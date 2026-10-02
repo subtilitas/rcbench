@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R8",
+ "label": "adjudicator-R8-3",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "function": "found V174",
+  "part": "",
+  "stands": true,
+  "scope": "function",
+  "ruling": "The refutation stands for the accuracy half of the figure. The noise half holds. servo_sim.c:22 sets noise_a 0.02f. servo_sim.c:44 returns (unit - 0.5) x noise_a, where unit runs from 0 to 1. That gives -10 to +10 mA, so 20 mA peak-to-peak. The +/-50 mA accuracy rests on \"half the 0.1 A step of the absolute thresholds\". No 0.1 A step exists in the cited sources or anywhere else in the checkout. servo_limit.c:59-61 sets knee_margin_a 0.15f, hard_limit_a 3.0f and stall_above_a 1.0f. servo_sync.c:36-37 sets min_depth_a 0.08f and hard_limit_a 4.0f. Servo.md:35-36 and :68 state these limits as 3.0 A, 1.0 A, 4.0 A, 0.15 A and 0.08 A. The settings schema holds no servo current threshold. The link pages carry current in 10 mA steps (link_pages.h:231, LINK_BN_CURRENT_CA). The 0.15 A and 0.08 A values are themselves off a 0.1 A grid, so a 0.1 A step contradicts the sources the claim cites. A one-decimal way of writing 3.0, 1.0 and 4.0 A is not a quantization step. It is also not a primary source for a measurement accuracy. The +/-50 mA is therefore the research's own choice, with a basis the sources do not hold. It was not found at a primary source, as P2 must record a value for research (V174 is \"for research\", owner, 2026-09-28). This is about the Port current monitor function's requirement value, not about any part. It does not refute INA3221AIRGVR or ERJ-6CWDR010V on any reading of their own figures.",
+  "evidence": "Checkout bb10544e89bec4f82d2e6be00b61614626dfa851 holds the following. shared/servo/servo_sim.c:22 `cfg->noise_a = 0.02f;`. servo_sim.c:41-45 has the LCG noise `(unit - 0.5f) * s->cfg.noise_a`, with unit in 0..1, giving +/-10 mA (20 mA p-p). servo_sim.c:141 sets noise_a 0.02f for the pair model. shared/servo/servo_limit.c:59-61 sets knee_margin_a 0.15f, hard_limit_a 3.0f and stall_above_a 1.0f. shared/servo/servo_sync.c:36-37 sets min_depth_a 0.08f and hard_limit_a 4.0f. docs/Servo.md:25 says \"at least 0.15 A\", :35 \"3.0 A\", :36 \"above 1.0 A for 400 ms\" and :68 \"at least 0.08 A ... 4.0 A\". shared/link/include/link_pages.h:231 reads `LINK_BN_CURRENT_CA = 1, /**< 10 mA steps, 0..655.35 A */`. I grepped shared/, docs/ and hardware/docs for a 0.1 A step, a 0.1 A unit, deciamps and \"in 0.1 A\". The only match is Power.md:89, a shunt table row, which is no threshold step. The settings schema (shared/settings) has no servo current setting. IOBoard.md:417 says \"The procedures act on 3.0 A, 0.15 A and 0.08 A. The host model assumes 0.02 A peak-to-peak sensor noise ... no servo has been measured (R8)\". It states no accuracy. Research.md:887 records V174 as \"for research (owner, 2026-09-28)\". The earlier FU-2B2 P2 return (003-P2-R8.json) gave the same basis as \"half the 0.1 A digit\".",
+  "source": "/home/claude/rcbench-research/round2/checkout-bb10544e89be at bb10544e: shared/servo/servo_sim.c:22,:41-45,:141; shared/servo/servo_limit.c:59-61; shared/servo/servo_sync.c:36-37; docs/Servo.md:25,:35-36,:68,:77; shared/link/include/link_pages.h:231; hardware/docs/IOBoard.md:417; hardware/docs/Research.md:887 (V174); grep over shared/, docs/, hardware/docs",
+  "read_at": "2026-10-02T18:52:56Z to 2026-10-02T18:53:46Z"
+ }
+}

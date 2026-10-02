@@ -1,0 +1,728 @@
+{
+ "role": "rerank",
+ "category": "R6",
+ "label": "rerank-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "functions": [
+   {
+    "function": "Servo supply",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPS55285VALR",
+      "reason": "Fixed input of the Scope table, ranked first; P2's record passes every requirement and the stock gate (JLCPCB 2732/2724 at 17:51:55Z; Digi-Key 5243, Active). Not replaced",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPS55285VALR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo supply inductor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "SRP1265A-4R7M",
+      "reason": "The part selection.json holds: 8.4 mOhm max, 28 A at a 20 % drop against the 13 A limit, 13.5 A heat rating. 7443551470's 7.7 mOhm is lower, but its saturation margin is the smallest of the five",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "ETQP5M4R7YFC",
+      "reason": "11.30 mOhm max, 20.0 A at -30 %, smallest body; below rank 1 on DC resistance and on its 30 % saturation definition",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "IHLP5050CEER4R7M01",
+      "reason": "15 mOhm max, 24 A typ and 10 A typ heat rating, 125 degC part limit; typical-only saturation and heat figures",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "IHLP4040DZER4R7M01",
+      "reason": "Passes every value with the DC resistance equal to the limit (16.50 mOhm max), typical-only saturation (17.0 A) and heat (9.5 A) figures, a 125 degC part limit; deepest stock of the five (JLCPCB 1388, Digi-Key 30264)",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "7443551470",
+      "reason": "7.7 mOhm max and 155 degC, but 15 A typ at a 30 % drop leaves 2 A over the 13 A limit, typical only, and JLCPCB stock 114 is 14 over the threshold of 100",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 5,
+      "part": "7443551470",
+      "maker": "Wurth Elektronik (WE-HCI, size 1365; datasheet and JLCPCB label 'Wurth Elektronik'); S2 name Wurth Elektronik",
+      "lcsc": "C1331156",
+      "package": "SMD 13.0 x 12.8 mm, 6.2 mm high (datasheet); JLCPCB 'SMD,13x12.8mm'",
+      "placements": 4,
+      "placements_basis": "fixed: one per TPS55285, 4 a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Inductance",
+        "required": "4.7 uH nominal; lowest with tolerance above 3.33 uH (1.2/fSW at 360 kHz); within 1 to 10 uH",
+        "datasheet": "4.7 uH +/-20 % at 100 kHz, 100 mV: 3.76 uH lowest at 0 A. Rated inductance 3.4 uH typ at 13.0 A (100 kHz); the typical curve on page 2 reads about 3.9 uH at 9.33 A, V118's highest operating peak (read off the graph). Tolerance at bias is not stated",
+        "pass": true,
+        "source": "https://www.we-online.com/components/products/datasheet/7443551470.pdf (HTTP 200, 2026-10-02T18:37:14Z), revision 006.001 of 2025-02-06, status field 'Valid', electrical properties and page 2"
+       },
+       {
+        "name": "Saturation current",
+        "required": "above 13 A",
+        "datasheet": "ISAT 10 % = 6 A typ; ISAT 30 % = 15 A typ (no minimum): above 13 A at the 30 % definition by 2 A; at a 20 % drop the datasheet states no figure and the typical curve gives under 13 A there (read off the graph)",
+        "pass": true,
+        "source": "https://www.we-online.com/components/products/datasheet/7443551470.pdf (HTTP 200, 2026-10-02T18:37:14Z), revision 006.001 of 2025-02-06, status field 'Valid', electrical properties; same 30 % basis as ETQP5M4R7YFC's 20.0 A at -30 %"
+       },
+       {
+        "name": "Heat-rating current",
+        "required": "at least 8 A, the typical ILIM_AVG each converter reaches at its own limit from the pack",
+        "datasheet": "IR,50K = 13 A max (dT 50 K); IRP,40K = 14.9 A max (dT 40 K): at least 8 A",
+        "pass": true,
+        "source": "https://www.we-online.com/components/products/datasheet/7443551470.pdf (HTTP 200, 2026-10-02T18:37:14Z), revision 006.001 of 2025-02-06, status field 'Valid', electrical properties"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 16.5 mOhm maximum, the highest in SLVSI72A Table 8-2 (IHLP4040DZER4R7M01)",
+        "datasheet": "RDC 7 mOhm +/-10 % at 20 degC: 7.7 mOhm max",
+        "pass": true,
+        "source": "https://www.we-online.com/components/products/datasheet/7443551470.pdf (HTTP 200, 2026-10-02T18:37:14Z), revision 006.001 of 2025-02-06, status field 'Valid', electrical properties"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC plus self-heating and the converter's board heating",
+        "datasheet": "operating -40 to +155 degC; ambient -40 to +105 degC at IRP; AEC-Q200 grade 1",
+        "pass": true,
+        "source": "https://www.we-online.com/components/products/datasheet/7443551470.pdf (HTTP 200, 2026-10-02T18:37:14Z), revision 006.001 of 2025-02-06, status field 'Valid', general information"
+       }
+      ],
+      "jlcpcb": "stockCount 114, canPresaleNumber 108, componentLibraryType expand, USD 2.8384 at the need of 20 (10+ break); read 2026-10-02T18:36:40Z, vendors.py jlcpcb C1331156 (selectSmtComponentList, exact LCSC match)",
+      "digikey": "7443551470: Wurth Elektronik, stock_available 1162 (cut tape; 800 on reel), lead_weeks 17, status Active; cached reading of 2026-10-02T18:13:10Z (P3), https://api.digikey.com/products/v4/search/7443551470/productdetails",
+      "gate": "need = 5 boards x 4 = 20; S4 threshold max(5 x 20, 50) = 100; stockCount 114 >= 100 and canPresaleNumber 108 >= 0: pass by rule 4, 14 over the threshold (the thinnest margin of the inductor candidates). Held 0",
+      "lifecycle": "maker product page for the order code not found (3 guessed URLs HTTP 404 at 2026-10-02T18:38:30Z); the family page https://www.we-online.com/en/components/products/WE-HCI (HTTP 200, 18:38:31Z) lists 7443551470 with no status text, so Digi-Key ProductStatus Active (18:13:10Z) is the status, a distributor figure; the data sheet's own status field reads 'Valid'; longevity commitment not read; first data sheet revision not read (current revision 006.001, 2025-02-06); PCN listing not read; JLCPCB carries no status",
+      "second_source": "second vendor: Digi-Key 7443551470 stock_available 1162 >= 100 (cached 18:13:10Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Lowest DC resistance of the five (7.7 mOhm max) and the highest temperature rating (155 degC), but the smallest saturation margin: 15 A typ at a 30 % drop against the 13 A limit, typical only, with 6 A at a 10 % drop; the thinnest JLCPCB stock (114 against a threshold of 100); land pattern not compared with the survivors'. Ranked last of five",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "7443551470"
+     },
+     {
+      "rank": 4,
+      "part": "IHLP4040DZER4R7M01",
+      "maker": "Vishay Dale (IHLP-4040DZ-01, document 34193); S1/S2 name Vishay",
+      "lcsc": "C845077",
+      "package": "SMD 10.16 x 10.16 mm, 4.0 mm max high (IHLP-4040DZ-01)",
+      "placements": 4,
+      "placements_basis": "fixed: one per TPS55285, 4 a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Inductance",
+        "required": "4.7 uH nominal; lowest with tolerance above 3.33 uH (1.2/fSW at 360 kHz); within 1 to 10 uH",
+        "datasheet": "4.7 uH +/-20 % at 100 kHz, 0.25 V, 0 A: 3.76 uH lowest",
+        "pass": true,
+        "source": "https://www.vishay.com/docs/34193/ihlp-4040dz-01.pdf (HTTP 200, 2026-10-02T18:37:14Z), document 34193, revision 13-Aug-2025, standard electrical specifications"
+       },
+       {
+        "name": "Saturation current",
+        "required": "above 13 A",
+        "datasheet": "17.0 A typ (L drops approximately 20 %; no minimum stated)",
+        "pass": true,
+        "source": "https://www.vishay.com/docs/34193/ihlp-4040dz-01.pdf (HTTP 200, 2026-10-02T18:37:14Z), document 34193, revision 13-Aug-2025, standard electrical specifications, note (2)"
+       },
+       {
+        "name": "Heat-rating current",
+        "required": "at least 8 A, the typical ILIM_AVG each converter reaches at its own limit from the pack",
+        "datasheet": "9.5 A typ (approximate dT 40 degC; no minimum stated)",
+        "pass": true,
+        "source": "https://www.vishay.com/docs/34193/ihlp-4040dz-01.pdf (HTTP 200, 2026-10-02T18:37:14Z), document 34193, revision 13-Aug-2025, note (1)"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 16.5 mOhm maximum, the highest in SLVSI72A Table 8-2 (IHLP4040DZER4R7M01)",
+        "datasheet": "15.00 mOhm typ, 16.50 mOhm max at 25 degC: equal to the 16.5 mOhm limit, no margin",
+        "pass": true,
+        "source": "https://www.vishay.com/docs/34193/ihlp-4040dz-01.pdf (HTTP 200, 2026-10-02T18:37:14Z), document 34193, revision 13-Aug-2025, standard electrical specifications"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC plus self-heating and the converter's board heating",
+        "datasheet": "operating -55 to +125 degC; part temperature (ambient plus rise) not above 125 degC",
+        "pass": true,
+        "source": "https://www.vishay.com/docs/34193/ihlp-4040dz-01.pdf (HTTP 200, 2026-10-02T18:37:14Z), document 34193, revision 13-Aug-2025, notes"
+       }
+      ],
+      "jlcpcb": "stockCount 1388, canPresaleNumber 1377, componentLibraryType expand, USD 0.9234 at the need of 20 (10+ break); read 2026-10-02T18:36:41Z, vendors.py jlcpcb C845077",
+      "digikey": "IHLP4040DZER4R7M01: Vishay Dale, stock_available 30264, lead_weeks 13, status Active; cached reading of 2026-10-02T18:13:08Z (P3), https://api.digikey.com/products/v4/search/IHLP4040DZER4R7M01/productdetails",
+      "gate": "need = 20; S4 threshold 100; stockCount 1388 >= 100 and canPresaleNumber 1377 >= 0: pass by rule 4. Held 0",
+      "lifecycle": "maker page https://www.vishay.com/en/product/34193/ (HTTP 200, 2026-10-02T18:38:44Z) carries no status text in its body, so Digi-Key ProductStatus Active (18:13:08Z) is the status, a distributor figure; longevity commitment not read; document 34193 revision 13-Aug-2025, first revision not read; PCN listing not read; JLCPCB carries no status",
+      "second_source": "second vendor: Digi-Key IHLP4040DZER4R7M01 stock_available 30264 >= 100 (cached 18:13:08Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Passes every value, with the DC resistance at the limit (16.50 mOhm max, the value of Table 8-2's own inductor), typical-only saturation and heat figures, a 125 degC part limit and the deepest stock of the five at both vendors. Ranked after IHLP5050CEER4R7M01 (15 mOhm max, 24 A typ) and ahead of 7443551470, whose saturation margin is smaller",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "IHLP4040DZER4R7M01"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "SRP1265A-4R7M",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port supply switch",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TLP3545A(TP1,F",
+      "reason": "P2's rank 1 stands: C connection 6.0 A at 50 degC, 60 V, stated Ron and a 0.5 ms maximum opening time, Toshiba on S1, JLCPCB 1040 against a threshold of 500",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "AQV252G2SX",
+      "reason": "Lower on-resistance with a stated C-connection maximum (20 mOhm) and 4.84 A at 50 degC; Panasonic on S2 only (photorelay-versus-IC question open); JLCPCB 980; 37-week lead",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "AQV252GAX",
+      "reason": "Passes every value with the C connection (about 3.98 A at 50 degC from a graph of one tested sample, 30 mOhm max); Panasonic on S2 only; JLCPCB 3595, Digi-Key 10187, 28-week lead; below rank 2 on margin",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 3,
+      "part": "AQV252GAX",
+      "maker": "Panasonic (PhotoMOS HE 1 Form A High Capacity, ASCTB144E 201912); S2 name Panasonic, not on S1",
+      "lcsc": "C425149",
+      "package": "DIP6 with surface-mount gull-wing terminals, 8.8 x 6.4 mm (JLCPCB 'SMD-6P')",
+      "placements": 20,
+      "placements_basis": "fixed by the specification: one per port, 20 ports (IOBoard.md:384)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Operating input range",
+        "required": "0.8 V to 8.70 V at the switch input (rail from 0.8 V; highest set point 8.53 V; HV ceiling 8.70 V)",
+        "datasheet": "load voltage 60 V peak AC (recommended maximum 48 V); photovoltaic gate drive, no supply pin on the load side: conducts from 0 V",
+        "pass": true,
+        "source": "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588893074924195840 (JLCPCB's copy of ASCTB144E 201912, HTTP 200, 2026-10-02T18:37:15Z), ratings and recommended operating conditions"
+       },
+       {
+        "name": "Conducts from 0.8 V",
+        "required": "turns on and carries the port's current from 0.8 V; the function may be split across parts",
+        "datasheet": "LED operate current 3 mA max at IL 100 mA, recommended IF 5 to 30 mA; the output is driven by the LED, independent of the load voltage",
+        "pass": true,
+        "source": "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588893074924195840 (JLCPCB's copy of ASCTB144E 201912, HTTP 200, 2026-10-02T18:37:15Z), electrical characteristics"
+       },
+       {
+        "name": "Continuous current",
+        "required": "3.0 A at 50 degC ambient, from a rail of 5.0 V up",
+        "datasheet": "C connection (DC load) 5.0 A at 25 degC; Reference data 1-2 (tested sample, not a guarantee) falls from 5.0 A at 25 degC to about 2.55 A at 85 degC: about 3.98 A at 50 degC by a straight line between those two points, read off the graph. A connection 2.5 A at 25 degC, about 2.0 A at 50 degC: the C connection is used",
+        "pass": true,
+        "source": "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588893074924195840 (JLCPCB's copy of ASCTB144E 201912, HTTP 200, 2026-10-02T18:37:15Z), absolute maximum ratings and Reference data 1-2"
+       },
+       {
+        "name": "Voltage drop",
+        "required": "at most 570 mV across the switch path at 3.0 A from 5.0 V up; reported below 5.0 V",
+        "datasheet": "Ron C connection 0.02 Ohm typ, 0.03 Ohm max at IL max, within 1 s, 25 degC: 90 mV max at 3 A; with CMS04(TE12L,Q,M) VF <= 0.37 V the path drops <= 0.46 V. Reference data 2 (A connection) shows Ron about 40 % above its 25 degC value at 85 degC: at that end the path is still under 0.50 V",
+        "pass": true,
+        "source": "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588893074924195840 (JLCPCB's copy of ASCTB144E 201912, HTTP 200, 2026-10-02T18:37:15Z), electrical characteristics and Reference data 2; CMS04 data sheet (P2 report)"
+       },
+       {
+        "name": "Own current limit",
+        "required": "whole tolerance band between 3.0 and 6.35 A",
+        "datasheet": "none in the relay; the companion INA301A1IDGKR on the port's 10 mOhm shunt pulls the LED drive low: trip band 4.30 to 4.51 A (P2 report, INA301 SBOS713A)",
+        "pass": true,
+        "source": "P2 report 'Port supply current-limit element INA301A1IDGKR'"
+       },
+       {
+        "name": "Reverse blocking",
+        "required": "pin up to 12 V, with the switch on and off",
+        "datasheet": "none in the relay; the companion CMS04(TE12L,Q,M) in series, VRRM 30 V, blocks with the switch on and off (P2 report)",
+        "pass": true,
+        "source": "P2 report 'Port supply reverse-blocking element CMS04(TE12L,Q,M)'"
+       },
+       {
+        "name": "Off-state leakage",
+        "required": "under 5 mA at 8.4 V",
+        "datasheet": "ILeak 1 uA max at IF 0 mA, VL max",
+        "pass": true,
+        "source": "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588893074924195840 (JLCPCB's copy of ASCTB144E 201912, HTTP 200, 2026-10-02T18:37:15Z), electrical characteristics"
+       },
+       {
+        "name": "Input withstand",
+        "required": "at least 20 V",
+        "datasheet": "VL 60 V peak AC absolute maximum",
+        "pass": true,
+        "source": "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588893074924195840 (JLCPCB's copy of ASCTB144E 201912, HTTP 200, 2026-10-02T18:37:15Z), absolute maximum ratings"
+       },
+       {
+        "name": "Opening time after reset",
+        "required": "every port switch open within 5 ms of an RP2354B reset",
+        "datasheet": "Toff 0.25 ms typ, 0.5 ms max (IF 5 mA, IL 100 mA, VL 10 V); the LED stops when the expander output becomes an input",
+        "pass": true,
+        "source": "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588893074924195840 (JLCPCB's copy of ASCTB144E 201912, HTTP 200, 2026-10-02T18:37:15Z), transfer characteristics"
+       },
+       {
+        "name": "Control off when undriven",
+        "required": "off while its control input is undriven and pulled to its inactive level; driven from a 3.3 V expander output",
+        "datasheet": "1 Form A normally open: off with IF 0 mA; LED turn-off current 0.2 mA min",
+        "pass": true,
+        "source": "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588893074924195840 (JLCPCB's copy of ASCTB144E 201912, HTTP 200, 2026-10-02T18:37:15Z), electrical characteristics"
+       },
+       {
+        "name": "Inrush",
+        "required": "peak at most 2.35 A; port capacitance not found",
+        "datasheet": "not verified: the port capacitance is not found (V133); Ton 1.1 ms typ, 5.0 ms max at IF 5 mA, IL 100 mA, VL 10 V, stated for a resistive load only",
+        "pass": true,
+        "source": "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588893074924195840 (JLCPCB's copy of ASCTB144E 201912, HTTP 200, 2026-10-02T18:37:15Z), transfer characteristics"
+       },
+       {
+        "name": "Not the rail gate",
+        "required": "no gate requirement",
+        "datasheet": "not used as the gate",
+        "pass": true,
+        "source": "V121"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "operating -40 to +85 degC",
+        "pass": true,
+        "source": "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588893074924195840 (JLCPCB's copy of ASCTB144E 201912, HTTP 200, 2026-10-02T18:37:15Z), absolute maximum ratings"
+       }
+      ],
+      "jlcpcb": "stockCount 3595, canPresaleNumber 3459, componentLibraryType expand, USD 2.2239 at the need of 100 (100+ break); read 2026-10-02T18:36:43Z, vendors.py jlcpcb C425149",
+      "digikey": "AQV252GAX: Panasonic Industry, stock_available 10187 (cut tape; 10000 on reel), lead_weeks 28, status Active; cached reading of 2026-10-02T18:20:13Z (P3), https://api.digikey.com/products/v4/search/AQV252GAX/productdetails",
+      "gate": "need = 5 boards x 20 = 100; S4 threshold max(5 x 100, 50) = 500; stockCount 3595 >= 500 and canPresaleNumber 3459 >= 0: pass by rule 4. Held 0",
+      "lifecycle": "Panasonic model page https://industrial.panasonic.com/ww/products/pt/photomos/models/AQV252GAX answered HTTP 404 (2026-10-02T18:43:40Z), so Digi-Key ProductStatus Active (18:20:13Z) is the status, a distributor figure; longevity commitment not read; data sheet ASCTB144E 201912 (JLCPCB's copy), first revision not read; PCN listing not read; JLCPCB carries no status",
+      "second_source": "second vendor: Digi-Key AQV252GAX stock_available 10187 >= 500 (cached 18:20:13Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Passes every value with the C connection, and holds the same companions as ranks 1 and 2 (CMS04 for reverse blocking, INA301 for the limit). Third: Panasonic is on S2 only (the photorelay-versus-IC question of S1 and S2 stands, as for AQV252G2SX), its 3.98 A at 50 degC is read off a graph of one tested sample, its Ron maximum (30 mOhm) is above AQV252G2SX's (20 mOhm), and its pin-compatibility with TLP3545A was not compared. It beats AQV252G2SX on stock only: 3595 at JLCPCB against 980, and a 28-week lead against 37",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "AQV252GAX"
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "TLP3109(TP,F",
+      "maker": "Toshiba",
+      "reason": "Lifecycle: Toshiba's page https://toshiba.semicon-storage.com/ap-en/semiconductor/product/optoelectronics/detail.TLP3109.html (HTTP 200, read 2026-10-02T18:37:21Z) reads 'TLP3109 is shortly to be discontinued', naming TLP3109A as the replacement, and Digi-Key ProductStatus for TLP3109(TP,F is Obsolete, stock 0 (https://api.digikey.com/products/v4/search/TLP3109%28TP%2CF/productdetails, 2026-10-02T18:37:04Z). The 2 A to 2.5 A of jlcparts is the A connection and P2's stated reason does not hold: the data sheet gives ION 4.0 A in the C connection, 3.0 A at 50 degC (P3's reading, Rev.2.0, 2017-04-20, JLCPCB copy), but a part announced for discontinuation fails the Lifecycle check. TLP3109A(TP,F: JLCPCB C1857559 stockCount 62 under 500 (2026-10-02T18:36:46Z), rule 4"
+     },
+     {
+      "part": "VOM1271T or TLP3906(TPL,E with a discrete back-to-back MOSFET pair",
+      "maker": "Vishay, Toshiba",
+      "reason": "Opening time after reset (within 5 ms, V127) is not stated at the load of a MOSFET pair, and no run selects the pair whose gate capacitance fixes that load. VOM1271T, document 83469 Rev. 1.9 (read 2026-10-02T18:37:20Z): toff 65 us typical at CL 200 pF, no minimum or maximum, and the page's note says typical values are for information only; no curve against load. TLP3906, Rev.3.0.A of 2026-04-07 (read 18:37:20Z): toff 1 ms maximum at CL 1000 pF only; Fig. 12.8's curve against CL, to 10,000 pF, is marked reference only, not guaranteed. A pair of back-to-back MOSFETs is two gates and two Cgd in parallel; with two MOSFETs of Ciss 0.5 to 1.15 nF each (the stocked 30 V parts of 19 to 30 mOhm in jlcparts) the load is 1.0 to 2.3 nF, at or above the one stated condition. Both drivers pass rule 4 (JLCPCB C146286 5503/5173 at 18:36:51Z; C146278 4582/4458 at 18:36:52Z) and Digi-Key lists both Active (88117; 47607 at 18:37:05Z and 18:37:07Z), so stock is not the reason. The topology also adds 40 MOSFETs to the 20 drivers and needs the same CMS04 and INA301 companions as the photorelay switches, which hold their 0.5 ms maximum in their own data sheets"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TLP3545A(TP1,F",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "I/O expander",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP23017T-E/SS",
+      "reason": "The part selection.json holds, requalified by P2: 8 addresses clear of the map, hardware RESET, inputs without pull-ups at reset, deepest stock at both vendors; 3 parts",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TCA6424ARGJR",
+      "reason": "Two parts cover the 33 lines with 15 spare; a different register map and firmware from rank 1; thinner Digi-Key stock and 20-week lead",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "PCAL6524HEAZ",
+      "reason": "Passes every value like rank 2; after it on its 30-week lead and shallower JLCPCB stock",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "PCA9698DGG,518",
+      "reason": "One part for all 33 lines with 7 spare and VOH stated at 10 mA; a different register map and firmware, 9.80 USD against 3 x 1.38 for three MCP23017, a 2010 data sheet; passes every value",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 4,
+      "part": "PCA9698DGG,518",
+      "maker": "NXP (PCA9698 Rev. 3, 3 August 2010; JLCPCB label 'NXP Semicon'); S1 name NXP",
+      "lcsc": "C729177",
+      "package": "TSSOP-56, 6.1 mm body (SOT364-1)",
+      "placements": 1,
+      "placements_basis": "33 lines (V119) in one part of 40 I/Os: 1 a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Lines",
+        "required": "33 lines: 30 outputs and 3 inputs; on an MCP23017 GPA7 and GPB7 carry none",
+        "datasheet": "40 I/O pins in 5 banks of 8, each configurable as input or output; no output-only pin: 7 spare over 33. Totem-pole outputs source 10 mA and sink 25 mA, 1 A total package",
+        "pass": true,
+        "source": "https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf (HTTP 200, 2026-10-02T18:37:19Z), Rev. 3, 3 August 2010, sections 1, 2"
+       },
+       {
+        "name": "Hardware reset input",
+        "required": "active-low reset returning every line to an input, from GPIO 14 with a pull-down",
+        "datasheet": "RESET, active LOW, resets the device to its power-up default state; tw(rst) 4 ns min; all I/Os are inputs at power-up and RESET (Fig 1)",
+        "pass": true,
+        "source": "https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf (HTTP 200, 2026-10-02T18:37:19Z), Rev. 3, 3 August 2010, sections 2, 7.8, 7.9, 12"
+       },
+       {
+        "name": "Power-up state",
+        "required": "every load line an input with no internal pull-up at power-up and after reset",
+        "datasheet": "40 I/O pins default to inputs at power-up; Fig 2 shows no pull resistor on the I/O pins (the only statement of no internal pull-up is for the address pins AD0 to AD2); OE defaults to enabled",
+        "pass": true,
+        "source": "https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf (HTTP 200, 2026-10-02T18:37:19Z), Rev. 3, 3 August 2010, sections 2, 7.1, Fig 2"
+       },
+       {
+        "name": "I2C clock",
+        "required": "at least 400 kHz at 3.3 V",
+        "datasheet": "fSCL 0 to 1000 kHz in Fast-mode Plus (400 kHz Fast-mode, 100 kHz Standard-mode); bus time-out resets the interface after SDA or SCL low for 25 ms",
+        "pass": true,
+        "source": "https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf (HTTP 200, 2026-10-02T18:37:19Z), Rev. 3, 3 August 2010, Table 15"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V",
+        "datasheet": "VDD 2.3 to 5.5 V; IDD 250 uA typ, 400 uA max at 3.3 V, fSCL 1 MHz, no load; VOH 2.3 V min at -10 mA, VDD 3.0 V; IOL 17 mA min at VOL 0.5 V, VDD 3.0 V; 25 mA a pin",
+        "pass": true,
+        "source": "https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf (HTTP 200, 2026-10-02T18:37:19Z), Rev. 3, 3 August 2010, Tables 13, 14"
+       },
+       {
+        "name": "Address",
+        "required": "clear of 0x31 (FUSB303), 0x40 to 0x4F, 0x18 to 0x1F and 74h/75h",
+        "datasheet": "64 addresses from three pins (AD2, AD1, AD0 each VSS, VDD, SCL or SDA); with all three at VSS or VDD the 7-bit addresses are 0x20 to 0x27 (Table 12 lists the 8-bit form 40h to 4Eh), clear of 0x31, 0x40 to 0x4F, 0x18 to 0x1F and 0x74 to 0x75. Reserved: alert response 0x0C, GPIO All Call 0x6E, Device ID 0x7C, none in the map",
+        "pass": true,
+        "source": "https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf (HTTP 200, 2026-10-02T18:37:19Z), Rev. 3, 3 August 2010, sections 7.1, 7.2, Table 12, Figs 6 to 8"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "operating -40 to +85 degC",
+        "pass": true,
+        "source": "https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf (HTTP 200, 2026-10-02T18:37:19Z), Rev. 3, 3 August 2010, Table 13"
+       }
+      ],
+      "jlcpcb": "stockCount 1908, canPresaleNumber 1894, componentLibraryType expand, USD 9.8044 at the need of 5 (1+ break); read 2026-10-02T18:36:48Z, vendors.py jlcpcb C729177",
+      "digikey": "PCA9698DGG,518: NXP USA Inc., stock_available 3322 (cut tape; 2000 on reel), lead_weeks 16, status Active; cached reading of 2026-10-02T14:27:10Z, https://api.digikey.com/products/v4/search/PCA9698DGG%2C518/productdetails",
+      "gate": "need = 5 boards x 1 = 5; S4 threshold max(5 x 5, 50) = 50; stockCount 1908 >= 50 and canPresaleNumber 1894 >= 0: pass by rule 4. Held 0",
+      "lifecycle": "NXP product page https://www.nxp.com/products/PCA9698 lists the part 'Active' (HTTP 200, 2026-10-02T18:39:31Z); longevity commitment not read; first data sheet v.1, 2006-02-24 (revision history); PCN listing not read; Digi-Key Active, agrees; JLCPCB carries no status",
+      "second_source": "second vendor: Digi-Key PCA9698DGG,518 stock_available 3322 >= 50 (cached 14:27:10Z)",
+      "alternates": [
+       "PCA9698BS (same die, HVQFN56 8 x 8 mm; not read for stock)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Covers the 33 lines in one part with 7 spare and states VOH (2.3 V at 10 mA, 3.0 V) for a photorelay LED drive, which MCP23017 states only at 3 mA; a different register map and firmware from rank 1, 2.4 times the cost of three MCP23017 (9.80 USD against 3 x 1.38), a 2010 data sheet and one part for all 33 lines. Fourth of four",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "PCA9698DGG,518"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP23017T-E/SS",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port voltage ceiling",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPS3701DDCR",
+      "reason": "P2's rank 1 stands: meets both bands with 0.1 % resistors, reconnects with 2 to 12 mV of hysteresis at INB, deepest stock (JLCPCB 26813)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TLV6710DDCR",
+      "reason": "Same thresholds and pins as rank 1 at almost four times its JLCPCB price and a ninth of its stock",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPS3701DDCR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo supply temperature",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP9808T-E/MS",
+      "reason": "The owner's part, requalified by P2 against V279's 72.0 and 66.25 degC; the only candidate",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP9808T-E/MS",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo supply temperature latch",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "74LVC1G175GW,125",
+      "reason": "The owner's first candidate (V303) and R3's latch part number: level set dominant on MR, cleared by the buffered F11 edge on CP, Ioff +/-2 uA; second vendor Digi-Key 36048",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "SN74LVC1G74DCUR",
+      "reason": "The owner's second candidate (V303); passes with the alert on CLR and F11 on CLK, PRE left unused; second vendor Digi-Key 35656; a second latch part number beside R3's",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "SN74LVC1G175DCKR",
+      "reason": "Same pinout and wiring as rank 1, 63 times its JLCPCB stock, but Digi-Key stock 0, so its second source is rank 1 itself; Ioff +/-10 uA",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 3,
+      "part": "SN74LVC1G175DCKR",
+      "maker": "Texas Instruments (SCES560G); S1 name Texas Instruments",
+      "lcsc": "C202238",
+      "package": "SC70-6 (DCK), 2.00 x 1.25 mm; JLCPCB 'SOT-363-6'",
+      "placements": 4,
+      "placements_basis": "fixed: 4 a board (V303)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Count",
+        "required": "4 a board, one per TPS55285",
+        "datasheet": "one D flip-flop with asynchronous clear a part",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1g175.pdf (HTTP 200, 2026-10-02T18:37:19Z), SCES560G, revised June 2015, section 3"
+       },
+       {
+        "name": "Set by the sensor's alert, set dominant",
+        "required": "the MCP9808 alert sets the latch as a level; while the alert is asserted a clear does not release the rail",
+        "datasheet": "CLR low forces Q low whatever the clock and D (Table 1): the alert (active low) on CLR holds 'tripped' = Q low while asserted",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1g175.pdf (HTTP 200, 2026-10-02T18:37:19Z), SCES560G, revised June 2015, Table 1 function table"
+       },
+       {
+        "name": "Cleared only by F11",
+        "required": "stays set until the operator clear control (F11) clears it; no firmware clear",
+        "datasheet": "with D tied HIGH and CLR high, the rising edge on CLK loads Q HIGH; no other input clears",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1g175.pdf (HTTP 200, 2026-10-02T18:37:19Z), SCES560G, revised June 2015, Table 1"
+       },
+       {
+        "name": "Holds only its own converter off",
+        "required": "its output takes that converter's EN/UVLO below 0.4 V (VEN_L) through the enable combination; the other rails and the ESC keep running",
+        "datasheet": "VOL 0.1 V max at 100 uA, 0.4 V max at 16 mA (VCC 3 V); Q low drives the enable AND, whose part is not selected",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1g175.pdf (HTTP 200, 2026-10-02T18:37:19Z), SCES560G, revised June 2015, section 6.5"
+       },
+       {
+        "name": "Defined state at power-up",
+        "required": "a defined state after power-up through an asynchronous input, held until the 3.3 V rail is in range",
+        "datasheet": "no power-up state stated; CLR held LOW at power-up gives Q low",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1g175.pdf (HTTP 200, 2026-10-02T18:37:19Z), SCES560G, revised June 2015, Table 1"
+       },
+       {
+        "name": "I_off on inputs",
+        "required": "I_off on inputs that the interlock's F11 clear line drives",
+        "datasheet": "Ioff +/-10 uA max at VCC 0 V, VI or VO 5.5 V (the Nexperia part states +/-2 uA)",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1g175.pdf (HTTP 200, 2026-10-02T18:37:19Z), SCES560G, revised June 2015, section 6.5"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V +/-3 %",
+        "datasheet": "VCC 1.65 to 5.5 V",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1g175.pdf (HTTP 200, 2026-10-02T18:37:19Z), SCES560G, revised June 2015, section 6.3"
+       },
+       {
+        "name": "Clear edge",
+        "required": "the F11 clear's debounced edge reaches the clock within its input transition limit (R3's Schmitt buffer SN74AUP1G17 already shapes it)",
+        "datasheet": "input transition rise or fall rate 10 ns/V max at VCC 3.3 V +/-0.3 V; takes R3's buffered F11 edge",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1g175.pdf (HTTP 200, 2026-10-02T18:37:19Z), SCES560G, revised June 2015, recommended operating conditions"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TA -40 to +125 degC",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1g175.pdf (HTTP 200, 2026-10-02T18:37:19Z), SCES560G, revised June 2015, recommended operating conditions"
+       }
+      ],
+      "jlcpcb": "stockCount 124838, canPresaleNumber 124683, componentLibraryType expand, USD 0.0851 at the need of 20 (1+ break); read 2026-10-02T18:36:49Z, vendors.py jlcpcb C202238",
+      "digikey": "SN74LVC1G175DCKR: Texas Instruments, stock_available 0 (all three packagings), lead_weeks 20, status Active; cached reading of 2026-10-02T17:53:15Z (P2), https://api.digikey.com/products/v4/search/SN74LVC1G175DCKR/productdetails",
+      "gate": "need = 5 x 4 = 20; S4 threshold max(100, 50) = 100; stockCount 124838 >= 100 and canPresaleNumber 124683 >= 0: pass by rule 4. Digi-Key stock 0 < 100: the second-vendor route fails, the alternate route of rule 5 holds. Held 0",
+      "lifecycle": "TI product page https://www.ti.com/product/SN74LVC1G175 lists ACTIVE and the DCKR orderable (HTTP 200, 2026-10-02T18:40:10Z); longevity commitment not read; first data sheet March 2004; PCN listing not read; Digi-Key Active, agrees (stock 0)",
+      "second_source": "alternate: 74LVC1G175GW,125 (Nexperia, TSSOP-6 SOT363-2): same pins (1 CLK/CP, 2 GND, 3 D, 4 Q, 5 VCC, 6 CLR/MR) and package class (SC-70-6, SOT-363), same wiring, no register or address; passes rules 1 to 4: JLCPCB C282350 stockCount 1973, canPresaleNumber 1886 >= 100 (2026-10-02T18:36:54Z), Nexperia on S1; it is on P2's shortlist",
+      "alternates": [
+       "74LVC1G175GW,125 (Nexperia; rank 1 of this function)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Same function, pinout and wiring as rank 1 with 63 times its JLCPCB stock (124838 against 1973), but Digi-Key holds none, so its second source is an alternate that is rank 1 itself. Ranked after SN74LVC1G74DCUR, which the owner names beside rank 1 (V303) and which has a second vendor of its own; Ioff is +/-10 uA against +/-2 uA at rank 1",
+      "second_source_route": "alternate",
+      "second_source_part": "74LVC1G175GW,125",
+      "p3_part": "SN74LVC1G175DCKR"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "74LVC1G175GW,125",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port voltage ceiling latch",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "Re-rank scope",
+    "value": "P3 returned 7 entries (1 in missed, 6 in exclusions_not_holding) under 4 functions of P2's; answered: 7443551470 and IHLP4040DZER4R7M01 (Servo supply inductor, qualified), AQV252GAX (Port supply switch, qualified), TLP3109(TP,F (dropped, lifecycle), VOM1271T or TLP3906(TPL,E with a discrete MOSFET pair (dropped), PCA9698DGG,518 (I/O expander, qualified), SN74LVC1G175DCKR (Servo supply temperature latch, qualified). P3's missed_functions, Port supply reverse blocking and Port supply current limit, are functions P2 did not return: not ranked here, left to the script's open items. TLP241A(TP1,F and VO14642AABTR, which P3 says hold, are not P3 entries",
+    "source": "P3 return; P2 return; this re-rank, 2026-10-02"
+   },
+   {
+    "figure": "Fixed input TPS55285VALR",
+    "value": "ranked first for Servo supply; P2's record passes every requirement and the stock gate; nothing to report to the owner as failed. The 3.72 A continuous rating at 6.0 V in, 8.4 V out, 50 degC on 33 degC/W is P2's figure, not re-derived here",
+    "source": "P2 return; Research.md Scope fixed inputs"
+   },
+   {
+    "figure": "7443551470 stock and status",
+    "value": "JLCPCB C1331156 stockCount 114, canPresaleNumber 108, expand, USD 2.8384 at 20 (read 2026-10-02T18:36:40Z, vendors.py jlcpcb); Digi-Key stock 1162, lead 17 weeks, Active (cached 2026-10-02T18:13:10Z); family page lists the code without status (HTTP 200, 18:38:31Z)",
+    "source": "vendors.py jlcpcb C1331156; vendors.py digikey 7443551470; https://www.we-online.com/en/components/products/WE-HCI"
+   },
+   {
+    "figure": "7443551470 inductance under bias",
+    "value": "typical curve (page 2) reads about 3.9 uH at 9.33 A and 3.4 uH typ at 13.0 A (table); the -20 % tolerance at bias is not stated; at 0 A the lowest is 3.76 uH. Read off a graph, typical only",
+    "source": "https://www.we-online.com/components/products/datasheet/7443551470.pdf, read 2026-10-02T18:37:14Z"
+   },
+   {
+    "figure": "IHLP4040DZER4R7M01 stock and status",
+    "value": "JLCPCB C845077 stockCount 1388, canPresaleNumber 1377, expand, USD 0.9234 at 20 (2026-10-02T18:36:41Z); Digi-Key 30264, lead 13 weeks, Active (cached 18:13:08Z); maker page HTTP 200 with no status text (18:38:44Z)",
+    "source": "vendors.py jlcpcb C845077; vendors.py digikey IHLP4040DZER4R7M01; https://www.vishay.com/en/product/34193/"
+   },
+   {
+    "figure": "AQV252GAX C-connection current at 50 degC",
+    "value": "5.0 A at 25 degC falling to about 2.55 A at 85 degC (Reference data 1-2, AQV252G, tested sample, not guaranteed): about 3.98 A at 50 degC by a straight line between those points. A connection about 2.0 A at 50 degC. Stock: JLCPCB C425149 3595/3459 (18:36:43Z), Digi-Key 10187, 28 weeks, Active (cached 18:20:13Z); Panasonic page HTTP 404 (18:43:40Z)",
+    "source": "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588893074924195840 read 2026-10-02T18:37:15Z, page 3; vendors.py jlcpcb C425149; vendors.py digikey AQV252GAX"
+   },
+   {
+    "figure": "TLP3109 lifecycle",
+    "value": "Toshiba product page: 'TLP3109 is shortly to be discontinued', replacement TLP3109A (read 2026-10-02T18:37:21Z); Digi-Key ProductStatus Obsolete, stock 0 (2026-10-02T18:37:04Z); TLP3109A(TP,F JLCPCB C1857559 stockCount 62, canPresaleNumber 47 (18:36:46Z), under the threshold of 500; TLP3109(TP,F JLCPCB C393897 stockCount 2506, canPresaleNumber 1767 (18:36:44Z)",
+    "source": "https://toshiba.semicon-storage.com/ap-en/semiconductor/product/optoelectronics/detail.TLP3109.html; vendors.py digikey TLP3109(TP,F; vendors.py jlcpcb C1857559, C393897"
+   },
+   {
+    "figure": "Photovoltaic drivers VOM1271T and TLP3906 turn-off",
+    "value": "VOM1271T toff 65 us typ at CL 200 pF, ton 53 us typ, no maximum, VOC 7.8 V min at IF 10 mA, ISC 6.0 uA min at 10 mA (document 83469 Rev. 1.9). TLP3906 toff 0.3 ms typ, 1 ms max at CL 1000 pF, IF 10 mA; VOC 7 V min, ISC 12 uA min; curve to 10,000 pF reference only (Rev.3.0.A, 2026-04-07). JLCPCB C146286 5503/5173 (18:36:51Z), C146278 4582/4458 (18:36:52Z); Digi-Key VOM1271T 88117 lead 9 weeks Active (18:37:05Z), TLP3906(TPL,E 47607 lead 24 weeks Active (18:37:07Z)",
+    "source": "https://www.vishay.com/docs/83469/vom1271.pdf and https://toshiba.semicon-storage.com/info/docget.jsp?did=15186&prodName=TLP3906, read 2026-10-02T18:37:20Z; vendors.py jlcpcb; vendors.py digikey"
+   },
+   {
+    "figure": "PCA9698DGG,518 for P5",
+    "value": "I2C addresses 7-bit 0x20 to 0x27 with AD pins at VSS or VDD (8-bit 40h to 4Eh in Table 12); reserved 0x0C, 0x6E, 0x7C. Supply current 250 uA typ, 400 uA max at 3.3 V (1 MHz, no load). VOH 2.3 V min at -10 mA, VDD 3.0 V, so a photorelay LED at 5 mA is inside a stated figure (MCP23017 states VOH only at 3 mA); IOL 17 mA min at 0.5 V, VDD 3.0 V; 1 A total package. OE pin low keeps outputs enabled. JLCPCB C729177 1908/1894, USD 9.8044 at 5 (18:36:48Z); Digi-Key 3322, lead 16 weeks, Active (cached 14:27:10Z); NXP page Active (18:39:31Z)",
+    "source": "https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf Rev. 3 read 2026-10-02T18:37:19Z; https://www.nxp.com/products/PCA9698; vendors.py jlcpcb C729177; vendors.py digikey PCA9698DGG,518"
+   },
+   {
+    "figure": "SN74LVC1G175DCKR sourcing",
+    "value": "JLCPCB C202238 stockCount 124838, canPresaleNumber 124683, expand, USD 0.0851 at 20 (2026-10-02T18:36:49Z); Digi-Key stock 0, lead 20 weeks, Active (cached 17:53:15Z); TI page ACTIVE (18:40:10Z). Rule-5 alternate 74LVC1G175GW,125: JLCPCB C282350 1973/1886 (18:36:54Z), Digi-Key Nexperia 36048 (cached 17:52:58Z); same pins 1 CLK/CP, 2 GND, 3 D, 4 Q, 5 VCC, 6 CLR/MR and package class SOT-363/SC-70-6",
+    "source": "vendors.py jlcpcb C202238, C282350; vendors.py digikey SN74LVC1G175DCKR, 74LVC1G175GW,125; https://www.ti.com/product/SN74LVC1G175; https://www.ti.com/lit/ds/symlink/sn74lvc1g175.pdf; https://assets.nexperia.com/documents/data-sheet/74LVC1G175.pdf (P2 reading)"
+   },
+   {
+    "figure": "Digi-Key calls left",
+    "value": "617 of 1000 at 2026-10-02T18:37:01Z; this re-rank made 3 uncached calls (TLP3109(TP,F, VOM1271T, TLP3906(TPL,E)",
+    "source": "vendors.py digikey-quota"
+   },
+   {
+    "figure": "Port voltage ceiling latch",
+    "value": "returned with no ranked part: V130 (owner, 2026-10-02) removes the latch and P2 returned an empty shortlist",
+    "source": "Research.md V130; P2 return"
+   },
+   {
+    "figure": "Maker allowlist question open",
+    "value": "AQV252G2SX and AQV252GAX (Panasonic) pass under S2 and fail under S1; the page does not say which list a photorelay falls under; TLP3545A (Toshiba) passes under both",
+    "source": "Research.md S1, S2 Answers (checkout bb10544e89be); P2 report"
+   }
+  ]
+ }
+}

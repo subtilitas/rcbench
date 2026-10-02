@@ -1,0 +1,60 @@
+{
+ "role": "P3",
+ "category": "R8",
+ "label": "P3-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "missed": [
+   {
+    "function": "Onboard shunt temperature sensor",
+    "part": "TMP275AIDGKR (C87815)",
+    "maker": "Texas Instruments (TMP275, SBOS363F, revised May 2018, https://www.ti.com/lit/ds/symlink/tmp275.pdf, read 2026-10-02T18:13:54Z); S1 Texas Instruments",
+    "why": "P2 dropped only the SOIC-8 TMP275AIDR (Rule 5, Digi-Key 0; re-read 2026-10-02T18:13:43Z: Digi-Key 0, Active) and did not consider the VSSOP-8 package of the same die. Values from SBOS363F section 6.5: range -40 to 125 degC; accuracy +/-0.75 degC max for 0 to 100 degC and +/-1 degC max for -40 to 125 degC at V+ 3 to 3.6 V (covers the 3.201 to 3.399 V rail); V+ 2.7 to 5.5 V; VIH 0.7 x V+, VOL 0.4 V max; conversion 37.5 ms max at 9 bit and 75 ms max at 10 bit, so two consecutive conversions fit the 500 ms stop deadline; fault queue for two consecutive faults. Address range 0x48 to 0x4F: INSIDE the 0x40 to 0x4F monitor block, so the address preference is not met. Stock: JLCPCB C87815 stockCount 1883, canPresaleNumber 1861, expand (vendors.py jlcpcb C87815, exact match, 2026-10-02T18:15:09Z) against a gate of 50 (need 5 boards x 1); Digi-Key TMP275AIDGKR stock_available 8742, ProductStatus Active, 20 weeks (productdetails, 2026-10-02T18:13:45Z), so the same part at the second vendor passes Rule 5. Qualify and rank it against PCT2075D,118: same +/-1 degC class or better, both vendors stocked, address in the block."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "functions": [
+     "Onboard shunt temperature sensor"
+    ],
+    "part": "LM75BD,118",
+    "reason_given": "Accuracy: +/-2 degC at 100 degC with no margin (round 1)",
+    "why_it_fails": "'No margin' is not a requirement value: the requirement is +/-2 degC at 3.3 V +/-3 %, 0 to at least 100 degC (V170, V168), and P2 treats the TMP1075DSGR as a pass at the same +/-2 degC with no margin. NXP LM75B (Rev. 6.1, 6 February 2015, https://www.nxp.com/docs/en/data-sheet/LM75B.pdf, read 2026-10-02T18:07:21Z), Table 18: Tacc -2 to +2 degC for Tamb -25 to +100 degC, with VCC 2.8 to 5.5 V as the condition, so the limit holds over the whole 3.3 V +/-3 % rail with no supply derating; operating -55 to +125 degC; VIH 0.7 x VCC; conversion period 100 ms (two consecutive conversions 200 ms, inside 500 ms). Address 0x48 to 0x4F, inside the monitor block (preference not met). JLCPCB C34565 stockCount 6497, canPresaleNumber 6463, expand (vendors.py jlcpcb C34565, 2026-10-02T18:15:10Z); Digi-Key LM75BD,118 stock_available 17510, Active, 16 weeks (2026-10-02T18:13:27Z), so the same part passes Rule 5 at the second vendor; NXP product page status Active (https://www.nxp.com/products/LM75B, 2026-10-02T18:13:20Z). Passes every value; ranks below the three on accuracy margin and address only."
+   },
+   {
+    "functions": [
+     "External shunt"
+    ],
+    "part": "BAS-M-R00005 (-AE-5.0, -AEU-5.0, -EU, -GU, -SU)",
+    "reason_given": "Kelvin sense: the 50 uOhm part is listed only as AE-5.0 with no sense hole (BAS p2 dimension table, read 2026-10-02T17:45:03Z); no wired-sense version in the datasheet",
+    "why_it_fails": "The requirement is 'defined sense points for the leads'; a sense hole is not a requirement value. The BAS datasheet (Issue 08-September-2026, https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BAS.pdf, fetched 2026-10-02T18:16:34Z) page 2 'Connection diagram' (Z-DR-159a) is drawn for the BAS series, not for the R version only: it marks 'position sense connection for flexible wires' on the copper strips each side of the resistive element and a 'soldering area for pcb', with the voltmeter U across those two strips. Only the R version adds the D2 hole on top. So the AE-5.0 versions have defined sense points. Values on P2's own basis (terminal 50 degC, as for BAS-M-R0001-R-5.0): BAS-M-R00005 is 50 uOhm, Manganin, Rthi 1.5 K/W, TCR 0 +/-100 ppm/K (20 to 60 degC), EMF 0.6 uV/K, 36 W at 70 degC terminal: at 300 A it dissipates 4.5 W, element 56.75 degC, TCR term 100 ppm x 300 A x 31.75 K = 0.953 A, EMF 0.6 uV/K x 6.75 K / 50 uOhm = 81 mA, total 1.03 A against 2.816 A; at 15 A 37.5 mA against 108.8 mA. Digi-Key (cached readings of 2026-10-02T14:23:29Z, vendors.py digikey, ProductStatus Active): BAS-M-R00005-AE-5.0 stock 863, 18 weeks; -AEU-5.0 stock 161, 41 weeks; -EU, -GU, -SU stock 0 and fail Rule 4. The datasheet's TCR range (20 to 60 degC only) is the same limitation P2 records for the BAS-M-R0001-R-5.0. 50 uOhm nominal is the bottom of the 50 to 136 uOhm class; as made, minus 5 % is 47.5 uOhm."
+   },
+   {
+    "functions": [
+     "External shunt"
+    ],
+    "part": "BAS E, AE, EU, ABU, Z, G, A05, A07",
+    "reason_given": "Kelvin sense: no sense pins or holes, or versions not in the datasheet",
+    "why_it_fails": "Applies to the two versions that the datasheet lists and that hold stock: BAS-M-R0001-E-5.0 (Digi-Key 101, Active, 12 weeks, cached reading 2026-10-02T13:58:58Z) and BAS-M-R0001-AE-5.0 (Digi-Key 96, Active, 41 weeks, same reading). Both are in the BAS dimension table and share the page 2 Connection diagram (Z-DR-159a, 'position sense connection for flexible wires', 'soldering area for pcb') with the R version P2 ranks second, so their sense points are defined and 'no sense hole' is not a requirement value. Same element, Rthi 2 K/W, TCR 0 +/-50 ppm/K and EMF as the BAS-M-R0001-R-5.0, so P2's figure for that part (753 mA of 2.833 A at 300 A, 19.0 mA at 15 A, terminal at 50 degC) applies. The E version has the shortest lead time of the BAS parts read (12 weeks against 18 for the R). The remaining codes stand for other reasons: EU, G, Z, A05, A07 read 0 at Digi-Key (13:58:58Z, Rule 4); ABU (207, 18 weeks) is not in the datasheet's version table and its sense arrangement is not shown, so it stays dropped."
+   },
+   {
+    "functions": [
+     "External shunt"
+    ],
+    "part": "WSBS8536L0500JK60 (50 uOhm WSBS8536...60)",
+    "reason_given": "Accuracy share not shown: TCR +/-175 ppm/degC for 50 uOhm (30411, revision 26-May-2026) gives 65.6 mA at 15 A but the sheet states no element-to-terminal thermal resistance for 50 uOhm, so the share at 300 A is not bounded from the datasheet",
+    "why_it_fails": "P2 passes the 100 uOhm WSBS8536L1000JK60 of the same sheet on 2 K/W and 18 K (2668.5 mA of 2.833 A), and that figure also comes from the same sheet's rating: all values of WSBS8536...60 are rated 50 W at 70 degC with a derating to +170 degC, which gives (170-70)/50 = 2 K/W for every value. On P2's own basis (terminal 50 degC) the 50 uOhm part at 300 A is 4.5 W, 9 K, element 59 degC: TCR 175 ppm x 300 A x 34 K = 1.785 A plus EMF 3 uV/degC x 9 K / 50 uOhm = 540 mA, total 2.325 A against 2.816 A (491 mA margin, more than the 164.5 mA of the 100 uOhm part P2 passes); at 15 A 65.6 mA against 108.8 mA. The accuracy reason therefore does not hold. The part is still not a candidate: vendors.py digikey WSBS8536L0500JK60 answered HTTP 404 'Requested Product wsbs8536l0500jk60 Not Found' (2026-10-02T18:08:49Z) and the keyword search 'WSBS8536' (cached 2026-10-02T13:59:00Z) lists no L0500 part with the sense-pin code 60 or 80; the 50 uOhm sense-pin parts it lists are L0500JK20 (49, one under the gate of 50) and L0500JK40 (0). The drop stands on Rule 4, not on accuracy."
+   },
+   {
+    "functions": [
+     "alert combining gate"
+    ],
+    "part": "SN74LV21ADGVR (C2860464)",
+    "reason_given": "Rule 4: 1 in the jlcparts copy, under the gate of 75; TVSOP land; not read at JLCPCB",
+    "why_it_fails": "Rule 3 counts stock at JLCPCB, not in the jlcparts copy. vendors.py jlcpcb C2860464 (exact match, 2026-10-02T18:15:12Z): stockCount 251, canPresaleNumber 251, expand, TVSOP-14-3.6mm, against the gate of 75, so Rule 4 passes. The part does not return as a candidate: TI's package option addendum in SCES340F (https://www.ti.com/lit/ds/symlink/sn74lv21a.pdf) lists SN74LV21ADGVR as NRND (Not Recommended for New Designs), and S5 passes active parts only. The drop stands on lifecycle, not on stock; the recorded reason should be corrected."
+   }
+  ],
+  "missed_functions": []
+ }
+}

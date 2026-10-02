@@ -1,0 +1,77 @@
+{
+ "role": "P3",
+ "category": "R6",
+ "label": "P3-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "missed": [
+   {
+    "function": "Servo supply inductor",
+    "part": "7443551470",
+    "maker": "Würth Elektronik (WE-HCI, size 1365)",
+    "why": "Family P2 did not consider (jlcparts row C1331156, maker field blank; JLCPCB label Wurth Elektronik). Every requirement value passes. Data sheet https://www.we-online.com/components/products/datasheet/7443551470.pdf, revision 006.001 of 2025-02-06, status field 'Valid', read 2026-10-02T18:09:38Z: L 4.7 uH +/-20 % at 100 kHz (3.76 uH lowest, above 3.33 uH), rated inductance 3.4 uH typ at 13.0 A; Isat 6 A typ at 10 % drop and 15 A typ at 30 % drop (above 13 A, typical only, 2 A margin, the smallest of the survivors); rated current IR,50K 13 A max (dT 50 K) and IRP,40K 14.9 A max (at least 8 A); RDC 7 mOhm +/-10 % at 20 degC (7.7 mOhm max, limit 16.5); operating -40 to +155 degC, ambient -40 to +105 degC at IRP; AEC-Q200 grade 1; 13.0 x 12.8 mm, 6.2 mm high; land pattern not compared with the survivors'. JLCPCB C1331156 stockCount 114, canPresaleNumber 108, expand (vendors.py jlcpcb, 2026-10-02T18:08:41Z): passes rule 4 at 100 (5 x 4 placements x 5 boards = 20 needed, gate max(100,50)) with 14 to spare, so it is the thinnest JLCPCB stock of the candidates. Digi-Key 7443551470 productdetails (2026-10-02T18:13:10Z): Active, stock 1162 (cut tape; 800 on reel), lead 17 weeks, so rule 5 passes by the second vendor. Lifecycle: the data sheet status is Valid; the Wurth product page was not read (three guessed URLs answered HTTP 404), so Digi-Key's ProductStatus Active is the distributor figure. Würth is on S2. Checked and rejected in the same search: Bourns SRP1238A-4R7M (C2047125, 750 in stock) lists 15.3 mOhm typ but 18.5 mOhm max in its data sheet (REV. 06/24, read 2026-10-02T18:09:25Z), over 16.5; TDK SPM12565VC-4R7M-D and SPM10065VC-4R7M-D (the successors TDK's page names for the NRND SPM12565VT) have no 4.7 uH JLCPCB listing (jlcpcb-search SPM12565VC and SPM10065VC, 2026-10-02T18:12:59Z), so they fail rule 1."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "IHLP4040DZER4R7M01",
+    "reason_given": "not dropped for a value (16.50 mOhm max, equal to the limit with no margin; round 1 re-rank reading 2026-09-29); not among the three recorded; stock not re-read",
+    "why_it_fails": "Equal to the limit passes 'at most 16.5 mOhm', and a function keeps up to three survivors, so no value fails. It is the inductor of SLVSI72A Table 8-2, from which the 16.5 mOhm limit is taken. Vishay IHLP-4040DZ-01, document 34193 revision 13-Aug-2025 (https://www.vishay.com/docs/34193/ihlp-4040dz-01.pdf, read 2026-10-02T18:10:19Z): 4.7 uH +/-20 % at 100 kHz (3.76 uH lowest), DCR 15.00 typ and 16.50 max mOhm at 25 degC, heat rating 9.5 A typ (dT 40 degC, at least 8 A), saturation 17.0 A typ at 20 % drop (above 13 A), operating -55 to +125 degC, 10.16 x 10.16 mm. Margins: none on DCR, typical-only saturation and heat figures, 125 degC part limit, the same as rank 3. Stock re-read: JLCPCB C845077 stockCount 1388, canPresaleNumber 1377, expand (2026-10-02T18:08:24Z), passes rule 4 at 100; Digi-Key IHLP4040DZER4R7M01 Active, stock 30264, lead 13 weeks (2026-10-02T18:13:08Z), passes rule 5 by the second vendor. Vishay page https://www.vishay.com/en/product/34193/ answered HTTP 200 at 18:10:20Z with the word 'Active' in the body; the status field itself was not isolated, so Digi-Key's Active is the status figure. Its variants are out: IHLP4040DZER4R7M11 (C845078) lists 7.6 A saturation in jlcparts, and IHLP4040DZER4R7MA1 (C5369184) has stockCount 49 (18:09:20Z).",
+    "functions": [
+     "Servo supply inductor"
+    ]
+   },
+   {
+    "part": "AQV252GAX",
+    "reason_given": "not qualified: jlcparts lists 2 A to 2.5 A on-state current (A connection), under 3.0 A at 50 degC; data sheets not read (grouped with TLP241A(TP1,F, TLP3109(TP,F and VO14642AABTR)",
+    "why_it_fails": "The 2.5 A is the A connection only. P2's rank 1 uses the C connection (DC load, both MOSFETs in parallel). Data sheet ASCTB144E 201912 (HE 1 Form A High Capacity, JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588893074924195840, read 2026-10-02T18:17Z): AQV252G continuous DC load current 2.5 A (A), 3.5 A (B), 5.0 A (C) at 25 degC; Fig. 1-2 derates the C connection to about 4 A at 50 degC (read off the graph, not tabulated), above 3.0 A; Ron C 20 mOhm typ, 30 mOhm max at IL max (90 mV at 3.0 A, leaving about 480 mV of the 570 mV for the reverse-blocking diode); load voltage 60 V; off-state leakage 1 uA max; Ton 5.0 ms max, Toff 0.5 ms max (inside 5 ms); LED operate current 3 mA max, recommended IF 5 to 30 mA; -40 to +85 degC; 6-pin DIP gull-wing (SMD-6P). Stock: JLCPCB C425149 stockCount 3595, canPresaleNumber 3459, expand (2026-10-02T18:18:25Z), above the gate of 500; Digi-Key AQV252GAX Active, stock 10187, lead 28 weeks (2026-10-02T18:20:13Z). Panasonic's product page was not found (guessed URLs answered HTTP 404), so Digi-Key's ProductStatus is the lifecycle figure. Panasonic is on S2 only, the same photorelay-versus-IC question as rank 2. Pin compatibility with the 7.62 mm pitch TLP3545A was not compared. The part would be rank 2 or 3 beside AQV252G2SX (C719719, 980 in stock at 18:16:08Z) and is the older HE DIP6 series. The other three in the group hold: TLP241A and VO14642AABTR are 2 A parts (4-pin, no C connection; VO14642 DC-only 2 A, document 81646).",
+    "functions": [
+     "Port supply switch"
+    ]
+   },
+   {
+    "part": "TLP3109(TP,F",
+    "reason_given": "not qualified: jlcparts lists 2 A to 2.5 A on-state current (A connection), under 3.0 A at 50 degC; data sheets not read",
+    "why_it_fails": "The reason does not hold, but the part is still out, on lifecycle. Data sheet TLP3109 Rev.2.0 2017-04-20 (JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588884371931598848, read 2026-10-02T18:17Z): ION 4.0 A in the C connection, derating -40 mA/degC above 25 degC, so 3.0 A at 50 degC (no margin); RON(C) 11 typ, 18 max mOhm; off-state voltage 100 V; trigger LED current 3 mA max. JLCPCB C393897 stockCount 2506, canPresaleNumber 1767 (2026-10-02T18:18:27Z), above 500. But Toshiba's product page https://toshiba.semicon-storage.com/ap-en/semiconductor/product/optoelectronics/detail.TLP3109.html (read 2026-10-02T18:19:31Z) shows 'EOL announced' and 'TLP3109 is shortly to be discontinued', naming TLP3109A as the replacement; that fails the Lifecycle check. TLP3109A(TP,F (C1857559) has stockCount 62, canPresaleNumber 47 (2026-10-02T18:19:56Z), under 500, so it fails rule 4.",
+    "functions": [
+     "Port supply switch"
+    ]
+   },
+   {
+    "part": "VOM1271T or TLP3906(TPL,E with a discrete back-to-back MOSFET pair",
+    "reason_given": "not qualified in this run: two MOSFETs a port beside the driver, against one TLP3545A that holds both MOSFETs and the LED; R3's records state no opening time at a MOSFET load for either driver",
+    "why_it_fails": "The reason names no requirement value that fails: a part count and an unread opening time are not failures. The FU-2B2 reason for the same topology, no own current limit in the switch, cannot be used either, because P2's rank 1 also takes its current limit and reverse blocking from companions (V302 allows the split). Both drivers pass rule 4: VOM1271T C146286 stockCount 5503, canPresaleNumber 5173 (2026-10-02T18:20:54Z); TLP3906(TPL,E C146278 stockCount 4582, canPresaleNumber 4458 (18:20:56Z). What this P3 did not qualify: the MOSFET itself, the gate discharge time at that MOSFET against the 5 ms opening limit (V127), and the drop. The re-rank has to qualify it; it is not shown to pass.",
+    "functions": [
+     "Port supply switch"
+    ]
+   },
+   {
+    "part": "PCA9698DGG,518",
+    "reason_given": "not dropped for a value (40 lines in one part, FU-2B2 re-rank reading); not among the three recorded",
+    "why_it_fails": "A part that is cut for count and not for a value is not an exclusion that holds, and it is the only candidate that covers the 33 lines in one placement. Data sheet PCA9698 Rev. 3, 3 August 2010 (https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf, read 2026-10-02T18:33:34Z): 40 I/Os; active-LOW RESET; all I/Os inputs at power-up and RESET; no internal pull-ups (the only pull-up statement is the address pins); Fm+ to 1 MHz; VDD 2.3 to 5.5 V; -40 to +85 degC; 64 addresses, 0x20 among them. JLCPCB C729177 stockCount 1908, canPresaleNumber 1894, expand (2026-10-02T18:27:46Z), gate 50 for 1 placement a board; Digi-Key PCA9698DGG,518 Active, stock 3322, lead 16 weeks (cached reading 2026-10-02T14:27:10Z); NXP page https://www.nxp.com/products/PCA9698 read 18:33:40Z. It needs OE held low (OEPOL = 0) and costs USD 9.80 a part at 1 (FU-2B2 P3 reading 14:27:05Z), neither a requirement value. Checked and not a candidate: PCA9505 has 100 kOhm pull-ups on every I/O (data sheet PCA9505_9506 Rev. 5, 2026-10-02T18:27:23Z); PCA9506DGG,518 (C729175) has stockCount 9 (18:27:43Z); PCAL6534EVJ (C2669660) has stockCount 0 (jlcpcb-search 18:2xZ); TCA1116PWR's only data sheet (SCPS229, 2011) is an abbreviated one without addresses or electrical values, so its values are not read.",
+    "functions": [
+     "I/O expander"
+    ]
+   },
+   {
+    "part": "SN74LVC1G175DCKR",
+    "reason_given": "not recorded: Digi-Key stock 0 (17:53:15Z), so its second source would be an alternate; the two survivors cover the function",
+    "why_it_fails": "Digi-Key stock 0 only moves the part to rule 5's alternate route, and the alternate exists; 'the two survivors cover the function' is not a failed value, and a function keeps up to three. SN74LVC1G175 data sheet SCES560G (https://www.ti.com/lit/ds/symlink/sn74lvc1g175.pdf, read 2026-10-02T18:24:46Z): same pinout as rank 1 (1 CLK, 2 GND, 3 D, 4 Q, 5 VCC, 6 CLR; Nexperia data sheet Rev. 11, pins 1 CP, 2 GND, 3 D, 4 Q, 5 VCC, 6 MR, read 18:24:47Z), same SC-70-6 / SOT-363 package, so the wiring is unchanged: level clear on pin 6 dominates the clock; VCC 1.65 to 5.5 V; Ioff +/-10 uA max at VI or VO 5.5 V with VCC 0; input transition 10 ns/V at 3.3 V; -40 to +125 degC; first revision March 2004. JLCPCB C202238 stockCount 124838, canPresaleNumber 124683, expand (2026-10-02T18:33:49Z), passes rule 4 at 100; rank 1's 74LVC1G175GW,125 (C282350) has 1973, presale 1886 (18:33:52Z) and Digi-Key 36048 (cached reading 17:52:58Z), so each is the other's pin-compatible alternate. TI page https://www.ti.com/product/SN74LVC1G175 carries status ACTIVE (read 2026-10-02T18:25:08Z); Digi-Key SN74LVC1G175DCKR Active, stock 0 (cached 17:53:15Z).",
+    "functions": [
+     "Servo supply temperature latch"
+    ]
+   }
+  ],
+  "missed_functions": [
+   {
+    "function": "Port supply reverse blocking",
+    "why": "V126 requires the port switch to block current from the pin back into the rail (pin up to 12 V, switch on and off), and V302 (owner, 2026-10-02) names 'separate reverse blocking' as a part of the split topology. P2's rank 1 for Port supply switch, TLP3545A(TP1,F, takes this from the companion CMS04(TE12L,Q,M) (jlcparts C603062: 30 V, 5 A, 370 mV at 5 A, reverse leakage 8 mA at 30 V; the leakage at 8.4 V against V125's 5 mA is not read), and P2 states that selection.json holds one part a function and that the companions need functions of their own. P2 returned no entry for it: it carries its Schottky candidates (FSV1045V, SDT10A45P5-13, SS10P4-M3/86A) as drops under Port supply switch, so no part for it can reach selection.json."
+   },
+   {
+    "function": "Port supply current limit",
+    "why": "V123 requires each port switch to limit its own current with the whole tolerance band between 3.0 and 6.35 A, and V302 names 'current limit' as a separate part of the split topology. P2's rank 1 takes it from the companion INA301A1IDGKR, which P2 says needs a function of its own because selection.json holds one part a function. P2 returned no entry and no requirements for it (limit band, trip against the 5 ms opening limit, 20 per board against a gate of 500, the alert's action on the photorelay LED), so the companion is unqualified in selection.json."
+   }
+  ]
+ }
+}

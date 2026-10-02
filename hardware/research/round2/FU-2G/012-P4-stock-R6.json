@@ -1,0 +1,904 @@
+{
+ "role": "P4",
+ "category": "R6",
+ "label": "P4-stock-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "Servo supply",
+    "part": "TPS55285VALR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "held quantity",
+      "stated": "12 held (owner, 2026-09-25), against need 5 x 4 = 20",
+      "read": "JLCPCB Parts Qty 12 for TPS55285VALR C52160906 in inventory-2026-09-25.csv. 12 < 20, so rule 6 does not cover the need; the rule-4 gate passes on JLCPCB stock 2732 >= 100 and presale 2724 >= 0 (checks stock and presale), which is the gate this check passes on",
+      "source": "hardware/docs/inventory-2026-09-25.csv and Held parts, Research.md at checkout bb10544e89be",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:51:02Z"
+     },
+     {
+      "figure": "stock",
+      "stated": "stockCount 2732 (17:51:55Z); threshold max(5 x 20, 50) = 100",
+      "read": "stockCount 2732 >= 100",
+      "source": "vendors.py jlcpcb C52160906 (selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:51Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 2724",
+      "read": "canPresaleNumber 2724 >= 0",
+      "source": "vendors.py jlcpcb C52160906",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:51Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (TI product page, 17:53:29Z); Digi-Key Active",
+      "read": "ACTIVE (Texas Instruments product page marketingStatusDescription for orderable TPS55285VALR; the data sheet's orderable table reads Active, Production)",
+      "source": "https://www.ti.com/product/TPS55285 (HTTP 200); SLVSI72A orderable addendum",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:06Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none (PCN listing not read)",
+      "read": "none found: TI product page ACTIVE, Digi-Key end_of_life false and discontinued false, JLCPCB and LCSC list it in stock. The maker's PCN listing is a script-loaded search and was not read",
+      "source": "https://www.ti.com/product/TPS55285; vendors.py digikey TPS55285VALR (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:06Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "4 (3 servo rails and the adjustable supply)",
+      "read": "IOBoard.md:375 three TPS55285 for the servo rails and :380 a fourth for the adjustable supply: 4 a board; candidate's count 4 >= 4",
+      "source": "hardware/docs/IOBoard.md:71, :375, :380 (checkout bb10544e89be)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:51:02Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C52160906",
+      "read": "the specification places the converters on the IO board; the part has LCSC number C52160906 (C and digits): the two agree",
+      "source": "IOBoard.md:375, :380; vendors.py jlcpcb C52160906",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:51:02Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "TI publishes a general commitment: product life cycles typically 10 to 15 years, standard products not obsoleted while they had sales in the last 5 years; no part-specific commitment. Recorded; not a gate under S5",
+      "source": "https://www.ti.com/support-quality/quality-policies-procedures/product-life-cycle.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:42Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first revision April 2025, 18 months, not flagged",
+      "read": "SLVSI72 original April 2025 (Advance Information), Revision A October 2025 (Production Data); 17 to 18 months before 2026-10-02, not under 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/tps55285.pdf section 10 Revision History (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:50:08Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status",
+      "read": "Digi-Key Active (Texas Instruments); JLCPCB selectSmtComponentList row carries no status field and lists stock 2732; LCSC page 'In stock, ships now', 2,720; all agree with the maker's ACTIVE",
+      "source": "vendors.py digikey TPS55285VALR (cached); vendors.py jlcpcb C52160906; https://lcsc.com/product-detail/C52160906.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:57Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "20 weeks",
+      "read": "lead_weeks 20 (manufacturer's lead time)",
+      "source": "https://api.digikey.com/products/v4/search/TPS55285VALR/productdetails (vendors.py digikey, cached reading)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:58:43Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C52160906, TPS55285VALR, WQFN-HR 15 pins (VAL)",
+      "read": "exact JLCPCB result for C52160906: part TPS55285VALR, package WQFN-15 (the 15-pin WQFN-HR VAL package of the data sheet), maker label Texas Instruments",
+      "source": "vendors.py jlcpcb C52160906; SLVSI72A Figure 4-1 and orderable table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:51Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand (JLCPCB's value for extended); S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C52160906",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:51Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 5243 >= 100",
+      "read": "Digi-Key stock_available 5243 (cut tape; 3000 on reel) >= threshold 100",
+      "source": "https://api.digikey.com/products/v4/search/TPS55285VALR/productdetails (cached reading)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:58:43Z"
+     }
+    ]
+   },
+   {
+    "function": "Servo supply inductor",
+    "part": "SRP1265A-4R7M",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 600 (17:51:55Z); threshold max(5 x 20, 50) = 100",
+      "read": "stockCount 600 >= 100",
+      "source": "vendors.py jlcpcb C780205 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:51Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 590",
+      "read": "canPresaleNumber 590 >= 0",
+      "source": "vendors.py jlcpcb C780205",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:51Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Digi-Key Active (maker page without status)",
+      "read": "Active (Digi-Key ProductStatus, product of maker Bourns Inc. with manufacturer part number SRP1265A-4R7M, a distributor figure). The Bourns page answered HTTP 403 with a challenge to the chrome, safari and plain clients, so the maker's status is not readable",
+      "source": "https://api.digikey.com/products/v4/search/SRP1265A-4R7M/productdetails (cached); https://www.bourns.com/products/magnetic-products/power-inductors/shielded/product/SRP1265A (HTTP 403)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:58:45Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "notices not read",
+      "read": "none found: Digi-Key end_of_life false and discontinued false, status Active; JLCPCB and LCSC in stock. Bourns' pages are blocked (HTTP 403) and no PCN listing was read",
+      "source": "vendors.py digikey SRP1265A-4R7M (cached); https://lcsc.com/product-detail/C780205.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:58Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "4, one per TPS55285",
+      "read": "each TPS55285 takes one inductor; 4 converters a board (IOBoard.md:375, :380): 4 placements; candidate's count 4 >= 4",
+      "source": "hardware/docs/IOBoard.md:375, :380, :415",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:51:02Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C780205",
+      "read": "the converter's inductor is on the IO board (IOBoard.md:415); LCSC number C780205: the two agree",
+      "source": "IOBoard.md:415; vendors.py jlcpcb C780205",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:51:02Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "not read: Bourns' site answers HTTP 403 with a challenge (product page and https://www.bourns.com/support/quality-reliability); no programme page could be read",
+      "source": "https://www.bourns.com/support/quality-reliability (HTTP 403, challenge)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:44Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first revision not read; current REV. 06/24",
+      "read": "not read: the data sheet carries only 'REV. 06/24' and no revision history, so the first revision date is not stated",
+      "source": "https://www.bourns.com/docs/Product-Datasheets/SRP1265A.pdf (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:50:10Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status",
+      "read": "Digi-Key Active (Bourns Inc.), the status; JLCPCB row carries no status field (stock 600); LCSC page 'In stock, ships now', 579",
+      "source": "vendors.py digikey SRP1265A-4R7M (cached); vendors.py jlcpcb C780205; https://lcsc.com/product-detail/C780205.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:58Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "22 weeks",
+      "read": "lead_weeks 22",
+      "source": "https://api.digikey.com/products/v4/search/SRP1265A-4R7M/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:58:45Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C780205, SRP1265A-4R7M, SMD 13.5 x 12.5 x 6.2 mm",
+      "read": "exact JLCPCB result for C780205: part SRP1265A-4R7M, package 'SMD,13.5x12.5mm', maker label BOURNS",
+      "source": "vendors.py jlcpcb C780205",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:51Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand (extended)",
+      "source": "vendors.py jlcpcb C780205",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:51Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 10610 >= 100",
+      "read": "Digi-Key stock_available 10610 (cut tape; 10500 on reel) >= threshold 100",
+      "source": "https://api.digikey.com/products/v4/search/SRP1265A-4R7M/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:58:45Z"
+     }
+    ]
+   },
+   {
+    "function": "Port supply switch",
+    "part": "TLP3545A(TP1,F",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 1040 (17:51:55Z); threshold max(5 x 100, 50) = 500",
+      "read": "stockCount 1040 >= 500",
+      "source": "vendors.py jlcpcb C2152260 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 1036",
+      "read": "canPresaleNumber 1036 >= 0",
+      "source": "vendors.py jlcpcb C2152260",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Digi-Key Active (Toshiba page without status)",
+      "read": "Active (Digi-Key ProductStatus, product of maker Toshiba Semiconductor and Storage with manufacturer part number TLP3545A(TP1,F, a distributor figure). Toshiba's product page answered HTTP 200 and carries no status text in its body",
+      "source": "https://api.digikey.com/products/v4/search/TLP3545A%28TP1%2CF/productdetails (cached); https://toshiba.semicon-storage.com/ap-en/semiconductor/product/isolators-solid-state-relays/photorelay-mosfet-output/detail.TLP3545A.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T17:53:01Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN listing not read",
+      "read": "none found: Toshiba page without any discontinuation text, Digi-Key end_of_life false and discontinued false, JLCPCB and LCSC in stock. Toshiba's PCN listing was not read",
+      "source": "Toshiba product page (HTTP 200); vendors.py digikey TLP3545A(TP1,F (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:09Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "20, one per port",
+      "read": "IOBoard.md:384 'one per port, 20'; output ports 20 (IOBoard.md:72): 20 a board; candidate's count 20 >= 20",
+      "source": "hardware/docs/IOBoard.md:72, :384",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:51:02Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C2152260",
+      "read": "the port supply switches are on the IO board (IOBoard.md:384); LCSC number C2152260: the two agree",
+      "source": "IOBoard.md:384; vendors.py jlcpcb C2152260",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:51:02Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "not read: no Toshiba programme page found; the guessed page https://toshiba.semicon-storage.com/ap-en/company/product-longevity.html answered HTTP 404 and the product page carries no commitment",
+      "source": "https://toshiba.semicon-storage.com/ap-en/company/product-longevity.html (HTTP 404)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:45Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "start of commercial production 2017-11; current Rev.5.0.A 2026-04-07",
+      "read": "not read: first datasheet revision date is not in the data sheet, which carries only Rev.5.0.A (2026-04-07); it states start of commercial production 2017-11 (about 107 months)",
+      "source": "https://toshiba.semicon-storage.com/info/docget.jsp?did=60318&prodName=TLP3545A (HTTP 200) page 1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:50:11Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status",
+      "read": "Digi-Key Active (Toshiba Semiconductor and Storage), the status; JLCPCB row carries no status field (stock 1040); LCSC page 'In stock, ships now', 1,040",
+      "source": "vendors.py digikey TLP3545A(TP1,F (cached); vendors.py jlcpcb C2152260; https://lcsc.com/product-detail/C2152260.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:59Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "24 weeks",
+      "read": "lead_weeks 24",
+      "source": "https://api.digikey.com/products/v4/search/TLP3545A%28TP1%2CF/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T17:53:01Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2152260, TLP3545A(TP1,F, DIP6 surface-mount lead forming, JLCPCB 'SMD-6P'",
+      "read": "exact JLCPCB result for C2152260: part TLP3545A(TP1,F, package SMD-6P, maker label TOSHIBA; the data sheet's ordering table lists TLP3545A(TP1,F as lead form LF1, tape and reel 1500 pcs",
+      "source": "vendors.py jlcpcb C2152260; TLP3545A data sheet Rev.5.0.A ordering table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand (extended)",
+      "source": "vendors.py jlcpcb C2152260",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 28269 >= 500",
+      "read": "Digi-Key stock_available 28269 (cut tape; 27000 on reel) >= threshold 500",
+      "source": "https://api.digikey.com/products/v4/search/TLP3545A%28TP1%2CF/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T17:53:01Z"
+     }
+    ]
+   },
+   {
+    "function": "I/O expander",
+    "part": "MCP23017T-E/SS",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 6240 (17:51:55Z); threshold max(5 x 15, 50) = 75",
+      "read": "stockCount 6240 >= 75",
+      "source": "vendors.py jlcpcb C558584 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 6131",
+      "read": "canPresaleNumber 6131 >= 0",
+      "source": "vendors.py jlcpcb C558584",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "In Production (Microchip product page, 17:53:29Z)",
+      "read": "In Production (Microchip Technology product page, productSatus field and 'Status: In Production')",
+      "source": "https://www.microchip.com/en-us/product/MCP23017 (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:07Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none found by round 1's adjudicator (2026-09-29T17:33:13Z); PCN listing not read",
+      "read": "none found: Microchip page In Production, Digi-Key end_of_life false and discontinued false, JLCPCB and LCSC in stock. The PCN search is a POST API and was not read",
+      "source": "https://www.microchip.com/en-us/product/MCP23017; vendors.py digikey MCP23017T-E/SS (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:07Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "3 (33 lines over 14 usable lines a part)",
+      "read": "Pins.md:132-140: three MCP23017 at 0x20, 0x21, 0x22 carry 33 lines; GPA7 and GPB7 are output only, 14 usable lines a part, so 2 parts give 28 < 33 and 3 give 42 >= 33; IOBoard.md:420 states 3 parts; candidate's count 3 >= 3",
+      "source": "hardware/docs/Pins.md:132-140; IOBoard.md:420",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:51:02Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C558584",
+      "read": "the I/O expander for the port switches is on the IO board (IOBoard.md:384, :420); LCSC number C558584: the two agree",
+      "source": "IOBoard.md:384, :420; vendors.py jlcpcb C558584",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:51:02Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "not read: no Microchip programme page found; guessed pages /en-us/about/quality-and-reliability/product-longevity and /en-us/support/product-longevity answered HTTP 404, and the product page carries no commitment",
+      "source": "https://www.microchip.com/en-us/about/quality-and-reliability/product-longevity (HTTP 404); https://www.microchip.com/en-us/support/product-longevity (HTTP 404)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:43Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first revision Revision A, June 2005",
+      "read": "Revision A (June 2005), 'Original release of this document' (about 255 months); not under 12 months",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/MCP23017-Data-Sheet-DS20001952.pdf Appendix A (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:50:09Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status",
+      "read": "Digi-Key Active (Microchip Technology); JLCPCB row carries no status field (stock 6240); LCSC page 'In stock, ships now', 6,300; all agree with the maker's In Production",
+      "source": "vendors.py digikey MCP23017T-E/SS (cached); vendors.py jlcpcb C558584; https://lcsc.com/product-detail/C558584.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:59Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "4 weeks",
+      "read": "lead_weeks 4",
+      "source": "https://api.digikey.com/products/v4/search/MCP23017T-E%2FSS/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:58:53Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C558584, MCP23017T-E/SS, SSOP-28",
+      "read": "exact JLCPCB result for C558584: part MCP23017T-E/SS, package SSOP-28, maker label Microchip Tech",
+      "source": "vendors.py jlcpcb C558584; DS20001952D (28-pin SSOP, 'MCP23017T-E/SS' tape and reel)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand (extended)",
+      "source": "vendors.py jlcpcb C558584",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 16532 >= 75",
+      "read": "Digi-Key stock_available 16532 (cut tape; 16300 on reel) >= threshold 75",
+      "source": "https://api.digikey.com/products/v4/search/MCP23017T-E%2FSS/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:58:53Z"
+     }
+    ]
+   },
+   {
+    "function": "Port voltage ceiling",
+    "part": "TPS3701DDCR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 26813 (17:51:55Z); threshold max(5 x 100, 50) = 500",
+      "read": "stockCount 26813 >= 500",
+      "source": "vendors.py jlcpcb C132788 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 26784",
+      "read": "canPresaleNumber 26784 >= 0",
+      "source": "vendors.py jlcpcb C132788",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (TI product page, 17:53:29Z)",
+      "read": "ACTIVE (Texas Instruments product page marketingStatusDescription for orderable TPS3701DDCR; the data sheet's orderable table reads Active, Production)",
+      "source": "https://www.ti.com/product/TPS3701 (HTTP 200); SBVS240C packaging information",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:06Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN not read",
+      "read": "none found: TI page ACTIVE, Digi-Key end_of_life false and discontinued false, JLCPCB and LCSC in stock. The maker's PCN listing is a script-loaded search and was not read",
+      "source": "https://www.ti.com/product/TPS3701; vendors.py digikey TPS3701DDCR (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:06Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "20, one per port",
+      "read": "a jumper on each of the 20 ports selects the ceiling (IOBoard.md:386); one TPS3701 a port, only INB used as the overvoltage input: 20 a board; candidate's count 20 >= 20",
+      "source": "hardware/docs/IOBoard.md:72, :386",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:51:02Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C132788",
+      "read": "the per-port ceiling is on the IO board (IOBoard.md:386); LCSC number C132788: the two agree",
+      "source": "IOBoard.md:386; vendors.py jlcpcb C132788",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:51:02Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "TI publishes a general commitment: product life cycles typically 10 to 15 years, standard products not obsoleted while they had sales in the last 5 years; no part-specific commitment. Recorded; not a gate under S5",
+      "source": "https://www.ti.com/support-quality/quality-policies-procedures/product-life-cycle.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:42Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first revision November 2014",
+      "read": "Original release November 2014 (Changes from Original (November 2014) to Revision A); about 143 months; not under 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/tps3701.pdf section 4 Revision History (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:50:08Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status",
+      "read": "Digi-Key Active (Texas Instruments); JLCPCB row carries no status field (stock 26813); LCSC page 'In stock, ships now', 26,813; all agree with the maker's ACTIVE",
+      "source": "vendors.py digikey TPS3701DDCR (cached); vendors.py jlcpcb C132788; https://lcsc.com/product-detail/C132788.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:50:00Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "12 weeks",
+      "read": "lead_weeks 12",
+      "source": "https://api.digikey.com/products/v4/search/TPS3701DDCR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T17:52:53Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C132788, TPS3701DDCR, SOT-23-6 (DDC)",
+      "read": "exact JLCPCB result for C132788: part TPS3701DDCR, package SOT-23-Thin-6 (the data sheet's DDC, SOT-23-THIN, 6 pins), maker label Texas Instruments",
+      "source": "vendors.py jlcpcb C132788; SBVS240C orderable table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand (extended)",
+      "source": "vendors.py jlcpcb C132788",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 11567 >= 500",
+      "read": "Digi-Key stock_available 11567 (cut tape; 9000 on reel) >= threshold 500",
+      "source": "https://api.digikey.com/products/v4/search/TPS3701DDCR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T17:52:53Z"
+     }
+    ]
+   },
+   {
+    "function": "Servo supply temperature",
+    "part": "MCP9808T-E/MS",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 764 (17:51:55Z); threshold max(5 x 20, 50) = 100",
+      "read": "stockCount 764 >= 100",
+      "source": "vendors.py jlcpcb C129490 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 725",
+      "read": "canPresaleNumber 725 >= 0",
+      "source": "vendors.py jlcpcb C129490",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "In Production (Microchip product page, 17:53:29Z)",
+      "read": "In Production (Microchip Technology product page, productSatus field and 'Status: In Production')",
+      "source": "https://www.microchip.com/en-us/product/MCP9808 (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:07Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN listing not read",
+      "read": "none found: Microchip page In Production, Digi-Key end_of_life false and discontinued false, JLCPCB and LCSC in stock. The PCN search is a POST API and was not read",
+      "source": "https://www.microchip.com/en-us/product/MCP9808; vendors.py digikey MCP9808T-E/MS (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:07Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "4, one beside each TPS55285",
+      "read": "IOBoard.md:460 'An MCP9808T-E/MS beside each TPS55285, 4 a board'; candidate's count 4 >= 4",
+      "source": "hardware/docs/IOBoard.md:460",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:51:02Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C129490",
+      "read": "the sensors sit beside the converters on the IO board (IOBoard.md:460); LCSC number C129490: the two agree",
+      "source": "IOBoard.md:460; vendors.py jlcpcb C129490",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:51:02Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "not read: no Microchip programme page found; guessed pages /en-us/about/quality-and-reliability/product-longevity and /en-us/support/product-longevity answered HTTP 404, and the product page carries no commitment",
+      "source": "https://www.microchip.com/en-us/about/quality-and-reliability/product-longevity (HTTP 404); https://www.microchip.com/en-us/support/product-longevity (HTTP 404)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:43Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first revision Revision A, October 2011",
+      "read": "Revision A (October 2011), 'Original Release of this Document' (about 179 months); not under 12 months",
+      "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/MCP9808-0.5C-Maximum-Accuracy-Digital-Temperature-Sensor-Data-Sheet-DS20005095B.pdf Appendix B (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:50:09Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status",
+      "read": "Digi-Key Active (Microchip Technology); JLCPCB row carries no status field (stock 764); LCSC page 'In stock, ships now', 764; all agree with the maker's In Production",
+      "source": "vendors.py digikey MCP9808T-E/MS (cached); vendors.py jlcpcb C129490; https://lcsc.com/product-detail/C129490.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:50:00Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "4 weeks",
+      "read": "lead_weeks 4",
+      "source": "https://api.digikey.com/products/v4/search/MCP9808T-E%2FMS/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:58:27Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C129490, MCP9808T-E/MS, MSOP-8",
+      "read": "exact JLCPCB result for C129490: part MCP9808T-E/MS, package MSOP-8, maker label Microchip Tech",
+      "source": "vendors.py jlcpcb C129490; DS20005095B (8-pin MSOP)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand (extended)",
+      "source": "vendors.py jlcpcb C129490",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:52Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 21419 >= 100",
+      "read": "Digi-Key stock_available 21419 (cut tape; 20000 on reel) >= threshold 100",
+      "source": "https://api.digikey.com/products/v4/search/MCP9808T-E%2FMS/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:58:27Z"
+     }
+    ]
+   },
+   {
+    "function": "Servo supply temperature latch",
+    "part": "74LVC1G175GW,125",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 1973 (17:51:55Z); threshold max(5 x 20, 50) = 100",
+      "read": "stockCount 1973 >= 100",
+      "source": "vendors.py jlcpcb C282350 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:53Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 1886",
+      "read": "canPresaleNumber 1886 >= 0",
+      "source": "vendors.py jlcpcb C282350",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:53Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Production (Nexperia product page, 17:53:29Z)",
+      "read": "Production (Nexperia product page, product-status 'Production', productState production)",
+      "source": "https://www.nexperia.com/product/74LVC1G175GW (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:07Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN not read",
+      "read": "none found: Nexperia page Production, Digi-Key Nexperia product end_of_life false and discontinued false, JLCPCB and LCSC in stock. The maker's PCN listing was not read",
+      "source": "https://www.nexperia.com/product/74LVC1G175GW; vendors.py digikey-keyword 74LVC1G175GW,125 (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:07Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "4, one per TPS55285",
+      "read": "V303: a latch part 4 a board, one per TPS55285 (Research.md V303, owner 2026-10-02); IOBoard.md:460 four sensors, each switching its own converter off; candidate's count 4 >= 4",
+      "source": "Research.md V303 (line 1016); hardware/docs/IOBoard.md:460",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:51:02Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C282350",
+      "read": "the latch is on the IO board (IOBoard.md:226, :460; V303); LCSC number C282350: the two agree",
+      "source": "IOBoard.md:226, :460; vendors.py jlcpcb C282350",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:51:02Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "Nexperia Longevity Program 2026 (start date January 1st 2025): logic families including LVC, mini logic 6-pin SOT363-2 package, 10 years as of September 2025 (table read from flattened page text)",
+      "source": "https://www.nexperia.com/support/customer-support/longevity (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:49:27Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet v.1, 18 March 2004",
+      "read": "74LVC1G175 v.1 released 20040318 (Product specification), about 270 months; not under 12 months",
+      "source": "https://assets.nexperia.com/documents/data-sheet/74LVC1G175.pdf Revision history (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:50:09Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active for the Nexperia product; JLCPCB no status",
+      "read": "Digi-Key Active (Nexperia USA Inc. product; the NXP USA Inc. product with the same number reads 'Discontinued at DigiKey', stock 0, and is not the candidate's maker); JLCPCB row carries no status field (stock 1973); LCSC page 'In stock, ships now', 1,970; agree with the maker's Production",
+      "source": "vendors.py digikey-keyword 74LVC1G175GW,125 (cached; productdetails 404 duplicate); vendors.py jlcpcb C282350; https://lcsc.com/product-detail/C282350.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:50:00Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "20 weeks",
+      "read": "lead_weeks 20 (Nexperia USA Inc. product)",
+      "source": "https://api.digikey.com/products/v4/search/keyword, keywords 74LVC1G175GW,125 (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T17:52:58Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C282350, 74LVC1G175GW,125, TSSOP-6 (SOT363-2)",
+      "read": "exact JLCPCB result for C282350: part 74LVC1G175GW,125, package TSSOP-6 (data sheet: TSSOP6, SOT363-2), maker label Nexperia",
+      "source": "vendors.py jlcpcb C282350; 74LVC1G175 Rev. 11 ordering information",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:53Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand (extended)",
+      "source": "vendors.py jlcpcb C282350",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T18:48:53Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key Nexperia 36048 >= 100",
+      "read": "Digi-Key stock_available 36048 (cut tape; 36000 on reel) for the Nexperia USA Inc. product >= threshold 100",
+      "source": "https://api.digikey.com/products/v4/search/keyword, keywords 74LVC1G175GW,125 (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T17:52:58Z"
+     }
+    ]
+   }
+  ]
+ }
+}

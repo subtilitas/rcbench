@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R6",
+ "label": "adjudicator-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "function": "P2 report: Port supply reverse-blocking element CMS04(TE12L,Q,M)",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation holds. The report gives \"USD 0.1057 at 100\", but JLCPCB's price breaks for C603062 put 100 pieces in the 50 break at USD 0.1412. USD 0.1057 is the 500 break. The error is in this report's price figure only. It is not about the part's lifecycle, its maker or its LCSC identity, so the scope is function. The stock gate is unaffected: the stock is 4617, which is above the threshold of 500 (5 x a need of 100, under S4 as the owner answered it). The stock count, presale count, library type, maker label and package all agree with the report. The corrected figure is USD 0.1412 each at 100 pieces.",
+  "evidence": "vendors.py jlcpcb C603062 (HTTP 200, 2026-10-02T19:15:30Z), exact match: part CMS04(TE12L,Q,M), maker_label TOSHIBA, package SOD-128, stockCount 4617, canPresaleNumber 4562, componentLibraryType expand. Price breaks in USD: 1: 0.178, 50: 0.1412, 150: 0.1254, 500: 0.1057, 3000: 0.0852, 6000: 0.08. 100 pieces fall in the 50-149 break, so they cost 0.1412 each, not 0.1057. The claim and the verifier read the same breaks, at 17:51:55Z and 18:56:25Z.",
+  "source": "python3 /home/claude/rcbench-research/round2/tools/ae5deaac6575b1ac/vendors.py jlcpcb C603062 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, keyword C603062)",
+  "read_at": "2026-10-02T19:15:30Z",
+  "scope": "function"
+ }
+}

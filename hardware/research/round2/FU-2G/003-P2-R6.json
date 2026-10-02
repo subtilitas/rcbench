@@ -1,0 +1,2144 @@
+{
+ "role": "P2",
+ "category": "R6",
+ "label": "P2-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "found_values": [
+   {
+    "question_id": "V109",
+    "value": "Servo rails: 4 to 6.35 A a rail, each TPS55285's limit stopping at 6.35 A (IOBoard.md:377). Adjustable supply: a current limit of 0.5 to 6.35 A in 50 mA steps (IOBoard.md:380). The IOUT_LIMIT register sets 500 mA to 6.35 A, one LSB 50 mA, reset 1110 0100b = 5 A with the limit enabled (SLVSI72A 7.2). Tolerance is stated only at the 1, 3 and 5 A settings: 0.8 to 1.2 A, 2.8 to 3.2 A, 4.7 to 5.3 A (VIN 19 V, VOUT 5 V, Tj -20 to 85 degC, engineering-sample characterization, note 1); none at 6.35 A. Applied as 'Servo rail current limit range' and 'Adjustable supply current limit' of Servo supply (adjudicator ruling 013 of FU-2B2)",
+    "source": "hardware/docs/IOBoard.md:377, :380 (checkout bb10544e89be); SLVSI72A rev A 5.4 (IOUT_LIMIT), 7.2, https://www.ti.com/lit/ds/symlink/tps55285.pdf (vendors.py fetch, chrome, HTTP 200, 4,317,800 bytes)",
+    "read_at": "2026-10-02T17:40:16Z"
+   },
+   {
+    "question_id": "V110",
+    "value": "From the pack at the 8.4 V setting each rail runs to its own limit setting (owner, 2026-09-30, IOBoard.md:377); the setting is not lowered from the pack. The delivered current is bounded by ILIM_AVG, 7 A min and 8 A typ with no maximum (SLVSI72A 5.4): at 6.0 V in, 4.57 A at 7 A and 5.15 A at 8 A (V111 loss model); 6.35 A at 8.4 V needs about 10 A of inductor current at 6.0 V and is reached at the 7 A minimum only from about 8.13 V in ((53.34 W + 3.59 W) / 7 A). Applied as 'Pack operation to its own limit', not as 6.35 A from 6.0 V, after FU-2B2's adjudicator ruling 011 (the delivered figure is reported)",
+    "source": "IOBoard.md:377, :379 (checkout bb10544e89be); SLVSI72A 5.4 (ILIM_AVG), Figure 5-3; results/hardware/research/round2/FU-2B2/011-adjudicator-R6.json; scratch thermal3.py",
+    "read_at": "2026-10-02T17:40:16Z"
+   },
+   {
+    "question_id": "V111",
+    "value": "The datasheet guarantees no efficiency. Typical figure derived from Figure 5-3 (VOUT 9 V, FPWM, TA 25 degC) read from the PDF's vector curves: converter loss fitted on the VIN 5 V boost curve, P = 0.2532 - 0.0973 IL + 0.0820 IL^2 W (IL 0.94 to 7.73 A); the same fit reproduces the VIN 9 V boost curves of Figures 5-5 and 5-7 within 0.13 W. 6.0 V in, 8.4 V out: 96.7 % at 1 A, 94.6 % at 3 A, 93.2 % at 3.72 A, 91.5 % at 4.57 A (IL 7 A), 90.2 % at 5.15 A (IL 8 A). 6.6 V in: 93.8 % at 4.12 A. Applied as 'Efficiency from the pack'",
+    "source": "SLVSI72A Figures 5-3, 5-5, 5-7, https://www.ti.com/lit/ds/symlink/tps55285.pdf; scratch /home/claude/rcbench-research/round2/scratch/FU-2G/P2-R6/fig.py, thermal3.py, validate.py",
+    "read_at": "2026-10-02T17:40:16Z"
+   },
+   {
+    "question_id": "V112",
+    "value": "20 V steady, the top of the owner's 12 to 20 V DC input. The transient and its duration are not read: no page in the tree states them. The TPS55285 stops at VIN OVP 22.0 V min, 22.5 typ, 23.0 V max rising (0.9 V hysteresis); VIN is rated 27 V absolute maximum. Applied as 'Highest steady VIN'",
+    "source": "IOBoard.md:378 (checkout bb10544e89be); SLVSI72A 5.1, 5.4 (VVIN_OVP)",
+    "read_at": "2026-10-02T17:40:16Z"
+   },
+   {
+    "question_id": "V113",
+    "value": "The converters are checked from 6.0 V at the pack terminals (2 x 3.0 V, F9; Round 2 Follow-ups row: 'the converters stay checked from 6.0 V'). The board's pack floor is 3.3 V a cell under load, 6.6 V (V294, owner 2026-10-02), so 6.0 V is the conservative end. The drop across R5's pack path is not read here. Applied as 'Pack input range'",
+    "source": "Research.md, Raised by P1 V294 (line 1007) and the FU-2G follow-up item for Servo supply; IOBoard.md:358 (checkout bb10544e89be)",
+    "read_at": "2026-10-02T17:58:02Z"
+   },
+   {
+    "question_id": "V114",
+    "value": "5.5 V and 8.4 V are nominal set points; the highest voltage at a port's supply pin is the F16 ceiling, 6.0 V (LV) and 8.7 V (HV). SLVSI72A gives VOUT_FULL 9.85 to 10.15 V on the 10 V range (VOUT_FS 01h, REF 0780h) and VREF 1.117 to 1.141 V at 1.129 V, 0.837 to 0.855 V at 0.846 V, 0.501 to 0.514 V at 0.508 V; with those, 5.5 V gives 5.40 to 5.59 V and 8.4 V gives 8.27 to 8.53 V (FU-2B2's derivation, which its P4 re-derived as 5.41 to 5.59 V and 8.27 to 8.53 V). Ripple and load-step overshoot depend on round 2's capacitors and are not included. Applied as 'Set point against the ceilings'",
+    "source": "F16 Answer (Research.md); SLVSI72A 5.4 (VOUT_FULL, VREF); results/hardware/research/round2/FU-2B2/010-P4-datasheet-R6.json",
+    "read_at": "2026-10-02T17:40:16Z"
+   },
+   {
+    "question_id": "V115",
+    "value": "An output of the main coprocessor's I/O expander, with a pull-down that holds EN/UVLO below VEN_L 0.4 V while that output is an input (IOBoard.md Measurement coprocessor reset and Load gates at reset). A MODE resistor of 0 Ohm (75h) or 48.7 kOhm (74h) sets the default OE bit to 0 (Table 6-2). The rail's temperature latch (V283, V303) also holds EN/UVLO low: the two combine in an AND, whose part is not selected. Applied as 'Enable off at reset' and 'Temperature trip input'",
+    "source": "IOBoard.md:115, :374 (checkout bb10544e89be); SLVSI72A 5.4 (VEN_L 0.4 V, VEN_H 1.03 V), 6.3.2 Table 6-2",
+    "read_at": "2026-10-02T17:40:16Z"
+   },
+   {
+    "question_id": "V116",
+    "value": "0 to 50 degC ambient, one range for the whole IO board (V7; V270). Applied as 'Ambient range' of every R6 function",
+    "source": "Research.md V7 (line 720) and V270 (line 983) Answers (checkout bb10544e89be)",
+    "read_at": "2026-10-02T17:58:02Z"
+   },
+   {
+    "question_id": "V117",
+    "value": "400 kHz (FSW 00b: 360, 400, 440 kHz). TI uses 400 kHz in its application and the inner current loop needs L above 1.2/fSW: 3.33 uH at the 360 kHz minimum. Applied as 'Switching frequency' and the inductor's 'Inductance'",
+    "source": "SLVSI72A 5.4 (fSW), 8.2.2.1, 8.2.2.3",
+    "read_at": "2026-10-02T17:40:16Z"
+   },
+   {
+    "question_id": "V118",
+    "value": "Above 13 A, the peak inductor current limit at boost (ILIM_PK, typical, no min or max): an overload drives the inductor to it. Highest operating peaks with 4.7 uH less 20 % (3.76 uH) at 360 kHz: 9.33 A for the adjustable supply boosting 6.0 V to 15 V at the 8 A typical clamp (ripple 2.66 A); 8.63 A for a servo rail 6.0 V to 8.4 V at the clamp; 8.15 A for 20 V to 8.4 V at 6.35 A. Applied as 'Saturation current'",
+    "source": "SLVSI72A 5.4 (ILIM_PK 13 A, ILIM_AVG), 8.2.2.3 equations 5, 8, 9",
+    "read_at": "2026-10-02T17:40:16Z"
+   },
+   {
+    "question_id": "V119",
+    "value": "33 lines on the main coprocessor's I2C bus: 20 port switch enables, 5 bias selectors, 5 converter enables (4 TPS55285 and the TPS55288), the hardware latch read-back, and 2 inputs (DC input source status and brownout). GPA7 and GPB7 of the MCP23017 are output only and carry none of these, so 14 usable lines a part and 3 parts. The port supply switch topology of this run uses the same 20 enable lines (the INA301's RESET is tied to its port's enable) and adds none. Applied as 'Lines'",
+    "source": "hardware/docs/Pins.md:132-140 (checkout bb10544e89be); MCP23017 DS20001952D page 1",
+    "read_at": "2026-10-02T17:58:02Z"
+   },
+   {
+    "question_id": "V120",
+    "value": "400 kHz: the only I2C rate in the tree is SET_I2C_KHZ, 100 to 400 kHz in 100 kHz steps, default 400. The TPS55285 takes 100 to 1000 kHz, the MCP23017 up to 1.7 MHz, the MCP9808 up to 400 kHz. Applied as 'I2C clock'",
+    "source": "shared/settings/settings.c:105-107 (checkout bb10544e89be); SLVSI72A 5.5; MCP23017 DS20001952D; MCP9808 DS20005095B",
+    "read_at": "2026-10-02T17:58:02Z"
+   },
+   {
+    "question_id": "V121",
+    "value": "Yes. The servo rail gate is R3's one high-side switch on each servo rail and on the adjustable supply's output, open within 5 ms of the enable node falling; the 20 port supply switches are driven through the I/O expander and are not the gate. Applied as 'Not the rail gate'",
+    "source": "IOBoard.md:218 (Servo rail gate) and :384 (checkout bb10544e89be)",
+    "read_at": "2026-10-02T17:58:02Z"
+   },
+   {
+    "question_id": "V122",
+    "value": "3.0 A continuous, the per-servo current ceiling at which the procedures abort at once; it applies from a rail of 5.0 V up (V282). Applied as 'Continuous current'",
+    "source": "docs/Servo.md:35 (checkout bb10544e89be); V282 Answer (owner, 2026-10-01)",
+    "read_at": "2026-10-02T17:58:02Z"
+   },
+   {
+    "question_id": "V123",
+    "value": "Yes: each port limits its own current, with its whole tolerance band between 3.0 A and 6.35 A: at or above 3.0 A the firmware abort acts first, and under 6.35 A, the rail's limit, one shorted port does not pull the other ports into the converter's limit. The specification names a port breaker of 3.96 to 4.84 A (IOBoard.md:113). Applied as 'Own current limit'",
+    "source": "docs/Servo.md:35; IOBoard.md:113, :389 (checkout bb10544e89be)",
+    "read_at": "2026-10-02T17:58:02Z"
+   },
+   {
+    "question_id": "V124",
+    "value": "570 mV across the switch path at 3.0 A from a rail of 5.0 V up; below 5.0 V the drop is reported (V282). Basis: the LV setting's low edge 5.40 V (V114) against the lowest operating voltage of the low-voltage servo read, 4.8 V (Savox SH-0255MG+: 'Operating Voltage (V) 4.8V - 6.0V'), 0.60 V, less 30 mV in the 10 mOhm port shunt. Applied as 'Voltage drop'",
+    "source": "https://savox-servo.com/en/product/SH-0255MGplus/savox-servo-sh-0255mg-digital-dc-motor-metal-gear (vendors.py fetch, HTTP 200); IOBoard.md:387; V282 Answer",
+    "read_at": "2026-10-02T17:54:57Z"
+   },
+   {
+    "question_id": "V125",
+    "value": "Under 5 mA at 8.4 V: an open port leaks less than the idle current of the lightest load read, 5 mA ('Quiescent Current (mA) 5' for the SH-0255MG+ and the SB-2290SG); the same 5 mA placeholder as the servo rail gate (IOBoard.md:218). Applied as 'Off-state leakage'",
+    "source": "https://savox-servo.com/en/product/SH-0255MGplus/savox-servo-sh-0255mg-digital-dc-motor-metal-gear (17:54:57Z) and https://savox-servo.com/en/product/SB-2290SG/savox-servo-sb-2290sg-digital-brushless-motor-steel-gear-high-voltage (17:54:58Z), vendors.py fetch, HTTP 200",
+    "read_at": "2026-10-02T17:54:58Z"
+   },
+   {
+    "question_id": "V126",
+    "value": "Yes, with the pin up to 12 V, while the switch is on and while it is off: an ESC on a port drives its BEC onto the port's supply pin, and YGE's BEC 'is adjustable from 5.5V to 8.4V, with the Saphir series up to 12V'. Applied as 'Reverse blocking'",
+    "source": "docs/OpenYGE.md:249-253 (checkout bb10544e89be); https://www.yge.de/en/products/low-voltage-lv (vendors.py fetch, HTTP 200)",
+    "read_at": "2026-10-02T17:54:58Z"
+   },
+   {
+    "question_id": "V127",
+    "value": "5 ms from an RP2354B reset to every port switch open: the specification's opening time for a power switch (servo rail gate, 5 ms from the enable node falling), inside V1's 500 ms stop deadline. Applied as 'Opening time after reset'",
+    "source": "IOBoard.md:218, :374 (checkout bb10544e89be); V1 Answer",
+    "read_at": "2026-10-02T17:58:02Z"
+   },
+   {
+    "question_id": "V128",
+    "value": "LV: may cut off from 5.59 V, must cut off by 6.00 V. HV: may cut off from 8.53 V, must cut off by 8.70 V. The lower edges are the highest set points of V114, the upper edges F16. The HV band is +/-0.99 % about 8.615 V, the LV band +/-3.5 % about 5.795 V. Ripple and overshoot are not included. Applied as 'LV trip band' and 'HV trip band'",
+    "source": "F16 Answer (Research.md); IOBoard.md:386 (checkout bb10544e89be); V114 above",
+    "read_at": "2026-10-02T17:58:02Z"
+   },
+   {
+    "question_id": "V129",
+    "value": "Not found: no source read gives a time a servo survives above its rating or a cut-off time for the ceiling. The Savox pages give operating ranges only (4.8 to 6.0 V, 6.0 to 8.4 V); docs/OpenYGE.md:253 states only that a BEC value above the servos' rating damages them. Recorded, not a pass or fail limit",
+    "source": "Savox pages above (17:54:57Z, 17:54:58Z); docs/OpenYGE.md:253 (checkout bb10544e89be)",
+    "read_at": "2026-10-02T17:58:02Z"
+   },
+   {
+    "question_id": "V131",
+    "value": "8.4 V, 2 x 4.2 V a cell (IOBoard.md Pack voltage range, owner 2026-09-30). The SLS XTRON vendor page states no charge voltage, so 4.2 V a cell is not confirmed by the vendor. Applied as the top of 'Pack input range'",
+    "source": "IOBoard.md:358, :395 (checkout bb10544e89be)",
+    "read_at": "2026-10-02T17:58:02Z"
+   },
+   {
+    "question_id": "V132",
+    "value": "In boost the pack current is the inductor current: 5.59 A at 6.0 V at the 3.72 A continuous rating; in overload ILIM_AVG bounds it, 7 A min, 8 A typ, no maximum stated, so no maximum rules out a clamp above 9.9 A. Applied as 'Pack current at 6.0 V'",
+    "source": "SLVSI72A 5.4 (ILIM_AVG), 6.3.9; V111 loss model",
+    "read_at": "2026-10-02T17:40:16Z"
+   },
+   {
+    "question_id": "V133",
+    "value": "Peak inrush at most 2.35 A from the rail: the rail's 6.35 A setting less the 4.0 A a synchronised pair may draw on other ports (docs/Servo.md:68-69). The capacitance a port presents is not found: no servo or receiver page read gives one. Applied as 'Inrush'",
+    "source": "docs/Servo.md:64-69 (checkout bb10544e89be); V109",
+    "read_at": "2026-10-02T17:58:02Z"
+   },
+   {
+    "question_id": "V134",
+    "value": "6.35 A as the TPS55285 output current limit setting, enabled at reset, with OCP_DELAY 00b = 128 us at reset; hiccup off time 76 ms. It is a setting, not a bound: no tolerance is given at 6.35 A, and during the delay only ILIM_AVG (7 A min, 8 A typ, no max) bounds the output. The port's own limit (V123) acts first on one shorted port. Applied as 'Current into a shorted port'",
+    "source": "SLVSI72A 5.4 (ILIM_AVG, tHICCUP), 7.2, 7.3 (OCP_DELAY)",
+    "read_at": "2026-10-02T17:40:16Z"
+   },
+   {
+    "question_id": "V135",
+    "value": "Cut-off state: yes, read from the port monitor's bus-voltage reading, which falls behind an open switch; with V130 the firmware reports the cut-off. Jumper position: no; the setup screen lists the ceilings as set in hardware. Applied as 'Cut-off state readable'",
+    "source": "shared/ui/stub_screen.c:56; IOBoard.md:387; V130 Answer (owner, 2026-10-02) (checkout bb10544e89be)",
+    "read_at": "2026-10-02T17:58:02Z"
+   },
+   {
+    "question_id": "V136",
+    "value": "20 V: the TPS55285 programs up to 15 V, its output OVP trips at 110.5 to 120 % of the set point, VOUT is rated 17 V absolute maximum, and a converter failed through passes the DC input, 20 V at most (V112). Applied as 'Input withstand'",
+    "source": "SLVSI72A 5.1, 5.2, 5.4 (VVOUT_OVP_FB 110.5 to 120 %)",
+    "read_at": "2026-10-02T17:40:16Z"
+   },
+   {
+    "question_id": "V277",
+    "value": "Each of the 20 port switches switches its port from 0.8 V (V55) to 8.4 V; with V282 it turns on from 0.8 V and carries the port's current, the 3.0 A and 570 mV applying from 5.0 V up; with V302 the function may be split across parts (a switch from 0.5 V or below with separate reverse blocking, current limit and 20 V protection). TPS259474LRPWR takes VIN only from 2.7 V (SLVSFC9C 6.3, FU-2B2 reading 2026-10-02T14:00:46Z) and fails. A split topology passes: TLP3545A(TP1,F photorelay (C connection) + CMS04(TE12L,Q,M) Schottky + INA301A1IDGKR breaker. Applied as 'Operating input range' and 'Conducts from 0.8 V'",
+    "source": "Research.md V277, V282, V302 (lines 990, 1015) and Round 2 Follow-ups row; IOBoard.md:384 (checkout bb10544e89be)",
+    "read_at": "2026-10-02T17:58:02Z"
+   },
+   {
+    "question_id": "V278",
+    "value": "3.72 A: the continuous output current one TPS55285 holds at 6.0 V in, 8.4 V out and 50 degC ambient with the junction at the 125 degC recommended maximum on V281's 33 degC/W (loss budget (125 - 50)/33 = 2.27 W), every converter loss in V111's model counted in the IC. 3.94 A if the selected SRP1265A-4R7M's 8.4 mOhm maximum DC loss is taken out; 4.11 A with a 14.3 mOhm inductor taken out. Typical TA 25 degC curves; RDS(on) rise with temperature not stated and not counted; heatsink not credited. At the V294 floor of 6.6 V: 4.12 A. Applied as 'Continuous current at 6.0 V in, 50 degC'",
+    "source": "SLVSI72A 5.2 (TJ 125 degC), 5.3 (RthJA 33 degC/W, EVM), Figure 5-3; V281 Answer (owner, 2026-10-01); scratch thermal3.py",
+    "read_at": "2026-10-02T17:40:16Z"
+   },
+   {
+    "question_id": "V280",
+    "value": "Each port is cut off above 6.0 V (LV) or 8.7 V (HV), set by a jumper (F16), with V128's bands; per V130 (owner, 2026-10-02) the port reconnects by itself once the rail falls below the ceiling, with the comparator's own hysteresis, no latch, and the firmware reports the cut-off. A cut-off below the band would cut a rail set from 0.8 V (V55), so the ceiling acts above the band only. Applied as 'LV trip band', 'HV trip band', 'No cut-off below the band' and 'Reconnect with the comparator's hysteresis'",
+    "source": "Research.md V128, V130 (line 843), V280, F16 (checkout bb10544e89be); IOBoard.md:386",
+    "read_at": "2026-10-02T17:58:02Z"
+   }
+  ],
+  "functions": [
+   {
+    "function": "Servo supply",
+    "requirements": [
+     {
+      "name": "Converter part (fixed input)",
+      "value": "TPS55285, 4 a board: 3 servo rails and the adjustable supply",
+      "source": "Research.md Scope fixed inputs; IOBoard.md:375, :380 (owner, 2026-09-25 and 2026-09-30)"
+     },
+     {
+      "name": "DC input range",
+      "value": "12 to 20 V",
+      "source": "owner, 2026-09-25; IOBoard.md:378"
+     },
+     {
+      "name": "Highest steady VIN",
+      "value": "20 V; transient not read",
+      "source": "V112"
+     },
+     {
+      "name": "Pack input range",
+      "value": "6.0 to 8.4 V at the pack terminals; the board's floor is 6.6 V under load (V294) and the converters stay checked from 6.0 V",
+      "source": "F9, V113, V131, V294; FU-2G follow-up item"
+     },
+     {
+      "name": "Output settings",
+      "value": "servo rails 0.8 V up to 5.5 V or 8.4 V; adjustable supply 0.8 to 15 V in 10 mV steps",
+      "source": "V55; IOBoard.md:376, :380"
+     },
+     {
+      "name": "Set point against the ceilings",
+      "value": "highest set point under the port ceiling: 5.59 V against 6.0 V, 8.53 V against 8.7 V",
+      "source": "V114, F16"
+     },
+     {
+      "name": "Servo rail current limit range",
+      "value": "4 to 6.35 A a rail, set over I2C",
+      "source": "V109; IOBoard.md:377"
+     },
+     {
+      "name": "Adjustable supply current limit",
+      "value": "0.5 to 6.35 A in 50 mA steps",
+      "source": "V109; IOBoard.md:380; FU-2B2 adjudicator ruling 013"
+     },
+     {
+      "name": "Efficiency from the pack",
+      "value": "the datasheet's figure from 6.0 to 8.4 V in at 8.4 V out, in %",
+      "source": "V111; FU-2B2 adjudicator ruling 013"
+     },
+     {
+      "name": "Continuous current at 6.0 V in, 50 degC",
+      "value": "found in A with TJ at most 125 degC on 33 degC/W at 8.4 V out",
+      "source": "V278, V281"
+     },
+     {
+      "name": "Pack operation to its own limit",
+      "value": "the limit setting is not lowered from the pack; the delivered current is reported",
+      "source": "V110; owner, 2026-09-30; FU-2B2 adjudicator ruling 011"
+     },
+     {
+      "name": "Adjustable supply continuous current",
+      "value": "qualified across 6.0 to 20 V in and 0.8 to 15 V out at 50 degC on 33 degC/W, or at its worst point shown",
+      "source": "IOBoard.md:380; Research.md Round 2, Rules of stage 1 (V281's 33 degC/W)"
+     },
+     {
+      "name": "Pack current at 6.0 V",
+      "value": "the input current at 6.0 V bounded for R5, R7 and P5",
+      "source": "V132"
+     },
+     {
+      "name": "Current into a shorted port",
+      "value": "output limit enabled at reset, 6.35 A setting, 128 us OCP_DELAY; ILIM_AVG bounds the delay",
+      "source": "V134"
+     },
+     {
+      "name": "Enable off at reset",
+      "value": "off and registers reset while the expander output driving EN/UVLO is an input",
+      "source": "V115; IOBoard.md:374"
+     },
+     {
+      "name": "Temperature trip input",
+      "value": "the rail's own latch holds EN/UVLO low until the F11 clear",
+      "source": "V283, V303"
+     },
+     {
+      "name": "Switching frequency",
+      "value": "400 kHz",
+      "source": "V117"
+     },
+     {
+      "name": "I2C clock",
+      "value": "400 kHz",
+      "source": "V120"
+     },
+     {
+      "name": "I2C address",
+      "value": "74h or 75h, two converters on each of the measurement coprocessor's 2 buses",
+      "source": "IOBoard.md:116"
+     },
+     {
+      "name": "Current-limit sense",
+      "value": "internal; no external sense resistor",
+      "source": "IOBoard.md:382"
+     },
+     {
+      "name": "Ambient range",
+      "value": "0 to 50 degC",
+      "source": "V116"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "TPS55285VALR",
+      "maker": "Texas Instruments (data sheet SLVSI72A); S1 name Texas Instruments",
+      "lcsc": "C52160906",
+      "package": "WQFN-HR 15 pins (VAL)",
+      "placements": 4,
+      "placements_basis": "fixed by the specification: 3 servo rails and the adjustable supply (IOBoard.md:375, :380)",
+      "held": 12,
+      "requirements": [
+       {
+        "name": "Converter part (fixed input)",
+        "required": "TPS55285",
+        "datasheet": "TPS55285VALR, SLVSI72A rev A (April 2025, revised October 2025)",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/tps55285.pdf, read 2026-10-02T17:40:16Z"
+       },
+       {
+        "name": "DC input range",
+        "required": "12 to 20 V",
+        "datasheet": "VIN 2.4 to 22 V (VOUT >= 3.0 V), 3 to 22 V (VOUT < 3.0 V), 5.2",
+        "pass": true,
+        "source": "SLVSI72A 5.2"
+       },
+       {
+        "name": "Highest steady VIN",
+        "required": "20 V",
+        "datasheet": "VIN OVP 22.0 min, 23.0 V max rising; VIN 27 V absolute maximum",
+        "pass": true,
+        "source": "SLVSI72A 5.1, 5.4"
+       },
+       {
+        "name": "Pack input range",
+        "required": "6.0 to 8.4 V",
+        "datasheet": "inside VIN 2.4 to 22 V; 3 V minimum for VOUT under 3.0 V",
+        "pass": true,
+        "source": "SLVSI72A 5.2"
+       },
+       {
+        "name": "Output settings",
+        "required": "0.8 to 8.4 V servo, 0.8 to 15 V adjustable in 10 mV",
+        "datasheet": "VOUT 0.8 to 15 V; internal feedback 10 mV steps (INTFB 11)",
+        "pass": true,
+        "source": "SLVSI72A 5.2, 7.4"
+       },
+       {
+        "name": "Set point against the ceilings",
+        "required": "at most 5.59 V and 8.53 V under 6.0 V and 8.7 V",
+        "datasheet": "VOUT_FULL 9.85 to 10.15 V (10 V range); VREF 1.117 to 1.141 V at 1.129 V: 5.40 to 5.59 V and 8.27 to 8.53 V",
+        "pass": true,
+        "source": "SLVSI72A 5.4"
+       },
+       {
+        "name": "Servo rail current limit range",
+        "required": "4 to 6.35 A",
+        "datasheet": "IOUT_LIMIT 500 mA to 6.35 A, 50 mA LSB; tolerance only at 1, 3, 5 A (4.7 to 5.3 A at 5 A)",
+        "pass": true,
+        "source": "SLVSI72A 5.4, 7.2"
+       },
+       {
+        "name": "Adjustable supply current limit",
+        "required": "0.5 to 6.35 A in 50 mA steps",
+        "datasheet": "'IOUT_LIMIT sets the target output current limit from 500mA to 6.35A. One LSB stands for 50mA'",
+        "pass": true,
+        "source": "SLVSI72A 7.2"
+       },
+       {
+        "name": "Efficiency from the pack",
+        "required": "datasheet figure at 6.0 to 8.4 V in, 8.4 V out",
+        "datasheet": "none guaranteed; typical 93.2 % at 3.72 A, 91.5 % at 4.57 A, 90.2 % at 5.15 A from 6.0 V (Figure 5-3 fit)",
+        "pass": true,
+        "source": "SLVSI72A Figures 5-3, 5-5, 5-7; scratch thermal3.py"
+       },
+       {
+        "name": "Continuous current at 6.0 V in, 50 degC",
+        "required": "found, TJ at most 125 degC on 33 degC/W",
+        "datasheet": "3.72 A (2.27 W); 3.94 A less SRP1265A's 8.4 mOhm; typical 25 degC curves, no heatsink credit",
+        "pass": true,
+        "source": "SLVSI72A 5.2, 5.3, Figure 5-3"
+       },
+       {
+        "name": "Pack operation to its own limit",
+        "required": "setting not lowered from the pack; delivered current reported",
+        "datasheet": "ILIM_AVG 7 A min, 8 A typ, no max: 4.57 to 5.15 A at 8.4 V from 6.0 V; 6.35 A from about 8.13 V in",
+        "pass": true,
+        "source": "SLVSI72A 5.4"
+       },
+       {
+        "name": "Adjustable supply continuous current",
+        "required": "qualified at its worst point shown at 50 degC",
+        "datasheet": "worst point shown 6.0 V in, 15 V out: 1.94 A (2.05 A less 8.4 mOhm); 12 V to 15 V 4.16 A; 20 V to 15 V 5.13 A; 20 V to 5 V 5.12 A; outputs below 5 V not shown",
+        "pass": true,
+        "source": "SLVSI72A Figures 5-1, 5-3, 5-5, 5-7; scratch thermal2.py"
+       },
+       {
+        "name": "Pack current at 6.0 V",
+        "required": "bounded for R5, R7, P5",
+        "datasheet": "5.59 A at 3.72 A out; overload ILIM_AVG 7 A min, 8 A typ, no max",
+        "pass": true,
+        "source": "SLVSI72A 5.4"
+       },
+       {
+        "name": "Current into a shorted port",
+        "required": "limit enabled at reset, 128 us delay",
+        "datasheet": "Current_Limit_EN reset 1; OCP_DELAY reset 00b = 128 us; hiccup off 76 ms",
+        "pass": true,
+        "source": "SLVSI72A 5.4, 7.2, 7.3"
+       },
+       {
+        "name": "Enable off at reset",
+        "required": "off while EN/UVLO is pulled down",
+        "datasheet": "VEN_L 0.4 V, VEN_H 1.03 V; MODE 0 Ohm or 48.7 kOhm gives OE 0 (Table 6-2)",
+        "pass": true,
+        "source": "SLVSI72A 5.4, 6.3.2"
+       },
+       {
+        "name": "Temperature trip input",
+        "required": "EN/UVLO held low by the rail latch switches the converter off",
+        "datasheet": "EN/UVLO below 0.4 V: shutdown; TSD 175 degC typ, 20 degC hysteresis, auto restart (not a latch)",
+        "pass": true,
+        "source": "SLVSI72A 5.4, 6.3.4"
+       },
+       {
+        "name": "Switching frequency",
+        "required": "400 kHz",
+        "datasheet": "FSW 00b: 360 to 440 kHz",
+        "pass": true,
+        "source": "SLVSI72A 5.4"
+       },
+       {
+        "name": "I2C clock",
+        "required": "400 kHz",
+        "datasheet": "fSCL 100 to 1000 kHz",
+        "pass": true,
+        "source": "SLVSI72A 5.5"
+       },
+       {
+        "name": "I2C address",
+        "required": "74h and 75h",
+        "datasheet": "0 Ohm 75h, 24.9 kOhm 75h, 48.7 kOhm 74h, 82.5 kOhm or open 74h",
+        "pass": true,
+        "source": "SLVSI72A Table 6-2"
+       },
+       {
+        "name": "Current-limit sense",
+        "required": "internal",
+        "datasheet": "output current sensed internally, no external sense resistor",
+        "pass": true,
+        "source": "SLVSI72A 6.3.12"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TJ -40 to 125 degC recommended, 150 degC absolute; RthJA 47.6 (standard), 33 degC/W (EVM)",
+        "pass": true,
+        "source": "SLVSI72A 5.1, 5.2, 5.3"
+       }
+      ],
+      "jlcpcb": "stockCount 2732, canPresaleNumber 2724, componentLibraryType expand, USD 2.6775 at the need of 20 (10+ break); read 2026-10-02T17:51:55Z, vendors.py jlcpcb C52160906 (selectSmtComponentList, exact LCSC match)",
+      "digikey": "TPS55285VALR: stock_available 5243, lead_weeks 20, status Active; cached reading of 2026-10-02T13:58:43Z, https://api.digikey.com/products/v4/search/TPS55285VALR/productdetails (vendors.py digikey, 17:5x call returned cached)",
+      "gate": "need = 5 boards x 4 = 20; S4 threshold max(5 x 20, 50) = 100; stockCount 2732 >= 100 and canPresaleNumber 2724 >= 0: pass by rule 4. Held 12 < 20, so rule 6 does not cover the need",
+      "lifecycle": "TI product page ACTIVE (https://www.ti.com/product/TPS55285, 2026-10-02T17:53:29Z); longevity commitment not read; first datasheet revision April 2025, production data from revision A, October 2025: 18 months since the first revision, not flagged; PCN listing not read; JLCPCB carries no status; Digi-Key Active, agrees",
+      "second_source": "second vendor: Digi-Key TPS55285VALR stock_available 5243 >= 100 (cached 13:58:43Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Fixed input of the Scope table; not replaced. Passes every requirement now that ruling 013's efficiency and current-limit rows are carried. Continuous rating 3.72 A at 6.0 V in, 8.4 V out, 50 degC on 33 degC/W; with the owner's 72.0 degC threshold the rail holds about 2.47 A at 50 degC without heatsink credit (reported)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": []
+   },
+   {
+    "function": "Servo supply inductor",
+    "requirements": [
+     {
+      "name": "Inductance",
+      "value": "4.7 uH nominal; lowest with tolerance above 3.33 uH (1.2/fSW at 360 kHz); within 1 to 10 uH",
+      "source": "SLVSI72A 5.2, 8.2.2.3; V117"
+     },
+     {
+      "name": "Saturation current",
+      "value": "above 13 A",
+      "source": "V118"
+     },
+     {
+      "name": "Heat-rating current",
+      "value": "at least 8 A, the typical ILIM_AVG each converter reaches at its own limit from the pack",
+      "source": "V132; owner, 2026-09-30"
+     },
+     {
+      "name": "DC resistance",
+      "value": "at most 16.5 mOhm maximum, the highest in SLVSI72A Table 8-2 (IHLP4040DZER4R7M01)",
+      "source": "SLVSI72A Table 8-2"
+     },
+     {
+      "name": "Ambient range",
+      "value": "0 to 50 degC plus self-heating and the converter's board heating",
+      "source": "V116"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "SRP1265A-4R7M",
+      "maker": "Bourns (data sheet SRP1265A REV. 06/24); S2 name Bourns",
+      "lcsc": "C780205",
+      "package": "SMD 13.5 x 12.5 x 6.2 mm",
+      "placements": 4,
+      "placements_basis": "fixed: one per TPS55285, 4 a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Inductance",
+        "required": "4.7 uH, lowest above 3.33 uH",
+        "datasheet": "4.7 uH +/-20 %: 3.76 uH lowest",
+        "pass": true,
+        "source": "https://www.bourns.com/docs/Product-Datasheets/SRP1265A.pdf, electrical table, read 2026-10-02T17:40:16Z"
+       },
+       {
+        "name": "Saturation current",
+        "required": "above 13 A",
+        "datasheet": "Isat 28 A (inductance drops 20 %)",
+        "pass": true,
+        "source": "SRP1265A electrical table"
+       },
+       {
+        "name": "Heat-rating current",
+        "required": "at least 8 A",
+        "datasheet": "Irms 13.5 A (40 degC rise)",
+        "pass": true,
+        "source": "SRP1265A electrical table"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 16.5 mOhm",
+        "datasheet": "7 mOhm typ, 8.4 mOhm max",
+        "pass": true,
+        "source": "SRP1265A electrical table"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC plus heating",
+        "datasheet": "operating -55 to +150 degC including temperature rise",
+        "pass": true,
+        "source": "SRP1265A general specifications"
+       }
+      ],
+      "jlcpcb": "stockCount 600, canPresaleNumber 590, expand, USD 0.8064 at the need of 20 (10+ break); read 2026-10-02T17:51:55Z, vendors.py jlcpcb C780205",
+      "digikey": "SRP1265A-4R7M: stock_available 10610, lead_weeks 22, status Active; cached reading of 2026-10-02T13:58:45Z, https://api.digikey.com/products/v4/search/SRP1265A-4R7M/productdetails",
+      "gate": "need = 5 x 4 = 20; threshold max(100, 50) = 100; 600 >= 100 and 590 >= 0: pass (rule 4)",
+      "lifecycle": "maker page: Bourns listing without status text (FU-2B2 reading 2026-10-02T14:02:53Z; not re-read), so Digi-Key ProductStatus Active (13:58:45Z) is the status, a distributor figure; longevity not read; current data sheet REV. 06/24, first revision not read; notices not read; JLCPCB no status",
+      "second_source": "second vendor: Digi-Key SRP1265A-4R7M stock_available 10610 >= 100 (13:58:45Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Lowest DC resistance of the three (8.4 mOhm max: 0.26 W at the 5.59 A of the 3.72 A rating, 0.54 W at the 8 A clamp), 28 A saturation, 13.5 A heat rating, rated to 150 degC with its rise; the part selection.json holds",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "ETQP5M4R7YFC",
+      "maker": "Panasonic (catalog AGL0000C59, PCC-M1054M); S2 name Panasonic",
+      "lcsc": "C409638",
+      "package": "SMD 10.0 x 10.7 x 5.4 mm (PCC-M1054M)",
+      "placements": 4,
+      "placements_basis": "fixed: one per TPS55285, 4 a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Inductance",
+        "required": "4.7 uH, lowest above 3.33 uH",
+        "datasheet": "4.7 uH +/-20 %: 3.76 uH lowest",
+        "pass": true,
+        "source": "https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C59.pdf, read 2026-10-02T17:40:16Z"
+       },
+       {
+        "name": "Saturation current",
+        "required": "above 13 A",
+        "datasheet": "20.0 A at -30 % inductance",
+        "pass": true,
+        "source": "AGL0000C59, ETQP5M table"
+       },
+       {
+        "name": "Heat-rating current",
+        "required": "at least 8 A",
+        "datasheet": "13.1 A (high-dissipation board), 10.9 A (4-layer FR4), 40 K rise",
+        "pass": true,
+        "source": "AGL0000C59"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 16.5 mOhm",
+        "datasheet": "10.2 mOhm typ, 11.30 mOhm max at 20 degC",
+        "pass": true,
+        "source": "AGL0000C59"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC plus heating",
+        "datasheet": "Tc -40 to +170 degC including self-heating",
+        "pass": true,
+        "source": "AGL0000C59"
+       }
+      ],
+      "jlcpcb": "stockCount 337, canPresaleNumber 324, expand, USD 0.8925 at the need of 20; read 2026-10-02T17:51:55Z, vendors.py jlcpcb C409638",
+      "digikey": "ETQ-P5M4R7YFC: stock_available 41860, lead_weeks 23, status Active; cached reading of 2026-10-02T13:58:46Z, https://api.digikey.com/products/v4/search/ETQ-P5M4R7YFC/productdetails",
+      "gate": "need = 20; threshold 100; 337 >= 100 and 324 >= 0: pass (rule 4)",
+      "lifecycle": "maker model page answered HTTP 404 in FU-2B2 (14:03:10Z; not re-read), so Digi-Key ProductStatus Active (13:58:46Z) is the status, a distributor figure; longevity not read; catalog dated 6-Feb-26, first revision not read; notices not read",
+      "second_source": "second vendor: Digi-Key ETQ-P5M4R7YFC stock_available 41860 >= 100 (13:58:46Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "11.30 mOhm max (0.35 W at 5.59 A), 20 A saturation at -30 %, smallest body; below rank 1 on DC resistance and on its 30 % saturation definition",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "IHLP5050CEER4R7M01",
+      "maker": "Vishay Dale (document 34105, revision 24-Apr-2025); S1/S2 name Vishay",
+      "lcsc": "C845092",
+      "package": "SMD 13.2 x 12.9 x 3.5 mm (IHLP-5050CE-01)",
+      "placements": 4,
+      "placements_basis": "fixed: one per TPS55285, 4 a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Inductance",
+        "required": "4.7 uH, lowest above 3.33 uH",
+        "datasheet": "4.7 uH +/-20 %: 3.76 uH lowest",
+        "pass": true,
+        "source": "https://www.vishay.com/docs/34105/ihlp-5050ce-01.pdf, read 2026-10-02T17:40:32Z"
+       },
+       {
+        "name": "Saturation current",
+        "required": "above 13 A",
+        "datasheet": "24 A typical (no minimum stated)",
+        "pass": true,
+        "source": "document 34105 table"
+       },
+       {
+        "name": "Heat-rating current",
+        "required": "at least 8 A",
+        "datasheet": "10 A typical",
+        "pass": true,
+        "source": "document 34105 table"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 16.5 mOhm",
+        "datasheet": "14.3 mOhm typ, 15 mOhm max at 25 degC",
+        "pass": true,
+        "source": "document 34105 table"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC plus heating",
+        "datasheet": "-55 to +125 degC, part temperature including rise at most 125 degC",
+        "pass": true,
+        "source": "document 34105"
+       }
+      ],
+      "jlcpcb": "stockCount 727, canPresaleNumber 727, expand, USD 1.0876 at the need of 20; read 2026-10-02T17:51:55Z, vendors.py jlcpcb C845092",
+      "digikey": "IHLP5050CEER4R7M01: stock_available 476, lead_weeks 23, status Active; cached reading of 2026-10-02T13:58:49Z, https://api.digikey.com/products/v4/search/IHLP5050CEER4R7M01/productdetails",
+      "gate": "need = 20; threshold 100; 727 >= 100 and 727 >= 0: pass (rule 4)",
+      "lifecycle": "maker page https://www.vishay.com/en/product/34105/ carries no status in its body (FU-2B2 reading 14:03:11Z; not re-read), so Digi-Key ProductStatus Active (13:58:49Z) is the status, a distributor figure; longevity not read; current revision 24-Apr-2025, first revision not read; notices not read",
+      "second_source": "second vendor: Digi-Key IHLP5050CEER4R7M01 stock_available 476 >= 100 (13:58:49Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Passes every value with the highest DC resistance of the three (15 mOhm max, 0.47 W at 5.59 A) and the lowest part temperature limit, 125 degC; typical-only saturation and heat figures",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "ASPIAIG-Q1010-4R7M-T",
+      "maker": "Abracon",
+      "reason": "rule 4: JLCPCB C3220895 stockCount 95 under the threshold of 100 (FU-2B2 reading 2026-10-02T14:15:37Z; not re-read)"
+     },
+     {
+      "part": "XAL1510-472MED, XAL1010-472MED, XAL7070-472MEC, XAL8080-472MED",
+      "maker": "Coilcraft",
+      "reason": "rule 5: Digi-Key answers HTTP 404 or lists no 4.7 uH stock (FU-2B2 readings 13:58:51Z, 14:14:37Z; T3 readings 2026-09-29), and no survivor shares their footprints"
+     },
+     {
+      "part": "ETQP6M4R7YLC",
+      "maker": "Panasonic",
+      "reason": "rule 5: Digi-Key ETQ-P6M4R7YLC stock 0 (FU-2B2 reading 14:15:45Z); the PCC-M1060ML land pattern differs from the survivors'"
+     },
+     {
+      "part": "IHLP4040DZER4R7M01",
+      "maker": "Vishay",
+      "reason": "not dropped for a value (16.50 mOhm max, equal to the limit); not among the three recorded; stock not re-read"
+     },
+     {
+      "part": "ETQP8M4R7JFA, ETQP4M4R7KVC",
+      "maker": "Panasonic",
+      "reason": "rule 5: Digi-Key 8 and 0 (round 1 readings, 2026-09-29); not re-read"
+     },
+     {
+      "part": "SPM10065VT-4R7M-D, SPM12565VT-4R7M-D",
+      "maker": "TDK",
+      "reason": "lifecycle: TDK product pages read 'Production (NRND)' (2026-09-29T09:54:35Z, 10:40:59Z)"
+     },
+     {
+      "part": "SPM10040T-4R7M-HZR",
+      "maker": "TDK",
+      "reason": "Saturation current: 8.7 A (20 % down), under 13 A (round 1 re-rank, 2026-09-29T12:51:32Z)"
+     },
+     {
+      "part": "SRP7050WA-4R7M, SRP8540A-4R7M",
+      "maker": "Bourns",
+      "reason": "DC resistance: 20.5 and 29.5 mOhm max, over 16.5 mOhm (round 1 re-rank, 2026-09-29T12:51:32Z)"
+     },
+     {
+      "part": "SRP1038A-4R7M, SRP1270-4R7M, MPX1D1040L4R7, IHLP5050CEER4R7M06, XAL6060-472MEC",
+      "maker": "Bourns, KEMET, Vishay, Coilcraft",
+      "reason": "rule 4: JLCPCB stock 7, 25, 40, 30 and 0 in round 1's readings (2026-09-29T12:45Z), under the threshold of 100; not re-read"
+     }
+    ]
+   },
+   {
+    "function": "Port supply switch",
+    "requirements": [
+     {
+      "name": "Operating input range",
+      "value": "0.8 V to 8.70 V at the switch input (rail from 0.8 V; highest set point 8.53 V; HV ceiling 8.70 V)",
+      "source": "V277, V55, V114, V128"
+     },
+     {
+      "name": "Conducts from 0.8 V",
+      "value": "turns on and carries the port's current from 0.8 V; the function may be split across parts",
+      "source": "V282, V302 (owner, 2026-10-01 and 2026-10-02)"
+     },
+     {
+      "name": "Continuous current",
+      "value": "3.0 A at 50 degC ambient, from a rail of 5.0 V up",
+      "source": "V122, V282"
+     },
+     {
+      "name": "Voltage drop",
+      "value": "at most 570 mV across the switch path at 3.0 A from 5.0 V up; reported below 5.0 V",
+      "source": "V124, V282"
+     },
+     {
+      "name": "Own current limit",
+      "value": "whole tolerance band between 3.0 and 6.35 A",
+      "source": "V123"
+     },
+     {
+      "name": "Reverse blocking",
+      "value": "pin up to 12 V, with the switch on and off",
+      "source": "V126"
+     },
+     {
+      "name": "Off-state leakage",
+      "value": "under 5 mA at 8.4 V",
+      "source": "V125"
+     },
+     {
+      "name": "Input withstand",
+      "value": "at least 20 V",
+      "source": "V136"
+     },
+     {
+      "name": "Opening time after reset",
+      "value": "every port switch open within 5 ms of an RP2354B reset",
+      "source": "V127"
+     },
+     {
+      "name": "Control off when undriven",
+      "value": "off while its control input is undriven and pulled to its inactive level; driven from a 3.3 V expander output",
+      "source": "IOBoard.md:374, Load gates at reset"
+     },
+     {
+      "name": "Inrush",
+      "value": "peak at most 2.35 A; port capacitance not found",
+      "source": "V133"
+     },
+     {
+      "name": "Not the rail gate",
+      "value": "no gate requirement",
+      "source": "V121"
+     },
+     {
+      "name": "Ambient range",
+      "value": "0 to 50 degC",
+      "source": "V116"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "TLP3545A(TP1,F",
+      "maker": "Toshiba (data sheet TLP3545A,TLP3545AF Rev.5.0.A, 2026-04-07); S1 name Toshiba",
+      "lcsc": "C2152260",
+      "package": "DIP6 with surface-mount lead forming (LF1, taped TP1), body 7.12 x 7.62 x 3.65 mm; JLCPCB 'SMD-6P'",
+      "placements": 20,
+      "placements_basis": "fixed by the specification: one per port, 20 ports (IOBoard.md:384)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Operating input range",
+        "required": "0.8 to 8.70 V",
+        "datasheet": "photo MOSFET output, no supply pin on the load side; VOFF 60 V min; conducts from 0 V",
+        "pass": true,
+        "source": "https://toshiba.semicon-storage.com/info/docget.jsp?did=60318&prodName=TLP3545A (TLP3545A_datasheet_en_20230526.pdf, HTTP 200), sections 3, 8, read 2026-10-02T17:45:11Z"
+       },
+       {
+        "name": "Conducts from 0.8 V",
+        "required": "on and carrying the port current from 0.8 V",
+        "datasheet": "the LED (IF 5 to 25 mA, IFT 3 mA max) drives the MOSFET gates photovoltaically, independent of the load voltage; RON C connection 9 mOhm typ at 8 A",
+        "pass": true,
+        "source": "TLP3545A data sheet 9, 13"
+       },
+       {
+        "name": "Continuous current",
+        "required": "3.0 A at 50 degC",
+        "datasheet": "C connection (drains 4 and 6 to source 5, DC): ION 8 A, derating -80 mA/degC above 25 degC: 6.0 A at 50 degC. A connection: 4 A, -40 mA/degC: 3.0 A at 50 degC with PO 525 mW at 50 degC under the 540 mW of 60 mOhm at 3 A, so the C connection is used",
+        "pass": true,
+        "source": "TLP3545A data sheet 8 (Absolute Maximum Ratings)"
+       },
+       {
+        "name": "Voltage drop",
+        "required": "at most 570 mV at 3.0 A from 5.0 V",
+        "datasheet": "RON C connection 9 mOhm typ, maximum not stated; derived 15 mOhm max from the A connection's 60 mOhm max (two MOSFETs in series vs in parallel): 45 mV max, 27 mV typ at 3 A; with CMS04(TE12L,Q,M) VF <= 0.37 V at 3 A (0.37 V max at 5 A) the path drops <= 0.415 V",
+        "pass": true,
+        "source": "TLP3545A data sheet 13; CMS04 data sheet (report)"
+       },
+       {
+        "name": "Own current limit",
+        "required": "band within 3.0 to 6.35 A",
+        "datasheet": "none in the photorelay; a companion INA301A1IDGKR on the port's 10 mOhm shunt pulls the LED drive low: trip band 4.30 to 4.51 A, latched while the port's enable is high (report)",
+        "pass": true,
+        "source": "INA301 SBOS713A 6.5, 7.3.2, 7.3.3 (report)"
+       },
+       {
+        "name": "Reverse blocking",
+        "required": "pin up to 12 V, on and off",
+        "datasheet": "C connection conducts in reverse through the body diodes; the companion CMS04(TE12L,Q,M) in series blocks with VRRM 30 V, on and off (report)",
+        "pass": true,
+        "source": "CMS04 data sheet (report)"
+       },
+       {
+        "name": "Off-state leakage",
+        "required": "under 5 mA at 8.4 V",
+        "datasheet": "IOFF 1 uA max at VOFF 60 V, 25 degC",
+        "pass": true,
+        "source": "TLP3545A data sheet 12"
+       },
+       {
+        "name": "Input withstand",
+        "required": "at least 20 V",
+        "datasheet": "VOFF 60 V min (absolute maximum 60 V)",
+        "pass": true,
+        "source": "TLP3545A data sheet 3, 8"
+       },
+       {
+        "name": "Opening time after reset",
+        "required": "within 5 ms",
+        "datasheet": "tOFF 0.1 ms typ, 0.5 ms max (IF 5 or 10 mA, RL 200 Ohm, VDD 20 V); the LED stops when the expander output becomes an input",
+        "pass": true,
+        "source": "TLP3545A data sheet 15"
+       },
+       {
+        "name": "Control off when undriven",
+        "required": "off with its control undriven and pulled down",
+        "datasheet": "normally open (1-Form-A): off with IF 0; IFC (return) 0.01 mA min",
+        "pass": true,
+        "source": "TLP3545A data sheet 3, 13"
+       },
+       {
+        "name": "Inrush",
+        "required": "peak at most 2.35 A",
+        "datasheet": "not verified: the port capacitance is not found (V133); tON 0.5 ms typ, 3 ms max at IF 10 mA and 1.2 ms typ, 5 ms max at IF 5 mA, stated for a resistive load only",
+        "pass": true,
+        "source": "TLP3545A data sheet 15"
+       },
+       {
+        "name": "Not the rail gate",
+        "required": "none",
+        "datasheet": "not used as the gate",
+        "pass": true,
+        "source": "V121"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "Topr -40 to 110 degC (absolute), -40 to 85 degC recommended",
+        "pass": true,
+        "source": "TLP3545A data sheet 8, 9"
+       }
+      ],
+      "jlcpcb": "stockCount 1040, canPresaleNumber 1036, expand, USD 2.9961 at the need of 100 (100+ break); read 2026-10-02T17:51:55Z, vendors.py jlcpcb C2152260",
+      "digikey": "TLP3545A(TP1,F: stock_available 28269, lead_weeks 24, status Active; read 2026-10-02T17:53:01Z, https://api.digikey.com/products/v4/search/TLP3545A%28TP1%2CF/productdetails",
+      "gate": "need = 5 boards x 20 = 100; S4 threshold max(5 x 100, 50) = 500; stockCount 1040 >= 500 and canPresaleNumber 1036 >= 0: pass (rule 4)",
+      "lifecycle": "maker page https://toshiba.semicon-storage.com/ap-en/semiconductor/product/isolators-solid-state-relays/photorelay-mosfet-output/detail.TLP3545A.html (HTTP 200, 17:44:58Z) carries no status in its body, so Digi-Key ProductStatus Active (17:53:01Z) is the status, a distributor figure; longevity not read; start of commercial production 2017-11 (data sheet), current revision Rev.5.0.A 2026-04-07; PCN listing not read; JLCPCB no status",
+      "second_source": "second vendor: Digi-Key TLP3545A(TP1,F stock_available 28269 >= 500 (17:53:01Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "The switch element of the split topology V302 allows: conducts from 0 V, 60 V off-state, 6.0 A at 50 degC in the C connection, off when its LED is undriven, 0.5 ms opening. Reverse blocking and the current limit come from the companions CMS04(TE12L,Q,M) and INA301A1IDGKR, whose records are in the report; selection.json holds one part a function, so those two need functions of their own. Toshiba is on S1, so its maker passes under either list",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "AQV252G2SX",
+      "maker": "Panasonic (PhotoMOS HE SOP, ASCTB145E 2021-03); S2 name Panasonic, not on S1",
+      "lcsc": "C719719",
+      "package": "SOP-6, 4.4 x 6.3 x 2.1 mm",
+      "placements": 20,
+      "placements_basis": "fixed by the specification: one per port, 20 ports",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Operating input range",
+        "required": "0.8 to 8.70 V",
+        "datasheet": "load voltage 50 V (40 V recommended max); conducts from 0 V",
+        "pass": true,
+        "source": "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8590228133305102336 (JLCPCB's copy of ASCTB145E, HTTP 200), read 2026-10-02T17:49:29Z"
+       },
+       {
+        "name": "Conducts from 0.8 V",
+        "required": "on from 0.8 V",
+        "datasheet": "photovoltaic gate drive; LED operate current 3.0 mA max, recommended IF 5 to 30 mA",
+        "pass": true,
+        "source": "ASCTB145E electrical characteristics"
+       },
+       {
+        "name": "Continuous current",
+        "required": "3.0 A at 50 degC",
+        "datasheet": "C connection 6.0 A at 25 degC; derating curve 1-1 read from the PDF vectors: 6.0 A to 25 degC falling to 3.21 A at 85 degC, 4.84 A at 50 degC. A connection 2.41 A at 50 degC, so the C connection is used",
+        "pass": true,
+        "source": "ASCTB145E absolute maximum ratings and Reference data 1-1"
+       },
+       {
+        "name": "Voltage drop",
+        "required": "at most 570 mV at 3.0 A from 5.0 V",
+        "datasheet": "Ron C connection 0.01 Ohm typ, 0.02 Ohm max: 60 mV max at 3 A; with CMS04 <= 0.37 V the path drops <= 0.43 V",
+        "pass": true,
+        "source": "ASCTB145E electrical characteristics"
+       },
+       {
+        "name": "Own current limit",
+        "required": "band within 3.0 to 6.35 A",
+        "datasheet": "none in the relay; the companion INA301A1IDGKR as for rank 1 (report)",
+        "pass": true,
+        "source": "INA301 SBOS713A (report)"
+       },
+       {
+        "name": "Reverse blocking",
+        "required": "pin up to 12 V, on and off",
+        "datasheet": "companion CMS04(TE12L,Q,M) in series, VRRM 30 V (report)",
+        "pass": true,
+        "source": "CMS04 data sheet (report)"
+       },
+       {
+        "name": "Off-state leakage",
+        "required": "under 5 mA at 8.4 V",
+        "datasheet": "ILeak 1 uA max at VL max",
+        "pass": true,
+        "source": "ASCTB145E"
+       },
+       {
+        "name": "Input withstand",
+        "required": "at least 20 V",
+        "datasheet": "VL 50 V absolute maximum",
+        "pass": true,
+        "source": "ASCTB145E"
+       },
+       {
+        "name": "Opening time after reset",
+        "required": "within 5 ms",
+        "datasheet": "Toff 0.08 ms typ, 0.5 ms max",
+        "pass": true,
+        "source": "ASCTB145E transfer characteristics"
+       },
+       {
+        "name": "Control off when undriven",
+        "required": "off when undriven",
+        "datasheet": "1 Form A, off with IF 0; LED turn-off current 0.2 mA min",
+        "pass": true,
+        "source": "ASCTB145E"
+       },
+       {
+        "name": "Inrush",
+        "required": "peak at most 2.35 A",
+        "datasheet": "not verified: port capacitance not found; Ton 1.5 ms typ, 5.0 ms max at IF 5 mA, IL 100 mA",
+        "pass": true,
+        "source": "ASCTB145E"
+       },
+       {
+        "name": "Not the rail gate",
+        "required": "none",
+        "datasheet": "not used as the gate",
+        "pass": true,
+        "source": "V121"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "Topr -40 to +85 degC",
+        "pass": true,
+        "source": "ASCTB145E"
+       }
+      ],
+      "jlcpcb": "stockCount 980, canPresaleNumber 954, expand, USD 2.8482 at the need of 100 (100+ break); read 2026-10-02T17:51:55Z, vendors.py jlcpcb C719719",
+      "digikey": "AQV252G2SX: stock_available 36613, lead_weeks 37, status Active; read 2026-10-02T17:53:03Z, https://api.digikey.com/products/v4/search/AQV252G2SX/productdetails",
+      "gate": "need = 100; threshold 500; 980 >= 500 and 954 >= 0: pass (rule 4)",
+      "lifecycle": "maker page https://industrial.panasonic.com/ww/products/pt/photomos/models/AQV252G2S answered HTTP 404 (17:49:22Z), so Digi-Key ProductStatus Active (17:53:03Z) is the status, a distributor figure; longevity not read; data sheet read is JLCPCB's copy dated 2021-03, first revision not read; notices not read",
+      "second_source": "second vendor: Digi-Key AQV252G2SX stock_available 36613 >= 500 (17:53:03Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Lower on-resistance with a stated C-connection maximum (20 mOhm) and a smaller body than rank 1, but Panasonic is on S2 only: whether a photorelay counts as an IC under S1 is not stated on the page, reported to the owner; ranked second for that and its 37-week lead. Not pin-compatible with rank 1 (SOP-6 against DIP6)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "TPS259474LRPWR",
+      "maker": "Texas Instruments",
+      "reason": "Conducts from 0.8 V (V277, V282): VIN 2.7 to 23 V (SLVSFC9C 6.3, FU-2B2 reading 2026-10-02T14:00:46Z). Round 1's selection; JLCPCB C2864845 3712/3671 (17:51:55Z)"
+     },
+     {
+      "part": "TPS259470LRPWR, TPS259470ARPWR, TPS259474ARPWR",
+      "maker": "Texas Instruments",
+      "reason": "Conducts from 0.8 V: the same die, VIN 2.7 to 23 V (SLVSFC9C, FU-2B2 reading 14:00:46Z)"
+     },
+     {
+      "part": "NCP45520IMNTWG-L, NCP45521IMNTWG-H",
+      "maker": "onsemi",
+      "reason": "Input withstand (V136): VIN and VOUT 18 V absolute maximum (NCP45520/D Rev. 7, FU-2B2 reading 13:56:29Z). VIN 0.5 to 13.5 V meets the low end, but a 20 V protection ahead of it needs a series element that conducts from 0.8 V and blocks 20 V, which is itself the switch (TLP3545A); no reverse blocking and only a short-circuit trip in the part"
+     },
+     {
+      "part": "NCP45650IMNTWG",
+      "maker": "onsemi",
+      "reason": "Conducts from 0.8 V: VIN 1 to 13.5 V; Input withstand: 18 V absolute maximum (FU-2B2 reading 14:04:24Z)"
+     },
+     {
+      "part": "DML3006LFDS-7",
+      "maker": "Diodes Incorporated",
+      "reason": "rule 4: JLCPCB C2149933 stockCount 57 under 500 (FU-2B2 reading 13:55:37Z)"
+     },
+     {
+      "part": "TLP3555A(TP1,F",
+      "maker": "Toshiba",
+      "reason": "Continuous current: ION 3 A, derating -30 mA/degC above 25 degC, 2.25 A at 50 degC; 4-pin, no C connection (data sheet Rev.4.0.A, https://toshiba.semicon-storage.com/info/docget.jsp?did=61844&prodName=TLP3555A, read 2026-10-02T17:45:12Z)"
+     },
+     {
+      "part": "TLP3106A(TP,F",
+      "maker": "Toshiba",
+      "reason": "rule 4: JLCPCB C1857560 stockCount 10 under 500 (2026-10-02T17:55:48Z)"
+     },
+     {
+      "part": "TLP3107A(TP,F",
+      "maker": "Toshiba",
+      "reason": "rule 4: JLCPCB C1857558 stockCount 158 under 500 (2026-10-02T17:55:48Z)"
+     },
+     {
+      "part": "TLP241A(TP1,F, TLP3109(TP,F, VO14642AABTR, AQV252GAX",
+      "maker": "Toshiba, Vishay, Panasonic",
+      "reason": "not qualified: jlcparts lists 2 A to 2.5 A on-state current (A connection), under 3.0 A at 50 degC; data sheets not read"
+     },
+     {
+      "part": "AQZ102",
+      "maker": "Panasonic",
+      "reason": "not qualified: SIP-4 through-hole; AQV252G2SX covers Panasonic in a surface-mount body"
+     },
+     {
+      "part": "CPC1907B, G3VM-31HR(TR05)",
+      "maker": "Littelfuse IXYS, Omron",
+      "reason": "rule 2: makers not on S1 or S2"
+     },
+     {
+      "part": "VOM1271T or TLP3906(TPL,E with a discrete back-to-back MOSFET pair",
+      "maker": "Vishay, Toshiba",
+      "reason": "not qualified in this run: two MOSFETs a port beside the driver, against one TLP3545A that holds both MOSFETs and the LED; R3's records state no opening time at a MOSFET load for either driver (FU-2A 017-rerank-R3)"
+     },
+     {
+      "part": "FSV1045V (companion, reverse blocking)",
+      "maker": "onsemi",
+      "reason": "rule 4: JLCPCB C895433 stockCount 1055 with canPresaleNumber -272 (2026-10-02T17:51:55Z)"
+     },
+     {
+      "part": "SDT10A45P5-13 (companion, reverse blocking)",
+      "maker": "Diodes Incorporated",
+      "reason": "rule 4: JLCPCB C2997843 stockCount 240 under 500 (17:55:48Z); data sheet DS39577 Rev. 3-2 carries 'NEW PRODUCT ADVANCED INFORMATION'"
+     },
+     {
+      "part": "SS10P4-M3/86A (companion, reverse blocking)",
+      "maker": "Vishay",
+      "reason": "Voltage drop not shown: VF 0.56 V max at 10 A, 0.41 V typ at 5 A, no maximum at 3 A (document 88983, https://www.vishay.com/docs/88983/ss10p4.pdf, read 17:56:11Z), so 0.525 V at 3 A is not bounded; passes rule 4 (JLCPCB C968538 7225/7186, 17:55:48Z; Digi-Key 26833 Active, 17:56:06Z)"
+     },
+     {
+      "part": "BTS7004-1EPP, VN7016AJ and other smart high-side switches",
+      "maker": "Infineon, STMicroelectronics",
+      "reason": "Conducts from 0.8 V: VS(OP) 4.1 V and VCC 4 V minimum (FU-2A P2-R3 readings)"
+     },
+     {
+      "part": "TPS2594x, TPS259480, TPS2595x, TPS2597x, TPS25946, TPS2663x, TPS1663x, LM73100, TPS22810, TPS2121, TCKE812NL, SiP32429, SiP32433, FPF2895, DPS1133FIAQ-13, TPS27081ADDCR",
+      "maker": "Texas Instruments, Toshiba, Vishay, onsemi, Diodes Incorporated",
+      "reason": "Conducts from 0.8 V: each starts at 1.2 V or above in round 1's and FU-2B2's readings (2026-09-29 and 2026-10-02); not re-read"
+     },
+     {
+      "part": "TPS22990, TPS22918",
+      "maker": "Texas Instruments",
+      "reason": "Operating input range: rated to 5.5 V, under 8.70 V (R6 row)"
+     }
+    ]
+   },
+   {
+    "function": "I/O expander",
+    "requirements": [
+     {
+      "name": "Lines",
+      "value": "33 lines: 30 outputs and 3 inputs; on an MCP23017 GPA7 and GPB7 carry none",
+      "source": "V119; Pins.md:132-140"
+     },
+     {
+      "name": "Hardware reset input",
+      "value": "active-low reset returning every line to an input, from GPIO 14 with a pull-down",
+      "source": "R6 row; Pins.md:132; IOBoard.md:374"
+     },
+     {
+      "name": "Power-up state",
+      "value": "every load line an input with no internal pull-up at power-up and after reset",
+      "source": "IOBoard.md:374"
+     },
+     {
+      "name": "I2C clock",
+      "value": "at least 400 kHz at 3.3 V",
+      "source": "V120"
+     },
+     {
+      "name": "Supply",
+      "value": "3.3 V",
+      "source": "IOBoard.md Logic rail"
+     },
+     {
+      "name": "Address",
+      "value": "clear of 0x31 (FUSB303), 0x40 to 0x4F, 0x18 to 0x1F and 74h/75h",
+      "source": "Pins.md; IOBoard.md:116, :420"
+     },
+     {
+      "name": "Ambient range",
+      "value": "0 to 50 degC",
+      "source": "V116"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "MCP23017T-E/SS",
+      "maker": "Microchip Technology (DS20001952D); S1 name Microchip",
+      "lcsc": "C558584",
+      "package": "SSOP-28, 5.30 mm body",
+      "placements": 3,
+      "placements_basis": "33 lines over 14 usable lines a part (GPA7, GPB7 output only): 3 parts (Pins.md:132-140)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Lines",
+        "required": "33",
+        "datasheet": "16 lines a part, GPA7 and GPB7 output only: 3 parts give 42 usable",
+        "pass": true,
+        "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/MCP23017-Data-Sheet-DS20001952.pdf page 1, read 2026-10-02T17:40:16Z"
+       },
+       {
+        "name": "Hardware reset input",
+        "required": "active-low reset",
+        "datasheet": "RESET pin; reset returns IODIR to inputs",
+        "pass": true,
+        "source": "DS20001952D"
+       },
+       {
+        "name": "Power-up state",
+        "required": "inputs, no pull-ups",
+        "datasheet": "I/O pins default to input; GPPU 0 at reset",
+        "pass": true,
+        "source": "DS20001952D"
+       },
+       {
+        "name": "I2C clock",
+        "required": "400 kHz at 3.3 V",
+        "datasheet": "100 kHz, 400 kHz, 1.7 MHz",
+        "pass": true,
+        "source": "DS20001952D page 1"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V",
+        "datasheet": "1.8 to 5.5 V; 25 mA per output pin, 125 mA into VDD max",
+        "pass": true,
+        "source": "DS20001952D absolute maximum ratings"
+       },
+       {
+        "name": "Address",
+        "required": "clear of the listed addresses",
+        "datasheet": "0x20 to 0x27 by A2:A0; the map uses 0x20 to 0x22",
+        "pass": true,
+        "source": "DS20001952D"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to +125 degC (E grade)",
+        "pass": true,
+        "source": "DS20001952D"
+       }
+      ],
+      "jlcpcb": "stockCount 6240, canPresaleNumber 6131, expand, USD 1.3835 at the need of 15 (10+ break); read 2026-10-02T17:51:55Z, vendors.py jlcpcb C558584",
+      "digikey": "MCP23017T-E/SS: stock_available 16532, lead_weeks 4, status Active; cached reading of 2026-10-02T13:58:53Z, https://api.digikey.com/products/v4/search/MCP23017T-E%2FSS/productdetails",
+      "gate": "need = 5 x 3 = 15; threshold max(75, 50) = 75; 6240 >= 75 and 6131 >= 0: pass (rule 4)",
+      "lifecycle": "Microchip product page 'productSatus': 'In Production' (https://www.microchip.com/en-us/product/MCP23017, 17:53:29Z); longevity not read; first data sheet Revision A, June 2005; PCN listing not read (POST search API); round 1's adjudicator found no end-of-life notice (2026-09-29T17:33:13Z); Digi-Key Active, agrees",
+      "second_source": "second vendor: Digi-Key MCP23017T-E/SS stock_available 16532 >= 75 (13:58:53Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Round 1's and FU-2B2's selection, requalified: 8 addresses clear of every other device, hardware RESET, inputs without pull-ups at reset, deepest stock at both vendors. Its outputs also source the photorelay LEDs of the port supply switch (P5 figure in the report)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "TCA6424ARGJR",
+      "maker": "Texas Instruments (SCPS193D); S1 name Texas Instruments",
+      "lcsc": "C80692",
+      "package": "VQFN-32 (RGJ), 5 x 5 mm",
+      "placements": 2,
+      "placements_basis": "33 lines over 24 a part: 2 parts",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Lines",
+        "required": "33",
+        "datasheet": "24 push-pull lines a part: 48 over 2",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/tca6424a.pdf, read 2026-10-02T17:40:16Z"
+       },
+       {
+        "name": "Hardware reset input",
+        "required": "active-low reset",
+        "datasheet": "RESET active low, same reset as power-on",
+        "pass": true,
+        "source": "SCPS193D"
+       },
+       {
+        "name": "Power-up state",
+        "required": "inputs, no pull-ups",
+        "datasheet": "all channels inputs at power-on",
+        "pass": true,
+        "source": "SCPS193D"
+       },
+       {
+        "name": "I2C clock",
+        "required": "400 kHz",
+        "datasheet": "400 kHz fast mode",
+        "pass": true,
+        "source": "SCPS193D"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V",
+        "datasheet": "VCCI and VCCP 1.65 to 5.5 V",
+        "pass": true,
+        "source": "SCPS193D"
+       },
+       {
+        "name": "Address",
+        "required": "clear of the listed addresses",
+        "datasheet": "0x22 or 0x23 by ADDR",
+        "pass": true,
+        "source": "SCPS193D"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 85 degC",
+        "pass": true,
+        "source": "SCPS193D"
+       }
+      ],
+      "jlcpcb": "stockCount 4940, canPresaleNumber 4819, expand, USD 1.3542 at the need of 10; read 2026-10-02T17:51:55Z, vendors.py jlcpcb C80692",
+      "digikey": "TCA6424ARGJR: stock_available 1247, lead_weeks 20, status Active; cached reading of 2026-10-02T13:58:56Z, https://api.digikey.com/products/v4/search/TCA6424ARGJR/productdetails",
+      "gate": "need = 5 x 2 = 10; threshold 50; 4940 >= 50 and 4819 >= 0: pass (rule 4)",
+      "lifecycle": "TI product page ACTIVE (https://www.ti.com/product/TCA6424A, 17:53:29Z); longevity not read; first revision July 2010 (SCPS193D header); PCN not read; Digi-Key Active, agrees",
+      "second_source": "second vendor: Digi-Key TCA6424ARGJR stock_available 1247 >= 50 (13:58:56Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Two parts cover the 33 lines with 15 spare; a different register map and firmware from rank 1; thinner Digi-Key stock and 20-week lead",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "PCAL6524HEAZ",
+      "maker": "NXP (PCAL6524 Rev. 2.1, 3 July 2025); S1 name NXP",
+      "lcsc": "C3000497",
+      "package": "HUQFN-32, 5 x 5 mm",
+      "placements": 2,
+      "placements_basis": "33 lines over 24 a part: 2 parts",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Lines",
+        "required": "33",
+        "datasheet": "24 lines a part: 48 over 2",
+        "pass": true,
+        "source": "https://www.nxp.com/docs/en/data-sheet/PCAL6524DS.pdf, read 2026-10-02T17:40:16Z"
+       },
+       {
+        "name": "Hardware reset input",
+        "required": "active-low reset",
+        "datasheet": "RESET active low",
+        "pass": true,
+        "source": "PCAL6524 Rev. 2.1"
+       },
+       {
+        "name": "Power-up state",
+        "required": "inputs, no pull-ups",
+        "datasheet": "all I/Os inputs at reset; pull-up/pull-down enable registers default 0",
+        "pass": true,
+        "source": "PCAL6524 Rev. 2.1 Tables 62, 64, 66"
+       },
+       {
+        "name": "I2C clock",
+        "required": "400 kHz",
+        "datasheet": "Fm+ to 1 MHz",
+        "pass": true,
+        "source": "PCAL6524 Rev. 2.1"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V",
+        "datasheet": "VDD(I2C) 0.8 to 3.6 V, VDD(P) 1.65 to 5.5 V",
+        "pass": true,
+        "source": "PCAL6524 Rev. 2.1"
+       },
+       {
+        "name": "Address",
+        "required": "clear of the listed addresses",
+        "datasheet": "0x20 to 0x23 by ADDR (Table 4)",
+        "pass": true,
+        "source": "PCAL6524 Rev. 2.1 Table 4"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to +85 degC",
+        "pass": true,
+        "source": "PCAL6524 Rev. 2.1"
+       }
+      ],
+      "jlcpcb": "stockCount 2399, canPresaleNumber 2374, expand, USD 1.5981 at the need of 10; read 2026-10-02T17:51:55Z, vendors.py jlcpcb C3000497",
+      "digikey": "PCAL6524HEAZ: stock_available 18577, lead_weeks 30, status Active; cached reading of 2026-10-02T14:20:12Z, https://api.digikey.com/products/v4/search/PCAL6524HEAZ/productdetails",
+      "gate": "need = 10; threshold 50; 2399 >= 50 and 2374 >= 0: pass (rule 4)",
+      "lifecycle": "NXP product page Active (https://www.nxp.com/products/PCAL6524, 17:53:29Z); longevity not read; first release 22 September 2015 (FU-2B2 P3 reading); PCN not read; Digi-Key Active, agrees",
+      "second_source": "second vendor: Digi-Key PCAL6524HEAZ stock_available 18577 >= 50 (14:20:12Z)",
+      "alternates": [
+       "PCAL6524HEHP (same die, HUQFN32; JLCPCB C2669688 115/112 in FU-2B2's reading)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Passes every value like rank 2; ranked after it on its 30-week lead and shallower JLCPCB stock",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "TCA6416APWR, TCA6416ARTWR, PCAL6416AHF, TCAL6416PWR, PI4IOE5V6416 variants",
+      "maker": "Texas Instruments, NXP, Diodes Incorporated",
+      "reason": "Lines (V119): 16 lines a part at only 2 addresses give 32 lines, under 33 (round 1 readings)"
+     },
+     {
+      "part": "PCA9698DGG,518",
+      "maker": "NXP",
+      "reason": "not dropped for a value (40 lines in one part, FU-2B2 re-rank reading); not among the three recorded"
+     },
+     {
+      "part": "TCA9539PWR, NCA9539PW-Q100J",
+      "maker": "Texas Instruments, Nexperia",
+      "reason": "Address: 0x74 to 0x77 overlaps the TPS55285's 74h/75h (round 1 readings)"
+     },
+     {
+      "part": "TCA9535PWR, PCA9535PW",
+      "maker": "Texas Instruments, NXP",
+      "reason": "Hardware reset input: no reset pin (round 1 reading)"
+     },
+     {
+      "part": "UMW rows, XRA1201PIG24TR-F",
+      "maker": "UMW Youtai Semiconductor, MaxLinear",
+      "reason": "rule 2: maker not on S1"
+     }
+    ]
+   },
+   {
+    "function": "Port voltage ceiling",
+    "requirements": [
+     {
+      "name": "LV trip band",
+      "value": "may cut off from 5.59 V, must by 6.00 V",
+      "source": "V128, F16"
+     },
+     {
+      "name": "HV trip band",
+      "value": "may cut off from 8.53 V, must by 8.70 V (+/-0.99 % about 8.615 V)",
+      "source": "V128, F16"
+     },
+     {
+      "name": "No cut-off below the band",
+      "value": "a rail from 0.8 V to the band passes; the ceiling acts above it only",
+      "source": "V280, V55"
+     },
+     {
+      "name": "Reconnect with the comparator's hysteresis",
+      "value": "the port reconnects by itself once the rail falls below the ceiling, with the comparator's own hysteresis; no latch; the firmware reports the cut-off",
+      "source": "V130 (owner, 2026-10-02)"
+     },
+     {
+      "name": "Input withstand",
+      "value": "the sensed rail at up to 20 V",
+      "source": "V136"
+     },
+     {
+      "name": "Cut-off time",
+      "value": "not found; recorded, not a limit",
+      "source": "V129"
+     },
+     {
+      "name": "Cut-off state readable",
+      "value": "yes, through the port monitor's bus voltage; jumper position not read",
+      "source": "V135"
+     },
+     {
+      "name": "Jumper selection",
+      "value": "a jumper on each port selects LV or HV",
+      "source": "F16"
+     },
+     {
+      "name": "Acts on the port switch",
+      "value": "an output that turns the port supply switch off while the rail is above the ceiling",
+      "source": "IOBoard.md:386 ('the port is cut off')"
+     },
+     {
+      "name": "Ambient range",
+      "value": "0 to 50 degC",
+      "source": "V116"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "TPS3701DDCR",
+      "maker": "Texas Instruments (SBVS240C, November 2014, revised February 2019); S1 name Texas Instruments",
+      "lcsc": "C132788",
+      "package": "SOT-23-6 (DDC)",
+      "placements": 20,
+      "placements_basis": "fixed: one per port; only INB is an overvoltage input (INA asserts below its threshold), so one part a port",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "LV trip band",
+        "required": "5.59 to 6.00 V",
+        "datasheet": "VIT+(INB) 397 to 403 mV, IIN +/-25 nA: with 0.1 % resistors Rb 4.99 kOhm, Rt 67.3 kOhm the trip is 5.739 to 5.851 V (resistor TCR not included)",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/tps3701.pdf 6.5, read 2026-10-02T17:40:16Z; band derived in this run"
+       },
+       {
+        "name": "HV trip band",
+        "required": "8.53 to 8.70 V",
+        "datasheet": "with 0.1 % resistors Rb 4.99 kOhm, Rt 102.5 kOhm: 8.532 to 8.699 V (with Rb 10 kOhm 8.529 to 8.701 V fails; TCR not included)",
+        "pass": true,
+        "source": "SBVS240C 6.5; derived in this run"
+       },
+       {
+        "name": "No cut-off below the band",
+        "required": "acts above the band only",
+        "datasheet": "OUTB is driven low only when INB exceeds VIT+(INB)",
+        "pass": true,
+        "source": "SBVS240C pin functions"
+       },
+       {
+        "name": "Reconnect with the comparator's hysteresis",
+        "required": "reconnects by itself below the ceiling",
+        "datasheet": "OUTB goes high when INB falls below VIT-(INB) 387 to 400 mV; VHYS(INB) 2 to 12 mV: 43 to 258 mV at the HV rail, 29 to 174 mV at LV",
+        "pass": true,
+        "source": "SBVS240C 6.5, pin functions"
+       },
+       {
+        "name": "Input withstand",
+        "required": "20 V on the rail",
+        "datasheet": "INB sees 20 V / 21.54 = 0.93 V through the HV divider; VDD 1.8 to 36 V",
+        "pass": true,
+        "source": "SBVS240C 6.3, 6.5"
+       },
+       {
+        "name": "Cut-off time",
+        "required": "recorded",
+        "datasheet": "tpd(HL) 9.9 us typ (10 mV overdrive); with the photorelay's 0.5 ms max tOFF the port opens within about 0.51 ms",
+        "pass": true,
+        "source": "SBVS240C 6.6"
+       },
+       {
+        "name": "Cut-off state readable",
+        "required": "via the port monitor",
+        "datasheet": "not part-specific; OUTB could also be read but takes a line",
+        "pass": true,
+        "source": "V135"
+       },
+       {
+        "name": "Jumper selection",
+        "required": "LV or HV per port",
+        "datasheet": "threshold set by the external divider; the jumper switches the divider",
+        "pass": true,
+        "source": "SBVS240C 8"
+       },
+       {
+        "name": "Acts on the port switch",
+        "required": "turns the port switch off above the ceiling",
+        "datasheet": "open-drain OUTB rated 25 V, VOL 250 mV max at 5 mA (VDD 5 V), 250 mV at 3 mA (VDD 1.8 V): pulls the photorelay LED drive below its 1.50 V minimum VF; VOL at the LED drive current above 5 mA not stated",
+        "pass": true,
+        "source": "SBVS240C 6.5"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TJ -40 to 125 degC",
+        "pass": true,
+        "source": "SBVS240C"
+       }
+      ],
+      "jlcpcb": "stockCount 26813, canPresaleNumber 26784, expand, USD 0.4081 at the need of 100 (100+ break); read 2026-10-02T17:51:55Z, vendors.py jlcpcb C132788",
+      "digikey": "TPS3701DDCR: stock_available 11567, lead_weeks 12, status Active; read 2026-10-02T17:52:53Z, https://api.digikey.com/products/v4/search/TPS3701DDCR/productdetails",
+      "gate": "need = 5 x 20 = 100; threshold max(500, 50) = 500; 26813 >= 500 and 26784 >= 0: pass (rule 4)",
+      "lifecycle": "TI product page ACTIVE (https://www.ti.com/product/TPS3701, 17:53:29Z); longevity not read; first revision November 2014; PCN not read; Digi-Key Active, agrees",
+      "second_source": "second vendor: Digi-Key TPS3701DDCR stock_available 11567 >= 500 (17:52:53Z)",
+      "alternates": [
+       "TLV6710DDCR (same pins and threshold table, rank 2)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "With V130 answered (no latch, the comparator's own hysteresis), its one failing check in FU-2B2 is gone: it meets both bands with 0.1 % resistors, reconnects with 2 to 12 mV of hysteresis at INB, and has the deepest stock",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "TLV6710DDCR",
+      "maker": "Texas Instruments (SNVSAV4B, January 2018, revised October 2018); S1 name Texas Instruments",
+      "lcsc": "C2863066",
+      "package": "SOT-23-6 (DDC)",
+      "placements": 20,
+      "placements_basis": "fixed: one per port",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "LV trip band",
+        "required": "5.59 to 6.00 V",
+        "datasheet": "VIT+(INB) 397 to 403 mV, IIN +/-25 nA, the TPS3701's table: 5.739 to 5.851 V with the same 0.1 % divider",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/tlv6710.pdf 6.5, read 2026-10-02T17:40:16Z"
+       },
+       {
+        "name": "HV trip band",
+        "required": "8.53 to 8.70 V",
+        "datasheet": "8.532 to 8.699 V with Rb 4.99 kOhm, Rt 102.5 kOhm, 0.1 %",
+        "pass": true,
+        "source": "SNVSAV4B 6.5; derived in this run"
+       },
+       {
+        "name": "No cut-off below the band",
+        "required": "acts above the band only",
+        "datasheet": "OUTB driven low only above VIT+(INB)",
+        "pass": true,
+        "source": "SNVSAV4B pin functions"
+       },
+       {
+        "name": "Reconnect with the comparator's hysteresis",
+        "required": "reconnects by itself",
+        "datasheet": "OUTB high below VIT-(INB); VHYS(INB) 2 to 12 mV",
+        "pass": true,
+        "source": "SNVSAV4B 6.5"
+       },
+       {
+        "name": "Input withstand",
+        "required": "20 V on the rail",
+        "datasheet": "INB 0.93 V at 20 V through the divider; VDD 1.8 to 36 V",
+        "pass": true,
+        "source": "SNVSAV4B"
+       },
+       {
+        "name": "Cut-off time",
+        "required": "recorded",
+        "datasheet": "tpd(HL) 9.9 us typ",
+        "pass": true,
+        "source": "SNVSAV4B 6.6"
+       },
+       {
+        "name": "Cut-off state readable",
+        "required": "via the port monitor",
+        "datasheet": "not part-specific",
+        "pass": true,
+        "source": "V135"
+       },
+       {
+        "name": "Jumper selection",
+        "required": "LV or HV per port",
+        "datasheet": "external divider",
+        "pass": true,
+        "source": "SNVSAV4B"
+       },
+       {
+        "name": "Acts on the port switch",
+        "required": "turns the port switch off above the ceiling",
+        "datasheet": "open-drain OUTB up to 25 V, VOL 250 mV max at 5 mA",
+        "pass": true,
+        "source": "SNVSAV4B 6.5"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TJ -40 to 125 degC",
+        "pass": true,
+        "source": "SNVSAV4B"
+       }
+      ],
+      "jlcpcb": "stockCount 3103, canPresaleNumber 3091, expand, USD 1.5428 at the need of 100; read 2026-10-02T17:51:55Z, vendors.py jlcpcb C2863066",
+      "digikey": "TLV6710DDCR: stock_available 17144, lead_weeks 20, status Active; read 2026-10-02T17:52:54Z, https://api.digikey.com/products/v4/search/TLV6710DDCR/productdetails",
+      "gate": "need = 100; threshold 500; 3103 >= 500 and 3091 >= 0: pass (rule 4)",
+      "lifecycle": "TI product page ACTIVE (https://www.ti.com/product/TLV6710, 17:53:29Z); longevity not read; first revision January 2018; PCN not read; Digi-Key Active, agrees",
+      "second_source": "second vendor: Digi-Key TLV6710DDCR stock_available 17144 >= 500 (17:52:54Z)",
+      "alternates": [
+       "TPS3701DDCR (same pins and threshold table, rank 1)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Same thresholds and pins as rank 1 at almost four times its JLCPCB price and a ninth of its JLCPCB stock",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "TPS3703 (DSE variants)",
+      "maker": "Texas Instruments",
+      "reason": "No cut-off below the band: a window supervisor whose UV side asserts below VIT-(UV) on the same SENSE pin (SBVS249B 9.1.3, FU-2B2 reading 13:57:36Z)"
+     },
+     {
+      "part": "TPS3762",
+      "maker": "Texas Instruments",
+      "reason": "HV trip band: VITP +/-0.9 % at 800 mV, over +/-0.99 % with a divider (SNVSCM8A 6.5, FU-2B2 reading 13:57:35Z)"
+     },
+     {
+      "part": "TLV6713",
+      "maker": "Texas Instruments",
+      "reason": "rule 4: JLCPCB C2861351 stockCount 167 under 500 (FU-2B2 P3 reading 14:26:09Z); non-inverting single channel"
+     },
+     {
+      "part": "TPS3702, TLV6700, TPS3700, TPS3710, TPS3760, TPS3899, TPS389x, TLV40x1, TLV3011/TLV3012, TPS25947 OVLO, TPS25940 OVP",
+      "maker": "Texas Instruments",
+      "reason": "HV trip band: threshold accuracy 0.9 % to 2.5 % before the divider, over +/-0.99 % (round 1 and FU-2B2 P3 readings)"
+     },
+     {
+      "part": "ADCMP350/354/356, ADCMP341/343, MAX6495/6497/6499",
+      "maker": "Analog Devices",
+      "reason": "HV trip band +/-1.6 % to +/-3.5 %, or rule 4 (round 1 readings, 2026-09-29)"
+     }
+    ]
+   },
+   {
+    "function": "Servo supply temperature",
+    "requirements": [
+     {
+      "name": "Sensor part and placement",
+      "value": "MCP9808T-E/MS beside each TPS55285, 4 a board, each at its own address in 0x18 to 0x1F apart from the onboard shunt's",
+      "source": "IOBoard.md:460 (owner, 2026-09-30)"
+     },
+     {
+      "name": "Shutdown threshold",
+      "value": "72.0 degC beside a servo converter, 66.25 degC beside the adjustable supply's",
+      "source": "V279 (owner, 2026-10-02)"
+     },
+     {
+      "name": "Accuracy at the threshold",
+      "value": "error counted in the threshold (0.5 degC in V279's derivation)",
+      "source": "V279"
+     },
+     {
+      "name": "Alert output",
+      "value": "open-drain, asserted at or above the threshold, sets the rail's own latch",
+      "source": "IOBoard.md:460; V283; FU-2B2 adjudicator ruling 012"
+     },
+     {
+      "name": "Limit lock",
+      "value": "limits held until the next power-up after the start-up write",
+      "source": "IOBoard.md:460"
+     },
+     {
+      "name": "I2C clock",
+      "value": "400 kHz",
+      "source": "V120"
+     },
+     {
+      "name": "Supply",
+      "value": "3.3 V",
+      "source": "IOBoard.md Logic rail"
+     },
+     {
+      "name": "Ambient range",
+      "value": "0 to 50 degC; the sensor sits on the converter's board area",
+      "source": "V116"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "MCP9808T-E/MS",
+      "maker": "Microchip Technology (DS20005095B); S1 name Microchip",
+      "lcsc": "C129490",
+      "package": "MSOP-8",
+      "placements": 4,
+      "placements_basis": "fixed: one beside each TPS55285, 4 a board (IOBoard.md:460)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Sensor part and placement",
+        "required": "MCP9808T-E/MS, 4 a board, 0x18 to 0x1F",
+        "datasheet": "address 0011 A2 A1 A0: 0x18 to 0x1F, 8 a bus",
+        "pass": true,
+        "source": "https://ww1.microchip.com/downloads/en/DeviceDoc/MCP9808-0.5C-Maximum-Accuracy-Digital-Temperature-Sensor-Data-Sheet-DS20005095B.pdf Table 3-2, read 2026-10-02T17:40:16Z"
+       },
+       {
+        "name": "Shutdown threshold",
+        "required": "72.0 and 66.25 degC",
+        "datasheet": "TCRIT in 0.25 degC steps (bits 11-2): both values representable; THYST 0, 1.5, 3, 6 degC",
+        "pass": true,
+        "source": "DS20005095B Register 5-3, 5-2"
+       },
+       {
+        "name": "Accuracy at the threshold",
+        "required": "error counted",
+        "datasheet": "+/-0.5 degC max from -20 to 100 degC; +/-1 degC max -40 to 125 degC",
+        "pass": true,
+        "source": "DS20005095B page 1, electrical characteristics"
+       },
+       {
+        "name": "Alert output",
+        "required": "open-drain, asserted at or above the limit, sets the latch",
+        "datasheet": "open-drain, active-low or active-high; Alert Sel 1 gives TCRIT only; TA >= TCRIT forces comparator mode until TA < TCRIT - THYST; the latch, not the sensor, holds the rail (ruling 012)",
+        "pass": true,
+        "source": "DS20005095B 5.2.3, Register 5-2"
+       },
+       {
+        "name": "Limit lock",
+        "required": "held until next power-up",
+        "datasheet": "Crit. Lock and Win. Lock hold TCRIT and TUPPER/TLOWER until a power-on reset; VPOR 2.2 V falling resets CONFIG to 0x0000",
+        "pass": true,
+        "source": "DS20005095B Register 5-2, 5.3"
+       },
+       {
+        "name": "I2C clock",
+        "required": "400 kHz",
+        "datasheet": "fSC 0 to 400 kHz",
+        "pass": true,
+        "source": "DS20005095B"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V",
+        "datasheet": "VDD 2.7 to 5.5 V; IDD 200 uA typ, 400 uA max",
+        "pass": true,
+        "source": "DS20005095B"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC ambient, board to about 100 degC",
+        "datasheet": "-40 to +125 degC operating",
+        "pass": true,
+        "source": "DS20005095B"
+       }
+      ],
+      "jlcpcb": "stockCount 764, canPresaleNumber 725, expand, USD 1.8842 at the need of 20 (10+ break); read 2026-10-02T17:51:55Z, vendors.py jlcpcb C129490",
+      "digikey": "MCP9808T-E/MS: stock_available 21419, lead_weeks 4, status Active; cached reading of 2026-10-02T13:58:27Z, https://api.digikey.com/products/v4/search/MCP9808T-E%2FMS/productdetails",
+      "gate": "need = 5 x 4 = 20; threshold max(100, 50) = 100; 764 >= 100 and 725 >= 0: pass (rule 4). With R8's one a board, 25 and 125: still passes",
+      "lifecycle": "Microchip product page 'productSatus': 'In Production' (https://www.microchip.com/en-us/product/MCP9808, 17:53:29Z); longevity not read; first data sheet Revision A, October 2011; PCN listing not read; Digi-Key Active, agrees",
+      "second_source": "second vendor: Digi-Key MCP9808T-E/MS stock_available 21419 >= 100 (13:58:27Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "The owner's part, requalified against V279's 72.0 and 66.25 degC; passes every value now that the rail's latch is a function of its own (FU-2B2 ruling 012, V303)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": []
+   },
+   {
+    "function": "Servo supply temperature latch",
+    "requirements": [
+     {
+      "name": "Count",
+      "value": "4 a board, one per TPS55285",
+      "source": "V303 (owner, 2026-10-02)"
+     },
+     {
+      "name": "Set by the sensor's alert, set dominant",
+      "value": "the MCP9808 alert sets the latch as a level; while the alert is asserted a clear does not release the rail",
+      "source": "V283; IOBoard.md:460 ('Each alert output switches its own converter's output off above a threshold, in hardware')"
+     },
+     {
+      "name": "Cleared only by F11",
+      "value": "stays set until the operator clear control (F11) clears it; no firmware clear",
+      "source": "V283 (owner, 2026-10-01)"
+     },
+     {
+      "name": "Holds only its own converter off",
+      "value": "its output takes that converter's EN/UVLO below 0.4 V (VEN_L) through the enable combination; the other rails and the ESC keep running",
+      "source": "V283; SLVSI72A 5.4"
+     },
+     {
+      "name": "Defined state at power-up",
+      "value": "a defined state after power-up through an asynchronous input, held until the 3.3 V rail is in range",
+      "source": "IOBoard.md:374 (Load gates at reset); V283"
+     },
+     {
+      "name": "I_off on inputs",
+      "value": "I_off on inputs that the interlock's F11 clear line drives",
+      "source": "R3 row (Research.md); IOBoard.md isolation rule"
+     },
+     {
+      "name": "Supply",
+      "value": "3.3 V +/-3 %",
+      "source": "IOBoard.md Logic rail"
+     },
+     {
+      "name": "Clear edge",
+      "value": "the F11 clear's debounced edge reaches the clock within its input transition limit (R3's Schmitt buffer SN74AUP1G17 already shapes it)",
+      "source": "FU-2A 012-P2-R3 latch record"
+     },
+     {
+      "name": "Ambient range",
+      "value": "0 to 50 degC",
+      "source": "V116"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "74LVC1G175GW,125",
+      "maker": "Nexperia (74LVC1G175 Rev. 11, 15 August 2023); S1 name Nexperia",
+      "lcsc": "C282350",
+      "package": "TSSOP-6 (SOT363-2)",
+      "placements": 4,
+      "placements_basis": "fixed: 4 a board (V303)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Count",
+        "required": "4 a board",
+        "datasheet": "one flip-flop a part",
+        "pass": true,
+        "source": "https://assets.nexperia.com/documents/data-sheet/74LVC1G175.pdf, read 2026-10-02T17:40:16Z"
+       },
+       {
+        "name": "Set by the sensor's alert, set dominant",
+        "required": "level set, set wins over clear",
+        "datasheet": "MR LOW forces Q LOW independent of CP (Table 4): the alert (active-low) on MR sets 'tripped' = Q LOW and holds it while asserted",
+        "pass": true,
+        "source": "74LVC1G175 Table 4"
+       },
+       {
+        "name": "Cleared only by F11",
+        "required": "F11 clear only",
+        "datasheet": "with D tied HIGH, the F11 clear's rising edge on CP loads Q HIGH ('Load 1'); no other input clears",
+        "pass": true,
+        "source": "74LVC1G175 Table 4"
+       },
+       {
+        "name": "Holds only its own converter off",
+        "required": "EN/UVLO below 0.4 V while set",
+        "datasheet": "VOL 0.17 V typ, 0.40 V max at 12 mA (VCC 2.7 V); Q LOW drives the enable AND, whose part is not selected",
+        "pass": true,
+        "source": "74LVC1G175 static characteristics"
+       },
+       {
+        "name": "Defined state at power-up",
+        "required": "defined through an asynchronous input",
+        "datasheet": "no power-up state stated; MR (asynchronous) held LOW at power-up by the power-on reset gives Q LOW",
+        "pass": true,
+        "source": "74LVC1G175 section 1, Table 4"
+       },
+       {
+        "name": "I_off on inputs",
+        "required": "I_off",
+        "datasheet": "IOFF +/-2 uA max at VCC 0 V, VI or VO 5.5 V",
+        "pass": true,
+        "source": "74LVC1G175 static characteristics"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V +/-3 %",
+        "datasheet": "1.65 to 5.5 V",
+        "pass": true,
+        "source": "74LVC1G175 section 2"
+       },
+       {
+        "name": "Clear edge",
+        "required": "within the input transition limit",
+        "datasheet": "delta t/delta V 10 ns/V max at 2.7 to 5.5 V; Schmitt trigger action at all inputs; R3's buffered F11 edge fans out to the 4 latches",
+        "pass": true,
+        "source": "74LVC1G175 recommended operating conditions"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to +125 degC",
+        "pass": true,
+        "source": "74LVC1G175"
+       }
+      ],
+      "jlcpcb": "stockCount 1973, canPresaleNumber 1886, expand, USD 0.1064 at the need of 20 (50+ break; 1+ is 0.1366); read 2026-10-02T17:51:55Z, vendors.py jlcpcb C282350",
+      "digikey": "74LVC1G175GW,125 carried by two Digi-Key products: Nexperia USA Inc. stock_available 36048, lead_weeks 20, Active; NXP USA Inc. 0, 'Discontinued at DigiKey'; read 2026-10-02T17:52:58Z, keyword search https://api.digikey.com/products/v4/search/keyword (productdetails answered 404 'duplicate')",
+      "gate": "need = 5 x 4 = 20; threshold max(100, 50) = 100; 1973 >= 100 and 1886 >= 0: pass (rule 4). With R3's latch on the same part number, 25 and 125: still passes",
+      "lifecycle": "Nexperia product page 'Production' (https://www.nexperia.com/product/74LVC1G175GW, 17:53:29Z); longevity not read; first data sheet v.1, 18 March 2004; PCN not read; Digi-Key Active for the Nexperia product, agrees",
+      "second_source": "second vendor: Digi-Key Nexperia 74LVC1G175GW,125 stock_available 36048 >= 100 (17:52:58Z)",
+      "alternates": [
+       "74AUP1G175GW,125 (Nexperia, same pins; R3's FU-2A rank 2; Digi-Key 14982, 17:53:13Z)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The owner's first candidate (V303) and R3's latch part number: level set dominant on MR, cleared by the buffered F11 edge on CP, I_off, the same wiring R3 uses for the interlock latch",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "SN74LVC1G74DCUR",
+      "maker": "Texas Instruments (SCES794G, October 2009, revised September 2021); S1 name Texas Instruments",
+      "lcsc": "C70285",
+      "package": "VSSOP-8 (DCU)",
+      "placements": 4,
+      "placements_basis": "fixed: 4 a board (V303)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Count",
+        "required": "4 a board",
+        "datasheet": "one flip-flop a part",
+        "pass": true,
+        "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1g74.pdf, read 2026-10-02T17:40:16Z"
+       },
+       {
+        "name": "Set by the sensor's alert, set dominant",
+        "required": "level set, set wins over clear",
+        "datasheet": "with the alert on CLR (active-low) and PRE tied HIGH, CLR LOW holds Q LOW whatever the clock (Table 8-1); PRE and CLR both LOW gives a nonstable HIGH on both outputs, so F11 must not drive PRE",
+        "pass": true,
+        "source": "SCES794G Table 8-1"
+       },
+       {
+        "name": "Cleared only by F11",
+        "required": "F11 clear only",
+        "datasheet": "D tied HIGH, the F11 edge on CLK loads Q HIGH",
+        "pass": true,
+        "source": "SCES794G Table 8-1"
+       },
+       {
+        "name": "Holds only its own converter off",
+        "required": "EN/UVLO below 0.4 V while set",
+        "datasheet": "VOL 0.1 V max at 100 uA; 0.4 V max at 16 mA (VCC 3 V); Q LOW drives the enable AND",
+        "pass": true,
+        "source": "SCES794G 6.5"
+       },
+       {
+        "name": "Defined state at power-up",
+        "required": "defined through an asynchronous input",
+        "datasheet": "no power-up state stated; CLR held LOW at power-up gives Q LOW",
+        "pass": true,
+        "source": "SCES794G 8.4"
+       },
+       {
+        "name": "I_off on inputs",
+        "required": "I_off",
+        "datasheet": "Ioff +/-10 uA max at VCC 0 V, VI or VO 5.5 V",
+        "pass": true,
+        "source": "SCES794G 6.5"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V +/-3 %",
+        "datasheet": "1.65 to 5.5 V",
+        "pass": true,
+        "source": "SCES794G 6.3"
+       },
+       {
+        "name": "Clear edge",
+        "required": "within the input transition limit",
+        "datasheet": "delta t/delta v 10 ns/V max at 3.3 V +/-0.3 V; takes R3's buffered F11 edge",
+        "pass": true,
+        "source": "SCES794G 6.3"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 125 degC (DCU package)",
+        "pass": true,
+        "source": "SCES794G 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 12386, canPresaleNumber 12182, expand, USD 0.2384 at the need of 20 (50+ break; 1+ is 0.2956); read 2026-10-02T17:51:55Z, vendors.py jlcpcb C70285",
+      "digikey": "SN74LVC1G74DCUR: stock_available 35656, lead_weeks 20, status Active; read 2026-10-02T17:53:00Z, https://api.digikey.com/products/v4/search/SN74LVC1G74DCUR/productdetails",
+      "gate": "need = 20; threshold 100; 12386 >= 100 and 12182 >= 0: pass (rule 4)",
+      "lifecycle": "TI product page ACTIVE (https://www.ti.com/product/SN74LVC1G74, 17:53:29Z); longevity not read; first revision October 2009; PCN not read; Digi-Key Active, agrees",
+      "second_source": "second vendor: Digi-Key SN74LVC1G74DCUR stock_available 35656 >= 100 (17:53:00Z)",
+      "alternates": [
+       "74LVC1G74DC,125 (Nexperia, VSSOP-8; JLCPCB C503431 326/310, 17:51:55Z; Digi-Key Nexperia 442, 17:53:09Z); pin match not read"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Owner's second candidate (V303): passes with the alert on CLR and F11 on CLK; ranked second because PRE must stay unused (PRE and CLR both LOW release the set) and it is a second latch part number on the board beside R3's 74LVC1G175GW,125",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "SN74LVC1G175DCKR",
+      "maker": "Texas Instruments",
+      "reason": "not recorded: Digi-Key stock 0 (17:53:15Z), so its second source would be an alternate; the two survivors cover the function"
+     }
+    ]
+   },
+   {
+    "function": "Port voltage ceiling latch",
+    "requirements": [
+     {
+      "name": "No latch",
+      "value": "the port reconnects by itself once the rail falls below its ceiling, with the comparator's own hysteresis; the firmware reports the cut-off; the function takes no part",
+      "source": "V130 (owner, 2026-10-02); FU-2G follow-up item"
+     }
+    ],
+    "shortlist": [],
+    "dropped": []
+   }
+  ],
+  "report": [
+   {
+    "figure": "TPS55285 continuous current at 6.0 V in, 8.4 V out, 50 degC (V278), for the owner's TPS55285VALR decision",
+    "value": "3.72 A with every converter loss in the IC (2.27 W at 33 degC/W, TJ 125 degC); 3.94 A less SRP1265A-4R7M's 8.4 mOhm DC loss; 4.11 A less a 14.3 mOhm inductor. Typical TA 25 degC curves; RDS(on) rise not counted; heatsink not credited. Pack current 5.59 A at 6.0 V, 93.2 %",
+    "source": "SLVSI72A 5.2, 5.3, Figure 5-3, https://www.ti.com/lit/ds/symlink/tps55285.pdf read 2026-10-02T17:40:16Z; scratch /home/claude/rcbench-research/round2/scratch/FU-2G/P2-R6/thermal3.py"
+   },
+   {
+    "figure": "TPS55285 continuous current at the V294 pack floor",
+    "value": "6.6 V in, 8.4 V out, 50 degC: 4.12 A (4.36 A less 8.4 mOhm); clamp output 5.07 A at 7 A and 5.72 A at 8 A",
+    "source": "SLVSI72A Figure 5-3; V294; scratch thermal3.py"
+   },
+   {
+    "figure": "Sustained rail current under the owner's thresholds (V279)",
+    "value": "72.0 degC trips at 0.98 W of converter loss at 50 degC ambient without heatsink credit: about 2.47 A at 8.4 V from 6.0 V. 66.25 degC on the adjustable supply: about 0.95 A at 15 V from 6.0 V. The heatsink raises both; round 3 sizes it",
+    "source": "SLVSI72A 5.3 (RthJA 33, PsiJB 11.1 degC/W, EVM); MCP9808 DS20005095B accuracy; scratch thresh.py"
+   },
+   {
+    "figure": "Adjustable supply continuous current at 50 degC on 33 degC/W (P1 question 4)",
+    "value": "worst point shown 6.0 V in, 15 V out: 1.94 A (2.05 A less 8.4 mOhm); 6.0 to 12 V: 2.51 A; 9 to 15 V: 3.01 A; 12 to 15 V: 4.16 A; 20 to 15 V: 5.13 A; 20 to 9 V: 4.93 A; 20 to 5 V: 5.12 A. Outputs below 5 V are not shown in the data sheet: not known there",
+    "source": "SLVSI72A Figures 5-1, 5-3, 5-5, 5-7; scratch thermal2.py, thermal3.py"
+   },
+   {
+    "figure": "TPS55285 output at the inductor clamp from 6.0 V",
+    "value": "8.4 V out: 4.57 A at ILIM_AVG 7 A min, 5.15 A at 8 A typ (loss 3.59 W and 4.72 W); 6.35 A at 8.4 V is reached at the 7 A minimum only from about 8.13 V in. 15 V out: 2.53 A and 2.85 A. ILIM_AVG has no maximum",
+    "source": "SLVSI72A 5.4; V111 loss model"
+   },
+   {
+    "figure": "Pack current into the TPS55285 at 6.0 V, for R5, R7 and P5",
+    "value": "5.59 A each at the 3.72 A rating; at their own limits the inductor clamp, 7 A min, 8 A typ, no maximum; four converters 28 A min, 32 A typ, no maximum",
+    "source": "SLVSI72A 5.4 (ILIM_AVG); V111, V132"
+   },
+   {
+    "figure": "Servo inductor currents, for P5",
+    "value": "peak 9.33 A at the adjustable supply's 6.0 V to 15 V boost at the 8 A clamp (3.76 uH, 360 kHz, ripple 2.66 A); 8.63 A for 6.0 V to 8.4 V at the clamp; 8.15 A for 20 V to 8.4 V at 6.35 A; SRP1265A-4R7M DC loss 0.26 W at 5.59 A, 0.54 W at 8 A",
+    "source": "SLVSI72A 8.2.2.3 equations 5, 8, 9; SRP1265A REV. 06/24"
+   },
+   {
+    "figure": "Port supply switch topology (V302)",
+    "value": "Per port: TLP3545A(TP1,F photorelay in the C connection (switch, 0 V up, 60 V) -> the R8 port shunt -> CMS04(TE12L,Q,M) Schottky (reverse blocking on and off, VRRM 30 V) -> port pin. INA301A1IDGKR on the same shunt pulls the photorelay's LED drive low at 4.30 to 4.51 A; its RESET is tied to the port's enable line, so a trip latches while the port is enabled and clears when firmware drops the enable. The TPS3701 ceiling's OUTB pulls the same LED drive low. selection.json holds one part a function: 'Port supply reverse blocking' and 'Port supply current limit' need functions of their own for the re-rank and P4",
+    "source": "TLP3545A data sheet Rev.5.0.A (17:45:11Z); CMS04 data sheet (17:47:42Z); INA301 SBOS713A (17:47:06Z); SBVS240C"
+   },
+   {
+    "figure": "Port supply reverse-blocking element CMS04(TE12L,Q,M)",
+    "value": "Toshiba, LCSC C603062, SOD-128 (M-FLAT). VRRM 30 V; IF(AV) 5.0 A (Tl 36 degC); VF 0.27 V typ at 1 A, 0.31 V typ at 3 A, 0.37 V max at 5 A; IRRM 8.0 mA max at 30 V, 25 degC; Tj 125 degC max; Rth(j-a) 60 degC/W (ceramic board) and 135 degC/W (FR4, 6 x 6 mm lands). At 3 A the loss is at most 1.11 W: Tj stays at or under 125 degC at 50 degC only below 67 degC/W, not shown on the FR4 figure; board copper is round 3's. JLCPCB 4617/4562, expand, USD 0.1057 at 100 (17:51:55Z); gate need 100, threshold 500: pass. Digi-Key 28112, lead 16 weeks, Active (17:47:37Z); Toshiba product page answered HTTP 404 (17:47:13Z), so Digi-Key's Active is the status; start of commercial production 2000-07",
+    "source": "https://toshiba.semicon-storage.com/info/CMS04_datasheet_en_20180911.pdf?did=3133&prodName=CMS04 (HTTP 200, 17:47:42Z); vendors.py jlcpcb C603062; vendors.py digikey CMS04(TE12L,Q,M)"
+   },
+   {
+    "figure": "Port supply current-limit element INA301A1IDGKR",
+    "value": "Texas Instruments, LCSC C471062, VSSOP-8. VCM 0 to 36 V independent of VS 2.7 to 5.5 V (works at a 0.8 V rail); gain 20 V/V, gain error 0.1 % max; VOS 125 uV max RTI; ILIMIT 79.2 to 80.8 uA over temperature; comparator offset 3.5 mV max, hysteresis 20 mV; alert 1 us max; open-drain ALERT, latch mode with RESET high, transparent with RESET low; IQ 700 uA max. With the 10 mOhm +/-0.5 % shunt (ERJ-6CWDR010V) and RLIMIT 11.0 kOhm 0.1 %: trip 4.30 to 4.51 A, inside 3.0 to 6.35 A and inside the 3.96 to 4.84 A breaker band; shunt TCR not counted. JLCPCB 1552/1395, expand, USD 1.9573 at 100 (17:51:55Z); gate 500: pass. Digi-Key 4140, lead 20 weeks, Active (17:53:05Z); TI page ACTIVE (17:53:29Z); first revision September 2015. ALERT VOL is stated only at 3 mA (0.3 V max); at the LED drive current above that it is not stated",
+    "source": "https://www.ti.com/lit/ds/symlink/ina301.pdf SBOS713A 6.5, 7.3.2, 7.3.3 (HTTP 200, 17:47:06Z); vendors.py jlcpcb C471062; vendors.py digikey INA301A1IDGKR"
+   },
+   {
+    "figure": "Port supply path drop and loss at 3.0 A",
+    "value": "TLP3545A C connection 27 mV typ, 45 mV max (derived from the A connection's 60 mOhm max); CMS04 0.31 V typ, 0.37 V max: 0.34 V typ, 0.415 V max against 570 mV. Loss per port at 3.0 A: up to 0.135 W in the photorelay and 1.11 W in the diode; at a 0.8 V rail the diode's 0.27 V at 1 A leaves about 0.5 V at the pin (reported, V282)",
+    "source": "TLP3545A data sheet 13; CMS04 data sheet"
+   },
+   {
+    "figure": "Port supply switch LED drive, for P5",
+    "value": "each port's photorelay LED takes 5 to 25 mA (TLP3545A recommended IF; AQV252G2S 5 to 30 mA) from its expander output: 20 ports at 5 mA = 100 mA, 7 a part = 35 mA per MCP23017 against 25 mA a pin and 125 mA into VDD; MCP23017 VOH is stated only at 3 mA (VDD - 0.7 V at 4.5 V), not at 5 mA from 3.3 V",
+    "source": "TLP3545A data sheet 9; MCP23017 DS20001952D absolute maximum ratings and D090"
+   },
+   {
+    "figure": "Rail loads of R6 parts on 3.3 V, for P5",
+    "value": "MCP23017 1 mA max each, 3 mA for 3; MCP9808 400 uA max each, 1.6 mA for 4; TPS3701 11 uA max each, 0.22 mA for 20; INA301 700 uA max each, 14 mA for 20; 74LVC1G175 4 uA max each; photorelay LEDs 100 mA at 5 mA a port through the expanders",
+    "source": "DS20001952D; DS20005095B; SBVS240C 6.5; SBOS713A 6.5; 74LVC1G175 Rev. 11"
+   },
+   {
+    "figure": "Port voltage ceiling bands and timing",
+    "value": "TPS3701DDCR INB with 0.1 % resistors: HV 8.532 to 8.699 V (Rb 4.99 kOhm, Rt 102.5 kOhm), LV 5.739 to 5.851 V (Rt 67.3 kOhm); resistor TCR not included; a 10 kOhm bottom resistor misses the HV band (8.529 to 8.701 V). Reconnect hysteresis 43 to 258 mV at HV, 29 to 174 mV at LV. Cut-off: tpd(HL) 9.9 us typ plus the photorelay's 0.5 ms max tOFF",
+    "source": "SBVS240C 6.5, 6.6 (read 17:40:16Z); derived in this run"
+   },
+   {
+    "figure": "Servo supply temperature latch wiring, for P5 and round 3",
+    "value": "Alert (MCP9808, active-low, comparator mode, TCRIT only) on MR of 74LVC1G175GW,125, wired-OR with the power-on reset so the latch powers up set; F11's buffered clear edge on CP with D HIGH; Q LOW = tripped. EN/UVLO = expander enable AND Q, a gate not selected. The alert's released edge on MR must rise within 10 ns/V: a pull-up of about 1 kOhm or the Schmitt buffer, not sized; the MCP9808 alert sinks 3 mA at 0.4 V",
+    "source": "74LVC1G175 Table 4 and recommended operating conditions; DS20005095B 5.2.3; SLVSI72A 5.4"
+   },
+   {
+    "figure": "I2C addresses of R6 parts, for P5",
+    "value": "TPS55285 74h or 75h (MODE 48.7 kOhm or 0 Ohm, OE 0); MCP23017 x 3 at 0x20 to 0x22 (0x20 to 0x27 possible); with TCA6424A x 2, 0x22 and 0x23; MCP9808 x 4 in 0x18 to 0x1F beside R8's one; the INA301, TPS3701, photorelays and latches take no address",
+    "source": "SLVSI72A Table 6-2; DS20001952D; SCPS193D; DS20005095B Table 3-2"
+   },
+   {
+    "figure": "Maker allowlist question for the owner",
+    "value": "Photorelays: S1 covers ICs and S2 the rest; Panasonic is on S2 only. AQV252G2SX (rank 2 of Port supply switch) passes under S2 and fails under S1; the page does not say which list a photorelay falls under. TLP3545A (Toshiba) passes under both",
+    "source": "Research.md S1, S2 Answers (checkout bb10544e89be)"
+   },
+   {
+    "figure": "Lifecycle read at Digi-Key in place of the maker",
+    "value": "TLP3545A(TP1,F (Toshiba page without status, 17:44:58Z; Digi-Key Active 17:53:01Z); AQV252G2SX (Panasonic page HTTP 404, 17:49:22Z; Digi-Key Active 17:53:03Z); CMS04(TE12L,Q,M) (Toshiba page HTTP 404, 17:47:13Z; Digi-Key Active 17:47:37Z); the three inductors (FU-2B2 maker readings; Digi-Key Active, cached 13:58:45Z to 13:58:49Z): distributor figures",
+    "source": "vendors.py fetch and digikey readings listed"
+   },
+   {
+    "figure": "P1-critic markings carried into this run",
+    "value": "MCP9808 alert destination: answered by V283 (the rail's own latch), selected here as 74LVC1G175GW,125. MCP23017T-E/SS: requalified, stands. Servo supply inductor: selection.json (round 2) holds SRP1265A-4R7M from FU-2B2, requalified here",
+    "source": "Research.md V283, V303; results/hardware/research/round2/selection.json"
+   },
+   {
+    "figure": "Values not found",
+    "value": "V129 (cut-off time); the capacitance half of V133, so inrush is not verified for either photorelay; the transient of V112; the TPS55285's efficiency below 5 V out and its RDS(on) at temperature; the TLP3545A's C-connection maximum on-resistance (derived, not stated); the reverse-blocking diode's junction temperature on the board",
+    "source": "sources listed under found values"
+   }
+  ]
+ }
+}

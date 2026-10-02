@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R6",
+ "label": "adjudicator-R6-2",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "function": "re-rank report: PCA9698DGG,518 for P5",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands, so the figure is refuted as stated. The claim gives PCA9698DGG,518 a total package current of \"1 A\". That is wrong for this part. Table 1 lists PCA9698DGG in the TSSOP56 package (SOT364-1). For TSSOP56, Table 14 gives IOL(tot) as 0.86 A max at VOL 0.5 V and VDD 4.5 V. The 1.0 A figure belongs to the HVQFN56 package (PCA9698BS). The datasheet's general description on page 1 also says \"1 A\". That is where the re-rank took it from: its Lines requirement cites sections 1 and 2. The corrected figure is 0.86 A. Footnote [2] adds that each bit is limited to 25 mA. The scope is function. This is a datasheet value restated in this re-rank figure for P5. It is not lifecycle, an end-of-life notice, the maker allowlist or LCSC identity. Remark: this ruling does not decide whether the expander passes the function. The error does not reverse a pass/fail at the load the re-rank names: 20 photorelay LEDs at 5 mA come to about 100 mA, which the re-rank calculates as a sourced current. IOL(tot) is a sink limit. Table 14 states no total source current, so the package's total sourced current is not stated in the datasheet.",
+  "evidence": "PCA9698.pdf Rev. 3 (3 August 2010), fetched HTTP 200, 370946 bytes. Table 1 (Ordering information): PCA9698DGG, TSSOP56, SOT364-1; PCA9698BS, HVQFN56, SOT684-1. Table 14 (Static characteristics), I/Os: \"IOL(tot) total LOW-level output current, VOL = 0.5 V; VDD = 4.5 V: TSSOP56 package [2] max 0.86 A; HVQFN56 package [2] max 1.0 A\". Footnote [2]: \"Each bit must be limited to a maximum of 25 mA and the total package limited to the package maximum limit due to internal busing limits.\" The page 1 general description says \"sinking 25 mA with a total package load of 1 A\". Table 13 (Limiting values): ISS 1100 mA max, IDD 500 mA max, Ptot 500 mW. The same Table 14 confirms these figures in the claim: IDD 250 uA typ and 400 uA max at VDD 3.3 V, fSCL 1 MHz, no load; VOH 2.3 V min at IOH -10 mA, VDD 3.0 V; IOL 17 mA min at VOL 0.5 V, VDD 3.0 V. The re-rank's out.json (scratch/FU-2G/rerank-R6) states \"1 A total package\" in the Lines requirement and in the P5 figure. It names a photorelay LED drive at 5 mA, with 20 port switches.",
+  "source": "https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf, fetched with vendors.py fetch (client chrome) and saved as /home/claude/rcbench-research/round2/scratch/FU-2G/adjudicator-R6/PCA9698.pdf: Rev. 3, Table 1, Table 13, Table 14 with footnote [2], section 1",
+  "read_at": "2026-10-02T19:16:13Z",
+  "scope": "function"
+ }
+}

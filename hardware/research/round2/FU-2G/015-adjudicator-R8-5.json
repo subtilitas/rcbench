@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R8",
+ "label": "adjudicator-R8-5",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "function": "function requirements: External shunt",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands, scope function. The specification line \"External shunt class\" (IOBoard.md:462, state \"decided\") limits the shunt to busbar type, 50 to 100 uOhm, 4.5 to 9 W at 300 A. The list instead gives a resistance of 50 to 136 uOhm, taken from P2's found value for V162. That found value takes its 50 uOhm floor from line 462 but replaces the same line's 100 uOhm ceiling with 40.96 mV / 300 A = 136.5 uOhm. The list also has no dissipation entry. A 136 uOhm part therefore passes the list while it dissipates (300 A)^2 x 136 uOhm = 12.24 W, above the decided 9 W. Research.md's Round 2 section says the specification holds where it differs, and a value found for research does not override a line the specification marks decided. So the list understates a decided requirement. The verifier's second point also holds as an omission. V165's row is filed under \"R8, External shunt\", and its found value of 25 mA or finer appears only under Motor monitor. With the 50 uOhm floor, the INA228 resolves 1.56 mA, so no part is wrongly admitted through that gap. The first point alone makes the refutation stand. The finding concerns this function's requirement list, not the selected part WSBE8518L1000JKA2: at 100 uOhm and 9 W it meets the decided class, though this ruling did not re-read its datasheet.",
+  "evidence": "IOBoard.md:462 reads \"External shunt class | busbar type, 50 to 100 µΩ, 4.5 to 9 W at 300 A. Part number: WSBE8518L1000JKA2 (R8) ... | decided; part: WSBE8518L1000JKA2, no second source (R8)\". hardware/STATUS.md:50 gives the same class. Power.md's table under \"Motor monitor (INA228)\" gives 100 uOhm at 9 W and 50 uOhm at 4.5 W at 300 A. Research.md:875, row V162 (R8, External shunt), says \"The pages give busbar type, 50 to 100 µΩ ... for research (owner, 2026-09-28)\". Research.md:878, row V165 (R8, External shunt), is \"for research (owner, 2026-09-28)\". The found value for V162 in FU-2B2/003-P2-R8.json is \"50 to 136 uOhm: lower bound the specification's busbar class (50 uOhm, IOBoard.md:462); upper bound 40.96 mV / 300 A = 136.5 uOhm\". The claim under review repeats that range. For V165 the same file holds \"25 mA or finer on the external path\", which the claim's list does not carry. Arithmetic: 300^2 x 136e-6 = 12.24 W, against 9 W. Research.md's Round 2 section, line 538, says \"this section and the specification hold\".",
+  "source": "checkout bb10544e89be: hardware/docs/IOBoard.md:462-463, hardware/STATUS.md:50, hardware/docs/Power.md (motor monitor table), hardware/docs/Research.md:538, :702-703, :875, :878; results/hardware/research/round2/FU-2B2/003-P2-R8.json (V162, V165 found values)",
+  "read_at": "2026-10-02T18:56:08Z",
+  "scope": "function"
+ }
+}
