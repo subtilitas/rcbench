@@ -909,6 +909,13 @@ function merge(cat, p2, rr, p3) {
     }).filter(c => {
       const failing = (c.requirements || []).filter(r => r.pass === false)
       if (!failing.length) return true
+      // A fixed input is not dropped on P2's word (Scope): it stays for P4,
+      // whose datasheet verifier re-reads the failing values, and the owner
+      // is told.
+      if (what === 'shortlisted' && fixed && isFixed(fixed, c.part)) {
+        followUps.push({ role: 'owner', category: cat, function: name, part: c.part, reason: `fixed input ${fixed} fails P2's requirement: ${failing.map(r => r.name).join(', ')}; kept for P4 and reported to the owner, not re-selected` })
+        return true
+      }
       followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} with a failed requirement: ${failing.map(r => r.name).join(', ')}` })
       // The drop is P2's word only: the datasheet verifier re-reads it.
       failed.push({ part: c.part, names: failing.map(r => r.name), requirements: failing })
