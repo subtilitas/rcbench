@@ -388,9 +388,9 @@ part.
   a drop with the entry's text copied exactly, one drop for each entry. A part
   discussed only in the re-rank's report is neither qualified nor dropped. A
   record in `new_candidates` handles the entry whose text its `p3_part`
-  copies, spaces and case aside, and no other entry that shares a part number
-  with it. A find and the re-rank's part are the same part when they share a
-  part number or an LCSC number, a record's `lcsc` field included:
+  copies, runs of spaces and case aside, and no other entry that shares a part
+  number with it. A find and the re-rank's part are the same part when they
+  share a part number or an LCSC number, a record's `lcsc` field included:
   `TCAN3413DR (C22433320)`, `A (C1); B (C2)` and a part with its function
   appended all match the bare part number. Part numbers are the pieces between
   semicolons, commas followed by a space, slashes between spaces and ` and `,

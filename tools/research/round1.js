@@ -765,7 +765,7 @@ function partKeys(p, functionNames, anyOption = false) {
   const bases = anyOption ? numbers.map(x => x.split('#')[0]).filter((b, i) => b !== numbers[i] && b.length >= 4 && /[A-Z]/.test(b) && /\d/.test(b)) : []
   return new Set([...[...numbers, ...bases].map(x => `mpn:${x}`), ...lcsc])
 }
-// The same text, spaces collapsed and case aside.
+// The same text, runs of spaces collapsed and case aside.
 function sameText(a, b) {
   const t = x => String((x && typeof x === 'object' ? x.part : x) || '').replace(/\s+/g, ' ').trim().toUpperCase()
   return !!t(a) && t(a) === t(b)
