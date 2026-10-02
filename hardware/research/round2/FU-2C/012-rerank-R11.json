@@ -1,0 +1,690 @@
+{
+ "role": "rerank",
+ "category": "R11",
+ "label": "rerank-R11",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "functions": [
+   {
+    "function": "accelerometer",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "ADXL316WBCSZ",
+      "option": "",
+      "reason": "Kept first, as selection.json holds it: meets every value on P2's record, with 1.000 us of delay variation at 100 pF against the 1.244 us share, 210 ug/rtHz, -40 to 105 degC, JLCPCB 104 (re-read 2026-10-02T01:16:52Z, gate 50) and a second vendor (Digi-Key 387, P2 reading 2026-10-02T00:26:13Z). Two limits P4 sees: the lead-length value holds only with a buffer between XOUT and the 2 m lead that no function selects (report 'accelerometer lead buffer'), and the sensor's own response delay variation at 1,092 Hz is not stated (report 'accelerometer sensor response')"
+     },
+     {
+      "rank": 2,
+      "part": "ADXL326BCPZ-RL7",
+      "option": "",
+      "reason": "Kept second: meets every value with 0.960 us at 100 pF and has the larger JLCPCB stock (922, re-read 2026-10-02T01:16:53Z), but no second source (Digi-Key 0, pin-identical rows C579450 and C662324 at 0), 300 ug/rtHz and an 85 degC upper limit at the edge of the 0 to 85 degC mount range. The same lead buffer limit as rank 1"
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "ADXL316WBCSZ",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "optical index",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "VCND2045X02, VCND2045SLX02, VCND2040X02, VCND2040SLX02",
+      "maker": "Vishay (Digi-Key maker string 'Vishay Semiconductor Opto Division'); counts as Vishay (S1)",
+      "reason": "fails rule 1: no LCSC number. vendors.py jlcpcb-search VCND2045 and VCND2040 returned no result (2026-10-02T01:13:13Z, selectSmtComponentList); keyword VCND returned only unrelated LED rows (C9900052117 and others, 'JLCPCB Assembly', stock 0); the jlcparts copy of 2026-09-14 holds no VCND sensor row (query 2026-10-02T01:18:21Z). Also fails working distance: the datasheets (VCND2045 Rev. 1.1, document 80514, https://www.vishay.com/docs/80514/vcnd2045x02_vcnd2045slx02.pdf; VCND2040 Rev. 1.1, document 80347, https://www.vishay.com/docs/80347/vcnd2040x02_vcnd2040slx02.pdf; both read 2026-10-02T01:16:13Z) state reflective reverse light current at d = 4 mm only (flat mirror and Kodak gray card) and a temperature curve at a mirror at d = 5 mm; no operating range, and no pen-line target. The stated rise and fall times, 9 ns (VCND2045) and 18 ns (VCND2040) typical, are measured in the communication setup at d = 10 mm with a pulsed LED, not on a reflected edge, and have no maximum. First datasheet revision 13-Aug-2026, under 12 months. Digi-Key: Active, stock 3000 each, 6 weeks (cached reading 2026-10-02T01:09:56Z). Not a candidate; reported so the owner sees the one allowlisted reflective family that states a sub-microsecond time (report 'VCND reflective sensors')"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": []
+   },
+   {
+    "function": "magnetic pickup",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "DRV5015A1QDBZR",
+      "option": "",
+      "reason": "Kept first, as selection.json holds it: the lowest operate point found (BOP 0.7 mT typical, 2.0 mT maximum, shared with ranks 2 and 3), fBW 20 kHz minimum against 1,092 Hz, stock at both vendors (JLCPCB 339 re-read 2026-10-02T01:16:55Z, gate 50; Digi-Key 2821, P2 reading 2026-10-02T00:26:17Z). P3 returned no part for this function"
+     },
+     {
+      "rank": 2,
+      "part": "DRV5015A1EDBZRQ1",
+      "option": "",
+      "reason": "Kept second: rank 1's automotive grade with the same thresholds, bandwidth and pins; JLCPCB 6167 (re-read 2026-10-02T01:16:56Z) against Digi-Key 680"
+     },
+     {
+      "rank": 3,
+      "part": "AH1711-SA-7",
+      "option": "",
+      "reason": "Kept third: rank 1's thresholds, guaranteed 20 kHz bandwidth, pins and polarity from a second maker; JLCPCB 100 (re-read 2026-10-02T01:16:58Z, 2 x the gate of 50), a 40-week lead time at Digi-Key and a manufacturer status not in the page body (P2, 2026-10-02T00:27:10Z)"
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "DRV5015A1QDBZR",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "phase-wire clip",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TLV3201AIDBVR",
+      "option": "",
+      "reason": "Kept first, as selection.json holds it: the only candidate with a stated maximum over temperature that serves both placements (55 ns over -40 to 125 degC, inside the optical index's 1.244 us share), 40 uA, JLCPCB 39649 (re-read 2026-10-02T01:16:59Z). Second source by its alternate TLV3601DBVR, since Digi-Key has 0 (P2, 2026-10-02T00:26:22Z)"
+     },
+     {
+      "rank": 2,
+      "part": "TLV3501AIDBVR",
+      "option": "",
+      "reason": "Kept second: 7 ns maximum over temperature and a Digi-Key second source (26303, P2 2026-10-02T00:26:24Z), JLCPCB 9661 (re-read 2026-10-02T01:17:01Z); below rank 1 for 3.2 mA typical supply current and a 6-pin package with a shutdown pin"
+     },
+     {
+      "rank": 3,
+      "part": "TLV3601DBVR",
+      "option": "",
+      "reason": "Kept third and rank 1's rule-5 alternate on the same DBV pins: 4.5 ns maximum over temperature, JLCPCB 1621 (re-read 2026-10-02T01:17:03Z) and Digi-Key 5959. Its 5 uA maximum input bias against TLV3201's 5 nA is an offset of 5 uA times the divider's Thevenin resistance; the divider is stage 2's and not selected, so the offset is not computable here (report 'TLV3601 as the alternate')"
+     },
+     {
+      "rank": 4,
+      "part": "TLV7011DBVR",
+      "option": "",
+      "reason": "New from P3, qualified for the clip placement only: tPHL 260 ns and tPLH 310 ns typical at VS 5 V, VOD 100 mV (SLVSDM5F 6.9), 70 x under the 21.8 us bound, but typical only, no maximum and no 3.3 V figure, so it cannot be the optical index's comparator. Inputs clamp to VEE only and are rated -0.3 to 6 V whatever VCC is, so the 3.3 V rail down does not pull the divided phase signal into the rail; 5 uA supply current, internal hysteresis 4.2 mV typical; JLCPCB 9054 and Digi-Key 56323. Below ranks 1 to 3, which state maxima over temperature"
+     },
+     {
+      "rank": 5,
+      "part": "TLV7031DBVR",
+      "option": "",
+      "reason": "New from P3, qualified for the clip placement only: tPHL and tPLH 3 us typical at VS 5 V, VOD 100 mV (SLVSE13J 5.8), 7 x under the 21.8 us bound, typical only, no 3.3 V figure and none at a lower overdrive. Inputs clamp to VEE only, rated -0.3 to 7 V; 335 nA typical and 900 nA maximum supply current (stated at VS 1.8 V); JLCPCB 93786, Digi-Key 1886. Below rank 4 for the thinner margin on a typical figure"
+     },
+     {
+      "rank": 6,
+      "part": "TLV1811DBVR",
+      "option": "",
+      "reason": "New from P3, qualified for the clip placement only: 450 ns (high to low) and 420 ns (low to high) typical at VOD 100 mV, CL 50 pF, but stated at VS 12 V only (SNOSDC8E 5.8), 3.3 V not stated, no maximum. Inputs rated -0.3 V to (V+) + 0.3 V, so the rail-down case is the one of ranks 1 to 3; 6 uA typical; JLCPCB 31030, Digi-Key 744. Last: its figures are 8.7 V from the board's supply"
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 4,
+      "part": "TLV7011DBVR",
+      "maker": "Texas Instruments (datasheet SLVSDM5F); counts as Texas Instruments (S1)",
+      "lcsc": "C702117",
+      "package": "SOT-23-5 (DBV)",
+      "placements": 2,
+      "placements_basis": "range 1 to 2, as for the function: one comparator for the phase-wire clip, one for the optical index if that function's front end takes one; this part serves the clip placement only, and the gate is applied at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "coupling",
+        "required": "galvanic clip",
+        "datasheet": "not a comparator figure: the clip is galvanic and the comparator input is ground-referenced",
+        "pass": true,
+        "source": "TLV7011 datasheet SLVSDM5F (September 2017, revised March 2020), https://www.ti.com/lit/ds/symlink/tlv7011.pdf, read 2026-10-02T01:13:33Z"
+       },
+       {
+        "name": "isolation",
+        "required": "none, IO board ground",
+        "datasheet": "not a comparator figure: the inputs are referenced to the IO board ground (V216)",
+        "pass": true,
+        "source": "TLV7011 SLVSDM5F"
+       },
+       {
+        "name": "input withstand",
+        "required": "120 V at the clip input, divider and clamp in front",
+        "datasheet": "IN+ and IN- VEE - 0.3 V to 6 V absolute maximum, +/-10 mA, diode-clamped to VEE only (6.1, single): no clamp to VCC, so the rail-down case does not conduct into the rail. The 120 V belongs to the divider and clamp of stage 2",
+        "pass": true,
+        "source": "TLV7011 SLVSDM5F 6.1"
+       },
+       {
+        "name": "electrical frequency passed",
+        "required": "22,937 Hz",
+        "datasheet": "tPHL 260 ns, tPLH 310 ns typical at VS 5 V, VOD 100 mV, CL 15 pF; tR and tF 5 ns typical; against a 43.6 us period at 22,937 Hz the comparator follows it. Typical only",
+        "pass": true,
+        "source": "TLV7011 SLVSDM5F 6.9"
+       },
+       {
+        "name": "PWM rejected",
+        "required": "8 to 288 kHz",
+        "datasheet": "not a comparator figure: the comparator filters nothing; the rejection is stage 2's. Internal hysteresis 1.2 / 4.2 / 14 mV (min / typ / max)",
+        "pass": true,
+        "source": "TLV7011 SLVSDM5F 6.8"
+       },
+       {
+        "name": "lowest speed",
+        "required": "none below 500 rpm",
+        "datasheet": "DC-coupled comparator",
+        "pass": true,
+        "source": "TLV7011 SLVSDM5F"
+       },
+       {
+        "name": "comparator supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "VS 1.6 to 5.5 V recommended (6.4, single), 6 V absolute maximum; ICC 5 uA typical, 10 uA maximum at VS 1.8 V, no load",
+        "pass": true,
+        "source": "TLV7011 SLVSDM5F 6.1, 6.4, 6.8"
+       },
+       {
+        "name": "comparator output",
+        "required": "push-pull at 3.3 V",
+        "datasheet": "push-pull output (TLV7011; the TLV7021 is the open-drain version); VOH 4.7 V minimum at VS 5 V, IO 3 mA",
+        "pass": true,
+        "source": "TLV7011 SLVSDM5F 6.8"
+       },
+       {
+        "name": "comparator input range",
+        "required": "includes 0 V",
+        "datasheet": "common-mode range VEE to VCC + 0.1 V at VS 2.5 to 5 V: includes 0 V",
+        "pass": true,
+        "source": "TLV7011 SLVSDM5F 6.8"
+       },
+       {
+        "name": "comparator delay",
+        "required": "under 21.8 us; inside 1.244 us at the index",
+        "datasheet": "260 and 310 ns typical at VS 5 V, VOD 100 mV; no maximum over temperature and no figure at 3.3 V. Under 21.8 us on the typical figure, 70 x; the index placement's share of 1.244 us is not shown, so the part serves the clip placement alone",
+        "pass": true,
+        "source": "TLV7011 SLVSDM5F 6.9"
+       },
+       {
+        "name": "placements",
+        "required": "1 to 2",
+        "datasheet": "one comparator per SOT-23-5 package; clip placement only",
+        "pass": true,
+        "source": "TLV7011 SLVSDM5F"
+       },
+       {
+        "name": "board ambient temperature",
+        "required": "0 to 50 degC",
+        "datasheet": "TA -40 to 125 degC recommended",
+        "pass": true,
+        "source": "TLV7011 SLVSDM5F 6.4"
+       }
+      ],
+      "jlcpcb": "stockCount 9054, canPresaleNumber 8319, componentLibraryType expand, price USD 0.5138 a part at the 1 break (need 5), read 2026-10-02T01:15:38Z, vendors.py jlcpcb C702117 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 56323, manufacturer lead time 20 weeks, ProductStatus Active, discontinued false, end of life false, read 2026-10-02T01:15:47Z, vendors.py digikey TLV7011DBVR (https://api.digikey.com/products/v4/search/TLV7011DBVR/productdetails)",
+      "gate": "need 5 boards x 2 = 10; threshold max(5 x 10, 50) = 50; stockCount 9054 >= 50 and canPresaleNumber 8319 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/TLV7011, meta status ACTIVE and orderable TLV7011DBVR marketingStatusDescription ACTIVE, read 2026-10-02T01:15:56Z (vendors.py fetch); longevity commitment not read; first datasheet release May 2017 (revision history of SLVSDM5F), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-10-02T01:15:47Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 56323 >= 50 (2026-10-02T01:15:47Z); pin-compatible alternates on the DBV pin order OUT 1, VEE 2, IN+ 3, IN- 4, VCC 5: TLV7031DBVR and TLV1811DBVR",
+      "alternates": [
+       "TLV7031DBVR",
+       "TLV1811DBVR"
+      ],
+      "driver_in_shared": "none (GPIO edge on measurement GPIO 25)",
+      "reason": "qualifies for the clip placement on its stated typical delay, but typical only, so it ranks below the three parts that state maxima; its inputs do not clamp to VCC and it draws 5 uA",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "TLV7031DBVR",
+      "maker": "Texas Instruments (datasheet SLVSE13J); counts as Texas Instruments (S1)",
+      "lcsc": "C2869832",
+      "package": "SOT-23-5 (DBV)",
+      "placements": 2,
+      "placements_basis": "range 1 to 2, as for the function; this part serves the clip placement only, and the gate is applied at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "coupling",
+        "required": "galvanic clip",
+        "datasheet": "not a comparator figure: the clip is galvanic and the comparator input is ground-referenced",
+        "pass": true,
+        "source": "TLV7031 datasheet SLVSE13J (September 2017, revised November 2024), https://www.ti.com/lit/ds/symlink/tlv7031.pdf, read 2026-10-02T01:13:34Z"
+       },
+       {
+        "name": "isolation",
+        "required": "none, IO board ground",
+        "datasheet": "not a comparator figure: the inputs are referenced to the IO board ground (V216)",
+        "pass": true,
+        "source": "TLV7031 SLVSE13J"
+       },
+       {
+        "name": "input withstand",
+        "required": "120 V at the clip input, divider and clamp in front",
+        "datasheet": "IN+ and IN- VEE - 0.3 V to 7 V absolute maximum, +/-10 mA, diode-clamped to VEE only (5.1): no clamp to VCC. The 120 V belongs to the divider and clamp of stage 2",
+        "pass": true,
+        "source": "TLV7031 SLVSE13J 5.1"
+       },
+       {
+        "name": "electrical frequency passed",
+        "required": "22,937 Hz",
+        "datasheet": "tPHL and tPLH 3 us typical at VS 5 V, VOD 100 mV, CL 15 pF (the delays include the contribution of input offset and hysteresis); tR and tF 4.5 ns typical; against a 43.6 us period the comparator follows 22,937 Hz. Typical only",
+        "pass": true,
+        "source": "TLV7031 SLVSE13J 5.8"
+       },
+       {
+        "name": "PWM rejected",
+        "required": "8 to 288 kHz",
+        "datasheet": "not a comparator figure: the rejection is stage 2's. Hysteresis 2 / 7 / 17 mV at 25 degC",
+        "pass": true,
+        "source": "TLV7031 SLVSE13J 5.7"
+       },
+       {
+        "name": "lowest speed",
+        "required": "none below 500 rpm",
+        "datasheet": "DC-coupled comparator",
+        "pass": true,
+        "source": "TLV7031 SLVSE13J"
+       },
+       {
+        "name": "comparator supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "VS 1.6 to 6.5 V recommended (5.3), 7 V absolute maximum; ICC 335 nA typical, 900 nA maximum at VS 1.8 V, no load",
+        "pass": true,
+        "source": "TLV7031 SLVSE13J 5.1, 5.3, 5.7"
+       },
+       {
+        "name": "comparator output",
+        "required": "push-pull at 3.3 V",
+        "datasheet": "push-pull output (TLV7031; the TLV7041 is open-drain); VOH 4.65 V minimum at VS 5 V, IO 3 mA",
+        "pass": true,
+        "source": "TLV7031 SLVSE13J 5.7"
+       },
+       {
+        "name": "comparator input range",
+        "required": "includes 0 V",
+        "datasheet": "common-mode range VEE to VCC + 0.1 V: includes 0 V",
+        "pass": true,
+        "source": "TLV7031 SLVSE13J 5.7"
+       },
+       {
+        "name": "comparator delay",
+        "required": "under 21.8 us; inside 1.244 us at the index",
+        "datasheet": "3 us typical at VS 5 V, VOD 100 mV; no maximum, no figure at 3.3 V or at a lower overdrive. Under 21.8 us on the typical figure, 7 x; the index placement's 1.244 us is not met (3 us typical alone is over it), so the part serves the clip placement alone",
+        "pass": true,
+        "source": "TLV7031 SLVSE13J 5.8"
+       },
+       {
+        "name": "placements",
+        "required": "1 to 2",
+        "datasheet": "one comparator per SOT-23-5 package; clip placement only",
+        "pass": true,
+        "source": "TLV7031 SLVSE13J"
+       },
+       {
+        "name": "board ambient temperature",
+        "required": "0 to 50 degC",
+        "datasheet": "TA -40 to 125 degC recommended",
+        "pass": true,
+        "source": "TLV7031 SLVSE13J 5.3"
+       }
+      ],
+      "jlcpcb": "stockCount 93786, canPresaleNumber 93704, componentLibraryType expand, price USD 0.3523 a part at the 1 break (need 5), read 2026-10-02T01:15:40Z, vendors.py jlcpcb C2869832 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 1886, manufacturer lead time 20 weeks, ProductStatus Active, discontinued false, end of life false, read 2026-10-02T01:15:50Z, vendors.py digikey TLV7031DBVR (https://api.digikey.com/products/v4/search/TLV7031DBVR/productdetails)",
+      "gate": "need 5 boards x 2 = 10; threshold max(5 x 10, 50) = 50; stockCount 93786 >= 50 and canPresaleNumber 93704 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/TLV7031, meta status ACTIVE and orderable TLV7031DBVR marketingStatusDescription ACTIVE, read 2026-10-02T01:15:56Z (vendors.py fetch); longevity commitment not read; first datasheet release September 2017 (Revision * in the revision history of SLVSE13J), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-10-02T01:15:50Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 1886 >= 50 (2026-10-02T01:15:50Z); pin-compatible alternates on the DBV pin order (the 'North West' pinout, OUT 1, VEE 2, IN+ 3, IN- 4, VCC 5): TLV7011DBVR and TLV1811DBVR",
+      "alternates": [
+       "TLV7011DBVR",
+       "TLV1811DBVR"
+      ],
+      "driver_in_shared": "none (GPIO edge on measurement GPIO 25)",
+      "reason": "qualifies for the clip placement on its stated typical delay; the thinnest margin of the three P3 parts (7 x) and typical only; 335 nA supply current and inputs that do not clamp to VCC",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 6,
+      "part": "TLV1811DBVR",
+      "maker": "Texas Instruments (datasheet SNOSDC8E); counts as Texas Instruments (S1)",
+      "lcsc": "C5373003",
+      "package": "SOT-23-5 (DBV)",
+      "placements": 2,
+      "placements_basis": "range 1 to 2, as for the function; this part serves the clip placement only, and the gate is applied at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "coupling",
+        "required": "galvanic clip",
+        "datasheet": "not a comparator figure: the clip is galvanic and the comparator input is ground-referenced",
+        "pass": true,
+        "source": "TLV1811 datasheet SNOSDC8E (September 2022, revised July 2025), https://www.ti.com/lit/ds/symlink/tlv1811.pdf, read 2026-10-02T01:13:34Z"
+       },
+       {
+        "name": "isolation",
+        "required": "none, IO board ground",
+        "datasheet": "not a comparator figure: the inputs are referenced to the IO board ground (V216)",
+        "pass": true,
+        "source": "TLV1811 SNOSDC8E"
+       },
+       {
+        "name": "input withstand",
+        "required": "120 V at the clip input, divider and clamp in front",
+        "datasheet": "IN+ and IN- -0.3 V to (V+) + 0.3 V absolute maximum, +/-10 mA, diode-clamped to (V-) (5.1, note 2); with the 3.3 V rail down the (V+) limit is the rail itself, as for TLV3201. The 120 V belongs to the divider and clamp of stage 2",
+        "pass": true,
+        "source": "TLV1811 SNOSDC8E 5.1"
+       },
+       {
+        "name": "electrical frequency passed",
+        "required": "22,937 Hz",
+        "datasheet": "TPD-HL 450 ns and TPD-LH 420 ns typical at VOD 100 mV, CL 50 pF, VS 12 V, 25 degC; 900 ns at VOD 10 mV; toggle frequency 500 kHz typical; against a 43.6 us period the comparator follows 22,937 Hz. Typical only, at 12 V",
+        "pass": true,
+        "source": "TLV1811 SNOSDC8E 5.8"
+       },
+       {
+        "name": "PWM rejected",
+        "required": "8 to 288 kHz",
+        "datasheet": "not a comparator figure: the rejection is stage 2's",
+        "pass": true,
+        "source": "TLV1811 SNOSDC8E"
+       },
+       {
+        "name": "lowest speed",
+        "required": "none below 500 rpm",
+        "datasheet": "DC-coupled comparator",
+        "pass": true,
+        "source": "TLV1811 SNOSDC8E"
+       },
+       {
+        "name": "comparator supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "VS 2.4 to 40 V recommended (5.3); IQ 6 uA typical, 7.5 uA maximum at 25 degC, output low, VS 12 V",
+        "pass": true,
+        "source": "TLV1811 SNOSDC8E 5.3, 5.7"
+       },
+       {
+        "name": "comparator output",
+        "required": "push-pull at 3.3 V",
+        "datasheet": "push-pull output (TLV1811; the TLV1821 is open-drain); VOH within 250 mV of (V+) at 4 mA",
+        "pass": true,
+        "source": "TLV1811 SNOSDC8E 5.7"
+       },
+       {
+        "name": "comparator input range",
+        "required": "includes 0 V",
+        "datasheet": "common-mode range (V-) - 0.2 V to (V+) + 0.2 V: includes 0 V",
+        "pass": true,
+        "source": "TLV1811 SNOSDC8E 5.7"
+       },
+       {
+        "name": "comparator delay",
+        "required": "under 21.8 us; inside 1.244 us at the index",
+        "datasheet": "450 and 420 ns typical at VS 12 V, VOD 100 mV; no maximum, no figure at 3.3 V. Under 21.8 us on the typical figure; the index placement's 1.244 us is not shown, so the part serves the clip placement alone",
+        "pass": true,
+        "source": "TLV1811 SNOSDC8E 5.8"
+       },
+       {
+        "name": "placements",
+        "required": "1 to 2",
+        "datasheet": "one comparator per SOT-23-5 package; clip placement only",
+        "pass": true,
+        "source": "TLV1811 SNOSDC8E"
+       },
+       {
+        "name": "board ambient temperature",
+        "required": "0 to 50 degC",
+        "datasheet": "TA -40 to 125 degC recommended",
+        "pass": true,
+        "source": "TLV1811 SNOSDC8E 5.3"
+       }
+      ],
+      "jlcpcb": "stockCount 31030, canPresaleNumber 30961, componentLibraryType expand, price USD 1.0047 a part at the 1 break (need 5), read 2026-10-02T01:15:41Z, vendors.py jlcpcb C5373003 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 744, manufacturer lead time 12 weeks, ProductStatus Active, discontinued false, end of life false, read 2026-10-02T01:15:52Z, vendors.py digikey TLV1811DBVR (https://api.digikey.com/products/v4/search/TLV1811DBVR/productdetails)",
+      "gate": "need 5 boards x 2 = 10; threshold max(5 x 10, 50) = 50; stockCount 31030 >= 50 and canPresaleNumber 30961 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/TLV1811, meta status ACTIVE and orderable TLV1811DBVR marketingStatusDescription ACTIVE, read 2026-10-02T01:15:57Z (vendors.py fetch); longevity commitment not read; first datasheet release September 2022 (Revision * in the revision history of SNOSDC8E), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-10-02T01:15:52Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 744 >= 50 (2026-10-02T01:15:52Z); pin-compatible alternates on the DBV pin order (standard 'North West' pinout): TLV7011DBVR and TLV7031DBVR",
+      "alternates": [
+       "TLV7011DBVR",
+       "TLV7031DBVR"
+      ],
+      "driver_in_shared": "none (GPIO edge on measurement GPIO 25)",
+      "reason": "qualifies for the clip placement on a typical delay stated at 12 V only; ranks last of the P3 parts because no figure is near the 3.3 V supply and its inputs clamp to V+",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TLV3201AIDBVR",
+      "kind": "first",
+      "option": ""
+     },
+     {
+      "part": "TLV3601DBVR",
+      "kind": "alternate",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "encoder input",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "AM26LV32EIDR",
+      "option": "",
+      "reason": "Kept first, as selection.json holds it: a 3.3 V receiver with Ioff, +/-14 V inputs, the tightest delay window of the three (8 to 26 ns, leaving 32 ns of the 50 ns spacing against the decoder's 14 ns), JLCPCB 48815 (re-read 2026-10-02T01:17:04Z) and Digi-Key 13102 (P2, 2026-10-02T00:26:28Z). P3 returned no part for this function"
+     },
+     {
+      "rank": 2,
+      "part": "DS34LV86TMX/NOPB",
+      "option": "",
+      "reason": "Kept second: meets every value with a second vendor (JLCPCB 2737 re-read 2026-10-02T01:17:06Z, Digi-Key 5449); no Ioff figure on its outputs and a wider delay window (6 to 35 ns) than rank 1"
+     },
+     {
+      "rank": 3,
+      "part": "ISL32273EIBZ-T",
+      "option": "",
+      "reason": "Kept third: a second maker on the same SOIC-16 signal pins, 55 ns maximum delay with no minimum, A and B rated -9 to +13 V (1 V over the 12 V requirement), JLCPCB 874 (re-read 2026-10-02T01:17:07Z) and no Digi-Key stock (P2, 2026-10-02T00:26:31Z)"
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "AM26LV32EIDR",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "encoder decode",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "option": "",
+      "reason": "Kept first, as selection.json holds it: the only decoder; 2 PIO state machines of the measurement coprocessor reach 20 Mcounts/s in P2's cycle model (not run on hardware); held 20 against a need of 10; JLCPCB 2535 (re-read 2026-10-02T01:17:09Z). No external decoder from an allowlisted maker exists in the jlcparts copy. P3 returned no part for this function"
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "rotation from ESC",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "option": "",
+      "reason": "Kept first, as selection.json holds it: the main coprocessor's PIO receives the DShot reply and shared/dshot already turns it into rpm; no part to add; held 20. P3 returned no part for this function"
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "rotation inputs",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "option": "",
+      "reason": "Kept first, as selection.json holds it: the measurement coprocessor times every rotation input on its own clock, 6 GPIO there and 1 on the main; no part to add; held 20. P3 returned no part for this function"
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "BENCH rpm source",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "option": "",
+      "reason": "Kept first, as selection.json holds it: firmware on the main coprocessor selects among inputs that each keep their own GPIO; no selector part; the selecting setting is not in the tree; held 20. P3 returned no part for this function"
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "servo measured position",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "option": "",
+      "reason": "Kept first, as selection.json holds it: the F4 encoder decoded by the measurement coprocessor gives the position when the operator mounts it on the servo output shaft; no part to add; held 20. Open: V209 is marked 'for research' and lists 'a sensor of its own that R11 selects' as a choice; P2's finding of the F4 encoder is a reading of the tree, not an owner decision, and F4 lets the operator mount the encoder on the motor shaft, which leaves this function with no source (report 'servo measured position source')"
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "AS5600-ASOT (C499458), AS5600L-ASOM (C2153666)",
+      "maker": "ams OSRAM (JLCPCB label 'AMS')",
+      "reason": "not qualified, not refuted: no requirement values exist to check a magnetic angle sensor against, since V210 (resolution and horn travel) is unanswered and P2 found it not applicable. JLCPCB stock 40435 (presale 39884) and 608 (presale 431), read 2026-10-02T01:16:40Z and 01:16:41Z. Digi-Key not read. The owner's choice (b) of V209 would need V210's values first"
+     },
+     {
+      "part": "TLE5012BE1000 (C123083), TLI5012BE1000 (C190955)",
+      "maker": "Infineon",
+      "reason": "not qualified, not refuted: no V210 values. JLCPCB stock 7644 (presale 7449) and 1149 (presale 1092), read 2026-10-02T01:16:43Z and 01:16:44Z. Digi-Key not read"
+     },
+     {
+      "part": "A1335LLETR-T (C2655192)",
+      "maker": "Allegro",
+      "reason": "not qualified, not refuted: no V210 values. JLCPCB stock 104 (presale 81), read 2026-10-02T01:16:46Z, over the gate of 50 for 5 placements. Digi-Key not read"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   }
+  ],
+  "report": [
+   {
+    "figure": "VCND reflective sensors",
+    "value": "Not a candidate for the optical index. No JLCPCB listing: keyword searches VCND2045 and VCND2040 return 0 results, keyword VCND returns only unrelated LED rows with stock 0; no VCND sensor row in the jlcparts copy of 2026-09-14. Datasheets state tr 9 ns (VCND2045) and 18 ns (VCND2040) typical, in the communication setup at d = 10 mm with a pulsed LED, no maximum; reflective data at d = 4 mm only (mirror, gray card) and a mirror temperature curve at d = 5 mm; no operating range; photodiode capacitance 5.8 pF at VR 0 V; Rev. 1.1, 13-Aug-2026. Digi-Key lists both Active, 3000 each, 6 weeks. The optical index keeps no part. A sub-microsecond time exists only on parts that JLCPCB does not carry",
+    "source": "vendors.py jlcpcb-search VCND2045, VCND2040, VCND (2026-10-02T01:13:13Z to 01:13:14Z); sqlite query on cache.sqlite3 (2026-10-02T01:18:21Z); https://www.vishay.com/docs/80514/vcnd2045x02_vcnd2045slx02.pdf and https://www.vishay.com/docs/80347/vcnd2040x02_vcnd2040slx02.pdf (vendors.py fetch, 2026-10-02T01:16:13Z); vendors.py digikey VCND2045X02, VCND2040X02 (cached reading 2026-10-02T01:09:56Z)"
+   },
+   {
+    "figure": "clip comparators with typical-only delay",
+    "value": "P2 dropped TLV7011, TLV7031 and TLV1811 for typical-only delays, which the requirement does not make a failure at the clip placement: 'under 21.8 us' applies there, and the maximum over 0 to 50 degC counts only where the same part is the optical index's comparator. They qualify for the clip placement alone and rank 4 to 6. Datasheet delays: TLV7011 260 ns (high to low) and 310 ns (low to high) typical at VS 5 V, VOD 100 mV, CL 15 pF; TLV7031 3 us both at the same conditions; TLV1811 450 and 420 ns at VS 12 V, VOD 100 mV, CL 50 pF, and 900 ns at VOD 10 mV. None states a maximum, and none a figure at the board's 3.3 V. The three cannot serve the optical index's comparator: its 1.244 us share needs a stated maximum. The delay at 3.3 V and at small overdrive is not read",
+    "source": "https://www.ti.com/lit/ds/symlink/tlv7011.pdf SLVSDM5F 6.9 (read 2026-10-02T01:13:33Z); https://www.ti.com/lit/ds/symlink/tlv7031.pdf SLVSE13J 5.8 (01:13:34Z); https://www.ti.com/lit/ds/symlink/tlv1811.pdf SNOSDC8E 5.8 (01:13:34Z), all vendors.py fetch, chrome"
+   },
+   {
+    "figure": "clip comparator inputs with the 3.3 V rail down",
+    "value": "TLV7011 (-0.3 to 6 V) and TLV7031 (-0.3 to 7 V) clamp their inputs to VEE only and rate them independent of VCC. TLV1811 rates inputs to (V+) + 0.3 V. P2's three parts clamp to both rails (TLV3201 -0.5 V to VCC + 0.5 V, TLV3501 and TLV3601 -0.3 V to VCC + 0.3 V). With the rail down, a coasting motor's divided phase signal flows into the rail through the divider on TLV3201, TLV3501, TLV3601 and TLV1811, and into nothing on TLV7011 and TLV7031 up to 6 V and 7 V. Stage 2's divider sets the current in each case",
+    "source": "TLV7011 SLVSDM5F 6.1 and TLV7031 SLVSE13J 5.1 and TLV1811 SNOSDC8E 5.1 (2026-10-02T01:13:33Z to 01:13:34Z); P2's TLV3201, TLV3501 and TLV3601 readings of 2026-10-02T00:25:36Z to 00:25:38Z"
+   },
+   {
+    "figure": "TLV3601 as the alternate",
+    "value": "TLV3601DBVR, rank 1's rule-5 alternate, has 5 uA maximum input bias against TLV3201's 5 nA. The offset at the comparator input is that current times the Thevenin resistance of the divider, which stage 2 has not selected, so the offset and whether the alternate works in the same circuit are not computable. FU-C1's adjudicator ruled on the same point for MAX999 and found no stated figure that separates the parts. P4 verifies the alternate against the pins and the delay; the bias offset waits for the divider",
+    "source": "P2 record of TLV3601DBVR (TLV3601 SNOSDB1E, read 2026-10-02T00:25:38Z); /home/claude/rcbench-research/round2/results/hardware/research/round1/FU-C2/010-adjudicator-R11-4.json"
+   },
+   {
+    "figure": "accelerometer lead buffer",
+    "value": "P3's missed function holds. P2's rank 1 meets the lead-length value (V222: 2 m, its capacitance outside the delay-variation node) only with a buffer between XOUT and the lead, and no function or part selects that buffer. ADXL316's output resistor is 27 to 37 kOhm. The buffer's own delay variation counts inside the 1.244 us share, of which ADXL316 at 100 pF uses 1.000 us, leaving 0.244 us. 2 m of cable of an unknown capacitance would add to the 100 pF node without the buffer. The owner decides whether R11 gains a function for the buffer; none is selected here",
+    "source": "P2's accelerometer record, report 'accelerometer output node' (ADXL316 Rev. C, read 2026-10-02T00:25:32Z); P3's missed_functions; checkout 145e0285289f hardware/docs/Research.md:919 (V222)"
+   },
+   {
+    "figure": "accelerometer sensor response",
+    "value": "The accelerometer's delay variation of 1.000 us is the RFILT x C pole alone, as V225's derivation names. The sensor's own response, 1,600 Hz bandwidth typical with no external filter and 4.2 kHz resonance (ADXL316), has no stated minimum or maximum and no phase at 1,092 Hz, so its delay variation at 1,092 Hz is not known. A single pole at 1,600 Hz would delay 1,092 Hz by about 87 us; the spread of that delay between parts is not stated",
+    "source": "ADXL316 data sheet Rev. C, Table 1, https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf (P2 reading 2026-10-02T00:25:32Z; not re-read); checkout 145e0285289f Research.md:922 (V225)"
+   },
+   {
+    "figure": "servo measured position source",
+    "value": "V209 is 'for research (owner, 2026-09-28)' and offers three choices. P2's finding that R11 selects no sensor of its own rests on the tree, not on an owner answer. F4 says the encoder measures the servo output shaft or the motor shaft, wherever the operator mounts it, so with the encoder on the motor shaft the servo screen has no measured position. Magnetic angle sensors with JLCPCB stock over the gate: AS5600-ASOT 40435, AS5600L-ASOM 608, TLE5012BE1000 7644, TLI5012BE1000 1149, A1335LLETR-T 104. They are not qualified: V210's resolution and travel are not stated. The owner decides V209's second choice",
+    "source": "checkout 145e0285289f hardware/docs/Research.md:665 (F4), :906 and :907 (V209, V210); vendors.py jlcpcb C499458, C2153666, C123083, C190955, C2655192 (2026-10-02T01:16:40Z to 01:16:46Z)"
+   },
+   {
+    "figure": "P2 shortlist stock re-read",
+    "value": "JLCPCB stockCount and canPresaleNumber match P2's readings for every shortlisted part: C662336 104 and 86, C579451 922 and 911, C2152440 339 and 336, C2152679 6167 and 6165, C7071848 100 and 100, C105188 39649 and 38331, C193413 9661 and 9515, C5213958 1621 and 1554, C527448 48815 and 48715, C140249 2737 and 2728, C1015816 874 and 874, C39843328 2535 and 2407. All pass rule 4 at 50. Digi-Key readings of P2 are not re-read",
+    "source": "vendors.py jlcpcb for each C number (2026-10-02T01:16:52Z to 01:17:09Z)"
+   },
+   {
+    "figure": "Digi-Key calls",
+    "value": "3 calls of this task (TLV7011DBVR, TLV7031DBVR, TLV1811DBVR) plus 1 quota call; 940 of the day's 1,000 calls left at the last reading. VCND2045X02 and VCND2040X02 were read from the cache",
+    "source": "vendors.py digikey-quota (2026-10-02T01:18:36Z); ratelimit_remaining 944, 943, 942 in the three readings (2026-10-02T01:15:47Z to 01:15:52Z)"
+   }
+  ]
+ }
+}

@@ -1,0 +1,1190 @@
+{
+ "task": "FU",
+ "run": "FU-2C",
+ "run_id": "3ef225ef8e5c6c9e",
+ "commit": "145e0285289fc86cef83b300bbfb8657559403bc",
+ "date": "2026-10-02",
+ "run_info": {
+  "claude_code": "2.1.287 (Claude Code)",
+  "cpus": 48,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "concurrency": 16,
+  "concurrency_setting": "unset",
+  "agent_model": "sonnet",
+  "oversight_model": "opus",
+  "digikey_calls_left": 997,
+  "vendors_sha256": "214b14a3af0a4a1e0edfab77124a786c4e0fade844ec4d0c72149c1571ff8bf6"
+ },
+ "followup": {
+  "phases": "P2-P4",
+  "round": 1,
+  "categories": [
+   "R9",
+   "R10",
+   "R11"
+  ],
+  "items": [
+   {
+    "category": "R9",
+    "function": "cell monitor isolation barrier (new)",
+    "requirement": "An isoSPI (isolated SPI) transceiver pair or a digital isolator between the ADBMS1818ASWAZ-RL and the measurement coprocessor's SPI1, rated 85 V DC working or more (V189). Answered under Raised by P1: V289: A digital isolator on direct SPI, rated 85 V DC working or more (V189). Its pack side runs from the ADBMS1818's 5 V regulator output; its current is for research (owner, 2026-10-01)",
+    "source": "V189; IOBoard.md, Cell monitor isolation; Pins.md",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R10",
+    "function": "Converter for the accelerometer; optical index",
+    "requirement": "Delay variation at most 1.244 µs at 1,092 Hz (65,535 rpm): the optical index's share of V225. None of the 9 reflective sensors round 1 searched meets it; they state 10 to 70 µs. R10 is read for its share of the same budget. Answered under Raised by P1: V290: 52 ns at 65,535 rpm: V225's 2.54 µs less 1.244 µs each for the accelerometer and the optical index; the same split of 16.7 µs at 10,000 rpm gives 342 ns. It holds the ADCS7476's 30 ps aperture jitter and the chip-select trigger's jitter; PIO or a timer of the measurement coprocessor drives the trigger (owner, 2026-10-01) V291: No bus contention: the two ADCS7476 have the measurement coprocessor's SPI0 to themselves (Pins.md). The trigger and timer jitter sits inside V290's 52 ns (owner, 2026-10-01)",
+    "source": "V225; Sensing.md, Not known",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R11",
+    "function": "Converter for the accelerometer; optical index",
+    "requirement": "Delay variation at most 1.244 µs at 1,092 Hz (65,535 rpm): the optical index's share of V225. None of the 9 reflective sensors round 1 searched meets it; they state 10 to 70 µs. R10 is read for its share of the same budget",
+    "source": "V225; Sensing.md, Not known",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "role": "P1",
+    "category": "R9",
+    "value": {
+     "where": "hardware/docs/IOBoard.md:473",
+     "quantity": "cell count range on the balance lead",
+     "value": "1 to 16 cells, for the 16-cell pack of F15",
+     "marking": "owner",
+     "source": "F15 (owner, 2026-09-25): 16 cells, 67.2 V at 4.2 V a cell",
+     "refutation_tried": "F15's answer only gives the top of the range (16 cells); the lower bound of 1 is SET_PACK_CELLS's physical floor (shared/settings/settings.c:39-41) and is already a question under Raised by P1 (V181), so it is not re-raised here",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   }
+  ]
+ },
+ "stock_exceptions": [],
+ "accept_open": {
+  "reason": "Owner, 2026-10-01: accepted open for the P2-P4 follow-ups of round 2 on R2, R3, R5, R6, R7 and R9 (Research.md, Round 2, Rules of stage 1): FU-2P1's 18 P1 items: 10 values whose question is already under Raised by P1 and answered for research (V26, V27, V29, V39, V43, V47, V92, V139, V148, V181); the monostable page's servo rail figures, which V55 replaces; the board's draw of about 49.7 A at an assumed 90 % efficiency, the nominal sizing basis; the pack disconnect's round 1 account, corrected in the Follow-ups row; the adjustable supply's continuous current, which R6 qualifies on V281's 33 °C/W; and 3 markings in R6 the critic did not rule on.",
+  "functions": [
+   "R9: FU-2P1 left 1 P1 items unresolved"
+  ]
+ },
+ "decisions": {
+  "Q4": "An external ADC: ADCS7476AIMFX/NOPB, the part R10 kept (owner, 2026-09-29)",
+  "Q8": "An I²C FRAM: MB85RC256VPNF-G-AMERE2, the part R12 kept (owner, 2026-09-29)",
+  "Q9": "The 74HC423 keeps the '423 behaviour, and an SN74AUP1G17DBVR with I_off goes in front of its trigger inputs, as R3 selected (owner, 2026-09-29)"
+ },
+ "planned": 16,
+ "started": 21,
+ "extra_used": 5,
+ "free": 16,
+ "skipped": [],
+ "summary": {
+  "categories": [
+   "R9",
+   "R10",
+   "R11"
+  ],
+  "held": [],
+  "results": [
+   {
+    "category": "R9",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "Cell monitor",
+      "part": "ADBMS1818ASWAZ-RL",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "cell monitor isolation barrier",
+      "part": "ISO7741DWR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "figure": "found V195",
+      "status": "refuted"
+     }
+    ],
+    "figures_open": [
+     "found V186",
+     "found V187",
+     "found V195"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "Cell monitor",
+      "decision": "none",
+      "part": "ADBMS1818ASWAZ-RL",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "cell monitor isolation barrier",
+      "decision": "none",
+      "part": "ISO7741DWR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "balance-lead input network",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "balance-lead connector protection (mis-plugged lead)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "balance-lead connector",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "unused-input tie",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   },
+   {
+    "category": "R10",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "Converter for the accelerometer",
+      "part": "ADCS7476AIMFX/NOPB",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Converter for the accelerometer",
+      "part": "LM4040AIM3-3.0/NOPB",
+      "as": "primary",
+      "status": "refuted",
+      "scope": "function"
+     },
+     {
+      "figure": "P2 report: Q4 effective number of bits: AD7476ARTZ-REEL7",
+      "status": "refuted"
+     }
+    ],
+    "figures_open": [
+     "P2 report: Q4 effective number of bits: AD7476ARTZ-REEL7"
+    ],
+    "q_missing": true,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "Converter for the accelerometer",
+      "decision": "Q4",
+      "part": "ADCS7476AIMFX/NOPB",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [
+       "LM4040AIM3-3.0/NOPB"
+      ],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [
+       {
+        "part": "LM4040AIM3-3.0/NOPB",
+        "status": "refuted",
+        "alternate": "",
+        "alternate_status": "",
+        "second_source_missing": false,
+        "option": "reference"
+       }
+      ],
+      "q_options_missing": [
+       "reference"
+      ]
+     },
+     {
+      "function": "Reference for the RP2354B ADC (the reference option of Q4, 'ADC and reference' in the R10 row)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   },
+   {
+    "category": "R11",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "accelerometer",
+      "part": "ADXL316WBCSZ",
+      "as": "primary",
+      "status": "refuted, no ruling"
+     },
+     {
+      "function": "magnetic pickup",
+      "part": "DRV5015A1QDBZR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "phase-wire clip",
+      "part": "TLV3201AIDBVR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "phase-wire clip",
+      "part": "TLV3601DBVR",
+      "as": "alternate",
+      "for": "TLV3201AIDBVR",
+      "status": "verified"
+     },
+     {
+      "function": "encoder input",
+      "part": "AM26LV32EIDR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "encoder decode",
+      "part": "RP2354B",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "rotation from ESC",
+      "part": "RP2354B",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "rotation inputs",
+      "part": "RP2354B",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "BENCH rpm source",
+      "part": "RP2354B",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     }
+    ],
+    "figures_open": [],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "accelerometer",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "optical index",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "magnetic pickup",
+      "decision": "none",
+      "part": "DRV5015A1QDBZR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "phase-wire clip",
+      "decision": "none",
+      "part": "TLV3201AIDBVR",
+      "rank": 1,
+      "alternate": "TLV3601DBVR",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "encoder input",
+      "decision": "none",
+      "part": "AM26LV32EIDR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "encoder decode",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "rotation from ESC",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "rotation inputs",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "BENCH rpm source",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "servo measured position",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   }
+  ],
+  "selection": {
+   "R9": [
+    {
+     "function": "Cell monitor",
+     "decision": "none",
+     "part": "ADBMS1818ASWAZ-RL",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "cell monitor isolation barrier",
+     "decision": "none",
+     "part": "ISO7741DWR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "balance-lead input network",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "balance-lead connector protection (mis-plugged lead)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "balance-lead connector",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "unused-input tie",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ],
+   "R10": [
+    {
+     "function": "Converter for the accelerometer",
+     "decision": "Q4",
+     "part": "ADCS7476AIMFX/NOPB",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [
+      "LM4040AIM3-3.0/NOPB"
+     ],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [
+      {
+       "part": "LM4040AIM3-3.0/NOPB",
+       "status": "refuted",
+       "alternate": "",
+       "alternate_status": "",
+       "second_source_missing": false,
+       "option": "reference"
+      }
+     ],
+     "q_options_missing": [
+      "reference"
+     ]
+    },
+    {
+     "function": "Reference for the RP2354B ADC (the reference option of Q4, 'ADC and reference' in the R10 row)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ],
+   "R11": [
+    {
+     "function": "accelerometer",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "optical index",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "magnetic pickup",
+     "decision": "none",
+     "part": "DRV5015A1QDBZR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "phase-wire clip",
+     "decision": "none",
+     "part": "TLV3201AIDBVR",
+     "rank": 1,
+     "alternate": "TLV3601DBVR",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "encoder input",
+     "decision": "none",
+     "part": "AM26LV32EIDR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "encoder decode",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "rotation from ESC",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "rotation inputs",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "BENCH rpm source",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "servo measured position",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ]
+  },
+  "figures_open": {
+   "R9": [
+    "found V186",
+    "found V187",
+    "found V195"
+   ],
+   "R10": [
+    "P2 report: Q4 effective number of bits: AD7476ARTZ-REEL7"
+   ],
+   "R11": []
+  },
+  "part_refuted": {
+   "R9": [],
+   "R10": [],
+   "R11": []
+  },
+  "q_missing": [
+   "R10"
+  ],
+  "chain_failed": []
+ },
+ "followUps": [
+  {
+   "role": "P0",
+   "host": "www.vishay.com",
+   "categories": [
+    "R3",
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P0",
+   "host": "www.isabellenhuette.com",
+   "categories": [
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "ADCS7476AIMFX/NOPB",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, channels, vibration amplitude without clipping, input span at the accelerometer input, ratiometric full scale, smallest amplitude resolved, static angle resolution, trigger on the coprocessor timebase, converter delay variation, shared data line, serial frame on SPI0, accelerometer lead, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "ADC121S101CIMF/NOPB",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, sample rate per channel, channels, vibration amplitude without clipping, input span at the accelerometer input, ratiometric full scale, smallest amplitude resolved, static angle resolution, trigger on the coprocessor timebase, converter delay variation, shared data line, serial frame on SPI0, accelerometer lead, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "AD7476ARTZ-REEL7",
+   "reason": "shortlisted states other values than the function for: Q4 option, fundamental at the highest motor speed, sample rate per channel, channels, vibration amplitude without clipping, input span at the accelerometer input, ratiometric full scale, smallest amplitude resolved, static angle resolution, trigger on the coprocessor timebase, converter delay variation, shared data line, serial frame on SPI0, accelerometer lead, 3.3 V logic toward the RP2354B, ADC input rating with the 3.3 V rail down, supply from the board rails; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "LM4040AIM3-3.0/NOPB",
+   "reason": "shortlisted states other values than the function for: Q4 option; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P3",
+   "category": "R10",
+   "function": "Reference for the RP2354B ADC (the reference option of Q4, 'ADC and reference' in the R10 row)",
+   "reason": "function the row names that P2 did not return: The R10 row and IOBoard.md:491 name the RP2354B's ADC with a reference. P2 returned no function entry for it: LM4040AIM3-3.0/NOPB, REF3330AIDBZR, REF35300QDBVR and the other references appear only in its dropped list, with the reason that Q4 chose the external ADC (owner, 2026-09-29). selection.json still carries LM4040AIM3-3.0/NOPB as a verified q_alternative with option 'reference', so the record and P2's return disagree. Given the Q4 decision the function is not needed for the board; the orchestrator decides whether an entry is owed."
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "Cell monitor",
+   "part": "ADBMS1818ASWAZ-RL",
+   "reason": "shortlisted states other values than the function for: cell count, stack voltage, input rating, separate input, one connector, no count setting, pack-side interface, SPI timing, isolator supply, tap current, cell resolution, error under load, cell voltage range, reading period, sample skew, current pairing, resistance resolution, mis-plugged lead, pack presence, ambient range, quantities; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "Cell monitor",
+   "part": "ADBMS1818ASWAZ-R7",
+   "reason": "shortlisted states other values than the function for: cell count, stack voltage, input rating, separate input, one connector, no count setting, pack-side interface, SPI timing, isolator supply, tap current, cell resolution, error under load, cell voltage range, reading period, sample skew, current pairing, resistance resolution, mis-plugged lead, pack presence, ambient range, quantities; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "Cell monitor",
+   "part": "ADBMS1818ASWZ-RL",
+   "reason": "shortlisted states other values than the function for: cell count, stack voltage, input rating, separate input, one connector, no count setting, pack-side interface, SPI timing, isolator supply, tap current, cell resolution, error under load, cell voltage range, reading period, sample skew, current pairing, resistance resolution, mis-plugged lead, pack presence, ambient range, quantities; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ISO7741DWR",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, SPI timing at 1 MHz, pack-side logic, chip select idle high, ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ISO6741DWR",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, SPI timing at 1 MHz, pack-side logic, chip select idle high, ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ADUM1411BRWZ-RL",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, SPI timing at 1 MHz, pack-side logic, chip select idle high, ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ISO7741DBQR",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, SPI timing at 1 MHz, pack-side logic, chip select idle high, ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ISO7041DBQR",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, SPI timing at 1 MHz, pack-side logic, chip select idle high, ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ISO7341CDWR",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, SPI timing at 1 MHz, pack-side logic, chip select idle high, ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ADUM1401BRWZ-RL",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, SPI timing at 1 MHz, pack-side logic, chip select idle high, ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ADUM7441CRQZ-RL7",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, SPI timing at 1 MHz, pack-side logic, chip select idle high, ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ISO7141CCDBQR",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, SPI timing at 1 MHz, pack-side logic, chip select idle high, ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ISO7841DWWR",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, SPI timing at 1 MHz, pack-side logic, chip select idle high, ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P3",
+   "category": "R9",
+   "function": "balance-lead input network",
+   "reason": "function the row names that P2 did not return: IOBoard.md:524 lists 'its balance-lead input network ... not stated (R9)' as an open item of the cell monitor. It is the per-tap resistors and capacitors in front of the ADBMS1818's C pins, so its part is a resistor or capacitor. Research.md (Round 2, Rules of stage 1) says such a function is returned without candidates and left to stage 2; P2 returned no entry for it, and FU-2P1's P1-R9 function list names only 'Cell monitor' and 'cell monitor isolation barrier'."
+  },
+  {
+   "role": "P3",
+   "category": "R9",
+   "function": "balance-lead connector protection (mis-plugged lead)",
+   "reason": "function the row names that P2 did not return: IOBoard.md:524 names 'protection against a mis-plugged lead' and IOBoard.md:575 puts ESD and overvoltage protection on the balance-lead connector in round 2; Research.md Scope row 2 and the stage 1 rules leave it to stage 2 and require an entry without candidates. P2 returned none. P2's rank 1 reason relies on this function ('stage 2's balance-lead protection for a reversed lead'), and V188 (85 V) and V191 (shifted lead, reversed 67.2 V) are its requirement values."
+  },
+  {
+   "role": "P3",
+   "category": "R9",
+   "function": "balance-lead connector",
+   "reason": "function the row names that P2 did not return: IOBoard.md:524 names 'the balance-lead connector sizes'; V192 (owner, 2026-09-28) fixes 1 connector of 16 cells, 17 pins, with each pack's leads arriving through an adapter lead. Connectors are selected in stage 2 and are returned without candidates in stage 1. P2 returned no entry."
+  },
+  {
+   "role": "P3",
+   "category": "R9",
+   "function": "unused-input tie",
+   "reason": "function the row names that P2 did not return: V193 (owner, 2026-09-28): no jumper or adapter lead sets the cell count and 'the board ties unused inputs itself'. That is a function of the board, in front of the monitor's inputs, not named in the R9 row or IOBoard.md. P2 returned no entry. Its part is not stated: if resistors or diodes it is stage 2; if an active part it is a stage 1 part. P2's rank 1 reason also requires V+ held at 16 V or more for packs under 16 V, which implies a supply referenced to the pack's negative; that supply is in no function list."
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "question": "V186",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "question": "V187",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "rerank",
+   "category": "R11",
+   "part": "a magnetic angle sensor at the horn",
+   "functions": [
+    "servo measured position"
+   ],
+   "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "accelerometer",
+   "part": "ADXL316WBCSZ",
+   "reason": "shortlisted states other values than the function for: output type, axes, full scale, vibration bandwidth, lowest balance speed, balance resolution, static angle resolution, delay variation, lead length, supply, build and sourcing, sensor ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "accelerometer",
+   "part": "ADXL326BCPZ-RL7",
+   "reason": "shortlisted states other values than the function for: output type, axes, full scale, vibration bandwidth, lowest balance speed, balance resolution, static angle resolution, delay variation, lead length, supply, build and sourcing, sensor ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R11",
+   "function": "optical index",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "DRV5015A1QDBZR",
+   "reason": "shortlisted states other values than the function for: sensor type, pulses per revolution, lowest speed, supply, output, build and sourcing, sensitivity, sensor ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "DRV5015A1EDBZRQ1",
+   "reason": "shortlisted states other values than the function for: sensor type, pulses per revolution, lowest speed, supply, output, build and sourcing, sensitivity, sensor ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "AH1711-SA-7",
+   "reason": "shortlisted states other values than the function for: sensor type, pulses per revolution, lowest speed, supply, output, build and sourcing, sensitivity, sensor ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV3201AIDBVR",
+   "reason": "shortlisted states other values than the function for: coupling, isolation, input withstand, electrical frequency passed, PWM rejected, lowest speed, comparator supply, comparator output, comparator input range, comparator delay, placements, board ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV3501AIDBVR",
+   "reason": "shortlisted states other values than the function for: coupling, isolation, input withstand, electrical frequency passed, PWM rejected, lowest speed, comparator supply, comparator output, comparator input range, comparator delay, placements, board ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV3601DBVR",
+   "reason": "shortlisted states other values than the function for: coupling, isolation, input withstand, electrical frequency passed, PWM rejected, lowest speed, comparator supply, comparator output, comparator input range, comparator delay, placements, board ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV7011DBVR",
+   "reason": "shortlisted states other values than the function for: coupling, isolation, input withstand, electrical frequency passed, PWM rejected, lowest speed, comparator supply, comparator output, comparator input range, comparator delay, placements, board ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV7031DBVR",
+   "reason": "shortlisted states other values than the function for: coupling, isolation, input withstand, electrical frequency passed, PWM rejected, lowest speed, comparator supply, comparator output, comparator input range, comparator delay, placements, board ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV1811DBVR",
+   "reason": "shortlisted states other values than the function for: coupling, isolation, input withstand, electrical frequency passed, PWM rejected, lowest speed, comparator supply, comparator output, comparator input range, comparator delay, placements, board ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "encoder input",
+   "part": "AM26LV32EIDR",
+   "reason": "shortlisted states other values than the function for: signal forms, channels, per-channel frequency, A-to-B edge spacing, input withstand, supply, powered-off behaviour, board ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "encoder input",
+   "part": "DS34LV86TMX/NOPB",
+   "reason": "shortlisted states other values than the function for: signal forms, channels, per-channel frequency, A-to-B edge spacing, input withstand, supply, powered-off behaviour, board ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "encoder input",
+   "part": "ISL32273EIBZ-T",
+   "reason": "shortlisted states other values than the function for: signal forms, channels, per-channel frequency, A-to-B edge spacing, input withstand, supply, powered-off behaviour, board ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "encoder decode",
+   "part": "RP2354B",
+   "reason": "shortlisted states other values than the function for: count rate, direction, index capture, edge spacing tolerated, resources, external decoder maker; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "rotation from ESC",
+   "part": "RP2354B",
+   "reason": "shortlisted states other values than the function for: source, staleness, hardware; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "rotation inputs",
+   "part": "RP2354B",
+   "reason": "shortlisted states other values than the function for: highest shaft speed, lowest shaft speed, inputs, edge timing, hardware; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "BENCH rpm source",
+   "part": "RP2354B",
+   "reason": "shortlisted states other values than the function for: selection, register, hardware; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P3",
+   "category": "R11",
+   "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+   "reason": "function the row names that P2 did not return: Not named by the R11 row or its IOBoard.md lines, so it is outside the strict definition; reported because P2's rank 1 for 'accelerometer' meets the 'lead length' value (V222) only 'with 100 pF on XOUT and a buffer before the lead', and no entry or part for that buffer is in what I was given. ADXL316's 32 kohm output resistor cannot drive the lead capacitance without the pole moving into the delay-variation node, and the buffer's own delay variation counts inside the 1.244 us share. If P2's full record already names a buffer part, this item closes. Every function that the row and its IOBoard.md lines do name (accelerometer, optical index, magnetic pickup, phase-wire clip, encoder input, encoder decode, rotation from ESC, BENCH rpm source, servo measured position, with 'rotation inputs' as P2's own addition) has a P2 entry."
+  },
+  {
+   "role": "rerank",
+   "category": "R10",
+   "function": "Converter for the accelerometer",
+   "part": "LM4040AIM3-3.0/NOPB",
+   "reason": "Q alternative refuted; no other alternative verified in its place"
+  },
+  {
+   "role": "P2",
+   "category": "R10",
+   "figure": "P2 report: Q4 effective number of bits: AD7476ARTZ-REEL7",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P4",
+   "category": "R9",
+   "function": "Cell monitor",
+   "part": "ADBMS1818ASWAZ-RL",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: analog.com answered HTTP 403 (challenge) with --client safari for the product page (01:13:30Z) and the resources page (01:14:09Z), and HTTP 404 for the support page (01:14:11Z); no longevity programme page was reached. S5 makes it recorded, not required",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R9",
+   "function": "Cell monitor",
+   "part": "ADBMS1818ASWAZ-RL",
+   "figure": "market introduction",
+   "reason": "recorded as not read: not read: Rev. 0's date is not in the revision history (the history lists 12/2021 Rev. 0 to Rev. A 'Added 64-Lead LQFP_EP (SW-64-2)' and 9/2023 Rev. A to Rev. B). The SW-64-2 package of this part dates from 12/2021 at the latest, more than 12 months before 2026-10-02, so no under-12-months flag",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "figure": "found V195",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R11",
+   "label": "adjudicator-R11",
+   "reason": "returned nothing twice"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R11",
+   "function": "accelerometer",
+   "part": "ADXL316WBCSZ",
+   "reason": "refutation without a ruling"
+  },
+  {
+   "role": "P4",
+   "category": "R11",
+   "function": "encoder decode",
+   "part": "RP2354B",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R11",
+   "function": "rotation from ESC",
+   "part": "RP2354B",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R11",
+   "function": "rotation inputs",
+   "part": "RP2354B",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R11",
+   "function": "BENCH rpm source",
+   "part": "RP2354B",
+   "reason": "a verifier gave no required check for some figures"
+  }
+ ],
+ "missing": [
+  {
+   "role": "adjudicator",
+   "category": "R11",
+   "label": "adjudicator-R11",
+   "attempt": 0
+  },
+  {
+   "role": "adjudicator",
+   "category": "R11",
+   "label": "adjudicator-R11",
+   "attempt": 1
+  }
+ ],
+ "sequence": 20,
+ "output_sha256": "f02af16cc2b09bbdaa61736675ba2381f312b8f630be674bc29f95e9fb0be687",
+ "research_round": 2
+}

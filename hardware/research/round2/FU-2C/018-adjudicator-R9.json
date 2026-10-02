@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R9",
+ "label": "adjudicator-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "function": "found V195",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The claim was 'the count comes from the setting (SET_PACK_CELLS)', and no line at 145e028 supports it. SET_PACK_CELLS is defined only in the settings table: settings.c:39-41, 'pack_cells', 'Series count in the pack', 1 to 14, default 6. Apart from that table and settings.h:41, it appears only in test_settings.c and in render_screen.c:333, where the setup-dirty screenshot sets it to 4. No firmware or UI code reads SET_PACK_CELLS into battery_state_t. The only settings_get_int calls in firmware/panel/main/main.c read SET_OUT_RAMP, SET_MOTOR_POLES and SET_OUT_MIN_US/MAX_US. battery_screen.c never reads a setting. battery_screen_set() at battery_screen.c:70-81 copies the whole state struct, cells included, as the caller passes it (s.b = *b). The header documents that struct as 'What the balance lead says' (battery_screen.h:27), so if anything the cell count is tied to the lead, not to the setting. The only callers are the host tests (test_battery.c:59, render_screen.c:324), which set b.cells = 6 directly (render_screen.c:311), as IOBoard.md:433 also says. The presence half of the claim (valid, NO PACK, 'nothing on the lead') matches battery_screen.h:19/27 and battery_screen.c:233. The count half has no source, and the question V195 itself says 'No line states where the count comes from.' The figure as claimed is not found. The finding is about this function's requirement value, not about the part.",
+  "evidence": "settings.c:39-41 defines SET_PACK_CELLS as a user setting, 1 to 14, default 6. In grep -rn SET_PACK_CELLS|pack_cells over *.c, *.h, *.md and *.py, the only hits outside the settings table and its header are test_settings.c and render_screen.c:333 (settings_set to 4 for a screenshot), plus the docs. No reader feeds battery_state_t. battery_screen.c:70-81 battery_screen_set: 's.b = *b', a copy of the caller's struct, cells included. battery_screen.c reads s.b.cells (lines 85-284) and calls no settings function. battery_screen.h:14 'int cells; 1 to 14', :19 'bool valid; a monitor answered', :27 'What the balance lead says. NULL, or valid false, means nothing is on.' battery_screen.c:233 'NO PACK', 'nothing on the lead' when !s.b.valid. render_screen.c:305-325 builds a test state with b.cells = 6 and passes it to battery_screen_set. firmware/panel/main/main.c calls settings_get_int only for SET_OUT_RAMP (:96), SET_MOTOR_POLES (:594) and SET_OUT_MIN_US/MAX_US (:2558-2559). Research.md:892 (V195): 'No line states where the count comes from.'",
+  "source": "checkout /home/claude/rcbench-research/round2/checkout-145e0285289f at 145e0285289fc86cef83b300bbfb8657559403bc: shared/settings/settings.c:39-41; shared/settings/include/settings.h:41; shared/ui/include/battery_screen.h:11-31; shared/ui/battery_screen.c:70-105, 233; test/host/render_screen.c:305-333; firmware/panel/main/main.c:96, 594, 2558-2559; hardware/docs/Research.md:892; hardware/docs/IOBoard.md:433; grep -rn 'SET_PACK_CELLS|pack_cells|battery_screen_set' and grep -rln 'settings_get_int|settings_get(' over the checkout",
+  "read_at": "2026-10-02T01:29:21Z",
+  "scope": "function"
+ }
+}

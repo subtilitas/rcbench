@@ -1,0 +1,54 @@
+{
+ "role": "P3",
+ "category": "R10",
+ "label": "P3-R10",
+ "attempt": 0,
+ "data": {
+  "category": "R10",
+  "missed": [
+   {
+    "function": "Converter for the accelerometer",
+    "part": "ADS7046IRUGR (C543003), 12 bit, 3 MSPS, X2QFN-8 1.5 x 1.5 mm",
+    "maker": "Texas Instruments (SBAS785; S1 Texas Instruments)",
+    "why": "Passes every requirement value read. SBAS785 (https://www.ti.com/lit/ds/symlink/ads7046.pdf, read 2026-10-02T00:31:07Z): input sampled with the CS falling edge (Description, 8.4.1); aperture jitter 12 ps RMS, aperture delay 3 ns (6.5), so converter variation is far inside 52 ns; AVDD 2.35 to 3.6 V and 'also provides the reference voltage' (Pin Functions), input 0 V to AVDD with AINM to GND; SDO tri-state while CS is high, tdz_CSDO 5.5 ns max (6.7); frame of 15 SCLK falling edges (leading 0, 12 data bits, 2 zeros; 8.4.2), inside the 4 to 16 bit frame; the data of each frame belong to the sample taken at the previous CS edge, one frame of constant latency; SINAD 69 dB min (11.17 bits) and 71.1 dB typ at 2 kHz, AVDD 3.3 V; -40 to 125 degC; DVDD 1.65 to 3.6 V independent of AVDD, 3 MSPS; sampling capacitance 16 pF; no input leakage figure stated. JLCPCB stockCount 771, presale 762, expand, 4.2836 at 10 (2026-10-02T00:35:58Z, vendors.py jlcpcb C543003). Digi-Key API (productdetails ADS7046IRUGR, 2026-10-02T00:37:47Z): Active, lead time 20 weeks, stock 267 (cut tape), so rule 5 by the same part at Digi-Key. TI product page marketingStatusDescription ACTIVE (https://www.ti.com/product/ADS7046, 2026-10-02T00:38:14Z). Not considered by P2, which read only TI's ADS7886 and ADS7866 of this vendor's SAR families. Siblings checked and not finds: ADS7052 and ADS7056 (14 bit) need 18 SCLK per frame (tCONV = 18 x tSCLK), over the 16 bit frame; ADS7042, ADS7043, ADS7044 and ADS7049-Q1 state no aperture jitter; ADS7047, ADS7054, ADS7057 take a differential input (+/-AVDD range), which does not give the 0 V to VS span on one single-ended output."
+   },
+   {
+    "function": "Converter for the accelerometer",
+    "part": "ADS8864IDGSR (C2670121), 16 bit, 400 kSPS, VSSOP-10",
+    "maker": "Texas Instruments (SBAS572B; S1 Texas Instruments)",
+    "why": "Passes every requirement value read, with REF tied to the 3.3 V rail. SBAS572B (https://www.ti.com/lit/ds/symlink/ads8864.pdf, read 2026-10-02T00:31:10Z): in 3-wire CS mode a CONVST rising edge forces DOUT to 3-state, samples the input and starts the conversion (9.4.1.1), so CONVST is the chip select and the sample instant is a chip-select edge the PIO drives; aperture jitter 5 ps RMS, aperture delay 4 ns (7.5); 16 SCLK frame, conversion result read in the next CS-low window, DOUT 3-state when CONVST is high (td-CNV-DOhz 13.2 ns), SCLK 16 to 66.6 MHz; AVDD 2.7 to 3.6 V; REF input range 2.5 to 5 V with a 10 to 22 uF decoupling capacitor, so REF on the same 3.3 V rail (3.201 to 3.399 V) gives a full scale that follows the ADXL316 supply; input span 0 to VREF, AINN to GND; input leakage 5 nA typ; -40 to 85 degC. Limit: the SINAD minimum of 90.5 dB is stated at VREF = 5 V only, not at 3.3 V (typical curves only), and the REF pin draws 100 uA pulses from the rail. 16 bits give a 50 uV step at 3.3 V against the 86 uV of 0.1 degree. JLCPCB stockCount 1971, presale 1963, expand, 7.2049 at 10 (2026-10-02T00:35:59Z). Digi-Key (2026-10-02T00:37:49Z): Active, lead 20 weeks, stock 2877. TI page ACTIVE (https://www.ti.com/product/ADS8864, 2026-10-02T00:38:14Z). Not considered by P2."
+   },
+   {
+    "function": "Converter for the accelerometer",
+    "part": "ADS8866IDGS (C202265), 16 bit, 100 kSPS, VSSOP-10 (same family and pinout as ADS8864)",
+    "maker": "Texas Instruments (SBAS573-class sheet read as ads8866.pdf; S1 Texas Instruments)",
+    "why": "Same interface, 5 ps aperture jitter, REF 2.5 to 5 V, AVDD 2.7 to 3.6 V, -40 to 85 degC, CONVST-edge sampling and 3-state DOUT as ADS8864 (https://www.ti.com/lit/ds/symlink/ads8866.pdf, read 2026-10-02T00:31:11Z); tconv 500 to 8,800 ns; the same VREF = 5 V-only SINAD minimum (90.5 dB). JLCPCB stockCount 705, presale 700, 6.7904 at 10 (2026-10-02T00:36:04Z). Digi-Key: Active, lead 20 weeks, stock 236 (2026-10-02T00:37:51Z). TI page ACTIVE (https://www.ti.com/product/ADS8866, 2026-10-02T00:38:15Z). Its tape-and-reel DRC and DRCT variants fail rule 4 (C2655451 stock 0, presale -6; C701705 stock 20). ADS8865IDGS (stock 16) and ADS8867IDGS (stock 47) fail rule 4 (2026-10-02T00:36:07Z, 00:36:05Z)."
+   },
+   {
+    "function": "Converter for the accelerometer",
+    "part": "ADS8860IDGSR (C2866559), 16 bit, 1 MSPS, VSSOP-10 (same family as ADS8864)",
+    "maker": "Texas Instruments (ads8860.pdf; S1 Texas Instruments)",
+    "why": "Same interface and figures as ADS8864 (aperture jitter 5 ps, REF 2.5 to 5 V, AVDD 2.7 to 3.6 V, tconv 500 to 710 ns; https://www.ti.com/lit/ds/symlink/ads8860.pdf, read 2026-10-02T00:31:12Z). JLCPCB stockCount 50, presale 42 (2026-10-02T00:36:00Z), exactly at the gate of 50, 16.489 at 10. Digi-Key stock 0 (2026-10-02T00:37:52Z), so rule 5 only through the pin-compatible ADS8864IDGSR. TI product page not read for this part number."
+   },
+   {
+    "function": "Converter for the accelerometer",
+    "part": "AD7276ARMZ-REEL (C650752), 12 bit, 3 MSPS, MSOP-8",
+    "maker": "Analog Devices (data sheet AD7276/AD7277/AD7278 Rev. E; S1 Analog Devices)",
+    "why": "P2 dropped only the AD7276 SOT-23 reels (C208646, C578413) on stock; the MSOP-8 reel was not considered. Data sheet (https://www.analog.com/media/en/technical-documentation/data-sheets/AD7276_7277_7278.pdf, safari client, read 2026-10-02T00:32:50Z): input sampled on the falling edge of CS; reference derived from VDD, input 0 to VDD; aperture jitter 18 ps typ, aperture delay 5 ns typ; VDD 2.35 to 3.6 V; SDATA 3-state (t9 4.2 ns after CS rising); 2 leading zeros, 12 bits, 16 SCLK cycles supported; SINAD 68 dB min at 1 MHz (10.7 bits at that frequency; a figure at low frequency is not stated); -40 to 125 degC; pin compatible with the AD7476 and AD7476A. JLCPCB stockCount 3,053, presale 3,051, expand, 6.1954 at 10 (2026-10-02T00:36:10Z). Digi-Key (2026-10-02T00:37:54Z): Active, lead 23 weeks, stock 0, so rule 5 only through the pin-compatible AD7476ABRMZ-REEL7 below. The same-family AD7274BRMZ-REEL (C650748) has an external reference pin and JLCPCB stock 1, so it fails."
+   },
+   {
+    "function": "Converter for the accelerometer",
+    "part": "AD7476ABRMZ-REEL7 (C578439), 12 bit, 1 MSPS, MSOP-8",
+    "maker": "Analog Devices (data sheet AD7476A/AD7477A/AD7478A Rev. G; S1 Analog Devices)",
+    "why": "The AD7476A, a different data sheet from the AD7476 Rev. F that P2 read for its rank 3 AD7476ARTZ-REEL7 (C651070). Data sheet (https://www.analog.com/media/en/technical-documentation/data-sheets/AD7476A_7477A_7478A.pdf, safari client, read 2026-10-02T00:36:46Z): sampled on the falling edge of CS; reference taken from VDD, input 0 to VDD; aperture jitter 30 ps typ, aperture delay 10 ns typ; VDD 2.35 to 5.25 V; 16 SCLK conversion with 4 leading zeros and 12 data bits; SINAD 70 dB min at 25 degC and 69 dB min over temperature (VDD 2.4 to 3.6 V); -40 to 85 degC; SDATA 3-state. JLCPCB stockCount 193, presale 193, expand, 11.3552 at 10 (2026-10-02T00:36:14Z), against 71 for rank 3. Digi-Key (2026-10-02T00:37:56Z): Active, lead 18 weeks, stock 635. MSOP-8, not footprint-compatible with the SOT-23-6 parts."
+   }
+  ],
+  "exclusions_not_holding": [],
+  "missed_functions": [
+   {
+    "function": "Reference for the RP2354B ADC (the reference option of Q4, 'ADC and reference' in the R10 row)",
+    "why": "The R10 row and IOBoard.md:491 name the RP2354B's ADC with a reference. P2 returned no function entry for it: LM4040AIM3-3.0/NOPB, REF3330AIDBZR, REF35300QDBVR and the other references appear only in its dropped list, with the reason that Q4 chose the external ADC (owner, 2026-09-29). selection.json still carries LM4040AIM3-3.0/NOPB as a verified q_alternative with option 'reference', so the record and P2's return disagree. Given the Q4 decision the function is not needed for the board; the orchestrator decides whether an entry is owed."
+   }
+  ]
+ }
+}

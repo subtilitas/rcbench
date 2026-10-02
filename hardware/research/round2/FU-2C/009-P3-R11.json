@@ -1,0 +1,35 @@
+{
+ "role": "P3",
+ "category": "R11",
+ "label": "P3-R11",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "missed": [
+   {
+    "function": "optical index",
+    "part": "VCND2045X02, VCND2045SLX02, VCND2040X02, VCND2040SLX02",
+    "maker": "Vishay (Digi-Key maker string 'Vishay Semiconductor Opto Division'); counts as Vishay (S1)",
+    "why": "A reflective optical sensor family P2 did not consider: 855 or 860 nm emitter and a silicon PIN photodiode in one 4.4 x 2.25 x 1.9 mm SMD package, AEC-Q102. Output rise and fall time (20 to 80 %) is stated as 9 ns typical for VCND2045 and 18 ns typical for VCND2040 (push-pull LED driver IF 24 mA, Ira 5 uA, VR 2 V, 'communication setup' at d 10 mm). These are the only allowlisted reflective sensors read with a stated time under the 1.244 us share (typical only, no maximum, and measured on an LED-driven path, not a pen-line edge). Datasheets: VCND2045X02/SLX02, document 80514, Rev. 1.1, 13-Aug-2026, https://www.vishay.com/docs/80514/vcnd2045x02_vcnd2045slx02.pdf, read 2026-10-02T01:10:40Z; VCND2040X02/SLX02, document 80347, Rev. 1.1, 13-Aug-2026, https://www.vishay.com/docs/80347/vcnd2040x02_vcnd2040slx02.pdf, read 2026-10-02T01:10:18Z. Digi-Key keyword search 'reflective optical sensor photodiode', 2026-10-02T01:09:56Z: Active, stock 3,000 (VCND2040X02), 3,000 (VCND2045X02), 3,000 (VCND2040SLX02), 2,950 (VCND2045SLX02), lead time 6 weeks. IT DOES NOT PASS every value, so the re-rank should drop it on these two: (1) 'build and sourcing': JLCPCB keyword searches for VCND2040, VCND2045, VCND2040X02, VCND2045X02, VCND2045SLX02 and 'Vishay VCND' returned no result (api selectSmtComponentList, 2026-10-02T01:10:02Z to 01:10:53Z), so there is no LCSC number and rule 1 fails; (2) 'working distance': neither datasheet states an operating range; the reflective figures are at d 4 mm only (VCND2040: reverse light current 96 uA mirror, 6 uA grey card, 32 uA white card). Also flagged: first datasheet revision 13-Aug-2026, under 12 months on the market; the part is a bare LED and photodiode, so the transimpedance front end that the index needs is not part of the figure. Reported so the owner sees the one family that states a sub-microsecond time; it is not a candidate unless Vishay states a range and JLCPCB lists it."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "TLV7011DBVR, TLV7031DBVR, TLV1811DBVR",
+    "reason_given": "comparator delay: typical delays only (FU-C1 readings; not re-read), so the index placement's share inside 1.244 us is not shown; at the clip placement alone they would pass",
+    "why_it_fails": "The drop rests on the optical-index placement, which has no sensor and no part (V292 unmet), and the requirement counts the index share only 'where the same part is the optical index's comparator'. P2's own text says the clip placement alone passes. For the clip the bound is 'under 21.8 us' and the figures read today are far under it: TLV7011 tPHL 260 ns and tPLH 310 ns typical at VS 5 V, VOD 100 mV, CL 15 pF, 5 uA typical, push-pull, rail-to-rail input, internal hysteresis 4.2 mV typical (SLVSDM5F table 6.9, https://www.ti.com/lit/ds/symlink/tlv7011.pdf, read 2026-10-02T00:55:58Z); TLV7031 tPD 3 us typical at VS 5 V, 315 nA typical (SLVSE13J, read 00:55:59Z); TLV1811 900 ns at VOD 10 mV and 450/420 ns at VOD 100 mV, typical at VS 12 V and 25 degC, 5 uA, push-pull, 2.4 to 40 V (SNOSDC8E 5.8, read 2026-10-02T01:09:11Z). None states a maximum or a 3.3 V figure, so they belong below rank 1 on 'typical only', not out of the function: rank 1 TLV3201 is chosen for the lowest supply current (40 uA) and these draw 5 uA, 0.315 uA and 5 uA. JLCPCB stock today: TLV7011DBVR C702117 9,054 (presale 8,319, 2026-10-02T00:58:26Z); TLV7031DBVR C2869832 93,786 (presale 93,704, 00:58:27Z); TLV1811DBVR C5373003 31,030 (presale 30,961, 00:58:30Z). For comparison, ST TS881 (C88382, 459 at JLCPCB, 2026-10-02T01:02:43Z; Digi-Key Active, 8,839, 01:02:46Z) states maxima over -40 to 125 degC (13 and 14 us at 2.7 V and 10 mV overdrive, 22 and 19 us at 5 V, DocID023340 Rev 3, https://www.st.com/resource/en/datasheet/ts881.pdf read 01:02:11Z) so its 5 V figure at 10 mV overdrive is not under 21.8 us and 3.3 V is not tabulated; it is not offered as a find."
+   },
+   {
+    "part": "a magnetic angle sensor at the horn",
+    "reason_given": "not a candidate: V209's finding names the F4 encoder, so no sensor of its own is selected (V210 not applicable); maker 'not searched'",
+    "why_it_fails": "The reason is circular. V209's Answer column reads 'for research (owner, 2026-09-28)' and lists three choices, one of them 'a sensor of its own that R11 selects (for example a magnetic angle sensor at the horn)'; the finding that names the F4 encoder is P2's own reading of the tree, not an owner decision. The same finding records that the encoder measures the servo shaft only while the operator mounts it there, and F4 lets the operator mount it on the motor shaft, which leaves the servo screen's measured position with no source. 'Not searched' is not a reading. S1 makers list magnetic rotary position sensors with JLCPCB stock well over the gate of 50 (JLCPCB API keyword searches, 2026-10-02T01:03:57Z to 01:04:00Z): AS5600-ASOT C499458 40,435 and AS5600L-ASOM C2153666 608 (JLCPCB label 'AMS', an ams OSRAM part by its part number), TLE5012BE1000 C123083 7,644 and TLI5012BE1000 C190955 1,149 (Infineon), A1335LLETR-T C2655192 104 (Allegro). They are not qualified here: V210 states no resolution or travel, so there are no values to check them against, and Digi-Key was not read. The owner can pick option (b) or none; the drop does not show that research ruled it out."
+   }
+  ],
+  "missed_functions": [
+   {
+    "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+    "why": "Not named by the R11 row or its IOBoard.md lines, so it is outside the strict definition; reported because P2's rank 1 for 'accelerometer' meets the 'lead length' value (V222) only 'with 100 pF on XOUT and a buffer before the lead', and no entry or part for that buffer is in what I was given. ADXL316's 32 kohm output resistor cannot drive the lead capacitance without the pole moving into the delay-variation node, and the buffer's own delay variation counts inside the 1.244 us share. If P2's full record already names a buffer part, this item closes. Every function that the row and its IOBoard.md lines do name (accelerometer, optical index, magnetic pickup, phase-wire clip, encoder input, encoder decode, rotation from ESC, BENCH rpm source, servo measured position, with 'rotation inputs' as P2's own addition) has a P2 entry."
+   }
+  ]
+ }
+}

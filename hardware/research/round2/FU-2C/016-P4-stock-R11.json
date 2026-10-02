@@ -1,0 +1,1093 @@
+{
+ "role": "P4",
+ "category": "R11",
+ "label": "P4-stock-R11",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "accelerometer",
+    "part": "ADXL316WBCSZ",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 104; need 5, gate 50",
+      "read": "stockCount 104 in exact row C662336 (ADXL316WBCSZ, LFCSP-12); need 5 x 1 = 5; gate max(5 x 5, 50) = 50; 104 >= 50: rule 4 passes",
+      "source": "vendors.py jlcpcb C662336 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 86",
+      "read": "canPresaleNumber 86 in exact row C662336: zero or above, passes",
+      "source": "vendors.py jlcpcb C662336 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Digi-Key ProductStatus Active (status of record for Analog Devices)",
+      "read": "Digi-Key ProductStatus Active, discontinued false, end_of_life false. ADI product page answered HTTP 403 challenge to the safari and chrome clients (01:21:52Z, 01:21:58Z), no page status read. S5: passes",
+      "source": "vendors.py digikey ADXL316WBCSZ (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:13Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices not read (P2)",
+      "read": "no notice found: Digi-Key end_of_life false, discontinued false; LCSC productCycle 'normal'. ADI sends PCNs and PDNs through myAnalog (login): not read; product page 403",
+      "source": "vendors.py digikey ADXL316WBCSZ; lcsc.com/product-detail/C662336.html; analog.com life-cycle page (vendors.py fetch, safari)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:52Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1: one 3-axis accelerometer on the sensor board",
+      "read": "1 a board: IOBoard.md:532 'ADXL316WBCSZ, on a sensor board of its own'; Pins.md GPIO 5 and 24 are one ADCS7476 an axis of the same part. Count 1 >= 1",
+      "source": "checkout 145e0285289f IOBoard.md:532, Pins.md",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on a sensor board JLCPCB assembles: LCSC number (V221)",
+      "read": "specification puts it on a sensor board that JLCPCB assembles under the IO board's rules (V221, IOBoard.md:532), not an off-board part bought at Digi-Key; LCSC number C662336 matches",
+      "source": "checkout 145e0285289f Research.md rule 1, V221; IOBoard.md:532",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (P2)",
+      "read": "ADI life-cycle page: 'obsolescence should be avoided provided technology and customer demand exist ... customers are notified two years in advance'; general statement, no part-specific commitment; S5: recorded, not a gate",
+      "source": "https://www.analog.com/en/support/product-life-cycle-information.html (vendors.py fetch, safari)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:52Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision 10/2015",
+      "read": "ADXL316 Rev. C revision history '10/2015 - Revision 0: Initial Version'; about 132 months, over 12, not flagged",
+      "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf (vendors.py fetch, safari)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:52Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; JLCPCB's API carries no status",
+      "read": "Digi-Key Active, discontinued false, end_of_life false; LCSC page C662336: ADXL316WBCSZ, ADI, LFCSP-12, productCycle 'normal'; JLCPCB row has no status field; no disagreement with the maker",
+      "source": "vendors.py digikey ADXL316WBCSZ (cached, read 2026-10-02T00:26:13Z); https://www.lcsc.com/product-detail/C662336.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:39Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 46 weeks",
+      "read": "manufacturer lead time 46 weeks in Digi-Key's API (Analog Devices Inc., tray)",
+      "source": "vendors.py digikey ADXL316WBCSZ (cached, read 2026-10-02T00:26:13Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:13Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C662336, ADXL316WBCSZ, LFCSP-12",
+      "read": "exact JLCPCB result for C662336 names ADXL316WBCSZ, package LFCSP-12; the LCSC page lists productModel ADXL316WBCSZ",
+      "source": "vendors.py jlcpcb C662336 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand (extended)",
+      "read": "componentLibraryType 'expand' (extended) on C662336; S6 allows both",
+      "source": "vendors.py jlcpcb C662336 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 387 >= 50",
+      "read": "Digi-Key ADXL316WBCSZ (505-ADXL316WBCSZ-ND, tray): stock_available 387, Active; gate 50: 387 >= 50 passes",
+      "source": "vendors.py digikey ADXL316WBCSZ (cached, read 2026-10-02T00:26:13Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:13Z"
+     }
+    ]
+   },
+   {
+    "function": "magnetic pickup",
+    "part": "DRV5015A1QDBZR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 339; need 5, gate 50",
+      "read": "stockCount 339 in exact row C2152440 (DRV5015A1QDBZR, SOT-23); need 5 x 1 = 5; gate max(5 x 5, 50) = 50; 339 >= 50: rule 4 passes",
+      "source": "vendors.py jlcpcb C2152440 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 336",
+      "read": "canPresaleNumber 336 in exact row C2152440: zero or above, passes",
+      "source": "vendors.py jlcpcb C2152440 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "TI ACTIVE (product page, orderable DRV5015A1QDBZR)",
+      "read": "ACTIVE: ti.com/product/DRV5015 meta status ACTIVE and orderable DRV5015A1QDBZR marketingStatusDescription ACTIVE (the DBZT 250-piece reels read OBSOLETE: other orderables). S5: passes",
+      "source": "https://www.ti.com/product/DRV5015 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:13Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices not read (P2)",
+      "read": "no notice found: orderable ACTIVE, no NRND or last-time-buy on it; Digi-Key end_of_life false; LCSC productCycle 'normal'. TI's per-part PCN listing not opened",
+      "source": "ti.com/product/DRV5015; vendors.py digikey DRV5015A1QDBZR; lcsc.com/product-detail/C2152440.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:39Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1: one latch on the magnetic pickup's sensor board",
+      "read": "1 a board: Pins.md GPIO 27 'magnetic pickup (DRV5015A1)', one latch for V218's two magnets. Count 1 >= 1",
+      "source": "checkout 145e0285289f Pins.md:124, IOBoard.md:481",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on a sensor board JLCPCB assembles: LCSC number (V217, V221)",
+      "read": "V217 puts the latch on a sensor board JLCPCB assembles, as V221, not an off-board part; LCSC number C2152440 matches",
+      "source": "checkout 145e0285289f Research.md rule 1, V217, V221",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (P2)",
+      "read": "TI product life cycle page: product life cycles 'typically 10 to 15 years and often extend longer'; policy for all TI standard products, no part-specific commitment; S5: recorded, not a gate",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:38Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision June 2018",
+      "read": "DRV5015 SBAS915A 'JUNE 2018 - REVISED APRIL 2019', history 'Changes from Original (June 2018)'; about 100 months, over 12, not flagged",
+      "source": "https://www.ti.com/lit/ds/symlink/drv5015.pdf (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:38Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; JLCPCB's API carries no status",
+      "read": "Digi-Key Active, discontinued false, end_of_life false; LCSC page C2152440: DRV5015A1QDBZR, TI, SOT-23, productCycle 'normal'; JLCPCB row has no status field; no disagreement with the maker",
+      "source": "vendors.py digikey DRV5015A1QDBZR (cached, read 2026-10-02T00:26:17Z); https://www.lcsc.com/product-detail/C2152440.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:39Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 12 weeks",
+      "read": "manufacturer lead time 12 weeks in Digi-Key's API (stock 2821)",
+      "source": "vendors.py digikey DRV5015A1QDBZR (cached, read 2026-10-02T00:26:17Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:17Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2152440, DRV5015A1QDBZR, SOT-23",
+      "read": "exact JLCPCB result for C2152440 names DRV5015A1QDBZR, package SOT-23; the LCSC page lists productModel DRV5015A1QDBZR",
+      "source": "vendors.py jlcpcb C2152440 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand (extended)",
+      "read": "componentLibraryType 'expand' (extended) on C2152440; S6 allows both",
+      "source": "vendors.py jlcpcb C2152440 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 2821 >= 50",
+      "read": "Digi-Key DRV5015A1QDBZR: stock_available 2821 (cut tape and Digi-Reel; tape and reel 0, min 3000), Active; gate 50: 2821 >= 50 passes",
+      "source": "vendors.py digikey DRV5015A1QDBZR (cached, read 2026-10-02T00:26:17Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:17Z"
+     }
+    ]
+   },
+   {
+    "function": "phase-wire clip",
+    "part": "TLV3201AIDBVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 39649; need 10, gate 50",
+      "read": "stockCount 39649 in exact row C105188 (TLV3201AIDBVR, SOT-23-5); need 5 x 2 = 10; gate max(5 x 10, 50) = 50; 39649 >= 50: rule 4 passes",
+      "source": "vendors.py jlcpcb C105188 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 38331",
+      "read": "canPresaleNumber 38331 in exact row C105188: zero or above, passes",
+      "source": "vendors.py jlcpcb C105188 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "TI ACTIVE (product page, orderable TLV3201AIDBVR)",
+      "read": "ACTIVE: ti.com/product/TLV3201 meta status ACTIVE and orderable TLV3201AIDBVR marketingStatusDescription ACTIVE. S5: passes",
+      "source": "https://www.ti.com/product/TLV3201 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:18Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices not read (P2)",
+      "read": "no notice found: all five orderables on the page ACTIVE; Digi-Key end_of_life false; LCSC productCycle 'normal'. TI's per-part PCN listing not opened",
+      "source": "ti.com/product/TLV3201; vendors.py digikey TLV3201AIDBVR; lcsc.com/product-detail/C105188.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:39Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2: range 1 to 2, gate applied at 2",
+      "read": "range 1 to 2 as the function requirement states (Pins.md GPIO 25 is the clip comparator; the optical index may add one); top 2. Count 2 >= 2",
+      "source": "checkout 145e0285289f Pins.md:122, Research.md rule 4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board: LCSC number",
+      "read": "on the IO board (Pins.md GPIO 25 'phase-wire clip comparator (TLV3201)'); LCSC number C105188 matches",
+      "source": "checkout 145e0285289f Pins.md:122, IOBoard.md:482",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (P2)",
+      "read": "TI product life cycle page: product life cycles 'typically 10 to 15 years and often extend longer'; policy for all TI standard products, no part-specific commitment; S5: recorded, not a gate",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:38Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision March 2012",
+      "read": "TLV3201 SBOS561C 'MARCH 2012 - REVISED MAY 2024', history 'Revision * (March 2012) to Revision A (June 2012)'; about 175 months, over 12, not flagged",
+      "source": "https://www.ti.com/lit/ds/symlink/tlv3201.pdf (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:38Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; JLCPCB's API carries no status",
+      "read": "Digi-Key Active, discontinued false, end_of_life false; LCSC page C105188: TLV3201AIDBVR, TI, SOT-23-5, productCycle 'normal'; JLCPCB row has no status field; no disagreement with the maker",
+      "source": "vendors.py digikey TLV3201AIDBVR (cached, read 2026-10-02T00:26:22Z); https://www.lcsc.com/product-detail/C105188.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:39Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 20 weeks",
+      "read": "manufacturer lead time 20 weeks in Digi-Key's API (Digi-Key stock 0)",
+      "source": "vendors.py digikey TLV3201AIDBVR (cached, read 2026-10-02T00:26:22Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:22Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C105188, TLV3201AIDBVR, SOT-23-5",
+      "read": "exact JLCPCB result for C105188 names TLV3201AIDBVR, package SOT-23-5; the LCSC page lists productModel TLV3201AIDBVR",
+      "source": "vendors.py jlcpcb C105188 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand (extended)",
+      "read": "componentLibraryType 'expand' (extended) on C105188; S6 allows both",
+      "source": "vendors.py jlcpcb C105188 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     }
+    ]
+   },
+   {
+    "function": "phase-wire clip",
+    "part": "TLV3601DBVR",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 1621; need 10, gate 50",
+      "read": "stockCount 1621 in exact row C5213958 (TLV3601DBVR, SOT-23-5); need 5 x 2 = 10; gate max(5 x 10, 50) = 50; 1621 >= 50: rule 4 passes",
+      "source": "vendors.py jlcpcb C5213958 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 1554",
+      "read": "canPresaleNumber 1554 in exact row C5213958: zero or above, passes",
+      "source": "vendors.py jlcpcb C5213958 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "TI ACTIVE (product page, orderable TLV3601DBVR)",
+      "read": "ACTIVE: ti.com/product/TLV3601 meta status ACTIVE and orderable TLV3601DBVR marketingStatusDescription ACTIVE. S5: passes",
+      "source": "https://www.ti.com/product/TLV3601 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:18Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices not read (P2)",
+      "read": "no notice found: all five orderables on the page ACTIVE; Digi-Key end_of_life false; LCSC productCycle 'normal'. TI's per-part PCN listing not opened",
+      "source": "ti.com/product/TLV3601; vendors.py digikey TLV3601DBVR; lcsc.com/product-detail/C5213958.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:39Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2: range 1 to 2, gate applied at 2",
+      "read": "range 1 to 2 as the function requirement states; top 2. Count 2 >= 2",
+      "source": "checkout 145e0285289f Pins.md:122, Research.md rule 4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board: LCSC number",
+      "read": "on the IO board as rank 1's alternate (Pins.md GPIO 25); LCSC number C5213958 matches",
+      "source": "checkout 145e0285289f Pins.md:122, IOBoard.md:482",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (P2)",
+      "read": "TI product life cycle page: product life cycles 'typically 10 to 15 years and often extend longer'; policy for all TI standard products, no part-specific commitment; S5: recorded, not a gate",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:38Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision June 2021",
+      "read": "TLV3601 SNOSDB1E 'JUNE 2021 - REVISED APRIL 2023', history 'Revision * (June 2021) to Revision A (August 2021)'; DBV package left Preview in Revision C (July 2022). About 64 months (51 for the DBV package), over 12, not flagged",
+      "source": "https://www.ti.com/lit/ds/symlink/tlv3601.pdf (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:38Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; JLCPCB's API carries no status",
+      "read": "Digi-Key Active, discontinued false, end_of_life false; LCSC page C5213958: TLV3601DBVR, TI, SOT-23-5, productCycle 'normal'; JLCPCB row has no status field; no disagreement with the maker",
+      "source": "vendors.py digikey TLV3601DBVR (cached, read 2026-10-02T00:26:26Z); https://www.lcsc.com/product-detail/C5213958.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:39Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 12 weeks",
+      "read": "manufacturer lead time 12 weeks in Digi-Key's API (Digi-Key stock 5959)",
+      "source": "vendors.py digikey TLV3601DBVR (cached, read 2026-10-02T00:26:26Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:26Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C5213958, TLV3601DBVR, SOT-23-5",
+      "read": "exact JLCPCB result for C5213958 names TLV3601DBVR, package SOT-23-5; the LCSC page lists productModel TLV3601DBVR",
+      "source": "vendors.py jlcpcb C5213958 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand (extended)",
+      "read": "componentLibraryType 'expand' (extended) on C5213958; S6 allows both",
+      "source": "vendors.py jlcpcb C5213958 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:32Z"
+     }
+    ]
+   },
+   {
+    "function": "encoder input",
+    "part": "AM26LV32EIDR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 48815; need 5, gate 50",
+      "read": "stockCount 48815 in exact row C527448 (AM26LV32EIDR, SOIC-16); need 5 x 1 = 5; gate max(5 x 5, 50) = 50; 48815 >= 50: rule 4 passes",
+      "source": "vendors.py jlcpcb C527448 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:33Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 48715",
+      "read": "canPresaleNumber 48715 in exact row C527448: zero or above, passes",
+      "source": "vendors.py jlcpcb C527448 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:33Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "TI ACTIVE (product page, orderable AM26LV32EIDR)",
+      "read": "ACTIVE: ti.com/product/AM26LV32E meta status ACTIVE and orderable AM26LV32EIDR marketingStatusDescription ACTIVE. S5: passes",
+      "source": "https://www.ti.com/product/AM26LV32E (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:19Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and end-of-life notices not read (P2)",
+      "read": "no notice found: all five orderables on the page ACTIVE; Digi-Key end_of_life false; LCSC productCycle 'normal'. TI's per-part PCN listing not opened",
+      "source": "ti.com/product/AM26LV32E; vendors.py digikey AM26LV32EIDR; lcsc.com/product-detail/C527448.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:39Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1: one quad receiver takes A, B and I",
+      "read": "1 a board: 3 channels (A, B, I on GPIO 20 to 22) in one 4-receiver package. Count 1 >= 1",
+      "source": "checkout 145e0285289f Pins.md:117-119, IOBoard.md:483-484",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board: LCSC number",
+      "read": "on the IO board (IOBoard.md:484 'receiver AM26LV32EIDR'); LCSC number C527448 matches",
+      "source": "checkout 145e0285289f IOBoard.md:484",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read (P2)",
+      "read": "TI product life cycle page: product life cycles 'typically 10 to 15 years and often extend longer'; policy for all TI standard products, no part-specific commitment; S5: recorded, not a gate",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:38Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision April 2008",
+      "read": "AM26LV32E SLLS849E 'APRIL 2008 - REVISED AUGUST 2023', earliest history row 'Revision A (May 2008) to Revision B (July 2015)'; about 222 months, over 12, not flagged",
+      "source": "https://www.ti.com/lit/ds/symlink/am26lv32e.pdf (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:38Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; JLCPCB's API carries no status",
+      "read": "Digi-Key Active, discontinued false, end_of_life false; LCSC page C527448: AM26LV32EIDR, TI, SOIC-16, productCycle 'normal'; JLCPCB row has no status field; no disagreement with the maker",
+      "source": "vendors.py digikey AM26LV32EIDR (cached, read 2026-10-02T00:26:28Z); https://www.lcsc.com/product-detail/C527448.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:39Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 20 weeks",
+      "read": "manufacturer lead time 20 weeks in Digi-Key's API (stock 13102)",
+      "source": "vendors.py digikey AM26LV32EIDR (cached, read 2026-10-02T00:26:28Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:28Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C527448, AM26LV32EIDR, SOIC-16",
+      "read": "exact JLCPCB result for C527448 names AM26LV32EIDR, package SOIC-16; the LCSC page lists productModel AM26LV32EIDR",
+      "source": "vendors.py jlcpcb C527448 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:33Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand (extended)",
+      "read": "componentLibraryType 'expand' (extended) on C527448; S6 allows both",
+      "source": "vendors.py jlcpcb C527448 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:33Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 13102 >= 50",
+      "read": "Digi-Key AM26LV32EIDR: stock_available 13102 (cut tape), Active; gate 50: 13102 >= 50 passes",
+      "source": "vendors.py digikey AM26LV32EIDR (cached, read 2026-10-02T00:26:28Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:28Z"
+     }
+    ]
+   },
+   {
+    "function": "encoder decode",
+    "part": "RP2354B",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "held quantity, or both stock and presale",
+      "stated": "held 20 (inventory 2026-09-25) >= 5 x 2 = 10; JLCPCB 2535 / 2407",
+      "read": "inventory-2026-09-25.csv C39843328: JLCPCB Parts Qty 20 (global 0, consigned 0); Research.md Held parts lists 20. 20 >= 10: passes by rule 6. JLCPCB row also stockCount 2535 >= 50 and canPresaleNumber 2407 >= 0 (rule 4). Stepping of the held parts not read; the count is the owner's export",
+      "source": "checkout 145e0285289f hardware/docs/inventory-2026-09-25.csv; vendors.py jlcpcb C39843328 (exact LCSC match) read 2026-10-02T01:20:33Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "in production, 'until at least January 2045'",
+      "read": "in production: raspberrypi.com RP2350 page lists RP2354B (48 GPIO, QFN 80, stacked 2MB flash) and states 'RP2350 will remain in production until at least January 2045'. S5: passes",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:24Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN 28 moves production to stepping A4",
+      "read": "PCN 28 'RP235x A4 stepping PCN' (updated 6 Oct 2025): 'all other variants are now EOL' means the non-A4 steppings; C39843328 is erpComponentName SC1512(13)-A4, Digi-Key Active, end_of_life false. No notice names the A4 RP2354B. Limitation: the stepping of the 20 held parts is not read",
+      "source": "https://pip.raspberrypi.com/categories/1263-pcn; PCN pdf RP-008771-CC-2 (vendors.py fetch); vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:34Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2: fixed, 2 RP2354B a board (owner, 2026-09-30)",
+      "read": "2 a board: Research.md:70 'RP2354B, two a board: a main and a measurement coprocessor (owner, 2026-09-30)'. The decoder runs on the measurement coprocessor. No placement beyond the 2. Count 2 >= 2",
+      "source": "checkout 145e0285289f Research.md:70, Pins.md:28-31",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board: LCSC number",
+      "read": "on the IO board (fixed input); LCSC number C39843328 matches",
+      "source": "checkout 145e0285289f Research.md:70; vendors.py jlcpcb C39843328 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "until at least January 2045",
+      "read": "'RP2350 will remain in production until at least January 2045' under Obsolescence; S5: recorded, not a gate",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first release 8 August 2024",
+      "read": "RP2350 datasheet (build 2025-07-29) release history '8 August 2024 - Initial release.'; about 26 months, over 12, not flagged",
+      "source": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:24Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key SC1512(13)-A4 Active; JLCPCB carries no status",
+      "read": "Digi-Key SC1512(13)-A4 Active, end_of_life false ('RP2354B' itself is HTTP 404 at Digi-Key, 00:26:34Z); LCSC page C39843328: RP2354B, Raspberry Pi, QFN-80-EP(10x10), productCycle 'normal'; JLCPCB row has no status; no disagreement",
+      "source": "vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z); https://www.lcsc.com/product-detail/C39843328.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:39Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 22 weeks (SC1512(13)-A4)",
+      "read": "manufacturer lead time 22 weeks in Digi-Key's API for SC1512(13)-A4",
+      "source": "vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C39843328, RP2354B, QFN-80 10 x 10 mm",
+      "read": "exact JLCPCB result for C39843328 names RP2354B, package QFN-80-EP(10x10), erpComponentName SC1512(13)-A4",
+      "source": "vendors.py jlcpcb C39843328 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:33Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand (extended)",
+      "read": "componentLibraryType 'expand' (extended) on C39843328; S6 allows both",
+      "source": "vendors.py jlcpcb C39843328 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:33Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key SC1512(13)-A4 3560 >= 50",
+      "read": "Digi-Key SC1512(13)-A4 (the orderable JLCPCB gives as erpComponentName): stock_available 3560 (cut tape and Digi-Reel; tape and reel 2500), Active; gate 50: 3560 >= 50 passes. The RP2354B search is 404, so this rests on the erpComponentName match",
+      "source": "vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     }
+    ]
+   },
+   {
+    "function": "rotation from ESC",
+    "part": "RP2354B",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "held quantity, or both stock and presale",
+      "stated": "held 20 (inventory 2026-09-25) >= 5 x 2 = 10; JLCPCB 2535 / 2407",
+      "read": "inventory-2026-09-25.csv C39843328: JLCPCB Parts Qty 20 (global 0, consigned 0); Research.md Held parts lists 20. 20 >= 10: passes by rule 6. JLCPCB row also stockCount 2535 >= 50 and canPresaleNumber 2407 >= 0 (rule 4). Stepping of the held parts not read; the count is the owner's export",
+      "source": "checkout 145e0285289f hardware/docs/inventory-2026-09-25.csv; vendors.py jlcpcb C39843328 (exact LCSC match) read 2026-10-02T01:20:33Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "in production, 'until at least January 2045'",
+      "read": "in production: raspberrypi.com RP2350 page lists RP2354B (48 GPIO, QFN 80, stacked 2MB flash) and states 'RP2350 will remain in production until at least January 2045'. S5: passes",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:24Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN 28 moves production to stepping A4",
+      "read": "PCN 28 'RP235x A4 stepping PCN' (updated 6 Oct 2025): 'all other variants are now EOL' means the non-A4 steppings; C39843328 is erpComponentName SC1512(13)-A4, Digi-Key Active, end_of_life false. No notice names the A4 RP2354B. Limitation: the stepping of the 20 held parts is not read",
+      "source": "https://pip.raspberrypi.com/categories/1263-pcn; PCN pdf RP-008771-CC-2 (vendors.py fetch); vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:34Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2: fixed, 2 RP2354B a board (owner, 2026-09-30)",
+      "read": "2 a board: Research.md:70 'RP2354B, two a board: a main and a measurement coprocessor (owner, 2026-09-30)'. The DShot reply is received on the main coprocessor. No placement beyond the 2. Count 2 >= 2",
+      "source": "checkout 145e0285289f Research.md:70, Pins.md:28-31",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board: LCSC number",
+      "read": "on the IO board (fixed input); LCSC number C39843328 matches",
+      "source": "checkout 145e0285289f Research.md:70; vendors.py jlcpcb C39843328 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "until at least January 2045",
+      "read": "'RP2350 will remain in production until at least January 2045' under Obsolescence; S5: recorded, not a gate",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first release 8 August 2024",
+      "read": "RP2350 datasheet (build 2025-07-29) release history '8 August 2024 - Initial release.'; about 26 months, over 12, not flagged",
+      "source": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:24Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key SC1512(13)-A4 Active; JLCPCB carries no status",
+      "read": "Digi-Key SC1512(13)-A4 Active, end_of_life false ('RP2354B' itself is HTTP 404 at Digi-Key, 00:26:34Z); LCSC page C39843328: RP2354B, Raspberry Pi, QFN-80-EP(10x10), productCycle 'normal'; JLCPCB row has no status; no disagreement",
+      "source": "vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z); https://www.lcsc.com/product-detail/C39843328.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:39Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 22 weeks (SC1512(13)-A4)",
+      "read": "manufacturer lead time 22 weeks in Digi-Key's API for SC1512(13)-A4",
+      "source": "vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C39843328, RP2354B, QFN-80 10 x 10 mm",
+      "read": "exact JLCPCB result for C39843328 names RP2354B, package QFN-80-EP(10x10), erpComponentName SC1512(13)-A4",
+      "source": "vendors.py jlcpcb C39843328 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:33Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand (extended)",
+      "read": "componentLibraryType 'expand' (extended) on C39843328; S6 allows both",
+      "source": "vendors.py jlcpcb C39843328 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:33Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key SC1512(13)-A4 3560 >= 50",
+      "read": "Digi-Key SC1512(13)-A4 (the orderable JLCPCB gives as erpComponentName): stock_available 3560 (cut tape and Digi-Reel; tape and reel 2500), Active; gate 50: 3560 >= 50 passes. The RP2354B search is 404, so this rests on the erpComponentName match",
+      "source": "vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     }
+    ]
+   },
+   {
+    "function": "rotation inputs",
+    "part": "RP2354B",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "held quantity, or both stock and presale",
+      "stated": "held 20 (inventory 2026-09-25) >= 5 x 2 = 10; JLCPCB 2535 / 2407",
+      "read": "inventory-2026-09-25.csv C39843328: JLCPCB Parts Qty 20 (global 0, consigned 0); Research.md Held parts lists 20. 20 >= 10: passes by rule 6. JLCPCB row also stockCount 2535 >= 50 and canPresaleNumber 2407 >= 0 (rule 4). Stepping of the held parts not read; the count is the owner's export",
+      "source": "checkout 145e0285289f hardware/docs/inventory-2026-09-25.csv; vendors.py jlcpcb C39843328 (exact LCSC match) read 2026-10-02T01:20:33Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "in production, 'until at least January 2045'",
+      "read": "in production: raspberrypi.com RP2350 page lists RP2354B (48 GPIO, QFN 80, stacked 2MB flash) and states 'RP2350 will remain in production until at least January 2045'. S5: passes",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:24Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN 28 moves production to stepping A4",
+      "read": "PCN 28 'RP235x A4 stepping PCN' (updated 6 Oct 2025): 'all other variants are now EOL' means the non-A4 steppings; C39843328 is erpComponentName SC1512(13)-A4, Digi-Key Active, end_of_life false. No notice names the A4 RP2354B. Limitation: the stepping of the 20 held parts is not read",
+      "source": "https://pip.raspberrypi.com/categories/1263-pcn; PCN pdf RP-008771-CC-2 (vendors.py fetch); vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:34Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2: fixed, 2 RP2354B a board (owner, 2026-09-30)",
+      "read": "2 a board: Research.md:70 'RP2354B, two a board: a main and a measurement coprocessor (owner, 2026-09-30)'. The inputs sit on the measurement coprocessor, the index copy also on the main. No placement beyond the 2. Count 2 >= 2",
+      "source": "checkout 145e0285289f Research.md:70, Pins.md:28-31",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board: LCSC number",
+      "read": "on the IO board (fixed input); LCSC number C39843328 matches",
+      "source": "checkout 145e0285289f Research.md:70; vendors.py jlcpcb C39843328 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "until at least January 2045",
+      "read": "'RP2350 will remain in production until at least January 2045' under Obsolescence; S5: recorded, not a gate",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first release 8 August 2024",
+      "read": "RP2350 datasheet (build 2025-07-29) release history '8 August 2024 - Initial release.'; about 26 months, over 12, not flagged",
+      "source": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:24Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key SC1512(13)-A4 Active; JLCPCB carries no status",
+      "read": "Digi-Key SC1512(13)-A4 Active, end_of_life false ('RP2354B' itself is HTTP 404 at Digi-Key, 00:26:34Z); LCSC page C39843328: RP2354B, Raspberry Pi, QFN-80-EP(10x10), productCycle 'normal'; JLCPCB row has no status; no disagreement",
+      "source": "vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z); https://www.lcsc.com/product-detail/C39843328.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:39Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 22 weeks (SC1512(13)-A4)",
+      "read": "manufacturer lead time 22 weeks in Digi-Key's API for SC1512(13)-A4",
+      "source": "vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C39843328, RP2354B, QFN-80 10 x 10 mm",
+      "read": "exact JLCPCB result for C39843328 names RP2354B, package QFN-80-EP(10x10), erpComponentName SC1512(13)-A4",
+      "source": "vendors.py jlcpcb C39843328 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:33Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand (extended)",
+      "read": "componentLibraryType 'expand' (extended) on C39843328; S6 allows both",
+      "source": "vendors.py jlcpcb C39843328 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:33Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key SC1512(13)-A4 3560 >= 50",
+      "read": "Digi-Key SC1512(13)-A4 (the orderable JLCPCB gives as erpComponentName): stock_available 3560 (cut tape and Digi-Reel; tape and reel 2500), Active; gate 50: 3560 >= 50 passes. The RP2354B search is 404, so this rests on the erpComponentName match",
+      "source": "vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     }
+    ]
+   },
+   {
+    "function": "BENCH rpm source",
+    "part": "RP2354B",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "held quantity, or both stock and presale",
+      "stated": "held 20 (inventory 2026-09-25) >= 5 x 2 = 10; JLCPCB 2535 / 2407",
+      "read": "inventory-2026-09-25.csv C39843328: JLCPCB Parts Qty 20 (global 0, consigned 0); Research.md Held parts lists 20. 20 >= 10: passes by rule 6. JLCPCB row also stockCount 2535 >= 50 and canPresaleNumber 2407 >= 0 (rule 4). Stepping of the held parts not read; the count is the owner's export",
+      "source": "checkout 145e0285289f hardware/docs/inventory-2026-09-25.csv; vendors.py jlcpcb C39843328 (exact LCSC match) read 2026-10-02T01:20:33Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "in production, 'until at least January 2045'",
+      "read": "in production: raspberrypi.com RP2350 page lists RP2354B (48 GPIO, QFN 80, stacked 2MB flash) and states 'RP2350 will remain in production until at least January 2045'. S5: passes",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:24Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN 28 moves production to stepping A4",
+      "read": "PCN 28 'RP235x A4 stepping PCN' (updated 6 Oct 2025): 'all other variants are now EOL' means the non-A4 steppings; C39843328 is erpComponentName SC1512(13)-A4, Digi-Key Active, end_of_life false. No notice names the A4 RP2354B. Limitation: the stepping of the 20 held parts is not read",
+      "source": "https://pip.raspberrypi.com/categories/1263-pcn; PCN pdf RP-008771-CC-2 (vendors.py fetch); vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:34Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2: fixed, 2 RP2354B a board (owner, 2026-09-30)",
+      "read": "2 a board: Research.md:70 'RP2354B, two a board: a main and a measurement coprocessor (owner, 2026-09-30)'. The selection runs on the main coprocessor. No placement beyond the 2. Count 2 >= 2",
+      "source": "checkout 145e0285289f Research.md:70, Pins.md:28-31",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board: LCSC number",
+      "read": "on the IO board (fixed input); LCSC number C39843328 matches",
+      "source": "checkout 145e0285289f Research.md:70; vendors.py jlcpcb C39843328 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:23:41Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "until at least January 2045",
+      "read": "'RP2350 will remain in production until at least January 2045' under Obsolescence; S5: recorded, not a gate",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:24Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first release 8 August 2024",
+      "read": "RP2350 datasheet (build 2025-07-29) release history '8 August 2024 - Initial release.'; about 26 months, over 12, not flagged",
+      "source": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:22:24Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key SC1512(13)-A4 Active; JLCPCB carries no status",
+      "read": "Digi-Key SC1512(13)-A4 Active, end_of_life false ('RP2354B' itself is HTTP 404 at Digi-Key, 00:26:34Z); LCSC page C39843328: RP2354B, Raspberry Pi, QFN-80-EP(10x10), productCycle 'normal'; JLCPCB row has no status; no disagreement",
+      "source": "vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z); https://www.lcsc.com/product-detail/C39843328.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:21:39Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 22 weeks (SC1512(13)-A4)",
+      "read": "manufacturer lead time 22 weeks in Digi-Key's API for SC1512(13)-A4",
+      "source": "vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C39843328, RP2354B, QFN-80 10 x 10 mm",
+      "read": "exact JLCPCB result for C39843328 names RP2354B, package QFN-80-EP(10x10), erpComponentName SC1512(13)-A4",
+      "source": "vendors.py jlcpcb C39843328 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:33Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand (extended)",
+      "read": "componentLibraryType 'expand' (extended) on C39843328; S6 allows both",
+      "source": "vendors.py jlcpcb C39843328 (exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T01:20:33Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key SC1512(13)-A4 3560 >= 50",
+      "read": "Digi-Key SC1512(13)-A4 (the orderable JLCPCB gives as erpComponentName): stock_available 3560 (cut tape and Digi-Reel; tape and reel 2500), Active; gate 50: 3560 >= 50 passes. The RP2354B search is 404, so this rests on the erpComponentName match",
+      "source": "vendors.py digikey SC1512(13)-A4 (cached, read 2026-10-02T00:26:33Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     }
+    ]
+   }
+  ]
+ }
+}

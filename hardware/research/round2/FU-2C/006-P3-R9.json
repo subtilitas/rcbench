@@ -1,0 +1,131 @@
+{
+ "role": "P3",
+ "category": "R9",
+ "label": "P3-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "missed": [
+   {
+    "function": "cell monitor isolation barrier",
+    "part": "ADUM1411BRWZ-RL (C660417)",
+    "maker": "Analog Devices",
+    "why": "P2 dropped only the A grade of this data sheet (ADUM1411ARWZ-RL, C33299, 1 Mbps) and returned no entry for the B grade, which passes every requirement value and has a second-vendor route. Data sheet ADuM1410/1411/1412 Rev. N, https://www.analog.com/media/en/technical-documentation/data-sheets/ADuM1410_1411_1412.pdf (vendors.py fetch --client safari, HTTP 200, read 2026-10-02T00:44:30Z). Channels: VIA, VIB, VIC on side 1 to VOA, VOB, VOC on side 2, and VID on side 2 to VOD on side 1, so 3 forward and 1 reverse (Table 11). Supply 2.7 to 5.5 V on each side, so 3.3 V host and 5 V VREG fit. B grade: 10 Mbps, minimum pulse width 100 ns, tPHL/tPLH 25/35/60 ns max in the 3 V/5 V block (Table 3), so the round trip is 60 + 60 + 60 = 180 ns against 500 ns. IDD2 (Q) 1.7 typ, 2.4 mA max at 3 V/5 V, DC to 1 MHz logic frequency (Table 3); VREG load 24.6 + 2.4 = 27.0 mA of about 35 mA on P2's accounting. VIORM 560 Vpeak, VIOWM 396 Vrms (Table 7), above 85 V DC. Default output: with VDD1 off and CTRL2 high or open, VOA, VOB and VOC are high (Table 11, Table 13), so CS idles high. -40 to +105 C. JLCPCB (vendors.py jlcpcb C660417, read 2026-10-02T00:43:41Z): stockCount 345, canPresaleNumber 311, extended library, 3.3326 at 1 piece, above the gate of 50. Digi-Key (vendors.py digikey ADUM1411BRWZ-RL, https://api.digikey.com/products/v4/search/ADUM1411BRWZ-RL/productdetails, read 2026-10-02T00:45:25Z): Active, stock_available 1078, lead time 16 weeks. The second-vendor route passes, which ADUM1401BRWZ-RL's does not. Its sibling ADUM1411BRWZ (C138537) has JLCPCB stockCount 17 (00:43:43Z) and fails rule 4."
+   },
+   {
+    "function": "cell monitor isolation barrier",
+    "part": "ISO7341CDWR (C486024)",
+    "maker": "Texas Instruments",
+    "why": "Not considered by P2. ISO734x data sheet SLLSEI6G, https://www.ti.com/lit/ds/symlink/iso7341c.pdf (HTTP 200, read 2026-10-02T00:44:28Z). ISO7341x has 3 forward and 1 reverse channel, VCC 3 to 5.5 V on each side, and default output high without the F suffix (Table of function modes: input power down gives H for ISO734xC). ICC2 at 5 V +/-10 %: 2.9 typ, 4.4 mA max at DC to 1 Mbps; 4.9 typ, 6.5 mA max at 10 Mbps (section 7.10). tPLH/tPHL 20/31/58 ns at 5 V and 22/35/66 ns at 3.3 V. VIORM 1414 Vpk. -40 to +125 C. JLCPCB (read 2026-10-02T00:43:35Z): C486024 stockCount 75, canPresaleNumber 72, extended library, 2.5442 at 1 piece; the gate is 50, so the margin is thin. C2878511 (ISO7341CDW, the non-reel row) has 41 and fails (00:43:37Z). Digi-Key (read 2026-10-02T00:46:46Z, .../ISO7341CDWR/productdetails): Active, stock_available 1038, lead time 12 weeks. It passes every requirement value; its pin-compatibility with rank 1 was not checked."
+   },
+   {
+    "function": "cell monitor isolation barrier",
+    "part": "ADUM7441CRQZ-RL7 (C661776)",
+    "maker": "Analog Devices",
+    "why": "P2 listed it as 'not qualified; data sheet not read'. It passes. ADuM7440/7441/7442 Rev. E, https://www.analog.com/media/en/technical-documentation/data-sheets/ADuM7440_7441_7442.pdf (safari, HTTP 200, read 2026-10-02T00:44:30Z). ADuM7441: 3 inputs on side 1, 1 input on side 2 (ordering table). Maximum continuous working voltage 420 V peak DC, basic insulation, 50-year lifetime (Table 18), above 85 V DC. The rating is 1 kV rms functional isolation, not reinforced; no requirement value asks for more. Input unpowered gives default high (Table 19). C grade 25 Mbps, tPHL/tPLH 31/46/60 ns max at 3.3 V/5 V. IDD2 3.6 typ, 4.6 mA max at 1 Mbps and 8.0 typ, 11 mA max at 25 Mbps in the 3.3 V/5 V block (Table 11); the value at 2 Mbps is not stated and is bounded by 11 mA. VDD1 3.0 to 3.6 V, VDD2 4.5 to 5.5 V. -40 to +105 C. JLCPCB (read 2026-10-02T00:43:47Z): stockCount 1128, canPresaleNumber 1100, extended library, 6.5157 at 1 piece. Digi-Key (read 2026-10-02T00:46:52Z, .../ADUM7441CRQZ-RL7/productdetails): Active, stock_available 592, lead time 40 weeks."
+   },
+   {
+    "function": "cell monitor isolation barrier",
+    "part": "ISO7141CCDBQR (C544481)",
+    "maker": "Texas Instruments",
+    "why": "Not considered by P2. ISO71xxCC data sheet SLLSE83F, https://www.ti.com/lit/ds/symlink/iso7141cc.pdf (HTTP 200, read 2026-10-02T00:44:28Z). ISO7141: 3 forward, 1 reverse; default output high without the F suffix; VCC 2.7 to 5.5 V; VIORM 566 Vpk; tPLH/tPHL 12/19/35 ns at 5 V and 15/23/45 ns at 3.3 V. ICC2 at 5 V +/-10 %: 4.2 typ, 7 mA max at DC to 1 Mbps; 6.2 typ, 9.6 mA max at 10 Mbps (section 6.12); on P2's accounting the VREG load is 24.6 + 9.6 = 34.2 mA of about 35 mA, so the margin is small. It passes every requirement value. JLCPCB (read 2026-10-02T00:43:34Z): stockCount 594, canPresaleNumber 586, extended library, 5.6476 at 1 piece. Digi-Key (read 2026-10-02T00:46:48Z): Active, stock_available 0, lead time 20 weeks, so the second-vendor route by stock fails. It would rank below the three survivors."
+   },
+   {
+    "function": "cell monitor isolation barrier",
+    "part": "ISO7841DWWR (C5216512)",
+    "maker": "Texas Instruments",
+    "why": "Not considered by P2. ISO7841 data sheet SLLSEM3I, https://www.ti.com/lit/ds/symlink/iso7841.pdf (HTTP 200, read 2026-10-02T00:44:29Z). 3 forward, 1 reverse; VCC 2.25 to 5.5 V; default high for ISO7841 (low for the F part); VIORM 2828 Vpk and VIOWM 2828 VDC for the DWW package (2121 for DW); tPLH/tPHL 6/11/16 ns at 5 V. ICC2 at 5 V: 2.9 typ, 4.2 mA max at 1 Mbps; 4.4 typ, 5.7 mA max at 10 Mbps. It passes every requirement value. JLCPCB (read 2026-10-02T00:43:40Z): stockCount 51, canPresaleNumber 48, extended library, 8.39 at 1 piece; 51 clears the gate of 50 by 1. C882716 (ISO7841DWR) has 32 and fails (00:43:38Z). Digi-Key (read 2026-10-02T00:46:50Z): Active, stock_available 578, lead time 20 weeks. It costs 5.7 times rank 1 at 1 piece and would rank below the three survivors."
+   },
+   {
+    "function": "cell monitor isolation barrier",
+    "part": "Rows of already-named barrier families that fail rule 4 at JLCPCB, and families outside P2's lists: ADUM1411BRWZ C138537 (17), ADUM3401BRWZ-RL C579402 (13), ADUM2401BRWZ-RL C18965 (34/33), ADUM2401BRWZ C579392 (0/-6), ADUM2401CRWZ C579393 (1), ADUM2401CRWZ-RL C660640 (0), ISO7841DWR C882716 (32), MAX14931EASE+ C7457853 (40/38), MAX14931AAWE+ C7454086 (10), MAX14931AASE+ C7455919 (5/4), Toshiba DCL540L01 C20247089 (0) and DCL541B01 C20247091 (0)",
+    "maker": "Analog Devices (Maxim); Texas Instruments; Toshiba",
+    "why": "Each reading is vendors.py jlcpcb, exact LCSC match, read 2026-10-02T00:43:37Z to 00:53:04Z (stockCount, with canPresaleNumber after the slash where it differs). All fall under the gate of 50 or carry a negative presale count, so none is a candidate. MAX14931 (Maxim, counts as Analog Devices) is a 3 forward, 1 reverse 25 Mbps isolator. Toshiba DCL540/DCL541 are 150 Mbps 5000 Vrms isolators; the other DCL rows (C20247086, C20247087, C20247088, C20247090) were not read. ADUM2401ARWZ-RL C55634 re-read at 0 / -2 (00:51:14Z), as P2 found."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "ADBMS6948WCCSZ (C18166021)",
+    "maker": "Analog Devices",
+    "why": "A seed in the R9 row of Research.md with no entry in P2's shortlist or drops. JLCPCB (vendors.py jlcpcb C18166021, read 2026-10-02T00:40:45Z): stockCount 0, canPresaleNumber 0, extended library, 18.8186 at 1 piece. It fails rule 4 (gate 50). Its data sheet was not read; rule 4 settles it."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "ADBMS6830 family: ADBMS6830MWCCSZ-RL C18168951, ADBMS6830MWCCSZ C18166017, ADBMS6830MWCSWZ-RL C18171253, ADBMS6830MSW-ENG C42946217; ADBMS6830B C41361182, C41380607, C28360199",
+    "maker": "Analog Devices",
+    "why": "A 16-cell monitor (jlcparts attribute 16, C18168951 '1~16'; not a source) that P2 did not list although it lists ADBMS6832. JLCPCB readings, vendors.py jlcpcb, 2026-10-02T00:40:40Z to 00:40:42Z: C18168951 stockCount 15, canPresaleNumber 15; C18166017 0/0; C18171253 0/-1; C42946217 10/9; C41361182 0/0; C41380607 0/0; C28360199 0/0. All fail rule 4 (gate 50). Data sheet not read."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "ADES1830CCSZ C22463734, ADES1831CCSZ C37992838",
+    "maker": "Analog Devices",
+    "why": "16-channel monitors that P2 did not list. JLCPCB (read 2026-10-02T00:40:43Z and 00:50:30Z): C22463734 stockCount 4, canPresaleNumber 4; C37992838 5/5. Both fail rule 4 (gate 50). Data sheets not read."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "RAA4892062GNP#AA5 C3682740, #MA5 C3682026, #HA5 C3682828, RAA489206 C3033183; ISL94216AIRZ C20350813, ISL94216AIRZ-T C5772778",
+    "maker": "Renesas",
+    "why": "16-cell front ends that P2 did not list (FU-C1 dropped ISL94216IRZ C3681570 on its 12 to 55 V rating and stock 20). JLCPCB readings 2026-10-02T00:40:43Z to 00:50:33Z: every row stockCount 0, canPresaleNumber 0. All fail rule 4 (gate 50). Data sheets not read."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "ML5238GAZ0FX (C507501), ML5238 C6145679",
+    "maker": "ROHM",
+    "why": "jlcparts attribute '5~16' cells (not a source); P2 did not list it. JLCPCB (read 2026-10-02T00:40:44Z): stockCount 0, canPresaleNumber 0, and erpComponentName begins with the characters for 'discontinued'. It fails rule 4 and the JLCPCB label marks it discontinued. Data sheet not read."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "BQ79758QPAPRQ1 C41921942, BQ79758BQPAPRQ1 C50498581, BQ78702BPAPR C49262227, BQ79718BQPAPRQ1 C50341507, BQ79718VPAPRQ1 C42394540, BQ79716BQPAPRQ1 C52019727, BQ79712SBQPHPRQ1 C53435646",
+    "maker": "Texas Instruments",
+    "why": "Newer TI monitors that P2 did not list. JLCPCB readings 2026-10-02T00:40:45Z to 00:50:27Z: C41921942 stockCount 0/0; C50498581 0/0; C49262227 0/0; C50341507 1/-8; C42394540 0/0; C52019727 3/3; C53435646 3/3. All fail rule 4 (gate 50). Data sheets not read."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "BQ76PL455APFCR (C2877182), BQ76PL455APFCT (C1992228)",
+    "maker": "Texas Instruments",
+    "why": "P2 returned no entry; the jlcparts attribute is 6~16 cells (not a source). JLCPCB (read 2026-10-02T00:48:29Z and 00:48:30Z): C2877182 stockCount 1325, canPresaleNumber 1322; C1992228 68/68. Both pass the stock gate. Not read: https://www.ti.com/lit/ds/symlink/bq76pl455a.pdf, .../bq76pl455a-q1.pdf, https://www.ti.com/product/BQ76PL455A and .../BQ76PL455A-Q1 all answered HTTP 404 (2026-10-02T00:48:37Z), so no requirement value, lifecycle status or interface is read. The part cannot be qualified; Digi-Key was not read."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "MC33771BTA1AE (C432306)",
+    "maker": "NXP",
+    "why": "P2 recorded the MC33771 rows as 'jlcparts lists 7 to 14 cells; data sheet not read'. The sibling MC33771C data sheet Rev. 7.1 (4 March 2026), https://www.nxp.com/docs/en/data-sheet/MC33771C.pdf (HTTP 200, read 2026-10-02T00:48:40Z), gives '7 to 14 cells management' and 'A minimum of seven cells must be used'; it also gives 4 Mbps 4-wire SPI. It fails V181 and misses 16 cells (V192). The MC33771B data sheet https://www.nxp.com/docs/en/data-sheet/MC33771B.pdf answered HTTP 404 (00:48:38Z) and is not read. JLCPCB C432306 stockCount 506, canPresaleNumber 505 (00:48:26Z); C5191762 10/5 and C5191761 11/10 (00:48:26Z) fail rule 4."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "Per-device cell counts below 16 and stock under the gate: L9963E-TR C3682039 (3), TLE9012DQUXUMA1 C6554281 (3), TLE9012AQU C540099 (0), MAX17852ACB/V+ C3681505 (13), ISL78714ANZ C3681572 (3), ISL94212INZ C3681518 (6), MC33775ATA1AE C5353387 (0 / presale 2)",
+    "maker": "STMicroelectronics; Infineon; Analog Devices (Maxim); Renesas; NXP",
+    "why": "P2 returned no entry for these families. JLCPCB readings, vendors.py jlcpcb, 2026-10-02T00:40:46Z to 00:48:30Z, stockCount shown in brackets: every row is under the gate of 50. Their cell counts (4 to 14, 12, 14, 12, 4 to 14) come from jlcparts attributes and the JLCPCB titles, not from data sheets, which were not read; rule 4 settles each. The ADBMS6815 data sheet (https://www.analog.com/media/en/technical-documentation/data-sheets/ADBMS6815.pdf, HTTP 200, read 2026-10-02T00:48:03Z) gives 'up to 12 battery cells' and a built-in isoSPI interface, which sources P2's ADBMS6815 drop."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "ISO7741FDBQR (C2872241), ISO7741FQDBQRQ1 (C2877510), ISO7741FDWR (C485810), ISO6741FDWR (C5216433)",
+    "reason_given": "Fail 'chip select idle high': the F suffix defaults low on input power loss, which drives CS and SCK low and selects the monitor while the host side is unpowered. Source cited: Pins.md:151-155.",
+    "why_it_fails": "The requirement is P2's extension of Pins.md:151-155, which covers only the coprocessor in reset: the pads come out of reset pulled down 32 to 86 kohm and the external pull-up of about 10 kohm holds each chip select high. In that case the barrier input is high and an F part also outputs high. The host-unpowered case is stated in no requirement of Research.md, IOBoard.md or Pins.md, and no figure read shows that CSB held low with SCK and SDI low, while the host side is unpowered, harms the ADBMS1818 or exceeds V190. All four parts pass the other requirement values on rank 1's data sheet and have stock above the gate (JLCPCB, vendors.py jlcpcb, read 2026-10-02T00:51:15Z: C2872241 125/99; C2877510 4469/4454; C485810 1086/1066; C5216433 1144/1137). The drop stands only if the owner adds the host-unpowered requirement. No shortlist rank depends on it, since the default-high rows ISO7741DWR, ISO6741DWR and ISO7041DBQR pass."
+   },
+   {
+    "part": "ADUM1401BRWZ-RL (C91762)",
+    "reason_given": "Left outside the three survivors because its second-vendor route fails: Digi-Key stock 0, Active, 18 weeks. Its rule 5 would rest on ISO7741DWR, which has the same pin functions.",
+    "why_it_fails": "Rule 5 passes on its first branch, a pin-compatible alternate that passes rules 1 to 4 and works in the same circuit, and P2's own text names that alternate. The pins match: ADuM1400/1401/1402 Rev. M Table 17 (https://www.analog.com/media/en/technical-documentation/data-sheets/ADuM1400_1401_1402.pdf, safari, HTTP 200, read 2026-10-02T00:52:51Z) gives 1 VDD1, 2 GND1, 3 VIA, 4 VIB, 5 VIC, 6 VOD, 7 VE1, 8 GND1, 9 GND2, 10 VE2, 11 VID, 12 VOC, 13 VOB, 14 VOA, 15 GND2, 16 VDD2, and ISO7740/7741/7742 SLLSEP4K Table 4-1 (https://www.ti.com/lit/ds/symlink/iso7741.pdf, HTTP 200, read 2026-10-02T00:52:51Z) gives the same pins 1 to 16 for the ISO7741 (EN1 and EN2 on pins 7 and 10, enabled when open in both). Both default high on input power loss. So the stated reason does not exclude it. Its IDD2 is 1.2 typ, 1.8 mA max at DC to 1 MHz (Table 3, 5 V), against 6.4 mA for rank 1; JLCPCB stock 2850/2789 at 5.5452 (P2, 2026-10-02T00:24:02Z). It is a candidate for rank 3 on those figures; whether it ranks above ISO7041DBQR is the re-rank's call."
+   }
+  ],
+  "missed_functions": [
+   {
+    "function": "balance-lead input network",
+    "why": "IOBoard.md:524 lists 'its balance-lead input network ... not stated (R9)' as an open item of the cell monitor. It is the per-tap resistors and capacitors in front of the ADBMS1818's C pins, so its part is a resistor or capacitor. Research.md (Round 2, Rules of stage 1) says such a function is returned without candidates and left to stage 2; P2 returned no entry for it, and FU-2P1's P1-R9 function list names only 'Cell monitor' and 'cell monitor isolation barrier'."
+   },
+   {
+    "function": "balance-lead connector protection (mis-plugged lead)",
+    "why": "IOBoard.md:524 names 'protection against a mis-plugged lead' and IOBoard.md:575 puts ESD and overvoltage protection on the balance-lead connector in round 2; Research.md Scope row 2 and the stage 1 rules leave it to stage 2 and require an entry without candidates. P2 returned none. P2's rank 1 reason relies on this function ('stage 2's balance-lead protection for a reversed lead'), and V188 (85 V) and V191 (shifted lead, reversed 67.2 V) are its requirement values."
+   },
+   {
+    "function": "balance-lead connector",
+    "why": "IOBoard.md:524 names 'the balance-lead connector sizes'; V192 (owner, 2026-09-28) fixes 1 connector of 16 cells, 17 pins, with each pack's leads arriving through an adapter lead. Connectors are selected in stage 2 and are returned without candidates in stage 1. P2 returned no entry."
+   },
+   {
+    "function": "unused-input tie",
+    "why": "V193 (owner, 2026-09-28): no jumper or adapter lead sets the cell count and 'the board ties unused inputs itself'. That is a function of the board, in front of the monitor's inputs, not named in the R9 row or IOBoard.md. P2 returned no entry. Its part is not stated: if resistors or diodes it is stage 2; if an active part it is a stage 1 part. P2's rank 1 reason also requires V+ held at 16 V or more for packs under 16 V, which implies a supply referenced to the pack's negative; that supply is in no function list."
+   }
+  ]
+ }
+}

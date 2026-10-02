@@ -486,7 +486,62 @@
    "part": "ADBMS1818ASWAZ-RL",
    "rank": 1,
    "alternate": "",
-   "run": "FU-C1",
+   "run": "FU-2C",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "cell monitor isolation barrier": {
+   "part": "ISO7741DWR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2C",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "balance-lead input network": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-2C",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "balance-lead connector protection (mis-plugged lead)": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-2C",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "balance-lead connector": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-2C",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "unused-input tie": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-2C",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -499,13 +554,13 @@
    "part": "ADCS7476AIMFX/NOPB",
    "rank": 1,
    "alternate": "",
-   "run": "FU-C1",
+   "run": "FU-2C",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [
     {
      "part": "LM4040AIM3-3.0/NOPB",
-     "status": "verified",
+     "status": "refuted",
      "alternate": "",
      "alternate_status": "",
      "second_source_missing": false,
@@ -513,26 +568,40 @@
     }
    ],
    "decision": "Q4",
-   "q_options_missing": []
-  }
- },
- "R11": {
-  "accelerometer": {
-   "part": "ADXL316WBCSZ",
-   "rank": 1,
+   "q_options_missing": [
+    "reference"
+   ]
+  },
+  "Reference for the RP2354B ADC (the reference option of Q4, 'ADC and reference' in the R10 row)": {
+   "part": null,
+   "rank": null,
    "alternate": "",
-   "run": "FU-C2",
+   "run": "FU-2C",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
    "decision": "none",
    "q_options_missing": []
+  }
+ },
+ "R11": {
+  "accelerometer": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-2C",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": [],
+   "not_requalified": "ADXL316WBCSZ"
   },
   "optical index": {
    "part": null,
    "rank": null,
    "alternate": "",
-   "run": "FU-C2",
+   "run": "FU-2C",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -543,7 +612,7 @@
    "part": "DRV5015A1QDBZR",
    "rank": 1,
    "alternate": "",
-   "run": "FU-C2",
+   "run": "FU-2C",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -554,7 +623,7 @@
    "part": "TLV3201AIDBVR",
    "rank": 1,
    "alternate": "TLV3601DBVR",
-   "run": "FU-C2",
+   "run": "FU-2C",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -565,7 +634,7 @@
    "part": "AM26LV32EIDR",
    "rank": 1,
    "alternate": "",
-   "run": "FU-C2",
+   "run": "FU-2C",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
@@ -573,54 +642,70 @@
    "q_options_missing": []
   },
   "encoder decode": {
-   "part": "RP2354B",
-   "rank": 1,
+   "part": null,
+   "rank": null,
    "alternate": "",
-   "run": "FU-C2",
+   "run": "FU-2C",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
    "decision": "none",
-   "q_options_missing": []
+   "q_options_missing": [],
+   "not_requalified": "RP2354B"
   },
   "rotation from ESC": {
-   "part": "RP2354B",
-   "rank": 1,
+   "part": null,
+   "rank": null,
    "alternate": "",
-   "run": "FU-C2",
+   "run": "FU-2C",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
    "decision": "none",
-   "q_options_missing": []
+   "q_options_missing": [],
+   "not_requalified": "RP2354B"
   },
   "rotation inputs": {
-   "part": "RP2354B",
-   "rank": 1,
+   "part": null,
+   "rank": null,
    "alternate": "",
-   "run": "FU-C2",
+   "run": "FU-2C",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
    "decision": "none",
-   "q_options_missing": []
+   "q_options_missing": [],
+   "not_requalified": "RP2354B"
   },
   "BENCH rpm source": {
-   "part": "RP2354B",
-   "rank": 1,
+   "part": null,
+   "rank": null,
    "alternate": "",
-   "run": "FU-C2",
+   "run": "FU-2C",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
    "decision": "none",
-   "q_options_missing": []
+   "q_options_missing": [],
+   "not_requalified": "RP2354B"
   },
   "servo measured position": {
-   "part": "RP2354B",
-   "rank": 1,
+   "part": null,
+   "rank": null,
    "alternate": "",
-   "run": "FU-C2",
+   "run": "FU-2C",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": [],
+   "not_requalified": "RP2354B"
+  },
+  "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-2C",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
