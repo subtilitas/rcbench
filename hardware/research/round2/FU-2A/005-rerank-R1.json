@@ -1,0 +1,549 @@
+{
+ "role": "rerank",
+ "category": "R1",
+ "label": "rerank-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "functions": [
+   {
+    "function": "Microcontroller",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "reason": "The fixed input of the Scope table, ranked first and not replaced. No P3 candidate for this function. Every value of the part passes in P2's record. Stock re-read: JLCPCB C39843328 stockCount 2535, canPresaleNumber 2418, expand (2026-10-01T22:03:53Z, vendors.py jlcpcb C39843328); rule 6 by 20 held against 10; second vendor Digi-Key SC1512(13)-A4 3560, Active (P2, 2026-10-01T21:38:01Z). Three watchdog rows fail on firmware, not on the part (the image sets no timeout, V4; no timeout meets V1's 500 ms with V2's stalls; V2's stall is uncapped with a slow host): reported to the owner, not re-selected",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "12 MHz crystal",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "ABM8-272-T3",
+      "reason": "The only candidate, the crystal RP2350 Table 597 specifies. No P3 candidate for this function. Every value passes in P2's record (CL 10 pF, ESR 50 Ohm max, drive level 200 uW max, C0 3.0 pF max, 65 ppm worst case). Stock re-read: JLCPCB C20625731 stockCount 13725, canPresaleNumber 13105 (2026-10-01T22:03:54Z); Digi-Key 28204, Active (P2, 21:38:03Z). Maker status not read (Abracon product page 404): reported to the owner",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "ABM8-272-T3",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Core regulator inductor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "AOTA-B201610S3R3-101-T",
+      "reason": "Ground 1: the inductor RP2350 datasheet section 6.3.8.2 recommends, in the 2.0 x 1.6 mm case of the Figure 23 layout. Maker status Active read, Digi-Key second vendor 28061. Unchanged by P3's find. JLCPCB re-read 3373 / 2898 (2026-10-01T22:03:54Z)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "VLS4015CX-3R3M-H",
+      "reason": "Not ground 1. Ground 2: Digi-Key second vendor (2479, Active). Ground 3: maker status read (Production). Ground 4: 16.0 mm2 and 1.5 mm high. JLCPCB re-read 1845 / 1845 (22:03:55Z). XFL4020-332MEC does not displace it: no Digi-Key second vendor and no maker status read",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "74438357033",
+      "reason": "Not ground 1. Ground 2: Digi-Key second vendor (3870, Active). Ground 3: maker status read (Active, expected lifetime over 10 years). Ground 4: 16.8 mm2 and 3.1 mm, larger and taller than the two above. JLCPCB 78 / 77 (re-read 22:03:55Z) passes the gate of 50 by 28. XFL4020-332MEC ranks below it on ground 3",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "XFL4020-332MEC",
+      "reason": "P3's find, qualified: every value of V8, V14 and V7 passes, JLCPCB 713 / 702 passes rule 4 (P2's stale reading of 0 / -11 is replaced). Ranks below the three on the order of the inductor grounds: it is not the recommended part (ground 1); its second source is an alternate, XGL4020-332MEC (same body and land pattern, JLCPCB 1446), where the three above have Digi-Key (ground 2, both Coilcraft parts are absent from Digi-Key's API); and Coilcraft's page carries no lifecycle field, so maker status is not read (ground 3). 4.0 x 4.0 x 2.10 mm max. Unit price USD 7.97 at 10 against 0.28 to 2.91 for the three",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 4,
+      "part": "XFL4020-332MEC",
+      "maker": "Coilcraft (JLCPCB maker_label 'Coilcraft'); allowlist name Coilcraft (S2)",
+      "lcsc": "C19191633",
+      "package": "SMD 4.0 +/-0.3 x 4.0 +/-0.3 x 2.10 mm max, 2 terminals (JLCPCB 'SMD,4x4mm')",
+      "placements": 2,
+      "placements_basis": "fixed by the specification: one inductor on VREG_LX of each of the 2 RP2354B (IOBoard.md:61, :102, :140; RP2350 datasheet section 6.3.8.2)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inductance",
+        "required": "3.3 uH +/-20 %",
+        "datasheet": "XFL4020-332ME_ 3.3 uH +/-20 % at 1 MHz, 0.1 Vrms, 0 Adc",
+        "pass": true,
+        "source": "Coilcraft Document 745-1, revised 03/10/26 (SHA-256 6dca915ac1daa47210f7708a7540221ffef4f34a88a8621c94bd50cdf48647e6), https://www.coilcraft.com/getmedia/50632d43-da1b-4cdb-8ab4-3029cab51df3/xfl4020.pdf, read 2026-10-01T22:02:00Z"
+       },
+       {
+        "name": "saturation current",
+        "required": ">= 1.5 A",
+        "datasheet": "Isat 2.7 A at a 10 % inductance drop, 2.8 A at 20 %, 2.9 A at 30 %, at 25 C",
+        "pass": true,
+        "source": "Document 745-1, read 2026-10-01T22:02:00Z"
+       },
+       {
+        "name": "DC resistance",
+        "required": "<= 250 mOhm",
+        "datasheet": "DCR 34.80 mOhm typ, 38.30 mOhm max",
+        "pass": true,
+        "source": "Document 745-1, read 2026-10-01T22:02:00Z"
+       },
+       {
+        "name": "fully shielded",
+        "required": "yes",
+        "datasheet": "Title 'Shielded Power Inductors - XFL4020'; composite core",
+        "pass": true,
+        "source": "Document 745-1, read 2026-10-01T22:02:00Z"
+       },
+       {
+        "name": "polarity marking",
+        "required": "yes",
+        "datasheet": "The drawing's dash-number marking 'indicates direction of terminals and start (short) lead'; the same marking P2 accepted for the XGL4020",
+        "pass": true,
+        "source": "Document 745-3 pages of the same file, read 2026-10-01T22:02:00Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "0 to 50 C ambient",
+        "datasheet": "Ambient -40 C to +125 C with the 40 C-rise Irms current; maximum part temperature +165 C; AEC-Q200",
+        "pass": true,
+        "source": "Document 745-1, read 2026-10-01T22:02:00Z"
+       }
+      ],
+      "jlcpcb": "C19191633 exact match: stockCount 713, canPresaleNumber 702, componentLibraryType expand, USD 7.9706 at the 10-piece break (need 10; next break 30); read 2026-10-01T22:01:38Z, vendors.py jlcpcb C19191633 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList). P3 read 713 / 702 at 2026-10-01T21:53:15Z",
+      "digikey": "Not listed: productdetails XFL4020-332MEC HTTP 404 'Requested Product xfl4020-332mec Not Found', read 2026-10-01T21:55:52Z (cached, read by P3); keyword search 'Coilcraft XFL4020 3.3uH' returned 0 products, 2026-10-01T22:01:51Z, vendors.py digikey-search (https://api.digikey.com/products/v4/search/keyword)",
+      "gate": "need = 5 boards (S7) x 2 placements = 10; S4 threshold max(5 x 10, 50) = 50; stockCount 713 >= 50 and canPresaleNumber 702 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status: not read. The Coilcraft product page https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xfl/xfl4020/xfl4020-332/ (HTTP 200, read 2026-10-01T22:03:13Z) carries no lifecycle field, only 'in stock, ready to ship today'; reported to the owner as the Lifecycle check sets out. Longevity: no Coilcraft longevity page read. Market introduction: first revision date not read; the served Document 745-1 is revised 03/10/26. Notices: Coilcraft's discontinuation listing not read. Distributor: LCSC productCycle 'normal', stockNumber 713 (https://www.lcsc.com/product-detail/C19191633.html, read 2026-10-01T22:02:49Z); Digi-Key not listed",
+      "second_source": "alternate: XGL4020-332MEC (C6937839). Same 4.0 x 4.0 mm body, 2.10 mm max height and terminal dimensions; same recommended land pattern (0.134 / 3.4, 0.093 / 2.37, 0.038 / 0.98 in / mm in Documents 745-3 and 1529-3); same start-lead marking; same 3.3 uH +/-20 %. Passes rules 1 to 4: Coilcraft is on S2, JLCPCB stockCount 1446, canPresaleNumber 1443 (2026-10-01T22:01:38Z). Isat 2.2 A at 10 % drop and DCR 34.0 mOhm max against 1.5 A and 250 mOhm. Neither part is at Digi-Key, so the two share one maker and one distributor",
+      "alternates": [
+       "XGL4020-332MEC"
+      ],
+      "driver_in_shared": "none",
+      "reason": "P3's find, qualified on every value. Ranks 4: below the three shortlisted parts on grounds 2 and 3 of the inductor ranking basis",
+      "second_source_route": "alternate",
+      "second_source_part": "XGL4020-332MEC"
+     },
+     {
+      "rank": 0,
+      "part": "XGL4020-332MEC",
+      "maker": "Coilcraft (JLCPCB maker_label 'Coilcraft'); allowlist name Coilcraft (S2)",
+      "lcsc": "C6937839",
+      "package": "SMD 4.0 +/-0.3 x 4.0 +/-0.3 x 2.10 mm max, 2 terminals (JLCPCB 'SMD,4x4mm')",
+      "placements": 2,
+      "placements_basis": "fixed by the specification: one inductor on VREG_LX of each of the 2 RP2354B; held as the alternate of XFL4020-332MEC (IOBoard.md:61, :102, :140)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "inductance",
+        "required": "3.3 uH +/-20 %",
+        "datasheet": "XGL4020-332ME_ 3.3 uH +/-20 % at 1 MHz",
+        "pass": true,
+        "source": "Coilcraft Document 1529-1, revised 02/19/26 (SHA-256 1e050d7e4f44f7e1f3ae3be38de87b15e4d72b2ef463c7b1f4edc292f83ad2c0), https://www.coilcraft.com/getmedia/76c9c081-4945-4c85-9129-9356e1ad6734/xgl4020.pdf, read 2026-10-01T22:03:19Z"
+       },
+       {
+        "name": "saturation current",
+        "required": ">= 1.5 A",
+        "datasheet": "Isat 2.2 A at a 10 % drop, 3.5 A at 20 %, 4.8 A at 30 %",
+        "pass": true,
+        "source": "Document 1529-1, read 2026-10-01T22:03:19Z"
+       },
+       {
+        "name": "DC resistance",
+        "required": "<= 250 mOhm",
+        "datasheet": "DCR 30.8 mOhm typ, 34.0 mOhm max",
+        "pass": true,
+        "source": "Document 1529-1, read 2026-10-01T22:03:19Z"
+       },
+       {
+        "name": "fully shielded",
+        "required": "yes",
+        "datasheet": "Title 'Shielded Power Inductors - XGL4020'; composite core",
+        "pass": true,
+        "source": "Document 1529-1, read 2026-10-01T22:03:19Z"
+       },
+       {
+        "name": "polarity marking",
+        "required": "yes",
+        "datasheet": "Dash-number marking 'indicates direction of terminals and start (short) lead'",
+        "pass": true,
+        "source": "Document 1529-3 of the same file, read 2026-10-01T22:03:19Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "0 to 50 C ambient",
+        "datasheet": "Ambient -40 C to +125 C with the 40 C-rise Irms current; AEC-Q200",
+        "pass": true,
+        "source": "Document 1529-1, read 2026-10-01T22:03:19Z"
+       }
+      ],
+      "jlcpcb": "C6937839 exact match: stockCount 1446, canPresaleNumber 1443, componentLibraryType expand, USD 9.0419 at the 10-piece break (need 10; next break 30); read 2026-10-01T22:01:38Z, vendors.py jlcpcb C6937839 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "Not listed: productdetails XGL4020-332MEC HTTP 404 'Requested Product xgl4020-332mec Not Found', read 2026-10-01T22:01:44Z, not cached; keyword search 'XGL4020-332' returned 0 products, 2026-10-01T22:01:52Z, vendors.py digikey-search",
+      "gate": "need = 5 boards x 2 placements = 10; S4 threshold 50; stockCount 1446 >= 50 and canPresaleNumber 1443 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status: not read. https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xgl/xgl4020/xgl4020-332/ (HTTP 200, read 2026-10-01T22:03:11Z) carries no lifecycle field. Longevity not read. Market introduction not read; Document 1529-1 revised 02/19/26. Notices not read. Distributor: LCSC productCycle 'normal', stockNumber 1446 (https://www.lcsc.com/product-detail/C6937839.html, read 2026-10-01T22:02:50Z); Digi-Key not listed",
+      "second_source": "none needed: held only as the alternate of XFL4020-332MEC, not ranked",
+      "alternates": [
+       "XFL4020-332MEC"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The sourcing-rule-5 alternate of XFL4020-332MEC; kept as the alternate's record, not ranked",
+      "second_source_route": "none",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "AOTA-B201610S3R3-101-T",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "USB protection",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPD6E05U06RVZR",
+      "reason": "One part covers the 5 lines with a spare channel and has no supply pin. Meets V9 outright (+/-12 kV contact, +/-15 kV air) and gives VRWM 5.5 V in the specification table (V10 with no margin, 5.5 V against 5.5 V) without an application-text condition. Gives a numeric clamp (14 V at 5 A TLP). Rated to 125 C, JLCPCB 6716 (re-read 2026-10-01T22:03:54Z), Digi-Key second vendor 38411. Not displaced by TPD6E001RSFR, which needs its VCC pin open and rests V10 on an application statement",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TPD6E001RSFR",
+      "reason": "P3's find, qualified. Meets V9 outright (+/-8 kV contact, +/-15 kV air, section 6.2), where TPD6E004RSER's +/-12 kV air passes only by the owner's relaxation. States a numeric channel clamp (VCC + 60 V at 8 kV contact, 24 A, not production tested) and 10 V tolerated swing with VCC open (section 8.2.2 step 5b), against TPD6E004's 5.8 V. Same layout condition as TPD6E004: VCC pin open with 0.1 uF. Below TPD6E05U06RVZR: V10's 5.5 V rests on step 5b, which section 8 says is not part of the component specification; 4 x 4 mm; JLCPCB 193 against 6716. Digi-Key second vendor 2000, Active, 12 weeks",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TPD6E004RSER",
+      "reason": "Covers the 5 lines only with VCC open. Its +/-12 kV air misses V9's 15 kV (passes by the owner's relaxation); 5.8 V tolerated swing in its Recommended Operating Conditions, 0.3 V over VBUS 5.5 V; no clamping figure in a table (Figure 8-2 shows a spike near 160 V in the first nanoseconds of a +8 kV strike); no matching figure; rated to 85 C. JLCPCB 463 (re-read 22:03:54Z), Digi-Key second vendor 27136. Ranked below TPD6E001RSFR on V9 and the open-VCC swing, above TPD6E001RSER on rule 5",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "TPD6E001RSER",
+      "reason": "Same die and values as TPD6E001RSFR in UQFN-10 1.5 x 2.0 mm; the smaller package is its only gain over RSFR. Fails rule 5: Digi-Key stock_available 0 (lead 20 weeks) against 50, and RSFR is not an alternate in the same land pattern. Ranked last and flagged with no second source; passes rule 4 (JLCPCB 1032 / 1027)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "TPD6E001RSFR",
+      "maker": "Texas Instruments (datasheet; JLCPCB maker_label 'Texas Instruments'; Digi-Key 'Texas Instruments'); allowlist name Texas Instruments (S1)",
+      "lcsc": "C1975428",
+      "package": "WQFN-12-EP (RSF), 4.00 x 4.00 mm (JLCPCB 'QFN-12-EP(4x4)')",
+      "placements": 2,
+      "placements_basis": "range 1 to 2: one part covers the 5 lines of one port; 1 for the main coprocessor's USB port (IOBoard.md:148), 2 if the measurement coprocessor has its own, which is not stated (IOBoard.md:148, :115); top of the range used",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "lines covered",
+        "required": "VBUS, D+, D-, CC1, CC2 on one part",
+        "datasheet": "6 channels IO1 to IO6 (RSF pins 1, 2, 3, 7, 8, 9), each steered by two diodes to a central clamp between VCC and GND; with VCC left open (section 8.2.2 step 5b) no line is tied to a supply; 5 used, 1 spare",
+        "pass": true,
+        "source": "TPD6E001 datasheet SLLS685D, July 2006, revised September 2015 (SHA-256 2ac09d1a40497e97f41381a62d979bd68bced7105db31e6b8316e263d317af05), https://www.ti.com/lit/ds/symlink/tpd6e001.pdf, sections 5 and 7.3, read 2026-10-01T22:01:59Z"
+       },
+       {
+        "name": "IEC 61000-4-2 contact",
+        "required": "+/-8 kV",
+        "datasheet": "+/-8000 V contact discharge (section 6.2)",
+        "pass": true,
+        "source": "SLLS685D section 6.2, read 2026-10-01T22:01:59Z"
+       },
+       {
+        "name": "IEC 61000-4-2 air",
+        "required": "+/-15 kV",
+        "datasheet": "+/-15000 V air-gap discharge (section 6.2)",
+        "pass": true,
+        "source": "SLLS685D section 6.2, read 2026-10-01T22:01:59Z"
+       },
+       {
+        "name": "VBUS rating",
+        "required": "stand-off >= 5.5 V",
+        "datasheet": "No VRWM row. VBR 11 V min at 10 mA (section 6.5). Section 8.2.2 step 5b: with VCC not connected 'can tolerate higher signal swing in the range up to 10 V'. Section 6.3 recommends IOx 0 to VCC and section 6.1 gives VI/O at most VCC + 0.3 V; section 8 states its text 'is not part of the TI component specification'. The pass rests on step 5b",
+        "pass": true,
+        "source": "SLLS685D sections 6.1, 6.3, 6.5, 8 and 8.2.2, read 2026-10-01T22:01:59Z"
+       },
+       {
+        "name": "D+ and D- stand-off",
+        "required": ">= 3.63 V",
+        "datasheet": "As for VBUS: up to 10 V with VCC open; leakage +/-1 nA, VI/O = GND to VCC",
+        "pass": true,
+        "source": "SLLS685D sections 6.5 and 8.2.2, read 2026-10-01T22:01:59Z"
+       },
+       {
+        "name": "D+/D- steady voltage (V12)",
+        "required": "3.63 V, or the datasheet figure",
+        "datasheet": "A passive clamp: no steady limit below VBR 11 V min; the datasheet figure stands by the owner's relaxation",
+        "pass": true,
+        "source": "SLLS685D sections 6.5 and 7.4, read 2026-10-01T22:01:59Z; V12 (owner, 2026-09-30)"
+       },
+       {
+        "name": "D+/D- ESD clamping (V12)",
+        "required": "36 V at 16 A TLP, or the datasheet figure",
+        "datasheet": "Channel clamp at +/-8 kV contact (IF = 24 A): VCC + 60 V positive, -60 V negative; at +/-15 kV HBM (10 A): VCC + 25 V; not production tested; 16 A TLP not given. The datasheet figure stands by the relaxation; it is higher than TPD6E05U06's 14 V at 5 A",
+        "pass": true,
+        "source": "SLLS685D section 6.5 and its note 2, read 2026-10-01T22:01:59Z; V12 (owner, 2026-09-30)"
+       },
+       {
+        "name": "D+/D- capacitance (V11)",
+        "required": "<= 75 pF a line",
+        "datasheet": "Ci/o 1.5 pF typ at VCC 5 V, bias VCC/2; Figure 1 plots 1.5 to 1.73 pF over 0 to 5 V at VCC 5 V; no maximum given",
+        "pass": true,
+        "source": "SLLS685D section 6.5 and Figure 1, read 2026-10-01T22:01:59Z"
+       },
+       {
+        "name": "D+/D- capacitance matching",
+        "required": "< 10 %",
+        "datasheet": "No matching figure and no maximum capacitance; the part adds about 1.5 pF to a line. The line totals are not known (RP2350 Table 1437 gives no pin capacitance)",
+        "pass": true,
+        "source": "SLLS685D sections 6.5 and 6.6, read 2026-10-01T22:01:59Z"
+       },
+       {
+        "name": "CC function",
+        "required": "CC at vRd up to 2.042 V passes, also with VBUS at vSafe0V",
+        "datasheet": "With VCC open no line is tied to VBUS; leakage +/-1 nA, ICC 100 nA max. The 0.1 uF at VCC charges through the CC line's upper diode at attach; the datasheet gives no time (arithmetic, not a datasheet figure: 80 uA into 0.1 uF is 0.8 V per ms). Same condition as TPD6E004RSER",
+        "pass": true,
+        "source": "SLLS685D sections 6.5 and 8.2.2, read 2026-10-01T22:01:59Z; USB Type-C R2.5 Table 4-36 as read by P2, 2026-10-01T21:34:40Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "0 to 50 C",
+        "datasheet": "TA -40 to 85 C",
+        "pass": true,
+        "source": "SLLS685D section 6.3, read 2026-10-01T22:01:59Z"
+       }
+      ],
+      "jlcpcb": "C1975428 exact match: stockCount 193, canPresaleNumber 193, componentLibraryType expand, USD 0.6259 at the 10-piece break (need 10; next break 30); read 2026-10-01T22:01:38Z, vendors.py jlcpcb C1975428 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList). P3 read 193 / 193 at 2026-10-01T21:49:12Z",
+      "digikey": "TPD6E001RSFR: stock_available 2000 (cut tape 2000; tape and reel 2000, minimum order 2000), lead_weeks 12, ProductStatus Active, discontinued false, end_of_life false; read 2026-10-01T21:56:03Z (read by P3, 'cached': true at this task's call of 22:01Z), vendors.py digikey TPD6E001RSFR (https://api.digikey.com/products/v4/search/TPD6E001RSFR/productdetails)",
+      "gate": "need = 5 boards (S7) x 2 placements (top of 1 to 2) = 10; S4 threshold max(5 x 10, 50) = 50; stockCount 193 >= 50 and canPresaleNumber 193 >= 0: pass (rule 4), margin 143",
+      "lifecycle": "Maker status: ACTIVE, from '<meta name=\"status\" content=\"ACTIVE\"' on https://www.ti.com/product/TPD6E001 (HTTP 200, read 2026-10-01T22:02:47Z): pass. Longevity: no TI commitment read. Market introduction: first datasheet revision July 2006 (SLLS685D header): not flagged. Notices: TI's PCN listing not read; Digi-Key end_of_life false. Distributor: LCSC productCycle 'normal', stockNumber 193 (https://www.lcsc.com/product-detail/C1975428.html, read 2026-10-01T22:02:48Z); Digi-Key Active (21:56:03Z). Agrees with the maker",
+      "second_source": "second vendor: Digi-Key TPD6E001RSFR stock_available 2000 >= 50, Active (read 2026-10-01T21:56:03Z)",
+      "alternates": [],
+      "driver_in_shared": "none: a passive part",
+      "reason": "P3's find, qualified. Meets V9 outright and gives the widest stated swing with VCC open; V10 rests on an application statement, the clamp is a typical, not-production-tested figure, and the package is 4 x 4 mm. Ranks 2",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 4,
+      "part": "TPD6E001RSER",
+      "maker": "Texas Instruments (datasheet; JLCPCB maker_label 'Texas Instruments'; Digi-Key 'Texas Instruments'); allowlist name Texas Instruments (S1)",
+      "lcsc": "C1973318",
+      "package": "UQFN-10 (RSE), 1.50 x 2.00 mm (JLCPCB 'UQFN-10(1.5x2)')",
+      "placements": 2,
+      "placements_basis": "range 1 to 2: one part covers the 5 lines of one port; 1 for the main coprocessor's USB port (IOBoard.md:148), 2 if the measurement coprocessor has its own, which is not stated (IOBoard.md:148, :115); top of the range used",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "lines covered",
+        "required": "VBUS, D+, D-, CC1, CC2 on one part",
+        "datasheet": "6 channels IO1, IO2, IO3, IO4, IO5, IO6 (RSE pins 1, 2, 3, 6, 7, 8) on the same die as the RSF; VCC pin 10 open; 5 used, 1 spare",
+        "pass": true,
+        "source": "TPD6E001 datasheet SLLS685D (SHA-256 2ac09d1a...af05), https://www.ti.com/lit/ds/symlink/tpd6e001.pdf, section 5, read 2026-10-01T22:01:59Z"
+       },
+       {
+        "name": "IEC 61000-4-2 contact",
+        "required": "+/-8 kV",
+        "datasheet": "+/-8000 V (section 6.2)",
+        "pass": true,
+        "source": "SLLS685D section 6.2, read 2026-10-01T22:01:59Z"
+       },
+       {
+        "name": "IEC 61000-4-2 air",
+        "required": "+/-15 kV",
+        "datasheet": "+/-15000 V (section 6.2)",
+        "pass": true,
+        "source": "SLLS685D section 6.2, read 2026-10-01T22:01:59Z"
+       },
+       {
+        "name": "VBUS rating",
+        "required": "stand-off >= 5.5 V",
+        "datasheet": "As RSFR: VBR 11 V min; up to 10 V with VCC open by section 8.2.2 step 5b, an application statement outside the component specification",
+        "pass": true,
+        "source": "SLLS685D sections 6.5 and 8.2.2, read 2026-10-01T22:01:59Z"
+       },
+       {
+        "name": "D+ and D- stand-off",
+        "required": ">= 3.63 V",
+        "datasheet": "As VBUS",
+        "pass": true,
+        "source": "SLLS685D section 8.2.2, read 2026-10-01T22:01:59Z"
+       },
+       {
+        "name": "D+/D- steady voltage (V12)",
+        "required": "3.63 V, or the datasheet figure",
+        "datasheet": "Passive clamp, no steady limit below 11 V; relaxation",
+        "pass": true,
+        "source": "SLLS685D section 7.4; V12 (owner, 2026-09-30)"
+       },
+       {
+        "name": "D+/D- ESD clamping (V12)",
+        "required": "36 V at 16 A TLP, or the datasheet figure",
+        "datasheet": "VCC + 60 V at 8 kV contact, not production tested; relaxation",
+        "pass": true,
+        "source": "SLLS685D section 6.5, read 2026-10-01T22:01:59Z; V12 (owner, 2026-09-30)"
+       },
+       {
+        "name": "D+/D- capacitance (V11)",
+        "required": "<= 75 pF a line",
+        "datasheet": "1.5 pF typ; no maximum",
+        "pass": true,
+        "source": "SLLS685D section 6.5, read 2026-10-01T22:01:59Z"
+       },
+       {
+        "name": "D+/D- capacitance matching",
+        "required": "< 10 %",
+        "datasheet": "No matching figure; line totals not known",
+        "pass": true,
+        "source": "SLLS685D section 6.5, read 2026-10-01T22:01:59Z"
+       },
+       {
+        "name": "CC function",
+        "required": "CC at vRd up to 2.042 V passes, also with VBUS at vSafe0V",
+        "datasheet": "As RSFR: no supply tied to VBUS with VCC open; leakage +/-1 nA",
+        "pass": true,
+        "source": "SLLS685D sections 6.5 and 8.2.2, read 2026-10-01T22:01:59Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "0 to 50 C",
+        "datasheet": "TA -40 to 85 C",
+        "pass": true,
+        "source": "SLLS685D section 6.3, read 2026-10-01T22:01:59Z"
+       }
+      ],
+      "jlcpcb": "C1973318 exact match: stockCount 1032, canPresaleNumber 1027, componentLibraryType expand, USD 0.3284 at the 10-piece break (need 10); read 2026-10-01T22:01:38Z, vendors.py jlcpcb C1973318 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "TPD6E001RSER: stock_available 0 (cut tape 0; tape and reel 0, minimum order 3000), lead_weeks 20, ProductStatus Active, discontinued false, end_of_life false; read 2026-10-01T21:55:54Z (read by P3, 'cached': true at this task's call of 22:01Z), vendors.py digikey TPD6E001RSER (https://api.digikey.com/products/v4/search/TPD6E001RSER/productdetails)",
+      "gate": "need = 5 boards (S7) x 2 placements (top of 1 to 2) = 10; S4 threshold 50; stockCount 1032 >= 50 and canPresaleNumber 1027 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status: ACTIVE, https://www.ti.com/product/TPD6E001 (HTTP 200, read 2026-10-01T22:02:47Z; one product page for both packages): pass. Longevity: not read. Market introduction: July 2006: not flagged. Notices: TI PCN listing not read. Distributor: LCSC productCycle 'normal', stockNumber 1032 (https://www.lcsc.com/product-detail/C1973318.html, read 2026-10-01T22:02:48Z); Digi-Key Active (21:55:54Z)",
+      "second_source": "none: Digi-Key stock_available 0 < 50 (read 2026-10-01T21:55:54Z); TPD6E001RSFR carries the same die in a QFN-12 4 x 4 mm land pattern, so it is not a pin-compatible alternate",
+      "alternates": [],
+      "driver_in_shared": "none: a passive part",
+      "reason": "P3's find, qualified on every value and rule 4; fails rule 5. Ranked last and reported with no second source. Its gain over TPD6E001RSFR is a 1.5 x 2.0 mm body",
+      "second_source_route": "none",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "TPD4E05U06 (C138714) with a separate VBUS clamp: a two-part set",
+      "maker": "Texas Instruments",
+      "reason": "Not qualified. P3's point holds that the page does not say 'on one part' (V13 says 5 lines; the Follow-ups row says 'parts'), but a single part, TPD6E05U06RVZR, covers the 5 lines and passes, so a pair adds a part and a VBUS clamp no agent has qualified (stand-off at least 5.5 V, 3 A path) with no value gained. The building block TPD4E05U06DQAR (D+, D-, CC1, CC2, no supply pin) is on P3's reading (SLVSBO7O, c167cf1e..., VRWM 5.5 V, JLCPCB C138714 stockCount 144174 at 2026-10-01T21:59:38Z); not re-read here. A pair is open to the owner if a single part is refused"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPD6E05U06RVZR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "stock re-read: first-ranked parts",
+    "value": "JLCPCB exact matches, stockCount / canPresaleNumber, all expand: C39843328 RP2354B 2535 / 2418; C20625731 ABM8-272-T3 13725 / 13105; C42411119 AOTA-B201610S3R3-101-T 3373 / 2898; C962978 TPD6E05U06RVZR 6716 / 6257; C1973052 TPD6E004RSER 463 / 449; C3222575 VLS4015CX-3R3M-H 1845 / 1845; C17430655 74438357033 78 / 77. Each equals P2's reading except ABM8-272-T3 (13736 / 13116 at P2's time, 11 fewer). All pass the gate of 50",
+    "source": "vendors.py jlcpcb C<number>, read 2026-10-01T22:03:53Z to 22:03:55Z (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)"
+   },
+   {
+    "figure": "crystal tolerance: TPD6E001RSFR",
+    "value": "not applicable: a USB ESD protection array, not a frequency source",
+    "source": "TPD6E001 datasheet SLLS685D (SHA-256 2ac09d1a40497e97f41381a62d979bd68bced7105db31e6b8316e263d317af05), https://www.ti.com/lit/ds/symlink/tpd6e001.pdf, read 2026-10-01T22:01:59Z"
+   },
+   {
+    "figure": "crystal tolerance: TPD6E001RSER",
+    "value": "not applicable: a USB ESD protection array, not a frequency source",
+    "source": "TPD6E001 datasheet SLLS685D, https://www.ti.com/lit/ds/symlink/tpd6e001.pdf, read 2026-10-01T22:01:59Z"
+   },
+   {
+    "figure": "crystal tolerance: XFL4020-332MEC",
+    "value": "not applicable: a core regulator inductor, not a frequency source",
+    "source": "Coilcraft Document 745-1, revised 03/10/26 (SHA-256 6dca915ac1daa47210f7708a7540221ffef4f34a88a8621c94bd50cdf48647e6), https://www.coilcraft.com/getmedia/50632d43-da1b-4cdb-8ab4-3029cab51df3/xfl4020.pdf, read 2026-10-01T22:02:00Z"
+   },
+   {
+    "figure": "crystal tolerance: XGL4020-332MEC",
+    "value": "not applicable: a core regulator inductor, not a frequency source",
+    "source": "Coilcraft Document 1529-1, revised 02/19/26 (SHA-256 1e050d7e4f44f7e1f3ae3be38de87b15e4d72b2ef463c7b1f4edc292f83ad2c0), https://www.coilcraft.com/getmedia/76c9c081-4945-4c85-9129-9356e1ad6734/xgl4020.pdf, read 2026-10-01T22:03:19Z"
+   },
+   {
+    "figure": "USB protection ranking basis",
+    "value": "Grounds in order, each only to break a tie on the ones before: (1) fewest values that rest on the owner's relaxation of V9 and V12, and on an application-text condition; (2) a second source that passes rule 5; (3) maker status read; (4) JLCPCB stock. Result: 1 TPD6E05U06RVZR (no supply pin, VRWM 5.5 V in the table, 12 kV contact and 15 kV air); 2 TPD6E001RSFR (15 kV air outright; V10 rests on section 8.2.2 step 5b with VCC open); 3 TPD6E004RSER (12 kV air by relaxation; 5.8 V swing with VCC open); 4 TPD6E001RSER (no second source). All four cover 5 lines with one part. V12's 3.63 V steady and 36 V at 16 A TLP rest on the relaxation for every passive clamp: figures stated are TPD6E05U06 14 V at 5 A TLP, TPD6E001 VCC + 60 V at 8 kV contact and 24 A (typical, not production tested), TPD6E004 no table figure",
+    "source": "the records of this return; SLVSBO7O, SLLS685D (SHA-256 2ac09d1a...af05), SLLS799C (SHA-256 8d6c886eb6d6bda0a260669ca6b3c3f334ef65e5962ce68904f10be97c251272), each read 2026-10-01T22:01:59Z to 22:04:13Z"
+   },
+   {
+    "figure": "TPD6E001 with VCC open: basis of V10",
+    "value": "Section 8.2.2 step 5b: VCC not connected, 'can tolerate higher signal swing in the range up to 10 V', a 0.1 uF still at VCC. Section 8 states it 'is not part of the TI component specification'. The tables give IOx 0 to VCC (6.3), VI/O at most VCC + 0.3 V (6.1), VBR 11 V min at 10 mA (6.5). TPD6E004's table gives VI/O at most the lesser of 5.8 V and VCC (6.4) and VBR 6 V min. Board consequence: the VCC pin is left open with 0.1 uF to ground, as for TPD6E004. With VCC open the node follows the highest line minus one diode drop (VF 0.65 to 0.95 V at 10 mA) and holds its charge on the 0.1 uF until the leakage (ICC 100 nA max) discharges it. Not measured",
+    "source": "TPD6E001 SLLS685D sections 6.1, 6.3, 6.5, 8 and 8.2.2, read 2026-10-01T22:01:59Z; TPD6E004 SLLS799C sections 6.4 and 8.2.2, read 2026-10-01T22:02:02Z"
+   },
+   {
+    "figure": "USB protection: pair of parts",
+    "value": "No pair is qualified. The page's V13 asks for 5 lines and does not say one part; a single part (TPD6E05U06RVZR) passes, so the choice of a pair stays with the owner and nothing in the research requires it",
+    "source": "hardware/docs/Research.md V13 and the Follow-ups row USB protection in checkout 08042b06b2dc; the records of this return"
+   },
+   {
+    "figure": "USB protection: jlcparts-based drops, spot check",
+    "value": "TPD5E003DPFR (C1976480), dropped by P2 on a jlcparts stand-off figure, read in its datasheet: 5 channels, VRWM 5 V max, VBR 6 V min, +/-15 kV contact and air. VRWM 5 V is under V10's 5.5 V, so the drop holds on a datasheet figure. The other jlcparts-based drops of P2 (PESD5V0L5UV, ESDA6V1-5SC6Y, GMF05LC-HSF-GS08, NUP5120X6T1G, SMF05CT1G, D5V0M5U6V-7, VESD05A6-HAF-GS08, ESDA6V1U1RL, CDDFN10-0506N, DT6250-06MR-13) were not re-read; they rest on the jlcparts figure as P2 states",
+    "source": "https://www.ti.com/lit/ds/symlink/tpd5e003.pdf (SHA-256 not recorded), section 6, read 2026-10-01T22:04:03Z"
+   },
+   {
+    "figure": "inductor ranking basis",
+    "value": "P2's grounds apply: (1) the part RP2350 section 6.3.8.2 recommends; (2) a second source that passes rule 5; (3) maker status read as active; (4) body footprint, then height; (5) JLCPCB stock. XFL4020-332MEC (4.0 x 4.0 x 2.10 mm max, JLCPCB 713) passes every value; its second source is an alternate (XGL4020-332MEC) not Digi-Key, and its maker status is not read, so it ranks 4 behind AOTA-B201610S3R3-101-T, VLS4015CX-3R3M-H and 74438357033 (ground 3). Placements are 2 a board, one for each RP2354B",
+    "source": "the records of this return; RP2350 datasheet sections 6.3.8.2 and 6.3.8.3 as P2 read them, 2026-10-01T21:33:09Z"
+   },
+   {
+    "figure": "XFL4020-332MEC: rule 4 reading",
+    "value": "JLCPCB C19191633 stockCount 713, canPresaleNumber 702, expand. The earlier reading that failed rule 4 (0 / -11 at 2026-09-29T08:36:51Z, FU-A4 P2) is replaced; FU-A4's P4 had read 713 / 702 at 2026-09-29T09:20:29Z. LCSC lists stockNumber 713, productCycle normal",
+    "source": "vendors.py jlcpcb C19191633, read 2026-10-01T22:01:38Z; https://www.lcsc.com/product-detail/C19191633.html, read 2026-10-01T22:02:49Z"
+   },
+   {
+    "figure": "maker status not read: XFL4020-332MEC and XGL4020-332MEC",
+    "value": "Coilcraft's product pages for both parts (HTTP 200) carry no lifecycle field, only 'in stock, ready to ship today'. Maker status is not read; reported to the owner as the Lifecycle check sets out. S5 passes only active parts, so the status leaves both open. Digi-Key does not list either part (HTTP 404), so no distributor status exists besides LCSC's 'normal'",
+    "source": "https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xfl/xfl4020/xfl4020-332/, read 2026-10-01T22:03:13Z; .../xgl/xgl4020/xgl4020-332/, read 2026-10-01T22:03:11Z; vendors.py digikey XFL4020-332MEC (cached 21:55:52Z) and XGL4020-332MEC (22:01:44Z)"
+   },
+   {
+    "figure": "fixed input check: RP2354B",
+    "value": "Stock: JLCPCB C39843328 stockCount 2535, canPresaleNumber 2418, expand, passes rule 4 at 50 for a need of 10 (2 a board) and rule 6 by 20 held. Second vendor Digi-Key SC1512(13)-A4 3560, Active (P2). Lifecycle: in production until at least January 2045 (P2). Not replaced. Reported to the owner: three watchdog rows fail on firmware, not on the part. The image sets no watchdog (grep -i watchdog firmware/iomcu/ finds only the comment at main.c:970-973, re-read here); V1's 500 ms and V2's stalls (400 ms erase plus a 500 ms console write in one pass; no bound with a slow host) leave no timeout until the store moves to the FRAM and the console write is capped. Not measured",
+    "source": "vendors.py jlcpcb C39843328, read 2026-10-01T22:03:53Z; vendors.py digikey 'SC1512(13)-A4', read 2026-10-01T21:38:01Z (P2); grep -rn -i watchdog firmware/iomcu/ and sed -n 1045,1090p firmware/iomcu/src/main.c in checkout 08042b06b2dc, run 2026-10-01T22:0xZ"
+   },
+   {
+    "figure": "Digi-Key calls this task",
+    "value": "3 uncached calls: productdetails XGL4020-332MEC (22:01:44Z), keyword searches 'Coilcraft XFL4020 3.3uH' (22:01:51Z) and 'XGL4020-332' (22:01:52Z), each 0 products or 404. ratelimit_remaining 921 after the last. TPD6E001RSFR, TPD6E001RSER and XFL4020-332MEC came back cached from P3's readings of 21:55:52Z to 21:56:03Z",
+    "source": "vendors.py digikey and digikey-search with DIGIKEY_ENV_FILE and DIGIKEY_CACHE_DIR as set, 2026-10-01T22:01Z"
+   }
+  ]
+ }
+}

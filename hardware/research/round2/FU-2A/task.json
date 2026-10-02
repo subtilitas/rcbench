@@ -1,0 +1,1742 @@
+{
+ "task": "FU",
+ "run": "FU-2A",
+ "run_id": "b194d854ece576a1",
+ "commit": "08042b06b2dc79732b9358ec6b893f51fcb29694",
+ "date": "2026-10-01",
+ "run_info": {
+  "claude_code": "2.1.287 (Claude Code)",
+  "cpus": 48,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "concurrency": 16,
+  "concurrency_setting": "unset",
+  "agent_model": "sonnet",
+  "oversight_model": "opus",
+  "digikey_calls_left": 997,
+  "vendors_sha256": "214b14a3af0a4a1e0edfab77124a786c4e0fade844ec4d0c72149c1571ff8bf6"
+ },
+ "followup": {
+  "phases": "P2-P4",
+  "round": 1,
+  "categories": [
+   "R1",
+   "R2",
+   "R3"
+  ],
+  "items": [
+   {
+    "category": "R1",
+    "function": "USB protection",
+    "requirement": "Standard USB protection parts on VBUS, D+ and D−, CC1 and CC2. Where a standard part misses the 3.63 V steady limit on D+ and D−, or another figure of V9 and V12, its datasheet figure stands (owner, 2026-09-30). Round 1 found no part that covers the 5 lines",
+    "source": "V9, V12; IOBoard.md, USB port; hardware/STATUS.md, USB protection",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R2",
+    "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+    "requirement": "The 40 MHz clock of each MCP2518FDT-E/SL (owner, 2026-10-01): a crystal or an oscillator, and its frequency error against V26 and V27. Round 1 found no part",
+    "source": "V26, V27; IOBoard.md, Controller clock and Clock accuracy; Control.md, Not verified",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R3",
+    "function": "servo rail gate",
+    "requirement": "Conducts from 0.8 V: on each of the 3 servo rails, 0.8 to 8.4 V, and on the adjustable supply's output, 0.8 to 15 V, each up to 6.35 A (V55; owner, 2026-09-30). The BTS7004-1EPP starts only at VS(OP), 4.1 V at most",
+    "source": "IOBoard.md, Servo rail gate; hardware/STATUS.md, Servo path from 0.8 V",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R3",
+    "function": "onboard pack switch MOSFETs; external pack switch module; pack overvoltage and transient clamp",
+    "requirement": "Round 1 refutes IPT015N10N5ATMA1 and the VS-FC420SA10 and VS-FC270SA20 modules on safe operating area during the controlled turn-off. It finds no clamp that holds the pack node under 85 V at up to 600 A",
+    "source": "hardware/STATUS.md, ESC pack switch; Control.md, Not known",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "role": "P1-critic",
+    "category": "R2",
+    "value": {
+     "where": "hardware/docs/Research.md:722",
+     "quantity": "largest frequency error of the link CAN controller's clock (ppm), including temperature and ageing",
+     "value": "for research (owner, 2026-09-28) -- no ppm figure given; only the 1% two-node long-frame failure point is stated",
+     "marking": "owner",
+     "source": "Research.md:722, V26 under Raised by P1",
+     "refutation_tried": "Confirmed V26 is already in the Raised by P1 table with an owner answer ('for research'), so it is a question already raised, not re-raised here; it is the value P2 must derive before qualifying a crystal/oscillator part, and the owner has already directed that derivation to research rather than to itself.",
+     "question": -1
+    },
+    "reason": "marking not ruled on"
+   },
+   {
+    "role": "P1-critic",
+    "category": "R2",
+    "value": {
+     "where": "hardware/docs/Research.md:723",
+     "quantity": "largest frequency error of the external CAN controller's clock (ppm), including temperature and ageing",
+     "value": "for research (owner, 2026-09-28)",
+     "marking": "owner",
+     "source": "Research.md:723, V27 under Raised by P1",
+     "refutation_tried": "Same status as V26: already raised and answered 'for research'; not re-raised.",
+     "question": -1
+    },
+    "reason": "marking not ruled on"
+   },
+   {
+    "role": "P1",
+    "category": "R3",
+    "value": {
+     "where": "hardware/docs/Monostable.md:413-416",
+     "quantity": "off-state leakage, servo rail gate",
+     "value": "under 5 mA per rail",
+     "marking": "assumption",
+     "source": "pull request #167 / Monostable.md:413-416: '5 mA per rail as the placeholder until that idle current is measured'",
+     "refutation_tried": "the primary source itself calls this a placeholder, not a measured limit; V39 (Research.md:735) already asks the owner for the real idle current and is still 'for research' -- not re-raised here since it is already under Raised by P1",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   },
+   {
+    "role": "P1",
+    "category": "R3",
+    "value": {
+     "where": "hardware/docs/Monostable.md:401-402",
+     "quantity": "servo rail current/voltage as the unmodified monostable spec (commit 23c82ca) states it",
+     "value": "up to 8.4 V, 4 to 8 A, no stated lower voltage bound",
+     "marking": "assumption",
+     "source": "Monostable.md:401-402, a page that predates the owner's 2026-09-30 decisions (prerequisite 4 notes the linked pages can predate later owner decisions)",
+     "refutation_tried": "superseded as a current requirement: the Round 2 section states that where it differs from a category row or the specification, the specification and that section hold (Research.md:537), and V55 (owner, 2026-09-30) replaces the lower bound and current figure; kept only as the stale seed figure, not something P2 should qualify a part against",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   },
+   {
+    "role": "P1",
+    "category": "R3",
+    "value": {
+     "where": "hardware/docs/Research.md:743 (V47)",
+     "quantity": "reverse current the closed ESC pack switch carries back into the pack",
+     "value": "not answered; the reverse-polarity ideal-diode stage is expected to block it",
+     "marking": "assumption",
+     "source": "V47, Research.md:743, Answer column 'for research'",
+     "refutation_tried": "already raised as V47 and unanswered; not re-raised. Affects the onboard pack switch driver function, not the two follow-up gap functions (servo rail gate; onboard/external MOSFETs and clamp), so it does not block their search",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   },
+   {
+    "role": "P1",
+    "category": "R3",
+    "value": {
+     "where": "hardware/docs/Research.md:739 (V43)",
+     "quantity": "reset supervisor delay after the 3.3 V rail crosses its threshold",
+     "value": "not stated; depends on the 3.3 V ramp time R5 selects",
+     "marking": "assumption",
+     "source": "V43, Research.md:739, Answer column 'for research'",
+     "refutation_tried": "already raised as V43; not re-raised. Not a value the two follow-up gap functions need",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   },
+   {
+    "role": "P1",
+    "category": "R3",
+    "value": {
+     "where": "hardware/docs/Research.md:725 (V29)",
+     "quantity": "latch power-up state",
+     "value": "not stated",
+     "marking": "assumption",
+     "source": "V29, Research.md:725, Answer column 'for research'",
+     "refutation_tried": "already raised as V29; not re-raised. Not a value the two follow-up gap functions need",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   }
+  ]
+ },
+ "stock_exceptions": [],
+ "accept_open": {
+  "reason": "Owner, 2026-10-01: accepted open for the P2-P4 follow-ups of round 2 on R2, R3, R5, R6, R7 and R9 (Research.md, Round 2, Rules of stage 1): FU-2P1's 18 P1 items: 10 values whose question is already under Raised by P1 and answered for research (V26, V27, V29, V39, V43, V47, V92, V139, V148, V181); the monostable page's servo rail figures, which V55 replaces; the board's draw of about 49.7 A at an assumed 90 % efficiency, the nominal sizing basis; the pack disconnect's round 1 account, corrected in the Follow-ups row; the adjustable supply's continuous current, which R6 qualifies on V281's 33 °C/W; and 3 markings in R6 the critic did not rule on.",
+  "functions": [
+   "R2: FU-2P1 left 2 P1 items unresolved",
+   "R3: FU-2P1 left 5 P1 items unresolved"
+  ]
+ },
+ "decisions": {
+  "Q4": "An external ADC: ADCS7476AIMFX/NOPB, the part R10 kept (owner, 2026-09-29)",
+  "Q8": "An I²C FRAM: MB85RC256VPNF-G-AMERE2, the part R12 kept (owner, 2026-09-29)",
+  "Q9": "The 74HC423 keeps the '423 behaviour, and an SN74AUP1G17DBVR with I_off goes in front of its trigger inputs, as R3 selected (owner, 2026-09-29)"
+ },
+ "planned": 16,
+ "started": 21,
+ "extra_used": 5,
+ "free": 16,
+ "skipped": [],
+ "summary": {
+  "categories": [
+   "R1",
+   "R2",
+   "R3"
+  ],
+  "held": [],
+  "results": [
+   {
+    "category": "R1",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "Microcontroller",
+      "part": "RP2354B",
+      "as": "primary",
+      "status": "verified; refutation did not stand",
+      "reason": ""
+     },
+     {
+      "function": "12 MHz crystal",
+      "part": "ABM8-272-T3",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "Core regulator inductor",
+      "part": "AOTA-B201610S3R3-101-T",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "USB protection",
+      "part": "TPD6E05U06RVZR",
+      "as": "primary",
+      "status": "verified"
+     }
+    ],
+    "figures_open": [],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "Microcontroller",
+      "decision": "none",
+      "part": "RP2354B",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "12 MHz crystal",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Core regulator inductor",
+      "decision": "none",
+      "part": "AOTA-B201610S3R3-101-T",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "USB protection",
+      "decision": "none",
+      "part": "TPD6E05U06RVZR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   },
+   {
+    "category": "R2",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "Link CAN controller",
+      "part": "MCP2518FDT-E/SL",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Link CAN transceiver",
+      "part": "TCAN3413DR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "External CAN controller",
+      "part": "MCP2518FDT-E/SL",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "External CAN transceiver",
+      "part": "TCAN1472VDRQ1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+      "part": "DSC1001DL5-040.0000",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "figure": "function requirements: Link CAN controller",
+      "status": "refuted"
+     },
+     {
+      "figure": "function requirements: External CAN controller",
+      "status": "confirmed; refutation did not stand"
+     }
+    ],
+    "figures_open": [
+     "function requirements: Link CAN controller"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "Link CAN controller",
+      "decision": "none",
+      "part": "MCP2518FDT-E/SL",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Link CAN transceiver",
+      "decision": "none",
+      "part": "TCAN3413DR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "External CAN controller",
+      "decision": "none",
+      "part": "MCP2518FDT-E/SL",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "External CAN transceiver",
+      "decision": "none",
+      "part": "TCAN1472VDRQ1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Link terminator (the 120 Ohm at the IO board's end: fitted, switchable or external)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+      "decision": "none",
+      "part": "DSC1001DL5-040.0000",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   },
+   {
+    "category": "R3",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "monostable",
+      "part": "74HC423BQ,115",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "OR gate",
+      "part": "74AUP1G32GW,125",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "reset supervisor",
+      "part": "TPS3703A7330DSERQ1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "latch",
+      "part": "74LVC1G175GW,125",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "latch clear control",
+      "part": "434153017835",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "trigger-path inverter",
+      "part": "SN74AUP1G14DBVR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "trigger input I_off buffer (Q9)",
+      "part": "SN74AUP1G17DBVR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "inverter on an active-low output enable",
+      "part": "SN74LVC1G04DBVR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "servo rail gate",
+      "part": "BSC014N04LSATMA1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "servo rail gate driver",
+      "part": "TPSI3052DWZR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "onboard pack switch MOSFETs",
+      "part": "IPT015N10N5ATMA1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "onboard pack switch driver",
+      "part": "TPSI3052DWZR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "external module driver output",
+      "part": "TPSI3052DWZR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "pack reverse-polarity protection",
+      "part": "IPT015N10N5ATMA1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "pack precharge",
+      "part": "CSD19537Q3T",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "figure": "re-rank report: document key",
+      "status": "refuted"
+     },
+     {
+      "figure": "re-rank drop: trigger-path inverter: SN74LVC1G14DCKR",
+      "status": "refuted"
+     }
+    ],
+    "figures_open": [
+     "re-rank report: document key",
+     "re-rank drop: trigger-path inverter: SN74LVC1G14DCKR"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "monostable",
+      "decision": "none",
+      "part": "74HC423BQ,115",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "OR gate",
+      "decision": "none",
+      "part": "74AUP1G32GW,125",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "reset supervisor",
+      "decision": "none",
+      "part": "TPS3703A7330DSERQ1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "latch",
+      "decision": "none",
+      "part": "74LVC1G175GW,125",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "latch clear control",
+      "decision": "none",
+      "part": "434153017835",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "trigger-path inverter",
+      "decision": "none",
+      "part": "SN74AUP1G14DBVR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "trigger input I_off buffer (Q9)",
+      "decision": "none",
+      "part": "SN74AUP1G17DBVR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "inverter on an active-low output enable",
+      "decision": "none",
+      "part": "SN74LVC1G04DBVR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "servo rail gate",
+      "decision": "none",
+      "part": "BSC014N04LSATMA1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "servo rail gate driver",
+      "decision": "none",
+      "part": "TPSI3052DWZR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "onboard pack switch MOSFETs",
+      "decision": "none",
+      "part": "IPT015N10N5ATMA1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "onboard pack switch driver",
+      "decision": "none",
+      "part": "TPSI3052DWZR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "external pack switch module",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "external module driver output",
+      "decision": "none",
+      "part": "TPSI3052DWZR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "pack reverse-polarity protection",
+      "decision": "none",
+      "part": "IPT015N10N5ATMA1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "pack overvoltage and transient clamp",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "pack precharge",
+      "decision": "none",
+      "part": "CSD19537Q3T",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "timing network (C and R of the monostable)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "heartbeat-node series resistors, links and fail-safe pull-downs",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   }
+  ],
+  "selection": {
+   "R1": [
+    {
+     "function": "Microcontroller",
+     "decision": "none",
+     "part": "RP2354B",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "12 MHz crystal",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Core regulator inductor",
+     "decision": "none",
+     "part": "AOTA-B201610S3R3-101-T",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "USB protection",
+     "decision": "none",
+     "part": "TPD6E05U06RVZR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ],
+   "R2": [
+    {
+     "function": "Link CAN controller",
+     "decision": "none",
+     "part": "MCP2518FDT-E/SL",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Link CAN transceiver",
+     "decision": "none",
+     "part": "TCAN3413DR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "External CAN controller",
+     "decision": "none",
+     "part": "MCP2518FDT-E/SL",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "External CAN transceiver",
+     "decision": "none",
+     "part": "TCAN1472VDRQ1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Link terminator (the 120 Ohm at the IO board's end: fitted, switchable or external)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+     "decision": "none",
+     "part": "DSC1001DL5-040.0000",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ],
+   "R3": [
+    {
+     "function": "monostable",
+     "decision": "none",
+     "part": "74HC423BQ,115",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "OR gate",
+     "decision": "none",
+     "part": "74AUP1G32GW,125",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "reset supervisor",
+     "decision": "none",
+     "part": "TPS3703A7330DSERQ1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "latch",
+     "decision": "none",
+     "part": "74LVC1G175GW,125",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "latch clear control",
+     "decision": "none",
+     "part": "434153017835",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "trigger-path inverter",
+     "decision": "none",
+     "part": "SN74AUP1G14DBVR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "trigger input I_off buffer (Q9)",
+     "decision": "none",
+     "part": "SN74AUP1G17DBVR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "inverter on an active-low output enable",
+     "decision": "none",
+     "part": "SN74LVC1G04DBVR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "servo rail gate",
+     "decision": "none",
+     "part": "BSC014N04LSATMA1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "servo rail gate driver",
+     "decision": "none",
+     "part": "TPSI3052DWZR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "onboard pack switch MOSFETs",
+     "decision": "none",
+     "part": "IPT015N10N5ATMA1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "onboard pack switch driver",
+     "decision": "none",
+     "part": "TPSI3052DWZR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "external pack switch module",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "external module driver output",
+     "decision": "none",
+     "part": "TPSI3052DWZR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "pack reverse-polarity protection",
+     "decision": "none",
+     "part": "IPT015N10N5ATMA1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "pack overvoltage and transient clamp",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "pack precharge",
+     "decision": "none",
+     "part": "CSD19537Q3T",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "timing network (C and R of the monostable)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "heartbeat-node series resistors, links and fail-safe pull-downs",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ]
+  },
+  "figures_open": {
+   "R1": [],
+   "R2": [
+    "function requirements: Link CAN controller"
+   ],
+   "R3": [
+    "re-rank report: document key",
+    "re-rank drop: trigger-path inverter: SN74LVC1G14DCKR"
+   ]
+  },
+  "part_refuted": {
+   "R1": [],
+   "R2": [],
+   "R3": []
+  },
+  "q_missing": [],
+  "chain_failed": []
+ },
+ "followUps": [
+  {
+   "role": "P0",
+   "host": "www.vishay.com",
+   "categories": [
+    "R3",
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P0",
+   "host": "www.isabellenhuette.com",
+   "categories": [
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P0",
+   "host": "abracon.com",
+   "categories": [
+    "R1"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "Microcontroller",
+   "part": "RP2354B",
+   "reason": "shortlisted states other values than the function for: part, stepping, package, GPIO count, ADC inputs, in-package flash, flash supply range, GPIO0-39 fault tolerance, GPIO40-47 rating, pin input leakage, pad pull-up, SWDIO reset bias, BOOT pin, RESET pin, USB device port, crystal input, core regulator, PIO blocks and reach, PWM slices, DMA channels, serial controllers, store endurance, flash write window, image size limit, board header, operating ambient, watchdog enabled, watchdog stop deadline (V1), watchdog stall cover (V2), watchdog window (V1 and V2), image watchdog timeout (V4), held quantity; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "Microcontroller",
+   "part": "RP2354B",
+   "reason": "shortlisted lacks the function's requirements: placements"
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "12 MHz crystal",
+   "part": "ABM8-272-T3",
+   "reason": "shortlisted states other values than the function for: cut and mode, shunt capacitance C0, ESR, drive level rating, total frequency error, DShot clock budget, USB data rate, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "12 MHz crystal",
+   "part": "ABM8-272-T3",
+   "reason": "shortlisted lacks the function's requirements: placements"
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "Core regulator inductor",
+   "part": "AOTA-B201610S3R3-101-T",
+   "reason": "shortlisted states other values than the function for: saturation current, DC resistance, polarity marking, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "Core regulator inductor",
+   "part": "VLS4015CX-3R3M-H",
+   "reason": "shortlisted states other values than the function for: saturation current, DC resistance, polarity marking, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "Core regulator inductor",
+   "part": "74438357033",
+   "reason": "shortlisted states other values than the function for: saturation current, DC resistance, polarity marking, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "Core regulator inductor",
+   "part": "XFL4020-332MEC",
+   "reason": "shortlisted states other values than the function for: saturation current, DC resistance, polarity marking, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "Core regulator inductor",
+   "part": "AOTA-B201610S3R3-101-T",
+   "reason": "shortlisted lacks the function's requirements: placements"
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "Core regulator inductor",
+   "part": "VLS4015CX-3R3M-H",
+   "reason": "shortlisted lacks the function's requirements: placements"
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "Core regulator inductor",
+   "part": "74438357033",
+   "reason": "shortlisted lacks the function's requirements: placements"
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "Core regulator inductor",
+   "part": "XFL4020-332MEC",
+   "reason": "shortlisted lacks the function's requirements: placements"
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "Core regulator inductor",
+   "part": "XGL4020-332MEC",
+   "reason": "alternate states other values than the function for: saturation current, DC resistance, polarity marking, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "Core regulator inductor",
+   "part": "XGL4020-332MEC",
+   "reason": "alternate lacks the function's requirements: placements"
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "USB protection",
+   "part": "TPD6E05U06RVZR",
+   "reason": "shortlisted states other values than the function for: lines covered, IEC 61000-4-2 contact, IEC 61000-4-2 air, VBUS rating, D+ and D- stand-off, D+/D- steady voltage (V12), D+/D- ESD clamping (V12), D+/D- capacitance (V11), D+/D- capacitance matching, CC function, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "USB protection",
+   "part": "TPD6E001RSFR",
+   "reason": "shortlisted states other values than the function for: lines covered, IEC 61000-4-2 contact, IEC 61000-4-2 air, VBUS rating, D+ and D- stand-off, D+/D- steady voltage (V12), D+/D- ESD clamping (V12), D+/D- capacitance (V11), D+/D- capacitance matching, CC function, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "USB protection",
+   "part": "TPD6E004RSER",
+   "reason": "shortlisted states other values than the function for: lines covered, IEC 61000-4-2 contact, IEC 61000-4-2 air, VBUS rating, D+ and D- stand-off, D+/D- steady voltage (V12), D+/D- ESD clamping (V12), D+/D- capacitance (V11), D+/D- capacitance matching, CC function, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "USB protection",
+   "part": "TPD6E001RSER",
+   "reason": "shortlisted states other values than the function for: lines covered, IEC 61000-4-2 contact, IEC 61000-4-2 air, VBUS rating, D+ and D- stand-off, D+/D- steady voltage (V12), D+/D- ESD clamping (V12), D+/D- capacitance (V11), D+/D- capacitance matching, CC function, operating temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "USB protection",
+   "part": "TPD6E05U06RVZR",
+   "reason": "shortlisted lacks the function's requirements: placements"
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "USB protection",
+   "part": "TPD6E001RSFR",
+   "reason": "shortlisted lacks the function's requirements: placements"
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "USB protection",
+   "part": "TPD6E004RSER",
+   "reason": "shortlisted lacks the function's requirements: placements"
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "function": "USB protection",
+   "part": "TPD6E001RSER",
+   "reason": "shortlisted lacks the function's requirements: placements"
+  },
+  {
+   "role": "P4",
+   "category": "R1",
+   "function": "12 MHz crystal",
+   "part": "ABM8-272-T3",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: no longevity or lifecycle programme page found on Abracon's product page, quality page (https://abracon.com/quality, HTTP 200, no commitment text) or listings; none published as far as read. Not a gate under S5.",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R1",
+   "function": "12 MHz crystal",
+   "part": "ABM8-272-T3",
+   "figure": "market introduction",
+   "reason": "recorded as not read: not read: first revision date; the served datasheet is Drawing 456603 Revision B, Date of Issue Sept. 16th, 2024 (SHA-256 aead22b6...ae91), 24.5 months before today, so over 12 months. Not flagged.",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R1",
+   "function": "Core regulator inductor",
+   "part": "AOTA-B201610S3R3-101-T",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: no Abracon longevity or lifecycle programme page found (product page and https://abracon.com/quality carry none). Not a gate under S5.",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "Link CAN controller",
+   "part": "MCP2518FDT-E/SL",
+   "reason": "shortlisted states other values than the function for: bus format, exact 1 Mbit/s at a 75 % sample point, takes the 40 MHz clock, SPI mode 0 at 10 MHz, 3.3 V logic toward the RP2354B, active-low interrupt, error reporting, RXCAN and TXCAN test points, time to acknowledge; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "Link CAN controller",
+   "part": "MCP251863T-E/SS",
+   "reason": "shortlisted states other values than the function for: bus format, exact 1 Mbit/s at a 75 % sample point, takes the 40 MHz clock, SPI mode 0 at 10 MHz, 3.3 V logic toward the RP2354B, active-low interrupt, error reporting, RXCAN and TXCAN test points; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "Link CAN controller",
+   "part": "MCP2518FDT-H/SL",
+   "reason": "shortlisted states other values than the function for: bus format, exact 1 Mbit/s at a 75 % sample point, takes the 40 MHz clock, SPI mode 0 at 10 MHz, 3.3 V logic toward the RP2354B, active-low interrupt, error reporting, RXCAN and TXCAN test points, time to acknowledge; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "Link CAN controller",
+   "part": "MCP251863T-E/SS",
+   "reason": "shortlisted lacks the function's requirements: time to acknowledge"
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "Link CAN transceiver",
+   "part": "TCAN3413DR",
+   "reason": "shortlisted states other values than the function for: classic CAN at 1 Mbit/s, RXD at 3.3 V logic, loop delay, bus-fault rating, supply from a board rail, separate TXD and RXD; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "Link CAN transceiver",
+   "part": "SN65HVD233DR",
+   "reason": "shortlisted states other values than the function for: classic CAN at 1 Mbit/s, RXD at 3.3 V logic, loop delay, bus-fault rating, supply from a board rail, separate TXD and RXD; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "Link CAN transceiver",
+   "part": "TCAN1472VDRQ1",
+   "reason": "shortlisted states other values than the function for: classic CAN at 1 Mbit/s, RXD at 3.3 V logic, loop delay, bus-fault rating, supply from a board rail, separate TXD and RXD; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "External CAN controller",
+   "part": "MCP2518FDT-E/SL",
+   "reason": "shortlisted states other values than the function for: CAN FD at the port's rates, exact rates from the 40 MHz clock, takes the 40 MHz clock, SPI mode 0 at 10 MHz on the shared bus, 3.3 V logic toward the RP2354B, transceiver standby held by the enable node, error reporting, RXCAN and TXCAN test points; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "External CAN controller",
+   "part": "MCP2518FDT-E/QBB",
+   "reason": "shortlisted states other values than the function for: CAN FD at the port's rates, exact rates from the 40 MHz clock, takes the 40 MHz clock, SPI mode 0 at 10 MHz on the shared bus, 3.3 V logic toward the RP2354B, transceiver standby held by the enable node, error reporting, RXCAN and TXCAN test points; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "External CAN controller",
+   "part": "MCP2518FDT-H/SL",
+   "reason": "shortlisted states other values than the function for: CAN FD at the port's rates, exact rates from the 40 MHz clock, takes the 40 MHz clock, SPI mode 0 at 10 MHz on the shared bus, 3.3 V logic toward the RP2354B, transceiver standby held by the enable node, error reporting, RXCAN and TXCAN test points; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "External CAN transceiver",
+   "part": "TCAN1472VDRQ1",
+   "reason": "shortlisted states other values than the function for: CAN FD at the port's rates, standby input held by the enable node, normal to standby time, powered-off isolation of the standby input, loop delay, bus-fault rating, isolation, RXD at 3.3 V logic, supply from a board rail; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "External CAN transceiver",
+   "part": "TCAN1462VDRBRQ1",
+   "reason": "shortlisted states other values than the function for: CAN FD at the port's rates, standby input held by the enable node, normal to standby time, powered-off isolation of the standby input, loop delay, bus-fault rating, isolation, RXD at 3.3 V logic, supply from a board rail; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "External CAN transceiver",
+   "part": "TCAN1472VDRBRQ1",
+   "reason": "shortlisted states other values than the function for: CAN FD at the port's rates, standby input held by the enable node, normal to standby time, powered-off isolation of the standby input, loop delay, bus-fault rating, isolation, RXD at 3.3 V logic, supply from a board rail; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R2",
+   "function": "Link terminator (the 120 Ohm at the IO board's end: fitted, switchable or external)",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+   "part": "DSC1001DL5-040.0000",
+   "reason": "shortlisted states other values than the function for: frequency, frequency error, oscillator output into OSC1, oscillator supply, start-up; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+   "part": "SG-8101CE 40.000000MHz TBGPA",
+   "reason": "shortlisted states other values than the function for: frequency, frequency error, oscillator output into OSC1, oscillator supply, start-up; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+   "part": "X1G0059610009",
+   "reason": "shortlisted states other values than the function for: frequency, frequency error, oscillator output into OSC1, oscillator supply, start-up; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+   "part": "X1G0041710150",
+   "reason": "shortlisted states other values than the function for: frequency, frequency error, oscillator output into OSC1, oscillator supply, start-up; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+   "part": "ABM8W-40.0000MHZ-4-B1U-T3",
+   "reason": "shortlisted states other values than the function for: frequency, frequency error, crystal or resonator window, crystal gain margin, crystal parameters of V269, start-up; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+   "part": "DSC1001DL5-040.0000",
+   "reason": "shortlisted lacks the function's requirements: crystal or resonator window, crystal gain margin, crystal parameters of V269"
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+   "part": "SG-8101CE 40.000000MHz TBGPA",
+   "reason": "shortlisted lacks the function's requirements: crystal or resonator window, crystal gain margin, crystal parameters of V269"
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+   "part": "X1G0059610009",
+   "reason": "shortlisted lacks the function's requirements: crystal or resonator window, crystal gain margin, crystal parameters of V269"
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+   "part": "X1G0041710150",
+   "reason": "shortlisted lacks the function's requirements: crystal or resonator window, crystal gain margin, crystal parameters of V269"
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+   "part": "ABM8W-40.0000MHZ-4-B1U-T3",
+   "reason": "shortlisted lacks the function's requirements: oscillator output into OSC1, oscillator supply"
+  },
+  {
+   "role": "P4",
+   "category": "R1",
+   "function": "12 MHz crystal",
+   "part": "ABM8-272-T3",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "figure": "function requirements: Link CAN controller",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "monostable",
+   "part": "74HC423BQ,115",
+   "reason": "shortlisted states other values than the function for: trigger input isolation, timing capacitor range, timing constant k drift (V36), timing-pin leakage at 50 degC (V37), window at every corner; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "OR gate",
+   "part": "74AUP1G32GW,125",
+   "reason": "shortlisted states other values than the function for: minimum supply; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "reset supervisor",
+   "part": "TPS3703A7330DSERQ1",
+   "reason": "shortlisted states other values than the function for: release at or below the rail's lower edge, band to 3.201 V stated, delay (V43), active-low output held through the ramp; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "latch",
+   "part": "74LVC1G175GW,125",
+   "reason": "shortlisted states other values than the function for: minimum supply, clock edge, output drive; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "latch clear control",
+   "part": "434153017835",
+   "reason": "shortlisted states other values than the function for: operator control and place (V31); checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "inverter on an active-low output enable",
+   "part": "SN74LVC1G04DBVR",
+   "reason": "shortlisted states other values than the function for: output pull, output drive; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "servo rail gate",
+   "part": "BSC014N04LSATMA1",
+   "reason": "shortlisted states other values than the function for: the rail high-side switch is the gate (V33), conducts from 0.8 V (V55), fail-open, gate-source rating against the driver; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "servo rail gate",
+   "part": "NTMFS5C430NLT1G",
+   "reason": "shortlisted states other values than the function for: the rail high-side switch is the gate (V33), conducts from 0.8 V (V55), fail-open, gate-source rating against the driver; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "onboard pack switch MOSFETs",
+   "part": "IPT015N10N5ATMA1",
+   "reason": "shortlisted states other values than the function for: safe operating area during turn-off, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "onboard pack switch MOSFETs",
+   "part": "IPT015N10NF2SATMA1",
+   "reason": "shortlisted states other values than the function for: safe operating area during turn-off, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "onboard pack switch driver",
+   "part": "TPSI3052DWZR",
+   "reason": "shortlisted states other values than the function for: high-voltage rating (V34), closing time (V46), turn-off overlap; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R3",
+   "function": "external pack switch module",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "external module driver output",
+   "part": "TPSI3052DWZR",
+   "reason": "shortlisted states other values than the function for: module control input, closing time (V46); checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "pack reverse-polarity protection",
+   "part": "IPT015N10N5ATMA1",
+   "reason": "shortlisted states other values than the function for: current, external path; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R3",
+   "function": "pack overvoltage and transient clamp",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "pack precharge",
+   "part": "CSD19537Q3T",
+   "reason": "shortlisted states other values than the function for: ESC input capacitance precharged (V42), closing time (V46), open path leakage (V40); checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R3",
+   "function": "timing network (C and R of the monostable)",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R3",
+   "function": "heartbeat-node series resistors, links and fail-safe pull-downs",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P3",
+   "category": "R3",
+   "function": "latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)",
+   "reason": "function the row names that P2 did not return: IOBoard.md@08042b0:244 and V31 (found by R3) place a Schmitt buffer with no transition-rate limit between the debounce and the clock; P2's latch record has a 'clock edge' requirement that names SN74AUP1G17 but returns no function, candidates or placement count for this part. It is a second SN74AUP1G17 placement beside the Q9 buffer (7 placements by 5 boards would not change the gate) and needs its own record."
+  },
+  {
+   "role": "P3",
+   "category": "R3",
+   "function": "switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+   "reason": "function the row names that P2 did not return: V54 (owner, 2026-09-28) states that the switched node goes negative until a clamp conducts, and P2's SOA requirements for the onboard MOSFETs and the external module assume 'about 1 V of the freewheel diode on the switched node'. P2's clamp record lists a negative-clamp requirement (above -0.3 V where an INA228 pin sits on it, which none does) but returns no function and no candidate for the diode: it must carry 300 A (onboard) and 600 A (external) for the 0.5 uH discharge (22.5 mJ and 90 mJ), and stand 67.2 V reverse with the switch closed. No entry exists, so the SOA qualification of rank 1 rests on an unselected part."
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "latch clear control",
+   "part": "434153017835",
+   "figure": "market introduction",
+   "reason": "recorded as not read: not read: the datasheet carries no revision history and no first-revision date; its title block reads REVISION 001.002, 2021-01-07 (not the first revision)",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "figure": "re-rank report: document key",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "figure": "re-rank drop: trigger-path inverter: SN74LVC1G14DCKR",
+   "reason": "figure refuted"
+  }
+ ],
+ "missing": [],
+ "sequence": 19,
+ "output_sha256": "41d5a883a5d3814272d9e1958e28e81f2c1394fd9754091129e2688aabf4b5ca",
+ "research_round": 2
+}

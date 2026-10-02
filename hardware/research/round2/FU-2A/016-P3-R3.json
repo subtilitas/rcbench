@@ -1,0 +1,131 @@
+{
+ "role": "P3",
+ "category": "R3",
+ "label": "P3-R3",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "missed": [
+   {
+    "function": "onboard pack switch MOSFETs",
+    "part": "IPT017N12NM6ATMA1 (LCSC C20191620)",
+    "maker": "Infineon (S1)",
+    "why": "OptiMOS 6 120 V in the same PG-HSOF-8 (TOLL) package as rank 1; P2 records no 120 V family. Datasheet Rev. 2.0 (2022-12-06), https://www.infineon.com/assets/row/public/documents/24/49/infineon-ipt017n12nm6-datasheet-en.pdf, read 2026-10-01T22:48:06Z. V34: V(BR)DSS 120 V min. F2/V49: RDS(on) 1.7 mOhm max at VGS 10 V, ID 150 A; Diagram 8 typical 100 degC/25 degC ratio about 1.37 at 10 V gives 2.33 mOhm, 8 devices 6.5 W at 150 A (derived; 10 devices 5.2 W; V49 limit 7 W); ID 331 A at TC 25 degC, 234 A at TC 100 degC. V48/SOA, method of the P2 record: Diagram 3 (TC 25 degC, single pulse, 300 dpi, read by eye, about 10 %) at 85 V: 1 us line about 1250 A, 10 us line about 230 A; at TC 100 degC (x 0.5, Ptot ratio 0.5) about 625 A at 1 us and about 375 A at 2 us by log interpolation (derived), so one device carries 300 A for a 2 us overlap. VGS +/-20 V (16.2 V drive passes). IDSS 1 uA at 25 degC, 100 uA max at 125 degC (V40). Enhancement mode, VGS(th) 2.6 to 3.6 V. Qg 141 nC max. Tj -55 to 175 degC. Stock: JLCPCB C20191620 stockCount 12528, canPresaleNumber 12446, expand (2026-10-01T22:39:09Z, vendors.py jlcpcb); Digi-Key IPT017N12NM6ATMA1 Active, stock_available 6634, lead 8 weeks (22:49:08Z, vendors.py digikey). Lifecycle: https://www.infineon.com/part/IPT017N12NM6 body reads 'active and preferred' (22:47:58Z). Land match to rank 1's PG-HSOF-8 not compared. The 120 V rating does not help the clamp: avalanche above 85 V still lifts the pack node over the INA228 limit.  Placements 8 to 10 as for rank 1."
+   },
+   {
+    "function": "onboard pack switch MOSFETs",
+    "part": "IAUT300N10S5N015 (LCSC C5151439; Digi-Key IAUT300N10S5N015ATMA1)",
+    "maker": "Infineon (S1)",
+    "why": "OptiMOS 5 automotive-qualified 100 V, PG-HSOF-8-1 (TOLL); P2 lists it only as 'not qualified in this run'. Datasheet Rev. 1.2 (2025-02-19), https://www.infineon.com/assets/row/public/documents/10/49/infineon-iaut300n10s5n015-datasheet-en.pdf, read 2026-10-01T22:48:06Z. V(BR)DSS 100 V min; RDS(on) 1.5 mOhm max at VGS 10 V, ID 100 A (Diagram 8 typical 1.8 mOhm at 100 degC against 1.3 at 25 degC: 2.08 mOhm, 8 devices 5.85 W at 150 A, derived); ID 300 A at TC 25 degC, 247 A at TC 100 degC; VGS +/-20 V; IDSS 1 uA at 25 degC, 20 uA max at 85 degC (VDS 50 V); VGS(th) 2.2 to 3.8 V; Qg 216 nC max. Diagram 3 (TC 25 degC, single pulse, 200 dpi) at 85 V: 1 us line about 1200 A, 10 us line about 230 A; at TC 100 degC (x 0.5) about 365 A at 2 us (derived, same method as rank 1). Stock: C5151439 stockCount 555, canPresaleNumber 530 (2026-10-01T22:39:11Z); against the gate of 250 at 10 a board it passes, against 500 for the 20 a board summed with the reverse-polarity array it passes by 55. The other LCSC row, C535729, has stockCount 5, canPresaleNumber -10 and fails rule 4. Digi-Key IAUT300N10S5N015ATMA1 Active, stock_available 12057, lead 26 weeks (22:49:17Z). Infineon page https://www.infineon.com/part/IAUT300N10S5N015 reads 'active and preferred' (22:47:57Z). A candidate pin-compatible alternate to rank 1 for rule 5 if the land match (PG-HSOF-8-1 against PG-HSOF-8) is confirmed; not compared here."
+   },
+   {
+    "function": "pack reverse-polarity protection",
+    "part": "IPT017N12NM6ATMA1 (C20191620) and IAUT300N10S5N015 (C5151439)",
+    "maker": "Infineon (S1)",
+    "why": "The function uses the same array as the onboard switch, so the two records above apply unchanged: 100 V and 120 V blocking exceed the -67.2 V of F15, the channel conducts both ways when on (V47), VGS +/-20 V, stock above the summed 20 a board gate of 500 for C20191620 (12528) and 555 for C5151439 (2026-10-01T22:39:09Z and 22:39:11Z). The shortlist holds one part for this function; these give it a rank 2 and 3."
+   },
+   {
+    "function": "reset supervisor",
+    "part": "TPS389033GQDSERQ1 (LCSC C2066928)",
+    "maker": "Texas Instruments (S1)",
+    "why": "TPS3890-Q1 option G: VITN 3.06 V, VITP 3.084 V typical, threshold accuracy +/-1 % over -40 to 125 degC, VHYST 0.325 to 0.825 % (SBVS303B, Feb 2018, https://www.ti.com/lit/ds/symlink/tps3890-q1.pdf, read 2026-10-01T22:43:51Z). Threshold minimum 3.0294 V (above 2.0 V, 1.65 V, 0.8 V); release at most 3.06 x 1.01 x 1.00825 = 3.116 V (derived), under 3.201 V; band to 3.201 V 171.6 mV (derived), 16.6 mV wider than rank 1's 155 mV, so a rank 2 candidate. VDD 1.5 to 5.5 V; open-drain active-low RESET, VPOR 0.8 V max; no overvoltage comparator, so no OV trip below 3.399 V. V43: with CT open the rising delay tPD(r) is 25 us typical at VDD 3.3 V, with no minimum stated (derived minimum with a CT capacitor: C x 1.17 V / 1.35 uA); the 125 ns is met by the typical figure only. Pinout differs from the TPS3703 in the same DSE WSON-6 package (SENSE 1, GND 2, MR 3, VDD 4, CT 5, RESET 6), so it is not a drop-in. JLCPCB C2066928 stockCount 162, canPresaleNumber 161 (22:47:33Z); Digi-Key TPS389033GQDSERQ1 Active, stock_available 1136 (lead 26 weeks) and 56140 (lead 1 week), two rows (22:52:46Z); https://www.ti.com/product/TPS3890-Q1 reads ACTIVE (22:52:46Z). Not a find but a fact for the band: TPS3703 option A5330DSER (5 % window, UV 3.135 V +/-0.7 %: minimum 3.113 V, release at most 3.182 V, band 88 mV, derived from SBVS249B Fig. 5-1 and Table 7.5) and A6330DSER (band 121 mV) exist, but JLCPCB C2868050 and C2862900 read stockCount 0, canPresaleNumber 0 (22:47:31Z), so they fail rule 4. The option 4 window (A4330) releases at 3.216 V at most and fails 3.201 V."
+   },
+   {
+    "function": "OR gate",
+    "part": "SN74AUP1G32DBVR (LCSC C469878)",
+    "maker": "Texas Instruments (S1)",
+    "why": "P2 dropped only the UMW row of this part number; the Texas Instruments row C469878 is a genuine S1 part. SN74AUP1G32 datasheet https://www.ti.com/lit/ds/symlink/sn74aup1g32.pdf read 2026-10-01T22:49:24Z: Ioff 0.6 uA max (0.2 uA typical) at VCC 0 V, VI or VO 0 to 3.6 V, on both inputs, -40 to 85 degC; VCC 0.8 to 3.6 V (minimum under 3.018 V); VIH 2 V at VCC 3 to 3.6 V (under VCC - 0.1 V of the 74HC423); tpd 4.6 ns max at 3.3 V; push-pull, IOH -4 mA at 3 V. Ioff is 0.1 uA above rank 1's +/-0.5 uA, so a rank 2 or 3 candidate. JLCPCB C469878 stockCount 3492, canPresaleNumber 3266 (22:49:26Z); Digi-Key SN74AUP1G32DBVR Texas Instruments row Active, stock_available 93341, lead 20 weeks (22:49:37Z). SOT-23-5, not the same land as the TSSOP-5 rank 1."
+   },
+   {
+    "function": "latch clear control",
+    "part": "EVQ-Q2B03W (LCSC C79178)",
+    "maker": "Panasonic (S2)",
+    "why": "Light-touch switch, 6.5 x 6.0 mm, snap action SPST. Panasonic specification read from JLCPCB's copy (https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588917540969975808, vendors.py fetch 2026-10-01T22:50:09Z; not a maker URL): bouncing 10 ms max (ON, OFF); rating 10 uA at 2 Vdc to 20 mA at 15 Vdc (covers 3.3 V at up to 1 mA); operating temperature -40 to +85 degC. JLCPCB C79178 stockCount 9646, canPresaleNumber 9308 (22:50:13Z, vendors.py jlcpcb); Digi-Key EVQ-Q2B03W Panasonic Industry Active, stock_available 9994, lead 14 weeks (22:50:23Z), so a second vendor exists. Maker page status not read (P2 found the Panasonic product URLs answer 404)."
+   },
+   {
+    "function": "latch clear control",
+    "part": "EVQPLHA15 (LCSC C79172)",
+    "maker": "Panasonic (S2)",
+    "why": "Panasonic EVQ-PL series, 4.9 x 4.9 mm, snap action SPST, 1.6 N. Specification from JLCPCB's copy (https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588918242128121856, fetched 2026-10-01T22:50:08Z): bouncing 3 ms max (ON) and 8 ms max (OFF), tighter than the 10 ms of rank 1 and of the EVPAA parts; rating 10 uA at 2 Vdc to 20 mA at 15 Vdc; operating temperature -20 to +70 degC (covers 0 to 50 degC); 500000 cycles min. JLCPCB C79172 stockCount 92890, canPresaleNumber 89144 (22:50:13Z). Digi-Key EVQ-PLHA15 Active, stock_available 0, lead 14 weeks (22:50:19Z): the second-vendor route fails rule 5, so it needs an alternate that is not named here. Maker page status not read."
+   },
+   {
+    "function": "pack precharge",
+    "part": "DMT10H015LFG-13 (LCSC C6021899)",
+    "maker": "Diodes Incorporated (S1)",
+    "why": "100 V N-channel, PowerDI3333-8 (3.3 x 3.3 mm, the size of rank 1's VSONP-8). Datasheet read from JLCPCB's copy (https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8560101008559788032, fetched 2026-10-01T22:53:21Z): BVDSS 100 V min (V34); VGSS +/-20 V (16.2 V drive passes); RDS(on) 13.5 mOhm max at 10 V, 18 mOhm at 6 V; ID 42 A at TC 25 degC (3.5 A peak of V42 passes); IDSS 1 uA max at VDS 80 V (V40); enhancement mode, VGS(th) 1.4 to 3.5 V (fail-open). Switching times are nanoseconds against the 5 ms budget (not read in full). JLCPCB C6021899 stockCount 2001, canPresaleNumber 1993 (22:53:13Z), against a gate of 50 at 2 a board; Digi-Key DMT10H015LFG-13 Active, stock_available 2619, lead 52 weeks (22:53:33Z). Maker page lifecycle status not read: https://www.diodes.com/part/view/DMT10H015LFG answered 200 (22:53:35Z) with no status field found."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "74HC4538PW,118 (monostable)",
+    "reason_given": "passes every value read; not recorded in full: rank 1 holds a second source",
+    "why_it_fails": "Holding a second source is not a miss of any requirement value or sourcing rule. P2 keeps up to three survivors per function (owner, 2026-09-28) and the P4 refutation path needs a next-ranked part; the monostable shortlist holds one part, and a standing refutation of the 74HC423BQ,115 would have no rank 2. This part, and the CD74HC4538PWR alternate in its land, belong on the shortlist with a full record."
+   },
+   {
+    "part": "74LVC1G32GW,125 and SN74LVC1G32DCKR (OR gate)",
+    "reason_given": "passes every value read; not recorded in full: rank 1 holds a second source",
+    "why_it_fails": "Same: the reason is not a failed value. The OR gate shortlist holds one part; the owner's rule is up to three survivors. Both pass on P2's own statement, with JLCPCB stock 1306 and 37390."
+   },
+   {
+    "part": "TPS3850H33DRCT and TPS3852H33DRBR (reset supervisor)",
+    "reason_given": "passes every value read; not recorded in full: rank 1 holds a second source",
+    "why_it_fails": "Same. Both pass on P2's statement and have stock (JLCPCB 772 and 4319). The TPS3852H33 band is 156.5 mV by the FU-A3 P3 record, 1.5 mV over rank 1, so it is a valid rank 2 with different packages (SON-8 and VSON-10), not a land alternate."
+   },
+   {
+    "part": "74LVC1G74DC,125 and SN74LVC1G74DCUR; 74AUP1G175GW,125 and SN74LVC1G175DCKR (latch)",
+    "reason_given": "pass with the Schmitt buffer ahead of CP; not recorded: 8-pin land, three 6-pin survivors rank above; and: passes every value read, rank 1 holds a second source",
+    "why_it_fails": "The reason names three 6-pin survivors ranked above, but the latch shortlist holds one part, so no rank 2 or 3 exists. Land size is not a requirement value. The two 6-pin parts that pass (74AUP1G175GW,125 and SN74LVC1G175DCKR) should fill ranks 2 and 3."
+   },
+   {
+    "part": "EVPAA202K and EVPAA602W (latch clear control)",
+    "reason_given": "passes every value read; not recorded in full: rank 1 holds a second source",
+    "why_it_fails": "Same: both state 10 ms bounce, the 10 uA to 20 mA rating and carry JLCPCB stock; the shortlist holds one part. P2 also gives Digi-Key stock 30278 and 13795 for them, while the FU-A3 P3 record reads the Digi-Key product details of both as 404; the two readings disagree and neither is reconciled."
+   },
+   {
+    "part": "SN74LVC1G14DCKR and 74AUP1G14GVH (trigger-path inverter)",
+    "reason_given": "passes; not recorded: two lower-I_off survivors rank above it; passes every value read, rank 1 holds a second source",
+    "why_it_fails": "The shortlist holds one part, not two. Not a failed value."
+   },
+   {
+    "part": "SN74AUP1G17DCKR and 74LVC1G17GW,125 (trigger input I_off buffer, Q9)",
+    "reason_given": "passes every value read; not recorded in full: rank 1 holds a second source",
+    "why_it_fails": "Same. The Q9 buffer decision of the owner names rank 1, and a refutation of it has no recorded next candidate."
+   },
+   {
+    "part": "74LVC1G04GV,125 (inverter on an active-low output enable)",
+    "reason_given": "passes every value read; not recorded in full: rank 1 holds a second source",
+    "why_it_fails": "Same: one part recorded."
+   },
+   {
+    "part": "TPSI3050DWZR (servo rail gate driver)",
+    "reason_given": "passes every value read; not recorded in full: rank 1 holds a second source",
+    "why_it_fails": "P2's own servo rail gate driver requirement reads 'VDRV at or above 10 V', and P2's record for the external module driver output states TPSI3050 VDRV 9.4 V minimum. Either the pass statement or the requirement is unsound; the drop reason is not the controlling one. The servo switches ranked (BSC014N04LS, NTMFS5C430NL) are logic-level, so 9.4 V may suffice, but then the requirement row is wrong."
+   },
+   {
+    "part": "IPT015N10NF2SATMA1 (pack reverse-polarity protection)",
+    "reason_given": "passes every value read; recorded in full under onboard pack switch MOSFETs; not recorded here: rank 1 holds a second source",
+    "why_it_fails": "Same: the function's shortlist holds one part and the part passes."
+   },
+   {
+    "part": "DML3012LDC-7, DML3012LDC-7A, DML3008LFDS-7 and LTC4451AV#TRPBF (servo rail gate)",
+    "reason_given": "fail sourcing rule 4: the parts database lists 15, 25, 30 and 5 in stock (jlcparts copy of 2026-09-14); not counted at JLCPCB",
+    "why_it_fails": "The evidence breaks Sourcing rule 3: the jlcparts copy finds candidates and never counts them. The outcome holds on JLCPCB's API read 2026-10-01T22:51:46Z to 22:51:51Z: C17531599 stockCount 11, C17514180 25, C17662734 2 (presale 1), C3216388 4, all against the gate of 100 at 4 a board. The drop stands but needs this reading as its basis."
+   },
+   {
+    "part": "VOM1271T and TLP3906(TPL,E (onboard pack switch driver)",
+    "reason_given": "opening time within 5 ms not stated at the array load; open-circuit voltage 7.8 V and 7 V min, under 10 V",
+    "why_it_fails": "The 10 V figure is not a requirement of the pack MOSFETs: the TOLL parts state RDS(on) at VGS 6 V (IPT015N10N5 2.0 mOhm max), so 7 V to 7.8 V drive is workable with more devices. 'Not stated' is a missing reading, not a failed value. The controlling failures are the 2 us turn-off overlap and the 3 A peak sink of the SOA record, which photovoltaic drivers (gate discharge through a microamp source) are not shown to meet; P2 should say that and read their turn-off times."
+   }
+  ],
+  "missed_functions": [
+   {
+    "function": "latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)",
+    "why": "IOBoard.md@08042b0:244 and V31 (found by R3) place a Schmitt buffer with no transition-rate limit between the debounce and the clock; P2's latch record has a 'clock edge' requirement that names SN74AUP1G17 but returns no function, candidates or placement count for this part. It is a second SN74AUP1G17 placement beside the Q9 buffer (7 placements by 5 boards would not change the gate) and needs its own record."
+   },
+   {
+    "function": "switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+    "why": "V54 (owner, 2026-09-28) states that the switched node goes negative until a clamp conducts, and P2's SOA requirements for the onboard MOSFETs and the external module assume 'about 1 V of the freewheel diode on the switched node'. P2's clamp record lists a negative-clamp requirement (above -0.3 V where an INA228 pin sits on it, which none does) but returns no function and no candidate for the diode: it must carry 300 A (onboard) and 600 A (external) for the 0.5 uH discharge (22.5 mJ and 90 mJ), and stand 67.2 V reverse with the switch closed. No entry exists, so the SOA qualification of rank 1 rests on an unselected part."
+   }
+  ]
+ }
+}

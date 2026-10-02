@@ -1,0 +1,47 @@
+{
+ "role": "P3",
+ "category": "R1",
+ "label": "P3-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "missed": [
+   {
+    "function": "USB protection",
+    "part": "TPD6E001RSFR (LCSC C1975428)",
+    "maker": "Texas Instruments (JLCPCB maker_label 'Texas Instruments'; Digi-Key 'Texas Instruments'); allowlist S1",
+    "why": "P2 dropped it on a jlcparts stand-off of 5.0 V and did not read its datasheet. The datasheet (SLLS685D, https://www.ti.com/lit/ds/symlink/tpd6e001.pdf, SHA-256 2ac09d1a40497e97f41381a62d979bd68bced7105db31e6b8316e263d317af05, read 2026-10-01T21:49:17Z) gives: 6 channels; IEC 61000-4-2 +/-8 kV contact and +/-15 kV air (section 6.2), so V9 passes without the owner's relaxation, unlike TPD6E004's +/-12 kV air; Ci/o 1.5 pF typ (V11 <= 75 pF); channel leakage +/-1 nA; -40 to 85 C (V7); breakdown 11 V min. Section 8.2.2 step 5b: with VCC left unconnected it 'can tolerate higher signal swing in the range up to 10 V', which covers VBUS 5.5 V (V10) and CC at vRd, and with no supply tied to VBUS CC is not pulled toward an unpowered VBUS. TPD6E004 states only 5.8 V for the same case. Same layout condition as P2's rank 2: VCC pin open with the 0.1 uF bypass the datasheet recommends. Not shown or weaker: Table 6.1 gives VI/O max VCC + 0.3 V with no condition for open VCC; no capacitance-matching figure (D+ and D- 10 %); clamp at 8 kV contact is VCC + 60 V positive (not production tested) against V12's 36 V at 16 A, which the owner's relaxation of 2026-09-30 lets stand; package QFN-12-EP 4 x 4 mm. Rule 4: JLCPCB C1975428 stockCount 193, canPresaleNumber 193, expand (vendors.py jlcpcb, 2026-10-01T21:49:12Z), at or above the gate of 50. Rule 5 and Digi-Key: TPD6E001RSFR stock_available 2000, Active, lead time 12 weeks (vendors.py digikey, 2026-10-01T21:56:03Z). Lifecycle: TI product page https://www.ti.com/product/TPD6E001 meta status ACTIVE (2026-10-01T21:58:22Z). Ranks above TPD6E004RSER on V9 and the open-VCC swing, below TPD6E05U06RVZR on clamping and size."
+   },
+   {
+    "function": "USB protection",
+    "part": "TPD6E001RSER (LCSC C1973318)",
+    "maker": "Texas Instruments; allowlist S1",
+    "why": "Same die and datasheet as TPD6E001RSFR (read 2026-10-01T21:49:17Z) in UQFN-10 1.5 x 2 mm; every value as for RSFR, including the open-VCC condition. Rule 4: JLCPCB C1973318 stockCount 1032, canPresaleNumber 1027, expand (2026-10-01T21:49:12Z). Digi-Key TPD6E001RSER: Active, lead time 20 weeks, stock_available 0 (vendors.py digikey, 2026-10-01T21:55:54Z), so Digi-Key does not give rule 5 for this package. The RSFR is not pin-compatible (QFN-12 4 x 4 mm), so it is not an alternate in the same land pattern. Second source open for this package; the smaller package is the reason to list it. TI status ACTIVE as for RSFR."
+   },
+   {
+    "function": "Core regulator inductor",
+    "part": "XFL4020-332MEC (LCSC C19191633)",
+    "maker": "Coilcraft (JLCPCB maker_label 'Coilcraft'); allowlist S2",
+    "why": "P2 dropped it on rule 4 at its 2026-09-29T08:36:51Z reading (stock 0, presale -11) and did not re-read it. Re-read: JLCPCB C19191633 stockCount 713, canPresaleNumber 702, expand (vendors.py jlcpcb, 2026-10-01T21:53:15Z), at or above the gate of 50. Datasheet Document 745-1 revised 03/10/26 (https://www.coilcraft.com/getmedia/50632d43-da1b-4cdb-8ab4-3029cab51df3/xfl4020.pdf, SHA-256 6dca915ac1daa47210f7708a7540221ffef4f34a88a8621c94bd50cdf48647e6, read 2026-10-01T21:53:58Z): XFL4020-332ME_ 3.3 uH +/-20 %; DCR 34.80 typ, 38.30 max mOhm (V8 <= 250); Isat 2.7 A at 10 % drop (V8 >= 1.5 A); 'Shielded Power Inductors', composite core (V14); ambient -40 to +125 C with Irms (V7); the dash number marks 'direction of terminals and start (short) lead' (V14 polarity), the mark P2 accepted for XGL4020. Body 4 x 4 mm. Rule 5: Digi-Key has no listing (productdetails XFL4020-332MEC HTTP 404, 2026-10-01T21:55:52Z; keyword search 'XFL4020-332' returned 0 products, 21:56:05Z), as for the other Coilcraft parts. The same-maker XGL4020-332MEC (C6937839, JLCPCB stockCount 1446, canPresaleNumber 1443, 2026-10-01T21:53:39Z) is the candidate alternate; its pin-for-pin fit to the XFL4020 land pattern is not read. Manufacturer status: the Coilcraft product page (https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xfl/xfl4020/xfl4020-332/, read 2026-10-01T21:58:38Z) shows 'in stock, ready to ship today' and no lifecycle field, so status is not read. Ranks with the other Coilcraft finds: below the three shortlisted parts on ground 2 (no Digi-Key second vendor)."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "TPD6E001RSFR (C1975428)",
+    "reason_given": "5 or 6 channels at a stand-off of 5.0 to 5.2 V per the jlcparts attributes: misses the 5.5 V stand-off of V10. Datasheets not read; the drop rests on the jlcparts figure",
+    "why_it_fails": "The jlcparts '5V' is not a datasheet figure: TPD6E001 gives no VRWM. Its datasheet (read 2026-10-01T21:49:17Z) states, for VCC left unconnected, a tolerated signal swing up to 10 V (section 8.2.2 step 5b), above 5.5 V. It is a supply-pin steering part like TPD6E004, which P2 ranked 2 under the same open-VCC condition. It passes rule 4 (193 at 21:49:12Z) and has Digi-Key stock 2000 (21:56:03Z). Details in the missed entry."
+   },
+   {
+    "part": "XFL4020-332MEC (C19191633)",
+    "reason_given": "Fails rule 4 at its last reading: stockCount 0, canPresaleNumber -11 (2026-09-29T08:36:51Z); not re-read in this task",
+    "why_it_fails": "The reading is stale. JLCPCB read 2026-10-01T21:53:15Z: stockCount 713, canPresaleNumber 702. The part passes every value of V8, V14 and V7 (datasheet read 2026-10-01T21:53:58Z). Only rule 5 stays open (no Digi-Key listing; XGL4020-332MEC as alternate, fit not read)."
+   },
+   {
+    "part": "TPD4E05U06 (C138714) and the other 4-line parts; VBUS54CV-HSF-G4-08 (C511465) for VBUS, D+ and D- without CC",
+    "reason_given": "At most 4 data lines: fail 'lines covered' on one part; VBUS54CV covers 3 lines without CC",
+    "why_it_fails": "'On one part' is in P2's requirement row, not on the page: Research.md:570 and STATUS.md:75 say 'standard USB protection parts on VBUS, D+ and D-, CC1 and CC2' (plural) and V13 asks how many lines 'the protection' covers. A pair of parts that covers the 5 lines was not tested. Building blocks read: TPD4E05U06DQAR covers D+, D-, CC1 and CC2 with no supply pin (SLVSBO7O, SHA-256 starts c167cf1e72a5473a, read 2026-10-01T21:59:37Z: VRWM 5.5 V, +/-12 kV contact, +/-15 kV air, 0.42 to 0.5 pF with 0.01 to 0.06 pF channel-to-channel variation; JLCPCB C138714 stockCount 144174 at 21:59:38Z); VBUS would need a separate clamp with stand-off at or above 5.5 V that no agent has qualified, or VBUS54CV-HSF-G4-08 on VBUS, D+ and D- with CC on a separate supply-less part (JLCPCB C511465 stockCount 2909, 21:57:09Z). Not qualified and Digi-Key not read. It matters only if the owner wants a pair; TPD6E05U06RVZR already covers the 5 lines on one part."
+   }
+  ],
+  "missed_functions": []
+ }
+}

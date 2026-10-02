@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R3",
+ "label": "adjudicator-R3",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "function": "re-rank report: document key",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation holds. The document key labels two datasheets with the wrong revision. [D9] reads \"Nexperia 74LVC1G17 Rev. 15 (3 September 2024)\". The datasheet at that URL is Rev. 16.1 of 3 September 2024. Rev. 15 is dated 2023-08-15. [D10] reads \"Nexperia 74LVC1G04 Rev. 17 (4 August 2023)\". The datasheet at that URL is Rev. 18.1 of 2 September 2024. Rev. 17 is a superseded revision. The re-rank's own saved copies, read at 2026-10-01T23:00:26Z, are byte-identical to my reads (MD5 checksums match), so the re-rank read Rev. 16.1 and Rev. 18.1 and mislabelled them. The correct labels are \"[D9] Nexperia 74LVC1G17 Rev. 16.1 (3 September 2024)\" and \"[D10] Nexperia 74LVC1G04 Rev. 18.1 (2 September 2024)\". The values the key serves are unaffected. The 74LVC1G04 Rev. 18.1 states CI 5 pF typical at VCC = 3.3 V (line 287 of the text extraction) and a Δt/ΔV row at 1.65 V to 2.7 V of 20 ns/V. The 2.7 V to 5.5 V row of 10 ns/V that the verifier cites is not quoted here; I did not extract it separately. The fault is a labelling error in the report figure. It is not about any part's lifecycle, notice, allowlist or LCSC identity, so the scope is function.",
+  "evidence": "74LVC1G17.pdf (316,448 bytes, MD5 ac17d407a5e881c2e1c560d3fc79fc73, identical to scratch/FU-2A/rerank-R3/ds/74lvc1g17.pdf). Header: \"Rev. 16.1 — 3 September 2024\". Table 13, Revision history: v.16.1 20240903 (supersedes v.16); v.16 20240712; v.15 20230815. 74LVC1G04.pdf (303,128 bytes, MD5 154754d0770127bb232e6043c521fbff, identical to scratch/FU-2A/rerank-R3/ds/74lvc1g04.pdf). Header: \"Rev. 18.1 — 2 September 2024\". Table 12, Revision history: v.18.1 20240902 (supersedes v.18); v.18 20240711; v.17 20230804. CI = 5 pF typical at VCC = 3.3 V. Local copies are in /home/claude/rcbench-research/round2/scratch/FU-2A/adjudicator-R3/.",
+  "source": "https://assets.nexperia.com/documents/data-sheet/74LVC1G17.pdf and https://assets.nexperia.com/documents/data-sheet/74LVC1G04.pdf, via vendors.py fetch (chrome client, HTTP 200); revision history tables and page headers",
+  "read_at": "2026-10-02T00:09:26Z",
+  "scope": "function"
+ }
+}

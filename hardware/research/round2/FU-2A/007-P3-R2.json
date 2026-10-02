@@ -1,0 +1,25 @@
+{
+ "role": "P3",
+ "category": "R2",
+ "label": "P3-R2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "missed": [
+   {
+    "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+    "part": "SG-8101CE 40.000000MHz TBGPA (C390554, SMD3225-4P, 3.2 x 2.5 mm)",
+    "maker": "Seiko Epson (JLCPCB API label 'Seiko Epson'); S2 Epson",
+    "why": "P2 considered only the SG-8101CB of this family (C390561). The SG-8101CE is the same Epson programmable CMOS oscillator in the 3.2 x 2.5 mm package. Figures from the Epson data sheet for SG-8101CG/CE/CB/CA, Spec No SG-8101series_E_Ver2.0 (https://download.epsondevice.com/td/pdf/app/SG-8101CE_en.pdf, read 2026-10-01T22:14:37Z): frequency tolerance +/-15 ppm at -40 to +85 degC including aging (limit 3,876 ppm); VCC 1.62 to 3.63 V, so the 3.3 V rail 3.201 to 3.399 V is inside; CMOS output, symmetry 45 to 55 % at 50 % VCC with a load of 15 pF or less (OSC1 asks 45 to 55 %); rise and fall time 6 ns max at 20 to 80 % for grade A at fo up to 40 MHz (OSC1 asks 20 ns); VOH at least 90 % VCC at -3.0 mA and VOL at most 10 % VCC at VCC 2.70 to 3.63 V (OSC1 asks 0.7 VDD high, 0.3 VDD low); ICC 4.4 mA max at 20 to 50 MHz, VCC 2.70 to 3.63 V, no load; start-up 3 ms max; ordering code T (1.8 to 3.3 V), BG (+/-15 ppm, -40 to +85 degC), P (output enable on pin 1), A (default edge). Pin 1 is OE and the data sheet says not to use it open, so it is tied to the 3.3 V rail. Pads: #1 OE, #2 GND, #3 OUT, #4 VCC. JLCPCB C390554 (vendors.py jlcpcb, 2026-10-01T22:10:33Z): stockCount 853, canPresaleNumber 847, library 'expand', 0.7023 USD at 10, description '-40 to +85 degC 1.8V~3.3V 40MHz +/-15ppm SMD3225-4P'. Digi-Key keyword search 'SG-8101CE 40.0000M' (2026-10-01T22:09:57Z): SG-8101CE 40.0000M-TBGPA0 Active, stock 0, manufacturer lead 6 weeks; so its second source under rule 5 is a pin-compatible alternate, and X1G0059610009 (C7504304, SG3225CAN, same 3225-4P footprint, pads #1 ST, #2 GND, #3 OUT, #4 VCC per SGxxxxCAN_E_Ver3.0, https://download.epsondevice.com/td/pdf/app/SG3225CAN_en.pdf, read 2026-10-01T22:10:12Z) is that alternate: JLCPCB 91, presale 91 (22:10:33Z), over the gate of 50 for 2 placements x 5 boards. Epson's product page https://www.epsondevice.com/crystal/en/products/crystal-oscillator/sg8101ce.html (22:10:33Z) states no lifecycle status; Digi-Key's status for the 40 MHz variants is Active. Market introduction date not read. On P2's own order (an oscillator above a crystal; JLCPCB stock well over the gate) the pair C390554 with C7504304 sits above rank 3, the ABM8W crystal (JLCPCB 73, 4 pF load, drive level not shown). The pair has a stated data-sheet grade and a second source; rank 2's product number is not in Epson's standard table."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "X1G0059610009 (SG3225CAN 40 MHz, JG grade, C7504304)",
+    "reason_given": "Meets every value but ranks below the three: JLCPCB 91; the Digi-Key keyword search 'SG3225CAN 40.000000M-TJGA3' returned no product, so no second source is shown.",
+    "why_it_fails": "Rule 5 accepts a pin-compatible alternate that passes rules 1 to 4 as the second source, not only the same part at Digi-Key. SG-8101CE 40.000000MHz TBGPA (C390554) is such an alternate: same 3.2 x 2.5 mm 4-pad package and pad functions (#1 ST or OE, #2 GND, #3 OUT, #4 VCC), CMOS, 1.62 to 3.63 V, 45 to 55 % symmetry, Epson (S2), JLCPCB stockCount 853, presale 847 at 2026-10-01T22:10:33Z, against the gate of 50. Pin 1 tied to the 3.3 V rail suits both parts (the SG-8101 data sheet forbids pin 1 open; the SG3225CAN allows high or open). C7504304 itself reads JLCPCB 91, presale 91 at the same time, so the pair passes rule 4 and rule 5 together, and the drop reason 'no second source shown' does not hold. Frequency tolerance of the SG3225CAN at -40 to +85 degC is +/-25 ppm (SGxxxxCAN_E_Ver3.0 section 4), inside 3,876 ppm. Sources: https://download.epsondevice.com/td/pdf/app/SG3225CAN_en.pdf (22:10:12Z); https://download.epsondevice.com/td/pdf/app/SG-8101CE_en.pdf (22:14:37Z)."
+   }
+  ],
+  "missed_functions": []
+ }
+}

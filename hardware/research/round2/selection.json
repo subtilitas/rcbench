@@ -1,0 +1,1072 @@
+{
+ "R1": {
+  "Microcontroller": {
+   "part": "RP2354B",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "12 MHz crystal": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": [],
+   "not_requalified": "ABM8-272-T3"
+  },
+  "Core regulator inductor": {
+   "part": "AOTA-B201610S3R3-101-T",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "USB protection": {
+   "part": "TPD6E05U06RVZR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R2": {
+  "Link CAN controller": {
+   "part": "MCP2518FDT-E/SL",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Link CAN transceiver": {
+   "part": "TCAN3413DR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "External CAN controller": {
+   "part": "MCP2518FDT-E/SL",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "External CAN transceiver": {
+   "part": "TCAN1472VDRQ1",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Link terminator (the 120 Ohm at the IO board's end: fitted, switchable or external)": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "CAN controller clock (the crystal, resonator or oscillator each controller takes)": {
+   "part": "DSC1001DL5-040.0000",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R3": {
+  "monostable": {
+   "part": "74HC423BQ,115",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "OR gate": {
+   "part": "74AUP1G32GW,125",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "reset supervisor": {
+   "part": "TPS3703A7330DSERQ1",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "latch": {
+   "part": "74LVC1G175GW,125",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "latch clear control": {
+   "part": "434153017835",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "trigger-path inverter": {
+   "part": "SN74AUP1G14DBVR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "trigger input I_off buffer (Q9)": {
+   "part": "SN74AUP1G17DBVR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "servo rail gate": {
+   "part": "BSC014N04LSATMA1",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "onboard pack switch MOSFETs": {
+   "part": "IPT015N10N5ATMA1",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "onboard pack switch driver": {
+   "part": "TPSI3052DWZR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "external pack switch module": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "external module driver output": {
+   "part": "TPSI3052DWZR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "pack reverse-polarity protection": {
+   "part": "IPT015N10N5ATMA1",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "pack overvoltage and transient clamp": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "pack precharge": {
+   "part": "CSD19537Q3T",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "servo rail gate driver": {
+   "part": "TPSI3052DWZR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "timing network (C and R of the monostable)": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "inverter on an active-low output enable": {
+   "part": "SN74LVC1G04DBVR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "heartbeat-node series resistors, links and fail-safe pull-downs": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "switched-node freewheel diode (negative clamp of the ESC-side node, V54)": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-2A",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R4": {
+  "gated output buffer": {
+   "part": "SN74LVC244APWR",
+   "rank": 1,
+   "alternate": "74LVC244APW,118",
+   "run": "FU-A3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "enable inverter": {
+   "part": "SN74LVC1G04DBVR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-A3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "bias selector": {
+   "part": "SN74LVC1G126DBVR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-A3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "level translation": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-A3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "multiprotocol port path": {
+   "part": "SN74CBTLV3126PWR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-A3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "UART socket path": {
+   "part": "SN74CBTLV3126PWR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-A3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "receiver inputs": {
+   "part": "SN74LVC1T45DBVR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-A3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "series resistance and clamps": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-A3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "reset idle level": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-A3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "programming supply switching": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-A3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "reply path through the gate": {
+   "part": "SN74CBTLV3126PWR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-A3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)": {
+   "part": "SN74CBTLV3126PWR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-A3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R9": {
+  "Cell monitor": {
+   "part": "ADBMS1818ASWAZ-RL",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-C1",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R10": {
+  "Converter for the accelerometer": {
+   "part": "ADCS7476AIMFX/NOPB",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-C1",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [
+    {
+     "part": "LM4040AIM3-3.0/NOPB",
+     "status": "verified",
+     "alternate": "",
+     "alternate_status": "",
+     "second_source_missing": false,
+     "option": "reference"
+    }
+   ],
+   "decision": "Q4",
+   "q_options_missing": []
+  }
+ },
+ "R11": {
+  "accelerometer": {
+   "part": "ADXL316WBCSZ",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-C2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "optical index": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-C2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "magnetic pickup": {
+   "part": "DRV5015A1QDBZR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-C2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "phase-wire clip": {
+   "part": "TLV3201AIDBVR",
+   "rank": 1,
+   "alternate": "TLV3601DBVR",
+   "run": "FU-C2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "encoder input": {
+   "part": "AM26LV32EIDR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-C2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "encoder decode": {
+   "part": "RP2354B",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-C2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "rotation from ESC": {
+   "part": "RP2354B",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-C2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "rotation inputs": {
+   "part": "RP2354B",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-C2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "BENCH rpm source": {
+   "part": "RP2354B",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-C2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "servo measured position": {
+   "part": "RP2354B",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-C2",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R12": {
+  "motor temperature thermocouple": {
+   "part": "MAX31856MUD+T",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-C1",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "motor temperature infrared": {
+   "part": "MLX90614ESF-BCC-000-TU",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-C1",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "external I2C ports": {
+   "part": "TCA9548APWR",
+   "rank": 1,
+   "alternate": "PCA9548APWR",
+   "run": "FU-C1",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "non-volatile store": {
+   "part": "MB85RC256VPNF-G-AMERE2",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-C1",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [
+    {
+     "part": "M24256E-FMN6TP",
+     "status": "verified",
+     "alternate": "",
+     "alternate_status": "",
+     "second_source_missing": false,
+     "option": "EEPROM"
+    }
+   ],
+   "decision": "Q8",
+   "q_options_missing": []
+  }
+ },
+ "R13": {
+  "load-cell bridge ADC": {
+   "part": "ADS1235IRHBR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-C1",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "load-cell excitation": {
+   "part": "BD450M2FP3-CE2",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-C1",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R5": {
+  "reverse-polarity protection": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": [],
+   "not_requalified": "LM74800QDRRRQ1"
+  },
+  "overvoltage protection": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "inrush limiting": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": [],
+   "not_requalified": "LM74800QDRRRQ1"
+  },
+  "source selection": {
+   "part": "LM74800QDRRRQ1",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "pack disconnect": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "3.3 V logic buck": {
+   "part": "LMQ66430MC3RXBRQ1",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "5 V rail": {
+   "part": "TPS62933DRLR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "display supply": {
+   "part": "TPS259474ARPWR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "receiver supply": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "encoder 12 V supply": {
+   "part": "TPS55288RPMR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "2S pack connector": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "logic supply from the RP2354B's USB port (IOBoard.md:384, marked R5)": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R6": {
+  "Servo supply": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Servo supply inductor": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Port supply switch": {
+   "part": "TPS259474LRPWR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "I/O expander": {
+   "part": "MCP23017T-E/SS",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Port voltage ceiling": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R7": {
+  "Pack charger": {
+   "part": "BQ25713RSNR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Cell balancing": {
+   "part": "MAX17320G22+",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Power path": {
+   "part": "BQ25713RSNR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Charger input limit": {
+   "part": "FUSB303BTMX",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Pack cells": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Pack overcurrent protection": {
+   "part": "MAX17320G22+",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Bench pack balance lead": {
+   "part": "MAX17320G22+",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ },
+ "R8": {
+  "Motor monitor": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Onboard shunt": {
+   "part": "BVR-Z-R0002-1.0",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Onboard shunt temperature sensor": {
+   "part": "MCP9808T-E/MS",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "External shunt": {
+   "part": "WSBE8518L1000JKA2",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": true,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "External shunt sense input": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Port current monitor": {
+   "part": "INA3221AIRGVR",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Port shunt": {
+   "part": "ERJ-6CWDR010V",
+   "rank": 1,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  },
+  "Servo rail monitor": {
+   "part": null,
+   "rank": null,
+   "alternate": "",
+   "run": "FU-B3",
+   "alternate_unverified": [],
+   "second_source_missing": false,
+   "q_alternatives": [],
+   "decision": "none",
+   "q_options_missing": []
+  }
+ }
+}
