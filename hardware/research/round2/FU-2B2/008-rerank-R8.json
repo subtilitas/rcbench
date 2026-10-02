@@ -1,0 +1,957 @@
+{
+ "role": "rerank",
+ "category": "R8",
+ "label": "rerank-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "functions": [
+   {
+    "function": "Motor monitor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "INA228AIDGSR",
+      "reason": "The owner's fixed input (Scope table, 2026-09-30), ranked first and not replaced. Every datasheet value in P2's record passes. It fails sourcing rule 4: JLCPCB C2887910 stockCount 0, canPresaleNumber -236 against a gate of 50 (need 5 x 2 = 10), read 2026-10-02T14:43:54Z; Digi-Key 0 in every packaging, 20 weeks, Active, read 2026-10-02T13:58:19Z (cached reading of P2); not held. No second source passes rule 5: INA228AQDGSRQ1 reads JLCPCB 0/-231 (C5214669, 14:44:02Z) and 0/0 (C32710522, 14:44:03Z) and Digi-Key 0 (13:58:21Z); INA228AIDGST reads JLCPCB 0/0 (C2862904, 14:44:02Z) and Digi-Key status Obsolete, stock 0 (14:34:20Z, cached reading of P3's run). Reported to the owner. No P3 candidate for this function.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "INA228AIDGSR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Onboard shunt",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "BVR-Z-R0002-1.0",
+      "reason": "Widest accuracy margin of the three (369 mA of the 1.4166 A share at 150 A, 8.4 mA of 134.1 mA at 15 A); the datasheet (BVR Issue 12-September-2024, re-read 2026-10-02T14:46:48Z) gives 0.2 mOhm, TCR 0 +/-20 ppm/K, Rthi 4 K/W, P70 12 W and P>100 degC 6 W against the 4.5 W at 150 A; four-terminal. The round 1 selection. JLCPCB C6869644 stockCount 353, canPresaleNumber 348 at 14:43:54Z against the gate of 50; Digi-Key 11190, Active, 18 weeks (13:58:22Z) is the second vendor. No P3 candidate for this function.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "BVE-M-R0002-1.0",
+      "reason": "Passes with a second vendor (JLCPCB 2500/2498 at 14:43:54Z; Digi-Key 103, 13:58:24Z); below the BVR because its TCR is stated 20 to 60 degC only and its thermal EMF is the maker's material figure from another sheet; the margin is 48.6 mA of 1.4166 A.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "WSLP2726L2000FEA",
+      "reason": "Passes on the stated TCR (+/-75 ppm/degC) and EMF (<3 uV/degC), 1198 mA of 1.4166 A; JLCPCB 480/475 at 14:43:55Z; Digi-Key 0, so no second source (reported). Last for that reason.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "BVR-Z-R0002-1.0",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Onboard shunt temperature sensor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP9808T-E/MS",
+      "reason": "+/-0.5 degC maximum from -20 to +100 degC at VDD 3.3 V, the tightest accuracy at 100 degC of the sensors with addresses outside the monitor block (0x18 to 0x1F); the round 1 selection and the part of the 4 servo-supply sensors, so one part and one driver. JLCPCB C129490 764/725 at 14:43:55Z; Digi-Key 21419, Active, 4 weeks (13:58:27Z) is the second vendor.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "STTS22HTR",
+      "reason": "+/-1.0 degC maximum over -40 to 125 degC, addresses 0x38 to 0x3F outside the monitor block, second vendor (JLCPCB C2969838 543/526 at 14:43:55Z; Digi-Key 737, 13:58:29Z, 24 weeks). Below the MCP9808 on accuracy at 100 degC.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "PCT2075D,118",
+      "reason": "P3's find, qualified: +/-1 degC maximum from -25 to +100 degC (PCT2075 Rev. 10.1, Table 20, VCC 2.7 to 5.5 V) with addresses 0x28 to 0x2F outside the monitor block when an address pin floats; Digi-Key 22646 (14:28:30Z) is the second vendor; JLCPCB C192517 328/324 (14:43:59Z) is the smallest stock of the sensors ranked and about 6.5 times the gate. P2's reason for the drop, 11-bit resolution, is not a requirement value. Ranked above TMP116AIDRVR because of the addresses; below STTS22HTR because the out-of-block addresses rest on floating pins read at power-up and the JLCPCB stock is lower.",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "TMP116AIDRVR",
+      "reason": "+/-0.25 degC maximum to 105 degC with stock at both vendors (JLCPCB C2691433 2394/2318 at 14:43:56Z; Digi-Key 37337, 13:58:31Z); its addresses 0x48 to 0x4B sit inside the 0x40 to 0x4F monitor block, which the requirement prefers to avoid.",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "TMP119AIYBGR",
+      "reason": "P3's find, qualified: +/-0.15 degC maximum from -55 to +125 degC, the best accuracy read; in-block addresses 0x48 to 0x4B, a 0.95 x 1.488 mm DSBGA-6 wafer-level package, and the accuracy is stated at 8 averages and I2C levels of 5 % and 95 % of V+, which the board's bus does not meet exactly. Both vendors (JLCPCB 7727/7644, Digi-Key 8848).",
+      "option": ""
+     },
+     {
+      "rank": 6,
+      "part": "TMP1075DSGR",
+      "reason": "P3's find, qualified: the only TMP1075 package with stock at both vendors (JLCPCB 38490, Digi-Key 12781) but +/-2 degC maximum at 100 degC with no margin (its +/-1 degC holds to 75 degC only); addresses 0x48 to 0x4F, or 0x50 to 0x5F with an address pin on SDA or SCL.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 3,
+      "part": "PCT2075D,118",
+      "maker": "NXP (PCT2075 Rev. 10.1, 15 September 2021); S1 NXP; JLCPCB label NXP Semicon; Digi-Key maker NXP USA Inc.",
+      "lcsc": "C192517",
+      "package": "SOIC-8",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one sensor beside the onboard shunt (IOBoard.md:459)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "watched temperature",
+        "required": "beside the shunt, own limit",
+        "datasheet": "digital I2C sensor; temperature register 11 bit, 0.125 degC; the limit is held in firmware (the OS output, 80 degC and 75 degC hysteresis at power-up, is programmable)",
+        "pass": true,
+        "source": "PCT2075 Rev. 10.1, https://www.nxp.com/docs/en/data-sheet/PCT2075.pdf, section 1, read 2026-10-02T14:40:21Z"
+       },
+       {
+        "name": "trip rule",
+        "required": "two conversions; recorded",
+        "datasheet": "conversion period Tconv 0.1 s typical in normal mode, programmable up to 3.2 s through the Tidle register 04h; conversion time tconv(T) 28 ms typical; two conversions 200 ms at the default period (typical, no maximum stated for the default); inside the 500 ms stop deadline",
+        "pass": true,
+        "source": "PCT2075 Table 20, section 7.2"
+       },
+       {
+        "name": "range",
+        "required": "0 to 100 degC",
+        "datasheet": "-55 to +125 degC",
+        "pass": true,
+        "source": "PCT2075 features, Table 19"
+       },
+       {
+        "name": "accuracy",
+        "required": "+/-2 degC at 3.3 V +/-3 %",
+        "datasheet": "+/-1 degC max from -25 to +100 degC; +/-2 degC max from -55 to +125 degC; VCC 2.7 to 5.5 V",
+        "pass": true,
+        "source": "PCT2075 Table 20"
+       },
+       {
+        "name": "interface",
+        "required": "3.3 V I2C; an address outside 0x40 to 0x4F preferred",
+        "datasheet": "VCC 2.7 to 5.5 V, VIH 0.7 VCC; Table 5 (SO8): 0x48 to 0x4F with A2:A0 at 0 or 1 (inside the block); with a floating address pin 0x28 to 0x2F, 0x35 to 0x37 and 0x70 to 0x77, sampled at power-up only. 0x28 to 0x2F is outside the block and clear of the MCP9808s' 0x18 to 0x1F; 0x70 to 0x77 is a multiplexer range of R12 (not checked here)",
+        "pass": true,
+        "source": "PCT2075 Table 5, Table 19, Table 20"
+       },
+       {
+        "name": "board ambient",
+        "required": "0 to 50 degC",
+        "datasheet": "Tamb -55 to +125 degC",
+        "pass": true,
+        "source": "PCT2075 Table 19"
+       }
+      ],
+      "jlcpcb": "stockCount 328, canPresaleNumber 324, componentLibraryType expand, 0.9543 at the 1 break (currency not labelled); read 2026-10-02T14:43:59Z, vendors.py jlcpcb C192517 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList), exact LCSC match, label NXP Semicon",
+      "digikey": "stock_available 22646 (CT 22646, TR 22500), lead_weeks 16, ProductStatus Active (NXP USA Inc.); read 2026-10-02T14:28:30Z, https://api.digikey.com/products/v4/search/PCT2075D%2C118/productdetails, cached reading of the same UTC day",
+      "gate": "need = 5 boards x 1 = 5; S4 threshold max(5 x 5, 50) = 50; stockCount 328 >= 50 and canPresaleNumber 324 >= 0: pass (rule 4); not held",
+      "lifecycle": "Maker: https://www.nxp.com/products/PCT2075 shows 'Status - Active' (read 2026-10-02T14:43:14Z). Longevity: NXP's programme page not read. Introduced: PCT2075 v.1, 2013-04-05, not flagged. Notices: PCN listing not read. Distributor: Digi-Key Active (14:28:30Z); JLCPCB reading has no status field",
+      "second_source": "second vendor: Digi-Key 22646 >= 50 (14:28:30Z)",
+      "alternates": [
+       "TMP1075DR (SOIC-8, LM75 pinout and the same 0x48 to 0x4F strapping, but its conversion-rate bits sit in the configuration register where the PCT2075 has the Tidle register, so not the same firmware configuration: not a rule 5 alternate)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "+/-1 degC to 100 degC, addresses outside the monitor block through floating pins, second vendor with deep stock; below STTS22HTR, above TMP116AIDRVR",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "TMP119AIYBGR",
+      "maker": "Texas Instruments (TMP119 SNIS236, January 2024); S1 Texas Instruments",
+      "lcsc": "C22428347",
+      "package": "DSBGA-6 (YBG), 0.95 x 1.488 mm",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one sensor beside the onboard shunt",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "watched temperature",
+        "required": "beside the shunt, own limit",
+        "datasheet": "digital I2C sensor with programmable alert limits and an ALERT pin; the limit is held in firmware",
+        "pass": true,
+        "source": "TMP119 SNIS236, https://www.ti.com/lit/ds/symlink/tmp119.pdf, read 2026-10-02T14:40:21Z, section 3"
+       },
+       {
+        "name": "trip rule",
+        "required": "two conversions; recorded",
+        "datasheet": "conversion time 15.5 ms typical (13 to 17.5 ms) without averaging; Table 8-6 cycle times in continuous mode from 15.5 ms; with 8 averages (AVG 01) the shortest cycle is 125 ms: two conversions 250 ms",
+        "pass": true,
+        "source": "TMP119 6.5, Table 8-6"
+       },
+       {
+        "name": "range",
+        "required": "0 to 100 degC",
+        "datasheet": "-55 to +150 degC",
+        "pass": true,
+        "source": "TMP119 features, 6.5"
+       },
+       {
+        "name": "accuracy",
+        "required": "+/-2 degC at 3.3 V +/-3 %",
+        "datasheet": "+/-0.15 degC max from -55 to +125 degC, V+ 1.7 to 5.5 V (1.8 V above 70 degC); stated at 8 averages, a 1 Hz cycle and I2C levels VIL <= 0.05 x V+, VIH >= 0.95 x V+; at the 125 ms cycle and the board's pad levels the figure is not stated, 13 times inside +/-2 degC",
+        "pass": true,
+        "source": "TMP119 6.5"
+       },
+       {
+        "name": "interface",
+        "required": "3.3 V I2C; an address outside 0x40 to 0x4F preferred",
+        "datasheet": "V+ 1.7 to 5.5 V; ADD0 to GND, V+, SDA or SCL: 0x48, 0x49, 0x4A, 0x4B, inside the monitor block",
+        "pass": true,
+        "source": "TMP119 Table 7-2"
+       },
+       {
+        "name": "board ambient",
+        "required": "0 to 50 degC",
+        "datasheet": "-55 to +150 degC",
+        "pass": true,
+        "source": "TMP119 6.5"
+       }
+      ],
+      "jlcpcb": "stockCount 7727, canPresaleNumber 7644, componentLibraryType expand, 3.4269 at the 1 break (currency not labelled); read 2026-10-02T14:44:00Z, vendors.py jlcpcb C22428347, exact LCSC match, label Texas Instruments",
+      "digikey": "stock_available 8848 (CT 8848, TR 6000), lead_weeks 20, ProductStatus Active; read 2026-10-02T14:27:24Z, https://api.digikey.com/products/v4/search/TMP119AIYBGR/productdetails, cached reading of the same UTC day",
+      "gate": "need = 5 boards x 1 = 5; S4 threshold 50; stockCount 7727 >= 50 and canPresaleNumber 7644 >= 0: pass (rule 4); not held",
+      "lifecycle": "ACTIVE: https://www.ti.com/product/TMP119 meta status ACTIVE, orderable TMP119AIYBGR ACTIVE (read 2026-10-02T14:43:09Z). Longevity: TI states typically 10 to 15 years, no dated commitment (read by round 1), not a gate. Introduced: initial release January 2024, 33 months, not flagged. Notices: no public TI PCN listing. Distributor: Digi-Key Active (14:27:24Z)",
+      "second_source": "second vendor: Digi-Key 8848 >= 50 (14:27:24Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Best accuracy read, both vendors; ranked below the out-of-block parts for its in-block addresses, the wafer-level package and an accuracy stated at conditions the bus does not match",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 6,
+      "part": "TMP1075DSGR",
+      "maker": "Texas Instruments (TMP1075 SBOS854F, revised June 2024); S1 Texas Instruments",
+      "lcsc": "C2870250",
+      "package": "WSON-8 (DSG) 2 x 2 mm",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one sensor beside the onboard shunt",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "watched temperature",
+        "required": "beside the shunt, own limit",
+        "datasheet": "digital I2C sensor with ALERT; the limit is held in firmware",
+        "pass": true,
+        "source": "TMP1075 SBOS854F, https://www.ti.com/lit/ds/symlink/tmp1075.pdf, read 2026-10-02T14:40:21Z"
+       },
+       {
+        "name": "trip rule",
+        "required": "two conversions; recorded",
+        "datasheet": "conversion rate 27.5 ms default (R1:R0 00), 55, 110, 220 ms, variation +/-10 %: two conversions 55 ms, 60.5 ms at +10 %; active conversion 5.5 ms",
+        "pass": true,
+        "source": "TMP1075 6.5, Table 7-8"
+       },
+       {
+        "name": "range",
+        "required": "0 to 100 degC",
+        "datasheet": "-55 to +125 degC",
+        "pass": true,
+        "source": "TMP1075 6.5"
+       },
+       {
+        "name": "accuracy",
+        "required": "+/-2 degC at 3.3 V +/-3 %",
+        "datasheet": "DSG package: +/-1 degC max -40 to +75 degC; +/-2 degC max -55 to +125 degC, V+ 1.7 to 5.5 V: at 100 degC the stated maximum is +/-2 degC, equal to the requirement, no margin",
+        "pass": true,
+        "source": "TMP1075 6.5"
+       },
+       {
+        "name": "interface",
+        "required": "3.3 V I2C; an address outside 0x40 to 0x4F preferred",
+        "datasheet": "V+ 1.7 to 5.5 V; Table 7-2: 0x48 to 0x4F with A pins at GND or V+, 0x40 to 0x47 and 0x50 to 0x5F with an A pin on SDA or SCL; 0x50 to 0x5F is outside the block (the R12 FRAM at 0x50 to 0x57 not checked)",
+        "pass": true,
+        "source": "TMP1075 Table 7-2"
+       },
+       {
+        "name": "board ambient",
+        "required": "0 to 50 degC",
+        "datasheet": "-55 to +125 degC",
+        "pass": true,
+        "source": "TMP1075 6.5"
+       }
+      ],
+      "jlcpcb": "stockCount 38490, canPresaleNumber 38421, componentLibraryType expand, 0.4942 at the 1 break (currency not labelled); read 2026-10-02T14:44:00Z, vendors.py jlcpcb C2870250, exact LCSC match, label Texas Instruments",
+      "digikey": "stock_available 12781 (CT 12781, TR 12000), lead_weeks 20, ProductStatus Active; read 2026-10-02T14:28:50Z, https://api.digikey.com/products/v4/search/TMP1075DSGR/productdetails, cached reading of the same UTC day",
+      "gate": "need = 5 boards x 1 = 5; S4 threshold 50; stockCount 38490 >= 50 and canPresaleNumber 38421 >= 0: pass (rule 4); not held",
+      "lifecycle": "ACTIVE: https://www.ti.com/product/TMP1075 meta status ACTIVE, orderable TMP1075DSGR ACTIVE (read 2026-10-02T14:43:00Z). Longevity: TI typically 10 to 15 years, no dated commitment. Introduced: SBOS854 March 2018, not flagged. Notices: no public TI PCN listing. Distributor: Digi-Key Active (14:28:50Z)",
+      "second_source": "second vendor: Digi-Key 12781 >= 50 (14:28:50Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Passes with the deepest stock of the sensors but the least accuracy margin at 100 degC (+/-2 degC against +/-2 degC); last",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "TMP1075DR",
+      "maker": "Texas Instruments",
+      "reason": "Passes every value (+/-1 degC max -40 to +110 degC; JLCPCB C2878381 1530/1513 at 14:43:59Z) but fails sourcing rule 5: Digi-Key reads stock 0 in every packaging, 20 weeks (14:28:43Z), so the second-vendor route fails, and the alternate P3 names, PCT2075D,118, is not the same firmware configuration: the TMP1075 sets its conversion rate in configuration bits 14:13 where the PCT2075 has the Tidle register 04h, and the start-up registers differ. The same die in WSON-8 (TMP1075DSGR) is a different land and is ranked."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP9808T-E/MS",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "External shunt",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "WSBE8518L1000JKA2",
+      "maker_note": "",
+      "reason": "The round 1 selection and the part IOBoard.md names. TCR +/-10 ppm/degC over -20 to 150 degC, the best stated TCR range: 462.5 mA of the 2.833 A share at 300 A. Digi-Key 418, Active, 48 weeks (13:58:56Z); no second source (reported). The 48-week lead time is the longest of the five.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "BAS-M-R0001-R-5.0",
+      "reason": "Same accuracy figure as the BSS (753 mA at 300 A, TCR 0 +/-50 ppm/K stated 20 to 60 degC) and the largest stock, Digi-Key 1273 (13:58:58Z), 18 weeks; sense holes for wires; terminal temperature at 300 A not known. No second source (reported). Above the BSS-L100-001 for stock (516) and a sense connection by wire holes read on a datasheet issued 08-September-2026; the BSS offers a connector, an NTC and a measured resistance.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "BSS-L100-001",
+      "reason": "P3's find, qualified: 100 uOhm, 753 mA at 300 A and 19.0 mA at 15 A against 2.833 A and 125.7 mA, 450 A continuous, 7-pin sense connector with an NTC, resistance in a Data Matrix Code to +/-0.1 %. Digi-Key 516 (14:25:02Z), 18 weeks; no second source. Below the BAS for stock; the sense connector's voltage rating and the pins' meaning (R1 and R2) are not stated.",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "BSS-L050-001",
+      "reason": "P3's find, qualified: 50 uOhm, 795 mA at 300 A against 2.816 A, half the signal (1.56 mA a step); Digi-Key 333 (14:25:22Z), 41 weeks. Below the 100 uOhm parts on signal and lead time; -5 % as made is 47.5 uOhm, 2.5 uOhm under the class's 50 uOhm.",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "WSBS8536L1000JK60",
+      "reason": "Passes with the thinnest margin (2668.5 mA of 2.833 A at 300 A, TCR +/-165 ppm/degC) and Digi-Key 76 against the gate of 50 (13:59:00Z), 48 weeks; no second source. Last.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 3,
+      "part": "BSS-L100-001",
+      "maker": "Isabellenhuette (BSS, SIZE 8420, Issue 02-May-2024); S2 Isabellenhuette; Digi-Key maker Isabellenhuette USA",
+      "lcsc": "none",
+      "package": "busbar 84 x 20 x 3 mm, two 8.3 mm holes, 7-pin Molex DuraClik sense connector, MANGANIN, tray",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one external shunt (IOBoard.md:462)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "type",
+        "required": "busbar, off the board, bought at Digi-Key; LCSC none",
+        "datasheet": "bolt-mounted busbar shunt, SIZE 8420, MANGANIN, L 84 mm, W 20 mm, H 3 mm, holes diameter 8.3 mm",
+        "pass": true,
+        "source": "BSS, https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BSS.pdf, pages 1 and 2, read 2026-10-02T14:40:20Z"
+       },
+       {
+        "name": "resistance",
+        "required": "50 to 136 uOhm",
+        "datasheet": "100 uOhm, tolerance as made 5.0 %; measured value in the Data Matrix Code +/-0.1 %; 78.125 nV / 100 uOhm = 0.78 mA a step",
+        "pass": true,
+        "source": "BSS p1"
+       },
+       {
+        "name": "highest current and duty",
+        "required": "300 A peak for 30 s, 9 W, within rating at 50 degC",
+        "datasheet": "Pnom 20 W at a terminal temperature TK = Tmax - Rthi x Pnom = 125 - 2.0 x 20 = 85 degC; continuous +/-450 A, 10 s +/-600 A; 300 A is 9 W, element 18 K above the terminal: 68 degC at a 50 degC terminal, under Tmax 125 degC",
+        "pass": true,
+        "source": "BSS p1"
+       },
+       {
+        "name": "accuracy share",
+        "required": "<= 2.833 A at 300 A and <= 125.7 mA at 15 A",
+        "datasheet": "TCR < 50 ppm/K (20 to 60 degC), thermal EMF < 0.6 uV/K (30 to 60 degC), Rthi 2.0 K/W; terminal at 50 degC, element 18 K above: 300 A x 50 ppm x 43 K = 645 mA, EMF 0.6 uV x 18 K / 100 uOhm = 108 mA, 753 mA; at 15 A 15 A x 50 ppm x 25 K = 18.75 mA plus 0.3 mA, 19.0 mA. The element at 68 degC is 8 K outside the 20 to 60 degC TCR range; the terminal temperature at 300 A is round 3's",
+        "pass": true,
+        "source": "BSS p1; method of P2's BAS and WSBE rows"
+       },
+       {
+        "name": "Kelvin sense",
+        "required": "defined sense points",
+        "datasheet": "7-pin Molex DuraClik connector 5600200720: pin 1 NTC+, 2 R1+, 3 R2+, 4 R2-, 5 R1-, 6 NTC-, 7 GND. The datasheet does not say which taps R1 and R2 are, nor the connector's voltage rating against the 67.2 V pack",
+        "pass": true,
+        "source": "BSS p2 pin specification"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 125 degC, limited by the connector",
+        "pass": true,
+        "source": "BSS p1"
+       }
+      ],
+      "jlcpcb": "not a gate (off the board, rule 1); not read",
+      "digikey": "stock_available 516 (4423-BSS-L100-001-ND, tray), lead_weeks 18, ProductStatus Active; read 2026-10-02T14:25:02Z, https://api.digikey.com/products/v4/search/BSS-L100-001/productdetails, cached reading of the same UTC day",
+      "gate": "need = 5 boards x 1 = 5; S4 threshold max(5 x 5, 50) = 50; Digi-Key 516 >= 50: pass (rules 1 and 4 at the second vendor); not held",
+      "lifecycle": "Maker page https://www.isabellenhuette.com/solutions/products/bss (read 2026-10-02T14:43:43Z) carries no status in its body; by the owner's rule of 2026-10-02 the status is Digi-Key ProductStatus Active (14:25:02Z), a distributor figure. Longevity: none published. Introduced: Issue 02-May-2024 is the only issue read, 17 months, not flagged. Notices: PCN list not read. Distributor: no JLCPCB listing read (off the board)",
+      "second_source": "none: BSS-L050-001 is another value, not an alternate; BAS-M-R0001-R-5.0 shares the 84 x 20 x 3 mm outline and the 8.3 mm holes but senses through wire holes, not a connector, so the connections differ; WSBE8518 differs in size and sense pins. Reported",
+      "alternates": [],
+      "driver_in_shared": "none (passive)",
+      "reason": "Same accuracy figure as the BAS with a sense connector, an NTC and a measured resistance; below the BAS for stock; no second source",
+      "second_source_route": "none",
+      "second_source_part": ""
+     },
+     {
+      "rank": 4,
+      "part": "BSS-L050-001",
+      "maker": "Isabellenhuette (BSS, SIZE 8420, Issue 02-May-2024); S2 Isabellenhuette; Digi-Key maker Isabellenhuette USA",
+      "lcsc": "none",
+      "package": "busbar 84 x 20 x 3 mm, two 8.3 mm holes, 7-pin Molex DuraClik sense connector, MANGANIN, tray",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one external shunt",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "type",
+        "required": "busbar, off the board, bought at Digi-Key; LCSC none",
+        "datasheet": "bolt-mounted busbar shunt, SIZE 8420, MANGANIN, 84 x 20 x 3 mm, holes diameter 8.3 mm",
+        "pass": true,
+        "source": "BSS, https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BSS.pdf, pages 1 and 2, read 2026-10-02T14:40:20Z"
+       },
+       {
+        "name": "resistance",
+        "required": "50 to 136 uOhm",
+        "datasheet": "50 uOhm, tolerance as made 5.0 % (47.5 to 52.5 uOhm; 2.5 uOhm under 50 at the limit); measured value in the Data Matrix Code +/-0.2 %; 78.125 nV / 50 uOhm = 1.56 mA a step, inside 25 mA",
+        "pass": true,
+        "source": "BSS p1"
+       },
+       {
+        "name": "highest current and duty",
+        "required": "300 A peak for 30 s, 4.5 W, within rating at 50 degC",
+        "datasheet": "Pnom 30 W, TK = 125 - 1.5 x 30 = 80 degC; continuous +/-600 A, 10 s +/-800 A; 300 A is 4.5 W, element 6.75 K above the terminal",
+        "pass": true,
+        "source": "BSS p1"
+       },
+       {
+        "name": "accuracy share",
+        "required": "<= 2.816 A at 300 A and <= 108.8 mA at 15 A (V166's 3 A and 150 mA less the INA228's 183.6 mA and 41.2 mA on 50 uOhm, from SLYS021A 6.5: gain drift 150, offset drift 5, PSRR 1, CMRR 26.8, half LSB 0.8 mA at 300 A)",
+        "datasheet": "TCR < 75 ppm/K (20 to 60 degC), EMF < 0.6 uV/K, Rthi 1.5 K/W: terminal at 50 degC, element 6.75 K above: 300 A x 75 ppm x 31.75 K = 714 mA, EMF 0.6 uV x 6.75 K / 50 uOhm = 81 mA, 795 mA; at 15 A 28.1 mA plus 0.2 mA, 28.3 mA",
+        "pass": true,
+        "source": "BSS p1; INA228 SLYS021A 6.5, https://www.ti.com/lit/ds/symlink/ina228.pdf, read 2026-10-02T14:47:00Z"
+       },
+       {
+        "name": "Kelvin sense",
+        "required": "defined sense points",
+        "datasheet": "the same 7-pin DuraClik connector and pin-out as BSS-L100-001; pin meaning and connector voltage rating not stated",
+        "pass": true,
+        "source": "BSS p2"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to 125 degC, limited by the connector",
+        "pass": true,
+        "source": "BSS p1"
+       }
+      ],
+      "jlcpcb": "not a gate (off the board, rule 1); not read",
+      "digikey": "stock_available 333 (4423-BSS-L050-001-ND, tray), lead_weeks 41, ProductStatus Active; read 2026-10-02T14:25:22Z, https://api.digikey.com/products/v4/search/BSS-L050-001/productdetails, cached reading of the same UTC day",
+      "gate": "need = 5 boards x 1 = 5; S4 threshold 50; Digi-Key 333 >= 50: pass (rules 1 and 4 at the second vendor); not held",
+      "lifecycle": "Maker page carries no status (read 2026-10-02T14:43:43Z); Digi-Key ProductStatus Active (14:25:22Z), distributor figure by the owner's rule of 2026-10-02. Longevity: none published. Introduced: Issue 02-May-2024, 17 months, not flagged. Notices: not read",
+      "second_source": "none: no other 50 uOhm busbar with a sense connection passes: WSBE8536L0500JK 26, JKB2 21 and JKA2 0 at Digi-Key (search read 2026-10-02T14:22:42Z); BAS-M-R00005 is listed only as -AE, -AEU, -EU, -GU and -SU versions (14:23:29Z). Reported",
+      "alternates": [],
+      "driver_in_shared": "none (passive)",
+      "reason": "Passes with a wide margin; half the signal, a longer lead time (41 weeks) and 5 % under the class's 50 uOhm as made; no second source",
+      "second_source_route": "none",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "WSBE8518L1000JKA2",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "External shunt sense input",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "INA228AIDGSR",
+      "reason": "The fixed input of the Scope table, ranked first and not replaced; no P3 candidate. It fails two of P2's rows, reported to the owner: input withstand (SLYS021A 6.1: differential -40 to 40 V and 5 mA a pin against 85 V between the leads; the 1 kOhm leads pass 42.5 to 85 mA, held only by a TVS that no run selects) and series resistance (SLYS021A 8.1.4, re-read 2026-10-02T14:47:00Z: 'Do not use values greater than 100 ohms for RFILTER', against the owner's 1 kOhm). It fails rule 4 as under Motor monitor (JLCPCB 0/-236 at 14:43:54Z; Digi-Key 0 at 13:58:19Z).",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "INA228AIDGSR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port current monitor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "INA3221AIRGVR",
+      "reason": "The owner's seed and the round 1 selection; the only candidate with a critical and a warning output on each part, as the alert scheme takes them; 49.3 of 50 mA accuracy with the port shunt. JLCPCB C181255 stockCount 8600, canPresaleNumber 8468 at 14:43:56Z against a gate of 175 (need 35); Digi-Key 67227, Active (13:58:32Z) is the second vendor. No P3 candidate for this function.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [
+     {
+      "part": "INA3221AQRGVRQ1",
+      "maker": "Texas Instruments",
+      "reason": "Fails sourcing rule 4: JLCPCB C1849473 stockCount 61, canPresaleNumber 51 against the gate of 175 (need 5 x 7 = 35) at 2026-10-02T14:43:56Z; not held, so rule 6 does not apply. Digi-Key 9430, Active (13:58:34Z), does not pass a part at JLCPCB. The first-ranked part has its second source at Digi-Key, so this alternate is not needed."
+     }
+    ],
+    "verify": [
+     {
+      "part": "INA3221AIRGVR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port shunt",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "ERJ-6CWDR010V",
+      "reason": "The round 1 selection. 22.9 mA of the 23.6 mA share with the INA3221, the thinnest margin of the three (0.7 mA), but it is the only part with stock at both vendors: JLCPCB C236284 4062/4027 at 14:43:57Z against a gate of 500 (need 100), Digi-Key 12302, Active, 15 weeks (13:58:36Z). No P3 candidate for this function.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "PA1206DRE470R01Z",
+      "reason": "Widest margin of the three (20.1 mA of 23.6 mA: TCR +/-50 ppm/degC class E, 1 W); JLCPCB C20160275 1283/1274 at 14:43:57Z against 500; Digi-Key 0, 31 weeks (13:58:41Z), so its second source is the pin-compatible PE1206DRE... alternate PE1206DRM470R01L (JLCPCB 1221/1202 at 14:43:57Z), the same 1206 land. Ranked above the PE for the larger margin.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "PE1206DRM470R01L",
+      "reason": "22.7 mA of 23.6 mA (+/-75 ppm/degC class M, 1 W); JLCPCB C4144857 1221/1202 at 14:43:57Z; Digi-Key 0, 27 weeks (13:58:39Z), so its second source is the PA1206DRE470R01Z alternate on the same land.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "ERJ-6CWDR010V",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo rail monitor",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "alert shift register",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "SN74LV165APWR",
+      "reason": "Levels stated over VCC 3 to 3.6 V (VIH 0.7 x VCC, VIL 0.3 x VCC), -40 to 125 degC, Ioff, fmax 50 MHz minimum; JLCPCB C201716 stockCount 11657, canPresaleNumber 11638 at 14:43:57Z against the gate of 50 (need 10). Digi-Key 7 (13:58:42Z) fails the second-vendor route, so the second source is the pin-compatible Nexperia 74LV165APW,118 (JLCPCB 13220/13219 at 14:43:58Z).",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "74VHC165FT",
+      "reason": "P3's find, qualified: the only candidate besides rank 1 with levels stated over a range that holds the 3.201 to 3.399 V rail (VCC 3.0 to 5.5 V: VIH 0.7 x VCC, VIL 0.3 x VCC), -40 to 125 degC; second vendor on its own (JLCPCB C5349732 2262/2261 at 14:44:00Z; Digi-Key 1316, Active, 16 weeks, 14:32:50Z), so it does not depend on rank 1 as an alternate. Its text says the load is synchronous and its truth table shows it independent of the clock; firmware that pulses the clock while load is low serves both. Ranked second as the fallback that stands alone.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "74LV165APW,118",
+      "reason": "Schmitt inputs, Ioff, lowest price, largest JLCPCB stock (13220/13219 at 14:43:58Z); -40 to 85 degC only; Digi-Key 0 (13:58:44Z), so its second source is rank 1 as the alternate, which makes it depend on rank 1.",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "74LV165PW,118",
+      "reason": "Fixed 2.0 V and 0.8 V thresholds, fmax 24 MHz minimum, no Ioff; JLCPCB 9558/9557 (14:43:58Z); Digi-Key 0 for the Nexperia product and discontinued for the NXP listing; second source SN74LV165APWR as the alternate.",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "SN74LV166ADR",
+      "reason": "P3's find, qualified: levels stated over 3 to 3.6 V, -40 to 85 degC, but the load is synchronous (one clock pulse while SH/LD is low), the pinout is not the 165's (CLR pin to tie high), the price is 2.57, 8 times the 165s, and JLCPCB C2860649 stock 50/50 at 14:44:01Z sits exactly at the gate of 50. Digi-Key 8915 (14:32:52Z) is the second vendor. Last.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "74VHC165FT",
+      "maker": "Toshiba (74VHC165FT Rev.4.0.B, 2026-05-13); S1 Toshiba; JLCPCB label TOSHIBA; Digi-Key maker Toshiba Semiconductor and Storage",
+      "lcsc": "C5349732",
+      "package": "TSSOP-16 (TSSOP16B)",
+      "placements": 2,
+      "placements_basis": "fixed by the specification: two 8-bit parts in cascade (owner, 2026-09-30)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "function",
+        "required": "8-bit PISO, cascadable, one load",
+        "datasheet": "8-bit parallel or serial-in, serial-out shift register; SHIFT/LOAD low loads A to H, SI serial input, QH and QH-bar outputs for cascading. Page 1 says the load is 'synchronously' at the clock edge; the truth table shows it with CK at X. Firmware that pulses CK while SHIFT/LOAD is low serves both",
+        "pass": true,
+        "source": "74VHC165FT, https://toshiba.semicon-storage.com/info/docget.jsp?did=14003&prodName=74VHC165FT, read 2026-10-02T14:42:20Z, sections 2 and 8"
+       },
+       {
+        "name": "pins",
+        "required": "load, clock, data",
+        "datasheet": "S/L (1), CK (2), QH (9), SI (10), CK INH (15) tied low, A to H on 11 to 14 and 3 to 6; pin and function compatible with the 74 series 165",
+        "pass": true,
+        "source": "74VHC165FT sections 3 and 7"
+       },
+       {
+        "name": "placements",
+        "required": "2",
+        "datasheet": "2",
+        "pass": true,
+        "source": "specification"
+       },
+       {
+        "name": "supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "VCC 2.0 to 5.5 V",
+        "pass": true,
+        "source": "74VHC165FT section 12"
+       },
+       {
+        "name": "input levels at 3.3 V",
+        "required": "VIH <= 2.62 V, VIL >= 0.5 V at 3.3 V",
+        "datasheet": "VCC 3.0 to 5.5 V: VIH min 0.7 x VCC (2.24 V at 3.201 V, 2.38 V at 3.399 V), VIL max 0.3 x VCC (0.96 V at 3.201 V), at 25 degC, -40 to 85 degC and -40 to 125 degC",
+        "pass": true,
+        "source": "74VHC165FT 13.1 to 13.3"
+       },
+       {
+        "name": "output level at 3.3 V",
+        "required": "VOH >= 2 V, VOL <= 0.8 V",
+        "datasheet": "at VCC 3.0 V: VOH 2.58 V (25 degC), 2.48 V (-40 to 85 degC), 2.40 V (-40 to 125 degC) at -4 mA; VOL 0.36, 0.44, 0.55 V at 4 mA",
+        "pass": true,
+        "source": "74VHC165FT 13.1 to 13.3"
+       },
+       {
+        "name": "read time",
+        "required": "<< 5 ms",
+        "datasheet": "VCC 3.3 +/- 0.3 V: fMAX 55 MHz min (-40 to 85 degC, 15 pF), S/L pulse 9 ns, CK pulse 7 ns: 16 bits at 1 MHz take 16 us (computed)",
+        "pass": true,
+        "source": "74VHC165FT 13.5, 13.8"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "Topr -40 to 125 degC; power-down protection on all inputs",
+        "pass": true,
+        "source": "74VHC165FT sections 3 and 12"
+       }
+      ],
+      "jlcpcb": "stockCount 2262, canPresaleNumber 2261, componentLibraryType expand, 0.2428 at the 1 break for the need of 10 (currency not labelled); read 2026-10-02T14:44:00Z, vendors.py jlcpcb C5349732 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList), exact LCSC match, label TOSHIBA",
+      "digikey": "stock_available 1316 (CT 1316, TR 0), lead_weeks 16, ProductStatus Active; read 2026-10-02T14:32:50Z, https://api.digikey.com/products/v4/search/74VHC165FT/productdetails, cached reading of the same UTC day",
+      "gate": "need = 5 boards x 2 = 10; S4 threshold max(5 x 10, 50) = 50; stockCount 2262 >= 50 and canPresaleNumber 2261 >= 0: pass (rule 4); not held",
+      "lifecycle": "Toshiba product page not read: https://toshiba.semicon-storage.com/ap-en/semiconductor/product/logic-ics/detail.74VHC165FT.html answered HTTP 404 (2026-10-02T14:43:30Z). By the owner's rule of 2026-10-02 the status is Digi-Key ProductStatus Active (14:32:50Z), a distributor figure. Longevity: none read. Introduced: start of commercial production 2013-05 per the datasheet, not flagged. Notices: not read. Distributor: JLCPCB reading has no status field",
+      "second_source": "second vendor: Digi-Key 1316 >= 50 (14:32:50Z)",
+      "alternates": [
+       "SN74LV165APWR (pin for pin, TSSOP-16)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Levels stated over 3.0 to 5.5 V and a second vendor on its own; below SN74LV165APWR on JLCPCB stock; the datasheet's synchronous and asynchronous wording differs",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "SN74LV166ADR",
+      "maker": "Texas Instruments (SN74LV166A SCLS456D, revised March 2023); S1 Texas Instruments",
+      "lcsc": "C2860649",
+      "package": "SOIC-16 (D) 9.9 x 3.9 mm",
+      "placements": 2,
+      "placements_basis": "fixed by the specification: two 8-bit parts in cascade",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "function",
+        "required": "8-bit PISO, cascadable, one load",
+        "datasheet": "8-bit parallel-load shift register; SH/LD low loads A to H on the next rising CLK edge (synchronous load); SER serial input, QH output; CLR overrides (tied high)",
+        "pass": true,
+        "source": "SN74LV166A, https://www.ti.com/lit/ds/symlink/sn74lv166a.pdf, read 2026-10-02T14:40:22Z, 8.1"
+       },
+       {
+        "name": "pins",
+        "required": "load, clock, data",
+        "datasheet": "SH/LD (15), CLK (7), QH (13), SER (1); CLK INH tied low; CLR (9) tied high; a different pinout from the 165, so no pin-compatible pairing with the 165 parts",
+        "pass": true,
+        "source": "SN74LV166A Table 5-1"
+       },
+       {
+        "name": "placements",
+        "required": "2",
+        "datasheet": "2",
+        "pass": true,
+        "source": "specification"
+       },
+       {
+        "name": "supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "VCC 2 to 5.5 V",
+        "pass": true,
+        "source": "SN74LV166A 6.3"
+       },
+       {
+        "name": "input levels at 3.3 V",
+        "required": "VIH <= 2.62 V, VIL >= 0.5 V at 3.3 V",
+        "datasheet": "VCC 3 to 3.6 V: VIH min 0.7 x VCC, VIL max 0.3 x VCC",
+        "pass": true,
+        "source": "SN74LV166A 6.3"
+       },
+       {
+        "name": "output level at 3.3 V",
+        "required": "VOH >= 2 V, VOL <= 0.8 V",
+        "datasheet": "VOH 2.48 V min and VOL 0.44 V max at VCC 3 V (the table prints the test currents one row off)",
+        "pass": true,
+        "source": "SN74LV166A 6.5"
+       },
+       {
+        "name": "read time",
+        "required": "<< 5 ms",
+        "datasheet": "VCC 3.3 +/- 0.3 V: fmax 55 MHz min (CL 15 pF); 16 bits at 1 MHz take 16 us (computed)",
+        "pass": true,
+        "source": "SN74LV166A 6.10"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TA -40 to 85 degC; Ioff 5 uA max",
+        "pass": true,
+        "source": "SN74LV166A 6.3, 6.5"
+       }
+      ],
+      "jlcpcb": "stockCount 50, canPresaleNumber 50, componentLibraryType expand, 2.2613 at the 10 break for the need of 10 (currency not labelled); read 2026-10-02T14:44:01Z, vendors.py jlcpcb C2860649, exact LCSC match, label Texas Instruments",
+      "digikey": "stock_available 8915, lead_weeks 12, ProductStatus Active; read 2026-10-02T14:32:52Z, https://api.digikey.com/products/v4/search/SN74LV166ADR/productdetails, cached reading of the same UTC day",
+      "gate": "need = 5 boards x 2 = 10; S4 threshold 50; stockCount 50 >= 50 and canPresaleNumber 50 >= 0: pass (rule 4) with no margin; not held",
+      "lifecycle": "ACTIVE: https://www.ti.com/product/SN74LV166A meta status ACTIVE, orderable SN74LV166ADR ACTIVE (read 2026-10-02T14:43:10Z). Longevity: TI typically 10 to 15 years, no dated commitment. Introduced: February 2001, not flagged. Notices: no public TI PCN listing. Distributor: Digi-Key Active (14:32:52Z)",
+      "second_source": "second vendor: Digi-Key 8915 >= 50 (14:32:52Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Passes; synchronous load, a non-165 pinout, 8 times the price and JLCPCB stock at the gate; last",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "SN74AHC165PWR",
+      "maker": "Texas Instruments",
+      "reason": "Input levels are not stated at 3.3 V: SCLS991 Table 5.3 gives VIH 2.1 V and VIL 0.9 V at VCC = 3 V and 3.85 V and 1.65 V at 5.5 V, and VOH and VOL at 3 V and 4.5 V, with no row or range that holds the 3.201 to 3.399 V rail, the same ground on which the HC165 parts are dropped. The datasheet's description (read 2026-10-02T14:40:22Z) names a serial-in, parallel-out register with 3-state outputs while its pin table is a 165's. JLCPCB C32498669 820/818 at 14:44:01Z and Digi-Key 2726 (14:32:49Z) would pass the gate."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "SN74LV165APWR",
+      "kind": "first",
+      "option": ""
+     },
+     {
+      "part": "74LV165APW,118",
+      "kind": "alternate",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "alert combining gate",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "CD4082BM96",
+      "reason": "The owner's CD4082, with the largest JLCPCB stock of the three (C193801 3996/3808 at 14:43:58Z against a gate of 75) and Digi-Key 7125 (13:58:49Z) as second vendor. Its datasheet states no level and no delay below VDD 5 V (125 ns typical, 250 ns maximum at 5 V), so P2's two rows 'stated at 3.3 V' fail and are reported, not shown. No CD4082 meets them.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "MC14082BDR2G",
+      "reason": "A 4082 from a second maker in the same SOIC-14 land; JLCPCB C903932 2361/2361 at 14:43:58Z, Digi-Key 5003 (13:58:51Z); 300 ns maximum at 5 V; nothing stated at 3.3 V.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "CD4082BNSR",
+      "reason": "The same die in the wider SO-14 body; JLCPCB C2870425 892/891 at 14:43:59Z, Digi-Key 110323 (13:58:53Z); nothing stated at 3.3 V.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "74VHC21FT",
+      "maker": "Toshiba",
+      "reason": "Fails the requirement 'part: CD4082' (IOBoard.md:113 and the Follow-ups row, owner 2026-09-30): it is a 74x21 dual 4-input AND gate with another pinout. It does state what the CD4082s do not (74VHC21FT Rev.3.0.B, read 2026-10-02T14:46:18Z: VCC 3.0 to 5.5 V, VIH 0.7 x VCC, tPLH and tPHL 7.0 ns maximum at 3.3 +/- 0.3 V, 25 degC, 15 pF; 12 ns at 50 pF per P3); JLCPCB C4470883 4393/4393 (14:44:01Z); Digi-Key 19647, Active (14:32:57Z). Whether a 74x21 replaces the CD4082 is the owner's choice, reported."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "CD4082BM96",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "Digi-Key calls",
+    "value": "No new Digi-Key product call: every part was answered from the same UTC day's cache (cached readings 13:58Z to 14:34Z); one digikey-quota call read 728 calls left at 14:40:12Z",
+    "source": "vendors.py digikey-quota, 2026-10-02T14:40:12Z"
+   },
+   {
+    "figure": "INA228AIDGSR fixed input, stock",
+    "value": "Fails rule 4: JLCPCB C2887910 stockCount 0, canPresaleNumber -236 (gate 50, need 10); Digi-Key 0 in all packagings, 20 weeks, Active; not held. Reported to the owner, not replaced",
+    "source": "vendors.py jlcpcb C2887910, 2026-10-02T14:43:54Z; https://api.digikey.com/products/v4/search/INA228AIDGSR/productdetails, 2026-10-02T13:58:19Z (cached)"
+   },
+   {
+    "figure": "INA228 variants",
+    "value": "INA228AQDGSRQ1 JLCPCB 0/-231 (C5214669) and 0/0 (C32710522), Digi-Key 0, Active; INA228AIDGST JLCPCB 0/0 (C2862904) and Digi-Key ProductStatus Obsolete, stock 0, 12 weeks. No rule 5 second source",
+    "source": "vendors.py jlcpcb, 2026-10-02T14:44:02Z to 14:44:03Z; Digi-Key INA228AQDGSRQ1 13:58:21Z, INA228AIDGST 14:34:20Z (cached)"
+   },
+   {
+    "figure": "External sense input: series resistance",
+    "value": "SLYS021A 8.1.4 reads 'Do not use values greater than 100 ohms for RFILTER' against the owner's 1 kOhm in each lead; input differential absolute maximum -40 to 40 V against the 85 V fault (V179). Confirms P2's two failed rows; the TVS that holds the withstand has no part in any run",
+    "source": "https://www.ti.com/lit/ds/symlink/ina228.pdf SLYS021A 6.1, 8.1.4, read 2026-10-02T14:47:00Z"
+   },
+   {
+    "figure": "TVS on the external shunt's sense leads",
+    "value": "No function of this return and no part: Research.md stage 1 names the shunts, USB, power input and ESC pack path protection and leaves the protection on 'signal, sensor, balance-lead, link and heartbeat connectors' to stage 2; whether the shunt's sense leads are a sensor connector in that sense is not stated, and IOBoard.md:464 says 'round 2'. The INA228's 85 V withstand rests on it. For the owner",
+    "source": "hardware/docs/Research.md Rules of stage 1 and Scope row 2; hardware/docs/IOBoard.md:464 (checkout 14098109c7ce); P3 missed_functions"
+   },
+   {
+    "figure": "BSS-L100-001 datasheet figures",
+    "value": "100 uOhm +/-5 % as made, TCR <50 ppm/K (20 to 60 degC), thermal EMF <0.6 uV/K (30 to 60 degC), Rthi 2.0 K/W, Pnom 20 W, TK = 125 - 2.0 x 20 = 85 degC, continuous +/-450 A, 10 s +/-600 A, -40 to 125 degC limited by the connector; 7-pin Molex DuraClik 5600200720: 1 NTC+, 2 R1+, 3 R2+, 4 R2-, 5 R1-, 6 NTC-, 7 GND",
+    "source": "https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BSS.pdf, Issue 02-May-2024, read 2026-10-02T14:40:20Z"
+   },
+   {
+    "figure": "BSS accuracy budgets",
+    "value": "BSS-L100-001: 753 mA at 300 A (645 TCR + 108 EMF) of 2.833 A, 19.0 mA at 15 A of 125.7 mA. BSS-L050-001: 795 mA at 300 A (714 + 81) of 2.816 A, 28.3 mA at 15 A of 108.8 mA. INA228 on 50 uOhm: 183.6 mA at 300 A and 41.2 mA at 15 A (gain drift 150 and 7.5, offset drift 5, PSRR 1, CMRR 26.8, half LSB 0.8 mA). P3's 21.5 mA at 15 A for the L100 is 19.0 mA by P2's method",
+    "source": "BSS datasheet; INA228 SLYS021A 6.5 read 2026-10-02T14:47:00Z; computed"
+   },
+   {
+    "figure": "BSS sense connection not stated",
+    "value": "The datasheet names the connector pins and not which taps R1 and R2 are, nor the connector's voltage rating against the 67.2 V pack (V177, V179). The BSS shares the BAS's 84 x 20 x 3 mm outline and 8.3 mm holes at 60 mm, with a connector in place of sense holes; mounting is round 3's",
+    "source": "BSS p2; BAS Issue 08-September-2026 p2, https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BAS.pdf, read 2026-10-02T14:45:44Z"
+   },
+   {
+    "figure": "BSS stock",
+    "value": "BSS-L100-001 Digi-Key 516 (tray), 18 weeks, Active; BSS-L050-001 333, 41 weeks, Active; neither is listed at JLCPCB in this task (off the board, not read). The Isabellenhuette BSS page carries no status",
+    "source": "https://api.digikey.com/products/v4/search/BSS-L100-001/productdetails 2026-10-02T14:25:02Z and BSS-L050-001 14:25:22Z (cached); https://www.isabellenhuette.com/solutions/products/bss 2026-10-02T14:43:43Z"
+   },
+   {
+    "figure": "50 uOhm external shunts",
+    "value": "WSBE8536L0500JK 26, JKB2 21, JKA2 0 at Digi-Key, under the gate of 50. BAS-M-R00005 (TCR 0 +/-100 ppm/K, Rthi 1.5 K/W) is listed only as -AE-5.0 (863), -AEU-5.0 (161), -EU, -GU, -SU (0): no wired-sense version in the datasheet's dimension table, so none is qualified. The WSBS8536 50 uOhm TCR claim of P3 is not re-read",
+    "source": "Digi-Key keyword searches 'WSBE8536' 2026-10-02T14:22:42Z and 'BAS-M-R00005' 14:23:29Z (cached); BAS datasheet p2 read 14:45:44Z"
+   },
+   {
+    "figure": "External shunt second source",
+    "value": "None for any of the five: BSS-L100-001 and BSS-L050-001 have no alternate; the WSBE, BAS and WSBS8536 results stand from P2 (JKB2 10, JK 53, AR 0, JK20 17, JK80 10)",
+    "source": "Digi-Key readings of P2 (13:58:56Z to 13:59:00Z) and P3; selection.json marks WSBE8518L1000JKA2 second_source_missing"
+   },
+   {
+    "figure": "Temperature sensor figures read",
+    "value": "PCT2075D,118 +/-1 degC max -25 to +100 degC, conversion period 100 ms typical (28 ms conversion), addresses 0x48 to 0x4F or 0x28 to 0x2F, 0x35 to 0x37, 0x70 to 0x77 with floating pins; TMP1075 DSG +/-2 degC max at 100 degC (+/-1 degC to 75 degC), D and DGK +/-1 degC to 110 degC, conversion 27.5 ms +/-10 %; TMP119 +/-0.15 degC -55 to 125 degC at 8 averages, 1 Hz, I2C levels 5 % and 95 % of V+, cycle 125 ms with 8 averages",
+    "source": "PCT2075 Rev. 10.1, TMP1075 SBOS854F, TMP119 SNIS236, read 2026-10-02T14:40:21Z to 14:40:22Z"
+   },
+   {
+    "figure": "Temperature sensor trip timing for P5",
+    "value": "Two consecutive conversions: MCP9808T-E/MS 500, 130 or 60 ms by resolution (P2); PCT2075D,118 200 ms at the default 100 ms period; TMP1075DSGR 55 ms (60.5 ms at +10 %); TMP119AIYBGR 250 ms at 8 averages, 31 ms with none; all under the 500 ms stop deadline",
+    "source": "datasheets as above; hardware/docs/Research.md V288, V1"
+   },
+   {
+    "figure": "TMP1075DR second source",
+    "value": "Digi-Key 0 (14:28:43Z); the alternate PCT2075D,118 differs in the conversion-rate register and start-up registers, so rule 5 is not met; the DSG package of the same die is ranked",
+    "source": "https://api.digikey.com/products/v4/search/TMP1075DR/productdetails 2026-10-02T14:28:43Z (cached); TMP1075 SBOS854F Table 7-8; PCT2075 Rev. 10.1 section 7"
+   },
+   {
+    "figure": "Shift register input-level ground",
+    "value": "Parts are kept when the datasheet states VIH and VIL over a range holding 3.201 to 3.399 V: SN74LV165A and SN74LV166A (3 to 3.6 V), 74LV165A (3.0 to 3.6 V), 74VHC165FT (3.0 to 5.5 V). SN74AHC165 and the onsemi MC74HC165A give rows at 3.0 V and 4.5 or 5.5 V only (MC74HC165A Rev. 13: VIH 2.1 V, VIL 0.9 V at 3.0 V, VOH 2.48 V and VOL 0.26 V at 2.4 mA), so P2's reason for the HC165 parts holds for the onsemi part as well, with its 3.0 V rows recorded; MC74HC165ADTR2G reads Digi-Key 10000 (P3, 14:32:56Z)",
+    "source": "SCLS991 5.3 read 2026-10-02T14:40:22Z; MC74HC165A/D, https://www.onsemi.com/pdf/datasheet/mc74hc165a-d.pdf, read 2026-10-02T14:48:04Z; SCLS402R and 74LV165A as in P2"
+   },
+   {
+    "figure": "74VHC165FT datasheet wording",
+    "value": "Page 1 says the parallel load is synchronous at the positive clock edge; the truth table (page 3) shows the load with CK at X; JLCPCB's description says 'Asynchronous parallel load function'. Datasheet Rev.4.0.B is dated 2026-05-13. Firmware that pulses CK while SHIFT/LOAD is low works for both",
+    "source": "https://toshiba.semicon-storage.com/info/docget.jsp?did=14003&prodName=74VHC165FT, read 2026-10-02T14:42:20Z; vendors.py jlcpcb C5349732 2026-10-02T14:42:13Z"
+   },
+   {
+    "figure": "Alert combining gate at 3.3 V",
+    "value": "Every CD4082 candidate states levels and delay at 5 V only (CD4082B 125 ns typical, 250 ns maximum; MC14082B 300 ns maximum). 74VHC21FT (Toshiba, JLCPCB C4470883 4393, Digi-Key 19647) and SN74LV21APWR (JLCPCB C201541 171/168, Digi-Key 78636) state tpd at 3.3 V (7.0 ns and 8.5 ns maximum) and are not CD4082s. The owner decides whether a 74x21 replaces the CD4082",
+    "source": "vendors.py jlcpcb C4470883, C201541 2026-10-02T14:44:01Z; Digi-Key 74VHC21FT 14:32:57Z, SN74LV21APWR 14:32:59Z (cached); 74VHC21FT Rev.3.0.B read 14:46:18Z"
+   },
+   {
+    "figure": "Port shunt order",
+    "value": "PA1206DRE470R01Z (20.1 mA) ranks above PE1206DRM470R01L (22.7 mA) on the 23.6 mA share; ERJ-6CWDR010V (22.9 mA) stays first as the round 1 selection with stock at both vendors. Yageo PA and PE_L datasheets re-fetched (HTTP 200); their figures are P2's",
+    "source": "vendors.py fetch of the JLCPCB-hosted PA V2 and PE_L V13 copies, 2026-10-02T14:45:13Z"
+   },
+   {
+    "figure": "INA3221AQRGVRQ1",
+    "value": "JLCPCB C1849473 stockCount 61, canPresaleNumber 51 against the gate of 175: fails rule 4, not held; Digi-Key 9430. Dropped from the shortlist",
+    "source": "vendors.py jlcpcb C1849473, 2026-10-02T14:43:56Z; Digi-Key 13:58:34Z (cached)"
+   },
+   {
+    "figure": "Lifecycle status read",
+    "value": "TI pages ACTIVE for TMP1075 (DR and DSGR), TMP119 (AIYBGR) and SN74LV166A (DR); NXP PCT2075 page 'Status - Active'; Toshiba page not found (404), so Digi-Key Active stands for 74VHC165FT; Isabellenhuette BSS page carries no status, Digi-Key Active stands",
+    "source": "https://www.ti.com/product/TMP1075 2026-10-02T14:43:00Z, /TMP119 14:43:09Z, /SN74LV166A 14:43:10Z; https://www.nxp.com/products/PCT2075 14:43:14Z; Toshiba URL 14:43:30Z; BSS page 14:43:43Z"
+   }
+  ]
+ }
+}

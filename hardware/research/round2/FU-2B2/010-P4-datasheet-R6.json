@@ -1,0 +1,936 @@
+{
+ "role": "P4",
+ "category": "R6",
+ "label": "P4-datasheet-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "verifier": "datasheet",
+  "parts": [
+   {
+    "function": "Servo supply",
+    "part": "TPS55285VALR",
+    "kind": "first",
+    "verdict": "refuted",
+    "refutation": "Check 'Output current from the pack at 8.4 V' fails: the owner requires each rail to run to its own limit, up to 6.35 A, from the pack (IOBoard.md, Servo rail current, owner 2026-09-30). SLVSI72A 5.4 gives ILIM_AVG 7 A min, 8 A typ, no maximum (VIN 8 V, VOUT 15 V). From 6.0 V in at 8.4 V out that delivers 4.58 A at 7 A and 5.16 A at 8 A (re-derived from Figure 5-3). 6.35 A at 8.4 V needs about 9.9 to 10.1 A of inductor current from 6.0 V. All other 19 checks pass. The part is the owner's fixed input; selection.json holds no Servo supply part.",
+    "checks": [
+     {
+      "figure": "Converter part (fixed input)",
+      "stated": "TPS55285VALR, SLVSI72A rev A (October 2025)",
+      "read": "Section 11 orderable table: TPS55285VALR, Active, Production, WQFN-HR (VAL) 15 pins, 3000 per reel, -40 to 125 degC; document SLVSI72A, revised October 2025",
+      "source": "https://www.ti.com/lit/ds/symlink/tps55285.pdf, page 1 and section 11",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "DC input range",
+      "stated": "VIN 2.4 to 22 V (VOUT >= 3.0 V), 3 to 22 V (VOUT < 3.0 V), 5.2",
+      "read": "Table 5.2: VIN 2.4 to 22 V for VOUT >= 3.0 V, 3 to 22 V for VOUT < 3.0 V; 12 to 20 V lies inside",
+      "source": "SLVSI72A 5.2, https://www.ti.com/lit/ds/symlink/tps55285.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "Highest steady VIN",
+      "stated": "VIN OVP 22.0 min to 23.0 V max rising; VIN 27 V absolute maximum",
+      "read": "5.4 VVIN_OVP rising threshold 22 min, 22.5 typ, 23 max V, hysteresis 0.9 V; 5.1 VIN and SW1 27 V absolute maximum. 20 V steady is 2.0 V under the OVP minimum. The data sheet gives no transient level or duration.",
+      "source": "SLVSI72A 5.1, 5.4, 6.3.14",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "Pack input range",
+      "stated": "inside VIN 2.4 to 22 V; UVLO 2.8 to 3.0 V rising",
+      "read": "VIN 2.4 to 22 V recommended; VVIN_UVLO rising 2.8/2.9/3.0 V, falling 2.31 to 2.38 V (VOUT >= 3 V) and 2.6 to 2.8 V (VOUT < 3 V); 6.0 to 8.4 V lies inside",
+      "source": "SLVSI72A 5.2, 5.4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "Output settings",
+      "stated": "VOUT 0.8 to 15 V; 10 mV steps on the internal range",
+      "read": "VOUT 0.8 to 15 V (5.2, 5.4). Table 7-6 internal feedback steps: 2.5 mV (5 V range), 5 mV (10 V), 7.5 mV (15 V), 10 mV (INTFB 11, 0.8 V at REF 0000h). 5.5 V and 8.4 V fall on the 10 V range (5 mV step); 0.8 to 15 V in 10 mV steps is the INTFB 11 range.",
+      "source": "SLVSI72A 5.2, 5.4, 7.1, 7.4 Tables 7-5 and 7-6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "Set point against the ceilings",
+      "stated": "VOUT_FULL 9.85 to 10.15 V on the 10 V range; derived 5.40 to 5.59 V and 8.27 to 8.53 V",
+      "read": "VOUT_FULL (VOUT_FS 01h, REF 0780h) 9.85/10/10.15 V; VREF 1.117 to 1.141 V at 1.129 V, 0.837 to 0.855 V at 0.846 V, 0.501 to 0.514 V at 0.508 V. Re-derived: 5.5 V gives 5.41 to 5.59 V, 8.4 V gives 8.27 to 8.53 V (VREF interpolated plus ratio tolerance). Under 6.0 V and 8.7 V. Ripple and overshoot are not in the data sheet.",
+      "source": "SLVSI72A 5.4 (VOUT_FULL, VREF), 7.4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "Output current limit",
+      "stated": "IOUT_LIMIT 0.5 to 6.35 A in 50 mA steps; tolerance only at 1, 3, 5 A (4.7 to 5.3 A at 5 A)",
+      "read": "6.3.12 and Table 7-3: 500 mA to 6.35 A, 50 mA step, Current_Limit_EN reset 1b, setting reset 5 A. Tolerance 0.8 to 1.2 A at 1 A, 2.8 to 3.2 A at 3 A, 4.7 to 5.3 A at 5 A (VIN 19 V, VOUT 5 V, CCM, note 1 engineering samples); none at 6.35 A.",
+      "source": "SLVSI72A 5.4, 6.3.12, 7.2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "Continuous current at 6.0 V in, 50 degC",
+      "stated": "3.72 A (all converter loss in the IC; 2.27 W), 4.11 A less a 14.3 mOhm inductor's DC loss; typical 25 degC curves, no heatsink credit",
+      "read": "Re-digitised Figures 5-1, 5-3, 5-5, 5-7 from the PDF vector paths, calibrated on the data sheet's 92.0 % (20 V in, 5 V out, 5 A) and 95.7 % (12 V in, 15 V out, 5 A): read 92.01 % and 95.72 %. Loss fit of the Figure 5-3 VIN 5 V curve 0.254 - 0.0994 IL + 0.0817 IL^2 W. Budget (125-50)/33 = 2.27 W gives 3.74 A at 6.0 V in, 8.4 V out, and 4.13 A with the 14.3 mOhm inductor loss taken out. Differences to stated: 0.02 A. Typical TA 25 degC curves; RDS(on) rise not counted.",
+      "source": "SLVSI72A 5.2, 5.3 (RthJA 33 degC/W EVM), Figure 5-3, Table 8-2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "Output current from the pack at 8.4 V",
+      "stated": "ILIM_AVG 7 A min, 8 A typ, no max: 4.57 A (7 A) to 5.15 A typ (8 A) at 8.4 V from 6.0 V; 6.35 A needs about 10 A",
+      "read": "ILIM_AVG 7 min, 8 typ, no max (glyph positions in the MIN and TYP columns; VIN 8 V, VOUT 15 V, 400 kHz). Loss model gives 4.58 A at IL 7 A and 5.16 A at IL 8 A from 6.0 V. 6.35 A x 8.4 V = 53.3 W needs IL about 9.9 to 10.1 A at 6.0 V, above the 8 A typical clamp; the 7 A minimum reaches 6.35 A only from about 8.1 V in. Required 6.35 A is not met from the pack floor.",
+      "source": "SLVSI72A 5.4 (ILIM_AVG), 6.3.9, 8.2.2.3 equation 7, Figure 5-3",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "Adjustable supply continuous current",
+      "stated": "worst point shown 6.0 V in, 15 V out: 1.94 A (2.13 A less inductor DC loss); 12 V to 15 V 4.16 A; 20 V to 5 V 5.12 A; outputs below 5 V not shown",
+      "read": "Re-derived with the 2.27 W budget: 6.0 V in, 15 V out 1.945 A (2.135 A less inductor loss); 6.0 to 12 V 2.52 A; 9 to 15 V 3.01 A; 12 to 15 V 4.16 to 4.18 A; 20 to 15 V 5.12 to 5.14 A; 20 to 5 V 5.13 to 5.14 A. Figures exist only for VOUT 5, 9, 12, 15 V and VIN 5, 9, 12, 20 V; nothing below 5 V out. The worst point shown is 6.0 V to 15 V.",
+      "source": "SLVSI72A Figures 5-1, 5-3, 5-5, 5-7",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "Pack current at 6.0 V",
+      "stated": "5.59 A at 3.72 A out; overload ILIM_AVG 7 A min, 8 A typ, no max",
+      "read": "5.61 A at 3.74 A out (93.3 %). Overload bound ILIM_AVG 7 A min, 8 A typ with no maximum stated; four converters at the clamp 28 A min, 32 A typ, no maximum. A guaranteed upper bound is not in the data sheet.",
+      "source": "SLVSI72A 5.4 (ILIM_AVG), 6.3.9, Figure 5-3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "Current into a shorted port",
+      "stated": "Current_Limit_EN 1 at reset; OCP_DELAY 00b = 128 us; hiccup off time 76 ms",
+      "read": "Table 7-3 Current_Limit_EN reset 1b; Table 7-4 OCP_DELAY reset 00b = 128 us; Table 7-8 HICCUP reset 1; tHICCUP 76 ms typ (5.4, 6.3.16); ILIM_AVG 7/8 A bounds the output during the delay",
+      "source": "SLVSI72A 5.4, 6.3.16, 7.2, 7.3, 7.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "Enable off at reset",
+      "stated": "VEN_L 0.4 V min; EN low resets registers (6.3.6); MODE 0 Ohm or 48.7 kOhm gives OE 0",
+      "read": "6.3.6: EN/UVLO below 0.4 V puts the part in shutdown and resets all registers; VEN_L 0.4 V, VEN_H 1.03 V (5.4). Table 6-2: MODE 0 Ohm gives 75h with OE 0, 48.7 kOhm gives 74h with OE 0 (24.9 kOhm, 82.5 kOhm and open give OE 1).",
+      "source": "SLVSI72A 5.4, 6.3.2 Table 6-2, 6.3.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "Temperature trip input",
+      "stated": "EN/UVLO low: shutdown; thermal shutdown TSD 175 degC typ, 20 degC hysteresis, auto restart (not a latch)",
+      "read": "EN/UVLO low disables the device (Table 4-1, 6.3.6). TSD 175 degC typ, 20 degC hysteresis, converter restarts automatically (6.3.17), so the part has no latch of its own; an external latch holding EN/UVLO below 0.4 V switches it off.",
+      "source": "SLVSI72A 4 Table 4-1, 5.4, 6.3.6, 6.3.17",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "Switching frequency",
+      "stated": "FSW 00b 360 to 440 kHz",
+      "read": "5.4 fSW, FSW = 00b: 360/400/440 kHz",
+      "source": "SLVSI72A 5.4, 7.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "I2C clock",
+      "stated": "fSCL 100 to 1000 kHz",
+      "read": "5.5 fSCL 100 min, 1000 max kHz; I2C IO voltage 1.7 to 5.5 V",
+      "source": "SLVSI72A 5.4, 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "I2C address",
+      "stated": "74h (48.7 kOhm, 82.5 kOhm or open) or 75h (0 or 24.9 kOhm)",
+      "read": "Table 6-2: 0 Ohm 75h, 24.9 kOhm 75h, 48.7 kOhm 74h, 82.5 kOhm or open 74h; address is seven bits (6.5.5)",
+      "source": "SLVSI72A 6.3.2 Table 6-2, 6.5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "Current-limit sense",
+      "stated": "output current sensed internally",
+      "read": "6.3.12: output current limit works in buck, buck-boost and boost without an external current sense resistor; 8.2.2.7 equivalent internal sense resistance 0.055 Ohm",
+      "source": "SLVSI72A 6.3.12, 8.2.2.7",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "Ambient range",
+      "stated": "TJ -40 to 125 degC recommended, 150 degC absolute; holds up to 3.72 A at 6.0 V in on 33 degC/W; above it the temperature trip acts",
+      "read": "5.2 TJ -40 to 125 degC; 5.1 TJ 150 degC; 5.3 RthJA 47.6 (standard) and 33 degC/W (TPS55285EVM, 4-layer 2 oz). 0 to 50 degC ambient lies inside; at 50 degC and 33 degC/W the loss budget is 2.27 W.",
+      "source": "SLVSI72A 5.1, 5.2, 5.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:58Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments (data sheet SLVSI72A); S1 name Texas Instruments",
+      "read": "Data sheet SLVSI72A is a Texas Instruments document; S1 lists Texas Instruments",
+      "source": "SLVSI72A; hardware/docs/Research.md question S1 (checkout 14098109c7ce)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:58:16Z"
+     }
+    ]
+   },
+   {
+    "function": "Servo supply inductor",
+    "part": "SRP1265A-4R7M",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "Inductance",
+      "stated": "4.7 uH +/-20 % at 100 kHz: 3.76 uH lowest",
+      "read": "Row SRP1265A-4R7M: L 4.7 uH, tolerance 20 %, at 100 kHz and 1 V; lowest 3.76 uH, above 3.33 uH (1.2/fSW at 360 kHz) and inside 1 to 10 uH",
+      "source": "https://www.bourns.com/docs/Product-Datasheets/SRP1265A.pdf, electrical table (REV. 06/24)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:59Z"
+     },
+     {
+      "figure": "Saturation current",
+      "stated": "Isat 28 A (inductance drops 20 %)",
+      "read": "Isat 28 A, rated current definition: inductance drops 20 % at Isat; above 13 A",
+      "source": "SRP1265A data sheet, electrical table and general specifications",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:59Z"
+     },
+     {
+      "figure": "Heat-rating current",
+      "stated": "Irms 13.5 A (40 degC rise)",
+      "read": "Irms 13.5 A, 40 degC temperature rise at rated Irms; at least 8 A",
+      "source": "SRP1265A data sheet, electrical table and general specifications",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:59Z"
+     },
+     {
+      "figure": "DC resistance",
+      "stated": "7 mOhm typ, 8.4 mOhm max",
+      "read": "DCR 7 mOhm typ, 8.4 mOhm max at 25 degC; limit 16.5 mOhm",
+      "source": "SRP1265A data sheet, electrical table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:59Z"
+     },
+     {
+      "figure": "Ambient range",
+      "stated": "-55 to +150 degC including temperature rise",
+      "read": "Operating temperature -55 to +150 degC (temperature rise included); 0 to 50 degC plus rise lies inside",
+      "source": "SRP1265A data sheet, general specifications",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:40:59Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Bourns (data sheet SRP1265A REV. 06/24); S2 name Bourns",
+      "read": "Data sheet is a Bourns document; S2 lists Bourns",
+      "source": "SRP1265A REV. 06/24; Research.md question S2 (checkout 14098109c7ce)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:58:16Z"
+     }
+    ]
+   },
+   {
+    "function": "I/O expander",
+    "part": "MCP23017T-E/SS",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "Lines",
+      "stated": "16 lines a part, GPA7 and GPB7 output only: 3 parts give 42 usable",
+      "read": "16-bit port, pins GPA7 and GPB7 output only on the MCP23017 (page 1, pin table); 14 usable lines a part, 42 over 3 parts against 33 needed",
+      "source": "DS20001952D page 1 and Table 2-1, https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/MCP23017-Data-Sheet-DS20001952.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "Hardware reset input",
+      "stated": "RESET pin, TRSTL 1 us min; reset returns IODIR to inputs",
+      "read": "RESET pin 18, 'Hardware reset. Must be externally biased'; TRSTL 1 us min, TIOZ 1 us max (outputs high-impedance from RESET low), Table 1-2. The data sheet does not word the register reset on RESET; IODIR default is FFh (all inputs) at power-on.",
+      "source": "DS20001952D Table 1-2, Table 2-1, section 3.5.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "Power-up state",
+      "stated": "I/O pins default to input; GPPU 0 at reset",
+      "read": "Page 1 'I/O pins default to input'; IODIRA/B reset 1111 1111, GPPUA/B 0000 0000 (register table); IO7 must be written to 0 for output on the MCP23017",
+      "source": "DS20001952D page 1, register summary",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "I2C clock",
+      "stated": "100 kHz, 400 kHz, 1.7 MHz",
+      "read": "400 kHz mode specified at 2.7 to 5.5 V; 1.7 MHz mode only at 4.5 to 5.5 V; 400 kHz at 3.3 V is covered",
+      "source": "DS20001952D page 1, Table 1-3 (I2C timing)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "Supply",
+      "stated": "1.8 to 5.5 V at -40 to 85 degC; IDD 1 mA max",
+      "read": "VDD 1.8 to 5.5 V at -40 to +85 degC; D004 IDD 1 mA max at SCL 1 MHz; VIH 0.8 VDD (2.64 V at 3.3 V)",
+      "source": "DS20001952D page 1, Table 1-1 D001, D004, D041",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "Address",
+      "stated": "0x20 to 0x27 by A2:A0; the map uses 0x20 to 0x22",
+      "read": "Control byte 0100 A2 A1 A0 (7-bit 0x20 to 0x27); Pins.md uses 0x20, 0x21, 0x22 on the main bus and puts the FUSB303 at 0x31; clear of 0x31, 0x40 to 0x4F, 0x18 to 0x1F, 0x74 and 0x75",
+      "source": "DS20001952D section 3.3.1; hardware/docs/Pins.md I/O expanders and I2C rules (checkout 14098109c7ce)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "Ambient range",
+      "stated": "-40 to +85 degC at 1.8 to 5.5 V",
+      "read": "Operating voltage 1.8 to 5.5 V at -40 to +85 degC (extended -40 to +125 degC only at 4.5 to 5.5 V); 0 to 50 degC lies inside; part is -E/SS, tape and reel T",
+      "source": "DS20001952D page 1, product identification system",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Microchip Technology (DS20001952D); S1 name Microchip",
+      "read": "Data sheet DS20001952D is a Microchip document; S1 lists Microchip",
+      "source": "DS20001952D; Research.md question S1 (checkout 14098109c7ce)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:58:16Z"
+     }
+    ]
+   },
+   {
+    "function": "Servo supply temperature",
+    "part": "MCP9808T-E/MS",
+    "kind": "first",
+    "verdict": "refuted",
+    "refutation": "Check 'Rail's own latch' fails: V283 requires only that converter to switch off and stay off until the operator clear control (F11) clears it. The MCP9808 has no such latch: comparator mode releases when TA falls below the limit less THYST; TCRIT forces comparator mode; interrupt mode (TUPPER/TLOWER) releases only on an I2C write of Int. Clear, which is firmware, not the F11 control; all registers return to defaults at power-on reset (VPOR 2.2 V, falling VDD). No sensor can meet it alone: the latch is a separate part, a function round 2 does not list. The other 9 checks pass.",
+    "checks": [
+     {
+      "figure": "Sensor part and placement",
+      "stated": "address 0011 A2 A1 A0: 0x18 to 0x1F, 8 a bus",
+      "read": "Table 3-2: 0011 A2 A1 A0 gives 0x18 to 0x1F, 8 sensors a bus; MCP9808T-E/MS is the tape-and-reel MSOP-8 extended-temperature ordering code (product identification system); 4 a board plus R8's one fit in 8 addresses a bus",
+      "source": "DS20005095B Table 3-2 and product identification system, https://ww1.microchip.com/downloads/en/DeviceDoc/MCP9808-0.5C-Maximum-Accuracy-Digital-Temperature-Sensor-Data-Sheet-DS20005095B.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "Shutdown threshold",
+      "stated": "TUPPER/TCRIT in 0.25 degC steps, bits 11-2; THYST 0, 1.5, 3, 6 degC",
+      "read": "Register 5-3: 11-bit two's complement, 0.25 degC per bit (bits 11-2), so 72.0, 66.25 and 99.25 degC are settable; THYST 0, +1.5, +3.0, +6.0 degC (Register 5-2). Re-derived thresholds with 33 degC/W, PsiJB 11.1 degC/W, 0.5 degC sensor error: 72.25 and 66.5 degC at my loss read (stated 72.0 and 66.25 are the lower, safe steps; within one step).",
+      "source": "DS20005095B Registers 5-2, 5-3; SLVSI72A 5.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "Accuracy at the threshold",
+      "stated": "+/-0.5 degC max from -20 to 100 degC, +/-1 degC max -40 to 125 degC, lifetime drift included",
+      "read": "TACY +/-0.25 typ, +/-0.5 max from -20 to +100 degC; +/-1.0 max from -40 to +125 degC at VDD 3.3 V; note 1: includes lifetime drift. 66.25, 72.0 and 99.25 degC lie in the +/-0.5 degC band.",
+      "source": "DS20005095B section 1.0 temperature sensor DC characteristics",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "Alert output",
+      "stated": "open-drain, active-low or active-high, comparator or interrupt mode; TA >= TCRIT forces comparator mode until TA < TCRIT - THYST; VOL 0.4 V at 3 mA",
+      "read": "Open-drain, pull-up needed, polarity and mode selectable (5.2.3); TA above the critical limit forces comparator output until TA drops below TCRIT less hysteresis; TA register bit 15 is set when TA >= TCRIT; VOL 0.4 V max at 3 mA, IOH 1 uA max",
+      "source": "DS20005095B 3.3, 5.1.3, 5.2.3, section 1.0",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "Rail's own latch",
+      "stated": "no latch to an external clear: comparator mode releases below the limit less THYST; interrupt mode releases on an I2C write of Int. Clear, which is firmware; every setting returns to its power-up default at power-on reset, VPOR 2.2 V",
+      "read": "Confirmed: 5.2.3.1 comparator releases below limit less hysteresis; 5.2.3.2 interrupt output is deasserted only by CONFIG bit 5 (I2C); 5.3 POR defaults (alert disabled, limits 0), VPOR 2.2 V falling. No hardware latch or external clear input exists. V283 asks for a hold until the F11 operator clear: not met by the part.",
+      "source": "DS20005095B 5.2.3.1, 5.2.3.2, 5.3, Register 5-2",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "Limit lock",
+      "stated": "Crit. Lock and Win. Lock bits hold TCRIT and TUPPER/TLOWER until a power-on reset",
+      "read": "Register 5-2 bit 7 Crit. Lock stays set until an internal reset (5.3 POR), bit 6 Win. Lock until a power-on reset; with either lock set THYST, Alert Cnt, Alert Sel, Alert Pol, Alert Mod and shutdown cannot be changed, so the alert must be enabled before locking",
+      "source": "DS20005095B Register 5-2, 5.2.1, 5.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "I2C clock",
+      "stated": "fSC 0 to 400 kHz",
+      "read": "Serial port clock frequency fSC 0 to 400 kHz",
+      "source": "DS20005095B serial interface timing table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "Supply",
+      "stated": "VDD 2.7 to 5.5 V; IDD 200 uA typ, 400 uA max",
+      "read": "VDD 2.7 to 5.5 V; IDD 200 uA typ, 400 uA max; shutdown 0.1 uA typ, 2 uA max",
+      "source": "DS20005095B section 1.0 power supply",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "Ambient range",
+      "stated": "-40 to +125 degC operating",
+      "read": "Operating temperature range -40 to +125 degC; 8L-MSOP thermal response 1.4 s to 63 %, RthJA 211 degC/W; 0 to 50 degC ambient and a board up to about 100 degC lie inside (accuracy band to 100 degC)",
+      "source": "DS20005095B temperature characteristics, section 1.0",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:41:00Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Microchip Technology (DS20005095B); S1 name Microchip",
+      "read": "Data sheet DS20005095B is a Microchip document; S1 lists Microchip",
+      "source": "DS20005095B; Research.md question S1 (checkout 14098109c7ce)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T14:58:16Z"
+     }
+    ]
+   }
+  ],
+  "figures": [
+   {
+    "figure": "found V109",
+    "verdict": "confirmed",
+    "evidence": "IOUT_LIMIT 0.5 to 6.35 A in 50 mA steps, reset 1100100b = 5 A, Current_Limit_EN reset 1; tolerance only at 1, 3, 5 A (4.7 to 5.3 A at 5 A, VIN 19 V, VOUT 5 V, note 1 engineering samples), none at 6.35 A. IOBoard.md Servo rail current and Servo supply rows carry the owner text.",
+    "source": "https://www.ti.com/lit/ds/symlink/tps55285.pdf 5.4, 6.3.12, 7.2; IOBoard.md rows 71, 377 (checkout 14098109c7ce)",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "found V110",
+    "verdict": "confirmed",
+    "evidence": "ILIM_AVG 7 A min, 8 A typ, no max (column positions checked). Re-derived loss model gives 4.58 A and 5.16 A at 8.4 V out from 6.0 V (stated 4.57, 5.15). 6.35 A x 8.4 V needs IL about 9.9 to 10.1 A at 6.0 V, above the clamp. The owner text 'runs to its own limit' is IOBoard.md row 377.",
+    "source": "SLVSI72A 5.4, 8.2.2.3 equation 7, Figure 5-3; IOBoard.md row 377",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "found V111",
+    "verdict": "confirmed",
+    "evidence": "Re-digitised Figures 5-1, 5-3, 5-5, 5-7 (calibration read 92.01 % and 95.72 % against the stated 92.0 % and 95.7 %). Fit of the Figure 5-3 VIN 5 V curve: 0.254 - 0.0994 IL + 0.0817 IL^2 W (stated 0.253, 0.0973, 0.0820). At 6.0 V in, 8.4 V out: 93.3 % at 3.74 A, 91.5 % at 4.58 A, 90.2 % at 5.16 A (stated 93.2, 91.4, 90.2); VIN 9 V curve 95.2 % at 6 A. The fit tracks the VIN 9 V boost curves within 0.04 W up to IL 6.8 A and 0.13 W for Figure 5-5. No efficiency is guaranteed.",
+    "source": "SLVSI72A Figures 5-1, 5-3, 5-5, 5-7 (vector paths, page 9 and 10); scratch digit.py, loss.py, fits.py in /home/claude/rcbench-research/round2/scratch/FU-2B2/P4-datasheet-R6/",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "found V112",
+    "verdict": "confirmed",
+    "evidence": "20 V is the top of the owner's 12 to 20 V input; VIN OVP 22 min, 22.5 typ, 23 max V rising, hysteresis 0.9 V; VIN absolute maximum 27 V. The data sheet states no transient level or duration; none found in the checkout either.",
+    "source": "SLVSI72A 5.1, 5.4; IOBoard.md row 355 and Servo converter input from the DC input",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "found V113",
+    "verdict": "confirmed",
+    "evidence": "6.0 V is 2 x 3.0 V (F9 answer); 5.59 A at 3.72 A out stated, 5.61 A at 3.74 A re-derived (0.4 % apart). The pack path drop is not read, as stated.",
+    "source": "Research.md F9; IOBoard.md Pack voltage range; SLVSI72A Figure 5-3",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "found V114",
+    "verdict": "confirmed",
+    "evidence": "VOUT_FULL 9.85 to 10.15 V at REF 0780h, VOUT_FS 01h; VREF limits at 0.508 V and 0.846 V as stated. Re-derived 5.5 V gives 5.41 to 5.59 V and 8.4 V gives 8.27 to 8.53 V (stated 5.40 to 5.59, 8.27 to 8.53). The data sheet states no tolerance at 5.5 V or 8.4 V.",
+    "source": "SLVSI72A 5.4 (VOUT_FULL, VREF), 7.4; Research.md F16",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "found V115",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md Measurement coprocessor reset: main coprocessor drives converter enables through its expander, held off at reset. EN/UVLO below 0.4 V resets registers (6.3.6); MODE 0 Ohm (75h) or 48.7 kOhm (74h) gives OE 0 (Table 6-2).",
+    "source": "SLVSI72A 5.4, 6.3.2, 6.3.6; IOBoard.md row 115 and Load gates at reset; Pins.md I/O expanders",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "found V116",
+    "verdict": "confirmed",
+    "evidence": "V7 and V270 answers: 0 to 50 degC ambient, one range for the whole IO board (owner, 2026-09-28 and 2026-10-01).",
+    "source": "Research.md rows V7 and V270 (checkout 14098109c7ce)",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "found V117",
+    "verdict": "confirmed",
+    "evidence": "FSW 00b 360/400/440 kHz; 8.1 recommends a frequency below 500 kHz; 8.2.2.1 uses 400 kHz; 8.2.2.3 requires L above 1.2/fSW, 3.33 uH at 360 kHz.",
+    "source": "SLVSI72A 5.4, 6.3.7, 8.1, 8.2.2.1, 8.2.2.3",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "found V118",
+    "verdict": "confirmed",
+    "evidence": "ILIM_PK 13 A typical, no min or max. Re-derived peaks with equations 5 to 9 at 3.76 uH, 360 kHz: 9.33 A (6 to 15 V at the 8 A clamp, ripple 2.66 A), 8.63 A (6 to 8.4 V), 8.15 A (20 to 8.4 V at 6.35 A), as stated.",
+    "source": "SLVSI72A 5.4, 8.2.2.3 equations 5, 7, 8, 9",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "found V119",
+    "verdict": "confirmed",
+    "evidence": "Pins.md: 33 lines = 20 port switch enables + 5 bias selectors + 5 converter enables (30 outputs) + latch read-back + 2 inputs (3 inputs); GPA7 and GPB7 are output only on the MCP23017 (DS20001952D page 1), so 14 lines a part and 3 parts.",
+    "source": "hardware/docs/Pins.md I/O expanders; DS20001952D page 1",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "found V120",
+    "verdict": "confirmed",
+    "evidence": "settings.c:105-107 SET_I2C_KHZ min 100, max 400, step 100, default 400. TPS55285 fSCL 100 to 1000 kHz; MCP9808 0 to 400 kHz; MCP23017 1.7 MHz needs 4.5 to 5.5 V, so 400 kHz at 3.3 V (the 400 kHz value is unaffected).",
+    "source": "shared/settings/settings.c:105-107 (checkout); SLVSI72A 5.5; DS20001952D Table 1-3; DS20005095B",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "found V121",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md row 248 and Servo rail gate row 218: the rail switch of R3 is the gate; the 20 port switches are driven through the expander and are not a gate. V33 of FU-2A 012-P2-R3.json states the same (read 2026-10-01T22:12:26Z).",
+    "source": "hardware/docs/IOBoard.md rows 218, 248; results/hardware/research/round2/FU-2A/012-P2-R3.json",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "found V122",
+    "verdict": "confirmed",
+    "evidence": "docs/Servo.md:35 'Current ceiling | 3.0 A | abort immediately, checked at every sample'; V282 answer applies it from 5.0 V up.",
+    "source": "docs/Servo.md:35; Research.md V282 (checkout)",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "found V123",
+    "verdict": "confirmed",
+    "evidence": "3.0 A is the firmware abort (Servo.md:35); 6.35 A is the rail limit; IOBoard.md rows 113 and 389 name the port breaker 3.96 to 4.84 A (owner, 2026-09-30), inside the 3.0 to 6.35 A band.",
+    "source": "docs/Servo.md:35; hardware/docs/IOBoard.md rows 113, 389",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "found V124",
+    "verdict": "confirmed",
+    "evidence": "Savox SH-0255MG+ page: 'Operating Voltage (V) 4.8V - 6.0V'. LV low edge 5.40 V less 4.8 V = 0.60 V; 10 mOhm x 3.0 A = 30 mV; 570 mV (IOBoard.md Port current monitor: 10 mOhm shunt a port).",
+    "source": "https://savox-servo.com/en/product/SH-0255MGplus/savox-servo-sh-0255mg-digital-dc-motor-metal-gear (HTTP 200); IOBoard.md row 387",
+    "read_at": "2026-10-02T14:47:13Z"
+   },
+   {
+    "figure": "found V125",
+    "verdict": "confirmed",
+    "evidence": "Both pages read 'Quiescent Current (mA) 5' (SH-0255MG+ and SB-2290SG).",
+    "source": "https://savox-servo.com/en/product/SH-0255MGplus/... and https://savox-servo.com/en/product/SB-2290SG/... (HTTP 200)",
+    "read_at": "2026-10-02T14:47:13Z"
+   },
+   {
+    "figure": "found V126",
+    "verdict": "confirmed",
+    "evidence": "YGE page: 'The voltage is adjustable from 5.5V to 8.4V, with the Saphir series up to 12V'; docs/OpenYGE.md BEC row states a BEC above the servos' rating damages them.",
+    "source": "https://www.yge.de/en/products/low-voltage-lv (HTTP 200); docs/OpenYGE.md line 253",
+    "read_at": "2026-10-02T14:47:13Z"
+   },
+   {
+    "figure": "found V127",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md Servo rail gate row: open within 5 ms of the enable node falling; V1 answer 500 ms stop deadline (Research.md row V1).",
+    "source": "hardware/docs/IOBoard.md row 218; Research.md row V1",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "found V128",
+    "verdict": "confirmed",
+    "evidence": "HV band 8.53 to 8.70 V is +/-0.987 % about 8.615 V; LV 5.59 to 6.00 V is +/-3.54 % about 5.795 V; lower edges are the V114 set points, upper edges F16.",
+    "source": "Research.md F16, V114, V128; IOBoard.md row 386",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "found V130",
+    "verdict": "confirmed",
+    "evidence": "STATUS.md:340 'Every stop latches; nothing re-arms on its own.'",
+    "source": "STATUS.md:340 (checkout 14098109c7ce)",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "found V131",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md Pack voltage range: 6.0 to 8.4 V, 2 x 4.2 V; F9 answer states the vendor page gives no chemistry, charge voltage or floor.",
+    "source": "hardware/docs/IOBoard.md row 358; Research.md F9",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "found V132",
+    "verdict": "confirmed",
+    "evidence": "5.61 A re-derived at 3.74 A out (stated 5.59 A at 3.72 A); ILIM_AVG 7 A min, 8 A typ, no maximum. Pack current in boost equals inductor current (equation 7).",
+    "source": "SLVSI72A 5.4, 6.3.9, 8.2.2.3 equation 7, Figure 5-3",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "found V133",
+    "verdict": "confirmed",
+    "evidence": "docs/Servo.md:68 'The current ceiling is 4.0 A for the pair'; 6.35 A - 4.0 A = 2.35 A. No capacitance found in the pages read.",
+    "source": "docs/Servo.md:66-69 (checkout)",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "found V134",
+    "verdict": "confirmed",
+    "evidence": "Current_Limit_EN reset 1, Current_Limit_Setting 1111111b = 6.35 A; OCP_DELAY 00b = 128 us (Table 7-4); ILIM_AVG 7/8 A no max; no tolerance at 6.35 A.",
+    "source": "SLVSI72A 5.4, 7.2, 7.3",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "found V135",
+    "verdict": "confirmed",
+    "evidence": "stub_screen.c:56 'Socket ceilings: low and high voltage, each set in hardware'; STATUS.md:340; IOBoard.md Port current monitor row 387.",
+    "source": "shared/ui/stub_screen.c:56; STATUS.md:340; IOBoard.md row 387",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "found V136",
+    "verdict": "confirmed",
+    "evidence": "VOUT 0.8 to 15 V recommended; VVOUT_OVP_FB 110.5/115/120 % (18 V at 15 V); VOUT absolute maximum 17 V; DC input 20 V through a failed converter; matches V44 in FU-2A 012-P2-R3.json.",
+    "source": "SLVSI72A 5.1, 5.2, 5.4; FU-2A/012-P2-R3.json V44",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "found V277",
+    "verdict": "confirmed",
+    "evidence": "SLVSFC9C (revised May 2026) VIN 2.7 to 23 V; VUVP(F) 2.35/2.42/2.55 V; so TPS259474LRPWR does not switch from 0.8 V. V282: from 0.8 V the switch turns on.",
+    "source": "https://www.ti.com/lit/ds/symlink/tps25947.pdf 6.3, 6.5 (HTTP 200)",
+    "read_at": "2026-10-02T14:47:35Z"
+   },
+   {
+    "figure": "found V278",
+    "verdict": "confirmed",
+    "evidence": "Re-derived from the vector curves: 3.74 A with all loss in the IC (stated 3.72), 4.13 A less the 14.3 mOhm inductor loss (stated 4.11); budget (125-50)/33 = 2.27 W; typical TA 25 degC curves, RDS(on) rise and heatsink not counted. Table 8-2 XAL7070-472ME DCR max 14.3 mOhm confirmed.",
+    "source": "SLVSI72A 5.2, 5.3, Figure 5-3, Table 8-2; scratch fits.py",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "found V279",
+    "verdict": "confirmed",
+    "evidence": "Register 5-3 0.25 degC steps, TACY +/-0.5 degC max to 100 degC, PsiJB 11.1 degC/W. 125 - 11.1 x 4.72 W - 0.5 = 72.1 (stated 72.0); with my loss read 4.69 W it is 72.4, so the stated step is within one step and safe; 15 V out 5.23 W gives 66.25 (mine 66.5); 99.25 degC holds the 3.72 A (124.95 degC); about 152 degC at the 8 A clamp; 2.47 A at 72.0 degC (mine 2.49 A).",
+    "source": "SLVSI72A 5.3; DS20005095B Registers 5-2, 5-3, section 1.0",
+    "read_at": "2026-10-02T14:41:00Z"
+   },
+   {
+    "figure": "found V280",
+    "verdict": "confirmed",
+    "evidence": "Research.md Follow-ups row Port voltage ceiling, F16, V128 and V130; a rail set from 0.8 V (V55) means the ceiling acts above the band only.",
+    "source": "Research.md Follow-ups, F16, V55, V280; IOBoard.md row 386",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "P2 report: TPS55285 continuous current at 6.0 V in, 8.4 V out, 50 degC (V278)",
+    "verdict": "confirmed",
+    "evidence": "3.74 A and 4.13 A re-derived against 3.72 and 4.11 A; 5.61 A against 5.59 A; 93.3 % against 93.2 %; typical 25 degC curves, no RDS(on) rise, no heatsink, as stated.",
+    "source": "SLVSI72A 5.2, 5.3, Figure 5-3, Table 8-2",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "P2 report: TPS55285 continuous current from the DC input at 9 V out, 50 degC",
+    "verdict": "confirmed",
+    "evidence": "Re-derived from Bezier-sampled Figure 5-3: 12 V in 5.67 A, 20 V in 4.97 A (stated 5.63, 4.93); less inductor loss 6.33 A and 5.47 A (stated 6.27, 5.43); 0.7 % low in each. Stated 3.33 W at 20 V in and 6.35 A matches 94.2 % at 8.4 V out (3.30 W); at 9 V out it is 3.53 W, TJ about 167 degC; both exceed 125 degC at 50 degC.",
+    "source": "SLVSI72A Figure 5-3 VIN 12 V and 20 V curves",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "P2 report: Adjustable supply continuous current at 50 degC (P1 assumption, IOBoard.md Adjustable supply)",
+    "verdict": "confirmed",
+    "evidence": "1.945 A and 2.135 A (stated 1.94, 2.13); 6 to 12 V 2.52 A (2.51); 9 to 15 V 3.01 A; 12 to 15 V 4.16 to 4.18 A (4.16); 20 to 15 V 5.12 to 5.14 A (5.13); 20 to 5 V 5.13 to 5.14 A (5.12). Figures cover VOUT 5, 9, 12, 15 V only.",
+    "source": "SLVSI72A Figures 5-1, 5-5, 5-7; scratch fits.py, bez.py",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "P2 report: TPS55285 output at the inductor clamp from 6.0 V",
+    "verdict": "confirmed",
+    "evidence": "8.4 V out 4.58 A and 5.16 A, loss 3.56 W and 4.69 W, TJ 168 and 205 degC at 50 degC (stated 4.57, 5.15, 3.59, 4.72, 168, 206); 15 V out 2.53 A and 2.85 A, 3.99 W and 5.22 W (stated 2.53, 2.85, 4.00, 5.23). TSD 175 degC typ, 20 degC hysteresis, auto restart confirmed.",
+    "source": "SLVSI72A 5.4, 6.3.17, Figures 5-3, 5-7",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "P2 report: MCP9808 shutdown threshold (V279)",
+    "verdict": "confirmed",
+    "evidence": "Same as found V279: 72.0 and 66.25 degC are safe steps (mine 72.25 and 66.5 within digitising error of one 0.25 degC step); 99.25 degC alternative holds the 3.72 A rating; sustained 2.47 A (mine 2.49 A) at 72.0 degC.",
+    "source": "DS20005095B Registers 5-2, 5-3; SLVSI72A 5.3",
+    "read_at": "2026-10-02T14:41:00Z"
+   },
+   {
+    "figure": "P2 report: Rail's own temperature latch (V283)",
+    "verdict": "confirmed",
+    "evidence": "MCP9808: comparator releases below limit less THYST, interrupt mode releases on Int. Clear (I2C), TCRIT forces comparator mode, POR defaults at VPOR 2.2 V. JLCPCB C70285 SN74LVC1G74DCUR VSSOP-8 stock 12391, presale 12187, expand (read 14:53:23Z).",
+    "source": "DS20005095B 5.2.3, 5.3; vendors.py jlcpcb C70285",
+    "read_at": "2026-10-02T14:53:23Z"
+   },
+   {
+    "figure": "P2 report: Port supply switch gap (V277, V282)",
+    "verdict": "confirmed",
+    "evidence": "TPS25947 family VIN 2.7 to 23 V; NCP45520 VIN 0.5 to 13.5 V, abs max 18 V, short-circuit trip only (Rev 7); NCP45650 VIN 1 to 13.5 V, abs max 18 V (Rev 0); DML3006LFDS 0.5 to 13.5 V, abs max 18 V, short-circuit trip only; DPS1133 4.5 to 24 V. NCP45650 has an adjustable OCP pin, a trip and not a limit band; its fails rest on VIN 1 V and 18 V.",
+    "source": "tps25947.pdf, ncp45520-d.pdf, jlcpcb copy of NCP45650/D, DML3006LFDS.pdf, DPS1133.pdf (HTTP 200)",
+    "read_at": "2026-10-02T14:57:20Z"
+   },
+   {
+    "figure": "P2 report: Port voltage ceiling gap (V280)",
+    "verdict": "confirmed",
+    "evidence": "TPS3701 VIT+(INB) 397 to 403 mV; +/-0.75 % plus 0.2 % resistors gives 8.533 to 8.697 V (HV) and 5.74 to 5.85 V (LV); IIN +/-15 to 25 nA; OUTB releases when the sense voltage falls below VIT-(INB), no latch. JLCPCB C132788 stock 26813, presale 26784 (14:49:28Z).",
+    "source": "https://www.ti.com/lit/ds/symlink/tps3701.pdf 6.5, pin functions; vendors.py jlcpcb C132788",
+    "read_at": "2026-10-02T14:47:35Z"
+   },
+   {
+    "figure": "P2 report: Servo inductor currents, for P5",
+    "verdict": "confirmed",
+    "evidence": "Peaks 9.33, 8.63, 8.15 A re-derived; DC loss at 5.59 A and 8 A with max DCR: SRP1265A 8.4 mOhm 0.26/0.54 W, ETQP5M4R7YFC 11.30 mOhm 0.35/0.72 W, IHLP5050CEER4R7M01 15 mOhm 0.47/0.96 W; DCR values read in the three data sheets.",
+    "source": "SLVSI72A 8.2.2.3; SRP1265A.pdf; AGL0000C59.pdf (row ETQP5M4R7YFC 10.2 [11.30]); Vishay document 34105 (4.7 uH 14.3/15)",
+    "read_at": "2026-10-02T14:47:35Z"
+   },
+   {
+    "figure": "P2 report: Pack current into one TPS55285 at 6.0 V, for R5, R7 and P5",
+    "verdict": "confirmed",
+    "evidence": "5.61 A at 3.74 A (stated 5.59 A at 3.72 A); ILIM_AVG 7/8 A no max; four converters 28 A min, 32 A typ.",
+    "source": "SLVSI72A 5.4, Figure 5-3",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "P2 report: I2C addresses of R6 parts, for P5",
+    "verdict": "confirmed",
+    "evidence": "TPS55285 74h/75h (Table 6-2, 7-bit); MCP23017 0100 A2A1A0, 0x20 to 0x27; TCA6424A Table 8-3 ADDR low 0x22, high 0x23; MCP9808 0011 xxx, 0x18 to 0x1F.",
+    "source": "SLVSI72A Table 6-2; DS20001952D 3.3.1; SCPS193D Table 8-3; DS20005095B Table 3-2",
+    "read_at": "2026-10-02T14:47:35Z"
+   },
+   {
+    "figure": "P2 report: Rail loads of R6 parts on 3.3 V, for P5",
+    "verdict": "confirmed",
+    "evidence": "MCP23017 IDD 1 mA max (D004, SCL 1 MHz); MCP9808 IDD 400 uA max; TPS3701 IDD 11 uA max (8 typ), 20 parts 0.22 mA.",
+    "source": "DS20001952D Table 1-1; DS20005095B section 1.0; SBVS240C 6.5",
+    "read_at": "2026-10-02T14:47:35Z"
+   },
+   {
+    "figure": "P2 report: Lifecycle read at Digi-Key in place of the maker",
+    "verdict": "confirmed",
+    "evidence": "Bourns URL redirected to the power inductor listing (HTTP 200), SRP1265A row shows no status text; Panasonic model page HTTP 404; Vishay page HTTP 200 with no status in its body. Digi-Key ProductStatus Active for SRP1265A-4R7M (Bourns Inc.), ETQ-P5M4R7YFC (Panasonic Industry), IHLP5050CEER4R7M01 (Vishay Dale), cached readings 13:58:45Z to 13:58:49Z.",
+    "source": "vendors.py fetch of the three maker pages (14:50:13Z, 14:50:29Z, 14:50:31Z); vendors.py digikey readings",
+    "read_at": "2026-10-02T14:50:31Z"
+   },
+   {
+    "figure": "P2 report: Values not found",
+    "verdict": "confirmed",
+    "evidence": "V129 and the capacitance of V133 have no source in the checkout or the vendor pages read; the data sheet gives no VIN transient, no efficiency below 5 V out, and RDS(on) only typical at 25 degC (15.5 and 14.5 mOhm).",
+    "source": "SLVSI72A 5.4, 5.6; Savox and YGE pages; Research.md",
+    "read_at": "2026-10-02T14:47:13Z"
+   },
+   {
+    "figure": "re-rank report: P3 find XAL1010-472MED (Coilcraft), servo inductor",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C19271849 XAL1010-472MED stock 157, presale 148, expand, USD 11.469 at 10; Digi-Key productdetails 404 for -472MED, -472MEC (cached 14:14) and -472MEB; live keyword XAL1010 lists only XAL1010-103MED stock 0 (14:49:49Z), as do XAL1010-472 and 'Coilcraft XAL1010 4.7uH' (no products). C3220895 ASPIAIG-Q1010-4R7M-T stock 95 under 100 and labelled 11.9x11 mm against 11.3x10 mm.",
+    "source": "vendors.py jlcpcb C19271849, C3220895 (14:49:28Z); vendors.py digikey and digikey-search (14:49:49Z to 14:49:57Z; cached 14:14:37Z, 14:14:38Z, 14:32:41Z)",
+    "read_at": "2026-10-02T14:49:57Z"
+   },
+   {
+    "figure": "re-rank report: P3 find ETQP6M4R7YLC (Panasonic), servo inductor",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C409643 stock 458, presale 457, expand; Digi-Key ETQ-P6M4R7YLC Active, lead 23 weeks, stock 0, minimum 3000; family search ETQ-P6M returns 7 products, 4.7 uH at 0; AGL0000C59 row ETQP6M4R7YLC 8.7 [9.57] mOhm, 14.1 [11.8] A, 24.7 A; land patterns of PCC-M1054M and PCC-M1060ML print differently (11.7 and 11.9 mm).",
+    "source": "vendors.py jlcpcb C409643 (14:49:29Z); vendors.py digikey (cached 14:15:45Z), digikey-search ETQ-P6M (cached 14:33:26Z); AGL0000C59.pdf",
+    "read_at": "2026-10-02T14:49:29Z"
+   },
+   {
+    "figure": "re-rank report: Search for a pin-compatible alternate to the two inductor finds",
+    "verdict": "confirmed",
+    "evidence": "jlcparts copy rows: SRP1038A-4R7M stock 125, MPX1D1040L4R7 stock 100, ASPIAIG-F1040-4R7M-T stock 3 as stated. The count 129 is not reproduced (my size filters give 137 to 197 rows; the filter is not stated); no land pattern was compared and none claimed, so no counter-evidence to the drop.",
+    "source": "sqlite3 read-only /home/claude/rcbench-research/jlcparts-2026-09-14/cache.sqlite3",
+    "read_at": "2026-10-02T14:55:00Z"
+   },
+   {
+    "figure": "re-rank report: PCAL6524HEAZ (NXP), I/O expander, qualified as a third survivor",
+    "verdict": "confirmed",
+    "evidence": "Rev 2.1 (3 July 2025): Table 4 prints 40h, 42h, 44h, 46h, 7-bit 0x20 to 0x23; RESET pin 28, tw(rst) 150 ns, trec(rst) 500 ns; inputs at power-on; fSCL to 1000 kHz; VDD(P) 1.65 to 5.5 V, VDD(I2C) 0.8 to 3.6 V; IDD 12 uA typ, 25 uA max at 2.3 to 3.6 V and 400 kHz; Tamb -40 to 85 degC; 42 degC/W. JLCPCB C3000497 2399/2374 USD 1.5981, C2669688 115/112; Digi-Key 18577, 30 weeks, Active (cached 14:20:12Z); NXP page Active (it carries a Product Longevity block, 10 years for participating products; participation not stated); PCN page HTTP 404 (14:53:30Z).",
+    "source": "https://www.nxp.com/docs/en/data-sheet/PCAL6524DS.pdf; https://www.nxp.com/products/PCAL6524; vendors.py jlcpcb",
+    "read_at": "2026-10-02T14:53:30Z"
+   },
+   {
+    "figure": "re-rank report: PCA9698DGG,518 (NXP), I/O expander, qualified and dropped on the cap of three survivors",
+    "verdict": "confirmed",
+    "evidence": "Rev 3 (3 August 2010): 40 I/Os, RESET and power-on initialise all as inputs, 2.3 to 5.5 V, Fm+ 1 MHz, -40 to +85 degC, 64 addresses, row VSS/VSS/VSS 40h (8-bit) = 7-bit 0x20. JLCPCB C729177 1908/1894 USD 8.4469 at 10; Digi-Key 3322, 16 weeks, Active (cached 14:27:10Z). Three-survivor cap: Research.md P2 row, owner 2026-09-28.",
+    "source": "https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf; vendors.py jlcpcb C729177; Research.md Agent layout P2",
+    "read_at": "2026-10-02T14:49:28Z"
+   },
+   {
+    "figure": "re-rank report: I/O expander spare lines, for P5",
+    "verdict": "confirmed",
+    "evidence": "33 needed (Pins.md); 3 x 14 = 42 gives 9 spare; 2 x 24 = 48 gives 15; 1 x 40 gives 7. Pins.md lists port ceiling read-backs of up to 40 lines (V135) as not pinned; V135's answer reads the cut-off through the port monitor.",
+    "source": "Pins.md I/O expanders and Not known; DS20001952D; SCPS193D; PCAL6524 and PCA9698 data sheets",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "re-rank report: TLV6713 (Port voltage ceiling), P3's claim of 0.75 % accuracy",
+    "verdict": "confirmed",
+    "evidence": "SBVS331B 7.5: VIT- 397/400/403 mV, VIT+ 400/405.5/413 mV (+/-1.6 % about 406.5 mV). TLV6710 and TPS3701 VIT+(INB) 397 to 403 mV. JLCPCB C2861351 stock 167/165, C2872139 stock 0 (14:49:28Z), under 500.",
+    "source": "https://www.ti.com/lit/ds/symlink/tlv6713.pdf 7.5; tlv6710.pdf; tps3701.pdf; vendors.py jlcpcb",
+    "read_at": "2026-10-02T14:49:29Z"
+   },
+   {
+    "figure": "re-rank report: Port voltage ceiling: comparator found, latch missing",
+    "verdict": "confirmed",
+    "evidence": "TPS3701: VIT+(INB) 397 to 403 mV, 8.533 to 8.697 V with 0.1 % resistors (+/-0.95 %); OUTB goes high when the sense voltage falls below VIT-(INB), no latch in the text; Follow-ups row Port voltage ceiling includes 'the latch'; JLCPCB 26813 against 500; TLV6710 C2863066 3103/3091.",
+    "source": "tps3701.pdf, tlv6710.pdf; Research.md Follow-ups; vendors.py jlcpcb C132788, C2863066",
+    "read_at": "2026-10-02T14:49:29Z"
+   },
+   {
+    "figure": "re-rank report: Servo supply temperature: latch is a missing function",
+    "verdict": "confirmed",
+    "evidence": "MCP9808 has no hardware latch (see V283 check). selection.json R3 holds 'latch', 'latch clear control' and a clock Schmitt buffer; the Follow-ups table lists no latch function for R6 and the shortlist shows 'Servo supply temperature latch' not returned.",
+    "source": "results/hardware/research/round2/selection.json; Research.md Follow-ups; DS20005095B 5.2.3",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "re-rank report: TPS55285VALR market introduction",
+    "verdict": "confirmed",
+    "evidence": "Revision History: Revision * April 2025 (Advance Information), Revision A October 2025 (Production Data). 2026-10-02 is 17 months after the first revision, not under 12 months, so not flagged; about 12 months as production data.",
+    "source": "SLVSI72A section 10; Research.md Lifecycle check",
+    "read_at": "2026-10-02T14:40:58Z"
+   },
+   {
+    "figure": "re-rank report: Fixed input TPS55285VALR fails one check, reported to the owner",
+    "verdict": "confirmed",
+    "evidence": "The part fails 'Output current from the pack at 8.4 V' (ILIM_AVG 7/8 A no max; 4.58 to 5.16 A at 8.4 V from 6.0 V; 6.35 A needs about 10 A). IOBoard.md rows 71 and 79 record the owner keeping the part; selection.json R6 Servo supply has part null.",
+    "source": "SLVSI72A 5.4; IOBoard.md rows 71, 377, 379; selection.json",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "re-rank report: Servo supply stock, re-read for rank 1",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C52160906 TPS55285VALR WQFN-15 stock 2732, presale 2724, expand, USD 2.6775 at 10; Digi-Key stock 5243, lead 20 weeks, Active (cached 13:58:43Z); held 12 under need 20, so rule 6 does not cover.",
+    "source": "vendors.py jlcpcb C52160906 (14:49:28Z); vendors.py digikey TPS55285VALR (cached); Research.md Held parts",
+    "read_at": "2026-10-02T14:49:28Z"
+   },
+   {
+    "figure": "re-rank report: Functions without a part",
+    "verdict": "confirmed",
+    "evidence": "selection.json R6 holds part null for Servo supply, Servo supply inductor and Port voltage ceiling and TPS259474LRPWR for Port supply switch, which fails V277 (VIN 2.7 V). The shortlist records no P3 find for Port supply switch.",
+    "source": "selection.json; tps25947.pdf 6.3",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "re-rank report: Digi-Key calls made by this re-rank",
+    "verdict": "confirmed",
+    "evidence": "Cache holds the three live readings: XAL1010-472MEB productdetails 14:32:41Z, keyword XAL1010 14:32:46Z (ratelimit_remaining 738), keyword ETQ-P6M 14:33:26Z. The total by agent cannot be separated: the cache is shared with R8's agents.",
+    "source": "/home/claude/rcbench-research/round2/cache/digikey/2026-10-02 (search-4849b9c8975b368eefb7876d.json, search-0815d0d4e081ada82012cc56.json)",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "re-rank report: Working files",
+    "verdict": "confirmed",
+    "evidence": "v.sh, db.py, pcal6524.pdf, pca9698.pdf, tlv6713.pdf, tps3701.pdf, tlv6710.pdf, nxp_pcal6524.html exist in rerank-R6; PDF sizes equal my fresh downloads (816662, 370946, 554178, 757645, 733441 bytes).",
+    "source": "/home/claude/rcbench-research/round2/scratch/FU-2B2/rerank-R6/",
+    "read_at": "2026-10-02T14:55:00Z"
+   },
+   {
+    "figure": "function requirements: Servo supply",
+    "verdict": "refuted",
+    "evidence": "Row V111 names 'R6, Servo supply' and its found value (loss model, efficiency from the pack) says 'Applied as Efficiency from the pack'; no requirement of that name or source V111 is in the list. IOBoard.md rows 71, 377 and 380 set the limit 0.5 to 6.35 A in 50 mA steps (4 to 6.35 A a rail); 'Output current limit' says only 'up to 6.35 A'. V109, V110, V112 to V115, V131, V132, V134, V278, V281, V116 are named.",
+    "source": "Research.md rows V111, V109; IOBoard.md rows 71, 377, 380",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "function requirements: Servo supply inductor",
+    "verdict": "confirmed",
+    "evidence": "Rows naming R6 Servo supply inductor are V117 and V118; both are named (inductance 3.33 uH from 1.2/fSW at 360 kHz, saturation above 13 A), with V132 for the 8 A heat rating and V116; DCR 16.5 mOhm from Table 8-2. No value weaker.",
+    "source": "Research.md rows V117, V118, V132, V116; SLVSI72A 8.2.2.3, Table 8-2",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "function requirements: I/O expander",
+    "verdict": "confirmed",
+    "evidence": "Rows V119 and V120 named (33 lines, 30 outputs and 3 inputs; 400 kHz); Pins.md reset from GPIO 14, IOBoard.md Load gates at reset and Logic rail, Pins.md addresses (FUSB303 at 0x31) and V116 named. No value weaker.",
+    "source": "Research.md rows V119, V120; Pins.md I/O expanders; IOBoard.md Load gates at reset",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "function requirements: Servo supply temperature",
+    "verdict": "confirmed",
+    "evidence": "Rows V279 and V283 named (72.0, 66.25, 99.25 degC; rail's own latch until the F11 clear); IOBoard.md Servo supply temperature row (placement 0x18 to 0x1F, alert, limit lock), V120, V116 and the 3.3 V logic rail named. No value weaker.",
+    "source": "Research.md rows V279, V283; IOBoard.md row 460",
+    "read_at": "2026-10-02T14:58:16Z"
+   },
+   {
+    "figure": "re-rank drop: Servo supply inductor: XAL1010-472MED",
+    "verdict": "confirmed",
+    "evidence": "Drop on rule 5 holds: Digi-Key lists no XAL1010-472 part (404 on three codes; keyword search only XAL1010-103MED stock 0); the only named alternate C3220895 has stock 95 under the threshold 100 (5 boards x 4 = 20, 5x, min 100) and a different labelled size. jlcparts row XAL1010-472MED: 5.2 mOhm typ, 25.4 A, 24 A.",
+    "source": "vendors.py digikey, digikey-search (14:49:49Z to 14:49:57Z); vendors.py jlcpcb C3220895; jlcparts cache",
+    "read_at": "2026-10-02T14:49:57Z"
+   },
+   {
+    "figure": "re-rank drop: Servo supply inductor: ETQP6M4R7YLC",
+    "verdict": "confirmed",
+    "evidence": "Drop on rule 5 holds: Digi-Key ETQ-P6M4R7YLC stock 0 with minimum 3000; family 7 products, 4.7 uH at 0; PCC-M1060ML land pattern differs from PCC-M1054M (data sheet drawings 11.9 mm against 11.7 mm). Values 9.57 mOhm max, 24.7 A at -30 %, 11.8 A at 40 K read in AGL0000C59.",
+    "source": "AGL0000C59.pdf; vendors.py digikey (cached 14:15:45Z, 14:33:26Z)",
+    "read_at": "2026-10-02T14:49:29Z"
+   },
+   {
+    "figure": "re-rank drop: I/O expander: PCA9698DGG,518",
+    "verdict": "confirmed",
+    "evidence": "Qualified (40 lines, RESET, defaults inputs, 0x20 free of listed addresses) and ranked fourth on the 3-survivor cap (owner, 2026-09-28): USD 8.4469 at 10 against 1.3542 each for TCA6424ARGJR (2 parts about 2.71), 7 spare lines against 15. Not dropped on a value.",
+    "source": "PCA9698.pdf Rev 3, Table 12; vendors.py jlcpcb C729177, C80692 (14:53:25Z); Research.md P2 row",
+    "read_at": "2026-10-02T14:53:25Z"
+   },
+   {
+    "figure": "re-rank drop: Port voltage ceiling: TPS3701DDCR",
+    "verdict": "confirmed",
+    "evidence": "Latch until action (V130, V280) is not met: OUTB returns high when the sense voltage falls below VIT-(INB), no latch in SBVS240C; the Follow-ups row puts the latch in this function. Bands and rule 4 pass (VIT+(INB) 397 to 403 mV, JLCPCB 26813/26784).",
+    "source": "https://www.ti.com/lit/ds/symlink/tps3701.pdf; Research.md Follow-ups",
+    "read_at": "2026-10-02T14:47:35Z"
+   },
+   {
+    "figure": "re-rank drop: Port voltage ceiling: TLV6710DDCR",
+    "verdict": "confirmed",
+    "evidence": "Same: OUTB high again when the sense voltage falls below VIT-(INB), no latch in SNVSAV4B; VIT+(INB) 397 to 403 mV; JLCPCB C2863066 3103/3091.",
+    "source": "https://www.ti.com/lit/ds/symlink/tlv6710.pdf; vendors.py jlcpcb C2863066",
+    "read_at": "2026-10-02T14:49:29Z"
+   },
+   {
+    "figure": "re-rank drop: Port voltage ceiling: TLV6713DDCR",
+    "verdict": "confirmed",
+    "evidence": "HV band: overvoltage trip is VIT+ 400 to 413 mV (+/-1.6 % about 406.5 mV) over +/-0.99 %; rule 4: C2861351 stock 167 and C2872139 stock 0 under 500 (5 x 100); no latch. SBVS331B 7.5.",
+    "source": "https://www.ti.com/lit/ds/symlink/tlv6713.pdf 7.5; vendors.py jlcpcb C2861351, C2872139",
+    "read_at": "2026-10-02T14:49:29Z"
+   }
+  ]
+ }
+}

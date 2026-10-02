@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R8",
+ "label": "adjudicator-R8-3",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "function": "Port current monitor",
+  "part": "INA3221AIRGVR",
+  "stands": false,
+  "scope": "function",
+  "ruling": "The refutation does not stand. The stock and lifecycle verifier confirmed the part and raised no refutation. The datasheet verifier's only failed check is a disagreement on the noise figure. The verifier itself recorded passes true. The figure P2 states, 80 uV p-p (8 mA), is 4 times the plotted 20 uV p-p (2 mA) at the 1.1 ms conversion time. That error is in the conservative direction. Both values are below the 20 mA p-p research figure for the port current reading: V174 is \"for research\", and the host model assumes 0.02 A p-p (IOBoard.md, Not known). SBOS576C states no noise maximum, so no guaranteed figure is in conflict. The disagreement corrects the recorded figure to about 20 uV p-p (about 2 mA on 10 mOhm, typical, from the plot) and does not refute the part. The other 15 datasheet checks and all 13 stock and lifecycle checks agree and pass, as the verifiers report. This ruling re-read only the noise evidence. INA3221AIRGVR stays for \"Port current monitor\".",
+  "evidence": "SBOS576C (\"MAY 2012 - REVISED SEPTEMBER 2026\"), page 18, Figure 7-7 \"Noise Versus Conversion Time\", rendered at 400 dpi, no averaging, 1000 conversions. The 1.1 ms trace (the CT=100 setting the design uses) has a flat baseline at about -95 uV, with single-conversion spikes to about -85 uV (5 of them) and about -105 uV (4 of them). That is about 20 uV p-p, about 2 mA on the 10 mOhm port shunt. The 332 us trace lies between about -40 and 0 uV, about 40 uV p-p. The 140 us trace lies between about 30 and 110 uV, about 80 uV p-p. The stated 80 uV p-p therefore matches the 140 us trace and not the 1.1 ms trace. The text around the figure (7.4.2 area) gives no numerical noise specification, and section 6.5 gives no noise maximum. Requirement: V174 (Research.md:880), \"What accuracy and noise, in mA, must a port current reading hold?\", is answered \"for research (owner, 2026-09-28)\". IOBoard.md, Not known: \"The host model assumes 0.02 A peak-to-peak sensor noise\". 2 mA (plot) and 8 mA (stated) are both under 20 mA p-p.",
+  "source": "https://www.ti.com/lit/ds/symlink/ina3221.pdf (SBOS576C, page 18, Figure 7-7), fetched with vendors.py fetch to /home/claude/rcbench-research/round2/scratch/FU-2B2/adjudicator-R8/ina3221.pdf and rendered to adj_p18-18.png and adj_fig77.png; requirement from checkout 14098109c7ce hardware/docs/Research.md:880 (V174) and hardware/docs/IOBoard.md (Not known, port monitor noise)",
+  "read_at": "2026-10-02T15:19:07Z (datasheet fetched; figure read by 2026-10-02T15:19:47Z)"
+ }
+}

@@ -1,0 +1,331 @@
+{
+ "role": "rerank",
+ "category": "R6",
+ "label": "rerank-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "functions": [
+   {
+    "function": "Servo supply",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPS55285VALR",
+      "reason": "Fixed input of the Scope table (owner, 2026-09-25 and 2026-09-30), ranked first and not replaced. P2's record passes 17 of 18 requirements; the stock gate passes by rule 4 (JLCPCB stockCount 2732 against 100) with Digi-Key 5243 as the second source. It fails 'Output current from the pack at 8.4 V': ILIM_AVG 7 A min, 8 A typ, no maximum, gives 4.57 to 5.15 A at 8.4 V from 6.0 V against the owner's 6.35 A (SLVSI72A 5.4, equation 7); reported to the owner. Continuous rating 3.72 A at 6.0 V in, 8.4 V out, 50 degC on 33 degC/W (V278).",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPS55285VALR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo supply inductor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "SRP1265A-4R7M",
+      "reason": "Unchanged from P2. 8.4 mOhm max DCR (0.26 W at the 5.59 A of the 3.72 A rating, 0.54 W at the 8 A clamp), Isat 28 A at 20 % drop, Irms 13.5 A at 40 K rise, rated to 150 degC with rise. JLCPCB 600 / 590 (14:37:02Z) and Digi-Key 10610 against the gate of 100. Neither P3 find replaces it: both fail sourcing rule 5.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "ETQP5M4R7YFC",
+      "reason": "Unchanged. 11.30 mOhm max DCR, Isat 20.0 A at -30 % inductance, Irms 13.1 A, smallest body. JLCPCB 337 / 324 (14:37:04Z) and Digi-Key 41860 pass the gate of 100. Below rank 1 on DCR and on the 30 % saturation definition.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "IHLP5050CEER4R7M01",
+      "reason": "Unchanged. Passes every value with the highest DCR of the three (15 mOhm max against the 16.5 mOhm limit) and typical-only saturation (24 A) and heat (10 A) figures. JLCPCB 727 / 727 (14:37:05Z), Digi-Key 476 against the gate of 100.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "XAL1010-472MED",
+      "maker": "Coilcraft",
+      "reason": "Sourcing rule 5. P3's values (5.70 mOhm max DCR, Isat 25.4 A, Irms 24.0 A, 3.76 uH lowest) are not re-read, because the drop rests on rule 5. JLCPCB C19271849: stockCount 157, canPresaleNumber 148, expand, USD 11.469 at 10 (vendors.py jlcpcb, 2026-10-02T14:32:36Z); passes rule 4 at 100. Same-part route fails: Digi-Key productdetails answers HTTP 404 for XAL1010-472MED (14:14:37Z, cached), XAL1010-472MEC (14:14:38Z, cached) and XAL1010-472MEB (14:32:41Z, live); keyword search XAL1010 (14:32:46Z) lists only XAL1010-103MED, stock 0. Alternate route fails: no pin-compatible alternate is documented, and the only one P3 named, Abracon ASPIAIG-Q1010-4R7M-T C3220895, has JLCPCB stockCount 95 under 100 (14:32:56Z) and is labelled 11.9 x 11 mm against 11.3 x 10 mm. Same reason as the XAL1510-472MED drop in P2's list."
+     },
+     {
+      "part": "ETQP6M4R7YLC",
+      "maker": "Panasonic",
+      "reason": "Sourcing rule 5. P3's values (9.57 mOhm max DCR, 24.7 A at -30 %, 11.8 A at 40 K) are not re-read, because the drop rests on rule 5. JLCPCB C409643: stockCount 458, canPresaleNumber 457, expand (14:32:36Z); passes rule 4 at 100. Same-part route fails: Digi-Key lists ETQ-P6M4R7YLC (productdetails of ETQP6M4R7YLC answers HTTP 404, 14:15:39Z cached) as Active, lead 23 weeks, stock_available 0, minimum order 3000 (keyword search, 14:15:45Z cached); the family search ETQ-P6M (14:33:26Z) shows 4.7 uH at 0 as well. Alternate route fails: its land pattern differs from the ETQP5M4R7YFC's (P3), and no 4.7 uH part on the PCC-M1060ML pattern is documented."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "SRP1265A-4R7M",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port supply switch",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "I/O expander",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP23017T-E/SS",
+      "reason": "Unchanged from P2 and round 1's selection (selection.json, FU-B3). Eight addresses clear of every other device, hardware RESET, inputs without pull-ups at reset, deepest stock (JLCPCB 6248 / 6139 at 14:37:08Z, Digi-Key 16532). Needs 3 parts for the 33 lines (GPA7 and GPB7 output only), 42 usable, 9 spare.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TCA6424ARGJR",
+      "reason": "Unchanged. 2 parts, 48 lines, 15 spare, a different register map from rank 1. Passes every value; JLCPCB 4941 / 4820 (14:37:08Z), Digi-Key 1247 with a 20-week lead.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "PCAL6524HEAZ",
+      "reason": "P3's finding holds: P2's only reason for leaving it out was a 30-week lead time, which is recorded under rule 7 and gates nothing. It passes all 7 values (record in new_candidates), has 2 parts and 15 spare lines like rank 2 and the deepest Digi-Key stock (18577). Ranked after TCA6424ARGJR because it adds nothing on any requirement, has a 30-week lead against 20 and a deeper-stocked second vendor but a shallower JLCPCB stock (2399 against 4941).",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 3,
+      "part": "PCAL6524HEAZ",
+      "maker": "NXP Semiconductors (data sheet PCAL6524 Rev. 2.1, 3 July 2025); S1 name NXP",
+      "lcsc": "C3000497",
+      "package": "HUQFN32 (SOT1426-1), 5 x 5 x 0.56 mm; JLCPCB 'HUQFN-32-EP(5x5)'",
+      "placements": 2,
+      "placements_basis": "fixed by the line count: 33 lines over 24-line parts need 2 parts",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Lines",
+        "required": "33 over the placements",
+        "datasheet": "24 lines a part (P0_0 to P2_7), all usable as input or output: 2 parts give 48",
+        "pass": true,
+        "source": "PCAL6524 Rev. 2.1 Table 3, https://www.nxp.com/docs/en/data-sheet/PCAL6524DS.pdf (vendors.py fetch, chrome, HTTP 200, 2026-10-02T14:35:00Z)"
+       },
+       {
+        "name": "Hardware reset input",
+        "required": "active-low reset returning every line to an input, from GPIO 14 with a pull-down",
+        "datasheet": "RESET active LOW, pin 28; registers and the I2C state machine take their defaults while RESET is low; tw(rst) 150 ns min, trec(rst) 500 ns min; the pull-up is required only if the pin is unused, so a pull-down holds the part in reset",
+        "pass": true,
+        "source": "PCAL6524 Rev. 2.1 Table 3, 6.8, Table 66"
+       },
+       {
+        "name": "Power-up state",
+        "required": "every load line an input with no internal pull-up at power-up and after reset",
+        "datasheet": "all I/Os inputs at power-on and after reset; pull-up/pull-down enable registers 4Ch, 4Dh, 4Eh default 0000 0000 (floating input); output port configuration default push-pull; VPOR 1.2 V typ, 1.5 V max",
+        "pass": true,
+        "source": "PCAL6524 Rev. 2.1 Table 3 notes [1]-[3], 6.5.7, Table 18 register defaults, Table 64"
+       },
+       {
+        "name": "I2C clock",
+        "required": "at least 400 kHz at 3.3 V",
+        "datasheet": "Fm+ to 1 MHz; 100 kHz and 400 kHz modes",
+        "pass": true,
+        "source": "PCAL6524 Rev. 2.1 1, 2, Table 65"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V",
+        "datasheet": "VDD(I2C-bus) 0.8 to 3.6 V, VDD(P) 1.65 to 5.5 V; IDD 12 uA typ, 25 uA max at 2.3 to 3.6 V and fSCL 400 kHz; I/O pins 5.5 V tolerant",
+        "pass": true,
+        "source": "PCAL6524 Rev. 2.1 Table 62, Table 64"
+       },
+       {
+        "name": "Address",
+        "required": "clear of 0x31, 0x40 to 0x4F, 0x18 to 0x1F and 74h/75h",
+        "datasheet": "ADDR to SCL, SDA, VSS or VDD gives 7-bit 0x20, 0x21, 0x22, 0x23 (the table prints the 8-bit write bytes 40h, 42h, 44h, 46h); general call 0x00 and device ID 0x7C are the only other addresses; 0x20 and 0x21 are clear of every listed address",
+        "pass": true,
+        "source": "PCAL6524 Rev. 2.1 6.1 Table 4, 6.3, Figures 5 and 6; Pins.md, I/O expanders"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "Tamb -40 to +85 degC; Rth(j-a) 42 degC/W on a JEDEC 2S2P board",
+        "pass": true,
+        "source": "PCAL6524 Rev. 2.1 Table 62, Table 63"
+       }
+      ],
+      "jlcpcb": "stockCount 2399, canPresaleNumber 2374, componentLibraryType expand, USD 1.5981 at the need of 10 (10+ break); read 2026-10-02T14:36:18Z, vendors.py jlcpcb C3000497 (selectSmtComponentList, exact match)",
+      "digikey": "PCAL6524HEAZ: stock_available 18577, lead_weeks 30, status Active, tape and reel minimum order 500; cached reading of 2026-10-02T14:20:12Z, https://api.digikey.com/products/v4/search/PCAL6524HEAZ/productdetails",
+      "gate": "need = 5 boards x 2 placements = 10; S4 threshold max(5 x 10, 50) = 50; stockCount 2399 >= 50 and canPresaleNumber 2374 >= 0: pass by rule 4. Held 0",
+      "lifecycle": "NXP product page https://www.nxp.com/products/PCAL6524 (vendors.py fetch, HTTP 200, 2026-10-02T14:36:18Z): status Active. Longevity: the page carries a Product Longevity programme block (participating products 10 years minimum) and does not state that PCAL6524 participates; recorded as no published commitment for this part. First datasheet revision v.1, 22 September 2015: over 12 months, not flagged. Notices: the NXP product-change-notice page tried (https://www.nxp.com/support/quality-and-reliability/product-change-notifications:PCN-HOME) answered HTTP 404 at 14:38:31Z, so the PCN listing is not read; the data sheet's revision history shows the HEAZ 7-inch, 500-unit ordering option removed in v.1.2 (November 2016) and restored in v.2 (May 2019), and Rev. 2.1 Table 2 lists it. Distributor status: Digi-Key ProductStatus Active (14:20:12Z), agrees; JLCPCB carries no status field",
+      "second_source": "Digi-Key PCAL6524HEAZ stock_available 18577 >= the gate of 50 (cached reading, 14:20:12Z). A same-die alternate in the same SOT1426-1 package also passes rules 1 to 4: PCAL6524HEHP, C2669688, JLCPCB 115 / 112 at 14:36:37Z against 50",
+      "alternates": [
+       "PCAL6524HEHP (13-inch reel, same die and package, C2669688)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "All 7 requirement values pass. Same line count and spare lines as TCA6424ARGJR (48 and 15 spare), deeper Digi-Key stock, longer lead time; firmware needs its own register map, as with every part of this function.",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "PCA9698DGG,518",
+      "maker": "NXP",
+      "reason": "Qualified and dropped on the three-survivor cap (owner, 2026-09-28), not on a value. P3's finding holds: P2's reasons, price and an OE pin wired low, are not requirement values. It passes: 40 lines in 1 part (33 needed, 7 spare); RESET active low, power-up default every I/O an input, no internal pull-ups on the I/Os, internal pull-ups on none of AD2:AD0; Fm+ to 1 MHz; VDD 2.3 to 5.5 V; Tamb -40 to +85 degC; 64 addresses, of which 7-bit 0x20 (AD2:AD0 = VSS, VSS, VSS) is clear of every listed address (PCA9698 Rev. 3, 3 August 2010, 7.1, 7.9, Table 12, https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf, vendors.py fetch HTTP 200, 2026-10-02T14:35:00Z). JLCPCB C729177 stockCount 1908, canPresaleNumber 1894, expand, USD 8.4469 at 10 (14:36:39Z) against 50 for 5 placements; Digi-Key stock_available 3322, lead 16 weeks, Active (14:27:10Z cached). It ranks fourth among 4 qualified parts: USD 8.45 against about 2.7 for two TCA6424ARGJR, 7 spare lines against 15, and one part carrying all 33 lines in a TSSOP56. Its OE input 3-states every output, which no other option has; it is a wiring choice, not a requirement."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP23017T-E/SS",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port voltage ceiling",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "TPS3701DDCR",
+      "maker": "Texas Instruments",
+      "reason": "P3's finding does not change the drop. The requirement is 'Latch until action' (V130, V280), and the Follow-ups row of Research.md puts the latch into this function ('each failed the +/-0.99 % HV trip band or the latch'). TPS3701 has no latch: OUTB goes high again when the sense voltage falls below VIT-(INB); the word latch does not occur in SBVS240C (https://www.ti.com/lit/ds/symlink/tps3701.pdf, vendors.py fetch HTTP 200, 2026-10-02T14:39:04Z). It meets both trip bands (VIT+(INB) 397 to 403 mV, +/-0.75 %, so 8.533 to 8.697 V with 0.1 % resistors) and rule 4 (JLCPCB C132788 26813 / 26784, 14:37:53Z). R3 holds its latch (74LVC1G175GW,125, F11) as its own function; R6 has no latch function in Follow-ups or selection.json. A latch function for the 20 ports is a gap for a P1 follow-up, and TPS3701DDCR is the comparator it would pair with. Reported, not ranked."
+     },
+     {
+      "part": "TLV6710DDCR",
+      "maker": "Texas Instruments",
+      "reason": "Same as TPS3701DDCR: no latch (the word does not occur in SNVSAV4B, https://www.ti.com/lit/ds/symlink/tlv6710.pdf, 2026-10-02T14:39:05Z); INB band VIT+(INB) 397 to 403 mV and rule 4 pass (JLCPCB C2863066 3103 / 3091, 14:37:54Z)."
+     },
+     {
+      "part": "TLV6713DDCR",
+      "maker": "Texas Instruments",
+      "reason": "P3 is right that P2's reason (0.9 % to 2.5 %) does not hold for the falling threshold, but the part still fails, on three values. (1) HV trip band: the overvoltage trip is the rising threshold VIT+, 400 to 413 mV (+/-1.6 % about 406.5 mV, before any divider), over +/-0.99 %; the 0.75 % applies to VIT- 397 to 403 mV only (SBVS331B 7.5, https://www.ti.com/lit/ds/symlink/tlv6713.pdf, vendors.py fetch HTTP 200, 2026-10-02T14:38:00Z). TLV6710 and TPS3701 reach +/-0.75 % on the rising edge only through INB, the inverting input, which TLV6713 does not have. (2) Rule 4: JLCPCB C2861351 stockCount 167 under 500 (need 100, S4), C2872139 0 (14:37:50Z). (3) Latch until action: none."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo supply temperature",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP9808T-E/MS",
+      "reason": "The owner's part (2026-09-30) and the only one in P2's record. It passes 8 of 9 requirements. It fails 'Rail's own latch' (V283): comparator mode releases below the limit less THYST, interrupt mode releases on an I2C write, and settings reset at power-on. No sensor can meet that value alone, because the latch holds EN/UVLO until the F11 clear and is a part of its own, which P3 lists as a missing function. Kept first and reported to the owner, not replaced. JLCPCB 764 / 725 (14:37:10Z), Digi-Key 21419 against the gate of 100.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP9808T-E/MS",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "P3 find XAL1010-472MED (Coilcraft), servo inductor",
+    "value": "Fails sourcing rule 5, dropped. JLCPCB C19271849 stockCount 157 / presale 148 passes rule 4 at 100. Digi-Key productdetails answers HTTP 404 for XAL1010-472MED, -472MEC and -472MEB; keyword XAL1010 lists only XAL1010-103MED, stock 0, Active. No pin-compatible alternate is documented: ASPIAIG-Q1010-4R7M-T C3220895 has stockCount 95 under 100 and a different labelled size (11.9 x 11 mm against 11.3 x 10 mm)",
+    "source": "vendors.py jlcpcb C19271849 and C3220895 (2026-10-02T14:32:36Z, 14:32:56Z); vendors.py digikey XAL1010-472MED and -472MEC (cached 14:14:37Z, 14:14:38Z), -472MEB (live 14:32:41Z); digikey-search XAL1010 (live 14:32:46Z)"
+   },
+   {
+    "figure": "P3 find ETQP6M4R7YLC (Panasonic), servo inductor",
+    "value": "Fails sourcing rule 5, dropped. JLCPCB C409643 stockCount 458 / presale 457 passes rule 4. Digi-Key ETQ-P6M4R7YLC: Active, lead 23 weeks, stock_available 0, minimum order 3000. Family search ETQ-P6M returns 7 products; the 4.7 uH row is at 0. No pin-compatible alternate documented (PCC-M1060ML land pattern differs from the ETQP5M4R7YFC's)",
+    "source": "vendors.py jlcpcb C409643 (2026-10-02T14:32:36Z); vendors.py digikey ETQ-P6M4R7YLC (cached keyword reading 14:15:45Z); digikey-search ETQ-P6M --limit 50 (live 14:33:26Z)"
+   },
+   {
+    "figure": "Search for a pin-compatible alternate to the two inductor finds",
+    "value": "jlcparts query for 4.7 uH inductors in packages 10 to 11.5 mm square returned 129 rows (for example SRP1038A-4R7M stock 125, MPX1D1040L4R7 stock 100, ASPIAIG-F1040-4R7M-T stock 3 in the 2026-09-14 copy). None is documented as pin-compatible with the XAL1010 or the PCC-M1060ML; no land pattern was compared, and none is claimed",
+    "source": "sqlite3 read-only query of /home/claude/rcbench-research/jlcparts-2026-09-14/cache.sqlite3, 2026-10-02T14:33Z (find only; counts are the dated stocks above)"
+   },
+   {
+    "figure": "PCAL6524HEAZ (NXP), I/O expander, qualified as a third survivor",
+    "value": "Passes all 7 values. Addresses 7-bit 0x20 to 0x23 (Table 4 prints the 8-bit bytes 40h to 46h). IDD 25 uA max at 3.3 V and 400 kHz. JLCPCB C3000497 2399 / 2374, USD 1.5981 at 10. Digi-Key 18577, lead 30 weeks, Active. NXP page Active. Same-die alternate PCAL6524HEHP C2669688 stock 115 / 112. NXP PCN listing not read (the URL tried answered HTTP 404)",
+    "source": "PCAL6524 Rev. 2.1 Tables 3, 4, 62, 64, 66 (https://www.nxp.com/docs/en/data-sheet/PCAL6524DS.pdf, read 2026-10-02T14:35:00Z); vendors.py jlcpcb C3000497 (14:36:18Z) and C2669688 (14:36:37Z); vendors.py digikey PCAL6524HEAZ (cached 14:20:12Z); https://www.nxp.com/products/PCAL6524 (14:36:18Z); PCN page (14:38:31Z, HTTP 404)"
+   },
+   {
+    "figure": "PCA9698DGG,518 (NXP), I/O expander, qualified and dropped on the cap of three survivors",
+    "value": "Passes every value with 40 lines in one part (7 spare). USD 8.4469 at 10 against about 2.7 for two TCA6424ARGJR. JLCPCB C729177 1908 / 1894; Digi-Key 3322, lead 16 weeks, Active. Its OE pin 3-states every output; wiring choice, not a requirement",
+    "source": "PCA9698 Rev. 3 7.1, 7.9, Table 12 (https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf, read 2026-10-02T14:35:00Z); vendors.py jlcpcb C729177 (14:36:39Z); vendors.py digikey PCA9698DGG,518 (cached 14:27:10Z)"
+   },
+   {
+    "figure": "I/O expander spare lines, for P5",
+    "value": "33 lines needed (V119). Spare: MCP23017 x 3 gives 42 usable, 9 spare; TCA6424A x 2 or PCAL6524 x 2 give 48, 15 spare; PCA9698 x 1 gives 40, 7 spare. Pins.md lists port ceiling read-backs of up to 40 lines (V135) as not pinned; V135's answer reads the cut-off through the port monitor, so they are not counted",
+    "source": "Pins.md, I/O expanders and Not known (checkout 14098109c7ce); P2 V119 and V135; datasheets above"
+   },
+   {
+    "figure": "TLV6713 (Port voltage ceiling), P3's claim of 0.75 % accuracy",
+    "value": "0.75 % is the falling threshold VIT- (397 to 403 mV). The rising threshold VIT+ that trips an overvoltage cut-off is 400 to 413 mV, +/-1.6 % about 406.5 mV, over the +/-0.99 % HV band. TLV6710 and TPS3701 reach +/-0.75 % on the rising edge only through INB (VIT+(INB) 397 to 403 mV). JLCPCB stock of TLV6713DDCR 167, DDCT 0, under 500",
+    "source": "SBVS331B 7.5 (https://www.ti.com/lit/ds/symlink/tlv6713.pdf, read 2026-10-02T14:38:00Z); vendors.py jlcpcb C2861351 and C2872139 (14:37:50Z)"
+   },
+   {
+    "figure": "Port voltage ceiling: comparator found, latch missing",
+    "value": "TPS3701DDCR meets both trip bands (8.533 to 8.697 V HV with 0.1 % resistors; rule 4: 26813 against 500) and has no latch. Neither it nor TLV6710DDCR is ranked, because the function as the Follow-ups row words it includes the latch. A latch function (20 a board, set by the comparator, cleared by an operator or firmware action) is not in P2's functions, Follow-ups or selection.json. Needs a P1 follow-up that adds it; the function stays without a part until then. Owner's choice whether to pair TPS3701DDCR with a latch",
+    "source": "SBVS240C (https://www.ti.com/lit/ds/symlink/tps3701.pdf, read 2026-10-02T14:39:04Z); SNVSAV4B (read 14:39:05Z); Research.md Follow-ups row Port voltage ceiling; vendors.py jlcpcb C132788 (14:37:53Z)"
+   },
+   {
+    "figure": "Servo supply temperature: latch is a missing function",
+    "value": "The MCP9808T-E/MS is ranked first although it fails 'Rail's own latch' (V283), which no sensor can meet alone. P3's missed function, a latch of the rail's own (4 a board, set by that sensor's alert, holding that converter's EN/UVLO low, cleared by F11, off at power-up), is not in P2's functions or in Follow-ups. R3's selection.json holds a latch and a clear control for F11; whether a copy per rail serves is not read. Needs a P1 follow-up that adds the function",
+    "source": "IOBoard.md, Servo supply temperature; V283 (owner, 2026-10-01); P2 and P3 returns; selection.json R3, read 2026-10-02"
+   },
+   {
+    "figure": "TPS55285VALR market introduction",
+    "value": "First datasheet revision SLVSI72 revision *, April 2025 (Advance Information): 17 months before 2026-10-02, not under 12 months, so not flagged. Production Data since revision A, October 2025 (about 12 months). P2's lifecycle field words this as flagged at the 12-month line; the rule counts from the first revision",
+    "source": "SLVSI72A 10 Revision History (P2's saved copy /home/claude/rcbench-research/round2/scratch/FU-2B2/P2-R6/tps55285.txt, https://www.ti.com/lit/ds/symlink/tps55285.pdf, read by P2 2026-10-02T13:50:35Z); Research.md Lifecycle check"
+   },
+   {
+    "figure": "Fixed input TPS55285VALR fails one check, reported to the owner",
+    "value": "'Output current from the pack at 8.4 V': the owner requires each rail to run to its own limit up to 6.35 A from the pack (2026-09-30); the inductor clamp ILIM_AVG, 7 A min, 8 A typ, no maximum, gives 4.57 A at 7 A and 5.15 A at 8 A from 6.0 V. 6.35 A needs about 10 A of inductor current. Continuous rating from P2's V278: 3.72 A at 6.0 V in, 8.4 V out, 50 degC on 33 degC/W. P2's figures; P4 re-reads them. selection.json holds no part for Servo supply (FU-B3), and this rank 1 is the only record for it",
+    "source": "P2 return V110, V278 (SLVSI72A 5.4, equation 7, Figure 5-3, read by P2 2026-10-02T13:50:35Z); selection.json R6, read 2026-10-02"
+   },
+   {
+    "figure": "Servo supply stock, re-read for rank 1",
+    "value": "TPS55285VALR C52160906 JLCPCB stockCount 2732, presale 2724, expand, USD 2.6775 at 10, against the threshold of 100 for 20 placements; held 12 under 20, so rule 6 does not cover the need. Digi-Key 5243, lead 20 weeks, Active (P2, 13:58:43Z)",
+    "source": "vendors.py jlcpcb C52160906, 2026-10-02T14:37:00Z; P2 Digi-Key reading (cached)"
+   },
+   {
+    "figure": "Functions without a part",
+    "value": "Port supply switch: no part (V277, V282); P3 returned nothing for it. Port voltage ceiling: no part (see above). Both stay as P2 left them",
+    "source": "P2 and P3 returns, read 2026-10-02"
+   },
+   {
+    "figure": "Digi-Key calls made by this re-rank",
+    "value": "3 live calls: XAL1010-472MEB productdetails (14:32:41Z), keyword XAL1010 (14:32:46Z), keyword ETQ-P6M (14:33:26Z). Every other Digi-Key figure above is a cached reading of earlier the same UTC day, with its time. ratelimit_remaining 738 after the XAL1010 keyword call",
+    "source": "vendors.py digikey and digikey-search, DIGIKEY_CACHE_DIR=/home/claude/rcbench-research/round2/cache/digikey"
+   },
+   {
+    "figure": "Working files",
+    "value": "datasheet copies and scripts in /home/claude/rcbench-research/round2/scratch/FU-2B2/rerank-R6/ (v.sh, db.py, pcal6524.pdf, pca9698.pdf, tlv6713.pdf, tps3701.pdf, tlv6710.pdf, nxp_pcal6524.html)",
+    "source": "scratch directory of this task"
+   }
+  ]
+ }
+}

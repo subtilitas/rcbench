@@ -1,0 +1,1159 @@
+{
+ "task": "FU",
+ "run": "FU-2B2",
+ "run_id": "a175b4f906dbda2e",
+ "commit": "14098109c7ce87041008b2011d897b924739bf15",
+ "date": "2026-10-02",
+ "run_info": {
+  "claude_code": "2.1.287 (Claude Code)",
+  "cpus": 48,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "concurrency": 16,
+  "concurrency_setting": "unset",
+  "agent_model": "sonnet",
+  "oversight_model": "opus",
+  "digikey_calls_left": 809,
+  "vendors_sha256": "214b14a3af0a4a1e0edfab77124a786c4e0fade844ec4d0c72149c1571ff8bf6"
+ },
+ "followup": {
+  "phases": "P2-P4",
+  "round": 1,
+  "categories": [
+   "R6",
+   "R8"
+  ],
+  "items": [
+   {
+    "category": "R6",
+    "function": "Port supply switch",
+    "requirement": "Switches each of the 20 ports from 0.8 V (V55) to 8.4 V. The TPS259474LRPWR takes VIN only from 2.7 V. Answered under Raised by P1: V282: From 0.8 V the switch turns on and carries the port's current. The 3.0 A and the 570 mV this question names apply from 5.0 V up; below 5.0 V the drop is a reported figure, not a requirement (owner, 2026-10-01)",
+    "source": "IOBoard.md, Port supply switch",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R6",
+    "function": "Servo supply",
+    "requirement": "The continuous current one TPS55285 with its heatsink holds at 6.0 V in and 50 °C ambient, in A. This is each rail's continuous rating (owner, 2026-09-30). The heatsink's size is round 3's. Answered under Raised by P1: V281: 33 °C/W, the datasheet's RθJA on TI's 4-layer 2 oz EVM (SLVSI72A 5.3). The heatsink adds margin, which round 3 sizes (owner, 2026-10-01) V283: The rail's own latch: only that converter switches off, and it stays off until the operator clear control (F11) clears it. The other rails and the ESC keep running, and the firmware reports the trip (owner, 2026-10-01)",
+    "source": "IOBoard.md, Servo rail current",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R6",
+    "function": "servo supply temperature sensor (new)",
+    "requirement": "The MCP9808T-E/MS beside each TPS55285, 4 a board, and its shutdown threshold against the TPS55285's 125 °C recommended junction maximum. Answered under Raised by P1: V281: 33 °C/W, the datasheet's RθJA on TI's 4-layer 2 oz EVM (SLVSI72A 5.3). The heatsink adds margin, which round 3 sizes (owner, 2026-10-01) V283: The rail's own latch: only that converter switches off, and it stays off until the operator clear control (F11) clears it. The other rails and the ESC keep running, and the firmware reports the trip (owner, 2026-10-01)",
+    "source": "IOBoard.md, Servo supply temperature",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R6",
+    "function": "Port voltage ceiling",
+    "requirement": "Cuts the port off above 6.0 V (LV) or 8.7 V (HV), set by a jumper (F16). No candidate passed round 1: each failed the ±0.99 % HV trip band (V128) or the latch (V130)",
+    "source": "IOBoard.md, Port voltage ceiling; Supply.md, Not known",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R8",
+    "function": "alert shift register (new)",
+    "requirement": "Parallel-in, serial-out: two 8-bit parts in cascade take the 16 alert outputs at once, on 3 main coprocessor pins (owner, 2026-09-30). Answered under Raised by P1: V286: 3.3 V for the shift registers and the CD4082 gates; every alert node pulls up to 3.3 V (owner, 2026-10-01)",
+    "source": "IOBoard.md, Current aborts",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R8",
+    "function": "alert combining gate (new)",
+    "requirement": "CD4082, a dual 4-input AND gate, 3 a board (owner, 2026-09-30): its part number, stock and speed at 3.3 V. Answered under Raised by P1: V286: 3.3 V for the shift registers and the CD4082 gates; every alert node pulls up to 3.3 V (owner, 2026-10-01)",
+    "source": "IOBoard.md, Current aborts",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R8",
+    "function": "Port current monitor; Motor monitor",
+    "requirement": "The alert thresholds, whether the monitors latch their alert outputs, and the critical line's blanking time, against the port switch's 3.96 to 4.84 A breaker and the INA3221's conversion time. The INA228 stays fixed (owner, 2026-09-30). Answered under Raised by P1: V288: Every temperature the board reads: the onboard shunt's sensor, the motor's thermocouple and infrared channels and the ESC telemetry's temperature, each with its own operator-set limit on the LIMITS page. Two consecutive conversions above the limit trip it. The ESC pack switch opens within the 500 ms stop deadline (V1) (owner, 2026-10-01)",
+    "source": "IOBoard.md, Current aborts",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "role": "P1-critic",
+    "category": "R6",
+    "value": {
+     "where": "hardware/docs/IOBoard.md:460",
+     "quantity": "MCP9808 alert destination (interlock's latch vs. a latch of the rail's own)",
+     "value": "not stated",
+     "marking": "assumption",
+     "source": "IOBoard.md:460: \"Whether the alert sets the interlock's latch or a latch of the rail's own is not stated\"",
+     "refutation_tried": "grepped Research.md and IOBoard.md for \"interlock\" near R6 and for any F11-style decision covering the MCP9808's alert routing; none found",
+     "question": 6
+    },
+    "reason": "marking not ruled on"
+   },
+   {
+    "role": "P1-critic",
+    "category": "R6",
+    "value": {
+     "where": "hardware/docs/Research.md:313",
+     "quantity": "Already-selected R6 parts standing into round 2",
+     "value": "I/O expander: MCP23017T-E/SS (confirmed); Port supply switch (round 1, now refuted at the low end only): TPS259474LRPWR",
+     "marking": "sourced",
+     "source": "hardware/research/round1/selection.json; confirmed in FU-B3/020-P4-datasheet-R6.json",
+     "refutation_tried": "MCP23017T-E/SS's only round-1 refutation (an unread Microchip PCN link, treated as a possible end-of-life notice) did not stand once the adjudicator re-read Microchip's public PCN search API and found no end-of-life notice (FU-B3/022-adjudicator-R6.json); stands unchanged for this follow-up",
+     "question": -1
+    },
+    "reason": "marking not ruled on"
+   },
+   {
+    "role": "P1-critic",
+    "category": "R6",
+    "value": {
+     "where": "hardware/docs/Supply.md:145",
+     "quantity": "Servo supply inductor selection status",
+     "value": "SRP1265A-4R7M was confirmed by both FU-B3 verifiers (4.7 uH, 28 A saturation, 8.4 mOhm DC resistance max, -55 to 150 degC), but hardware/research/round1/selection.json carries no part for this function",
+     "marking": "sourced",
+     "source": "FU-B3/015-P4-stock-R6.json, FU-B3/020-P4-datasheet-R6.json; Supply.md:145 records the same discrepancy",
+     "refutation_tried": "checked the Round 2 Follow-ups table (Research.md) for a 'Servo supply inductor' row: none exists, so this function is not one of this task's listed gaps and no new question is raised for it here; it is still listed in functions because the R6 row and IOBoard.md name it",
+     "question": -1
+    },
+    "reason": "marking not ruled on"
+   },
+   {
+    "role": "P1",
+    "category": "R6",
+    "value": {
+     "where": "hardware/docs/IOBoard.md:380",
+     "quantity": "Servo supply heatsink basis for continuous-current rating",
+     "value": "the Adjustable supply's continuous current, qualified across its full 6-20 V in, 0.8-15 V out range at 50 degC ambient, is not known until a follow-up of R6 qualifies it",
+     "marking": "assumption",
+     "source": "IOBoard.md:380",
+     "refutation_tried": "this depends on the same TPS55285 heatsink thermal-resistance figure the Servo rail current gap needs (IOBoard.md:375, :377); no separate figure found for the Adjustable supply's own worst point",
+     "question": 4
+    },
+    "reason": "assumption without a confirmed question"
+   }
+  ]
+ },
+ "stock_exceptions": [],
+ "accept_open": {
+  "reason": "Owner, 2026-10-01 and 2026-10-02 (Research.md, Round 2, Rules of stage 1, and the owner's rulings of 2026-10-02): Round 2's runs in R5 to R8, its P5-P6 follow-up and its T6 may start with these items open, the reason given to `--accept-open` (owner, 2026-10-01): round 1's parts in R4, R12 and R13, and every function of round 1 that round 2 does not decide again; the resistors, capacitors, connectors and connector protection left to stage 2; the functions a round 2 follow-up leaves without a part, which the pages state as not known; and T5's conflicts and gaps in the categories round 2 does not run; FU-2P1's 18 P1 items in R2, R3, R5, R6, R7 and R9 stay open, the reason given to `--accept-open` of the P2-P4 follow-ups on those categories (owner, 2026-10-01): 10 values whose question is already under Raised by P1 and answered for research (V26, V27, V29, V39, V43, V47, V92, V139, V148, V181); the monostable page's servo rail figures, which V55 replaces; the board's draw of about 49.7 A at an assumed 90 % efficiency, the nominal sizing basis; the pack disconnect's round 1 account, corrected in the Follow-ups row; the adjustable supply's continuous current, which R6 qualifies on V281's 33 °C/W; and 3 markings in R6 the critic did not rule on. Accepted as not known by the owner on 2026-10-02: R1 figure function requirements: Microcontroller (FU-2D; six IOBoard.md rows left off the list, the part meets them); R2 figure function requirements: Link CAN controller (FU-2A; V16 and V26 left off the list, the part meets both); R3 figures re-rank report: document key and re-rank drop: trigger-path inverter: SN74LVC1G14DCKR (FU-2A; no rank 1 changes); R9 found V186 and found V187 (not found in either round) and found V195 (refuted); R10 the LM4040AIM3-3.0/NOPB Q alternative refuted on V290, no function implementing Q4 having an alternative for each of its options, and figure P2 report: Q4 effective number of bits: AD7476ARTZ-REEL7 (FU-2C; Q4 is decided for the external ADC); R11 figures P2 report: encoder decode resources for P5 and re-rank report: lead buffer output span (FU-2E; no selected part affected; P5 sizes clk_sys for the encoder); R11 accelerometer and optical index, which the owner fixes as ADXL316WBCSZ and TCND5000 without further research (2026-10-02; Research.md, Scope, fixed inputs), and R11 servo measured position, which V209 gives to the F4 encoder with no part of its own; and the items 'the specification changed after RUN selected its parts' for R2, R3 (FU-2A), R10 (FU-2C), R1, R9 (FU-2D) and R11 (FU-2E), which the plan edits recording the owner's rulings of 2026-10-02 cause.",
+  "functions": [
+   "R6: FU-2P1 left 4 P1 items unresolved",
+   "R2: Link terminator (the 120 Ohm at the IO board's end: fitted, switchable or external)",
+   "R3: external pack switch module",
+   "R3: pack overvoltage and transient clamp",
+   "R3: timing network (C and R of the monostable)",
+   "R3: heartbeat-node series resistors, links and fail-safe pull-downs",
+   "R3: latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)",
+   "R3: switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+   "R4: level translation",
+   "R4: series resistance and clamps",
+   "R4: reset idle level",
+   "R4: programming supply switching",
+   "R9: balance-lead input network",
+   "R9: balance-lead connector protection (mis-plugged lead)",
+   "R9: balance-lead connector",
+   "R9: unused-input tie",
+   "R10: Reference for the RP2354B ADC (the reference option of Q4, 'ADC and reference' in the R10 row)",
+   "R10: Converter for the accelerometer (Q alternative LM4040AIM3-3.0/NOPB: refuted)",
+   "R11: accelerometer",
+   "R11: optical index",
+   "R11: servo measured position",
+   "R1: figure function requirements: Microcontroller not confirmed in FU-2D",
+   "R2: figure function requirements: Link CAN controller not confirmed in FU-2A",
+   "R3: figure re-rank report: document key not confirmed in FU-2A",
+   "R3: figure re-rank drop: trigger-path inverter: SN74LVC1G14DCKR not confirmed in FU-2A",
+   "R4: figure found V75 not confirmed in FU-A3",
+   "R4: figure P2 report: series resistance range not confirmed in FU-A3",
+   "R4: figure P2 report: clamp level against the switch alternates not confirmed in FU-A3",
+   "R4: figure re-rank report: rerank R4: series resistance on the PWM lines not confirmed in FU-A3",
+   "R9: figure found V186 not confirmed in FU-2D",
+   "R9: figure found V187 not confirmed in FU-2D",
+   "R10: figure P2 report: Q4 effective number of bits: AD7476ARTZ-REEL7 not confirmed in FU-2C",
+   "R10: no function implementing Q4 has an alternative for each of its options",
+   "R11: figure P2 report: encoder decode resources for P5 not confirmed in FU-2E",
+   "R11: figure re-rank report: lead buffer output span not confirmed in FU-2E",
+   "R12: figure P2 report: Q8 store candidate: M24256E-FMN6TP not confirmed in FU-C1",
+   "R12: figure function requirements: external I2C ports not confirmed in FU-C1",
+   "R1: the specification changed after FU-2D selected its parts",
+   "R2: the specification changed after FU-2A selected its parts",
+   "R3: the specification changed after FU-2A selected its parts",
+   "R4: the specification changed after FU-A3 selected its parts",
+   "R9: the specification changed after FU-2D selected its parts",
+   "R10: the specification changed after FU-2C selected its parts",
+   "R11: the specification changed after FU-2E selected its parts",
+   "R12: the specification changed after FU-C1 selected its parts",
+   "R13: the specification changed after FU-C1 selected its parts",
+   "R2: FU-2P1 left 2 P1 items unresolved",
+   "R3: FU-2P1 left 5 P1 items unresolved",
+   "R9: FU-2P1 left 1 P1 items unresolved"
+  ]
+ },
+ "decisions": {
+  "Q4": "An external ADC: ADCS7476AIMFX/NOPB, the part R10 kept (owner, 2026-09-29)",
+  "Q8": "An I²C FRAM: MB85RC256VPNF-G-AMERE2, the part R12 kept (owner, 2026-09-29)",
+  "Q9": "The 74HC423 keeps the '423 behaviour, and an SN74AUP1G17DBVR with I_off goes in front of its trigger inputs, as R3 selected (owner, 2026-09-29)"
+ },
+ "planned": 11,
+ "started": 18,
+ "extra_used": 7,
+ "free": 21,
+ "skipped": [],
+ "summary": {
+  "categories": [
+   "R6",
+   "R8"
+  ],
+  "held": [],
+  "results": [
+   {
+    "category": "R6",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "Servo supply",
+      "part": "TPS55285VALR",
+      "as": "primary",
+      "status": "verified; refutation did not stand",
+      "reason": ""
+     },
+     {
+      "function": "Servo supply inductor",
+      "part": "SRP1265A-4R7M",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "I/O expander",
+      "part": "MCP23017T-E/SS",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Servo supply temperature",
+      "part": "MCP9808T-E/MS",
+      "as": "primary",
+      "status": "verified; refutation did not stand",
+      "reason": ""
+     },
+     {
+      "figure": "function requirements: Servo supply",
+      "status": "refuted"
+     }
+    ],
+    "figures_open": [
+     "found V129",
+     "function requirements: Servo supply"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "Servo supply",
+      "decision": "none",
+      "part": "TPS55285VALR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Servo supply inductor",
+      "decision": "none",
+      "part": "SRP1265A-4R7M",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Port supply switch",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "I/O expander",
+      "decision": "none",
+      "part": "MCP23017T-E/SS",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Port voltage ceiling",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Servo supply temperature",
+      "decision": "none",
+      "part": "MCP9808T-E/MS",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Servo supply temperature latch",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Port voltage ceiling latch",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   },
+   {
+    "category": "R8",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "Motor monitor",
+      "part": "INA228AIDGSR",
+      "as": "primary",
+      "status": "refuted",
+      "scope": "part"
+     },
+     {
+      "function": "Onboard shunt",
+      "part": "BVR-Z-R0002-1.0",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Onboard shunt temperature sensor",
+      "part": "MCP9808T-E/MS",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "External shunt sense input",
+      "part": "INA228AIDGSR",
+      "as": "primary",
+      "status": "refuted, no ruling"
+     },
+     {
+      "function": "Port current monitor",
+      "part": "INA3221AIRGVR",
+      "as": "primary",
+      "status": "verified; refutation did not stand",
+      "reason": ""
+     },
+     {
+      "function": "Port shunt",
+      "part": "ERJ-6CWDR010V",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "figure": "found V177",
+      "status": "refuted"
+     }
+    ],
+    "figures_open": [
+     "found V177"
+    ],
+    "q_missing": false,
+    "part_refuted": [
+     "INA228AIDGSR"
+    ],
+    "selection": [
+     {
+      "function": "Motor monitor",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [
+       "INA228AIDGSR"
+      ],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Onboard shunt",
+      "decision": "none",
+      "part": "BVR-Z-R0002-1.0",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Onboard shunt temperature sensor",
+      "decision": "none",
+      "part": "MCP9808T-E/MS",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "External shunt",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "External shunt sense input",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [
+       "INA228AIDGSR"
+      ],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Port current monitor",
+      "decision": "none",
+      "part": "INA3221AIRGVR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Port shunt",
+      "decision": "none",
+      "part": "ERJ-6CWDR010V",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Servo rail monitor",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "alert shift register",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "alert combining gate",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "External shunt sense input: the low-capacitance TVS (transient-voltage-suppression) diode behind the two 1 kOhm series resistors (IOBoard.md:464, owner 2026-09-30)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   }
+  ],
+  "selection": {
+   "R6": [
+    {
+     "function": "Servo supply",
+     "decision": "none",
+     "part": "TPS55285VALR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Servo supply inductor",
+     "decision": "none",
+     "part": "SRP1265A-4R7M",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Port supply switch",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "I/O expander",
+     "decision": "none",
+     "part": "MCP23017T-E/SS",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Port voltage ceiling",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Servo supply temperature",
+     "decision": "none",
+     "part": "MCP9808T-E/MS",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Servo supply temperature latch",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Port voltage ceiling latch",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ],
+   "R8": [
+    {
+     "function": "Motor monitor",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [
+      "INA228AIDGSR"
+     ],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Onboard shunt",
+     "decision": "none",
+     "part": "BVR-Z-R0002-1.0",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Onboard shunt temperature sensor",
+     "decision": "none",
+     "part": "MCP9808T-E/MS",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "External shunt",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "External shunt sense input",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [
+      "INA228AIDGSR"
+     ],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Port current monitor",
+     "decision": "none",
+     "part": "INA3221AIRGVR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Port shunt",
+     "decision": "none",
+     "part": "ERJ-6CWDR010V",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Servo rail monitor",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "alert shift register",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "alert combining gate",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "External shunt sense input: the low-capacitance TVS (transient-voltage-suppression) diode behind the two 1 kOhm series resistors (IOBoard.md:464, owner 2026-09-30)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ]
+  },
+  "figures_open": {
+   "R6": [
+    "found V129",
+    "function requirements: Servo supply"
+   ],
+   "R8": [
+    "found V177"
+   ]
+  },
+  "part_refuted": {
+   "R6": [],
+   "R8": [
+    "INA228AIDGSR"
+   ]
+  },
+  "q_missing": [],
+  "chain_failed": []
+ },
+ "followUps": [
+  {
+   "role": "P0",
+   "host": "www.vishay.com",
+   "categories": [
+    "R3",
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P0",
+   "host": "www.isabellenhuette.com",
+   "categories": [
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "rerank",
+   "category": "R6",
+   "part": "TLV6713",
+   "functions": [
+    "Port voltage ceiling"
+   ],
+   "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+  },
+  {
+   "role": "P2",
+   "category": "R6",
+   "function": "Servo supply",
+   "part": "TPS55285VALR",
+   "reason": "shortlisted states other values than the function for: Converter part (fixed input), Highest steady VIN, Pack input range, Output settings, Set point against the ceilings, Output current limit, Continuous current at 6.0 V in, 50 degC, Output current from the pack at 8.4 V, Adjustable supply continuous current, Pack current at 6.0 V, Current into a shorted port, Enable off at reset, Temperature trip input, I2C address, Current-limit sense; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R6",
+   "function": "Servo supply inductor",
+   "part": "SRP1265A-4R7M",
+   "reason": "shortlisted states other values than the function for: Inductance, Heat-rating current, DC resistance, Ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R6",
+   "function": "Servo supply inductor",
+   "part": "ETQP5M4R7YFC",
+   "reason": "shortlisted states other values than the function for: Inductance, Heat-rating current, DC resistance, Ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R6",
+   "function": "Servo supply inductor",
+   "part": "IHLP5050CEER4R7M01",
+   "reason": "shortlisted states other values than the function for: Inductance, Heat-rating current, DC resistance, Ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R6",
+   "function": "Port supply switch",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R6",
+   "function": "I/O expander",
+   "part": "MCP23017T-E/SS",
+   "reason": "shortlisted states other values than the function for: Lines, Hardware reset input, Power-up state, I2C clock, Address; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R6",
+   "function": "I/O expander",
+   "part": "TCA6424ARGJR",
+   "reason": "shortlisted states other values than the function for: Lines, Hardware reset input, Power-up state, I2C clock, Address; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R6",
+   "function": "I/O expander",
+   "part": "PCAL6524HEAZ",
+   "reason": "shortlisted states other values than the function for: Lines, Address; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R6",
+   "function": "Port voltage ceiling",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R6",
+   "function": "Servo supply temperature",
+   "part": "MCP9808T-E/MS",
+   "reason": "shortlisted states other values than the function for: Sensor part and placement, Shutdown threshold, Accuracy at the threshold, Alert output, Rail's own latch, Limit lock, Ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P3",
+   "category": "R6",
+   "function": "Servo supply temperature latch",
+   "reason": "function the row names that P2 did not return: The Servo supply temperature line of IOBoard.md states that the trip latches until the operator clear control (F11) clears it, and 'threshold, latch and wiring of the alert outputs: a follow-up of R6'. V283 (owner, 2026-10-01) rules a latch of the rail's own: only that converter switches off and stays off until the F11 clear. P2 lists 'Rail's own latch' among the requirements of Servo supply temperature and records the MCP9808T-E/MS failing it, but returns no function and no part for the latch itself (4 a board, one for each converter, set by that MCP9808's alert, holding that converter's EN/UVLO low, cleared by F11, off at power-up and reset). selection.json (round2) R3 already holds a latch (74LVC1G175GW,125) and a clear control (434153017835) for F11, from FU-2A; whether a copy per rail serves is not read."
+  },
+  {
+   "role": "P3",
+   "category": "R6",
+   "function": "Port voltage ceiling latch",
+   "reason": "function the row names that P2 did not return: V130 and the Follow-ups row for Port voltage ceiling (Research.md) name the latch: the port stays off until an operator or firmware action. P2 lists 'Latch until action' as a requirement of Port voltage ceiling and drops the two comparators that meet the trip bands for lacking it, but returns no function and no part for a latch (20 a board, one for each port, set by the ceiling comparator, cleared by an operator or firmware action). The R3 latch and clear control in selection.json (round2) are the nearest parts; their fit for 20 ports is not read."
+  },
+  {
+   "role": "P2",
+   "category": "R6",
+   "question": "V129",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "rerank",
+   "category": "R8",
+   "part": "MC74HC165ADR2G, MC74HC165ADTR2G",
+   "functions": [
+    "alert shift register"
+   ],
+   "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+  },
+  {
+   "role": "rerank",
+   "category": "R8",
+   "part": "SN74LV21APWR (C201541), also SN74LV21ADR",
+   "functions": [
+    "alert combining gate"
+   ],
+   "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+  },
+  {
+   "role": "rerank",
+   "category": "R8",
+   "part": "50 uOhm WSBS8536 and BAS-M-R00005 parts",
+   "functions": [
+    "External shunt"
+   ],
+   "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "Motor monitor",
+   "part": "INA228AIDGSR",
+   "reason": "shortlisted states other values than the function for: fixed part, bus and input rating, trip inside full scale, overcurrent alert threshold, alert latch, alert within 20 ms, alert output, current accuracy, voltage accuracy, external-path resolution, charge and energy, reading of record, logic and addresses; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "Onboard shunt",
+   "part": "BVR-Z-R0002-1.0",
+   "reason": "shortlisted states other values than the function for: continuous current, dissipation, trip inside full scale, power rating at a 100 degC terminal, accuracy share, Kelvin sense; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "Onboard shunt",
+   "part": "BVE-M-R0002-1.0",
+   "reason": "shortlisted states other values than the function for: continuous current, dissipation, trip inside full scale, power rating at a 100 degC terminal, accuracy share, Kelvin sense; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "Onboard shunt",
+   "part": "WSLP2726L2000FEA",
+   "reason": "shortlisted states other values than the function for: continuous current, dissipation, trip inside full scale, power rating at a 100 degC terminal, accuracy share, Kelvin sense; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "Onboard shunt temperature sensor",
+   "part": "MCP9808T-E/MS",
+   "reason": "shortlisted states other values than the function for: watched temperature, trip rule, range, accuracy, interface; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "Onboard shunt temperature sensor",
+   "part": "STTS22HTR",
+   "reason": "shortlisted states other values than the function for: watched temperature, trip rule, range, accuracy, interface; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "Onboard shunt temperature sensor",
+   "part": "PCT2075D,118",
+   "reason": "shortlisted states other values than the function for: watched temperature, trip rule, range, interface; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "Onboard shunt temperature sensor",
+   "part": "TMP116AIDRVR",
+   "reason": "shortlisted states other values than the function for: watched temperature, trip rule, range, accuracy, interface; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "Onboard shunt temperature sensor",
+   "part": "TMP119AIYBGR",
+   "reason": "shortlisted states other values than the function for: watched temperature, trip rule, range, interface; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "Onboard shunt temperature sensor",
+   "part": "TMP1075DSGR",
+   "reason": "shortlisted states other values than the function for: watched temperature, trip rule, range, interface; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "External shunt sense input",
+   "part": "INA228AIDGSR",
+   "reason": "shortlisted states other values than the function for: common mode, bus-voltage connection, input withstand, series resistance, Kelvin and filter, monitor; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "Port current monitor",
+   "part": "INA3221AIRGVR",
+   "reason": "shortlisted states other values than the function for: channels, common-mode range, full scale, channel refresh and abort time, accuracy, noise, alert outputs, alert thresholds, alert latch, critical blanking, direction, logic level, addresses; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "Port shunt",
+   "part": "ERJ-6CWDR010V",
+   "reason": "shortlisted states other values than the function for: power, tolerance and TCR share, placements; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "Port shunt",
+   "part": "PA1206DRE470R01Z",
+   "reason": "shortlisted states other values than the function for: power, tolerance and TCR share, placements; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "Port shunt",
+   "part": "PE1206DRM470R01L",
+   "reason": "shortlisted states other values than the function for: power, tolerance and TCR share, placements; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R8",
+   "function": "Servo rail monitor",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P3",
+   "category": "R8",
+   "function": "External shunt sense input: the low-capacitance TVS (transient-voltage-suppression) diode behind the two 1 kOhm series resistors (IOBoard.md:464, owner 2026-09-30)",
+   "reason": "function the row names that P2 did not return: P2 returned only the INA228 for 'External shunt sense input' and left the 85 V withstand to 'the stage-2 TVS'. The R8 row names 'the IO board's input for its sense leads'. Research.md Rules of stage 1 sends only the protection on the signal, sensor, balance-lead, link and heartbeat connectors to stage 2, and names the shunts, USB protection, power input protection and ESC pack path protection as stage 1; the external shunt's sense leads are none of the listed connectors, and IOBoard.md:464 says only 'round 2'. The TVS therefore has no entry in P2's return and no stage assigned on the page. Its clamp voltage and placement are not stated (IOBoard.md:464). The 1 kOhm resistors are resistors, left to stage 2."
+  },
+  {
+   "role": "P4",
+   "category": "R6",
+   "function": "Servo supply inductor",
+   "part": "SRP1265A-4R7M",
+   "figure": "market introduction",
+   "reason": "recorded as not read: not read: the data sheet (REV. 06/24, https://www.bourns.com/docs/Product-Datasheets/SRP1265A.pdf) carries no revision history; the first revision date is unknown. The 2017-07-17 PCN names SRP1265A, so the series existed by 2017",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R6",
+   "function": "I/O expander",
+   "part": "MCP23017T-E/SS",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: Microchip's longevity or lifecycle programme page not found (a guessed URL answered HTTP 404 at 14:42:15Z); the product page carries no longevity statement. Not a gate under S5",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R6",
+   "function": "Servo supply temperature",
+   "part": "MCP9808T-E/MS",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: Microchip's longevity or lifecycle programme page not found (a guessed URL answered HTTP 404 at 14:42:15Z); the product page carries no longevity statement. Not a gate under S5",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R6",
+   "figure": "function requirements: Servo supply",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P4",
+   "category": "R8",
+   "function": "Onboard shunt",
+   "part": "BVR-Z-R0002-1.0",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: no longevity or product-lifecycle programme page found at isabellenhuette.com (the BVR product page states none; https://www.isabellenhuette.com/quality answers HTTP 404). Not a gate under S5",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R8",
+   "function": "Port shunt",
+   "part": "ERJ-6CWDR010V",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: no longevity or product-lifecycle programme page found at industrial.panasonic.com (https://industrial.panasonic.com/ww/support answers HTTP 404; the series and model pages state no commitment). Not a gate under S5",
+   "notice": true
+  },
+  {
+   "role": "owner",
+   "category": "R8",
+   "function": "Motor monitor",
+   "part": "INA228AIDGSR",
+   "reason": "fixed input INA228 refuted; reported to the owner, not re-selected"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R8",
+   "function": "External shunt sense input",
+   "part": "INA228AIDGSR",
+   "reason": "the ruling gives no evidence, source and time read"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R8",
+   "function": "External shunt sense input",
+   "part": "INA228AIDGSR",
+   "reason": "refutation without a ruling"
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "figure": "found V177",
+   "reason": "figure refuted"
+  }
+ ],
+ "missing": [],
+ "sequence": 24,
+ "output_sha256": "5e4e6aae14a7bad4493c6bffc434653c16aaf30cb079490f20c575dc7be3c557",
+ "research_round": 2
+}

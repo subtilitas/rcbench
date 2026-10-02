@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R8",
+ "label": "adjudicator-R8-4",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "function": "found V177",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation holds. V177 asks whether each motor shunt sits in the pack's positive lead or in its return, and its answer is \"for research\" (owner, 2026-09-28). The claim says \"high side on both paths\", but none of its cited sources states where either shunt sits. The claim is an inference, and the inference does not follow from the sources. testbench/WIRING.md:37-47 says only that the ESC pack's return reaches the star point on its own lead. A low-side shunt in that lead, between pack negative and the star point, fits that wiring equally well. F7, the R3 row and IOBoard.md make the pack switch high-side. That fixes the switch position and says nothing about the shunt position. F15 gives only the 67.2 V pack voltage. IOBoard.md:508 states outright that the shunt position is not stated in the tree, and Research.md V189 repeats this. No other page in the checkout fixes the position either: Power.md names the shunt parts but not where they sit. The value \"high side on both paths\" is therefore not found, and V177 stays open. As the verifier notes, the 67.2 V common-mode figure still stands as the worst-case design basis. The INA228 is decided, and its bus input is rated to 85 V (IOBoard.md:452). The ruling is limited to this function's answer, so its scope is function.",
+  "evidence": "Research.md:883 V177: \"Does each motor shunt sit in the ESC pack's positive lead (high side) or in its return (low side)? ... for research (owner, 2026-09-28)\". IOBoard.md:508: \"Whether the shunts sit on the high side or the low side of the motor supply: not stated in the tree (R8).\" WIRING.md:37-39: the \"servo supply's return and the ESC pack's return ... all return to [the star point], each with its own lead\". This gives no shunt position. Research.md:677 F7 and IOBoard.md ESC pack gate rows: \"A high-side switch\". This concerns the switch, not the shunt. Research.md:685 F15: 16 cells, 67.2 V. Research.md:895 V189 question: \"Which side of the motor supply the shunts sit on is not stated\". Its answer puts the cell monitor on the pack's negative behind an 85 V isolation barrier. That is consistent with either shunt position. A grep for shunt in hardware/docs and docs found no line that fixes the motor shunts' side.",
+  "source": "checkout 14098109c7ce: hardware/docs/Research.md:677 (F7), :685 (F15), :883 (V177), :895 (V189), R3 row :312; hardware/docs/IOBoard.md ESC pack gate rows (around :219-220), :452, :508; testbench/WIRING.md:30-55; hardware/docs/Power.md:23-25, :199-215",
+  "read_at": "2026-10-02T15:20:20Z",
+  "scope": "function"
+ }
+}

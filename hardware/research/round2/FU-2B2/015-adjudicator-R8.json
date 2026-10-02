@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R8",
+ "label": "adjudicator-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "function": "Motor monitor",
+  "part": "INA228AIDGSR",
+  "stands": true,
+  "scope": "part",
+  "ruling": "The stock verifier's refutation holds. INA228AIDGSR fails sourcing rule 4. JLCPCB's exact LCSC match C2887910 has stockCount 0 and canPresaleNumber -236. The gate is S4's max(5 x 10, 50) = 50 for a need of 5 boards (S7) x 2 placements (IOBoard.md, one INA228 for each shunt path). A negative presale count fails whatever the stock or need is. The part is not in the 2026-09-25 personal-library export, so rule 6 does not apply. Digi-Key also has 0 in all three packagings, with a 20-week lead time, so rule 5's second-vendor route fails too. Because of the negative presale count and zero stock at both vendors, the part fails the stock gate for any quantity, so the scope is the part. The lifecycle checks pass and are not part of the refutation: TI ACTIVE, Digi-Key Active, EndOfLife false. The datasheet verifier's confirmation is not disputed. The owner fixes the part (Research.md Fixed inputs, IOBoard.md Motor current and voltage monitor, 2026-09-30: no further research, the owner states it returns to stock soon). Under Fixed inputs, a fixed input that fails a check is reported to the owner, not re-selected. So this ruling is reported to the owner and sends no replacement candidate to new verifiers.",
+  "evidence": "Re-read 2026-10-02T15:15:33Z: vendors.py jlcpcb C2887910 returned exact_match lcsc C2887910, part INA228AIDGSR, maker_label Texas Instruments, package VSSOP-10-0.5mm, stockCount 0, canPresaleNumber -236, componentLibraryType expand, other_results 0. Digi-Key productdetails INA228AIDGSR (cached: true, read_at 2026-10-02T13:58:19Z, same UTC day): status Active, lead_weeks 20, discontinued false, end_of_life false, stock_available 0 (Tape & Reel 0, Cut Tape 0, Digi-Reel 0). Gate: Research.md S4 says \"5 times the need of the build being ordered, never under 50\" and S7 says 5 boards. IOBoard.md \"Monitors for the two shunt positions\" says one INA228 for each path, and the measurement coprocessor row says 2 INA228. That gives a need of 10 and a gate of 50. Rule 4 says a negative presale count fails whatever the stock says. The inventory-2026-09-25.csv export has no INA228 or INA238 row, so the part is not held. Research.md Scope, Fixed inputs: Motor monitor INA228 (owner, 2026-09-30), fixed without further research, and \"A fixed input that fails a check is reported to the owner, not re-selected\".",
+  "source": "vendors.py jlcpcb C2887910 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList); vendors.py digikey INA228AIDGSR (https://api.digikey.com/products/v4/search/INA228AIDGSR/productdetails, cached 2026-10-02T13:58:19Z); checkout 14098109c7ce hardware/docs/Research.md Sourcing rules 4-6, S4, S7, Scope Fixed inputs; hardware/docs/IOBoard.md Motor current and voltage monitor, Monitors for the two shunt positions; hardware/docs/inventory-2026-09-25.csv",
+  "read_at": "2026-10-02T15:15:33Z"
+ }
+}

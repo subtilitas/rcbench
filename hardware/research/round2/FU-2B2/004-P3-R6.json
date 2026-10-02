@@ -1,0 +1,55 @@
+{
+ "role": "P3",
+ "category": "R6",
+ "label": "P3-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "missed": [
+   {
+    "function": "Servo supply inductor",
+    "part": "XAL1010-472MED",
+    "maker": "Coilcraft",
+    "why": "Coilcraft XAL1010 family, not considered by P2. Every requirement value passes. Document 804-1, revised 02/25/26 (https://www.coilcraft.com/getmedia/dd74e670-e705-456a-9a69-585fe02eaf3c/xal1010.pdf, read 2026-10-02T14:14:25Z): 4.7 uH +/-20 % (3.76 uH at -20 %, above 3.33 uH), DCR 5.20 typ and 5.70 max mOhm (limit 16.5), Isat 25.4 A at 20 % drop (above 13 A), Irms 24.0 A at 40 C rise (at least 8 A), ambient -40 to +125 C with that rise, 11.3 x 10 mm. JLCPCB C19271849 stockCount 157, canPresaleNumber 148, expand (vendors.py jlcpcb, 2026-10-02T14:14:16Z); passes rule 4 at 100. It FAILS rule 5, so it does not enter the shortlist and is listed so the re-rank can close it. Digi-Key API productdetails answers HTTP 404 for XAL1010-472MED (2026-10-02T14:14:37Z) and XAL1010-472MEC (14:14:38Z). Keyword search XAL1010 (14:14:49Z) lists only XAL1010-103MED, 0 in stock, Active. The Abracon ASPIAIG-Q1010-4R7M-T (21.4 A, 5.7 mOhm; footprint match not checked) has JLCPCB C3220895 stock 95, under 100 (14:15:37Z). Manufacturer lifecycle not read."
+   },
+   {
+    "function": "Servo supply inductor",
+    "part": "ETQP6M4R7YLC",
+    "maker": "Panasonic",
+    "why": "Panasonic PCC-M1060ML type, not considered by P2 (P2 read ETQP5M, ETQP4M and ETQP8M). Every requirement value passes. Catalog AGL0000C59, 6-Feb-26 (https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C59.pdf, read 2026-10-02T14:30:13Z), table 6: 4.7 uH +/-20 %, DCR 8.7 typ [9.57 max] mOhm, rated current 14.1 [11.8] A at dT 40 K, 24.7 A at dL -30 %, 10.0 x 10.9 x 6.0 mm. This is lower DCR and higher saturation current than P2's rank 2 ETQP5M4R7YFC (11.30 max mOhm, 20 A). JLCPCB C409643 stockCount 458, canPresaleNumber 457, expand (2026-10-02T14:15:31Z); passes rule 4. It FAILS rule 5, so it does not enter the shortlist and is listed so the re-rank can close it. Digi-Key lists it as ETQ-P6M4R7YLC (the hyphenated MPN; the unhyphenated productdetails call answers 404 at 14:15:39Z): Active, lead 23 weeks, stock 0 (keyword search, 14:15:45Z). The recommended land pattern of PCC-M1060ML (11.9 mm wide) differs from the PCC-M1054M of ETQP5M4R7YFC (11.0 mm), so no listed pin-compatible alternate exists."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "PCAL6524HEAZ",
+    "reason_given": "not dropped for a value (24 lines, 0x20 to 0x23, round 1 re-rank reading 2026-09-29T10:34:19Z); not among the two recorded: 30-week lead time in round 1's reading; not re-read",
+    "why_it_fails": "Lead time is no requirement value (Sourcing rule 7 records it; the Lifecycle check gates status only), and a function keeps up to three survivors while P2 records two for I/O expander. The part passes every value. Datasheet PCAL6524 Rev. 2.1, 3 July 2025 (https://www.nxp.com/docs/en/data-sheet/PCAL6524DS.pdf, read 2026-10-02T14:19:51Z): 24 lines, so 2 parts give 48 against 33; active-low RESET; all I/Os inputs at reset; pull-up/pull-down enable registers 4Ch to 4Eh default 0000 0000 (floating inputs); Fm+ to 1 MHz; VDD(I2C-bus) 0.8 to 3.6 V, VDD(P) 1.65 to 5.5 V; Tamb -40 to +85 C; ADDR to SCL, SDA, VSS or VDD gives 0x20, 0x21, 0x22, 0x23 (Table 4), so 0x20 and 0x22 are clear of 0x31, 0x40-0x4F, 0x18-0x1F and 0x74/0x75; first release 22 September 2015. JLCPCB C3000497 stockCount 2399, canPresaleNumber 2374, expand (2026-10-02T14:20:07Z); gate 50 for 10 placements. Digi-Key PCAL6524HEAZ (productdetails, 2026-10-02T14:20:12Z): Active, stock 18577, lead 30 weeks. NXP product page https://www.nxp.com/products/PCAL6524 (2026-10-02T14:20:23Z): Active. Same-die HUQFN32 alternate PCAL6524HEHP C2669688 stock 115, presale 112 (14:20:09Z). It is a different register map and firmware from rank 1."
+   },
+   {
+    "part": "PCA9698DGG,518",
+    "reason_given": "not dropped for a value (40 lines, one part); not recorded: USD 9.80 a part and an OE pin held low (round 1, 2026-09-29)",
+    "why_it_fails": "Price and a pin that is wired low are not requirement values. The part passes every value and would be the third survivor. Datasheet PCA9698 Rev. 3, 3 August 2010 (https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf, read 2026-10-02T14:27:15Z): 40 I/Os in one part against 33; active-low RESET; all I/Os inputs at power-up and RESET; the only pull-up statement is for the address pins (none), none is named on the I/Os; Fm+ to 1 MHz; VDD 2.3 to 5.5 V; Tamb -40 to +85 C; 64 addresses by AD2..AD0 (Table 12, includes 7-bit 0x20, byte 40h). OE adds a hardware 3-state of every output and, with OEPOL = 0 (default), needs OE held low to enable them; that is a wiring item, not a miss. JLCPCB C729177 stockCount 1908, canPresaleNumber 1894, expand, USD 9.8044 at 1 (2026-10-02T14:27:05Z); gate 50 for 5 placements. Digi-Key PCA9698DGG,518 (productdetails, 2026-10-02T14:27:10Z): Active, stock 3322, lead 16 weeks. NXP product page https://www.nxp.com/products/PCA9698 (14:27:28Z): Active."
+   },
+   {
+    "part": "TLV6713",
+    "reason_given": "HV trip band: threshold accuracy 0.9 % to 2.5 % before the divider, over +/-0.99 % (round 1 readings, not re-read), grouped with TPS3702, TLV6700, TPS3700, TPS3710, TPS3760, TPS3899 and others",
+    "why_it_fails": "The reason does not hold for TLV6713. Datasheet SBVS331B (https://www.ti.com/lit/ds/symlink/tlv6713.pdf, read 2026-10-02T14:23:40Z) states 0.75 % maximum threshold accuracy over -40 to +125 C (Features; Table 1), equal to the TLV6710 that P2 accepts on accuracy, with VDD 1.8 to 36 V, a 400 mV reference and an open-drain output rated 25 V. It still stays out, for other reasons: JLCPCB C2861351 stockCount 167, canPresaleNumber 165 (2026-10-02T14:26:09Z) is under 500 (C2872139: 0); it is a single non-inverting channel whose OUT goes high above the threshold, so the cut-off needs an inversion; and it does not latch. The re-read of the rest of the group agrees with P2: TPS3702 0.9 %, TLV6700, TPS3700, TPS3710, TPS3760 and TPS3890 1 %, TPS3840 1.5 %, TPS3899 2 % to 2.5 % max, TLV3011/12 reference 1 % (TI data sheets read 2026-10-02T14:23:37Z to 14:23:44Z)."
+   },
+   {
+    "part": "TPS3701DDCR, TLV6710DDCR",
+    "reason_given": "Latch until action (V130): the comparator's OUTB behaviour, no latch; P2 records that both meet the trip bands and 'passes with a latch part added'",
+    "why_it_fails": "The two parts that meet both trip bands (0.75 % max threshold accuracy, VDD 1.8 to 36 V, INB limits P2 records; TLV6710 band re-read in SBVS331B, 2026-10-02T14:23:40Z) are dropped for a property no 0.75 % comparator has, while the research already treats a latch as its own function elsewhere: selection.json (round2) R3 holds 'latch' 74LVC1G175GW,125 and 'latch clear control' 434153017835 for F11. With the latch as a separate part the function has a passing trip element and the exclusion leaves it with no part. This is a decision for the re-rank and the owner (V130, V280), not a verified pass: the count of 20 latches, their power-up state and the clear wiring are not read. Stock: TPS3701DDCR C132788 26813/26784 (2026-10-02T14:26:14Z); TLV6710DDCR C2863066 3103/3091 (14:26:12Z), both over 500."
+   }
+  ],
+  "missed_functions": [
+   {
+    "function": "Servo supply temperature latch",
+    "why": "The Servo supply temperature line of IOBoard.md states that the trip latches until the operator clear control (F11) clears it, and 'threshold, latch and wiring of the alert outputs: a follow-up of R6'. V283 (owner, 2026-10-01) rules a latch of the rail's own: only that converter switches off and stays off until the F11 clear. P2 lists 'Rail's own latch' among the requirements of Servo supply temperature and records the MCP9808T-E/MS failing it, but returns no function and no part for the latch itself (4 a board, one for each converter, set by that MCP9808's alert, holding that converter's EN/UVLO low, cleared by F11, off at power-up and reset). selection.json (round2) R3 already holds a latch (74LVC1G175GW,125) and a clear control (434153017835) for F11, from FU-2A; whether a copy per rail serves is not read."
+   },
+   {
+    "function": "Port voltage ceiling latch",
+    "why": "V130 and the Follow-ups row for Port voltage ceiling (Research.md) name the latch: the port stays off until an operator or firmware action. P2 lists 'Latch until action' as a requirement of Port voltage ceiling and drops the two comparators that meet the trip bands for lacking it, but returns no function and no part for a latch (20 a board, one for each port, set by the ceiling comparator, cleared by an operator or firmware action). The R3 latch and clear control in selection.json (round2) are the nearest parts; their fit for 20 ports is not read."
+   }
+  ]
+ }
+}
