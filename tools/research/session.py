@@ -688,7 +688,8 @@ def owner_selftest():
     fallback of effective_selection with its ledger filters, a verified
     owner input and an input the owner does not keep; owner_items,
     open_selections and refuted_for_itself; t6_open's selected parts and
-    its comparison by the list the check was given; upstream_view;
+    its comparison by the list the check was given, or none; upstream_view
+    and stale_selections with a run's list, an empty one and none;
     owner_fixed_of; differs_from_prepared; fixed_input_fails; and
     selection_changed and selection_to_write. Returns the failures; reads
     no network."""
@@ -838,6 +839,12 @@ def owner_selftest():
             tmp))] == ["R7", "R8", "R8", "R11"],
             "owner_items orders categories by number")
         fixed["R11"].pop()
+        put(f"{r2}/FU-2P", {"task": "FU", "sequence": 3, "followup": {
+            "phases": "P5-P6", "round": 1, "categories": [], "items": []},
+            "summary": {"conflicts": []}})
+        open_t6, _ = t6_open(tmp)
+        expect("R7: selections changed after FU-2P" in open_t6,
+               "a check recorded without the list saw no owner part")
         given = owner_fixed_of({"owner_fixed": owner_items(eff)})
         expect(given.get("R8", [{}])[0] == {
             "function": "Motor monitor", "part": "INA228",
@@ -1019,8 +1026,9 @@ def effective_selection(results, pending=None, before=None, fixed=None):
     default) is its function's part: where no run kept a part that starts
     with the input's number, the function keeps the input's orderable
     number as the owner's, run "owner", and owner_fixed names the run that
-    left it open, the part it replaces and each ledger reading of the runs
-    read that did not verify it. Any other fixed input that no run
+    last decided the function (empty when no run named it), the part that
+    run kept or did not requalify, and each ledger reading of the runs read
+    that did not verify the input. Any other fixed input that no run
     verified stays open."""
     eff, listed, dropped = {}, {}, {}
     read = []
@@ -1206,7 +1214,7 @@ def t6_open(results):
     # The check saw the owner's fixed inputs it was given, not today's.
     eff = effective_selection(results)
     then = effective_selection(results, before=last.get("sequence", 0),
-                               fixed=owner_fixed_of(last))
+                               fixed=owner_fixed_of(last) or {})
 
     def bound(sel, c):
         return {fn: (e.get("part"), e.get("alternate"), e.get("run"),
@@ -1554,8 +1562,11 @@ def open_in_category(results, categories):
 def owner_fixed_of(task):
     """The owner-kept fixed inputs a recorded run was given, as
     categories.json writes fixed inputs. None for a run recorded before
-    runs carried the list: it is read under today's list, as its plan's
-    Scope table already named the inputs."""
+    runs carried the list: the stale-selection gate reads such a run under
+    today's list, as the downstream runs recorded without it read plans
+    whose Scope table names the upstream inputs the owner keeps (R11's);
+    t6_open reads such a check as given none, as no selection.json before
+    the list held an owner entry."""
     if "owner_fixed" not in task:
         return None
     fixed = {}

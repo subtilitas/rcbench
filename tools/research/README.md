@@ -372,9 +372,11 @@ hold the fixed inputs the owner keeps that no run verified (`owner_fixed`),
 and every prompt names them. The run's result carries the list, and `record`
 refuses an output whose list differs from the prepared one. `t6_open` rebuilds
 the selection the last check saw from the list that check was given, and the
-stale-selection gate rebuilds the upstream parts a run saw the same way. A run
-recorded without the list is read under today's, as its plan's Scope table
-named the inputs.`session.py check`
+stale-selection gate rebuilds the upstream parts a run saw the same way. The
+stale-selection gate reads a run recorded without the list under today's list:
+those runs read plans whose Scope table names the upstream inputs the owner
+keeps. `t6_open` reads a check recorded without the list as given none.
+`session.py check`
 confirms the Blocking and Sourcing tables still read as the gates expect, that
 the Outputs table has a row for `tools/jlc_stock.py`, and that `p1_asks` names
 exactly the rows that carry "P1 asks", each with distinct names, and that
