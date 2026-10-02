@@ -436,7 +436,8 @@ and `market introduction`, which the lifecycle table records without a gate
 `not read: REASON` in the stock verifier's return: that is recorded, neither
 passing nor failing, and listed for the owner as an unread manufacturer
 status is. A stock verifier's `lifecycle status` written `not read: REASON`
-(a part neither its maker's page nor Digi-Key lists under its maker, or a
+(a part whose maker status cannot be read and that Digi-Key does not list
+under its maker, or a
 Digi-Key value the Lifecycle check does not grade), with passes true, neither
 passes nor fails either, whatever agrees says, but shows no check, so the part
 stays not verified; with passes false it fails as any check. Either way it is
