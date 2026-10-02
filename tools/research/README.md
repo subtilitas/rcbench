@@ -386,7 +386,10 @@ part.
   pieces between semicolons, commas followed by a space, slashes between
   spaces and ` and `, without parenthesized text, case and spaces; a function
   name is none. `2N7002BK,215` and `MCP2542FD-E/SN` are one part number each.
-  The drop of such a find is re-read as the drop of any P3 find;
+  A find named by a family, as `MLX90393 rows`, matches a part whose number
+  starts with one of its stems: a word outside parentheses of 6 or more
+  characters with a letter and a digit. The drop of such a find is re-read as
+  the drop of any P3 find;
 - it has no requirement, or names one requirement twice;
 - it serves a fixed input of the Scope table (`categories.json`
   `fixed_inputs`: the function by the table's input name, the input by a

@@ -753,12 +753,27 @@ function samePart(a, b, functionNames) {
   return [...partKeys(a, functionNames)].some(k => kb.has(k))
 }
 
+// A P3 find may name a family, as "MLX90393 rows", not an orderable part.
+// Its stems are the words of 6 or more characters with a letter and a
+// digit, outside parentheses; a part number that starts with one is of
+// that family.
+function familyStems(p) {
+  const text = String((p && typeof p === 'object' ? p.part : p) || '').toUpperCase().replace(/\([^)]*\)/g, ' ')
+  return (text.match(/[A-Z0-9][A-Z0-9-]{5,}/g) || []).filter(w => /[A-Z]/.test(w) && /\d/.test(w))
+}
+function ofFamily(cand, find) {
+  const n = String((cand && typeof cand === 'object' ? cand.part : cand) || '').toUpperCase().replace(/\s+/g, '')
+  return !!n && familyStems(find).some(s => n.startsWith(s))
+}
+
 function merge(cat, p2, rr, p3) {
   // The functions are P2's. A find with no owner is handled by any of them.
   const names = (p2.functions || []).map(f => f.function)
   // Every candidate P3 found, and every P2 exclusion P3 overturned, is
-  // qualified, ranked or dropped by the re-rank.
-  const handled = (fr, part) => fr && ([...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || [])].some(c => samePart(c, part, names)) || (fr.ranking || []).some(r => samePart(r, part, names)))
+  // qualified, ranked or dropped by the re-rank: by its part or LCSC
+  // number, or, for a find named by a family, by a part of that family.
+  const sameOrFamily = (c, part) => samePart(c, part, names) || ofFamily(c, part)
+  const handled = (fr, part) => fr && ([...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || [])].some(c => sameOrFamily(c, part)) || (fr.ranking || []).some(r => sameOrFamily(r, part)))
   const handledAny = part => (rr.functions || []).some(fr => names.includes(fr.function) && handled(fr, part))
   // A P3 find the re-rank neither qualified nor dropped leaves its function
   // open: the function P3 names, the function whose P2 drop P3 overturned,

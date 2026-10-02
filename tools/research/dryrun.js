@@ -998,6 +998,14 @@ async function main() {
   check(r1(r).selection[0].part === 'part1', 'P3 find by LCSC number, the drop naming it in its lcsc field: handled')
   r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW (c98) AND partx (c99)', dropShortPart: 'PARTX' })
   check(r1(r).selection[0].part === 'part1', 'P3 find in another case, joined by AND: handled')
+  // A find named by a family is handled by a part of that family, on a stem
+  // of 6 or more characters with a letter and a digit.
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'ABC1234 rows (and others of the same kind)', dropShortPart: 'ABC1234XYZ-RE' })
+  check(r1(r).selection[0].part === 'part1', 'P3 find named by a family, a part of it dropped: handled')
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'ABC1234 rows', dropShortPart: 'ABC9999XYZ' })
+  check(r1(r).selection[0].part === null, 'P3 find named by a family, another family dropped: unhandled')
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'AB12 rows', dropShortPart: 'AB12345' })
+  check(r1(r).selection[0].part === null, 'P3 find named by a stem under 6 characters: unhandled')
   r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW-REEL / partX' })
   check(r1(r).selection[0].part === 'part1', 'P3 find of two parts joined by a spaced slash: handled')
   r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW/partX' })
