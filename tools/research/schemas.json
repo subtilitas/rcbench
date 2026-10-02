@@ -862,9 +862,13 @@
      "items": {
       "type": "object",
       "properties": {
-       "function": {
-        "type": "string",
-        "description": "the function P2 dropped the part under, named as P2 names it"
+       "functions": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        },
+        "minItems": 1,
+        "description": "every function P2 dropped the part under for the reason that does not hold, named as P2 names it"
        },
        "part": {
         "type": "string"
@@ -877,7 +881,7 @@
        }
       },
       "required": [
-       "function",
+       "functions",
        "part",
        "reason_given",
        "why_it_fails"

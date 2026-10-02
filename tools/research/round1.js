@@ -289,7 +289,7 @@ function p2View(p2) {
 function p3Prompt(cat, p2) {
   return `${ctx('P3', cat, `P3-${cat}`)}
 
-Search for part families P2 did not consider, from the same allowlist, and re-read each reason P2 gave for dropping a candidate. Read Digi-Key only for a find that passes every requirement value of its function. Name each function exactly as P2 does; for each drop that does not hold, give the function P2 dropped the part under. List in missed_functions each function the ${cat} row or its lines in hardware/docs/IOBoard.md name that P2 returned no entry for. P2's shortlist and drops (its full records are with the session):
+Search for part families P2 did not consider, from the same allowlist, and re-read each reason P2 gave for dropping a candidate. Read Digi-Key only for a find that passes every requirement value of its function. Name each function exactly as P2 does; for each drop that does not hold, name in functions every function P2 dropped the part under for the reason that does not hold. List in missed_functions each function the ${cat} row or its lines in hardware/docs/IOBoard.md name that P2 returned no entry for. P2's shortlist and drops (its full records are with the session):
 ${J(p2View(p2))}`
 }
 
@@ -736,8 +736,10 @@ function distinctRanks(list) {
 // parenthesized text, case and spaces; a piece that is a function name is
 // none. A comma or slash without a space stays in the part number, as in
 // Nexperia's 2N7002BK,215 and Microchip's MCP2542FD-E/SN. A record's own
-// lcsc field counts as its LCSC number.
-function partKeys(p, functionNames) {
+// lcsc field counts as its LCSC number. With anyOption, a number with a '#'
+// after 4 characters or more, a letter and a digit among them, also matches
+// the number before the '#'.
+function partKeys(p, functionNames, anyOption = false) {
   const rec = p && typeof p === 'object' ? p : { part: p }
   const fn = new Set(functionNames.map(n => String(n).toUpperCase().replace(/\s+/g, '')))
   const text = String(rec.part || '').toUpperCase()
@@ -745,15 +747,16 @@ function partKeys(p, functionNames) {
   const lcsc = [...(text.match(/\bC\d+\b/g) || []), ...(/^C\d+$/.test(own) ? [own] : [])].map(c => `lcsc:${c}`)
   const numbers = text.replace(/\([^)]*\)/g, ' ').split(/;|,\s+|\s+\/\s+|\s+AND\s+/)
     .map(x => x.replace(/\s+/g, '')).filter(x => x && !fn.has(x))
-  // A '#' suffix is Analog Devices' packing and RoHS option: LTC4020EUHF#PBF
-  // and LTC4020EUHF#TRPBF are the part LTC4020EUHF.
-  const bases = numbers.map(x => x.split('#')[0]).filter((b, i) => b !== numbers[i] && b.length >= 4 && /[A-Z]/.test(b) && /\d/.test(b))
+  // A '#' suffix is an ordering option of the number before it: Analog
+  // Devices' packing and RoHS option (LTC4020EUHF#PBF, LTC4020EUHF#TRPBF),
+  // an automotive flow (#W), or any other.
+  const bases = anyOption ? numbers.map(x => x.split('#')[0]).filter((b, i) => b !== numbers[i] && b.length >= 4 && /[A-Z]/.test(b) && /\d/.test(b)) : []
   return new Set([...[...numbers, ...bases].map(x => `mpn:${x}`), ...lcsc])
 }
-function samePart(a, b, functionNames) {
+function samePart(a, b, functionNames, anyOption = false) {
   if (typeof a === 'string' && a === b) return true
-  const kb = partKeys(b, functionNames)
-  return [...partKeys(a, functionNames)].some(k => kb.has(k))
+  const kb = partKeys(b, functionNames, anyOption)
+  return [...partKeys(a, functionNames, anyOption)].some(k => kb.has(k))
 }
 
 // A P3 find may name a family, as "MLX90393 rows", not an orderable part.
@@ -788,11 +791,13 @@ function merge(cat, p2, rr, p3) {
   // qualified, ranked or dropped by the re-rank: by its part or LCSC
   // number, or, for a find that names only a family, by a part of that
   // family the re-rank qualified or dropped as a P3 candidate. A part P2
-  // shortlisted is no P3 candidate.
+  // shortlisted is no P3 candidate. A drop P3 overturned is also handled
+  // under another ordering option of its number; a find is not, as its
+  // option may be the one with stock.
   const shortlisted = (fn, c) => (((p2.functions || []).find(f => f.function === fn) || {}).shortlist || []).some(s => samePart(s, c, names))
-  const handled = (fr, part) => fr && ([...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || [])].some(c => samePart(c, part, names)) || (fr.ranking || []).some(r => samePart(r, part, names))
+  const handled = (fr, part, anyOption) => fr && ([...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || [])].some(c => samePart(c, part, names, anyOption)) || (fr.ranking || []).some(r => samePart(r, part, names, anyOption))
     || (familyOnly(part) && [...(fr.new_candidates || []), ...(fr.dropped_from_p3 || [])].some(c => ofFamily(c, part) && !shortlisted(fr.function, c))))
-  const handledAny = part => (rr.functions || []).some(fr => names.includes(fr.function) && handled(fr, part))
+  const handledAny = (part, anyOption) => (rr.functions || []).some(fr => names.includes(fr.function) && handled(fr, part, anyOption))
   // A P3 find the re-rank neither qualified nor dropped leaves its function
   // open: the function P3 names, the function whose P2 drop P3 overturned,
   // or every function when it names or dropped under none of P2's.
@@ -805,14 +810,15 @@ function merge(cat, p2, rr, p3) {
   }
   for (const x of (p3 && p3.exclusions_not_holding) || []) {
     // Each function whose P2 drop P3 overturned handles the part itself: the
-    // function P3 names, or, where P2 dropped the part under no function of
-    // that name, every function that dropped it. With no owner, any
-    // function's handling counts.
-    const droppedBy = (p2.functions || []).filter(f => (f.dropped || []).some(d => samePart(d, x.part, names))).map(f => f.function)
-    const owners = droppedBy.includes(x.function) ? [x.function] : droppedBy
+    // functions P3 names that dropped it, or, where it names none of them,
+    // every function that dropped it. With no owner, any function's
+    // handling counts.
+    const droppedBy = (p2.functions || []).filter(f => (f.dropped || []).some(d => samePart(d, x.part, names, true))).map(f => f.function)
+    const named = droppedBy.filter(n => Array.isArray(x.functions) && x.functions.includes(n))
+    const owners = named.length ? named : droppedBy
     const open = owners.length
-      ? owners.filter(n => !handled((rr.functions || []).find(fr => fr.function === n), x.part))
-      : (handledAny(x.part) ? [] : names)
+      ? owners.filter(n => !handled((rr.functions || []).find(fr => fr.function === n), x.part, true))
+      : (handledAny(x.part, true) ? [] : names)
     if (!open.length) continue
     followUps.push({ role: 'rerank', category: cat, part: x.part, functions: open, reason: 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank' })
     for (const n of open) unhandled.add(n)
@@ -1534,11 +1540,12 @@ function figuresToCheck(cat, p2, rr, functions, p3) {
   for (const f of functions) for (const d of f.failed || []) add(`failed requirement: ${f.function}: ${d.part} (${d.names.join(', ')})`, d)
   // Every drop of a part P3 found or reopened, whichever list the re-rank
   // put it in.
-  // A drop is of P3's part when it names the same part (samePart) or a part
-  // of the family P3 named (ofFamily).
-  const fromP3 = [...((p3 && p3.missed) || []), ...((p3 && p3.exclusions_not_holding) || [])].map(x => x.part)
+  // A drop is of P3's part when it names the same part (samePart), for a
+  // drop P3 overturned also under another ordering option, or a part of the
+  // family P3 named (ofFamily).
+  const fromP3 = [...((p3 && p3.missed) || []).map(x => [x.part, false]), ...((p3 && p3.exclusions_not_holding) || []).map(x => [x.part, true])]
   const fnNames = [...(p2.functions || []).map(f => f.function), ...functions.map(f => f.function)]
-  const ofP3 = d => fromP3.some(part => samePart(d, part, fnNames) || ofFamily(d, part))
+  const ofP3 = d => fromP3.some(([part, anyOption]) => samePart(d, part, fnNames, anyOption) || ofFamily(d, part))
   // A part dropped under several functions is re-read under each.
   const drops = new Set()
   for (const f of functions) {
