@@ -341,7 +341,7 @@ async function main() {
   check(/"part1":\s*\[[^\]]*"lead time"/.test(stPrompt.split('The checks each part owes')[1] || ''), 'P4 stock prompt lists lead time among part1\'s owed checks')
   const owedOf = (res, label) => (((res.prompts.find(p => p.label === label) || {}).prompt || '').split('The checks each part owes')[1] || '').split('The shortlist,')[0]
   check(/"part1"/.test(owedOf(r, 'P4-stock-R1')) && !/"part2"|"part3"/.test(owedOf(r, 'P4-stock-R1')), 'P4 prompt lists owed checks for the planned parts only')
-  check(stPrompt.includes('"lifecycle status" (the maker\'s product page; where that page cannot be read or carries no status, Digi-Key\'s ProductStatus'), 'P4 stock prompt reads the lifecycle status at Digi-Key where the maker\'s page cannot be read')
+  check(stPrompt.includes('for another maker\'s part its product page, and where that page cannot be read or carries no status, Digi-Key\'s ProductStatus. A Digi-Key status is that of the product whose maker and manufacturer part number are the candidate\'s') && stPrompt.includes('Write "not read: REASON", with passes true, only for a part neither'), 'P4 stock prompt reads the lifecycle status at Digi-Key where the maker\'s page cannot be read, for the candidate\'s own maker and part number')
   r = await runTask('T2', { held: 500, heldChecks: true })
   check(/\["held quantity",/.test(owedOf(r, 'P4-stock-R1')) && !/"held quantity, or/.test(owedOf(r, 'P4-stock-R1')) && !/"stock",/.test(owedOf(r, 'P4-stock-R1')), 'P4 stock prompt owes a held part "held quantity" in place of stock and presale')
 
