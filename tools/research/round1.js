@@ -1022,13 +1022,19 @@ function shown(c, verifier) {
   return read && !readsNone(c.source) && readInRun(c.read_at)
 }
 
+// Rule 6's check is owed as "held quantity". Up to FU-2C of round 2 the
+// owed list worded it "held quantity, or both stock and presale", and a
+// verifier that copied that wording named the same reading.
+const HELD_NAMES = new Set(['held quantity', 'held quantity, or both stock and presale'])
+const isHeld = c => HELD_NAMES.has(String(c.figure || ''))
+
 function covered(v, cand) {
   // A part with no record cannot show its gate evidence, and a datasheet
   // confirmation with nothing to check shows none.
   if (!cand) return false
   const req = requiredChecks(v.verifier, cand, v.kind)
   if (v.verifier === 'datasheet' && !req.length) return false
-  const have = new Set((v.checks || []).filter(c => shown(c, v.verifier)).map(c => c.figure))
+  const have = new Set((v.checks || []).filter(c => shown(c, v.verifier)).map(c => isHeld(c) ? 'held quantity' : c.figure))
   // Rule 6: a part the owner holds passes rule 4 on the held quantity, in
   // place of the live stock and presale.
   const held = v.verifier === 'stock' && onBoard(cand) && Number(cand.held) > 0 && have.has('held quantity')
@@ -1120,7 +1126,7 @@ function owedChecks(kind, functions, plan) {
     if (!cand) continue
     let names = requiredChecks(kind, cand, w.kind)
     if (kind === 'datasheet' && w.alsoAlternate) names = [...names, ...[...FIT].filter(n => !names.includes(n))]
-    if (kind === 'stock' && onBoard(cand) && Number(cand.held) > 0) names = ['held quantity, or both stock and presale', ...names.filter(n => n !== 'stock' && n !== 'presale')]
+    if (kind === 'stock' && onBoard(cand) && Number(cand.held) > 0) names = ['held quantity', ...names.filter(n => n !== 'stock' && n !== 'presale')]
     owed[w.function] = { ...(owed[w.function] || {}), [w.part]: names }
   }
   return owed
@@ -1175,12 +1181,12 @@ async function verifyCategory(cat, functions, bundle, claims) {
         // Rule 6: a passing held quantity supersedes the live stock and
         // presale readings of a held part, and passing live readings a
         // failing held quantity.
-        const heldRoute = v.verifier === 'stock' && onBoard(cand) && Number(cand && cand.held) > 0 && (v.checks || []).some(c => c.figure === 'held quantity' && shown(c) && c.agrees && c.passes === true)
+        const heldRoute = v.verifier === 'stock' && onBoard(cand) && Number(cand && cand.held) > 0 && (v.checks || []).some(c => isHeld(c) && shown(c) && c.agrees && c.passes === true)
         const liveRoute = v.verifier === 'stock' && passing('stock') && passing('presale')
         // Compatibility checks bear on a part's alternate role only, and the
         // second vendor's stock on a route that needs it.
         const compat = c => FIT.has(c.figure)
-        const offRoute = c => (heldRoute && (c.figure === 'stock' || c.figure === 'presale')) || (liveRoute && c.figure === 'held quantity')
+        const offRoute = c => (heldRoute && (c.figure === 'stock' || c.figure === 'presale')) || (liveRoute && isHeld(c))
           || (e.kind !== 'alternate' && compat(c)) || (c.figure === 'second-vendor stock' && !requiredChecks('stock', cand, e.kind).includes(c.figure))
         // A reading that moves or always passes, and a requirement P2 gave no
         // value for, differs from the value stated without refuting.

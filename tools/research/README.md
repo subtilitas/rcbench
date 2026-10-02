@@ -478,7 +478,8 @@ requirement list, the failed requirements or the drop. A replacement pair
 confirms no figure, but its datasheet verifier's refutation of one is
 adjudicated in the same way. A part on the board that the owner holds may pass
 the stock gate on a `held quantity` check in place of `stock` and `presale`
-(rule 6); a passing held quantity that shows a reading supersedes failing live
+(rule 6; a check named `held quantity, or both stock and presale`, the owed
+list's wording up to FU-2C of round 2, is the same check); a passing held quantity that shows a reading supersedes failing live
 readings, and passing live readings a failing held quantity. A return whose
 `category` names another category counts as not returned. Only the kept part's
 rule-5 alternate gates its selection, and the alternate of a part on the board
