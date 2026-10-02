@@ -1077,6 +1077,8 @@ async function main() {
   const fixedPrefix = { R1: [{ function: 'f1', part: 'PART' }] }
   r = await runTask('T2', { fixedInputs: fixedPrefix, failedReqAt: 1 })
   check(r1(r).selection[0].part === 'part1' && !r.result.followUps.some(f => f.role === 'owner'), 'fixed input first and passing, a failing variant below it: kept')
+  r = await runTask('T2', { fixedInputs: { R1: [{ function: 'f1', part: 'part3' }] }, firstRecord: { part: 'part3-RL7' }, failedReq: true, ranking: ['part3-RL7', 'part2', 'part3'].map((part, i) => ({ rank: i + 1, part, reason: 'r' })) })
+  check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.role === 'owner' && f.part === 'part2' && /not ranked first/.test(f.reason)) && !r.result.followUps.some(f => /fails P2's requirement/.test(f.reason || '')), 'failing variant first, another part above the passing input: reported as not ranked first')
   r = await runTask('T2', { fixedInputs: fixedPrefix, failedReq: true, p4parts: ['part2'] })
   check(r1(r).ledger.some(l => l.part === 'part2') && !r.result.followUps.some(f => f.role === 'owner'), 'fixed input\'s failing variant dropped, a passing variant first: kept for P4')
   r = await runTask('T2', { failedReq: true })

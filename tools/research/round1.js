@@ -924,10 +924,13 @@ function merge(cat, p2, rr, p3) {
     alternateRecords = qualify(alternateRecords, 'alternate')
     // A fixed input is not re-selected (Scope): a function whose first-ranked
     // part after the drops is not the fixed input is not ranked, and the
-    // owner is told: that P2's record fails the input (the datasheet
-    // verifier re-reads that drop), or that another part ranks first.
+    // owner is told: that P2's record fails the input, when no record of it
+    // is left (the datasheet verifier re-reads that drop), or that another
+    // part ranks first.
     const firstFixed = !!fixed && shortlist.length > 0 && isFixed(fixed, shortlist[0].part)
-    const fixedFailed = fixed && !firstFixed ? failed.find(d => d.what === 'shortlisted' && isFixed(fixed, d.part)) : null
+    const fixedLeft = !!fixed && shortlist.some(c => isFixed(fixed, c.part))
+    const fixedDrops = fixed && !fixedLeft ? failed.filter(d => d.what === 'shortlisted' && isFixed(fixed, d.part)) : []
+    const fixedFailed = fixedDrops.find(d => String(d.part).toUpperCase() === String(fixed).toUpperCase()) || fixedDrops[0] || null
     if (fixedFailed) {
       followUps.push({ role: 'owner', category: cat, function: name, part: fixedFailed.part, reason: `fixed input ${fixed} fails P2's requirement: ${fixedFailed.names.join(', ')}; the datasheet verifier re-reads it; reported to the owner, not re-selected` })
       shortlist = []
