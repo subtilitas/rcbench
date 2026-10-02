@@ -435,7 +435,13 @@ and `market introduction`, which the lifecycle table records without a gate
 (S5 records a commitment and does not require one), may read
 `not read: REASON` in the stock verifier's return: that is recorded, neither
 passing nor failing, and listed for the owner as an unread manufacturer
-status is. A datasheet requirement of the same name is a requirement. A
+status is. A stock verifier's `lifecycle status` written `not read: REASON`
+(a part whose maker status cannot be read and that Digi-Key does not list
+under its maker, or a
+Digi-Key value the Lifecycle check does not grade), with passes true, neither
+passes nor fails either, whatever agrees says, but shows no check, so the part
+stays not verified; with passes false it fails as any check. Either way it is
+listed for the owner. A datasheet requirement of the same name is a requirement. A
 placeholder reason (`none`, `N/A`, `-`, `unknown`) is none, and a refuted
 verdict that states no refutation and whose only failing checks are such
 readings is a confirmation; one that states a refutation is ruled on. A reading time is an ISO

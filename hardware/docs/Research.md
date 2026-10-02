@@ -97,7 +97,7 @@ Owner decisions of 2026-09-27, each applied where the last column says:
 | Parts database | the last full copy of the jlcparts database, of 2026-09-14, with 7,161,863 rows. The published copy held 985,000 rows on 2026-09-27 | [Sourcing rule 3](#sourcing-rules), P0 |
 | Returns and commits | the session that launches a task writes each agent's return and commits it; a workflow script has no file or git access | [Agent layout](#agent-layout), prerequisite 5 |
 | Questions a P1 critic adds | one more agent re-checks them before they reach the owner. T1 has 28 agents and the run 102 | [Agent layout](#agent-layout), S8 |
-| Lifecycle of Analog Devices, Melexis and Allegro parts | Digi-Key's product status, recorded as a distributor figure. On 2026-09-27 the Analog Devices product pages carried no lifecycle status in the page body, and the host refused every request for a time after about 15. The Melexis pages refused every client tried. Allegro's pages load the status by script | [Lifecycle check](#lifecycle-check) |
+| Lifecycle of Analog Devices, Melexis and Allegro parts | Digi-Key's product status, recorded as a distributor figure; for another maker's part too where its product page cannot be read or carries no status (owner, 2026-10-02). On 2026-09-27 the Analog Devices product pages carried no lifecycle status in the page body, and the host refused every request for a time after about 15. The Melexis pages refused every client tried. Allegro's pages load the status by script | [Lifecycle check](#lifecycle-check) |
 | RAMXEED | counts as Fujitsu | S1, R12 |
 | INA3221 | a seed of R8, which may replace it | [Fixed inputs](#scope), the Servo current row above, R8 |
 | Branches | `research/round1` and `research/round1-results` start from `main` after the pull requests that carry these decisions and the workflow scripts are merged | prerequisites 4 and 5 |
@@ -283,11 +283,11 @@ Recorded for every candidate that reaches the shortlist.
 
 | Field | Source | Gate |
 | --- | --- | --- |
-| Manufacturer status | the manufacturer's product page. For Analog Devices (with Maxim and Linear), Melexis and Allegro, Digi-Key's API (`ProductStatus`), recorded as a distributor figure (owner, 2026-09-27). On 2026-09-27 the Analog Devices product pages carried no lifecycle status in the page body (the ADXL1002 page has `"lifeCycle":null`), and the host refused every request for a time after about 15. The Melexis pages refused every client tried. Allegro's pages load the status by script. Another product page whose status is absent from the page body is recorded as not read and reported to the owner | pass: active or in production. Fail: NRND (not recommended for new designs), last-time buy, obsolete, discontinued. Preview or sampling: fails unless question S5 accepts it. Digi-Key's `ProductStatus`: Active passes; Not For New Designs, Last Time Buy and Obsolete fail; any other value is recorded and reported to the owner |
+| Manufacturer status | the manufacturer's product page. For Analog Devices (with Maxim and Linear), Melexis and Allegro, Digi-Key's API (`ProductStatus`), recorded as a distributor figure (owner, 2026-09-27). On 2026-09-27 the Analog Devices product pages carried no lifecycle status in the page body (the ADXL1002 page has `"lifeCycle":null`), and the host refused every request for a time after about 15. The Melexis pages refused every client tried. Allegro's pages load the status by script. Where another product page cannot be read or carries no status in its body, Digi-Key's API (`ProductStatus`) is read in its place, from the Digi-Key product whose maker and manufacturer part number are the part's, and recorded as a distributor figure (owner, 2026-10-02); a part Digi-Key does not list under its maker either is recorded as not read and reported to the owner | pass: active or in production. Fail: NRND (not recommended for new designs), last-time buy, obsolete, discontinued. Preview or sampling: fails unless question S5 accepts it. Digi-Key's `ProductStatus`: Active passes; Not For New Designs, Last Time Buy and Obsolete fail, and Preliminary, a preview, fails under S5; any other value is recorded and reported to the owner |
 | Longevity commitment | the manufacturer's longevity or product-lifecycle programme page, where it publishes one | recorded, and a gate only if question S5 makes it one. No published commitment is recorded as that |
 | Market introduction | first datasheet revision date | recorded; under 12 months on the market is flagged |
 | Change and discontinuation notices | the manufacturer's PCN (product change notice) listing, where public | any end-of-life notice fails |
-| Distributor status | JLCPCB and LCSC part page; `ProductStatus` in Digi-Key's API | recorded. Where it disagrees with the manufacturer, the manufacturer's page is the status and the disagreement is written down. For Analog Devices, Melexis and Allegro parts, Digi-Key's `ProductStatus` is the status, and a JLCPCB or LCSC status that disagrees is written down |
+| Distributor status | JLCPCB and LCSC part page; `ProductStatus` in Digi-Key's API | recorded. Where it disagrees with the manufacturer, the manufacturer's page is the status and the disagreement is written down. For Analog Devices, Melexis and Allegro parts, and for a part whose status the Manufacturer status row reads at Digi-Key, Digi-Key's `ProductStatus` is the status, and a JLCPCB or LCSC status that disagrees is written down |
 
 ## Research categories
 
@@ -398,7 +398,8 @@ the next-ranked part. With no restarts, T2 and T3 absorb 3 refutations each,
 and T4 absorbs 2. More go to a follow-up task. A host that P0 reached and that
 refuses an agent later in the task, as `www.analog.com` did after about 15
 requests on 2026-09-27, is recorded with the time and the client; the figure
-is recorded as not read, and the item goes to a follow-up task.
+is recorded as not read, and the item goes to a follow-up task. A lifecycle
+status is read at Digi-Key in that case ([Lifecycle check](#lifecycle-check)).
 
 Follow-up tasks. A gap P6 returns, a conflict P5 returns, the owner's choice on
 Q9 when it adds or changes a part, or a refutation a task cannot absorb,
