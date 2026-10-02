@@ -862,6 +862,10 @@
      "items": {
       "type": "object",
       "properties": {
+       "function": {
+        "type": "string",
+        "description": "the function P2 dropped the part under, named as P2 names it"
+       },
        "part": {
         "type": "string"
        },
@@ -873,6 +877,7 @@
        }
       },
       "required": [
+       "function",
        "part",
        "reason_given",
        "why_it_fails"

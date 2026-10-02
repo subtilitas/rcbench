@@ -289,7 +289,7 @@ function p2View(p2) {
 function p3Prompt(cat, p2) {
   return `${ctx('P3', cat, `P3-${cat}`)}
 
-Search for part families P2 did not consider, from the same allowlist, and re-read each reason P2 gave for dropping a candidate. Read Digi-Key only for a find that passes every requirement value of its function. Name each function exactly as P2 does. List in missed_functions each function the ${cat} row or its lines in hardware/docs/IOBoard.md name that P2 returned no entry for. P2's shortlist and drops (its full records are with the session):
+Search for part families P2 did not consider, from the same allowlist, and re-read each reason P2 gave for dropping a candidate. Read Digi-Key only for a find that passes every requirement value of its function. Name each function exactly as P2 does; for each drop that does not hold, give the function P2 dropped the part under. List in missed_functions each function the ${cat} row or its lines in hardware/docs/IOBoard.md name that P2 returned no entry for. P2's shortlist and drops (its full records are with the session):
 ${J(p2View(p2))}`
 }
 
@@ -743,9 +743,12 @@ function partKeys(p, functionNames) {
   const text = String(rec.part || '').toUpperCase()
   const own = String(rec.lcsc || '').trim().toUpperCase()
   const lcsc = [...(text.match(/\bC\d+\b/g) || []), ...(/^C\d+$/.test(own) ? [own] : [])].map(c => `lcsc:${c}`)
-  const mpn = text.replace(/\([^)]*\)/g, ' ').split(/;|,\s+|\s+\/\s+|\s+AND\s+/)
-    .map(x => x.replace(/\s+/g, '')).filter(x => x && !fn.has(x)).map(x => `mpn:${x}`)
-  return new Set([...mpn, ...lcsc])
+  const numbers = text.replace(/\([^)]*\)/g, ' ').split(/;|,\s+|\s+\/\s+|\s+AND\s+/)
+    .map(x => x.replace(/\s+/g, '')).filter(x => x && !fn.has(x))
+  // A '#' suffix is Analog Devices' packing and RoHS option: LTC4020EUHF#PBF
+  // and LTC4020EUHF#TRPBF are the part LTC4020EUHF.
+  const bases = numbers.map(x => x.split('#')[0]).filter((b, i) => b !== numbers[i] && b.length >= 4 && /[A-Z]/.test(b) && /\d/.test(b))
+  return new Set([...[...numbers, ...bases].map(x => `mpn:${x}`), ...lcsc])
 }
 function samePart(a, b, functionNames) {
   if (typeof a === 'string' && a === b) return true
@@ -801,9 +804,12 @@ function merge(cat, p2, rr, p3) {
     for (const n of owned ? [m.function] : names) unhandled.add(n)
   }
   for (const x of (p3 && p3.exclusions_not_holding) || []) {
-    // Each function whose P2 drop P3 overturned handles the part itself;
-    // with no owner, any function's handling counts.
-    const owners = (p2.functions || []).filter(f => (f.dropped || []).some(d => samePart(d, x.part, names))).map(f => f.function)
+    // Each function whose P2 drop P3 overturned handles the part itself: the
+    // function P3 names, or, where P2 dropped the part under no function of
+    // that name, every function that dropped it. With no owner, any
+    // function's handling counts.
+    const droppedBy = (p2.functions || []).filter(f => (f.dropped || []).some(d => samePart(d, x.part, names))).map(f => f.function)
+    const owners = droppedBy.includes(x.function) ? [x.function] : droppedBy
     const open = owners.length
       ? owners.filter(n => !handled((rr.functions || []).find(fr => fr.function === n), x.part))
       : (handledAny(x.part) ? [] : names)

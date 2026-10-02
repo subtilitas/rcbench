@@ -376,16 +376,25 @@ part.
   n, ranked a part with no record, ranked a part twice or also dropped it, or
   either P2 or the re-rank returned it twice;
 - P3 found a candidate for it, or overturned its P2 drop of a part, and the
-  re-rank neither qualified nor dropped that part under it. A find P3 files
-  under no function of P2's, and a drop it overturns that no function made,
-  hold every function open until the re-rank qualifies or drops the part under
-  one of P2's functions. A find and the re-rank's part are the same part when
+  re-rank neither qualified nor dropped that part under it. P3 names the
+  function whose drop it overturns. Where P2 dropped the part under no
+  function of that name, or P3 names none, the drop is overturned under every
+  function that dropped the part. A find P3 files under no function of P2's,
+  and a drop it overturns that no function made, hold every function open
+  until the re-rank qualifies or drops the part under one of P2's functions. A
+  find and the re-rank's part are the same part when
   they share a part number or an LCSC number, a record's `lcsc` field
   included: `TCAN3413DR (C22433320)`, `A (C1); B (C2)` and a part with its
   function appended all match the bare part number. Part numbers are the
   pieces between semicolons, commas followed by a space, slashes between
   spaces and ` and `, without parenthesized text, case and spaces; a function
   name is none. `2N7002BK,215` and `MCP2542FD-E/SN` are one part number each.
+  A part number with a `#` after 4 characters or more, a letter and a digit
+  among them, also matches the number before the `#`: Analog Devices' packing
+  and RoHS option, as in `LTC4020EUHF#PBF` and `LTC4020EUHF#TRPBF`. Other
+  makers' packing suffixes, as TI's reel letter (`TPS62933DRLR`,
+  `TPS62933DRLT`) or Maxim's `+T`, make another part number: a current
+  limitation.
   A find that names only a family, as `MLX90393 rows`, is also handled by a
   part of that family the re-rank qualified (`new_candidates`) or dropped as a
   P3 candidate (`dropped_from_p3`), not by a part P2 shortlisted. Its stem is a

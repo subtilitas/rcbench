@@ -113,6 +113,7 @@ async function runTask(task, opts = {}) {
       if (opts.reportParts) data.report = opts.reportParts.map(figure => ({ figure, value: 'not applicable: transceiver', source: 's' }))
       if (opts.twoDeciders) data.functions.push({ ...data.functions[0], function: 'fX' })
       if (opts.p2DropY) data.functions[0].dropped = [{ part: opts.p2DropPart || 'partY', maker: 'm', reason: 'r' }]
+      if (opts.p2DropYAll) data.functions.forEach(f => { f.dropped = [{ part: opts.p2DropPart || 'partY', maker: 'm', reason: 'r' }] })
       if (opts.foundNotRead) data.found_values = [{ question_id: 'V9', value: 'not read: HTTP 403', source: 's', read_at: 't' }]
       if (opts.foundValue) data.found_values = [{ question_id: 'V9', value: opts.foundValue, source: 's', read_at: '2026-09-28T10:00:00Z' }]
       if (opts.reports) data.report = opts.reports.map(([figure, value]) => ({ figure, value, source: 's', read_at: '2026-09-28T10:00:00Z' }))
@@ -205,7 +206,7 @@ async function runTask(task, opts = {}) {
     }
     if (role === 'P3') Object.assign(data, { missed: [], exclusions_not_holding: [], missed_functions: opts.missedFn ? [{ function: 'f2', why: 'the row names it' }] : [] })
     if (role === 'P3' && opts.p3missed) data.missed = [{ function: opts.p3missedFn || 'f1', part: opts.p3missedPart || 'partX', maker: 'm', why: 'w' }]
-    if (role === 'P3' && opts.p3overturned) data.exclusions_not_holding = [{ part: opts.p3overPart || 'partY', reason_given: 'r', why_it_fails: 'w' }]
+    if (role === 'P3' && opts.p3overturned) data.exclusions_not_holding = [{ ...(opts.p3overFn ? { function: opts.p3overFn } : {}), part: opts.p3overPart || 'partY', reason_given: 'r', why_it_fails: 'w' }]
     if (role === 'P7-critic' || role === 'P7') {
       for (const k of Object.keys(data.checks)) data.checks[k] = { passed: !(opts.failCheck === k && role === 'P7-critic'), output: opts.failCheck === k && opts.failOutput ? opts.failOutput : k === 'jlc_stock' && opts.passOutput ? opts.passOutput : 'o' }
       const pagesOut = opts.p7Pages || opts.groupPages
@@ -973,6 +974,28 @@ async function main() {
   // An overturned exclusion is handled by the function that dropped it.
   r = await runTask('T2', { p3overturned: true, p2DropY: true, extraFn: true, rrHandleYin: 'fX' })
   check(r1(r).selection.find(e => e.function === 'f1').part === null, 'overturned exclusion handled by another function: owner stays open')
+  // P3 names the function whose drop it overturned: a function that dropped
+  // the part for another reason is not held open by it. Without a name, or
+  // with one under which P2 did not drop the part, every function that
+  // dropped it is.
+  const overYinX = { p3overturned: true, twoDeciders: true, p2DropYAll: true, extraFn: true, rrHandleYin: true }
+  r = await runTask('T2', { ...overYinX, p3overFn: 'fX' })
+  check(r1(r).selection.find(e => e.function === 'f1').part === 'part1', 'overturned exclusion of the function P3 names, handled there: the other function that dropped it is ranked')
+  r = await runTask('T2', overYinX)
+  check(r1(r).selection.find(e => e.function === 'f1').part === null, 'overturned exclusion with no function named: every function that dropped it stays open')
+  r = await runTask('T2', { ...overYinX, p3overFn: 'F1 buck' })
+  check(r1(r).selection.find(e => e.function === 'f1').part === null, 'overturned exclusion under a function that did not drop it: every function that dropped it stays open')
+  r = await runTask('T2', { ...overYinX, p3overFn: 'f1' })
+  check(r1(r).selection.find(e => e.function === 'f1').part === null, 'overturned exclusion of f1, handled only under fX: f1 stays open')
+  // A '#' packing suffix does not make another part: the re-rank's
+  // LTC4020EUHF#TRPBF handles P3's LTC4020EUHF#PBF.
+  const overAdi = { p3overturned: true, p3overPart: 'LTC4020EUHF#PBF (C2858365)', p2DropY: true, p2DropPart: 'LTC4020EUHF#PBF', p3dropShort: true }
+  r = await runTask('T2', { ...overAdi, dropShortPart: 'LTC4020EUHF#TRPBF', dropShortLcsc: 'C462630' })
+  check(r1(r).selection[0].part === 'part1', "overturned exclusion of a '#' variant the re-rank dropped: handled")
+  r = await runTask('T2', { ...overAdi, dropShortPart: 'LTC4021EUHF#TRPBF', dropShortLcsc: 'C462631' })
+  check(r1(r).selection[0].part === null, "overturned exclusion, another number before the '#': open")
+  r = await runTask('T2', { ...overAdi, p3overPart: 'AB#1', p2DropPart: 'AB#1', dropShortPart: 'AB#2' })
+  check(r1(r).selection[0].part === null, "a '#' after fewer than 4 characters is part of the number: open")
   // A P3 find the re-rank did not handle keeps its function open.
   r = await runTask('T2', { p3missed: true })
   check(r1(r).selection[0].part === null, 'unhandled P3 find: function open')
