@@ -624,6 +624,7 @@ async function main() {
   check(r.prompts.find(x => x.label === 'P7').prompt.includes('These fixed inputs of the Scope table are their functions\' parts, kept by the owner although no run verified them; where that file leaves one open or names another part, this list holds (in the file such an entry has run "owner" and owner_fixed lists the readings that did not verify it)') && r.prompts.find(x => x.label === 'P7').prompt.includes('R7 Pack cells: SLSXT30002130'), 'T6: the prompts name the owner-fixed parts')
   check(r.prompts.find(x => x.label === 'P7-critic').prompt.includes('"state":"fixed by the owner; each check no run confirmed stated as not known","item":"R7 Pack cells: SLSXT30002130"'), 'T6: the critic marks the owner-fixed part as the owner\'s')
   const critP = r.prompts.find(x => x.label === 'P7-critic').prompt
+  check(critP.includes('(a part off the board that Digi-Key does not list as "[FAIL] PART: not checked, no Digi-Key product carries PART")'), 'T6: the checks name the not-listed line\'s format')
   check(critP.indexOf('fixed by the owner; each check') < critP.indexOf("the owner's stock exception, with its reason"), 'T6: the stock exceptions come last among the marks')
   r = await runTask('T6', { ...pack, ownerFixed: [], marked: [{ index: 0, file: 'hardware/docs/Parts.md', line: 5 }], failCheck: 'jlc_stock', failOutput: notListed })
   check(r.result.summary.stopped === true, 'T6: a not-listed part that is not owner-fixed fails the stock check')

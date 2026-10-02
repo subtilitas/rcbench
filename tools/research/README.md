@@ -373,9 +373,11 @@ and every prompt names them. The run's result carries the list, and `record`
 refuses an output whose list differs from the prepared one. `t6_open` rebuilds
 the selection the last check saw from the list that check was given, and the
 stale-selection gate rebuilds the upstream parts a run saw the same way. The
-stale-selection gate reads a run recorded without the list under today's list:
-those runs read plans whose Scope table names the upstream inputs the owner
-keeps. `t6_open` reads a check recorded without the list as given none.
+stale-selection gate reads a run recorded without the list under today's list.
+A run that decides a downstream function and whose plan names the upstream
+inputs in its Scope table saw them as fixed. A run whose plan predates those
+rows fails the specification comparison anyway. `t6_open` reads a check
+recorded without the list as given none.
 `session.py check`
 confirms the Blocking and Sourcing tables still read as the gates expect, that
 the Outputs table has a row for `tools/jlc_stock.py`, and that `p1_asks` names
@@ -620,7 +622,7 @@ and verifies no part leaves it open and records the earlier part in
 `not_requalified`. A function an earlier P1 inventory of its category lists
 and the latest does not is retired: the next run that selects parts in the
 category without naming it removes it. A fixed input of the Scope table the
-owner keeps whatever the runs return (`owner_keeps` in `categories.json`
+owner keeps whatever a run returns (`owner_keeps` in `categories.json`
 `fixed_inputs`) is its function's part. Where no run keeps a part that starts
 with the input's number, the function keeps the input's `orderable` number, or
 the input itself, with run `owner`. Its `owner_fixed` names the run that last

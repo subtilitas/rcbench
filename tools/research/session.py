@@ -1021,8 +1021,8 @@ def effective_selection(results, pending=None, before=None, fixed=None):
     without naming it. `before` reads only the runs recorded before that
     sequence number.
 
-    A fixed input of the Scope table the owner keeps whatever the runs
-    return (owner_keeps in `fixed`, categories.json's fixed_inputs by
+    A fixed input of the Scope table the owner keeps whatever a run
+    returns (owner_keeps in `fixed`, categories.json's fixed_inputs by
     default) is its function's part: where no run kept a part that starts
     with the input's number, the function keeps the input's orderable
     number as the owner's, run "owner", and owner_fixed names the run that
@@ -1562,11 +1562,12 @@ def open_in_category(results, categories):
 def owner_fixed_of(task):
     """The owner-kept fixed inputs a recorded run was given, as
     categories.json writes fixed inputs. None for a run recorded before
-    runs carried the list: the stale-selection gate reads such a run under
-    today's list, as the downstream runs recorded without it read plans
-    whose Scope table names the upstream inputs the owner keeps (R11's);
-    t6_open reads such a check as given none, as no selection.json before
-    the list held an owner entry."""
+    runs carried the list. The stale-selection gate reads such a run under
+    today's list: a run that decides a downstream function and whose plan
+    names the upstream inputs in its Scope table saw them as fixed, and
+    one whose plan predates those rows fails the specification comparison
+    anyway. t6_open reads such a check as given none, as no selection.json
+    before the list held an owner entry."""
     if "owner_fixed" not in task:
         return None
     fixed = {}
