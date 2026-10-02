@@ -376,28 +376,39 @@ part.
   n, ranked a part with no record, ranked a part twice or also dropped it, or
   either P2 or the re-rank returned it twice;
 - P3 found a candidate for it, or overturned its P2 drop of a part, and the
-  re-rank neither qualified nor dropped that part under it. A find P3 files
-  under no function of P2's, and a drop it overturns that no function made,
-  hold every function open until the re-rank qualifies or drops the part under
-  one of P2's functions. A find and the re-rank's part are the same part when
-  they share a part number or an LCSC number, a record's `lcsc` field
-  included: `TCAN3413DR (C22433320)`, `A (C1); B (C2)` and a part with its
-  function appended all match the bare part number. Part numbers are the
-  pieces between semicolons, commas followed by a space, slashes between
-  spaces and ` and `, without parenthesized text, case and spaces; a function
-  name is none. `2N7002BK,215` and `MCP2542FD-E/SN` are one part number each.
-  A find that names only a family, as `MLX90393 rows`, is also handled by a
-  part of that family the re-rank qualified (`new_candidates`) or dropped as a
-  P3 candidate (`dropped_from_p3`), not by a part P2 shortlisted. Its stem is a
-  word outside parentheses of 6 or more letters, digits and hyphens with a
-  letter and a digit, starting with a letter or digit, followed by `rows`,
-  `family`, `series`, `variants`, `parts` or `devices`; a part belongs to the
-  family when its number starts with the stem. A find with an LCSC number or
-  another word of 4 or more characters with a letter and a digit names a part
-  and is handled only by that part. A stem also matches a number that
-  continues its digits (`TMP107 family` and TMP1075DGKR, a different part): a
-  current limitation. The drop of such a find is re-read as the drop of any P3
-  find;
+  re-rank neither qualified nor dropped that part under it. P3 names the
+  functions whose drop it overturns. Where P2 dropped the part under none of
+  them, or P3 names none, the drop is overturned under every function that
+  dropped the part. A find P3 files under no function of P2's, and a drop it
+  overturns that no function made, hold every function open until the re-rank
+  qualifies or drops the part under one of P2's functions. A find and the
+  re-rank's part are the same part when they share a part number or an LCSC
+  number, a record's `lcsc` field included: `TCAN3413DR (C22433320)`,
+  `A (C1); B (C2)` and a part with its function appended all match the bare
+  part number. Part numbers are the pieces between semicolons, commas followed
+  by a space, slashes between spaces and ` and `, without parenthesized text,
+  case and spaces; a function name is none. `2N7002BK,215` and
+  `MCP2542FD-E/SN` are one part number each. A `#` after 4 characters or more,
+  a letter and a digit among them, starts an ordering option: Analog Devices'
+  packing and RoHS (Restriction of Hazardous Substances) option in
+  `LTC4020EUHF#PBF` and `LTC4020EUHF#TRPBF`, or an automotive flow (`#W`,
+  `#3ZZ`). For a drop P3 overturned, the number before the `#` matches any
+  option of it. The re-rank's drop of another option of that part is re-read
+  as any P3 drop. A P3 find matches only its own option, as the find's option
+  may be the one with stock. Other makers' packing suffixes, as Texas
+  Instruments' reel letter (`TPS62933DRLR`, `TPS62933DRLT`) or Maxim's `+T`,
+  make another part number: a current limitation. A find that names only a
+  family, as `MLX90393 rows`, is also handled by a part of that family the
+  re-rank qualified (`new_candidates`) or dropped as a P3 candidate
+  (`dropped_from_p3`), not by a part P2 shortlisted. Its stem is a word
+  outside parentheses of 6 or more letters, digits and hyphens with a letter
+  and a digit, starting with a letter or digit, followed by `rows`, `family`,
+  `series`, `variants`, `parts` or `devices`; a part belongs to the family
+  when its number starts with the stem. A find with an LCSC number or another
+  word of 4 or more characters with a letter and a digit names a part and is
+  handled only by that part. A stem also matches a number that continues its
+  digits (`TMP107 family` and TMP1075DGKR, a different part): a current
+  limitation. The drop of such a find is re-read as the drop of any P3 find;
 - it has no requirement, or names one requirement twice;
 - it serves a fixed input of the Scope table (`categories.json`
   `fixed_inputs`: the function by the table's input name, the input by a
