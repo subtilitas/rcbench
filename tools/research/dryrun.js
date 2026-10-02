@@ -1215,6 +1215,8 @@ async function main() {
   check(r1(r).selection[0].part !== 'part1' && r.calls.some(c => c.startsWith('adjudicator-R1')), 'unread held quantity with failing live stock: refuted')
   r = await runTask('T2', { held: 20, addStock: ['held quantity'], edit: { 'held quantity': { passes: false } } })
   check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'failing held quantity, passing live stock: verified')
+  r = await runTask('T2', { held: 20, addStock: ['held quantity'], edit: { 'held quantity': { figure: 'held quantity, or both stock and presale', passes: false } } })
+  check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'failing held quantity in the earlier owed wording, passing live stock: verified')
   // The second vendor's stock bears on the second-vendor route only, and not
   // on an alternate (rule 5 asks rules 1 to 4).
   r = await runTask('T2', { altName: 'part2', verify: ['part2'], addStock: ['second-vendor stock'], edit: { 'second-vendor stock': { passes: false } } })
