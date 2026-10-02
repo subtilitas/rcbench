@@ -47,6 +47,10 @@
     "part": {
      "type": "string"
     },
+    "p3_part": {
+     "type": "string",
+     "description": "the re-rank's record of a P3 candidate only: the part text of the entry of P3's it answers, copied exactly, where that entry names the part otherwise"
+    },
     "maker": {
      "type": "string",
      "description": "from the datasheet; the allowlist name it counts as"
@@ -970,7 +974,8 @@
         "type": "array",
         "items": {
          "$ref": "dropped"
-        }
+        },
+        "description": "P3 candidates the re-rank drops, each with its reason: one entry for each entry of P3's it drops, its part text copied exactly from P3's entry"
        },
        "verify": {
         "type": "array",

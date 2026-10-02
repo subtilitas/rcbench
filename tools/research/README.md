@@ -376,33 +376,36 @@ part.
   n, ranked a part with no record, ranked a part twice or also dropped it, or
   either P2 or the re-rank returned it twice;
 - P3 found a candidate for it, or overturned its P2 drop of a part, and the
-  re-rank neither qualified nor dropped that part under it. The re-rank is
-  told to list each such part under each function P3 names for it, as P3
-  names it, also where P3 says the drop stands for another reason; a part it
-  discusses only in its report is neither. P3 names the
+  re-rank neither qualified nor dropped that part under it. P3 names the
   functions whose drop it overturns. Where P2 dropped the part under none of
   them, or P3 names none, the drop is overturned under every function that
   dropped the part. A find P3 files under no function of P2's, and a drop it
   overturns that no function made, hold every function open until the re-rank
-  qualifies or drops the part under one of P2's functions. A find and the
-  re-rank's part are the same part when they share a part number or an LCSC
-  number, a record's `lcsc` field included: `TCAN3413DR (C22433320)`,
-  `A (C1); B (C2)` and a part with its function appended all match the bare
-  part number. Part numbers are the pieces between semicolons, commas followed
-  by a space, slashes between spaces and ` and `, without parenthesized text,
-  case and spaces; a function name is none. `2N7002BK,215` and
-  `MCP2542FD-E/SN` are one part number each. A `#` after 4 characters or more,
-  a letter and a digit among them, starts an ordering option: Analog Devices'
-  packing and RoHS (Restriction of Hazardous Substances) option in
-  `LTC4020EUHF#PBF` and `LTC4020EUHF#TRPBF`, or an automotive flow (`#W`,
-  `#3ZZ`). For a drop P3 overturned, the number before the `#` matches any
-  option of it. The re-rank's drop of another option of that part is re-read
-  as any P3 drop. A P3 find matches only its own option, as the find's option
-  may be the one with stock. Other makers' packing suffixes, as Texas
-  Instruments' reel letter (`TPS62933DRLR`, `TPS62933DRLT`) or Maxim's `+T`,
-  make another part number: a current limitation. A find that names only a
-  family, as `MLX90393 rows`, is also handled by a part of that family the
-  re-rank qualified (`new_candidates`) or dropped as a P3 candidate
+  qualifies or drops the part under one of P2's functions. The re-rank is told
+  to list each entry of P3's under the functions these rules hold open for it,
+  also where P3 says the drop stands for another reason: a qualified record by
+  its exact part number, with the entry's text in `p3_part` where the entry
+  names the part otherwise, or a drop with the entry's text copied exactly,
+  one drop for each entry. A part discussed only in the re-rank's report is
+  neither qualified nor dropped. A record in `new_candidates` handles the
+  entry its `p3_part` names. A find and the re-rank's part are the same part
+  when they share a part number or an LCSC number, a record's `lcsc` field
+  included: `TCAN3413DR (C22433320)`, `A (C1); B (C2)` and a part with its
+  function appended all match the bare part number. Part numbers are the
+  pieces between semicolons, commas followed by a space, slashes between
+  spaces and ` and `, without parenthesized text, case and spaces; a function
+  name is none. `2N7002BK,215` and `MCP2542FD-E/SN` are one part number each.
+  A `#` after 4 characters or more, a letter and a digit among them, starts an
+  ordering option: Analog Devices' packing and RoHS (Restriction of Hazardous
+  Substances) option in `LTC4020EUHF#PBF` and `LTC4020EUHF#TRPBF`, or an
+  automotive flow (`#W`, `#3ZZ`). For a drop P3 overturned, the number before
+  the `#` matches any option of it. The re-rank's drop of another option of
+  that part is re-read as any P3 drop. A P3 find matches only its own option,
+  as the find's option may be the one with stock. Other makers' packing
+  suffixes, as Texas Instruments' reel letter (`TPS62933DRLR`, `TPS62933DRLT`)
+  or Maxim's `+T`, make another part number: a current limitation. A find that
+  names only a family, as `MLX90393 rows`, is also handled by a part of that
+  family the re-rank qualified (`new_candidates`) or dropped as a P3 candidate
   (`dropped_from_p3`), not by a part P2 shortlisted. Its stem is a word
   outside parentheses of 6 or more letters, digits and hyphens with a letter
   and a digit, starting with a letter or digit, followed by `rows`, `family`,
@@ -480,11 +483,15 @@ a second reading's time or a range's end may follow it, as in
 `2026-09-28T13:51Z to 13:56Z (JLCPCB)`. The time ends at the end of the text,
 at whitespace, at `,`, `;`, `(` or `)`, or at a hyphen before a range's end
 time, so `2026-09-28T10` and `2026-09-28T10:00+99` are no times. A date-time
-without a zone is UTC (Coordinated Universal Time). For a P4 check, a figure verdict or a ruling
-the time may follow one word that names the source, as in
-`JLCPCB 2026-10-02T15:17:10Z; Digi-Key 2026-10-02T15:17:30Z`; `not`, `no`,
-`never` and `unread` name no source, and two words are no reading. For these
-every date it gives is also the date `prepare` gave the run or the next day,
+without a zone is UTC (Coordinated Universal Time). For a P4 check, a figure
+verdict or a ruling, the time may follow one word that names the source, as in
+`JLCPCB 2026-10-02T15:17:10Z; Digi-Key 2026-10-02T15:17:30Z` or
+`ADXL316: 2026-10-02T11:27:32Z`. The word is a letter, then letters, digits,
+dots and hyphens, with a colon or none. `not`, `no`, `none`, `nothing`,
+`never`, `unknown`, `unread`, `pending`, `failed`, `na`, `n.a` and `n.a.`, in
+any case, name no source. Two words before the time are no reading. For a P4
+check, a figure verdict or a ruling, every date the text gives is also the
+date `prepare` gave the run or the next day,
 for a run that passes midnight, so a reading copied from an earlier return or
 the parts database, or dated later, shows nothing. The workflow script has no
 clock: a run that goes on past the day after `prepare` counts none of the
