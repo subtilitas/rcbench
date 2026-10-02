@@ -998,14 +998,24 @@ async function main() {
   check(r1(r).selection[0].part === 'part1', 'P3 find by LCSC number, the drop naming it in its lcsc field: handled')
   r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW (c98) AND partx (c99)', dropShortPart: 'PARTX' })
   check(r1(r).selection[0].part === 'part1', 'P3 find in another case, joined by AND: handled')
-  // A find named by a family is handled by a part of that family, on a stem
-  // of 6 or more characters with a letter and a digit.
-  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'ABC1234 rows (and others of the same kind)', dropShortPart: 'ABC1234XYZ-RE' })
-  check(r1(r).selection[0].part === 'part1', 'P3 find named by a family, a part of it dropped: handled')
-  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'ABC1234 rows', dropShortPart: 'ABC9999XYZ' })
-  check(r1(r).selection[0].part === null, 'P3 find named by a family, another family dropped: unhandled')
-  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'AB12 rows', dropShortPart: 'AB12345' })
-  check(r1(r).selection[0].part === null, 'P3 find named by a stem under 6 characters: unhandled')
+  // A find named by a family ("STEM rows", "STEM family") is handled by a
+  // part of that family; a stem is a whole word of 6 or more characters with
+  // a letter and a digit. A part number, a variant and a context word are not.
+  for (const [find, dropped, want, what] of [
+    ['ABC1234 rows (and others of the same kind)', 'ABC1234XYZ-RE', 'part1', 'family find, a part of it dropped: handled'],
+    ['ABC123 family', 'ABC123X', 'part1', 'family find on a 6-character stem: handled'],
+    ['ABC1234 rows', 'ABC9999XYZ', null, 'family find, another family dropped: unhandled'],
+    ['AB123 rows', 'AB12345', null, 'family find on a 5-character stem: unhandled'],
+    ['AP2112K-3.3TRG1 (C51118)', 'AP2112K-3.0TRG1', null, 'part number, its sibling variant dropped: unhandled'],
+    ['MCP2542FD-E/SN', 'MCP2542FD-E/MF', null, 'part number with a slash, its package variant dropped: unhandled'],
+    ['ADBMS6832MWCCSZ (C18166020); ADBMS6833 is the 16-channel sibling', 'ADBMS6833', null, 'a context word of the find dropped: unhandled'],
+  ]) {
+    r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: find, dropShortPart: dropped })
+    check(r1(r).selection[0].part === want, `P3 ${what}`)
+  }
+  // The drop that handles a family find is re-read, as an exact one is.
+  r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'ABC1234 rows', dropShortPart: 'ABC1234XYZ-RE', omitFigure: ['P4-datasheet-R1', 're-rank drop: f1: ABC1234XYZ-RE'] })
+  check(r.result.followUps.some(f => f.figure === 're-rank drop: f1: ABC1234XYZ-RE' && f.reason === 'figure not verified'), 'P3 family find dropped from the shortlist: re-read')
   r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW-REEL / partX' })
   check(r1(r).selection[0].part === 'part1', 'P3 find of two parts joined by a spaced slash: handled')
   r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW/partX' })

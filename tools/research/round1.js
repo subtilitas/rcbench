@@ -754,12 +754,15 @@ function samePart(a, b, functionNames) {
 }
 
 // A P3 find may name a family, as "MLX90393 rows", not an orderable part.
-// Its stems are the words of 6 or more characters with a letter and a
-// digit, outside parentheses; a part number that starts with one is of
-// that family.
+// A stem is a word outside parentheses, of 6 or more letters, digits and
+// hyphens with a letter and a digit, that a family word follows: rows,
+// family, series, variants, parts or devices. A part number that starts
+// with a stem is of that family. A word with "/", "," or "." in it, or one
+// no family word follows, names a part or its context, not a family.
+const FAMILY_WORDS = new Set(['ROWS', 'FAMILY', 'SERIES', 'VARIANTS', 'PARTS', 'DEVICES'])
 function familyStems(p) {
-  const text = String((p && typeof p === 'object' ? p.part : p) || '').toUpperCase().replace(/\([^)]*\)/g, ' ')
-  return (text.match(/[A-Z0-9][A-Z0-9-]{5,}/g) || []).filter(w => /[A-Z]/.test(w) && /\d/.test(w))
+  const words = String((p && typeof p === 'object' ? p.part : p) || '').toUpperCase().replace(/\([^)]*\)/g, ' ').split(/\s+/).filter(Boolean)
+  return words.filter((w, i) => /^[A-Z0-9][A-Z0-9-]{5,}$/.test(w) && /[A-Z]/.test(w) && /\d/.test(w) && FAMILY_WORDS.has((words[i + 1] || '').replace(/[^A-Z]/g, '')))
 }
 function ofFamily(cand, find) {
   const n = String((cand && typeof cand === 'object' ? cand.part : cand) || '').toUpperCase().replace(/\s+/g, '')
@@ -1503,10 +1506,11 @@ function figuresToCheck(cat, p2, rr, functions, p3) {
   for (const f of functions) for (const d of f.failed || []) add(`failed requirement: ${f.function}: ${d.part} (${d.names.join(', ')})`, d)
   // Every drop of a part P3 found or reopened, whichever list the re-rank
   // put it in.
-  // A drop is of P3's part when it names the same part (samePart).
+  // A drop is of P3's part when it names the same part (samePart) or a part
+  // of the family P3 named (ofFamily), as merge() matches them.
   const fromP3 = [...((p3 && p3.missed) || []), ...((p3 && p3.exclusions_not_holding) || [])].map(x => x.part)
   const fnNames = [...(p2.functions || []).map(f => f.function), ...functions.map(f => f.function)]
-  const ofP3 = d => fromP3.some(part => samePart(d, part, fnNames))
+  const ofP3 = d => fromP3.some(part => samePart(d, part, fnNames) || ofFamily(d, part))
   // A part dropped under several functions is re-read under each.
   const drops = new Set()
   for (const f of functions) {
