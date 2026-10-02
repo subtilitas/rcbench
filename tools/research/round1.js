@@ -791,9 +791,16 @@ function merge(cat, p2, rr, p3) {
   for (const x of (p3 && p3.exclusions_not_holding) || []) {
     // Each function whose P2 drop P3 overturned handles the part itself;
     // with no owner, any function's handling counts.
-    const owners = (p2.functions || []).filter(f => (f.dropped || []).some(d => samePart(d, x.part, names) || ofFamily(d, x.part))).map(f => f.function)
+    const overturned = f => (f.dropped || []).filter(d => samePart(d, x.part, names) || ofFamily(d, x.part))
+    const owners = (p2.functions || []).filter(f => overturned(f).length).map(f => f.function)
+    // An owner handles the exclusion when its re-rank qualifies, ranks or
+    // drops one of the drops P3 overturned, not another part of the family.
+    const handledDrops = n => {
+      const fr = (rr.functions || []).find(f => f.function === n)
+      return overturned((p2.functions || []).find(f => f.function === n) || {}).some(d => handled(fr, d))
+    }
     const open = owners.length
-      ? owners.filter(n => !handled((rr.functions || []).find(fr => fr.function === n), x.part))
+      ? owners.filter(n => !handledDrops(n))
       : (handledAny(x.part) ? [] : names)
     if (!open.length) continue
     followUps.push({ role: 'rerank', category: cat, part: x.part, functions: open, reason: 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank' })

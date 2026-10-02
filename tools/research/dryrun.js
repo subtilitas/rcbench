@@ -974,6 +974,17 @@ async function main() {
   check(r1(r).selection.find(e => e.function === 'f1').part === null, 'overturned exclusion handled by another function: owner stays open')
   r = await runTask('T2', { p3overturned: true, p3overPart: 'ABC1234 rows', p2DropY: true, p2DropPart: 'ABC1234XYZ', twoDeciders: true, extraFn: true, rrHandleYin: 'fX', rrHandleYPart: 'ABC1234QQ' })
   check(r1(r).selection.find(e => e.function === 'f1').part === null, 'family exclusion over a drop under f1, a family part handled under another function: owner stays open')
+  // The owner of a family exclusion handles it only through the drop P3
+  // overturned, not through a family part P2 kept: ranking the kept ABC1234A
+  // leaves the dropped ABC1234XYZ unhandled; dropping ABC1234XYZ handles it.
+  const famKept = { p3overturned: true, p3overPart: 'ABC1234 rows', p2DropY: true, p2DropPart: 'ABC1234XYZ', firstRecord: { part: 'ABC1234A' }, ranking: [{ rank: 1, part: 'ABC1234A', reason: 'r' }, { rank: 2, part: 'part2', reason: 'r' }, { rank: 3, part: 'part3', reason: 'r' }] }
+  // (The mock's verifiers answer for part1 only, so the function's reaching
+  // P4, its ledger entry, is what shows it ranked.)
+  const overturnedOpen = res => res.result.followUps.some(f => f.reason === 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank' && (f.functions || []).includes('f1'))
+  r = await runTask('T2', famKept)
+  check(overturnedOpen(r) && !r1(r).ledger.length, 'family exclusion, only a kept family part ranked: owner stays open')
+  r = await runTask('T2', { ...famKept, dropShort: ['ABC1234XYZ'] })
+  check(!overturnedOpen(r) && r1(r).ledger.some(e => e.part === 'ABC1234A'), 'family exclusion, the overturned drop dropped again: handled')
   // A P3 find the re-rank did not handle keeps its function open.
   r = await runTask('T2', { p3missed: true })
   check(r1(r).selection[0].part === null, 'unhandled P3 find: function open')
@@ -1001,8 +1012,9 @@ async function main() {
   r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW (c98) AND partx (c99)', dropShortPart: 'PARTX' })
   check(r1(r).selection[0].part === 'part1', 'P3 find in another case, joined by AND: handled')
   // A find named by a family ("STEM rows", "STEM family") is handled by a
-  // part of that family; a stem is a whole word of 6 or more characters with
-  // a letter and a digit. A part number, a variant and a context word are not.
+  // part of that family; a stem is a whole word of 6 or more letters, digits
+  // and hyphens with a letter and a digit, followed by a family word. A word
+  // with "/", "," or "." in it and a context word give no stem.
   for (const [find, dropped, want, what] of [
     ['ABC1234 rows (and others of the same kind)', 'ABC1234XYZ-RE', 'part1', 'family find, a part of it dropped: handled'],
     ['ABC123 family', 'ABC123X', 'part1', 'family find on a 6-character stem: handled'],
@@ -1016,6 +1028,13 @@ async function main() {
     ['1234567 parts', '12345678', null, 'stem without a letter: unhandled'],
     ['AP2112K-3.3TRG1 variants', 'AP2112K-3.3TRG1-7', null, 'part number with a dot, a family word after it: unhandled'],
     ['ABC1234 rows, and more', 'ABC1234XYZ', 'part1', 'family word with punctuation after it: handled'],
+    ['ABC-1234 series', 'ABC-1234X', 'part1', 'stem with a hyphen, series: handled'],
+    ['ABC1234 devices', 'ABC1234X', 'part1', 'devices: handled'],
+    ['ABC1234 variants', 'ABC1234X', 'part1', 'variants: handled'],
+    ['ABC1234 parts', 'ABC1234X', 'part1', 'parts: handled'],
+    ['MCP2542FD-E/SN variants', 'MCP2542FD-E/SN-1', null, 'part number with a slash, a family word after it: unhandled'],
+    ['2N7002BK,215 devices', '2N7002BK,215X', null, 'part number with a comma, a family word after it: unhandled'],
+    ['-ABC123 rows', '-ABC1234', null, 'word starting with a hyphen: unhandled'],
   ]) {
     r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: find, dropShortPart: dropped })
     check(r1(r).selection[0].part === want, `P3 ${what}`)
