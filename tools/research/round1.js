@@ -799,8 +799,9 @@ function merge(cat, p2, rr, p3) {
     || (familyOnly(part) && [...(fr.new_candidates || []), ...(fr.dropped_from_p3 || [])].some(c => ofFamily(c, part) && !shortlisted(fr.function, c))))
   const handledAny = (part, anyOption) => (rr.functions || []).some(fr => names.includes(fr.function) && handled(fr, part, anyOption))
   // A P3 find the re-rank neither qualified nor dropped leaves its function
-  // open: the function P3 names, the function whose P2 drop P3 overturned,
-  // or every function when it names or dropped under none of P2's.
+  // open: the function P3 names; for an overturned drop, the functions P3
+  // names that dropped it, else every function that dropped it; or every
+  // function when it names or dropped under none of P2's.
   const unhandled = new Set()
   for (const m of (p3 && p3.missed) || []) {
     const owned = names.includes(m.function)

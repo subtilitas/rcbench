@@ -1004,6 +1004,13 @@ async function main() {
     r = await runTask('T2', { ...overAdi, p3overPart: `${base}#1`, p2DropPart: `${base}#1`, dropShortPart: `${base}#2` })
     check(r1(r).selection[0].part === null, `a '#' after ${what} is part of the number: open`)
   }
+  // An overturned drop no P2 function made is handled under another option,
+  // and the re-rank's drop of that option is re-read.
+  const overAdiNoOwner = { p3overturned: true, p3overPart: 'LTC4020EUHF#PBF (C2858365)', p3dropShort: true, dropShortPart: 'LTC4020EUHF#TRPBF', dropShortLcsc: 'C462630' }
+  r = await runTask('T2', overAdiNoOwner)
+  check(r1(r).selection[0].part === 'part1', "overturned exclusion no function made, another '#' option dropped: handled")
+  r = await runTask('T2', { ...overAdiNoOwner, p2DropY: true, p2DropPart: 'LTC4020EUHF#PBF', omitFigure: ['P4-datasheet-R1', 're-rank drop: f1: LTC4020EUHF#TRPBF'] })
+  check(r.result.followUps.some(f => f.figure === 're-rank drop: f1: LTC4020EUHF#TRPBF' && f.reason === 'figure not verified'), "drop of another '#' option of an overturned exclusion: re-read")
   // P2's drop of another option is P2's drop of the part: only the function
   // that dropped it stays open.
   r = await runTask('T2', { p3overturned: true, p3overPart: 'ABC123#PBF', twoDeciders: true, extraFn: true, p2DropY: true, p2DropPart: 'ABC123#TRPBF' })
@@ -1012,6 +1019,8 @@ async function main() {
   // may be the one with stock.
   r = await runTask('T2', { p3missed: true, p3missedPart: 'ABC123#TRPBF (C462630)', p3dropShort: true, dropShortPart: 'ABC123#PBF', dropShortLcsc: 'C2858365' })
   check(r1(r).selection[0].part === null, "P3 find of a '#' option, another option dropped: open")
+  r = await runTask('T2', { p3missed: true, p3missedFn: 'F1 buck', p3missedPart: 'ABC123#TRPBF (C462630)', p3dropShort: true, dropShortPart: 'ABC123#PBF', dropShortLcsc: 'C2858365' })
+  check(r1(r).selection[0].part === null, "P3 find of a '#' option under no function of P2's, another option dropped: open")
   // A P3 find the re-rank did not handle keeps its function open.
   r = await runTask('T2', { p3missed: true })
   check(r1(r).selection[0].part === null, 'unhandled P3 find: function open')
