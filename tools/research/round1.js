@@ -818,9 +818,9 @@ function merge(cat, p2, rr, p3) {
   for (const x of (p3 && p3.exclusions_not_holding) || []) {
     // Each function whose P2 drop P3 overturned handles the part itself;
     // with no owner, any function's handling counts.
-    // The pieces of the owner's P2 drops that P3 overturned: a drop record
-    // can name several parts and families, and only the matching ones count;
-    // a record that matches only whole (by its own lcsc field) counts whole.
+    // The owner is a function with a P2 drop P3 overturned: a matching piece
+    // of a drop record that names several parts and families, or a record
+    // that matches only whole (by its own lcsc field).
     const matches = d => samePart(d, x.part, names) || ofFamily(d, x.part)
     const overturned = f => (f.dropped || []).flatMap(d => {
       const hit = recordPieces(d).filter(matches)
@@ -829,16 +829,13 @@ function merge(cat, p2, rr, p3) {
     const owners = (p2.functions || []).filter(f => overturned(f).length).map(f => f.function)
     // A re-rank entry names the part P3 named, by part or LCSC number.
     const exact = fr => !!fr && [...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || []), ...(fr.ranking || [])].some(c => samePart(c, x.part, names))
-    // An owner handles the exclusion when its re-rank names the part P3
-    // named, or handles one of the overturned pieces; another part of the
-    // family, or of the same drop record, does not count. With no owner,
-    // only a re-rank that names P3's part does.
-    const handledDrops = n => {
-      const fr = (rr.functions || []).find(f => f.function === n)
-      return exact(fr) || overturned((p2.functions || []).find(f => f.function === n) || {}).some(d => handled(fr, d))
-    }
+    // An owner handles the exclusion as a missed find is handled: its
+    // re-rank names the part P3 named, or, for an exclusion named only by a
+    // family, a part of it from outside P2's shortlist. Another member of the
+    // drop record does not count. With no owner, only a re-rank that names
+    // P3's part does.
     const open = owners.length
-      ? owners.filter(n => !handledDrops(n))
+      ? owners.filter(n => !handled((rr.functions || []).find(f => f.function === n), x.part))
       : ((rr.functions || []).some(fr => names.includes(fr.function) && exact(fr)) ? [] : names)
     if (!open.length) continue
     followUps.push({ role: 'rerank', category: cat, part: x.part, functions: open, reason: 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank' })

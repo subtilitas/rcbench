@@ -1038,6 +1038,14 @@ async function main() {
   // names P3's part closes it, not a family part P2 kept.
   r = await runTask('T2', { ...famKept, p2DropY: false })
   check(r.result.followUps.some(f => f.reason === 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank'), 'family exclusion with no owner, a kept family part ranked: open')
+  // An owner found through a drop record matched only by its own lcsc field
+  // is not handled by the re-rank dropping a member of that record, and a
+  // drop in P2's spelling of the part, which P4 would not re-read, does not
+  // handle it either.
+  r = await runTask('T2', { p3overturned: true, p3overPart: 'partY (C123)', p2DropY: true, p2DropPart: 'partY-TR, partZ', p2DropLcsc: 'C123', dropShort: ['partZ'] })
+  check(overturnedOpen(r), 'lcsc-only drop record, another member dropped again: owner stays open')
+  r = await runTask('T2', { p3overturned: true, p3overPart: 'partY (C123)', p2DropY: true, p2DropPart: 'partY-TR (C123)', dropShort: ['partY-TR'] })
+  check(overturnedOpen(r), 'exclusion dropped again only in P2\'s spelling: owner stays open')
   // An exclusion matched to its P2 drop by LCSC number is handled when the
   // re-rank names the part P3 named, as before families.
   r = await runTask('T2', { p3overturned: true, p3overPart: 'partY (C123)', p2DropY: true, p2DropPart: 'partY-TR (C123)', dropShort: ['partY'] })

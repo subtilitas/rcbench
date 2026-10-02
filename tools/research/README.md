@@ -399,11 +399,12 @@ part.
   stem also matches a number that continues its digits: `TMP107 family`
   matches TMP1075DGKR, a different part, and that is a current limitation. An
   overturned exclusion's owner is a function whose P2 drop matches it either
-  way, and the owner handles it when its re-rank qualifies, ranks or drops the
-  part P3 named, by part or LCSC number, or the matching piece of one of those
-  drops (a drop record that names several parts is split as part numbers are,
-  outside balanced parentheses, and one that matches only by its own `lcsc`
-  field counts whole); another part of the family or of the same record does
+  way: a matching piece of a drop record that names several parts (split as
+  part numbers are, outside balanced parentheses), or a record that matches
+  only by its own `lcsc` field. The owner handles it as a missed find is
+  handled: its re-rank qualifies, ranks or drops the part P3 named, by part or
+  LCSC number, or, for an exclusion named only by a family, a part of that
+  family from outside P2's shortlist; another member of the drop record does
   not count. An exclusion with no owner is handled only by a re-rank that
   names P3's part. The drop of a find matched either way is re-read as the
   drop of any P3 find;
