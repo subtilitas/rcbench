@@ -396,8 +396,9 @@ part.
   stem also matches a number that continues its digits: `TMP107 family`
   matches TMP1075DGKR, a different part, and that is a current limitation. An
   overturned exclusion's owner is a function whose P2 drop matches it either
-  way, and the owner handles it only when its re-rank qualifies, ranks or drops
-  one of those drops, not another part of the family. The drop of a find
+  way, and the owner handles it when its re-rank qualifies, ranks or drops the
+  part P3 named, by part or LCSC number, or one of those drops; another part of
+  the family does not count. The drop of a find
   matched either way is re-read as the drop of any P3 find;
 - it has no requirement, or names one requirement twice;
 - it serves a fixed input of the Scope table (`categories.json`

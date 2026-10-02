@@ -794,10 +794,12 @@ function merge(cat, p2, rr, p3) {
     const overturned = f => (f.dropped || []).filter(d => samePart(d, x.part, names) || ofFamily(d, x.part))
     const owners = (p2.functions || []).filter(f => overturned(f).length).map(f => f.function)
     // An owner handles the exclusion when its re-rank qualifies, ranks or
-    // drops one of the drops P3 overturned, not another part of the family.
+    // drops the part P3 named, by part or LCSC number, or one of the drops
+    // P3 overturned; another part of the family does not count.
     const handledDrops = n => {
       const fr = (rr.functions || []).find(f => f.function === n)
-      return overturned((p2.functions || []).find(f => f.function === n) || {}).some(d => handled(fr, d))
+      const exact = !!fr && [...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || []), ...(fr.ranking || [])].some(c => samePart(c, x.part, names))
+      return exact || overturned((p2.functions || []).find(f => f.function === n) || {}).some(d => handled(fr, d))
     }
     const open = owners.length
       ? owners.filter(n => !handledDrops(n))

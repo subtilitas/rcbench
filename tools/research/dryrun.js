@@ -111,7 +111,7 @@ async function runTask(task, opts = {}) {
       if (opts.strictReq) data.functions[0].shortlist[0].requirements = [{ name: 'x0', required: '>= 99 V', datasheet: '70 V', pass: false, source: 's' }, { name: 'x1', required: 'x1', datasheet: 'd', pass: true, source: 's' }]
       if (opts.reportParts) data.report = opts.reportParts.map(figure => ({ figure, value: 'not applicable: transceiver', source: 's' }))
       if (opts.twoDeciders) data.functions.push({ ...data.functions[0], function: 'fX' })
-      if (opts.p2DropY) data.functions[0].dropped = [{ part: opts.p2DropPart || 'partY', maker: 'm', reason: 'r' }]
+      if (opts.p2DropY) data.functions[0].dropped = (opts.p2DropParts || [opts.p2DropPart || 'partY']).map(part => ({ part, maker: 'm', reason: 'r' }))
       if (opts.foundNotRead) data.found_values = [{ question_id: 'V9', value: 'not read: HTTP 403', source: 's', read_at: 't' }]
       if (opts.foundValue) data.found_values = [{ question_id: 'V9', value: opts.foundValue, source: 's', read_at: '2026-09-28T10:00:00Z' }]
       if (opts.reports) data.report = opts.reports.map(([figure, value]) => ({ figure, value, source: 's', read_at: '2026-09-28T10:00:00Z' }))
@@ -985,6 +985,14 @@ async function main() {
   check(overturnedOpen(r) && !r1(r).ledger.length, 'family exclusion, only a kept family part ranked: owner stays open')
   r = await runTask('T2', { ...famKept, dropShort: ['ABC1234XYZ'] })
   check(!overturnedOpen(r) && r1(r).ledger.some(e => e.part === 'ABC1234A'), 'family exclusion, the overturned drop dropped again: handled')
+  r = await runTask('T2', { ...famKept, dropShort: ['ABC1234 rows'] })
+  check(!overturnedOpen(r), 'family exclusion dropped again in P3\'s own words: handled')
+  r = await runTask('T2', { ...famKept, p2DropParts: ['ABC1234XYZ', 'partQ'], dropShort: ['partQ'] })
+  check(overturnedOpen(r), 'family exclusion, only another of the owner\'s drops dropped again: owner stays open')
+  // An exclusion matched to its P2 drop by LCSC number is handled when the
+  // re-rank names the part P3 named, as before families.
+  r = await runTask('T2', { p3overturned: true, p3overPart: 'partY (C123)', p2DropY: true, p2DropPart: 'partY-TR (C123)', dropShort: ['partY'] })
+  check(!overturnedOpen(r), 'exclusion matched to its drop by LCSC number, the re-rank naming P3\'s part: handled')
   // A P3 find the re-rank did not handle keeps its function open.
   r = await runTask('T2', { p3missed: true })
   check(r1(r).selection[0].part === null, 'unhandled P3 find: function open')
@@ -1035,6 +1043,7 @@ async function main() {
     ['MCP2542FD-E/SN variants', 'MCP2542FD-E/SN-1', null, 'part number with a slash, a family word after it: unhandled'],
     ['2N7002BK,215 devices', '2N7002BK,215X', null, 'part number with a comma, a family word after it: unhandled'],
     ['-ABC123 rows', '-ABC1234', null, 'word starting with a hyphen: unhandled'],
+    ['ABC1234 is like ABC9999 rows', 'ABC1234X', null, 'a family word after another word only: unhandled'],
   ]) {
     r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: find, dropShortPart: dropped })
     check(r1(r).selection[0].part === want, `P3 ${what}`)
