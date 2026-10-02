@@ -1021,6 +1021,10 @@ async function main() {
   check(r1(r).selection[0].part === null, "P3 find of a '#' option, another option dropped: open")
   r = await runTask('T2', { p3missed: true, p3missedFn: 'F1 buck', p3missedPart: 'ABC123#TRPBF (C462630)', p3dropShort: true, dropShortPart: 'ABC123#PBF', dropShortLcsc: 'C2858365' })
   check(r1(r).selection[0].part === null, "P3 find of a '#' option under no function of P2's, another option dropped: open")
+  // The re-rank is told to list every P3 part in its lists, not its report.
+  r = await runTask('T2', { p3overturned: true })
+  const rrPrompt = r.prompts.find(x => x.label === 'rerank-R1').prompt
+  check(['Every part P3 names in missed or in exclusions_not_holding is a P3 candidate', 'also where P3 says the drop stands for another reason', 'named as P3 names it', 'A part discussed only in report is neither qualified nor dropped'].every(t => rrPrompt.includes(t)), 're-rank prompt: every P3 part listed')
   // A P3 find the re-rank did not handle keeps its function open.
   r = await runTask('T2', { p3missed: true })
   check(r1(r).selection[0].part === null, 'unhandled P3 find: function open')
@@ -1289,6 +1293,12 @@ async function main() {
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence, source and time read'), 'ruling read before the task: no ruling')
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], stands: false, rulingReadAt: '2099-01-01' })
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence, source and time read'), 'ruling read after the task: no ruling')
+  // The time may follow one word naming the source; a negation, two words or
+  // a date outside the task are no reading.
+  for (const [t, counts] of [['JLCPCB 2026-09-28T15:17:10Z; Digi-Key 2026-09-28T15:17:30Z', true], ['datasheet: 2026-09-28T10:00:00Z', true], ['not 2026-09-28T10:00:00Z', false], ['JLCPCB page 2026-09-28T10:00:00Z', false], ['JLCPCB 2026-09-20T10:00:00Z', false], ['JLCPCB 2026-09-28T10:00:00Z; Digi-Key 2026-09-20T10:00:00Z', false]]) {
+    r = await runTask('T2', { refute: ['P4-stock-R1:part1'], stands: false, rulingReadAt: t })
+    check((r1(r).selection[0].part === 'part1') === counts, `ruling read at "${t}": ${counts ? 'a ruling' : 'no ruling'}`)
+  }
   // "none" is a reading of a notice or commitment that does not exist, and
   // no reading of a status or identity; "not found" is none.
   // A reading recorded without a gate may be not read, with its reason; it

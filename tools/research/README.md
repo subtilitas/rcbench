@@ -376,7 +376,10 @@ part.
   n, ranked a part with no record, ranked a part twice or also dropped it, or
   either P2 or the re-rank returned it twice;
 - P3 found a candidate for it, or overturned its P2 drop of a part, and the
-  re-rank neither qualified nor dropped that part under it. P3 names the
+  re-rank neither qualified nor dropped that part under it. The re-rank is
+  told to list each such part under each function P3 names for it, as P3
+  names it, also where P3 says the drop stands for another reason; a part it
+  discusses only in its report is neither. P3 names the
   functions whose drop it overturns. Where P2 dropped the part under none of
   them, or P3 names none, the drop is overturned under every function that
   dropped the part. A find P3 files under no function of P2's, and a drop it
@@ -478,6 +481,9 @@ a second reading's time or a range's end may follow it, as in
 at whitespace, at `,`, `;`, `(` or `)`, or at a hyphen before a range's end
 time, so `2026-09-28T10` and `2026-09-28T10:00+99` are no times. A date-time
 without a zone is UTC (Coordinated Universal Time). For a P4 check, a figure verdict or a ruling
+the time may follow one word that names the source, as in
+`JLCPCB 2026-10-02T15:17:10Z; Digi-Key 2026-10-02T15:17:30Z`; `not`, `no`,
+`never` and `unread` name no source, and two words are no reading. For these
 every date it gives is also the date `prepare` gave the run or the next day,
 for a run that passes midnight, so a reading copied from an earlier return or
 the parts database, or dated later, shows nothing. The workflow script has no
