@@ -1,0 +1,287 @@
+{
+ "role": "rerank",
+ "category": "R1",
+ "label": "rerank-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "functions": [
+   {
+    "function": "Microcontroller",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "option": "",
+      "reason": "The fixed input of the Scope table, ranked first and not replaced. No P3 candidate for this function. Every datasheet value in P2's record passes; JLCPCB C39843328 stockCount 2535 against the gate of 50, 20 held against a need of 10 (rule 6), Digi-Key SC1512(13)-A4 3560 Active as the second vendor, in production until at least January 2045. Three watchdog rows fail on firmware, not on the part: V2 stall cover, the V1/V2 window and the image's own timeout (V4: none set). They are reported to the owner and do not replace the part, as FU-A4's and FU-2A's adjudicators ruled."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "12 MHz crystal",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "ABM8-272-T3",
+      "option": "",
+      "reason": "The only candidate and the crystal RP2350 Table 597 specifies: CL 10 pF, ESR 50 Ohm max, drive level 200 uW max, C0 3.0 pF max, 65 ppm worst case total error. No P3 candidate. A re-query of the jlcparts copy (2026-10-02, about 06:53Z) of 12 MHz, 10 pF crystal rows from an allowlisted or blank maker finds no other row with ESR 50 Ohm or below; every other row states 70 Ohm or more, or no ESR with a maker off the S2 list per P2's JLCPCB readings (not re-read here). Lifecycle: Abracon's page answers HTTP 404, so Digi-Key ProductStatus Active (Abracon LLC, ABM8-272-T3) stands as the maker status under the Lifecycle check of 2026-10-02. JLCPCB 13715 passes rule 4; Digi-Key 28279 is the second vendor."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "ABM8-272-T3",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Core regulator inductor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "AOTA-B201610S3R3-101-T",
+      "option": "",
+      "reason": "Ground 1: the inductor RP2350 datasheet section 6.3.8.2 recommends, in the 2.0 x 1.6 mm case of the Figure 23 layout, approved by Raspberry Pi for the RP235x. Every value passes (140 mOhm max, Isat 2.4 A or more, polarity dot, shielded). Maker status Active read at Abracon's page. JLCPCB 3368 passes rule 4; Digi-Key 27951 is the second vendor. Unchanged by P3, which found nothing for this function."
+     },
+     {
+      "rank": 2,
+      "part": "VLS4015CX-3R3M-H",
+      "option": "",
+      "reason": "Not ground 1: 4.0 x 4.0 mm body, not qualified by Raspberry Pi. Ground 2: Digi-Key second vendor 2479, Active. Ground 3: maker status read (Production). Ground 4: 16.0 mm2 and 1.5 mm high, smaller and lower than 74438357033. JLCPCB 1845."
+     },
+     {
+      "rank": 3,
+      "part": "74438357033",
+      "option": "",
+      "reason": "Not ground 1. Ground 2: Digi-Key second vendor 3870, Active. Ground 3: maker status read (Active, expected lifetime over 10 years). Ground 4: 16.8 mm2 and 3.1 mm high, larger and taller than VLS4015CX-3R3M-H. JLCPCB 78 passes the gate of 50 by 28, the thinnest margin of the three."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "AOTA-B201610S3R3-101-T",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "USB protection",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPD6E05U06RVZR",
+      "option": "",
+      "reason": "Ground 1: rule 5 passes (Digi-Key 38412). Ground 2: no supply pin, so no wiring condition; meets V9 outright (12 kV contact, 15 kV air); VRWM 5.5 V in its table (no margin against VBUS 5.5 V, VBR 6.5 V min); a numeric clamp (14 V at 5 A TLP). Only V12's steady limit and its 16 A clamp figure rest on the owner's relaxation. One part covers the 5 lines with a spare channel. Rated to 125 C; JLCPCB 6706. Unchanged by P3's find."
+     },
+     {
+      "rank": 2,
+      "part": "TPD8S009DSMR",
+      "option": "",
+      "reason": "P3's find, qualified: passes rules 1 to 5 (JLCPCB 970 / 967, Digi-Key 5311, Active at TI). Ground 1 passes as for the others. Ground 2: it ranks below TPD6E05U06RVZR because its air discharge is 9 kV (V9's 15 kV passes only by the relaxation), it states no 16 A clamp figure, and it has a VCC pin whose wiring matters. It ranks above the two TPD6E00x parts because its 5.5 V stand-off (VRWM, VBR 9 V min) is a table row and its open-VCC behaviour is in section 6.3.6 and section 8 ('no need to power it'), where TPD6E001RSFR and TPD6E004RSER rest V10, the D+/D- stand-off and CC on application text TI marks as not part of the specification. The datasheet's own conflict, VIO 0 to VCC in the absolute maximum and recommended rows against VRWM with no VCC condition and the Ioff text, applies equally to TPD6E001RSFR and TPD6E004RSER (IOx 0 to VCC) and does not separate them; it is left to P4 to rule on if this part is ever first. Ground 4: JLCPCB 970 against 193 and 463. VCC must not be tied to VBUS: CC would then sit above VCC while VBUS is at vSafe0V. Package 2.5 x 6.5 mm, the largest of the four."
+     },
+     {
+      "rank": 3,
+      "part": "TPD6E001RSFR",
+      "option": "",
+      "reason": "Ground 1: rule 5 passes (Digi-Key 2000). Ground 2: meets V9 outright (15 kV air) and tolerates 10 V with VCC open, but V10, the D+/D- stand-off and the CC function rest on application text (section 8.2.2 step 5b, 'not part of the TI component specification'), its clamp figure is typical and not production tested, and it gives no matching figure: more such values than TPD6E05U06RVZR and than TPD8S009DSMR. Layout condition: VCC pin left open with 0.1 uF. 4 x 4 mm; JLCPCB 193."
+     },
+     {
+      "rank": 4,
+      "part": "TPD6E004RSER",
+      "option": "",
+      "reason": "Ground 1: rule 5 passes (Digi-Key 27136). Ground 2: its 12 kV air passes V9 only by the relaxation, V10 rests on 5.8 V of application text (0.3 V over 5.5 V), it has no clamping figure in a table and no matching figure: the most such values of the four. Rated to 85 C. Layout condition: VCC pin left open with 0.1 uF. 1.5 x 1.5 mm, the smallest; JLCPCB 463."
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "TPD8S009DSMR",
+      "maker": "Texas Instruments (datasheet SLVS816B; JLCPCB maker_label 'Texas Instruments'; Digi-Key 'Texas Instruments'); allowlist name Texas Instruments (S1)",
+      "lcsc": "C471873",
+      "package": "SON-15 (DSM), 2.50 x 6.50 mm (JLCPCB 'SON-15')",
+      "placements": 2,
+      "placements_basis": "range 1 to 2: one part covers the 5 lines of one port; 1 for the main coprocessor's USB port, 2 if the measurement coprocessor has its own, which IOBoard.md does not state; top of the range used",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "lines covered",
+        "required": "VBUS, D+, D-, CC1, CC2",
+        "datasheet": "8 channels, pins 1, 3, 4, 6, 7, 9, 10, 12 (D0+ to D3-), each to ground; GND pins 2, 5, 8, 11; VCC pins 13 and 15 'optional'; pin 14 N.C.; 5 used, 3 spare",
+        "pass": true,
+        "source": "TPD8S009 datasheet SLVS816B, July 2008, revised January 2025 (SHA-256 a874e2aca7d8597893860e8b8c301cf0f333fba2c9aab4b4eec54c6a17141360), https://www.ti.com/lit/ds/symlink/tpd8s009.pdf, section 4 Pin Functions and section 6.1, read 2026-10-02T06:50:53Z"
+       },
+       {
+        "name": "IEC 61000-4-2 contact",
+        "required": "+/-8 kV",
+        "datasheet": "+/-8000 V contact discharge (sections 5.2 and 6.3.1)",
+        "pass": true,
+        "source": "SLVS816B section 5.2, read 2026-10-02T06:50:53Z"
+       },
+       {
+        "name": "IEC 61000-4-2 air",
+        "required": "+/-15 kV, or the datasheet figure",
+        "datasheet": "+/-9000 V air-gap discharge (sections 5.2 and 6.3.1): misses 15 kV; the datasheet figure stands by the owner's relaxation of V9",
+        "pass": true,
+        "source": "SLVS816B sections 5.2 and 6.3.1, read 2026-10-02T06:50:53Z"
+       },
+       {
+        "name": "VBUS stand-off",
+        "required": ">= 5.5 V, not relaxed",
+        "datasheet": "VRWM 5.5 V (MAX column), 'any IO pin to ground', no VCC condition; VBR 9 V min at 1 mA (section 5.5). Section 8: 'passive ESD protection device so there is no need to power it'; section 6.3.6: handles a live signal at the pins with VCC at 0 V. Open point: the absolute maximum (5.1) and recommended (5.3) rows give VIO 0 to VCC, which read literally forbids VBUS at 5.5 V on a pin with VCC open or at 0 V; the datasheet does not settle it. The pass rests on the VRWM row and section 6.3.6",
+        "pass": true,
+        "source": "SLVS816B sections 5.1, 5.3, 5.5, 6.3.6 and 8, read 2026-10-02T06:50:53Z"
+       },
+       {
+        "name": "VBUS current",
+        "required": "3 A on VBUS",
+        "datasheet": "a shunt from each I/O to ground with no series path; it carries no VBUS load current",
+        "pass": true,
+        "source": "SLVS816B sections 6.2 and 6.4, read 2026-10-02T06:50:53Z"
+       },
+       {
+        "name": "D+ and D- stand-off",
+        "required": ">= 3.63 V",
+        "datasheet": "VRWM 5.5 V; IIO 0.01 uA typ, 0.1 uA max at VIO 3.3 V with VCC 5 V; leakage with VCC open is not stated. Same open point as the VBUS row",
+        "pass": true,
+        "source": "SLVS816B section 5.5, read 2026-10-02T06:50:53Z"
+       },
+       {
+        "name": "D+/D- steady voltage (V12)",
+        "required": "3.63 V, or the datasheet figure",
+        "datasheet": "A passive clamp that activates above VBR, 9 V min (section 6.4): it limits no steady voltage below 9 V; the datasheet figure stands by the owner's relaxation",
+        "pass": true,
+        "source": "SLVS816B sections 5.5 and 6.4, read 2026-10-02T06:50:53Z"
+       },
+       {
+        "name": "D+/D- ESD clamping (V12)",
+        "required": "36 V at 16 A TLP, or the datasheet figure",
+        "datasheet": "No TLP clamping voltage; RDYN 1.1 Ohm typ at 1 A (section 5.5); Figure 5-3 shows the 8 kV contact clamping waveform, a graph whose peak is not read; IPP 2.5 A at 8/20 us (5.1). 16 A is not given; the datasheet figure stands by the owner's relaxation",
+        "pass": true,
+        "source": "SLVS816B sections 5.1, 5.5 and 5.6, read 2026-10-02T06:50:53Z"
+       },
+       {
+        "name": "D+/D- capacitance (V11)",
+        "required": "<= 75 pF a line",
+        "datasheet": "CIO 0.8 pF typ at VCC 5 V, VIO 2.5 V; no maximum given",
+        "pass": true,
+        "source": "SLVS816B section 5.5, read 2026-10-02T06:50:53Z"
+       },
+       {
+        "name": "D+/D- capacitance matching",
+        "required": "< 10 %",
+        "datasheet": "No matching figure: 'excellent matching between differential signal pairs' (section 6.1) with no number; the part adds 0.8 pF typ to each line, 1.1 % of the 75 pF share; the line totals are not known (RP2350 Table 1437 gives no pin capacitance)",
+        "pass": true,
+        "source": "SLVS816B sections 5.5 and 6.1, read 2026-10-02T06:50:53Z"
+       },
+       {
+        "name": "CC function",
+        "required": "CC at vRd up to 2.042 V passes undisturbed, also with VBUS at vSafe0V",
+        "datasheet": "With VCC open or at 0 V a blocking diode at the VCC pin stops current from an I/O to the supply pin (section 6.3.6, Ioff); the only conduction paths are the clamp above VBR 9 V min and the lower diode below -0.6 V; leakage 0.1 uA max measured with VCC 5 V, so 0.5 mV across a 5.1 kOhm Rd; leakage with VCC open is not stated. VCC tied to VBUS would put CC above VCC before attach and is not used. Same open point as the VBUS row",
+        "pass": true,
+        "source": "SLVS816B sections 5.5, 6.3.6 and 6.4, read 2026-10-02T06:50:53Z; USB Type-C R2.5 Table 4-36 as in P2's record, read 2026-10-02T06:25:30Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "0 to 50 C",
+        "datasheet": "TA -40 to 85 C",
+        "pass": true,
+        "source": "SLVS816B section 5.3, read 2026-10-02T06:50:53Z"
+       }
+      ],
+      "jlcpcb": "C471873 exact match: stockCount 970, canPresaleNumber 967, componentLibraryType expand, USD 1.0583 at the 10-piece break (need 10); read 2026-10-02T06:50:53Z, vendors.py jlcpcb C471873 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "TPD8S009DSMR, Texas Instruments: stock_available 5311 (cut tape; 3000 on tape and reel), lead_weeks 12, ProductStatus Active, discontinued false, end_of_life false; read 2026-10-02T06:46:19Z, returned cached: true to this task (P3's reading of the same UTC day), vendors.py digikey TPD8S009DSMR (https://api.digikey.com/products/v4/search/TPD8S009DSMR/productdetails)",
+      "gate": "need = 5 boards (S7) x 2 placements (top of 1 to 2) = 10; S4 threshold max(5 x 10, 50) = 50; stockCount 970 >= 50 and canPresaleNumber 967 >= 0: pass (rule 4)",
+      "lifecycle": "Maker status: ACTIVE, from '<meta name=\"status\" content=\"ACTIVE\"' on https://www.ti.com/product/TPD8S009 (HTTP 200, read 2026-10-02T06:52:14Z): pass. Longevity: no TI commitment for the part read. Market introduction: first datasheet issue July 2008, revision B January 2025 (SLVS816B header and revision history): not flagged. Notices: TI's PCN listing not read; Digi-Key end_of_life false. Distributor: LCSC productCycle 'normal', stockNumber 970 (https://www.lcsc.com/product-detail/C471873.html, HTTP 200, read 2026-10-02T06:52:15Z); Digi-Key Active (06:46:19Z). Agrees with the maker",
+      "second_source": "second vendor: Digi-Key TPD8S009DSMR stock_available 5311 >= 50, Active (read 2026-10-02T06:46:19Z, cached)",
+      "alternates": [],
+      "driver_in_shared": "none: a passive part",
+      "reason": "P3's find, qualified as P2 does. Every value passes or stands by the owner's relaxation; rules 1 to 5 pass. Ranked 2: ground 1 passes; on ground 2 it rests on the relaxation for the air discharge (9 kV), the steady limit and the clamp figure, but on no application text, while TPD6E001RSFR and TPD6E004RSER rest V10, the D+/D- stand-off and CC on application text TI excludes from the specification; TPD6E05U06RVZR has no VCC pin and meets V9 outright, so it stays first. Open point for P4 if ever first: VIO 0 to VCC in the absolute maximum and recommended rows against VRWM and the Ioff text. VCC pins left open; not tied to VBUS. Package 2.5 x 6.5 mm.",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPD6E05U06RVZR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "crystal tolerance: TPD8S009DSMR",
+    "value": "not applicable: a USB ESD protection array, not a frequency source",
+    "source": "TPD8S009 datasheet SLVS816B (SHA-256 a874e2aca7d8597893860e8b8c301cf0f333fba2c9aab4b4eec54c6a17141360), https://www.ti.com/lit/ds/symlink/tpd8s009.pdf, read 2026-10-02T06:50:53Z"
+   },
+   {
+    "figure": "TPD8S009DSMR: P3 exclusion",
+    "value": "P3's objection to P2's drop holds in part. P2 tested only VCC on VBUS. The datasheet gives VRWM 5.5 V (any IO pin to ground, no VCC condition), VBR 9 V min at 1 mA, section 6.3.6 (live signal at the pins with VCC at 0 V, blocking diode at the VCC pin) and section 8 ('no need to power it'). The part is qualified and ranked 2 in USB protection. Open point left to P4: VIO 0 to VCC in sections 5.1 and 5.3 read literally excludes a signal above an open or grounded VCC; the datasheet does not settle it, and the TPD6E001 and TPD6E004 datasheets carry the same row against their application text",
+    "source": "SLVS816B sections 5.1, 5.3, 5.5, 6.3.6, 8, read 2026-10-02T06:50:53Z"
+   },
+   {
+    "figure": "TPD8S009DSMR: JLCPCB stock",
+    "value": "C471873: stockCount 970, canPresaleNumber 967, expand, USD 1.0583 at 10 pieces; rule 4 gate 50 passes",
+    "source": "vendors.py jlcpcb C471873 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList), read 2026-10-02T06:50:53Z"
+   },
+   {
+    "figure": "TPD8S009DSMR: Digi-Key",
+    "value": "stock_available 5311 (3000 on tape and reel), lead_weeks 12, Active, discontinued false, end_of_life false; rule 5 by second vendor passes",
+    "source": "vendors.py digikey TPD8S009DSMR (https://api.digikey.com/products/v4/search/TPD8S009DSMR/productdetails), cached reading of 2026-10-02T06:46:19Z"
+   },
+   {
+    "figure": "TPD8S009DSMR: lifecycle",
+    "value": "TI page status ACTIVE; LCSC productCycle 'normal', stockNumber 970; first datasheet issue July 2008; TI PCN listing and longevity commitment not read",
+    "source": "https://www.ti.com/product/TPD8S009 (HTTP 200, read 2026-10-02T06:52:14Z); https://www.lcsc.com/product-detail/C471873.html (HTTP 200, read 2026-10-02T06:52:15Z)"
+   },
+   {
+    "figure": "USB protection: ranking grounds",
+    "value": "Order TPD6E05U06RVZR, TPD8S009DSMR, TPD6E001RSFR, TPD6E004RSER. Grounds as P2 set them: (1) rule 5 passes, which all four do; (2) fewest values resting on the relaxation, application text or typical-only figures; (3) maker status read; (4) JLCPCB stock. Ground 2 separates the four: TPD8S009DSMR rests on no application text, where TPD6E001RSFR rests V10, the D+/D- stand-off and CC on text TI excludes from the specification",
+    "source": "the records of this return and P2's; datasheets SLVS816B, SLVSBO7O, SLLS685D, SLLS799C as read by P2 (2026-10-02T06:25:54Z to 06:25:55Z) and here"
+   },
+   {
+    "figure": "12 MHz crystal: candidates in the copy",
+    "value": "A query of the jlcparts copy for crystal rows with 12MHz and 10pF in the description, from an allowlisted or blank maker, returns ABM8-272-T3 (C20625731) as the only row with ESR 50 Ohm; the others state 70 Ohm or more, or no ESR. Rows with a blank maker and no ESR are the ones P2 took from JLCPCB as makers off the S2 list; not re-read here",
+    "source": "sqlite3 file:/home/claude/rcbench-research/jlcparts-2026-09-14/cache.sqlite3?mode=ro, table jlc_components, run 2026-10-02 about 06:53Z"
+   },
+   {
+    "figure": "P2 stock and lifecycle readings",
+    "value": "Not re-read in this task for RP2354B, ABM8-272-T3, AOTA-B201610S3R3-101-T, VLS4015CX-3R3M-H, 74438357033, TPD6E05U06RVZR, TPD6E001RSFR and TPD6E004RSER: P4's stock and lifecycle verifier re-reads them. Their figures in the final shortlist are P2's, read 2026-10-02T06:20:15Z to 06:28:01Z",
+    "source": "P2's return for R1 of this task"
+   },
+   {
+    "figure": "fixed input: RP2354B",
+    "value": "Ranked first for Microcontroller; no P3 candidate. Reported to the owner as in P2's return: three watchdog rows fail on firmware (V2 stall cover, V1/V2 window, V4 image timeout none set), none on the part",
+    "source": "P2's return; FU-2A adjudicator-R1 (010-adjudicator-R1.json, 2026-10-01T22:24Z)"
+   }
+  ]
+ }
+}

@@ -1,0 +1,81 @@
+{
+ "role": "P3",
+ "category": "R9",
+ "label": "P3-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "missed": [
+   {
+    "function": "cell monitor isolation barrier",
+    "part": "ISO7741BDWR (C2862696)",
+    "maker": "Texas Instruments",
+    "why": "P2 returned no entry. Same data sheet as rank 1: ISO774x SLLSEP4K, https://www.ti.com/lit/ds/symlink/iso7741.pdf (vendors.py fetch chrome, HTTP 200, read 2026-10-02T07:02:55Z; same SHA-256 as P2's copy). ISO7741B is the basic-insulation variant. 3 forward and 1 reverse channel; VIORM 1414 VPK and VIOWM 1414 VDC (section 5.6), above 85 V DC; VCC 2.25 to 5.5 V on each side; output defaults high without the F suffix (section 3); ICC2 at 5 V 4.6 mA max at 1 Mbps, 5.2 mA max DC, 6.4 mA max at 10 Mbps (section 5.10); tPD 10.7 ns typ; DW-16 land pattern and pin functions of rank 1; ISO7741BDWR listed Active, Production. JLCPCB (vendors.py jlcpcb C2862696, 2026-10-02T06:50:56Z): stockCount 322, canPresaleNumber 321, extended, 2.7393 at 1 piece (rank 1 C571196: 5112 / 4926, 1.4745 at 06:50:59Z). Digi-Key (https://api.digikey.com/products/v4/search/ISO7741BDWR/productdetails, 2026-10-02T06:58:56Z): Active, stock_available 356, lead 20 weeks. Passes every value. Ranks below rank 1 on stock and price (1.9 times); it is a pin-compatible alternate and a same-land-pattern second source with stock above the gate of 50 at both vendors."
+   },
+   {
+    "function": "cell monitor isolation barrier",
+    "part": "ISO7741QDWRQ1 (C124738)",
+    "maker": "Texas Instruments",
+    "why": "P2 dropped only the F and Q1 rows (ISO7741FQDBQRQ1) and returned no entry for this default-high Q1 part. ISO774x-Q1 SLLSEU0G, https://www.ti.com/lit/ds/symlink/iso7741-q1.pdf (chrome, HTTP 200, 2,618,010 bytes, read 2026-10-02T06:51:10Z): 3 forward and 1 reverse; output high without the F suffix; VCC 2.25 to 5.5 V; DW-16 VIOWM 2121 VDC, 1500 VRMS (section 5.6); ICC2 at 5 V 4.6 mA max at 1 Mbps (section 5.10); tPLH/tPHL 6 / 10.7 / 17 ns at 5 V (5.15); AEC-Q100 grade 1, -40 to 125 C. JLCPCB (2026-10-02T06:50:56Z): stockCount 1566, canPresaleNumber 1565, extended, 2.2451 at 1 piece. Digi-Key (https://api.digikey.com/products/v4/search/ISO7741QDWRQ1/productdetails, 06:58:57Z): Active, stock_available 15, lead 20 weeks, under the gate of 50, so its second source is the pin-compatible ISO7741DWR, not Digi-Key. Passes every value; ranks below rank 1 on price (1.5 times) and stock."
+   },
+   {
+    "function": "cell monitor isolation barrier",
+    "part": "ISO7241CDWR (C133245)",
+    "maker": "Texas Instruments",
+    "why": "Not considered by P2 or FU-2C. ISO724x SLLS868W, https://www.ti.com/lit/ds/symlink/iso7241c.pdf (chrome, HTTP 200, read 2026-10-02T06:51:09Z). ISO7241C is 3 forward / 1 reverse (Table 7-1); pins identical to ISO7741 (INA 3, INB 4, INC 5, OUTD 6, EN1 7, IND 11, OUTC 12, OUTB 13, OUTA 14; Table 4-1); VCC 3.15 to 5.5 V on each side (5.3); input power down with output side powered gives output high (Table 7-2); VIORM 560 VPK (section 5.6), above 85 V DC; tPLH/tPHL 22 to 51 ns with VCC1 3.3 V and VCC2 5 V (5.19); 25 Mbps; Active, -40 to 125 C. Cost: ICC2 at 5 V 13 mA typ, 20 mA max quiescent and 28 mA max at 25 Mbps (5.10), against 5.2 mA for rank 1, so the 5 V rail carries 24.6 + 20 = 44.6 mA awake, inside the 300 mA of LTM8068's VOUT2 but not the 31.0 mA the pack-side supply row names. JLCPCB (06:50:56Z): stockCount 3197, canPresaleNumber 3175, extended, 1.9525 at 1. Digi-Key (https://api.digikey.com/products/v4/search/ISO7241CDWR/productdetails, 06:58:59Z): Active, stock_available 3704, lead 12 weeks. Passes every value; second-vendor route passes. It ranks below rank 1 on current and price."
+   },
+   {
+    "function": "cell monitor isolation barrier",
+    "part": "ADUM141E1WBRWZ-RL (C660437)",
+    "maker": "Analog Devices",
+    "why": "Not considered. ADuM140D/E to ADuM142D/E Rev. K, https://www.analog.com/media/en/technical-documentation/data-sheets/ADuM140D_140E_141D_141E_142D_142E.pdf (safari, HTTP 200, 1,017,635 bytes, read 2026-10-02T06:51:16Z). ADuM141E1: 3 inputs on side 1, 1 on side 2, 150 Mbps, default high (ordering guide; Table 21: unpowered input side gives high); pin-compatible with ADuM1401; VDD 1.8 to 5 V each side; VIORM 565 V peak, VIOWM 400 V rms (Table 19: 565 V peak bipolar; a DC figure is not stated); tPD 4.8 / 7.2 / 13 ns at 5 V; IDD2 at 5 V 4.0 typ and 6.85 mA max at 1 Mbps (Table 2), 10 mA max quiescent; the W model is listed as qualified for automotive use. JLCPCB (06:50:57Z): stockCount 200, canPresaleNumber 194, extended, 2.3069 at 1. Digi-Key (https://api.digikey.com/products/v4/search/ADUM141E1WBRWZ-RL/productdetails, 06:59:02Z): Active, stock_available 1190, lead 52 weeks. Passes every value; second-vendor route passes; same SOIC-16 wide land pattern as rank 1; ranks below rank 1 on price (1.6 times) and stock."
+   },
+   {
+    "function": "cell monitor isolation barrier",
+    "part": "ADUM141E1BRWZ-RL (C456282)",
+    "maker": "Analog Devices",
+    "why": "Same data sheet, figures and pins as ADUM141E1WBRWZ-RL without the automotive qualification (ADuM140D/E to 142D/E Rev. K, read 2026-10-02T06:51:16Z). JLCPCB (06:50:57Z): stockCount 135, canPresaleNumber 133, extended, 4.8087 at 1. Digi-Key (06:59:01Z, https://api.digikey.com/products/v4/search/ADUM141E1BRWZ-RL/productdetails): Active, stock_available 510, lead 52 weeks. Passes every value; ranks below the W model on price."
+   },
+   {
+    "function": "cell monitor isolation barrier",
+    "part": "ADUM241E1BRWZ-RL (C660677)",
+    "maker": "Analog Devices",
+    "why": "Not considered. ADuM240D/E to ADuM242D/E Rev. E, https://www.analog.com/media/en/technical-documentation/data-sheets/ADuM240D_240E_241D_241E_242D_242E.pdf (safari, HTTP 200, 795,458 bytes, read 2026-10-02T06:51:17Z). ADuM241E1: 3 inputs on side 1, 1 on side 2, default high, 5.0 kV rms, pin-compatible with ADuM2401; VDD 1.8 to 5 V; VIORM 849 V peak, VIOWM 600 V rms; tPD 13 ns max at 5 V; IDD2 6.85 mA max at 1 Mbps (Table 2). JLCPCB (06:50:58Z): stockCount 121, canPresaleNumber 120, extended, 2.3524 at 1. Digi-Key (06:59:04Z, https://api.digikey.com/products/v4/search/ADUM241E1BRWZ-RL/productdetails): Active, stock_available 0, lead 52 weeks, so the second-vendor route fails. Passes every value; ranks below the ADuM141E1 rows for the second source."
+   },
+   {
+    "function": "Cell monitor",
+    "part": "BQ76PL455APFCR (C2877182), BQ76PL455APFCT (C1992228)",
+    "maker": "Texas Instruments",
+    "why": "P2 returned no entry. Not read: the TI data sheet and product URLs https://www.ti.com/lit/ds/symlink/bq76pl455a.pdf, .../bq76pl455a-q1.pdf, https://www.ti.com/lit/gpn/bq76pl455a and https://www.ti.com/lit/ds/slusae9a/slusae9a.pdf all answered HTTP 404 (2026-10-02T07:00:57Z to 07:00:58Z), so no lowest cell count, interface, input rating or lifecycle value is read; the jlcparts attribute '6~16' is not a source. JLCPCB (2026-10-02T07:01:07Z and 07:01:08Z): C2877182 stockCount 1325 / 1322 at 10.9862; C1992228 68 / 68 at 9.5556. It cannot be qualified; Digi-Key not read."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "ISO7741FDWR (C485810), ISO6741FDWR (C5216433), ISO7741FDBQR (C2872241), ISO7741FQDBQRQ1 (C2877510)",
+    "reason_given": "Fail 'chip select idle high' (Pins.md:151-155): the F suffix defaults low on input power loss, which selects the monitor while the host side is unpowered.",
+    "why_it_fails": "Pins.md lines 151-155 cover only the coprocessor in reset: pads come out of reset pulled down (32 to 86 kOhm) and each chip select has an external pull-up of about 10 kOhm. In that state the host's 3.3 V rail is up, the barrier input is high and an F part's output is high; F acts only on input power loss. No line of Pins.md, IOBoard.md or Research.md (checkout fe53d3a, read 2026-10-02) states a host-side-unpowered case. In that case an F part holds CSB, SCK and SDI low. ADBMS1818 Rev. B p. 56 (https://www.analog.com/media/en/technical-documentation/data-sheets/ADBMS1818.pdf, safari, HTTP 200, read 2026-10-02T07:06:16Z): in SPI mode activity on CSB or SCK wakes the port, and the differential SCK - CSB must reach VWAKE 200 mV for tDWELL 240 ns (Table 7); static low on both lines is 0 mV and no clock edge. No value read shows harm to the ADBMS1818 or to V190. The other values pass: ISO774x SLLSEP4K and ISO774x-Q1 SLLSEU0G (read 2026-10-02T07:02:55Z and 06:51:10Z); ISO6741 not re-read. JLCPCB (06:55:56Z to 06:55:57Z): C485810 1086 / 1066 at 1.7509; C5216433 1144 / 1137 at 1.9167; C2872241 125 / 99 at 2.6125; C2877510 4469 / 4454 at 1.6078. Digi-Key (07:02:40Z to 07:02:46Z): 3870, 1460, 0, 0, all Active. The drop stands only if the owner adds a host-unpowered requirement."
+   },
+   {
+    "part": "ISO7741DBQR (C913840), as the generic reason for the unkept rows",
+    "reason_given": "Not among the three kept: less stock, higher price, a land pattern no shortlisted row shares, or a Digi-Key stock of 0. Rank 1's reason: 'most JLCPCB stock at the lowest price but one'.",
+    "why_it_fails": "For ISO7741DBQR the first two reasons are false. JLCPCB (vendors.py jlcpcb C913840, 2026-10-02T07:05:25Z): stockCount 38042, canPresaleNumber 37915, 0.9478 at 1 piece, 0.782 at 10; rank 1 C571196 has 5112 / 4926 at 1.4745 (06:50:59Z). It has the most stock and the lowest price of any barrier read, so rank 1's 'lowest price but one' is wrong too. Only the land pattern (DBQ-16, SSOP 150 mil) and Digi-Key stock 0 (cached reading 2026-10-02T01:04:17Z, same UTC day, https://api.digikey.com/products/v4/search/ISO7741DBQR/productdetails) hold. Its rule 5 passes on the pin-compatible alternate ISO7741DWR: SLLSEP4K Figure 4-2 shows the ISO7741 DW and DBQ packages with the same pin functions. DBQ-16 VIOWM is 566 VDC, above 85 V. The row belongs in the ranking on land pattern and second source only. The other generic-reason rows (ADUM1411BRWZ-RL 345 / 311 at 3.3326; ISO7341CDWR 75 / 72; ADUM1401BRWZ-RL 2850 / 2789 at 5.5452; ADUM7441CRQZ-RL7 1128 at 6.5157; ISO7141CCDBQR 594 at 5.6476; ISO7841DWWR 51 at 8.39) re-read at 07:05Z hold."
+   },
+   {
+    "part": "ADUM5411BRSZ-RL7 (C2830727)",
+    "reason_given": "Cannot be qualified: the data sheet URL .../ADuM5410_5411_5412.pdf answered HTTP 404.",
+    "why_it_fails": "The data sheet is published at https://www.analog.com/media/en/technical-documentation/data-sheets/ADuM5410-5411-5412.pdf (hyphens; safari, HTTP 200, 922,072 bytes, read 2026-10-02T06:52:34Z, Rev. B). The 404 was a wrong file name. Read: ADuM5411 has VIA, VIB, VIC inputs and VOD output on side 1 (3 forward, 1 reverse); VDD1 (3.0 to 5.5 V) is independent of VDDP, so 3.3 V host logic is allowed with VDDP at 5 V, and the ADuM5401 reason does not apply; VIORM 573 V peak. The part still fails the 5 V output: IISO(MAX) 30 mA (VISO above 4.5 V) against 24.6 mA for the ADBMS1818 plus IDD2 up to 6.85 mA at 1 Mbps = 31.45 mA; VISO setpoint 4.7 V min with 5 % load regulation (3 to 27 mA) = 4.465 V under 4.5 V; VDDP draws 104 mA typ, 140 mA max at full load from the 5 V rail (Table 3, Table 4). The drop stands on those values, not on the 404. JLCPCB 517 / 505 at 17.123 (06:54:20Z)."
+   },
+   {
+    "part": "DCP010505BP-U/700 (C962989), DCP020505U/1K, DCP020503U, DCR011205U/1K",
+    "reason_given": "Not qualified: 1 kV operational-isolation modules; their data sheets are not read in this task.",
+    "why_it_fails": "An unread data sheet is not a reason. Read now: DCP01 SBVS012I (https://www.ti.com/lit/ds/symlink/dcp010505b.pdf, chrome, HTTP 200, read 2026-10-02T06:55:23Z) and DCP02 SBVS011N (https://www.ti.com/lit/ds/symlink/dcp020505.pdf, read 06:55:24Z) both give 'Continuous voltage applied across isolation barrier: 60 VDC / 42.5 VAC', under the 85 V DC working rating of V189, as DCR010505U does. The DCR01 family sheet P2 read gives the same 60 VDC for DCR011205U/1K. The four drops stand on 60 VDC, not on the data sheets being unread."
+   },
+   {
+    "part": "SN6505BDBVR (C74518), SN6501DBVR (C49451), LT8301 and LM25180 flyback rows",
+    "reason_given": "Not qualified: transformer drivers and flyback controllers that need a transformer and rectifiers no stage 1 function selects.",
+    "why_it_fails": "This is a scope condition, not a requirement value, and P2 applies it unevenly: rank 2 (ISOW7741BDFMR with TPS61040DBVR) also needs a boost inductor and diode that no function selects, and P2 keeps it, ranked below rank 1 for that reason, citing Research.md Rules of stage 1 ('an inductor a category names is researched in stage 1'). The function 'cell monitor pack-side supply' is new and owns the magnetics its route needs. A flyback IC with a primary-side-regulated transformer stays a candidate with unselected magnetics and ranks lower; it is not dropped. No value of the function (5 V 4.5 to 5.5 V, V+ of 16 V or more, 85 V DC working, 0.0014 A at V+) is read for any of these rows in this task, so none is shown to pass; no live JLCPCB count was read for them (jlcparts shows LT8301ES5#TRMPBF C68269 with 675, not a source)."
+   }
+  ],
+  "missed_functions": []
+ }
+}

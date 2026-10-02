@@ -1,0 +1,1093 @@
+{
+ "role": "P4",
+ "category": "R11",
+ "label": "P4-stock-R11",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "magnetic pickup",
+    "part": "DRV5015A1QDBZR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "339",
+      "read": "stockCount 339, canPresaleNumber 336; need 5 x 1 = 5, threshold max(5 x 5, 50) = 50; 339 >= 50: rule 4 passes",
+      "source": "vendors.py jlcpcb C2152440 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE",
+      "read": "ACTIVE (Texas Instruments): https://www.ti.com/product/DRV5015 meta status ACTIVE, orderable DRV5015A1QDBZR marketingStatusDescription ACTIVE; Digi-Key ProductStatus Active (2026-10-02T00:26:17Z, distributor figure)",
+      "source": "https://www.ti.com/product/DRV5015 (vendors.py fetch); Digi-Key API productdetails DRV5015A1QDBZR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:01Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "not read",
+      "read": "none found: orderable ACTIVE on the product page; Digi-Key discontinued false, end of life false; TI's change-notice search not read. Other orderables DRV5015A1QDBZT, A2QDBZT, A3QDBZT (250-piece reel) are OBSOLETE; the candidate DBZR is ACTIVE.",
+      "source": "https://www.ti.com/product/DRV5015; Digi-Key API productdetails DRV5015A1QDBZR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:01Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1",
+      "read": "1 a board (one latch on the sensor board); need 5; count 1 >= 1",
+      "source": "hardware/docs/IOBoard.md, Pins.md, Research.md at checkout fe53d3a8bc9a",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board",
+      "read": "magnetic pickup latch (V217) on a board JLCPCB assembles; LCSC C2152440: both say on the board (rule 1)",
+      "source": "hardware/docs/IOBoard.md, Pins.md, Research.md at checkout fe53d3a8bc9a",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "no per-part date; TI states 'product life cycles are typically 10 to 15 years and often extend longer'; recorded, not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:26:49Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first revision June 2018 (SBAS915)",
+      "read": "datasheet SBAS915A 'JUNE 2018 - REVISED APRIL 2019', history 'Original (June 2018) to Revision A'; over 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/drv5015.pdf (vendors.py fetch, pdftotext)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:26Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status",
+      "read": "Digi-Key Active (2026-10-02T00:26:17Z); LCSC product-detail/C2152440.html in stock 335; JLCPCB API and partdetail/C2152440 carry no status; no disagreement",
+      "source": "Digi-Key API; lcsc.com and jlcpcb.com part pages (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:02Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "12 weeks",
+      "read": "manufacturer lead time 12 weeks (Digi-Key)",
+      "source": "Digi-Key API productdetails DRV5015A1QDBZR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:17Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "336",
+      "read": "canPresaleNumber 336, zero or above",
+      "source": "vendors.py jlcpcb C2152440 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "DRV5015A1QDBZR, SOT-23 (DBZ)",
+      "read": "exact result for C2152440: DRV5015A1QDBZR, SOT-23, Texas Instruments",
+      "source": "vendors.py jlcpcb C2152440 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "expand (S6 allows both)",
+      "source": "vendors.py jlcpcb C2152440 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 2821",
+      "read": "Digi-Key stock_available 2821 >= 50 (gate for need 5: max(5 x 5, 50) = 50)",
+      "source": "Digi-Key API productdetails DRV5015A1QDBZR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:17Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "phase-wire clip",
+    "part": "TLV3201AIDBVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "39645",
+      "read": "stockCount 39645, canPresaleNumber 38327; need 5 x 2 = 10, threshold max(5 x 10, 50) = 50; 39645 >= 50: rule 4 passes",
+      "source": "vendors.py jlcpcb C105188 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE",
+      "read": "ACTIVE (Texas Instruments): https://www.ti.com/product/TLV3201 meta status ACTIVE, orderable TLV3201AIDBVR marketingStatusDescription ACTIVE; Digi-Key ProductStatus Active (2026-10-02T00:26:22Z, distributor figure)",
+      "source": "https://www.ti.com/product/TLV3201 (vendors.py fetch); Digi-Key API productdetails TLV3201AIDBVR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:02Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "not read",
+      "read": "none found: orderable ACTIVE on the product page; Digi-Key discontinued false, end of life false; TI's change-notice search not read. All 5 TI orderables ACTIVE.",
+      "source": "https://www.ti.com/product/TLV3201; Digi-Key API productdetails TLV3201AIDBVR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:02Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2",
+      "read": "2 a board (range 1 to 2, top 2); need 10; count 2 >= 2",
+      "source": "hardware/docs/IOBoard.md, Pins.md, Research.md at checkout fe53d3a8bc9a",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board",
+      "read": "phase-wire clip comparator, GPIO 25 on a board JLCPCB assembles; LCSC C105188: both say on the board (rule 1)",
+      "source": "hardware/docs/IOBoard.md, Pins.md, Research.md at checkout fe53d3a8bc9a",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "no per-part date; TI states 'product life cycles are typically 10 to 15 years and often extend longer'; recorded, not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:26:49Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first revision March 2012 (SBOS561)",
+      "read": "SBOS561C 'MARCH 2012 - REVISED MAY 2024', history ends 'Revision * (March 2012) to Revision A (June 2012)'; over 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/tlv3201.pdf (vendors.py fetch, pdftotext)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:27Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status",
+      "read": "Digi-Key Active (2026-10-02T00:26:22Z); LCSC product-detail/C105188.html in stock 38665; JLCPCB API and partdetail/C105188 carry no status; no disagreement",
+      "source": "Digi-Key API; lcsc.com and jlcpcb.com part pages (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:03Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "20 weeks",
+      "read": "manufacturer lead time 20 weeks (Digi-Key)",
+      "source": "Digi-Key API productdetails TLV3201AIDBVR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:22Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "38327",
+      "read": "canPresaleNumber 38327, zero or above",
+      "source": "vendors.py jlcpcb C105188 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "TLV3201AIDBVR, SOT-23-5 (DBV)",
+      "read": "exact result for C105188: TLV3201AIDBVR, SOT-23-5, Texas Instruments",
+      "source": "vendors.py jlcpcb C105188 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "expand (S6 allows both)",
+      "source": "vendors.py jlcpcb C105188 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "phase-wire clip",
+    "part": "TLV3601DBVR",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "1621",
+      "read": "stockCount 1621, canPresaleNumber 1554; need 5 x 2 = 10, threshold max(5 x 10, 50) = 50; 1621 >= 50: rule 4 passes",
+      "source": "vendors.py jlcpcb C5213958 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE",
+      "read": "ACTIVE (Texas Instruments): https://www.ti.com/product/TLV3601 meta status ACTIVE, orderable TLV3601DBVR marketingStatusDescription ACTIVE; Digi-Key ProductStatus Active (2026-10-02T00:26:26Z, distributor figure)",
+      "source": "https://www.ti.com/product/TLV3601 (vendors.py fetch); Digi-Key API productdetails TLV3601DBVR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:02Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "not read",
+      "read": "none found: orderable ACTIVE on the product page; Digi-Key discontinued false, end of life false; TI's change-notice search not read. All 5 TI orderables ACTIVE.",
+      "source": "https://www.ti.com/product/TLV3601; Digi-Key API productdetails TLV3601DBVR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:02Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2",
+      "read": "2 a board (range 1 to 2, top 2); need 10; count 2 >= 2",
+      "source": "hardware/docs/IOBoard.md, Pins.md, Research.md at checkout fe53d3a8bc9a",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board",
+      "read": "phase-wire clip comparator as alternate, GPIO 25 on a board JLCPCB assembles; LCSC C5213958: both say on the board (rule 1)",
+      "source": "hardware/docs/IOBoard.md, Pins.md, Research.md at checkout fe53d3a8bc9a",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "no per-part date; TI states 'product life cycles are typically 10 to 15 years and often extend longer'; recorded, not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:26:49Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first revision June 2021 (SNOSDB1)",
+      "read": "SNOSDB1E 'JUNE 2021 - REVISED APRIL 2023', history 'Revision * (June 2021) to Revision A (August 2021)'; over 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/tlv3601.pdf (vendors.py fetch, pdftotext)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:27Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status",
+      "read": "Digi-Key Active (2026-10-02T00:26:26Z); LCSC product-detail/C5213958.html in stock 1487; JLCPCB API and partdetail/C5213958 carry no status; no disagreement",
+      "source": "Digi-Key API; lcsc.com and jlcpcb.com part pages (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:04Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "12 weeks",
+      "read": "manufacturer lead time 12 weeks (Digi-Key)",
+      "source": "Digi-Key API productdetails TLV3601DBVR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:26Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "1554",
+      "read": "canPresaleNumber 1554, zero or above",
+      "source": "vendors.py jlcpcb C5213958 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "TLV3601DBVR, SOT-23-5 (DBV)",
+      "read": "exact result for C5213958: TLV3601DBVR, SOT-23-5, Texas Instruments",
+      "source": "vendors.py jlcpcb C5213958 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "expand (S6 allows both)",
+      "source": "vendors.py jlcpcb C5213958 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "encoder input",
+    "part": "AM26LV32EIDR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "48815",
+      "read": "stockCount 48815, canPresaleNumber 48715; need 5 x 1 = 5, threshold max(5 x 5, 50) = 50; 48815 >= 50: rule 4 passes",
+      "source": "vendors.py jlcpcb C527448 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE",
+      "read": "ACTIVE (Texas Instruments): https://www.ti.com/product/AM26LV32E meta status ACTIVE, orderable AM26LV32EIDR marketingStatusDescription ACTIVE; Digi-Key ProductStatus Active (2026-10-02T00:26:28Z, distributor figure)",
+      "source": "https://www.ti.com/product/AM26LV32E (vendors.py fetch); Digi-Key API productdetails AM26LV32EIDR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:02Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "not read",
+      "read": "none found: orderable ACTIVE on the product page; Digi-Key discontinued false, end of life false; TI's change-notice search not read. All 5 TI orderables ACTIVE.",
+      "source": "https://www.ti.com/product/AM26LV32E; Digi-Key API productdetails AM26LV32EIDR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:02Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1",
+      "read": "1 a board (one quad receiver for A, B, I); need 5; count 1 >= 1",
+      "source": "hardware/docs/IOBoard.md, Pins.md, Research.md at checkout fe53d3a8bc9a",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board",
+      "read": "encoder receiver, GPIO 20 to 22 on a board JLCPCB assembles; LCSC C527448: both say on the board (rule 1)",
+      "source": "hardware/docs/IOBoard.md, Pins.md, Research.md at checkout fe53d3a8bc9a",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "no per-part date; TI states 'product life cycles are typically 10 to 15 years and often extend longer'; recorded, not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:26:49Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first revision April 2008 (SLLS849)",
+      "read": "SLLS849E 'APRIL 2008 - REVISED AUGUST 2023', history from Revision A (May 2008); over 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/am26lv32e.pdf (vendors.py fetch, pdftotext)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:27Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status",
+      "read": "Digi-Key Active (2026-10-02T00:26:28Z); LCSC product-detail/C527448.html in stock 48663; JLCPCB API and partdetail/C527448 carry no status; no disagreement",
+      "source": "Digi-Key API; lcsc.com and jlcpcb.com part pages (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:05Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "20 weeks",
+      "read": "manufacturer lead time 20 weeks (Digi-Key)",
+      "source": "Digi-Key API productdetails AM26LV32EIDR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:28Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "48715",
+      "read": "canPresaleNumber 48715, zero or above",
+      "source": "vendors.py jlcpcb C527448 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "AM26LV32EIDR, SOIC-16 (D)",
+      "read": "exact result for C527448: AM26LV32EIDR, SOIC-16, Texas Instruments",
+      "source": "vendors.py jlcpcb C527448 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "expand (S6 allows both)",
+      "source": "vendors.py jlcpcb C527448 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:45Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 13102",
+      "read": "Digi-Key stock_available 13102 >= 50 (gate for need 5: max(5 x 5, 50) = 50)",
+      "source": "Digi-Key API productdetails AM26LV32EIDR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:28Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "encoder decode",
+    "part": "RP2354B",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "held quantity",
+      "stated": "20, inventory 2026-09-25",
+      "read": "CSV row RP2354B C39843328: JLCPCB qty 20, global sourcing 0, consigned 0; need 5 x 2 = 10; 20 >= 10: rule 6 pass",
+      "source": "hardware/docs/inventory-2026-09-25.csv and Research.md Held parts",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "in production",
+      "read": "in production (Raspberry Pi): https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch) lists RP2354B and states 'RP2350 will remain in production until at least January 2045'; Digi-Key SC1512(13)-A4 ProductStatus Active (2026-10-02T00:26:33Z, distributor figure)",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch); Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:03Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN 28 (stepping A4) not re-read",
+      "read": "none: the Raspberry Pi portal lists 1 RP2350 PCN, 'RP235x A4 stepping PCN' (6 Oct 2025), a stepping change; Digi-Key discontinued false, end of life false",
+      "source": "https://pip.raspberrypi.com/categories/1263-pcn (vendors.py fetch); Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:26:31Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2",
+      "read": "2 a board, main and measurement coprocessor (owner, 2026-09-30); need 10; count 2 >= 2",
+      "source": "Research.md prerequisite 9 (lines 522-524) and line 558, checkout fe53d3a8bc9a",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board",
+      "read": "IO board, main and measurement coprocessor; LCSC C39843328: both say on the board (rule 1)",
+      "source": "Research.md Held parts and prerequisite 9; Pins.md",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "until at least January 2045",
+      "read": "'RP2350 will remain in production until at least January 2045'; recorded, not a gate (S5)",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:03Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "8 August 2024",
+      "read": "RP2350 datasheet build 2025-07-29, Appendix H: '8 August 2024 - Initial release'; lists RP2354B; about 14 months: over 12",
+      "source": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (vendors.py fetch, pdftotext)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:26:08Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status",
+      "read": "Digi-Key SC1512(13)-A4 Active (00:26:33Z); LCSC C39843328 in stock 2,580; JLCPCB API and partdetail carry no status; no disagreement. 'RP2354B' is not a Digi-Key part number (404); the product is the one JLCPCB names as erpComponentName 'SC1512(13)-A4'",
+      "source": "Digi-Key API; lcsc.com and jlcpcb.com part pages (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:06Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "22 weeks",
+      "read": "manufacturer lead time 22 weeks (Digi-Key SC1512(13)-A4)",
+      "source": "Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "RP2354B, QFN-80 10 x 10 mm",
+      "read": "exact result for C39843328: RP2354B, QFN-80-EP(10x10), Raspberry Pi",
+      "source": "vendors.py jlcpcb C39843328 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:46Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "expand (S6 allows both)",
+      "source": "vendors.py jlcpcb C39843328 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:46Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 3560",
+      "read": "Digi-Key SC1512(13)-A4 (Raspberry Pi) stock_available 3560 >= 50 (gate for need 10: max(50, 50)); SC1512-A4 6125",
+      "source": "Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "rotation from ESC",
+    "part": "RP2354B",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "held quantity",
+      "stated": "20, inventory 2026-09-25",
+      "read": "CSV row RP2354B C39843328: JLCPCB qty 20, global sourcing 0, consigned 0; need 5 x 2 = 10; 20 >= 10: rule 6 pass",
+      "source": "hardware/docs/inventory-2026-09-25.csv and Research.md Held parts",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "in production",
+      "read": "in production (Raspberry Pi): https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch) lists RP2354B and states 'RP2350 will remain in production until at least January 2045'; Digi-Key SC1512(13)-A4 ProductStatus Active (2026-10-02T00:26:33Z, distributor figure)",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch); Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:03Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN 28 (stepping A4) not re-read",
+      "read": "none: the Raspberry Pi portal lists 1 RP2350 PCN, 'RP235x A4 stepping PCN' (6 Oct 2025), a stepping change; Digi-Key discontinued false, end of life false",
+      "source": "https://pip.raspberrypi.com/categories/1263-pcn (vendors.py fetch); Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:26:31Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2",
+      "read": "2 a board, main and measurement coprocessor (owner, 2026-09-30); need 10; count 2 >= 2",
+      "source": "Research.md prerequisite 9 (lines 522-524) and line 558, checkout fe53d3a8bc9a",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board",
+      "read": "IO board, main and measurement coprocessor; LCSC C39843328: both say on the board (rule 1)",
+      "source": "Research.md Held parts and prerequisite 9; Pins.md",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "until at least January 2045",
+      "read": "'RP2350 will remain in production until at least January 2045'; recorded, not a gate (S5)",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:03Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "8 August 2024",
+      "read": "RP2350 datasheet build 2025-07-29, Appendix H: '8 August 2024 - Initial release'; lists RP2354B; about 14 months: over 12",
+      "source": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (vendors.py fetch, pdftotext)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:26:08Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status",
+      "read": "Digi-Key SC1512(13)-A4 Active (00:26:33Z); LCSC C39843328 in stock 2,580; JLCPCB API and partdetail carry no status; no disagreement. 'RP2354B' is not a Digi-Key part number (404); the product is the one JLCPCB names as erpComponentName 'SC1512(13)-A4'",
+      "source": "Digi-Key API; lcsc.com and jlcpcb.com part pages (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:06Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "22 weeks",
+      "read": "manufacturer lead time 22 weeks (Digi-Key SC1512(13)-A4)",
+      "source": "Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "RP2354B, QFN-80 10 x 10 mm",
+      "read": "exact result for C39843328: RP2354B, QFN-80-EP(10x10), Raspberry Pi",
+      "source": "vendors.py jlcpcb C39843328 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:46Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "expand (S6 allows both)",
+      "source": "vendors.py jlcpcb C39843328 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:46Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 3560",
+      "read": "Digi-Key SC1512(13)-A4 (Raspberry Pi) stock_available 3560 >= 50 (gate for need 10: max(50, 50)); SC1512-A4 6125",
+      "source": "Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "rotation inputs",
+    "part": "RP2354B",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "held quantity",
+      "stated": "20, inventory 2026-09-25",
+      "read": "CSV row RP2354B C39843328: JLCPCB qty 20, global sourcing 0, consigned 0; need 5 x 2 = 10; 20 >= 10: rule 6 pass",
+      "source": "hardware/docs/inventory-2026-09-25.csv and Research.md Held parts",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "in production",
+      "read": "in production (Raspberry Pi): https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch) lists RP2354B and states 'RP2350 will remain in production until at least January 2045'; Digi-Key SC1512(13)-A4 ProductStatus Active (2026-10-02T00:26:33Z, distributor figure)",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch); Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:03Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN 28 (stepping A4) not re-read",
+      "read": "none: the Raspberry Pi portal lists 1 RP2350 PCN, 'RP235x A4 stepping PCN' (6 Oct 2025), a stepping change; Digi-Key discontinued false, end of life false",
+      "source": "https://pip.raspberrypi.com/categories/1263-pcn (vendors.py fetch); Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:26:31Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2",
+      "read": "2 a board, main and measurement coprocessor (owner, 2026-09-30); need 10; count 2 >= 2",
+      "source": "Research.md prerequisite 9 (lines 522-524) and line 558, checkout fe53d3a8bc9a",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board",
+      "read": "IO board, main and measurement coprocessor; LCSC C39843328: both say on the board (rule 1)",
+      "source": "Research.md Held parts and prerequisite 9; Pins.md",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "until at least January 2045",
+      "read": "'RP2350 will remain in production until at least January 2045'; recorded, not a gate (S5)",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:03Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "8 August 2024",
+      "read": "RP2350 datasheet build 2025-07-29, Appendix H: '8 August 2024 - Initial release'; lists RP2354B; about 14 months: over 12",
+      "source": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (vendors.py fetch, pdftotext)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:26:08Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status",
+      "read": "Digi-Key SC1512(13)-A4 Active (00:26:33Z); LCSC C39843328 in stock 2,580; JLCPCB API and partdetail carry no status; no disagreement. 'RP2354B' is not a Digi-Key part number (404); the product is the one JLCPCB names as erpComponentName 'SC1512(13)-A4'",
+      "source": "Digi-Key API; lcsc.com and jlcpcb.com part pages (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:06Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "22 weeks",
+      "read": "manufacturer lead time 22 weeks (Digi-Key SC1512(13)-A4)",
+      "source": "Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "RP2354B, QFN-80 10 x 10 mm",
+      "read": "exact result for C39843328: RP2354B, QFN-80-EP(10x10), Raspberry Pi",
+      "source": "vendors.py jlcpcb C39843328 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:46Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "expand (S6 allows both)",
+      "source": "vendors.py jlcpcb C39843328 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:46Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 3560",
+      "read": "Digi-Key SC1512(13)-A4 (Raspberry Pi) stock_available 3560 >= 50 (gate for need 10: max(50, 50)); SC1512-A4 6125",
+      "source": "Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "BENCH rpm source",
+    "part": "RP2354B",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "held quantity",
+      "stated": "20, inventory 2026-09-25",
+      "read": "CSV row RP2354B C39843328: JLCPCB qty 20, global sourcing 0, consigned 0; need 5 x 2 = 10; 20 >= 10: rule 6 pass",
+      "source": "hardware/docs/inventory-2026-09-25.csv and Research.md Held parts",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "in production",
+      "read": "in production (Raspberry Pi): https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch) lists RP2354B and states 'RP2350 will remain in production until at least January 2045'; Digi-Key SC1512(13)-A4 ProductStatus Active (2026-10-02T00:26:33Z, distributor figure)",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch); Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:03Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN 28 (stepping A4) not re-read",
+      "read": "none: the Raspberry Pi portal lists 1 RP2350 PCN, 'RP235x A4 stepping PCN' (6 Oct 2025), a stepping change; Digi-Key discontinued false, end of life false",
+      "source": "https://pip.raspberrypi.com/categories/1263-pcn (vendors.py fetch); Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:26:31Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2",
+      "read": "2 a board, main and measurement coprocessor (owner, 2026-09-30); need 10; count 2 >= 2",
+      "source": "Research.md prerequisite 9 (lines 522-524) and line 558, checkout fe53d3a8bc9a",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board",
+      "read": "IO board, main and measurement coprocessor; LCSC C39843328: both say on the board (rule 1)",
+      "source": "Research.md Held parts and prerequisite 9; Pins.md",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "until at least January 2045",
+      "read": "'RP2350 will remain in production until at least January 2045'; recorded, not a gate (S5)",
+      "source": "https://www.raspberrypi.com/products/rp2350/ (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:03Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "8 August 2024",
+      "read": "RP2350 datasheet build 2025-07-29, Appendix H: '8 August 2024 - Initial release'; lists RP2354B; about 14 months: over 12",
+      "source": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (vendors.py fetch, pdftotext)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:26:08Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status",
+      "read": "Digi-Key SC1512(13)-A4 Active (00:26:33Z); LCSC C39843328 in stock 2,580; JLCPCB API and partdetail carry no status; no disagreement. 'RP2354B' is not a Digi-Key part number (404); the product is the one JLCPCB names as erpComponentName 'SC1512(13)-A4'",
+      "source": "Digi-Key API; lcsc.com and jlcpcb.com part pages (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:06Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "22 weeks",
+      "read": "manufacturer lead time 22 weeks (Digi-Key SC1512(13)-A4)",
+      "source": "Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "RP2354B, QFN-80 10 x 10 mm",
+      "read": "exact result for C39843328: RP2354B, QFN-80-EP(10x10), Raspberry Pi",
+      "source": "vendors.py jlcpcb C39843328 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:46Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "expand (S6 allows both)",
+      "source": "vendors.py jlcpcb C39843328 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:46Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 3560",
+      "read": "Digi-Key SC1512(13)-A4 (Raspberry Pi) stock_available 3560 >= 50 (gate for need 10: max(50, 50)); SC1512-A4 6125",
+      "source": "Digi-Key API SC1512(13)-A4 (vendors.py digikey, cached 2026-10-02T00:26:33Z); digikey RP2354B 404 (00:26:34Z); digikey-search RP2354B (06:56:19Z) lists SC1512(13)-A4 and SC1512-A4, Raspberry Pi",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T00:26:33Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+    "part": "TLV9062IDR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "170194 (stock moves)",
+      "read": "stockCount 170179, canPresaleNumber 169465; need 5 x 1 = 5, threshold max(5 x 5, 50) = 50; 170179 >= 50: rule 4 passes",
+      "source": "vendors.py jlcpcb C398355 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:46Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE",
+      "read": "ACTIVE (Texas Instruments): https://www.ti.com/product/TLV9062 meta status ACTIVE, orderable TLV9062IDR marketingStatusDescription ACTIVE; Digi-Key ProductStatus Active (2026-10-02T06:29:51Z, distributor figure)",
+      "source": "https://www.ti.com/product/TLV9062 (vendors.py fetch); Digi-Key API productdetails TLV9062IDR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:03Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "not read",
+      "read": "none found: orderable ACTIVE on the product page; Digi-Key discontinued false, end of life false; TI's change-notice search not read. All 13 TI orderables ACTIVE.",
+      "source": "https://www.ti.com/product/TLV9062; Digi-Key API productdetails TLV9062IDR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:03Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1",
+      "read": "1 a board (one dual op amp for X and Y); need 5; count 1 >= 1",
+      "source": "hardware/docs/IOBoard.md, Pins.md, Research.md at checkout fe53d3a8bc9a",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board",
+      "read": "accelerometer lead buffer on its sensor board (V221, V222) on a board JLCPCB assembles; LCSC C398355: both say on the board (rule 1)",
+      "source": "hardware/docs/IOBoard.md, Pins.md, Research.md at checkout fe53d3a8bc9a",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:26Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "no per-part date; TI states 'product life cycles are typically 10 to 15 years and often extend longer'; recorded, not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:26:49Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first revision March 2017 (SBOS839)",
+      "read": "SBOS839N 'MARCH 2017 - REVISED JULY 2026', history ends 'Revision * (March 2017) to Revision A (June 2017)'; over 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/tlv9062.pdf (vendors.py fetch, pdftotext)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:25:28Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status",
+      "read": "Digi-Key Active (2026-10-02T06:29:51Z); LCSC product-detail/C398355.html in stock 169800; JLCPCB API and partdetail/C398355 carry no status; no disagreement",
+      "source": "Digi-Key API; lcsc.com and jlcpcb.com part pages (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:27:07Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "20 weeks",
+      "read": "manufacturer lead time 20 weeks (Digi-Key)",
+      "source": "Digi-Key API productdetails TLV9062IDR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T06:29:51Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "169480 (moves)",
+      "read": "canPresaleNumber 169465, zero or above",
+      "source": "vendors.py jlcpcb C398355 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:46Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "TLV9062IDR, SOIC-8 (D)",
+      "read": "exact result for C398355: TLV9062IDR, SOIC-8, Texas Instruments",
+      "source": "vendors.py jlcpcb C398355 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:46Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "expand (S6 allows both)",
+      "source": "vendors.py jlcpcb C398355 (jlcpcb.com selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T07:24:46Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 7844",
+      "read": "Digi-Key stock_available 7844 >= 50 (gate for need 5: max(5 x 5, 50) = 50)",
+      "source": "Digi-Key API productdetails TLV9062IDR (vendors.py digikey, cached answer of the same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T06:29:51Z"
+     }
+    ],
+    "refutation": ""
+   }
+  ]
+ }
+}

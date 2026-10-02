@@ -1,0 +1,77 @@
+{
+ "role": "P3",
+ "category": "R11",
+ "label": "P3-R11",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "missed": [
+   {
+    "function": "servo measured position",
+    "part": "MLX90393ELW-ABA-011-RE (LCSC C2654971)",
+    "maker": "Melexis",
+    "why": "A 3-axis Hall magnetometer, 16-bit X and Y, I2C. It is not a dedicated angle die. Firmware on the measurement coprocessor takes atan2(By, Bx) under a diametric magnet on the horn axis. Values: (a) Interface: I2C standard mode 100 kHz and fast mode 400 kHz; option -011 answers at address 00011xx = 0x0C to 0x0F, the last two bits strapped by A0 and A1; VDD 2.2 / 3 / 3.6 V min / nom / max; E code -40 to +85 degC (covers 0 to 50 degC). (b) Resolution: XY sensitivity 0.161 to 3.22 uT/LSB; Figure 2 plots XY noise on a 0 to 60 mGauss axis, so noise is at most 6 uT if the axis top is the worst case (curve values not read numerically). The 0.129 degree step (2.25 mrad) then holds at a field in the XY plane above about 2.7 mT; the magnet's field at the sensor is not stated, for this part or any other candidate. (c) Travel: the XY pair gives the full 360 degrees, so +/-90 degrees is inside it. (d) Update: Table 19 gives 1.27 ms (OSR 0, DIG_FILT 0) to 7.60 ms (OSR 1, DIG_FILT 4) for an XYZ conversion, inside the 50 ms poll. Source: MLX90393 data sheet Rev 012 (18-Nov-2025), https://media.melexis.com/-/media/files/documents/datasheets/mlx90393-datasheet-melexis.pdf (vendors.py fetch, HTTP 200, read 2026-10-02T06:55:37Z); first data sheet release 11-Nov-2014. Stock: JLCPCB C2654971 stockCount 2222, presale 2147, expand library (vendors.py jlcpcb, 2026-10-02T06:55:28Z); Digi-Key MLX90393ELW-ABA-011-RE (vendors.py digikey, 2026-10-02T06:56:14Z): Active, stock 28,268, lead time 22 weeks. Lifecycle: the Melexis product and documentation pages answer HTTP 403 with a challenge (read 2026-10-02T06:55:37Z), so Digi-Key ProductStatus Active is the status, recorded as a distributor figure under the Lifecycle check. Second source: MLX90393SLW-ABA-011-RE, same pins and address."
+   },
+   {
+    "function": "servo measured position",
+    "part": "MLX90393SLW-ABA-011-RE (LCSC C2649492)",
+    "maker": "Melexis",
+    "why": "The alternate of C2654971 in the same circuit and firmware: same QFN-16 3x3 pins and option -011 (address 00011xx), S code -20 to +85 degC (covers 0 to 50 degC). Same data sheet Rev 012, read 2026-10-02T06:55:37Z. JLCPCB C2649492 stockCount 2326, presale 2239 (2026-10-02T06:55:29Z); Digi-Key MLX90393SLW-ABA-011-RE Active, stock 10,855, lead time 22 weeks (2026-10-02T06:56:16Z). The other -012, -013 and -014 address variants fail rule 4 or carry another address: C3716135 stock 5 / presale -55, C1518191 80 / 49, C1518192 61 / -12 (2026-10-02T06:55:29Z)."
+   },
+   {
+    "function": "phase-wire clip",
+    "part": "TLV3202AIDR (LCSC C129325)",
+    "maker": "Texas Instruments",
+    "why": "The dual of rank 1 in the same data sheet (TLV3201, TLV3202, SBOS561C, Mar 2012, rev May 2024, https://www.ti.com/lit/ds/symlink/tlv3202.pdf, vendors.py fetch, read 2026-10-02T06:57:17Z). One SOIC-8 covers placements 1 to 2: the clip comparator and the optical index comparator. Same stated figures as rank 1: VS 2.7 to 5.5 V; input common-mode range (VEE) - 0.2 V to (VCC) + 0.2 V, so 0 V is inside; push-pull output; propagation delay 55 ns maximum over -40 to +125 degC at VCC 2.7 V (Section 6.8; also 55 ns at 5 V), which sits inside the 1.244 us index share (4.4 %) and far inside the clip's 21.8 us; hysteresis 1.2 mV typical (the 'comparator with hysteresis' for the index needs added positive feedback). JLCPCB C129325 stockCount 7764, presale 7457 (vendors.py jlcpcb, 2026-10-02T06:57:38Z). Digi-Key TLV3202AIDR Active, stock 10,738, lead time 20 weeks (vendors.py digikey, 2026-10-02T06:57:46Z), so rule 5 passes as the same part at the second vendor. TI product page https://www.ti.com/product/TLV3202 (vendors.py fetch, HTTP 200, read 2026-10-02T07:03:01Z): MarketingStatusId = 1, paired on the page with marketingStatusDescription ACTIVE."
+   },
+   {
+    "function": "phase-wire clip",
+    "part": "TLV3502AIDR (LCSC C131165)",
+    "maker": "Texas Instruments",
+    "why": "The dual of rank 2 in SBOS321E (TLV3501, TLV3502, Mar 2005, rev Apr 2016, https://www.ti.com/lit/ds/symlink/tlv3501.pdf, vendors.py fetch, read 2026-10-02T06:57:55Z). One SOIC-8 covers both comparator placements. VS 2.7 to 5.5 V; common-mode range (V-) - 0.2 V to (V+) - 0.2 V (0 V inside); push-pull; propagation delay 7 ns maximum over -40 to +125 degC at 20 mV overdrive (not production tested, ensured by characterization); hysteresis 6 mV typical. Ranks below TLV3202AIDR for the supply current P2 notes against rank 2 (3.2 mA typical). JLCPCB C131165 stockCount 3285, presale 3214 (2026-10-02T06:57:39Z); Digi-Key TLV3502AIDR Active, stock 4,084, lead time 12 weeks (2026-10-02T06:57:48Z). TI page https://www.ti.com/product/TLV3502 read 2026-10-02T07:03:02Z: MarketingStatusId = 1 (ACTIVE)."
+   },
+   {
+    "function": "magnetic pickup",
+    "part": "DRV5015A3QDBZR (LCSC C2152442)",
+    "maker": "Texas Instruments",
+    "why": "A sibling of rank 1 in the same data sheet (DRV5015, SBAS915A, Jun 2018 rev Apr 2019, https://www.ti.com/lit/ds/symlink/drv5015.pdf, vendors.py fetch, read 2026-10-02T06:57:17Z). Digital latch, open-drain output, VCC 2.5 to 5.5 V, TA -40 to +125 degC, fBW 20 kHz minimum / 30 kHz typical, BOP 0.5 / 1.8 / 3.7 mT and BRP -3.7 / -1.8 / -0.5 mT (A2 and A3 columns), so the operate point is higher than rank 1's 2.0 mT maximum and it ranks below ranks 1 to 3. Same pins as rank 1; the output is inverted (high with no field), so firmware inverts the polarity. JLCPCB C2152442 stockCount 538, presale 536 (2026-10-02T06:58:16Z); Digi-Key DRV5015A3QDBZR Active, stock 2,592 as cut tape (reel 0), lead time 12 weeks (2026-10-02T06:58:29Z). TI page https://www.ti.com/product/DRV5015 read 2026-10-02T07:03:26Z: MarketingStatusId = 1. DRV5015A2QDBZR (C2152452, 45) and DRV5015A2EDBZRQ1 (C2869610, 30) fail rule 4 (2026-10-02T06:58:16Z)."
+   },
+   {
+    "function": "magnetic pickup",
+    "part": "DRV5013AGQDBZR (LCSC C2655066)",
+    "maker": "Texas Instruments",
+    "why": "Digital latch, open-drain, VCC 2.5 to 38 V, fBW 20 kHz minimum / 30 kHz typical, DRV5013AG BOP 3 / 6 / 9 mT and BRP -9 / -6 / -3 mT (SLIS150N, Jul 2025, https://www.ti.com/lit/ds/symlink/drv5013.pdf, vendors.py fetch, read 2026-10-02T06:58:30Z), TA -40 to +125 degC for the Q grade. P2 names only DRV5013ADQDBZR and DRV5013FAQDBZR of this family. The highest operate point of the candidates, so it ranks below ranks 1 to 3 and above none. JLCPCB C2655066 stockCount 2461, presale 2447 (2026-10-02T06:58:17Z); Digi-Key DRV5013AGQDBZR Active, stock 8,271, lead time 12 weeks (2026-10-02T06:58:30Z). TI page https://www.ti.com/product/DRV5013 read 2026-10-02T07:03:04Z: MarketingStatusId = 1."
+   },
+   {
+    "function": "encoder input",
+    "part": "SN65HVD78DR (LCSC C111824)",
+    "maker": "Texas Instruments",
+    "why": "A 3.3 V half-duplex RS-485 transceiver used for its receiver, one a channel, so 3 packages a board for A, B and I; P2's drop of MAX3280EAUK+T as 'not recorded' uses the same package count, so this ranks below the three quad receivers. SN65HVD72, 75, 78 data sheet SLLSE11H (Mar 2012, rev Mar 2019), https://www.ti.com/lit/ds/symlink/sn65hvd78.pdf (vendors.py fetch, read 2026-10-02T06:57:16Z). Values: VCC 3 / 3.3 / 3.6 V; bus input range -7 to +12 V recommended and -13 to +16.5 V absolute maximum on A and B, so 12 V is inside; with VCC = 0 V the bus input current is 333 uA maximum at +12 V and -267 uA minimum at -7 V, so the powered-off input draws under 0.34 mA; receiver propagation delay tPHL and tPLH 35 ns maximum at the 50 Mbps device, no minimum stated, pulse skew 2.5 ns maximum (Section 7.9, CL = 15 pF), which under the opposite-edge bound of rulings 007 and 008 leaves 50 - 35 = 15 ns, 1 ns above the 14 ns limit; differential thresholds VIT+ -20 mV maximum and VIT- -200 mV minimum, so a reference on the inverting input serves the single-ended form; TA -40 to +125 degC. THVD1450 to THVD1452 (40 ns maximum, 10 ns left) correctly fail; this part passes by 1 ns. JLCPCB C111824 stockCount 1451, presale 1405 (vendors.py jlcpcb, 2026-10-02T07:01:47Z); Digi-Key SN65HVD78DR Active, stock 387 as cut tape (reel 0), lead time 20 weeks (2026-10-02T07:01:49Z). TI page https://www.ti.com/product/SN65HVD78 read 2026-10-02T07:03:03Z: MarketingStatusId = 1."
+   },
+   {
+    "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+    "part": "TLV9002IDR (LCSC C398360)",
+    "maker": "Texas Instruments",
+    "why": "A dual rail-to-rail op amp, unity-gain stable, from the family of rank 1 (TLV9001, 9002, 9004, SBOS833R, Nov 2021, https://www.ti.com/lit/ds/symlink/tlv9002.pdf, vendors.py fetch, read 2026-10-02T07:00:26Z). Values: GBW 1 MHz typical at VS = 5 V (not stated at 3.3 V; 1 / 0.652 = 1.5 x the 652 kHz floor, no minimum stated); phase margin 78 degrees at G = 1; input range (V-) - 0.1 V to (V+) + 0.1 V, so 0.1 to 3.2 V at 3.3 V is inside; VOS drift +/-0.6 uV/degC typical (limit 5.7); input bias +/-5 pA typical at VS = 5 V (limit 1 nA); noise 30 nV/rtHz at 1 kHz (limit 1.2 uV/rtHz); capacitive-load drive stated as 500 pF; VS 1.8 to 5.5 V; TA -40 to +125 degC. All figures are typical and at 5 V, like rank 1's. Below ranks 1 to 3 for the 1 MHz GBW margin and no Digi-Key stock. JLCPCB C398360 stockCount 24203, presale 23977 (2026-10-02T07:00:52Z); Digi-Key TLV9002IDR Active, stock 0, lead time 12 weeks (2026-10-02T07:00:53Z), so rule 5 needs a pin-compatible alternate. TI page https://www.ti.com/product/TLV9002 read 2026-10-02T07:03:04Z: MarketingStatusId = 1."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "MLX90393 rows (and 3D magnetometers of the same kind)",
+    "reason_given": "MLX90393 is a 3D magnetometer with no angle output; not read at JLCPCB",
+    "why_it_fails": "V209 and V210 ask for a measured position at 0.129 degree or finer over 180 degrees, not for a dedicated rotary-sensor die. TMAG5273A2QDBVR, P2's rank 1, is itself a 3-axis Hall sensor whose angle is computed from X and Y, so 'no angle output' separates the two parts by where atan2 runs, not by a requirement value. The MLX90393 data sheet states 16-bit X and Y at 0.161 to 3.22 uT/LSB, and the part now reads at JLCPCB: C2654971 stock 2222, presale 2147 (2026-10-02T06:55:28Z), Digi-Key Active 28,268 (06:56:14Z)."
+   },
+   {
+    "part": "MCP6561T-E/OT, LMV7219M5X/NOPB",
+    "reason_given": "comparator delay: 80 ns maximum at 25 degC only (MCP6561), 20 ns maximum at TJ 25 degC only (LMV7219); not stated over 0 to 50 degC",
+    "why_it_fails": "The clip's own comparator-delay value is under 21.8 us. 80 ns and 20 ns are 0.4 % and 0.1 % of it, so the missing 0 to 50 degC statement cannot change the result for the clip placement. The over-temperature maximum counts only where the part is the optical index's comparator, and P2 itself keeps TLV7011DBVR, TLV7031DBVR and TLV1811DBVR for the clip placement alone with no maximum stated at all. The two parts are excluded from the index placement only. Their other values (input range, supply, output, stock) were not re-read in this task."
+   },
+   {
+    "part": "BPV10NF, BPW34, VBPW34S and other PIN photodiodes (with an emitter on the probe board)",
+    "reason_given": "sensor selected and working distance: a photodiode alone is not a reflective sensor, and no operating distance is stated",
+    "why_it_fails": "This forks on a design choice for the owner. A probe board that carries an infrared emitter and a PIN photodiode, assembled by JLCPCB, is a reflective infrared sensor on a probe board (V219); P2's own readings give the detector times that meet the 1.244 us share (BPV10NF tr 80 ns, tf 60 ns; BPW34 100 ns) where all 9 integrated sensors fail it. The pair has no part-level 'stated operating range' (V220) because the range is a design output, computed from the emitter's stated radiant intensity and the photodiode's stated sensitivity; the pen line's reflectance and width are not stated, and TCND5000's 2 to 25 mm is likewise stated for a reference target, not the pen line. I did not select an emitter or compute the range, and no discrete pair is listed under missed for that reason. TCND5000's own drop holds: its data sheet (Rev 1.6, read 2026-10-02T06:52:01Z) states rise and fall times of 15 ns for the emitter only."
+   }
+  ],
+  "missed_functions": []
+ }
+}

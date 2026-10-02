@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R1",
+ "label": "adjudicator-R1-2",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "function": "function requirements: Microcontroller",
+  "part": "",
+  "stands": true,
+  "scope": "function",
+  "ruling": "The refutation stands. Under tools/research/README.md:459-462 and round1.js:314, this figure checks one thing: whether the function's requirement list names every requirement that IOBoard.md, the answers and the values found for research set for it, with no value weaker than theirs. The table \"Microcontroller, flash and debug\" in IOBoard.md marks six rows \"required\" that the claimed list for Microcontroller leaves out: PIO reach, PWM slices, Board header, Image size limit, Flash write window and Store endurance. The R1 category row of Research.md (line 308) also sets two of these on R1 itself. R1 records the in-package flash's erase, program and endurance figures as not known for the die. R1 also records the lines the IO board's pico-sdk header changes from olimex_rp2350_xl.h. The list therefore does not name every requirement set for the function. The fault is in the list, not in the part, so the scope is function. Nothing here concerns the RP2354B's lifecycle, maker or LCSC identity. This ruling does not say whether the part meets the omitted rows. The verifier's datasheet readings (12 PIO state machines, 12 PWM slices, 2 MB) were not re-read here and play no part in the ruling. The entries the list does carry are no weaker than their sources: V1 500 ms, V2 and V4 as found, 0 to 50 C, pin ratings, flash supply, SWDIO bias, BOOT and RESET, USB port, crystal and core regulator, and watchdog enabled.",
+  "evidence": "IOBoard.md in checkout fe53d3a8bc9a, table \"Microcontroller, flash and debug\". Each row below has the State \"required\" and is missing from the claim.\n- Line 137, PIO reach: \"3 blocks, 12 state machines\", a block sees 32 GPIO from a base of 0 or 16.\n- Line 138, PWM slices: \"12 slices of 2 channels\", with the slice mapping for GP0-31 and GP32-47.\n- Line 143, Board header: PICO_RP2350A at 0 (48 GPIO), 2 MB of flash, no PSRAM.\n- Line 144, Image size limit: \"2,088,960 bytes: 2 MB less the store's two 4,096-byte sectors\".\n- Line 146, Flash write window: sector erase 45 ms typical and 400 ms maximum, page program 0.4 ms typical and 3 ms maximum; packaged-part figures, die figures not known.\n- Line 147, Store endurance: 100,000 erase cycles a sector; the die's figure is not known.\n\nResearch.md line 308 (R1 row): R1 \"records its erase, program and endurance figures as not known for the die\", and R1 \"records the lines the IO board's header changes from\" olimex_rp2350_xl.h.\n\nThe claimed list (29 entries) names none of these six rows. The function's list in FU-2A (results round2/FU-2A/002-P2-R1.json) carried them all: \"PIO blocks and reach\", \"PWM slices\", \"DMA channels\", \"serial controllers\", \"store endurance\", \"flash write window\", \"image size limit\" and \"board header\".",
+  "source": "hardware/docs/IOBoard.md lines 137, 138, 143, 144, 146, 147 and hardware/docs/Research.md line 308, both in the read-only checkout /home/claude/rcbench-research/round2/checkout-fe53d3a8bc9a at fe53d3a8bc9aa58f294eb764b16a73cbd3b2df43; tools/research/README.md lines 459-462 and tools/research/round1.js line 314 in the same checkout; /home/claude/rcbench-research/round2/results/hardware/research/round2/FU-2A/002-P2-R1.json, function Microcontroller, requirements",
+  "read_at": "2026-10-02T07:09:38Z"
+ }
+}

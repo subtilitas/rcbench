@@ -1,0 +1,1358 @@
+{
+ "role": "rerank",
+ "category": "R11",
+ "label": "rerank-R11",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "functions": [
+   {
+    "function": "accelerometer",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "optical index",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "BPV10NF, BPW34, VBPW34S and other PIN photodiodes with an emitter on the probe board",
+      "maker": "Vishay, ams OSRAM",
+      "reason": "P3's argument is that a discrete emitter and photodiode pair is a reflective infrared sensor on a probe board (V219) whose detector times (BPV10NF tr 80 ns, tf 60 ns; BPW34 100 ns, P2's readings) meet the 1.244 us share. The drop still holds on V220: the value is 'the sensor's stated operating range includes 5 mm', and a pair states no operating range, because the range follows from the emitter, the lens and the geometry chosen on the board, and the pen line's reflectance and width are not stated. It also holds on V219: the selected part is a sensor, and a pair is a circuit with no part-level delay figure for the emitter-to-detector path. The choice between a discrete pair designed on the probe board and no optical index part is the owner's; it is reported (report 'optical index discrete pair')"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "magnetic pickup",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "DRV5015A1QDBZR",
+      "reason": "lowest operate point of the five (BOP 0.7 mT typical, 2.0 mT maximum), fBW 20 kHz minimum against 1,092 Hz, stock at both vendors (JLCPCB 339, Digi-Key 2821 in P2's readings); selection.json keeps it",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "DRV5015A1EDBZRQ1",
+      "reason": "rank 1's automotive grade with the same thresholds, bandwidth and pins; JLCPCB 6167, Digi-Key 680",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "AH1711-SA-7",
+      "reason": "rank 1's thresholds, bandwidth, pins and polarity from a second maker; JLCPCB 100, Digi-Key 2995; the Diodes page carries no status, so Digi-Key's ProductStatus Active stands in under the Lifecycle check of 2026-10-02",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "DRV5015A3QDBZR",
+      "reason": "same die family and pins as rank 1 with an inverted output and a higher operate point (up to 3.7 mT); JLCPCB 538, Digi-Key 2592",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "DRV5013AGQDBZR",
+      "reason": "highest operate point (up to 9 mT, the strongest magnet needed), supply to 38 V; JLCPCB 2461, Digi-Key 8271",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 4,
+      "part": "DRV5015A3QDBZR",
+      "maker": "Texas Instruments (datasheet SBAS915A); counts as Texas Instruments (S1)",
+      "lcsc": "C2152442",
+      "package": "SOT-23 (DBZ), 3 pins",
+      "placements": 1,
+      "placements_basis": "fixed: one latch on the magnetic pickup's sensor board, one board for each IO board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "sensor type",
+        "required": "bipolar latch, digital output",
+        "datasheet": "digital latch Hall sensor; DRV5015A3 output is inverted: it drives high at a south pole above BOP and low at a north pole below BRP, and is high at power-up with no field",
+        "pass": true,
+        "source": "DRV5015 SBAS915A, https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-10-02T07:08:29Z, Section 7.1"
+       },
+       {
+        "name": "pulses per revolution",
+        "required": "sensing bandwidth >= 1,092 Hz",
+        "datasheet": "fBW 20 kHz minimum, 30 kHz typical (6.6); td 13 us typical, 25 us maximum (6.5): 20 kHz is 18 x the 1,092 Hz of one pulse a turn",
+        "pass": true,
+        "source": "DRV5015 SBAS915A, https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-10-02T07:08:29Z, 6.5 and 6.6"
+       },
+       {
+        "name": "lowest speed",
+        "required": "holds state at standstill",
+        "datasheet": "a latch: the output changes only at the operate or release point and holds between them (Section 7.1)",
+        "pass": true,
+        "source": "DRV5015 SBAS915A, https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-10-02T07:08:29Z, Section 7.1"
+       },
+       {
+        "name": "supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "VCC 2.5 to 5.5 V recommended, -0.3 to 6.0 V absolute maximum; ICC 2.3 mA typical, 2.8 mA maximum",
+        "pass": true,
+        "source": "DRV5015 SBAS915A, https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-10-02T07:08:29Z, 6.1, 6.3 and 6.5"
+       },
+       {
+        "name": "output",
+        "required": "open-drain, pulled up to 3.3 V",
+        "datasheet": "open-drain output (pin 2); pins VCC 1, OUT 2, GND 3, the order of rank 1",
+        "pass": true,
+        "source": "DRV5015 SBAS915A, https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-10-02T07:08:29Z, Section 4"
+       },
+       {
+        "name": "build and sourcing",
+        "required": "LCSC number, rule 4 at JLCPCB",
+        "datasheet": "LCSC C2152442, stockCount 538, canPresaleNumber 536 (2026-10-02T07:08:12Z)",
+        "pass": true,
+        "source": "vendors.py jlcpcb C2152442"
+       },
+       {
+        "name": "sensitivity",
+        "required": "operate and release points stated",
+        "datasheet": "DRV5015A3: BOP 0.5 / 1.8 / 3.7 mT, BRP -3.7 / -1.8 / -0.5 mT, BHYS 2.3 / 3.6 mT (min / typ / max): the operate point is up to 3.7 mT against rank 1's 2.0 mT",
+        "pass": true,
+        "source": "DRV5015 SBAS915A, https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-10-02T07:08:29Z, 6.6"
+       },
+       {
+        "name": "sensor ambient temperature",
+        "required": "0 to 85 degC",
+        "datasheet": "TA -40 to 125 degC",
+        "pass": true,
+        "source": "DRV5015 SBAS915A, https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-10-02T07:08:29Z, 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 538, canPresaleNumber 536, componentLibraryType expand, price USD 0.3231 a part at the 1 break (need 5), read 2026-10-02T07:08:12Z, vendors.py jlcpcb C2152442 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 2592 (cut tape; reel 0), manufacturer lead time 12 weeks, ProductStatus Active, discontinued false, end of life false, read 2026-10-02T06:58:29Z, vendors.py digikey DRV5015A3QDBZR (https://api.digikey.com/products/v4/search/DRV5015A3QDBZR/productdetails) (P3's reading of the same UTC day, returned from the cache at 2026-10-02T07:08:22Z, marked cached)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 538 >= 50 and canPresaleNumber 536 >= 0: pass (rule 4, 2026-10-02T07:08:12Z)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/DRV5015, orderable DRV5015A3QDBZR marketingStatusDescription ACTIVE, read 2026-10-02T07:09:56Z (vendors.py fetch); longevity commitment not read; first datasheet revision June 2018 (SBAS915), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-10-02T06:58:29Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 2592 >= 50 (2026-10-02T06:58:29Z). DRV5015A1QDBZR shares the pins but its output polarity is the opposite, so it is not an alternate in the same firmware configuration",
+      "alternates": [],
+      "driver_in_shared": "none (GPIO edge on measurement GPIO 27; the firmware inverts the level)",
+      "reason": "same data sheet, pins and 20 kHz minimum bandwidth as rank 1, with a higher operate point (up to 3.7 mT against 2.0 mT) and an inverted output; JLCPCB 538 (2026-10-02T07:08:12Z)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "DRV5013AGQDBZR",
+      "maker": "Texas Instruments (datasheet SLIS150N); counts as Texas Instruments (S1)",
+      "lcsc": "C2655066",
+      "package": "SOT-23 (DBZ), 3 pins",
+      "placements": 1,
+      "placements_basis": "fixed: one latch on the magnetic pickup's sensor board, one board for each IO board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "sensor type",
+        "required": "bipolar latch, digital output",
+        "datasheet": "digital bipolar-latch Hall sensor with an open-drain output (30 mA sink)",
+        "pass": true,
+        "source": "DRV5013 SLIS150N, https://www.ti.com/lit/ds/symlink/drv5013.pdf, read 2026-10-02T07:08:29Z, Features and Section 4"
+       },
+       {
+        "name": "pulses per revolution",
+        "required": "sensing bandwidth >= 1,092 Hz",
+        "datasheet": "fBW 20 kHz minimum, 30 kHz typical; td 13 us typical, 25 us maximum: 20 kHz is 18 x 1,092 Hz",
+        "pass": true,
+        "source": "DRV5013 SLIS150N, https://www.ti.com/lit/ds/symlink/drv5013.pdf, read 2026-10-02T07:08:29Z, 5.6 and 5.7"
+       },
+       {
+        "name": "lowest speed",
+        "required": "holds state at standstill",
+        "datasheet": "a bipolar latch: the output changes only between BOP and BRP and holds between them",
+        "pass": true,
+        "source": "DRV5013 SLIS150N, https://www.ti.com/lit/ds/symlink/drv5013.pdf, read 2026-10-02T07:08:29Z, Features"
+       },
+       {
+        "name": "supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "VCC 2.5 to 38 V; ICC 2.7 mA typical at 25 degC, 3.5 mA maximum at TA max",
+        "pass": true,
+        "source": "DRV5013 SLIS150N, https://www.ti.com/lit/ds/symlink/drv5013.pdf, read 2026-10-02T07:08:29Z, 5.3 and 5.5"
+       },
+       {
+        "name": "output",
+        "required": "open-drain, pulled up to 3.3 V",
+        "datasheet": "open-drain output, 'requires a resistor pullup'; pins VCC 1, OUT 2, GND 3 on DBZ",
+        "pass": true,
+        "source": "DRV5013 SLIS150N, https://www.ti.com/lit/ds/symlink/drv5013.pdf, read 2026-10-02T07:08:29Z, Table 4-1"
+       },
+       {
+        "name": "build and sourcing",
+        "required": "LCSC number, rule 4 at JLCPCB",
+        "datasheet": "LCSC C2655066, stockCount 2461, canPresaleNumber 2447 (2026-10-02T07:08:13Z)",
+        "pass": true,
+        "source": "vendors.py jlcpcb C2655066"
+       },
+       {
+        "name": "sensitivity",
+        "required": "operate and release points stated",
+        "datasheet": "DRV5013AG: BOP 3 / 6 / 9 mT, BRP -9 / -6 / -3 mT, Bhys 12 mT typical (min / typ / max): the highest operate point of the candidates, up to 9 mT",
+        "pass": true,
+        "source": "DRV5013 SLIS150N, https://www.ti.com/lit/ds/symlink/drv5013.pdf, read 2026-10-02T07:08:29Z, 5.7"
+       },
+       {
+        "name": "sensor ambient temperature",
+        "required": "0 to 85 degC",
+        "datasheet": "Q grade: TA -40 to 125 degC",
+        "pass": true,
+        "source": "DRV5013 SLIS150N, https://www.ti.com/lit/ds/symlink/drv5013.pdf, read 2026-10-02T07:08:29Z, 5.3"
+       }
+      ],
+      "jlcpcb": "stockCount 2461, canPresaleNumber 2447, componentLibraryType expand, price USD 0.5316 a part at the 1 break (need 5), read 2026-10-02T07:08:13Z, vendors.py jlcpcb C2655066 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 8271, manufacturer lead time 12 weeks, ProductStatus Active, discontinued false, end of life false, read 2026-10-02T06:58:30Z, vendors.py digikey DRV5013AGQDBZR (https://api.digikey.com/products/v4/search/DRV5013AGQDBZR/productdetails) (P3's reading of the same UTC day, returned from the cache at 2026-10-02T07:08:22Z, marked cached)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 2461 >= 50 and canPresaleNumber 2447 >= 0: pass (rule 4, 2026-10-02T07:08:13Z)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/DRV5013, orderable DRV5013AGQDBZR marketingStatusDescription ACTIVE, read 2026-10-02T07:09:56Z (vendors.py fetch); longevity commitment not read; first datasheet revision March 2014 (SLIS150), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-10-02T06:58:30Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 8271 >= 50 (2026-10-02T06:58:30Z)",
+      "alternates": [],
+      "driver_in_shared": "none (GPIO edge on measurement GPIO 27)",
+      "reason": "meets every value with the widest supply range (2.5 to 38 V) and the highest operate point (up to 9 mT), so it needs the strongest magnet of the five; JLCPCB 2461 and Digi-Key 8271",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "DRV5015A1QDBZR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "phase-wire clip",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TLV3201AIDBVR",
+      "reason": "55 ns maximum over -40 to 125 degC, 40 uA, serves both comparator placements, JLCPCB 39645 (P2 reading); Digi-Key 0, so the second source is its alternate TLV3601DBVR, which both FU-2C verifiers confirmed; selection.json keeps it",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TLV3202AIDR",
+      "reason": "the dual of rank 1 with the same stated figures; one SOIC-8 for both placements and the same part at Digi-Key (10738) as a second source, so no alternate is needed; JLCPCB 7764",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TLV3601DBVR",
+      "reason": "rank 1's rule-5 alternate on the same DBV pins: 4.5 ns maximum over temperature, JLCPCB 1621 and Digi-Key 5959; 5 uA maximum input bias; kept in the top three as the alternate",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "TLV3501AIDBVR",
+      "reason": "7 ns maximum over temperature and Digi-Key 26303; 3.2 mA typical supply current and a 6-pin package with a shutdown pin; 2 packages for both placements",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "TLV3502AIDR",
+      "reason": "the dual of rank 4 with the same 7 ns and 3.2 mA; JLCPCB 3285 and Digi-Key 4084",
+      "option": ""
+     },
+     {
+      "rank": 6,
+      "part": "MCP6561T-E/OT",
+      "reason": "clip placement only: 80 ns maximum at 25 degC, no figure over temperature, 2 mA input current limit; JLCPCB 4005 and Digi-Key 18112",
+      "option": ""
+     },
+     {
+      "rank": 7,
+      "part": "LMV7219M5X/NOPB",
+      "reason": "clip placement only: 20 ns maximum at TJ 25 degC, input range ends at 0 V with no margin, input bias up to 2000 nA; JLCPCB 13801 and Digi-Key 18367",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "TLV3202AIDR",
+      "maker": "Texas Instruments (datasheet SBOS561C); counts as Texas Instruments (S1)",
+      "lcsc": "C129325",
+      "package": "SOIC-8 (D)",
+      "placements": 1,
+      "placements_basis": "range 1 to 2 comparators: one for the phase-wire clip (measurement GPIO 25) and one for the optical index if that function's front end takes one on the IO board; one dual package covers both, so the top of the range is 1 package a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "coupling",
+        "required": "galvanic clip",
+        "datasheet": "not a comparator figure: the clip is galvanic and the comparator input is ground-referenced",
+        "pass": true,
+        "source": "TLV3202 SBOS561C, https://www.ti.com/lit/ds/symlink/tlv3202.pdf, read 2026-10-02T07:08:28Z"
+       },
+       {
+        "name": "isolation",
+        "required": "none, IO board ground",
+        "datasheet": "not a comparator figure: the inputs are referenced to the IO board ground (no isolation, V216)",
+        "pass": true,
+        "source": "TLV3202 SBOS561C, https://www.ti.com/lit/ds/symlink/tlv3202.pdf, read 2026-10-02T07:08:28Z"
+       },
+       {
+        "name": "input withstand",
+        "required": "120 V at the clip input, divider and clamp in front",
+        "datasheet": "signal input pins -0.5 V to (VCC) + 0.5 V absolute maximum, +/-10 mA; input pins diode-clamped to the supply rails; the 120 V belongs to the divider and clamp of stage 2 (the same figures as rank 1)",
+        "pass": true,
+        "source": "TLV3202 SBOS561C, https://www.ti.com/lit/ds/symlink/tlv3202.pdf, read 2026-10-02T07:08:28Z"
+       },
+       {
+        "name": "electrical frequency passed",
+        "required": "22,937 Hz",
+        "datasheet": "tPD 50 ns maximum at 25 degC, 55 ns maximum over -40 to 125 degC (6.6 at VCC 5 V, 6.8 at VCC 2.7 V, 20 mV overdrive, CL 15 pF): against a 43.6 us period at 22,937 Hz the comparator follows it",
+        "pass": true,
+        "source": "TLV3202 SBOS561C, https://www.ti.com/lit/ds/symlink/tlv3202.pdf, read 2026-10-02T07:08:28Z"
+       },
+       {
+        "name": "PWM rejected",
+        "required": "8 to 288 kHz",
+        "datasheet": "not a comparator figure: the comparator filters nothing; the rejection is the stage 2 network's (report 'phase-wire clip frequency overlap')",
+        "pass": true,
+        "source": "TLV3202 SBOS561C, https://www.ti.com/lit/ds/symlink/tlv3202.pdf, read 2026-10-02T07:08:28Z"
+       },
+       {
+        "name": "lowest speed",
+        "required": "none below 500 rpm",
+        "datasheet": "DC-coupled comparator",
+        "pass": true,
+        "source": "TLV3202 SBOS561C, https://www.ti.com/lit/ds/symlink/tlv3202.pdf, read 2026-10-02T07:08:28Z"
+       },
+       {
+        "name": "comparator supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "VS 2.7 to 5.5 V recommended (6.3), 7 V absolute maximum; IQ 36 uA typical, 46 uA maximum at 25 degC, 60 uA maximum over temperature (VCC 2.7 V table)",
+        "pass": true,
+        "source": "TLV3202 SBOS561C, https://www.ti.com/lit/ds/symlink/tlv3202.pdf, read 2026-10-02T07:08:28Z"
+       },
+       {
+        "name": "comparator output",
+        "required": "push-pull at 3.3 V",
+        "datasheet": "push-pull outputs (title: '40ns, microPOWER, Push-Pull Output Comparators'); VOH and VOL within 250 and 260 mV of the rails at 4 mA",
+        "pass": true,
+        "source": "TLV3202 SBOS561C, https://www.ti.com/lit/ds/symlink/tlv3202.pdf, read 2026-10-02T07:08:28Z"
+       },
+       {
+        "name": "comparator input range",
+        "required": "includes 0 V",
+        "datasheet": "VCM (VEE) - 0.2 V to (VCC) + 0.2 V: includes 0 V",
+        "pass": true,
+        "source": "TLV3202 SBOS561C, https://www.ti.com/lit/ds/symlink/tlv3202.pdf, read 2026-10-02T07:08:28Z"
+       },
+       {
+        "name": "comparator delay",
+        "required": "under 21.8 us; inside 1.244 us at the index",
+        "datasheet": "tPD 55 ns maximum over -40 to 125 degC, identical to rank 1: under 21.8 us, and 55 ns of the optical index's 1.244 us; hysteresis 1.2 mV typical",
+        "pass": true,
+        "source": "TLV3202 SBOS561C, https://www.ti.com/lit/ds/symlink/tlv3202.pdf, read 2026-10-02T07:08:28Z"
+       },
+       {
+        "name": "placements",
+        "required": "1 to 2",
+        "datasheet": "two comparators in one SOIC-8 (D) package: 1OUT 1, 1IN- 2, 1IN+ 3, GND 4, 2IN+ 5, 2IN- 6, 2OUT 7, VCC 8; one package covers the clip and the optical index comparator",
+        "pass": true,
+        "source": "TLV3202 SBOS561C, https://www.ti.com/lit/ds/symlink/tlv3202.pdf, read 2026-10-02T07:08:28Z"
+       },
+       {
+        "name": "board ambient temperature",
+        "required": "0 to 50 degC",
+        "datasheet": "specified -40 to 125 degC (6.3)",
+        "pass": true,
+        "source": "TLV3202 SBOS561C, https://www.ti.com/lit/ds/symlink/tlv3202.pdf, read 2026-10-02T07:08:28Z"
+       }
+      ],
+      "jlcpcb": "stockCount 7764, canPresaleNumber 7457, componentLibraryType expand, price USD 1.0974 a part at the 1 break (need 5), read 2026-10-02T07:08:09Z, vendors.py jlcpcb C129325 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 10738, manufacturer lead time 20 weeks, ProductStatus Active, discontinued false, end of life false, read 2026-10-02T06:57:46Z, vendors.py digikey TLV3202AIDR (https://api.digikey.com/products/v4/search/TLV3202AIDR/productdetails) (P3's reading of the same UTC day, returned from the cache at 2026-10-02T07:08:21Z, marked cached)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 7764 >= 50 and canPresaleNumber 7457 >= 0: pass (rule 4, 2026-10-02T07:08:09Z)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/TLV3202, orderable TLV3202AIDR marketingStatusDescription ACTIVE, read 2026-10-02T07:09:55Z (vendors.py fetch); longevity commitment not read; first datasheet revision March 2012 (SBOS561), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-10-02T06:57:46Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 10738 >= 50 (2026-10-02T06:57:46Z), the same part",
+      "alternates": [
+       "TLV3502AIDR"
+      ],
+      "driver_in_shared": "none (GPIO edge on measurement GPIO 25)",
+      "reason": "the dual of rank 1 from the same data sheet with the same stated figures (55 ns maximum over -40 to 125 degC, 5 nA maximum input bias over temperature), one SOIC-8 for both comparator placements, and a second source at Digi-Key without an alternate; JLCPCB 7764 (2026-10-02T07:08:09Z)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "TLV3502AIDR",
+      "maker": "Texas Instruments (datasheet SBOS321E); counts as Texas Instruments (S1)",
+      "lcsc": "C131165",
+      "package": "SOIC-8 (D)",
+      "placements": 1,
+      "placements_basis": "range 1 to 2 comparators: one for the phase-wire clip and one for the optical index if that function's front end takes one; one dual package covers both, so the top of the range is 1 package a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "coupling",
+        "required": "galvanic clip",
+        "datasheet": "not a comparator figure: the clip is galvanic and the comparator input is ground-referenced",
+        "pass": true,
+        "source": "TLV3502 SBOS321E, https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-10-02T07:08:29Z"
+       },
+       {
+        "name": "isolation",
+        "required": "none, IO board ground",
+        "datasheet": "not a comparator figure: the inputs are referenced to the IO board ground (no isolation, V216)",
+        "pass": true,
+        "source": "TLV3502 SBOS321E, https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-10-02T07:08:29Z"
+       },
+       {
+        "name": "input withstand",
+        "required": "120 V at the clip input, divider and clamp in front",
+        "datasheet": "signal input terminals (V-) - 0.3 V to (V+) + 0.3 V absolute maximum, 10 mA; input terminals diode-clamped to the supply rails; the 120 V belongs to the divider and clamp of stage 2",
+        "pass": true,
+        "source": "TLV3502 SBOS321E, https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-10-02T07:08:29Z"
+       },
+       {
+        "name": "electrical frequency passed",
+        "required": "22,937 Hz",
+        "datasheet": "T(pd) 4.5 ns typical, 6.4 ns maximum at 25 degC, 7 ns maximum over -40 to 125 degC at 20 mV overdrive (not production tested, ensured by characterization): against a 43.6 us period the comparator follows it",
+        "pass": true,
+        "source": "TLV3502 SBOS321E, https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-10-02T07:08:29Z"
+       },
+       {
+        "name": "PWM rejected",
+        "required": "8 to 288 kHz",
+        "datasheet": "not a comparator figure: the comparator filters nothing; the rejection is the stage 2 network's (report 'phase-wire clip frequency overlap')",
+        "pass": true,
+        "source": "TLV3502 SBOS321E, https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-10-02T07:08:29Z"
+       },
+       {
+        "name": "lowest speed",
+        "required": "none below 500 rpm",
+        "datasheet": "DC-coupled comparator",
+        "pass": true,
+        "source": "TLV3502 SBOS321E, https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-10-02T07:08:29Z"
+       },
+       {
+        "name": "comparator supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "specified 2.7 to 5.5 V, operating 2.2 to 5.5 V; IQ 3.2 mA typical, 5 mA maximum at VS 5 V",
+        "pass": true,
+        "source": "TLV3502 SBOS321E, https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-10-02T07:08:29Z"
+       },
+       {
+        "name": "comparator output",
+        "required": "push-pull at 3.3 V",
+        "datasheet": "push-pull CMOS output stage; VOH and VOL within 30 mV typical, 50 mV maximum of the rails at 1 mA",
+        "pass": true,
+        "source": "TLV3502 SBOS321E, https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-10-02T07:08:29Z"
+       },
+       {
+        "name": "comparator input range",
+        "required": "includes 0 V",
+        "datasheet": "VCM (V-) - 0.2 V to (V+) - 0.2 V: includes 0 V",
+        "pass": true,
+        "source": "TLV3502 SBOS321E, https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-10-02T07:08:29Z"
+       },
+       {
+        "name": "comparator delay",
+        "required": "under 21.8 us; inside 1.244 us at the index",
+        "datasheet": "T(pd) 7 ns maximum over -40 to 125 degC at 20 mV overdrive, 12 ns at 5 mV: under 21.8 us and inside the optical index's 1.244 us; hysteresis 6 mV typical",
+        "pass": true,
+        "source": "TLV3502 SBOS321E, https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-10-02T07:08:29Z"
+       },
+       {
+        "name": "placements",
+        "required": "1 to 2",
+        "datasheet": "two comparators in one SOIC-8 (D) package: +IN A 1, -IN A 2, +IN B 3, -IN B 4, V- 5, OUT B 6, OUT A 7, V+ 8; one package covers both placements",
+        "pass": true,
+        "source": "TLV3502 SBOS321E, https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-10-02T07:08:29Z"
+       },
+       {
+        "name": "board ambient temperature",
+        "required": "0 to 50 degC",
+        "datasheet": "specified -40 to 125 degC (6.3 and 6.6)",
+        "pass": true,
+        "source": "TLV3502 SBOS321E, https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-10-02T07:08:29Z"
+       }
+      ],
+      "jlcpcb": "stockCount 3285, canPresaleNumber 3214, componentLibraryType expand, price USD 1.8826 a part at the 1 break (need 5), read 2026-10-02T07:08:10Z, vendors.py jlcpcb C131165 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 4084, manufacturer lead time 12 weeks, ProductStatus Active, discontinued false, end of life false, read 2026-10-02T06:57:48Z, vendors.py digikey TLV3502AIDR (https://api.digikey.com/products/v4/search/TLV3502AIDR/productdetails) (P3's reading of the same UTC day, returned from the cache at 2026-10-02T07:08:22Z, marked cached)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 3285 >= 50 and canPresaleNumber 3214 >= 0: pass (rule 4, 2026-10-02T07:08:10Z)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/TLV3502, orderable TLV3502AIDR marketingStatusDescription ACTIVE, read 2026-10-02T07:09:56Z (vendors.py fetch); longevity commitment not read; first datasheet revision March 2005 (SBOS321), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-10-02T06:57:48Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 4084 >= 50 (2026-10-02T06:57:48Z), the same part",
+      "alternates": [
+       "TLV3202AIDR"
+      ],
+      "driver_in_shared": "none (GPIO edge on measurement GPIO 25)",
+      "reason": "the dual of TLV3501AIDBVR (rank 4) with its 7 ns maximum over temperature and 3.2 mA typical supply current; below it for JLCPCB 3285 against 9652 and the SOIC-8 package",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 6,
+      "part": "MCP6561T-E/OT",
+      "maker": "Microchip (datasheet DS20002139E); counts as Microchip (S1). JLCPCB labels it Microchip Tech",
+      "lcsc": "C117501",
+      "package": "SOT-23-5",
+      "placements": 1,
+      "placements_basis": "fixed for this part: one comparator for the phase-wire clip; the part qualifies for the clip placement only, since no maximum delay over temperature is stated for the optical index placement",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "coupling",
+        "required": "galvanic clip",
+        "datasheet": "not a comparator figure: the clip is galvanic and the comparator input is ground-referenced",
+        "pass": true,
+        "source": "MCP6561 DS20002139E, the PDF linked from https://www.microchip.com/en-us/product/MCP6561, read 2026-10-02T07:11:34Z"
+       },
+       {
+        "name": "isolation",
+        "required": "none, IO board ground",
+        "datasheet": "not a comparator figure: the inputs are referenced to the IO board ground (no isolation, V216)",
+        "pass": true,
+        "source": "MCP6561 DS20002139E, the PDF linked from https://www.microchip.com/en-us/product/MCP6561, read 2026-10-02T07:11:34Z"
+       },
+       {
+        "name": "input withstand",
+        "required": "120 V at the clip input, divider and clamp in front",
+        "datasheet": "analog input VSS - 1.0 V to VDD + 1.0 V absolute maximum, current at input pins +/-2 mA (a tighter limit than the TLV320x's 10 mA, so the stage 2 clamp must hold the input current under 2 mA); input leakage 1 pA typical",
+        "pass": true,
+        "source": "MCP6561 DS20002139E, the PDF linked from https://www.microchip.com/en-us/product/MCP6561, read 2026-10-02T07:11:34Z"
+       },
+       {
+        "name": "electrical frequency passed",
+        "required": "22,937 Hz",
+        "datasheet": "tPHL 34 to 56 ns and tPLH 47 to 49 ns typical, 80 ns maximum at TA 25 degC (VDD 1.8 V and 5.5 V, 100 mV overdrive, CL 25 pF); fTG 4 MHz typical at 5.5 V: against a 43.6 us period the comparator follows it",
+        "pass": true,
+        "source": "MCP6561 DS20002139E, the PDF linked from https://www.microchip.com/en-us/product/MCP6561, read 2026-10-02T07:11:34Z"
+       },
+       {
+        "name": "PWM rejected",
+        "required": "8 to 288 kHz",
+        "datasheet": "not a comparator figure: the comparator filters nothing; the rejection is the stage 2 network's (report 'phase-wire clip frequency overlap')",
+        "pass": true,
+        "source": "MCP6561 DS20002139E, the PDF linked from https://www.microchip.com/en-us/product/MCP6561, read 2026-10-02T07:11:34Z"
+       },
+       {
+        "name": "lowest speed",
+        "required": "none below 500 rpm",
+        "datasheet": "DC-coupled comparator",
+        "pass": true,
+        "source": "MCP6561 DS20002139E, the PDF linked from https://www.microchip.com/en-us/product/MCP6561, read 2026-10-02T07:11:34Z"
+       },
+       {
+        "name": "comparator supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "VDD 1.8 to 5.5 V, 6.5 V absolute maximum; IQ 60 / 100 / 130 uA per comparator",
+        "pass": true,
+        "source": "MCP6561 DS20002139E, the PDF linked from https://www.microchip.com/en-us/product/MCP6561, read 2026-10-02T07:11:34Z"
+       },
+       {
+        "name": "comparator output",
+        "required": "push-pull at 3.3 V",
+        "datasheet": "push-pull output, CMOS and TTL compatible; VOH at least VDD - 0.7 V at -3 mA (VDD 1.8 V) and -8 mA (5.5 V), VOL at most 0.6 V",
+        "pass": true,
+        "source": "MCP6561 DS20002139E, the PDF linked from https://www.microchip.com/en-us/product/MCP6561, read 2026-10-02T07:11:34Z"
+       },
+       {
+        "name": "comparator input range",
+        "required": "includes 0 V",
+        "datasheet": "VCMR VSS - 0.2 V to VDD + 0.2 V at VDD 1.8 V and VSS - 0.3 V to VDD + 0.3 V at 5.5 V: includes 0 V",
+        "pass": true,
+        "source": "MCP6561 DS20002139E, the PDF linked from https://www.microchip.com/en-us/product/MCP6561, read 2026-10-02T07:11:34Z"
+       },
+       {
+        "name": "comparator delay",
+        "required": "under 21.8 us; inside 1.244 us at the index",
+        "datasheet": "tPHL and tPLH 80 ns maximum at TA 25 degC only, stated at 1.8 V and 5.5 V and not over 0 to 50 degC: under 21.8 us for the clip (passes); not stated over temperature, so it cannot be the optical index's comparator (fails that placement); hysteresis 1 to 5 mV",
+        "pass": true,
+        "source": "MCP6561 DS20002139E, the PDF linked from https://www.microchip.com/en-us/product/MCP6561, read 2026-10-02T07:11:34Z"
+       },
+       {
+        "name": "placements",
+        "required": "1 to 2",
+        "datasheet": "one comparator per SOT-23-5 package: OUT 1, VSS 2, +IN 3, -IN 4, VDD 5, the DBV pin order of rank 1",
+        "pass": true,
+        "source": "MCP6561 DS20002139E, the PDF linked from https://www.microchip.com/en-us/product/MCP6561, read 2026-10-02T07:11:34Z"
+       },
+       {
+        "name": "board ambient temperature",
+        "required": "0 to 50 degC",
+        "datasheet": "specified -40 to 125 degC",
+        "pass": true,
+        "source": "MCP6561 DS20002139E, the PDF linked from https://www.microchip.com/en-us/product/MCP6561, read 2026-10-02T07:11:34Z"
+       }
+      ],
+      "jlcpcb": "stockCount 4005, canPresaleNumber 3981, componentLibraryType expand, price USD 0.743 a part at the 1 break (need 5), read 2026-10-02T07:11:03Z, vendors.py jlcpcb C117501 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 18112, manufacturer lead time 4 weeks, ProductStatus Active, discontinued false, end of life false, read 2026-10-02T07:11:07Z, vendors.py digikey MCP6561T-E/OT (https://api.digikey.com/products/v4/search/MCP6561T-E%2FOT/productdetails)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 4005 >= 50 and canPresaleNumber 3981 >= 0: pass (rule 4, 2026-10-02T07:11:03Z)",
+      "lifecycle": "manufacturer status in production: https://www.microchip.com/en-us/product/MCP6561 carries productSatus 'In Production', read 2026-10-02T07:11:29Z (vendors.py fetch); longevity commitment not read; first datasheet revision A, March 2009 (revision history), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-10-02T07:11:07Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 18112 >= 50 (2026-10-02T07:11:07Z)",
+      "alternates": [
+       "TLV3201AIDBVR",
+       "TLV3601DBVR"
+      ],
+      "driver_in_shared": "none (GPIO edge on measurement GPIO 25)",
+      "reason": "meets the clip's values with a 80 ns maximum at 25 degC only; below the TI parts for that missing over-temperature figure, its +/-2 mA input current limit and no use as the index comparator; JLCPCB 4005 and Digi-Key 18112",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 7,
+      "part": "LMV7219M5X/NOPB",
+      "maker": "Texas Instruments (datasheet SNOS458I, formerly National Semiconductor); counts as Texas Instruments (S1)",
+      "lcsc": "C283912",
+      "package": "SOT-23-5 (DBV)",
+      "placements": 1,
+      "placements_basis": "fixed for this part: one comparator for the phase-wire clip; the part qualifies for the clip placement only, since no maximum delay over temperature is stated for the optical index placement",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "coupling",
+        "required": "galvanic clip",
+        "datasheet": "not a comparator figure: the clip is galvanic and the comparator input is ground-referenced",
+        "pass": true,
+        "source": "LMV7219 SNOS458I, https://www.ti.com/lit/ds/symlink/lmv7219.pdf, read 2026-10-02T07:11:23Z"
+       },
+       {
+        "name": "isolation",
+        "required": "none, IO board ground",
+        "datasheet": "not a comparator figure: the inputs are referenced to the IO board ground (no isolation, V216)",
+        "pass": true,
+        "source": "LMV7219 SNOS458I, https://www.ti.com/lit/ds/symlink/lmv7219.pdf, read 2026-10-02T07:11:23Z"
+       },
+       {
+        "name": "input withstand",
+        "required": "120 V at the clip input, divider and clamp in front",
+        "datasheet": "voltage at input pins (V-) - 0.4 V to (V+) + 0.4 V absolute maximum, current at an input pin +/-10 mA (6.1); the 120 V belongs to the divider and clamp of stage 2; input bias 450 nA typical, 950 nA maximum at 2.7 V and 2000 nA over temperature, so the divider's Thevenin resistance sets an offset of up to 2 uA times that resistance (the stage 2 network); internal hysteresis 7 to 7.5 mV",
+        "pass": true,
+        "source": "LMV7219 SNOS458I, https://www.ti.com/lit/ds/symlink/lmv7219.pdf, read 2026-10-02T07:11:23Z"
+       },
+       {
+        "name": "electrical frequency passed",
+        "required": "22,937 Hz",
+        "datasheet": "tPD 7 to 12 ns typical and 19 to 20 ns maximum at TJ 25 degC (V+ 2.7 V and 5 V, 15 or 50 mV overdrive, CL 10 pF): against a 43.6 us period the comparator follows it",
+        "pass": true,
+        "source": "LMV7219 SNOS458I, https://www.ti.com/lit/ds/symlink/lmv7219.pdf, read 2026-10-02T07:11:23Z"
+       },
+       {
+        "name": "PWM rejected",
+        "required": "8 to 288 kHz",
+        "datasheet": "not a comparator figure: the comparator filters nothing; the rejection is the stage 2 network's (report 'phase-wire clip frequency overlap')",
+        "pass": true,
+        "source": "LMV7219 SNOS458I, https://www.ti.com/lit/ds/symlink/lmv7219.pdf, read 2026-10-02T07:11:23Z"
+       },
+       {
+        "name": "lowest speed",
+        "required": "none below 500 rpm",
+        "datasheet": "DC-coupled comparator",
+        "pass": true,
+        "source": "LMV7219 SNOS458I, https://www.ti.com/lit/ds/symlink/lmv7219.pdf, read 2026-10-02T07:11:23Z"
+       },
+       {
+        "name": "comparator supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "supply 2.7 to 5 V (6.3), 5.5 V absolute maximum; IS 0.9 mA typical, 1.6 mA maximum at 2.7 V, 1.1 and 1.8 mA at 5 V",
+        "pass": true,
+        "source": "LMV7219 SNOS458I, https://www.ti.com/lit/ds/symlink/lmv7219.pdf, read 2026-10-02T07:11:23Z"
+       },
+       {
+        "name": "comparator output",
+        "required": "push-pull at 3.3 V",
+        "datasheet": "push-pull rail-to-rail output; VO within 0.22 V (typical) of V+ at 4 mA",
+        "pass": true,
+        "source": "LMV7219 SNOS458I, https://www.ti.com/lit/ds/symlink/lmv7219.pdf, read 2026-10-02T07:11:23Z"
+       },
+       {
+        "name": "comparator input range",
+        "required": "includes 0 V",
+        "datasheet": "VCM CMRR above 50 dB down to -0.2 V typical and -0.1 V maximum, 0 V maximum over -40 to 85 degC and TPCB 105 degC: includes 0 V with no margin at the worst case",
+        "pass": true,
+        "source": "LMV7219 SNOS458I, https://www.ti.com/lit/ds/symlink/lmv7219.pdf, read 2026-10-02T07:11:23Z"
+       },
+       {
+        "name": "comparator delay",
+        "required": "under 21.8 us; inside 1.244 us at the index",
+        "datasheet": "tPD 20 ns maximum at TJ 25 degC only: under 21.8 us for the clip (passes); not stated over 0 to 50 degC, so it cannot be the optical index's comparator (fails that placement)",
+        "pass": true,
+        "source": "LMV7219 SNOS458I, https://www.ti.com/lit/ds/symlink/lmv7219.pdf, read 2026-10-02T07:11:23Z"
+       },
+       {
+        "name": "placements",
+        "required": "1 to 2",
+        "datasheet": "one comparator per SOT-23-5 (DBV) package: OUT 1, V- 2, +IN 3, -IN 4, V+ 5, the DBV pin order of rank 1",
+        "pass": true,
+        "source": "LMV7219 SNOS458I, https://www.ti.com/lit/ds/symlink/lmv7219.pdf, read 2026-10-02T07:11:23Z"
+       },
+       {
+        "name": "board ambient temperature",
+        "required": "0 to 50 degC",
+        "datasheet": "ambient -40 to 85 degC recommended (6.3)",
+        "pass": true,
+        "source": "LMV7219 SNOS458I, https://www.ti.com/lit/ds/symlink/lmv7219.pdf, read 2026-10-02T07:11:23Z"
+       }
+      ],
+      "jlcpcb": "stockCount 13801, canPresaleNumber 13762, componentLibraryType expand, price USD 0.7527 a part at the 1 break (need 5), read 2026-10-02T07:11:06Z, vendors.py jlcpcb C283912 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "keyword search on the duplicate part number: Texas Instruments LMV7219M5X/NOPB stock_available 18367, manufacturer lead time 20 weeks, ProductStatus Active, discontinued false, end of life false; a National Semiconductor product (Rochester Electronics, 0) under the same number is another listing and not counted; read 2026-10-02T07:11:13Z, vendors.py digikey LMV7219M5X/NOPB (https://api.digikey.com/products/v4/search/keyword)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 13801 >= 50 and canPresaleNumber 13762 >= 0: pass (rule 4, 2026-10-02T07:11:06Z)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/LMV7219, orderable LMV7219M5X/NOPB marketingStatusDescription ACTIVE (the orderable LMV7219M5X without the NOPB suffix is OBSOLETE), read 2026-10-02T07:16:02Z (vendors.py fetch); longevity commitment not read; first datasheet revision April 2000 (SNOS458), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-10-02T07:11:13Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key (Texas Instruments) 18367 >= 50 (2026-10-02T07:11:13Z)",
+      "alternates": [
+       "TLV3201AIDBVR",
+       "TLV3601DBVR"
+      ],
+      "driver_in_shared": "none (GPIO edge on measurement GPIO 25)",
+      "reason": "meets the clip's values at the lowest price class (JLCPCB 13801, Digi-Key 18367); last because its 0 V input limit has no margin, its input bias reaches 2000 nA over temperature, and its delay maximum is a 25 degC figure",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TLV3201AIDBVR",
+      "kind": "first",
+      "option": ""
+     },
+     {
+      "part": "TLV3601DBVR",
+      "kind": "alternate",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "encoder input",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "AM26LV32EIDR",
+      "reason": "a 3.3 V quad receiver with Ioff, +/-14 V inputs, the tightest delay window (leaves 32 ns of the 50 ns spacing against the model's 14 ns), JLCPCB 48815 and Digi-Key 13102; selection.json keeps it",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "DS34LV86TMX/NOPB",
+      "reason": "meets every value with a second vendor (JLCPCB 2737, Digi-Key 5449); no Ioff figure on its outputs and a wider delay window",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "ISL32273EIBZ-T",
+      "reason": "a second maker on the same SOIC-16 signal pins, 55 ns maximum delay with no minimum; JLCPCB 874, Digi-Key 0, second source by alternate AM26LV32EIDR",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "SN65HVD78DR",
+      "reason": "qualifies with 3 packages a board and 1 ns of margin on the 14 ns edge-spacing limit (35 ns maximum, no minimum stated); JLCPCB 1451, Digi-Key 387",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 4,
+      "part": "SN65HVD78DR",
+      "maker": "Texas Instruments (datasheet SLLSE11H); counts as Texas Instruments (S1)",
+      "lcsc": "C111824",
+      "package": "SOIC-8 (D)",
+      "placements": 3,
+      "placements_basis": "fixed: one half-duplex transceiver used as a receiver for each of A, B and I, with DE tied to ground and RE tied to ground; 3 packages a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "signal forms",
+        "required": "RS-422 and 5 V single-ended",
+        "datasheet": "differential receiver on bus pins A and B; VIT+ -70 typical, -20 mV maximum, VIT- -200 mV minimum, -150 typical; hysteresis 50 mV minimum, 80 mV typical; a 5 V single-ended line against a reference on B stays inside the -7 to 12 V common-mode range",
+        "pass": true,
+        "source": "SN65HVD78 SLLSE11H, https://www.ti.com/lit/ds/symlink/sn65hvd78.pdf, read 2026-10-02T07:08:29Z, 7.5"
+       },
+       {
+        "name": "channels",
+        "required": "3",
+        "datasheet": "one receiver in each package, so A, B and I take 3 packages",
+        "pass": true,
+        "source": "SN65HVD78 SLLSE11H, https://www.ti.com/lit/ds/symlink/sn65hvd78.pdf, read 2026-10-02T07:08:29Z, Section 4"
+       },
+       {
+        "name": "per-channel frequency",
+        "required": "5 MHz",
+        "datasheet": "50 Mbps grade (SN65HVD78): receiver tPHL and tPLH 35 ns maximum, no minimum stated, pulse skew 2.5 ns maximum, tr and tf 1 / 3 / 6 ns (CL 15 pF); signalling rate 50 Mbps",
+        "pass": true,
+        "source": "SN65HVD78 SLLSE11H, https://www.ti.com/lit/ds/symlink/sn65hvd78.pdf, read 2026-10-02T07:08:29Z, 7.3 and 7.9"
+       },
+       {
+        "name": "A-to-B edge spacing",
+        "required": ">= 14 ns at 5 MHz",
+        "datasheet": "at 5 MHz the 50 ns quadrature spacing less the largest opposite-edge delay difference: 35 ns maximum against no stated minimum is at most 35 ns, leaving 15 ns, 1 ns above the 14 ns limit; A, B and I sit in 3 separate packages, so no skew figure between channels applies",
+        "pass": true,
+        "source": "SN65HVD78 SLLSE11H, https://www.ti.com/lit/ds/symlink/sn65hvd78.pdf, read 2026-10-02T07:08:29Z, 7.9"
+       },
+       {
+        "name": "input withstand",
+        "required": "12 V",
+        "datasheet": "bus inputs: recommended VI -7 to 12 V; absolute maximum -13 to 16.5 V; the 12 V of the encoder supply is inside the recommended range",
+        "pass": true,
+        "source": "SN65HVD78 SLLSE11H, https://www.ti.com/lit/ds/symlink/sn65hvd78.pdf, read 2026-10-02T07:08:29Z, 7.1 and 7.3"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V receiver",
+        "datasheet": "VCC 3 / 3.3 / 3.6 V; ICC 600 uA typical and 800 uA maximum with the receiver enabled and the driver disabled",
+        "pass": true,
+        "source": "SN65HVD78 SLLSE11H, https://www.ti.com/lit/ds/symlink/sn65hvd78.pdf, read 2026-10-02T07:08:29Z, 7.3 and 7.5"
+       },
+       {
+        "name": "powered-off behaviour",
+        "required": "no damaging current with the 3.3 V rail down",
+        "datasheet": "bus input current at VCC = 0 V: 240 uA typical, 333 uA maximum at VI = 12 V and -180 uA typical, -267 uA minimum at VI = -7 V (DE at 0 V); no Ioff figure for the receiver output pin, which faces the RP2354B on the same unpowered rail",
+        "pass": true,
+        "source": "SN65HVD78 SLLSE11H, https://www.ti.com/lit/ds/symlink/sn65hvd78.pdf, read 2026-10-02T07:08:29Z, 7.5"
+       },
+       {
+        "name": "board ambient temperature",
+        "required": "0 to 50 degC",
+        "datasheet": "TA -40 to 125 degC",
+        "pass": true,
+        "source": "SN65HVD78 SLLSE11H, https://www.ti.com/lit/ds/symlink/sn65hvd78.pdf, read 2026-10-02T07:08:29Z, 7.3"
+       }
+      ],
+      "jlcpcb": "stockCount 1451, canPresaleNumber 1405, componentLibraryType expand, price USD 1.1608 a part at the 10 break (need 15), read 2026-10-02T07:08:15Z, vendors.py jlcpcb C111824 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 387 (cut tape; reel 0), manufacturer lead time 20 weeks, ProductStatus Active, discontinued false, end of life false, read 2026-10-02T07:01:49Z, vendors.py digikey SN65HVD78DR (https://api.digikey.com/products/v4/search/SN65HVD78DR/productdetails) (P3's reading of the same UTC day, returned from the cache at 2026-10-02T07:08:22Z, marked cached)",
+      "gate": "need 5 boards x 3 = 15; threshold max(5 x 15, 50) = 75; stockCount 1451 >= 75 and canPresaleNumber 1405 >= 0: pass (rule 4, 2026-10-02T07:08:15Z)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/SN65HVD78, orderable SN65HVD78DR marketingStatusDescription ACTIVE, read 2026-10-02T07:09:57Z (vendors.py fetch); longevity commitment not read; first datasheet revision March 2012 (SLLSE11), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-10-02T07:01:49Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 387 >= 75 (2026-10-02T07:01:49Z), the threshold for a need of 15",
+      "alternates": [],
+      "driver_in_shared": "none (GPIO into the PIO decoder; no decoder program in the tree)",
+      "reason": "a 3.3 V receiver with a stated 35 ns maximum and 12 V recommended inputs, but 3 packages a board and 1 ns of margin on the 14 ns edge-spacing limit, against 21 to 42 ns of margin for the three quad receivers; JLCPCB 1451 and Digi-Key 387",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "AM26LV32EIDR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "encoder decode",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "reason": "unchanged from P2: the part both FU-2C verifiers confirmed; JLCPCB 2535 (P2 reading 2026-10-02T06:27:42Z), held 20 against a need of 10, Digi-Key SC1512(13)-A4 3560; no P3 candidate and no external decoder from an allowlisted maker",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "rotation from ESC",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "reason": "unchanged from P2: the part both FU-2C verifiers confirmed; JLCPCB 2535 (P2 reading 2026-10-02T06:27:42Z), held 20 against a need of 10, Digi-Key SC1512(13)-A4 3560; no P3 candidate and no external decoder from an allowlisted maker",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "rotation inputs",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "reason": "unchanged from P2: the part both FU-2C verifiers confirmed; JLCPCB 2535 (P2 reading 2026-10-02T06:27:42Z), held 20 against a need of 10, Digi-Key SC1512(13)-A4 3560; no P3 candidate and no external decoder from an allowlisted maker",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "BENCH rpm source",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "reason": "unchanged from P2: the part both FU-2C verifiers confirmed; JLCPCB 2535 (P2 reading 2026-10-02T06:27:42Z), held 20 against a need of 10, Digi-Key SC1512(13)-A4 3560; no P3 candidate and no external decoder from an allowlisted maker",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "servo measured position",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TMAG5273A2QDBVR",
+      "reason": "a CORDIC angle engine with 0.0625 degree steps on I2C at 3.3 V, JLCPCB 18069 and Digi-Key 2416, Active at TI",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "MLX90393ELW-ABA-011-RE",
+      "reason": "qualifies as a 3-axis magnetometer with the angle computed in firmware; the only candidate after rank 1 with a second vendor and an Active status read (Digi-Key 28268, JLCPCB 2222)",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "MLX90393SLW-ABA-011-RE",
+      "reason": "the E-code part's twin with -20 to 85 degC; JLCPCB 2326, Digi-Key 10855",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "AS5600-ASOT",
+      "reason": "meets every value but fails sourcing rule 5 (Digi-Key 'Discontinued at DigiKey' with 0, its tube twin fails rule 4) and the maker's status is not read, so it follows the three that pass; JLCPCB 40430",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "MLX90393ELW-ABA-011-RE",
+      "maker": "Melexis (data sheet MLX90393 Rev 012); counts as Melexis (S1, owner-added). JLCPCB labels it Melexis",
+      "lcsc": "C2654971",
+      "package": "QFN-16 3 x 3 mm (LW)",
+      "placements": 1,
+      "placements_basis": "fixed: one angle sensor on the servo position sensor board, one board for each IO board; the servo screen draws one measured arm (docs/Screens.md:156-158)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "sensor",
+        "required": "magnetic angle sensor under a diametric magnet on the horn axis",
+        "datasheet": "3-axis Hall magnetometer (Triaxis); the X and Y outputs under an on-axis diametric magnet give the angle as atan2(By, Bx), which firmware computes; the part has no angle output and no angle engine, unlike rank 1's CORDIC",
+        "pass": true,
+        "source": "MLX90393 Rev 012 (18-Nov-2025), https://media.melexis.com/-/media/files/documents/datasheets/mlx90393-datasheet-melexis.pdf, read 2026-10-02T07:08:28Z, features and Section 13"
+       },
+       {
+        "name": "resolution",
+        "required": "<= 0.129 degree",
+        "datasheet": "16-bit output (NOUT); XY sensitivity 0.161 to 3.22 uT/LSB (Table 9; Table 17 lists 0.150 to 6.009 uT/LSB at HALLCONF 0xC, 25 degC). At 3.22 uT/LSB a step is 0.129 degree or finer for a field in the XY plane of 1.43 mT or more. XY noise (Figure 2, GAIN_SEL 7, read off the plot, approximate): about 51 mGauss at TCONV 1.27 ms, about 11 mGauss at 7.6 ms, about 6 mGauss at 26 ms, so noise stays under 0.129 degree for 0.49 mT or more at 7.6 ms. The magnet's field at the sensor is not stated for this or any candidate. Saturation onset 50 mT; offset drift under +/-1000 LSB and sensitivity drift +/-3 % over temperature (accuracy is not asked by V210)",
+        "pass": true,
+        "source": "MLX90393 Rev 012 (18-Nov-2025), https://media.melexis.com/-/media/files/documents/datasheets/mlx90393-datasheet-melexis.pdf, read 2026-10-02T07:08:28Z, Table 9, Figure 2, Table 17, Table 19"
+       },
+       {
+        "name": "travel",
+        "required": "180 degrees",
+        "datasheet": "XY pair gives 0 to 360 degrees",
+        "pass": true,
+        "source": "MLX90393 Rev 012 (read 2026-10-02T07:08:28Z), Section 13"
+       },
+       {
+        "name": "interface",
+        "required": "I2C, 3.3 V, fixed address, 100 kHz",
+        "datasheet": "I2C standard mode 100 kHz and fast mode 400 kHz; option -011 answers at 7-bit address 00011xx, 0x0C to 0x0F, the last two bits set by A0 and A1 (Table 14), so strapped on the sensor board it is fixed; VDD_IO 1.65 V to VDD, tied to the 3.3 V supply for 3.3 V logic",
+        "pass": true,
+        "source": "MLX90393 Rev 012 (read 2026-10-02T07:08:28Z), Table 6, Table 14, SCL clock table"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V (3.201 to 3.399 V)",
+        "datasheet": "VDD 2.2 / 3 / 3.6 V min / nom / max; absolute maximum 4 V",
+        "pass": true,
+        "source": "MLX90393 Rev 012 (read 2026-10-02T07:08:28Z), Table 6 and absolute maximum ratings"
+       },
+       {
+        "name": "update",
+        "required": "within 50 ms",
+        "datasheet": "TCONV for XYZ 1.27 ms (OSR 0, DIG_FILT 0) to 7.60 ms (OSR 1, DIG_FILT 4), 26.04 ms at OSR 1 and DIG_FILT 6 (Table 19)",
+        "pass": true,
+        "source": "MLX90393 Rev 012 (read 2026-10-02T07:08:28Z), Table 19"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC",
+        "datasheet": "E code: TOPERATING -40 to 85 degC (Table 8)",
+        "pass": true,
+        "source": "MLX90393 Rev 012 (read 2026-10-02T07:08:28Z), Table 8 and ordering codes"
+       },
+       {
+        "name": "build and sourcing",
+        "required": "LCSC number, rule 4",
+        "datasheet": "LCSC C2654971, stockCount 2222, canPresaleNumber 2147 (2026-10-02T07:08:05Z)",
+        "pass": true,
+        "source": "vendors.py jlcpcb C2654971"
+       }
+      ],
+      "jlcpcb": "stockCount 2222, canPresaleNumber 2147, componentLibraryType expand, price USD 2.7068 a part at the 1 break (need 5), read 2026-10-02T07:08:05Z, vendors.py jlcpcb C2654971 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 28268, manufacturer lead time 22 weeks, ProductStatus Active, discontinued false, end of life false, read 2026-10-02T06:56:14Z, vendors.py digikey MLX90393ELW-ABA-011-RE (https://api.digikey.com/products/v4/search/MLX90393ELW-ABA-011-RE/productdetails) (P3's reading of the same UTC day, returned from the cache at 2026-10-02T07:08:21Z, marked cached)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 2222 >= 50 and canPresaleNumber 2147 >= 0: pass (rule 4, 2026-10-02T07:08:05Z)",
+      "lifecycle": "manufacturer status not read from the maker: https://www.melexis.com/en/product/MLX90393 answered HTTP 403 with a challenge (2026-10-02T07:12:17Z). Digi-Key's ProductStatus stands in (Lifecycle check): Active, discontinued false, end of life false (2026-10-02T06:56:14Z), recorded as a distributor figure; longevity commitment not read; first data sheet release 11-Nov-2014 (revision history), over 12 months; change and end-of-life notices not read; JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 28268 >= 50 (2026-10-02T06:56:14Z); the same die, pins and address 0x0C to 0x0F in the S-code part MLX90393SLW-ABA-011-RE (record at rank 3)",
+      "alternates": [
+       "MLX90393SLW-ABA-011-RE"
+      ],
+      "driver_in_shared": "none: no driver under shared/ names it; a register read over the PIO I2C bus of measurement GPIO 18 and 19 (Pins.md), with atan2 in firmware",
+      "reason": "meets every value in this task's reading, with Digi-Key stock 28268 against rank 1's 2416 and JLCPCB 2222; below rank 1 because the angle is computed in firmware and the data sheet states noise only in a plot",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "MLX90393SLW-ABA-011-RE",
+      "maker": "Melexis (data sheet MLX90393 Rev 012); counts as Melexis (S1, owner-added). JLCPCB labels it Melexis",
+      "lcsc": "C2649492",
+      "package": "QFN-16 3 x 3 mm (LW)",
+      "placements": 1,
+      "placements_basis": "fixed: one angle sensor on the servo position sensor board, one board for each IO board; the servo screen draws one measured arm (docs/Screens.md:156-158)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "sensor",
+        "required": "magnetic angle sensor under a diametric magnet on the horn axis",
+        "datasheet": "3-axis Hall magnetometer (Triaxis); the X and Y outputs under an on-axis diametric magnet give the angle as atan2(By, Bx), which firmware computes; the part has no angle output and no angle engine, unlike rank 1's CORDIC",
+        "pass": true,
+        "source": "MLX90393 Rev 012 (18-Nov-2025), https://media.melexis.com/-/media/files/documents/datasheets/mlx90393-datasheet-melexis.pdf, read 2026-10-02T07:08:28Z, features and Section 13"
+       },
+       {
+        "name": "resolution",
+        "required": "<= 0.129 degree",
+        "datasheet": "16-bit output (NOUT); XY sensitivity 0.161 to 3.22 uT/LSB (Table 9; Table 17 lists 0.150 to 6.009 uT/LSB at HALLCONF 0xC, 25 degC). At 3.22 uT/LSB a step is 0.129 degree or finer for a field in the XY plane of 1.43 mT or more. XY noise (Figure 2, GAIN_SEL 7, read off the plot, approximate): about 51 mGauss at TCONV 1.27 ms, about 11 mGauss at 7.6 ms, about 6 mGauss at 26 ms, so noise stays under 0.129 degree for 0.49 mT or more at 7.6 ms. The magnet's field at the sensor is not stated for this or any candidate. Saturation onset 50 mT; offset drift under +/-1000 LSB and sensitivity drift +/-3 % over temperature (accuracy is not asked by V210)",
+        "pass": true,
+        "source": "MLX90393 Rev 012 (18-Nov-2025), https://media.melexis.com/-/media/files/documents/datasheets/mlx90393-datasheet-melexis.pdf, read 2026-10-02T07:08:28Z, Table 9, Figure 2, Table 17, Table 19"
+       },
+       {
+        "name": "travel",
+        "required": "180 degrees",
+        "datasheet": "XY pair gives 0 to 360 degrees",
+        "pass": true,
+        "source": "MLX90393 Rev 012 (read 2026-10-02T07:08:28Z), Section 13"
+       },
+       {
+        "name": "interface",
+        "required": "I2C, 3.3 V, fixed address, 100 kHz",
+        "datasheet": "I2C standard mode 100 kHz and fast mode 400 kHz; option -011 answers at 7-bit address 00011xx, 0x0C to 0x0F, the last two bits set by A0 and A1 (Table 14), so strapped on the sensor board it is fixed; VDD_IO 1.65 V to VDD, tied to the 3.3 V supply for 3.3 V logic",
+        "pass": true,
+        "source": "MLX90393 Rev 012 (read 2026-10-02T07:08:28Z), Table 6, Table 14, SCL clock table"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V (3.201 to 3.399 V)",
+        "datasheet": "VDD 2.2 / 3 / 3.6 V min / nom / max; absolute maximum 4 V",
+        "pass": true,
+        "source": "MLX90393 Rev 012 (read 2026-10-02T07:08:28Z), Table 6 and absolute maximum ratings"
+       },
+       {
+        "name": "update",
+        "required": "within 50 ms",
+        "datasheet": "TCONV for XYZ 1.27 ms (OSR 0, DIG_FILT 0) to 7.60 ms (OSR 1, DIG_FILT 4), 26.04 ms at OSR 1 and DIG_FILT 6 (Table 19)",
+        "pass": true,
+        "source": "MLX90393 Rev 012 (read 2026-10-02T07:08:28Z), Table 19"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC",
+        "datasheet": "S code: TOPERATING -20 to 85 degC (Table 8)",
+        "pass": true,
+        "source": "MLX90393 Rev 012 (read 2026-10-02T07:08:28Z), Table 8 and ordering codes"
+       },
+       {
+        "name": "build and sourcing",
+        "required": "LCSC number, rule 4",
+        "datasheet": "LCSC C2649492, stockCount 2326, canPresaleNumber 2239 (2026-10-02T07:08:07Z)",
+        "pass": true,
+        "source": "vendors.py jlcpcb C2649492"
+       }
+      ],
+      "jlcpcb": "stockCount 2326, canPresaleNumber 2239, componentLibraryType expand, price USD 2.4369 a part at the 1 break (need 5), read 2026-10-02T07:08:07Z, vendors.py jlcpcb C2649492 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 10855, manufacturer lead time 22 weeks, ProductStatus Active, discontinued false, end of life false, read 2026-10-02T06:56:16Z, vendors.py digikey MLX90393SLW-ABA-011-RE (https://api.digikey.com/products/v4/search/MLX90393SLW-ABA-011-RE/productdetails) (P3's reading of the same UTC day, returned from the cache at 2026-10-02T07:08:21Z, marked cached)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 2326 >= 50 and canPresaleNumber 2239 >= 0: pass (rule 4, 2026-10-02T07:08:07Z)",
+      "lifecycle": "manufacturer status not read from the maker: https://www.melexis.com/en/product/MLX90393 answered HTTP 403 with a challenge (2026-10-02T07:12:17Z). Digi-Key's ProductStatus stands in (Lifecycle check): Active, discontinued false, end of life false (2026-10-02T06:56:16Z), recorded as a distributor figure; longevity commitment not read; first data sheet release 11-Nov-2014 (revision history), over 12 months; change and end-of-life notices not read; JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 10855 >= 50 (2026-10-02T06:56:16Z); the same die, pins and address in the E-code part MLX90393ELW-ABA-011-RE (record at rank 2)",
+      "alternates": [
+       "MLX90393ELW-ABA-011-RE"
+      ],
+      "driver_in_shared": "none: no driver under shared/ names it; a register read over the PIO I2C bus of measurement GPIO 18 and 19 (Pins.md), with atan2 in firmware",
+      "reason": "the E-code part's twin with a narrower temperature range (-20 to 85 degC, still covering 0 to 50 degC); JLCPCB 2326 and Digi-Key 10855; ranks after it for the smaller Digi-Key stock",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TMAG5273A2QDBVR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TLV9062IDR",
+      "reason": "meets every value with margin (10 MHz GBW typical, 16 ns of delay), JLCPCB 170194 and Digi-Key 7844",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "AD8606ARZ-REEL7",
+      "reason": "stated maxima for drift, bias and noise; Digi-Key 0 and USD 6.75, its alternate is rank 1",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TSV912IDT",
+      "reason": "8 MHz GBW typical, 5 uV/degC typical drift close to the 5.7 uV/degC limit; JLCPCB 149990 and Digi-Key 1970",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "TLV9002IDR",
+      "reason": "1 MHz GBW typical gives 159 ns, 1.53 x inside the 0.244 us bound, the thinnest margin of the four; no Digi-Key stock, its alternate is rank 1",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 4,
+      "part": "TLV9002IDR",
+      "maker": "Texas Instruments (datasheet SBOS833R); counts as Texas Instruments (S1)",
+      "lcsc": "C398360",
+      "package": "SOIC-8 (D)",
+      "placements": 1,
+      "placements_basis": "fixed: one dual op amp for the X and Y followers on the accelerometer sensor board, one sensor board for each IO board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channels and place",
+        "required": "dual, unity-gain follower",
+        "datasheet": "dual (TLV9002), rail-to-rail input and output; phase margin 78 degrees at G = 1 (VS 5.5 V); SOIC-8 pins OUT1 1, IN1- 2, IN1+ 3, V- 4, IN2+ 5, IN2- 6, OUT2 7, V+ 8",
+        "pass": true,
+        "source": "TLV9002 SBOS833R, https://www.ti.com/lit/ds/symlink/tlv9002.pdf, read 2026-10-02T07:08:30Z, Pin Configuration and 7.10"
+       },
+       {
+        "name": "delay variation",
+        "required": "<= 0.244 us at 1,092 Hz",
+        "datasheet": "GBW 1 MHz typical at VS 5 V (no minimum, not stated at 3.3 V): follower delay about 1 / (2 pi x 1 MHz) = 159 ns, under 0.244 us by 1.53 x; the bound holds only while GBW stays above 652 kHz, 65 % of the typical",
+        "pass": true,
+        "source": "TLV9002 SBOS833R, https://www.ti.com/lit/ds/symlink/tlv9002.pdf, read 2026-10-02T07:08:30Z, 7.10"
+       },
+       {
+        "name": "input range",
+        "required": "0.1 to 3.2 V at 3.3 V",
+        "datasheet": "VCM (V-) - 0.1 V to (V+) + 0.1 V with no phase reversal; CMRR at VS 5.5 V 95 dB typical for VCM below (V+) - 1.4 V and 63 dB minimum, 77 dB typical over the full input range, so the input stage changes over near (V+) - 1.4 V, 1.9 V at 3.3 V",
+        "pass": true,
+        "source": "TLV9002 SBOS833R, https://www.ti.com/lit/ds/symlink/tlv9002.pdf, read 2026-10-02T07:08:30Z, 7.10"
+       },
+       {
+        "name": "output and load",
+        "required": "stable into the lead with a series resistor",
+        "datasheet": "capacitive load drive 500 pF, 'much higher capacitive loads' than the family's earlier parts; output swing 10 mV typical, 20 mV maximum from the rails at RL 10 kOhm (VS 5.5 V); open-loop output impedance 1200 Ohm at 1 MHz",
+        "pass": true,
+        "source": "TLV9002 SBOS833R, https://www.ti.com/lit/ds/symlink/tlv9002.pdf, read 2026-10-02T07:08:30Z, Description and 7.10"
+       },
+       {
+        "name": "offset drift",
+        "required": "< 5.7 uV/degC",
+        "datasheet": "+/-0.6 uV/degC typical, -40 to 125 degC; no maximum",
+        "pass": true,
+        "source": "TLV9002 SBOS833R, https://www.ti.com/lit/ds/symlink/tlv9002.pdf, read 2026-10-02T07:08:30Z, 7.10"
+       },
+       {
+        "name": "input bias current",
+        "required": "< 1 nA over 0 to 85 degC",
+        "datasheet": "+/-5 pA typical at VS 5 V; no figure over temperature",
+        "pass": true,
+        "source": "TLV9002 SBOS833R, https://www.ti.com/lit/ds/symlink/tlv9002.pdf, read 2026-10-02T07:08:30Z, 7.10"
+       },
+       {
+        "name": "noise",
+        "required": "< 1.2 uV/rtHz at 1 kHz",
+        "datasheet": "30 nV/rtHz at 1 kHz, 27 nV/rtHz at 10 kHz (VS 5 V)",
+        "pass": true,
+        "source": "TLV9002 SBOS833R, https://www.ti.com/lit/ds/symlink/tlv9002.pdf, read 2026-10-02T07:08:30Z, 7.10"
+       },
+       {
+        "name": "supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "VS 1.8 to 5.5 V; 7 V absolute maximum",
+        "pass": true,
+        "source": "TLV9002 SBOS833R, https://www.ti.com/lit/ds/symlink/tlv9002.pdf, read 2026-10-02T07:08:30Z, 7.10 and revision history"
+       },
+       {
+        "name": "sensor ambient temperature",
+        "required": "0 to 85 degC",
+        "datasheet": "TA -40 to 125 degC",
+        "pass": true,
+        "source": "TLV9002 SBOS833R, https://www.ti.com/lit/ds/symlink/tlv9002.pdf, read 2026-10-02T07:08:30Z, 7.10"
+       },
+       {
+        "name": "build and sourcing",
+        "required": "LCSC number, rule 4",
+        "datasheet": "LCSC C398360, stockCount 24203, canPresaleNumber 23977 (2026-10-02T07:08:17Z)",
+        "pass": true,
+        "source": "vendors.py jlcpcb C398360"
+       }
+      ],
+      "jlcpcb": "stockCount 24203, canPresaleNumber 23977, componentLibraryType expand, price USD 0.1646 a part at the 1 break (need 5), read 2026-10-02T07:08:17Z, vendors.py jlcpcb C398360 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 0, manufacturer lead time 12 weeks, ProductStatus Active, discontinued false, end of life false, read 2026-10-02T07:00:53Z, vendors.py digikey TLV9002IDR (https://api.digikey.com/products/v4/search/TLV9002IDR/productdetails) (P3's reading of the same UTC day, returned from the cache at 2026-10-02T07:08:22Z, marked cached)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 24203 >= 50 and canPresaleNumber 23977 >= 0: pass (rule 4, 2026-10-02T07:08:17Z)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/TLV9002, orderable TLV9002IDR marketingStatusDescription ACTIVE, read 2026-10-02T07:09:57Z (vendors.py fetch); longevity commitment not read; first datasheet revision October 2017 (SBOS833), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-10-02T07:00:53Z); JLCPCB's API carries no status",
+      "second_source": "alternate TLV9062IDR (Texas Instruments): the same SOIC-8 dual pinout, unity-gain stable, rail-to-rail input and output, the same follower with the same series resistor; passes rules 1 to 4 at JLCPCB (C398355, 170194, presale 169480, 2026-10-02T06:27:43Z in P2's reading); its record is at rank 1. The second-vendor route fails: Digi-Key 0",
+      "alternates": [
+       "TLV9062IDR",
+       "TSV912IDT"
+      ],
+      "driver_in_shared": "none needed: an analogue follower",
+      "reason": "meets every value on typical figures, with the lowest GBW of the four (1 MHz typical, 1.53 x the 0.244 us bound) and no Digi-Key stock; JLCPCB 24203 and USD 0.16 a part; the rule-5 alternate is rank 1",
+      "second_source_route": "alternate",
+      "second_source_part": "TLV9062IDR"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TLV9062IDR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "P3 candidates qualified",
+    "value": "8 parts P3 listed as missed qualify with full records: MLX90393ELW-ABA-011-RE (rank 2) and MLX90393SLW-ABA-011-RE (rank 3) for the servo position, TLV3202AIDR (rank 2) and TLV3502AIDR (rank 5) for the clip, DRV5015A3QDBZR (rank 4) and DRV5013AGQDBZR (rank 5) for the magnetic pickup, SN65HVD78DR (rank 4) for the encoder input, TLV9002IDR (rank 4) for the lead buffer. 2 parts from P3's exclusions that do not hold qualify for the clip placement alone with full records: MCP6561T-E/OT (rank 6) and LMV7219M5X/NOPB (rank 7). 0 P3 parts are dropped; P3's photodiode exclusion is kept (report 'optical index discrete pair'). No P2 shortlist part is dropped",
+    "source": "vendors.py jlcpcb readings 2026-10-02T07:08:05Z to 07:11:06Z; data sheets read 2026-10-02T07:08:28Z to 07:11:34Z (vendors.py fetch); Digi-Key readings of 06:56:14Z to 07:11:13Z"
+   },
+   {
+    "figure": "selection.json precedence",
+    "value": "selection.json keeps DRV5015A1QDBZR (magnetic pickup), TLV3201AIDBVR with alternate TLV3601DBVR (phase-wire clip) and AM26LV32EIDR (encoder input); this re-rank's rank 1 is the same part in each, so it changes no selection. For the 8 other functions selection.json holds no part; rank 1 here is RP2354B for encoder decode, rotation from ESC, rotation inputs and BENCH rpm source, TMAG5273A2QDBVR for the servo position and TLV9062IDR for the lead buffer. The accelerometer and the optical index have no ranked part",
+    "source": "/home/claude/rcbench-research/round2/results/hardware/research/round2/selection.json, R11, read 2026-10-02T07:19:28Z"
+   },
+   {
+    "figure": "MLX90393 angle resolution",
+    "value": "16-bit XY output at 0.161 to 3.22 uT/LSB (Table 9; Table 17 lists 0.150 to 6.009 uT/LSB). A 0.129 degree step (2.251 mrad) needs a field in the XY plane of 1.43 mT or more at 3.22 uT/LSB. XY noise read off Figure 2 (GAIN_SEL 7, approximate): about 51 mGauss at 1.27 ms, about 11 mGauss at 7.6 ms, about 6 mGauss at 26 ms of conversion, which keeps the angle noise under 0.129 degree for 2.27 mT, 0.49 mT and 0.27 mT of field. Saturation onset 50 mT, highest-gain range at least +/-4.8 mT; the magnet's field at the sensor is not stated for any candidate, so the margin is unknown. The same step-size reading passes TMAG5273A2QDBVR's 0.0625 degree, whose noise P2 did not read",
+    "source": "MLX90393 data sheet Rev 012, https://media.melexis.com/-/media/files/documents/datasheets/mlx90393-datasheet-melexis.pdf (vendors.py fetch, read 2026-10-02T07:08:28Z), Table 9, Table 17, Table 19, Figure 2 (page 16, rendered and read); arithmetic in /home/claude/rcbench-research/round2/scratch/FU-2D/rerank-R11/calc.py"
+   },
+   {
+    "figure": "MLX90393 lifecycle",
+    "value": "Melexis's product page is not readable: https://www.melexis.com/en/product/MLX90393 answered HTTP 403 with a challenge. Digi-Key's ProductStatus stands in under the Lifecycle check: Active for MLX90393ELW-ABA-011-RE (stock 28268, 22 weeks) and MLX90393SLW-ABA-011-RE (stock 10855, 22 weeks), recorded as a distributor figure. The other address options -012, -013 and -014 fail rule 4 or carry another address (P3: C3716135 5 / presale -55, C1518191 80 / 49, C1518192 61 / -12; not re-read)",
+    "source": "vendors.py fetch https://www.melexis.com/en/product/MLX90393 (2026-10-02T07:12:17Z, HTTP 403); vendors.py digikey MLX90393ELW-ABA-011-RE and MLX90393SLW-ABA-011-RE (P3's readings 2026-10-02T06:56:14Z and 06:56:16Z, returned from the cache at 07:08:21Z)"
+   },
+   {
+    "figure": "accelerometer stock re-read",
+    "value": "Every analogue accelerometer P2 dropped on rule 4 is still under the gate of 50 at JLCPCB: ADXL1002BCPZ-RL7 C662288 18 (presale 17), ADXL1001BCPZ-RL C662285 2, ADXL1004BCPZ-RL7 C662292 1, ADXL1001BCPZ C514384 0 (presale -5), ADXL1002BCPZ C579442 0 (presale -19), ADXL1003BCPZ and -RL7 0, ADXL1005BCPZ 0 and 0, ADXL377BCPZ-RL7 0, AD22293Z-RL7 2. AD22035Z C649092 passes the gate (83, presale 83) and is dropped on delay variation only. The accelerometer keeps no part",
+    "source": "vendors.py jlcpcb C662288, C662285, C662292, C514384, C579442, C579443, C662290, C662293, C662295, C662294, C579467, C514210, C649092, read 2026-10-02T07:14:19Z to 07:14:24Z"
+   },
+   {
+    "figure": "accelerometer delay variation re-derived",
+    "value": "At 1,092.25 Hz and CX = 4.7 nF (the data sheets' stated minimum), the RFILT x CX pole delays the signal by 104.40 us at 27 kOhm, 116.75 us at 32 kOhm and 127.26 us at 37 kOhm (ADXL316): a spread of 22.86 us against the 1.244 us share, 18.4 x. ADXL326 (27.2 to 36.8 kOhm): 104.94 to 126.87 us, a spread of 21.94 us. P2's figures are reproduced. The data sheets state no temperature coefficient of RFILT or CX, so the drift of one unit between two runs is not stated; the spread is a unit-to-unit figure, which docs/Balance.md:65-66 says a trial run cancels. The owner decides whether the share is judged on the spread, on the drift (not stated) or on a measurement",
+    "source": "calc.py in /home/claude/rcbench-research/round2/scratch/FU-2D/rerank-R11/ run 2026-10-02T07:20:11Z; inputs from P2's reading of the ADXL316 data sheet Rev. C (2026-10-02T06:21:43Z) and the ADXL326 data sheet Rev. 0 (06:28:10Z), not re-read"
+   },
+   {
+    "figure": "optical index discrete pair",
+    "value": "No reflective sensor with an LCSC number from an allowlisted maker states a response time under 1.244 us, and none states one at all for the part with the widest range (TCND5000). A second search of the jlcparts copy for reflective sensors lists 388 rows; the allowlisted ones with stock in the copy (figures of its 2026-09-14 fetches, not counts under rule 3) are QRE1113GR 7390, TCRT5000 4712, TCRT5000L 3777, VCNT2020 1920, CNY70 1079, RPR-220 1013, QRD1114 838, TCND5000 166, QRE1113 92, all read by P2 or P3; QRD1113 (C184280, an ambient-light row) and QRD1313 (C3271791) hold 0. A discrete emitter and PIN photodiode on the probe board is the one route to a time inside the share (BPV10NF tr 80 ns, tf 60 ns; BPW34 100 ns, P2's readings), but it states no operating range for V220 and the pen line's reflectance and width are not stated. The owner decides between that design and no optical index part",
+    "source": "jlcparts copy cache.sqlite3 of 2026-09-14 (opened read-only, query run 2026-10-02T07:18:52Z); BPV10NF and BPW34 data sheets read by P2 (2026-10-02T00:22:24Z and 00:22:25Z), not re-read"
+   },
+   {
+    "figure": "phase-wire clip comparator inputs",
+    "value": "TLV3202AIDR carries the same stated figures as TLV3201AIDBVR: 55 ns maximum over -40 to 125 degC at VCC 2.7 V and 5 V, 5 nA maximum input bias over temperature, input range (VEE) - 0.2 V to (VCC) + 0.2 V, 1.2 mV hysteresis, 36 uA typical. TLV3502AIDR: 7 ns maximum over temperature, 6 mV hysteresis, input range up to (V+) - 0.2 V. MCP6561T-E/OT: 80 ns maximum at 25 degC only, input current limit +/-2 mA, hysteresis 1 to 5 mV. LMV7219M5X/NOPB: 20 ns maximum at TJ 25 degC only, input range down to 0 V at the worst case, input bias 950 nA maximum at 2.7 V and 2000 nA over temperature, hysteresis 7 to 7.5 mV. TLV3601DBVR (P2): 5 uA maximum input bias. The comparator input current limits and biases are inputs to stage 2's divider and clamp",
+    "source": "TLV3201/TLV3202 SBOS561C (read 2026-10-02T07:08:28Z); TLV3501/TLV3502 SBOS321E (07:08:29Z); MCP6561 DS20002139E (07:11:34Z); LMV7219 SNOS458I (07:11:23Z)"
+   },
+   {
+    "figure": "SN65HVD78 edge-spacing margin",
+    "value": "Receiver tPHL and tPLH 35 ns maximum with no minimum stated (50 Mbps device, CL 15 pF), pulse skew 2.5 ns maximum. At 5 MHz the 50 ns quadrature spacing less 35 ns leaves 15 ns, 1 ns above the decoder model's 14 ns limit, against 32 ns for AM26LV32EIDR, and the three channels sit in 3 packages. Bus input current with VCC = 0 V: 333 uA maximum at +12 V, -267 uA minimum at -7 V. Recommended input range -7 to +12 V. 3 packages a board give a need of 15 and a gate threshold of 75: JLCPCB 1451 and Digi-Key 387 pass",
+    "source": "SN65HVD72, SN65HVD75, SN65HVD78 data sheet SLLSE11H (vendors.py fetch, read 2026-10-02T07:08:29Z), 7.3, 7.5, 7.9; vendors.py jlcpcb C111824 (07:08:15Z); vendors.py digikey SN65HVD78DR (P3's reading 2026-10-02T07:01:49Z, returned from the cache at 07:08:22Z)"
+   },
+   {
+    "figure": "lead buffer delay margins",
+    "value": "Follower delay about 1 / (2 pi GBW) against the 0.244 us bound (floor 652 kHz of GBW): TLV9062IDR 10 MHz, 16 ns; AD8606ARZ-REEL7 9 to 10 MHz, 18 ns; TSV912IDT 7.2 MHz, 22 ns; TLV9002IDR 1 MHz, 159 ns, 1.53 x inside the bound. All typical figures at 5 V or 3.3 V; no data sheet states a minimum GBW. TLV9002's CMRR at VS 5.5 V is 95 dB typical below (V+) - 1.4 V and 63 dB minimum, 77 dB typical over its full input range, so its input stage changes over near (V+) - 1.4 V, 1.9 V at 3.3 V, inside the sensor's output swing; the data sheet states no offset step there. TLV9062's and TSV912's changeover was not read",
+    "source": "TLV9001, TLV9002, TLV9004 data sheet SBOS833R (vendors.py fetch, read 2026-10-02T07:08:30Z), 7.10; P2's readings of the TLV9062, AD8606 and TSV912 data sheets (2026-10-02T06:25:21Z to 06:26:09Z), not re-read; calc.py"
+   },
+   {
+    "figure": "AH1711-SA-7 lifecycle under the Lifecycle check",
+    "value": "P2 recorded the Diodes page as carrying no status and wrote 'manufacturer status not read'. The Lifecycle check of 2026-10-02 reads Digi-Key's ProductStatus in its place for a page that carries no status in its body: Active, discontinued false, end of life false (stock 2995, 40 weeks), recorded as a distributor figure. Under that rule the AH1711-SA-7 status gate passes; the P2 record is not edited here",
+    "source": "hardware/docs/Research.md, Lifecycle check, Manufacturer status row at commit fe53d3a8bc9a; P2's reading of https://www.diodes.com/part/view/AH1711 (2026-10-02T00:27:10Z) and vendors.py digikey AH1711-SA-7 (2026-10-02T00:26:21Z)"
+   },
+   {
+    "figure": "AS5600-ASOT ranking",
+    "value": "Ranked last of the servo candidates: Digi-Key lists it 'Discontinued at DigiKey' with 0 (P2), the maker's status is not read, and AS5600-ASOM fails rule 4. It meets every requirement value, so it stays on the list for the owner, who is told the Digi-Key value is outside the gate's list",
+    "source": "P2's readings, vendors.py digikey AS5600-ASOT (2026-10-02T06:30:00Z) and vendors.py jlcpcb C79815 (06:27:51Z), not re-read"
+   },
+   {
+    "figure": "Digi-Key calls",
+    "value": "This task made 4 new calls: MCP6561T-E/OT, MCP6561T-E/LT, and LMV7219M5X/NOPB as a details call that answered 404 and a keyword search (ratelimit_remaining 891 after the first and 888 after the last). The readings of the other 8 candidates came from P3's cache of the same UTC day, marked cached. 884 of the day's 1,000 calls were left at 07:15:26Z, a count other agents share",
+    "source": "vendors.py digikey-quota, 2026-10-02T07:15:26Z (remaining 884)"
+   }
+  ]
+ }
+}

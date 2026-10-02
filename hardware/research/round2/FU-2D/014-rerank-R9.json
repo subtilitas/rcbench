@@ -1,0 +1,1514 @@
+{
+ "role": "rerank",
+ "category": "R9",
+ "label": "rerank-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "functions": [
+   {
+    "function": "Cell monitor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "ADBMS1818ASWAZ-RL",
+      "reason": "Stays first. selection.json holds it for the Cell monitor (FU-2C) and no P3 candidate qualifies above it: BQ76PL455A is Obsolete at Digi-Key. JLCPCB stockCount 12500, presale 12495, 7.5967 at 1 (2026-10-02T07:11:59Z, vendors.py jlcpcb C5372802); Digi-Key 534, Active, 38 weeks (2026-10-02T00:24:59Z, cached). Second vendor passes",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "ADBMS1818ASWAZ-R7",
+      "reason": "Same orderable model on a 300-part reel, so rank 1's land pattern. JLCPCB 195 / 195, 7.8194 at 1 (2026-10-02T07:12:00Z, C7455595); Digi-Key 290, Active, 38 weeks (00:25:02Z, cached). Second vendor passes",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "ADBMS1818ASWZ-RL",
+      "reason": "Same die and figures with more stock than rank 2: JLCPCB 2723 / 2717, 8.525 at 1 (2026-10-02T07:12:02Z, C2971928); Digi-Key 854, Active, 39 weeks (00:25:03Z, cached). Its outline 05-08-1982 differs from SW-64-2 of ranks 1 and 2",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "BQ76PL455APFCR (C2877182), BQ76PL455APFCT (C1992228)",
+      "maker": "Texas Instruments",
+      "reason": "Fails S5 (active only): Digi-Key ProductStatus Obsolete, stock 0 for BQ76PL455APFCR (2026-10-02T00:59:20Z, cached, https://api.digikey.com/products/v4/search/BQ76PL455APFCR/productdetails) and for BQ76PL455APFCT (2026-10-02T07:12:18Z, vendors.py digikey, https://api.digikey.com/products/v4/search/BQ76PL455APFCT/productdetails). Digi-Key is the status where the maker's page cannot be read: https://www.ti.com/product/BQ76PL455A, .../BQ76PL455A-Q1 and https://www.ti.com/lit/ds/symlink/bq76pl455a.pdf, bq76pl455a-q1.pdf, https://www.ti.com/lit/gpn/bq76pl455a answered HTTP 404 (2026-10-02T07:11:20Z to 07:16:17Z), so the lowest cell count and the interface are not read. JLCPCB 1325 / 1322 and 68 / 68 (07:11:51Z, 07:11:52Z) pass rule 4 and do not override Obsolete"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "ADBMS1818ASWAZ-RL",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "cell monitor isolation barrier",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "ISO7741DWR",
+      "reason": "Stays first. selection.json holds it (FU-2C) and every value passes. JLCPCB 5112 / 4926, 1.4745 at 1 (2026-10-02T07:11:54Z, C571196); Digi-Key 4824, Active, 20 weeks (00:25:05Z, cached); second vendor passes. P2's \"lowest price but one\" is wrong: ISO7741DBQR is 0.9478 and ISO6741DWR 1.4485. It stays first on the DW-16 land pattern, a second-vendor route with 4824 at Digi-Key, default high and a 2121 VDC rating",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "ISO6741DWR",
+      "reason": "Same DW-16 land pattern and pins as rank 1. JLCPCB 2961 / 2879, 1.4485 at 1 (2026-10-02T07:11:56Z, C5216432); Digi-Key 4417, Active (00:25:07Z, cached). Below rank 1 for less JLCPCB stock and a 50 Mbps rating",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "ISO7741QDWRQ1",
+      "reason": "Rank 1's die in an AEC-Q100 grade 1 variant on the DW-16 land pattern; JLCPCB 1566 at 2.2451; Digi-Key 15, so rule 5 rests on rank 1 as the alternate",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "ISO7741BDWR",
+      "reason": "Basic-insulation variant of rank 1 on the DW-16 land pattern; VIOWM 1414 VDC; JLCPCB 322 at 2.7393; Digi-Key 356 passes the second-vendor route",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "ISO7241CDWR",
+      "reason": "Default high on the DW-16 land pattern, 3197 at JLCPCB and 3704 at Digi-Key; 28 mA at most on the 5 V rail, 4.4 times rank 1, and a data sheet that gives VIORM 560 VPK and no working-voltage row",
+      "option": ""
+     },
+     {
+      "rank": 6,
+      "part": "ISO7741FDWR",
+      "reason": "F-suffix twin of rank 1: default low on input power loss, an unstated host-unpowered case. P2's drop reason is not a page value (Pins.md:151-155 covers the coprocessor in reset, where the output is high). Below the default-high DW-16 rows",
+      "option": ""
+     },
+     {
+      "rank": 7,
+      "part": "ISO6741FDWR",
+      "reason": "F-suffix twin of rank 2, same reasoning as rank 6; higher price and lower Digi-Key stock than rank 6",
+      "option": ""
+     },
+     {
+      "rank": 8,
+      "part": "ISOW7741BDFMR",
+      "reason": "P2's rank 3, moved down by the new DW-16 rows: JLCPCB 101 / 96 at 7.969 (2026-10-02T07:11:57Z, C5216397), 2.0 times the gate; Digi-Key 1548, Active (06:31:51Z). 20-pin land pattern, 5.4 times rank 1's price, B-variant release date not read. It also makes the pack-side 5 V rail itself (rank 2 of the pack-side supply)",
+      "option": ""
+     },
+     {
+      "rank": 9,
+      "part": "ADUM141E1WBRWZ-RL",
+      "reason": "Another maker on the DW-16 land pattern, default high; JLCPCB 200 at 2.3069; Digi-Key 1190 at a 52-week lead; the Rev. K data sheet states no DC working voltage",
+      "option": ""
+     },
+     {
+      "rank": 10,
+      "part": "ISO7741DBQR",
+      "reason": "Rank 1's die in DBQ-16: JLCPCB 38042 at 0.9478, the most stock and lowest price of any barrier read. A second land pattern, Digi-Key 0, so rule 5 rests on the alternate ISO7141CCDBQR (record in this return)",
+      "option": ""
+     },
+     {
+      "rank": 11,
+      "part": "ISO7741FQDBQRQ1",
+      "reason": "F-suffix, AEC-Q100 grade 1, DBQ-16; JLCPCB 4469 at 1.6078; Digi-Key 0, rule 5 on ISO7741FDBQR",
+      "option": ""
+     },
+     {
+      "rank": 12,
+      "part": "ADUM141E1BRWZ-RL",
+      "reason": "Non-W model of rank 9 at 4.8087; JLCPCB 135; Digi-Key 510 at 52 weeks",
+      "option": ""
+     },
+     {
+      "rank": 13,
+      "part": "ISO7741FDBQR",
+      "reason": "F-suffix, DBQ-16; JLCPCB 125 (2.5 times the gate); Digi-Key 0, rule 5 on ISO7741FQDBQRQ1",
+      "option": ""
+     },
+     {
+      "rank": 14,
+      "part": "ADUM241E1BRWZ-RL",
+      "reason": "5.0 kV variant; JLCPCB 121; Digi-Key 0, rule 5 on ISO7741DWR; the Rev. E data sheet states no DC working voltage",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 3,
+      "part": "ISO7741QDWRQ1",
+      "maker": "Texas Instruments",
+      "lcsc": "C124738",
+      "package": "SOIC-16 wide body (DW), 10.30 x 7.50 mm, ISO7741 pin functions (Figure 4-2); JLCPCB SOIC-16-300mil",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1 (one isolator for the 4 lines of Pins.md:105-112); the gate applies at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "barrier type",
+        "required": "digital isolator",
+        "datasheet": "quad-channel digital isolator, SiO2 capacitive barrier (section 3)",
+        "pass": true,
+        "source": "ISO774x-Q1 SLLSEU0G (November 2016, revised October 2024), https://www.ti.com/lit/ds/symlink/iso7741-q1.pdf, vendors.py fetch chrome, HTTP 200, 2,618,010 bytes, SHA-256 fcea7bd0b9e495fa..., read 2026-10-02T07:11:13Z"
+       },
+       {
+        "name": "working voltage",
+        "required": "85 V DC working or more",
+        "datasheet": "VIOWM 2121 VDC and VIORM 2121 VPK, DW-16 (section 5.6, DW column)",
+        "pass": true,
+        "source": "SLLSEU0G"
+       },
+       {
+        "name": "channels",
+        "required": "3 forward, 1 reverse",
+        "datasheet": "INA-INC forward, IND-OUTD reverse (Figure 4-2, DW-16 and DBQ-16)",
+        "pass": true,
+        "source": "SLLSEU0G"
+       },
+       {
+        "name": "host-side supply",
+        "required": "3.3 V",
+        "datasheet": "VCC1 2.25 to 5.5 V; VIH 0.7 x VCCI = 2.31 V at 3.3 V (5.3)",
+        "pass": true,
+        "source": "SLLSEU0G"
+       },
+       {
+        "name": "pack-side supply",
+        "required": "5 V rail, 4.5 to 5.5 V",
+        "datasheet": "VCC2 2.25 to 5.5 V, independent of VCC1 (5.3)",
+        "pass": true,
+        "source": "SLLSEU0G"
+       },
+       {
+        "name": "pack-side current",
+        "required": "found at 5 V, checked against the 5 V rail",
+        "datasheet": "ICC2 at 5 V: 4.6 mA max at 1 Mbps, 6.4 mA max at 10 Mbps (bounds 2 Mbps), DC 3.7 to 5.2 mA max (5.10). Rail: ADBMS1818 24.6 mA (16.5 + 8.1) + 6.4 = 31.0 mA awake, about 5.2 mA asleep",
+        "pass": true,
+        "source": "SLLSEU0G; ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "powered in monitor sleep",
+        "required": "outputs powered in sleep; able to wake the monitor",
+        "datasheet": "CMOS outputs on the always-on rail, VOH at least VCCO - 0.4 V at -4 mA (5.9): an edge swings about 5 V, above 200 mV",
+        "pass": true,
+        "source": "SLLSEU0G; ADBMS1818 Rev. B p. 56, Table 7"
+       },
+       {
+        "name": "SPI timing at 1 MHz",
+        "required": "2 Mbps; round trip inside 500 ns",
+        "datasheet": "tPLH, tPHL 6 / 10.7 / 17 ns at 5 V (5.15) and 18.5 ns max at 3.3 V (5.16): 18.5 + 60 + 18.5 = 97 ns. SDO rise through 5 kOhm and the RP2354B input setup are not read",
+        "pass": true,
+        "source": "SLLSEU0G; ADBMS1818 Rev. B Table 10"
+       },
+       {
+        "name": "pack-side logic",
+        "required": "drives CSB, SCK, SDI; reads open-drain SDO",
+        "datasheet": "VOH at least VCCO - 0.4 V, VOL at most 0.4 V at 4 mA (5.9); IND threshold 3.5 V, reached by the SDO pull-up to 5 V",
+        "pass": true,
+        "source": "SLLSEU0G"
+       },
+       {
+        "name": "chip select idle high",
+        "required": "CS stays deasserted while the coprocessor resets (Pins.md:151-155)",
+        "datasheet": "default output high on input power loss without suffix F (section 3); with the host powered and the pull-up holding CS high the output is high",
+        "pass": true,
+        "source": "SLLSEU0G; Pins.md:151-155"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C ambient",
+        "datasheet": "-40 to 125 C, AEC-Q100 grade 1 (features)",
+        "pass": true,
+        "source": "SLLSEU0G"
+       }
+      ],
+      "jlcpcb": "stockCount 1566, canPresaleNumber 1565, componentLibraryType expand, 2.2451 at the 1 break (no currency in the API); read 2026-10-02T07:11:32Z, vendors.py jlcpcb C124738 (exact match), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "digikey": "stock_available 15, lead time 20 weeks, ProductStatus Active, not discontinued, not end of life; read 2026-10-02T06:58:57Z, cached: true (same UTC day), vendors.py digikey ISO7741QDWRQ1, https://api.digikey.com/products/v4/search/ISO7741QDWRQ1/productdetails",
+      "gate": "need 5 boards x 1 = 5; S4 threshold 50. JLCPCB 1566 >= 50 and presale 1565 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/ISO7741-Q1 meta status, HTTP 200, read 2026-10-02T07:14:51Z; orderable table lists ISO7741QDWRQ1 Active, Production: pass. Longevity not read. First data sheet November 2016 (ISO774x-Q1, SLLSEU0G). PCNs not read. Distributor: Digi-Key Active, JLCPCB in stock, no disagreement",
+      "second_source": "alternate ISO7741DWR (P2 rank 1). Digi-Key stock_available 15 (2026-10-02T06:58:57Z, cached) is under the gate of 50. ISO7741DWR has the DW-16 outline and the same pin functions (Figure 4-2 of both data sheets), both default high, 2.25 to 5.5 V supplies, and passes rules 1 to 4 (JLCPCB 5112 / 4926 at 2026-10-02T07:11:54Z; TI page ACTIVE 07:14:50Z)",
+      "alternates": [
+       "ISO7741DWR"
+      ],
+      "driver_in_shared": "none; transparent isolator",
+      "reason": "Same die and DW-16 land pattern as rank 1, AEC-Q100 grade 1. JLCPCB stock 1566 (31 times the gate) at 1.5 times rank 1's price. Below ISO6741DWR because Digi-Key holds 15, so its rule 5 rests on the alternate, rank 1, and not on a second vendor",
+      "second_source_route": "alternate",
+      "second_source_part": "ISO7741DWR"
+     },
+     {
+      "rank": 4,
+      "part": "ISO7741BDWR",
+      "maker": "Texas Instruments",
+      "lcsc": "C2862696",
+      "package": "SOIC-16 wide body (DW), 10.30 x 7.50 mm, ISO7741 pin functions (Figure 4-2); JLCPCB SOIC-16-300mil",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1 (one isolator for the 4 lines of Pins.md:105-112); the gate applies at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "barrier type",
+        "required": "digital isolator",
+        "datasheet": "quad-channel digital isolator, SiO2 capacitive barrier (section 3)",
+        "pass": true,
+        "source": "ISO774x SLLSEP4K (March 2016, revised August 2026), https://www.ti.com/lit/ds/symlink/iso7741.pdf, vendors.py fetch chrome, HTTP 200, 2,398,713 bytes, SHA-256 2ca99c9d6fcbe473..., read 2026-10-02T07:11:13Z"
+       },
+       {
+        "name": "working voltage",
+        "required": "85 V DC working or more",
+        "datasheet": "VIOWM 1414 VDC and VIORM 1414 VPK for ISO7741B, DW-16 (section 5.6)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "channels",
+        "required": "3 forward, 1 reverse",
+        "datasheet": "INA-INC forward, IND-OUTD reverse (Figure 4-2, DW-16 and DBQ-16)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "host-side supply",
+        "required": "3.3 V",
+        "datasheet": "VCC1 2.25 to 5.5 V; VIH 0.7 x VCCI = 2.31 V at 3.3 V (5.3)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "pack-side supply",
+        "required": "5 V rail, 4.5 to 5.5 V",
+        "datasheet": "VCC2 2.25 to 5.5 V, independent of VCC1 (5.3)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "pack-side current",
+        "required": "found at 5 V, checked against the 5 V rail",
+        "datasheet": "ICC2 at 5 V: 4.6 mA max at 1 Mbps, 6.4 mA max at 10 Mbps (bounds 2 Mbps), DC 3.7 to 5.2 mA max (5.10). Rail: ADBMS1818 24.6 mA (16.5 + 8.1) + 6.4 = 31.0 mA awake, about 5.2 mA asleep",
+        "pass": true,
+        "source": "SLLSEP4K; ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "powered in monitor sleep",
+        "required": "outputs powered in sleep; able to wake the monitor",
+        "datasheet": "CMOS outputs on the always-on rail, VOH at least VCCO - 0.4 V at -4 mA (5.9): an edge swings about 5 V, above 200 mV",
+        "pass": true,
+        "source": "SLLSEP4K; ADBMS1818 Rev. B p. 56, Table 7"
+       },
+       {
+        "name": "SPI timing at 1 MHz",
+        "required": "2 Mbps; round trip inside 500 ns",
+        "datasheet": "tPLH, tPHL at most 17 ns at 5 V (5.15), 18.5 ns at 3.3 V (5.16): 18.5 + 60 + 18.5 = 97 ns. SDO rise and RP2354B setup not read",
+        "pass": true,
+        "source": "SLLSEP4K; ADBMS1818 Rev. B Table 10"
+       },
+       {
+        "name": "pack-side logic",
+        "required": "drives CSB, SCK, SDI; reads open-drain SDO",
+        "datasheet": "VOH at least VCCO - 0.4 V, VOL at most 0.4 V at 4 mA (5.9); IND threshold 3.5 V, reached by the SDO pull-up to 5 V",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "chip select idle high",
+        "required": "CS stays deasserted while the coprocessor resets (Pins.md:151-155)",
+        "datasheet": "default output high on input power loss without suffix F (section 3); with the host powered and the pull-up holding CS high the output is high",
+        "pass": true,
+        "source": "SLLSEP4K; Pins.md:151-155"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C ambient",
+        "datasheet": "-55 to 125 C (section 5.3)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       }
+      ],
+      "jlcpcb": "stockCount 322, canPresaleNumber 321, componentLibraryType expand, 2.7393 at the 1 break (no currency in the API); read 2026-10-02T07:11:30Z, vendors.py jlcpcb C2862696 (exact match), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "digikey": "stock_available 356, lead time 20 weeks, ProductStatus Active, not discontinued, not end of life; read 2026-10-02T06:58:56Z, cached: true (same UTC day), vendors.py digikey ISO7741BDWR, https://api.digikey.com/products/v4/search/ISO7741BDWR/productdetails",
+      "gate": "need 5 boards x 1 = 5; S4 threshold 50. JLCPCB 322 >= 50 and presale 321 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/ISO7741 meta status, HTTP 200, read 2026-10-02T07:14:50Z; orderable table lists ISO7741BDWR Active, Production: pass. Longevity not read. First data sheet March 2016 (ISO774x family); the ISO7741B basic-insulation variant's own first date is not read. PCNs not read. Distributor: Digi-Key Active, JLCPCB in stock, no disagreement",
+      "second_source": "second vendor: Digi-Key stock_available 356 >= 50 (2026-10-02T06:58:56Z, cached)",
+      "alternates": [
+       "ISO7741DWR"
+      ],
+      "driver_in_shared": "none; transparent isolator",
+      "reason": "Basic-insulation variant of rank 1 on the same data sheet and the same DW-16 land pattern. JLCPCB stock 322 (6.4 times the gate) at 1.9 times rank 1's price; second-vendor route passes. Below ISO7741QDWRQ1 for less stock and a higher price",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "ISO7241CDWR",
+      "maker": "Texas Instruments",
+      "lcsc": "C133245",
+      "package": "SOIC-16 wide body (DW), 10.30 x 7.50 mm, ISO7741 pin functions (Table 4-1: ISO7241C pins 3-5 INA-INC, 6 OUTD, 7 EN1, 10 EN2, 11 IND, 12-14 OUTC-OUTA); JLCPCB SOIC-16-300mil",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1 (one isolator for the 4 lines of Pins.md:105-112); the gate applies at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "barrier type",
+        "required": "digital isolator",
+        "datasheet": "quad-channel digital isolator, silicon-dioxide barrier, C option TTL inputs with a noise filter (section 3)",
+        "pass": true,
+        "source": "ISO724x SLLS868W (September 2007, revised October 2025), https://www.ti.com/lit/ds/symlink/iso7241c.pdf, vendors.py fetch chrome, HTTP 200, 2,133,784 bytes, SHA-256 58fe15dbbedbccee..., read 2026-10-02T07:11:13Z"
+       },
+       {
+        "name": "working voltage",
+        "required": "85 V DC working or more",
+        "datasheet": "VIORM 560 VPK, maximum repetitive peak isolation voltage (section 5.6); no VIOWM or DC working row is given, so 85 V DC is covered by the peak rating, not by a stated DC working figure",
+        "pass": true,
+        "source": "SLLS868W"
+       },
+       {
+        "name": "channels",
+        "required": "3 forward, 1 reverse",
+        "datasheet": "ISO7241C: INA to INC forward, IND to OUTD reverse (Table 4-1, Table 7-1)",
+        "pass": true,
+        "source": "SLLS868W"
+       },
+       {
+        "name": "host-side supply",
+        "required": "3.3 V",
+        "datasheet": "VCC1 3.15 to 3.6 V for 3.3 V operation (section 5.3): the 3.3 V rail at 3.3 V +/- 3 % is 3.201 to 3.399 V; TTL input VIH 2 V, 5 V tolerant",
+        "pass": true,
+        "source": "SLLS868W"
+       },
+       {
+        "name": "pack-side supply",
+        "required": "5 V rail, 4.5 to 5.5 V",
+        "datasheet": "VCC2 4.5 to 5.5 V for 5 V operation (section 5.3); the 3.3 V / 5 V pair is tabulated (5.13, 5.14, 5.19)",
+        "pass": true,
+        "source": "SLLS868W"
+       },
+       {
+        "name": "pack-side current",
+        "required": "found at 5 V, checked against the 5 V rail",
+        "datasheet": "ICC2 with VCC1 3.3 V and VCC2 5 V (5.14): quiescent 13 typ / 20 mA max, 25 Mbps 18 / 28 mA max, no load (bounds 2 Mbps). 5 V rail: ADBMS1818 24.6 mA (16.5 + 8.1) + 28 = 52.6 mA at most awake, about 20 mA asleep; the supply of rank 1, LTM8068EY#PBF, takes about 54 mA on VOUT1 (typical graph maximum about 80 mA at 18 V)",
+        "pass": true,
+        "source": "SLLS868W; ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "powered in monitor sleep",
+        "required": "outputs powered in sleep; able to wake the monitor",
+        "datasheet": "outputs follow VCC2, VOH at least VCCO - 0.8 V at -4 mA on the 5 V side (5.13): at least 4.2 V, above the 200 mV differential; powered from the always-on rail",
+        "pass": true,
+        "source": "SLLS868W; ADBMS1818 Rev. B p. 56, Table 7"
+       },
+       {
+        "name": "SPI timing at 1 MHz",
+        "required": "2 Mbps; round trip inside 500 ns",
+        "datasheet": "tPLH, tPHL 22 to 51 ns with VCC1 3.3 V and VCC2 5 V (5.19): 51 + 60 + 51 = 162 ns. The input noise filter needs pulses of 40 ns or more; a 1 MHz clock has 500 ns half periods. SDO rise and RP2354B setup are not read",
+        "pass": true,
+        "source": "SLLS868W; ADBMS1818 Rev. B Table 10"
+       },
+       {
+        "name": "pack-side logic",
+        "required": "drives CSB, SCK, SDI; reads open-drain SDO",
+        "datasheet": "5 V side VOH at least 4.2 V at -4 mA, VOL at most 0.4 V at 4 mA (5.13); IND is a TTL input, VIH 2 V, reached by the SDO pull-up to the 5 V rail; input current 10 uA max",
+        "pass": true,
+        "source": "SLLS868W"
+       },
+       {
+        "name": "chip select idle high",
+        "required": "CS stays deasserted while the coprocessor resets (Pins.md:151-155)",
+        "datasheet": "input power down with the output side powered gives output high (Table 7-2, labelled ISO7231C-Q1 in the sheet). With the host side powered and CS held high by the pull-up the output is high",
+        "pass": true,
+        "source": "SLLS868W; Pins.md:151-155"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C ambient",
+        "datasheet": "-40 to 125 C (section 5.3)",
+        "pass": true,
+        "source": "SLLS868W"
+       }
+      ],
+      "jlcpcb": "stockCount 3197, canPresaleNumber 3175, componentLibraryType expand, 1.9525 at the 1 break (no currency in the API); read 2026-10-02T07:11:33Z, vendors.py jlcpcb C133245 (exact match), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "digikey": "stock_available 3704, lead time 12 weeks, ProductStatus Active, not discontinued, not end of life; read 2026-10-02T06:58:59Z, cached: true (same UTC day), vendors.py digikey ISO7241CDWR, https://api.digikey.com/products/v4/search/ISO7241CDWR/productdetails",
+      "gate": "need 5 boards x 1 = 5; S4 threshold 50. JLCPCB 3197 >= 50 and presale 3175 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/ISO7241C meta status, HTTP 200, read 2026-10-02T07:14:51Z; orderable table lists ISO7241CDWR Active, Production: pass. Longevity not read. First data sheet September 2007. The sheet labels its Table 7-2 \"ISO7231C-Q1\". PCNs not read. Distributor: Digi-Key Active, JLCPCB in stock, no disagreement",
+      "second_source": "second vendor: Digi-Key stock_available 3704 >= 50 (2026-10-02T06:58:59Z, cached)",
+      "alternates": [
+       "ISO7741DWR",
+       "ISO6741DWR"
+      ],
+      "driver_in_shared": "none; transparent isolator",
+      "reason": "Older 25 Mbps part on the DW-16 land pattern, default high, 3.3 V and 5 V supplies tabulated together. JLCPCB stock 3197 at 1.3 times rank 1's price, Digi-Key 3704 at 12 weeks. Ranks below ISO7741BDWR because its pack-side current is 28 mA at most, 4.4 times rank 1's, and because its data sheet gives VIORM 560 VPK only, no working-voltage row",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 6,
+      "part": "ISO7741FDWR",
+      "maker": "Texas Instruments",
+      "lcsc": "C485810",
+      "package": "SOIC-16 wide body (DW), 10.30 x 7.50 mm, ISO7741 pin functions (Figure 4-2); JLCPCB SOIC-16-300mil",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1 (one isolator for the 4 lines of Pins.md:105-112); the gate applies at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "barrier type",
+        "required": "digital isolator",
+        "datasheet": "quad-channel digital isolator, SiO2 capacitive barrier (section 3)",
+        "pass": true,
+        "source": "ISO774x SLLSEP4K (March 2016, revised August 2026), https://www.ti.com/lit/ds/symlink/iso7741.pdf, vendors.py fetch chrome, HTTP 200, 2,398,713 bytes, SHA-256 2ca99c9d6fcbe473..., read 2026-10-02T07:11:13Z"
+       },
+       {
+        "name": "working voltage",
+        "required": "85 V DC working or more",
+        "datasheet": "VIOWM 2121 VDC and VIORM 2121 VPK, DW-16 (section 5.6)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "channels",
+        "required": "3 forward, 1 reverse",
+        "datasheet": "INA-INC forward, IND-OUTD reverse (Figure 4-2, DW-16 and DBQ-16)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "host-side supply",
+        "required": "3.3 V",
+        "datasheet": "VCC1 2.25 to 5.5 V; VIH 0.7 x VCCI = 2.31 V at 3.3 V (5.3)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "pack-side supply",
+        "required": "5 V rail, 4.5 to 5.5 V",
+        "datasheet": "VCC2 2.25 to 5.5 V, independent of VCC1 (5.3)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "pack-side current",
+        "required": "found at 5 V, checked against the 5 V rail",
+        "datasheet": "ICC2 at 5 V: 4.6 mA max at 1 Mbps, 6.4 mA max at 10 Mbps (bounds 2 Mbps), DC 3.7 to 5.2 mA max (5.10). Rail: ADBMS1818 24.6 mA (16.5 + 8.1) + 6.4 = 31.0 mA awake, about 5.2 mA asleep",
+        "pass": true,
+        "source": "SLLSEP4K; ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "powered in monitor sleep",
+        "required": "outputs powered in sleep; able to wake the monitor",
+        "datasheet": "CMOS outputs on the always-on rail, VOH at least VCCO - 0.4 V at -4 mA (5.9): an edge swings about 5 V, above 200 mV",
+        "pass": true,
+        "source": "SLLSEP4K; ADBMS1818 Rev. B p. 56, Table 7"
+       },
+       {
+        "name": "SPI timing at 1 MHz",
+        "required": "2 Mbps; round trip inside 500 ns",
+        "datasheet": "tPLH, tPHL at most 17 ns at 5 V (5.15), 18.5 ns at 3.3 V (5.16): 18.5 + 60 + 18.5 = 97 ns. SDO rise and RP2354B setup not read",
+        "pass": true,
+        "source": "SLLSEP4K; ADBMS1818 Rev. B Table 10"
+       },
+       {
+        "name": "pack-side logic",
+        "required": "drives CSB, SCK, SDI; reads open-drain SDO",
+        "datasheet": "VOH at least VCCO - 0.4 V, VOL at most 0.4 V at 4 mA (5.9); IND threshold 3.5 V, reached by the SDO pull-up to 5 V",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "chip select idle high",
+        "required": "CS stays deasserted while the coprocessor resets (Pins.md:151-155)",
+        "datasheet": "F suffix: default output low only on input power loss (section 3). With the host powered and the pull-up holding CS high the output is high, as for the default-high twin. With the host unpowered, CSB, SCK and SDI sit low; harm to the ADBMS1818 not read (wake needs SCK - CSB of 200 mV for 240 ns, p. 56). No page line states a host-unpowered case",
+        "pass": true,
+        "source": "SLLSEP4K; Pins.md:151-155"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C ambient",
+        "datasheet": "-55 to 125 C (section 5.3)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       }
+      ],
+      "jlcpcb": "stockCount 1086, canPresaleNumber 1066, componentLibraryType expand, 1.7509 at the 1 break (no currency in the API); read 2026-10-02T07:11:40Z, vendors.py jlcpcb C485810 (exact match), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "digikey": "stock_available 3870, lead time 20 weeks, ProductStatus Active, not discontinued, not end of life; read 2026-10-02T07:02:40Z, cached: true (same UTC day), vendors.py digikey ISO7741FDWR, https://api.digikey.com/products/v4/search/ISO7741FDWR/productdetails",
+      "gate": "need 5 boards x 1 = 5; S4 threshold 50. JLCPCB 1086 >= 50 and presale 1066 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/ISO7741 meta status, HTTP 200, read 2026-10-02T07:14:50Z; orderable table lists ISO7741FDWR Active, Production: pass. Longevity not read. First data sheet March 2016. PCNs not read. Distributor: Digi-Key Active, JLCPCB in stock, no disagreement",
+      "second_source": "second vendor: Digi-Key stock_available 3870 >= 50 (2026-10-02T07:02:40Z, cached)",
+      "alternates": [
+       "ISO7741DWR"
+      ],
+      "driver_in_shared": "none; transparent isolator",
+      "reason": "P2 dropped the F-suffix rows for a host-unpowered case no page line states; Pins.md:151-155 covers the coprocessor in reset, where the F part outputs high like its twin. Same die and DW-16 land pattern as rank 1, default low on input power loss. Below the default-high rows because that unstated case would hold CSB, SCK and SDI low",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 7,
+      "part": "ISO6741FDWR",
+      "maker": "Texas Instruments",
+      "lcsc": "C5216433",
+      "package": "SOIC-16 wide body (DW), ISO7741 pin functions (ISO6741 Figure 6-2); JLCPCB SOIC-16-300mil",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1 (one isolator for the 4 lines of Pins.md:105-112); the gate applies at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "barrier type",
+        "required": "digital isolator",
+        "datasheet": "quad-channel digital isolator, 3 forward and 1 reverse (section 1)",
+        "pass": true,
+        "source": "ISO674x SLLSFJ6G (December 2019, revised January 2023), https://www.ti.com/lit/ds/symlink/iso6741.pdf, vendors.py fetch chrome, HTTP 200, 3,389,464 bytes, SHA-256 18282cc8e701676e..., read 2026-10-02T07:11:13Z"
+       },
+       {
+        "name": "working voltage",
+        "required": "85 V DC working or more",
+        "datasheet": "VIOWM 2121 VDC and VIORM 2121 VPK (section 7.6)",
+        "pass": true,
+        "source": "SLLSFJ6G"
+       },
+       {
+        "name": "channels",
+        "required": "3 forward, 1 reverse",
+        "datasheet": "INA to INC forward, IND to OUTD reverse (Figure 6-2)",
+        "pass": true,
+        "source": "SLLSFJ6G"
+       },
+       {
+        "name": "host-side supply",
+        "required": "3.3 V",
+        "datasheet": "VCC1 2.25 to 5.5 V (section 7.3)",
+        "pass": true,
+        "source": "SLLSFJ6G"
+       },
+       {
+        "name": "pack-side supply",
+        "required": "5 V rail, 4.5 to 5.5 V",
+        "datasheet": "VCC2 2.25 to 5.5 V (section 7.3)",
+        "pass": true,
+        "source": "SLLSFJ6G"
+       },
+       {
+        "name": "pack-side current",
+        "required": "found at 5 V, checked against the 5 V rail",
+        "datasheet": "ICC2 at 5 V: 3.0 / 4.5 mA at 1 Mbps, 4.8 / 6.5 mA max at 10 Mbps, DC 3.5 / 5.1 mA max (section 7.10). 5 V rail: ADBMS1818 24.6 mA (16.5 + 8.1) + 6.5 = 31.1 mA at most awake",
+        "pass": true,
+        "source": "SLLSFJ6G; ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "powered in monitor sleep",
+        "required": "outputs powered in sleep; able to wake the monitor",
+        "datasheet": "CMOS outputs at VCC2 from the always-on rail (section 7.9)",
+        "pass": true,
+        "source": "SLLSFJ6G; ADBMS1818 Rev. B p. 56, Table 7"
+       },
+       {
+        "name": "SPI timing at 1 MHz",
+        "required": "2 Mbps; round trip inside 500 ns",
+        "datasheet": "propagation delay at most 18 ns at 3.3 V (section 7.18): 18 + 60 + 18 = 96 ns. SDO rise and RP2354B setup are not read",
+        "pass": true,
+        "source": "SLLSFJ6G; ADBMS1818 Rev. B Table 10"
+       },
+       {
+        "name": "pack-side logic",
+        "required": "drives CSB, SCK, SDI; reads open-drain SDO",
+        "datasheet": "CMOS outputs at VCC2; input thresholds proportional to VCCI (section 7.9)",
+        "pass": true,
+        "source": "SLLSFJ6G"
+       },
+       {
+        "name": "chip select idle high",
+        "required": "CS stays deasserted while the coprocessor resets (Pins.md:151-155)",
+        "datasheet": "F suffix: default output low only on input power loss (section 1). With the host powered and the pull-up holding CS high the output is high, as for the default-high twin. With the host unpowered, CSB, SCK and SDI sit low; harm to the ADBMS1818 not read (wake needs SCK - CSB of 200 mV for 240 ns, p. 56). No page line states a host-unpowered case",
+        "pass": true,
+        "source": "SLLSFJ6G; Pins.md:151-155"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C ambient",
+        "datasheet": "-40 to 125 C (section 7.3)",
+        "pass": true,
+        "source": "SLLSFJ6G"
+       }
+      ],
+      "jlcpcb": "stockCount 1144, canPresaleNumber 1137, componentLibraryType expand, 1.9167 at the 1 break (no currency in the API); read 2026-10-02T07:11:41Z, vendors.py jlcpcb C5216433 (exact match), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "digikey": "stock_available 1460, lead time 20 weeks, ProductStatus Active, not discontinued, not end of life; read 2026-10-02T07:02:42Z, cached: true (same UTC day), vendors.py digikey ISO6741FDWR, https://api.digikey.com/products/v4/search/ISO6741FDWR/productdetails",
+      "gate": "need 5 boards x 1 = 5; S4 threshold 50. JLCPCB 1144 >= 50 and presale 1137 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/ISO6741 meta status, HTTP 200, read 2026-10-02T07:14:50Z; orderable table lists ISO6741FDWR Active, Production: pass. Longevity not read. First data sheet December 2019. PCNs not read. Distributor: Digi-Key Active, JLCPCB in stock, no disagreement",
+      "second_source": "second vendor: Digi-Key stock_available 1460 >= 50 (2026-10-02T07:02:42Z, cached)",
+      "alternates": [
+       "ISO6741DWR",
+       "ISO7741DWR"
+      ],
+      "driver_in_shared": "none; transparent isolator",
+      "reason": "F-suffix twin of rank 2 on the DW-16 land pattern; same reasoning as ISO7741FDWR. Below it for a higher price and lower Digi-Key stock",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 9,
+      "part": "ADUM141E1WBRWZ-RL",
+      "maker": "Analog Devices",
+      "lcsc": "C660437",
+      "package": "SOIC_W 16-lead, RW-16, reel of 1000; JLCPCB SOIC-16-300mil; ISO7741 DW-16 pin functions",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1 (one isolator for the 4 lines of Pins.md:105-112); the gate applies at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "barrier type",
+        "required": "digital isolator",
+        "datasheet": "quad-channel digital isolator, iCoupler air-core transformer barrier; 3 inputs on side 1 and 1 on side 2 (ADuM141)",
+        "pass": true,
+        "source": "ADuM140D/E to ADuM142D/E Rev. K (12/2024), https://www.analog.com/media/en/technical-documentation/data-sheets/ADuM140D_140E_141D_141E_142D_142E.pdf, vendors.py fetch safari, HTTP 200, 1,017,635 bytes, SHA-256 d8dc27340f57bada..., read 2026-10-02T07:11:18Z"
+       },
+       {
+        "name": "working voltage",
+        "required": "85 V DC working or more",
+        "datasheet": "VIORM 565 V peak and VIOWM 400 V rms (Table 16); Table 19 maximum continuous working voltage 565 V peak, bipolar AC waveform. Rev. K gives no DC working row, so 85 V DC is covered by the continuous 565 V peak rating, not by a stated DC figure",
+        "pass": true,
+        "source": "ADuM141E Rev. K"
+       },
+       {
+        "name": "channels",
+        "required": "3 forward, 1 reverse",
+        "datasheet": "VIA to VIC forward, VID to VOD reverse; pins 1 VDD1, 2 and 8 GND1, 3-5 VIA-VIC, 6 VOD, 7 VE1, 9 and 15 GND2, 10 VE2, 11 VID, 12-14 VOC-VOA, 16 VDD2 (pin function table): ISO7741's pin functions",
+        "pass": true,
+        "source": "ADuM141E Rev. K"
+       },
+       {
+        "name": "host-side supply",
+        "required": "3.3 V",
+        "datasheet": "VDD1 1.8 to 5 V; VIH 0.7 x VDD1 = 2.31 V at 3.3 V (Table 3); IDD1 up to 17.0 mA with inputs low (Table 1), counted on the 3.3 V rail",
+        "pass": true,
+        "source": "ADuM141E Rev. K"
+       },
+       {
+        "name": "pack-side supply",
+        "required": "5 V rail, 4.5 to 5.5 V",
+        "datasheet": "VDD2 1.8 to 5 V, independent of VDD1",
+        "pass": true,
+        "source": "ADuM141E Rev. K"
+       },
+       {
+        "name": "pack-side current",
+        "required": "found at 5 V, checked against the 5 V rail",
+        "datasheet": "IDD2 at 5 V: 4.0 typ / 6.85 mA max at 1 Mbps, 5.5 / 8.5 mA max at 25 Mbps (Table 2; bounds 2 Mbps), quiescent 10.0 mA max. 5 V rail: ADBMS1818 24.6 mA (16.5 + 8.1) + 10.0 = 34.6 mA at most awake",
+        "pass": true,
+        "source": "ADuM141E Rev. K; ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "powered in monitor sleep",
+        "required": "outputs powered in sleep; able to wake the monitor",
+        "datasheet": "CMOS outputs at VDD2, VOH at least VDD - 0.1 V at -20 uA (Table 1); powered from the always-on rail",
+        "pass": true,
+        "source": "ADuM141E Rev. K; ADBMS1818 Rev. B p. 56, Table 7"
+       },
+       {
+        "name": "SPI timing at 1 MHz",
+        "required": "2 Mbps; round trip inside 500 ns",
+        "datasheet": "tPHL, tPLH 13 ns max at 5 V (Table 1) and 14 ns at 3.3 V (Table 3): 14 + 60 + 14 = 88 ns. SDO rise and RP2354B setup are not read",
+        "pass": true,
+        "source": "ADuM141E Rev. K; ADBMS1818 Rev. B Table 10"
+       },
+       {
+        "name": "pack-side logic",
+        "required": "drives CSB, SCK, SDI; reads open-drain SDO",
+        "datasheet": "VOH at least VDD - 0.1 V at -20 uA, VOL at most 0.1 V at 20 uA (Table 1); IND threshold 0.7 x 5 V = 3.5 V, reached by the SDO pull-up to the 5 V rail",
+        "pass": true,
+        "source": "ADuM141E Rev. K"
+       },
+       {
+        "name": "chip select idle high",
+        "required": "CS stays deasserted while the coprocessor resets (Pins.md:151-155)",
+        "datasheet": "E1 models: output high when the input side is unpowered and the output side powered (truth table). With the host side powered and CS held high by the pull-up the output is high",
+        "pass": true,
+        "source": "ADuM141E Rev. K; Pins.md:151-155"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C ambient",
+        "datasheet": "-40 to +125 C (ordering guide)",
+        "pass": true,
+        "source": "ADuM141E Rev. K"
+       }
+      ],
+      "jlcpcb": "stockCount 200, canPresaleNumber 194, componentLibraryType expand, 2.3069 at the 1 break (no currency in the API); read 2026-10-02T07:11:35Z, vendors.py jlcpcb C660437 (exact match), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "digikey": "stock_available 1190, lead time 52 weeks, ProductStatus Active, not discontinued, not end of life; read 2026-10-02T06:59:02Z, cached: true (same UTC day), vendors.py digikey ADUM141E1WBRWZ-RL, https://api.digikey.com/products/v4/search/ADUM141E1WBRWZ-RL/productdetails",
+      "gate": "need 5 boards x 1 = 5; S4 threshold 50. JLCPCB 200 >= 50 and presale 194 >= 0: pass (rule 4)",
+      "lifecycle": "Digi-Key ProductStatus Active (2026-10-02T06:59:02Z, cached), the status that counts for Analog Devices: pass. Maker page and PCN listing not read. First data sheet date of the ADuM141E family not read; Rev. K is 12/2024. Distributor: JLCPCB in stock; no disagreement. The W model is listed as qualified for automotive use (ordering guide note 2)",
+      "second_source": "second vendor: Digi-Key stock_available 1190 >= 50 (2026-10-02T06:59:02Z, cached)",
+      "alternates": [
+       "ISO7741DWR",
+       "ADUM141E1BRWZ-RL"
+      ],
+      "driver_in_shared": "none; transparent isolator",
+      "reason": "Another maker on the DW-16 land pattern, default high. JLCPCB stock 200 (4 times the gate) at 1.6 times rank 1's price; Digi-Key 1190 at a 52-week lead. Below the TI rows because its Rev. K data sheet states no DC working voltage and its stock margin is smaller",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 10,
+      "part": "ISO7741DBQR",
+      "maker": "Texas Instruments",
+      "lcsc": "C913840",
+      "package": "SSOP/QSOP-16 150 mil (DBQ), 4.90 x 3.90 mm body, ISO7741 pin functions (Figure 4-2); JLCPCB SSOP-16-150mil. Not the DW-16 land pattern of ranks 1 and 2",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1 (one isolator for the 4 lines of Pins.md:105-112); the gate applies at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "barrier type",
+        "required": "digital isolator",
+        "datasheet": "quad-channel digital isolator, SiO2 capacitive barrier (section 3)",
+        "pass": true,
+        "source": "ISO774x SLLSEP4K (March 2016, revised August 2026), https://www.ti.com/lit/ds/symlink/iso7741.pdf, vendors.py fetch chrome, HTTP 200, 2,398,713 bytes, SHA-256 2ca99c9d6fcbe473..., read 2026-10-02T07:11:13Z"
+       },
+       {
+        "name": "working voltage",
+        "required": "85 V DC working or more",
+        "datasheet": "VIOWM 566 VDC and VIORM 566 VPK, DBQ-16 (section 5.6)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "channels",
+        "required": "3 forward, 1 reverse",
+        "datasheet": "INA-INC forward, IND-OUTD reverse (Figure 4-2, DW-16 and DBQ-16)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "host-side supply",
+        "required": "3.3 V",
+        "datasheet": "VCC1 2.25 to 5.5 V; VIH 0.7 x VCCI = 2.31 V at 3.3 V (5.3)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "pack-side supply",
+        "required": "5 V rail, 4.5 to 5.5 V",
+        "datasheet": "VCC2 2.25 to 5.5 V, independent of VCC1 (5.3)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "pack-side current",
+        "required": "found at 5 V, checked against the 5 V rail",
+        "datasheet": "ICC2 at 5 V: 4.6 mA max at 1 Mbps, 6.4 mA max at 10 Mbps (bounds 2 Mbps), DC 3.7 to 5.2 mA max (5.10). Rail: ADBMS1818 24.6 mA (16.5 + 8.1) + 6.4 = 31.0 mA awake, about 5.2 mA asleep",
+        "pass": true,
+        "source": "SLLSEP4K; ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "powered in monitor sleep",
+        "required": "outputs powered in sleep; able to wake the monitor",
+        "datasheet": "CMOS outputs on the always-on rail, VOH at least VCCO - 0.4 V at -4 mA (5.9): an edge swings about 5 V, above 200 mV",
+        "pass": true,
+        "source": "SLLSEP4K; ADBMS1818 Rev. B p. 56, Table 7"
+       },
+       {
+        "name": "SPI timing at 1 MHz",
+        "required": "2 Mbps; round trip inside 500 ns",
+        "datasheet": "tPLH, tPHL at most 17 ns at 5 V (5.15), 18.5 ns at 3.3 V (5.16): 18.5 + 60 + 18.5 = 97 ns. SDO rise and RP2354B setup not read",
+        "pass": true,
+        "source": "SLLSEP4K; ADBMS1818 Rev. B Table 10"
+       },
+       {
+        "name": "pack-side logic",
+        "required": "drives CSB, SCK, SDI; reads open-drain SDO",
+        "datasheet": "VOH at least VCCO - 0.4 V, VOL at most 0.4 V at 4 mA (5.9); IND threshold 3.5 V, reached by the SDO pull-up to 5 V",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "chip select idle high",
+        "required": "CS stays deasserted while the coprocessor resets (Pins.md:151-155)",
+        "datasheet": "default output high on input power loss without suffix F (section 3); with the host powered and the pull-up holding CS high the output is high",
+        "pass": true,
+        "source": "SLLSEP4K; Pins.md:151-155"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C ambient",
+        "datasheet": "-55 to 125 C (section 5.3)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       }
+      ],
+      "jlcpcb": "stockCount 38042, canPresaleNumber 37915, componentLibraryType expand, 0.9478 at the 1 break (no currency in the API); read 2026-10-02T07:11:46Z, vendors.py jlcpcb C913840 (exact match), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "digikey": "stock_available 0, lead time 20 weeks, ProductStatus Active, not discontinued, not end of life; read 2026-10-02T01:04:17Z, cached: true (same UTC day), vendors.py digikey ISO7741DBQR, https://api.digikey.com/products/v4/search/ISO7741DBQR/productdetails",
+      "gate": "need 5 boards x 1 = 5; S4 threshold 50. JLCPCB 38042 >= 50 and presale 37915 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/ISO7741 meta status, HTTP 200, read 2026-10-02T07:14:50Z; orderable table lists ISO7741DBQR Active, Production: pass. Longevity not read. First data sheet March 2016. PCNs not read. Distributor: Digi-Key Active, JLCPCB in stock, no disagreement",
+      "second_source": "alternate ISO7141CCDBQR: Digi-Key stock_available 0 (2026-10-02T01:04:17Z, cached) fails the second-vendor route. ISO7141CCDBQR has the same DBQ-16 drawing and the same pin functions (ISO7141 pins 6 OUTD, 7 EN1, 10 EN2, 11 IND), default high without the F suffix, supplies from 2.7 V, and passes rules 1 to 4: JLCPCB 594 / 586 (2026-10-02T07:11:48Z), TI page ACTIVE (07:14:52Z). Its record is in this return as the alternate's record",
+      "alternates": [
+       "ISO7141CCDBQR"
+      ],
+      "driver_in_shared": "none; transparent isolator",
+      "reason": "Rank 1's die and figures in a DBQ-16 package. JLCPCB stock 38042 and 0.9478 at 1, the most stock and the lowest price of any barrier read, which P2's reason for leaving it out (less stock, higher price) does not hold. Ranks below the DW-16 rows for a second land pattern and a rule 5 that rests on an older-generation alternate with 9.6 mA at most, not on a second vendor",
+      "second_source_route": "alternate",
+      "second_source_part": "ISO7141CCDBQR"
+     },
+     {
+      "rank": 11,
+      "part": "ISO7741FQDBQRQ1",
+      "maker": "Texas Instruments",
+      "lcsc": "C2877510",
+      "package": "SSOP/QSOP-16 150 mil (DBQ), 4.90 x 3.90 mm body, ISO7741 pin functions (Figure 4-2); JLCPCB SSOP-16-150mil. Not the DW-16 land pattern of ranks 1 and 2",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1 (one isolator for the 4 lines of Pins.md:105-112); the gate applies at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "barrier type",
+        "required": "digital isolator",
+        "datasheet": "quad-channel digital isolator, SiO2 capacitive barrier (section 3)",
+        "pass": true,
+        "source": "ISO774x-Q1 SLLSEU0G (November 2016, revised October 2024), https://www.ti.com/lit/ds/symlink/iso7741-q1.pdf, vendors.py fetch chrome, HTTP 200, 2,618,010 bytes, SHA-256 fcea7bd0b9e495fa..., read 2026-10-02T07:11:13Z"
+       },
+       {
+        "name": "working voltage",
+        "required": "85 V DC working or more",
+        "datasheet": "VIOWM 566 VDC and VIORM 566 VPK, DBQ-16 (section 5.6, DBQ column)",
+        "pass": true,
+        "source": "SLLSEU0G"
+       },
+       {
+        "name": "channels",
+        "required": "3 forward, 1 reverse",
+        "datasheet": "INA-INC forward, IND-OUTD reverse (Figure 4-2, DW-16 and DBQ-16)",
+        "pass": true,
+        "source": "SLLSEU0G"
+       },
+       {
+        "name": "host-side supply",
+        "required": "3.3 V",
+        "datasheet": "VCC1 2.25 to 5.5 V; VIH 0.7 x VCCI = 2.31 V at 3.3 V (5.3)",
+        "pass": true,
+        "source": "SLLSEU0G"
+       },
+       {
+        "name": "pack-side supply",
+        "required": "5 V rail, 4.5 to 5.5 V",
+        "datasheet": "VCC2 2.25 to 5.5 V, independent of VCC1 (5.3)",
+        "pass": true,
+        "source": "SLLSEU0G"
+       },
+       {
+        "name": "pack-side current",
+        "required": "found at 5 V, checked against the 5 V rail",
+        "datasheet": "ICC2 at 5 V: 4.6 mA max at 1 Mbps, 6.4 mA max at 10 Mbps (bounds 2 Mbps), DC 3.7 to 5.2 mA max (5.10). Rail: ADBMS1818 24.6 mA (16.5 + 8.1) + 6.4 = 31.0 mA awake, about 5.2 mA asleep",
+        "pass": true,
+        "source": "SLLSEU0G; ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "powered in monitor sleep",
+        "required": "outputs powered in sleep; able to wake the monitor",
+        "datasheet": "CMOS outputs on the always-on rail, VOH at least VCCO - 0.4 V at -4 mA (5.9): an edge swings about 5 V, above 200 mV",
+        "pass": true,
+        "source": "SLLSEU0G; ADBMS1818 Rev. B p. 56, Table 7"
+       },
+       {
+        "name": "SPI timing at 1 MHz",
+        "required": "2 Mbps; round trip inside 500 ns",
+        "datasheet": "tPLH, tPHL 6 / 10.7 / 17 ns at 5 V (5.15) and 18.5 ns max at 3.3 V (5.16): 18.5 + 60 + 18.5 = 97 ns. SDO rise and RP2354B setup are not read",
+        "pass": true,
+        "source": "SLLSEU0G; ADBMS1818 Rev. B Table 10"
+       },
+       {
+        "name": "pack-side logic",
+        "required": "drives CSB, SCK, SDI; reads open-drain SDO",
+        "datasheet": "VOH at least VCCO - 0.4 V, VOL at most 0.4 V at 4 mA (5.9); IND threshold 3.5 V, reached by the SDO pull-up to 5 V",
+        "pass": true,
+        "source": "SLLSEU0G"
+       },
+       {
+        "name": "chip select idle high",
+        "required": "CS stays deasserted while the coprocessor resets (Pins.md:151-155)",
+        "datasheet": "F suffix: default output low only on input power loss (section 3). With the host powered and the pull-up holding CS high the output is high, as for the default-high twin. With the host unpowered, CSB, SCK and SDI sit low; harm to the ADBMS1818 not read (wake needs SCK - CSB of 200 mV for 240 ns, p. 56). No page line states a host-unpowered case",
+        "pass": true,
+        "source": "SLLSEU0G; Pins.md:151-155"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C ambient",
+        "datasheet": "-40 to 125 C, AEC-Q100 grade 1 (features)",
+        "pass": true,
+        "source": "SLLSEU0G"
+       }
+      ],
+      "jlcpcb": "stockCount 4469, canPresaleNumber 4454, componentLibraryType expand, 1.6078 at the 1 break (no currency in the API); read 2026-10-02T07:11:44Z, vendors.py jlcpcb C2877510 (exact match), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "digikey": "stock_available 0, lead time 20 weeks, ProductStatus Active, not discontinued, not end of life; read 2026-10-02T07:02:44Z, cached: true (same UTC day), vendors.py digikey ISO7741FQDBQRQ1, https://api.digikey.com/products/v4/search/ISO7741FQDBQRQ1/productdetails",
+      "gate": "need 5 boards x 1 = 5; S4 threshold 50. JLCPCB 4469 >= 50 and presale 4454 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/ISO7741-Q1 meta status, HTTP 200, read 2026-10-02T07:14:51Z; orderable table lists ISO7741FQDBQRQ1 Active, Production: pass. Longevity not read. First data sheet November 2016 (ISO774x-Q1, SLLSEU0G). PCNs not read. Distributor: Digi-Key Active, JLCPCB in stock, no disagreement",
+      "second_source": "alternate ISO7741FDBQR: Digi-Key stock_available 0 (2026-10-02T07:02:44Z, cached) fails the second-vendor route. ISO7741FDBQR has the same DBQ-16 drawing, the same die and pin functions and the same default-low output, and passes rules 1 to 4 (JLCPCB 125 / 99 at 2026-10-02T07:11:43Z; TI page ACTIVE 07:14:50Z). Its record is in this return, ranked",
+      "alternates": [
+       "ISO7741FDBQR"
+      ],
+      "driver_in_shared": "none; transparent isolator",
+      "reason": "F-suffix, AEC-Q100 grade 1, DBQ-16: default low, a second land pattern and a rule 5 on a part with 125 at JLCPCB. JLCPCB stock 4469 at 1.6078. Below the DBQ default-high row",
+      "second_source_route": "alternate",
+      "second_source_part": "ISO7741FDBQR"
+     },
+     {
+      "rank": 12,
+      "part": "ADUM141E1BRWZ-RL",
+      "maker": "Analog Devices",
+      "lcsc": "C456282",
+      "package": "SOIC_W 16-lead, RW-16, reel of 1000; JLCPCB SOIC-16-300mil; ISO7741 DW-16 pin functions",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1 (one isolator for the 4 lines of Pins.md:105-112); the gate applies at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "barrier type",
+        "required": "digital isolator",
+        "datasheet": "quad-channel digital isolator, iCoupler air-core transformer barrier; 3 inputs on side 1 and 1 on side 2 (ADuM141)",
+        "pass": true,
+        "source": "ADuM140D/E to ADuM142D/E Rev. K (12/2024), https://www.analog.com/media/en/technical-documentation/data-sheets/ADuM140D_140E_141D_141E_142D_142E.pdf, vendors.py fetch safari, HTTP 200, 1,017,635 bytes, SHA-256 d8dc27340f57bada..., read 2026-10-02T07:11:18Z"
+       },
+       {
+        "name": "working voltage",
+        "required": "85 V DC working or more",
+        "datasheet": "VIORM 565 V peak and VIOWM 400 V rms (Table 16); Table 19 maximum continuous working voltage 565 V peak, bipolar AC waveform. Rev. K gives no DC working row, so 85 V DC is covered by the continuous 565 V peak rating, not by a stated DC figure",
+        "pass": true,
+        "source": "ADuM141E Rev. K"
+       },
+       {
+        "name": "channels",
+        "required": "3 forward, 1 reverse",
+        "datasheet": "VIA to VIC forward, VID to VOD reverse; pins 1 VDD1, 2 and 8 GND1, 3-5 VIA-VIC, 6 VOD, 7 VE1, 9 and 15 GND2, 10 VE2, 11 VID, 12-14 VOC-VOA, 16 VDD2 (pin function table): ISO7741's pin functions",
+        "pass": true,
+        "source": "ADuM141E Rev. K"
+       },
+       {
+        "name": "host-side supply",
+        "required": "3.3 V",
+        "datasheet": "VDD1 1.8 to 5 V; VIH 0.7 x VDD1 = 2.31 V at 3.3 V (Table 3); IDD1 up to 17.0 mA with inputs low (Table 1), counted on the 3.3 V rail",
+        "pass": true,
+        "source": "ADuM141E Rev. K"
+       },
+       {
+        "name": "pack-side supply",
+        "required": "5 V rail, 4.5 to 5.5 V",
+        "datasheet": "VDD2 1.8 to 5 V, independent of VDD1",
+        "pass": true,
+        "source": "ADuM141E Rev. K"
+       },
+       {
+        "name": "pack-side current",
+        "required": "found at 5 V, checked against the 5 V rail",
+        "datasheet": "IDD2 at 5 V: 4.0 typ / 6.85 mA max at 1 Mbps, 5.5 / 8.5 mA max at 25 Mbps (Table 2; bounds 2 Mbps), quiescent 10.0 mA max. 5 V rail: ADBMS1818 24.6 mA (16.5 + 8.1) + 10.0 = 34.6 mA at most awake",
+        "pass": true,
+        "source": "ADuM141E Rev. K; ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "powered in monitor sleep",
+        "required": "outputs powered in sleep; able to wake the monitor",
+        "datasheet": "CMOS outputs at VDD2, VOH at least VDD - 0.1 V at -20 uA (Table 1); powered from the always-on rail",
+        "pass": true,
+        "source": "ADuM141E Rev. K; ADBMS1818 Rev. B p. 56, Table 7"
+       },
+       {
+        "name": "SPI timing at 1 MHz",
+        "required": "2 Mbps; round trip inside 500 ns",
+        "datasheet": "tPHL, tPLH 13 ns max at 5 V (Table 1) and 14 ns at 3.3 V (Table 3): 14 + 60 + 14 = 88 ns. SDO rise and RP2354B setup are not read",
+        "pass": true,
+        "source": "ADuM141E Rev. K; ADBMS1818 Rev. B Table 10"
+       },
+       {
+        "name": "pack-side logic",
+        "required": "drives CSB, SCK, SDI; reads open-drain SDO",
+        "datasheet": "VOH at least VDD - 0.1 V at -20 uA, VOL at most 0.1 V at 20 uA (Table 1); IND threshold 0.7 x 5 V = 3.5 V, reached by the SDO pull-up to the 5 V rail",
+        "pass": true,
+        "source": "ADuM141E Rev. K"
+       },
+       {
+        "name": "chip select idle high",
+        "required": "CS stays deasserted while the coprocessor resets (Pins.md:151-155)",
+        "datasheet": "E1 models: output high when the input side is unpowered and the output side powered (truth table). With the host side powered and CS held high by the pull-up the output is high",
+        "pass": true,
+        "source": "ADuM141E Rev. K; Pins.md:151-155"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C ambient",
+        "datasheet": "-40 to +125 C (ordering guide)",
+        "pass": true,
+        "source": "ADuM141E Rev. K"
+       }
+      ],
+      "jlcpcb": "stockCount 135, canPresaleNumber 133, componentLibraryType expand, 4.8087 at the 1 break (no currency in the API); read 2026-10-02T07:11:36Z, vendors.py jlcpcb C456282 (exact match), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "digikey": "stock_available 510, lead time 52 weeks, ProductStatus Active, not discontinued, not end of life; read 2026-10-02T06:59:01Z, cached: true (same UTC day), vendors.py digikey ADUM141E1BRWZ-RL, https://api.digikey.com/products/v4/search/ADUM141E1BRWZ-RL/productdetails",
+      "gate": "need 5 boards x 1 = 5; S4 threshold 50. JLCPCB 135 >= 50 and presale 133 >= 0: pass (rule 4)",
+      "lifecycle": "Digi-Key ProductStatus Active (2026-10-02T06:59:01Z, cached), the status that counts for Analog Devices: pass. Maker page and PCN listing not read. First data sheet date not read; Rev. K is 12/2024. Distributor: JLCPCB in stock; no disagreement",
+      "second_source": "second vendor: Digi-Key stock_available 510 >= 50 (2026-10-02T06:59:01Z, cached)",
+      "alternates": [
+       "ADUM141E1WBRWZ-RL",
+       "ISO7741DWR"
+      ],
+      "driver_in_shared": "none; transparent isolator",
+      "reason": "The non-W model of the row above at 2.1 times its price and 135 at JLCPCB (2.7 times the gate); same data sheet, same DW-16 land pattern; second-vendor route passes",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 13,
+      "part": "ISO7741FDBQR",
+      "maker": "Texas Instruments",
+      "lcsc": "C2872241",
+      "package": "SSOP/QSOP-16 150 mil (DBQ), 4.90 x 3.90 mm body, ISO7741 pin functions (Figure 4-2); JLCPCB SSOP-16-150mil. Not the DW-16 land pattern of ranks 1 and 2",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1 (one isolator for the 4 lines of Pins.md:105-112); the gate applies at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "barrier type",
+        "required": "digital isolator",
+        "datasheet": "quad-channel digital isolator, SiO2 capacitive barrier (section 3)",
+        "pass": true,
+        "source": "ISO774x SLLSEP4K (March 2016, revised August 2026), https://www.ti.com/lit/ds/symlink/iso7741.pdf, vendors.py fetch chrome, HTTP 200, 2,398,713 bytes, SHA-256 2ca99c9d6fcbe473..., read 2026-10-02T07:11:13Z"
+       },
+       {
+        "name": "working voltage",
+        "required": "85 V DC working or more",
+        "datasheet": "VIOWM 566 VDC and VIORM 566 VPK, DBQ-16 (section 5.6)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "channels",
+        "required": "3 forward, 1 reverse",
+        "datasheet": "INA-INC forward, IND-OUTD reverse (Figure 4-2, DW-16 and DBQ-16)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "host-side supply",
+        "required": "3.3 V",
+        "datasheet": "VCC1 2.25 to 5.5 V; VIH 0.7 x VCCI = 2.31 V at 3.3 V (5.3)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "pack-side supply",
+        "required": "5 V rail, 4.5 to 5.5 V",
+        "datasheet": "VCC2 2.25 to 5.5 V, independent of VCC1 (5.3)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "pack-side current",
+        "required": "found at 5 V, checked against the 5 V rail",
+        "datasheet": "ICC2 at 5 V: 4.6 mA max at 1 Mbps, 6.4 mA max at 10 Mbps (bounds 2 Mbps), DC 3.7 to 5.2 mA max (5.10). Rail: ADBMS1818 24.6 mA (16.5 + 8.1) + 6.4 = 31.0 mA awake, about 5.2 mA asleep",
+        "pass": true,
+        "source": "SLLSEP4K; ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "powered in monitor sleep",
+        "required": "outputs powered in sleep; able to wake the monitor",
+        "datasheet": "CMOS outputs on the always-on rail, VOH at least VCCO - 0.4 V at -4 mA (5.9): an edge swings about 5 V, above 200 mV",
+        "pass": true,
+        "source": "SLLSEP4K; ADBMS1818 Rev. B p. 56, Table 7"
+       },
+       {
+        "name": "SPI timing at 1 MHz",
+        "required": "2 Mbps; round trip inside 500 ns",
+        "datasheet": "tPLH, tPHL at most 17 ns at 5 V (5.15), 18.5 ns at 3.3 V (5.16): 18.5 + 60 + 18.5 = 97 ns. SDO rise and RP2354B setup not read",
+        "pass": true,
+        "source": "SLLSEP4K; ADBMS1818 Rev. B Table 10"
+       },
+       {
+        "name": "pack-side logic",
+        "required": "drives CSB, SCK, SDI; reads open-drain SDO",
+        "datasheet": "VOH at least VCCO - 0.4 V, VOL at most 0.4 V at 4 mA (5.9); IND threshold 3.5 V, reached by the SDO pull-up to 5 V",
+        "pass": true,
+        "source": "SLLSEP4K"
+       },
+       {
+        "name": "chip select idle high",
+        "required": "CS stays deasserted while the coprocessor resets (Pins.md:151-155)",
+        "datasheet": "F suffix: default output low only on input power loss (section 3). With the host powered and the pull-up holding CS high the output is high, as for the default-high twin. With the host unpowered, CSB, SCK and SDI sit low; harm to the ADBMS1818 not read (wake needs SCK - CSB of 200 mV for 240 ns, p. 56). No page line states a host-unpowered case",
+        "pass": true,
+        "source": "SLLSEP4K; Pins.md:151-155"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C ambient",
+        "datasheet": "-55 to 125 C (section 5.3)",
+        "pass": true,
+        "source": "SLLSEP4K"
+       }
+      ],
+      "jlcpcb": "stockCount 125, canPresaleNumber 99, componentLibraryType expand, 2.6125 at the 1 break (no currency in the API); read 2026-10-02T07:11:43Z, vendors.py jlcpcb C2872241 (exact match), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "digikey": "stock_available 0, lead time 20 weeks, ProductStatus Active, not discontinued, not end of life; read 2026-10-02T07:02:46Z, cached: true (same UTC day), vendors.py digikey ISO7741FDBQR, https://api.digikey.com/products/v4/search/ISO7741FDBQR/productdetails",
+      "gate": "need 5 boards x 1 = 5; S4 threshold 50. JLCPCB 125 >= 50 and presale 99 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/ISO7741 meta status, HTTP 200, read 2026-10-02T07:14:50Z; orderable table lists ISO7741FDBQR Active, Production: pass. Longevity not read. First data sheet March 2016. PCNs not read. Distributor: Digi-Key Active, JLCPCB in stock, no disagreement",
+      "second_source": "alternate ISO7741FQDBQRQ1: Digi-Key stock_available 0 (2026-10-02T07:02:46Z, cached) fails the second-vendor route. ISO7741FQDBQRQ1 has the same DBQ-16 drawing, die and pin functions, default low, and passes rules 1 to 4 (JLCPCB 4469 / 4454 at 2026-10-02T07:11:44Z; TI page ACTIVE 07:14:51Z)",
+      "alternates": [
+       "ISO7741FQDBQRQ1"
+      ],
+      "driver_in_shared": "none; transparent isolator",
+      "reason": "F-suffix, DBQ-16: default low, a second land pattern, JLCPCB 125 (2.5 times the gate) and a rule 5 on the alternate. Last of the TI rows",
+      "second_source_route": "alternate",
+      "second_source_part": "ISO7741FQDBQRQ1"
+     },
+     {
+      "rank": 14,
+      "part": "ADUM241E1BRWZ-RL",
+      "maker": "Analog Devices",
+      "lcsc": "C660677",
+      "package": "SOIC_W 16-lead, RW-16, reel of 1000; JLCPCB SOIC-16-300mil; pins as ADuM2401 (VE1 7, VE2 10, VOD 6, VID 11)",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1 (one isolator for the 4 lines of Pins.md:105-112); the gate applies at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "barrier type",
+        "required": "digital isolator",
+        "datasheet": "quad-channel digital isolator, iCoupler air-core transformer barrier; 3 inputs on side 1 and 1 on side 2 (ADuM241)",
+        "pass": true,
+        "source": "ADuM240D/E to ADuM242D/E Rev. E (1/2025), https://www.analog.com/media/en/technical-documentation/data-sheets/ADuM240D_240E_241D_241E_242D_242E.pdf, vendors.py fetch safari, HTTP 200, 795,458 bytes, SHA-256 b61e33783979b3b1..., read 2026-10-02T07:11:19Z"
+       },
+       {
+        "name": "working voltage",
+        "required": "85 V DC working or more",
+        "datasheet": "VIORM 849 V peak and VIOWM 600 V rms (insulation table); Table 17 maximum continuous working voltage 849 V peak, bipolar AC waveform. Rev. E gives no DC working row, so 85 V DC is covered by the continuous 849 V peak rating, not by a stated DC figure",
+        "pass": true,
+        "source": "ADuM241E Rev. E"
+       },
+       {
+        "name": "channels",
+        "required": "3 forward, 1 reverse",
+        "datasheet": "VIA to VIC forward, VID to VOD reverse; pins as ADuM2401: 1 VDD1, 2 and 8 GND1, 3-5 VIA-VIC, 6 VOD, 7 VE1, 9 and 15 GND2, 10 VE2, 11 VID, 12-14 VOC-VOA, 16 VDD2 (pin function table): ISO7741's pin functions",
+        "pass": true,
+        "source": "ADuM241E Rev. E"
+       },
+       {
+        "name": "host-side supply",
+        "required": "3.3 V",
+        "datasheet": "VDD1 1.8 to 5 V; VIH 0.7 x VDD1 = 2.31 V at 3.3 V (Table 3); IDD1 up to 17.0 mA with inputs low (Table 1), counted on the 3.3 V rail",
+        "pass": true,
+        "source": "ADuM241E Rev. E"
+       },
+       {
+        "name": "pack-side supply",
+        "required": "5 V rail, 4.5 to 5.5 V",
+        "datasheet": "VDD2 1.8 to 5 V, independent of VDD1",
+        "pass": true,
+        "source": "ADuM241E Rev. E"
+       },
+       {
+        "name": "pack-side current",
+        "required": "found at 5 V, checked against the 5 V rail",
+        "datasheet": "IDD2 at 5 V: 4.0 typ / 6.85 mA max at 1 Mbps, 5.5 / 8.5 mA max at 25 Mbps (Table 2); 5 V rail: ADBMS1818 24.6 mA (16.5 + 8.1) + 8.5 = 33.1 mA at most awake",
+        "pass": true,
+        "source": "ADuM241E Rev. E; ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "powered in monitor sleep",
+        "required": "outputs powered in sleep; able to wake the monitor",
+        "datasheet": "CMOS outputs at VDD2, VOH at least VDD - 0.1 V at -20 uA (Table 1); powered from the always-on rail",
+        "pass": true,
+        "source": "ADuM241E Rev. E; ADBMS1818 Rev. B p. 56, Table 7"
+       },
+       {
+        "name": "SPI timing at 1 MHz",
+        "required": "2 Mbps; round trip inside 500 ns",
+        "datasheet": "tPHL, tPLH 13 ns max at 5 V: 13 + 60 + 13 = 86 ns. SDO rise and RP2354B setup are not read",
+        "pass": true,
+        "source": "ADuM241E Rev. E; ADBMS1818 Rev. B Table 10"
+       },
+       {
+        "name": "pack-side logic",
+        "required": "drives CSB, SCK, SDI; reads open-drain SDO",
+        "datasheet": "VOH at least VDD - 0.1 V at -20 uA, VOL at most 0.1 V at 20 uA (Table 1); IND threshold 0.7 x 5 V = 3.5 V, reached by the SDO pull-up to the 5 V rail",
+        "pass": true,
+        "source": "ADuM241E Rev. E"
+       },
+       {
+        "name": "chip select idle high",
+        "required": "CS stays deasserted while the coprocessor resets (Pins.md:151-155)",
+        "datasheet": "E1 models: output high when the input side is unpowered and the output side powered (truth table). With the host side powered and CS held high by the pull-up the output is high",
+        "pass": true,
+        "source": "ADuM241E Rev. E; Pins.md:151-155"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C ambient",
+        "datasheet": "-40 to +125 C (ordering guide)",
+        "pass": true,
+        "source": "ADuM241E Rev. E"
+       }
+      ],
+      "jlcpcb": "stockCount 121, canPresaleNumber 120, componentLibraryType expand, 2.3524 at the 1 break (no currency in the API); read 2026-10-02T07:11:38Z, vendors.py jlcpcb C660677 (exact match), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "digikey": "stock_available 0, lead time 52 weeks, ProductStatus Active, not discontinued, not end of life; read 2026-10-02T06:59:04Z, cached: true (same UTC day), vendors.py digikey ADUM241E1BRWZ-RL, https://api.digikey.com/products/v4/search/ADUM241E1BRWZ-RL/productdetails",
+      "gate": "need 5 boards x 1 = 5; S4 threshold 50. JLCPCB 121 >= 50 and presale 120 >= 0: pass (rule 4)",
+      "lifecycle": "Digi-Key ProductStatus Active (2026-10-02T06:59:04Z, cached), the status that counts for Analog Devices: pass. Maker page and PCN listing not read. First data sheet date not read; Rev. E is 1/2025. Distributor: JLCPCB in stock; no disagreement",
+      "second_source": "alternate ISO7741DWR: Digi-Key stock_available 0 (2026-10-02T06:59:04Z, cached) fails the second-vendor route. ISO7741DWR has the SOIC-16 wide outline and the same pin functions, both default high, and passes rules 1 to 4 (JLCPCB 5112 / 4926 at 2026-10-02T07:11:54Z)",
+      "alternates": [
+       "ISO7741DWR",
+       "ADUM141E1WBRWZ-RL"
+      ],
+      "driver_in_shared": "none; transparent isolator",
+      "reason": "5.0 kV rms variant of the ADuM141E1 row; Digi-Key stock 0, so its rule 5 rests on the alternate. JLCPCB 121 (2.4 times the gate). Last, for the data sheet stating no DC working row and the alternate route",
+      "second_source_route": "alternate",
+      "second_source_part": "ISO7741DWR"
+     },
+     {
+      "rank": 99,
+      "part": "ISO7141CCDBQR",
+      "maker": "Texas Instruments",
+      "lcsc": "C544481",
+      "package": "SSOP-16 150 mil (DBQ), ISO7741 DBQ pin functions; JLCPCB SSOP-16-150mil",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification; range 1 to 1 (one isolator for the 4 lines of Pins.md:105-112); the gate applies at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "barrier type",
+        "required": "digital isolator",
+        "datasheet": "quad-channel digital isolator, capacitive barrier, 3 forward and 1 reverse (ISO7141)",
+        "pass": true,
+        "source": "ISO71xxCC SLLSE83F (April 2013, revised January 2015), https://www.ti.com/lit/ds/symlink/iso7141cc.pdf, vendors.py fetch chrome, HTTP 200, 1,021,860 bytes, SHA-256 7542176b542f2b1e..., read 2026-10-02T07:11:13Z"
+       },
+       {
+        "name": "working voltage",
+        "required": "85 V DC working or more",
+        "datasheet": "VIORM 566 VPK, maximum working voltage per VDE V 0884-10 (insulation table); no DC row is given, so 85 V DC is covered by the peak rating",
+        "pass": true,
+        "source": "SLLSE83F"
+       },
+       {
+        "name": "channels",
+        "required": "3 forward, 1 reverse",
+        "datasheet": "ISO7141: 3 forward, 1 reverse; the DBQ-16 pin functions match ISO7741 (OUTD 6, EN1 7, EN2 10, IND 11)",
+        "pass": true,
+        "source": "SLLSE83F"
+       },
+       {
+        "name": "host-side supply",
+        "required": "3.3 V",
+        "datasheet": "VCC1 2.7 to 5.5 V; VIH 2 V minimum, 5.5 V tolerant (section 6.3)",
+        "pass": true,
+        "source": "SLLSE83F"
+       },
+       {
+        "name": "pack-side supply",
+        "required": "5 V rail, 4.5 to 5.5 V",
+        "datasheet": "VCC2 2.7 to 5.5 V (section 6.3)",
+        "pass": true,
+        "source": "SLLSE83F"
+       },
+       {
+        "name": "pack-side current",
+        "required": "found at 5 V, checked against the 5 V rail",
+        "datasheet": "ICC2 at 5 V +/- 10 %: DC 4.2 typ / 7 mA max, 10 Mbps 6.2 / 9.6 mA max, 25 Mbps 9.2 / 13 mA (section 6.12; 9.6 mA bounds 2 Mbps). 5 V rail: ADBMS1818 24.6 mA (16.5 + 8.1) + 9.6 = 34.2 mA at most awake",
+        "pass": true,
+        "source": "SLLSE83F; ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "powered in monitor sleep",
+        "required": "outputs powered in sleep; able to wake the monitor",
+        "datasheet": "CMOS outputs at VCC2, VOH at least VCCO - 0.5 V at -4 mA (section 6.6); powered from the always-on rail",
+        "pass": true,
+        "source": "SLLSE83F; ADBMS1818 Rev. B p. 56, Table 7"
+       },
+       {
+        "name": "SPI timing at 1 MHz",
+        "required": "2 Mbps; round trip inside 500 ns",
+        "datasheet": "tPLH, tPHL 15 / 23 / 45 ns at 3.3 V and 12 / 19 / 35 ns at 5 V (section 6.9, 6.10): 45 + 60 + 45 = 150 ns. SDO rise and RP2354B setup are not read",
+        "pass": true,
+        "source": "SLLSE83F; ADBMS1818 Rev. B Table 10"
+       },
+       {
+        "name": "pack-side logic",
+        "required": "drives CSB, SCK, SDI; reads open-drain SDO",
+        "datasheet": "VOH at least VCCO - 0.5 V at -4 mA, VOL at most 0.4 V at 4 mA (section 6.6); input hysteresis 450 mV; IND reached by the SDO pull-up to the 5 V rail",
+        "pass": true,
+        "source": "SLLSE83F"
+       },
+       {
+        "name": "chip select idle high",
+        "required": "CS stays deasserted while the coprocessor resets (Pins.md:151-155)",
+        "datasheet": "default output high without the F suffix (features, section 3). With the host side powered and CS held high by the pull-up the output is high",
+        "pass": true,
+        "source": "SLLSE83F; Pins.md:151-155"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C ambient",
+        "datasheet": "-40 to 125 C (section 6.3)",
+        "pass": true,
+        "source": "SLLSE83F"
+       }
+      ],
+      "jlcpcb": "stockCount 594, canPresaleNumber 586, componentLibraryType expand, 5.6476 at the 1 break (no currency in the API); read 2026-10-02T07:11:48Z, vendors.py jlcpcb C544481 (exact match), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "digikey": "stock_available 0, lead time 20 weeks, ProductStatus Active, not discontinued, not end of life; read 2026-10-02T00:46:48Z, cached: true (same UTC day), vendors.py digikey ISO7141CCDBQR, https://api.digikey.com/products/v4/search/ISO7141CCDBQR/productdetails",
+      "gate": "need 5 boards x 1 = 5; S4 threshold 50. JLCPCB 594 >= 50 and presale 586 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/ISO7141CC meta status, HTTP 200, read 2026-10-02T07:14:52Z; orderable table lists ISO7141CCDBQR Active, Production: pass. Longevity not read. First data sheet April 2013. PCNs not read. Distributor: Digi-Key Active, JLCPCB in stock, no disagreement",
+      "second_source": "alternate ISO7741DBQR: Digi-Key stock_available 0 (2026-10-02T00:46:48Z, cached); the pair stands on each other, ISO7741DBQR at JLCPCB 38042 / 37915. This record is the alternate's record of ISO7741DBQR, not ranked",
+      "alternates": [
+       "ISO7741DBQR"
+      ],
+      "driver_in_shared": "none; transparent isolator",
+      "reason": "Alternate record for ISO7741DBQR, not ranked: older-generation 50 Mbps part on the DBQ-16 drawing, default high without the F suffix, 566 VPK, 9.6 mA at most on the 5 V rail",
+      "second_source_route": "alternate",
+      "second_source_part": "ISO7741DBQR"
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "ADUM5411BRSZ-RL7 (C2830727)",
+      "maker": "Analog Devices",
+      "reason": "Cannot serve as the pack-side 5 V source of ADBMS1818 VREG, which is the only role its converter has here. The data sheet (https://www.analog.com/media/en/technical-documentation/data-sheets/ADuM5410-5411-5412.pdf, Rev. B, vendors.py fetch safari, HTTP 200, 922,072 bytes, SHA-256 5762eced..., read 2026-10-02T07:11:19Z) gives VISO setpoint 4.7 V min and load regulation 5 % max over 3 to 27 mA (Table 3), so 4.465 V at the bound, under the 4.5 V minimum of VREG (ADBMS1818 Rev. B Table 3). IISO(MAX) is 30 mA, against 24.6 mA for the ADBMS1818 plus IDD2 up to 8.5 mA (Table 4). It gives no V+ output. P2's \"cannot be qualified\" rested on a wrong file name (underscores; the 404 of 2026-10-02T06:36:45Z): the sheet loads, and the drop stands on these values. JLCPCB 517 / 505 at 17.123 (2026-10-02T07:11:49Z); Digi-Key 1674, Active, 52 weeks (07:12:15Z, vendors.py digikey ADUM5411BRSZ-RL7)"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "ISO7741DWR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "cell monitor pack-side supply",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "LTM8068EY#PBF",
+      "reason": "Stays first; no P3 candidate qualifies above it. JLCPCB 135 / 135, 25.4643 at 1 (2026-10-02T07:12:02Z, C581210), 2.7 times the gate; Digi-Key 481, Active, 47 weeks (06:31:40Z). One module gives VOUT2 for the 5 V rail and VOUT1 for V+ with 250 V working isolation. Needs a preload of about 10 mA while the monitor sleeps and the V+ OR element",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "ISOW7741BDFMR",
+      "reason": "Route 2 with TPS61040DBVR as the V+ boost (JLCPCB 47555 / 41034, 0.7479 at 1, 2026-10-02T07:12:03Z, C7722; Digi-Key 7162, 06:31:54Z). JLCPCB ISOW7741BDFMR 101 / 96 at 7.969 (07:11:57Z); Digi-Key 1548 (06:31:51Z). Cheaper than rank 1 but its boost inductor and diode are not selected, it takes only the 5 V rail, and the B variant's release date is not read",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "DCP010505BP-U/700 (C962989), DCP020505U/1K, DCP020503U, DCR011205U/1K",
+      "maker": "Texas Instruments",
+      "reason": "Fail the isolation value of 85 V DC working. Each data sheet states \"Continuous voltage applied across isolation barrier: 60 VDC\" (DCP01 https://www.ti.com/lit/ds/symlink/dcp010505b.pdf, DCP02 https://www.ti.com/lit/ds/symlink/dcp020505.pdf, which lists DCP020503 and DCP020505, DCR01 https://www.ti.com/lit/ds/symlink/dcr010505.pdf, which lists DCR011205; vendors.py fetch chrome, HTTP 200, 1,976,012 / 2,307,546 / 1,386,064 bytes, read 2026-10-02T07:11:20Z). They give 5 V or 3.3 V only, with no V+"
+     },
+     {
+      "part": "SN6505BDBVR (C74518), SN6501DBVR (C49451), LT8301 rows, LM25180 rows",
+      "maker": "Texas Instruments; Analog Devices",
+      "reason": "Cannot be qualified on the isolation value. These are transformer drivers and flyback controllers: the data sheets state no isolation or working voltage (SN6505B, SN6501, LM25180 vendors.py fetch chrome and LT8301 fetch safari, HTTP 200, read 2026-10-02T07:17:41Z to 07:17:42Z), which is the transformer's, and no function and no stage 1 category selects a transformer. None gives V+ of 16 V or more without a second winding or a boost. This is not the position of rank 2: there the isolation rating is a stated value of ISOW7741B (1000 VRMS working, 1500 VPK), and the parts left unselected are the inductor and diode of a non-isolating boost, which stage 1 researches. P3 is right that the reason is a scope condition, not a datasheet value that fails"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "LTM8068EY#PBF",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "balance-lead input network",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "balance-lead connector protection (mis-plugged lead)",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "balance-lead connector",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "unused-input tie",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "reads in this task",
+    "value": "JLCPCB: 28 exact-match readings of C numbers, 2026-10-02T07:11:30Z to 07:15:33Z, each with other_results 0. Digi-Key: 23 part numbers, each answered from the day's cache except ADUM5411BRSZ-RL7 (07:12:15Z) and BQ76PL455APFCT (07:12:18Z), which were live; 887 calls left at 07:12:12Z before those two. Data sheets: 15 fetched 2026-10-02T07:11:13Z to 07:17:42Z, HTTP 200",
+    "source": "vendors.py jlcpcb, vendors.py digikey, vendors.py digikey-quota (2026-10-02T07:12:12Z, remaining 887), vendors.py fetch"
+   },
+   {
+    "figure": "F-suffix isolators",
+    "value": "Four rows qualify on every value the page states: ISO7741FDWR, ISO6741FDWR, ISO7741FDBQR, ISO7741FQDBQRQ1. Pins.md:151-155 holds a chip select high during a coprocessor reset by an external pull-up of about 10 kOhm, and an F part outputs high while the host side is powered. Default low acts only on input power loss, a case no line of Pins.md, IOBoard.md or Research.md at fe53d3a8bc9a states. The re-rank ranks them below their default-high twins. If the owner states that the host side may be unpowered while the pack side runs, the F rows fail and ranks 6, 7, 11 and 13 drop out",
+    "source": "Pins.md:151-155 at fe53d3a8bc9a; ISO774x SLLSEP4K section 3, read 2026-10-02T07:11:13Z; ISO674x SLLSFJ6G section 1"
+   },
+   {
+    "figure": "working-voltage rows of the non-TI rows",
+    "value": "ISO7241C states VIORM 560 VPK only. ADuM141E1 (Rev. K) and ADuM241E1 (Rev. E) state VIORM 565 and 849 V peak, VIOWM 400 and 600 V rms and a continuous bipolar AC rating of 565 and 849 V peak; Rev. K lists \"Deleted Table 17 and Table 18\" in its revision history and states no DC row. The re-rank passes 85 V DC on those peak ratings, which the data sheets state but not as a DC working figure, and ranks the four rows 5, 9, 12 and 14, low; ISO7141CCDBQR, kept as the alternate record of ISO7741DBQR, states 566 VPK only. The TI ISO774x and ISO674x rows state VIOWM in VDC (2121, 1414 and 566)",
+    "source": "ISO724x SLLS868W section 5.6; ADuM140D/E to 142D/E Rev. K Tables 16 and 19 and revision history; ADuM240D/E to 242D/E Rev. E Table 17, read 2026-10-02T07:11:13Z to 07:11:19Z"
+   },
+   {
+    "figure": "5 V rail load per barrier",
+    "value": "ADBMS1818 24.6 mA (16.5 mA measure + 8.1 mA isoSPI circuit, as P2 read) plus the barrier at most: ISO7741 family 6.4 mA, 31.0 mA; ISO6741 6.5 mA, 31.1 mA; ADuM141E1 10.0 mA quiescent, 34.6 mA; ISO7141CC 9.6 mA, 34.2 mA; ISO7241C 28 mA, 52.6 mA. Rank 1 of the pack-side supply carries 1.4 mA on VOUT1 for V+ besides: 54.0 mA for ISO7241C against a typical maximum of about 80 mA at VOUT1 18 V (LTM8068 p. 5, P2). ISOW7741BDFMR draws its own converter's IISOIN, not this rail",
+    "source": "ISO7741 SLLSEP4K 5.10; ISO6741 SLLSFJ6G 7.10; ADuM141 Rev. K Tables 1 and 2; ISO71xxCC SLLSE83F 6.12; ISO724x SLLS868W 5.14; ADBMS1818 Rev. B Table 3 (P2, 2026-10-02T06:21:10Z)"
+   },
+   {
+    "figure": "host-side current of the ADuM141E1 rows",
+    "value": "IDD1 up to 17.0 mA with inputs low and 10.3 mA at 1 Mbps, on the 3.3 V rail. ISO7741 ICC1 is at most 6.8 mA (P2). P5 counts the host side of whichever row is selected",
+    "source": "ADuM140D/E to 142D/E Rev. K Tables 1 and 2, read 2026-10-02T07:11:18Z"
+   },
+   {
+    "figure": "ISO7741DBQR price and stock",
+    "value": "JLCPCB 38042 / 37915 at 0.9478 against rank 1's 5112 / 4926 at 1.4745: P2's ground for leaving it out (less stock, higher price) does not hold. Digi-Key stock 0 (cached 2026-10-02T01:04:17Z). It ranks 10 on a second land pattern (DBQ-16) and a rule 5 that rests on ISO7141CCDBQR",
+    "source": "vendors.py jlcpcb C913840, 2026-10-02T07:11:46Z; vendors.py digikey ISO7741DBQR"
+   },
+   {
+    "figure": "ISO7741 DBQ-16 and DW-16 pin functions",
+    "value": "Figure 4-2 of SLLSEP4K draws the ISO7741 DW and DBQ packages with the same pin functions. DBQ-16 VIOWM 566 VDC and VIORM 566 VPK; DW-16 2121 VDC; ISO7741B DW-16 only, 1414 VDC. ISO7741QDBQRQ1 (C5216482) has JLCPCB stock 10 (2026-10-02T07:15:32Z) and fails rule 4, so it is no alternate for ISO7741DBQR",
+    "source": "SLLSEP4K sections 4 and 5.6, read 2026-10-02T07:11:13Z; vendors.py jlcpcb C5216482"
+   },
+   {
+    "figure": "ISO7741B first data sheet date",
+    "value": "not read. The data sheet in hand lists revisions from H (March 2023) on; the ISO7741B variant's own first date is not in them, so the under-12-months flag is not determined for ISO7741BDWR. The family's first data sheet is March 2016",
+    "source": "SLLSEP4K section 10, read 2026-10-02T07:11:13Z"
+   },
+   {
+    "figure": "pack-side supply routes",
+    "value": "No P3 row qualifies. DCP01, DCP02 and DCR01 modules state 60 VDC across the barrier. SN6505B, SN6501, LT8301 and LM25180 state no isolation voltage. ADuM5411 fails VISO 4.5 V at the bound. The two P2 routes stay: LTM8068EY#PBF (rank 1) and ISOW7741BDFMR with TPS61040DBVR (rank 2)",
+    "source": "datasheets read 2026-10-02T07:11:19Z to 07:17:42Z"
+   },
+   {
+    "figure": "selection.json against the re-rank",
+    "value": "selection.json holds ADBMS1818ASWAZ-RL for the Cell monitor and ISO7741DWR for the barrier; both stay rank 1. It holds no part for the pack-side supply yet; rank 1 there is LTM8068EY#PBF",
+    "source": "round2/selection.json, R9, read 2026-10-02"
+   },
+   {
+    "figure": "Q4 and Q8",
+    "value": "not applicable to R9; decision none on every function",
+    "source": "categories.json q_options not used in R9"
+   }
+  ]
+ }
+}

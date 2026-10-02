@@ -1,0 +1,18 @@
+{
+ "role": "P3",
+ "category": "R1",
+ "label": "P3-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "missed": [],
+  "exclusions_not_holding": [
+   {
+    "part": "TPD8S009DSMR (C471873)",
+    "reason_given": "'VBUS stand-off' and 'CC function' not shown together: recommended VIO 0 to VCC, VCC absolute maximum 6 V (SLVS816B sections 5.1 and 5.3); VBUS at 5.5 V on an IO pin needs VCC at 5.5 V or more, and with VCC on VBUS the CC lines sit above VCC while VBUS is at vSafe0V before attach.",
+    "why_it_fails": "The reason tests one wiring only, VCC on VBUS. The datasheet (SLVS816B, https://www.ti.com/lit/ds/symlink/tpd8s009.pdf, read 2026-10-02T06:45:37Z) also gives: Table 5.5 VRWM 5.5 V, 'any IO pin to ground', with no VCC condition; VBR 9 V min at 1 mA; the VCC pin is 'optional', sits behind a blocking diode, and 'the TPD8S009 can handle live signal at the signal pins when the VCC pin is connected to 0V' (sections 6.1 and 6.3.6, the Ioff feature, for live HDMI lines while the system is off). Only a lower clamp diode to ground is listed in the table. With VCC left open or at 0 V the blocking diode keeps the steering path from loading CC at 0.277 to 2.042 V, so the CC-function objection does not apply to that wiring. P2 and FU-2A accepted the same open-VCC wiring for TPD6E004RSER and TPD6E001RSFR on application text; here the VRWM row stands in a table. Values read: 8 channels (4 pairs) cover the 5 lines with 3 spare; IEC 61000-4-2 +/-8 kV contact (V9 outright), +/-9 kV air (V9's 15 kV missed: the owner's relaxation of 2026-09-30 lets the datasheet figure stand); VRWM 5.5 V meets V10 and V12's 3.63 V; CIO 0.8 pF typ at VCC 5 V, VIO 2.5 V (V11 at most 75 pF; typical only); 'excellent matching between differential signal pairs' with no matching figure (10 %); no 16 A TLP clamp figure (RDYN 1.1 ohm typ at 1 A; V12 relaxation); -40 to +85 C ambient rating covers 0 to 50 C; SON-15 2.5 x 6.5 mm. Open point for the re-rank and P4 to rule on: the absolute-maximum row 'VIO 0 to VCC' read literally forbids an IO voltage above an open or grounded VCC, against the VRWM row and the Ioff text; P2's reason follows the first reading and the datasheet does not settle it. Sourcing: JLCPCB C471873 stockCount 970, canPresaleNumber 967, expand, USD 1.0583 at 10 (vendors.py jlcpcb, read 2026-10-02T06:48:28Z), passes rule 4; Digi-Key TPD8S009DSMR stock_available 5311, ProductStatus Active, lead 12 weeks, maker Texas Instruments (vendors.py digikey, read 2026-10-02T06:46:19Z), passes rule 5. On ground 2 it ranks below TPD6E05U06RVZR (V9 air and the V10 swing rest on the relaxation and on application text), so it is a candidate for rank 2 or 3, not for rank 1."
+   }
+  ],
+  "missed_functions": []
+ }
+}
