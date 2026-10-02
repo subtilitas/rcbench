@@ -386,28 +386,18 @@ part.
   pieces between semicolons, commas followed by a space, slashes between
   spaces and ` and `, without parenthesized text, case and spaces; a function
   name is none. `2N7002BK,215` and `MCP2542FD-E/SN` are one part number each.
-  A find named only by a family, as `MLX90393 rows`, matches a part whose
-  number starts with its stem, when the re-rank brings that part from outside
-  P2's shortlist for the function; a family part P2 already kept handles no
-  find, and a find that also names a part by number is handled by that part. A
-  stem is a whitespace-separated word outside parentheses, of 6 or more
-  letters, digits and hyphens with a letter and a digit, followed by `rows`,
-  `family`, `series`, `variants`, `parts` or `devices`, starting with a letter
-  or digit. A word with `/`, `,` or `.` in it (`AP2112K-3.3TRG1`,
-  `MCP2542FD-E/SN`) and a word no family word follows are no stem; a part
-  number of letters, digits and hyphens followed by a family word is one. A
-  stem also matches a number that continues its digits: `TMP107 family`
-  matches TMP1075DGKR, a different part, and that is a current limitation. An
-  overturned exclusion's owner is a function whose P2 drop matches it either
-  way: a matching piece of a drop record that names several parts (split as
-  part numbers are, outside balanced parentheses), or a record that matches
-  only by its own `lcsc` field. The owner handles it as a missed find is
-  handled: its re-rank qualifies, ranks or drops the part P3 named, by part or
-  LCSC number, or, for an exclusion named only by a family, a part of that
-  family from outside P2's shortlist; another member of the drop record does
-  not count. An exclusion with no owner is handled only by a re-rank that
-  names P3's part. The drop of a find matched either way is re-read as the
-  drop of any P3 find;
+  A find that names only a family, as `MLX90393 rows`, is also handled by a
+  part of that family the re-rank qualified (`new_candidates`) or dropped as a
+  P3 candidate (`dropped_from_p3`), not by a part P2 shortlisted. Its stem is a
+  word outside parentheses of 6 or more letters, digits and hyphens with a
+  letter and a digit, starting with a letter or digit, followed by `rows`,
+  `family`, `series`, `variants`, `parts` or `devices`; a part belongs to the
+  family when its number starts with the stem. A find with an LCSC number or
+  another word of 4 or more characters with a letter and a digit names a part
+  and is handled only by that part. A stem also matches a number that
+  continues its digits (`TMP107 family` and TMP1075DGKR, a different part): a
+  current limitation. The drop of such a find is re-read as the drop of any P3
+  find;
 - it has no requirement, or names one requirement twice;
 - it serves a fixed input of the Scope table (`categories.json`
   `fixed_inputs`: the function by the table's input name, the input by a
