@@ -437,9 +437,10 @@ and `market introduction`, which the lifecycle table records without a gate
 passing nor failing, and listed for the owner as an unread manufacturer
 status is. A stock verifier's `lifecycle status` written `not read: REASON`
 (a part neither its maker's page nor Digi-Key lists under its maker, or a
-Digi-Key value outside the four the Lifecycle check grades) neither passes nor
-fails either, but shows no check, so the part stays not verified; it is listed
-for the owner. A datasheet requirement of the same name is a requirement. A
+Digi-Key value the Lifecycle check does not grade), with passes true, neither
+passes nor fails either, whatever agrees says, but shows no check, so the part
+stays not verified; with passes false it fails as any check. Either way it is
+listed for the owner. A datasheet requirement of the same name is a requirement. A
 placeholder reason (`none`, `N/A`, `-`, `unknown`) is none, and a refuted
 verdict that states no refutation and whose only failing checks are such
 readings is a confirmation; one that states a refutation is ruled on. A reading time is an ISO
