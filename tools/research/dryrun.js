@@ -111,7 +111,7 @@ async function runTask(task, opts = {}) {
       if (opts.strictReq) data.functions[0].shortlist[0].requirements = [{ name: 'x0', required: '>= 99 V', datasheet: '70 V', pass: false, source: 's' }, { name: 'x1', required: 'x1', datasheet: 'd', pass: true, source: 's' }]
       if (opts.reportParts) data.report = opts.reportParts.map(figure => ({ figure, value: 'not applicable: transceiver', source: 's' }))
       if (opts.twoDeciders) data.functions.push({ ...data.functions[0], function: 'fX' })
-      if (opts.p2DropY) data.functions[0].dropped = [{ part: 'partY', maker: 'm', reason: 'r' }]
+      if (opts.p2DropY) data.functions[0].dropped = [{ part: opts.p2DropPart || 'partY', maker: 'm', reason: 'r' }]
       if (opts.foundNotRead) data.found_values = [{ question_id: 'V9', value: 'not read: HTTP 403', source: 's', read_at: 't' }]
       if (opts.foundValue) data.found_values = [{ question_id: 'V9', value: opts.foundValue, source: 's', read_at: '2026-09-28T10:00:00Z' }]
       if (opts.reports) data.report = opts.reports.map(([figure, value]) => ({ figure, value, source: 's', read_at: '2026-09-28T10:00:00Z' }))
@@ -155,7 +155,7 @@ async function runTask(task, opts = {}) {
       data.functions = [{ function: 'f1', decision: opts.qDecision || ({ R10: 'Q4', R12: 'Q8' }[rcat] || 'none'), kept_option: opts.keptOption || '', ranking: (opts.ranking || (opts.ranked || [1, 2, 3]).map(rank => ({ rank, part: `part${rank}`, reason: 'r', option: (opts.rankOptions || {})[`part${rank}`] || '' }))),
         new_candidates: opts.p3dropped ? [{ ...cand(7), part: 'partN' }] : [], dropped_from_p3: opts.p3dropped ? [{ part: 'partN', maker: 'm', reason: 'r' }] : [],
         dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : (opts.dropShort || []).map(part => ({ part, maker: 'm', reason: 'r' })), verify: opts.qDup ? [{ part: 'part3', kind: 'q-alternative', option: 'reference' }, { part: 'part3', kind: 'q-alternative', option: 'external ADC' }] : opts.twoQShare ? [{ part: 'part2', kind: 'q-alternative' }, { part: 'part3', kind: 'q-alternative' }] : opts.qAlt || opts.sharedAlt ? [{ part: 'part3', kind: 'q-alternative', option: opts.qOption || '' }] : (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
-      if (opts.extraFn) data.functions.push({ ...data.functions[0], function: 'fX', ...(opts.rrHandleYin || opts.rrHandleXin ? { dropped_from_shortlist: [{ part: opts.rrHandleXin ? 'partX' : 'partY', maker: 'm', reason: 'r' }] } : {}) })
+      if (opts.extraFn) data.functions.push({ ...data.functions[0], function: 'fX', ...(opts.rrHandleYin || opts.rrHandleXin ? { dropped_from_shortlist: [{ part: opts.rrHandleXin ? 'partX' : (opts.rrHandleYPart || 'partY'), maker: 'm', reason: 'r' }] } : {}) })
       if (opts.p3dropShort) data.functions[0].dropped_from_shortlist = [{ part: opts.dropShortPart || 'partX', maker: 'm', reason: 'fails vmax', ...(opts.dropShortLcsc ? { lcsc: opts.dropShortLcsc } : {}) }]
       if (opts.rrDup) data.functions.push({ ...data.functions[0], ranking: [], dropped_from_shortlist: [{ part: 'part1', maker: 'm', reason: 'fails vmax at 85 C' }] })
       if (opts.noRerankFn) data.functions = []
@@ -204,7 +204,7 @@ async function runTask(task, opts = {}) {
     }
     if (role === 'P3') Object.assign(data, { missed: [], exclusions_not_holding: [], missed_functions: opts.missedFn ? [{ function: 'f2', why: 'the row names it' }] : [] })
     if (role === 'P3' && opts.p3missed) data.missed = [{ function: opts.p3missedFn || 'f1', part: opts.p3missedPart || 'partX', maker: 'm', why: 'w' }]
-    if (role === 'P3' && opts.p3overturned) data.exclusions_not_holding = [{ part: 'partY', reason_given: 'r', why_it_fails: 'w' }]
+    if (role === 'P3' && opts.p3overturned) data.exclusions_not_holding = [{ part: opts.p3overPart || 'partY', reason_given: 'r', why_it_fails: 'w' }]
     if (role === 'P7-critic' || role === 'P7') {
       for (const k of Object.keys(data.checks)) data.checks[k] = { passed: !(opts.failCheck === k && role === 'P7-critic'), output: opts.failCheck === k && opts.failOutput ? opts.failOutput : k === 'jlc_stock' && opts.passOutput ? opts.passOutput : 'o' }
       const pagesOut = opts.p7Pages || opts.groupPages
@@ -972,6 +972,8 @@ async function main() {
   // An overturned exclusion is handled by the function that dropped it.
   r = await runTask('T2', { p3overturned: true, p2DropY: true, extraFn: true, rrHandleYin: 'fX' })
   check(r1(r).selection.find(e => e.function === 'f1').part === null, 'overturned exclusion handled by another function: owner stays open')
+  r = await runTask('T2', { p3overturned: true, p3overPart: 'ABC1234 rows', p2DropY: true, p2DropPart: 'ABC1234XYZ', twoDeciders: true, extraFn: true, rrHandleYin: 'fX', rrHandleYPart: 'ABC1234QQ' })
+  check(r1(r).selection.find(e => e.function === 'f1').part === null, 'family exclusion over a drop under f1, a family part handled under another function: owner stays open')
   // A P3 find the re-rank did not handle keeps its function open.
   r = await runTask('T2', { p3missed: true })
   check(r1(r).selection[0].part === null, 'unhandled P3 find: function open')
@@ -1009,6 +1011,11 @@ async function main() {
     ['AP2112K-3.3TRG1 (C51118)', 'AP2112K-3.0TRG1', null, 'part number, its sibling variant dropped: unhandled'],
     ['MCP2542FD-E/SN', 'MCP2542FD-E/MF', null, 'part number with a slash, its package variant dropped: unhandled'],
     ['ADBMS6832MWCCSZ (C18166020); ADBMS6833 is the 16-channel sibling', 'ADBMS6833', null, 'a context word of the find dropped: unhandled'],
+    ['note (see ABC1234 rows)', 'ABC1234XYZ', null, 'family named only inside parentheses: unhandled'],
+    ['ABCDEFG parts', 'ABCDEFGH', null, 'stem without a digit: unhandled'],
+    ['1234567 parts', '12345678', null, 'stem without a letter: unhandled'],
+    ['AP2112K-3.3TRG1 variants', 'AP2112K-3.3TRG1-7', null, 'part number with a dot, a family word after it: unhandled'],
+    ['ABC1234 rows, and more', 'ABC1234XYZ', 'part1', 'family word with punctuation after it: handled'],
   ]) {
     r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: find, dropShortPart: dropped })
     check(r1(r).selection[0].part === want, `P3 ${what}`)

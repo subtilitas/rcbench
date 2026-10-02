@@ -391,8 +391,10 @@ part.
   or more letters, digits and hyphens with a letter and a digit, followed by
   `rows`, `family`, `series`, `variants`, `parts` or `devices`. A part number
   (`AP2112K-3.3TRG1`, `MCP2542FD-E/SN`) and a word no family word follows are
-  no stem. The drop of a find matched either way is re-read as the drop of any
-  P3 find;
+  no stem. A stem also matches a number that continues its digits: `TMP107
+  family` matches TMP1075DGKR, a different part, and that is a current
+  limitation. An overturned exclusion's owner is found the same way. The drop
+  of a find matched either way is re-read as the drop of any P3 find;
 - it has no requirement, or names one requirement twice;
 - it serves a fixed input of the Scope table (`categories.json`
   `fixed_inputs`: the function by the table's input name, the input by a

@@ -791,7 +791,7 @@ function merge(cat, p2, rr, p3) {
   for (const x of (p3 && p3.exclusions_not_holding) || []) {
     // Each function whose P2 drop P3 overturned handles the part itself;
     // with no owner, any function's handling counts.
-    const owners = (p2.functions || []).filter(f => (f.dropped || []).some(d => samePart(d, x.part, names))).map(f => f.function)
+    const owners = (p2.functions || []).filter(f => (f.dropped || []).some(d => samePart(d, x.part, names) || ofFamily(d, x.part))).map(f => f.function)
     const open = owners.length
       ? owners.filter(n => !handled((rr.functions || []).find(fr => fr.function === n), x.part))
       : (handledAny(x.part) ? [] : names)
