@@ -398,7 +398,8 @@ part.
   overturned exclusion's owner is a function whose P2 drop matches it either
   way, and the owner handles it when its re-rank qualifies, ranks or drops the
   part P3 named, by part or LCSC number, or the matching piece of one of those
-  drops (a drop record that names several parts is split as part numbers are);
+  drops (a drop record that names several parts is split as part numbers are,
+  and one that matches only by its own `lcsc` field counts whole);
   another part of the family or of the same record does not count. An
   exclusion with no owner is handled only by a re-rank that names P3's part. The drop of a find
   matched either way is re-read as the drop of any P3 find;

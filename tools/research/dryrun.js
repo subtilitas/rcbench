@@ -111,7 +111,7 @@ async function runTask(task, opts = {}) {
       if (opts.strictReq) data.functions[0].shortlist[0].requirements = [{ name: 'x0', required: '>= 99 V', datasheet: '70 V', pass: false, source: 's' }, { name: 'x1', required: 'x1', datasheet: 'd', pass: true, source: 's' }]
       if (opts.reportParts) data.report = opts.reportParts.map(figure => ({ figure, value: 'not applicable: transceiver', source: 's' }))
       if (opts.twoDeciders) data.functions.push({ ...data.functions[0], function: 'fX' })
-      if (opts.p2DropY) data.functions[0].dropped = (opts.p2DropParts || [opts.p2DropPart || 'partY']).map(part => ({ part, maker: 'm', reason: 'r' }))
+      if (opts.p2DropY) data.functions[0].dropped = (opts.p2DropParts || [opts.p2DropPart || 'partY']).map((part, k) => ({ part, maker: 'm', reason: 'r', ...(k === 0 && opts.p2DropLcsc ? { lcsc: opts.p2DropLcsc } : {}) }))
       if (opts.foundNotRead) data.found_values = [{ question_id: 'V9', value: 'not read: HTTP 403', source: 's', read_at: 't' }]
       if (opts.foundValue) data.found_values = [{ question_id: 'V9', value: opts.foundValue, source: 's', read_at: '2026-09-28T10:00:00Z' }]
       if (opts.reports) data.report = opts.reports.map(([figure, value]) => ({ figure, value, source: 's', read_at: '2026-09-28T10:00:00Z' }))
@@ -997,6 +997,27 @@ async function main() {
   check(overturnedOpen(r), 'exact exclusion in a bundled drop record, another member dropped again: owner stays open')
   r = await runTask('T2', { ...famKept, p2DropParts: ['AS5048B-HTSP-500, ABC1234 rows'], dropShort: ['ABC1234XYZ'] })
   check(!overturnedOpen(r), 'family exclusion in a bundled drop record, a part of the family dropped: handled')
+  // A record splits at ";", ", ", " / " and " and ", not inside parentheses.
+  for (const sep of ['; ', ' and ', ' / ']) {
+    r = await runTask('T2', { ...famKept, p3overPart: 'AS5048B-HTSP-500', p2DropParts: [`AS5048B-HTSP-500${sep}AS5055A-BQFM`], dropShort: ['AS5055A-BQFM'] })
+    check(overturnedOpen(r), `bundled drop record split at "${sep.trim()}", another member dropped again: owner stays open`)
+  }
+  // The owner keeps the exclusion when another function's re-rank names the
+  // part: a record with a comma inside parentheses, and a record matched by
+  // its own lcsc field (one piece, or several), still have their owner.
+  const elsewhere = { p3overturned: true, p2DropY: true, twoDeciders: true, extraFn: true, rrHandleYin: 'fX' }
+  for (const [what, o] of [
+    ['a comma inside parentheses', { p3overPart: 'AS5048B-HTSP-500', p2DropPart: 'AS5048B-HTSP-500 (alt, AS5055A-BQFM)', rrHandleYPart: 'AS5048B-HTSP-500' }],
+    ['its own lcsc field, one piece', { p3overPart: 'partY (C123)', p2DropPart: 'partY-TR', p2DropLcsc: 'C123', rrHandleYPart: 'partY' }],
+    ['its own lcsc field, several pieces', { p3overPart: 'partY (C123)', p2DropPart: 'partY-TR, partZ', p2DropLcsc: 'C123', rrHandleYPart: 'partY' }],
+  ]) {
+    r = await runTask('T2', { ...elsewhere, ...o })
+    check(overturnedOpen(r), `exclusion owned through a drop record with ${what}, handled only under another function: owner stays open`)
+  }
+  // A family named inside a drop record's parentheses makes no owner: the
+  // exclusion has none, and every function stays open.
+  r = await runTask('T2', { p3overturned: true, p3overPart: 'ABC9999 rows', p2DropY: true, p2DropPart: 'ABC1234XYZ (see, ABC9999 rows)', twoDeciders: true })
+  check(r.result.followUps.some(f => f.reason === 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank' && (f.functions || []).join() === 'f1,fX'), 'family named inside a drop record\'s parentheses: no owner, every function open')
   // A family exclusion no P2 drop matches has no owner: only a re-rank that
   // names P3's part closes it, not a family part P2 kept.
   r = await runTask('T2', { ...famKept, p2DropY: false })

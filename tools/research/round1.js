@@ -770,7 +770,7 @@ function ofFamily(cand, find) {
 }
 
 // The pieces of a record that names several parts, split where partKeys
-// splits, outside parentheses; a one-piece record keeps its lcsc field.
+// splits, outside parentheses.
 function recordPieces(p) {
   const rec = p && typeof p === 'object' ? p : { part: p }
   const text = String(rec.part || '')
@@ -785,8 +785,7 @@ function recordPieces(p) {
     }
   }
   out.push(text.slice(start))
-  const parts = out.map(s => s.trim()).filter(Boolean)
-  return parts.length === 1 ? [{ ...rec, part: parts[0] }] : parts.map(part => ({ part }))
+  return out.map(s => s.trim()).filter(Boolean).map(part => ({ part }))
 }
 
 function merge(cat, p2, rr, p3) {
@@ -812,8 +811,13 @@ function merge(cat, p2, rr, p3) {
     // Each function whose P2 drop P3 overturned handles the part itself;
     // with no owner, any function's handling counts.
     // The pieces of the owner's P2 drops that P3 overturned: a drop record
-    // can name several parts and families, and only the matching ones count.
-    const overturned = f => (f.dropped || []).flatMap(recordPieces).filter(d => samePart(d, x.part, names) || ofFamily(d, x.part))
+    // can name several parts and families, and only the matching ones count;
+    // a record that matches only whole (by its own lcsc field) counts whole.
+    const matches = d => samePart(d, x.part, names) || ofFamily(d, x.part)
+    const overturned = f => (f.dropped || []).flatMap(d => {
+      const hit = recordPieces(d).filter(matches)
+      return hit.length ? hit : (samePart(d, x.part, names) ? [d] : [])
+    })
     const owners = (p2.functions || []).filter(f => overturned(f).length).map(f => f.function)
     // A re-rank entry names the part P3 named, by part or LCSC number.
     const exact = fr => !!fr && [...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || []), ...(fr.ranking || [])].some(c => samePart(c, x.part, names))
