@@ -702,7 +702,7 @@ def owner_selftest():
         "R6": [{"function": "Servo supply", "part": "TPS55285",
                 "orderable": "TPS55285VALR"}],
         "R7": [{"function": "Pack cells", "part": "SLSXT30002130",
-                "owner_keeps": True}],
+                "owner_keeps": True, "off_board": True}],
         "R8": [{"function": "Motor monitor", "part": "INA228",
                 "orderable": "INA228AIDGSR", "owner_keeps": True},
                {"function": "External shunt sense input", "part": "INA228",
@@ -797,6 +797,9 @@ def owner_selftest():
                "a fixed input the owner does not keep, left open by a run, "
                "stays open")
         pack = eff.get("R7", {}).get("Pack cells") or {}
+        expect(pack.get("owner_fixed", {}).get("off_board") is True and
+               mm.get("owner_fixed", {}).get("off_board") is False,
+               "owner_fixed carries the input's off_board mark")
         expect(pack.get("part") == "SLSXT30002130" and
                [u["status"] for u in pack.get("owner_fixed", {})
                 .get("unverified", [])] == ["not verified", "refuted"],
@@ -848,7 +851,8 @@ def owner_selftest():
         given = owner_fixed_of({"owner_fixed": owner_items(eff)})
         expect(given.get("R8", [{}])[0] == {
             "function": "Motor monitor", "part": "INA228",
-            "orderable": "INA228AIDGSR", "owner_keeps": True},
+            "orderable": "INA228AIDGSR", "owner_keeps": True,
+            "off_board": False},
             "owner_fixed_of gives back the input and its orderable")
         expect(upstream_view(tmp, ["R7", "R8"], 3, {})
                != upstream_view(tmp, ["R7", "R8"], None),
@@ -1094,7 +1098,8 @@ def effective_selection(results, pending=None, before=None, fixed=None):
                 "decision": held.get("decision", "none"),
                 "q_options_missing": [],
                 "owner_fixed": {
-                    "input": part, "left_open_by": held.get("run", ""),
+                    "input": part, "off_board": bool(x.get("off_board")),
+                    "left_open_by": held.get("run", ""),
                     "replaced": held.get("part")
                     or held.get("not_requalified") or "",
                     "unverified": unverified}}
@@ -1574,7 +1579,8 @@ def owner_fixed_of(task):
     for x in task.get("owner_fixed") or []:
         fixed.setdefault(x["category"], []).append(
             {"function": x["function"], "part": x["input"],
-             "orderable": x["part"], "owner_keeps": True})
+             "orderable": x["part"], "owner_keeps": True,
+             "off_board": x.get("off_board", False)})
     return fixed
 
 
@@ -1583,6 +1589,7 @@ def owner_items(eff):
     each, in category order."""
     return [{"category": c, "function": fn, "part": e["part"],
              "input": e["owner_fixed"]["input"],
+             "off_board": e["owner_fixed"].get("off_board", False),
              "left_open_by": e["owner_fixed"]["left_open_by"],
              "unverified": e["owner_fixed"]["unverified"]}
             for c in sorted(eff, key=lambda c: int(c[1:]) if c[1:].isdigit()

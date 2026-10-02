@@ -266,26 +266,27 @@ an excepted part in the format P7 is given: `[FAIL] PART: stock N, gate G`
 (or `PART (second vendor)`) with N below G, or `[FAIL] PART: presale N` with
 N below zero, PART exactly the excepted part number, and the report ends with
 `N problem(s)`, N the count of `[FAIL]` lines, with no traceback. For a fixed
-input the owner keeps that no run verified, off the board and not listed at
-Digi-Key, `[FAIL] PART: not checked, no Digi-Key product carries PART` is
-excepted too, both PARTs the excepted part number. A line in
-any other wording, a failed lookup among them, is not excepted, and an
-exception's mark counts only on its part's own `Parts.md` row, the line the
-critic gives for the part in `part_rows`. With exceptions
-given, the report's `[FAIL]` lines are read whether or not the critic marks
-the check passed, and `prepare` refuses an exception for a part no function
-keeps (kept part, alternate, Q alternative or its alternate). The pages state each
-exception with its reason in the part's `Parts.md` row, and only a mark
-there counts. `prepare` reads the exceptions before it merges anything. `record` refuses an output whose exceptions differ from the
-prepared ones. P7 and its critic run the stock check once each, after their
-last edit: each run reads Digi-Key. The critic corrects every sentence that
-breaks the writing rules in the files P7 listed, older sentences among them,
-before its stock check, and edits nothing after it. It rephrases a
+input the owner keeps that no run verified, marked `off_board` in
+`categories.json` and not listed at Digi-Key,
+`[FAIL] PART: not checked, no Digi-Key product carries PART` is excepted too,
+both PARTs the excepted part number. A line in any other wording, a failed
+lookup among them, is not excepted, and an exception's mark counts only on its
+part's own `Parts.md` row, the line the critic gives for the part in
+`part_rows`. With exceptions given, the report's `[FAIL]` lines are read
+whether or not the critic marks the check passed, and `prepare` refuses an
+exception for a part no function keeps (kept part, alternate, Q alternative or
+its alternate). The pages state each exception with its reason in the part's
+`Parts.md` row, and only a mark there counts. `prepare` reads the exceptions
+before it merges anything. `record` refuses an output whose exceptions differ
+from the prepared ones. P7 and its critic run the stock check once each, after
+their last edit: each run reads Digi-Key. The critic corrects every sentence
+that breaks the writing rules in the files P7 listed, older sentences among
+them, before its stock check, and edits nothing after it. It rephrases a
 comparison that no verified figure backs to state the rank alone, lists no
 sentence of `Research.md` below its status line, and states a contradiction
-between the specification and a return as not known instead of listing it
-as a writing issue; only a line that starts
-with `[FAIL]` is a problem line of the report.
+between the specification and a return as not known instead of listing it as a
+writing issue; only a line that starts with `[FAIL]` is a problem line of the
+report.
 
 It refuses these unless `--accept-open REASON` records the owner's reason and
 the items in the arguments:

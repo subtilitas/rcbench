@@ -612,7 +612,7 @@ async function main() {
   // the board that Digi-Key does not list passes the stock check only as
   // the owner's exception.
   const packSel = { selection: { R7: { 'Pack cells': { part: 'SLSXT30002130', alternate: '', q_alternatives: [], run: 'owner' } } } }
-  const packOwner = [{ category: 'R7', function: 'Pack cells', part: 'SLSXT30002130' }]
+  const packOwner = [{ category: 'R7', function: 'Pack cells', part: 'SLSXT30002130', off_board: true }]
   const packExc = [{ part: 'SLSXT30002130', reason: 'sourcing rules 4 and 5 waived (owner, 2026-09-30)' }]
   const packRow = [{ function: 'Pack cells', part: 'SLSXT30002130', parts_line: 5, group_page: 'hardware/docs/GroupB.md' }]
   const packMarks = [{ index: 0, file: 'hardware/docs/Parts.md', line: 5 }, { index: 1, file: 'hardware/docs/Parts.md', line: 5 }]
@@ -626,6 +626,8 @@ async function main() {
   const critP = r.prompts.find(x => x.label === 'P7-critic').prompt
   check(critP.includes('(a part off the board that Digi-Key does not list as "[FAIL] PART: not checked, no Digi-Key product carries PART")'), 'T6: the checks name the not-listed line\'s format')
   check(critP.indexOf('fixed by the owner; each check') < critP.indexOf("the owner's stock exception, with its reason"), 'T6: the stock exceptions come last among the marks')
+  r = await runTask('T6', { ...pack, ownerFixed: [{ ...packOwner[0], off_board: false }], failCheck: 'jlc_stock', failOutput: notListed })
+  check(r.result.summary.stopped === true, 'T6: a not-listed owner part on the board fails the stock check')
   r = await runTask('T6', { ...pack, ownerFixed: [], marked: [{ index: 0, file: 'hardware/docs/Parts.md', line: 5 }], failCheck: 'jlc_stock', failOutput: notListed })
   check(r.result.summary.stopped === true, 'T6: a not-listed part that is not owner-fixed fails the stock check')
   for (const out of ['[FAIL] SLSXT30002130: not checked, no Digi-Key product carries SLSXT3000\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, Digi-Key search failed, HTTP 500\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, no Digi-Key credentials\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, Digi-Key lookup failed for SLSXT30002130\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, no Digi-Key product carries SLSXT30002130 (HTTP 500)\n1 problem(s)']) {

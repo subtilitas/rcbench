@@ -220,7 +220,8 @@
       {
         "function": "Pack cells",
         "part": "SLSXT30002130",
-        "owner_keeps": true
+        "owner_keeps": true,
+        "off_board": true
       }
     ],
     "R8": [

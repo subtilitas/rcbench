@@ -1791,13 +1791,14 @@ if (TASK === 'T6') {
     const m = /(\d+) problem\(s\)\s*$/.exec(text.trim())
     return !!m && Number(m[1]) === failLines(r).length && !/Traceback|\bException\b/.test(text)
   }
-  // A fixed input the owner keeps that Digi-Key does not list, off the
-  // board, reads exactly "[FAIL] PART: not checked, no Digi-Key product
-  // carries PART": excepted with the owner's exception for that part.
+  // A fixed input the owner keeps off the board (categories.json
+  // off_board) that Digi-Key does not list reads exactly "[FAIL] PART: not
+  // checked, no Digi-Key product carries PART": excepted with the owner's
+  // exception for that part.
   const NOT_LISTED = /^\s*\[FAIL\]\s+(\S+):\s*not checked, no Digi-Key product carries (\S+)\s*$/
   const unlisted = l => {
     const m = NOT_LISTED.exec(l)
-    return !!m && m[1] === m[2] && OWNER_FIXED.some(x => x.part === m[1])
+    return !!m && m[1] === m[2] && OWNER_FIXED.some(x => x.part === m[1] && x.off_board === true)
   }
   const excepted = r => {
     const lines = failLines(r)
