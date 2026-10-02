@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R7",
+ "label": "adjudicator-R7",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "function": "P2 report: protector overcurrent window",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The figures in the claim reproduce from the sources. The sentence about the shunt has the wrong direction. The trip current is V_trip / R_shunt. With a shunt below nominal, the trip current rises (52.84 A at 0.993 mOhm, so the lower edge moves away from 52.1 A). Only a shunt above nominal lowers it. Also, 0.7 % high is not quite enough: 52.472 mV / 1.007 mOhm = 52.107 A, still 0.007 A above 52.1 A. The lower edge goes under 52.1 A at about +0.714 % (52.472 / 52.1 = 1.00714). The figure has to be corrected before it goes to the owner or P5. Correction: on the no-trim figures, a shunt about 0.71 % or more above nominal brings the AOLD lower edge under 52.1 A. The scope is this function, because the error concerns the overcurrent window against the pack path's 52.1 A nominal (V294). It is not a fault of the BQ40Z80 as a part.",
+  "evidence": "Re-read 2026-10-02T16:44Z. SLUUBT5C Table A-2 (OLD Threshold, RSNS = 1): 0x08 = -61.08 mV. Table A-3: OLD delay ranges from 1 ms (0x00) to 31 ms (0x0F). BQ40Z80 datasheet SLUSBV4D (revised May 2026), section 5.5: VOFFSET for OCD, SCC and SCDx is -2.5 to +2.5 mV post-trim, and VSCALE is -10 % to +10 % with no trim and -5 % to +5 % post-trim. The datasheet labels these rows \"OCD, SCC, and SCDx\", not OLD by name. tDETECT is 160 us max. Recomputed at 1 mOhm: no-trim window 61.08 x 0.9 - 2.5 = 52.472 mV and 61.08 x 1.1 + 2.5 = 69.688 mV, so 52.47 to 69.69 A. Post-trim window 55.53 to 66.63 A. 52.472 / 1.007 = 52.107 A. 52.472 / 0.993 = 52.842 A. Break-even shunt factor 52.472 / 52.1 = 1.00714. Requirement: Research.md V294 Answer (owner, 2026-10-02) puts the pack path at 52.1 A nominal at a 5.8 V bus, rated 60 A. The claim says \"a shunt 0.7 % low brings it under 52.1 A\"; with I = V/R, a low shunt raises the trip current.",
+  "source": "/home/claude/rcbench-research/round2/scratch/FU-2F/P4-datasheet-R7/bq40z80.pdf (SLUSBV4D section 5.5, text lines 994-1037); /home/claude/rcbench-research/round2/scratch/FU-2F/P4-datasheet-R7/sluubt5.pdf (SLUUBT5C Appendix A Tables A-2 and A-3); hardware/docs/Research.md V294 at checkout 267fcc6db3ed",
+  "read_at": "2026-10-02T16:44:10Z",
+  "scope": "function"
+ }
+}

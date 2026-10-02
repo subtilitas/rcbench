@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R7",
+ "label": "adjudicator-R7-3",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "function": "re-rank report: BQ25731 no-battery start-up level",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. Figure 10-5 (power-up from 5 V, 2-cell without battery) shows a VSYS step of about 1.2 divisions at 5 V per division. That is about 6 V, not the claimed 0.6 division (about 3 V). The 5 V VBUS step on the same grid measures 1.0 division, which confirms the scale. Figure 10-4 (power-up from 20 V) also shows a VSYS step of about 1.2 divisions, about 6 V, so neither figure supports P3's 8.4 V. The data sheet states no measured no-battery VSYS level. It does list a default minimum system voltage of 6.6 V for a 2S battery (table lines 1725 and 4430 of the text extraction), which is near the graph reading and well above 3 V. The claim's figure value is wrong. This concerns the figure the function reports, not the part's lifecycle or identity, so the scope is function.",
+  "evidence": "I rendered SLUSE66A page 89 with pdftoppm at 400 dpi and cropped Figure 10-5 to 1500x1167 px. The minor ticks on the centre axis are spaced 17.5 px, so 1 division is 87.4 px. The frame runs from y=233 to about y=931 px, which is 8 divisions at 87.3 px each. CH1 VBUS (Ch1 5.0 V/div) moves from y=409 to y=321, a step of 88 px. That is 1.01 divisions, or 5.0 V. CH4 VSYS (Ch4 5.0 V/div) moves from y=837.4 to y=730.8, a step of 106.6 px. That is 1.22 divisions, or about 6.1 V. In Figure 10-4 (Ch4 also 5.0 V/div), CH4 VSYS moves from about y=836 to about y=732. That is about 1.2 divisions, or about 6 V. These are graph readings; the data sheet states no VSYS value for the no-battery power-up. The data sheet text gives a default minimum system voltage of 6.6 V for 2S. The PDF I read is the same file the verifier, P3 and the re-rank used (md5 48497dbf72d1d78cc53470ba394dab7a). Files are in /home/claude/rcbench-research/round2/scratch/FU-2F/adjudicator-R7/ (p89-089.png, f105.png, f104.png).",
+  "source": "https://www.ti.com/lit/ds/symlink/bq25731.pdf (SLUSE66A, file /home/claude/rcbench-research/round2/scratch/FU-2F/P4-datasheet-R7/bq25731.pdf), section 10.2.3, Figures 10-4 and 10-5 on page 89, rendered at 400 dpi. The minimum system voltage default is in the same data sheet, at text-extraction lines 1725 and 4430.",
+  "read_at": "2026-10-02T16:47:00Z",
+  "scope": "function"
+ }
+}

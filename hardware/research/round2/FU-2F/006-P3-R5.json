@@ -1,0 +1,150 @@
+{
+ "role": "P3",
+ "category": "R5",
+ "label": "P3-R5",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "missed": [
+   {
+    "function": "pack disconnect",
+    "part": "BQ40Z50RSMR-R1 (LCSC C179743, VQFN-32 4x4 mm)",
+    "maker": "Texas Instruments (S1)",
+    "why": "P2 dropped it only because its datasheet and TRM were not read; read here. Datasheet SLUSCB3 (July 2015) https://www.ti.com/lit/ds/symlink/bq40z50-r1.pdf read 2026-10-02T15:56:32Z; TRM SLUUBC1D https://www.ti.com/lit/pdf/SLUUBC1 read 15:56:49Z. Same tables as the kept BQ40Z50-R2 and BQ40Z80: 1 to 4 series cells (2 needed); cell scaling K 0.198 to 0.202 (7.10); ADC offset +/-157 uV max, multiplied by 1/K, and gain error +/-0.8 % FSR (7.16); OCD, SCC and SCDx offset +/-2.5 mV and scale +/-5 % post-trim (7.31). With a 1 mOhm sense resistor and RSNS = 1: OCD 61.2 mV (11 steps of 5.56 mV above 16.6 mV) gives 55.6 A to 66.8 A, inside 52.1 to 90 A; SCD1 111 mV (steps of 22.2 mV) gives 103 A to 119 A, above the OCD band and at or below 180 A (my arithmetic from 7.31). CUV Threshold, Delay and Recovery are data-flash values; with Protection Configuration[CUV_RECOV_CHG] = 1 the CUV trip clears only at min cell voltage >= CUV:Recovery and charging detected (TRM 2.2, 14.9.1). TS1 to TS4 with OTC, OTD, UTC, UTD (TRM 14.9), COV (TRM 2.4), high-side CHG and DSG drive (7.18). VCC, BAT and PACK 30 V absolute (7.1), as the kept BQ40Z50-R2; ISHUTDOWN 1.6 uA typical, no maximum stated (7.5), start-up VPACK 2.05 to 2.45 V (7.6). Open mid wire rests on the same pull-down inference as the kept parts (TRM 3.22 compares BAT with the cell sum and cannot see a 2S mid tap). Needs the same data-flash image, mid-cell pull-down, wake contact and 1 or 0.5 mOhm sense resistor as the kept BQ40Z parts. JLCPCB C179743 stockCount 20574, canPresaleNumber 20548, expand, USD 1.6907 at 10 (vendors.py jlcpcb, 2026-10-02T16:27:47Z) against BQ40Z50RSMR-R2 9994 and BQ40Z80RSMR 8611 the same minute; need 5, gate 50: pass. Digi-Key BQ40Z50RSMR-R1 stock 5923 (cut tape and Digi-Reel), 3000 on reel, lead 20 weeks, ProductStatus 'Not For New Designs' (vendors.py digikey, 2026-10-02T15:57:58Z, fresh): second vendor passes. Lifecycle: TI product page https://www.ti.com/product/BQ40Z50-R1 read 15:56:50Z shows BQ40Z50RSMR-R1, -R1G4 and RSMT-R1 ACTIVE; the manufacturer's page is the status, and the Digi-Key 'Not For New Designs' is a disagreement to write down. Longevity programme and PCN listing not read. First datasheet July 2015. Pin-compatible with BQ40Z50RSMR-R2 (same RSM package), different firmware."
+   },
+   {
+    "function": "pack disconnect",
+    "part": "BQ40Z50RSMR (LCSC C2868204, VQFN-32 4x4 mm; the first-generation BQ40Z50)",
+    "maker": "Texas Instruments (S1)",
+    "why": "Not considered by P2. Datasheet SLUSBS8B https://www.ti.com/lit/ds/symlink/bq40z50.pdf read 2026-10-02T15:57:36Z and TRM SLUUA43A https://www.ti.com/lit/pdf/SLUUA43 read 15:57:41Z: same figures as BQ40Z50-R1 and -R2 for the values read: 30 V absolute on BAT, VCC, PACK and VC pins (7.1), ADC offset +/-157 uV and gain +/-0.8 % FSR, K 0.049 to 0.051 for PACK and 0.198 to 0.202 for cells, OCD, SCC and SCDx offset +/-2.5 mV and scale +/-5 % post-trim (7.31), ISHUTDOWN 1.6 uA typical, and CUV_RECOV_CHG with 'charging detected' in the TRM CUV table. Not read: the TRM's open-cell and temperature sections for this revision. JLCPCB C2868204 stockCount 91, canPresaleNumber 90, expand, USD 2.6043 at 10 (2026-10-02T16:27:47Z): passes gate 50 with 41 to spare, thin against R1's 20574. Digi-Key BQ40Z50RSMR ProductStatus Active, stock 5935 (cut tape), reel 0, lead 20 weeks (2026-10-02T15:58:08Z, fresh). TI page https://www.ti.com/product/BQ40Z50 read 15:57:26Z: BQ40Z50RSMR and RSMT ACTIVE. Ranks below BQ40Z50RSMR-R1 on JLCPCB stock."
+   },
+   {
+    "function": "5 V rail",
+    "part": "LMQ66430MC3RXBRQ1 (LCSC C19271903), used as an adjustable 5 V output",
+    "maker": "Texas Instruments (S1)",
+    "why": "P2 used it only for the 3.3 V buck. SNVSBV1F (revised September 2026) https://www.ti.com/lit/ds/symlink/lmq66430-q1.pdf read 2026-10-02T16:00:40Z: every variant takes an external divider (RFBT parallel RFBB 5 to 10 kOhm, section 8.2.1.2.2.1) and then regulates VOUT/FB to the 1.00 V reference, VFB 0.99 to 1.01 V for VIN 3.0 V to 36 V in FPWM (6.5), output 1 V to 18 V (6.3). 5.0 V +/-1.0 % plus 0.2 % for 0.1 % resistors: 4.94 V to 5.06 V before ripple, inside 4.75 V to 5.25 V; at the display 4.94 V less 0.325 V is 4.62 V, at or above 4.5 V; highest 5.06 V plus ripple below 5.5 V. Output 3 A (6.3) against 2.60 A. VIN 42 V absolute (6.1), above the 37.3 V clamp level, where P2's rank 1 TPS62933DRLR is 32 V absolute (P2's own note). Start-up 3.6 V, then 3.0 V to 36 V. At 5.8 V in, tOFF-MIN 85 ns max limits duty to 81 % at 2.2 MHz, so 5.0 V runs in frequency foldback (tON-MAX 6 to 13 us, DMAX 98 % in foldback, VDROP1 0.2 V typical at 1 A, 6.6); with HS 260 mOhm and LS 140 mOhm maximum (6.5) the drop at 2.08 A is about 0.61 V against 0.8 V of headroom (my arithmetic, inductor resistance excluded; the dropout figure is typical only: P4 to check). The factory 5 V variant LMQ66430MC5RXBRQ1 (C22450811) has JLCPCB stock 0 (2026-10-02T16:01:12Z), hence the adjustable use of the 3.3 V orderable. JLCPCB C19271903 stockCount 701, canPresaleNumber 583, expand (2026-10-02T16:27:47Z); need 10 if it also serves the 3.3 V rail (2 placements a board), gate 50: pass. Digi-Key stock 7558, Active, lead 20 weeks (2026-10-02T11:57:43Z, cached). TI page https://www.ti.com/product/LMQ66430-Q1 read 16:23:49Z lists LMQ66430MC3RXBRQ1 ACTIVE. First datasheet February 2022. One part type for both rails would remove a second converter type; the 3 A rating then carries 1.84 A and 2.60 A on two parts, not one."
+   },
+   {
+    "function": "5 V rail",
+    "part": "LM61460AFSQRJRRQ1 (LCSC C2876600), used as an adjustable 5 V output",
+    "maker": "Texas Instruments (S1)",
+    "why": "P2 shortlisted it only for the 3.3 V buck. SNVSB70F https://www.ti.com/lit/ds/symlink/lm61460-q1.pdf read 2026-10-02T16:04:53Z: VFB_acc -1 % to +1 % for VIN 3.3 V to 36 V in FPWM (6.5), so 5.0 V is 4.94 V to 5.06 V with 0.2 % for 0.1 % resistors; 6 A against 2.60 A; VIN to AGND 42 V absolute (6.1), above the 37.3 V clamp level; RDS(on) 41 mOhm typical, 82 mOhm maximum high side and 45 mOhm maximum low side (6.5); dropout 0.4 V typical at 4 A (features), DMAX 98 % in foldback; so 5.8 V in and 2.08 A out regulate with margin (typical dropout, P4 to check). Same value and conditions as P2's 3.3 V reading of this part. JLCPCB C2876600 stockCount 165, canPresaleNumber 145, expand, USD 1.9411 at 10 (2026-10-02T16:27:48Z); need 5, gate 50: pass. Digi-Key one 3000-piece reel, stock 3000, Active, lead 20 weeks (2026-10-02T11:57:44Z, cached). TI page https://www.ti.com/product/LM61460-Q1 read 16:23:48Z: LM61460AFSQRJRRQ1 ACTIVE."
+   },
+   {
+    "function": "reverse-polarity protection",
+    "part": "LM74700QDBVRQ1 (LCSC C2941042, SOT-23-6) and its 250-piece reel LM74700QDBVTQ1 (LCSC C2653623)",
+    "maker": "Texas Instruments (S1)",
+    "why": "P2 dropped LM74700 only from source selection, never from this function. SNOSD17G https://www.ti.com/lit/ds/symlink/lm74700-q1.pdf read 2026-10-02T16:06:22Z: ideal diode controller for one external N-channel MOSFET, reverse rating -65 V, input 3.2 V to 65 V (3.9 V start-up), so -25.2 V reverse, 25.2 V continuous, the 37.3 V clamp level and 5.8 V to 22 V operation all hold; 'zero DC reverse current flow' with reverse blocking in under 0.75 us, so the pack's 6.0 to 8.45 V does not reach the DC pins; nothing is sacrificed; -40 to 125 degC. The MOSFET carries 25.2 to 31.1 A on the DC path and 52.1 to 60 A on the pack path (stage 2). No OV, UV or inrush control: those are other functions. JLCPCB C2941042 stockCount 1398, canPresaleNumber 906, USD 1.5818 at 10; C2653623 stockCount 5561, presale 5510 (2026-10-02T16:27:48Z); need 10, gate 50: pass. Digi-Key LM74700QDBVRQ1 stock 0, LM74700QDBVTQ1 (same die, reel of 250) stock 5975, Active, lead 12 weeks (2026-10-02T16:06:33Z, fresh): rule 5 by the same part at the second vendor. TI page https://www.ti.com/product/LM74700-Q1 read 16:23:47Z: ACTIVE. First datasheet October 2017."
+   },
+   {
+    "function": "reverse-polarity protection",
+    "part": "LTC4365IDDB#TRPBF (LCSC C688325, DFN-8 2x3 mm); TSOT-23-8 alternate LTC4365HTS8#TRPBF (C688321)",
+    "maker": "Analog Devices (Linear Technology; S1)",
+    "why": "P2 dropped it from inrush limiting and source selection only. Datasheet Rev. B https://www.analog.com/media/en/technical-documentation/data-sheets/ltc4365.pdf (safari client) read 2026-10-02T16:08:31Z: controls a back-to-back N-channel MOSFET pair; operating 2.5 V to 34 V, protection range -40 V to 60 V (VIN row), so -25.2 V reverse, 25.2 V continuous and the 37.3 V clamp level hold; reverse input supply current -1.2 mA typical, -1.8 mA maximum at -40 V; with VIN unplugged the gate is off and the pair blocks the pack's 6.0 to 8.45 V from the DC pins; nothing is sacrificed; C grade 0 to 70, I grade -40 to 85, H grade -40 to 125 degC. It cannot be the source selector: the pair conducts both ways when on (P2's drop for source selection holds). The MOSFET pair carries the DC and pack currents (stage 2). JLCPCB C688325 stockCount 2275, canPresaleNumber 2270, expand, USD 4.295 at 10 (2026-10-02T16:27:49Z); C688321 2357 and 2351; need 10, gate 50: pass. Digi-Key LTC4365IDDB#TRPBF stock 9866, Active, lead 12 weeks (2026-10-02T16:09:30Z, fresh); LTC4365HTS8#TRPBF 3219 (16:09:32Z). Lifecycle read at Digi-Key (Analog Devices rule): Active; first datasheet date not read."
+   },
+   {
+    "function": "reverse-polarity protection",
+    "part": "LTC4367IMS8#PBF (LCSC C580888, MSOP-8)",
+    "maker": "Analog Devices (Linear Technology; S1)",
+    "why": "Not passed by P2 (dropped from overvoltage protection on stock routes only). Datasheet Rev. D https://www.analog.com/media/en/technical-documentation/data-sheets/ltc4367.pdf read 2026-10-02T16:10:03Z: back-to-back N-channel controller, operating 2.5 V to 60 V, protection range -40 V to 100 V; reverse input supply current -1.5 mA typical, -2.5 mA maximum at -40 V; same blocking behaviour as LTC4365; I grade -40 to 85 degC. JLCPCB C580888 stockCount 93, canPresaleNumber 83, expand, USD 7.1676 at 10 (2026-10-02T16:27:49Z): passes gate 50 with 43 to spare; the reel orderable C688378 has 16, the DFN C688360 381 but its Digi-Key stock is 0 and the DFN has no pin-compatible orderable with stock. Digi-Key LTC4367IMS8#TRPBF (reel; same part) stock 5270, Active, lead 23 weeks (2026-10-02T16:10:17Z, fresh); LTC4367IMS8#PBF (tube) 0 there. Rule 5 holds only through the packing suffix, on a thin JLCPCB margin."
+   },
+   {
+    "function": "overvoltage protection",
+    "part": "LTC4365IDDB#TRPBF (LCSC C688325); TSOT-23-8 alternate LTC4365HTS8#TRPBF (C688321)",
+    "maker": "Analog Devices (Linear Technology; S1)",
+    "why": "P2 listed LTC4365 under inrush and source selection only. Datasheet Rev. B (ltc4365.pdf, read 2026-10-02T16:08:31Z). Cut-off band: OV rising threshold 492.5 to 507.5 mV (+/-1.5 %), hysteresis 20 to 32 mV; a divider ratio of 42 gives trips of 20.69 to 21.32 V (20.64 to 21.36 V with 0.1 % resistors), above 20.0 V and at or below 22.0 V at every corner; the pack input (above 8.45 V, at or below 22 V) is a different ratio of the same part. Release: OV falling at the same ratio is 19.34 V to 20.48 V (my arithmetic: 42 x (0.4925 - 0.032) to 42 x (0.5075 - 0.020)); the band straddles 20.0 V, the lower end below 20.0 V as V299 accepts. Non-destructive: the gate turns off and the part restarts after tRECOVERY 26 to 49 ms (LTC4365; the -1 variant 0.6 to 1.5 ms, JLCPCB 26). Continuous 25.2 V: operating to 34 V; transient 60 V behind the clamp: protection range 60 V, VOUT 40 V absolute. Cut-off response, stated maxima: UV or OV fault propagation 2 us (overdrive 50 mV) plus fast gate turn-off 4 us at CGATE 2.2 nF, so 6 us, against the LM74800's 5.4 us; a larger inrush CGATE lengthens the second term (RGATE keeps it fast, Figure 14). External MOSFETs carry the current (stage 2). Ambient 0 to 70 degC (C grade). Stock and second source as in the reverse-polarity entry: JLCPCB 2275 (2026-10-02T16:27:49Z), Digi-Key 9866 Active (16:09:30Z)."
+   },
+   {
+    "function": "overvoltage protection",
+    "part": "LTC4367IMS8#PBF (LCSC C580888, MSOP-8)",
+    "maker": "Analog Devices (Linear Technology; S1)",
+    "why": "P2 dropped LTC4367CDD#TRPBF for 'no route of rule 5'. Datasheet Rev. D (ltc4367.pdf, read 2026-10-02T16:10:03Z): OV rising 492.5 to 507.5 mV, hysteresis 20 to 32 mV, the same band and release arithmetic as LTC4365 (trips 20.69 to 21.32 V and releases 19.34 V to 20.48 V at a ratio of 42); recovery delay 22 to 45 ms (LTC4367) or 0.2 to 1.2 ms (-1); UV or OV fault propagation 2 us max plus fast gate turn-off 6 us max at CGATE 2.2 nF, so 8 us; operating 2.5 V to 60 V, protection -40 V to 100 V; I grade -40 to 85 degC. Route: JLCPCB C580888 stockCount 93, presale 83 (2026-10-02T16:27:49Z); Digi-Key LTC4367IMS8#TRPBF stock 5270 Active (16:10:17Z). Thin JLCPCB margin; LTC4365 is the stronger find for this function."
+   },
+   {
+    "function": "inrush limiting",
+    "part": "LTC4365IDDB#TRPBF (LCSC C688325); TSOT-23-8 alternate LTC4365HTS8#TRPBF (C688321)",
+    "maker": "Analog Devices (Linear Technology; S1)",
+    "why": "P2 dropped it for 'a part and MOSFET of their own where rank 1 needs none', which does not hold (see exclusions). Datasheet Rev. B (ltc4365.pdf, read 2026-10-02T16:08:31Z), Applications 'Limiting Inrush Current During Turn-On': GATE is pulled up by IGATE(UP) 12 to 30 uA (20 uA typical, 'GATE = VIN = VOUT = 12 V'); a capacitor CGATE from GATE to ground sets the slew, and the source follower gives IINRUSH = C_OUT / CGATE x IGATE(UP). So the inrush is set by a component value and is bounded at the controller's corners (12 to 30 uA, a 2.5:1 spread); for 2.0 A at the 30 uA corner CGATE >= 15 nF per mF of C_OUT, with the MOSFET Cgd and CGATE tolerances to add (P5). Turn-on is held back by tRECOVERY 26 to 49 ms first. Input -25.2 V and 25.2 V at either terminal: -40 V to 60 V protection; 37.3 V behind the clamp; 5.8 V to 22 V inside 2.5 V to 34 V; 0 to 70 degC (C grade). Stock and second source as in the reverse-polarity entry: JLCPCB 2275 (2026-10-02T16:27:49Z), Digi-Key 9866 Active (16:09:30Z)."
+   },
+   {
+    "function": "inrush limiting",
+    "part": "LTC4367IMS8#PBF (LCSC C580888, MSOP-8)",
+    "maker": "Analog Devices (Linear Technology; S1)",
+    "why": "Datasheet Rev. D (ltc4367.pdf, read 2026-10-02T16:10:03Z): IGATE(UP) 20 to 60 uA, so IINRUSH = C_OUT / CGATE x IGATE(UP) is set by a capacitor and bounded at the controller's corners (3:1 spread; Applications 'Limiting Inrush Current'); recovery delay 22 to 45 ms; -40 V to 100 V protection, 2.5 V to 60 V operating; I grade -40 to 85 degC. JLCPCB C580888 stockCount 93, presale 83 (2026-10-02T16:27:49Z); Digi-Key LTC4367IMS8#TRPBF 5270 Active (16:10:17Z). Thin JLCPCB margin; LTC4365 is the stronger find."
+   },
+   {
+    "function": "source-status signal",
+    "part": "TLV333IDBVR (LCSC C473369, SOT-23-5)",
+    "maker": "Texas Instruments (S1)",
+    "why": "Not considered by P2 (a zero-drift family beside rank 3 OPA333AIDBVR). SBOS751 (December 2015) https://www.ti.com/lit/ds/symlink/tlv333.pdf read 2026-10-02T16:26:46Z: supply 1.8 V to 5.5 V, so the 3.201 to 3.399 V rail; rail-to-rail input and output; input offset 2 uV typical, 15 uV maximum at 5 V (7.7), against the 2 mV allowed; the output cannot exceed its own supply; input pins diode-clamped, current limited to 10 mA (7.1 notes), against 0.37 mA at the 37.3 V clamp level with 100 kOhm or more in the divider top (OPA333 has a 1 mA rating per P2); GBW 350 kHz, slew 0.16 V/us, turn-on time 100 us (7.7), so well under 10 ms (Figure 13's settling axis is labelled ms in the extracted text and reads 0 to 600; at 0.16 V/us a 3.3 V step slews in about 21 us, so the unit is probably us: P4 to confirm against the figure); -40 to 125 degC. JLCPCB C473369 stockCount 28373, canPresaleNumber 27212, USD 0.3008 at 10 (2026-10-02T16:27:52Z); need 5, gate 50: pass; price 0.3 against OPA333AIDBVR 1.19. Digi-Key TLV333IDBVR stock 20764, Active, lead 20 weeks (2026-10-02T16:26:44Z, fresh). TI page https://www.ti.com/product/TLV333 read 16:27:03Z: ACTIVE. First datasheet December 2015."
+   },
+   {
+    "function": "DC input brownout detection",
+    "part": "TLV333IDBVR (LCSC C473369, SOT-23-5)",
+    "maker": "Texas Instruments (S1)",
+    "why": "Same buffer as for the source-status signal, which serves both functions through one divider and one ADC input (V271, V276): offset 15 uV max against 2 mV, supply 1.8 V to 5.5 V, output bounded by its supply, 10 mA input-current rating with the rail down, TLV333 SBOS751 read 2026-10-02T16:26:46Z. JLCPCB C473369 stockCount 28373, presale 27212 (2026-10-02T16:27:52Z); Digi-Key 20764 Active (16:26:44Z); TI page ACTIVE (16:27:03Z). Detection only, no cut-off; the 11.0 V and 11.5 V thresholds and the 10 ms qualifying time stay in firmware."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "BQ40Z50RSMR-R1",
+    "functions": [
+     "pack disconnect"
+    ],
+    "reason_given": "Not among the three kept: the R2's predecessor firmware; its datasheet and TRM not read. JLCPCB C179743 20574, presale 20548 (15:35:23Z)",
+    "why_it_fails": "An unread datasheet and TRM show no failed requirement value. Read at 15:56:32Z and 15:56:49Z (SLUSCB3, SLUUBC1D): the ADC, current-protection, CUV_RECOV_CHG, temperature and 30 V tables equal the kept BQ40Z50-R2's, and JLCPCB stock is 20574, twice R2's 9994 (16:27:47Z). Digi-Key lists it 'Not For New Designs' (15:57:58Z, stock 5923) while TI's page shows ACTIVE (15:56:50Z); that disagreement is written down, not a failure under the Lifecycle check."
+   },
+   {
+    "part": "LTC4364HDE-2#TRPBF",
+    "functions": [
+     "reverse-polarity protection",
+     "inrush limiting",
+     "source selection"
+    ],
+    "reason_given": "LTC4364 has no overvoltage cut-off and JLCPCB 90 (FU-B1 and FU-B3 readings); for inrush: meets the inrush values, no OV cut-off so a second controller type, JLCPCB 90; for source selection: LTC4364 no OV cut-off, JLCPCB 90",
+    "why_it_fails": "None of the three functions has an overvoltage cut-off among its requirement values (that is the overvoltage function's, where the drop holds: the part regulates and times out instead of cutting off). JLCPCB 90 is at or above the gate of 50 (5 x 10 placements; today C688295 stockCount 80, presale 79, 2026-10-02T16:27:50Z; MSOP alternate LTC4364HMS-2#PBF C580875 65, presale 65). Digi-Key LTC4364HDE-2#TRPBF stock 8671, Active, lead 12 weeks (16:17:34Z), so rule 5 holds. ADI datasheet Rev. B https://www.analog.com/media/en/technical-documentation/data-sheets/ltc4364-1-4364-2.pdf read 16:17:38Z: operating 4 V to 80 V, reverse input protection to -40 V, ideal diode with 1.5 us maximum turn-off (tOFF(DGATE)), UV falling 1.22 to 1.28 V with 25 to 80 mV hysteresis (a ratio of 8.08 gives falling thresholds 9.86 to 10.34 V and rising up to 10.99 V, inside V88's corners; my arithmetic), HGATE turned off in 4 us maximum at UV. Open for P4: the timed current-limit breaker's 50 mV sense (a sub-mOhm shunt at 52 to 60 A, or SENSE tied to OUT) and the inrush corners (IHGATE(UP) 10 to 30 uA)."
+   },
+   {
+    "part": "LTC4365IDDB#TRPBF",
+    "functions": [
+     "inrush limiting"
+    ],
+    "reason_given": "Not among the three kept: a part and MOSFET of their own where rank 1 needs none (FU-B1 readings)",
+    "why_it_fails": "The LM74800 also needs MOSFETs of its own: P2's own report 'MOSFETs not selected' names back-to-back N-channel pairs for each LM7480x, and the LTC4365 drives the same kind of pair. It adds no part the LM74800 does not need beyond the controller itself. The LTC4365's inrush is set by CGATE across a stated 12 to 30 uA gate current (Rev. B, read 2026-10-02T16:08:31Z), JLCPCB C688325 2275 (16:27:49Z), Digi-Key 9866 Active (16:09:30Z)."
+   },
+   {
+    "part": "LTC4367CDD#TRPBF",
+    "functions": [
+     "overvoltage protection"
+    ],
+    "reason_given": "No route of rule 5 (LTC4368, LTC4367) or rule 4 fails (LTC4418, JLCPCB 30) (FU-B1, T3 readings)",
+    "why_it_fails": "For LTC4367 a route exists: JLCPCB LTC4367IMS8#PBF C580888 stockCount 93, presale 83 (2026-10-02T16:27:49Z), and the same part as LTC4367IMS8#TRPBF at Digi-Key stock 5270, Active (16:10:17Z); the DFN LTC4367CDD#TRPBF itself has JLCPCB 381 (C688360) but Digi-Key 0 (16:10:14Z). OV band, release and cut-off time are in the missed entry (Rev. D, read 16:10:03Z). LTC4368 not re-qualified here."
+   },
+   {
+    "part": "LTC4359HDCB#TRPBF",
+    "functions": [
+     "reverse-polarity protection"
+    ],
+    "reason_given": "Meets the reverse values; no UV or OV comparator, -40 V against rank 1's -65 V (FU-B3 reading 2026-09-29T15:32:13Z, not re-read)",
+    "why_it_fails": "The drop gives two non-requirements: this function has no UV or OV value, and -40 V reverse exceeds the required -25.2 V. Re-read: ADI LTC4359 https://www.analog.com/media/en/technical-documentation/data-sheets/ltc4359.pdf read 2026-10-02T16:23:41Z: ideal diode controller, 4 V to 80 V, reverse input protection to -40 V, 9 uA shutdown current. JLCPCB C688238 stockCount 4788, presale 4777 (16:27:51Z); Digi-Key LTC4359HDCB#TRPBF stock 6220, Active, lead 10 weeks (16:23:39Z). It passes the function's values; it is not a source selector."
+   },
+   {
+    "part": "LMR33630ADDAR",
+    "functions": [
+     "5 V rail"
+    ],
+    "reason_given": "Pass the values; not among the three kept: Digi-Key 0 (T3)",
+    "why_it_fails": "Digi-Key 0 is stale for the part type: LMR33630ADDA (same ESOP-8 device, tube) JLCPCB C2866787 stockCount 676, presale 626 (2026-10-02T16:27:52Z) and Digi-Key stock 513, Active, lead 12 weeks (16:21:32Z); the reel orderable has Digi-Key 0 (12:39:01Z, cached) and JLCPCB C841384 44014. LMR33630 SNVSAN3F (Nov 2020) https://www.ti.com/lit/ds/symlink/lmr33630.pdf read 16:04:51Z: VIN to PGND 38 V absolute (7.1), above the 37.3 V clamp level where TPS62933DRLR is 32 V; VFB 0.985 to 1.015 V is stated at VIN = 12 V only, which suits the 5 V rail's 4.75 V to 5.25 V but not the 3.3 V rail; 3 A. P4 to check dropout at 5.8 V in, 2.08 A out (DMAX 98 %, 7.7)."
+   },
+   {
+    "part": "LTC4417IUF#TRPBF",
+    "functions": [
+     "source selection"
+    ],
+    "reason_given": "LTC4417 break-before-make at USD 11.98 (FU-B1, FU-B3 readings)",
+    "why_it_fails": "Price is not a requirement value, and break-before-make is stated as 0.7 to 3.2 us (tG(SWITCHOVER), ADI Rev. G https://www.analog.com/media/en/technical-documentation/data-sheets/ltc4417.pdf read 2026-10-02T16:18:29Z), a gap the bus capacitance bridges; nothing shows an interruption of the 3.3 V and 5 V rails. Passing values read: -42 V reverse and 2.5 V to 36 V (V1 to V3), OV and UV windows +/-1.5 % (0.985 to 1.015 V), blocks reverse and cross conduction, so the DC side blocks the pack and the pack stays out of the DC pins. JLCPCB C688510 stockCount 3253, presale 3207, USD 10.39 at 10 (16:27:52Z); Digi-Key 4053, Active (16:18:50Z). Not settled, for P4: the 100 to 412 ms input validation time (tVALID) is not among V88's values, the thresholds with the HYS pin hysteresis against V88's corners, and P-channel MOSFET pairs at 52 to 60 A (stage 2)."
+   }
+  ],
+  "missed_functions": []
+ }
+}

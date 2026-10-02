@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R7",
+ "label": "adjudicator-R7-2",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "function": "P2 report: pack temperature reading uncertainty",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The datasheet confirms the input value: in SLUSBV4D section 5.5, RNTC(PU) on TS1 to TS4 is 14.4 kOhm min, 18 kOhm typ and 21.6 kOhm max. Nothing marks it as trimmed. With that pull-up and the specified 10 kOhm, B 3435 K NTC, the reading error is not symmetric. Firmware reads the NTC against the nominal 18 kOhm, so the resistance it infers is R_NTC x 18/R_PU. At R_PU = 14.4 kOhm the reading is too cold by 4.76 K at 0 °C, 5.40 K at 18 °C and 6.85 K at 55 °C. At R_PU = 21.6 kOhm it is too warm by 4.02 K, 4.57 K and 5.82 K. The report's \"+-4.0, +-4.5, +-5.7 K\" matches only the positive side. It understates the cold-reading side by 0.8 to 1.2 K. That is the side that matters for the 55 °C upper limit: a reading of 55 °C occurs at 62.15 °C actual, about 7 K above the owner's 55 °C limit. The verifier wrote about 61.9 °C, which does not change the outcome. The report's second figure holds: after a one-point offset calibration at 25 °C, the residual is +0.90/-0.78 K at 0 °C and -1.18/+1.02 K at 55 °C, so \"about 1 K\" is reproduced. The uncalibrated band has to be restated as -4.8/+4.0 K at 0 °C, -5.4/+4.6 K at 18 °C and -6.9/+5.8 K at 55 °C. Not included in these figures: RNTC(DRIFT), -360 to -200 ppm/°C. Scope is function: the error is in a figure this function reports. Nothing about the BQ40Z80 part itself fails.",
+  "evidence": "SLUSBV4D (BQ40Z80, revised May 2026), section 5.5, NTC Thermistor Measurement Support: RNTC(PU) on TS1/TS2/TS3/TS4 is 14.4 / 18 / 21.6 kOhm (min/typ/max), RNTC(DRIFT) is -360 / -280 / -200 ppm/°C. Section 8 (around line 2741 of the text extract): an integrated 18 kOhm (typical) linearization pull-up for a 10 kOhm (103) NTC. The NTC is from IOBoard.md, Pack temperature row: 10 kOhm, B 3435 K, limits 0 and 55 °C. Recomputed with R(T) = 10k*exp(B(1/T - 1/298.15)) and inferred R = R*18k/R_PU. Errors at R_PU 14.4 kOhm / 21.6 kOhm: 0 °C -4.76/+4.02 K; 18 °C -5.40/+4.57 K; 25 °C -5.66/+4.79 K; 55 °C -6.85/+5.82 K. A 55 °C reading falls at 62.15 °C actual with R_PU 14.4 kOhm and at 49.38 °C with 21.6 kOhm. Residual after a 25 °C offset calibration: 0 °C +0.90/-0.78 K, 55 °C -1.18/+1.02 K. Script: /home/claude/rcbench-research/round2/scratch/FU-2F/adjudicator-R7/calc.py, run at 2026-10-02T16:45:08Z.",
+  "source": "https://www.ti.com/lit/ds/symlink/bq40z80.pdf (SLUSBV4D, section 5.5 Electrical Characteristics, RNTC(PU) and RNTC(DRIFT)), fetched with vendors.py fetch, HTTP 200, 2,721,930 bytes, saved at /home/claude/rcbench-research/round2/scratch/FU-2F/adjudicator-R7/bq40z80.pdf; computation in /home/claude/rcbench-research/round2/scratch/FU-2F/adjudicator-R7/calc.py",
+  "read_at": "2026-10-02T16:44:53Z",
+  "scope": "function"
+ }
+}

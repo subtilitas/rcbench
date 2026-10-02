@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R7",
+ "label": "adjudicator-R7-5",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "function": "re-rank report: BQ29209 balancing range",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The reported figure gets its own arithmetic wrong. The datasheet ranges match the claim: VC2 and VDD 6.0 to 8.4 V, VC1 3 to 4.2 V, CB_EN high below 6 V. The charger's upper edge, 8.4 V + 0.6 % = 8.4504 V, is also correct. But 8.4504 V is 50.4 mV above the 8.4 V top of the VDD/VC2 balancing range, not the 4.5 mV the report states. The per-cell figure holds: 4.2252 V is 25.2 mV above the 4.2 V top of the VC1 range. The excursion stays inside the 4 to 10 V VDD Recommended Operating Conditions and the 0 to 5 V cell input range. So this is not a requirement failure for the part. It is a wrong number in the report, so the scope is function.",
+  "evidence": "SLUSA52C (bq29200, bq29209; revised March 2016), section 8.3.6: \"The recommended range of cell balancing is VC2 and VDD between 6.0 V and 8.4 V, and VC1 between 3 V and 4.2 V. Below VDD = 6 V, it is recommended to pull CB_EN high to disable the cell balancing function.\" Section 7.3, Recommended Operating Conditions: Supply voltage VDD min 4 V, max 10 V; input voltage range VC2-VC1 and VC1-GND 0 to 5 V. BQ25723 datasheet section 8.5, VBAT_REG_ACC (charge enable, 0 to 85 degC): REG0x05/04() = 0x20D0H gives 8.4 V nominal, -0.6 % to +0.6 %. 8.4 V x 1.006 = 8.4504 V. 8.4504 V - 8.4 V = 0.0504 V = 50.4 mV, not 4.5 mV as reported. Per cell: 8.4504 V / 2 = 4.2252 V, which is 25.2 mV above 4.2 V. The reported 25 mV holds.",
+  "source": "https://www.ti.com/lit/ds/symlink/bq29209.pdf (SLUSA52C sections 8.3.6 and 7.3, HTTP 200, 827052 bytes) and https://www.ti.com/lit/ds/symlink/bq25723.pdf (section 8.5 VBAT_REG_ACC, HTTP 200, 4002198 bytes), both fetched with vendors.py fetch --out into /home/claude/rcbench-research/round2/scratch/FU-2F/adjudicator-R7/ (bq29209-adj.pdf, bq25723-adj.pdf)",
+  "read_at": "2026-10-02T16:48:34Z",
+  "scope": "function"
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R7",
+ "label": "adjudicator-R7-4",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "function": "re-rank report: RSR drop on the pack path",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands on its first point. The re-rank's own Pack charger ranking puts LTC4020EUHF#TRPBF at rank 4. It carries P2's record unchanged, and that record sizes RCS at 4 mOhm. On the LTC4020, RCS is in the pack-to-load path but is not a 5 mOhm RSR. It is sized from the charge current by RCS = 0.05/ICSMAX. At P2's 4 mOhm it drops 0.208 V and dissipates 10.9 W at 52.1 A, against 0.261 V and 13.6 W for the BQ257xx RSR. \"Identical for every charger ranked\" is therefore false. The 5 mOhm figures themselves reproduce: 0.2605 V and 13.57 W at 52.1 A, 0.3485 V at 69.7 A. The second point does not refute anything. The LTC4020 has a series PowerPath FET, which agrees with \"only the BQ25731 has no BATFET in series\". It does not contradict it. The scope is function: this is a figure of the re-rank's report about the pack path, not a fault of any part.",
+  "evidence": "LTC4020 data sheet Rev. E, pin functions. CSP (pin 23) and CSN (pin 22) connect to the battery charge current sense resistor RCS, with RCS = 0.05/ICSMAX. BGATE (pin 21) drives the PowerPath FET, \"minimizing the FET series impedance between the DC/DC converter output and the battery\". CSN is the negative reference of the ideal diode against BAT, so the FET sits between CSN and BAT. The front-page application shows VOUT on the CSP side of RCS. Battery-to-load current therefore flows BAT, FET, CSN, RCS, CSP, VOUT. The absolute maximum of CSP to CSN is -0.3 to 0.3 V. P2's record for the LTC4020 reads \"ICSMAX = 0.05 V / RCS (12.5 A at 4 mOhm)\" and \"4 mOhm RCS: 0.208 V at 52.1 A, 0.279 V at 69.7 A (computed)\". The re-rank ranks LTC4020EUHF#TRPBF at 4 under Pack charger with \"Unchanged record from P2\". Computed: 0.004 x 52.1 = 0.2084 V and 0.004 x 52.1^2 = 10.86 W, against 0.005 x 52.1 = 0.2605 V, 0.005 x 69.7 = 0.3485 V and 0.005 x 52.1^2 = 13.57 W.",
+  "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/ltc4020.pdf, Rev. E, pin functions BGATE, CSN, CSP, Absolute Maximum Ratings and Typical Application, fetched with vendors.py fetch --client safari: HTTP 200, 1,391,678 bytes. The text was read from scratch/FU-2F/P4-datasheet-R7/ltc4020.pdf, which has the same MD5 (eb0a0d3aa434098e98d11466a517c010) as P2's copy and the same byte count as this fetch. The FU-2F R7 re-rank return (Pack charger ranking) and P2's R7 return (LTC4020 record) were read from the workflow journal wf_02025ddc-e5b.",
+  "read_at": "2026-10-02T16:48:00Z",
+  "scope": "function"
+ }
+}

@@ -1,0 +1,2213 @@
+{
+ "role": "P2",
+ "category": "R7",
+ "label": "P2-R7",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "found_values": [
+   {
+    "question_id": "V138",
+    "value": "4.2 V a cell, 8.4 V for the 2S pack. SLS safety notes REV.1.06 section 3: 'Voll geladen beträgt die Spannung 12,6 V (4,2 V pro Zelle)' (3S example at 3,7 V a cell nominal); section 1: the 'Nenn-/Ladeschlussspannung' is not to be exceeded. The vendor page states only 'Spannung: 7,4V (2S)'",
+    "source": "https://www.stefansliposhop.de/media/general/SLS_Sicherheitshinweise_DE_A4.pdf sections 1 and 3 (vendors.py fetch, HTTP 200, 509,128 bytes); https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html (HTTP 200)",
+    "read_at": "2026-10-02T15:27:52Z"
+   },
+   {
+    "question_id": "V139",
+    "value": "94.7 % typical, a graph reading: BQ25723 Figure 8-1 (VIN 5 V, CCM 800 kHz, RAC = RSR = 5 mOhm, 2.2 uH), curve VOUT 7.4 V: about 94.8 % from 1.7 to 2.0 A and about 94.5 % at 2.2 A (page 21 rendered at 300 dpi). No curve at 6.6 V or 8.4 V and no guaranteed figure. Replaces the assumed 90 %",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25723.pdf SLUSE64 (May 2021) 8.7 Figure 8-1 (vendors.py fetch, HTTP 200, 4,002,198 bytes)",
+    "read_at": "2026-10-02T15:27:52Z"
+   },
+   {
+    "question_id": "V140",
+    "value": "About 88.5 % typical (88 to 89 %), a graph reading: TPS55285 Figure 5-3 (VOUT 9 V, FPWM, TA 25 °C), curve VIN 5 V at its last point near 4 A (page 9 rendered at 250 dpi). No curve at 6.0 V in, 8.4 V and 6.35 A out, and the datasheet guarantees no efficiency. IOBoard.md's about 49.7 A and V294's 52.1 A use an assumed 90 %, which stays the nominal sizing basis (Research.md, Round 2, Rules of stage 1)",
+    "source": "https://www.ti.com/lit/ds/symlink/tps55285.pdf SLVSI72A 5.6 Figure 5-3 (vendors.py fetch, HTTP 200, 4,317,800 bytes)",
+    "read_at": "2026-10-02T15:27:52Z"
+   },
+   {
+    "question_id": "V141",
+    "value": "About 96 % typical, a graph reading: TPS62933F Figure 8-22 (VOUT 5 V, 500 kHz, 6.8 uH), curve Vin 6 V at 1.5 A (page 12 rendered at 250 dpi). 7.5 W / 0.96 / 6.0 V = 1.30 A from the pack (computed)",
+    "source": "https://www.ti.com/lit/ds/symlink/tps62933.pdf SLUSEA4D Figure 8-22 (vendors.py fetch, HTTP 200, 4,034,940 bytes)",
+    "read_at": "2026-10-02T15:27:52Z"
+   },
+   {
+    "question_id": "V142",
+    "value": "84.6 mA average a cell: the pack maker's guide, 'Ein effizienter Balancer sollte eigentlich 1/20 des Ladestroms zum Ausgleichen der einzelnen Zellen schaffen'; 1/20 of the 1.69 A charge current into a full pack (V144) is 84.6 mA (computed). The guide starts balancing at the CC to CV transition, 4.0 or 4.1 V a cell",
+    "source": "https://www.stefansliposhop.de/media/general/LiPoFAQV15c.pdf, 'Das Balancen' (vendors.py fetch, HTTP 200, 470,473 bytes), linked from the safety notes section 4",
+    "read_at": "2026-10-02T15:27:52Z"
+   },
+   {
+    "question_id": "V143",
+    "value": "About 1.18 A at 6.0 V (computed): the 3.3 V rail at its 1,475 mA summed maxima, 5.4 W in, and the encoder supply, 1.3 W in, (5.4 + 1.3) W / 6.0 V = 1.12 A, plus the load-cell excitation's 0.06 A linear from the bus. V294's 52.1 A at a 5.8 V bus already includes them",
+    "source": "/home/claude/rcbench-research/round2/results/hardware/research/round2/FU-2B1/003-P2-R5.json, found value V90 (its sources: IOBoard.md Pack path current and Adjustable supply budget, R5 report '3.3 V rail load, summed maxima')",
+    "read_at": "2026-10-02T15:26Z (results file read)"
+   },
+   {
+    "question_id": "V144",
+    "value": "1.69 A into a full pack at 8.4 V: 15 W (F8) x 94.7 % (V139) = 14.2 W, / 8.4 V = 1.691 A; 2.15 A at the 6.6 V floor of V294 (computed). The 3 A input limit sets the rate across 6.6 to 8.4 V; the BQ25723 sets up to 16.256 A in 128 mA steps with a 5 mOhm RSR. Below VSYS_MIN with 2S it clamps the charge to 384 mA",
+    "source": "F8 answer; V139 above; https://www.ti.com/lit/ds/symlink/bq25723.pdf SLUSE64 Features and 8.5 (pre-charge clamp)",
+    "read_at": "2026-10-02T15:27:52Z"
+   },
+   {
+    "question_id": "V145",
+    "value": "3000 mAh for the pack, 2S1P, so 3000 mAh a cell, as the vendor page states. No source states a minimum capacity or run time. At 52.1 A nominal the pack runs about 3.5 min from full (3.0 Ah / 52.1 A, no rate derating), 2.8 min at the maker's limit of 80 % use (computed)",
+    "source": "https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html 'Kapazität: 3000mAh'; LiPoFAQV15c.pdf 'Nutzung von über 80% der Nennkapazität ist nicht sinnvoll'",
+    "read_at": "2026-10-02T15:27:52Z"
+   },
+   {
+    "question_id": "V146",
+    "value": "Charge: the maker's guide allows fast charge from 10 °C ('minimal 10°C') to 40 °C ('max. 40°C'), under 10 °C below 1C (typically 0.2C to 0.5C), and a reduced current from 15 °C; the board charges at 0.56C to 0.72C (1.69 to 2.15 A on 3.0 Ah). Discharge: the pack never above 60 °C; below 18 °C loads above 5C need preheating, which V296 meets by 15 A or less. The board's ambient is 0 to 50 °C (V7) and the owner's pack limits are 0 to 55 °C (V150)",
+    "source": "https://www.stefansliposhop.de/media/general/LiPoFAQV15c.pdf sections 'Laden wenn der LiPo sehr kalt oder warm ist', 'Woran erkennt man', 'Und wenn es mal kalt (unter 18°C) wird?', 'Die maximale Leistung'; Research.md V7, V150, V296 at 267fcc6",
+    "read_at": "2026-10-02T15:27:52Z"
+   },
+   {
+    "question_id": "V148",
+    "value": "The RP2354B's USB port: one USB Type-C connector carries the F8 charger input, the RP2354B's D+ and D-, and CC1 and CC2, VBUS rated 5.5 V at 3 A. It has no SuperSpeed pair, so the Default current the CC detector applies is 500 mA (USB 2.0)",
+    "source": "hardware/docs/Research.md V10 and V13 answers (owner, 2026-09-28), checkout 267fcc6db3edc0a57f770a64679d22e8e2d8afee",
+    "read_at": "2026-10-02T15:24Z (checkout read)"
+   },
+   {
+    "question_id": "V149",
+    "value": "On the IO board, as an LCSC part JLCPCB places. The SLS safety notes section 2: 'SLS Akkus verfügen über keine eigene Schutzschaltung', so the pack as sold has no protection; it is bought assembled at Stefansliposhop, not at Digi-Key, and its XH balance lead reaches the board (IOBoard.md Bench pack balance lead)",
+    "source": "https://www.stefansliposhop.de/media/general/SLS_Sicherheitshinweise_DE_A4.pdf section 2; IOBoard.md Pack overcurrent protection at 267fcc6",
+    "read_at": "2026-10-02T15:27:52Z"
+   },
+   {
+    "question_id": "V150",
+    "value": "Owner: over-temperature 55 °C and under-temperature 0 °C (2026-09-30). Found: per-cell overvoltage on charge at 4.25 V, 50 mV above the 4.2 V a cell full charge of the maker's notes and above the charger's 8.4 V setting, whose +0.6 % edge is 4.2252 V a cell. Short circuit: a trip band, with the part's stated tolerance, above the overcurrent band and at or below the pack's 60C (180 A) burst, whose duration the vendor does not state",
+    "source": "SLS_Sicherheitshinweise_DE_A4.pdf section 3; vendor page 'Kurzzeitiger Entladestrom: max. 60C (180,0A)'; bq25723.pdf SLUSE64 8.5 VBAT_REG_ACC",
+    "read_at": "2026-10-02T15:27:52Z"
+   },
+   {
+    "question_id": "V152",
+    "value": "Yes, up to the 3.0 A input limit at 5 V (15 W) less the charge current. The BQ25723's NVDC path regulates VSYS at the VSYS_MIN setting, 6.6 V by default for 2S (Table 9-2), with a depleted battery ('Even with a depleted battery, the system is regulated above the minimum system voltage', 9.4.1.1). The servo converters' draw far exceeds 15 W, so firmware limits them on USB alone",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25723.pdf SLUSE64 9.3.8 Table 9-2, 9.4.1.1, pin BATDRV",
+    "read_at": "2026-10-02T15:27:52Z"
+   },
+   {
+    "question_id": "V153",
+    "value": "Yes: USB-C is the only charge source (F8), so a pack at the floor recovers on the bench only by charging while the floor disconnect holds discharge off. With the BQ40Z80 as the one protector, CUV sets OperationStatus()[XDSG] only, charging stays allowed, and with Protection Configuration[CUV_RECOV_CHG] = 1 the CUV recovers only when charging is detected and every cell is at or above CUV:Recovery. The charger connects on the pack side of the protector's FETs",
+    "source": "https://www.ti.com/lit/pdf/sluubt5 SLUUBT5C 3.2 Cell Undervoltage Protection (vendors.py fetch, HTTP 200, 4,683,293 bytes); F8 answer",
+    "read_at": "2026-10-02T15:27:52Z"
+   }
+  ],
+  "functions": [
+   {
+    "function": "Pack charger",
+    "requirements": [
+     {
+      "name": "charge source",
+      "value": "USB-C VBUS only; never the 12 to 20 V DC input",
+      "source": "F8 answer; IOBoard.md Charge source"
+     },
+     {
+      "name": "input voltage",
+      "value": "operates at 5 V VBUS, rated to at least 5.5 V",
+      "source": "F8; V10 answer"
+     },
+     {
+      "name": "input draw",
+      "value": "no more than 3 A at 5 V (15 W), with input limits settable at or under 1.5 A and 500 mA",
+      "source": "F8; IOBoard.md Charger input limit"
+     },
+     {
+      "name": "cell count",
+      "value": "2S lithium-ion, the cobalt-based pouch cells of the SLS XTRON pack",
+      "source": "F9 answer (owner, 2026-09-30); V137"
+     },
+     {
+      "name": "charge voltage",
+      "value": "4.2 V a cell, 8.4 V for the pack, a setting at or under 8.4 V; the tolerance's upper edge is recorded",
+      "source": "V138 (found)"
+     },
+     {
+      "name": "charge current",
+      "value": "charge-current setting reaches at least 2.15 A (15 W x 94.7 % into the 6.6 V floor)",
+      "source": "V144 (found); V294"
+     },
+     {
+      "name": "termination on pack current",
+      "value": "terminates on the cells' current, not the load's",
+      "source": "IOBoard.md Power, Not known (power path line)"
+     },
+     {
+      "name": "battery path current",
+      "value": "the sense element in the pack-to-load path stays inside its recommended range at 52.1 A nominal and up to the protector's overcurrent band upper edge, 69.7 A (BQ40Z80 at 1 mOhm, no-trim figures)",
+      "source": "V294 (52.1 A, rated 60 A); V284 (60 A); this return, report 'protector overcurrent window'"
+     },
+     {
+      "name": "charges with floor disconnect open",
+      "value": "charges the cells while the floor disconnect holds discharge off, with the RP2354B powered from VSYS on USB-C",
+      "source": "V153 (found); V152 (found)"
+     },
+     {
+      "name": "pack temperature input",
+      "value": "the pack's 10 kOhm, B 3435 K NTC is read by the pack protection IC, not required of the charger",
+      "source": "V147 answer; V298"
+     },
+     {
+      "name": "operating ambient",
+      "value": "0 to 50 °C",
+      "source": "V7 answer"
+     },
+     {
+      "name": "charger efficiency",
+      "value": "recorded for P5, not a gate",
+      "source": "V139 (found)"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "BQ25723RSNR",
+      "maker": "Texas Instruments (SLUSE64); on the S1 list",
+      "lcsc": "C2871889",
+      "package": "WQFN-32 4.0 x 4.0 mm (RSN)",
+      "placements": 1,
+      "placements_basis": "fixed: one pack charger a board (IOBoard.md Pack charger)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "charge source",
+        "required": "USB-C VBUS only",
+        "datasheet": "one input, VBUS/ACP, 3.5 to 26 V (Features)",
+        "pass": true,
+        "source": "bq25723.pdf SLUSE64 Features, read 2026-10-02T15:27:52Z"
+       },
+       {
+        "name": "input voltage",
+        "required": "5 V, rated to at least 5.5 V",
+        "datasheet": "3.5 V to 26 V input range",
+        "pass": true,
+        "source": "SLUSE64 Features"
+       },
+       {
+        "name": "input draw",
+        "required": "3 A maximum; settable at or under 1.5 A and 500 mA",
+        "datasheet": "IIN_DPM_REG_ACC with 10 mOhm RAC: 0x3A00H 2800 to 3000 mA, 0x1C00H 1300 to 1500 mA, 0x0800H 300 to 500 mA (-40 to 105 °C)",
+        "pass": true,
+        "source": "SLUSE64 8.5"
+       },
+       {
+        "name": "cell count",
+        "required": "2S",
+        "datasheet": "1 to 4 cells; 2S set by CELL_BATPRESZ at 40 % of VDDA, VSYS_MIN 6.6 V, SYSOVP 12 V (Table 9-2)",
+        "pass": true,
+        "source": "SLUSE64 9.3.8"
+       },
+       {
+        "name": "charge voltage",
+        "required": "4.2 V a cell, a setting at or under 8.4 V",
+        "datasheet": "VBAT_REG_ACC at REG0x05/04 = 0x20D0H (8.4 V): -0.6 % to 0.6 %, 0 to 85 °C, 8.3496 to 8.4504 V (4.2252 V a cell at the upper edge)",
+        "pass": true,
+        "source": "SLUSE64 8.5"
+       },
+       {
+        "name": "charge current",
+        "required": "at least 2.15 A",
+        "datasheet": "up to 16.2 A in 128 mA steps with a 5 mOhm sense resistor",
+        "pass": true,
+        "source": "SLUSE64 Features"
+       },
+       {
+        "name": "termination on pack current",
+        "required": "on the cells' current",
+        "datasheet": "RSR between SRP and SRN in the BATFET-to-battery path; IBAT = 8 or 16 x (VSRP - VSRN); host-terminated on that reading",
+        "pass": true,
+        "source": "SLUSE64 pin functions, 9.3 IBAT"
+       },
+       {
+        "name": "battery path current",
+        "required": "inside range at 52.1 A and 69.7 A",
+        "datasheet": "SRP-SRN -0.5 to 0.5 V absolute maximum and recommended; 5 mOhm is a register option (RSNS_RSR = 1b). 5 mOhm: 0.261 V at 52.1 A, 0.349 V at 69.7 A (computed)",
+        "pass": true,
+        "source": "SLUSE64 8.1, 8.3, 9.3 (RSNS_RAC/RSNS_RSR text)"
+       },
+       {
+        "name": "charges with floor disconnect open",
+        "required": "charges with discharge held off; VSYS from VBUS",
+        "datasheet": "NVDC: with a depleted battery the BATFET runs linear and VSYS is held at VSYS_MIN",
+        "pass": true,
+        "source": "SLUSE64 9.4.1.1, pin BATDRV"
+       },
+       {
+        "name": "operating ambient",
+        "required": "0 to 50 °C",
+        "datasheet": "junction -20 to 125 °C recommended",
+        "pass": true,
+        "source": "SLUSE64 8.3"
+       }
+      ],
+      "jlcpcb": "stockCount 214, canPresaleNumber 213, componentLibraryType expand, 4.2186 a unit at the 1-unit break, which covers the need of 5 (currency not labelled in the reading); maker label Texas Instruments; read 2026-10-02T15:33:38Z, vendors.py jlcpcb C2871889 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList), exact LCSC match",
+      "digikey": "stock_available 4528, lead_weeks 20, ProductStatus Active; reading of 2026-10-02T11:53:56Z returned cached, https://api.digikey.com/products/v4/search/BQ25723RSNR/productdetails",
+      "gate": "need = 5 boards x 1 = 5; S4 threshold max(5 x 5, 50) = 50; stockCount 214 >= 50 and canPresaleNumber 213 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE on TI's product page (https://www.ti.com/product/BQ25723, read 2026-10-02T15:34:09Z). Longevity: no commitment read. First datasheet SLUSE64, May 2021: 64 months on the market, not flagged. Change notices: TI's PCN listing not read. Distributor: Digi-Key Active (11:53:56Z); the JLCPCB reading carries no status field",
+      "second_source": "second vendor: Digi-Key stock_available 4528 >= 50 (2026-10-02T11:53:56Z, cached). No pin-compatible alternate passes: BQ25730RSNR, the pin-for-pin alternate on TI's page, reads stockCount 1, canPresaleNumber -3 (C5219071, 15:34:41Z); BQ25713RSNR is pin-to-pin compatible but its RSNS_RSR = 1b means 20 mOhm, so the firmware differs",
+      "alternates": [
+       "BQ25713RSNR (pin-to-pin compatible per SLUSE64 Features; firmware differs, RSNS_RSR)",
+       "BQ25730RSNR (pin-for-pin per TI page; JLCPCB 1, presale -3)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Passes every value with 5 mOhm as a stated register option, and is the only rank whose 5 mOhm charge-current scaling and accuracy the datasheet states. Its RSR sits in the pack-to-load path: 0.261 V and 13.6 W at 52.1 A (report)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "BQ25713RSNR",
+      "maker": "Texas Instruments (SLUSD83C); on the S1 list",
+      "lcsc": "C2878935",
+      "package": "WQFN-32 4.0 x 4.0 mm (RSN)",
+      "placements": 1,
+      "placements_basis": "fixed: one pack charger a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "charge source",
+        "required": "USB-C VBUS only",
+        "datasheet": "one input, VBUS/ACP",
+        "pass": true,
+        "source": "bq25713.pdf SLUSD83C Features, read 2026-10-02T15:27:52Z"
+       },
+       {
+        "name": "input voltage",
+        "required": "5 V, rated to at least 5.5 V",
+        "datasheet": "3.5 to 24 V input",
+        "pass": true,
+        "source": "SLUSD83C Features"
+       },
+       {
+        "name": "input draw",
+        "required": "3 A maximum; at or under 1.5 A and 500 mA",
+        "datasheet": "IIN_DPM register with 10 mOhm RAC, 50 mA steps; accuracy rows as the BQ25723",
+        "pass": true,
+        "source": "SLUSD83C 8.5"
+       },
+       {
+        "name": "charge voltage",
+        "required": "4.2 V a cell, at or under 8.4 V",
+        "datasheet": "VBAT_REG_ACC 0x20D0H (8.4 V): -0.6 % to 0.6 %, 0 to 85 °C",
+        "pass": true,
+        "source": "SLUSD83C 8.5"
+       },
+       {
+        "name": "charge current",
+        "required": "at least 2.15 A",
+        "datasheet": "8.128 A at the 10 mOhm scale; with a 5 mOhm RSR the register code is half the current, so 16.256 A",
+        "pass": true,
+        "source": "SLUSD83C 9.6.3, ChargeCurrent register"
+       },
+       {
+        "name": "battery path current",
+        "required": "inside range at 52.1 A and 69.7 A",
+        "datasheet": "SRP-SRN -0.5 to 0.5 V (8.1, 8.3); 9.6.3: 'resistors of other values can also be used' (no more than 20 mOhm suggested). 5 mOhm: 0.261 V at 52.1 A, 0.349 V at 69.7 A. Charge-current accuracy is tabulated at 10 mOhm only; PSYS needs 10 or 20 mOhm",
+        "pass": true,
+        "source": "SLUSD83C 8.1, 8.3, 9.3, 9.6.3; FU-2B1 adjudicator-R7-2 ruling"
+       },
+       {
+        "name": "termination on pack current",
+        "required": "on the cells' current",
+        "datasheet": "RSR in the BATFET-to-battery path, IBAT monitor",
+        "pass": true,
+        "source": "SLUSD83C pin functions"
+       },
+       {
+        "name": "charges with floor disconnect open",
+        "required": "VSYS from VBUS with the battery depleted",
+        "datasheet": "NVDC with BATFET linear at VSYS_MIN",
+        "pass": true,
+        "source": "SLUSD83C 9.4"
+       },
+       {
+        "name": "operating ambient",
+        "required": "0 to 50 °C",
+        "datasheet": "TJ -40 to 85 °C operating free-air range row",
+        "pass": true,
+        "source": "SLUSD83C 8.1"
+       }
+      ],
+      "jlcpcb": "stockCount 286, canPresaleNumber 184, componentLibraryType expand, 2.4288 a unit at the 1-unit break (currency not labelled); read 2026-10-02T15:33:38Z, vendors.py jlcpcb C2878935, exact LCSC match",
+      "digikey": "stock_available 2103, lead_weeks 20, ProductStatus Active; reading of 2026-10-02T12:46:42Z returned cached, https://api.digikey.com/products/v4/search/BQ25713RSNR/productdetails",
+      "gate": "need = 5 x 1 = 5; threshold 50; stockCount 286 >= 50, canPresaleNumber 184 >= 0: pass",
+      "lifecycle": "ACTIVE on https://www.ti.com/product/BQ25713 (read 2026-10-02T15:34:09Z). Longevity: none read. First datasheet SLUSD83, June 2018 (revised May 2023, C): 99 months. PCN listing not read. Digi-Key Active (12:46:42Z)",
+      "second_source": "second vendor: Digi-Key 2103 >= 50 (2026-10-02T12:46:42Z, cached)",
+      "alternates": [
+       "BQ25713BRSNR (same datasheet, VAP mode; JLCPCB C2863640 stockCount 71, read 15:34:42Z)",
+       "BQ25723RSNR (pin-to-pin compatible; register meaning of RSNS_RSR differs)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Passes every value, but the 5 mOhm RSR is outside its RSNS_RSR options: the charge-current code reads half the current and its accuracy at 5 mOhm is not stated, so it ranks under the BQ25723",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "LTC4020EUHF#TRPBF",
+      "maker": "Analog Devices (Linear), LTC4020 Rev. E; counts as Analog Devices on the S1 list",
+      "lcsc": "C462630",
+      "package": "QFN-38 5 x 7 mm (UHF)",
+      "placements": 1,
+      "placements_basis": "fixed: one pack charger a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "charge source",
+        "required": "USB-C VBUS only",
+        "datasheet": "one buck-boost input, PVIN/SENSVIN",
+        "pass": true,
+        "source": "ltc4020.pdf Rev. E (vendors.py fetch --client safari, HTTP 200, read 2026-10-02T15:35:40Z)"
+       },
+       {
+        "name": "input voltage",
+        "required": "5 V, rated to at least 5.5 V",
+        "datasheet": "VIN operating 4.5 to 55 V; UVLO rising 3.6 to 4.4 V",
+        "pass": true,
+        "source": "Rev. E Electrical Characteristics"
+       },
+       {
+        "name": "input draw",
+        "required": "3 A maximum; at or under 1.5 A and 500 mA",
+        "datasheet": "average inductor current limit VSENS 45 to 60 mV (20 mOhm: 2.25 to 3.0 A, equal to the input current in boost); ILIMIT pin programs lower limits at 20 V/V; accuracy at 1.5 A and 500 mA not stated",
+        "pass": true,
+        "source": "Rev. E Electrical Characteristics, VSENS and ILIMIT rows"
+       },
+       {
+        "name": "charge voltage",
+        "required": "4.2 V a cell, at or under 8.4 V",
+        "datasheet": "float reference 2.475 to 2.525 V over temperature (+-1 %), set by divider",
+        "pass": true,
+        "source": "Rev. E VFB row"
+       },
+       {
+        "name": "charge current",
+        "required": "at least 2.15 A",
+        "datasheet": "ICSMAX = 0.05 V / RCS (12.5 A at 4 mOhm); RNG/SS scales it at 18 to 22 V/V",
+        "pass": true,
+        "source": "Rev. E RNG/SS row, RCS equation"
+       },
+       {
+        "name": "battery path current",
+        "required": "inside range at 52.1 A and 69.7 A",
+        "datasheet": "CSP to CSN -0.3 to 0.3 V absolute maximum; 4 mOhm RCS: 0.208 V at 52.1 A, 0.279 V at 69.7 A (computed)",
+        "pass": true,
+        "source": "Rev. E Absolute Maximum Ratings"
+       },
+       {
+        "name": "termination on pack current",
+        "required": "on the cells' current",
+        "datasheet": "C/10 detection across RCS, the pack's current",
+        "pass": true,
+        "source": "Rev. E C/10 rows"
+       },
+       {
+        "name": "charges with floor disconnect open",
+        "required": "system from VBUS with the pack held off",
+        "datasheet": "instant-on: VOUT held at 84 to 86 % of float with a depleted pack; 110 % of float with the pack disconnected (FU-2B1 rerank reading)",
+        "pass": true,
+        "source": "Rev. E VFBMIN row; FU-2B1/008-rerank-R7.json"
+       },
+       {
+        "name": "operating ambient",
+        "required": "0 to 50 °C",
+        "datasheet": "E grade tested 0 to 85 °C junction, -40 to 125 °C by design",
+        "pass": true,
+        "source": "Rev. E Note 2"
+       }
+      ],
+      "jlcpcb": "stockCount 2648, canPresaleNumber 2637, componentLibraryType expand, 14.2343 a unit at the 1-unit break (currency not labelled); maker label Analog Devices; read 2026-10-02T15:33:38Z, vendors.py jlcpcb C462630, exact LCSC match",
+      "digikey": "stock_available 620, lead_weeks 49, ProductStatus Active; reading of 2026-10-02T12:24:33Z returned cached, https://api.digikey.com/products/v4/search/LTC4020EUHF%23TRPBF/productdetails",
+      "gate": "need = 5 x 1 = 5; threshold 50; stockCount 2648 >= 50, canPresaleNumber 2637 >= 0: pass",
+      "lifecycle": "Analog Devices part: Digi-Key ProductStatus Active is the status (Lifecycle check), 2026-10-02T12:24:33Z (cached). Longevity: none read. First datasheet: not dated in the copy; Rev. A is dated 01/14, so over 12 months. PCN listing not read",
+      "second_source": "second vendor: Digi-Key 620 >= 50 (2026-10-02T12:24:33Z, cached)",
+      "alternates": [
+       "LTC4020EUHF#PBF (C2858365, same part on another reel; JLCPCB 52 in FU-2B1, not re-read)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Passes every value with RCS sized from the pack current and needs no firmware for the path. Ranks third: +-1 % float, input limits below 3 A rest on an external ILIMIT setting with no stated accuracy, VOUT reaches 110 % of float (about 9.24 V) with the pack disconnected, 49-week lead time, highest price",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "BQ25730RSNR (C5219071)",
+      "maker": "Texas Instruments",
+      "reason": "rule 4: stockCount 1, canPresaleNumber -3 (2026-10-02T15:34:41Z)"
+     },
+     {
+      "part": "BQ25720RSNR (C2870152)",
+      "maker": "Texas Instruments",
+      "reason": "rule 4: stockCount 0, canPresaleNumber -2 (2026-10-02T15:38:19Z)"
+     },
+     {
+      "part": "BQ25731RSNR (C2871872)",
+      "maker": "Texas Instruments",
+      "reason": "charges with floor disconnect open and USB-only operation not shown: no BATFET ('BATFET Power Path: No'), VSYS is the battery node, and SLUSE66A states no VSYS regulation with the battery held off; CELL_BATPRESZ low disables charge (FU-2B1 rerank reading, 2026-10-02T12:36:55Z, not overturned)"
+     },
+     {
+      "part": "BQ25756RRVR (C19272232), BQ25756ERRVR (C22427194)",
+      "maker": "Texas Instruments",
+      "reason": "termination on pack current: RBAT_SNS sits between the converter output and the node that joins BATTERY and SYSTEM (SLUSEN5A Figure 7-1, simplified schematic), so it measures charge plus load current; no BATFET. The earlier drop on the pack current through RBAT_SNS does not hold (FU-2B1 adjudicator rulings 018, 019, 2026-10-02T13:38:07Z and 13:39:40Z)"
+     },
+     {
+      "part": "BQ25750RRVR (C22427288)",
+      "maker": "Texas Instruments",
+      "reason": "run while charging: the battery connects to the system only with the input outside its VAC window, so with USB-C present the 15 W input carries the bench (FU-2B1 P2 reading of bq25750.pdf, 2026-10-02T11:58:14Z)"
+     },
+     {
+      "part": "BQ25887RGER (C2761614)",
+      "maker": "Texas Instruments",
+      "reason": "no power path (SLUSD89B Device Comparison Table, round 1 reading); JLCPCB 757 (15:38:20Z)"
+     },
+     {
+      "part": "BQ25883RGER, BQ25886RGER, BQ25882YFFR, BQ25798RQMR, BQ25792RQMR",
+      "maker": "Texas Instruments",
+      "reason": "battery path current: integrated BATFET rated 4 to 6 A RMS, under 52.1 A (round 1 T3 readings, not re-read)"
+     },
+     {
+      "part": "MAX77960EFV06+, MAX77961BEFV06+",
+      "maker": "Analog Devices (Maxim)",
+      "reason": "battery path current: SYS and BATT 10.0 A RMS absolute maximum, under 52.1 A (round 1 reading)"
+     },
+     {
+      "part": "ISL9241IRTZ (C5657483), ISL9241HRTZ-T",
+      "maker": "Renesas",
+      "reason": "rule 4 at round 1's FU-B3 re-rank (stockCount 10, 2026-09-29T17:13:45Z); not re-read"
+     },
+     {
+      "part": "MP2672A and other MP26xx",
+      "maker": "Monolithic Power Systems",
+      "reason": "not on S1 (rule 2)"
+     }
+    ]
+   },
+   {
+    "function": "Cell balancing",
+    "requirements": [
+     {
+      "name": "cells balanced",
+      "value": "each of the 2 series cells of the SLS XTRON pack",
+      "source": "V137 answer; F9"
+     },
+     {
+      "name": "balance current",
+      "value": "at least 84.6 mA average a cell: 1/20 of the 1.69 A charge current",
+      "source": "V142 (found); V144 (found)"
+     },
+     {
+      "name": "supply range",
+      "value": "runs from the 2S pack, 6.6 to 8.4504 V",
+      "source": "V294; V138 (found); BQ25723 VBAT_REG_ACC"
+     },
+     {
+      "name": "works beside the charger",
+      "value": "balances without the charger doing it; the BQ25723 has no balancing; it shares the taps with the pack protector",
+      "source": "IOBoard.md Pack charger, Bench pack balance lead; V298"
+     },
+     {
+      "name": "operating ambient",
+      "value": "0 to 50 °C",
+      "source": "V7 answer"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "BQ29209DRBR",
+      "maker": "Texas Instruments (SLUSA52C); on the S1 list",
+      "lcsc": "C139352",
+      "package": "VSON-8 3 x 3 mm (DRB)",
+      "placements": 1,
+      "placements_basis": "fixed: one balancer for the one bench pack",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "cells balanced",
+        "required": "2 in series",
+        "datasheet": "2-series cell protection with automatic cell balance",
+        "pass": true,
+        "source": "bq29209.pdf SLUSA52C page 1, read 2026-10-02T15:27:52Z"
+       },
+       {
+        "name": "balance current",
+        "required": "at least 84.6 mA average",
+        "datasheet": "external cell balancing mode, Ibal = VCELL / RCB_EXT (9.3.1): 44.9 Ohm gives 84.6 mA at 3.8 V and 93.6 mA at 4.2 V; internal mode up to 15 mA",
+        "pass": true,
+        "source": "SLUSA52C 9.3.1, Features"
+       },
+       {
+        "name": "supply range",
+        "required": "6.6 to 8.4504 V",
+        "datasheet": "VDD 4 to 10 V recommended, 16 V absolute maximum",
+        "pass": true,
+        "source": "SLUSA52C 7.1, 7.3"
+       },
+       {
+        "name": "works beside the charger",
+        "required": "autonomous",
+        "datasheet": "starts at a mismatch of 17 to 45 mV, stops at -9 to 9 mV, enabled by the CB_EN pin; no firmware",
+        "pass": true,
+        "source": "SLUSA52C 7.5 VMM_DET_ON, VMM_DET_OFF"
+       },
+       {
+        "name": "operating ambient",
+        "required": "0 to 50 °C",
+        "datasheet": "TA -40 to 110 °C",
+        "pass": true,
+        "source": "SLUSA52C 7.3"
+       }
+      ],
+      "jlcpcb": "stockCount 592, canPresaleNumber 565, componentLibraryType expand, 1.0388 a unit at the 1-unit break (currency not labelled); read 2026-10-02T15:33:38Z, vendors.py jlcpcb C139352, exact LCSC match",
+      "digikey": "stock_available 3899, lead_weeks 26, ProductStatus Active; reading of 2026-10-02T11:54:03Z returned cached, https://api.digikey.com/products/v4/search/BQ29209DRBR/productdetails",
+      "gate": "need = 5 x 1 = 5; threshold 50; 592 >= 50, presale 565 >= 0: pass",
+      "lifecycle": "ACTIVE on https://www.ti.com/product/BQ29209 (read 2026-10-02T15:34:09Z). Longevity: none read. First datasheet SLUSA52, September 2010: over 12 months. PCN listing not read. Digi-Key Active",
+      "second_source": "alternate BQ29200DRBR: same datasheet, pin, package and circuit, no firmware; its overvoltage threshold is 4.35 V against 4.30 V, used only if the OUT pin is wired. It passes rules 1 to 4 (JLCPCB 3350, presale 3349). Digi-Key 3899 also passes as second vendor",
+      "alternates": [
+       "BQ29200DRBR (C2865505)"
+      ],
+      "driver_in_shared": "none (no firmware; CB_EN is a GPIO or a strap)",
+      "reason": "Autonomous balancing at the required current with an external FET network; verified first-ranked in FU-2B1",
+      "second_source_route": "alternate",
+      "second_source_part": "BQ29200DRBR"
+     },
+     {
+      "rank": 2,
+      "part": "BQ29200DRBR",
+      "maker": "Texas Instruments (SLUSA52C); on the S1 list",
+      "lcsc": "C2865505",
+      "package": "VSON-8 3 x 3 mm (DRB)",
+      "placements": 1,
+      "placements_basis": "fixed: one balancer for the one bench pack",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "cells balanced",
+        "required": "2 in series",
+        "datasheet": "2-series cell protection with automatic cell balance",
+        "pass": true,
+        "source": "SLUSA52C page 1"
+       },
+       {
+        "name": "balance current",
+        "required": "at least 84.6 mA average",
+        "datasheet": "Ibal = VCELL / RCB_EXT in external mode, as the BQ29209",
+        "pass": true,
+        "source": "SLUSA52C 9.3.1"
+       },
+       {
+        "name": "supply range",
+        "required": "6.6 to 8.4504 V",
+        "datasheet": "VDD 4 to 10 V",
+        "pass": true,
+        "source": "SLUSA52C 7.3"
+       },
+       {
+        "name": "works beside the charger",
+        "required": "autonomous",
+        "datasheet": "mismatch detection 17 to 45 mV on, -9 to 9 mV off; CB_EN pin",
+        "pass": true,
+        "source": "SLUSA52C 7.5"
+       },
+       {
+        "name": "operating ambient",
+        "required": "0 to 50 °C",
+        "datasheet": "TA -40 to 110 °C; overvoltage threshold 4.35 V (Device Options)",
+        "pass": true,
+        "source": "SLUSA52C 5, 7.3"
+       }
+      ],
+      "jlcpcb": "stockCount 3350, canPresaleNumber 3349, componentLibraryType expand, 0.795 a unit at the 1-unit break (currency not labelled); read 2026-10-02T15:33:38Z, vendors.py jlcpcb C2865505, exact LCSC match",
+      "digikey": "stock_available 3931, lead_weeks 12, ProductStatus Active; reading of 2026-10-02T11:54:05Z returned cached, https://api.digikey.com/products/v4/search/BQ29200DRBR/productdetails",
+      "gate": "need = 5 x 1 = 5; threshold 50; 3350 >= 50, presale 3349 >= 0: pass",
+      "lifecycle": "ACTIVE on https://www.ti.com/product/BQ29200 (read 2026-10-02T15:34:09Z). Longevity: none read. First datasheet SLUSA52, September 2010. PCN not read. Digi-Key Active",
+      "second_source": "alternate BQ29209DRBR (rank 1); Digi-Key 3931 also passes",
+      "alternates": [
+       "BQ29209DRBR (C139352)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The BQ29209's pin-compatible twin with more stock; its 4.35 V overvoltage output, if wired, sits further above the 4.25 V protector threshold",
+      "second_source_route": "alternate",
+      "second_source_part": "BQ29209DRBR"
+     }
+    ],
+    "dropped": [
+     {
+      "part": "MAX17320G22+ (C2914309)",
+      "maker": "Analog Devices (Maxim)",
+      "reason": "balance current: internal FETs only, 100 mA continuous absolute maximum, RSWITCH 3 to 20 Ohm, with a pause in each cycle: about 62 mA average with peaks under 100 mA (FU-2B1 P2 reading of MAX17320 Rev 12)"
+     },
+     {
+      "part": "BQ76907RGRR (C22458649)",
+      "maker": "Texas Instruments",
+      "reason": "balance current: internal only, 50 mA absolute maximum a cell (SLUSE96A 6.1, FU-2B1 reading)"
+     },
+     {
+      "part": "BQ40Z80RSMR (C882850)",
+      "maker": "Texas Instruments",
+      "reason": "balance current not shown: internal bypass 10 mA (RCB 200 Ohm); external mode balances one cell at a time through an external FET network whose current SLUSBV4D does not state, and the time follows Impedance Track SOC after a field QMax update (SLUUBT5C 8.1)"
+     },
+     {
+      "part": "BQ28Z610DRZR (C157573), BQ28Z620DRZR (C20345237)",
+      "maker": "Texas Instruments",
+      "reason": "balance current: internal bypass 200 Ohm, about 20 mA at 4.2 V, under 84.6 mA"
+     },
+     {
+      "part": "BQ25887RGER (C2761614)",
+      "maker": "Texas Instruments",
+      "reason": "works beside the charger: its balancing runs inside its own charge cycle (SLUSD89B 8.3.4.3, FU-2B1 rerank reading), and the charger fails Pack charger"
+     },
+     {
+      "part": "BQ7718xx family (for example BQ771815DPJR)",
+      "maker": "Texas Instruments",
+      "reason": "overvoltage protectors with no balancing (jlcparts descriptions)"
+     },
+     {
+      "part": "MP2672A, MP2639C",
+      "maker": "Monolithic Power Systems",
+      "reason": "not on S1 (rule 2)"
+     }
+    ]
+   },
+   {
+    "function": "Power path",
+    "requirements": [
+     {
+      "name": "run while charging",
+      "value": "the bench runs from the pack while USB-C charges it",
+      "source": "IOBoard.md Power, Not known (power path line); R7 row"
+     },
+     {
+      "name": "termination on pack current",
+      "value": "the charger terminates on the cells' current, not the load's",
+      "source": "IOBoard.md Power, Not known"
+     },
+     {
+      "name": "pack current carried",
+      "value": "52.1 A nominal through the path from the cells to the board, up to 69.7 A (protector band upper edge), with the sense inputs inside their range",
+      "source": "V294; V284; report 'protector overcurrent window'"
+     },
+     {
+      "name": "USB-only operation",
+      "value": "with USB-C present, no DC input and the pack flat or held off, the board runs from USB-C at up to 3.0 A at 5 V less the charge current",
+      "source": "V152 (found)"
+     },
+     {
+      "name": "charges with floor disconnect open",
+      "value": "charges the cells while discharge is held off",
+      "source": "V153 (found)"
+     },
+     {
+      "name": "path MOSFET gate drive at the floor",
+      "value": "recorded for stage 2: the external BATFET or PowerPath FET is enhanced with at most VSYS, 5.8 to 6.6 V at the floor",
+      "source": "Research.md Round 2, Rules of stage 1 (MOSFETs to stage 2); V294"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "BQ25723RSNR",
+      "maker": "Texas Instruments (SLUSE64); on the S1 list",
+      "lcsc": "C2871889",
+      "package": "WQFN-32 4.0 x 4.0 mm (RSN)",
+      "placements": 1,
+      "placements_basis": "fixed: the charger's own NVDC path, one a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "run while charging",
+        "required": "bench on the pack while charging",
+        "datasheet": "NVDC: BATFET fully on during charge and an ideal diode (30 mV) in supplement mode, so the pack supplements VSYS",
+        "pass": true,
+        "source": "SLUSE64 pin BATDRV, 9.4.1.1, VBATDRV_DIODE"
+       },
+       {
+        "name": "termination on pack current",
+        "required": "cells' current",
+        "datasheet": "RSR between BATFET and battery, IBAT monitor",
+        "pass": true,
+        "source": "SLUSE64 9.3"
+       },
+       {
+        "name": "pack current carried",
+        "required": "52.1 A to 69.7 A, sense inside range",
+        "datasheet": "SRP-SRN -0.5 to 0.5 V; 5 mOhm: 0.261 V and 0.349 V",
+        "pass": true,
+        "source": "SLUSE64 8.1, 8.3"
+       },
+       {
+        "name": "USB-only operation",
+        "required": "board from USB-C with the pack flat or held off",
+        "datasheet": "VSYS held at VSYS_MIN, 6.6 V default for 2S",
+        "pass": true,
+        "source": "SLUSE64 Table 9-2, 9.4.1.1"
+       },
+       {
+        "name": "charges with floor disconnect open",
+        "required": "yes",
+        "datasheet": "charge path through the protector's CHG FET; BQ40Z80 CUV holds discharge only",
+        "pass": true,
+        "source": "SLUSE64; SLUUBT5C 3.2"
+       },
+       {
+        "name": "path MOSFET gate drive at the floor",
+        "required": "recorded",
+        "datasheet": "BATDRV goes 10 V below VSYS (8.5 to 11.5 V) for a P-channel BATFET, limited by VSYS at 5.8 to 6.6 V; Ciss under 5 nF advised",
+        "pass": true,
+        "source": "SLUSE64 BATDRV pin, VBATDRV_ON, 10.2 MOSFET selection"
+       }
+      ],
+      "jlcpcb": "stockCount 214, canPresaleNumber 213, expand, 4.2186 a unit at the 1-unit break; read 2026-10-02T15:33:38Z, vendors.py jlcpcb C2871889, exact LCSC match",
+      "digikey": "stock_available 4528, lead_weeks 20, Active; 2026-10-02T11:53:56Z (cached), https://api.digikey.com/products/v4/search/BQ25723RSNR/productdetails",
+      "gate": "need = 5 x 1 = 5; threshold 50; 214 >= 50, presale 213 >= 0: pass",
+      "lifecycle": "ACTIVE on https://www.ti.com/product/BQ25723 (2026-10-02T15:34:09Z); first datasheet May 2021; PCN not read; Digi-Key Active",
+      "second_source": "second vendor: Digi-Key 4528 >= 50 (11:53:56Z, cached)",
+      "alternates": [
+       "BQ25713RSNR (pin-to-pin, firmware differs)",
+       "BQ25730RSNR (JLCPCB 1)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The charger's own path passes every value; the pack-to-load current crosses its 5 mOhm RSR and the external BATFET (report)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "BQ25713RSNR",
+      "maker": "Texas Instruments (SLUSD83C); on the S1 list",
+      "lcsc": "C2878935",
+      "package": "WQFN-32 4.0 x 4.0 mm (RSN)",
+      "placements": 1,
+      "placements_basis": "fixed: the charger's own path",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "run while charging",
+        "required": "bench on the pack while charging",
+        "datasheet": "NVDC path with BATFET supplement",
+        "pass": true,
+        "source": "SLUSD83C 9.4"
+       },
+       {
+        "name": "termination on pack current",
+        "required": "cells' current",
+        "datasheet": "RSR in the battery path",
+        "pass": true,
+        "source": "SLUSD83C"
+       },
+       {
+        "name": "pack current carried",
+        "required": "52.1 A to 69.7 A",
+        "datasheet": "SRP-SRN -0.5 to 0.5 V; other RSR values allowed (9.6.3); 5 mOhm: 0.261 V and 0.349 V",
+        "pass": true,
+        "source": "SLUSD83C 8.1, 8.3, 9.6.3"
+       },
+       {
+        "name": "USB-only operation",
+        "required": "board from USB-C",
+        "datasheet": "VSYS held at VSYS_MIN with a depleted battery",
+        "pass": true,
+        "source": "SLUSD83C 9.4"
+       },
+       {
+        "name": "charges with floor disconnect open",
+        "required": "yes",
+        "datasheet": "as the BQ25723",
+        "pass": true,
+        "source": "SLUSD83C"
+       },
+       {
+        "name": "path MOSFET gate drive at the floor",
+        "required": "recorded",
+        "datasheet": "P-channel BATFET on BATDRV, limited by VSYS",
+        "pass": true,
+        "source": "SLUSD83C BATDRV"
+       }
+      ],
+      "jlcpcb": "stockCount 286, canPresaleNumber 184, expand, 2.4288 at the 1-unit break; read 2026-10-02T15:33:38Z, vendors.py jlcpcb C2878935",
+      "digikey": "stock_available 2103, lead_weeks 20, Active; 2026-10-02T12:46:42Z (cached)",
+      "gate": "need 5; threshold 50; 286 >= 50, presale 184 >= 0: pass",
+      "lifecycle": "ACTIVE on https://www.ti.com/product/BQ25713 (15:34:09Z); first datasheet June 2018; PCN not read; Digi-Key Active",
+      "second_source": "second vendor: Digi-Key 2103 >= 50",
+      "alternates": [
+       "BQ25713BRSNR (C2863640, 71 at JLCPCB)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Same path as rank 1 with the 5 mOhm RSR off its register options",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "LTC4020EUHF#TRPBF",
+      "maker": "Analog Devices (Linear); counts as Analog Devices on S1",
+      "lcsc": "C462630",
+      "package": "QFN-38 5 x 7 mm (UHF)",
+      "placements": 1,
+      "placements_basis": "fixed: the charger's own PowerPath",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "run while charging",
+        "required": "bench on the pack while charging",
+        "datasheet": "PowerPath ideal-diode FET (BGATE) lets the pack supply the load when the converter is limited",
+        "pass": true,
+        "source": "ltc4020.pdf Rev. E, read 2026-10-02T15:35:40Z; FU-2B1 P3 reading"
+       },
+       {
+        "name": "termination on pack current",
+        "required": "cells' current",
+        "datasheet": "C/10 across RCS in the pack path",
+        "pass": true,
+        "source": "Rev. E"
+       },
+       {
+        "name": "pack current carried",
+        "required": "52.1 A to 69.7 A",
+        "datasheet": "CSP-CSN -0.3 to 0.3 V absolute maximum; 4 mOhm: 0.208 V and 0.279 V",
+        "pass": true,
+        "source": "Rev. E Absolute Maximum Ratings"
+       },
+       {
+        "name": "USB-only operation",
+        "required": "board from USB-C",
+        "datasheet": "instant-on VOUT at 84 to 86 % of float",
+        "pass": true,
+        "source": "Rev. E VFBMIN"
+       },
+       {
+        "name": "charges with floor disconnect open",
+        "required": "yes",
+        "datasheet": "charges through RCS and the PowerPath FET",
+        "pass": true,
+        "source": "Rev. E"
+       },
+       {
+        "name": "path MOSFET gate drive at the floor",
+        "required": "recorded",
+        "datasheet": "BGATE drives a P-channel FET, clamped 9.5 V below CSP; at most 6.6 V at the floor",
+        "pass": true,
+        "source": "FU-2B1 P3 reading of Rev. E"
+       }
+      ],
+      "jlcpcb": "stockCount 2648, canPresaleNumber 2637, expand, 14.2343 at the 1-unit break; read 2026-10-02T15:33:38Z, vendors.py jlcpcb C462630",
+      "digikey": "stock_available 620, lead_weeks 49, Active; 2026-10-02T12:24:33Z (cached)",
+      "gate": "need 5; threshold 50; 2648 >= 50, presale 2637 >= 0: pass",
+      "lifecycle": "Digi-Key ProductStatus Active (ADI part, Lifecycle check), 12:24:33Z; Rev. A dated 01/14; PCN not read",
+      "second_source": "second vendor: Digi-Key 620 >= 50",
+      "alternates": [
+       "LTC4020EUHF#PBF (C2858365)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Passes with no firmware in the path; VOUT 110 % of float with the pack off and the 49-week lead time rank it third",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "BQ25731RSNR (C2871872)",
+      "maker": "Texas Instruments",
+      "reason": "USB-only operation not shown: no BATFET, VSYS is the battery node (FU-2B1 rerank reading of SLUSE66A)"
+     },
+     {
+      "part": "BQ25750RRVR, BQ25756RRVR",
+      "maker": "Texas Instruments",
+      "reason": "run while charging (BQ25750: battery joins the system only with the input outside its window) and termination on pack current (BQ25756: RBAT_SNS carries charge plus load current)"
+     },
+     {
+      "part": "BQ25720RSNR, BQ25730RSNR",
+      "maker": "Texas Instruments",
+      "reason": "rule 4: stockCount 0 and 1, presale -2 and -3 (15:38:19Z, 15:34:41Z)"
+     },
+     {
+      "part": "BQ25798RQMR, BQ25883RGER, BQ25886RGER, BQ25882YFFR",
+      "maker": "Texas Instruments",
+      "reason": "pack current carried: integrated BATFET 4 to 6 A RMS"
+     },
+     {
+      "part": "MAX77960EFV06+, MAX77961BEFV06+",
+      "maker": "Analog Devices (Maxim)",
+      "reason": "pack current carried: 10.0 A RMS absolute maximum"
+     },
+     {
+      "part": "BQ25887RGER",
+      "maker": "Texas Instruments",
+      "reason": "no power path"
+     }
+    ]
+   },
+   {
+    "function": "Charger input limit",
+    "requirements": [
+     {
+      "name": "advertisement detection",
+      "value": "reads the source's Rp advertisement on CC: Default, 1.5 A or 3.0 A",
+      "source": "IOBoard.md Charger input limit; F8"
+     },
+     {
+      "name": "default current",
+      "value": "500 mA at Default: the shared connector carries USB 2.0 D+ and D- and no SuperSpeed pair",
+      "source": "V148 (found); V13 answer"
+     },
+     {
+      "name": "dead-battery Rd",
+      "value": "presents Rd on CC with no supply, so a source turns VBUS on for a flat or held-off pack",
+      "source": "V152, V153 (found)"
+     },
+     {
+      "name": "supply",
+      "value": "runs from VBUS up to 5.5 V, or from a rail present whenever VBUS is",
+      "source": "V10 answer; V152 (found)"
+     },
+     {
+      "name": "limit output",
+      "value": "sets the charger's input limit by pins, or reports it over I2C with an interrupt",
+      "source": "R7 row"
+     },
+     {
+      "name": "adjust time",
+      "value": "recorded for P5, not a gate: tSinkAdj 60 ms maximum (USB Type-C Release 2.5 Table 4-32)",
+      "source": "FU-2P1 and round 1 T1/022-P1-critic-R7.json"
+     },
+     {
+      "name": "operating ambient",
+      "value": "0 to 50 °C",
+      "source": "V7 answer"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "FUSB303BTMX",
+      "maker": "onsemi (FUSB303B/D Rev. 3); on the S1 list",
+      "lcsc": "C895444",
+      "package": "X2QFN-12 1.6 x 1.6 mm",
+      "placements": 1,
+      "placements_basis": "fixed: one USB-C port a board (V13)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "advertisement detection",
+        "required": "Default, 1.5 A, 3.0 A",
+        "datasheet": "Sink with Default, 1.5 A or 3 A current on OUT1/OUT2 (pin table) or in I2C registers",
+        "pass": true,
+        "source": "fusb303b-d.pdf Rev. 3 (September 2024) pin functions, read 2026-10-02T15:27:52Z"
+       },
+       {
+        "name": "default current",
+        "required": "500 mA applied at Default",
+        "datasheet": "reports Default; the charger's limit is set by firmware or strap",
+        "pass": true,
+        "source": "Rev. 3"
+       },
+       {
+        "name": "dead-battery Rd",
+        "required": "Rd with no supply",
+        "datasheet": "Dead Battery Support (Sink Port role when No Power Applied)",
+        "pass": true,
+        "source": "Rev. 3 Features"
+       },
+       {
+        "name": "supply",
+        "required": "VBUS to 5.5 V or the 3.3 V rail",
+        "datasheet": "VDD 2.85 to 5.5 V; ID, VBUS_DET, CC1, CC2 tolerate 28 V DC",
+        "pass": true,
+        "source": "Rev. 3 Features"
+       },
+       {
+        "name": "limit output",
+        "required": "pins, or I2C with interrupt",
+        "datasheet": "GPIO and I2C configuration, INT",
+        "pass": true,
+        "source": "Rev. 3 Features"
+       },
+       {
+        "name": "adjust time",
+        "required": "recorded",
+        "datasheet": "tRpValueChange 10 to 20 ms",
+        "pass": true,
+        "source": "FU-2B1 P2 reading of Rev. 3"
+       },
+       {
+        "name": "operating ambient",
+        "required": "0 to 50 °C",
+        "datasheet": "TA -40 to +85 °C",
+        "pass": true,
+        "source": "Rev. 3 Recommended Operating Conditions"
+       }
+      ],
+      "jlcpcb": "stockCount 5265, canPresaleNumber 5234, expand, 0.5398 a unit at the 1-unit break (currency not labelled); read 2026-10-02T15:33:38Z, vendors.py jlcpcb C895444, exact LCSC match",
+      "digikey": "stock_available 4224, lead_weeks 52, ProductStatus Active; 2026-10-02T11:53:58Z (cached), https://api.digikey.com/products/v4/search/FUSB303BTMX/productdetails",
+      "gate": "need = 5 x 1 = 5; threshold 50; 5265 >= 50, presale 5234 >= 0: pass",
+      "lifecycle": "Active for FUSB303BTMX in the orderable-parts table of https://www.onsemi.com/products/interfaces/usb-type-c/fusb303b (read 2026-10-02T15:34:09Z); the same table marks FUSB303TMX Last Shipments. Longevity: none read. First datasheet date not stated in Rev. 3. PCN not read. Digi-Key Active",
+      "second_source": "second vendor: Digi-Key 4224 >= 50 (11:53:58Z, cached)",
+      "alternates": [
+       "FUSB303TMX (Last Shipments, lifecycle fail)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Runs from the 3.3 V rail or VBUS, dead-battery Rd, pins or I2C with interrupt, states its Rp-change time; verified first in FU-2B1",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "TUSB321AIRWBR",
+      "maker": "Texas Instruments (SLLSER2A); on the S1 list",
+      "lcsc": "C2674046",
+      "package": "X2QFN-12 1.6 x 1.6 mm (RWB)",
+      "placements": 1,
+      "placements_basis": "fixed: one USB-C port a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "advertisement detection",
+        "required": "Default, 1.5 A, 3.0 A",
+        "datasheet": "OUT1/OUT2 open-drain current mode: Default, medium, high",
+        "pass": true,
+        "source": "tusb321ai.pdf SLLSER2A pin functions, read 2026-10-02T15:27:52Z"
+       },
+       {
+        "name": "dead-battery Rd",
+        "required": "Rd with no supply",
+        "datasheet": "RCC_DB 4.1 to 6.1 kOhm at VDD = 0 V",
+        "pass": true,
+        "source": "SLLSER2A 6.5"
+       },
+       {
+        "name": "supply",
+        "required": "VBUS to 5.5 V",
+        "datasheet": "VDD 4.5 to 5.5 V",
+        "pass": true,
+        "source": "SLLSER2A Features"
+       },
+       {
+        "name": "limit output",
+        "required": "pins",
+        "datasheet": "OUT1, OUT2",
+        "pass": true,
+        "source": "SLLSER2A"
+       },
+       {
+        "name": "operating ambient",
+        "required": "0 to 50 °C",
+        "datasheet": "TA -40 to 85 °C",
+        "pass": true,
+        "source": "SLLSER2A 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 2387, canPresaleNumber 2357, expand, 1.5493 at the 1-unit break; read 2026-10-02T15:33:38Z, vendors.py jlcpcb C2674046",
+      "digikey": "stock_available 6965, lead_weeks 12, Active; 2026-10-02T11:54:00Z (cached)",
+      "gate": "need 5; threshold 50; 2387 >= 50, presale 2357 >= 0: pass",
+      "lifecycle": "ACTIVE on https://www.ti.com/product/TUSB321AI (15:34:09Z); first datasheet October 2015; PCN not read; Digi-Key Active",
+      "second_source": "second vendor: Digi-Key 6965 >= 50",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Pins only, VDD 4.5 V minimum ties it to VBUS; no Rp-change time stated",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "TUSB320LAIRWBR",
+      "maker": "Texas Instruments (SLLSEQ8D); on the S1 list",
+      "lcsc": "C132554",
+      "package": "X2QFN-12 1.6 x 1.6 mm (RWB)",
+      "placements": 1,
+      "placements_basis": "fixed: one USB-C port a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "advertisement detection",
+        "required": "Default, 1.5 A, 3.0 A",
+        "datasheet": "current mode on OUT1/OUT2 in GPIO mode or in I2C with INT_N",
+        "pass": true,
+        "source": "tusb320lai.pdf SLLSEQ8D, read 2026-10-02T15:27:52Z"
+       },
+       {
+        "name": "dead-battery Rd",
+        "required": "Rd with no supply",
+        "datasheet": "RCC_DB 4.1 to 6.1 kOhm; 7.3.3 Dead Battery Mode",
+        "pass": true,
+        "source": "SLLSEQ8D 6.5, 7.3.3"
+       },
+       {
+        "name": "supply",
+        "required": "a rail present whenever VBUS is",
+        "datasheet": "VDD 2.7 to 5 V, ramp within 25 ms; VBUS 4 to 28 V sensed",
+        "pass": true,
+        "source": "SLLSEQ8D 6.3"
+       },
+       {
+        "name": "limit output",
+        "required": "pins or I2C with interrupt",
+        "datasheet": "both",
+        "pass": true,
+        "source": "SLLSEQ8D"
+       },
+       {
+        "name": "operating ambient",
+        "required": "0 to 50 °C",
+        "datasheet": "TA -40 to 85 °C",
+        "pass": true,
+        "source": "SLLSEQ8D 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 3089, canPresaleNumber 3038, expand, 1.2729 at the 1-unit break; read 2026-10-02T15:33:38Z, vendors.py jlcpcb C132554",
+      "digikey": "stock_available 11965, lead_weeks 12, Active; 2026-10-02T12:17:33Z (cached)",
+      "gate": "need 5; threshold 50; 3089 >= 50, presale 3038 >= 0: pass",
+      "lifecycle": "ACTIVE on https://www.ti.com/product/TUSB320LAI (15:34:09Z); first datasheet October 2015; PCN not read; Digi-Key Active",
+      "second_source": "second vendor: Digi-Key 11965 >= 50",
+      "alternates": [
+       "TUSB320LIRWBR (industrial sibling)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Runs from the 3.3 V rail; VDD must ramp within 25 ms, a start-up figure for P5",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "FUSB303TMX (C603072)",
+      "maker": "onsemi",
+      "reason": "lifecycle: Last Shipments on onsemi's FUSB303B orderable-parts table (2026-10-02T15:34:09Z)"
+     },
+     {
+      "part": "TUSB321RWBR (C139392)",
+      "maker": "Texas Instruments",
+      "reason": "dead-battery Rd: SLLSEO6C states RCC_D only in UFP or DRP mode and no Rd at VDD = 0 V (FU-2B1 reading)"
+     },
+     {
+      "part": "PTN5150AHXMP (C2651889)",
+      "maker": "NXP",
+      "reason": "rule 5: Digi-Key stock 18 under 50, no pin-compatible alternate passes rule 4 (FU-2B1 rerank reading)"
+     },
+     {
+      "part": "WUSB3801Q-12/TR",
+      "maker": "Will Semiconductor",
+      "reason": "not on S1 (rule 2)"
+     }
+    ]
+   },
+   {
+    "function": "Pack cells",
+    "requirements": [
+     {
+      "name": "pack",
+      "value": "SLS XTRON 3000 mAh 2S1P, article SLSXT30002130, the owner's choice; rules 2, 4 and 5 waived; bought at Stefansliposhop",
+      "source": "F9, V137, V151 answers; Sourcing rules 1 and 2 (owner, 2026-09-30)"
+     },
+     {
+      "name": "charge voltage",
+      "value": "4.2 V a cell",
+      "source": "V138 (found)"
+     },
+     {
+      "name": "discharge floor",
+      "value": "3.3 V a cell under load is the lowest trip; the maker's limit is not crossed",
+      "source": "V294, V295 (owner, 2026-10-02)"
+     },
+     {
+      "name": "continuous discharge",
+      "value": "at least 52.1 A nominal and at least the overcurrent band's upper edge, 69.7 A, at or below the pack's continuous rating",
+      "source": "V294; V284; report 'protector overcurrent window'"
+     },
+     {
+      "name": "burst discharge",
+      "value": "at least the short-circuit band's upper edge, 100.2 A, for the trip delay",
+      "source": "V150 (found); report 'protector short-circuit window'"
+     },
+     {
+      "name": "cold discharge",
+      "value": "below 18 °C at the pack's NTC the pack delivers 15 A or less (90 W at 6.0 V), by firmware",
+      "source": "V296 (owner, 2026-10-02)"
+     },
+     {
+      "name": "charge current",
+      "value": "maximum charge current at least 2.15 A",
+      "source": "V144 (found)"
+     },
+     {
+      "name": "temperature",
+      "value": "0 to 55 °C pack limits; 0 to 50 °C ambient",
+      "source": "V150 answer; V7; V146 (found)"
+     },
+     {
+      "name": "capacity",
+      "value": "3000 mAh, the pack the owner fixes; no minimum stated",
+      "source": "V145 (found)"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "SLS XTRON 3000mAh 2S1P 7,4V 30C/60C (SLSXT30002130)",
+      "maker": "StefansLipoShop GmbH (the vendor page's 'Hersteller'); exempt from rule 2 (owner, 2026-09-30)",
+      "lcsc": "none",
+      "package": "pouch pack, about 136 x 43 x 13 mm, 174 g, XT60 socket on AWG12, XH balance connector",
+      "placements": 1,
+      "placements_basis": "fixed: one bench pack a board (V137)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "charge voltage",
+        "required": "4.2 V a cell",
+        "datasheet": "safety notes section 3: 4,2 V pro Zelle voll geladen",
+        "pass": true,
+        "source": "SLS_Sicherheitshinweise_DE_A4.pdf REV.1.06, read 2026-10-02T15:27:52Z"
+       },
+       {
+        "name": "discharge floor",
+        "required": "3.3 V a cell under load",
+        "datasheet": "section 4: 'Entladen Sie den Akku unter Last nie unter 3,3 V pro Zelle'; 3,75 V at rest; the guide: not even briefly",
+        "pass": true,
+        "source": "SLS safety notes section 4; LiPoFAQV15c.pdf 'Zusammenfassend'"
+       },
+       {
+        "name": "continuous discharge",
+        "required": "52.1 A and 69.7 A, at or below the rating",
+        "datasheet": "Dauerentladestrom max. 30C (90,0A): 1.73 times 52.1 A, 1.29 times 69.7 A",
+        "pass": true,
+        "source": "vendor page, read 2026-10-02T15:27:52Z"
+       },
+       {
+        "name": "burst discharge",
+        "required": "100.2 A for up to about 1 ms",
+        "datasheet": "Kurzzeitiger Entladestrom max. 60C (180,0A), duration not stated",
+        "pass": true,
+        "source": "vendor page"
+       },
+       {
+        "name": "cold discharge",
+        "required": "15 A or less below 18 °C",
+        "datasheet": "guide: below 18 °C preheating is mandatory for loads above 5C (15 A); near 10 °C under 50 % of the C rate (under 45 A)",
+        "pass": true,
+        "source": "LiPoFAQV15c.pdf 'Und wenn es mal kalt', 'Die maximale Leistung'"
+       },
+       {
+        "name": "charge current",
+        "required": "at least 2.15 A",
+        "datasheet": "Ladestrom max. 4C (12A)",
+        "pass": true,
+        "source": "vendor page"
+       },
+       {
+        "name": "temperature",
+        "required": "0 to 55 °C",
+        "datasheet": "never above 60 °C; charge under 10 °C below 1C, the board's 0.72C at most",
+        "pass": true,
+        "source": "LiPoFAQV15c.pdf"
+       },
+       {
+        "name": "capacity",
+        "required": "3000 mAh",
+        "datasheet": "Kapazität 3000mAh",
+        "pass": true,
+        "source": "vendor page"
+       }
+      ],
+      "jlcpcb": "not read: a part off the board bought at Stefansliposhop (Sourcing rule 1); the vendor page shows 'Lieferzeit: 1-3 Tage*' and 25,30 EUR, no stock count (read 2026-10-02T15:27:52Z)",
+      "digikey": "not read: the owner waives rules 4 and 5 for the pack (2026-09-30), and Digi-Key does not sell it",
+      "gate": "waived by the owner (Sourcing rule 1, 2026-09-30); need 5 boards x 1 = 5 packs",
+      "lifecycle": "no maker lifecycle page; the vendor page lists the article for sale with a 1 to 3 day delivery time (read 2026-10-02T15:27:52Z); longevity, first datasheet date and change notices not published",
+      "second_source": "none: rule 5 waived by the owner (2026-09-30)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "The owner's fixed pack. With V294's 3.3 V floor and V296's 15 A below 18 °C, both refutations of FU-2B1 ruling 015 are answered and it passes every value",
+      "second_source_route": "none",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "INR-18650-P30B",
+      "maker": "Molicel",
+      "reason": "not used: the owner replaced the 18650 cells with the SLS XTRON pack (F9, 2026-09-30)"
+     }
+    ]
+   },
+   {
+    "function": "Pack overcurrent protection",
+    "requirements": [
+     {
+      "name": "one IC on the pack",
+      "value": "one IC does the pack disconnect, the overcurrent protection, the bench balance lead and the pack temperature",
+      "source": "V297, V298 (owner, 2026-10-02)"
+     },
+     {
+      "name": "location",
+      "value": "on the IO board, an LCSC part JLCPCB places",
+      "source": "V149 (found)"
+     },
+     {
+      "name": "cells",
+      "value": "2S, 6.6 to 8.4504 V",
+      "source": "V294; V138 (found)"
+     },
+     {
+      "name": "overcurrent threshold",
+      "value": "60 A nominal; the trip band with the part's stated tolerance lies above 52.1 A and at or below 90 A",
+      "source": "V284; V294; vendor page 30C (90 A)"
+     },
+     {
+      "name": "short circuit",
+      "value": "a trip band with the part's stated tolerance above the overcurrent band and at or below 180 A",
+      "source": "V150 (found)"
+     },
+     {
+      "name": "charge overvoltage",
+      "value": "per-cell overvoltage on charge settable to 4.25 V",
+      "source": "V150 (found)"
+     },
+     {
+      "name": "undervoltage trip",
+      "value": "lowest trip 3.3 V a cell under load, the threshold set above it by the IC's accuracy band",
+      "source": "V294, V295"
+     },
+     {
+      "name": "undervoltage release",
+      "value": "released only with charging present and every cell above a recovery voltage, not on a charger alone or on the load returning",
+      "source": "V93 found by FU-2B1 R5 (003-P2-R5.json); IOBoard.md Pack disconnect hysteresis"
+     },
+     {
+      "name": "threshold in non-volatile memory",
+      "value": "set in hardware or in the part's own NVM written before shipping, not by host firmware at each start",
+      "source": "V98 found by FU-2B1 R5"
+     },
+     {
+      "name": "temperature",
+      "value": "blocks charge and discharge above 55 °C and below 0 °C, read from the pack NTC",
+      "source": "V150 answer; IOBoard.md Pack temperature"
+     },
+     {
+      "name": "NTC",
+      "value": "reads a 10 kOhm, B 3435 K NTC",
+      "source": "V147 answer"
+     },
+     {
+      "name": "FET drive at the floor",
+      "value": "enhances its protection FETs from a 6.6 V pack",
+      "source": "V294"
+     },
+     {
+      "name": "operating ambient",
+      "value": "0 to 50 °C",
+      "source": "V7 answer"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "BQ40Z80RSMR",
+      "maker": "Texas Instruments (SLUSBV4D, TRM SLUUBT5C); on the S1 list",
+      "lcsc": "C882850",
+      "package": "VQFN-32 4 x 4 mm (RSM)",
+      "placements": 1,
+      "placements_basis": "fixed: one pack protector a board (V297, V298)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "one IC on the pack",
+        "required": "disconnect, overcurrent, balance lead, temperature",
+        "datasheet": "pack manager with CHG/DSG high-side FET drive, CUV, AOLD/ASCD, VC1 to VC6 and TS1 to TS4",
+        "pass": true,
+        "source": "bq40z80.pdf SLUSBV4D (May 2026) 1, 6.3, read 2026-10-02T15:27:52Z"
+       },
+       {
+        "name": "cells",
+        "required": "2S, 6.6 to 8.4504 V",
+        "datasheet": "2 to 6 series; 2S with VC6 shorted to VC5, VC4, VC3 and VC2 (6.3.6.4); VCC 2.2 to 32 V",
+        "pass": true,
+        "source": "SLUSBV4D 5.3, 6.3.6.4"
+       },
+       {
+        "name": "overcurrent threshold",
+        "required": "band above 52.1 A, at or below 90 A, about 60 A",
+        "datasheet": "AOLD -16.6 to -100 mV in 5.56 mV steps (RSNS = 1); 0x08 = 61.08 mV; offset +-2.5 mV, scale +-10 % without trim, +-5 % post-trim; at 1 mOhm 52.5 to 69.7 A (no trim) or 55.5 to 66.6 A (post-trim), nominal 61.1 A; delay 1 to 31 ms",
+        "pass": true,
+        "source": "SLUSBV4D 5.5 Current Protection Thresholds and Timing; SLUUBT5C Appendix A OLD Threshold table"
+       },
+       {
+        "name": "short circuit",
+        "required": "above the overcurrent band, at or below 180 A",
+        "datasheet": "SCD1 -44.4 to -200 mV in 22.2 mV steps; 88.8 mV at 1 mOhm: 77.4 to 100.2 A (no trim), 81.9 to 95.7 A (post-trim); delay 0 to 915 us",
+        "pass": true,
+        "source": "SLUSBV4D 5.5"
+       },
+       {
+        "name": "charge overvoltage",
+        "required": "settable to 4.25 V",
+        "datasheet": "COV thresholds 0 to 32767 mV, default 4300 mV",
+        "pass": true,
+        "source": "SLUUBT5C 19.10 COV"
+       },
+       {
+        "name": "undervoltage trip",
+        "required": "lowest trip 3.3 V",
+        "datasheet": "CUV:Threshold 0 to 32767 mV, Delay 0 to 255 s; no cell-voltage accuracy stated; the uncalibrated ADC figures give a band of 83 to 132 mV at 3.3 V, so 3390 to 3440 mV keeps the lowest trip at 3.3 V (report)",
+        "pass": true,
+        "source": "SLUUBT5C 3.2, 19.10 CUV; SLUSBV4D 5.5 ADC"
+       },
+       {
+        "name": "undervoltage release",
+        "required": "charge-gated",
+        "datasheet": "CUV recovers with CUV_RECOV_CHG = 1 only when charging is detected and min cell >= CUV:Recovery",
+        "pass": true,
+        "source": "SLUUBT5C 3.2"
+       },
+       {
+        "name": "threshold in non-volatile memory",
+        "required": "NVM written before shipping",
+        "datasheet": "data flash, written with BQSTUDIO; default 6S configuration changed before first use on 2S",
+        "pass": true,
+        "source": "SLUSBV4D 7.3.1 Table 7-1 note"
+       },
+       {
+        "name": "temperature",
+        "required": "block above 55 °C and below 0 °C, both directions",
+        "datasheet": "OTC, OTD, UTC, UTD thresholds -40.0 to 150.0 °C in 0.1 °C; UTD and UTC set XDSG and XCHG; OTD and OTC open the FETs with FET Options[OTFET] = 1",
+        "pass": true,
+        "source": "SLUUBT5C 3.9 to 3.13, 19.10.13 to 19.10.17"
+       },
+       {
+        "name": "NTC",
+        "required": "10 kOhm, B 3435 K",
+        "datasheet": "TS pins with 18 kOhm pull-up (14.4 to 21.6 kOhm) for a 10 kOhm (103) NTC; cell temperature polynomial a1 to a5, b1 to b4 in data flash",
+        "pass": true,
+        "source": "SLUSBV4D 5.5, 7.3.2 thermistor text; SLUUBT5C Calibration"
+       },
+       {
+        "name": "FET drive at the floor",
+        "required": "from 6.6 V",
+        "datasheet": "VFETON 10.5 to 12.5 V above VBAT for VBAT >= 4.92 V",
+        "pass": true,
+        "source": "SLUSBV4D 5.5 N-channel FET Drive"
+       },
+       {
+        "name": "operating ambient",
+        "required": "0 to 50 °C",
+        "datasheet": "TOPR -40 to 85 °C",
+        "pass": true,
+        "source": "SLUSBV4D 5.3"
+       }
+      ],
+      "jlcpcb": "stockCount 8611, canPresaleNumber 8597, componentLibraryType expand, 2.6921 a unit at the 1-unit break (currency not labelled); maker label Texas Instruments (jlcparts maker field blank); read 2026-10-02T15:33:38Z, vendors.py jlcpcb C882850, exact LCSC match",
+      "digikey": "stock_available 6515, lead_weeks 20, ProductStatus Active; reading of 2026-10-02T11:58:04Z returned cached, https://api.digikey.com/products/v4/search/BQ40Z80RSMR/productdetails",
+      "gate": "need = 5 x 1 = 5; threshold 50; 8611 >= 50, presale 8597 >= 0: pass",
+      "lifecycle": "ACTIVE on https://www.ti.com/product/BQ40Z80 (read 2026-10-02T15:34:09Z); TI lists BQ41Z50 as a similar-function part. Longevity: none read. First datasheet SLUSBV4, June 2018 (revised May 2026, D): 99 months. PCN listing not read. Digi-Key Active",
+      "second_source": "second vendor: Digi-Key 6515 >= 50 (11:58:04Z, cached). BQ40Z80RSMT, the same device on a small reel, fails rule 4 (C528626: 21, presale 15, 15:33:38Z)",
+      "alternates": [
+       "BQ40Z80RSMT (C528626, rule 4 fail)"
+      ],
+      "driver_in_shared": "none (SMBus gauge registers; no driver in shared/)",
+      "reason": "Meets every value and is R5's FU-2B1 pack disconnect, so the one-IC rule keeps it: 2S documented, charge-gated CUV recovery, open-cell failure, four TS inputs, 10.5 V FET drive at the floor, most stock at both vendors. Needs a data-flash image, per-board calibration and Scale Factor 2 for firmware currents above 32,767 mA",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "BQ40Z50RSMR-R2",
+      "maker": "Texas Instruments (SLUSCS4C, TRM SLUUBK0B); on the S1 list",
+      "lcsc": "C2845123",
+      "package": "VQFN-32 4 x 4 mm (RSM)",
+      "placements": 1,
+      "placements_basis": "fixed: one pack protector a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "one IC on the pack",
+        "required": "four functions",
+        "datasheet": "pack manager with high-side FET drive, CUV, OLD/SCD, VC1 to VC4, TS1 to TS4",
+        "pass": true,
+        "source": "bq40z50-r2.pdf SLUSCS4C, read 2026-10-02T15:27:52Z"
+       },
+       {
+        "name": "cells",
+        "required": "2S",
+        "datasheet": "1 to 4 series; VCC 2.2 to 26 V",
+        "pass": true,
+        "source": "SLUSCS4C 7.3"
+       },
+       {
+        "name": "overcurrent threshold",
+        "required": "band above 52.1 A, at or below 90 A",
+        "datasheet": "OLD -16.6 to -100 mV, offset +-2.5 mV post-trim, scale +-10 % no trim, +-5 % post-trim: 61.08 mV at 1 mOhm gives 52.5 to 69.7 A or 55.5 to 66.6 A",
+        "pass": true,
+        "source": "SLUSCS4C 7.5"
+       },
+       {
+        "name": "short circuit",
+        "required": "above the band, at or below 180 A",
+        "datasheet": "SCD 44.4 to 200 mV; 88.8 mV: 77.4 to 100.2 A",
+        "pass": true,
+        "source": "SLUSCS4C 7.5"
+       },
+       {
+        "name": "charge overvoltage",
+        "required": "4.25 V",
+        "datasheet": "COV data flash in mV",
+        "pass": true,
+        "source": "SLUUBK0B"
+       },
+       {
+        "name": "undervoltage release",
+        "required": "charge-gated",
+        "datasheet": "CUV_RECOV_CHG (Bit 1): require charge to recover",
+        "pass": true,
+        "source": "sluubk0.pdf, read 2026-10-02T15:27:52Z"
+       },
+       {
+        "name": "temperature",
+        "required": "0 and 55 °C both directions",
+        "datasheet": "OTC, OTD, UTC, UTD in data flash; RNTC(PU) 14.4 to 21.6 kOhm",
+        "pass": true,
+        "source": "SLUSCS4C 7.5; SLUUBK0B"
+       },
+       {
+        "name": "FET drive at the floor",
+        "required": "from 6.6 V",
+        "datasheet": "VDSG(ON) 10.5 to 12 V for VBAT >= 4.92 V",
+        "pass": true,
+        "source": "SLUSCS4C 7.5"
+       },
+       {
+        "name": "operating ambient",
+        "required": "0 to 50 °C",
+        "datasheet": "TOPR -40 to 85 °C",
+        "pass": true,
+        "source": "SLUSCS4C 7.3"
+       }
+      ],
+      "jlcpcb": "stockCount 9994, canPresaleNumber 9886, expand, 1.9492 a unit at the 1-unit break; read 2026-10-02T15:33:38Z, vendors.py jlcpcb C2845123, exact LCSC match",
+      "digikey": "stock_available 161, lead_weeks 20, Active; 2026-10-02T11:54:07Z (cached), https://api.digikey.com/products/v4/search/BQ40Z50RSMR-R2/productdetails",
+      "gate": "need 5; threshold 50; 9994 >= 50, presale 9886 >= 0: pass",
+      "lifecycle": "ACTIVE on https://www.ti.com/product/BQ40Z50-R2 (15:34:09Z); first datasheet SLUSCS4, June 2017; PCN not read; Digi-Key Active",
+      "second_source": "second vendor: Digi-Key 161 >= 50 (11:54:07Z, cached). BQ40Z50RSMR-R1 (C179743, 20574 at JLCPCB, ACTIVE) is the earlier firmware that TI says R2 replaces drop-in; its data flash differs",
+      "alternates": [
+       "BQ40Z50RSMR-R1 (C179743)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Same AFE and CUV logic as rank 1 for 1 to 4 series; ranks second on the thin Digi-Key stock and because R5's disconnect reading is on the BQ40Z80",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "BQ4050RSMR",
+      "maker": "Texas Instruments (SLUSC67B, TRM SLUUAQ3A); on the S1 list",
+      "lcsc": "C157570",
+      "package": "VQFN-32 4 x 4 mm (RSM)",
+      "placements": 1,
+      "placements_basis": "fixed: one pack protector a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "one IC on the pack",
+        "required": "four functions",
+        "datasheet": "CEDV gauge and protector with high-side FET drive, VC1 to VC4, TS1 to TS4",
+        "pass": true,
+        "source": "bq4050.pdf SLUSC67B, read 2026-10-02T15:27:52Z"
+       },
+       {
+        "name": "cells",
+        "required": "2S",
+        "datasheet": "1 to 4 series; VCC 2.2 to 26 V",
+        "pass": true,
+        "source": "SLUSC67B 7.3"
+       },
+       {
+        "name": "overcurrent threshold",
+        "required": "band above 52.1 A, at or below 90 A",
+        "datasheet": "OCD -16.6 to -100 mV, scale +-10 % no trim, +-5 % post-trim: 52.5 to 69.7 A at 61.08 mV, 1 mOhm",
+        "pass": true,
+        "source": "SLUSC67B 7.5"
+       },
+       {
+        "name": "short circuit",
+        "required": "above the band, at or below 180 A",
+        "datasheet": "SCD 44.4 to 200 mV; 88.8 mV: 77.4 to 100.2 A",
+        "pass": true,
+        "source": "SLUSC67B 7.5"
+       },
+       {
+        "name": "undervoltage release",
+        "required": "charge-gated",
+        "datasheet": "Protection Configuration[CUV_RECOV_CHG] = 1",
+        "pass": true,
+        "source": "sluuaq3.pdf 3.x CUV, read 2026-10-02T15:27:52Z"
+       },
+       {
+        "name": "temperature",
+        "required": "0 and 55 °C both directions",
+        "datasheet": "OTC, OTD, UTC, UTD; RNTC(PU) 14.4 to 21.6 kOhm",
+        "pass": true,
+        "source": "SLUSC67B 7.5; SLUUAQ3A"
+       },
+       {
+        "name": "FET drive at the floor",
+        "required": "from 6.6 V",
+        "datasheet": "VDSG(ON) 10.5 to 12 V for 4.92 V <= VBAT <= 18 V",
+        "pass": true,
+        "source": "SLUSC67B 7.5"
+       },
+       {
+        "name": "operating ambient",
+        "required": "0 to 50 °C",
+        "datasheet": "TOPR -40 to 85 °C",
+        "pass": true,
+        "source": "SLUSC67B 7.3"
+       }
+      ],
+      "jlcpcb": "stockCount 15945, canPresaleNumber 15931, expand, 1.2404 at the 1-unit break; read 2026-10-02T15:33:38Z, vendors.py jlcpcb C157570",
+      "digikey": "stock_available 5311, lead_weeks 20, Active; 2026-10-02T11:58:06Z (cached)",
+      "gate": "need 5; threshold 50; 15945 >= 50, presale 15931 >= 0: pass",
+      "lifecycle": "ACTIVE on https://www.ti.com/product/BQ4050 (15:34:09Z); first datasheet SLUSC67, March 2016; PCN not read; Digi-Key Active",
+      "second_source": "second vendor: Digi-Key 5311 >= 50 (cached)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Same thresholds and lowest price; ranks third because its open-cell check does not see a 2S mid tap (FU-2B1 R5 reading), which V107 rests on",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "MAX17320G22+ (C2914309)",
+      "maker": "Analog Devices (Maxim)",
+      "reason": "undervoltage release, so not the one IC: 'Undervoltage fault persists until charger applied' and 'All discharge-only faults are released when the charger is connected' (MAX17320 Rev 12, --client safari, read 2026-10-02T15:38:56Z); R5's P2 dropped it as the disconnect on the same text. Also FET drive 5 to 7 V at a 6 V pack (FU-2B1 reading)"
+     },
+     {
+      "part": "BQ76907RGRR (C22458649)",
+      "maker": "Texas Instruments",
+      "reason": "threshold in non-volatile memory: defaults FET_EN = 0 and CUV disabled until a host writes the registers after each power-up (SLUUCI8, FU-2B1 R5 reading); low-side FET drive"
+     },
+     {
+      "part": "BQ28Z620DRZR (C20345237)",
+      "maker": "Texas Instruments",
+      "reason": "rule 5: JLCPCB 64, presale 64 (15:33:38Z) passes rule 4 by 14, Digi-Key stock_available 0 (2026-10-02T12:27:41Z, cached) and no pin-compatible alternate passes"
+     },
+     {
+      "part": "BQ28Z610DRZR (C157573), BQ28Z610DRZR-R1 (C2876556)",
+      "maker": "Texas Instruments",
+      "reason": "overcurrent threshold: SLUSAS3D 7.23 states no offset or scale error for its comparators, so no band can be shown (FU-2B1 reading)"
+     },
+     {
+      "part": "BQ41Z50RSNR (C48397778)",
+      "maker": "Texas Instruments",
+      "reason": "rule 4: stockCount 20, presale 20 (2026-10-02T15:34:41Z)"
+     },
+     {
+      "part": "BQ40Z80RSMT (C528626)",
+      "maker": "Texas Instruments",
+      "reason": "rule 4: stockCount 21, presale 15 (15:33:38Z)"
+     },
+     {
+      "part": "BQ3060PWR (C544452)",
+      "maker": "Texas Instruments",
+      "reason": "not qualified: datasheet not read in this task; three members of the BQ40 family already pass; JLCPCB 256 (15:33:38Z)"
+     },
+     {
+      "part": "BQ76905RGRR, BQ77307RGRR, MAX17320G20+, RAJ240075A20DNP#HC1",
+      "maker": "Texas Instruments, Analog Devices, Renesas",
+      "reason": "rule 4 at FU-2B1 (stock 10, 3, 15, 5); not re-read"
+     },
+     {
+      "part": "BQ7692000PWR family, BQ76925, BQ78350-R1",
+      "maker": "Texas Instruments",
+      "reason": "cells: 3 or more series only (jlcparts descriptions)"
+     },
+     {
+      "part": "BQ29209DRBR, BQ29200DRBR, BQ2961xx, BQ2962xx, BQ7718xx",
+      "maker": "Texas Instruments",
+      "reason": "overcurrent threshold: overvoltage protection only"
+     },
+     {
+      "part": "R5460N212AF-TR-FE and the R5460 series",
+      "maker": "Nisshinbo",
+      "reason": "temperature: no thermistor input; overcurrent set by the FETs' RDS(on); fails R5's open balance lead"
+     },
+     {
+      "part": "S-8252, S-8232 (ABLIC); DW01 (Fortune); HY2120 (HYCON)",
+      "maker": "ABLIC, Fortune, HYCON",
+      "reason": "not on S1 (rule 2)"
+     }
+    ]
+   },
+   {
+    "function": "Bench pack balance lead",
+    "requirements": [
+     {
+      "name": "one IC on the pack",
+      "value": "the pack protector IC reads the lead (one IC for four functions)",
+      "source": "V297, V298"
+     },
+     {
+      "name": "separate input",
+      "value": "an input of its own, apart from R9's ESC pack balance-lead input",
+      "source": "IOBoard.md Bench pack balance lead"
+     },
+     {
+      "name": "taps",
+      "value": "3 conductors for the 2S pack (negative, mid-point, positive) reaching the protector and the balancer",
+      "source": "F9; IOBoard.md Bench pack balance lead"
+     },
+     {
+      "name": "per-cell reading",
+      "value": "the IC on the lead reads each cell's voltage for the 3.3 V a cell floor",
+      "source": "V294; IOBoard.md Discharge floor"
+     },
+     {
+      "name": "open lead",
+      "value": "with the lead unplugged or the mid wire open the pack stays off; may rest on the IC's undervoltage logic, confirmed by a bench test",
+      "source": "V107 found by FU-2B1 R5; V301 (owner, 2026-10-02)"
+     },
+     {
+      "name": "connector",
+      "value": "selected in stage 2 of round 2 with its protection",
+      "source": "Research.md Round 2, Rules of stage 1"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "BQ40Z80RSMR",
+      "maker": "Texas Instruments (SLUSBV4D); on the S1 list",
+      "lcsc": "C882850",
+      "package": "VQFN-32 4 x 4 mm (RSM)",
+      "placements": 1,
+      "placements_basis": "fixed: the one pack protector",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "one IC on the pack",
+        "required": "the protector reads the lead",
+        "datasheet": "the same part as Pack overcurrent protection",
+        "pass": true,
+        "source": "SLUSBV4D"
+       },
+       {
+        "name": "taps",
+        "required": "3 conductors",
+        "datasheet": "VC1 and VC2 with VC6 to VC3 shorted to VC2 for 2S",
+        "pass": true,
+        "source": "SLUSBV4D 6.3.6.4"
+       },
+       {
+        "name": "per-cell reading",
+        "required": "each cell",
+        "datasheet": "cell voltage ADC, K 0.198 to 0.202, 16-bit; Cell Voltage 1 and 2 over SMBus",
+        "pass": true,
+        "source": "SLUSBV4D 5.5"
+       },
+       {
+        "name": "open lead",
+        "required": "pack held off",
+        "datasheet": "open cell connection permanent failure; cell detach check current 30 to 70 uA; behaviour with an open 2S mid tap inferred, bench test per V301",
+        "pass": true,
+        "source": "SLUSBV4D 6.3.2, 5.5 ICD"
+       }
+      ],
+      "jlcpcb": "stockCount 8611, canPresaleNumber 8597, expand, 2.6921 at the 1-unit break; read 2026-10-02T15:33:38Z, vendors.py jlcpcb C882850",
+      "digikey": "stock_available 6515, lead_weeks 20, Active; 2026-10-02T11:58:04Z (cached)",
+      "gate": "need 5; threshold 50; 8611 >= 50, presale 8597 >= 0: pass",
+      "lifecycle": "ACTIVE on https://www.ti.com/product/BQ40Z80 (15:34:09Z); first datasheet June 2018; PCN not read; Digi-Key Active",
+      "second_source": "second vendor: Digi-Key 6515 >= 50",
+      "alternates": [
+       "BQ40Z80RSMT (rule 4 fail)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Follows the one-IC rule and the protector's rank 1",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "BQ40Z50RSMR-R2",
+      "maker": "Texas Instruments (SLUSCS4C); on the S1 list",
+      "lcsc": "C2845123",
+      "package": "VQFN-32 4 x 4 mm (RSM)",
+      "placements": 1,
+      "placements_basis": "fixed: the one pack protector",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "taps",
+        "required": "3 conductors",
+        "datasheet": "VC1 to VC4, 2S with VC4 and VC3 tied to VC2",
+        "pass": true,
+        "source": "SLUSCS4C pin functions"
+       },
+       {
+        "name": "per-cell reading",
+        "required": "each cell",
+        "datasheet": "cell voltage ADC over SMBus",
+        "pass": true,
+        "source": "SLUSCS4C 7.5"
+       },
+       {
+        "name": "open lead",
+        "required": "pack held off",
+        "datasheet": "cell detach check; open cell behaviour inferred",
+        "pass": true,
+        "source": "SLUSCS4C"
+       }
+      ],
+      "jlcpcb": "stockCount 9994, canPresaleNumber 9886, expand; read 2026-10-02T15:33:38Z, vendors.py jlcpcb C2845123",
+      "digikey": "stock_available 161, lead_weeks 20, Active; 2026-10-02T11:54:07Z (cached)",
+      "gate": "need 5; threshold 50; pass",
+      "lifecycle": "ACTIVE (15:34:09Z); first datasheet June 2017; Digi-Key Active",
+      "second_source": "second vendor: Digi-Key 161 >= 50",
+      "alternates": [
+       "BQ40Z50RSMR-R1"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Follows the protector's rank 2",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "BQ4050RSMR",
+      "maker": "Texas Instruments (SLUSC67B); on the S1 list",
+      "lcsc": "C157570",
+      "package": "VQFN-32 4 x 4 mm (RSM)",
+      "placements": 1,
+      "placements_basis": "fixed: the one pack protector",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "taps",
+        "required": "3 conductors",
+        "datasheet": "VC1 to VC4, 2S with VC4 and VC3 tied to VC2",
+        "pass": true,
+        "source": "SLUSC67B pin functions"
+       },
+       {
+        "name": "per-cell reading",
+        "required": "each cell",
+        "datasheet": "cell voltage ADC over SMBus",
+        "pass": true,
+        "source": "SLUSC67B 7.5"
+       },
+       {
+        "name": "open lead",
+        "required": "pack held off",
+        "datasheet": "OPNCELL open cell tab failure (SLUUAQ3A 3.18); does not see a 2S mid tap per FU-2B1 R5",
+        "pass": true,
+        "source": "SLUUAQ3A 3.18"
+       }
+      ],
+      "jlcpcb": "stockCount 15945, canPresaleNumber 15931, expand; read 2026-10-02T15:33:38Z, vendors.py jlcpcb C157570",
+      "digikey": "stock_available 5311, lead_weeks 20, Active; 2026-10-02T11:58:06Z (cached)",
+      "gate": "need 5; threshold 50; pass",
+      "lifecycle": "ACTIVE (15:34:09Z); first datasheet March 2016; Digi-Key Active",
+      "second_source": "second vendor: Digi-Key 5311 >= 50",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Follows the protector's rank 3",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "MAX17320G22+ (C2914309)",
+      "maker": "Analog Devices (Maxim)",
+      "reason": "one IC on the pack: fails the disconnect's undervoltage release (see Pack overcurrent protection)"
+     },
+     {
+      "part": "BQ28Z620DRZR (C20345237)",
+      "maker": "Texas Instruments",
+      "reason": "rule 5: Digi-Key 0 (cached 12:27:41Z)"
+     },
+     {
+      "part": "BQ76907RGRR (C22458649)",
+      "maker": "Texas Instruments",
+      "reason": "one IC on the pack: thresholds written by a host at each power-up"
+     }
+    ]
+   },
+   {
+    "function": "Pack temperature",
+    "requirements": [
+     {
+      "name": "one IC on the pack",
+      "value": "the pack protector reads the NTC (one IC for four functions)",
+      "source": "V297, V298"
+     },
+     {
+      "name": "NTC",
+      "value": "a 10 kOhm, B 3435 K NTC taped at the cell centre, on a lead of its own",
+      "source": "V147 answer; IOBoard.md Pack temperature"
+     },
+     {
+      "name": "limits",
+      "value": "blocks charge and discharge above 55 °C and below 0 °C",
+      "source": "V150 answer (owner, 2026-09-30)"
+     },
+     {
+      "name": "reading for firmware",
+      "value": "the temperature reaches the RP2354B so firmware lowers the TPS55285 limits to 15 A or less from the pack below 18 °C",
+      "source": "V296 (owner, 2026-10-02)"
+     },
+     {
+      "name": "operating ambient",
+      "value": "0 to 50 °C",
+      "source": "V7"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "BQ40Z80RSMR",
+      "maker": "Texas Instruments (SLUSBV4D, SLUUBT5C); on the S1 list",
+      "lcsc": "C882850",
+      "package": "VQFN-32 4 x 4 mm (RSM)",
+      "placements": 1,
+      "placements_basis": "fixed: the one pack protector",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "NTC",
+        "required": "10 kOhm, B 3435 K",
+        "datasheet": "TS1 to TS4, 18 kOhm pull-up (14.4 to 21.6 kOhm, -280 ppm/°C) for a 10 kOhm (103) NTC; configurable polynomial in data flash",
+        "pass": true,
+        "source": "SLUSBV4D 5.5, 7.3.2; SLUUBT5C Calibration"
+       },
+       {
+        "name": "limits",
+        "required": "55 °C and 0 °C, both directions",
+        "datasheet": "OTC 550, OTD 550, UTC 0, UTD 0 settable in 0.1 °C (-400 to 1500); UTD sets XDSG; OTD sets XDSG with FET Options[OTFET] = 1",
+        "pass": true,
+        "source": "SLUUBT5C 3.9 to 3.13, 19.10.13 to 19.10.17"
+       },
+       {
+        "name": "reading for firmware",
+        "required": "temperature to the RP2354B",
+        "datasheet": "Temperature() and DAStatus2() over SMBus in 0.1 K; SMBus address 0x16 (8-bit), 100 kHz, XL 400 kHz; SMBC/SMBD VIH 1.3 V, inputs to 32 V",
+        "pass": true,
+        "source": "SLUUBT5C 3.8, SMBus Address; SLUSBV4D 5.5"
+       },
+       {
+        "name": "operating ambient",
+        "required": "0 to 50 °C",
+        "datasheet": "-40 to 85 °C",
+        "pass": true,
+        "source": "SLUSBV4D 5.3"
+       }
+      ],
+      "jlcpcb": "stockCount 8611, canPresaleNumber 8597, expand, 2.6921 at the 1-unit break; read 2026-10-02T15:33:38Z, vendors.py jlcpcb C882850",
+      "digikey": "stock_available 6515, lead_weeks 20, Active; 2026-10-02T11:58:04Z (cached)",
+      "gate": "need 5; threshold 50; pass",
+      "lifecycle": "ACTIVE on https://www.ti.com/product/BQ40Z80 (15:34:09Z); first datasheet June 2018; PCN not read; Digi-Key Active",
+      "second_source": "second vendor: Digi-Key 6515 >= 50",
+      "alternates": [
+       "BQ40Z80RSMT (rule 4 fail)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The one pack IC; reads the NTC and acts in both directions, and reports it over SMBus for V296. Its reading uncertainty without calibration is in the report",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "BQ40Z50RSMR-R2",
+      "maker": "Texas Instruments (SLUSCS4C); on the S1 list",
+      "lcsc": "C2845123",
+      "package": "VQFN-32 4 x 4 mm (RSM)",
+      "placements": 1,
+      "placements_basis": "fixed: the one pack protector",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "NTC",
+        "required": "10 kOhm, B 3435 K",
+        "datasheet": "TS1 to TS4, 18 kOhm pull-up (14.4 to 21.6 kOhm)",
+        "pass": true,
+        "source": "SLUSCS4C 7.5"
+       },
+       {
+        "name": "limits",
+        "required": "55 °C and 0 °C",
+        "datasheet": "OTC, OTD, UTC, UTD in data flash",
+        "pass": true,
+        "source": "SLUUBK0B"
+       },
+       {
+        "name": "reading for firmware",
+        "required": "over the bus",
+        "datasheet": "SMBus Temperature()",
+        "pass": true,
+        "source": "SLUSCS4C"
+       }
+      ],
+      "jlcpcb": "stockCount 9994, presale 9886, expand; read 2026-10-02T15:33:38Z, C2845123",
+      "digikey": "stock_available 161, lead 20, Active; 11:54:07Z (cached)",
+      "gate": "need 5; threshold 50; pass",
+      "lifecycle": "ACTIVE (15:34:09Z); first datasheet June 2017",
+      "second_source": "second vendor: Digi-Key 161 >= 50",
+      "alternates": [
+       "BQ40Z50RSMR-R1"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Follows the protector's rank 2",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "BQ4050RSMR",
+      "maker": "Texas Instruments (SLUSC67B); on the S1 list",
+      "lcsc": "C157570",
+      "package": "VQFN-32 4 x 4 mm (RSM)",
+      "placements": 1,
+      "placements_basis": "fixed: the one pack protector",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "NTC",
+        "required": "10 kOhm, B 3435 K",
+        "datasheet": "TS1 to TS4, 18 kOhm pull-up (14.4 to 21.6 kOhm)",
+        "pass": true,
+        "source": "SLUSC67B 7.5"
+       },
+       {
+        "name": "limits",
+        "required": "55 °C and 0 °C",
+        "datasheet": "OTC, OTD, UTC, UTD in data flash",
+        "pass": true,
+        "source": "SLUUAQ3A"
+       },
+       {
+        "name": "reading for firmware",
+        "required": "over the bus",
+        "datasheet": "SMBus Temperature()",
+        "pass": true,
+        "source": "SLUSC67B"
+       }
+      ],
+      "jlcpcb": "stockCount 15945, presale 15931, expand; read 2026-10-02T15:33:38Z, C157570",
+      "digikey": "stock_available 5311, lead 20, Active; 11:58:06Z (cached)",
+      "gate": "need 5; threshold 50; pass",
+      "lifecycle": "ACTIVE (15:34:09Z); first datasheet March 2016",
+      "second_source": "second vendor: Digi-Key 5311 >= 50",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Follows the protector's rank 3",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "MAX17320G22+ (C2914309)",
+      "maker": "Analog Devices (Maxim)",
+      "reason": "one IC on the pack: fails the disconnect's undervoltage release"
+     },
+     {
+      "part": "a separate temperature IC",
+      "maker": "none",
+      "reason": "one IC on the pack (V298) and no part of its own (V296)"
+     }
+    ]
+   }
+  ],
+  "report": [
+   {
+    "figure": "one IC for the pack",
+    "value": "BQ40Z80RSMR for Pack overcurrent protection, Bench pack balance lead and Pack temperature, the part R5 selected for the pack disconnect in FU-2B1. R5's P2 in FU-2F chooses the disconnect on its own; a different choice there is a conflict for the owner (V297, V298)",
+    "source": "selection.json R5 pack disconnect; this return"
+   },
+   {
+    "figure": "pack current at the floor",
+    "value": "52.1 A nominal at a 5.8 V bus with the pack path sized at 6.0 V (V294); IOBoard.md's about 49.7 A is the older figure. Both rest on an assumed 90 % efficiency; V140 reads about 88.5 % typical, no guaranteed figure. P5 recomputes it",
+    "source": "V294 answer; IOBoard.md Pack path current; V140 (found)"
+   },
+   {
+    "figure": "pack discharge rating against the current",
+    "value": "90 A continuous (30C): 1.73 times 52.1 A and 1.29 times the 69.7 A upper overcurrent edge; 180 A burst (60C, duration not stated): 1.80 times the 100.2 A upper short-circuit edge",
+    "source": "vendor page, read 2026-10-02T15:27:52Z; this return"
+   },
+   {
+    "figure": "protector overcurrent window",
+    "value": "BQ40Z80 AOLD 0x08, 61.08 mV, 1 mOhm shunt: nominal 61.1 A; 52.5 to 69.7 A with the datasheet's no-trim +-10 % and +-2.5 mV, 55.5 to 66.6 A post-trim (+-5 %). The datasheet does not say which applies to a shipped part. The lower edge is 0.4 A above 52.1 A before the shunt's tolerance: a shunt 0.7 % low brings it under 52.1 A on the no-trim figures. Delay 1 to 31 ms plus 160 us detect",
+    "source": "SLUSBV4D 5.5; SLUUBT5C Appendix A OLD Threshold (RSNS = 1)"
+   },
+   {
+    "figure": "protector short-circuit window",
+    "value": "SCD1 88.8 mV at 1 mOhm: 77.4 to 100.2 A (no trim), 81.9 to 95.7 A (post-trim), delay 0 to 915 us (1850 us with SCDDx2)",
+    "source": "SLUSBV4D 5.5"
+   },
+   {
+    "figure": "cell voltage band and thresholds",
+    "value": "The BQ40Z80 datasheet states no cell-voltage accuracy. Without board calibration: K 0.198 to 0.202 (33 mV at 3.3 V), ADC gain error 0.8 % of full scale (49 mV at the cell if full scale is 1.225 V, 98 mV if 2.45 V), offset 0.8 mV: 83 to 132 mV. CUV:Threshold 3390 to 3440 mV holds the 3.3 V lowest trip. The same band puts a 4.25 V COV as low as 4.12 to 4.17 V, under the 4.2 V full charge, so per-board voltage calibration, which the datasheet requires before gauging, is needed for COV. Calibrated accuracy is not stated",
+    "source": "SLUSBV4D 5.5 ADC and K rows, 7.3.1; computed"
+   },
+   {
+    "figure": "undervoltage timing",
+    "value": "CUV:Delay is set in whole seconds (0 to 255 s, default 2 s). A sag below 3.3 V shorter than the delay is not stopped, against the maker's 'auch nicht kurzzeitig' (not even briefly)",
+    "source": "SLUUBT5C 19.10 CUV; LiPoFAQV15c.pdf 'Zusammenfassend'"
+   },
+   {
+    "figure": "pack temperature reading uncertainty",
+    "value": "TS pull-up 14.4 to 21.6 kOhm (+-20 %), not stated as trimmed. With a 10 kOhm, B 3435 K NTC that is +-4.0 K at 0 °C, +-4.5 K at 18 °C and +-5.7 K at 55 °C before calibration (computed); a one-point temperature offset calibration at 25 °C leaves about 1 K at 0 and 55 °C (computed)",
+    "source": "SLUSBV4D 5.5 RNTC(PU); computed from B 3435 K"
+   },
+   {
+    "figure": "stage 2 MOSFETs: protector CHG and DSG",
+    "value": "High-side back-to-back N-channel. Drain-source: at least the pack's 8.45 V and the pack input clamp level, 37.3 V for TVS2701DRBR at 125 °C (Follows-ups row of R5); a 40 V class covers both. Current: 52.1 A continuous, up to 69.7 A for the overcurrent delay (31 ms) and 100.2 A for the short-circuit delay (915 us). Gate drive 10.5 to 12.5 V (VFETON). Body diode: the CHG FET's diode carries discharge current until the gauge turns the FET on (SLUUBT5C 12.1), the DSG FET's diode up to 2.15 A of charge current. Share of the drop allowance: P5's",
+    "source": "SLUSBV4D 5.5; SLUUBT5C 12.1; Research.md Follow-ups (input transient clamp row)"
+   },
+   {
+    "figure": "stage 2 MOSFETs: charger BATFET and switches",
+    "value": "BQ25723: one P-channel BATFET carries the pack current, 52.1 A continuous and 69.7 A briefly, driven 10 V below VSYS but limited by VSYS of 5.8 to 6.6 V at the floor, Ciss under 5 nF advised; drain-source at least the 12 V 2S SYSOVP. Whether one such P-channel FET carries 52.1 A at a 6 V gate drive is not known. Four N-channel switching FETs: input side at least VBUS 5.5 V, output side at least 12 V, about 3 A",
+    "source": "SLUSE64 BATDRV, Table 9-2, 10.2"
+   },
+   {
+    "figure": "charger battery path loss and drop",
+    "value": "The 5 mOhm RSR is in the pack-to-load path: 0.261 V and 13.6 W at 52.1 A, 0.349 V at 69.7 A, 0.501 V at the 100.2 A short-circuit edge, over the 0.5 V SRP-SRN absolute maximum for up to 1 ms. With the 1 mOhm protector shunt the two resistors drop 0.313 V at 52.1 A, more than the 0.2 V from a 6.0 V pack to the 5.8 V bus of V294 and within the 0.8 V from the 6.6 V floor. LTC4020 at 4 mOhm: 0.208 V, 10.9 W; 0.401 V at 100.2 A against its 0.3 V CSP-CSN maximum",
+    "source": "SLUSE64 8.1; LTC4020 Rev. E; computed"
+   },
+   {
+    "figure": "charger efficiency and charge current",
+    "value": "94.7 % typical from 5 V into 7.4 V (V139). 1.69 A into 8.4 V and 2.15 A into 6.6 V from 15 W; 0.56C to 0.72C",
+    "source": "V139, V144 (found)"
+   },
+   {
+    "figure": "charge voltage against the maker's 4.2 V",
+    "value": "BQ25723 at 8.4 V: 8.3496 to 8.4504 V (+-0.6 %, 0 to 85 °C), 4.2252 V a cell at the upper edge, 25 mV over the maker's 'nicht überschreiten'. A setting of 8.352 V keeps the edge at 8.402 V if the +-0.6 % holds there; the datasheet tabulates it at 8.4 V and 4.2 V only",
+    "source": "SLUSE64 8.5 VBAT_REG_ACC; SLS safety notes sections 1 and 3"
+   },
+   {
+    "figure": "balance current required and available",
+    "value": "Required 84.6 mA average a cell (V142). BQ29209/BQ29200 external mode: Ibal = VCELL / RCB_EXT, 44.9 Ohm or less gives 84.6 mA at 3.8 V. BQ40Z80 internal 10 mA; MAX17320 about 62 mA average; BQ76907 50 mA",
+    "source": "SLUSA52C 9.3.1; SLUSBV4D 6.3.6.5; FU-2B1 readings"
+   },
+   {
+    "figure": "pack run time at the nominal draw",
+    "value": "about 3.5 min from full at 52.1 A (3.0 Ah / 52.1 A), 2.8 min at the maker's 80 % use; no discharge curve published, so no rate derating",
+    "source": "vendor page; LiPoFAQV15c.pdf; computed"
+   },
+   {
+    "figure": "cold discharge",
+    "value": "V296's 15 A below 18 °C is 5C on 3.0 Ah, the maker's limit for loads without preheating; near 10 °C the maker's limit is under 15C (45 A). The maker states no rate between 0 and 10 °C",
+    "source": "LiPoFAQV15c.pdf; V296"
+   },
+   {
+    "figure": "bus addresses for P5",
+    "value": "BQ40Z80 SMBus 0x16 8-bit (0x0B 7-bit), 100 kHz, XL 400 kHz, inputs to 32 V; BQ25723 I2C 0x6B; FUSB303B 0x21 or 0x31 (ADDR/ORIENT)",
+    "source": "SLUUBT5C SMBus Address; SLUSE64 9.5; IOBoard.md Not known"
+   },
+   {
+    "figure": "protector production setup",
+    "value": "BQ40Z80 ships configured for 6S: the first power-up on a 2S pack needs a supply on PACK+ until the cell configuration is written, then a data-flash image (cell count, thresholds, Scale Factor 2 for currents above 32,767 mA, thermistor polynomial, FET Options[OTFET] = 1, CUV_RECOV_CHG = 1) and a calibration per board. Shutdown current 1.4 uA typical, no maximum stated, against V301's 10 uA",
+    "source": "SLUSBV4D Table 7-1 note, 5.5 ISHUTDOWN; SLUUBT5C 6.7"
+   },
+   {
+    "figure": "changes from the selection",
+    "value": "Pack charger and Power path: BQ25723RSNR (none in FU-2B1). Pack overcurrent protection and Bench pack balance lead: MAX17320G22+ to BQ40Z80RSMR. Pack temperature: BQ40Z80RSMR (none). Pack cells: the SLS XTRON pack now passes. Cell balancing stays BQ29209DRBR, Charger input limit stays FUSB303BTMX",
+    "source": "selection.json R7, read 2026-10-02; this return"
+   }
+  ]
+ }
+}
