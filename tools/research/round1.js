@@ -296,7 +296,7 @@ ${J(p2View(p2))}`
 function rerankPrompt(cat, p2, p3) {
   return `${ctx('rerank', cat, `rerank-${cat}`)}
 
-You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. Rank every such part, or list it with its reason in dropped_from_shortlist (a P2 candidate) or dropped_from_p3 (a P3 candidate).${fixedFor(cat).length ? ` Rank each fixed input of the Scope table first for its function: ${fixedNames(cat)}; one that fails a check is reported to the owner, not replaced by another part.` : ''} In verify, name the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative. List your own figures in report${((A.per_part_reports || {})[cat] || []).length ? `, and for each part you rank, name in verify or give a record in new_candidates, a rule-5 alternate's record among them, that P2's report lacks, these figures named "NAME: PART": ${((A.per_part_reports || {})[cat]).join('; ')}` : ''}. ${cat === 'R10' || cat === 'R12' ? `Set decision to ${cat === 'R10' ? 'Q4 on the function that implements Q4' : 'Q8 on the function that implements Q8, the non-volatile store,'} and none on the others; its alternatives are the q-alternatives in its verify. Give each q-alternative its option, the function its kept_option for the first-ranked part, and each ranking entry its part's option, from these classes, one part at least for each: ${((A.q_options || {})[cat === 'R10' ? 'Q4' : 'Q8'] || []).join('; ')}.` : 'Set decision to none on every function.'} A rule-5 alternate that is not on P2's shortlist needs a full record in new_candidates; it is kept as the alternate's record, not ranked. The script builds the final shortlist from P2's records and yours.
+You are the re-rank of the "Agent layout" table. Qualify each candidate P3 returned as P2 does, and give each qualified one a full record in new_candidates. Then rank each function's shortlist: every entry of ranking names a part of P2's shortlist or of new_candidates, by its exact part number. Rank every such part, or list it with its reason in dropped_from_shortlist (a P2 candidate) or dropped_from_p3 (a P3 candidate). Every entry of P3's missed and exclusions_not_holding is a P3 candidate, also where P3 says the drop stands for another reason. It belongs under each function P3 names for it; for an overturned drop where P2 dropped the part under none of those, under each function that dropped it; for a find under no function of P2's, or a drop no function of P2's made, under one of P2's. Qualify it in new_candidates, by its exact part number, or list it in dropped_from_p3 under each such function with its part text copied exactly from P3's entry, one entry for each entry of P3's, also where the entry names several parts. Every record in new_candidates that answers an entry of P3's gives that entry's text, copied exactly, in p3_part. A part discussed only in your report is neither qualified nor dropped.${fixedFor(cat).length ? ` Rank each fixed input of the Scope table first for its function: ${fixedNames(cat)}; one that fails a check is reported to the owner, not replaced by another part.` : ''} In verify, name the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative. List your own figures in report${((A.per_part_reports || {})[cat] || []).length ? `, and for each part you rank, name in verify or give a record in new_candidates, a rule-5 alternate's record among them, that P2's report lacks, these figures named "NAME: PART": ${((A.per_part_reports || {})[cat]).join('; ')}` : ''}. ${cat === 'R10' || cat === 'R12' ? `Set decision to ${cat === 'R10' ? 'Q4 on the function that implements Q4' : 'Q8 on the function that implements Q8, the non-volatile store,'} and none on the others; its alternatives are the q-alternatives in its verify. Give each q-alternative its option, the function its kept_option for the first-ranked part, and each ranking entry its part's option, from these classes, one part at least for each: ${((A.q_options || {})[cat === 'R10' ? 'Q4' : 'Q8'] || []).join('; ')}.` : 'Set decision to none on every function.'} A rule-5 alternate that is not on P2's shortlist needs a full record in new_candidates; it is kept as the alternate's record, not ranked. The script builds the final shortlist from P2's records and yours.
 
 P2's return:
 ${J(p2)}
@@ -443,11 +443,23 @@ function isTime(text) {
 // A reading of this task: taken on or after the day the session prepared it,
 // not copied from an earlier return or the parts database, and no later than
 // the next day, for a run that passes midnight. Every date the text gives
-// counts. The script has no clock.
+// counts. The script has no clock. The time may follow one word that names
+// the source, as "JLCPCB 2026-10-02T15:17:10Z; Digi-Key 2026-10-02T15:17:30Z"
+// or "ADXL316: 2026-10-02T11:27:32Z": a letter, then letters, digits, dots
+// and hyphens, and a colon or not. A word that says nothing was read names
+// no source, also before a hyphen or dot ("No-data", "None.").
+const SOURCE_WORD = /^([A-Za-z][A-Za-z0-9.-]*):?\s+(?=\d{4}-\d{2}-\d{2})/
+const NO_SOURCE = new Set(['not', 'no', 'none', 'nothing', 'nil', 'never', 'unknown', 'unread', 'unavailable', 'missing', 'pending', 'failed', 'na', 'n.a', 'n.a.'])
+function sourceTime(text) {
+  const t = String(text || '').trim()
+  const m = t.match(SOURCE_WORD)
+  const word = m ? m[1].toLowerCase() : ''
+  return m && !NO_SOURCE.has(word) && !NO_SOURCE.has(word.split(/[-.]/)[0]) ? t.slice(m[0].length) : t
+}
 function readInRun(text) {
   const start = Date.parse(A.date)
   const inRun = ms => ms >= start && ms < start + 2 * 864e5
-  return inRun(leadingTime(text)) && (String(text).match(/\d{4}-\d{2}-\d{2}/g) || []).every(day => inRun(calendarDay(day)))
+  return inRun(leadingTime(sourceTime(text))) && (String(text).match(/\d{4}-\d{2}-\d{2}/g) || []).every(day => inRun(calendarDay(day)))
 }
 
 // A value that holds no reading: blank, a bare placeholder or written as not
@@ -753,6 +765,11 @@ function partKeys(p, functionNames, anyOption = false) {
   const bases = anyOption ? numbers.map(x => x.split('#')[0]).filter((b, i) => b !== numbers[i] && b.length >= 4 && /[A-Z]/.test(b) && /\d/.test(b)) : []
   return new Set([...[...numbers, ...bases].map(x => `mpn:${x}`), ...lcsc])
 }
+// The same text, runs of spaces collapsed and case aside.
+function sameText(a, b) {
+  const t = x => String((x && typeof x === 'object' ? x.part : x) || '').replace(/\s+/g, ' ').trim().toUpperCase()
+  return !!t(a) && t(a) === t(b)
+}
 function samePart(a, b, functionNames, anyOption = false) {
   if (typeof a === 'string' && a === b) return true
   const kb = partKeys(b, functionNames, anyOption)
@@ -791,11 +808,14 @@ function merge(cat, p2, rr, p3) {
   // qualified, ranked or dropped by the re-rank: by its part or LCSC
   // number, or, for a find that names only a family, by a part of that
   // family the re-rank qualified or dropped as a P3 candidate. A part P2
-  // shortlisted is no P3 candidate. A drop P3 overturned is also handled
+  // shortlisted is no P3 candidate. A record the re-rank qualified handles
+  // the P3 entry whose text its p3_part copies, and no other entry that
+  // shares a part number with it. A drop P3 overturned is also handled
   // under another ordering option of its number; a find is not, as its
   // option may be the one with stock.
   const shortlisted = (fn, c) => (((p2.functions || []).find(f => f.function === fn) || {}).shortlist || []).some(s => samePart(s, c, names))
   const handled = (fr, part, anyOption) => fr && ([...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || [])].some(c => samePart(c, part, names, anyOption)) || (fr.ranking || []).some(r => samePart(r, part, names, anyOption))
+    || (fr.new_candidates || []).some(c => typeof c.p3_part === 'string' && sameText(c.p3_part, part))
     || (familyOnly(part) && [...(fr.new_candidates || []), ...(fr.dropped_from_p3 || [])].some(c => ofFamily(c, part) && !shortlisted(fr.function, c))))
   const handledAny = (part, anyOption) => (rr.functions || []).some(fr => names.includes(fr.function) && handled(fr, part, anyOption))
   // A P3 find the re-rank neither qualified nor dropped leaves its function

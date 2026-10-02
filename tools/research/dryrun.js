@@ -155,7 +155,7 @@ async function runTask(task, opts = {}) {
     if (role === 'rerank') {
       const rcat = (o.label.match(/R\d+/) || [''])[0]
       data.functions = [{ function: 'f1', decision: opts.qDecision || ({ R10: 'Q4', R12: 'Q8' }[rcat] || 'none'), kept_option: opts.keptOption || '', ranking: (opts.ranking || (opts.ranked || [1, 2, 3]).map(rank => ({ rank, part: `part${rank}`, reason: 'r', option: (opts.rankOptions || {})[`part${rank}`] || '' }))),
-        new_candidates: opts.p3dropped ? [{ ...cand(7), part: 'partN' }] : (opts.newP3 || []).map((part, k) => ({ ...cand(7), part, lcsc: `C77${k}` })), dropped_from_p3: opts.p3dropped ? [{ part: 'partN', maker: 'm', reason: 'r' }] : (opts.dropP3 || []).map(part => ({ part, maker: 'm', reason: 'r' })),
+        new_candidates: opts.p3dropped ? [{ ...cand(7), part: 'partN' }] : (opts.newP3 || []).map((part, k) => ({ ...cand(7), part, lcsc: `C77${k}`, ...(opts.newP3For ? { p3_part: opts.newP3For } : {}) })), dropped_from_p3: opts.p3dropped ? [{ part: 'partN', maker: 'm', reason: 'r' }] : (opts.dropP3 || []).map(part => ({ part, maker: 'm', reason: 'r' })),
         dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : (opts.dropShort || []).map(part => ({ part, maker: 'm', reason: 'r' })), verify: opts.qDup ? [{ part: 'part3', kind: 'q-alternative', option: 'reference' }, { part: 'part3', kind: 'q-alternative', option: 'external ADC' }] : opts.twoQShare ? [{ part: 'part2', kind: 'q-alternative' }, { part: 'part3', kind: 'q-alternative' }] : opts.qAlt || opts.sharedAlt ? [{ part: 'part3', kind: 'q-alternative', option: opts.qOption || '' }] : (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
       if (opts.extraFn) data.functions.push({ ...data.functions[0], function: 'fX', ...(opts.rrHandleYin || opts.rrHandleXin ? { dropped_from_shortlist: [{ part: opts.rrHandleXin ? 'partX' : 'partY', maker: 'm', reason: 'r' }] } : {}) })
       if (opts.p3dropShort) data.functions[0].dropped_from_shortlist = [{ part: opts.dropShortPart || 'partX', maker: 'm', reason: 'fails vmax', ...(opts.dropShortLcsc ? { lcsc: opts.dropShortLcsc } : {}) }]
@@ -1021,6 +1021,36 @@ async function main() {
   check(r1(r).selection[0].part === null, "P3 find of a '#' option, another option dropped: open")
   r = await runTask('T2', { p3missed: true, p3missedFn: 'F1 buck', p3missedPart: 'ABC123#TRPBF (C462630)', p3dropShort: true, dropShortPart: 'ABC123#PBF', dropShortLcsc: 'C2858365' })
   check(r1(r).selection[0].part === null, "P3 find of a '#' option under no function of P2's, another option dropped: open")
+  // The re-rank is told to list every P3 part in its lists, not its report.
+  r = await runTask('T2', { p3overturned: true })
+  const rrPrompt = r.prompts.find(x => x.label === 'rerank-R1').prompt
+  check(["Every entry of P3's missed and exclusions_not_holding is a P3 candidate", 'also where P3 says the drop stands for another reason', 'It belongs under each function P3 names for it', 'under each function that dropped it', "with its part text copied exactly from P3's entry, one entry for each entry of P3's, also where the entry names several parts", 'Qualify it in new_candidates, by its exact part number', "Every record in new_candidates that answers an entry of P3's gives that entry's text, copied exactly, in p3_part", 'or a drop no function of P2\'s made, under one of P2\'s', 'under each such function', 'A part discussed only in your report is neither qualified nor dropped'].every(t => rrPrompt.includes(t)), 're-rank prompt: every P3 entry listed')
+  // A record the re-rank qualified under another number handles the P3
+  // entry it names in p3_part; without p3_part it does not.
+  const groupFind = { p3missed: true, p3missedPart: '50 uOhm ABC8536 and DEF-R00005 parts', newP3: ['ABC8536L1000JK60'] }
+  r = await runTask('T2', { ...groupFind, newP3For: '50 uOhm ABC8536 and DEF-R00005 parts' })
+  check(r1(r).selection[0].part === 'part1', 'P3 group find answered by a qualified record naming it in p3_part: handled')
+  r = await runTask('T2', groupFind)
+  check(r1(r).selection[0].part === null, 'P3 group find, qualified record without p3_part: open')
+  r = await runTask('T2', { ...groupFind, newP3For: '50 uOhm ABC8536 parts' })
+  check(r1(r).selection[0].part === null, 'P3 group find, p3_part naming another entry: open')
+  // A record whose number follows "also" in P3's entry needs p3_part too.
+  r = await runTask('T2', { p3missed: true, p3missedPart: 'ABC123 (C201541), also ABC124', newP3: ['ABC124'], newP3For: 'ABC123 (C201541), also ABC124' })
+  check(r1(r).selection[0].part === 'part1', 'P3 entry naming a second part after "also", qualified with p3_part: handled')
+  r = await runTask('T2', { p3missed: true, p3missedPart: 'ABC123 (C201541), also ABC124', newP3: ['ABC124'] })
+  check(r1(r).selection[0].part === null, 'P3 entry naming a second part after "also", qualified without p3_part: open')
+  // p3_part handles only the entry whose text it copies, not another entry
+  // that shares a part number with it.
+  r = await runTask('T2', { p3missed: true, p3missedPart: 'TMP1075DR (C2878381)', p3overturned: true, p3overPart: 'TMP1075DR, TMP275AIDR', p2DropY: true, p2DropPart: 'TMP1075DR, TMP275AIDR', newP3: ['TMP275AIDR'], newP3For: 'TMP1075DR, TMP275AIDR' })
+  check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.part === 'TMP1075DR (C2878381)' && f.reason === 'P3 candidate neither qualified nor dropped by the re-rank') && !r.result.followUps.some(f => f.part === 'TMP1075DR, TMP275AIDR'), 'p3_part of one entry: the entry handled, another entry sharing a number open')
+  r = await runTask('T2', { p3missed: true, p3missedPart: '50 uOhm  ABC8536 and DEF-R00005 parts', newP3: ['ABC8536L1000JK60'], newP3For: '50 uohm ABC8536 and DEF-R00005 parts ' })
+  check(r1(r).selection[0].part === 'part1', 'p3_part with other spacing and case: handled')
+  // A drop of a group find copies P3's text; split into its parts, it does
+  // not match the find.
+  r = await runTask('T2', { p3missed: true, p3missedPart: '50 uOhm ABC8536 and DEF-R00005 parts', dropP3: ['50 uOhm ABC8536 and DEF-R00005 parts'] })
+  check(r1(r).selection[0].part === 'part1', "P3 group find dropped under P3's text: handled")
+  r = await runTask('T2', { p3missed: true, p3missedPart: '50 uOhm ABC8536 and DEF-R00005 parts', dropP3: ['ABC8536', 'DEF-R00005'] })
+  check(r1(r).selection[0].part === null, 'P3 group find dropped part by part: open')
   // A P3 find the re-rank did not handle keeps its function open.
   r = await runTask('T2', { p3missed: true })
   check(r1(r).selection[0].part === null, 'unhandled P3 find: function open')
@@ -1289,6 +1319,12 @@ async function main() {
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence, source and time read'), 'ruling read before the task: no ruling')
   r = await runTask('T2', { refute: ['P4-stock-R1:part1'], stands: false, rulingReadAt: '2099-01-01' })
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence, source and time read'), 'ruling read after the task: no ruling')
+  // The time may follow one word naming the source; a negation, two words or
+  // a date outside the task are no reading.
+  for (const [t, counts] of [['JLCPCB 2026-09-28T15:17:10Z; Digi-Key 2026-09-28T15:17:30Z', true], ['datasheet: 2026-09-28T10:00:00Z', true], ['Nordic 2026-09-28T10:00:00Z', true], ['ADXL316: 2026-09-28T10:00:00Z', true], ...['not', 'No', 'None', 'nothing', 'never', 'unknown', 'Unread:', 'Not-read', 'No-data', 'None.', 'unread.', 'nil', 'unavailable', 'Missing', 'pending', 'failed', 'NA', 'n.a', 'N.A.', 'n/a'].map(w => [`${w} 2026-09-28T10:00:00Z`, false]), ['JLCPCB page 2026-09-28T10:00:00Z', false], ['JLCPCB 2026-09-20T10:00:00Z', false], ['JLCPCB 2026-09-28T10:00:00Z; Digi-Key 2026-09-20T10:00:00Z', false]]) {
+    r = await runTask('T2', { refute: ['P4-stock-R1:part1'], stands: false, rulingReadAt: t })
+    check(counts ? r1(r).selection[0].part === 'part1' : r1(r).selection[0].part === null && r.result.followUps.some(f => f.reason === 'the ruling gives no evidence, source and time read'), `ruling read at "${t}": ${counts ? 'a ruling' : 'no ruling'}`)
+  }
   // "none" is a reading of a notice or commitment that does not exist, and
   // no reading of a status or identity; "not found" is none.
   // A reading recorded without a gate may be not read, with its reason; it
