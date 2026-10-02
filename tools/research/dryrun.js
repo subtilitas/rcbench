@@ -111,7 +111,7 @@ async function runTask(task, opts = {}) {
       if (opts.strictReq) data.functions[0].shortlist[0].requirements = [{ name: 'x0', required: '>= 99 V', datasheet: '70 V', pass: false, source: 's' }, { name: 'x1', required: 'x1', datasheet: 'd', pass: true, source: 's' }]
       if (opts.reportParts) data.report = opts.reportParts.map(figure => ({ figure, value: 'not applicable: transceiver', source: 's' }))
       if (opts.twoDeciders) data.functions.push({ ...data.functions[0], function: 'fX' })
-      if (opts.p2DropY) data.functions[0].dropped = [{ part: 'partY', maker: 'm', reason: 'r' }]
+      if (opts.p2DropY) data.functions[0].dropped = [{ part: opts.p2DropPart || 'partY', maker: 'm', reason: 'r' }]
       if (opts.foundNotRead) data.found_values = [{ question_id: 'V9', value: 'not read: HTTP 403', source: 's', read_at: 't' }]
       if (opts.foundValue) data.found_values = [{ question_id: 'V9', value: opts.foundValue, source: 's', read_at: '2026-09-28T10:00:00Z' }]
       if (opts.reports) data.report = opts.reports.map(([figure, value]) => ({ figure, value, source: 's', read_at: '2026-09-28T10:00:00Z' }))
@@ -153,7 +153,7 @@ async function runTask(task, opts = {}) {
     if (role === 'rerank') {
       const rcat = (o.label.match(/R\d+/) || [''])[0]
       data.functions = [{ function: 'f1', decision: opts.qDecision || ({ R10: 'Q4', R12: 'Q8' }[rcat] || 'none'), kept_option: opts.keptOption || '', ranking: (opts.ranking || (opts.ranked || [1, 2, 3]).map(rank => ({ rank, part: `part${rank}`, reason: 'r', option: (opts.rankOptions || {})[`part${rank}`] || '' }))),
-        new_candidates: opts.p3dropped ? [{ ...cand(7), part: 'partN' }] : [], dropped_from_p3: opts.p3dropped ? [{ part: 'partN', maker: 'm', reason: 'r' }] : [],
+        new_candidates: opts.p3dropped ? [{ ...cand(7), part: 'partN' }] : (opts.newP3 || []).map((part, k) => ({ ...cand(7), part, lcsc: `C77${k}` })), dropped_from_p3: opts.p3dropped ? [{ part: 'partN', maker: 'm', reason: 'r' }] : (opts.dropP3 || []).map(part => ({ part, maker: 'm', reason: 'r' })),
         dropped_from_shortlist: opts.rankDropped ? [{ part: 'part1', maker: 'm', reason: 'r' }] : (opts.dropShort || []).map(part => ({ part, maker: 'm', reason: 'r' })), verify: opts.qDup ? [{ part: 'part3', kind: 'q-alternative', option: 'reference' }, { part: 'part3', kind: 'q-alternative', option: 'external ADC' }] : opts.twoQShare ? [{ part: 'part2', kind: 'q-alternative' }, { part: 'part3', kind: 'q-alternative' }] : opts.qAlt || opts.sharedAlt ? [{ part: 'part3', kind: 'q-alternative', option: opts.qOption || '' }] : (opts.verify || []).map(part => ({ part, kind: 'alternate' })) }]
       if (opts.extraFn) data.functions.push({ ...data.functions[0], function: 'fX', ...(opts.rrHandleYin || opts.rrHandleXin ? { dropped_from_shortlist: [{ part: opts.rrHandleXin ? 'partX' : 'partY', maker: 'm', reason: 'r' }] } : {}) })
       if (opts.p3dropShort) data.functions[0].dropped_from_shortlist = [{ part: opts.dropShortPart || 'partX', maker: 'm', reason: 'fails vmax', ...(opts.dropShortLcsc ? { lcsc: opts.dropShortLcsc } : {}) }]
@@ -204,7 +204,7 @@ async function runTask(task, opts = {}) {
     }
     if (role === 'P3') Object.assign(data, { missed: [], exclusions_not_holding: [], missed_functions: opts.missedFn ? [{ function: 'f2', why: 'the row names it' }] : [] })
     if (role === 'P3' && opts.p3missed) data.missed = [{ function: opts.p3missedFn || 'f1', part: opts.p3missedPart || 'partX', maker: 'm', why: 'w' }]
-    if (role === 'P3' && opts.p3overturned) data.exclusions_not_holding = [{ part: 'partY', reason_given: 'r', why_it_fails: 'w' }]
+    if (role === 'P3' && opts.p3overturned) data.exclusions_not_holding = [{ part: opts.p3overPart || 'partY', reason_given: 'r', why_it_fails: 'w' }]
     if (role === 'P7-critic' || role === 'P7') {
       for (const k of Object.keys(data.checks)) data.checks[k] = { passed: !(opts.failCheck === k && role === 'P7-critic'), output: opts.failCheck === k && opts.failOutput ? opts.failOutput : k === 'jlc_stock' && opts.passOutput ? opts.passOutput : 'o' }
       const pagesOut = opts.p7Pages || opts.groupPages
@@ -998,6 +998,53 @@ async function main() {
   check(r1(r).selection[0].part === 'part1', 'P3 find by LCSC number, the drop naming it in its lcsc field: handled')
   r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW (c98) AND partx (c99)', dropShortPart: 'PARTX' })
   check(r1(r).selection[0].part === 'part1', 'P3 find in another case, joined by AND: handled')
+  // A find that names only a family ("STEM rows") is handled by a part of
+  // that family the re-rank qualified or dropped as a P3 candidate; a part
+  // P2 shortlisted, a find that also names a part, and a stem that is not a
+  // whole word of 6 or more letters, digits and hyphens with a letter and a
+  // digit followed by a family word, are not.
+  const kept = { firstRecord: { part: 'ABC1234A' }, ranking: [{ rank: 1, part: 'ABC1234A', reason: 'r' }, { rank: 2, part: 'part2', reason: 'r' }, { rank: 3, part: 'part3', reason: 'r' }] }
+  const missedOpen = res => res.result.followUps.some(f => f.reason === 'P3 candidate neither qualified nor dropped by the re-rank')
+  for (const [find, opts, open, what] of [
+    ['ABC1234 rows (and others of the same kind)', { dropP3: ['ABC1234XYZ-RE'] }, false, 'a part of it dropped as a P3 candidate'],
+    ['ABC1234 rows', { newP3: ['ABC1234XYZ'] }, false, 'a part of it qualified as a new candidate'],
+    ['ABC123 family', { dropP3: ['ABC123X'] }, false, 'a 6-character stem'],
+    ['ABC-1234 series', { dropP3: ['ABC-1234X'] }, false, 'a stem with a hyphen, series'],
+    ['ABC1234 devices', { dropP3: ['ABC1234X'] }, false, 'devices'],
+    ['ABC1234 variants', { dropP3: ['ABC1234X'] }, false, 'variants'],
+    ['ABC1234 parts', { dropP3: ['ABC1234X'] }, false, 'parts'],
+    ['ABC1234 rows, and more', { dropP3: ['ABC1234X'] }, false, 'a family word with punctuation after it'],
+    ['ABC1234 rows', { dropP3: ['ABC9999XYZ'] }, true, 'another family dropped'],
+    ['ABC1234 for the gate', { dropP3: ['ABC1234X'] }, true, 'a part number no family word follows'],
+    ['ABC1234 rows', { dropShort: ['ABC1234X'] }, true, 'only a shortlist part of it dropped'],
+    ['ABC1234 rows', kept, true, 'only a family part P2 kept ranked'],
+    ['ABC1234 rows', { ...kept, dropP3: ['ABC1234A'] }, true, 'a family part P2 shortlisted, listed as a P3 drop'],
+    ['AB123 rows', { dropP3: ['AB12345'] }, true, 'a 5-character stem'],
+    ['ABCDEFG parts', { dropP3: ['ABCDEFGH'] }, true, 'a stem without a digit'],
+    ['1234567 parts', { dropP3: ['12345678'] }, true, 'a stem without a letter'],
+    ['-ABC123 rows', { dropP3: ['-ABC1234'] }, true, 'a word starting with a hyphen'],
+    ['note (see ABC1234 rows)', { dropP3: ['ABC1234XYZ'] }, true, 'a family named only inside parentheses'],
+    ['AP2112K-3.3TRG1 variants', { dropP3: ['AP2112K-3.3TRG1-7'] }, true, 'a part number with a dot'],
+    ['MCP2542FD-E/SN variants', { dropP3: ['MCP2542FD-E/SN-1'] }, true, 'a part number with a slash'],
+    ['2N7002BK,215 devices', { dropP3: ['2N7002BK,215X'] }, true, 'a part number with a comma'],
+    ['ADBMS6832MWCCSZ (C18166020); ADBMS6833 is the 16-channel sibling', { dropP3: ['ADBMS6833'] }, true, 'a context word'],
+    ['ABC1234XY (C9), ABC1234 family', { dropP3: ['ABC1234ZZ'] }, true, 'a find that also names a part'],
+    ['ADBMS6830 family: ADBMS6830MWCCSZ-RL C18168951', { dropP3: ['ADBMS6830B'] }, true, 'a find that also names a part with its LCSC number'],
+    ['ABC1234 rows (LCSC C99)', { dropP3: ['ABC1234X'] }, true, 'a family with an LCSC number'],
+  ]) {
+    r = await runTask('T2', { p3missed: true, p3missedPart: find, ...opts })
+    check(missedOpen(r) === open, `P3 family find, ${what}: ${open ? 'open' : 'handled'}`)
+  }
+  // The owner of a family exclusion handles it the same way.
+  const famExcl = { p3overturned: true, p3overPart: 'ABC1234 rows', p2DropY: true, p2DropPart: 'AS5048B-HTSP-500, ABC1234 rows' }
+  const overturnedOpen = res => res.result.followUps.some(f => f.reason === 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank')
+  r = await runTask('T2', { ...famExcl, dropP3: ['ABC1234XYZ'] })
+  check(!overturnedOpen(r), 'P3 family exclusion, a part of it dropped as a P3 candidate: handled')
+  r = await runTask('T2', { ...famExcl, ...kept })
+  check(overturnedOpen(r), 'P3 family exclusion, only a family part P2 kept ranked: open')
+  // The drop of a family find is re-read as any P3 drop is.
+  r = await runTask('T2', { p3missed: true, p3missedPart: 'ABC1234 rows', dropP3: ['ABC1234Q'], p3dropShort: true, dropShortPart: 'ABC1234XYZ-RE', omitFigure: ['P4-datasheet-R1', 're-rank drop: f1: ABC1234XYZ-RE'] })
+  check(r.result.followUps.some(f => f.figure === 're-rank drop: f1: ABC1234XYZ-RE' && f.reason === 'figure not verified'), 'P3 family find dropped from the shortlist: re-read')
   r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW-REEL / partX' })
   check(r1(r).selection[0].part === 'part1', 'P3 find of two parts joined by a spaced slash: handled')
   r = await runTask('T2', { p3missed: true, p3dropShort: true, p3missedPart: 'partW/partX' })

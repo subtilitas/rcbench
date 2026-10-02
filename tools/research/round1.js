@@ -753,12 +753,42 @@ function samePart(a, b, functionNames) {
   return [...partKeys(a, functionNames)].some(k => kb.has(k))
 }
 
+// A P3 find may name a family, as "MLX90393 rows", not an orderable part.
+// A stem is a word outside parentheses, of 6 or more letters, digits and
+// hyphens with a letter and a digit, that a family word follows: rows,
+// family, series, variants, parts or devices. A part number that starts
+// with a stem is of that family.
+const FAMILY_WORDS = new Set(['ROWS', 'FAMILY', 'SERIES', 'VARIANTS', 'PARTS', 'DEVICES'])
+function familyStems(p) {
+  const words = String((p && typeof p === 'object' ? p.part : p) || '').toUpperCase().replace(/\([^)]*\)/g, ' ').split(/\s+/).filter(Boolean)
+  return words.filter((w, i) => /^[A-Z0-9][A-Z0-9-]{5,}$/.test(w) && /[A-Z]/.test(w) && /\d/.test(w) && FAMILY_WORDS.has((words[i + 1] || '').replace(/[^A-Z]/g, '')))
+}
+function ofFamily(cand, find) {
+  const n = String((cand && typeof cand === 'object' ? cand.part : cand) || '').toUpperCase().replace(/\s+/g, '')
+  return !!n && familyStems(find).some(s => n.startsWith(s))
+}
+// A find names only a family when it has a stem and names no part: no LCSC
+// number, and no other word outside parentheses of 4 or more characters
+// with a letter and a digit.
+function familyOnly(find) {
+  const text = String((find && typeof find === 'object' ? find.part : find) || '')
+  const stems = familyStems(find)
+  if (!stems.length || /\bC\d+\b/i.test(text)) return false
+  return !text.toUpperCase().replace(/\([^)]*\)/g, ' ').split(/[\s,;:/]+/).filter(Boolean)
+    .some(w => !stems.includes(w) && w.length >= 4 && /[A-Z]/.test(w) && /\d/.test(w))
+}
+
 function merge(cat, p2, rr, p3) {
   // The functions are P2's. A find with no owner is handled by any of them.
   const names = (p2.functions || []).map(f => f.function)
   // Every candidate P3 found, and every P2 exclusion P3 overturned, is
-  // qualified, ranked or dropped by the re-rank.
-  const handled = (fr, part) => fr && ([...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || [])].some(c => samePart(c, part, names)) || (fr.ranking || []).some(r => samePart(r, part, names)))
+  // qualified, ranked or dropped by the re-rank: by its part or LCSC
+  // number, or, for a find that names only a family, by a part of that
+  // family the re-rank qualified or dropped as a P3 candidate. A part P2
+  // shortlisted is no P3 candidate.
+  const shortlisted = (fn, c) => (((p2.functions || []).find(f => f.function === fn) || {}).shortlist || []).some(s => samePart(s, c, names))
+  const handled = (fr, part) => fr && ([...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || [])].some(c => samePart(c, part, names)) || (fr.ranking || []).some(r => samePart(r, part, names))
+    || (familyOnly(part) && [...(fr.new_candidates || []), ...(fr.dropped_from_p3 || [])].some(c => ofFamily(c, part) && !shortlisted(fr.function, c))))
   const handledAny = part => (rr.functions || []).some(fr => names.includes(fr.function) && handled(fr, part))
   // A P3 find the re-rank neither qualified nor dropped leaves its function
   // open: the function P3 names, the function whose P2 drop P3 overturned,
@@ -1488,10 +1518,11 @@ function figuresToCheck(cat, p2, rr, functions, p3) {
   for (const f of functions) for (const d of f.failed || []) add(`failed requirement: ${f.function}: ${d.part} (${d.names.join(', ')})`, d)
   // Every drop of a part P3 found or reopened, whichever list the re-rank
   // put it in.
-  // A drop is of P3's part when it names the same part (samePart).
+  // A drop is of P3's part when it names the same part (samePart) or a part
+  // of the family P3 named (ofFamily).
   const fromP3 = [...((p3 && p3.missed) || []), ...((p3 && p3.exclusions_not_holding) || [])].map(x => x.part)
   const fnNames = [...(p2.functions || []).map(f => f.function), ...functions.map(f => f.function)]
-  const ofP3 = d => fromP3.some(part => samePart(d, part, fnNames))
+  const ofP3 = d => fromP3.some(part => samePart(d, part, fnNames) || ofFamily(d, part))
   // A part dropped under several functions is re-read under each.
   const drops = new Set()
   for (const f of functions) {

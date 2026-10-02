@@ -386,7 +386,18 @@ part.
   pieces between semicolons, commas followed by a space, slashes between
   spaces and ` and `, without parenthesized text, case and spaces; a function
   name is none. `2N7002BK,215` and `MCP2542FD-E/SN` are one part number each.
-  The drop of such a find is re-read as the drop of any P3 find;
+  A find that names only a family, as `MLX90393 rows`, is also handled by a
+  part of that family the re-rank qualified (`new_candidates`) or dropped as a
+  P3 candidate (`dropped_from_p3`), not by a part P2 shortlisted. Its stem is a
+  word outside parentheses of 6 or more letters, digits and hyphens with a
+  letter and a digit, starting with a letter or digit, followed by `rows`,
+  `family`, `series`, `variants`, `parts` or `devices`; a part belongs to the
+  family when its number starts with the stem. A find with an LCSC number or
+  another word of 4 or more characters with a letter and a digit names a part
+  and is handled only by that part. A stem also matches a number that
+  continues its digits (`TMP107 family` and TMP1075DGKR, a different part): a
+  current limitation. The drop of such a find is re-read as the drop of any P3
+  find;
 - it has no requirement, or names one requirement twice;
 - it serves a fixed input of the Scope table (`categories.json`
   `fixed_inputs`: the function by the table's input name, the input by a
