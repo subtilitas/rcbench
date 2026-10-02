@@ -220,6 +220,16 @@
         "function": "Motor monitor",
         "part": "INA228"
       }
+    ],
+    "R11": [
+      {
+        "function": "accelerometer",
+        "part": "ADXL316WBCSZ"
+      },
+      {
+        "function": "optical index",
+        "part": "TCND5000"
+      }
     ]
   }
 }

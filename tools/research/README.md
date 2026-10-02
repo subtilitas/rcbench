@@ -407,7 +407,11 @@ part.
   re-selected: no replacement pair runs, and the function keeps no other
   part, also none verified from the verify list. P1, P2 and the re-rank are
   given the inputs. A function that serves the input under another name is
-  not bound to it.
+  not bound to it. A fixed input that fails a requirement in P2's record is
+  dropped as any part is, and the datasheet verifier re-reads that drop; the
+  function keeps no other part, and the owner is told. A packaging suffix of a table entry that is already an orderable
+  number counts as the input too (ADXL316WBCSZ-RL7 for ADXL316WBCSZ), also
+  where its stock differs: a current limitation.
 
 A part with more than one record, with placements below 1, or with an LCSC
 number that is neither `C` and digits nor `none`, has no record: it is

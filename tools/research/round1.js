@@ -911,7 +911,7 @@ function merge(cat, p2, rr, p3) {
       if (!failing.length) return true
       followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} with a failed requirement: ${failing.map(r => r.name).join(', ')}` })
       // The drop is P2's word only: the datasheet verifier re-reads it.
-      failed.push({ part: c.part, names: failing.map(r => r.name), requirements: failing })
+      failed.push({ part: c.part, names: failing.map(r => r.name), requirements: failing, what })
       return false
     }).map(c => {
       const have = new Set((c.requirements || []).map(r => r.name))
@@ -923,9 +923,19 @@ function merge(cat, p2, rr, p3) {
     shortlist = qualify(shortlist, 'shortlisted')
     alternateRecords = qualify(alternateRecords, 'alternate')
     // A fixed input is not re-selected (Scope): a function whose first-ranked
-    // part after the drops is another part is not ranked, and the owner is
-    // told.
-    if (fixed && shortlist.length && !isFixed(fixed, shortlist[0].part)) {
+    // part after the drops is not the fixed input is not ranked, and the
+    // owner is told: that P2's record fails the input, when no record of it
+    // is left (the datasheet verifier re-reads that drop), or that another
+    // part ranks first.
+    const firstFixed = !!fixed && shortlist.length > 0 && isFixed(fixed, shortlist[0].part)
+    const fixedLeft = !!fixed && shortlist.some(c => isFixed(fixed, c.part))
+    const fixedDrops = fixed && !fixedLeft ? failed.filter(d => d.what === 'shortlisted' && isFixed(fixed, d.part)) : []
+    const fixedFailed = fixedDrops.find(d => String(d.part).toUpperCase() === String(fixed).toUpperCase()) || fixedDrops[0] || null
+    if (fixedFailed) {
+      followUps.push({ role: 'owner', category: cat, function: name, part: fixedFailed.part, reason: `fixed input ${fixed} fails P2's requirement: ${fixedFailed.names.join(', ')}; the datasheet verifier re-reads it; reported to the owner, not re-selected` })
+      shortlist = []
+      verify = []
+    } else if (fixed && shortlist.length && !firstFixed) {
       followUps.push({ role: 'owner', category: cat, function: name, part: shortlist[0].part, reason: `fixed input ${fixed} not ranked first; reported to the owner, not re-selected` })
       shortlist = []
       verify = []
