@@ -212,13 +212,26 @@
     "R6": [
       {
         "function": "Servo supply",
-        "part": "TPS55285"
+        "part": "TPS55285",
+        "orderable": "TPS55285VALR"
+      }
+    ],
+    "R7": [
+      {
+        "function": "Pack cells",
+        "part": "SLSXT30002130"
       }
     ],
     "R8": [
       {
         "function": "Motor monitor",
-        "part": "INA228"
+        "part": "INA228",
+        "orderable": "INA228AIDGSR"
+      },
+      {
+        "function": "External shunt sense input",
+        "part": "INA228",
+        "orderable": "INA228AIDGSR"
       }
     ],
     "R11": [

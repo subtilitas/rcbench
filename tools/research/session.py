@@ -83,6 +83,9 @@ RUNS_DIR = os.path.join("hardware", "research", "round1")
 ROUNDS = (1, 2)
 ROUND = 1
 RUNS_DIRS = (RUNS_DIR,)
+# The run name of a fixed input the owner keeps where no run verified it.
+# A run name is T1 to T6 or FU and a suffix, so it cannot clash.
+OWNER = "owner"
 # The files T6 may write: the Outputs table of the plan.
 T6_DIRS = ("hardware/docs/",)
 T6_FILES = ("hardware/STATUS.md", "hardware/README.md", "tools/jlc_stock.py")
@@ -422,6 +425,14 @@ def cmd_check(_args):
     for c in fixed:
         if c not in cats["categories"]:
             fails.append(f"fixed_inputs: unknown category {c}")
+    # The orderable number the owner's entry writes is the input's.
+    for c, xs in fixed.items():
+        for x in xs:
+            o = x.get("orderable")
+            if o is not None and not str(o).upper().startswith(
+                    str(x.get("part") or "").upper()):
+                fails.append(f"fixed_inputs {c} {x.get('function')}: "
+                             f"orderable {o} is not a {x.get('part')}")
     raised_rows(text)
     jlc_stock_row(text)
     if set(decisions(text)) != {"Q4", "Q8", "Q9"}:
@@ -446,6 +457,7 @@ def cmd_check(_args):
             fails.append(f"the page has no section \"Round {n}\", which the "
                          f"prompts of round {n} name")
     fails += round_selftest()
+    fails += owner_selftest()
 
     schemas = resolved_schemas()
     js = read(os.path.join(HERE, "round1.js"))
@@ -643,6 +655,140 @@ def round_selftest():
     return fails
 
 
+def owner_selftest():
+    """The fixed inputs the owner keeps, on a throwaway repository: the
+    fallback of effective_selection, owner_items, open_selections,
+    refuted_for_itself, t6_open's selected parts and selection_changed.
+    Returns the failures; reads no network."""
+    global load
+    fails = []
+    tmp = tempfile.mkdtemp(prefix="rcbench-owner-")
+    saved = load
+    fixed = {
+        "R1": [{"function": "Microcontroller", "part": "RP2354B"}],
+        "R7": [{"function": "Pack cells", "part": "SLSXT30002130"}],
+        "R8": [{"function": "Motor monitor", "part": "INA228",
+                "orderable": "INA228AIDGSR"},
+               {"function": "External shunt sense input", "part": "INA228",
+                "orderable": "INA228AIDGSR"}]}
+
+    def fake(name):
+        cats = saved(name)
+        return {**cats, "fixed_inputs": fixed} \
+            if name == "categories.json" else cats
+
+    def put(run, task):
+        path = os.path.join(tmp, run, "task.json")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(task, f)
+        git("add", "-A", cwd=tmp)
+        git("-c", "user.name=check", "-c", "user.email=check@localhost",
+            "-c", "commit.gpgsign=false", "commit", "-q", "--no-verify",
+            "-m", f"Record {run}", cwd=tmp)
+
+    def expect(ok, what):
+        if not ok:
+            fails.append(f"owner self-test: {what}")
+    try:
+        load = fake
+        use_round(2)
+        r1, r2 = (posix(runs_dir(k)) for k in (1, 2))
+        git("init", "-q", tmp)
+        put(f"{r1}/FU-A", {"task": "FU", "sequence": 1, "summary": {
+            "selection": {
+                "R1": [{"function": "Microcontroller", "part": "RP2354B"}],
+                "R8": [{"function": "Motor monitor",
+                        "part": "INA238AIDGSR"}]}}})
+        put(f"{r2}/FU-2B", {"task": "FU", "sequence": 2, "summary": {
+            "selection": {
+                "R7": [{"function": "Pack cells", "part": None}],
+                "R8": [{"function": "Motor monitor", "part": None}]},
+            "results": [
+                {"category": "R8", "ledger": [
+                    {"function": "Motor monitor", "part": "INA228AIDGSR",
+                     "status": "refuted", "reason": "stock 0"},
+                    {"figure": "found V1", "status": "refuted"}]},
+                {"category": "R7", "ledger": [
+                    {"function": "Pack cells",
+                     "part": "SLS XTRON 3000mAh (SLSXT30002130)",
+                     "status": "not verified", "reason": "stock not read"},
+                    {"function": "Pack cells",
+                     "part": "SLS XTRON (SLSXT30002130)",
+                     "status": "verified"}]}],
+            "part_refuted": {"R8": ["INA228AIDGSR"]}}})
+        eff = effective_selection(tmp)
+        mm = eff.get("R8", {}).get("Motor monitor") or {}
+        expect(mm.get("part") == "INA228AIDGSR" and mm.get("run") == OWNER,
+               "a fixed input a run left open is the owner's, by its "
+               "orderable number")
+        of = mm.get("owner_fixed") or {}
+        expect(of.get("left_open_by") == "FU-2B"
+               and of.get("replaced") == "INA238AIDGSR"
+               and [u["status"] for u in of.get("unverified", [])]
+               == ["refuted"],
+               "owner_fixed names the run, the replaced part and the "
+               "reading that did not verify it")
+        expect((eff.get("R1", {}).get("Microcontroller") or {}).get("run")
+               == "FU-A", "a fixed input a run verified stays the run's")
+        sense = eff.get("R8", {}).get("External shunt sense input") or {}
+        expect(sense.get("run") == OWNER and
+               sense.get("owner_fixed", {}).get("left_open_by") == "",
+               "a fixed input no run named is the owner's")
+        pack = eff.get("R7", {}).get("Pack cells") or {}
+        expect(pack.get("part") == "SLSXT30002130" and
+               [u["status"] for u in pack.get("owner_fixed", {})
+                .get("unverified", [])] == ["not verified"],
+               "a ledger part that names the input in a longer name is "
+               "its reading; a verified reading is not listed")
+        before = effective_selection(tmp, before=2)
+        bmm = before.get("R8", {}).get("Motor monitor") or {}
+        expect(bmm.get("run") == OWNER and bmm.get("owner_fixed", {})
+               .get("replaced") == "INA238AIDGSR",
+               "a verified part that is not the input is replaced")
+        items = owner_items(eff)
+        expect([(o["category"], o["function"]) for o in items]
+               == [("R7", "Pack cells"), ("R8", "Motor monitor"),
+                   ("R8", "External shunt sense input")],
+               "owner_items lists each owner entry once, in category "
+               "order")
+        expect(not any("Pack cells" in o or "Motor monitor" in o
+                       or "External shunt" in o
+                       for o in open_selections(eff, ["R7", "R8"])),
+               "open_selections counts no owner entry open")
+        expect(refuted_for_itself(tmp, ["R8"]) == [],
+               "refuted_for_itself skips an owner entry")
+        put(f"{r2}/FU-2P", {"task": "FU", "sequence": 3, "followup": {
+            "phases": "P5-P6", "round": 1, "categories": [], "items": []},
+            "summary": {"conflicts": [{"parts": ["SLSXT30002130"],
+                                       "categories": ["R7"]}]}})
+        open_t6, _ = t6_open(tmp)
+        expect(not any("no run selected" in o for o in open_t6),
+               "a conflict that names an owner part names a selected "
+               "part")
+        sel_rel = os.path.join(RUNS_DIR, "selection.json")
+        expect(selection_changed(tmp, sel_rel, eff),
+               "no committed selection.json: changed")
+        path = os.path.join(tmp, sel_rel)
+        with open(path, "w") as f:
+            json.dump(eff, f)
+        git("add", "-A", cwd=tmp)
+        git("-c", "user.name=check", "-c", "user.email=check@localhost",
+            "-c", "commit.gpgsign=false", "commit", "-q", "--no-verify",
+            "-m", "selection", cwd=tmp)
+        expect(not selection_changed(tmp, sel_rel, eff),
+               "the committed selection.json: unchanged")
+        expect(selection_changed(tmp, sel_rel, {**eff, "R9": {}}),
+               "another selection: changed")
+    except SystemExit as err:
+        fails.append(f"owner self-test: {err}")
+    finally:
+        load = saved
+        use_round(1)
+        shutil.rmtree(tmp, ignore_errors=True)
+    return fails
+
+
 # ---------------------------------------------------------------- prepare
 
 def worktree(base, name, ref, detach=True):
@@ -713,18 +859,28 @@ def runs(results, stopped=False, pending=None):
     return sorted(out, key=lambda r: r[1].get("sequence", 0))
 
 
-def effective_selection(results, pending=None, before=None):
+def effective_selection(results, pending=None, before=None, fixed=None):
     """The part each function keeps: the latest run that names a function
     decides it. A run that names it and verifies no part leaves it open,
     and records the earlier part it did not requalify. A function an
     earlier P1 inventory of its category lists and the latest one does
     not is retired by the next run that selects parts in the category
     without naming it. `before` reads only the runs recorded before that
-    sequence number."""
+    sequence number.
+
+    A fixed input of the Scope table (`fixed`, categories.json's
+    fixed_inputs by default) is its function's part whatever the runs
+    return: where no run kept a part that starts with the input's number,
+    the function keeps the input's orderable number as the owner's, run
+    "owner", and owner_fixed names the run that left it open, the part it
+    replaces and each ledger reading of the runs read that did not verify
+    it."""
     eff, listed, dropped = {}, {}, {}
+    read = []
     for name, task in runs(results, pending=pending):
         if before is not None and task.get("sequence", 0) >= before:
             continue
+        read.append((name, task))
         for cat, names in ((task.get("summary") or {}).get("inventory")
                            or {}).items():
             if names:
@@ -756,7 +912,50 @@ def effective_selection(results, pending=None, before=None):
                     if held["part"] in (e.get("refuted") or []):
                         entry["refuted"] = held["part"]
                 slot[e["function"]] = entry
+    if fixed is None:
+        fixed = load("categories.json").get("fixed_inputs", {})
+    for c, inputs in fixed.items():
+        for x in inputs:
+            fn, part = x.get("function"), str(x.get("part") or "")
+            if not fn or not part:
+                continue
+            held = eff.get(c, {}).get(fn) or {}
+            if str(held.get("part") or "").upper().startswith(part.upper()):
+                continue
+            unverified = [
+                {"run": n, "part": row.get("part"),
+                 "status": row.get("status"), "reason": row.get("reason", "")}
+                for n, t in read
+                for r in (t.get("summary") or {}).get("results") or []
+                if isinstance(r, dict) and r.get("category") == c
+                for row in r.get("ledger") or []
+                if isinstance(row, dict) and row.get("function") == fn
+                and part.upper() in str(row.get("part") or "").upper()
+                and not str(row.get("status") or "").startswith("verified")]
+            eff.setdefault(c, {})[fn] = {
+                "part": x.get("orderable") or part, "rank": None,
+                "alternate": "", "run": OWNER, "alternate_unverified": [],
+                "second_source_missing": False, "q_alternatives": [],
+                "decision": held.get("decision", "none"),
+                "q_options_missing": [],
+                "owner_fixed": {
+                    "input": part, "left_open_by": held.get("run", ""),
+                    "replaced": held.get("part")
+                    or held.get("not_requalified") or "",
+                    "unverified": unverified}}
     return eff
+
+
+def selection_changed(results, sel_rel, new):
+    """Whether `new` differs from the selection.json committed at HEAD of
+    the results tree, or none is committed."""
+    shown = git("-C", results, "show", f"HEAD:{posix(sel_rel)}", check=False)
+    if shown.returncode:
+        return True
+    try:
+        return json.loads(shown.stdout) != new
+    except ValueError:
+        return True
 
 
 def changed_under(tree, rel):
@@ -878,6 +1077,14 @@ def t6_open(results):
                     if part and e["function"] in eff.get(c, {}):
                         part_fn.setdefault(part, set()).add(
                             (c, e["function"]))
+    # A fixed input the owner keeps is selected for its function. A
+    # conflict that names it is covered only as any other: no run verifies
+    # it, so it passes T6 only as the owner's accepted open item.
+    for c, fns in eff.items():
+        for fn, e in fns.items():
+            if e.get("run") == OWNER and e.get("part"):
+                selected.add(e["part"])
+                part_fn.setdefault(e["part"], set()).add((c, fn))
 
     # The category IDs a conflict's or gap's category names, a range such
     # as R5 to R8 naming each ID in it; a category holding any other word
@@ -1123,6 +1330,10 @@ def refuted_for_itself(results, categories):
         if c not in categories:
             continue
         for fn, e in fns.items():
+            # A fixed input the owner keeps stands whatever a run read;
+            # owner_fixed carries the refutation.
+            if e.get("run") == OWNER:
+                continue
             # The kept part, its rule-5 alternate, each Q alternative and
             # that one's alternate.
             used = [e.get("part"), e.get("alternate")] + [
@@ -1159,6 +1370,18 @@ def open_in_category(results, categories):
             out.append(f"{c}: no function implementing {q} has an "
                        "alternative for each of its options")
     return out
+
+
+def owner_items(eff):
+    """The fixed inputs the owner keeps where no run verified them, once
+    each, in category order."""
+    return [{"category": c, "function": fn, "part": e["part"],
+             "input": e["owner_fixed"]["input"],
+             "left_open_by": e["owner_fixed"]["left_open_by"],
+             "unverified": e["owner_fixed"]["unverified"]}
+            for c in sorted(eff, key=lambda c: int(c[1:]) if c[1:].isdigit()
+                            else 0)
+            for fn, e in eff[c].items() if e.get("run") == OWNER]
 
 
 def open_selections(eff, categories):
@@ -1687,7 +1910,15 @@ def cmd_prepare(args):
         gate_cats = list(cats["categories"])
     else:
         gate_cats = []
-    open_sel += open_selections(effective_selection(results), gate_cats)
+    eff_now = effective_selection(results)
+    owners = owner_items(eff_now)
+    shown = [o for o in owners if o["category"] in gate_cats]
+    if shown:
+        print("the owner's fixed parts no run verified: " + "; ".join(
+            f"{o['category']} {o['function']} {o['part']}"
+            + (f" (left open by {o['left_open_by']})"
+               if o["left_open_by"] else "") for o in shown))
+    open_sel += open_selections(eff_now, gate_cats)
     open_sel += open_in_category(results, gate_cats)
     open_sel += refuted_for_itself(results, gate_cats)
     open_sel += stale_selections(results, gate_cats, rows, commit, up,
@@ -1806,6 +2037,7 @@ def cmd_prepare(args):
         "raised": raised_questions(results),
         "p1_asks": cats.get("p1_asks", {}),
         "fixed_inputs": cats.get("fixed_inputs", {}),
+        "owner_fixed": owners,
         "required_reports": cats.get("reports", {}),
         "per_part_reports": cats.get("reports_per_part", {}),
         "inventory": inventory(results, list(cats["categories"])),
@@ -2153,16 +2385,19 @@ def record(args):
                    + "; ".join(misplaced))
         paths += [os.path.join(results, d) for d in dirty
                   if not in_run(d)]
-    if (result.get("summary") or {}).get("selection") and not stopped:
-        sel = os.path.join(results, RUNS_DIR, "selection.json")
-        with open(sel, "w") as f:
-            json.dump(effective_selection(results, pending=(run, meta)), f,
-                      indent=1,
-                      ensure_ascii=False)
-        paths.append(sel)
     sel_rel = os.path.join(RUNS_DIR, "selection.json")
     sel_tracked = git("-C", results, "cat-file", "-e", f"HEAD:{sel_rel}",
                       check=False).returncode == 0
+    # The effective selection after this run, written whenever it differs
+    # from the committed one: a run that selects parts, a P1 inventory that
+    # retires a function, or a fixed input the owner keeps.
+    if not stopped:
+        new = effective_selection(results, pending=(run, meta))
+        if selection_changed(results, sel_rel, new):
+            sel = os.path.join(results, sel_rel)
+            with open(sel, "w") as f:
+                json.dump(new, f, indent=1, ensure_ascii=False)
+            paths.append(sel)
     try:
         git("-C", results, "add", "--", *paths)
         git("-C", results, "commit", "-q", "-m", message[0], "-m",
