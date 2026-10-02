@@ -341,7 +341,7 @@ async function main() {
   check(/"part1":\s*\[[^\]]*"lead time"/.test(stPrompt.split('The checks each part owes')[1] || ''), 'P4 stock prompt lists lead time among part1\'s owed checks')
   const owedOf = (res, label) => (((res.prompts.find(p => p.label === label) || {}).prompt || '').split('The checks each part owes')[1] || '').split('The shortlist,')[0]
   check(/"part1"/.test(owedOf(r, 'P4-stock-R1')) && !/"part2"|"part3"/.test(owedOf(r, 'P4-stock-R1')), 'P4 prompt lists owed checks for the planned parts only')
-  check(stPrompt.includes('for another maker\'s part its product page, and where that page cannot be read or carries no status, Digi-Key\'s ProductStatus. A Digi-Key status is that of the product whose maker and manufacturer part number are the candidate\'s') && stPrompt.includes('Write "not read: REASON", with passes true, only for a part neither'), 'P4 stock prompt reads the lifecycle status at Digi-Key where the maker\'s page cannot be read, for the candidate\'s own maker and part number')
+  check(stPrompt.includes('for another maker\'s part its product page, and where that page cannot be read or carries no status, Digi-Key\'s ProductStatus. A Digi-Key status is that of the product whose maker and manufacturer part number are the candidate\'s') && stPrompt.includes('Write any other Digi-Key value as "not read: Digi-Key ProductStatus VALUE", and a part neither the maker\'s page nor Digi-Key lists under its maker as "not read: REASON", each with agrees and passes true'), 'P4 stock prompt reads the lifecycle status at Digi-Key where the maker\'s page cannot be read, for the candidate\'s own maker and part number')
   r = await runTask('T2', { held: 500, heldChecks: true })
   check(/\["held quantity",/.test(owedOf(r, 'P4-stock-R1')) && !/"held quantity, or/.test(owedOf(r, 'P4-stock-R1')) && !/"stock",/.test(owedOf(r, 'P4-stock-R1')), 'P4 stock prompt owes a held part "held quantity" in place of stock and presale')
 
@@ -939,6 +939,16 @@ async function main() {
   check(r1(r).selection[0].part === 'part1', 'held part with its held quantity checked: verified')
   r = await runTask('T2', { held: 0, heldChecks: true })
   check(r1(r).selection[0].part === null, 'part not held, checked on a held quantity: not verified')
+  // A lifecycle status written not read, an unlisted part or a Digi-Key
+  // value the Lifecycle check does not grade, neither passes nor fails: the
+  // part stays not verified, no adjudicator runs, the owner gets a notice;
+  // also when the verifier marks it as disagreeing.
+  for (const agrees of [true, false]) {
+    r = await runTask('T2', { edit: { 'lifecycle status': { read: 'not read: Digi-Key ProductStatus Preliminary', agrees } } })
+    check(r1(r).selection[0].part === null && !r.calls.some(c => c.startsWith('adjudicator-R1')) && r.result.followUps.some(f => f.figure === 'lifecycle status' && f.notice && /Preliminary/.test(f.reason)), `lifecycle status not read (agrees ${agrees}): not verified, not refuted, listed for the owner`)
+  }
+  r = await runTask('T2', { edit: { 'lifecycle status': { read: 'Active (Digi-Key ProductStatus, maker page HTTP 404)' } } })
+  check(r1(r).selection[0].part === 'part1' && !r.result.followUps.some(f => f.figure === 'lifecycle status'), 'lifecycle status read at Digi-Key: verified')
   // A held quantity named in the owed list's earlier wording, as FU-2C's
   // R11 stock verifier named it, is the same check, also beside failing
   // live stock; another name is not.
