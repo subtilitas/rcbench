@@ -1,0 +1,180 @@
+{
+ "role": "P3",
+ "category": "R6",
+ "label": "P3-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "missed": [
+   {
+    "function": "Port supply current limit",
+    "part": "INA381A1IDSGR",
+    "maker": "Texas Instruments",
+    "why": "A family P2 did not consider (INA381A1 to A4, comparator reference set on a pin, not by a limit resistor as on the INA301). Every requirement value passes. Data sheet SBOS848B (https://www.ti.com/lit/ds/symlink/ina381.pdf, read 2026-10-02T21:10:27Z): common-mode input -0.2 to 26 V (covers 0.8 to 8.70 V, 12 V back-fed while off, 20 V through a failed converter; differential absolute maximum +/-26 V, so a braking servo's negative VSENSE drives the output to GND without damage and without a trip); supply 2.7 to 5.5 V (3.201 to 3.399 V passes); A1 gain 20 V/V, gain error 1 % max, offset 150 uV max at VCM 0 V and 500 uV max at VCM 12 V, comparator offset 5 mV max, hysteresis 50 mV; open-drain active-low ALERT (6 V absolute maximum) that pulls the TPSI3052 EN low; latch mode with RESET high, cleared when RESET is pulled low for at least 100 ns, so RESET goes to the port's enable and the trip holds the switch off while the enable is high; response: comparator alone 0.4 us typ / 1 us max, total small-signal alert 2 us typ / 5 us max, slew-limited alert 3 us typ / 10 us max (reported, V129 states no limit). Trip band on the 10 mOhm port shunt (assumed +/-0.8 % with temperature coefficient) with CMPREF 0.88 V: 4.11 to 4.70 A when CMPREF is a 0.1 % divider off the 3.201 to 3.399 V rail, 4.23 to 4.58 A from the 1.25 V REF3112 (my arithmetic, worst case, 25 K from 25 degC): inside 3.0 to 6.35 A and inside the 3.96 to 4.84 A breaker band. Stock: JLCPCB C544574 stockCount 615, canPresaleNumber 539, expand, USD 0.387 at 500 (vendors.py jlcpcb, 2026-10-02T21:11:23Z), passes the gate of 500 (20 placements x 5 boards x 5) by 115. Digi-Key INA381A1IDSGR Active, stock 8602, lead 20 weeks (productdetails, 2026-10-02T21:12:09Z), so rule 5 passes by the second vendor. TI page https://www.ti.com/product/INA381 reads ACTIVE (2026-10-02T21:24:30Z); first data sheet December 2017. WSON-8 2 x 2 mm, thermal pad to GND. Same-footprint sibling INA381A2IDSGR (gain 50, CMPREF 2.2 V): JLCPCB C2155688 4774/4538 (21:11:22Z) but Digi-Key stock 0 (21:12:08Z), so it is not a second source of its own and needs another divider. INA301A1IDGKR's JLCPCB price is USD 1.76 at 500 (jlcparts), about four times this part's."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "IHLP4040DZER4R7M01",
+    "functions": [
+     "Servo supply inductor"
+    ],
+    "reason_given": "not dropped for a value (FU-2G re-rank ranks 4 and 5); not recorded here",
+    "why_it_fails": "No requirement value fails, and the function keeps up to three survivors while P2 records one. Vishay IHLP-4040DZ-01, document 34193 (https://www.vishay.com/docs/34193/ihlp-4040dz-01.pdf, read 2026-10-02T21:25:02Z), 4.7 uH row: DCR 15.00 typ and 16.50 max mOhm (equal to the 16.5 limit, which passes 'at most'), heat rating 9.5 A typ (at least 8 A), saturation 17.0 A typ at 20 % drop (above 13 A). JLCPCB C845077 stockCount 1388, canPresaleNumber 1377, expand (vendors.py jlcpcb, 2026-10-02T21:14:42Z), passes the gate of 100. Digi-Key IHLP4040DZER4R7M01 Active, stock 30264, lead 13 weeks (cached reading 2026-10-02T18:13:08Z). Margins: none on DCR; heat and saturation are typical figures only."
+   },
+   {
+    "part": "7443551470",
+    "functions": [
+     "Servo supply inductor"
+    ],
+    "reason_given": "not dropped for a value (FU-2G re-rank ranks 4 and 5); not recorded here",
+    "why_it_fails": "No requirement value fails. Wurth WE-HCI data sheet (https://www.we-online.com/components/products/datasheet/7443551470.pdf, read 2026-10-02T21:25:03Z): 4.7 uH +/-20 %, RDC 7 mOhm +/-10 % at 20 degC (7.7 mOhm max, under 16.5), IR,50K 13 A max and IRP,40K 14.9 A max (at least 8 A), ISAT 6 A typ at 10 % drop and 15 A typ at 30 % drop (above 13 A only on the 30 % criterion, typical only, 2 A margin), ambient -40 to +105 degC at IRP. JLCPCB C1331156 stockCount 114, canPresaleNumber 108, expand (2026-10-02T21:14:41Z): passes the gate of 100 by 14, the thinnest of the inductors. Digi-Key 7443551470 Active, stock 1162, lead 17 weeks (cached reading 2026-10-02T18:13:10Z)."
+   },
+   {
+    "part": "ETQP5M4R7YFC",
+    "functions": [
+     "Servo supply inductor"
+    ],
+    "reason_given": "passes every value (4.7 uH, 20.0 A saturation, 13.1 A typ [10.9 A] heat rating, 11.30 mOhm max); not recorded in full: second on DC resistance",
+    "why_it_fails": "Rank order on DC resistance is not a requirement value, and the function keeps up to three survivors. Panasonic catalog AGL0000C59, 6-Feb-26, table 5 (https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C59.pdf, read 2026-10-02T21:25:02Z): ETQP5M4R7YFC 4.7 uH +/-20 %, DCR 10.2 typ [11.30 max] mOhm (under 16.5), rated current 13.1 A [10.9 A] at 40 K rise (at least 8 A), 20.0 A at -30 % inductance (above 13 A). JLCPCB C409638 stockCount 337, canPresaleNumber 324, expand (2026-10-02T21:14:45Z), passes the gate of 100. Digi-Key ETQ-P5M4R7YFC Active, stock 41860, lead 23 weeks (cached 2026-10-02T13:58:46Z)."
+   },
+   {
+    "part": "IHLP5050CEER4R7M01",
+    "functions": [
+     "Servo supply inductor"
+    ],
+    "reason_given": "passes every value (4.7 uH, 24 A typ saturation, 10 A typ heat rating, 15 mOhm max); not recorded in full: below the parts above on DC resistance and typical-only ratings",
+    "why_it_fails": "Rank order and typical-only ratings are not requirement values; the requirement says 'above 13 A' and 'at least 8 A' and the typical figures clear both. Vishay IHLP-5050CE-01, document 34105 (https://www.vishay.com/docs/34105/ihlp-5050ce-01.pdf, read 2026-10-02T21:25:01Z): 4.7 uH row DCR 14.3 typ and 15 max mOhm (under 16.5), heat 10 A, saturation 24 A. JLCPCB C845092 stockCount 727, canPresaleNumber 727, expand (2026-10-02T21:14:44Z), passes the gate of 100. Digi-Key IHLP5050CEER4R7M01 Active, stock 476, lead 23 weeks (cached 2026-10-02T13:58:49Z), passes 100."
+   },
+   {
+    "part": "DMG4822SSD-13",
+    "functions": [
+     "Port supply switch"
+    ],
+    "reason_given": "not dropped for a value read; 20 mOhm at 10 V per jlcparts; not recorded",
+    "why_it_fails": "No value fails; it is the cheapest pair read. Diodes DS35403 Rev. 3-2 (https://www.diodes.com/assets/Datasheets/DMG4822SSD.pdf, read 2026-10-02T21:21:12Z): dual N-channel, SO-8 with separate S1 and S2 (so the source-to-source pair of V302 works); VDSS 30 V (above 20 V); VGSS +/-25 V (above the TPSI3052's 16.2 V); RDS(ON) 20 mOhm max at 10 V and 31 mOhm max at 4.5 V, so the pair drops 120 mV at 3.0 A (25 degC) against 570 mV; IDSS 1 uA max at 30 V (under 5 mA); RthJA 88.4 degC/W, about 0.36 W in the package at 3.0 A (0.54 W at 1.5 x hot RDS(on)), TJ about 82 to 98 degC at 50 degC ambient. JLCPCB C212299 stockCount 4471, canPresaleNumber 4463, expand, USD 0.186 at 500 (2026-10-02T21:20:49Z), passes the gate of 500. Digi-Key DMG4822SSD-13 Active, stock 14898, lead 32 weeks (2026-10-02T21:21:28Z)."
+   },
+   {
+    "part": "DMT3009LDT-7",
+    "functions": [
+     "Port supply switch"
+    ],
+    "reason_given": "passes every value (...); not recorded in full: 30 V, higher RDS(on), not pin-compatible with rank 1",
+    "why_it_fails": "A higher RDS(on) and a different footprint are not requirement values: rank 1's second source is the second vendor (rule 5), not a pin-compatible alternate. 30 V is above the 20 V withstand. Diodes DS37810 Rev. 7-2 (https://www.diodes.com/assets/Datasheets/DMT3009LDT.pdf, read 2026-10-02T21:25:11Z) states RDS(ON) 13.8 mOhm max at VGS 4.5 V (P2 records 11.1 mOhm max at 10 V), 67 mV to 83 mV across the pair at 3.0 A against 570 mV. JLCPCB C155503 stockCount 2341, canPresaleNumber 2165, expand (2026-10-02T21:20:48Z), passes the gate of 500. Digi-Key DMT3009LDT-7 Active, stock 1660, lead 44 weeks (cached 2026-10-02T20:38:01Z)."
+   },
+   {
+    "part": "TPSI3050DWZR",
+    "functions": [
+     "Port supply switch driver"
+    ],
+    "reason_given": "Gate drive within the MOSFET ratings: VVDRV_H 9.4 to 11 V (SLVSGO9C), under the 10 V at which both pairs state RDS(on); otherwise the same pins and timing as rank 1",
+    "why_it_fails": "10 V is the test condition of the MOSFETs' RDS(on) figure, not a requirement of the page; what the page requires of the path is V124's 570 mV at 3.0 A and a VGS inside the rating. At 9.4 V minimum the pair passes: DMT3009LDT-7 states 13.8 mOhm max at VGS 4.5 V (DS37810, read 21:25:11Z) and DMG4822SSD-13 31 mOhm max at 4.5 V (DS35403, read 21:21:12Z), so 2 x 31 mOhm x 3.0 A = 186 mV worst case; BUK7K6R8-40E states 6.8 mOhm max at 10 V and its RDS(on)-against-VGS curve (Fig. 7, https://assets.nexperia.com/documents/data-sheet/BUK7K6R8-40E.pdf, read 21:08:31Z) is flat well below 9.4 V, 41 mV at 6.8 mOhm each. VDRV maximum 11 V is under every pair's 20 V VGS rating. TPSI3050 SLVSGO9C (https://www.ti.com/lit/ds/symlink/tpsi3050.pdf, read 2026-10-02T21:08:26Z): same two-wire/three-wire modes, static on in the non-S part (the one-shot is the S variant), primary 3 to 5.5 V, VIH_EN 2.1 V min at VDDP 3 V (0.7 x VDDP above that), VDRV falls in 2.4 us typ / 3 us max, VDRV low when VDDP is under its UVLO. JLCPCB C17227641 stockCount 1857, canPresaleNumber 1812, expand, USD 2.6157 at 500 (2026-10-02T21:20:49Z), against 1046 and USD 3.73 for the TPSI3052DWZR (C20346001, 21:08:12Z). Digi-Key TPSI3050DWZR Active, stock 7369, lead 12 weeks (cached 2026-10-02T20:38:05Z)."
+   },
+   {
+    "part": "INA301A1QDGKRQ1",
+    "functions": [
+     "Port supply current limit"
+    ],
+    "reason_given": "the automotive grade of rank 1, same pinout and gain, JLCPCB C553117 2392/2392, Digi-Key 2223 Active; its own Q1 data sheet not read; not recorded in full",
+    "why_it_fails": "The reason is a missing reading, not a failed value, and I read the sheet. INA301-Q1 SBOS786B (https://www.ti.com/lit/ds/symlink/ina301-q1.pdf, read 2026-10-02T21:18:53Z): A1 gain 20 V/V, common-mode 0 to 36 V, supply 2.7 to 5.5 V, offset 35 uV max, gain error 0.1 % max, open-drain ALERT with transparent and latched modes selected by RESET, total alert response 1 us: the same figures as the INA301 sheet SBOS713A that P2 qualifies rank 1 on, so the 4.30 to 4.51 A band carries over. JLCPCB C553117 stockCount 2392, canPresaleNumber 2392, expand, USD 1.9573 at 500 (2026-10-02T21:20:49Z), passes 500. Digi-Key INA301A1QDGKRQ1 Active, stock 2223, lead 20 weeks (cached 2026-10-02T20:38:07Z). It is also a pin-compatible second source for rank 1."
+   },
+   {
+    "part": "PCA9698DGG,518",
+    "functions": [
+     "I/O expander"
+    ],
+    "reason_given": "not dropped for a value (FU-2G re-rank rank 4; its total low-level current is 0.86 A in TSSOP56, ruling 018); not recorded",
+    "why_it_fails": "Ruling 018 corrects a figure in the re-rank's P5 report; IOL(tot) is a sink limit, and every line here drives a TPSI3052 EN input (microamps), so no requirement value fails. It is the one candidate that covers the 37 lines in a single placement. NXP PCA9698 Rev. 3 (https://www.nxp.com/docs/en/data-sheet/PCA9698.pdf, read 2026-10-02T21:25:03Z): 40 I/Os that default to inputs at power-up and on RESET; active-low RESET input; no internal pull-ups on the I/Os (the only pull-up statement is for AD2 to AD0); 1 MHz Fm+; VDD 2.3 to 5.5 V; 64 addresses chosen by AD2 to AD0. It needs OE held low (OEPOL = 0 default) and costs USD 9.80 at 1, neither a requirement value. JLCPCB C729177 stockCount 1908, canPresaleNumber 1894, expand (2026-10-02T21:20:49Z), passes the gate of 50 for one placement. Digi-Key PCA9698DGG,518 Active, stock 3322, lead 16 weeks (cached 2026-10-02T14:27:10Z)."
+   },
+   {
+    "part": "TCA6424ARGJR",
+    "functions": [
+     "I/O expander"
+    ],
+    "reason_given": "passes every value (...); not recorded in full: another register map and firmware than rank 1",
+    "why_it_fails": "A different register map is not a requirement value, and the function keeps up to three survivors. TI SCPS193D (https://www.ti.com/lit/ds/symlink/tca6424a.pdf, read 2026-10-02T21:25:04Z): 24 push-pull lines, so 2 parts on the ADDR pin's two addresses give 48 against 37; active-low RESET input; internal power-on reset and RESET return the I/Os to inputs; no pull-up registers; P2 records the addresses as 0x22 and 0x23, clear of 0x31, 0x40 to 0x4F, 0x18 to 0x1F and 0x74/0x75. JLCPCB C80692 stockCount 4940, canPresaleNumber 4819, expand (2026-10-02T21:20:50Z), passes the gate of 50. Digi-Key TCA6424ARGJR Active, stock 1247, lead 20 weeks (cached 2026-10-02T13:58:56Z)."
+   },
+   {
+    "part": "PCAL6524HEAZ",
+    "functions": [
+     "I/O expander"
+    ],
+    "reason_given": "passes every value (...); not recorded in full: 30-week lead",
+    "why_it_fails": "The manufacturer's lead time is recorded under Sourcing rule 7 and is no gate; the Lifecycle check gates status only. NXP PCAL6524 Rev. 2.1 (https://www.nxp.com/docs/en/data-sheet/PCAL6524DS.pdf, read 2026-10-02T21:25:05Z; P2 read the same sheet at 20:28:13Z): 24 lines (48 on 2 parts), RESET, inputs at reset, pull-up/pull-down enable registers default off, Fm+. JLCPCB C3000497 stockCount 2399, canPresaleNumber 2374, expand (2026-10-02T21:20:50Z), passes 50. Digi-Key PCAL6524HEAZ Active, stock 18577, lead 30 weeks (cached 2026-10-02T14:20:12Z)."
+   },
+   {
+    "part": "TLV6710DDCR",
+    "functions": [
+     "Port voltage ceiling"
+    ],
+    "reason_given": "passes every value: the same INB thresholds, hysteresis, input current and DDC pins as rank 1; not recorded in full: four times rank 1's price",
+    "why_it_fails": "Price is not a requirement value, and the function keeps up to three survivors; P2 records one. TLV6710 SNVSAV4B (https://www.ti.com/lit/ds/symlink/tlv6710.pdf, read 2026-10-02T21:25:06Z): 0.75 % max threshold accuracy over temperature, VDD 1.8 to 36 V, 5.5 mV typ hysteresis (2 to 12 mV), open-drain outputs, the TPS3701's window pinout. JLCPCB C2863066 stockCount 3103, canPresaleNumber 3091, expand, USD 1.4664 at 500 (2026-10-02T21:20:50Z), against USD 0.3658 for C132788 (21:20:53Z): passes 500. Digi-Key TLV6710DDCR Active, stock 17144, lead 20 weeks (cached 2026-10-02T17:52:54Z). It is the only second source for rank 1 that passes the HV band."
+   },
+   {
+    "part": "SN74LVC1G175DCKR",
+    "functions": [
+     "Servo supply temperature latch"
+    ],
+    "reason_given": "passes every value with rank 1's pinout ..., but Digi-Key 0 (cached 17:53:15Z): its second source would be 74LVC1G175GW,125; not recorded in full",
+    "why_it_fails": "Rule 5 takes a pin-compatible alternate that passes rules 1 to 4 in place of second-vendor stock, and P2 names that alternate: its own rank 1. Both are six-pin SOT363/SC70-6 with CP/CLK 1, GND 2, D 3, Q 4, VCC 5, MR/CLR 6 (SN74LVC1G175 DCK pinout, https://www.ti.com/lit/ds/symlink/sn74lvc1g175.pdf, read 2026-10-02T21:25:09Z; Nexperia 74LVC1G175 section 6.1). Digi-Key stock 0 for the TI part (cached 2026-10-02T17:53:15Z) therefore fails nothing; rank 1 is the part with the second vendor's stock gap read the other way. JLCPCB C202238 stockCount 124838, canPresaleNumber 124683, expand (2026-10-02T21:20:50Z), passes the gate of 100. It is a survivor with 74LVC1G175GW,125 as its second source."
+   },
+   {
+    "part": "SN74LVC1G08DCKR",
+    "functions": [
+     "Servo supply enable gate"
+    ],
+    "reason_given": "passes every value, pin-compatible with rank 1 (...); not recorded in full",
+    "why_it_fails": "No value fails and no other reason is given, so it is a survivor and rank 1's pin-compatible alternate (rule 5). JLCPCB C7832 stockCount 349684, canPresaleNumber 349407, expand, USD 0.0412 at 100 (2026-10-02T21:20:51Z), passes the gate of 100; Digi-Key TI SN74LVC1G08DCKR Active, stock 773636 (P2's reading 2026-10-02T20:38:13Z; my cached call returns the multi-product match without a stock figure). TI SCES217AA (https://www.ti.com/lit/ds/symlink/sn74lvc1g08.pdf, read 2026-10-02T21:25:06Z) is the sheet P2 qualified it on."
+   },
+   {
+    "part": "TPS3808G30DBVR",
+    "functions": [
+     "Servo supply latch power-up reset"
+    ],
+    "reason_given": "not dropped for a value; a capacitor-set delay pin the function does not need; not recorded",
+    "why_it_fails": "The CT pin needs no capacitor: left open it gives a fixed 20 ms typ (12 to 28 ms) reset delay, and a delay is a reported figure here. TPS3808 SBVS050N (https://www.ti.com/lit/ds/symlink/tps3808.pdf, read 2026-10-02T21:20:13Z): G30 threshold 2.79 V nominal, accuracy +/-1.5 % (+/-1.25 % at -40 to 85 degC), hysteresis 1 to 2.5 %, so the threshold lies between 2.75 V and 2.90 V including hysteresis (above the latch's 1.65 V minimum supply, under 3.201 V); open-drain RESET; VPOR 0.8 V, so RESET is low from a supply below 1.65 V; VDD 1.65 V (0 to 85 degC) to 6.5 V; 2.4 uA typ. JLCPCB C189211 stockCount 2472, canPresaleNumber 2470, expand, USD 0.4926 at 100 (2026-10-02T21:20:52Z), passes 100. Digi-Key TPS3808G30DBVR Active, stock 11092, lead 20 weeks (2026-10-02T21:21:32Z). Its SOT-23-6 pinout differs from the TLV803SDBZR's, which no requirement names."
+   },
+   {
+    "part": "TPS3703A7330DSERQ1",
+    "functions": [
+     "Servo supply latch power-up reset"
+    ],
+    "reason_given": "not dropped for a value: R3's reset supervisor (window, 7 to 13 ms); not recorded, since its overvoltage side also asserts RESET",
+    "why_it_fails": "No requirement forbids the overvoltage side: it asserts above 3.531 V (3.3 V + 7 %, +/-0.7 %), above the 3.399 V rail maximum, so it asserts nothing in range and holds the latch set (rail off) if the 3.3 V rail rises past it, which is the safe direction. TPS3703 SBVS249B (https://www.ti.com/lit/ds/symlink/tps3703.pdf, read 2026-10-02T21:10:29Z): A7330 is 10 ms delay with CT open, 7 % UV/OV window on 3.30 V, thresholds +/-0.7 %, hysteresis 0.3 to 0.8 %, VPOR 1 V (RESET low from a supply below 1.65 V), UV about 3.05 to 3.09 V plus hysteresis, under 3.201 V; R3's records give 3.044 to 3.046 V. JLCPCB C1849519 stockCount 307, canPresaleNumber 306, expand (2026-10-02T21:20:52Z), passes the gate of 100 for 4 placements a board (thin); Digi-Key TPS3703A7330DSERQ1 Active, stock 280, lead 26 weeks (2026-10-02T21:21:33Z), passes 100. The same part number as R3's supervisor saves a line on the bill of materials."
+   },
+   {
+    "part": "APX803S-29SA-7",
+    "functions": [
+     "Servo supply latch power-up reset"
+    ],
+    "reason_given": "passes every value with TLV803SDBZR's SOT-23 pinout (...), JLCPCB C143831 1426/1403, but Digi-Key 0 (20:38:17Z); not recorded in full",
+    "why_it_fails": "Digi-Key stock 0 fails nothing under rule 5: the pin-compatible alternate is P2's rank 1, the TLV803SDBZR, which passes rules 1 to 4 (the MAX803 SOT-23 pinout the two share, as P2 records). Diodes DS39161 Rev. 2-2 (https://www.diodes.com/assets/Datasheets/APX803S.pdf, read 2026-10-02T21:25:09Z): open-drain active-low RESET, threshold 2.89 to 2.97 V at 25 degC with a 30 ppm/degC typical tempco (about 2 mV over 0 to 50 degC), RESET guaranteed low for VCC above 1.0 V at 50 uA sink, tDELAY 140 to 280 ms. JLCPCB C143831 stockCount 1426, canPresaleNumber 1403, expand (2026-10-02T21:20:52Z), passes 100. Digi-Key 0, Active, lead 52 weeks (cached 2026-10-02T20:38:17Z). The threshold is stated at 25 degC only, with no maximum tempco, which P2 records."
+   },
+   {
+    "part": "SN74LVC1G17DCKR",
+    "functions": [
+     "Servo supply latch clear buffer"
+    ],
+    "reason_given": "passes every value, pin-compatible with rank 1 (VT+ 1.48 to 1.92 V at 3 V, Ioff, TA -40 to 125 degC; SCES351Y); not recorded in full",
+    "why_it_fails": "No value fails and no other reason is given; it is rank 1's pin-compatible alternate. JLCPCB C10425 stockCount 115714, canPresaleNumber 114568, expand, USD 0.0565 at 100 (2026-10-02T21:20:51Z), passes the gate of 100; Digi-Key TI SN74LVC1G17DCKR Active, stock 8697 (P2's reading 2026-10-02T20:38:24Z). TI SCES351Y read 2026-10-02T21:25:07Z (https://www.ti.com/lit/ds/symlink/sn74lvc1g17.pdf)."
+   },
+   {
+    "part": "SN74AUP1G17DBVR",
+    "functions": [
+     "Servo supply latch clear buffer"
+    ],
+    "reason_given": "passes every value (Schmitt input, hysteresis 0.79 to 1.31 V at 3 V, Ioff; SCES579J) ...; R3's trigger buffer part number; not recorded in full: 4 mA drive into 5 clock inputs",
+    "why_it_fails": "The latch's clock input is a CMOS gate input of a few pF and the requirement is the 10 ns/V input transition limit, not a drive current: 4 mA into 5 inputs of about 3 pF each (SN74LVC1G175 input capacitance 3 pF typ) charges them in nanoseconds. It is R3's buffer part number, so one part number serves both. JLCPCB C183012 stockCount 8838, canPresaleNumber 8715, expand, USD 0.2341 at 50 (2026-10-02T21:20:51Z), passes 100; Digi-Key TI SN74AUP1G17DBVR Active, stock 88895 (P2's reading 2026-10-02T20:38:28Z). TI SCES579J read 2026-10-02T21:25:08Z (https://www.ti.com/lit/ds/symlink/sn74aup1g17.pdf)."
+   },
+   {
+    "part": "LM4041A12IDBZR",
+    "functions": [
+     "Servo rail clamp reference"
+    ],
+    "reason_given": "not dropped for a value read; a 1.225 V shunt reference (+/-0.1 %, 100 ppm/degC per jlcparts) needs another circuit; its data sheet not read in this run",
+    "why_it_fails": "A bias resistor from the 3.3 V or 5 V rail is the only added part, and no requirement value excludes it; I read the sheet. LM4041-N SNOS641I (https://www.ti.com/lit/ds/symlink/lm4041-n.pdf, read 2026-10-02T21:22:28Z): A grade 1.225 V +/-0.1 % (+/-1.2 mV) at 25 degC, 100 ppm/degC max, so +/-0.35 % over 25 K from 25 degC (+/-4.3 mV), against REF3112's +/-0.2 % plus 15 ppm/degC (+/-0.24 %); P2's +/-0.53 % clamp total becomes +/-0.64 %, inside +/-0.99 % with about 30 mV of margin at 8.615 V. IRMIN 60 uA (65 uA over temperature), 12 mA max, so one resistor sized for the four divider and amplifier loads feeds them. JLCPCB C543058 stockCount 5674, canPresaleNumber 5671, expand, USD 0.8633 at 100 (2026-10-02T21:29:02Z); Digi-Key LM4041A12IDBZR Active, stock 3035, lead 12 weeks (2026-10-02T21:29:05Z). Not pin-compatible with REF3112 (two-terminal shunt, not a series reference)."
+   }
+  ],
+  "missed_functions": []
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R7",
+ "label": "adjudicator-R7",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "function": "P2 report: protector short-circuit windows",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation holds. The claim gives its source as SLUSBV4D 5.5. That table lists a maximum tSCD1 of 1850 us with PROTECTION_CONTROL[SCDDx2] = 1, so the claimed \"1830 us with SCDDx2\" does not match it. 1830 us is the 0x0F entry of SLUUBT5C Table A-10, which is the technical reference manual (TRM), not the cited source. The two TI documents differ by 20 us. The rest of the figure reproduces from the sources. SCD1 88.8 mV is Table A-8 setting 0x02 (RSNS = 1). The 1 mOhm +-0.5 % shunt with -10/+10 % scale error untrimmed gives 77.03 to 100.68 A: (79.92 - 2.5) / 1.005 and (97.68 + 2.5) / 0.995. The ±5 % scale error and ±2.5 mV offset post-trim give 81.45 to 96.22 A. The delay without SCDDx2 is 0 to 915 us. Only the SCDDx2 delay is wrong for the cited source. A corrected figure reads \"0 to 1850 us (SLUSBV4D 5.5); largest setting 1830 us (SLUUBT5C Table A-10, 0x0F)\". The ruling concerns this figure's value and source in this function, not the part's identity or lifecycle.",
+  "evidence": "SLUSBV4D (June 2018, revised May 2026) section 5.5, Current Protection Timing: tSCD1 is 0 to 915 us with PROTECTION_CONTROL[SCDDx2] = 0 and 0 to 1850 us with SCDDx2 = 1. The program step ΔtSCD1 is 61 us and 121 us. VSCD1 with RSNS = 1 is -44.4 to -200 mV in 22.2 mV steps. VSCALE is -10 % to 10 % untrimmed and -5 % to 5 % post-trim. VOFFSET is -2.5 to 2.5 mV post-trim. SLUUBT5C Table A-8 lists 0x02 as -88.8 mV (RSNS = 1). Table A-9 (SCDDx2 = 0) runs 0x0F = 915 us. Table A-10 (SCDDx2 = 1) runs 0x0F = 1830 us.",
+  "source": "https://www.ti.com/lit/ds/symlink/bq40z80.pdf (SLUSBV4D section 5.5 Electrical Characteristics, Current Protection Timing rows tSCD1, ΔtSCD1, VSCALE, VOFFSET); https://www.ti.com/lit/ug/sluubt5c/sluubt5c.pdf (SLUUBT5C Tables A-8, A-9, A-10), both read with vendors.py fetch, HTTP 200",
+  "read_at": "2026-10-02T21:58:06Z",
+  "scope": "function"
+ }
+}

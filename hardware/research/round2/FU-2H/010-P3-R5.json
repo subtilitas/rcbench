@@ -1,0 +1,193 @@
+{
+ "role": "P3",
+ "category": "R5",
+ "label": "P3-R5",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "missed": [
+   {
+    "function": "display supply",
+    "part": "TPS259472ARPWR",
+    "maker": "Texas Instruments",
+    "why": "Fourth orderable of the TPS25947 datasheet (SLVSFC9C 6.5, read 2026-10-02T20:31Z in P2's scratch) that P2 did not list. It has the same RON (45 mOhm maximum at 2.7 to 23 V), the same ILIM table (RILM 750 Ohm gives 3.96 to 4.84 A, 1.65 kOhm gives 1.800 to 2.200 A) and the same reverse current blocking rows as the TPS259474. It differs by a pin-selected output clamp: OVCSEL with 390 kOhm to GND gives VOVC 13.2 to 14.5 V, well above the display's 5.5 V back-feed, so the clamp stays out of the 5 V path. Pins differ from the TPS259470/74 (OVCSEL, PGTH and PG replace OVLO, AUXOFF and FLT), so it is not their alternate and P5 would count PG and PGTH. JLCPCB C3662789 stock 3781, presale 3657, library expand, 2026-10-02T21:16:11Z. Digi-Key 30150, Active, lead 12 weeks, fresh read 2026-10-02T21:16:16Z, so rule 5 holds by the same part at the second vendor, where rank 1 TPS259474ARPWR has Digi-Key 0. Not re-read: the ILIM window for the 2.5 A nominal setting is taken from the family table, not recomputed for this variant."
+   },
+   {
+    "function": "5 V rail",
+    "part": "TPS54360BDDAR",
+    "maker": "Texas Instruments",
+    "why": "Family P2 did not consider (only TPS54302 is named). SNVSB93 6.5, read 2026-10-02T21:16:31Z: VREF 0.792 to 0.808 V (+/-1 %) over TJ -40 to 150 degC and VIN 4.5 to 60 V, so the line term is inside the figure (TPS62933: +/-2 % over -40 to 150 degC, +/-1.5 % over 0 to 85 degC). 3.5 A against 2.60 A, 60 V against the 27 V bus. Duty approaches 100 % with the BOOT refresh (7.3.4); RDS(on) 92 mOhm typical, 190 mOhm maximum at VIN 12 V (not stated at 5.8 V), so 2.08 A drops about 0.4 V of the 0.8 V available at 5.8 V in (arithmetic). Reference alone leaves 4.95 V lowest rail before resistors, against 4.875 V for LM61460 and 4.825 V for TPS62933. Pulse-skip Eco-mode at light load is not a stated value of this function (P2 keeps the PFM TPS62933 as rank 2). JLCPCB C524806 stock 59415, presale 58476, expand, 2026-10-02T21:17:06Z. Digi-Key 0 (fresh 2026-10-02T21:17:08Z), so rule 5 rests on the pin-identical TPS54340BDDAR (same DDA pinout, 4.5 to 42 V, VREF 0.792 to 0.808 V; JLCPCB C1850353 stock 2970, presale 2941, 2026-10-02T21:17:06Z). Digi-Key ProductStatus Active; the TI page read 2026-10-02T21:17:22Z shows ACTIVE, the NRND hit there is the title of a differences note for the non-B parts."
+   },
+   {
+    "function": "bus clamp (behind the overvoltage cut-off, ahead of the TPS55285)",
+    "part": "LT4363IMS-2#TRPBF",
+    "maker": "Analog Devices (Linear)",
+    "why": "P2 returns no part for this function; no passive TVS from the allowlist meets it (VRWM 22 V with VBR maximum at or under 27.0 V and a clamp at or under 27.0 V at 27 A leaves no room: TVS2200 is 0.6 V over, standard 22 V TVS are 28 to 35 V at their current, Bourns PTVS2-022C-H has 10 uA at VWM and VC 28 V). LT4363 is the series alternative P2 dropped only by topology under LTC4364 and LTC4380: it regulates the output at an adjustable clamp set by FB, 1.25 to 1.30 V over its range (+/-2 %), so a divider puts the top corner at 27.0 V and the bottom corner near 25.9 V, above the 22.0 V trip; tOFF(OV) 0.25 us typical, 1 us maximum; VCC -60 to 80 V operating, 100 V absolute; LT4363 datasheet read from the JLCPCB link 2026-10-02T21:00:32Z (the analog.com copy answered 404). It needs a stage 2 MOSFET and a 50 mV sense resistor in the 52.1 A path. Open item, not stated by the datasheet: overshoot above the clamp while the gate discharges (GATE pull-down 75 mA minimum) depends on the MOSFET's gate charge and the bus capacitance, 18.8 to 80 uF. JLCPCB C118131 stock 5433, presale 5312, expand, 2026-10-02T21:13:05Z. Digi-Key 5460, Active, lead 21 weeks, fresh read 2026-10-02T21:13:10Z."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "functions": [
+     "reverse-polarity protection",
+     "overvoltage protection",
+     "inrush limiting",
+     "source selection"
+    ],
+    "part": "LM74800MDRRR",
+    "reason_given": "Passes every value of this function; not among the survivors recorded: two LM7480x orderables cover the function, and it has the highest price at 10 (3.292)",
+    "why_it_fails": "The count of orderables and the price at 10 are not requirement values or sourcing rules. P2 kept two survivors in each of the four functions where its rule allows up to three. The part is rank 1's die as a non-automotive orderable and P2 records it as passing. JLCPCB C7216630 stock 6031, presale 5940, expand, 2026-10-02T20:57:22Z, against a gate of 50 (5 times a need of 10, never under 50). Digi-Key 2148, Active (cached 2026-10-02T11:57:41Z), so rule 5 holds by the same part at the second vendor."
+   },
+   {
+    "functions": [
+     "reverse-polarity protection",
+     "overvoltage protection",
+     "source selection"
+    ],
+    "part": "LM74801QDRRRQ1",
+    "reason_given": "Passes; not among the survivors recorded: least stock of the WSON-12 parts (JLCPCB C2873366 708, presale 705); listed as rank 1's alternate (reverse-polarity); passes (4.7 us max cut-off), not among the survivors: JLCPCB 708 (overvoltage); Passes; not among the survivors recorded: JLCPCB 708 (source selection)",
+    "why_it_fails": "708 is not under the gate of 50: JLCPCB C2873366 stock 708, presale 705, 2026-10-02T20:57:21Z. Digi-Key 2940, Active (cached 2026-10-02T16:42:03Z), so rule 5 holds by the same part. Least stock is a rank, not a failed value, and each function keeps two survivors against up to three."
+   },
+   {
+    "functions": [
+     "reverse-polarity protection"
+    ],
+    "part": "LTC4359HDCB#TRPBF",
+    "reason_given": "Meets the reverse values; no UV or OV comparator, -40 V against rank 1's -65 V (FU-B3 reading 2026-09-29T15:32:13Z, not re-read)",
+    "why_it_fails": "A UV or OV comparator is not a value of the reverse-polarity function (the overvoltage cut-off is its own function), and -40 V is above the required -25.2 V. LTC4359 Rev F, read 2026-10-02T20:57:41Z: IN, SOURCE and SHDN -40 to 100 V, OUT -2 to 100 V, operating 4 to 80 V, H grade -40 to 125 degC, so 25.2 V forward, -25.2 V reverse and the 37.3 V clamp level are inside the ratings. JLCPCB C688238 stock 4788, presale 4777, expand, 2026-10-02T20:56:57Z. Digi-Key 6220, Active, lead 10 weeks (cached 2026-10-02T16:23:39Z), so rule 5 holds."
+   },
+   {
+    "functions": [
+     "reverse-polarity protection"
+    ],
+    "part": "LM74910QRGERQ1",
+    "reason_given": "Passes (FU-B3 reading); not among the survivors recorded: 24 pins with a breaker the function does not need",
+    "why_it_fails": "Pin count and an unused breaker are not requirement values. P2 records the part as passing. JLCPCB C22427891 stock 1982, presale 1977, expand, 2026-10-02T20:57:11Z. Digi-Key 7440, Active, lead 20 weeks, fresh read 2026-10-02T21:13:38Z."
+   },
+   {
+    "functions": [
+     "reverse-polarity protection"
+    ],
+    "part": "LM74700QDBVRQ1, LM74700QDBVTQ1",
+    "reason_given": "Qualified by FU-2F re-rank for reverse blocking only (-65 V to 65 V, 0.75 us); not among the survivors recorded: no overvoltage cut-off or load disconnect, so a second controller type",
+    "why_it_fails": "Overvoltage cut-off and load disconnect belong to other functions; for the reverse-polarity function P2 records the part as qualified. 'A second controller type' is not a value or a sourcing rule, and the function keeps two survivors against up to three. JLCPCB C2941042 (DBVRQ1) stock 1373, presale 881 and C2653623 (DBVTQ1) stock 5563, presale 5512, 2026-10-02T20:57:13Z and 20:57:14Z. Digi-Key DBVTQ1 5975, Active (cached 2026-10-02T16:06:33Z); DBVRQ1 0 (cached 16:06:31Z), and the two share the SOT-23-6 pins, so rule 5 holds through the DBVTQ1."
+   },
+   {
+    "functions": [
+     "reverse-polarity protection",
+     "overvoltage protection"
+    ],
+    "part": "LTC4365IDDB#TRPBF",
+    "reason_given": "FU-2F P3 finds the re-rank qualified on their values; not among the survivors recorded: each adds a second controller type beside the LM7480x, and the LTC4365 conducts both ways when enabled (reverse-polarity); FU-2F re-rank qualified it (OV +/-1.5 %, trip 20.64 to 21.36 V, release 19.30 to 20.52 V, 6 us maximum cut-off at 2.2 nF); not among the survivors recorded: a second controller type (overvoltage)",
+    "why_it_fails": "P2's own text records the part as qualified on the values of both functions. 'A second controller type' is not a value. Conducting both ways when enabled is a source selection matter: the gate is off below the UV set point and with the input unpowered, so the pack's voltage does not reach the DC pins (LTC4365 datasheet read 2026-10-02T21:23:51Z: VIN -40 to 60 V absolute, operating 2.5 to 34 V, reverse supply protection to -40 V). JLCPCB C688325 stock 2275, presale 2270, 2026-10-02T20:57:08Z. Digi-Key 9866, Active (cached 2026-10-02T16:09:30Z)."
+   },
+   {
+    "functions": [
+     "reverse-polarity protection"
+    ],
+    "part": "LTC4417IUF#TRPBF",
+    "reason_given": "FU-2F P3 finds the re-rank qualified on their values; not among the survivors recorded: each adds a second controller type beside the LM7480x",
+    "why_it_fails": "The reason is a controller count, not a value, and P2 records the part as qualified. LTC4417 datasheet read 2026-10-02T21:23:51Z: V1 to V3 -42 to 42 V absolute (reverse battery protection to -42 V), VREV blocking threshold 30 to 200 mV, operating 2.5 to 36 V. JLCPCB C688510 stock 3253, presale 3207, 2026-10-02T20:57:09Z. Digi-Key 4053, Active (cached 2026-10-02T16:18:50Z)."
+   },
+   {
+    "functions": [
+     "reverse-polarity protection",
+     "inrush limiting"
+    ],
+    "part": "LTC4364HDE-2#TRPBF",
+    "reason_given": "LTC4364 has no overvoltage cut-off and JLCPCB 90 (reverse-polarity); Meets the inrush values (design point 1.05 A); no overvoltage cut-off, so a second controller type; JLCPCB 80 to 90 (inrush limiting)",
+    "why_it_fails": "The missing overvoltage cut-off is another function's value, and 80 to 90 is not under the gate of 50: JLCPCB C688295 stock 80, presale 79, expand, 2026-10-02T20:56:58Z. Digi-Key 8671, Active, lead 12 weeks (cached 2026-10-02T16:17:34Z), so rule 5 holds by the same part. LTC4364-1/-2 datasheet read 2026-10-02T21:20:28Z: reverse input protection to -40 V, reverse output to -20 V, operating 4 to 80 V."
+   },
+   {
+    "functions": [
+     "bus clamp (behind the overvoltage cut-off, ahead of the TPS55285)"
+    ],
+    "part": "LTC4364, LTC4380 (a surge stopper in series with the four TPS55285 inputs)",
+    "reason_given": "Not a clamp on the bus: a series element in the 52.1 A pack path and the 25.2 A DC path, against V308, which places a clamp on the bus",
+    "why_it_fails": "The requirement values of this function (pins at or under 27 V during the cut-off window, no conduction up to 22.0 V, bus never negative, S1 maker) do not name a shunt topology, and no passive part meets the clamp value. A surge stopper that regulates its output at an FB-set clamp holds the TPS55285 pins at that level; the series MOSFET and sense resistor are stage 2 items against the drop allowance. LTC4364 passes the sourcing rules (JLCPCB C688295 80 at 2026-10-02T20:56:58Z, Digi-Key 8671 cached 16:17:34Z). Whether the dynamic overshoot stays under 27 V is open and unstated by the datasheets."
+   },
+   {
+    "functions": [
+     "3.3 V logic buck"
+    ],
+    "part": "TPSM63603RDHR and TPSM63603SRDHR",
+    "reason_given": "Passes every value (SLVSFS5A; reference +/-1 %, 3 A, inductor inside); not among the survivors recorded: Digi-Key 0, so rule 5 rests only on its twin TPSM63603SRDHR (JLCPCB 60, 10 over the gate), and the highest price (11.5633 at 5)",
+    "why_it_fails": "Rule 5 accepts a pin-compatible alternate that passes rules 1 to 4, and P2 names the twin as that alternate; price is not a value; the function keeps two survivors against up to three. JLCPCB C5219327 (RDHR) stock 238, presale 230, 2026-10-02T21:14:35Z; C5219328 (SRDHR) stock 60, presale 59, 2026-10-02T21:14:37Z, both at or above the gate of 50. Digi-Key 0 for both (cached 2026-10-02T12:39:20Z and 12:51:12Z). The two share pins and datasheet (SLVSFS5A), so each is the other's alternate."
+   },
+   {
+    "functions": [
+     "3.3 V logic buck"
+    ],
+    "part": "TLVM13620RDHR",
+    "reason_given": "Passes every value (2 A, VFB +/-1 %); fails rule 5: Digi-Key 0 and its pin-compatible TLVM13630RDHR JLCPCB 1, presale -64 (FU-2B1 re-rank)",
+    "why_it_fails": "TPSM63603RDHR is a second pin-compatible alternate that P2 did not weigh. The TLVM13620 pin table (SLVSGL2 Table 6-1, read 2026-10-02T21:14:43Z) matches the TPSM63603's on pins 1 to 19 and 22 to 30; pins 20 and 21 are NC on the TLVM13620 and the optional CBOOT and RBOOT on the TPSM63603, left open. Both give VFB 1.0 V +/-1 %, tSS 3.5 to 7 ms, load and line regulation 0.1 %. JLCPCB C5219263 (TLVM13620RDHR) stock 8015, presale 8005, 2026-10-02T21:14:32Z; the alternate C5219327 stock 238, presale 230, 2026-10-02T21:14:35Z (TLVM13630RDHR C5219304 stock 1, presale -64 confirmed). Digi-Key 0 for the TLVM13620RDHR (cached 2026-10-02T12:39:18Z). So rule 5 holds by the alternate."
+   },
+   {
+    "functions": [
+     "3.3 V logic buck"
+    ],
+    "part": "TPS62933FDRLR",
+    "reason_given": "Fail '3.3 V tolerance at the monostable': VFB 784 to 816 mV (+/-2.0 %) over TJ -40 to 150 degC (SLUSEA4D 6.5, read 2026-10-02T20:31:13Z)",
+    "why_it_fails": "The reason states one term and no total. +/-2.0 % is inside the +/-3.0 % window (3.201 to 3.399 V); the same row gives 788 to 812 mV (+/-1.5 %) at TJ 0 to 85 degC. Adding 0.1 % feedback resistors (about +/-0.15 %) and IFB 0.15 uA maximum through a 31.25 kOhm top resistor (0.14 %) gives 2.29 % on the wider row, leaving 0.71 % (23 mV) for ripple and load regulation. The datasheet gives load regulation only as typical curves (Figures 8-24 to 8-28), no guaranteed figure, so that remainder is unbounded by the datasheet, not shown exceeded. The F variant is forced continuous conduction, so the light-load PFM objection P2 uses on the LM61460A does not apply. Soft-start has stated limits (ISS 4.5 to 6.5 uA). JLCPCB C5219272 stock 2510, presale 2474, expand, 2026-10-02T21:07:44Z. Digi-Key 3674, Active, fresh read 2026-10-02T21:07:46Z."
+   },
+   {
+    "functions": [
+     "3.3 V logic buck"
+    ],
+    "part": "MAX17504ATP+T",
+    "reason_given": "Fail '3.3 V tolerance' as stated (FU-B3)",
+    "why_it_fails": "The datasheet states the figure: FB regulation 0.89 to 0.91 V (+/-1.1 %) over -40 to 125 degC with MODE at GND (forced PWM), 4.5 to 60 V in, 3.5 A, soft-start current 4.7 to 5.3 uA, FB bias current +/-50 nA (MAX17504 datasheet read 2026-10-02T21:18:53Z). Reference, resistors (+/-0.15 %) and bias current sum to about 1.3 %, inside +/-3.0 %; load regulation is not stated. High-side RDS(on) 165 typical, 325 mOhm maximum at 1.84 A is no dropout issue at 3.3 V out. JLCPCB C516781 stock 12039, presale 12015, expand, 2026-10-02T21:19:08Z. Digi-Key: the tube orderable MAX17504ATP+ 6475, Active, fresh 2026-10-02T21:19:12Z; the reel ATP+T 0 (same read time)."
+   },
+   {
+    "functions": [
+     "5 V rail"
+    ],
+    "part": "TPS563300DRLR",
+    "reason_given": "Passes every value (SLUSES9: VFB +/-2 %, 3 A, 30 V absolute); not among the survivors recorded: TPS62933DRLR has its pins with more stock",
+    "why_it_fails": "More stock for another part is a rank, not a failed value, and rule 4 and 5 are met. JLCPCB C5219249 stock 3207, presale 3120, expand, 2026-10-02T21:22:30Z. Digi-Key 3468, Active (cached 2026-10-02T11:57:50Z). The 5 V rail keeps two survivors against up to three."
+   },
+   {
+    "functions": [
+     "display supply"
+    ],
+    "part": "TPS259474LRPWR",
+    "reason_given": "Passes the values (SLVSFC9C); not among the survivors recorded: it latches off on a fault and needs an EN toggle the tree does not provide",
+    "why_it_fails": "Latch-off behaviour is not a requirement value of this function (P2 records the values as passed) and whether an expander pin can toggle EN is a pin-budget question for P5, not a part rule. JLCPCB C2864845 stock 3712, presale 3671, expand, 2026-10-02T21:22:31Z. Digi-Key 39902, Active (cached 2026-10-02T11:57:57Z). Rank 1 TPS259474ARPWR has Digi-Key 0, so this orderable would give rank 1's pins a stocked second vendor; the behaviour differs (latch against auto-retry), so it is not the same configuration."
+   },
+   {
+    "functions": [
+     "encoder 12 V supply"
+    ],
+    "part": "LM5176PWPR",
+    "reason_given": "Passes the values (SNVSAI1D); not among the survivors recorded: LM5175PWPR's circuit at a higher price, Digi-Key 91 (cached 11:58:02Z); JLCPCB C442493 12163",
+    "why_it_fails": "Price is not a requirement value or a sourcing rule, and the function keeps two survivors against up to three. JLCPCB C442493 stock 12163, presale 12096, expand, 2026-10-02T21:22:33Z. Digi-Key 91, Active (cached 2026-10-02T11:58:02Z), at or above the gate of 50."
+   },
+   {
+    "functions": [
+     "source-status signal",
+     "DC input brownout detection"
+    ],
+    "part": "TLV9001IDBVR",
+    "reason_given": "Passes the values (SBOS833R: VOS 1.6 mV max at 25 degC, 2 mV over temperature, input 10 mA); not among the survivors recorded: Digi-Key 0 (cached 11:58:08Z), so rule 5 rests on TLV9061IDBVR",
+    "why_it_fails": "Rule 5 accepts a pin-compatible alternate that passes rules 1 to 4, and P2 names TLV9061IDBVR as that alternate (SOT-23-5, same pinout). Digi-Key 0 is therefore no failure. JLCPCB C398363 stock 45061, presale 44893, expand, 2026-10-02T21:22:25Z; the alternate C398358 stock 290051, presale 288990, same read. Each function keeps two survivors against up to three."
+   },
+   {
+    "functions": [
+     "source-status signal",
+     "DC input brownout detection"
+    ],
+    "part": "OPA333AIDBVR",
+    "reason_given": "Passes (FU-2F readings); not among the survivors recorded: 1 mA input rating where the others take 10 mA, so it needs 37 kOhm or more in the divider top; the highest price",
+    "why_it_fails": "The function's own input-current value assumes 100 kOhm or more in the divider top (0.37 mA at the 37.3 V clamp level), which is under 1 mA, and the 37 kOhm minimum P2 derives is met by that. Price is not a value. JLCPCB C30878 stock 9003, presale 8422, expand, 2026-10-02T21:22:26Z. Digi-Key Active with TR 3000 and cut tape stock (cached 2026-10-02T11:58:11Z)."
+   },
+   {
+    "functions": [
+     "pack disconnect"
+    ],
+    "part": "BQ40Z50RSMR-R1, BQ40Z50RSMR",
+    "reason_given": "FU-2F re-rank qualified both on the R2's tables; not among the three kept: Digi-Key lists the R1 Not For New Designs (TI's page ACTIVE), and the BQ40Z50RSMR has JLCPCB 91 (FU-2F readings, not re-read)",
+    "why_it_fails": "Under the Lifecycle check the manufacturer's page is the status and a Digi-Key disagreement is only written down, so the R1's Digi-Key Not For New Designs (cached 2026-10-02T15:57:58Z) does not fail it while TI's page reads ACTIVE. 91 is not under the gate of 50: JLCPCB C2868204 stock 91, presale 90, 2026-10-02T21:21:39Z; Digi-Key 5935, Active (cached 2026-10-02T15:58:08Z). The R1: JLCPCB C179743 stock 20574, presale 20548, 2026-10-02T21:21:40Z; Digi-Key 5923 cut tape. 'Not among the three kept' stands only as a rank against the R2 and BQ4050RSMR; the re-rank decides it."
+   }
+  ],
+  "missed_functions": []
+ }
+}

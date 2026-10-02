@@ -1,0 +1,42 @@
+{
+ "role": "P3",
+ "category": "R8",
+ "label": "P3-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "missed": [
+   {
+    "function": "External shunt",
+    "part": "WSBS8518L1000JT34 (second source WSBS8518L1000JK34; sense-pin version WSBS8518L1000JT35)",
+    "maker": "Vishay Dale (S1 Vishay); Digi-Key maker Vishay Dale",
+    "why": "P2 dropped only the WSBS8518 '...20' sense-pin codes (TCR +/-175 ppm/degC); the low-TCR '...34' and '...35' codes of the same busbar were not considered. WSBS8518...34 datasheet (document 30354, revision 26-May-2026, https://www.vishay.com/docs/30354/wsbs8518-34.pdf, read 2026-10-02T21:03:28Z): 100 uOhm +/-5 % (J), TCR +/-65 ppm/degC, thermal EMF < 1.25 uV/degC, 36 W at P70, -65 to +170 degC, Ni-Cr element, 'voltage sensing locations' drawn. The '...35' sheet (30355, same revision, read 21:03:29Z) is the same electrics with sense pins attached. Values on P2's basis (terminal 50 degC, 105 uOhm, 9.45 W, 31.5 mV <= 40.96 mV): Rthi taken from the rating, (170-70)/36 = 2.78 K/W (the sheet states none), rise 26.3 K, element 76.3 degC: TCR 65 ppm x 51.3 K x 300 A = 0.999 A plus EMF 1.25 uV/K x 26.3 K / 105 uOhm = 0.313 A, total 1.31 A against 2.833 A; at 15 A 25 mA against 125.7 mA; 9.45 W against 36 W. Digi-Key keyword search 'WSBS8518L1000' (api.digikey.com/products/v4/search/keyword, read 2026-10-02T20:59:26Z, not cached): JT34 stock 81 (Tray), JK34 97 (Bulk), JT35 79 (Tray), all Active, 48 weeks, so rule 4 (gate 50) passes at the second vendor and JK34 is the alternate that passes rules 1 to 4 on the same mounting; JK35 reads 50 and 'Discontinued at DigiKey' and is not a candidate. JLCPCB shows 0 for the board codes (C1558135, C1558146, C1558144, C1558147 at 20:59:59Z to 21:00:00Z), irrelevant for a part off the board. The part ranks against WSBE8518L1000JKA2 (TCR +/-10 ppm, no second source, 48 weeks): it has a second source and the same lead time; Vishay's page status is not read, Digi-Key's ProductStatus is the figure."
+   },
+   {
+    "function": "External shunt",
+    "part": "CSM2F-8518-L100J02 (alternate of CSM2F-8518-L100J01)",
+    "maker": "Bourns (S2 Bourns); Digi-Key maker Bourns Inc.",
+    "why": "The fully tinned version of the same 85 x 18 mm, 100 uOhm busbar P2 dropped as L100J01. Datasheet https://www.bourns.com/docs/product-datasheets/csm2f-8518-2.pdf (read 2026-10-02T21:03:27Z, via Digi-Key's link for CSM2F-8518-L100J00): 100 uOhm +/-5 %, 36 W at 70 degC terminal, TCR on test points +/-150 ppm/degC (+20 to +130 degC), no thermal EMF figure (the J01 sheet's 1.5 uV/K for 100 uOhm taken for the same element). On P2's basis with the conservative Rthi of 2.78 K/W: 2.306 A + 0.375 A = 2.68 A against 2.833 A (margin 0.15 A), 57 mA against 125.7 mA at 15 A; with the 1.25 K/W the derating curve of the J01 sheet implies 1.83 A. Digi-Key (keyword search 'CSM2F-8518', 2026-10-02T20:56:50Z): CSM2F-8518-L100J02 stock 99 (Bag), 12 weeks, Active, so it passes rule 4 (gate 50) as the pin-compatible alternate of L100J01 for rule 5 (same body and holes, different finish). CSM2F-8518-L100J00 (bare copper, TCR +/-50 ppm, no EMF figure) reads stock 0 (digikey CSM2F-8518-L100J00, 20:58:42Z) and fails rule 4."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "functions": [
+     "External shunt"
+    ],
+    "part": "CSM2F-8518-L100J01",
+    "reason_given": "Accuracy not shown: no thermal resistance or EMF (round 1)",
+    "why_it_fails": "The datasheet states both. CSM2F-8518 tinned-terminal sheet (REV. 01/26, https://www.bourns.com/docs/product-datasheets/csm2f-8518-1.pdf?sfvrsn=3e2b72f6_9, read 2026-10-02T21:03:26Z): 100 uOhm +/-5 %, 36 W power rating at 70 degC terminal, power derating curve flat to 125 degC terminal and zero at about 170 degC, TCR on test points +/-125 ppm/degC for 100 uOhm, alloy TCR < 50 ppm/degC, thermal EMF < 1.50 uV/K for 100 uOhm, operating -40 to +170 degC, two 'voltage test points' marked on the strip with positions A and B. Rthi follows from the rating as for the WSBS8536 and BAS parts: (170-70)/36 = 2.78 K/W on the 70 degC rating, 1.25 K/W on the curve's 125 degC knee. Values on P2's basis (terminal 50 degC, 105 uOhm, 9.45 W, 31.5 mV <= 40.96 mV, 36 W rating): conservative Rthi: element 76.3 degC, TCR 125 ppm x 51.3 K x 300 A = 1.92 A plus EMF 1.5 uV/K x 26.3 K / 105 uOhm = 0.375 A, total 2.30 A against 2.833 A (margin 0.53 A); 1.55 A on the 1.25 K/W basis; at 15 A 48 mA against 125.7 mA. Digi-Key keyword search 'CSM2F-8518' (api.digikey.com/products/v4/search/keyword, read 2026-10-02T20:56:50Z): CSM2F-8518-L100J01 stock 167 (Bulk), 12 weeks, ProductStatus Active, so rule 4 (gate 50) passes; the alternate for rule 5 is CSM2F-8518-L100J02 (99, see missed). It meets every External shunt value including the 12-week lead time (WSBE8518L1000JKA2 has 48). Bourns' own page status is not read."
+   },
+   {
+    "functions": [
+     "External shunt"
+    ],
+    "part": "RSN-500-50B, RSN-300-100B and other panel shunts (RSN, RSA, RSB, RSC)",
+    "reason_given": "Rule 2 not shown: S2 names Bourns, and rule 2 lists no other names for it; not qualified further",
+    "why_it_fails": "The reason does not hold: Digi-Key lists these under the URL path bourns-inc, and the datasheets are Bourns documents (https://www.bourns.com/docs/product-datasheets/rsn.pdf?sfvrsn=d62223f6_5, read 2026-10-02T21:03:29Z; rsabc.pdf, read 2026-10-02T20:41:27Z) titled 'Riedon DC Ammeter Shunts / Busbar Shunts by Bourns', marked BOURNS, with 'Formerly a Riedon product; BE Services Company, Inc., a subsidiary of Bourns, purchased certain assets of Riedon in April 2023'. Under rule 2 the datasheet's maker counts, and Digi-Key's maker string is 'Riedon products by Bourns'; whether a subsidiary's name is Bourns is a reading of rule 2 the owner can settle. The parts still do not pass on values, so the drop stands on a different reason that P2 did not record: RSN-500-50B is 100 uOhm +/-0.1 %, element TCR +/-15 ppm/degC (curve to 100 degC), rated 500 A and recommended at 2/3 of it (333 A), but the sheet says 'at ambient temperatures above 40 degC, the current must be further derated' without a figure, so 300 A at 50 degC ambient (V163, V164) is not shown; operating range -30 to +70 degC; no thermal EMF figure; screw terminals with no stated sense-lead connection (RSN-300-100B: 300 A rated, 200 A operating, below 300 A). Digi-Key RSN-500-50B 75 (12 weeks, Active) per P2's search read 2026-10-02T20:23:45Z. The re-rank should drop them on 'derating at 50 degC and thermal EMF not stated', not on rule 2."
+   }
+  ],
+  "missed_functions": []
+ }
+}

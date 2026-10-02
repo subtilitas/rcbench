@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R6",
+ "label": "adjudicator-R6-2",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "function": "found V113",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. V113 asks for the lowest voltage at the servo converter's VIN when it runs from the pack. It asks whether that is 6.0 V, or 6.0 V less a stated drop across the pack path. The value gives 6.0 V at the pack terminals and says the drop across R5's pack path is not read. The owner's V294 answer of 2026-10-02 states the pack-path sizing that the value itself cites: \"The pack path stays sized at 6.0 V: 52.1 A nominal at a 5.8 V bus, rated 60 A\". The 52.1 A comes from FU-2B1's R5 P2 V90 value, 302.0 W in at a 5.8 V bus (302.0 / 5.8 = 52.07 A). That 302.0 W includes the four TPS55285 inputs (283.7 W). The bus is therefore the node at the converters' VIN, and the owner's sizing puts it at 5.8 V. That is 0.2 V under the 6.0 V pack floor. A stated figure for the drop exists in an owner answer, so the value is wrong to say it is not read. It is also wrong to check the converter from 6.0 V and not from 5.8 V. The rest of the value is right: 6.0 V at the pack terminals (IOBoard.md Pack voltage range) and the 6.6 V under-load floor (V294). The TPS55285 still runs at 5.8 V: SLVSI72A 5.2 gives a VIN range of 2.4 to 22 V for VOUT of 3.0 V or more. The 5.8 V figure changes the low-end input and inductor currents R6 checks, not whether the part is usable. The finding concerns this function's requirement value, not the part.",
+  "evidence": "Research.md@68adf31 line 826 (V113): \"What is the lowest voltage at the servo converter's VIN when it runs from the pack, in V? Is it 6.0 V, or 6.0 V less a stated drop across the pack path (R5's disconnect, source selection and protection) at the pack current?\" Status: for research (owner, 2026-09-28). Research.md@68adf31 line 1007 (V294 Answer, owner, 2026-10-02): \"3.3 V a cell under load, 6.6 V for the pack ... The pack path stays sized at 6.0 V: 52.1 A nominal at a 5.8 V bus, rated 60 A\". FU-2B1/003-P2-R5.json, V90 value (read_at 2026-10-02T11:59:23Z): \"50.4 A at the 6.0 V floor and 52.1 A at a 5.8 V bus. Four TPS55285 at 6.35 A deliver 255.3 W ..., 283.7 W in; ... 302.0 W in all\". IOBoard.md@68adf31 line 358, Pack voltage range: 6.0 V to 8.4 V, with 6.0 V as the lowest pack voltage. TPS55285 SLVSI72A (revised October 2025) 5.2 Recommended Operating Conditions: input voltage range 2.4 V min, 22 V max (Vout >= 3.0 V). 5.4: VIN falling UVLO is 2.31 to 2.38 V for VOUT >= 3 V.",
+  "source": "hardware/docs/Research.md@68adf31bf1c74e2a2c1f32ba925b462a9696115f lines 826 (V113) and 1007 (V294); hardware/docs/IOBoard.md@68adf31 line 358 (Pack voltage range); /home/claude/rcbench-research/round2/results/hardware/research/round2/FU-2B1/003-P2-R5.json (V90 value); https://www.ti.com/lit/ds/symlink/tps55285.pdf SLVSI72A 5.2 and 5.4 (vendors.py fetch, HTTP 200)",
+  "read_at": "2026-10-02T22:27:25Z (TPS55285 datasheet); 2026-10-02T22:25Z (Research.md, IOBoard.md and FU-2B1 return)",
+  "scope": "function"
+ }
+}

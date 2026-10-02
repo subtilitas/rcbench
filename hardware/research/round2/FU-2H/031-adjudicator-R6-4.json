@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R6",
+ "label": "adjudicator-R6-4",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "function": "function requirements: Port supply switch",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation holds. Raised by P1 row V134 is filed under \"R6, Port supply switch\". It asks for the highest current the servo rail may deliver into a shorted port, and it is marked \"for research (owner, 2026-09-28)\". P2 must find that value and qualify the port switch against it. The current flows through the closed port switch until the port's current limit opens it. The switch's list has 14 entries, and none of them is sourced to V134 or limits a short-circuit or peak current through the switch. Its sources are V55, V114, V277, V282, V302, V122, V116, V124, V126, V312, V125, V136, V127, V123, V130, V133 and V121. The value appears only in the Servo supply list, as \"Current into a shorted port\". That entry qualifies the TPS55285, not the switch. The Port supply current limit list holds the trip band (3.0 to 6.35 A; 4.30 to 4.51 A for the INA301A1IDGKR). It does not hold the current the switch must carry before the trip opens it. The list is therefore missing one requirement: the switch must carry the shorted-port current until the limit acts. That current is bounded by the 6.35 A output-limit setting with the 128 us OCP_DELAY, and by ILIM_AVG, 7 A minimum and 8 A typical, with no maximum stated. This ruling is about this function's requirement list, not about any part. No part was ruled on. The verifier's note that BUK7K6R8-40E (IDM 276 A at tp up to 10 us) would meet the requirement does not affect the ruling.",
+  "evidence": "Research.md@68adf31 line 847: \"| V134 | R6, Port supply switch | What is the highest current the servo rail may deliver into a shorted port, in A: 6.35 A, with firmware keeping the TPS55285's output current limit enabled and its response at 128 us, or the average inductor current limit the converter falls back to otherwise, 7 A minimum and 8 A typical, with no maximum stated? | for research (owner, 2026-09-28) |\". The P2 return (scratch FU-2H/P2-R6/out/final.json) records the V134 value as found: 6.35 A setting, output limit enabled at reset, OCP_DELAY 00b = 128 us at reset, and ILIM_AVG 7 A minimum and 8 A typical with no maximum bounding the output during the delay. In that return the port's own limit (4.30 to 4.51 A) acts first, and the value is \"Applied as 'Current into a shorted port'\". That entry is in the Servo supply list only (rerank-R6/p2fn.json). Its Port supply switch list holds the 14 entries quoted in the claim, and none of them names V134 or a short-circuit or peak current. TPS55285 datasheet re-read at 2026-10-02T22:29:59Z (HTTP 200, 4,317,800 bytes): ILIM_AVG \"Average inductor current limit\" is 7 A minimum and 8 A typical at VIN = 8 V, VOUT = 15 V and FSW = 400 kHz, with no maximum. Table 7-4: OCP_DELAY reset 00b = 128 us (default). Section 7.3: hiccup mode is enabled only by the HICCUP bit in register 06h, with 76 ms typical off time.",
+  "source": "hardware/docs/Research.md@68adf31bf1c74e2a2c1f32ba925b462a9696115f line 847 (V134), and the claim's 14 entries against /home/claude/rcbench-research/round2/scratch/FU-2H/rerank-R6/p2fn.json; https://www.ti.com/lit/ds/symlink/tps55285.pdf (ILIM_AVG row of the Electrical Characteristics, Table 7-4 VOUT_SR OCP_DELAY, section 7.3 hiccup text), fetched with vendors.py fetch",
+  "read_at": "2026-10-02T22:29:59Z",
+  "scope": "function"
+ }
+}

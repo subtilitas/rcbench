@@ -1,0 +1,1093 @@
+{
+ "role": "P4",
+ "category": "R7",
+ "label": "P4-stock-R7",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "Pack charger",
+    "part": "BQ25723RSNR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 214 against the gate max(25, 50) = 50 for 5 boards x 1",
+      "read": "stockCount 214 >= 50: pass (rule 4)",
+      "source": "vendors.py jlcpcb C2871889 (jlcpcb.com selectSmtComponentList API)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:17Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (Texas Instruments)",
+      "read": "ACTIVE: ti.com/product/BQ25723 meta status ACTIVE and orderable BQ25723RSNR marketingStatusDescription ACTIVE (Texas Instruments page); Digi-Key ProductStatus Active (Texas Instruments, 2026-10-02T11:53:56Z) agrees",
+      "source": "https://www.ti.com/product/BQ25723",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:31Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none",
+      "read": "no end-of-life or last-time-buy notice found: TI page ACTIVE, Digi-Key end_of_life false and discontinued false (2026-10-02T11:53:56Z); TI's PCN listing not read: ti.com PCN paths answered HTTP 404 (21:29:34Z)",
+      "source": "https://www.ti.com/product/BQ25723; api.digikey.com/products/v4/search/BQ25723RSNR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:31Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 a board: one pack charger a board (IOBoard.md Pack charger)",
+      "read": "specification fixes 1 placement a board; need 5 boards x 1 = 5; candidate's count 1 >= 1",
+      "source": "IOBoard.md Pack charger; Research.md V297, V298 (checkout 68adf31)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:31:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC number C2871889",
+      "read": "the specification places the part on the IO board (V149); LCSC number C2871889 is C and digits: agrees",
+      "source": "Research.md V149; vendors.py jlcpcb C2871889",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:17Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published for the part",
+      "read": "no part commitment read; TI's programme page states typical product life cycles of 10 to 15 years as a general policy, not a commitment for this part; not a gate under S5",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:07Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet May 2021, 65 months",
+      "read": "SLUSE64 revision history: May 2021, Initial release: 65 months before 2026-10-02, over 12 months, not flagged",
+      "source": "https://www.ti.com/lit/ds/symlink/bq25723.pdf (SLUSE64)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:41Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB and LCSC list the part",
+      "read": "JLCPCB lists C2871889 with stockCount 214 (no status field); LCSC page lists it with stockNumber 214, no discontinued flag; Digi-Key Active (2026-10-02T11:53:56Z); no disagreement with the manufacturer",
+      "source": "vendors.py jlcpcb C2871889; https://www.lcsc.com/product-detail/C2871889.html; Digi-Key productdetails BQ25723RSNR (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:26Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "Digi-Key lead_weeks 20",
+      "read": "manufacturer lead time 20 weeks, recorded",
+      "source": "api.digikey.com/products/v4/search/BQ25723RSNR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:53:56Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 213",
+      "read": "canPresaleNumber 213 >= 0",
+      "source": "vendors.py jlcpcb C2871889",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:17Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "BQ25723RSNR, WQFN-32 4.0 x 4.0 mm (RSN)",
+      "read": "exact result for C2871889: part BQ25723RSNR, package QFN-32-EP(4x4), maker label Texas Instruments; names the candidate and its package",
+      "source": "vendors.py jlcpcb C2871889",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:17Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "vendors.py jlcpcb C2871889",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:17Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 4528 >= 50",
+      "read": "stock_available 4528 >= 50 (rule 4 gate): pass; ProductStatus Active, maker Texas Instruments",
+      "source": "api.digikey.com/products/v4/search/BQ25723RSNR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:53:56Z"
+     }
+    ]
+   },
+   {
+    "function": "Cell balancing",
+    "part": "BQ29209DRBR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 592 against the gate 50 for 5 boards x 1",
+      "read": "stockCount 592 >= 50: pass (rule 4)",
+      "source": "vendors.py jlcpcb C139352 (jlcpcb.com selectSmtComponentList API)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:18Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (Texas Instruments)",
+      "read": "ACTIVE: ti.com/product/BQ29209 meta status ACTIVE and orderable BQ29209DRBR marketingStatusDescription ACTIVE (Texas Instruments page); Digi-Key ProductStatus Active (Texas Instruments, 2026-10-02T11:54:03Z) agrees",
+      "source": "https://www.ti.com/product/BQ29209",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:31Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none",
+      "read": "no end-of-life or last-time-buy notice found: TI page ACTIVE, Digi-Key end_of_life false and discontinued false (2026-10-02T11:54:03Z); TI's PCN listing not read: ti.com PCN paths answered HTTP 404 (21:29:34Z)",
+      "source": "https://www.ti.com/product/BQ29209; api.digikey.com/products/v4/search/BQ29209DRBR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:31Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 a board: one balancer for the one bench pack",
+      "read": "specification fixes 1 placement a board; need 5 boards x 1 = 5; candidate's count 1 >= 1",
+      "source": "IOBoard.md; Research.md V297, V298 (checkout 68adf31)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:31:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC number C139352",
+      "read": "the specification places the part on the IO board (V149); LCSC number C139352 is C and digits: agrees",
+      "source": "Research.md V149; vendors.py jlcpcb C139352",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:18Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published for the part",
+      "read": "no part commitment read; TI's programme page states typical product life cycles of 10 to 15 years as a general policy, not a commitment for this part; not a gate under S5",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:07Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet September 2010, 193 months",
+      "read": "SLUSA52C revision history: Revision A, September 2010: 193 months before 2026-10-02, over 12 months, not flagged",
+      "source": "https://www.ti.com/lit/ds/symlink/bq29209.pdf (SLUSA52C)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:41Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB and LCSC list the part",
+      "read": "JLCPCB lists C139352 with stockCount 592 (no status field); LCSC page lists it with stockNumber 592, no discontinued flag; Digi-Key Active (2026-10-02T11:54:03Z); no disagreement with the manufacturer",
+      "source": "vendors.py jlcpcb C139352; https://www.lcsc.com/product-detail/C139352.html; Digi-Key productdetails BQ29209DRBR (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:27Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "Digi-Key lead_weeks 26",
+      "read": "manufacturer lead time 26 weeks, recorded",
+      "source": "api.digikey.com/products/v4/search/BQ29209DRBR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:54:03Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 565",
+      "read": "canPresaleNumber 565 >= 0",
+      "source": "vendors.py jlcpcb C139352",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:18Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "BQ29209DRBR, VSON-8 3 x 3 mm (DRB)",
+      "read": "exact result for C139352: part BQ29209DRBR, package SON-8(3x3), maker label Texas Instruments; names the candidate and its 3 x 3 mm SON-8 package (JLCPCB's name omits EP)",
+      "source": "vendors.py jlcpcb C139352",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:18Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "vendors.py jlcpcb C139352",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:18Z"
+     }
+    ]
+   },
+   {
+    "function": "Cell balancing",
+    "part": "BQ29200DRBR",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 3350 against the gate 50 for 5 boards x 1",
+      "read": "stockCount 3350 >= 50: pass (rule 4)",
+      "source": "vendors.py jlcpcb C2865505 (jlcpcb.com selectSmtComponentList API)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:20Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (Texas Instruments)",
+      "read": "ACTIVE: ti.com/product/BQ29200 meta status ACTIVE and orderable BQ29200DRBR marketingStatusDescription ACTIVE (Texas Instruments page); Digi-Key ProductStatus Active (Texas Instruments, 2026-10-02T11:54:05Z) agrees",
+      "source": "https://www.ti.com/product/BQ29200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:31Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none",
+      "read": "no end-of-life or last-time-buy notice found: TI page ACTIVE, Digi-Key end_of_life false and discontinued false (2026-10-02T11:54:05Z); TI's PCN listing not read: ti.com PCN paths answered HTTP 404 (21:29:34Z)",
+      "source": "https://www.ti.com/product/BQ29200; api.digikey.com/products/v4/search/BQ29200DRBR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:31Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 a board: one balancer for the one bench pack",
+      "read": "specification fixes 1 placement a board; need 5 boards x 1 = 5; candidate's count 1 >= 1",
+      "source": "IOBoard.md; Research.md V297, V298 (checkout 68adf31)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:31:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC number C2865505",
+      "read": "the specification places the part on the IO board (V149); LCSC number C2865505 is C and digits: agrees",
+      "source": "Research.md V149; vendors.py jlcpcb C2865505",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:20Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published for the part",
+      "read": "no part commitment read; TI's programme page states typical product life cycles of 10 to 15 years as a general policy, not a commitment for this part; not a gate under S5",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:07Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet September 2010, 193 months",
+      "read": "SLUSA52C (shared with BQ29209) revision history: Revision A, September 2010: 193 months before 2026-10-02, over 12 months, not flagged",
+      "source": "https://www.ti.com/lit/ds/symlink/bq29200.pdf (SLUSA52C)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:41Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB and LCSC list the part",
+      "read": "JLCPCB lists C2865505 with stockCount 3350 (no status field); LCSC page lists it with stockNumber 3350, no discontinued flag; Digi-Key Active (2026-10-02T11:54:05Z); no disagreement with the manufacturer",
+      "source": "vendors.py jlcpcb C2865505; https://www.lcsc.com/product-detail/C2865505.html; Digi-Key productdetails BQ29200DRBR (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:27Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "Digi-Key lead_weeks 12",
+      "read": "manufacturer lead time 12 weeks, recorded",
+      "source": "api.digikey.com/products/v4/search/BQ29200DRBR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:54:05Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 3349",
+      "read": "canPresaleNumber 3349 >= 0",
+      "source": "vendors.py jlcpcb C2865505",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:20Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "BQ29200DRBR, VSON-8 3 x 3 mm (DRB)",
+      "read": "exact result for C2865505: part BQ29200DRBR, package SON-8-EP(3x3), maker label Texas Instruments; names the candidate and its package",
+      "source": "vendors.py jlcpcb C2865505",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:20Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "vendors.py jlcpcb C2865505",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:20Z"
+     }
+    ]
+   },
+   {
+    "function": "Power path",
+    "part": "BQ25723RSNR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 214 against the gate max(25, 50) = 50 for 5 boards x 1",
+      "read": "stockCount 214 >= 50: pass (rule 4)",
+      "source": "vendors.py jlcpcb C2871889 (jlcpcb.com selectSmtComponentList API)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:17Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (Texas Instruments)",
+      "read": "ACTIVE: ti.com/product/BQ25723 meta status ACTIVE and orderable BQ25723RSNR marketingStatusDescription ACTIVE (Texas Instruments page); Digi-Key ProductStatus Active (Texas Instruments, 2026-10-02T11:53:56Z) agrees",
+      "source": "https://www.ti.com/product/BQ25723",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:31Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none",
+      "read": "no end-of-life or last-time-buy notice found: TI page ACTIVE, Digi-Key end_of_life false and discontinued false (2026-10-02T11:53:56Z); TI's PCN listing not read: ti.com PCN paths answered HTTP 404 (21:29:34Z)",
+      "source": "https://www.ti.com/product/BQ25723; api.digikey.com/products/v4/search/BQ25723RSNR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:31Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 a board: the charger's own NVDC path, one a board",
+      "read": "the power path is the charger's own, one charger a board (IOBoard.md Pack charger); need 5 boards x 1 = 5; candidate's count 1 >= 1",
+      "source": "IOBoard.md Pack charger; Research.md R7 row (checkout 68adf31)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:31:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC number C2871889",
+      "read": "the specification places the charger and its path on the IO board (V149); LCSC number C2871889 is C and digits: agrees",
+      "source": "Research.md V149; vendors.py jlcpcb C2871889",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:17Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published for the part",
+      "read": "no part commitment read; TI's programme page states typical product life cycles of 10 to 15 years as a general policy, not a commitment for this part; not a gate under S5",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:07Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet May 2021, 65 months",
+      "read": "SLUSE64 revision history: May 2021, Initial release: 65 months before 2026-10-02, over 12 months, not flagged",
+      "source": "https://www.ti.com/lit/ds/symlink/bq25723.pdf (SLUSE64)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:41Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB and LCSC list the part",
+      "read": "JLCPCB lists C2871889 with stockCount 214 (no status field); LCSC page lists it with stockNumber 214, no discontinued flag; Digi-Key Active (2026-10-02T11:53:56Z); no disagreement with the manufacturer",
+      "source": "vendors.py jlcpcb C2871889; https://www.lcsc.com/product-detail/C2871889.html; Digi-Key productdetails BQ25723RSNR (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:26Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "Digi-Key lead_weeks 20",
+      "read": "manufacturer lead time 20 weeks, recorded",
+      "source": "api.digikey.com/products/v4/search/BQ25723RSNR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:53:56Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 213",
+      "read": "canPresaleNumber 213 >= 0",
+      "source": "vendors.py jlcpcb C2871889",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:17Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "BQ25723RSNR, WQFN-32 4.0 x 4.0 mm (RSN)",
+      "read": "exact result for C2871889: part BQ25723RSNR, package QFN-32-EP(4x4), maker label Texas Instruments; names the candidate and its package",
+      "source": "vendors.py jlcpcb C2871889",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:17Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "vendors.py jlcpcb C2871889",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:17Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 4528 >= 50",
+      "read": "stock_available 4528 >= 50 (rule 4 gate): pass; ProductStatus Active, maker Texas Instruments",
+      "source": "api.digikey.com/products/v4/search/BQ25723RSNR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:53:56Z"
+     }
+    ]
+   },
+   {
+    "function": "Charger input limit",
+    "part": "FUSB303BTMX",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 5265 against the gate 50 for 5 boards x 1",
+      "read": "stockCount 5265 >= 50: pass (rule 4)",
+      "source": "vendors.py jlcpcb C895444 (jlcpcb.com selectSmtComponentList API)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:22Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Active (onsemi)",
+      "read": "Active: onsemi product page offers list itemCondition Active for FUSB303BTMX and the orderable table row is Active (FUSB303TMX, a different part number, is Last Shipments); Digi-Key ProductStatus Active (onsemi, 2026-10-02T11:53:58Z) agrees",
+      "source": "https://www.onsemi.com/products/interfaces/usb-type-c/fusb303btmx",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:50Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none",
+      "read": "no end-of-life or last-time-buy notice found for FUSB303BTMX: onsemi's PCN page (pcnPub.do?pn=FUSB303TMX,FUSB303BTMX) answers HTTP 200 with no listing in the body, loaded by script, so the listing is not read; product page Active, Digi-Key end_of_life false and discontinued false (2026-10-02T11:53:58Z)",
+      "source": "https://www.onsemi.com/PowerSolutions/pcnPub.do?pn=FUSB303TMX,FUSB303BTMX; api.digikey.com/products/v4/search/FUSB303BTMX/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:21Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 a board: one USB-C port a board (V13)",
+      "read": "specification fixes one USB-C port a board (V13); need 5 boards x 1 = 5; candidate's count 1 >= 1",
+      "source": "IOBoard.md Charger input limit; Research.md V13 (checkout 68adf31)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:31:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC number C895444",
+      "read": "the specification places the part on the IO board (the board's USB-C port); LCSC number C895444 is C and digits: agrees",
+      "source": "IOBoard.md Charger input limit; vendors.py jlcpcb C895444",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:22Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none read",
+      "read": "none read: no onsemi longevity programme page found; guessed onsemi support and quality paths redirect to the home page; not a gate under S5",
+      "source": "https://www.onsemi.com/ (support and quality paths); https://www.onsemi.com/products/interfaces/usb-type-c/fusb303btmx",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:08Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "Rev. 3, September 2024",
+      "read": "not read: the copy read (FUSB303B/D Rev. 3, September 2024, copyright 2020) has no revision history, so the first revision's date is unknown; Rev. 3 is 25 months old; not flagged",
+      "source": "https://www.onsemi.com/pdf/datasheet/fusb303b-d.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:42Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB and LCSC list the part",
+      "read": "JLCPCB lists C895444 with stockCount 5265 (no status field); LCSC page lists it with stockNumber 5265, no discontinued flag; Digi-Key Active (2026-10-02T11:53:58Z); no disagreement with the manufacturer",
+      "source": "vendors.py jlcpcb C895444; https://www.lcsc.com/product-detail/C895444.html; Digi-Key productdetails FUSB303BTMX (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:28Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "Digi-Key lead_weeks 52",
+      "read": "manufacturer lead time 52 weeks, recorded",
+      "source": "api.digikey.com/products/v4/search/FUSB303BTMX/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:53:58Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 5234",
+      "read": "canPresaleNumber 5234 >= 0",
+      "source": "vendors.py jlcpcb C895444",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:22Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "FUSB303BTMX, X2QFN-12 1.6 x 1.6 mm",
+      "read": "exact result for C895444: part FUSB303BTMX, package X2-QFN-12(1.6x1.6), maker label onsemi; names the candidate and its package",
+      "source": "vendors.py jlcpcb C895444",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:22Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "vendors.py jlcpcb C895444",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:22Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 4224 >= 50",
+      "read": "stock_available 4224 >= 50 (rule 4 gate): pass; ProductStatus Active, maker onsemi",
+      "source": "api.digikey.com/products/v4/search/FUSB303BTMX/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:53:58Z"
+     }
+    ]
+   },
+   {
+    "function": "Pack cells",
+    "part": "SLSXT30002130",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "not read: rules 4 and 5 waived by the owner (V307)",
+      "read": "not read: the vendor page shows 'Lieferzeit: 1-3 Tage*' and no stock count; Digi-Key does not list it (productdetails SLSXT30002130 answered 404 Not Found, cached 2026-10-02T13:10:21Z; keyword search 'SLS XTRON 3000mAh 2S1P' returned no products, 21:30:07Z); rules 4 and 5 waived for the pack (Sourcing rule 1, owner 2026-09-30; V307)",
+      "source": "https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html; api.digikey.com/products/v4/search/SLSXT30002130/productdetails",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:05Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "no maker lifecycle page",
+      "read": "not read: the maker is StefansLipoShop GmbH, which publishes no lifecycle page; the vendor page lists article SLSXT30002130 for sale; Digi-Key does not list the part under its maker (404 Not Found, cached 13:10:21Z; empty keyword search 21:30:07Z)",
+      "source": "https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html; api.digikey.com/products/v4/search/keyword",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:05Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none known",
+      "read": "no end-of-life notice found: the vendor page lists the article for sale at 25,30 EUR with a delivery time of 1 to 3 days; the maker publishes no change-notice listing",
+      "source": "https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:05Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 pack a board",
+      "read": "specification fixes one SLS XTRON 2S1P pack a board (V137: 2S1P); need 5 boards x 1 = 5 packs; candidate's count 1 >= 1",
+      "source": "IOBoard.md Pack cells; Research.md V137, V307 (checkout 68adf31)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:31:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "off the board, LCSC none",
+      "read": "the specification places the pack off the IO board (XT60 and XH leads to the board); it has no LCSC number: agrees",
+      "source": "IOBoard.md Pack cells; Research.md Sourcing rule 1; vendor page",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:05Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published",
+      "read": "none published: the vendor page and the maker's documents state no longevity commitment",
+      "source": "https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:05Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "not known",
+      "read": "not read: the pack has no data sheet or revision date; the vendor page carries no introduction date",
+      "source": "https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:05Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "vendor lists it for sale",
+      "read": "Stefansliposhop lists the article for sale (Lieferzeit 1-3 Tage, 25,30 EUR); not listed at Digi-Key (404 cached 2026-10-02T13:10:21Z; empty keyword search 21:30:07Z); JLCPCB and LCSC do not apply, no LCSC number",
+      "source": "vendor page; api.digikey.com/products/v4/search/SLSXT30002130/productdetails",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:05Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "1 to 3 days at the vendor",
+      "read": "Lieferzeit 1-3 Tage (deliveries to Germany) on the vendor page; Digi-Key lead time not read: the part is not listed there",
+      "source": "https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:05Z"
+     }
+    ]
+   },
+   {
+    "function": "Pack overcurrent protection",
+    "part": "BQ40Z80RSMR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 8611 against the gate 50 for 5 boards x 1",
+      "read": "stockCount 8611 >= 50: pass (rule 4)",
+      "source": "vendors.py jlcpcb C882850 (jlcpcb.com selectSmtComponentList API)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:23Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (Texas Instruments)",
+      "read": "ACTIVE: ti.com/product/BQ40Z80 meta status ACTIVE and orderable BQ40Z80RSMR marketingStatusDescription ACTIVE (Texas Instruments page); Digi-Key ProductStatus Active (Texas Instruments, 2026-10-02T11:58:04Z) agrees",
+      "source": "https://www.ti.com/product/BQ40Z80",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:32Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none",
+      "read": "no end-of-life or last-time-buy notice found: TI page ACTIVE, Digi-Key end_of_life false and discontinued false (2026-10-02T11:58:04Z); TI's PCN listing not read: ti.com PCN paths answered HTTP 404 (21:29:34Z)",
+      "source": "https://www.ti.com/product/BQ40Z80; api.digikey.com/products/v4/search/BQ40Z80RSMR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:32Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 a board: one pack protector a board (V297, V298)",
+      "read": "specification fixes one pack IC a board (V297, V298); need 5 boards x 1 = 5; candidate's count 1 >= 1",
+      "source": "Research.md V297, V298 (checkout 68adf31)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:31:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC number C882850",
+      "read": "the specification places the pack protector on the IO board (V149); LCSC number C882850 is C and digits: agrees",
+      "source": "Research.md V149; vendors.py jlcpcb C882850",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:23Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published for the part",
+      "read": "no part commitment read; TI's programme page states typical product life cycles of 10 to 15 years as a general policy, not a commitment for this part; not a gate under S5",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:07Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet June 2018, 100 months",
+      "read": "SLUSBV4D revision history: Revision A, June 2018: 100 months before 2026-10-02, over 12 months, not flagged",
+      "source": "https://www.ti.com/lit/ds/symlink/bq40z80.pdf (SLUSBV4D)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:42Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB and LCSC list the part",
+      "read": "JLCPCB lists C882850 with stockCount 8611 (no status field); LCSC page lists it with stockNumber 8611, no discontinued flag; Digi-Key Active (2026-10-02T11:58:04Z); no disagreement with the manufacturer",
+      "source": "vendors.py jlcpcb C882850; https://www.lcsc.com/product-detail/C882850.html; Digi-Key productdetails BQ40Z80RSMR (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:28Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "Digi-Key lead_weeks 20",
+      "read": "manufacturer lead time 20 weeks, recorded",
+      "source": "api.digikey.com/products/v4/search/BQ40Z80RSMR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:58:04Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 8597",
+      "read": "canPresaleNumber 8597 >= 0",
+      "source": "vendors.py jlcpcb C882850",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:23Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "BQ40Z80RSMR, VQFN-32 4 x 4 mm (RSM)",
+      "read": "exact result for C882850: part BQ40Z80RSMR, package VQFN-32-EP(4x4), maker label Texas Instruments; names the candidate and its package",
+      "source": "vendors.py jlcpcb C882850",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:23Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "vendors.py jlcpcb C882850",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:23Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 6515 >= 50",
+      "read": "stock_available 6515 >= 50 (rule 4 gate): pass; ProductStatus Active, maker Texas Instruments",
+      "source": "api.digikey.com/products/v4/search/BQ40Z80RSMR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:58:04Z"
+     }
+    ]
+   },
+   {
+    "function": "Bench pack balance lead",
+    "part": "BQ40Z80RSMR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 8611 against the gate 50 for 5 boards x 1",
+      "read": "stockCount 8611 >= 50: pass (rule 4)",
+      "source": "vendors.py jlcpcb C882850 (jlcpcb.com selectSmtComponentList API)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:23Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (Texas Instruments)",
+      "read": "ACTIVE: ti.com/product/BQ40Z80 meta status ACTIVE and orderable BQ40Z80RSMR marketingStatusDescription ACTIVE (Texas Instruments page); Digi-Key ProductStatus Active (Texas Instruments, 2026-10-02T11:58:04Z) agrees",
+      "source": "https://www.ti.com/product/BQ40Z80",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:32Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none",
+      "read": "no end-of-life or last-time-buy notice found: TI page ACTIVE, Digi-Key end_of_life false and discontinued false (2026-10-02T11:58:04Z); TI's PCN listing not read: ti.com PCN paths answered HTTP 404 (21:29:34Z)",
+      "source": "https://www.ti.com/product/BQ40Z80; api.digikey.com/products/v4/search/BQ40Z80RSMR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:32Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 a board: the one pack protector, no extra placement (V298)",
+      "read": "specification fixes the one pack IC for the four functions (V297, V298), no extra placement; need 5 boards x 1 = 5; candidate's count 1 >= 1",
+      "source": "Research.md V297, V298 (checkout 68adf31)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:31:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC number C882850",
+      "read": "the specification places the pack IC on the IO board (V149); LCSC number C882850 is C and digits: agrees",
+      "source": "Research.md V149; vendors.py jlcpcb C882850",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:23Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published for the part",
+      "read": "no part commitment read; TI's programme page states typical product life cycles of 10 to 15 years as a general policy, not a commitment for this part; not a gate under S5",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:07Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet June 2018, 100 months",
+      "read": "SLUSBV4D revision history: Revision A, June 2018: 100 months before 2026-10-02, over 12 months, not flagged",
+      "source": "https://www.ti.com/lit/ds/symlink/bq40z80.pdf (SLUSBV4D)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:42Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB and LCSC list the part",
+      "read": "JLCPCB lists C882850 with stockCount 8611 (no status field); LCSC page lists it with stockNumber 8611, no discontinued flag; Digi-Key Active (2026-10-02T11:58:04Z); no disagreement with the manufacturer",
+      "source": "vendors.py jlcpcb C882850; https://www.lcsc.com/product-detail/C882850.html; Digi-Key productdetails BQ40Z80RSMR (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:28Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "Digi-Key lead_weeks 20",
+      "read": "manufacturer lead time 20 weeks, recorded",
+      "source": "api.digikey.com/products/v4/search/BQ40Z80RSMR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:58:04Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 8597",
+      "read": "canPresaleNumber 8597 >= 0",
+      "source": "vendors.py jlcpcb C882850",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:23Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "BQ40Z80RSMR, VQFN-32 4 x 4 mm (RSM)",
+      "read": "exact result for C882850: part BQ40Z80RSMR, package VQFN-32-EP(4x4), maker label Texas Instruments; names the candidate and its package",
+      "source": "vendors.py jlcpcb C882850",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:23Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "vendors.py jlcpcb C882850",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:23Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 6515 >= 50",
+      "read": "stock_available 6515 >= 50 (rule 4 gate): pass; ProductStatus Active, maker Texas Instruments",
+      "source": "api.digikey.com/products/v4/search/BQ40Z80RSMR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:58:04Z"
+     }
+    ]
+   },
+   {
+    "function": "Pack temperature",
+    "part": "BQ40Z80RSMR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 8611 against the gate 50 for 5 boards x 1",
+      "read": "stockCount 8611 >= 50: pass (rule 4)",
+      "source": "vendors.py jlcpcb C882850 (jlcpcb.com selectSmtComponentList API)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:23Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (Texas Instruments)",
+      "read": "ACTIVE: ti.com/product/BQ40Z80 meta status ACTIVE and orderable BQ40Z80RSMR marketingStatusDescription ACTIVE (Texas Instruments page); Digi-Key ProductStatus Active (Texas Instruments, 2026-10-02T11:58:04Z) agrees",
+      "source": "https://www.ti.com/product/BQ40Z80",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:32Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none",
+      "read": "no end-of-life or last-time-buy notice found: TI page ACTIVE, Digi-Key end_of_life false and discontinued false (2026-10-02T11:58:04Z); TI's PCN listing not read: ti.com PCN paths answered HTTP 404 (21:29:34Z)",
+      "source": "https://www.ti.com/product/BQ40Z80; api.digikey.com/products/v4/search/BQ40Z80RSMR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:32Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 a board: the one pack protector, no extra placement (V298)",
+      "read": "specification fixes the one pack IC for the four functions (V297, V298), no extra placement; need 5 boards x 1 = 5; candidate's count 1 >= 1",
+      "source": "Research.md V297, V298 (checkout 68adf31)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:31:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC number C882850",
+      "read": "the specification places the pack IC on the IO board (V149); LCSC number C882850 is C and digits: agrees",
+      "source": "Research.md V149; vendors.py jlcpcb C882850",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:23Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published for the part",
+      "read": "no part commitment read; TI's programme page states typical product life cycles of 10 to 15 years as a general policy, not a commitment for this part; not a gate under S5",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:07Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet June 2018, 100 months",
+      "read": "SLUSBV4D revision history: Revision A, June 2018: 100 months before 2026-10-02, over 12 months, not flagged",
+      "source": "https://www.ti.com/lit/ds/symlink/bq40z80.pdf (SLUSBV4D)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:29:42Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB and LCSC list the part",
+      "read": "JLCPCB lists C882850 with stockCount 8611 (no status field); LCSC page lists it with stockNumber 8611, no discontinued flag; Digi-Key Active (2026-10-02T11:58:04Z); no disagreement with the manufacturer",
+      "source": "vendors.py jlcpcb C882850; https://www.lcsc.com/product-detail/C882850.html; Digi-Key productdetails BQ40Z80RSMR (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:30:28Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "Digi-Key lead_weeks 20",
+      "read": "manufacturer lead time 20 weeks, recorded",
+      "source": "api.digikey.com/products/v4/search/BQ40Z80RSMR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:58:04Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 8597",
+      "read": "canPresaleNumber 8597 >= 0",
+      "source": "vendors.py jlcpcb C882850",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:23Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "BQ40Z80RSMR, VQFN-32 4 x 4 mm (RSM)",
+      "read": "exact result for C882850: part BQ40Z80RSMR, package VQFN-32-EP(4x4), maker label Texas Instruments; names the candidate and its package",
+      "source": "vendors.py jlcpcb C882850",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:23Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "vendors.py jlcpcb C882850",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T21:28:23Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 6515 >= 50",
+      "read": "stock_available 6515 >= 50 (rule 4 gate): pass; ProductStatus Active, maker Texas Instruments",
+      "source": "api.digikey.com/products/v4/search/BQ40Z80RSMR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:58:04Z"
+     }
+    ]
+   }
+  ]
+ }
+}

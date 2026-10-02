@@ -1,0 +1,58 @@
+{
+ "role": "rerank",
+ "category": "R8",
+ "label": "rerank-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "functions": [
+   {
+    "function": "Motor monitor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "INA228AIDGSR",
+      "reason": "The owner's fixed input (Scope, V304), ranked first whatever a run returns. Meets all 14 requirement values on the onboard path. Fails rule 4 at JLCPCB (C2887910 stockCount 0, presale -236, read 2026-10-02T21:09:15Z) and at Digi-Key (0, 13:58:19Z cached): reported to the owner as a current limitation and a T6 stock exception, not replaced.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "INA228AIDGSR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Onboard shunt",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "BVR-Z-R0002-1.0",
+      "reason": "Widest accuracy margin of the three (369 mA of 1.4166 A), four terminals, stock at JLCPCB (353) and Digi-Key (11190); the part selection.json keeps. No P3 return touches this function.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "BVE-M-R0001-E-5.0-placeholder-never-used",
+      "reason": "x",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": []
+ }
+}

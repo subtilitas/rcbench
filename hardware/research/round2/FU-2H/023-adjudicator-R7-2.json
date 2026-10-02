@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R7",
+ "label": "adjudicator-R7-2",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "function": "re-rank report: PTN5110NHQZ dropped",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The re-rank dropped PTN5110NHQZ under Charger input limit as \"not qualified\" because its datasheet supposedly gives no sink-side detection thresholds. That is false. PTN5110 Rev. 1.6 (3 April 2020), Table 12, lists two sink-mode CC (configuration channel) thresholds: VTUS at 0.61/0.66/0.70 V and VTUM at 1.16/1.23/1.31 V (min/typ/max). These are the USB Type-C limits that separate the three source advertisements a sink reads across its Rd. Below VTUS is default current, between VTUS and VTUM is 1.5 A, and above VTUM is 3 A. So the datasheet covers all three levels the requirement names (IOBoard.md, Charger input limit; Research.md R7). The verifier said a separate 3 A sink threshold is missing. A sink needs none, because the 3 A advertisement is the range above VTUM. That remark does not weaken the refutation. The re-rank's other reasons are not drop grounds. A unit price of 9.7653 is no gate in the Sourcing rules. The schema.org BackOrder flag on NXP's page is not a lifecycle status: the same page reads \"Status - Active\", which passes the Lifecycle check. The register definitions in references [3] and [5] stay not read. A gap in reading does not show a missing threshold. The drop's reason fails, so PTN5110NHQZ goes back to the function's candidates. Whether a TCPC (Type-C port controller), which firmware reads over I²C to set the charger's limit, ranks above the current part (FUSB303BTMX) is a ranking question this figure does not decide. The ruling concerns this function's requirement values, not the part's lifecycle or identity.",
+  "evidence": "PTN5110 Rev. 1.6, 3 April 2020, Table 12 \"USB PD and Type-C AC/DC characteristics\", USB Type-C specification rows. Source pull-up current: Default 64/80/96 uA, 1.5 A 166/180/194 uA, 3 A 314/330/346 uA. Rpulldn 4.6/5.1/5.6 kOhm. Sink-mode thresholds: VTUM \"Medium current mode detection threshold, Sink mode\" 1.16/1.23/1.31 V; VTUS \"Standard current mode detection threshold, Sink mode\" 0.61/0.66/0.70 V; VTURa 0.15/0.2/0.25 V. Dead-battery clamps VCLAMPH 0.85 to 2.18 V, VCLAMPM 0.45 to 1.25 V, VCLAMPL 0.25 to 1.25 V. Table 3 lists PTN5110NHQZ as the reel of ordering option PTN5110NHQ (TCPC Rev 2.0 version 1.0, DRP), -40 to +85 C. NXP product page (redirects to .../usb-pd-tcpc-phy-ic:PTN5110, HTTP 200, 216,352 bytes) reads \"Status - Active\", and its schema.org availability is BackOrder. JLCPCB C2674062, exact match PTN5110NHQZ, maker label NXP Semicon: stockCount 600, canPresaleNumber 581, expand, 9.7653 at 1, 8.4372 at 1000. The register definitions in [3] and [5] were not read.",
+  "source": "https://www.nxp.com/docs/en/data-sheet/PTN5110.pdf (vendors.py fetch, HTTP 200, 1,843,111 bytes, saved /home/claude/rcbench-research/round2/scratch/FU-2H/adjudicator-R7/ptn5110.pdf), Table 12 and Table 3; https://www.nxp.com/products/PTN5110 (vendors.py fetch, saved nxp_ptn5110.html); vendors.py jlcpcb C2674062 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, saved jlc_C2674062.json)",
+  "read_at": "2026-10-02T21:59:25Z (datasheet); 2026-10-02T21:59:43Z (NXP product page and JLCPCB)",
+  "scope": "function"
+ }
+}

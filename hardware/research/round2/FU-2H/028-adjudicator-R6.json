@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R6",
+ "label": "adjudicator-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "function": "found V112",
+  "part": "",
+  "stands": true,
+  "ruling": "The datasheet verifier's refutation stands for the transient half of V112. The value says no page states a transient at the servo converter's VIN or its duration, and records it as not read. Research.md at 68adf31, which this run reads, does state one. Line 591 (Follow-ups, input transient clamp) puts 60 V for 10 us on the input. TVS2701DRBR clamps it to 35.7 V at 27 degC and 37.3 V at 125 degC. Behind the overvoltage cut-off, the bus carries that voltage to the TPS55285 for 3.98 us typical and 5.4 us maximum, plus the MOSFETs' gate-discharge time. V308 (line 1021) gives the owner's answer of 2026-10-02 in its Answer column: a second clamp on the bus, behind the cut-off and ahead of the TPS55285, holds the TPS55285 input pins at or under 27 V. The corrected value reads as follows. Steady: 20 V. Transient at VIN: at most 27 V, held by the owner's second clamp (part not selected). Without that clamp the bus sees 35.7 to 37.3 V for 0.00398 ms typical and 0.0054 ms maximum, plus a gate-discharge time no page states (not read). The steady half holds. Re-read in SLVSI72A (April 2025, revised October 2025), the TPS55285 gives: VIN absolute maximum 27 V (5.1); recommended input range 22 V maximum; VVIN_OVP 22 V min, 22.5 V typ and 23 V max rising, with 0.9 V hysteresis. The refutation concerns this question's requirement value, not the part, so its scope is function.",
+  "evidence": "Research.md@68adf31 line 1021, V308 (R5, input transient clamp): question \"TVS2701DRBR clamps the inputs at 35.7 V (27 degC) to 37.3 V (125 degC). Until the overvoltage cut-off, 3.98 us typical and 5.4 us maximum plus the MOSFETs' gate discharge, the bus carries that voltage to the four TPS55285 (27 V absolute maximum)\"; answer \"A second clamp on the bus behind the cut-off, ahead of the TPS55285, holds their input pins at or under 27 V ... (owner, 2026-10-02)\". Line 591, Follow-ups row 'input transient clamp': \"survive 60 V for 10 us only behind the clamp: TVS2701DRBR clamps to 35.7 V at 27 degC and 37.3 V at 125 degC ... Behind the overvoltage cut-off the bus sees the clamp voltage for 3.98 us typical, 5.4 us maximum, plus the MOSFETs' gate-discharge time, against the TPS55285's 27 V absolute maximum\". V112 (line 825) is still \"for research (owner, 2026-09-28)\". IOBoard.md@68adf31 line 355, DC input: 12 to 20 V. SLVSI72A, re-fetched with HTTP 200 and 4,317,800 bytes, saved at /home/claude/rcbench-research/round2/scratch/FU-2H/adjudicator-R6/tps55285.pdf. Section 5.1: VIN, SW1 -0.3 to 27 V. Section 5.4: VIN 2.4 to 22 V; VVIN_OVP rising 22 / 22.5 / 23 V; VVIN_OVP_HYS 0.9 V.",
+  "source": "hardware/docs/Research.md@68adf31bf1c74e2a2c1f32ba925b462a9696115f lines 591, 825 and 1021; hardware/docs/IOBoard.md@68adf31 line 355; vendors.py fetch https://www.ti.com/lit/ds/symlink/tps55285.pdf (SLVSI72A, sections 5.1 and 5.4), read 2026-10-02T22:26:12Z",
+  "read_at": "2026-10-02T22:26:19Z",
+  "scope": "function"
+ }
+}

@@ -1,0 +1,154 @@
+{
+ "role": "P3",
+ "category": "R7",
+ "label": "P3-R7",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "missed": [
+   {
+    "function": "Pack charger",
+    "part": "BQ25710RSNR (C2864000)",
+    "maker": "Texas Instruments",
+    "why": "Neither in P2's shortlist nor its drops. Sibling of the BQ25713 (rank 3) with the same values. SLUSD20B (July 2018, rev. April 2023), https://www.ti.com/lit/ds/symlink/bq25710.pdf, read 2026-10-02T20:53:07Z: NVDC buck-boost, 1 to 4 series, VINPUT_OP 3.5 to 26 V; VBAT_REG_ACC at the 8.4 V code 0x20D0: -0.6 to +0.6 % (8.3496 to 8.4504 V, 4.2252 V a cell at the upper edge); IIN_HOST 50 mA LSB, so 3 A, 1.5 A and 500 mA are settable; SRP-SRN -0.5 to 0.5 V in both the absolute maximum and the recommended table (0.2605 V at 52.1 A and 0.3502 V at 70.04 A on 5 mOhm); TJ -20 to 125 C; no thermistor input. RSNS_RSR options are 10 or 20 mOhm only, so a 5 mOhm RSR is off-option exactly as for the BQ25713 (FU-2B1 ruling 016 holds that this does not disqualify it; charge-current accuracy is tabulated at 10 mOhm only: 4096 mA -3/+2 %, 2048 mA -4/+3 %, 1024 mA -5/+6 %). SMBus address 09h, different register map. JLCPCB C2864000 stockCount 1857, canPresaleNumber 1834 (vendors.py jlcpcb, 2026-10-02T20:51:17Z). Digi-Key BQ25710RSNR Active, lead 20 weeks, stock_available 406 (cached reading of 2026-10-02T12:46:42Z). TI page https://www.ti.com/product/BQ25710 lists BQ25710RSNR ACTIVE (2026-10-02T20:57:54Z). First revision July 2018, so not flagged for under 12 months. TI PCN listing not read."
+   },
+   {
+    "function": "Pack charger",
+    "part": "BQ25713BRSNR (C2863640)",
+    "maker": "Texas Instruments",
+    "why": "Neither in P2's shortlist nor its drops. The BQ25713 on the same data sheet with I2C address 6Ah (SLUSD83C, June 2018, rev. May 2023, https://www.ti.com/lit/ds/symlink/bq25713.pdf, read 2026-10-02T20:53:13Z): VINPUT_OP 3.5 to 26 V, 1 to 4 series, SRP-SRN -0.5 to 0.5 V (absolute maximum and recommended), 8.4 V code at -0.6 to +0.6 %, IIN_HOST 50 mA steps. Same 5 mOhm off-option caveat as the BQ25713 (RSNS_RSR 10 or 20 mOhm; 9.6.3 allows other values, accuracy not stated at 5 mOhm). JLCPCB C2863640 stockCount 71, canPresaleNumber 71 (2026-10-02T20:51:24Z), 21 above the gate of 50. Digi-Key BQ25713BRSNR Active, lead 12 weeks, stock_available 1213 (cached 2026-10-02T12:46:42Z). TI page https://www.ti.com/product/BQ25713B lists BQ25713BRSNR ACTIVE (2026-10-02T20:57:54Z)."
+   },
+   {
+    "function": "Power path",
+    "part": "BQ25710RSNR (C2864000)",
+    "maker": "Texas Instruments",
+    "why": "Same part and readings as the Pack charger entry (SLUSD20B read 2026-10-02T20:53:07Z; JLCPCB 1857/1834 at 20:51:17Z; Digi-Key 406 cached 12:46:42Z; TI page ACTIVE 20:57:54Z). Path: system on VSYS, VSYS_MIN regulation with the pack depleted (SLUSD20B 8.5 minimum system voltage regulation, -2 to +2 %), external BATFET driven by BATDRV, the 5 mOhm RSR carries the cells' current in both directions. Gate drive of the external BATFET at the 6.0 to 6.6 V floor is a stage 2 record. Not read: USB-only start-up figure for this part."
+   },
+   {
+    "function": "Power path",
+    "part": "BQ25713BRSNR (C2863640)",
+    "maker": "Texas Instruments",
+    "why": "Same part and readings as the Pack charger entry (SLUSD83C read 2026-10-02T20:53:13Z; JLCPCB 71/71 at 20:51:24Z; Digi-Key 1213 cached 12:46:42Z; TI page ACTIVE 20:57:54Z). Same NVDC path with external BATFET and 5 mOhm RSR as the BQ25713, same off-option RSR caveat."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "TUSB320LIRWBR (C2836598)",
+    "maker": "Texas Instruments",
+    "why": "Not in P2's shortlist or drops. SLLSEP2D (Aug 2015, rev. May 2017), https://www.ti.com/lit/ds/symlink/tusb320li.pdf, read 2026-10-02T20:53:16Z: UFP via the PORT pin; Type-C current default / medium / high on the OUT pins or in I2C with INT_N; dead-battery mode 7.3.3: Rd with VDD absent, RCC_DB 4.1 to 6.1 kOhm; VDD 2.7 to 5 V (absolute maximum 6 V), so it runs from the 3.3 V rail, not from a 5.5 V VBUS; VDD must ramp within 25 ms (start-up figure for P5); TA -40 to 85 C. Rp-change time not read. JLCPCB C2836598 stockCount 6110, canPresaleNumber 6085 (2026-10-02T20:59:08Z). Digi-Key Active, lead 12 weeks, stock_available 654 (cached 2026-10-02T12:17:35Z). TI page https://www.ti.com/product/TUSB320LI lists TUSB320LIRWBR ACTIVE (2026-10-02T20:57:57Z). Older generation of the P2's rank 3 TUSB320LAIRWBR."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "FUSB301TMX (C132290)",
+    "maker": "onsemi",
+    "why": "Not in P2's shortlist or drops. Same maker and class as rank 1. FUSB301/D Rev. 2 (Nov 2023), https://www.onsemi.com/pdf/datasheet/fusb301-d.pdf, read 2026-10-02T20:58:26Z: dead-battery sink support with no power (VSNKDB 2.18 V maximum, RDEVICE 4.6 to 5.6 kOhm with VDD in range); sink Rd current thresholds default 0.61 to 0.70 V, 1.5 A 1.16 to 1.31 V, 3 A 2.04 to 2.18 V, reported over I2C with open-drain INT_N (no pin outputs of the level); VDD 2.8 to 5.5 V (the 3.3 V rail or VBUS); TA -40 to 85 C. Rp-change time not read. JLCPCB C132290 stockCount 10288, canPresaleNumber 10266 (2026-10-02T20:59:09Z). Digi-Key Active, lead 52 weeks, stock_available 28544 (cached 2026-10-02T12:29:33Z). onsemi page https://www.onsemi.com/products/interfaces/usb-type-c/fusb301 lists FUSB301TMX itemCondition Active (2026-10-02T20:59:28Z)."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "HD3SS3220RNHR (C165155)",
+    "maker": "Texas Instruments",
+    "why": "Not in P2's shortlist or drops. SLLSES1E (Dec 2015, rev. July 2025), https://www.ti.com/lit/ds/symlink/hd3ss3220.pdf, read 2026-10-02T20:53:17Z: USB Type-C DRP controller with a USB 3 mux that stays unused; UFP set by PORT; Type-C current default / medium (1.5 A) / high (3 A) on OUT1/OUT2 or I2C with INT_N; dead battery 6.4.3: Rd with VDD5 absent, R(CC_DB) 4.1 to 6.1 kOhm; VDD5 4.5 to 5.5 V from VBUS plus VCC33 3.0 to 3.6 V; the non-I part is rated 0 to 70 C (covers 0 to 50 C). Items for P5: VDD5 ramp, VCC33 sequencing, ENn_CC, VBUS_DET resistor. JLCPCB C165155 stockCount 2064, canPresaleNumber 1992 (2026-10-02T20:59:08Z). Digi-Key Active, lead 20 weeks, stock_available 2752 (cached 2026-10-02T16:01:56Z). TI page https://www.ti.com/product/HD3SS3220 lists HD3SS3220RNHR ACTIVE (2026-10-02T20:57:58Z). Heaviest of the pin parts: two supplies for an unused mux."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "TUSB322IRWBR (C2674422)",
+    "maker": "Texas Instruments",
+    "why": "Not in P2's shortlist or drops. SLLSEO5D (Oct 2015, rev. March 2021), https://www.ti.com/lit/ds/symlink/tusb322i.pdf, read 2026-10-02T20:53:17Z: VDD 4.5 to 5.5 V (runs from VBUS up to 5.5 V); dead battery 6.4.4: Rd with VDD absent, RCC_DB 4.1 to 6.1 kOhm; Type-C current default / medium / high in the I2C CURRENT_MODE_DETECT register with INT_N; TA -40 to 85 C. It powers up as DRP and UFP-only is set by an I2C write to MODE_SELECT, so the pin-output route is not available and firmware must write it before VDD-powered toggling. JLCPCB C2674422 stockCount 695, canPresaleNumber 692 (2026-10-02T20:59:08Z). Digi-Key Active, lead 26 weeks, stock_available 4158 (cached 2026-10-02T12:17:36Z). TI page https://www.ti.com/product/TUSB322I lists TUSB322IRWBR ACTIVE (2026-10-02T20:57:57Z)."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "STUSB4500QTR (C2678061)",
+    "maker": "STMicroelectronics",
+    "why": "Not in P2's shortlist or drops. USB PD sink controller (DS12499, https://www.st.com/resource/en/datasheet/stusb4500.pdf, read 2026-10-02T20:58:28Z): dead-battery mode on CC1DB/CC2DB with no supply; VDD 4.1 to 22 V from VBUS; with NVM configuration 3 (PWR_OK_CFG = 11b) POWER_OK2 reports the source's Type-C current at 5 V (Hi-Z default, low for 3.0 A) and POWER_OK3 the 1.5 A level, with ALERT over I2C; TA -40 to 105 C. Needs its NVM programmed to configuration 3 and a 5 V-only PDO list (a PD source then gives a 5 V contract), a manufacturing step the other parts do not have. JLCPCB C2678061 stockCount 4882, canPresaleNumber 4759 (2026-10-02T20:59:10Z). Digi-Key Active, lead 30 weeks, stock_available 27363 (cached 2026-10-02T12:17:40Z). ST page https://www.st.com/en/interfaces-and-transceivers/stusb4500.html lists STUSB4500QTR Active (2026-10-02T20:59:26Z)."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "FUSB302BMPX (C132291)",
+    "maker": "onsemi",
+    "why": "Not in P2's shortlist or drops. TCPC-class PHY (FUSB302B data sheet, https://www.onsemi.com/pdf/datasheet/fusb302b-d.pdf, read 2026-10-02T20:58:26Z): dead-battery support (sink mode with no power applied; VUFPDB 2.18 V maximum, RDEVICE 4.6 to 5.6 kOhm); the source's Rp level is read from the BC_LVL status bits with I_BC_LVL interrupt on open-drain INT_N over I2C; VDD 2.7 to 5.5 V; -40 to 85 C. Needs firmware for toggle and Rp reading (heavier than the pin parts). JLCPCB C132291 stockCount 7136, canPresaleNumber 6718 (2026-10-02T20:59:09Z). Digi-Key live reading 2026-10-02T21:02:05Z: Active, lead 56 weeks, stock_available 5929. onsemi page https://www.onsemi.com/products/interfaces/usb-type-c/fusb302b lists FUSB302BMPX Active (2026-10-02T20:59:39Z)."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "TUSB422IYFPR (C702378)",
+    "maker": "Texas Instruments",
+    "why": "Not in P2's shortlist or drops. USB Type-C port controller (SLLSEW6C, https://www.ti.com/lit/ds/symlink/tusb422.pdf, read 2026-10-02T20:58:31Z): dead-battery support, VDD 2.7 to 5.5 V, TA -40 to 105 C (85 C with VCONN), Rp level in CC_STATUS with INT_N over I2C. Needs a port-manager stack on the host. JLCPCB C702378 stockCount 229, canPresaleNumber 229 (2026-10-02T20:59:11Z). Digi-Key Active, lead 20 weeks, stock_available 7103 (cached 2026-10-02T12:17:41Z). TI page https://www.ti.com/product/TUSB422 lists TUSB422IYFPR ACTIVE (2026-10-02T21:05:18Z). Ranks below the pin parts for the firmware load."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "PTN5110NHQZ (C2674062)",
+    "maker": "NXP",
+    "why": "Not in P2's shortlist or drops. PTN5110 data sheet Rev. 1.6 (April 2020), https://www.nxp.com/docs/en/data-sheet/PTN5110.pdf, read 2026-10-02T21:01:36Z: TCPC PHY with Rd behaviour under dead battery/no power, VDD 2.7 to 5.5 V (VBUS 4 to 25 V), I2C with ALERT, Tamb -40 to 85 C; needs a TCPM stack. JLCPCB C2674062 stockCount 600, canPresaleNumber 581 (2026-10-02T21:01:30Z). Digi-Key live reading 2026-10-02T21:02:07Z: Active, lead 30 weeks, stock_available 7202. NXP page https://www.nxp.com/products/PTN5110 shows status Active (2026-10-02T21:05:13Z); its schema availability for PTN5110NHQZ reads BackOrder. Same firmware class as the TUSB422."
+   },
+   {
+    "function": "Cell balancing",
+    "part": "BQ40Z50RSMR-R2 (C2845123), BQ4050RSMR (C157570), BQ40Z50RSMR-R1 (C179743), BQ40Z50RSMR (C2868204)",
+    "maker": "Texas Instruments",
+    "why": "P2 has no Cell balancing entry for them. Each data sheet offers EXTERNAL CELL BALANCING as the BQ40Z80 does, with the current set by the external network (BQ40Z50-R2 SLUSCS4C 9.2.2.3.2, BQ4050 SLUSC67B 8.2.2.3.2, BQ40Z50-R1 SLUSCB3 9.2.2.3.2, BQ40Z50 SLUSBS8B 9.2.2.3.2; fetched 2026-10-02T20:53:18Z to 21:01:52Z); internal balancing is 10 mA only; application note SLUA420 not read, and the balance-time calculation needs a field QMax update (TRMs), as for the BQ40Z80 (P2 rank 3). They stand or fall with that exclusion and follow the pack IC order. Stock: JLCPCB 9994 / 15945 / 20574 / 91 (2026-10-02T20:56:10Z to 20:57:05Z); Digi-Key 161 (cached 11:54:07Z), 5311 (cached 11:58:06Z), 5923 (cached 15:57:58Z), 5935 (cached 15:58:08Z)."
+   },
+   {
+    "function": "Bench pack balance lead",
+    "part": "BQ40Z50RSMR-R1 (C179743)",
+    "maker": "Texas Instruments",
+    "why": "Not in P2's shortlist; P2 dropped it only under Pack overcurrent protection (see exclusions). Per-cell voltages on VC1 to VC4 for 1 to 4 series (SLUSCB3, fetched 2026-10-02T21:01:52Z), so a 3-conductor 2S lead reads each cell; open-cell check as for the BQ4050, the 2S mid tap open case rests on the undervoltage logic and the bench test (V301). JLCPCB C179743 stockCount 20574, canPresaleNumber 20548 (2026-10-02T20:57:02Z). TI page https://www.ti.com/product/BQ40Z50-R1 lists BQ40Z50RSMR-R1 ACTIVE (2026-10-02T20:57:52Z); Digi-Key reads Not For New Designs (cached 2026-10-02T15:57:58Z), written down as a disagreement."
+   },
+   {
+    "function": "Bench pack balance lead",
+    "part": "BQ40Z50RSMR (C2868204)",
+    "maker": "Texas Instruments",
+    "why": "Not in P2's shortlist; P2 dropped it only under Pack overcurrent protection (see exclusions). Per-cell voltages on VC1 to VC4 for 1 to 4 series (SLUSBS8B, https://www.ti.com/lit/ds/symlink/bq40z50.pdf, read 2026-10-02T20:53:18Z). JLCPCB C2868204 stockCount 91, canPresaleNumber 90 (2026-10-02T20:56:10Z). Digi-Key Active, lead 20 weeks, stock_available 5935 (cached 2026-10-02T15:58:08Z). TI page https://www.ti.com/product/BQ40Z50 lists BQ40Z50RSMR ACTIVE (2026-10-02T20:57:53Z)."
+   },
+   {
+    "function": "Pack temperature",
+    "part": "BQ40Z50RSMR-R1 (C179743)",
+    "maker": "Texas Instruments",
+    "why": "Not in P2's shortlist; follows the protector function. Four external thermistor inputs with an internal pull-up for a 10 kOhm NTC and an internal sensor, OTC/OTD and UTC/UTD, temperature over SMBus for V296 (SLUSCB3, TRM SLUUBC1D read 2026-10-02T21:05:33Z: UTC threshold -40.0 to 150.0 C in 0.1 C, address 0x4897). Thermistor fit for 10 kOhm B 3435 K and the one-point calibration (V310) not read for this revision. Stock and status as under Bench pack balance lead."
+   },
+   {
+    "function": "Pack temperature",
+    "part": "BQ40Z50RSMR (C2868204)",
+    "maker": "Texas Instruments",
+    "why": "Not in P2's shortlist; follows the protector function. Four external thermistor inputs with an 18 kOhm internal pull-up for a 10 kOhm NTC, OTC/OTD and UTC/UTD, SMBus temperature (SLUSBS8B; TRM SLUUA43A, https://www.ti.com/lit/ug/sluua43/sluua43.pdf, read 2026-10-02T20:57:21Z: UTC threshold -40.0 to 150.0 C in 0.1 C, address 0x488D, so 10 C is settable). Thermistor fit for B 3435 K and the 25 C offset calibration of V310 not read. Stock and status as under Bench pack balance lead."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "BQ25700ARSNR (C965493), BQ25703ARSNR (C188229)",
+    "reason_given": "battery path current / pack current carried: SRP-SRN recommended -0.35 to 0.35 V; a 5 mOhm RSR gives 0.350 V at 70.04 A, at the limit before the resistor's own tolerance; RSR options 10 or 20 mOhm only",
+    "why_it_fails": "Both halves of the reason apply equally to the BQ25713 that P2 ranks third, or are an artefact of the 5 mOhm choice. (1) The RSR is not fixed at 5 mOhm: the BQ25703A and BQ25700A data sheets (SLUSCU1A, SLUSCQ8A, https://www.ti.com/lit/ds/symlink/bq25703a.pdf and bq25700a.pdf, read 2026-10-02T20:53:14Z) say 'resistors of other values can also be used', no more than 20 mOhm suggested; at 4 mOhm the sense is 0.2084 V at 52.1 A and 0.2802 V at 70.04 A, inside -0.35 to 0.35 V (absolute maximum -0.5 to 0.5 V). (2) 'RSR options 10 or 20 mOhm only' is the register scale (RSNS_RSR, REG0x31[2]) and is the same off-option caveat that leaves the BQ25713 at rank 3 (FU-2B1 ruling 016: it does not disqualify; charge-current accuracy is tabulated at 10 mOhm only). The other values pass: VINPUT_OP 3.5 to 26 V, 8.4 V code -0.6 to +0.6 %, 1 to 4 series. The part is therefore the BQ25713's equal at best, at 4 mOhm or lower, not excluded. JLCPCB C965493 stockCount 1680, canPresaleNumber 1680 and C188229 stockCount 5436, canPresaleNumber 5433 (2026-10-02T20:51:28Z); Digi-Key Active, stock 7182 and 2648 (cached 2026-10-02T12:46:42Z); TI pages list BQ25700ARSNR and BQ25703ARSNR ACTIVE (2026-10-02T20:57:55Z and 20:57:56Z).",
+    "functions": [
+     "Pack charger",
+     "Power path"
+    ]
+   },
+   {
+    "part": "BQ40Z50RSMR-R1 (C179743)",
+    "reason_given": "lifecycle: Digi-Key ProductStatus Not For New Designs (2026-10-02T15:57:58Z, cached) against ACTIVE on TI's page (FU-2F); TI names BQ40Z50-R2 its drop-in replacement, which ranks second",
+    "why_it_fails": "The Lifecycle check makes the manufacturer's page the status for a Texas Instruments part and records a distributor's disagreement; Digi-Key's ProductStatus is the status only for Analog Devices, Melexis and Allegro parts and where the maker's page cannot be read. TI's page https://www.ti.com/product/BQ40Z50-R1 lists BQ40Z50RSMR-R1, BQ40Z50RSMR-R1G4 and BQ40Z50RSMT-R1 with marketingStatusDescription ACTIVE (read 2026-10-02T20:57:52Z), so the gate passes and the Digi-Key value is written down. The page's 'drop-in replacement with upgraded functionality' entry is a recommendation, not a status. Not read: TI's PCN listing (an end-of-life notice would fail the part). The AFE figures match the ranks it follows: SLUSCB3 (fetched 2026-10-02T21:01:52Z) OCD scale -10/+10 % no trim, -5/+5 % post-trim, offset -2.5 to 2.5 mV; PACK 30 V absolute maximum; TRM SLUUBC1D (read 2026-10-02T21:05:33Z): CUV recovery requires charging detected with Protection Configuration[CUV_RECOV_CHG] = 1, UTC threshold -40 to 150 C. JLCPCB stockCount 20574, canPresaleNumber 20548 (2026-10-02T20:57:02Z); Digi-Key stock 5923 (cached 2026-10-02T15:57:58Z).",
+    "functions": [
+     "Pack overcurrent protection"
+    ]
+   },
+   {
+    "part": "BQ40Z50RSMR (C2868204)",
+    "reason_given": "not qualified in this task: the original BQ40Z50 firmware, whose TRM (CUV recovery on charge, UTC) was not read; JLCPCB stockCount 91, presale 90 passes rule 4; TI page ACTIVE",
+    "why_it_fails": "The reason is an unfinished reading, not a value the part misses, and the TRM is public. SLUUA43A (May 2015, https://www.ti.com/lit/ug/sluua43/sluua43.pdf, read 2026-10-02T20:57:21Z): 2.2 Cell Undervoltage Protection recovery condition 2 is CUV recovery with Protection Configuration[CUV_RECOV_CHG] = 1 and charging detected; UTC threshold -400 to 1500 in 0.1 C (13.10.16.1, 0x488D), so 10 C is settable; four TS inputs with an 18 kOhm pull-up for a 10 kOhm NTC. SLUSBS8B (Nov 2019, https://www.ti.com/lit/ds/symlink/bq40z50.pdf, read 2026-10-02T20:53:18Z): 1 to 4 series, VCC 2.2 to 26 V, PACK absolute maximum 30 V, OCD -16.6 to -100 mV in 5.56 mV steps (RSNS = 1), SCD1/SCD2 -44.4 to -200 mV in 22.2 mV steps, OCD/SCC/SCD offset -2.5 to 2.5 mV post-trim, scale -10/+10 % no trim and -5/+5 % post-trim (the same 52.47 to 69.69 A untrimmed and 55.5 to 66.6 A post-trim windows as the BQ40Z80 for 61.08 mV), CHG/DSG drive 10.5 to 12 V above VBAT for VBAT at or above 4.92 V. JLCPCB stockCount 91, canPresaleNumber 90 (2026-10-02T20:56:10Z), above the gate of 50 by 41. Digi-Key Active, lead 20 weeks, stock_available 5935 (cached 2026-10-02T15:58:08Z). TI page https://www.ti.com/product/BQ40Z50 lists BQ40Z50RSMR ACTIVE (2026-10-02T20:57:53Z). Not read: the 10 kOhm B 3435 K fit, V310's calibration procedure for this revision, TI's PCN listing.",
+    "functions": [
+     "Pack overcurrent protection"
+    ]
+   }
+  ],
+  "missed_functions": [
+   {
+    "function": "Pack NTC thermistor and its lead connector",
+    "why": "IOBoard.md, Pack temperature row: the 10 kOhm, B 3435 K NTC reaches the board on a lead of its own and 'round 2 selects a leaded part and the lead's connector' (the Bench pack balance lead row also leaves its connector to stage 2). Research.md, Rules of stage 1: a function whose part is a resistor or a connector is returned without candidates and left to stage 2. P2 returned no entry for it; the NTC appears only as a requirement inside Pack overcurrent protection, Pack temperature and Pack charger."
+   },
+   {
+    "function": "Pack protector MOSFETs (charge and discharge FETs the pack IC drives)",
+    "why": "Research.md, Round 2, Rules of stage 1: the MOSFETs that R5's and R7's controllers drive (the pack protector's and the charger's) are left to stage 2, and P2 states their requirements: drain-source voltage, share of the drop allowance, safe operating area and body-diode current. P2 returned no entry for them. Values to state come from the function rows: 52.1 A nominal and 70.04 A continuous, 100.68 A for up to 915 us, the 6.6 V floor and 8.4504 V top, the BQ40Z80's 10.5 V gate drive at the floor."
+   },
+   {
+    "function": "Charger MOSFETs (BATFET and the buck-boost switches the charger drives)",
+    "why": "Same rule of Research.md, Round 2, Rules of stage 1 as for the pack protector's MOSFETs. P2 returned no entry; the BQ25723's external BATFET sits in the 52.1 A / 70.04 A pack-to-load path and its gate drive at the 5.8 to 6.6 V floor is recorded for stage 2 (Power path row), but no function carries the drain-source voltage, drop allowance, safe operating area and body-diode current requirements."
+   }
+  ]
+ }
+}
