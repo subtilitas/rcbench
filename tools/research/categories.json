@@ -212,23 +212,42 @@
     "R6": [
       {
         "function": "Servo supply",
-        "part": "TPS55285"
+        "part": "TPS55285",
+        "orderable": "TPS55285VALR"
+      }
+    ],
+    "R7": [
+      {
+        "function": "Pack cells",
+        "part": "SLSXT30002130",
+        "owner_keeps": true,
+        "off_board": true
       }
     ],
     "R8": [
       {
         "function": "Motor monitor",
-        "part": "INA228"
+        "part": "INA228",
+        "orderable": "INA228AIDGSR",
+        "owner_keeps": true
+      },
+      {
+        "function": "External shunt sense input",
+        "part": "INA228",
+        "orderable": "INA228AIDGSR",
+        "owner_keeps": true
       }
     ],
     "R11": [
       {
         "function": "accelerometer",
-        "part": "ADXL316WBCSZ"
+        "part": "ADXL316WBCSZ",
+        "owner_keeps": true
       },
       {
         "function": "optical index",
-        "part": "TCND5000"
+        "part": "TCND5000",
+        "owner_keeps": true
       }
     ]
   }

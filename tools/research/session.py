@@ -83,6 +83,9 @@ RUNS_DIR = os.path.join("hardware", "research", "round1")
 ROUNDS = (1, 2)
 ROUND = 1
 RUNS_DIRS = (RUNS_DIR,)
+# The run name of a fixed input the owner keeps where no run verified it.
+# A run name is T1 to T6 or FU and a suffix, so it cannot clash.
+OWNER = "owner"
 # The files T6 may write: the Outputs table of the plan.
 T6_DIRS = ("hardware/docs/",)
 T6_FILES = ("hardware/STATUS.md", "hardware/README.md", "tools/jlc_stock.py")
@@ -257,6 +260,51 @@ def sourcing_answers(text):
     return out
 
 
+def fixed_input_fails(fixed, text, categories):
+    """The fixed inputs are the Scope table's, by input name and part, each
+    in a known category; the inputs the owner keeps whatever a run returns
+    are the rows that say so; each orderable number is its input's."""
+    fails = []
+    listed = sorted((x.get("function"), x.get("part"))
+                    for xs in fixed.values() for x in xs)
+    if listed != sorted(fixed_inputs(text)):
+        fails.append(f"fixed_inputs {listed} against the Scope table "
+                     f"{sorted(fixed_inputs(text))}")
+    for c in fixed:
+        if c not in categories:
+            fails.append(f"fixed_inputs: unknown category {c}")
+    kept = sorted(x.get("function") for xs in fixed.values() for x in xs
+                  if x.get("owner_keeps"))
+    if kept != sorted(owner_kept_rows(text)):
+        fails.append(f"fixed_inputs owner_keeps {kept} against the Scope "
+                     "rows that say \"whatever a run returns\" "
+                     f"{sorted(owner_kept_rows(text))}")
+    for c, xs in fixed.items():
+        for x in xs:
+            o = x.get("orderable")
+            if o is not None and not str(o).upper().startswith(
+                    str(x.get("part") or "").upper()):
+                fails.append(f"fixed_inputs {c} {x.get('function')}: "
+                             f"orderable {o} is not a {x.get('part')}")
+    return fails
+
+
+def owner_kept_rows(text):
+    """The inputs of the Scope table's fixed inputs whose value says the
+    owner keeps them whatever a run returns."""
+    sec = text.split("| Input | Value | Source |", 1)
+    if len(sec) < 2:
+        return []
+    out = []
+    for line in sec[1].split("\n")[1:]:
+        c = cells(line)
+        if not c or len(c) != 3:
+            break
+        if c[0].strip("-: ") and "whatever a run returns" in c[1]:
+            out.append(c[0])
+    return out
+
+
 def fixed_inputs(text):
     """The Scope table of fixed inputs: (input, part), the part being the
     part number that leads the value cell."""
@@ -411,17 +459,8 @@ def cmd_check(_args):
     for c, names in asks.items():
         if not names or len(set(names)) != len(names):
             fails.append(f"p1_asks {c}: no name, or a name twice")
-    # The fixed inputs are the Scope table's, by input name and part, each
-    # in a known category.
-    fixed = cats.get("fixed_inputs", {})
-    listed = sorted((x.get("function"), x.get("part"))
-                    for xs in fixed.values() for x in xs)
-    if listed != sorted(fixed_inputs(text)):
-        fails.append(f"fixed_inputs {listed} against the Scope table "
-                     f"{sorted(fixed_inputs(text))}")
-    for c in fixed:
-        if c not in cats["categories"]:
-            fails.append(f"fixed_inputs: unknown category {c}")
+    fails += fixed_input_fails(cats.get("fixed_inputs", {}), text,
+                               cats["categories"])
     raised_rows(text)
     jlc_stock_row(text)
     if set(decisions(text)) != {"Q4", "Q8", "Q9"}:
@@ -446,6 +485,7 @@ def cmd_check(_args):
             fails.append(f"the page has no section \"Round {n}\", which the "
                          f"prompts of round {n} name")
     fails += round_selftest()
+    fails += owner_selftest()
 
     schemas = resolved_schemas()
     js = read(os.path.join(HERE, "round1.js"))
@@ -643,6 +683,269 @@ def round_selftest():
     return fails
 
 
+def owner_selftest():
+    """The fixed inputs the owner keeps, on a throwaway repository: the
+    fallback of effective_selection with its ledger filters, a verified
+    owner input and an input the owner does not keep; owner_items,
+    open_selections and refuted_for_itself; t6_open's selected parts and
+    its comparison by the list the check was given, or none; upstream_view
+    and stale_selections with a run's list, an empty one and none;
+    owner_fixed_of; differs_from_prepared; fixed_input_fails; and
+    selection_changed and selection_to_write. Returns the failures; reads
+    no network."""
+    global load
+    fails = []
+    tmp = tempfile.mkdtemp(prefix="rcbench-owner-")
+    saved = load
+    fixed = {
+        "R1": [{"function": "Microcontroller", "part": "RP2354B"}],
+        "R6": [{"function": "Servo supply", "part": "TPS55285",
+                "orderable": "TPS55285VALR"}],
+        "R7": [{"function": "Pack cells", "part": "SLSXT30002130",
+                "owner_keeps": True, "off_board": True}],
+        "R8": [{"function": "Motor monitor", "part": "INA228",
+                "orderable": "INA228AIDGSR", "owner_keeps": True},
+               {"function": "External shunt sense input", "part": "INA228",
+                "orderable": "INA228AIDGSR", "owner_keeps": True}],
+        "R11": [{"function": "accelerometer", "part": "ADXL316WBCSZ",
+                 "owner_keeps": True}]}
+
+    def fake(name):
+        cats = saved(name)
+        return {**cats, "fixed_inputs": fixed} \
+            if name == "categories.json" else cats
+
+    def put(run, task):
+        path = os.path.join(tmp, run, "task.json")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(task, f)
+        git("add", "-A", cwd=tmp)
+        git("-c", "user.name=check", "-c", "user.email=check@localhost",
+            "-c", "commit.gpgsign=false", "commit", "-q", "--no-verify",
+            "-m", f"Record {run}", cwd=tmp)
+
+    def expect(ok, what):
+        if not ok:
+            fails.append(f"owner self-test: {what}")
+    try:
+        load = fake
+        use_round(2)
+        r1, r2 = (posix(runs_dir(k)) for k in (1, 2))
+        git("init", "-q", tmp)
+        put(f"{r1}/FU-A", {"task": "FU", "sequence": 1, "summary": {
+            "selection": {
+                "R1": [{"function": "Microcontroller", "part": "RP2354B"}],
+                "R8": [{"function": "Motor monitor",
+                        "part": "INA238AIDGSR"}],
+                "R11": [{"function": "accelerometer",
+                         "part": "ADXL316WBCSZ-RL7"}]}}})
+        put(f"{r2}/FU-2B", {"task": "FU", "sequence": 2, "summary": {
+            "selection": {
+                "R6": [{"function": "Servo supply", "part": None}],
+                "R7": [{"function": "Pack cells", "part": None}],
+                "R8": [{"function": "Motor monitor", "part": None}]},
+            "results": [
+                {"category": "R8", "ledger": [
+                    {"function": "Motor monitor", "part": "INA228AIDGSR",
+                     "status": "refuted", "reason": "stock 0"},
+                    {"function": "Motor monitor", "part": "INA238AIDGSR",
+                     "status": "refuted", "reason": "another part"},
+                    {"figure": "found V1", "status": "refuted"}]},
+                {"category": "R6", "ledger": [
+                    {"function": "Motor monitor", "part": "INA228AIDGSR",
+                     "status": "refuted", "reason": "another category"}]},
+                {"category": "R7", "ledger": [
+                    {"function": "Pack cells",
+                     "part": "SLS XTRON 3000mAh (SLSXT30002130)",
+                     "status": "not verified", "reason": "stock not read"},
+                    {"function": "Pack cells",
+                     "part": "sls xtron (slsxt30002130)",
+                     "status": "refuted", "reason": "lower case"},
+                    {"function": "Pack cells",
+                     "part": "SLS XTRON (SLSXT30002130)",
+                     "status": "verified"}]}],
+            "part_refuted": {"R8": ["INA228AIDGSR"]}}})
+        eff = effective_selection(tmp)
+        mm = eff.get("R8", {}).get("Motor monitor") or {}
+        expect(mm.get("part") == "INA228AIDGSR" and mm.get("run") == OWNER,
+               "a fixed input a run left open is the owner's, by its "
+               "orderable number")
+        of = mm.get("owner_fixed") or {}
+        expect(of.get("left_open_by") == "FU-2B"
+               and of.get("replaced") == "INA238AIDGSR"
+               and [u["status"] for u in of.get("unverified", [])]
+               == ["refuted"],
+               "owner_fixed names the run, the replaced part and the "
+               "reading that did not verify it")
+        acc = eff.get("R11", {}).get("accelerometer") or {}
+        expect(acc.get("run") == "FU-A" and acc.get("part")
+               == "ADXL316WBCSZ-RL7" and "owner_fixed" not in acc,
+               "an input the owner keeps that a run verified stays the "
+               "run's")
+        sense = eff.get("R8", {}).get("External shunt sense input") or {}
+        expect(sense.get("run") == OWNER and
+               sense.get("owner_fixed", {}).get("left_open_by") == ""
+               and sense.get("owner_fixed", {}).get("unverified") == [],
+               "a fixed input no run named is the owner's, with no reading "
+               "of another function")
+        expect([u["part"] for u in of.get("unverified", [])]
+               == ["INA228AIDGSR"],
+               "a reading of another part or category is not the input's")
+        servo = eff.get("R6", {}).get("Servo supply") or {}
+        expect(not servo.get("part") and servo.get("run") == "FU-2B",
+               "a fixed input the owner does not keep, left open by a run, "
+               "stays open")
+        pack = eff.get("R7", {}).get("Pack cells") or {}
+        expect(pack.get("owner_fixed", {}).get("off_board") is True and
+               mm.get("owner_fixed", {}).get("off_board") is False,
+               "owner_fixed carries the input's off_board mark")
+        expect(pack.get("part") == "SLSXT30002130" and
+               [u["status"] for u in pack.get("owner_fixed", {})
+                .get("unverified", [])] == ["not verified", "refuted"],
+               "a ledger part that names the input in a longer name is "
+               "its reading; a verified reading is not listed")
+        before = effective_selection(tmp, before=2)
+        bmm = before.get("R8", {}).get("Motor monitor") or {}
+        expect(bmm.get("run") == OWNER and bmm.get("owner_fixed", {})
+               .get("replaced") == "INA238AIDGSR",
+               "a verified part that is not the input is replaced")
+        items = owner_items(eff)
+        expect([(o["category"], o["function"]) for o in items]
+               == [("R7", "Pack cells"), ("R8", "Motor monitor"),
+                   ("R8", "External shunt sense input")],
+               "owner_items lists each owner entry once, in category "
+               "order")
+        expect(not any("Pack cells" in o or "Motor monitor" in o
+                       or "External shunt" in o
+                       for o in open_selections(eff, ["R7", "R8"])),
+               "open_selections counts no owner entry open")
+        expect(refuted_for_itself(tmp, ["R8"]) == [],
+               "refuted_for_itself skips an owner entry")
+        put(f"{r2}/FU-2P", {"task": "FU", "sequence": 3, "followup": {
+            "phases": "P5-P6", "round": 1, "categories": [], "items": []},
+            "owner_fixed": owner_items(eff),
+            "summary": {"conflicts": [{"parts": ["SLSXT30002130"],
+                                       "categories": ["R7"]}]}})
+        open_t6, _ = t6_open(tmp)
+        expect(not any("no run selected" in o for o in open_t6),
+               "a conflict that names an owner part names a selected "
+               "part")
+        expect(not any("selections changed" in o for o in open_t6),
+               "the owner parts the check was given are no change")
+        fixed["R11"].append({"function": "optical index",
+                             "part": "TCND5000", "owner_keeps": True})
+        open_t6, _ = t6_open(tmp)
+        expect("R11: selections changed after FU-2P" in open_t6,
+               "an owner part the check was not given is a change")
+        expect([o["category"] for o in owner_items(effective_selection(
+            tmp))] == ["R7", "R8", "R8", "R11"],
+            "owner_items orders categories by number")
+        fixed["R11"].pop()
+        put(f"{r2}/FU-2P", {"task": "FU", "sequence": 3, "followup": {
+            "phases": "P5-P6", "round": 1, "categories": [], "items": []},
+            "summary": {"conflicts": []}})
+        open_t6, _ = t6_open(tmp)
+        expect("R7: selections changed after FU-2P" in open_t6,
+               "a check recorded without the list saw no owner part")
+        given = owner_fixed_of({"owner_fixed": owner_items(eff)})
+        expect(given.get("R8", [{}])[0] == {
+            "function": "Motor monitor", "part": "INA228",
+            "orderable": "INA228AIDGSR", "owner_keeps": True,
+            "off_board": False},
+            "owner_fixed_of gives back the input and its orderable")
+        expect(upstream_view(tmp, ["R7", "R8"], 3, {})
+               != upstream_view(tmp, ["R7", "R8"], None),
+               "an upstream input the owner keeps that a run was not "
+               "given is a change for it")
+        expect(upstream_view(tmp, ["R7", "R8"], 3, given)
+               == upstream_view(tmp, ["R7", "R8"], None),
+               "the owner inputs a run was given are no change for it")
+        want = {"commit": "c", "owner_fixed": owner_items(eff)}
+        expect(differs_from_prepared(dict(want), want) == [],
+               "an output that copies its arguments differs in nothing")
+        expect(differs_from_prepared({**want, "owner_fixed": []}, want)
+               == ["owner_fixed"]
+               and differs_from_prepared({"commit": "c"}, want)
+               == ["owner_fixed"],
+               "an output whose owner_fixed differs is refused")
+        table = ("| Input | Value | Source |\n| --- | --- | --- |\n"
+                 "| Pack cells | SLSXT30002130, kept whatever a run returns "
+                 "| x |\n| Servo supply | TPS55285 | x |\n")
+        good = {"R6": [{"function": "Servo supply", "part": "TPS55285",
+                        "orderable": "TPS55285VALR"}],
+                "R7": [{"function": "Pack cells", "part": "SLSXT30002130",
+                        "owner_keeps": True}]}
+        cats7 = ["R6", "R7"]
+        expect(fixed_input_fails(good, table, cats7) == [],
+               "fixed inputs that match the Scope table pass")
+        bad = {**good, "R6": [{**good["R6"][0], "orderable": "TPS552X"}]}
+        expect(any("orderable TPS552X" in f
+                   for f in fixed_input_fails(bad, table, cats7)),
+               "an orderable that is not its input fails")
+        loose = {**good, "R6": [{**good["R6"][0], "owner_keeps": True}]}
+        expect(any("owner_keeps" in f
+                   for f in fixed_input_fails(loose, table, cats7)),
+               "owner_keeps on a row that does not say so fails")
+        bare = {**good, "R7": [{"function": "Pack cells",
+                                "part": "SLSXT30002130"}]}
+        expect(any("owner_keeps" in f
+                   for f in fixed_input_fails(bare, table, cats7)),
+               "a row that says so without owner_keeps fails")
+        # The stale-selection gate compares the upstream parts a run saw,
+        # by the owner list it was given, with today's.
+        head = git("rev-parse", "HEAD").strip()
+        rows = raised_rows(read(os.path.join(ROOT, PLAN_REL)))
+        decider = {"task": "FU", "commit": head, "followup": {
+            "phases": "P2-P4", "round": 1, "categories": ["R7"],
+            "items": []}, "summary": {"selection": {
+                "R7": [{"function": "Pack charger", "part": "BQX"}]}}}
+        changed_up = ("R7: parts of T2 or T4 changed after FU-2S "
+                      "selected its parts")
+
+        def stale_with(seq, **given):
+            put(f"{r2}/FU-2S", {**decider, "sequence": seq, **given})
+            return stale_selections(tmp, ["R7"], rows, head, ["R8"],
+                                    ["R7"])
+        expect(changed_up not in stale_with(
+            10, owner_fixed=owner_items(effective_selection(tmp))),
+            "a run given today's owner list sees no upstream change")
+        expect(changed_up in stale_with(11, owner_fixed=[]),
+               "a run not given an upstream owner input sees a change")
+        expect(changed_up not in stale_with(12),
+               "a run recorded without the list is read under today's")
+        sel_rel = os.path.join(RUNS_DIR, "selection.json")
+        eff = effective_selection(tmp)
+        expect(selection_changed(tmp, sel_rel, eff),
+               "no committed selection.json: changed")
+        nosel = ("FU-2Q", {"task": "FU", "sequence": 4, "summary": {}})
+        expect(selection_to_write(tmp, sel_rel, nosel, False)
+               == effective_selection(tmp, pending=nosel),
+               "a run that selects no part writes a changed selection")
+        expect(selection_to_write(tmp, sel_rel, nosel, True) is None,
+               "a stopped run writes no selection")
+        path = os.path.join(tmp, sel_rel)
+        with open(path, "w") as f:
+            json.dump(eff, f)
+        git("add", "-A", cwd=tmp)
+        git("-c", "user.name=check", "-c", "user.email=check@localhost",
+            "-c", "commit.gpgsign=false", "commit", "-q", "--no-verify",
+            "-m", "selection", cwd=tmp)
+        expect(not selection_changed(tmp, sel_rel, eff),
+               "the committed selection.json: unchanged")
+        expect(selection_to_write(tmp, sel_rel, nosel, False) is None,
+               "a run that leaves the selection as committed writes none")
+        expect(selection_changed(tmp, sel_rel, {**eff, "R9": {}}),
+               "another selection: changed")
+    except SystemExit as err:
+        fails.append(f"owner self-test: {err}")
+    finally:
+        load = saved
+        use_round(1)
+        shutil.rmtree(tmp, ignore_errors=True)
+    return fails
+
+
 # ---------------------------------------------------------------- prepare
 
 def worktree(base, name, ref, detach=True):
@@ -713,18 +1016,30 @@ def runs(results, stopped=False, pending=None):
     return sorted(out, key=lambda r: r[1].get("sequence", 0))
 
 
-def effective_selection(results, pending=None, before=None):
+def effective_selection(results, pending=None, before=None, fixed=None):
     """The part each function keeps: the latest run that names a function
     decides it. A run that names it and verifies no part leaves it open,
     and records the earlier part it did not requalify. A function an
     earlier P1 inventory of its category lists and the latest one does
     not is retired by the next run that selects parts in the category
     without naming it. `before` reads only the runs recorded before that
-    sequence number."""
+    sequence number.
+
+    A fixed input of the Scope table the owner keeps whatever a run
+    returns (owner_keeps in `fixed`, categories.json's fixed_inputs by
+    default) is its function's part: where no run kept a part that starts
+    with the input's number, the function keeps the input's orderable
+    number as the owner's, run "owner", and owner_fixed names the run that
+    last decided the function (empty when no run named it), the part that
+    run kept or did not requalify, and each ledger reading of the runs read
+    that did not verify the input. Any other fixed input that no run
+    verified stays open."""
     eff, listed, dropped = {}, {}, {}
+    read = []
     for name, task in runs(results, pending=pending):
         if before is not None and task.get("sequence", 0) >= before:
             continue
+        read.append((name, task))
         for cat, names in ((task.get("summary") or {}).get("inventory")
                            or {}).items():
             if names:
@@ -756,7 +1071,74 @@ def effective_selection(results, pending=None, before=None):
                     if held["part"] in (e.get("refuted") or []):
                         entry["refuted"] = held["part"]
                 slot[e["function"]] = entry
+    if fixed is None:
+        fixed = load("categories.json").get("fixed_inputs", {})
+    for c, inputs in fixed.items():
+        for x in inputs:
+            fn, part = x.get("function"), str(x.get("part") or "")
+            if not fn or not part or not x.get("owner_keeps"):
+                continue
+            held = eff.get(c, {}).get(fn) or {}
+            if str(held.get("part") or "").upper().startswith(part.upper()):
+                continue
+            unverified = [
+                {"run": n, "part": row.get("part"),
+                 "status": row.get("status"), "reason": row.get("reason", "")}
+                for n, t in read
+                for r in (t.get("summary") or {}).get("results") or []
+                if isinstance(r, dict) and r.get("category") == c
+                for row in r.get("ledger") or []
+                if isinstance(row, dict) and row.get("function") == fn
+                and part.upper() in str(row.get("part") or "").upper()
+                and not str(row.get("status") or "").startswith("verified")]
+            eff.setdefault(c, {})[fn] = {
+                "part": x.get("orderable") or part, "rank": None,
+                "alternate": "", "run": OWNER, "alternate_unverified": [],
+                "second_source_missing": False, "q_alternatives": [],
+                "decision": held.get("decision", "none"),
+                "q_options_missing": [],
+                "owner_fixed": {
+                    "input": part, "off_board": bool(x.get("off_board")),
+                    "left_open_by": held.get("run", ""),
+                    "replaced": held.get("part")
+                    or held.get("not_requalified") or "",
+                    "unverified": unverified}}
     return eff
+
+
+def differs_from_prepared(result, want):
+    """The fields a run's output copies from its prepared arguments that
+    differ from them."""
+    copied = [k for k in ("commit", "date", "followup", "decisions",
+                          "accept_open")
+              if result.get(k) != want.get(k)]
+    for k in ("stock_exceptions", "owner_fixed"):
+        if (result.get(k) or []) != (want.get(k) or []):
+            copied.append(k)
+    return copied
+
+
+def selection_to_write(results, sel_rel, pending, stopped):
+    """The effective selection after the pending run, when record writes
+    it: after any run that is not stopped, whenever it differs from the
+    committed one (a run that selects parts, a P1 inventory that retires a
+    function, a fixed input the owner keeps). None otherwise."""
+    if stopped:
+        return None
+    new = effective_selection(results, pending=pending)
+    return new if selection_changed(results, sel_rel, new) else None
+
+
+def selection_changed(results, sel_rel, new):
+    """Whether `new` differs from the selection.json committed at HEAD of
+    the results tree, or none is committed."""
+    shown = git("-C", results, "show", f"HEAD:{posix(sel_rel)}", check=False)
+    if shown.returncode:
+        return True
+    try:
+        return json.loads(shown.stdout) != new
+    except ValueError:
+        return True
 
 
 def changed_under(tree, rel):
@@ -834,8 +1216,10 @@ def t6_open(results):
     name, last = checks[-1]
     # An effective entry the check did not see: a function bound to other
     # parts, or the same parts requalified by a later run.
+    # The check saw the owner's fixed inputs it was given, not today's.
     eff = effective_selection(results)
-    then = effective_selection(results, before=last.get("sequence", 0))
+    then = effective_selection(results, before=last.get("sequence", 0),
+                               fixed=owner_fixed_of(last) or {})
 
     def bound(sel, c):
         return {fn: (e.get("part"), e.get("alternate"), e.get("run"),
@@ -878,6 +1262,13 @@ def t6_open(results):
                     if part and e["function"] in eff.get(c, {}):
                         part_fn.setdefault(part, set()).add(
                             (c, e["function"]))
+    # A fixed input the owner keeps is a selected part: a conflict that
+    # names it does not name a part no run selected. No run verifies it,
+    # so such a conflict passes T6 only as the owner's accepted open item.
+    for fns in eff.values():
+        for e in fns.values():
+            if e.get("run") == OWNER and e.get("part"):
+                selected.add(e["part"])
 
     # The category IDs a conflict's or gap's category names, a range such
     # as R5 to R8 naming each ID in it; a category holding any other word
@@ -1037,18 +1428,14 @@ def stale_selections(results, categories, rows, now, upstream=(),
             spec_at[commit] = spec_text(commit)
         return spec_at[commit]
 
-    def up_of(before):
+    def up_of(before, fixed=None):
         # Each upstream function's part, alternate, Q alternatives and the
         # run that qualified them: a swap or a requalification is a change.
-        if before not in up_at:
-            sel = effective_selection(results, before=before)
-            up_at[before] = {(u, fn): (e.get("part"), e.get("alternate"),
-                                       e.get("run"), json.dumps(
-                                           e.get("q_alternatives") or [],
-                                           sort_keys=True))
-                             for u in upstream
-                             for fn, e in sel.get(u, {}).items()}
-        return up_at[before]
+        # A run saw the owner's fixed inputs it was given, not today's.
+        key = (before, json.dumps(fixed, sort_keys=True))
+        if key not in up_at:
+            up_at[key] = upstream_view(results, upstream, before, fixed)
+        return up_at[key]
 
     out = []
     for c in categories:
@@ -1072,10 +1459,22 @@ def stale_selections(results, categories, rows, now, upstream=(),
             if spec_of(commit) != spec_of(now):
                 out.append(f"{c}: the specification changed after {name} "
                            "selected its parts")
-            if c in downstream and up_of(seq[name]) != up_of(None):
+            if c in downstream and up_of(seq[name], owner_fixed_of(task)) \
+                    != up_of(None):
                 out.append(f"{c}: parts of T2 or T4 changed after {name} "
                            "selected its parts")
     return out
+
+
+def upstream_view(results, upstream, before, fixed=None):
+    """Each upstream function's part, alternate, Q alternatives and the run
+    that qualified them, in the effective selection before that sequence
+    number, with the owner's fixed inputs `fixed` (today's when None)."""
+    sel = effective_selection(results, before=before, fixed=fixed)
+    return {(u, fn): (e.get("part"), e.get("alternate"), e.get("run"),
+                      json.dumps(e.get("q_alternatives") or [],
+                                 sort_keys=True))
+            for u in upstream for fn, e in sel.get(u, {}).items()}
 
 
 def q9_open(results, now):
@@ -1123,6 +1522,10 @@ def refuted_for_itself(results, categories):
         if c not in categories:
             continue
         for fn, e in fns.items():
+            # A fixed input the owner keeps stands whatever a run read;
+            # owner_fixed carries the refutation.
+            if e.get("run") == OWNER:
+                continue
             # The kept part, its rule-5 alternate, each Q alternative and
             # that one's alternate.
             used = [e.get("part"), e.get("alternate")] + [
@@ -1159,6 +1562,39 @@ def open_in_category(results, categories):
             out.append(f"{c}: no function implementing {q} has an "
                        "alternative for each of its options")
     return out
+
+
+def owner_fixed_of(task):
+    """The owner-kept fixed inputs a recorded run was given, as
+    categories.json writes fixed inputs. None for a run recorded before
+    runs carried the list. The stale-selection gate reads such a run under
+    today's list: a run that decides a downstream function and whose plan
+    names the upstream inputs in its Scope table saw them as fixed, and
+    one whose plan predates those rows fails the specification comparison
+    anyway. t6_open reads such a check as given none, as no selection.json
+    before the list held an owner entry."""
+    if "owner_fixed" not in task:
+        return None
+    fixed = {}
+    for x in task.get("owner_fixed") or []:
+        fixed.setdefault(x["category"], []).append(
+            {"function": x["function"], "part": x["input"],
+             "orderable": x["part"], "owner_keeps": True,
+             "off_board": x.get("off_board", False)})
+    return fixed
+
+
+def owner_items(eff):
+    """The fixed inputs the owner keeps where no run verified them, once
+    each, in category order."""
+    return [{"category": c, "function": fn, "part": e["part"],
+             "input": e["owner_fixed"]["input"],
+             "off_board": e["owner_fixed"].get("off_board", False),
+             "left_open_by": e["owner_fixed"]["left_open_by"],
+             "unverified": e["owner_fixed"]["unverified"]}
+            for c in sorted(eff, key=lambda c: int(c[1:]) if c[1:].isdigit()
+                            else 0)
+            for fn, e in eff[c].items() if e.get("run") == OWNER]
 
 
 def open_selections(eff, categories):
@@ -1528,7 +1964,7 @@ def turn(results, task, run, followup, cats):
 
 def selection_file(results):
     """The selection.json a run reads, repository-relative: that of the
-    latest round whose runs selected parts."""
+    latest round with a recorded run."""
     for d in reversed(RUNS_DIRS):
         rel = posix(d) + "/selection.json"
         if git("-C", results, "cat-file", "-e", f"HEAD:{rel}",
@@ -1687,7 +2123,16 @@ def cmd_prepare(args):
         gate_cats = list(cats["categories"])
     else:
         gate_cats = []
-    open_sel += open_selections(effective_selection(results), gate_cats)
+    eff_now = effective_selection(results)
+    owners = owner_items(eff_now)
+    shown = [o for o in owners if o["category"] in gate_cats]
+    if shown:
+        print("the owner's fixed parts no run verified: " + "; ".join(
+            f"{o['category']} {o['function']} {o['part']}"
+            + (" (" + ", ".join(f"{u['run']}: {u['status']}"
+                                for u in o["unverified"]) + ")"
+               if o["unverified"] else "") for o in shown))
+    open_sel += open_selections(eff_now, gate_cats)
     open_sel += open_in_category(results, gate_cats)
     open_sel += refuted_for_itself(results, gate_cats)
     open_sel += stale_selections(results, gate_cats, rows, commit, up,
@@ -1806,6 +2251,7 @@ def cmd_prepare(args):
         "raised": raised_questions(results),
         "p1_asks": cats.get("p1_asks", {}),
         "fixed_inputs": cats.get("fixed_inputs", {}),
+        "owner_fixed": owners,
         "required_reports": cats.get("reports", {}),
         "per_part_reports": cats.get("reports_per_part", {}),
         "inventory": inventory(results, list(cats["categories"])),
@@ -2006,12 +2452,7 @@ def record(args):
         raise SystemExit(f"the output is run {result.get('run')} "
                          f"{result.get('run_id')}, not the prepared {run} "
                          f"{want['run_id']}")
-    copied = [k for k in ("commit", "date", "followup", "decisions",
-                          "accept_open")
-              if result.get(k) != want.get(k)]
-    if (result.get("stock_exceptions") or []) != \
-            (want.get("stock_exceptions") or []):
-        copied.append("stock_exceptions")
+    copied = differs_from_prepared(result, want)
     if copied:
         raise SystemExit("the output's " + ", ".join(copied)
                          + " differ from the prepared arguments")
@@ -2153,16 +2594,15 @@ def record(args):
                    + "; ".join(misplaced))
         paths += [os.path.join(results, d) for d in dirty
                   if not in_run(d)]
-    if (result.get("summary") or {}).get("selection") and not stopped:
-        sel = os.path.join(results, RUNS_DIR, "selection.json")
-        with open(sel, "w") as f:
-            json.dump(effective_selection(results, pending=(run, meta)), f,
-                      indent=1,
-                      ensure_ascii=False)
-        paths.append(sel)
     sel_rel = os.path.join(RUNS_DIR, "selection.json")
     sel_tracked = git("-C", results, "cat-file", "-e", f"HEAD:{sel_rel}",
                       check=False).returncode == 0
+    new = selection_to_write(results, sel_rel, (run, meta), stopped)
+    if new is not None:
+        sel = os.path.join(results, sel_rel)
+        with open(sel, "w") as f:
+            json.dump(new, f, indent=1, ensure_ascii=False)
+        paths.append(sel)
     try:
         git("-C", results, "add", "--", *paths)
         git("-C", results, "commit", "-q", "-m", message[0], "-m",

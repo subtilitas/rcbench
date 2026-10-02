@@ -315,7 +315,7 @@ async function runTask(task, opts = {}) {
     commit: 'deadbeef', date: '2026-09-27', paths: {}, hosts: opts.hosts || [], clients: CLIENTS, inventory: opts.inventory || {}, jlcparts: JL, p5_budgets: opts.p5Budgets || [], p5_conditional: opts.p5Conditional || [], p5_chips: opts.p5Chips || {}, q_options: opts.qOptions || {},
     followup: opts.followup, first_v: 5, decision_categories: { Q4: ['R10'], Q8: ['R2', 'R12'], Q9: ['R3'] }, t6_outputs: opts.t6Outputs || T6OUT, for_research: opts.forResearch || [], raised: opts.raised || [], p1_asks: opts.p1Asks || {}, fixed_inputs: opts.fixedInputs || {}, required_reports: opts.requiredReports || {}, per_part_reports: opts.perPartReports || {},
     p5_assumptions: opts.p5Assumptions || [], decisions: opts.decisions || {}, accept_open: opts.acceptOpen || null, left_open: opts.leftOpen || [], p5_assumed: opts.p5AssumedT6 || [],
-    last_p56: opts.lastP56 || '', p56_runs: opts.p56Runs || [], selection: opts.selection || {}, jlc_stock_row: opts.jlcRow || [], run_info: opts.runInfo || {}, stock_exceptions: opts.stockExceptions || [],
+    last_p56: opts.lastP56 || '', p56_runs: opts.p56Runs || [], selection: opts.selection || {}, jlc_stock_row: opts.jlcRow || [], run_info: opts.runInfo || {}, stock_exceptions: opts.stockExceptions || [], owner_fixed: opts.ownerFixed || [],
     research_round: opts.researchRound, runs_dir: opts.runsDir, runs_dirs: opts.runsDirs, selection_file: opts.selectionFile, branch: opts.branch, group_pages: opts.groupPages, t6_may_write: opts.t6MayWrite }
   const fn = new Function('args', 'agent', 'parallel', 'pipeline', 'phase', 'log',
     `return (async () => {${src}})()`)
@@ -607,6 +607,44 @@ async function main() {
   check(r.result.summary.stopped === true, 'T6: a failed lookup of an excepted part is no shortfall and stops it')
   r = await runTask('T6', { failCheck: 'jlc_stock', failOutput: '[FAIL] ADS1235IRHBR: stock 0, gate 50', stockExceptions: exc, marked: [{ index: 0, file: 'hardware/docs/Power.md', line: 3 }] })
   check(r.result.summary.stopped === true && /item 0 not stated/.test(r.result.summary.reasons[0]), 'T6: an exception stated outside Parts.md stops it')
+  // A fixed input the owner keeps where no run verified it: its part is
+  // owed a Parts.md row, its mark states it as the owner's, and a pack off
+  // the board that Digi-Key does not list passes the stock check only as
+  // the owner's exception.
+  const packSel = { selection: { R7: { 'Pack cells': { part: 'SLSXT30002130', alternate: '', q_alternatives: [], run: 'owner' } } } }
+  const packOwner = [{ category: 'R7', function: 'Pack cells', part: 'SLSXT30002130', off_board: true }]
+  const packExc = [{ part: 'SLSXT30002130', reason: 'sourcing rules 4 and 5 waived (owner, 2026-09-30)' }]
+  const packRow = [{ function: 'Pack cells', part: 'SLSXT30002130', parts_line: 5, group_page: 'hardware/docs/GroupB.md' }]
+  const packMarks = [{ index: 0, file: 'hardware/docs/Parts.md', line: 5 }, { index: 1, file: 'hardware/docs/Parts.md', line: 5 }]
+  const notListed = '[FAIL] SLSXT30002130: not checked, no Digi-Key product carries SLSXT30002130\n1 problem(s)'
+  const pack = { ...packSel, ownerFixed: packOwner, stockExceptions: packExc, partRows: packRow, marked: packMarks }
+  r = await runTask('T6', { ...pack, failCheck: 'jlc_stock', failOutput: notListed })
+  check(!r.result.summary.stopped, `T6: an owner-fixed pack Digi-Key does not list, excepted and marked, finishes it: ${(r.result.summary.reasons || []).join()}`)
+  check(JSON.stringify(r.result.owner_fixed) === JSON.stringify(packOwner), 'T6: the result carries the owner-fixed parts it was given')
+  check(r.prompts.find(x => x.label === 'P7').prompt.includes('These fixed inputs of the Scope table are their functions\' parts, kept by the owner although no run verified them; where that file leaves one open or names another part, this list holds (in the file such an entry has run "owner" and owner_fixed lists the readings that did not verify it)') && r.prompts.find(x => x.label === 'P7').prompt.includes('R7 Pack cells: SLSXT30002130'), 'T6: the prompts name the owner-fixed parts')
+  check(r.prompts.find(x => x.label === 'P7-critic').prompt.includes('"state":"fixed by the owner; each check no run confirmed stated as not known","item":"R7 Pack cells: SLSXT30002130"'), 'T6: the critic marks the owner-fixed part as the owner\'s')
+  const critP = r.prompts.find(x => x.label === 'P7-critic').prompt
+  check(critP.includes('(a part off the board that Digi-Key does not list as "[FAIL] PART: not checked, no Digi-Key product carries PART")'), 'T6: the checks name the not-listed line\'s format')
+  check(critP.indexOf('fixed by the owner; each check') < critP.indexOf("the owner's stock exception, with its reason"), 'T6: the stock exceptions come last among the marks')
+  r = await runTask('T6', { ...pack, ownerFixed: [{ ...packOwner[0], off_board: false }], failCheck: 'jlc_stock', failOutput: notListed })
+  check(r.result.summary.stopped === true, 'T6: a not-listed owner part on the board fails the stock check')
+  r = await runTask('T6', { ...pack, ownerFixed: [], marked: [{ index: 0, file: 'hardware/docs/Parts.md', line: 5 }], failCheck: 'jlc_stock', failOutput: notListed })
+  check(r.result.summary.stopped === true, 'T6: a not-listed part that is not owner-fixed fails the stock check')
+  for (const out of ['[FAIL] SLSXT30002130: not checked, no Digi-Key product carries SLSXT3000\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, Digi-Key search failed, HTTP 500\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, no Digi-Key credentials\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, Digi-Key lookup failed for SLSXT30002130\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, no Digi-Key product carries SLSXT30002130 (HTTP 500)\n1 problem(s)']) {
+    r = await runTask('T6', { ...pack, failCheck: 'jlc_stock', failOutput: out })
+    check(r.result.summary.stopped === true, `T6: "${out.split('\n')[0]}" is no excepted line`)
+  }
+  r = await runTask('T6', { ...pack, stockExceptions: [], marked: [packMarks[0]], failCheck: 'jlc_stock', failOutput: notListed })
+  check(r.result.summary.stopped === true, 'T6: an owner-fixed pack without the stock exception fails the stock check')
+  const inaSel = { R7: packSel.selection.R7, R8: { 'Motor monitor': { part: 'INA228AIDGSR', alternate: '', q_alternatives: [], run: 'owner' } } }
+  r = await runTask('T6', { ...pack, selection: inaSel, ownerFixed: [...packOwner, { category: 'R8', function: 'Motor monitor', part: 'INA228AIDGSR' }], stockExceptions: [{ part: 'INA228AIDGSR', reason: 'stock 0 (V304)' }], partRows: [...packRow, { function: 'Motor monitor', part: 'INA228AIDGSR', parts_line: 6, group_page: 'hardware/docs/GroupB.md' }], marked: [packMarks[0], { index: 1, file: 'hardware/docs/Parts.md', line: 6 }, { index: 2, file: 'hardware/docs/Parts.md', line: 6 }], failCheck: 'jlc_stock', failOutput: notListed })
+  check(r.result.summary.stopped === true, 'T6: an owner-fixed pack whose not-listed line has no exception of its own fails the stock check')
+  r = await runTask('T6', { ...pack, marked: [{ index: 0, file: 'hardware/docs/GroupB.md', line: 9 }, packMarks[1]], failCheck: 'jlc_stock', failOutput: notListed })
+  check(!r.result.summary.stopped, `T6: the owner's mark counts on any page, the exception's on its Parts.md row: ${(r.result.summary.reasons || []).join()}`)
+  r = await runTask('T6', { ...pack, marked: [packMarks[1]], failCheck: 'jlc_stock', failOutput: notListed })
+  check(r.result.summary.stopped === true && r.result.summary.reasons.some(x => /item 0 not stated on the pages/.test(x)), 'T6: an owner-fixed part not marked stops it')
+  r = await runTask('T6', { ...pack, partRows: [], failCheck: 'jlc_stock', failOutput: notListed })
+  check(r.result.summary.stopped === true && r.result.summary.reasons.some(x => /no Parts.md row or group B page for SLSXT30002130/.test(x)), 'T6: an owner-fixed part without its Parts.md row stops it')
   r = await runTask('T6', { runInfo: { agent_model: 'sonnet', oversight_model: 'opus' } })
   check(r.models.length === 2 && r.models.every(([, m]) => m === 'opus'), 'T6: P7 and its critic on the oversight model')
 

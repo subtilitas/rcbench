@@ -81,7 +81,7 @@ sequence number counts the runs of every round, so round 2's first record is
 18. `record` writes the round into each `task.json` as `research_round`;
 round 1's records, which lack it, are read as round 1. The round's own
 `selection.json` holds the part each function keeps over every round once a
-run of the round selects parts; until then a run reads the previous round's.
+run of the round is recorded; until then a run reads the previous round's.
 `check` runs the round rules on a throwaway git repository, and fails when
 the plan has no section "Round 2".
 
@@ -265,24 +265,28 @@ passed when every line of its report that starts `[FAIL]` is a shortfall of
 an excepted part in the format P7 is given: `[FAIL] PART: stock N, gate G`
 (or `PART (second vendor)`) with N below G, or `[FAIL] PART: presale N` with
 N below zero, PART exactly the excepted part number, and the report ends with
-`N problem(s)`, N the count of `[FAIL]` lines, with no traceback. A line in
-any other wording, a failed lookup among them, is not excepted, and an
-exception's mark counts only on its part's own `Parts.md` row, the line the
-critic gives for the part in `part_rows`. With exceptions
-given, the report's `[FAIL]` lines are read whether or not the critic marks
-the check passed, and `prepare` refuses an exception for a part no function
-keeps (kept part, alternate, Q alternative or its alternate). The pages state each
-exception with its reason in the part's `Parts.md` row, and only a mark
-there counts. `prepare` reads the exceptions before it merges anything. `record` refuses an output whose exceptions differ from the
-prepared ones. P7 and its critic run the stock check once each, after their
-last edit: each run reads Digi-Key. The critic corrects every sentence that
-breaks the writing rules in the files P7 listed, older sentences among them,
-before its stock check, and edits nothing after it. It rephrases a
+`N problem(s)`, N the count of `[FAIL]` lines, with no traceback. For a fixed
+input the owner keeps that no run verified, marked `off_board` in
+`categories.json` and not listed at Digi-Key,
+`[FAIL] PART: not checked, no Digi-Key product carries PART` is excepted too,
+both PARTs the excepted part number. A line in any other wording, a failed
+lookup among them, is not excepted, and an exception's mark counts only on its
+part's own `Parts.md` row, the line the critic gives for the part in
+`part_rows`. With exceptions given, the report's `[FAIL]` lines are read
+whether or not the critic marks the check passed, and `prepare` refuses an
+exception for a part no function keeps (kept part, alternate, Q alternative or
+its alternate). The pages state each exception with its reason in the part's
+`Parts.md` row, and only a mark there counts. `prepare` reads the exceptions
+before it merges anything. `record` refuses an output whose exceptions differ
+from the prepared ones. P7 and its critic run the stock check once each, after
+their last edit: each run reads Digi-Key. The critic corrects every sentence
+that breaks the writing rules in the files P7 listed, older sentences among
+them, before its stock check, and edits nothing after it. It rephrases a
 comparison that no verified figure backs to state the rank alone, lists no
 sentence of `Research.md` below its status line, and states a contradiction
-between the specification and a return as not known instead of listing it
-as a writing issue; only a line that starts
-with `[FAIL]` is a problem line of the report.
+between the specification and a return as not known instead of listing it as a
+writing issue; only a line that starts with `[FAIL]` is a problem line of the
+report.
 
 It refuses these unless `--accept-open REASON` records the owner's reason and
 the items in the arguments:
@@ -294,7 +298,10 @@ the items in the arguments:
 - T3 and P2-P4 follow-ups on its categories, for the categories of T2 and T4,
   and T5, P5-P6 follow-ups and T6, for every category, while:
   - a function has no verified part, or keeps a part a run at or after its own
-    refuted for itself, or a missing or unverified second source;
+    refuted for itself, or a missing or unverified second source; a fixed
+    input the owner keeps (below) counts as none of these, and `prepare`
+    prints each such function with its part and the readings that did not
+    verify it;
   - R10 or R12 has not exactly one function marked with its decision, or no Q4
     or Q8 alternative, other than the kept part, on that function, lacks a
     verified part, of its own and with its class confirmed by the datasheet
@@ -346,7 +353,9 @@ the items in the arguments:
   name and every function any run selected one of its parts for (as the kept
   part, its alternate, a Q alternative or that one's alternate; a retired
   function aside), each researched to a verified part (never the first check's
-  items, a conflict naming a part no run selected, which `prepare` names, or
+  items, a conflict naming a part no run selected and the owner does not
+  keep, which `prepare` names, a conflict naming a part the owner keeps,
+  which no run verifies, or
   one only retired functions kept, or a category holding a word other than
   IDs, ranges, `and` and list separators); and while a run that decides an R3
   function was not given the Q9 decision now in force.
@@ -359,12 +368,24 @@ CPU count and the workflow concurrency. For T6 they also hold the P5/P6
 checks, the conflicts and gaps they leave (each the last check lists, and each
 of an earlier check no follow-up after it covered), the assumptions of the
 last check's P5 its critic upheld, the parts `selection.json` keeps, and the
-sentences of the Outputs row of `tools/jlc_stock.py`. `session.py check`
+sentences of the Outputs row of `tools/jlc_stock.py`. Every run's arguments
+hold the fixed inputs the owner keeps that no run verified (`owner_fixed`),
+and every prompt names them. The run's result carries the list, and `record`
+refuses an output whose list differs from the prepared one. `t6_open` rebuilds
+the selection the last check saw from the list that check was given, and the
+stale-selection gate rebuilds the upstream parts a run saw the same way. The
+stale-selection gate reads a run recorded without the list under today's list.
+A run that decides a downstream function and whose plan names the upstream
+inputs in its Scope table saw them as fixed. A run whose plan predates those
+rows fails the specification comparison anyway. `t6_open` reads a check
+recorded without the list as given none.
+`session.py check`
 confirms the Blocking and Sourcing tables still read as the gates expect, that
 the Outputs table has a row for `tools/jlc_stock.py`, and that `p1_asks` names
 exactly the rows that carry "P1 asks", each with distinct names, and that
 `fixed_inputs` lists the fixed inputs of the Scope table by input name and
-part.
+part, `owner_keeps` exactly on the rows that say "whatever a run returns", and
+each `orderable` number, where given, starting with its part.
 
 `round1.js` keeps a function open, with no part, when:
 
@@ -418,18 +439,20 @@ part.
   limitation. The drop of such a find is re-read as the drop of any P3 find;
 - it has no requirement, or names one requirement twice;
 - it serves a fixed input of the Scope table (`categories.json`
-  `fixed_inputs`: the function by the table's input name, the input by a
-  part number that starts with the table's, INA238AIDGSR for INA238), and
-  its first-ranked part after the drops is another part, or the input's
-  refutation stands. The input is reported to the owner (role `owner`), not
-  re-selected: no replacement pair runs, and the function keeps no other
-  part, also none verified from the verify list. P1, P2 and the re-rank are
-  given the inputs. A function that serves the input under another name is
-  not bound to it. A fixed input that fails a requirement in P2's record is
-  dropped as any part is, and the datasheet verifier re-reads that drop; the
-  function keeps no other part, and the owner is told. A packaging suffix of a table entry that is already an orderable
-  number counts as the input too (ADXL316WBCSZ-RL7 for ADXL316WBCSZ), also
-  where its stock differs: a current limitation.
+  `fixed_inputs`: the function by the table's input name, the input by a part
+  number that starts with the table's, INA228AIDGSR for INA228), and its
+  first-ranked part after the drops is another part, or the input's refutation
+  stands. The input is reported to the owner (role `owner`), not re-selected:
+  no replacement pair runs, and the function keeps no other part, also none
+  verified from the verify list. P1, P2 and the re-rank are given the inputs.
+  A function that serves the input under another name is not bound to it. A
+  fixed input that fails a requirement in P2's record is dropped as any part
+  is, and the datasheet verifier re-reads that drop; the function keeps no
+  other part, and the owner is told. A packaging suffix of a table entry that
+  is already an orderable number counts as the input too (ADXL316WBCSZ-RL7 for
+  ADXL316WBCSZ), also where its stock differs: a current limitation. The
+  effective selection then keeps an input marked `owner_keeps` as the owner's
+  (see `record`). Any other input stays open.
 
 A part with more than one record, with placements below 1, or with an LCSC
 number that is neither `C` and digits nor `none`, has no record: it is
@@ -593,13 +616,21 @@ and lacks the returns its task cannot finish without (P0, or P7 and its
 critic), an output already recorded in any round, a plan or a refusal, a return that does
 not match its schema, and a results tree whose head moved since `prepare`. A
 task P0 stopped is recorded as `TASK-stopped-N` and does not count as
-recorded. After a run that selects parts it rewrites the round's
-`selection.json`, the part each function keeps over every round: the latest
-run that names a function decides it. A run that names it and verifies
-no part leaves it open and records the earlier part in `not_requalified`. A
-function an earlier P1 inventory of its category lists and the latest does not
-is retired: the next run that selects parts in the category without naming it
-removes it. `record` commits only the run's directory and that file.
+recorded. After any run that is not stopped it rewrites the round's
+`selection.json` where it changes, the part each function keeps over every
+round: the latest run that names a function decides it. A run that names it
+and verifies no part leaves it open and records the earlier part in
+`not_requalified`. A function an earlier P1 inventory of its category lists
+and the latest does not is retired: the next run that selects parts in the
+category without naming it removes it. A fixed input of the Scope table the
+owner keeps whatever a run returns (`owner_keeps` in `categories.json`
+`fixed_inputs`) is its function's part. Where no run keeps a part that starts
+with the input's number, the function keeps the input's `orderable` number, or
+the input itself, with run `owner`. Its `owner_fixed` names the run that last
+decided the function (empty when no run named it), the part that run kept or
+did not requalify, and each ledger reading that did not verify the input. Any
+other fixed input no run verifies stays open, for the owner to decide.
+`record` commits only the run's directory and that file.
 
 After a T6 that was not stopped `record` also commits the pages P7 wrote. It
 refuses a changed file outside the files P7 declared and its critic reviewed
@@ -627,8 +658,10 @@ as the arguments say: each conflict and gap the checks leave as not known,
 each item accepted open as not verified or not known, and each upheld
 assumption as assumed; the `Parts.md` line and the page of its category's
 group for each verified part `selection.json` keeps (the kept part, its
-alternate, each Q alternative and its alternate), a part not verified being an
-item accepted open; and a verdict with its reason that `tools/jlc_stock.py`
+alternate, each Q alternative and its alternate), a part a run did not verify
+being an item accepted open; the same for each part the owner keeps, and the
+line that states it as the owner's, with each check no run confirmed as not
+known; and a verdict with its reason that `tools/jlc_stock.py`
 does what each sentence of its Outputs row states. A stopped T6 leaves the
 output paths as they were. A T6 that `record` refuses, for any reason, an
 unreadable output included, does too, and keeps what P7 changed in a stash
