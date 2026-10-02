@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R7",
+ "label": "adjudicator-R7-5",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "function": "re-rank drop: Power path: BQ25756RRVR (C19272232), BQ25756ERRVR (C22427194)",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The re-rank's stated reason is false: the 60 A trip and the 66.8 A pack current do not cross RBAT_SNS. The reason assumes the pack's discharge to the bench flows through SRP-SRN. In the data sheet's topology, RBAT_SNS (5 mOhm) sits between the converter's output and one node that joins BATTERY and SYSTEM. Pack-to-load current therefore bypasses the sense resistor. The SRP-SRN absolute maximum of -0.3 to 0.3 V (5.1) is not loaded by the pack current. That makes the arithmetic of 0.300 V at 60 A and 0.334 V at 66.8 A irrelevant. The data sheet's own note in 6.3.5.1.2.1 recommends this topology: \"connect the system load directly in parallel to the battery pack\". The re-rank cites that same note, which contradicts its own premise. The drop as stated does not hold. This ruling is only about the reason given. It does not qualify the part for the Power path. The topology also implies a separate point, which no verifier raised here and which needs its own reading: RBAT_SNS carries the charge current plus any system load, so the charger does not terminate on the pack's current alone (IOBoard.md line 408). The data sheet also describes no BATFET or power-path stage, which was P2's observation. Scope is function: the finding is about how this function's pack-current requirement applies to the part, not about lifecycle, maker or LCSC identity.",
+  "evidence": "SLUSEN5A (REVISED AUGUST 2026), read again for this ruling, gives the following. Simplified Schematic (page 1): the converter output (Q4 side, CSYS cap) feeds RBAT_SNS. The lower end of RBAT_SNS (SRN) is one node with SYSTEM (+CSYS) and BATTERY, and FB is tapped from it. Figure 7-1 (page 59): \"RBAT_SNS 5mΩ\" runs between the converter's 80 µF output node (SRP side, through 10 Ω) and the node labelled SYSTEM (80 µF, CSYS). The BATTERY (4S Li-Ion) connects to that same lower node. 6.3.5.1.2.1: \"Note that when the system is directly connected to the input supply, the device cannot limit the system load. ... it is recommended to connect the system load directly in parallel to the battery pack.\" 5.1 Absolute Maximum Ratings: \"ACP with respect to ACN, SRP with respect to SRN -0.3 to 0.3 V\". 5.3 Recommended Operating Conditions: RBAT_SNS NOM 5 mΩ. VICHG_OC (VSRP - VSRN rising) 120 to 170 mV, a charge-direction limit. With the load parallel to the pack, the pack's discharge into the bench does not pass through RBAT_SNS. Nothing in the data sheet places the 60 A or 66.8 A pack current across SRP-SRN.",
+  "source": "https://www.ti.com/lit/ds/symlink/bq25756.pdf (SLUSEN5A), fetched with vendors.py fetch (client chrome, HTTP 200, 3,898,676 bytes). Sources: Simplified Schematic on page 1 (rendered), Figure 7-1 on page 59 (rendered), 6.3.5.1.2.1 MPPT note, 5.1 and 5.3 tables, VICHG_OC row. Local copy at /home/claude/rcbench-research/round2/scratch/FU-2B1/adjudicator-R7/pp/bq25756.pdf. Requirement: hardware/docs/IOBoard.md line 408 at f06c3ae.",
+  "read_at": "2026-10-02T13:39:40Z",
+  "scope": "function"
+ }
+}

@@ -1,0 +1,949 @@
+{
+ "role": "P4",
+ "category": "R7",
+ "label": "P4-datasheet-R7",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "verifier": "datasheet",
+  "parts": [
+   {
+    "function": "Cell balancing",
+    "part": "BQ29209DRBR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "cells balanced",
+      "stated": "voltage protection with automatic cell balance for 2-series cell Li-ion packs (title, 8.1.2)",
+      "read": "Title: 'bq2920x Voltage Protection with Automatic Cell Balance for 2-Series Cell Li-Ion Batteries'. 8.1: 'provides overvoltage protection and cell balancing for 2-series cell lithium-ion battery packs'. 8.1.2: the cell with the higher voltage is loaded; VC1/VC1_CB and VC2 pins sense and balance both cells.",
+      "source": "https://www.ti.com/lit/ds/symlink/bq29209.pdf SLUSA52C, title, 8.1.2, pin table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "balance current",
+      "stated": "internal up to 15 mA; external mode (9.3.1, Figure 11): RCB_EXT and two external FETs set the current, no IC limit stated; RCB_EXT of 44.9 Ohm or less gives 84.6 mA at 3.8 V and 94 mA at 4.2252 V; balancing continuous while mismatch is above 17 to 45 mV and stops at -9 to 9 mV",
+      "read": "Features: 'Internal Cell Balancing Handles Current up to 15 mA', 'External Cell Balancing Mode Supported'. 7.6: ICB 0.5 to 15 mA over RCB 4700 to 120 Ohm (internal). 9.3.1 Figure 11: Q1/Q2 with RCB_EXT and RCLAMP above 2 kOhm, 'Ibal = VCELL / RCB_EXT'; no IC current limit stated for the external network. 7.5: VMM_DET_ON 17/30/45 mV, VMM_DET_OFF -9/0/9 mV. Arithmetic: 3.8 V / 44.9 Ohm = 84.6 mA; 4.2252 V / 44.9 Ohm = 94.1 mA, 0.40 W in RCB_EXT. Caveat: section 9 is headed 'not part of the TI component specification', so the external-mode current is a design equation, not a guaranteed figure.",
+      "source": "SLUSA52C Features, 7.5, 7.6, 8.1.2, 9 (note), 9.3.1 Figure 11",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "supply range",
+      "stated": "VDD 4 to 10 V; VC2-VC1 and VC1-GND 0 to 5 V (7.3)",
+      "read": "7.3 Recommended Operating Conditions: VDD 4 to 10 V; VC2-VC1, VC1-GND 0 to 5 V; abs max VDD 16 V, VC2-VC1 8 V. 8.3.6: recommended balancing range is VC2/VDD 6.0 to 8.4 V and VC1 3 to 4.2 V; below VDD = 6 V pull CB_EN high. The charger's 8.4504 V (4.2252 V a cell) is 0.05 V (0.025 V) above that calibration range; 6.0 V is at its lower edge. Inside 7.3.",
+      "source": "SLUSA52C 7.1, 7.3, 8.3.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "works beside the charger",
+      "stated": "automatic voltage-based balancing, enabled by CB_EN low; no host",
+      "read": "8.1.2: automatic correction, starts at about 30 mV mismatch, stops at about 0 mV, enabled by pulling CB_EN low (disabled above 2.2 V); no register, bus or host. 8.3.4 recommends CB_EN high at low state of charge. SLUSE64 (BQ25723) contains no mention of balancing, so the charger does none.",
+      "source": "SLUSA52C 8.1.2, 8.3.4; https://www.ti.com/lit/ds/symlink/bq25723.pdf (0 occurrences of 'balanc')",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "operating ambient",
+      "stated": "-40 to 110 C (7.3)",
+      "read": "7.3 and Device Options table: TA -40 to 110 C. The package addendum lists -40 to 85 C for the orderable. Both cover 0 to 50 C.",
+      "source": "SLUSA52C 5, 7.3, packaging addendum (15-Jul-2026)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments (SLUSA52C); on the S1 list",
+      "read": "Data sheet is Texas Instruments' own (SLUSA52C, copyright Texas Instruments). S1 lists Texas Instruments.",
+      "source": "SLUSA52C page 1; Research.md S1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     }
+    ]
+   },
+   {
+    "function": "Cell balancing",
+    "part": "BQ29200DRBR",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "cells balanced",
+      "stated": "2-series device (same data sheet as the BQ29209)",
+      "read": "Same data sheet SLUSA52C covers bq29200 and bq29209: 2-series cell balancing, identical text.",
+      "source": "SLUSA52C title, 8.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "balance current",
+      "stated": "external mode, RCB_EXT 44.9 Ohm or less at 3.8 V (computed), as the BQ29209",
+      "read": "9.3.1 and 7.6 apply to both parts; Ibal = VCELL / RCB_EXT; no per-part current difference. Same caveat as the BQ29209 (section 9 is not part of the component specification).",
+      "source": "SLUSA52C 7.6, 9.3.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "supply range",
+      "stated": "VDD 4 to 10 V",
+      "read": "7.3: VDD 4 to 10 V, VC pins 0 to 5 V, for both parts; 8.3.6 balancing range 6.0 to 8.4 V as for the BQ29209.",
+      "source": "SLUSA52C 7.3, 8.3.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "works beside the charger",
+      "stated": "automatic voltage-based balancing",
+      "read": "8.1.2 is common to both parts: automatic, CB_EN controlled, no host.",
+      "source": "SLUSA52C 8.1.2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "operating ambient",
+      "stated": "-40 to 110 C",
+      "read": "Device Options table and 7.3: -40 to 110 C; packaging addendum -40 to 85 C for BQ29200DRBR.",
+      "source": "SLUSA52C 5, 7.3, addendum",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments (SLUSA52C); on the S1 list",
+      "read": "Texas Instruments data sheet; S1 lists Texas Instruments.",
+      "source": "SLUSA52C page 1; Research.md S1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "pin-for-pin match",
+      "stated": "same VSON-8 pins and circuit, differing only in the OVP threshold on OUT (4.35 V against 4.30 V)",
+      "read": "Both are DRB 8-pin VSON 3.00 x 3.00 mm with one pin table (VC2 1, VC1 2, VC1_CB 3, CD 4, GND 5, CB_EN 6, VDD 7, OUT 8, thermal pad). Same package drawing DRB0008B, same tape-and-reel data (3.3 x 3.3 x 1.1 mm, Q2). Only the top marking differs (200 against 209).",
+      "source": "SLUSA52C 1 (Device Information), 5, 6, packaging addendum and package outline DRB0008B",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "functional match",
+      "stated": "balancing role identical; only VPROTECT differs, unused in the balancing role",
+      "read": "Device Options table: BQ29200 OVP 4.35 V, BQ29209 OVP 4.30 V. Electrical Characteristics: VPROTECT is the only parameter split by part; VMM_DET_ON/OFF, VCB_EN, RCB1/RCB2, ICB and 7.6 are common. OUT is not used for balancing (the MAX17320 protects against overvoltage); the 4.30 or 4.35 V OVP is above the 4.2252 V charge maximum either way.",
+      "source": "SLUSA52C 5, 7.5, 7.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     }
+    ]
+   },
+   {
+    "function": "Charger input limit",
+    "part": "FUSB303BTMX",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "advertisement detection",
+      "stated": "Sink role detects Rp current level, reported in BC_LVL and flagged on INT_N (I2C mode), or on OUT1/OUT2 (GPIO mode)",
+      "read": "Table 1 GPIO mode with ID HIGH-Z (sink): OUT1/OUT2 = HIGH-Z/HIGH-Z 'Sink with Default Current', LOW/HIGH-Z 'Sink with 1.5 A', LOW/LOW 'Sink with 3 A', HIGH-Z/LOW 'No Device Attached'. Table 6: vRd-def 0.61 to 0.70 V sink threshold. Sink-only role by PORT/DEBUG_N low.",
+      "source": "https://www.onsemi.com/download/data-sheet/pdf/fusb303b-d.pdf Rev. 3 (Sept 2024), Table 1, Table 6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "default current",
+      "stated": "Default is a level the firmware maps to 500 mA; the BQ25723 sets 300 to 500 mA at 0x0800H",
+      "read": "FUSB303B reports 'Sink with Default Current' only; the 500 mA value is not in its data sheet. BQ25723 SLUSE64 8.5: REG0x0F/0E = 0x0800H gives 300/400/500 mA min/typ/max (10 mOhm ACP/ACN, -40 to 105 C); with a 5 mOhm RAC the accuracy is worse (9.6.23) and the register scales differently.",
+      "source": "FUSB303B/D Table 1; https://www.ti.com/lit/ds/symlink/bq25723.pdf 8.5 IIN_DPM_REG_ACC, 9.6.23",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:55Z"
+     },
+     {
+      "figure": "dead-battery Rd",
+      "stated": "'Dead Battery Support (Sink Port role when No Power Applied)' (Features)",
+      "read": "Features list 'Dead Battery Support (Sink Port role when No Power Applied)'. Dead Battery section: if power is not applied and a Source pulls CC up, the part turns on the pull-down so the Source turns on VBUS. VSNKDB 2.18 V max under all pull-up loads; Rd 4.6/5.1/5.6 kOhm with VDD in range.",
+      "source": "FUSB303B/D Features, Dead Battery, Table 6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "supply",
+      "stated": "VDD 2.85 to 5.5 V: runs from VBUS or from the 3.3 V rail",
+      "read": "Table 5: VDD 2.85/3.3/5.5 V; abs max VDD 6.0 V; VBUS_DET 4.0 to 22 V; CC1/CC2/VBUS_DET tolerate 28 V. Runs from the 3.3 V rail or from a 5.5 V VBUS.",
+      "source": "FUSB303B/D Table 4, Table 5, Features",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "limit output",
+      "stated": "I2C with INT_N, or GPIO mode with OUT1/OUT2 (pin 7 SDA/OUT1)",
+      "read": "ADDR/ORIENT sets I2C mode (address 42h or 62h, INT_N interrupt on pin 6) or GPIO mode (float): pin 7 SDA/OUT1, pin 8 SCL/OUT2 open-drain outputs encode Default/1.5 A/3 A.",
+      "source": "FUSB303B/D Table 1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "adjust time",
+      "stated": "tRpValueChange 10 to 20 ms",
+      "read": "Table 8: tRpValueChange 'Time a Sink port shall wait before it can determine there has been a change in Rp' 10 min, 20 max ms. USB Type-C 2.5 Table 4-32: tSinkAdj 60 ms max, 'tRpValueChange (Min)' as its minimum. Recorded for P5; not a gate.",
+      "source": "FUSB303B/D Table 8; USB Type-C Release 2.5 (March 2026) Table 4-32 (usbc25.zip SHA-256 603c2cb0...)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:21:35Z"
+     },
+     {
+      "figure": "operating ambient",
+      "stated": "TA -40 to +85 C",
+      "read": "Table 5: TA -40 to +85 C; ordering table: -40 to 85 C.",
+      "source": "FUSB303B/D Table 5, Table 26",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "onsemi (FUSB303B/D Rev. 3); on the S1 list",
+      "read": "onsemi data sheet FUSB303B/D; S1 lists onsemi. Ordering table lists FUSB303BTMX, X2QFN-12 1.6 x 1.6 mm, top mark UN.",
+      "source": "FUSB303B/D page 1, Table 26; Research.md S1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:43Z"
+     }
+    ]
+   },
+   {
+    "function": "Pack cells",
+    "part": "SLS XTRON 3000mAh 2S1P 7,4V 30C/60C (SLSXT30002130)",
+    "kind": "first",
+    "verdict": "refuted",
+    "refutation": "discharge floor fails: the pack maker's safety notes (section 4) say 'Entladen Sie den Akku unter Last nie unter 3,3 V pro Zelle' and 3,75 V per cell at rest; the guide says 3,3 V under load 'auch nicht kurzzeitig' and 3,70 V at rest, against the required 3.0 V a cell. temperature fails against the vendor guide: below 18 C preheating is mandatory for loads above 5C and near 10 C the recommended discharge rate is under 50 % of the C rate (under 45 A of 90 A), against 49.7 A nominal (16.6C) required over 0 to 50 C ambient. Both are conflicts for the owner; the pack is the owner's fixed choice (2026-09-30).",
+    "checks": [
+     {
+      "figure": "pack",
+      "stated": "'Ausfuehrung: 2S1P', 'Kapazitaet: 3000mAh', 'Spannung: 7,4V', Artikel-Nr. SLSXT30002130",
+      "read": "Vendor page: 'SLS XTRON 3000mAh 2S1P 7,4V 30C/60C', Spannung 7,4V (2S), Ausfuehrung 2S1P, Kapazitaet 3000mAh, Artikel-Nr. SLSXT30002130, 25,30 EUR, 'Lieferzeit: 1-3 Tage', XH balance connector, XT60 (Buchse), AWG12, 136x43x13 mm, ca. 174 g, Hersteller StefansLipoShop GmbH.",
+      "source": "https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:53Z"
+     },
+     {
+      "figure": "charge voltage",
+      "stated": "'Voll geladen ... 4,2 V pro Zelle' (safety notes section 3)",
+      "read": "Section 3 (generic 3S example): 'Voll geladen betraegt die Spannung 12,6 V (4,2 V pro Zelle)'; section 1 requires keeping Nenn-/Ladeschlussspannung. The vendor page itself states only 7,4 V (2S).",
+      "source": "https://www.stefansliposhop.de/media/general/SLS_Sicherheitshinweise_DE_A4.pdf REV.1.06 sections 1, 3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:54Z"
+     },
+     {
+      "figure": "discharge floor",
+      "stated": "'Entladen Sie den Akku unter Last nie unter 3,3 V pro Zelle. Im Ruhezustand sollte die Spannung pro Zelle nicht unter 3,75 V fallen' (section 4); the guide: open-circuit 'sollte nie unter 3,6V liegen'",
+      "read": "Quotes confirmed. Safety notes section 4: never below 3,3 V a cell under load, not below 3,75 V at rest. Guide (LiPoFAQV15c, 'Zusammenfassend'): under load never below 3,3 V 'auch nicht kurzzeitig', at rest not for long under 3,70 V, 'Eine tiefere Entladung fuehrt zur Zerstoerung des Akkus'; earlier text: open-circuit 'sollte nie unter 3,6V liegen'. No source allows 3.0 V a cell.",
+      "source": "SLS_Sicherheitshinweise_DE_A4.pdf section 4; https://www.stefansliposhop.de/media/general/LiPoFAQV15c.pdf",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-10-02T13:08:54Z"
+     },
+     {
+      "figure": "continuous discharge",
+      "stated": "'Dauerentladestrom: max. 30C (90,0A)'",
+      "read": "Vendor page: 'Dauerentladestrom: max. 30C (90,0A)'. 90 A is above 49.7 A and above the 66.8 A upper trip edge. Notes: the safety notes ask to allow for connector and cable derating; the guide's low-temperature derating is under the temperature check.",
+      "source": "vendor page (technical data)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:53Z"
+     },
+     {
+      "figure": "burst discharge",
+      "stated": "'Kurzzeitiger Entladestrom: max. 60C (180,0A)', duration not stated",
+      "read": "Vendor page: 'Kurzzeitiger Entladestrom: max. 60C (180,0A)'; no duration stated anywhere in the page, notes or guide. 180 A is above the 107.5 A upper short-circuit trip edge of the MAX17320G22+ at 0.5 mOhm (107.52 A).",
+      "source": "vendor page (technical data); safety notes; guide",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:53Z"
+     },
+     {
+      "figure": "charge current",
+      "stated": "'Ladestrom: max. 4C (12A)'",
+      "read": "Vendor page: 'Ladestrom: max. 4C (12A)'; 12 A is above 2.37 A. Guide: use 2 to 3C maximum when charging cold (10 C) or warm (40 C); the board's 0.56C to 0.79C is below that.",
+      "source": "vendor page; LiPoFAQV15c.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:53Z"
+     },
+     {
+      "figure": "temperature",
+      "stated": "no limits on the vendor page; the guide: never above 60 C, fast charge 10 to 40 C, under 10 C below 1C. The board charges at 0.56C to 0.79C",
+      "read": "Guide confirmed: 'max. 40C' and 'minimal 10C' for fast charge; under 10 C charge rates under 1C 'typisch: 0,2C bis 0,5C', reduce from 15 C; never above 60 C ('Der LiPo darf unter keinen Umstaenden waermer als 60C werden'). Not stated in the P2 entry: 'Hat ein Akku unter 18C ... faellt die empfohlene Entladerate deutlich'; 'Naehern wir uns den 10C ... unter 50% der sonst moeglichen C-Rate'; 'wenn die Akkutemperatur unter 18C ist, ist Vorwaermen Pflicht' for loads above 5C. At 0 to 18 C ambient the board's 49.7 A (16.6C) is above that guidance. No lower pack temperature limit is stated. The 55 C upper limit is inside the 60 C guide limit.",
+      "source": "https://www.stefansliposhop.de/media/general/LiPoFAQV15c.pdf ('Laden wenn der LiPo sehr kalt oder warm ist', 'Woran erkennt man', 'Und wenn es mal kalt wird', 'Hochstrombelastung')",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-10-02T13:08:54Z"
+     },
+     {
+      "figure": "capacity",
+      "stated": "'Kapazitaet: 3000mAh'",
+      "read": "Vendor page: 'Kapazitaet: 3000mAh' (2S1P, so 3000 mAh a cell). No minimum capacity or tolerance is stated.",
+      "source": "vendor page (technical data)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:53Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "StefansLipoShop GmbH (the vendor page's 'Hersteller'); exempt from rule 2 (owner, 2026-09-30)",
+      "read": "Vendor page 'Hersteller: StefansLipoShop GmbH'. Research.md Sourcing rule 1 and 2: the SLS XTRON pack is exempt from rule 2 and rules 4 and 5 are waived (owner, 2026-09-30).",
+      "source": "vendor page (GPSR block); Research.md Sourcing rules 1 and 2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:53Z"
+     }
+    ]
+   },
+   {
+    "function": "Pack overcurrent protection",
+    "part": "MAX17320G22+",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "location",
+      "stated": "LCSC C2914309, JLCPCB extended library",
+      "read": "JLCPCB API exact match C2914309 = MAX17320G22+, maker label 'Analog Devices Inc./Maxim Integrated', package QFN-24-EP(4x4), componentLibraryType expand, stockCount 543, canPresaleNumber 450. Data sheet ordering table lists MAX17320G22+ (I2C, SHA-256, 24 TQFN).",
+      "source": "vendors.py jlcpcb C2914309 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList); MAX17320 Rev 12 Ordering Information",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:19:51Z"
+     },
+     {
+      "figure": "cells",
+      "stated": "2S to 4S; VIN 4.2 to 18 V",
+      "read": "General Description: 2 to 4 series cells. Electrical Characteristics VIN 4.2 to 18 V; cell voltage measurement range 2.1 to 4.9 V; Note 10: BATTS and CELL1 must be used, neighbour CELL pins shorted when no cell is between them. Figure 24 (page 73): 2S uses BATTS, CELL1 and GND/CSP with CELL2/CELL3 shorted.",
+      "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/MAX17320.pdf Rev 12 (7/25), page 1, Electrical Characteristics, Note 10, Figure 24",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:44Z"
+     },
+     {
+      "figure": "overcurrent threshold",
+      "stated": "ODTH 2.5 mV steps to 77.5 mV, 1 to 15 ms; OCOE -1.2 to +1.2 mV, OCGE -5 to +5 %; at 0.5 mOhm 30 mV trips at 54.72 to 65.52 A; at 1 mOhm 60 mV at 55.86 to 64.26 A",
+      "read": "nODSCTh: ODTH 0 to -77.5 mV in -2.5 mV steps; nODSCCfg OCDLY 70 us + 977 us x OCDLY, 1 to 15 steps (about 1 to 14.7 ms). OCOE +/-1.2 mV, OCGE +/-5 % of threshold. 30 mV (0.5 mOhm) = 12 steps: (30-1.2) x 0.95 = 27.36 mV = 54.72 A, (30+1.2) x 1.05 = 32.76 mV = 65.52 A; 60 mV (1 mOhm): 55.86 to 64.26 A. A purely additive combination gives 54.6 to 65.4 A. Both inside above 49.7 A and at or below 90 A. Sense resistor tolerance not included. Current register range +/-51.2 mV, so slow ODCP covers 102.4 A at 0.5 mOhm and 51.2 A at 1 mOhm.",
+      "source": "MAX17320 Rev 12 Electrical Characteristics COMPARATORS, nODSCTh (Table 22), nODSCCfg (Table 24), Protector section",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:44Z"
+     },
+     {
+      "figure": "short circuit",
+      "stated": "SCTH 5 mV steps to 155 mV, 70 us to 985 us; at 0.5 mOhm 50 mV trips at 92.72 to 107.52 A; at 1 mOhm 100 mV at 93.86 to 106.26 A",
+      "read": "nODSCTh SCTH 0 to -155 mV in -5 mV steps; SCDLY 70 + 61 x SCDLY us, up to 985 us. Same OCOE/OCGE: 50 mV -> (48.8 x 0.95, 51.2 x 1.05) = 46.36 to 53.76 mV = 92.72 to 107.52 A at 0.5 mOhm; 100 mV -> 93.86 to 106.26 A at 1 mOhm. Above the 65.52 A top of the overcurrent band, under 180 A.",
+      "source": "MAX17320 Rev 12 nODSCTh, nODSCCfg, COMPARATORS",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:44Z"
+     },
+     {
+      "figure": "charge overvoltage",
+      "stated": "ChargingVoltage + dOVP, 10 mV steps, range 3.9 to 4.88 V",
+      "read": "Table 2: overvoltage = ChargingVoltage[temp] + nOVPrtTh.dOVP, 10 mV step, 'Protection range from 3.9V to 4.88V'; example 4.20 V + 50 mV = 4.25 V. dOVP 0 to 150 mV.",
+      "source": "MAX17320 Rev 12 Table 2, nOVPrtTh",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:44Z"
+     },
+     {
+      "figure": "temperature",
+      "stated": "T4 too-hot and T1 too-cold charge in 1 C steps; TooHotDischarge T4 to T4 + 30 C in 2 C steps (55 C at delta 0); discharge blocked below T1 by TooColdDischarge (DevName 420Bh or newer) or BlockDisCEn (DevName 420Ah only). The DevName of parts shipped is not stated",
+      "read": "Confirmed: nTPrtTh1 T1/T4 block charge, 1 C steps, 1 C hysteresis; nProtMiscTh.TooHotDischarge 2 C LSB, range T4 to T4+30 C (55 C with delta 0); nProtMiscTh2.TooColdDischarge (DevName 420Bh or newer, enabled by nProtCfg.BlockCDisEn, 2 C LSB, 2.5 C hysteresis) and BlockDisCEn (DevName 420Ah only). DevName register 021h: 'The DevName for the IC is 4209h, 420Ah, or 420Bh'; a 4209h part has neither cold-discharge control. The DevName of the G22+ as shipped is not stated: the cold discharge block is not guaranteed by the data sheet alone and is settled by reading DevName (021h) on the first board.",
+      "source": "MAX17320 Rev 12 nTPrtTh1, nProtMiscTh, nProtMiscTh2, nProtCfg, DevName (Table 84), Protector section",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:44Z"
+     },
+     {
+      "figure": "NTC",
+      "stated": "Table 58 lists Murata NCP15XH103F03RC and Semitec 103AT-2 at B 3435 K",
+      "read": "Table 58: Murata NCP15XH103F03RC 10 kOhm, beta 3435 K, nThermCfg 71BEh (the factory default 71BEh); Semitec 103AT-2 10 kOhm, 3435 K, 91C3h; accurate within +/-1 C from -40 to +85 C. Thermistors on TH1 to TH4 to GND.",
+      "source": "MAX17320 Rev 12 nThermCfg Register (1CAh), Table 58, pin table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:44Z"
+     },
+     {
+      "figure": "operating ambient",
+      "stated": "-40 to +85 C",
+      "read": "Absolute Maximum Ratings: Operating Temperature Range -40 C to +85 C; Electrical Characteristics TA -40 to +85 C.",
+      "source": "MAX17320 Rev 12 Absolute Maximum Ratings",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:44Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Analog Devices (Maxim), MAX17320 Rev 12; counts as Analog Devices on the S1 list",
+      "read": "Data sheet 19-100749 Rev 12, (c) 2025 Analog Devices, Maxim ModelGauge/1-Wire trademarks; S1 lists Analog Devices with Maxim and Linear.",
+      "source": "MAX17320 Rev 12 page 1; Research.md S1, Sourcing rule 2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:44Z"
+     }
+    ]
+   },
+   {
+    "function": "Bench pack balance lead",
+    "part": "MAX17320G22+",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "separate input",
+      "stated": "its own CELL1, CELL2 and BATTS pins on the bench pack",
+      "read": "Pin table: CELL1 (pin 21), CELL2 (22), CELL3 (23), BATTS (24) 'Used for cell balancing and voltage sensing'; GND 20 and CSP. These are the IC's own inputs, separate from the 1 to 16 cell monitor of R9.",
+      "source": "MAX17320 Rev 12 pin description table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:44Z"
+     },
+     {
+      "figure": "taps",
+      "stated": "Figure 24 2S configuration; note 10: 'BATTS and CELL1 must be used'",
+      "read": "Figure 24 (page 73, rendered): for 2S, RBAL4/BATTS at the top, RBAL1/CELL1 at the mid-point, GND/CSP at the bottom, CELL2 and CELL3 shorted ('replace cap with short for 2S'). Note 10 quote confirmed. Three conductors: negative, mid-point, positive.",
+      "source": "MAX17320 Rev 12 Figure 24, Electrical Characteristics Note 10",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:44Z"
+     },
+     {
+      "figure": "per-cell reading",
+      "stated": "CELL1, CELL2: 'Used for cell balancing and voltage sensing'",
+      "read": "Cell voltage measurement resolution 78.125 uV, error +/-12.5 mV at 25 C (+/-25 mV over temperature), range 2.1 to 4.9 V per cell; 'Voltage of each cell ... is measured at the CSP or GND/CELL1/CELL2/CELL3/BATTS connections'.",
+      "source": "MAX17320 Rev 12 Electrical Characteristics, Detailed Description",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:44Z"
+     },
+     {
+      "figure": "connector",
+      "stated": "not a part requirement",
+      "read": "Research.md Round 2, Rules of stage 1: stage 1 selects no connector; the connector is selected in stage 2. Not a data sheet item.",
+      "source": "Research.md, Round 2, Rules of stage 1 (checkout f06c3ae)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:44Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Analog Devices (Maxim); counts as Analog Devices on the S1 list",
+      "read": "Analog Devices (Maxim) data sheet Rev 12; S1 lists Analog Devices with Maxim and Linear.",
+      "source": "MAX17320 Rev 12 page 1; Research.md S1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:44Z"
+     }
+    ]
+   }
+  ],
+  "figures": [
+   {
+    "figure": "found V138",
+    "verdict": "confirmed",
+    "evidence": "SLS safety notes section 3: 'Die Nennspannung betraegt 11,1 V (3,7 V pro Zelle). Voll geladen betraegt die Spannung 12,6 V (4,2 V pro Zelle)'; section 1 keeps Nenn-/Ladeschlussspannung; the vendor page states only 7,4 V (2S). BQ25723 SLUSE64 8.5 VBAT_REG_ACC at REG0x05/04 = 0x20D0H (8.400 V): -0.6 % to +0.6 % over 0 to 85 C = 8.3496 to 8.4504 V, 4.1748 to 4.2252 V a cell.",
+    "source": "https://www.stefansliposhop.de/media/general/SLS_Sicherheitshinweise_DE_A4.pdf sections 1, 3; vendor page; https://www.ti.com/lit/ds/symlink/bq25723.pdf 8.5",
+    "read_at": "2026-10-02T13:08:55Z"
+   },
+   {
+    "figure": "found V139",
+    "verdict": "confirmed",
+    "evidence": "Figure 8-1 (VIN 5 V, CCM 800 kHz, RAC = RSR = 5 mOhm, 2.2 uH), curve VOUT 7.4 V, digitized at 300 dpi: 94.8 % at 1.68 A, 94.8 at 2.0 A, 94.7 at 2.35 A, 93.9 at 1.0 A, 94.3 at 3.0 A (reading resolution about 0.1 point; P2 94.7/94.8/94.7/93.8/94.3). Curve ends near 5.2 A. No 6.0 V or 8.4 V curve; typical graph reading, no guarantee.",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25723.pdf SLUSE64 8.7 Figure 8-1 (PDF page 21)",
+    "read_at": "2026-10-02T13:08:55Z"
+   },
+   {
+    "figure": "found V140",
+    "verdict": "confirmed",
+    "evidence": "Re-read now (round 1 carried it): TPS55285 SLVSI72A 5.6 Figure 5-3 (VOUT 9 V, FPWM, TA 25 C) has curves VIN 5, 9, 12, 20 V only; the VIN 5 V curve ends at 3.78 A at 88.6 % (digitized at 300 dpi), P2 88.7 % at 3.8 A. No curve at 6.0 V in with 8.4 V out at 6.35 A. 53.34 W / 0.887 / 6.0 V = 10.02 A.",
+    "source": "https://www.ti.com/lit/ds/symlink/tps55285.pdf SLVSI72A Figure 5-3",
+    "read_at": "2026-10-02T13:09:01Z"
+   },
+   {
+    "figure": "found V141",
+    "verdict": "confirmed",
+    "evidence": "Re-read now: SLUSEA4D Figure 8-22 (VOUT 5 V, fSW 500 kHz, L = 6.8 uH), curve VIN 6 V: 96.0 to 96.1 % at 1.5 A (digitized, 300 dpi). The figure is captioned 'TPS62933F Efficiency', the forced-PWM variant, not the TPS62933 R5 selected (TPS62933DRLR); the data sheet has no 5 V efficiency figure for the plain TPS62933, and at 1.5 A all variants run in PWM. 7.5 W / 0.960 / 6.0 V = 1.302 A.",
+    "source": "https://www.ti.com/lit/ds/symlink/tps62933.pdf SLUSEA4D Figure 8-22",
+    "read_at": "2026-10-02T13:09:01Z"
+   },
+   {
+    "figure": "found V142",
+    "verdict": "confirmed",
+    "evidence": "LiPo ABC (V1.7, 04/2015), 'Das Balancen': 'Ein effizienter Balancer sollte eigentlich 1/20 des Ladestroms zum Ausgleichen der einzelnen Zellen schaffen'; the guide says balancing starts at the CC to CV transition. 15 W x 0.947 / 8.4 V = 1.691 A; /20 = 84.6 mA; at 2.37 A, 118 mA. 5 % of 3000 mAh = 150 mAh over 2 x 1.78 h = 42 mA. Round 1's 50 mA from TI SLYT322 with the P30B read in round1/FU-B3/004-P2-R7.json (SLYT322 itself not re-read).",
+    "source": "https://www.stefansliposhop.de/media/general/LiPoFAQV15c.pdf; SLS_Sicherheitshinweise_DE_A4.pdf section 4",
+    "read_at": "2026-10-02T13:08:54Z"
+   },
+   {
+    "figure": "found V143",
+    "verdict": "confirmed",
+    "evidence": "Arithmetic holds: 3.60 W / 0.956 / 6.0 V = 0.628 A; 1.2 W / 0.88 / 6.0 V = 0.227 A; 0.051 A; sum 0.906 to 0.91 A. Re-read: TPS62933 Fig 8-18 (VOUT 3.3 V, 4.7 uH) VIN 6 V curve at 1.09 A = 95.7 % (P2 95.6 %); TPS55288 SLVSF01B Fig 6-5 (VOUT 12 V, FPWM) VIN 5 V curve at 0.1 A reads about 86 %, not 88 %: 1.2 / 0.86 / 6 = 0.233 A, total still 0.91 A. The inputs 1090 mA (R5's 3.3 V sum), 100 mA at 12 V (Omron E6B2) and 51.0 mA (R13) come from round 1 returns (T3/006-P2-R5.json V99, V102; FU-C1/013-rerank-R13.json), read there, not re-derived here.",
+    "source": "https://www.ti.com/lit/ds/symlink/tps62933.pdf Fig 8-18; https://www.ti.com/lit/ds/symlink/tps55288.pdf Fig 6-5; round1 returns",
+    "read_at": "2026-10-02T13:15:37Z"
+   },
+   {
+    "figure": "found V144",
+    "verdict": "confirmed",
+    "evidence": "SLUSE64 9.6.2: with a 5 mOhm sense resistor the charge current range is 0 to 16.256 A in 128 mA steps (10 mOhm: 8.128 A, 64 mA). 8.5 ICLAMP 384 mA for 2S or more with VSRN below VSYS_MIN (default VSYS_MIN 6.6 V for 2S, Table 9-2, adjustable). 15 W x 0.947 / 8.4 V = 1.691 A; /6.0 V = 2.368 A. Vendor page: 'Ladestrom: max. 4C (12A)'.",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25723.pdf 9.6.2, 8.5, Table 9-2; vendor page",
+    "read_at": "2026-10-02T13:08:55Z"
+   },
+   {
+    "figure": "found V145",
+    "verdict": "confirmed",
+    "evidence": "Vendor page 'Kapazitaet: 3000mAh' (2S1P); no minimum or run time stated. Guide: 'Nutzung von ueber 80% der Nennkapazitaet ist nicht sinnvoll'. 3.0 Ah / 49.7 A = 3.62 min; 80 % = 2.9 min.",
+    "source": "vendor page; https://www.stefansliposhop.de/media/general/LiPoFAQV15c.pdf",
+    "read_at": "2026-10-02T13:08:54Z"
+   },
+   {
+    "figure": "found V146",
+    "verdict": "confirmed",
+    "evidence": "V7 answer in Research.md: 0 to 50 C ambient, one range for the whole IO board (owner, 2026-09-28); IOBoard.md Pack temperature: owner 0 to 55 C. Guide: fast charge 'max. 40C' and 'minimal 10C', under 10 C below 1C (typically 0.2C to 0.5C), never above 60 C. 1.69 A / 3 Ah = 0.56C, 2.37 A = 0.79C. Note: the guide's cold-discharge derating (below 18 C) is not in this figure.",
+    "source": "Research.md Raised by P1 V7 (checkout f06c3ae); IOBoard.md Pack temperature; LiPoFAQV15c.pdf",
+    "read_at": "2026-10-02T13:08:54Z"
+   },
+   {
+    "figure": "found V148",
+    "verdict": "confirmed",
+    "evidence": "V10 and V13 answers (owner, 2026-09-28): one USB Type-C connector for the F8 charger input and the RP2354B's USB, 5 lines (VBUS, D+, D-, CC1, CC2), VBUS rated 5.5 V at 3 A; no SuperSpeed pair. USB Type-C 2.5: Default is 500 mA for USB 2.0 ports, 900 mA or 1,500 mA for USB 3.2 ports.",
+    "source": "Research.md Raised by P1 V10, V13, V148 (checkout f06c3ae); USB Type-C Release 2.5 section 4.6.2",
+    "read_at": "2026-10-02T13:21:35Z"
+   },
+   {
+    "figure": "found V149",
+    "verdict": "confirmed",
+    "evidence": "Safety notes section 2: 'SLS Akkus verfuegen ueber keine eigene Schutzschaltung, die ein eigenes Balancing/Equalizing oder vor Ueberladung / Tiefentladung verhindert'. JLCPCB now: MAX17320G22+ C2914309 stockCount 543, BQ40Z50RSMR-R2 C2845123 9994, BQ76907RGRR C22458649 2366 (identical to the figure).",
+    "source": "SLS_Sicherheitshinweise_DE_A4.pdf section 2; vendors.py jlcpcb C2914309, C2845123, C22458649",
+    "read_at": "2026-10-02T13:19:51Z"
+   },
+   {
+    "figure": "found V150",
+    "verdict": "confirmed",
+    "evidence": "V150 answer: over-temperature 55 C and under-temperature 0 C (owner, 2026-09-30). 4.25 V - 4.2252 V = 24.8 mV; 4.25 - 4.2 = 50 mV. Vendor page 'Kurzzeitiger Entladestrom: max. 60C (180,0A)', no duration. 'Per-cell undervoltage is R5's 3.0 V floor' matches F9.",
+    "source": "Research.md V150, F9 (checkout f06c3ae); vendor page; SLS safety notes section 3",
+    "read_at": "2026-10-02T13:08:53Z"
+   },
+   {
+    "figure": "found V152",
+    "verdict": "confirmed",
+    "evidence": "SLUSE64 Description: 'The system keeps operating even when the battery is completely discharged or removed'; BATDRV pin: 'BATFET is in linear mode to regulate VSYS at minimum system voltage when battery is depleted'; 9.4.1.1 (not 9.3): 'Even with a depleted battery, the system is regulated above the minimum system voltage'. IIN_HOST 0x3A00H = 2800/2900/3000 mA and ILIM_HIZ 2.2 V = 2800 to 3200 mA (10 mOhm RAC table). 15 W at 5 V is 3.0 A; 53.3 W is not available.",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25723.pdf Description, pin 21, 8.5, 9.4.1.1",
+    "read_at": "2026-10-02T13:08:55Z"
+   },
+   {
+    "figure": "found V153",
+    "verdict": "confirmed",
+    "evidence": "MAX17320 Rev 12 Protector features: 'All discharge-only faults are released when the charger is connected'; Table 2: 'Undervoltage fault persists until charger applied'. BQ25723 9.6.2: ChargeCurrent resets to 0 A (reset 0000h); VSYS held from VBUS (9.4.1.1); ICLAMP 384 mA below VSYS_MIN.",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/MAX17320.pdf Rev 12 Protector section, Table 2; https://www.ti.com/lit/ds/symlink/bq25723.pdf 9.6.2, 8.5",
+    "read_at": "2026-10-02T13:08:44Z"
+   },
+   {
+    "figure": "P2 report: pack current at the 6.0 V floor",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md Pack path current: four converters at 6.35 A (three at 53.3 W and the adjustable supply at 95.3 W, 255.3 W / 0.9 / 6.0 V = 47.3 A) and the board about 49.7 A with display, logic rails and second RP2354B, nominal at an assumed 90 %; round 1 sized 12.23 A (V90).",
+    "source": "hardware/docs/IOBoard.md Pack path current (checkout f06c3ae)",
+    "read_at": "2026-10-02T13:08:06Z"
+   },
+   {
+    "figure": "P2 report: pack discharge rating against the pack current",
+    "verdict": "confirmed",
+    "evidence": "Vendor page 90.0 A (30C) continuous, 180.0 A (60C) burst. 90 / 49.7 = 1.81; 90 / 66.8 = 1.35.",
+    "source": "vendor page (technical data)",
+    "read_at": "2026-10-02T13:08:53Z"
+   },
+   {
+    "figure": "P2 report: pack temperature limits",
+    "verdict": "confirmed",
+    "evidence": "Owner 0 to 55 C (IOBoard.md Pack temperature). Guide: never above 60 C, fast charge 10 to 40 C, under 10 C below 1C; 0.56C to 0.79C. The report omits the guide's cold-discharge derating below 18 C (see Pack cells temperature check).",
+    "source": "IOBoard.md Pack temperature; LiPoFAQV15c.pdf",
+    "read_at": "2026-10-02T13:08:54Z"
+   },
+   {
+    "figure": "P2 report: pack discharge floor against the vendor",
+    "verdict": "confirmed",
+    "evidence": "Safety notes section 4: 'nie unter 3,3 V pro Zelle' under load, 3,75 V per cell at rest; F9 keeps 3.0 V a cell (owner, 2026-09-30). At 3.3 V a cell the pack floor is 6.6 V. The conflict is real.",
+    "source": "SLS_Sicherheitshinweise_DE_A4.pdf section 4; Research.md F9",
+    "read_at": "2026-10-02T13:08:54Z"
+   },
+   {
+    "figure": "P2 report: pack full-charge voltage",
+    "verdict": "confirmed",
+    "evidence": "Safety notes 4,2 V per cell; BQ25723 8.3496 to 8.4504 V at 0x20D0H (SLUSE64 8.5); highest pack voltage 8.4504 V.",
+    "source": "SLS safety notes section 3; bq25723.pdf 8.5",
+    "read_at": "2026-10-02T13:08:55Z"
+   },
+   {
+    "figure": "P2 report: overcurrent window, MAX17320G22+",
+    "verdict": "confirmed",
+    "evidence": "Reproduced: 0.5 mOhm ODTH 30 mV (12 steps) 54.72 to 65.52 A, SCTH 50 mV 92.72 to 107.52 A; 1 mOhm 60 mV 55.86 to 64.26 A, 100 mV 93.86 to 106.26 A (offset applied before the gain; an additive combination gives 54.6 to 65.4 A). Current register +/-51.2 mV: 102.4 A at 0.5 mOhm, 51.2 A at 1 mOhm. Table 53 not separately opened.",
+    "source": "MAX17320 Rev 12 COMPARATORS, nODSCTh Table 22, Electrical Characteristics",
+    "read_at": "2026-10-02T13:08:44Z"
+   },
+   {
+    "figure": "P2 report: overcurrent window, BQ40Z50RSMR-R2",
+    "verdict": "confirmed",
+    "evidence": "SLUSCS4C 7.31: VOLD -16.6 to -100 mV, step -5.56 mV; VOFFSET -2.5 to 2.5 mV, VSCALE -5 to 5 % post-trim. 16.6 + 8 x 5.56 = 61.08 mV: (61.08-2.5) x 0.95 = 55.65 A and (61.08+2.5) x 1.05 = 66.76 A at 1 mOhm (P2 exact under offset-then-gain; additive gives 55.5 to 66.6 A). SCD1 88.8 mV: 81.99 to 95.87 A.",
+    "source": "https://www.ti.com/lit/ds/symlink/bq40z50-r2.pdf SLUSCS4C 7.31",
+    "read_at": "2026-10-02T13:08:58Z"
+   },
+   {
+    "figure": "P2 report: overcurrent window, BQ76907RGRR",
+    "verdict": "confirmed",
+    "evidence": "SLUSE96A 6.19: OCD -4 to -200 mV in 2 mV steps, accuracy -2.15 to +2.58 mV for -58 to -100 mV: 60 mV gives 57.42 to 62.58 A at 1 mOhm (either sign). SCD -10 to -500 mV, accuracy -11 % to +6 % for -60 to -500 mV: 100 mV gives 89.0 to 106.0 A; P2's 111.0 A is the conservative either-sign bound.",
+    "source": "https://www.ti.com/lit/ds/symlink/bq76907.pdf SLUSE96A 6.19",
+    "read_at": "2026-10-02T13:09:00Z"
+   },
+   {
+    "figure": "P2 report: protector sense resistor dissipation",
+    "verdict": "confirmed",
+    "evidence": "49.7^2 x 0.5 mOhm = 1.235 W; 60^2 x 0.5 mOhm = 1.80 W; 1 mOhm: 2.47 W and 3.60 W.",
+    "source": "arithmetic from IOBoard.md Pack path current and V284",
+    "read_at": "2026-10-02T13:08:06Z"
+   },
+   {
+    "figure": "P2 report: protector FET gate drive at the floor",
+    "verdict": "confirmed",
+    "evidence": "MAX17320 CHARGE PUMP rows: 6 V selection 5/6/7 V; 8 V setting 7/8/9 V only with VIN > 6 V; 10 V setting 9/10/11 V only with VIN > 7.5 V. At the 6.0 V floor only the 6 V selection (5 V minimum) applies.",
+    "source": "MAX17320 Rev 12 Electrical Characteristics CHARGE PUMP",
+    "read_at": "2026-10-02T13:08:44Z"
+   },
+   {
+    "figure": "P2 report: charger battery path at the pack current",
+    "verdict": "refuted",
+    "evidence": "The numbers are right for 10 mOhm (0.497 V at 49.7 A, 0.60 V at 60 A) and for the BQ25723 at 5 mOhm (0.249 V, 0.300 V; 12.35 W, 18 W). The claim 'BQ25713 (10 or 20 mOhm RSR only)' and its drop are contradicted by SLUSD83C 9.6.3: 'The SRP and SRN pins are used to sense voltage drop across RSR with default value of 10 mOhm. However, resistors of other values can also be used ... no more than 20 mOhm is suggested'; the 10 and 20 mOhm limit in 9.3 applies to PSYS only. With a 5 mOhm RSR SRP-SRN is 0.334 V at 66.8 A, inside the -0.5 to 0.5 V of the BQ25713 (abs max and recommended). The re-rank report states the same.",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25713.pdf SLUSD83C 9.3 (PSYS), 9.6.3, 8.1, 8.3",
+    "read_at": "2026-10-02T13:08:55Z"
+   },
+   {
+    "figure": "P2 report: external BATFET",
+    "verdict": "confirmed",
+    "evidence": "SLUSE64 pin 21: BATDRV 'goes 10 V below VSYS'; VBATDRV_ON 8.5/10/11.5 V (8.5); BATDRV recommended 0 to 32 V, BATDRV-VSYS 0 to 10.8 V; 10.2 MOSFET text: 'the Ciss of P-channel MOSFET should be chosen less than 5 nF'. At VSYS = 6.0 V the gate can be pulled at most 6.0 V below VSYS (to ground). Whether one P-channel FET carries 49.7 A at 6 V drive is not in the data sheet (unknown, as the report says).",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25723.pdf pin 21, 8.3, 8.5, 10 (MOSFET selection)",
+    "read_at": "2026-10-02T13:08:55Z"
+   },
+   {
+    "figure": "P2 report: charger efficiency 5 V to 2S",
+    "verdict": "confirmed",
+    "evidence": "Same reading as V139: 94.7 to 94.8 % at 1.68 A on the VOUT 7.4 V curve, Figure 8-1.",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25723.pdf Figure 8-1",
+    "read_at": "2026-10-02T13:08:55Z"
+   },
+   {
+    "figure": "P2 report: charge current from the 15 W source",
+    "verdict": "confirmed",
+    "evidence": "15 W x 0.947 / 8.4 V = 1.691 A; / 6.0 V = 2.368 A; ICLAMP 384 mA for 2S or more below VSYS_MIN; IIN_HOST 0x3A00H 2800 to 3000 mA and ILIM_HIZ 2.2 V up to 3200 mA (tables are with a 10 mOhm RAC; a 5 mOhm RAC has worse accuracy and other ranges, 9.6.23).",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25723.pdf 8.5, 9.3.6, 9.6.23",
+    "read_at": "2026-10-02T13:08:55Z"
+   },
+   {
+    "figure": "P2 report: balance current required and available",
+    "verdict": "confirmed",
+    "evidence": "84.6 mA = 1/20 of 1.69 A. MAX17320: internal FETs, 100 mA continuous abs max, RBAL 3/9/20 Ohm, balancing paused 45 ms in each 351.5 ms task period (87 %): RBAL(ext) at least 39.25 Ohm, 4.2 V / (39.25 + 20) = 71 mA peak, 62 mA average. BQ76907 ICB 0 to 50 mA. BQ29209/BQ29200 external: 44.9 Ohm or less at 3.8 V. BQ40Z50-R2 TRM: DUTY 75 % typ, 84.6 / 0.75 = 112.8 mA while on.",
+    "source": "MAX17320 Rev 12 Absolute Maximum Ratings, Cell Balancing Current/Duty Cycle, RBAL row, tTP 351.5 ms; bq76907.pdf 6.1; bq29209.pdf 9.3.1; https://www.ti.com/lit/ug/sluubk0b/sluubk0b.pdf 'External Cell Balancing'",
+    "read_at": "2026-10-02T13:08:58Z"
+   },
+   {
+    "figure": "P2 report: pack run time at the nominal draw",
+    "verdict": "confirmed",
+    "evidence": "3.0 Ah / 49.7 A = 3.62 min; x 0.8 = 2.9 min; no rate derating (the vendor publishes no discharge curve; none found in the page, notes or guide).",
+    "source": "vendor page; LiPoFAQV15c.pdf",
+    "read_at": "2026-10-02T13:08:54Z"
+   },
+   {
+    "figure": "P2 report: discharge-fault release on charger connection",
+    "verdict": "confirmed",
+    "evidence": "MAX17320 Protector features: 'Ideal-Diode Control ... All discharge-only faults are released when the charger is connected'; Table 2: undervoltage fault 'persists until charger applied'. With USB-C present the pack reconnects to the load.",
+    "source": "MAX17320 Rev 12 Protector section, Table 2",
+    "read_at": "2026-10-02T13:08:44Z"
+   },
+   {
+    "figure": "P2 report: USB-C sink timing",
+    "verdict": "confirmed",
+    "evidence": "USB Type-C 2.5 Table 4-32: tSinkAdj 60 ms max (min = tRpValueChange). FUSB303B Table 8: tRpValueChange 10 to 20 ms. TUSB321AI SLLSER2A: no Rp-change time (only tCCCB_DEFAULT 168 ms). The firmware I2C path is not in any data sheet.",
+    "source": "USB Type-C Release 2.5 Table 4-32; fusb303b-d.pdf Table 8; https://www.ti.com/lit/ds/symlink/tusb321ai.pdf",
+    "read_at": "2026-10-02T13:21:35Z"
+   },
+   {
+    "figure": "P2 report: Default USB current applied",
+    "verdict": "confirmed",
+    "evidence": "V13 answer: shared connector with VBUS, D+, D-, CC1, CC2 only; USB Type-C 2.5: Default 500 mA for USB 2.0 ports.",
+    "source": "Research.md V13; USB Type-C Release 2.5 section 4.6.2",
+    "read_at": "2026-10-02T13:21:35Z"
+   },
+   {
+    "figure": "P2 report: changes from the selection",
+    "verdict": "refuted",
+    "evidence": "Matches selection.json round 2: R7 Pack charger and Power path BQ25713RSNR; Cell balancing, Pack overcurrent protection and Bench pack balance lead MAX17320G22+; Charger input limit FUSB303BTMX; Pack cells none. TUSB321RWBR (SLLSEO6C): RCC_D only 'when in UFP or DRP mode', no dead-battery mode, matches. The Pack charger and Power path move to the BQ25723 is justified in the figure by '(60 A battery path)', which does not hold: SLUSD83C 9.6.3 allows other RSR values, so the BQ25713 at 5 mOhm passes the 0.5 V SRP-SRN range (0.334 V at 66.8 A); the re-rank report says the same. The move rests on other grounds if at all.",
+    "source": "hardware/research/round2/selection.json R7; https://www.ti.com/lit/ds/symlink/tusb321.pdf; bq25713.pdf 9.6.3",
+    "read_at": "2026-10-02T13:08:55Z"
+   },
+   {
+    "figure": "re-rank report: RSR other than 10 or 20 mOhm on the BQ257xx family",
+    "verdict": "confirmed",
+    "evidence": "BQ25713 SLUSD83C 9.6.3 quote confirmed; same sentence in bq25710 (SLUSD20B), bq25703a (SLUSCU1A) and bq25700a (SLUSCQ8A). ChargeOption1 RSNS_RSR: 0b 10 mOhm, 1b 20 mOhm on these parts (BQ25723: 10/5 mOhm). BQ25713 9.3: 'For proper PSYS functionality, RAC and RSR values are limited to 10 mOhm and 20 mOhm'. Charge current register (Tables 9-23/24) is defined for 10 mOhm only, accuracy tabulated with 10 mOhm.",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25713.pdf, bq25710.pdf, bq25703a.pdf, bq25700a.pdf, bq25723.pdf",
+    "read_at": "2026-10-02T13:08:56Z"
+   },
+   {
+    "figure": "re-rank report: SRP-SRN at a 5 mOhm RSR against each part's range",
+    "verdict": "confirmed",
+    "evidence": "5 mOhm x 49.7, 60, 66.8 A = 0.249, 0.300, 0.334 V. BQ25723/BQ25713/BQ25710 -0.5 to 0.5 V abs max and recommended (margin 33 % at 66.8 A); BQ25703A, BQ25700A recommended -0.35 to 0.35 V, abs max -0.5 to 0.5 (4.6 % margin); BQ25756 SRP-SRN -0.3 to 0.3 V abs max with RBAT_SNS 5 mOhm only; LTC4020 CSP-CSN -0.3 to 0.3 V abs max, no recommended range, 4 mOhm x 66.8 A = 0.267 V. Caveat on BQ25756: in its schematics RBAT_SNS sits between the converter and the SYSTEM/BATTERY node, so pack discharge does not cross it (see the BQ25756 drop figures).",
+    "source": "bq25723/13/10/03a/00a data sheets 8.1, 8.3; https://www.ti.com/lit/ds/symlink/bq25756.pdf 5.1, 5.3; https://www.analog.com/media/en/technical-documentation/data-sheets/ltc4020.pdf Rev. E",
+    "read_at": "2026-10-02T13:08:57Z"
+   },
+   {
+    "figure": "re-rank report: Selection of round 1 against this ranking, and the BQ25723 record's alternate note",
+    "verdict": "confirmed",
+    "evidence": "selection.json round 2 R7 holds BQ25713RSNR (Pack charger, Power path), MAX17320G22+ (Cell balancing, Pack overcurrent protection, Bench pack balance lead), FUSB303BTMX, none for Pack cells. BQ25713 is not pin-and-register compatible with the BQ25723 (Device Comparison Table: input sense 10/20 mOhm against 5/10 mOhm; RSNS bits and register scales differ). Digi-Key BQ25723RSNR stock_available 4528, Active, lead 20 weeks (cached reading 11:53:56Z). The BQ25723 record's alternate note itself is in P2's return, not in a file I could read.",
+    "source": "hardware/research/round2/selection.json; bq25723.pdf Device Comparison Table; vendors.py digikey BQ25723RSNR (cached 2026-10-02T11:53:56Z)",
+    "read_at": "2026-10-02T13:20:23Z"
+   },
+   {
+    "figure": "re-rank report: BQ25731RSNR: no BATFET, VSYS without a battery not stated",
+    "verdict": "confirmed",
+    "evidence": "SLUSE66A Device Comparison Table: BATFET Power Path 'No' for BQ25731; pin 18: charge is disabled when CELL_BATPRESZ is low; 9.6.2: CELL_BATPRESZ low resets ChargeCurrent to 0; Table 9-2 battery removal row ChargeVoltage 4.200 V, SYSOVP 25 V, VSYS_MIN 3.6 V; 9.3.21.5 BATOVP: with charge disabled 'the converter should keep operating without disturbance until battery rise up system voltage ... SYSOVP'. Electrical Characteristics: IIN_DPM 0x0800H with 5 mOhm RAC = 600/800/1000 mA. No VSYS regulation without a battery is stated.",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25731.pdf SLUSE66A 6, pin table, 8.5, 9.3.21.5, 9.6.2, Table 9-2",
+    "read_at": "2026-10-02T13:08:57Z"
+   },
+   {
+    "figure": "re-rank report: LTC4020 sense resistor and charge-current sizing",
+    "verdict": "confirmed",
+    "evidence": "Rev. E: RCS = 0.05 / ICSMAX; RNG/SS 'reduces maximum charge current to the fraction of programmed current corresponding to the voltage (in volts)', 50 uA sourced: 4 mOhm = 12.5 A, 0.19 V = 19 % = 2.37 A (50 uA x 3.8 kOhm). Pack discharge through RCS (typical application: VOUT - RCS - BGATE FET - BAT): 0.199, 0.240, 0.267 V at 49.7, 60, 66.8 A; 9.9 W and 14.4 W; 107.5 A x 4 mOhm = 0.43 V over the 0.3 V abs max.",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/ltc4020.pdf Rev. E, pins 15, 22, 23, Typical Application, Absolute Maximum Ratings",
+    "read_at": "2026-10-02T13:09:02Z"
+   },
+   {
+    "figure": "re-rank report: LTC4020 input limit",
+    "verdict": "confirmed",
+    "evidence": "VSENS 45/50/60 mV (over temperature) with RSENSEA/B = 0.05 / ILMAX: 20 mOhm gives 2.25 to 3.0 A. ILIMIT programming 20 V/V typical only (no min or max). In boost the inductor current is the input current.",
+    "source": "ltc4020.pdf Rev. E Electrical Characteristics VSENS, ILIMIT; pins 5, 6, 25",
+    "read_at": "2026-10-02T13:09:02Z"
+   },
+   {
+    "figure": "re-rank report: LTC4020 float accuracy against the 4.25 V per-cell overvoltage",
+    "verdict": "confirmed",
+    "evidence": "VFB float 2.4875/2.5/2.5125 V (25 C) and 2.475 to 2.525 V over the junction range: 8.316 to 8.484 V for 8.4 V; 4.242 V a cell at the top, 8 mV under 4.25 V. BQ25723 8.3496 to 8.4504 V (+/-0.6 %, 0 to 85 C).",
+    "source": "ltc4020.pdf Rev. E VFB rows; bq25723.pdf 8.5",
+    "read_at": "2026-10-02T13:09:02Z"
+   },
+   {
+    "figure": "re-rank report: LTC4020 system rail range and termination",
+    "verdict": "confirmed",
+    "evidence": "VOUT(MIN) = 0.85 x VFLOAT (7.14 V at 8.4 V); VFBMAX reference 2.75 V against 2.5 V float = 110 % (9.24 V). C/10 termination VCSP-VCSN 3/5/7 mV: 0.75 to 1.75 A at 4 mOhm = 0.25 to 0.58C of 3 Ah. TEOC = CTIMER x 1.46 x 10^7. NTC window 1.35 V (0 C) to 0.3 V (40 C), 50 uA bias; disabled by a resistor.",
+    "source": "ltc4020.pdf Rev. E pins 14, 16, 19, 20, Electrical Characteristics, NTC section",
+    "read_at": "2026-10-02T13:09:02Z"
+   },
+   {
+    "figure": "re-rank report: Overcurrent bands at 1 mOhm, BQ40Z50-R2, BQ40Z80, BQ4050",
+    "verdict": "confirmed",
+    "evidence": "BQ40Z50-R2 7.31, BQ40Z80 SLUSBV4D 5.5 and BQ4050 SLUSC67B 6.31 all: VOCD -16.6 to -100 mV in 5.56 mV steps, SCD1 -44.4 to -200 mV in 22.2 mV steps, VOFFSET +/-2.5 mV and VSCALE +/-5 % post-trim (no trim +/-10 %). 61.08 mV: 55.5 to 66.6 A (additive), 55.65 to 66.76 A (offset-then-gain, which is P2's figure for 61.08 mV, not a 61.2 mV setting: the 0.1 A difference is the combination method). SCD1 88.8 mV: 81.9 to 95.7 A. BQ28Z620 SLUSET3 8.22 gives the same (offset +/-1 mV below 8.3 mV, +/-2.5 mV above, gain +/-5 %).",
+    "source": "https://www.ti.com/lit/ds/symlink/bq40z50-r2.pdf 7.31; bq40z80.pdf 5.5; bq4050.pdf 6.31; bq28z620.pdf 8.22",
+    "read_at": "2026-10-02T13:08:59Z"
+   },
+   {
+    "figure": "re-rank report: BQ40Z80 external balancing",
+    "verdict": "confirmed",
+    "evidence": "SLUUBT5C chapter 8: 'DUTY = cell balancing duty cycle, which is 75% typ'; 8.3: with [CBM] = 1 the gauge balances with only one cell at a time. 112.8 mA x 0.75 = 84.6 mA; 3.6 V / 112.8 mA = 31.9 Ohm; 4.2252 V / 31.9 Ohm x 0.75 = 99 mA. SLUSBV4D Table 7-1 default cell configuration 6s; footnote: for a first use with a 1s or 2s pack connect a charger to PACK+ before the cell configuration is updated.",
+    "source": "https://www.ti.com/lit/ug/sluubt5/sluubt5.pdf SLUUBT5C chapter 8, 8.3; https://www.ti.com/lit/ds/symlink/bq40z80.pdf Table 7-1",
+    "read_at": "2026-10-02T13:08:59Z"
+   },
+   {
+    "figure": "re-rank report: BQ25887 balancing",
+    "verdict": "confirmed",
+    "evidence": "SLUSD89B Electrical Characteristics: ICB_MAX 400 mA at VCELL 4.2 V, RCBSET 9.5 Ohm; 8.3.4.3 'Cell Balancing During Charging'; VCBEN_RISING 3.65/3.7/3.75 V; CB_CHG_DIS default 1 (charge disabled for the measurement); VBUS 3.9 to 6.2 V; Device Comparison Table: power path No. The data sheet also lists a 'manual cell discharge function' (REG2A bit 6 low) without stating it works outside a charge cycle, so 'no balance-only mode is stated' holds.",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25887.pdf SLUSD89B 5, 8.3.4.3, 8.5.43, Electrical Characteristics",
+    "read_at": "2026-10-02T13:08:58Z"
+   },
+   {
+    "figure": "re-rank report: BQ29209 external balancing, re-read",
+    "verdict": "confirmed",
+    "evidence": "SLUSA52C 9.3.1: Ibal = VCELL / RCB_EXT; RCLAMP above 2 kOhm; 10 Power Supply: 'maximum 10-V operation on the VDD input'; 7.3 TA -40 to 110 C. 4.2252 V / 44.9 Ohm = 94.1 mA.",
+    "source": "https://www.ti.com/lit/ds/symlink/bq29209.pdf SLUSA52C 9.3.1, 10, 7.3",
+    "read_at": "2026-10-02T13:08:43Z"
+   },
+   {
+    "figure": "re-rank report: PTN5150AHXMP second vendor",
+    "verdict": "confirmed",
+    "evidence": "Digi-Key PTN5150AHXMP (NXP USA Inc.) Active, lead 30 weeks, stock_available 18 (cut tape 18, tape and reel 0, Digi-Reel 18) at 12:17:38Z (cached). Round 1 FU-B1/009-rerank-R7.json: 378 at 2026-09-29T12:35:06Z. JLCPCB: PTN5150AHXMP C2651889 9695/9686; PTN5150HXMP C2678019, PTN5150HHXMP C2678125, PTN5150AHX C17313775, PTN5150AHX528 C17543083 all stockCount 0 (jlcpcb-search PTN5150 lists exactly these five). 18 is under the gate of 50.",
+    "source": "vendors.py digikey PTN5150AHXMP (cached 2026-10-02T12:17:38Z, https://api.digikey.com/products/v4/search/PTN5150AHXMP/productdetails); vendors.py jlcpcb C2651889, C2678019, C2678125, C17313775, C17543083; jlcpcb-search PTN5150",
+    "read_at": "2026-10-02T13:20:14Z"
+   },
+   {
+    "figure": "re-rank report: BQ28Z620DRZR second vendor",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C20345237 BQ28Z620DRZR stockCount 64, canPresaleNumber 64 (13:19:58Z); Digi-Key BQ28Z620DRZR Texas Instruments Active, lead 12 weeks, stock_available 0 (cached 12:27:41Z). Rule 5 second-vendor route fails.",
+    "source": "vendors.py jlcpcb C20345237; vendors.py digikey BQ28Z620DRZR (cached 2026-10-02T12:27:41Z)",
+    "read_at": "2026-10-02T13:19:58Z"
+   },
+   {
+    "figure": "re-rank report: TUSB320 supply ramp for P5",
+    "verdict": "confirmed",
+    "evidence": "TUSB320LAI SLLSEQ8D and TUSB320LI SLLSEP2D: VDD 2.7 to 5 V (pin table: 'VDD must ramp within 25 ms or less'; also in the power-up sequence). TUSB322I SLLSEO5D: VDD 4.5/5/5.5 V. FUSB301/D Rev 2: VDD 2.8 (1) to 5.5 V recommended, 3.0 to 5.5 V in Features. The 3.3 V regulator's soft-start against 25 ms is not in any data sheet (unknown).",
+    "source": "https://www.ti.com/lit/ds/symlink/tusb320lai.pdf, tusb320li.pdf, tusb322i.pdf; https://www.onsemi.com/download/data-sheet/pdf/fusb301-d.pdf",
+    "read_at": "2026-10-02T13:20:53Z"
+   },
+   {
+    "figure": "re-rank report: Charger input limit candidates added",
+    "verdict": "confirmed",
+    "evidence": "Data sheets: TUSB320LAI/LI GPIO mode OUT1/OUT2 pins, dead-battery RCC_DB 4.1/5.1/6.1 kOhm, 2.7 to 5 V; FUSB301 I2C with INT_N, tCCDebounce (sink) 63/75/87 ms, tPDDebounce 10/15/20 ms, TA -40 to 85 C; STUSB4500 DS12499 Rev 8: PWR_OK_CFG configuration 3 (detection of USB Type-C current capability), CC1DB/CC2DB dead battery, VDD 4.1 to 22 V and VSYS 3.0 to 5.5 V; TUSB322I 6.3.2: powers up as DRP, 'DFP-only and UFP-only mode is not available in GPIO mode', MODE_SELECT write needed; TUSB422 TCPC: VDD 2.7 to 5.5 V, ROLE_CONTROL 0x0A, Rd on both CC pins when VDD is not active. JLCPCB now: C132554 2089, C2836598 6110, C132290 10288, C2678061 4882, C2674422 695, C702378 229 (all equal to the figure); the 3089 reading of TUSB320LAIRWBR at 12:16:22Z in P3 is not re-readable.",
+    "source": "vendor data sheets above; vendors.py jlcpcb C132554, C2836598, C132290, C2678061, C2674422, C702378",
+    "read_at": "2026-10-02T13:20:53Z"
+   },
+   {
+    "figure": "re-rank report: 5 mOhm family stock",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB: BQ25713RSNR C2878935 286/184, BQ25713BRSNR C2863640 71/71, BQ25710RSNR C2864000 1857/1834, BQ25703ARSNR C188229 5436/5433, BQ25700ARSNR C965493 1680/1680, BQ25723RSNR C2871889 214/213 (jlcpcb-search), BQ25720RSNR C2870152 0/-2. Digi-Key (cached 12:46:42Z, BQ25723 11:53:56Z): 2103, 1213, 406, 2648, 7182, 4528 all Active. TI product pages meta status ACTIVE for BQ25713, BQ25710, BQ25703A, BQ25700A, BQ25723, BQ25720, BQ25731, BQ25887 at 13:20:42Z to 13:20:45Z.",
+    "source": "vendors.py jlcpcb (13:19:55Z to 13:20:14Z); vendors.py digikey (cached); https://www.ti.com/product/<part>",
+    "read_at": "2026-10-02T13:20:45Z"
+   },
+   {
+    "figure": "re-rank report: Pack temperature function",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md Pack temperature row (0 and 55 C, 10 kOhm B 3435 K NTC, action on discharge a follow-up of R7) is present; the shortlist input shows Pack temperature with not_returned true. MAX17320 T1/T4 in 1 C steps; BQ40Z80 (SLUUBT5C), BQ4050 (SLUUAQ3A) and BQ40Z50-R2 TRMs: Protections OTC, OTD, UTC, UTD I2, -400 to 1500 in 0.1 C units, OTC default 550.",
+    "source": "hardware/docs/IOBoard.md Pack temperature; sluubt5, sluuaq3, sluubk0b Protections rows; MAX17320 nTPrtTh1",
+    "read_at": "2026-10-02T13:22:33Z"
+   },
+   {
+    "figure": "re-rank report: NTC model of the TI gauges",
+    "verdict": "confirmed",
+    "evidence": "BQ40Z50-R2 SLUSCS4C, BQ40Z80 SLUSBV4D 7.3.2.4.5 and BQ4050 SLUSC67B 8.2.2.3.4: 10 kOhm at 25 C (103) NTC 'such as a Mitsubishi BN35-3H103', 18 kOhm internal pull-up in the block diagrams, no B value stated; BQ28Z620 SLUSET3: '10-kOhm (25 C) NTC external thermistor, such as the Semitec 103AT-2'; MAX17320 Table 58 lists 103AT-2 at 3435 K. '103AT-type' for the BQ40Z50-R2 is not its wording.",
+    "source": "bq40z50-r2.pdf, bq40z80.pdf, bq4050.pdf, bq28z620.pdf, MAX17320 Table 58",
+    "read_at": "2026-10-02T13:08:59Z"
+   },
+   {
+    "figure": "re-rank report: Digi-Key calls",
+    "verdict": "confirmed",
+    "evidence": "Cached answers carry ratelimit_remaining 818 for BQ25710RSNR and BQ25700ARSNR at 12:46:42Z (821 for BQ25713, BQ25713B, BQ25703A); my one live read (BQ25756RRVR, 13:20:23Z) returned 810, consistent.",
+    "source": "/home/claude/rcbench-research/round2/cache/digikey (ratelimit_remaining field); vendors.py digikey BQ25756RRVR",
+    "read_at": "2026-10-02T13:20:23Z"
+   },
+   {
+    "figure": "function requirements: Cell balancing",
+    "verdict": "confirmed",
+    "evidence": "Compared with IOBoard.md Pack charger rows, F9, V137 (2 cells), V138, V142 (84.6 mA), V144, V146, V7: the list names cells balanced, balance current (84.6 mA), supply range (6.0 to 8.4504 V), works beside the charger, operating ambient (0 to 50 C). The only Raised by P1 row naming Cell balancing is V142. No value weaker than theirs.",
+    "source": "Research.md Raised by P1 V137, V138, V142, V144, F9; IOBoard.md rows Pack charger, Discharge floor",
+    "read_at": "2026-10-02T13:08:06Z"
+   },
+   {
+    "figure": "function requirements: Charger input limit",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md Charger input limit row and F8, V10, V13, V148, V152, V153, V7: advertisement detection (Default, 1.5 A, 3.0 A), default 500 mA, dead-battery Rd, supply up to 5.5 V or from a rail present with VBUS, limit output by pins or I2C with interrupt, adjust time recorded, 0 to 50 C. The only row naming the function is V148.",
+    "source": "Research.md Raised by P1 V10, V13, V148, V152, V153, F8; IOBoard.md Charger input limit",
+    "read_at": "2026-10-02T13:08:06Z"
+   },
+   {
+    "figure": "function requirements: Pack cells",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md Pack cells and Pack path current rows, F9, V137, V138, V144, V145, V146, V150, V151, V284 and V140/V141/V143/V285: pack identity, 4.2 V a cell, 3.0 V floor, 49.7 A and 66.8 A continuous, 107.5 A burst, 2.37 A charge, 0 to 55 C pack and 0 to 50 C ambient, 3000 mAh. V140, V141, V143 (88.7 %, 96.0 %, 0.91 A) would put the nominal draw at about 50.2 A against the 49.7 A of IOBoard.md, but the required 66.8 A governs; V285 is not needed (owner, 2026-10-01).",
+    "source": "Research.md Raised by P1 V137 to V151, V284, V285; IOBoard.md Pack cells",
+    "read_at": "2026-10-02T13:08:06Z"
+   },
+   {
+    "figure": "function requirements: Pack overcurrent protection",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md Pack overcurrent protection, Pack temperature rows; V147, V149, V150, V284, V7, F9: location, 2S 6.0 to 8.4504 V, 60 A nominal with the band above 49.7 A and at or below 90 A, short-circuit band above it and at or below 180 A, 4.25 V per-cell charge overvoltage, 55 C and 0 C from the NTC, 10 kOhm B 3435 K NTC, 0 to 50 C. Rows naming the function: V149, V150, V284.",
+    "source": "Research.md Raised by P1 V147, V149, V150, V284; IOBoard.md Pack overcurrent protection, Pack temperature",
+    "read_at": "2026-10-02T13:08:06Z"
+   },
+   {
+    "figure": "function requirements: Bench pack balance lead",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md Bench pack balance lead and Discharge floor rows, F9, Research.md R9 row: input of its own apart from the ESC pack lead, 3 conductors for 2S reaching the protector, the balancer and the per-cell floor reading, per-cell reading on the IC, connector left to stage 2. No Raised by P1 row names the function (V107 names the R5 pack disconnect).",
+    "source": "IOBoard.md Bench pack balance lead, Discharge floor; Research.md R9, Rules of stage 1, V107",
+    "read_at": "2026-10-02T13:08:06Z"
+   },
+   {
+    "figure": "re-rank drop: Pack charger: BQ25731RSNR (C2871872)",
+    "verdict": "confirmed",
+    "evidence": "SLUSE66A: no BATFET (Device Comparison Table); CELL_BATPRESZ low only resets ChargeCurrent and disables charge; ChargeVoltage returns to 4.2 V (Table 9-2); 9.3.21.5 keeps the converter operating with charge disabled until SYSOVP; no VSYS regulation with the battery held off is stated; IIN_DPM 0x0800H at 5 mOhm RAC = 600 to 1000 mA. Other values hold: VBUS 3.5 to 26 V, 8.4 V +/-0.6 %, 16.256 A, SRP-SRN -0.5 to 0.5 V. JLCPCB C2871872 1125/1122 (13:19:59Z), Digi-Key 2079 Active (cached 12:31:24Z), TI page ACTIVE (13:20:45Z).",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25731.pdf; vendors.py jlcpcb C2871872; vendors.py digikey BQ25731RSNR",
+    "read_at": "2026-10-02T13:08:57Z"
+   },
+   {
+    "figure": "re-rank drop: Pack charger: BQ25756RRVR (C19272232), BQ25756ERRVR (C22427194)",
+    "verdict": "refuted",
+    "evidence": "Facts hold (SLUSEN5A 5.1: SRP with respect to SRN -0.3 to 0.3 V abs max; 5.3: RBAT_SNS 5 mOhm), but the inference that the 60 A pack current crosses RBAT_SNS does not: the Simplified Schematic and Figure 7-1 (page 59) put RBAT_SNS between the converter output and the node joined to both BATTERY and SYSTEM (CSYS), and 6.3.5 says 'connect the system load directly in parallel to the battery pack'. Pack discharge to the load bypasses RBAT_SNS, so 0.300 V at 60 A and 0.334 V at 66.8 A do not occur; only converter output current (charge plus load share from the 15 W input) crosses it. P2's reason (no system output, no power path) is nearer the data sheet: the converter output is the battery node. A different failure may apply (charge termination on the sum of cell and load current); the stated one does not.",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25756.pdf SLUSEN5A page 1 Simplified Schematic, 5.1, 5.3, 6.3.5, 7.2.1 Figure 7-1 (page 59)",
+    "read_at": "2026-10-02T13:08:57Z"
+   },
+   {
+    "figure": "re-rank drop: Cell balancing: BQ4050RSMR (C157570)",
+    "verdict": "confirmed",
+    "evidence": "SLUSC67B 8.2.2.3.2: 'Internal cell balancing can only support up to 10 mA ... External cell balancing ... refer to SLUA420'. SLUUAQ3A 7.1/14.4.12: one CB bit, no duty cycle or per-interval on-time stated; Cell Balance Interval default 20 s. Corrections to the reason: TRM 7.1 does describe an external P-channel FET and resistor bypass and says adjacent cells are alternated; and 'Cell balancing only occurs when charging current is detected'. SLUA420A (read now, 13:27:50Z) covers bq20zxx gauges (duty D = 0.22 for 2 cells), not the BQ4050. The BQ40Z50-R2 and BQ40Z80 TRMs state DUTY 75 % typ. No average current at an external path is shown for the BQ4050, so the drop stands.",
+    "source": "https://www.ti.com/lit/ds/symlink/bq4050.pdf 8.2.2.3.2; https://www.ti.com/lit/ug/sluuaq3/sluuaq3.pdf SLUUAQ3A 7.1; https://www.ti.com/lit/an/slua420/slua420.pdf",
+    "read_at": "2026-10-02T13:27:50Z"
+   },
+   {
+    "figure": "re-rank drop: Cell balancing: BQ25887RGER (C2761614)",
+    "verdict": "confirmed",
+    "evidence": "SLUSD89B 8.3.4.3 'Cell Balancing During Charging'; VCBEN_RISING 3.65 to 3.75 V; CB_CHG_DIS default 1; own boost converter VBUS 3.9 to 6.2 V; no power path; ICB_MAX 400 mA at 9.5 Ohm. JLCPCB C2761614 757/754 (13:19:59Z); Digi-Key 10966 Active (cached 12:42:16Z).",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25887.pdf; vendors.py jlcpcb C2761614; vendors.py digikey BQ25887RGER",
+    "read_at": "2026-10-02T13:08:58Z"
+   },
+   {
+    "figure": "re-rank drop: Power path: BQ25731RSNR (C2871872)",
+    "verdict": "confirmed",
+    "evidence": "Same reading as the Pack charger drop: no BATFET, VSYS with the battery held off not stated, input limit at or under 500 mA not tabulated at a 5 mOhm RAC (600 to 1000 mA at 0x0800H).",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25731.pdf SLUSE66A 6, 8.5, 9.3.21.5, 9.6.2, Table 9-2",
+    "read_at": "2026-10-02T13:08:57Z"
+   },
+   {
+    "figure": "re-rank drop: Power path: BQ25756RRVR (C19272232), BQ25756ERRVR (C22427194)",
+    "verdict": "refuted",
+    "evidence": "Same as the Pack charger row: the stated reason (SRP-SRN above 0.3 V at the 60 A trip) assumes the pack discharge crosses RBAT_SNS; the data sheet's Simplified Schematic and Figure 7-1 place RBAT_SNS between the converter and the joined BATTERY/SYSTEM node, and 6.3.5 puts the load in parallel with the pack, so the pack current bypasses it. The data sheet has no BATFET or power path (P2's observation).",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25756.pdf SLUSEN5A Simplified Schematic, 6.3.5, Figure 7-1",
+    "read_at": "2026-10-02T13:08:57Z"
+   },
+   {
+    "figure": "re-rank drop: Charger input limit: PTN5150AHXMP (C2651889)",
+    "verdict": "confirmed",
+    "evidence": "Rule 5: Digi-Key stock_available 18 (cut tape 18, tape and reel 0), Active, lead 30 weeks, cached 12:17:38Z, under the gate of 50; the other four PTN5150 order codes read stockCount 0 at JLCPCB (C2678019, C2678125, C17313775, C17543083); PTN5150AHXMP itself C2651889 9695/9686. NXP data sheet values were not re-read here.",
+    "source": "vendors.py digikey PTN5150AHXMP (cached 2026-10-02T12:17:38Z); vendors.py jlcpcb C2651889 and the four others; jlcpcb-search PTN5150",
+    "read_at": "2026-10-02T13:20:14Z"
+   },
+   {
+    "figure": "re-rank drop: Pack overcurrent protection: BQ28Z620DRZR (C20345237)",
+    "verdict": "confirmed",
+    "evidence": "Rule 5: JLCPCB 64/64 (13:19:58Z) passes rule 4, Digi-Key stock_available 0, Active, lead 12 weeks (cached 12:27:41Z) fails the second-vendor route. BQ28Z610 SLUSAS3D 7.23 (read now): OCD, SCC, SCD thresholds with no offset or scale error, same VSON-12 package; its data flash against the BQ28Z620 is not read. BQ28Z620 SLUSET3 8.22: OCD 16.6 to 100 mV in 5.56 mV steps, offset +/-1 mV below 8.3 mV and +/-2.5 mV above, gain +/-5 %; 1 to 2 series; VCC 2.2 to 10 V; Semitec 103AT-2; internal balance RCB 200 Ohm (8.13). COV range not read, as stated.",
+    "source": "https://www.ti.com/lit/ds/symlink/bq28z620.pdf SLUSET3; https://www.ti.com/lit/ds/symlink/bq28z610.pdf SLUSAS3D 7.23; vendors.py jlcpcb C20345237; vendors.py digikey BQ28Z620DRZR",
+    "read_at": "2026-10-02T13:19:58Z"
+   },
+   {
+    "figure": "re-rank drop: Bench pack balance lead: BQ28Z620DRZR (C20345237)",
+    "verdict": "confirmed",
+    "evidence": "Same record as the Pack overcurrent protection drop: JLCPCB 64/64, Digi-Key 0, no pin-compatible alternate shown (BQ28Z610 states no comparator tolerance), values read as listed.",
+    "source": "https://www.ti.com/lit/ds/symlink/bq28z620.pdf; bq28z610.pdf 7.23; vendors.py jlcpcb C20345237; vendors.py digikey BQ28Z620DRZR",
+    "read_at": "2026-10-02T13:19:58Z"
+   }
+  ]
+ }
+}

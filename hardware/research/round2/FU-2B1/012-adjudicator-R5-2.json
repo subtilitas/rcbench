@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R5",
+ "label": "adjudicator-R5-2",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "function": "function requirements: 5 V rail",
+  "part": "",
+  "stands": false,
+  "ruling": "The refutation does not hold, so the list stands. V101's row is labelled \"R5, 5 V rail\", but its found value places no load on the 5 V rail. The value is 345 Ohm, which draws 45.7 mA for 3 cells at 5.25 V, and it says itself that this current comes from R13's own regulator, \"not from the 5 V rail\". V254's found value says the same: the excitation has a 5 V linear regulator of its own, fed from the selected 6.0 to 20 V input bus, \"not the IO board's 5 V rail\". The part selected for that function is BD450M2FP3-CE2, and it is specified only for VCC 6 V to 42 V, so it cannot run from a 5 V rail. IOBoard.md:372 still lists the load-cell excitation among the rail's loads. That line is the tree's list of possible loads, and it says itself that \"the excitation and encoder currents are not stated\". The research questions V101 and V254 answer this, and both answers take the excitation off the rail. A found value that sets nothing for this function is not a requirement the list has to name. The verifier agrees that no entry in the list is weaker than its source. Three earlier datasheet verifiers confirmed the same reading of V101 for this function: T3 at 11:18:00Z, FU-B1 at 13:27:33Z and FU-B3 at 17:16:00Z, all on 2026-09-29. The scope is function: the question is this function's requirement list, not anything about a part.",
+  "evidence": "Research.md at f06c3ae0, line 807, row V101 \"R5, 5 V rail\": asks the lowest bridge resistance; Decision \"for research (owner, 2026-09-28)\". The found value, in round1/FU-B1/005-P2-R5.json (read 2026-09-29T12:08:58Z) and round1/FU-B3/002-P2-R5.json, is: \"345 Ohm ... Three cells on one 5.25 V excitation draw 45.7 mA from R13's own regulator, not from the 5 V rail\". Research.md line 960, V254: asks whether the excitation comes from the 5 V rail or from a separate supply. Its found value, in round1/FU-C1/004-P2-R13.json, is: \"A 5 V linear regulator of its own ... fed from the board's selected input bus (6.0 to 20 V ...). Not the IO board's 5 V rail\". round2/selection.json gives \"load-cell excitation\" as BD450M2FP3-CE2, rank 1, from run FU-C1. round1/FU-C1/022-P4-datasheet-R13.json confirms that part's VOUT as 4.90 to 5.10 V for 6 V <= VCC <= 42 V. IOBoard.md line 372 lists the excitation among the 5 V rail's tree loads and says \"The excitation and encoder currents are not stated\". Line 81 names BD450M2FP3-CE2 as R13's part. The T3, FU-B1 and FU-B3 P4 datasheet verifiers each confirmed \"function requirements: 5 V rail\" on the same reading of V101.",
+  "source": "hardware/docs/Research.md lines 807 (V101) and 960 (V254) at f06c3ae0; hardware/docs/IOBoard.md lines 81 and 372 at f06c3ae0; results round1/FU-B1/005-P2-R5.json (V101 found); round1/FU-C1/004-P2-R13.json (V254 found); round1/FU-C1/022-P4-datasheet-R13.json (BD450M2FP3-CE2 VCC 6 to 42 V); round2/selection.json R13 \"load-cell excitation\"",
+  "read_at": "2026-10-02T13:19:50Z to 2026-10-02T13:21:09Z",
+  "scope": "function"
+ }
+}

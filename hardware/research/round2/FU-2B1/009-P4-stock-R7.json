@@ -1,0 +1,715 @@
+{
+ "role": "P4",
+ "category": "R7",
+ "label": "P4-stock-R7",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "Cell balancing",
+    "part": "BQ29209DRBR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 592, canPresaleNumber 565",
+      "read": "stockCount 592 (need 5 x 1 = 5; threshold max(5 x 5, 50) = 50; 592 >= 50)",
+      "source": "vendors.py jlcpcb C139352, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 565",
+      "read": "canPresaleNumber 565 (zero or above)",
+      "source": "vendors.py jlcpcb C139352, JLCPCB selectSmtComponentList API",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE on ti.com/product/BQ29209",
+      "read": "ACTIVE (marketingStatusDescription of the BQ29209DRBR record, Texas Instruments product page); Digi-Key ProductStatus Active (Texas Instruments)",
+      "source": "https://www.ti.com/product/BQ29209 (chrome client, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:34Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN listing not read",
+      "read": "none found: TI page ACTIVE, no discontinuation or last-time-buy text for the part; Digi-Key discontinued false, end_of_life false; JLCPCB and LCSC list the part in stock. TI's PCN listing not read",
+      "source": "https://www.ti.com/product/BQ29209; https://api.digikey.com/products/v4/search/BQ29209DRBR/productdetails (cached); https://www.lcsc.com/product-detail/C139352.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:09:36Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 (fixed: one balancer for the one bench pack a board)",
+      "read": "1: IOBoard.md Pack cells and Pack charger fix one bench pack a board; need = 5 boards x 1 = 5",
+      "source": "hardware/docs/IOBoard.md Pack cells, Pack charger rows at f06c3ae; Research.md S7 (5 boards), S4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C139352",
+      "read": "on the IO board (the balancer sits beside the pack input) and LCSC number C139352: both say on the board",
+      "source": "hardware/docs/IOBoard.md Pack charger, Bench pack balance lead; vendors.py jlcpcb C139352",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none read",
+      "read": "No part-specific commitment. TI's programme page states a general commitment: product life cycles typically 10 to 15 years; a standard product is not eligible for obsolescence with sales in the last 5 years, or in production under 10 years, or any customer demand. Recorded; S5 makes it no gate",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:09:36Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "First datasheet September 2010 (SLUSA52C revised March 2016): 192 months",
+      "read": "SLUSA52C Revision History lists 'Changes from Original (June 2010) to Revision A' and Revision A as September 2010: the original data sheet is June 2010, about 196 months; over 12 months, not flagged. The stated September 2010 is Revision A",
+      "source": "https://www.ti.com/lit/ds/symlink/bq29209.pdf (SLUSA52C, section 4 Revision History)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-10-02T13:09:00Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB reading has no status field",
+      "read": "Digi-Key ProductStatus Active; LCSC page In-Stock 592, no discontinued or obsolete marking; JLCPCB result carries no status field; no disagreement with the maker's ACTIVE",
+      "source": "https://api.digikey.com/products/v4/search/BQ29209DRBR/productdetails (cached 11:54:03Z); https://www.lcsc.com/product-detail/C139352.html; JLCPCB selectSmtComponentList",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:10:45Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 26",
+      "read": "manufacturer lead time 26 weeks",
+      "source": "https://api.digikey.com/products/v4/search/BQ29209DRBR/productdetails (cached: true, first read 2026-10-02T11:54:03Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:54:03Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C139352, BQ29209DRBR, VSON-8 3 x 3 mm (DRB)",
+      "read": "exact JLCPCB result for C139352: part BQ29209DRBR, package SON-8(3x3), label Texas Instruments",
+      "source": "vendors.py jlcpcb C139352",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "vendors.py jlcpcb C139352",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     }
+    ]
+   },
+   {
+    "function": "Cell balancing",
+    "part": "BQ29200DRBR",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 3352, canPresaleNumber 3351",
+      "read": "stockCount 3352 (need 5; threshold 50; 3352 >= 50)",
+      "source": "vendors.py jlcpcb C2865505, JLCPCB selectSmtComponentList API, exact LCSC match",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 3351",
+      "read": "canPresaleNumber 3351",
+      "source": "vendors.py jlcpcb C2865505",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE on ti.com/product/BQ29200",
+      "read": "ACTIVE (marketingStatusDescription of the BQ29200DRBR record); Digi-Key ProductStatus Active (Texas Instruments)",
+      "source": "https://www.ti.com/product/BQ29200 (chrome client, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:34Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN not read",
+      "read": "none found: TI page ACTIVE; Digi-Key discontinued false, end_of_life false; LCSC In-Stock 3,352. TI's PCN listing not read",
+      "source": "https://www.ti.com/product/BQ29200; Digi-Key productdetails BQ29200DRBR (cached); https://www.lcsc.com/product-detail/C2865505.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:09:36Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 (fixed: one balancer a board)",
+      "read": "1: one bench pack a board (IOBoard.md); need 5",
+      "source": "hardware/docs/IOBoard.md Pack cells; Research.md S4, S7",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C2865505",
+      "read": "on the IO board and LCSC C2865505: both say on the board",
+      "source": "IOBoard.md Pack charger; vendors.py jlcpcb C2865505",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none read",
+      "read": "No part-specific commitment; TI's general commitment (life cycles typically 10 to 15 years) as for the BQ29209. Recorded, no gate",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:09:36Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "First datasheet September 2010: 192 months",
+      "read": "Same data sheet as the BQ29209 (SLUSA52C, 'Product Folder Links: bq29200 bq29209'): original June 2010, about 196 months; not flagged. The stated September 2010 is Revision A",
+      "source": "https://www.ti.com/lit/ds/symlink/bq29209.pdf (SLUSA52C section 4)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-10-02T13:09:00Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active",
+      "read": "Digi-Key ProductStatus Active; LCSC In-Stock 3,352, no discontinued marking; JLCPCB no status field; no disagreement with the maker",
+      "source": "Digi-Key productdetails BQ29200DRBR (cached 11:54:05Z); https://www.lcsc.com/product-detail/C2865505.html; JLCPCB API",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:10:45Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 12",
+      "read": "manufacturer lead time 12 weeks",
+      "source": "https://api.digikey.com/products/v4/search/BQ29200DRBR/productdetails (cached: true, first read 2026-10-02T11:54:05Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:54:05Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2865505, BQ29200DRBR, VSON-8 3 x 3 mm (DRB)",
+      "read": "exact JLCPCB result for C2865505: part BQ29200DRBR, package SON-8-EP(3x3), label Texas Instruments",
+      "source": "vendors.py jlcpcb C2865505",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand",
+      "source": "vendors.py jlcpcb C2865505",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     }
+    ]
+   },
+   {
+    "function": "Charger input limit",
+    "part": "FUSB303BTMX",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 5281, canPresaleNumber 5250",
+      "read": "stockCount 5281 (need 5; threshold 50; 5281 >= 50)",
+      "source": "vendors.py jlcpcb C895444, JLCPCB selectSmtComponentList API, exact LCSC match",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 5250",
+      "read": "canPresaleNumber 5250",
+      "source": "vendors.py jlcpcb C895444",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Active on onsemi's page, orderable-parts table; FUSB303TMX beside it Last Shipments",
+      "read": "FUSB303BTMX itemCondition Active in the page's orderable-parts list; the FUSB303TMX (a different part) is Last Shipments; Digi-Key ProductStatus Active (onsemi)",
+      "source": "https://www.onsemi.com/products/interfaces/usb-type-c/fusb303btmx (chrome client, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:34Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN not read",
+      "read": "none found for the FUSB303BTMX: Active on onsemi's page; Digi-Key discontinued false, end_of_life false; LCSC In-Stock 5,281. The FUSB303TMX (not the candidate) is Last Shipments, a 6-month last-shipment period before obsolete per onsemi's page legend. onsemi's PCN listing not read",
+      "source": "https://www.onsemi.com/products/interfaces/usb-type-c/fusb303btmx; Digi-Key productdetails FUSB303BTMX (cached); https://www.lcsc.com/product-detail/C895444.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:10:45Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 (fixed: one CC detector on the one USB-C connector, V13)",
+      "read": "1: V13 answer, one USB Type-C connector shared with the charger input; need 5",
+      "source": "hardware/docs/Research.md V13 (owner, 2026-09-28); S4, S7",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C895444",
+      "read": "on the IO board (USB-C connector's CC) and LCSC C895444: both say on the board",
+      "source": "IOBoard.md Charger input limit; vendors.py jlcpcb C895444",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none read",
+      "read": "not read: no onsemi longevity programme page located (the guessed product-longevity URL returned onsemi's home page; the onsemi.com pages found cover sustainability programmes and EOL replacement only). None read",
+      "source": "https://www.onsemi.com/company/quality-and-reliability/product-longevity (redirected to https://www.onsemi.com/); https://www.onsemi.com/products/product-services/find-replace-obsolete-eol-products",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:09:57Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "First revision date not stated in Rev. 3: at least 53 months",
+      "read": "not read: FUSB303B/D carries no revision history; it shows only 'September, 2024 - Rev. 3' and copyright 2020. At least 25 months on the market by Rev. 3; the Rev. 2, April 2022 date round 1 read is not re-read",
+      "source": "https://www.onsemi.com/download/data-sheet/pdf/fusb303b-d.pdf (HTTP 200, 559,529 bytes)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:09:00Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active",
+      "read": "Digi-Key ProductStatus Active; LCSC In-Stock 5,281, no discontinued marking; JLCPCB no status field; no disagreement with the maker's Active",
+      "source": "Digi-Key productdetails FUSB303BTMX (cached 11:53:58Z); https://www.lcsc.com/product-detail/C895444.html; JLCPCB API",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:10:45Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 52",
+      "read": "manufacturer lead time 52 weeks",
+      "source": "https://api.digikey.com/products/v4/search/FUSB303BTMX/productdetails (cached: true, first read 2026-10-02T11:53:58Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:53:58Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C895444, FUSB303BTMX, X2QFN-12 1.6 x 1.6 mm",
+      "read": "exact JLCPCB result for C895444: part FUSB303BTMX, package X2-QFN-12(1.6x1.6), label onsemi",
+      "source": "vendors.py jlcpcb C895444",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand",
+      "source": "vendors.py jlcpcb C895444",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 4224 >= 50",
+      "read": "stock_available 4224 (Tape and Reel, Cut Tape and Digi-Reel each 4224) >= 50 (rule 4 gate)",
+      "source": "https://api.digikey.com/products/v4/search/FUSB303BTMX/productdetails (cached: true, first read 2026-10-02T11:53:58Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:53:58Z"
+     }
+    ]
+   },
+   {
+    "function": "Pack cells",
+    "part": "SLS XTRON 3000mAh 2S1P 7,4V 30C/60C (SLSXT30002130)",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "vendor page: 25,30 EUR, Lieferzeit 1-3 Tage, no stock count; rule 4 waived by the owner",
+      "read": "schema.org availability InStock, Lieferzeit 1-3 Tage, 25,30 EUR, no stock count; not at Digi-Key (HTTP 404 for SLSXT30002130, keyword search returns no products); rule 4 waived by the owner (2026-09-30); need 5 x 1 = 5",
+      "source": "https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html (HTTP 200); Digi-Key API digikey SLSXT30002130 and digikey-search 'SLS XTRON 3000mAh 2S1P' (13:10:21Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:10:05Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "No lifecycle status on the vendor page",
+      "read": "not read: the vendor page carries no lifecycle status and the pack is not a Digi-Key product (404). The listing is orderable, InStock",
+      "source": "https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html; Digi-Key productdetails SLSXT30002130 (404)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:10:21Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "No change notices published",
+      "read": "none found: no discontinuation, Auslauf or sold-out text on the vendor page; no manufacturer PCN listing exists to read",
+      "source": "https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:10:05Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 (fixed: one bench pack a board)",
+      "read": "1: IOBoard.md Pack cells, one SLS XTRON pack; need 5 x 1 = 5",
+      "source": "hardware/docs/IOBoard.md Pack cells row at f06c3ae",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "off the board, LCSC none",
+      "read": "specification places the pack off the board (bought at Stefansliposhop, mates by XT60 and XH); no LCSC number: both say off the board",
+      "source": "IOBoard.md Pack cells; Research.md Sourcing rule 1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:00Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "No longevity statement",
+      "read": "none published on the vendor page",
+      "source": "https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:10:05Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "Market introduction: not stated",
+      "read": "not read: the vendor page states no introduction date",
+      "source": "https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:10:05Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "No distributor status",
+      "read": "not listed at JLCPCB, LCSC or Digi-Key (Digi-Key 404 and empty keyword search); the vendor lists it InStock, delivery 1-3 days; no disagreement to record",
+      "source": "Digi-Key API 13:10:21Z; https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:10:21Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "Lieferzeit 1-3 Tage",
+      "read": "not read: Digi-Key lists no such product, so no manufacturer lead time in its API; the vendor's delivery time is 1 to 3 days (Germany)",
+      "source": "Digi-Key API digikey SLSXT30002130 (404); vendor page",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:10:21Z"
+     }
+    ]
+   },
+   {
+    "function": "Pack overcurrent protection",
+    "part": "MAX17320G22+",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 543, canPresaleNumber 450",
+      "read": "stockCount 543 (need 5; threshold 50; 543 >= 50)",
+      "source": "vendors.py jlcpcb C2914309, JLCPCB selectSmtComponentList API, exact LCSC match",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 450",
+      "read": "canPresaleNumber 450",
+      "source": "vendors.py jlcpcb C2914309",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Digi-Key ProductStatus Active (distributor figure)",
+      "read": "Active, Digi-Key product of maker Analog Devices Inc./Maxim Integrated, part MAX17320G22+",
+      "source": "https://api.digikey.com/products/v4/search/MAX17320G22%2B/productdetails (cached: true, first read 2026-10-02T11:54:08Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:54:08Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "PCN not read",
+      "read": "none found: Digi-Key Active, discontinued false, end_of_life false; LCSC In-Stock 362; ADI's PCN and PDN listings not read",
+      "source": "Digi-Key productdetails MAX17320G22+ (cached); https://www.lcsc.com/product-detail/C2914309.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:10:46Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 (fixed: one protector for the one bench pack a board)",
+      "read": "1: one bench pack a board; need 5",
+      "source": "hardware/docs/IOBoard.md Pack cells, Pack overcurrent protection",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C2914309",
+      "read": "on the IO board (V149) and LCSC C2914309: both say on the board",
+      "source": "IOBoard.md Pack overcurrent protection; vendors.py jlcpcb C2914309",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none read",
+      "read": "No part-specific commitment. ADI's life-cycle page: 'obsolescence should be avoided provided technology and customer demand exist', customers notified two years in advance when it cannot be. Recorded, no gate",
+      "source": "https://www.analog.com/en/support/product-life-cycle-information.html (safari client, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:09:56Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "Rev 0, 2/20: 79 months",
+      "read": "Revision History: Rev 0, 2/20, 'Initial release'; about 80 months; Rev 12 is the data sheet read",
+      "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/MAX17320.pdf (safari, HTTP 200, 4,371,109 bytes), Revision History",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:09:00Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB no status field",
+      "read": "Digi-Key ProductStatus Active (the status for an Analog Devices part); LCSC In-Stock 362 against JLCPCB stockCount 543 (stock differs, status not); no discontinued marking; JLCPCB no status field",
+      "source": "Digi-Key productdetails MAX17320G22+ (cached 11:54:08Z); https://www.lcsc.com/product-detail/C2914309.html; JLCPCB API",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:10:46Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 10",
+      "read": "manufacturer lead time 10 weeks",
+      "source": "https://api.digikey.com/products/v4/search/MAX17320G22%2B/productdetails (cached: true, first read 2026-10-02T11:54:08Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:54:08Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2914309, MAX17320G22+, TQFN-24 4 x 4 mm",
+      "read": "exact JLCPCB result for C2914309: part MAX17320G22+, package QFN-24-EP(4x4), label Analog Devices Inc./Maxim Integrated",
+      "source": "vendors.py jlcpcb C2914309",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand",
+      "source": "vendors.py jlcpcb C2914309",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 355 >= 50",
+      "read": "stock_available 355 (Tray) >= 50",
+      "source": "https://api.digikey.com/products/v4/search/MAX17320G22%2B/productdetails (cached: true, first read 2026-10-02T11:54:08Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:54:08Z"
+     }
+    ]
+   },
+   {
+    "function": "Bench pack balance lead",
+    "part": "MAX17320G22+",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 543, canPresaleNumber 450",
+      "read": "stockCount 543 (need 5; threshold 50; 543 >= 50)",
+      "source": "vendors.py jlcpcb C2914309, JLCPCB selectSmtComponentList API, exact LCSC match",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 450",
+      "read": "canPresaleNumber 450",
+      "source": "vendors.py jlcpcb C2914309",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Digi-Key ProductStatus Active (distributor figure)",
+      "read": "Active, Digi-Key product of maker Analog Devices Inc./Maxim Integrated, part MAX17320G22+",
+      "source": "https://api.digikey.com/products/v4/search/MAX17320G22%2B/productdetails (cached: true, first read 2026-10-02T11:54:08Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:54:08Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "longevity and PCN not read",
+      "read": "none found: Digi-Key Active, discontinued false, end_of_life false; LCSC In-Stock 362; ADI's PCN and PDN listings not read",
+      "source": "Digi-Key productdetails MAX17320G22+ (cached); https://www.lcsc.com/product-detail/C2914309.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:10:46Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 (fixed: the pack protector, one a board)",
+      "read": "1: one bench pack and one protector a board; need 5",
+      "source": "hardware/docs/IOBoard.md Bench pack balance lead, Pack overcurrent protection",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C2914309",
+      "read": "on the IO board and LCSC C2914309: both say on the board",
+      "source": "IOBoard.md Bench pack balance lead; vendors.py jlcpcb C2914309",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "longevity not read",
+      "read": "No part-specific commitment; ADI's general statement (obsolescence avoided while technology and demand exist, two years' notice). Recorded, no gate",
+      "source": "https://www.analog.com/en/support/product-life-cycle-information.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:09:56Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet 2/20",
+      "read": "Rev 0, 2/20, Initial release; about 80 months",
+      "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/MAX17320.pdf Revision History",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:09:00Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active",
+      "read": "Digi-Key ProductStatus Active; LCSC In-Stock 362 against JLCPCB 543 (stock only); no discontinued marking; no status disagreement",
+      "source": "Digi-Key productdetails MAX17320G22+ (cached 11:54:08Z); https://www.lcsc.com/product-detail/C2914309.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:10:46Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 10",
+      "read": "manufacturer lead time 10 weeks",
+      "source": "https://api.digikey.com/products/v4/search/MAX17320G22%2B/productdetails (cached: true, first read 2026-10-02T11:54:08Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:54:08Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2914309, MAX17320G22+, TQFN-24 4 x 4 mm",
+      "read": "exact JLCPCB result for C2914309: MAX17320G22+, QFN-24-EP(4x4)",
+      "source": "vendors.py jlcpcb C2914309",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand",
+      "source": "vendors.py jlcpcb C2914309",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T13:08:26Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 355 >= 50",
+      "read": "stock_available 355 >= 50",
+      "source": "https://api.digikey.com/products/v4/search/MAX17320G22%2B/productdetails (cached: true, first read 2026-10-02T11:54:08Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-02T11:54:08Z"
+     }
+    ]
+   }
+  ]
+ }
+}

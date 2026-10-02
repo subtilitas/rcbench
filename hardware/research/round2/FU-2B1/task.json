@@ -1,0 +1,1591 @@
+{
+ "task": "FU",
+ "run": "FU-2B1",
+ "run_id": "15da5504e6009b42",
+ "commit": "f06c3ae0d5701cdf8004880f2e5634e5eee6accc",
+ "date": "2026-10-02",
+ "run_info": {
+  "claude_code": "2.1.287 (Claude Code)",
+  "cpus": 48,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "concurrency": 16,
+  "concurrency_setting": "unset",
+  "agent_model": "sonnet",
+  "oversight_model": "opus",
+  "digikey_calls_left": 872,
+  "vendors_sha256": "214b14a3af0a4a1e0edfab77124a786c4e0fade844ec4d0c72149c1571ff8bf6"
+ },
+ "followup": {
+  "phases": "P2-P4",
+  "round": 1,
+  "categories": [
+   "R5",
+   "R7"
+  ],
+  "items": [
+   {
+    "category": "R5",
+    "function": "source selection; pack disconnect",
+    "requirement": "Sized for about 49.7 A: the board's draw from the pack at the 6.0 V floor with the four TPS55285 at 6.35 A, nominal at an assumed 90 %. Round 1 sized both for 12.23 A (V90). No pack disconnect passed round 1: its one shortlisted candidate, R5460N212AF-TR-FE, failed the open balance lead (V107) in FU-B1, and FU-B3 found none",
+    "source": "IOBoard.md, Pack path current and Pack reconnect; Supply.md, Not known",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R5",
+    "function": "overvoltage protection; reverse-polarity protection; inrush limiting",
+    "requirement": "The DC input's overvoltage threshold, non-destructive (owner, 2026-09-30): round 1 left the overvoltage protection without a part. FU-B3 did not requalify the LM74800QDRRRQ1 for the reverse-polarity protection and the inrush limiting",
+    "source": "IOBoard.md, Overvoltage protection, Reverse-polarity protection, Inrush limiting, and Not known under Power",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R5",
+    "function": "source-status signal (new)",
+    "requirement": "A signal the coprocessor reads that tells the DC input from the pack: a DC-input-present input or the DC input voltage, on an RP2354B input or an expander pin within the pin budget. Answered under Raised by P1: V271: One signal: the DC input voltage through a divider into one ADC input of the measurement coprocessor, GPIO 40 to 47. The firmware compares it with the thresholds, so it serves the source status and the DC input brownout detection (owner, 2026-10-01) V276: As V271: the DC input voltage on one ADC input of the measurement coprocessor, serving both (owner, 2026-10-01)",
+    "source": "IOBoard.md, Servo rail current",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R5",
+    "function": "DC input brownout detection (new)",
+    "requirement": "Detects the DC input falling below a threshold, which the coprocessor reads; non-destructive (owner, 2026-09-30). Its threshold and the time below it are not stated. The source selection's undervoltage gate is 10.1 V falling and 11.0 V rising (V88). Answered under Raised by P1: V272: Trips at 11.0 V falling and resets at 11.5 V rising, above the source selection's 10.1 V handover (V88) (owner, 2026-10-01) V273: 10 ms (owner, 2026-10-01) V274: As V272: 11.0 V falling, 11.5 V rising (owner, 2026-10-01) V275: As V273: 10 ms (owner, 2026-10-01)",
+    "source": "IOBoard.md, DC input brownout detection",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R7",
+    "function": "Pack overcurrent protection",
+    "requirement": "Thresholds for about 49.7 A, against 3.0 V a cell (F9) and 0 to 55 °C (owner, 2026-09-30), at or below the pack's 90 A continuous. Round 1 set them for 12.23 A (V150). Answered under Raised by P1: V284: 60 A, about 20 % above the 49.7 A nominal draw and below the pack's 90 A continuous (owner, 2026-10-01)",
+    "source": "IOBoard.md, Pack overcurrent protection and Pack temperature",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "role": "P1",
+    "category": "R5",
+    "value": {
+     "where": "IOBoard.md:358",
+     "quantity": "pack full-charge voltage used for sizing (V, upper bound)",
+     "value": "8.4 V (4.2 V/cell)",
+     "marking": "assumption",
+     "source": "IOBoard.md:358",
+     "refutation_tried": "checked the SLS XTRON vendor-page description at IOBoard.md:395 -- it states 7.4 V nominal and no per-cell charge limit, so 4.2 V/cell is not vendor-confirmed; already raised as V92 ('for research'), not re-raised",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   },
+   {
+    "role": "P1",
+    "category": "R5",
+    "value": {
+     "where": "IOBoard.md:359",
+     "quantity": "board draw from the pack at the 6.0 V floor, nominal (A)",
+     "value": "about 49.7 A",
+     "marking": "assumption",
+     "source": "IOBoard.md:359; Research.md:573",
+     "refutation_tried": "recomputed the four-converter subtotal from the page's own per-converter figures: 3 servo converters at 9.9 A each (IOBoard.md:359) = 29.7 A, plus the adjustable supply at 17.6 A (IOBoard.md:381) = 47.3 A, matching the stated four-converter figure exactly; adding the display's 1.4 A (IOBoard.md:395) and the second RP2354B's 0.2 A (IOBoard.md:120) gives 48.9 A, about 0.8 A short of the stated 49.7 A, with the remainder (the main RP2354B's and other unitemized logic current) not broken out anywhere in the tree; the underlying 90% pack-side efficiency is explicitly 'not stated' and remains open at V90/V105/V111 ('for research')",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   },
+   {
+    "role": "P1",
+    "category": "R5",
+    "value": {
+     "where": "Research.md:573",
+     "quantity": "stated failure reasons of the pack disconnect candidates",
+     "value": "each candidate failed an open balance lead (V107), the reconnect condition (V93, V94) or the per-cell floor (V95)",
+     "marking": "assumption",
+     "source": "Research.md:573",
+     "refutation_tried": "read every P2, P3, rerank and P4 return for R5's pack disconnect across T3, FU-B1 and FU-B3 -- only one candidate was ever shortlisted, R5460N212AF-TR-FE, refuted in both FU-B1 (hardware/research/round1/FU-B1/032-P4-datasheet-R5.json) and FU-B3 specifically on the balance-lead-open check (V107); the same P4 return shows it passing the reconnect-condition (V93, V94) and per-cell-floor (V95) checks. No candidate's recorded failure is the reconnect condition or the per-cell floor; the claim is not supported by the primary files read for this task",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   },
+   {
+    "role": "P1",
+    "category": "R7",
+    "value": {
+     "where": "hardware/docs/IOBoard.md:359",
+     "quantity": "nominal board draw from the pack at the 6.0 V floor",
+     "value": "about 49.7 A with the display, the logic rails and the second RP2354B included; about 47.3 A from the four TPS55285 converters alone at an assumed 90 % efficiency",
+     "marking": "assumption",
+     "source": "IOBoard.md:359 (Pack path current): 'at the 6.0 V floor the four converters at 6.35 A draw about 47.3 A at an assumed 90 %, and the board about 49.7 A ... nominal figures'.",
+     "refutation_tried": "The page itself calls these 'nominal figures' with 'no upper bound' until the protection threshold is set (IOBoard.md:395). The 90 % efficiency from the pack is unverified (already raised as V140, Research.md:836, 'for research'); not re-raised here. Holds as the nominal, not maximum, draw this follow-up's threshold has to clear.",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   },
+   {
+    "role": "P1",
+    "category": "R7",
+    "value": {
+     "where": "hardware/docs/IOBoard.md:400",
+     "quantity": "charger efficiency and resulting charge current",
+     "value": "assumed 90 %: 13.5 W, about 1.6 A into a full pack at 8.4 V; a 2 A charger (BQ25887 reference figure) uses the whole 13.5 W above 6.75 V",
+     "marking": "assumption",
+     "source": "IOBoard.md:400 (Charge current): 'At an assumed 90 % that is 13.5 W ...'.",
+     "refutation_tried": "No source is given for 90 %; the same unverified figure as V139 (Research.md:835, 'for research'), already under Raised by P1 and not re-raised. The arithmetic (15 W x 0.9 = 13.5 W; 13.5 W / 8.4 V = 1.607 A) holds.",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   },
+   {
+    "role": "P1",
+    "category": "R7",
+    "value": {
+     "where": "hardware/docs/IOBoard.md:407",
+     "quantity": "charger's USB-C input connector identity",
+     "value": "not stated: whether it is the RP2354B's own USB port or a separate USB-C connector",
+     "marking": "assumption",
+     "source": "IOBoard.md:407 (Not known): 'Whether the charger's USB-C input is the RP2354B's USB port or a connector of its own: not stated (F8, R7, round 2)'.",
+     "refutation_tried": "Matches V148 (Research.md:844, 'for research'), already under Raised by P1; not re-raised here.",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   }
+  ]
+ },
+ "stock_exceptions": [],
+ "accept_open": {
+  "reason": "Owner, 2026-10-01 and 2026-10-02 (Research.md, Round 2, Rules of stage 1, and the owner's rulings of 2026-10-02): Round 2's runs in R5 to R8, its P5-P6 follow-up and its T6 may start with these items open, the reason given to `--accept-open` (owner, 2026-10-01): round 1's parts in R4, R12 and R13, and every function of round 1 that round 2 does not decide again; the resistors, capacitors, connectors and connector protection left to stage 2; the functions a round 2 follow-up leaves without a part, which the pages state as not known; and T5's conflicts and gaps in the categories round 2 does not run; FU-2P1's 18 P1 items in R2, R3, R5, R6, R7 and R9 stay open, the reason given to `--accept-open` of the P2-P4 follow-ups on those categories (owner, 2026-10-01): 10 values whose question is already under Raised by P1 and answered for research (V26, V27, V29, V39, V43, V47, V92, V139, V148, V181); the monostable page's servo rail figures, which V55 replaces; the board's draw of about 49.7 A at an assumed 90 % efficiency, the nominal sizing basis; the pack disconnect's round 1 account, corrected in the Follow-ups row; the adjustable supply's continuous current, which R6 qualifies on V281's 33 °C/W; and 3 markings in R6 the critic did not rule on. Accepted as not known by the owner on 2026-10-02: R1 figure function requirements: Microcontroller (FU-2D; six IOBoard.md rows left off the list, the part meets them); R2 figure function requirements: Link CAN controller (FU-2A; V16 and V26 left off the list, the part meets both); R3 figures re-rank report: document key and re-rank drop: trigger-path inverter: SN74LVC1G14DCKR (FU-2A; no rank 1 changes); R9 found V186 and found V187 (not found in either round) and found V195 (refuted); R10 the LM4040AIM3-3.0/NOPB Q alternative refuted on V290, no function implementing Q4 having an alternative for each of its options, and figure P2 report: Q4 effective number of bits: AD7476ARTZ-REEL7 (FU-2C; Q4 is decided for the external ADC); R11 figures P2 report: encoder decode resources for P5 and re-rank report: lead buffer output span (FU-2E; no selected part affected; P5 sizes clk_sys for the encoder); R11 accelerometer and optical index, which the owner fixes as ADXL316WBCSZ and TCND5000 without further research (2026-10-02; Research.md, Scope, fixed inputs), and R11 servo measured position, which V209 gives to the F4 encoder with no part of its own; and the items 'the specification changed after RUN selected its parts' for R2, R3 (FU-2A), R10 (FU-2C), R1, R9 (FU-2D) and R11 (FU-2E), which the plan edits recording the owner's rulings of 2026-10-02 cause.",
+  "functions": [
+   "R5: FU-2P1 left 3 P1 items unresolved",
+   "R7: FU-2P1 left 3 P1 items unresolved",
+   "R2: Link terminator (the 120 Ohm at the IO board's end: fitted, switchable or external)",
+   "R3: external pack switch module",
+   "R3: pack overvoltage and transient clamp",
+   "R3: timing network (C and R of the monostable)",
+   "R3: heartbeat-node series resistors, links and fail-safe pull-downs",
+   "R3: latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)",
+   "R3: switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+   "R4: level translation",
+   "R4: series resistance and clamps",
+   "R4: reset idle level",
+   "R4: programming supply switching",
+   "R9: balance-lead input network",
+   "R9: balance-lead connector protection (mis-plugged lead)",
+   "R9: balance-lead connector",
+   "R9: unused-input tie",
+   "R10: Reference for the RP2354B ADC (the reference option of Q4, 'ADC and reference' in the R10 row)",
+   "R10: Converter for the accelerometer (Q alternative LM4040AIM3-3.0/NOPB: refuted)",
+   "R11: accelerometer",
+   "R11: optical index",
+   "R11: servo measured position",
+   "R1: figure function requirements: Microcontroller not confirmed in FU-2D",
+   "R2: figure function requirements: Link CAN controller not confirmed in FU-2A",
+   "R3: figure re-rank report: document key not confirmed in FU-2A",
+   "R3: figure re-rank drop: trigger-path inverter: SN74LVC1G14DCKR not confirmed in FU-2A",
+   "R4: figure found V75 not confirmed in FU-A3",
+   "R4: figure P2 report: series resistance range not confirmed in FU-A3",
+   "R4: figure P2 report: clamp level against the switch alternates not confirmed in FU-A3",
+   "R4: figure re-rank report: rerank R4: series resistance on the PWM lines not confirmed in FU-A3",
+   "R9: figure found V186 not confirmed in FU-2D",
+   "R9: figure found V187 not confirmed in FU-2D",
+   "R10: figure P2 report: Q4 effective number of bits: AD7476ARTZ-REEL7 not confirmed in FU-2C",
+   "R10: no function implementing Q4 has an alternative for each of its options",
+   "R11: figure P2 report: encoder decode resources for P5 not confirmed in FU-2E",
+   "R11: figure re-rank report: lead buffer output span not confirmed in FU-2E",
+   "R12: figure P2 report: Q8 store candidate: M24256E-FMN6TP not confirmed in FU-C1",
+   "R12: figure function requirements: external I2C ports not confirmed in FU-C1",
+   "R1: the specification changed after FU-2D selected its parts",
+   "R2: the specification changed after FU-2A selected its parts",
+   "R3: the specification changed after FU-2A selected its parts",
+   "R4: the specification changed after FU-A3 selected its parts",
+   "R9: the specification changed after FU-2D selected its parts",
+   "R10: the specification changed after FU-2C selected its parts",
+   "R11: the specification changed after FU-2E selected its parts",
+   "R12: the specification changed after FU-C1 selected its parts",
+   "R13: the specification changed after FU-C1 selected its parts",
+   "R2: FU-2P1 left 2 P1 items unresolved",
+   "R3: FU-2P1 left 5 P1 items unresolved",
+   "R9: FU-2P1 left 1 P1 items unresolved"
+  ]
+ },
+ "decisions": {
+  "Q4": "An external ADC: ADCS7476AIMFX/NOPB, the part R10 kept (owner, 2026-09-29)",
+  "Q8": "An I²C FRAM: MB85RC256VPNF-G-AMERE2, the part R12 kept (owner, 2026-09-29)",
+  "Q9": "The 74HC423 keeps the '423 behaviour, and an SN74AUP1G17DBVR with I_off goes in front of its trigger inputs, as R3 selected (owner, 2026-09-29)"
+ },
+ "planned": 11,
+ "started": 19,
+ "extra_used": 8,
+ "free": 21,
+ "skipped": [],
+ "summary": {
+  "categories": [
+   "R5",
+   "R7"
+  ],
+  "held": [],
+  "results": [
+   {
+    "category": "R5",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "reverse-polarity protection",
+      "part": "LM74800QDRRRQ1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "overvoltage protection",
+      "part": "LM74800QDRRRQ1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "inrush limiting",
+      "part": "LM74800QDRRRQ1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "source selection",
+      "part": "LM74800QDRRRQ1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "pack disconnect",
+      "part": "BQ40Z80RSMR",
+      "as": "primary",
+      "status": "verified; refutation did not stand",
+      "reason": ""
+     },
+     {
+      "function": "3.3 V logic buck",
+      "part": "LMQ66430MC3RXBRQ1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "5 V rail",
+      "part": "TPS62933DRLR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "display supply",
+      "part": "TPS259474ARPWR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "display supply",
+      "part": "TPS259470ARPWR",
+      "as": "alternate",
+      "for": "TPS259474ARPWR",
+      "status": "verified"
+     },
+     {
+      "function": "encoder 12 V supply",
+      "part": "TPS55288RPMR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "source-status signal",
+      "part": "TLV9061IDBVR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "DC input brownout detection",
+      "part": "TLV9061IDBVR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "figure": "function requirements: 5 V rail",
+      "status": "confirmed; refutation did not stand"
+     },
+     {
+      "figure": "function requirements: display supply",
+      "status": "confirmed; refutation did not stand"
+     }
+    ],
+    "figures_open": [],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "reverse-polarity protection",
+      "decision": "none",
+      "part": "LM74800QDRRRQ1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "overvoltage protection",
+      "decision": "none",
+      "part": "LM74800QDRRRQ1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "inrush limiting",
+      "decision": "none",
+      "part": "LM74800QDRRRQ1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "source selection",
+      "decision": "none",
+      "part": "LM74800QDRRRQ1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "pack disconnect",
+      "decision": "none",
+      "part": "BQ40Z80RSMR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "3.3 V logic buck",
+      "decision": "none",
+      "part": "LMQ66430MC3RXBRQ1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "5 V rail",
+      "decision": "none",
+      "part": "TPS62933DRLR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "display supply",
+      "decision": "none",
+      "part": "TPS259474ARPWR",
+      "rank": 1,
+      "alternate": "TPS259470ARPWR",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "receiver supply",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "encoder 12 V supply",
+      "decision": "none",
+      "part": "TPS55288RPMR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "2S pack connector",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "logic supply from the RP2354B's USB port",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "source-status signal",
+      "decision": "none",
+      "part": "TLV9061IDBVR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "DC input brownout detection",
+      "decision": "none",
+      "part": "TLV9061IDBVR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "input transient clamp (TVS on the DC input and on the pack input)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   },
+   {
+    "category": "R7",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "Cell balancing",
+      "part": "BQ29209DRBR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Cell balancing",
+      "part": "BQ29200DRBR",
+      "as": "alternate",
+      "for": "BQ29209DRBR",
+      "status": "verified"
+     },
+     {
+      "function": "Charger input limit",
+      "part": "FUSB303BTMX",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Pack cells",
+      "part": "SLS XTRON 3000mAh 2S1P 7,4V 30C/60C (SLSXT30002130)",
+      "as": "primary",
+      "status": "refuted",
+      "scope": "function"
+     },
+     {
+      "function": "Pack overcurrent protection",
+      "part": "MAX17320G22+",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Bench pack balance lead",
+      "part": "MAX17320G22+",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "figure": "P2 report: charger battery path at the pack current",
+      "status": "refuted"
+     },
+     {
+      "figure": "P2 report: changes from the selection",
+      "status": "refuted"
+     },
+     {
+      "figure": "re-rank drop: Pack charger: BQ25756RRVR (C19272232), BQ25756ERRVR (C22427194)",
+      "status": "refuted"
+     },
+     {
+      "figure": "re-rank drop: Power path: BQ25756RRVR (C19272232), BQ25756ERRVR (C22427194)",
+      "status": "refuted"
+     }
+    ],
+    "figures_open": [
+     "P2 report: charger battery path at the pack current",
+     "P2 report: changes from the selection",
+     "re-rank drop: Pack charger: BQ25756RRVR (C19272232), BQ25756ERRVR (C22427194)",
+     "re-rank drop: Power path: BQ25756RRVR (C19272232), BQ25756ERRVR (C22427194)"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "Pack charger",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Cell balancing",
+      "decision": "none",
+      "part": "BQ29209DRBR",
+      "rank": 1,
+      "alternate": "BQ29200DRBR",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Power path",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Charger input limit",
+      "decision": "none",
+      "part": "FUSB303BTMX",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Pack cells",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [
+       "SLS XTRON 3000mAh 2S1P 7,4V 30C/60C (SLSXT30002130)"
+      ],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Pack overcurrent protection",
+      "decision": "none",
+      "part": "MAX17320G22+",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Bench pack balance lead",
+      "decision": "none",
+      "part": "MAX17320G22+",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Pack temperature",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   }
+  ],
+  "selection": {
+   "R5": [
+    {
+     "function": "reverse-polarity protection",
+     "decision": "none",
+     "part": "LM74800QDRRRQ1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "overvoltage protection",
+     "decision": "none",
+     "part": "LM74800QDRRRQ1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "inrush limiting",
+     "decision": "none",
+     "part": "LM74800QDRRRQ1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "source selection",
+     "decision": "none",
+     "part": "LM74800QDRRRQ1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "pack disconnect",
+     "decision": "none",
+     "part": "BQ40Z80RSMR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "3.3 V logic buck",
+     "decision": "none",
+     "part": "LMQ66430MC3RXBRQ1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "5 V rail",
+     "decision": "none",
+     "part": "TPS62933DRLR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "display supply",
+     "decision": "none",
+     "part": "TPS259474ARPWR",
+     "rank": 1,
+     "alternate": "TPS259470ARPWR",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "receiver supply",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "encoder 12 V supply",
+     "decision": "none",
+     "part": "TPS55288RPMR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "2S pack connector",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "logic supply from the RP2354B's USB port",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "source-status signal",
+     "decision": "none",
+     "part": "TLV9061IDBVR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "DC input brownout detection",
+     "decision": "none",
+     "part": "TLV9061IDBVR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "input transient clamp (TVS on the DC input and on the pack input)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ],
+   "R7": [
+    {
+     "function": "Pack charger",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Cell balancing",
+     "decision": "none",
+     "part": "BQ29209DRBR",
+     "rank": 1,
+     "alternate": "BQ29200DRBR",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Power path",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Charger input limit",
+     "decision": "none",
+     "part": "FUSB303BTMX",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Pack cells",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [
+      "SLS XTRON 3000mAh 2S1P 7,4V 30C/60C (SLSXT30002130)"
+     ],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Pack overcurrent protection",
+     "decision": "none",
+     "part": "MAX17320G22+",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Bench pack balance lead",
+     "decision": "none",
+     "part": "MAX17320G22+",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Pack temperature",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ]
+  },
+  "figures_open": {
+   "R5": [],
+   "R7": [
+    "P2 report: charger battery path at the pack current",
+    "P2 report: changes from the selection",
+    "re-rank drop: Pack charger: BQ25756RRVR (C19272232), BQ25756ERRVR (C22427194)",
+    "re-rank drop: Power path: BQ25756RRVR (C19272232), BQ25756ERRVR (C22427194)"
+   ]
+  },
+  "part_refuted": {
+   "R5": [],
+   "R7": []
+  },
+  "q_missing": [],
+  "chain_failed": []
+ },
+ "followUps": [
+  {
+   "role": "P0",
+   "host": "www.vishay.com",
+   "categories": [
+    "R3",
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P0",
+   "host": "www.isabellenhuette.com",
+   "categories": [
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P0",
+   "host": "www.ramxeed.com",
+   "categories": [
+    "R12"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "reverse-polarity protection",
+   "part": "LM74800QDRRRQ1",
+   "reason": "shortlisted states other values than the function for: reverse voltage survived, forward continuous voltage survived, input transient survived, operating input range, current carried, DC pins kept free of the pack voltage, non-destructive, ambient temperature, maker allowed; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "reverse-polarity protection",
+   "part": "LM74810QDRRRQ1",
+   "reason": "shortlisted states other values than the function for: reverse voltage survived, forward continuous voltage survived, input transient survived, operating input range, current carried, DC pins kept free of the pack voltage, non-destructive, ambient temperature, maker allowed; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "reverse-polarity protection",
+   "part": "LM74800MDRRR",
+   "reason": "shortlisted states other values than the function for: reverse voltage survived, forward continuous voltage survived, input transient survived, operating input range, current carried, DC pins kept free of the pack voltage, non-destructive, ambient temperature, maker allowed; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "overvoltage protection",
+   "part": "LM74800QDRRRQ1",
+   "reason": "shortlisted states other values than the function for: cut-off band, non-destructive cut-off, continuous overvoltage survived, transient survived, cut-off response, current carried; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "overvoltage protection",
+   "part": "LM74810QDRRRQ1",
+   "reason": "shortlisted states other values than the function for: cut-off band, non-destructive cut-off, continuous overvoltage survived, transient survived, cut-off response, current carried; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "overvoltage protection",
+   "part": "LM74800MDRRR",
+   "reason": "shortlisted states other values than the function for: cut-off band, non-destructive cut-off, continuous overvoltage survived, transient survived, cut-off response, current carried; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "inrush limiting",
+   "part": "LM74800QDRRRQ1",
+   "reason": "shortlisted states other values than the function for: inrush limit, current carried, operating input range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "inrush limiting",
+   "part": "LM74810QDRRRQ1",
+   "reason": "shortlisted states other values than the function for: inrush limit, current carried, operating input range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "inrush limiting",
+   "part": "LM74800MDRRR",
+   "reason": "shortlisted states other values than the function for: inrush limit, current carried, operating input range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "source selection",
+   "part": "LM74800QDRRRQ1",
+   "reason": "shortlisted states other values than the function for: DC input selected when present, switchover interruption, pack kept off the DC pins, DC kept out of the pack, USB-C supply through the pack input, current carried, input survival; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "source selection",
+   "part": "LM74810QDRRRQ1",
+   "reason": "shortlisted states other values than the function for: DC input selected when present, switchover interruption, pack kept off the DC pins, DC kept out of the pack, USB-C supply through the pack input, current carried, input survival; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "source selection",
+   "part": "LM74800MDRRR",
+   "reason": "shortlisted states other values than the function for: DC input selected when present, switchover interruption, pack kept off the DC pins, DC kept out of the pack, USB-C supply through the pack input, current carried, input survival; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "pack disconnect",
+   "part": "BQ40Z80RSMR",
+   "reason": "shortlisted states other values than the function for: per-cell floor, cells, reconnect condition, trip filter, current while disconnected, threshold set in hardware, balance lead open, pack voltage, pack current, start from the pack alone, maker allowed; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "pack disconnect",
+   "part": "BQ40Z50RSMR-R2",
+   "reason": "shortlisted states other values than the function for: per-cell floor, cells, reconnect condition, trip filter, current while disconnected, threshold set in hardware, balance lead open, pack voltage, pack current, start from the pack alone, maker allowed; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "pack disconnect",
+   "part": "BQ4050RSMR",
+   "reason": "shortlisted states other values than the function for: per-cell floor, cells, reconnect condition, trip filter, current while disconnected, threshold set in hardware, balance lead open, pack voltage, pack current, start from the pack alone, maker allowed; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "pack disconnect",
+   "part": "BQ28Z610DRZR",
+   "reason": "shortlisted states other values than the function for: per-cell floor, cells, reconnect condition, trip filter, current while disconnected, threshold set in hardware, balance lead open, pack voltage, pack current, start from the pack alone, maker allowed; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "3.3 V logic buck",
+   "part": "LMQ66430MC3RXBRQ1",
+   "reason": "shortlisted states other values than the function for: output current, input range, 3.3 V tolerance at the monostable, start-up ramp, rail order; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "3.3 V logic buck",
+   "part": "LM61460AFSQRJRRQ1",
+   "reason": "shortlisted states other values than the function for: output current, input range, 3.3 V tolerance at the monostable, start-up ramp, rail order; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "3.3 V logic buck",
+   "part": "TPSM63603RDHR",
+   "reason": "shortlisted states other values than the function for: output current, input range, 3.3 V tolerance at the monostable, start-up ramp; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "3.3 V logic buck",
+   "part": "TLVM13620RDHR",
+   "reason": "shortlisted states other values than the function for: output current, input range, 3.3 V tolerance at the monostable, start-up ramp; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "3.3 V logic buck",
+   "part": "LMR43620MSC3RPERQ1",
+   "reason": "shortlisted states other values than the function for: output current, input range, 3.3 V tolerance at the monostable, start-up ramp, rail order; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "3.3 V logic buck",
+   "part": "TPSM63603SRDHR",
+   "reason": "alternate states other values than the function for: output current, input range, 3.3 V tolerance at the monostable, start-up ramp, rail order; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "5 V rail",
+   "part": "TPS62933DRLR",
+   "reason": "shortlisted states other values than the function for: output current, regulation at the lowest input, input range, voltage at the display end; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "5 V rail",
+   "part": "TPS563300DRLR",
+   "reason": "shortlisted states other values than the function for: output current, regulation at the lowest input, input range, voltage at the display end; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "5 V rail",
+   "part": "LMR51430YFDDCR",
+   "reason": "shortlisted states other values than the function for: output current, regulation at the lowest input, input range, voltage at the display end; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "display supply",
+   "part": "TPS259474ARPWR",
+   "reason": "shortlisted states other values than the function for: reverse current blocked, current limit, current carried, input voltage, voltage drop at 2 A, 5 V back-fed with the input at 0 V; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "display supply",
+   "part": "TPS259470ARPWR",
+   "reason": "shortlisted states other values than the function for: reverse current blocked, current limit, current carried, input voltage, voltage drop at 2 A, 5 V back-fed with the input at 0 V; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "display supply",
+   "part": "TPS259474LRPWR",
+   "reason": "shortlisted states other values than the function for: reverse current blocked, current limit, current carried, input voltage, voltage drop at 2 A, 5 V back-fed with the input at 0 V; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R5",
+   "function": "receiver supply",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "encoder 12 V supply",
+   "part": "TPS55288RPMR",
+   "reason": "shortlisted states other values than the function for: input range, output voltage at the connector, output current, output current limit, power-on inrush absorbed; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "encoder 12 V supply",
+   "part": "LM5175PWPR",
+   "reason": "shortlisted states other values than the function for: input range, output voltage at the connector, output current, output current limit, power-on inrush absorbed; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "encoder 12 V supply",
+   "part": "LM5176PWPR",
+   "reason": "shortlisted states other values than the function for: input range, output voltage at the connector, output current, output current limit, power-on inrush absorbed; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R5",
+   "function": "2S pack connector",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R5",
+   "function": "logic supply from the RP2354B's USB port",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "source-status signal",
+   "part": "TLV9061IDBVR",
+   "reason": "shortlisted states other values than the function for: signal form, ADC input within its rating with the 3.3 V rail down, input current with its supply at 0 V, input range, offset contribution, supply, settling; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "source-status signal",
+   "part": "TLV9001IDBVR",
+   "reason": "shortlisted states other values than the function for: signal form, ADC input within its rating with the 3.3 V rail down, input current with its supply at 0 V, input range, offset contribution, supply, settling; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "source-status signal",
+   "part": "OPA333AIDBVR",
+   "reason": "shortlisted states other values than the function for: signal form, ADC input within its rating with the 3.3 V rail down, input current with its supply at 0 V, input range, offset contribution, supply, settling; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "DC input brownout detection",
+   "part": "TLV9061IDBVR",
+   "reason": "shortlisted states other values than the function for: signal, thresholds, qualifying time, non-destructive, ADC input within its rating with the 3.3 V rail down, offset contribution; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "DC input brownout detection",
+   "part": "TLV9001IDBVR",
+   "reason": "shortlisted states other values than the function for: signal, thresholds, qualifying time, non-destructive, ADC input within its rating with the 3.3 V rail down, offset contribution; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R5",
+   "function": "DC input brownout detection",
+   "part": "OPA333AIDBVR",
+   "reason": "shortlisted states other values than the function for: signal, thresholds, qualifying time, non-destructive, ADC input within its rating with the 3.3 V rail down, offset contribution; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P3",
+   "category": "R5",
+   "function": "input transient clamp (TVS on the DC input and on the pack input)",
+   "reason": "function the row names that P2 did not return: IOBoard.md, Power, Overvoltage protection row: 'a transient the protection absorbs (V85) stays within the rating of the part that absorbs it', and V85 asks what the DC input's protection absorbs; Research.md Round 2, Rules of stage 1, puts the power input's protection in stage 1 and in R5 (connector protection for stage 2 lists the signal, sensor, balance-lead, link and heartbeat connectors, not the power inputs; IOBoard.md line 575 agrees). P2's survival rows for reverse-polarity protection, overvoltage protection, inrush limiting and source selection all assume TVS2701DRBR (60 V for 10 us clamped to at most 37.3 V; V85 'found'), P2's own report 'input transient clamp gap' says the clamp 'needs a function of its own', and P2 returned no entry for it, so selection.json (hardware/research/round2/selection.json, R5) has no clamp. P2 dropped TVS2701DRBR and SMBJ26CA-13-F from the overvoltage function as 'not candidates for this function'. Data P2 already read for the missing entry: TVS2701DRBR JLCPCB C2878109 stock 155, presale 118 (P2 file jlc_summary.txt, 2026-10-02T11:55:24Z), 2 placements, need 10, gate 50; SMBJ26CA-13-F C135063 63/62 clamps at 42.1 V at 14.2 A, above 37.3 V (FU-B3 P2 report, 2026-09-29T15:33:18Z). Not ranked, no second source, lifecycle and Digi-Key not recorded."
+  },
+  {
+   "role": "rerank",
+   "category": "R7",
+   "part": "LTC4020EUHF#PBF (C2858365)",
+   "functions": [
+    "Pack charger",
+    "Power path"
+   ],
+   "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+  },
+  {
+   "role": "rerank",
+   "category": "R7",
+   "part": "BQ25887RGER (C2761614)",
+   "functions": [
+    "Pack charger",
+    "Power path"
+   ],
+   "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Cell balancing",
+   "part": "BQ29209DRBR",
+   "reason": "shortlisted states other values than the function for: cells balanced, balance current, supply range, works beside the charger; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Cell balancing",
+   "part": "BQ29200DRBR",
+   "reason": "shortlisted states other values than the function for: cells balanced, balance current, supply range, works beside the charger; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Cell balancing",
+   "part": "BQ40Z50RSMR-R2",
+   "reason": "shortlisted states other values than the function for: cells balanced, balance current, supply range, works beside the charger; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Cell balancing",
+   "part": "BQ40Z80RSMR",
+   "reason": "shortlisted states other values than the function for: cells balanced, balance current, supply range, works beside the charger, operating ambient; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Charger input limit",
+   "part": "FUSB303BTMX",
+   "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output, adjust time; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Charger input limit",
+   "part": "TUSB321AIRWBR",
+   "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output, adjust time; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Charger input limit",
+   "part": "TUSB320LAIRWBR",
+   "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output, adjust time, operating ambient; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Charger input limit",
+   "part": "TUSB320LIRWBR",
+   "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output, adjust time, operating ambient; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Charger input limit",
+   "part": "FUSB301TMX",
+   "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output, adjust time, operating ambient; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Charger input limit",
+   "part": "STUSB4500QTR",
+   "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output, adjust time, operating ambient; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Charger input limit",
+   "part": "TUSB322IRWBR",
+   "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output, adjust time, operating ambient; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Charger input limit",
+   "part": "TUSB422IYFPR",
+   "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output, adjust time, operating ambient; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Pack cells",
+   "part": "SLS XTRON 3000mAh 2S1P 7,4V 30C/60C (SLSXT30002130)",
+   "reason": "shortlisted states other values than the function for: pack, discharge floor, continuous discharge, burst discharge, charge current, temperature, capacity; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Pack overcurrent protection",
+   "part": "MAX17320G22+",
+   "reason": "shortlisted states other values than the function for: location, overcurrent threshold, short circuit, charge overvoltage, temperature, NTC; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Pack overcurrent protection",
+   "part": "BQ40Z50RSMR-R2",
+   "reason": "shortlisted states other values than the function for: location, cells, overcurrent threshold, short circuit, charge overvoltage, temperature, NTC; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Pack overcurrent protection",
+   "part": "BQ76907RGRR",
+   "reason": "shortlisted states other values than the function for: location, cells, overcurrent threshold, short circuit, charge overvoltage, temperature, NTC; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Pack overcurrent protection",
+   "part": "BQ40Z80RSMR",
+   "reason": "shortlisted states other values than the function for: location, overcurrent threshold, short circuit, temperature, NTC, operating ambient; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Pack overcurrent protection",
+   "part": "BQ4050RSMR",
+   "reason": "shortlisted states other values than the function for: location, overcurrent threshold, short circuit, temperature, NTC, operating ambient; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Bench pack balance lead",
+   "part": "MAX17320G22+",
+   "reason": "shortlisted states other values than the function for: separate input, taps, per-cell reading, connector; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Bench pack balance lead",
+   "part": "BQ40Z50RSMR-R2",
+   "reason": "shortlisted states other values than the function for: separate input, taps, per-cell reading, connector; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Bench pack balance lead",
+   "part": "BQ76907RGRR",
+   "reason": "shortlisted states other values than the function for: separate input, taps, per-cell reading, connector; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Bench pack balance lead",
+   "part": "BQ40Z80RSMR",
+   "reason": "shortlisted states other values than the function for: separate input, taps, per-cell reading, connector; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Bench pack balance lead",
+   "part": "BQ4050RSMR",
+   "reason": "shortlisted states other values than the function for: separate input, taps, per-cell reading, connector; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P3",
+   "category": "R7",
+   "function": "Pack temperature",
+   "reason": "function the row names that P2 did not return: IOBoard.md names it as its own row ('0 C lower and 55 C upper limit, read from a 10 kOhm, B 3435 K NTC; thresholds: a follow-up of R7; its action on discharge at the limits is a follow-up of R7's'). P2 returns no entry for it: the NTC appears only as a requirement inside Pack overcurrent protection and Pack charger, with no threshold setting, no discharge action at the limits and no part for the NTC read. The NTC part and its lead's connector are stage 2."
+  },
+  {
+   "role": "P4",
+   "category": "R7",
+   "function": "Charger input limit",
+   "part": "FUSB303BTMX",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: no onsemi longevity programme page located (the guessed product-longevity URL returned onsemi's home page; the onsemi.com pages found cover sustainability programmes and EOL replacement only). None read",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R7",
+   "function": "Charger input limit",
+   "part": "FUSB303BTMX",
+   "figure": "market introduction",
+   "reason": "recorded as not read: not read: FUSB303B/D carries no revision history; it shows only 'September, 2024 - Rev. 3' and copyright 2020. At least 25 months on the market by Rev. 3; the Rev. 2, April 2022 date round 1 read is not re-read",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R7",
+   "function": "Pack cells",
+   "part": "SLS XTRON 3000mAh 2S1P 7,4V 30C/60C (SLSXT30002130)",
+   "figure": "market introduction",
+   "reason": "recorded as not read: not read: the vendor page states no introduction date",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R7",
+   "function": "Pack cells",
+   "part": "SLS XTRON 3000mAh 2S1P 7,4V 30C/60C (SLSXT30002130)",
+   "figure": "lifecycle status",
+   "reason": "lifecycle status not read: the vendor page carries no lifecycle status and the pack is not a Digi-Key product (404). The listing is orderable, InStock",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "function": "Pack cells",
+   "part": "SLS XTRON 3000mAh 2S1P 7,4V 30C/60C (SLSXT30002130)",
+   "reason": "refuted, and no next-ranked candidate"
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "figure": "P2 report: charger battery path at the pack current",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "figure": "P2 report: changes from the selection",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "figure": "re-rank drop: Pack charger: BQ25756RRVR (C19272232), BQ25756ERRVR (C22427194)",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "figure": "re-rank drop: Power path: BQ25756RRVR (C19272232), BQ25756ERRVR (C22427194)",
+   "reason": "figure refuted"
+  }
+ ],
+ "missing": [],
+ "sequence": 23,
+ "output_sha256": "958ed1ebfd5c2ba3cada935411c3593f261e99988c2a133b26fb21a740392250",
+ "research_round": 2
+}

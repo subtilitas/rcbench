@@ -1,0 +1,140 @@
+{
+ "role": "P3",
+ "category": "R7",
+ "label": "P3-R7",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "missed": [
+   {
+    "function": "Pack charger",
+    "part": "BQ25731RSNR (C2871872)",
+    "maker": "Texas Instruments",
+    "why": "Same family as the rank-1 BQ25723 (I2C 1- to 5-cell buck-boost charge controller, SLUSE66A, https://www.ti.com/lit/ds/symlink/bq25731.pdf read 2026-10-02T12:21:44Z) and the one P2 dropped only for 'No BATFET'. Values against the Pack charger rows: VBUS 3.5 to 26 V (covers 5 V, rated far above 5.5 V); input current limit up to 6.35 A / 10 A in 50 / 100 mA steps for 10 / 5 mOhm RAC (covers 500 mA, 1.5 A, 3 A); 1 to 5 cells with 2S set by the CELL_BATPRESZ divider; charge current up to 16.2 A in 128 mA steps at 5 mOhm RSR (covers 2.37 A); charge voltage register covers 8.4 V; host-terminated by CHRG_INHIBIT like the BQ25723; 5 mOhm RSR is the POR setting (RSNS_RSR = 1b, text near line 1652) and SRP-SRN is -0.5 to 0.5 V both absolute and recommended, so 0.249 V at 49.7 A, 0.300 V at 60 A, 0.334 V at 66.8 A with 5 mOhm (12.4 W in the shunt at 49.7 A, same as the BQ25723's RSR). Section 9.3.17: the input source powers the system load and the charge, the charge current falls as the system load rises, and below the system voltage the battery supplements the load; IBAT reads (VSRN - VSRP) in discharge, so the shunt carries the cells' current in both directions and the load sits on the VSYS side of it (termination on the cells' current). No NTC pin (the protector reads the pack NTC, V147). Stock: JLCPCB C2871872 stockCount 1125, canPresaleNumber 1122, expand, read 2026-10-02T12:30:14Z (BQ25723 C2871889 read 214 / 213 at 11:50:06Z). TI product page https://www.ti.com/product/BQ25731 shows ACTIVE, read 2026-10-02T12:31:22Z. Digi-Key API (productdetails/BQ25731RSNR, read 2026-10-02T12:31:24Z): Active, lead time 20 weeks, stock_available 2079. Not read: behaviour of the VSYS_MIN register with no BATFET at the 6.0 V pack floor, and VSYS with the pack disconnected (CELL_BATPRESZ pulled low on battery removal disables charge). No BATFET gate drive is needed, so the BATFET gate-drive row does not apply."
+   },
+   {
+    "function": "Power path",
+    "part": "BQ25731RSNR (C2871872)",
+    "maker": "Texas Instruments",
+    "why": "Same part and readings as the Pack charger entry. Its load-sharing path is the RSR alone: the system load on VSYS, the pack behind the 5 mOhm RSR, which carries 49.7 A to 66.8 A with SRP-SRN 0.249 to 0.334 V inside the -0.5 to 0.5 V recommended range (SLUSE66A, read 2026-10-02T12:21:44Z). Run while charging and USB-only operation come from the dynamic power management of section 9.3.17 (charge current drops to zero as the system load rises; the battery supplements when VSYS falls below it). IOBoard.md 'Not known' accepts 'a power path or load sharing'. JLCPCB stockCount 1125 (12:30:14Z), TI page ACTIVE (12:31:22Z), Digi-Key Active with stock 2079 (12:31:24Z). Open: the pack-held-off state (CELL_BATPRESZ low) with VSYS fed from USB-C only is not read."
+   },
+   {
+    "function": "Pack charger",
+    "part": "LTC4020EUHF#TRPBF (C462630)",
+    "maker": "Analog Devices (Linear)",
+    "why": "P2 dropped the LTC4020 (read as C2858365, #PBF) by sizing RCS at 21 mOhm for the 2.37 A charge current. The data sheet (Rev. E, https://www.analog.com/media/en/technical-documentation/data-sheets/ltc4020.pdf, safari client, read 2026-10-02T12:32:03Z) sets ICSMAX = 0.05 V / RCS but gives RNG/SS (pin 15, effective range 0 to 1 V) as a fraction of ICSMAX, so RCS follows the pack current, not the charge current: RCS = 4 mOhm gives ICSMAX 12.5 A, RNG/SS about 0.19 V sets 2.37 A, and CSP-CSN is 0.267 V at 66.8 A against the -0.3 to 0.3 V absolute maximum (no separate recommended range is stated). Buck-boost with 4.5 to 55 V VIN (covers 5 V, rated to 55 V), UVLO rising 3.6 to 4.4 V; float voltage by divider (8.4 V, +-0.5 %); the system load is on the converter output, the pack behind the PowerPath FET and RCS (instant-on for a flat pack); the NTC pin (1.35 V / 0.3 V limits at 50 uA) reads the pack NTC through a scaling network; ILIMIT programs the average inductor current (about the input current in boost mode, 45 to 60 mV across RSENSEA at 20 V/V) and can be driven by a resistor or a sink, so the 500 mA / 1.5 A / 3 A states are external; the accuracy of the input limit is not read. Limits: C/10 termination is 5 mV (3 to 7 mV) across RCS, 1.25 A (0.75 to 1.75 A) at 4 mOhm; the E grade is tested over 0 to 85 C junction, -40 to 125 C by design (Note 2); 12.35 W-class shunt loss at 49.7 A as for the BQ25723. Stock: JLCPCB C462630 stockCount 2648, canPresaleNumber 2637, expand, read 2026-10-02T12:23:52Z (C2858365 reads 52 / 51 at 12:23:51Z; the I grade C580827 reads 4). Digi-Key API (productdetails/LTC4020EUHF#TRPBF, read 2026-10-02T12:24:33Z): Active, lead time 49 weeks, stock_available 620. Digi-Key ProductStatus is the lifecycle status for Analog Devices."
+   },
+   {
+    "function": "Power path",
+    "part": "LTC4020EUHF#TRPBF (C462630)",
+    "maker": "Analog Devices (Linear)",
+    "why": "Same part and readings as the Pack charger entry. Power path: converter output feeds the system, an ideal-diode PowerPath FET (BGATE, 14 mV servo) lets the pack supply the load when the converter is limited, charging stays on the cells' current through RCS (4 mOhm: 0.267 V at 66.8 A, within the 0.3 V absolute maximum). Instant-on keeps the system running with a flat pack while it charges. BGATE drives an external P-channel FET, clamped 9.5 V below CSP, so the 6.0 V floor gate-drive row applies as for the BQ25723. JLCPCB stockCount 2648 (12:23:52Z); Digi-Key Active, stock 620 (12:24:33Z)."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "TUSB320LAIRWBR (C132554)",
+    "maker": "Texas Instruments",
+    "why": "Family P2 did not consider (P2 has only the TUSB321 and TUSB321A). SLLSEQ8D (https://www.ti.com/lit/ds/symlink/tusb320lai.pdf, read 2026-10-02T12:14:04Z): UFP via the PORT pin, current mode default / medium / high on OUT1 / OUT2 pins or in the I2C CURRENT_MODE_DETECT register with INT_N; dead-battery mode (section 7.3.3): Rd 5.1 kOhm (RCC_DB 4.1 to 6.1 kOhm) with VDD absent, so a source turns on VBUS for a flat pack; VDD 2.7 to 5 V (absolute maximum 6 V), so it runs from the 3.3 V rail, not from a 5.5 V VBUS; VBUS_DET through 887 kOhm, 4 to 28 V; TA -40 to 85 C. JLCPCB C132554 stockCount 3089, canPresaleNumber 3038, read 2026-10-02T12:16:22Z. TI page ACTIVE (https://www.ti.com/product/TUSB320LAI, read 12:14:47Z). Digi-Key (productdetails/TUSB320LAIRWBR, read 12:17:33Z): Active, lead time 12 weeks, stock_available 11965."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "TUSB320LIRWBR (C2836598)",
+    "maker": "Texas Instruments",
+    "why": "Industrial-grade sibling of the TUSB320LAI with the same values (SLLSEP2D, https://www.ti.com/lit/ds/symlink/tusb320li.pdf, read 2026-10-02T12:15:03Z): dead-battery Rd (RCC_DB 4.1 to 6.1 kOhm), VDD 2.7 to 5 V, TA -40 to 85 C, current mode on OUT pins or I2C with INT_N. JLCPCB C2836598 stockCount 6110, canPresaleNumber 6085, read 12:16:24Z. TI page ACTIVE (https://www.ti.com/product/TUSB320LI, read 12:14:48Z). Digi-Key (read 12:17:35Z): Active, lead time 12 weeks, stock_available 654."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "TUSB322IRWBR (C2674422)",
+    "maker": "Texas Instruments",
+    "why": "SLLSEO5D (https://www.ti.com/lit/ds/symlink/tusb322i.pdf, read 2026-10-02T12:13:47Z): VDD 4.5 to 5.5 V, so it runs from VBUS up to 5.5 V; dead-battery mode (section 6.4.4), RCC_DB 4.1 to 6.1 kOhm; Type-C current default / medium / high in I2C CURRENT_MODE_DETECT with INT_N; TA -40 to 85 C. UFP-only is set over I2C (it powers up as DRP), so the pin-output route is not available. JLCPCB C2674422 stockCount 695, canPresaleNumber 692, read 12:16:27Z. TI page ACTIVE (read 12:14:48Z). Digi-Key (read 12:17:36Z): Active, lead time 26 weeks, stock_available 4158."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "PTN5150AHXMP (C2651889)",
+    "maker": "NXP",
+    "why": "PTN5150A Rev. 1 (https://www.nxp.com/docs/en/data-sheet/PTN5150A.pdf, read 2026-10-02T12:16:11Z): PORT = GND selects UFP; default / medium (1.5 A) / high (3.0 A) current detection on OUT1 / OUT2 pins (no-I2C mode) or in I2C registers with INTB; with no power the part defaults to UFP with Rd active (general description of the CC block); VDD 2.7 to 5.5 V; Tamb -40 to 85 C. The data sheet gives no Rd tolerance for the unpowered state. NXP page https://www.nxp.com/products/PTN5150 shows status Active (read 12:16:05Z; the orderable PTN5150AHXMP carries schema availability 'BackOrder'). JLCPCB C2651889 stockCount 9695, canPresaleNumber 9686, label 'NXP Semicon', read 12:16:28Z. Digi-Key (read 12:17:38Z): Active, lead time 30 weeks, stock_available 18 (below the gate as a second vendor)."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "FUSB301TMX (C132290)",
+    "maker": "onsemi",
+    "why": "Same maker and class as the rank-1 FUSB303BTMX. FUSB301 data sheet (https://www.onsemi.com/pdf/datasheet/fusb301-d.pdf, read 2026-10-02T12:28:56Z): sink dead-battery support with no power applied (pull-down, VSNKDB 2.18 V maximum), Rd current thresholds default 0.66 V / 1.5 A 1.23 V / 3 A 2.11 V reported over I2C with open-drain INT_N, VDD 3.0 to 5.5 V (3.3 V rail or VBUS), TA -40 to 85 C. onsemi page https://www.onsemi.com/products/interfaces/usb-type-c/fusb301 lists FUSB301TMX Active (read 12:29:07Z). JLCPCB C132290 stockCount 10288, canPresaleNumber 10266, read 12:29:26Z. Digi-Key (read 12:29:33Z): Active, lead time 52 weeks, stock_available 28544. Not read: its Rp-change time."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "STUSB4500QTR (C2678061)",
+    "maker": "STMicroelectronics",
+    "why": "USB PD sink controller (DS12499 Rev 8, https://www.st.com/resource/en/datasheet/stusb4500.pdf, read 2026-10-02T12:13:48Z): dead-battery mode on CC1DB / CC2DB with no supply, VDD 4.1 to 22 V from VBUS (or VSYS 3.0 to 5.5 V), NVM configuration 3 gives the source's Type-C current on POWER_OK2 / POWER_OK3 (both Hi-Z = default, one low = 1.5 A or 3.0 A), ALERT interrupt over I2C, TA -40 to 105 C. It needs its NVM set to configuration 3 and a 5 V-only PDO so VBUS stays at 5 V. ST page https://www.st.com/en/interfaces-and-transceivers/stusb4500.html (read 12:17:05Z): STUSB4500QTR Active, STUSB4500BJR NRND. JLCPCB C2678061 stockCount 4882, canPresaleNumber 4759, read 12:16:30Z. Digi-Key (read 12:17:40Z): Active, lead time 30 weeks, stock_available 27363."
+   },
+   {
+    "function": "Charger input limit",
+    "part": "TUSB422IYFPR (C702378)",
+    "maker": "Texas Instruments",
+    "why": "USB Type-C port controller (TCPC) with dead-battery support (https://www.ti.com/lit/ds/symlink/tusb422.pdf, read 2026-10-02T12:13:50Z): VDD 2.7 to 5.5 V, CC_STATUS CC1_STATE / CC2_STATE hold the Rp level, INT_N interrupt, TA -40 to 85 C. It needs a port-manager stack on the host (heavier than the pin parts). JLCPCB C702378 stockCount 229, canPresaleNumber 229, read 12:16:33Z. TI page ACTIVE (https://www.ti.com/product/TUSB422, read 12:17:19Z). Digi-Key (read 12:17:41Z): Active, lead time 20 weeks, stock_available 7103."
+   },
+   {
+    "function": "Pack overcurrent protection",
+    "part": "BQ28Z620DRZR (C20345237)",
+    "maker": "Texas Instruments",
+    "why": "Successor of the BQ28Z610 that P2 dropped for stating no comparator tolerance; the BQ28Z620 states it (SLUSD..., https://www.ti.com/lit/ds/symlink/bq28z620.pdf, read 2026-10-02T12:27:08Z, section 8.22): OCD -16.6 to -100 mV in 5.56 mV steps (RSNS = 1), SCD1 / SCD2 44.4 to 200 mV in 22.2 mV steps, offset +-1 mV below 8.3 mV and +-2.5 mV above, gain error +-5 %. At 1 mOhm: OCD 61.1 mV gives 55.5 to 66.6 A, SCD 88.8 mV gives 81.9 to 95.7 A (above the overcurrent band, under 180 A). 1- to 2-series, VCC 2.2 to 10 V (covers 6.0 to 8.4504 V), high-side N-FET drive, TS1 NTC input, supports a 0.5 mOhm shunt. Internal balance bypass RCB 200 Ohm, so it does not balance at 84.6 mA. Not read: the COV setting range at 4.25 V and the thermistor model for 10 kOhm, B 3435 K. JLCPCB C20345237 stockCount 64, canPresaleNumber 64, read 12:27:25Z (above the gate of 50 by 14). TI page ACTIVE (https://www.ti.com/product/BQ28Z620, read 12:27:26Z). Digi-Key (read 12:27:41Z): Active, lead time 12 weeks, stock_available 0."
+   },
+   {
+    "function": "Pack overcurrent protection",
+    "part": "BQ40Z80RSMR (C882850)",
+    "maker": "Texas Instruments",
+    "why": "Sibling of the rank-2 BQ40Z50RSMR-R2 that P2 did not name. SLUSBV4D (https://www.ti.com/lit/ds/symlink/bq40z80.pdf, read 2026-10-02T12:19:14Z): 2- to 6-series (the RSMT variant 2 to 7), VCC 2.2 to 32 V, high-side N-FET drive, OCD -16.6 to -100 mV, SCD1 / SCD2 -44.4 to -200 mV, no-trim scale error +-10 % (post-trim +-5 %), offset +-2.5 mV post-trim, four thermistor inputs TS1 to TS4. Same unread items as the BQ40Z50: the thermistor model for 10 kOhm B 3435 K and the TRM (not read for this part). JLCPCB C882850 stockCount 8611, canPresaleNumber 8597, read 2026-10-02T12:20:14Z. TI page ACTIVE (https://www.ti.com/product/BQ40Z80, read 12:20:15Z). Digi-Key (cached reading of 2026-10-02T11:58:04Z): Active, lead time 20 weeks, stock_available 6515."
+   },
+   {
+    "function": "Pack overcurrent protection",
+    "part": "BQ4050RSMR (C157570)",
+    "maker": "Texas Instruments",
+    "why": "1- to 4-series SBS pack manager in the same family (SLUSBE0-class data sheet, https://www.ti.com/lit/ds/symlink/bq4050.pdf, read 2026-10-02T12:19:14Z): VCC 2.2 to 26 V, OCD -16.6 to -100 mV, SCC / SCD1 / SCD2 +-44.4 to 200 mV, no-trim scale error +-10 %, post-trim +-5 % and offset +-2.5 mV, TS1 to TS4, high-side FET drive. Unread: the thermistor model and the TRM. JLCPCB C157570 stockCount 15945, canPresaleNumber 15931, read 2026-10-02T12:20:14Z. TI page ACTIVE (https://www.ti.com/product/BQ4050, read 12:20:15Z). Digi-Key (cached reading 11:58:06Z): Active, lead time 20 weeks, stock_available 5311."
+   },
+   {
+    "function": "Cell balancing",
+    "part": "BQ40Z80RSMR (C882850) and BQ4050RSMR (C157570)",
+    "maker": "Texas Instruments",
+    "why": "Both support EXTERNAL CELL BALANCING (one cell at a time, faster than the internal 200 Ohm / 10 mA bypass; BQ40Z80 section 7.3.2.4.2 and BQ4050 section 8.2.2.3.2, which cite the Fast Cell Balancing Using External MOSFET application note), as the rank-3 BQ40Z50 does, and balance at rest or while charging without the charger. BQ40Z80 supply 2.2 to 32 V, BQ4050 2.2 to 26 V, TA -40 to 85 C. The external-FET current (84.6 mA) was not computed here; stock and lifecycle as in the Pack overcurrent protection entries (JLCPCB 8611 and 15945 read 12:20:14Z)."
+   },
+   {
+    "function": "Bench pack balance lead",
+    "part": "BQ28Z620DRZR (C20345237), BQ40Z80RSMR (C882850), BQ4050RSMR (C157570)",
+    "maker": "Texas Instruments",
+    "why": "Each is a protector and gauge that reads the per-cell voltages on its VC pins (BQ28Z620 VC1 / VC2 for the 2S pack, 1- to 2-series) and so can be the IC on the bench pack's 3-conductor lead, following their Pack overcurrent protection entries and readings."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "LTC4020EUHF#PBF (C2858365)",
+    "reason_given": "Battery path current: system load on the converter output and battery discharge returns through RCS (RCS = 0.05 / ICSMAX, 21 mOhm for 2.37 A), which gives -1.04 V across CSP-CSN at 49.7 A against the -0.3 to 0.3 V absolute maximum (LTC4020.pdf Rev. E, read 2026-10-02T11:52:03Z)",
+    "why_it_fails": "The 21 mOhm assumes ICSMAX equals the 2.37 A charge current. The RNG/SS pin (pin 15, 'effective range 0 to 1 V') reduces the maximum charge current to the fraction VRNG/SS of the current RCS programs (my reading of the same Rev. E, 2026-10-02T12:32:03Z), so RCS can be 4 mOhm (ICSMAX 12.5 A, RNG/SS about 0.19 V for 2.37 A) and CSP-CSN is 0.267 V at 66.8 A, inside 0.3 V. The reason names no requirement value the part misses once RCS is sized from the pack current. The stocked order code is C462630 (#TRPBF), 2648 on 2026-10-02T12:23:52Z; C2858365 reads 52."
+   },
+   {
+    "part": "BQ25731RSNR (C2871872)",
+    "reason_given": "No BATFET ('BATFET Power Path No', SLUSE66A Device Comparison Table, round 1 reading 2026-09-29T10:12:57Z, not re-read): no power path",
+    "why_it_fails": "'No BATFET' removes a switch, not the load sharing the rows ask for. Re-read at 2026-10-02T12:21:44Z: section 9.3.17 says the input source powers the system and the charge, charge current falls as the system load rises, and the battery supplements the load when VSYS falls below it; IBAT is read in discharge as 8 or 16 x (VSRN - VSRP); the 5 mOhm RSR is the POR setting; SRP-SRN is -0.5 to 0.5 V recommended (0.334 V at 66.8 A). IOBoard.md 'Not known' accepts 'a power path or load sharing'. Live stock 1125 (12:30:14Z) is above the gate; the part is not shown to miss any Pack charger or Power path value."
+   },
+   {
+    "part": "BQ25756RRVR (C19272232), BQ25756ERRVR (C22427194)",
+    "reason_given": "The data sheet (read 2026-10-02T11:58:13Z) names no system output, NVDC path or power path: the converter output is the battery, so the bench cannot run from the pack while it charges",
+    "why_it_fails": "As stated the reason does not hold: the data sheet says to connect the system load 'directly in parallel to the battery pack' (MPPT note, section 6.3.5) and describes a system on the input side, so a load can run from the pack while charging. The part still fails on another value: RBAT_SNS is listed at 5 mOhm only and SRP with respect to SRN is -0.3 to 0.3 V absolute maximum, so 66.8 A gives 0.334 V (60 A gives 0.300 V, at the limit). Drop it on the sense range, not on the missing power path. Live stock of C22427194 116 (2026-10-02T12:09:51Z)."
+   },
+   {
+    "part": "BQ25703ARSNR (C188229), BQ25700ARSNR (C965493), BQ25710RSNR (C2864000), BQ25713RSNR (C2878935), BQ25713BRSNR (C2863640)",
+    "reason_given": "Battery path current: RSR 10 or 20 mOhm only (RSNS_RSR bit), SRP-SRN 0.60 V at 60 A against -0.5 to 0.5 V (BQ25710/13) and 35 A at 10 mOhm against -0.35 to 0.35 V (BQ25703A/BQ25700A)",
+    "why_it_fails": "The bit only sets the scale of the IC's charge-current setting and IBAT readout (the BQ25710 and BQ25713 data sheets limit RAC and RSR to 10 and 20 mOhm only 'for proper PSYS functionality'); the requirement value is the SRP-SRN range. With a 5 mOhm shunt and RSNS_RSR = 0 (firmware doubles the register values) SRP-SRN is 0.334 V at 66.8 A, inside 0.35 V and 0.5 V. This is an off-datasheet use: the data sheets state charge-current accuracy for 10 mOhm only and the PSYS function for 10 and 20 mOhm, so the accuracy at 5 mOhm is not stated. Live stock 2026-10-02T12:25:06Z to 12:25:21Z: C188229 5436, C965493 1680, C2864000 1857, C2878935 286, C2863640 71 (all above the gate of 50)."
+   },
+   {
+    "part": "BQ25887RGER (C2761614)",
+    "reason_given": "Cell balancing: its balancing belongs to a charger dropped under Pack charger for lacking a power path",
+    "why_it_fails": "The reason is a dependency on another function's drop, not a Cell balancing requirement value. Re-read SLUSD89B (https://www.ti.com/lit/ds/symlink/bq25887.pdf, 2026-10-02T12:21:42Z): balance current is set by RCBSET up to 400 mA (above 84.6 mA), auto or manual mode over I2C. Whether it balances 'without the charger doing it' (charger idle, no VBUS) is not stated; its balancing is tied to the charge state machine (VCBEN 3.65 to 3.75 V per cell, charge disabled during the voltage measurement). The part is neither shown to pass nor shown to fail on a value."
+   }
+  ],
+  "missed_functions": [
+   {
+    "function": "Pack temperature",
+    "why": "IOBoard.md names it as its own row ('0 C lower and 55 C upper limit, read from a 10 kOhm, B 3435 K NTC; thresholds: a follow-up of R7; its action on discharge at the limits is a follow-up of R7's'). P2 returns no entry for it: the NTC appears only as a requirement inside Pack overcurrent protection and Pack charger, with no threshold setting, no discharge action at the limits and no part for the NTC read. The NTC part and its lead's connector are stage 2."
+   }
+  ]
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R7",
+ "label": "adjudicator-R7-4",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "function": "re-rank drop: Pack charger: BQ25756RRVR (C19272232), BQ25756ERRVR (C22427194)",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The data sheet's facts are as the re-rank states: SRP with respect to SRN is -0.3 to 0.3 V absolute maximum (5.1), and RBAT_SNS is 5 mOhm (5.3). The inference that the pack's 60 A trip current or 66.8 A crosses RBAT_SNS does not follow from the data sheet. The BQ25756 has no BATFET and no driver pin for one. Its Simplified Schematic (page 1) and Figure 7-1 (page 59) place RBAT_SNS between the converter's output capacitor (SRP side) and the node that joins BATTERY and SYSTEM/CSYS (SRN side). Section 6.3.5.1.2.1 recommends connecting the system load directly in parallel to the battery pack, which is the SRN-side node. Current from the pack to the load therefore does not cross RBAT_SNS. Only the converter's output current crosses it. From a 15 W USB-C input (F8), that current is at most about 2.5 A at the 6.0 V floor before losses (computed), about 12.5 mV across 5 mOhm, inside the 0.3 V rating. The 0.300 V at 60 A and 0.334 V at 66.8 A do not occur, so the stated reason for the drop fails. Other grounds may still exclude the part, but this ruling does not decide them. One example: IOBoard.md line 408 requires termination on the pack's current, not the load's, and this topology measures the converter's output current, the sum of charge and load current. Scope is function: the ruling concerns this function's current requirement, not the part's lifecycle or identity.",
+  "evidence": "SLUSEN5A (revised August 2026). 5.1 Absolute Maximum Ratings: \"ACP with respect to ACN, SRP with respect to SRN -0.3 0.3 V\". 5.3: \"RBAT_SNS Battery current sense resistor 5 mOhm\". 6.3.5.1.2.1: \"To enable MPPT operation, it is recommended to connect the system load directly in parallel to the battery pack.\" Figure 7-1 (page 59, rendered and inspected), from left to right: Q4 drain, then the 80 uF output capacitor, then the SRP tap, then RBAT_SNS 5 mOhm, then the SRN tap. SYSTEM with CSYS and the 4S battery's positive terminal join at the SRN node. The page 1 Simplified Schematic has the same arrangement. The pin table has no BATFET driver pin. \"BATFET on\" appears only as a quiescent-current test condition. The verifier's account matches the data sheet. Research.md R7 and IOBoard.md line 408 require a power path or load sharing, and termination on the pack's current.",
+  "source": "https://www.ti.com/lit/ds/symlink/bq25756.pdf, fetched with vendors.py (HTTP 200, 3,898,676 bytes) and saved at /home/claude/rcbench-research/round2/scratch/FU-2B1/adjudicator-R7/bq25756/bq25756.pdf. SLUSEN5A sections read: page 1 Simplified Schematic, 5.1, 5.3, 6.3.5.1.2.1, 7.2.1 Figure 7-1 (page 59). Re-rank claim read from /home/claude/rcbench-research/round2/scratch/FU-2B1/rerank-R7/out.json, functions[0].dropped_from_p3[1].",
+  "read_at": "2026-10-02T13:38:07Z",
+  "scope": "function"
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R7",
+ "label": "adjudicator-R7-2",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "function": "P2 report: charger battery path at the pack current",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The figure drops the BQ25713 because it allows \"10 or 20 mOhm RSR only\". The datasheet does not say that. SLUSD83C 9.6.3 says other RSR values can be used, with no more than 20 mOhm suggested. The 10 and 20 mOhm limit in 9.3 applies only to the PSYS (system power monitor) function. REG0x31[2] RSNS_RSR is the PSYS and current-scaling selection, not a limit on the resistor. With a 5 mOhm RSR, the BQ25713's SRP-SRN is 0.249 V at 49.7 A and 0.300 V at 60 A (V284's overcurrent threshold). Both are inside the -0.5 to 0.5 V of 8.1 (absolute maximum) and 8.3 (recommended operating). That is the same margin the figure grants the BQ25723 at 5 mOhm. The figure has a second error. At 10 mOhm and 49.7 A, 0.497 V is below the 0.5 V limit, not above it. Only the 60 A case, 0.60 V, exceeds the limit at 10 mOhm. The figure's other numbers are correct: 0.249 V and 0.300 V, and 12.35 W and 18 W in the resistor. Scope is function: the error is in how this function's battery-path requirement is applied, not in the part's status. With 5 mOhm, every current register (ChargeCurrent, which is 64 mA per step at 10 mOhm) and every ADC reading of battery current scales by 2. PSYS is not usable unless RSR is 10 or 20 mOhm. These are design consequences. They do not disqualify the part.",
+  "evidence": "SLUSD83C (revised May 2023), 9.6.3 Charge current: \"The SRP and SRN pins are used to sense voltage drop across RSR with default value of 10 mΩ. However, resistors of other values can also be used. For a larger sense resistor, a larger sense voltage is given, and a higher regulation accuracy; but, at the expense of higher conduction loss. A current sensing resistor value no more than 20 mΩ is suggested.\" 9.3 PSYS: \"For proper PSYS functionality, RAC and RSR values are limited to 10 mΩ and 20 mΩ.\" REG0x31[2] RSNS_RSR: 0b 10 mΩ (default), 1b 20 mΩ. 8.1 Absolute Maximum Ratings and 8.3 Recommended Operating Conditions, differential SRP-SRN: -0.5 V to 0.5 V. Computed: 5 mΩ x 49.7 A = 0.2485 V; 5 mΩ x 60 A = 0.300 V; 10 mΩ x 49.7 A = 0.497 V (< 0.5 V); 10 mΩ x 60 A = 0.600 V (> 0.5 V); (49.7 A)^2 x 5 mΩ = 12.35 W; (60 A)^2 x 5 mΩ = 18.0 W. The 60 A is V284 (owner, 2026-10-01) and the 49.7 A is IOBoard.md Pack path current, checkout f06c3ae.",
+  "source": "https://www.ti.com/lit/ds/symlink/bq25713.pdf (SLUSD83C), fetched with vendors.py fetch, HTTP 200, 3,112,472 bytes, saved as /home/claude/rcbench-research/round2/scratch/FU-2B1/adjudicator-R7/bq25713_chgpath.pdf; sections 8.1, 8.3, 9.3 (PSYS), 9.6.3, register REG0x31[2]",
+  "read_at": "2026-10-02T13:35:04Z",
+  "scope": "function"
+ }
+}
