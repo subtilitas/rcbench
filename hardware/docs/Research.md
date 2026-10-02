@@ -64,17 +64,19 @@ both.
 
 Fixed inputs. Round 1 checks them for stock, lifecycle and a second source.
 A fixed input that fails a check is reported to the owner, not re-selected.
-A fixed input no run verifies stays its function's part as the owner's
-(owner, 2026-10-02): the pages state each check no run confirmed as not
-known.
+The pack, the two INA228 and the R11 sensors below are their functions'
+parts whatever a run returns (owner, 2026-09-30 and 2026-10-02): where no
+run verifies one, the selection keeps it as the owner's, and the pages
+state each check no run confirmed as not known. Any other fixed input
+that no run verifies stays open for the owner.
 
 | Input | Value | Source |
 | --- | --- | --- |
 | Microcontroller | RP2354B, two a board: a main and a measurement coprocessor (owner, 2026-09-30). The RP2350B die and a 2 MB Winbond QSPI (quad serial peripheral interface) NOR (not-or) flash stacked in one QFN-80 (quad flat no-lead, 80 pads) 10 × 10 mm package; 48 GPIO (general-purpose input/output), 8 ADC inputs, 520 kB SRAM (static random-access memory) on the die, no PSRAM (pseudo-static random-access memory) in the package. Stepping A4 (owner, 2026-09-27), from the marking RP2354B0A4 in JLCPCB's product photograph of C39843328. In JLCPCB's API (application programming interface), C39843328 carries the `erpComponentName` `SC1512(13)-A4` (2026-09-27). The marking on the held parts is not read. The flash is a W25Q16JVWI according to section 14.3 of the RP2350 datasheet (build 2024-08-08), read from a copy. R1 reads the part number from Raspberry Pi's own copy at `datasheets.raspberrypi.com`. Section 14.3 gives the flash 2.7 to 3.6 V. Table 1441 of build 2025-07-29 gives QSPI_IOVDD, the supply of the QSPI interface, on the RP2354 as 2.97 to 3.63 V, 3.3 V nominal, because the in-package flash is a 3.3 V part; R1 confirms both | owner; held in the owner's JLCPCB personal parts library |
 | Servo supply | TPS55285: current limit set internally, up to 6.35 A; input 2.4 to 22 V; 12 held in the owner's personal library (owner, 2026-09-25). Four a board: one for each of 3 servo rails and one simple adjustable supply, 0.8 to 15 V (owner, 2026-09-30) | [Power](Power.md) |
-| Pack cells | SLSXT30002130, the SLS XTRON 3000 mAh 2S1P pack, off the board, bought at Stefansliposhop with sourcing rules 1, 2, 4 and 5 waived (owner, 2026-09-30); fixed whatever a run returns (owner, 2026-10-02) | [Power](Power.md) |
+| Pack cells | SLSXT30002130, the SLS XTRON 3000 mAh 2S1P pack (two cells in series, one string), off the board, bought at Stefansliposhop with sourcing rules 1, 2, 4 and 5 waived (owner, 2026-09-30); fixed whatever a run returns (owner, 2026-10-02) | [Power](Power.md) |
 | Motor monitor | INA228 (owner, 2026-09-30), fixed without further research on the monitor. Round 1's records read the INA238 | [Power](Power.md) |
-| External shunt sense input | INA228 (owner, 2026-09-30), the external shunt path's monitor, as the Motor monitor's | [Power](Power.md) |
+| External shunt sense input | INA228 (owner, 2026-09-30): one INA228 for each shunt path, the same part as the Motor monitor | [Power](Power.md) |
 | accelerometer | ADXL316WBCSZ (owner, 2026-10-02), fixed without further research. Its datasheet states no figure for its delay drift between runs | [Sensing](Sensing.md) |
 | optical index | TCND5000 (owner, 2026-10-02), fixed without further research. Its datasheet states no detector response time | [Sensing](Sensing.md) |
 
@@ -550,7 +552,7 @@ Where this section differs from a row under [Research categories](#research-cate
 - The owner's answers to round 2's questions arrive on `research/round2`. Before T6 the session merges it into `research/round2-results`.
 - The session runs `tools/research/session.py` with `--round 2` and the base directory `~/rcbench-research/round2`.
 - Each run's returns go under `hardware/research/round2/<run>/`. Round 1's returns under `hardware/research/round1/` count as earlier runs: the gates, the selection and the question numbers read both directories.
-- `hardware/research/round2/selection.json` holds the part each function keeps over both rounds, once a round 2 run selects parts. Until then `hardware/research/round1/selection.json` holds it.
+- `hardware/research/round2/selection.json` holds the part each function keeps over both rounds, once a round 2 run is recorded. Until then `hardware/research/round1/selection.json` holds it.
 - A run name is unique over both rounds. Round 2's follow-ups are named `FU-2` and a suffix. T6 runs once in each round. After T6 of round 2, `session.py prepare --round 2` refuses every run.
 - Round 2's questions continue the table under [Raised by P1](#raised-by-p1), from V269.
 - Each run reads the commit of `research/round2` at its start. It reads the monostable pages at commit 23c82ca6ca976d956098cfafd25dbefa11584f5d, as prerequisite 4 sets out.

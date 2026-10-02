@@ -219,29 +219,34 @@
     "R7": [
       {
         "function": "Pack cells",
-        "part": "SLSXT30002130"
+        "part": "SLSXT30002130",
+        "owner_keeps": true
       }
     ],
     "R8": [
       {
         "function": "Motor monitor",
         "part": "INA228",
-        "orderable": "INA228AIDGSR"
+        "orderable": "INA228AIDGSR",
+        "owner_keeps": true
       },
       {
         "function": "External shunt sense input",
         "part": "INA228",
-        "orderable": "INA228AIDGSR"
+        "orderable": "INA228AIDGSR",
+        "owner_keeps": true
       }
     ],
     "R11": [
       {
         "function": "accelerometer",
-        "part": "ADXL316WBCSZ"
+        "part": "ADXL316WBCSZ",
+        "owner_keeps": true
       },
       {
         "function": "optical index",
-        "part": "TCND5000"
+        "part": "TCND5000",
+        "owner_keeps": true
       }
     ]
   }

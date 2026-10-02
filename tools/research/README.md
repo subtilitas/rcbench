@@ -298,8 +298,9 @@ the items in the arguments:
   and T5, P5-P6 follow-ups and T6, for every category, while:
   - a function has no verified part, or keeps a part a run at or after its own
     refuted for itself, or a missing or unverified second source; a fixed
-    input the owner keeps (below) counts as neither, and `prepare` prints
-    each such part once;
+    input the owner keeps (below) counts as none of these, and `prepare`
+    prints each such function with its part and the readings that did not
+    verify it;
   - R10 or R12 has not exactly one function marked with its decision, or no Q4
     or Q8 alternative, other than the kept part, on that function, lacks a
     verified part, of its own and with its class confirmed by the datasheet
@@ -352,7 +353,7 @@ the items in the arguments:
   part, its alternate, a Q alternative or that one's alternate; a retired
   function aside), each researched to a verified part (never the first check's
   items, a conflict naming a part no run selected and the owner does not
-  keep, which `prepare` names, or a conflict naming a part the owner keeps,
+  keep, which `prepare` names, a conflict naming a part the owner keeps,
   which no run verifies, or
   one only retired functions kept, or a category holding a word other than
   IDs, ranges, `and` and list separators); and while a run that decides an R3
@@ -368,7 +369,10 @@ of an earlier check no follow-up after it covered), the assumptions of the
 last check's P5 its critic upheld, the parts `selection.json` keeps, and the
 sentences of the Outputs row of `tools/jlc_stock.py`. Every run's arguments
 hold the fixed inputs the owner keeps that no run verified (`owner_fixed`),
-which every prompt names. `session.py check`
+which every prompt names; the run's result carries them, `record` refuses an
+output whose list differs from the prepared one, and `t6_open` compares the
+selection with the one the last check saw by the list that check was
+given. `session.py check`
 confirms the Blocking and Sourcing tables still read as the gates expect, that
 the Outputs table has a row for `tools/jlc_stock.py`, and that `p1_asks` names
 exactly the rows that carry "P1 asks", each with distinct names, and that
@@ -609,13 +613,14 @@ round: the latest run that names a function decides it. A run that names it
 and verifies no part leaves it open and records the earlier part in
 `not_requalified`. A function an earlier P1 inventory of its category lists
 and the latest does not is retired: the next run that selects parts in the
-category without naming it removes it. A fixed input of the Scope table
-(`categories.json` `fixed_inputs`) is its function's part whatever the runs
-return: where no run keeps a part that starts with the input's number, the
-function keeps the input's `orderable` number, or the input itself, with run
-`owner`. Its `owner_fixed` names the run that left the function open, the
-part it replaces and each ledger reading that did not verify it. `record`
-commits only the run's directory and that file.
+category without naming it removes it. A fixed input of the Scope table the
+owner keeps whatever the runs return (`owner_keeps` in `categories.json`
+`fixed_inputs`) is its function's part: where no run keeps a part that starts
+with the input's number, the function keeps the input's `orderable` number, or
+the input itself, with run `owner`. Any other fixed input no run verifies
+stays open, for the owner to decide. Its `owner_fixed` names the run that left
+the function open, the part it replaces and each ledger reading that did not
+verify it. `record` commits only the run's directory and that file.
 
 After a T6 that was not stopped `record` also commits the pages P7 wrote. It
 refuses a changed file outside the files P7 declared and its critic reviewed

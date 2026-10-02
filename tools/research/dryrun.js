@@ -620,8 +620,10 @@ async function main() {
   const pack = { ...packSel, ownerFixed: packOwner, stockExceptions: packExc, partRows: packRow, marked: packMarks }
   r = await runTask('T6', { ...pack, failCheck: 'jlc_stock', failOutput: notListed })
   check(!r.result.summary.stopped, `T6: an owner-fixed pack Digi-Key does not list, excepted and marked, finishes it: ${(r.result.summary.reasons || []).join()}`)
-  check(r.prompts.find(x => x.label === 'P7').prompt.includes('An entry there whose run is "owner" is a fixed input of the Scope table that no run verified') && r.prompts.find(x => x.label === 'P7').prompt.includes('R7 Pack cells: SLSXT30002130'), 'T6: the prompts name the owner-fixed parts')
+  check(r.prompts.find(x => x.label === 'P7').prompt.includes('These fixed inputs of the Scope table are their functions\' parts, kept by the owner although no run verified them') && r.prompts.find(x => x.label === 'P7').prompt.includes('R7 Pack cells: SLSXT30002130'), 'T6: the prompts name the owner-fixed parts')
   check(r.prompts.find(x => x.label === 'P7-critic').prompt.includes('"state":"fixed by the owner; each check no run confirmed stated as not known","item":"R7 Pack cells: SLSXT30002130"'), 'T6: the critic marks the owner-fixed part as the owner\'s')
+  const critP = r.prompts.find(x => x.label === 'P7-critic').prompt
+  check(critP.indexOf('fixed by the owner; each check') < critP.indexOf("the owner's stock exception, with its reason"), 'T6: the stock exceptions come last among the marks')
   r = await runTask('T6', { ...pack, ownerFixed: [], marked: [{ index: 0, file: 'hardware/docs/Parts.md', line: 5 }], failCheck: 'jlc_stock', failOutput: notListed })
   check(r.result.summary.stopped === true, 'T6: a not-listed part that is not owner-fixed fails the stock check')
   for (const out of ['[FAIL] SLSXT30002130: not checked, no Digi-Key product carries SLSXT3000\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, Digi-Key search failed, HTTP 500\n1 problem(s)', '[FAIL] SLSXT30002130: not checked, no Digi-Key credentials\n1 problem(s)']) {
@@ -630,6 +632,11 @@ async function main() {
   }
   r = await runTask('T6', { ...pack, stockExceptions: [], marked: [packMarks[0]], failCheck: 'jlc_stock', failOutput: notListed })
   check(r.result.summary.stopped === true, 'T6: an owner-fixed pack without the stock exception fails the stock check')
+  const inaSel = { R7: packSel.selection.R7, R8: { 'Motor monitor': { part: 'INA228AIDGSR', alternate: '', q_alternatives: [], run: 'owner' } } }
+  r = await runTask('T6', { ...pack, selection: inaSel, ownerFixed: [...packOwner, { category: 'R8', function: 'Motor monitor', part: 'INA228AIDGSR' }], stockExceptions: [{ part: 'INA228AIDGSR', reason: 'stock 0 (V304)' }], partRows: [...packRow, { function: 'Motor monitor', part: 'INA228AIDGSR', parts_line: 6, group_page: 'hardware/docs/GroupB.md' }], marked: [packMarks[0], { index: 1, file: 'hardware/docs/Parts.md', line: 6 }, { index: 2, file: 'hardware/docs/Parts.md', line: 6 }], failCheck: 'jlc_stock', failOutput: notListed })
+  check(r.result.summary.stopped === true, 'T6: an owner-fixed pack whose not-listed line has no exception of its own fails the stock check')
+  r = await runTask('T6', { ...pack, marked: [{ index: 0, file: 'hardware/docs/GroupB.md', line: 9 }, packMarks[1]], failCheck: 'jlc_stock', failOutput: notListed })
+  check(!r.result.summary.stopped, `T6: the owner's mark counts on any page, the exception's on its Parts.md row: ${(r.result.summary.reasons || []).join()}`)
   r = await runTask('T6', { ...pack, marked: [packMarks[1]], failCheck: 'jlc_stock', failOutput: notListed })
   check(r.result.summary.stopped === true && r.result.summary.reasons.some(x => /item 0 not stated on the pages/.test(x)), 'T6: an owner-fixed part not marked stops it')
   r = await runTask('T6', { ...pack, partRows: [], failCheck: 'jlc_stock', failOutput: notListed })

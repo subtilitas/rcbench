@@ -185,7 +185,7 @@ function ctx(role, cat, label) {
     `Your instructions are hardware/docs/Research.md in the read-only checkout ${P.checkout} at commit ${A.commit}: ${rows}, the Sourcing rules, "Held parts" and "Lifecycle check". The requirement values are in hardware/docs/IOBoard.md in the same checkout and in the Answer columns of Research.md there, "Raised by P1" among them, and the owner's decisions in its Decision column; a proposed answer is not an answer. Where this prompt and the page differ, the page holds.`,
     ...(ROUND > 1 ? [`Round ${ROUND}'s own rules are the section "Round ${ROUND}" of that page; where it and a category row or a phase row differ, that section holds.`] : []),
     `Today is ${A.date}. Every figure you report carries the time it was read and the URL or API call it came from. A value you could not read is written as not read, with the reason; never estimated. A search engine's summary is not a source.`,
-    `Paths: the monostable page and the pages it links, at commit 23c82ca: ${P.monostable}. The parts database, sqlite, opened read-only only (sqlite3.connect('file:${P.db}?mode=ro', uri=True)): ${P.db}. Returns of earlier tasks: ${runDirs('<run>/')}. The part each function keeps after refutations and follow-ups is in ${SELECTION}; it counts over any re-rank's rank 1 and over a superseded selection.${OWNER_FIXED.length ? ` An entry there whose run is "owner" is a fixed input of the Scope table that no run verified, which the owner keeps; its owner_fixed lists the readings that did not verify it: ${OWNER_FIXED.map(x => `${x.category} ${x.function}: ${x.part}`).join('; ')}.` : ''} Your scratch directory: ${P.scratch}/${A.run || TASK}/${label}/.`,
+    `Paths: the monostable page and the pages it links, at commit 23c82ca: ${P.monostable}. The parts database, sqlite, opened read-only only (sqlite3.connect('file:${P.db}?mode=ro', uri=True)): ${P.db}. Returns of earlier tasks: ${runDirs('<run>/')}. The part each function keeps after refutations and follow-ups is in ${SELECTION}; it counts over any re-rank's rank 1 and over a superseded selection.${OWNER_FIXED.length ? ` These fixed inputs of the Scope table are their functions' parts, kept by the owner although no run verified them (run "owner" there, with owner_fixed listing the readings that did not verify each): ${OWNER_FIXED.map(x => `${x.category} ${x.function}: ${x.part}`).join('; ')}.` : ''} Your scratch directory: ${P.scratch}/${A.run || TASK}/${label}/.`,
     `Clients: pages with \`python3 ${VENDORS} fetch URL\` (--client safari for www.analog.com); JLCPCB stock with \`python3 ${VENDORS} jlcpcb C<digits>\` (the exact LCSC match); Digi-Key with \`python3 ${VENDORS} digikey MPN\` or \`python3 ${VENDORS} digikey-search KEYWORDS\`; run this copy of vendors.py, no other, with DIGIKEY_ENV_FILE=${P.digikey_env}${P.digikey_cache ? ` and DIGIKEY_CACHE_DIR=${P.digikey_cache}` : ''} in that command's environment${P.digikey_cache ? '; Digi-Key allows 1,000 calls a day, so an answer any agent read earlier on the same UTC day comes back marked "cached": true with the time it was read, and counts as a reading of this task. A keyword search (--limit up to 50) is also kept as the reading of each part number it lists, with the same fields as vendors.py digikey, so one search can read many candidates. A part number several Digi-Key products carry comes back with its matches and their makers' : ''}. Never print a credential.`,
     `Write, commit and push nothing inside ${P.checkout} or ${P.results}. Return exactly the schema.`,
   ].join('\n')
@@ -387,10 +387,10 @@ const MARKS = [
   ...STOCK_EXCEPTIONS.map(x => ({ state: "the owner's stock exception, with its reason, in the part's Parts.md row", item: `${x.part}: ${x.reason}` })),
 ]
 
-// Each verified part selection.json keeps under a function: the kept part,
-// its alternate, and each Q alternative with its own alternate, and each
-// fixed input the owner keeps. A part not verified is open (session.py
-// open_selections), stated as accepted open.
+// Each part selection.json keeps under a function: the kept part, its
+// alternate, each Q alternative with its own alternate, each of them
+// verified, and each fixed input the owner keeps. A part not verified is
+// open (session.py open_selections), stated as accepted open.
 const isVerified = s => String(s || '').startsWith('verified')
 const GROUP_OF = Object.fromEntries(Object.values(A.tasks || {}).flatMap(t => (t.categories || []).map(c => [c, t.group])))
 const OWED_PARTS = Object.entries(A.selection || {}).flatMap(([cat, fns]) => Object.entries(fns).flatMap(([fn, e]) =>
@@ -1914,7 +1914,7 @@ if (TASK === 'T6') {
 
 log(`${TASK}: ${started} agents started (${PLANNED} planned, ${extra} of ${FREE} free used); ${followUps.length} items for follow-up`)
 return {
-  task: TASK, run: A.run || TASK, run_id: A.run_id || '', commit: A.commit, date: A.date, run_info: A.run_info || {}, followup: TASK === 'FU' ? FU : null, stock_exceptions: STOCK_EXCEPTIONS,
+  task: TASK, run: A.run || TASK, run_id: A.run_id || '', commit: A.commit, date: A.date, run_info: A.run_info || {}, followup: TASK === 'FU' ? FU : null, stock_exceptions: STOCK_EXCEPTIONS, owner_fixed: OWNER_FIXED,
   accept_open: A.accept_open || null, decisions: A.decisions || {},
   planned: PLANNED, started, extra_used: extra, free: FREE, skipped, summary, followUps, missing, returns,
 }
