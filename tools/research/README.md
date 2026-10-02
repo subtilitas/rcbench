@@ -386,11 +386,14 @@ part.
   pieces between semicolons, commas followed by a space, slashes between
   spaces and ` and `, without parenthesized text, case and spaces; a function
   name is none. `2N7002BK,215` and `MCP2542FD-E/SN` are one part number each.
-  A find named by a family, as `MLX90393 rows`, matches a part whose number
-  starts with its stem: a whitespace-separated word outside parentheses, of 6
-  or more letters, digits and hyphens with a letter and a digit, followed by
-  `rows`, `family`, `series`, `variants`, `parts` or `devices`, starting with a
-  letter or digit. A word with `/`, `,` or `.` in it (`AP2112K-3.3TRG1`,
+  A find named only by a family, as `MLX90393 rows`, matches a part whose
+  number starts with its stem, when the re-rank brings that part from outside
+  P2's shortlist for the function; a family part P2 already kept handles no
+  find, and a find that also names a part by number is handled by that part. A
+  stem is a whitespace-separated word outside parentheses, of 6 or more
+  letters, digits and hyphens with a letter and a digit, followed by `rows`,
+  `family`, `series`, `variants`, `parts` or `devices`, starting with a letter
+  or digit. A word with `/`, `,` or `.` in it (`AP2112K-3.3TRG1`,
   `MCP2542FD-E/SN`) and a word no family word follows are no stem; a part
   number of letters, digits and hyphens followed by a family word is one. A
   stem also matches a number that continues its digits: `TMP107 family`
@@ -399,10 +402,11 @@ part.
   way, and the owner handles it when its re-rank qualifies, ranks or drops the
   part P3 named, by part or LCSC number, or the matching piece of one of those
   drops (a drop record that names several parts is split as part numbers are,
-  and one that matches only by its own `lcsc` field counts whole);
-  another part of the family or of the same record does not count. An
-  exclusion with no owner is handled only by a re-rank that names P3's part. The drop of a find
-  matched either way is re-read as the drop of any P3 find;
+  outside balanced parentheses, and one that matches only by its own `lcsc`
+  field counts whole); another part of the family or of the same record does
+  not count. An exclusion with no owner is handled only by a re-rank that
+  names P3's part. The drop of a find matched either way is re-read as the
+  drop of any P3 find;
 - it has no requirement, or names one requirement twice;
 - it serves a fixed input of the Scope table (`categories.json`
   `fixed_inputs`: the function by the table's input name, the input by a

@@ -770,19 +770,17 @@ function ofFamily(cand, find) {
 }
 
 // The pieces of a record that names several parts, split where partKeys
-// splits, outside parentheses.
+// splits, outside the parenthesized spans it removes.
 function recordPieces(p) {
   const rec = p && typeof p === 'object' ? p : { part: p }
   const text = String(rec.part || '')
+  const spans = [...text.matchAll(/\([^)]*\)/g)].map(m => [m.index, m.index + m[0].length])
   const out = []
-  let depth = 0, start = 0
+  let start = 0
   for (let i = 0; i < text.length; i++) {
-    if (text[i] === '(') depth++
-    else if (text[i] === ')') depth = Math.max(0, depth - 1)
-    else if (!depth) {
-      const m = /^(;|,\s+|\s+\/\s+|\s+and\s+)/i.exec(text.slice(i))
-      if (m) { out.push(text.slice(start, i)); start = i + m[0].length; i = start - 1 }
-    }
+    if (spans.some(([a, b]) => i >= a && i < b)) continue
+    const m = /^(;|,\s+|\s+\/\s+|\s+and\s+)/i.exec(text.slice(i))
+    if (m) { out.push(text.slice(start, i)); start = i + m[0].length; i = start - 1 }
   }
   out.push(text.slice(start))
   return out.map(s => s.trim()).filter(Boolean).map(part => ({ part }))
@@ -794,8 +792,18 @@ function merge(cat, p2, rr, p3) {
   // Every candidate P3 found, and every P2 exclusion P3 overturned, is
   // qualified, ranked or dropped by the re-rank: by its part or LCSC
   // number, or, for a find named by a family, by a part of that family.
-  const sameOrFamily = (c, part) => samePart(c, part, names) || ofFamily(c, part)
-  const handled = (fr, part) => fr && ([...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || [])].some(c => sameOrFamily(c, part)) || (fr.ranking || []).some(r => sameOrFamily(r, part)))
+  // A find that names a part by number or LCSC number is handled by that
+  // part; one that names only a family, by a part of it the re-rank brings
+  // from outside P2's shortlist for the function, not one P2 already kept.
+  const namesPart = x => !familyStems(x).length && (/\bC\d+\b/i.test(x.part) || x.part.replace(/\([^)]*\)/g, ' ').split(/\s+/).some(w => w.length >= 4 && /[A-Za-z]/.test(w) && /\d/.test(w)))
+  const familyOnly = part => familyStems(part).length > 0 && !recordPieces(part).some(namesPart)
+  const keptBy = (fn, c) => (((p2.functions || []).find(f => f.function === fn) || {}).shortlist || []).some(s => samePart(s, c, names))
+  const handled = (fr, part) => {
+    if (!fr) return false
+    const entries = [...(fr.new_candidates || []), ...(fr.dropped_from_p3 || []), ...(fr.dropped_from_shortlist || []), ...(fr.ranking || [])]
+    if (entries.some(c => samePart(c, part, names))) return true
+    return familyOnly(part) && entries.some(c => ofFamily(c, part) && !keptBy(fr.function, c))
+  }
   const handledAny = part => (rr.functions || []).some(fr => names.includes(fr.function) && handled(fr, part))
   // A P3 find the re-rank neither qualified nor dropped leaves its function
   // open: the function P3 names, the function whose P2 drop P3 overturned,

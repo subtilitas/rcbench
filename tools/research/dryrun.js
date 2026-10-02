@@ -1018,6 +1018,22 @@ async function main() {
   // exclusion has none, and every function stays open.
   r = await runTask('T2', { p3overturned: true, p3overPart: 'ABC9999 rows', p2DropY: true, p2DropPart: 'ABC1234XYZ (see, ABC9999 rows)', twoDeciders: true })
   check(r.result.followUps.some(f => f.reason === 'P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank' && (f.functions || []).join() === 'f1,fX'), 'family named inside a drop record\'s parentheses: no owner, every function open')
+  // A family part P2 already kept handles no find: neither a missed find that
+  // names a part beside its family, nor a family-only find, nor an exclusion
+  // whose overturned drop is written as the family.
+  const missedOpen = res => res.result.followUps.some(f => f.reason === 'P3 candidate neither qualified nor dropped by the re-rank')
+  const kept = { firstRecord: { part: 'ABC1234A' }, ranking: [{ rank: 1, part: 'ABC1234A', reason: 'r' }, { rank: 2, part: 'part2', reason: 'r' }, { rank: 3, part: 'part3', reason: 'r' }] }
+  r = await runTask('T2', { ...kept, p3missed: true, p3missedPart: 'ABC1234XY (C9), ABC1234 family' })
+  check(missedOpen(r), 'missed find naming a part beside its family, only a kept family part ranked: open')
+  r = await runTask('T2', { p3missed: true, p3missedPart: 'ABC1234XY (C9), ABC1234 family', dropShort: ['ABC1234ZZ'] })
+  check(missedOpen(r), 'missed find naming a part beside its family, only another family part dropped: open')
+  r = await runTask('T2', { ...kept, p3missed: true, p3missedPart: 'ABC1234 rows' })
+  check(missedOpen(r), 'family-only missed find, only a kept family part ranked: open')
+  r = await runTask('T2', { ...famKept, p2DropParts: ['AS5048B-HTSP-500, AS5055A-BQFM, ABC1234 rows'] })
+  check(overturnedOpen(r), 'exclusion whose overturned drop is the family, only a kept family part ranked: owner stays open')
+  // An unclosed parenthesis does not stop a record from splitting.
+  r = await runTask('T2', { ...famKept, p3overPart: 'VOM1271T', p2DropParts: ['TLP3906(TPL,E; VOM1271T'], dropShort: ['TLP3906(TPL,E'] })
+  check(overturnedOpen(r), 'bundled drop record with an unclosed parenthesis, another member dropped again: owner stays open')
   // A family exclusion no P2 drop matches has no owner: only a re-rank that
   // names P3's part closes it, not a family part P2 kept.
   r = await runTask('T2', { ...famKept, p2DropY: false })
