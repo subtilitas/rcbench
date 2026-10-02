@@ -342,7 +342,7 @@ async function main() {
   const owedOf = (res, label) => (((res.prompts.find(p => p.label === label) || {}).prompt || '').split('The checks each part owes')[1] || '').split('The shortlist,')[0]
   check(/"part1"/.test(owedOf(r, 'P4-stock-R1')) && !/"part2"|"part3"/.test(owedOf(r, 'P4-stock-R1')), 'P4 prompt lists owed checks for the planned parts only')
   r = await runTask('T2', { held: 500, heldChecks: true })
-  check(/"held quantity, or both stock and presale"/.test(owedOf(r, 'P4-stock-R1')) && !/"stock",/.test(owedOf(r, 'P4-stock-R1')), 'P4 stock prompt gives a held part the held quantity in place of stock and presale')
+  check(/\["held quantity",/.test(owedOf(r, 'P4-stock-R1')) && !/"held quantity, or/.test(owedOf(r, 'P4-stock-R1')) && !/"stock",/.test(owedOf(r, 'P4-stock-R1')), 'P4 stock prompt owes a held part "held quantity" in place of stock and presale')
 
   // A return names its category by ID; the ID with the name, or the name
   // alone, names it too; another ID does not.
@@ -938,6 +938,16 @@ async function main() {
   check(r1(r).selection[0].part === 'part1', 'held part with its held quantity checked: verified')
   r = await runTask('T2', { held: 0, heldChecks: true })
   check(r1(r).selection[0].part === null, 'part not held, checked on a held quantity: not verified')
+  // A held quantity named in the owed list's earlier wording, as FU-2C's
+  // R11 stock verifier named it, is the same check, also beside failing
+  // live stock; another name is not.
+  const oldName = { 'held quantity': { figure: 'held quantity, or both stock and presale' } }
+  r = await runTask('T2', { held: 500, heldChecks: true, edit: oldName })
+  check(r1(r).selection[0].part === 'part1', 'held part with its held quantity in the earlier owed wording: verified')
+  r = await runTask('T2', { held: 500, heldChecks: true, heldAndLive: true, edit: oldName })
+  check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'held part in the earlier owed wording with failing live stock: verified on its held quantity')
+  r = await runTask('T2', { held: 500, heldChecks: true, edit: { 'held quantity': { figure: 'held stock' } } })
+  check(r1(r).selection[0].part === null, 'held part with its held quantity under another name: not verified')
   // A required figure reported per part counts as returned.
   r = await runTask('T2', { requiredReports: { R2: ['frames held'] }, reportPerPart: true })
   check(!r.result.summary.figures_open.R2.includes('P2 report: frames held') && !r.result.followUps.some(f => f.figure === 'P2 report: frames held'), 'required figure reported per part: returned')
@@ -1205,6 +1215,8 @@ async function main() {
   check(r1(r).selection[0].part !== 'part1' && r.calls.some(c => c.startsWith('adjudicator-R1')), 'unread held quantity with failing live stock: refuted')
   r = await runTask('T2', { held: 20, addStock: ['held quantity'], edit: { 'held quantity': { passes: false } } })
   check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'failing held quantity, passing live stock: verified')
+  r = await runTask('T2', { held: 20, addStock: ['held quantity'], edit: { 'held quantity': { figure: 'held quantity, or both stock and presale', passes: false } } })
+  check(r1(r).selection[0].part === 'part1' && !r.calls.some(c => c.startsWith('adjudicator-R1')), 'failing held quantity in the earlier owed wording, passing live stock: verified')
   // The second vendor's stock bears on the second-vendor route only, and not
   // on an alternate (rule 5 asks rules 1 to 4).
   r = await runTask('T2', { altName: 'part2', verify: ['part2'], addStock: ['second-vendor stock'], edit: { 'second-vendor stock': { passes: false } } })
