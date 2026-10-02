@@ -1015,7 +1015,7 @@ function notReadWithReason(text) {
 const recordedUnread = (c, verifier) => verifier === 'stock' && RECORDED_ONLY.has(c.figure) && notReadWithReason(c.read)
 // A lifecycle status the stock verifier could not read (a part neither its
 // maker's page nor Digi-Key lists under its maker), or a Digi-Key value
-// outside the four the Lifecycle check grades, written "not read: REASON".
+// the Lifecycle check does not grade, written "not read: REASON".
 // Written with passes true it neither passes nor fails, whatever agrees
 // says, and shows no check, so the part stays not verified; with passes
 // false it fails as any check. Either way it is listed for the owner.
