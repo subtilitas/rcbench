@@ -909,13 +909,6 @@ function merge(cat, p2, rr, p3) {
     }).filter(c => {
       const failing = (c.requirements || []).filter(r => r.pass === false)
       if (!failing.length) return true
-      // A fixed input is not dropped on P2's word (Scope): it stays for P4,
-      // whose datasheet verifier re-reads the failing values, and the owner
-      // is told.
-      if (what === 'shortlisted' && fixed && isFixed(fixed, c.part)) {
-        followUps.push({ role: 'owner', category: cat, function: name, part: c.part, reason: `fixed input ${fixed} fails P2's requirement: ${failing.map(r => r.name).join(', ')}; kept for P4 and reported to the owner, not re-selected` })
-        return true
-      }
       followUps.push({ role: 'P2', category: cat, function: name, part: c.part, reason: `${what} with a failed requirement: ${failing.map(r => r.name).join(', ')}` })
       // The drop is P2's word only: the datasheet verifier re-reads it.
       failed.push({ part: c.part, names: failing.map(r => r.name), requirements: failing })
@@ -929,10 +922,16 @@ function merge(cat, p2, rr, p3) {
     })
     shortlist = qualify(shortlist, 'shortlisted')
     alternateRecords = qualify(alternateRecords, 'alternate')
-    // A fixed input is not re-selected (Scope): a function whose first-ranked
-    // part after the drops is another part is not ranked, and the owner is
-    // told.
-    if (fixed && shortlist.length && !isFixed(fixed, shortlist[0].part)) {
+    // A fixed input is not re-selected (Scope): a function whose fixed input
+    // P2's record fails (the datasheet verifier re-reads that drop), or whose
+    // first-ranked part after the drops is another part, is not ranked, and
+    // the owner is told.
+    const fixedFailed = fixed ? failed.find(d => isFixed(fixed, d.part)) : null
+    if (fixedFailed) {
+      followUps.push({ role: 'owner', category: cat, function: name, part: fixedFailed.part, reason: `fixed input ${fixed} fails P2's requirement: ${fixedFailed.names.join(', ')}; the datasheet verifier re-reads it; reported to the owner, not re-selected` })
+      shortlist = []
+      verify = []
+    } else if (fixed && shortlist.length && !isFixed(fixed, shortlist[0].part)) {
       followUps.push({ role: 'owner', category: cat, function: name, part: shortlist[0].part, reason: `fixed input ${fixed} not ranked first; reported to the owner, not re-selected` })
       shortlist = []
       verify = []

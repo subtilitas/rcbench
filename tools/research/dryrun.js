@@ -1066,13 +1066,11 @@ async function main() {
   check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.role === 'owner' && f.part === 'part1' && /not ranked first/.test(f.reason)), 'fixed input ranked below another part: function open, reported to the owner')
   r = await runTask('T2', { fixedInputs: fixedPart1, refute: ['P4-stock-R1:part1'] })
   check(r1(r).selection[0].part === null && !r.calls.includes('P4-stock-R1-2') && r.result.followUps.some(f => f.role === 'owner' && f.part === 'part1' && /refuted/.test(f.reason)), 'fixed input refuted: no next-ranked part, reported to the owner')
-  // A fixed input that fails a P2 requirement is not dropped on P2's word:
-  // it goes to P4, whose datasheet verifier re-reads the value, and the
-  // owner is told; a refutation that stands is reported, not replaced.
+  // A fixed input that P2's record fails is dropped as any part is, and the
+  // datasheet verifier re-reads the drop; the function keeps no other part
+  // and the owner is told.
   r = await runTask('T2', { fixedInputs: fixedPart1, failedReq: true })
-  check(r.result.followUps.some(f => f.role === 'owner' && f.part === 'part1' && /fails P2's requirement: x0/.test(f.reason)) && r1(r).ledger.some(l => l.part === 'part1') && !r.result.followUps.some(f => /not ranked first/.test(f.reason || '')), 'fixed input failing a P2 requirement: kept for P4, reported to the owner')
-  r = await runTask('T2', { fixedInputs: fixedPart1, failedReq: true, refute: ['P4-datasheet-R1:part1'] })
-  check(r1(r).selection[0].part === null && !r.calls.includes('P4-datasheet-R1-2') && r.result.followUps.some(f => f.role === 'owner' && f.part === 'part1' && /refuted/.test(f.reason)), 'fixed input failing a P2 requirement, refuted by P4: reported to the owner, not replaced')
+  check(r1(r).selection[0].part === null && r.result.followUps.some(f => f.role === 'owner' && f.part === 'part1' && /fails P2's requirement: x0/.test(f.reason)) && !r.result.followUps.some(f => /not ranked first/.test(f.reason || '')) && r.prompts.find(x => x.label === 'P4-datasheet-R1').prompt.includes('failed requirement: f1: part1 (x0)'), 'fixed input failing a P2 requirement: function open, drop re-read, reported to the owner')
   r = await runTask('T2', { failedReq: true })
   check(r1(r).ledger.every(l => l.part !== 'part1') && r.result.followUps.some(f => f.role === 'P2' && /with a failed requirement/.test(f.reason || '')), 'a part that is no fixed input and fails a P2 requirement: dropped')
   r = await runTask('T2', { fixedInputs: fixedPart1, verifyFirst: ['part2'], p4parts: ['part2'], refute: ['P4-stock-R1:part1'] })
