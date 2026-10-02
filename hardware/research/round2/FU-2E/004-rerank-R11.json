@@ -1,0 +1,641 @@
+{
+ "role": "rerank",
+ "category": "R11",
+ "label": "rerank-R11",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "functions": [
+   {
+    "function": "accelerometer",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "ADXL356BEZ (C662368), ADXL356BEZ-RL (C662369), ADXL356BEZ-RL7 (C662370), ADXL356CEZ (C579461), ADXL356CEZ-RL (C662371), ADXL356CEZ-RL7 (C662372)",
+      "maker": "Analog Devices",
+      "reason": "rule 4: all six LCSC numbers are under the gate of max(5 x 5, 50) = 50 at JLCPCB (need 5 boards x 1 = 5). vendors.py jlcpcb, read 2026-10-02T10:51:24Z to 10:51:26Z (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match), stockCount / canPresaleNumber: C662368 7/7, C662369 0/0, C662370 0/0, C579461 12/12, C662371 24/23, C662372 0/0; all expand, LCC-14 6x6 mm, USD 74 to 121 a part at 1 piece. The data sheet figures P3 read (ADXL356/ADXL357 Rev. A, 2026-10-02T10:27:37Z: ranges +/-10 and +/-20 g or +/-40 g, 2.25 to 3.6 V, -40 to +125 degC, 32 kOhm output resistance, output swing about 1.77 V) are not re-read, because rule 4 fails first. Like ADXL316, the data sheet states no temperature coefficient of the output resistor and no phase or delay figure, so 'delay drift between runs' would not be shown either. No candidate enters the accelerometer function."
+     },
+     {
+      "part": "ADXL356BEZ, ADXL356CEZ and the -RL and -RL7 variants (same row)",
+      "maker": "Analog Devices",
+      "reason": "Digi-Key not read: a part that fails rule 4 at JLCPCB has no board route, and a second vendor does not rescue it (sourcing rules 1 and 4)."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "optical index",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "magnetic pickup",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "DRV5015A1QDBZR",
+      "option": "",
+      "reason": "unchanged. Operate point 0.7 mT typical, 2.0 mT maximum (release -2.0 mT minimum); fBW 20 kHz minimum against 1,092 Hz (18 x); ICC 2.3 typical, 2.8 mA maximum; JLCPCB C2152440 339 / presale 336 and Digi-Key 2821 (12 weeks), both over the gate of 50 (JLCPCB re-read 2026-10-02T10:56:25Z). selection.json keeps it and both FU-2D verifiers confirmed it. TMAG5115A1CQDBZR (new from P3) has the lower guaranteed field (1.7 mT against 2.0 mT) but not the guaranteed bandwidth or supply current, so it does not displace it: see rank 3."
+     },
+     {
+      "rank": 2,
+      "part": "DRV5015A1EDBZRQ1",
+      "option": "",
+      "reason": "rank 1's automotive grade: the same A1 thresholds (BOP -0.2 / 0.7 / 2.0 mT), fBW 20 kHz minimum and pins; the largest JLCPCB stock (C2152679 6167, re-read 2026-10-02T10:56:27Z) against Digi-Key 680 and 20 weeks."
+     },
+     {
+      "rank": 3,
+      "part": "TMAG5115A1CQDBZR",
+      "option": "",
+      "reason": "new from P3 and qualified. Its guaranteed switching field is the lowest found: BOP 0.2 / 1.0 / 1.7 mT and BRP -1.7 / -1.0 / -0.2 mT over temperature (SBASAJ1B 6.6), where ranks 1, 2 and 4 guarantee 2.0 mT; TI's data sheet 8.1 states the magnet must exceed the maximum BOP or BRP. P3's point holds on the maximum and fails on the typical (1.0 mT against 0.7 mT). For a dipole field a 1.7 against 2.0 mT guarantee is 5.7 % more gap, and the typical figures reverse that by 12.6 %. Ranks below 1 and 2 because its sensing bandwidth is stated as 60 kHz typical with no minimum (tPD 6 us maximum), its ICC is 6 typical / 8 mA maximum against 2.8, its JLCPCB stock (133, C22455387) is 2.7 x the gate against 6.8 x and 123 x, and its lead time is 20 weeks against 12. Ranks above rank 4 AH1711-SA-7 for the lower guaranteed field, JLCPCB 133 against 100, Digi-Key 20 weeks against 40, and a manufacturer status read on TI's page (ACTIVE) where the Diodes page carries none. Pin-compatible with rank 1 (VCC 1, OUT 2, GND 3, SOT-23; south pole pulls the output low in both)."
+     },
+     {
+      "rank": 4,
+      "part": "AH1711-SA-7",
+      "option": "",
+      "reason": "unchanged from P2's rank 3: rank 1's thresholds (0.7 mT typical, 2.0 mT maximum), 20 kHz minimum bandwidth and pins from a second maker, but the thinnest JLCPCB stock (C7071848 100, re-read 2026-10-02T10:56:28Z), a 40-week lead time and no manufacturer status in the page body."
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 3,
+      "part": "TMAG5115A1CQDBZR",
+      "maker": "Texas Instruments (data sheet SBASAJ1B); counts as Texas Instruments (S1); JLCPCB label 'Texas Instruments'",
+      "lcsc": "C22455387",
+      "package": "SOT-23 (DBZ), 3 pins",
+      "placements": 1,
+      "placements_basis": "fixed: one latch on the magnetic pickup's sensor board, one sensor board for each IO board (as the other candidates of this function)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "sensor type",
+        "required": "bipolar latch, digital output",
+        "datasheet": "'High-speed digital bipolar-latch Hall sensor'; a south pole pulls the output low (BOP), a north pole releases it (BRP); 8.1: 'When removing the magnetic field, the device keeps its previous state'. Power-on state high; powered on with a field between BRP and BOP the output is indeterminate (7.3.2)",
+        "pass": true,
+        "source": "TMAG5115 SBASAJ1B (Dec 2022, rev Aug 2024), https://www.ti.com/lit/ds/symlink/tmag5115.pdf (vendors.py fetch, HTTP 200), read 2026-10-02T10:51:35Z, Features, 7.1, 7.3.2, 8.1"
+       },
+       {
+        "name": "pulses per revolution",
+        "required": "a stated sensing bandwidth of at least 1,092 Hz (one pulse a turn at 65,535 rpm)",
+        "datasheet": "fBW 60 kHz typical, no minimum stated (6.5); tPD 5 typical / 6 us maximum; output jitter window 5 us (1 kHz triangle wave, +/-8 mT); fCHOP 1,000 kHz typical. 55 x the need on the typical figure",
+        "pass": true,
+        "source": "SBASAJ1B 6.5, read 2026-10-02T10:51:35Z. Typical-only bandwidth: the pass rests on the stated 60 kHz and the 6 us maximum delay"
+       },
+       {
+        "name": "lowest speed",
+        "required": "holds its state with the rotor stopped, reads down to 10 rpm",
+        "datasheet": "a latch: 'When removing the magnetic field, the device keeps its previous state'",
+        "pass": true,
+        "source": "SBASAJ1B 8.1, read 2026-10-02T10:51:35Z"
+       },
+       {
+        "name": "supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "VCC 2.5 to 26 V recommended, -0.3 to 30 V absolute maximum; design example 3.0 to 3.6 V; ICC 6 typical / 8 mA maximum over -40 to 125 degC",
+        "pass": true,
+        "source": "SBASAJ1B 6.1, 6.3, 6.5, 8.2.1.1, read 2026-10-02T10:51:35Z"
+       },
+       {
+        "name": "output",
+        "required": "open-drain, pulled up to 3.3 V on the IO board, into measurement GPIO 27",
+        "datasheet": "OUT pin 2 'open-drain output. Requires a resistor pullup, typically 10 kOhm'; VCC 1, GND 3; the pull-up may go to a supply other than VCC (7.1); VOL 0.7 V maximum at IOL 5 mA; output leakage 0.1 typical / 1 uA maximum; tR, tF 2 us typical (10 kOhm, 50 pF, VCC 12 V); sink 15 mA recommended, short-circuit limit 25 mA typical",
+        "pass": true,
+        "source": "SBASAJ1B Table 5-1, 6.3, 6.5, 7.1, read 2026-10-02T10:51:35Z"
+       },
+       {
+        "name": "build and sourcing",
+        "required": "LCSC number, rule 4 at JLCPCB",
+        "datasheet": "C22455387 TMAG5115A1CQDBZR, SOT-23-3, stockCount 133, canPresaleNumber 133",
+        "pass": true,
+        "source": "vendors.py jlcpcb C22455387, 2026-10-02T10:51:26Z"
+       },
+       {
+        "name": "sensitivity",
+        "required": "operate and release points stated; the operate point ranks",
+        "datasheet": "TMAG5115A: BOP 0.2 / 1.0 / 1.7 mT, BRP -1.7 / -1.0 / -0.2 mT, BHYS 0.4 / 2.0 / 3.4 mT (min / typ / max) over -40 to 125 degC, VCC 2.5 to 26 V; internal noise 125 typical / 200 uT peak-to-peak",
+        "pass": true,
+        "source": "SBASAJ1B 6.5, 6.6, read 2026-10-02T10:51:35Z"
+       },
+       {
+        "name": "sensor ambient temperature",
+        "required": "0 to 85 degC",
+        "datasheet": "TA -40 to 125 degC; thermal shutdown at TJ 156 / 168 / 180 degC; RthJA 208.2 degC/W",
+        "pass": true,
+        "source": "SBASAJ1B 6.3, 6.4, 6.5, read 2026-10-02T10:51:35Z"
+       }
+      ],
+      "jlcpcb": "stockCount 133, canPresaleNumber 133, componentLibraryType expand, USD 0.4422 a part at the 1 break (need 5), read 2026-10-02T10:51:26Z, vendors.py jlcpcb C22455387 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 2641 (cut tape; reel 0), manufacturer lead time 20 weeks, ProductStatus Active, discontinued false, end of life false, read 2026-10-02T10:37:44Z, vendors.py digikey TMAG5115A1CQDBZR (https://api.digikey.com/products/v4/search/TMAG5115A1CQDBZR/productdetails), returned from the same UTC day's cache, marked cached (P3's reading, a reading of this task); 0 new calls",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; JLCPCB 133 >= 50 and presale 133 >= 0: pass (rule 4), 2.7 x the threshold",
+      "lifecycle": "ACTIVE: https://www.ti.com/product/TMAG5115 orderable TMAG5115A1CQDBZR marketingStatusDescription ACTIVE, page meta status ACTIVE, MarketingStatusId 1 (vendors.py fetch, HTTP 200, 2026-10-02T10:53:05Z); longevity: no per-part commitment, TI states 'product life cycles are typically 10 to 15 years and often extend longer' (https://www.ti.com/quality-reliability/quality/product-life-cycle.html, 2026-10-02T10:56:56Z); market introduction: first data sheet revision December 2022 (SBASAJ), over 12 months; notices: TI's change-notice search not read, no end-of-life notice on the product page; distributor: Digi-Key Active (cached 2026-10-02T10:37:44Z), JLCPCB API carries no status",
+      "second_source": "second vendor: Digi-Key stock_available 2641 >= 50 (cached 2026-10-02T10:37:44Z); the pin-compatible DRV5015A1QDBZR also stands in (same SOT-23 pins and polarity, different thresholds and supply current)",
+      "alternates": [
+       "DRV5015A1QDBZR",
+       "DRV5015A1EDBZRQ1"
+      ],
+      "driver_in_shared": "none",
+      "reason": "qualifies on every value; the lowest guaranteed switching field (1.7 mT) but typical-only bandwidth, 8 mA maximum supply current and 133 at JLCPCB, so it ranks 3, above AH1711-SA-7 and below the two DRV5015A1 orderables",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "DRV5015A1QDBZR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "phase-wire clip",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TLV3201AIDBVR",
+      "option": "",
+      "reason": "unchanged: tPD 55 ns maximum over -40 to 125 degC at 2.7 V and 5 V (4.4 % of the optical index's 1.244 us), one comparator for each placement, JLCPCB C105188 39590 (re-read 2026-10-02T10:56:30Z); Digi-Key holds 0, so the second source is the alternate TLV3601DBVR on the same pins. selection.json keeps it."
+     },
+     {
+      "rank": 2,
+      "part": "TLV3202AIDR",
+      "option": "",
+      "reason": "unchanged: rank 1's figures in one SOIC-8 dual for both placements, with Digi-Key 10738 as a second vendor; below rank 1 because the optical index has no part and the second channel may go unused. JLCPCB C129325 7764 (re-read 2026-10-02T10:56:28Z)."
+     },
+     {
+      "rank": 3,
+      "part": "TLV3601DBVR",
+      "option": "",
+      "reason": "unchanged: rank 1's rule-5 alternate on the same DBV pins, 4.5 ns maximum over temperature; 4.9 mA typical supply and USD 3.99 a part at 1 piece against 36 uA and USD 0.97. JLCPCB C5213958 1621 (re-read 2026-10-02T10:56:33Z), Digi-Key 5959."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TLV3201AIDBVR",
+      "kind": "first",
+      "option": ""
+     },
+     {
+      "part": "TLV3601DBVR",
+      "kind": "alternate",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "encoder input",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "AM26LV32EIDR",
+      "option": "",
+      "reason": "unchanged: 3.3 V quad receiver (VCC 3.0 to 3.6 V), A and B inputs +/-14 V absolute maximum, Ioff +/-100 uA at VCC 0 V, delay window 8 to 26 ns, JLCPCB C527448 48815 and Digi-Key 13102; the cheapest of the three (USD 0.74 at 1 piece). selection.json keeps it. The spacing P2 left (32 ns) is conservative: the stated skews tsk(o) 6 and tsk(p) 6 ns bound the difference at 12 ns, leaving 38 ns of the 50 ns. Its Ioff is an output figure and its line input current (1.5 mA at VI 10 V) carries no VCC condition in the table, so the data sheet verifier is to confirm the input side of 'powered-off behaviour'."
+     },
+     {
+      "rank": 2,
+      "part": "DS34LV86TMX/NOPB",
+      "option": "",
+      "reason": "unchanged order, corrected basis. P2's record says the powered-off input current is plotted only and the channel spacing is 29 ns wide. The data sheet states IIN at VIN +10 V as 1.1 typical / 1.8 mA maximum for 'Power On or VCC = 0V', and states tSK2 (pin to pin within a device) 4 ns and tSK1 (|tPHL - tPLH|) 4 ns maximum, which bound the A-to-B difference at 8 ns and leave 42 ns. Inputs +/-14 V. Below rank 1 for JLCPCB 2737 against 48815 and USD 2.17 against 0.74, and a 35 ns maximum delay with no tight window; above rank 3 for a second vendor (Digi-Key 5449) where rank 3 has none."
+     },
+     {
+      "rank": 3,
+      "part": "ISL32273EIBZ-T",
+      "option": "",
+      "reason": "unchanged: a second maker on the same signal pins, 0.2 mA maximum input current at VIN 12 V with VCC 0 V, channel-to-channel skew 8 ns maximum plus 6 ns for |tPLH - tPHL| (14 ns, leaving 36 ns), inputs -9 to +13 V (1 V over 12 V); JLCPCB 874 (re-read 2026-10-02T10:56:38Z), Digi-Key 0, so its second source is the alternate AM26LV32EIDR."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "AM26LV32EIDR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "encoder decode",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "option": "",
+      "reason": "unchanged: the only decoder, 2 PIO state machines of the measurement coprocessor; held 20 against a need of 10 (rule 6), JLCPCB C39843328 2491 / presale 2363 (re-read 2026-10-02T10:56:39Z), Digi-Key SC1512(13)-A4 3560. P3 returned no decoder."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "rotation from ESC",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "option": "",
+      "reason": "unchanged: no part to add; the main coprocessor's PIO receives the bidirectional DShot reply. Held 20 against a need of 10 (rule 6)."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "rotation inputs",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "option": "",
+      "reason": "unchanged: the measurement coprocessor times each rotation input on its own clock; no part to add. Held 20 against a need of 10 (rule 6)."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "BENCH rpm source",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "option": "",
+      "reason": "unchanged: firmware on the main coprocessor fills the register from the input a panel setting picks; no selector part. Held 20 against a need of 10 (rule 6)."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "RP2354B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "servo measured position",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TLV9062IDR",
+      "option": "",
+      "reason": "unchanged: the largest margin on every limit with a figure (offset drift 0.53 uV/degC typical against 5.7, GBP 10 MHz typical, 16 nV/rtHz at 1 kHz), 0.8 mA maximum supply current for the pair, stock at both vendors (JLCPCB C398355 170164 re-read 2026-10-02T10:56:41Z, Digi-Key 7844) and USD 0.12. Drift and bias are typical figures only. selection.json keeps it."
+     },
+     {
+      "rank": 2,
+      "part": "MCP6022T-I/SN",
+      "option": "",
+      "reason": "new from P3, qualified. Stock at both vendors (JLCPCB C57639 16336, Digi-Key 52689 with 4 weeks), so its second source is the same part; offset drift 3.5 uV/degC typical (39 % under the limit); the only candidate besides AD8606 that states an input bias maximum over the sensor's range (150 pA at 85 degC); GBWP 10 MHz typical; 2.7 mA maximum supply for the pair. Below rank 1 for the thinner drift margin, USD 1.13 against 0.12, and an industrial grade that ends at 85 degC, the sensor mount's maximum, with no margin."
+     },
+     {
+      "rank": 3,
+      "part": "OPA2365AIDR",
+      "option": "",
+      "reason": "new from P3, qualified. The largest margins after rank 1 (offset drift 1 uV/degC typical, GBW 50 MHz typical, JLCPCB C130011 8860 = 177 x the gate, 12 weeks at Digi-Key), but Digi-Key holds 0, so its second source is the alternate TLV9062IDR, and it draws 4.6 typical / 5 mA maximum for each amplifier (10 mA for the pair, 6 x rank 1) and costs USD 1.38. Its bias over temperature is a typical curve only. Below rank 2 for the Digi-Key stock and the supply current; above rank 4 for the drift margin."
+     },
+     {
+      "rank": 4,
+      "part": "TSV912IDT",
+      "option": "",
+      "reason": "unchanged: second vendor in stock (Digi-Key 1970), JLCPCB C1509138 149990, USD 0.16; below ranks 1 to 3 because its 5 uV/degC typical offset drift is 12 % under the 5.7 limit with no maximum stated, and GBW 8 MHz is the lowest of the typical-GBW parts."
+     },
+     {
+      "rank": 5,
+      "part": "AD8606ARZ-REEL7",
+      "option": "",
+      "reason": "unchanged: the only candidate with stated maxima for offset drift (4.5 uV/degC), bias over temperature (50 pA to 85 degC) and noise (12 nV/rtHz at 1 kHz), but Digi-Key 0, a 33-week lead time and USD 6.75 a part; its rule-5 alternate is rank 1."
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "MCP6022T-I/SN",
+      "maker": "Microchip Technology (data sheet DS20001685E); counts as Microchip (S1); JLCPCB label 'Microchip Tech'",
+      "lcsc": "C57639",
+      "package": "SOIC-8",
+      "placements": 1,
+      "placements_basis": "fixed: one dual op amp, X and Y, on the sensor board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channels and place",
+        "required": "2 channels, unity-gain followers",
+        "datasheet": "MCP6022 dual in 8-lead SOIC (OUTA 1, -INA 2, +INA 3, VSS 4, +INB 5, -INB 6, OUTB 7, VDD 8, the pin order of TLV9062IDR); 'Unity Gain Stable'; phase margin 65 degrees at G = +1 V/V, CL 60 pF",
+        "pass": true,
+        "source": "MCP6021/1R/2/3/4 DS20001685E (Jan 2017), https://ww1.microchip.com/downloads/en/DeviceDoc/20001685E.pdf (vendors.py fetch, HTTP 200), read 2026-10-02T10:51:37Z, Features, Package Types, AC Electrical Characteristics"
+       },
+       {
+        "name": "delay drift between runs",
+        "required": "whole delay <= 0.244 us, GBW above 652 kHz",
+        "datasheet": "GBWP 10 MHz typical (VDD 2.5 to 5.5 V, CL 60 pF; no minimum): about 16 ns at 1,092 Hz; slew rate 7.0 V/us",
+        "pass": true,
+        "source": "DS20001685E AC Electrical Characteristics, read 2026-10-02T10:51:37Z"
+       },
+       {
+        "name": "input range",
+        "required": "includes 0.1 V to 3.2 V at a 3.3 V supply; output able to carry the sensor's span (0.45 to 2.95 V at 3.399 V, the ADXL316's 0 g 0.4 to 0.6 VS plus 16 g at up to 23 mV/V/g)",
+        "datasheet": "VCMR VSS - 0.3 V to VDD + 0.3 V; output swing VSS + 15 mV to VDD - 20 mV at 10 kOhm",
+        "pass": true,
+        "source": "DS20001685E DC Electrical Characteristics, read 2026-10-02T10:51:37Z; ADXL316 Rev. C Table 1 (P2 scratch copy, read 2026-10-02T10:10:44Z)"
+       },
+       {
+        "name": "output and load",
+        "required": "unity-gain stable; drives the lead's capacitance through a series output resistor (stage 2's)",
+        "datasheet": "unity-gain stable, PM 65 degrees at CL 60 pF; short-circuit current +/-22 to +/-30 mA",
+        "pass": true,
+        "source": "DS20001685E, read 2026-10-02T10:51:37Z"
+       },
+       {
+        "name": "offset drift",
+        "required": "under 5.7 uV/degC",
+        "datasheet": "+/-3.5 uV/degC typical over -40 to +125 degC, no maximum; VOS +/-500 uV maximum at 25 degC (industrial); Figure 2-7 shows the offset moving 0 to about -100 uV between 50 and 85 degC (graph reading)",
+        "pass": true,
+        "source": "DS20001685E DC Electrical Characteristics, Figure 2-7, read 2026-10-02T10:51:37Z. Typical-only drift"
+       },
+       {
+        "name": "input bias current",
+        "required": "under 1 nA over 0 to 85 degC",
+        "datasheet": "IB 1 pA typical at 25 degC; 30 typical / 150 pA maximum at 85 degC (industrial parts)",
+        "pass": true,
+        "source": "DS20001685E DC Electrical Characteristics, read 2026-10-02T10:51:37Z"
+       },
+       {
+        "name": "noise",
+        "required": "under 1.2 uV/rtHz at 1 kHz",
+        "datasheet": "8.7 nV/rtHz typical at 10 kHz; 1 kHz not tabulated, Figure 2-11 plots about 12 nV/rtHz at 1 kHz (VDD 5 V, graph reading); 2.9 uV peak-to-peak 0.1 to 10 Hz",
+        "pass": true,
+        "source": "DS20001685E AC Electrical Characteristics, Figures 2-8, 2-11, read 2026-10-02T10:51:37Z"
+       },
+       {
+        "name": "supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "VDD 2.5 to 5.5 V; IQ 0.5 / 1.0 / 1.35 mA per amplifier (min / typ / max)",
+        "pass": true,
+        "source": "DS20001685E DC Electrical Characteristics, read 2026-10-02T10:51:37Z"
+       },
+       {
+        "name": "sensor ambient temperature",
+        "required": "0 to 85 degC",
+        "datasheet": "industrial grade -40 to +85 degC; operates to +125 degC 'with reduced performance'; extended grade (-E) is a separate orderable",
+        "pass": true,
+        "source": "DS20001685E Temperature Characteristics, Note 1, read 2026-10-02T10:51:37Z. The range ends at the required maximum with no margin"
+       },
+       {
+        "name": "build and sourcing",
+        "required": "LCSC number, rule 4",
+        "datasheet": "C57639 MCP6022T-I/SN, SOIC-8, stockCount 16336, canPresaleNumber 16233",
+        "pass": true,
+        "source": "vendors.py jlcpcb C57639, 2026-10-02T10:51:27Z"
+       }
+      ],
+      "jlcpcb": "stockCount 16336, canPresaleNumber 16233, componentLibraryType expand, USD 1.1315 a part at the 1 break (need 5), read 2026-10-02T10:51:27Z, vendors.py jlcpcb C57639 (exact LCSC match)",
+      "digikey": "stock_available 52689 (cut tape; reel 52300), manufacturer lead time 4 weeks, ProductStatus Active, discontinued false, end of life false, read 2026-10-02T10:47:18Z, vendors.py digikey MCP6022T-I/SN (https://api.digikey.com/products/v4/search/MCP6022T-I%2FSN/productdetails), cached (P3's reading, a reading of this task); 0 new calls",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; JLCPCB 16336 >= 50 and presale 16233 >= 0: pass (rule 4)",
+      "lifecycle": "In production: https://www.microchip.com/en-us/product/MCP6022 page data 'productSatus: In Production' (vendors.py fetch, HTTP 200, 2026-10-02T10:53:06Z); longevity: no published commitment read; market introduction November 2001 (DS20001685E revision history, 'Revision A (November 2001) Original Release'); notices: Microchip's PCN listing not read; distributor: Digi-Key Active (cached 2026-10-02T10:47:18Z), JLCPCB API carries no status",
+      "second_source": "second vendor: Digi-Key stock_available 52689 >= 50 (cached 2026-10-02T10:47:18Z); pin-compatible alternate TLV9062IDR also applies",
+      "alternates": [
+       "TLV9062IDR"
+      ],
+      "driver_in_shared": "none",
+      "reason": "qualifies on every value; second source is the same part at Digi-Key; drift margin 39 % and an industrial grade that ends at 85 degC rank it below TLV9062IDR",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "OPA2365AIDR",
+      "maker": "Texas Instruments (data sheet SBOS365G); counts as Texas Instruments (S1); JLCPCB label 'Texas Instruments'",
+      "lcsc": "C130011",
+      "package": "SOIC-8 (D)",
+      "placements": 1,
+      "placements_basis": "fixed: one dual op amp, X and Y, on the sensor board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channels and place",
+        "required": "2 channels, unity-gain followers",
+        "datasheet": "OPA2365 dual in SOIC-8 (Figure 6-3: OUTA 1, -INA 2, +INA 3, V- 4, +INB 5, -INB 6, OUTB 7, V+ 8, the pin order of TLV9062IDR); in unity gain 'remain stable with a pure capacitive load up to approximately 1 nF' (8.3.3)",
+        "pass": true,
+        "source": "OPA365, OPA2365 SBOS365G (May 2006, rev May 2023), https://www.ti.com/lit/ds/symlink/opa365.pdf (vendors.py fetch, HTTP 200), read 2026-10-02T10:51:36Z, Device Information, 6, 8.3.3"
+       },
+       {
+        "name": "delay drift between runs",
+        "required": "whole delay <= 0.244 us, GBW above 652 kHz",
+        "datasheet": "GBW 50 MHz typical at VS 5 V (no figure at 3.3 V, no minimum): about 3.2 ns at 1,092 Hz; slew rate 25 V/us",
+        "pass": true,
+        "source": "SBOS365G 7.6, read 2026-10-02T10:51:36Z"
+       },
+       {
+        "name": "input range",
+        "required": "includes 0.1 V to 3.2 V at a 3.3 V supply; output able to carry the sensor's span (0.45 to 2.95 V)",
+        "datasheet": "VCM (V-) - 0.1 V to (V+) + 0.1 V; output within 10 typical / 20 mV maximum of the rail at RL 10 kOhm, VS 5.5 V, -40 to 125 degC",
+        "pass": true,
+        "source": "SBOS365G 7.6, read 2026-10-02T10:51:36Z"
+       },
+       {
+        "name": "output and load",
+        "required": "unity-gain stable; drives the lead's capacitance through a series output resistor (stage 2's)",
+        "datasheet": "stable in unity gain with a pure capacitive load to about 1 nF; a series resistor of 10 to 20 ohm is the data sheet's technique; open-loop output impedance 30 ohm at 1 MHz; short-circuit current +/-65 mA",
+        "pass": true,
+        "source": "SBOS365G 7.6, 8.3.3, read 2026-10-02T10:51:36Z"
+       },
+       {
+        "name": "offset drift",
+        "required": "under 5.7 uV/degC",
+        "datasheet": "1 uV/degC typical over -40 to 125 degC, no maximum; VOS 100 typical / 200 uV maximum at 25 degC; the production distribution (Figure 7-4) shows no population above about 4 uV/degC (graph reading)",
+        "pass": true,
+        "source": "SBOS365G 7.6, Figure 7-4, read 2026-10-02T10:51:36Z. Typical-only drift"
+       },
+       {
+        "name": "input bias current",
+        "required": "under 1 nA over 0 to 85 degC",
+        "datasheet": "+/-0.2 typical / +/-10 pA maximum at 25 degC; over temperature a typical curve only (Figure 7-5): under 50 pA at 85 degC (graph reading)",
+        "pass": true,
+        "source": "SBOS365G 7.6, Figure 7-5, read 2026-10-02T10:51:36Z. No maximum over temperature"
+       },
+       {
+        "name": "noise",
+        "required": "under 1.2 uV/rtHz at 1 kHz",
+        "datasheet": "4.5 nV/rtHz typical at 100 kHz; 1 kHz not tabulated, Figure 7-14 plots about 15 nV/rtHz at 1 kHz (graph reading); 5 uV peak-to-peak 0.1 to 10 Hz",
+        "pass": true,
+        "source": "SBOS365G 7.6, Figure 7-14, read 2026-10-02T10:51:36Z"
+       },
+       {
+        "name": "supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "VS 2.2 to 5.5 V specified; IQ 4.6 typical / 5 mA maximum per amplifier (10 mA for the pair)",
+        "pass": true,
+        "source": "SBOS365G 7.3, 7.6, read 2026-10-02T10:51:36Z"
+       },
+       {
+        "name": "sensor ambient temperature",
+        "required": "0 to 85 degC",
+        "datasheet": "specified -40 to +125 degC",
+        "pass": true,
+        "source": "SBOS365G 7.3, read 2026-10-02T10:51:36Z"
+       },
+       {
+        "name": "build and sourcing",
+        "required": "LCSC number, rule 4",
+        "datasheet": "C130011 OPA2365AIDR, SOIC-8, stockCount 8860, canPresaleNumber 8643",
+        "pass": true,
+        "source": "vendors.py jlcpcb C130011, 2026-10-02T10:51:26Z"
+       }
+      ],
+      "jlcpcb": "stockCount 8860, canPresaleNumber 8643, componentLibraryType expand, USD 1.3802 a part at the 1 break (need 5), read 2026-10-02T10:51:26Z, vendors.py jlcpcb C130011 (exact LCSC match)",
+      "digikey": "stock_available 0 (tape and reel 0, cut tape 0, Digi-Reel 0), manufacturer lead time 12 weeks, ProductStatus Active, discontinued false, end of life false, read 2026-10-02T10:41:44Z, vendors.py digikey OPA2365AIDR (https://api.digikey.com/products/v4/search/OPA2365AIDR/productdetails), cached (P3's reading, a reading of this task); 0 new calls",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; JLCPCB 8860 >= 50 and presale 8643 >= 0: pass (rule 4)",
+      "lifecycle": "ACTIVE: https://www.ti.com/product/OPA2365 orderable OPA2365AIDR marketingStatusDescription ACTIVE, page meta status ACTIVE, MarketingStatusId 1 (vendors.py fetch, HTTP 200, 2026-10-02T10:53:24Z); the part page flags 'hasReplacements' with the text 'newer alternatives may be available', which is not a lifecycle notice; longevity: no per-part commitment, TI 10 to 15 years typical (https://www.ti.com/quality-reliability/quality/product-life-cycle.html, 2026-10-02T10:56:56Z); market introduction May 2006 (SBOS365, 'MAY 2006 - REVISED MAY 2023'); notices: TI's change-notice search not read; distributor: Digi-Key Active with 0 stock (cached 2026-10-02T10:41:44Z), JLCPCB no status",
+      "second_source": "alternate TLV9062IDR: dual SOIC-8 with the same pin order (OUT A 1, -IN A 2, +IN A 3, V- 4, +IN B 5, -IN B 6, OUT B 7, V+ 8), unity-gain stable, supply 1.8 to 5.5 V, passes rules 1 to 4 (JLCPCB 170164, 2026-10-02T10:56:41Z) and has Digi-Key 7844 (cached 2026-10-02T06:29:51Z); Digi-Key holds 0 of OPA2365AIDR",
+      "alternates": [
+       "TLV9062IDR",
+       "MCP6022T-I/SN"
+      ],
+      "driver_in_shared": "none",
+      "reason": "qualifies on every value; larger drift and bandwidth margin than rank 2 but 10 mA for the pair, USD 1.38 and no Digi-Key stock, so the alternate is rank 1",
+      "second_source_route": "alternate",
+      "second_source_part": "TLV9062IDR"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TLV9062IDR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "ADXL356 stock at JLCPCB",
+    "value": "C662368 ADXL356BEZ 7 / presale 7; C662369 ADXL356BEZ-RL 0 / 0; C662370 ADXL356BEZ-RL7 0 / 0; C579461 ADXL356CEZ 12 / 12; C662371 ADXL356CEZ-RL 24 / 23; C662372 ADXL356CEZ-RL7 0 / 0. All under the gate of 50 (need 5 x 1 = 5), so the family is dropped on rule 4 and the accelerometer function keeps no candidate",
+    "source": "vendors.py jlcpcb C662368, C662369, C662370, C579461, C662371, C662372, read 2026-10-02T10:51:24Z to 10:51:26Z (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)"
+   },
+   {
+    "figure": "magnetic pickup operate and release points",
+    "value": "Guaranteed switching field (maximum BOP, minimum BRP): DRV5015A1 and A1E (Q1) +/-2.0 mT, AH1711 +/-2.0 mT (20 Gauss), TMAG5115A1 +/-1.7 mT. Typical BOP: 0.7, 0.7 and 1.0 mT. Bandwidth: 20 kHz minimum for the first three, 60 kHz typical with tPD 6 us maximum for TMAG5115A1. ICC maximum: 2.8, 2.8 and 8 mA. For a dipole field (B proportional to 1 / distance cubed) 1.7 against 2.0 mT is 5.7 % more gap on the guarantee, and 0.7 against 1.0 mT is 12.6 % more gap for the DRV5015A1 on the typical figure. Rank 1 stays DRV5015A1QDBZR; TMAG5115A1CQDBZR is rank 3",
+    "source": "DRV5015 SBAS915A 6.6 (https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-10-02T10:51:36Z); TMAG5115 SBASAJ1B 6.5, 6.6 (https://www.ti.com/lit/ds/symlink/tmag5115.pdf, read 2026-10-02T10:51:35Z); AH1711 DS45410 Rev. 3-2 (P2's reading 2026-10-02T10:14:12Z, not re-read); arithmetic in this return"
+   },
+   {
+    "figure": "TMAG5115A1CQDBZR sourcing",
+    "value": "JLCPCB C22455387 stockCount 133, canPresaleNumber 133, expand, USD 0.4422 at 1 piece (2.7 x the gate of 50). Digi-Key stock_available 2641 (cut tape), lead time 20 weeks, Active, not discontinued, no end of life. TI product page: orderable TMAG5115A1CQDBZR ACTIVE",
+    "source": "vendors.py jlcpcb C22455387 (2026-10-02T10:51:26Z); vendors.py digikey TMAG5115A1CQDBZR (https://api.digikey.com/products/v4/search/TMAG5115A1CQDBZR/productdetails, cached, read 2026-10-02T10:37:44Z); https://www.ti.com/product/TMAG5115 (vendors.py fetch, HTTP 200, 2026-10-02T10:53:05Z)"
+   },
+   {
+    "figure": "lead buffer candidates side by side",
+    "value": "Offset drift typical against the 5.7 uV/degC limit: TLV9062IDR 0.53, OPA2365AIDR 1.0, MCP6022T-I/SN 3.5, TSV912IDT 5.0, AD8606ARZ-REEL7 4.5 maximum. Supply current maximum for the pair: TLV9062 1.6 mA (800 uA each), MCP6022 2.7 mA (1.35 mA each), OPA2365 10 mA (5 mA each). GBW typical against the 652 kHz need: 10 MHz, 50 MHz (at 5 V), 10 MHz, 8 MHz, 10 MHz. JLCPCB stock: 170164, 8860, 16336, 149990, 2953. Digi-Key stock: 7844, 0, 52689, 1970, 0. Ranking 1 TLV9062IDR, 2 MCP6022T-I/SN, 3 OPA2365AIDR, 4 TSV912IDT, 5 AD8606ARZ-REEL7",
+    "source": "TLV9062 SBOS839N, OPA365 SBOS365G, MCP6021/1R/2/3/4 DS20001685E (all fetched 2026-10-02T10:51:36Z to 10:51:38Z, scratch copies under rerank-R11/ds); TSV912 DS4899 and AD8606 Rev. O as P2 read them (2026-10-02T10:13:57Z, not re-read); vendors.py jlcpcb C398355, C130011, C57639, C1509138, C26360 (2026-10-02T10:51:26Z to 10:56:44Z); Digi-Key readings cached from 2026-10-02T06:29:51Z to 10:47:18Z"
+   },
+   {
+    "figure": "lead buffer output span",
+    "value": "The buffer must carry the ADXL316's span: 0 g at 0.4 to 0.6 of VS and 16 g at up to 23 mV/V/g, that is 0.45 to 2.95 V at VS 3.399 V, inside every candidate's output swing (within 20 mV of either rail at 10 kOhm). The sensor's own output swing high (2.8 V at VS 3 V, about VS - 0.2 V) sits 0.18 V inside a buffer's 20 mV rail margin, so the output swing does not separate the five candidates",
+    "source": "ADXL316 Rev. C Table 1 (P2 scratch copy, read 2026-10-02T10:10:44Z); OPA365 SBOS365G 7.6 and MCP6022 DS20001685E DC Electrical Characteristics (read 2026-10-02T10:51:36Z); TLV9062 SBOS839N (read 2026-10-02T10:51:38Z); arithmetic"
+   },
+   {
+    "figure": "MCP6022T-I/SN grade",
+    "value": "The orderable MCP6022T-I/SN is the industrial grade, -40 to +85 degC; the JLCPCB description (C57639) lists -40 to +125 degC, which belongs to the extended grade (-E). The data sheet says industrial parts operate to +125 degC 'with reduced performance'. The sensor mount's 0 to 85 degC maximum sits on the grade's limit. Bias maximum at 85 degC: 150 pA",
+    "source": "DS20001685E Temperature Characteristics and Note 1 (https://ww1.microchip.com/downloads/en/DeviceDoc/20001685E.pdf, read 2026-10-02T10:51:37Z); vendors.py jlcpcb C57639 (2026-10-02T10:51:27Z)"
+   },
+   {
+    "figure": "DS34LV86TMX/NOPB record in P2's shortlist",
+    "value": "P2's record says the powered-off input current is a plot only and counts a 29 ns spread (35 - 6 ns delay window), leaving 21 ns. The data sheet table states IIN at VIN +10 V as 1.1 typical / 1.8 mA maximum with 'Power On or VCC = 0V', tSK2 (pin to pin within a device) 4 ns maximum and tSK1 (|tPHL - tPLH|) 4 ns maximum, so the A-to-B difference is at most 8 ns and leaves 42 ns of 50 ns. The rank (2) is unchanged. The script builds the shortlist from P2's record, which therefore understates the part",
+    "source": "DS34LV86T SNLS115D, Electrical Characteristics and Switching Characteristics with notes (4) and (5) (P2 scratch copy ds/ds34lv86t.txt, https://www.ti.com/lit/ds/symlink/ds34lv86t.pdf, read 2026-10-02T10:13:57Z, re-read from the file 2026-10-02T10:58Z)"
+   },
+   {
+    "figure": "AM26LV32EIDR edge spacing and powered-off input",
+    "value": "P2's 32 ns left uses the 8 to 26 ns delay window (18 ns). The stated skews, tsk(o) 6 ns and tsk(p) 6 ns maximum, bound the A-to-B difference at 12 ns and leave 38 ns of 50 ns; both exceed the decoder model's 14 ns. 'Ioff +/-100 uA at VCC 0 V' is an output figure, and the line input current (1.5 mA at VI 10 V, input resistance 4 to 17 kOhm) carries no VCC condition in the table. The data sheet verifier is to confirm the input side of 'powered-off behaviour' for rank 1",
+    "source": "AM26LV32E SLLS849E 6.5, 6.6 (P2 scratch copy ds/am26lv32e.txt, read 2026-10-02T10:13:57Z, re-read from the file 2026-10-02T10:58Z)"
+   },
+   {
+    "figure": "JLCPCB re-read of the shortlisted parts",
+    "value": "C2152440 DRV5015A1QDBZR 339 / 336; C2152679 DRV5015A1EDBZRQ1 6167 / 6165; C7071848 AH1711-SA-7 100 / 100; C105188 TLV3201AIDBVR 39590 / 38272; C129325 TLV3202AIDR 7764 / 7457; C5213958 TLV3601DBVR 1621 / 1554; C527448 AM26LV32EIDR 48815 / 48715; C140249 DS34LV86TMX/NOPB 2737 / 2728; C1015816 ISL32273EIBZ-T 874 / 874; C39843328 RP2354B 2491 / 2363; C398355 TLV9062IDR 170164 / 169450; C1509138 TSV912IDT 149990 / 149968; C26360 AD8606ARZ-REEL7 2953 / 2873. All expand, all over the gate of 50 (RP2354B also held 20 against a need of 10)",
+    "source": "vendors.py jlcpcb C<number>, read 2026-10-02T10:56:25Z to 10:56:44Z (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)"
+   },
+   {
+    "figure": "Digi-Key calls",
+    "value": "0 new calls. The Digi-Key figures of the three new candidates are P3's readings of the same UTC day (10:37:44Z, 10:41:44Z, 10:47:18Z), returned from the cache marked cached; the rest are P2's cached readings. Calls left today: 874",
+    "source": "vendors.py digikey with DIGIKEY_CACHE_DIR=/home/claude/rcbench-research/round2/cache/digikey, 2026-10-02T10:52Z to 10:53Z; vendors.py digikey-quota, read 2026-10-02T10:53:00Z"
+   },
+   {
+    "figure": "functions without a shortlist",
+    "value": "accelerometer, optical index and servo measured position keep no ranked part. P3 returned one accelerometer family (ADXL356, dropped on rule 4) and no part for the other two. P2's accelerometer drop reasons (delay drift between runs not stated by the data sheets of ADXL316WBCSZ, AD22035Z and ADXL326BCPZ-RL7) and optical index reasons (stated rise or fall times of 10 us or more, or none) are not re-derived here, because P3 challenged none of them and the re-rank takes P2's dropped list as given",
+    "source": "P2 and P3 returns for R11 of FU-2E; vendors.py jlcpcb readings above"
+   },
+   {
+    "figure": "P3 exclusions in the magnetic pickup and lead buffer",
+    "value": "All three qualify and none is dropped. TMAG5115A1CQDBZR: P3 is right that 'higher operate points' fails on the maximum (1.7 against 2.0 mT) and wrong on the typical (1.0 against 0.7 mT); the other two reasons P2 gave stand (typical-only bandwidth, supply current 8 mA maximum), so it ranks 3. OPA2365AIDR: P3's claim that price and stock do not rank it below AD8606ARZ-REEL7 holds, and it ranks above it; it ranks below TLV9062IDR and MCP6022T-I/SN for 10 mA supply and no Digi-Key stock. MCP6022T-I/SN: no failed value; second",
+    "source": "TMAG5115 SBASAJ1B, OPA365 SBOS365G, MCP6022 DS20001685E, readings of 2026-10-02T10:51:35Z to 10:53:24Z; vendors.py jlcpcb and digikey readings above"
+   }
+  ]
+ }
+}

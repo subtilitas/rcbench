@@ -1,0 +1,644 @@
+{
+ "task": "FU",
+ "run": "FU-2E",
+ "run_id": "1d3516b206c26c91",
+ "commit": "4e10669ebcffe6ec9208b828147c66372dacbc7d",
+ "date": "2026-10-02",
+ "run_info": {
+  "claude_code": "2.1.287 (Claude Code)",
+  "cpus": 48,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "concurrency": 16,
+  "concurrency_setting": "unset",
+  "agent_model": "sonnet",
+  "oversight_model": "opus",
+  "digikey_calls_left": 880,
+  "vendors_sha256": "214b14a3af0a4a1e0edfab77124a786c4e0fade844ec4d0c72149c1571ff8bf6"
+ },
+ "followup": {
+  "phases": "P2-P4",
+  "round": 1,
+  "categories": [
+   "R11"
+  ],
+  "items": [
+   {
+    "category": "R11",
+    "function": "Converter for the accelerometer; optical index",
+    "requirement": "Delay variation at most 1.244 µs at 1,092 Hz (65,535 rpm): the optical index's share of V225. None of the 9 reflective sensors round 1 searched meets it; they state 10 to 70 µs. R10 is read for its share of the same budget. Answered under Raised by P1: V225: 1° at the highest rpm, whole chain, V202's converter share inside it: 2.54 µs of delay variation at 65,535 rpm, 16.7 µs at 10,000 rpm (owner, 2026-09-28). The delay variation is the drift of one unit between runs: the trial run cancels each unit's fixed delay, its unit-to-unit spread included (docs/Balance.md), with the filter capacitance CX at 4.7 nF or more, the datasheets' recommended minimum (owner, 2026-10-02)",
+    "source": "V225; Sensing.md, Not known",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R11",
+    "function": "accelerometer; accelerometer lead buffer (new)",
+    "requirement": "ADXL316WBCSZ fails only its lead length in FU-2C: 2 m (V222) without a buffer, and that refutation has no ruling, because the adjudicator failed twice on an account limit. The lead buffer sits on the sensor board before the lead of up to 2 m; its delay variation and the sensor's fit inside the accelerometer's 1.244 µs share of V225 at 65,535 rpm, and R10's ADCS7476AIMFX/NOPB needs a reservoir capacitor or a buffer at its input. Answered under Raised by P1: V225: 1° at the highest rpm, whole chain, V202's converter share inside it: 2.54 µs of delay variation at 65,535 rpm, 16.7 µs at 10,000 rpm (owner, 2026-09-28). The delay variation is the drift of one unit between runs: the trial run cancels each unit's fixed delay, its unit-to-unit spread included (docs/Balance.md), with the filter capacitance CX at 4.7 nF or more, the datasheets' recommended minimum (owner, 2026-10-02)",
+    "source": "FU-2C, R11 ledger and P3 return; V222, V225, V290",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R11",
+    "function": "encoder decode; rotation from ESC; rotation inputs; BENCH rpm source",
+    "requirement": "The RP2354B, which both FU-2C verifiers confirmed: the gate counted its stock check as missing under the name the owed list gave it, fixed in pull request #209",
+    "source": "FU-2C, R11 ledger",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R11",
+    "function": "servo measured position",
+    "requirement": "Not sent to P4 in FU-2C: P3's exclusion \"a magnetic angle sensor at the horn\" matched no part the re-rank dropped by name. The sensor is V209's choice and its resolution V210's, both for research. Answered under Raised by P1: V209: The F4 encoder on the servo output shaft gives the measured position; the function needs no part of its own. With the encoder on the motor shaft the servo screen shows no measured position (owner, 2026-10-02) V210: Does not apply: V209 gives the F4 encoder (owner, 2026-10-02)",
+    "source": "V209, V210; FU-2C, R11",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   }
+  ]
+ },
+ "stock_exceptions": [],
+ "accept_open": null,
+ "decisions": {
+  "Q4": "An external ADC: ADCS7476AIMFX/NOPB, the part R10 kept (owner, 2026-09-29)",
+  "Q8": "An I²C FRAM: MB85RC256VPNF-G-AMERE2, the part R12 kept (owner, 2026-09-29)",
+  "Q9": "The 74HC423 keeps the '423 behaviour, and an SN74AUP1G17DBVR with I_off goes in front of its trigger inputs, as R3 selected (owner, 2026-09-29)"
+ },
+ "planned": 6,
+ "started": 8,
+ "extra_used": 2,
+ "free": 26,
+ "skipped": [],
+ "summary": {
+  "categories": [
+   "R11"
+  ],
+  "held": [],
+  "results": [
+   {
+    "category": "R11",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "magnetic pickup",
+      "part": "DRV5015A1QDBZR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "phase-wire clip",
+      "part": "TLV3201AIDBVR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "phase-wire clip",
+      "part": "TLV3601DBVR",
+      "as": "alternate",
+      "for": "TLV3201AIDBVR",
+      "status": "verified"
+     },
+     {
+      "function": "encoder input",
+      "part": "AM26LV32EIDR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "encoder decode",
+      "part": "RP2354B",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "rotation from ESC",
+      "part": "RP2354B",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "rotation inputs",
+      "part": "RP2354B",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "BENCH rpm source",
+      "part": "RP2354B",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+      "part": "TLV9062IDR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "figure": "P2 report: encoder decode resources for P5",
+      "status": "refuted"
+     },
+     {
+      "figure": "re-rank report: lead buffer output span",
+      "status": "refuted, no ruling"
+     }
+    ],
+    "figures_open": [
+     "P2 report: encoder decode resources for P5",
+     "re-rank report: lead buffer output span"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "accelerometer",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "optical index",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "magnetic pickup",
+      "decision": "none",
+      "part": "DRV5015A1QDBZR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "phase-wire clip",
+      "decision": "none",
+      "part": "TLV3201AIDBVR",
+      "rank": 1,
+      "alternate": "TLV3601DBVR",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "encoder input",
+      "decision": "none",
+      "part": "AM26LV32EIDR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "encoder decode",
+      "decision": "none",
+      "part": "RP2354B",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "rotation from ESC",
+      "decision": "none",
+      "part": "RP2354B",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "rotation inputs",
+      "decision": "none",
+      "part": "RP2354B",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "BENCH rpm source",
+      "decision": "none",
+      "part": "RP2354B",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "servo measured position",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+      "decision": "none",
+      "part": "TLV9062IDR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   }
+  ],
+  "selection": {
+   "R11": [
+    {
+     "function": "accelerometer",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "optical index",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "magnetic pickup",
+     "decision": "none",
+     "part": "DRV5015A1QDBZR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "phase-wire clip",
+     "decision": "none",
+     "part": "TLV3201AIDBVR",
+     "rank": 1,
+     "alternate": "TLV3601DBVR",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "encoder input",
+     "decision": "none",
+     "part": "AM26LV32EIDR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "encoder decode",
+     "decision": "none",
+     "part": "RP2354B",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "rotation from ESC",
+     "decision": "none",
+     "part": "RP2354B",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "rotation inputs",
+     "decision": "none",
+     "part": "RP2354B",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "BENCH rpm source",
+     "decision": "none",
+     "part": "RP2354B",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "servo measured position",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+     "decision": "none",
+     "part": "TLV9062IDR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ]
+  },
+  "figures_open": {
+   "R11": [
+    "P2 report: encoder decode resources for P5",
+    "re-rank report: lead buffer output span"
+   ]
+  },
+  "part_refuted": {
+   "R11": []
+  },
+  "q_missing": [],
+  "chain_failed": []
+ },
+ "followUps": [
+  {
+   "role": "P0",
+   "host": "www.vishay.com",
+   "categories": [
+    "R3",
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P0",
+   "host": "www.isabellenhuette.com",
+   "categories": [
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "rerank",
+   "category": "R11",
+   "function": "accelerometer",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R11",
+   "function": "optical index",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "DRV5015A1QDBZR",
+   "reason": "shortlisted states other values than the function for: sensor type, pulses per revolution, lowest speed, supply, output, build and sourcing, sensitivity, sensor ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "DRV5015A1EDBZRQ1",
+   "reason": "shortlisted states other values than the function for: sensor type, pulses per revolution, lowest speed, supply, output, build and sourcing, sensitivity, sensor ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "TMAG5115A1CQDBZR",
+   "reason": "shortlisted states other values than the function for: sensor type, pulses per revolution, lowest speed, supply, output, build and sourcing, sensitivity, sensor ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "magnetic pickup",
+   "part": "AH1711-SA-7",
+   "reason": "shortlisted states other values than the function for: sensor type, pulses per revolution, lowest speed, supply, output, build and sourcing, sensitivity, sensor ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV3201AIDBVR",
+   "reason": "shortlisted states other values than the function for: coupling, isolation, input withstand, electrical frequency passed, PWM rejected, lowest speed, comparator supply, comparator output, comparator input range, comparator delay, placements, board ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV3202AIDR",
+   "reason": "shortlisted states other values than the function for: coupling, isolation, input withstand, electrical frequency passed, PWM rejected, lowest speed, comparator supply, comparator output, comparator input range, comparator delay, placements, board ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "phase-wire clip",
+   "part": "TLV3601DBVR",
+   "reason": "shortlisted states other values than the function for: coupling, isolation, input withstand, electrical frequency passed, PWM rejected, lowest speed, comparator supply, comparator output, comparator input range, comparator delay, placements, board ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "encoder input",
+   "part": "AM26LV32EIDR",
+   "reason": "shortlisted states other values than the function for: signal forms, channels, per-channel frequency, A-to-B edge spacing, input withstand, supply, powered-off behaviour, servo position source, board ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "encoder input",
+   "part": "DS34LV86TMX/NOPB",
+   "reason": "shortlisted states other values than the function for: signal forms, channels, per-channel frequency, A-to-B edge spacing, input withstand, supply, powered-off behaviour, servo position source, board ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "encoder input",
+   "part": "ISL32273EIBZ-T",
+   "reason": "shortlisted states other values than the function for: signal forms, channels, per-channel frequency, A-to-B edge spacing, input withstand, supply, powered-off behaviour, servo position source, board ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "encoder decode",
+   "part": "RP2354B",
+   "reason": "shortlisted states other values than the function for: count rate, direction, index capture, edge spacing tolerated, servo measured position, resources, external decoder maker; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "rotation from ESC",
+   "part": "RP2354B",
+   "reason": "shortlisted states other values than the function for: source, staleness, hardware; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "rotation inputs",
+   "part": "RP2354B",
+   "reason": "shortlisted states other values than the function for: highest shaft speed, lowest shaft speed, inputs, edge timing, hardware; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "BENCH rpm source",
+   "part": "RP2354B",
+   "reason": "shortlisted states other values than the function for: selection, register, hardware; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R11",
+   "function": "servo measured position",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+   "part": "TLV9062IDR",
+   "reason": "shortlisted states other values than the function for: channels and place, delay drift between runs, input range, output and load, offset drift, input bias current, noise, supply, sensor ambient temperature, build and sourcing; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+   "part": "MCP6022T-I/SN",
+   "reason": "shortlisted states other values than the function for: channels and place, delay drift between runs, input range, output and load, offset drift, input bias current, noise, supply, sensor ambient temperature, build and sourcing; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+   "part": "OPA2365AIDR",
+   "reason": "shortlisted states other values than the function for: channels and place, delay drift between runs, input range, output and load, offset drift, input bias current, noise, supply, sensor ambient temperature, build and sourcing; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+   "part": "TSV912IDT",
+   "reason": "shortlisted states other values than the function for: channels and place, delay drift between runs, input range, output and load, offset drift, input bias current, noise, supply, sensor ambient temperature, build and sourcing; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "function": "accelerometer lead buffer (a buffer before the lead of up to 2 m from the sensor board)",
+   "part": "AD8606ARZ-REEL7",
+   "reason": "shortlisted states other values than the function for: channels and place, delay drift between runs, input range, output and load, offset drift, input bias current, noise, supply, sensor ambient temperature, build and sourcing; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "figure": "P2 report: encoder decode resources for P5",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R11",
+   "function": "re-rank report: lead buffer output span",
+   "part": "",
+   "reason": "the ruling gives no evidence, source and time read"
+  },
+  {
+   "role": "P2",
+   "category": "R11",
+   "figure": "re-rank report: lead buffer output span",
+   "reason": "figure refuted without a ruling"
+  }
+ ],
+ "missing": [],
+ "sequence": 22,
+ "output_sha256": "d724234830b6e50c649c16f674777c82e8053eb8aa2c7d9b10127cc9485625c9",
+ "research_round": 2
+}

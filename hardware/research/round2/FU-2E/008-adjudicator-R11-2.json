@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R11",
+ "label": "adjudicator-R11-2",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "function": "re-rank report: lead buffer output span",
+  "part": "",
+  "stands": true,
+  "scope": "function",
+  "ruling": "The refutation stands. The figure gives the ADXL316 span as 0.45 to 2.95 V at VS 3.399 V. That span does not follow from the limits the figure itself states. The span 0.449 to 2.950 V comes only from an ideal 0 g level of 0.5 x VS with 16 g at 23 mV/V/g. With the stated 0 g band of 0.4 to 0.6 x VS (Table 1: 1.2 to 1.8 V at VS 3 V, ratiometric), the worst-case span at VS 3.399 V is 0.109 to 3.290 V. The figure therefore understates the span by about 0.34 V at each end. A figure that the re-rank reports for the buffer's output span has to state the correct span, so it is refuted as written. The scope is the function: the error is in this function's requirement arithmetic, not in any part. The conclusion the figure draws, that output swing does not separate the candidates, is not overturned. The sensor's own output limits its signal, at typical 0.1 V low and 2.8 V high (no load, VS 3 V; about VS - 0.2 V at 3.399 V, if that scales). The sensor's swing values are typical only, not guaranteed. That is inside the 10 to 20 mV rail margin the two buffer datasheets I re-read give at 10 kOhm. For the re-rank, the corrected figure is: 0.11 to 3.29 V from the 0 g and scale factor limits, held to about 0.1 to about 3.2 V (typical) by the sensor's output swing. Not re-read here: MCP6022 and the other candidates' swing. The TLV9062 and OPA365 rows are given at VS 5.5 V, not at 3.3 V.",
+  "evidence": "ADXL316 Rev. C, Table 1 (TA 25 °C, VS 3 V): 0 g voltage 1.2 min, 1.5 typ, 1.8 max V, that is 0.4 to 0.6 x VS, ratiometric. Initial 0 g deviation from ideal ±100 mV typ. Measurement range ±16 g min. Note 2: scale factors 15 mV/V/g min and 23 mV/V/g max. Output swing, no load: low 0.1 V typ, high 2.8 V typ. Operating VS 1.8 to 3.6 V. Arithmetic at VS 3.399 V, 16 x 0.023 x 3.399 = 1.2508 V. From 0.5 x VS: 0.449 to 2.950 V, the figure's span. From 0.4 x VS minus 1.2508 V and 0.6 x VS plus 1.2508 V: 0.109 to 3.290 V, the span that follows from the stated limits. The 0 g band alone is 1.360 to 2.039 V. OPA365 SBOS365G (revised May 2023), section 7.6: voltage output swing from rail 10 mV typ, 20 mV max, at RL 10 kOhm and VS 5.5 V, TA -40 to +125 °C. TLV9062 SBOS839N (revised July 2026): voltage output swing from supply rails 20 mV at VS 5.5 V, RL 10 kOhm; 60 mV at RL 2 kOhm.",
+  "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf (vendors.py fetch --client safari, HTTP 200, 370,034 bytes, Rev. C, Table 1 and note 2); https://www.ti.com/lit/ds/symlink/opa365.pdf (vendors.py fetch, HTTP 200, SBOS365G 7.6); https://www.ti.com/lit/ds/symlink/tlv9062.pdf (vendors.py fetch, HTTP 200, SBOS839N electrical characteristics); arithmetic in python. Copies in /home/claude/rcbench-research/round2/scratch/FU-2E/adjudicator-R11/lb/",
+  "read_at": "ADXL316: 2026-10-02T11:27:32Z; TLV9062: 2026-10-02T11:27:50Z; OPA365: 2026-10-02T11:27:51Z"
+ }
+}
