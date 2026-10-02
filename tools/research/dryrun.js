@@ -620,6 +620,7 @@ async function main() {
   const pack = { ...packSel, ownerFixed: packOwner, stockExceptions: packExc, partRows: packRow, marked: packMarks }
   r = await runTask('T6', { ...pack, failCheck: 'jlc_stock', failOutput: notListed })
   check(!r.result.summary.stopped, `T6: an owner-fixed pack Digi-Key does not list, excepted and marked, finishes it: ${(r.result.summary.reasons || []).join()}`)
+  check(JSON.stringify(r.result.owner_fixed) === JSON.stringify(packOwner), 'T6: the result carries the owner-fixed parts it was given')
   check(r.prompts.find(x => x.label === 'P7').prompt.includes('These fixed inputs of the Scope table are their functions\' parts, kept by the owner although no run verified them') && r.prompts.find(x => x.label === 'P7').prompt.includes('R7 Pack cells: SLSXT30002130'), 'T6: the prompts name the owner-fixed parts')
   check(r.prompts.find(x => x.label === 'P7-critic').prompt.includes('"state":"fixed by the owner; each check no run confirmed stated as not known","item":"R7 Pack cells: SLSXT30002130"'), 'T6: the critic marks the owner-fixed part as the owner\'s')
   const critP = r.prompts.find(x => x.label === 'P7-critic').prompt

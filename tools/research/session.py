@@ -260,6 +260,51 @@ def sourcing_answers(text):
     return out
 
 
+def fixed_input_fails(fixed, text, categories):
+    """The fixed inputs are the Scope table's, by input name and part, each
+    in a known category; the inputs the owner keeps whatever a run returns
+    are the rows that say so; each orderable number is its input's."""
+    fails = []
+    listed = sorted((x.get("function"), x.get("part"))
+                    for xs in fixed.values() for x in xs)
+    if listed != sorted(fixed_inputs(text)):
+        fails.append(f"fixed_inputs {listed} against the Scope table "
+                     f"{sorted(fixed_inputs(text))}")
+    for c in fixed:
+        if c not in categories:
+            fails.append(f"fixed_inputs: unknown category {c}")
+    kept = sorted(x.get("function") for xs in fixed.values() for x in xs
+                  if x.get("owner_keeps"))
+    if kept != sorted(owner_kept_rows(text)):
+        fails.append(f"fixed_inputs owner_keeps {kept} against the Scope "
+                     "rows that say \"whatever a run returns\" "
+                     f"{sorted(owner_kept_rows(text))}")
+    for c, xs in fixed.items():
+        for x in xs:
+            o = x.get("orderable")
+            if o is not None and not str(o).upper().startswith(
+                    str(x.get("part") or "").upper()):
+                fails.append(f"fixed_inputs {c} {x.get('function')}: "
+                             f"orderable {o} is not a {x.get('part')}")
+    return fails
+
+
+def owner_kept_rows(text):
+    """The inputs of the Scope table's fixed inputs whose value says the
+    owner keeps them whatever a run returns."""
+    sec = text.split("| Input | Value | Source |", 1)
+    if len(sec) < 2:
+        return []
+    out = []
+    for line in sec[1].split("\n")[1:]:
+        c = cells(line)
+        if not c or len(c) != 3:
+            break
+        if c[0].strip("-: ") and "whatever a run returns" in c[1]:
+            out.append(c[0])
+    return out
+
+
 def fixed_inputs(text):
     """The Scope table of fixed inputs: (input, part), the part being the
     part number that leads the value cell."""
@@ -414,25 +459,8 @@ def cmd_check(_args):
     for c, names in asks.items():
         if not names or len(set(names)) != len(names):
             fails.append(f"p1_asks {c}: no name, or a name twice")
-    # The fixed inputs are the Scope table's, by input name and part, each
-    # in a known category.
-    fixed = cats.get("fixed_inputs", {})
-    listed = sorted((x.get("function"), x.get("part"))
-                    for xs in fixed.values() for x in xs)
-    if listed != sorted(fixed_inputs(text)):
-        fails.append(f"fixed_inputs {listed} against the Scope table "
-                     f"{sorted(fixed_inputs(text))}")
-    for c in fixed:
-        if c not in cats["categories"]:
-            fails.append(f"fixed_inputs: unknown category {c}")
-    # The orderable number the owner's entry writes is the input's.
-    for c, xs in fixed.items():
-        for x in xs:
-            o = x.get("orderable")
-            if o is not None and not str(o).upper().startswith(
-                    str(x.get("part") or "").upper()):
-                fails.append(f"fixed_inputs {c} {x.get('function')}: "
-                             f"orderable {o} is not a {x.get('part')}")
+    fails += fixed_input_fails(cats.get("fixed_inputs", {}), text,
+                               cats["categories"])
     raised_rows(text)
     jlc_stock_row(text)
     if set(decisions(text)) != {"Q4", "Q8", "Q9"}:
@@ -657,9 +685,13 @@ def round_selftest():
 
 def owner_selftest():
     """The fixed inputs the owner keeps, on a throwaway repository: the
-    fallback of effective_selection, owner_items, open_selections,
-    refuted_for_itself, t6_open's selected parts and selection_changed.
-    Returns the failures; reads no network."""
+    fallback of effective_selection with its ledger filters, a verified
+    owner input and an input the owner does not keep; owner_items,
+    open_selections and refuted_for_itself; t6_open's selected parts and
+    its comparison by the list the check was given; upstream_view;
+    owner_fixed_of; differs_from_prepared; fixed_input_fails; and
+    selection_changed and selection_to_write. Returns the failures; reads
+    no network."""
     global load
     fails = []
     tmp = tempfile.mkdtemp(prefix="rcbench-owner-")
@@ -673,7 +705,9 @@ def owner_selftest():
         "R8": [{"function": "Motor monitor", "part": "INA228",
                 "orderable": "INA228AIDGSR", "owner_keeps": True},
                {"function": "External shunt sense input", "part": "INA228",
-                "orderable": "INA228AIDGSR", "owner_keeps": True}]}
+                "orderable": "INA228AIDGSR", "owner_keeps": True}],
+        "R11": [{"function": "accelerometer", "part": "ADXL316WBCSZ",
+                 "owner_keeps": True}]}
 
     def fake(name):
         cats = saved(name)
@@ -702,7 +736,9 @@ def owner_selftest():
             "selection": {
                 "R1": [{"function": "Microcontroller", "part": "RP2354B"}],
                 "R8": [{"function": "Motor monitor",
-                        "part": "INA238AIDGSR"}]}}})
+                        "part": "INA238AIDGSR"}],
+                "R11": [{"function": "accelerometer",
+                         "part": "ADXL316WBCSZ-RL7"}]}}})
         put(f"{r2}/FU-2B", {"task": "FU", "sequence": 2, "summary": {
             "selection": {
                 "R6": [{"function": "Servo supply", "part": None}],
@@ -738,8 +774,11 @@ def owner_selftest():
                == ["refuted"],
                "owner_fixed names the run, the replaced part and the "
                "reading that did not verify it")
-        expect((eff.get("R1", {}).get("Microcontroller") or {}).get("run")
-               == "FU-A", "a fixed input a run verified stays the run's")
+        acc = eff.get("R11", {}).get("accelerometer") or {}
+        expect(acc.get("run") == "FU-A" and acc.get("part")
+               == "ADXL316WBCSZ-RL7" and "owner_fixed" not in acc,
+               "an input the owner keeps that a run verified stays the "
+               "run's")
         sense = eff.get("R8", {}).get("External shunt sense input") or {}
         expect(sense.get("run") == OWNER and
                sense.get("owner_fixed", {}).get("left_open_by") == ""
@@ -787,12 +826,50 @@ def owner_selftest():
                "part")
         expect(not any("selections changed" in o for o in open_t6),
                "the owner parts the check was given are no change")
-        fixed["R11"] = [{"function": "optical index", "part": "TCND5000",
-                         "owner_keeps": True}]
+        fixed["R11"].append({"function": "optical index",
+                             "part": "TCND5000", "owner_keeps": True})
         open_t6, _ = t6_open(tmp)
         expect("R11: selections changed after FU-2P" in open_t6,
                "an owner part the check was not given is a change")
-        del fixed["R11"]
+        fixed["R11"].pop()
+        given = owner_fixed_of({"owner_fixed": owner_items(eff)})
+        expect(given.get("R8", [{}])[0] == {
+            "function": "Motor monitor", "part": "INA228",
+            "orderable": "INA228AIDGSR", "owner_keeps": True},
+            "owner_fixed_of gives back the input and its orderable")
+        expect(upstream_view(tmp, ["R7", "R8"], 3, {})
+               != upstream_view(tmp, ["R7", "R8"], None),
+               "an upstream input the owner keeps that a run was not "
+               "given is a change for it")
+        expect(upstream_view(tmp, ["R7", "R8"], 3, given)
+               == upstream_view(tmp, ["R7", "R8"], None),
+               "the owner inputs a run was given are no change for it")
+        want = {"commit": "c", "owner_fixed": owner_items(eff)}
+        expect(differs_from_prepared(dict(want), want) == [],
+               "an output that copies its arguments differs in nothing")
+        expect(differs_from_prepared({**want, "owner_fixed": []}, want)
+               == ["owner_fixed"]
+               and differs_from_prepared({"commit": "c"}, want)
+               == ["owner_fixed"],
+               "an output whose owner_fixed differs is refused")
+        table = ("| Input | Value | Source |\n| --- | --- | --- |\n"
+                 "| Pack cells | SLSXT30002130, kept whatever a run returns "
+                 "| x |\n| Servo supply | TPS55285 | x |\n")
+        good = {"R6": [{"function": "Servo supply", "part": "TPS55285",
+                        "orderable": "TPS55285VALR"}],
+                "R7": [{"function": "Pack cells", "part": "SLSXT30002130",
+                        "owner_keeps": True}]}
+        cats7 = ["R6", "R7"]
+        expect(fixed_input_fails(good, table, cats7) == [],
+               "fixed inputs that match the Scope table pass")
+        bad = {**good, "R6": [{**good["R6"][0], "orderable": "TPS552X"}]}
+        expect(any("orderable TPS552X" in f
+                   for f in fixed_input_fails(bad, table, cats7)),
+               "an orderable that is not its input fails")
+        loose = {**good, "R6": [{**good["R6"][0], "owner_keeps": True}]}
+        expect(any("owner_keeps" in f
+                   for f in fixed_input_fails(loose, table, cats7)),
+               "owner_keeps on a row that does not say so fails")
         sel_rel = os.path.join(RUNS_DIR, "selection.json")
         expect(selection_changed(tmp, sel_rel, eff),
                "no committed selection.json: changed")
@@ -980,6 +1057,18 @@ def effective_selection(results, pending=None, before=None, fixed=None):
                     or held.get("not_requalified") or "",
                     "unverified": unverified}}
     return eff
+
+
+def differs_from_prepared(result, want):
+    """The fields a run's output copies from its prepared arguments that
+    differ from them."""
+    copied = [k for k in ("commit", "date", "followup", "decisions",
+                          "accept_open")
+              if result.get(k) != want.get(k)]
+    for k in ("stock_exceptions", "owner_fixed"):
+        if (result.get(k) or []) != (want.get(k) or []):
+            copied.append(k)
+    return copied
 
 
 def selection_to_write(results, sel_rel, pending, stopped):
@@ -1292,18 +1381,14 @@ def stale_selections(results, categories, rows, now, upstream=(),
             spec_at[commit] = spec_text(commit)
         return spec_at[commit]
 
-    def up_of(before):
+    def up_of(before, fixed=None):
         # Each upstream function's part, alternate, Q alternatives and the
         # run that qualified them: a swap or a requalification is a change.
-        if before not in up_at:
-            sel = effective_selection(results, before=before)
-            up_at[before] = {(u, fn): (e.get("part"), e.get("alternate"),
-                                       e.get("run"), json.dumps(
-                                           e.get("q_alternatives") or [],
-                                           sort_keys=True))
-                             for u in upstream
-                             for fn, e in sel.get(u, {}).items()}
-        return up_at[before]
+        # A run saw the owner's fixed inputs it was given, not today's.
+        key = (before, json.dumps(fixed, sort_keys=True))
+        if key not in up_at:
+            up_at[key] = upstream_view(results, upstream, before, fixed)
+        return up_at[key]
 
     out = []
     for c in categories:
@@ -1327,10 +1412,22 @@ def stale_selections(results, categories, rows, now, upstream=(),
             if spec_of(commit) != spec_of(now):
                 out.append(f"{c}: the specification changed after {name} "
                            "selected its parts")
-            if c in downstream and up_of(seq[name]) != up_of(None):
+            if c in downstream and up_of(seq[name], owner_fixed_of(task)) \
+                    != up_of(None):
                 out.append(f"{c}: parts of T2 or T4 changed after {name} "
                            "selected its parts")
     return out
+
+
+def upstream_view(results, upstream, before, fixed=None):
+    """Each upstream function's part, alternate, Q alternatives and the run
+    that qualified them, in the effective selection before that sequence
+    number, with the owner's fixed inputs `fixed` (today's when None)."""
+    sel = effective_selection(results, before=before, fixed=fixed)
+    return {(u, fn): (e.get("part"), e.get("alternate"), e.get("run"),
+                      json.dumps(e.get("q_alternatives") or [],
+                                 sort_keys=True))
+            for u in upstream for fn, e in sel.get(u, {}).items()}
 
 
 def q9_open(results, now):
@@ -2299,14 +2396,7 @@ def record(args):
         raise SystemExit(f"the output is run {result.get('run')} "
                          f"{result.get('run_id')}, not the prepared {run} "
                          f"{want['run_id']}")
-    copied = [k for k in ("commit", "date", "followup", "decisions",
-                          "accept_open")
-              if result.get(k) != want.get(k)]
-    if (result.get("stock_exceptions") or []) != \
-            (want.get("stock_exceptions") or []):
-        copied.append("stock_exceptions")
-    if (result.get("owner_fixed") or []) != (want.get("owner_fixed") or []):
-        copied.append("owner_fixed")
+    copied = differs_from_prepared(result, want)
     if copied:
         raise SystemExit("the output's " + ", ".join(copied)
                          + " differ from the prepared arguments")

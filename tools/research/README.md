@@ -369,15 +369,16 @@ of an earlier check no follow-up after it covered), the assumptions of the
 last check's P5 its critic upheld, the parts `selection.json` keeps, and the
 sentences of the Outputs row of `tools/jlc_stock.py`. Every run's arguments
 hold the fixed inputs the owner keeps that no run verified (`owner_fixed`),
-which every prompt names; the run's result carries them, `record` refuses an
-output whose list differs from the prepared one, and `t6_open` compares the
-selection with the one the last check saw by the list that check was
-given. `session.py check`
+and every prompt names them. The run's result carries the list, and `record`
+refuses an output whose list differs from the prepared one. `t6_open` rebuilds
+the selection the last check saw from the list that check was given, and the
+stale-selection gate rebuilds the upstream parts a run saw the same way. `session.py check`
 confirms the Blocking and Sourcing tables still read as the gates expect, that
 the Outputs table has a row for `tools/jlc_stock.py`, and that `p1_asks` names
 exactly the rows that carry "P1 asks", each with distinct names, and that
 `fixed_inputs` lists the fixed inputs of the Scope table by input name and
-part, each `orderable` number, where given, starting with its part.
+part, `owner_keeps` exactly on the rows that say "whatever a run returns", and
+each `orderable` number, where given, starting with its part.
 
 `round1.js` keeps a function open, with no part, when:
 
@@ -443,7 +444,8 @@ part, each `orderable` number, where given, starting with its part.
   other part, and the owner is told. A packaging suffix of a table entry that
   is already an orderable number counts as the input too (ADXL316WBCSZ-RL7 for
   ADXL316WBCSZ), also where its stock differs: a current limitation. The
-  effective selection then keeps the input as the owner's (see `record`).
+  effective selection then keeps an input marked `owner_keeps` as the owner's
+  (see `record`). Any other input stays open.
 
 A part with more than one record, with placements below 1, or with an LCSC
 number that is neither `C` and digits nor `none`, has no record: it is
@@ -615,12 +617,12 @@ and verifies no part leaves it open and records the earlier part in
 and the latest does not is retired: the next run that selects parts in the
 category without naming it removes it. A fixed input of the Scope table the
 owner keeps whatever the runs return (`owner_keeps` in `categories.json`
-`fixed_inputs`) is its function's part: where no run keeps a part that starts
+`fixed_inputs`) is its function's part. Where no run keeps a part that starts
 with the input's number, the function keeps the input's `orderable` number, or
-the input itself, with run `owner`. Any other fixed input no run verifies
-stays open, for the owner to decide. Its `owner_fixed` names the run that left
+the input itself, with run `owner`. Its `owner_fixed` names the run that left
 the function open, the part it replaces and each ledger reading that did not
-verify it. `record` commits only the run's directory and that file.
+verify it. Any other fixed input no run verifies stays open, for the owner to
+decide. `record` commits only the run's directory and that file.
 
 After a T6 that was not stopped `record` also commits the pages P7 wrote. It
 refuses a changed file outside the files P7 declared and its critic reviewed
