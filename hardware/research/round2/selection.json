@@ -1481,15 +1481,29 @@
    }
   },
   "Port current monitor": {
-   "part": null,
+   "part": "INA3221AIRGVR",
    "rank": null,
    "alternate": "",
-   "run": "FU-2I",
+   "run": "owner",
    "alternate_unverified": [],
    "second_source_missing": false,
    "q_alternatives": [],
    "decision": "none",
-   "q_options_missing": []
+   "q_options_missing": [],
+   "owner_fixed": {
+    "input": "INA3221AIRGVR",
+    "off_board": false,
+    "left_open_by": "FU-2I",
+    "replaced": "",
+    "unverified": [
+     {
+      "run": "FU-2I",
+      "part": "INA3221AIRGVR",
+      "status": "refuted",
+      "reason": ""
+     }
+    ]
+   }
   },
   "Port shunt": {
    "part": "ERJ-6CWDR010V",

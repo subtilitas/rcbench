@@ -1,0 +1,637 @@
+{
+ "role": "P5",
+ "category": "",
+ "label": "P5",
+ "attempt": 0,
+ "data": {
+  "conflicts": [
+   {
+    "parts": [
+     "INA228AIDGSR"
+    ],
+    "categories": [
+     "R8"
+    ],
+    "kind": "shared-part stock shortfall",
+    "description": "INA228AIDGSR serves both the Motor monitor and the External shunt sense input (one for each shunt path, F1): 2 placements a board, need 10 for 5 boards, gate 50 (S4). JLCPCB C2887910 stockCount 0 and canPresaleNumber -254 (read 2026-10-03T08:16:53Z), Digi-Key 0 in every packaging with a 20-week lead time (cached reading 2026-10-03T00:02:22Z); not held; no rule-5 second source (INA228AQDGSRQ1 JLCPCB 0 / -240, INA228AIDGST obsolete at Digi-Key, INA238AIDGSR fits the footprint with no charge or energy register and JLCPCB 0 / -120). The shortfall is 50 units at the gate. The owner keeps the part (V304, 2026-10-02) and gives the shortfall to T6 as a stock exception; the stock is read again before the order.",
+    "evidence": "vendors.py jlcpcb C2887910 (2026-10-03T08:16:53Z); vendors.py digikey INA228AIDGSR cached (2026-10-03T00:02:22Z, https://api.digikey.com/products/v4/search/INA228AIDGSR/productdetails); FU-2I/002-P2-R8.json reports 'INA228AIDGSR stock (V304)' and 'INA228 second source'; selection.json R8 run 'owner'"
+   },
+   {
+    "parts": [
+     "IPT015N10N5ATMA1",
+     "INA228AIDGSR",
+     "CSD19537Q3T",
+     "ADBMS1818ASWAZ-RL"
+    ],
+    "categories": [
+     "R3",
+     "R8",
+     "R9"
+    ],
+    "kind": "ESC pack node clamp",
+    "description": "No part holds the ESC pack node under 85 V (V270) at the 300 A onboard and 600 A external turn-off: selection.json carries 'pack overvoltage and transient clamp', 'external pack switch module' and the 'switched-node freewheel diode' as none, and the onboard array IPT015N10N5ATMA1 qualifies only with a clamp under 85 V and that diode in place. The lowest absolute maximum on the node is INA228AIDGSR's 85 V (VBUS, IN+, IN-); the others are IPT015N10N5ATMA1 and CSD19537Q3T 100 V and ADBMS1818ASWAZ-RL 112.5 V. TVS diodes clamp at 113 to 126 V (round 1, T5); a simulated bank of 6 x 330 uF at 35 to 52 mOhm peaks under 82 V, 3 V under the INA228, and is not a selected part. The check against R3's clamp level cannot pass until route and parts are chosen (the owner's pass 2 after FU-2P56).",
+    "evidence": "FU-2A/012-P2-R3.json reports 'ESC pack node clamp level', 'onboard switch turn-off', 'external pack switch module'; FU-2A/017-rerank-R3.json 'pack node clamp and external module'; FU-2I/002-P2-R8.json and FU-2D/003-P2-R9.json requirement rows (INA228 VCM -0.3 to 85 V, ADBMS1818 Table 11 112.5 V); selection.json R3 (read 2026-10-03T08:20Z)"
+   },
+   {
+    "parts": [
+     "INA228AIDGSR",
+     "TPSI3052DWZR",
+     "MCP9808T-E/MS"
+    ],
+    "categories": [
+     "R3",
+     "R8"
+    ],
+    "kind": "motor overcurrent path: no hardware actuation path",
+    "description": "V288 and V159 require the ESC pack switch to open within the 500 ms stop deadline after a motor overcurrent or over-temperature detection. The detection chain reaches the main coprocessor in about 18 ms (INA228 ALERT within 17.0 ms, 74VHC21FT 8.5 ns, 1 ms pass; the MCP9808 at the onboard shunt 60 to 500 ms by resolution) and the coprocessor disarms its outputs. The pack switch drivers (TPSI3052DWZR) take the latch output alone: no coprocessor input exists (V53, V160), the Not defeatable rule allows none, and docs/Safety.md states that no hardware covers a healthy panel with a misbehaving coprocessor. The switch opens only when the panel's heartbeat stops (enable falls 155 to 185 ms later, switch open within 5 ms), and no coprocessor action stops it. A path through the panel (fault bit read at a 50 ms poll, STOP, heartbeat) adds up to 17 + 20 + 50 + 185 + 5 = 277 ms plus a panel reaction time that no page defines.",
+    "evidence": "FU-2A/012-P2-R3.json found V53; FU-2I/002-P2-R8.json found V159, V160 and reports 'Motor overcurrent path for P5', 'Over-temperature trip timing for P5'; docs/Safety.md 'Required external circuit: the monostable' (third row); Research.md V1, V288; IOBoard.md Link and safety (Not defeatable)"
+   },
+   {
+    "parts": [
+     "BQ25723RSNR",
+     "BQ40Z80RSMR",
+     "LM74800QDRRRQ1"
+    ],
+    "categories": [
+     "R5",
+     "R7"
+    ],
+    "kind": "rail conflict: pack path drop allowance and pack protection window",
+    "description": "V294 allows 0.2 V from the cells to the converters at 52.1 A (3.8 mOhm for the protector MOSFETs, ideal-diode MOSFETs, 1 mOhm shunt, XT60 and wiring). The BQ25723RSNR's battery sense resistor RSR (5 mOhm, in the pack-to-load path) alone drops 0.261 V and 13.6 W at 52.1 A, 0.313 V with the BQ40Z80's 1 mOhm shunt, before the BATFET and the MOSFETs. With 6 mOhm in the path and the converter loads at the verified efficiencies (305.0 W), the pack current at the 6.0 V sizing corner is 53.8 A (54.9 A at 8 mOhm, 56.1 A at 10 mOhm), above the BQ40Z80's untrimmed lower overcurrent edge of 52.21 A and above the post-trim edge of 55.25 A beyond 8.6 mOhm. At the 6.6 V floor of V294 the current is 47.3 to 50.1 A and inside both windows, and the converters' inductor clamps keep the draw at 31 to 35 A (7 to 8 A each, no maximum stated). At the 100.68 A upper short-circuit edge the RSR drops 0.503 V, over the BQ25723's 0.5 V SRP-SRN absolute maximum for up to 915 microseconds. Whether one P-channel BATFET carries 52.1 A is not known. The cell's 90 A continuous rating and the 60 A path rating hold.",
+    "evidence": "FU-2H/003-P2-R7.json reports 'charger battery path loss and drop', 'protector overcurrent windows', 'protector short-circuit windows', 'stage 2 MOSFETs: charger BATFET and switches'; FU-2F/012-adjudicator-R7-4.json (RSR figures reproduce); FU-2I/003-P2-R5.json 'pack path drop allowance'; BQ25723 https://www.ti.com/lit/ds/symlink/bq25723.pdf (read 2026-10-03T08:37:22Z): SRP-SRN -0.5 to 0.5 V, RSNS_RSR 5 mOhm or 10 mOhm; Research.md V294, V309; P5 arithmetic scratch/FU-2P56/P5/calc.py (2026-10-03T08:35Z)"
+   },
+   {
+    "parts": [
+     "TCAN1472VDRQ1",
+     "SN74LVC1G04DBVR"
+    ],
+    "categories": [
+     "R2",
+     "R3",
+     "R4"
+    ],
+    "kind": "enable polarity: external CAN standby",
+    "description": "The external CAN transceiver TCAN1472VDRQ1 is in standby with STB high and in normal mode with STB low (STB has an integrated pull-up), while the enable node is high when enabled. The standby input therefore needs an inverter with I_off from the enable node, as FU-2A noted. No function in selection.json names it, and SN74LVC1G04DBVR is booked for the 244 output enables only (R3 1 to 2, R4 1 to 2 placements, summed 4; 5 with this inverter). The external CAN port would stay in normal mode, or with an undriven STB in standby, rather than follow the enable node.",
+    "evidence": "TCAN1472-Q1 datasheet https://www.ti.com/lit/ds/symlink/tcan1472-q1.pdf (pin table 'Standby mode control input, integrated pull-up'; STB = 0 V normal, STB = VIO standby; read 2026-10-03T08:32:48Z); FU-2A/003-P2-R2.json report 'external port loop delay'; selection.json R2, R3, R4"
+   },
+   {
+    "parts": [
+     "ADBMS1818ASWAZ-RL",
+     "LTM8068EY#PBF"
+    ],
+    "categories": [
+     "R9"
+    ],
+    "kind": "function without a part on the ESC pack node",
+    "description": "The ADBMS1818's V+ must be at or above C18 - 0.3 V and C18 may not exceed V+ + 5.5 V, with unused inputs tied to the top cell. The always-on supply LTM8068EY#PBF gives a fixed 18 V on VOUT1 (17.7 V after an OR drop): it misses TME for packs above 18.0 V (5 cells at 4.2 V) and exceeds the absolute limit above 23.2 V (6 cells), so V+ for 1 to 16 cells up to 67.2 V needs an OR element from each tap that can be the pack top (blocks up to 67.2 V, 85 V rating, drop at most 0.3 V at 1.4 mA). FU-2D reported that no function names it. It sits on the ESC pack node and has no part in selection.json, so the node's check against the clamp level cannot include it.",
+    "evidence": "FU-2D/003-P2-R9.json reports 'V+ feed from the highest tap', 'V+ OR element ratings'; ADBMS1818 Rev. B Tables 3 and 11 as read in FU-2D (2026-10-02T06:21:10Z); Research.md V189, V193, V289, F15; selection.json R9"
+   }
+  ],
+  "combinations": [
+   {
+    "bind_order": "main chip: multiprotocol ports 1, 2, 3, 4 (GPIO 32, 34, 36, 38) in this order, then the UART socket (GPIO 33), then PPM on a PWM port (GPIO 16 to 31); the 16 PWM ports on slices 0 to 7 in any order (no PIO)",
+    "outputs": "16 PWM ports + 4 multiprotocol ports all bidirectional DShot + UART socket (PIO UART) + 1 PPM output",
+    "fits": true,
+    "resources": "PIO state machines 11 of 12; instruction words 81 of 96 (PIO2 32: ports 1 and 2 as tx SM0 / rx SM1 and tx SM2 / rx SM3; PIO1 32: ports 3 and 4 the same; PIO0 17: socket tx and rx 13 + PPM 4); DMA 2 of 16; PWM slices 8 of 12 (16 PWM ports); every block at base 16. 1 state machine and 15 words spare.",
+    "source": "firmware/iomcu/src/out_dshot.c:73-92, :155-207 and out_ppm.c:183-191 in checkout-f0306687a475; ~/toolchains/pico-sdk 2.3.0 src/rp2_common/hardware_pio/pio.c:48-120, :454-508 (NUM_PIOS 3, 4 state machines, 32 words a block, platform_defs.h); hardware/docs/Pins.md and pinmap.json; allocator model scratch/FU-2P56/P5/pio_sim.py, run over all 11,520 orders and mixes",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "bind_order": "main chip: multiprotocol ports 1, 2, 3, 4 (GPIO 32, 34, 36, 38) in this order, then the UART socket (GPIO 33), then PPM on a PWM port (GPIO 16 to 31); the 16 PWM ports on slices 0 to 7 in any order (no PIO)",
+    "outputs": "the same with all 4 multiprotocol ports on plain DShot (1 state machine, 4 words each)",
+    "fits": true,
+    "resources": "PIO state machines 7 of 12; words 33 of 96 (PIO2 16 for the 4 ports, PIO1 17 for socket and PPM, PIO0 empty); DMA 2; PWM slices 8.",
+    "source": "firmware/iomcu/src/out_dshot.c:73-92, :155-207 and out_ppm.c:183-191 in checkout-f0306687a475; pico-sdk 2.3.0 pio.c:48-120, :454-508; hardware/docs/Pins.md; allocator model scratch/FU-2P56/P5/pio_sim.py over all 11,520 orders and mixes",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "bind_order": "main chip: multiprotocol ports 1, 2, 3, 4 (GPIO 32, 34, 36, 38) in this order, then the UART socket (GPIO 33), then PPM on a PWM port (GPIO 16 to 31); the 16 PWM ports on slices 0 to 7 in any order (no PIO)",
+    "outputs": "every mix of bidirectional DShot, plain DShot and no PIO output on the 4 multiprotocol ports except the 13 listed in the next entry (68 of 81 mixes, including the all-bidirectional and all-plain mixes above), each with the socket and PPM",
+    "fits": true,
+    "resources": "at most 11 of 12 state machines and 81 of 96 words (the all-bidirectional mix); a port in a programming mode is allocated as 2 state machines and at most 16 words, assumption 'programmer state machines'; DMA 2; the 4 ports in servo PWM mode instead use PWM slices 8 to 11 and no PIO (12 of 12 slices with the 16 PWM ports, 0 spare).",
+    "source": "firmware/iomcu/src/out_dshot.c:73-92, :155-207 and out_ppm.c:183-191 in checkout-f0306687a475; pico-sdk 2.3.0 pio.c:48-120, :454-508; hardware/docs/Pins.md; allocator model scratch/FU-2P56/P5/pio_sim.py over all 11,520 orders and mixes",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "bind_order": "main chip: multiprotocol ports 1, 2, 3, 4 (GPIO 32, 34, 36, 38) in this order, then the UART socket (GPIO 33), then PPM on a PWM port (GPIO 16 to 31); the 16 PWM ports on slices 0 to 7 in any order (no PIO)",
+    "outputs": "the 13 mixes of ports 1 to 4 (B bidirectional DShot, P plain DShot, N no PIO output, port 1 first): BPBB, BPBP, BPBN, BPNB, BNPB, PBBB, PBBP, PBBN, PBNB, PPPB, PNBB, NBPB, NPBB",
+    "fits": false,
+    "resources": "the last bidirectional port is refused although 1 or 2 blocks are free: its transmitter takes the next free state machine of PIO2 or PIO1, SM3, and its receiver must sit on state machine (SM3 + 1) modulo 4 = SM0, which an earlier plain or bidirectional bind holds; pico-sdk does not retry another block (out_dshot.c:73-92, :199-207). The coprocessor refuses these binds and the OUTPUTS page shows the refusal (owner, 2026-09-25).",
+    "source": "firmware/iomcu/src/out_dshot.c:73-92, :155-207 and out_ppm.c:183-191 in checkout-f0306687a475; pico-sdk 2.3.0 pio.c:48-120, :454-508; hardware/docs/Pins.md; allocator model scratch/FU-2P56/P5/pio_sim.py over all 11,520 orders and mixes",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "bind_order": "main chip: PPM first, then ports 1 to 4, then the UART socket; also PPM, socket, ports; also ports 1, 2, PPM, ports 3, 4, socket; also ports 1 to 4, PPM, socket",
+    "outputs": "1 PPM output + 4 bidirectional DShot ports + UART socket",
+    "fits": false,
+    "resources": "a PPM pin (GPIO 16 to 31) is accepted by a block at base 0, so the first free block, PIO2, stays at base 0 holding the PPM program; the 4 ports then take PIO1 and PIO0 (base 16) and the socket pin GPIO 33 finds no block that is at base 16 with a free state machine and words ('no block for tx'); in the order PPM, socket, ports the 4th port finds no block. The socket must be bound before PPM and PPM after the ports.",
+    "source": "firmware/iomcu/src/out_dshot.c:73-92, :155-207 and out_ppm.c:183-191 in checkout-f0306687a475; pico-sdk 2.3.0 pio.c:48-120, :454-508; hardware/docs/Pins.md; allocator model scratch/FU-2P56/P5/pio_sim.py over all 11,520 orders and mixes",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "bind_order": "main chip: socket first, then PPM, then ports",
+    "outputs": "UART socket + PPM + 4 bidirectional DShot ports",
+    "fits": false,
+    "resources": "socket tx SM0 and rx SM1 and PPM SM2 take PIO2; the first bidirectional port then lands its transmitter on PIO2 SM3 and needs SM0 for its receiver, held by the socket: all four ports are refused.",
+    "source": "firmware/iomcu/src/out_dshot.c:73-92, :155-207 and out_ppm.c:183-191 in checkout-f0306687a475; pico-sdk 2.3.0 pio.c:48-120, :454-508; hardware/docs/Pins.md; allocator model scratch/FU-2P56/P5/pio_sim.py over all 11,520 orders and mixes",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "bind_order": "main chip: all four multiprotocol ports bound in a programming mode (PIO UART, tx 4 + rx 9 words, assumed), ports 1 to 4, then socket, then PPM",
+    "outputs": "ESC bootloader at 19,200 baud, ESCape32 CLI, Hitec D-series on the 4 ports + UART socket + PPM",
+    "fits": true,
+    "resources": "11 of 12 state machines, 69 of 96 words (PIO2 26, PIO1 26, PIO0 17); VESC runs on UART1 (GPIO 4, 5), the inter-chip link on UART0; DMA 2. No programmer protocol has run on a wire and no PIO UART program is written: assumption, not a measurement.",
+    "source": "firmware/iomcu/src/out_dshot.c:73-92, :155-207 and out_ppm.c:183-191 in checkout-f0306687a475; pico-sdk 2.3.0 pio.c:48-120, :454-508; hardware/docs/Pins.md; allocator model scratch/FU-2P56/P5/pio_sim.py over all 11,520 orders and mixes",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "bind_order": "measurement chip: encoder 2 state machines + chip-select trigger 1 in PIO0, receiver 2 in PIO1, PIO I2C 1 in PIO2 (all blocks at base 0)",
+    "outputs": "encoder A, B, index at 5 MHz a channel (RS-422) or 1 MHz (single-ended), 2 ADCS7476 triggered on the index timebase, receiver bus with transmit (JETI EX Bus, SRXL2), PIO I2C bus for the TCA9548A and MLX90614",
+    "fits": true,
+    "resources": "6 of 12 state machines (7 with a third for the encoder index); at most 72 of 96 words (PIO0 27, PIO1 13, PIO2 up to 32); DMA 0; PWM 0; every PIO pin in GPIO 0 to 31; clk_sys at least 75 MHz for the encoder (150 MHz default). Program sizes other than quad_edge.pio's 19 words are assumptions.",
+    "source": "FU-2E/002-P2-R11.json 'encoder decode resources for P5'; FU-2C/002-P2-R10.json 'Q4 resources for P5'; hardware/docs/Pins.md; pico-sdk pio.c (3 blocks, 4 state machines, 32 words); assumptions 'receiver bus state machines'",
+    "read_at": "2026-10-03T08:37:16Z"
+   }
+  ],
+  "budgets": [
+   {
+    "item": "GPIO: main",
+    "value": "44 of 48 GPIO used; capacity 48 (NUM_BANK0_GPIOS with PICO_RP2350A 0, pico-sdk 2.3.0 platform_defs.h); 4 free: GPIO 15, 35, 39 (fault tolerant) and 47 (an ADC pin). The parts round 2 selected add no main GPIO: the 3 shared alert lines (GPIO 8, 9, 10) and the 3 shift-register pins (11, 12, 13) are in the 44; the 20 port enables, 5 bias selectors, 5 converter enables and the latch read-back are 31 lines on the 3 MCP23017 (FU-2I 019-rerank-R6 'I/O expander line count against V271 and V276': 31 of 42 usable; Pins.md counts 33 with the 2 DC-input inputs that V271 moved to the ADC), not GPIO; the DC input status and brownout moved to the measurement chip's ADC (V271, V276). The interrupt or status outputs of BQ25723RSNR, BQ40Z80RSMR, FUSB303BTMX, the 4 TPS55285 and TPS55288RPMR have no pin in the map (Pins.md, Not known); P5 assumes they are read over I2C, because wiring them would take more than the 4 free pins. Alternates (74LVC244APW,118, PCA9548APWR, TPS259470ARPWR, BQ29200DRBR, TLV9001IDBVR, TLV3601DBVR, 74LV165APW,118, SN74LV21APWR, BAS-M-R0001-AE-5.0) are pin-for-pin or passive and add no GPIO.",
+    "within": true,
+    "source": "hardware/docs/Pins.md and hardware/docs/pinmap.json in checkout-f0306687a475 (python3 tools/pinmap_check.py hardware/docs/pinmap.json: main 44 of 48, measurement 32 of 48, 0 failures); FU-2I/004-P2-R6.json report 'Expander lines, for P5' and 019-rerank-R6.json 'I/O expander line count against V271 and V276'; Research.md V271, V276",
+    "read_at": "2026-10-03T08:37:16Z (tools/pinmap_check.py run); FU-2I returns read 2026-10-03T08:20Z"
+   },
+   {
+    "item": "GPIO: measurement",
+    "value": "34 of 48 GPIO used, 14 free. 32 in the map (UART0 link 0-1; I2C1 bus B 2-3; SPI0 accelerometer ADCs 4, 5, 6, 24; optical index 7; SPI1 8-11, 15 and the load-cell and thermocouple lines 9, 12, 13, 14, 28-31; I2C0 bus A 16-17; PIO I2C 18-19; encoder 20-22; receiver 23; phase-wire comparator 25; TCA9548A reset 26; magnetic pickup 27), plus 1 ADC pin (one of GPIO 40-47) for the DC input voltage through the TLV9061IDBVR buffer (V271, V276) and 1 direction pin for the receiver buffer SN74LVC1T45DBVR, because the bench transmits on the receiver input for JETI EX Bus and SRXL2 (V71; Pins.md Not known). GPIO 5 and 24, the ADCS7476 chip selects, change from SIO to a PIO function for the PIO-driven trigger (FU-2C 002-P2-R10 'Q4 trigger pins for P5'); that changes no count. GPIO 40 to 47 carry no connector signal.",
+    "within": true,
+    "source": "hardware/docs/Pins.md and hardware/docs/pinmap.json in checkout-f0306687a475 (python3 tools/pinmap_check.py hardware/docs/pinmap.json: main 44 of 48, measurement 32 of 48, 0 failures); FU-2C/002-P2-R10.json; Research.md V71, V271, V276; FU-2I/003-P2-R5.json",
+    "read_at": "2026-10-03T08:37:16Z (tools/pinmap_check.py run); FU-2C and FU-2I returns read 2026-10-03T08:20Z"
+   },
+   {
+    "item": "PIO GPIO windows: main",
+    "value": "PIO pins: GPIO 32, 34, 36, 38 (multiprotocol ports 1 to 4), GPIO 33 (UART socket, PIO UART) and one PPM pin on a PWM port, GPIO 16 to 31. All lie in the window GPIO 16 to 47, so each block runs at base 16, which pico-sdk 2.3.0 sets only on an empty block (pio_set_gpio_base_unsafe in pio.c, second pass of pio_claim_free_sm_and_add_program_for_gpio_range). A PPM pin (16 to 31) is accepted by a block at base 0 or 16, so a PPM bound before the pins at 32 and up can leave PIO2 at base 0 and the socket pin (33) then finds no block (combination 'PPM first'). With the stated bind order every block ends at base 16 and all 5 pins plus the PPM pin are reachable. No main PIO pin is below GPIO 16 (GPIO 6, 7 are SIO).",
+    "within": true,
+    "source": "hardware/docs/Pins.md and hardware/docs/pinmap.json in checkout-f0306687a475 (python3 tools/pinmap_check.py hardware/docs/pinmap.json: main 44 of 48, measurement 32 of 48, 0 failures); ~/toolchains/pico-sdk 2.3.0 src/rp2_common/hardware_pio/pio.c:48-120, :454-508 (read 2026-10-03T08:19Z); firmware/iomcu/src/out_dshot.c:155-160 and out_ppm.c:183-186 in the checkout; P5's allocator model scratch/FU-2P56/P5/pio_sim.py",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "item": "PIO GPIO windows: measurement",
+    "value": "PIO pins: GPIO 7 (optical index), 5 and 24 (ADCS7476 chip selects, PIO-driven), 18 and 19 (PIO I2C), 20, 21, 22 (encoder A, B, index), 23 (receiver). All lie in GPIO 0 to 31, so all 3 blocks sit at base 0 and every pin is reachable by any block; the pins GPIO 32 to 47 on this chip are ADC inputs and need no PIO.",
+    "within": true,
+    "source": "hardware/docs/Pins.md and hardware/docs/pinmap.json in checkout-f0306687a475 (python3 tools/pinmap_check.py hardware/docs/pinmap.json: main 44 of 48, measurement 32 of 48, 0 failures); FU-2E/002-P2-R11.json report 'encoder decode resources for P5'; FU-2C/002-P2-R10.json 'Q4 trigger pins for P5'",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "item": "PIO state machines: main",
+    "value": "11 of 12 with the stated bind order: bidirectional DShot on the 4 multiprotocol ports 8 (transmitter and receiver per port, receiver on state machine (transmitter + 1) modulo 4, out_dshot.c:73-92), UART socket as a PIO UART 2 (transmit and receive; assumed, no program in the tree), PPM 1 (out_ppm.c). Plain DShot takes 1 per port, so a mix takes less. 1 spare. Receiver buses, the encoder and the index are on the measurement chip. Which mixes bind depends on the order: 68 of the 81 mixes of {bidirectional, plain, no PIO output} on the 4 ports bind when ports are bound 1, 2, 3, 4, then the socket, then PPM; the other 13 are refused (see combinations).",
+    "within": true,
+    "source": "firmware/iomcu/src/out_dshot.c:73-92, :199-207; out_ppm.c:183; ~/toolchains/pico-sdk pio.c:454-508 (NUM_PIOS 3, NUM_PIO_STATE_MACHINES 4, platform_defs.h); P5 allocator model pio_sim.py; assumption 'programmer state machines'",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "item": "PIO state machines: measurement",
+    "value": "6 of 12 (7 if the encoder index is captured by a third state machine instead of a GPIO interrupt): encoder 2 (one per channel, one copy of quad_edge.pio, PIO0), ADCS7476 chip-select trigger and index sampling 1 (V290 has PIO or a timer drive the trigger; PIO is the only route bounded within 52 ns; no program in the tree, count assumed), PIO I2C bus of GPIO 18/19 for the TCA9548A and MLX90614 1 (assumed), receiver 2 (1 receive, 1 transmit; assumption 'receiver bus state machines'). Programmer: 0 here (it runs on the main chip). Needs clk_sys of at least 75 MHz for the encoder at 5 MHz a channel and 19.3 MHz for the 52 ns share; the pico-sdk default is 150 MHz.",
+    "within": true,
+    "source": "FU-2E/002-P2-R11.json reports 'encoder decode resources for P5' and 'R11 pins'; FU-2C/002-P2-R10.json 'Q4 resources for P5', 'Q4 converter delay variation against V290'; Pins.md rules",
+    "read_at": "FU-2E returns read 2026-10-02T10:17:15Z (model re-run), FU-2C 2026-10-02T00:20:04Z; combined 2026-10-03T08:37:16Z"
+   },
+   {
+    "item": "PIO instruction memory: main",
+    "value": "81 of 96 words with the stated bind order: PIO2 32 (ports 1 and 2, bidirectional DShot 11 + 5 = 16 words each), PIO1 32 (ports 3 and 4), PIO0 17 (UART socket PIO UART transmit 4 + receive 9 words, assumed from the pico-examples UART programs, which are not in the tree, plus PPM 4). Words in the tree: dshot_tx 4, dshot_bidir_tx 11, dshot_rx 5, ppm_tx 4. pico-sdk places each bound output's copy and never reuses a loaded one, so 2 bidirectional ports fill a block. 15 words free, all in PIO0.",
+    "within": true,
+    "source": "firmware/iomcu/src/dshot.pio, ppm.pio, out_dshot.c:88, :155, out_ppm.c:183; ~/toolchains/pico-sdk pio.c:48-61 (PIO_INSTRUCTION_COUNT 32); P5 allocator model pio_sim.py",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "item": "PIO instruction memory: measurement",
+    "value": "At most 72 of 96 words: PIO0 19 (quad_edge.pio, one copy for both state machines) + 8 (trigger and index program, assumed) = 27; PIO1 13 (receiver: UART receive 9 + transmit 4, assumed); PIO2 up to 32 (the PIO I2C program's size is not in the tree and is taken as a full block). The 19-word figure is from FU-2E; the others are assumptions, marked as such.",
+    "within": true,
+    "source": "FU-2E/002-P2-R11.json 'encoder decode resources for P5' (quad_edge.hex, 19 words); assumptions 'receiver bus state machines'",
+    "read_at": "FU-2E read 2026-10-02T10:17:15Z; 2026-10-03T08:37:16Z"
+   },
+   {
+    "item": "DMA channels: main",
+    "value": "2 of 16: PPM takes a data and a control channel (out_ppm.c:190-191, chained; erratum comment out_ppm.c:69; erratum RP2350-E5 workaround cited in the file, E8 forbids CHAIN_TO with zero-length transfers). Plain and bidirectional DShot, the CAN SPI, the I2C bus and the 2 UARTs are not stated to use DMA. 14 free. NUM_DMA_CHANNELS 16 (platform_defs.h).",
+    "within": true,
+    "source": "firmware/iomcu/src/out_ppm.c:183-191; FU-2D/002-P2-R1.json report 'stepping-A4 errata'; pico-sdk platform_defs.h",
+    "read_at": "2026-10-03T08:37:16Z; errata read 2026-10-02T06:22:39Z"
+   },
+   {
+    "item": "DMA channels: measurement",
+    "value": "0 stated of 16: the encoder decode uses none (FU-2E), the two ADCS7476 deliver one 16-bit SPI frame per conversion, and no DMA use is stated for SPI0, SPI1, the I2C buses or the UART link. If the accelerometer stream is drained by DMA, 2 channels (SPI0 receive and a pacing channel) are a reserve; the Q4 reference option would take 1 (DREQ_ADC). 14 to 16 free.",
+    "within": true,
+    "source": "FU-2E/002-P2-R11.json 'encoder decode resources for P5'; FU-C1/003-P2-R10.json 'Q4 resources for P5' (read 2026-09-29T02:42:00Z); FU-2C/002-P2-R10.json",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "item": "PWM slices: main",
+    "value": "12 of 12: the 16 PWM ports on GPIO 16 to 31 take slices 0 to 7 (slice = (pin / 2) mod 8, channel = pin low bit, one pair a slice, so the frame rate is set per pair), and the 4 multiprotocol ports in servo mode take slices 8 to 11 on GPIO 32, 34, 36, 38 (slice = 8 + (pin / 2) mod 4, channel A). No pin of the map that lies 16 apart below GPIO 32 or 8 apart from GPIO 32 up from a PWM pin carries PWM: GPIO 0 to 15 are UART, I2C and SIO, GPIO 40, 42, 44, 46 are SPI and SIO. 0 spare; the PWM function is used by no other pin.",
+    "within": true,
+    "source": "shared/outputs/include/out_pwm_map.h:4-16 and hardware/docs/pinmap.json (PWM_A_0 to PWM_B_7 on GPIO 16 to 31; PWM_A_8 to A_11 slices from io_bank0.h funcsel table, ~/toolchains/pico-sdk read 2026-10-03T08:19Z)",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "item": "PWM slices: measurement",
+    "value": "0 of 12: no pin of this chip carries PWM; the encoder decode uses PIO, not a PWM slice (FU-2E).",
+    "within": true,
+    "source": "hardware/docs/pinmap.json measurement chip; FU-2E/002-P2-R11.json",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "item": "ADC inputs: main",
+    "value": "0 of 8 used: GPIO 40 to 46 are digital (CAN SPI1, chip selects and interrupts), GPIO 47 is free and ADC-capable; 1 usable. The rule that a connector signal stays off GPIO 40 to 47 holds: none sits there.",
+    "within": true,
+    "source": "hardware/docs/Pins.md and hardware/docs/pinmap.json in checkout-f0306687a475 (python3 tools/pinmap_check.py hardware/docs/pinmap.json: main 44 of 48, measurement 32 of 48, 0 failures)",
+    "read_at": "2026-10-03T08:37:16Z (tools/pinmap_check.py run)"
+   },
+   {
+    "item": "ADC inputs: measurement",
+    "value": "1 of 8 used: the DC input voltage (11.0 V trip falling, 11.5 V reset rising, 10 ms qualify; V271, V272, V273) through a divider and the TLV9061IDBVR buffer on one of GPIO 40 to 47; 7 free. The external ADC decided for Q4 (ADCS7476AIMFX/NOPB) uses 0 of the 8 inputs. The buffer's output cannot exceed its 3.3 V supply, so the pin stays inside IOVDD + 0.5 V with the 3.3 V rail down; its input takes up to 10 mA with its supply at 0 V (FU-2I 003-P2-R5). NUM_ADC_CHANNELS is 9 with PICO_RP2350A 0: 8 inputs plus the temperature sensor.",
+    "within": true,
+    "source": "FU-2I/003-P2-R5.json requirements of TLV9061IDBVR 'ADC input within its rating with the 3.3 V rail down'; Research.md V271-V276; pico-sdk platform_defs.h",
+    "read_at": "FU-2I read 2026-10-03T00:13:52Z to 00:24:32Z; 2026-10-03T08:37:16Z"
+   },
+   {
+    "item": "SPI controllers: main",
+    "value": "1 of 2: SPI1 on GPIO 40 (receive), 42 (clock), 43 (transmit) carries both MCP2518FDT-E/SL, each with its own chip select (GPIO 41, 45, SIO with 10 kOhm pull-up) and interrupt (GPIO 44, 46), mode 0 at 10 MHz; the part's clock limit is 0.85 x SYSCLK / 2 = 17 MHz at the 40 MHz clock of the DSC1001DL5-040.0000. SPI0 free.",
+    "within": true,
+    "source": "hardware/docs/Pins.md 'Main coprocessor' and 'Rules the map follows' (MCP2518FD SPI clock limit); IOBoard.md 'Controller clock' (40 MHz clock of each MCP2518FDT-E/SL, owner 2026-10-01)",
+    "read_at": "2026-10-03T08:37:16Z (tools/pinmap_check.py run)"
+   },
+   {
+    "item": "SPI controllers: measurement",
+    "value": "2 of 2: SPI0 (GPIO 4 receive, 6 clock; chip selects GPIO 5 and 24) carries the two ADCS7476AIMFX/NOPB alone (V291); SPI1 (GPIO 8, 10, 11) carries the ADS1235IRHBR (mode 1, CS GPIO 9), the MAX31856MUD+T (mode 1, CS GPIO 13) and, across the ISO7741DWR, the ADBMS1818ASWAZ-RL (mode 3, 1 MHz at most, CS GPIO 15), the format switched between transactions with every chip select high. 0 spare.",
+    "within": true,
+    "source": "hardware/docs/Pins.md 'Measurement coprocessor' and 'Rules the map follows'; FU-2D/003-P2-R9.json 'barrier pins for P5'; Research.md V291",
+    "read_at": "2026-10-03T08:37:16Z (tools/pinmap_check.py run)"
+   },
+   {
+    "item": "I2C controllers: main",
+    "value": "1 of 2: I2C1 on GPIO 2 and 3 carries 3 MCP23017T-E/SS, the FRAM (or EEPROM), BQ25723RSNR, BQ40Z80RSMR, FUSB303BTMX and TPS55288RPMR (provisional, Pins.md). I2C0 free.",
+    "within": true,
+    "source": "hardware/docs/Pins.md; FU-2H/003-P2-R7.json 'bus addresses for P5'; FU-2F/003-P2-R5.json 'pack IC bus address'",
+    "read_at": "2026-10-03T08:37:16Z (tools/pinmap_check.py run)"
+   },
+   {
+    "item": "I2C controllers: measurement",
+    "value": "2 of 2 hardware controllers plus 1 PIO bus: I2C0 (GPIO 16, 17, sensor bus A) and I2C1 (GPIO 2, 3, sensor bus B) carry the 7 INA3221AIRGVR, 2 INA228AIDGSR, 5 MCP9808T-E/MS and 4 TPS55285VALR; the third bus on GPIO 18 and 19 is a PIO I2C (1 state machine) for the TCA9548APWR and MLX90614ESF-BCC-000-TU. 0 hardware controller spare.",
+    "within": true,
+    "source": "hardware/docs/Pins.md; IOBoard.md 'Two coprocessors' (Converter I2C); FU-2I/002-P2-R8.json 'I2C addresses for P5'",
+    "read_at": "2026-10-03T08:37:16Z (tools/pinmap_check.py run)"
+   },
+   {
+    "item": "UART controllers: main",
+    "value": "2 of 2: UART0 on GPIO 0, 1 is the inter-chip link; UART1 on GPIO 4, 5 is VESC (separate transmit and receive, 115,200 baud, V67). The one-pin UART socket (OpenYGE, 115,200 baud 8N1, half duplex) is a PIO UART on GPIO 33. 0 spare.",
+    "within": true,
+    "source": "hardware/docs/Pins.md 'Owner decisions'; Research.md V67; IOBoard.md OpenYGE line",
+    "read_at": "2026-10-03T08:37:16Z (tools/pinmap_check.py run)"
+   },
+   {
+    "item": "UART controllers: measurement",
+    "value": "1 of 2: UART0 on GPIO 0, 1 is the inter-chip link. UART1 is free; GPIO 23 has UART1_RX (funcsel 0x0b in io_bank0.h), so a receive-only receiver bus could use it, but the map puts the receiver on PIO1 and the transmit direction needs a PIO state machine (assumption 'receiver bus state machines').",
+    "within": true,
+    "source": "hardware/docs/pinmap.json; ~/toolchains/pico-sdk src/rp2350/hardware_regs/include/hardware/regs/io_bank0.h (GPIO23 funcsel table)",
+    "read_at": "2026-10-03T08:19Z"
+   },
+   {
+    "item": "in-package flash",
+    "value": "Each RP2354B holds 2 MB (W25Q16JVWI, RP2350 datasheet section 14.3). Image limit 2,088,960 bytes (2 MB less the store's two 4,096-byte sectors); the main image as built on the module is 272,040 bytes, 13.0 % of the limit, and includes the 206,000-byte board picture; the measurement image is not written (unknown). Packaged-part figures (W25Q16JV-DTR revision I, the die's figures are not known; marked as packaged-part): 4 kB sector erase 45 ms typical, 400 ms maximum; 256-byte page program 0.4 ms typical, 3 ms maximum; at least 100,000 program-erase cycles; QSPI_IOVDD 2.97 to 3.63 V. With Q8 decided as the FRAM (owner, 2026-09-29) no erase or program runs in operation, so the 400 ms stall applies to firmware updates only; the MCP2518FD holds 32 frames and the panel sends at most 9 in a 400 ms stall (V16, FU-2A). R1's watchdog finding stands: while the store was in flash no timeout met both the 500 ms stop deadline (V1) and the 900 ms longest stall (V2); with the store in the FRAM a window opens once the console write is capped (firmware).",
+    "within": true,
+    "source": "FU-2D/002-P2-R1.json reports 'in-package flash' and 'watchdog' (P4 confirmed FU-2D/009-P4-datasheet-R1.json 2026-10-02T06:54:48Z); docs/FirstRun.md:60-63 and firmware/iomcu/src/art_rp2350_can.c:1-19 in the checkout; IOBoard.md Image size limit; Research.md V1, V2, V16, Q8",
+    "read_at": "RP2350 datasheet and Winbond readings 2026-10-02T06:22:39Z (FU-2D); checkout read 2026-10-03T08:19Z"
+   },
+   {
+    "item": "I2C address map: main bus",
+    "value": "I2C1, GPIO 2 and 3. 0x0B BQ40Z80RSMR (SMBus, 8-bit 0x16, 10 to 100 kHz); 0x20, 0x21, 0x22 the 3 MCP23017T-E/SS; 0x31 FUSB303BTMX (ADDR/ORIENT strapped high: its other address, 0x21, meets the second MCP23017, the collision FU-2H's R7 flagged; Pins.md puts it at 0x31); 0x50 the FRAM MB85RC256VPNF-G-AMERE2 (A2 to A0 low); 0x6B BQ25723RSNR; 0x74 or 0x75 TPS55288RPMR (MODE resistor; the bus has no other 0x74 or 0x75, so the encoder supply stays here). No two devices share an address. Alternates: PCA9548APWR is not on this bus; the EEPROM option M24256E-FMN6TP answers at 0x50 (chip address) and 0x58 to 0x5F (identification page), also free.",
+    "within": true,
+    "source": "FU-2H/003-P2-R7.json 'bus addresses for P5'; FU-2F/003-P2-R5.json 'pack IC bus address'; FU-2I/004-P2-R6.json 'I2C addresses of R6 parts, for P5'; FU-C1/005-P2-R12.json (MB85RC256V 0x50 to 0x57, M24256E); hardware/docs/Pins.md I/O expanders and Not known",
+    "read_at": "FU-2H 2026-10-02T20:21Z; FU-2I 2026-10-03T00:24:20Z; FU-C1 2026-09-29T02:45Z; collision check 2026-10-03T08:40Z"
+   },
+   {
+    "item": "I2C address map: measurement bus A",
+    "value": "I2C0, GPIO 16 and 17 (P5's assignment, 7 INA3221 split 4 and 3): INA3221AIRGVR x4 at 0x40 to 0x43 (A0 to GND, VS, SDA, SCL); TPS55285VALR x2 at 0x74 (MODE 48.7 kOhm) and 0x75 (MODE 0 Ohm); MCP9808T-E/MS x3 at 0x18, 0x19, 0x1A. No collision.",
+    "within": true,
+    "source": "FU-2I/002-P2-R8.json 'I2C addresses for P5'; FU-2I/004-P2-R6.json 'I2C addresses of R6 parts, for P5'; IOBoard.md Converter I2C and Port current monitor",
+    "read_at": "FU-2I 2026-10-03T00:16:21Z to 00:24:20Z; 2026-10-03T08:40Z"
+   },
+   {
+    "item": "I2C address map: measurement bus B",
+    "value": "I2C1, GPIO 2 and 3: INA3221AIRGVR x3 at 0x40 to 0x42; INA228AIDGSR x2 at 0x44 and 0x45 (A0, A1; the display's INA228 address setting offers 0x40, 0x41, 0x44, 0x45; the INA3221 holds 0x40 to 0x43 on both buses, so both INA228 take 0x44 or above); TPS55285VALR x2 at 0x74 and 0x75; MCP9808T-E/MS x2 at 0x18, 0x19 (5 sensors in all: 4 beside the converters and 1 at the onboard shunt, 8 addresses 0x18 to 0x1F available on each bus). No collision.",
+    "within": true,
+    "source": "FU-2I/002-P2-R8.json 'I2C addresses for P5'; IOBoard.md Motor monitor address; FU-2I/004-P2-R6.json",
+    "read_at": "FU-2I 2026-10-03T00:16:21Z; 2026-10-03T08:40Z"
+   },
+   {
+    "item": "I2C address map: Qwiic and infrared bus",
+    "value": "PIO I2C, GPIO 18 and 19: TCA9548APWR at 0x70 (A2 to A0 low; any of 0x70 to 0x77, PCA9548APWR alternate has the same map) and MLX90614ESF-BCC-000-TU at 0x5A; the 2 Qwiic ports sit behind mux channels, so a device there can take any address, including 0x74 and 0x75, without meeting the converters on the other buses. The addresses a Qwiic device may use are not stated (V246 was answered from the INA228 setting, not by the owner). No collision on the shared segment.",
+    "within": true,
+    "source": "FU-C1/005-P2-R12.json reports 'infrared sensor bus for P5', V246; hardware/docs/Pins.md Rules the map follows",
+    "read_at": "FU-C1 2026-09-29T02:45Z; 2026-10-03T08:40Z"
+   },
+   {
+    "item": "current per rail: 3.3 V logic rail",
+    "value": "LMQ66430MC3RXBRQ1 rated 3 A. Load: 1,475 mA summed maxima of the parts selected in R1 to R4 and R9 to R13 plus R5's buffer (incl. 2 x RP2354B 642 mA, 2 Qwiic ports 452 mA, 8 x TPSI3052DWZR 208 mA at 26 mA typical, 2 x ADCS7476, ISO7741DWR 6.8 mA) + R6 80.9 mA (20 x TPSI3052DWZR at 3.1 mA typical with RPXFR 7.32 kOhm = 62 mA, 20 x INA301A1IDGKR 14 mA, 3 x MCP23017 3 mA, 4 x MCP9808 1.6 mA, 20 x TPS3701 0.22 mA, 4 x TLV803S 0.04 mA, latches and gates 0.04 mA) + R8 5.85 mA (2 x INA228 2.2 mA, 7 x INA3221 3.15 mA, MCP9808 0.4 mA, 2 x SN74LV165A and 3 x 74VHC21FT 0.1 mA) + R7 0 mA (BQ25723, BQ40Z80, BQ29209 run from VBUS or the pack; the FUSB303's 3.3 V draw is not read) = 1,562 mA stated; + 100 mA bound for the TCND5000 emitter (drive current not stated) = 1,662 mA; x 1.25 (V99) = 2.08 A, 69 % of 3 A. If the 20 port drivers sit at RPXFR 20 kOhm (26 mA each typical, 520 mA, no maximum stated) the sum is 2,120 mA, x 1.25 = 2.65 A, still under 3 A. TLV3601DBVR as alternate adds up to 14 mA (7 mA maximum each, 2 placements). The 3.3 V window of 3.201 to 3.399 V holds: 3.237 to 3.353 V with ripple and transient (FU-2I 003-P2-R5).",
+    "within": true,
+    "source": "FU-2I/003-P2-R5.json reports '3.3 V rail load', '3.3 V logic buck rating needed' (itemised by FU-2B1/003-P2-R5.json, P4 confirmed FU-2B1/010-P4-datasheet-R5.json 2026-10-02T12:55:49Z); FU-2I/004-P2-R6.json report '3.3 V and 5 V loads of R6 parts, for P5'; FU-2I/002-P2-R8.json '3.3 V supply current of R8 parts for P5'; TPSI3052 SLVSGS3B 6.9 re-read https://www.ti.com/lit/ds/symlink/tpsi3052.pdf (IVDDP 3.1 mA at RPXFR 7.32 kOhm, 26 mA at 20 kOhm, VDDP 3.3 V)",
+    "read_at": "FU-2I 2026-10-03T00:13:52Z to 00:24:32Z; TPSI3052 datasheet 2026-10-03T08:30:07Z; sum 2026-10-03T08:40Z"
+   },
+   {
+    "item": "current per rail: 5 V rail",
+    "value": "LM61460AFSQRJRRQ1 rated 6 A (3.0 to 36 V in, 42 V absolute). Load: 2.08 A peak (display 2.0 A, TCAN1472VDRQ1 80 mA) + R6 8.8 mA (4 x OPA376AIDBVR 3.8 mA, REF3112AIDBZR and the offset dividers about 5 mA; the LTC4352 ideal-diode controllers, 10 mA, have no part) + R9's LTM8068EY#PBF, whose rail is not stated and whose input current at 18 V out is not read: bounded at 0.2 A from 5 V (load 11 mA at 18 V and 31 mA at 5 V awake, about 0.4 W out) = 2.29 A; x 1.25 = 2.86 A, 48 % of 6 A. With the display switch at its highest limit, 2.72 A + 0.08 A + 0.009 A + 0.2 A = 3.01 A, still half the rating. Load cells (45.7 mA) and the encoder are off this rail (V100, V254). R7 and R8 add none. Alternate TLV9001IDBVR draws less than OPA376.",
+    "within": true,
+    "source": "FU-2I/003-P2-R5.json reports '5 V rail load and rating needed', '3.3 V rail load' and requirement rows of LM61460AFSQRJRRQ1; FU-2I/004-P2-R6.json '3.3 V and 5 V loads of R6 parts, for P5'; FU-2D/003-P2-R9.json 'LTM8068 draw from the board rail', 'pack-side 5 V rail load'",
+    "read_at": "FU-2I 2026-10-03T00:13:52Z to 00:24:32Z; FU-2D 2026-10-02T06:26:30Z; 2026-10-03T08:40Z"
+   },
+   {
+    "item": "current per rail: display supply",
+    "value": "TPS259474ARPWR (alternate TPS259470ARPWR, same ILIM rows, differs on pins 3 and 4: PG and PGTH against AUXOFF and FLT): ILIM 2.23 to 2.72 A at RILM 1.33 kOhm (2.5 A nominal), IMAX 5.5 A, 45 mOhm maximum. Load 2.0 A peak, 1.5 A continuous at 5 V (prerequisite 7). The lowest limit corner, 2.23 A, is above the 2 A peak; a cable short is held at 2.72 A, and the 5 V rail's 6 A carries that plus 0.3 A, so the rail stays up. Voltage at the display end: 4.55 V at 2 A (least 4.5 V, TJA1051T/3 VCC), 5.06 V plus ripple at no load (at most 5.5 V); allowed cable drop 0.235 V over supply and return.",
+    "within": true,
+    "source": "FU-2I/003-P2-R5.json requirement rows of TPS259474ARPWR and report 'link cable allowed drop at 2 A', V79, V81, V82",
+    "read_at": "FU-2I 2026-10-03T00:13:52Z to 00:24:32Z"
+   },
+   {
+    "item": "current per rail: encoder supply",
+    "value": "TPS55288RPMR output limit 233 to 267 mA (VSNS 28 to 32 mV over 120 mOhm, both jumper positions) against the encoder's 160 mA at 5 V and 100 mA at 12 V (Omron E6B2-C class, V102); the power-on inrush of about 9 A for 0.3 ms (2.7 mC) runs into the limit for up to 11.6 ms; firmware clears HICCUP before enabling the output. Input from the bus, 5.8 to 19.27 V. A short on the cable leaves the 5 V rail untouched.",
+    "within": true,
+    "source": "FU-2I/003-P2-R5.json requirement rows of TPS55288RPMR, reports 'encoder supply design'; FU-2B1/003-P2-R5.json V102, V108",
+    "read_at": "FU-2I 2026-10-03T00:13:52Z; FU-2B1 2026-10-02T11:45:46Z to 11:59:23Z"
+   },
+   {
+    "item": "current per rail: DC input bus",
+    "value": "12 to 18 V (V319): 25.2 A at 12 V, 16.8 A at 18 V, 22.9 A at 13.2 V and 18.0 A at 16.8 V (4S pack empty and full), 31.0 A at 9.73 V, the lowest falling corner of the handover; 302.0 W in at the owner's 90 % (4 x TPS55285 at 6.35 A 255.3 W out). LM74800QDRRRQ1 is a controller; the MOSFETs that carry the current are stage 2 (VDS 40 V or more, 25.2 A continuous, 31.0 A handover, 168 nC on HGATE). No stage 1 part rates below the requirement.",
+    "within": true,
+    "source": "FU-2I/003-P2-R5.json reports 'DC path current at 12 V', 'at 18 V', 'at the handover corner', 'DC path power basis', 'MOSFETs for stage 2'; Research.md V105, V319",
+    "read_at": "FU-2I 2026-10-03T00:13:53Z"
+   },
+   {
+    "item": "current per rail: servo rails 1 to 3 (each)",
+    "value": "TPS55285VALR with SRP1265A-4R7M (saturation 28 A against the 9.33 A peak at the 8 A clamp, 13.5 A rms against 8 A). Limit 0.5 to 6.35 A in 50 mA steps; continuous rating (owner V281, 33 degC/W, 50 degC, heatsink not credited) 3.72 A at 6.0 V in and 8.4 V out, 3.59 A at the 5.8 V bus, 4.12 A at 6.6 V; MCP9808 trip at 72.0 degC leaves about 2.5 A sustained (2.47 A in V279, 2.48 A in FU-2I) at 8.4 V from 6.0 V (V279). From the pack at 6.0 V the inductor clamp (7 A minimum, 8 A typical, no maximum) delivers 4.57 to 5.15 A at 8.4 V; 6.35 A at 8.4 V needs about 10 A and is not deliverable from 6.0 V (adjudicator 011, as IOBoard.md states). From the DC input (12 to 18 V) the limit reaches 6.35 A. A rail loaded above its sustained current ends in the latched shutdown of V279 and V283, by design. Checked against the owner-set rating: within; the rail's limit above the rating is the owner's decision (Servo rail current row).",
+    "within": true,
+    "source": "FU-2I/004-P2-R6.json reports 'TPS55285 continuous current at 6.0 V in, 8.4 V out, 50 degC (V278)', 'at the 5.8 V bus', 'at the V294 pack floor', 'Sustained rail current under the owner's thresholds (V279)', 'TPS55285 output at the inductor clamp from 6.0 V', 'Servo inductor currents, for P5' (SLVSI72A read 2026-10-03T00:23:26Z); requirement rows of SRP1265A-4R7M; Research.md V279, V281",
+    "read_at": "FU-2I 2026-10-03T00:23:26Z to 00:31Z"
+   },
+   {
+    "item": "current per rail: adjustable supply",
+    "value": "TPS55285VALR with SRP1265A-4R7M, 0.8 to 15 V, limit 0.5 to 6.35 A. Continuous current at 50 degC on 33 degC/W, worst point shown: 1.94 A at 6.0 V in and 15 V out (2.05 A less 8.4 mOhm); 2.51 A for 6.0 to 12 V in; 3.01 A for 9 to 15 V in; 4.16 A for 12 to 15 V; 5.13 A at 20 to 15 V; outputs below 5 V have no curve (not known). MCP9808 trip at 66.25 degC leaves about 0.95 A at 15 V from 6.0 V. Inductor peak 9.33 A at the 8 A clamp (6.0 V to 15 V boost) against 28 A saturation. From the pack at 6.0 V the clamp gives 2.53 to 2.85 A at 15 V. Reported against the owner's request to qualify the supply 'at its worst point shown'; the 6.35 A limit is a setting, not a deliverable current from the pack (IOBoard.md Adjustable supply budget).",
+    "within": true,
+    "source": "FU-2I/004-P2-R6.json reports 'Adjustable supply continuous current at 50 degC on 33 degC/W (P1 question 4)', 'Sustained rail current under the owner's thresholds (V279)', 'TPS55285 output at the inductor clamp from 6.0 V'",
+    "read_at": "FU-2I 2026-10-03T00:23:26Z"
+   },
+   {
+    "item": "pack current",
+    "value": "Owner's sizing basis (V294, FU-2F/FU-2I): 302.0 W in at 90 % for every converter = 50.3 A at the 6.0 V floor, 52.1 A at a 5.8 V bus, rated 60 A. Recomputed (P5, 2026-10-03): P out 255.3 W (3 servo rails x 8.4 V x 6.35 A + adjustable 15 V x 6.35 A); TPS55285 at the lowest verified efficiency, 88.8 % at 6.0 V in (R6's figure from SLVSI72A Figure 5-3, nearest curve VIN 5 V and VOUT 9 V, its last point at 3.8 A; 93.2 % at 3.72 A and 8.4 V out, FU-2I) = 287.5 W; 5 V rail 10.4 W at 96.0 % (TPS62933F Figure 8-22 at 6 V in, R5 verified; the LM61460's efficiency is not read) = 10.8 W; 3.3 V rail 1.562 A x 3.3 V at 95 % = 5.4 W; encoder 1.2 W at 90 % = 1.3 W; load-cell regulator 0.26 W: 305.0 W = 50.8 A at 6.0 V, 52.6 A at 5.8 V. With the resistance of the parts already in the path, the BQ25723 5 mOhm RSR plus the 1 mOhm shunt, 6 mOhm before BATFET, MOSFETs, connector and wiring: 53.8 A at a 6.0 V pack, 54.9 A at 8 mOhm, 56.1 A at 10 mOhm; at the V294 floor of 6.6 V: 48.4 A at 6 mOhm. The converters cannot draw 6.35 A each from 6.0 V: at ILIM_AVG 7 A minimum, 8 A typical (no maximum stated) four draw 28 to 32 A, 31.0 to 35.0 A with the loads. Pack path rating 60 A: within at every recomputed figure.",
+    "within": true,
+    "source": "FU-2I/003-P2-R5.json reports 'pack path current', 'DC path power basis'; FU-2I/004-P2-R6.json 'TPS55285 continuous current ...' and 'Pack current into the TPS55285 at 6.0 V, for R5, R7 and P5'; FU-2H/003-P2-R7.json 'charger battery path loss and drop'; FU-2B1/014-P4-datasheet-R7.json (TPS62933F curve confirmed); BQ25723 https://www.ti.com/lit/ds/symlink/bq25723.pdf (RSNS_RSR 5 mOhm, SRP-SRN 0.5 V absolute); P5 arithmetic scratch/FU-2P56/P5/calc.py",
+    "read_at": "FU-2I 2026-10-03T00:13:52Z to 00:31Z; FU-2H 2026-10-02T20:21:44Z; BQ25723 datasheet 2026-10-03T08:37:22Z; calc 2026-10-03T08:35Z"
+   },
+   {
+    "item": "cell rating",
+    "value": "SLS XTRON 3000 mAh 2S1P (SLSXT30002130, the owner's Pack cells part whatever a run returns): 90 A continuous (30C), 180 A burst (60C, duration not stated), charge up to 4C. Against the recomputed pack current of up to 53.8 A at the 6.0 V corner (56.1 A at 10 mOhm): 1.67 times (1.60 times) margin continuous; 6.6 V corner 48.4 A, 1.86 times. The protector's short-circuit upper edge, 100.68 A (SCD1 88.8 mV on 1 mOhm +0.5 %), is 1.79 times under the 180 A burst and above the 90 A continuous only for the 0 to 915 microsecond SCD1 delay. Below 18 degC at the pack's NTC firmware lowers the converter limits to 15 A or less (V296). The vendor page states no chemistry, charge voltage, discharge floor, internal resistance or thermistor; the maker's safety notes give 3.3 V a cell under load and 4.2 V full (V294). Rules 4 and 5 are waived for the pack (owner, 2026-09-30); its stock is not read.",
+    "within": true,
+    "source": "FU-2H/003-P2-R7.json reports 'pack discharge rating against the current', 'protector short-circuit windows', 'pack temperature reading'; Research.md V137, V294, V296, V307; vendor page https://www.stefansliposhop.de/akkus/sls-xtron/sls-xtron-30c/sls-xtron-3000mah-2s1p-7-4v-30c-60c::1031.html read 2026-10-02T20:21:44Z (FU-2H)",
+    "read_at": "FU-2H 2026-10-02T20:21:44Z; 2026-10-03T08:35Z"
+   },
+   {
+    "item": "pack protection",
+    "value": "BQ40Z80RSMR on 1 mOhm +/-0.5 %, overcurrent AOLD 61.08 mV: untrimmed window 52.21 to 70.04 A, post-trim 55.25 to 66.97 A; SCD1 88.8 mV: untrimmed 77.03 to 100.68 A, post-trim 81.45 to 96.22 A; delays 1 to 31 ms and 0 to 915 microseconds. The upper edges, 70.04 A and 100.68 A, are under the cell's 90 A continuous and 180 A burst. The lower untrimmed edge, 52.21 A, is under the recomputed pack current at the 6.0 V corner: 53.8 A with 6 mOhm in the path (1.6 A over the edge), 52.6 A without it (0.4 A over); the owner's 52.1 A on a 90 % basis is 0.11 A under it; the post-trim edge, 55.25 A, is crossed above 8.6 mOhm of path resistance, which BATFET, 2 protector MOSFETs, 2 ideal-diode MOSFETs and the connector are likely to reach. At the V294 floor of 6.6 V the current is 47.3 to 50.1 A for 3 to 10 mOhm in the path and inside both windows. Not within at the sizing corner: reported as a conflict. Other thresholds hold: CUV 3,432 mV nominal (3.349 to 3.515 V with the cell-voltage band of 83 mV) above the 3.3 V floor; disconnected current 11.63 uA typical-based against 12 uA (V317); OTC/OTD 55 degC, UTC/UTD 0 degC with 10 degC charge limit; the pack pins take 100 Ohm and 0.1 uF against the 35 V absolute maximum under the TVS2701's 37.3 V clamp. The 5 mOhm RSR also reaches 0.503 V at the 100.68 A edge, over the BQ25723's 0.5 V SRP-SRN limit for up to 915 microseconds.",
+    "within": false,
+    "source": "FU-2H/003-P2-R7.json reports 'protector overcurrent windows', 'protector short-circuit windows', 'charger battery path loss and drop'; FU-2I/003-P2-R5.json requirement rows of BQ40Z80RSMR; FU-2F/003-P2-R5.json 'pack IC pack-side pins', 'cell-voltage band'; Research.md V284, V294, V309, V317; BQ25723 datasheet SLUSE64 (SRP-SRN, RSNS_RSR); P5 arithmetic calc.py",
+    "read_at": "FU-2H 2026-10-02T20:21:44Z; FU-2I 2026-10-03T00:13:54Z; BQ25723 2026-10-03T08:37:22Z; calc 2026-10-03T08:35Z"
+   },
+   {
+    "item": "ESC pack node clamp",
+    "value": "R3's clamp: no part in selection.json ('pack overvoltage and transient clamp': null). Requirement V270: the clamp holds the pack node under 85 V across 0 to 50 degC, 67.2 V pack, 300 A onboard (45 mJ in 1 uH) and 600 A external. FU-2A found no TVS, active clamp or catalogued capacitor bank that qualifies (round 1's T5 put TVS clamps at 113 to 126 V); a simulated capacitive clamp (6 x 330 uF at 35 to 52 mOhm) peaks under 82 V but names no part. Parts on the node and their absolute maxima: INA228AIDGSR VBUS and IN+/IN- 85 V (VCM -0.3 to 85 V), the binding limit and 3 V over the simulated peak; IPT015N10N5ATMA1 100 V VDS (onboard array and reverse-polarity array, conditional on the clamp and a switched-node freewheel diode, neither has a part); CSD19537Q3T 100 V; ADBMS1818ASWAZ-RL 112.5 V V+ to V-; TPSI3052DWZR floats with the switch source. Also unselected on this node: the external pack switch module, the freewheel diode and the ADBMS1818's V+ feed element (blocks 67.2 V; FU-2D 'V+ OR element ratings': no function names it). Level 85 V not shown to be held by any part: not within.",
+    "within": false,
+    "source": "FU-2A/012-P2-R3.json reports 'ESC pack node clamp level', 'onboard switch turn-off', 'external pack switch module'; FU-2A/017-rerank-R3.json 'pack node clamp and external module'; FU-2I/002-P2-R8.json requirement rows of INA228AIDGSR; FU-2D/003-P2-R9.json requirement rows of ADBMS1818ASWAZ-RL and report 'V+ OR element ratings'; selection.json R3 (read 2026-10-03T08:20Z); Research.md V45, V48, V54, V270",
+    "read_at": "FU-2A 2026-10-01T21:47:29Z to 22:12:26Z; FU-2D 2026-10-02T06:21:10Z; FU-2I 2026-10-03T00:15:41Z"
+   },
+   {
+    "item": "I2C bus timing: main bus",
+    "value": "Devices: 3 MCP23017, FRAM, BQ25723, BQ40Z80, FUSB303B, TPS55288. Clock: 400 kHz default (V120); the BQ40Z80 states SMBus 10 to 100 kHz (SMBus XL 40 to 400 kHz, timeout 5 to 20 ms; XL not read as a data-flash setting), so the controller runs at 100 kHz while it is addressed or XL is enabled. No device converts on this bus; the FRAM has no write wait. Per transaction: MCP23017 write 0.073 ms at 400 kHz (0.29 ms at 100 kHz); two-byte read 0.12 ms (0.48 ms); BQ40Z80 word read about 0.57 ms at 100 kHz. A 396-byte output-binding record to the FRAM is 3,591 SCL cycles: 8.98 ms at 400 kHz, 35.9 ms at 100 kHz (FU-C1); the EEPROM alternative is 7 page writes of 603 cycles plus 5 ms tW each: 10.6 ms of bus time, 45.6 ms per save. A port enable queued behind a save waits at most 9 ms (36 ms at 100 kHz), against the 80 ms and 100 ms windows. Port switches open on the expander reset (GPIO 14) within microseconds, not over I2C (V127: 5 ms). Poll load: expander read-back every 10 ms is 3.6 % of the bus at 400 kHz. Within.",
+    "within": true,
+    "source": "BQ40Z80 https://www.ti.com/lit/ds/symlink/bq40z80.pdf (SLUSBV4D, fSMB 10-100 kHz, fSMBXL 40-400 kHz, tTIMEOUT), FU-C1/005-P2-R12.json reports 'Q8 store candidate: MB85RC256VPNF-G-AMERE2' and 'Q8 store candidate: M24256E-FMN6TP'; FU-2I/004-P2-R6.json 'Port switches through an RP2354B watchdog reset'; Research.md V120, V127; transaction bit counts i2c_calc.py",
+    "read_at": "BQ40Z80 datasheet 2026-10-03T08:25:45Z; FU-C1 2026-09-29T02:45:22Z; FU-2I 2026-10-03T00:24:38Z; calc 2026-10-03T08:35Z"
+   },
+   {
+    "item": "I2C bus timing: measurement bus A",
+    "value": "4 INA3221 and 2 TPS55285 and 3 MCP9808. INA3221 conversion: CT 100 (1.1 ms typical, 1.21 ms maximum a channel), 3 channels shunt only: 3.3 ms typical, 3.63 ms maximum a refresh, each device converting on its own, so the conversions overlap. Read of the 6 shunt and bus registers in one burst: 138 bit times, 0.345 ms at 400 kHz; 4 devices 1.38 ms of each 5 ms sample (27.6 %); at 100 kHz they take 5.52 ms and do not fit, so the bus runs at 400 kHz (INA3221 and MCP9808 to 400 kHz, TPS55285 100 to 1000 kHz). MCP9808 conversion 130 ms typical at 0.25 degC, 250 ms at 0.0625 degC (no maximum stated); a 2-byte read is 0.12 ms. TPS55285 writes are a few registers at start-up. Within with 72 % of the sample period free.",
+    "within": true,
+    "source": "FU-2I/002-P2-R8.json reports 'Port monitor timing for P5', 'Over-temperature trip timing for P5' (SBOS576C 6.5, DS20005095B); FU-2I/004-P2-R6.json (SLVSI72A 5.5); Research.md V120, V173; i2c_calc.py",
+    "read_at": "FU-2I 2026-10-03T00:15:40Z to 00:24:20Z; calc 2026-10-03T08:35Z"
+   },
+   {
+    "item": "I2C bus timing: measurement bus B",
+    "value": "3 INA3221, 2 INA228, 2 TPS55285, 2 MCP9808. INA3221 reads: 3 x 0.345 ms = 1.035 ms of each 5 ms (20.7 %). INA228: continuous shunt and bus (MODE Bh), AVG 4, 1052 us each: an averaged result every 8.42 ms (8.50 ms at the -1 % oscillator; 12.6 ms in the reset mode, so the mode is written). Reads for the BENCH sample every 20 ms: bus voltage, current, power (3 bytes each), energy and charge (5 bytes each): 321 bit times, 0.80 ms at 400 kHz for each INA228, 1.6 ms for both, 8.0 % of 20 ms. Worst 5 ms window, both INA228 reads plus the INA3221 sweep: 2.64 ms, 52.8 %; staggering the INA228 reads off the INA3221 sweep keeps it at 20.7 %. Within at 400 kHz.",
+    "within": true,
+    "source": "FU-2I/002-P2-R8.json reports 'Motor overcurrent path for P5', 'Port monitor timing for P5' (SLYS021A 6.5, 7.3.4); firmware/iomcu/src/main.c sampling every 20 ms (IOBoard.md Sampling); i2c_calc.py",
+    "read_at": "FU-2I 2026-10-03T00:15:40Z to 00:15:41Z; calc 2026-10-03T08:35Z"
+   },
+   {
+    "item": "I2C bus timing: Qwiic and infrared bus",
+    "value": "PIO I2C, TCA9548APWR, MLX90614ESF-BCC-000-TU (SMBus 10 to 100 kHz, 0x5A) and two Qwiic ports (V243 applied 400 kHz; 226 mA a port, 1 m). The MLX90614 sets the clock to 100 kHz while it is addressed; the datasheet's refresh time is 36 to 93 ms single zone, by FIR setting (128 to 1024), and it asks that SCL and SDA stay quiet for longer than the refresh time before a reading because continuous SMBus traffic induces an error on the TO39 package. A reading is 0.57 ms at 100 kHz, a mux channel select 0.20 ms. The temperature need is a reading every 2 s (V242, V236). The clock is set per transaction: 100 kHz for the MLX90614, up to 400 kHz for a Qwiic device behind the mux; the owner's 400 kHz is not met on the shared segment. A device hot-plugged on a Qwiic port may fail one transfer and is retried (V253); the TCA9548A reset on GPIO 26 clears a held channel. Within.",
+    "within": true,
+    "source": "MLX90614 datasheet Rev 021 https://www.melexis.com/-/media/files/documents/datasheets/mlx90614-datasheet-melexis.pdf (FSMBus 10-100 kHz, FIR table, page 22 note); FU-C1/005-P2-R12.json 'infrared sensor bus for P5', V242, V243, V245, V253; hardware/docs/Pins.md Rules the map follows",
+    "read_at": "MLX90614 datasheet 2026-10-03T08:35:48Z; FU-C1 2026-09-29T02:40:44Z; calc 2026-10-03T08:35Z"
+   },
+   {
+    "item": "alert pins",
+    "value": "6 main GPIO against 16 unshared: 3 shared lines (GPIO 8 INA3221 critical, 9 INA3221 warning, 10 INA228 ALERT) and 3 shift-register pins (GPIO 11 load, 12 clock, 13 data) for 2 cascaded SN74LV165APWR that take the 16 alert nodes (7 critical, 7 warning, 2 ALERT); 5 AND gates (2 + 2 + 1) in 3 74VHC21FT form the lines (8.5 ns maximum a gate at 3.3 V, 20.5 ns for the 2-gate cascade); nodes pull up to 3.3 V (V286). The INA3221 outputs are transparent, the INA228 ALERT latched (ALATCH 1). The INA301 ALERT, the MCP9808 alerts and the TPS3701 OUTB act on drivers and latches in hardware and use no GPIO. Free main GPIO after the 6: 15, 35, 39, 47. The interrupt outputs of the charger group, the converters and the encoder supply are not wired in the map (polled over I2C, see GPIO: main).",
+    "within": true,
+    "source": "IOBoard.md Two coprocessors (Current aborts); hardware/docs/Pins.md main table; FU-2I/002-P2-R8.json reports 'Alert latching (V287)', 'Alert combining gate part, stock and speed at 3.3 V', 'Alert shift register part and stock'; Research.md V286, V305",
+    "read_at": "FU-2I 2026-10-03T00:13:47Z to 00:16:21Z; Pins.md read 2026-10-03T08:20Z"
+   },
+   {
+    "item": "motor overcurrent path",
+    "value": "Detection to the main coprocessor: INA228 compares the averaged result (SLOWALERT 1, AVG 4, 1052 us shunt and bus): one result every 8.42 ms (8.50 ms at -1 % oscillator), ALERT within 2 results, 17.0 ms of the crossing; SOVL 30.00 mV = 150 A on 200 uOhm and 300 A on 100 uOhm (148.5 A and 285.7 A at the shunts' upper tolerance); through 1 gate of the 74VHC21FT (8.5 ns) to a main interrupt; disarm on the next 1 ms pass: about 18 ms in all, inside the 20 ms of IOBoard.md. Over-temperature: two consecutive conversions above each limit; the MCP9808 at the onboard shunt takes 60, 130, 260 or 500 ms at 0.5, 0.25, 0.125, 0.0625 degC (the default 0.0625 degC leaves no room in 500 ms, so firmware writes 0.25 degC: 195 ms with the crossing inside a conversion). To the ESC pack switch: no path. The TPSI3052DWZR switch drivers take the latch output alone, and the coprocessor cannot remove or add to the enable (V53, V160, Not defeatable); docs/Safety.md states that no hardware covers a healthy panel with a misbehaving coprocessor. V288 and V159 require the switch to open within the 500 ms stop deadline, and nothing in the design carries that: the switch opens only when the panel's heartbeat stops (enable falls 155 to 185 ms later, switch within 5 ms), which no coprocessor action causes. If a panel reaction on the fault bit were defined, 17 + 20 + 50 + 185 + 5 = 277 ms plus the panel's reaction would have to stay under 223 ms; none is defined. Not within.",
+    "within": false,
+    "source": "FU-2I/002-P2-R8.json reports 'Motor overcurrent path for P5', 'Over-temperature trip timing for P5', found V158, V159, V160; FU-2A/012-P2-R3.json found V53; docs/Safety.md 'Required external circuit' table; Research.md V1, V288; IOBoard.md Not defeatable, Current aborts",
+    "read_at": "FU-2I 2026-10-03T00:15:40Z to 00:16:21Z; FU-2A 2026-10-01T22:12:26Z; docs/Safety.md read 2026-10-03T08:22Z"
+   },
+   {
+    "item": "servo current abort",
+    "value": "Sample period 5 ms (assumption 'servo current sample period'). Worst case from a current crossing 3.0 A: first INA3221 conversion wholly above the ceiling ends within 3.63 + 1.21 = 4.84 ms; the next 5 ms sample reads it, up to 5 ms later; the read of the last of 4 devices on bus A ends 1.38 ms after the sample starts; the abort message to the main coprocessor over the inter-chip UART, taken as 1 ms (rate and protocol not stated); the main coprocessor's 1 ms output pass: 4.84 + 5 + 1.38 + 1 + 1 = about 13.2 ms. Hardware path: critical line low after 4.84 ms, the 5 ms blanking (V287; the Critical pin's hold with three channels enabled is not read and is measured on the bench, V323), 74VHC21FT 20.5 ns, interrupt and pass: about 10.9 ms. The port breaker (INA301A1IDGKR trip 4.30 to 4.51 A, latched) acts in hardware inside the 3.96 to 4.84 A band. Against the 80 ms averaging window of the bind detection (after a 120 ms settle) and the 100 ms of the synchroniser: 13.2 ms is 17 % and 13 %. The stall timeout, 1.0 A for 400 ms, is longer than the abort chain. Within.",
+    "within": true,
+    "source": "docs/Servo.md:21-39 (protections, windows), test/host/test_servo_limit.c:19 (SAMPLE_MS 5), shared/servo/servo_limit.c:56-62 in the checkout; FU-2I/002-P2-R8.json 'Port monitor timing for P5', 'Critical line blanking time (V287)'; FU-2I/004-P2-R6.json 'Port supply current limit trip and the breaker band'; Research.md V173, V323",
+    "read_at": "FU-2I 2026-10-03T00:15:40Z; checkout read 2026-10-03T08:22Z; calc 2026-10-03T08:35Z"
+   },
+   {
+    "item": "enable polarity: output gate, switch drivers and latches",
+    "value": "Enable node: high while retriggered (F10), through the latch Q (74LVC1G175GW,125, high = enabled, powers up low). Consumers, all active high except one that has its inverter: SN74LVC244APWR 1OE and 2OE are active low and take the node through SN74LVC1G04DBVR (R4's enable inverter, sinks 1.32 mA for 4 pull-ups, unpowered output disabled by the 10 kOhm pull-ups); SN74CBTLV3126PWR OE active high (A = B while OE high); SN74LVC1G126DBVR bias selector OE active high; TPSI3052DWZR EN active high (VIH 0.7 x VDDP, 2.31 V at 3.3 V) for the pack switches, rail gates and 20 port drivers; the servo supply enable gate 74LVC1G08GW,125 ANDs the expander enable with the rail latch Q (high = on, latch powers up low through the TLV803SDBZR). R3 and R4 agree: enabled = high, disabled = low, every consumer's unpowered or undriven state is disabled. Polarity only: the latch's EN load (8 TPSI3052 EN pins through 4.7 kOhm, the 10 kOhm pulls) is not shown, because the TPSI3052 data sheet states thresholds (VIH 0.7 x VDDP) and no EN input current; the load passes if each EN draws under about 0.17 mA with VOH 3.2 V at the lowest rail and 4.7 kOhm in series.",
+    "within": true,
+    "source": "FU-A3/002-P2-R4.json requirement rows 'enable source and polarity' (SN74LVC244APWR), 'bias per mode', 'control' (SN74LVC1G126DBVR), 'directions' (SN74CBTLV3126PWR); FU-2A/012-P2-R3.json rows of 74LVC1G175GW,125 and TPSI3052DWZR; FU-2I/004-P2-R6.json 'Temperature latch at power-up and on a 3.3 V dip', V115; TPSI3052 datasheet 6.9",
+    "read_at": "FU-A3 2026-09-29; FU-2A 2026-10-01T22:12:26Z; FU-2I 2026-10-03T00:24:38Z; TPSI3052 datasheet 2026-10-03T08:30:07Z"
+   },
+   {
+    "item": "enable polarity: external CAN standby",
+    "value": "TCAN1472VDRQ1's STB is high for standby and low for normal mode (SLLSFW8A: STB = 0 V normal, STB = VIO standby, integrated pull-up so an undriven pin is standby), and the enable node is high when enabled, so the node needs an inverter with I_off from the node to STB. FU-2A noted it and no function in selection.json names it; SN74LVC1G04DBVR is booked for the 244 enables only (R3 1 to 2, R4 1 to 2). The standby input has the polarity opposite to every other consumer: not within until a function and its placement exist.",
+    "within": false,
+    "source": "FU-2A/003-P2-R2.json report 'external port loop delay' ('needs ... an inverter with I_off from the enable node to STB'); TCAN1472-Q1 https://www.ti.com/lit/ds/symlink/tcan1472-q1.pdf pin table and electrical characteristics; selection.json R2, R3, R4 (read 2026-10-03T08:20Z); IOBoard.md Link and safety (Servo rail gate, Powered-off isolation)",
+    "read_at": "TCAN1472 datasheet 2026-10-03T08:32:48Z; FU-2A 2026-10-01T21:34Z"
+   },
+   {
+    "item": "power-up sequence",
+    "value": "Reset supervisor TPS3703A7330DSERQ1 (F12): undervoltage 3.046 to 3.092 V, release at most 3.117 V, delay 7 to 13 ms with CT open, overvoltage at least 3.508 V. 3.3 V regulator LMQ66430MC3RXBRQ1: soft start tSS 2 / 3.5 / 4.6 ms (minimum, typical, maximum), output 3.27 to 3.32 V, 3.237 to 3.353 V with ripple and transient, inside 3.201 to 3.399 V. The rail crosses 3.117 V no later than 4.6 ms x 3.117 / 3.3 = 4.3 ms after the converter starts and is in regulation by 4.6 ms; the clear releases at least 7 ms after the rail crosses the threshold, against at most 4.6 ms for the whole ramp from the converter start (the rail is in regulation 0.3 ms after the crossing), so the release follows regulation by at least 2.4 ms and the supervisor releases only inside the band. The band between 3.117 V and 3.201 V, where the window is not specified, is crossed during the ramp inside the 7 ms delay; in a dip that stays above the undervoltage threshold it is not closed (R3's open point). 5 V rail LM61460AFSQRJRRQ1 tSS 3.5 / 5 / 7 ms; either order is accepted (V106, TCAN1472 passive unpowered). The latch's TLV803SDBZR holds every rail latch set below 2.87 to 2.99 V until the first F11 clear. Within.",
+    "within": true,
+    "source": "FU-2A/012-P2-R3.json report 'reset supervisor band below 3.201 V'; FU-2I/003-P2-R5.json reports '3.3 V start-up ramp', '3.3 V tolerance budget'; FU-2I/004-P2-R6.json 'Temperature latch at power-up and on a 3.3 V dip'; Research.md V43, V106, F12",
+    "read_at": "FU-2A 2026-10-01T21:36Z to 22:12Z; FU-2I 2026-10-03T00:13:52Z to 00:24:38Z"
+   },
+   {
+    "item": "allowlist",
+    "value": "85 distinct parts checked: every first-ranked part in selection.json, each alternate (74LVC244APW,118; PCA9548APWR; TPS259470ARPWR; BQ29200DRBR; TLV9001IDBVR; TLV3601DBVR; BAS-M-R0001-AE-5.0; 74LV165APW,118; SN74LV21APWR), both Q4 and Q8 alternatives (LM4040AIM3-3.0/NOPB, M24256E-FMN6TP) and INA3221AIRGVR. Makers: Texas Instruments, Microchip, Nexperia, Infineon, Analog Devices (with Maxim and Linear), Toshiba, onsemi, ROHM, STMicroelectronics, Vishay, Melexis, RAMXEED counted as Fujitsu, Raspberry Pi (S1); Abracon, Bourns, Wurth Elektronik, Panasonic, Isabellenhuette (S2). 84 on S1 or S2; 1 exempt: SLSXT30002130, StefansLipoShop, the owner's pack, outside S9 and exempt from rule 2 (owner, 2026-09-30). 0 parts from Monolithic Power Systems, Richtek, Silergy, SG Micro or 3PEAK.",
+    "within": true,
+    "source": "hardware/research/round2/selection.json plus owner-fixed INA3221AIRGVR; maker fields of the P2 and re-rank records in the runs that decided each function (e.g. FU-2I/004-P2-R6.json, FU-2D/003-P2-R9.json); Research.md S1, S2, S9, Sourcing rule 2",
+    "read_at": "selection.json read 2026-10-03T08:20Z; maker check 2026-10-03T08:30Z"
+   },
+   {
+    "item": "Q4 alternatives: reference",
+    "value": "RP2354B's own ADC with LM4040AIM3-3.0/NOPB on ADC_AVDD (C544506, 1 a board, JLCPCB 2,963 / 2,949 expand against a gate of 50). Resources on the measurement chip: 2 of the 8 ADC inputs (the two accelerometer axes; with the DC input status 3 of 8), 1 DMA channel (DREQ_ADC), 0 SPI controllers, 0 PIO state machines, 0 added GPIO; about 10 mA from the 3.3 V rail through the series resistor (30 Ohm in FU-2C's placement note, a stage 2 passive; 0.3 V across it), inside the rail budget. ADC figures: 9 bits minimum (9.5 typical), 500 kS/s shared, 250 kS/s a channel at 2 channels against more than 13,107 S/s a channel; no external trigger and no stated latency jitter, so V290's 52 ns share is not shown; FU-2C's P4 refuted the part on V290 and the owner accepted that as not known (2026-10-03). The resource budget fits; Q4 is decided for the external ADC.",
+    "within": true,
+    "source": "FU-C1/003-P2-R10.json reports 'Q4 effective number of bits: REF3330AIDBZR' (RP2350 Tables 1438, 1441), 'Q4 resources for P5'; FU-2C/002-P2-R10.json and FU-2C P4 reports; selection.json R10 q_alternatives; vendors.py jlcpcb C544506; Research.md Q4, V290",
+    "read_at": "stock 2026-10-03T08:36:25Z; FU-C1 2026-09-29T02:42:00Z; FU-2C 2026-10-02T00:19:30Z"
+   },
+   {
+    "item": "Q4 alternatives: external ADC",
+    "value": "ADCS7476AIMFX/NOPB x2 (C91530, JLCPCB 1,802 / 1,765 expand against need 10, gate 50; Digi-Key 88 in FU-2C): SPI0 on the measurement chip alone (V291), GPIO 4, 5, 6, 24 (4 pins), 0 of the 8 ADC inputs, 1 PIO state machine and about 8 words for the chip-select trigger and index sampling (assumed), 0 to 2 DMA channels. ENOB 11.34 bits minimum over -40 to 125 degC; 1 MSPS at 20 MHz SCLK, about half each with 2 converters on one data line, against more than 13,107 S/s a channel; aperture jitter 30 ps plus one clk_sys cycle, 6.70 ns at 150 MHz against 52 ns at 65,535 rpm (V290), needs clk_sys of 19.3 MHz or more. Fits. A reservoir capacitor or buffer at the input is a stage 2 requirement (FU-2C).",
+    "within": true,
+    "source": "FU-2C/002-P2-R10.json reports 'Q4 effective number of bits', 'Q4 sampling rate', 'Q4 trigger', 'Q4 latency jitter', 'Q4 resources for P5', 'Q4 converter delay variation against V290'; vendors.py jlcpcb C91530",
+    "read_at": "stock 2026-10-03T08:40:55Z; FU-2C 2026-10-02T00:19:30Z to 00:24:49Z"
+   },
+   {
+    "item": "Q8 alternatives: FRAM",
+    "value": "MB85RC256VPNF-G-AMERE2 (C45273903, RAMXEED counted as Fujitsu, 1 a board, JLCPCB 9,466 / 9,415 against gate 50): on the main chip's I2C1 at 0x50 (A2 to A0), 0 GPIO, 0 added controllers; 32,768 bytes against 792 needed (V247); 10^12 read/writes a byte against 3,200,000 saves (V248); no write wait; 2.7 to 5.5 V; a 396-byte record is 3,591 SCL cycles, 8.98 ms at 400 kHz, 35.9 ms at 100 kHz, interrupts on, so no CAN frame is lost; frees the flash store's 8,192 bytes. Fits.",
+    "within": true,
+    "source": "FU-C1/005-P2-R12.json report 'Q8 store candidate: MB85RC256VPNF-G-AMERE2'; vendors.py jlcpcb C45273903; Research.md Q8, V247, V248",
+    "read_at": "stock 2026-10-03T08:36:24Z; FU-C1 2026-09-29T02:45:22Z"
+   },
+   {
+    "item": "Q8 alternatives: EEPROM",
+    "value": "M24256E-FMN6TP (C5221744, STMicroelectronics, 1 a board, JLCPCB 125,241 / 125,230): main chip I2C1 at 0x50 to 0x57 by C2 to C0 (identification page 0x58 to 0x5F), 0 GPIO; 32,768 bytes, 64-byte pages, 4,000,000 cycles at 25 degC and 1,200,000 at 85 degC; a 396-byte record is 7 page writes of 603 SCL cycles plus tW 5 ms maximum each: 10.6 ms of bus time at 400 kHz, 45.6 ms a save; the part does not respond during tW and the bus stays free; 73 slots of 448 bytes give 87,600,000 saves against 3,200,000. 1.65 to 5.5 V. Fits.",
+    "within": true,
+    "source": "FU-C1/005-P2-R12.json report 'Q8 store candidate: M24256E-FMN6TP'; vendors.py jlcpcb C5221744; Research.md Q8",
+    "read_at": "stock 2026-10-03T08:36:24Z; FU-C1 2026-09-29T02:45:25Z"
+   },
+   {
+    "item": "absent IOVDD",
+    "value": "not applicable: R1's pin ratings equal those the specification cites, so pull request #167's statement that the RP2350 'is not specified as tolerating an input above an absent IOVDD' is not checked again. R1 (FU-2A and FU-2D, both confirmed by the P4 datasheet verifier): GPIO 0 to 39 VPIN_FT 5.5 V at IOVDD 3.3 V, 4.2 V at 2.5 V, 3.63 V at 1.8 V and at IOVDD 0 V (Table 1433 of build 2025-07-29, 1430 of build 2024-08-08); GPIO 40 to 47 IOVDD + 0.5 V; 'very little current flows' below 3.63 V at IOVDD 0 V, no figure; IIN 1 uA maximum.",
+    "within": true,
+    "source": "FU-2D/002-P2-R1.json report 'pin ratings' (RP2350 datasheet build d126e9e, Tables 1426, 1427, 1433, 1436), confirmed in FU-2D/009-P4-datasheet-R1.json and FU-2A/008-P4-datasheet-R1.json; IOBoard.md Pin ratings, Conflicts in the tree 'Pin tolerance'",
+    "read_at": "FU-2D 2026-10-02T06:22:39Z, P4 2026-10-02T06:54:48Z; FU-2A P4 2026-10-01T22:08:54Z"
+   },
+   {
+    "item": "shared-part stock: RP2354B",
+    "value": "kept for Microcontroller (2 a board, a main and a measurement coprocessor) and for encoder decode, rotation from ESC, rotation inputs and BENCH rpm source, which add no placement; summed 2 a board: need 10, gate 50. JLCPCB 2,482 / 2,310 expand; held 20 in the owner's library (export 2026-09-25) covers the need of 10 by rule 6. Digi-Key SC1512(13)-A4 3,560 (FU-2E, cached 2026-10-02T00:26:33Z). LCSC C39843328, read 2026-10-03T08:16:50Z.",
+    "within": true,
+    "source": "vendors.py jlcpcb C39843328 (exact LCSC match, JLCPCB selectSmtComponentList API); placements from the P2 and re-rank records of the deciding runs and selection.json (read 2026-10-03T08:20Z); sourcing rule 4, S4, S7",
+    "read_at": "2026-10-03T08:16:50Z"
+   },
+   {
+    "item": "shared-part stock: MCP2518FDT-E/SL",
+    "value": "Link CAN controller 1 + External CAN controller 1 (each P2 row books 'applies at 2' for the same part; the board carries 2): summed 2, need 10, gate 50. JLCPCB 28,626 / 28,427 expand. LCSC C626758, read 2026-10-03T08:16:50Z.",
+    "within": true,
+    "source": "vendors.py jlcpcb C626758 (exact LCSC match, JLCPCB selectSmtComponentList API); placements from the P2 and re-rank records of the deciding runs and selection.json (read 2026-10-03T08:20Z); sourcing rule 4, S4, S7",
+    "read_at": "2026-10-03T08:16:50Z"
+   },
+   {
+    "item": "shared-part stock: TPSI3052DWZR",
+    "value": "onboard pack switch driver 2 (array and precharge) + external module driver output 2 + servo rail gate driver 4 (R3) + port supply switch driver 20 (R6) = 28 a board at the top of each range (26 at the bottom): need 140, gate 700. JLCPCB 1,046 / 1,022 expand: passes with 346 over the gate, 1.49 times; the Digi-Key figure of FU-2A, 3,164 (2026-10-01T21:56:18Z), is the second vendor. FU-2I's verifier gated the 20 port drivers alone (gate 500) and FU-2A the 8 of R3 (gate 200); the sum is 28. LCSC C20346001, read 2026-10-03T08:16:50Z.",
+    "within": true,
+    "source": "vendors.py jlcpcb C20346001 (exact LCSC match, JLCPCB selectSmtComponentList API); placements from the P2 and re-rank records of the deciding runs and selection.json (read 2026-10-03T08:20Z); sourcing rule 4, S4, S7",
+    "read_at": "2026-10-03T08:16:50Z"
+   },
+   {
+    "item": "shared-part stock: IPT015N10N5ATMA1",
+    "value": "onboard pack switch MOSFETs 8 to 10 + pack reverse-polarity protection 8 to 10 (an anti-series array beside the switch array, the same count): summed 20 at the top, need 100, gate 500. JLCPCB 29,904 / 27,968 expand. LCSC C108964, read 2026-10-03T08:16:51Z.",
+    "within": true,
+    "source": "vendors.py jlcpcb C108964 (exact LCSC match, JLCPCB selectSmtComponentList API); placements from the P2 and re-rank records of the deciding runs and selection.json (read 2026-10-03T08:20Z); sourcing rule 4, S4, S7",
+    "read_at": "2026-10-03T08:16:51Z"
+   },
+   {
+    "item": "shared-part stock: SN74LVC1G04DBVR",
+    "value": "R3 'inverter on an active-low output enable' 1 to 2 + R4 'enable inverter' 1 to 2 (neither return cross-checks the other): summed 4 at the top, need 20, gate 100; with the missing external CAN standby inverter 5, need 25, gate 125. JLCPCB 131,761 / 129,959 expand. LCSC C7827, read 2026-10-03T08:16:51Z.",
+    "within": true,
+    "source": "vendors.py jlcpcb C7827 (exact LCSC match, JLCPCB selectSmtComponentList API); placements from the P2 and re-rank records of the deciding runs and selection.json (read 2026-10-03T08:20Z); sourcing rule 4, S4, S7",
+    "read_at": "2026-10-03T08:16:51Z"
+   },
+   {
+    "item": "shared-part stock: SN74CBTLV3126PWR",
+    "value": "R4 'multiprotocol port path', 'UART socket path' and two 'reply path through the gate' rows name the same 2 physical parts (5 to 6 lines at 4 switches a part; VESC's 2 lines use 2 of the 3 spare channels): summed 2, need 10, gate 50. Taken as 4 rows x 2 = 8 the gate is 200: 385 / 380 expand passes either way. LCSC C543078, read 2026-10-03T08:16:51Z.",
+    "within": true,
+    "source": "vendors.py jlcpcb C543078 (exact LCSC match, JLCPCB selectSmtComponentList API); placements from the P2 and re-rank records of the deciding runs and selection.json (read 2026-10-03T08:20Z); sourcing rule 4, S4, S7",
+    "read_at": "2026-10-03T08:16:51Z"
+   },
+   {
+    "item": "shared-part stock: LM74800QDRRRQ1",
+    "value": "reverse-polarity protection, overvoltage protection, inrush limiting and source selection are one controller on the DC input and one on the pack input: 2 a board, need 10, gate 50 (4 rows x 2 = 8: gate 200). JLCPCB 4,040 / 3,969 expand. LCSC C3215600, read 2026-10-03T08:16:52Z.",
+    "within": true,
+    "source": "vendors.py jlcpcb C3215600 (exact LCSC match, JLCPCB selectSmtComponentList API); placements from the P2 and re-rank records of the deciding runs and selection.json (read 2026-10-03T08:20Z); sourcing rule 4, S4, S7",
+    "read_at": "2026-10-03T08:16:52Z"
+   },
+   {
+    "item": "shared-part stock: BQ25723RSNR",
+    "value": "Pack charger and Power path, one charger a board: 1, need 5, gate 50 (2 rows: gate 50 x 2 = 100). JLCPCB 214 / 213 expand. LCSC C2871889, read 2026-10-03T08:16:52Z.",
+    "within": true,
+    "source": "vendors.py jlcpcb C2871889 (exact LCSC match, JLCPCB selectSmtComponentList API); placements from the P2 and re-rank records of the deciding runs and selection.json (read 2026-10-03T08:20Z); sourcing rule 4, S4, S7",
+    "read_at": "2026-10-03T08:16:52Z"
+   },
+   {
+    "item": "shared-part stock: BQ40Z80RSMR",
+    "value": "pack disconnect (R5) and Pack overcurrent protection, Bench pack balance lead, Pack temperature (R7): one IC for the four functions (V297, V298), 1 a board, need 5, gate 50 (4 rows: 100). JLCPCB 8,611 / 8,596 expand. LCSC C882850, read 2026-10-03T08:16:52Z.",
+    "within": true,
+    "source": "vendors.py jlcpcb C882850 (exact LCSC match, JLCPCB selectSmtComponentList API); placements from the P2 and re-rank records of the deciding runs and selection.json (read 2026-10-03T08:20Z); sourcing rule 4, S4, S7",
+    "read_at": "2026-10-03T08:16:52Z"
+   },
+   {
+    "item": "shared-part stock: TLV9061IDBVR",
+    "value": "source-status signal and DC input brownout detection are the same buffer: 1, need 5, gate 50. JLCPCB 289,960 / 288,844 expand. LCSC C398358, read 2026-10-03T08:16:52Z.",
+    "within": true,
+    "source": "vendors.py jlcpcb C398358 (exact LCSC match, JLCPCB selectSmtComponentList API); placements from the P2 and re-rank records of the deciding runs and selection.json (read 2026-10-03T08:20Z); sourcing rule 4, S4, S7",
+    "read_at": "2026-10-03T08:16:52Z"
+   },
+   {
+    "item": "shared-part stock: MCP9808T-E/MS",
+    "value": "Servo supply temperature 4 (R6, one beside each TPS55285) + Onboard shunt temperature sensor 1 (R8) = 5 a board: need 25, gate 125. JLCPCB 762 / 721 expand. LCSC C129490, read 2026-10-03T08:16:53Z.",
+    "within": true,
+    "source": "vendors.py jlcpcb C129490 (exact LCSC match, JLCPCB selectSmtComponentList API); placements from the P2 and re-rank records of the deciding runs and selection.json (read 2026-10-03T08:20Z); sourcing rule 4, S4, S7",
+    "read_at": "2026-10-03T08:16:53Z"
+   },
+   {
+    "item": "shared-part stock: 74LVC1G175GW,125",
+    "value": "R3 interlock latch 1 + R6 Servo supply temperature latch 4 = 5 a board: need 25, gate 125. JLCPCB 1,973 / 1,890 expand. LCSC C282350, read 2026-10-03T08:16:53Z.",
+    "within": true,
+    "source": "vendors.py jlcpcb C282350 (exact LCSC match, JLCPCB selectSmtComponentList API); placements from the P2 and re-rank records of the deciding runs and selection.json (read 2026-10-03T08:20Z); sourcing rule 4, S4, S7",
+    "read_at": "2026-10-03T08:16:53Z"
+   },
+   {
+    "item": "shared-part stock: INA228AIDGSR",
+    "value": "Motor monitor 1 + External shunt sense input 1 (the two monitors of F1): 2 a board, need 10, gate 50. JLCPCB C2887910 stockCount 0, canPresaleNumber -254, expand, read 2026-10-03T08:16:53Z (presale -236 on 2026-10-02, -254 at FU-2I's 00:13:22Z); Digi-Key 0 in all packagings, 20 weeks, Active (cached reading 2026-10-03T00:02:22Z); not held; no rule-5 route (INA228AQDGSRQ1 0/-240, INA228AIDGST obsolete, INA238AIDGSR 0/-120). Fails rule 4: shortfall of 50. The owner keeps the part (V304, 2026-10-02); the shortfall is a stated limitation, given to T6 as a stock exception, and the stock is read again before the order.",
+    "within": false,
+    "source": "vendors.py jlcpcb C2887910 (exact LCSC match, JLCPCB selectSmtComponentList API); placements from the P2 and re-rank records of the deciding runs and selection.json (read 2026-10-03T08:20Z); sourcing rule 4, S4, S7; Digi-Key https://api.digikey.com/products/v4/search/INA228AIDGSR/productdetails (cached); FU-2I/002-P2-R8.json 'INA228AIDGSR stock (V304)', 'INA228 second source'; Research.md V304",
+    "read_at": "2026-10-03T08:16:53Z; Digi-Key 2026-10-03T00:02:22Z"
+   }
+  ],
+  "assumptions": [
+   {
+    "item": "receiver bus state machines",
+    "value": "2 PIO state machines on the measurement coprocessor, both in PIO1: 1 receive and 1 transmit, 13 instruction words (UART receive 9 + transmit 4, sized from the pico-examples UART programs, which are not in the tree); one receiver input on GPIO 23 (V68); the receive program takes the S.BUS 8E2 100 kbaud frame with the pad's input inversion and the other buses (iBUS, SUMD, CRSF, SRXL2, JETI EX Bus) as UART; the transmit state machine drives GPIO 23 through SN74LVC1T45DBVR, whose direction pin takes 1 more GPIO (counted in GPIO: measurement). A hardware UART is available for the receive-only buses: UART1 is free on this chip and GPIO 23 has UART1_RX (funcsel 0x0b), but UART1_TX would need GPIO 20, 22, 24 or 26, which the encoder, the chip select and the TCA9548A reset hold, so the transmit direction needs PIO.",
+    "why": "No receiver PIO program is written (docs/Receivers.md); V71 (owner, 2026-09-28) says the bench transmits on a receiver input for JETI EX Bus and SRXL2; the map puts the receiver on PIO1; the count must be stated and the count for transmit is the smallest that meets V71.",
+    "source": "hardware/docs/pinmap.json measurement GPIO 23; Research.md V68, V71; docs/Receivers.md:10-16 and shared/sbus/include/sbus.h:4-17 in the checkout; ~/toolchains/pico-sdk io_bank0.h GPIO23 funcsel table; hardware/docs/Pins.md Not known (receive-only)",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "item": "programmer state machines",
+    "value": "0 state machines beyond the 8 booked for bidirectional DShot on the 4 multiprotocol ports: a port runs one protocol at a time, so the programmer's one-wire bootloader (BLHeli_S and AM32, 19,200 baud, half duplex), ESCape32 CLI and Hitec D-series run as PIO UART programs (transmit 4 + receive 9 words, assumed) on the 2 state machines and within the 16 words of that port's DShot allocation; DShot's teardown() releases the state machines and words before the new program loads (out_dshot.c:113-127). VESC's 115,200 baud runs on UART1 (GPIO 4, 5, V67), not on a state machine. If a mode needs a third state machine on one port, the main chip has 1 spare (11 of 12 booked), enough for one port at a time.",
+    "why": "No programmer protocol has run on a wire (STATUS.md, shared/ui/programmer_screen.c:237-248), the levels, form and baud of Hitec D-series and the ESCape32 baud are not stated (V59 to V62, for research), and each bound output loads its own copy of its program, so a count has to be assumed.",
+    "source": "firmware/iomcu/src/out_dshot.c:113-127 and dshot.pio in the checkout; hardware/docs/IOBoard.md Programming on the multiprotocol ports; Research.md V59 to V62, V67; hardware/docs/Pins.md Owner decisions",
+    "read_at": "2026-10-03T08:37:16Z"
+   },
+   {
+    "item": "servo current sample period",
+    "value": "5 ms (a 200 Hz current sensor): the measurement coprocessor reads each INA3221 and checks the 3.0 A ceiling at every sample; the INA3221 refreshes its 3 channels in 3.63 ms at most, so each channel gives a fresh value at every 5 ms sample.",
+    "why": "The tree does not state the period of the coprocessor's port-current sample; docs/Servo.md:35 says 'checked at every sample' and the host test models the sensor at 5 ms. Round 1's P5 assumed 20 ms, the BENCH sampling period, which its critic rejected: that period belongs to the motor monitor's BENCH reading.",
+    "source": "test/host/test_servo_limit.c:19 ('#define SAMPLE_MS 5u /* a 200 Hz current sensor */') and docs/Servo.md:35 in checkout-f0306687a475; FU-2I/002-P2-R8.json found V173 (read 2026-10-03T00:15:40Z); round1/T5/004-P5-critic.json added item on the sample period",
+    "read_at": "2026-10-03T08:22Z (checkout), 2026-10-03T00:15:40Z (V173)"
+   }
+  ]
+ }
+}
