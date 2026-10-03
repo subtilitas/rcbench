@@ -32,7 +32,7 @@ verifiers, P5 the cross-category check and P6 the completeness check. T1 to T6 a
 | Onboard shunt | BVR-Z-R0002-1.0 (Isabellenhütte) | 4026 | 359 / 11190 | rank 1 on accuracy: its path error is 0.50 A of 1.5 A at 150 A; four-terminal Kelvin |
 | Onboard shunt temperature sensor | MCP9808T-E/MS (Microchip) | MSOP-8 | 764 / 21589 | ±0.5 °C at most from −20 to 100 °C; its addresses, 0x18 to 0x1F, sit outside the monitor block 0x40 to 0x4F |
 | External shunt, off the board | WSBE8518L1000JKA2 (Vishay) | 8518 busbar | none / 418 | rank 1 on accuracy: its path error is 0.73 A of 3 A at 300 A. No second source: see [Not known](#not-known) |
-| Port current monitor | INA3221AIRGVR (Texas Instruments), 7 a board | QFN-16 | 8704 / 67241 | the owner's seed, which passes with 7 parts for 20 ports |
+| Port current monitor | INA3221AIRGVR (Texas Instruments), 7 a board | QFN-16 | 8704 / 67241 | the owner's fixed input, kept whatever a research run returns (owner, 2026-10-03), 7 parts for 20 ports |
 | Port shunt | ERJ-6CWDR010V (Panasonic), 20 a board | 0805 | 4062 / 12302 | passes with the INA3221; a ±0.5 % part, rank 1 on stock at both vendors |
 
 The three fixed or held inputs of group B do not stand as selected parts:

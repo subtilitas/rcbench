@@ -236,6 +236,11 @@
         "part": "INA228",
         "orderable": "INA228AIDGSR",
         "owner_keeps": true
+      },
+      {
+        "function": "Port current monitor",
+        "part": "INA3221AIRGVR",
+        "owner_keeps": true
       }
     ],
     "R11": [
