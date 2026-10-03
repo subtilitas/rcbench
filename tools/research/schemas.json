@@ -1279,7 +1279,7 @@
        },
        "read_at": {
         "type": "string",
-        "description": "the time the combination was worked out"
+        "description": "the time the combination was worked out: its time as ISO 8601 UTC first (2026-10-03T08:37:16Z), alone or after one word naming the source (FU-2I 2026-10-03T00:13:52Z), then further readings and notes"
        }
       },
       "required": [
@@ -1312,7 +1312,7 @@
        },
        "read_at": {
         "type": "string",
-        "description": "the time each figure of the budget was read (sourcing rule 7)"
+        "description": "the time each figure of the budget was read (sourcing rule 7): its time as ISO 8601 UTC first (2026-10-03T08:37:16Z), alone or after one word naming the source (FU-2I 2026-10-03T00:13:52Z), then further readings and notes"
        }
       },
       "required": [
@@ -1344,7 +1344,7 @@
        },
        "read_at": {
         "type": "string",
-        "description": "the time the value was read or set"
+        "description": "the time the value was read or set: its time as ISO 8601 UTC first (2026-10-03T08:37:16Z), alone or after one word naming the source (FU-2I 2026-10-03T00:13:52Z), then further readings and notes"
        }
       },
       "required": [

@@ -345,7 +345,7 @@ const owedBudgets = () => (A.p5_budgets || []).map(n => optionsOf(n).length ? `$
 function p5Prompt() {
   return `${ctx('P5', '', 'P5')}
 
-Read every return under ${runDirs('')} (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board; check each part selection.json keeps for more than one function against the rule-4 stock gate at its summed placements ("shared-part stock: PART"; a shortfall is a conflict); and those the rows R5 and R7 under "Research categories" give P5: each rail's current with the parts R6, R7 and R8 selected, and the pack current recomputed from the converter efficiencies R5 and R6 verified, with the cell's rating and the pack's protection checked against it; a shortfall is a rail conflict. The parts to check are those in ${SELECTION}, each with its alternate, and both alternatives of Q4 and Q8.${(A.p5_budgets || []).length ? ` Return one budget for each of these: ${owedBudgets()}. Give each its source, its reading time and whether it is within its limit, and name its item as listed or, where it has several (each rail, each I2C bus), "NAME: DETAIL" once for each; every row of an item counts. A check the P5 row makes conditional (${(A.p5_conditional || []).join('; ')}) is returned with "not applicable: REASON" as its value when its condition does not hold.` : ''}${(A.p5_assumptions || []).length ? ` State in assumptions each of these, named as listed or "NAME: DETAIL" where it has several, with the value you assume, why, its source and its time: ${A.p5_assumptions.join('; ')}.` : ''}`
+Read every return under ${runDirs('')} (T2, T3, T4 and every FU-* directory) and run the checks of the P5 row over the whole board; check each part selection.json keeps for more than one function against the rule-4 stock gate at its summed placements ("shared-part stock: PART"; a shortfall is a conflict); and those the rows R5 and R7 under "Research categories" give P5: each rail's current with the parts R6, R7 and R8 selected, and the pack current recomputed from the converter efficiencies R5 and R6 verified, with the cell's rating and the pack's protection checked against it; a shortfall is a rail conflict. The parts to check are those in ${SELECTION}, each with its alternate, and both alternatives of Q4 and Q8. Every read_at, of a combination, a budget or an assumption, starts with its time as ISO 8601 UTC, as 2026-10-03T08:37:16Z, or with one word naming the source and then that time, as "FU-2I 2026-10-03T00:13:52Z"; further readings and notes follow it. A read_at that starts any other way counts as no reading time.${(A.p5_budgets || []).length ? ` Return one budget for each of these: ${owedBudgets()}. Give each its source, its reading time and whether it is within its limit, and name its item as listed or, where it has several (each rail, each I2C bus), "NAME: DETAIL" once for each; every row of an item counts. A check the P5 row makes conditional (${(A.p5_conditional || []).join('; ')}) is returned with "not applicable: REASON" as its value when its condition does not hold.` : ''}${(A.p5_assumptions || []).length ? ` State in assumptions each of these, named as listed or "NAME: DETAIL" where it has several, with the value you assume, why, its source and its time: ${A.p5_assumptions.join('; ')}.` : ''}`
 }
 function p5CriticPrompt(p5) {
   return `${ctx('P5-critic', '', 'P5-critic')}
@@ -467,6 +467,10 @@ function readInRun(text) {
   const inRun = ms => ms >= start && ms < start + 2 * 864e5
   return inRun(leadingTime(sourceTime(text))) && (String(text).match(/\d{4}-\d{2}-\d{2}/g) || []).every(day => inRun(calendarDay(day)))
 }
+// A P5 reading time is a reading time, alone or after one word that names
+// the source, as "FU-2I 2026-10-03T00:13:52Z; BQ25723 2026-10-03T08:37:22Z".
+// P5 cites readings of earlier runs, so its dates need not fall in this run.
+const p5Time = text => isTime(sourceTime(text))
 
 // A value that holds no reading: blank, a bare placeholder or written as not
 // read. "none" is a reading: no notice, no commitment, no resistor.
@@ -1716,7 +1720,7 @@ async function phaseP5P6() {
   }
   const shared = [...keptBy].filter(([, fns]) => fns.size > 1).map(([part]) => part)
   const conditional = n => (A.p5_conditional || []).some(c => (n === c || n.startsWith(`${c}: `)) && !(c === 'shared-part stock' && shared.length))
-  const counts = x => x.upheld === true && !readsNone(x.source) && !!isTime(x.read_at) && !notFound(x.value)
+  const counts = x => x.upheld === true && !readsNone(x.source) && p5Time(x.read_at) && !notFound(x.value)
     && (!/^(not applicable|n\/a|does not apply)\b/i.test(String(x.value).trim()) || conditional(String(x.item || '')))
   const unmet = (list, n, ok) => {
     const rows = (list || []).filter(x => String(x.item || '') === n || String(x.item || '').startsWith(`${n}: `))
@@ -1732,14 +1736,14 @@ async function phaseP5P6() {
   for (const x of over) followUps.push({ role: 'P5', item: x, reason: 'budget over its limit' })
   // Every assumption the P5 row makes P5 state, upheld, with a value, its
   // source and its time.
-  const assumptionsMissing = a.missing ? [] : (A.p5_assumptions || []).filter(n => unmet(a.assumptions, n, x => x.upheld === true && !readsNone(x.source) && !!isTime(x.read_at) && !notFound(x.value)))
+  const assumptionsMissing = a.missing ? [] : (A.p5_assumptions || []).filter(n => unmet(a.assumptions, n, x => x.upheld === true && !readsNone(x.source) && p5Time(x.read_at) && !notFound(x.value)))
   for (const n of assumptionsMissing) followUps.push({ role: 'P5', item: n, reason: 'assumption the P5 row names not stated and upheld' })
   // A combination counts with its outputs, bind order, resources, source
   // and time, and upheld.
-  if (!a.missing && !(a.combinations || []).some(x => x.upheld === true && x.fits === true && !readsNone(x.outputs) && !readsNone(x.bind_order) && !readsNone(x.resources) && !readsNone(x.source) && !!isTime(x.read_at))) missingChecks.push('P5 combinations')
+  if (!a.missing && !(a.combinations || []).some(x => x.upheld === true && x.fits === true && !readsNone(x.outputs) && !readsNone(x.bind_order) && !readsNone(x.resources) && !readsNone(x.source) && p5Time(x.read_at))) missingChecks.push('P5 combinations')
   // An assumption without a value assumed nothing.
-  const unsourced = [...(a.combinations || []), ...(a.budgets || [])].filter(x => readsNone(x.source) || !isTime(x.read_at)).length
-    + (a.assumptions || []).filter(x => readsNone(x.source) || !isTime(x.read_at) || notFound(x.value)).length
+  const unsourced = [...(a.combinations || []), ...(a.budgets || [])].filter(x => readsNone(x.source) || !p5Time(x.read_at)).length
+    + (a.assumptions || []).filter(x => readsNone(x.source) || !p5Time(x.read_at) || notFound(x.value)).length
   if (!a.missing && !(a.budgets || []).length) missingChecks.push('P5 budgets')
   for (const m of missingChecks) followUps.push({ role: m, reason: `${m} returned nothing; the check did not run` })
   return { conflicts: a.conflicts, combinations: a.combinations || [], budgets: a.budgets || [], assumptions: a.assumptions || [], gaps: b.gaps,

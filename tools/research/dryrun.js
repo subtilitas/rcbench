@@ -176,6 +176,7 @@ async function runTask(task, opts = {}) {
     if (role === 'P5' && opts.unsourcedAssumption) data.assumptions = data.assumptions.map(x => ({ ...x, source: '' }))
     if (role === 'P5' && opts.blankCombos) data.combinations = data.combinations.map(x => ({ ...x, outputs: '', bind_order: '', resources: '' }))
     if (role === 'P5' && opts.assumptionValue) data.assumptions = data.assumptions.map(x => ({ ...x, value: opts.assumptionValue }))
+    if (role === 'P5' && opts.p5ReadAt) for (const k of ['combinations', 'budgets', 'assumptions']) data[k] = data[k].map(x => ({ ...x, read_at: opts.p5ReadAt }))
     if (role === 'P5-critic') {
       // The critic rules on every item P5 returned.
       const p5ret = JSON.parse(prompt.slice(prompt.lastIndexOf('\n') + 1))
@@ -1456,6 +1457,18 @@ async function main() {
   check(r.result.summary.missing_checks.includes('P5 combinations'), 'T5: a combination without outputs, bind order and resources is none')
   r = await runTask('T5', { assumptionValue: 'not read' })
   check(r.result.summary.unsourced_items === 2, `T5: ${r.result.summary.unsourced_items} items without a value, source and time, expected the 2 assumptions`)
+  // A P5 reading time may follow one word that names the source, and may be
+  // of an earlier day; two words, or a word that names none, are no time.
+  for (const t of ['FU-2I 2026-09-28T10:00:00Z; BQ25723 2026-09-28T10:05Z', 'JLCPCB: 2026-09-28T10:00:00Z', 'FU-2A 2026-09-01T21:47:29Z to 22:12:26Z']) {
+    r = await runTask('T5', { p5Budgets: ['GPIO'], p5Items: ['GPIO'], p5ReadAt: t })
+    check(r.result.summary.unsourced_items === 0 && r.result.summary.budgets_missing.length === 0 && !r.result.summary.missing_checks.includes('P5 combinations'), `T5: P5 reading time "${t}" counts`)
+  }
+  for (const t of ['FU-2I FU-2H 2026-09-28T10:00:00Z', 'none 2026-09-28T10:00:00Z', 'Not-read 2026-09-28T10:00:00Z', 'read 2026-09-28T10']) {
+    r = await runTask('T5', { p5Budgets: ['GPIO'], p5Items: ['GPIO'], p5ReadAt: t })
+    check(r.result.summary.unsourced_items > 0 && r.result.summary.budgets_missing.includes('GPIO') && r.result.summary.missing_checks.includes('P5 combinations'), `T5: P5 reading time "${t}" is none`)
+  }
+  r = await runTask('T5', { p5Budgets: ['GPIO'], p5Items: ['GPIO'], p5ReadAt: 'FU-2I 2026-09-28T10:00:00Z' })
+  check(r.prompts.find(x => x.label === 'P5').prompt.includes('Every read_at, of a combination, a budget or an assumption, starts with its time as ISO 8601 UTC'), 'T5: the P5 prompt states the reading-time format')
 
   // A refutation no adjudicator ruled on is not cleared by a later pair's
   // verification; a standing one still moves on.
@@ -1573,6 +1586,10 @@ async function main() {
   check(r.result.summary.budgets_over === 0, 'T5: no budget over its limit')
   // The assumptions the P5 row requires are each stated and upheld.
   r = await runTask('T5', { p5Assumptions: cats.p5_assumptions })
+  for (const [t, ok] of [['FU-2I 2026-09-28T10:00:00Z', true], ['none 2026-09-28T10:00:00Z', false]]) {
+    r = await runTask('T5', { p5Assumptions: cats.p5_assumptions, p5Assumed: cats.p5_assumptions.map(n => [n, '2']), p5ReadAt: t })
+    check((r.result.summary.assumptions_missing.length === 0) === ok, `T5: an assumption read at "${t}" ${ok ? 'counts' : 'is missing'}`)
+  }
   check(r.result.summary.assumptions_missing.join() === cats.p5_assumptions.join() && r.prompts.find(x => x.label === 'P5').prompt.includes('State in assumptions'), 'T5: required assumptions not stated are missing')
   r = await runTask('T5', { p5Assumptions: cats.p5_assumptions, p5Assumed: [...cats.p5_assumptions.map(n => [n, '2']), ['programmer state machines: SWD', 'not read']] })
   check(r.result.summary.assumptions_missing.join() === 'programmer state machines', `T5: assumptions missing ${r.result.summary.assumptions_missing}, expected the one with an unread row`)
