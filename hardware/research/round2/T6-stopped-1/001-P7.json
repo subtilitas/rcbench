@@ -1,0 +1,4688 @@
+{
+ "role": "P7",
+ "category": "",
+ "label": "P7",
+ "attempt": 0,
+ "data": {
+  "files": [
+   "hardware/docs/IOBoard.md",
+   "hardware/docs/Research.md",
+   "hardware/STATUS.md",
+   "hardware/docs/Control.md",
+   "hardware/docs/Supply.md",
+   "hardware/docs/Sensing.md",
+   "hardware/docs/Parts.md",
+   "hardware/docs/Power.md",
+   "hardware/README.md",
+   "tools/jlc_stock.py"
+  ],
+  "corrections": [
+   "Parts.md has one row per part, 75 selected parts and 11 alternates or Q options, from hardware/research/round2/selection.json. A part that serves several functions has one row whose placements are the sum FU-2Q's P5 counts under shared-part stock. These are TPSI3052DWZR 28 (gate 700), IPT015N10N5ATMA1 20, SN74LVC1G04DBVR 5 (V326), MCP9808T-E/MS 5, 74LVC1G175GW,125 5, SN74AUP1G17DBVR 2 and INA228AIDGSR 2. A single run's verifier gated only part of each count, for example FU-2I's 20 port drivers (gate 500).",
+   "RP2354B and INA228AIDGSR carry the JLCPCB stock and presale of FU-2Q's P5 (2026-10-03T12:34Z). Their P4 records hold no stock reading (RP2354B) or a refuted one (INA228AIDGSR). TCND5000 has no P4 reading at all: its row carries P2's figures (FU-2E JLCPCB, T4 Digi-Key), each marked not verified.",
+   "LM4040AIM3-3.0/NOPB is labelled as the Q4 reference option, not chosen and not verified. FU-2C's datasheet verifier refuted it on V290's 52 ns share (FU-2C/013, adjudicator 014). Round 1's pages called it verified.",
+   "Five FU-2Q budgets carry their critic's corrections instead of P5's figures. Display supply: the allowed cable drop is 0.285 V with LM61460AFSQRJRRQ1 to 4.5 V, not 0.235 V. UART controllers, measurement: UART1_TX is also on GPIO 36, 38, 40 and 42. Cell rating: USB-C charge is 0.53C to 0.72C, not 0.56C. Pack protection: the post-trim edge is crossed at 8.2 mOhm on the 306.5 W basis, not 8.6 mOhm. 3.3 V rail at RPXFR 20 kOhm: 2.65 A and 88 %, not 2.78 A and 93 %. Each of these budgets is stated as not known, because the critic rejected it.",
+   "The receiver bus state machine assumption is stated with the P5 critic's correction to its supporting sentence (UART1_TX pin options). The critic upheld the assumption itself.",
+   "tools/jlc_stock.py: a held quantity under the need no longer stands in for stock. Such a row is checked by rule 4 like an unheld one and printed with a note. TPS55285VALR is held at 12 against a need of 20, and FU-2I's stock verifier checked it that way. Before this change the tool failed it as a rule-6 shortfall.",
+   "IOBoard.md states name the round 2 part on each line where round 2 replaced round 1's: BTS7004-1EPP becomes BSC014N04LSATMA1; TPS259474LRPWR becomes BUK7K6R8-40E,115 with TPSI3052DWZR and INA301A1IDGKR; TPS62933DRLR becomes LM61460AFSQRJRRQ1; BQ25713RSNR becomes BQ25723RSNR; MAX17320G22+ becomes BQ40Z80RSMR and BQ29209DRBR; WSBE8518L1000JKA2 becomes BAS-M-R0001-E-5.0 (V313); CD4082 becomes 74VHC21FT (V305); and the TCAN1472VDRQ1 external transceiver is added. The owner's later answers are cited on the lines touched: the DC input of 12 to 18 V (V319) and the 3.3 V a cell floor (V294).",
+   "Control.md, measurement bus B address row: the INA3221 addresses are written as 0x40, 0x41 and 0x42 instead of 0x40 to 0x42. tools/check_docs.py treats a paragraph that names 3 of the 4 settings.c k_ina_addr values as an incomplete enumeration.",
+   "The SN74LVC1G04DBVR placement disagreement of round 1 (R3 1, R4 2, booked at 3) is stated with V326's 5 a board, the owner's upper bound, which includes the external CAN standby inverter.",
+   "The 53 conflicts and gaps up to FU-2Q are each stated as not known on the group page of their first category, including those from T5 and FU-2P56. Where an owner answer followed an item (V321, V324 to V333), the answer is cited beside it. The item stays stated as not known."
+  ],
+  "checks": {
+   "check_docs": {
+    "passed": true,
+    "output": "docs agree with the tree"
+   },
+   "ruff": {
+    "passed": true,
+    "output": "All checks passed!"
+   },
+   "jlc_stock": {
+    "passed": false,
+    "output": "exit 1, 5 problem(s). The [FAIL] lines:\n[FAIL] SLSXT30002130: not checked, no Digi-Key product carries SLSXT30002130\n[FAIL] INA228AIDGSR: stock 0, gate 50\n[FAIL] INA228AIDGSR: presale -254\n[FAIL] INA228AIDGSR (second vendor): stock 0, gate 50\n[FAIL] ADS1235IRHBR (second vendor): stock 0, gate 50\nLast lines:\nPersonal library (rule 6):\n  [ok] RP2354B: held 20 (stated 2026-09-25), need 10; JLCPCB stock 2482, presale 2310\n  [ok] RP2354B at Digi-Key as SC1512(13)-A4: stock 3560, gate 50\n5 problem(s)\nNot passed. SLSXT30002130 and INA228AIDGSR are the accepted exceptions. ADS1235IRHBR (R13, round 1, kept unchanged) fails at Digi-Key, 0 against the gate of 50. It is not in the accepted list for this check. It carries the owner's round 1 stock exception (owner, 2026-09-29) in its Parts.md row and on STATUS.md. JLCPCB reads it at 1338 with presale 1203, which passes. Also printed: TPS55285VALR [note] held 12 is under the need of 20, so rule 4 applies; it passes at JLCPCB with 2732 against 100 and at Digi-Key with 5243."
+   }
+  },
+  "group_pages": {
+   "A": "hardware/docs/Control.md",
+   "B": "hardware/docs/Supply.md",
+   "C": "hardware/docs/Sensing.md"
+  },
+  "figures": [
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 36,
+    "figure": "12"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 36,
+    "figure": "20"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "10 x 10 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "2,482"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "2,310"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "2026-10-03T12:34:07Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "20"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "3560"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "2026-10-02T06:56:19Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "2045"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "12 MHz"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "13705"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "13076"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "2026-10-02T06:54:44Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "28279"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "2026-10-02T06:27:51Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "404"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "3373"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "2879"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "2026-10-02T06:54:46Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "27951"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "2026-10-02T06:27:53Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "1.4 x 3.5 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "6706"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "6264"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "2026-10-02T06:54:47Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "1 to 2"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "38412"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "2026-10-02T06:27:58Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "10 to 15"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "28621"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "28440"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "2026-10-01T22:23:40Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "42151"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "2026-10-01T21:43:10Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "3923"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "3261"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "2026-10-01T22:23:40Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "4070"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "2026-10-01T21:43:23Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "130"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "2026-10-01T22:23:41Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "1 to 2"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "5108"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "2026-10-01T21:43:27Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 71,
+    "figure": "98"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 71,
+    "figure": "2026-10-01T22:23:41Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 71,
+    "figure": "100"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 71,
+    "figure": "2026-10-01T21:43:34Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "2.5 x 3.5 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "227"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "225"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "2026-10-03T11:51:08Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "2148"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "2026-10-03T10:57:24Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "932"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "929"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "2026-10-03T11:51:14Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "14211"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "2026-10-03T10:57:27Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "1.5 x 1.5 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "307"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "306"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "2026-10-03T11:51:15Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "280"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "2026-10-03T01:13:11Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "1973"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "1890"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "2026-10-03T11:51:15Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "5"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "36048"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "2026-10-03T00:26:29Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "2.9 x 3.5 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "5199"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "5041"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "2026-10-03T11:51:15Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "27039"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "2026-10-03T10:57:45Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "1977"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "1955"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "2026-10-03T11:51:16Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "0 to 1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "27055"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "2026-10-03T10:57:50Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "8832"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "8700"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "2026-10-03T11:51:16Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "88895"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "2026-10-03T00:26:51Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "10736"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "10558"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "2026-10-03T11:51:16Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "4"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "6946"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "2026-10-03T10:58:11Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 80,
+    "figure": "29904"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 80,
+    "figure": "27968"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 80,
+    "figure": "2026-10-03T11:51:17Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 80,
+    "figure": "20"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 80,
+    "figure": "8 to 10"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 80,
+    "figure": "38146"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 80,
+    "figure": "2026-10-03T10:58:14Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "1046"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "1022"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "2026-10-03T11:51:17Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "28"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "3164"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "2026-10-03T00:26:13Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "3.3 x 3.3 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "630"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "591"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "2026-10-03T11:51:17Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "1 to 2"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "3267"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "2026-10-03T10:58:20Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 83,
+    "figure": "131566"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 83,
+    "figure": "129968"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 83,
+    "figure": "2026-10-03T11:51:16Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 83,
+    "figure": "309656"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 83,
+    "figure": "2026-10-03T10:58:06Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "2190"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "2152"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "2026-10-03T11:51:18Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "300 A"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "60 A"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "600 A"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "15476"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "2026-10-03T10:58:23Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "3 x 3 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "4040"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "3969"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "2026-10-03T01:24:26Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "7592"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "2026-10-03T00:19:01Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 90,
+    "figure": "4 x 4 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 90,
+    "figure": "8611"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 90,
+    "figure": "8596"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 90,
+    "figure": "2026-10-03T01:24:26Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 90,
+    "figure": "6515"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 90,
+    "figure": "2026-10-03T00:19:08Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "3.3 V"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "2.5 x 2.5 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "701"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "574"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "7558"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "2026-10-03T00:19:13Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "5 V"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "3.5 x 4 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "165"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "141"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "3000"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "2026-10-03T00:19:15Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 93,
+    "figure": "2 x 2 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 93,
+    "figure": "498"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 93,
+    "figure": "325"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "12 V"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "5157"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "5078"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "5262"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "2026-10-03T00:19:27Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 95,
+    "figure": "290051"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 95,
+    "figure": "288935"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 95,
+    "figure": "1436"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 95,
+    "figure": "2026-10-03T00:19:32Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 96,
+    "figure": "155"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 96,
+    "figure": "115"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 96,
+    "figure": "24815"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 96,
+    "figure": "2026-10-03T00:19:37Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 97,
+    "figure": "2222"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 97,
+    "figure": "2139"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 97,
+    "figure": "1 to 4"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 97,
+    "figure": "5064"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 97,
+    "figure": "2026-10-03T00:18:53Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 98,
+    "figure": "2732"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 98,
+    "figure": "2723"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 98,
+    "figure": "2026-10-03T01:42:16Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 98,
+    "figure": "12"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 98,
+    "figure": "20"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 98,
+    "figure": "8"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 98,
+    "figure": "5243"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 98,
+    "figure": "2026-10-03T00:26:00Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 99,
+    "figure": "13.5 x 12.5 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 99,
+    "figure": "600"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 99,
+    "figure": "589"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 99,
+    "figure": "10610"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 99,
+    "figure": "2026-10-03T00:26:02Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 99,
+    "figure": "403"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 100,
+    "figure": "13671"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 100,
+    "figure": "13413"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 100,
+    "figure": "2894"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 100,
+    "figure": "2026-10-03T00:26:09Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 101,
+    "figure": "6240"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 101,
+    "figure": "6119"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 101,
+    "figure": "2 to 3"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 101,
+    "figure": "16532"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 101,
+    "figure": "2026-10-03T00:26:18Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 102,
+    "figure": "26813"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 102,
+    "figure": "26783"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 102,
+    "figure": "11567"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 102,
+    "figure": "2026-10-03T00:26:23Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 103,
+    "figure": "757"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 103,
+    "figure": "716"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 103,
+    "figure": "21419"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 103,
+    "figure": "2026-10-03T00:14:16Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 104,
+    "figure": "1552"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 104,
+    "figure": "1380"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 104,
+    "figure": "4140"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 104,
+    "figure": "2026-10-03T00:26:15Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 105,
+    "figure": "62157"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 105,
+    "figure": "61907"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 105,
+    "figure": "65616"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 105,
+    "figure": "2026-10-03T00:26:35Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 106,
+    "figure": "56335"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 106,
+    "figure": "56092"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 106,
+    "figure": "178"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 106,
+    "figure": "2026-10-03T00:26:40Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 107,
+    "figure": "18569"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 107,
+    "figure": "18433"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 107,
+    "figure": "31433"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 107,
+    "figure": "2026-10-03T00:26:44Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 108,
+    "figure": "22986"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 108,
+    "figure": "22742"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 109,
+    "figure": "40000"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 109,
+    "figure": "39898"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 109,
+    "figure": "9011"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 109,
+    "figure": "2026-10-03T00:26:54Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 110,
+    "figure": "5 x 6 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 110,
+    "figure": "542"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 110,
+    "figure": "519"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 110,
+    "figure": "18254"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 110,
+    "figure": "2026-10-03T00:27:03Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 111,
+    "figure": "5692"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 111,
+    "figure": "5638"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 111,
+    "figure": "2226"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 111,
+    "figure": "2026-10-03T00:27:08Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 112,
+    "figure": "214"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 112,
+    "figure": "213"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 112,
+    "figure": "2026-10-02T21:28:17Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 112,
+    "figure": "4528"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 112,
+    "figure": "2026-10-02T11:53:56Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 113,
+    "figure": "592"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 113,
+    "figure": "565"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 113,
+    "figure": "2026-10-02T21:28:18Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 114,
+    "figure": "1.6 x 1.6 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 114,
+    "figure": "5265"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 114,
+    "figure": "5234"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 114,
+    "figure": "2026-10-02T21:28:22Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 114,
+    "figure": "4224"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 114,
+    "figure": "2026-10-02T11:53:58Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 115,
+    "figure": "136 x 43 x 13 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 115,
+    "figure": "1 to 3"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 115,
+    "figure": "2026-10-02T21:30:05Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 116,
+    "figure": "0"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 116,
+    "figure": "−254"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 116,
+    "figure": "2026-10-03T12:34:15Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 116,
+    "figure": "2026-10-03T00:02:22Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 117,
+    "figure": "353"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 117,
+    "figure": "348"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 117,
+    "figure": "2026-10-03T01:03:51Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 117,
+    "figure": "11190"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 117,
+    "figure": "2026-10-03T00:14:11Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 118,
+    "figure": "84 x 20 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 118,
+    "figure": "8.3 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 118,
+    "figure": "2026-10-03T00:14:21Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 118,
+    "figure": "101"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 119,
+    "figure": "8595"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 119,
+    "figure": "8455"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 119,
+    "figure": "2026-10-03T01:03:54Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 119,
+    "figure": "7"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 119,
+    "figure": "67227"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 119,
+    "figure": "2026-10-03T00:14:27Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 120,
+    "figure": "4062"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 120,
+    "figure": "4024"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 120,
+    "figure": "2026-10-03T01:03:56Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 120,
+    "figure": "12302"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 120,
+    "figure": "2026-10-03T00:14:29Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 121,
+    "figure": "11657"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 121,
+    "figure": "11636"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 121,
+    "figure": "2026-10-03T01:03:57Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 122,
+    "figure": "4393"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 122,
+    "figure": "2026-10-03T01:04:00Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 123,
+    "figure": "12500"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 123,
+    "figure": "12494"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 123,
+    "figure": "2026-10-03T11:33:51Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 123,
+    "figure": "534"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 123,
+    "figure": "2026-10-03T10:50:31Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 124,
+    "figure": "5102"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 124,
+    "figure": "4890"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 124,
+    "figure": "2026-10-03T11:33:53Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 124,
+    "figure": "4817"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 124,
+    "figure": "2026-10-03T10:50:36Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 125,
+    "figure": "11.25 x 9 x 4.92 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 125,
+    "figure": "135"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 125,
+    "figure": "2026-10-03T11:33:54Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 125,
+    "figure": "481"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 125,
+    "figure": "2026-10-03T10:50:41Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 126,
+    "figure": "1,802"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 126,
+    "figure": "1,767"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 126,
+    "figure": "2026-10-02T01:02:01Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 126,
+    "figure": "88"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 126,
+    "figure": "2026-10-02T00:22:42Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 127,
+    "figure": "104"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 127,
+    "figure": "86"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 127,
+    "figure": "2026-10-02T01:20:32Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 127,
+    "figure": "387"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 127,
+    "figure": "2026-10-02T00:26:13Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 128,
+    "figure": "6 x 4.3 x 3.75 mm"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 128,
+    "figure": "308"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 128,
+    "figure": "277"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 128,
+    "figure": "2026-10-02T10:12:26Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 128,
+    "figure": "1526"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 128,
+    "figure": "2026-09-28T15:25:24Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 129,
+    "figure": "339"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 129,
+    "figure": "336"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 129,
+    "figure": "2026-10-02T11:01:32Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 129,
+    "figure": "2821"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 129,
+    "figure": "2026-10-02T00:26:17Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 130,
+    "figure": "39590"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 130,
+    "figure": "38272"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 130,
+    "figure": "2026-10-02T11:01:32Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 131,
+    "figure": "48815"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 131,
+    "figure": "48715"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 131,
+    "figure": "13102"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 131,
+    "figure": "2026-10-02T00:26:28Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 132,
+    "figure": "170164"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 132,
+    "figure": "169450"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 132,
+    "figure": "2026-10-02T11:01:33Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 132,
+    "figure": "7844"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 132,
+    "figure": "2026-10-02T06:29:51Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 141,
+    "figure": "−254"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 141,
+    "figure": "50"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 146,
+    "figure": "1046"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 146,
+    "figure": "700"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 146,
+    "figure": "28"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 156,
+    "figure": "52 ns"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 162,
+    "figure": "1498"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 162,
+    "figure": "1404"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 163,
+    "figure": "45046"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 163,
+    "figure": "45038"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 164,
+    "figure": "3350"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 164,
+    "figure": "3349"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 164,
+    "figure": "2026-10-02T21:28:20Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 165,
+    "figure": "2026-10-03T00:14:23Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 165,
+    "figure": "96"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 166,
+    "figure": "13220"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 166,
+    "figure": "13218"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 166,
+    "figure": "2026-10-03T01:03:59Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 167,
+    "figure": "171"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 167,
+    "figure": "168"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 167,
+    "figure": "2026-10-03T01:04:02Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 168,
+    "figure": "2,969"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 168,
+    "figure": "2,956"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 168,
+    "figure": "2026-10-02T01:02:03Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 168,
+    "figure": "26,680"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 168,
+    "figure": "2026-10-02T00:46:37Z"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 169,
+    "figure": "1621"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 169,
+    "figure": "1554"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 169,
+    "figure": "2026-10-02T11:01:32Z"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 36,
+    "figure": "12 MHz"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 36,
+    "figure": "13705 / 28279"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 36,
+    "figure": "10 pF"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 36,
+    "figure": "50 Ω"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 36,
+    "figure": "200 µW"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 36,
+    "figure": "65 ppm"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 37,
+    "figure": "3373 / 27951"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 37,
+    "figure": "2.0 × 1.6 mm"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 37,
+    "figure": "140 mΩ"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 37,
+    "figure": "2.4 A"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 38,
+    "figure": "6706 / 38412"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 38,
+    "figure": "12 kV"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 38,
+    "figure": "15 kV"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 38,
+    "figure": "14 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 38,
+    "figure": "5 A"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 38,
+    "figure": "3.63 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 39,
+    "figure": "28621 / 42151"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 40,
+    "figure": "3923 / 4070"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 40,
+    "figure": "180 ns"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 40,
+    "figure": "347 ns"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 41,
+    "figure": "130 / 5108"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 41,
+    "figure": "155 to 160 ns"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 41,
+    "figure": "172 ns"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 41,
+    "figure": "1 µA"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 42,
+    "figure": "98 / 100"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 42,
+    "figure": "40 MHz"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 42,
+    "figure": "±10 ppm"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 42,
+    "figure": "±3,876 ppm"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 42,
+    "figure": "1.96 times"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 43,
+    "figure": "227 / 2148"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 44,
+    "figure": "932 / 14211"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 44,
+    "figure": "0.2 µA"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 44,
+    "figure": "0.5 µA"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 44,
+    "figure": "−40 to 85 °C"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 45,
+    "figure": "307 / 280"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 45,
+    "figure": "155 mV"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 45,
+    "figure": "7 to 13 ms"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 46,
+    "figure": "5 a board"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 46,
+    "figure": "1973 / 36048"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 46,
+    "figure": "24 mA"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 47,
+    "figure": "5199 / 27039"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 47,
+    "figure": "10 ms"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 48,
+    "figure": "1977 / 27055"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 48,
+    "figure": "0.6 µA"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 49,
+    "figure": "8832 / 88895"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 50,
+    "figure": "4 a board"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 50,
+    "figure": "10736 / 6946"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 50,
+    "figure": "1.4 mΩ"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 50,
+    "figure": "1.9 mΩ"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 50,
+    "figure": "0.8 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 51,
+    "figure": "20 a board"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 51,
+    "figure": "29904 / 38146"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 52,
+    "figure": "28 a board"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 52,
+    "figure": "1046 / 3164"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 52,
+    "figure": "13.9 to 16.2 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 52,
+    "figure": "1.49 times"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 52,
+    "figure": "700"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 53,
+    "figure": "630 / 3267"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 53,
+    "figure": "100 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 53,
+    "figure": "3.3 × 3.3 mm"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 53,
+    "figure": "80 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 54,
+    "figure": "131566 / 309656"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 55,
+    "figure": "2190 / 15476"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 55,
+    "figure": "60 A"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 55,
+    "figure": "300 A"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 55,
+    "figure": "85.93 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 55,
+    "figure": "14.07 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 56,
+    "figure": "94504 / 0"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 56,
+    "figure": "142 Ω"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 56,
+    "figure": "27928"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 57,
+    "figure": "73877 / 19254"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 58,
+    "figure": "401 / 3756"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 59,
+    "figure": "392691 / 90872"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 59,
+    "figure": "5.5 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 71,
+    "figure": "2,482"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 72,
+    "figure": "2,310"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 72,
+    "figure": "2026-10-03T12:34:07Z"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 92,
+    "figure": "148"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 120,
+    "figure": "9.4 to 11 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 137,
+    "figure": "0.93 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 138,
+    "figure": "85.93 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 138,
+    "figure": "82.93 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 139,
+    "figure": "6 × 330 µF"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 139,
+    "figure": "35 to 52 mΩ"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 140,
+    "figure": "45 mJ"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 140,
+    "figure": "1 µH"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 178,
+    "figure": "44 of 48"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 178,
+    "figure": "31 of 42"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 178,
+    "figure": "35 of 42"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 179,
+    "figure": "35 of 48"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 182,
+    "figure": "11 of 12"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 183,
+    "figure": "6 of 12"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 183,
+    "figure": "75 MHz"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 183,
+    "figure": "5 MHz"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 184,
+    "figure": "81 of 96"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 184,
+    "figure": "15 words"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 185,
+    "figure": "72 of 96"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 185,
+    "figure": "91 words"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 186,
+    "figure": "2 of 16"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 188,
+    "figure": "12 of 12"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 189,
+    "figure": "0 of 12"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 190,
+    "figure": "0 of 8"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 191,
+    "figure": "1 of 8"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 192,
+    "figure": "1 of 2"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 192,
+    "figure": "10 MHz"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 192,
+    "figure": "17 MHz"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 192,
+    "figure": "200 ns"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 193,
+    "figure": "2 of 2"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 196,
+    "figure": "115,200 baud"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 198,
+    "figure": "2,088,960 bytes"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 198,
+    "figure": "272,040 bytes"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 198,
+    "figure": "13.0 %"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 198,
+    "figure": "45 ms"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 198,
+    "figure": "400 ms"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 198,
+    "figure": "0.4 ms"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 198,
+    "figure": "3 ms"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 198,
+    "figure": "100,000 cycles"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 199,
+    "figure": "0x0B"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 199,
+    "figure": "0x31"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 199,
+    "figure": "0x21"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 199,
+    "figure": "0x50"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 199,
+    "figure": "0x6B"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 200,
+    "figure": "0x43"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 200,
+    "figure": "0x1A"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 201,
+    "figure": "0x41"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 201,
+    "figure": "0x44"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 201,
+    "figure": "0x45"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 202,
+    "figure": "0x70"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 202,
+    "figure": "0x5A"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 203,
+    "figure": "0.17 mA"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 204,
+    "figure": "1.38 mA"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 204,
+    "figure": "2.7 mA"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 204,
+    "figure": "0.33 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 206,
+    "figure": "3.117 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 206,
+    "figure": "2 to 4.6 ms"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 206,
+    "figure": "2.5 ms"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 206,
+    "figure": "7 ms"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 206,
+    "figure": "3.201 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 209,
+    "figure": "28,616"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 209,
+    "figure": "1,046"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 209,
+    "figure": "29,900"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 209,
+    "figure": "131,566"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 209,
+    "figure": "385"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 209,
+    "figure": "1,973"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 209,
+    "figure": "8,832"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 209,
+    "figure": "2026-10-03T12:34Z"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 221,
+    "figure": "8 of 12"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 222,
+    "figure": "7 of 12"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 222,
+    "figure": "33 words"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 223,
+    "figure": "223"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 223,
+    "figure": "256"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 223,
+    "figure": "155"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 223,
+    "figure": "175"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 223,
+    "figure": "11 and 69"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 223,
+    "figure": "3 and 17"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 226,
+    "figure": "19 words"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 239,
+    "figure": "100 kbaud"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 249,
+    "figure": "13 words"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 251,
+    "figure": "19,200 baud"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 267,
+    "figure": "117 to 120 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 267,
+    "figure": "112.5 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 269,
+    "figure": "100 µs"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 269,
+    "figure": "2026-10-03T13:40:19Z"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 270,
+    "figure": "3300 to 4700 µF"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 270,
+    "figure": "20 to 30 mΩ"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 277,
+    "figure": "131,566"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 283,
+    "figure": "113 to 126 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 287,
+    "figure": "2 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 288,
+    "figure": "3.0 to 3.3 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 289,
+    "figure": "275 Ω"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 289,
+    "figure": "29.8 mA"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 289,
+    "figure": "12 mA"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 289,
+    "figure": "245 mW"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 290,
+    "figure": "75 pF"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 297,
+    "figure": "120 Ω"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 36,
+    "figure": "4040 / 7592"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 36,
+    "figure": "−65 to 70 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 36,
+    "figure": "18.05 to 19.27 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 36,
+    "figure": "11.34 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 36,
+    "figure": "12 to 18 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 37,
+    "figure": "8611 / 6515"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 37,
+    "figure": "11.63 µA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 37,
+    "figure": "12 µA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 37,
+    "figure": "35 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 38,
+    "figure": "701 / 7558"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 38,
+    "figure": "3.27 to 3.32 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 38,
+    "figure": "42 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 39,
+    "figure": "165 / 3000"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 39,
+    "figure": "±1 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 39,
+    "figure": "0.285 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 40,
+    "figure": "498 / 0"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 40,
+    "figure": "2.23 to 2.72 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 40,
+    "figure": "45 mΩ"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 41,
+    "figure": "5157 / 5262"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 41,
+    "figure": "233 to 267 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 42,
+    "figure": "290051 / 1436"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 43,
+    "figure": "155 / 24815"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 43,
+    "figure": "±27 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 43,
+    "figure": "35.7 to 37.3 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 43,
+    "figure": "8/20 µs"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 44,
+    "figure": "2222 / 5064"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 44,
+    "figure": "19.5 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 44,
+    "figure": "24.7 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 44,
+    "figure": "36.7 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 45,
+    "figure": "2732 / 5243"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 45,
+    "figure": "3.72 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 45,
+    "figure": "33 °C/W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 46,
+    "figure": "600 / 10610"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 46,
+    "figure": "8.4 mΩ"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 46,
+    "figure": "28 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 46,
+    "figure": "9.33 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 46,
+    "figure": "13.5 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 47,
+    "figure": "13671 / 2894"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 47,
+    "figure": "41 to 80 mV"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 47,
+    "figure": "0.24 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 47,
+    "figure": "276 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 49,
+    "figure": "1552 / 4140"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 49,
+    "figure": "4.30 to 4.51 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 49,
+    "figure": "3.96 to 4.84 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 49,
+    "figure": "1 µs"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 50,
+    "figure": "6240 / 16532"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 51,
+    "figure": "26813 / 11567"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 51,
+    "figure": "0.1 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 52,
+    "figure": "757 / 21419"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 52,
+    "figure": "±0.5 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 52,
+    "figure": "72.0 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 52,
+    "figure": "66.25 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 54,
+    "figure": "62157 / 65616"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 55,
+    "figure": "56335 / 178"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 55,
+    "figure": "2.87 to 2.99 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 55,
+    "figure": "1.1 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 56,
+    "figure": "18569 / 31433"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 57,
+    "figure": "22986"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 57,
+    "figure": "17.2 µs"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 57,
+    "figure": "0.11 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 57,
+    "figure": "1000 µF"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 57,
+    "figure": "45046"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 58,
+    "figure": "40000 / 9011"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 58,
+    "figure": "±0.35 mV"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 59,
+    "figure": "542 / 18254"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 59,
+    "figure": "1.45 mΩ"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 59,
+    "figure": "9.0 nF"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 59,
+    "figure": "10 nF"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 60,
+    "figure": "5692 / 2226"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 60,
+    "figure": "9.4 mΩ"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 60,
+    "figure": "0.4 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 61,
+    "figure": "214 / 4528"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 61,
+    "figure": "5 mΩ"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 61,
+    "figure": "6.6 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 62,
+    "figure": "592"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 62,
+    "figure": "3350"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 63,
+    "figure": "5265 / 4224"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 63,
+    "figure": "10 to 20 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 64,
+    "figure": "3000 mAh"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 64,
+    "figure": "90 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 64,
+    "figure": "180 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 64,
+    "figure": "12 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 65,
+    "figure": "−254"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 65,
+    "figure": "85 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 65,
+    "figure": "20 bits"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 66,
+    "figure": "353 / 11190"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 66,
+    "figure": "369 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 66,
+    "figure": "1.4166 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 66,
+    "figure": "150 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 67,
+    "figure": "84 × 20 mm"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 67,
+    "figure": "753 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 67,
+    "figure": "2.833 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 68,
+    "figure": "7 a board"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 68,
+    "figure": "8595 / 67227"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 69,
+    "figure": "4062 / 12302"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 69,
+    "figure": "0.9 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 69,
+    "figure": "22.9 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 69,
+    "figure": "23.8 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 70,
+    "figure": "11657"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 70,
+    "figure": "3 to 3.6 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 70,
+    "figure": "13220"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 71,
+    "figure": "4393"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 71,
+    "figure": "8.5 ns"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 71,
+    "figure": "15 pF"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 71,
+    "figure": "12.0 ns"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 71,
+    "figure": "50 pF"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 71,
+    "figure": "171"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 103,
+    "figure": "16.48 to 17.63 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 104,
+    "figure": "18.0 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 137,
+    "figure": "0.1 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 156,
+    "figure": "1 mΩ"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 157,
+    "figure": "52.21 to 70.04 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 158,
+    "figure": "55.25 to 66.97 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 158,
+    "figure": "77.03 to 100.68 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 159,
+    "figure": "81.45 to 96.22 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 159,
+    "figure": "10 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 178,
+    "figure": "40 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 179,
+    "figure": "−0.3 to 85 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 179,
+    "figure": "5 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 194,
+    "figure": "1,475 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 194,
+    "figure": "80.9 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 194,
+    "figure": "5.85 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 194,
+    "figure": "1,562 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 194,
+    "figure": "1,662 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 194,
+    "figure": "2.08 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 194,
+    "figure": "69 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 194,
+    "figure": "20 kΩ"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 194,
+    "figure": "2,120 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 194,
+    "figure": "2.65 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 194,
+    "figure": "88 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 194,
+    "figure": "2.78 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 194,
+    "figure": "93 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 195,
+    "figure": "8.8 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 195,
+    "figure": "2.29 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 195,
+    "figure": "2.86 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 195,
+    "figure": "48 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 195,
+    "figure": "3.01 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 196,
+    "figure": "0.235 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 196,
+    "figure": "4.5 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 197,
+    "figure": "160 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 197,
+    "figure": "5.8 to 19.27 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 198,
+    "figure": "302.0 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 198,
+    "figure": "25.2 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 198,
+    "figure": "16.8 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 198,
+    "figure": "31.0 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 198,
+    "figure": "9.73 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 199,
+    "figure": "0.5 to 6.35 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 199,
+    "figure": "3.59 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 199,
+    "figure": "4.12 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 199,
+    "figure": "2.5 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 199,
+    "figure": "4.57 to 5.15 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 199,
+    "figure": "10 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 200,
+    "figure": "1.94 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 200,
+    "figure": "2.51 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 200,
+    "figure": "4.16 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 200,
+    "figure": "0.95 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 201,
+    "figure": "41 mV"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 201,
+    "figure": "175 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 201,
+    "figure": "0.09 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 201,
+    "figure": "0.403 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 201,
+    "figure": "3 µs"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 202,
+    "figure": "51.0 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 202,
+    "figure": "0.66 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 202,
+    "figure": "104.9 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 202,
+    "figure": "0.72 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 202,
+    "figure": "110.3 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 202,
+    "figure": "0.60 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 203,
+    "figure": "1.4 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 203,
+    "figure": "31.0 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 203,
+    "figure": "300 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 203,
+    "figure": "12.0 to 13.7 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 203,
+    "figure": "15 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 204,
+    "figure": "94.7 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 204,
+    "figure": "14.2 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 204,
+    "figure": "13.3 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 204,
+    "figure": "2.8 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 204,
+    "figure": "16.5 to 17.0 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 204,
+    "figure": "13.9 to 14.5 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 204,
+    "figure": "500 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 204,
+    "figure": "2.5 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 205,
+    "figure": "50.3 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 205,
+    "figure": "52.1 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 205,
+    "figure": "306.5 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 205,
+    "figure": "51.1 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 205,
+    "figure": "46.4 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 205,
+    "figure": "6 mΩ"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 205,
+    "figure": "54.0 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 205,
+    "figure": "48.6 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 205,
+    "figure": "47.3 to 50.1 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 205,
+    "figure": "3 to 10 mΩ"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 205,
+    "figure": "28 to 32 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 206,
+    "figure": "1.67 times"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 206,
+    "figure": "56.4 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 206,
+    "figure": "1.60 times"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 206,
+    "figure": "1.85 times"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 206,
+    "figure": "100.68 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 206,
+    "figure": "1.79 times"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 206,
+    "figure": "3.0 Ah"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 207,
+    "figure": "47.5 to 50.3 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 207,
+    "figure": "52.21 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 207,
+    "figure": "55.25 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 207,
+    "figure": "8.6 mΩ"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 207,
+    "figure": "8.2 mΩ"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 207,
+    "figure": "0.503 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 207,
+    "figure": "3 mV"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 207,
+    "figure": "915 µs"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 208,
+    "figure": "0 to 50 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 208,
+    "figure": "67.2 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 208,
+    "figure": "82 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 209,
+    "figure": "400 kHz"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 209,
+    "figure": "100 kHz"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 209,
+    "figure": "8.98 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 209,
+    "figure": "35.9 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 209,
+    "figure": "9 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 209,
+    "figure": "36 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 209,
+    "figure": "80 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 209,
+    "figure": "100 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 210,
+    "figure": "3.63 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 210,
+    "figure": "1.38 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 210,
+    "figure": "27.6 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 211,
+    "figure": "20.7 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 211,
+    "figure": "8.42 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 211,
+    "figure": "1.6 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 211,
+    "figure": "20 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 211,
+    "figure": "2.64 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 211,
+    "figure": "52.8 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 212,
+    "figure": "2 s"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 213,
+    "figure": "20.5 ns"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 214,
+    "figure": "17 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 214,
+    "figure": "287 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 214,
+    "figure": "500 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 215,
+    "figure": "4.84 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 215,
+    "figure": "13.2 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 215,
+    "figure": "17 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 215,
+    "figure": "13 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 216,
+    "figure": "4,036"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 216,
+    "figure": "8,611"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 216,
+    "figure": "289,996"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 216,
+    "figure": "752"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 216,
+    "figure": "2026-10-03T12:34Z"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 216,
+    "figure": "2026-10-03T12:34:15Z"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 219,
+    "figure": "200 Hz"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 237,
+    "figure": "2026-10-03T00:02:22Z"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 237,
+    "figure": "0 / −240 and 0 / 0"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 237,
+    "figure": "0 / −120"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 238,
+    "figure": "5.4 to 6.0 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 238,
+    "figure": "10.8 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 238,
+    "figure": "8.2 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 238,
+    "figure": "0.26 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 238,
+    "figure": "2.3 to 2.8 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 240,
+    "figure": "2026-10-03T13:39:50Z"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 240,
+    "figure": "3827"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 240,
+    "figure": "2026-10-03T00:26:57Z"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 240,
+    "figure": "20 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 242,
+    "figure": "0 s"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 242,
+    "figure": "1.5 s"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 243,
+    "figure": "25 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 247,
+    "figure": "±2 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 248,
+    "figure": "88 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 248,
+    "figure": "9 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 248,
+    "figure": "4 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 253,
+    "figure": "2026-09-29T17:18:33Z"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 257,
+    "figure": "2026-10-03T08:16:53Z"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 258,
+    "figure": "277 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 259,
+    "figure": "3.8 mΩ"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 259,
+    "figure": "0.261 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 259,
+    "figure": "13.6 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 259,
+    "figure": "0.313 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 260,
+    "figure": "16.5 to 16.9 W"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 268,
+    "figure": "1.4 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 268,
+    "figure": "10.5 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 273,
+    "figure": "15 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 273,
+    "figure": "18 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 274,
+    "figure": "100 Ω"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 274,
+    "figure": "1 kΩ"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 274,
+    "figure": "92 kΩ"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 37,
+    "figure": "12500 / 534"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 38,
+    "figure": "5102 / 4817"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 38,
+    "figure": "2121 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 38,
+    "figure": "97 ns"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 39,
+    "figure": "135 / 481"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 39,
+    "figure": "250 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 39,
+    "figure": "10 mA"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 40,
+    "figure": "1,802 / 88"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 40,
+    "figure": "11.34"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 40,
+    "figure": "−40 to 125 °C"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 40,
+    "figure": "30 ps"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 41,
+    "figure": "104 / 387"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 42,
+    "figure": "170164 / 7844"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 42,
+    "figure": "0.53 µV/°C"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 42,
+    "figure": "5.7 µV/°C"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 42,
+    "figure": "10 MHz"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 42,
+    "figure": "0.8 mA"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 43,
+    "figure": "6 × 4.3 × 3.75 mm"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 43,
+    "figure": "308"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 43,
+    "figure": "1526"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 44,
+    "figure": "339 / 2821"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 44,
+    "figure": "0.7 mT"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 44,
+    "figure": "2.0 mT"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 44,
+    "figure": "20 kHz"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 44,
+    "figure": "1,092 Hz"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 45,
+    "figure": "39590 / 0"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 45,
+    "figure": "55 ns"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 45,
+    "figure": "4.4 %"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 45,
+    "figure": "1.244 µs"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 45,
+    "figure": "1621"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 46,
+    "figure": "48815 / 13102"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 46,
+    "figure": "±14 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 46,
+    "figure": "±100 µA"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 46,
+    "figure": "8 to 26 ns"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 48,
+    "figure": "11,459 / 12,023"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 48,
+    "figure": "±1.51 °C"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 48,
+    "figure": "±2 °C"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 48,
+    "figure": "±45 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 49,
+    "figure": "311 / 933"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 49,
+    "figure": "±3 °C"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 49,
+    "figure": "0 to 200 °C"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 50,
+    "figure": "39,690 / 0"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 50,
+    "figure": "5,100"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 51,
+    "figure": "6,523 / 484"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 51,
+    "figure": "32,768 bytes"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 51,
+    "figure": "792"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 51,
+    "figure": "10^12 cycles"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 52,
+    "figure": "1340 / 0"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 52,
+    "figure": "0.13 µV"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 52,
+    "figure": "1200"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 52,
+    "figure": "0.170 µV"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 53,
+    "figure": "3165 / 3618"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 53,
+    "figure": "0 to 60 mA"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 61,
+    "figure": "401"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 77,
+    "figure": "17.7 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 78,
+    "figure": "18.0 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 79,
+    "figure": "23.2 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 80,
+    "figure": "67.2 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 88,
+    "figure": "2,969"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 88,
+    "figure": "26,680"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 88,
+    "figure": "52 ns"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 105,
+    "figure": "75 MHz"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 139,
+    "figure": "8 words"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 139,
+    "figure": "6.70 ns"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 139,
+    "figure": "150 MHz"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 140,
+    "figure": "9 bits"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 142,
+    "figure": "45.6 ms"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 142,
+    "figure": "87,600,000"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 142,
+    "figure": "3,200,000"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 153,
+    "figure": "1.4 mA"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 153,
+    "figure": "425"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 153,
+    "figure": "10 µA"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 153,
+    "figure": "35.6 to 39.6 µA"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 153,
+    "figure": "0.27 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 153,
+    "figure": "0.32 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 153,
+    "figure": "2026-10-03T12:45:51Z"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 154,
+    "figure": "5 kΩ"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 155,
+    "figure": "16 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 157,
+    "figure": "670 and 711 µs"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 157,
+    "figure": "233 and 248 µs"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 160,
+    "figure": "±500 N"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 160,
+    "figure": "±30 N·m"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 160,
+    "figure": "980.7 N"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 164,
+    "figure": "100 kg"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 170,
+    "figure": "100 mA"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 35,
+    "figure": "16.48 to 17.63 V"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 35,
+    "figure": "11.0 V"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 35,
+    "figure": "11.5 V"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 35,
+    "figure": "11.63 µA"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 43,
+    "figure": "223"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 43,
+    "figure": "256"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 44,
+    "figure": "72.0 °C"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 45,
+    "figure": "−254"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 47,
+    "figure": "4.57 to 5.15 A"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 48,
+    "figure": "66.25 °C"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 49,
+    "figure": "0.261 V"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 49,
+    "figure": "0.503 V"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 49,
+    "figure": "915 µs"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 50,
+    "figure": "52.21 to 70.04 A"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 52,
+    "figure": "4.30 to 4.51 A"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 54,
+    "figure": "101 and 96"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 117,
+    "figure": "20 weeks"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 118,
+    "figure": "38 weeks"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 118,
+    "figure": "47 weeks"
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 36,
+    "figure": "2026-10-03T01:42:16Z"
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 40,
+    "figure": "101 and 96"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 121,
+    "figure": "1,562 mA"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 121,
+    "figure": "1,662 mA"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 142,
+    "figure": "65 ppm"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 361,
+    "figure": "3.349 to 3.515 V"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 366,
+    "figure": "18.05 to 19.27 V"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 367,
+    "figure": "11.0 V"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 398,
+    "figure": "61.08 mV"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 398,
+    "figure": "77.03 to 100.68 A"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 514,
+    "figure": "30.00 mV"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 514,
+    "figure": "200 µΩ"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 514,
+    "figure": "100 µΩ"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 514,
+    "figure": "17.0 ms"
+   }
+  ]
+ }
+}
