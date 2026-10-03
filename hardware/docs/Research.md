@@ -77,6 +77,7 @@ owner.
 | Pack cells | SLSXT30002130, the SLS XTRON 3000 mAh 2S1P pack (two cells in series, one string), off the board, bought at Stefansliposhop with sourcing rules 1, 2, 4 and 5 waived (owner, 2026-09-30); kept whatever a run returns (owner, 2026-10-02) | [Power](Power.md) |
 | Motor monitor | INA228 (owner, 2026-09-30), fixed without further research on the monitor and kept whatever a run returns (owner, 2026-10-02). Round 1's records read the INA238 | [Power](Power.md) |
 | External shunt sense input | INA228 (owner, 2026-09-30): one INA228 for each shunt path, the same part as the Motor monitor, kept whatever a run returns (owner, 2026-10-02) | [Power](Power.md) |
+| Port current monitor | INA3221AIRGVR, 7 for the 20 ports (owner, 2026-09-25), kept whatever a run returns (owner, 2026-10-03). Its Critical pin's hold with three channels enabled is not stated in the data sheet and is measured on the bench before the order | [Power](Power.md) |
 | accelerometer | ADXL316WBCSZ (owner, 2026-10-02), fixed without further research and kept whatever a run returns. Its datasheet states no figure for its delay drift between runs | [Sensing](Sensing.md) |
 | optical index | TCND5000 (owner, 2026-10-02), fixed without further research and kept whatever a run returns. Its datasheet states no detector response time | [Sensing](Sensing.md) |
 
@@ -108,7 +109,7 @@ Owner decisions of 2026-09-27, each applied where the last column says:
 | Questions a P1 critic adds | one more agent re-checks them before they reach the owner. T1 has 28 agents and the run 102 | [Agent layout](#agent-layout), S8 |
 | Lifecycle of Analog Devices, Melexis and Allegro parts | Digi-Key's product status, recorded as a distributor figure; for another maker's part too where its product page cannot be read or carries no status (owner, 2026-10-02). On 2026-09-27 the Analog Devices product pages carried no lifecycle status in the page body, and the host refused every request for a time after about 15. The Melexis pages refused every client tried. Allegro's pages load the status by script | [Lifecycle check](#lifecycle-check) |
 | RAMXEED | counts as Fujitsu | S1, R12 |
-| INA3221 | a seed of R8, which may replace it | [Fixed inputs](#scope), the Servo current row above, R8 |
+| INA3221 | a seed of R8 until round 2 (owner, 2026-09-27); since then INA3221AIRGVR is a fixed input the owner keeps whatever a run returns (owner, 2026-10-03) | [Fixed inputs](#scope), the Servo current row above, R8 |
 | Branches | `research/round1` and `research/round1-results` start from `main` after the pull requests that carry these decisions and the workflow scripts are merged | prerequisites 4 and 5 |
 | Workflow scripts | committed to `main` under `tools/research/` through a pull request that the automated reviewers and the owner review, with their schemas and the tool that writes and commits each task's returns | prerequisite 6 |
 | Start of T1 | on the owner's go, once prerequisites 4 to 6 are in place | status line |
