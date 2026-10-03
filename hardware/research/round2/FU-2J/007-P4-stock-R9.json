@@ -1,0 +1,391 @@
+{
+ "role": "P4",
+ "category": "R9",
+ "label": "P4-stock-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "Cell monitor",
+    "part": "ADBMS1818ASWAZ-RL",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 12500, canPresaleNumber 12494; gate 50 (S4: 5 x 5 = 25, never under 50; need 5 boards x 1 = 5); held 0",
+      "read": "stockCount 12500 >= 50; LCSC page inventoryLevel 12500 (In-Stock). Gate passes.",
+      "source": "vendors.py jlcpcb C5372802 (exact match, other_results 0), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList; https://www.lcsc.com/product-detail/C5372802.html HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:33:51Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 12494",
+      "read": "canPresaleNumber 12494, zero or above",
+      "source": "vendors.py jlcpcb C5372802, same API call",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:33:51Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Active (Digi-Key ProductStatus, Analog Devices)",
+      "read": "Active, read with maker Analog Devices Inc. from Digi-Key ProductStatus (product 505-ADBMS1818ASWAZ-RLCT-ND); discontinued false. The analog.com product page answered HTTP 403 (challenge, safari client) at 2026-10-03T11:34:02Z, so Digi-Key is the status for an Analog Devices part. Data sheet Rev. B ordering guide lists ADBMS1818ASWAZ-RL (Reel, 1500, SW-64-2) without an NRND or last-time-buy mark.",
+      "source": "vendors.py digikey ADBMS1818ASWAZ-RL, https://api.digikey.com/products/v4/search/ADBMS1818ASWAZ-RL/productdetails (cached answer of an earlier agent the same UTC day, returned 2026-10-03T11:33:54Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T10:50:31Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none; Digi-Key end_of_life false",
+      "read": "No end-of-life or last-time-buy notice found: Digi-Key end_of_life false, discontinued false, status Active; no notice in data sheet Rev. B. The ADI PCN listing was not read: analog.com HTTP 403 (challenge) at 2026-10-03T11:34:02Z; analog.com/en/product-change-notices.html HTTP 404 at 11:34:30Z.",
+      "source": "vendors.py digikey ADBMS1818ASWAZ-RL (cached, 10:50:31Z); vendors.py fetch --client safari https://www.analog.com/en/products/adbms1818.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:02Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 (not fixed by the specification; range 1 to 1: one 18-channel monitor reads the 16 cells of the one 17-pin connector, V192); gate applies at 1",
+      "read": "The specification fixes no count; IOBoard.md Cell monitor row names one part for the one balance-lead input; V192 gives 1 connector of 16 cells (17 pins); the ADBMS1818 has 18 channels, so one placement covers it. Top of range 1; candidate's count 1 >= 1.",
+      "source": "hardware/docs/IOBoard.md Cell monitor row (checkout 7e74cd442a79); Research.md V192; ADBMS1818 Rev. B p. 1 (https://www.analog.com/media/en/technical-documentation/data-sheets/adbms1818.pdf, HTTP 200, 6,027,563 bytes)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:17Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board; LCSC C5372802",
+      "read": "The specification places the cell monitor on the IO board (IOBoard.md Cell monitor row: 'part: ADBMS1818ASWAZ-RL (R9)'; Research.md row 'cell monitor pack-side supply' and V289 put its supply and barrier on the board). LCSC number C5372802 is C and digits: passes.",
+      "source": "hardware/docs/IOBoard.md Cell monitor row; Research.md Follow-ups table; vendors.py jlcpcb C5372802",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:33:51Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no commitment read; analog.com page 403",
+      "read": "not read: analog.com/en/products/adbms1818.html answered HTTP 403 (challenge, safari client) at 2026-10-03T11:34:02Z; no longevity programme page was reachable (analog.com/en/support/quality-and-reliability/product-longevity.html HTTP 404 at 11:34:31Z). S5 makes longevity a record, not a gate.",
+      "source": "vendors.py fetch --client safari https://www.analog.com/en/products/adbms1818.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:02Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "Rev. 0 undated, Rev. A 12/2021, Rev. B 9/2023: more than 12 months",
+      "read": "Revision history of Rev. B: 12/2021 Rev. 0 to Rev. A (Rev. 0 undated), 9/2023 Rev. A to Rev. B. Earliest dated revision 12/2021, about 58 months before 2026-10-03: not under 12 months.",
+      "source": "ADBMS1818 Rev. B revision history p. 2, https://www.analog.com/media/en/technical-documentation/data-sheets/adbms1818.pdf, vendors.py fetch --client safari, HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:17Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB in stock 12500; Digi-Key Active; no disagreement",
+      "read": "JLCPCB in stock 12500 (componentLibraryType expand); LCSC In-Stock 12,500, no discontinued flag on the page; Digi-Key Active. No disagreement with the maker status.",
+      "source": "vendors.py jlcpcb C5372802; https://www.lcsc.com/product-detail/C5372802.html HTTP 200; vendors.py digikey ADBMS1818ASWAZ-RL",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:42Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 38 weeks",
+      "read": "lead_weeks 38",
+      "source": "vendors.py digikey ADBMS1818ASWAZ-RL, https://api.digikey.com/products/v4/search/ADBMS1818ASWAZ-RL/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T10:50:31Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C5372802 is ADBMS1818ASWAZ-RL, JLCPCB 'LQFP-64-EP(10x10)'",
+      "read": "Exact JLCPCB result for C5372802: part ADBMS1818ASWAZ-RL, package LQFP-64-EP(10x10), maker_label Analog Devices, other_results 0. Data sheet ordering guide: ADBMS1818ASWAZ-RL, SW-64-2, LQFP with thermal pad, reel of 1500: same part number and package.",
+      "source": "vendors.py jlcpcb C5372802; ADBMS1818 Rev. B ordering guide p. 92",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:33:51Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C5372802, selectSmtComponentList",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:33:51Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 534 >= gate 50",
+      "read": "Digi-Key stock_available 534 (cut tape 534, Digi-Reel 534, tape and reel 0), maker Analog Devices Inc. >= 50. Passes the rule-4 gate at the second vendor.",
+      "source": "vendors.py digikey ADBMS1818ASWAZ-RL, https://api.digikey.com/products/v4/search/ADBMS1818ASWAZ-RL/productdetails (cached answer, returned 2026-10-03T11:33:54Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T10:50:31Z"
+     }
+    ]
+   },
+   {
+    "function": "cell monitor isolation barrier",
+    "part": "ISO7741DWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 5102, canPresaleNumber 4890; gate 50; held 0",
+      "read": "stockCount 5102 >= 50; LCSC page inventoryLevel 5102 (In-Stock). Gate passes.",
+      "source": "vendors.py jlcpcb C571196 (exact match, other_results 0), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList; https://www.lcsc.com/product-detail/C571196.html HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:33:53Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 4890",
+      "read": "canPresaleNumber 4890, zero or above",
+      "source": "vendors.py jlcpcb C571196, same API call",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:33:53Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (TI product page meta status)",
+      "read": "https://www.ti.com/product/ISO7741 carries <meta name=\"status\" content=\"ACTIVE\" />, HTTP 200, 376,504 bytes, no challenge. SLLSEP4K orderable table lists ISO7741DWR Active, Production (SOIC DW 16, 2000 large T&R). Digi-Key ProductStatus Active (Texas Instruments).",
+      "source": "vendors.py fetch --out https://www.ti.com/product/ISO7741; SLLSEP4K https://www.ti.com/lit/ds/symlink/iso7741.pdf HTTP 200, 2,398,713 bytes",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:10Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none found; PCN listing not public on the product page",
+      "read": "No end-of-life or last-time-buy notice found: TI page status ACTIVE, orderable table Active/Production, Digi-Key end_of_life false and discontinued false. TI's PCN listing is not on the product page and was not read.",
+      "source": "https://www.ti.com/product/ISO7741 (11:34:10Z); vendors.py digikey ISO7741DWR (cached, 10:50:36Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:10Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 (not fixed by the specification; range 1 to 1: one 3-forward, 1-reverse isolator carries the 4 lines of Pins.md:105-112)",
+      "read": "The specification fixes no count; Pins.md:105-112 lists 4 lines (SPI1_SCLK GPIO 10, SPI1_TX GPIO 11, cell monitor CS GPIO 15 forward; SPI1_RX GPIO 8 reverse); ISO7741 has 3 forward and 1 reverse channel, so one placement carries all four. Top of range 1; count 1 >= 1.",
+      "source": "hardware/docs/Pins.md:105-112 (checkout 7e74cd442a79); SLLSEP4K section 4, https://www.ti.com/lit/ds/symlink/iso7741.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:17Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board; LCSC C571196",
+      "read": "IOBoard.md Cell monitor isolation row puts the barrier on the board between the ESC pack negative and the measurement coprocessor's SPI1 (V189, V289); LCSC number C571196 is C and digits: passes.",
+      "source": "hardware/docs/IOBoard.md Cell monitor isolation row; Research.md Follow-ups row 'cell monitor isolation barrier (new)'; vendors.py jlcpcb C571196",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:33:53Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no part-specific commitment published",
+      "read": "No part-specific commitment on the ISO7741 product page. TI's programme page states a general policy only: 'inventory and manufacturing strategies in place to allow us to offer products that exist for a decade or more'; no ISO7741 term or date. Recorded; not a gate under S5.",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html HTTP 200, 18,941 bytes; https://www.ti.com/product/ISO7741",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:37Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet March 2016: more than 12 months",
+      "read": "SLLSEP4K header 'MARCH 2016 - REVISED AUGUST 2026': first data sheet March 2016, about 127 months before 2026-10-03: not under 12 months.",
+      "source": "SLLSEP4K p. 1, https://www.ti.com/lit/ds/symlink/iso7741.pdf, HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:17Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB in stock; no disagreement",
+      "read": "JLCPCB in stock 5102; LCSC In-Stock 5,102; Digi-Key Active; TI page ACTIVE. No disagreement.",
+      "source": "vendors.py jlcpcb C571196; https://www.lcsc.com/product-detail/C571196.html HTTP 200; vendors.py digikey ISO7741DWR; https://www.ti.com/product/ISO7741",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:42Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 20 weeks",
+      "read": "lead_weeks 20",
+      "source": "vendors.py digikey ISO7741DWR, https://api.digikey.com/products/v4/search/ISO7741DWR/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T10:50:36Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C571196 is ISO7741DWR, JLCPCB 'SOIC-16-300mil'",
+      "read": "Exact JLCPCB result for C571196: part ISO7741DWR, package SOIC-16-300mil, maker_label Texas Instruments, other_results 0. SLLSEP4K lists ISO7741DWR in SOIC (DW) 16: same part number and package.",
+      "source": "vendors.py jlcpcb C571196; SLLSEP4K orderable table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:33:53Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C571196, selectSmtComponentList",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:33:53Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 4817 >= gate 50",
+      "read": "Digi-Key stock_available 4817 (cut tape 4817, Digi-Reel 4817, tape and reel 4000), maker Texas Instruments >= 50. Passes.",
+      "source": "vendors.py digikey ISO7741DWR, https://api.digikey.com/products/v4/search/ISO7741DWR/productdetails (cached answer, returned 2026-10-03T11:33:54Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T10:50:36Z"
+     }
+    ]
+   },
+   {
+    "function": "cell monitor pack-side supply",
+    "part": "LTM8068EY#PBF",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 135, canPresaleNumber 135; gate 50; held 0",
+      "read": "stockCount 135 >= 50 (2.7 times the gate); LCSC page inventoryLevel 135 (In-Stock). Gate passes.",
+      "source": "vendors.py jlcpcb C581210 (exact match, other_results 0), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList; https://www.lcsc.com/product-detail/C581210.html HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:33:54Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 135",
+      "read": "canPresaleNumber 135, zero or above",
+      "source": "vendors.py jlcpcb C581210, same API call",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:33:54Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Active (Digi-Key ProductStatus, Analog Devices)",
+      "read": "Active, read with maker Analog Devices Inc. from Digi-Key ProductStatus (product LTM8068EY#PBF-ND, Tray); discontinued false. analog.com/en/products/ltm8068.html answered HTTP 403 (challenge, safari client) at 2026-10-03T11:34:03Z, so Digi-Key is the status for this Analog Devices (Linear) part.",
+      "source": "vendors.py digikey 'LTM8068EY#PBF', https://api.digikey.com/products/v4/search/LTM8068EY%23PBF/productdetails (cached answer, returned 2026-10-03T11:33:54Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T10:50:41Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none; Digi-Key end_of_life false",
+      "read": "No end-of-life or last-time-buy notice found: Digi-Key end_of_life false, discontinued false, status Active; no notice in LTM8068 Rev. D. The ADI PCN listing was not read (analog.com HTTP 403 challenge at 11:34:03Z; the PCN index URL tried returned 404).",
+      "source": "vendors.py digikey 'LTM8068EY#PBF' (cached, 10:50:41Z); vendors.py fetch --client safari https://www.analog.com/en/products/ltm8068.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:03Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 (not fixed by the specification; range 1 to 1: one module gives both pack-side rails for the one monitor, V289)",
+      "read": "The specification fixes no count; V289 asks for one always-on pack-side supply referenced to the ESC pack negative; LTM8068 has two isolated outputs, VOUT1 and VOUT2, so one placement gives the 5 V and the V+ rail. Top of range 1; count 1 >= 1.",
+      "source": "Research.md V289 and Follow-ups row 'cell monitor pack-side supply (new)'; LTM8068 Rev. D p. 1-2, https://www.analog.com/media/en/technical-documentation/data-sheets/ltm8068.pdf, HTTP 200, 1,648,549 bytes",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:18Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board; LCSC C581210",
+      "read": "Research.md Follow-ups row puts the pack-side supply on the IO board (an always-on supply referenced to the ESC pack negative, crossing the barrier from a board rail); LCSC number C581210 is C and digits: passes.",
+      "source": "hardware/docs/Research.md Follow-ups row 'cell monitor pack-side supply (new)'; V289; vendors.py jlcpcb C581210",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:33:54Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read: analog.com product host 403",
+      "read": "not read: analog.com/en/products/ltm8068.html answered HTTP 403 (challenge, safari client) at 2026-10-03T11:34:03Z; no longevity programme page was reachable (analog.com longevity URL tried returned HTTP 404 at 11:34:31Z). S5 makes longevity a record, not a gate.",
+      "source": "vendors.py fetch --client safari https://www.analog.com/en/products/ltm8068.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:03Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "Rev. 0 undated, Rev. A 05/16: more than 12 months",
+      "read": "Revision history of Rev. D: A 05/16, B 07/17, C 11/20, D 11/25; Rev. 0 precedes A and is undated. Earliest dated revision 05/16, about 125 months before 2026-10-03: not under 12 months.",
+      "source": "LTM8068 Rev. D revision history, https://www.analog.com/media/en/technical-documentation/data-sheets/ltm8068.pdf, vendors.py fetch --client safari, HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:18Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "JLCPCB in stock 135; Digi-Key Active; no disagreement",
+      "read": "JLCPCB in stock 135; LCSC In-Stock 135; Digi-Key Active. No disagreement.",
+      "source": "vendors.py jlcpcb C581210; https://www.lcsc.com/product-detail/C581210.html HTTP 200; vendors.py digikey 'LTM8068EY#PBF'",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:34:43Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 47 weeks",
+      "read": "lead_weeks 47",
+      "source": "vendors.py digikey 'LTM8068EY#PBF', https://api.digikey.com/products/v4/search/LTM8068EY%23PBF/productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T10:50:41Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C581210 is LTM8068EY#PBF, JLCPCB 'BGA-38'",
+      "read": "Exact JLCPCB result for C581210: part LTM8068EY#PBF, package BGA-38, maker_label Analog Devices, other_results 0. LTM8068 Rev. D lists LTM8068EY#PBF (SAC305, BGA, 38-pin 11.25 x 9 x 4.92 mm): same part number and package.",
+      "source": "vendors.py jlcpcb C581210; LTM8068 Rev. D order information and package pages",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:33:54Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand; S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C581210, selectSmtComponentList",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T11:33:54Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 481 >= gate 50",
+      "read": "Digi-Key stock_available 481 (Tray), maker Analog Devices Inc. >= 50. Passes. The pin-compatible LTM8068IY#PBF is not part of this check.",
+      "source": "vendors.py digikey 'LTM8068EY#PBF', https://api.digikey.com/products/v4/search/LTM8068EY%23PBF/productdetails (cached answer, returned 2026-10-03T11:33:54Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T10:50:41Z"
+     }
+    ]
+   }
+  ]
+ }
+}

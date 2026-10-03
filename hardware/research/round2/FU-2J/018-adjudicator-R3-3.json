@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R3",
+ "label": "adjudicator-R3-3",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "function": "function requirements: onboard pack switch MOSFETs",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The requirement list for the onboard pack switch MOSFETs is incomplete because it has no opening-time entry. Three sources require one. IOBoard.md line 219 (ESC pack gate, onboard 150 A path) asks for \"a high-side switch with the servo rail gate's opening time\". Line 218 sets that time: \"open within 5 ms of the enable node falling\". Research.md, row R3, qualifies the array's MOSFETs for \"that voltage, the current of F2, safe operating area during turn-off, the 5 ms budget, and current sharing and heat across the array\". Monostable.md@23c82ca line 113 gives \"Power switch open after the enable node falls: 5 ms, budget for the driver and the switch\". The list has 11 entries: V34, continuous current, V48, turn-off voltage, SOA, V49, V47, V40, fail-open, gate-source and V270. None of them is the 5 ms opening time. FU-2A's P2 and re-rank lists for this same function did carry it (\"the array open within 5 ms of the enable falling, driver and switch together\"). The figure does not state what the function requires. The ruling is about the function's requirement list, not about the part. The verifier reads the part's td(off) as 85 ns and tf as 30 ns, plus the driver's 3 us, which meets 5 ms. Nothing here fails a part in another function.",
+  "evidence": "IOBoard.md@7e74cd4:219: \"ESC pack gate, onboard 150 A path | a MOSFET array and its driver on the IO board (F7). A high-side switch with the servo rail gate's opening time, fail-open rule and leakage limit.\" IOBoard.md@7e74cd4:218: Servo rail gate \"open within 5 ms of the enable node falling\". Research.md@7e74cd4 R3 row: \"its MOSFETs are qualified for that voltage, the current of F2, safe operating area during turn-off, the 5 ms budget, and current sharing and heat across the array\". Monostable.md@23c82ca:113: \"Power switch open after the enable node falls | 5 ms | budget for the driver and the switch\". FU-2A/012-P2-R3.json and FU-2A/017-rerank-R3.json list \"opening time: the array open within 5 ms of the enable falling, driver and switch together\" for this function. The list under refutation has no opening-time entry.",
+  "source": "hardware/docs/IOBoard.md lines 218-219 and hardware/docs/Research.md row R3, both in checkout 7e74cd442a79; hardware/docs/Monostable.md line 113 at 23c82ca (/home/claude/rcbench-research/round2/monostable-23c82ca); results/hardware/research/round2/FU-2A/012-P2-R3.json and 017-rerank-R3.json",
+  "read_at": "2026-10-03T12:22:02Z",
+  "scope": "function"
+ }
+}

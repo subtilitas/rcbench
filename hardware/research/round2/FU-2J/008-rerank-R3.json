@@ -1,0 +1,1569 @@
+{
+ "role": "rerank",
+ "category": "R3",
+ "label": "rerank-R3",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "functions": [
+   {
+    "function": "monostable",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "74HC423BQ,115",
+      "reason": "selection.json's part and the owner's Q9 part (2026-09-29): the '423 behaviour is stated in a sentence (section 1) and in Table 3; JLCPCB 227 and Digi-Key 2148 pass the gate of 50 (P2 readings of 2026-10-03T10:46:00Z and 10:57:24Z)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "74HC4538PW,118",
+      "reason": "the only other family whose datasheet carries the K temperature graph (Fig. 17) and a stated nREXT/CEXT leakage, so its window terms are stated; the clear release is not drawn as a trigger anywhere (Table 3 has no nCD-rising row, Fig. 8 shows no output edge) but no sentence says so, so it ranks below the '423 part; JLCPCB 8948 and Digi-Key 4779 (P3 overturns P2's drop: the page says 'stated in the datasheet', not 'in words'; FU-2A's re-rank ranked it the same way)",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "74HC4538PW-Q100,118",
+      "reason": "the automotive orderable of rank 2 with its own datasheet (74HC4538_Q100 Rev. 5) and the same tables; the second-vendor route fails (Digi-Key lists it as 74HC4538PW-Q100,11 with stock 0), so its second source is rank 2",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "CD74HC4538PWR",
+      "reason": "TI's TSSOP-16 part with the same pin function and the same table-only evidence on clear release; its datasheet states no K against temperature and plots K against supply and CX only up to 0.1 uF, so the window rests on the owner's V36 assumption; JLCPCB 934, Digi-Key 7021",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "74HC4538PW,118",
+      "maker": "Nexperia (S1)",
+      "lcsc": "C547076",
+      "package": "TSSOP16 (SOT403-1), body 4.4 mm: 1 1CEXT, 2 1REXT/CEXT, 3 1CD, 4 1B (LOW to HIGH triggered), 5 1A (HIGH to LOW triggered), 6 1Q, 7 1Q-bar, 8 GND, 9 2Q-bar, 10 2Q, 11 2A, 12 2B, 13 2CD, 14 2REXT/CEXT, 15 2CEXT, 16 VCC",
+      "placements": 1,
+      "placements_basis": "fixed: one dual part for the single-channel OR design (IOBoard.md, Monostable topology)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "'423 behaviour stated",
+        "required": "the clear release does not trigger, stated in the datasheet; a part whose clear release fires a pulse is excluded",
+        "datasheet": "no sentence on clear release; section 1 says only 'A LOW level at nCD terminates the output pulse immediately'. Table 3 lists the pulse-producing inputs: nA falling with nB LOW and nB rising with nA HIGH, both with nCD HIGH, and nCD LOW giving nQ LOW; it has no nCD-rising row. Fig. 8 draws no output edge at the nCD rise; Table 7 gives a recovery time nCD to nA, nB (2 ns typ, 45 ns max at 2.0 V, -40 to 85 degC). Stated by the table, not by a sentence: ranks below the 74HC423 on this point",
+        "pass": true,
+        "source": "Nexperia 74HC4538 Rev. 7, section 1, Table 3, Fig. 8 (page 8, rendered 2026-10-03T11:37:28Z), Table 7; Monostable.md@23c82ca:229-236; FU-2A/017-rerank-R3.json (same reading)"
+       },
+       {
+        "name": "dual retriggerable, one half per edge polarity",
+        "required": "two retriggerable halves in one package, each with a rising-edge and a falling-edge trigger input",
+        "datasheet": "dual retriggerable-resettable; each half has nA (HIGH to LOW triggered) and nB (LOW to HIGH triggered). The spare input of each half sits at the other level than on a '423 (nA falling needs nB LOW, nB rising needs nA HIGH), taken from Table 3 when the wiring is checked",
+        "pass": true,
+        "source": "Nexperia 74HC4538 Rev. 7, section 1, Tables 2 and 3"
+       },
+       {
+        "name": "supply",
+        "required": "3.201 V to 3.399 V inside the operating range",
+        "datasheet": "VCC 2.0 V to 6.0 V",
+        "pass": true,
+        "source": "Rev. 7, Table 5"
+       },
+       {
+        "name": "minimum supply",
+        "required": "operating supply minimum below 3.046 V",
+        "datasheet": "2.0 V",
+        "pass": true,
+        "source": "Rev. 7, Table 5"
+       },
+       {
+        "name": "trigger input isolation",
+        "required": "I_off on the trigger inputs and the 4.7 kOhm series resistor; without I_off the SN74AUP1G17DBVR goes in front (Q9)",
+        "datasheet": "no I_off: 'Inputs include clamp diodes'; meets it on the Q9 route with the SN74AUP1G17DBVR in front",
+        "pass": true,
+        "source": "Rev. 7, section 1; Q9 Decision"
+       },
+       {
+        "name": "Q low while clear is active",
+        "required": "stated in the datasheet",
+        "datasheet": "Table 3: nCD LOW gives nQ LOW and nQ-bar HIGH whatever nA and nB",
+        "pass": true,
+        "source": "Rev. 7, Table 3"
+       },
+       {
+        "name": "timing resistor range",
+        "required": "R 50 kOhm to 150 kOhm inside the permitted REXT range",
+        "datasheet": "REXT 10 kOhm min at VCC 2.0 V, 2 kOhm min at 5.0 V, 1000 kOhm max",
+        "pass": true,
+        "source": "Rev. 7, Table 7"
+       },
+       {
+        "name": "timing capacitor range",
+        "required": "the C that puts 170 ms inside R 50 to 150 kOhm inside the permitted CEXT range",
+        "datasheet": "CEXT 'no limits'; TW = 0.7 x REXT x CEXT: 170 ms needs 4.86 uF at 50 kOhm to 1.62 uF at 150 kOhm (derived); Fig. 13 plots K for CEXT up to 100 uF",
+        "pass": true,
+        "source": "Rev. 7, Table 7, section 1, Fig. 13"
+       },
+       {
+        "name": "timing constant k drift (V36)",
+        "required": "owner: not known, +/-3 % kept as an assumption; a term the datasheet states is read, not estimated",
+        "datasheet": "K = 0.70. Supply: Fig. 15 (CEXT 100 nF, 25 degC) shows K flat between 3.2 and 3.4 V, about 0.30 % (FU-2A's 600 dpi reading, not re-measured). Temperature: Fig. 17 (CEXT 1 uF, VCC 4.5 V) K normalized 1.019, 1.026, 1.033 (5.6 kOhm) at -25, 25, 75 degC and 1.003, 1.008, 1.015 (1 MOhm): +/-0.34 % over 0 to 50 degC (FU-2A's reading); section 1: 'typical pulse width variation over temperature range is +/-0.2 %'. All typical curves at other CEXT and VCC, not limits",
+        "pass": true,
+        "source": "Rev. 7, Figs. 15 and 17 (pages 11 and 12 rendered at 110 dpi 2026-10-03T11:44Z), section 1; FU-2A/017-rerank-R3.json; V36 Answer"
+       },
+       {
+        "name": "timing-pin leakage at 50 degC (V37)",
+        "required": "the 25 degC leakage doubled every 10 degC: 0.57 uA (found, for the '423)",
+        "datasheet": "II on pin nREXT/CEXT +/-50 nA at 25 degC, +/-500 nA at -40 to 85 degC (VCC 6.0 V): 50 nA doubled 2.5 times = 0.283 uA at 50 degC; at 110.4 kOhm that is 31.2 mV of 3.3 V, 0.95 %",
+        "pass": true,
+        "source": "Rev. 7, Table 6 (II, pin nREXT/CEXT); derived"
+       },
+       {
+        "name": "window at every corner",
+        "required": "155 ms to 185 ms after the last edge at every corner of 0 to 50 degC and 3.3 V +/-3 %, set to 170 ms on test",
+        "datasheet": "terms: setting 1.5 %, R 0.25 %, C 0.5 % (Monostable.md worked values), K supply 0.30 %, K temperature 0.34 %, leakage 0.95 %: sum 3.84 %, 163.5 to 176.5 ms on 170 ms (C 2.2 uF, R 110.4 kOhm; derived). With the owner's +/-3 % in place of the 0.34 %: 6.50 %, 158.95 to 181.05 ms. Both inside 155 to 185 ms",
+        "pass": true,
+        "source": "Rev. 7, Figs. 15 and 17, Table 6; Monostable.md@23c82ca:296-337; V36 Answer; derived"
+       },
+       {
+        "name": "input transition rate",
+        "required": "the trigger edges, driven by the Q9 buffer, inside the input's rise and fall rate limit",
+        "datasheet": "625 ns/V at 2.0 V, 139 ns/V at 4.5 V, 83 ns/V at 6.0 V; Schmitt-trigger action on the trigger inputs; the AUP buffer's edges are nanoseconds",
+        "pass": true,
+        "source": "Rev. 7, Table 5, section 1; SN74AUP1G17 SCES579J"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC (V270)",
+        "datasheet": "Tamb -40 to +125 degC",
+        "pass": true,
+        "source": "Rev. 7, Table 5"
+       }
+      ],
+      "jlcpcb": "C547076 74HC4538PW,118 (Nexperia, TSSOP-16) stockCount 8948, canPresaleNumber 8946, expand, USD 0.3748 at 1+ (need 5); read 2026-10-03T11:42:25Z, vendors.py jlcpcb C547076 (selectSmtComponentList, exact LCSC match)",
+      "digikey": "74HC4538PW,118: Nexperia USA Inc. row Active, stock_available 4779, lead 20 weeks; an NXP USA Inc. row 'Discontinued at DigiKey', 0; cached reading of 2026-10-03T11:24:17Z (a P3 agent's, counts as this task's), vendors.py digikey 74HC4538PW,118 (keyword search, duplicate)",
+      "gate": "need 5 boards x 1 = 5; threshold 50 (S4: 5 x 5, never under 50); JLCPCB 8948 and presale 8946: pass (rule 4)",
+      "lifecycle": "Production in the body of https://www.nexperia.com/product/74HC4538PW (2026-10-03T11:43:27Z): pass; longevity: no part commitment read; first datasheet 74HC_HCT4538_CNV v.2, 1997-09-02 (revision history of Rev. 7); notices: no PCN listing read; distributor: Digi-Key Nexperia row Active, JLCPCB listed with stock",
+      "second_source": "second vendor: Digi-Key Nexperia row 4779 at or above 50 (cached 2026-10-03T11:24:17Z)",
+      "alternates": [
+       "CD74HC4538PWR (Texas Instruments, TSSOP-16, same pin positions with the trigger names swapped; rank 4)",
+       "74HC4538PW-Q100,118 (automotive orderable, same land and pins; rank 3)"
+      ],
+      "driver_in_shared": "none (grep of shared/ and firmware/ at 7e74cd442a79 for the part number, 2026-10-03T11:46:34Z)",
+      "reason": "same dual retriggerable class as rank 1 with the K temperature graph and the nREXT/CEXT leakage stated, so the window sum is 3.84 % against 4.92 % for rank 1 with its temperature term unstated; clear release stated by the function table only; takes the SN74AUP1G17DBVR in front of its trigger inputs like rank 1",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "74HC4538PW,118"
+     },
+     {
+      "rank": 3,
+      "part": "74HC4538PW-Q100,118",
+      "maker": "Nexperia (S1)",
+      "lcsc": "C3241572",
+      "package": "TSSOP16 (SOT403-1), body 4.4 mm, pin function as 74HC4538PW,118",
+      "placements": 1,
+      "placements_basis": "fixed: one dual part for the single-channel OR design",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "'423 behaviour stated",
+        "required": "the clear release does not trigger, stated in the datasheet",
+        "datasheet": "as the 74HC4538 datasheet: Table 3 of the -Q100 sheet (Rev. 5, 26 March 2024) has the same two pulse rows and the nCD LOW row, no nCD-rising row, no sentence on clear release; Fig. 8 and trec as in the base sheet. Stated by the table only",
+        "pass": true,
+        "source": "Nexperia 74HC4538-Q100 Rev. 5, section 1, Table 3, Fig. 8, Table 7 (fetched 2026-10-03T11:42:37Z)"
+       },
+       {
+        "name": "dual retriggerable, one half per edge polarity",
+        "required": "two retriggerable halves, each with a rising-edge and a falling-edge trigger input",
+        "datasheet": "same pin description as the base part: nA HIGH to LOW triggered, nB LOW to HIGH triggered",
+        "pass": true,
+        "source": "Rev. 5, Table 2"
+       },
+       {
+        "name": "supply",
+        "required": "3.201 V to 3.399 V",
+        "datasheet": "VCC 2.0 V to 6.0 V",
+        "pass": true,
+        "source": "Rev. 5, Table 5"
+       },
+       {
+        "name": "minimum supply",
+        "required": "below 3.046 V",
+        "datasheet": "2.0 V",
+        "pass": true,
+        "source": "Rev. 5, Table 5"
+       },
+       {
+        "name": "trigger input isolation",
+        "required": "I_off, or the Q9 buffer in front plus 4.7 kOhm",
+        "datasheet": "'Inputs include clamp diodes': no I_off; the SN74AUP1G17DBVR goes in front (Q9)",
+        "pass": true,
+        "source": "Rev. 5, section 1; Q9 Decision"
+       },
+       {
+        "name": "Q low while clear is active",
+        "required": "stated",
+        "datasheet": "Table 3: nCD LOW gives nQ LOW, nQ-bar HIGH",
+        "pass": true,
+        "source": "Rev. 5, Table 3"
+       },
+       {
+        "name": "timing resistor range",
+        "required": "50 to 150 kOhm inside the range",
+        "datasheet": "REXT 10 kOhm min at 2.0 V, 2 kOhm min at 5.0 V, 1000 kOhm max",
+        "pass": true,
+        "source": "Rev. 5, Table 7"
+       },
+       {
+        "name": "timing capacitor range",
+        "required": "1.62 to 4.86 uF inside the range",
+        "datasheet": "CEXT no limits; TW = 0.7 x REXT x CEXT",
+        "pass": true,
+        "source": "Rev. 5, Table 7"
+       },
+       {
+        "name": "timing constant k drift (V36)",
+        "required": "owner: not known, +/-3 % kept as an assumption",
+        "datasheet": "same figures as the base sheet (section 1 +/-0.2 % typical over temperature; the K graphs are not re-read for the -Q100 sheet); the owner's +/-3 % fits as for rank 2",
+        "pass": true,
+        "source": "Rev. 5, section 1; V36 Answer"
+       },
+       {
+        "name": "timing-pin leakage at 50 degC (V37)",
+        "required": "25 degC leakage doubled every 10 degC",
+        "datasheet": "II on nREXT/CEXT: the Rev. 5 revision history records the 2017 change of this maximum; Table 6 value not re-read here, so 0.283 uA (base sheet) is carried; the window fits at 3 uA of the same pin only if R stays at or under 110 kOhm: reported, not re-measured",
+        "pass": true,
+        "source": "Rev. 5, revision history (v.3, 2017-03-17); 74HC4538 Rev. 7 Table 6"
+       },
+       {
+        "name": "window at every corner",
+        "required": "155 ms to 185 ms at every corner",
+        "datasheet": "6.50 % with the owner's +/-3 % (158.95 to 181.05 ms), as rank 2",
+        "pass": true,
+        "source": "derived; Monostable.md@23c82ca:296-337"
+       },
+       {
+        "name": "input transition rate",
+        "required": "inside the limit",
+        "datasheet": "as the base sheet: 625 ns/V at 2.0 V, 139 ns/V at 4.5 V; nanosecond buffer edges",
+        "pass": true,
+        "source": "Rev. 5, Table 5"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC",
+        "datasheet": "Tamb -40 to +125 degC (AEC-Q100 grade 1)",
+        "pass": true,
+        "source": "Rev. 5, section 2, Table 5"
+       }
+      ],
+      "jlcpcb": "C3241572 74HC4538PW-Q100118 (Nexperia, TSSOP-16) stockCount 2314, canPresaleNumber 2314, expand, USD 0.4504 at 1+ (need 5); read 2026-10-03T11:42:25Z, vendors.py jlcpcb C3241572",
+      "digikey": "74HC4538PW-Q100,118: not found (HTTP 404, 2026-10-03T11:42:27Z, vendors.py digikey 74HC4538PW-Q100,118); a keyword search for 74HC4538PW-Q100 lists one product, 74HC4538PW-Q100,11, Nexperia USA Inc., Active, stock_available 0, lead 22 weeks (2026-10-03T11:42:36Z, vendors.py digikey-search)",
+      "gate": "need 5; threshold 50; JLCPCB 2314 and presale 2314: pass (rule 4)",
+      "lifecycle": "Production in the body of https://www.nexperia.com/product/74HC4538PW-Q100 (2026-10-03T11:42:36Z): pass; longevity: none read; first datasheet 74HC_HCT4538_Q100 v.1, 2012-08-02 (Rev. 5 revision history); notices: none read; distributor: Digi-Key lists the -Q100,11 orderable Active with 0 stock",
+      "second_source": "alternate: 74HC4538PW,118 (rank 2, full record in this return; same SOT403-1 land and pin positions, same circuit) passes rules 1 to 4; the second-vendor route fails (Digi-Key 0)",
+      "alternates": [
+       "74HC4538PW,118 (rank 2)"
+      ],
+      "driver_in_shared": "none (grep of shared/ and firmware/ at 7e74cd442a79, 2026-10-03T11:46:34Z)",
+      "reason": "same die and tables as rank 2 on its own datasheet (P2 called it the same datasheet; it is a separate file, Rev. 5); no second vendor with stock, and it adds no evidence beyond rank 2",
+      "second_source_route": "alternate",
+      "second_source_part": "74HC4538PW,118",
+      "p3_part": "74HC4538PW-Q100,118"
+     },
+     {
+      "rank": 4,
+      "part": "CD74HC4538PWR",
+      "maker": "Texas Instruments (S1)",
+      "lcsc": "C354056",
+      "package": "TSSOP-16 (PW): 1 1CX, 2 1RXCX, 3 1R, 4 1A, 5 1B, 6 1Q, 7 1Q-bar, 8 GND, 9 2Q-bar, 10 2Q, 11 2B, 12 2A, 13 2R, 14 2RXCX, 15 2CX, 16 VCC; TI's 1A (pin 4) is the rising-edge input and 1B (pin 5) the falling-edge input, the reverse of Nexperia's names on the same pins",
+      "placements": 1,
+      "placements_basis": "fixed: one dual part for the single-channel OR design",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "'423 behaviour stated",
+        "required": "the clear release does not trigger, stated in the datasheet",
+        "datasheet": "no sentence on clear release; the truth table lists R L giving Q L and pulse rows only for A and B edges with R H (R H, A L, B falling; R H, A rising, B H), no R-rising row; 'On power up the IC is reset'. Stated by the table only",
+        "pass": true,
+        "source": "TI SCHS123E (October 2003), description and truth table (fetched 2026-10-03T11:37:28Z)"
+       },
+       {
+        "name": "dual retriggerable, one half per edge polarity",
+        "required": "two retriggerable halves with a rising-edge and a falling-edge trigger input",
+        "datasheet": "dual retriggerable/resettable; leading-edge (A) and trailing-edge (B) trigger inputs on each half; retriggers on each new trigger pulse",
+        "pass": true,
+        "source": "SCHS123E, description, functional terminal connections"
+       },
+       {
+        "name": "supply",
+        "required": "3.201 V to 3.399 V",
+        "datasheet": "HC types 2 V to 6 V",
+        "pass": true,
+        "source": "SCHS123E, operating conditions"
+       },
+       {
+        "name": "minimum supply",
+        "required": "below 3.046 V",
+        "datasheet": "2 V",
+        "pass": true,
+        "source": "SCHS123E, operating conditions"
+       },
+       {
+        "name": "trigger input isolation",
+        "required": "I_off, or the Q9 buffer in front plus 4.7 kOhm",
+        "datasheet": "no I_off stated; the SN74AUP1G17DBVR goes in front (Q9)",
+        "pass": true,
+        "source": "SCHS123E, DC specifications; Q9 Decision"
+       },
+       {
+        "name": "Q low while clear is active",
+        "required": "stated",
+        "datasheet": "truth table: R L gives Q L, Q-bar H whatever A and B",
+        "pass": true,
+        "source": "SCHS123E, truth table"
+       },
+       {
+        "name": "timing resistor range",
+        "required": "50 to 150 kOhm inside the range",
+        "datasheet": "RX min 5 kOhm; no maximum stated (note 4: the maximum depends on leakage; noise susceptibility for RX over 1 MOhm)",
+        "pass": true,
+        "source": "SCHS123E, operating conditions and note 4"
+       },
+       {
+        "name": "timing capacitor range",
+        "required": "the C that puts 170 ms inside R 50 to 150 kOhm inside the range",
+        "datasheet": "CX min 0, no maximum stated; tau = 0.7 x RX x CX; Fig. 10 (VCC 5 V) plots K only up to 100 nF",
+        "pass": true,
+        "source": "SCHS123E, operating conditions, Fig. 10"
+       },
+       {
+        "name": "timing constant k drift (V36)",
+        "required": "owner: not known, +/-3 % kept as an assumption",
+        "datasheet": "no K against temperature; K against supply only at CX 10 nF and 100 nF, 25 degC (Fig. 8, read at 130 dpi): at most 0.3 % between 3.2 and 3.4 V; output pulse width tested at 3 V and 5 V with RX 10 kOhm, CX 0.1 uF only (0.64 to 0.78 ms at 3 V, 25 degC). Supply term stated at CX up to 0.1 uF, temperature term not stated: the owner's +/-3 % applies",
+        "pass": true,
+        "source": "SCHS123E, switching specifications, Figs. 8 and 10; V36 Answer"
+       },
+       {
+        "name": "timing-pin leakage at 50 degC (V37)",
+        "required": "25 degC leakage doubled every 10 degC",
+        "datasheet": "input leakage RXCX +/-0.05 uA at 25 degC, +/-0.5 uA at -40 to 85 degC (VCC 6 V): doubled to 0.283 uA at 50 degC; 31.2 mV of 3.3 V at 110.4 kOhm, 0.95 %",
+        "pass": true,
+        "source": "SCHS123E, DC electrical specifications; derived"
+       },
+       {
+        "name": "window at every corner",
+        "required": "155 ms to 185 ms at every corner",
+        "datasheet": "setting 1.5 %, R 0.25 %, C 0.5 %, K supply 0.3 %, K temperature 3 % (owner's assumption, not stated), leakage 0.95 %: 6.50 %, 158.95 to 181.05 ms at 170 ms (derived); passes on the assumption, not on stated terms",
+        "pass": true,
+        "source": "SCHS123E; Monostable.md@23c82ca:296-337; V36 Answer; derived"
+       },
+       {
+        "name": "input transition rate",
+        "required": "trigger edges inside the input's rise and fall limit",
+        "datasheet": "trigger inputs A and B: unlimited rise and fall time at 2, 4.5 and 6 V; reset input 1000 ns at 2 V, 500 ns at 4.5 V, 400 ns at 6 V maximum",
+        "pass": true,
+        "source": "SCHS123E, operating conditions"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC",
+        "datasheet": "TA -55 to 125 degC",
+        "pass": true,
+        "source": "SCHS123E, operating conditions"
+       }
+      ],
+      "jlcpcb": "C354056 CD74HC4538PWR (Texas Instruments, TSSOP-16) stockCount 934, canPresaleNumber 920, expand, USD 0.4243 at 1+ (need 5); read 2026-10-03T11:42:25Z, vendors.py jlcpcb C354056",
+      "digikey": "CD74HC4538PWR, Texas Instruments, Active, stock_available 7021, lead 12 weeks; cached reading of 2026-10-03T11:32:12Z (a P3 agent's, counts as this task's), vendors.py digikey CD74HC4538PWR",
+      "gate": "need 5; threshold 50; JLCPCB 934 and presale 920: pass (rule 4)",
+      "lifecycle": "ACTIVE for orderable CD74HC4538PWR in the body of https://www.ti.com/product/CD74HC4538 (marketingStatusDescription, 2026-10-03T11:43:28Z): pass; longevity: none read; first datasheet June 1998 (SCHS123E cover, revised October 2003); notices: not read; distributor: Digi-Key Active",
+      "second_source": "second vendor: Digi-Key 7021 at or above 50 (cached 2026-10-03T11:32:12Z)",
+      "alternates": [
+       "74HC4538PW,118 (rank 2; same SOT403-1-class land and pin positions, the trigger names swapped)"
+      ],
+      "driver_in_shared": "none (grep of shared/ and firmware/ at 7e74cd442a79, 2026-10-03T11:46:34Z)",
+      "reason": "second maker for the same function; its window rests on the owner's temperature assumption because the sheet states no K against temperature, and its K graphs stop at 0.1 uF",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "CD74HC4538PWR (LCSC C354056)"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "74HC423BQ,115",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "OR gate",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "74AUP1G32GW,125",
+      "reason": "selection.json's part; lowest I_off of the stocked parts (0.2 uA at 25 degC, 0.5 uA at -40 to 85 degC); JLCPCB 932, Digi-Key 14211 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "SN74AUP1G32DBVR",
+      "reason": "I_off 0.6 uA at -40 to 85 degC; deepest AUP stock: JLCPCB 3492, Digi-Key 93341 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "74AUP1G32SE-7",
+      "reason": "I_off 0.6 uA at -40 to 85 degC, equal to rank 2, in the SOT353 (SC-70-5) package; shallower stock than rank 2 (JLCPCB 1174, Digi-Key 252 with a 52-week lead) and a datasheet of February 2015",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "74LVC1G32GW,125",
+      "reason": "highest I_off of the four (+/-2 uA); JLCPCB 1306, Digi-Key 85523 (P2)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 3,
+      "part": "74AUP1G32SE-7",
+      "maker": "Diodes Incorporated (S1)",
+      "lcsc": "C842327",
+      "package": "SOT353 (SC-70-5, JEDEC MO-203 class), 2.0 x 1.25 mm, 0.65 mm pitch: 1 A, 2 B, 3 GND, 4 Y, 5 VCC",
+      "placements": 1,
+      "placements_basis": "fixed: one OR gate (IOBoard.md, Monostable topology)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "two-input OR, push-pull output",
+        "required": "one 2-input OR combining the two Q outputs into the enable node, push-pull",
+        "datasheet": "single 2-input positive OR gate with a standard push-pull output; Schmitt-trigger action at all inputs (hysteresis 250 mV typ at 3.0 V)",
+        "pass": true,
+        "source": "Diodes DS35154 Rev. 4-2, description and features (fetched 2026-10-03T11:37:25Z)"
+       },
+       {
+        "name": "I_off on both inputs",
+        "required": "a datasheet limit on input current with VCC 0 V on both inputs",
+        "datasheet": "IOFF 0.2 uA at 25 degC and 0.6 uA at -40 to 85 degC (VI or VO 0 to 3.6 V, VCC 0); +/-3.5 uA at -40 to 125 degC",
+        "pass": true,
+        "source": "DS35154, electrical characteristics (pages 4 and 5)"
+       },
+       {
+        "name": "supply",
+        "required": "3.201 V to 3.399 V inside the operating range",
+        "datasheet": "VCC 0.8 V to 3.6 V",
+        "pass": true,
+        "source": "DS35154, recommended operating conditions"
+       },
+       {
+        "name": "minimum supply",
+        "required": "below 3.046 V",
+        "datasheet": "0.8 V",
+        "pass": true,
+        "source": "DS35154, recommended operating conditions"
+       },
+       {
+        "name": "input high level",
+        "required": "VIH at 3.3 V below the 74HC423 Q high level (VCC - 0.1 V at 20 uA)",
+        "datasheet": "VIH 2.0 V min at VCC 3.0 to 3.6 V (all temperature ranges)",
+        "pass": true,
+        "source": "DS35154, electrical characteristics"
+       },
+       {
+        "name": "propagation delay",
+        "required": "under 1 us",
+        "datasheet": "tpd 3.5 ns max at 25 degC and 4.1 ns max at -40 to 85 degC, VCC 3.3 V +/- 0.3 V, CL 5 pF; 5.0 ns max with CL 10 pF",
+        "pass": true,
+        "source": "DS35154, switching characteristics"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC (V270)",
+        "datasheet": "TA -40 to +125 degC (recommended); the tables are given for -40 to 85 degC and -40 to 125 degC",
+        "pass": true,
+        "source": "DS35154, recommended operating conditions"
+       }
+      ],
+      "jlcpcb": "C842327 74AUP1G32SE-7 (Diodes Incorporated, SOT-353) stockCount 1174, canPresaleNumber 1174, expand, USD 0.0929 at 1+ (need 5); read 2026-10-03T11:36:52Z, vendors.py jlcpcb C842327 (selectSmtComponentList, exact LCSC match)",
+      "digikey": "74AUP1G32SE-7, Diodes Incorporated, Active, stock_available 252 (cut tape and Digi-Reel; the 3,000-piece reel 0), lead 52 weeks; cached reading of 2026-10-03T11:27:45Z (a P3 agent's, counts as this task's), vendors.py digikey 74AUP1G32SE-7",
+      "gate": "need 5 x 1 = 5; threshold 50 (S4); JLCPCB 1174 and presale 1174: pass (rule 4)",
+      "lifecycle": "https://www.diodes.com/part/view/74AUP1G32 answered HTTP 200 (2026-10-03T11:38:01Z) with no status in the body; Digi-Key ProductStatus Active (2026-10-03T11:27:45Z), recorded as the distributor figure (Lifecycle check, owner 2026-10-02): pass; longevity: none read; first datasheet: Rev. 4-2 of February 2015 read, no earlier date listed; notices: not read; distributor: JLCPCB listed with stock",
+      "second_source": "second vendor: Digi-Key 252 at or above 50 (cached 2026-10-03T11:27:45Z); 5 times the 50 gate is not reached, 252 is",
+      "alternates": [
+       "74AUP1G32GW,125 (SC-88A class, same 0.65 mm pitch and pins 3 GND, 4 Y, 5 VCC; the two inputs swap places, harmless on an OR; Nexperia land dimensions not compared; rank 1)"
+      ],
+      "driver_in_shared": "none (grep of shared/ and firmware/ at 7e74cd442a79, 2026-10-03T11:46:34Z)",
+      "reason": "I_off 0.6 uA at -40 to 85 degC, equal to SN74AUP1G32DBVR and under the +/-2 uA of the LVC part; a third maker (Diodes) for the OR gate; stock 252 at Digi-Key against 93341 for rank 2 and a 52-week lead",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "74AUP1G32SE-7 (LCSC C842327)"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "74AUP1G32GW,125",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "reset supervisor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPS3703A7330DSERQ1",
+      "reason": "selection.json's part; band 155 mV with an overvoltage trip above the rail; delay 7 to 13 ms stated; JLCPCB 307, Digi-Key 280 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TPS3850H33DRCT",
+      "reason": "band 156.5 mV; a watchdog to tie off and a thermal-pad land; JLCPCB 772, Digi-Key 1197 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TPS3808G33DBVR",
+      "reason": "band 169.4 mV, 2.2 mV narrower than rank 4; the V43 delay has a stated minimum (12 ms) where rank 4's has none; no watchdog; SOT-23-6 land differs from the WSON-6 parts; JLCPCB 36025, Digi-Key 8077",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "TPS389033GQDSERQ1",
+      "reason": "widest band (171.6 mV) and the V43 delay met on a typical figure only (P2)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 3,
+      "part": "TPS3808G33DBVR",
+      "maker": "Texas Instruments (S1)",
+      "lcsc": "C43698",
+      "package": "SOT-23-6 (DBV): 1 RESET, 2 GND, 3 MR, 4 CT, 5 SENSE, 6 VDD",
+      "placements": 1,
+      "placements_basis": "fixed: one supervisor holds both clear inputs (IOBoard.md, Clear network)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "threshold above the logic's minimum supply",
+        "required": "threshold minimum above 2.0 V (74HC423), 1.65 V (LVC logic) and 0.8 V (AUP logic)",
+        "datasheet": "G33: VIT- 3.07 V nominal; accuracy -1.25 % to +1.25 % at -40 to 85 degC TJ (+/-0.5 % typ), -1.5 % to +1.5 % over -40 to 125 degC: minimum 3.0316 V (3.0240 V over the full range), derived",
+        "pass": true,
+        "source": "TI SBVS050N (August 2026), Table 4-1 and section 6.5, fetched 2026-10-03T11:37:25Z"
+       },
+       {
+        "name": "release at or below the rail's lower edge",
+        "required": "threshold maximum plus hysteresis maximum at or below 3.201 V",
+        "datasheet": "VHYS fixed versions 1 % typ, 2.5 % max of VIT: release at most 3.1084 + 0.0777 = 3.186 V at TJ -40 to 85 degC; 3.1161 + 0.0779 = 3.194 V over -40 to 125 degC (derived)",
+        "pass": true,
+        "source": "SBVS050N, section 6.5; derived"
+       },
+       {
+        "name": "band to 3.201 V stated",
+        "required": "the band between the threshold minimum and 3.201 V stated from the datasheet",
+        "datasheet": "3.201 - 3.0316 = 169.4 mV (177.1 mV with the full-range minimum of 3.0240 V), derived; no overvoltage threshold",
+        "pass": true,
+        "source": "SBVS050N, section 6.5; derived"
+       },
+       {
+        "name": "delay (V43)",
+        "required": "at least 125 ns after the rail passes the threshold",
+        "datasheet": "td 12 ms min, 20 ms typ, 28 ms max with CT open (-40 to 125 degC TJ)",
+        "pass": true,
+        "source": "SBVS050N, section 6.6"
+       },
+       {
+        "name": "output defined through the ramp",
+        "required": "the clear inputs held active from the lowest supply at which the output is defined",
+        "datasheet": "VPOR 0.8 V (VOL max 0.2 V at 15 uA, Trise(VDD) at least 15 us/V); open-drain RESET, pull-up 10 kOhm to 1 MOhm; VOL 0.4 V max at 1 mA from VDD 1.8 V",
+        "pass": true,
+        "source": "SBVS050N, sections 5 and 6.5"
+       },
+       {
+        "name": "supply",
+        "required": "3.201 V to 3.399 V inside the operating range",
+        "datasheet": "VDD 1.7 V to 6.5 V (1.65 V at 0 to 85 degC TJ); SENSE and VDD on the 3.3 V rail",
+        "pass": true,
+        "source": "SBVS050N, section 6.5"
+       },
+       {
+        "name": "no firmware",
+        "required": "no watchdog or register that firmware must serve in the clear path",
+        "datasheet": "no watchdog; MR input with a 90 kOhm internal pull-up, left open",
+        "pass": true,
+        "source": "SBVS050N, section 5 and 6.5"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC (V270)",
+        "datasheet": "TJ -40 to 125 degC",
+        "pass": true,
+        "source": "SBVS050N, section 6.5 and orderable table"
+       }
+      ],
+      "jlcpcb": "C43698 TPS3808G33DBVR (Texas Instruments, SOT-23-6) stockCount 36025, canPresaleNumber 35890, expand, USD 0.439 at 1+ (need 5); read 2026-10-03T11:36:51Z, vendors.py jlcpcb C43698 (selectSmtComponentList, exact LCSC match)",
+      "digikey": "TPS3808G33DBVR, Texas Instruments, Active, stock_available 8077, lead 20 weeks; cached reading of 2026-10-03T11:24:23Z (a P3 agent's, counts as this task's), vendors.py digikey TPS3808G33DBVR",
+      "gate": "need 5 x 1 = 5; threshold 50 (S4: 5 x 5, never under 50); JLCPCB 36025 and presale 35890: pass (rule 4)",
+      "lifecycle": "ACTIVE for orderable TPS3808G33DBVR in the body of https://www.ti.com/product/TPS3808 (marketingStatusDescription, 2026-10-03T11:38:00Z): pass; longevity: not read, no part commitment recorded; first datasheet May 2004 (SBVS050, Rev. N of August 2026 read); notices: not read; distributor: Digi-Key Active (11:24:23Z), JLCPCB listed with stock",
+      "second_source": "second vendor: Digi-Key 8077 at or above 50 (cached 2026-10-03T11:24:23Z)",
+      "alternates": [
+       "TPS3808G33DBVT (same die, 250-piece reel; JLCPCB C702174 901/884 at 11:36:51Z; Digi-Key stock 0 at 11:37:18Z; not qualified)",
+       "TPS3808G33QDBVRQ1 (automotive orderable; JLCPCB C414616 1281/1280 at 11:36:51Z; Digi-Key stock 0 at 11:37:15Z; not qualified)"
+      ],
+      "driver_in_shared": "none (grep of shared/ and firmware/ at 7e74cd442a79, 2026-10-03T11:46:34Z)",
+      "reason": "band 169.4 mV, second widest of the four; the V43 delay is a stated minimum of 12 ms; the same open-drain active-low topology as rank 1, on a SOT-23-6 land that differs from the WSON-6 TPS3703",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "TPS3808G33DBVR (LCSC C43698); same-die orderables TPS3808G33QDBVRQ1 (C414616) and TPS3808G33DBVT (C702174)"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPS3703A7330DSERQ1",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "latch",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "74LVC1G175GW,125",
+      "reason": "selection.json's part; 24 mA output for the gate drivers' enable load; JLCPCB 1973, Digi-Key 36048 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "74AUP1G175GW,125",
+      "reason": "I_off 0.2 uA at 25 degC but a 4 mA-class output for the enable load (P2)",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "SN74LVC1G175DCKR",
+      "reason": "Ioff +/-10 uA and no second-vendor stock (Digi-Key 0); its second source is rank 1 as an alternate (P2)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "74LVC1G175GW,125",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "latch clear control",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "434153017835",
+      "reason": "selection.json's part; the maker states status and lifetime over 10 years; contact bounce 10 ms max; JLCPCB 5199, Digi-Key 27039 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "EVPAA202K",
+      "reason": "rates 10 uA at 2 V explicitly; status read only at the distributor (P2)",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "EVQ-Q2B03W",
+      "reason": "largest footprint; status read only at the distributor (P2)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "434153017835",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "trigger-path inverter",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "SN74AUP1G14DBVR",
+      "reason": "selection.json's part; lowest Ioff (0.6 uA at -40 to 85 degC); JLCPCB 1977, Digi-Key 27055 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "74AUP1G14GVH",
+      "reason": "Ioff +/-0.2 uA; lowest JLCPCB stock of the three (356) (P2)",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "74LVC1G14GW,125",
+      "reason": "highest Ioff (+/-2 uA); JLCPCB 54827, Digi-Key 265629 (P2)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "SN74AUP1G14DBVR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kind": "",
+    "kept_option": ""
+   },
+   {
+    "function": "trigger input I_off buffer (Q9)",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "SN74AUP1G17DBVR",
+      "reason": "the owner's Q9 part (2026-09-29) and selection.json's part; JLCPCB 8838, Digi-Key 88895 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "SN74AUP1G17DCKR",
+      "reason": "same die in SC-70-5; JLCPCB 325 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "74LVC1G17GW,125",
+      "reason": "Ioff +/-2 uA, highest of the three; JLCPCB 18569, Digi-Key 31433 (P2)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "SN74AUP1G17DBVR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "SN74AUP1G17DBVR",
+      "reason": "the part named for this function by the owner's ruling of 2026-10-03 on FU-2P56; one part number with the Q9 buffer, 2 a board, need 10, JLCPCB 8838 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "SN74AUP1G17DCKR",
+      "reason": "same die, less JLCPCB stock (325) (P2)",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "74LVC1G17GW,125",
+      "reason": "Ioff +/-2 uA; another land than the Q9 buffer (P2)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "SN74AUP1G17DBVR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "inverter on an active-low output enable",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "SN74LVC1G04DBVR",
+      "reason": "selection.json's part; R4's enable inverter, one part number across R3, R4 and the STB drive; JLCPCB 131770, Digi-Key 309656 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "74LVC1G04GV,125",
+      "reason": "a second maker on the same SOT-23-5 land and pins, same 32 mA drive class; Ioff +/-2 uA; JLCPCB 21943, Digi-Key 67979 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "SN74AUP1G04DBVR",
+      "reason": "lowest Ioff of the three (0.6 uA) on the same land as rank 1, but a 4 mA output (VOL 0.33 V max at 2.7 mA, against the 1.4 mA load) and the same maker as rank 1; JLCPCB 2945, Digi-Key 16657",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 3,
+      "part": "SN74AUP1G04DBVR",
+      "maker": "Texas Instruments (S1)",
+      "lcsc": "C2682121",
+      "package": "SOT-23-5 (DBV): 1 NC, 2 A, 3 GND, 4 Y, 5 VCC",
+      "placements": 3,
+      "placements_basis": "range 1 to 3 for R3: 1 to 2 for the active-low OE pins and 1 for the external CAN STB (V326); with R4's enable inverter 1 to 2, the count takes 5 a board as the upper bound: need 25, threshold 125",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "isolation",
+        "required": "I_off, or 4.7 kOhm from the enable node",
+        "datasheet": "Ioff 0.2 uA at 25 degC, 0.6 uA at -40 to 85 degC (VI or VO 0 to 3.6 V, VCC 0)",
+        "pass": true,
+        "source": "TI SCES571K (June 2014), section 7.5 (fetched 2026-10-03T11:37:27Z)"
+       },
+       {
+        "name": "output pull",
+        "required": "a 10 kOhm pull-up at each active-low OE pin, so an unpowered inverter reads disabled",
+        "datasheet": "'The Ioff circuitry disables the outputs' with VCC 0 V; the pull-ups then hold the OE pins and the STB pin at their disabled levels",
+        "pass": true,
+        "source": "SCES571K, section 9 (feature text)"
+       },
+       {
+        "name": "external CAN standby drive (V326)",
+        "required": "VOL under STB's VIL 0.3 x VIO (0.99 V at VIO 3.3 V), sinking its pull-up (IIL up to 20 uA)",
+        "datasheet": "VOL 0.33 V max at IOL 2.7 mA and 0.45 V max at 4 mA, VCC 3 V, -40 to 85 degC; the 20 uA STB pull-up is far under 2.7 mA; an unpowered inverter leaves STB to its pull-up, standby",
+        "pass": true,
+        "source": "SCES571K, section 7.5; TCAN1472 SLLSFW8A pin table (P2 [D34])"
+       },
+       {
+        "name": "output drive",
+        "required": "sinks the 10 kOhm pull-ups of the OE pins (0.34 mA each at 3.399 V, 4 pins 1.36 mA) and STB's pull-up with VOL under the inputs' VIL",
+        "datasheet": "1.36 mA + 0.02 mA is under the 2.7 mA of the VOL 0.33 V row and the 4 mA IOL rating at VCC 3 V; VOL 0.33 V against the 0.8 V VIL of the SN74LVC244A OE pins at VCC 2.7 to 3.6 V (R4's gated buffer, selection.json R4)",
+        "pass": true,
+        "source": "SCES571K, sections 7.3 and 7.5; TI SN74LVC244A recommended operating conditions (fetched 2026-10-03T11:39:00Z)"
+       },
+       {
+        "name": "delay",
+        "required": "with the buffer, inside the 1 us disable budget",
+        "datasheet": "tpd 3.2 ns max at 25 degC and 3.9 ns max at -40 to 85 degC, VCC 3.3 V +/- 0.3 V, CL 5 pF",
+        "pass": true,
+        "source": "SCES571K, section 7.6"
+       },
+       {
+        "name": "supply",
+        "required": "3.201 V to 3.399 V",
+        "datasheet": "VCC 0.8 V to 3.6 V",
+        "pass": true,
+        "source": "SCES571K, section 7.3"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC (V270)",
+        "datasheet": "TA -40 to 85 degC",
+        "pass": true,
+        "source": "SCES571K, section 7.3"
+       }
+      ],
+      "jlcpcb": "C2682121 SN74AUP1G04DBVR (Texas Instruments, SOT-23-5) stockCount 2945, canPresaleNumber 2942, expand, USD 0.294 at 1+ (need 25; 0.2307 at 50+); read 2026-10-03T11:36:52Z, vendors.py jlcpcb C2682121 (selectSmtComponentList, exact LCSC match)",
+      "digikey": "SN74AUP1G04DBVR: Texas Instruments row Active, stock_available 16657, lead 12 weeks (cut tape 4828, reel 3000, bulk 11829 with a 1322 minimum); a UMW row, not on S1, also listed; cached reading of 2026-10-03T11:28:46Z (a P3 agent's, counts as this task's), vendors.py digikey SN74AUP1G04DBVR (keyword search, duplicate)",
+      "gate": "need 5 x 5 = 25 (R3 and R4 summed with the STB inverter, upper bound); threshold 125 (S4: 5 x 25); JLCPCB 2945 and presale 2942: pass (rule 4)",
+      "lifecycle": "ACTIVE for orderable SN74AUP1G04DBVR in the body of https://www.ti.com/product/SN74AUP1G04 (marketingStatusDescription, 2026-10-03T11:38:01Z): pass; longevity: not read, no part commitment recorded; first datasheet June 2004 (SCES571, Rev. K read); notices: not read; distributor: Digi-Key TI row Active",
+      "second_source": "second vendor: Digi-Key TI row 16657 at or above 125 (cached 2026-10-03T11:28:46Z)",
+      "alternates": [
+       "SN74LVC1G04DBVR (same SOT-23-5 land and pins; rank 1)"
+      ],
+      "driver_in_shared": "none (grep of shared/ and firmware/ at 7e74cd442a79, 2026-10-03T11:46:34Z)",
+      "reason": "Ioff 0.6 uA against +/-10 uA and +/-2 uA for the LVC parts; the sink margin is 2.7 mA against the 1.4 mA load, where the LVC parts sink tens of mA; a different part number from R4's selected inverter, so it adds a unique part if chosen for R3 alone",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "SN74AUP1G04DBVR (LCSC C2682121)"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "SN74LVC1G04DBVR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "servo rail gate",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "BSC014N04LSATMA1",
+      "reason": "selection.json's part; 1.4 mOhm max at 10 V and 1.9 mOhm at 4.5 V, conducts from 0 V with the floating driver; JLCPCB 10736, Digi-Key 6946 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "NTMFS5C430NLT1G",
+      "reason": "1.4 mOhm max at 10 V, 2.2 mOhm at 4.5 V; IDSS 10 uA against 1 uA; status read only at the distributor (P2)",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "STL110N10F7",
+      "reason": "100 V part; 6 mOhm max at 10 V (0.24 W at 6.35 A), four times the resistance of ranks 1 and 2; status read at the maker's page (Active, available until 02/2032); JLCPCB 20838, Digi-Key 4814",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 3,
+      "part": "STL110N10F7",
+      "maker": "STMicroelectronics (S1)",
+      "lcsc": "C672185",
+      "package": "PowerFLAT 5x6 (8 leads): pins 1-3 S, 4 G, 5-8 D",
+      "placements": 4,
+      "placements_basis": "fixed: one switch on each of the 3 servo rails and one on the adjustable output (IOBoard.md, Servo rail gate); with the pack precharge's 2 the part number would take 6 a board: need 30, threshold 150",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "the rail high-side switch is the gate (V33)",
+        "required": "one N-channel switch on each of the 3 servo rails and one on the adjustable output, 4 a board",
+        "datasheet": "N-channel enhancement MOSFET, STripFET F7, driven by a floating TPSI3052",
+        "pass": true,
+        "source": "ST DS9392 Rev. 6, cover (fetched 2026-10-03T11:37:27Z); TPSI3052 SLVSGS3B"
+       },
+       {
+        "name": "conducts from 0.8 V (V55)",
+        "required": "closed and conducting from 0.8 V: each servo rail 0.8 to 8.4 V, the adjustable output 0.8 to 15 V",
+        "datasheet": "VGS held 13.9 to 16.2 V above the source by the floating TPSI3052, so the channel conducts from a 0 V source; RDS(on) 6 mOhm max at VGS 10 V, ID 10 A; the switch states no figure below 10 V",
+        "pass": true,
+        "source": "DS9392 Table 3; TPSI3052 SLVSGS3B 6.9"
+       },
+       {
+        "name": "continuous current",
+        "required": "up to 6.35 A on each rail and on the adjustable output",
+        "datasheet": "ID 107 A at TC 25 degC; 21 A at Tpcb 25 degC and 14 A at Tpcb 100 degC (Rthj-pcb 31.3 degC/W on 1 square inch, 2 oz); at 6.35 A: 38.1 mV and 0.24 W at 6 mOhm (derived)",
+        "pass": true,
+        "source": "DS9392 Tables 1 to 3; derived"
+       },
+       {
+        "name": "voltage rating (V44)",
+        "required": "at least 27 V",
+        "datasheet": "V(BR)DSS 100 V min",
+        "pass": true,
+        "source": "DS9392 Table 3"
+       },
+       {
+        "name": "opening time",
+        "required": "open within 5 ms of the enable node falling, driver and switch together",
+        "datasheet": "td(off) 52 ns and tf 21 ns typ (VDD 50 V, RG 4.7 Ohm); driver EN falling to VDRV low 3 us max",
+        "pass": true,
+        "source": "DS9392 Table 5; TPSI3052 SLVSGS3B 6.10"
+       },
+       {
+        "name": "fail-open",
+        "required": "open with its control input undriven or the 3.3 V supply absent; enhancement mode",
+        "datasheet": "enhancement N-channel, VGS(th) 2.5 to 4.5 V; the driver pulls VDRV low on primary loss",
+        "pass": true,
+        "source": "DS9392 Table 3; TPSI3052 SLVSGS3B 6.10"
+       },
+       {
+        "name": "off-state leakage (V39)",
+        "required": "under 5 mA a rail",
+        "datasheet": "IDSS 1 uA max at VDS 100 V, 25 degC; 10 uA max at TC 125 degC (design, not tested)",
+        "pass": true,
+        "source": "DS9392 Table 3"
+       },
+       {
+        "name": "gate-source rating against the driver",
+        "required": "VGS rating at or above 16.2 V",
+        "datasheet": "VGS +/-20 V",
+        "pass": true,
+        "source": "DS9392 Table 1"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC (V270)",
+        "datasheet": "TJ -55 to 175 degC",
+        "pass": true,
+        "source": "DS9392 Table 1"
+       }
+      ],
+      "jlcpcb": "C672185 STL110N10F7 (STMicroelectronics, PowerFLAT-8 5x6) stockCount 20838, canPresaleNumber 20811, expand, USD 1.0957 at 1+ (need 20; 0.7917 at 30+); read 2026-10-03T11:36:52Z, vendors.py jlcpcb C672185 (selectSmtComponentList, exact LCSC match)",
+      "digikey": "STL110N10F7, STMicroelectronics, Active, stock_available 4814, lead 24 weeks; cached reading of 2026-10-03T11:26:44Z (a P3 agent's, counts as this task's), vendors.py digikey STL110N10F7",
+      "gate": "need 5 x 4 = 20 (30 with the precharge); threshold 100 (150); JLCPCB 20838 and presale 20811: pass (rule 4)",
+      "lifecycle": "'Active Product is in volume production. Available until: 02/2032' in the body of https://www.st.com/en/power-transistors/stl110n10f7.html (2026-10-03T11:38:01Z): pass; longevity: available until 02/2032 (same page); first datasheet 2012-12-03 (DS9392 Rev. 1); notices: not read; distributor: Digi-Key Active",
+      "second_source": "second vendor: Digi-Key 4814 at or above 150 (cached 2026-10-03T11:26:44Z)",
+      "alternates": [
+       "NTMFS5C430NLT1G (DFN5 5 x 6, pins 1-3 S, 4 G, 5-8 D; land match not compared; rank 2)",
+       "BSC014N04LSATMA1 (PG-TDSON-8 FL 5 x 6, same pin order; land match not compared; rank 1)"
+      ],
+      "driver_in_shared": "none (grep of shared/ and firmware/ at 7e74cd442a79, 2026-10-03T11:46:34Z)",
+      "reason": "passes every value with a 100 V rating and maker-read status; 6 mOhm max at 10 V is the highest resistance of the three and the stated figure is at 10 V, not at the driver's 13.9 to 16.2 V",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "STL110N10F7 (LCSC C672185)"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "BSC014N04LSATMA1",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "servo rail gate driver",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPSI3052DWZR",
+      "reason": "selection.json's part; 13.9 to 16.2 V floating drive; one part number across R3 and R6; JLCPCB 1046, Digi-Key 3164 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TPSI3050DWZR",
+      "reason": "9.4 to 11 V drive; passes at the 4.5 V RDS(on) condition; JLCPCB 1857, Digi-Key 7369 (P2)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPSI3052DWZR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "onboard pack switch MOSFETs",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "IPT015N10N5ATMA1",
+      "reason": "selection.json's part; passes every value with the freewheel diode and the stage 2 bus capacitance; 8 devices for V49; JLCPCB 29904, Digi-Key 38146 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "IPT015N10NF2SATMA1",
+      "reason": "SOA figures carried from FU-2A, not re-read; JLCPCB 12420, Digi-Key 6331 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "IPT017N12NM6ATMA1",
+      "reason": "needs 9 or 10 devices for V49; JLCPCB 12528, Digi-Key 6634 (P2)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "IPT015N10N5ATMA1",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "onboard pack switch driver",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPSI3052DWZR",
+      "reason": "selection.json's part; 15 V drive lets 8 devices meet V49; JLCPCB 1046, Digi-Key 3164 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TPSI3050DWZR",
+      "reason": "9.4 V minimum drive needs 10 MOSFETs (P2)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPSI3052DWZR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "external pack switch module",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "external module driver output",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPSI3052DWZR",
+      "reason": "selection.json's part; the only part meeting the 10 V module class (VDRV 13.9 to 16.2 V); the module itself is not known (V324) (P2)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPSI3052DWZR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "pack reverse-polarity protection",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "IPT015N10N5ATMA1",
+      "reason": "selection.json's part; one part number with the switch array (P2)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "IPT015N10NF2SATMA1",
+      "reason": "rank 2 of the switch array (P2)",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "IPT017N12NM6ATMA1",
+      "reason": "needs 9 or 10 devices (P2)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "IPT015N10N5ATMA1",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "pack overvoltage and transient clamp",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "pack precharge",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "CSD19537Q3T",
+      "reason": "selection.json's part; 100 V, VSONP-8 3.3 x 3.3 mm, IDSS 1 uA at 80 V; JLCPCB 630, Digi-Key 3267 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "STL110N10F7",
+      "reason": "passes every value; status read at the maker's page where rank 3's is read only at the distributor; JLCPCB 20838 against 2001, lead 24 weeks against 52; PowerFLAT 5x6 land, larger than the 3.3 x 3.3 mm of ranks 1 and 3",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "DMT10H015LFG-13",
+      "reason": "status read only at the distributor (maker page HTTP 403) and a 52-week lead time (P2)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "STL110N10F7",
+      "maker": "STMicroelectronics (S1)",
+      "lcsc": "C672185",
+      "package": "PowerFLAT 5x6 (8 leads): pins 1-3 S, 4 G, 5-8 D",
+      "placements": 2,
+      "placements_basis": "range 1 to 2: one for the onboard path, one if the external path's precharge sits on the IO board; gate at 2; with the servo rail gate's 4 the part number would take 6 a board: need 30, threshold 150",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "drain-source rating (V34)",
+        "required": "at least 85 V",
+        "datasheet": "V(BR)DSS 100 V min (VGS 0 V, ID 250 uA)",
+        "pass": true,
+        "source": "ST DS9392 Rev. 6, Table 3 (fetched 2026-10-03T11:37:27Z)"
+       },
+       {
+        "name": "ESC input capacitance precharged (V42)",
+        "required": "3.5 A peak at 67.2 V through 19 Ohm or less that charges 4700 uF within 447 ms",
+        "datasheet": "ID 107 A at TC 25 degC, 75 A at TC 100 degC; IDM 428 A; RDS(on) 6 mOhm max at VGS 10 V, ID 10 A; the resistor, not the MOSFET, sets the 3.5 A",
+        "pass": true,
+        "source": "DS9392 Tables 1 and 3"
+       },
+       {
+        "name": "closing time (V46)",
+        "required": "closed within 500 ms, precharge included",
+        "datasheet": "td(on) 25 ns and tr 36 ns typ (VDD 50 V, RG 4.7 Ohm); the RC sets 447 ms; driver tLH_VDRV 4.5 us max after VDDH steady",
+        "pass": true,
+        "source": "DS9392 Table 5; TPSI3052 SLVSGS3B 6.10"
+       },
+       {
+        "name": "opening time",
+        "required": "open within 5 ms of the enable falling",
+        "datasheet": "td(off) 52 ns and tf 21 ns typ; driver 3 us max",
+        "pass": true,
+        "source": "DS9392 Table 5; TPSI3052 SLVSGS3B 6.10"
+       },
+       {
+        "name": "open path leakage (V40)",
+        "required": "5 mA on both paths, the precharge path included",
+        "datasheet": "IDSS 1 uA max at VDS 100 V, 25 degC; 10 uA max at TC 125 degC",
+        "pass": true,
+        "source": "DS9392 Table 3"
+       },
+       {
+        "name": "on the ESC pack node (V324)",
+        "required": "rated above the node, held under 85 V by the stage 2 bus capacitance",
+        "datasheet": "100 V",
+        "pass": true,
+        "source": "DS9392 Table 1"
+       },
+       {
+        "name": "fail-open",
+        "required": "enhancement mode",
+        "datasheet": "VGS(th) 2.5 to 4.5 V",
+        "pass": true,
+        "source": "DS9392 Table 3"
+       },
+       {
+        "name": "gate-source rating against the driver",
+        "required": "at least 16.2 V",
+        "datasheet": "VGS +/-20 V",
+        "pass": true,
+        "source": "DS9392 Table 1"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC (V270)",
+        "datasheet": "TJ -55 to 175 degC",
+        "pass": true,
+        "source": "DS9392 Table 1"
+       }
+      ],
+      "jlcpcb": "C672185 STL110N10F7 (STMicroelectronics, PowerFLAT-8 5x6) stockCount 20838, canPresaleNumber 20811, expand, USD 1.0957 at 1+ (need 10; 0.899 at 10+); read 2026-10-03T11:36:52Z, vendors.py jlcpcb C672185",
+      "digikey": "STL110N10F7, STMicroelectronics, Active, stock_available 4814, lead 24 weeks; cached reading of 2026-10-03T11:26:44Z (a P3 agent's, counts as this task's), vendors.py digikey STL110N10F7",
+      "gate": "need 5 x 2 = 10 (30 with the servo rail gate); threshold 50 (150); JLCPCB 20838 and presale 20811: pass (rule 4)",
+      "lifecycle": "'Active Product is in volume production. Available until: 02/2032' in the body of https://www.st.com/en/power-transistors/stl110n10f7.html (2026-10-03T11:38:01Z): pass; longevity: available until 02/2032 (same page); first datasheet 2012-12-03 (DS9392 Rev. 1); notices: not read; distributor: Digi-Key Active",
+      "second_source": "second vendor: Digi-Key 4814 at or above 50 (cached 2026-10-03T11:26:44Z)",
+      "alternates": [],
+      "driver_in_shared": "none (grep of shared/ and firmware/ at 7e74cd442a79, 2026-10-03T11:46:34Z)",
+      "reason": "passes every value on the 100 V rating with the highest JLCPCB stock of the three; the ranks 1 and 3 are 3.3 x 3.3 mm parts, so none is a pin-for-pin alternate on the 5 x 6 land",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "STL110N10F7 (LCSC C672185)"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "CSD19537Q3T",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "servo rail gate driver (see above)",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "timing network (C and R of the monostable)",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "heartbeat-node series resistors, links and fail-safe pull-downs",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "STPS30H100DJF-TR",
+      "reason": "fewest SMD devices (5 at 60 A each, top of the stated maximum forward curve); onboard turn-off VDS at most 85.93 V; JLCPCB 2190, Digi-Key 15476 (P2)",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "STPS20M100SG-TR",
+      "reason": "8 devices and a higher VF (about 1.01 V at 37.5 A) (P2)",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "FERD40H100SG-TR",
+      "reason": "lowest VF but 15 devices, as the 25 degC maximum is stated only to 20 A (P2)",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "V60100C-E3/4W",
+      "reason": "5 packages (10 diodes at 30 A, the stated VF point, 0.79 V max) give an onboard turn-off VDS of at most 85.79 V, under rank 1's 85.93 V; ranked last because it is through-hole (JLCPCB row: THT, manual weld), JLCPCB's acceptance of that mode for this order is not read, and IR has no stated maximum at 125 degC",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 4,
+      "part": "V60100C-E3/4W",
+      "maker": "Vishay (S1)",
+      "lcsc": "C499495",
+      "package": "TO-220AB, through-hole, 2 x 30 A common cathode: pins 1 and 3 anodes, pin 2 and the tab the cathode",
+      "placements": 5,
+      "placements_basis": "5 packages in parallel for 300 A, 10 diodes at 30 A each, the VF point the datasheet states; the 600 A external path would take 10 packages (not known, V324)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "reverse rating",
+        "required": "VRRM at least 85 V: it stands the pack node, 67.2 V and held under 85 V, with the switch closed",
+        "datasheet": "VRRM 100 V; breakdown 100 V min at IR 1.0 mA",
+        "pass": true,
+        "source": "Vishay 88942 (26-Jun-2023), maximum ratings and electrical characteristics (fetched 2026-10-03T11:37:27Z)"
+       },
+       {
+        "name": "peak forward current, onboard",
+        "required": "300 A across the array, each device's share inside its stated forward characteristic and under its single-pulse surge rating",
+        "datasheet": "30 A a diode at the stated VF point (0.79 V max at 30 A, 25 degC; 0.70 V max at 125 degC); IFSM 320 A a diode (8.3 ms half sine); IF(AV) 30 A a diode; equal sharing between 10 diodes is assumed, the datasheet states none",
+        "pass": true,
+        "source": "88942, maximum ratings and electrical characteristics"
+       },
+       {
+        "name": "pulse length",
+        "required": "t = 0.5 uH x 300 A / (V_ESC + VF): 2.2 us at 67.2 V, about 40 us at the 2.8 V lowest pack, triangular",
+        "datasheet": "2.21 us at 67.2 V and 41.8 us at 2.8 V with VF 0.79 V (derived)",
+        "pass": true,
+        "source": "derived; V54, V51 Answers"
+       },
+       {
+        "name": "single-pulse current and energy",
+        "required": "each device's pulse I2t under its surge I2t; its energy VF x Q stated; 22.5 mJ is the lead's energy",
+        "datasheet": "30^2 x 41.8 us / 3 = 0.0125 A2s against 320^2 x 8.3 ms / 2 = 425 A2s; energy at most 0.79 V x 0.627 mC = 0.50 mJ a diode, 4.95 mJ for 10; no forward energy rating stated (EAS 450 mJ is a reverse avalanche rating)",
+        "pass": true,
+        "source": "88942 maximum ratings; derived"
+       },
+       {
+        "name": "forward voltage at 300 A",
+        "required": "read as a maximum at each device's share; sets the onboard switch's turn-off VDS",
+        "datasheet": "0.79 V max at 30 A, 25 degC (0.73 V typ); 0.70 V max at 125 degC; 0 degC not stated: turn-off VDS at most 85 + 0.79 = 85.79 V (derived)",
+        "pass": true,
+        "source": "88942 electrical characteristics; derived"
+       },
+       {
+        "name": "600 A external path",
+        "required": "figures reported, not pass or fail (not known, V324)",
+        "datasheet": "10 packages (20 diodes) at 30 A: VF 0.79 V; 4.41 us at 67.2 V, 83.6 us at 2.8 V; I2t 0.025 A2s a diode; at most 0.99 mJ a diode, 19.8 mJ of the 90 mJ for 20",
+        "pass": true,
+        "source": "derived from 88942; V48, V54, V324 Answers"
+       },
+       {
+        "name": "placement",
+        "required": "on the IO board at the switched node, anode to ground, cathode to the switched node",
+        "datasheet": "TO-220AB through-hole (cathode tab at the switched node). The JLCPCB library row C499495 gives assembly process THT and assembly mode manualWeld (jlcparts copy of 2026-09-14), not machine placement; whether JLCPCB's assembly accepts a manual-weld part on this order: not read",
+        "pass": true,
+        "source": "88942 mechanical data; jlcparts cache.sqlite3 row C499495 (opened read-only 2026-10-03T11:35Z)"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC (V270)",
+        "datasheet": "TJ -40 to 150 degC; IR at VR 100 V per diode 65 uA typ and 1000 uA max at 25 degC, 30 mA typ at 125 degC with no maximum stated; IR at 50 degC not stated",
+        "pass": true,
+        "source": "88942 maximum ratings and electrical characteristics"
+       }
+      ],
+      "jlcpcb": "C499495 V60100C-E3/4W (Vishay Intertech, TO-220AB-3) stockCount 919, canPresaleNumber 919, expand, USD 2.1101 at 1+ (need 25; 1.7931 at 10+); read 2026-10-03T11:36:52Z, vendors.py jlcpcb C499495 (selectSmtComponentList, exact LCSC match)",
+      "digikey": "V60100C-E3/4W, Vishay General Semiconductor - Diodes Division, Active, stock_available 1531 (tube), lead 29 weeks; cached reading of 2026-10-03T11:30:49Z (a P3 agent's, counts as this task's), vendors.py digikey V60100C-E3/4W",
+      "gate": "need 5 x 5 = 25; threshold 125 (S4: 5 x 25); JLCPCB 919 and presale 919: pass (rule 4)",
+      "lifecycle": "https://www.vishay.com/en/product/88942/ answered HTTP 200 (2026-10-03T11:38:02Z) and names V60100C-E3, with no status in the body; Digi-Key ProductStatus Active (2026-10-03T11:30:49Z), recorded as the distributor figure (Lifecycle check, owner 2026-10-02): pass; longevity: none read; first datasheet: revision of 26-Jun-2023 read, earlier date not read; notices: not read; distributor: JLCPCB listed with stock",
+      "second_source": "second vendor: Digi-Key 1531 at or above 125 (cached 2026-10-03T11:30:49Z)",
+      "alternates": [],
+      "driver_in_shared": "none (grep of shared/ and firmware/ at 7e74cd442a79, 2026-10-03T11:46:34Z)",
+      "reason": "the stated maximum VF sits at exactly the 30 A share, 0.79 V against 0.93 V for rank 1, with 5 packages; ranked last for the through-hole, manual-weld row, the unverified acceptance of that mode and the unstated hot leakage; the D2PAK siblings VB60100C-E3/4W (C7409628) and -E3/8W (C3014159) read 9 and 0 in the jlcparts copy of 2026-09-14, not re-read",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "V60100C-E3/4W (LCSC C499495)"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "STPS30H100DJF-TR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "rank 1 of every function",
+    "value": "each function's rank 1 is the part selection.json holds for it (run FU-2A): 74HC423BQ,115, 74AUP1G32GW,125, TPS3703A7330DSERQ1, 74LVC1G175GW,125, 434153017835, SN74AUP1G14DBVR, SN74AUP1G17DBVR, SN74LVC1G04DBVR, BSC014N04LSATMA1, TPSI3052DWZR (servo rail gate driver, onboard driver, external module driver), IPT015N10N5ATMA1 (switch array and reverse-polarity array), CSD19537Q3T. Where selection.json holds no part (latch clock Schmitt buffer, freewheel diode) rank 1 is P2's rank 1; the latch clock buffer is SN74AUP1G17DBVR by the owner's ruling of 2026-10-03. No R3 function is among the fixed inputs of the task",
+    "source": "/home/claude/rcbench-research/round2/results/hardware/research/round2/selection.json, read 2026-10-03T11:20Z"
+   },
+   {
+    "figure": "disposition of P3's 9 entries",
+    "value": "all 9 are answered by a record in new_candidates and none is dropped: TPS3808G33DBVR (reset supervisor), 74AUP1G32SE-7 (OR gate), SN74AUP1G04DBVR (inverter), STL110N10F7 under pack precharge and under servo rail gate, V60100C-E3/4W (freewheel diode), CD74HC4538PWR, 74HC4538PW,118 and 74HC4538PW-Q100,118 (monostable). The two other TPS3808G33 orderables sit in alternates of the TPS3808G33DBVR record; both read Digi-Key stock 0",
+    "source": "this return; P3's return in the task"
+   },
+   {
+    "figure": "clear release of the 74HC4538 parts",
+    "value": "P3's exclusions hold on the page's words ('stated in the datasheet', Monostable.md@23c82ca:229-236, not 'in words') and FU-2A's re-rank ranked 74HC4538PW,118 second on the same evidence. None of the three 4538 datasheets (Nexperia Rev. 7, Nexperia -Q100 Rev. 5, TI SCHS123E) has a sentence on clear release. Each function table lists pulse rows only for the A and B edges and has no clear-rising row. The Nexperia sheet adds Fig. 8, which draws no output edge at the nCD rise, and a recovery time nCD to nA, nB (Table 7). The three records state this and rank behind the 74HC423, which has the sentence. If the owner reads 'stated' as 'in a sentence', all three drop and the monostable has one part",
+    "source": "Nexperia 74HC4538 Rev. 7 (fetched 2026-10-03T11:37:28Z), 74HC4538_Q100 Rev. 5 (11:42:37Z), TI cd74hc4538.pdf SCHS123E (11:37:28Z); FU-2A/017-rerank-R3.json; Monostable.md@23c82ca:229-236"
+   },
+   {
+    "figure": "74HC4538PW-Q100,118 datasheet and Digi-Key listing",
+    "value": "the -Q100 orderable has its own datasheet, 74HC4538_Q100 Rev. 5 (26 March 2024, 295003 bytes), not the datasheet of the base part: Rev. 7 of 74HC4538 lists only 74HC4538D and 74HC4538PW in its ordering table. Digi-Key finds no product 74HC4538PW-Q100,118 (HTTP 404) and lists 74HC4538PW-Q100,11 with stock 0 and lead 22 weeks, so its second source is the alternate 74HC4538PW,118. JLCPCB C3241572 reads 2314 / 2314",
+    "source": "vendors.py fetch https://assets.nexperia.com/documents/data-sheet/74HC4538_Q100.pdf (2026-10-03T11:42:37Z); vendors.py digikey 74HC4538PW-Q100,118 (11:42:27Z); vendors.py digikey-search 74HC4538PW-Q100 (11:42:36Z); vendors.py jlcpcb C3241572 (11:42:25Z)"
+   },
+   {
+    "figure": "window sums of the three 4538 records",
+    "value": "74HC4538PW,118 and -Q100: setting 1.5 %, R 0.25 %, C 0.5 %, K supply 0.30 %, K temperature 0.34 %, leakage 0.95 % = 3.84 %, 163.5 to 176.5 ms on 170 ms at C 2.2 uF and R 110.4 kOhm; with the owner's 3 % for the K temperature term 6.50 %, 158.95 to 181.05 ms. CD74HC4538PWR: no K against temperature is stated, so only the 6.50 % case applies (supply term 0.3 % read from Fig. 8 at CX 100 nF; leakage 0.283 uA at 50 degC, 0.95 %). The K figures of the Nexperia sheet are FU-2A's 600 dpi readings of Figs. 15 and 17, re-viewed here at 110 dpi and not re-measured; they are typical curves at CEXT 100 nF and 1 uF and VCC 4.5 V, not limits",
+    "source": "Nexperia 74HC4538 Rev. 7 Figs. 15, 17, Table 6; TI SCHS123E Fig. 8, DC specifications; FU-2A/017-rerank-R3.json; Monostable.md@23c82ca:296-337; V36 Answer"
+   },
+   {
+    "figure": "TPS3808G33DBVR band and release",
+    "value": "VIT- 3.07 V, accuracy 1.25 % at TJ -40 to 85 degC: minimum 3.0316 V, maximum 3.1084 V; VHYS 1 % typ and 2.5 % max of VIT: release at most 3.186 V (3.194 V over TJ -40 to 125 degC at 1.5 %); band to 3.201 V 169.4 mV (177.1 mV at the full-range minimum 3.0240 V); td 12 ms min, 20 ms typ, 28 ms max with CT open; VPOR 0.8 V; VDD 1.7 to 6.5 V. Against the shortlist: TPS3703A7330DSERQ1 155 mV, TPS3850H33DRCT 156.5 mV, TPS389033GQDSERQ1 171.6 mV",
+    "source": "TI SBVS050N, sections 4, 6.5, 6.6 (https://www.ti.com/lit/ds/symlink/tps3808.pdf, fetched 2026-10-03T11:37:25Z); P2 records; derived"
+   },
+   {
+    "figure": "SN74AUP1G04DBVR against the enable loads",
+    "value": "load 4 x 0.34 mA (10 kOhm to 3.399 V) + 0.02 mA STB pull-up = 1.38 mA; datasheet VOL 0.33 V max at 2.7 mA, 0.45 V max at 4 mA (VCC 3 V, -40 to 85 degC); the SN74LVC244A OE pins (R4's gated buffer) have VIL 0.8 V max at VCC 2.7 to 3.6 V and the TCAN1472 STB has VIL 0.3 x VIO = 0.99 V; Ioff 0.6 uA at -40 to 85 degC; tpd 3.9 ns max at 3.3 V",
+    "source": "TI SCES571K (fetched 2026-10-03T11:37:27Z); TI SN74LVC244A (fetched 11:39:00Z); selection.json R4; P2 [D34]; derived"
+   },
+   {
+    "figure": "STL110N10F7 figures",
+    "value": "V(BR)DSS 100 V min; VGS +/-20 V; VGS(th) 2.5 to 4.5 V; RDS(on) 5 mOhm typ and 6 mOhm max at VGS 10 V, ID 10 A; ID 107 A at TC 25 degC and 21 A at Tpcb 25 degC (Rthj-pcb 31.3 degC/W); IDSS 1 uA max at 100 V, 25 degC and 10 uA at TC 125 degC (not production tested); Qg 72 nC typ at 50 V, 10 V; at 6.35 A 38.1 mV and 0.24 W (derived, 25 degC RDS(on)); the datasheet states no RDS(on) at the driver's 13.9 to 16.2 V. Both uses together are 6 a board: need 30, threshold 150, against JLCPCB 20838 and Digi-Key 4814",
+    "source": "ST DS9392 Rev. 6 (https://www.st.com/resource/en/datasheet/stl110n10f7.pdf, fetched 2026-10-03T11:37:27Z); derived"
+   },
+   {
+    "figure": "V60100C-E3/4W as the freewheel diode",
+    "value": "onboard 300 A over 5 packages (10 diodes at 30 A): VF 0.79 V max at 30 A, 25 degC (0.70 V at 125 degC); turn-off VDS at most 85.79 V against 85.93 V for 5 x STPS30H100DJF-TR; pulse 2.21 us at 67.2 V and 41.8 us at 2.8 V; I2t 0.0125 A2s a diode against 425 A2s (IFSM 320 A, 8.3 ms); at most 0.50 mJ a diode, 4.95 mJ for 10. External 600 A (not known, V324): 20 diodes, 4.41 us and 83.6 us, 19.8 mJ of 90 mJ. IR at 100 V: 1000 uA max at 25 degC per diode (10 mA for 10), 30 mA typ at 125 degC with no maximum. JLCPCB row: THT, manualWeld; whether JLCPCB accepts that mode on the order is not read",
+    "source": "Vishay 88942 (https://www.vishay.com/docs/88942/v60100c.pdf, fetched 2026-10-03T11:37:27Z); jlcparts cache.sqlite3 row C499495 (read-only); derived"
+   },
+   {
+    "figure": "JLCPCB readings of the new parts",
+    "value": "C43698 36025/35890; C414616 1281/1280; C702174 901/884; C842327 1174/1174; C2682121 2945/2942; C672185 20838/20811; C499495 919/919 (all expand) at 2026-10-03T11:36:51Z to 11:36:52Z; C547076 8948/8946, C3241572 2314/2314, C354056 934/920 at 11:42:25Z",
+    "source": "vendors.py jlcpcb C<digits> (selectSmtComponentList, exact LCSC match)"
+   },
+   {
+    "figure": "Digi-Key readings of the new parts",
+    "value": "TPS3808G33DBVR 8077, lead 20 weeks (cached 11:24:23Z); TPS3808G33DBVT 0 (11:37:18Z); TPS3808G33QDBVRQ1 0 (11:37:15Z); 74AUP1G32SE-7 252, lead 52 weeks (cached 11:27:45Z); SN74AUP1G04DBVR TI row 16657, lead 12 weeks (cached 11:28:46Z); STL110N10F7 4814, lead 24 weeks (cached 11:26:44Z); V60100C-E3/4W 1531, lead 29 weeks (cached 11:30:49Z); 74HC4538PW,118 Nexperia row 4779, lead 20 weeks (cached 11:24:17Z); CD74HC4538PWR 7021, lead 12 weeks (cached 11:32:12Z); 74HC4538PW-Q100,11 0, lead 22 weeks (11:42:36Z). All Active. Quota read 763 calls left at 11:37:19Z, 761 after the last call",
+    "source": "vendors.py digikey MPN, digikey-search, digikey-quota (DIGIKEY_ENV_FILE and DIGIKEY_CACHE_DIR as set by the task)"
+   },
+   {
+    "figure": "lifecycle pages read",
+    "value": "TPS3808G33DBVR ACTIVE (ti.com/product/TPS3808, 11:38:00Z); SN74AUP1G04DBVR ACTIVE (ti.com/product/SN74AUP1G04, 11:38:01Z); CD74HC4538PWR ACTIVE (ti.com/product/CD74HC4538, 11:43:28Z); STL110N10F7 Active, available until 02/2032 (st.com, 11:38:01Z); 74HC4538PW Production (nexperia.com, 11:43:27Z) and 74HC4538PW-Q100 Production (11:42:36Z). Diodes' page for 74AUP1G32 (11:38:01Z) and Vishay's page 88942 (11:38:02Z) answered HTTP 200 with no status in the body, so Digi-Key ProductStatus Active is the recorded status for 74AUP1G32SE-7 and V60100C-E3/4W. Longevity commitments and change notices were not read",
+    "source": "vendors.py fetch of each URL, 2026-10-03; Lifecycle check, Research.md"
+   },
+   {
+    "figure": "Sourcing rule 5 routes",
+    "value": "every first-ranked part passes by the second vendor (Digi-Key at or above its gate). New records: second vendor for all but 74HC4538PW-Q100,118, whose route is the alternate 74HC4538PW,118 (rank 2, full record). No first-ranked part rests on an alternate, so verify names no alternate",
+    "source": "P2 records; this return"
+   },
+   {
+    "figure": "datasheets read in this re-rank",
+    "value": "TI SBVS050N TPS3808; Diodes DS35154 Rev. 4-2 74AUP1G32; TI SCES571K SN74AUP1G04; TI SN74LVC244A; ST DS9392 Rev. 6 STL110N10F7; Vishay 88942 V60100C; Nexperia 74HC4538 Rev. 7; Nexperia 74HC4538_Q100 Rev. 5; TI SCHS123E CD74HC4538. All fetched with vendors.py fetch (chrome client, HTTP 200) between 2026-10-03T11:37:25Z and 11:42:37Z and kept under /home/claude/rcbench-research/round2/scratch/FU-2J/rerank-R3/ds/",
+    "source": "vendors.py fetch URL --out; scratch FU-2J/rerank-R3/ds/*.meta"
+   }
+  ]
+ }
+}

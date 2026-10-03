@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R3",
+ "label": "adjudicator-R3",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "function": "latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)",
+  "part": "SN74AUP1G17DBVR",
+  "stands": false,
+  "scope": "function",
+  "ruling": "The refutation does not stand, and SN74AUP1G17DBVR stays for this function. The stock and lifecycle verifier confirmed the part with no failed checks. The datasheet verifier raised one disagreement, and it is about a recorded figure, not a requirement. I re-read SCES579J. P2's figure, \"hysteresis 0.27 to 0.66 V typ range stated at 25 degC\", is wrong in three ways. (1) Table 6.5 gives hysteresis (VT+ - VT-) as minimum and maximum only, with no typical column. (2) 0.27 to 0.66 V is the VCC 1.65 V row, not the 3.3 V supply's row. (3) The same limits apply at 25 degC and at -40 to +85 degC. At VCC 3 V the hysteresis is 0.79 V minimum and 1.31 V maximum, at both temperatures. The corrected figure is 0.79 to 1.31 V (min to max) at VCC 3 V. The datasheet has no 3.3 V row. The function's requirements still pass. The input is a Schmitt trigger (sections 3 and 8.1: it allows slow input transitions). The recommended operating conditions (6.3) have no input transition-rate row. I_off is 0.2 uA at 25 degC and 0.6 uA at -40 to +85 degC (6.5). VCC is 0.8 to 3.6 V, and TA is -40 to +85 degC (6.3). It is a single buffer with no processor, register or firmware (V32). IOBoard.md and Research.md set no hysteresis value for this buffer (IOBoard.md Not known bullet, V31, Q9), so the misstated figure fails no requirement. Even so, the actual hysteresis at 3 V is larger than the stated one, which is the conservative direction for the RC debounce. The verifier itself recorded passes true on this check. The error is in this report's figure for this function only. It concerns neither lifecycle, maker nor LCSC identity, so the scope is function. Record the corrected figure. Do not send the next-ranked candidate.",
+  "evidence": "SCES579J (JUNE 2004, REVISED SEPTEMBER 2017), Table 6.5 Electrical Characteristics, row Delta VT Hysteresis (VT+ - VT-), MIN and MAX columns only (TYP empty): VCC 0.8 V 0.07/0.5; 1.1 V 0.08/0.46; 1.4 V 0.18/0.56; 1.65 V 0.27/0.66; 2.3 V 0.53/0.92; 3 V 0.79/1.31 V, identical at TA 25 degC and -40 to +85 degC. Table 6.3 Recommended Operating Conditions: rows VCC 0.8 to 3.6 V, VI 0 to 3.6 V, VO, IOH, IOL, TA -40 to 85 degC; no delta-t/delta-v row. Section 8.1: 'independent gate with Schmitt-trigger inputs, which allows for slow input transition'. Table 6.5 Ioff (VI or VO 0 to 3.6 V, VCC 0 V): 0.2 uA at 25 degC, 0.6 uA at -40 to +85 degC. IOBoard.md Not known bullet (V31) and Research.md Q9 name a Schmitt buffer with I_off and state no hysteresis value. Stock verifier: no failed checks (JLCPCB C183012 stockCount 8832, canPresaleNumber 8700, 11:51:16Z; Digi-Key Active).",
+  "source": "https://www.ti.com/lit/ds/symlink/sn74aup1g17.pdf (vendors.py fetch, HTTP 200, 2727870 bytes), SCES579J sections 3, 6.3, 6.5, 8.1; hardware/docs/IOBoard.md Not known bullet on the operator clear control; hardware/docs/Research.md V31, V32, Q9 at commit 7e74cd442a79",
+  "read_at": "2026-10-03T12:18:58Z"
+ }
+}

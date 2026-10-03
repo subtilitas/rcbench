@@ -1,0 +1,72 @@
+{
+ "role": "P3",
+ "category": "R3",
+ "label": "P3-R3",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "missed": [
+   {
+    "function": "reset supervisor",
+    "part": "TPS3808G33DBVR (LCSC C43698); same-die orderables TPS3808G33QDBVRQ1 (C414616) and TPS3808G33DBVT (C702174)",
+    "maker": "Texas Instruments (S1)",
+    "why": "P2 returned no entry for it, neither shortlisted nor dropped; it is a R3-row-adjacent TI supervisor that passes every requirement value and beats P2's rank 3. TPS3808 datasheet SBVS050N (Aug 2026), https://www.ti.com/lit/ds/symlink/tps3808.pdf, read 2026-10-03T11:21:25Z. G33: VIT- 3.07 V nominal, accuracy -1.25 % to +1.25 % over -40 to 85 degC (tables 6.5), so threshold minimum 3.0316 V (above 2.0, 1.65, 0.8 V); VHYS fixed versions 1 % typical, 2.5 % maximum of VIT, so release at most 3.1084 + 0.0768 = 3.185 V (derived), at or below 3.201 V; band 3.201 - 3.0316 = 169.4 mV (derived), narrower than rank 3's 171.6 mV and wider than ranks 1 and 2 (155 and 156.5 mV). V43: td 12 ms min, 20 ms typ, 28 ms max with CT open (section 6.6), against 125 ns, and a stated minimum, where rank 3 meets V43 on a typical figure only. Output held low from VPOR 0.8 V (VOL max 0.2 V at 15 uA; Trise(VDD) at least 15 us/V), open-drain active-low RESET with a 10 kOhm to 1 MOhm pull-up to the 3.3 V rail, the same topology as rank 1. VDD 1.7 to 6.5 V (1.65 V at 0 to 85 degC), TJ -40 to 125 degC. No watchdog, only an MR input with an internal 90 kOhm pull-up: no firmware in the clear path. Packaging table: TPS3808G33DBVR Active, Production. TI product page https://www.ti.com/product/TPS3808 reads ACTIVE (2026-10-03T11:31:45Z). JLCPCB C43698 stockCount 36025, canPresaleNumber 35890, expand (11:24:30Z, vendors.py jlcpcb); C414616 1281/1280 and C702174 901/884 (11:24:31Z and 11:24:33Z). Digi-Key TPS3808G33DBVR Active, stock_available 8077, lead 20 weeks (11:24:23Z, vendors.py digikey). Placements: 1 a board. Pinout (SOT-23-6 DBV) differs from the WSON-6 TPS3703, so not a drop-in."
+   },
+   {
+    "function": "OR gate",
+    "part": "74AUP1G32SE-7 (LCSC C842327)",
+    "maker": "Diodes Incorporated (S1)",
+    "why": "P2 considered Nexperia, TI and UMW rows only; Diodes' AUP family is not recorded. It passes every value and has a lower I_off than rank 3. Datasheet DS35154 Rev. 4-2 (Feb 2015), https://www.diodes.com/assets/Datasheets/74AUP1G32.pdf, read 2026-10-03T11:27:18Z: IOFF 0.2 uA typ, 0.6 uA max at TA -40 to 85 degC, VI or VO 0 to 3.6 V, VCC 0 (inputs A and B), so I_off on both inputs; VCC 0.8 to 3.6 V (minimum under 3.046 V; 3.201 to 3.399 V inside); VIH 2.0 V min at VCC 3.0 to 3.6 V, below the 74HC423's Q high level of VCC - 0.1 V; VOH VCC - 0.1 V at -20 uA; push-pull output, +/-4 mA at 3 V; Schmitt-trigger inputs; TA -40 to 125 degC. This ties rank 2 (0.6 uA) and is below rank 3's 74LVC1G32GW,125 (+/-2 uA by P2's record). Package SOT-353 (SC-70-5), the same SOT-353 land family as rank 1's 74AUP1G32GW,125 TSSOP-5 (SOT353), so it would serve as a same-land second source for rank 1 (land dimensions not compared). JLCPCB C842327 stockCount 1174, canPresaleNumber 1174, expand (2026-10-03T11:27:43Z); Digi-Key 74AUP1G32SE-7 Active, stock_available 252, lead 52 weeks (11:27:45Z). Manufacturer status: https://www.diodes.com/part/view/74AUP1G32 answered 200 (11:27:45Z) with no status field found, so Digi-Key ProductStatus Active is the recorded distributor figure. Placements: 1 a board."
+   },
+   {
+    "function": "inverter on an active-low output enable",
+    "part": "SN74AUP1G04DBVR (LCSC C2682121)",
+    "maker": "Texas Instruments (S1)",
+    "why": "P2 returned two parts and no drop; the AUP1G04 family is not recorded. Datasheet SCES571K (June 2014), https://www.ti.com/lit/ds/symlink/sn74aup1g04.pdf, read 2026-10-03T11:28:36Z, section 7.5: Ioff 0.2 uA typ, 0.6 uA max at VI or VO 0 to 3.6 V, VCC 0 V (I_off on the input from the enable node); VCC 0.8 to 3.6 V; VOL 0.33 V max at IOL 2.7 mA and 0.45 V max at 4 mA, VCC 3 V, -40 to 85 degC, so the 10 kOhm pull-ups of 4 OE pins (1.36 mA) plus the TCAN1472 STB pull-up (IIL up to 20 uA, STB VIL 0.3 x VIO = 0.99 V at VIO 3.3 V) sit inside the sink limit with VOL about 0.33 V; VOH VCC - 0.1 V at -20 uA. The OE pins' own VIL belongs to R4's buffer and is not read here. Same SOT-23-5 land as rank 1's SN74LVC1G04DBVR. JLCPCB C2682121 stockCount 2945, canPresaleNumber 2942, expand (2026-10-03T11:28:43Z); Digi-Key SN74AUP1G04DBVR Texas Instruments row Active, stock_available 16657, lead 12 weeks (11:28:46Z; a UMW row also exists). The datasheet's own table gives I_off 0.6 uA against the LVC1G04's higher limit, so it ranks above rank 2 on I_off if the shortlist keeps I_off as the order. Not compared: tpd at 3.3 V against the 1 us budget (AUP is nanoseconds, not read in the table)."
+   },
+   {
+    "function": "pack precharge",
+    "part": "STL110N10F7 (LCSC C672185)",
+    "maker": "STMicroelectronics (S1)",
+    "why": "P2's precharge shortlist holds two parts and no drop; this is a third. ST DS9392 Rev 6 (March 2020), https://www.st.com/resource/en/datasheet/stl110n10f7.pdf, read 2026-10-03T11:26:30Z: V(BR)DSS 100 V min (V34: at least 85 V); VGS +/-20 V (at least 16.2 V); enhancement mode, VGS(th) 2.5 to 4.5 V (fail-open); RDS(on) 5 mOhm typ, 6 mOhm max at VGS 10 V, 10 A; ID 107 A (3.5 A peak of V42 is far inside); IDSS 1 uA max at VDS 100 V (25 degC) and 10 uA max at TC 125 degC (V40: 5 mA both paths); PowerFLAT 5x6. Status: https://www.st.com/en/power-transistors/stl110n10f7.html reads Active, 'Product is in volume production' (11:26:44Z). JLCPCB C672185 stockCount 20838, canPresaleNumber 20811, expand (11:26:42Z), against a gate of 50 at 2 a board; Digi-Key STL110N10F7 Active, stock_available 4814, lead 24 weeks (11:26:44Z). The 4 mOhm-class and 100 V alternatives in the allowlist (TI CSD19532Q5B C473333, Infineon BSC098N10NS5 C534398, onsemi FDD86110 C455153) were found in the jlcparts copy only and not read."
+   },
+   {
+    "function": "servo rail gate",
+    "part": "STL110N10F7 (LCSC C672185)",
+    "maker": "STMicroelectronics (S1)",
+    "why": "P2's servo rail gate shortlist holds two parts; this is a third, a 100 V N-channel switch of the same class as rank 1, driven by the floating TPSI3052 drive. ST DS9392 Rev 6, https://www.st.com/resource/en/datasheet/stl110n10f7.pdf, read 2026-10-03T11:26:30Z: V(BR)DSS 100 V (V44: at least 27 V); VGS +/-20 V (at least 16.2 V, the TPSI3052's highest VDRV); RDS(on) 6 mOhm max at VGS 10 V (0.24 W at 6.35 A, derived; lower at 15 V drive, not stated); ID 107 A; IDSS 1 uA max at 100 V (25 degC), 10 uA at 125 degC, so the 5 mA off-state limit (V39) holds by three orders; enhancement mode, VGS(th) 2.5 to 4.5 V, open with the gate undriven. Conduction from 0.8 V depends on the driver, as for rank 1, not on the switch. Status Active (st.com page, 2026-10-03T11:26:44Z). JLCPCB C672185 20838/20811 (11:26:42Z) against a gate of 100 at 4 a board; Digi-Key Active, 4814 (11:26:44Z)."
+   },
+   {
+    "function": "switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+    "part": "V60100C-E3/4W (LCSC C499495)",
+    "maker": "Vishay (S1)",
+    "why": "P2 recorded no Vishay TO-220 or TO-247 dual; this one states VF at 30 A, which beats ranks 2 and 3 on P2's own metrics. Vishay document 88942 (26-Jun-2023), https://www.vishay.com/docs/88942/v60100c.pdf, read 2026-10-03T11:31:15Z (same figures in rev 23-Sep-2019): 2 x 30 A common cathode, VRRM 100 V (at least 85 V, with the node held under 85 V); VF max 0.79 V at 30 A and 25 degC, 0.70 V at 30 A and 125 degC, per diode; IFSM 320 A per diode (8.3 ms half sine). 300 A over 5 packages (10 diodes) is 30 A a diode, exactly the stated VF point, so the onboard turn-off VDS is at most 85 + 0.79 = 85.79 V (derived), against rank 1's 85.93 V. Pulse I2t per diode, I^2 x t / 3: 0.0007 A2s at 2.2 us and 0.012 A2s at 40 us (derived), against IFSM^2 x tp / 2 = 425 A2s. Limits: the datasheet states no VF above 30 A and no current sharing between 10 diodes, so equal share is assumed with no margin above the stated point; TO-220AB is through-hole, and its fit to JLCPCB assembly is not compared. JLCPCB C499495 stockCount 919, canPresaleNumber 919 (2026-10-03T11:30:47Z) against a gate of 125 for 5 packages a board; Digi-Key V60100C-E3/4W Vishay General Semiconductor, Active, stock_available 1531, lead 29 weeks (11:30:49Z). Vishay's page for the part was not read, so Digi-Key's ProductStatus is the recorded figure. Checked and not a find: VS-60CPQ150-N3 (C468113), JLCPCB stockCount 62 at 11:30:40Z against 75 for 3 packages a board."
+   },
+   {
+    "function": "monostable",
+    "part": "CD74HC4538PWR (LCSC C354056)",
+    "maker": "Texas Instruments (S1)",
+    "why": "P2 records no entry for the TI CD74HC4538; it is the pin-compatible TSSOP-16 alternate of the 74HC4538PW,118 and carries the same single open point. TI SCHS123E (Oct 2003), https://www.ti.com/lit/ds/symlink/cd74hc4538.pdf, read 2026-10-03T11:16:27Z: dual retriggerable, resettable; truth table has R L giving Q L, and pulse rows only for the A and B trigger edges with R H, no reset-rising row; 'On power up the IC is reset'; VCC 2 to 6 V (HC types); RX min 5 kOhm, CX min 0, so R 50 to 150 kOhm and the C that gives 170 ms are inside; output pulse width tested at VCC 3 V and 5 V (0.64 to 0.78 ms at 25 degC and 3 V), K factor graphed against VCC (Figs 8 and 9); trigger inputs A and B have no rise or fall limit. Like the Nexperia sheet it has no sentence on clear release, so it ranks only if the owner or the re-rank accepts the function table as the statement (see the 74HC4538 exclusion); the spare-input levels differ from the page's wiring table (the 4538 trigger on a falling A needs B low, on a rising B needs A high) and the wiring is checked against the part's table. Status: https://www.ti.com/product/CD74HC4538 reads ACTIVE (11:32:12Z); packaging table lists CD74HC4538PWR Active, Production. JLCPCB C354056 stockCount 934, canPresaleNumber 920, expand (11:24:34Z); Digi-Key CD74HC4538PWR Active, stock_available 7021, lead 12 weeks (11:32:12Z). The onsemi sibling, MC74HC4538A/D Rev. 17 (July 2026, read 11:16:28Z), prints 'Not Triggered' for reset transitions in its function table, but lists MC74HC4538ADR2G, ADTR2G and ADG as discontinued; its one orderable not marked discontinued, NLV74HC4538ADR2G (C904883), reads stockCount 0, canPresaleNumber 0 (11:18:01Z), so it is no candidate."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "functions": [
+     "monostable"
+    ],
+    "part": "74HC4538PW,118",
+    "reason_given": "the clear release is not stated in words: section 1 and Table 3 of Rev. 7 have no sentence on it; Monostable.md@23c82ca:229-236 requires it stated",
+    "why_it_fails": "The page says a part whose clear release can trigger is excluded and that the '423 behaviour is required and stated in the datasheet; it does not say in words, and nothing read shows this part's release triggers. Nexperia 74HC4538 Rev. 7 (26 March 2024), https://assets.nexperia.com/documents/data-sheet/74HC4538.pdf (P2 read 2026-10-03T10:49:20Z; Table 3 on page 3 re-read from that copy): Table 3 is the complete function table, with pulse rows only for nA falling with nB L and for nB rising with nA H, both with nCD H, and nCD L giving nQ L; it has no nCD-rising row. Table 9 lists a recovery time 'nCD to nA, nB', Fig. 5 shows reset only as pulse shortening, and Fig. 2 shows an internal power-on reset. FU-2A's re-rank kept this part at rank 2 on the same fact ('not stated in words, so it ranks below the owner's choice'), and round 1's P4 of the 74HC423 also cited the missing nCD-rising row of its Table 3 beside the sentence. The drop leaves the monostable shortlist with one part, so a standing refutation of the 74HC423BQ,115 has no next-ranked candidate. The sheet also states pulse-width variation over temperature of +/-0.2 % typical (section 1), a figure no stocked 74HC423 gives (V36). Caveat: no sentence says the release does not trigger, and the part is below the 74HC423 on that point; the reason holds only if the owner reads 'stated' as 'in a sentence'. Other values pass as for rank 1: VCC 2.0 to 6.0 V, R 50 to 150 kOhm inside the 10 to 1000 kOhm (2.0 V) and 2 to 1000 kOhm (5.0 V) ranges, CEXT no limit, nREXT/CEXT leakage +/-50 nA at 25 degC and +/-500 nA to 85 degC, -40 to 125 degC. JLCPCB C547076 stockCount 8948, canPresaleNumber 8946 (2026-10-03T11:24:37Z); Digi-Key Nexperia USA row Active, stock_available 4779 (11:24:17Z)."
+   },
+   {
+    "functions": [
+     "monostable"
+    ],
+    "part": "74HC4538PW-Q100,118",
+    "reason_given": "same die and datasheet as 74HC4538PW,118: clear release not stated ([D2]); C3241572 2314/2314",
+    "why_it_fails": "The reason is the one above and does not hold for the same grounds: the function table that lists every pulse-producing condition has no nCD-rising row, and the page's requirement is that the behaviour be stated in the datasheet, not that a sentence state it. The caveat above applies unchanged. JLCPCB C3241572 stockCount 2314, canPresaleNumber 2314, re-read 2026-10-03T11:32:10Z; the automotive suffix adds no second reason."
+   }
+  ],
+  "missed_functions": []
+ }
+}

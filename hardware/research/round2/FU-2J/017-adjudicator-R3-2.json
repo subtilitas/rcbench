@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R3",
+ "label": "adjudicator-R3-2",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "function": "servo rail gate",
+  "part": "BSC014N04LSATMA1",
+  "stands": false,
+  "ruling": "The refutation does not stand. BSC014N04LSATMA1 stays for \"servo rail gate\". The stock verifier confirmed the part and raised no refutation. Its one disagreeing check, market introduction, was stated as \"not read\" and read as 2012-10-11. That is 14.0 years on the market, against the 12-month flag, and the check passes. The datasheet verifier's one failed check is \"ambient temperature\". I re-read it. Rev. 2.9 (2024-06-11), Table 2, gives the operating and storage temperature Tj, Tstg as -55 to 175 degC. Line 2.9 of the revision history reads \"Upgrade Operating and storage temperature max to 175°C\". The stated \"Tj -55 to 150 degC\" is therefore the figure of an earlier revision and is wrong for the datasheet in force. The error is on the conservative side: 150 degC is lower than 175 degC. The requirement is the board's 0 to 50 degC ambient (V7, owner, 2026-09-28: one range for the whole IO board). That range lies inside both ratings. The verifier recorded passes true for this check. This follows the ruling on INA3221AIRGVR in FU-2B2, adjudicator-R8-3, where a wrong figure that still met the requirement corrected the record and did not refute the part. A refuted report entry differs, because there the figure is the deliverable. Here the part meets every requirement value. The correction to the record is Tj, Tstg -55 to 175 degC (Rev. 2.9, Table 2). Nothing in this ruling concerns the part's lifecycle, end-of-life notices, maker allowlist or LCSC identity. Its subject is a figure checked against this function's requirement, so the scope is function. This ruling re-read only the temperature evidence and the V7 requirement. The other 9 datasheet checks and all 13 stock and lifecycle checks agree and pass, as the verifiers report.",
+  "evidence": "Datasheet fetched 2026-10-03T12:21:03Z, HTTP 200, 1,518,278 bytes, MD5 b34c416b77efe35f46db77f9f2e879dd. It is saved at /home/claude/rcbench-research/round2/scratch/FU-2J/adjudicator-R3/bsc014n04ls.pdf, with its text extraction bsc014n04ls.txt beside it. Every page footer reads \"Revision 2.9\". Table 2 (text line 108): \"Operating and storage temperature Tj, Tstg -55 - 175 °C\". The features list (line 17) gives \"175°C rated\". The revision history (lines 618-629) reads \"Revision 2024-06-11, Rev. 2.9\" and \"2.0 2012-10-11 Release of final version\". Its line 2.9 is \"2024-06-11 Upgrade Operating and storage temperature max to 175°C\". Requirement: Research.md:720, V7, answer \"0 to 50 °C ambient, one range for the whole IO board (owner, 2026-09-28)\". IOBoard.md:218, Servo rail gate row, sets no temperature figure of its own. IOBoard.md:250 reads \"Behaviour outside 0 to 50 °C: not analysed\". Precedent: results/hardware/research/round2/FU-2B2/017-adjudicator-R8-3.json (INA3221AIRGVR noise figure, stands false). Both files are in checkout 7e74cd442a79.",
+  "source": "https://www.infineon.com/assets/row/public/documents/24/49/infineon-bsc014n04ls-datasheet-en.pdf (BSC014N04LS Rev. 2.9, Table 2 and Revision History), fetched with vendors.py fetch; hardware/docs/Research.md:720 (V7) and hardware/docs/IOBoard.md:218 and :250 at commit 7e74cd442a79",
+  "read_at": "2026-10-03T12:21:03Z",
+  "scope": "function"
+ }
+}

@@ -1,0 +1,2006 @@
+{
+ "task": "FU",
+ "run": "FU-2J",
+ "run_id": "4b631036bb8024a0",
+ "commit": "7e74cd442a79fadc539deeee8715e6a5264fc7d7",
+ "date": "2026-10-03",
+ "run_info": {
+  "claude_code": "2.1.287 (Claude Code)",
+  "cpus": 48,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "concurrency": 16,
+  "concurrency_setting": "unset",
+  "agent_model": "sonnet",
+  "oversight_model": "opus",
+  "digikey_calls_left": 839,
+  "vendors_sha256": "214b14a3af0a4a1e0edfab77124a786c4e0fade844ec4d0c72149c1571ff8bf6"
+ },
+ "followup": {
+  "phases": "P2-P4",
+  "round": 1,
+  "categories": [
+   "R3",
+   "R9"
+  ],
+  "items": [
+   {
+    "category": "R3",
+    "function": "servo rail gate",
+    "requirement": "Conducts from 0.8 V: on each of the 3 servo rails, 0.8 to 8.4 V, and on the adjustable supply's output, 0.8 to 15 V, each up to 6.35 A (V55; owner, 2026-09-30). The BTS7004-1EPP starts only at VS(OP), 4.1 V at most",
+    "source": "IOBoard.md, Servo rail gate; hardware/STATUS.md, Servo path from 0.8 V",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R3",
+    "function": "onboard pack switch MOSFETs; external pack switch module; pack overvoltage and transient clamp",
+    "requirement": "Round 1 refutes IPT015N10N5ATMA1 and the VS-FC420SA10 and VS-FC270SA20 modules on safe operating area during the controlled turn-off. It finds no clamp that holds the pack node under 85 V at up to 600 A. Answered under Raised by P1: V270: 0 to 50 °C ambient. Supply: the ESC pack from its lowest voltage (V181) to 67.2 V, 16 cells at 4.2 V (F15); the gate drive from the 3.2 to 3.4 V logic window; the clamp holds the pack node under 85 V. The same range answers V38's question for the safety gate and the ESC pack switches (owner, 2026-10-01) V324: The bus capacitance with damping, with no clamp part. It is a stage 2 requirement for the 300 A onboard path, from FU-2A's figures: 6 x 330 µF at 35 to 52 mOhm, a peak under 82 V, 45 mJ at 1 µH, the loop inductance stated as assumed. The 600 A external path and the external pack switch module are not known. A pass-2 run of R3 researches the switched-node freewheel diode (owner, 2026-10-03)",
+    "source": "hardware/STATUS.md, ESC pack switch; Control.md, Not known",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R9",
+    "function": "cell monitor isolation barrier (new)",
+    "requirement": "An isoSPI (isolated SPI) transceiver pair or a digital isolator between the ADBMS1818ASWAZ-RL and the measurement coprocessor's SPI1, rated 85 V DC working or more (V189). Answered under Raised by P1: V289: A digital isolator on direct SPI, rated 85 V DC working or more (V189). Its current is for research (owner, 2026-10-01). Its pack side runs from an always-on supply referenced to the pack negative, not from the ADBMS1818's regulator, which is off while the monitor sleeps; the same supply gives the ADBMS1818 an external VREG, and V+ of 16 V or more for packs under 16 V. That supply is a function of R9 (owner, 2026-10-02)",
+    "source": "V189; IOBoard.md, Cell monitor isolation; Pins.md",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "category": "R9",
+    "function": "cell monitor pack-side supply (new)",
+    "requirement": "An always-on supply referenced to the ESC pack's negative. It runs the isolator's pack side while the ADBMS1818ASWAZ-RL sleeps, so the monitor can be woken over SPI, gives the ADBMS1818 an external VREG, and gives V+ of 16 V or more for packs under 16 V, from 1 cell (V181) to 16 cells at 67.2 V (F15) (V289, owner, 2026-10-02)",
+    "source": "V289; FU-2C, R9 P2 report and P4 figures",
+    "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+   },
+   {
+    "role": "P1",
+    "category": "R3",
+    "value": {
+     "where": "hardware/docs/Monostable.md:413-416",
+     "quantity": "off-state leakage, servo rail gate",
+     "value": "under 5 mA per rail",
+     "marking": "assumption",
+     "source": "pull request #167 / Monostable.md:413-416: '5 mA per rail as the placeholder until that idle current is measured'",
+     "refutation_tried": "the primary source itself calls this a placeholder, not a measured limit; V39 (Research.md:735) already asks the owner for the real idle current and is still 'for research' -- not re-raised here since it is already under Raised by P1",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   },
+   {
+    "role": "P1",
+    "category": "R3",
+    "value": {
+     "where": "hardware/docs/Monostable.md:401-402",
+     "quantity": "servo rail current/voltage as the unmodified monostable spec (commit 23c82ca) states it",
+     "value": "up to 8.4 V, 4 to 8 A, no stated lower voltage bound",
+     "marking": "assumption",
+     "source": "Monostable.md:401-402, a page that predates the owner's 2026-09-30 decisions (prerequisite 4 notes the linked pages can predate later owner decisions)",
+     "refutation_tried": "superseded as a current requirement: the Round 2 section states that where it differs from a category row or the specification, the specification and that section hold (Research.md:537), and V55 (owner, 2026-09-30) replaces the lower bound and current figure; kept only as the stale seed figure, not something P2 should qualify a part against",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   },
+   {
+    "role": "P1",
+    "category": "R3",
+    "value": {
+     "where": "hardware/docs/Research.md:743 (V47)",
+     "quantity": "reverse current the closed ESC pack switch carries back into the pack",
+     "value": "not answered; the reverse-polarity ideal-diode stage is expected to block it",
+     "marking": "assumption",
+     "source": "V47, Research.md:743, Answer column 'for research'",
+     "refutation_tried": "already raised as V47 and unanswered; not re-raised. Affects the onboard pack switch driver function, not the two follow-up gap functions (servo rail gate; onboard/external MOSFETs and clamp), so it does not block their search",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   },
+   {
+    "role": "P1",
+    "category": "R3",
+    "value": {
+     "where": "hardware/docs/Research.md:739 (V43)",
+     "quantity": "reset supervisor delay after the 3.3 V rail crosses its threshold",
+     "value": "not stated; depends on the 3.3 V ramp time R5 selects",
+     "marking": "assumption",
+     "source": "V43, Research.md:739, Answer column 'for research'",
+     "refutation_tried": "already raised as V43; not re-raised. Not a value the two follow-up gap functions need",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   },
+   {
+    "role": "P1",
+    "category": "R3",
+    "value": {
+     "where": "hardware/docs/Research.md:725 (V29)",
+     "quantity": "latch power-up state",
+     "value": "not stated",
+     "marking": "assumption",
+     "source": "V29, Research.md:725, Answer column 'for research'",
+     "refutation_tried": "already raised as V29; not re-raised. Not a value the two follow-up gap functions need",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   },
+   {
+    "role": "P1",
+    "category": "R9",
+    "value": {
+     "where": "hardware/docs/IOBoard.md:473",
+     "quantity": "cell count range on the balance lead",
+     "value": "1 to 16 cells, for the 16-cell pack of F15",
+     "marking": "owner",
+     "source": "F15 (owner, 2026-09-25): 16 cells, 67.2 V at 4.2 V a cell",
+     "refutation_tried": "F15's answer only gives the top of the range (16 cells); the lower bound of 1 is SET_PACK_CELLS's physical floor (shared/settings/settings.c:39-41) and is already a question under Raised by P1 (V181), so it is not re-raised here",
+     "question": -1
+    },
+    "reason": "assumption without a confirmed question"
+   },
+   {
+    "category": "R3",
+    "function": "switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+    "requirement": "No part: FU-2A's P3 named it a missed function and the re-rank returned no candidate. The diode clamps the ESC-side switched node when the pack switch opens (V54). It carries 300 A onboard and 600 A external for the 0.5 uH discharge, 22.5 mJ and 90 mJ, and stands 67.2 V reverse with the switch closed (F15). The turn-off qualification of IPT015N10N5ATMA1 assumes about 1 V across it, VDS up to 86 V with the node under 85 V. Read its forward voltage at 300 A, its single-pulse current and energy ratings and its reverse rating, and state the onboard turn-off margin with it. The 600 A external path is not known (V324): state the diode's figures there as reported, not as pass or fail. The ESC pack node is held by its bus capacitance with damping, a stage 2 requirement, not a clamp part (V324)",
+    "source": "FU-2A/016-P3-R3.json missed functions; FU-2A/012-P2-R3.json 'onboard switch turn-off'; V54, V270, V324",
+    "reason": "the owner's rulings of 2026-10-03 on FU-2P56 (Raised by P1, V324 to V333; V53, V159, V160)"
+   },
+   {
+    "category": "R3",
+    "function": "pack overvoltage and transient clamp; external pack switch module",
+    "requirement": "No part, by V324: the bus capacitance with damping holds the ESC pack node under 85 V, a stage 2 requirement with FU-2A's figures (6 x 330 uF at 35 to 52 mOhm, a peak under 82 V, 45 mJ at 1 uH, the loop inductance assumed). The 600 A external path and the external module are not known. This run searches neither a clamp part nor a module; it states the stage 2 requirement as FU-2A's figures give it",
+    "source": "V270, V324; FU-2A/012-P2-R3.json 'ESC pack node clamp level', 'external pack switch module'",
+    "reason": "the owner's rulings of 2026-10-03 on FU-2P56 (Raised by P1, V324 to V333; V53, V159, V160)"
+   },
+   {
+    "category": "R3",
+    "function": "latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)",
+    "requirement": "FU-2A's re-rank and its P4 datasheet verifier name SN74AUP1G17DBVR for it, a second placement beside the Q9 trigger-input I_off buffer (2 a board, need 10), but FU-2A's merge left the function without a part. Qualify it under its own function name by that part number",
+    "source": "FU-2A/017-rerank-R3.json figure 'latch clock Schmitt buffer (P3's missed function)'; FU-2A/019-P4-datasheet-R3.json",
+    "reason": "the owner's rulings of 2026-10-03 on FU-2P56 (Raised by P1, V324 to V333; V53, V159, V160)"
+   },
+   {
+    "category": "R3",
+    "function": "onboard pack switch driver; external module driver output",
+    "requirement": "The drivers take the latch output alone; no coprocessor signal reaches them (V53). A motor overcurrent or over-temperature opens the ESC pack switches through the coprocessor's failsafe latch and the panel's heartbeat: the latched coprocessor refuses the panel's control writes, the panel stops its heartbeat, and the monostable opens the switches, within the 500 ms stop deadline (V159, V160)",
+    "source": "V53, V159, V160, V288; IOBoard.md, Not defeatable",
+    "reason": "the owner's rulings of 2026-10-03 on FU-2P56 (Raised by P1, V324 to V333; V53, V159, V160)"
+   },
+   {
+    "category": "R3",
+    "function": "inverter on an active-low output enable",
+    "requirement": "R4's enable inverter, SN74LVC1G04DBVR, also drives the external CAN transceiver's STB from the enable node, so the TCAN1472VDRQ1 is in normal mode while the enable node is high and in standby when it falls (V326). The placement count across R3 and R4 takes a fifth SN74LVC1G04DBVR a board as the upper bound: need 25, gate 125",
+    "source": "V326; FU-2A/003-P2-R2.json 'external port loop delay'; TCAN1472-Q1 datasheet, STB",
+    "reason": "the owner's rulings of 2026-10-03 on FU-2P56 (Raised by P1, V324 to V333; V53, V159, V160)"
+   },
+   {
+    "category": "R3",
+    "function": "monostable; timing network (C and R of the monostable)",
+    "requirement": "The drift of k over 3.3 V +/-3 % and 0 to 50 degC is not known: no stocked 74HC423 states k against temperature. The window budget keeps +/-3 % as an assumption, and the corner sweep of Monostable.md step 11 tests the window at 0 and 50 degC (V36). The timing network's resistor and capacitor are stage 2",
+    "source": "V36; FU-2A/012-P2-R3.json 'timing network'",
+    "reason": "the owner's rulings of 2026-10-03 on FU-2P56 (Raised by P1, V324 to V333; V53, V159, V160)"
+   },
+   {
+    "category": "R3",
+    "function": "every R3 function",
+    "requirement": "FU-2A verified: 74HC423BQ,115 (monostable), 74AUP1G32GW,125 (OR gate), TPS3703A7330DSERQ1 (reset supervisor), 74LVC1G175GW,125 (latch), 434153017835 (latch clear control), SN74AUP1G14DBVR (trigger-path inverter), SN74AUP1G17DBVR (trigger input I_off buffer), BSC014N04LSATMA1 (servo rail gate), IPT015N10N5ATMA1 (onboard pack switch MOSFETs, pack reverse-polarity protection), TPSI3052DWZR (onboard pack switch driver, external module driver output, servo rail gate driver), CSD19537Q3T (pack precharge), SN74LVC1G04DBVR (inverter on an active-low output enable). Requalify them. FU-2P56 names IPT015N10N5ATMA1 and CSD19537Q3T on the ESC pack node, held under 85 V by the bus capacitance (V324). The timing network, the heartbeat-node resistors, links and pull-downs, and the test points (V333) are stage 2",
+    "source": "selection.json R3 (run FU-2A); FU-2P56 conflicts; V324, V333",
+    "reason": "the owner's rulings of 2026-10-03 on FU-2P56 (Raised by P1, V324 to V333; V53, V159, V160)"
+   },
+   {
+    "category": "R9",
+    "function": "V+ OR element (new)",
+    "requirement": "Feeds the ADBMS1818's V+ from each balance-lead tap that can be the pack top, so V+ stays at or above C18 - 0.3 V and C18 at or under V+ + 5.5 V for 1 to 16 cells up to 67.2 V, with no cell-count setting (V193, V327). With only the LTM8068EY#PBF's fixed 18 V on V+, V+ falls below C18 - 0.3 V above 18.0 V of pack, and C18 exceeds V+ + 5.5 V above 23.2 V. Requirements (V327, FU-2D): the pack-side branch drops at most 0.3 V at 1.4 mA, the ADBMS1818's highest V+ current; the supply-side branch blocks up to 67.2 V less the supply voltage, and the pack-side branch blocks the supply into the pack; both rated with V188's 85 V in mind; with the board off, V+ draws 6.1 uA typical and 18 uA maximum from the pack top through it, a draw V190 does not count. State the placements a board and the stock gate at that count",
+    "source": "FU-2D/003-P2-R9.json reports 'V+ feed from the highest tap', 'V+ OR element ratings', 'monitor with the board unpowered'; ADBMS1818 Rev. B Tables 3 and 11; V188, V190, V193, V327; FU-2P56 conflicts",
+    "reason": "the owner's rulings of 2026-10-03 on FU-2P56 (Raised by P1, V324 to V333; V53, V159, V160)"
+   },
+   {
+    "category": "R9",
+    "function": "every R9 function",
+    "requirement": "FU-2D verified: ADBMS1818ASWAZ-RL (Cell monitor), ISO7741DWR (cell monitor isolation barrier), LTM8068EY#PBF (cell monitor pack-side supply). Requalify them. FU-2P56 names ADBMS1818ASWAZ-RL on the ESC pack node, held under 85 V by the bus capacitance (V324). The balance-lead input network, its connector and its connector protection, and the unused-input tie, are stage 2",
+    "source": "selection.json R9 (run FU-2D); FU-2P56 conflicts; V324, V327",
+    "reason": "the owner's rulings of 2026-10-03 on FU-2P56 (Raised by P1, V324 to V333; V53, V159, V160)"
+   }
+  ]
+ },
+ "stock_exceptions": [],
+ "owner_fixed": [
+  {
+   "category": "R7",
+   "function": "Pack cells",
+   "part": "SLSXT30002130",
+   "input": "SLSXT30002130",
+   "off_board": true,
+   "left_open_by": "FU-2H",
+   "unverified": [
+    {
+     "run": "FU-2B1",
+     "part": "SLS XTRON 3000mAh 2S1P 7,4V 30C/60C (SLSXT30002130)",
+     "status": "refuted",
+     "reason": ""
+    },
+    {
+     "run": "FU-2F",
+     "part": "SLS XTRON 3000mAh 2S1P 7,4V 30C/60C (SLSXT30002130)",
+     "status": "not verified",
+     "reason": "a verifier gave no required check for some figures"
+    },
+    {
+     "run": "FU-2H",
+     "part": "SLSXT30002130",
+     "status": "not verified",
+     "reason": "a verifier gave no required check for some figures"
+    }
+   ]
+  },
+  {
+   "category": "R8",
+   "function": "Motor monitor",
+   "part": "INA228AIDGSR",
+   "input": "INA228",
+   "off_board": false,
+   "left_open_by": "FU-2I",
+   "unverified": [
+    {
+     "run": "FU-2B2",
+     "part": "INA228AIDGSR",
+     "status": "refuted",
+     "reason": ""
+    },
+    {
+     "run": "FU-2G",
+     "part": "INA228AIDGSR",
+     "status": "refuted",
+     "reason": ""
+    },
+    {
+     "run": "FU-2H",
+     "part": "INA228AIDGSR",
+     "status": "refuted",
+     "reason": ""
+    },
+    {
+     "run": "FU-2I",
+     "part": "INA228AIDGSR",
+     "status": "refuted",
+     "reason": ""
+    }
+   ]
+  },
+  {
+   "category": "R8",
+   "function": "External shunt sense input",
+   "part": "INA228AIDGSR",
+   "input": "INA228",
+   "off_board": false,
+   "left_open_by": "FU-2I",
+   "unverified": [
+    {
+     "run": "FU-2B2",
+     "part": "INA228AIDGSR",
+     "status": "refuted, no ruling",
+     "reason": ""
+    },
+    {
+     "run": "FU-2G",
+     "part": "INA228AIDGSR",
+     "status": "refuted",
+     "reason": ""
+    },
+    {
+     "run": "FU-2I",
+     "part": "INA228AIDGSR",
+     "status": "refuted",
+     "reason": ""
+    }
+   ]
+  },
+  {
+   "category": "R8",
+   "function": "Port current monitor",
+   "part": "INA3221AIRGVR",
+   "input": "INA3221AIRGVR",
+   "off_board": false,
+   "left_open_by": "FU-2I",
+   "unverified": [
+    {
+     "run": "FU-2I",
+     "part": "INA3221AIRGVR",
+     "status": "refuted",
+     "reason": ""
+    }
+   ]
+  },
+  {
+   "category": "R11",
+   "function": "accelerometer",
+   "part": "ADXL316WBCSZ",
+   "input": "ADXL316WBCSZ",
+   "off_board": false,
+   "left_open_by": "FU-2E",
+   "unverified": [
+    {
+     "run": "FU-2C",
+     "part": "ADXL316WBCSZ",
+     "status": "refuted, no ruling",
+     "reason": ""
+    }
+   ]
+  },
+  {
+   "category": "R11",
+   "function": "optical index",
+   "part": "TCND5000",
+   "input": "TCND5000",
+   "off_board": false,
+   "left_open_by": "FU-2E",
+   "unverified": []
+  }
+ ],
+ "accept_open": {
+  "reason": "Owner, 2026-10-01: accepted open for the P2-P4 follow-ups of round 2 on R2, R3, R5, R6, R7 and R9 (Research.md, Round 2, Rules of stage 1): FU-2P1's 18 P1 items: 10 values whose question is already under Raised by P1 and answered for research (V26, V27, V29, V39, V43, V47, V92, V139, V148, V181); the monostable page's servo rail figures, which V55 replaces; the board's draw of about 49.7 A at an assumed 90 % efficiency, the nominal sizing basis; the pack disconnect's round 1 account, corrected in the Follow-ups row; the adjustable supply's continuous current, which R6 qualifies on V281's 33 °C/W; and 3 markings in R6 the critic did not rule on.",
+  "functions": [
+   "R3: FU-2P1 left 5 P1 items unresolved",
+   "R9: FU-2P1 left 1 P1 items unresolved"
+  ]
+ },
+ "decisions": {
+  "Q4": "An external ADC: ADCS7476AIMFX/NOPB, the part R10 kept (owner, 2026-09-29)",
+  "Q8": "An I²C FRAM: MB85RC256VPNF-G-AMERE2, the part R12 kept (owner, 2026-09-29)",
+  "Q9": "The 74HC423 keeps the '423 behaviour, and an SN74AUP1G17DBVR with I_off goes in front of its trigger inputs, as R3 selected (owner, 2026-09-29)"
+ },
+ "planned": 11,
+ "started": 18,
+ "extra_used": 7,
+ "free": 21,
+ "skipped": [],
+ "summary": {
+  "categories": [
+   "R3",
+   "R9"
+  ],
+  "held": [
+   {
+    "category": "R1",
+    "host": "abracon.com",
+    "reason": "unreachable"
+   }
+  ],
+  "results": [
+   {
+    "category": "R3",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "monostable",
+      "part": "74HC423BQ,115",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "OR gate",
+      "part": "74AUP1G32GW,125",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "reset supervisor",
+      "part": "TPS3703A7330DSERQ1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "latch",
+      "part": "74LVC1G175GW,125",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "latch clear control",
+      "part": "434153017835",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "trigger-path inverter",
+      "part": "SN74AUP1G14DBVR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "trigger input I_off buffer (Q9)",
+      "part": "SN74AUP1G17DBVR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)",
+      "part": "SN74AUP1G17DBVR",
+      "as": "primary",
+      "status": "verified; refutation did not stand",
+      "reason": ""
+     },
+     {
+      "function": "inverter on an active-low output enable",
+      "part": "SN74LVC1G04DBVR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "servo rail gate",
+      "part": "BSC014N04LSATMA1",
+      "as": "primary",
+      "status": "verified; refutation did not stand",
+      "reason": ""
+     },
+     {
+      "function": "servo rail gate driver",
+      "part": "TPSI3052DWZR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "onboard pack switch MOSFETs",
+      "part": "IPT015N10N5ATMA1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "onboard pack switch driver",
+      "part": "TPSI3052DWZR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "external module driver output",
+      "part": "TPSI3052DWZR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "pack reverse-polarity protection",
+      "part": "IPT015N10N5ATMA1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "pack precharge",
+      "part": "CSD19537Q3T",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+      "part": "STPS30H100DJF-TR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "figure": "function requirements: onboard pack switch MOSFETs",
+      "status": "refuted"
+     }
+    ],
+    "figures_open": [
+     "found V38",
+     "function requirements: onboard pack switch MOSFETs"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "monostable",
+      "decision": "none",
+      "part": "74HC423BQ,115",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "OR gate",
+      "decision": "none",
+      "part": "74AUP1G32GW,125",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "reset supervisor",
+      "decision": "none",
+      "part": "TPS3703A7330DSERQ1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "latch",
+      "decision": "none",
+      "part": "74LVC1G175GW,125",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "latch clear control",
+      "decision": "none",
+      "part": "434153017835",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "trigger-path inverter",
+      "decision": "none",
+      "part": "SN74AUP1G14DBVR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "trigger input I_off buffer (Q9)",
+      "decision": "none",
+      "part": "SN74AUP1G17DBVR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)",
+      "decision": "none",
+      "part": "SN74AUP1G17DBVR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "inverter on an active-low output enable",
+      "decision": "none",
+      "part": "SN74LVC1G04DBVR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "servo rail gate",
+      "decision": "none",
+      "part": "BSC014N04LSATMA1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "servo rail gate driver",
+      "decision": "none",
+      "part": "TPSI3052DWZR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "onboard pack switch MOSFETs",
+      "decision": "none",
+      "part": "IPT015N10N5ATMA1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "onboard pack switch driver",
+      "decision": "none",
+      "part": "TPSI3052DWZR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "external pack switch module",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "external module driver output",
+      "decision": "none",
+      "part": "TPSI3052DWZR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "pack reverse-polarity protection",
+      "decision": "none",
+      "part": "IPT015N10N5ATMA1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "pack overvoltage and transient clamp",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "pack precharge",
+      "decision": "none",
+      "part": "CSD19537Q3T",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "servo rail gate driver (see above)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "timing network (C and R of the monostable)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "heartbeat-node series resistors, links and fail-safe pull-downs",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+      "decision": "none",
+      "part": "STPS30H100DJF-TR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   },
+   {
+    "category": "R9",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "Cell monitor",
+      "part": "ADBMS1818ASWAZ-RL",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "cell monitor isolation barrier",
+      "part": "ISO7741DWR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "cell monitor pack-side supply",
+      "part": "LTM8068EY#PBF",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "figure": "P2 report: V+ OR element: no part",
+      "status": "refuted"
+     },
+     {
+      "figure": "P2 report: LTM8068 minimum load and preload",
+      "status": "refuted"
+     },
+     {
+      "figure": "P2 report: barrier pins for P5",
+      "status": "refuted"
+     },
+     {
+      "figure": "function requirements: Cell monitor",
+      "status": "refuted"
+     }
+    ],
+    "figures_open": [
+     "found V186",
+     "found V187",
+     "P2 report: V+ OR element: no part",
+     "P2 report: LTM8068 minimum load and preload",
+     "P2 report: barrier pins for P5",
+     "function requirements: Cell monitor"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "Cell monitor",
+      "decision": "none",
+      "part": "ADBMS1818ASWAZ-RL",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "cell monitor isolation barrier",
+      "decision": "none",
+      "part": "ISO7741DWR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "cell monitor pack-side supply",
+      "decision": "none",
+      "part": "LTM8068EY#PBF",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "V+ OR element",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "balance-lead input network",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "balance-lead connector protection (mis-plugged lead)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "balance-lead connector",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "unused-input tie",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Cell monitor quantities",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   }
+  ],
+  "selection": {
+   "R3": [
+    {
+     "function": "monostable",
+     "decision": "none",
+     "part": "74HC423BQ,115",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "OR gate",
+     "decision": "none",
+     "part": "74AUP1G32GW,125",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "reset supervisor",
+     "decision": "none",
+     "part": "TPS3703A7330DSERQ1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "latch",
+     "decision": "none",
+     "part": "74LVC1G175GW,125",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "latch clear control",
+     "decision": "none",
+     "part": "434153017835",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "trigger-path inverter",
+     "decision": "none",
+     "part": "SN74AUP1G14DBVR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "trigger input I_off buffer (Q9)",
+     "decision": "none",
+     "part": "SN74AUP1G17DBVR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)",
+     "decision": "none",
+     "part": "SN74AUP1G17DBVR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "inverter on an active-low output enable",
+     "decision": "none",
+     "part": "SN74LVC1G04DBVR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "servo rail gate",
+     "decision": "none",
+     "part": "BSC014N04LSATMA1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "servo rail gate driver",
+     "decision": "none",
+     "part": "TPSI3052DWZR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "onboard pack switch MOSFETs",
+     "decision": "none",
+     "part": "IPT015N10N5ATMA1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "onboard pack switch driver",
+     "decision": "none",
+     "part": "TPSI3052DWZR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "external pack switch module",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "external module driver output",
+     "decision": "none",
+     "part": "TPSI3052DWZR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "pack reverse-polarity protection",
+     "decision": "none",
+     "part": "IPT015N10N5ATMA1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "pack overvoltage and transient clamp",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "pack precharge",
+     "decision": "none",
+     "part": "CSD19537Q3T",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "servo rail gate driver (see above)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "timing network (C and R of the monostable)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "heartbeat-node series resistors, links and fail-safe pull-downs",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+     "decision": "none",
+     "part": "STPS30H100DJF-TR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ],
+   "R9": [
+    {
+     "function": "Cell monitor",
+     "decision": "none",
+     "part": "ADBMS1818ASWAZ-RL",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "cell monitor isolation barrier",
+     "decision": "none",
+     "part": "ISO7741DWR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "cell monitor pack-side supply",
+     "decision": "none",
+     "part": "LTM8068EY#PBF",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "V+ OR element",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "balance-lead input network",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "balance-lead connector protection (mis-plugged lead)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "balance-lead connector",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "unused-input tie",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Cell monitor quantities",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ]
+  },
+  "figures_open": {
+   "R3": [
+    "found V38",
+    "function requirements: onboard pack switch MOSFETs"
+   ],
+   "R9": [
+    "found V186",
+    "found V187",
+    "P2 report: V+ OR element: no part",
+    "P2 report: LTM8068 minimum load and preload",
+    "P2 report: barrier pins for P5",
+    "function requirements: Cell monitor"
+   ]
+  },
+  "part_refuted": {
+   "R3": [],
+   "R9": []
+  },
+  "q_missing": [],
+  "chain_failed": []
+ },
+ "followUps": [
+  {
+   "role": "P0",
+   "host": "www.vishay.com",
+   "categories": [
+    "R3",
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P0",
+   "host": "www.isabellenhuette.com",
+   "categories": [
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "Cell monitor",
+   "part": "ADBMS1818ASWAZ-RL",
+   "reason": "shortlisted states other values than the function for: cell count, stack voltage, input rating, ESC pack node, separate input, one connector, no count setting, pack-side interface, SPI timing, external VREG, V+ from the supply, V+ against C18, wake over SPI, tap current, cell resolution, error under load, cell voltage range, reading period, sample skew, current pairing, resistance resolution, mis-plugged lead, pack presence, ambient range, quantities; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "Cell monitor",
+   "part": "ADBMS1818ASWAZ-R7",
+   "reason": "shortlisted states other values than the function for: cell count, stack voltage, input rating, ESC pack node, separate input, one connector, no count setting, pack-side interface, SPI timing, external VREG, V+ from the supply, V+ against C18, wake over SPI, tap current, cell resolution, error under load, cell voltage range, reading period, sample skew, current pairing, resistance resolution, mis-plugged lead, pack presence, ambient range, quantities; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "Cell monitor",
+   "part": "ADBMS1818ASWZ-RL",
+   "reason": "shortlisted states other values than the function for: cell count, stack voltage, input rating, ESC pack node, separate input, one connector, no count setting, pack-side interface, SPI timing, external VREG, V+ from the supply, V+ against C18, wake over SPI, tap current, cell resolution, error under load, cell voltage range, reading period, sample skew, current pairing, resistance resolution, mis-plugged lead, pack presence, ambient range, quantities; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ISO7741DWR",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, powered in monitor sleep, SPI timing at 1 MHz, pack-side logic, chip select idle high, ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ISO6741DWR",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, powered in monitor sleep, SPI timing at 1 MHz, pack-side logic, chip select idle high, ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ISO7741FDWR",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, powered in monitor sleep, SPI timing at 1 MHz, pack-side logic, chip select idle high; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ISO6741FDWR",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, powered in monitor sleep, SPI timing at 1 MHz, pack-side logic, chip select idle high; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ISOW7741BDFMR",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, powered in monitor sleep, SPI timing at 1 MHz, pack-side logic, chip select idle high, ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ISO7741FQDBQRQ1",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, powered in monitor sleep, SPI timing at 1 MHz, pack-side logic, chip select idle high; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ISO7741FDBQR",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, powered in monitor sleep, SPI timing at 1 MHz, pack-side logic, chip select idle high; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ADUM3151ARSZ-RL7",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, powered in monitor sleep, SPI timing at 1 MHz, pack-side logic, chip select idle high; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ADUM5411BRSZ-RL7",
+   "reason": "shortlisted states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, powered in monitor sleep, SPI timing at 1 MHz, pack-side logic, chip select idle high; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor isolation barrier",
+   "part": "ADUM3151ARSZ",
+   "reason": "alternate states other values than the function for: barrier type, working voltage, channels, host-side supply, pack-side supply, pack-side current, powered in monitor sleep, SPI timing at 1 MHz, pack-side logic, chip select idle high; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor pack-side supply",
+   "part": "LTM8068EY#PBF",
+   "reason": "shortlisted states other values than the function for: reference, isolation, always on, 5 V output, V+ output, pack range, input, ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "function": "cell monitor pack-side supply",
+   "part": "ISOW7741BDFMR",
+   "reason": "shortlisted states other values than the function for: reference, isolation, always on, 5 V output, V+ output, pack range, input, ambient range; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R9",
+   "function": "V+ OR element",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R9",
+   "function": "balance-lead input network",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R9",
+   "function": "balance-lead connector protection (mis-plugged lead)",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R9",
+   "function": "balance-lead connector",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R9",
+   "function": "unused-input tie",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P3",
+   "category": "R9",
+   "function": "Cell monitor quantities",
+   "reason": "function the row names that P2 did not return: IOBoard.md:475 names it as a required line: per cell voltage and resistance under load, and per pack capacity and drawn mAh. P2's 'Cell monitor' entry carries per-cell voltage and resistance under load from the INA228's motor current (its 'quantities' row) but nothing for the per-pack capacity and drawn mAh, and no entry or source of those two figures (the INA228's charge register is R8's, not named in R9). IOBoard.md:524 also names how cell samples align with the motor current for the per-cell resistance; P2 records that only as 'not fixed: V187 not found'."
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "question": "V186",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "question": "V187",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "monostable",
+   "part": "74HC423BQ,115",
+   "reason": "shortlisted states other values than the function for: '423 behaviour stated, dual retriggerable, one half per edge polarity, supply, minimum supply, trigger input isolation, Q low while clear is active, timing resistor range, timing capacitor range, timing constant k drift (V36), timing-pin leakage at 50 degC (V37), window at every corner, input transition rate, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "monostable",
+   "part": "74HC4538PW,118",
+   "reason": "shortlisted states other values than the function for: supply, minimum supply, trigger input isolation, timing constant k drift (V36), timing-pin leakage at 50 degC (V37), ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "monostable",
+   "part": "74HC4538PW-Q100,118",
+   "reason": "shortlisted states other values than the function for: '423 behaviour stated, dual retriggerable, one half per edge polarity, supply, minimum supply, trigger input isolation, Q low while clear is active, timing resistor range, timing capacitor range, timing constant k drift (V36), timing-pin leakage at 50 degC (V37), window at every corner, input transition rate, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "monostable",
+   "part": "CD74HC4538PWR",
+   "reason": "shortlisted states other values than the function for: '423 behaviour stated, dual retriggerable, one half per edge polarity, supply, minimum supply, trigger input isolation, Q low while clear is active, timing resistor range, timing capacitor range, timing constant k drift (V36), timing-pin leakage at 50 degC (V37), window at every corner, input transition rate, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "OR gate",
+   "part": "74AUP1G32GW,125",
+   "reason": "shortlisted states other values than the function for: two-input OR, push-pull output, I_off on both inputs, supply, minimum supply, input high level, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "OR gate",
+   "part": "SN74AUP1G32DBVR",
+   "reason": "shortlisted states other values than the function for: two-input OR, push-pull output, I_off on both inputs, supply, minimum supply, input high level, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "OR gate",
+   "part": "74AUP1G32SE-7",
+   "reason": "shortlisted states other values than the function for: minimum supply; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "OR gate",
+   "part": "74LVC1G32GW,125",
+   "reason": "shortlisted states other values than the function for: two-input OR, push-pull output, I_off on both inputs, supply, minimum supply, input high level, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "reset supervisor",
+   "part": "TPS3703A7330DSERQ1",
+   "reason": "shortlisted states other values than the function for: threshold above the logic's minimum supply, release at or below the rail's lower edge, band to 3.201 V stated, delay (V43), output defined through the ramp, supply, no firmware, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "reset supervisor",
+   "part": "TPS3850H33DRCT",
+   "reason": "shortlisted states other values than the function for: threshold above the logic's minimum supply, release at or below the rail's lower edge, band to 3.201 V stated, delay (V43), output defined through the ramp, supply, no firmware, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "reset supervisor",
+   "part": "TPS3808G33DBVR",
+   "reason": "shortlisted states other values than the function for: band to 3.201 V stated, delay (V43); checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "reset supervisor",
+   "part": "TPS389033GQDSERQ1",
+   "reason": "shortlisted states other values than the function for: threshold above the logic's minimum supply, release at or below the rail's lower edge, band to 3.201 V stated, delay (V43), output defined through the ramp, supply, no firmware, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "latch",
+   "part": "74LVC1G175GW,125",
+   "reason": "shortlisted states other values than the function for: power-up state (V29), place (V30), set on the enable node's low level, set dominant (V52), cleared only by the operator control (V31, V32), I_off on the inputs, supply, clock edge, output drive, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "latch",
+   "part": "74AUP1G175GW,125",
+   "reason": "shortlisted states other values than the function for: power-up state (V29), place (V30), set on the enable node's low level, set dominant (V52), cleared only by the operator control (V31, V32), I_off on the inputs, supply, clock edge, output drive, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "latch",
+   "part": "SN74LVC1G175DCKR",
+   "reason": "shortlisted states other values than the function for: power-up state (V29), place (V30), set on the enable node's low level, set dominant (V52), cleared only by the operator control (V31, V32), I_off on the inputs, supply, clock edge, output drive, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "latch clear control",
+   "part": "434153017835",
+   "reason": "shortlisted states other values than the function for: operator control and place (V31), no relay or firmware clear (V32), contact rating, contact bounce, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "latch clear control",
+   "part": "EVPAA202K",
+   "reason": "shortlisted states other values than the function for: operator control and place (V31), no relay or firmware clear (V32), contact rating, contact bounce, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "latch clear control",
+   "part": "EVQ-Q2B03W",
+   "reason": "shortlisted states other values than the function for: operator control and place (V31), no relay or firmware clear (V32), contact rating, contact bounce, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "trigger-path inverter",
+   "part": "SN74AUP1G14DBVR",
+   "reason": "shortlisted states other values than the function for: I_off on the input, input threshold, supply, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "trigger-path inverter",
+   "part": "74AUP1G14GVH",
+   "reason": "shortlisted states other values than the function for: I_off on the input, input threshold, supply, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "trigger-path inverter",
+   "part": "74LVC1G14GW,125",
+   "reason": "shortlisted states other values than the function for: I_off on the input, input threshold, supply, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "trigger input I_off buffer (Q9)",
+   "part": "SN74AUP1G17DBVR",
+   "reason": "shortlisted states other values than the function for: I_off on the input, output undriven while unpowered, non-inverting, drives both trigger inputs, input threshold, input voltage while unpowered, supply, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "trigger input I_off buffer (Q9)",
+   "part": "SN74AUP1G17DCKR",
+   "reason": "shortlisted states other values than the function for: I_off on the input, output undriven while unpowered, non-inverting, drives both trigger inputs, input threshold, input voltage while unpowered, supply, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "trigger input I_off buffer (Q9)",
+   "part": "74LVC1G17GW,125",
+   "reason": "shortlisted states other values than the function for: I_off on the input, output undriven while unpowered, non-inverting, drives both trigger inputs, input threshold, input voltage while unpowered, supply, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)",
+   "part": "SN74AUP1G17DBVR",
+   "reason": "shortlisted states other values than the function for: Schmitt input with no transition-rate limit, output edge inside the latch clock limit, I_off on input and output, no processor in the path (V32), supply, named part, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)",
+   "part": "SN74AUP1G17DCKR",
+   "reason": "shortlisted states other values than the function for: Schmitt input with no transition-rate limit, output edge inside the latch clock limit, I_off on input and output, no processor in the path (V32), supply, named part, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "latch clock Schmitt buffer (between the clear push button's RC debounce and the latch clock)",
+   "part": "74LVC1G17GW,125",
+   "reason": "shortlisted states other values than the function for: Schmitt input with no transition-rate limit, output edge inside the latch clock limit, I_off on input and output, no processor in the path (V32), supply, named part, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "inverter on an active-low output enable",
+   "part": "SN74LVC1G04DBVR",
+   "reason": "shortlisted states other values than the function for: isolation, output pull, external CAN standby drive (V326), output drive, delay, supply, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "inverter on an active-low output enable",
+   "part": "74LVC1G04GV,125",
+   "reason": "shortlisted states other values than the function for: isolation, output pull, external CAN standby drive (V326), output drive, delay, supply, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "inverter on an active-low output enable",
+   "part": "SN74AUP1G04DBVR",
+   "reason": "shortlisted states other values than the function for: external CAN standby drive (V326), output drive; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "servo rail gate",
+   "part": "BSC014N04LSATMA1",
+   "reason": "shortlisted states other values than the function for: the rail high-side switch is the gate (V33), conducts from 0.8 V (V55), continuous current, voltage rating (V44), opening time, fail-open, off-state leakage (V39), gate-source rating against the driver, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "servo rail gate",
+   "part": "NTMFS5C430NLT1G",
+   "reason": "shortlisted states other values than the function for: the rail high-side switch is the gate (V33), conducts from 0.8 V (V55), continuous current, voltage rating (V44), opening time, fail-open, off-state leakage (V39), gate-source rating against the driver, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "servo rail gate",
+   "part": "STL110N10F7",
+   "reason": "shortlisted states other values than the function for: the rail high-side switch is the gate (V33), voltage rating (V44), off-state leakage (V39), gate-source rating against the driver; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "servo rail gate driver",
+   "part": "TPSI3052DWZR",
+   "reason": "shortlisted states other values than the function for: floating gate drive at any rail voltage, gate drive within the switch's ratings, static on, opening time, fail-open, single control input from the enable (V53), control input isolation, primary supply, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "servo rail gate driver",
+   "part": "TPSI3050DWZR",
+   "reason": "shortlisted states other values than the function for: floating gate drive at any rail voltage, gate drive within the switch's ratings, static on, opening time, fail-open, single control input from the enable (V53), control input isolation, primary supply, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "onboard pack switch MOSFETs",
+   "part": "IPT015N10N5ATMA1",
+   "reason": "shortlisted states other values than the function for: drain-source rating (V34), continuous current, current opened without damage (V48), turn-off voltage, safe operating area during turn-off, dissipation at 150 A (V49), conduction in both directions (V47), off-state leakage (V40), fail-open, gate-source rating against the driver, ambient and supply (V270); checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "onboard pack switch MOSFETs",
+   "part": "IPT015N10NF2SATMA1",
+   "reason": "shortlisted states other values than the function for: drain-source rating (V34), continuous current, current opened without damage (V48), turn-off voltage, safe operating area during turn-off, dissipation at 150 A (V49), conduction in both directions (V47), off-state leakage (V40), fail-open, gate-source rating against the driver, ambient and supply (V270); checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "onboard pack switch MOSFETs",
+   "part": "IPT017N12NM6ATMA1",
+   "reason": "shortlisted states other values than the function for: drain-source rating (V34), continuous current, current opened without damage (V48), turn-off voltage, safe operating area during turn-off, dissipation at 150 A (V49), conduction in both directions (V47), off-state leakage (V40), fail-open, gate-source rating against the driver, ambient and supply (V270); checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "onboard pack switch driver",
+   "part": "TPSI3052DWZR",
+   "reason": "shortlisted states other values than the function for: high-voltage rating (V34), lowest pack voltage (V51), static on, opening time, turn-off overlap, closing time (V46), fail-open, single control input from the enable (V53), control input isolation, regenerative current (V47), ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "onboard pack switch driver",
+   "part": "TPSI3050DWZR",
+   "reason": "shortlisted states other values than the function for: high-voltage rating (V34), lowest pack voltage (V51), static on, opening time, turn-off overlap, closing time (V46), fail-open, single control input from the enable (V53), control input isolation, regenerative current (V47), ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R3",
+   "function": "external pack switch module",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "external module driver output",
+   "part": "TPSI3052DWZR",
+   "reason": "shortlisted states other values than the function for: high-voltage rating (V34), lowest pack voltage (V51), static on, opening time, closing time (V46), fail-open, single control input from the enable (V53), control input isolation, module control input, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "pack reverse-polarity protection",
+   "part": "IPT015N10N5ATMA1",
+   "reason": "shortlisted states other values than the function for: reverse voltage, forward rating (V34), current, regenerative current (V47), lowest pack voltage (V51), turn-off voltage, gate-source rating against the driver, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "pack reverse-polarity protection",
+   "part": "IPT015N10NF2SATMA1",
+   "reason": "shortlisted states other values than the function for: reverse voltage, forward rating (V34), current, regenerative current (V47), lowest pack voltage (V51), turn-off voltage, gate-source rating against the driver, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "pack reverse-polarity protection",
+   "part": "IPT017N12NM6ATMA1",
+   "reason": "shortlisted states other values than the function for: reverse voltage, forward rating (V34), current, regenerative current (V47), lowest pack voltage (V51), turn-off voltage, gate-source rating against the driver, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R3",
+   "function": "pack overvoltage and transient clamp",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "pack precharge",
+   "part": "CSD19537Q3T",
+   "reason": "shortlisted states other values than the function for: drain-source rating (V34), ESC input capacitance precharged (V42), closing time (V46), opening time, open path leakage (V40), on the ESC pack node (V324), fail-open, gate-source rating against the driver, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "pack precharge",
+   "part": "STL110N10F7",
+   "reason": "shortlisted states other values than the function for: drain-source rating (V34), ESC input capacitance precharged (V42), closing time (V46); checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "pack precharge",
+   "part": "DMT10H015LFG-13",
+   "reason": "shortlisted states other values than the function for: drain-source rating (V34), ESC input capacitance precharged (V42), closing time (V46), opening time, open path leakage (V40), on the ESC pack node (V324), fail-open, gate-source rating against the driver, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "rerank",
+   "category": "R3",
+   "function": "servo rail gate driver (see above)",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R3",
+   "function": "timing network (C and R of the monostable)",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R3",
+   "function": "heartbeat-node series resistors, links and fail-safe pull-downs",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+   "part": "STPS30H100DJF-TR",
+   "reason": "shortlisted states other values than the function for: reverse rating, peak forward current, onboard, pulse length, single-pulse current and energy, forward voltage at 300 A, 600 A external path, placement, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+   "part": "STPS20M100SG-TR",
+   "reason": "shortlisted states other values than the function for: reverse rating, peak forward current, onboard, pulse length, single-pulse current and energy, forward voltage at 300 A, 600 A external path, placement, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+   "part": "FERD40H100SG-TR",
+   "reason": "shortlisted states other values than the function for: reverse rating, peak forward current, onboard, pulse length, single-pulse current and energy, forward voltage at 300 A, 600 A external path, placement, ambient temperature; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "function": "switched-node freewheel diode (negative clamp of the ESC-side node, V54)",
+   "part": "V60100C-E3/4W",
+   "reason": "shortlisted states other values than the function for: reverse rating, peak forward current, onboard, pulse length, single-pulse current and energy, forward voltage at 300 A, 600 A external path; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "question": "V38",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "P4",
+   "category": "R9",
+   "function": "Cell monitor",
+   "part": "ADBMS1818ASWAZ-RL",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: analog.com/en/products/adbms1818.html answered HTTP 403 (challenge, safari client) at 2026-10-03T11:34:02Z; no longevity programme page was reachable (analog.com/en/support/quality-and-reliability/product-longevity.html HTTP 404 at 11:34:31Z). S5 makes longevity a record, not a gate.",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R9",
+   "function": "cell monitor pack-side supply",
+   "part": "LTM8068EY#PBF",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: analog.com/en/products/ltm8068.html answered HTTP 403 (challenge, safari client) at 2026-10-03T11:34:03Z; no longevity programme page was reachable (analog.com longevity URL tried returned HTTP 404 at 11:34:31Z). S5 makes longevity a record, not a gate.",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "figure": "P2 report: V+ OR element: no part",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "figure": "P2 report: LTM8068 minimum load and preload",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "figure": "P2 report: barrier pins for P5",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R9",
+   "figure": "function requirements: Cell monitor",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "latch clear control",
+   "part": "434153017835",
+   "figure": "market introduction",
+   "reason": "recorded as not read: not read: the datasheet title block gives revision 001.002 dated 2021-01-07 and lists no earlier revision, so the first revision date is not listed; 2021-01-07 is a later revision, so the part has been on the market at least 5.7 years",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R3",
+   "figure": "function requirements: onboard pack switch MOSFETs",
+   "reason": "figure refuted"
+  }
+ ],
+ "missing": [],
+ "sequence": 30,
+ "output_sha256": "e9b1e21ca3d8e2f3f5e9ecb3f7afc16db6745fadbe462f3b75ad87569b5d1308",
+ "research_round": 2
+}

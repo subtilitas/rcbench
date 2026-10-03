@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R9",
+ "label": "adjudicator-R9-2",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "function": "P2 report: LTM8068 minimum load and preload",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. P2's readings of the graphs are correct. The minimum load is about 15 mA at VOUT1 = 18 V, at 25 C. The maximum load at 18 V from VIN = 5 V is about 80 mA. 1.8 kOhm at 18 V draws 10 mA and dissipates 0.18 W. The conclusion that about 10 mA of preload keeps VOUT1 in regulation while the monitor sleeps does not hold. P2 sized the sleep load with the ISO7741's side-2 maximum, 5.2 mA, which applies only with the inputs low. A maximum is the wrong bound for a minimum-load check. While the ADBMS1818 sleeps, the SPI bus idles with CSB and SCK high (SPI mode 3) and SDO pulled up. In that state ICC2 is 2.0 mA typical and 3.7 mA maximum, so the module carries 12.0 to 13.7 mA, below 15 mA. Even the inputs-low case, at 3.2 mA typical, gives only 13.2 mA. The 15 mA figure is also a room-temperature typical. LTM8068 p. 14 says a colder application may need a larger minimum load and must be characterized at its lowest operating temperature. The preload must therefore be larger than 10 mA and sized against the barrier's smallest current at the lowest operating temperature. That value is not read. The awake budget leaves room for it: about 80 mA available against 32.4 mA without the preload. The ruling concerns how this function's preload is sized, not the LTM8068 or ISO7741 as parts.",
+  "evidence": "LTM8068 Rev. D p. 6, graph 8068 G19 'Minimum Load Current vs VOUT1 Over Full Input Voltage Range' (TA = 25 C): the curve crosses 15 mA at VOUT1 = 18 V, rising from about 7 mA at 3 V to about 21 mA at 24 V. p. 5, graph 8068 G15 'Maximum Load Current vs VOUT1': VIN = 5 V at VOUT1 = 18 V is about 80 mA. p. 14, 'Minimum Load': 'Note that this graph describes room temperature operation. If the end application operates at a colder temperature, the minimum load requirement may be higher and the minimum load condition must be characterized for the lowest operating temperature.' ISO7741 SLLSEP4K (revised August 2026), table 5.10, Supply Current Characteristics, 5-V Supply, p. 14, ISO7741 'Supply current - DC signal', EN1 = EN2 = VCCI: with VI = VCCI, ICC2 is 2.0 mA typical and 3.7 mA maximum (ICC1 1.5 / 2.9). With VI = 0 V, ICC2 is 3.2 mA typical and 5.2 mA maximum (ICC1 4.8 / 6.8). The 3.3-V table 5.12 gives ICC2 2.0 / 3.7 and 3.2 / 5.1. ADBMS1818: the part 'supports SPI Mode 3 (CPHA = 1 and CPOL = 1)', and SDO is an open-drain output that needs a pull-up. Sums: 10 + 2.0 = 12.0 mA and 10 + 3.7 = 13.7 mA with the inputs high; 10 + 3.2 = 13.2 mA with the inputs low, typical; each is below 15 mA. 18 V / 1.8 kOhm = 10 mA; 18 V x 10 mA = 0.18 W.",
+  "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/ltm8068.pdf (Rev. D; vendors.py fetch --client safari; pp. 5 and 6 rendered at 130 dpi and read as images, p. 14 text). https://www.ti.com/lit/ds/symlink/iso7741.pdf (SLLSEP4K; vendors.py fetch; tables 5.10 p. 14 and 5.12). ADBMS1818 SPI mode and SDO: the ADBMS1818 datasheet copy in /home/claude/rcbench-research/round2/scratch/FU-2J/P2-R9/adbms1818.txt, not fetched again. Local copies: /home/claude/rcbench-research/round2/scratch/FU-2J/adjudicator-R9/ltm/",
+  "read_at": "2026-10-03T12:01:28Z (both datasheets fetched); pages read 2026-10-03T12:01:28Z to 2026-10-03T12:02:03Z",
+  "scope": "function"
+ }
+}

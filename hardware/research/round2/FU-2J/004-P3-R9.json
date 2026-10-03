@@ -1,0 +1,41 @@
+{
+ "role": "P3",
+ "category": "R9",
+ "label": "P3-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "missed": [
+   {
+    "function": "cell monitor isolation barrier",
+    "part": "ADUM3151ARSZ-RL7 (C660734); second source ADUM3151ARSZ (C660733), same die, non-reel",
+    "maker": "Analog Devices (ADuM3151/ADuM3152/ADuM3153 data sheet Rev. C; S1; JLCPCB maker_label 'Analog Devices')",
+    "why": "P2 returned no entry for the ADuM315x SPI isolator family (P2 lists only the ADuM140x/141x/144x/240x/540x/7441 rows and the LTC6820/ADBMS6822 isoSPI parts). Data sheet https://www.analog.com/media/en/technical-documentation/data-sheets/ADuM3151_3152_3153.pdf (vendors.py fetch --client safari, HTTP 200, 646,908 bytes, read 2026-10-03T11:10:04Z). Values against P2's rows: 4 high-speed channels MCLK, MO, MSS (host to pack) and SO (pack to host) = 3 forward and 1 reverse (Table 20 pins 3, 4, 6, 16); A grade SPI clock 1 MHz max, 2 Mbps a channel (Table 1), pulse width min 100 ns; tPLH/tPHL 25 ns max on MCLK, MO, SO and 21 to 25 ns on MSS at 5 V (Table 1), so forward + ADBMS1818 t8 60 ns + reverse = 110 ns inside the 500 ns half period; VDD1 and VDD2 each 3.0 to 5.5 V, independent (3.3 V host, 5 V pack side), VIH 0.7 x VDDx, VOH VDDx - 0.1 V at -20 uA (Table 3); IDD2 6.0 typ, 10.5 max mA at 1 MHz A grade and 5 V (Table 2), IDD2(Q) 6.1 typ mA (Table 3, maximum not stated), so the pack-side 5 V rail carries 16.5 + 8.1 + 10.5 = 35.1 mA awake against 31.0 mA for ISO7741DWR, inside the 300 mA P2 states for LTM8068's VOUT2; VIORM 565 V peak (Table 19 gives the AC bipolar figure only, no DC figure, as for the ADuM141E1 rows P2 passed), above 85 V DC; -40 to +125 C. Power-off default is high impedance on both sides (Table 23), so CS idles high only with a pack-side pull-up on SSS (stage 2); the host-unpowered case is not a value in Pins.md. Not a listed value, but material: MI has no output enable, and SPI1_RX (GPIO 8) is shared with the ADS1235 and MAX31856 (Pins.md:156-158), so the reverse channel needs a tri-state outside the part; ISO7741DWR has EN1. JLCPCB (vendors.py jlcpcb, 2026-10-03T11:10:37Z): C660734 stockCount 166, canPresaleNumber 158, extended, 7.5268 at 1 piece; C660733 86 / 85, 10.0872 at 1 (gate 50 passes both). Digi-Key (vendors.py digikey ADUM3151ARSZ-RL7, https://api.digikey.com/products/v4/search/ADUM3151ARSZ-RL7/productdetails, 2026-10-03T11:10:45Z): Active, lead 44 weeks, stock_available 0 on all three packagings, so the second-vendor route fails and the same-die C660733 is the second source under rule 5. Package SSOP-20-208mil, a land pattern no shortlisted row shares. Ranks below ISO7741DWR (5.1 times the price, 1/57 of the stock) and near ISOW7741BDFMR (7.969 at 1, stock 99 / 94 read 2026-10-03T11:07:46Z); no driver check or first-datasheet date read."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "ISO7741FDWR (C485810), ISO6741FDWR (C5216433), ISO7741FDBQR (C2872241), ISO7741FQDBQRQ1 (C2877510), ISOW7741FBDFMR (C5216399)",
+    "reason_given": "Fail 'chip select idle high' (Pins.md:151-155): the F suffix defaults low on input power loss (SLLSEP4K section 4, SLLSFJ6G p. 1, SLLSFK1C section 5)",
+    "functions": [
+     "cell monitor isolation barrier"
+    ],
+    "why_it_fails": "Pins.md:151-155 (checkout 7e74cd442a79, read 2026-10-03) says only that every chip select has an external pull-up of about 10 kOhm and that RP2350 pads come out of reset pulled down (32 to 86 kOhm), which would select every chip while the coprocessor resets. In that state the host rail is up, the isolator input is high and an F part's output is high; the F suffix acts only when the input side loses power. No line of Pins.md, IOBoard.md or Research.md (checked by grep for 'unpowered', 'host side', 'host-side') states a host-side-unpowered case, so 'CS stays deasserted while the host side is unpowered' is P2's addition and not a requirement value. In that case an F part holds CSB, SCK and SDI at 0 V; with P2's own wake value (SCK - CSB at least 200 mV for 240 ns) the difference is 0 mV, so it does not wake the ADBMS1818. The drop stands only if the owner adds a host-unpowered requirement. At JLCPCB the F rows do not displace rank 1 or 2 (ISO7741FDWR 1.7509 at 1 and ISO6741FDWR 1.9167 at 1 per FU-2D, against 1.4745 for ISO7741DWR), so they are alternates, not new first choices."
+   },
+   {
+    "part": "ADUM5411BRSZ-RL7 (C2830727)",
+    "reason_given": "Cannot be qualified: its data sheet URL answered HTTP 404 in FU-2D (2026-10-02T06:36:45Z)",
+    "functions": [
+     "cell monitor isolation barrier"
+    ],
+    "why_it_fails": "The 404 came from the file name. The ADuM5410/ADuM5411/ADuM5412 data sheet answers HTTP 200 at https://www.analog.com/media/en/technical-documentation/data-sheets/ADuM5410-5411-5412.pdf (vendors.py fetch --client safari, 922,072 bytes, Rev. B, read 2026-10-03T11:07:53Z); the underscore name answers 404. Read against P2's values: VDD1 (side 1 logic, 3.0 to 5.5 V) is independent of VDDP (converter input), so the ADuM5401 reason 'one supply sets the converter and the side-1 logic, VIH 0.7 x VDD1' does not apply to this family; 3 forward and 1 reverse, 150 Mbps, tPLH/tPHL 13 ns max (Table 5), VIH 0.7 x VDDx, VDD2 independent of VDDP (pin table). The part still does not qualify as P2's barrier and pack-side supply in one: data outputs default low (Table 32), VISO is 4.7 V min with load regulation 5 % max (Table 3), so 4.47 V at the data sheet's bound against the 4.5 V minimum, and IISO(MAX) is 30 mA against 16.5 + 8.1 mA + IDD2 6.85 mA max at 1 Mbps (Table 4) = 31.45 mA. JLCPCB stock 517 / 504 at 17.123 at 1 piece (vendors.py jlcpcb C2830727, 2026-10-03T11:07:44Z). As a barrier alone, with VDDP unused, it is a pricier alternate that defaults low, below ISO7741DWR."
+   }
+  ],
+  "missed_functions": [
+   {
+    "function": "Cell monitor quantities",
+    "why": "IOBoard.md:475 names it as a required line: per cell voltage and resistance under load, and per pack capacity and drawn mAh. P2's 'Cell monitor' entry carries per-cell voltage and resistance under load from the INA228's motor current (its 'quantities' row) but nothing for the per-pack capacity and drawn mAh, and no entry or source of those two figures (the INA228's charge register is R8's, not named in R9). IOBoard.md:524 also names how cell samples align with the motor current for the per-cell resistance; P2 records that only as 'not fixed: V187 not found'."
+   }
+  ]
+ }
+}

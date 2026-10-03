@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R9",
+ "label": "adjudicator-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "function": "P2 report: V+ OR element: no part",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands on the drop values. The figure says PMEG100T30ELP, PMEG10030ELP, PMEG10010ELR and PMEG100V060ELPD drop \"about 0.33 to 0.4 V typical at 1 mA, 25 C\". The PMEG100T30ELP's own 25 C curve gives about 0.27 V at 1 mA and about 0.28 V at 1.4 mA. That is under V327's 0.3 V at 1.4 mA. The PMEG10030ELP gives about 0.30 V at 1 mA. So the stated range is wrong, and the PMEG100T30ELP is the nearest candidate, not one of the parts that fail on drop at 25 C. The conclusion that no part is shown to meet both V327 and V190 still holds. Three reasons: the PMEG100T30ELP's interpolated 0 C drop is about 0.32 V typical, over 0.3 V at the cold end of V7's 0 to 50 C; its data sheet gives no forward-voltage maximum below 0.5 A; it gives no reverse current between 25 C and 85 C. The figure's value has to be corrected. Its \"no part\" outcome is unchanged. The scope is function: the fault is in this function's requirement check, not in any part's lifecycle, maker or LCSC identity.",
+  "evidence": "The PMEG100T30ELP data sheet (Nexperia, 19 July 2024, 260,074 B) was rendered at 200 dpi and its Fig. 3 (forward current vs forward voltage, typical, pulsed) was pixel-scanned. The scale is 0 V at x=260 px and 0.4 V at x=408 px, which is 370 px per volt. At IF = 1 mA (bottom gridline), curve (6), Tj = 25 C, sits at x=361, which is 0.273 V. At 1.4 mA (y about 682) it sits at x about 362.5, which is 0.277 V. Curve (7), Tj = -40 C, gives 0.396 V at 1.4 mA. Linear interpolation to 0 C gives about 0.32 V. Table 7 gives VF maxima only from 0.5 A upward (550 mV maximum at 0.5 A, 25 C). It gives IR 0.1 uA typical and 0.8 uA maximum at 60 V, 25 C, then 0.42 mA typical at 100 V, 125 C. There is no IR figure at 50 C. The PMEG10030ELP data sheet (20 February 2023, 264,246 B), Fig. 4, curve (5) at 25 C, gives about 0.30 V at 1 mA by visual reading of the plot, about 0.31 V at 1.4 mA. Both readings disagree with the stated \"about 0.33 to 0.4 V\". The verifier's leakage figures were not re-read here: BAT46 at 35.6 uA and 39.6 uA summed, PMEG10010ELR at 150 nA maximum. They are not what the refutation contests. The PMEG10010ELR and PMEG100V060ELPD data sheets were fetched (HTTP 200, 291,987 B and 735,261 B) and their forward-voltage pages rendered (p. 6 and p. 7). Those curves were not scanned or read. Their drops (about 0.35 V and 0.32 V) rest on the verifier's reading only. The ruling rests on the PMEG100T30ELP reading alone.",
+  "source": "vendors.py fetch https://assets.nexperia.com/documents/data-sheet/PMEG100T30ELP.pdf (HTTP 200, 260,074 B), Fig. 3 and Table 7; https://assets.nexperia.com/documents/data-sheet/PMEG10030ELP.pdf (HTTP 200, 264,246 B), Fig. 4; PMEG10010ELR.pdf (HTTP 200, 291,987 B) and PMEG100V060ELPD.pdf (HTTP 200, 735,261 B), forward-voltage pages rendered but not read; Research.md V327 and V190 at 7e74cd442a79; FU-2D 003-P2-R9 \"V+ OR element ratings\" and 017-P4-datasheet-R9 (V7 0 to 50 C). Copies in /home/claude/rcbench-research/round2/scratch/FU-2J/adjudicator-R9/",
+  "read_at": "2026-10-03T11:59:36Z to 11:59:37Z",
+  "scope": "function"
+ }
+}

@@ -1,0 +1,1834 @@
+{
+ "role": "P2",
+ "category": "R9",
+ "label": "P2-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "found_values": [
+   {
+    "question_id": "V181",
+    "value": "1 cell. The cell monitor reads ESC packs from 1 cell up to the 16 cells of F15 (67.2 V). The lower bound is SET_PACK_CELLS's physical floor, found in the tree, not given by the owner; this also settles the P1 item on IOBoard.md:473 (1 to 16 cells, the 1 not owner-given)",
+    "source": "checkout 7e74cd442a79: shared/settings/settings.c:33-41 (comment 'Ranges are the physical ones: a pack cannot have zero cells'; SET_PACK_CELLS 'Series count in the pack', min 1, max 14); hardware/docs/IOBoard.md:473 ('1 to 16 cells on the balance lead'); F15 in Research.md ('16 cells, 67.2 V at 4.2 V a cell')",
+    "read_at": "2026-10-03T10:47Z"
+   },
+   {
+    "question_id": "V182",
+    "value": "1 mV per cell reading: the finest step the screen shows for a quantity derived from cell readings (pack mean to 0.001 V, spread in whole mV; each cell printed to 0.01 V)",
+    "source": "checkout 7e74cd442a79: shared/ui/battery_screen.c:288 ('%.3f V', pack mean), :290 ('%d mV', spread = difference of two cell readings), :204 ('%.2f', each cell)",
+    "read_at": "2026-10-03T10:47Z"
+   },
+   {
+    "question_id": "V183",
+    "value": "+/-6 mV per cell under load, over 0 to 50 C ambient. Derived: the spread is the difference of two readings (battery_screen.c:95-105) and the plot floor is 12 mV (SCALE_FLOOR_MV, :41), so each reading's error stays within half of it; no line states an error directly. The spread verdict switches at 30 mV and 60 mV (:46-47). Ambient range from V7",
+    "source": "checkout 7e74cd442a79: shared/ui/battery_screen.c:41, :46-47, :95-105; V7 in Research.md (0 to 50 C ambient, one range for the whole IO board)",
+    "read_at": "2026-10-03T10:47Z"
+   },
+   {
+    "question_id": "V184",
+    "value": "2.8 V a cell at the low end; the top is 4.2 V a cell (F15). 2.8 V is the lowest 'Low voltage cut' an ESC on the programmer screen takes, per cell",
+    "source": "checkout 7e74cd442a79: shared/ui/programmer_screen.c:139-141, :166-168, :202-204 ('Low voltage cut', 'Per cell, where it starts pulling power back to save the pack', 28 to 38 tenths of a volt)",
+    "read_at": "2026-10-03T10:47Z"
+   },
+   {
+    "question_id": "V185",
+    "value": "20 ms for every cell of a 16-cell pack: the coprocessor samples the bench numbers every 20 ms (50 Hz)",
+    "source": "checkout 7e74cd442a79: hardware/docs/IOBoard.md:469 (Sampling, 'every 20 ms (50 Hz)'); firmware/iomcu/src/main.c:1013 ('(uint32_t)(now - last_sample) >= 20u')",
+    "read_at": "2026-10-03T10:47Z"
+   },
+   {
+    "question_id": "V186",
+    "value": "not found. No source in the tree bounds how fast a cell's voltage moves under load, so no skew limit in us follows. The only output rate limit, SET_OUT_RAMP 5 to 300 %/s, applies upward; a throttle decrease is an unramped step. Since FU-2D only Research.md changed in the tree (git diff fe53d3a8bc9a..7e74cd442a79)",
+    "source": "checkout 7e74cd442a79: shared/settings/settings.c:61-63; shared/outputs/outputs.c:351-356; hardware/docs/IOBoard.md:524 (alignment 'not stated'); grep for 'skew' and 'cell sample' over *.md, *.c, *.h outside hardware/research",
+    "read_at": "2026-10-03T10:48Z"
+   },
+   {
+    "question_id": "V187",
+    "value": "not found. The tree does not state how fast motor current and cell voltage change between a cell sample and its INA228 current sample",
+    "source": "checkout 7e74cd442a79: hardware/docs/IOBoard.md:74, :475, :524; shared/outputs/outputs.c:351-356",
+    "read_at": "2026-10-03T10:48Z"
+   },
+   {
+    "question_id": "V188",
+    "value": "85 V: the balance-lead input is rated for at least 85 V, 17.8 V above 67.2 V. The lead's top pin is the ESC pack's positive, whose lowest absolute maximum is the INA228's common-mode and VBUS input, -0.3 to 85 V; V324 holds that node under 85 V with the bus capacitance (simulated peak under 82 V)",
+    "source": "INA228 data sheet SLYS021A (January 2021, revised May 2022), section 6.1 Absolute Maximum Ratings: VIN+, VIN- common-mode -0.3 to 85 V, VVBUS -0.3 to 85 V; https://www.ti.com/lit/ds/symlink/ina228.pdf, vendors.py fetch, HTTP 200, 2,473,528 bytes; Research.md V324 (owner, 2026-10-03); R8 Motor monitor INA228AIDGSR (fixed input)",
+    "read_at": "2026-10-03T10:46:05Z"
+   },
+   {
+    "question_id": "V191",
+    "value": "reverse: 67.2 V, the whole 16-cell pack at 4.2 V a cell, on the input's lowest pin with every other pin below it. Adjacent pins: 4.2 V of either polarity, for a lead shifted by one pin or reversed",
+    "source": "F15 in Research.md ('16 cells, 67.2 V at 4.2 V a cell'); V192 (1 connector of 17 pins): a balance lead carries one cell between adjacent pins, so a one-pin shift keeps 4.2 V between neighbours and a reversal swaps the pack end for end",
+    "read_at": "2026-10-03T10:48Z"
+   },
+   {
+    "question_id": "V194",
+    "value": "0.1 mOhm per cell, over a motor current step of at least 10 A (1 mV of V182 over 10 A resolves 0.1 mOhm)",
+    "source": "checkout 7e74cd442a79: shared/ui/battery_screen.c:295 ('%.1f mOhm', the pack sum); shared/ui/include/battery_screen.h:16 (milliohms per cell, under load)",
+    "read_at": "2026-10-03T10:47Z"
+   },
+   {
+    "question_id": "V195",
+    "value": "whether a pack is plugged in: from the lead. The cell count: not found. No firmware or UI code reads SET_PACK_CELLS (only shared/settings/settings.c:39-41 and host tests), and nothing but host tests fills battery_state_t.cells; the header documents the whole state, count included, as 'What the balance lead says'. FU-2C's 'from the setting' stays refuted (round2/FU-2C/018-adjudicator-R9.json)",
+    "source": "checkout 7e74cd442a79: shared/ui/include/battery_screen.h:14 ('int cells; 1 to 14'), :19 ('a monitor answered'), :27 ('What the balance lead says. NULL, or valid false, means nothing is on'); shared/ui/battery_screen.c:233 ('NO PACK', 'nothing on the lead'); grep of SET_PACK_CELLS over *.c and *.h",
+    "read_at": "2026-10-03T10:47Z"
+   },
+   {
+    "question_id": "V289",
+    "value": "Barrier pack-side current, at VCC2 = 5 V from the always-on pack-side supply (not from VREG, owner 2026-10-02). Rank 1 ISO7741DWR ICC2: 2.8 typ / 4.6 mA max at 1 Mbps and 4.2 / 6.4 mA max at 10 Mbps, all channels switching, CL 15 pF; DC 2.0 / 3.7 mA max with inputs high and 3.2 / 5.2 mA max with inputs low. The 1 MHz SPI clock is 2 Mbps, between the tabulated rates, so 6.4 mA bounds it; the idle monitor (CS and SCK high, SPI mode 3) draws 3.7 to 5.2 mA. The tables give VCC1 = VCC2 = 5 V; a 3.3 V host side with a 5 V pack side is not tabulated. Rank 2 ISO6741DWR: 4.5 mA max at 1 Mbps, 6.5 mA max at 10 Mbps, DC 3.5 / 5.1 mA max. Rank 3 ISOW7741BDFMR takes its pack side from its own converter (IISOIN, FU-2D: 8.9 mA max at 10 Mbps)",
+    "source": "ISO774x SLLSEP4K (March 2016, revised August 2026) section 5.10, https://www.ti.com/lit/ds/symlink/iso7741.pdf, vendors.py fetch, HTTP 200, 2,398,713 bytes, SHA-256 2ca99c9d6fcbe473...; ISO674x SLLSFJ6G section 7.10, https://www.ti.com/lit/ds/symlink/iso6741.pdf, HTTP 200, 3,389,464 bytes, read 2026-10-03T10:50:59Z; Research.md V289",
+    "read_at": "2026-10-03T10:46:04Z"
+   }
+  ],
+  "functions": [
+   {
+    "function": "Cell monitor",
+    "requirements": [
+     {
+      "name": "cell count",
+      "value": "reads packs of 1 to 16 cells in series on the ESC pack's balance lead",
+      "source": "V181 (found: 1 cell); F15; IOBoard.md:473"
+     },
+     {
+      "name": "stack voltage",
+      "value": "operates with 67.2 V between the lead's top and bottom pins",
+      "source": "F15"
+     },
+     {
+      "name": "input rating",
+      "value": "balance-lead input rated to at least 85 V",
+      "source": "V188 (found)"
+     },
+     {
+      "name": "ESC pack node",
+      "value": "sits on the ESC pack node, held under 85 V by the bus capacitance (simulated peak under 82 V), with no clamp part",
+      "source": "V324 (owner, 2026-10-03); FU-2P56 conflicts"
+     },
+     {
+      "name": "separate input",
+      "value": "its own balance-lead input, apart from the 2S pack's lead of F9; both packs are connected during a motor test",
+      "source": "IOBoard.md:402; Research.md R9 row"
+     },
+     {
+      "name": "one connector",
+      "value": "16 cells on one 17-pin connector; each pack's leads arrive through an adapter lead",
+      "source": "V192 (owner, 2026-09-28)"
+     },
+     {
+      "name": "no count setting",
+      "value": "any count from 1 to 16 cells with no jumper or adapter setting; the board ties unused inputs itself (stage 2)",
+      "source": "V193 (owner, 2026-09-28)"
+     },
+     {
+      "name": "pack-side interface",
+      "value": "sits on the ESC pack's negative and talks direct 4-wire SPI to a digital isolator rated 85 V DC working or more",
+      "source": "V189; V289 (owner, 2026-10-01); IOBoard.md:474"
+     },
+     {
+      "name": "SPI timing",
+      "value": "SPI mode 3 at 1 MHz at most on measurement SPI1",
+      "source": "Pins.md:156-158"
+     },
+     {
+      "name": "external VREG",
+      "value": "VREG supplied by the always-on pack-side supply, referenced to the pack negative, not by the DRIVE-and-NPN regulator, which is off in sleep",
+      "source": "V289 (owner, 2026-10-02)"
+     },
+     {
+      "name": "V+ from the supply",
+      "value": "V+ of 16 V or more from the same supply for packs under 16 V",
+      "source": "V289 (owner, 2026-10-02)"
+     },
+     {
+      "name": "V+ against C18",
+      "value": "V+ at or above C18 - 0.3 V and C18 at most V+ + 5.5 V for 1 to 16 cells up to 67.2 V, through the V+ OR element",
+      "source": "V327 (owner, 2026-10-03); ADBMS1818 Rev. B Tables 3 and 11"
+     },
+     {
+      "name": "wake over SPI",
+      "value": "a sleeping monitor wakes on activity from the isolator's powered outputs",
+      "source": "V289 (owner, 2026-10-02)"
+     },
+     {
+      "name": "tap current",
+      "value": "at most 100 uA per tap pin with the IO board powered and 10 uA unpowered, averaged over 1 s; the monitor's supply from top to bottom not counted",
+      "source": "V190 (owner, 2026-09-28)"
+     },
+     {
+      "name": "cell resolution",
+      "value": "1 mV per cell reading",
+      "source": "V182 (found)"
+     },
+     {
+      "name": "error under load",
+      "value": "+/-6 mV per cell over 0 to 50 C ambient; V186 not found, so the static error is checked against 6 mV",
+      "source": "V183 (found); V7; V186"
+     },
+     {
+      "name": "cell voltage range",
+      "value": "2.8 V to 4.2 V a cell within that error",
+      "source": "V184 (found); F15"
+     },
+     {
+      "name": "reading period",
+      "value": "every cell of a 16-cell pack read at least every 20 ms",
+      "source": "V185 (found)"
+     },
+     {
+      "name": "sample skew",
+      "value": "not fixed: V186 not found",
+      "source": "V186"
+     },
+     {
+      "name": "current pairing",
+      "value": "not fixed: V187 not found",
+      "source": "V187"
+     },
+     {
+      "name": "resistance resolution",
+      "value": "0.1 mOhm per cell over a current step of at least 10 A",
+      "source": "V194 (found)"
+     },
+     {
+      "name": "mis-plugged lead",
+      "value": "the input survives a lead shifted by one pin (4.2 V between adjacent pins) and a reversed lead (67.2 V reverse), with the stage 2 connector protection",
+      "source": "V191 (found)"
+     },
+     {
+      "name": "pack presence",
+      "value": "tells from the lead whether a pack is plugged in; the count's source is not found",
+      "source": "V195 (found in part)"
+     },
+     {
+      "name": "ambient range",
+      "value": "rated over 0 to 50 C ambient",
+      "source": "V7"
+     },
+     {
+      "name": "quantities",
+      "value": "per-cell voltage; resistance under load from the voltage and the INA228's motor current",
+      "source": "IOBoard.md:475; IOBoard.md:74"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "ADBMS1818ASWAZ-RL",
+      "maker": "Analog Devices (ADBMS1818 data sheet Rev. B); Analog Devices on S1; JLCPCB maker_label 'Analog Devices'",
+      "lcsc": "C5372802",
+      "package": "64-lead LQFP_EP 10 x 10 mm, outline SW-64-2, exposed pad on V- (ordering guide, Rev. B p. 92); JLCPCB 'LQFP-64-EP(10x10)'",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification. Range 1 to 1: one 18-channel monitor reads the 16 cells of the one 17-pin connector (V192). The gate applies at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "cell count",
+        "required": "1 to 16 cells, no count setting",
+        "datasheet": "measures up to 18 cells (p. 1); p. 86: unused C inputs shorted to the highest connected cell or left open, they read 0.0 V; no register or pin takes the count. Table 3 TME conditions: C13 at least 2.5 V and C7 at least 1 V, met by a 1-cell pack at 2.8 V with unused inputs tied to its top (C7 = C13 = 2.8 V); V+ 16 V or more from the pack-side supply",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B pp. 1, 5, 86, https://www.analog.com/media/en/technical-documentation/data-sheets/adbms1818.pdf, vendors.py fetch --client safari, HTTP 200, 6,027,563 bytes, SHA-256 36b07646ed2930be..., read 2026-10-03T10:46:03Z"
+       },
+       {
+        "name": "stack voltage",
+        "required": "67.2 V top to bottom",
+        "datasheet": "Table 3: V+ 16 / 60 / 90 V with TME met; V+ to C12 at most 40 V (67.2 - 50.4 = 16.8 V at 16 x 4.2 V); Table 11: V+ to V- 112.5 V absolute, V+ to C12 50 V absolute",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Tables 3 and 11, pp. 5, 10 (read 10:46:03Z)"
+       },
+       {
+        "name": "input rating",
+        "required": "at least 85 V",
+        "datasheet": "Table 11: C(n), S(n) -0.3 V to MIN(8 x n, 112.5 V), so C16 112.5 V; C18 -0.3 V to MIN(V+ + 5.5 V, 112.5 V); V+ to V- 112.5 V. Lower pins are limited to 8 x n V, which the stage 2 clamp respects pin by pin",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11 p. 10"
+       },
+       {
+        "name": "ESC pack node",
+        "required": "node under 85 V (V324)",
+        "datasheet": "112.5 V absolute on V+ and C16 against a simulated node peak under 82 V; the INA228's 85 V, not this part, binds the node",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11; V324; FU-2P56/002-P5.json budgets/35"
+       },
+       {
+        "name": "separate input",
+        "required": "own balance-lead input",
+        "datasheet": "one input set C0 to C18 on one IC; the 2S pack's lead has its own input (IOBoard.md:402), a board arrangement",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B pin table p. 12; IOBoard.md:402 at 7e74cd442a79"
+       },
+       {
+        "name": "one connector",
+        "required": "16 cells on one 17-pin connector",
+        "datasheet": "C0 to C18 on one IC; 16 cells use C0 to C16, 17 pins",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B pin table p. 12"
+       },
+       {
+        "name": "no count setting",
+        "required": "1 to 16 cells with no setting",
+        "datasheet": "p. 86: unused C inputs shorted to the highest connected cell or left open; no register or pin sets the count. The tie network is stage 2",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 86"
+       },
+       {
+        "name": "pack-side interface",
+        "required": "direct 4-wire SPI referenced to V-",
+        "datasheet": "ISOMD to V- configures Port A as 4-wire SPI (p. 56: 'If ISOMD = V-, Port A is in SPI mode'); SDO open drain; all pins referenced to V-",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B pp. 12-13, 56"
+       },
+       {
+        "name": "SPI timing",
+        "required": "mode 3, 1 MHz at most",
+        "datasheet": "4-wire port 'using CPHA = 1 and CPOL = 1', 'The maximum data rate is 1 Mbps'; Table 9 tCLK at least 1 us, t3 and t4 at least 200 ns; Table 10 t8 (SCK falling to SDO valid) 60 ns max",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Tables 9, 10 p. 9; p. 46"
+       },
+       {
+        "name": "external VREG",
+        "required": "VREG from the always-on supply",
+        "datasheet": "sleep state 'The DRIVE pin is 0 V'; VREG 'can be powered by an external supply'; Table 3 VREG 4.5 / 5 / 5.5 V; IREG(CORE) 9 uA sleep, 16.5 mA measure (full range); IREG(isoSPI) with ISOMD = 0 up to 8.1 mA (2 kOhm, active), 3.3 mA (20 kOhm); peak VREG current 'approaches 35 mA' with isoSPI and conversions together (p. 70)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 3 pp. 5-6; pp. 25-26, 70"
+       },
+       {
+        "name": "V+ from the supply",
+        "required": "V+ 16 V or more for packs under 16 V",
+        "datasheet": "Table 3: V+ 16 V min for TME; IVP 1.4 mA max (measure, full range), 0.825 mA (REFUP), 28 uA (standby), 9 uA (sleep, VREG = 5 V)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 3 pp. 4-5"
+       },
+       {
+        "name": "V+ against C18",
+        "required": "V+ at or above C18 - 0.3 V, C18 at most V+ + 5.5 V",
+        "datasheet": "Table 3: V+ to C18 at least -0.3 V for TME; Table 11: C18 up to MIN(V+ + 5.5 V, 112.5 V). Met only with the V+ OR element feeding V+ from the pack top, which has no part in this return",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Tables 3 and 11; V327"
+       },
+       {
+        "name": "wake over SPI",
+        "required": "wakes on SPI activity from the isolator",
+        "datasheet": "p. 56: with ISOMD = V-, activity on the CSB or SCK pin wakes the serial interface; Table 7 VWAKE 200 mV for tDWELL 240 ns, tREADY 10 us max; tSLEEP 1.8 / 2 / 2.2 s",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Tables 4 and 7 pp. 6-8; p. 56"
+       },
+       {
+        "name": "tap current",
+        "required": "100 uA powered, 10 uA unpowered per tap pin",
+        "datasheet": "Table 1: C(n) leakage +/-250 nA max not measured (full range), +/-1 uA while measured; open-wire detection draws 70 / 100 / 130 uA during that test, which the firmware duty keeps within 100 uA averaged over 1 s; V+ supply current is top to bottom and not counted",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1 p. 4"
+       },
+       {
+        "name": "cell resolution",
+        "required": "1 mV",
+        "datasheet": "measurement resolution 0.1 mV/bit",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1 p. 3"
+       },
+       {
+        "name": "error under load",
+        "required": "+/-6 mV over 0 to 50 C",
+        "datasheet": "TME normal mode, full temperature range: +/-2.8 mV at 2.0 V, +/-4.0 mV at 3.3 V, +/-4.8 mV at 4.2 V; filtered mode +/-3.8 mV at 4.2 V; fast mode +/-12.5 mV at 4.2 V (fails, not used)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1 p. 3"
+       },
+       {
+        "name": "cell voltage range",
+        "required": "2.8 to 4.2 V a cell",
+        "datasheet": "input range C(n-1) to C(n-1) + 5 V; TME specified from 2.0 to 4.2 V",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1 pp. 3-4"
+       },
+       {
+        "name": "reading period",
+        "required": "16 cells within 20 ms",
+        "datasheet": "tCYCLE, 18 cells from REFUP, normal mode 2027 / 2343 / 2488 us; plus tREFUP 2.7 / 3.5 / 4.4 ms from standby: 6.9 ms at most",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 4 p. 6"
+       },
+       {
+        "name": "sample skew",
+        "required": "not fixed (V186 not found)",
+        "datasheet": "tSKEW2 (cell 18 to cell 1, ADCV) normal 580 / 670 / 711 us, fast 202 / 233 / 248 us",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 4 p. 6"
+       },
+       {
+        "name": "current pairing",
+        "required": "not fixed (V187 not found)",
+        "datasheet": "no figure checked: the requirement is not fixed",
+        "pass": true,
+        "source": "V187"
+       },
+       {
+        "name": "resistance resolution",
+        "required": "0.1 mOhm over 10 A",
+        "datasheet": "0.1 mV/bit gives 0.01 mOhm over 10 A",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "mis-plugged lead",
+        "required": "survives 4.2 V either polarity between adjacent pins and 67.2 V reversed",
+        "datasheet": "Table 11: C(n) to C(n-1) -0.3 to +8 V, groups of three -0.3 to +21 V; a reversed or shifted lead exceeds -0.3 V, so the stage 2 balance-lead connector protection carries this requirement",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11 p. 10"
+       },
+       {
+        "name": "pack presence",
+        "required": "presence from the lead",
+        "datasheet": "unused inputs read 0.0 V (p. 86); an empty lead reads 0 V on every cell",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 86"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C ambient",
+        "datasheet": "specified junction range -40 to +85 C for ADBMS1818ASWZ and ASWAZ; theta-JA 17 C/W; about 0.22 W (VREG 5 V x 25 mA + V+ 67.2 V x 1.4 mA) adds about 4 C",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Tables 11 and 12 p. 10"
+       },
+       {
+        "name": "quantities",
+        "required": "per-cell voltage",
+        "datasheet": "18 cell voltages; resistance under load is computed by firmware with the INA228 current",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 1"
+       }
+      ],
+      "jlcpcb": "stockCount 12500, canPresaleNumber 12494, componentLibraryType expand, 7.5967 at the 1 break, which covers the need of 5 (next break 10; currency not given by the API). Read 2026-10-03T10:50:13Z, vendors.py jlcpcb C5372802 (exact match, other_results 0), https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "digikey": "stock_available 534 (cut tape 534, reel 0), manufacturer lead time 38 weeks, ProductStatus Active, discontinued false, end_of_life false, maker Analog Devices Inc. Read 2026-10-03T10:50:31Z, not cached, vendors.py digikey ADBMS1818ASWAZ-RL, https://api.digikey.com/products/v4/search/ADBMS1818ASWAZ-RL/productdetails",
+      "gate": "need 5 boards x 1 = 5. S4: 5 x 5 = 25, never under 50, so 50. JLCPCB 12500 >= 50 and presale 12494 >= 0: pass (rule 4)",
+      "lifecycle": "Status: Digi-Key ProductStatus Active (2026-10-03T10:50:31Z), the status for Analog Devices: pass. https://www.analog.com/en/products/adbms1818.html answered HTTP 403 (challenge, --client safari) at 2026-10-03T10:50:54Z: PCN listing and longevity not read. First data sheet: Rev. 0 undated, Rev. A 12/2021, Rev. B 9/2023: more than 12 months on the market. No end-of-life notice: Digi-Key end_of_life false. Distributor: JLCPCB in stock 12500; Digi-Key Active; no disagreement",
+      "second_source": "second vendor: Digi-Key stock_available 534 >= the gate of 50 (2026-10-03T10:50:31Z, vendors.py digikey ADBMS1818ASWAZ-RL)",
+      "alternates": [
+       "ADBMS1818ASWAZ-R7",
+       "ADBMS1818ASWZ-RL",
+       "LTC6813HLWE-1#3ZZPBF"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Rank 1. Meets every requirement value read, with VREG and V+ from the always-on pack-side supply and the stage 2 protection for a mis-plugged lead; V+ against C18 needs the V+ OR element, which has no part. Most JLCPCB stock and lowest price of the rows that pass. It stays the part selection.json holds (FU-2D)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "ADBMS1818ASWAZ-R7",
+      "maker": "Analog Devices (ADBMS1818 Rev. B ordering guide); S1; JLCPCB maker_label 'Analog Devices'",
+      "lcsc": "C7455595",
+      "package": "SW-64-2, 64-lead LQFP_EP 10 x 10 mm, reel of 300 (p. 92); rank 1's land pattern; JLCPCB 'LQFP-64-EP(10x10)'",
+      "placements": 1,
+      "placements_basis": "as rank 1: range 1 to 1, one monitor for the one 17-pin connector (V192)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "cell count",
+        "required": "1 to 16 cells, no count setting",
+        "datasheet": "rank 1's die and data sheet: up to 18 cells, unused inputs tied to the top read 0.0 V (p. 86)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B pp. 1, 86, 92 (read 2026-10-03T10:46:03Z)"
+       },
+       {
+        "name": "stack voltage",
+        "required": "67.2 V",
+        "datasheet": "V+ 16 to 90 V; V+ to C12 at most 40 V",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "input rating",
+        "required": "at least 85 V",
+        "datasheet": "C16 and V+ 112.5 V absolute",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11"
+       },
+       {
+        "name": "ESC pack node",
+        "required": "node under 85 V (V324)",
+        "datasheet": "112.5 V absolute",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11; V324"
+       },
+       {
+        "name": "separate input",
+        "required": "own input",
+        "datasheet": "as rank 1",
+        "pass": true,
+        "source": "IOBoard.md:402"
+       },
+       {
+        "name": "one connector",
+        "required": "17 pins",
+        "datasheet": "C0 to C16 of C0 to C18",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 12"
+       },
+       {
+        "name": "no count setting",
+        "required": "no setting",
+        "datasheet": "no register or pin sets the count (p. 86)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 86"
+       },
+       {
+        "name": "pack-side interface",
+        "required": "4-wire SPI",
+        "datasheet": "ISOMD = V-: Port A 4-wire SPI",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 56"
+       },
+       {
+        "name": "SPI timing",
+        "required": "mode 3, 1 MHz",
+        "datasheet": "CPHA = 1, CPOL = 1, 1 Mbps max; t8 60 ns",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Tables 9, 10"
+       },
+       {
+        "name": "external VREG",
+        "required": "external VREG",
+        "datasheet": "VREG 4.5 to 5.5 V from an external supply; 16.5 mA measure",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 3; pp. 25-26"
+       },
+       {
+        "name": "V+ from the supply",
+        "required": "16 V or more",
+        "datasheet": "V+ 16 V min; IVP 1.4 mA max",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "V+ against C18",
+        "required": "V+ >= C18 - 0.3 V",
+        "datasheet": "as rank 1; needs the V+ OR element",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Tables 3, 11"
+       },
+       {
+        "name": "wake over SPI",
+        "required": "wakes on CSB or SCK",
+        "datasheet": "as rank 1",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 56, Table 7"
+       },
+       {
+        "name": "tap current",
+        "required": "100 / 10 uA",
+        "datasheet": "+/-250 nA not measured, +/-1 uA measured",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "cell resolution",
+        "required": "1 mV",
+        "datasheet": "0.1 mV/bit",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "error under load",
+        "required": "+/-6 mV",
+        "datasheet": "+/-4.8 mV at 4.2 V normal mode, full range",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "cell voltage range",
+        "required": "2.8 to 4.2 V",
+        "datasheet": "C(n-1) to C(n-1) + 5 V",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "reading period",
+        "required": "20 ms",
+        "datasheet": "2.488 ms max normal mode, 18 cells",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 4"
+       },
+       {
+        "name": "sample skew",
+        "required": "not fixed",
+        "datasheet": "tSKEW2 711 us max normal",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 4"
+       },
+       {
+        "name": "current pairing",
+        "required": "not fixed",
+        "datasheet": "not checked",
+        "pass": true,
+        "source": "V187"
+       },
+       {
+        "name": "resistance resolution",
+        "required": "0.1 mOhm over 10 A",
+        "datasheet": "0.1 mV/bit",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "mis-plugged lead",
+        "required": "survives with stage 2 protection",
+        "datasheet": "C(n) to C(n-1) -0.3 to +8 V absolute",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11"
+       },
+       {
+        "name": "pack presence",
+        "required": "from the lead",
+        "datasheet": "unused inputs read 0.0 V",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 86"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C",
+        "datasheet": "-40 to +85 C junction (ASWAZ)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11"
+       },
+       {
+        "name": "quantities",
+        "required": "per-cell voltage",
+        "datasheet": "18 cell voltages",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 1"
+       }
+      ],
+      "jlcpcb": "stockCount 195, canPresaleNumber 195, componentLibraryType expand, 7.8194 at the 1 break (next 10); read 2026-10-03T10:50:14Z, vendors.py jlcpcb C7455595 (exact match, other_results 0)",
+      "digikey": "stock_available 290 (cut tape 290, reel 0), lead time 38 weeks, ProductStatus Active, discontinued false, end_of_life false; read 2026-10-03T10:50:33Z, not cached, vendors.py digikey ADBMS1818ASWAZ-R7, https://api.digikey.com/products/v4/search/ADBMS1818ASWAZ-R7/productdetails",
+      "gate": "need 5 x 1 = 5; threshold 50; JLCPCB 195 >= 50 and presale 195 >= 0: pass (rule 4)",
+      "lifecycle": "Digi-Key ProductStatus Active (2026-10-03T10:50:33Z): pass. analog.com product page HTTP 403 at 10:50:54Z: PCNs and longevity not read. SW-64-2 added in Rev. A, 12/2021: more than 12 months. No end-of-life notice (Digi-Key end_of_life false). Distributor: JLCPCB in stock 195; no disagreement",
+      "second_source": "second vendor: Digi-Key stock_available 290 >= 50 (2026-10-03T10:50:33Z)",
+      "alternates": [
+       "ADBMS1818ASWAZ-RL",
+       "ADBMS1818ASWZ-RL"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Rank 2. Rank 1's part on a 300-part reel, same land pattern. Less JLCPCB stock and a higher price than rank 1",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "ADBMS1818ASWZ-RL",
+      "maker": "Analog Devices (ADBMS1818 Rev. B ordering guide); S1; JLCPCB maker_label 'Analog Devices'",
+      "lcsc": "C2971928",
+      "package": "64-lead LQFP with exposed pad, outline 05-08-1982, reel of 1500 (p. 92); a different drawing from rank 1's SW-64-2; JLCPCB 'LQFP-64-EP(10x10)'",
+      "placements": 1,
+      "placements_basis": "as rank 1: range 1 to 1 (V192)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "cell count",
+        "required": "1 to 16 cells, no count setting",
+        "datasheet": "rank 1's data sheet: up to 18 cells; unused inputs tied to the top read 0.0 V (p. 86)",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B pp. 1, 86, 92 (read 2026-10-03T10:46:03Z)"
+       },
+       {
+        "name": "stack voltage",
+        "required": "67.2 V",
+        "datasheet": "V+ 16 to 90 V; V+ to C12 at most 40 V",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "input rating",
+        "required": "at least 85 V",
+        "datasheet": "112.5 V absolute",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11"
+       },
+       {
+        "name": "ESC pack node",
+        "required": "node under 85 V (V324)",
+        "datasheet": "112.5 V absolute",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11; V324"
+       },
+       {
+        "name": "separate input",
+        "required": "own input",
+        "datasheet": "as rank 1",
+        "pass": true,
+        "source": "IOBoard.md:402"
+       },
+       {
+        "name": "one connector",
+        "required": "17 pins",
+        "datasheet": "C0 to C16",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 12"
+       },
+       {
+        "name": "no count setting",
+        "required": "no setting",
+        "datasheet": "p. 86",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 86"
+       },
+       {
+        "name": "pack-side interface",
+        "required": "4-wire SPI",
+        "datasheet": "ISOMD = V-",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 56"
+       },
+       {
+        "name": "SPI timing",
+        "required": "mode 3, 1 MHz",
+        "datasheet": "1 Mbps max",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Tables 9, 10"
+       },
+       {
+        "name": "external VREG",
+        "required": "external VREG",
+        "datasheet": "VREG 4.5 to 5.5 V external",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "V+ from the supply",
+        "required": "16 V or more",
+        "datasheet": "V+ 16 V min, IVP 1.4 mA max",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 3"
+       },
+       {
+        "name": "V+ against C18",
+        "required": "V+ >= C18 - 0.3 V",
+        "datasheet": "needs the V+ OR element",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Tables 3, 11"
+       },
+       {
+        "name": "wake over SPI",
+        "required": "wakes on CSB or SCK",
+        "datasheet": "as rank 1",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 56"
+       },
+       {
+        "name": "tap current",
+        "required": "100 / 10 uA",
+        "datasheet": "+/-250 nA, +/-1 uA measured",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "cell resolution",
+        "required": "1 mV",
+        "datasheet": "0.1 mV/bit",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "error under load",
+        "required": "+/-6 mV",
+        "datasheet": "+/-4.8 mV at 4.2 V",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "cell voltage range",
+        "required": "2.8 to 4.2 V",
+        "datasheet": "0 to 5 V per cell",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "reading period",
+        "required": "20 ms",
+        "datasheet": "2.488 ms max",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 4"
+       },
+       {
+        "name": "sample skew",
+        "required": "not fixed",
+        "datasheet": "711 us max normal",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 4"
+       },
+       {
+        "name": "current pairing",
+        "required": "not fixed",
+        "datasheet": "not checked",
+        "pass": true,
+        "source": "V187"
+       },
+       {
+        "name": "resistance resolution",
+        "required": "0.1 mOhm",
+        "datasheet": "0.1 mV/bit",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 1"
+       },
+       {
+        "name": "mis-plugged lead",
+        "required": "with stage 2 protection",
+        "datasheet": "-0.3 to +8 V between inputs",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Table 11"
+       },
+       {
+        "name": "pack presence",
+        "required": "from the lead",
+        "datasheet": "0.0 V on unused inputs",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 86"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C",
+        "datasheet": "-40 to +85 C junction (ASWZ); 05-08-1982 theta-JA 17 C/W",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B Tables 11, 12"
+       },
+       {
+        "name": "quantities",
+        "required": "per-cell voltage",
+        "datasheet": "18 cell voltages",
+        "pass": true,
+        "source": "ADBMS1818 Rev. B p. 1"
+       }
+      ],
+      "jlcpcb": "stockCount 2723, canPresaleNumber 2716, componentLibraryType expand, 8.525 at the 1 break (next 10); read 2026-10-03T10:50:14Z, vendors.py jlcpcb C2971928 (exact match, other_results 0)",
+      "digikey": "stock_available 854 (cut tape 854, reel 0), lead time 39 weeks, ProductStatus Active, discontinued false, end_of_life false; read 2026-10-03T10:50:34Z, not cached, vendors.py digikey ADBMS1818ASWZ-RL, https://api.digikey.com/products/v4/search/ADBMS1818ASWZ-RL/productdetails",
+      "gate": "need 5 x 1 = 5; threshold 50; JLCPCB 2723 >= 50 and presale 2716 >= 0: pass (rule 4)",
+      "lifecycle": "Digi-Key ProductStatus Active (2026-10-03T10:50:34Z): pass. analog.com product page HTTP 403 at 10:50:54Z: PCNs and longevity not read. Rev. B 9/2023; this package predates Rev. A of 12/2021: more than 12 months. No end-of-life notice. Distributor: JLCPCB in stock; no disagreement",
+      "second_source": "second vendor: Digi-Key stock_available 854 >= 50 (2026-10-03T10:50:34Z)",
+      "alternates": [
+       "ADBMS1818ASWAZ-RL",
+       "LTC6813HLWE-1#3ZZPBF"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Rank 3. Same die and figures as rank 1, more stock than rank 2; its 05-08-1982 outline differs from SW-64-2, so a land pattern made for both is needed",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "BQ76952PFBR (C2862742) and BQ7695201/BQ7695204 rows",
+      "maker": "Texas Instruments",
+      "reason": "Fail V181: '3-Series to 16-Series' (SLUSE13B, read 2026-10-02T00:29:36Z in FU-2C; carried from FU-2D, not re-read in this task)"
+     },
+     {
+      "part": "BQ76942PFBR (C2692351)",
+      "maker": "Texas Instruments",
+      "reason": "Fails V181 and 16 cells: 3 to 10 series (SLUSE14B, read in FU-2C; carried from FU-2D)"
+     },
+     {
+      "part": "BQ79616PAPRQ1 (C3682338), BQ79656PAPRQ1 (C3681535)",
+      "maker": "Texas Instruments",
+      "reason": "Fail V181: 6-cell minimum (SLUSF21A, FU-2C; round1 FU-C1); carried from FU-2D"
+     },
+     {
+      "part": "MAX14921ECS+T (C2932577)",
+      "maker": "Analog Devices (Maxim)",
+      "reason": "Fails F15 and V188 ('+65V (max)') and V181 (3-cell minimum) (FU-2C); carried from FU-2D"
+     },
+     {
+      "part": "LTC6812HLWE-1#3ZZTRPBF (C18171243)",
+      "maker": "Analog Devices",
+      "reason": "One device measures up to 15 cells, short of 16 on the one 17-pin input (V192) (FU-2C); carried from FU-2D"
+     },
+     {
+      "part": "ADBMS6832MWCCSZ-RL (C18168954), ADBMS6832MWCCSZ (C18166020)",
+      "maker": "Analog Devices",
+      "reason": "Cannot be qualified: the only public data sheet is a 2-page short form without lowest cell count, absolute maximum, error or tap current (FU-2C); carried from FU-2D"
+     },
+     {
+      "part": "MC33774 and MC33771 rows",
+      "maker": "NXP",
+      "reason": "Fail V181: 4 to 18 cells and 7 to 14 cells (FU-2C; round1 FU-C1); carried from FU-2D"
+     },
+     {
+      "part": "ADBMS6948WCCSZ, ADBMS6830 family, ADES1830/1831, RAA489206/ISL94216, ML5238, BQ797xx, L9963E, TLE9012, MAX17852, ISL78714, ISL94212, MC33775 rows",
+      "maker": "Analog Devices; Renesas; ROHM; Texas Instruments; STMicroelectronics; Infineon; NXP",
+      "reason": "Fail rule 4 at JLCPCB (stock under 50 or negative presale), read 2026-10-02 in FU-2C (round2/FU-2C/010-rerank-R9.json); carried from FU-2D, not re-read"
+     },
+     {
+      "part": "LTC6813HLWE-1#3ZZPBF (C2758259), LTC6813HLWE-1#3ZZTRPBF (C2979142)",
+      "maker": "Analog Devices",
+      "reason": "Not dropped on a requirement value (qualified in round1 FU-C1); not among the three kept: about twice the price and less JLCPCB stock (350 / 340 and 270 / 247 in FU-2C, 2026-10-02T00:24:20Z); listed as an alternate"
+     }
+    ]
+   },
+   {
+    "function": "cell monitor isolation barrier",
+    "requirements": [
+     {
+      "name": "barrier type",
+      "value": "a digital isolator on direct SPI",
+      "source": "V289 (owner, 2026-10-01); IOBoard.md:474"
+     },
+     {
+      "name": "working voltage",
+      "value": "rated 85 V DC working or more",
+      "source": "V189 (owner, 2026-09-28)"
+     },
+     {
+      "name": "channels",
+      "value": "SPI1_SCLK (GPIO 10), SPI1_TX (GPIO 11) and cell monitor CS (GPIO 15) host to pack; SPI1_RX (GPIO 8) pack to host: 3 forward, 1 reverse",
+      "source": "Pins.md:105-112"
+     },
+     {
+      "name": "host-side supply",
+      "value": "3.3 V, the measurement coprocessor's logic level",
+      "source": "Research.md fixed inputs (RP2354B); Pins.md"
+     },
+     {
+      "name": "pack-side supply",
+      "value": "from the always-on supply referenced to the ESC pack negative, not from the ADBMS1818's regulator; the same 5 V rail feeds the external VREG, 4.5 to 5.5 V",
+      "source": "V289 (owner, 2026-10-02); ADBMS1818 Rev. B Table 3"
+     },
+     {
+      "name": "pack-side current",
+      "value": "for research (V289): found as the candidate's pack-side supply current at 5 V and checked against the supply's 5 V rail",
+      "source": "V289"
+     },
+     {
+      "name": "powered in monitor sleep",
+      "value": "its pack-side outputs stay powered while the ADBMS1818 sleeps and drive the wake-up: SCK - CSB at least 200 mV for at least 240 ns",
+      "source": "V289 (owner, 2026-10-02); ADBMS1818 Rev. B p. 56, Table 7"
+     },
+     {
+      "name": "SPI timing at 1 MHz",
+      "value": "2 Mbps a channel; forward delay + ADBMS1818 t8 (60 ns) + reverse delay inside the 500 ns half period",
+      "source": "Pins.md:156-158; ADBMS1818 Rev. B Tables 9 and 10"
+     },
+     {
+      "name": "pack-side logic",
+      "value": "drives CSB, SCK and SDI (VIH 2.3 V, VIL 0.8 V, -0.3 to 6 V absolute) and reads SDO, open drain with a pull-up",
+      "source": "ADBMS1818 Rev. B Tables 5, 11"
+     },
+     {
+      "name": "chip select idle high",
+      "value": "CS stays deasserted while the host side is unpowered or the coprocessor resets: the output defaults high on input power loss",
+      "source": "Pins.md:151-155"
+     },
+     {
+      "name": "ambient range",
+      "value": "0 to 50 C ambient",
+      "source": "V7"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "ISO7741DWR",
+      "maker": "Texas Instruments (ISO774x data sheet SLLSEP4K); S1; JLCPCB maker_label 'Texas Instruments'",
+      "lcsc": "C571196",
+      "package": "SOIC-16 wide body (DW), 10.30 x 7.50 mm; pins 1 VCC1, 2 GND1, 3-5 INA-INC, 6 OUTD, 7 EN1, 8 GND1, 9 GND2, 10 EN2, 11 IND, 12-14 OUTC-OUTA, 15 GND2, 16 VCC2; JLCPCB 'SOIC-16-300mil'",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification. Range 1 to 1: one 3-forward, 1-reverse isolator carries the 4 lines of Pins.md:105-112. The gate applies at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "barrier type",
+        "required": "digital isolator, direct SPI",
+        "datasheet": "quad-channel digital isolator; ISO7741: 3 forward, 1 reverse channel",
+        "pass": true,
+        "source": "SLLSEP4K (revised August 2026) p. 1, section 4, https://www.ti.com/lit/ds/symlink/iso7741.pdf, vendors.py fetch, HTTP 200, 2,398,713 bytes, read 2026-10-03T10:46:04Z"
+       },
+       {
+        "name": "working voltage",
+        "required": "85 V DC working or more",
+        "datasheet": "VIOWM 2121 VDC (ISO774x DW), VIORM 2121 VPK",
+        "pass": true,
+        "source": "SLLSEP4K insulation specifications"
+       },
+       {
+        "name": "channels",
+        "required": "3 forward, 1 reverse",
+        "datasheet": "INA-INC to OUTA-OUTC forward, IND to OUTD reverse",
+        "pass": true,
+        "source": "SLLSEP4K pin functions"
+       },
+       {
+        "name": "host-side supply",
+        "required": "3.3 V",
+        "datasheet": "VCC 2.25 to 5.5 V each side, level translation",
+        "pass": true,
+        "source": "SLLSEP4K p. 1, 5.3"
+       },
+       {
+        "name": "pack-side supply",
+        "required": "5 V from the always-on supply",
+        "datasheet": "VCC2 2.25 to 5.5 V",
+        "pass": true,
+        "source": "SLLSEP4K 5.3"
+       },
+       {
+        "name": "pack-side current",
+        "required": "found (V289) and within the 5 V rail",
+        "datasheet": "ICC2 at 5 V: 4.6 mA max at 1 Mbps, 6.4 mA max at 10 Mbps; DC 3.7 mA (inputs high) / 5.2 mA (inputs low); within the LTM8068 VOUT2's 300 mA",
+        "pass": true,
+        "source": "SLLSEP4K 5.10"
+       },
+       {
+        "name": "powered in monitor sleep",
+        "required": "outputs powered while the monitor sleeps",
+        "datasheet": "VCC2 from the always-on supply; outputs follow inputs whenever VCC1 and VCC2 are up",
+        "pass": true,
+        "source": "SLLSEP4K; V289"
+       },
+       {
+        "name": "SPI timing at 1 MHz",
+        "required": "round trip inside 500 ns",
+        "datasheet": "tPLH, tPHL 18.5 ns max at 3.3 V (17 ns at 5 V): 18.5 + 60 + 18.5 = 97 ns",
+        "pass": true,
+        "source": "SLLSEP4K 5.15, 5.16; ADBMS1818 Rev. B Table 10"
+       },
+       {
+        "name": "pack-side logic",
+        "required": "VOH above 2.3 V at 5 V",
+        "datasheet": "outputs swing to VCC2 = 5 V; CMOS outputs, VCC2 - 0.4 V min at 4 mA",
+        "pass": true,
+        "source": "SLLSEP4K 5.x electrical characteristics"
+       },
+       {
+        "name": "chip select idle high",
+        "required": "default output high",
+        "datasheet": "'If the input power or signal is lost, default output is high for devices without suffix F'; tDO 0.1 / 0.3 us",
+        "pass": true,
+        "source": "SLLSEP4K section 4, 5.15"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C",
+        "datasheet": "TA -55 to 125 C",
+        "pass": true,
+        "source": "SLLSEP4K 5.3"
+       }
+      ],
+      "jlcpcb": "stockCount 5102, canPresaleNumber 4890, componentLibraryType expand, 1.4745 at the 1 break (next 10); read 2026-10-03T10:50:14Z, vendors.py jlcpcb C571196 (exact match, other_results 0)",
+      "digikey": "stock_available 4817 (cut tape 4817, reel 4000), manufacturer lead time 20 weeks, ProductStatus Active, discontinued false, end_of_life false; read 2026-10-03T10:50:36Z, not cached, vendors.py digikey ISO7741DWR, https://api.digikey.com/products/v4/search/ISO7741DWR/productdetails",
+      "gate": "need 5 boards x 1 = 5; threshold 50; JLCPCB 5102 >= 50 and presale 4890 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/ISO7741 <meta name='status' content='ACTIVE'>, vendors.py fetch, HTTP 200, 376,504 bytes, read 2026-10-03T10:50:51Z: pass. Longevity: no part-specific commitment read. First data sheet March 2016: more than 12 months. PCN listing not public on the product page, not read. Distributor: Digi-Key Active; JLCPCB in stock; no disagreement",
+      "second_source": "second vendor: Digi-Key stock_available 4817 >= 50 (2026-10-03T10:50:36Z)",
+      "alternates": [
+       "ISO6741DWR",
+       "ISO7341CDWR",
+       "ADUM1411BRWZ-RL"
+      ],
+      "driver_in_shared": "none; the isolator passes SPI through and needs no driver",
+      "reason": "Rank 1. Meets every value, the widest working rating (2121 VDC) and a 97 ns round trip. Most JLCPCB stock of the DW-16 rows. Pairs with rank 1 of the pack-side supply, LTM8068EY#PBF, whose VOUT2 is its pack-side 5 V. It stays the part selection.json holds (FU-2D)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "ISO6741DWR",
+      "maker": "Texas Instruments (ISO674x data sheet SLLSFJ6G); S1; JLCPCB maker_label 'Texas Instruments'",
+      "lcsc": "C5216432",
+      "package": "SOIC-16 wide body (DW), ISO7741's pin functions (Figure 6-2); JLCPCB 'SOIC-16-300mil'",
+      "placements": 1,
+      "placements_basis": "as rank 1: range 1 to 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "barrier type",
+        "required": "digital isolator",
+        "datasheet": "quad-channel digital isolator, 3 forward, 1 reverse",
+        "pass": true,
+        "source": "SLLSFJ6G (revised January 2023), https://www.ti.com/lit/ds/symlink/iso6741.pdf, vendors.py fetch, HTTP 200, 3,389,464 bytes, read 2026-10-03T10:50:59Z"
+       },
+       {
+        "name": "working voltage",
+        "required": "85 V DC or more",
+        "datasheet": "VIOWM 2121 VDC",
+        "pass": true,
+        "source": "SLLSFJ6G insulation specifications"
+       },
+       {
+        "name": "channels",
+        "required": "3 forward, 1 reverse",
+        "datasheet": "ISO6741 3/1",
+        "pass": true,
+        "source": "SLLSFJ6G section 6"
+       },
+       {
+        "name": "host-side supply",
+        "required": "3.3 V",
+        "datasheet": "1.71 to 5.5 V each side",
+        "pass": true,
+        "source": "SLLSFJ6G 7.3"
+       },
+       {
+        "name": "pack-side supply",
+        "required": "5 V",
+        "datasheet": "VCC2 up to 5.5 V",
+        "pass": true,
+        "source": "SLLSFJ6G 7.3"
+       },
+       {
+        "name": "pack-side current",
+        "required": "found (V289)",
+        "datasheet": "ICC2 at 5 V: 4.5 mA max at 1 Mbps, 6.5 mA max at 10 Mbps; DC 3.5 / 5.1 mA max",
+        "pass": true,
+        "source": "SLLSFJ6G 7.10"
+       },
+       {
+        "name": "powered in monitor sleep",
+        "required": "outputs powered",
+        "datasheet": "VCC2 from the always-on supply",
+        "pass": true,
+        "source": "V289"
+       },
+       {
+        "name": "SPI timing at 1 MHz",
+        "required": "inside 500 ns",
+        "datasheet": "18 + 60 + 18 = 96 ns (FU-2D reading of SLLSFJ6G 7.18, same file size)",
+        "pass": true,
+        "source": "SLLSFJ6G 7.18"
+       },
+       {
+        "name": "pack-side logic",
+        "required": "VOH above 2.3 V",
+        "datasheet": "outputs swing to VCC2",
+        "pass": true,
+        "source": "SLLSFJ6G"
+       },
+       {
+        "name": "chip select idle high",
+        "required": "default high",
+        "datasheet": "'Default output high (ISO674x) and low (ISO674xF)'; tDO 0.1 / 0.3 us",
+        "pass": true,
+        "source": "SLLSFJ6G p. 1, 7.18"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C",
+        "datasheet": "-40 to 125 C",
+        "pass": true,
+        "source": "SLLSFJ6G 7.3"
+       }
+      ],
+      "jlcpcb": "stockCount 2961, canPresaleNumber 2875, componentLibraryType expand, 1.4485 at the 1 break (next 10); read 2026-10-03T10:50:15Z, vendors.py jlcpcb C5216432 (exact match, other_results 0)",
+      "digikey": "stock_available 4417 (cut tape 4417, reel 2000), lead time 20 weeks, ProductStatus Active, discontinued false, end_of_life false; read 2026-10-03T10:50:37Z, not cached, vendors.py digikey ISO6741DWR, https://api.digikey.com/products/v4/search/ISO6741DWR/productdetails",
+      "gate": "need 5; threshold 50; JLCPCB 2961 >= 50 and presale 2875 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/ISO6741 meta status ACTIVE, HTTP 200, 311,405 bytes, read 2026-10-03T10:50:51Z: pass. Longevity: none read. First data sheet December 2019: more than 12 months. PCNs not read. Distributor: Digi-Key Active; JLCPCB in stock; no disagreement",
+      "second_source": "second vendor: Digi-Key stock_available 4417 >= 50 (2026-10-03T10:50:37Z)",
+      "alternates": [
+       "ISO7741DWR"
+      ],
+      "driver_in_shared": "none; transparent isolator",
+      "reason": "Rank 2. Every value on rank 1's land pattern at the lowest price; below rank 1 for less JLCPCB stock",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "ISOW7741BDFMR",
+      "maker": "Texas Instruments (ISOW774x data sheet SLLSFK1C); S1; JLCPCB maker_label 'Texas Instruments'",
+      "lcsc": "C5216397",
+      "package": "20-pin SOIC wide body (DFM), 12.83 x 7.5 mm; JLCPCB 'DFM-20'. Not the DW-16 land pattern of ranks 1 and 2",
+      "placements": 1,
+      "placements_basis": "as rank 1: range 1 to 1; the same part is the 5 V source of rank 2 of the pack-side supply, placed once for both",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "barrier type",
+        "required": "digital isolator",
+        "datasheet": "quad-channel digital isolator with integrated isolated DC-DC, 3 forward, 1 reverse",
+        "pass": true,
+        "source": "SLLSFK1C (April 2022), https://www.ti.com/lit/ds/symlink/isow7741.pdf, vendors.py fetch, HTTP 200, 4,018,264 bytes, read 2026-10-03T10:51:00Z"
+       },
+       {
+        "name": "working voltage",
+        "required": "85 V DC or more",
+        "datasheet": "VIOWM 1500 VDC",
+        "pass": true,
+        "source": "SLLSFK1C insulation specifications"
+       },
+       {
+        "name": "channels",
+        "required": "3 forward, 1 reverse",
+        "datasheet": "ISOW7741 3/1",
+        "pass": true,
+        "source": "SLLSFK1C section 6"
+       },
+       {
+        "name": "host-side supply",
+        "required": "3.3 V logic",
+        "datasheet": "VIO 1.71 to 5.5 V for the logic; VDD 5 V for a 5 V VISOOUT",
+        "pass": true,
+        "source": "SLLSFK1C 7.3"
+       },
+       {
+        "name": "pack-side supply",
+        "required": "always-on, referenced to pack negative",
+        "datasheet": "its own isolated output VISOOUT 4.75 to 5.25 V at 0 to 55 mA (VSEL = VISOOUT, VDD 5 V)",
+        "pass": true,
+        "source": "SLLSFK1C 7.x VISOOUT"
+       },
+       {
+        "name": "pack-side current",
+        "required": "found (V289)",
+        "datasheet": "IISOIN 8.9 mA max at 10 Mbps (FU-2D reading of SLLSFK1C 7.12, same file size)",
+        "pass": true,
+        "source": "SLLSFK1C 7.12"
+       },
+       {
+        "name": "powered in monitor sleep",
+        "required": "outputs powered",
+        "datasheet": "VISOOUT runs while VDD is present",
+        "pass": true,
+        "source": "SLLSFK1C"
+       },
+       {
+        "name": "SPI timing at 1 MHz",
+        "required": "inside 500 ns",
+        "datasheet": "16.2 + 60 + 15.7 = 91.9 ns (FU-2D reading of 7.19, 7.20)",
+        "pass": true,
+        "source": "SLLSFK1C 7.19, 7.20"
+       },
+       {
+        "name": "pack-side logic",
+        "required": "VOH above 2.3 V",
+        "datasheet": "outputs swing to VISOIN = 5 V",
+        "pass": true,
+        "source": "SLLSFK1C"
+       },
+       {
+        "name": "chip select idle high",
+        "required": "default high",
+        "datasheet": "'If the input signal is lost, the default output is high for the ISOW77xx devices without the F suffix'",
+        "pass": true,
+        "source": "SLLSFK1C section 5"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C",
+        "datasheet": "-40 to 125 C",
+        "pass": true,
+        "source": "SLLSFK1C 7.3"
+       }
+      ],
+      "jlcpcb": "stockCount 99, canPresaleNumber 94, componentLibraryType expand, 7.969 at the 1 break (next 10); read 2026-10-03T10:50:15Z, vendors.py jlcpcb C5216397 (exact match, other_results 0)",
+      "digikey": "stock_available 1548 (cut tape 1548, reel 850), manufacturer lead time 20 weeks, ProductStatus Active, discontinued false, end_of_life false; read 2026-10-03T10:50:39Z, not cached, vendors.py digikey ISOW7741BDFMR, https://api.digikey.com/products/v4/search/ISOW7741BDFMR/productdetails",
+      "gate": "need 5; threshold 50; JLCPCB 99 >= 50 and presale 94 >= 0: pass (rule 4), 1.98 times the gate",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/ISOW7741 meta status ACTIVE, HTTP 200, 295,835 bytes, read 2026-10-03T10:50:52Z: pass. Longevity: none read. Market introduction: family data sheet September 2021; Rev. C (April 2022) calls the B devices planned, and their release date is not read, so the under-12-months flag is not determined. PCNs not read. Distributor: Digi-Key Active; JLCPCB in stock; no disagreement",
+      "second_source": "second vendor: Digi-Key stock_available 1548 >= 50 (2026-10-03T10:50:39Z)",
+      "alternates": [
+       "ISOW7741DFMR"
+      ],
+      "driver_in_shared": "none; transparent isolator",
+      "reason": "Rank 3. Meets every value and also makes the pack-side 5 V rail, so it pairs with rank 2 of the pack-side supply. Below ranks 1 and 2 for a 20-pin land pattern, 1.98 times the stock gate at JLCPCB, 5.4 times rank 1's price and a B-variant release date not read",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "ISO7041DBQR (C2877500)",
+      "maker": "Texas Instruments",
+      "reason": "Not dropped on a requirement value; not among the three kept (FU-2D: low pack-side current counted only while the pack side ran from the monitor's regulator); carried from FU-2D"
+     },
+     {
+      "part": "ISO7741QDWRQ1, ISO7741BDWR, ISO7241CDWR, ADUM141E1WBRWZ-RL, ADUM141E1BRWZ-RL, ADUM241E1BRWZ-RL, ISO7741DBQR (C913840), ADUM1411BRWZ-RL (C660417), ISO7341CDWR (C486024), ADUM1401BRWZ-RL (C91762), ADUM7441CRQZ-RL7 (C661776), ISO7141CCDBQR (C544481), ISO7841DWWR (C5216512)",
+      "maker": "Texas Instruments; Analog Devices",
+      "reason": "Not dropped on a requirement value; qualified in FU-2C or by FU-2D's re-rank (round2/FU-2D/014-rerank-R9.json). Not among the three kept: less stock, higher price or another land pattern; not re-read in this task"
+     },
+     {
+      "part": "ISO7741FDWR (C485810), ISO6741FDWR (C5216433), ISO7741FDBQR (C2872241), ISO7741FQDBQRQ1 (C2877510), ISOW7741FBDFMR (C5216399)",
+      "maker": "Texas Instruments",
+      "reason": "Fail 'chip select idle high' (Pins.md:151-155): the F suffix defaults low on input power loss (SLLSEP4K section 4, read 2026-10-03T10:46:04Z; SLLSFJ6G p. 1, read 10:50:59Z; SLLSFK1C section 5, read 10:51:00Z)"
+     },
+     {
+      "part": "ISOW7741DFMR (C5216398)",
+      "maker": "Texas Instruments",
+      "reason": "Fails rule 4 in FU-2D: JLCPCB stockCount 9, canPresaleNumber 4 (2026-10-02T06:28:47Z) against a gate of 50; not re-read"
+     },
+     {
+      "part": "ISOW7841DWER (C179690), ISOW7841FDWER (C2860804)",
+      "maker": "Texas Instruments",
+      "reason": "Fail rule 4 in FU-2D: JLCPCB 43 / 38 and 4 / 3 (2026-10-02) against 50; not re-read"
+     },
+     {
+      "part": "ADUM5401ARWZ-RL (C23872), ADUM5401CRWZ-RL (C514368)",
+      "maker": "Analog Devices",
+      "reason": "Fail host-side supply: one supply VDD1 sets the converter and the side-1 logic, VIH 0.7 x VDD1 (ADuM5401 data sheet Table 1, FU-2D); carried"
+     },
+     {
+      "part": "ADUM5411BRSZ-RL7 (C2830727)",
+      "maker": "Analog Devices",
+      "reason": "Cannot be qualified: its data sheet URL answered HTTP 404 in FU-2D (2026-10-02T06:36:45Z); carried"
+     },
+     {
+      "part": "LTC6820HMS#3ZZTRPBF (C514444), LTC6820IMS#TRPBF (C581009), LTC6820HMS#TRPBF (C689580), ADBMS6822WCCSZ-RL (C19190031)",
+      "maker": "Analog Devices",
+      "reason": "isoSPI transceivers; V289 sets a digital isolator on direct SPI"
+     },
+     {
+      "part": "CA-IS37xx, CA-IS36xx, ISO7741N0-Y, CMT8041N1, NSI8141S0, ADUM3401CRWZ-HXY rows",
+      "maker": "Chipanalog; YLPTEC; HopeRF; NOVOSENSE; HXY MOSFET (JLCPCB labels)",
+      "reason": "Rule 2: makers not on S1"
+     }
+    ]
+   },
+   {
+    "function": "cell monitor pack-side supply",
+    "requirements": [
+     {
+      "name": "reference",
+      "value": "its outputs are referenced to the ESC pack's negative",
+      "source": "V289 (owner, 2026-10-02)"
+     },
+     {
+      "name": "isolation",
+      "value": "it crosses the barrier from the board side, so it is rated 85 V DC working or more",
+      "source": "V189 (owner, 2026-09-28)"
+     },
+     {
+      "name": "always on",
+      "value": "runs whenever the IO board is powered, from a board rail, independent of the ADBMS1818's state, so the isolator's pack side stays powered while the monitor sleeps and the monitor can be woken over SPI",
+      "source": "V289 (owner, 2026-10-02)"
+     },
+     {
+      "name": "5 V output",
+      "value": "4.5 to 5.5 V for the external VREG and the isolator's pack side: 16.5 mA (VREG, measure) + 8.1 mA (IREG(isoSPI), ISOMD = 0, 2 kOhm, active) + 6.4 mA (ISO7741DWR ICC2) = 31.0 mA awake; about 5.2 mA asleep",
+      "source": "V289; ADBMS1818 Rev. B Table 3; SLLSEP4K 5.10"
+     },
+     {
+      "name": "V+ output",
+      "value": "16 V or more, at most 90 V, for packs under 16 V, at up to 1.4 mA (IVP, measure, full range), after the supply-side branch of the V+ OR element",
+      "source": "V289; V327; ADBMS1818 Rev. B Table 3"
+     },
+     {
+      "name": "pack range",
+      "value": "works from 1 cell (V181) to 16 cells at 67.2 V (F15): its V+ output is ORed with the pack top through the V+ OR element, which blocks up to 67.2 V less the supply voltage",
+      "source": "V289; V327; V181; F15"
+     },
+     {
+      "name": "input",
+      "value": "one of the board's rails; which rail is not stated",
+      "source": "FU-2P56/003-P5-critic.json budget_verdicts/26"
+     },
+     {
+      "name": "ambient range",
+      "value": "0 to 50 C ambient",
+      "source": "V7"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "LTM8068EY#PBF",
+      "maker": "Analog Devices (LTM8068 data sheet Rev. D, 'For more information www.analog.com'); Analog Devices (Linear) on S1; JLCPCB maker_label 'Analog Devices'",
+      "lcsc": "C581210",
+      "package": "BGA-38, 11.25 x 9 x 4.92 mm, 1.27 mm pitch, two ball columns removed for isolation; JLCPCB 'BGA-38'",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification. Range 1 to 1: one module gives both pack-side rails for the one monitor (V289). The gate applies at 1",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "reference",
+        "required": "outputs referenced to the pack negative",
+        "datasheet": "VOUT1 and VOUT2 are relative to VOUTN, the secondary return, galvanically isolated from GND",
+        "pass": true,
+        "source": "LTM8068 Rev. D pp. 2, 8, https://www.analog.com/media/en/technical-documentation/data-sheets/ltm8068.pdf, vendors.py fetch --client safari, HTTP 200, 1,648,549 bytes, SHA-256 5bb33f351982a33f..., read 2026-10-03T10:46:04Z"
+       },
+       {
+        "name": "isolation",
+        "required": "85 V DC working or more",
+        "datasheet": "2 kVAC (2.83 kVDC for 1 s) hi-pot; 'may be operated with up to 250V working voltage in a pollution degree 2 environment' (UL 60950, functional insulation, 3.06 mm external gap)",
+        "pass": true,
+        "source": "LTM8068 Rev. D pp. 2-3, 12"
+       },
+       {
+        "name": "always on",
+        "required": "from a board rail, independent of the monitor",
+        "datasheet": "VIN 3 to 40 V; Table 1 row for VOUT1 18 V: VIN 3 to 27 V (VIN + VOUT1 at most 45 V absolute); RUN high keeps it running",
+        "pass": true,
+        "source": "LTM8068 Rev. D pp. 2-3, Table 1 p. 11"
+       },
+       {
+        "name": "5 V output",
+        "required": "4.5 to 5.5 V at 31.0 mA awake",
+        "datasheet": "VOUT2 LDO, RFB2 = 608.78 / (5 - 1.22) kOhm; FB2 1.19 to 1.25 V over temperature gives about 4.88 to 5.12 V before resistor tolerance; up to 300 mA; dropout 0.25 V at 10 mA, 0.34 V at 100 mA",
+        "pass": true,
+        "source": "LTM8068 Rev. D p. 3, p. 8"
+       },
+       {
+        "name": "V+ output",
+        "required": "16 V or more after the supply-side branch, at 1.4 mA",
+        "datasheet": "VOUT1 18 V with RFB1 = 2.37 kOhm (typical only; tolerance stated only at 5 V: 4.75 to 5.25 V); VOUT1 relative to VOUTN 25 V absolute, protected by the supply-side branch that blocks the pack top",
+        "pass": true,
+        "source": "LTM8068 Rev. D p. 2, p. 3, Table 1"
+       },
+       {
+        "name": "pack range",
+        "required": "1 to 16 cells with the V+ OR element",
+        "datasheet": "VOUT1 does not see the pack top while the supply-side branch blocks it; the V+ OR element has no part in this return",
+        "pass": true,
+        "source": "V327"
+       },
+       {
+        "name": "input",
+        "required": "a board rail",
+        "datasheet": "VIN 3 to 27 V at 18 V out allows the 5 V or the 12 V rail; input current at VOUT1 18 V not read (plotted only to 15 V)",
+        "pass": true,
+        "source": "LTM8068 Rev. D Table 1, p. 5"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C",
+        "datasheet": "LTM8068E guaranteed from 0 to 125 C internal; maximum internal temperature 125 C",
+        "pass": true,
+        "source": "LTM8068 Rev. D p. 2, Note 4 p. 3"
+       },
+       {
+        "name": "minimum load",
+        "required": "regulates at sleep load of about 5.2 mA",
+        "datasheet": "minimum load about 15 mA at VOUT1 18 V (typical graph, p. 6, 'Minimum Load Current vs VOUT1'); a preload resistor of about 10 mA (1.8 kOhm, 0.18 W at 18 V) holds regulation asleep; maximum load at 18 V from VIN 5 V about 80 mA (typical graph) against 42.4 mA with preload",
+        "pass": true,
+        "source": "LTM8068 Rev. D pp. 5-6, 14"
+       }
+      ],
+      "jlcpcb": "stockCount 135, canPresaleNumber 135, componentLibraryType expand, 25.4643 at the 5 break (currency not given by the API); read 2026-10-03T10:50:15Z, vendors.py jlcpcb C581210 (exact match, other_results 0)",
+      "digikey": "stock_available 481 (Tray), manufacturer lead time 47 weeks, ProductStatus Active, discontinued false, end_of_life false; read 2026-10-03T10:50:41Z, not cached, vendors.py digikey LTM8068EY#PBF, https://api.digikey.com/products/v4/search/LTM8068EY%23PBF/productdetails",
+      "gate": "need 5 boards x 1 = 5; threshold 50; JLCPCB 135 >= 50 and presale 135 >= 0: pass (rule 4), 2.7 times the gate",
+      "lifecycle": "Status: Digi-Key ProductStatus Active (2026-10-03T10:50:41Z), the status for Analog Devices: pass. The analog.com product host answered HTTP 403 (challenge) for adbms1818.html at 10:50:54Z; the LTM8068 product page is not read, so PCN listing and longevity are not read. First data sheet: Rev. 0 undated, before Rev. A 05/16; Rev. D 11/25: more than 12 months. No end-of-life notice (Digi-Key end_of_life false). Distributor: JLCPCB in stock 135; Digi-Key Active; no disagreement",
+      "second_source": "second vendor: Digi-Key stock_available 481 >= 50 (2026-10-03T10:50:41Z). The pin-compatible LTM8068IY#PBF fails rule 4 at JLCPCB: 0 / 0 (C581211, 2026-10-03T10:50:16Z)",
+      "alternates": [
+       "LTM8068IY#PBF"
+      ],
+      "driver_in_shared": "none; a power module needs no driver",
+      "reason": "Rank 1. One module gives both pack-side rails the owner names, 5 V for VREG and the isolator (VOUT2) and V+ at 18 V (VOUT1), from the 5 V or 12 V board rail, with 250 V working isolation and no magnetics to select. Needs a preload resistor (stage 2) and the V+ OR element, which has no part. Highest price of the routes and a BGA land pattern. Pairs with ISO7741DWR. It stays the part selection.json holds (FU-2D)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "ISOW7741BDFMR",
+      "maker": "Texas Instruments (ISOW774x data sheet SLLSFK1C); S1. With TPS61040DBVR (Texas Instruments, SLVS413L, C7722) as this route's V+ boost",
+      "lcsc": "C5216397",
+      "package": "20-pin SOIC wide body (DFM), 12.83 x 7.5 mm; the boost TPS61040DBVR is SOT-23-5",
+      "placements": 1,
+      "placements_basis": "not fixed by the specification. Range 1 to 1: one isolator with integrated converter for the one monitor, plus one TPS61040DBVR (1 a board). The same ISOW7741BDFMR is rank 3 of the barrier, so this route places it once for both functions",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "reference",
+        "required": "pack negative",
+        "datasheet": "VISOOUT relative to GND2, the isolated side",
+        "pass": true,
+        "source": "SLLSFK1C pin functions (read 2026-10-03T10:51:00Z)"
+       },
+       {
+        "name": "isolation",
+        "required": "85 V DC or more",
+        "datasheet": "VIOWM 1500 VDC",
+        "pass": true,
+        "source": "SLLSFK1C insulation specifications"
+       },
+       {
+        "name": "always on",
+        "required": "from a board rail",
+        "datasheet": "VDD 5 V for a 5 V VISOOUT; runs while VDD is present",
+        "pass": true,
+        "source": "SLLSFK1C 7.3"
+       },
+       {
+        "name": "5 V output",
+        "required": "4.5 to 5.5 V at 31 mA plus the boost's input",
+        "datasheet": "VISOOUT 4.75 to 5.25 V at 0 to 55 mA; 4.5 to 5.25 V at 0 to 110 mA (VDD 5 V, VSEL = VISOOUT); IDD 115 typ / 171 mA max at 55 mA load",
+        "pass": true,
+        "source": "SLLSFK1C 7.x"
+       },
+       {
+        "name": "V+ output",
+        "required": "16 V or more at 1.4 mA",
+        "datasheet": "TPS61040: input 1.8 to 6 V, output up to 28 V (SLVS413L, revised August 2026, https://www.ti.com/lit/ds/symlink/tps61040.pdf, HTTP 200, read 2026-10-03T10:51:01Z); its inductor and Schottky diode are not selected",
+        "pass": true,
+        "source": "SLVS413L p. 1"
+       },
+       {
+        "name": "pack range",
+        "required": "with the V+ OR element",
+        "datasheet": "as rank 1; the OR element has no part",
+        "pass": true,
+        "source": "V327"
+       },
+       {
+        "name": "input",
+        "required": "a board rail",
+        "datasheet": "5 V rail only (VDD 5 V for 5 V out)",
+        "pass": true,
+        "source": "SLLSFK1C 7.3"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 C",
+        "datasheet": "ISOW7741 -40 to 125 C; TPS61040 -40 to 85 C",
+        "pass": true,
+        "source": "SLLSFK1C 7.3; SLVS413L"
+       }
+      ],
+      "jlcpcb": "ISOW7741BDFMR: stockCount 99, canPresaleNumber 94, expand, 7.969 at the 1 break; read 2026-10-03T10:50:15Z, vendors.py jlcpcb C5216397 (exact match). TPS61040DBVR: stockCount 47548, canPresaleNumber 40538, expand, 0.7479 at the 1 break; read 2026-10-03T10:50:16Z, vendors.py jlcpcb C7722 (exact match)",
+      "digikey": "ISOW7741BDFMR: stock_available 1548, lead time 20 weeks, Active; read 2026-10-03T10:50:39Z, vendors.py digikey ISOW7741BDFMR. TPS61040DBVR: stock_available 7152, lead time 20 weeks, Active; read 2026-10-03T10:50:42Z, vendors.py digikey TPS61040DBVR, https://api.digikey.com/products/v4/search/TPS61040DBVR/productdetails; neither cached",
+      "gate": "need 5 x 1 = 5 for each part; threshold 50. ISOW7741BDFMR 99 >= 50, presale 94 >= 0: pass. TPS61040DBVR 47548 >= 50, presale 40538 >= 0: pass (rule 4)",
+      "lifecycle": "ISOW7741: TI product page meta status ACTIVE (2026-10-03T10:50:52Z); B devices' release date not read. TPS61040: https://www.ti.com/product/TPS61040 meta status ACTIVE, HTTP 200, 344,442 bytes, read 2026-10-03T10:50:53Z; first data sheet October 2002. Longevity and PCNs not read for either. Distributor: Digi-Key Active for both; JLCPCB in stock; no disagreement",
+      "second_source": "second vendor: Digi-Key ISOW7741BDFMR 1548 and TPS61040DBVR 7152, both >= 50 (2026-10-03T10:50:39Z and 10:50:42Z)",
+      "alternates": [
+       "ISOW7741DFMR",
+       "TPS61041DBVR"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Rank 2. The barrier's own converter makes the always-on 5 V and a TPS61040 boost makes V+, replacing both ISO7741DWR and the LTM8068 at about 8.72 at 1 against 26.94, with no preload. Below rank 1: its boost inductor and diode are not selected, it takes only the 5 V rail, its stock is 1.98 times the gate and the B variant's release date is not read",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "ADUM5000ARWZ-RL (C50435)",
+      "maker": "Analog Devices",
+      "reason": "Fails the 5 V output's 4.5 V minimum on the data sheet's bound: VISO 4.7 V min at no load and 5 % load regulation give 4.47 V (ADuM5000 Rev. B Table 1, FU-2D); carried"
+     },
+     {
+      "part": "DCR010505U/1K (C111870)",
+      "maker": "Texas Instruments",
+      "reason": "Fails isolation: 60 VDC continuous across the barrier (SBVS013E, FU-2D); carried"
+     },
+     {
+      "part": "DCP010505BP-U/700 (C962989), DCP020505U/1K, DCP020503U, DCR011205U/1K",
+      "maker": "Texas Instruments",
+      "reason": "Not qualified: 5 V outputs only, data sheets not read (FU-2D); carried"
+     },
+     {
+      "part": "LTM8068IY#PBF (C581211)",
+      "maker": "Analog Devices",
+      "reason": "Fails rule 4: JLCPCB stockCount 0, canPresaleNumber 0 (2026-10-03T10:50:16Z, vendors.py jlcpcb C581211)"
+     },
+     {
+      "part": "LTM8067EY#PBF (C581209), LTM8067IY#PBF (C690763)",
+      "maker": "Analog Devices",
+      "reason": "Fail rule 4 in FU-2D: JLCPCB 10 / 9 and 17 / 17 (2026-10-02); not re-read"
+     },
+     {
+      "part": "UCC12040DVER (C5216535), UCC12050DVER (C504571)",
+      "maker": "Texas Instruments",
+      "reason": "Fail rule 4 in FU-2D: JLCPCB 20 / 7 and 0 / -2 (2026-10-02); not re-read"
+     },
+     {
+      "part": "MGJ2D051505SC (C22409337)",
+      "maker": "Murata",
+      "reason": "Fails rule 4 in FU-2D: JLCPCB 29 / 29 (2026-10-02); not re-read"
+     },
+     {
+      "part": "ISOW7841DWER (C179690), ISOW7741DFMR (C5216398)",
+      "maker": "Texas Instruments",
+      "reason": "Fail rule 4 in FU-2D: JLCPCB 43 / 38 and 9 / 4 (2026-10-02); not re-read"
+     },
+     {
+      "part": "ADUM5401ARWZ-RL (C23872)",
+      "maker": "Analog Devices",
+      "reason": "Fails the 4.5 V minimum and the 3.3 V host logic (VIH 0.7 x VDD1) (FU-2D); carried"
+     },
+     {
+      "part": "SN6505BDBVR (C74518), SN6501DBVR (C49451), LT8301, LM25180 rows",
+      "maker": "Texas Instruments; Analog Devices",
+      "reason": "Not qualified: transformer drivers and flyback controllers that need a transformer and rectifiers no stage 1 function selects (FU-2D); carried"
+     },
+     {
+      "part": "NXJ1S0505MC-R7 (C6134339), NXE1S0305MC-R7 (C6943300), CRE1S0505S3C (C410820)",
+      "maker": "Murata",
+      "reason": "Not qualified: unregulated 5 V modules; their light-load output against VREG's 5.5 V maximum is not read, and they give 5 V only (FU-2D); carried"
+     }
+    ]
+   },
+   {
+    "function": "V+ OR element",
+    "requirements": [
+     {
+      "name": "branch count",
+      "value": "one pack-side branch from each balance-lead tap that can be the pack top, C1 to C16 (1 to 16 cells, V181, F15, no count setting V193), and one supply-side branch from the pack-side supply's V+ output: 17 branches",
+      "source": "V327 (owner, 2026-10-03); V181; V193; F15"
+     },
+     {
+      "name": "pack-side drop",
+      "value": "at most 0.3 V at 1.4 mA, the ADBMS1818's highest V+ current, so V+ stays at or above C18 - 0.3 V; over 0 to 50 C ambient (V7), the drop being highest at 0 C",
+      "source": "V327; ADBMS1818 Rev. B Table 3 (IVP 1.4 mA max, V+ to C18 at least -0.3 V); V7"
+     },
+     {
+      "name": "supply-side blocking",
+      "value": "the supply-side branch blocks up to 67.2 V less the supply voltage (49.2 V with the LTM8068's 18 V)",
+      "source": "V327; F15"
+     },
+     {
+      "name": "pack-side blocking",
+      "value": "each pack-side branch blocks the supply into the pack, and a lower tap's branch blocks the pack top above it: up to 62.7 V reverse (66.9 V of V+ less the 4.2 V of tap C1) on a 16-cell pack at 4.2 V a cell",
+      "source": "V327; F15"
+     },
+     {
+      "name": "voltage rating",
+      "value": "both branches rated with V188's 85 V in mind: a reverse rating of 85 V or more",
+      "source": "V327; V188 (found: 85 V)"
+     },
+     {
+      "name": "unpowered V+ draw",
+      "value": "with the board off, V+ draws 6.1 uA typical and 18 uA maximum from the pack top through it; V190 does not count this draw",
+      "source": "V327; ADBMS1818 Rev. B Table 3"
+     },
+     {
+      "name": "tap leakage",
+      "value": "with the board unpowered the top tap pin feeds V+ and carries the reverse leakage of the up to 15 blocked pack-side branches into the lower taps (3.9 to 62.7 V reverse each on a 16-cell pack); that sum is not a top-to-bottom supply draw, so V190's 10 uA a tap pin unpowered (100 uA powered), averaged over 1 s, bounds it: at most 10 uA at 50 C summed, or 0.67 uA a branch at 62.7 V if every branch is bounded at its highest reverse voltage; the ADBMS1818's own C pin leakage (+/-250 nA) and the stage 2 input network share the same 10 uA",
+      "source": "V190 (owner, 2026-09-28); V327; F15; V7"
+     },
+     {
+      "name": "ambient range",
+      "value": "0 to 50 C ambient",
+      "source": "V7"
+     },
+     {
+      "name": "placements and gate",
+      "value": "17 single-diode placements a board: need 5 x 17 = 85, S4 gate 5 x 85 = 425 (above 50). A dual common-cathode part would take 9 placements (need 45, gate 225)",
+      "source": "V327; Research.md S4, S7; Sourcing rule 4"
+     }
+    ],
+    "shortlist": [],
+    "dropped": [
+     {
+      "part": "BAT46WJ,115 (C114696), BAT46GW (BAT46GWJ C549269, BAT46GWX C489244), BAT46WH,115 (C426768)",
+      "maker": "Nexperia",
+      "reason": "Fails tap leakage. IR max at 25 C: 0.8 uA at 10 V, 2 uA at 50 V, 4 uA at 75 V; at Tj 60 C: 20 uA at 10 V, 44 uA at 50 V, 80 uA at 75 V. Summed over the 15 blocked branches of a 16-cell pack (2 at up to 10 V, 9 at up to 50 V, 4 at up to 62.7 V) the 25 C maxima give 35.6 uA and the 60 C maxima 756 uA, against 10 uA. Its drop: VF max 200 mV at 0.1 mA and 350 mV at 10 mA (25 C), 470 mV at 10 mA (-40 C); at 1.4 mA not tabulated. BAT46WJ data sheet Table 7 and BAT46GW (9 October 2024) Table 7, https://assets.nexperia.com/documents/data-sheet/BAT46WJ.pdf and BAT46GW.pdf, vendors.py fetch, HTTP 200, read 2026-10-03T10:48:34Z and 10:48:35Z"
+     },
+     {
+      "part": "BAT46ZFILM (C283255), BAT46JFILM (C111205), BAT46 (C2969783), BAT46AWFILM (C2971277, common anode)",
+      "maker": "STMicroelectronics",
+      "reason": "Fails tap leakage. IR max at 25 C: 0.8 uA at 10 V, 2 uA at 50 V, 5 uA at 75 V; at 60 C: 7.5, 15, 20 uA. Summed over the 15 blocked branches: 39.6 uA at 25 C and 230 uA at 60 C against 10 uA; Figure 3 typical at Tj 50 C is about 1 to 2 uA a branch at 20 to 60 V, already over 10 uA summed. Drop meets it on the typical curve (Figure 6, about 0.24 V at 1.4 mA, 25 C); VF max 0.25 V at 0.1 mA and 0.45 V at 10 mA. BAT46 Series data sheet Rev 4 (July 2006) Table 3, Figures 3 and 6, https://www.st.com/resource/en/datasheet/bat46.pdf, HTTP 200, read 2026-10-03T10:51:35Z. BAT46AWFILM is common anode, which cannot OR into V+"
+     },
+     {
+      "part": "BAT46W-E3-08 (C14099), BAT46W-HE3-08 (C145279), BAT46W-7-F (C83152), BAT46WQ-7-F (C134400)",
+      "maker": "Vishay; Diodes Incorporated",
+      "reason": "Not qualified: the Vishay data sheet URL https://www.vishay.com/docs/85662/bat46w.pdf answered HTTP 404 (2026-10-03T10:51:37Z) and the Diodes data sheet is not read. The BAT46 die of the Nexperia and ST data sheets fails tap leakage"
+     },
+     {
+      "part": "BAT41KFILM (C73150), BAT41ZFILM (C222251), BAT41 (C2969790)",
+      "maker": "STMicroelectronics",
+      "reason": "Fails pack-side drop: VF 400 mV typical, 450 mV maximum at IF = 1 mA, 25 C, above 0.3 V before the current reaches 1.4 mA. Its leakage would pass at 25 C (0.1 uA max at 50 V) and is 20 uA max at 100 C. BAT41 data sheet DS4884 Rev 3 (September 2021) Table 2, https://www.st.com/resource/en/datasheet/bat41.pdf, HTTP 200, read 2026-10-03T10:51:35Z"
+     },
+     {
+      "part": "PMEG10010ELRX (C179426), PMEG10010ELR-QX (C5361358), PMEG10020ELRX (C456130)",
+      "maker": "Nexperia",
+      "reason": "Fails pack-side drop: Fig. 4 typical at Tj 25 C gives about 0.4 V at 1 mA, above 0.3 V; the table starts at 0.1 A (505 / 565 mV). Its leakage passes at 25 C (150 nA max at 100 V, 2.25 uA summed over 15 branches) and is 500 uA max at 125 C, not stated at 50 C. PMEG10010ELR and PMEG10020ELR data sheets (1 January 2023) Table 7 and Fig. 4, https://assets.nexperia.com/documents/data-sheet/PMEG10010ELR.pdf, HTTP 200, read 2026-10-03T10:48:33Z"
+     },
+     {
+      "part": "PMEG10030ELPX (C5260346), PMEG100V060ELPDZ (C2889115)",
+      "maker": "Nexperia",
+      "reason": "Fails pack-side drop: Fig. 4 typical at Tj 25 C gives about 0.35 V (PMEG10030ELP) and about 0.4 V (PMEG100V060ELPD) at 1 mA. IR max 450 nA at 100 V, 25 C. Data sheets PMEG10030ELP (20 February 2023) and PMEG100V060ELPD (20 May 2016), Table 7 and Fig. 4, https://assets.nexperia.com/documents/data-sheet/, HTTP 200, read 2026-10-03T10:48:34Z"
+     },
+     {
+      "part": "PMEG100T30ELP-QX (C7327553)",
+      "maker": "Nexperia",
+      "reason": "Fails pack-side drop: Fig. 3 typical at Tj 25 C gives about 0.33 V at 1 mA. IR 0.8 uA max at 60 V and 1.75 uA at 100 V, 25 C. PMEG100T30ELP data sheet Table 7 and Fig. 3, https://assets.nexperia.com/documents/data-sheet/PMEG100T30ELP.pdf, HTTP 200, read 2026-10-03T10:53:15Z"
+     },
+     {
+      "part": "PMEG100T030ELPE-QZ (C3757563)",
+      "maker": "Nexperia",
+      "reason": "Not qualified: data sheet read (2026-10-03T10:53:16Z), IR 0.63 uA max at 60 V and 2.5 uA at 100 V (25 C), but its forward curve at 1 mA is not read; the PMEG100T trench family's curve (PMEG100T30ELP) is about 0.33 V at 1 mA"
+     },
+     {
+      "part": "STPS1H100A (C165701), STPS1H100AY (C181833)",
+      "maker": "STMicroelectronics",
+      "reason": "Cannot be qualified on the drop: the maximum forward curve (Figure 9) stops at 10 mA, 0.45 V at 25 C; no figure at 1.4 mA. IR 4 uA max at 100 V, 25 C, and 0.5 mA at 125 C. STPS1H100 DS1228 Rev 8, Table 3 and Figure 9, https://www.st.com/resource/en/datasheet/stps1h100.pdf, HTTP 200, read 2026-10-03T10:51:36Z"
+     },
+     {
+      "part": "B1100-13-F (C110106), MBRS1100T3G (C82068), MBR1H100SFT3G (C235757), VS-10MQ100NTRPBF (C241877), other 100 V power Schottky rows in the jlcparts copy",
+      "maker": "Diodes Incorporated; onsemi; Vishay",
+      "reason": "Not qualified: data sheets not read. Their jlcparts rows give 40 to 500 uA at 100 V and 25 C, 4 to 50 times the 10 uA a single branch would have for the whole top pin"
+     },
+     {
+      "part": "silicon small-signal and rectifier diodes (no part number read)",
+      "maker": "any",
+      "reason": "Not searched further: a silicon junction drops about 0.6 V at 1 mA, twice the 0.3 V allowed; no data sheet read"
+     }
+    ]
+   },
+   {
+    "function": "balance-lead input network",
+    "requirements": [
+     {
+      "name": "input filter",
+      "value": "a series resistor and capacitor on each C input; more than about 100 Ohm adds a systematic error",
+      "source": "ADBMS1818 Rev. B p. 71 (as read in FU-2D)"
+     },
+     {
+      "name": "tap current",
+      "value": "its draw counts in V190: 100 uA powered, 10 uA unpowered per tap pin",
+      "source": "V190"
+     },
+     {
+      "name": "stage",
+      "value": "resistors and capacitors: returned without candidates and left to stage 2 of round 2",
+      "source": "Research.md, Round 2, Rules of stage 1; follow-up item 'every R9 function' (V324, V327)"
+     }
+    ],
+    "shortlist": [],
+    "dropped": []
+   },
+   {
+    "function": "balance-lead connector protection (mis-plugged lead)",
+    "requirements": [
+     {
+      "name": "mis-plugged lead",
+      "value": "survives a reversed lead (67.2 V reverse) and a lead shifted by one pin (4.2 V between adjacent pins)",
+      "source": "V191 (found)"
+     },
+     {
+      "name": "clamp level",
+      "value": "clamps under the input's rating of at least 85 V, and under the ADBMS1818's per-pin limits: C(n) -0.3 to MIN(8 x n, 112.5 V), C(n) to C(n-1) -0.3 to +8 V",
+      "source": "V188 (found); ADBMS1818 Rev. B Table 11"
+     },
+     {
+      "name": "stage",
+      "value": "connector protection: returned without candidates and left to stage 2 of round 2",
+      "source": "Research.md, Round 2, Rules of stage 1"
+     }
+    ],
+    "shortlist": [],
+    "dropped": []
+   },
+   {
+    "function": "balance-lead connector",
+    "requirements": [
+     {
+      "name": "connector",
+      "value": "1 connector of 16 cells, 17 pins; each pack's own leads reach it through an adapter lead",
+      "source": "V192 (owner, 2026-09-28)"
+     },
+     {
+      "name": "stage",
+      "value": "a connector: returned without candidates; stage 1 selects no connector",
+      "source": "Research.md, Round 2, Rules of stage 1"
+     }
+    ],
+    "shortlist": [],
+    "dropped": []
+   },
+   {
+    "function": "unused-input tie",
+    "requirements": [
+     {
+      "name": "tie",
+      "value": "the board ties the unused C inputs itself, with no setting, for any pack from 1 to 16 cells",
+      "source": "V193 (owner, 2026-09-28)"
+     },
+     {
+      "name": "tie target",
+      "value": "unused C inputs shorted to the highest connected cell or left open; tied unused inputs read 0.0 V",
+      "source": "ADBMS1818 Rev. B pp. 85-86"
+     },
+     {
+      "name": "stage",
+      "value": "the tie stays with stage 2 (owner, 2026-10-03); the V+ feed from the highest connected tap is the V+ OR element",
+      "source": "V327; Research.md, Round 2, Rules of stage 1"
+     }
+    ],
+    "shortlist": [],
+    "dropped": []
+   }
+  ],
+  "report": [
+   {
+    "figure": "V+ OR element placements and gate",
+    "value": "17 placements a board: 16 pack-side branches (taps C1 to C16) and 1 supply-side branch, single diodes. Need 5 x 17 = 85; S4 gate 5 x 85 = 425. A dual common-cathode part would make it 9 placements, need 45, gate 225; the allowlisted 100 V small-signal duals in the jlcparts copy (BAT46AWFILM, BAR46AFILM, ST) are common anode and cannot OR into V+",
+    "source": "V327; V181; V193; F15; Research.md S4, S7 and Sourcing rule 4; jlcparts copy 2026-09-14 (C2971277, C2926950)"
+   },
+   {
+    "figure": "V+ OR element: no part",
+    "value": "No candidate meets both V327's pack-side drop (0.3 V at 1.4 mA, 0 to 50 C) and V190's 10 uA unpowered at the top tap pin, which carries the summed reverse leakage of the up to 15 blocked pack-side branches (3.9 to 62.7 V each). Low-barrier BAT46 parts meet the drop typically (ST Fig. 6, about 0.24 V at 1.4 mA, 25 C) but sum to 35.6 uA (Nexperia) and 39.6 uA (ST) on their 25 C maxima, and about 15 to 25 uA on ST's typical 50 C curve. Low-leakage parts pass the leakage at 25 C (PMEG10010ELR 150 nA max at 100 V, 2.25 uA summed) but drop about 0.33 to 0.4 V typical at 1 mA, 25 C (PMEG100T30ELP, PMEG10030ELP, PMEG10010ELR, PMEG100V060ELPD), and BAT41 drops 450 mV max at 1 mA. The function is without a part; the owner decides whether V190 applies to the OR element's branch leakage or the drop allowance changes",
+    "source": "Nexperia BAT46WJ, BAT46GW, PMEG10010ELR, PMEG10030ELP, PMEG100V060ELPD (read 2026-10-03T10:48:33Z to 10:48:35Z), PMEG100T30ELP (10:53:15Z); ST BAT46 Rev 4 and BAT41 DS4884 Rev 3 (10:51:35Z); V190; V327"
+   },
+   {
+    "figure": "V289 barrier pack-side current",
+    "value": "ISO7741DWR at VCC2 = 5 V: ICC2 at most 6.4 mA at 10 Mbps (bounds the 2 Mbps of a 1 MHz SPI clock), 4.6 mA at 1 Mbps; DC 3.7 mA (inputs high) to 5.2 mA (inputs low). ISO6741DWR: 6.5 / 4.5 mA, DC 5.1 mA. A 3.3 V host with a 5 V pack side is not tabulated",
+    "source": "SLLSEP4K 5.10 (read 2026-10-03T10:46:04Z); SLLSFJ6G 7.10 (10:50:59Z)"
+   },
+   {
+    "figure": "pack-side 5 V rail load",
+    "value": "Awake: ADBMS1818 VREG 16.5 mA (measure, full range) + 8.1 mA (IREG(isoSPI), ISOMD = 0, active, RB1 + RB2 = 2 kOhm; 3.3 mA with 20 kOhm) + ISO7741DWR 6.4 mA = 31.0 mA at most; the data sheet gives a VREG peak approaching 35 mA with isoSPI traffic and conversions together. Asleep: VREG 9 uA + ISO7741DWR 3.7 to 5.2 mA",
+    "source": "ADBMS1818 Rev. B Table 3 and p. 70 (read 2026-10-03T10:46:03Z); SLLSEP4K 5.10"
+   },
+   {
+    "figure": "V+ load from the supply",
+    "value": "IVP at most 1.4 mA (measure), 0.825 mA (REFUP), 28 uA (standby), 9 uA (sleep with VREG = 5 V), full temperature range",
+    "source": "ADBMS1818 Rev. B Table 3 (read 2026-10-03T10:46:03Z)"
+   },
+   {
+    "figure": "LTM8068 minimum load and preload",
+    "value": "Minimum load about 15 mA at VOUT1 18 V (typical graph, full input range, 25 C). Asleep the module carries about 5.2 mA, so about 10 mA of preload (1.8 kOhm, 0.18 W at 18 V) keeps VOUT1 in regulation; the preload resistor is stage 2. Maximum load at VOUT1 18 V from VIN 5 V about 80 mA (typical graph) against 42.4 mA awake with preload",
+    "source": "LTM8068 Rev. D pp. 5-6, 14 (read 2026-10-03T10:46:04Z)"
+   },
+   {
+    "figure": "LTM8068 draw from the board rail",
+    "value": "Not read at VOUT1 18 V: the data sheet plots input current only up to VOUT1 15 V. VIN quiescent 7 mA not switching. The feeding rail is not stated; VIN 3 to 27 V at 18 V out allows the 5 V or the 12 V rail. P5 bounds it at 0.2 A from 5 V (FU-2P56)",
+    "source": "LTM8068 Rev. D p. 3, Table 1; FU-2P56/002-P5.json budgets/26"
+   },
+   {
+    "figure": "LTM8068 VOUT1 tolerance",
+    "value": "18 V with RFB1 = 2.37 kOhm is stated as typical only; the only tolerance stated is 4.75 to 5.25 V at the 5 V setting. V+ of 16 V or more after the supply-side branch rests on that typical figure",
+    "source": "LTM8068 Rev. D p. 3"
+   },
+   {
+    "figure": "barrier host-side current for P5",
+    "value": "ISO7741DWR ICC1 at VCC1 = 3.3 V: at most 4.7 mA at 1 Mbps, 5.2 mA at 10 Mbps, 6.8 mA at DC with inputs low. Budget 6.8 mA on the 3.3 V rail",
+    "source": "SLLSEP4K 5.12 (read 2026-10-03T10:46:04Z)"
+   },
+   {
+    "figure": "barrier pins for P5",
+    "value": "measurement coprocessor GPIO 8 (SPI1_RX), GPIO 10 (SPI1_SCLK), GPIO 11 (SPI1_TX) and GPIO 15 (cell monitor CS, SIO, pulled up) drive the barrier's host side. The isolator's enables are tied high and take no pin",
+    "source": "Pins.md:105-112 at 7e74cd442a79"
+   },
+   {
+    "figure": "SPI round trip at 1 MHz",
+    "value": "half period 500 ns. ISO7741DWR 18.5 + 60 + 18.5 = 97 ns (3.3 V tPLH max 18.5 ns); ISO6741DWR 96 ns; ISOW7741BDFMR 91.9 ns. SDO's rise through its pull-up and the RP2354B's input setup are not read",
+    "source": "SLLSEP4K 5.16; SLLSFJ6G 7.18; SLLSFK1C 7.19, 7.20; ADBMS1818 Rev. B Table 10"
+   },
+   {
+    "figure": "cell sample skew",
+    "value": "ADBMS1818 tSKEW2 (cell 18 to cell 1, ADCV) normal mode 580 / 670 / 711 us, fast mode 202 / 233 / 248 us. V186 and V187 are not found, so skew and pairing with the INA228 are not checked",
+    "source": "ADBMS1818 Rev. B Table 4 (read 2026-10-03T10:46:03Z)"
+   },
+   {
+    "figure": "monitor with the board unpowered",
+    "value": "With the pack plugged and the board off, V+ is fed from the pack top through the V+ OR element and VREG is 0 V: IVP 6.1 uA typ, 18 uA max over the full range (sleep, VREG = 0 V), a top-to-bottom draw V190 does not count; C(n) leakage +/-250 nA max; plus the OR element's branch leakage into the lower taps (see 'V+ OR element: no part')",
+    "source": "ADBMS1818 Rev. B Tables 1 and 3; V190; V327"
+   },
+   {
+    "figure": "open-wire detection current",
+    "value": "70 / 100 / 130 uA per C pin during the open-wire test, against V190's 100 uA powered, averaged over 1 s; the firmware's open-wire duty is not stated",
+    "source": "ADBMS1818 Rev. B Table 1 p. 4"
+   },
+   {
+    "figure": "ADBMS1818 on the ESC pack node",
+    "value": "V+ to V- and C16 112.5 V absolute against the node's simulated peak under 82 V held by the bus capacitance (V324): within. The INA228's 85 V stays the node's binding limit",
+    "source": "ADBMS1818 Rev. B Table 11; V324; FU-2P56/002-P5.json budgets/35"
+   },
+   {
+    "figure": "wake from sleep",
+    "value": "tSLEEP 1.8 / 2 / 2.2 s after the last valid command; with ISOMD = V-, activity on CSB or SCK wakes the SPI port, VWAKE 200 mV for tDWELL 240 ns; tREADY 10 us max. With the always-on supply the isolator drives that pulse",
+    "source": "ADBMS1818 Rev. B Tables 4 and 7, p. 56"
+   },
+   {
+    "figure": "pack-side supply route prices",
+    "value": "Route 1: ISO7741DWR 1.4745 + LTM8068EY#PBF 25.4643 = 26.94 at the need of 5, plus a preload resistor. Route 2: ISOW7741BDFMR 7.969 + TPS61040DBVR 0.7479 = 8.72, plus a boost inductor and Schottky diode not selected. Both routes need the V+ OR element. Prices carry no currency in the JLCPCB API",
+    "source": "vendors.py jlcpcb C571196, C581210, C5216397, C7722, 2026-10-03T10:50:14Z to 10:50:16Z"
+   },
+   {
+    "figure": "ADI pages not read",
+    "value": "https://www.analog.com/en/products/adbms1818.html answered HTTP 403 (challenge, --client safari) at 2026-10-03T10:50:54Z: PCN listings and longevity of the Analog Devices rows are not read; their status is Digi-Key's. Data sheet PDFs on the same host loaded at 10:46:03Z and 10:46:04Z",
+    "source": "vendors.py fetch --client safari, 2026-10-03T10:50:54Z"
+   }
+  ]
+ }
+}
