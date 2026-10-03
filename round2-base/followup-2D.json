@@ -1,0 +1,81 @@
+{
+ "phases": "P2-P4",
+ "round": 1,
+ "categories": [
+  "R1",
+  "R9",
+  "R11"
+ ],
+ "items": [
+  {
+   "category": "R1",
+   "function": "USB protection",
+   "requirement": "Standard USB protection parts on VBUS, D+ and D−, CC1 and CC2. Where a standard part misses the 3.63 V steady limit on D+ and D−, or another figure of V9 and V12, its datasheet figure stands (owner, 2026-09-30). Round 1 found no part that covers the 5 lines",
+   "source": "V9, V12; IOBoard.md, USB port; hardware/STATUS.md, USB protection",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R1",
+   "function": "12 MHz crystal",
+   "requirement": "ABM8-272-T3 passes all 12 datasheet checks and the stock gate in FU-2A, which leaves it unverified: Abracon's product page answers HTTP 404 and the stock verifier wrote its lifecycle status as not read. Its status is read at Digi-Key where the maker's page cannot be read (Lifecycle check, owner, 2026-10-02)",
+   "source": "FU-2A, R1 ledger; Lifecycle check",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R9",
+   "function": "cell monitor isolation barrier (new)",
+   "requirement": "An isoSPI (isolated SPI) transceiver pair or a digital isolator between the ADBMS1818ASWAZ-RL and the measurement coprocessor's SPI1, rated 85 V DC working or more (V189). Answered under Raised by P1: V289: A digital isolator on direct SPI, rated 85 V DC working or more (V189). Its current is for research (owner, 2026-10-01). Its pack side runs from an always-on supply referenced to the pack negative, not from the ADBMS1818's regulator, which is off while the monitor sleeps; the same supply gives the ADBMS1818 an external VREG, and V+ of 16 V or more for packs under 16 V. That supply is a function of R9 (owner, 2026-10-02)",
+   "source": "V189; IOBoard.md, Cell monitor isolation; Pins.md",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R9",
+   "function": "cell monitor pack-side supply (new)",
+   "requirement": "An always-on supply referenced to the ESC pack's negative. It runs the isolator's pack side while the ADBMS1818ASWAZ-RL sleeps, so the monitor can be woken over SPI, gives the ADBMS1818 an external VREG, and gives V+ of 16 V or more for packs under 16 V, from 1 cell (V181) to 16 cells at 67.2 V (F15) (V289, owner, 2026-10-02)",
+   "source": "V289; FU-2C, R9 P2 report and P4 figures",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R11",
+   "function": "Converter for the accelerometer; optical index",
+   "requirement": "Delay variation at most 1.244 µs at 1,092 Hz (65,535 rpm): the optical index's share of V225. None of the 9 reflective sensors round 1 searched meets it; they state 10 to 70 µs. R10 is read for its share of the same budget",
+   "source": "V225; Sensing.md, Not known",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R11",
+   "function": "accelerometer; accelerometer lead buffer (new)",
+   "requirement": "ADXL316WBCSZ fails only its lead length in FU-2C: 2 m (V222) without a buffer, and that refutation has no ruling, because the adjudicator failed twice on an account limit. The lead buffer sits on the sensor board before the lead of up to 2 m; its delay variation and the sensor's fit inside the accelerometer's 1.244 µs share of V225 at 65,535 rpm, and R10's ADCS7476AIMFX/NOPB needs a reservoir capacitor or a buffer at its input",
+   "source": "FU-2C, R11 ledger and P3 return; V222, V225, V290",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R11",
+   "function": "encoder decode; rotation from ESC; rotation inputs; BENCH rpm source",
+   "requirement": "The RP2354B, which both FU-2C verifiers confirmed: the gate counted its stock check as missing under the name the owed list gave it, fixed in pull request #209",
+   "source": "FU-2C, R11 ledger",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R11",
+   "function": "servo measured position",
+   "requirement": "Not sent to P4 in FU-2C: P3's exclusion \"a magnetic angle sensor at the horn\" matched no part the re-rank dropped by name. The sensor is V209's choice and its resolution V210's, both for research",
+   "source": "V209, V210; FU-2C, R11",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "role": "P1",
+   "category": "R9",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:473",
+    "quantity": "cell count range on the balance lead",
+    "value": "1 to 16 cells, for the 16-cell pack of F15",
+    "marking": "owner",
+    "source": "F15 (owner, 2026-09-25): 16 cells, 67.2 V at 4.2 V a cell",
+    "refutation_tried": "F15's answer only gives the top of the range (16 cells); the lower bound of 1 is SET_PACK_CELLS's physical floor (shared/settings/settings.c:39-41) and is already a question under Raised by P1 (V181), so it is not re-raised here",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  }
+ ]
+}

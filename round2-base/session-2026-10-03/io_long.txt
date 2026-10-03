@@ -1,0 +1,18 @@
+hardware/docs/IOBoard.md:19: 43 words: Sources are files and lines in the tree, pull request #167, the pico-sdk 2.3.1 headers, two pico-sdk 2.3.0 sources (X and X), and two datasheets read from copie
+hardware/docs/IOBoard.md:19: 44 words: Table 1423 (Pin Types) is 1426 there, 1424 (GPIO pins; GPIO is general-purpose input/output) is 1427, 1425 (QSPI pins; QSPI is quad serial peripheral interface)
+hardware/docs/IOBoard.md:63: 41 words: The 2.2 kΩ series resistor in [STATUS.md] is not shown to hold a pin within that rating while IOVDD is at 0 V, so a 5 V output that can drive before 3.3 V is up
+hardware/docs/IOBoard.md:73: 49 words: 20, typed (owner, 2026-09-25). 16 PWM ports, each enabled or disabled with a pulse range, the frame rate set per pair (1–2, 3–4 …), and one of them switchable t
+hardware/docs/IOBoard.md:113: 94 words: the fixed ADCs: the load-cell ADC, the thermocouple converter, the accelerometer ADC and the infrared sensor, with a copy of the index pulse for balancing; the 
+hardware/docs/IOBoard.md:116: 49 words: It enables a converter only after the measurement coprocessor reports that converter's settings and its MCP9808's limits written and read back, and it switches 
+hardware/docs/IOBoard.md:157: 42 words: up to 32 pins, one register each: GPIO in 6 bits, printed pad number 1 to 63 in 6 bits (0 means no pin), holder in 4 bits (0 free, 1 heartbeat, 2 CAN, 3 flash, 
+hardware/docs/IOBoard.md:231: 64 words: every logic input in the interlock that can be driven while its own supply is absent has I_off (a datasheet limit on input current with the input above the devi
+hardware/docs/IOBoard.md:257: 49 words: The Not defeatable rule keeps a gate off the I/O expander that drives the port switches, so R3's rail switch is the gate, one on each of the 3 servo rails and o
+hardware/docs/IOBoard.md:383: 47 words: each port supply switch is open, and each servo converter and the adjustable supply's converter is off, while the RP2354B or I/O expander pin that drives it is 
+hardware/docs/IOBoard.md:404: 63 words: It carries the pack current: 9.9 A for the servo supply at the 6.0 V floor, about 1.4 A for the display (7.5 W through an assumed 90 %), and the logic rails, wh
+hardware/docs/IOBoard.md:407: 49 words: follows the USB-C source's current advertisement on its CC (configuration channel) pins: default USB current (500 mA for USB 2.0, 900 mA for USB 3.2 single-lane
+hardware/docs/IOBoard.md:437: 44 words: No link page carries the cells, vibration, thrust or torque: the per-cell voltages the cell monitor of R9 reads, and the BATTERY screen's resistances, capacity 
+hardware/docs/IOBoard.md:549: 79 words: The IO board's connectors carry the link cable to the display, the heartbeat line from the panel's header J8, 20 output ports, the UART socket, the external CAN
+hardware/docs/IOBoard.md:589: 54 words: 16 channels. 3 outputs (0 to 2), the heartbeat (3), the CAN controller's SPI on the bring-up module (4 to 7), RXCAN (8), the panel's touch bus (9 and 10), the D
+hardware/docs/IOBoard.md:593: 51 words: the switched side of each of the 3 servo rails, of the adjustable supply's output and of the ESC pack, for a scope probe rated for 8.4 V on a servo rail, 15 V o
+hardware/docs/IOBoard.md:623: 41 words: Pull request #167 leaves the rail's decay out of the timing budget, measured and recorded, not specified; its ESC example with 470 µF and a 50 mA idle draw need
+hardware/docs/IOBoard.md:625: 46 words: The RP2350 datasheet (build 2024-08-08, Tables 1423, 1424 and 1430, read from a copy) rates GPIO0 to 39 at 5.5 V while IOVDD is at 3.3 V and at 3.63 V while IOV

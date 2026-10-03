@@ -1,0 +1,205 @@
+1 R3: external pack switch module
+2 R3: pack overvoltage and transient clamp
+6 R3: switched-node freewheel diode (negative clamp of the ESC-side node, V54)
+8 R4: series resistance and clamps
+17 R6: Servo rail ideal diode
+34 R4: figure found V75 not confirmed in FU-A3
+35 R4: figure P2 report: series resistance range not confirmed in FU-A3
+36 R4: figure P2 report: clamp level against the switch alternates not confirmed in FU-A3
+37 R4: figure re-rank report: rerank R4: series resistance on the PWM lines not confirmed in FU-A3
+38 R5: figure found V96 not confirmed in FU-2I
+42 R6: figure found V129 not confirmed in FU-2I
+52 R8: figure P2 report: Blanking against the port breaker not confirmed in FU-2I
+55 R9: figure found V186 not confirmed in FU-2D
+56 R9: figure found V187 not confirmed in FU-2D
+74 R13: the specification changed after FU-C1 selected its parts
+81
+===== 0
+{
+ "spec_line": "IOBoard.md:220 \"ESC pack gate, external path above 150 A | a driven external module, whose driver output is on the IO board (F7) ... a part off the board, bought at the second vendor of S3\"",
+ "kind": "no-part",
+ "category": "R3",
+ "description": "No external pack switch module is selected. selection.json (round 2) holds part null for 'external pack switch module' (run FU-2A). FU-2A/012-P2-R3.json, report 'external pack switch module': 'No module qualifies'. VS-FC420SA10 and VS-FC270SA20 draw no safe-operating-area line shorter than 100 us (136 A and 160 to 169 A a module at 85 V) against the 600 A of V48 and the 300 A peak for 30 s of V50. The other 100 V SOT-227 modules at Digi-Key are from IXYS (Littelfuse, not on S1) or Microchip with 10 to 18 in stock, under the Digi-Key gate (vendors.py digikey-search \"MOSFET N-CH 100V SOT-227\", 32 rows, 2026-10-01T21:42:17Z). FU-2A/017-rerank-R3.json ranks nothing. No owner answer in Research.md decides this function. It is not stage 2 (a module, not a passive or connector). Only the driver output TPSI3052DWZR is selected. Carry-over from round 1's P6 (round1/T5/001-P6.json).",
+ "source": "P6",
+ "unchecked": false
+}
+===== 1
+{
+ "spec_line": "IOBoard.md:219-220 and :422 \"No part qualifies as the overvoltage and transient clamp\" (ESC pack path; V45, V48, V54, V270)",
+ "kind": "no-part",
+ "category": "R3",
+ "description": "No pack overvoltage and transient clamp is selected; selection.json (round 2) holds part null for 'pack overvoltage and transient clamp' (run FU-2A). FU-2A/012-P2-R3.json, report 'ESC pack node clamp level': 'No part qualifies'. Every TVS fails the clamp level at the path current (SMCJ70A breaks down at 77.8 to 86.0 V and clamps at 113 V at 13.3 A, from the FU-A3 reading of 2026-09-29T04:43:37Z), and an active clamp fails. A capacitive bank (6 x 330 uF at 35 to 52 mOhm total series resistance for 300 A, 3,300 to 4,700 uF at 20 to 30 mOhm for 600 A) peaks under 82 V only in simulation (derived, scratch sim.py, vendors.py jlcpcb C178734 read 2026-10-01T21:47:29Z) and rings to 117 to 120 V on plug-in with little series resistance. The onboard switch turn-off of the selected IPT015N10N5ATMA1 'holds only with the pack node clamped' (same file, report 'onboard switch turn-off'). Both the FU-2A selection and the R11 phase-wire clip's 120 V input figure (V214) rest on this clamp. No later run covers R3.",
+ "source": "P6",
+ "unchecked": false
+}
+===== 2
+{
+ "spec_line": "IOBoard.md:219-220 (ESC pack gates; V54 \"0.5 uH on each path\", the freewheel diode on the switched node)",
+ "kind": "no-part",
+ "category": "R3",
+ "description": "The switched-node freewheel diode has no part. P3 returned it as a missed function (FU-2A/016-P3-R3.json, missed_functions): it carries 300 A onboard and 600 A external for 22.5 mJ and 90 mJ and stands 67.2 V reverse with the switch closed. FU-2A/017-rerank-R3.json, report 'switched-node freewheel diode (P3's missed function)': 'This return has no entry and no candidate for it; the script opens a follow-up'. selection.json (round 2) holds part null. No later run covers R3 (FU-2D covered R1, R9, R11; FU-2B1 to FU-2I covered R5 to R8). The onboard turn-off safe-operating-area qualification of IPT015N10N5ATMA1 (FU-2A/012-P2-R3.json, 'onboard switch turn-off') assumes about 1 V of this diode, so the selected MOSFET's qualification rests on an unselected part. A diode is not a stage 2 part type.",
+ "source": "P6",
+ "unchecked": false
+}
+===== 3
+{
+ "spec_line": "IOBoard.md:373 \"Power indicator | an LED on the IO board that shows it has power\" (required); also :424 status LED not stated",
+ "kind": "no-part",
+ "category": "R5",
+ "description": "The power indicator LED has no part and no marking. It is in no inventory function of R5 (args-FU-2P56.json inventory) and in no stage 2 part type of Research.md Round 2 (resistors and capacitors, inductors and crystals, connectors, connector protection, MOSFETs). Research.md Held parts lists WS2812B-1313-V6 (C52941388, 50 held) as 'round 2, the indicators' and notes Worldsemi is not on the S1 or S2 list. A grep of every return under round1/ and round2/ for 'power indicator' and 'status LED' finds none (2026-10-03). The panel's bus-fault screen sends the operator to this LED (shared/ui/busfault_screen.c:158, :201).",
+ "source": "P6",
+ "unchecked": false
+}
+===== 4
+{
+ "spec_line": "IOBoard.md:153 \"BOOT and RESET | a BOOT button and a RESET button, each a dry contact to ground, with a relay contact across each\" (required)",
+ "kind": "no-part",
+ "category": "R1",
+ "description": "The two buttons have no part and no marking. R1's inventory (Microcontroller, 12 MHz crystal, Core regulator inductor, USB protection) names neither, and push buttons are not a stage 2 part type. The only push button selected is the latch clear control 434153017835 (R3). Whether the measurement coprocessor has its own BOOT and RESET contacts is not stated (IOBoard.md:115, :153). The relay contacts belong to the test bench and are off the board. R1 reports the BOOT contact's series resistor question (found 2026-10-02, FU-2D/002-P2-R1.json), which presumes a button that no function selects.",
+ "source": "P6",
+ "unchecked": false
+}
+===== 5
+{
+ "spec_line": "IOBoard.md:579-584 and :550-566 (CAN logic test points, Monostable test points, Gated output test points, Rail switch control nodes, Switched rails); \"No research category or question covers test access\" (:550, :590)",
+ "kind": "no-part",
+ "category": "R3",
+ "description": "The test points the interlock test of pull request #167 reads (monostable outputs, trigger input, enable node, both sides of each gated output, control node and switched side of each rail switch, RXCAN and TXCAN) have no part and no marking. IOBoard.md states in two places that no research category or question covers test access. Test points are not named in the stage 2 types of Research.md Round 2 (connectors is the nearest). Each probe lead's series resistor is 'a few hundred ohms' with no value (testbench/WIRING.md:23). They need either a stage 2 marking or a part type.",
+ "source": "P6",
+ "unchecked": false
+}
+===== 6
+{
+ "spec_line": "Research.md V36 (R3, monostable): drift of the timing constant k over 3.3 V +/-3 % and 0 to 50 degC",
+ "kind": "value-not-found",
+ "category": "R3",
+ "description": "Found only in part. FU-2A/012-P2-R3.json (found V36, read_at 2026-10-01T21:44:26Z, 74HC423 datasheet Fig. 7 at 600 dpi): the supply term, K 0.4810 at 3.201 V, 0.4780 at 3.3 V, 0.4750 at 3.399 V, +0.63 % / -0.63 %. 'The datasheet neither graphs nor limits K against temperature, so the temperature term is not read.' The window budget (155 to 185 ms across 0 to 50 degC, V7, V38) still rests on the assumed +/-3 % of pull request #167 for that term. The FU-A2 reading (2026-09-29) also finds no part in stock that states a K limit against temperature.",
+ "source": "P6",
+ "unchecked": false
+}
+===== 7
+{
+ "spec_line": "Research.md V60 (R4, multiprotocol port path): Hitec D-series high level the servo drives and its input-high threshold; IOBoard.md:295",
+ "kind": "value-not-found",
+ "category": "R4",
+ "description": "The servo's input-high threshold is not found. FU-A3/002-P2-R4.json (found V60, read 2026-09-29T04:38:24Z and 04:41:01Z): the programmer drives about 2 V, the servo's input-high threshold 'is not stated', and the source is a reverse-engineered library (HitecDServoInternal.h, README.md at raw.githubusercontent.com/timmaxw/HitecDServo) that states it is not endorsed by Hitec; no Hitec publication was found. The levels and baud of the protocol are 'not stated in the tree' (IOBoard.md:295). R4 was not run in round 2, so no later reading exists.",
+ "source": "P6",
+ "unchecked": false
+}
+===== 8
+{
+ "spec_line": "Research.md V69 (R4, receiver inputs): highest voltage a receiver drives on its signal wire; IOBoard.md:296",
+ "kind": "value-not-found",
+ "category": "R4",
+ "description": "Found for SRXL2 (3.3 V logic) and CRSF (3.0 to 3.3 V) only. FU-A3/002-P2-R4.json (found V69, read 2026-09-29T04:38:22Z to 04:38:23Z and 04:41:05Z): JETI EX Bus states only a logic one of at least 3.0 V and a zero of at most 1.5 V with no maximum, SUMD (Rev 01) states no level, and for S.BUS and iBUS 'no maker specification read, level not read'. Four of the six receiver buses therefore have no stated maximum. The receiver buffer SN74LVC1T45DBVR is selected on that basis. No round 2 run covers R4.",
+ "source": "P6",
+ "unchecked": false
+}
+===== 9
+{
+ "spec_line": "Research.md V75 (R4, series resistance and clamps): faults the buffer must survive on a connector signal line",
+ "kind": "value-not-found",
+ "category": "R4",
+ "description": "The found value is refuted and not re-run. FU-A3/010-P4-datasheet-R4.json (found V75, verdict refuted, read_at 2026-09-29T05:40:35Z and 05:36:57Z): V75's 275 Ohm and 142 Ohm lower bounds cover only the short to ground; for the 8.7 V short to the port supply pin the pad-driven line carries (8.7 - 0.5) V / 275 Ohm = 29.8 mA into the pad against the 12 mA highest drive setting (RP2350 Table 1436), and 245 mW in the resistor, not 95 mW. The series resistance and clamp function is stage 2 (resistors, connector protection), but the fault current it must hold is not established. R4 was not run in round 2; the harness lists 'R4 figure found V75 not confirmed in FU-A3' as accepted open.",
+ "source": "P6",
+ "unchecked": false
+}
+===== 10
+{
+ "spec_line": "Research.md V96 (R5, pack disconnect): how long a cell must stay at or below the floor before the pack disconnects; IOBoard.md:360-363",
+ "kind": "value-not-found",
+ "category": "R5",
+ "description": "Not found. FU-2I/003-P2-R5.json (found V96, read_at 2026-10-03T00:22:23Z, 2026-10-02T20:33:21Z): 'No source sets a lower bound'; the maker's 3.3 V rule (SLS_Sicherheitshinweise_DE_A4.pdf section 4, read 2026-10-03T00:22:23Z) gives only an upper bound, and the fall rate depends on the pack's internal resistance, not measured (V285). The value taken, BQ40Z80 CUV:Delay 0 s (1 s steps, average trigger delay up to 1.5 s, SLUUBT5C), is P2's choice. FU-2I/021-P4-datasheet-R5.json refuted two statements of the figure (read 2026-10-03T01:28:04Z and 01:35:37Z) and adjudicator 022 upheld point 2. Listed in the owner's accepted open items of 2026-10-03.",
+ "source": "P6",
+ "unchecked": false
+}
+===== 11
+{
+ "spec_line": "Research.md V129 (R6, Port voltage ceiling): time within which a port must be cut off once its supply pin exceeds its ceiling, in microseconds",
+ "kind": "value-not-found",
+ "category": "R6",
+ "description": "Not found. FU-2I/004-P2-R6.json (found V129, read_at 2026-10-03T00:30:20Z): 'Not found: no source read gives a time a servo survives above its rating or a cut-off time'; the Savox SH-0255MG+ and SB-2290SG pages give operating ranges and blocking currents only (vendors.py fetch, HTTP 200). No P4 verifier re-read it (round2/FU-2I has no 'found V129' figure). The selected TPS3701DDCR has a response time, but the requirement it is held against is unknown. Listed in the owner's accepted open items of 2026-10-03 (R6 found V129 not found).",
+ "source": "P6",
+ "unchecked": false
+}
+===== 12
+{
+ "spec_line": "Research.md V173 and V287 (R8, Port current monitor): longest time from a port exceeding 3.0 A to the abort, and the critical line's blanking time; IOBoard.md:113 and :389",
+ "kind": "value-not-found",
+ "category": "R8",
+ "description": "The blanking time is not read, so V173 has no single figure. FU-2I/002-P2-R8.json (found V287 and V173, read_at 2026-10-03T00:15:40Z): the first INA3221 conversion wholly above 3.0 A completes within 3.63 + 1.21 = 4.84 ms (three channels, shunt only, CT 100, SBOS576C 6.5 and 7.4.2.1), the 74VHC21FT cascade adds 20.5 ns max, 'Blanking time: not read'. Adjudicator FU-2H/016-adjudicator-R8-3.json (2026-10-02T21:29:51Z) upheld the refutation of the blanking part: SBOS576C does not state when the Critical pin releases with three channels enabled. The owner's V323 (2026-10-03) keeps INA3221AIRGVR and has the pin's hold measured on the bench before the order, so the figure stays unknown until then. The blanking time is also a firmware choice the tree does not state (IOBoard.md:113).",
+ "source": "P6",
+ "unchecked": false
+}
+===== 13
+{
+ "spec_line": "Research.md V186 (R9, Cell monitor): largest time between the first and last cell sample of one reading; IOBoard.md:475",
+ "kind": "value-not-found",
+ "category": "R9",
+ "description": "Not found. FU-2D/003-P2-R9.json (found V186, read_at 2026-10-02T06:35Z): 'No source in the tree bounds how fast a cell's voltage moves under load, so no skew limit in us follows'; the only rate limit, SET_OUT_RAMP 5 to 300 %/s, applies upward (shared/outputs/outputs.c:351-356). No P4 verifier re-read it. Listed in the owner's accepted open items (R9 found V186 not found in either round).",
+ "source": "P6",
+ "unchecked": false
+}
+===== 14
+{
+ "spec_line": "Research.md V187 (R9, Cell monitor): largest time between a cell voltage sample and its paired motor current sample for the resistance under load; IOBoard.md:475-476",
+ "kind": "value-not-found",
+ "category": "R9",
+ "description": "Not found. FU-2D/003-P2-R9.json (found V187, read_at 2026-10-02T06:35Z): 'The tree does not state how fast motor current and cell voltage change between a cell sample and its INA228 current sample'. No P4 verifier re-read it. The ADBMS1818's 16 cell conversions against the INA228's conversion are therefore not aligned to any requirement. Listed in the owner's accepted open items (R9 found V187 not found in either round).",
+ "source": "P6",
+ "unchecked": false
+}
+===== 15
+{
+ "spec_line": "Research.md V195 (R9, Cell monitor): whether the cell count comes from the balance lead or from SET_PACK_CELLS",
+ "kind": "value-not-found",
+ "category": "R9",
+ "description": "Half found. FU-2D/003-P2-R9.json (found V195, read_at 2026-10-02T06:35Z): presence of a pack comes from the lead (battery_screen.h:19, :27); 'the cell count: not found'. No firmware or UI code reads SET_PACK_CELLS and nothing but the host tests fills battery_state_t.cells. FU-2C's answer 'from the setting' was refuted and the refutation stands (round2/FU-2C/018-adjudicator-R9.json). FU-2D/017-P4-datasheet-R9.json (read 2026-10-02T07:31:00Z) confirmed that the count is not found. Whether the ADBMS1818 can report the count of a 1 to 16 cell pack with no setting (V193) is therefore open.",
+ "source": "P6",
+ "unchecked": false
+}
+===== 16
+{
+ "spec_line": "Research.md V257, V259, V260 (R13, load-cell bridge ADC): rated capacity, smallest resolved load change and accuracy of each of the 3 load cells; IOBoard.md:499-500",
+ "kind": "value-not-found",
+ "category": "R13",
+ "description": "Not found for the 2 torque cells. FU-C1/004-P2-R13.json (found V257, V259, V260, read_at 2026-09-29T02:40:15Z): thrust cell 980.7 N (100 kg TAS501) found; 'Torque cells: not read', because each torque cell's capacity is the torque range of V258 divided by the lever arm between the 2 cells, which is mechanical (round 3) and not stated in the tree. V259 (in N) and V260 (in % of rated output) for the torque cells depend on it, so only the thrust figures are found. R13 was not run in round 2. The ADS1235IRHBR and BD450M2FP3-CE2 were qualified against the thrust cell only.",
+ "source": "P6",
+ "unchecked": false
+}
+===== 17
+{
+ "spec_line": "Research.md V11 (R1, USB protection): highest capacitance per line the protection may add on D+ and D-; IOBoard.md:148",
+ "kind": "value-not-found",
+ "category": "R1",
+ "description": "The protection's share is not known. FU-2D/002-P2-R1.json (found V11, read_at 2026-10-02T06:25:12Z): USB 2.0 section 7.1.6.1 allows up to 75 pF of lumped capacitance to ground per line at the transceiver and in the connector, with D+ and D- within 10 %; 'The RP2350 datasheet gives no capacitance for USB_DP and USB_DM (Table 1437), so the share left for the protection is not known'. FU-2D/009-P4-datasheet-R1.json confirmed that statement. The selected TPD6E05U06RVZR is held against a limit the research could not split.",
+ "source": "P6",
+ "unchecked": false
+}
+===== 18
+{
+ "spec_line": "Research.md V316 and V321 (R6, Servo rail ideal diode): \"An ideal-diode controller and its MOSFET sit between the converter's output and the rail\"; V321 \"Not known for now: the function stays without a part (owner, 2026-10-03)\"",
+ "kind": "no-part",
+ "category": "R6",
+ "description": "The ideal-diode controller of each of the 4 servo converters has no part. selection.json (round2) holds part null for 'Servo rail ideal diode' (run FU-2I) while 'Servo rail ideal diode MOSFET' CSD17573Q5B is selected. FU-2I/019-rerank-R6.json ranks only LTC4352CMS#TRPBF (C688177), which fails rule 4: FU-2I/020-P4-stock-R6.json (vendors.py jlcpcb C688177, read_at 2026-10-03T01:42:16Z) stockCount 10 against a gate of 100 (5 boards x 4 placements = 20, S4 threshold max(5 x 20, 50)); live reading vendors.py jlcpcb C688177 at 2026-10-03T09:42:35Z: stockCount 10, canPresaleNumber 10. Digi-Key 3827, Active (api.digikey.com/products/v4/search/LTC4352CMS%23TRPBF/productdetails, 2026-10-03T00:26:57Z) does not count for an on-board part (rule 1) and the library holds 0. The other controllers were dropped on withstand or range (TPS2410 to TPS2413 and TPS2419 18 V maximum, LM5050-1, LM74610, ISL6146). The IC is not a stage 2 type. P6 reports the equivalent R3 functions (gaps 0 to 2) but not this one.",
+ "source": "P6 critic",
+ "unchecked": false
+}
+===== 19
+{
+ "spec_line": "Research.md V301 (R5, pack disconnect): \"10 \u00b5A stays, with an operator wake contact for a start from the pack alone\" (owner, 2026-10-02)",
+ "kind": "no-part",
+ "category": "R5",
+ "description": "The operator wake contact has no function and no part. FU-2I/003-P2-R5.json (BQ40Z80RSMR requirement 'start from the pack alone', source SLUSBV4D 5.3, read 2026-10-03T00:13:54Z) states 'a contact from the pack to PACK wakes it' and marks the requirement pass with no part for the contact. selection.json (round2) has no function for it, and a switch or push button is not a stage 2 type (resistors, capacitors, inductors, crystals, connectors, connector protection, MOSFETs). It is the same kind of line as the BOOT and RESET buttons of gap 5. Without the contact the pack cannot start after a disconnect when no DC input or charger is present.",
+ "source": "P6 critic",
+ "unchecked": false
+}
+===== 20
+{
+ "spec_line": "Research.md V315 (R6, Servo supply): \"researches a clamp ... stating the energy the clamp absorbs. The energy a servo returns is not known unless a servo data sheet states it\"",
+ "kind": "value-not-found",
+ "category": "R6",
+ "description": "The energy a braking servo returns into its port is not found. FU-2I/004-P2-R6.json report 'Servo rail clamp energy and peak current' (Savox SH-0255MG+ and SB-2290SG pages, vendors.py fetch HTTP 200, 2026-10-03T00:30:19Z and 00:30:20Z): 'Energy absorbed: not known; no servo data sheet read states the energy a braking servo returns', only blocking currents of 1.4 A and 10.5 A. The same return lists it under 'Values not found'; FU-2I/026-P4-datasheet-R6.json confirms it absent (read_at 2026-10-03T01:51:29Z). The clamp's load resistor pulse rating and the rail capacitance with servos attached are therefore unsized. P6 lists V129 from the same 'Values not found' entry but not this value.",
+ "source": "P6 critic",
+ "unchecked": false
+}

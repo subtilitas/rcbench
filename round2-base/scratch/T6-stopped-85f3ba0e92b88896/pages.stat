@@ -1,0 +1,11 @@
+ hardware/README.md        |   6 +-
+ hardware/STATUS.md        | 182 ++++++++++----------
+ hardware/docs/Control.md  | 428 +++++++++++++++++++++++++++++++---------------
+ hardware/docs/IOBoard.md  | 269 ++++++++++++++++-------------
+ hardware/docs/Parts.md    | 224 +++++++++++++++---------
+ hardware/docs/Power.md    |  25 ++-
+ hardware/docs/Research.md |  34 +++-
+ hardware/docs/Sensing.md  | 231 +++++++++++++++++--------
+ hardware/docs/Supply.md   | 397 +++++++++++++++++++++++++++++-------------
+ tools/jlc_stock.py        |  22 +--
+ 10 files changed, 1170 insertions(+), 648 deletions(-)

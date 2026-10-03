@@ -1,0 +1,77 @@
+[
+ {
+  "figure": "Q4 effective number of bits: ADCS7476AIMFX/NOPB",
+  "value": "11.34 bits minimum from SINAD 70 dB min over -40 to 125 degC (fIN 100 kHz, 1 MSPS, 20 MHz SCLK), 72 dB typ at 25 degC; ENOB = (SINAD - 1.76) / 6.02. With the ADXL316 on the same rail at 15 mV/V/g: 25.8 mg per effective step, 7.45 mg rms; 0.041 mg at the fundamental after one 5 s run at 13,108 S/s, under V198's 1 mg; 19 samples reach V206's 1.75 mg",
+  "source": "SNAS192G 6.5, https://www.ti.com/lit/ds/symlink/adcs7476.pdf, read 2026-10-02T00:19:30Z; ADXL316 Rev. C Table 1, https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf, read 2026-10-02T00:23:15Z"
+ },
+ {
+  "figure": "Q4 sampling rate: ADCS7476AIMFX/NOPB",
+  "value": "1 MSPS per converter at fSCLK 20 MHz (tTH 400 ns); 2 converters on one SDATA alternate, so each reaches up to about half that; against more than 13,107 S/s per channel (V197)",
+  "source": "SNAS192G 6.5 and 7.3, read 2026-10-02T00:19:30Z"
+ },
+ {
+  "figure": "Q4 trigger: ADCS7476AIMFX/NOPB",
+  "value": "triggered: the input is sampled and held at the falling edge of CS (pin 6), aperture delay 3 ns typ; the measurement coprocessor drives CS, by PIO or a timer (V290)",
+  "source": "SNAS192G Pin Functions, 6.5 and 7.3, read 2026-10-02T00:19:30Z"
+ },
+ {
+  "figure": "Q4 latency jitter: ADCS7476AIMFX/NOPB",
+  "value": "30 ps aperture jitter (tAJ, typical). With a PIO-driven CS: one clk_sys cycle, 6.67 ns at 150 MHz, so 6.70 ns in all against V290's 52 ns at 65,535 rpm (342 ns at 10,000 rpm). A timer-interrupt CS: latency not stated in the RP2350 data sheet, not confirmed",
+  "source": "SNAS192G 6.5, read 2026-10-02T00:19:30Z; RP2350 datasheet build 2025-07-29 sections 11.2.2, 11.5.6.3, Table 541, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-10-02T00:20:04Z; V290, Research.md:987"
+ },
+ {
+  "figure": "Q4 effective number of bits: ADC121S101CIMF/NOPB",
+  "value": "11.3 bits minimum, 11.6 typical, over -40 to 125 degC, VA 2.7 to 5.25 V, fIN 100 kHz (SINAD 70 dB min). At 15 mV/V/g: 26.4 mg per effective step, 7.63 mg rms; 0.042 mg after one 5 s run at 13,108 S/s; 20 samples reach 1.75 mg",
+  "source": "SNAS304H 7.6, https://www.ti.com/lit/ds/symlink/adc121s101.pdf, read 2026-10-02T00:19:30Z; ADXL316 Rev. C Table 1, read 2026-10-02T00:23:15Z"
+ },
+ {
+  "figure": "Q4 sampling rate: ADC121S101CIMF/NOPB",
+  "value": "500 ksps to 1 Msps guaranteed at fSCLK 10 to 20 MHz; functional from a 25 kHz SCLK; against more than 13,107 S/s per channel",
+  "source": "SNAS304H 7.4 and 7.6, read 2026-10-02T00:19:30Z"
+ },
+ {
+  "figure": "Q4 trigger: ADC121S101CIMF/NOPB",
+  "value": "triggered: the input is sampled and held on the falling edge of CS, aperture delay 3 ns typ",
+  "source": "SNAS304H 8.3 and 7.6, read 2026-10-02T00:19:30Z"
+ },
+ {
+  "figure": "Q4 latency jitter: ADC121S101CIMF/NOPB",
+  "value": "30 ps aperture jitter (tAJ, typical); with a PIO-driven CS 6.70 ns in all against 52 ns; timer route not confirmed",
+  "source": "SNAS304H 7.6, read 2026-10-02T00:19:30Z; RP2350 sections 11.2.2, Table 541, read 2026-10-02T00:20:04Z"
+ },
+ {
+  "figure": "Q4 effective number of bits: AD7476ARTZ-REEL7",
+  "value": "11.17 bits minimum from SINAD 69 dB min, A version, TMIN to TMAX (-40 to 85 degC), fIN 100 kHz; 71.5 dB typ. At 15 mV/V/g: 28.9 mg per effective step, 8.34 mg rms; 0.046 mg after one 5 s run at 13,108 S/s; 23 samples reach 1.75 mg",
+  "source": "AD7476/AD7477/AD7478 Rev. F Table 1, https://www.analog.com/media/en/technical-documentation/data-sheets/AD7476_7477_7478.pdf, read 2026-10-02T00:22:03Z"
+ },
+ {
+  "figure": "Q4 sampling rate: AD7476ARTZ-REEL7",
+  "value": "1,000 kSPS max (A version, fSCLK 20 MHz, conversion 0.8 us in 16 SCLK); fSCLK 10 kHz min",
+  "source": "AD7476 Rev. F Table 1 and Timing Specifications, read 2026-10-02T00:22:03Z"
+ },
+ {
+  "figure": "Q4 trigger: AD7476ARTZ-REEL7",
+  "value": "triggered: the input is sampled on the falling edge of CS and the conversion starts there; aperture delay 10 ns typ",
+  "source": "AD7476 Rev. F General Description and Table 1, read 2026-10-02T00:22:03Z"
+ },
+ {
+  "figure": "Q4 latency jitter: AD7476ARTZ-REEL7",
+  "value": "30 ps aperture jitter (typical); with a PIO-driven CS 6.70 ns in all against 52 ns; timer route not confirmed",
+  "source": "AD7476 Rev. F Table 1, read 2026-10-02T00:22:03Z; RP2350 sections 11.2.2, Table 541, read 2026-10-02T00:20:04Z"
+ },
+ {
+  "figure": "Q4 trigger pins for P5",
+  "value": "Pins.md gives the two chip selects (GPIO 5 and GPIO 24) to SIO. V290 has PIO or a timer drive the trigger, and only the PIO route is bounded within 52 ns from the RP2350 data sheet. A PIO-driven CS needs GPIO 5 and 24 on a PIO function; both lie in GPIO 0 to 31, the range of PIO2, which samples the index on GPIO 7. The pin map is not an output of this task; P5 checks the function select",
+  "source": "hardware/docs/Pins.md:101-103, :107, :121, :170, checkout 145e0285289f, read 2026-10-02T00:24:49Z; RP2350 section 11.2.2, read 2026-10-02T00:20:04Z"
+ },
+ {
+  "figure": "Q4 resources for P5",
+  "value": "External ADC (decided): 2 converters on measurement SPI0, SDATA on GPIO 4, SCLK on GPIO 6, a chip select each on GPIO 5 and GPIO 24; 0 of the RP2354B's 8 ADC inputs; one 16-bit SPI frame per conversion; one PIO state machine for the CS trigger and index timestamp (count assumed, no program in the tree)",
+  "source": "hardware/docs/Pins.md:101-103, :121; SNAS192G 7.3; RP2350 section 12.3, read 2026-10-02T00:20:04Z"
+ },
+ {
+  "figure": "Q4 converter delay variation against V290",
+  "value": "Each shortlisted converter states 30 ps aperture jitter; with a PIO-driven chip select the converter's share is at most 6.70 ns at clk_sys 150 MHz against 52 ns at 65,535 rpm and 342 ns at 10,000 rpm. The share stays under 52 ns for any clk_sys of 19.3 MHz or more. The measurement coprocessor's clk_sys is not stated in the tree",
+  "source": "V290, Research.md:987; SNAS192G 6.5; SNAS304H 7.6; AD7476 Rev. F Table 1; RP2350 Table 541 and 11.2.2, read 2026-10-02T00:20:04Z"
+ }
+]

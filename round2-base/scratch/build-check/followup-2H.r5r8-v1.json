@@ -1,0 +1,313 @@
+{
+ "phases": "P2-P4",
+ "round": 1,
+ "categories": [
+  "R5",
+  "R6",
+  "R7",
+  "R8"
+ ],
+ "items": [
+  {
+   "category": "R5",
+   "function": "source selection; pack disconnect",
+   "requirement": "Sized for about 49.7 A: the board's draw from the pack at the 6.0 V floor with the four TPS55285 at 6.35 A, nominal at an assumed 90 %. Round 1 sized both for 12.23 A (V90). No pack disconnect passed round 1: its one shortlisted candidate, R5460N212AF-TR-FE, failed the open balance lead (V107) in FU-B1, and FU-B3 found none. Answered under Raised by P1: V295: As V294: 3.3 V a cell under load is the lowest trip, the threshold set above it by the IC's accuracy band. V95's ±75 mV, round 1's R5460 figure, is no requirement (owner, 2026-10-02) V297: One IC does the pack disconnect, the pack overcurrent protection, the bench pack balance lead and the pack temperature, selected in FU-2F (owner, 2026-10-02) V301: 10 µA stays, with an operator wake contact for a start from the pack alone. The open-lead behaviour may rest on the IC's undervoltage logic, an inference. A bench test confirms it before the pages call V107 met: mid wire open, with and without a charger, and first cell attach (owner, 2026-10-02)",
+   "source": "IOBoard.md, Pack path current and Pack reconnect; Supply.md, Not known",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R5",
+   "function": "overvoltage protection; reverse-polarity protection; inrush limiting",
+   "requirement": "The DC input's overvoltage threshold, non-destructive (owner, 2026-09-30): round 1 left the overvoltage protection without a part. FU-B3 did not requalify the LM74800QDRRRQ1 for the reverse-polarity protection and the inrush limiting. Answered under Raised by P1: V299: Yes, as a current limitation. After a trip, a source between the release, 18.58 to 19.81 V, and 20.0 V stays cut off until it falls below the release, and the board runs from the pack. The DC input range stays 12 to 20 V. Firmware does not take the DC input as selected because it is present (owner, 2026-10-02)",
+   "source": "IOBoard.md, Overvoltage protection, Reverse-polarity protection, Inrush limiting, and Not known under Power",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R5",
+   "function": "source-status signal (new)",
+   "requirement": "A signal the coprocessor reads that tells the DC input from the pack: a DC-input-present input or the DC input voltage, on an RP2354B input or an expander pin within the pin budget. Answered under Raised by P1: V271: One signal: the DC input voltage through a divider into one ADC input of the measurement coprocessor, GPIO 40 to 47. The firmware compares it with the thresholds, so it serves the source status and the DC input brownout detection (owner, 2026-10-01) V276: As V271: the DC input voltage on one ADC input of the measurement coprocessor, serving both (owner, 2026-10-01) V300: The values stay. A one-point bench calibration sets the divider and the ADC on each board. The pages bound the trip and reset corners before the ADC's own error only (owner, 2026-10-02)",
+   "source": "IOBoard.md, Servo rail current",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R5",
+   "function": "DC input brownout detection (new)",
+   "requirement": "Detects the DC input falling below a threshold, which the coprocessor reads; non-destructive (owner, 2026-09-30). Its threshold and the time below it are not stated. The source selection's undervoltage gate is 10.1 V falling and 11.0 V rising (V88). Answered under Raised by P1: V272: Trips at 11.0 V falling and resets at 11.5 V rising, above the source selection's 10.1 V handover (V88) (owner, 2026-10-01) V273: 10 ms (owner, 2026-10-01) V274: As V272: 11.0 V falling, 11.5 V rising (owner, 2026-10-01) V275: As V273: 10 ms (owner, 2026-10-01) V300: The values stay. A one-point bench calibration sets the divider and the ADC on each board. The pages bound the trip and reset corners before the ADC's own error only (owner, 2026-10-02)",
+   "source": "IOBoard.md, DC input brownout detection",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R6",
+   "function": "Port supply switch",
+   "requirement": "Switches each of the 20 ports from 0.8 V (V55) to 8.4 V. The TPS259474LRPWR takes VIN only from 2.7 V. Answered under Raised by P1: V133: The capacitance is not known. The 2.35 A peak, the rail's 6.35 A limit less the 4.0 A two synchronised ports may draw, is a reported figure, not a pass or fail requirement (owner, 2026-10-02) V282: From 0.8 V the switch turns on and carries the port's current. The 3.0 A and the 570 mV this question names apply from 5.0 V up; below 5.0 V the drop is a reported figure, not a requirement (owner, 2026-10-01) V302: Yes. The search covers topologies that split the function across parts: a load switch from 0.5 V with separate reverse blocking, current limit and 20 V protection (owner, 2026-10-02) V312: A research run names the switch (TLP3545A first), its reverse blocking (CMS04(TE12L,Q,M) first) and its current limit (INA301A1IDGKR on the port shunt first) as functions and verifies each, with the servo supply temperature latch's enable gate and power-up reset, before FU-2P56 (owner, 2026-10-02)",
+   "source": "IOBoard.md, Port supply switch",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R6",
+   "function": "Servo supply",
+   "requirement": "The continuous current one TPS55285 with its heatsink holds at 6.0 V in and 50 °C ambient, in A. This is each rail's continuous rating (owner, 2026-09-30). The heatsink's size is round 3's. Answered under Raised by P1: V279: 72.0 °C beside a servo converter and 66.25 °C beside the adjustable supply's converter: the junction stays at 125 °C or below at the 8 A typical inductor clamp. At 50 °C ambient without a heatsink a rail then holds about 2.47 A at 8.4 V from 6.0 V before it trips (owner, 2026-10-02) V281: 33 °C/W, the datasheet's RθJA on TI's 4-layer 2 oz EVM (SLVSI72A 5.3). The heatsink adds margin, which round 3 sizes (owner, 2026-10-01) V283: The rail's own latch: only that converter switches off, and it stays off until the operator clear control (F11) clears it. The other rails and the ESC keep running, and the firmware reports the trip (owner, 2026-10-01) V303: A latch part a research run selects, 4 a board; R3's 74LVC1G175GW,125 is the first candidate, SN74LVC1G74DCUR beside it (owner, 2026-10-02)",
+   "source": "IOBoard.md, Servo rail current",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R6",
+   "function": "servo supply temperature sensor (new)",
+   "requirement": "The MCP9808T-E/MS beside each TPS55285, 4 a board, and its shutdown threshold against the TPS55285's 125 °C recommended junction maximum. Answered under Raised by P1: V279: 72.0 °C beside a servo converter and 66.25 °C beside the adjustable supply's converter: the junction stays at 125 °C or below at the 8 A typical inductor clamp. At 50 °C ambient without a heatsink a rail then holds about 2.47 A at 8.4 V from 6.0 V before it trips (owner, 2026-10-02) V281: 33 °C/W, the datasheet's RθJA on TI's 4-layer 2 oz EVM (SLVSI72A 5.3). The heatsink adds margin, which round 3 sizes (owner, 2026-10-01) V283: The rail's own latch: only that converter switches off, and it stays off until the operator clear control (F11) clears it. The other rails and the ESC keep running, and the firmware reports the trip (owner, 2026-10-01)",
+   "source": "IOBoard.md, Servo supply temperature",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R6",
+   "function": "Port voltage ceiling",
+   "requirement": "Cuts the port off above 6.0 V (LV) or 8.7 V (HV), set by a jumper (F16). No candidate passed round 1: each failed the ±0.99 % HV trip band (V128) or the latch (V130). Answered under Raised by P1: V130: The port reconnects by itself once the rail falls below the ceiling, with the comparator's own hysteresis. No latch. The firmware reports the cut-off (owner, 2026-10-02)",
+   "source": "IOBoard.md, Port voltage ceiling; Supply.md, Not known",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R7",
+   "function": "Pack overcurrent protection",
+   "requirement": "Thresholds for about 49.7 A, against 3.0 V a cell (F9) and 0 to 55 °C (owner, 2026-09-30), at or below the pack's 90 A continuous. Round 1 set them for 12.23 A (V150). Answered under Raised by P1: V284: 60 A, about 20 % above the 49.7 A nominal draw and below the pack's 90 A continuous (owner, 2026-10-01) V294: 3.3 V a cell under load, 6.6 V for the pack; it replaces F9's 3.0 V. The protector's undervoltage threshold sits above 3.3 V by its accuracy band, so 3.3 V is the lowest trip. The pack path stays sized at 6.0 V: 52.1 A nominal at a 5.8 V bus, rated 60 A (owner, 2026-10-02) V298: As V297: one IC for the four functions, selected in FU-2F (owner, 2026-10-02) V309: 61.08 mV on 1 mOhm stays (V284's 60 A). Stage 2 holds the shunt's tolerance to +0.5 % or tighter, which keeps the untrimmed lower edge at 52.21 A or above. The pages state both windows (owner, 2026-10-02)",
+   "source": "IOBoard.md, Pack overcurrent protection and Pack temperature",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R7",
+   "function": "Pack cells",
+   "requirement": "FU-2B1 refutes the SLS XTRON pack on its discharge floor and its temperature. The maker's safety notes (REV.1.06, section 4) set 3.3 V a cell under load and 3.75 V at rest; its guide makes preheating mandatory below 18 °C for loads above 5C (15 A). The board's floor is 3.3 V a cell, and below 18 °C the pack delivers 15 A or less (owner, 2026-10-02). Answered under Raised by P1: V294: 3.3 V a cell under load, 6.6 V for the pack; it replaces F9's 3.0 V. The protector's undervoltage threshold sits above 3.3 V by its accuracy band, so 3.3 V is the lowest trip. The pack path stays sized at 6.0 V: 52.1 A nominal at a 5.8 V bus, rated 60 A (owner, 2026-10-02) V296: Below 18 °C at the pack's NTC, firmware lowers the TPS55285 current limits so the pack delivers 15 A or less (90 W at 6.0 V). The DC input keeps its full power. No part of its own (owner, 2026-10-02) V307: Yes, whatever a run returns: a fixed input of the owner. Its stock is not read, sourcing rules 4 and 5 being waived for it (owner, 2026-09-30); T6 takes it as a stock exception, and the pages state each check no run confirmed as not known (owner, 2026-10-02)",
+   "source": "V294, V296; FU-2B1, R7 adjudicator ruling 015",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R7",
+   "function": "Pack charger; Power path",
+   "requirement": "No part in FU-2B1, through a merge defect that pull request #213 fixes: P3 overturned P2's drop of LTC4020EUHF#PBF, and of BQ25887RGER under Cell balancing only, and the merge held both functions open, so no verifier read their first-ranked BQ25723RSNR. FU-2B1 refutes four figures: the BQ25713 family takes sense resistors other than 10 and 20 mOhm (SLUSD83C 9.6.3); the battery path current does not separate the BQ25713RSNR from the BQ25723RSNR; the BQ25756's RBAT_SNS is not in the pack-to-load path, under either function. Answered under Raised by P1: V311: No charging below 10 °C pack temperature: the pack protector's under-temperature charge limit is 10 °C (owner, 2026-10-02)",
+   "source": "FU-2B1, R7 ledger, adjudicator rulings 016 to 019; pull request #213",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R5",
+   "function": "pack disconnect; Pack overcurrent protection; Bench pack balance lead; Pack temperature",
+   "requirement": "One IC on the pack does the disconnect, the overcurrent protection, the bench balance lead and the pack temperature (owner, 2026-10-02). FU-2B1 put three ICs on the pack's taps: BQ40Z80RSMR for the disconnect, MAX17320G22+ for the overcurrent protection and the balance lead, BQ29209DRBR for the balancing. R5's P2 dropped MAX17320G22+ as the disconnect: a charger alone releases its undervoltage fault. Answered under Raised by P1: V295: As V294: 3.3 V a cell under load is the lowest trip, the threshold set above it by the IC's accuracy band. V95's ±75 mV, round 1's R5460 figure, is no requirement (owner, 2026-10-02) V297: One IC does the pack disconnect, the pack overcurrent protection, the bench pack balance lead and the pack temperature, selected in FU-2F (owner, 2026-10-02) V301: 10 µA stays, with an operator wake contact for a start from the pack alone. The open-lead behaviour may rest on the IC's undervoltage logic, an inference. A bench test confirms it before the pages call V107 met: mid wire open, with and without a charger, and first cell attach (owner, 2026-10-02)",
+   "source": "V297, V298; FU-2B1, R5 and R7 ledgers",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R7",
+   "function": "pack disconnect; Pack overcurrent protection; Bench pack balance lead; Pack temperature",
+   "requirement": "One IC on the pack does the disconnect, the overcurrent protection, the bench balance lead and the pack temperature (owner, 2026-10-02). FU-2B1 put three ICs on the pack's taps: BQ40Z80RSMR for the disconnect, MAX17320G22+ for the overcurrent protection and the balance lead, BQ29209DRBR for the balancing. R5's P2 dropped MAX17320G22+ as the disconnect: a charger alone releases its undervoltage fault. Answered under Raised by P1: V284: 60 A, about 20 % above the 49.7 A nominal draw and below the pack's 90 A continuous (owner, 2026-10-01) V294: 3.3 V a cell under load, 6.6 V for the pack; it replaces F9's 3.0 V. The protector's undervoltage threshold sits above 3.3 V by its accuracy band, so 3.3 V is the lowest trip. The pack path stays sized at 6.0 V: 52.1 A nominal at a 5.8 V bus, rated 60 A (owner, 2026-10-02) V296: Below 18 °C at the pack's NTC, firmware lowers the TPS55285 current limits so the pack delivers 15 A or less (90 W at 6.0 V). The DC input keeps its full power. No part of its own (owner, 2026-10-02) V298: As V297: one IC for the four functions, selected in FU-2F (owner, 2026-10-02) V309: 61.08 mV on 1 mOhm stays (V284's 60 A). Stage 2 holds the shunt's tolerance to +0.5 % or tighter, which keeps the untrimmed lower edge at 52.21 A or above. The pages state both windows (owner, 2026-10-02) V310: Yes: a one-point offset calibration at 25 °C on each board, with the voltage and current calibration the data sheet requires, and a curve fitted on the bench for the B 3435 K NTC, leaving about ±1 K. The 0 °C, 55 °C and 18 °C (V296) limits stay (owner, 2026-10-02)",
+   "source": "V297, V298; FU-2B1, R5 and R7 ledgers",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R5",
+   "function": "input transient clamp (TVS on the DC input and on the pack input)",
+   "requirement": "No part in FU-2B1; P2 returned no entry for it. The reverse-polarity protection, the overvoltage protection, the inrush limiting and the source selection survive 60 V for 10 µs only behind the clamp: TVS2701DRBR clamps to 35.7 V at 27 °C and 37.3 V at 125 °C. The clamp is the power input's protection, researched in stage 1, with TVS2701DRBR as its first candidate (owner, 2026-10-02). Behind the overvoltage cut-off the bus sees the clamp voltage for 3.98 µs typical, 5.4 µs maximum, plus the MOSFETs' gate-discharge time, against the TPS55285's 27 V absolute maximum. Answered under Raised by P1: V308: A second clamp on the bus behind the cut-off, ahead of the TPS55285, holds their input pins at or under 27 V. A P2-P4 follow-up of R5 and R7 researches it before FU-2P56, and states how the BQ40Z80 pack pins stay at or under 35 V (owner, 2026-10-02)",
+   "source": "FU-2B1, R5 P2 report and P4 checks",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R8",
+   "function": "alert shift register (new)",
+   "requirement": "Parallel-in, serial-out: two 8-bit parts in cascade take the 16 alert outputs at once, on 3 main coprocessor pins (owner, 2026-09-30). Answered under Raised by P1: V286: 3.3 V for the shift registers and the CD4082 gates; every alert node pulls up to 3.3 V (owner, 2026-10-01)",
+   "source": "IOBoard.md, Current aborts",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R8",
+   "function": "alert combining gate (new)",
+   "requirement": "CD4082, a dual 4-input AND gate, 3 a board (owner, 2026-09-30): its part number, stock and speed at 3.3 V. Answered under Raised by P1: V286: 3.3 V for the shift registers and the CD4082 gates; every alert node pulls up to 3.3 V (owner, 2026-10-01) V305: 74VHC21FT, a dual 4-input AND gate with stated figures at 3.3 V, in place of the CD4082; SN74LV21APWR beside it (owner, 2026-10-02)",
+   "source": "IOBoard.md, Current aborts",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R8",
+   "function": "Port current monitor; Motor monitor",
+   "requirement": "The alert thresholds, whether the monitors latch their alert outputs, and the critical line's blanking time, against the port switch's 3.96 to 4.84 A breaker and the INA3221's conversion time. The INA228 stays fixed (owner, 2026-09-30). Answered under Raised by P1: V174: ±50 mA from 0 to 3.0 A, uncalibrated, at 0 to 50 °C, with the host model's 20 mA peak-to-peak noise (owner, 2026-10-02) V288: Every temperature the board reads: the onboard shunt's sensor, the motor's thermocouple and infrared channels and the ESC telemetry's temperature, each with its own operator-set limit on the LIMITS page. Two consecutive conversions above the limit trip it. The ESC pack switch opens within the 500 ms stop deadline (V1) (owner, 2026-10-01) V304: Yes. The unmet stock gate is a current limitation, given to T6 as a stock exception, and the stock is read again before the order (owner, 2026-10-02)",
+   "source": "IOBoard.md, Current aborts",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R5",
+   "function": "bus clamp (behind the overvoltage cut-off, ahead of the TPS55285) (new)",
+   "requirement": "A second clamp on the bus behind the LM74800 overvoltage cut-off, ahead of the four TPS55285, holds their input pins at or under 27 V (their absolute maximum) while the input clamp TVS2701DRBR holds the input at 35.7 V (27 °C) to 37.3 V (125 °C) for the cut-off's 3.98 µs typical, 5.4 µs maximum plus the MOSFETs' gate discharge (V308, owner, 2026-10-02). It does not conduct at the highest bus voltage of normal operation, the overvoltage trip at up to 22.0 V. The run states the bus capacitance and the surge current it assumes, and how the BQ40Z80's pack-side pins (BAT, VCC, PBI, PACK: 35 V absolute maximum) stay at or under 35 V",
+   "source": "V308; FU-2F, R5 P2 report and P4 checks of the input transient clamp and the pack disconnect",
+   "reason": "the owner's rulings of 2026-10-02 on FU-2F (Raised by P1, V307 to V311)"
+  },
+  {
+   "category": "R7",
+   "function": "Pack cells",
+   "requirement": "The SLS XTRON 3000 mAh 2S1P pack is the Pack cells part whatever a run returns, a fixed input of the owner: name it by its article number SLSXT30002130 in every record. Its stock is not read, sourcing rules 4 and 5 being waived for it (V307, owner, 2026-09-30 and 2026-10-02)",
+   "source": "V307; Research.md, Scope, fixed inputs",
+   "reason": "the owner's rulings of 2026-10-02 on FU-2F (Raised by P1, V307 to V311)"
+  },
+  {
+   "category": "R6",
+   "function": "Port supply switch; Port supply reverse blocking (new); Port supply current limit (new)",
+   "requirement": "Three functions a port, 20 a board: the switch, a TLP3545A(TP1,F photorelay first (conducts from 0 V; both FU-2G verifiers confirmed it, and only the inrush check read 'not read'); its reverse blocking, a CMS04(TE12L,Q,M) Schottky first (V126: the pin up to 12 V); its current limit, an INA301A1IDGKR on the R8 port shunt first, which pulls the switch's drive low at 4.30 to 4.51 A and holds it while the port's enable is high (V123). Each function gets its own requirement list from V122 to V127 and V282: 3.0 A and the 570 mV drop from 5.0 V up, the switch on from 0.8 V, off within 5 ms, 5 mA off-state. The inrush peak of 2.35 A is a reported figure, not a pass or fail requirement (V133). Name each part by its orderable number (V312, owner, 2026-10-02)",
+   "source": "V122 to V127, V133, V282, V302, V312; FU-2G, R6 P2 report and ledger",
+   "reason": "the owner's rulings of 2026-10-02 on FU-2G (Raised by P1, V174, V133, V312 to V314)"
+  },
+  {
+   "category": "R6",
+   "function": "Servo supply temperature latch; Servo supply enable gate (new); Servo supply latch power-up reset (new)",
+   "requirement": "FU-2G selected 74LVC1G175GW,125 as the latch, 4 a board. The latch needs a gate that ANDs the expander's enable with its Q output, a power-up reset on its MR input, and a buffer that carries the operator clear control (F11) to the 4 latch clock inputs and the interlock: research them as functions (V312, owner, 2026-10-02)",
+   "source": "V283, V303, V312; FU-2G, R6 P2 report",
+   "reason": "the owner's rulings of 2026-10-02 on FU-2G (Raised by P1, V174, V133, V312 to V314)"
+  },
+  {
+   "category": "R8",
+   "function": "External shunt",
+   "requirement": "BAS-M-R0001-E-5.0, with BAS-M-R0001-AE-5.0 as its second source, in place of WSBE8518L1000JKA2; its sense leads are soldered on the strip (V313). The class, 50 to 100 µOhm and 4.5 to 9 W at 300 A, is nominal, with the part's tolerance on top (V314) (owner, 2026-10-02)",
+   "source": "V313, V314; IOBoard.md, External shunt",
+   "reason": "the owner's rulings of 2026-10-02 on FU-2G (Raised by P1, V174, V133, V312 to V314)"
+  },
+  {
+   "category": "R8",
+   "function": "Motor monitor; External shunt sense input",
+   "requirement": "INA228AIDGSR is the part of both functions whatever a run returns, a fixed input the owner keeps; its unmet stock gate is a current limitation, given to T6 as a stock exception (V304, owner, 2026-10-02)",
+   "source": "V304; Research.md, Scope, fixed inputs",
+   "reason": "the owner's rulings of 2026-10-02 on FU-2G (Raised by P1, V174, V133, V312 to V314)"
+  },
+  {
+   "role": "P1-critic",
+   "category": "R6",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:460",
+    "quantity": "MCP9808 alert destination (interlock's latch vs. a latch of the rail's own)",
+    "value": "not stated",
+    "marking": "assumption",
+    "source": "IOBoard.md:460: \"Whether the alert sets the interlock's latch or a latch of the rail's own is not stated\"",
+    "refutation_tried": "grepped Research.md and IOBoard.md for \"interlock\" near R6 and for any F11-style decision covering the MCP9808's alert routing; none found",
+    "question": 6
+   },
+   "reason": "marking not ruled on"
+  },
+  {
+   "role": "P1-critic",
+   "category": "R6",
+   "value": {
+    "where": "hardware/docs/Research.md:313",
+    "quantity": "Already-selected R6 parts standing into round 2",
+    "value": "I/O expander: MCP23017T-E/SS (confirmed); Port supply switch (round 1, now refuted at the low end only): TPS259474LRPWR",
+    "marking": "sourced",
+    "source": "hardware/research/round1/selection.json; confirmed in FU-B3/020-P4-datasheet-R6.json",
+    "refutation_tried": "MCP23017T-E/SS's only round-1 refutation (an unread Microchip PCN link, treated as a possible end-of-life notice) did not stand once the adjudicator re-read Microchip's public PCN search API and found no end-of-life notice (FU-B3/022-adjudicator-R6.json); stands unchanged for this follow-up",
+    "question": -1
+   },
+   "reason": "marking not ruled on"
+  },
+  {
+   "role": "P1-critic",
+   "category": "R6",
+   "value": {
+    "where": "hardware/docs/Supply.md:145",
+    "quantity": "Servo supply inductor selection status",
+    "value": "SRP1265A-4R7M was confirmed by both FU-B3 verifiers (4.7 uH, 28 A saturation, 8.4 mOhm DC resistance max, -55 to 150 degC), but hardware/research/round1/selection.json carries no part for this function",
+    "marking": "sourced",
+    "source": "FU-B3/015-P4-stock-R6.json, FU-B3/020-P4-datasheet-R6.json; Supply.md:145 records the same discrepancy",
+    "refutation_tried": "checked the Round 2 Follow-ups table (Research.md) for a 'Servo supply inductor' row: none exists, so this function is not one of this task's listed gaps and no new question is raised for it here; it is still listed in functions because the R6 row and IOBoard.md name it",
+    "question": -1
+   },
+   "reason": "marking not ruled on"
+  },
+  {
+   "role": "P1",
+   "category": "R5",
+   "value": {
+    "where": "IOBoard.md:358",
+    "quantity": "pack full-charge voltage used for sizing (V, upper bound)",
+    "value": "8.4 V (4.2 V/cell)",
+    "marking": "assumption",
+    "source": "IOBoard.md:358",
+    "refutation_tried": "checked the SLS XTRON vendor-page description at IOBoard.md:395 -- it states 7.4 V nominal and no per-cell charge limit, so 4.2 V/cell is not vendor-confirmed; already raised as V92 ('for research'), not re-raised",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R5",
+   "value": {
+    "where": "IOBoard.md:359",
+    "quantity": "board draw from the pack at the 6.0 V floor, nominal (A)",
+    "value": "about 49.7 A",
+    "marking": "assumption",
+    "source": "IOBoard.md:359; Research.md:573",
+    "refutation_tried": "recomputed the four-converter subtotal from the page's own per-converter figures: 3 servo converters at 9.9 A each (IOBoard.md:359) = 29.7 A, plus the adjustable supply at 17.6 A (IOBoard.md:381) = 47.3 A, matching the stated four-converter figure exactly; adding the display's 1.4 A (IOBoard.md:395) and the second RP2354B's 0.2 A (IOBoard.md:120) gives 48.9 A, about 0.8 A short of the stated 49.7 A, with the remainder (the main RP2354B's and other unitemized logic current) not broken out anywhere in the tree; the underlying 90% pack-side efficiency is explicitly 'not stated' and remains open at V90/V105/V111 ('for research')",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R5",
+   "value": {
+    "where": "Research.md:573",
+    "quantity": "stated failure reasons of the pack disconnect candidates",
+    "value": "each candidate failed an open balance lead (V107), the reconnect condition (V93, V94) or the per-cell floor (V95)",
+    "marking": "assumption",
+    "source": "Research.md:573",
+    "refutation_tried": "read every P2, P3, rerank and P4 return for R5's pack disconnect across T3, FU-B1 and FU-B3 -- only one candidate was ever shortlisted, R5460N212AF-TR-FE, refuted in both FU-B1 (hardware/research/round1/FU-B1/032-P4-datasheet-R5.json) and FU-B3 specifically on the balance-lead-open check (V107); the same P4 return shows it passing the reconnect-condition (V93, V94) and per-cell-floor (V95) checks. No candidate's recorded failure is the reconnect condition or the per-cell floor; the claim is not supported by the primary files read for this task",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R6",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:380",
+    "quantity": "Servo supply heatsink basis for continuous-current rating",
+    "value": "the Adjustable supply's continuous current, qualified across its full 6-20 V in, 0.8-15 V out range at 50 degC ambient, is not known until a follow-up of R6 qualifies it",
+    "marking": "assumption",
+    "source": "IOBoard.md:380",
+    "refutation_tried": "this depends on the same TPS55285 heatsink thermal-resistance figure the Servo rail current gap needs (IOBoard.md:375, :377); no separate figure found for the Adjustable supply's own worst point",
+    "question": 4
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R7",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:359",
+    "quantity": "nominal board draw from the pack at the 6.0 V floor",
+    "value": "about 49.7 A with the display, the logic rails and the second RP2354B included; about 47.3 A from the four TPS55285 converters alone at an assumed 90 % efficiency",
+    "marking": "assumption",
+    "source": "IOBoard.md:359 (Pack path current): 'at the 6.0 V floor the four converters at 6.35 A draw about 47.3 A at an assumed 90 %, and the board about 49.7 A ... nominal figures'.",
+    "refutation_tried": "The page itself calls these 'nominal figures' with 'no upper bound' until the protection threshold is set (IOBoard.md:395). The 90 % efficiency from the pack is unverified (already raised as V140, Research.md:836, 'for research'); not re-raised here. Holds as the nominal, not maximum, draw this follow-up's threshold has to clear.",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R7",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:400",
+    "quantity": "charger efficiency and resulting charge current",
+    "value": "assumed 90 %: 13.5 W, about 1.6 A into a full pack at 8.4 V; a 2 A charger (BQ25887 reference figure) uses the whole 13.5 W above 6.75 V",
+    "marking": "assumption",
+    "source": "IOBoard.md:400 (Charge current): 'At an assumed 90 % that is 13.5 W ...'.",
+    "refutation_tried": "No source is given for 90 %; the same unverified figure as V139 (Research.md:835, 'for research'), already under Raised by P1 and not re-raised. The arithmetic (15 W x 0.9 = 13.5 W; 13.5 W / 8.4 V = 1.607 A) holds.",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R7",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:407",
+    "quantity": "charger's USB-C input connector identity",
+    "value": "not stated: whether it is the RP2354B's own USB port or a separate USB-C connector",
+    "marking": "assumption",
+    "source": "IOBoard.md:407 (Not known): 'Whether the charger's USB-C input is the RP2354B's USB port or a connector of its own: not stated (F8, R7, round 2)'.",
+    "refutation_tried": "Matches V148 (Research.md:844, 'for research'), already under Raised by P1; not re-raised here.",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  }
+ ]
+}

@@ -1,0 +1,806 @@
+{
+ "category": "R10",
+ "verifier": "datasheet",
+ "parts": [
+  {
+   "function": "Converter for the accelerometer",
+   "part": "ADCS7476AIMFX/NOPB",
+   "kind": "first",
+   "verdict": "confirmed",
+   "refutation": "",
+   "checks": [
+    {
+     "figure": "Q4 option",
+     "stated": "external ADC: 12-bit SAR, 1 MSPS, serial interface",
+     "read": "external ADC: 12-bit SAR converter at 1 MSPS, SPI/QSPI/MICROWIRE-compatible serial interface, supply used as reference (Description, Features)",
+     "source": "SNAS192G (April 2003, rev. May 2016) Description, https://www.ti.com/lit/ds/symlink/adcs7476.pdf (vendors.py fetch, chrome, HTTP 200)",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "fundamental at the highest motor speed",
+     "stated": "fRATE 1 MSPS: Nyquist 500 kHz",
+     "read": "fRATE throughput 1 MSPS max (6.5), Nyquist 500 kHz, against 1,092.25 Hz",
+     "source": "SNAS192G 6.5 AC Electrical Characteristics, https://www.ti.com/lit/ds/symlink/adcs7476.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "sample rate per channel",
+     "stated": "1 MSPS per converter at fSCLK 20 MHz, tTH 400 ns; one converter per channel",
+     "read": "fSCLK 20 MHz max, fRATE 1 MSPS, tTH 400 ns (6.5); SCLK range 10 kHz to 20 MHz (pin 4); one converter per axis gives far more than 13,107 S/s per channel",
+     "source": "SNAS192G 6.5 and Pin Functions, https://www.ti.com/lit/ds/symlink/adcs7476.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "channels",
+     "stated": "1 input (pin 3 VIN) per part; 2 parts",
+     "read": "pin 3 VIN, the only analog input; 2 placements for 2 axes",
+     "source": "SNAS192G Pin Functions, https://www.ti.com/lit/ds/symlink/adcs7476.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "vibration amplitude without clipping",
+     "stated": "input range 0 to VDD; VDD and ADXL316 on one rail, so 0.032 to 0.968 x VS lies inside",
+     "read": "VIN input range 0 to VDD (6.5). ADXL316: 0 g at 1.2 to 1.8 V at VS 3 V (0.4 to 0.6 x VS), scale factor 15 to 23 mV/V/g (note 2): +/-16 g spans 0.032 to 0.968 x VS, inside 0 to VDD with VDD = VS",
+     "source": "SNAS192G 6.5, https://www.ti.com/lit/ds/symlink/adcs7476.pdf (03:30:13Z); ADXL316 Rev. C Table 1 and note 2, https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf (vendors.py fetch, safari, HTTP 200, 03:30:16Z)",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:16Z"
+    },
+    {
+     "figure": "input span at the accelerometer input",
+     "stated": "VIN input range 0 to VDD (6.5; pin 3), VDD = VS",
+     "read": "pin 3 'This signal can range from 0 V to VDD'; 6.5 VIN 0 to VDD; absolute max VDD + 0.3 V",
+     "source": "SNAS192G Pin Functions, 6.1, 6.5, https://www.ti.com/lit/ds/symlink/adcs7476.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "ratiometric full scale",
+     "stated": "'uses the supply voltage as a reference'; VDD and ADXL316 both on the 3.3 V rail",
+     "read": "Description: 'uses the supply voltage as a reference, enabling ... full-scale input range of 0 to VDD'; pin 1 'uses this power supply as a reference'; LSB = VDD/4096 (7.4.1). Full scale follows VS when both sit on the 3.3 V rail",
+     "source": "SNAS192G Description, Pin Functions, 7.4.1, https://www.ti.com/lit/ds/symlink/adcs7476.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "smallest amplitude resolved",
+     "stated": "ENOB 11.34 bits min (SINAD 70 dB min, -40 to 125 degC, fIN 100 kHz): 25.8 mg per step, 7.45 mg rms; 0.041 mg rms after 5 s at 13,108 S/s",
+     "read": "SINAD 70 dB min over -40 to 125 degC, 72 dB typ, fIN 100 kHz (6.5): ENOB (70 - 1.76)/6.02 = 11.336 bits. Full scale 66.7 g at 15 mV/V/g (ADXL316 note 2): 25.80 mg per effective step, 7.45 mg rms; lock-in amplitude noise 7.45 x sqrt(2/65,540) = 0.041 mg, under 1 mg",
+     "source": "SNAS192G 6.5, https://www.ti.com/lit/ds/symlink/adcs7476.pdf (03:30:13Z); ADXL316 Rev. C note 2 (03:30:16Z)",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "static angle resolution",
+     "stated": "DC-coupled 0 to VDD; 19 samples average 7.45 mg rms to 1.75 mg; ADXL316 1 mV rms noise dithers the 0.81 mV code; offset error +/-1.2 LSB; offset drift not stated",
+     "read": "DC-coupled input 0 to VDD; (7.45/1.75)^2 = 18.1, so 19 samples reach 1.709 mg; LSB 3.3 V/4096 = 0.806 mV; ADXL316 output noise 1 mV typ (<4 kHz, VS 3 V); VOFF +/-1.2 LSB over -40 to 125 degC; no offset drift figure in 6.5. Resolution, not accuracy: the zero is taken on a reference surface (V206)",
+     "source": "SNAS192G 6.5, https://www.ti.com/lit/ds/symlink/adcs7476.pdf (03:30:13Z); ADXL316 Rev. C Table 1 (03:30:16Z)",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "amplitude accuracy",
+     "stated": "not applicable: no requirement (gain error +/-1.2 LSB)",
+     "read": "no requirement (V203); GE +/-1.2 LSB over -40 to 125 degC (6.5)",
+     "source": "V203 Answer, hardware/docs/Research.md:763 at e13f5f6; SNAS192G 6.5",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:38:27Z"
+    },
+    {
+     "figure": "trigger or timestamp on the coprocessor timebase",
+     "stated": "triggered: conversion begins on the falling edge of CS; input sampled at that edge; tAD 3 ns typ",
+     "read": "pin 6 'A conversion process begins on the falling edge of CS'; 7.3 'The input signal is sampled and held for conversion at the falling edge of CS'; tAD 3 ns (6.5). CS is driven by the coprocessor",
+     "source": "SNAS192G Pin Functions, 6.5, 7.3, https://www.ti.com/lit/ds/symlink/adcs7476.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "latency jitter",
+     "stated": "tAJ 30 ps typ, tAD 3 ns typ",
+     "read": "tAJ aperture jitter 30 ps, tAD aperture delay 3 ns (6.5, typical column); 5 orders under 2.54 us",
+     "source": "SNAS192G 6.5, https://www.ti.com/lit/ds/symlink/adcs7476.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "accelerometer lead",
+     "stated": "CINA 30 pF, tTH 400 ns; settles only against a charge-reservoir capacitor or buffer at VIN, which round 2 sizes; passes with that input network",
+     "read": "CINA 30 pF, tTH 400 ns (6.5); in hold the sampling capacitor is switched to ground (7.4, Figure 25), so each track draws 30 pF x VIN from the source. 37 kOhm x 30 pF = 1.1 us exceeds 400 ns without a reservoir; the ADXL316's CX plus the lead capacitance at the input form that reservoir (about 4 % charge share from 765 pF, recovering with 25 us time constant within a 76 us period at 13.1 kS/s, a steady gain error, not noise). Condition as stated",
+     "source": "SNAS192G 6.5, 7.4, https://www.ti.com/lit/ds/symlink/adcs7476.pdf (03:30:13Z); ADXL316 Rev. C Table 1 RFILT 27 to 37 kOhm, note 5 (03:30:16Z)",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "ambient temperature range",
+     "stated": "TA -40 to 125 degC (6.3)",
+     "read": "Recommended Operating Conditions TA -40 to 125 degC; orderable ADCS7476AIMFX/NOPB -40 to 125 (addendum)",
+     "source": "SNAS192G 6.3 and Package Option Addendum, https://www.ti.com/lit/ds/symlink/adcs7476.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "3.3 V logic toward the RP2354B",
+     "stated": "VOH VDD - 0.2 V min at 200 uA, VIH 2.4 V min; SDATA swings to the 3.3 V rail",
+     "read": "VOH VDD - 0.2 V min at 200 uA source, VOL 0.4 V max, VIH 2.4 V min (6.5); SDATA is the only output and is bounded by VDD on the 3.3 V rail",
+     "source": "SNAS192G 6.5, https://www.ti.com/lit/ds/symlink/adcs7476.pdf; hardware/docs/IOBoard.md:54",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "ADC input rating with the 3.3 V rail down",
+     "stated": "not applicable: drives no ADC input; SDATA unpowered with the 3.3 V rail",
+     "read": "drives no GPIO40 to 47 input; its VDD is the 3.3 V rail, so SDATA cannot drive with the rail down (digital output absolute max VDD-bounded)",
+     "source": "SNAS192G Pin Functions, 6.1, https://www.ti.com/lit/ds/symlink/adcs7476.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "ADC_AVDD voltage from the reference",
+     "stated": "not applicable (external ADC)",
+     "read": "not applicable: requirement set for the reference option only",
+     "source": "RP2350 datasheet build 2025-07-29 section 6.1.5, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (vendors.py fetch, HTTP 200)",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:16Z"
+    },
+    {
+     "figure": "reference output current",
+     "stated": "not applicable (external ADC; VDD is the reference)",
+     "read": "not applicable: requirement set for the reference option only; VDD is the reference (Description)",
+     "source": "SNAS192G Description, https://www.ti.com/lit/ds/symlink/adcs7476.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "supply from the board rails",
+     "stated": "VDD 2.7 to 5.25 V (6.3)",
+     "read": "VDD 2.7 to 5.25 V (6.3); static figures stated at VDD 2.7 to 3.6 V; 3.201 to 3.399 V inside both",
+     "source": "SNAS192G 6.3 and 6.5, https://www.ti.com/lit/ds/symlink/adcs7476.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    },
+    {
+     "figure": "manufacturer allowlist",
+     "stated": "Texas Instruments (SNAS192G); S1 Texas Instruments",
+     "read": "Texas Instruments, copyright 2003-2016 in SNAS192G; ADCS7476AIMFX/NOPB listed Active in its addendum; Texas Instruments is on the S1 list",
+     "source": "SNAS192G footer and Package Option Addendum, https://www.ti.com/lit/ds/symlink/adcs7476.pdf; S1 Answer, hardware/docs/Research.md at e13f5f6",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:13Z"
+    }
+   ]
+  },
+  {
+   "function": "Converter for the accelerometer",
+   "part": "LM4040AIM3-3.0/NOPB",
+   "kind": "q-alternative",
+   "verdict": "confirmed",
+   "refutation": "",
+   "checks": [
+    {
+     "figure": "Q4 option",
+     "stated": "reference on ADC_AVDD, full scale of the RP2354B's ADC (Table 1438); 3.000 V shunt reference",
+     "read": "RP2350 Table 1438 VPIN_ADC 0 to ADC_AVDD; LM4040-N-3.0 reverse breakdown 3 V at 100 uA (5.11): a reference on ADC_AVDD, the reference option",
+     "source": "RP2350 datasheet build 2025-07-29 Table 1438, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (03:30:16Z); SNOS633N (Dec 1991, rev. Aug 2025) 5.11, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf (vendors.py fetch, chrome, HTTP 200, 03:30:14Z)",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:16Z"
+    },
+    {
+     "figure": "fundamental at the highest motor speed",
+     "stated": "RP2354B ADC 500 kS/s, 250 kS/s per channel with 2: Nyquist 125 kHz",
+     "read": "500 kS/s from a 48 MHz clk_adc, 96 cycles per sample (12.4.3); round robin (12.4.3.3) gives 250 kS/s per channel with 2, Nyquist 125 kHz",
+     "source": "RP2350 sections 12.4, 12.4.3, 12.4.3.3, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:16Z"
+    },
+    {
+     "figure": "sample rate per channel",
+     "stated": "500 kS/s (96 cycles of 48 MHz clk_adc), shared by CS.RROBIN: 250 kS/s per channel",
+     "read": "'Capturing a sample takes 96 clock cycles ... 2 us per sample (500 kS/s)' (12.4.3); CS.RROBIN interleaves channels in free-running mode (12.4.3.3, cited by the re-rank under 12.4.3.2): 250 kS/s each",
+     "source": "RP2350 sections 12.4.3, 12.4.3.2, 12.4.3.3, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:16Z"
+    },
+    {
+     "figure": "channels",
+     "stated": "8 external inputs on QFN-80, GPIO40 to 47; 2 used",
+     "read": "'Eight inputs available on QFN-80 package pins shared with GPIO[47:40]' (12.4; Table 1119)",
+     "source": "RP2350 section 12.4 and Table 1119, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:16Z"
+    },
+    {
+     "figure": "vibration amplitude without clipping",
+     "stated": "ADC range 0 to ADC_AVDD; ADXL316 supplied from the cathode, which is ADC_AVDD",
+     "read": "VPIN_ADC 0 to ADC_AVDD (Table 1438); ADXL316 at +/-16 g spans 0.032 to 0.968 x VS (note 2); with VS = ADC_AVDD it lies inside",
+     "source": "RP2350 Table 1438 (03:30:16Z); ADXL316 Rev. C Table 1 note 2, https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf (safari, 03:30:16Z)",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:16Z"
+    },
+    {
+     "figure": "input span at the accelerometer input",
+     "stated": "0 to ADC_AVDD with VS = ADC_AVDD; ADXL316 output at most 0.968 x 3.032 V = 2.935 V, under IOVDD's 3.201 V",
+     "read": "0 to ADC_AVDD (Table 1438); ADC inputs must not exceed IOVDD (12.4, 6.1.5); 0.968 x 3.0321 V = 2.935 V < 3.201 V",
+     "source": "RP2350 Table 1438, sections 6.1.5 and 12.4, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:16Z"
+    },
+    {
+     "figure": "ratiometric full scale",
+     "stated": "ADXL316 runs from the cathode node, which is ADC_AVDD; at least 5.51 mA available to both loads",
+     "read": "shunt schematic: load on the cathode node fed through RS (Description figure); ADXL316 sensitivity ratiometric to VS (note 2); ADC full scale is ADC_AVDD (Table 1438), the same node",
+     "source": "SNOS633N Description and 5.11 (03:30:14Z); ADXL316 Rev. C note 2 (03:30:16Z); RP2350 Table 1438 (03:30:16Z)",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:16Z"
+    },
+    {
+     "figure": "smallest amplitude resolved",
+     "stated": "RP2354B ENOB 9 bits min: 130.2 mg per step, 37.6 mg rms; 0.21 mg rms after 5 s at 13,108 S/s, 0.048 mg at 250 kS/s",
+     "read": "ENOB 9 min, 9.5 typ (Table 1438): 66.7 g / 2^9 = 130.2 mg, 37.59 mg rms; 37.59 x sqrt(2/65,540) = 0.208 mg; at 250 kS/s 0.048 mg. With RIN_ADC 100 kOhm min loading RFILT up to 37 kOhm, sensitivity can fall to 0.73x: 0.28 mg, still under 1 mg",
+     "source": "RP2350 Table 1438 (03:30:16Z); ADXL316 Rev. C note 2 and Table 1 (03:30:16Z)",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:16Z"
+    },
+    {
+     "figure": "static angle resolution",
+     "stated": "DC input; 462 samples (35 ms at 13.1 kS/s) average 37.6 mg rms to 1.75 mg; INL and DNL not stated",
+     "read": "(37.59/1.75)^2 = 461.3, so 462 samples, 35.2 ms at 13,108 S/s; INL and DNL 'Details to follow' (12.4.5). With the 0.73x worst-case divider from RIN_ADC, 866 samples, 66 ms: still met",
+     "source": "RP2350 Table 1438 and sections 12.4.4, 12.4.5, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:16Z"
+    },
+    {
+     "figure": "amplitude accuracy",
+     "stated": "not applicable: no requirement",
+     "read": "no requirement (V203)",
+     "source": "V203 Answer, hardware/docs/Research.md:763 at e13f5f6",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:38:27Z"
+    },
+    {
+     "figure": "trigger or timestamp on the coprocessor timebase",
+     "stated": "no external trigger input; START_ONCE starts one conversion; START_MANY with DIV.INT = n every n + 1 clk_adc cycles; free-running samples timestamped by index",
+     "read": "CS.START_ONCE 'immediately start a new conversion', READY high after 96 clk_adc cycles (12.4.3.1); START_MANY with DIV.INT = n triggers once per n + 1 cycles (12.4.3.2); no external trigger pin described",
+     "source": "RP2350 sections 12.4.3.1 and 12.4.3.2, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:16Z"
+    },
+    {
+     "figure": "latency jitter",
+     "stated": "not stated; conversions a whole number of 20.8 ns clk_adc cycles apart with DIV.FRAC 0; START_MANY-to-first-conversion phase not stated",
+     "read": "no jitter figure in the RP2350 data sheet. Bound read from 12.4.3.1: a START_ONCE conversion starts immediately and completes 96 clk_adc cycles (2.0 us) later, so its sample instant lies within 2.0 us of the write plus a clock-domain crossing not stated; free-running samples are an exact number of 20.8 ns cycles apart. Passes on that bound; the START_MANY start phase remains not stated",
+     "source": "RP2350 sections 12.4.3.1 and 12.4.3.2, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:16Z"
+    },
+    {
+     "figure": "accelerometer lead",
+     "stated": "about 1 pF across the input when sampling, effective impedance over 100 kOhm at 500 kS/s, 'DC measurements have no need to buffer'; RIN_ADC 100 kOhm min",
+     "read": "12.4.3: 'places about 1pF across the input ... effective impedance, even when sampling at 500 kS/s, is over 100 kOhm. DC measurements have no need to buffer'; Table 1438 RIN_ADC 100 kOhm min. Against 27 to 37 kOhm a constant divider of up to 27 %, not stated by the re-rank on this row",
+     "source": "RP2350 section 12.4.3 and Table 1438 (03:30:16Z); ADXL316 Rev. C Table 1 RFILT (03:30:16Z)",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:16Z"
+    },
+    {
+     "figure": "ambient temperature range",
+     "stated": "industrial -40 to 85 degC (5.3); junction at most 64.3 degC at 50 degC ambient (44 mW x 326 degC/W)",
+     "read": "5.3 Industrial Temperature -40 to 85 degC; addendum LM4040AIM3-3.0/NO.A -40 to 85; 5.1 note 3 RthetaJA 326 degC/W board mounted: 44 mW gives 14.3 degC rise, 64.3 degC",
+     "source": "SNOS633N 5.1 note 3, 5.3, addendum, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:14Z"
+    },
+    {
+     "figure": "3.3 V logic toward the RP2354B",
+     "stated": "not applicable: cathode and anode only (Table 4-1)",
+     "read": "Table 4-1: Anode pin 2, Cathode pin 1, pin 3 float or to anode; no logic signal",
+     "source": "SNOS633N Table 4-1, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:14Z"
+    },
+    {
+     "figure": "ADC input rating with the 3.3 V rail down",
+     "stated": "fed from the 3.3 V rail through the resistor, so the cathode and ADXL316 fall with that rail; with the rail up the ADXL316 output stays at or below 2.935 V",
+     "read": "a shunt only sinks current, so the cathode never exceeds the rail by more than its capacitor's discharge through 30 Ohm; ADXL316 on the cathode falls with the rail; with the rail up output <= 0.968 x 3.032 V = 2.935 V < IOVDD. Meets VPIN IOVDD + 0.5 V (Table 1433)",
+     "source": "SNOS633N 5.3 and Description (03:30:14Z); RP2350 Table 1433, section 12.4 (03:30:16Z)",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:16Z"
+    },
+    {
+     "figure": "ADC_AVDD voltage from the reference",
+     "stated": "2.978 V to 3.032 V; either direction by note (3) over TJ 0 to 64.3 degC: +/-14.8 mV and 2.975 V to 3.025 V; hysteresis 0.08 % typ, no limit",
+     "read": "A grade +/-22 mV at 100 uA over TMIN to TMAX; change IRMIN to 1 mA 1.1 mV max, 1 to 15 mA 9 mV max; ZR 0.4 typ, 0.9 max: 2.978 to 3.0321 V. Note (3): +/-3 mV +/- 100 ppm/degC x 39.3 degC x 3 V = +/-14.8 mV; with 10.1 mV either way 2.9751 to 3.0249 V. Read strictly with +/-22 mV and the change subtracted the floor would be 2.968 V; the note (3) reading over the actual junction range is the data sheet's own definition and holds. Hysteresis 0.08 % typ (2.4 mV) and 120 ppm/1000 h typ leave 2.972 V, still >= 2.97 V",
+     "source": "SNOS633N 5.11 and notes (3), (4), 5.1 note 3, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf (03:30:14Z); RP2350 Table 1441 note c and 6.1.5 (03:30:16Z)",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:14Z"
+    },
+    {
+     "figure": "reference output current",
+     "stated": "30 Ohm +/-1 %: at least (3.201 - 3.0321) V / 30.3 Ohm = 5.57 mA, 5.51 mA for the load after IRMIN 67 uA; no output capacitor required, stable with any capacitive load",
+     "read": "(3.201 - 3.0321)/30.3 = 5.574 mA; IRMIN 67 uA over TMIN to TMAX (5.11): 5.507 mA for the load, 10x the 0.53 mA typical (RP2350 Table 1446 hello_adc 142 uA, 12.4.6 about 40 uA, ADXL316 350 uA typ). Features 'No output capacitor required', 'Tolerates capacitive loads'; Description 'stability with any capacitive load'",
+     "source": "SNOS633N Features, Description, 5.11 (03:30:14Z); RP2350 Table 1446, 12.4.6 (03:30:16Z); ADXL316 Rev. C Table 1 (03:30:16Z)",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:14Z"
+    },
+    {
+     "figure": "supply from the board rails",
+     "stated": "3.3 V rail through 30 Ohm +/-1 %; shunt 5.57 to 14.5 mA inside 62 uA to 15 mA; at most 44 mW against 230 mW at 50 degC; resistor 6.3 mW",
+     "read": "no load, 3.399 V, 29.7 Ohm, VR 2.968 V: 14.5 mA, inside Reverse Current 62 uA to 15 mA (5.3); 14.5 mA x 3.032 V = 44.0 mW; PDmax (125 - 50)/326 = 230 mW (5.1 note 3); resistor 0.431 V x 14.5 mA = 6.25 mW",
+     "source": "SNOS633N 5.1, 5.3, 5.11, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf; hardware/docs/Research.md:283",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:14Z"
+    },
+    {
+     "figure": "manufacturer allowlist",
+     "stated": "Texas Instruments (SNOS633N); S1 Texas Instruments",
+     "read": "Texas Instruments, copyright 2025 in SNOS633N; LM4040AIM3-3.0/NOPB Active, SOT-23 (DBZ), marking RKA in the addendum; Texas Instruments is on the S1 list",
+     "source": "SNOS633N footer and Package Option Addendum, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf; S1 Answer, hardware/docs/Research.md at e13f5f6",
+     "agrees": true,
+     "passes": true,
+     "read_at": "2026-09-29T03:30:14Z"
+    }
+   ]
+  }
+ ],
+ "figures": [
+  {
+   "figure": "found V196",
+   "verdict": "confirmed",
+   "evidence": "to_u16 saturates at 65,535 (bench_state.c:27) and LINK_BN_RPM uses 1.0 per count (:82); IOBoard.md:487 states 10,000 rpm as an example and the register limit; Balance.md:60-62 uses 10,000 rpm as an example. 65,535/60 = 1,092.25 Hz. APC page: Thin Electric and Polycarbonate FPV 150,000/D (65,535 rpm at D <= 2.29 in); Racing on Electric Motors 270,000/D (<= 4.12 in). V225 answer at Research.md:785 states 2.54 us at 65,535 rpm",
+   "source": "checkout e13f5f6 shared/bench/bench_state.c:21-28 and :82, hardware/docs/IOBoard.md:487, docs/Balance.md:60-62, hardware/docs/Research.md:785; https://www.apcprop.com/technical-information/rpm-limits/ (vendors.py fetch, chrome, HTTP 200, 03:35:33Z)",
+   "read_at": "2026-09-29T03:38:27Z"
+  },
+  {
+   "figure": "found V197",
+   "verdict": "confirmed",
+   "evidence": "Blade count 2 to 6 at Balance.md:19 and balance_screen.h:25. 6 x 1,092.25 Hz = 6,553.5 Hz, x2 = 13,107 S/s; fundamental alone 2,184.5 S/s. ADXL316 note 5 gives bandwidth 1/(2 pi x 32 kOhm x C); Applications text: 'The analog bandwidth must be no more than half the analog-to-digital sampling frequency to minimize aliasing'. Stated honestly as derived, no source states a rate",
+   "source": "checkout e13f5f6 docs/Balance.md:19, shared/ui/include/balance_screen.h:25 (03:38:27Z); ADXL316 Rev. C note 5 and Applications Information, https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf (safari, 03:30:16Z)",
+   "read_at": "2026-09-29T03:38:27Z"
+  },
+  {
+   "figure": "found V198",
+   "verdict": "confirmed",
+   "evidence": "Research.md:758 V198 Answer: '1 mg at the fundamental, after one run's averaging (V208) (owner, 2026-09-28)'",
+   "source": "hardware/docs/Research.md:758, checkout e13f5f6",
+   "read_at": "2026-09-29T03:38:27Z"
+  },
+  {
+   "figure": "found V199",
+   "verdict": "confirmed",
+   "evidence": "Research.md:759 V199 Answer: '+/-16 g (owner, 2026-09-28)'",
+   "source": "hardware/docs/Research.md:759, checkout e13f5f6",
+   "read_at": "2026-09-29T03:38:27Z"
+  },
+  {
+   "figure": "found V200",
+   "verdict": "confirmed",
+   "evidence": "ADXL316 Table 1: 0 g 1.2 to 1.8 V at VS 3 V (0.4 to 0.6 x VS), ratiometric; note 2 scale factor 15 to 23 mV/V/g; +/-16 g: 0.6 + 0.368 = 0.968 x VS and 0.4 - 0.368 = 0.032 x VS; typical 0 g 0.132 to 0.868 x VS; at 3.3 V 0.106 V and 3.194 V; output swing 0.1 V and 2.8 V typ, no load. RP2350 12.4 and 6.1.5: ADC input must not exceed IOVDD. selection.json R10/R11: R11 accelerometer ADXL316WBCSZ",
+   "source": "ADXL316 Rev. C Table 1 and note 2, https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf (safari, 03:30:16Z); RP2350 build 2025-07-29 sections 6.1.5 and 12.4, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (03:30:16Z); results selection.json",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "found V201",
+   "verdict": "confirmed",
+   "evidence": "Balance.md:47-48 'two axes in the firewall's plane ... Use one of those and ignore the third'; IOBoard.md:451 one axis; V206 answer (Research.md:766) adds 2 axes for the static angle: 2 channels",
+   "source": "checkout e13f5f6 docs/Balance.md:47-48, hardware/docs/IOBoard.md:451, hardware/docs/Research.md:766",
+   "read_at": "2026-09-29T03:38:27Z"
+  },
+  {
+   "figure": "found V202",
+   "verdict": "confirmed",
+   "evidence": "V225 answer (Research.md:785): 1 degree whole chain, V202's converter share inside it, 2.54 us at 65,535 rpm; 1/(360 x 1,092.25 Hz) = 2.543 us. balance_screen.c:549 prints '%d deg'. Balance.md:65-69 constant delay cancels, variation counts",
+   "source": "checkout e13f5f6 hardware/docs/Research.md:785, shared/ui/balance_screen.c:549, docs/Balance.md:65-69",
+   "read_at": "2026-09-29T03:38:27Z"
+  },
+  {
+   "figure": "found V203",
+   "verdict": "confirmed",
+   "evidence": "Research.md:763 V203 Answer: 'No requirement: the correction is relative (owner, 2026-09-28)'",
+   "source": "hardware/docs/Research.md:763, checkout e13f5f6",
+   "read_at": "2026-09-29T03:38:27Z"
+  },
+  {
+   "figure": "found V204",
+   "verdict": "confirmed",
+   "evidence": "V7 Answer at Research.md:567: '0 to 50 degC ambient, one range for the whole IO board (owner, 2026-09-28)'; V231 at :791 is 0 to 85 degC at the sensor mount (R11)",
+   "source": "hardware/docs/Research.md:567 and :791, checkout e13f5f6",
+   "read_at": "2026-09-29T03:38:27Z"
+  },
+  {
+   "figure": "found V205",
+   "verdict": "confirmed",
+   "evidence": "IOBoard.md:447 'an analogue sensor, piezo or analogue accelerometer, into an ADC on the IO board ... (Q4)', state required; Q4 at Research.md:840 names the RP2354B's ADC with a reference or an external ADC; R11 row :289 makes IIS3DWB a seed only if Q4 accepts it; selection.json R11 accelerometer ADXL316WBCSZ (analogue)",
+   "source": "checkout e13f5f6 hardware/docs/IOBoard.md:447, hardware/docs/Research.md:289 and :840; results selection.json",
+   "read_at": "2026-09-29T03:38:27Z"
+  },
+  {
+   "figure": "found V206",
+   "verdict": "confirmed",
+   "evidence": "Research.md:766 V206 Answer: 'Yes, to 0.1 degree, 2 axes, zeroed on a reference surface (owner, 2026-09-28)'; sin(0.1 degree) = 1.745 mg",
+   "source": "hardware/docs/Research.md:766, checkout e13f5f6",
+   "read_at": "2026-09-29T03:38:27Z"
+  },
+  {
+   "figure": "found V207",
+   "verdict": "confirmed",
+   "evidence": "Research.md:767 V207 Answer: '2 m (owner, 2026-09-28)'",
+   "source": "hardware/docs/Research.md:767, checkout e13f5f6",
+   "read_at": "2026-09-29T03:38:27Z"
+  },
+  {
+   "figure": "found V208",
+   "verdict": "confirmed",
+   "evidence": "Research.md:768 V208 Answer: '5 s at steady speed per run (owner, 2026-09-28)'",
+   "source": "hardware/docs/Research.md:768, checkout e13f5f6",
+   "read_at": "2026-09-29T03:38:27Z"
+  },
+  {
+   "figure": "P2 report: Q4 effective number of bits: ADCS7476AIMFX/NOPB",
+   "verdict": "confirmed",
+   "evidence": "SINAD 70 dB min over -40 to 125 degC, 72 dB typ at 25 degC, fIN 100 kHz: ENOB 11.336 min, 11.67 typ. 66.7 g full scale: 25.80 mg per step, 7.45 mg rms; 0.041 mg after 5 s at 13,108 S/s; 19 samples reach 1.709 mg",
+   "source": "SNAS192G 6.5, https://www.ti.com/lit/ds/symlink/adcs7476.pdf (03:30:13Z); ADXL316 Rev. C note 2 (03:30:16Z)",
+   "read_at": "2026-09-29T03:30:13Z"
+  },
+  {
+   "figure": "P2 report: Q4 sampling rate: ADCS7476AIMFX/NOPB",
+   "verdict": "confirmed",
+   "evidence": "fSCLK 20 MHz max, fRATE 1 MSPS, tTH 400 ns (6.5); one converter per axis",
+   "source": "SNAS192G 6.5, https://www.ti.com/lit/ds/symlink/adcs7476.pdf",
+   "read_at": "2026-09-29T03:30:13Z"
+  },
+  {
+   "figure": "P2 report: Q4 trigger: ADCS7476AIMFX/NOPB",
+   "verdict": "confirmed",
+   "evidence": "pin 6: conversion begins on the falling edge of CS; 7.3: input sampled and held at the falling edge of CS; tAD 3 ns (6.5)",
+   "source": "SNAS192G Pin Functions, 6.5, 7.3, https://www.ti.com/lit/ds/symlink/adcs7476.pdf",
+   "read_at": "2026-09-29T03:30:13Z"
+  },
+  {
+   "figure": "P2 report: Q4 latency jitter: ADCS7476AIMFX/NOPB",
+   "verdict": "confirmed",
+   "evidence": "tAJ aperture jitter 30 ps, typical column (6.5); limit 2.54 us",
+   "source": "SNAS192G 6.5, https://www.ti.com/lit/ds/symlink/adcs7476.pdf",
+   "read_at": "2026-09-29T03:30:13Z"
+  },
+  {
+   "figure": "P2 report: Q4 effective number of bits: REF3330AIDBZR",
+   "verdict": "confirmed",
+   "evidence": "Table 1438 ENOB 9 min, 9.5 typ; 12.4 '12-bit with 9.2 ENOB'; 130.2 mg step, 37.6 mg rms, 0.208 mg after 5 s at 13,108 S/s, 0.048 mg at 250 kS/s; 12.4.5 'Details to follow'. 462 samples are the minimum for 1.75 mg (the 464 stated also reach it). REF3330: +/-0.15 % (4.5 mV) + 30 ppm/degC over 125 degC (11.25 mV) + line 0.27 mV + load 0.08 mV + hysteresis 0.27 mV = 2.9836 to 3.0164 V; Table 1441 note c 2.97 V",
+   "source": "RP2350 build 2025-07-29 Tables 1438, 1441, sections 12.4, 12.4.5, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (03:30:16Z); SBOS392I 6.5, https://www.ti.com/lit/ds/symlink/ref33.pdf (03:30:14Z)",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "P2 report: Q4 sampling rate: REF3330AIDBZR",
+   "verdict": "confirmed",
+   "evidence": "96 cycles of 48 MHz clk_adc, 500 kS/s (12.4.3); DIV.INT sets lower rates (12.4.3.2); RROBIN interleaving (12.4.3.3): 250 kS/s per channel with 2",
+   "source": "RP2350 sections 12.4.3, 12.4.3.2, 12.4.3.3, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "P2 report: Q4 trigger: REF3330AIDBZR",
+   "verdict": "confirmed",
+   "evidence": "no external trigger described; START_ONCE immediate conversion (12.4.3.1); START_MANY with DIV.INT = n once per n + 1 cycles (12.4.3.2)",
+   "source": "RP2350 sections 12.4.3.1, 12.4.3.2, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "P2 report: Q4 latency jitter: REF3330AIDBZR",
+   "verdict": "confirmed",
+   "evidence": "no jitter stated; DIV = 0 gives a sample every 96 cycles, DIV.INT n every n + 1 cycles, a non-zero DIV.FRAC varies the interval between two adjacent cycle counts (first-order delta sigma, 12.4.3.2); 1/48 MHz = 20.8 ns; START_MANY start phase not stated",
+   "source": "RP2350 section 12.4.3.2, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "P2 report: Q4 effective number of bits: ADS7886SBDBVR",
+   "verdict": "confirmed",
+   "evidence": "SINAD 69 dB min, 71.25 typ at VDD 2.35 to 3.6 V, fI 100 kHz, table over -40 to 125 degC: ENOB 11.169 min, 11.54 typ; 28.95 mg step, 8.36 mg rms, 0.046 mg after 5 s; 23 samples (22.8 needed)",
+   "source": "SLAS492B 7.5, https://www.ti.com/lit/ds/symlink/ads7886.pdf (vendors.py fetch, chrome, HTTP 200, 03:30:14Z); ADXL316 Rev. C note 2 (03:30:16Z)",
+   "read_at": "2026-09-29T03:30:14Z"
+  },
+  {
+   "figure": "P2 report: Q4 sampling rate: ADS7886SBDBVR",
+   "verdict": "confirmed",
+   "evidence": "Maximum throughput rate 1 MHz at 20-MHz SCLK; acquisition time 325 ns min (7.5)",
+   "source": "SLAS492B 7.5, https://www.ti.com/lit/ds/symlink/ads7886.pdf",
+   "read_at": "2026-09-29T03:30:14Z"
+  },
+  {
+   "figure": "P2 report: Q4 trigger: ADS7886SBDBVR",
+   "verdict": "confirmed",
+   "evidence": "8.4.1 'With the falling edge of CS, the input signal is sampled and the conversion process is initiated'; aperture delay 5 ns typ (7.5)",
+   "source": "SLAS492B 7.5 and 8.4.1, https://www.ti.com/lit/ds/symlink/ads7886.pdf",
+   "read_at": "2026-09-29T03:30:14Z"
+  },
+  {
+   "figure": "P2 report: Q4 resources for P5",
+   "verdict": "confirmed",
+   "evidence": "RROBIN (12.4.3.3), FIFO with DREQ_ADC to one DMA channel (12.4.3.4, 12.4.3.5) for the reference option. External: each ADCS7476 samples on its CS falling edge and SDATA returns to TRI-STATE after the 16th SCLK falling edge or CS rising (7.3), so 2 parts on one CS and SCLK with 2 data lines need 4 GPIO on one PIO state machine. On an SPI controller 4 GPIO suffice (SCLK, shared RX, 2 chip selects; TX needs no pin), so 5 is an upper bound, not an error for a budget",
+   "source": "RP2350 sections 12.4.3.3 to 12.4.3.5, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (03:30:16Z); SNAS192G Pin Functions and 7.3 (03:30:13Z)",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "P2 report: Q4 ratiometric condition",
+   "verdict": "confirmed",
+   "evidence": "15 mV/V/g x 3.3 V = 49.5 mV/g; 1.75 mg = 0.0866 mV; 0 g nominal at VS/2 (ADXL316 1.5 V typ at 3 V), so VS must hold to 0.173 mV = 52 ppm for a non-ratiometric reading; rail +/-3 % (Research.md:283). A reference from 5 V would power the ADXL316 with the 3.3 V rail down, driving GPIO40 to 47 above IOVDD + 0.5 V (Table 1433)",
+   "source": "ADXL316 Rev. C Table 1 and note 2 (03:30:16Z); hardware/docs/Research.md:283 and :766 at e13f5f6 (03:38:27Z); RP2350 Table 1433 (03:30:16Z)",
+   "read_at": "2026-09-29T03:38:27Z"
+  },
+  {
+   "figure": "P2 report: Q4 input drive over the 2 m lead",
+   "verdict": "confirmed",
+   "evidence": "ADXL316 RFILT 27 to 37 kOhm; ADCS7476 CINA 30 pF, tTH 400 ns; ADS7886 CI 21 pF (16 + 5 pF, Figure 27), acquisition 325 ns, buffer advised above 200 Ohm (8.3.1); RP2350 about 1 pF, effective impedance over 100 kOhm at 500 kS/s, RIN_ADC 100 kOhm min; 37/(100 + 37) = 27 % loss",
+   "source": "ADXL316 Rev. C Table 1 (03:30:16Z); SNAS192G 6.5 (03:30:13Z); SLAS492B 7.5, 8.3.1, Figure 27 (03:30:14Z); RP2350 12.4.3 and Table 1438 (03:30:16Z)",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "P2 report: Q4 reference supply headroom",
+   "verdict": "refuted",
+   "evidence": "The low end of the headroom is wrong. With the REF3330 output range stated in the same figure, 2.983 to 3.017 V, the headroom at the 3.201 V rail is 3.201 - 3.017 = 184 mV to 3.201 - 2.983 = 218 mV, not 195 to 218 mV. The rest reads as stated: dropout 70 mV max at ILOAD +/-2 mA over -40 to 85 degC; VS specified from VOUT + 0.2 V (6.3, 6.5), 3.2164 V at a 3.0164 V output; line regulation stated only from VOUT + 200 mV. The conclusion, headroom above the 70 mV dropout, still holds at 184 mV",
+   "source": "SBOS392I 6.3 and 6.5, https://www.ti.com/lit/ds/symlink/ref33.pdf (vendors.py fetch, chrome, HTTP 200); hardware/docs/Research.md:283",
+   "read_at": "2026-09-29T03:30:14Z"
+  },
+  {
+   "figure": "re-rank report: Q4 effective number of bits: LM4040AIM3-3.0/NOPB",
+   "verdict": "confirmed",
+   "evidence": "Table 1438 ENOB 9 min, 9.5 typ; 12.4 9.2; 130.2 mg, 37.6 mg rms, 0.21 mg and 0.048 mg after 5 s; 462 samples; ADC_AVDD 2.978 to 3.032 V from 3.022 + 1.1 + 9 mV (SNOS633N 5.11); Table 1441 note c 2.97 V",
+   "source": "RP2350 Tables 1438, 1441, section 12.4 (03:30:16Z); SNOS633N 5.11, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf (03:30:14Z); ADXL316 Rev. C note 2 (03:30:16Z)",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "re-rank report: Q4 sampling rate: LM4040AIM3-3.0/NOPB",
+   "verdict": "confirmed",
+   "evidence": "500 kS/s at 96 cycles of 48 MHz (12.4.3); RROBIN interleaving (12.4.3.3): 250 kS/s per channel with 2",
+   "source": "RP2350 sections 12.4.3, 12.4.3.2, 12.4.3.3, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "re-rank report: Q4 trigger: LM4040AIM3-3.0/NOPB",
+   "verdict": "confirmed",
+   "evidence": "START_ONCE, START_MANY with DIV.INT + 1 pacing; no external trigger input described",
+   "source": "RP2350 sections 12.4.3.1, 12.4.3.2, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "re-rank report: Q4 latency jitter: LM4040AIM3-3.0/NOPB",
+   "verdict": "confirmed",
+   "evidence": "not stated in the RP2350 data sheet; whole numbers of 20.8 ns cycles with DIV.FRAC 0; START_MANY start phase not stated. A START_ONCE sample lies within the 96-cycle (2.0 us) conversion after the write (12.4.3.1)",
+   "source": "RP2350 sections 12.4.3.1, 12.4.3.2, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "re-rank report: Q4 effective number of bits: REF35300QDBVR",
+   "verdict": "confirmed",
+   "evidence": "RP2354B figures as above. REF35300: +/-0.05 % (1.5 mV) + 12 ppm/degC over -40 to 105 degC (5.22 mV) + line 120 ppm/V max (0.11 mV) + load 60 ppm/mA max sourcing (0.10 mV) = +/-6.93 mV: 2.993 to 3.007 V",
+   "source": "RP2350 Table 1438 (03:30:16Z); SNAS809C 6.5, https://www.ti.com/lit/ds/symlink/ref35.pdf (vendors.py fetch, chrome, HTTP 200, 03:30:15Z); ADXL316 Rev. C note 2",
+   "read_at": "2026-09-29T03:30:15Z"
+  },
+  {
+   "figure": "re-rank report: Q4 sampling rate: REF35300QDBVR",
+   "verdict": "confirmed",
+   "evidence": "500 kS/s round robin, 250 kS/s per channel with 2",
+   "source": "RP2350 sections 12.4.3, 12.4.3.2, 12.4.3.3, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "re-rank report: Q4 trigger: REF35300QDBVR",
+   "verdict": "confirmed",
+   "evidence": "no external trigger; START_ONCE or START_MANY paced by DIV (12.4.3.1, 12.4.3.2)",
+   "source": "RP2350 sections 12.4.3.1, 12.4.3.2, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "re-rank report: Q4 latency jitter: REF35300QDBVR",
+   "verdict": "confirmed",
+   "evidence": "not stated; whole numbers of 20.8 ns clk_adc cycles with DIV.FRAC 0 (12.4.3.2)",
+   "source": "RP2350 section 12.4.3.2, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "re-rank report: Q4 effective number of bits: LM4040AIM3-3.0+T",
+   "verdict": "confirmed",
+   "evidence": "RP2354B figures as above. 19-1787 3.000V table: LM4040A +/-22 mV over TMIN to TMAX, change 1.0 mV (IRMIN to 1 mA) and 8.0 mV (1 to 15 mA) max: 2.978 to 3.031 V",
+   "source": "RP2350 Table 1438 (03:30:16Z); 19-1787 Electrical Characteristics 3.000V, https://www.analog.com/media/en/technical-documentation/data-sheets/lm4040.pdf (vendors.py fetch, safari, HTTP 200, 03:30:17Z)",
+   "read_at": "2026-09-29T03:30:17Z"
+  },
+  {
+   "figure": "re-rank report: Q4 sampling rate: LM4040AIM3-3.0+T",
+   "verdict": "confirmed",
+   "evidence": "250 kS/s per channel with 2 in round robin",
+   "source": "RP2350 sections 12.4.3, 12.4.3.3, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "re-rank report: Q4 trigger: LM4040AIM3-3.0+T",
+   "verdict": "confirmed",
+   "evidence": "no external trigger; START_ONCE or START_MANY; samples timestamped by index (12.4.3.1, 12.4.3.2)",
+   "source": "RP2350 sections 12.4.3.1, 12.4.3.2, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "re-rank report: Q4 latency jitter: LM4040AIM3-3.0+T",
+   "verdict": "confirmed",
+   "evidence": "not stated in the RP2350 data sheet",
+   "source": "RP2350 section 12.4.3.2, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "re-rank report: Q4 effective number of bits: LM4040BIM3-3.0/NOPB",
+   "verdict": "confirmed",
+   "evidence": "RP2354B figures as above. SNOS633N 5.11 B grade +/-26 mV over TMIN to TMAX, plus 1.1 + 9 mV: 2.974 to 3.036 V",
+   "source": "RP2350 Table 1438 (03:30:16Z); SNOS633N 5.11, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf (03:30:14Z)",
+   "read_at": "2026-09-29T03:30:14Z"
+  },
+  {
+   "figure": "re-rank report: Q4 sampling rate: LM4040BIM3-3.0/NOPB",
+   "verdict": "confirmed",
+   "evidence": "250 kS/s per channel with 2 in round robin",
+   "source": "RP2350 sections 12.4.3, 12.4.3.3, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "re-rank report: Q4 trigger: LM4040BIM3-3.0/NOPB",
+   "verdict": "confirmed",
+   "evidence": "no external trigger; START_ONCE or START_MANY (12.4.3.1, 12.4.3.2)",
+   "source": "RP2350 sections 12.4.3.1, 12.4.3.2, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "re-rank report: Q4 latency jitter: LM4040BIM3-3.0/NOPB",
+   "verdict": "confirmed",
+   "evidence": "not stated in the RP2350 data sheet",
+   "source": "RP2350 section 12.4.3.2, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+   "read_at": "2026-09-29T03:30:16Z"
+  },
+  {
+   "figure": "re-rank report: Q4 effective number of bits: ADC128S052CIMTX/NOPB",
+   "verdict": "confirmed",
+   "evidence": "ENOB 11.3 min, 11.8 typ at VA = VD = 3 V, fIN 40.2 kHz, and at 5 V; SINAD 70 dB min; limits over TMIN to TMAX; no 3.3 V row. 26.44 mg step, 7.63 mg rms, 0.042 mg after 5 s; 20 samples (19.0 needed)",
+   "source": "SNAS333E 6.6, https://www.ti.com/lit/ds/symlink/adc128s052.pdf (vendors.py fetch, chrome, HTTP 200, 03:30:15Z); ADXL316 Rev. C note 2",
+   "read_at": "2026-09-29T03:30:15Z"
+  },
+  {
+   "figure": "re-rank report: Q4 sampling rate: ADC128S052CIMTX/NOPB",
+   "verdict": "confirmed",
+   "evidence": "6.6 applies at fSCLK 3.2 to 8 MHz, fSAMPLE 200 to 500 kSPS; throughput 16 SCLK cycles; 6.4 Recommended Operating Conditions give Clock Frequency 50 to 1600 kHz: the conflict is in the data sheet as stated, and no clock lies in both ranges. The title, Features and TI product page (Sample rate (max) 500 ksps, 'specified for conversion throughput rates of 200 kSPS to 500 kSPS') support 3.2 to 8 MHz; the 6.4 row stands alone. Either range gives at least 50 kS/s per channel",
+   "source": "SNAS333E 6.4, 6.6, 7.5.1, https://www.ti.com/lit/ds/symlink/adc128s052.pdf (03:30:15Z); https://www.ti.com/product/ADC128S052 (vendors.py fetch, chrome, HTTP 200, 03:36:51Z)",
+   "read_at": "2026-09-29T03:36:51Z"
+  },
+  {
+   "figure": "re-rank report: Q4 trigger: ADC128S052CIMTX/NOPB",
+   "verdict": "confirmed",
+   "evidence": "7.5.1: frame starts on the falling edge of CS; track for the first 3 SCLK cycles, hold from the N x 16 + 4th falling edge; aperture delay defined from the fourth falling SCLK edge, 4 ns typ (6.6); a second channel in the frame is held 16 SCLK later, 2 us at 8 MHz",
+   "source": "SNAS333E 6.6, 7.5.1, Specification Definitions, https://www.ti.com/lit/ds/symlink/adc128s052.pdf",
+   "read_at": "2026-09-29T03:30:15Z"
+  },
+  {
+   "figure": "re-rank report: Q4 shunt reference sizing",
+   "verdict": "confirmed",
+   "evidence": "TI A grade with 30 Ohm +/-1 % on 3.201 to 3.399 V: 5.574 to 14.5 mA; 5.507 mA after 67 uA IRMIN; 44.0 mW shunt; 6.25 mW resistor; 14.3 degC rise at 326 degC/W, 64.3 degC; 2.978 to 3.032 V rising; note (3) either direction +/-14.8 mV and 10.1 mV: 2.975 to 3.025 V. Maxim 3.000V table and Note 2 give 2.978 to 3.031 V and +/-14.9 mV",
+   "source": "SNOS633N 5.1, 5.3, 5.11, note (3), https://www.ti.com/lit/ds/symlink/lm4040-n.pdf (03:30:14Z); 19-1787 Electrical Characteristics 3.000V and Note 2, https://www.analog.com/media/en/technical-documentation/data-sheets/lm4040.pdf (03:30:17Z); hardware/docs/Research.md:283",
+   "read_at": "2026-09-29T03:30:17Z"
+  },
+  {
+   "figure": "re-rank report: Q4 REF3330 supply range at the rail's low end",
+   "verdict": "confirmed",
+   "evidence": "6.3 VIN min VOUT + 0.2 V; 6.5 VS specified VOUT + 0.2 V to 5.5 V: 3.2 V nominal, 3.2045 V at +0.15 %, 3.2164 to 3.217 V at the drift limit; dropout 70 mV max at ILOAD +/-2 mA, -40 to 85 degC; line regulation stated from VIN = VOUT + 200 mV only",
+   "source": "SBOS392I 6.3 and 6.5, https://www.ti.com/lit/ds/symlink/ref33.pdf; hardware/docs/Research.md:283",
+   "read_at": "2026-09-29T03:30:14Z"
+  },
+  {
+   "figure": "re-rank report: Q4 REF35300 second source",
+   "verdict": "confirmed",
+   "evidence": "Digi-Key REF35300QDBVR: stock 0 on tape and reel, cut tape and Digi-Reel, stock_available 0, Active, lead 9 weeks (cached reading 03:12:12Z). REF35300QDBVRQ1: stock_available 2,081 (cut tape and Digi-Reel), Active, 16 weeks (cached reading 03:23:47Z). JLCPCB C32287196 exact match REF35300QDBVRQ1, SOT-23-6, stockCount 48, canPresaleNumber 48, 4.4818 at 1 (03:36:17Z). jlcparts copy: REF35300 rows are C6643299 and C32287196 (SOT-23-6) and C41988475 REF35300YBHR (DSBGA-4) only",
+   "source": "vendors.py digikey REF35300QDBVR (https://api.digikey.com/products/v4/search/REF35300QDBVR/productdetails, cached: true); vendors.py digikey REF35300QDBVRQ1 (https://api.digikey.com/products/v4/search/REF35300QDBVRQ1/productdetails, cached: true); vendors.py jlcpcb C32287196; jlcparts cache.sqlite3 jlc_components mfr LIKE 'REF35300%' (read-only, 03:38:52Z)",
+   "read_at": "2026-09-29T03:38:52Z"
+  },
+  {
+   "figure": "Q option: Converter for the accelerometer: ADCS7476AIMFX/NOPB: external ADC",
+   "verdict": "confirmed",
+   "evidence": "a 12-bit, 1 MSPS SAR ADC with serial interface, separate from the RP2354B: external ADC option of Q4",
+   "source": "SNAS192G Description, https://www.ti.com/lit/ds/symlink/adcs7476.pdf; Q4, hardware/docs/Research.md:840",
+   "read_at": "2026-09-29T03:30:13Z"
+  },
+  {
+   "figure": "Q option: Converter for the accelerometer: LM4040AIM3-3.0/NOPB: reference",
+   "verdict": "confirmed",
+   "evidence": "3.000 V shunt voltage reference setting ADC_AVDD, the RP2354B ADC's full scale (Table 1438): the RP2354B's ADC with a reference",
+   "source": "SNOS633N 5.11 (03:30:14Z); RP2350 Table 1438 (03:30:16Z); Q4, hardware/docs/Research.md:840",
+   "read_at": "2026-09-29T03:30:14Z"
+  },
+  {
+   "figure": "Q option: Converter for the accelerometer: REF3330AIDBZR: reference",
+   "verdict": "confirmed",
+   "evidence": "REF3330 3.0 V series voltage reference (6.5) on ADC_AVDD: the RP2354B's ADC with a reference",
+   "source": "SBOS392I 6.5, https://www.ti.com/lit/ds/symlink/ref33.pdf; Q4, hardware/docs/Research.md:840",
+   "read_at": "2026-09-29T03:30:14Z"
+  },
+  {
+   "figure": "Q option: Converter for the accelerometer: ADS7886SBDBVR: external ADC",
+   "verdict": "confirmed",
+   "evidence": "12-bit, 1 MSPS SAR ADC with serial interface: external ADC",
+   "source": "SLAS492B title and 7.5, https://www.ti.com/lit/ds/symlink/ads7886.pdf",
+   "read_at": "2026-09-29T03:30:14Z"
+  },
+  {
+   "figure": "Q option: Converter for the accelerometer: REF35300QDBVR: reference",
+   "verdict": "confirmed",
+   "evidence": "REF35 3.0 V series voltage reference on ADC_AVDD: reference option",
+   "source": "SNAS809C 6.5, https://www.ti.com/lit/ds/symlink/ref35.pdf",
+   "read_at": "2026-09-29T03:30:15Z"
+  },
+  {
+   "figure": "Q option: Converter for the accelerometer: ADC128S052CIMTX/NOPB: external ADC",
+   "verdict": "confirmed",
+   "evidence": "8-channel 12-bit SAR ADC, 200 to 500 kSPS, serial interface: external ADC",
+   "source": "SNAS333E title and 6.6, https://www.ti.com/lit/ds/symlink/adc128s052.pdf",
+   "read_at": "2026-09-29T03:30:15Z"
+  },
+  {
+   "figure": "Q option: Converter for the accelerometer: LM4040AIM3-3.0+T: reference",
+   "verdict": "confirmed",
+   "evidence": "3.000 V shunt voltage reference on ADC_AVDD: reference option",
+   "source": "19-1787 3.000V table, https://www.analog.com/media/en/technical-documentation/data-sheets/lm4040.pdf",
+   "read_at": "2026-09-29T03:30:17Z"
+  },
+  {
+   "figure": "Q option: Converter for the accelerometer: LM4040BIM3-3.0/NOPB: reference",
+   "verdict": "confirmed",
+   "evidence": "3.000 V shunt voltage reference, B grade, on ADC_AVDD: reference option",
+   "source": "SNOS633N 5.11, https://www.ti.com/lit/ds/symlink/lm4040-n.pdf",
+   "read_at": "2026-09-29T03:30:14Z"
+  },
+  {
+   "figure": "Q option: Converter for the accelerometer: LM4040AIM3-3.0/NOPB: reference (2)",
+   "verdict": "confirmed",
+   "evidence": "same part and class as above: 3.000 V shunt reference setting ADC_AVDD, the RP2354B's ADC with a reference",
+   "source": "SNOS633N 5.11 (03:30:14Z); RP2350 Table 1438 (03:30:16Z); Q4, hardware/docs/Research.md:840",
+   "read_at": "2026-09-29T03:30:14Z"
+  },
+  {
+   "figure": "function requirements: Converter for the accelerometer",
+   "verdict": "confirmed",
+   "evidence": "Every row naming 'R10, Converter for the accelerometer' (V196 to V208) maps to an entry: V196 fundamental, V197 sample rate, V198 and V208 smallest amplitude, V199 clipping, V200 input span, V201 and V206 channels, V202 with V225 latency jitter, V203 amplitude accuracy, V204 temperature, V205 in the Q4 option, V206 static angle and ratiometric, V207 lead. IOBoard.md :447 (Q4 option), :448 (167 Hz at 10,000 rpm, weaker than 1,092 Hz), :449 (15 us sensor delay, weaker than 2.54 us), :450 (timebase), :451 (axis), :452 (converter), :453 (ADC front-end rule) and :54 (3.3 V logic, GPIO40 to 47 rating) are covered, and Research.md:269-272 and :283 give the ADC input rule and the rail. No value is weaker than its source",
+   "source": "checkout e13f5f6 hardware/docs/IOBoard.md:54, :447-453, :487; hardware/docs/Research.md:269-272, :283, :756-768, :785, :840",
+   "read_at": "2026-09-29T03:38:27Z"
+  }
+ ]
+}

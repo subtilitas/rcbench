@@ -1,0 +1,115 @@
+{
+ "phases": "P2-P4",
+ "round": 1,
+ "categories": [
+  "R6",
+  "R8"
+ ],
+ "items": [
+  {
+   "category": "R6",
+   "function": "Port supply switch",
+   "requirement": "Switches each of the 20 ports from 0.8 V (V55) to 8.4 V. The TPS259474LRPWR takes VIN only from 2.7 V. Answered under Raised by P1: V282: From 0.8 V the switch turns on and carries the port's current. The 3.0 A and the 570 mV this question names apply from 5.0 V up; below 5.0 V the drop is a reported figure, not a requirement (owner, 2026-10-01)",
+   "source": "IOBoard.md, Port supply switch",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R6",
+   "function": "Servo supply",
+   "requirement": "The continuous current one TPS55285 with its heatsink holds at 6.0 V in and 50 °C ambient, in A. This is each rail's continuous rating (owner, 2026-09-30). The heatsink's size is round 3's. Answered under Raised by P1: V281: 33 °C/W, the datasheet's RθJA on TI's 4-layer 2 oz EVM (SLVSI72A 5.3). The heatsink adds margin, which round 3 sizes (owner, 2026-10-01) V283: The rail's own latch: only that converter switches off, and it stays off until the operator clear control (F11) clears it. The other rails and the ESC keep running, and the firmware reports the trip (owner, 2026-10-01)",
+   "source": "IOBoard.md, Servo rail current",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R6",
+   "function": "servo supply temperature sensor (new)",
+   "requirement": "The MCP9808T-E/MS beside each TPS55285, 4 a board, and its shutdown threshold against the TPS55285's 125 °C recommended junction maximum. Answered under Raised by P1: V281: 33 °C/W, the datasheet's RθJA on TI's 4-layer 2 oz EVM (SLVSI72A 5.3). The heatsink adds margin, which round 3 sizes (owner, 2026-10-01) V283: The rail's own latch: only that converter switches off, and it stays off until the operator clear control (F11) clears it. The other rails and the ESC keep running, and the firmware reports the trip (owner, 2026-10-01)",
+   "source": "IOBoard.md, Servo supply temperature",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R6",
+   "function": "Port voltage ceiling",
+   "requirement": "Cuts the port off above 6.0 V (LV) or 8.7 V (HV), set by a jumper (F16). No candidate passed round 1: each failed the ±0.99 % HV trip band (V128) or the latch (V130)",
+   "source": "IOBoard.md, Port voltage ceiling; Supply.md, Not known",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R8",
+   "function": "alert shift register (new)",
+   "requirement": "Parallel-in, serial-out: two 8-bit parts in cascade take the 16 alert outputs at once, on 3 main coprocessor pins (owner, 2026-09-30). Answered under Raised by P1: V286: 3.3 V for the shift registers and the CD4082 gates; every alert node pulls up to 3.3 V (owner, 2026-10-01)",
+   "source": "IOBoard.md, Current aborts",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R8",
+   "function": "alert combining gate (new)",
+   "requirement": "CD4082, a dual 4-input AND gate, 3 a board (owner, 2026-09-30): its part number, stock and speed at 3.3 V. Answered under Raised by P1: V286: 3.3 V for the shift registers and the CD4082 gates; every alert node pulls up to 3.3 V (owner, 2026-10-01)",
+   "source": "IOBoard.md, Current aborts",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R8",
+   "function": "Port current monitor; Motor monitor",
+   "requirement": "The alert thresholds, whether the monitors latch their alert outputs, and the critical line's blanking time, against the port switch's 3.96 to 4.84 A breaker and the INA3221's conversion time. The INA228 stays fixed (owner, 2026-09-30). Answered under Raised by P1: V288: Every temperature the board reads: the onboard shunt's sensor, the motor's thermocouple and infrared channels and the ESC telemetry's temperature, each with its own operator-set limit on the LIMITS page. Two consecutive conversions above the limit trip it. The ESC pack switch opens within the 500 ms stop deadline (V1) (owner, 2026-10-01)",
+   "source": "IOBoard.md, Current aborts",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "role": "P1-critic",
+   "category": "R6",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:460",
+    "quantity": "MCP9808 alert destination (interlock's latch vs. a latch of the rail's own)",
+    "value": "not stated",
+    "marking": "assumption",
+    "source": "IOBoard.md:460: \"Whether the alert sets the interlock's latch or a latch of the rail's own is not stated\"",
+    "refutation_tried": "grepped Research.md and IOBoard.md for \"interlock\" near R6 and for any F11-style decision covering the MCP9808's alert routing; none found",
+    "question": 6
+   },
+   "reason": "marking not ruled on"
+  },
+  {
+   "role": "P1-critic",
+   "category": "R6",
+   "value": {
+    "where": "hardware/docs/Research.md:313",
+    "quantity": "Already-selected R6 parts standing into round 2",
+    "value": "I/O expander: MCP23017T-E/SS (confirmed); Port supply switch (round 1, now refuted at the low end only): TPS259474LRPWR",
+    "marking": "sourced",
+    "source": "hardware/research/round1/selection.json; confirmed in FU-B3/020-P4-datasheet-R6.json",
+    "refutation_tried": "MCP23017T-E/SS's only round-1 refutation (an unread Microchip PCN link, treated as a possible end-of-life notice) did not stand once the adjudicator re-read Microchip's public PCN search API and found no end-of-life notice (FU-B3/022-adjudicator-R6.json); stands unchanged for this follow-up",
+    "question": -1
+   },
+   "reason": "marking not ruled on"
+  },
+  {
+   "role": "P1-critic",
+   "category": "R6",
+   "value": {
+    "where": "hardware/docs/Supply.md:145",
+    "quantity": "Servo supply inductor selection status",
+    "value": "SRP1265A-4R7M was confirmed by both FU-B3 verifiers (4.7 uH, 28 A saturation, 8.4 mOhm DC resistance max, -55 to 150 degC), but hardware/research/round1/selection.json carries no part for this function",
+    "marking": "sourced",
+    "source": "FU-B3/015-P4-stock-R6.json, FU-B3/020-P4-datasheet-R6.json; Supply.md:145 records the same discrepancy",
+    "refutation_tried": "checked the Round 2 Follow-ups table (Research.md) for a 'Servo supply inductor' row: none exists, so this function is not one of this task's listed gaps and no new question is raised for it here; it is still listed in functions because the R6 row and IOBoard.md name it",
+    "question": -1
+   },
+   "reason": "marking not ruled on"
+  },
+  {
+   "role": "P1",
+   "category": "R6",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:380",
+    "quantity": "Servo supply heatsink basis for continuous-current rating",
+    "value": "the Adjustable supply's continuous current, qualified across its full 6-20 V in, 0.8-15 V out range at 50 degC ambient, is not known until a follow-up of R6 qualifies it",
+    "marking": "assumption",
+    "source": "IOBoard.md:380",
+    "refutation_tried": "this depends on the same TPS55285 heatsink thermal-resistance figure the Servo rail current gap needs (IOBoard.md:375, :377); no separate figure found for the Adjustable supply's own worst point",
+    "question": 4
+   },
+   "reason": "assumption without a confirmed question"
+  }
+ ]
+}

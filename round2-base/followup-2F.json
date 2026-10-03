@@ -1,0 +1,164 @@
+{
+ "phases": "P2-P4",
+ "round": 1,
+ "categories": [
+  "R5",
+  "R7"
+ ],
+ "items": [
+  {
+   "category": "R5",
+   "function": "source selection; pack disconnect",
+   "requirement": "Sized for about 49.7 A: the board's draw from the pack at the 6.0 V floor with the four TPS55285 at 6.35 A, nominal at an assumed 90 %. Round 1 sized both for 12.23 A (V90). No pack disconnect passed round 1: its one shortlisted candidate, R5460N212AF-TR-FE, failed the open balance lead (V107) in FU-B1, and FU-B3 found none. Answered under Raised by P1: V295: As V294: 3.3 V a cell under load is the lowest trip, the threshold set above it by the IC's accuracy band. V95's ±75 mV, round 1's R5460 figure, is no requirement (owner, 2026-10-02) V297: One IC does the pack disconnect, the pack overcurrent protection, the bench pack balance lead and the pack temperature, selected in FU-2F (owner, 2026-10-02) V301: 10 µA stays, with an operator wake contact for a start from the pack alone. The open-lead behaviour may rest on the IC's undervoltage logic, an inference. A bench test confirms it before the pages call V107 met: mid wire open, with and without a charger, and first cell attach (owner, 2026-10-02)",
+   "source": "IOBoard.md, Pack path current and Pack reconnect; Supply.md, Not known",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R5",
+   "function": "overvoltage protection; reverse-polarity protection; inrush limiting",
+   "requirement": "The DC input's overvoltage threshold, non-destructive (owner, 2026-09-30): round 1 left the overvoltage protection without a part. FU-B3 did not requalify the LM74800QDRRRQ1 for the reverse-polarity protection and the inrush limiting. Answered under Raised by P1: V299: Yes, as a current limitation. After a trip, a source between the release, 18.58 to 19.81 V, and 20.0 V stays cut off until it falls below the release, and the board runs from the pack. The DC input range stays 12 to 20 V. Firmware does not take the DC input as selected because it is present (owner, 2026-10-02)",
+   "source": "IOBoard.md, Overvoltage protection, Reverse-polarity protection, Inrush limiting, and Not known under Power",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R5",
+   "function": "source-status signal (new)",
+   "requirement": "A signal the coprocessor reads that tells the DC input from the pack: a DC-input-present input or the DC input voltage, on an RP2354B input or an expander pin within the pin budget. Answered under Raised by P1: V271: One signal: the DC input voltage through a divider into one ADC input of the measurement coprocessor, GPIO 40 to 47. The firmware compares it with the thresholds, so it serves the source status and the DC input brownout detection (owner, 2026-10-01) V276: As V271: the DC input voltage on one ADC input of the measurement coprocessor, serving both (owner, 2026-10-01) V300: The values stay. A one-point bench calibration sets the divider and the ADC on each board. The pages bound the trip and reset corners before the ADC's own error only (owner, 2026-10-02)",
+   "source": "IOBoard.md, Servo rail current",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R5",
+   "function": "DC input brownout detection (new)",
+   "requirement": "Detects the DC input falling below a threshold, which the coprocessor reads; non-destructive (owner, 2026-09-30). Its threshold and the time below it are not stated. The source selection's undervoltage gate is 10.1 V falling and 11.0 V rising (V88). Answered under Raised by P1: V272: Trips at 11.0 V falling and resets at 11.5 V rising, above the source selection's 10.1 V handover (V88) (owner, 2026-10-01) V273: 10 ms (owner, 2026-10-01) V274: As V272: 11.0 V falling, 11.5 V rising (owner, 2026-10-01) V275: As V273: 10 ms (owner, 2026-10-01) V300: The values stay. A one-point bench calibration sets the divider and the ADC on each board. The pages bound the trip and reset corners before the ADC's own error only (owner, 2026-10-02)",
+   "source": "IOBoard.md, DC input brownout detection",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R7",
+   "function": "Pack overcurrent protection",
+   "requirement": "Thresholds for about 49.7 A, against 3.0 V a cell (F9) and 0 to 55 °C (owner, 2026-09-30), at or below the pack's 90 A continuous. Round 1 set them for 12.23 A (V150). Answered under Raised by P1: V284: 60 A, about 20 % above the 49.7 A nominal draw and below the pack's 90 A continuous (owner, 2026-10-01) V294: 3.3 V a cell under load, 6.6 V for the pack; it replaces F9's 3.0 V. The protector's undervoltage threshold sits above 3.3 V by its accuracy band, so 3.3 V is the lowest trip. The pack path stays sized at 6.0 V: 52.1 A nominal at a 5.8 V bus, rated 60 A (owner, 2026-10-02) V298: As V297: one IC for the four functions, selected in FU-2F (owner, 2026-10-02)",
+   "source": "IOBoard.md, Pack overcurrent protection and Pack temperature",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R7",
+   "function": "Pack cells",
+   "requirement": "FU-2B1 refutes the SLS XTRON pack on its discharge floor and its temperature. The maker's safety notes (REV.1.06, section 4) set 3.3 V a cell under load and 3.75 V at rest; its guide makes preheating mandatory below 18 °C for loads above 5C (15 A). The board's floor is 3.3 V a cell, and below 18 °C the pack delivers 15 A or less (owner, 2026-10-02). Answered under Raised by P1: V294: 3.3 V a cell under load, 6.6 V for the pack; it replaces F9's 3.0 V. The protector's undervoltage threshold sits above 3.3 V by its accuracy band, so 3.3 V is the lowest trip. The pack path stays sized at 6.0 V: 52.1 A nominal at a 5.8 V bus, rated 60 A (owner, 2026-10-02) V296: Below 18 °C at the pack's NTC, firmware lowers the TPS55285 current limits so the pack delivers 15 A or less (90 W at 6.0 V). The DC input keeps its full power. No part of its own (owner, 2026-10-02)",
+   "source": "V294, V296; FU-2B1, R7 adjudicator ruling 015",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R7",
+   "function": "Pack charger; Power path",
+   "requirement": "No part in FU-2B1, through a merge defect that pull request #213 fixes: P3 overturned P2's drop of LTC4020EUHF#PBF, and of BQ25887RGER under Cell balancing only, and the merge held both functions open, so no verifier read their first-ranked BQ25723RSNR. FU-2B1 refutes four figures: the BQ25713 family takes sense resistors other than 10 and 20 mOhm (SLUSD83C 9.6.3); the battery path current does not separate the BQ25713RSNR from the BQ25723RSNR; the BQ25756's RBAT_SNS is not in the pack-to-load path, under either function",
+   "source": "FU-2B1, R7 ledger, adjudicator rulings 016 to 019; pull request #213",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R5",
+   "function": "pack disconnect; Pack overcurrent protection; Bench pack balance lead; Pack temperature",
+   "requirement": "One IC on the pack does the disconnect, the overcurrent protection, the bench balance lead and the pack temperature (owner, 2026-10-02). FU-2B1 put three ICs on the pack's taps: BQ40Z80RSMR for the disconnect, MAX17320G22+ for the overcurrent protection and the balance lead, BQ29209DRBR for the balancing. R5's P2 dropped MAX17320G22+ as the disconnect: a charger alone releases its undervoltage fault. Answered under Raised by P1: V295: As V294: 3.3 V a cell under load is the lowest trip, the threshold set above it by the IC's accuracy band. V95's ±75 mV, round 1's R5460 figure, is no requirement (owner, 2026-10-02) V297: One IC does the pack disconnect, the pack overcurrent protection, the bench pack balance lead and the pack temperature, selected in FU-2F (owner, 2026-10-02) V301: 10 µA stays, with an operator wake contact for a start from the pack alone. The open-lead behaviour may rest on the IC's undervoltage logic, an inference. A bench test confirms it before the pages call V107 met: mid wire open, with and without a charger, and first cell attach (owner, 2026-10-02)",
+   "source": "V297, V298; FU-2B1, R5 and R7 ledgers",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R7",
+   "function": "pack disconnect; Pack overcurrent protection; Bench pack balance lead; Pack temperature",
+   "requirement": "One IC on the pack does the disconnect, the overcurrent protection, the bench balance lead and the pack temperature (owner, 2026-10-02). FU-2B1 put three ICs on the pack's taps: BQ40Z80RSMR for the disconnect, MAX17320G22+ for the overcurrent protection and the balance lead, BQ29209DRBR for the balancing. R5's P2 dropped MAX17320G22+ as the disconnect: a charger alone releases its undervoltage fault. Answered under Raised by P1: V284: 60 A, about 20 % above the 49.7 A nominal draw and below the pack's 90 A continuous (owner, 2026-10-01) V294: 3.3 V a cell under load, 6.6 V for the pack; it replaces F9's 3.0 V. The protector's undervoltage threshold sits above 3.3 V by its accuracy band, so 3.3 V is the lowest trip. The pack path stays sized at 6.0 V: 52.1 A nominal at a 5.8 V bus, rated 60 A (owner, 2026-10-02) V296: Below 18 °C at the pack's NTC, firmware lowers the TPS55285 current limits so the pack delivers 15 A or less (90 W at 6.0 V). The DC input keeps its full power. No part of its own (owner, 2026-10-02) V298: As V297: one IC for the four functions, selected in FU-2F (owner, 2026-10-02)",
+   "source": "V297, V298; FU-2B1, R5 and R7 ledgers",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R5",
+   "function": "input transient clamp (TVS on the DC input and on the pack input)",
+   "requirement": "No part in FU-2B1; P2 returned no entry for it. The reverse-polarity protection, the overvoltage protection, the inrush limiting and the source selection survive 60 V for 10 µs only behind the clamp: TVS2701DRBR clamps to 35.7 V at 27 °C and 37.3 V at 125 °C. The clamp is the power input's protection, researched in stage 1, with TVS2701DRBR as its first candidate (owner, 2026-10-02). Behind the overvoltage cut-off the bus sees the clamp voltage for 3.98 µs typical, 5.4 µs maximum, plus the MOSFETs' gate-discharge time, against the TPS55285's 27 V absolute maximum",
+   "source": "FU-2B1, R5 P2 report and P4 checks",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "role": "P1",
+   "category": "R5",
+   "value": {
+    "where": "IOBoard.md:358",
+    "quantity": "pack full-charge voltage used for sizing (V, upper bound)",
+    "value": "8.4 V (4.2 V/cell)",
+    "marking": "assumption",
+    "source": "IOBoard.md:358",
+    "refutation_tried": "checked the SLS XTRON vendor-page description at IOBoard.md:395 -- it states 7.4 V nominal and no per-cell charge limit, so 4.2 V/cell is not vendor-confirmed; already raised as V92 ('for research'), not re-raised",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R5",
+   "value": {
+    "where": "IOBoard.md:359",
+    "quantity": "board draw from the pack at the 6.0 V floor, nominal (A)",
+    "value": "about 49.7 A",
+    "marking": "assumption",
+    "source": "IOBoard.md:359; Research.md:573",
+    "refutation_tried": "recomputed the four-converter subtotal from the page's own per-converter figures: 3 servo converters at 9.9 A each (IOBoard.md:359) = 29.7 A, plus the adjustable supply at 17.6 A (IOBoard.md:381) = 47.3 A, matching the stated four-converter figure exactly; adding the display's 1.4 A (IOBoard.md:395) and the second RP2354B's 0.2 A (IOBoard.md:120) gives 48.9 A, about 0.8 A short of the stated 49.7 A, with the remainder (the main RP2354B's and other unitemized logic current) not broken out anywhere in the tree; the underlying 90% pack-side efficiency is explicitly 'not stated' and remains open at V90/V105/V111 ('for research')",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R5",
+   "value": {
+    "where": "Research.md:573",
+    "quantity": "stated failure reasons of the pack disconnect candidates",
+    "value": "each candidate failed an open balance lead (V107), the reconnect condition (V93, V94) or the per-cell floor (V95)",
+    "marking": "assumption",
+    "source": "Research.md:573",
+    "refutation_tried": "read every P2, P3, rerank and P4 return for R5's pack disconnect across T3, FU-B1 and FU-B3 -- only one candidate was ever shortlisted, R5460N212AF-TR-FE, refuted in both FU-B1 (hardware/research/round1/FU-B1/032-P4-datasheet-R5.json) and FU-B3 specifically on the balance-lead-open check (V107); the same P4 return shows it passing the reconnect-condition (V93, V94) and per-cell-floor (V95) checks. No candidate's recorded failure is the reconnect condition or the per-cell floor; the claim is not supported by the primary files read for this task",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R7",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:359",
+    "quantity": "nominal board draw from the pack at the 6.0 V floor",
+    "value": "about 49.7 A with the display, the logic rails and the second RP2354B included; about 47.3 A from the four TPS55285 converters alone at an assumed 90 % efficiency",
+    "marking": "assumption",
+    "source": "IOBoard.md:359 (Pack path current): 'at the 6.0 V floor the four converters at 6.35 A draw about 47.3 A at an assumed 90 %, and the board about 49.7 A ... nominal figures'.",
+    "refutation_tried": "The page itself calls these 'nominal figures' with 'no upper bound' until the protection threshold is set (IOBoard.md:395). The 90 % efficiency from the pack is unverified (already raised as V140, Research.md:836, 'for research'); not re-raised here. Holds as the nominal, not maximum, draw this follow-up's threshold has to clear.",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R7",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:400",
+    "quantity": "charger efficiency and resulting charge current",
+    "value": "assumed 90 %: 13.5 W, about 1.6 A into a full pack at 8.4 V; a 2 A charger (BQ25887 reference figure) uses the whole 13.5 W above 6.75 V",
+    "marking": "assumption",
+    "source": "IOBoard.md:400 (Charge current): 'At an assumed 90 % that is 13.5 W ...'.",
+    "refutation_tried": "No source is given for 90 %; the same unverified figure as V139 (Research.md:835, 'for research'), already under Raised by P1 and not re-raised. The arithmetic (15 W x 0.9 = 13.5 W; 13.5 W / 8.4 V = 1.607 A) holds.",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  },
+  {
+   "role": "P1",
+   "category": "R7",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:407",
+    "quantity": "charger's USB-C input connector identity",
+    "value": "not stated: whether it is the RP2354B's own USB port or a separate USB-C connector",
+    "marking": "assumption",
+    "source": "IOBoard.md:407 (Not known): 'Whether the charger's USB-C input is the RP2354B's USB port or a connector of its own: not stated (F8, R7, round 2)'.",
+    "refutation_tried": "Matches V148 (Research.md:844, 'for research'), already under Raised by P1; not re-raised here.",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  }
+ ]
+}

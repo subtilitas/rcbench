@@ -1,0 +1,46 @@
+{
+ "phases": "P2-P4",
+ "round": 1,
+ "categories": [
+  "R9",
+  "R10",
+  "R11"
+ ],
+ "items": [
+  {
+   "category": "R9",
+   "function": "cell monitor isolation barrier (new)",
+   "requirement": "An isoSPI (isolated SPI) transceiver pair or a digital isolator between the ADBMS1818ASWAZ-RL and the measurement coprocessor's SPI1, rated 85 V DC working or more (V189). Answered under Raised by P1: V289: A digital isolator on direct SPI, rated 85 V DC working or more (V189). Its pack side runs from the ADBMS1818's 5 V regulator output; its current is for research (owner, 2026-10-01)",
+   "source": "V189; IOBoard.md, Cell monitor isolation; Pins.md",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R10",
+   "function": "Converter for the accelerometer; optical index",
+   "requirement": "Delay variation at most 1.244 µs at 1,092 Hz (65,535 rpm): the optical index's share of V225. None of the 9 reflective sensors round 1 searched meets it; they state 10 to 70 µs. R10 is read for its share of the same budget. Answered under Raised by P1: V290: 52 ns at 65,535 rpm: V225's 2.54 µs less 1.244 µs each for the accelerometer and the optical index; the same split of 16.7 µs at 10,000 rpm gives 342 ns. It holds the ADCS7476's 30 ps aperture jitter and the chip-select trigger's jitter; PIO or a timer of the measurement coprocessor drives the trigger (owner, 2026-10-01) V291: No bus contention: the two ADCS7476 have the measurement coprocessor's SPI0 to themselves (Pins.md). The trigger and timer jitter sits inside V290's 52 ns (owner, 2026-10-01)",
+   "source": "V225; Sensing.md, Not known",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R11",
+   "function": "Converter for the accelerometer; optical index",
+   "requirement": "Delay variation at most 1.244 µs at 1,092 Hz (65,535 rpm): the optical index's share of V225. None of the 9 reflective sensors round 1 searched meets it; they state 10 to 70 µs. R10 is read for its share of the same budget",
+   "source": "V225; Sensing.md, Not known",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "role": "P1",
+   "category": "R9",
+   "value": {
+    "where": "hardware/docs/IOBoard.md:473",
+    "quantity": "cell count range on the balance lead",
+    "value": "1 to 16 cells, for the 16-cell pack of F15",
+    "marking": "owner",
+    "source": "F15 (owner, 2026-09-25): 16 cells, 67.2 V at 4.2 V a cell",
+    "refutation_tried": "F15's answer only gives the top of the range (16 cells); the lower bound of 1 is SET_PACK_CELLS's physical floor (shared/settings/settings.c:39-41) and is already a question under Raised by P1 (V181), so it is not re-raised here",
+    "question": -1
+   },
+   "reason": "assumption without a confirmed question"
+  }
+ ]
+}

@@ -1,0 +1,151 @@
+{
+ "phases": "P1",
+ "round": 1,
+ "categories": [
+  "R1",
+  "R2",
+  "R3",
+  "R5",
+  "R6",
+  "R7",
+  "R8",
+  "R9",
+  "R10",
+  "R11"
+ ],
+ "items": [
+  {
+   "category": "R1",
+   "function": "USB protection",
+   "requirement": "Standard USB protection parts on VBUS, D+ and D−, CC1 and CC2. Where a standard part misses the 3.63 V steady limit on D+ and D−, or another figure of V9 and V12, its datasheet figure stands (owner, 2026-09-30). Round 1 found no part that covers the 5 lines",
+   "source": "V9, V12; IOBoard.md, USB port; hardware/STATUS.md, USB protection",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R2",
+   "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+   "requirement": "The 40 MHz clock of each MCP2518FDT-E/SL (owner, 2026-10-01): a crystal or an oscillator, and its frequency error against V26 and V27. Round 1 found no part",
+   "source": "V26, V27; IOBoard.md, Controller clock and Clock accuracy; Control.md, Not verified",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R3",
+   "function": "servo rail gate",
+   "requirement": "Conducts from 0.8 V: on each of the 3 servo rails, 0.8 to 8.4 V, and on the adjustable supply's output, 0.8 to 15 V, each up to 6.35 A (V55; owner, 2026-09-30). The BTS7004-1EPP starts only at VS(OP), 4.1 V at most",
+   "source": "IOBoard.md, Servo rail gate; hardware/STATUS.md, Servo path from 0.8 V",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R3",
+   "function": "onboard pack switch MOSFETs; external pack switch module; pack overvoltage and transient clamp",
+   "requirement": "Round 1 refutes IPT015N10N5ATMA1 and the VS-FC420SA10 and VS-FC270SA20 modules on safe operating area during the controlled turn-off. It finds no clamp that holds the pack node under 85 V at up to 600 A",
+   "source": "hardware/STATUS.md, ESC pack switch; Control.md, Not known",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R5",
+   "function": "source selection; pack disconnect",
+   "requirement": "Sized for about 49.7 A: the board's draw from the pack at the 6.0 V floor with the four TPS55285 at 6.35 A, nominal at an assumed 90 %. Round 1 sized both for 12.23 A (V90). No pack disconnect passed round 1: each candidate failed an open balance lead (V107), the reconnect condition (V93, V94) or the per-cell floor (V95)",
+   "source": "IOBoard.md, Pack path current and Pack reconnect; Supply.md, Not known",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R5",
+   "function": "overvoltage protection; reverse-polarity protection; inrush limiting",
+   "requirement": "The DC input's overvoltage threshold, non-destructive (owner, 2026-09-30): round 1 left the overvoltage protection without a part. FU-B3 did not requalify the LM74800QDRRRQ1 for the reverse-polarity protection and the inrush limiting",
+   "source": "IOBoard.md, Overvoltage protection, Reverse-polarity protection, Inrush limiting, and Not known under Power",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R5",
+   "function": "source-status signal (new)",
+   "requirement": "A signal the coprocessor reads that tells the DC input from the pack: a DC-input-present input or the DC input voltage, on an RP2354B input or an expander pin within the pin budget",
+   "source": "IOBoard.md, Servo rail current",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R5",
+   "function": "DC input brownout detection (new)",
+   "requirement": "Detects the DC input falling below a threshold, which the coprocessor reads; non-destructive (owner, 2026-09-30). Its threshold and the time below it are not stated. The source selection's undervoltage gate is 10.1 V falling and 11.0 V rising (V88)",
+   "source": "IOBoard.md, DC input brownout detection",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R6",
+   "function": "Port supply switch",
+   "requirement": "Switches each of the 20 ports from 0.8 V (V55) to 8.4 V. The TPS259474LRPWR takes VIN only from 2.7 V",
+   "source": "IOBoard.md, Port supply switch",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R6",
+   "function": "Servo supply",
+   "requirement": "The continuous current one TPS55285 with its heatsink holds at 6.0 V in and 50 °C ambient, in A. This is each rail's continuous rating (owner, 2026-09-30). The heatsink's size is round 3's",
+   "source": "IOBoard.md, Servo rail current",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R6",
+   "function": "servo supply temperature sensor (new)",
+   "requirement": "The MCP9808T-E/MS beside each TPS55285, 4 a board, and its shutdown threshold against the TPS55285's 125 °C recommended junction maximum",
+   "source": "IOBoard.md, Servo supply temperature",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R6",
+   "function": "Port voltage ceiling",
+   "requirement": "Cuts the port off above 6.0 V (LV) or 8.7 V (HV), set by a jumper (F16). No candidate passed round 1: each failed the ±0.99 % HV trip band (V128) or the latch (V130)",
+   "source": "IOBoard.md, Port voltage ceiling; Supply.md, Not known",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R7",
+   "function": "Pack overcurrent protection",
+   "requirement": "Thresholds for about 49.7 A, against 3.0 V a cell (F9) and 0 to 55 °C (owner, 2026-09-30), at or below the pack's 90 A continuous. Round 1 set them for 12.23 A (V150)",
+   "source": "IOBoard.md, Pack overcurrent protection and Pack temperature",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R8",
+   "function": "alert shift register (new)",
+   "requirement": "Parallel-in, serial-out: two 8-bit parts in cascade take the 16 alert outputs at once, on 3 main coprocessor pins (owner, 2026-09-30)",
+   "source": "IOBoard.md, Current aborts",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R8",
+   "function": "alert combining gate (new)",
+   "requirement": "CD4082, a dual 4-input AND gate, 3 a board (owner, 2026-09-30): its part number, stock and speed at 3.3 V",
+   "source": "IOBoard.md, Current aborts",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R8",
+   "function": "Port current monitor; Motor monitor",
+   "requirement": "The alert thresholds, whether the monitors latch their alert outputs, and the critical line's blanking time, against the port switch's 3.96 to 4.84 A breaker and the INA3221's conversion time. The INA228 stays fixed (owner, 2026-09-30)",
+   "source": "IOBoard.md, Current aborts",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R9",
+   "function": "cell monitor isolation barrier (new)",
+   "requirement": "An isoSPI (isolated SPI) transceiver pair or a digital isolator between the ADBMS1818ASWAZ-RL and the measurement coprocessor's SPI1, rated 85 V DC working or more (V189)",
+   "source": "V189; IOBoard.md, Cell monitor isolation; Pins.md",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R10",
+   "function": "Converter for the accelerometer; optical index",
+   "requirement": "Delay variation at most 1.244 µs at 1,092 Hz (65,535 rpm): the optical index's share of V225. None of the 9 reflective sensors round 1 searched meets it; they state 10 to 70 µs. R10 is read for its share of the same budget",
+   "source": "V225; Sensing.md, Not known",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  },
+  {
+   "category": "R11",
+   "function": "Converter for the accelerometer; optical index",
+   "requirement": "Delay variation at most 1.244 µs at 1,092 Hz (65,535 rpm): the optical index's share of V225. None of the 9 reflective sensors round 1 searched meets it; they state 10 to 70 µs. R10 is read for its share of the same budget",
+   "source": "V225; Sensing.md, Not known",
+   "reason": "requirement changed after round 1 or round 1 left the function without a part (Research.md, Round 2, Follow-ups)"
+  }
+ ]
+}

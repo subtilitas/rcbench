@@ -1,0 +1,408 @@
+{
+ "role": "rerank",
+ "category": "R2",
+ "label": "rerank-R2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "functions": [
+   {
+    "function": "Link CAN controller",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP2518FDT-E/SL",
+      "option": "",
+      "reason": "P2's rank kept; P3 returned nothing for this function. Meets every link value from the 40 MHz clock the owner fixed. One receive FIFO holds 32 frames against V16's 9 (400 ms) and 8 (3 ms). It is also the external port's rank 1, so one part number serves both controllers. JLCPCB 28,621 and Digi-Key 42,151, Active (P2, 2026-10-01T21:40:38Z and 21:43:10Z). It needs a new driver: shared/can holds the MCP2515's register map only."
+     },
+     {
+      "rank": 2,
+      "part": "MCP251863T-E/SS",
+      "option": "",
+      "reason": "P2's rank kept. The MCP2518FD controller with a CAN FD transceiver in one SSOP-28; meets every link value, tPD(TXD-RXD) 210 ns max against 347 ns. Below rank 1 on price (2.71 against 1.3136 USD at 10), stock (JLCPCB 3,693, Digi-Key 857), its transceiver's 5 V supply (V100 open) and because it cannot serve the external port (210 ns against 172 ns)."
+     },
+     {
+      "rank": 3,
+      "part": "MCP2518FDT-H/SL",
+      "option": "",
+      "reason": "P2's rank kept. Rank 1's die, datasheet and SOIC-14 pinout in the -40 to +150 degC grade; it is rank 1's rule-5 alternate. Below rank 1 on JLCPCB stock (148 against 28,621), price (2.736 USD at 10) and Digi-Key stock (0)."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP2518FDT-E/SL",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "Link CAN transceiver",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TCAN3413DR",
+      "option": "",
+      "reason": "P2's rank kept; P3 returned nothing for this function. Runs from the 3.3 V rail alone (VCC 3 to 3.6 V, VIO 1.7 to 3.6 V). Loop delay 180 ns max at VCC = VIO = 3 to 3.6 V against the link's 347 ns (re-read in P2's saved copy of SLLSFS8A, table 5.9). Bus -58 to 58 V against 5.5 V. JLCPCB 3,923 and Digi-Key 4,070, Active (P2, 2026-10-01T21:40:45Z and 21:43:23Z). Round 1's selection.json keeps it for the link."
+     },
+     {
+      "rank": 2,
+      "part": "SN65HVD233DR",
+      "option": "",
+      "reason": "P2's rank kept. A 3.3 V part, loop 135 ns max, bus -36 to 36 V, JLCPCB 24,685 and Digi-Key 31,248, 0.6568 USD at 10. Below rank 1 because it runs at 1 Mbit/s only, so it cannot serve the external port, has the narrower bus rating, and TI marks hasReplacements true."
+     },
+     {
+      "rank": 3,
+      "part": "TCAN1472VDRQ1",
+      "option": "",
+      "reason": "P2's rank kept. Meets every link value (loop 155/160 ns max at VIO 3 to 3.6 V, bus -58 to 58 V) and is the external port's rank 1, so one part number could serve both ports. Below ranks 1 and 2 on the link because VCC needs the 5 V rail (tolerance open, V100) and JLCPCB holds 130 (gate 50 at 2 placements)."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TCAN3413DR",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "External CAN controller",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP2518FDT-E/SL",
+      "option": "",
+      "reason": "P2's rank kept; P3 returned nothing for this function. Meets every external-port value: 1000 kbit/s nominal and 5000 kbit/s data exact from 40 MHz (40 TQ and 8 TQ), a separate transceiver whose standby input stays with the enable node, TXCAN and RXCAN on pins of their own. Also the link's rank 1. One FIFO of 32 frames does not hold V17's saturated-bus 87 (3 ms) or 11,495 (400 ms) frames; that feeds Q8 only. JLCPCB 28,621 and Digi-Key 42,151 (P2, 2026-10-01T21:40:38Z, 21:43:10Z)."
+     },
+     {
+      "rank": 2,
+      "part": "MCP2518FDT-E/QBB",
+      "option": "",
+      "reason": "P2's rank kept. Rank 1's die and datasheet in VDFN-14 3 x 4.5 mm with an exposed pad. Below rank 1 on price (2.115 against 1.3136 USD at 10), stock (JLCPCB 7,837, Digi-Key 9,800) and a leadless footprint; it is not footprint-compatible with rank 1."
+     },
+     {
+      "rank": 3,
+      "part": "MCP2518FDT-H/SL",
+      "option": "",
+      "reason": "P2's rank kept. Rank 1's die and SOIC-14 pinout in the -40 to +150 degC grade, rank 1's rule-5 alternate. Below rank 1 and 2 on stock (JLCPCB 148, presale 121, Digi-Key 0) and price (2.736 USD at 10)."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP2518FDT-E/SL",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "External CAN transceiver",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TCAN1472VDRQ1",
+      "option": "",
+      "reason": "P2's order kept; P3 returned nothing for this function. The SOIC-8 part that meets the 172 ns loop delay (155/160 ns max at VIO 3 to 3.6 V, re-read in P2's saved copy of SLLSFW8A, table 5.9), with STB unpowered leakage of 1 uA max (I_off), tMODE 30 us and bus -58 to 58 V. The second source is the same part at Digi-Key (5,108, Active). Corrected from P2's text: it is not the cheapest of the three (1.19 USD at 10 against 0.9299 for TCAN1472VDRBRQ1), and JLCPCB holds 130 against the gate of 50, the thinnest margin of the three. It needs the 5 V rail for VCC (V100 open) and an inverter with I_off from the enable node to STB."
+     },
+     {
+      "rank": 2,
+      "part": "TCAN1462VDRBRQ1",
+      "option": "",
+      "reason": "P2's rank kept. Meets every value with 12 ns of loop margin (155/160 ns against 172 ns), both vendors over the gate (JLCPCB 1,848, Digi-Key 2,975). Below rank 1 on price (3.5098 against 1.19 USD at 10) and a leadless SON-8 3 x 3 mm footprint."
+     },
+     {
+      "rank": 3,
+      "part": "TCAN1472VDRBRQ1",
+      "option": "",
+      "reason": "P2's rank kept. Rank 2's footprint and loop delays, 0.9299 USD at 10, JLCPCB 3,006. Below rank 2 because Digi-Key holds 0, so its second source is the alternate TCAN1462VDRBRQ1 and rests on rank 2's stock."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TCAN1472VDRQ1",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "Link terminator (the 120 Ohm at the IO board's end: fitted, switchable or external)",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": []
+   },
+   {
+    "function": "CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "DSC1001DL5-040.0000",
+      "option": "",
+      "reason": "P2's rank kept over P3's find. The only candidate with a manufacturer status read as In Production (Microchip page, P2 2026-10-01T21:39:56Z), an ordering code the datasheet lists, and the same part at Digi-Key over the gate (stock 100 against 50; JLCPCB 98 against 50). +/-10 ppm all-in against +/-3,876 ppm. Weak points: JLCPCB 98 and Digi-Key 100 are about 2 times the gate, the price is the highest (2.2532 USD at 10), and supply current is not stated at 40 MHz and 3.3 V."
+     },
+     {
+      "rank": 2,
+      "part": "SG-8101CE 40.000000MHz TBGPA",
+      "option": "",
+      "reason": "P3's find, qualified on the Epson data sheet re-read at 2026-10-01T22:16:51Z; every figure P3 gave holds. Above P2's rank 2 because its ordering code is in the data sheet (X1G0041710150's is not) and every value is stated at 3.3 V and 40 MHz (4.4 mA max, +/-15 ppm all-in, 6 ns edges). JLCPCB 853, 0.7023 USD at 10. Below rank 1 because Digi-Key holds 0 for it (minimum order 4,000), so its second source is the alternate X1G0059610009 (JLCPCB 91, about 1.8 times the gate), and Epson's page states no lifecycle status (not read; Digi-Key Active)."
+     },
+     {
+      "rank": 3,
+      "part": "X1G0059610009",
+      "option": "",
+      "reason": "P2's drop reason ('no second source shown') does not hold: P3's alternate route passes. SG-8101CE 40.000000MHz TBGPA has the same 3.2 x 2.5 x 1.05 mm package and footprint (1.4 x 1.2 mm pads on 2.4 x 1.9 mm centres, both data sheets), the same pad functions and JLCPCB 853. Digi-Key's own search missed it because P2 searched 'SG3225CAN 40.000000M-TJGA3'; Digi-Key lists SG3225CAN 40.0000M-TJGA3, Active, stock 15, under the gate. Datasheet-listed number (X1G005961000915, 40 MHz, +/-50 ppm). Below rank 2 on tolerance (+/-50 against +/-15 ppm) and JLCPCB stock (91 against 853)."
+     },
+     {
+      "rank": 4,
+      "part": "X1G0041710150",
+      "option": "",
+      "reason": "P2's rank 2, lowered. JLCPCB 910 and 0.6926 USD at 10, but the number is not in Epson's SG-210STF ordering table, so its frequency, grade and lifecycle are not shown by any data sheet; only JLCPCB's listing says 40 MHz. Digi-Key status for the number is not read. It passes at the family's worst grade (+/-50 ppm). Below ranks 2 and 3, whose numbers are in their data sheets."
+     },
+     {
+      "rank": 5,
+      "part": "ABM8W-40.0000MHZ-4-B1U-T3",
+      "option": "",
+      "reason": "P2's rank 3, now last. The one 40 MHz crystal read that clears the gain margin of 5 (7.48), both vendors over the gate (JLCPCB 73, Digi-Key 1,842) and Abracon status Active. Below the oscillators: a 4 pF load whose stray capacitance is not stated, a drive level in circuit that is not known, and 2 placements of a part that needs two load capacitors each."
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "SG-8101CE 40.000000MHz TBGPA",
+      "maker": "Seiko Epson (SG-8101series_E_Ver2.0; JLCPCB 'Seiko Epson'); S2 Epson",
+      "lcsc": "C390554",
+      "package": "SMD3225-4P, 3.2 x 2.5 x 1.05 mm",
+      "placements": 2,
+      "placements_basis": "1 to 2: one oscillator for each MCP2518FD (owner: the 40 MHz clock of each); the gate applies at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "frequency",
+        "required": "40 MHz",
+        "datasheet": "output frequency 0.67 to 170 MHz in 1 ppm steps; ordering code SG-8101CE 40.000000MHz TBGPA: T = 1.8 to 3.3 V typ., BG = +/-15 ppm at -40 to +85 degC, P = output enable on pin 1, A = default rise and fall time. JLCPCB lists the same code ('40MHz +/-15ppm 1.8V~3.3V')",
+        "pass": true,
+        "source": "https://download.epsondevice.com/td/pdf/app/SG-8101CE_en.pdf (Spec No SG-8101series_E_Ver2.0) page 2, product number and table 4; vendors.py jlcpcb C390554; read 2026-10-01T22:16:51Z and 22:16:41Z"
+       },
+       {
+        "name": "frequency error",
+        "required": "at most +/-3,876 ppm with temperature and ageing",
+        "datasheet": "+/-15 ppm at -40 to +85 degC, including initial tolerance, temperature, voltage, load and first-year ageing at +25 degC (table 4, note *1); ageing after the first year not stated",
+        "pass": true,
+        "source": "SG-8101CE data sheet page 2, table 4, same URL, read 2026-10-01T22:16:51Z"
+       },
+       {
+        "name": "oscillator output into OSC1",
+        "required": "duty 45 to 55 %, rise and fall <= 20 ns, VOH >= 0.7 VDD, VOL <= 0.3 VDD, <= VDD + 0.3 V",
+        "datasheet": "symmetry 45 to 55 % at 50 % VCC, CMOS load <= 15 pF; tr/tf 6 ns max, 20 to 80 % VCC, 15 pF (code A, fo <= 40 MHz); VOH >= 90 % VCC at -3.0 mA and VOL <= 10 % VCC at 3.0 mA (VCC 2.70 to 3.63 V, code A, fo <= 40 MHz); pin 1 high (VIH 70 % VCC) enables the output; pin 1 must not be left open, so it is tied to the 3.3 V rail. DS20006027B gives no OSC1 input capacitance, so the 15 pF load limit is shown for one OSC1 only",
+        "pass": true,
+        "source": "SG-8101CE data sheet page 3, table 5, and page 1 terminal assignment, same URL, read 2026-10-01T22:16:51Z; DS20006027B Tables 7-1 and 7-3 (P2, 2026-10-01T21:30:54Z)"
+       },
+       {
+        "name": "oscillator supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "VCC 1.62 to 3.63 V; absolute maximum 4 V; ICC 3.8 mA typ, 4.4 mA max, no load, 20 MHz < fo <= 50 MHz, VCC 2.70 to 3.63 V; 0.1 uF bypass at VCC; VCC rise from 0 to 90 % between 5 us and 500 ms. The IO board's 3.3 V ramp time is not stated (IOBoard.md, Power), so the ramp limit is not checked",
+        "pass": true,
+        "source": "SG-8101CE data sheet pages 2 and 3, tables 2, 3 and 5, same URL, read 2026-10-01T22:16:51Z"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC",
+        "datasheet": "code BG: -40 to +85 degC",
+        "pass": true,
+        "source": "SG-8101CE data sheet page 2, same URL, read 2026-10-01T22:16:51Z"
+       },
+       {
+        "name": "start-up",
+        "required": "well inside about 1000 ms",
+        "datasheet": "t_str 3 ms max at t = 0 for VCC > 1.62 V",
+        "pass": true,
+        "source": "SG-8101CE data sheet page 3, table 5, same URL, read 2026-10-01T22:16:51Z"
+       }
+      ],
+      "jlcpcb": "stockCount 853, canPresaleNumber 847, componentLibraryType expand, 0.7023 USD each at 10 (the need); read 2026-10-01T22:16:41Z; vendors.py jlcpcb C390554 (exact match, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "stock_available 0, manufacturer lead time 6 weeks, ProductStatus Active, tape and reel minimum order 4,000, for SG-8101CE 40.0000M-TBGPA0 (the same ordering code TBGPA); read 2026-10-01T22:17:10Z; vendors.py digikey-search 'SG-8101CE 40.0000M' (https://api.digikey.com/products/v4/search/keyword)",
+      "gate": "need = 5 boards x 2 placements = 10; threshold max(5 x 10, 50) = 50 (S4); stockCount 853 >= 50 and canPresaleNumber 847 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status: not read; the page https://www.epsondevice.com/crystal/en/products/crystal-oscillator/sg8101ce.html (read 2026-10-01T22:17:15Z) carries no lifecycle status in its body; reported to the owner. Epson's Discontinued Products pages for SPXO and Programmable SPXO (https://www.epsondevice.com/crystal/en/products/discon/spxo/ and /programmable/, read 2026-10-01T22:17:32Z and 22:17:33Z) do not list the SG-8101CE as discontinued or not recommended for new design, and name it as a suggested alternative to discontinued SG-310SCF, SG-310SDF, SG-310SEF and SG-8003CE. Longevity: not read. First datasheet: not read (Spec No SG-8101series_E_Ver2.0 carries copyright 2025 and no revision history). Notices: not read. Distributor: JLCPCB in stock; Digi-Key Active (22:17:10Z)",
+      "second_source": "alternate: X1G0059610009 (C7504304, SG3225CAN 40 MHz, +/-50 ppm), passes rules 1 to 4 (JLCPCB 91, presale 91, 22:16:41Z, over the gate of 50) and fits the same circuit: the same 3.2 x 2.5 x 1.05 mm package and recommended footprint (1.4 x 1.2 mm pads, 2.4 x 1.9 mm centres; SG-8101CE data sheet page 30, SG3225CAN data sheet page 24, read 22:16:51Z), pad 1 enable (OE or ST), 2 GND, 3 OUT, 4 VCC; pin 1 tied to the 3.3 V rail suits both. The two differ in tolerance (+/-15 and +/-50 ppm, both inside 3,876 ppm) and in the VCC ramp limit (5 us to 500 ms against more than 150 us), and the board's ramp is not stated. The Digi-Key route fails (stock 0)",
+      "alternates": [
+       "X1G0059610009 (C7504304): SG3225CAN 40 MHz JG, same footprint"
+      ],
+      "driver_in_shared": "none: a clock needs no driver; the MCP2518FD's OSC register selects it",
+      "reason": "Most JLCPCB stock of the datasheet-listed oscillators (853) at 0.7023 USD at 10, with every value stated at 3.3 V and 40 MHz. Ranked 2: Digi-Key holds 0 and Epson's page states no lifecycle status, so the second source is the alternate and the status is not read.",
+      "second_source_route": "alternate",
+      "second_source_part": "X1G0059610009"
+     },
+     {
+      "rank": 3,
+      "part": "X1G0059610009",
+      "maker": "Seiko Epson (SG3225CAN, Spec No SGxxxxCAN_E_Ver3.0; JLCPCB 'Seiko Epson'); S2 Epson",
+      "lcsc": "C7504304",
+      "package": "SMD3225-4P, 3.2 x 2.5 x 1.05 mm",
+      "placements": 2,
+      "placements_basis": "1 to 2: one oscillator for each MCP2518FD; the gate applies at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "frequency",
+        "required": "40 MHz",
+        "datasheet": "standard frequency 40 MHz; JG grade ordering code X1G005961000915 (page 4 table). JLCPCB's X1G0059610009 is its first 12 characters; the last two, 15, end every SG3225CAN number in the table. JLCPCB lists '40MHz +/-50ppm CMOS 1.62V~3.63V'",
+        "pass": true,
+        "source": "https://download.epsondevice.com/td/pdf/app/SG3225CAN_en.pdf (Spec No SGxxxxCAN_E_Ver3.0) page 4 and table 4; vendors.py jlcpcb C7504304; read 2026-10-01T22:16:51Z and 22:16:41Z"
+       },
+       {
+        "name": "frequency error",
+        "required": "at most +/-3,876 ppm with temperature and ageing",
+        "datasheet": "+/-50 ppm at -40 to +85 degC, including initial tolerance, temperature, voltage and load; ageing +/-3 ppm in the first year at +25 degC; later years not stated",
+        "pass": true,
+        "source": "SG3225CAN data sheet page 7, table 4, same URL, read 2026-10-01T22:16:51Z"
+       },
+       {
+        "name": "oscillator output into OSC1",
+        "required": "duty 45 to 55 %, rise and fall <= 20 ns, VOH >= 0.7 VDD, VOL <= 0.3 VDD, <= VDD + 0.3 V",
+        "datasheet": "symmetry 45 to 55 % at 50 % VCC, <= 15 pF; tr/tf 3 ns max (VCC 3.3 V +/-10 %, 20 to 80 %, 15 pF); VOH >= 90 % VCC at -4 mA and VOL <= 10 % VCC at 4 mA (3.3 V +/-10 %); ST pin high or open enables the output",
+        "pass": true,
+        "source": "SG3225CAN data sheet page 8, table 5, same URL, read 2026-10-01T22:16:51Z; DS20006027B Tables 7-1 and 7-3 (P2, 2026-10-01T21:30:54Z)"
+       },
+       {
+        "name": "oscillator supply",
+        "required": "3.201 to 3.399 V",
+        "datasheet": "VCC 1.6 to 3.63 V (1.2 MHz <= fo <= 60 MHz); absolute maximum 4 V; ICC 2.2 mA max, no load, 20 MHz < fo <= 40 MHz at 3.3 V +/-10 %; 0.01 to 0.1 uF bypass; VCC rise from 0 to 90 % more than 150 us. The IO board's 3.3 V ramp time is not stated, so the ramp limit is not checked",
+        "pass": true,
+        "source": "SG3225CAN data sheet pages 7 and 8, tables 2, 3 and 5, same URL, read 2026-10-01T22:16:51Z"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 degC",
+        "datasheet": "JG: -40 to +85 degC",
+        "pass": true,
+        "source": "SG3225CAN data sheet pages 4 and 7, same URL, read 2026-10-01T22:16:51Z"
+       },
+       {
+        "name": "start-up",
+        "required": "well inside about 1000 ms",
+        "datasheet": "t_str 3 ms max at t = 0 at 90 % VCC",
+        "pass": true,
+        "source": "SG3225CAN data sheet page 8, table 5, same URL, read 2026-10-01T22:16:51Z"
+       }
+      ],
+      "jlcpcb": "stockCount 91, canPresaleNumber 91, componentLibraryType expand, 0.6649 USD each at 10 (the need); read 2026-10-01T22:16:41Z; vendors.py jlcpcb C7504304 (exact match, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "digikey": "stock_available 15, manufacturer lead time 16 weeks, ProductStatus Active, for SG3225CAN 40.0000M-TJGA3; read 2026-10-01T22:19:55Z; vendors.py digikey-search SG3225CAN --limit 30 (https://api.digikey.com/products/v4/search/keyword). Which Epson number that Digi-Key product is, is not read, so it is not shown to be X1G005961000915. P2's search string 'SG3225CAN 40.000000M-TJGA3' returned no product because Digi-Key names it '40.0000M'",
+      "gate": "need = 5 boards x 2 placements = 10; threshold max(5 x 10, 50) = 50 (S4); stockCount 91 >= 50 and canPresaleNumber 91 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status: not read; the SG3225CAN page https://www.epsondevice.com/crystal/en/products/crystal-oscillator/sg3225can.html (read 2026-10-01T22:20:34Z) carries no lifecycle status in its body; reported to the owner. Epson's Discontinued Products page for SPXO (https://www.epsondevice.com/crystal/en/products/discon/spxo/, read 2026-10-01T22:17:32Z) does not list the SG3225CAN as a product and names it as a suggested alternative to discontinued SG-310SCF, SG-310SDF and SG-310SEF; the same page lists SG7050CAN and SG5032CAN as discontinued (21-006E_EOL). Longevity: not read. First datasheet: not read (SGxxxxCAN_E_Ver3.0 carries copyright 2025). Notices: not read. Distributor: JLCPCB in stock; Digi-Key Active for SG3225CAN 40.0000M-TJGA3 (22:19:55Z)",
+      "second_source": "alternate: SG-8101CE 40.000000MHz TBGPA (C390554), passes rules 1 to 4 (JLCPCB 853, presale 847, 22:16:41Z) with the same package, footprint and pad functions (data sheets, read 22:16:51Z); pin 1 tied to the 3.3 V rail suits both. The Digi-Key route fails: stock 15 against the gate of 50 (22:19:55Z)",
+      "alternates": [
+       "SG-8101CE 40.000000MHz TBGPA (C390554): same footprint, +/-15 ppm"
+      ],
+      "driver_in_shared": "none: a clock needs no driver; the MCP2518FD's OSC register selects it",
+      "reason": "P2's exclusion reason ('no second source shown') does not hold: the alternate route of rule 5 passes with SG-8101CE, and Digi-Key does list the part (15). Ranked 3 below SG-8101CE on tolerance (+/-50 against +/-15 ppm) and JLCPCB stock (91 against 853); above X1G0041710150 because its number is in the data sheet.",
+      "second_source_route": "alternate",
+      "second_source_part": "SG-8101CE 40.000000MHz TBGPA"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "DSC1001DL5-040.0000",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   }
+  ],
+  "report": [
+   {
+    "figure": "frames held: SG-8101CE 40.000000MHz TBGPA",
+    "value": "not applicable: a clock source stores no frames",
+    "source": "SG-8101CE data sheet, https://download.epsondevice.com/td/pdf/app/SG-8101CE_en.pdf, read 2026-10-01T22:16:51Z"
+   },
+   {
+    "figure": "clock tolerance: SG-8101CE 40.000000MHz TBGPA",
+    "value": "+/-15 ppm at -40 to +85 degC including initial tolerance, temperature, voltage, load and first-year ageing at +25 degC; ageing after the first year not stated. Against the external port's +/-3,876 ppm (V27) and the link's +/-5,000 ppm (V26): pass",
+    "source": "SG-8101CE data sheet page 2, table 4 and note *1, https://download.epsondevice.com/td/pdf/app/SG-8101CE_en.pdf, read 2026-10-01T22:16:51Z"
+   },
+   {
+    "figure": "frames held: X1G0059610009",
+    "value": "not applicable: a clock source stores no frames",
+    "source": "SG3225CAN data sheet, https://download.epsondevice.com/td/pdf/app/SG3225CAN_en.pdf, read 2026-10-01T22:16:51Z"
+   },
+   {
+    "figure": "clock tolerance: X1G0059610009",
+    "value": "+/-50 ppm at -40 to +85 degC including initial tolerance, temperature, voltage and load; ageing +/-3 ppm in the first year at +25 degC; later ageing not stated. Against +/-3,876 ppm (V27) and +/-5,000 ppm (V26): pass",
+    "source": "SG3225CAN data sheet page 7, table 4, https://download.epsondevice.com/td/pdf/app/SG3225CAN_en.pdf, read 2026-10-01T22:16:51Z"
+   },
+   {
+    "figure": "Digi-Key stock of SG3225CAN 40 MHz",
+    "value": "SG3225CAN 40.0000M-TJGA3: Active, stock 15, lead 16 weeks. P2's report says its search for 'SG3225CAN 40.000000M-TJGA3' returned no product; the name Digi-Key uses is '40.0000M'. Stock 15 is under the gate of 50, so X1G0059610009's second source is the alternate SG-8101CE",
+    "source": "vendors.py digikey-search SG3225CAN --limit 30 (https://api.digikey.com/products/v4/search/keyword), read 2026-10-01T22:19:55Z"
+   },
+   {
+    "figure": "Digi-Key stock of SG-8101CE 40 MHz",
+    "value": "SG-8101CE 40.0000M-TBGPA0: Active, stock 0, lead 6 weeks, minimum order 4,000 (tape and reel); other 40 MHz variants (TBGSA0, TCHPA0, TCHSA0) also 0; a bulk listing 'SG-8101CE 40.000000 MHZ TCHPA' is Obsolete. The Digi-Key route of rule 5 fails for it",
+    "source": "vendors.py digikey-search 'SG-8101CE 40.0000M' (https://api.digikey.com/products/v4/search/keyword), read 2026-10-01T22:17:10Z"
+   },
+   {
+    "figure": "Epson lifecycle evidence",
+    "value": "The SG-8101CE and SG3225CAN pages carry no lifecycle status in their bodies, so the manufacturer status is not read and is reported to the owner. Epson's Discontinued Products pages (SPXO, Programmable SPXO) list neither part as discontinued; they name both as suggested alternatives to discontinued SG-310S*F parts. The SPXO page lists SG7050CAN and SG5032CAN as Discontinued (21-006E_EOL), which is a further reason, beside P2's, that X1G0044810015 (SG7050CAN) is not a candidate. SG-210STF is on neither page. SG-8002CE and SG-8002CA are 'Not recommended for new design (June/2026)'",
+    "source": "https://www.epsondevice.com/crystal/en/products/discon/spxo/ (read 2026-10-01T22:17:32Z) and /programmable/ (22:17:33Z); sg8101ce.html (22:17:15Z); sg3225can.html (22:20:34Z)"
+   },
+   {
+    "figure": "Oscillator supply ramp",
+    "value": "SG-8101CE: VCC rise from 0 to 90 % between 5 us and 500 ms; SG3225CAN: more than 150 us. The IO board's 3.3 V ramp time is not stated (IOBoard.md line 414), so neither limit is checked; it is an input for R5 and P5. A board whose ramp is under 150 us excludes the SG3225CAN and keeps the SG-8101CE",
+    "source": "SG-8101CE data sheet page 2, table 3; SG3225CAN data sheet page 7, table 3 (read 2026-10-01T22:16:51Z); checkout 08042b06b2dc hardware/docs/IOBoard.md:414"
+   },
+   {
+    "figure": "Footprint match of SG-8101CE and SG3225CAN",
+    "value": "Both outline pages show 3.2 +/-0.2 x 2.5 +/-0.2 x 1.05 +/-0.15 mm and the same recommended footprint: 1.4 x 1.2 mm pads, 2.4 mm horizontal and 1.9 mm vertical centres. Pin 1 is OE or ST, which the SG-8101CE data sheet forbids leaving open and the SG3225CAN accepts open or high; tied to the 3.3 V rail, it suits both",
+    "source": "SG-8101CE data sheet page 30; SG3225CAN data sheet page 24, read 2026-10-01T22:16:51Z (page images read)"
+   },
+   {
+    "figure": "P3's SG-8101CE figures re-read",
+    "value": "All figures P3 gave hold in the data sheet: +/-15 ppm, VCC 1.62 to 3.63 V, symmetry 45 to 55 %, tr/tf 6 ns max (code A, fo <= 40 MHz), VOH 90 % VCC at -3.0 mA, VOL 10 % VCC at 3.0 mA, ICC 4.4 mA max, start-up 3 ms max, ordering code T BG P A. JLCPCB C390554: stock 853, presale 847, expand, 0.7023 USD at 10, mfr part 'SG-8101CE 40.000000MHz TBGPA'",
+    "source": "SG-8101CE data sheet pages 2 and 3 (read 2026-10-01T22:16:51Z); vendors.py jlcpcb C390554 (read 2026-10-01T22:16:41Z)"
+   },
+   {
+    "figure": "External CAN transceiver: price correction",
+    "value": "P2's reason for TCAN1472VDRQ1 says 'lowest price of the three'. At 10 pieces TCAN1472VDRQ1 is 1.19 USD, TCAN1472VDRBRQ1 0.9299 and TCAN1462VDRBRQ1 3.5098. The order is kept: rank 1 has the same part at Digi-Key (5,108) as its second source and a hand-solderable SOIC-8 footprint; its JLCPCB stock of 130 is the thin margin",
+    "source": "P2 records of TCAN1472VDRQ1 (C43116843, 2026-10-01T21:40:48Z) and TCAN1472VDRBRQ1 (C48736736, 21:40:49Z); vendors.py jlcpcb"
+   },
+   {
+    "figure": "Re-rank checks of P2's loop delays",
+    "value": "TCAN3413: tPROP(LOOP1) and tPROP(LOOP2) 180 ns max at VCC = VIO = 3 to 3.6 V (190 ns at VIO 2.25 to 2.75 V): over the external port's 172 ns, under the link's 347 ns. TCAN1472-Q1: 155 and 160 ns max at VIO 3 to 3.6 V; ILKG_STB(OFF) -1 to +1 uA at STB = 5.5 V; tMODE 30 us. These match P2's figures",
+    "source": "P2's saved copies of SLLSFS8A table 5.9 and SLLSFW8A tables 5.8 and 5.9 (read by P2 2026-10-01T21:35:16Z), re-read in the files by this re-rank at 2026-10-01T22:15Z to 22:20Z"
+   },
+   {
+    "figure": "Digi-Key readings of the re-rank",
+    "value": "4 calls from 2026-10-01T22:17:10Z to 22:19:55Z: one keyword search for the SG-8101CE and three for the SG3225CAN; x-ratelimit-remaining 913 after the first and 910 after the last; none came back cached. JLCPCB: 4 reads (C390554, C7504304, C256001, C390561) at 22:16:41Z to 22:16:42Z. C256001 reads 910, presale 881, unchanged from P2",
+    "source": "python3 /home/claude/rcbench-research/round2/tools/b194d854ece576a1/vendors.py digikey-search and jlcpcb"
+   }
+  ]
+ }
+}

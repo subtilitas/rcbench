@@ -1,0 +1,526 @@
+{
+ "role": "P4",
+ "category": "R1",
+ "label": "P4-stock-R1",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "Microcontroller",
+    "part": "RP2354B",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "held quantity",
+      "stated": "20 held (2026-09-25) against a need of 10: 5 boards x 2 placements",
+      "read": "inventory-2026-09-25.csv row RP2354B, C39843328: JLCPCB Parts Qty 20, Global Sourcing 0, Consigned 0; 20 >= 10. The marking (stepping) on the held parts is not read, so whether they are A4 is not known (PCN 28 ends the other steppings).",
+      "source": "/home/claude/rcbench-research/round2/checkout-08042b06b2dc/hardware/docs/inventory-2026-09-25.csv; Research.md Held parts",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:12:29Z"
+     },
+     {
+      "figure": "stock",
+      "stated": "stockCount 2535 (P2 21:32:18Z; re-read 22:03:53Z), gate 50",
+      "read": "stockCount 2535, 2535 >= 50 (S4: max(5 x 10, 50)); LCSC stockNumber 2575",
+      "source": "python3 vendors.py jlcpcb C39843328 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:13Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 2418",
+      "read": "canPresaleNumber 2418, not negative",
+      "source": "python3 vendors.py jlcpcb C39843328 (JLCPCB selectSmtComponentList)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:13Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "in production (Raspberry Pi); RP2350 family in production until at least January 2045",
+      "read": "Raspberry Pi product page lists RP2354B (48 GPIO, 10x10 QFN80, 2MB stacked flash) and states 'RP2350 will remain in production until at least January 2045'; HTTP 200",
+      "source": "https://www.raspberrypi.com/products/rp2350/",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:09:06Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "one PCN listed, none an end-of-life notice for A4",
+      "read": "PCN listing holds one notice, 'RP235x A4 stepping PCN' (PCN 28, 1 Jun 2025, release 2 29 Jul 2025; PDF SHA-256 a626b311...1300a). It names RP2350A and RP2350B, not RP2354, and says 'Mass production will move to A4 in July 2025 and all other variants are now EOL': an end of life of the other steppings, not of A4. JLCPCB erpComponentName SC1512(13)-A4 and the Digi-Key SKU are A4. No end-of-life or last-time-buy notice for the A4 part; Digi-Key end_of_life false, discontinued false.",
+      "source": "https://pip.raspberrypi.com/categories/1263-pcn (22:09:07Z); https://pip-assets.raspberrypi.com/categories/1263-pcn/documents/RP-008771-CC-2-RP235x%20A4%20stepping%20PCN.pdf (22:10:22Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:10:22Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2 a board, a main and a measurement coprocessor (owner, 2026-09-30)",
+      "read": "2: IOBoard.md:61 'two RP2354B a board, a main coprocessor and a measurement coprocessor'; candidate count 2 >= 2",
+      "source": "hardware/docs/IOBoard.md:61, :102 in checkout 08042b06b2dc",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:07:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C39843328",
+      "read": "IOBoard.md:61 places it on the IO board; LCSC number C39843328 present; the two agree",
+      "source": "hardware/docs/IOBoard.md:61; vendors.py jlcpcb C39843328",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:13Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "until at least January 2045",
+      "read": "'RP2350 will remain in production until at least January 2045' (family page, under Obsolescence); not a gate under S5",
+      "source": "https://www.raspberrypi.com/products/rp2350/",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:09:06Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "RP2350 datasheet initial release 8 August 2024, over 12 months",
+      "read": "RP2350 datasheet documentation release history: '8 August 2024 - Initial release' (build 2025-07-29, SHA-256 2877d0f2...4be8). 25 months before today. The first revision that names the RP2354B alone is not separable; the part table lists it. Not flagged.",
+      "source": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, Appendix H",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:09:58Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "LCSC normal; Digi-Key Active; agrees with the maker",
+      "read": "JLCPCB: listed and orderable (stockCount 2535), the API result carries no status field. LCSC productCycle 'normal', stockNumber 2575. Digi-Key SC1512(13)-A4 ProductStatus Active. All agree with the maker's in production.",
+      "source": "vendors.py jlcpcb C39843328; https://www.lcsc.com/product-detail/C39843328.html; vendors.py digikey 'SC1512(13)-A4' (https://api.digikey.com/products/v4/search/SC1512%2813%29-A4/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:31Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "22 weeks",
+      "read": "lead_weeks 22 (Digi-Key manufacturer lead time, SC1512(13)-A4)",
+      "source": "vendors.py digikey 'SC1512(13)-A4' (Digi-Key API productdetails, cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T21:38:01Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C39843328 is RP2354B, QFN-80-EP 10 x 10 mm",
+      "read": "Exact JLCPCB result for C39843328: part RP2354B, maker_label Raspberry Pi, package QFN-80-EP(10x10), erpComponentName SC1512(13)-A4",
+      "source": "vendors.py jlcpcb C39843328",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:13Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand; S6 allows both",
+      "source": "vendors.py jlcpcb C39843328",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:13Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key SC1512(13)-A4 stock_available 3560 >= 50, Active",
+      "read": "stock_available 3560 (cut tape; 2500 on tape and reel) >= 50, Active. Digi-Key has no RP2354B listing under that name (productdetails RP2354B HTTP 404, 22:08:26Z); keyword search 'RP2354B' (22:10:46Z) returns SC1512(13)-A4 and SC1512-A4 (6125, Active). The API result carries no description, so the identity of SC1512(13)-A4 as the RP2354B rests on JLCPCB's erpComponentName for C39843328 carrying the same string; both Digi-Key products pass the gate.",
+      "source": "vendors.py digikey 'SC1512(13)-A4' (https://api.digikey.com/products/v4/search/SC1512%2813%29-A4/productdetails, read 21:38:01Z, cached); vendors.py digikey-search RP2354B (https://api.digikey.com/products/v4/search/keyword, 22:10:46Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T21:38:01Z"
+     }
+    ]
+   },
+   {
+    "function": "12 MHz crystal",
+    "part": "ABM8-272-T3",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 13736 (P2 21:32:18Z), re-read 13725, gate 50",
+      "read": "stockCount 13725 >= 50 (need 5 x 2 = 10; S4 max(50, 50))",
+      "source": "python3 vendors.py jlcpcb C20625731 (JLCPCB selectSmtComponentList)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:15Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 13116",
+      "read": "canPresaleNumber 13105, not negative",
+      "source": "python3 vendors.py jlcpcb C20625731",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:15Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "maker status not read (Abracon page 404); Digi-Key Active",
+      "read": "not read at the maker: https://abracon.com/parametric/crystals/ABM8-272-T3 answered HTTP 404 (22:09:08Z); also 404 for the lowercase path, a trailing slash, /crystals/ and the product-lineup path (22:09:20Z to 22:09:42Z); the parametric listing page lists no row. Distributor figure: Digi-Key ProductStatus Active; LCSC productCycle normal. Recorded as not read and reported to the owner as the Lifecycle check sets out; not a fail under that table, so passes is true, and it stays open for the owner.",
+      "source": "https://abracon.com/parametric/crystals/ABM8-272-T3 (HTTP 404); vendors.py digikey ABM8-272-T3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:09:08Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "Abracon PCN listing not read; Digi-Key end_of_life false",
+      "read": "No end-of-life or last-time-buy notice found. Abracon publishes no PCN or discontinuation listing at the paths tried (abracon.com/discontinued-products and /product-change-notifications, HTTP 404); Digi-Key end_of_life false, discontinued false.",
+      "source": "https://abracon.com/discontinued-products (404, 22:10:35Z); vendors.py digikey ABM8-272-T3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:10:36Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2 a board, one on XIN/XOUT of each RP2354B",
+      "read": "2: one crystal per RP2354B, two RP2354B a board (IOBoard.md:61, :102, :140); candidate count 2 >= 2",
+      "source": "hardware/docs/IOBoard.md:61, :102, :140",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:07:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C20625731",
+      "read": "IOBoard.md:140 places the crystal on the IO board; LCSC number C20625731 present",
+      "source": "hardware/docs/IOBoard.md:140; vendors.py jlcpcb C20625731",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:15Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no Abracon longevity page found; not read",
+      "read": "not read: no longevity or lifecycle programme page found on Abracon's product page, quality page (https://abracon.com/quality, HTTP 200, no commitment text) or listings; none published as far as read. Not a gate under S5.",
+      "source": "https://abracon.com/quality",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:11:59Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first revision date not read; Revision B Sept 16th 2024, over 12 months",
+      "read": "not read: first revision date; the served datasheet is Drawing 456603 Revision B, Date of Issue Sept. 16th, 2024 (SHA-256 aead22b6...ae91), 24.5 months before today, so over 12 months. Not flagged.",
+      "source": "https://abracon.com/datasheets/ABM8-272-T3.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:09:55Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "LCSC normal; Digi-Key Active; maker status not read",
+      "read": "LCSC productCycle normal (stockNumber 13765); Digi-Key Active; JLCPCB listed with stockCount 13725, no status field. No maker status to disagree with: maker status not read.",
+      "source": "https://www.lcsc.com/product-detail/C20625731.html; vendors.py digikey ABM8-272-T3; vendors.py jlcpcb C20625731",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:41Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "14 weeks",
+      "read": "lead_weeks 14 (Digi-Key manufacturer lead time)",
+      "source": "vendors.py digikey ABM8-272-T3 (https://api.digikey.com/products/v4/search/ABM8-272-T3/productdetails, cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T21:38:03Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C20625731 is ABM8-272-T3, SMD3225-4P",
+      "read": "Exact JLCPCB result: part ABM8-272-T3, maker_label Abracon LLC, package SMD3225-4P, description 12MHz 10pF 50 Ohm +/-30ppm",
+      "source": "vendors.py jlcpcb C20625731",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:15Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand; S6 allows both",
+      "source": "vendors.py jlcpcb C20625731",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:15Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key ABM8-272-T3 stock_available 28204 >= 50, Active",
+      "read": "stock_available 28204 (cut tape; 27000 on tape and reel) >= 50, Active",
+      "source": "vendors.py digikey ABM8-272-T3 (cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T21:38:03Z"
+     }
+    ]
+   },
+   {
+    "function": "Core regulator inductor",
+    "part": "AOTA-B201610S3R3-101-T",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 3373, gate 50",
+      "read": "stockCount 3373 >= 50 (need 10)",
+      "source": "python3 vendors.py jlcpcb C42411119 (JLCPCB selectSmtComponentList)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:16Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 2898",
+      "read": "canPresaleNumber 2898, not negative",
+      "source": "python3 vendors.py jlcpcb C42411119",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:16Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Active (Abracon page: 'Part Status Active')",
+      "read": "Abracon product page body reads 'Part Status Active'; HTTP 200",
+      "source": "https://abracon.com/parametric/inductors/AOTA-B201610S3R3-101-T",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:09:08Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "Abracon PCN listing not read; Digi-Key end_of_life false",
+      "read": "No end-of-life or last-time-buy notice found. The product page carries none; Abracon's discontinuation and PCN paths tried answered HTTP 404; Digi-Key end_of_life false, discontinued false.",
+      "source": "https://abracon.com/parametric/inductors/AOTA-B201610S3R3-101-T; https://abracon.com/discontinued-products (404); vendors.py digikey AOTA-B201610S3R3-101-T",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:10:36Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2 a board, one on VREG_LX of each RP2354B",
+      "read": "2: one inductor per RP2354B, two RP2354B a board (IOBoard.md:61, :102, :140); candidate count 2 >= 2",
+      "source": "hardware/docs/IOBoard.md:61, :102, :140",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:07:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C42411119",
+      "read": "IOBoard.md:140 places the inductor on the IO board; LCSC number C42411119 present",
+      "source": "hardware/docs/IOBoard.md:140; vendors.py jlcpcb C42411119",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:16Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no Abracon longevity page found; not read",
+      "read": "not read: no Abracon longevity or lifecycle programme page found (product page and https://abracon.com/quality carry none). Not a gate under S5.",
+      "source": "https://abracon.com/parametric/inductors/AOTA-B201610S3R3-101-T; https://abracon.com/quality",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:11:59Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "REVISION A 9/13/2024, stated as 12.6 months, not flagged",
+      "read": "REVISION A : 9/13/2024 on every page (SHA-256 b15dcb32...a7827), the first revision shown; 24.6 months before today (the stated 12.6 months is wrong by 12 months). Over 12 months either way. Not flagged.",
+      "source": "https://abracon.com/datasheets/AOTA-B201610S3R3-101-T.pdf",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-10-01T22:09:56Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "LCSC normal; Digi-Key Active; agrees with the maker",
+      "read": "LCSC productCycle normal (stockNumber 3300); Digi-Key Active; JLCPCB listed, stockCount 3373, no status field. Agree with the maker's Active.",
+      "source": "https://www.lcsc.com/product-detail/C42411119.html; vendors.py digikey AOTA-B201610S3R3-101-T; vendors.py jlcpcb C42411119",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:41Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks",
+      "read": "lead_weeks 16 (Digi-Key manufacturer lead time)",
+      "source": "vendors.py digikey AOTA-B201610S3R3-101-T (https://api.digikey.com/products/v4/search/AOTA-B201610S3R3-101-T/productdetails, cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T21:38:06Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C42411119 is AOTA-B201610S3R3-101-T, 0806 (2016 metric)",
+      "read": "Exact JLCPCB result: part AOTA-B201610S3R3-101-T, maker_label Abracon LLC, package 0806, description 0806 Molding Power Inductors",
+      "source": "vendors.py jlcpcb C42411119",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:16Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand; S6 allows both",
+      "source": "vendors.py jlcpcb C42411119",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:16Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key AOTA-B201610S3R3-101-T stock_available 28061 >= 50, Active",
+      "read": "stock_available 28061 (cut tape; 27000 on tape and reel) >= 50, Active",
+      "source": "vendors.py digikey AOTA-B201610S3R3-101-T (cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T21:38:06Z"
+     }
+    ]
+   },
+   {
+    "function": "USB protection",
+    "part": "TPD6E05U06RVZR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 6716, gate 50",
+      "read": "stockCount 6716 >= 50 (need 5 x 2 = 10, top of the 1 to 2 range)",
+      "source": "python3 vendors.py jlcpcb C962978 (JLCPCB selectSmtComponentList)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:18Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 6257",
+      "read": "canPresaleNumber 6257, not negative",
+      "source": "python3 vendors.py jlcpcb C962978",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:18Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (TI product page meta status)",
+      "read": "<meta name=\"status\" content=\"ACTIVE\"> on the TI product page; HTTP 200",
+      "source": "https://www.ti.com/product/TPD6E05U06",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:09:09Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "TI PCN listing not read; Digi-Key end_of_life false",
+      "read": "No end-of-life or last-time-buy notice found. TI's product-change-notification page (https://www.ti.com/support-quality/quality-policies-procedures/product-change-notification.html, HTTP 200, 14 kB) is a search form and lists no notice without a query, so the listing is not read; the product page body carries no end-of-life text; Digi-Key end_of_life false, discontinued false.",
+      "source": "https://www.ti.com/product/TPD6E05U06; vendors.py digikey TPD6E05U06RVZR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:10:35Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2 (top of the range 1 to 2): one for the main coprocessor's USB port, a second if the measurement coprocessor has its own, which is not stated",
+      "read": "IOBoard.md:148 'one USB device port on the main coprocessor's own USB pins'; whether the measurement coprocessor has a USB port is not stated, so the range is 1 to 2 and the top is 2; candidate count 2 >= 2",
+      "source": "hardware/docs/IOBoard.md:115, :148",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:07:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C962978",
+      "read": "IOBoard.md:148 places the USB port and its protection on the IO board; LCSC number C962978 present",
+      "source": "hardware/docs/IOBoard.md:148; vendors.py jlcpcb C962978",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:18Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no TI commitment for the part read",
+      "read": "No per-part commitment. TI's programme page states 'TI's product life cycles are typically 10 to 15 years and often extend longer' and that standard products are not eligible for obsolescence while sold within the last five years, in production under 10 years, or in customer demand. Not a gate under S5.",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:11:58Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet revision December 2012",
+      "read": "SLVSBO7O 'DECEMBER 2012 - REVISED AUGUST 2024' (SHA-256 c167cf1e...c6e3 02); revision history lists revisions N (Feb 2022) and O (Aug 2024) of the shared TPD1E05U06, TPD4E05U06, TPD6E05U06 datasheet. 165 months, over 12. The date the RVZ package or this device was added is not read. Not flagged.",
+      "source": "https://www.ti.com/lit/ds/symlink/tpd6e05u06.pdf, section 9",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:09:57Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "LCSC normal; Digi-Key Active; agrees with the maker",
+      "read": "LCSC productCycle normal (stockNumber 6101); Digi-Key Active; JLCPCB listed, stockCount 6716, no status field. Agree with the maker's ACTIVE.",
+      "source": "https://www.lcsc.com/product-detail/C962978.html; vendors.py digikey TPD6E05U06RVZR; vendors.py jlcpcb C962978",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:34Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "12 weeks",
+      "read": "lead_weeks 12 (Digi-Key manufacturer lead time)",
+      "source": "vendors.py digikey TPD6E05U06RVZR (https://api.digikey.com/products/v4/search/TPD6E05U06RVZR/productdetails, cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T21:38:11Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C962978 is TPD6E05U06RVZR, USON-14 (RVZ) 1.4 x 3.5 mm",
+      "read": "Exact JLCPCB result: part TPD6E05U06RVZR, maker_label Texas Instruments, package USON-14(1.4x3.5)",
+      "source": "vendors.py jlcpcb C962978",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:18Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand; S6 allows both",
+      "source": "vendors.py jlcpcb C962978",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T22:08:18Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key TPD6E05U06RVZR stock_available 38411 >= 50, Active",
+      "read": "stock_available 38411 (cut tape; 36000 on tape and reel) >= 50, Active",
+      "source": "vendors.py digikey TPD6E05U06RVZR (cached reading of this UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-01T21:38:11Z"
+     }
+    ]
+   }
+  ]
+ }
+}
