@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R5",
+ "label": "adjudicator-R5-3",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "function": "re-rank report: LM74910 / LM74900 overvoltage band",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands, but only on the figure's last sentence. The LM74910 / LM74900 band itself reproduces. With 59.7 kOhm over 2.00 kOhm, 0.1 % resistors, I(OV) 200 nA and R(SW) 10 to 46 Ohm, the trip is 18.0034 to 19.4996 V and the release is 16.402 to 17.736 V. That leaves 3.4 mV over the 18.0 V floor and 0.39 mV under the 19.5 V ceiling. The comparison sentence is wrong. It says \"The LM74800 has 0.45 V and 0.23 V of margin at the same two ends.\" FU-2I's own LM74800 design (P2 ratio 15.159, 0.1 % resistors, 2 mV leakage term) trips at 18.051 / 18.661 / 19.273 V. Its margin over the 18.0 V floor (V319) is therefore 0.051 V, not 0.45 V. The 0.23 V margin under the TVS1800's 19.5 V minimum breakdown is correct. No LM74800 margin of 0.45 V appears at these two ends in any FU-2H or FU-2I record. The figure as reported misstates how much wider the LM74800's low-end margin is than the LM74910's, and the reports use that margin to compare the two candidates. The scope is the function, because the error lies in this report's arithmetic against this function's floor and ceiling and not in either part.",
+  "evidence": "LM7480-Q1 SNOSD95C section 7.5: V(OVR) 1.195 / 1.231 / 1.267 V, V(OVF) 1.091 / 1.13 / 1.159 V, I(OV) 53 nA typical and 200 nA maximum, R(SW) 10 / 19.5 / 46 Ohm. LM74910-Q1 SNOSDE6C section 6.5: V(OVR) 0.585 / 0.6 / 0.63 V, V(OVF) 0.533 / 0.55 / 0.573 V, I(OV) 50 nA typical and 200 nA maximum, R(SW) 10 / 22.5 / 46 Ohm. All of these match the claim and the verifier. The FU-2I P2 calculation (scratch/FU-2I/P2-R5/calc.py), re-run, gives an LM74800 ratio of 15.159 with a band of 15.1307 to 15.1873. That puts the trip at 18.051 / 18.661 / 19.273 V and the release at 16.477 / 17.13 / 17.633 V. The margins are 18.051 - 18.0 = 0.051 V and 19.5 - 19.273 = 0.227 V. The FU-2I re-rank's own final.json gives the same LM74800 trip in its rank-1 reasons (\"trip 18.05 / 18.66 / 19.27 V, 0.23 V under the TVS1800's 19.5 V minimum breakdown\"). The LM74910 calculation (scratch/FU-2I/P4-datasheet-R5/calc2.py), re-run, gives (18.00335, 19.49961, 16.40199, 17.73645) V, with margins of 0.00335 V and 0.00039 V. In FU-2H, the LM74800 band was 20.35 to 21.66 V against a 20.0 to 22.0 V window, which gives margins of 0.35 V and 0.34 V. So 0.45 V is not an LM74800 margin at either the current ends or the earlier ones. The requirement is Research.md V319 (owner, 2026-10-03): the cut-off trips above 18 V. The 19.5 V ceiling is the TVS1800's minimum breakdown.",
+  "source": "https://www.ti.com/lit/ds/symlink/lm7480-q1.pdf SNOSD95C section 7.5, read 2026-10-03T02:09:25Z via vendors.py fetch. https://www.ti.com/lit/ds/symlink/lm74910-q1.pdf SNOSDE6C section 6.5, read 2026-10-03T02:09:26Z via vendors.py fetch. Arithmetic: scratch/FU-2I/P2-R5/calc.py and scratch/FU-2I/P4-datasheet-R5/calc2.py, re-run 2026-10-03. scratch/FU-2I/rerank-R5/final.json. results/round2/FU-2H/004-P2-R5.json. Research.md V319 at 5f5c0a61c4f7.",
+  "read_at": "2026-10-03T02:09:26Z",
+  "scope": "function"
+ }
+}

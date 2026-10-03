@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R5",
+ "label": "adjudicator-R5",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "function": "found V96",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands on point (2). Point (1) holds in part. The claim quotes 'auch nicht kurzzeitig' (not even briefly) from SLS_Sicherheitshinweise_DE_A4.pdf section 4. That section does not contain the words. Section 4 says only 'nie unter 3,3 V pro Zelle'. The words appear in the same shop's LiPoFAQV15c.pdf, in the paragraph 'Zusammenfassend'. The upper bound on the filter rests on this quote, so as written the figure cites a source that does not carry it. The substance can be restated with LiPoFAQV15c as its source. Point (1): SLUUBT5C, note after 3.1, says a 1 s granularity delay 'can have an average trigger delay equal to the delay setting plus 1.5 s'. At CUV:Delay 0 s that is an average of 1.5 s. The Technical Reference Manual (TRM) states no maximum. 'Triggers on average within up to 1.5 s' is acceptable as a statement about the average. It is not a bound on any single trip, and the figure must not use it as one. CUV:Delay is confirmed as U1, 0 to 255 s, default 2 s (TRM 19.10.1.2). The ruling concerns how this figure is sourced and worded. It does not concern any part, so scope is function.",
+  "evidence": "SLS_Sicherheitshinweise_DE_A4.pdf, section '4. Betrieb und Entladung', text extracted with pdftotext: 'Entladeschluss: Entladen Sie den Akku unter Last nie unter 3,3 V pro Zelle. Im Ruhezustand sollte die Spannung pro Zelle nicht unter 3,75 V fallen'. In the whole document 'kurzzeitig' appears once, at the 60C discharge rating in section 3. LiPoFAQV15c.pdf, 'Zusammenfassend:': 'Entladen Sie den Akku unter Last nie tiefer als 3,3V pro Zelle, auch nicht kurzzeitig.' TRM SLUUBT5C (Nov 2018, rev. June 2021), Note after 3.1: 'A delay setting with 1-s granularity can have an average trigger delay equal to the delay setting plus 1.5 s.' No maximum delay is stated. 3.2 Trip: 'Min cell voltage1..7 <= CUV:Threshold for CUV:Delay duration'. 19.10.1.2 Protections/CUV/Delay: Type U1, Min 0, Max 255, Default 2, Unit s.",
+  "source": "https://www.stefansliposhop.de/media/general/SLS_Sicherheitshinweise_DE_A4.pdf section 4; https://www.stefansliposhop.de/media/general/LiPoFAQV15c.pdf 'Zusammenfassend'; https://www.ti.com/lit/pdf/SLUUBT5 (final URL https://www.ti.com/lit/ug/sluubt5c/sluubt5c.pdf), Note after 3.1, 3.2, 19.10.1.2; each fetched with vendors.py fetch --out and read with pdftotext -layout",
+  "read_at": "2026-10-03T02:06:03Z (SLS safety sheet and LiPoFAQV15c), 2026-10-03T02:06:04Z (TRM SLUUBT5C)",
+  "scope": "function"
+ }
+}

@@ -1,0 +1,61 @@
+{
+ "role": "P3",
+ "category": "R8",
+ "label": "P3-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "missed": [],
+  "missed_functions": [],
+  "exclusions_not_holding": [
+   {
+    "functions": [
+     "External shunt"
+    ],
+    "part": "WSBS8518L1000JT34, WSBS8518L1000JK34, WSBS8518L1000JT35",
+    "reason_given": "FU-2H P3 finds (TCR +/-65 ppm/degC, 1.31 A of 2.833 A, Digi-Key 81, 97, 79 on 2026-10-02T20:59:26Z); not the owner's part (V313), not recorded beyond three",
+    "why_it_fails": "The two clauses do not separate these parts from P2's own rank 3. V313 names BAS-M-R0001-E-5.0 with BAS-M-R0001-AE-5.0 and replaces WSBE8518L1000JKA2, yet P2 ranks WSBE8518L1000JKA2 third, so 'not the owner's part' does not exclude. The cap of three drops a part only when three better ones remain; rank 3 has no second source by rule 5 (P2's own words), while JT34 and JK34 differ only in the packaging code (T tray, K bulk) of the ordering code, so JK34 is the same-mounting alternate that passes rules 1 to 4. Datasheet WSBS8518...34 (document 30354, revision 26-May-2026, https://www.vishay.com/docs/30354/wsbs8518-34.pdf, read 2026-10-03T00:49:45Z): 100 uOhm +/-5 %, TCR +/-65 ppm/degC for 100 uOhm, thermal EMF < 1.25 uV/degC, 36 W at 70 degC terminal, -65 to +170 degC, Ni-Cr, voltage sensing locations drawn. JT35 is the pinned version (document 30355, https://www.vishay.com/docs/30355/wsbs8518-35.pdf, read 2026-10-03T00:49:45Z). On P2's basis (terminal 50 degC, 105 uOhm, 9.45 W, 31.5 mV <= 40.96 mV, Rthi from the rating (170-70)/36 = 2.78 K/W because the sheet states none, rise 26.3 K): 65 ppm x 51.3 K x 300 A = 1.000 A plus EMF 1.25 uV/K x 26.3 K / 105 uOhm = 0.313 A, total 1.31 A against 2.833 A; at 15 A 25 mA against 125.7 mA. Digi-Key (vendors.py digikey, not cached): JT34 81 Tray, Active, 48 weeks, read 2026-10-03T00:50:05Z; JK34 97 Bulk, Active, 48 weeks, 00:50:07Z; JT35 79 Tray, Active, 48 weeks, 00:50:10Z. All are above the gate of 50. Vishay's page status is not read; Digi-Key's ProductStatus is the figure. WSBE8518L1000JKA2 reads 418 (Active, 48 weeks) in P2's search of 2026-10-03T00:14:25Z; WSBE8518L1000JK reads 53 and JKB2 10 in my keyword search 'WSBE8518' (2026-10-03T00:50:30Z), and the WSBE sheet (30424) draws no sense points for the unpinned part and a shrouded header for B2, so neither is a rule 5 alternate of JKA2."
+   },
+   {
+    "functions": [
+     "External shunt"
+    ],
+    "part": "CSM2F-8518-L100J01, CSM2F-8518-L100J02",
+    "reason_given": "FU-2H P3: the sheet states TCR +/-125 ppm/degC and EMF < 1.5 uV/K (2.30 A of 2.833 A; Digi-Key 167 and 99 on 2026-10-02T20:56:50Z); round 1's reason does not hold, but the part is not the owner's (V313); not recorded beyond three",
+    "why_it_fails": "Same inconsistency as above: P2 ranks WSBE8518L1000JKA2 third although V313 replaces it and it has no second source, so 'not the owner's part' and 'beyond three' do not exclude a part that passes every value and has an alternate. CSM2F-8518 tinned-terminal sheet (REV. 01/26, https://www.bourns.com/docs/product-datasheets/csm2f-8518-1.pdf, read 2026-10-03T00:54:24Z): 100 uOhm +/-5 %, 36 W at 70 degC terminal, TCR on test points +/-125 ppm/degC for 100 uOhm, alloy < 50 ppm/degC, thermal EMF < 1.50 uV/K for 100 uOhm, -40 to +170 degC, voltage test points marked. On P2's basis with Rthi 2.78 K/W from the rating: 125 ppm x 51.3 K x 300 A = 1.924 A plus EMF 1.5 uV/K x 26.3 K / 105 uOhm = 0.376 A, total 2.30 A against 2.833 A; at 15 A 48 mA against 125.7 mA. Caveat for J02: its sheet (csm2f-8518-2.pdf, same revision, read 2026-10-03T00:54:25Z) states +/-150 ppm/degC for 100 uOhm and no EMF figure, so its share (2.31 A of TCR plus the J01 EMF of 0.376 A = 2.68 A, margin 0.15 A) borrows the EMF from J01; J02 is the fully tinned alternate with the same body and holes. Digi-Key (vendors.py digikey, not cached): J01 167 Bulk, Active, 12 weeks, read 2026-10-03T00:50:12Z; J02 99 Bag, Active, 12 weeks, read 00:50:13Z. Both are above the gate of 50. Bourns' page status is not read."
+   },
+   {
+    "functions": [
+     "Onboard shunt"
+    ],
+    "part": "CSS2H-3920R-L200FE, CSS2H-3920R-L200F",
+    "reason_given": "Accuracy share not shown: +/-100 ppm/degC with no element-to-terminal thermal resistance (round 1 FU-B1)",
+    "why_it_fails": "The stated reason does not hold: the sheet gives what the share needs, and the drop stands on a different ground. Bourns CSS2H-3920 (REV. 01/26, https://www.bourns.com/docs/product-datasheets/css2h-3920.pdf, read 2026-10-03T00:30:09Z): CSS2H-3920R-L200x is 0.2 mOhm, 12 W at 70 degC terminal, with a terminal-temperature derating curve falling linearly to 0 at about 170 degC (40 % at 130 degC); TCR including copper terminals +/-100 ppm/degC for L200x (alloy alone +/-50 ppm/degC over 20 to 60 degC); no thermal EMF figure. Rthi follows from the rating as for the other parts: (170-70)/12 = 8.33 K/W. At 150 A on 202 uOhm (4.55 W) with the terminal at 100 degC the element is at 137.9 degC, and the TCR share is 100 ppm x 112.9 K x 150 A = 1.69 A against 1.4166 A. The part fails by 0.27 A with no EMF counted. The re-rank should drop it on that computed share. It passes rule 4 in the E reel: C4126121 stockCount 85, presale 83 (vendors.py jlcpcb, 2026-10-03T00:29:47Z); C2073640 (CSS2H-3920R-L200F) reads 21, under the gate of 50 (00:29:48Z)."
+   },
+   {
+    "functions": [
+     "Onboard shunt"
+    ],
+    "part": "BVE-Z-R0001-1.0",
+    "reason_given": "100 uOhm halves the onboard signal; three passing parts recorded (FU-2H Digi-Key search 2026-10-02T20:23:45Z: 4453, 41 weeks)",
+    "why_it_fails": "Neither clause is a requirement value. R <= 200 uOhm admits 100 uOhm: the INA228's share at 100 uOhm is at most 166.8 mA of V166's 1.5 A at 150 A, which leaves 1.333 A for the shunt. 'Three passing parts recorded' is the shortlist cap. A Digi-Key stock does not serve an onboard part: rule 1 needs an LCSC number and rule 4 the JLCPCB count. The drop stands on rule 4 at JLCPCB: C19842033 BVE-Z-R0001-1.0 stockCount 0, presale 0 (vendors.py jlcpcb, 2026-10-03T00:31:28Z); C6136045 (BVE-Z-R0001-5.0) also 0/0. The JLCPCB attribute of C19842033 lists TCR +/-200 ppm/degC (jlcparts copy; maker datasheet not read), which would also fail the 1.333 A share. The re-rank should record rule 4 as the reason."
+   },
+   {
+    "functions": [
+     "Onboard shunt temperature sensor"
+    ],
+    "part": "LM75BIMMX-3/NOPB (dropped together with TMP75AIDR, whose reason holds)",
+    "reason_given": "Accuracy: +/-3 degC at 100 degC",
+    "why_it_fails": "The figure is wrong for the LM75B. TI LM75B/LM75C (SNIS153D, https://www.ti.com/lit/ds/symlink/lm75b.pdf, read 2026-10-03T00:52:56Z) 6.5: +/-2 degC maximum from -25 to +100 degC and +/-3 degC only over -55 to +125 degC, at +VS = 3.3 V for the -3 parts; footnote 1: tested at the nominal supply, accuracy degrades typically 1 degC/V with variation of +VS. So at 100 degC the sheet reads +/-2 degC at a nominal 3.3 V, with no maximum over 3.201 to 3.399 V and no margin, the standing P2 gives LM75BD,118. The +/-3 degC at 100 degC holds for TMP75AIDR (SBOS288M Table 6.5, https://www.ti.com/lit/ds/symlink/tmp75.pdf, read 2026-10-03T00:5x Z via vendors.py fetch: TMP75 +/-2 degC maximum only over -25 to +85 degC, +/-3 degC over -40 to +125 degC). The drop of LM75BIMMX-3/NOPB stands as a no-margin pass not recorded beyond three, with accuracy over the rail band not stated as the recorded reason. C543061 stockCount 3729, presale 3719 (vendors.py jlcpcb, 2026-10-03T00:54:42Z)."
+   },
+   {
+    "functions": [
+     "alert shift register"
+    ],
+    "part": "TC74HC165AF(EL,F) (C7121109)",
+    "reason_given": "HC family, datasheet not read; three parts with levels stated over the rail are recorded",
+    "why_it_fails": "'Datasheet not read' is not a ground for a drop. The datasheet was read: TC74HC165AF data sheet, English, Mar 2014 (https://toshiba.semicon-storage.com/info/docget.jsp?did=11268&prodName=TC74HC165AF, read 2026-10-03T00:38:57Z). VCC (opr) is 2 to 6 V; DC characteristics list VIH 1.50, 3.15 and 4.20 V minimum and VIL 0.50, 1.35 and 1.80 V maximum at VCC 2.0, 4.5 and 6.0 V only. Levels are not stated over the rail 3.201 to 3.399 V, so the part fails on the same ground as the other HC parts, and the re-rank should record that ground. C7121109 stockCount 992, presale 992 (vendors.py jlcpcb, 2026-10-03T00:54:45Z)."
+   }
+  ]
+ }
+}

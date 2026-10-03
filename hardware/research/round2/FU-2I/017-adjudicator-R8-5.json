@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R8",
+ "label": "adjudicator-R8-5",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "function": "re-rank report: V319 and V318 against R8 (owner's answer of 2026-10-03: DC input 12 to 18 V, 12 V supply or 4S LiPo)",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands, scope function. The figure says \"No R8 requirement value changes\", and that is false. V171 is a value found for research. Its owner answer is \"for research (owner, 2026-09-28)\". The last P2 to find it, FU-2H, set the Port current monitor's input withstand to 20 V, \"the top of the DC input\". FU-2H's datasheet verifier confirmed it against \"Scope: 12 to 20 V DC input\". V319 replaces 12 to 20 V with 12 to 18 V. That moves the Port current monitor's input withstand requirement from 20 V to 18 V. The figure states that 18 V withstand itself, so it contradicts its own opening sentence. The rest of the figure holds. INA3221 SBOS576C 6.1 rates the IN+ and IN- common mode at -0.3 to 26 V, 8 V above 18 V. The 27 V bus hold of V318 is 1 V above 26 V. The INA228s sit on the ESC pack side. The conclusion therefore stands: lowering the DC input to 18 V keeps every R8 part inside its rating under a single fault. Only the \"no requirement value changes\" statement is refuted. The change relaxes the requirement, from 20 V to 18 V, and no R8 part fails because of it.",
+  "evidence": "Research.md:884 V171: \"What is the highest voltage, in V, a port current monitor must measure and withstand at its inputs?\", answer \"for research (owner, 2026-09-28)\". FU-2H 002-P2-R8.json, V171 found: \"Measure to 8.7 V ... withstand 20 V, the top of the DC input (owner, 2026-09-25)\". In the same file, Port current monitor requirement \"input withstand\" = \"20 V\", source \"V171 (found)\". FU-2H 011-P4-datasheet-R8.json, \"found V171\" confirmed, evidence \"Scope: 12 to 20 V DC input\". Research.md:1032 V319: \"A 12 V supply or a 4S LiPo pack ...: 12 to 18 V, in place of 12 to 20 V. The overvoltage cut-off trips above 18 V\" (owner, 2026-10-03). Research.md:1031 V318 holds the bus at or under 27 V for the cut-off window. INA3221 6.1 Absolute Maximum Ratings, read from the PDF fetched 2026-10-03T01:35:31Z (HTTP 200, 2,118,543 bytes): analog inputs IN+, IN- common mode -0.3 to 26 V; differential -26 to 26 V; VS 6 V. Revision C (September 2026). The resulting change is: Port current monitor input withstand, 20 V before V319, 18 V under V319.",
+  "source": "checkout 5f5c0a61c4f7 hardware/docs/Research.md lines 884 (V171), 1031 (V318), 1032 (V319); /home/claude/rcbench-research/round2/results/hardware/research/round2/FU-2H/002-P2-R8.json (V171 found value; Port current monitor 'input withstand'); /home/claude/rcbench-research/round2/results/hardware/research/round2/FU-2H/011-P4-datasheet-R8.json ('found V171'); https://www.ti.com/lit/ds/symlink/ina3221.pdf section 6.1 via vendors.py fetch, saved at /home/claude/rcbench-research/round2/scratch/FU-2I/adjudicator-R8/ina3221.pdf",
+  "read_at": "2026-10-03T01:35:31Z (INA3221 datasheet); Research.md, FU-2H P2 and P4 returns read 2026-10-03T01:33Z to 01:35Z",
+  "scope": "function"
+ }
+}

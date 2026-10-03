@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R8",
+ "label": "adjudicator-R8-6",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "function": "re-rank report: WSBS8518L1000JK35 status at Digi-Key",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The reading is right, but the conclusion drawn from it is not. Digi-Key lists WSBS8518L1000JK35 (Vishay Dale) with ProductStatus 'Discontinued at DigiKey', stock 50 and a lead time of 48 weeks. Vishay's product page for the WSBS8518 carries no status for each part number in its body. So the Lifecycle check (owner, 2026-10-02) reads Digi-Key's ProductStatus in its place. Under that rule, Active passes. Not For New Designs, Last Time Buy and Obsolete fail, and Preliminary fails under S5. 'Any other value is recorded and reported to the owner.' 'Discontinued at DigiKey' is a value outside that list. It describes Digi-Key's own stocking, and the same API record has discontinued=false and end_of_life=false. So JK35 neither passes nor fails the lifecycle gate: its status is recorded and reported to the owner. The claim 'fails the lifecycle gate, so WSBS8518L1000JT35 has no rule 5 alternate' does not follow. Its stock of 50 is at the rule 4 gate of 50.",
+  "evidence": "Digi-Key keyword search 'WSBS8518L1000' (--limit 50, cached, 20 products). WSBS8518L1000JK35, Vishay Dale: status 'Discontinued at DigiKey', stock_available 50, lead_weeks 48, discontinued false, end_of_life false, https://www.digikey.com/en/products/detail/vishay-dale/WSBS8518L1000JK35/6709546. The other 19 WSBS8518L1000 variants are Active, among them JT35 (stock 79) and JK34 (stock 97). Vishay's product page https://www.vishay.com/en/product/30134/ (HTTP 200, 765413 bytes, read 2026-10-03T01:36:18Z) does not name WSBS8518L1000 or JK35 anywhere in its body (0 matches) and carries no lifecycle status. The Vishay search URL for WSBS8518L1000JK35 returned HTTP 500 at 2026-10-03T01:36:12Z. Research.md, Lifecycle check, Manufacturer status row: where a product page carries no status in its body, Digi-Key's ProductStatus is read in its place. Its gate lists the failing ProductStatus values as Not For New Designs, Last Time Buy and Obsolete, plus Preliminary under S5. 'Any other value is recorded and reported to the owner.'",
+  "source": "python3 vendors.py digikey-search WSBS8518L1000 --limit 50 (https://api.digikey.com/products/v4/search/keyword, cached reading); vendors.py fetch https://www.vishay.com/en/product/30134/; checkout 5f5c0a61c4f7 hardware/docs/Research.md, Lifecycle check, line 288",
+  "read_at": "2026-10-03T00:58:26Z (Digi-Key search, cached); 2026-10-03T01:36:18Z (Vishay product page)",
+  "scope": "part"
+ }
+}

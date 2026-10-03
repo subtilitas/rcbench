@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R5",
+ "label": "adjudicator-R5-4",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "function": "re-rank report: TPS552882 against the TPS55288",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The claim says the TPS552882 adds two buck-leg MOSFETs and a sense resistor, \"against none for the TPS55288\". That is false. The TPS55288 integrates only the boost-leg MOSFETs. Its buck leg is two external MOSFETs driven from DR1H and DR1L, and its ISP/ISN output-current sense resistor is external too. The TPS552882 has the same external buck leg and the same optional ISP/ISN sense resistor. Both parts need the same external power parts. They differ in the I2C interface (SCL and SDA on pins 5 and 6 of the TPS55288; none on the TPS552882) and in how the TPS552882 is set without registers. The rest of the claim was not refuted and matches SLVSFC5: VIN 2.7 to 36 V, VIN and SW1 40 V absolute maximum, no I2C. The scope is function. The error is in this re-rank's comparison of external part count for the encoder 12 V supply, not in either part's lifecycle or identity.",
+  "evidence": "TPS55288 SLVSF01B (Rev. B, December 2020), section 3: \"The TPS55288 integrates two 16-A MOSFETs of the boost leg.\" Section 7.1: \"a 16-A buck-boost DC-to-DC converter with the two boost MOSFETs integrated.\" Table 5-1: pin 1 DR1L \"Gate driver output for low-side MOSFET in buck side\", pin 2 DR1H \"Gate driver output for high-side MOSFET in buck side\". The BOOT1 description refers to \"the source of external high-side power MOSFET\". The ISP and ISN pins take \"an optional current sense resistor\" to limit the output current. Pins 5 and 6 are SCL and SDA. TPS552882 SLVSFC5 (November 2020), section 3: \"integrates two 16-A MOSFETs of the boost leg\". Table 5-1: pins 1 and 2 are DR1L and DR1H, the buck-side gate drivers. The block diagram shows DR1H, DR1L, BOOT1 and SW1. ISP and ISN take the same optional sense resistor. Section 6.1: VIN and SW1 are rated -0.3 to 40 V. The two parts need the same external MOSFET and sense-resistor count, so the claim's \"against none for the TPS55288\" is wrong.",
+  "source": "https://www.ti.com/lit/ds/symlink/tps55288.pdf (SLVSF01B: sections 3, 5 Table 5-1, 7.1); https://www.ti.com/lit/ds/symlink/tps552882.pdf (SLVSFC5: sections 3, 5 Table 5-1, block diagram, 6.1), each fetched with vendors.py fetch, HTTP 200",
+  "read_at": "2026-10-03T02:10:07Z",
+  "scope": "function"
+ }
+}

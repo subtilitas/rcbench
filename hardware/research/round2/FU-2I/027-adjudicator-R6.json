@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R6",
+ "label": "adjudicator-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "function": "Servo rail ideal diode",
+  "part": "LTC4352CMS#TRPBF",
+  "stands": true,
+  "scope": "function",
+  "ruling": "The stock refutation holds. JLCPCB's exact match for C688177 (LTC4352CMS#TRPBF, Analog Devices, MSOP-12-0.65mm) has stockCount 10. The need is 5 boards (S7) x 4 placements = 20. The placements are one controller between each of the 4 TPS55285 converters and its rail: the 3 servo rails and the adjustable supply's output (V316). The gate of sourcing rule 4 under S4 is max(5 x 20, 50) = 100, and 10 < 100 fails it. canPresaleNumber is 10, zero or above, so the presale check passes. Rule 6 does not apply: LTC4352 / C688177 is not in inventory-2026-09-25.csv, so the part is not held. Digi-Key's stock is a second-source figure under rule 5. It does not replace rule 4's JLCPCB count for a part placed on the board (rules 1 and 3). The datasheet verifier's confirmation does not touch stock. Scope is function: the failure is the stock count against this function's need. The part's lifecycle, maker allowlist and LCSC identity all pass. The relayed owner question on V318 does not change this ruling. V319 (owner, 2026-10-03) sets the DC input to 12 to 18 V, from a 12 V supply or a 4S LiPo pack. Whether an 18 V-class TVS behind the cut-off holds the bus at or under 27 V is R5's follow-up research. This ruling does not answer it. The servo rails run at 0.8 to 15 V, which is inside the LTC4352's 0 to 18 V VIN range either way.",
+  "evidence": "vendors.py jlcpcb C688177, read 2026-10-03T02:17:01Z, HTTP 200. exact_match: lcsc C688177, part LTC4352CMS#TRPBF, maker_label Analog Devices, package MSOP-12-0.65mm, stockCount 10, canPresaleNumber 10, componentLibraryType expand, other_results 0. These match the verifier's reading of 2026-10-03T01:42:16Z. Gate: S4 (Research.md line 662) is 5 times the need, never under 50. S7 (line 665) is 5 boards. The placements are 4 per V316 (line 1029) and the four TPS55285 (Follow-ups, input transient clamp row). Need 20, gate 100, stock 10: FAIL. Held parts: grep for 4352 and C688177 in hardware/docs/inventory-2026-09-25.csv at 5f5c0a61c4f7 found no row (read 2026-10-03T02:17Z), so the part is not held and rule 6 does not apply. Copies of the readings are in /home/claude/rcbench-research/round2/scratch/FU-2I/adjudicator-R6/jlc-C688177.json.",
+  "source": "vendors.py jlcpcb C688177 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match); Research.md at 5f5c0a61c4f7: Sourcing rules 1, 3, 4, 6, Held parts, S4, S7, V316; hardware/docs/inventory-2026-09-25.csv",
+  "read_at": "2026-10-03T02:17:01Z"
+ }
+}

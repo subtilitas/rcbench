@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R8",
+ "label": "adjudicator-R8-4",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "function": "P2 report: Blanking against the port breaker",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation holds. The figure says R6's Port supply switch has no part in selection.json, so the breaker band rests on a part not yet verified. That is false. selection.json names a rank-1 part for the Port supply switch, BUK7K6R8-40E,115 (run FU-2H). It also names one for the Port supply current limit, INA301A1IDGKR (rank 1, FU-2H), and for the Port supply switch driver, TPSI3052DWZR (rank 1, FU-2H). The arithmetic holds: 26.2 mA plus 22.9 mA is 49.1 mA, which gives a 2.951 to 3.049 A critical threshold. IOBoard.md:113 also bears out the split: blanking covers 3.0 to 3.96 A, and the port switch's breaker acts from 3.96 to 4.84 A (owner, 2026-09-30). The figure fails on its R6 sentence alone. The ruling concerns this function's report and not a property of any part, so its scope is function.",
+  "evidence": "selection.json, R6 entries: \"Port supply switch\": part \"BUK7K6R8-40E,115\", rank 1, run \"FU-2H\". \"Port supply current limit\": part \"INA301A1IDGKR\", rank 1, run \"FU-2H\". \"Port supply switch driver\": part \"TPSI3052DWZR\", rank 1, run \"FU-2H\". \"Port supply reverse blocking\": part null. IOBoard.md:113 (checkout 5f5c0a61c4f7): \"A servo that draws 3.0 to 3.96 A in repeated pulses, each shorter than the blanking time, does not abort: the stall trip, 1.0 A for 400 ms, and the port breaker, 3.96 to 4.84 A, bound it (owner, 2026-09-30)\". The same row keeps \"the blanking time against the port switch's 3.96 to 4.84 A breaker\" open as a follow-up of R8. IOBoard.md:389 states the 3.0 A ceiling and the 3.96 A bound for repeated short trips.",
+  "source": "/home/claude/rcbench-research/round2/results/hardware/research/round2/selection.json (entries Port supply switch, Port supply current limit, Port supply switch driver); /home/claude/rcbench-research/round2/checkout-5f5c0a61c4f7/hardware/docs/IOBoard.md lines 113 and 389 at commit 5f5c0a61c4f7f7bf2354fdaa8e407e86cde05bf1",
+  "read_at": "2026-10-03T01:34:35Z",
+  "scope": "function"
+ }
+}

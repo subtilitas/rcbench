@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R6",
+ "label": "adjudicator-R6-6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "function": "re-rank report: Servo rail clamp op-amps: response and error budget",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The figure gives TLV9001 gate times of 4.3 us to 1.9 V and 16.9 us to 4.5 V. These omit TLV9001's stated overload recovery, while OPA376 gets its 0.33 us in the same model. Section 7.10 of the TLV9001 data sheet (SBOS833R, revised November 2021) lists tOR, the overload recovery time, as 0.85 us typical at VS 5 V with VIN x gain > VS. Section 8.4 says the delay after overload is the recovery time plus the slew time, about 850 ns. The figure's label \"recovery not stated\" is therefore wrong. Re-running P3's own resp.py with a 0.85 us delay for TLV9001 gives 5.2 us to 1.9 V and 17.7 us to 4.5 V. Rail rise at 6.35 A is then 0.113 V into 1000 uF and 1.13 V into 100 uF. On those times TLV9001 is slower than OPA376 (4.7 and 17.2 us), not faster. The figure states that the ranking rests on the response, so the error changes the ranking basis. The scope is function: the defect is in this function's response budget, not in the part's lifecycle or identity. The other values reproduce. OPA376 gives 4.7 and 17.2 us, rising 0.109 V into 1000 uF and 1.09 V into 100 uF. OPA333 and TLV333 give 17.7 and 36.3 us, rising 0.230 V into 1000 uF and 2.30 V into 100 uF. Their data sheets show overvoltage recovery only as plots (OPA333 Figures 12 and 13, TLV333 Figures 11 and 12), with no tabulated time. Their 0 us delay is therefore unchanged, and how much recovery would add for them is not read.",
+  "evidence": "TLV9001 data sheet SBOS833R, 7.10 Electrical Characteristics: \"SR Slew rate VS = 5 V 2 V/us\" and \"tOR Overload recovery time VS = 5 V, VIN x gain > VS 0.85 us\". Section 8.4: \"the propagation delay (in case of an overload condition) is the sum of the overload recovery time and the slew time. The overload recovery time for the TLV900x family is approximately 850 ns.\" OPA376 data sheet: \"Overload recovery time VIN x gain > VS 0.33 us\". scratch/FU-2I/rerank-R6/resp.py runs TLV9001 with delay 0.0, labelled \"recovery not stated\". The re-run copy, scratch/FU-2I/adjudicator-R6/resp_adj.py, gave these times to 1.1, 1.9 and 4.5 V. TLV9001 with 0.85 us: 3.7, 5.2 and 17.7 us, rising 0.113 V into 1000 uF and 1.13 V into 100 uF. TLV9001 with no recovery: 2.9, 4.3 and 16.9 us, as the figure states. OPA376 with 0.33 us: 3.2, 4.7 and 17.2 us. OPA333 and TLV333: 12.2, 17.7 and 36.3 us.",
+  "source": "https://www.ti.com/lit/ds/symlink/tlv9001.pdf (vendors.py fetch, HTTP 200, 8,043,380 bytes, read 2026-10-03T02:20:00Z), sections 7.10 and 8.4; https://www.ti.com/lit/ds/symlink/opa376.pdf (vendors.py fetch, HTTP 200, read 2026-10-03T02:18:41Z); OPA333 SBOS351E and TLV333 SBOS751 text in scratch/FU-2I/rerank-R6/ds; resp.py re-run as scratch/FU-2I/adjudicator-R6/resp_adj.py at 2026-10-03T02:20:08Z",
+  "read_at": "2026-10-03T02:20:08Z",
+  "scope": "function"
+ }
+}

@@ -1,0 +1,1512 @@
+{
+ "role": "rerank",
+ "category": "R6",
+ "label": "rerank-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "functions": [
+   {
+    "function": "Servo supply",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPS55285VALR",
+      "reason": "Fixed input of the Scope table, ranked first and not replaced. No check of this re-rank fails: JLCPCB 2732 against a gate of 100, Digi-Key 5243, active, VIN 27 V absolute maximum and 22 V recommended maximum against the 18 V DC input top (V319)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPS55285VALR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo supply inductor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "SRP1265A-4R7M",
+      "reason": "P2 rank 1, the part selection.json holds: 8.4 mOhm max, 28 A saturation, 13.5 A heat rating; JLCPCB 600 against 100, Digi-Key 10610",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "SRP1265A-4R7M",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port supply switch",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "BUK7K6R8-40E,115",
+      "reason": "P2 rank 1 kept: common-source pair, 41 to 80 mV at 3.0 A, 0.24 W, IDM 276 A; JLCPCB 13671, Digi-Key 2894",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "IRF7313TRPBF",
+      "reason": "Passes every value on the DMG4822SSD-13 pinout with the same driver; 174 to 261 mV at 3.0 A and 0.52 to 0.78 W, no steady-state thermal resistance stated, 52-week Digi-Key lead time; JLCPCB 19646, Digi-Key 42581",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "IRF7313TRPBF",
+      "maker": "Infineon Technologies (International Rectifier HEXFET; data sheet IRF7313PbF PD-95039, 10/7/04); S1 name Infineon; documents read: @1 JLCPCB copy jlcpcb.com/api/file/downloadByFileSystemAccessId/8588879815138664448 (vendors.py fetch HTTP 200, 2026-10-03T01:19:50Z); @2 ti.com/lit/ds/symlink/tpsi3052.pdf (2026-10-03T01:29:29Z)",
+      "lcsc": "C117622",
+      "package": "SO-8, dual N-channel, pins S1 G1 S2 G2 D2 D2 D1 D1 (as DMG4822SSD-13), JLCPCB SO-8",
+      "placements": 20,
+      "placements_basis": "fixed by the specification: one per port, 20 ports (sourcing rule 4); one dual package a port, its two N-channel MOSFETs source to source (common source), driven by the Port supply switch driver",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Operating input range",
+        "required": "0.8 V to 8.70 V at the switch input (rail from 0.8 V; highest set point 8.53 V; HV ceiling 8.70 V)",
+        "datasheet": "V(BR)DSS 30 V min at 25 degC; the channels conduct at any drain voltage from 0 V; VGS(th) 1.0 V min",
+        "pass": true,
+        "source": "IRF7313PbF PD-95039, 10/7/04, @1"
+       },
+       {
+        "name": "Conducts from 0.8 V",
+        "required": "turns on and carries the port's current from 0.8 V; the function may be split across parts",
+        "datasheet": "N-channel enhancement, VGS(th) 1.0 V min; RDS(on) stated at VGS 10 V (29 mOhm max) and 4.5 V (46 mOhm max); the floating driver holds VGS at 13.9 to 16.2 V whatever the rail voltage, inside VGS +/-20 V",
+        "pass": true,
+        "source": "IRF7313PbF PD-95039, 10/7/04, @1; TPSI3052 SLVSGS3B, ti.com/lit/ds/symlink/tpsi3052.pdf, read 2026-10-03T01:29:29Z, 6.5"
+       },
+       {
+        "name": "Continuous current",
+        "required": "3.0 A at 50 degC ambient, from a rail of 5.0 V up",
+        "datasheet": "ID 6.5 A at TA 25 degC and 5.2 A at 70 degC a channel; both channels carry the 3.0 A in series: pair loss 0.52 W at 29 mOhm, 0.78 W with RDS(on) x 1.5 (rise with temperature assumed; Figure 4 not read numerically); RthJA 62.5 degC/W (surface mount on FR-4, t <= 10 s; no steady-state figure stated): TJ about 99 degC at 50 degC ambient, under 150 degC up to 128 degC/W",
+        "pass": true,
+        "source": "IRF7313PbF PD-95039, 10/7/04, @1"
+       },
+       {
+        "name": "Voltage drop",
+        "required": "at most 570 mV across the switch path at 3.0 A from 5.0 V up; reported below 5.0 V",
+        "datasheet": "2 x 29 mOhm max at VGS 10 V: 174 mV at 3.0 A and 25 degC, 261 mV with RDS(on) x 1.5; against 570 mV (BUK7K6R8-40E: 41 to 80 mV)",
+        "pass": true,
+        "source": "IRF7313PbF PD-95039, 10/7/04, @1"
+       },
+       {
+        "name": "Conducts both ways while on",
+        "required": "a braking servo's current returns through the closed switch to the rail; no diode in the path",
+        "datasheet": "both channels enhanced: the pair conducts either way; no diode in the path while on (body diode 2.5 A continuous, 30 A pulsed, not carrying current while the channels are on)",
+        "pass": true,
+        "source": "IRF7313PbF PD-95039, 10/7/04, @1"
+       },
+       {
+        "name": "Reverse blocking while off",
+        "required": "blocks the pin up to 12 V while off, with no reverse-blocking part",
+        "datasheet": "common-source pair, sources tied: the body diodes are in anti-series and the off pair blocks either polarity up to 30 V (pin at 12 V with the rail at 0 V, or the rail at 20 V with the pin at 0 V)",
+        "pass": true,
+        "source": "IRF7313PbF PD-95039, 10/7/04, @1"
+       },
+       {
+        "name": "Off-state leakage",
+        "required": "under 5 mA at 8.4 V",
+        "datasheet": "IDSS 1 uA max at VDS 24 V, 25 degC; 25 uA at 55 degC: under 5 mA at 8.4 V (not stated above 55 degC)",
+        "pass": true,
+        "source": "IRF7313PbF PD-95039, 10/7/04, @1"
+       },
+       {
+        "name": "Input withstand",
+        "required": "at least 20 V: the rail through a failed converter at the DC input's 18 V top (V319) and the cut-off's trip above it",
+        "datasheet": "VDS 30 V max",
+        "pass": true,
+        "source": "IRF7313PbF PD-95039, 10/7/04, @1"
+       },
+       {
+        "name": "Opening time after reset",
+        "required": "every port switch open within 5 ms of an RP2354B reset",
+        "datasheet": "driver tHL_VDRV 3 us max (100 pF), 1.7 Ohm low-state resistance, 3 A peak sink into Qg 22 nC typ, 33 nC max a channel (66 nC the pair): open within microseconds, far inside 5 ms",
+        "pass": true,
+        "source": "IRF7313PbF PD-95039, 10/7/04, @1; TPSI3052 SLVSGS3B, @2 6.10"
+       },
+       {
+        "name": "Off when undriven",
+        "required": "off while its control is undriven and pulled to its inactive level",
+        "datasheet": "enhancement mode: off at VGS 0 V (VGS(th) 1.0 V min); the driver holds VDRV low with EN low",
+        "pass": true,
+        "source": "IRF7313PbF PD-95039, 10/7/04, @1; TPSI3052 SLVSGS3B, @2"
+       },
+       {
+        "name": "Acts on the current limit and the ceiling",
+        "required": "its control is pulled to off by the current limit's open-drain alert and the ceiling's open-drain output",
+        "datasheet": "the driver's EN takes the INA301 ALERT (VOL 0.3 V max at 3 mA) and the TPS3701 OUTB (VOL 0.25 V max at 3 mA) below VIL_EN 0.9 V, as for the other pairs",
+        "pass": true,
+        "source": "TPSI3052 SLVSGS3B, @2 6.5"
+       },
+       {
+        "name": "Inrush",
+        "required": "reported: peak against 2.35 A; port capacitance not known (not pass or fail)",
+        "datasheet": "not bounded by the part: Qg 66 nC max the pair and Ciss 650 pF a channel; the driver's tLH_VDRV is 4.5 us max into 100 pF (the time into 1.3 nF is not stated); the inrush into the port is set by its capacitance (not known) and the path resistance; reported",
+        "pass": true,
+        "source": "IRF7313PbF PD-95039, 10/7/04, @1; TPSI3052 SLVSGS3B, @2"
+       },
+       {
+        "name": "Not the rail gate",
+        "required": "no gate requirement",
+        "datasheet": "not used as the gate",
+        "pass": true,
+        "source": "Research.md@5f5c0a6 V121"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TJ -55 to 150 degC",
+        "pass": true,
+        "source": "IRF7313PbF PD-95039, 10/7/04, @1"
+       },
+       {
+        "name": "Current into a shorted port",
+        "required": "carries the shorted-port current until the port's current limit opens it: the converter's 6.35 A setting with its 128 us OCP_DELAY, ILIM_AVG (7 A min, 8 A typ, no maximum) bounding the output during the delay",
+        "datasheet": "IDM 30 A pulsed (pulse width limited by the junction maximum); the pair at 8 A for 128 us dissipates about 5.6 W with RDS(on) x 1.5, 0.71 mJ; the SOA curve (Figure 8) is not read at that point",
+        "pass": true,
+        "source": "IRF7313PbF PD-95039, 10/7/04, @1"
+       }
+      ],
+      "jlcpcb": "stockCount 19646, canPresaleNumber 19511, componentLibraryType expand, USD 0.3544 (100+ break) each at the need of 100; read 2026-10-03T01:20:00Z, vendors.py jlcpcb C117622 (exact LCSC match IRF7313TRPBF, label Infineon Technologies)",
+      "digikey": "IRF7313TRPBF: Infineon Technologies stock_available 42581, lead_weeks 52, ProductStatus Active; cached reading of 2026-10-03T01:09:29Z, api.digikey.com/products/v4/search/IRF7313TRPBF/productdetails",
+      "gate": "need = 5 boards x 20 = 100; S4 threshold max(5 x 100, 50) = 500; stockCount 19646 >= 500 and canPresaleNumber 19511 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "active: productStatusInfo 'active' for OPN IRF7313TRPBF on www.infineon.com/part/IRF7313 (vendors.py fetch HTTP 200, 2026-10-03T01:26:50Z). First data sheet: IRF7313PbF 10/7/04 (the copy read). Longevity: no commitment read. Notices: PCN listing not read. Distributor: Digi-Key Active (2026-10-03T01:09:29Z), lead time 52 weeks; JLCPCB carries no status",
+      "second_source": "second-vendor: Digi-Key IRF7313TRPBF 42581 >= 500 (2026-10-03T01:09:29Z)",
+      "alternates": [],
+      "driver_in_shared": "none (shared/ and firmware/ hold no driver for it: a discrete part)",
+      "reason": "Passes every value on the same SO-8 pinout as DMG4822SSD-13 and the same driver; the highest drop and loss of the pairs read: 174 to 261 mV at 3.0 A against 41 to 80 mV for BUK7K6R8-40E, and 0.52 to 0.78 W against 0.24 W; no steady-state thermal resistance stated; 52-week Digi-Key lead time. Ranked below the common-source BUK7K6R8-40E",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "IRF7313TRPBF"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "BUK7K6R8-40E,115",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port supply switch driver",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPSI3052DWZR",
+      "reason": "P2 rank 1 kept: VDRV 13.9 to 16.2 V at any port voltage meets the function's 10 V; same part number as R3's rail gate driver; JLCPCB 1046 against 500, Digi-Key 3164",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "TPSI3050DWZR",
+      "maker": "Texas Instruments",
+      "reason": "Gate drive within the MOSFET ratings, as the function states it: VDRV at or above 10 V, the RDS(on) condition of the pairs. The TPSI3050 drives VVDRV_H 9.4 V min, 10.2 V typ, 11 V max (SLVSGO9C 6.5, ti.com/lit/ds/symlink/tpsi3050.pdf, vendors.py fetch HTTP 200, 2026-10-03T01:19:42Z), 0.6 V under the 10 V; the TPSI3052's is 13.9 to 16.2 V (read 2026-10-03T01:29:29Z). BUK7K6R8-40E, rank 1 of the switch, states RDS(on) at VGS 10 V only. P3 notes that 10 V is a test condition and the page's value is the 570 mV drop at 3.0 A; that holds for pairs stated at 4.5 V (DMG4822SSD-13 31 mOhm max, 186 mV; IRF7313TRPBF 46 mOhm max, 276 mV at 25 degC) and P3 itself leaves the relaxation to a decision the page does not record. The function's value is kept; if the owner relaxes it to the drop, the part passes. JLCPCB C17227641 stockCount 1857, canPresaleNumber 1809, USD 2.7214 at the need of 100 (2026-10-03T01:20:16Z); Digi-Key 7369 Active (cached 2026-10-03T01:11:38Z)"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPSI3052DWZR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port supply current limit",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "INA301A1IDGKR",
+      "reason": "P2 rank 1 kept, the owner's first candidate (V312): trip 4.30 to 4.51 A with 0.1 % gain error and a 1 us alert; JLCPCB 1552, Digi-Key 4140",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "INA381A1IDSGR",
+      "reason": "Passes every value in a different circuit (CMPREF instead of RLIMIT, WSON-8 2 x 2 mm): trip 4.24 to 4.57 A, alert 5 us max; JLCPCB 615 against 500, Digi-Key 8602",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "INA381A1IDSGR",
+      "maker": "Texas Instruments (SBOS848B, December 2017, revised October 2019); S1 name Texas Instruments; documents read: @1 ti.com/lit/ds/symlink/ina381.pdf (vendors.py fetch HTTP 200, 2026-10-03T01:19:37Z)",
+      "lcsc": "C544574",
+      "package": "WSON-8 (DSG) 2 x 2 mm, JLCPCB 'WSON-8-EP(2x2)'",
+      "placements": 20,
+      "placements_basis": "fixed by the specification: one per port, 20 ports (sourcing rule 4)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Trip band",
+        "required": "whole band between 3.0 A and 6.35 A; the owner names 4.30 to 4.51 A for INA301A1IDGKR on the port shunt",
+        "datasheet": "VOUT = G x (VSENSE + VOS) against CMPREF: G 20 V/V, gain error 1 % max; VOS 500 uV max at VCM 12 V (150 uV at 0 V), 1 uV/degC max drift, PSRR 40 uV/V max; comparator offset 5 mV max. With the R8 port shunt 10 mOhm +/-0.5 % and CMPREF 0.88 V from a REF3112AIDBZR divider (0.1 % resistors, +/-0.45 % assumed; both stage 2) it trips at 4.24 to 4.57 A (this re-rank's arithmetic, 2026-10-03T01:35Z): inside 3.0 to 6.35 A and inside the 3.96 to 4.84 A breaker band. Hysteresis 50 mV on the amplifier output, 2.5 mV across the shunt, 0.25 A",
+        "pass": true,
+        "source": "INA381 SBOS848B, @1 6.5, 7.3.6"
+       },
+       {
+        "name": "Holds the switch off while the port's enable is high",
+        "required": "latches the trip until the port's enable falls",
+        "datasheet": "RESET high: latch mode, ALERT stays low after the overlimit ends; RESET low for at least 100 ns clears it (7.4.1.2): RESET on the port's enable line latches while the port is enabled and clears when the firmware drops the enable. RESET VIH 1.4 V min, VIL 0.4 V max, absolute maximum VS + 0.3 V",
+        "pass": true,
+        "source": "INA381 SBOS848B, @1 6.1, 6.5, 7.4.1"
+       },
+       {
+        "name": "Acts on the switch's drive",
+        "required": "an open-drain output that pulls the driver's EN low",
+        "datasheet": "ALERT active-low open drain, VOL 70 mV typ, 300 mV max at 3 mA, leakage 1 uA max, 6 V absolute maximum: below the TPSI3052 three-wire VIL_EN 0.9 V max at VDDP 3 V",
+        "pass": true,
+        "source": "INA381 SBOS848B, @1 6.1, 6.5; TPSI3052 SLVSGS3B, ti.com/lit/ds/symlink/tpsi3052.pdf, read 2026-10-03T01:29:29Z, 6.5"
+       },
+       {
+        "name": "Common-mode range",
+        "required": "the shunt at 0.8 V to 8.70 V, at 12 V from a back-fed pin while off, and up to 20 V through a failed converter (V136 with V319's 18 V top)",
+        "datasheet": "VCM -0.2 to 26 V recommended; input terminals GND - 0.3 to 26 V absolute maximum: covers 0.8 to 8.70 V, a 12 V back-fed pin and 20 V through a failed converter. The 27 V bus transient of V318 is over 26 V; it reaches a shunt only through a failed converter during a surge (double fault, not applied)",
+        "pass": true,
+        "source": "INA381 SBOS848B, @1 6.1, 6.3"
+       },
+       {
+        "name": "Return current",
+        "required": "a braking servo's current returning through the shunt (V126) does not damage it; reported whether it trips",
+        "datasheet": "differential input -26 to 26 V absolute maximum; a negative VSENSE drives OUT to GND and the comparator does not trip: the return current is not limited by this part (reported)",
+        "pass": true,
+        "source": "INA381 SBOS848B, @1 6.1, 6.5"
+       },
+       {
+        "name": "Response time",
+        "required": "reported (no requirement value stated)",
+        "datasheet": "total alert propagation delay at 1 mV overdrive 2 us typ, 5 us max; slew-limited (OUT 0.5 to 4.5 V) 3 us typ, 10 us max; comparator alone 0.4 us typ, 1 us max at 20 mV overdrive (INA301A1IDGKR: 0.75 us typ, 1 us max). Reported",
+        "pass": true,
+        "source": "INA381 SBOS848B, @1 6.5"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V +/-3 %",
+        "datasheet": "VS 2.7 to 5.5 V; IQ 250 uA typ, 350 uA max at 25 degC, 450 uA max over -40 to 125 degC",
+        "pass": true,
+        "source": "INA381 SBOS848B, @1 6.3, 6.5"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TA -40 to 125 degC",
+        "pass": true,
+        "source": "INA381 SBOS848B, @1 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 615, canPresaleNumber 532, componentLibraryType expand, USD 0.3983 (100+ break) each at the need of 100; read 2026-10-03T01:19:58Z, vendors.py jlcpcb C544574 (exact LCSC match INA381A1IDSGR, label Texas Instruments)",
+      "digikey": "INA381A1IDSGR: Texas Instruments stock_available 8602, lead_weeks 20, ProductStatus Active; cached reading of 2026-10-03T01:07:21Z, api.digikey.com/products/v4/search/INA381A1IDSGR/productdetails",
+      "gate": "need = 5 boards x 20 = 100; S4 threshold max(5 x 100, 50) = 500; stockCount 615 >= 500 and canPresaleNumber 532 >= 0: pass (sourcing rule 4), 115 over the threshold",
+      "lifecycle": "active, marketingStatusDescription ACTIVE for orderable INA381A1IDSGR on ti.com/product/INA381 (vendors.py fetch HTTP 200, 2026-10-03T01:26:15Z); the same page lists the small-reel orderables INA381A1IDSGT and INA381A1IDGST as OBSOLETE, not this one. First data sheet: SBOS848 December 2017 (SBOS848B revised October 2019); TI release date 2018-04-16 on the product page. Longevity: no commitment read. Notices: PCN listing not read. Distributor: Digi-Key Active (2026-10-03T01:07:21Z); JLCPCB carries no status",
+      "second_source": "second-vendor: Digi-Key INA381A1IDSGR 8602 >= 500 (2026-10-03T01:07:21Z)",
+      "alternates": [],
+      "driver_in_shared": "none (shared/ and firmware/ hold no driver for it: an analogue comparator part)",
+      "reason": "Passes every value; a different circuit from INA301A1IDGKR: the trip level is CMPREF (0.88 V from a REF3112 divider, stage 2) in place of RLIMIT 11.0 kOhm, in a 2 x 2 mm WSON-8 footprint, with 1 % gain error against 0.1 %, so a wider band, 4.24 to 4.57 A against 4.30 to 4.51 A, still inside 3.96 to 4.84 A. Alert delay 5 us max against 1 us. Ranked below the owner's INA301A1IDGKR (V312); JLCPCB 615 against a threshold of 500 (INA301: 1552)",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "INA381A1IDSGR"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "INA301A1IDGKR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port supply reverse blocking",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "I/O expander",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP23017T-E/SS",
+      "reason": "P2 rank 1 kept, the part selection.json holds: 42 usable lines on 3 parts against 31 needed (11 spare); JLCPCB 6240, Digi-Key 16532",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TCA6416APWR",
+      "reason": "Passes at 31 lines: 2 parts, 32 lines, 1 spare; addresses 0x20 and 0x21; JLCPCB 2526, Digi-Key 11812, 20 weeks",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "PCAL6416AHF,128",
+      "reason": "Passes at 31 lines on the TCA6416A pins and address with pull-ups off at reset; deepest stock (JLCPCB 20572, Digi-Key 111866), 30-week Digi-Key lead time, 4 x 4 mm QFN",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "TCA6416ARTWR",
+      "reason": "Passes at 31 lines; Digi-Key stock 0, so its second source is PCAL6416AHF,128 pin for pin with its exposed-pad land not compared",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "TCA9539PWR",
+      "reason": "Passes at 31 lines with the two parts at 0x76 and 0x77, beside the TPS55288's 74h/75h; JLCPCB 5845, Digi-Key 25367",
+      "option": ""
+     },
+     {
+      "rank": 6,
+      "part": "NCA9539PW-Q100J",
+      "reason": "Passes at 31 lines as TCA9539PWR, AEC-Q100 Grade 1; shallowest stock (JLCPCB 4576, Digi-Key 2646)",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "TCA6416APWR",
+      "maker": "Texas Instruments (SCPS194F, May 2009, revised January 2023); S1 name Texas Instruments; documents read: @1 ti.com/lit/ds/symlink/tca6416a.pdf (vendors.py fetch HTTP 200, 2026-10-03T01:19:38Z)",
+      "lcsc": "C130203",
+      "package": "TSSOP-24 (PW), 7.8 x 4.4 mm, JLCPCB 'TSSOP-24'",
+      "placements": 2,
+      "placements_basis": "range 2 a board for 31 lines: 2 parts of 16 lines give 32; the gate applies at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Lines",
+        "required": "31 lines (the function lists 33): V271 and V276 (owner, 2026-10-01) take the two DC-input lines of Pins.md to one ADC input, leaving 20 port enables, 5 bias selectors, 5 converter enables and 1 hardware latch read-back",
+        "datasheet": "16 lines a part, none output-only: 2 parts give 32, 1 spare over the 31 (4 rail-latch read-backs, V283, are not pinned and would not fit)",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 1, 5"
+       },
+       {
+        "name": "Hardware reset input",
+        "required": "active-low reset returning every line to an input, from GPIO 14 with a pull-down, so a watchdog reset opens every port switch",
+        "datasheet": "active-low RESET, VIH 0.7 x VCCI (2.31 V at 3.3 V) up to 5.5 V, tW 4 ns min, tRESET 600 ns; reset puts every register in its default state with all I/Os inputs ('All I/Os are set to inputs at reset', 8.3.4); a 10 kOhm-class pull-down on GPIO 14 holds it in reset",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 6.7, 8.3.4"
+       },
+       {
+        "name": "Power-up state",
+        "required": "every load line an input with no internal pull-up at power-up and after reset",
+        "datasheet": "power-up with all channels configured as inputs; no internal pull-up resistor on the P-ports (IIH and IIL 1 uA max); internal power-on reset VPOR 1.0 V typ, 1.4 V max",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 1, 6.5, 8.4.1"
+       },
+       {
+        "name": "Drives the switch driver's EN",
+        "required": "a logic high above VIH_EN 2.31 V into the TPSI3052 EN (microamps), through a series resistor that the open-drain alerts pull low",
+        "datasheet": "push-pull P-ports: VOH 2.6 V min at IOH -8 mA, VCCP 3 V (above the 2.31 V); EN draws microamps",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 6.5"
+       },
+       {
+        "name": "I2C clock",
+        "required": "at least 400 kHz at 3.3 V",
+        "datasheet": "100 kHz and 400 kHz (Fast-mode)",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 1"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V",
+        "datasheet": "VCCI and VCCP 1.65 to 5.5 V; ICC 6.5 uA typ, 15 uA max operating at 400 kHz (2.3 to 3.6 V, -40 to 85 degC)",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 6.3, 6.5"
+       },
+       {
+        "name": "Address",
+        "required": "clear of 0x31 (FUSB303), 0x40 to 0x4F, 0x18 to 0x1F and 74h/75h",
+        "datasheet": "0x20 (ADDR low) or 0x21 (ADDR high), Table 8-3: clear of 0x31, 0x40 to 0x4F, 0x18 to 0x1F and 74h/75h (the MCP23017 map's 0x20 to 0x22 is replaced)",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 8.6.1"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TA -40 to 85 degC at VCC up to 5.5 V, -40 to 125 degC up to 3.6 V",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 2526, canPresaleNumber 2361, componentLibraryType expand, USD 1.2908 (10+ break) each at the need of 10; read 2026-10-03T01:20:01Z, vendors.py jlcpcb C130203 (exact LCSC match TCA6416APWR, label Texas Instruments)",
+      "digikey": "TCA6416APWR: Texas Instruments stock_available 11812, lead_weeks 20, ProductStatus Active; cached reading of 2026-10-03T01:10:09Z, api.digikey.com/products/v4/search/TCA6416APWR/productdetails",
+      "gate": "need = 5 boards x 2 = 10; S4 threshold max(5 x 10, 50) = 50; stockCount 2526 >= 50 and canPresaleNumber 2361 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "active, marketingStatusDescription ACTIVE for orderable TCA6416APWR on ti.com/product/TCA6416A (vendors.py fetch HTTP 200, 2026-10-03T01:26:15Z). First data sheet: SCPS194 May 2009 (SCPS194F revised January 2023); TI release date 2009-05-21 on the product page. Longevity: no commitment read. Notices: PCN listing not read. Distributor: Digi-Key Active (2026-10-03T01:10:09Z); JLCPCB carries no status",
+      "second_source": "second-vendor: Digi-Key TCA6416APWR 11812 >= 50 (2026-10-03T01:10:09Z)",
+      "alternates": [],
+      "driver_in_shared": "none (shared/ and firmware/ hold no driver for it; the firmware drives the MCP23017 register map, which differs)",
+      "reason": "Passes every value once the line count is 31 (V271, V276): 2 parts, 32 lines, 1 spare, one part fewer than the 3 MCP23017, 1 spare line against 11. Another register map and firmware than rank 1. JLCPCB 2526, Digi-Key 11812",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "TCA6416APWR, TCA6416ARTWR, PCAL6416AHF"
+     },
+     {
+      "rank": 4,
+      "part": "TCA6416ARTWR",
+      "maker": "Texas Instruments (SCPS194F); S1 name Texas Instruments; documents read: @1 ti.com/lit/ds/symlink/tca6416a.pdf (vendors.py fetch HTTP 200, 2026-10-03T01:19:38Z); @2 www.nxp.com/docs/en/data-sheet/PCAL6416A.pdf (2026-10-03T01:19:48Z)",
+      "lcsc": "C182336",
+      "package": "WQFN-24 (RTW, RTW0024B), 4 x 4 mm, JLCPCB 'WQFN-24-EP(4x4)'",
+      "placements": 2,
+      "placements_basis": "range 2 a board for 31 lines: 2 parts of 16 lines give 32; the gate applies at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Lines",
+        "required": "31 lines (the function lists 33): V271 and V276 (owner, 2026-10-01) take the two DC-input lines of Pins.md to one ADC input, leaving 20 port enables, 5 bias selectors, 5 converter enables and 1 hardware latch read-back",
+        "datasheet": "16 lines a part, none output-only: 2 parts give 32, 1 spare over the 31 (4 rail-latch read-backs, V283, are not pinned and would not fit)",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 1, 5"
+       },
+       {
+        "name": "Hardware reset input",
+        "required": "active-low reset returning every line to an input, from GPIO 14 with a pull-down, so a watchdog reset opens every port switch",
+        "datasheet": "active-low RESET, VIH 0.7 x VCCI (2.31 V at 3.3 V) up to 5.5 V, tW 4 ns min, tRESET 600 ns; reset puts every register in its default state with all I/Os inputs ('All I/Os are set to inputs at reset', 8.3.4); a 10 kOhm-class pull-down on GPIO 14 holds it in reset",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 6.7, 8.3.4"
+       },
+       {
+        "name": "Power-up state",
+        "required": "every load line an input with no internal pull-up at power-up and after reset",
+        "datasheet": "power-up with all channels configured as inputs; no internal pull-up resistor on the P-ports (IIH and IIL 1 uA max); internal power-on reset VPOR 1.0 V typ, 1.4 V max",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 1, 6.5, 8.4.1"
+       },
+       {
+        "name": "Drives the switch driver's EN",
+        "required": "a logic high above VIH_EN 2.31 V into the TPSI3052 EN (microamps), through a series resistor that the open-drain alerts pull low",
+        "datasheet": "push-pull P-ports: VOH 2.6 V min at IOH -8 mA, VCCP 3 V (above the 2.31 V); EN draws microamps",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 6.5"
+       },
+       {
+        "name": "I2C clock",
+        "required": "at least 400 kHz at 3.3 V",
+        "datasheet": "100 kHz and 400 kHz (Fast-mode)",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 1"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V",
+        "datasheet": "VCCI and VCCP 1.65 to 5.5 V; ICC 6.5 uA typ, 15 uA max operating at 400 kHz (2.3 to 3.6 V, -40 to 85 degC)",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 6.3, 6.5"
+       },
+       {
+        "name": "Address",
+        "required": "clear of 0x31 (FUSB303), 0x40 to 0x4F, 0x18 to 0x1F and 74h/75h",
+        "datasheet": "0x20 (ADDR low) or 0x21 (ADDR high), Table 8-3: clear of 0x31, 0x40 to 0x4F, 0x18 to 0x1F and 74h/75h (the MCP23017 map's 0x20 to 0x22 is replaced)",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 8.6.1"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TA -40 to 85 degC at VCC up to 5.5 V, -40 to 125 degC up to 3.6 V",
+        "pass": true,
+        "source": "TCA6416A SCPS194F, @1 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 12685, canPresaleNumber 12614, componentLibraryType expand, USD 0.6568 (10+ break) each at the need of 10; read 2026-10-03T01:20:03Z, vendors.py jlcpcb C182336 (exact LCSC match TCA6416ARTWR, label Texas Instruments)",
+      "digikey": "TCA6416ARTWR: Texas Instruments stock_available 0, lead_weeks 20, ProductStatus Active; cached reading of 2026-10-03T01:10:11Z, api.digikey.com/products/v4/search/TCA6416ARTWR/productdetails",
+      "gate": "need = 5 boards x 2 = 10; S4 threshold max(5 x 10, 50) = 50; stockCount 12685 >= 50 and canPresaleNumber 12614 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "active, marketingStatusDescription ACTIVE for orderable TCA6416ARTWR on ti.com/product/TCA6416A (vendors.py fetch HTTP 200, 2026-10-03T01:26:15Z). First data sheet: SCPS194 May 2009 (SCPS194F revised January 2023); TI release date 2009-05-21 on the product page. Longevity: no commitment read. Notices: PCN listing not read. Distributor: Digi-Key Active (2026-10-03T01:10:11Z), stock 0; JLCPCB carries no status",
+      "second_source": "alternate: PCAL6416AHF,128, pin for pin (pins 1 to 24 carry the same signals in both data sheets: P0_0 to P0_7 on 1 to 8, GND 9, P1_0 to P1_7 on 10 to 17, ADDR 18, SCL 19, SDA 20, VDD(P) 21, INT 22, VDD(I2C-bus) 23, RESET 24), same address 0x20/0x21, same register 00h to 07h with inputs at reset and pull-up enables 0 at reset; both are 4 x 4 mm 24-terminal 0.5 mm packages (RTW0024B, SOT994-1), their exposed-pad land sizes not compared; passes rules 1 to 4 (JLCPCB C2652287 20572/20503 at 2026-10-03T01:20:05Z). Digi-Key stock of this part 0 (2026-10-03T01:10:11Z), so the second-vendor route fails",
+      "alternates": [
+       "PCAL6416AHF,128"
+      ],
+      "driver_in_shared": "none (as TCA6416APWR)",
+      "reason": "Passes every value on the same terms as TCA6416APWR; cheapest of the 16-line parts (USD 0.6568) and deepest JLCPCB stock of the TI parts (12685), but Digi-Key holds none, so its second source is the pin-compatible PCAL6416AHF,128, whose exposed-pad land was not compared. Below TCA6416APWR and PCAL6416AHF,128 for that",
+      "second_source_route": "alternate",
+      "second_source_part": "PCAL6416AHF,128",
+      "p3_part": "TCA6416APWR, TCA6416ARTWR, PCAL6416AHF"
+     },
+     {
+      "rank": 3,
+      "part": "PCAL6416AHF,128",
+      "maker": "NXP (PCAL6416A Rev. 7.1, 30 August 2022); S1 name NXP; documents read: @1 www.nxp.com/docs/en/data-sheet/PCAL6416A.pdf (vendors.py fetch HTTP 200, 2026-10-03T01:19:48Z)",
+      "lcsc": "C2652287",
+      "package": "HWQFN-24 (SOT994-1), 4 x 4 x 0.75 mm, JLCPCB 'HWQFN-24'",
+      "placements": 2,
+      "placements_basis": "range 2 a board for 31 lines: 2 parts of 16 lines give 32; the gate applies at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Lines",
+        "required": "31 lines (the function lists 33): V271 and V276 (owner, 2026-10-01) take the two DC-input lines of Pins.md to one ADC input, leaving 20 port enables, 5 bias selectors, 5 converter enables and 1 hardware latch read-back",
+        "datasheet": "16 lines a part, none output-only: 2 parts give 32, 1 spare over the 31 (4 rail-latch read-backs, V283, are not pinned and would not fit)",
+        "pass": true,
+        "source": "PCAL6416A Rev. 7.1, 30 August 2022, @1 1, 5"
+       },
+       {
+        "name": "Hardware reset input",
+        "required": "active-low reset returning every line to an input, from GPIO 14 with a pull-down, so a watchdog reset opens every port switch",
+        "datasheet": "active-low RESET, VIH 0.7 x VDD(I2C-bus) up to 5.5 V; the RESET pin resets the registers and the I2C state machine without removing power; all I/Os are set to inputs at reset (7.7, Figure 1); a pull-down on GPIO 14 holds it in reset",
+        "pass": true,
+        "source": "PCAL6416A Rev. 7.1, 30 August 2022, @1 7.7, 11"
+       },
+       {
+        "name": "Power-up state",
+        "required": "every load line an input with no internal pull-up at power-up and after reset",
+        "datasheet": "power-up with all I/Os inputs; the programmable pull-up/pull-down enable registers 46h and 47h reset to 0000 0000 (resistors disconnected), so no internal pull-up at power-up and after reset (Tables 21, 22); internal power-on reset VPOR 1.1 V typ, 1.4 V max",
+        "pass": true,
+        "source": "PCAL6416A Rev. 7.1, 30 August 2022, @1 7.4.7, 7.6, 13"
+       },
+       {
+        "name": "Drives the switch driver's EN",
+        "required": "a logic high above VIH_EN 2.31 V into the TPSI3052 EN (microamps), through a series resistor that the open-drain alerts pull low",
+        "datasheet": "push-pull P-ports: VOH 2.6 V min at IOH -8 mA, VDD(P) 3 V, with the reset drive strength CCx.x = 11b; EN draws microamps",
+        "pass": true,
+        "source": "PCAL6416A Rev. 7.1, 30 August 2022, @1 13"
+       },
+       {
+        "name": "I2C clock",
+        "required": "at least 400 kHz at 3.3 V",
+        "datasheet": "400 kHz Fast-mode (features); 100 kHz Standard-mode",
+        "pass": true,
+        "source": "PCAL6416A Rev. 7.1, 30 August 2022, @1 2"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V",
+        "datasheet": "VDD(I2C-bus) and VDD(P) 1.65 to 5.5 V",
+        "pass": true,
+        "source": "PCAL6416A Rev. 7.1, 30 August 2022, @1 11"
+       },
+       {
+        "name": "Address",
+        "required": "clear of 0x31 (FUSB303), 0x40 to 0x4F, 0x18 to 0x1F and 74h/75h",
+        "datasheet": "0x20 (ADDR low) or 0x21 (ADDR high), Table 5: clear of 0x31, 0x40 to 0x4F, 0x18 to 0x1F and 74h/75h",
+        "pass": true,
+        "source": "PCAL6416A Rev. 7.1, 30 August 2022, @1 7.1"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "Tamb -40 to +85 degC",
+        "pass": true,
+        "source": "PCAL6416A Rev. 7.1, 30 August 2022, @1 11"
+       }
+      ],
+      "jlcpcb": "stockCount 20572, canPresaleNumber 20503, componentLibraryType expand, USD 1.2193 (10+ break) each at the need of 10; read 2026-10-03T01:20:05Z, vendors.py jlcpcb C2652287 (exact LCSC match PCAL6416AHF,128, label NXP Semicon)",
+      "digikey": "PCAL6416AHF,128: NXP USA Inc. stock_available 111866, lead_weeks 30, ProductStatus Active; cached reading of 2026-10-03T01:10:13Z, api.digikey.com/products/v4/search/PCAL6416AHF%2C128/productdetails",
+      "gate": "need = 5 boards x 2 = 10; S4 threshold max(5 x 10, 50) = 50; stockCount 20572 >= 50 and canPresaleNumber 20503 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "active: status Active on www.nxp.com/products/PCAL6416A (vendors.py fetch HTTP 200, 2026-10-03T01:26:49Z). First data sheet: first revision not read; Rev. 7.1 of 30 August 2022 read. Longevity: no commitment read. Notices: PCN listing not read. Distributor: Digi-Key Active (2026-10-03T01:10:13Z), lead time 30 weeks; JLCPCB carries no status",
+      "second_source": "second-vendor: Digi-Key PCAL6416AHF,128 111866 >= 50 (2026-10-03T01:10:13Z)",
+      "alternates": [],
+      "driver_in_shared": "none (as TCA6416APWR)",
+      "reason": "Passes every value once the line count is 31 (V271, V276); superset of the TCA6416A register set at the same address and pins; deepest stock at both vendors (JLCPCB 20572, Digi-Key 111866), 4 x 4 mm QFN against the TSSOP of rank 2, Digi-Key lead time 30 weeks against 20",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "TCA6416APWR, TCA6416ARTWR, PCAL6416AHF"
+     },
+     {
+      "rank": 5,
+      "part": "TCA9539PWR",
+      "maker": "Texas Instruments (SCPS202C, October 2009, revised May 2016); S1 name Texas Instruments; documents read: @1 ti.com/lit/ds/symlink/tca9539.pdf (vendors.py fetch HTTP 200, 2026-10-03T01:19:39Z)",
+      "lcsc": "C131972",
+      "package": "TSSOP-24 (PW), 7.8 x 4.4 mm, JLCPCB 'TSSOP-24'",
+      "placements": 2,
+      "placements_basis": "range 2 a board for 31 lines: 2 parts of 16 lines give 32; the gate applies at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Lines",
+        "required": "31 lines (the function lists 33): V271 and V276 (owner, 2026-10-01) take the two DC-input lines of Pins.md to one ADC input, leaving 20 port enables, 5 bias selectors, 5 converter enables and 1 hardware latch read-back",
+        "datasheet": "16 lines a part, none output-only: 2 parts give 32, 1 spare over the 31 (as TCA6416APWR)",
+        "pass": true,
+        "source": "TCA9539 SCPS202C, @1 1"
+       },
+       {
+        "name": "Hardware reset input",
+        "required": "active-low reset returning every line to an input, from GPIO 14 with a pull-down, so a watchdog reset opens every port switch",
+        "datasheet": "active-low RESET, VIH 0.7 x VCC; tW 6 ns min, tRESET 400 ns (2.3 to 5.5 V); a reset or power-on reset returns the registers to default with all I/Os inputs; a pull-down on GPIO 14 holds it in reset",
+        "pass": true,
+        "source": "TCA9539 SCPS202C, @1 6.7, 8.3"
+       },
+       {
+        "name": "Power-up state",
+        "required": "every load line an input with no internal pull-up at power-up and after reset",
+        "datasheet": "power-up with all I/Os inputs; 'removal of the internal I/O pull-up resistor' against the PCA9555 (8.1): no internal pull-up at power-up and after reset; VPOR 1.2 V typ, 1.5 V max rising",
+        "pass": true,
+        "source": "TCA9539 SCPS202C, @1 6.7, 8.3"
+       },
+       {
+        "name": "Drives the switch driver's EN",
+        "required": "a logic high above VIH_EN 2.31 V into the TPSI3052 EN (microamps), through a series resistor that the open-drain alerts pull low",
+        "datasheet": "push-pull P-ports: VOH 2.6 V min at IOH -8 mA, VCC 3.0 V (above the 2.31 V); EN draws microamps",
+        "pass": true,
+        "source": "TCA9539 SCPS202C, @1 6.5"
+       },
+       {
+        "name": "I2C clock",
+        "required": "at least 400 kHz at 3.3 V",
+        "datasheet": "100 kHz and 400 kHz (Fast-mode)",
+        "pass": true,
+        "source": "TCA9539 SCPS202C, @1 1"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V",
+        "datasheet": "VCC 1.65 to 5.5 V",
+        "pass": true,
+        "source": "TCA9539 SCPS202C, @1 6.3"
+       },
+       {
+        "name": "Address",
+        "required": "clear of 0x31 (FUSB303), 0x40 to 0x4F, 0x18 to 0x1F and 74h/75h",
+        "datasheet": "0x74 to 0x77 by A1 and A0; the two parts strapped to 0x76 (A1 high, A0 low) and 0x77 (A1 and A0 high) are clear of 0x31, 0x40 to 0x4F, 0x18 to 0x1F and 74h/75h, which the TPS55288 may take on the main bus",
+        "pass": true,
+        "source": "TCA9539 SCPS202C, @1 8.6.1"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TA -40 to 85 degC",
+        "pass": true,
+        "source": "TCA9539 SCPS202C, @1 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 5845, canPresaleNumber 5718, componentLibraryType expand, USD 0.9738 (10+ break) each at the need of 10; read 2026-10-03T01:20:07Z, vendors.py jlcpcb C131972 (exact LCSC match TCA9539PWR, label Texas Instruments)",
+      "digikey": "TCA9539PWR: Texas Instruments stock_available 25367, lead_weeks 20, ProductStatus Active; cached reading of 2026-10-03T01:10:16Z, api.digikey.com/products/v4/search/TCA9539PWR/productdetails",
+      "gate": "need = 5 boards x 2 = 10; S4 threshold max(5 x 10, 50) = 50; stockCount 5845 >= 50 and canPresaleNumber 5718 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "active, marketingStatusDescription ACTIVE for orderable TCA9539PWR on ti.com/product/TCA9539 (vendors.py fetch HTTP 200, 2026-10-03T01:26:16Z). First data sheet: SCPS202 October 2009 (SCPS202C revised May 2016); TI release date 2009-09-11 on the product page. Longevity: no commitment read. Notices: PCN listing not read. Distributor: Digi-Key Active (2026-10-03T01:10:16Z); JLCPCB carries no status",
+      "second_source": "second-vendor: Digi-Key TCA9539PWR 25367 >= 50 (2026-10-03T01:10:16Z)",
+      "alternates": [],
+      "driver_in_shared": "none (as TCA6416APWR)",
+      "reason": "Passes every value once the line count is 31 (V271, V276) and the two parts take 0x76 and 0x77, beside the TPS55288 at 74h/75h; 2 parts, 1 spare line. Below the TCA6416A parts, whose addresses 0x20 and 0x21 leave the 0x74 to 0x77 block alone",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "TCA9539PWR, NCA9539PW-Q100J"
+     },
+     {
+      "rank": 6,
+      "part": "NCA9539PW-Q100J",
+      "maker": "Nexperia (NCA9539-Q100 Rev. 2.1, 5 August 2024); S1 name Nexperia; documents read: @1 assets.nexperia.com/documents/data-sheet/NCA9539_Q100.pdf (vendors.py fetch HTTP 200, 2026-10-03T01:21:33Z)",
+      "lcsc": "C20235690",
+      "package": "TSSOP-24 (SOT355-1), 7.8 x 4.4 mm, JLCPCB 'TSSOP-24'",
+      "placements": 2,
+      "placements_basis": "range 2 a board for 31 lines: 2 parts of 16 lines give 32; the gate applies at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Lines",
+        "required": "31 lines (the function lists 33): V271 and V276 (owner, 2026-10-01) take the two DC-input lines of Pins.md to one ADC input, leaving 20 port enables, 5 bias selectors, 5 converter enables and 1 hardware latch read-back",
+        "datasheet": "16 lines a part, none output-only: 2 parts give 32, 1 spare over the 31 (as TCA6416APWR)",
+        "pass": true,
+        "source": "NCA9539-Q100 Rev. 2.1, 5 August 2024, @1 2"
+       },
+       {
+        "name": "Hardware reset input",
+        "required": "active-low reset returning every line to an input, from GPIO 14 with a pull-down, so a watchdog reset opens every port switch",
+        "datasheet": "active-low RESET, VIH 0.7 x VCC; the RESET pin returns the registers, the state machine and the I/Os to default (6.5); 'All I/Os are set to inputs at reset'; a pull-down on GPIO 14 holds it in reset",
+        "pass": true,
+        "source": "NCA9539-Q100 Rev. 2.1, 5 August 2024, @1 6.4, 6.5, 8.2"
+       },
+       {
+        "name": "Power-up state",
+        "required": "every load line an input with no internal pull-up at power-up and after reset",
+        "datasheet": "16 I/O pins power up configured as inputs; no internal pull-up resistor: external resistors are required for inputs that may float (section 8, Fig. 11 note); internal power-on reset (6.4)",
+        "pass": true,
+        "source": "NCA9539-Q100 Rev. 2.1, 5 August 2024, @1 6.4, 6.5, 8.2"
+       },
+       {
+        "name": "Drives the switch driver's EN",
+        "required": "a logic high above VIH_EN 2.31 V into the TPSI3052 EN (microamps), through a series resistor that the open-drain alerts pull low",
+        "datasheet": "push-pull P-ports: VOH 2.6 V min at IOH -8 mA, VCC 3.0 V (above the 2.31 V); EN draws microamps",
+        "pass": true,
+        "source": "NCA9539-Q100 Rev. 2.1, 5 August 2024, @1 12"
+       },
+       {
+        "name": "I2C clock",
+        "required": "at least 400 kHz at 3.3 V",
+        "datasheet": "400 kHz Fast-mode (features)",
+        "pass": true,
+        "source": "NCA9539-Q100 Rev. 2.1, 5 August 2024, @1 2"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V",
+        "datasheet": "VCC 1.65 to 5.5 V",
+        "pass": true,
+        "source": "NCA9539-Q100 Rev. 2.1, 5 August 2024, @1 10"
+       },
+       {
+        "name": "Address",
+        "required": "clear of 0x31 (FUSB303), 0x40 to 0x4F, 0x18 to 0x1F and 74h/75h",
+        "datasheet": "0x74 + (A1, A0): 1 1 1 0 1 A1 A0 (Fig. 3); the two parts at 0x76 and 0x77 are clear of 0x31, 0x40 to 0x4F, 0x18 to 0x1F and 74h/75h",
+        "pass": true,
+        "source": "NCA9539-Q100 Rev. 2.1, 5 August 2024, @1 6.1, Fig. 3"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "Tamb -40 to +125 degC (AEC-Q100 Grade 1)",
+        "pass": true,
+        "source": "NCA9539-Q100 Rev. 2.1, 5 August 2024, @1 3, 9"
+       }
+      ],
+      "jlcpcb": "stockCount 4576, canPresaleNumber 4575, componentLibraryType expand, USD 1.1201 (10+ break) each at the need of 10; read 2026-10-03T01:20:08Z, vendors.py jlcpcb C20235690 (exact LCSC match NCA9539PW-Q100J, label Nexperia)",
+      "digikey": "NCA9539PW-Q100J: Nexperia USA Inc. stock_available 2646, lead_weeks 22, ProductStatus Active; cached reading of 2026-10-03T01:10:18Z, api.digikey.com/products/v4/search/NCA9539PW-Q100J/productdetails",
+      "gate": "need = 5 boards x 2 = 10; S4 threshold max(5 x 10, 50) = 50; stockCount 4576 >= 50 and canPresaleNumber 4575 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "'Production' on www.nexperia.com/product/NCA9539PW-Q100 (vendors.py fetch HTTP 200, 2026-10-03T01:26:49Z): active. First data sheet: first revision not read; Rev. 2.1 of 5 August 2024 read. Longevity: no commitment read. Notices: PCN listing not read. Distributor: Digi-Key Active (2026-10-03T01:10:18Z); JLCPCB carries no status",
+      "second_source": "second-vendor: Digi-Key NCA9539PW-Q100J 2646 >= 50 (2026-10-03T01:10:18Z); TCA9539PWR is its pin-compatible TI counterpart, not compared pin by pin here",
+      "alternates": [],
+      "driver_in_shared": "none (as TCA6416APWR)",
+      "reason": "Passes every value on the TCA9539 terms with an AEC-Q100 Grade 1 range (-40 to 125 degC) and its own Nexperia data sheet; shallowest stock of the expanders at Digi-Key (2646) and JLCPCB (4576); last of the ranked parts",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "TCA9539PWR, NCA9539PW-Q100J"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP23017T-E/SS",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port voltage ceiling",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPS3701DDCR",
+      "reason": "P2 rank 1 kept: both trip bands with 0.1 % E192 dividers, own hysteresis, OUTB pulls EN low; JLCPCB 26813, Digi-Key 11567",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPS3701DDCR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port voltage ceiling latch",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo supply temperature",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP9808T-E/MS",
+      "reason": "P2 rank 1 kept, the owner's part: 72.0 and 66.25 degC representable, +/-0.5 degC; JLCPCB 757, Digi-Key 21419",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP9808T-E/MS",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo supply temperature latch",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "74LVC1G175GW,125",
+      "reason": "P2 rank 1 kept, the owner's first candidate (V303) and R3's latch part number; JLCPCB 1973, Digi-Key 36048",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "SN74LVC1G74DCUR",
+      "reason": "P2 rank 2 kept, the owner's second candidate (V303); PRE unused; JLCPCB 12386, Digi-Key 35656",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "74LVC1G175GW,125",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo supply enable gate",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "74LVC1G08GW,125",
+      "reason": "P2 rank 1 kept: AND gate with I_off, same maker and family as the latch; JLCPCB 62157, Digi-Key 65616",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "74LVC1G08GW,125",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo supply latch power-up reset",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TLV803SDBZR",
+      "reason": "P2 rank 1 kept, the part selection.json holds: threshold 2.87 to 2.99 V over temperature, output valid from 1.1 V; JLCPCB 56335, Digi-Key 178 against 100",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TPS3808G30DBVR",
+      "reason": "Passes: falling 2.748 to 2.832 V, release at most 2.903 V, valid from 0.8 V, 20 ms typ delay; SOT-23-6 pinout of its own; Digi-Key 11092 against TLV803S's 178",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TPS3703A7330DSERQ1",
+      "reason": "Passes: UV falling 3.048 to 3.090 V; its overvoltage side asserts only above 3.506 V; thinnest stock (JLCPCB 307, Digi-Key 280), 26 weeks, USD 2.27",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "TPS3808G30DBVR",
+      "maker": "Texas Instruments (SBVS050N, May 2004, revised August 2026); S1 name Texas Instruments; documents read: @1 ti.com/lit/ds/symlink/tps3808.pdf (vendors.py fetch HTTP 200, 2026-10-03T01:19:41Z)",
+      "lcsc": "C189211",
+      "package": "SOT-23-6 (DBV), a different pinout from TLV803SDBZR, JLCPCB 'SOT-23-6'",
+      "placements": 4,
+      "placements_basis": "range 1 to 4 a board: 4 when each latch's MR node takes its own supervisor beside its own alert (as TLV803SDBZR); the gate applies at 4",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Output",
+        "required": "active-low open drain, wired with its latch's MCP9808 alert on MR, so the latch powers up set (rail off) until the F11 clear",
+        "datasheet": "open-drain active-low RESET: VOL 0.4 V max at 1 mA (VDD 1.8 to 6.5 V), leakage 300 nA max, VRESET up to 7 V absolute maximum; MR (internal 90 kOhm pull-up) and CT unused; the RESET pull-up serves the MR node its latch's MCP9808 alert shares",
+        "pass": true,
+        "source": "TPS3808 SBVS050N, @1 6.1, 6.5"
+       },
+       {
+        "name": "Threshold",
+        "required": "asserts below a threshold whose minimum is above the latch's 1.65 V minimum supply and whose maximum plus hysteresis is at or below 3.201 V (3.3 V - 3 %)",
+        "datasheet": "G30 option: VIT 2.79 V, accuracy +/-1.5 % over -40 to 125 degC: falling threshold 2.748 to 2.832 V; hysteresis 1 to 2.5 % of VIT: release at most 2.903 V; minimum above 1.65 V, maximum plus hysteresis under 3.201 V; SENSE tied to VDD (1.7 uA typ at 6.5 V)",
+        "pass": true,
+        "source": "TPS3808 SBVS050N, @1 4, 6.5"
+       },
+       {
+        "name": "Valid from a low supply",
+        "required": "output low from a supply below 1.65 V",
+        "datasheet": "VPOR 0.8 V max (VOL 0.2 V max at 15 uA, rise 15 us/V or slower): output low from a supply of 0.8 V up; VDD minimum 1.7 V over -40 to 125 degC (1.65 V over 0 to 85 degC)",
+        "pass": true,
+        "source": "TPS3808 SBVS050N, @1 6.5"
+       },
+       {
+        "name": "Release delay",
+        "required": "reported",
+        "datasheet": "td 12 ms min, 20 ms typ, 28 ms max with CT open (180 to 420 ms with CT at VDD); reported",
+        "pass": true,
+        "source": "TPS3808 SBVS050N, @1 6.6"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V +/-3 %",
+        "datasheet": "VDD 1.7 to 6.5 V (1.65 V over 0 to 85 degC); IDD 2.4 uA typ, 5 uA max at 3.3 V",
+        "pass": true,
+        "source": "TPS3808 SBVS050N, @1 6.5"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TJ -40 to 125 degC (TJ = TA at this dissipation)",
+        "pass": true,
+        "source": "TPS3808 SBVS050N, @1 6.5"
+       }
+      ],
+      "jlcpcb": "stockCount 2472, canPresaleNumber 2468, componentLibraryType expand, USD 0.6877 (10+ break) each at the need of 20; read 2026-10-03T01:20:13Z, vendors.py jlcpcb C189211 (exact LCSC match TPS3808G30DBVR, label Texas Instruments)",
+      "digikey": "TPS3808G30DBVR: Texas Instruments stock_available 11092, lead_weeks 20, ProductStatus Active; cached reading of 2026-10-03T01:13:09Z, api.digikey.com/products/v4/search/TPS3808G30DBVR/productdetails",
+      "gate": "need = 5 boards x 4 = 20; S4 threshold max(5 x 20, 50) = 100; stockCount 2472 >= 100 and canPresaleNumber 2468 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "active, marketingStatusDescription ACTIVE for orderable TPS3808G30DBVR on ti.com/product/TPS3808 (vendors.py fetch HTTP 200, 2026-10-03T01:26:17Z). First data sheet: SBVS050 May 2004 (SBVS050N revised August 2026); TI release date 2004-06-30 on the product page. Longevity: no commitment read. Notices: PCN listing not read. Distributor: Digi-Key Active (2026-10-03T01:13:09Z); JLCPCB carries no status",
+      "second_source": "second-vendor: Digi-Key TPS3808G30DBVR 11092 >= 100 (2026-10-03T01:13:09Z)",
+      "alternates": [],
+      "driver_in_shared": "none (shared/ and firmware/ hold no driver for it: a supervisor)",
+      "reason": "Passes every value: threshold band 2.748 to 2.832 V over temperature, release at most 2.903 V, output valid from 0.8 V, 20 ms typ release delay with CT open (the TLV803S: 120 to 280 ms); its own SOT-23-6 pinout and a delay pin the function leaves open. Digi-Key stock 11092 against 178 for TLV803SDBZR. Below TLV803SDBZR, which selection.json holds",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "TPS3808G30DBVR"
+     },
+     {
+      "rank": 3,
+      "part": "TPS3703A7330DSERQ1",
+      "maker": "Texas Instruments (SBVS344D, November 2018, revised March 2021); S1 name Texas Instruments; documents read: @1 ti.com/lit/ds/symlink/tps3703-q1.pdf (vendors.py fetch HTTP 200, 2026-10-03T01:19:41Z)",
+      "lcsc": "C1849519",
+      "package": "WSON-6 (DSE), 1.5 x 1.5 mm, JLCPCB 'WSON-6(1.5x1.5)'",
+      "placements": 4,
+      "placements_basis": "range 1 to 4 a board: 4 when each latch's MR node takes its own supervisor (as TLV803SDBZR); the gate applies at 4. R3 places the same part number as its reset supervisor",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Output",
+        "required": "active-low open drain, wired with its latch's MCP9808 alert on MR, so the latch powers up set (rail off) until the F11 clear",
+        "datasheet": "open-drain active-low RESET: VOL 250 mV max at 3 mA (VDD 2 V) and 5 mA (VDD 5 V), leakage 300 nA max, VRESET up to 6 V absolute maximum; MR (internal 100 kOhm pull-up) and CT unused; the RESET pull-up serves the MR node its latch's MCP9808 alert shares",
+        "pass": true,
+        "source": "TPS3703-Q1 SBVS344D, @1 7.1, 7.5"
+       },
+       {
+        "name": "Threshold",
+        "required": "asserts below a threshold whose minimum is above the latch's 1.65 V minimum supply and whose maximum plus hysteresis is at or below 3.201 V (3.3 V - 3 %)",
+        "datasheet": "A7330: 3.30 V window, UV/OV 7 %, accuracy +/-0.7 %: UV falling 3.048 to 3.090 V, hysteresis 0.3 to 0.8 % of the trip point: release at most 3.115 V (minimum above 1.65 V, maximum plus hysteresis under 3.201 V); OV rising 3.506 to 3.556 V, above the rail's 3.399 V maximum, so RESET does not assert in range; above it RESET asserts and sets the latches, the safe direction",
+        "pass": true,
+        "source": "TPS3703-Q1 SBVS344D, @1 5, 7.5"
+       },
+       {
+        "name": "Valid from a low supply",
+        "required": "output low from a supply below 1.65 V",
+        "datasheet": "VPOR 1 V max (VOL 0.25 V max at 15 uA): output low from a supply of 1 V up; UVLO 1.2 to 1.7 V (RESET low when VDD falls below it)",
+        "pass": true,
+        "source": "TPS3703-Q1 SBVS344D, @1 7.5"
+       },
+       {
+        "name": "Release delay",
+        "required": "reported",
+        "datasheet": "tD 7 ms min, 10 ms typ, 13 ms max with CT open (TPS3703A: 140 to 260 ms with CT at VDD); reported",
+        "pass": true,
+        "source": "TPS3703-Q1 SBVS344D, @1 7.6"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V +/-3 %",
+        "datasheet": "VDD 1.7 to 5.5 V; IDD 4.5 uA typ, 7 uA max",
+        "pass": true,
+        "source": "TPS3703-Q1 SBVS344D, @1 7.5"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TA -40 to 125 degC (AEC-Q100)",
+        "pass": true,
+        "source": "TPS3703-Q1 SBVS344D, @1 1, 7.1"
+       }
+      ],
+      "jlcpcb": "stockCount 307, canPresaleNumber 306, componentLibraryType expand, USD 2.2662 (10+ break) each at the need of 20; read 2026-10-03T01:20:15Z, vendors.py jlcpcb C1849519 (exact LCSC match TPS3703A7330DSERQ1, label Texas Instruments)",
+      "digikey": "TPS3703A7330DSERQ1: Texas Instruments stock_available 280, lead_weeks 26, ProductStatus Active; cached reading of 2026-10-03T01:13:11Z, api.digikey.com/products/v4/search/TPS3703A7330DSERQ1/productdetails",
+      "gate": "need = 5 boards x 4 = 20; S4 threshold max(5 x 20, 50) = 100; stockCount 307 >= 100 and canPresaleNumber 306 >= 0: pass (sourcing rule 4); with R3's reset supervisor on the same part number the need is 25 and the threshold 125: 307 still passes",
+      "lifecycle": "active, marketingStatusDescription ACTIVE for orderable TPS3703A7330DSERQ1 on ti.com/product/TPS3703-Q1 (vendors.py fetch HTTP 200, 2026-10-03T01:26:17Z). First data sheet: SBVS344 November 2018 (SBVS344D revised March 2021); TI release date 2019-05-06 on the product page. Longevity: no commitment read. Notices: PCN listing not read. Distributor: Digi-Key Active (2026-10-03T01:13:11Z); JLCPCB carries no status",
+      "second_source": "second-vendor: Digi-Key TPS3703A7330DSERQ1 280 >= 100 (2026-10-03T01:13:11Z)",
+      "alternates": [],
+      "driver_in_shared": "none (a supervisor)",
+      "reason": "Passes every value: UV falling band 3.048 to 3.090 V (+/-0.7 %), release at most 3.115 V; its overvoltage side asserts RESET above 3.506 V only, outside the rail band, and then sets the latches, the safe direction. The same part number as R3's reset supervisor. Thinnest stock of the three (JLCPCB 307, Digi-Key 280, 26-week lead), highest price (USD 2.2662), 1.5 mm WSON. Last of the three",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "TPS3703A7330DSERQ1"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TLV803SDBZR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo supply latch clear buffer",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "74LVC1G17GW,125",
+      "reason": "P2 rank 1 kept: Schmitt input with stated thresholds, strong LVC output for 5 clock inputs, I_off; JLCPCB 18569, Digi-Key 31433",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "74LVC1G17GW,125",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo rail clamp",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "OPA376AIDBVR",
+      "reason": "P2 rank 1 kept for its response, not its offset: slew 2 V/us, gate at full drive 17.2 us after the threshold, rail rise 0.11 V at 6.35 A into 1000 uF; offset 25 uV against 10 uV of OPA333, HV threshold 3 mV higher; no Digi-Key stock, second source TLV9001IDBVR",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TLV9001IDBVR",
+      "reason": "P2 rank 2 kept: the same response as OPA376 (2 V/us), 2 mV offset: HV threshold 8.679 V (21 mV under 8.70 V), LV 11 mV under the lowest trip edge; the pin-compatible second source of rank 1",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "OPA333AIDBVR",
+      "reason": "Passes every value with the smallest offset (HV threshold 8.659 V, 41 mV under 8.70 V), CMRR specified over the whole input range and Digi-Key stock (3416); slew 0.16 V/us: full drive 36.3 us after the threshold, twice the rail rise of ranks 1 and 2",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "TLV333IDBVR",
+      "reason": "Passes as OPA333 with 15 uV max offset and a drift figure typical only; cheapest and deepest stock (JLCPCB 28373, Digi-Key 20764); same slew 0.16 V/us",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 3,
+      "part": "OPA333AIDBVR",
+      "maker": "Texas Instruments (SBOS351E, March 2006, revised December 2015); S1 name Texas Instruments; documents read: @1 ti.com/lit/ds/symlink/opa333.pdf (vendors.py fetch HTTP 200, 2026-10-03T01:19:39Z)",
+      "lcsc": "C30878",
+      "package": "SOT-23-5 (DBV)",
+      "placements": 4,
+      "placements_basis": "fixed: one clamp on each of 3 servo rails and on the adjustable supply output (V315, V316)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Placement",
+        "required": "one clamp on each of the 3 servo rails and on the adjustable supply's output, 4 a board",
+        "datasheet": "one amplifier a clamp; SOT-23-5 (DBV)",
+        "pass": true,
+        "source": "OPA333 SBOS351E, @1 pinout"
+       },
+       {
+        "name": "Tracks the set voltage",
+        "required": "switches a load resistor across the rail once the rail exceeds the voltage before the ideal diode's MOSFET by 0.1 V, an offset that resistors set",
+        "datasheet": "IN+ takes the rail through 332 kOhm / 100 kOhm (k = 0.2315); IN- takes the converter's output through an equal divider whose 100 kOhm returns to 30.4 mV made from REF3112AIDBZR's 1.25 V by 1 kOhm / 24.9 Ohm (resistors stage 2): threshold = VA + 30.4 mV x (1 - k) / k = VA + 0.1008 V at every set point; the same SOT-23-5 pinout as OPA376AIDBVR (OUT, V-, +IN, -IN, V+)",
+        "pass": true,
+        "source": "model clamp_rr.py (P3 copy of P2 model/clamp.py with the op-amp row changed, re-run 2026-10-03T01:35Z); OPA333 SBOS351E, @1"
+       },
+       {
+        "name": "Enabled by the controller's turn-off signal",
+        "required": "the signal that turns the ideal diode's MOSFET off when the rail rises above the converter's output also enables the clamp",
+        "datasheet": "the op-amp drives the clamp MOSFET's gate through 3.92 kOhm (stage 2); the LTC4352 STATUS, low while its MOSFET is on, holds that gate below 0.4 V (VOL 0.4 V max at 1.25 mA; 4.5 V / 3.92 kOhm = 1.15 mA, inside the op-amp's short-circuit current of +/-5 mA); when the controller turns its MOSFET off STATUS releases and the op-amp drives the gate",
+        "pass": true,
+        "source": "OPA333 SBOS351E, @1 6.6; LTC4352 data sheet 4352fa (Rev A 12/10), www.analog.com/media/en/technical-documentation/data-sheets/4352fa.pdf, read 2026-10-03T01:27:50Z, Electrical Characteristics, Pin Functions"
+       },
+       {
+        "name": "Holds the rail under its ceiling",
+        "required": "threshold at or under 8.70 V at the 8.4 V setting (HV) and 6.00 V at the 5.5 V setting (LV), with the converter at its highest set point (8.53 V, 5.59 V)",
+        "datasheet": "HV: VA 8.27 to 8.53 V gives a threshold of 8.346 to 8.659 V (VOS 10 uV max plus 0.05 uV/degC max over 25 K, CMRR 106 dB min over the full input range; the two 0.1 % dividers +/-0.31 % of VA, REF3112 and its divider +/-0.55 % of the offset, divider current +1.6 mV, each divided by k): 41 mV under 8.70 V. LV: VA 5.41 to 5.59 V gives 5.495 to 5.710 V: 290 mV under 6.00 V. The rise during the response is not included: the rail capacitance is not known",
+        "pass": true,
+        "source": "model clamp_rr.py (2026-10-03T01:35Z); OPA333 SBOS351E, @1 6.6; SLVSI72A, ti.com/lit/ds/symlink/tps55285.pdf, read 2026-10-03T01:27:58Z, 5.4 VOUT_FULL"
+       },
+       {
+        "name": "No conduction in forward operation",
+        "required": "the threshold stays above the converter's output over every error, so the clamp never loads the converter",
+        "datasheet": "offset at least 0.058 V at VA 15.22 V, 0.076 V at 8.53 V, 0.085 V at 5.59 V, 0.098 V at 0.8 V: always above VA, while in forward conduction the rail sits 10 to 40 mV below VA",
+        "pass": true,
+        "source": "model clamp_rr.py (2026-10-03T01:35Z); OPA333 SBOS351E, @1"
+       },
+       {
+        "name": "Margin to the ceiling's lowest trip edge",
+        "required": "stated, in V, for the LV and HV settings",
+        "datasheet": "HV (lowest trip 8.534 V): -0.125 V with VA at 8.53 V, +0.032 V at 8.40 V, +0.188 V at 8.27 V; LV (lowest trip 5.740 V): +0.030 V with VA at 5.59 V, +0.138 V at 5.50 V, +0.245 V at 5.41 V. A port whose ceiling trips low in its band can cut off while the clamp holds the rail at the top of its band, and reconnects by its own hysteresis (V130)",
+        "pass": true,
+        "source": "model clamp_rr.py (2026-10-03T01:35Z); FU-2H TPS3701 trip band (005-P2-R6.json report, verified by 027-P4-datasheet-R6.json)"
+       },
+       {
+        "name": "Input range and withstand",
+        "required": "the rail and the converter's output from 0.8 V to the adjustable supply's 15.22 V plus the 0.1 V offset, and 20 V through a failed converter",
+        "datasheet": "common-mode range (V-) - 0.1 to (V+) + 0.1 V with CMRR 106 dB min specified over that whole range (no transition region, unlike OPA376AIDBVR's (V+) - 1.3 V limit): IN- at 3.56 V (15.38 V scaled) and 4.63 V at 20 V are inside at a 5 V rail down to 4.75 V; input pins to (V+) + 0.3 V, 1 mA (OPA333) or 10 mA (TLV333) clamp current: with the 5 V rail absent and the rail at 20 V the 332 kOhm divider limits the input current to about 14 uA",
+        "pass": true,
+        "source": "OPA333 SBOS351E, @1 6.1, 6.6"
+       },
+       {
+        "name": "Energy and peak current absorbed",
+        "required": "stated; the energy a servo returns is not known unless a servo data sheet states it",
+        "datasheet": "peak current = threshold / (load resistor + MOSFET RDS(on)), set by the resistors and the switch, not by the op-amp: with 1.36 Ohm on a servo rail 6.37 A at 8.66 V (55.1 W), 4.20 A at 5.71 V, 0.66 A at 0.90 V; with 2.42 Ohm on the adjustable output 6.36 A at 15.37 V (97.7 W). Energy: not known, no servo data sheet read states the energy a braking servo returns (Savox SH-0255MG+ and SB-2290SG state blocking currents of 1.4 A and 10.5 A only). Response: slew 0.16 V/us, GBW 350 kHz, no overload recovery time stated: through 3.92 kOhm into CSD17578Q3A (Ciss 1.59 nF max) the gate reaches 1.9 V (VGS(th) max) 17.7 us and 4.5 V 36.3 us after the threshold, against 4.7 us and 17.2 us for OPA376AIDBVR (model resp.py, 2026-10-03T01:35Z); rail rise = I x t / C: 0.23 V at 6.35 A into 1000 uF, 0.49 V into 470 uF, 2.3 V into 100 uF, twice OPA376AIDBVR's; the rail capacitance with servos attached is not known",
+        "pass": true,
+        "source": "OPA333 SBOS351E, @1 6.6; model resp.py; CSD17578Q3A SLPS525A, ti.com/lit/ds/symlink/csd17578q3a.pdf, read 2026-10-03T00:23:28Z (P2)"
+       },
+       {
+        "name": "Supply",
+        "required": "the board's 5 V or 3.3 V logic rail",
+        "datasheet": "VS 1.8 to 5.5 V; IQ 17 uA typ, 25 uA max at 25 degC, 28 uA max over -40 to 125 degC; run from the 5 V rail",
+        "pass": true,
+        "source": "OPA333 SBOS351E, @1 6.6"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "specified -40 to 125 degC",
+        "pass": true,
+        "source": "OPA333 SBOS351E, @1 6.6"
+       }
+      ],
+      "jlcpcb": "stockCount 9003, canPresaleNumber 8249, componentLibraryType expand, USD 1.1852 (10+ break) each at the need of 20; read 2026-10-03T01:20:10Z, vendors.py jlcpcb C30878 (exact LCSC match OPA333AIDBVR, label Texas Instruments)",
+      "digikey": "OPA333AIDBVR: Texas Instruments stock_available 3416, lead_weeks 20, ProductStatus Active; cached reading of 2026-10-03T01:11:12Z, api.digikey.com/products/v4/search/keyword keywords OPA333AIDBVR (details_status 404); the number is also carried by UMW, stock 0",
+      "gate": "need = 5 boards x 4 = 20; S4 threshold max(5 x 20, 50) = 100; stockCount 9003 >= 100 and canPresaleNumber 8249 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "active, marketingStatusDescription ACTIVE for orderable OPA333AIDBVR on ti.com/product/OPA333 (vendors.py fetch HTTP 200, 2026-10-03T01:26:16Z). First data sheet: SBOS351 March 2006 (SBOS351E revised December 2015); TI release date 2006-03-02 on the product page. Longevity: no commitment read. Notices: PCN listing not read. Distributor: Digi-Key Active (2026-10-03T01:11:12Z); JLCPCB carries no status",
+      "second_source": "second-vendor: Digi-Key OPA333AIDBVR (Texas Instruments) 3416 >= 100 (2026-10-03T01:11:12Z); TLV333IDBVR is its pin-compatible alternate",
+      "alternates": [
+       "TLV333IDBVR"
+      ],
+      "driver_in_shared": "none (an analogue part)",
+      "reason": "Passes every value, with a smaller offset error than OPA376AIDBVR (10 uV against 25 uV max; HV threshold 8.659 V against 8.662 V, 3 mV) and CMRR specified over the whole input range, and has Digi-Key stock (3416) where OPA376 has none. Slew 0.16 V/us against 2 V/us: the gate reaches full drive 36.3 us after the threshold against 17.2 us, so the rail rises twice as far in the response. Below OPA376AIDBVR and TLV9001IDBVR, whose response is faster",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "OPA333AIDBVR, TLV333IDBVR"
+     },
+     {
+      "rank": 4,
+      "part": "TLV333IDBVR",
+      "maker": "Texas Instruments (SBOS751, December 2015); S1 name Texas Instruments; documents read: @1 ti.com/lit/ds/symlink/tlv333.pdf (vendors.py fetch HTTP 200, 2026-10-03T01:19:40Z)",
+      "lcsc": "C473369",
+      "package": "SOT-23-5 (DBV)",
+      "placements": 4,
+      "placements_basis": "fixed: one clamp on each of 3 servo rails and on the adjustable supply output (V315, V316)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Placement",
+        "required": "one clamp on each of the 3 servo rails and on the adjustable supply's output, 4 a board",
+        "datasheet": "one amplifier a clamp; SOT-23-5 (DBV)",
+        "pass": true,
+        "source": "TLV333 SBOS751, @1 pinout"
+       },
+       {
+        "name": "Tracks the set voltage",
+        "required": "switches a load resistor across the rail once the rail exceeds the voltage before the ideal diode's MOSFET by 0.1 V, an offset that resistors set",
+        "datasheet": "IN+ takes the rail through 332 kOhm / 100 kOhm (k = 0.2315); IN- takes the converter's output through an equal divider whose 100 kOhm returns to 30.4 mV made from REF3112AIDBZR's 1.25 V by 1 kOhm / 24.9 Ohm (resistors stage 2): threshold = VA + 30.4 mV x (1 - k) / k = VA + 0.1008 V at every set point; the same SOT-23-5 pinout as OPA376AIDBVR (OUT, V-, +IN, -IN, V+)",
+        "pass": true,
+        "source": "model clamp_rr.py (P3 copy of P2 model/clamp.py with the op-amp row changed, re-run 2026-10-03T01:35Z); TLV333 SBOS751, @1"
+       },
+       {
+        "name": "Enabled by the controller's turn-off signal",
+        "required": "the signal that turns the ideal diode's MOSFET off when the rail rises above the converter's output also enables the clamp",
+        "datasheet": "the op-amp drives the clamp MOSFET's gate through 3.92 kOhm (stage 2); the LTC4352 STATUS, low while its MOSFET is on, holds that gate below 0.4 V (VOL 0.4 V max at 1.25 mA; 4.5 V / 3.92 kOhm = 1.15 mA, inside the op-amp's short-circuit current of +/-5 mA); when the controller turns its MOSFET off STATUS releases and the op-amp drives the gate",
+        "pass": true,
+        "source": "TLV333 SBOS751, @1 6.6; LTC4352 data sheet 4352fa (Rev A 12/10), www.analog.com/media/en/technical-documentation/data-sheets/4352fa.pdf, read 2026-10-03T01:27:50Z, Electrical Characteristics, Pin Functions"
+       },
+       {
+        "name": "Holds the rail under its ceiling",
+        "required": "threshold at or under 8.70 V at the 8.4 V setting (HV) and 6.00 V at the 5.5 V setting (LV), with the converter at its highest set point (8.53 V, 5.59 V)",
+        "datasheet": "HV: VA 8.27 to 8.53 V gives a threshold of 8.346 to 8.659 V (VOS 15 uV max plus 0.02 uV/degC typical drift over 25 K (no maximum stated), CMRR 102 dB min over the full input range; the two 0.1 % dividers +/-0.31 % of VA, REF3112 and its divider +/-0.55 % of the offset, divider current +1.6 mV, each divided by k): 41 mV under 8.70 V. LV: VA 5.41 to 5.59 V gives 5.495 to 5.710 V: 290 mV under 6.00 V. The rise during the response is not included: the rail capacitance is not known",
+        "pass": true,
+        "source": "model clamp_rr.py (2026-10-03T01:35Z); TLV333 SBOS751, @1 6.6; SLVSI72A, ti.com/lit/ds/symlink/tps55285.pdf, read 2026-10-03T01:27:58Z, 5.4 VOUT_FULL"
+       },
+       {
+        "name": "No conduction in forward operation",
+        "required": "the threshold stays above the converter's output over every error, so the clamp never loads the converter",
+        "datasheet": "offset at least 0.058 V at VA 15.22 V, 0.076 V at 8.53 V, 0.085 V at 5.59 V, 0.098 V at 0.8 V: always above VA, while in forward conduction the rail sits 10 to 40 mV below VA",
+        "pass": true,
+        "source": "model clamp_rr.py (2026-10-03T01:35Z); TLV333 SBOS751, @1"
+       },
+       {
+        "name": "Margin to the ceiling's lowest trip edge",
+        "required": "stated, in V, for the LV and HV settings",
+        "datasheet": "HV (lowest trip 8.534 V): -0.125 V with VA at 8.53 V, +0.032 V at 8.40 V, +0.188 V at 8.27 V; LV (lowest trip 5.740 V): +0.030 V with VA at 5.59 V, +0.138 V at 5.50 V, +0.245 V at 5.41 V. A port whose ceiling trips low in its band can cut off while the clamp holds the rail at the top of its band, and reconnects by its own hysteresis (V130)",
+        "pass": true,
+        "source": "model clamp_rr.py (2026-10-03T01:35Z); FU-2H TPS3701 trip band (005-P2-R6.json report, verified by 027-P4-datasheet-R6.json)"
+       },
+       {
+        "name": "Input range and withstand",
+        "required": "the rail and the converter's output from 0.8 V to the adjustable supply's 15.22 V plus the 0.1 V offset, and 20 V through a failed converter",
+        "datasheet": "common-mode range (V-) - 0.1 to (V+) + 0.1 V with CMRR 102 dB min specified over that whole range (no transition region, unlike OPA376AIDBVR's (V+) - 1.3 V limit): IN- at 3.56 V (15.38 V scaled) and 4.63 V at 20 V are inside at a 5 V rail down to 4.75 V; input pins to (V+) + 0.3 V, 1 mA (OPA333) or 10 mA (TLV333) clamp current: with the 5 V rail absent and the rail at 20 V the 332 kOhm divider limits the input current to about 14 uA",
+        "pass": true,
+        "source": "TLV333 SBOS751, @1 6.1, 6.6"
+       },
+       {
+        "name": "Energy and peak current absorbed",
+        "required": "stated; the energy a servo returns is not known unless a servo data sheet states it",
+        "datasheet": "peak current = threshold / (load resistor + MOSFET RDS(on)), set by the resistors and the switch, not by the op-amp: with 1.36 Ohm on a servo rail 6.37 A at 8.66 V (55.1 W), 4.20 A at 5.71 V, 0.66 A at 0.90 V; with 2.42 Ohm on the adjustable output 6.36 A at 15.37 V (97.7 W). Energy: not known, no servo data sheet read states the energy a braking servo returns (Savox SH-0255MG+ and SB-2290SG state blocking currents of 1.4 A and 10.5 A only). Response: slew 0.16 V/us, GBW 350 kHz, no overload recovery time stated: through 3.92 kOhm into CSD17578Q3A (Ciss 1.59 nF max) the gate reaches 1.9 V (VGS(th) max) 17.7 us and 4.5 V 36.3 us after the threshold, against 4.7 us and 17.2 us for OPA376AIDBVR (model resp.py, 2026-10-03T01:35Z); rail rise = I x t / C: 0.23 V at 6.35 A into 1000 uF, 0.49 V into 470 uF, 2.3 V into 100 uF, twice OPA376AIDBVR's; the rail capacitance with servos attached is not known",
+        "pass": true,
+        "source": "TLV333 SBOS751, @1 6.6; model resp.py; CSD17578Q3A SLPS525A, ti.com/lit/ds/symlink/csd17578q3a.pdf, read 2026-10-03T00:23:28Z (P2)"
+       },
+       {
+        "name": "Supply",
+        "required": "the board's 5 V or 3.3 V logic rail",
+        "datasheet": "VS 1.8 to 5.5 V; IQ 17 uA typ, 28 uA max over -40 to 125 degC; run from the 5 V rail",
+        "pass": true,
+        "source": "TLV333 SBOS751, @1 6.6"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "specified -40 to 125 degC",
+        "pass": true,
+        "source": "TLV333 SBOS751, @1 6.6"
+       }
+      ],
+      "jlcpcb": "stockCount 28373, canPresaleNumber 27159, componentLibraryType expand, USD 0.3008 (10+ break) each at the need of 20; read 2026-10-03T01:20:11Z, vendors.py jlcpcb C473369 (exact LCSC match TLV333IDBVR, label Texas Instruments)",
+      "digikey": "TLV333IDBVR: Texas Instruments stock_available 20764, lead_weeks 20, ProductStatus Active; cached reading of 2026-10-03T00:19:34Z, api.digikey.com/products/v4/search/TLV333IDBVR/productdetails",
+      "gate": "need = 5 boards x 4 = 20; S4 threshold max(5 x 20, 50) = 100; stockCount 28373 >= 100 and canPresaleNumber 27159 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "active, marketingStatusDescription ACTIVE for orderable TLV333IDBVR on ti.com/product/TLV333 (vendors.py fetch HTTP 200, 2026-10-03T01:26:17Z). First data sheet: SBOS751 December 2015; TI release date 2016-01-26 on the product page. Longevity: no commitment read. Notices: PCN listing not read. Distributor: Digi-Key Active (2026-10-03T00:19:34Z); JLCPCB carries no status",
+      "second_source": "second-vendor: Digi-Key TLV333IDBVR 20764 >= 100 (cached 2026-10-03T00:19:34Z); OPA333AIDBVR is its pin-compatible alternate",
+      "alternates": [
+       "OPA333AIDBVR"
+      ],
+      "driver_in_shared": "none (an analogue part)",
+      "reason": "Passes every value on the OPA333 terms: same SOT-23-5 pinout, slew 0.16 V/us, 15 uV max offset against 10 uV, drift stated typical only; the cheapest of the four op-amps (USD 0.3008) and the deepest stock at both vendors (JLCPCB 28373, Digi-Key 20764). Below OPA333AIDBVR on its offset maximum and drift figure",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "p3_part": "OPA333AIDBVR, TLV333IDBVR"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "OPA376AIDBVR",
+      "kind": "first",
+      "option": ""
+     },
+     {
+      "part": "TLV9001IDBVR",
+      "kind": "alternate",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo rail clamp reference",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "REF3112AIDBZR",
+      "reason": "P2 rank 1 kept: +/-0.35 mV of the 0.1 V offset, one part feeds the 4 clamps; JLCPCB 40000, Digi-Key 9011",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "REF3112AIDBZR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo rail ideal diode",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "LTC4352CMS#TRPBF",
+      "reason": "P2 rank 1 kept, the only controller read that runs from 0 V with a 4.7 to 6 V VCC, takes 24 V on its rail pins and has a turn-off status output; passes every requirement value and fails rule 4: JLCPCB 10 against 100 (every LTC4352 and LTC4353 row holds 0 to 10); Digi-Key 3827; reported to the owner, no other candidate to rank",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "LTC4352CMS#TRPBF",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo rail ideal diode MOSFET",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "CSD17573Q5B",
+      "reason": "P2 rank 1 kept: 1.45 mOhm max at 4.5 V, Ciss 9.0 nF max inside the controller's 10 nF; JLCPCB 542 against 100, Digi-Key 18254",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "CSD17573Q5B",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo rail clamp switch",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "CSD17578Q3A",
+      "reason": "P2 rank 1 kept: 9.4 mOhm max at 4.5 V, VGS(th) 1.1 V min above the 0.4 V STATUS level; JLCPCB 5692, Digi-Key 2226",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "CSD17578Q3A",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "Fixed input TPS55285VALR (Servo supply)",
+    "value": "Ranked first and not replaced; no check of this re-rank fails. JLCPCB C52160906 exact match: stockCount 2732, canPresaleNumber 2723, expand, against a gate of 100 (pass); held 12 is under the need of 20, so rule 6 does not cover it and the gate rests on the stock. Digi-Key stock_available 5243, lead 20 weeks, Active. The data sheet re-read has sha256 18d2a148409bf742..., byte-identical to P2's copy. P2's continuous rating (3.72 A at 6.0 V in, 8.4 V out, 50 degC on 33 degC/W) is under the 4 A low end of the servo rail current range; it is a reported figure, not a requirement value, and was not recomputed here",
+    "source": "vendors.py jlcpcb C52160906, 2026-10-03T01:25:52Z; vendors.py digikey TPS55285VALR, cached reading of 2026-10-03T00:26:00Z (api.digikey.com/products/v4/search/TPS55285VALR/productdetails); ti.com/lit/ds/symlink/tps55285.pdf, read 2026-10-03T01:27:58Z; P2 return of this run for the 3.72 A"
+   },
+   {
+    "figure": "TPS55285 against the 18 V DC input (V319, the owner's V318 question)",
+    "value": "From the converter's side 18 V is enough: VIN recommended range 2.4 to 22 V, input overvoltage protection stops switching at 22.0 V min, 22.5 V typ, 23.0 V max rising (0.9 V hysteresis), VIN and SW1 absolute maximum 27 V; 18 V is 4.0 V under the OVP minimum and 9 V under the absolute maximum. Whether the bus stays at or under 27 V for the cut-off window is not decided by this part's ratings: the TVS2701DRBR clamp (35.7 to 37.3 V, V308) lasts 3.98 us typ, 5.4 us max plus the gate discharge, and the bus capacitance (V318) or an 18 V-class TVS (V319) holds the input pins at 27 V: R5's figures, not read here. The 18 V top moves the cut-off's trip point, not the clamp voltage",
+    "source": "SLVSI72A, ti.com/lit/ds/symlink/tps55285.pdf, read 2026-10-03T01:27:58Z, 5.1, 5.2, 5.4; Research.md@5f5c0a6 V308, V318, V319 (checkout 5f5c0a61c4f7, read before 2026-10-03T01:19:37Z)"
+   },
+   {
+    "figure": "I/O expander line count against V271 and V276",
+    "value": "31 lines: 20 port switch enables, 5 bias selectors, 5 converter enables (4 TPS55285 and the TPS55288), 1 hardware latch read-back. Pins.md I/O expanders counts 33 with two inputs, the DC input's source status and brownout, 'until a decision lets one signal serve both'; V271 and V276 (owner, 2026-10-01) make it: the DC input voltage through a divider into one ADC input of the measurement coprocessor (GPIO 40 to 47) serves both. P2's value 33 is stale. Two 16-line parts give 32, 1 spare. Not pinned and not counted: read-backs of the 4 rail latches (V283), which would bring the count to 35; the port ceiling read-backs (V135) go through the port monitors. The MCP23017 keeps 42 usable lines on 3 parts, 11 spare",
+    "source": "hardware/docs/Pins.md I/O expanders; Research.md@5f5c0a6 V271, V276, V283, V135 (checkout 5f5c0a61c4f7, read before 2026-10-03T01:19:37Z)"
+   },
+   {
+    "figure": "Port supply switch input withstand under the 18 V top (V319)",
+    "value": "The function's 20 V stands: steady 18 V and the cut-off's trip above 18 V (R5 states the band; V299's ratio puts it near 19.8 V, an inference). Parts rated 18 V absolute maximum stay dropped, with no margin at 18 V and none above it: NCP45520IMNTWG-L and NCP45650IMNTWG, the TPS2410 family on A, C, FLTR, VDD and STAT, and TPS2419 (A, C 18 V). TPS2411PW holds JLCPCB stock 236",
+    "source": "Research.md@5f5c0a6 V136, V299, V319; P2's drop readings (TPS2410 ti.com/lit/ds/symlink/tps2410.pdf, read 2026-10-03T00:16:47Z); vendors.py jlcpcb C1523991, 2026-10-03T01:25:59Z"
+   },
+   {
+    "figure": "Servo rail ideal diode stock, for the owner",
+    "value": "LTC4352CMS#TRPBF passes every requirement value and fails rule 4: JLCPCB C688177 stockCount 10, canPresaleNumber 10 against a gate of 100; LTC4352IMS#TRPBF C688185 holds 0, LTC4353CMS#TRPBF C688189 holds 6, so no controller of this function passes. It is ranked first for want of another candidate; the P4 stock check will refute it. Digi-Key holds 3827 (LTC4352CMS#TRPBF); 20 bought there into the personal library pass rule 6 once the owner states the quantity held, or the owner accepts the exception. TPS2411PW (JLCPCB 236) passes the gate and fails the 20 V withstand (A, C 18 V absolute maximum)",
+    "source": "vendors.py jlcpcb C688177, C688185, C688189, C1523991, 2026-10-03T01:25:54Z to 01:25:59Z; vendors.py digikey LTC4352CMS#TRPBF, cached reading of 2026-10-03T00:26:57Z"
+   },
+   {
+    "figure": "Servo rail clamp op-amps: response and error budget",
+    "value": "Gate of CSD17578Q3A through 3.92 kOhm (Ciss 1.59 nF max) with the op-amp output ramping at its slew rate to 4.9 V: OPA376 (2 V/us, 0.33 us overload recovery) 1.9 V at 4.7 us and 4.5 V at 17.2 us, TLV9001 (2 V/us) 4.3 and 16.9 us, OPA333 and TLV333 (0.16 V/us) 17.7 and 36.3 us. Rail rise at 6.35 A over the time to 4.5 V: 0.11 V (OPA376), 0.23 V (OPA333, TLV333) into 1000 uF; 1.09 and 2.30 V into 100 uF; the rail capacitance is not known. Highest HV threshold at 8.53 V: 8.662 V (OPA376), 8.679 V (TLV9001), 8.659 V (OPA333, TLV333), 38, 21 and 41 mV under 8.70 V; LV 5.712, 5.729, 5.710 V. P2's 'smallest offset error' for OPA376 is not right (OPA333 10 uV max, OPA376 25 uV typ plus drift); the HV threshold differs by 3 mV, so the ranking rests on the response. P2's 15.6 us for OPA376 treats the output as a step; 17.2 us with the slew-limited ramp",
+    "source": "clamp_rr.py (P3's copy of P2's model/clamp.py, op-amp rows changed) and resp.py in scratch/FU-2I/rerank-R6, run 2026-10-03T01:35:04Z; OPA333 SBOS351E and TLV333 SBOS751 (ti.com/lit/ds/symlink/opa333.pdf, tlv333.pdf, read 2026-10-03T01:19:39Z, 01:19:40Z) 6.6 / 7.7; OPA376 and TLV9001 rows from P2's return"
+   },
+   {
+    "figure": "OPA376 input range at a low 5 V rail",
+    "value": "OPA376's CMRR (76 dB min) is specified for VCM < (V+) - 1.3 V: 3.7 V at 5.0 V, 3.55 V at 4.85 V, 3.45 V at 4.75 V. The adjustable supply's clamp input reaches 3.56 V at 15.38 V (15.22 V set plus the offset), so it leaves the specified region when the 5 V rail is under 4.86 V; the servo rails' inputs (2.0 V at 8.7 V) stay inside. The 5 V rail's tolerance is R5's and not read. OPA333 and TLV333 specify CMRR over (V-) - 0.1 to (V+) + 0.1 V. P2's record states the 3.7 V limit at 5.0 V only",
+    "source": "OPA376 SBOS406G, ti.com/lit/ds/symlink/opa376.pdf, P2's copy read 2026-10-03T00:24:22Z, 6.5 (CMRR, VCM); OPA333 SBOS351E 6.6 and TLV333 SBOS751 7.7, read 2026-10-03T01:19:39Z and 01:19:40Z"
+   },
+   {
+    "figure": "INA381A1IDSGR trip band and orderables",
+    "value": "Trip 4.24 to 4.57 A with the 10 mOhm +/-0.5 % shunt, CMPREF 0.88 V +/-0.45 % (assumed, stage 2), gain error 1 %, VOS 0.5 mV plus drift and PSRR, comparator offset 5 mV; inside 3.0 to 6.35 A and 3.96 to 4.84 A; hysteresis 0.25 A. The product page lists INA381A1IDSGT and INA381A1IDGST (small reels) as OBSOLETE and INA381A1IDSGR (3000 reel) as ACTIVE. JLCPCB 615 clears the gate of 500 by 115",
+    "source": "INA381 SBOS848B, ti.com/lit/ds/symlink/ina381.pdf, read 2026-10-03T01:19:37Z, 6.5, 7.3.6; arith.py 2026-10-03T01:35:10Z; ti.com/product/INA381, read 2026-10-03T01:26:15Z; vendors.py jlcpcb C544574, 2026-10-03T01:19:58Z"
+   },
+   {
+    "figure": "IRF7313TRPBF pair loss and junction temperature",
+    "value": "Pair at 3.0 A: 174 mV and 0.52 W at 2 x 29 mOhm max (VGS 10 V), 261 mV and 0.78 W with RDS(on) x 1.5 (the rise is assumed; Figure 4 not read numerically). RthJA 62.5 degC/W is stated for 10 s on FR-4, no steady-state figure: TJ about 99 degC at 50 degC ambient, under 150 degC up to 128 degC/W. Body diode 2.5 A continuous; IDM 30 A; the SOA at 8 A for 128 us (about 5.6 W, 0.71 mJ) is not read from Figure 8",
+    "source": "IRF7313PbF PD-95039, 10/7/04, JLCPCB copy, read 2026-10-03T01:19:50Z; arith.py 2026-10-03T01:35:10Z"
+   },
+   {
+    "figure": "TCA6416ARTWR second source",
+    "value": "Digi-Key stock 0, so the second-vendor route fails; the alternate is PCAL6416AHF,128: pins 1 to 24 carry the same signals in both data sheets, the same address 0x20/0x21 and register 00h to 07h, inputs and pull-up enables off at reset; JLCPCB C2652287 20572. Both packages are 4 x 4 mm, 24 terminals, 0.5 mm pitch (RTW0024B, SOT994-1); their exposed-pad land sizes are not compared",
+    "source": "TCA6416A SCPS194F Table 5-1 and PCAL6416A Rev. 7.1 Table 3, read 2026-10-03T01:19:38Z and 01:19:48Z; vendors.py digikey TCA6416ARTWR, cached reading of 2026-10-03T01:10:11Z"
+   },
+   {
+    "figure": "P2 entries recorded as passing every value but outside P2's shortlist",
+    "value": "Neither on P2's shortlist nor answering an entry of P3's, so not ranked here: INA301A1QDGKRQ1, DMG4822SSD-13, ETQP5M4R7YFC, IHLP5050CEER4R7M01, TCA6424ARGJR, PCAL6524HEAZ, TLV6710DDCR, SN74LVC1G175DCKR, SN74LVC1G08DCKR, SN74LVC1G17DCKR, SN74AUP1G17DBVR, LM4041A12IDBZR, LTC4352IMS#TRPBF, LTC4353CMS#TRPBF, PSMN1R0-30YLDX, TPH1R403NL, CSD18504Q5A, NTTFS4C10NTAG. The FU-2H re-rank ranked several of them",
+    "source": "P2's dropped lists in its return of this run; results/hardware/research/round2/FU-2H/019-rerank-R6.json"
+   },
+   {
+    "figure": "TCAL6416PWR",
+    "value": "P2's drop of the TCA6416A, PCAL6416A and TCAL6416PWR rests on the 33 lines too, but P3's entry leaves TCAL6416PWR out for a conflict in its data sheet (RESET re-initialises the bus 'without resetting the sticky registers' against section 7.3.5 returning the registers to default). Not qualified here; JLCPCB C20345827 holds 106 (P3's reading, time not given)",
+    "source": "P3's return of this run; not re-read"
+   },
+   {
+    "figure": "Digi-Key calls",
+    "value": "1 uncached call (digikey-quota): 843 of 1000 left at 2026-10-03T01:35:24Z. Every part reading above is a cached answer of the same UTC day, read from 00:19:34Z to 01:13:11Z by P2, P3 and an earlier agent",
+    "source": "vendors.py digikey-quota, 2026-10-03T01:35:24Z"
+   },
+   {
+    "figure": "Values not read",
+    "value": "PCN listings and longevity commitments of every new candidate; first data sheet revisions of PCAL6416A, NCA9539-Q100 and IRF7313; IRF7313 RDS(on) against temperature (Figure 4), safe operating area (Figure 8) and steady-state thermal resistance; exposed-pad land comparison of RTW0024B and SOT994-1; overload recovery of OPA333 and TLV333; the 5 V rail's tolerance; the rail capacitance with servos attached; the cut-off's trip band above 18 V (R5)",
+    "source": "sources listed under each record"
+   }
+  ]
+ }
+}

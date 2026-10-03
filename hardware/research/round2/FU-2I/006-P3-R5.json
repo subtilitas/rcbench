@@ -1,0 +1,116 @@
+{
+ "role": "P3",
+ "category": "R5",
+ "label": "P3-R5",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "missed": [
+   {
+    "function": "overvoltage protection",
+    "part": "LM74910QRGERQ1 (LCSC C22427891, VQFN-24 4x4 mm)",
+    "maker": "Texas Instruments",
+    "why": "P2 listed it only under reverse-polarity protection. Same family as the LM7480x with its own OV and UVLO comparators, so one controller serves the input, as for rank 1. SNOSDE6C https://www.ti.com/lit/ds/symlink/lm74910-q1.pdf read 2026-10-03T00:39:20Z: A pin -65 to 70 V, operating 3 to 65 V, V(OVR) 0.585 to 0.63 V, V(OVF) 0.533 to 0.573 V, OV to HGATE low 4 to 7 us, HGATE sink at least 128 mA (7 us + 168 nC/128 mA = 8.3 us, under 10 us). Cut-off band: the comparator alone spans 7.7 %, against 8.3 % between 18.0 and 19.5 V. Arithmetic with 0.1 % resistors, R(SW) 10 to 46 ohm and 200 nA OV leakage: with a 2 kOhm bottom resistor the trip is 18.01 to 19.49 V and the release 16.41 to 17.72 V; with 4.7 kOhm the top is 19.50 V. The margin is about 0.01 V and rests on 0.1 % resistors, so it ranks below the LM7480x; the release band reaches below 16.8 V as for rank 1. JLCPCB C22427891 stock 1982, presale 1977, expand, 2026-10-03T00:42:31Z. Digi-Key 7440, Active, lead 20 weeks, 2026-10-03T00:42:38Z (API https://api.digikey.com/products/v4/search/LM74910QRGERQ1/productdetails). TI page ACTIVE 2026-10-03T00:56:14Z (https://www.ti.com/product/LM74910-Q1). First datasheet revision December 2022."
+   },
+   {
+    "function": "overvoltage protection",
+    "part": "LM74900QRGERQ1 (LCSC C20345498, VQFN-24 4x4 mm)",
+    "maker": "Texas Instruments",
+    "why": "Pin-identical sibling of the LM74910 in the same datasheet (SNOSDE6C, read 2026-10-03T00:39:20Z); same V(OVR) 0.585 to 0.63 V, V(OVF) 0.533 to 0.573 V, OV to HGATE 4 to 7 us and band arithmetic as the LM74910 (18.01 to 19.49 V at 2 kOhm and 0.1 % resistors, margin about 0.01 V). Only DGATE turn-on is slower: 2 to 3.8 us against 0.75 to 1.6 us. JLCPCB C20345498 stock 3000, presale 2985, expand, 2026-10-03T00:42:33Z. Digi-Key 147, Active, lead 20 weeks, 2026-10-03T00:42:40Z, at or above the gate of 50 (10 placements). TI page ACTIVE 2026-10-03T00:56:14Z (https://www.ti.com/product/LM74900-Q1). It is the pin-compatible alternate of the LM74910 under rule 5."
+   },
+   {
+    "function": "inrush limiting",
+    "part": "LM74910QRGERQ1 (LCSC C22427891)",
+    "maker": "Texas Instruments",
+    "why": "SNOSDE6C read 2026-10-03T00:39:20Z: the HGATE pull-up is 39 to 75 uA (a 1.92:1 spread) with a Cdvdt capacitor and gate resistor on HGATE as in the datasheet's typical circuit, so the 2.0 A bound is a component value over the 18.8 to 80 uF bus capacitance (for 80 uF the dV/dt limit of 25 V/ms needs Cdvdt of at least 3 nF at 75 uA). The breaker is left unused: TMR to GND and ILIM to GND per Table 5-1. A -65 V to 70 V, operating 3 to 65 V, so -25.2 V and 25.2 V on the input and the 37.3 V clamp level are inside the ratings. Added gate-discharge charge of Cdvdt (3 to 10 nF x 11 V) extends the OV cut-off to about 9 us, still under 10 us. JLCPCB 1982 (2026-10-03T00:42:31Z), Digi-Key 7440 Active (00:42:38Z)."
+   },
+   {
+    "function": "inrush limiting",
+    "part": "LM74900QRGERQ1 (LCSC C20345498)",
+    "maker": "Texas Instruments",
+    "why": "Same HGATE circuit and pin table as the LM74910 (SNOSDE6C, read 2026-10-03T00:39:20Z): I(HGATE) 39 to 75 uA, Cdvdt on HGATE sets the inrush, breaker disabled by TMR and ILIM to GND. JLCPCB 3000, presale 2985 (2026-10-03T00:42:33Z); Digi-Key 147, Active (00:42:40Z)."
+   },
+   {
+    "function": "source selection",
+    "part": "LM74910QRGERQ1 (LCSC C22427891)",
+    "maker": "Texas Instruments",
+    "why": "Ideal-diode OR with the UVLO gate of V88 on the same pin family as the LM74800. SNOSDE6C read 2026-10-03T00:39:20Z: V(UVLOR) 0.585 to 0.63 V, V(UVLOF) 0.533 to 0.573 V. A divider for 11.0 V typical rising gives rising 10.70 to 11.57 V (under the 12 V lowest source) and falling 9.75 to 10.53 V (lowest corner above 8.45 V; typical 10.1 V). The highest falling corner is 10.53 V against 10.38 V for the LM74800, so the brownout trip's lowest corner needs re-checking against it. DGATE turn-off 0.5 to 0.95 us, turn-on 0.75 to 1.6 us (LM74910-Q1 only); A to C reverse threshold -16 to -5 mV; VS pin on the common-drain node. OUT to VS maximum is 5 V (16.5 V for the LM7480): the body diode of the load FET holds it near 0.7 V when the input is absent. JLCPCB 1982 (2026-10-03T00:42:31Z); Digi-Key 7440 Active (00:42:38Z)."
+   },
+   {
+    "function": "source selection",
+    "part": "LM74900QRGERQ1 (LCSC C20345498)",
+    "maker": "Texas Instruments",
+    "why": "Same OR circuit and UVLO thresholds as the LM74910 (SNOSDE6C, read 2026-10-03T00:39:20Z); DGATE turn-off 0.5 to 0.95 us, turn-on 2 to 3.8 us (LM74900-Q1 only), bridged by the bus capacitance. JLCPCB 3000, presale 2985 (2026-10-03T00:42:33Z); Digi-Key 147 Active (00:42:40Z)."
+   },
+   {
+    "function": "reverse-polarity protection",
+    "part": "LM74900QRGERQ1 (LCSC C20345498)",
+    "maker": "Texas Instruments",
+    "why": "P2 listed the LM74910 of this datasheet and not the LM74900. Same ratings (SNOSDE6C, read 2026-10-03T00:39:20Z): A -65 to 70 V, reverse leakage -100 to -35 uA at -65 V, reverse threshold -16 to -5 mV. JLCPCB 3000, presale 2985 (2026-10-03T00:42:33Z); Digi-Key 147 Active (00:42:40Z)."
+   },
+   {
+    "function": "reverse-polarity protection",
+    "part": "LTC4367IMS8#PBF (LCSC C580888, MSOP-8)",
+    "maker": "Analog Devices",
+    "why": "Back-to-back N-channel controller. Datasheet Rev. D https://www.analog.com/media/en/technical-documentation/data-sheets/ltc4367.pdf (safari client) read 2026-10-03T00:45:02Z: protection range -40 to 100 V, operating 2.5 to 60 V, so -25.2 V, 25.2 V and 5.8 to 19.27 V are covered; the gate is off below VIN(UVLO) 1.8 to 2.4 V, so the pack's voltage does not reach the DC pins. JLCPCB C580888 stock 93, presale 83, expand, 2026-10-03T00:44:34Z (gate 50). Second source: the same part as LTC4367IMS8#TRPBF at Digi-Key, 5270, Active, lead 23 weeks, 2026-10-03T00:44:42Z (the #PBF orderable reads 0 at 00:44:44Z). It adds a second controller type beside the LM7480x for source selection."
+   },
+   {
+    "function": "inrush limiting",
+    "part": "LTC4367IMS8#PBF (LCSC C580888, MSOP-8)",
+    "maker": "Analog Devices",
+    "why": "Rev. D read 2026-10-03T00:45:02Z: IGATE(UP) 20 to 60 uA (3:1), so the inrush is C_OUT/C_GATE x IGATE(UP), a component value; -40 to 100 V protection range; operating 2.5 to 60 V. JLCPCB 93, presale 83 (2026-10-03T00:44:34Z); Digi-Key LTC4367IMS8#TRPBF 5270 Active (00:44:42Z). Turn-on delay 22 to 45 ms (LTC4367) or 0.2 to 1.2 ms (-1) after the input is valid."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "functions": [
+     "reverse-polarity protection"
+    ],
+    "part": "LM74910QRGERQ1",
+    "reason_given": "Qualified by FU-2H's re-rank; ranked below the three LM7480x orderables: each adds a second controller type beside the LM7480x on an input that already carries one for the overvoltage cut-off and the source selection.",
+    "why_it_fails": "The LM74910 has its own OV and UVLO comparators, HGATE inrush control and ideal-diode DGATE (SNOSDE6C https://www.ti.com/lit/ds/symlink/lm74910-q1.pdf read 2026-10-03T00:39:20Z), so it replaces the LM7480x on the input instead of adding a type; the reason holds for the LM74700, LTC4359, LTC4417 and LTC4364 only. V(OVR) 0.585 to 0.63 V keeps the cut-off band inside 18.0 to 19.5 V only with 0.1 % resistors (18.01 to 19.49 V at a 2 kOhm bottom resistor), so it ranks on that thin margin and not on a controller count. JLCPCB C22427891 stock 1982, presale 1977 (2026-10-03T00:42:31Z); Digi-Key 7440, Active (00:42:38Z); more Digi-Key stock than the rank 3 LM74801 (2940 on 2026-10-02). Pin-compatible alternate under rule 5: LM74900QRGERQ1, JLCPCB 3000 (00:42:33Z)."
+   },
+   {
+    "functions": [
+     "overvoltage protection"
+    ],
+    "part": "LTC4367IMS8#PBF",
+    "reason_given": "No route of rule 5 (LTC4368, LTC4367: Digi-Key 0 or 1 for the orderables JLCPCB stocks) (FU-B1, T3 and FU-2F readings, not re-read).",
+    "why_it_fails": "Rule 5 accepts the same part at the second vendor. LTC4367IMS8#TRPBF, the reel of the same MSOP-8 part, reads Digi-Key stock 5270, Active, lead 23 weeks, 2026-10-03T00:44:42Z (API https://api.digikey.com/products/v4/search/LTC4367IMS8%23TRPBF/productdetails); only the #PBF tube orderable reads 0 (00:44:44Z). JLCPCB C580888 (#PBF) stock 93, presale 83, 2026-10-03T00:44:34Z, at or above the gate of 50. The OV band passes: Rev. D https://www.analog.com/media/en/technical-documentation/data-sheets/ltc4367.pdf read 2026-10-03T00:45:02Z gives OV rising 492.5 to 507.5 mV (+/-1.5 %), hysteresis 20 to 32 mV, fault propagation 1 to 2 us, gate fast turn-off 2 to 6 us (2.2 nF), -40 to 100 V protection range: trip 18.05 to 18.67 V and release 16.88 to 17.9 V at 0.1 % resistors, the LTC4365's comparator, so a 16.8 V pack sits under every release corner. The LTC4368IMS-2 drop holds: Digi-Key 1 for the TRPBF and 0 for the PBF (00:44:46Z, 00:44:48Z), and the alternate LTC4368CMS-2#PBF reads JLCPCB 29 (00:55:13Z)."
+   },
+   {
+    "functions": [
+     "3.3 V logic buck"
+    ],
+    "part": "TPSM63603RDHR, TPSM63603SRDHR, TLVM13620RDHR",
+    "reason_given": "Pass every value on FU-2H's re-rank reading; not kept: Digi-Key 0 for each, so rule 5 rests on a twin (TPSM63603SRDHR JLCPCB 60, presale 59), and a survivor with an alternate route takes the alternate's record as well; the two kept parts have stocked second vendors.",
+    "why_it_fails": "Rule 5 accepts a pin-compatible alternate that passes rules 1 to 4, and the reason names one; a record count is not a requirement value or a sourcing rule, and the function keeps two survivors against up to three. Digi-Key reads 0 for TPSM63603RDHR and SRDHR (cached 2026-10-03T00:19:16Z, 00:19:18Z) and TLVM13620RDHR (00:49:28Z). JLCPCB, 2026-10-03T00:49:11Z (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList): C5219327 TPSM63603RDHR stock 238, presale 229; C5219328 TPSM63603SRDHR 60, presale 59; C5219263 TLVM13620RDHR 8015, presale 8002, all at or above the gate of 50. The TPSM63603 pair share pins and datasheet; the TLVM13620's pins 1 to 19 and 22 to 30 match the TPSM63603's (NC against the optional CBOOT and RBOOT, left open), so each is the other's alternate, and the TLVM13620 (2 A against 1.84 A) is the TPSM63603's alternate in turn."
+   },
+   {
+    "functions": [
+     "3.3 V logic buck"
+    ],
+    "part": "MAX17504ATP+T",
+    "reason_given": "No route of rule 5: the reel has Digi-Key 0 and the tube orderable MAX17504ATP+ has JLCPCB 12 (FU-2H re-rank reading).",
+    "why_it_fails": "The same part is stocked at Digi-Key under the tube orderable: MAX17504ATP+ stock 6475, Active, lead 20 weeks, 2026-10-03T00:49:23Z; the reel MAX17504ATP+T reads 0 (00:49:21Z). Rule 5 asks for the same part at the second vendor, not the same ordering code. JLCPCB C516781 (ATP+T) stock 12039, presale 12014, expand, 2026-10-03T00:49:12Z. Caveat for the re-rank: the FB regulation row 0.89 to 0.91 V (MODE at SGND, forced PWM) and the 4.5 to 60 V range come from a table whose conditions read VIN = 24 V (https://www.analog.com/media/en/technical-documentation/data-sheets/max17504.pdf, safari client, read 2026-10-03T00:59:41Z); ISS 4.7 to 5.3 uA, IFB +/-50 nA, 3.5 A. If a row at VIN = 24 V does not count, the earlier tolerance drop stands; the rule 5 reason does not."
+   },
+   {
+    "functions": [
+     "5 V rail"
+    ],
+    "part": "TPS54360BDDAR, TPS54340BDDAR",
+    "reason_given": "Pass the values on FU-2H's re-rank reading (+/-1 % reference, 3.5 A); not kept: Digi-Key 0 for both (cached 2026-10-03T00:02:00Z and 00:02:01Z), so rule 5 rests on the pin-identical twin, which would take a fourth record.",
+    "why_it_fails": "A record count is not a requirement value, and these two outrank rank 2 and rank 3, whose +/-2 % reference P2 states 'leaves no margin at the display end'. TPS54360B datasheet https://www.ti.com/lit/ds/symlink/tps54360b.pdf read 2026-10-03T01:00:06Z: reference 0.792 to 0.808 V (+/-1 %) over TJ -40 to 150 degC and VIN 4.5 to 60 V (so 4.95 to 5.05 V before resistors), 3.5 A against 2.60 A, 60 V against the 27 V bus, high-side on-resistance 92 mOhm typical, 190 mOhm maximum (about 0.5 V of the 0.8 V headroom at 5.8 V in and 2.08 A). Rule 5 holds three ways. TPS54340BDDAR is the pin-identical alternate: JLCPCB C1850353 stock 2970, presale 2939 (2026-10-03T00:56:42Z). The same part at Digi-Key under the tube orderables: TPS54360BDDA 1925, Active (00:56:44Z) and TPS54340BDDA 1068, Active (00:56:56Z). JLCPCB C524806 (TPS54360BDDAR) stock 59411, presale 58431 (00:56:42Z). Pulse-skip Eco-mode at light load is not a value of this function (rank 2 is the PFM TPS62933)."
+   },
+   {
+    "functions": [
+     "encoder 12 V supply"
+    ],
+    "part": "TPS552882RPMR",
+    "reason_given": "Not among the survivors kept in FU-2F and FU-2H; not re-read in FU-2I.",
+    "why_it_fails": "A survivor list of an earlier run is not a requirement value, and the function keeps three against up to three only by ranking LM5175 and LM5176 (four external MOSFETs and two sense resistors) ahead of an integrated part. SLVSFC5 https://www.ti.com/lit/ds/symlink/tps552882.pdf read 2026-10-03T00:51:15Z: the TPS55288's integrated buck-boost without I2C: input 2.7 to 36 V, reference 1.188 to 1.212 V (+/-1 %), current-loop regulation VSNS 48 to 52 mV across ISP and ISN with VISN 2 to 21 V (so the limit holds at 5 V and 12 V and 0.2 Ohm gives 240 to 260 mA before resistor tolerance), soft-start 3 to 5 ms, hiccup restart after 76 ms (not a latch), 16 A switches, TJ -40 to 125 degC. Having no I2C, it needs no 74h or 75h address on the I2C buses and no firmware. JLCPCB C3188898 stock 5986, presale 5976, expand, 2026-10-03T00:51:10Z. Digi-Key 4844, Active, lead 20 weeks, 2026-10-03T00:51:15Z (rule 5 by the same part). TI page ACTIVE 2026-10-03T00:56:15Z (https://www.ti.com/product/TPS552882); first datasheet revision November 2020. Its sibling TPS552892RYQR fails rule 4 (JLCPCB 1, presale -27, 00:52:25Z)."
+   }
+  ],
+  "missed_functions": []
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R6",
+ "label": "adjudicator-R6-2",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "function": "found V119",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The found value counts 33 expander lines, and 2 of them are inputs for the DC input's source status and its brownout. Those 2 inputs come from Pins.md, and Pins.md (lines 133-137) counts them only \"until a decision lets one signal serve both\". V271 and V276 (owner, 2026-10-01) are that decision. One signal serves both: the DC input voltage, through a divider, into one ADC (analog-to-digital converter) input of the measurement coprocessor (GPIO 40 to 47). So no expander line carries either input. Under the owner's answers the count is 31 lines: 20 port switch enables, 5 bias selectors, 5 converter enables and 1 hardware latch read-back. The value as found contradicts the Answer column. The capacity conclusion still holds. Each MCP23017 has 14 lines usable for these signals, because GPA7 and GPB7 carry none of them. 2 parts give 28 lines, which is fewer than 31, so 3 parts at 0x20 to 0x22 are still needed and 42 lines are available. The figure is about this function's line count, not about the MCP23017 itself. The part is not failed. V283 answers that each rail has its own temperature latch. Whether those latches add read-back lines to the expander is not stated and was not ruled on here.",
+  "evidence": "The V271 Answer (Research.md:984) reads: \"One signal: the DC input voltage through a divider into one ADC input of the measurement coprocessor, GPIO 40 to 47. The firmware compares it with the thresholds, so it serves the source status and the DC input brownout detection (owner, 2026-10-01)\". V276 (Research.md:989) reads: \"As V271: the DC input voltage on one ADC input of the measurement coprocessor, serving both (owner, 2026-10-01)\". Pins.md:132-139 reads: \"They carry 33 lines: ... the hardware latch read-back, and two inputs for the DC input's source status and its brownout, until a decision lets one signal serve both ... the other 42 lines are free for them, 33 of them used\". V119 (Research.md:832) is still \"for research\", so no owner answer sets the count. The arithmetic is 33 − 2 = 31 lines, and 31 is more than the 2 × 14 = 28 lines that 2 parts give.",
+  "source": "hardware/docs/Research.md V119 (line 832), V271 (line 984), V276 (line 989); hardware/docs/Pins.md \"I/O expanders\" lines 130-140; hardware/docs/IOBoard.md line 366 (DC input brownout detection); checkout 5f5c0a61c4f7f7bf2354fdaa8e407e86cde05bf1",
+  "read_at": "2026-10-03T02:17:40Z",
+  "scope": "function"
+ }
+}

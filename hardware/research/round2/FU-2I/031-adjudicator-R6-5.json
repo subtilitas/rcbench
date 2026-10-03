@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R6",
+ "label": "adjudicator-R6-5",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "function": "P2 report: Expander lines, for P5",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The figure gives 33 expander lines. That number comes from Pins.md, which counts two expander inputs, one for the DC input's source status and one for its brownout, \"until a decision lets one signal serve both\". The owner has made that decision. In V271 and V276 (2026-10-01), the DC input voltage goes through a divider into one ADC input of the measurement coprocessor (GPIO 40 to 47), and that one signal serves both the source status and the brownout. Neither signal is on the expander anymore. The expander therefore carries 31 lines: 20 port switch enables, 5 bias selectors, 5 converter enables (4 TPS55285 and the TPS55288) and 1 hardware latch read-back. The rest of the claim holds. There are 42 usable lines on 3 MCP23017, with GPA7 and GPB7 excluded because they are outputs only and come out of reset as inputs. The V316 clamp needs no expander line: the ideal-diode controller's turn-off signal enables it. V319 (owner, 2026-10-03) narrows the DC input to 12 to 18 V for a 12 V supply or a 4S LiPo pack. It adds no expander line. The scope is function: the count is about this function's requirement, not about the MCP23017 itself.",
+  "evidence": "Research.md V271: \"One signal: the DC input voltage through a divider into one ADC input of the measurement coprocessor, GPIO 40 to 47 ... it serves the source status and the DC input brownout detection (owner, 2026-10-01)\". V276: \"As V271 ... serving both (owner, 2026-10-01)\". Pins.md lines 133-139: \"They carry 33 lines: the 20 port switch enables, the 5 bias selectors ..., the 5 converter enables (4 TPS55285 and the TPS55288), the hardware latch read-back, and two inputs for the DC input's source status and its brownout, until a decision lets one signal serve both ... the other 42 lines are free for them, 33 of them used.\" 20 + 5 + 5 + 1 = 31. V316 (owner, 2026-10-02): the MOSFET turn-off signal enables the clamp, so the clamp uses no expander line. The verifier's reading of the MCP23017 (DS20001952D: GPA7 and GPB7 output only, 42 usable lines) is not disputed.",
+  "source": "hardware/docs/Research.md rows V271, V276, V316, V319 and hardware/docs/Pins.md section \"I/O expanders\" (lines 130-140), checkout /home/claude/rcbench-research/round2/checkout-5f5c0a61c4f7 at commit 5f5c0a61c4f7f7bf2354fdaa8e407e86cde05bf1",
+  "read_at": "2026-10-03T02:19:29Z",
+  "scope": "function"
+ }
+}

@@ -1,0 +1,964 @@
+{
+ "role": "rerank",
+ "category": "R8",
+ "label": "rerank-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "functions": [
+   {
+    "function": "Motor monitor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "INA228AIDGSR",
+      "reason": "Owner's fixed input (Scope table, V304), ranked first whatever a run returns. Meets the 14 requirement values P2 recorded. Fails rule 4: JLCPCB C2887910 stockCount 0, canPresaleNumber -254 (read 2026-10-03T00:58:33Z), Digi-Key 0 and 20 weeks (cached reading 2026-10-03T00:02:22Z). Reported to the owner as a current limitation and T6 stock exception, not replaced. No rule 5 route passes.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "INA228AIDGSR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Onboard shunt",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "BVR-Z-R0002-1.0",
+      "reason": "Widest accuracy margin of the three (P2: 369 mA used of 1.4166 A at 150 A), four terminals, JLCPCB 353 and Digi-Key 11190 (second-vendor route passes). Unchanged by P3.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "BVE-M-R0002-1.0",
+      "reason": "Passes every value with the thinnest accuracy margin (P2: 1368 mA of 1.4166 A, margin 48.6 mA), most JLCPCB stock (2500), Digi-Key 103 passes the gate of 50.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "WSLP2726L2000FEA",
+      "reason": "Passes every value but fails rule 5: Digi-Key 0 (P2, 2026-10-03T00:14:14Z) and no qualified pin-compatible alternate. Ranks below the two parts that pass rule 5.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "CSS2H-3920R-L200FE, CSS2H-3920R-L200F",
+      "maker": "Bourns",
+      "reason": "P3's point holds that P2's stated reason (no element-to-terminal thermal resistance) does not stand, and the drop stands on the computed accuracy share. Bourns CSS2H-3920 sheet (https://www.bourns.com/docs/product-datasheets/css2h-3920.pdf, read 2026-10-03T00:58:38Z): CSS2H-3920R-L200x 0.2 mOhm 12 W at 70 degC terminal, TCR including copper terminals +/-100 ppm/degC, derating curve from 100 % at 70 degC to 0 % at about 170 degC, no thermal EMF figure. Rthi from the rating (170-70)/12 = 8.33 K/W as P2 derives it for the other parts. At 150 A on 202 uOhm (4.55 W) with the terminal at 100 degC the element is at 137.9 degC: 100 ppm x 112.9 K x 150 A = 1.69 A against the 1.4166 A share, a failure by 0.27 A before any EMF. The share fails even at 4.26 K/W, the highest Rthi that fits. Rule 4 as well for the F reel: C2073640 stockCount 21 under the gate of 50 (vendors.py jlcpcb, 2026-10-03T00:58:32Z); C4126121 (E reel) stockCount 85, presale 83 passes rule 4 but not the share."
+     },
+     {
+      "part": "BVE-Z-R0001-1.0",
+      "maker": "Isabellenhuette",
+      "reason": "Drops on rule 4, not on 'halves the signal' (100 uOhm is allowed: the INA228's share at 100 uOhm is 166.8 mA of V166's 1.5 A). The part is on the board, so JLCPCB counts: C19842033 stockCount 0, canPresaleNumber 0, library type expand (vendors.py jlcpcb, 2026-10-03T00:58:32Z); the Digi-Key stock of the P2 note (4453) does not serve an on-board part (rule 1). Not held. The JLCPCB description of C19842033 lists +/-200 ppm/degC (JLCPCB API, same reading), which would fail the accuracy share as well; the maker's sheet for the R0001 value is not re-read."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "BVR-Z-R0002-1.0",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Onboard shunt temperature sensor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP9808T-E/MS",
+      "reason": "+/-0.5 degC maximum from -20 to +100 degC, address 0x18 to 0x1F outside the INA block, Digi-Key 21419, JLCPCB 757 against a gate of 125 at the part (P2); the same part as R6's four servo supply sensors. Conversion at 0.25 degC resolution keeps two conversions near 130 ms against the 500 ms deadline, so the resolution register is written.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "PCT2075D,118",
+      "reason": "Passes at +/-1 degC; conversion cycle about 100 ms with a conversion of about 28 ms and no maximum stated (NXP PCT2075 sheet, read 2026-10-03T00:59:50Z), so two conversions are about 200 ms typical; address outside the monitor block; Digi-Key 22646.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TMP275AIDGKR",
+      "reason": "Passes at +/-0.75 degC, 37.5 ms maximum conversion at 9 bit, but its address 0x48 to 0x4F lies inside the monitor block, so it ranks last.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "LM75BIMMX-3/NOPB (dropped together with TMP75AIDR, whose reason holds)",
+      "maker": "Texas Instruments",
+      "reason": "The drop stands, on other grounds than P2's +/-3 degC at 100 degC, which is wrong for the LM75B (P3 is right). TI SNIS153D (https://www.ti.com/lit/ds/symlink/lm75b.pdf, read 2026-10-03T00:58:53Z), table 6.5: +/-2 degC maximum from -25 to +100 degC, but only at the nominal supply of 3.3 V; footnote 1 states accuracy degrades typically 1 degC/V of variation in +VS, so over the rail of 3.201 to 3.399 V no accuracy at or inside +/-2 degC is shown at 100 degC. Conversion time 100 ms typical and 300 ms maximum (-55 to +125 degC): two consecutive conversions are 600 ms at the maximum against the 500 ms stop deadline (V1, V288). Its address 0x48 to 0x4F lies inside the monitor block. Three better parts remain on the shortlist (MCP9808T-E/MS, PCT2075D,118, TMP275AIDGKR). Rule 4 would pass: C543061 stockCount 3729, presale 3719 (vendors.py jlcpcb, 2026-10-03T00:58:33Z)."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP9808T-E/MS",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "External shunt",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "BAS-M-R0001-E-5.0",
+      "reason": "The owner's part (V313), ranked first. Meets every electrical value (P2: 753 mA of the 2.833 A share at an assumed 50 degC terminal), Digi-Key 101 (2026-10-03T00:14:21Z). Second source: BAS-M-R0001-AE-5.0.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "BAS-M-R0001-AE-5.0",
+      "reason": "The owner's second source (V313): same dimension and electrical row, Digi-Key 96 against a gate of 50, 41 weeks.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "WSBS8518L1000JK34",
+      "reason": "First of the rest: passes every electrical value with 1.35 A of the 2.833 A share (TCR +/-65 ppm/degC, EMF below 1.25 uV/degC), voltage sensing locations on the strip as V313's soldered leads, Digi-Key 97 at 48 weeks. It passes rule 5 through WSBS8518L1000JT34, the same part in tray pack, Digi-Key 81; both are one maker's one design, so the second source pools stock and gives no second maker. Not the owner's part, so it stands behind BAS-M-R0001-E-5.0 and its AE.",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "WSBS8518L1000JT34",
+      "reason": "The tray-pack twin of rank 3 (the packaging code is the only difference in the ordering code), Digi-Key 81 against a gate of 50; the alternate of rank 3 and ranked in its own right as a P3 find. Same figures as rank 3.",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "WSBE8518L1000JKA2",
+      "reason": "Passes every electrical value with the largest margin (P2: 462.5 mA of 2.833 A) but is not the owner's part (V313 replaces it) and has no second source by rule 5 (the JK and JKB2 variants have no sense pins or another connection). Ranks below the two WSBS8518 parts, which pass rule 5.",
+      "option": ""
+     },
+     {
+      "rank": 6,
+      "part": "WSBS8518L1000JT35",
+      "reason": "Same element and figures as rank 3 with sense pins attached; Digi-Key 79. No rule 5 route: its bulk twin WSBS8518L1000JK35 reads 'Discontinued at DigiKey' (2026-10-03T00:58:26Z), which fails the lifecycle gate. Not the owner's part.",
+      "option": ""
+     },
+     {
+      "rank": 7,
+      "part": "CSM2F-8518-L100J01",
+      "reason": "Passes with the thinnest margin of the qualified parts that carry a stated EMF: 2.34 A of the 2.833 A share (TCR +/-125 ppm/degC, EMF below 1.5 uV/K for 100 uOhm), Digi-Key 167 at 12 weeks, same 85 x 18 mm body and 8.3 mm holes as the BAS. Rule 5 through CSM2F-8518-L100J02. Not the owner's part. Maker's page not readable (HTTP 403), status from Digi-Key.",
+      "option": ""
+     },
+     {
+      "rank": 8,
+      "part": "CSM2F-8518-L100J02",
+      "reason": "Fully tinned version of rank 7, same body and holes, Digi-Key 99. Its sheet states TCR +/-150 ppm/degC and no thermal EMF; with rank 7's 1.5 uV/K the share is 2.72 A of 2.833 A, a margin of 0.11 A on a borrowed figure. The alternate of rank 7.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 3,
+      "part": "WSBS8518L1000JK34",
+      "maker": "Vishay Dale (WSBS8518...34, document 30354, Revision 26-May-2026); on S1 and S2 as Vishay",
+      "lcsc": "none",
+      "package": "WSBS8518 busbar, 85 x 18 mm, Cu terminals, bulk pack, voltage sensing locations on the strip (no pins)",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one external shunt path (F1, IOBoard.md:462); off the board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "part",
+        "required": "BAS-M-R0001-E-5.0 (V313)",
+        "datasheet": "WSBS8518L1000JK34 is not that part; V313 names BAS-M-R0001-E-5.0 with BAS-M-R0001-AE-5.0 in place of WSBE8518L1000JKA2. It fails this value as P2's WSBE8518L1000JKA2 record does, and ranks behind the owner's two",
+        "pass": false,
+        "source": "Research.md V313"
+       },
+       {
+        "name": "type",
+        "required": "busbar shunt off the board, bought at Digi-Key; LCSC none",
+        "datasheet": "Power Metal Strip busbar shunt, Ni-Cr element, 85 x 18 mm, bolt holes",
+        "pass": true,
+        "source": "https://www.vishay.com/docs/30354/wsbs8518-34.pdf p1, p2, read 2026-10-03T00:56:35Z"
+       },
+       {
+        "name": "resistance",
+        "required": "50 to 100 uOhm nominal, tolerance on top",
+        "datasheet": "100 uOhm (L1000), J = +/-5 %",
+        "pass": true,
+        "source": "30354 p1"
+       },
+       {
+        "name": "dissipation",
+        "required": "<= 9 W nominal, 9.45 W at +5 %",
+        "datasheet": "P70 36 W for 100 uOhm; 9.45 W is 26 % of it",
+        "pass": true,
+        "source": "30354 p1"
+       },
+       {
+        "name": "highest current and duty",
+        "required": "300 A for 30 s",
+        "datasheet": "maximum current (P/R)^1/2 = (36 W / 100 uOhm)^1/2 = 600 A",
+        "pass": true,
+        "source": "30354 p1"
+       },
+       {
+        "name": "trip inside full scale",
+        "required": "<= 40.96 mV",
+        "datasheet": "300 A x 105 uOhm = 31.5 mV",
+        "pass": true,
+        "source": "30354 p1"
+       },
+       {
+        "name": "accuracy share",
+        "required": "<= 2.833 A at 300 A and <= 125.7 mA at 15 A",
+        "datasheet": "TCR +/-65 ppm/degC for 100 uOhm, thermal EMF < 1.25 uV/degC, Rthi not stated: 2.78 K/W from the rating ((170-70)/36), the basis P2 uses for WSBE. Terminal 50 degC (assumed, round 3 sets it), 9.45 W: element 76.3 degC. 65 ppm x 51.3 K x 300 A = 1.00 A; EMF 1.25 uV/K x 26.3 K / 95 uOhm = 0.35 A; total 1.35 A. At 15 A: 24 mA + 1 mA = 25 mA",
+        "pass": true,
+        "source": "30354 p1; derived"
+       },
+       {
+        "name": "resolution",
+        "required": "<= 25 mA",
+        "datasheet": "100 uOhm: 0.78 mA a step on the INA228",
+        "pass": true,
+        "source": "30354 p1; SLYS021A 6.5"
+       },
+       {
+        "name": "Kelvin sense",
+        "required": "defined sense points; sense leads soldered on the strip (V313)",
+        "datasheet": "dimension drawing marks the voltage sensing locations on the strip; no pins on the ...34 version",
+        "pass": true,
+        "source": "30354 p2"
+       },
+       {
+        "name": "high side",
+        "required": "sense points at up to 67.2 V",
+        "datasheet": "metal busbar; lead insulation is cabling, round 3",
+        "pass": true,
+        "source": "30354"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-65 to +170 degC",
+        "pass": true,
+        "source": "30354 p1"
+       }
+      ],
+      "jlcpcb": "not read: a part off the board (rule 1), counted at Digi-Key",
+      "digikey": "stock_available 97 (Bulk), lead_weeks 48, ProductStatus Active, maker Vishay Dale, read 2026-10-03T00:50:07Z (cached, read earlier on the same UTC day), vendors.py digikey WSBS8518L1000JK34 -> https://api.digikey.com/products/v4/search/WSBS8518L1000JK34/productdetails; keyword search 'WSBS8518L1000' read 2026-10-03T00:58:26Z lists 97 Bulk, Active",
+      "gate": "need = 5 boards x 1 = 5; S4 threshold max(5 x 5, 50) = 50; Digi-Key 97 >= 50: pass (rules 1 and 4 at the second vendor)",
+      "lifecycle": "Vishay product page https://www.vishay.com/en/product/30354/ (read 2026-10-03T00:59:34Z) carries no status in its body, so Digi-Key ProductStatus Active (00:50:07Z; search 00:58:26Z) is the status, a distributor figure (owner, 2026-10-02); longevity: none published read; first datasheet revision not stated (Revision 26-May-2026 current), so under 12 months on the market is not excluded; PCN listing not read; JLCPCB carries no part",
+      "second_source": "alternate WSBS8518L1000JT34: the same part in tray pack, the ordering codes differ only in the packaging letter (K bulk, T tray; 30354 p1); same body, holes, sense locations; Digi-Key 81 >= 50, Active (2026-10-03T00:50:05Z cached; search 00:58:26Z), so it passes rules 1 to 4 and fits the same mounting and connections. One maker, one design: the route pools stock and gives no second maker",
+      "alternates": [
+       "WSBS8518L1000JT34"
+      ],
+      "driver_in_shared": "none (a resistor)",
+      "reason": "Passes every electrical value with 1.35 A of the 2.833 A share and passes rule 5, which P2's rank 3 does not; behind the owner's part and its AE because V313 names those",
+      "second_source_route": "alternate",
+      "second_source_part": "WSBS8518L1000JT34",
+      "p3_part": "WSBS8518L1000JT34, WSBS8518L1000JK34, WSBS8518L1000JT35"
+     },
+     {
+      "rank": 4,
+      "part": "WSBS8518L1000JT34",
+      "maker": "Vishay Dale (WSBS8518...34, document 30354, Revision 26-May-2026); on S1 and S2 as Vishay",
+      "lcsc": "none",
+      "package": "WSBS8518 busbar, 85 x 18 mm, Cu terminals, tray pack, voltage sensing locations on the strip (no pins)",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one external shunt path; off the board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "part",
+        "required": "BAS-M-R0001-E-5.0 (V313)",
+        "datasheet": "not that part; fails this value as WSBE8518L1000JKA2 does",
+        "pass": false,
+        "source": "Research.md V313"
+       },
+       {
+        "name": "type",
+        "required": "busbar shunt off the board, bought at Digi-Key; LCSC none",
+        "datasheet": "Power Metal Strip busbar shunt, Ni-Cr element",
+        "pass": true,
+        "source": "https://www.vishay.com/docs/30354/wsbs8518-34.pdf p1, read 2026-10-03T00:56:35Z"
+       },
+       {
+        "name": "resistance",
+        "required": "50 to 100 uOhm nominal, tolerance on top",
+        "datasheet": "100 uOhm, J = +/-5 %",
+        "pass": true,
+        "source": "30354 p1"
+       },
+       {
+        "name": "dissipation",
+        "required": "<= 9 W nominal, 9.45 W at +5 %",
+        "datasheet": "P70 36 W",
+        "pass": true,
+        "source": "30354 p1"
+       },
+       {
+        "name": "highest current and duty",
+        "required": "300 A for 30 s",
+        "datasheet": "(P/R)^1/2 = 600 A",
+        "pass": true,
+        "source": "30354 p1"
+       },
+       {
+        "name": "trip inside full scale",
+        "required": "<= 40.96 mV",
+        "datasheet": "31.5 mV at +5 %",
+        "pass": true,
+        "source": "30354 p1"
+       },
+       {
+        "name": "accuracy share",
+        "required": "<= 2.833 A at 300 A and <= 125.7 mA at 15 A",
+        "datasheet": "same element as WSBS8518L1000JK34: 1.35 A at 300 A, 25 mA at 15 A",
+        "pass": true,
+        "source": "30354 p1; derived"
+       },
+       {
+        "name": "resolution",
+        "required": "<= 25 mA",
+        "datasheet": "0.78 mA",
+        "pass": true,
+        "source": "30354 p1; SLYS021A 6.5"
+       },
+       {
+        "name": "Kelvin sense",
+        "required": "defined sense points; leads soldered on the strip",
+        "datasheet": "voltage sensing locations on the strip",
+        "pass": true,
+        "source": "30354 p2"
+       },
+       {
+        "name": "high side",
+        "required": "67.2 V",
+        "datasheet": "metal busbar; insulation round 3",
+        "pass": true,
+        "source": "30354"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-65 to +170 degC",
+        "pass": true,
+        "source": "30354 p1"
+       }
+      ],
+      "jlcpcb": "not read: a part off the board (rule 1)",
+      "digikey": "stock_available 81 (Tray), lead_weeks 48, ProductStatus Active, maker Vishay Dale, read 2026-10-03T00:50:05Z (cached, read earlier on the same UTC day), vendors.py digikey WSBS8518L1000JT34 -> https://api.digikey.com/products/v4/search/WSBS8518L1000JT34/productdetails; keyword search 2026-10-03T00:58:26Z lists 81 Tray, Active",
+      "gate": "need 5; threshold 50; Digi-Key 81 >= 50: pass (rules 1 and 4)",
+      "lifecycle": "Vishay page https://www.vishay.com/en/product/30354/ (2026-10-03T00:59:34Z) carries no status: Digi-Key Active (00:50:05Z) is the status; longevity: none read; first revision not stated (26-May-2026 current); PCN listing not read",
+      "second_source": "alternate WSBS8518L1000JK34: the bulk-pack twin, Digi-Key 97 >= 50, Active (2026-10-03T00:50:07Z cached)",
+      "alternates": [
+       "WSBS8518L1000JK34"
+      ],
+      "driver_in_shared": "none (a resistor)",
+      "reason": "Same part as JK34 in tray pack; ranked beside it as a P3 find and as its alternate",
+      "second_source_route": "alternate",
+      "second_source_part": "WSBS8518L1000JK34",
+      "p3_part": "WSBS8518L1000JT34, WSBS8518L1000JK34, WSBS8518L1000JT35"
+     },
+     {
+      "rank": 6,
+      "part": "WSBS8518L1000JT35",
+      "maker": "Vishay Dale (WSBS8518...35, document 30355, Revision 26-May-2026); on S1 and S2 as Vishay",
+      "lcsc": "none",
+      "package": "WSBS8518 busbar, 85 x 18 mm, Cu terminals, sense pins attached, tray pack",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one external shunt path; off the board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "part",
+        "required": "BAS-M-R0001-E-5.0 (V313)",
+        "datasheet": "not that part; fails this value as WSBE8518L1000JKA2 does",
+        "pass": false,
+        "source": "Research.md V313"
+       },
+       {
+        "name": "type",
+        "required": "busbar shunt off the board, bought at Digi-Key; LCSC none",
+        "datasheet": "Power Metal Strip busbar shunt with sense pins",
+        "pass": true,
+        "source": "https://www.vishay.com/docs/30355/wsbs8518-35.pdf p1, read 2026-10-03T00:56:35Z"
+       },
+       {
+        "name": "resistance",
+        "required": "50 to 100 uOhm nominal, tolerance on top",
+        "datasheet": "100 uOhm, J = +/-5 %",
+        "pass": true,
+        "source": "30355 p1"
+       },
+       {
+        "name": "dissipation",
+        "required": "<= 9 W nominal, 9.45 W at +5 %",
+        "datasheet": "P70 36 W for 100 uOhm",
+        "pass": true,
+        "source": "30355 p1"
+       },
+       {
+        "name": "highest current and duty",
+        "required": "300 A for 30 s",
+        "datasheet": "(P/R)^1/2 = 600 A",
+        "pass": true,
+        "source": "30355 p1"
+       },
+       {
+        "name": "trip inside full scale",
+        "required": "<= 40.96 mV",
+        "datasheet": "31.5 mV at +5 %",
+        "pass": true,
+        "source": "30355 p1"
+       },
+       {
+        "name": "accuracy share",
+        "required": "<= 2.833 A at 300 A and <= 125.7 mA at 15 A",
+        "datasheet": "TCR +/-65 ppm/degC for 100 uOhm, EMF < 1.25 uV/degC, same element row and 36 W rating as the ...34: 1.35 A at 300 A, 25 mA at 15 A",
+        "pass": true,
+        "source": "30355 p1; derived"
+       },
+       {
+        "name": "resolution",
+        "required": "<= 25 mA",
+        "datasheet": "0.78 mA",
+        "pass": true,
+        "source": "30355 p1; SLYS021A 6.5"
+       },
+       {
+        "name": "Kelvin sense",
+        "required": "defined sense points",
+        "datasheet": "sense pins attached to the strip (35 = low TCR and sense pins attached); V313's soldered leads become the pins' connections",
+        "pass": true,
+        "source": "30355 p1, p2"
+       },
+       {
+        "name": "high side",
+        "required": "67.2 V",
+        "datasheet": "metal busbar; insulation round 3",
+        "pass": true,
+        "source": "30355"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-65 to +170 degC",
+        "pass": true,
+        "source": "30355 p1"
+       }
+      ],
+      "jlcpcb": "not read: a part off the board (rule 1)",
+      "digikey": "stock_available 79 (Tray), lead_weeks 48, ProductStatus Active, maker Vishay Dale, read 2026-10-03T00:50:10Z (cached, read earlier on the same UTC day), vendors.py digikey WSBS8518L1000JT35 -> https://api.digikey.com/products/v4/search/WSBS8518L1000JT35/productdetails",
+      "gate": "need 5; threshold 50; Digi-Key 79 >= 50: pass (rules 1 and 4)",
+      "lifecycle": "Vishay page https://www.vishay.com/en/product/30355/ (2026-10-03T00:59:35Z) carries no status: Digi-Key Active (00:50:10Z) is the status; longevity: none read; first revision not stated (26-May-2026 current); PCN listing not read",
+      "second_source": "none: the bulk-pack twin WSBS8518L1000JK35 reads ProductStatus 'Discontinued at DigiKey' with stock 50 (keyword search 2026-10-03T00:58:26Z), which fails the lifecycle gate; the ...34 parts have no sense pins, another connection",
+      "alternates": [],
+      "driver_in_shared": "none (a resistor)",
+      "reason": "Passes every electrical value; fails rule 5; not the owner's part",
+      "second_source_route": "none",
+      "second_source_part": "",
+      "p3_part": "WSBS8518L1000JT34, WSBS8518L1000JK34, WSBS8518L1000JT35"
+     },
+     {
+      "rank": 7,
+      "part": "CSM2F-8518-L100J01",
+      "maker": "Bourns Inc. (CSM2F-8518 with tinned terminals, REV. 01/26); on S2 as Bourns",
+      "lcsc": "none",
+      "package": "CSM2F-8518 busbar, 85 x 18 mm, two 8.3 mm holes, tinned terminals, bulk pack, voltage test points",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one external shunt path; off the board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "part",
+        "required": "BAS-M-R0001-E-5.0 (V313)",
+        "datasheet": "not that part; fails this value as WSBE8518L1000JKA2 does",
+        "pass": false,
+        "source": "Research.md V313"
+       },
+       {
+        "name": "type",
+        "required": "busbar shunt off the board, bought at Digi-Key; LCSC none",
+        "datasheet": "current sense resistor busbar, 85 x 18 mm, C10200 copper base",
+        "pass": true,
+        "source": "https://www.bourns.com/docs/product-datasheets/csm2f-8518-1.pdf p1, p2, read 2026-10-03T00:56:36Z"
+       },
+       {
+        "name": "resistance",
+        "required": "50 to 100 uOhm nominal, tolerance on top",
+        "datasheet": "100 uOhm, +/-5 %",
+        "pass": true,
+        "source": "csm2f-8518-1 p1"
+       },
+       {
+        "name": "dissipation",
+        "required": "<= 9 W nominal, 9.45 W at +5 %",
+        "datasheet": "36 W at 70 degC terminal, derating flat to 125 degC terminal",
+        "pass": true,
+        "source": "csm2f-8518-1 p1, p3"
+       },
+       {
+        "name": "highest current and duty",
+        "required": "300 A for 30 s",
+        "datasheet": "(36 W / 100 uOhm)^1/2 = 600 A",
+        "pass": true,
+        "source": "csm2f-8518-1 p1"
+       },
+       {
+        "name": "trip inside full scale",
+        "required": "<= 40.96 mV",
+        "datasheet": "31.5 mV at +5 %",
+        "pass": true,
+        "source": "csm2f-8518-1 p1"
+       },
+       {
+        "name": "accuracy share",
+        "required": "<= 2.833 A at 300 A and <= 125.7 mA at 15 A",
+        "datasheet": "TCR on test points +/-125 ppm/degC for 100 uOhm, EMF < 1.50 uV/K for 100 uOhm, Rthi not stated: 2.78 K/W from the 36 W rating at 70 degC and 170 degC (conservative; the derating curve is flat to 125 degC terminal). Terminal 50 degC, 9.45 W, element 76.3 degC: 125 ppm x 51.3 K x 300 A = 1.92 A; EMF 1.5 uV/K x 26.3 K / 95 uOhm = 0.41 A; total 2.34 A. At 15 A: 47 mA + 1 mA = 48 mA",
+        "pass": true,
+        "source": "csm2f-8518-1 p1, p3; derived"
+       },
+       {
+        "name": "resolution",
+        "required": "<= 25 mA",
+        "datasheet": "0.78 mA",
+        "pass": true,
+        "source": "csm2f-8518-1 p1; SLYS021A 6.5"
+       },
+       {
+        "name": "Kelvin sense",
+        "required": "defined sense points; leads soldered",
+        "datasheet": "voltage test points marked on the strip and voltage sense pads in the reference pad drawing",
+        "pass": true,
+        "source": "csm2f-8518-1 p2, p3"
+       },
+       {
+        "name": "high side",
+        "required": "67.2 V",
+        "datasheet": "metal busbar; insulation round 3",
+        "pass": true,
+        "source": "csm2f-8518-1"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to +170 degC",
+        "pass": true,
+        "source": "csm2f-8518-1 p1"
+       }
+      ],
+      "jlcpcb": "not read: a part off the board (rule 1)",
+      "digikey": "stock_available 167 (Bulk), lead_weeks 12, ProductStatus Active, maker Bourns Inc., read 2026-10-03T00:50:12Z (cached, read earlier on the same UTC day), vendors.py digikey CSM2F-8518-L100J01 -> https://api.digikey.com/products/v4/search/CSM2F-8518-L100J01/productdetails",
+      "gate": "need 5; threshold 50; Digi-Key 167 >= 50: pass (rules 1 and 4)",
+      "lifecycle": "Bourns product page https://www.bourns.com/products/current-sense-resistors/csm2f-8518 not read: HTTP 403 with a challenge on the chrome client (2026-10-03T00:59:35Z), safari and plain (00:59:43Z). Digi-Key ProductStatus Active (00:50:12Z) is the status, a distributor figure (owner, 2026-10-02); longevity: none read; the sheet is REV. 01/26, first issue not stated, so under 12 months on the market is not excluded; PCN listing not read",
+      "second_source": "alternate CSM2F-8518-L100J02: same 85 x 18 mm body, 8.3 mm holes, 100 uOhm +/-5 %, fully tinned; Digi-Key 99 >= 50, Active (2026-10-03T00:50:13Z cached). Its sheet states no thermal EMF",
+      "alternates": [
+       "CSM2F-8518-L100J02"
+      ],
+      "driver_in_shared": "none (a resistor)",
+      "reason": "Passes every electrical value with 2.34 A of 2.833 A; thinner margin than the WSBS8518 parts and not the owner's part",
+      "second_source_route": "alternate",
+      "second_source_part": "CSM2F-8518-L100J02",
+      "p3_part": "CSM2F-8518-L100J01, CSM2F-8518-L100J02"
+     },
+     {
+      "rank": 8,
+      "part": "CSM2F-8518-L100J02",
+      "maker": "Bourns Inc. (CSM2F-8518 fully tinned, REV. 01/26); on S2 as Bourns",
+      "lcsc": "none",
+      "package": "CSM2F-8518 busbar, 85 x 18 mm, two 8.3 mm holes, fully tinned terminals and element, bag pack",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one external shunt path; off the board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "part",
+        "required": "BAS-M-R0001-E-5.0 (V313)",
+        "datasheet": "not that part; fails this value as WSBE8518L1000JKA2 does",
+        "pass": false,
+        "source": "Research.md V313"
+       },
+       {
+        "name": "type",
+        "required": "busbar shunt off the board, bought at Digi-Key; LCSC none",
+        "datasheet": "current sense resistor busbar, fully tinned",
+        "pass": true,
+        "source": "https://www.bourns.com/docs/product-datasheets/csm2f-8518-2.pdf p1, p2, read 2026-10-03T00:56:37Z"
+       },
+       {
+        "name": "resistance",
+        "required": "50 to 100 uOhm nominal, tolerance on top",
+        "datasheet": "100 uOhm, +/-5 %",
+        "pass": true,
+        "source": "csm2f-8518-2 p1"
+       },
+       {
+        "name": "dissipation",
+        "required": "<= 9 W nominal, 9.45 W at +5 %",
+        "datasheet": "36 W at 70 degC terminal",
+        "pass": true,
+        "source": "csm2f-8518-2 p1"
+       },
+       {
+        "name": "highest current and duty",
+        "required": "300 A for 30 s",
+        "datasheet": "(36 W / 100 uOhm)^1/2 = 600 A",
+        "pass": true,
+        "source": "csm2f-8518-2 p1"
+       },
+       {
+        "name": "trip inside full scale",
+        "required": "<= 40.96 mV",
+        "datasheet": "31.5 mV at +5 %",
+        "pass": true,
+        "source": "csm2f-8518-2 p1"
+       },
+       {
+        "name": "accuracy share",
+        "required": "<= 2.833 A at 300 A and <= 125.7 mA at 15 A",
+        "datasheet": "TCR on test points +/-150 ppm/degC for 100 uOhm (+20 to +130 degC); the sheet states no thermal EMF, so J01's 1.5 uV/K of the same series is applied (borrowed). Element 76.3 degC: 150 ppm x 51.3 K x 300 A = 2.31 A + 0.41 A = 2.72 A, margin 0.11 A. At 15 A: 56 mA + 1 mA = 57 mA",
+        "pass": true,
+        "source": "csm2f-8518-2 p1; csm2f-8518-1 p1; derived"
+       },
+       {
+        "name": "resolution",
+        "required": "<= 25 mA",
+        "datasheet": "0.78 mA",
+        "pass": true,
+        "source": "csm2f-8518-2 p1; SLYS021A 6.5"
+       },
+       {
+        "name": "Kelvin sense",
+        "required": "defined sense points",
+        "datasheet": "voltage test points on the strip (same drawing as J01)",
+        "pass": true,
+        "source": "csm2f-8518-2 p2"
+       },
+       {
+        "name": "high side",
+        "required": "67.2 V",
+        "datasheet": "metal busbar; insulation round 3",
+        "pass": true,
+        "source": "csm2f-8518-2"
+       },
+       {
+        "name": "ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "-40 to +170 degC",
+        "pass": true,
+        "source": "csm2f-8518-2 p1"
+       }
+      ],
+      "jlcpcb": "not read: a part off the board (rule 1)",
+      "digikey": "stock_available 99 (Bag), lead_weeks 12, ProductStatus Active, maker Bourns Inc., read 2026-10-03T00:50:13Z (cached, read earlier on the same UTC day), vendors.py digikey CSM2F-8518-L100J02 -> https://api.digikey.com/products/v4/search/CSM2F-8518-L100J02/productdetails",
+      "gate": "need 5; threshold 50; Digi-Key 99 >= 50: pass (rules 1 and 4)",
+      "lifecycle": "Bourns page not read (HTTP 403 challenge, three clients, 2026-10-03T00:59:35Z to 00:59:43Z): Digi-Key ProductStatus Active (00:50:13Z) is the status; longevity: none read; REV. 01/26, first issue not stated; PCN listing not read",
+      "second_source": "alternate CSM2F-8518-L100J01: same body and holes, Digi-Key 167 >= 50, Active (2026-10-03T00:50:12Z cached)",
+      "alternates": [
+       "CSM2F-8518-L100J01"
+      ],
+      "driver_in_shared": "none (a resistor)",
+      "reason": "Passes only with an EMF borrowed from the J01 sheet and a margin of 0.11 A; ranked last; the alternate of rank 7",
+      "second_source_route": "alternate",
+      "second_source_part": "CSM2F-8518-L100J01",
+      "p3_part": "CSM2F-8518-L100J01, CSM2F-8518-L100J02"
+     }
+    ],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "BAS-M-R0001-E-5.0",
+      "kind": "first",
+      "option": ""
+     },
+     {
+      "part": "BAS-M-R0001-AE-5.0",
+      "kind": "alternate",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "External shunt sense input",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "INA228AIDGSR",
+      "reason": "The owner's fixed input (F1, V304), ranked first and not replaced. Fails rule 4 (JLCPCB 0, presale -254 at 2026-10-03T00:58:33Z; Digi-Key 0) and two values against the owner's 1 kOhm leads (IOBoard.md:464): TI SLYS021A 8.1.4 says 'Do not use values greater than 100 ohms for RFILTER' (read 2026-10-03T01:00:45Z), and RDIFF is 92 kOhm typical with no bound or drift, so 2 x 1 kOhm reads 2.13 % low typical with its change over 0 to 50 degC not bounded, against V166's +/-1 %. Reported to the owner.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "INA228AIDGSR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port current monitor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "INA3221AIRGVR",
+      "reason": "The owner's choice; meets every value but the Critical pin's hold time with three channels enabled, which SBOS576C does not state (blanking time cannot be set from it; a bench measurement fixes it). Inputs rated -0.3 to 26 V against the 18 V top of the DC input (V319) and its 8 V margin; JLCPCB 8595, Digi-Key 67227 (second-vendor route passes). Unchanged by P3.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "INA3221AIRGVR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port shunt",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "ERJ-6CWDR010V",
+      "reason": "Passes with a 0.9 mA margin (22.9 mA of the 23.8 mA share, the self-heating derived from the derating curve); JLCPCB 4062 and Digi-Key 12302 (second-vendor route passes). Unchanged by P3.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "PA1206DRE470R01Z",
+      "reason": "Widest margin, 1206 land; second source only through the PE1206DRM470R01L alternate because Digi-Key reads 0.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "PE1206DRM470R01L",
+      "reason": "Passes at +/-75 ppm/degC with 22.7 mA of 23.8 mA for a 9 K rise; the alternate of rank 2.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "ERJ-6CWDR010V",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo rail monitor",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "alert shift register",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "SN74LV165APWR",
+      "reason": "Levels stated over the rail (0.7 and 0.3 VCC at 3 to 3.6 V), most margin to 125 degC, JLCPCB 11657; second source by the Nexperia 74LV165APW,118 (Digi-Key 7 under the gate of 50). Unchanged by P3.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "74VHC165FT",
+      "reason": "Passes; its own second-vendor route (Digi-Key 1316); ranks below the TI and Nexperia pair that is verified together.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "74LV165APW,118",
+      "reason": "Passes; the rule 5 alternate of rank 1; rated to 85 degC.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "TC74HC165AF(EL,F) (C7121109)",
+      "maker": "Toshiba",
+      "reason": "P3 is right that 'datasheet not read' is no ground; the drop stands on the sheet read here. Toshiba TC74HC165AF (https://toshiba.semicon-storage.com/info/docget.jsp?did=11268&prodName=TC74HC165AF, read 2026-10-03T00:58:54Z): VCC (opr) 2 to 6 V; VIH 1.50, 3.15 and 4.20 V minimum and VIL 0.50, 1.35 and 1.80 V maximum at VCC 2.0, 4.5 and 6.0 V only, so no input level is stated over the rail 3.201 to 3.399 V, the ground that drops the other HC parts. Rule 4 would pass: C7121109 stockCount 992, presale 992 (vendors.py jlcpcb, 2026-10-03T00:58:32Z)."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "SN74LV165APWR",
+      "kind": "first",
+      "option": ""
+     },
+     {
+      "part": "74LV165APW,118",
+      "kind": "alternate",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "alert combining gate",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "74VHC21FT",
+      "reason": "The owner's part (V305); every value met, tpd 8.5 ns at 15 pF and 12.0 ns at 50 pF at 3.3 V +/-0.3 V; JLCPCB 4393 and Digi-Key 19647. Second source kept as the alternate SN74LV21APWR (the second-vendor route passes too).",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "SN74LV21APWR",
+      "reason": "The owner's part beside the 74VHC21FT (V305); same land; JLCPCB 171 against a gate of 75, Digi-Key 78636.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "SN74LV21ADR",
+      "reason": "Passes in SOIC-14, another land than the owner's two parts.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "74VHC21FT",
+      "kind": "first",
+      "option": ""
+     },
+     {
+      "part": "SN74LV21APWR",
+      "kind": "alternate",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "External shunt sense input: the low-capacitance TVS (transient-voltage-suppression) diode behind the two 1 kOhm series resistors (IOBoard.md:464, owner 2026-09-30)",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "INA228AIDGSR stock, fixed input (V304)",
+    "value": "Fails rule 4: JLCPCB C2887910 stockCount 0, canPresaleNumber -254, expand, 6.1775 USD at 10; Digi-Key 0 in all packagings, 20 weeks, Active (cached reading of 2026-10-03T00:02:22Z, P2). Not held. Kept by the owner as a current limitation and T6 stock exception; stock read again before the order",
+    "source": "vendors.py jlcpcb C2887910, read 2026-10-03T00:58:33Z (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList); Research.md V304"
+   },
+   {
+    "figure": "INA228 on the external shunt sense input, fixed input that fails two values",
+    "value": "Reported to the owner, not replaced. SLYS021A 8.1.4: 'Do not use values greater than 100 ohms for RFILTER. Doing so will degrade gain error and increase non-linearity'; the owner's leads are 1 kOhm each, 10 times that. RDIFF is 92 kOhm typical only (table 6.5), no minimum, maximum or drift: 2 x 1 kOhm gives 92/94, 2.13 % low typical, and its change over 0 to 50 degC is not bounded, against V166's +/-1 %. A one-point calibration removes the typical gain error, not RDIFF's drift",
+    "source": "https://www.ti.com/lit/ds/symlink/ina228.pdf (SLYS021A, JANUARY 2021, REVISED MAY 2022), vendors.py fetch, read 2026-10-03T01:00:45Z; IOBoard.md:464 (checkout 5f5c0a61c4f7)"
+   },
+   {
+    "figure": "V319 and V318 against R8 (owner's answer of 2026-10-03: DC input 12 to 18 V, 12 V supply or 4S LiPo)",
+    "value": "No R8 requirement value changes. The one R8 part that can see the DC bus is the INA3221 (V171, withstand 18 V, the top of the DC input): rated -0.3 to 26 V, 8 V margin at 18 V. The 27 V a bus is held to for the cut-off window (V318) is 1 V above the 26 V and reaches a port only through a converter failed short during that window, a double fault. The INA228s sit on the ESC pack (85 V rating), not on the DC bus. Answers the owner's question: a lowering to 18 V keeps every R8 part inside its rating in single-fault conditions",
+    "source": "Research.md V171, V318, V319 (checkout 5f5c0a61c4f7, read 2026-10-03T00:55Z); INA3221 SBOS576C 6.1 as read by P2, 2026-10-03T00:15:40Z"
+   },
+   {
+    "figure": "P3 finds qualified, External shunt: WSBS8518L1000JK34, JT34, JT35 (Vishay Dale, document 30354 and 30355, Revision 26-May-2026)",
+    "value": "Pass every electrical value: 100 uOhm +/-5 %, P70 36 W, maximum current 600 A, 31.5 mV at 300 A, TCR +/-65 ppm/degC, EMF < 1.25 uV/degC, -65 to +170 degC. Accuracy share 1.35 A of 2.833 A at 300 A and 25 mA of 125.7 mA at 15 A, on P2's basis: terminal 50 degC assumed, 105 uOhm, 9.45 W, Rthi 2.78 K/W from the rating ((170-70)/36), EMF taken at 95 uOhm. Digi-Key: JK34 97 Bulk, JT34 81 Tray, JT35 79 Tray, all Active, 48 weeks, gate 50. JK34 and JT34 differ only in the packaging letter and are each other's rule 5 alternate. Vishay pages carry no status in the body, Digi-Key's is the status",
+    "source": "https://www.vishay.com/docs/30354/wsbs8518-34.pdf and https://www.vishay.com/docs/30355/wsbs8518-35.pdf, vendors.py fetch, read 2026-10-03T00:56:35Z; vendors.py digikey readings 2026-10-03T00:50:05Z, 00:50:07Z, 00:50:10Z (cached, same UTC day); pages https://www.vishay.com/en/product/30354/ read 00:59:34Z and /30355/ read 00:59:35Z"
+   },
+   {
+    "figure": "WSBS8518L1000JK35 status at Digi-Key",
+    "value": "ProductStatus 'Discontinued at DigiKey', stock 50, 48 weeks. Fails the lifecycle gate, so WSBS8518L1000JT35 has no rule 5 alternate",
+    "source": "vendors.py digikey-search 'WSBS8518L1000' --limit 50 (https://api.digikey.com/products/v4/search/keyword), read 2026-10-03T00:58:26Z; 863 of the day's calls left"
+   },
+   {
+    "figure": "P3 finds qualified, External shunt: CSM2F-8518-L100J01 and J02 (Bourns)",
+    "value": "J01: TCR +/-125 ppm/degC, EMF < 1.50 uV/K for 100 uOhm, 36 W at 70 degC terminal, derating flat to 125 degC terminal (Rthi taken as 2.78 K/W, conservative), 2.34 A of 2.833 A at 300 A, 48 mA at 15 A, Digi-Key 167, 12 weeks. J02: TCR +/-150 ppm/degC (+20 to +130 degC), no thermal EMF stated; with J01's 1.5 uV/K 2.72 A, margin 0.11 A, on a borrowed figure; Digi-Key 99. Both Active at Digi-Key. Same 85 x 18 mm body and 8.3 mm holes. Bourns' product page answered HTTP 403 with a challenge to the chrome, safari and plain clients, status not read",
+    "source": "https://www.bourns.com/docs/product-datasheets/csm2f-8518-1.pdf (read 2026-10-03T00:56:36Z) and csm2f-8518-2.pdf (00:56:37Z); vendors.py digikey readings 00:50:12Z and 00:50:13Z (cached); https://www.bourns.com/products/current-sense-resistors/csm2f-8518 read 00:59:35Z, 00:59:43Z"
+   },
+   {
+    "figure": "External shunt order after P3",
+    "value": "1 BAS-M-R0001-E-5.0 and 2 BAS-M-R0001-AE-5.0 (owner, V313), then WSBS8518L1000JK34, JT34, WSBE8518L1000JKA2, WSBS8518L1000JT35, CSM2F-8518-L100J01, J02. P2's rank 3, WSBE8518L1000JKA2, fails rule 5, so it ranks under the two WSBS8518 parts that pass it; P3's point that 'not the owner's part' and 'beyond three' did not separate these parts from it holds",
+    "source": "Research.md V313; this re-rank, 2026-10-03"
+   },
+   {
+    "figure": "P3 drop CSS2H-3920R-L200FE and L200F (Onboard shunt), computed share",
+    "value": "TCR including copper terminals +/-100 ppm/degC, 12 W at 70 degC terminal, derating to 0 at about 170 degC: Rthi 8.33 K/W, element 137.9 degC at 4.55 W with the terminal at 100 degC, 1.69 A of the 1.4166 A share; fails with no EMF counted (it fails whenever Rthi exceeds 4.26 K/W). JLCPCB C4126121 85/83, C2073640 21/21 (under the gate of 50)",
+    "source": "https://www.bourns.com/docs/product-datasheets/css2h-3920.pdf, read 2026-10-03T00:58:38Z; vendors.py jlcpcb C4126121 and C2073640, read 2026-10-03T00:58:32Z"
+   },
+   {
+    "figure": "P3 drop BVE-Z-R0001-1.0 (Onboard shunt), rule 4",
+    "value": "C19842033 stockCount 0, canPresaleNumber 0, expand, 5930 package, 0.1 mOhm; JLCPCB description lists +/-200 ppm/degC (not a maker figure)",
+    "source": "vendors.py jlcpcb C19842033, read 2026-10-03T00:58:32Z"
+   },
+   {
+    "figure": "P3 drop LM75BIMMX-3/NOPB (temperature sensor)",
+    "value": "P2's '+/-3 degC at 100 degC' is wrong for the LM75B, which states +/-2 degC maximum from -25 to +100 degC at the nominal 3.3 V, degrading typically 1 degC/V of supply variation (no figure over 3.201 to 3.399 V); conversion 100 ms typical, 300 ms maximum, so two conversions reach 600 ms against the 500 ms stop deadline; address 0x48 to 0x4F. JLCPCB C543061 3729/3719. Dropped on those grounds",
+    "source": "https://www.ti.com/lit/ds/symlink/lm75b.pdf (SNIS153D) table 6.5 and footnote 1, read 2026-10-03T00:58:53Z; vendors.py jlcpcb C543061, read 00:58:33Z"
+   },
+   {
+    "figure": "P3 drop TC74HC165AF(EL,F) (alert shift register)",
+    "value": "Levels stated at VCC 2.0, 4.5 and 6.0 V only (VIH 1.50, 3.15, 4.20 V; VIL 0.50, 1.35, 1.80 V); none over the rail. JLCPCB C7121109 992/992, SOP-16",
+    "source": "https://toshiba.semicon-storage.com/info/docget.jsp?did=11268&prodName=TC74HC165AF, read 2026-10-03T00:58:54Z; vendors.py jlcpcb C7121109, read 00:58:32Z"
+   },
+   {
+    "figure": "PCT2075 conversion timing (temperature sensor rank 2)",
+    "value": "Conversion cycle about 100 ms, conversion about 28 ms in each cycle, no maximum stated; two conversions about 200 ms typical against the 500 ms stop deadline, a typical figure only",
+    "source": "https://www.nxp.com/docs/en/data-sheet/PCT2075.pdf, read 2026-10-03T00:59:50Z"
+   },
+   {
+    "figure": "Fixed inputs ranked first",
+    "value": "Motor monitor and External shunt sense input: INA228AIDGSR, rank 1 in both, each reported to the owner (stock; and for the sense input the 1 kOhm leads). Fixed inputs of other categories are outside R8",
+    "source": "Research.md Scope; selection.json (owner_fixed, run owner)"
+   },
+   {
+    "figure": "Sourcing rule 5 routes at the first-ranked parts",
+    "value": "Motor monitor and sense input INA228AIDGSR: none. Onboard shunt BVR-Z-R0002-1.0, temperature sensor MCP9808T-E/MS, Port current monitor INA3221AIRGVR, Port shunt ERJ-6CWDR010V: second vendor (Digi-Key 11190, 21419, 67227, 12302 per P2, read 2026-10-03T00:14Z). External shunt BAS-M-R0001-E-5.0: alternate BAS-M-R0001-AE-5.0. Alert shift register SN74LV165APWR: alternate 74LV165APW,118. Alert combining gate 74VHC21FT: alternate SN74LV21APWR (the second-vendor route, Digi-Key 19647, passes as well)",
+    "source": "P2's records; Research.md Sourcing rule 5"
+   },
+   {
+    "figure": "Digi-Key calls",
+    "value": "863 of 1,000 left at 2026-10-03T00:58:26Z; this re-rank made 1 uncached call (keyword search 'WSBS8518L1000'), the five P3 part readings were cached",
+    "source": "vendors.py digikey-search, digikey-quota"
+   }
+  ]
+ }
+}

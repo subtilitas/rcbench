@@ -1,0 +1,1399 @@
+{
+ "role": "P4",
+ "category": "R8",
+ "label": "P4-stock-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "Motor monitor",
+    "part": "INA228AIDGSR",
+    "kind": "first",
+    "verdict": "refuted",
+    "refutation": "Fails rule 4 (stock gate): JLCPCB C2887910 stockCount 0 and canPresaleNumber -254 (read 2026-10-03T01:03:50Z), Digi-Key 0 in all packagings (cached 2026-10-03T00:02:22Z); not held. The owner keeps the part (V304) as a current limitation and T6 stock exception; the reading refutes it as a verified part.",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 0, canPresaleNumber -254, Digi-Key 0; need 10, threshold 50: fail (rule 4); fixed input kept by V304",
+      "read": "JLCPCB C2887910 stockCount 0, canPresaleNumber -254; need 10, S4 threshold 50: fail (rule 4)",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C2887910)",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-10-03T01:03:50Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber -254",
+      "read": "canPresaleNumber -254",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C2887910)",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-10-03T01:03:50Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C2887910)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:50Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2887910, INA228AIDGSR, VSSOP-10",
+      "read": "JLCPCB exact result for C2887910: part INA228AIDGSR, package VSSOP-10-0.5mm, label Texas Instruments; names the candidate's part number and package",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C2887910)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:50Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "TI page ACTIVE; Digi-Key Active",
+      "read": "ACTIVE for orderable INA228AIDGSR (marketingStatusDescription ACTIVE, Texas Instruments)",
+      "source": "https://www.ti.com/product/INA228 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:13Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life or last-time-buy notice",
+      "read": "none found: the TI page carries no end-of-life, NRND or last-time-buy marking for the part; Digi-Key end_of_life false, discontinued false; PCN listing not read (script-loaded or login)",
+      "source": "https://www.ti.com/product/INA228; Digi-Key productdetails INA228AIDGSR (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:13Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2 (one for each shunt path)",
+      "read": "2: one INA228 for each shunt path, two paths (F1); matches",
+      "source": "IOBoard.md:74, :465, :503 (checkout 5f5c0a61c4f7)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C2887910",
+      "read": "IOBoard.md:74 and :465 put one INA228 on the IO board for each shunt path; LCSC number C2887910 (C and digits): agrees",
+      "source": "IOBoard.md:74, :465; JLCPCB C2887910",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published read",
+      "read": "not read: no longevity commitment on the TI product page and no programme page linked from it",
+      "source": "https://www.ti.com/product/INA228",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:13Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "January 2021 (SLYS021A header)",
+      "read": "first datasheet Revision * January 2021 (SLYS021A revision history); more than 12 months before 2026-10-03",
+      "source": "https://www.ti.com/lit/ds/symlink/ina228.pdf, 4 Revision History",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:51Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active, agrees; JLCPCB carries no status",
+      "read": "Digi-Key ProductStatus Active (Texas Instruments, cached 00:02:22Z); LCSC page C2887910 'Out of Stock' with no discontinued or obsolete marking; JLCPCB API has no status field; all agree with the maker's ACTIVE",
+      "source": "Digi-Key API; https://www.lcsc.com/product-detail/C2887910.html read 2026-10-03T01:06:50Z; JLCPCB API",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:02:22Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "20 weeks",
+      "read": "manufacturer lead time 20 weeks",
+      "source": "Digi-Key API productdetails INA228AIDGSR (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:02:22Z"
+     }
+    ]
+   },
+   {
+    "function": "External shunt sense input",
+    "part": "INA228AIDGSR",
+    "kind": "first",
+    "verdict": "refuted",
+    "refutation": "Fails rule 4 (stock gate): JLCPCB C2887910 stockCount 0 and canPresaleNumber -254 (read 2026-10-03T01:03:50Z), Digi-Key 0 in all packagings (cached 2026-10-03T00:02:22Z); not held. The owner keeps the part (V304) as a current limitation and T6 stock exception; the reading refutes it as a verified part.",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 0, canPresaleNumber -254, Digi-Key 0; need 10, threshold 50: fail (rule 4); fixed input kept by V304",
+      "read": "JLCPCB C2887910 stockCount 0, canPresaleNumber -254; need 10, S4 threshold 50: fail (rule 4)",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C2887910)",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-10-03T01:03:50Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber -254",
+      "read": "canPresaleNumber -254",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C2887910)",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-10-03T01:03:50Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C2887910)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:50Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2887910, INA228AIDGSR, VSSOP-10",
+      "read": "JLCPCB exact result for C2887910: part INA228AIDGSR, package VSSOP-10-0.5mm, label Texas Instruments; names the candidate's part number and package",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C2887910)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:50Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "TI page ACTIVE; Digi-Key Active",
+      "read": "ACTIVE for orderable INA228AIDGSR (marketingStatusDescription ACTIVE, Texas Instruments)",
+      "source": "https://www.ti.com/product/INA228 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:13Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life or last-time-buy notice",
+      "read": "none found: the TI page carries no end-of-life, NRND or last-time-buy marking for the part; Digi-Key end_of_life false, discontinued false; PCN listing not read (script-loaded or login)",
+      "source": "https://www.ti.com/product/INA228; Digi-Key productdetails INA228AIDGSR (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:13Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 here (the external path's); 2 at the part over both functions, need 10",
+      "read": "1: the external path's INA228, the second of the two on the board; matches",
+      "source": "IOBoard.md:74, :465, :503 (checkout 5f5c0a61c4f7)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C2887910",
+      "read": "IOBoard.md:74 and :465 put one INA228 on the IO board for each shunt path; LCSC number C2887910 (C and digits): agrees",
+      "source": "IOBoard.md:74, :465; JLCPCB C2887910",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published read",
+      "read": "not read: no longevity commitment on the TI product page and no programme page linked from it",
+      "source": "https://www.ti.com/product/INA228",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:13Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "January 2021 (SLYS021A header)",
+      "read": "first datasheet Revision * January 2021 (SLYS021A revision history); more than 12 months before 2026-10-03",
+      "source": "https://www.ti.com/lit/ds/symlink/ina228.pdf, 4 Revision History",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:51Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active, agrees; JLCPCB carries no status",
+      "read": "Digi-Key ProductStatus Active (Texas Instruments, cached 00:02:22Z); LCSC page C2887910 'Out of Stock' with no discontinued or obsolete marking; JLCPCB API has no status field; all agree with the maker's ACTIVE",
+      "source": "Digi-Key API; https://www.lcsc.com/product-detail/C2887910.html read 2026-10-03T01:06:50Z; JLCPCB API",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:02:22Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "20 weeks",
+      "read": "manufacturer lead time 20 weeks",
+      "source": "Digi-Key API productdetails INA228AIDGSR (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:02:22Z"
+     }
+    ]
+   },
+   {
+    "function": "Onboard shunt",
+    "part": "BVR-Z-R0002-1.0",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB 353 / 348; need 5, threshold 50: pass; Digi-Key 11190",
+      "read": "JLCPCB C6869644 stockCount 353, canPresaleNumber 348; need 5, S4 threshold 50: pass",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C6869644)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:51Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "presale 348",
+      "read": "canPresaleNumber 348",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C6869644)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:51Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C6869644)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:51Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C6869644, BVR-Z-R0002-1.0, 4026",
+      "read": "JLCPCB exact result for C6869644: part BVR-Z-R0002-1.0, package 4026, label Isabellenhuette; names the candidate's part number and package",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C6869644)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:51Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Isabellenhuette page carries no status; Digi-Key Active",
+      "read": "Isabellenhuette product page (read 2026-10-03T01:05:09Z) carries no lifecycle status in its text; the status is Digi-Key ProductStatus Active (Isabellenhuette USA, cached 2026-10-03T00:14:11Z), a distributor figure (owner, 2026-10-02)",
+      "source": "https://www.isabellenhuette.com/solutions/products/bvr; Digi-Key productdetails BVR-Z-R0002-1.0 (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:09Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life or last-time-buy notice",
+      "read": "none found: the maker page carries no notice; Digi-Key end_of_life false, discontinued false; PCN listing not read (script-loaded or login)",
+      "source": "https://www.isabellenhuette.com/solutions/products/bvr; Digi-Key productdetails BVR-Z-R0002-1.0 (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:09Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1",
+      "read": "1: one onboard 150 A shunt (F2); matches",
+      "source": "IOBoard.md:458",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C6869644",
+      "read": "the onboard shunt is placed on the IO board (IOBoard.md:458, :74); LCSC number C6869644: agrees",
+      "source": "IOBoard.md:458; JLCPCB C6869644",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published read",
+      "read": "not read: no longevity commitment on the maker's product page and no programme page linked from it",
+      "source": "https://www.isabellenhuette.com/solutions/products/bvr",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:09Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "not stated (Issue 12-September-2024 current)",
+      "read": "not read: the sheet gives only Issue 12-September-2024 and no revision history; the first revision date is not stated, so under 12 months is not excluded by the sheet alone; the issue itself is 25 months old",
+      "source": "https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BVR.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:54Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB carries no status",
+      "read": "Digi-Key ProductStatus Active (Isabellenhuette USA, cached 2026-10-03T00:14:11Z); LCSC page C6869644: 353 in stock, no discontinued or obsolete marking; JLCPCB API has no status field; no disagreement with the maker status",
+      "source": "Digi-Key API; https://www.lcsc.com/product-detail/C6869644.html read 2026-10-03T01:06:56Z; JLCPCB API",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:11Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "18 weeks",
+      "read": "manufacturer lead time 18 weeks",
+      "source": "Digi-Key API productdetails BVR-Z-R0002-1.0 (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:11Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 11190 >= 50",
+      "read": "Digi-Key stock_available 11190 (Cut Tape 11190, Tape & Reel 9800) against the rule-4 gate of 50 (need 5): pass",
+      "source": "Digi-Key API productdetails BVR-Z-R0002-1.0 (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:11Z"
+     }
+    ]
+   },
+   {
+    "function": "Onboard shunt temperature sensor",
+    "part": "MCP9808T-E/MS",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB 757 / 716; need 5 here, 25 at the part with R6's 4, threshold 125: pass; Digi-Key 21419",
+      "read": "JLCPCB C129490 stockCount 757, canPresaleNumber 716; need 25, S4 threshold 125: pass",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C129490)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:53Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "presale 716",
+      "read": "canPresaleNumber 716",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C129490)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:53Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C129490)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:53Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C129490, MCP9808T-E/MS, MSOP-8",
+      "read": "JLCPCB exact result for C129490: part MCP9808T-E/MS, package MSOP-8, label Microchip Tech; names the candidate's part number and package",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C129490)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:53Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Microchip page 'Status: In Production'; Digi-Key Active",
+      "read": "Microchip product page: 'Status: In Production' (product MCP9808); Digi-Key ProductStatus Active (Microchip Technology, cached 2026-10-03T00:14:16Z)",
+      "source": "https://www.microchip.com/en-us/product/mcp9808 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life or last-time-buy notice",
+      "read": "none found: the maker page carries no notice; Digi-Key end_of_life false, discontinued false; PCN listing not read (script-loaded or login)",
+      "source": "https://www.microchip.com/en-us/product/mcp9808 (vendors.py fetch); Digi-Key productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:14Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 here; 5 at the part (R6 adds 4)",
+      "read": "1 beside the onboard shunt (IOBoard.md:459) plus 4 beside the TPS55285 (IOBoard.md:460) = 5 at the part; candidate's count covers 5",
+      "source": "IOBoard.md:459, :460",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C129490",
+      "read": "the sensor is placed on the IO board beside the onboard shunt (IOBoard.md:459); LCSC number C129490: agrees",
+      "source": "IOBoard.md:459; JLCPCB C129490",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published read",
+      "read": "not read: no longevity commitment on the maker's product page and no programme page linked from it",
+      "source": "https://www.microchip.com/en-us/product/mcp9808",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:14Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet 2011 (DS20005095B copyright 2011-2018)",
+      "read": "first revision Revision A, October 2011 (DS20005095B Appendix B); more than 12 months",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/MCP9808-0.5C-Maximum-Accuracy-Digital-Temperature-Sensor-Data-Sheet-DS20005095B.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:53Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB carries no status",
+      "read": "Digi-Key ProductStatus Active (Microchip Technology, cached 2026-10-03T00:14:16Z); LCSC page C129490: 757 in stock, no discontinued or obsolete marking; JLCPCB API has no status field; no disagreement with the maker status",
+      "source": "Digi-Key API; https://www.lcsc.com/product-detail/C129490.html read 2026-10-03T01:06:56Z; JLCPCB API",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:16Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "4 weeks",
+      "read": "manufacturer lead time 4 weeks",
+      "source": "Digi-Key API productdetails MCP9808T-E/MS (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:16Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 21419 >= 125",
+      "read": "Digi-Key stock_available 21419 (Cut Tape 21419, Tape & Reel 20000) against the rule-4 gate of 125 (need 25 at the part): pass",
+      "source": "Digi-Key API productdetails MCP9808T-E/MS (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:16Z"
+     }
+    ]
+   },
+   {
+    "function": "External shunt",
+    "part": "BAS-M-R0001-E-5.0",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "Digi-Key 101 >= 50",
+      "read": "Digi-Key stock_available 101 (Tube 101); need 5, S4 threshold max(5 x 5, 50) = 50: pass (rule 4 at the second vendor; rule 1: off the board, no LCSC number)",
+      "source": "Digi-Key API productdetails BAS-M-R0001-E-5.0 (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:21Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Isabellenhuette page carries no status; Digi-Key Active",
+      "read": "Isabellenhuette product page (read 2026-10-03T01:05:09Z) carries no lifecycle status in its text; the status is Digi-Key ProductStatus Active (Isabellenhuette USA, cached 2026-10-03T00:14:21Z), a distributor figure (owner, 2026-10-02)",
+      "source": "https://www.isabellenhuette.com/solutions/products/bas; Digi-Key productdetails BAS-M-R0001-E-5.0 (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:09Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life or last-time-buy notice",
+      "read": "none found: the maker page carries no notice; Digi-Key end_of_life false, discontinued false; PCN listing not read (script-loaded or login)",
+      "source": "https://www.isabellenhuette.com/solutions/products/bas; Digi-Key productdetails BAS-M-R0001-E-5.0 (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:09Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1",
+      "read": "1: one external shunt path (F1, IOBoard.md:462; V313 names the BAS); off the board; matches",
+      "source": "IOBoard.md:462; Research.md V313",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "off the board, LCSC none",
+      "read": "the external shunt is a part off the board bought at Digi-Key (IOBoard.md:462, rule 1); it has no LCSC number: agrees",
+      "source": "IOBoard.md:462; Research.md Sourcing rule 1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published read",
+      "read": "not read: no longevity commitment on the maker's product page and no programme page linked from it",
+      "source": "https://www.isabellenhuette.com/solutions/products/bas",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:09Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "BAS on the market since Issue BAS-2012-10-12 (FU-2H archived reading), over 12 months",
+      "read": "not read: BAS.pdf gives Issue 08-September-2026 and a drawing date 18.10.2019 (page 2), no revision history; the first revision date is not stated; the earlier archived 2012 issue was not re-read here",
+      "source": "https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BAS.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:55Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB carries no status",
+      "read": "Digi-Key ProductStatus Active (Isabellenhuette USA, cached 2026-10-03T00:14:21Z); no LCSC page for an off-board part; JLCPCB API has no status field; no disagreement with the maker status",
+      "source": "Digi-Key API; no LCSC number; JLCPCB lists no part (rule 1)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:21Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "12 weeks",
+      "read": "manufacturer lead time 12 weeks",
+      "source": "Digi-Key API productdetails BAS-M-R0001-E-5.0 (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:21Z"
+     }
+    ]
+   },
+   {
+    "function": "External shunt",
+    "part": "BAS-M-R0001-AE-5.0",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "Digi-Key 96 >= 50",
+      "read": "Digi-Key stock_available 96 (Tube 96); need 5, S4 threshold max(5 x 5, 50) = 50: pass (rule 4 at the second vendor; rule 1: off the board, no LCSC number)",
+      "source": "Digi-Key API productdetails BAS-M-R0001-AE-5.0 (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:23Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Isabellenhuette page carries no status; Digi-Key Active",
+      "read": "Isabellenhuette product page (read 2026-10-03T01:05:09Z) carries no lifecycle status in its text; the status is Digi-Key ProductStatus Active (Isabellenhuette USA, cached 2026-10-03T00:14:23Z), a distributor figure (owner, 2026-10-02)",
+      "source": "https://www.isabellenhuette.com/solutions/products/bas; Digi-Key productdetails BAS-M-R0001-AE-5.0 (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:09Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life or last-time-buy notice",
+      "read": "none found: the maker page carries no notice; Digi-Key end_of_life false, discontinued false; PCN listing not read (script-loaded or login)",
+      "source": "https://www.isabellenhuette.com/solutions/products/bas; Digi-Key productdetails BAS-M-R0001-AE-5.0 (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:09Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1",
+      "read": "1: one external shunt path (F1, IOBoard.md:462; V313 names the BAS); off the board; matches",
+      "source": "IOBoard.md:462; Research.md V313",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "off the board, LCSC none",
+      "read": "the external shunt is a part off the board bought at Digi-Key (IOBoard.md:462, rule 1); it has no LCSC number: agrees",
+      "source": "IOBoard.md:462; Research.md Sourcing rule 1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published read",
+      "read": "not read: no longevity commitment on the maker's product page and no programme page linked from it",
+      "source": "https://www.isabellenhuette.com/solutions/products/bas",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:09Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "BAS on the market since Issue BAS-2012-10-12 (FU-2H archived reading), over 12 months",
+      "read": "not read: BAS.pdf gives Issue 08-September-2026 and a drawing date 18.10.2019 (page 2), no revision history; the first revision date is not stated; the earlier archived 2012 issue was not re-read here",
+      "source": "https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BAS.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:55Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB carries no status",
+      "read": "Digi-Key ProductStatus Active (Isabellenhuette USA, cached 2026-10-03T00:14:23Z); no LCSC page for an off-board part; JLCPCB API has no status field; no disagreement with the maker status",
+      "source": "Digi-Key API; no LCSC number; JLCPCB lists no part (rule 1)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:23Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "41 weeks",
+      "read": "manufacturer lead time 41 weeks",
+      "source": "Digi-Key API productdetails BAS-M-R0001-AE-5.0 (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:23Z"
+     }
+    ]
+   },
+   {
+    "function": "Port current monitor",
+    "part": "INA3221AIRGVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB 8595 / 8455; need 35, threshold 175: pass; Digi-Key 67227",
+      "read": "JLCPCB C181255 stockCount 8595, canPresaleNumber 8455; need 35, S4 threshold 175: pass",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C181255)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:54Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "presale 8455",
+      "read": "canPresaleNumber 8455",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C181255)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:54Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C181255)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:54Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C181255, INA3221AIRGVR, VQFN-16 4 x 4 mm",
+      "read": "JLCPCB exact result for C181255: part INA3221AIRGVR, package QFN-16-EP(4x4), label Texas Instruments; names the candidate's part number and package",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C181255)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:54Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "TI page ACTIVE; Digi-Key Active",
+      "read": "ACTIVE for orderable INA3221AIRGVR (marketingStatusDescription ACTIVE, Texas Instruments)",
+      "source": "https://www.ti.com/product/INA3221 (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:13Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life or last-time-buy notice",
+      "read": "none found: the TI page carries no notice for INA3221AIRGVR (the INA3221AIRGVT, the 250-piece reel, shows OBSOLETE on the page, a different orderable); Digi-Key end_of_life false, discontinued false; PCN listing not read (script-loaded or login)",
+      "source": "https://www.ti.com/product/INA3221 (vendors.py fetch); Digi-Key productdetails INA3221AIRGVR (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:13Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "7",
+      "read": "7: 7 INA3221 for the 20 ports, 3 channels a part (IOBoard.md:387); matches",
+      "source": "IOBoard.md:387, :112",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C181255",
+      "read": "the port monitors are placed on the IO board (IOBoard.md:387); LCSC number C181255: agrees",
+      "source": "IOBoard.md:387; JLCPCB C181255",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published read",
+      "read": "not read: no longevity commitment on the TI product page and no programme page linked from it",
+      "source": "https://www.ti.com/product/INA3221",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:13Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet May 2012",
+      "read": "first revision Revision * May 2012 (SBOS576C revision history; current revision C September 2026); more than 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/ina3221.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:52Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB carries no status",
+      "read": "Digi-Key ProductStatus Active (Texas Instruments, cached 2026-10-03T00:14:27Z); LCSC page C181255: 8,348 in stock, no discontinued or obsolete marking; JLCPCB API has no status field; no disagreement with the maker status",
+      "source": "Digi-Key API; https://www.lcsc.com/product-detail/C181255.html read 2026-10-03T01:06:57Z; JLCPCB API",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:27Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "20 weeks",
+      "read": "manufacturer lead time 20 weeks",
+      "source": "Digi-Key API productdetails INA3221AIRGVR (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:27Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 67227 >= 175",
+      "read": "Digi-Key stock_available 67227 (Cut Tape 67227, Tape & Reel 67218) against the rule-4 gate of 175 (need 35): pass",
+      "source": "Digi-Key API productdetails INA3221AIRGVR (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:27Z"
+     }
+    ]
+   },
+   {
+    "function": "Port shunt",
+    "part": "ERJ-6CWDR010V",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB 4062 / 4024; need 100, threshold 500: pass; Digi-Key 12302",
+      "read": "JLCPCB C236284 stockCount 4062, canPresaleNumber 4024; need 100, S4 threshold 500: pass",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C236284)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:56Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "presale 4024",
+      "read": "canPresaleNumber 4024",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C236284)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:56Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C236284)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:56Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C236284, ERJ-6CWDR010V, 0805",
+      "read": "JLCPCB exact result for C236284: part ERJ6CWDR010V, package 0805, label PANASONIC; names the candidate's part number and package",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C236284)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:56Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Panasonic page Active; Digi-Key Active",
+      "read": "Panasonic model page: Product status Active (1), New (0), NRFND (0) for the model ERJ6CWDR010V; Digi-Key ProductStatus Active (Panasonic Industry, cached 2026-10-03T00:14:29Z)",
+      "source": "https://industrial.panasonic.com/ww/products/pt/current-sensing-chip-resistors/models?model_number=ERJ6CWDR010V (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:20Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life or last-time-buy notice",
+      "read": "none found: the Panasonic model page lists the model as Active and carries no notice; Digi-Key end_of_life false, discontinued false; PCN listing not read (script-loaded or login)",
+      "source": "https://industrial.panasonic.com/ww/products/pt/current-sensing-chip-resistors/models?model_number=ERJ6CWDR010V (vendors.py fetch); Digi-Key productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:20Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "20",
+      "read": "20: one 10 mOhm shunt for each of the 20 ports (IOBoard.md:387); matches",
+      "source": "IOBoard.md:387",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C236284",
+      "read": "the port shunts are placed on the IO board (IOBoard.md:387); LCSC number C236284: agrees",
+      "source": "IOBoard.md:387; JLCPCB C236284",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published read",
+      "read": "not read: no longevity commitment on the maker's product page and no programme page linked from it",
+      "source": "https://industrial.panasonic.com/ww/products/pt/current-sensing-chip-resistors/models?model_number=ERJ6CWDR010V",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:20Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first revision not stated",
+      "read": "not read: AOA0000C313 carries page dates 29-Sep-23 and 30-Jun-23 only, no first-revision date",
+      "source": "https://industrial.panasonic.com/cdbs/www-data/pdf/RDN0000/AOA0000C313.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:55Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB carries no status",
+      "read": "Digi-Key ProductStatus Active (Panasonic Industry, cached 2026-10-03T00:14:29Z); LCSC page C236284: 4,062 in stock, no discontinued or obsolete marking; JLCPCB API has no status field; no disagreement with the maker status",
+      "source": "Digi-Key API; https://www.lcsc.com/product-detail/C236284.html read 2026-10-03T01:06:57Z; JLCPCB API",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:29Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "15 weeks",
+      "read": "manufacturer lead time 15 weeks",
+      "source": "Digi-Key API productdetails ERJ-6CWDR010V (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:29Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 12302 >= 500",
+      "read": "Digi-Key stock_available 12302 (Cut Tape 12302, Tape & Reel 10000) against the rule-4 gate of 500 (need 100): pass",
+      "source": "Digi-Key API productdetails ERJ-6CWDR010V (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:29Z"
+     }
+    ]
+   },
+   {
+    "function": "alert shift register",
+    "part": "SN74LV165APWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB 11657 / 11636; need 10, threshold 50: pass",
+      "read": "JLCPCB C201716 stockCount 11657, canPresaleNumber 11636; need 10, S4 threshold 50: pass",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C201716)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:57Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "presale 11636",
+      "read": "canPresaleNumber 11636",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C201716)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:57Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C201716)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:57Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C201716, SN74LV165APWR, TSSOP-16",
+      "read": "JLCPCB exact result for C201716: part SN74LV165APWR, package TSSOP-16, label Texas Instruments; names the candidate's part number and package",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C201716)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:57Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "TI page ACTIVE; Digi-Key Active",
+      "read": "ACTIVE for orderable SN74LV165APWR (marketingStatusDescription ACTIVE, Texas Instruments)",
+      "source": "https://www.ti.com/product/SN74LV165A (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life or last-time-buy notice",
+      "read": "none found: the TI page carries no notice for SN74LV165APWR; Digi-Key end_of_life false, discontinued false; PCN listing not read (script-loaded or login)",
+      "source": "https://www.ti.com/product/SN74LV165A (vendors.py fetch); Digi-Key productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:14Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2",
+      "read": "2: two 8-bit parts in cascade (IOBoard.md:113); matches",
+      "source": "IOBoard.md:113",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C201716",
+      "read": "the shift registers are placed on the IO board (IOBoard.md:113); LCSC number C201716: agrees",
+      "source": "IOBoard.md:113; JLCPCB C201716",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published read",
+      "read": "not read: no longevity commitment on the TI product page and no programme page linked from it",
+      "source": "https://www.ti.com/product/SN74LV165A",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:14Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet April 1998",
+      "read": "datasheet header SCLS402R April 1998, revised March 2023; more than 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/sn74lv165a.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:52Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB carries no status",
+      "read": "Digi-Key ProductStatus Active (Texas Instruments, cached 2026-10-03T00:14:33Z); LCSC page C201716: 11,655 in stock, no discontinued or obsolete marking; JLCPCB API has no status field; no disagreement with the maker status",
+      "source": "Digi-Key API; https://www.lcsc.com/product-detail/C201716.html read 2026-10-03T01:06:57Z; JLCPCB API",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:33Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "20 weeks",
+      "read": "manufacturer lead time 20 weeks",
+      "source": "Digi-Key API productdetails SN74LV165APWR (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:33Z"
+     }
+    ]
+   },
+   {
+    "function": "alert shift register",
+    "part": "74LV165APW,118",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB 13220 / 13218; need 10, threshold 50: pass",
+      "read": "JLCPCB C282340 stockCount 13220, canPresaleNumber 13218; need 10, S4 threshold 50: pass",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C282340)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:59Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "presale 13218",
+      "read": "canPresaleNumber 13218",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C282340)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:59Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C282340)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:59Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C282340, 74LV165APW,118, TSSOP-16",
+      "read": "JLCPCB exact result for C282340: part 74LV165APW,118, package TSSOP-16, label Nexperia; names the candidate's part number and package",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C282340)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:03:59Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Nexperia page production; Digi-Key Active",
+      "read": "Nexperia product page: Production (meta productState production, hero 'Production'); Digi-Key ProductStatus Active (Nexperia USA Inc., cached 2026-10-03T00:14:37Z)",
+      "source": "https://www.nexperia.com/product/74LV165APW (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:15Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life or last-time-buy notice",
+      "read": "none found: the Nexperia page carries no notice for 74LV165APW; Digi-Key end_of_life false, discontinued false; PCN listing not read (script-loaded or login)",
+      "source": "https://www.nexperia.com/product/74LV165APW (vendors.py fetch); Digi-Key productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:15Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2",
+      "read": "2: two 8-bit parts in cascade (IOBoard.md:113); matches",
+      "source": "IOBoard.md:113",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C282340",
+      "read": "the shift registers are placed on the IO board (IOBoard.md:113); LCSC number C282340: agrees",
+      "source": "IOBoard.md:113; JLCPCB C282340",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "Nexperia Longevity Program page: the logic table lists the LV family with 10 years at 16-pin packages as of September 2025 (TSSOP16, SOT403-1); table text extracted, column assignment inferred; the page states longevity statements give no legal rights",
+      "source": "https://www.nexperia.com/support/customer-support/longevity",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:41Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet December 1990 (revision history)",
+      "read": "74LV165A v.1 December 1990 (Table 11 revision history; current Rev. 5, 18 April 2024); more than 12 months",
+      "source": "https://assets.nexperia.com/documents/data-sheet/74LV165A.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:53Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB carries no status",
+      "read": "Digi-Key ProductStatus Active (Nexperia USA Inc., cached 2026-10-03T00:14:37Z); LCSC page C282340: 13,220 in stock, no discontinued or obsolete marking; JLCPCB API has no status field; no disagreement with the maker status",
+      "source": "Digi-Key API; https://www.lcsc.com/product-detail/C282340.html read 2026-10-03T01:06:58Z; JLCPCB API",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:37Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "20 weeks",
+      "read": "manufacturer lead time 20 weeks",
+      "source": "Digi-Key API productdetails 74LV165APW,118 (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:37Z"
+     }
+    ]
+   },
+   {
+    "function": "alert combining gate",
+    "part": "74VHC21FT",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB 4393 / 4393; need 15, threshold 75: pass; Digi-Key 19647",
+      "read": "JLCPCB C4470883 stockCount 4393, canPresaleNumber 4393; need 15, S4 threshold 75: pass",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C4470883)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:00Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "presale 4393",
+      "read": "canPresaleNumber 4393",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C4470883)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:00Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C4470883)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:00Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C4470883, 74VHC21FT, TSSOP-14",
+      "read": "JLCPCB exact result for C4470883: part 74VHC21FT, package TSSOP-14-175mil, label TOSHIBA; names the candidate's part number and package",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C4470883)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:00Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Toshiba page carries no status; Digi-Key Active",
+      "read": "Toshiba product page (read 2026-10-03T01:05:10Z) carries status words only in its menu (Not Recommended for New Design and EOL announced under other product families), none for the part; the status is Digi-Key ProductStatus Active (Toshiba Semiconductor and Storage, cached 2026-10-03T00:14:38Z), a distributor figure (owner, 2026-10-02)",
+      "source": "https://toshiba.semicon-storage.com/ap-en/semiconductor/product/general-purpose-logic-ics/detail.74VHC21FT.html; Digi-Key productdetails 74VHC21FT (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:10Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life or last-time-buy notice",
+      "read": "none found: the Toshiba page carries no notice for the part (the 'EOL announced' entries are menu links to other families); Digi-Key end_of_life false, discontinued false; PCN listing not read (script-loaded or login)",
+      "source": "https://toshiba.semicon-storage.com/ap-en/semiconductor/product/general-purpose-logic-ics/detail.74VHC21FT.html; Digi-Key productdetails 74VHC21FT (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:10Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "3",
+      "read": "3: 3 gate parts a board, 2 gates each (IOBoard.md:113); matches",
+      "source": "IOBoard.md:113; Research.md V305",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C4470883",
+      "read": "the gates are placed on the IO board (IOBoard.md:113); LCSC number C4470883: agrees",
+      "source": "IOBoard.md:113; JLCPCB C4470883",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published read",
+      "read": "not read: no longevity commitment on the maker's product page and no programme page linked from it",
+      "source": "https://toshiba.semicon-storage.com/ap-en/semiconductor/product/general-purpose-logic-ics/detail.74VHC21FT.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:10Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first production 2015-01 (FU-2H reading of Rev.3.0.B)",
+      "read": "'Start of commercial production 2015-01' on page 1 of 74VHC21FT Rev.3.0.B (2026-05-13); more than 12 months",
+      "source": "https://toshiba.semicon-storage.com/info/docget.jsp?did=15696&prodName=74VHC21FT",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:53Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB carries no status",
+      "read": "Digi-Key ProductStatus Active (Toshiba Semiconductor and Storage, cached 2026-10-03T00:14:38Z); LCSC page C4470883: 4,390 in stock, no discontinued or obsolete marking; JLCPCB API has no status field; no disagreement with the maker status",
+      "source": "Digi-Key API; https://www.lcsc.com/product-detail/C4470883.html read 2026-10-03T01:06:58Z; JLCPCB API",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:38Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks",
+      "read": "manufacturer lead time 16 weeks",
+      "source": "Digi-Key API productdetails 74VHC21FT (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:38Z"
+     }
+    ]
+   },
+   {
+    "function": "alert combining gate",
+    "part": "SN74LV21APWR",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB 171 / 168; need 15, threshold 75: pass; Digi-Key 78636",
+      "read": "JLCPCB C201541 stockCount 171, canPresaleNumber 168; need 15, S4 threshold 75: pass",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C201541)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:02Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "presale 168",
+      "read": "canPresaleNumber 168",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C201541)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:02Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows both",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C201541)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:02Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C201541, SN74LV21APWR, TSSOP-14",
+      "read": "JLCPCB exact result for C201541: part SN74LV21APWR, package TSSOP-14, label Texas Instruments; names the candidate's part number and package",
+      "source": "JLCPCB selectSmtComponentList API (vendors.py jlcpcb C201541)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:02Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "TI page ACTIVE; Digi-Key Active",
+      "read": "ACTIVE for orderable SN74LV21APWR (marketingStatusDescription ACTIVE, Texas Instruments)",
+      "source": "https://www.ti.com/product/SN74LV21A (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:14Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life or last-time-buy notice",
+      "read": "none found: the TI page carries no notice for SN74LV21APWR (SN74LV21ADBR carries a 'not for new designs' text, a different orderable); Digi-Key end_of_life false, discontinued false; PCN listing not read (script-loaded or login)",
+      "source": "https://www.ti.com/product/SN74LV21A (vendors.py fetch); Digi-Key productdetails (cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:14Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "3",
+      "read": "3: 3 gate parts a board (IOBoard.md:113); matches",
+      "source": "IOBoard.md:113; Research.md V305",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the board, LCSC C201541",
+      "read": "the gates are placed on the IO board (IOBoard.md:113); LCSC number C201541: agrees",
+      "source": "IOBoard.md:113; JLCPCB C201541",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:08:56Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "none published read",
+      "read": "not read: no longevity commitment on the TI product page and no programme page linked from it",
+      "source": "https://www.ti.com/product/SN74LV21A",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:04:14Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet September 2000",
+      "read": "datasheet header SCES340F September 2000, revised July 2023; more than 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/sn74lv21a.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T01:05:52Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB carries no status",
+      "read": "Digi-Key ProductStatus Active (Texas Instruments, cached 2026-10-03T00:14:40Z); LCSC page C201541: 170 in stock, no discontinued or obsolete marking; JLCPCB API has no status field; no disagreement with the maker status",
+      "source": "Digi-Key API; https://www.lcsc.com/product-detail/C201541.html read 2026-10-03T01:06:58Z; JLCPCB API",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:40Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "12 weeks",
+      "read": "manufacturer lead time 12 weeks",
+      "source": "Digi-Key API productdetails SN74LV21APWR (cached, same UTC day)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-10-03T00:14:40Z"
+     }
+    ]
+   }
+  ]
+ }
+}

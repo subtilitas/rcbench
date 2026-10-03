@@ -1,0 +1,74 @@
+{
+ "role": "P3",
+ "category": "R6",
+ "label": "P3-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "missed": [
+   {
+    "function": "Port supply current limit",
+    "part": "INA381A1IDSGR",
+    "maker": "Texas Instruments",
+    "why": "Family P2 returned no entry for (FU-2H's P3 found it and its re-rank held it at rank 3). Every requirement value passes. Data sheet SBOS848B (https://www.ti.com/lit/ds/symlink/ina381.pdf, read 2026-10-03T01:06:59Z): common-mode input -0.2 to 26 V (covers 0.8 to 8.70 V, a 12 V back-fed pin, 20 V through a failed converter; 26 V absolute maximum is under the 27 V bus transient of V318 only if that transient reached the shunt); differential absolute maximum +/-26 V, so a braking servo's negative VSENSE gives no trip and no damage; supply 2.7 to 5.5 V (3.201 to 3.399 V passes); A1 gain 20 V/V, gain error 1 % max, VOS 500 uV max at VCM 12 V (150 uV at 0 V), comparator offset 5 mV max; ALERT active-low open drain, VOL 300 mV max at 3 mA, 6 V absolute maximum, so it pulls the TPSI3052 EN low; RESET high gives latch mode and the alert clears only when RESET is held low for at least 100 ns, so RESET on the port's enable holds the switch off while the enable is high; alert delay 2 us typ and 5 us max small signal, 3 us typ and 10 us max slew limited (reported, V129 states no limit); -40 to 125 degC. Trip band, my arithmetic: 10 mOhm port shunt +/-0.5 %, CMPREF 0.88 V from the REF3112 through 0.1 % resistors (+/-0.45 %), gain error 1 %, VOS 500 uV and comparator offset 5 mV give 4.24 to 4.56 A, inside 3.0 to 6.35 A and inside the 3.96 to 4.84 A breaker band. JLCPCB C544574 stockCount 615, canPresaleNumber 532, expand, USD 0.3983 at 100 (vendors.py jlcpcb, 2026-10-03T01:06:52Z): passes the gate of 500 (20 placements x 5 boards x 5) by 115. Digi-Key INA381A1IDSGR Active, stock 8602, lead 20 weeks (productdetails 2026-10-03T01:07:21Z), so rule 5 passes at the second vendor. https://www.ti.com/product/INA381 meta status ACTIVE (2026-10-03T01:07:23Z); first data sheet December 2017. WSON-8 2 x 2 mm, a different footprint and a CMPREF reference node in place of RLIMIT, so it is a different circuit from INA301A1IDGKR. Its gain-50 sibling INA381A2IDSGR has JLCPCB 4774 (2026-10-03T01:06:52Z) but Digi-Key stock 0 (2026-10-03T01:07:23Z) and is not a second source. INA301A2IDGKR and INA301A3IDGKR, dropped by P2 as 'not the same circuit', stay out for another reason: JLCPCB stockCount 98 and 62 (2026-10-03T01:06:51Z), under 500."
+   },
+   {
+    "function": "Port supply switch",
+    "part": "IRF7313TRPBF",
+    "maker": "Infineon Technologies (International Rectifier HEXFET)",
+    "why": "Dual N-channel SO-8 P2 did not consider. Every requirement value passes. Data sheet IRF7313PbF, 10/7/04 (JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588879815138664448, read 2026-10-03T01:09:19Z): VDS 30 V (blocks the 12 V pin and the 20 V failed-converter case, either polarity with the sources tied); VGS +/-20 V (above the TPSI3052's 16.2 V); pins S1 G1 S2 G2 and D2 D2 D1 D1, separate sources, the same SO-8 pinout as DMG4822SSD-13 (DS35403 read 2026-10-03T01:14:27Z); RDS(on) 23 typ and 29 mOhm max at VGS 10 V (46 mOhm max at 4.5 V): the pair drops 174 mV at 3.0 A and 25 degC, 261 mV with RDS(on) x 1.5 (rise with temperature assumed, not tabulated here), against 570 mV; ID 6.5 A at TA 25 degC and 5.2 A at 70 degC a channel; PD 2.0 W at 25 degC and 1.3 W at 70 degC, RthJA 62.5 degC/W: pair loss 0.52 W at the 25 degC maximum and 0.78 W at x 1.5 gives TJ about 99 degC at 50 degC ambient, under 150 degC; IDSS 1 uA max at 24 V and 25 uA at 55 degC (under 5 mA at 8.4 V); IDM 30 A pulsed for the 128 us shorted-port interval; -55 to 150 degC. JLCPCB C117622 stockCount 19646, canPresaleNumber 19511, expand, USD 0.3544 at 100 (vendors.py jlcpcb, 2026-10-03T01:09:10Z): passes the gate of 500. Digi-Key IRF7313TRPBF Active, stock 42581, lead 52 weeks (productdetails 2026-10-03T01:09:29Z), rule 5 passes at the second vendor. Infineon page https://www.infineon.com/part/IRF7313 productStatusInfo 'active' for OPN IRF7313TRPBF (2026-10-03T01:09:40Z). Placements 20 a board. Ranks with DMG4822SSD-13 beside the common-source BUK7K6R8-40E; the same driver, TPSI3052, drives it. Si4214DDY-T1-GE3 (Vishay, same pinout, 19.5 mOhm max, JLCPCB 946) was checked and fails rule 5: Digi-Key stock 0 (2026-10-03T01:09:27Z)."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "functions": [
+     "I/O expander"
+    ],
+    "part": "TCA6416APWR, TCA6416ARTWR, PCAL6416AHF",
+    "reason_given": "Lines: 16 lines a part at 2 addresses give 32, under 33 (round 1 readings)",
+    "why_it_fails": "The 33 comes from Pins.md I/O expanders, which counts two expander inputs for the DC input's source status and brownout 'until a decision lets one signal serve both'. V271 and V276 (owner, 2026-10-01) make that decision: one signal, the DC input voltage through a divider into one ADC input of the measurement coprocessor (GPIO 40 to 47), serving both. The expander then carries 31 lines: 20 port enables, 5 bias selectors (R4's SN74LVC1G126DBVR is driven by a line), 5 converter enables, 1 hardware latch read-back; V316 removed the clamp threshold-select lines. 32 lines are at least 31. The page does not pin the four rail latches' read-back for V283's firmware report; if they took expander lines the count would be 35, so the finding assumes they do not. The datasheets pass the other values. TCA6416A (SCPS205, https://www.ti.com/lit/ds/symlink/tca6416a.pdf, read 2026-10-03T01:00:26Z): active-low RESET returns the registers to default, all 16 P-ports are inputs at power-on and after reset, no internal P-port pull-up, 400 kHz, address 0x20 or 0x21 by ADDR (clear of 0x31, 0x40 to 0x4F, 0x18 to 0x1F and 74h/75h), push-pull outputs that source 10 mA. PCAL6416A (https://www.nxp.com/docs/en/data-sheet/PCAL6416A.pdf, read 2026-10-03T01:13:58Z): 'All I/Os are set to inputs at reset', registers return to default on power-up or reset, same 0x20 or 0x21. JLCPCB need is 2 parts x 5 boards = 10, gate 50: TCA6416APWR C130203 2526/2361, TCA6416ARTWR C182336 12685/12614 (2026-10-03T01:00:35Z and :37Z), PCAL6416AHF,128 C2652287 20572/20503 (2026-10-03T01:00:37Z), all expand. Digi-Key (2026-10-03): TCA6416APWR Active, stock 11812, 20 weeks (01:10:09Z); TCA6416ARTWR Active, stock 0, 20 weeks (01:10:11Z); PCAL6416AHF,128 Active, stock 111866, 30 weeks (01:10:13Z). TCAL6416PWR (JLCPCB C20345827 106/106) is left out of this finding: its feature text says RESET re-initialises the bus 'without resetting the sticky registers' while section 7.3.5 says the registers return to default, a conflict not resolved here."
+   },
+   {
+    "functions": [
+     "I/O expander"
+    ],
+    "part": "TCA9539PWR, NCA9539PW-Q100J",
+    "reason_given": "Address: 0x74 to 0x77 overlaps the TPS55285's 74h/75h (round 1 readings)",
+    "why_it_fails": "The four addresses are chosen by the A1 and A0 pins, so two parts strapped to 0x76 and 0x77 are clear of 74h/75h; the four TPS55285 sit on the measurement coprocessor's buses, and only the TPS55288, at 74h or 75h, may share the expanders' main bus. Two 16-line parts give 32 lines, at least the 31 the expander carries after V271 and V276 (see the entry above; they fail only the 33 of P2's table). TCA9539 data sheet (https://www.ti.com/lit/ds/symlink/tca9539.pdf, read 2026-10-03T01:00:27Z): active-low RESET, power-on and reset states are inputs, 'removal of the internal I/O pull-up resistor' against the PCA9555, I2C 400 kHz, VCC 1.65 to 5.5 V. JLCPCB need 10, gate 50: TCA9539PWR C131972 5845/5718, NCA9539PW-Q100J C20235690 4576/4575 (2026-10-03T01:00:38Z), expand. Digi-Key: TCA9539PWR Active, stock 25367, 20 weeks (01:10:16Z); NCA9539PW-Q100J Nexperia, Active, stock 2646, 22 weeks (01:10:18Z). Not read: the NCA9539's own data sheet (it is read as the TCA9539's pin-compatible Nexperia equivalent)."
+   },
+   {
+    "functions": [
+     "Servo rail clamp"
+    ],
+    "part": "OPA333AIDBVR, TLV333IDBVR",
+    "reason_given": "response: slew 0.16 V/us takes about 16 us to a 2.5 V gate threshold (OPA333 SBOS351E); FU-2H drop, the same reason under V316",
+    "why_it_fails": "The Servo rail clamp function states no response-time value: V316 asks for the margin to the ceiling, the turn-off signal and its time, and the clamp switch's response is 'reported' (Servo rail clamp switch). A speed that is stated nowhere is not a requirement value, and OPA376's 2 V/us (about 6 us to the same threshold) is equally unstated. Against the stated values both parts pass with less offset error than OPA376AIDBVR, so P2's 'smallest offset error' for rank 1 is not right. OPA333 (SBOS351, https://www.ti.com/lit/ds/symlink/opa333.pdf, read 2026-10-03T01:02:25Z): VOS 10 uV max at 5 V, drift 0.05 uV/degC max, CMRR 106 dB min, input range (V-) - 0.1 to (V+) + 0.1 V (the 3.56 V divided input is inside), 1.8 to 5.5 V supply, -40 to 125 degC. TLV333 (https://www.ti.com/lit/ds/symlink/tlv333.pdf, read 2026-10-03T01:02:39Z): VOS 15 uV max, drift 0.02 uV/degC typical only, CMRR 102 dB min, same input range. Through P2's own error model (scratch/FU-2I/P2-R6/model/clamp.py with only the op-amp row changed: VOS plus 25 K of drift, CMRR at VCM 3.56 V) the highest thresholds are 8.659 V at the 8.53 V set point (41 mV under 8.70 V, against 38 mV for OPA376) and 5.710 V at 5.59 V (30 mV under the LV ceiling's lowest trip edge 5.740 V, against 28 mV), and the lowest threshold stays above the converter's output at both settings and at 0.8 V. JLCPCB OPA333AIDBVR C30878 stockCount 9003, canPresaleNumber 8249 (2026-10-03T01:11:04Z); TLV333IDBVR C473369 28373/27159 (01:11:06Z); both expand, gate 100 (4 x 5 boards x 5). Digi-Key OPA333AIDBVR, Texas Instruments product: Active, stock 3416, lead 20 weeks (2026-10-03T01:11:12Z; a UMW product shares the number, stock 0); TLV333IDBVR Active, stock 20764, 20 weeks (cached reading 2026-10-03T00:19:34Z). https://www.ti.com/product/OPA333 and /TLV333 meta status ACTIVE (2026-10-03T01:11:25Z). SOT-23-5, the pinout of OPA376AIDBVR, so each is a pin-compatible second source for rank 1 and for the other with Digi-Key stock, which OPA376 lacks. Slew 0.16 V/us and GBW 350 kHz are recorded as the response, not as a limit."
+   },
+   {
+    "functions": [
+     "Servo supply latch power-up reset"
+    ],
+    "part": "TPS3808G30DBVR",
+    "reason_given": "not dropped for a value; a capacitor-set delay pin the function does not need; not among the two recorded",
+    "why_it_fails": "An unused pin is not a requirement value, and the function records one survivor. TPS3808 (SBVS050N, https://www.ti.com/lit/ds/symlink/tps3808.pdf, read 2026-10-03T01:12:32Z): G30 option VIT 2.79 V, accuracy +/-1.5 % over -40 to 125 degC, hysteresis 1 to 2.5 %, so the falling threshold is 2.748 to 2.832 V and the release at most 2.903 V (minimum above 1.65 V, maximum plus hysteresis under 3.201 V); open-drain active-low RESET, VPOR 0.8 V (output low from a supply below 1.65 V), VDD 1.7 V minimum over -40 to 125 degC and 1.65 V over 0 to 85 degC; delay with CT open 12 to 28 ms (reported); MR and CT unused. JLCPCB C189211 stockCount 2472, canPresaleNumber 2468 (2026-10-03T01:13:04Z), gate 100; Digi-Key Active, stock 11092, 20 weeks (01:13:09Z); https://www.ti.com/product/TPS3808 meta status ACTIVE (01:13:17Z); SOT-23-6, a different pinout from TLV803SDBZR."
+   },
+   {
+    "functions": [
+     "Servo supply latch power-up reset"
+    ],
+    "part": "TPS3703A7330DSERQ1",
+    "reason_given": "not dropped for a value: R3's reset supervisor (window, 7 to 13 ms); not among the two recorded, since its overvoltage side also asserts RESET",
+    "why_it_fails": "The requirement states the falling threshold band and the supply; it forbids no assertion at overvoltage. The overvoltage threshold is 3.3 V x 1.07 less 0.7 %, at least 3.506 V, above the rail's 3.399 V, so RESET does not assert in range, and above it an asserted RESET sets the latch and switches the rails off, the safe direction. TPS3703-Q1 (SBVS344D, https://www.ti.com/lit/ds/symlink/tps3703-q1.pdf, read 2026-10-03T01:13:25Z; the non-Q1 SBVS249B has the same table): UV/OV 7 %, accuracy +/-0.7 %, so UV falls at 3.048 to 3.090 V and releases by 3.115 V (under 3.201 V, above 1.65 V); open-drain active-low RESET, VPOR 1 V maximum; VDD 1.7 to 5.5 V; delay with CT open 7 to 13 ms (reported). JLCPCB C1849519 stockCount 307, canPresaleNumber 306 (2026-10-03T01:13:06Z), gate 100; Digi-Key Active, stock 280, 26 weeks (01:13:11Z), also over 100; https://www.ti.com/product/TPS3703-Q1 meta status ACTIVE (01:13:17Z). WSON-6 1.5 x 1.5 mm; the same part number as R3's reset supervisor."
+   },
+   {
+    "functions": [
+     "Port supply switch driver"
+    ],
+    "part": "TPSI3050DWZR",
+    "reason_given": "Gate drive within the MOSFET ratings: VVDRV_H 9.4 V min, 10.2 V typ, 11 V max against the 10 V at which the pairs' RDS(on) is stated (TPSI3050, FU-2H re-rank drop)",
+    "why_it_fails": "10 V is the condition of a MOSFET table, and the page's value is the 570 mV drop at 3.0 A. DMG4822SSD-13 states RDS(on) at 4.5 V as well (31 mOhm max, 186 mV a pair at 3.0 A) and IRF7313TRPBF states 46 mOhm max at 4.5 V (276 mV), so a 9.4 V drive meets the drop with both; only BUK7K6R8-40E states 10 V alone. FU-2H's re-rank made the same arithmetic and kept the 10 V as the function's value; the drop therefore stands only for that pair, and relaxing it is a decision the page does not record. TPSI3050 (SLVSGO9C, https://www.ti.com/lit/ds/symlink/tpsi3050.pdf, read 2026-10-03T01:02:09Z): VDRV 9.4 to 11 V (12 V absolute maximum, under the pairs' 20 V rating), VDDP 3.0 to 5.5 V, EN threshold 0.7 x VDDP (2.31 V at 3.3 V), VDRV fall 2.4 us typ, same pins as TPSI3052. JLCPCB C17227641 stockCount 1857, canPresaleNumber 1809 (2026-10-03T00:56:27Z), gate 500; Digi-Key Active, stock 7369, 12 weeks (2026-10-03T01:11:38Z); https://www.ti.com/product/TPSI3050 meta status ACTIVE. Not re-read: its static-on and loss-of-supply rows, taken from FU-2H's note that pins, modes and timing match TPSI3052."
+   }
+  ],
+  "missed_functions": []
+ }
+}

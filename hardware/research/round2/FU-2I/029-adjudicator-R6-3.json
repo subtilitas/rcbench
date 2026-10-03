@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R6",
+ "label": "adjudicator-R6-3",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "function": "found V123",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation holds. The claim says the owner names the INA301A1IDGKR trip at 4.30 to 4.51 A in the V312 item. The owner's V312 answer names the part, with no trip current. V312 reads: \"its current limit (INA301A1IDGKR on the port shunt first) as functions and verifies each\". No owner statement anywhere gives a 4.30 to 4.51 A band. That band comes from a research run's own arithmetic (RLIMIT 11.0 kOhm with a 10 mOhm shunt). Presenting a proposed figure as the owner's decision is a false attribution. The rest of the value is supported: the 3.0 to 6.35 A allowed band and the quoted IOBoard.md sentence. The finding is about this function's requirement and how it is attributed, not about the part, so the scope is function.",
+  "evidence": "Research.md at 5f5c0a61c4f7, line 1025, V312 Answer: \"A research run names the switch (TLP3545A first) and its current limit (INA301A1IDGKR on the port shunt first) as functions and verifies each, with the servo supply temperature latch's enable gate and power-up reset, before FU-2P56. No reverse-blocking part: V126 (owner, 2026-10-02)\". It states no trip current. Research.md line 836, V123 Answer: \"for research (owner, 2026-09-28)\". These terms have zero matches across hardware/docs/ (Research.md and IOBoard.md included): \"4.30\", \"4.51\", \"4.29\", \"4.50\", \"RLIMIT\" and \"11.0 k\". IOBoard.md line 389, Servo current ceiling: \"Repeated short trips below 3.96 A do not abort; the stall trip and the port breaker bound them (owner, 2026-09-30)\". That matches the part of the claim that holds.",
+  "source": "grep of hardware/docs/Research.md (V312 line 1025, V123 line 836) and hardware/docs/IOBoard.md (line 389) at /home/claude/rcbench-research/round2/checkout-5f5c0a61c4f7, commit 5f5c0a61c4f7f7bf2354fdaa8e407e86cde05bf1",
+  "read_at": "2026-10-03T02:18:04Z",
+  "scope": "function"
+ }
+}
