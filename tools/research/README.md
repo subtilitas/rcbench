@@ -507,8 +507,9 @@ or a range's end may follow it, as in `2026-09-28T13:51Z to 13:56Z (JLCPCB)`.
 The time ends at the end of the text, at whitespace, at `,`, `;`, `(` or `)`,
 or at a hyphen before a range's end time, so `2026-09-28T10` and
 `2026-09-28T10:00+99` are no times. A date-time without a zone is UTC
-(Coordinated Universal Time). For a P4 check, a figure verdict or a ruling,
-the time may follow one word that names the source, as in
+(Coordinated Universal Time). For a P4 check, a figure verdict, a ruling, or
+a P5 combination, budget or assumption, the time may follow one word that
+names the source, as in
 `JLCPCB 2026-10-02T15:17:10Z; Digi-Key 2026-10-02T15:17:30Z` or
 `ADXL316: 2026-10-02T11:27:32Z`. The word is a letter, then letters, digits,
 dots and hyphens, with a colon or none. `not`, `no`, `none`, `nothing`, `nil`,
@@ -520,7 +521,7 @@ gives is also the date `prepare` gave the run or the next day, for a run that
 passes midnight, so a reading copied from an earlier return or the parts
 database, or dated later, shows nothing. The workflow script has no clock: a
 run that goes on past the day after `prepare` counts none of the readings it
-takes then. A check that disagrees or fails is a refutation, named in the
+takes then. A P5 time may be of any day: P5 cites readings of earlier runs. A check that disagrees or fails is a refutation, named in the
 refutation the adjudicator rules on whatever the verdict, and a confirmation
 whose refutation is not empty is one; a refutation that is `none`, or starts
 with `no refutation`, `not refuted`, `none found` or `nothing found`, counts
