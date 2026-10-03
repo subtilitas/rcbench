@@ -1,0 +1,166 @@
+{
+ "role": "P6",
+ "category": "",
+ "label": "P6",
+ "attempt": 0,
+ "data": {
+  "gaps": [
+   {
+    "spec_line": "IOBoard.md:220 \"ESC pack gate, external path above 150 A | a driven external module, whose driver output is on the IO board (F7) ... The module is a part off the board, bought at the second vendor of S3\"",
+    "kind": "no-part",
+    "category": "R3",
+    "description": "No external pack switch module has a part. selection.json (round 2, read 2026-10-03) holds part null for 'external pack switch module' (run FU-2J); only 'external module driver output' (TPSI3052DWZR) is selected. FU-2J/003-P2-R3.json returns the function with an empty shortlist and no dropped candidate, and FU-2J/008-rerank-R3.json ranks nothing, because V324 (owner, 2026-10-03) states the external path and its module are not known. The last research of the function is FU-2A/012-P2-R3.json (report 'external pack switch module': 'No module qualifies'; VS-FC420SA10 and VS-FC270SA20 draw no safe-operating-area line shorter than 100 us, read in FU-A3 and FU-2A). Fresh reading: vendors.py digikey-search \"MOSFET N-CH 100V SOT-227\" --limit 50, https://api.digikey.com/products/v4/search/keyword, read 2026-10-03T13:40:19Z: 32 rows; the only stocked non-Vishay SOT-227 100 V modules of an S1 maker are Microchip APT10M11JVRU3 (stock_available 18), APT10M11JVFR (10) and APT10M07JVFR (11), under the Digi-Key gate; the IXYS rows are not from an S1/S2 maker. A module is not a stage 2 part type (resistors, capacitors, inductors, crystals, connectors, connector protection, MOSFETs of R5's and R7's controllers), so the line is not 'stage 2 of round 2'. Owner accepted open 2026-10-03T11:40Z."
+   },
+   {
+    "spec_line": "IOBoard.md:219-220 and :422 \"No part qualifies as the overvoltage and transient clamp\" (ESC pack path; V45, V48, V54, V270, V324); switched-node freewheel diode of the external path",
+    "kind": "no-part",
+    "category": "R3",
+    "description": "The 600 A external pack path has no clamp and no placed freewheel diode. selection.json (round 2, read 2026-10-03) holds part null for 'pack overvoltage and transient clamp' (FU-2J). V324 (owner, 2026-10-03) decides 'bus capacitance with damping, no clamp part' as a stage 2 requirement for the 300 A onboard path only (6 x 330 uF at 35 to 52 mOhm, simulated peak under 82 V, loop inductance assumed) and states 'The 600 A external path and the external pack switch module are not known'. FU-2J/003-P2-R3.json (read 2026-10-03T10:46Z to 10:58Z) selects STPS30H100DJF-TR for the onboard node and reports for the external path 'switched-node freewheel diode, external 600 A (not known, V324)': 'Where this diode sits on the external path is not known. Reported, not pass or fail'. FU-2A/012-P2-R3.json (report 'ESC pack node clamp level', 2026-10-01) gives the 600 A bank only as a simulation (about 3300 to 4700 uF at 20 to 30 mOhm, derived), and no part or requirement is fixed for it. The onboard capacitors are stage 2; the external path's clamp is neither a part nor a stage 2 requirement."
+   },
+   {
+    "spec_line": "Research.md V316, V321 (R6, Servo rail ideal diode): \"An ideal-diode controller and its MOSFET sit between the converter's output and the rail\"",
+    "kind": "no-part",
+    "category": "R6",
+    "description": "The ideal-diode controller of the 4 servo converters has no part. selection.json (round 2, read 2026-10-03) holds part null for 'Servo rail ideal diode' (FU-2I) while 'Servo rail ideal diode MOSFET' CSD17573Q5B, the clamp switch, the clamp amplifier and its reference are selected, so the V316 circuit rests on the missing controller. V321 (owner, 2026-10-03): 'Not known for now: the function stays without a part'. FU-2I/019-rerank-R6.json ranks only LTC4352CMS#TRPBF (C688177); FU-2I/027-adjudicator-R6.json (read_at 2026-10-03T02:17:01Z) upholds the stock refutation: need 5 boards x 4 placements = 20, gate max(5 x 20, 50) = 100. Fresh readings: vendors.py jlcpcb C688177, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, read 2026-10-03T13:39:50Z: stockCount 10, canPresaleNumber 10, library type expand; vendors.py digikey 'LTC4352CMS#TRPBF', https://api.digikey.com/products/v4/search/LTC4352CMS%23TRPBF/productdetails, cached reading of 2026-10-03T00:26:57Z: stock_available 3827, Active. The alternative TPS2411PW (C1523991) fails the 20 V withstand (FU-2I P2 report 'Servo rail ideal diode stock, for the owner', vendors.py jlcpcb read 2026-10-03T00:17:34Z to 00:18:05Z). Owner accepted open 2026-10-03T11:40Z."
+   },
+   {
+    "spec_line": "Research.md V327 (R9, V+ OR element (new)) and IOBoard.md:473-474 cell monitor and its pack-side supply",
+    "kind": "no-part",
+    "category": "R9",
+    "description": "The V+ OR element of the ADBMS1818 has no part. selection.json (round 2, read 2026-10-03) holds part null for 'V+ OR element' (FU-2J), 17 placements a board (16 pack-side taps and 1 supply-side branch). FU-2J/002-P2-R9.json (report 'V+ OR element: no part', Nexperia BAT46WJ, BAT46GW, PMEG10010ELR, PMEG10030ELP, PMEG100V060ELPD read 2026-10-03T10:48:33Z to 10:48:35Z, PMEG100T30ELP 10:53:15Z): no diode meets both V327's 0.3 V drop at 1.4 mA and V190's 10 uA unpowered draw at the top tap pin, which carries the summed reverse leakage of up to 15 blocked branches. FU-2J/010-adjudicator-R9.json (read_at 2026-10-03T11:59:36Z) upholds that no part is shown to meet both. Without it the V+ supply for packs under 16 V and the supply-side blocking of V327 are unbuilt. Owner accepted open 2026-10-03T11:40Z."
+   },
+   {
+    "spec_line": "Research.md V190 and V327 (R9): whether V190's 10 uA applies to the V+ OR element's reverse leakage, or the 0.3 V drop allowance changes",
+    "kind": "unanswered",
+    "category": "R9",
+    "description": "FU-2J/002-P2-R9.json (read 2026-10-03T10:48Z) states 'the owner decides whether V190 applies to the OR element's branch leakage or the drop allowance changes'. No row under Raised by P1 (V1 to V333, Research.md at 7e74cd442a79, read 2026-10-03) asks it, and V327's answer fixes both limits at once. The accepted-open reason of 2026-10-03T11:40Z records that the owner decides later. The V+ OR element stays without a part until it is answered."
+   },
+   {
+    "spec_line": "IOBoard.md:115, :148, :153 \"whether the measurement coprocessor has its own BOOT and RESET contacts\", \"Whether the measurement coprocessor has a USB port of its own is not stated\", \"Its firmware load and debug route, USB or SWD ... not stated\"",
+    "kind": "unanswered",
+    "category": "R1",
+    "description": "The second RP2354B (measurement coprocessor, owner 2026-09-30) has no stated BOOT and RESET contacts, USB port or load and debug route. No row under Raised by P1 asks it (V332 places the BOOT and RESET buttons of the main coprocessor in stage 2 and does not cover the second chip). It changes counts: FU-2D/002-P2-R1.json (read 2026-10-02) states USB protection placements as 'range 1 to 2 ... 2 if the measurement coprocessor has its own, which IOBoard.md does not state; top of the range used', and the buttons, relay contacts and the SWD or USB connector of the second chip are stage 2 parts of unknown number."
+   },
+   {
+    "spec_line": "IOBoard.md:601 \"Whether the board carries a status LED beside the power indicator. Not stated in the tree, and no question covers it.\"",
+    "kind": "unanswered",
+    "category": "R5",
+    "description": "V331 (owner, 2026-10-03) places the power indicator LED and the pack wake contact in stage 2. It does not mention a status LED, and no row under Raised by P1 (V1 to V333) asks whether the board has one. IOBoard.md:601 states the line as not stated with no question. No part and no stage 2 marking exist for it."
+   },
+   {
+    "spec_line": "Research.md V96 (R5, pack disconnect): how long a cell must stay at or below the floor before the pack disconnects; IOBoard.md:360-363",
+    "kind": "value-not-found",
+    "category": "R5",
+    "description": "The found value is refuted and not re-run. FU-2I/021-P4-datasheet-R5.json (figure 'found V96', verdict refuted, read_at 2026-10-03T01:28:04Z for SLUUBT5C and 2026-10-03T01:35:37Z for the SLS notes) and FU-2I/022-adjudicator-R5.json (stands, read_at 2026-10-03T02:06:03Z): the found value says the BQ40Z80's CUV:Delay of 0 s 'triggers on average within up to 1.5 s', while the TRM note after 3.1 says the average trigger delay is the setting plus 1.5 s with no maximum stated, and it quotes 'auch nicht kurzzeitig' from SLS_Sicherheitshinweise_DE_A4.pdf section 4, where the words are absent (they are in LiPoFAQV15c, 'Zusammenfassend'). FU-2I/003-P2-R5.json (found V96, 2026-10-03T00:22:23Z) is unchanged and no later run covers R5. The adjudicator's corrected statement stands as text only. Owner accepted open 2026-10-03."
+   },
+   {
+    "spec_line": "Research.md V87 (R5, inrush limiting) and V99 (R5, 3.3 V logic buck and 5 V rail current margin)",
+    "kind": "value-not-found",
+    "category": "R5",
+    "description": "Two values marked for research carry a chosen figure, not a found one. FU-2I/003-P2-R5.json (found V87, 2026-10-03T00:13:52Z): '2.0 A peak on each input at plug-in. No source in the tree states a limit; the display's 2 A peak of prerequisite 7 is the bound taken'. Found V99 (2026-10-03T00:12Z): '25 % on each rail, chosen'. FU-2I's P4 datasheet verifier confirmed both as stated, which re-reads the choice and not a primary source. No owner row sets either value."
+   },
+   {
+    "spec_line": "Research.md V119 and V123 (R6, I/O expander lines; port supply switch current limit)",
+    "kind": "value-not-found",
+    "category": "R6",
+    "description": "Two found values are refuted and not re-run. FU-2I/026-P4-datasheet-R6.json (found V119 and found V123, verdict refuted, read_at 2026-10-03T02:06:23Z) with FU-2I/028-adjudicator-R6-2.json (2026-10-03T02:17:40Z) and 029-adjudicator-R6-3.json (2026-10-03T02:18:04Z), both standing. V119: found 33 expander lines counts 2 DC-input inputs that V271 and V276 (owner, 2026-10-01) remove, so the count is 31 (20 port enables, 5 bias selectors, 5 converter enables, 1 latch read-back). V123: the found value says 'The owner names the INA301A1IDGKR trip at 4.30 to 4.51 A (V312 item)'; V312 names the part and no trip current, so the band is P2's arithmetic attributed to the owner. The found records in FU-2I/004-P2-R6.json (2026-10-03T00:24:20Z and 00:12:00Z) are unchanged and no later run covers R6. Owner accepted open 2026-10-03."
+   },
+   {
+    "spec_line": "Research.md V129 (R6, Port voltage ceiling): time within which a port must be cut off once its supply pin exceeds its ceiling, in microseconds",
+    "kind": "value-not-found",
+    "category": "R6",
+    "description": "Not found. FU-2I/004-P2-R6.json (found V129, 2026-10-03T00:30:20Z; Savox SH-0255MG+ and SB-2290SG pages, vendors.py fetch HTTP 200 at 00:30:19Z and 00:30:20Z): 'no source read gives a time a servo survives above its rating or a cut-off time'. No P4 verifier figure names V129 in any run (results read 2026-10-03). The same return lists as not found the energy a braking servo returns (V315: 'no servo data sheet read states the energy'; the clamp's 55.1 mJ a millisecond is a model figure), the port capacitance of V133 and the rail capacitance with servos attached. Owner accepted open 2026-10-03."
+   },
+   {
+    "spec_line": "Research.md V173 and V287 (R8, Port current monitor): longest time from a port exceeding 3.0 A to the abort, and the critical line's blanking time; IOBoard.md:113, :389",
+    "kind": "value-not-found",
+    "category": "R8",
+    "description": "The abort time and the blanking time are not found. FU-2I/002-P2-R8.json (2026-10-03T00:15:40Z): V173 'Not one figure': the first INA3221 conversion wholly above 3.0 A ends within 3.63 + 1.21 = 4.84 ms (SBOS576C 6.5), 'the abort follows after the blanking time, which is not read'; V287 'Blanking time: not read': SBOS576C 7.3.2.1 states when the transparent Critical pin pulls low and not when it releases with three channels enabled. V323 (owner, 2026-10-03) keeps the INA3221 and states the Critical pin's hold is not known and is measured on the bench before the order. FU-2I/011-P4-datasheet-R8.json (2026-10-03T01:03:54Z) confirms the 4.84 ms and the not-read status. The 5 ms firmware check and the 3.96 to 4.84 A port breaker act regardless."
+   },
+   {
+    "spec_line": "Research.md V170 (R8, Onboard shunt temperature sensor): range and accuracy of the sensor beside the onboard shunt",
+    "kind": "value-not-found",
+    "category": "R8",
+    "description": "FU-2I/002-P2-R8.json (found V170, read_at 2026-10-03T00:19Z): 'accuracy +/-2 degC, the owner's figure for the motor thermocouple channel (V235), borrowed for want of one for this sensor'. The value is borrowed, not found at a source for this sensor; FU-2I's P4 verifier confirmed it as stated."
+   },
+   {
+    "spec_line": "Research.md V186 and V187 (R9, Cell monitor): largest time between the first and last cell sample of one reading, and between a cell sample and its paired motor current sample; IOBoard.md:475, :524",
+    "kind": "value-not-found",
+    "category": "R9",
+    "description": "Not found in either round. FU-2J/002-P2-R9.json (found V186 and V187, 2026-10-03T10:48Z): 'not found. No source in the tree bounds how fast a cell's voltage moves under load' and 'The tree does not state how fast motor current and cell voltage change'. The only P4 verdicts on the figures are T4/014-P4-datasheet-R9.json (2026-09-28T15:47:00Z, refuted); FU-2J's P4 re-read neither. The ADBMS1818 skew (tSKEW2 580 / 670 / 711 us in normal mode, 202 / 233 / 248 us in fast mode, FU-2J P2 report 'cell sample skew', 2026-10-03) has no limit to be checked against. Owner accepted open 2026-10-03."
+   },
+   {
+    "spec_line": "Research.md V195 (R9, Cell monitor): whether the cell count comes from the balance lead or from SET_PACK_CELLS",
+    "kind": "value-not-found",
+    "category": "R9",
+    "description": "Half found. FU-2J/002-P2-R9.json (found V195, 2026-10-03T10:47Z): presence of a pack comes from the lead (battery_screen.h:19, :27); 'The cell count: not found'. No firmware or UI code reads SET_PACK_CELLS and only host tests fill battery_state_t.cells; FU-2J/009-P4-datasheet-R9.json (2026-10-03T11:38Z) confirms the count source is not found. FU-2C's 'from the setting' stays refuted (round2/FU-2C/018-adjudicator-R9.json). Owner accepted open 2026-10-03."
+   },
+   {
+    "spec_line": "Research.md V292 (R11, optical index) and V225; IOBoard.md:480 \"Optical index\" and :486 \"Vibration sensor\"",
+    "kind": "value-not-found",
+    "category": "R11",
+    "description": "The optical index's delay variation against its 1.244 us share (V292, 1,092 Hz, 65,535 rpm) is not found for any sensor. The found value in FU-2C/005-P2-R11.json (2026-10-02T00:29:24Z), FU-2D/004-P2-R11.json (06:33:00Z) and FU-2E/002-P2-R11.json (10:11:30Z) restates the budget derived from V225 and V290; the sensor searches return 'No part' (FU-2E P2 report 'optical index delay variation'). Research.md Scope, fixed inputs (owner, 2026-10-02): TCND5000 'states no detector response time', and ADXL316WBCSZ 'states no figure for its delay drift between runs', so neither share of V225 is shown. Both parts are fixed by the owner without further research."
+   },
+   {
+    "spec_line": "Research.md V258 (R13, load-cell bridge ADC): thrust range in N and torque range in N·m the bench must measure; IOBoard.md:499, :534",
+    "kind": "value-not-found",
+    "category": "R13",
+    "description": "V258 stays 'for research' and its found value is another product's range. FU-C1/004-P2-R13.json (2026-09-29T02:40:15Z): 'No figure is in the tree. These are the published ranges of the commercial thrust stand' (Tyto Flight Stand 50, thrust +/-500 N, torque +/-30 N·m). V257, V259 and V260 (owner, 2026-10-03) state the thrust cell is 980.7 N and that the torque capacity, resolution and accuracy are not known until round 3 sets the lever arm and the ranges (V258), so the bench's own ranges are not found."
+   },
+   {
+    "spec_line": "IOBoard.md:218-220 and Research.md selection.json function 'servo rail gate driver (see above)'",
+    "kind": "other",
+    "category": "R3",
+    "description": "selection.json (round 2, read 2026-10-03) holds part null for the function 'servo rail gate driver (see above)' (FU-2J), beside 'servo rail gate driver' (TPSI3052DWZR). FU-2J/003-P2-R3.json states it is a placeholder with no candidates (report 'function name note'), so the driver is selected. A tool entry, not a missing hardware line; the owner accepted it open 2026-10-03T11:40Z."
+   },
+   {
+    "spec_line": "Sourcing rule 7 and the P6 row, R3: figures in round2/FU-2A/012-P2-R3.json, 017-rerank-R3.json, FU-2J/003-P2-R3.json, 008-rerank-R3.json and round1/T2/007, FU-A2/010, FU-A3/003",
+    "kind": "no-date",
+    "category": "R3",
+    "description": "Scan of every return, read 2026-10-03T13:40Z from the local results tree: vendor figures with a time of day and no date, or no time. FU-2A/012-P2-R3.json: 17 JLCPCB and 17 Digi-Key shortlist fields (15 of each for parts now in selection.json, e.g. 74HC423BQ,115 'C3216364 ... stockCount 227, canPresaleNumber 226 ...' and Digi-Key '... 21:55'), plus 3 report figures ('Q9 parts with I_off', 'ESC pack node clamp level', 'TPSI3052 count'). FU-2A/017-rerank-R3.json: 18 and 18 fields and 3 report figures ('readings of this re-rank 22:59:01Z to 22:59:17Z'). FU-2J/003-P2-R3.json 'SN74LVC1G04DBVR count with the CAN standby (V326)': 'JLCPCB 131770/129968 (10:46:31Z) and Digi-Key TI 309656 (10:58:06Z)'; FU-2J/008-rerank-R3.json 'disposition of P3's 9 entries': 'both read Digi-Key stock 0', no time. Round 1: T2/007 'Q9 parts that meet one requirement alone' (JLCPCB 233, no time), FU-A2/010 and FU-A3/003 'TPSI3052 count' (JLCPCB 1126, Digi-Key 3184, no time)."
+   },
+   {
+    "spec_line": "Sourcing rule 7 and the P6 row, R3: round2/FU-2J/003-P2-R3.json (selecting run of R3)",
+    "kind": "other",
+    "category": "R3",
+    "description": "8 JLCPCB and 10 Digi-Key shortlist fields of FU-2J/003-P2-R3.json carry a full time but name no API call or URL (for example IPT017N12NM6ATMA1 'C20191620 stockCount 12528, canPresaleNumber 12447, expand, USD 1.6111 at 100+; read 2026-10-03T10:46:43Z' and FERD40H100SG-TR 'stock_available 49830, lead 15 weeks; read 2026-10-03T10:58:26Z'); 4 JLCPCB and 1 Digi-Key of them are parts in selection.json. Sourcing rule 7 requires the date and the call or URL. Scan read 2026-10-03T13:41Z."
+   },
+   {
+    "spec_line": "Sourcing rule 7 and the P6 row, R4: round1/T2/004-P2-R4.json, FU-A1/019-rerank-R4.json, FU-A3/002-P2-R4.json (selecting run of R4)",
+    "kind": "no-date",
+    "category": "R4",
+    "description": "Scan read 2026-10-03T13:40Z. FU-A3/002-P2-R4.json: the lifecycle field of SN74CBTLV3126PWR under 'reply path through the gate' reads 'as under multiprotocol port path', with no status, source or date in that record. T2/004-P2-R4.json 'SN74CBTLV3126PWR stock margin': 'JLCPCB stockCount 401', no date or time. FU-A1/019-rerank-R4.json 'rerank: SN74CBTLV3245APWR second source': 'Digi-Key 0 (18:08:28Z)', time of day only."
+   },
+   {
+    "spec_line": "Sourcing rule 7 and the P6 row, R5: round2/FU-2B1/003-P2-R5.json, FU-2F/003-P2-R5.json, FU-2F/014-rerank-R5.json, round1/FU-B3/002-P2-R5.json",
+    "kind": "no-date",
+    "category": "R5",
+    "description": "Scan read 2026-10-03T13:40Z. FU-2B1/003-P2-R5.json: 10 JLCPCB and 12 Digi-Key shortlist fields with a time of day and no date (for example LM74810QDRRRQ1 'C3215601 1668, presale 1660, expand, 3.1067 at 10, read 11:55:16Z'). FU-2F/003-P2-R5.json: 13 Digi-Key fields and 4 lifecycle fields (for example 'cached 11:57:40Z', 'TPSM63603 product page 15:36:02Z'), where a cached reading names the original call's time without its date. FU-2F/014-rerank-R5.json 'LM74700QDBVRQ1 rule 5': 'Digi-Key ... 0 (cached 16:06:31Z)'. Round 1 FU-B3/002-P2-R5.json 'display supply stock margin': TPS259474ARPWR 'Digi-Key stock 125 (cached reading of 09:55:46Z)'."
+   },
+   {
+    "spec_line": "Sourcing rule 7 and the P6 row, R5: round2/FU-2I/003-P2-R5.json (selecting run of R5)",
+    "kind": "other",
+    "category": "R5",
+    "description": "25 JLCPCB and 19 Digi-Key shortlist fields of FU-2I/003-P2-R5.json carry a full time but name no API call or URL (for example TVS2701DRBR 'C2878109 stockCount 155, canPresaleNumber 115, expand, 0.8178 at the need of 10, 2026-10-03T00:18:39Z' and 'stock_available 24815, lead_weeks 12, Active, 2026-10-03T00:19:37Z'); 12 JLCPCB and 9 Digi-Key of them are parts in selection.json. Sourcing rule 7 requires the date and the call or URL. Scan read 2026-10-03T13:41Z."
+   },
+   {
+    "spec_line": "Sourcing rule 7 and the P6 row, R6: round1/FU-B3/003-P2-R6.json, round2/FU-2B2/002-P2-R6.json, round2/FU-2G/003-P2-R6.json",
+    "kind": "no-date",
+    "category": "R6",
+    "description": "Scan read 2026-10-03T13:40Z. Report figures quote JLCPCB stock with a time of day or none: FU-B3/003-P2-R6.json 'Ceiling latch gap' (TPS3701DDCR 'JLCPCB 26866', no time), FU-2B2/002-P2-R6.json 'Port voltage ceiling gap (V280)' ('JLCPCB 26813 against 500', no time), FU-2G/003-P2-R6.json 'Port supply reverse-blocking element CMS04' ('JLCPCB 4617/4562 ... (17:51:55Z)') and 'Port supply current-limit element INA301A1IDGKR' ('JLCPCB 1552/1395 ... (17:51:55Z)'). FU-2I, the selecting run, dates its readings."
+   },
+   {
+    "spec_line": "Sourcing rule 7 and the P6 row, R7: round2/FU-2F/002-P2-R7.json and round1/T3/003-P2-R7.json",
+    "kind": "no-date",
+    "category": "R7",
+    "description": "Scan read 2026-10-03T13:40Z. FU-2F/002-P2-R7.json: 4 lifecycle fields and 2 Digi-Key fields with a time of day and no date (for example BQ40Z50RSMR-R2 'stock_available 161, lead 20, Active; 11:54:07Z (cached)' and 'ACTIVE (15:34:09Z)'). T3/003-P2-R7.json: the lifecycle field of MAX17320G22+ ('Digi-Key Active (distributor figure, Analog Devices); PCN 2571D and 2452N, no end-of-life; first data sheet 2/20...') carries no date."
+   },
+   {
+    "spec_line": "Sourcing rule 7 and the P6 row, R8: round1/FU-B3/005-P2-R8.json, round2/FU-2B2/003-P2-R8.json, FU-2G/002-P2-R8.json, FU-2H/002-P2-R8.json, round1/T3/004-P2-R8.json",
+    "kind": "no-date",
+    "category": "R8",
+    "description": "Scan read 2026-10-03T13:40Z. FU-B3/005-P2-R8.json: 17 JLCPCB and 18 Digi-Key shortlist fields with no date (4 of each for parts now in selection.json), for example INA238AIDGSR 'stockCount 0, canPresaleNumber -99 ... vendors.py jlcpcb C286...' and a report figure 'INA238 second source'. FU-2B2/003-P2-R8.json: 6 lifecycle fields with a time of day only (for example TMP116AIDRVR 'ACTIVE ... (14:00:09Z)') and the report 'CD4082 part number, stock and speed at 3.3 V' (JLCPCB 3996, no time). FU-2G/002-P2-R8.json: 1 lifecycle field (INA228AIDGSR 'ACTIVE ... (17:41:20Z)') and the reports 'Alert combining gate part' and 'Alert shift register selected' ('JLCPCB 11657/11638 (17:40:24Z)'). FU-2H/002-P2-R8.json 'Alert shift register': 'JLCPCB 11657/11638 (20:22:08Z), Digi-Key 7 (13:58:42Z cached)'. T3/004-P2-R8.json 'INA238 second source': no date."
+   }
+  ]
+ }
+}

@@ -1,0 +1,166 @@
+{
+ "role": "P6-critic",
+ "category": "",
+ "label": "P6-critic",
+ "attempt": 0,
+ "data": {
+  "verdicts": [
+   {
+    "index": 0,
+    "holds": true,
+    "reason": "Verified in the local results tree (read 2026-10-03T13:4xZ to 13:55Z). selection.json (round 2) holds part null for 'external pack switch module' (run FU-2J); FU-2J/003-P2-R3.json has shortlist 0 and dropped 0 for it, FU-2J/008-rerank-R3.json ranks 0; V324 (owner, 2026-10-03) states the external path and its module are not known; FU-2A/012-P2-R3.json report 'external pack switch module' says 'No module qualifies' (VS-FC420SA10 and VS-FC270SA20 draw no SOA line shorter than 100 us). Fresh check: vendors.py digikey-search \"MOSFET N-CH 100V SOT-227\" --limit 50 (https://api.digikey.com/products/v4/search/keyword), read_at 2026-10-03T13:40:19Z, returned from cache by my call at 13:44:49Z: 32 rows; Microchip APT10M11JVRU3 18, APT10M11JVFR 10, APT10M07JVFR 11 in stock, under the Digi-Key gate of 50 or more; IXYS rows are not on S1 or S2 (S1 lists Vishay and Microchip, not IXYS or Littelfuse). A module is not a stage 2 part type, so the line is a gap. The owner accepted it open at 2026-10-03 11:40 UTC (args-FU-2Q.json accept_open), which does not remove it."
+   },
+   {
+    "index": 1,
+    "holds": true,
+    "reason": "Verified. selection.json holds part null for 'pack overvoltage and transient clamp' (FU-2J). V324 (owner, 2026-10-03) decides bus capacitance with damping and no clamp part as a stage 2 requirement for the 300 A onboard path only and states 'The 600 A external path and the external pack switch module are not known'. FU-2J/003-P2-R3.json report 'switched-node freewheel diode, external 600 A (not known, V324)' says 'Where this diode sits on the external path is not known. Reported, not pass or fail'. FU-2A/012-P2-R3.json 'ESC pack node clamp level' gives the 600 A bank only as a derived simulation (about 3300 to 4700 uF at 20 to 30 mOhm). The external path therefore has neither a part nor a stage 2 requirement; the onboard 300 A path is covered by V324 and the selected STPS30H100DJF-TR."
+   },
+   {
+    "index": 2,
+    "holds": true,
+    "reason": "Verified. selection.json holds part null for 'Servo rail ideal diode' (FU-2I) while 'Servo rail ideal diode MOSFET' (CSD17573Q5B), the clamp switch, amplifier and reference are selected, so the V316 circuit lacks its controller. V321 (owner, 2026-10-03): 'Not known for now: the function stays without a part'. FU-2I/019-rerank-R6.json ranks only LTC4352CMS#TRPBF; FU-2I/027-adjudicator-R6.json (read 2026-10-03T02:17:01Z) upholds the stock refutation, need 5 x 4 = 20, gate max(5 x 20, 50) = 100. Fresh: vendors.py jlcpcb C688177 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList) read 2026-10-03T13:45:22Z: stockCount 10, canPresaleNumber 10, expand; vendors.py digikey 'LTC4352CMS#TRPBF' (https://api.digikey.com/products/v4/search/LTC4352CMS%23TRPBF/productdetails) cached reading of 2026-10-03T00:26:57Z: stock_available 3827, Active. Rule 4 counts the JLCPCB stock for a placed part, so the function has no part."
+   },
+   {
+    "index": 3,
+    "holds": true,
+    "reason": "Verified. selection.json holds part null for 'V+ OR element' (FU-2J); 17 placements a board (16 pack-side taps, 1 supply-side branch). FU-2J/002-P2-R9.json report 'V+ OR element: no part' (Nexperia and ST datasheets read 2026-10-03T10:48:33Z to 10:53:15Z): no diode meets V327's 0.3 V at 1.4 mA and V190's 10 uA unpowered with the summed reverse leakage of up to 15 blocked branches. FU-2J/010-adjudicator-R9.json (read_at 2026-10-03T11:59:36Z) corrects the drop figures (PMEG100T30ELP 0.277 V at 1.4 mA, 25 degC) but upholds no part: 0.32 V at 0 degC, no VF maximum below 0.5 A, no IR between 25 and 85 degC. Accepted open by the owner (args-FU-2Q.json accept_open, 2026-10-03 11:40 UTC)."
+   },
+   {
+    "index": 4,
+    "holds": true,
+    "reason": "Verified. A search of the 333 rows V1 to V333 under Raised by P1 (Research.md at 7e74cd442a79, read 2026-10-03T13:5xZ) finds no row asking whether V190's 10 uA applies to the OR element's branch leakage; V327 fixes the drop and blocking limits together and V190 excludes only the monitor supply's top-to-bottom draw. FU-2J/002-P2-R9.json states 'the owner decides whether V190 applies ... or the drop allowance changes', and args-FU-2Q.json accept_open records 'the owner decides later'. It is a distinct pending owner decision on the same function as gap 3."
+   },
+   {
+    "index": 5,
+    "holds": true,
+    "reason": "Verified. IOBoard.md:115, :148 and :153 (checkout 7e74cd442a79, read 2026-10-03) each state the measurement coprocessor's BOOT and RESET contacts, USB port and load or debug route as not stated. No row under Raised by P1 asks it: V332 (owner, 2026-10-03) places the BOOT and RESET buttons in stage 2 without naming the second chip, and Pins.md names USB only for the VBUS detect on GPIO 37. FU-2D/002-P2-R1.json states USB protection placements 'range 1 to 2 ... 2 if the measurement coprocessor has its own, which IOBoard.md does not state; top of the range used', so the count of USB protection, buttons and connectors depends on it."
+   },
+   {
+    "index": 6,
+    "holds": true,
+    "reason": "Verified. IOBoard.md:601 (read 2026-10-03) states the status LED as not stated with no question. V331 (owner, 2026-10-03) places only the power indicator LED and the pack wake contact in stage 2, and a search of V1 to V333 finds no row on a status LED. LEDs are not in the stage 2 part-type list of Research.md, Round 2, so nothing assigns a part to it."
+   },
+   {
+    "index": 7,
+    "holds": true,
+    "reason": "Verified. FU-2I/021-P4-datasheet-R5.json figure 'found V96' is refuted (read_at 2026-10-03T01:28:04Z for SLUUBT5C, 01:35:37Z for the SLS notes) and FU-2I/022-adjudicator-R5.json stands (read_at 2026-10-03T02:06:03Z): 'auch nicht kurzzeitig' is in LiPoFAQV15c, not in section 4 of SLS_Sicherheitshinweise_DE_A4.pdf, and the 1.5 s is an average with no maximum. FU-2I/003-P2-R5.json found V96 (2026-10-03T00:22:23Z) is unchanged and no later run covers R5; the fall rate that bounds the filter is not known (V285). args-FU-2Q.json accept_open lists it as accepted by the owner on 2026-10-03."
+   },
+   {
+    "index": 8,
+    "holds": true,
+    "reason": "Verified. FU-2I/003-P2-R5.json found V87 (2026-10-03T00:13:52Z): 'No source in the tree states a limit; the display's 2 A peak ... is the bound taken'; found V99 (2026-10-03T00:12Z): '25 % on each rail, chosen'. FU-2I/021-P4-datasheet-R5.json (2026-10-03T01:24:52Z and 01:25:00Z) confirms both 'as stated', and states each is an assumption or chosen value. Both Answer cells still read 'for research' and no owner row sets a value, so neither is found at a source."
+   },
+   {
+    "index": 9,
+    "holds": true,
+    "reason": "Verified. FU-2I/026-P4-datasheet-R6.json (read_at 2026-10-03T02:06:23Z) refutes found V119 (33 lines count 2 inputs that V271 and V276 remove) and found V123 (the 4.30 to 4.51 A trip is P2 arithmetic, V312 names the part and no current); FU-2I/028-adjudicator-R6-2.json (02:17:40Z) and 029-adjudicator-R6-3.json (02:18:04Z) stand. The found records in FU-2I/004-P2-R6.json (2026-10-03T00:24:20Z and 00:12:00Z) are unchanged and no later run covers R6. Note: the adjudicator's corrected count is 31 (20 + 5 + 5 + 1); args-FU-2Q.json accept_open writes '32 expander lines', which no return supports. The corrected values exist in the rulings only."
+   },
+   {
+    "index": 10,
+    "holds": true,
+    "reason": "Verified. FU-2I/004-P2-R6.json found V129 (read_at 2026-10-03T00:30:20Z, Savox pages): 'Not found: no source read gives a time a servo survives above its rating or a cut-off time'. No P4 figure names V129 in any run (scan of all returns, read 2026-10-03T13:5xZ), so the not-found value is also unverified. The Answer cell reads 'for research'. args-FU-2Q.json accept_open lists it as accepted by the owner on 2026-10-03. The side claims about V315 and V133 are not gaps: their Answers (owner, 2026-10-02) state the energy and the capacitance as not known."
+   },
+   {
+    "index": 11,
+    "holds": true,
+    "reason": "Verified. FU-2I/002-P2-R8.json (2026-10-03T00:15:40Z): V173 'Not one figure', first INA3221 conversion wholly above 3.0 A ends within 3.63 + 1.21 = 4.84 ms; V287 'Blanking time: not read' because SBOS576C 7.3.2.1 gives the Critical pin's pull-low and not its release with three channels enabled. FU-2I/011-P4-datasheet-R8.json (2026-10-03T01:03:54Z) confirms 4.84 ms and the not-read status. V323 (owner, 2026-10-03) states the hold is not known and is measured on the bench; the V173 and V287 Answer cells still read 'for research'. The 5 ms firmware check and the 3.96 to 4.84 A breaker act regardless, so it is a recorded limitation, still a gap."
+   },
+   {
+    "index": 12,
+    "holds": true,
+    "reason": "Verified. FU-2I/002-P2-R8.json found V170 (read_at 2026-10-03T00:19Z): accuracy +/-2 degC is V235's thermocouple figure 'borrowed for want of one for this sensor'. FU-2I/011-P4-datasheet-R8.json (2026-10-03T01:20:51Z) confirms it 'as stated' and notes the owner has set no figure for the shunt sensor. The Answer cell reads 'for research'; the value is borrowed, not found."
+   },
+   {
+    "index": 13,
+    "holds": true,
+    "reason": "Verified. FU-2J/002-P2-R9.json found V186 and V187 (2026-10-03T10:48Z): 'not found' in both. The last P4 verdicts on them are T4/014-P4-datasheet-R9.json (2026-09-28T15:47:00Z, refuted); FU-2J's P4 figures name neither (scan of all returns, 2026-10-03T13:5xZ). FU-2J/002 report 'cell sample skew' gives ADBMS1818 tSKEW2 580 / 670 / 711 us normal and 202 / 233 / 248 us fast (Rev. B Table 4, read 2026-10-03T10:46:03Z) with no limit to compare against. args-FU-2Q.json accept_open lists both as accepted by the owner."
+   },
+   {
+    "index": 14,
+    "holds": true,
+    "reason": "Verified. FU-2J/002-P2-R9.json found V195 (2026-10-03T10:47Z): presence from the lead, 'The cell count: not found'; FU-2J/009-P4-datasheet-R9.json (2026-10-03T11:38Z) confirms that SET_PACK_CELLS is read only in settings.c:39 and settings.h:41 and the count source is not found. FU-2C's 'from the setting' stays refuted. The Answer cell reads 'for research'. args-FU-2Q.json accept_open lists it as accepted by the owner."
+   },
+   {
+    "index": 15,
+    "holds": true,
+    "reason": "Holds as a not-found value, not as a missing part. The optical index has a part, TCND5000, fixed by the owner (2026-10-02), and the selection.json entry is run 'owner'. V292 (for research, owner 2026-10-01) is marked for research and its found records (FU-2C/005 2026-10-02T00:29:24Z, FU-2D/004 06:33:00Z, FU-2E/002 10:11:30Z) only restate the budget (2.54 us less 52 ns, halved = 1.244 us, V225 and V290). No sensor's delay variation is found: TCND5000 states no detector response time and ADXL316WBCSZ no delay drift (Research.md Scope, fixed inputs). Listed as a gap to be written as not known and reported to the owner; the part is not re-selected."
+   },
+   {
+    "index": 16,
+    "holds": true,
+    "reason": "Verified. The V258 Answer cell still reads 'for research (owner, 2026-09-28)'. FU-C1/004-P2-R13.json found V258 (2026-09-29T02:40:15Z): 'No figure is in the tree. These are the published ranges of the commercial thrust stand' (Tyto Flight Stand 50, +/-500 N, +/-30 N.m); FU-C1/022-P4 (03:28:11Z) confirms that stand's figures, not a bench requirement. V257, V259 and V260 (owner, 2026-10-03) defer the torque range to round 3. The thrust cell (980.7 N) is fixed, but the bench's own ranges are not found."
+   },
+   {
+    "index": 17,
+    "holds": false,
+    "reason": "Does not hold. FU-2J/003-P2-R3.json states 'servo rail gate driver (see above)' is a placeholder with no candidates and that the driver's record is the entry 'servo rail gate driver', for which selection.json holds TPSI3052DWZR (FU-2J; P4 stock FU-2J/012-P4-stock-R3.json 2026-10-03T11:51:17Z). args-FU-2Q.json accept_open names it as an entry that TPSI3052DWZR serves. The spec line (IOBoard.md:218, Servo rail gate) has its driver; the null is a tool entry, and P6's own description says it is not a missing hardware line."
+   },
+   {
+    "index": 18,
+    "holds": false,
+    "reason": "Does not hold. FU-2A/012-P2-R3.json report 'reading times' states 'Every time without a date in this return is UTC on 2026-10-01', and every shortlist field names its call (for example 'vendors.py jlcpcb C179324', 'vendors.py digikey 74AUP1G32GW,125'). FU-2A/017-rerank-R3.json report 'document key' states 'every read time is UTC on 2026-10-01'. FU-2J/003's SN74LVC1G04DBVR count names vendors.py jlcpcb C7827 and is re-read with a full date and call by FU-2J/012-P4-stock-R3.json (2026-10-03T11:51:16Z); FU-2J/008's 'Digi-Key stock 0' points to the dated list in the same return (TPS3808G33DBVT 0 at 11:37:18Z, TPS3808G33QDBVRQ1 0 at 11:37:15Z). The round 1 figures (T2/007, FU-A2/010, FU-A3/003) are superseded by FU-2J's dated readings. Checked in the results tree 2026-10-03T13:5xZ."
+   },
+   {
+    "index": 19,
+    "holds": false,
+    "reason": "Does not hold. In FU-2J/003-P2-R3.json 59 of 84 stock fields name vendors.py and the call is stated in the report entries ('vendors.py jlcpcb C20346001', 'Digi-Key readings in this return' naming vendors.py digikey with 10:51:59Z to 10:58:26Z). Every part that selection.json keeps from R3 has a P4 stock record in FU-2J/012-P4-stock-R3.json read 2026-10-03T11:51:08Z to 11:51:18Z with 'source: vendors.py jlcpcb C<digits>' and a second-vendor check with call and time. The fields without a call belong to P2 shortlist entries that the P4 re-read replaces; no undated or unsourced figure reaches a page."
+   },
+   {
+    "index": 20,
+    "holds": false,
+    "reason": "Does not hold. R4's selecting run is FU-A3 and each kept R4 part has a dated P4 stock record there (FU-A3/008-P4-stock-R4.json, vendors.py jlcpcb C543078, 2026-09-29T05:36:12Z). FU-A3/002-P2-R4.json 'reply path through the gate' lifecycle 'as under multiprotocol port path' is a cross-reference to the same part's record, which carries 'TI ACTIVE ... re-read 2026-09-29T04:45:39Z' and Digi-Key 'read 2026-09-29T04:37:54Z'. T2/004 'JLCPCB stockCount 401' is a round 1 time-only figure superseded by those readings; FU-A1/019's 'Digi-Key 0 (18:08:28Z)' concerns SN74CBTLV3245APWR, which selection.json does not keep."
+   },
+   {
+    "index": 21,
+    "holds": false,
+    "reason": "Does not hold. R5's selecting run is FU-2I; every kept R5 part, TPS259474ARPWR among them, has a dated, sourced P4 stock record (FU-2I/012-P4-stock-R5.json, vendors.py jlcpcb C3215600 and C3662807, 2026-10-03T01:24:26Z). The time-only fields cited are in superseded or dropped records: FU-2B1/003 and FU-2F/003 are earlier runs, LM74810QDRRRQ1, TPSM63603 and LM74700QDBVRQ1 are not kept, and round 1 FU-B3/002's TPS259474ARPWR Digi-Key 125 is replaced by FU-2I's reading. The FU-2P56 critic ruled the same way (005-P6-critic.json verdicts 20 and 21). Checked 2026-10-03T13:5xZ."
+   },
+   {
+    "index": 22,
+    "holds": false,
+    "reason": "Does not hold. The P2 fields of FU-2I/003-P2-R5.json are typed 'jlcpcb' and 'digikey' and carry a full time; the call and URL are named in the reports and in the P4 re-read FU-2I/012-P4-stock-R5.json (2026-10-03T01:24:26Z, 'vendors.py jlcpcb C...'), which covers every kept R5 part. The FU-2P56 critic ruled the same on this file (005-P6-critic.json verdict 21). No figure that reaches a page lacks both a date and a call."
+   },
+   {
+    "index": 23,
+    "holds": false,
+    "reason": "Does not hold. R6's selecting run is FU-2I and its kept parts have dated, sourced P4 stock records (FU-2I/020-P4-stock-R6.json, 2026-10-03T01:42:16Z: TPS3701DDCR C132788, INA301A1IDGKR C471062, TPSI3052DWZR C20346001, vendors.py jlcpcb). The cited time-only figures are in round 1 or earlier reports for functions since decided otherwise: the ceiling latch is dropped (V130, no latch) and CMS04 is removed (V126, V312, owner 2026-10-02); the INA301 and TPS3701 figures are replaced by the FU-2I readings. The FU-2P56 critic ruled the same (verdict 25)."
+   },
+   {
+    "index": 24,
+    "holds": false,
+    "reason": "Does not hold. R7's selecting run is FU-2H, whose kept parts (BQ25723RSNR, BQ29209DRBR, FUSB303BTMX, BQ40Z80RSMR) have dated P4 stock records (FU-2H/018-P4-stock-R7.json, 2026-10-02T21:28:20Z). The time-only fields in FU-2F/002-P2-R7.json concern BQ40Z50RSMR-R2 and BQ4050RSMR, which are not kept; T3/003's MAX17320G22+ lifecycle line is a round 1 record for a part that BQ40Z80RSMR replaced. The FU-2P56 critic found only 2 time-only fields in FU-2F/002 (verdict 22); I find none that reaches a page."
+   },
+   {
+    "index": 25,
+    "holds": false,
+    "reason": "Does not hold. R8's selecting run is FU-2I; each kept R8 part has a dated P4 stock record (FU-2I/008-P4-stock-R8.json, 2026-10-03T00:14:23Z to 01:04:02Z: INA228AIDGSR, SN74LV165APWR, 74VHC21FT, BAS-M-R0001-AE-5.0 and the others, vendors.py jlcpcb). The time-only fields cited are for INA238AIDGSR, TMP116AIDRVR, CD4082 and the earlier alert shift register reading, none of which is kept or all of which FU-2I re-reads. FU-2B2/003's records carry full dates (INA228AIDGSR 'read 2026-10-02T13:54:48Z'). The FU-2P56 critic ruled the same (verdict 23)."
+   }
+  ],
+  "added": [
+   {
+    "spec_line": "IOBoard.md:238 \"Whether the IO board may draw anything from J8's 3V3 pin: not stated in the tree. No question asks it.\"",
+    "kind": "unanswered",
+    "category": "R2",
+    "description": "The line states a link-connector wiring decision as unknown with no question. A search of the 333 rows V1 to V333 under Raised by P1 (Research.md at 7e74cd442a79, read 2026-10-03T13:5xZ) finds no row on J8's 3V3 pin: V329 concerns the display's USB-C VBUS only, and Research.md names J8 only in 'ground common with J8's GND' (Interlock supply). The answer fixes whether the link cable carries a 3.3 V conductor, which the stage 2 link connector and cable and the 3.3 V rail budget of R5 depend on. It is not in the accept-open list of args-FU-2Q.json."
+   },
+   {
+    "spec_line": "Research.md V76 (R4, UART socket path): which serial devices the UART socket carries besides OpenYGE ESCs, and the highest baud rate among them",
+    "kind": "value-not-found",
+    "category": "R4",
+    "description": "Half found. FU-A3/002-P2-R4.json found V76 (read_at 2026-09-29T04:38:23Z for Betaflight esc_sensor.c, 04:41:02Z for the ESCape32 Settings page): the rates of the ESC telemetry protocols named in docs/OpenYGE.md:400-403 (Hobbywing, Kontronik, Scorpion, OMP, ZTW, APD, FLY, Graupner, XDFly) and of ESCape32's iBUS, S.Port, CRSF, MSB and HoTT modes are 'not read'; 115,200 baud is only 'the highest rate found'. FU-A3/010-P4-datasheet-R4.json (2026-09-29) confirms it as stated, so the highest rate among the devices is not established. The Answer cell reads 'for research' and R4 has run no follow-up in round 2."
+   },
+   {
+    "spec_line": "Research.md V140 (R7, Pack cells): efficiency the TPS55285 takes from the pack at 6.0 V in, 8.4 V and 6.35 A out",
+    "kind": "value-not-found",
+    "category": "R7",
+    "description": "Not found at the condition asked. FU-2H/003-P2-R7.json found V140 (read_at 2026-10-02T20:21:44Z): 'About 88 % typical, a graph reading: TPS55285 Figure 5-3 (VOUT 9 V, FPWM, TA 25 degC), curve VIN 5 V at its last point near 4 A. No curve at 6.0 V in, 8.4 V and 6.35 A out; the data sheet guarantees no efficiency'. FU-2H/020-P4 (2026-10-02) confirms it as stated. The Answer cell reads 'for research'; V294's 52.1 A rests on an assumed 90 %, so the figure for the question's condition is neither found nor set by the owner."
+   },
+   {
+    "spec_line": "Research.md V79 (R5, display supply): lowest voltage the display takes at its end of the link cable while it draws 2 A",
+    "kind": "value-not-found",
+    "category": "R5",
+    "description": "Half found. FU-2I/003-P2-R5.json found V79 (read_at 2026-10-03T00:22:22Z for the TJA1051 datasheet, 00:22:24Z for the Waveshare schematic): 4.5 V from the TJA1051T/3's VCC range on the display's 5V net; 'Drops inside the display between its supply entry and that part are not read'. The FU-2I P4 datasheet verifier (2026-10-03) confirms it and notes the other parts on the 5V net (CH343P, SGM2212, CS8501, AP3012, AP3032) were not compared, so the lowest voltage the display takes is not established. The Answer cell reads 'for research'."
+   }
+  ]
+ }
+}
