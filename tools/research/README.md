@@ -606,6 +606,9 @@ figure text in `p7_figure` and stands for it); another figure, such as a run's
 status line, may cite an earlier check's other files. P7 and its critic are
 given the three commands, the pages that need a figure checked, and the path
 rules for group pages and figure checks that `round1.js` and `record` apply.
+They are told to take an earlier check's open conflicts and gaps from that
+check's `task.json`, and to split a sentence over 40 words; the critic
+corrects the writing before it checks figures and runs the commands.
 The schemas ask P5, P6 and their critics to write a conflict's parts as
 `selection.json` writes them and each category by its ID alone.
 
