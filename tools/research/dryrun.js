@@ -1675,6 +1675,10 @@ async function main() {
   // A figure citing an earlier check's P5 return is superseded whatever its kind.
   r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/T5/003-P5.json', figureKind: 'other' })
   check(r.result.summary.stopped === true, 'T6: a figure labelled other citing an earlier P5 return stops it')
+  check(r.prompts.find(x => x.label === 'P7-critic').prompt.includes("a figure of an earlier check's open conflict or gap against that check's task.json, never its P5 or P5-critic return") && r.prompts.find(x => x.label === 'P7').prompt.includes("An earlier check's conflicts and gaps that stay open are stated from that check's task.json"), 'T6: P7 and its critic take an earlier check\'s open items from its task.json')
+  r = await runTask('T6', { p56Runs: ['T5', 'FU-b'], lastP56: 'FU-b', returnFile: 'hardware/research/round1/T5/task.json', figureKind: 'other' })
+  check(!r.result.summary.stopped, `T6: a figure labelled other citing an earlier check's task.json is checked: ${(r.result.summary.reasons || []).join()}`)
+  check(r.prompts.find(x => x.label === 'P7').prompt.includes('A sentence over 40 words breaks the short-sentence rule of CONTRIBUTING.md') && r.prompts.find(x => x.label === 'P7-critic').prompt.includes('before you check figures and before any check runs: a sentence over 40 words breaks the short-sentence rule'), 'T6: P7 and its critic split sentences over 40 words, the critic before its checks')
   r = await runTask('T6', { ...selQ, partRows: rows.slice(0, 1) })
   check(r.result.summary.stopped === true && ['part4', 'part5', 'altS'].every(p => r.result.summary.reasons[0].includes(`for ${p} (`)) && !['part3', 'altQ', 'altR', 'altA'].some(p => r.result.summary.reasons[0].includes(`for ${p} (`)), 'T6: each verified part without its Parts.md row stops it')
 
