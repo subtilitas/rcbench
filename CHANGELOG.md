@@ -94,6 +94,12 @@ history is in git.
 
 ### Fixed
 
+- **The bench does not arm while the SERVO page's rate is unknown.** A
+  panel that restarted while the coprocessor held a heli rate, and whose
+  reset to each slot's own rate at link-up went unanswered, could arm the
+  surfaces at that rate from any screen. Each arm now retries the reset and
+  is refused with `servo frame rate not known -- arm again` while it goes
+  unanswered.
 - **The panel's model and the log's clock ran slow while the link was
   down.** Each pass stepped them by a fixed 50 ms, and while the link is
   down a probe for the coprocessor's identity can hold a pass for its whole

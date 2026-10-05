@@ -174,6 +174,7 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
  * with the rest of the servo's wire handling. */
 static void servo_let_go(void);
 static void servo_service(bool link_up);
+static bool servo_rate_settled(void);
 /* The supply's service, defined with the supply.  control_pump() calls it,
  * so a stop or an OFF cuts the output where it lands and the supply keeps
  * its cadence while an exchange waits. */
@@ -3283,6 +3284,12 @@ static void service_arming(bool link_up)
              */
             arming_refused(&s_arm);
             control_alert("servo output not released -- arm again");
+        } else if (link_up && !servo_rate_settled()) {
+            /* The far end may hold a rate faster than the surfaces' servos
+             * take, and nothing here knows otherwise; refused like an
+             * unpaid release, and asked again on the next attempt. */
+            arming_refused(&s_arm);
+            control_alert("servo frame rate not known -- arm again");
         } else if (link_up) {
             /*
              * Two exchanges: CLEAR on its own, then the frame that arms.
@@ -3782,6 +3789,21 @@ static bool servo_rate_reset(void)
     s_servo_hz_sent = landed ? 0u : (uint16_t)SERVO_HZ_UNKNOWN;
     servo_rate_show(SERVO_RATE_UNSENT, 0u);
     return landed;
+}
+
+/*
+ * Whether the rate the surfaces run at is known, after one more try at
+ * putting each slot back at its own rate if it is not.  Asked before every
+ * arm: a panel that restarted while the far end held a heli rate, and whose
+ * reset at link-up went unanswered, would otherwise arm the surfaces at it
+ * from any screen, while the SERVO screen shows STANDARD PWM.
+ */
+static bool servo_rate_settled(void)
+{
+    if (s_servo_hz_sent == SERVO_HZ_UNKNOWN) {
+        (void)servo_rate_reset();
+    }
+    return s_servo_hz_sent != SERVO_HZ_UNKNOWN;
 }
 
 /*
