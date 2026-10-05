@@ -330,13 +330,16 @@ Messgerät am Pin, also jedes ein Indiz und keine Messung.
   laufen lassen**, damit liegt sein Bit-Timing innerhalb der Toleranz dieses
   einen ESC.
 - **Bidirektionales DShot600 hat auf dem Prüfstand eines Testers geantwortet**
-  (#172): ein Skystars 35A (AM32-Target `JUPITER_35A_F42`) mit AM32 2.21 an
-  einem 4S-Pack, gebunden auf GP0. Version 0.8.2 hat seine Drehzahl dekodiert
+  (#172): ein Skystars 35A mit AM32 2.21, Target `JUPITER_35A_F421` (der
+  AM32-Konfigurator zeigt es gekürzt als `JUPITER_35A_F42`), an einem
+  4S-Pack, gebunden auf GP0. Version 0.8.2 hat seine Drehzahl dekodiert
   (2593 rpm). Version 0.9.1 hat mit der wiederholten Anfrage oben seine
-  Extended Telemetry eingeschaltet: MOTOR & ESC zeigte 14,75 V, 72,0 A und
-  eine ESC-Temperatur von 41 °C bei 0 % Gas, und der Tester hat die Spannung
-  als richtig gemeldet. Die 72,0 A sind der eigene Messwert des ESC im
-  Stand; DshotDisplay las an einem anderen Tag 81,00 A vom selben ESC.
+  Extended Telemetry eingeschaltet: bei 0 % Gas zeigte MOTOR & ESC 14,75 V,
+  72,0 A und eine ESC-Temperatur von 41 °C. Der Tester hat die Spannung als
+  richtig gemeldet. Strom und Temperatur wurden dekodiert und gegen nichts
+  geprüft: 72,0 A im Stand, und 81,00 A, die DshotDisplay an einem anderen Tag
+  vom selben ESC las, sehen nach einem Eingang ohne Stromsensor dahinter aus
+  und nicht nach einer Messung.
 
 Nichts hiervon war an einem Oszilloskop, und jeder bidirektionale Punkt unten
 ist über diesen einen ESC hinaus unbestätigt:
@@ -345,9 +348,10 @@ ist über diesen einen ESC hinaus unbestätigt:
 - die Konvention für das führende Bit des Group Code;
 - die Turnaround-Verzögerung, und ob 30 µs das ist, was ein ESC tatsächlich
   wartet;
-- die Stress-, Status- und Debug-Frames der Extended Telemetry; Spannung
-  (0,25 V je Zählwert), Strom (1 A je Zählwert) und Temperatur (1 °C je
-  Zählwert) sind nur von AM32 2.21 gelesen;
+- die Einheiten der Extended-Telemetry-Frames für Strom (1 A je Zählwert)
+  und Temperatur (1 °C je Zählwert) sowie die Stress-, Status- und
+  Debug-Frames; nur die Spannung (0,25 V je Zählwert) ist gegen einen Wert
+  gelesen, den der Tester kannte;
 - ob andere ESCs als AM32 Command 13 unter der wiederholten Anfrage annehmen:
   Bluejay und BLHeli_32 sind ungetestet;
 - ob der Hinweis "mindestens 35 ms warten" in der Spezifikation zu Command 13

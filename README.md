@@ -49,7 +49,7 @@ Institute of Technology) licence's "without warranty of any kind" applies.
 
 | Screen | Function | State |
 | --- | --- | --- |
-| Motor & ESC | voltage, current, consumption, RPM (revolutions per minute) and temperatures plotted live | screen built; values simulated |
+| Motor & ESC | voltage, current, consumption, RPM (revolutions per minute) and temperatures plotted live | screen built; speed, voltage, current and ESC temperature from an ESC's bidirectional DShot telemetry, run against one AM32 ESC; simulated values while no coprocessor answers |
 | Servo | commanded and measured position; installed-limit search; two-servo synchronisation | screen built and commanding over the link; drives the pins bound as surfaces, run on a bring-up bench, timing unmeasured |
 | Analyser | sixteen receiver channels with history, the digital channels, LIVE / FRAME LOST / FAILSAFE / SILENT | S.BUS decoder built; PIO (programmable input/output) receiver not written |
 | Programmer | BLHeli_S, AM32, ESCape32, VESC and Hitec parameter tables | screen built; no protocol on a wire |
