@@ -161,10 +161,15 @@ Panel als Leitung ohne Flanken gelesen wird.
   er genommen hatte. Der Control-Task leert zuerst die Queue des Treibers und
   verwirft dann ein Scharfschalten, wenn der Render-Task seither Gesten
   verworfen hat oder einen Verlust-Eintrag noch nicht genommen hatte. Ist
-  das Scharfschalten ausgeführt, entschärft jeder Verlust -- der Render-Task
-  verwirft Gesten, oder im Strom des Treibers fehlt eine Nummer -- sofort,
-  bis der Render-Task den scharfen Prüfstand bestätigt; das tut ein Frame
-  nur, wenn er scharf begann und den Strom vollständig fand. Ein Frame, der
+  das Scharfschalten ausgeführt, macht jeder Verlust -- der Render-Task
+  verwirft Gesten, oder im Strom des Treibers fehlt eine Nummer -- es
+  rückgängig, bis der Render-Task den scharfen Prüfstand bestätigt; das tut
+  ein Frame nur, wenn er scharf begann und den Strom vollständig fand. Der
+  Control-Task sieht in jeder Wartezeit einer Link-Transaktion nach, nicht
+  nur einmal pro Durchlauf, und stoppt von dort wie bei STOP: der Heartbeat
+  fällt sofort ab, und der Coprozessor geht innerhalb von 150 ms in den
+  sicheren Zustand, wie lang der Rückstau hinter dem Scharfschalten auch
+  ist. Ein Frame, der
   vor dem Veröffentlichen begann, bricht Screens ab, die den Prüfstand noch
   für entschärft halten, und die setzen kein Entschärfen ab; also muss der
   Control-Task es tun. Nach der Bestätigung sehen die Screens einen Verlust

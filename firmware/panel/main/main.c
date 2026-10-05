@@ -855,6 +855,24 @@ static void control_pump(void)
         drv_lost(tail);
     }
     /*
+     * An arm the render side has not seen yet, against what this pass found
+     * -- here, inside every exchange's wait, and not only once a pass.  The
+     * pass that applied the arm can block for seconds on a backlog of servo
+     * exchanges, and a loss in that time would leave the arm driving until
+     * the pass ended.  Undone the way a STOP is undone from here, because a
+     * disarm writes the far end and this runs inside an exchange:
+     * arming_stop() drops the heartbeat now, the coprocessor fails safe
+     * within HEARTBEAT_MAX_GAP_MS (150 ms) whatever this task is waiting
+     * for, and service_arming() lets go of the rest when the loop is free.
+     * A queued drive command carries the old stop count and is dropped.
+     */
+    if (outputs_armed(&s_out)
+        && arm_watch_lost(&s_arm_watch, atomic_load(&s_loss_gen),
+                          atomic_load(&s_drv_gaps), atomic_load(&s_arm_ack))) {
+        arming_stop(&s_arm);
+        control_alert("touch lost while arming -- stopped");
+    }
+    /*
      * touch_age_ms() is the time since the controller last answered a poll,
      * not since the last touch.  An untouched panel is healthy; a controller
      * that has stopped answering is not.
@@ -2581,7 +2599,9 @@ static void arm_applied(void)
 
 /*
  * The look at the touch stream for an arm still being handed over, once
- * per pass and after the snapshot is published.
+ * per pass and after the snapshot is published.  control_pump() looks too,
+ * inside every exchange's wait, and stops rather than disarms there; this
+ * is the look that also ends the watch once the bench is no longer armed.
  *
  * Until the render side has seen the bench armed, a loss there is answered
  * by cancelling screens that still believe the bench is disarmed, which

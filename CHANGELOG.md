@@ -41,9 +41,11 @@ history is in git.
     the bench. An arm already handed to the control task carries how many
     times the render task had dropped gestures and the last event it had
     taken; the control task drains the driver's queue, drops an arm the
-    render task has had a loss since, and after applying it disarms on any
-    loss until the render task acknowledges the armed bench, which a frame
-    does only when it began armed and found the stream whole. A later loss
+    render task has had a loss since, and after applying it stops the bench
+    on any loss until the render task acknowledges the armed bench, which a
+    frame does only when it began armed and found the stream whole. The
+    look runs inside every link exchange's wait, so a backlog of servo
+    exchanges behind the arm cannot keep it driving. A later loss
     is seen by the screens against an armed bench. A hold
     is credited at most 250 ms per frame, so one late
     frame cannot complete a hold that began while it was dispatching the

@@ -138,9 +138,13 @@ unpowered or unplugged panel reads as a line that is not edging.
   event it had taken. The control task drains the driver's queue first, then
   drops an arm when the render task has dropped gestures since, or has a
   loss notice it had not yet taken. Once the arm is applied, any loss -- the
-  render task dropping gestures, or a gap in the driver's stream -- disarms at
-  once until the render task acknowledges the armed bench, which a frame
-  does only when it began armed and found the stream whole. A frame that
+  render task dropping gestures, or a gap in the driver's stream -- undoes it
+  until the render task acknowledges the armed bench, which a frame does
+  only when it began armed and found the stream whole. The control task
+  looks inside every link exchange's wait, not only once a pass, and stops
+  the bench from there as it does for STOP: the heartbeat drops at once and
+  the coprocessor fails safe within 150 ms, however long the exchange
+  backlog behind the arm. A frame that
   began before the arm was published cancels screens that still believe the
   bench is disarmed, which posts no disarm, so the control task has to.
   After the acknowledgement a loss is seen by the screens against an armed
