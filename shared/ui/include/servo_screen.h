@@ -36,7 +36,10 @@ typedef struct {
     servo_cmd_kind_t kind;
     uint16_t         value_us;
     /**
-     * The endpoints the selected servo type has, carried with the command.
+     * The range the channel is configured with, carried with the command:
+     * centred on the servo's PULSE CENTRE and reaching the further of its
+     * PULSE MIN and MAX, so its midpoint -- where the far end rests a
+     * surface -- is the centre.  value_us stays within MIN..MAX.
      *
      * The pulse means nothing without them: 760 us is the centre of a narrow
      * servo and below the bottom of a standard one, so a command clamped

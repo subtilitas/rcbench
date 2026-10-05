@@ -772,16 +772,24 @@ TEST_CASE(a_pulse_width_the_coprocessor_would_refuse_is_not_taken)
     tap(ROW_L_X, ROW_Y(3));                    /* PULSE MAX */
     keys("2600");
     key(UI_KEY_CANCEL);
+    /* A centre further from one end than the ceiling allows the other:
+     * 1800 us with MIN at 1000 would carry 1000..2600. */
+    tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
+    keys("1800");
+    key(UI_KEY_CANCEL);
     close_settings();
     servo_screen_set_commanded(0.0f);
     const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.value_us, 1500);
     CHECK_EQ(c.min_us, 1000);
     CHECK_EQ(c.max_us, 2000);
 }
 
 /*
  * MIN, CENTRE and MAX are set one by one, so each side of centre runs to
- * its own end: -90 deg is MIN and +90 deg is MAX.
+ * its own end: -90 deg is MIN and +90 deg is MAX.  The range a command
+ * carries is centred on CENTRE, because the far end rests a surface at its
+ * midpoint -- on RELEASE and before an arm -- and that rest is the centre.
  */
 TEST_CASE(each_side_of_centre_runs_to_its_own_end)
 {
@@ -799,7 +807,15 @@ TEST_CASE(each_side_of_centre_runs_to_its_own_end)
     servo_screen_set_commanded(45.0f);
     CHECK_EQ(last_cmd().value_us, 1760);
     servo_screen_set_commanded(90.0f);
-    CHECK_EQ(last_cmd().value_us, 2000);
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.value_us, 2000);
+    CHECK_EQ(c.min_us, 900);
+    CHECK_EQ(c.max_us, 2140);                  /* 1520 +/- 620 */
+    tap(ARM_X + ARM_W - 40, 350 + 16);         /* RELEASE */
+    const servo_cmd_t r = last_cmd();
+    CHECK_EQ(r.kind, SERVO_CMD_RELEASE);
+    CHECK_EQ(r.min_us, 900);
+    CHECK_EQ(r.max_us, 2140);
 }
 
 TEST_CASE(a_warning_cancelled_dropped_or_left_applies_nothing)

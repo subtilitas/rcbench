@@ -219,7 +219,7 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | --- | --- | --- |
 | OUTPUT | TYPE | das Servoprofil: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC oder HELI TAIL 760 |
 | OUTPUT | FRAME RATE | wie oft ein Impuls gesendet wird; die Liste des Typs oder CUSTOM über die Tastatur |
-| OUTPUT | PULSE MIN, CENTRE, MAX | die Impulsbreiten, auf die der Weg abgebildet wird, 400 bis 2500 us: -90 Grad ist MIN, 0 ist CENTRE, +90 Grad ist MAX |
+| OUTPUT | PULSE MIN, CENTRE, MAX | die Impulsbreiten, auf die der Weg abgebildet wird, 400 bis 2500 us: -90 Grad ist MIN, 0 ist CENTRE, +90 Grad ist MAX, und RELEASE ruht auf CENTRE. Ein Ende liegt nicht weiter von CENTRE entfernt als CENTRE von 400 us oder 2500 us |
 | OUTPUT | TRIM | zur Mitte addiert, 5 us je Schritt, bis 200 us in jede Richtung |
 | OUTPUT | TRAVEL | wie weit der Arm in jede Richtung darf, 10 bis 90 Grad |
 | OUTPUT | REVERSE | die Richtung, in der der Winkel auf den Impuls abgebildet wird |

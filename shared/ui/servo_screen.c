@@ -352,6 +352,24 @@ static float us_to_deg(uint16_t us)
     return s.reverse ? -d : d;
 }
 
+/*
+ * The range a command carries: the narrowest one centred on CENTRE that
+ * holds MIN and MAX.  The coprocessor knows a channel only by its two
+ * endpoints and rests a surface at their midpoint -- on RELEASE, before an
+ * arm, after a silence -- so MIN..MAX itself would rest a servo whose CENTRE
+ * is not midway between them away from its centre.  Commands never leave
+ * MIN..MAX: deg_to_us() clamps them.  The PULSE keypads keep this range
+ * inside OUT_FLOOR_US..OUT_CEILING_US.
+ */
+static void cmd_range(uint16_t *lo, uint16_t *hi)
+{
+    const unsigned below = (unsigned)s.centre_us - (unsigned)s.min_us;
+    const unsigned above = (unsigned)s.max_us - (unsigned)s.centre_us;
+    const unsigned half  = (below > above) ? below : above;
+    *lo = (uint16_t)((unsigned)s.centre_us - half);
+    *hi = (uint16_t)((unsigned)s.centre_us + half);
+}
+
 static float clamp_travel(float deg)
 {
     if (deg < -s.travel_deg) { return -s.travel_deg; }
@@ -435,8 +453,7 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
     /* The range travels with the pulse: the panel configures the channel
      * from it, and a narrow servo's 760 us centre is below a standard
      * servo's floor.  The frame rate goes with it. */
-    s.pending.min_us   = s.min_us;
-    s.pending.max_us   = s.max_us;
+    cmd_range(&s.pending.min_us, &s.pending.max_us);
     s.pending.frame_hz = s.frame_hz;
     s.pending.slew_per_s = slew_of(s.speed_pct);
     /* The grip only breathes while something is actually being held, so this
@@ -864,21 +881,36 @@ static void edit_row(int i)
         choice_add("CUSTOM", -1);
         break;
     }
-    case R_MIN:
-        open_keypad(KT_MIN, "PULSE MIN", "us", (float)s.min_us,
-                    (float)OUT_FLOOR_US,
-                    (float)(s.centre_us - 50u), 0);
+    /*
+     * Each end at least 50 us from the centre, and the range a command
+     * carries -- centred on CENTRE, out to the further end; see cmd_range()
+     * -- inside what the coprocessor takes.  So an end may lie no further
+     * from the centre than the centre lies from the floor or the ceiling.
+     */
+    case R_MIN: {
+        const unsigned c = s.centre_us;
+        const unsigned lo = (2u * c > OUT_CEILING_US + OUT_FLOOR_US)
+                                ? 2u * c - OUT_CEILING_US : OUT_FLOOR_US;
+        open_keypad(KT_MIN, "PULSE MIN", "us", (float)s.min_us, (float)lo,
+                    (float)(c - 50u), 0);
         break;
-    case R_CENTRE:
+    }
+    case R_CENTRE: {
+        unsigned lo = (s.max_us + OUT_FLOOR_US + 1u) / 2u;
+        unsigned hi = (OUT_CEILING_US + s.min_us) / 2u;
+        if (lo < s.min_us + 50u) { lo = s.min_us + 50u; }
+        if (hi > s.max_us - 50u) { hi = s.max_us - 50u; }
         open_keypad(KT_CENTRE, "PULSE CENTRE", "us", (float)s.centre_us,
-                    (float)(s.min_us + 50u), (float)(s.max_us - 50u), 0);
+                    (float)lo, (float)hi, 0);
         break;
+    }
     case R_MAX: {
-        const uint16_t top = max_pulse_for_rate();
+        const unsigned c = s.centre_us;
+        unsigned top = max_pulse_for_rate();
+        if (top > 2u * c - OUT_FLOOR_US) { top = 2u * c - OUT_FLOOR_US; }
         open_keypad(KT_MAX, "PULSE MAX", "us", (float)s.max_us,
-                    (float)(s.centre_us + 50u),
-                    (float)((top > s.centre_us + 50u) ? top
-                                                      : s.centre_us + 50u), 0);
+                    (float)(c + 50u),
+                    (float)((top > c + 50u) ? top : c + 50u), 0);
         break;
     }
     case R_TRAVEL:

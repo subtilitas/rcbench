@@ -3456,6 +3456,40 @@ static bool servo_countermanded(void)
            || atomic_load(&s_servo_release_request);
 }
 
+/*
+ * The range and speed the SERVO screen last named.  A release goes to the
+ * midpoint of the range the far end holds, which is the one the last
+ * position carried; a profile chosen since, with no position under it yet,
+ * would be released at the old profile's centre.  So a release restates the
+ * range first.  Kind NONE until a command names one.
+ */
+static servo_cmd_t s_servo_range;
+
+/* Whether a command names a range the far end takes.  A command that names
+ * none keeps the standard one. */
+static bool servo_named(const servo_cmd_t *sv)
+{
+    return sv->max_us > sv->min_us
+           && sv->min_us >= LINK_CC_FLOOR_US
+           && sv->max_us <= LINK_CC_CEILING_US;
+}
+
+/* The CHAN_CFG page for the surfaces under @p sv's range and speed. */
+static void servo_cfg(const servo_cmd_t *sv, uint16_t *cfg)
+{
+    const bool named = servo_named(sv);
+    for (uint8_t i = 0; i < LINK_OUT_CHANNELS; ++i) {
+        uint16_t *r = &cfg[(size_t)i * LINK_CC_STRIDE];
+        r[LINK_CC_ROLE] = LINK_CC_ROLE_SURFACE;
+        /* What the screen's SPEED means at this end: the rate the bench
+         * is allowed to move the output, rather than a number that only
+         * changed the drawing. */
+        r[LINK_CC_SLEW]   = sv->slew_per_s;
+        r[LINK_CC_MIN_US] = named ? sv->min_us : (uint16_t)SERVO_MIN_US;
+        r[LINK_CC_MAX_US] = named ? sv->max_us : (uint16_t)SERVO_MAX_US;
+    }
+}
+
 static bool write_servo(const servo_cmd_t sv)
 {
     link_msg_t reply;
@@ -3515,8 +3549,21 @@ static bool write_servo(const servo_cmd_t sv)
         for (uint8_t i = 0; i < LINK_OUT_CHANNELS; ++i) {
             centre[i] = (uint16_t)(LINK_CH_SPAN / 2u);
         }
+        /* The midpoint of the range the screen last named, which the
+         * screen centres on its PULSE CENTRE. */
+        const bool ranged = s_servo_range.kind != SERVO_CMD_NONE;
+        uint16_t cfg[LINK_CC_COUNT];
+        servo_cfg(&s_servo_range, cfg);
         for (uint8_t at = 0u; servo_next_run(mask, at, &first, &count);
              at = (uint8_t)(first + count)) {
+            if (ranged
+                && (!write_regs(&s_host, LINK_PAGE_CHAN_CFG,
+                                (uint8_t)(first * LINK_CC_STRIDE),
+                                (uint8_t)(count * LINK_CC_STRIDE),
+                                &cfg[(size_t)first * LINK_CC_STRIDE], &reply)
+                    || reply.op != LINK_OP_ACK)) {
+                return false;
+            }
             if (!write_regs(&s_host, LINK_PAGE_CHANNELS, first, count,
                             &centre[first], &reply)
                 || reply.op != LINK_OP_ACK) {
@@ -3547,9 +3594,7 @@ static bool write_servo(const servo_cmd_t sv)
          * travel to one end.  A command that names no range keeps the
          * standard one.
          */
-        const bool named = sv.max_us > sv.min_us
-                           && sv.min_us >= LINK_CC_FLOOR_US
-                           && sv.max_us <= LINK_CC_CEILING_US;
+        const bool named = servo_named(&sv);
         const uint16_t min_us = named ? sv.min_us : (uint16_t)SERVO_MIN_US;
         const uint16_t max_us = named ? sv.max_us : (uint16_t)SERVO_MAX_US;
         const uint16_t span = us_to_span(sv.value_us, min_us, max_us);
@@ -3563,15 +3608,8 @@ static bool write_servo(const servo_cmd_t sv)
          */
         uint16_t cfg[LINK_CC_COUNT];
         uint16_t cmd[LINK_OUT_CHANNELS];
+        servo_cfg(&sv, cfg);
         for (uint8_t i = 0; i < LINK_OUT_CHANNELS; ++i) {
-            uint16_t *r = &cfg[(size_t)i * LINK_CC_STRIDE];
-            r[LINK_CC_ROLE] = LINK_CC_ROLE_SURFACE;
-            /* What the screen's SPEED means at this end: the rate the bench
-             * is allowed to move the output, rather than a number that only
-             * changed the drawing. */
-            r[LINK_CC_SLEW]   = sv.slew_per_s;
-            r[LINK_CC_MIN_US] = min_us;
-            r[LINK_CC_MAX_US] = max_us;
             cmd[i] = span;
         }
         /*
@@ -3682,6 +3720,11 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
  */
 static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
 {
+    /* Every command from the screen carries its range, a release included,
+     * and the release the arm owes is paid with it. */
+    if (servo_named(&sv)) {
+        s_servo_range = sv;
+    }
     if (sv.kind == SERVO_CMD_ARM) {
         /*
          * The surfaces are centred first, whether or not this process cached
