@@ -266,6 +266,9 @@ int main(int argc, char **argv)
         bench_state_t bench;
         memset(&bench, 0, sizeof(bench));
         telemetry_sim_init(&sim, NULL);
+        /* The run's totals as the panel counts them, from what it shows. */
+        bench_totals_t totals;
+        bench_totals_reset(&totals);
         /* Before the samples, not after: the plot advances only while the
          * bench is armed, and arming clears it.  Posed the other way round
          * the trace would be empty. */
@@ -280,6 +283,8 @@ int main(int argc, char **argv)
             else if (t < 30.0f)          { th = 30.0f; }
             else                         { th = 64.0f; }
             telemetry_sim_step(&sim, th, 0.05f, &bench);
+            bench_totals_count(&totals, &bench, 0.05f, true);
+            bench_totals_show(&totals, &bench);
             motor_screen_push(&bench);
         }
         motor_screen_set_throttle(64.0f);

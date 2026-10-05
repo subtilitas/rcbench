@@ -340,28 +340,6 @@ TEST_CASE(charge_and_energy_only_accumulate)
     CHECK(last_mah > 0.0f);
 }
 
-TEST_CASE(the_simulator_starts_each_run_from_zero_and_keeps_the_pack)
-{
-    telemetry_sim_t s;
-    bench_state_t b;
-    memset(&b, 0, sizeof(b));
-    telemetry_sim_init(&s, NULL);
-    for (int i = 0; i < 200; ++i) {
-        telemetry_sim_step(&s, 80.0f, 0.05f, &b);
-    }
-    CHECK(b.charge_mah > 0.0f);
-    const float drawn = s.drawn_mah;
-
-    telemetry_sim_new_run(&s);
-    telemetry_sim_step(&s, 80.0f, 0.05f, &b);
-    /* One step's worth, not the first run's on top. */
-    CHECK(b.charge_mah < drawn / 100.0f);
-    CHECK(b.energy_wh >= 0.0f);
-    /* The pack is not refilled: its charge state carries on. */
-    CHECK(s.drawn_mah > drawn);
-    telemetry_sim_new_run(NULL);
-}
-
 /* ------------------------------------------- the run's charge and energy */
 
 static bench_state_t measured(float v, float a, uint16_t flags)
@@ -377,133 +355,101 @@ static bench_state_t measured(float v, float a, uint16_t flags)
 
 TEST_CASE(charge_and_energy_count_what_was_measured_while_driving)
 {
-    bench_state_t b = measured(16.0f, 36.0f,
-                               LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    const bench_state_t b = measured(16.0f, 36.0f,
+                                     LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
     for (int i = 0; i < 100; ++i) {          /* 100 s at 36 A and 576 W */
-        bench_state_count_totals(&b, 1.0f, true);
+        bench_totals_count(&t, &b, 1.0f, true);
     }
-    CHECK_NEAR(b.charge_mah, 1000.0f, 0.5f);
-    CHECK_NEAR(b.energy_wh, 16.0f, 0.01f);
-    CHECK((b.flags & LINK_BN_CHARGE_OK) != 0u);
-    CHECK((b.flags & LINK_BN_ENERGY_OK) != 0u);
+    CHECK_NEAR(t.mah, 1000.0f, 0.5f);
+    CHECK_NEAR(t.wh, 16.0f, 0.01f);
+    CHECK_EQ(t.counted, BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
 }
 
 TEST_CASE(nothing_is_counted_while_disarmed_or_unmeasured)
 {
+    bench_totals_t t;
+    bench_totals_reset(&t);
     bench_state_t b = measured(16.0f, 36.0f,
                                LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
-    bench_state_count_totals(&b, 1.0f, false);
-    CHECK_EQ(b.charge_mah, 0.0f);
-    CHECK_EQ(b.flags & (LINK_BN_CHARGE_OK | LINK_BN_ENERGY_OK), 0u);
+    bench_totals_count(&t, &b, 1.0f, false);
+    CHECK_EQ(t.mah, 0.0f);
+    CHECK_EQ(t.counted, 0u);
 
     /* A voltage with no current counts neither; a current with no voltage
      * counts charge and not energy. */
     b = measured(16.0f, 36.0f, LINK_BN_VOLTAGE_OK);
-    bench_state_count_totals(&b, 1.0f, true);
-    CHECK_EQ(b.charge_mah, 0.0f);
-    CHECK_EQ(b.flags & (LINK_BN_CHARGE_OK | LINK_BN_ENERGY_OK), 0u);
+    bench_totals_count(&t, &b, 1.0f, true);
+    CHECK_EQ(t.mah, 0.0f);
+    CHECK_EQ(t.counted, 0u);
     b = measured(16.0f, 36.0f, LINK_BN_CURRENT_OK);
-    bench_state_count_totals(&b, 1.0f, true);
-    CHECK_NEAR(b.charge_mah, 10.0f, 0.01f);
-    CHECK_EQ(b.energy_wh, 0.0f);
-    CHECK((b.flags & LINK_BN_CHARGE_OK) != 0u);
-    CHECK_EQ(b.flags & LINK_BN_ENERGY_OK, 0u);
+    bench_totals_count(&t, &b, 1.0f, true);
+    CHECK_NEAR(t.mah, 10.0f, 0.01f);
+    CHECK_EQ(t.wh, 0.0f);
+    CHECK_EQ(t.counted, BENCH_COUNTED_CHARGE);
 }
 
-TEST_CASE(a_total_outlives_a_lapse_and_the_run_and_resets_at_the_next)
+TEST_CASE(one_count_runs_through_a_change_of_source)
 {
-    bench_state_t b = measured(16.0f, 36.0f,
-                               LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
-    bench_state_count_totals(&b, 1.0f, true);
-    const float mah = b.charge_mah;
-
-    /* The coprocessor rebuilds flags every sample; a lapsed current keeps
-     * the total and its flag and adds nothing. */
-    b.flags = 0u;
-    bench_state_count_totals(&b, 1.0f, true);
-    CHECK_EQ(b.charge_mah, mah);
-    CHECK((b.flags & LINK_BN_CHARGE_OK) != 0u);
-
-    /* After the run, still there. */
-    b.flags = 0u;
-    bench_state_count_totals(&b, 1.0f, false);
-    CHECK((b.flags & LINK_BN_CHARGE_OK) != 0u);
-
-    /* The next run starts from nothing. */
-    bench_state_reset_totals(&b);
-    b.flags = 0u;
-    bench_state_count_totals(&b, 1.0f, true);
-    CHECK_EQ(b.charge_mah, 0.0f);
-    CHECK_EQ(b.flags & (LINK_BN_CHARGE_OK | LINK_BN_ENERGY_OK), 0u);
+    /*
+     * The coprocessor's readings for 10 s, the panel's model for 2 s while
+     * the link is down, then the coprocessor again for 3 s.  Each source
+     * writes its own charge over the field -- the coprocessor its empty
+     * register -- and the count is shown over it every time.  It never goes
+     * back, and the model's seconds are in it.
+     */
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    float last = 0.0f;
+    for (int i = 0; i < 15; ++i) {
+        bench_state_t b = measured(16.0f, 36.0f,
+                                   LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
+        b.charge_mah = (i >= 10 && i < 12) ? 3.0f : 0.0f;  /* each source's own */
+        bench_totals_count(&t, &b, 1.0f, true);
+        bench_totals_show(&t, &b);
+        CHECK(b.charge_mah >= last);
+        last = b.charge_mah;
+        CHECK_EQ(b.counted, BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
+    }
+    CHECK_NEAR(last, 150.0f, 0.1f);
 }
 
-TEST_CASE(a_stalled_sampler_counts_at_most_one_step)
+TEST_CASE(the_totals_outlast_the_run_and_reset_at_the_next)
 {
-    bench_state_t b = measured(16.0f, 36.0f,
-                               LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
-    bench_state_count_totals(&b, 60.0f, true);   /* a minute's stall */
-    CHECK_NEAR(b.charge_mah, 10.0f, 0.01f);      /* one second's worth */
-    bench_state_t c = measured(16.0f, 36.0f,
-                               LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
-    bench_state_count_totals(&c, -1.0f, true);
-    CHECK_EQ(c.charge_mah, 0.0f);
-    bench_state_count_totals(NULL, 1.0f, true);
-    bench_state_reset_totals(NULL);
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    const bench_state_t b = measured(16.0f, 36.0f,
+                                     LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
+    bench_totals_count(&t, &b, 1.0f, true);
+    /* Disarmed, a source that reports nothing at all: the totals stand. */
+    bench_state_t empty;
+    memset(&empty, 0, sizeof(empty));
+    bench_totals_count(&t, &empty, 1.0f, false);
+    bench_totals_show(&t, &empty);
+    CHECK_NEAR(empty.charge_mah, 10.0f, 0.01f);
+    CHECK_EQ(empty.counted, BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
+
+    bench_totals_reset(&t);
+    bench_totals_show(&t, &empty);
+    CHECK_EQ(empty.charge_mah, 0.0f);
+    CHECK_EQ(empty.counted, 0u);
 }
 
-TEST_CASE(the_totals_flags_survive_the_wire)
+TEST_CASE(a_stalled_loop_counts_at_most_one_step)
 {
-    bench_state_t b = measured(16.0f, 36.0f,
-                               LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
-    bench_state_count_totals(&b, 1.0f, true);
-    uint16_t regs[LINK_BN_COUNT];
-    bench_state_to_regs(&b, regs);
-    bench_state_t out;
-    memset(&out, 0, sizeof(out));
-    bench_state_from_regs(&out, regs, 0, LINK_BN_COUNT);
-    CHECK((out.flags & LINK_BN_CHARGE_OK) != 0u);
-    CHECK((out.flags & LINK_BN_ENERGY_OK) != 0u);
-    CHECK_NEAR(out.charge_mah, 10.0f, 1.0f);
-}
-
-TEST_CASE(a_run_that_changes_source_never_counts_backwards)
-{
-    /* The coprocessor counts 100 mAh, the link drops and the model counts
-     * 20 more, the link comes back and the re-armed coprocessor counts 30. */
-    bench_carry_t c;
-    bench_carry_reset(&c);
-    bench_state_t shown;
-    memset(&shown, 0, sizeof(shown));
-
-    shown.charge_mah = 100.0f; shown.energy_wh = 2.0f;
-    shown.flags = LINK_BN_CHARGE_OK | LINK_BN_ENERGY_OK;
-    bench_carry_apply(&c, &shown);
-    CHECK_NEAR(shown.charge_mah, 100.0f, 0.001f);
-
-    bench_carry_take(&c, &shown);                /* link lost */
-    shown.charge_mah = 20.0f; shown.energy_wh = 0.4f;
-    shown.flags = 0u;                            /* model, before it counts */
-    bench_carry_apply(&c, &shown);
-    CHECK_NEAR(shown.charge_mah, 120.0f, 0.001f);
-    CHECK_NEAR(shown.energy_wh, 2.4f, 0.001f);
-    CHECK((shown.flags & LINK_BN_CHARGE_OK) != 0u);
-
-    bench_carry_take(&c, &shown);                /* link back */
-    shown.charge_mah = 30.0f; shown.energy_wh = 0.5f;
-    shown.flags = LINK_BN_CHARGE_OK | LINK_BN_ENERGY_OK;
-    bench_carry_apply(&c, &shown);
-    CHECK_NEAR(shown.charge_mah, 150.0f, 0.001f);
-    CHECK_NEAR(shown.energy_wh, 2.9f, 0.001f);
-
-    /* A new run starts from nothing carried. */
-    bench_carry_reset(&c);
-    shown.charge_mah = 5.0f; shown.flags = 0u;
-    bench_carry_apply(&c, &shown);
-    CHECK_NEAR(shown.charge_mah, 5.0f, 0.001f);
-    CHECK_EQ(shown.flags & (LINK_BN_CHARGE_OK | LINK_BN_ENERGY_OK), 0u);
-    bench_carry_reset(NULL);
-    bench_carry_take(NULL, &shown);
-    bench_carry_apply(NULL, &shown);
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    const bench_state_t b = measured(16.0f, 36.0f,
+                                     LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
+    bench_totals_count(&t, &b, 60.0f, true);     /* a minute's stall */
+    CHECK_NEAR(t.mah, 10.0f, 0.01f);             /* one second's worth */
+    bench_totals_count(&t, &b, -1.0f, true);
+    CHECK_NEAR(t.mah, 10.0f, 0.01f);
+    bench_totals_count(NULL, &b, 1.0f, true);
+    bench_totals_count(&t, NULL, 1.0f, true);
+    bench_totals_show(NULL, NULL);
+    bench_totals_reset(NULL);
 }
 
 int main(void)
@@ -521,12 +467,10 @@ int main(void)
     RUN(rpm_lags_a_step_rather_than_following_it);
     RUN(the_simulator_accumulates_peaks_like_the_coprocessor_would);
     RUN(charge_and_energy_only_accumulate);
-    RUN(the_simulator_starts_each_run_from_zero_and_keeps_the_pack);
     RUN(charge_and_energy_count_what_was_measured_while_driving);
     RUN(nothing_is_counted_while_disarmed_or_unmeasured);
-    RUN(a_total_outlives_a_lapse_and_the_run_and_resets_at_the_next);
-    RUN(a_stalled_sampler_counts_at_most_one_step);
-    RUN(the_totals_flags_survive_the_wire);
-    RUN(a_run_that_changes_source_never_counts_backwards);
+    RUN(one_count_runs_through_a_change_of_source);
+    RUN(the_totals_outlast_the_run_and_reset_at_the_next);
+    RUN(a_stalled_loop_counts_at_most_one_step);
     return test_summary("bench");
 }

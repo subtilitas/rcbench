@@ -107,74 +107,46 @@ void bench_state_reset_peaks(bench_state_t *b)
     b->sag_seeded  = (b->flags & (uint16_t)LINK_BN_VOLTAGE_OK) != 0u;
 }
 
-void bench_state_reset_totals(bench_state_t *b)
+void bench_totals_reset(bench_totals_t *t)
 {
-    if (b == NULL) {
-        return;
-    }
-    b->charge_mah = 0.0f;
-    b->energy_wh  = 0.0f;
-    b->totals     = 0u;
-}
-
-void bench_state_count_totals(bench_state_t *b, float dt_s, bool driving)
-{
-    if (b == NULL) {
-        return;
-    }
-    if (driving) {
-        float dt = dt_s;
-        if (!(dt > 0.0f)) {
-            dt = 0.0f;          /* negative, zero or NaN counts nothing */
-        } else if (dt > BENCH_TOTALS_MAX_STEP_S) {
-            dt = BENCH_TOTALS_MAX_STEP_S;
-        }
-        const uint16_t both = (uint16_t)(LINK_BN_VOLTAGE_OK
-                                         | LINK_BN_CURRENT_OK);
-        if ((b->flags & (uint16_t)LINK_BN_CURRENT_OK) != 0u) {
-            b->charge_mah += b->current * dt * (1000.0f / 3600.0f);
-            b->totals |= (uint16_t)LINK_BN_CHARGE_OK;
-        }
-        if ((b->flags & both) == both) {
-            b->energy_wh += b->power * dt * (1.0f / 3600.0f);
-            b->totals |= (uint16_t)LINK_BN_ENERGY_OK;
-        }
-    }
-    b->flags |= b->totals;
-}
-
-void bench_carry_reset(bench_carry_t *c)
-{
-    if (c != NULL) {
-        c->mah   = 0.0f;
-        c->wh    = 0.0f;
-        c->flags = 0u;
+    if (t != NULL) {
+        t->mah     = 0.0f;
+        t->wh      = 0.0f;
+        t->counted = 0u;
     }
 }
 
-void bench_carry_take(bench_carry_t *c, const bench_state_t *shown)
+void bench_totals_count(bench_totals_t *t, const bench_state_t *b,
+                        float dt_s, bool driving)
 {
-    if (c == NULL || shown == NULL) {
+    if (t == NULL || b == NULL || !driving) {
         return;
     }
-    /* What is shown already includes any earlier carry, so this replaces
-     * the carry rather than adding to it. */
-    c->mah   = shown->charge_mah;
-    c->wh    = shown->energy_wh;
-    c->flags = (uint16_t)(shown->flags
-                          & (uint16_t)(LINK_BN_CHARGE_OK | LINK_BN_ENERGY_OK));
+    float dt = dt_s;
+    if (!(dt > 0.0f)) {
+        dt = 0.0f;              /* negative, zero or NaN counts nothing */
+    } else if (dt > BENCH_TOTALS_MAX_STEP_S) {
+        dt = BENCH_TOTALS_MAX_STEP_S;
+    }
+    const uint16_t both = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
+    if ((b->flags & (uint16_t)LINK_BN_CURRENT_OK) != 0u) {
+        t->mah += b->current * dt * (1000.0f / 3600.0f);
+        t->counted |= BENCH_COUNTED_CHARGE;
+    }
+    if ((b->flags & both) == both) {
+        t->wh += b->power * dt * (1.0f / 3600.0f);
+        t->counted |= BENCH_COUNTED_ENERGY;
+    }
 }
 
-void bench_carry_apply(const bench_carry_t *c, bench_state_t *b)
+void bench_totals_show(const bench_totals_t *t, bench_state_t *b)
 {
-    if (c == NULL || b == NULL) {
+    if (t == NULL || b == NULL) {
         return;
     }
-    b->charge_mah += c->mah;
-    b->energy_wh  += c->wh;
-    /* A total the run had stays a total, even before the new source has
-     * counted anything of its own. */
-    b->flags |= c->flags;
+    b->charge_mah = t->mah;
+    b->energy_wh  = t->wh;
+    b->counted    = t->counted;
 }
 
 void bench_state_track_peaks(bench_state_t *b)

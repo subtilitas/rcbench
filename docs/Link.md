@@ -62,7 +62,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-coprocessor transmits only in answer to a request. Protocol version 4.1. The
+coprocessor transmits only in answer to a request. Protocol version 4.0. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -148,13 +148,8 @@ sensor and index pulse, bit 7 cell monitor, bit 8 programming. The panel
 derives the menu marks from it.
 
 BENCH flags: bit 0 voltage valid, bit 1 current valid, bit 2 rpm valid, bit 3
-the ESC's temperature valid, bit 4 the motor's temperature valid, bit 5 the
-run's charge counted a measured current, bit 6 the run's energy counted a
-measured voltage and current, bit 7 simulated. Bits 5 and 6 are set from the
-first such sample of a run until the next arm, and were added at protocol 4.1:
-a 4.0 panel ignores them and shows the totals as numbers. The totals count
-what the ESC reports, so an ESC without a current sensor gives meaningless
-ones. The two temperatures carry separate bits because they come from
+the ESC's temperature valid, bit 4 the motor's temperature valid, bit 7
+simulated. The two temperatures carry separate bits because they come from
 different places and one of them usually does not come at all: an ESC reports
 its own temperature over extended DShot telemetry and knows nothing about the
 motor it drives. Bit 3 validated both until protocol 3.0, which is why that

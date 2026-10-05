@@ -18,14 +18,6 @@ void telemetry_sim_init(telemetry_sim_t *s, const telemetry_sim_cfg_t *cfg)
     s->temp_motor = 24.0f;
 }
 
-void telemetry_sim_new_run(telemetry_sim_t *s)
-{
-    if (s != NULL) {
-        s->run_mah = 0.0f;
-        s->run_wh  = 0.0f;
-    }
-}
-
 void telemetry_sim_step(telemetry_sim_t *s, float throttle_pct, float dt_s,
                         bench_state_t *out)
 {
@@ -68,8 +60,6 @@ void telemetry_sim_step(telemetry_sim_t *s, float throttle_pct, float dt_s,
     const float power = voltage * current;
     s->drawn_mah += current * dt_s * (1000.0f / 3600.0f);
     s->drawn_wh  += power   * dt_s * (1.0f / 3600.0f);
-    s->run_mah   += current * dt_s * (1000.0f / 3600.0f);
-    s->run_wh    += power   * dt_s * (1.0f / 3600.0f);
 
     /* Heating with a leak back to 24 C ambient; the ESC (electronic speed
      * controller) heats faster than the motor. */
@@ -82,8 +72,8 @@ void telemetry_sim_step(telemetry_sim_t *s, float throttle_pct, float dt_s,
     out->rpm        = s->rpm;
     out->temp_esc   = s->temp_esc;
     out->temp_motor = s->temp_motor;
-    out->charge_mah = s->run_mah;
-    out->energy_wh  = s->run_wh;
+    out->charge_mah = s->drawn_mah;
+    out->energy_wh  = s->drawn_wh;
 
     if (!out->valid) {
         out->voltage_min = voltage;
@@ -97,7 +87,6 @@ void telemetry_sim_step(telemetry_sim_t *s, float throttle_pct, float dt_s,
      * separate precisely because a real ESC reports only its own. */
     out->flags = LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
                | LINK_BN_RPM_OK | LINK_BN_TEMP_OK | LINK_BN_TEMP_MOT_OK
-               | LINK_BN_CHARGE_OK | LINK_BN_ENERGY_OK
                | LINK_BN_SIMULATED;
     out->valid = true;
 }

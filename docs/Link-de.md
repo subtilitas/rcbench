@@ -68,7 +68,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der Koprozessor sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.1. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.0. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -159,12 +159,7 @@ Programmierung. Das Panel leitet daraus die Marken im Menü ab.
 
 BENCH-Flags: Bit 0 Spannung gültig, Bit 1 Strom gültig, Bit 2 Drehzahl
 gültig, Bit 3 Temperatur des ESC gültig, Bit 4 Temperatur des Motors gültig,
-Bit 5 die Ladung des Laufs hat einen gemessenen Strom gezählt, Bit 6 die
-Energie des Laufs hat gemessene Spannung und gemessenen Strom gezählt, Bit 7
-simuliert. Bits 5 und 6 stehen ab dem ersten solchen Messwert eines Laufs bis
-zum nächsten Scharfschalten und kamen mit Protokoll 4.1: ein Panel mit 4.0
-ignoriert sie und zeigt die Summen als Zahlen. Die Summen zählen, was der ESC
-meldet; ein ESC ohne Stromsensor liefert also bedeutungslose. Die beiden Temperaturen haben getrennte Bits, weil sie aus
+Bit 7 simuliert. Die beiden Temperaturen haben getrennte Bits, weil sie aus
 verschiedenen Quellen kommen und eine davon meist gar nicht kommt: ein ESC
 meldet seine eigene Temperatur über die erweiterte DShot-Telemetrie und weiß
 nichts über den Motor, den er treibt. Bis Protokoll 3.0 galt Bit 3 für beide —

@@ -8,26 +8,19 @@ history is in git.
 
 ### Added
 
-- **MOTOR & ESC counts the run's charge and energy from the ESC's own
-  telemetry.** The coprocessor integrates the extended-telemetry current, and
-  voltage times current, while the bank drives, and starts again at each
-  arm (`bench_state_count_totals()`); a step longer than 1 s counts as 1 s.
-  Before, both totals read 0 on hardware because nothing filled them. Two
-  BENCH flags say whether each total has counted a measurement, and the
-  screen and the CSV show `--` and an empty cell when it has not, instead of
-  a 0 that reads as one. A run whose source changes -- the link lost to the
-  panel's model and back, where the coprocessor counts from zero again after
-  its failsafe -- carries its totals across (`bench_carry_t`), so they never
-  go backwards within one log; the model's consumption for the outage is in
-  them. The totals count what the ESC reports: an ESC without a current
-  sensor, such as the one in #172 that reports 72 A at idle, gives
-  meaningless ones.
-
-### Changed
-
-- **The link protocol is 4.1.** BENCH flags gain bit 5 (charge counted) and
-  bit 6 (energy counted). A 4.0 panel ignores them; either image goes on
-  alone.
+- **MOTOR & ESC counts the run's charge and energy.** Both read 0 on hardware
+  because nothing filled them. The panel now counts them from the current and
+  voltage it shows, while the bank is armed, from the arm
+  (`bench_totals_t`): the ESC's own readings over extended DShot telemetry
+  while the link is up, its model's while it is down. One count runs through
+  the run whatever the source does, so the totals never go back within one
+  log, and they stay after the run until the next arm. The time between two
+  samples is measured, and a gap longer than 1 s counts as 1 s. A total
+  nothing has counted is shown as `--` and written as an empty CSV cell,
+  not as a 0. The totals count what the ESC reports: an ESC without a
+  current sensor, such as the one in #172 that reports 72 A at idle, gives
+  meaningless ones. The BENCH page's charge and energy registers are not
+  used, and the protocol is unchanged.
 
 ## 0.9.1 - 2026-10-05
 

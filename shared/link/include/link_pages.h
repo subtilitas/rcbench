@@ -52,7 +52,7 @@ typedef enum {
  * older host can ignore.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 1u
+#define LINK_PROTOCOL_MINOR 0u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -267,17 +267,6 @@ typedef enum {
      * reported its own.
      */
     LINK_BN_TEMP_MOT_OK = 1u << 4,
-    /**
-     * The run's charge, and its energy, have counted a measured current --
-     * and for energy a measured voltage beside it.  Set from the first such
-     * sample of a run until the next arm, so a total is not withdrawn by a
-     * reading that lapses mid-run; a lapse is simply not counted.  Clear,
-     * the field is a zero nothing measured.  Added at protocol 4.1: an older
-     * panel ignores them and shows the totals as numbers, which is what it
-     * did before.
-     */
-    LINK_BN_CHARGE_OK  = 1u << 5,
-    LINK_BN_ENERGY_OK  = 1u << 6,
     /**
      * The numbers are modelled, not measured.  Set by a coprocessor running
      * without a front end and by the panel's own simulator; the panel draws

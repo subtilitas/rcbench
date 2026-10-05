@@ -231,14 +231,10 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
     return 0u;
 }
 
-/* Defined with the numbers below; see there. */
-static void bench_new_run(void);
-
 static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
                              const uint16_t *in)
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
-    const bool was_armed = s->control[LINK_CT_ARM] != 0u;
     /*
      * The page's rules are link_control_write()'s, host-tested: every
      * register of the frame is validated before any is stored, so a refused
@@ -252,16 +248,6 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
                                             &cleared);
     if (nack != 0u) {
         return nack;
-    }
-    /*
-     * A new run's numbers start before the write that asked for it is
-     * acknowledged.  sample() runs every 20 ms, and the panel reads BENCH as
-     * soon as the arm is answered and opens the run's log on it: left to the
-     * next sample, the first row of the new run would carry the last run's
-     * totals and peaks.
-     */
-    if (!was_armed && s->control[LINK_CT_ARM] != 0u) {
-        bench_new_run();
     }
     if (cleared) {
         /*
@@ -696,20 +682,6 @@ static bench_state_t s_bench;
  */
 static bool s_was_driving;
 
-/*
- * The peaks and the totals start again, and the page says so now rather
- * than at the next sample.  Called when the write that arms is accepted;
- * sample() does the same on the bank's edge into driving, for an arm that
- * arrives some other way.
- */
-static void bench_new_run(void)
-{
-    bench_state_reset_peaks(&s_bench);
-    bench_state_reset_totals(&s_bench);
-    s_bench.flags &= (uint16_t)~(LINK_BN_CHARGE_OK | LINK_BN_ENERGY_OK);
-    bench_state_to_regs(&s_bench, s_state.bench);
-}
-
 static void sample(void)
 {
     /*
@@ -774,25 +746,8 @@ static void sample(void)
     const bool driving = outputs_driving(&s_outputs);
     if (driving && !s_was_driving) {
         bench_state_reset_peaks(&s_bench);
-        bench_state_reset_totals(&s_bench);
     }
     s_was_driving = driving;
-
-    /*
-     * The run's charge and energy, from the ESC's own current and voltage
-     * while the bank drives, over the time since the last sample.  Only what
-     * arrived is counted, and the flags say whether anything has been; an
-     * ESC with no current sensor reports a current all the same, and it is
-     * counted as faithfully (bench_state_count_totals()).
-     */
-    const uint32_t t_ms = (uint32_t)to_ms_since_boot(get_absolute_time());
-    static uint32_t s_last_sample_ms;
-    const float dt_s = (s_last_sample_ms == 0u)
-                           ? 0.0f
-                           : (float)(uint32_t)(t_ms - s_last_sample_ms)
-                                 / 1000.0f;
-    s_last_sample_ms = t_ms;
-    bench_state_count_totals(&s_bench, dt_s, driving);
 
     /* Peaks only from readings that arrived, and a sag floor seeded by the
      * first voltage of the run rather than by the reset that opened it. */

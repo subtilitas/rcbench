@@ -2671,16 +2671,6 @@ static void link_report(void)
  * them.  When it does not, the panel models locally and sets the same flag.
  * Nothing above this function knows the difference.
  */
-/*
- * The run's charge and energy across a change of source; see bench_carry_t.
- * Control task only.  s_carry_src is which source last wrote the totals, so
- * the carry is taken from what is shown just before the other one first
- * writes over it, whichever of the two paths notices the change first.
- */
-typedef enum { CARRY_SRC_NONE = 0, CARRY_SRC_LINK, CARRY_SRC_MODEL } carry_src_t;
-static bench_carry_t s_carry;
-static carry_src_t   s_carry_src;
-
 static bool read_bench(link_host_t *host, bench_state_t *out)
 {
     link_msg_t reply;
@@ -2690,24 +2680,7 @@ static bool read_bench(link_host_t *host, bench_state_t *out)
     if (reply.op == LINK_OP_NACK) {
         return false;
     }
-    /*
-     * The model was counting this run and the coprocessor is back.  It
-     * re-armed after its failsafe and counts from zero again, so what the
-     * run had is carried.  A link down for less than its 200 ms failsafe
-     * never reaches here: the panel takes much longer to call the link
-     * lost.
-     */
-    if (s_carry_src == CARRY_SRC_MODEL && outputs_armed(&s_out)) {
-        bench_carry_take(&s_carry, out);
-    }
     bench_state_from_regs(out, reply.regs, reply.offset, reply.count);
-    /* Only over a read that wrote the totals: a partial read leaves them as
-     * they were, carry included. */
-    if (reply.offset <= LINK_BN_CHARGE_MAH
-        && (unsigned)reply.offset + reply.count > LINK_BN_ENERGY_DWH) {
-        bench_carry_apply(&s_carry, out);
-        s_carry_src = CARRY_SRC_LINK;
-    }
     return true;
 }
 
@@ -2749,11 +2722,20 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
  * seen it.  The snapshot carries the number; the render side acknowledges it
  * at the end of a frame that began with the bench armed and found no loss.
  */
+/*
+ * The run's charge and energy, counted here from what is shown -- the ESC's
+ * readings over the link, the model's while it is down -- so one count runs
+ * through the whole run whatever the source does; see bench_totals_t.
+ * Control task only.  s_totals_ms is when it last counted.
+ */
+static bench_totals_t s_totals;
+static uint32_t       s_totals_ms;
+
 static void arm_applied(void)
 {
-    /* A run starts with nothing carried from the last one. */
-    bench_carry_reset(&s_carry);
-    s_carry_src = CARRY_SRC_NONE;
+    /* A run starts with nothing counted. */
+    bench_totals_reset(&s_totals);
+    s_totals_ms = now_ms();
     ++s_arm_gen;
     arm_watch_begin(&s_arm_watch, s_arm_take_gen, s_arm_take_drv, s_arm_gen);
 }
@@ -4064,39 +4046,38 @@ static void advance_model_and_log(bool link_up, float emitted,
                                   telemetry_sim_t *sim, bench_state_t *bench,
                                   uint32_t *last_sample, bool *new_sample)
 {
+    bool due = false;
     if ((uint32_t)(now_ms() - *last_sample)
         >= (uint32_t)(1000.0f / PANEL_SAMPLE_HZ)) {
         *last_sample = now_ms();
-        /*
-         * A run's charge and energy are that run's, as the coprocessor's are
-         * from its arm: the model starts its totals again on the bank's arm
-         * edge, and the pack keeps what it has given.
-         */
-        static bool s_sim_was_armed;
-        const bool armed = outputs_armed(&s_out);
-        if (armed && !s_sim_was_armed) {
-            telemetry_sim_new_run(sim);
-        }
-        s_sim_was_armed = armed;
+        due = true;
         if (!link_up) {
-            /*
-             * The coprocessor was counting this run and the link is gone:
-             * what the run had is carried, and the model counts on from
-             * zero on top of it.
-             */
-            if (s_carry_src == CARRY_SRC_LINK && armed) {
-                bench_carry_take(&s_carry, bench);
-                telemetry_sim_new_run(sim);
-            }
             telemetry_sim_step(sim, emitted, 1.0f / PANEL_SAMPLE_HZ, bench);
-            bench_carry_apply(&s_carry, bench);
-            s_carry_src = CARRY_SRC_MODEL;
             *new_sample = true;
         }
-        if (*new_sample && s_log_armed) {
-            s_log_t += 1.0f / PANEL_SAMPLE_HZ;
-            log_post(s_log_t, bench);
+        /*
+         * The run's totals, from the sample either source just wrote, over
+         * the time since the last one -- measured, not the 50 ms this cadence
+         * aims at: a link probe can hold this loop for a second.
+         */
+        if (*new_sample) {
+            const uint32_t t = now_ms();
+            bench_totals_count(&s_totals, bench,
+                               (float)(uint32_t)(t - s_totals_ms) / 1000.0f,
+                               outputs_armed(&s_out));
+            s_totals_ms = t;
         }
+    }
+    /*
+     * Written over the source's own charge and energy before the screen or
+     * the log sees them, on every pass and not only a counted one: the first
+     * read after a link-up is not a new sample, and it has written the
+     * coprocessor's own empty registers over the totals.
+     */
+    bench_totals_show(&s_totals, bench);
+    if (due && *new_sample && s_log_armed) {
+        s_log_t += 1.0f / PANEL_SAMPLE_HZ;
+        log_post(s_log_t, bench);
     }
 }
 

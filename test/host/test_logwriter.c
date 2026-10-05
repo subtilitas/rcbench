@@ -210,7 +210,8 @@ TEST_CASE(charge_and_energy_are_written_only_when_counted)
     log_writer_t w = writer();
     bench_state_t b;
     memset(&b, 0, sizeof(b));
-    b.flags = (uint16_t)(LINK_BN_CURRENT_OK | LINK_BN_CHARGE_OK);
+    b.flags = (uint16_t)LINK_BN_CURRENT_OK;
+    b.counted = BENCH_COUNTED_CHARGE;
     b.current = 10.0f;
     b.charge_mah = 5.0f;
     b.energy_wh = 0.0f;
@@ -237,8 +238,8 @@ TEST_CASE(the_values_survive_the_round_trip)
      * column whose flag is clear is written empty. */
     b.flags = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
                          | LINK_BN_RPM_OK | LINK_BN_TEMP_OK
-                         | LINK_BN_TEMP_MOT_OK | LINK_BN_CHARGE_OK
-                         | LINK_BN_ENERGY_OK);
+                         | LINK_BN_TEMP_MOT_OK);
+    b.counted = BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY;
     b.voltage = 24.31f; b.current = 68.14f; b.power = 1656.0f;
     b.rpm = 13581.0f;   b.temp_esc = 46.3f; b.temp_motor = 58.9f;
     b.charge_mah = 1843.0f; b.energy_wh = 44.72f;
