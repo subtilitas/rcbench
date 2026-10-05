@@ -21,6 +21,23 @@ history is in git.
   current sensor, such as the one in #172 that reports 72 A at idle, gives
   meaningless ones. The BENCH page's charge and energy registers are not
   used, and the protocol is unchanged.
+- **SUPPLY sets, switches and records a programmable supply.** The screen
+  is for the PD mini, a USB-PD (USB Power Delivery) trigger controlled over
+  a UART (universal asynchronous receiver-transmitter): a voltage of 3.3 to
+  21 V in 20 mV steps, a current limit of 0.5 to 5 A in 50 mA steps, a plot
+  of voltage, current and power, the run's extremes, CV or CC, and the run's
+  mAh and Wh. OUTPUT ON is a 2 s hold and OUTPUT OFF a tap. STOP, and a
+  supply that stops answering, switch the output off; leaving the screen
+  does not. A run is one switch-on, recorded to a `BENCHnnn.CSV` of its own
+  with the columns time, set voltage, voltage, limit, current, power, mode,
+  charge and energy; an armed bench takes the log over. The PD mini's
+  protocol is not in this repository, so the panel runs a model of a supply
+  (`supply_sim_t`) and the tile is marked MODELLED.
+
+### Changed
+
+- **The menu is five tiles by two**, 150 x 204 px each, with SUPPLY third.
+  The tiles' lines are 16 characters or fewer to fit.
 
 ### Fixed
 

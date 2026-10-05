@@ -27,32 +27,34 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame            8,856     1107 KiB     29.1      19.5
-frame-idle        1,274      159 KiB      4.2      39.0
-held             4,777      597 KiB     15.7      39.0
-sim              9,817     1227 KiB     32.2      19.5
-throttle        10,598     1325 KiB     34.8      19.5
-chrome          33,106     4138 KiB    108.7       7.8
-overview           953      119 KiB      3.1      39.0
-servo           15,759     1970 KiB     51.7      13.0
-servo-grip        3,026      378 KiB      9.9      39.0
-analyser           871      109 KiB      2.9      39.0
-logs               937      117 KiB      3.1      39.0
-settings           862      108 KiB      2.8      39.0
-battery            871      109 KiB      2.9      39.0
-balance            865      108 KiB      2.8      39.0
-programmer          895      112 KiB      2.9      39.0
-balance-sim        2,395      299 KiB      7.9      39.0
-settings-sim        2,407      301 KiB      7.9      39.0
-battery-sim        2,401      300 KiB      7.9      39.0
-analyser-chrome       39,234     4904 KiB    128.8       6.5
-logs-chrome       16,061     2008 KiB     52.7      13.0
-settings-chrome       23,591     2949 KiB     77.4       9.8
-battery-chrome       36,987     4623 KiB    121.4       7.8
-balance-chrome       40,685     5086 KiB    133.5       6.5
-programmer-chrome       28,480     3560 KiB     93.5       9.8
-picker             902      113 KiB      3.0      39.0
-picker-chrome       15,883     1985 KiB     52.1      13.0
+frame            8,844     1106 KiB     29.0      19.5
+frame-idle        1,272      159 KiB      4.2      39.0
+held             4,765      596 KiB     15.6      39.0
+sim              9,803     1225 KiB     32.2      19.5
+throttle        10,562     1320 KiB     34.7      19.5
+chrome          33,059     4132 KiB    108.5       7.8
+overview           931      116 KiB      3.1      39.0
+servo           15,741     1968 KiB     51.7      13.0
+servo-grip        3,015      377 KiB      9.9      39.0
+supply           8,400     1050 KiB     27.6      19.5
+supply-chrome       31,419     3927 KiB    103.1       7.8
+analyser           860      108 KiB      2.8      39.0
+logs               912      114 KiB      3.0      39.0
+settings           866      108 KiB      2.8      39.0
+battery            857      107 KiB      2.8      39.0
+balance            858      107 KiB      2.8      39.0
+programmer          878      110 KiB      2.9      39.0
+balance-sim        2,396      300 KiB      7.9      39.0
+settings-sim        2,412      302 KiB      7.9      39.0
+battery-sim        2,397      300 KiB      7.9      39.0
+analyser-chrome       39,229     4904 KiB    128.8       6.5
+logs-chrome       16,054     2007 KiB     52.7      13.0
+settings-chrome       23,598     2950 KiB     77.4       9.8
+battery-chrome       36,981     4623 KiB    121.4       7.8
+balance-chrome       40,689     5086 KiB    133.5       6.5
+programmer-chrome       28,474     3559 KiB     93.5       9.8
+picker             897      112 KiB      2.9      39.0
+picker-chrome       15,891     1986 KiB     52.2      13.0
 clear           12,006     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
@@ -70,6 +72,7 @@ hlines               0        0 KiB      0.0      39.0
 | `overview` | the menu, chrome cached |
 | `servo` | the servo screen with the arm redrawn |
 | `servo-grip` | the servo screen with only the grip repainted |
+| `supply` | the supply screen with its output on, a sample landing every frame |
 | `analyser`, `logs`, `settings`, `battery`, `balance`, `programmer`, `picker` | one steady frame of that screen, chrome cached |
 | `<screen>-sim` | the same screen with the SIMULATION watermark |
 | `<screen>-chrome` | the same screen invalidated on every frame |
@@ -140,13 +143,13 @@ would repaint identical pixels, drawing slower would drop samples. CI
 
 | Modes | Ceiling (fills) | Catches |
 | --- | ---: | --- |
-| `frame`, `sim` | 15,600 | a bench frame that exceeds one telemetry sample |
+| `frame`, `sim`, `supply` | 15,600 | a bench frame that exceeds one telemetry sample |
 | `overview` | 2,000 | a chrome-cached screen that has started repainting |
 | `servo` | 17,000 | the arm and grip drawing growing |
 | `servo-grip` | 4,000 | a breath repainting the whole card |
 | the seven per-screen modes | 1,200 | a screen that has started repainting |
 | the three `-sim` modes | 2,800 | the watermark growing past a full canvas |
-| the seven `-chrome` modes | 45,000 | a full repaint growing |
+| the eight `-chrome` modes | 45,000 | a full repaint growing |
 
 If a future pane needs more room, the remaining levers in order of bluntness
 are the plot's height, its width, and clipping the simulation watermark to the

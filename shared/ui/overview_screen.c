@@ -15,10 +15,11 @@
 #define H (480 - UI_BAND_H)   /* the router owns the band */
 
 /*
- * Four columns by two rows: eight 190 x 204 px tiles with 8 px margins under
- * the 48 px band.
+ * Five columns by two rows: ten 150 x 204 px tiles with 8 px margins under
+ * the 48 px band.  A tile's line holds 16 characters of the 8 x 16 font,
+ * 128 of its 150 px.
  */
-#define COLS 4
+#define COLS 5
 #define ROWS 2
 #define M    8
 #define TW   ((W - (COLS + 1) * M) / COLS)
@@ -31,6 +32,9 @@ typedef struct {
     ui_icon_fn     icon;
     bool           live;    /**< the screen exists                        */
     uint16_t       needs;   /**< the hardware it needs, as link_cap_t     */
+    /** Modelled on the panel whatever the coprocessor reports: no link
+     *  capability names the hardware yet. */
+    bool           model_only;
 } tile_t;
 
 /*
@@ -39,22 +43,24 @@ typedef struct {
  * than "IR", which reads as infrared.
  */
 static const tile_t k_tiles[] = {
-    { SCREEN_MOTOR,      "MOTOR & ESC", "throttle, V/A/W, rpm",    ui_icon_motor,   true,
-      LINK_CAP_ESC_DRIVE | LINK_CAP_PACK_SENSE },
-    { SCREEN_SERVO,      "SERVO",       "pulse, travel, current",  ui_icon_servo,   true,
-      LINK_CAP_SERVO_PWM },
-    { SCREEN_ANALYSER,   "ANALYSER",    "buses, frames, raw",      ui_icon_chart,   true,
-      LINK_CAP_RECEIVER },
-    { SCREEN_LOGS,       "LOGS",        "record and read back",    ui_icon_record,  true,
-      0 },   /* the card is on the panel; nothing needed from the coprocessor */
-    { SCREEN_SETUP,      "SETUP",       "pack, output, theme",     ui_icon_sliders, true,
-      0 },
-    { SCREEN_BATTERY,    "BATTERY",     "cells, iR, capacity",     ui_icon_battery, true,
-      LINK_CAP_CELLS },
-    { SCREEN_BALANCE,    "BALANCE",     "vibration and phase",     ui_icon_balance, true,
-      LINK_CAP_VIBRATION },
-    { SCREEN_PROGRAMMER, "PROGRAMMER",  "ESC and servo settings",  ui_icon_chip,    true,
-      LINK_CAP_PROGRAM },
+    { SCREEN_MOTOR,      "MOTOR & ESC", "drive, V/A, rpm",    ui_icon_motor,   true,
+      LINK_CAP_ESC_DRIVE | LINK_CAP_PACK_SENSE, false },
+    { SCREEN_SERVO,      "SERVO",       "travel, current",    ui_icon_servo,   true,
+      LINK_CAP_SERVO_PWM, false },
+    { SCREEN_SUPPLY,     "SUPPLY",      "set and log V/A",    ui_icon_supply,  true,
+      0, true },   /* the PD mini's driver is not written; the panel models it */
+    { SCREEN_ANALYSER,   "ANALYSER",    "buses and frames",   ui_icon_chart,   true,
+      LINK_CAP_RECEIVER, false },
+    { SCREEN_LOGS,       "LOGS",        "record and read",    ui_icon_record,  true,
+      0, false },   /* the card is on the panel; nothing needed from the coprocessor */
+    { SCREEN_SETUP,      "SETUP",       "pack and output",    ui_icon_sliders, true,
+      0, false },
+    { SCREEN_BATTERY,    "BATTERY",     "cells, iR, mAh",     ui_icon_battery, true,
+      LINK_CAP_CELLS, false },
+    { SCREEN_BALANCE,    "BALANCE",     "vibration, phase",   ui_icon_balance, true,
+      LINK_CAP_VIBRATION, false },
+    { SCREEN_PROGRAMMER, "PROGRAMMER",  "ESC and servo",      ui_icon_chip,    true,
+      LINK_CAP_PROGRAM, false },
 };
 
 #define TILE_COUNT ((int)(sizeof(k_tiles) / sizeof(k_tiles[0])))
@@ -167,8 +173,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
          * modelled.  No badge: the hardware is fitted.
          */
         const uint16_t have = ui_router_status()->capabilities;
-        const bool fitted = (t->needs == 0)
-                            || ((have & t->needs) == t->needs);
+        const bool fitted = !t->model_only
+                            && ((t->needs == 0)
+                                || ((have & t->needs) == t->needs));
         if (!t->live || !fitted) {
             const gfx_rect_t badge = { (int16_t)(r.x + r.w / 2 - 44),
                                        (int16_t)(r.y + r.h - 30), 88, 20 };

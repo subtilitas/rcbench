@@ -93,11 +93,12 @@ is taken in a gap ahead of the save that needs it.
 | Rasteriser, fonts, touch mapping, theme, widgets, icons, router | built and tested |
 | Settings model and screen | built and tested on the host. The panel loads and saves the values in NVS (non-volatile storage) through `firmware/panel/components/settings_nvs/`, confirmed on hardware: a save writes and the next boot reports what it loaded |
 | CSV (comma-separated values) and number parsing, log viewer | built and tested against the fixture corpus |
-| Logger | built: a run is written while armed, in the format the viewer reads. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full |
+| Logger | built: a run is written while armed, or while the supply's output is on with the bench disarmed, in the format the viewer reads. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full |
 | Board, display, GT911, SD card | built; the panel boots and reports each step on the splash |
 | Shell: band, router, splash, menu, simulation watermark | built |
 | Motor & ESC (electronic speed controller) screen | built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the throttle are written to the coprocessor's control page at every 50 ms poll while the link is up; an arm writes CLEAR on its own, then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK to either leaves the panel disarmed. An arm and a throttle have gone through it on the bring-up bench and run a motor; the paths a session has to provoke -- a NACK, a STOP mid-throttle, a link pulled while armed -- have not |
 | Servo screen | built; writes `CHAN_CFG`, `OUTPUTS` and `CHANNELS` over the link |
+| Supply screen | built and tested on the host; the control task runs `supply_sim_t` in place of a PD mini driver. A stop or a supply that stops answering switches the output off, and a supply run is logged with its own columns |
 | Analyser, programmer, balance, battery screens | built, rendered from models |
 | Link codec, page map, dispatcher, both watchdogs, CAN framing | built and tested on the host |
 | CAN drivers (TWAI on the panel, XL2515 on the coprocessor) and the echo self-test | built; run on hardware at 1 Mbit/s with zero errors at either end |
@@ -190,8 +191,9 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
 
-The host suite is 46 binaries, one line per case: `test_gfx`, `test_touch_map`,
-`test_nav`, `test_widgets`, `test_bench`, `test_motor`, `test_servo`,
+The host suite is 48 binaries, one line per case: `test_gfx`, `test_touch_map`,
+`test_nav`, `test_widgets`, `test_bench`, `test_supply`, `test_supply_screen`,
+`test_motor`, `test_servo`,
 `test_analyser`, `test_programmer`, `test_balance`, `test_battery`,
 `test_settings`, `test_logfile`, `test_link_crc`, `test_link_pages`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
@@ -206,7 +208,7 @@ this list to `test/host/CMakeLists.txt`.
 
 Coverage floors: 94% overall, 85% for every file except `stub_screen.c`, which
 is exempt by name. `tools/coverage.py --check` fails on drift of the table
-below. `render_ui.py --check` holds 35 committed screenshots to the current
+below. `render_ui.py --check` holds 36 committed screenshots to the current
 render; `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000.
 
@@ -218,18 +220,19 @@ chrome-cached screen to 2,000.
 | `shared/touch/touch_map.c` | 100 | 100 | 100.0% |
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
 | `shared/ui/ui_widgets.c` | 200 | 192 | 96.0% |
-| `shared/ui/ui_icons.c` | 110 | 110 | 100.0% |
+| `shared/ui/ui_icons.c` | 122 | 122 | 100.0% |
 | `shared/ui/ui_band.c` | 34 | 32 | 94.1% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
 | `shared/ui/ui_plot.c` | 168 | 158 | 94.0% |
 | `shared/ui/ui_hero.c` | 29 | 28 | 96.5% |
 | `shared/ui/ui_slider.c` | 160 | 151 | 94.4% |
 | `shared/ui/ui_tabs.c` | 61 | 55 | 90.2% |
-| `shared/ui/ui_router.c` | 155 | 150 | 96.8% |
+| `shared/ui/ui_router.c` | 157 | 152 | 96.8% |
 | `shared/ui/splash_screen.c` | 60 | 57 | 95.0% |
-| `shared/ui/overview_screen.c` | 74 | 70 | 94.6% |
+| `shared/ui/overview_screen.c` | 75 | 71 | 94.7% |
 | `shared/ui/stub_screen.c` | 45 | 8 | 17.8% |
 | `shared/ui/motor_screen.c` | 442 | 433 | 98.0% |
+| `shared/ui/supply_screen.c` | 454 | 446 | 98.2% |
 | `shared/ui/servo_screen.c` | 469 | 435 | 92.8% |
 | `shared/ui/analyser_screen.c` | 223 | 220 | 98.7% |
 | `shared/ui/balance_screen.c` | 307 | 307 | 100.0% |
@@ -279,8 +282,9 @@ chrome-cached screen to 2,000.
 | `shared/outputs/out_pwm_map.c` | 15 | 15 | 100.0% |
 | `shared/outputs/out_store_map.c` | 68 | 68 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
-| `shared/bench/log_writer.c` | 69 | 65 | 94.2% |
-| **total** | **10314** | **9903** | **96.0%** |
+| `shared/bench/supply.c` | 105 | 103 | 98.1% |
+| `shared/bench/log_writer.c` | 113 | 102 | 90.3% |
+| **total** | **10932** | **10504** | **96.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -303,6 +307,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | S.BUS receiver | decoder built; the inverted 8E2 receiver at 100 kbaud is a PIO program that is not written | PIO program |
 | Measurement front end | round 1 of [the component research](hardware/docs/Research.md) ran from 2026-09-28 to 2026-09-30 and selected 49 parts. The motor monitor is the INA228 and the servo supply three TPS55285, which the owner keeps although round 1 refutes one at 4.0 A continuous from the pack floor (owner, 2026-09-30). The 20 output ports take a channel each of 7 INA3221. Round 2 selects the parts round 1 left open and is planned in the research page. No schematic exists. [The IO board specification](hardware/docs/IOBoard.md) is a draft | [hardware record](hardware/STATUS.md) |
 | Monostable | not on any board | hardware |
+| The PD mini has no driver | the SUPPLY screen, its log and the rules that switch the output off run against `supply_sim_t`, a model in the control task. The PD mini's UART (universal asynchronous receiver-transmitter) protocol is not in this repository, and whether the panel or the coprocessor talks to it is not decided. Nothing is powered, and the screen is marked MODELLED whatever the coprocessor reports | the protocol (#223), then a driver that fills `supply_state_t` and reports the range its source offers through `supply_screen_set_caps()` |
 | The release publishes without waiting for CI | `release.yml` and `ci.yml` both trigger on a `v*` tag and run in parallel. `release.yml`'s publish job needs only its own two build jobs, so the host suite, the sanitizer run, the coverage floors, clang-tidy, cppcheck, ruff, `check_docs.py`, the frame-cost ceilings and the screenshot check cannot stop `gh release create`. Both files build the two images with the same steps, so the artefacts are the ones CI would have built; what is unguarded is everything CI checks that is not a build. A tag added a `version` job that refuses a tag not matching `rcbench_version.h`, which is the narrow case that was worth making structural | a `workflow_run` trigger on a successful CI run for tag refs, or the host suite folded into `release.yml` as a job the builds need. Until then: confirm CI is green on the commit before pushing the tag |
 | OpenYGE wire facts | seven items want a capture: rpm scale, CRC (cyclic redundancy check) seed, frame length, legacy header, turnaround, parameter indices, `status2` | an ESC and a logic analyser; [list](docs/OpenYGE.md#8-what-to-measure-before-trusting-this-page) |
 | The bench in a browser | serving the interface to a browser on another machine is open; a browser on the panel is not planned. There is no network stack in the tree: no Wi-Fi bring-up, no sockets, no HTTP (Hypertext Transfer Protocol), and Wi-Fi costs internal RAM and CPU time on a board whose frame budget is spent. The safety line is a heartbeat, and a remote client cannot hold one: a browser that stops answering is indistinguishable from one whose user is idle | a read-only client (numbers, plots and logs out; arming, throttle and STOP stay at the panel), and before any code, a written answer to how a remote session proves it is still present |

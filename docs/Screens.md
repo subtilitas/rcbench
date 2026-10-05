@@ -29,6 +29,8 @@ ARM is at the bottom of a bench screen; STOP is at the top of the band.
 
 The mark is derived from the capability bits the coprocessor reports at
 bring-up. A screen whose hardware is missing opens and runs from the model.
+SUPPLY is marked MODELLED whatever the coprocessor reports: no driver for its
+hardware exists.
 
 The menu in the light theme:
 
@@ -181,6 +183,60 @@ armed disarms. Leaving the screen disarms and lets go of the pin: a screen
 that is not visible must not be holding a servo somewhere, or leaving the
 bench armed behind it.
 
+## Supply
+
+![Supply](img/supply.png)
+
+Sets, switches and records a programmable supply: the PD mini, a USB-PD (USB
+Power Delivery) trigger controlled over a UART (universal asynchronous
+receiver-transmitter). No driver for the PD mini exists, because its UART
+protocol is not in this repository. The panel runs a model of a supply in its
+place: the header says SUPPLY MODEL and the menu tile is marked MODELLED.
+
+The layout is the one MOTOR & ESC uses. The plot shows voltage, current and
+power over the last 27 s. The rail shows the readings, the run's lowest
+voltage and its highest current and power. MODE says which set point the
+supply holds: CV (constant voltage) at the set voltage, or CC (constant
+current) at the current limit. CC is drawn in the warning colour: a supply in
+CC is not giving the load the voltage it was set to.
+
+| Set point | Range | Slider step | Buttons |
+| --- | --- | --- | --- |
+| VOLTAGE | 3.3 to 21 V | 20 mV | 0.1 V |
+| CURRENT LIMIT | 0.5 to 5 A | 50 mA | 0.1 A |
+
+The ranges are a USB-PD PPS (Programmable Power Supply) source's widest
+profile, 3.3 to 21 V at up to 5 A. A driver reports the range its source
+offers, and the sliders follow it. A tap on a track sets the value under the
+finger. A set point takes effect at once, with the output on or off.
+
+**OUTPUT ON is a two-second hold**, the gesture and the fade ARM uses. OUTPUT
+OFF is a tap. STOP switches the output off on every screen, and so does a
+supply that stops answering. The output stays off until it is switched on
+again. Leaving the screen keeps the output on, so a servo or an ESC fed by the
+supply stays powered on the screen that tests it.
+
+A run is one switch-on of the output. The plot clears when the output comes on
+and holds the run after it goes off. The mAh and Wh under the switch count the
+run from the readings shown, each step capped at 1 s. RESET PEAKS starts the
+lowest and highest values again from the current reading.
+
+A run is recorded to a `BENCHnnn.CSV` of its own, one row every 50 ms:
+
+```
+time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh)
+```
+
+A reading that did not arrive is an empty cell. `mode` is CV, CC or OFF, and
+empty while the supply does not answer. The bench takes the log: arming during
+a supply run ends that run's file, and an output still on at the disarm starts
+a new file.
+
+The model is a 6 ohm load with a 1.4 A burst for 0.6 s every 3 s, behind a
+0.05 ohm source resistance. At the starting set points, 6.00 V and 2.00 A, the
+burst takes it into CC. Its readings are not measured and nothing on the bench
+is powered.
+
 ## Analyser
 
 ![Analyser](img/analyser.png)
@@ -259,7 +315,8 @@ Browse the card, open a file, check what the import detected, then plot:
 The CSV (comma-separated values) reader accepts decimal comma and decimal
 point, a units row and ragged rows; the import view shows what it decided
 before the file is plotted. Runs recorded by the bench are written as
-`BENCH001.CSV` to `BENCH999.CSV` in the card's root directory.
+`BENCH001.CSV` to `BENCH999.CSV` in the card's root directory. A run is one
+arming, or one switch-on of the SUPPLY output while the bench is not armed.
 
 The list holds 48 entries and a card holds up to 999 runs. When there are more
 than fit, the list keeps the newest runs and its tab reads `48 OF 137 FILES`

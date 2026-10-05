@@ -58,6 +58,7 @@ SOURCES = [
     "shared/ui/overview_screen.c",
     "shared/ui/stub_screen.c",
     "shared/ui/motor_screen.c",
+    "shared/ui/supply_screen.c",
     "shared/ui/servo_screen.c",
     "shared/ui/analyser_screen.c",
     "shared/ui/balance_screen.c",
@@ -74,6 +75,7 @@ SOURCES = [
     "shared/logfile/log_fields.c",
     "shared/bench/bench_state.c",
     "shared/bench/telemetry_sim.c",
+    "shared/bench/supply.c",
     "shared/servo/servo_sim.c",
     "shared/sbus/sbus.c",
     "shared/outputs/outputs.c",
@@ -97,7 +99,7 @@ INCLUDES = [
 ]
 
 MODES = ["frame", "frame-idle", "held", "sim", "throttle", "chrome",
-         "overview", "servo", "servo-grip",
+         "overview", "servo", "servo-grip", "supply", "supply-chrome",
          "analyser", "logs", "settings", "battery", "balance",
          "programmer", "balance-sim", "settings-sim", "battery-sim",
          "analyser-chrome", "logs-chrome", "settings-chrome",

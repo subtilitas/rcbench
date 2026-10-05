@@ -18,6 +18,7 @@ set(SRCS
     overview_screen.c
     stub_screen.c
     motor_screen.c
+    supply_screen.c
     servo_screen.c
     analyser_screen.c
     balance_screen.c

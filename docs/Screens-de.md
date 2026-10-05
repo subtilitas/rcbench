@@ -31,7 +31,8 @@ ARM sitzt unten auf einem Prüfstandsbildschirm; STOP sitzt oben im Band.
 
 Die Marke wird aus den Capability-Bits abgeleitet, die der Koprozessor beim
 Hochfahren meldet. Ein Bildschirm ohne seine Hardware öffnet trotzdem und
-arbeitet aus dem Modell.
+arbeitet aus dem Modell. SUPPLY trägt MODELLED unabhängig davon, was der
+Koprozessor meldet: einen Treiber für seine Hardware gibt es nicht.
 
 Das Menü im hellen Theme:
 
@@ -199,6 +200,67 @@ Bildschirms schaltet unscharf und gibt den Pin frei: ein Bildschirm, den man
 nicht sieht, darf weder ein Servo halten noch den Prüfstand scharf
 zurücklassen.
 
+## Netzteil
+
+![Netzteil](img/supply.png)
+
+Stellt ein programmierbares Netzteil ein, schaltet es und zeichnet es auf: den
+PD mini, einen USB-PD-Trigger (USB Power Delivery), der über einen UART
+(Universal Asynchronous Receiver-Transmitter) gesteuert wird. Einen Treiber
+für den PD mini gibt es nicht, weil sein UART-Protokoll nicht in diesem
+Repository liegt. Das Panel rechnet an seiner Stelle ein Modell eines
+Netzteils: die Kopfzeile sagt SUPPLY MODEL, und die Kachel im Menü trägt
+MODELLED.
+
+Das Layout ist das von MOTOR & ESC. Der Plot zeigt Spannung, Strom und
+Leistung der letzten 27 s. Die Leiste rechts zeigt die Messwerte, die
+niedrigste Spannung des Laufs und seinen höchsten Strom und seine höchste
+Leistung. MODE sagt, welchen Sollwert das Netzteil hält: CV (constant voltage)
+bei der eingestellten Spannung oder CC (constant current) an der
+Strombegrenzung. CC steht in der Warnfarbe: ein Netzteil in CC liefert der
+Last nicht die Spannung, auf die es gestellt ist.
+
+| Sollwert | Bereich | Schritt am Schieber | Knöpfe |
+| --- | --- | --- | --- |
+| VOLTAGE | 3,3 bis 21 V | 20 mV | 0,1 V |
+| CURRENT LIMIT | 0,5 bis 5 A | 50 mA | 0,1 A |
+
+Die Bereiche sind das weiteste Profil einer USB-PD-PPS-Quelle (Programmable
+Power Supply), 3,3 bis 21 V bei bis zu 5 A. Ein Treiber meldet den Bereich,
+den seine Quelle anbietet, und die Schieber folgen ihm. Ein Tippen auf eine
+Spur setzt den Wert unter dem Finger. Ein Sollwert wirkt sofort, bei
+eingeschaltetem wie ausgeschaltetem Ausgang.
+
+**OUTPUT ON ist ein Zwei-Sekunden-Halten**, dieselbe Geste und dieselbe Blende
+wie ARM. OUTPUT OFF ist ein Tippen. STOP schaltet den Ausgang auf jedem
+Bildschirm ab, ebenso ein Netzteil, das nicht mehr antwortet. Der Ausgang
+bleibt aus, bis er wieder eingeschaltet wird. Das Verlassen des Bildschirms
+lässt den Ausgang an, damit ein Servo oder ein ESC am Netzteil auf dem
+Bildschirm versorgt bleibt, der es testet.
+
+Ein Lauf ist ein Einschalten des Ausgangs. Der Plot leert sich, wenn der
+Ausgang angeht, und hält den Lauf, nachdem er ausgeht. mAh und Wh unter dem
+Schalter zählen den Lauf aus den angezeigten Messwerten, jeder Schritt auf 1 s
+begrenzt. RESET PEAKS beginnt die niedrigsten und höchsten Werte neu ab dem
+aktuellen Messwert.
+
+Ein Lauf wird in eine eigene `BENCHnnn.CSV` geschrieben, eine Zeile alle
+50 ms:
+
+```
+time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh)
+```
+
+Ein Messwert, der nicht ankam, ist eine leere Zelle. `mode` ist CV, CC oder
+OFF und leer, solange das Netzteil nicht antwortet. Der Prüfstand hat beim
+Log Vorrang: ARM während eines Netzteil-Laufs beendet dessen Datei, und ein
+Ausgang, der beim Unscharfschalten noch an ist, beginnt eine neue.
+
+Das Modell ist eine Last von 6 Ohm mit einem Stoß von 1,4 A für 0,6 s alle
+3 s, hinter einem Quellwiderstand von 0,05 Ohm. Bei den Startwerten, 6,00 V
+und 2,00 A, bringt der Stoß es in CC. Seine Messwerte sind nicht gemessen,
+und am Prüfstand wird nichts versorgt.
+
 ## Analyser
 
 ![Analyser](img/analyser.png)
@@ -284,7 +346,9 @@ Der Reader für CSV (Comma-Separated Values) akzeptiert Dezimalkomma und
 Dezimalpunkt, eine Einheitenzeile und Zeilen ungleicher Länge; die
 Importansicht zeigt, was er entschieden hat, bevor die Datei geplottet wird.
 Vom Prüfstand aufgezeichnete Läufe werden als `BENCH001.CSV` bis
-`BENCH999.CSV` im Wurzelverzeichnis der Karte abgelegt.
+`BENCH999.CSV` im Wurzelverzeichnis der Karte abgelegt. Ein Lauf ist ein
+Scharfschalten oder, solange der Prüfstand nicht scharf ist, ein Einschalten
+des SUPPLY-Ausgangs.
 
 Die Liste fasst 48 Einträge, die Karte bis zu 999 Läufe. Passen nicht alle
 hinein, behält die Liste die neuesten Läufe, und ihr Reiter zeigt

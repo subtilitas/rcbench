@@ -5,6 +5,7 @@
 #include "busfault_screen.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
+#include "supply_screen.h"
 #include "ui_screen.h"
 
 #include <stdio.h>
@@ -59,6 +60,7 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_SETUP:    return settings_screen();
     case SCREEN_OUTPUTS:  return outputs_screen();
     case SCREEN_PICKER:   return picker_screen();
+    case SCREEN_SUPPLY:   return supply_screen();
     case SCREEN_BUSFAULT: return busfault_screen();
     default:              return stub_screen(id);
     }
@@ -124,6 +126,7 @@ void ui_router_invalidate(void)
     outputs_screen_invalidate();
     picker_screen_invalidate();
     busfault_screen_invalidate();
+    supply_invalidate();
 }
 
 void ui_router_tick(float dt_s)
