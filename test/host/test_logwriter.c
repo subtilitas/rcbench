@@ -196,9 +196,35 @@ TEST_CASE(a_column_nothing_measured_is_empty_rather_than_zero)
     if (nl != NULL) { *nl = '\0'; }
 
     /* Voltage, current and power answered for nothing; the motor's
-     * temperature has no sensor.  Four empty cells, and the ones that did
-     * answer carry numbers. */
-    CHECK_STR_EQ(got, "1.000;;;;11419;46.3;;0;0.00");
+     * temperature has no sensor; and with no current there is no charge or
+     * energy to count.  Six empty cells, and the ones that did answer carry
+     * numbers. */
+    CHECK_STR_EQ(got, "1.000;;;;11419;46.3;;;");
+}
+
+TEST_CASE(charge_and_energy_are_written_only_when_counted)
+{
+    /* A current with no voltage beside it: the run counted charge and could
+     * not count energy, so one total is a number and the other is empty. */
+    fresh(-1);
+    log_writer_t w = writer();
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.flags = (uint16_t)LINK_BN_CURRENT_OK;
+    b.counted = BENCH_COUNTED_CHARGE;
+    b.current = 10.0f;
+    b.charge_mah = 5.0f;
+    b.energy_wh = 0.0f;
+    CHECK(log_writer_row(&w, 1.0f, &b));
+
+    const char *p = strchr(g_mem.buf, '\n');
+    CHECK(p != NULL);
+    ++p;
+    char got[160];
+    snprintf(got, sizeof(got), "%s", p);
+    char *nl = strchr(got, '\n');
+    if (nl != NULL) { *nl = '\0'; }
+    CHECK_STR_EQ(got, "1.000;;10.00;;;;;5;");
 }
 
 TEST_CASE(the_values_survive_the_round_trip)
@@ -213,6 +239,7 @@ TEST_CASE(the_values_survive_the_round_trip)
     b.flags = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
                          | LINK_BN_RPM_OK | LINK_BN_TEMP_OK
                          | LINK_BN_TEMP_MOT_OK);
+    b.counted = BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY;
     b.voltage = 24.31f; b.current = 68.14f; b.power = 1656.0f;
     b.rpm = 13581.0f;   b.temp_esc = 46.3f; b.temp_motor = 58.9f;
     b.charge_mah = 1843.0f; b.energy_wh = 44.72f;
@@ -546,6 +573,7 @@ int main(void)
     RUN(a_written_run_reads_back);
     RUN(the_header_carries_the_units_and_no_row_is_wasted);
     RUN(a_column_nothing_measured_is_empty_rather_than_zero);
+    RUN(charge_and_energy_are_written_only_when_counted);
     RUN(the_values_survive_the_round_trip);
     RUN(a_non_finite_reading_is_written_as_an_absent_cell);
     RUN(the_header_is_written_once_and_without_being_asked);

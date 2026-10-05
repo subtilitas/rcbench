@@ -783,9 +783,22 @@ static void draw_totals(gfx_canvas_t *c)
     const gfx_rect_t box = { (int16_t)(RIGHT_X + INNER), TOTALS_Y,
                              (int16_t)(RIGHT_W - 2 * INNER), 16 };
     gfx_fill_rect(c, box.x, box.y, box.w, box.h, ui_theme_color(UI_C_PANEL));
+    /* Each total only when the panel has counted it: a run with no current
+     * to count has no consumption, and 0 mAh reads as a measurement. */
+    char mah[16];
+    char wh[16];
+    if ((s.bench.counted & BENCH_COUNTED_CHARGE) != 0u) {
+        snprintf(mah, sizeof(mah), "%.0f", (double)s.bench.charge_mah);
+    } else {
+        snprintf(mah, sizeof(mah), "--");
+    }
+    if ((s.bench.counted & BENCH_COUNTED_ENERGY) != 0u) {
+        snprintf(wh, sizeof(wh), "%.2f", (double)s.bench.energy_wh);
+    } else {
+        snprintf(wh, sizeof(wh), "--");
+    }
     char line[48];
-    snprintf(line, sizeof(line), "%.0f mAh   %.2f Wh",
-             (double)s.bench.charge_mah, (double)s.bench.energy_wh);
+    snprintf(line, sizeof(line), "%s mAh   %s Wh", mah, wh);
     gfx_text_in(c, box, line, &gfx_font_8x16, ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_RIGHT);
 }

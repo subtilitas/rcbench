@@ -340,6 +340,118 @@ TEST_CASE(charge_and_energy_only_accumulate)
     CHECK(last_mah > 0.0f);
 }
 
+/* ------------------------------------------- the run's charge and energy */
+
+static bench_state_t measured(float v, float a, uint16_t flags)
+{
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.voltage = v;
+    b.current = a;
+    b.power   = v * a;
+    b.flags   = flags;
+    return b;
+}
+
+TEST_CASE(charge_and_energy_count_what_was_measured_while_driving)
+{
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    const bench_state_t b = measured(16.0f, 36.0f,
+                                     LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
+    for (int i = 0; i < 100; ++i) {          /* 100 s at 36 A and 576 W */
+        bench_totals_count(&t, &b, 1.0f, true);
+    }
+    CHECK_NEAR(t.mah, 1000.0f, 0.5f);
+    CHECK_NEAR(t.wh, 16.0f, 0.01f);
+    CHECK_EQ(t.counted, BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
+}
+
+TEST_CASE(nothing_is_counted_while_disarmed_or_unmeasured)
+{
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    bench_state_t b = measured(16.0f, 36.0f,
+                               LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
+    bench_totals_count(&t, &b, 1.0f, false);
+    CHECK_EQ(t.mah, 0.0f);
+    CHECK_EQ(t.counted, 0u);
+
+    /* A voltage with no current counts neither; a current with no voltage
+     * counts charge and not energy. */
+    b = measured(16.0f, 36.0f, LINK_BN_VOLTAGE_OK);
+    bench_totals_count(&t, &b, 1.0f, true);
+    CHECK_EQ(t.mah, 0.0f);
+    CHECK_EQ(t.counted, 0u);
+    b = measured(16.0f, 36.0f, LINK_BN_CURRENT_OK);
+    bench_totals_count(&t, &b, 1.0f, true);
+    CHECK_NEAR(t.mah, 10.0f, 0.01f);
+    CHECK_EQ(t.wh, 0.0f);
+    CHECK_EQ(t.counted, BENCH_COUNTED_CHARGE);
+}
+
+TEST_CASE(one_count_runs_through_a_change_of_source)
+{
+    /*
+     * The coprocessor's readings for 10 s, the panel's model for 2 s while
+     * the link is down, then the coprocessor again for 3 s.  Each source
+     * writes its own charge over the field -- the coprocessor its empty
+     * register -- and the count is shown over it every time.  It never goes
+     * back, and the model's seconds are in it.
+     */
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    float last = 0.0f;
+    for (int i = 0; i < 15; ++i) {
+        bench_state_t b = measured(16.0f, 36.0f,
+                                   LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
+        b.charge_mah = (i >= 10 && i < 12) ? 3.0f : 0.0f;  /* each source's own */
+        bench_totals_count(&t, &b, 1.0f, true);
+        bench_totals_show(&t, &b);
+        CHECK(b.charge_mah >= last);
+        last = b.charge_mah;
+        CHECK_EQ(b.counted, BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
+    }
+    CHECK_NEAR(last, 150.0f, 0.1f);
+}
+
+TEST_CASE(the_totals_outlast_the_run_and_reset_at_the_next)
+{
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    const bench_state_t b = measured(16.0f, 36.0f,
+                                     LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
+    bench_totals_count(&t, &b, 1.0f, true);
+    /* Disarmed, a source that reports nothing at all: the totals stand. */
+    bench_state_t empty;
+    memset(&empty, 0, sizeof(empty));
+    bench_totals_count(&t, &empty, 1.0f, false);
+    bench_totals_show(&t, &empty);
+    CHECK_NEAR(empty.charge_mah, 10.0f, 0.01f);
+    CHECK_EQ(empty.counted, BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
+
+    bench_totals_reset(&t);
+    bench_totals_show(&t, &empty);
+    CHECK_EQ(empty.charge_mah, 0.0f);
+    CHECK_EQ(empty.counted, 0u);
+}
+
+TEST_CASE(a_stalled_loop_counts_at_most_one_step)
+{
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    const bench_state_t b = measured(16.0f, 36.0f,
+                                     LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
+    bench_totals_count(&t, &b, 60.0f, true);     /* a minute's stall */
+    CHECK_NEAR(t.mah, 10.0f, 0.01f);             /* one second's worth */
+    bench_totals_count(&t, &b, -1.0f, true);
+    CHECK_NEAR(t.mah, 10.0f, 0.01f);
+    bench_totals_count(NULL, &b, 1.0f, true);
+    bench_totals_count(&t, NULL, 1.0f, true);
+    bench_totals_show(NULL, NULL);
+    bench_totals_reset(NULL);
+}
+
 int main(void)
 {
     RUN(every_field_survives_the_round_trip);
@@ -355,5 +467,10 @@ int main(void)
     RUN(rpm_lags_a_step_rather_than_following_it);
     RUN(the_simulator_accumulates_peaks_like_the_coprocessor_would);
     RUN(charge_and_energy_only_accumulate);
+    RUN(charge_and_energy_count_what_was_measured_while_driving);
+    RUN(nothing_is_counted_while_disarmed_or_unmeasured);
+    RUN(one_count_runs_through_a_change_of_source);
+    RUN(the_totals_outlast_the_run_and_reset_at_the_next);
+    RUN(a_stalled_loop_counts_at_most_one_step);
     return test_summary("bench");
 }

@@ -117,19 +117,22 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
      * zero any more than the screen may draw them as zero.
      *
      * Power carries both halves because it is their product.  Charge and
-     * energy carry none: they are accumulators this file does not own, and
-     * zero is where they legitimately start.
+     * energy carry what the panel counted (bench_state_t.counted): a run
+     * with no current to count has no consumption to record, and its record
+     * must not show 0 mAh that nothing counted.
      */
-    static const struct { int decimals; size_t offset; uint16_t flag; } k_cols[] = {
-        { 2, offsetof(bench_state_t, voltage),    LINK_BN_VOLTAGE_OK },
-        { 2, offsetof(bench_state_t, current),    LINK_BN_CURRENT_OK },
+    static const struct {
+        int decimals; size_t offset; uint16_t flag; uint8_t counted;
+    } k_cols[] = {
+        { 2, offsetof(bench_state_t, voltage),    LINK_BN_VOLTAGE_OK, 0u },
+        { 2, offsetof(bench_state_t, current),    LINK_BN_CURRENT_OK, 0u },
         { 0, offsetof(bench_state_t, power),
-             (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK) },
-        { 0, offsetof(bench_state_t, rpm),        LINK_BN_RPM_OK },
-        { 1, offsetof(bench_state_t, temp_esc),   LINK_BN_TEMP_OK },
-        { 1, offsetof(bench_state_t, temp_motor), LINK_BN_TEMP_MOT_OK },
-        { 0, offsetof(bench_state_t, charge_mah), 0u },
-        { 2, offsetof(bench_state_t, energy_wh),  0u },
+             (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK), 0u },
+        { 0, offsetof(bench_state_t, rpm),        LINK_BN_RPM_OK, 0u },
+        { 1, offsetof(bench_state_t, temp_esc),   LINK_BN_TEMP_OK, 0u },
+        { 1, offsetof(bench_state_t, temp_motor), LINK_BN_TEMP_MOT_OK, 0u },
+        { 0, offsetof(bench_state_t, charge_mah), 0u, BENCH_COUNTED_CHARGE },
+        { 2, offsetof(bench_state_t, energy_wh),  0u, BENCH_COUNTED_ENERGY },
     };
 
     char line[160];
@@ -146,6 +149,10 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
         const uint16_t need = k_cols[i].flag;
         if (need != 0u && (b->flags & need) != need) {
             continue;               /* nothing measured it: an empty cell */
+        }
+        if (k_cols[i].counted != 0u
+            && (b->counted & k_cols[i].counted) == 0u) {
+            continue;               /* nothing counted it: an empty cell */
         }
         float v;
         memcpy(&v, (const char *)b + k_cols[i].offset, sizeof(v));

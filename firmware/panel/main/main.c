@@ -2722,8 +2722,20 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
  * seen it.  The snapshot carries the number; the render side acknowledges it
  * at the end of a frame that began with the bench armed and found no loss.
  */
+/*
+ * The run's charge and energy, counted here from what is shown -- the ESC's
+ * readings over the link, the model's while it is down -- so one count runs
+ * through the whole run whatever the source does; see bench_totals_t.
+ * Control task only.  s_totals_ms is when it last counted.
+ */
+static bench_totals_t s_totals;
+static uint32_t       s_totals_ms;
+
 static void arm_applied(void)
 {
+    /* A run starts with nothing counted. */
+    bench_totals_reset(&s_totals);
+    s_totals_ms = now_ms();
     ++s_arm_gen;
     arm_watch_begin(&s_arm_watch, s_arm_take_gen, s_arm_take_drv, s_arm_gen);
 }
@@ -4034,17 +4046,53 @@ static void advance_model_and_log(bool link_up, float emitted,
                                   telemetry_sim_t *sim, bench_state_t *bench,
                                   uint32_t *last_sample, bool *new_sample)
 {
-    if ((uint32_t)(now_ms() - *last_sample)
-        >= (uint32_t)(1000.0f / PANEL_SAMPLE_HZ)) {
+    bool due = false;
+    /*
+     * The step is the time that passed, not the 50 ms this cadence aims at.
+     * While the link is down a probe for the coprocessor's identity can hold
+     * this loop for its whole 1000 ms timeout, and a fixed step would run
+     * the model, the plot's run and the log's clock twenty times slow for as
+     * long as the outage lasts.  Capped at a second, like the totals.
+     */
+    float step_s = 0.0f;
+    const uint32_t since = (uint32_t)(now_ms() - *last_sample);
+    if (since >= (uint32_t)(1000.0f / PANEL_SAMPLE_HZ)) {
         *last_sample = now_ms();
+        due = true;
+        step_s = (float)since / 1000.0f;
+        if (step_s > BENCH_TOTALS_MAX_STEP_S) {
+            step_s = BENCH_TOTALS_MAX_STEP_S;
+        }
         if (!link_up) {
-            telemetry_sim_step(sim, emitted, 1.0f / PANEL_SAMPLE_HZ, bench);
+            telemetry_sim_step(sim, emitted, step_s, bench);
             *new_sample = true;
         }
-        if (*new_sample && s_log_armed) {
-            s_log_t += 1.0f / PANEL_SAMPLE_HZ;
-            log_post(s_log_t, bench);
-        }
+    }
+    /*
+     * The run's totals, from the sample either source just wrote, over the
+     * time since the last one -- measured, not the 50 ms the model's cadence
+     * aims at: a link probe can hold this loop for a second.  Outside that
+     * cadence's gate, because a coprocessor sample arrives on the poll's
+     * clock, not on this one, and one that landed between two of its ticks
+     * would otherwise go uncounted.
+     */
+    if (*new_sample) {
+        const uint32_t t = now_ms();
+        bench_totals_count(&s_totals, bench,
+                           (float)(uint32_t)(t - s_totals_ms) / 1000.0f,
+                           outputs_armed(&s_out));
+        s_totals_ms = t;
+    }
+    /*
+     * Written over the source's own charge and energy before the screen or
+     * the log sees them, on every pass and not only a counted one: the first
+     * read after a link-up is not a new sample, and it has written the
+     * coprocessor's own empty registers over the totals.
+     */
+    bench_totals_show(&s_totals, bench);
+    if (due && *new_sample && s_log_armed) {
+        s_log_t += step_s;
+        log_post(s_log_t, bench);
     }
 }
 

@@ -6,6 +6,32 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- **MOTOR & ESC counts the run's charge and energy.** Both read 0 on hardware
+  because nothing filled them. The panel now counts them from the current and
+  voltage it shows, while the bank is armed, from the arm
+  (`bench_totals_t`): the ESC's own readings over extended DShot telemetry
+  while the link is up, its model's while it is down. One count runs through
+  the run whatever the source does, so the totals never go back within one
+  log, and they stay after the run until the next arm. The time between two
+  samples is measured, and a gap longer than 1 s counts as 1 s. A total
+  nothing has counted is shown as `--` and written as an empty CSV cell,
+  not as a 0. The totals count what the ESC reports: an ESC without a
+  current sensor, such as the one in #172 that reports 72 A at idle, gives
+  meaningless ones. The BENCH page's charge and energy registers are not
+  used, and the protocol is unchanged.
+
+### Fixed
+
+- **The panel's model and the log's clock ran slow while the link was
+  down.** Each pass stepped them by a fixed 50 ms, and while the link is
+  down a probe for the coprocessor's identity can hold a pass for its whole
+  1000 ms timeout, so the modelled speed, voltage and temperature, the
+  plot's run and the CSV's time column ran up to twenty times slow for the
+  length of an outage. They now step by the measured time since the last
+  sample, capped at 1 s.
+
 ## 0.9.1 - 2026-10-05
 
 Two panel fixes. The ESC pulse endpoints, Idle pulse and Full pulse, reach

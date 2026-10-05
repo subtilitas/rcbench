@@ -107,6 +107,48 @@ void bench_state_reset_peaks(bench_state_t *b)
     b->sag_seeded  = (b->flags & (uint16_t)LINK_BN_VOLTAGE_OK) != 0u;
 }
 
+void bench_totals_reset(bench_totals_t *t)
+{
+    if (t != NULL) {
+        t->mah     = 0.0f;
+        t->wh      = 0.0f;
+        t->counted = 0u;
+    }
+}
+
+void bench_totals_count(bench_totals_t *t, const bench_state_t *b,
+                        float dt_s, bool driving)
+{
+    if (t == NULL || b == NULL || !driving) {
+        return;
+    }
+    float dt = dt_s;
+    if (!(dt > 0.0f)) {
+        dt = 0.0f;              /* negative, zero or NaN counts nothing */
+    } else if (dt > BENCH_TOTALS_MAX_STEP_S) {
+        dt = BENCH_TOTALS_MAX_STEP_S;
+    }
+    const uint16_t both = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
+    if ((b->flags & (uint16_t)LINK_BN_CURRENT_OK) != 0u) {
+        t->mah += b->current * dt * (1000.0f / 3600.0f);
+        t->counted |= BENCH_COUNTED_CHARGE;
+    }
+    if ((b->flags & both) == both) {
+        t->wh += b->power * dt * (1.0f / 3600.0f);
+        t->counted |= BENCH_COUNTED_ENERGY;
+    }
+}
+
+void bench_totals_show(const bench_totals_t *t, bench_state_t *b)
+{
+    if (t == NULL || b == NULL) {
+        return;
+    }
+    b->charge_mah = t->mah;
+    b->energy_wh  = t->wh;
+    b->counted    = t->counted;
+}
+
 void bench_state_track_peaks(bench_state_t *b)
 {
     if (b == NULL) {
