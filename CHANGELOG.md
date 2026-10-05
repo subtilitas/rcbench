@@ -37,6 +37,21 @@ history is in git.
     keeps the link down and raises `protocol mismatch -- will not arm`, so
     both images go on together.
 
+### Fixed
+
+- **Extended telemetry comes on with AM32 (#172).** The bench sent command 13
+  only as the first ten frames of a run. AM32 2.21 takes a command only once
+  it has armed itself on 1 s of zero throttle, and it restarts after 0.5 s
+  without a frame, which a disarmed bench never sends, so every ask arrived
+  too early: speed showed, and voltage, current, power and ESC temperature
+  stayed empty. The ask is now repeated every 500 ms while the throttle is at
+  zero, until an extended frame comes back or 10 asks have gone, and it never
+  takes the place of a throttle above zero. Replies are read as extended
+  telemetry from the first repeat, so the one status frame AM32 sends when it
+  takes the command is heard. The schedule is `shared/dshot/dshot_edt.c`,
+  held by `test_dshot_edt` against a model of AM32 2.21's command and arming
+  rules; it has not been tried on an ESC.
+
 ## 0.8.2 - 2026-09-10
 
 Ten defects found in review of 0.8.1 and one reported from a bench. Three
