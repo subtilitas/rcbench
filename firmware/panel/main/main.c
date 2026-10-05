@@ -4131,14 +4131,19 @@ static void flush_screen_commands(uint32_t stops_now)
  * the router's press of the band was just cancelled, so no request follows
  * to consume it; one left standing would swallow the next stop that
  * genuinely needs the backstop.  A request the router latched before the
- * loss will consume it as it should.  The residual is a request raised
- * between the load and the store, which resolves to a stop applied twice,
- * and that latches the same way one does.
+ * loss will consume it as it should -- including one still in the router's
+ * own latch, which this frame would hand over only later: it is handed over
+ * here first, the same way, so the marker is kept for it.  The residual is
+ * a request raised by the backstop between the load and the store, which
+ * resolves to a stop applied twice, and that latches the same way one does.
  */
 static void touch_stream_broke(uint32_t stops_now)
 {
     ui_router_cancel_gestures();
     atomic_fetch_add(&s_loss_gen, 1u);
+    if (ui_router_take_stop()) {
+        atomic_store(&s_stop_request, true);
+    }
     if (!atomic_load(&s_stop_request)) {
         atomic_store(&s_stop_counted, false);
     }
