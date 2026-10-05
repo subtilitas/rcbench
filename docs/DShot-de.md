@@ -323,24 +323,43 @@ Die Implementierung ist aus der veröffentlichten Beschreibung des Protokolls
 geschrieben. Alles Folgende wird von der Host-Suite gegen Frames geprüft, die
 derselbe Code baut; das belegt die Arithmetik und nicht die Leitung.
 
-Eines steht nicht auf dieser Liste. **Einfaches DShot hat auf dem
-Aufbau-Prüfstand einen Motor vom Panel aus laufen lassen**, damit liegt sein
-Bit-Timing innerhalb der Toleranz dieses einen ESC -- gegen einen ESC, ohne
-Messgerät am Pin, also ein Indiz und keine Messung. Nichts hiervon war an
-einem Oszilloskop, und jeder bidirektionale Punkt unten ist in jeder Hinsicht
-unbestätigt:
+Zwei Dinge stehen nicht auf dieser Liste, jedes gegen einen ESC und ohne
+Messgerät am Pin, also jedes ein Indiz und keine Messung.
+
+- **Einfaches DShot hat auf dem Aufbau-Prüfstand einen Motor vom Panel aus
+  laufen lassen**, damit liegt sein Bit-Timing innerhalb der Toleranz dieses
+  einen ESC.
+- **Bidirektionales DShot600 hat auf dem Prüfstand eines Testers geantwortet**
+  (#172): ein Skystars 35A mit AM32 2.21, Target `JUPITER_35A_F421` (der
+  AM32-Konfigurator zeigt es gekürzt als `JUPITER_35A_F42`), an einem
+  4S-Pack, gebunden auf GP0. Version 0.8.2 hat seine Drehzahl dekodiert
+  (2593 rpm). Version 0.9.1 hat mit der wiederholten Anfrage oben seine
+  Extended Telemetry eingeschaltet: bei 0 % Gas zeigte MOTOR & ESC 14,75 V,
+  72,0 A und eine ESC-Temperatur von 41 °C. Der Tester hat die Spannung als
+  richtig gemeldet. Strom und Temperatur wurden dekodiert und gegen nichts
+  geprüft: 72,0 A im Stand, und 81,00 A, die DshotDisplay an einem anderen Tag
+  vom selben ESC las, sehen nach einem Eingang ohne Stromsensor dahinter aus
+  und nicht nach einer Messung.
+
+Nichts hiervon war an einem Oszilloskop, und jeder bidirektionale Punkt unten
+ist über diesen einen ESC hinaus unbestätigt:
 
 - die Antwortrate von fünf Vierteln der DShot-Rate;
 - die Konvention für das führende Bit des Group Code;
 - die Turnaround-Verzögerung, und ob 30 µs das ist, was ein ESC tatsächlich
   wartet;
-- die Frame-Typen der Extended Telemetry und ihre Einheiten;
+- die Einheiten der Extended-Telemetry-Frames für Strom (1 A je Zählwert)
+  und Temperatur (1 °C je Zählwert) sowie die Stress-, Status- und
+  Debug-Frames; nur die Spannung (0,25 V je Zählwert) ist gegen einen Wert
+  gelesen, den der Tester kannte;
+- ob andere ESCs als AM32 Command 13 unter der wiederholten Anfrage annehmen:
+  Bluejay und BLHeli_32 sind ungetestet;
 - ob der Hinweis "mindestens 35 ms warten" in der Spezifikation zu Command 13
   oder zu Command 12 (Save Settings) gehört. Die Tabelle lässt beide Lesarten
   zu, und der Prüfstand wartet in keinem Fall: auf die zehnte Wiederholung
   einer Anfrage folgt beim nächsten 1-ms-Takt das Throttle oder ein weiterer
-  Frame mit Throttle null. Das klärt der Text der Spezifikation
-  und keine Platine;
+  Frame mit Throttle null. Das klärt der Text der Spezifikation und keine
+  Platine;
 - jedes Bit-Timing, gegen die Toleranz eines echten ESC statt gegen die
   Spezifikation.
 
