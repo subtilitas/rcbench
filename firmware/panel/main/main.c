@@ -3024,9 +3024,11 @@ static void supply_step(float step_s)
         /* In integers: this can run inside an exchange's wait, deep on the
          * control task's stack, and a float conversion is the deepest thing
          * snprintf does. */
-        const unsigned milli = (trip == SUPPLY_TRIP_CURRENT)
-                                   ? atomic_load(&s_supply_trip_ma)
-                                   : atomic_load(&s_supply_trip_mv);
+        /* The threshold the trip was judged against, from the same
+         * snapshot, not one an edit may have stored since. */
+        const unsigned milli = (unsigned)lroundf(
+            ((trip == SUPPLY_TRIP_CURRENT) ? lim.trip_i : lim.trip_v)
+            * 1000.0f);
         char line[ALERT_MAX];
         snprintf(line, sizeof(line), "supply tripped over %u.%02u %s -- "
                  "output off", milli / 1000u, (milli % 1000u) / 10u,
@@ -4045,7 +4047,9 @@ static void supply_pump(void)
     }
     supply_step(step_s);
 
-    if (s_log_kind == LOG_RUN_SUPPLY) {
+    /* Not after a trip or a lost supply in this step: the switch-off wrote
+     * the run's last row already, and the run ends at the next edge. */
+    if (s_log_kind == LOG_RUN_SUPPLY && s_supply.output) {
         s_log_t += step_s;
         log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
         row.u.supply = s_supply;

@@ -236,6 +236,16 @@ TEST_CASE(a_trip_fires_once_a_reading_has_been_over_for_its_time)
     CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
     CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_CURRENT);
 
+    /* A threshold changed while counting starts the count again: time over
+     * 2.5 A is not time over 2.55 A. */
+    supply_trip_reset(&t);
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
+    const supply_limits_t raised = { 21.0f, 5.0f, 2.55f, 0.0f, 0.1f };
+    CHECK_EQ(supply_trip_step(&t, &raised, &st, 0.05f), SUPPLY_TRIP_NONE);
+    CHECK_EQ(supply_trip_step(&t, &raised, &st, 0.05f), SUPPLY_TRIP_NONE);
+    CHECK_EQ(supply_trip_step(&t, &raised, &st, 0.05f), SUPPLY_TRIP_CURRENT);
+
     /* The voltage trip, at a trip time of 0: the first reading over. */
     const supply_limits_t vlim = { 21.0f, 5.0f, 0.0f, 6.5f, 0.0f };
     st.v = 6.6f;

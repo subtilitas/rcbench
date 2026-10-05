@@ -106,6 +106,8 @@ typedef struct {
     float over_v_s;
     bool  i_over;         /**< the last current that arrived was over  */
     bool  v_over;         /**< the last voltage that arrived was over  */
+    float i_at;           /**< the threshold the current's count is for */
+    float v_at;           /**< the threshold the voltage's count is for */
 } supply_trip_t;
 
 void supply_trip_reset(supply_trip_t *t);
@@ -115,8 +117,8 @@ void supply_trip_reset(supply_trip_t *t);
  * the first reading seen over a threshold, and each reading over it after
  * that adds the time since the one before; one at or under it starts the
  * count again, and one that did not arrive leaves it where it is.  A trip
- * that is off forgets its count.  A trip time of 0 fires on the first
- * reading over.  Returns which trip fired,
+ * that is off forgets its count, and so does one whose threshold changed.
+ * A trip time of 0 fires on the first reading over.  Returns which trip fired,
  * once the time over reaches lim->trip_s; nothing while the output is off.
  * @p dt_s is clamped to 0 .. 1 s, as the totals' steps are.
  */

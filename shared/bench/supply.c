@@ -130,6 +130,8 @@ void supply_trip_reset(supply_trip_t *t)
         t->over_v_s = 0.0f;
         t->i_over   = false;
         t->v_over   = false;
+        t->i_at     = 0.0f;
+        t->v_at     = 0.0f;
     }
 }
 
@@ -139,9 +141,15 @@ void supply_trip_reset(supply_trip_t *t)
  * before it, which was not over, so the first interval is not credited.  A
  * threshold of 0 or less is off.
  */
-static bool over_for(float *over_s, bool *over, bool arrived, float value,
-                     float threshold, float hold_s, float dt)
+static bool over_for(float *over_s, bool *over, float *at, bool arrived,
+                     float value, float threshold, float hold_s, float dt)
 {
+    /* A count is for the threshold it was made against: one changed while
+     * the output is on starts again from the next reading over it. */
+    if (*over && *at != threshold) {
+        *over   = false;
+        *over_s = 0.0f;
+    }
     if (!(threshold > 0.0f)) {
         /* Off: what was counted is forgotten, so turning it back on starts
          * the count from nothing. */
@@ -158,6 +166,7 @@ static bool over_for(float *over_s, bool *over, bool arrived, float value,
         } else {
             *over   = true;
             *over_s = 0.0f;
+            *at     = threshold;
         }
         return *over_s >= hold_s;
     }
@@ -183,10 +192,10 @@ supply_trip_kind_t supply_trip_step(supply_trip_t *t,
     } else if (dt > BENCH_TOTALS_MAX_STEP_S) {
         dt = BENCH_TOTALS_MAX_STEP_S;
     }
-    const bool i_trip = over_for(&t->over_i_s, &t->i_over,
+    const bool i_trip = over_for(&t->over_i_s, &t->i_over, &t->i_at,
                                  (s->ok & SUPPLY_OK_CURRENT) != 0u, s->i,
                                  lim->trip_i, lim->trip_s, dt);
-    const bool v_trip = over_for(&t->over_v_s, &t->v_over,
+    const bool v_trip = over_for(&t->over_v_s, &t->v_over, &t->v_at,
                                  (s->ok & SUPPLY_OK_VOLTAGE) != 0u, s->v,
                                  lim->trip_v, lim->trip_s, dt);
     if (!i_trip && !v_trip) {

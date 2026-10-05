@@ -85,10 +85,11 @@ void ui_plot_push(ui_plot_t *p, const float *values)
         return;
     }
     for (int k = 0; k < p->count; ++k) {
-        /* A non-finite reading is stored as zero, so it cannot poison the
-         * scale; the trace dips to zero at that sample. */
+        /* A non-finite reading is a gap: kept as not-a-number, left out of
+         * the autorange, and not drawn, so the trace breaks there.  A zero
+         * would read as a measurement of zero. */
         const float v = values[k];
-        p->ring[k][p->head] = isfinite(v) ? v : 0.0f;
+        p->ring[k][p->head] = isfinite(v) ? v : NAN;
     }
     p->head = (p->head + 1) % UI_PLOT_HISTORY;
     if (p->filled < UI_PLOT_HISTORY) {
@@ -327,9 +328,13 @@ void ui_plot_render(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
                 prev_y = -1;
                 continue;
             }
+            const float sample = ui_plot_sample(p, k, back);
+            if (!isfinite(sample)) {
+                prev_y = -1;          /* a gap: the trace breaks here */
+                continue;
+            }
             const int x = r.x + i;
-            const int y = ui_plot_map_y(p, k, ui_plot_sample(p, k, back),
-                                        r.y, r.h);
+            const int y = ui_plot_map_y(p, k, sample, r.y, r.h);
             if (prev_y >= 0) {
                 /* Join to the previous column so a fast edge is a line
                  * rather than two unrelated dots. */
