@@ -4300,24 +4300,6 @@ static bool poll_bench(bench_state_t *bench)
     if (answered) {
         link_msg_t ack = { 0 };
         /*
-         * Not while a surface at the far end is still holding a position and
-         * owed a release.  A bank armed with no link -- the simulator, or a
-         * cable pulled -- reaches this the moment one answers, and the far end
-         * would render that old command before the centre arrived.
-         * servo_service() pays the debt every pass, so this holds for one.
-         * Nor while the rate the surfaces run at is not known: the far end
-         * may hold a heli rate from before a panel restart, and
-         * servo_service() settles that every pass too.  And not after a
-         * stop or a disarm asked for since the bank armed: the exchanges
-         * that settle those debts let the pump apply a STOP, and the bank
-         * itself is disarmed only on the next service_arming() pass.
-         */
-        const bool armed = outputs_armed(&s_out) && !s_servo_release_owed
-                           && !s_endpoints_hold
-                           && s_servo_hz_sent != SERVO_HZ_UNKNOWN
-                           && !arming_stopped(&s_arm)
-                           && !atomic_load(&s_disarm_request);
-        /*
          * The pole count, when an edit or a write that did not land leaves
          * one owed.  Between arms this is the path an edit takes to the far
          * end: nothing else writes the register while the link stays up, and
@@ -4330,6 +4312,28 @@ static bool poll_bench(bench_state_t *bench)
          * per edit.
          */
         (void)poles_service();
+        /*
+         * Not while a surface at the far end is still holding a position and
+         * owed a release.  A bank armed with no link -- the simulator, or a
+         * cable pulled -- reaches this the moment one answers, and the far end
+         * would render that old command before the centre arrived.
+         * servo_service() pays the debt every pass, so this holds for one.
+         * Nor while the rate the surfaces run at is not known: the far end
+         * may hold a heli rate from before a panel restart, and
+         * servo_service() settles that every pass too.  And not after a
+         * stop or a disarm asked for since the bank armed: the exchanges
+         * that settle those debts let the pump apply a STOP, and the bank
+         * itself is disarmed only on the next service_arming() pass.
+         *
+         * Decided after that exchange and straight before the write that
+         * carries it: the pump runs inside every exchange, so a STOP or a
+         * disarm can land in poles_service() as well.
+         */
+        const bool armed = outputs_armed(&s_out) && !s_servo_release_owed
+                           && !s_endpoints_hold
+                           && s_servo_hz_sent != SERVO_HZ_UNKNOWN
+                           && !arming_stopped(&s_arm)
+                           && !atomic_load(&s_disarm_request);
         const bool written = control_write(armed, &ack);
         /*
          * The throttle's endpoints, when an edit or a link-up leaves them
