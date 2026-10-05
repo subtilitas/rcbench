@@ -19,10 +19,23 @@ history is in git.
   a warning that it can destroy a servo not made for it and applies only
   after a 2 s hold; the profile in force shows red, and every restart is
   STANDARD PWM at 50 Hz. The test, limit and name settings are kept in NVS
-  (non-volatile storage). The coprocessor still drives PWM at 50 Hz and no
-  automatic test runs: those settings are kept for both.
+  (non-volatile storage). No automatic test runs: the TEST, LIMITS and DUT
+  settings are kept for it.
 - **SERVO plots the supply's live power.** Voltage, current and power of the
   supply that feeds the servo, read and plotted on the right card.
+- **The SERVO screen's frame rate reaches the pins.** A SERVO link page
+  (0x29, protocol 4.1) holds one frame rate, 40 to 560 Hz, for every PWM
+  output whose first channel is a surface; 0 is each slot's own rate. It is
+  refused with BAD_VALUE when a surface would leave the rate of the output
+  beside it on its PWM slice, and it is not kept across a coprocessor
+  restart. The panel writes it with every held position and with the rest
+  an armed servo takes when its profile changes: a rising rate after all
+  pulse widths have landed, any other before them, holding the pulse widths
+  back until it lands. It puts the page back to 0 at link-up and before
+  every binding, and does not write a binding while that goes unanswered.
+  The OUTPUT page shows whether the rate is in force, refused, or not taken
+  by a protocol 4.0 coprocessor. The PWM
+  driver's ceiling is 560 Hz.
 - **An on-screen keyboard** (`ui_textkey`) for names, and string settings
   beside the numbers (`settings_text()`), kept by the same store.
 

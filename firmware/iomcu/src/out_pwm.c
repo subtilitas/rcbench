@@ -190,8 +190,9 @@ void out_pwm_write(uint8_t pin, uint16_t pulse_us)
      * so there is always a tick of low and the output stays a pulse train.
      *
      * The combination is refused nowhere, because the endpoint is on the
-     * CHAN_CFG page and the rate is on the OUTPUTS page and either may be
-     * written after the other.  This is where both are known.
+     * CHAN_CFG page and the rate is on the OUTPUTS or the SERVO page, and
+     * either may be written after the other.  This is where both are known.
+     * At 560 Hz the wrap is 1784 us.
      */
     pwm_set_gpio_level(pin, (pulse_us > b->wrap) ? b->wrap : pulse_us);
 }

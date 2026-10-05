@@ -11,6 +11,7 @@
 
 #include "link_msg.h"
 #include "link_pages.h"
+#include "out_pwm_map.h"
 
 /*
  * The wire's driver numbers are a contract, so they are mapped rather than
@@ -124,6 +125,100 @@ void outputs_chan_cfg_apply(outputs_t *o, const uint16_t *regs)
         (void)outputs_set_endpoints(o, (uint8_t)c,
                                     r[LINK_CC_MIN_US], r[LINK_CC_MAX_US]);
     }
+}
+
+/* ---------------------------------------------------------------- SERVO */
+
+/* Whether the SERVO page's rate, when not 0, is the one slot @p i runs at. */
+static bool servo_rate_reaches(const outputs_t *o, unsigned i)
+{
+    const out_slot_t *sl = &o->slot[i];
+    return sl->driver == OUT_DRIVER_PWM
+           && sl->first_channel < OUT_MAX_CHANNELS
+           && o->channel[sl->first_channel].role == OUT_ROLE_SURFACE;
+}
+
+void outputs_slot_rates(const outputs_t *o, uint16_t servo_hz, uint16_t *rate)
+{
+    if (o == NULL || rate == NULL) {
+        return;
+    }
+    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+        rate[i] = (servo_hz != 0u && servo_rate_reaches(o, i))
+                      ? servo_hz
+                      : o->slot[i].rate_hz;
+    }
+}
+
+uint8_t outputs_servo_rate_check(const outputs_t *o, uint16_t hz)
+{
+    if (o == NULL) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    const out_driver_def_t *pwm = out_driver(OUT_DRIVER_PWM);
+    if (hz != 0u && (hz < pwm->rate_min_hz || hz > pwm->rate_max_hz)) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    /*
+     * A slice counts against one wrap register, so its two channels run at
+     * one rate.  Moving a surface off the rate of the output beside it on
+     * its slice would leave the silicon refusing whichever binds second, and
+     * the page reading back a rate no pin runs at.  Only pairs the rate
+     * moves are asked about: two slots the OUTPUTS page itself put on one
+     * slice at two rates are that page's to answer for, and 0 always goes
+     * back to them.
+     */
+    uint16_t rate[OUT_MAX_SLOTS];
+    outputs_slot_rates(o, hz, rate);
+    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+        for (unsigned j = i + 1u; j < OUT_MAX_SLOTS; ++j) {
+            const out_slot_t *a = &o->slot[i];
+            const out_slot_t *b = &o->slot[j];
+            if (a->driver != OUT_DRIVER_PWM || b->driver != OUT_DRIVER_PWM
+                || !out_pwm_same_slice(a->pin, b->pin)
+                || rate[i] == rate[j]) {
+                continue;
+            }
+            if (rate[i] != a->rate_hz || rate[j] != b->rate_hz) {
+                return LINK_NACK_BAD_VALUE;
+            }
+        }
+    }
+    return 0u;
+}
+
+/* The bank a page write would leave, judged on a copy: the bank itself is
+ * what drives, and a refused write must leave it as it was.  Static rather
+ * than on the stack, which on the coprocessor is the link task's. */
+static outputs_t s_trial;
+
+uint8_t outputs_chan_cfg_rate_check(const outputs_t *o,
+                                    const uint16_t *chan_cfg,
+                                    uint16_t servo_hz)
+{
+    if (o == NULL || chan_cfg == NULL) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    if (servo_hz == 0u) {
+        return 0u;
+    }
+    s_trial = *o;
+    outputs_chan_cfg_apply(&s_trial, chan_cfg);
+    return outputs_servo_rate_check(&s_trial, servo_hz);
+}
+
+uint8_t outputs_slots_rate_check(const outputs_t *o, const uint16_t *slots,
+                                 uint16_t servo_hz)
+{
+    if (o == NULL || slots == NULL) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    if (servo_hz == 0u) {
+        return 0u;
+    }
+    s_trial = *o;
+    outputs_slots_apply(&s_trial, slots);
+    return outputs_servo_rate_check(&s_trial, servo_hz);
 }
 
 /* -------------------------------------------------------------- OUTPUTS */

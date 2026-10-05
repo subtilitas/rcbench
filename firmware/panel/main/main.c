@@ -3656,6 +3656,135 @@ static bool write_servo(const servo_cmd_t sv)
 }
 
 /*
+ * The SERVO page: the frame rate every PWM output rendering a surface runs
+ * at.  A coprocessor before protocol 4.1 has no such page and runs each slot
+ * at its binding's rate, 50 Hz for a servo.
+ *
+ * The rate is written with every held position, not once: a coprocessor that
+ * restarts between two polls goes back to each slot's own rate without the
+ * link ever going down, and only a write that lands says what the pins run
+ * at.  A refusal is the binding's answer, not the wire's -- a surface sharing
+ * a PWM slice with an output at another rate -- so the same rate is not
+ * asked again until it changes, the binding is rewritten or the link comes
+ * back.
+ */
+#define SERVO_BIND_HZ    50u      /* the binding's SERVO PWM rate (out_bind.c) */
+#define SERVO_HZ_UNKNOWN 0xFFFFu  /* not known: perhaps a faster rate        */
+static bool     s_servo_rate_page;
+static uint16_t s_servo_hz_sent = SERVO_HZ_UNKNOWN;  /* acknowledged; 0 own */
+static uint16_t s_servo_hz_refused;  /* the last rate it refused; 0 none     */
+static atomic_uint s_servo_rate_shown;  /* (servo_rate_state_t << 16) | Hz */
+
+static void servo_rate_show(servo_rate_state_t st, uint16_t hz)
+{
+    atomic_store(&s_servo_rate_shown, ((unsigned)st << 16) | hz);
+}
+
+/* What became of a rate written: the pins run at it, the binding will not
+ * have it -- final until something changes -- or nothing answered. */
+typedef enum { RATE_LANDED, RATE_REFUSED, RATE_NO_ANSWER } rate_result_t;
+
+static rate_result_t write_servo_rate(uint16_t hz)
+{
+    if (hz == 0u) {
+        return RATE_LANDED;   /* a command that names no rate */
+    }
+    if (!s_servo_rate_page) {
+        /* Every PWM output at its binding's rate, which no profile is
+         * faster than. */
+        servo_rate_show(SERVO_RATE_UNSUPPORTED, hz);
+        return RATE_LANDED;
+    }
+    if (hz == s_servo_hz_refused) {
+        return RATE_REFUSED;
+    }
+    link_msg_t reply;
+    if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_FRAME_HZ, 1u, &hz,
+                    &reply)) {
+        return RATE_NO_ANSWER;
+    }
+    if (reply.op == LINK_OP_ACK) {
+        s_servo_hz_sent    = hz;
+        s_servo_hz_refused = 0u;
+        servo_rate_show(SERVO_RATE_IN_FORCE, hz);
+        return RATE_LANDED;
+    }
+    if (reply.op == LINK_OP_NACK) {
+        s_servo_hz_refused = hz;
+        servo_rate_show(SERVO_RATE_REFUSED, hz);
+        return RATE_REFUSED;
+    }
+    return RATE_NO_ANSWER;
+}
+
+/* The rate the surfaces run at as far as this end knows, or
+ * SERVO_HZ_UNKNOWN. */
+static uint16_t servo_rate_now(void)
+{
+    if (s_servo_hz_sent == SERVO_HZ_UNKNOWN) {
+        return SERVO_HZ_UNKNOWN;
+    }
+    return (s_servo_hz_sent != 0u) ? s_servo_hz_sent : (uint16_t)SERVO_BIND_HZ;
+}
+
+/*
+ * One position with its rate.  The pins must never carry a fast rate with
+ * the wider pulses of a slower profile: a 760 us tail servo going back to
+ * STANDARD PWM takes 50 Hz first and then 1000 to 2000 us, never 1500 us at
+ * 560 Hz.  So a rate going up follows the pulse widths, and only once every
+ * one of them landed; any other rate leads them, and a position waits for
+ * it unless the pins are known to run no faster than it.  A rate not known
+ * counts as fast.  A position held back is asked again with the next hold.
+ *
+ * Done only when the rate is settled too: a rate nobody answered leaves a
+ * release owed, so it is written again.  A refused one is settled -- the
+ * screen says REFUSED and the pins keep the slower rate -- because a release
+ * owed for ever would stop the bench arming.
+ */
+static bool write_servo_and_rate(const servo_cmd_t sv)
+{
+    const uint16_t now_hz = servo_rate_now();
+    if (now_hz != SERVO_HZ_UNKNOWN && sv.frame_hz > now_hz) {
+        if (!write_servo(sv)) {
+            return false;
+        }
+        return write_servo_rate(sv.frame_hz) != RATE_NO_ANSWER;
+    }
+    if (write_servo_rate(sv.frame_hz) != RATE_LANDED
+        && (now_hz == SERVO_HZ_UNKNOWN || now_hz > sv.frame_hz)) {
+        return false;
+    }
+    return write_servo(sv);
+}
+
+/*
+ * Each slot back at its own rate.  Before a binding: the rate the SERVO page
+ * holds was checked against the binding being replaced, and left in place a
+ * motor bound beside a 560 Hz surface would be refused by the silicon and
+ * stay still.  At link-up: a panel that restarted, or a link that only went
+ * quiet, can leave the far end holding a heli rate the screen no longer
+ * shows.  True when it landed, or there is no page to reset; otherwise the
+ * rate in force is not known.
+ */
+static bool servo_rate_reset(void)
+{
+    s_servo_hz_refused = 0u;
+    if (!s_servo_rate_page) {
+        s_servo_hz_sent = 0u;
+        servo_rate_show(SERVO_RATE_UNSUPPORTED, 0u);
+        return true;
+    }
+    const uint16_t own = 0u;
+    link_msg_t reply;
+    const bool landed = write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_FRAME_HZ,
+                                   1u, &own, &reply)
+                        && reply.op == LINK_OP_ACK;
+    s_servo_hz_sent = landed ? 0u : (uint16_t)SERVO_HZ_UNKNOWN;
+    servo_rate_show(SERVO_RATE_UNSENT, 0u);
+    return landed;
+}
+
+/*
  * Disarming, wherever it was asked for.
  *
  * Two screens can arm the bench and both disarm it the same way: the policy
@@ -3714,9 +3843,8 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
  * part of it that matters most is at this end.
  */
 /*
- * A servo command, onto the link.  Its frame_hz is not: the coprocessor
- * drives every PWM output at 50 Hz and the link carries no frame rate, so
- * the SERVO screen's rate is shown and kept there and goes no further.
+ * A servo command, onto the link: a position goes with its frame rate, on
+ * the SERVO page (see write_servo_and_rate()).
  */
 static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
 {
@@ -3776,7 +3904,7 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
     }
     s_servo_held = sv;
     s_servo_next_ms = now_ms() + SERVO_HOLD_MS;
-    if (link_up && write_servo(sv)) {
+    if (link_up && write_servo_and_rate(sv)) {
         /*
          * The surfaces are holding this position now, so an older release
          * still owed for them is void.  Paying it afterwards would centre
@@ -3829,12 +3957,16 @@ static void servo_service(bool link_up)
         return;   /* nothing can be said, and the debt keeps */
     }
     if (s_servo_release_owed) {
-        const servo_cmd_t release = { SERVO_CMD_RELEASE, 0, 0, 0, 0, 0 };
+        /* At the screen's rate, in the same order as a position: a release
+         * restates the range, and a profile chosen since the last position
+         * may be slower than the rate the pins still run at. */
+        servo_cmd_t release = { SERVO_CMD_RELEASE, 0, 0, 0, 0, 0 };
+        release.frame_hz = s_servo_range.frame_hz;
         /* Only a write the far end acknowledged pays it off.  link_up is a
          * snapshot and the link can go during the transaction; forgetting an
          * unacknowledged clear would leave the slot bound with nothing left
          * to remember it. */
-        s_servo_release_owed = !write_servo(release);
+        s_servo_release_owed = !write_servo_and_rate(release);
         return;
     }
     if (s_servo_held.kind == SERVO_CMD_NONE) {
@@ -3845,7 +3977,7 @@ static void servo_service(bool link_up)
         return;
     }
     s_servo_next_ms = now + SERVO_HOLD_MS;
-    (void)write_servo(s_servo_held);
+    (void)write_servo_and_rate(s_servo_held);
 }
 
 /*
@@ -3936,6 +4068,13 @@ static void drain_commands(bool link_up, bench_state_t *bench)
         }
         if (pc.kind == PANEL_CMD_OUTPUTS) {
             if (!link_up) {
+                atomic_store(&s_outputs_result, (int)OUTPUTS_NO_LINK);
+                continue;
+            }
+            /* Not over a rate the binding was never checked against: the
+             * far end may still hold one, and the operator is told nothing
+             * was written. */
+            if (!servo_rate_reset()) {
                 atomic_store(&s_outputs_result, (int)OUTPUTS_NO_LINK);
                 continue;
             }
@@ -4381,6 +4520,16 @@ static void link_came_up(const link_msg_t *reply)
      * read of it can reach a value from an earlier coprocessor.
      */
     s_board = reply->regs[LINK_ID_HARDWARE];
+
+    /*
+     * Whether it takes a frame rate, and each slot back at its own.  A
+     * coprocessor that only went quiet, or a panel that restarted, can leave
+     * the far end holding a heli rate the screen no longer shows; a servo
+     * plugged in since would meet it on the next arm.  The screen sends its
+     * rate again with its next position.
+     */
+    s_servo_rate_page = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 1u;
+    (void)servo_rate_reset();
 
     /*
      * A board this build ships no catalogue for describes its own pins, so a
@@ -5191,6 +5340,12 @@ void app_main(void)
             motor_screen_set_armed(false);
         }
         servo_screen_set_armed(armed_now);
+        {
+            /* Whether the screen's frame rate reached the pins. */
+            const unsigned r = atomic_load(&s_servo_rate_shown);
+            servo_screen_rate((servo_rate_state_t)(r >> 16),
+                              (uint16_t)(r & 0xFFFFu));
+        }
 
         /*
          * The supply's run, bounded by each sample's own output: a sample

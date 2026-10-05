@@ -152,10 +152,17 @@ static bool bind(const out_slot_t *s)
     }
 }
 
-void outputs_hw_apply(const outputs_t *o)
+void outputs_hw_apply(const outputs_t *o, const uint16_t *rate_hz)
 {
-    if (o == NULL) {
+    if (o == NULL || rate_hz == NULL) {
         return;
+    }
+    /* What each slot is to be: the bank's, at the rate it runs at.  A rate
+     * that moved is a slot that moved, so it is rebound like one. */
+    out_slot_t want[OUT_MAX_SLOTS];
+    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+        want[i] = o->slot[i];
+        want[i].rate_hz = rate_hz[i];
     }
     /*
      * Every slot that moved is released before any is bound.  Two slots
@@ -165,7 +172,7 @@ void outputs_hw_apply(const outputs_t *o)
      */
     bool moved[OUT_MAX_SLOTS];
     for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
-        moved[i] = !(same(&s_shadow[i], &o->slot[i]) && s_state[i].bound);
+        moved[i] = !(same(&s_shadow[i], &want[i]) && s_state[i].bound);
         if (moved[i]) {
             /* Whatever this slot's ESC said belongs to a binding that is
              * going away, and so does whether that ESC was ever asked for
@@ -184,7 +191,7 @@ void outputs_hw_apply(const outputs_t *o)
         if (!moved[i]) {
             continue;
         }
-        s_shadow[i] = o->slot[i];
+        s_shadow[i] = want[i];
         if (s_shadow[i].driver == OUT_DRIVER_NONE) {
             continue;
         }

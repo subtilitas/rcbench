@@ -311,6 +311,17 @@ static struct {
     uint32_t drawn_warn[2];
     uint8_t  drawn_save[2];
 
+    servo_rate_state_t rate_st;   /* what became of the rate rate_hz    */
+    uint16_t           rate_hz;
+
+    /* Changes to what a command carries -- the profile, the pulses, trim,
+     * travel -- and how many there had been when ARM was asked for. */
+    uint32_t profile_rev;
+    uint32_t arm_profile_rev;
+    /* An ARM posted whose arm has not landed yet: collected by the panel,
+     * which arms only once the release it owes has been written. */
+    bool     arm_in_flight;
+
     uint32_t ctrl_rev;
     uint32_t drawn_ctrl[2];
     unsigned drawn_mask;
@@ -368,6 +379,19 @@ static void cmd_range(uint16_t *lo, uint16_t *hi)
     const unsigned half  = (below > above) ? below : above;
     *lo = (uint16_t)((unsigned)s.centre_us - half);
     *hi = (uint16_t)((unsigned)s.centre_us + half);
+}
+
+/*
+ * The longest pulse the far end can render: the top of the range a command
+ * carries, which is past PULSE MAX when CENTRE is off the middle.  A pulse
+ * of an old span under a new range reaches it between two transactions, so
+ * the frame rate's pause is kept from it rather than from PULSE MAX.
+ */
+static uint16_t cmd_top(void)
+{
+    uint16_t lo, hi;
+    cmd_range(&lo, &hi);
+    return hi;
 }
 
 static float clamp_travel(float deg)
@@ -450,6 +474,12 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
     }
     s.pending.kind     = kind;
     s.pending.value_us = us;
+    if (kind == SERVO_CMD_ARM) {
+        s.arm_profile_rev = s.profile_rev;
+        s.arm_in_flight   = true;
+    } else if (kind == SERVO_CMD_DISARM) {
+        s.arm_in_flight = false;
+    }
     /* The range travels with the pulse: the panel configures the channel
      * from it, and a narrow servo's 760 us centre is below a standard
      * servo's floor.  The frame rate goes with it. */
@@ -472,8 +502,38 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
  */
 static void reissue(void)
 {
+    ++s.profile_rev;
+    if (s.pending.kind == SERVO_CMD_ARM) {
+        /*
+         * An arm asked for and not yet collected carries the profile it was
+         * asked under, and the panel centres the surfaces under it before it
+         * arms: it carries the one in force instead.  One already collected
+         * is answered when the arm lands; see servo_screen_set_armed().
+         */
+        cmd_range(&s.pending.min_us, &s.pending.max_us);
+        s.pending.frame_hz   = s.frame_hz;
+        s.pending.slew_per_s = slew_of(s.speed_pct);
+        s.arm_profile_rev    = s.profile_rev;
+        return;
+    }
     if (s.driving) {
         post(SERVO_CMD_POSITION, deg_to_us(s.commanded_deg));
+    } else if (s.armed || s.arm_in_flight) {
+        /*
+         * Resting on an armed bench: the rest restated under the profile now
+         * in force, its range and its frame rate, which the panel orders so
+         * a faster rate never meets wider pulses.  Left alone, a narrow
+         * servo would rest at a standard servo's centre, past its stop, and
+         * a servo would go on running at a heli rate after STANDARD PWM was
+         * chosen.
+         *
+         * An arm on its way is answered the same way, at once: the panel
+         * takes commands in order and arms only once the release it owes is
+         * written, so a release that reaches it before the arm lands is the
+         * profile the pins arm under.
+         */
+        post(SERVO_CMD_RELEASE, 0);
+        s.arm_profile_rev = s.profile_rev;
     }
 }
 
@@ -490,6 +550,7 @@ void servo_screen_set_armed(bool armed)
         return;
     }
     s.armed = armed;
+    s.arm_in_flight = false;
     /*
      * Nothing is being held across this edge, in either direction.  An arm
      * starts from nothing -- the panel drops the position and the slot on the
@@ -501,6 +562,16 @@ void servo_screen_set_armed(bool armed)
     s.driving = false;
     if (armed) {
         ui_hold_reached(&s.arm);
+        /*
+         * The profile changed after ARM was asked for and nothing answered
+         * it yet: the rest is restated under the profile in force, its
+         * range and rate in the panel's order.  reissue() answers a change
+         * while the arm is on its way, so this is the backstop.
+         */
+        if (s.profile_rev != s.arm_profile_rev) {
+            post(SERVO_CMD_RELEASE, 0);
+            s.arm_profile_rev = s.profile_rev;
+        }
     } else {
         /*
          * Disarmed, however it happened -- this screen's button, a STOP, a
@@ -532,6 +603,7 @@ void servo_screen_cancel_arm(void)
      * forwarded a frame later and clear the latch the stop had just set.
      */
     bool changed = false;
+    s.arm_in_flight = false;   /* the stop ends the arm on its way too */
     if (s.pending.kind == SERVO_CMD_ARM) {
         s.pending.kind = SERVO_CMD_NONE;
         changed = true;
@@ -628,6 +700,18 @@ uint16_t servo_screen_frame_hz(void) { return s.frame_hz; }
 
 const char *servo_screen_type_name(void) { return type()->name; }
 
+void servo_screen_rate(servo_rate_state_t st, uint16_t hz)
+{
+    if (st == s.rate_st && hz == s.rate_hz) {
+        return;
+    }
+    s.rate_st = st;
+    s.rate_hz = hz;
+    if (s.ov_open) {
+        ++s.ctrl_rev;   /* the OUTPUT page's note says it */
+    }
+}
+
 void servo_screen_set_commanded(float deg)
 {
     command(deg);
@@ -647,7 +731,7 @@ static void apply_profile(int t, uint16_t hz)
         s.centre_us = k_types[t].centre_us;
         s.max_us    = k_types[t].max_us;
     }
-    const uint16_t top = max_rate_for(s.type, s.max_us);
+    const uint16_t top = max_rate_for(s.type, cmd_top());
     s.frame_hz = (hz > top) ? top : hz;
     reissue();
     ++s.ctrl_rev;
@@ -660,7 +744,7 @@ static void apply_profile(int t, uint16_t hz)
  */
 static void ask_profile(int t, uint16_t hz)
 {
-    const uint16_t pulses = (t != s.type) ? k_types[t].max_us : s.max_us;
+    const uint16_t pulses = (t != s.type) ? k_types[t].max_us : cmd_top();
     const uint16_t top = max_rate_for(t, pulses);
     if (hz > top) {
         hz = top;
@@ -870,7 +954,7 @@ static void edit_row(int i)
         break;
     case R_RATE: {
         open_choice(CH_RATE, SETTING_COUNT, "FRAME RATE");
-        const uint16_t top = max_rate_for(s.type, s.max_us);
+        const uint16_t top = max_rate_for(s.type, cmd_top());
         for (int k = 0; k < type()->rate_count; ++k) {
             if (type()->rates[k] <= top) {
                 char lbl[16];
@@ -884,20 +968,23 @@ static void edit_row(int i)
     /*
      * Each end at least 50 us from the centre, and the range a command
      * carries -- centred on CENTRE, out to the further end; see cmd_range()
-     * -- inside what the coprocessor takes.  So an end may lie no further
-     * from the centre than the centre lies from the floor or the ceiling.
+     * -- inside what the coprocessor takes and what the frame rate leaves
+     * a pause after (max_pulse_for_rate(), never above the ceiling).  So an
+     * end may lie no further from the centre than the centre lies from the
+     * floor or from that top.
      */
     case R_MIN: {
         const unsigned c = s.centre_us;
-        const unsigned lo = (2u * c > OUT_CEILING_US + OUT_FLOOR_US)
-                                ? 2u * c - OUT_CEILING_US : OUT_FLOOR_US;
+        const unsigned top = max_pulse_for_rate();
+        const unsigned lo = (2u * c > top + OUT_FLOOR_US) ? 2u * c - top
+                                                          : OUT_FLOOR_US;
         open_keypad(KT_MIN, "PULSE MIN", "us", (float)s.min_us, (float)lo,
                     (float)(c - 50u), 0);
         break;
     }
     case R_CENTRE: {
         unsigned lo = (s.max_us + OUT_FLOOR_US + 1u) / 2u;
-        unsigned hi = (OUT_CEILING_US + s.min_us) / 2u;
+        unsigned hi = (max_pulse_for_rate() + s.min_us) / 2u;
         if (lo < s.min_us + 50u) { lo = s.min_us + 50u; }
         if (hi > s.max_us - 50u) { hi = s.max_us - 50u; }
         open_keypad(KT_CENTRE, "PULSE CENTRE", "us", (float)s.centre_us,
@@ -958,7 +1045,7 @@ static void choose(int k)
     } else if (target == CH_RATE) {
         if (v < 0) {
             open_keypad(KT_RATE, "FRAME RATE", "Hz", (float)s.frame_hz, 50.0f,
-                        (float)max_rate_for(s.type, s.max_us), 0);
+                        (float)max_rate_for(s.type, cmd_top()), 0);
         } else {
             ask_profile(s.type, (uint16_t)v);
         }
@@ -1815,6 +1902,43 @@ static void draw_note(gfx_canvas_t *c, int x, int y, const char *const *lines,
     }
 }
 
+/* Whether the frame rate reached the pins, in two lines. */
+static void draw_rate_note(gfx_canvas_t *c, int x, int y)
+{
+    const servo_rate_state_t st = (s.rate_hz == s.frame_hz
+                                   || s.rate_st == SERVO_RATE_UNSUPPORTED)
+                                      ? s.rate_st
+                                      : SERVO_RATE_UNSENT;
+    char l1[64], l2[64];
+    bool warn = true;
+    switch (st) {
+    case SERVO_RATE_IN_FORCE:
+        snprintf(l1, sizeof(l1), "In force: every PWM surface runs at %u Hz.",
+                 (unsigned)s.frame_hz);
+        snprintf(l2, sizeof(l2), "A PPM output keeps its own frame.");
+        warn = false;
+        break;
+    case SERVO_RATE_REFUSED:
+        snprintf(l1, sizeof(l1), "REFUSED: a surface shares a PWM slice with");
+        snprintf(l2, sizeof(l2), "an output at another rate. The pins kept theirs.");
+        break;
+    case SERVO_RATE_UNSUPPORTED:
+        snprintf(l1, sizeof(l1), "This coprocessor takes no frame rate: every");
+        snprintf(l2, sizeof(l2), "PWM output runs at its binding's, 50 Hz.");
+        break;
+    case SERVO_RATE_UNSENT:
+    default:
+        snprintf(l1, sizeof(l1), "The rate goes to the coprocessor with the");
+        snprintf(l2, sizeof(l2), "next position.");
+        warn = false;
+        break;
+    }
+    const gfx_color_t col = warn ? ui_theme_color(UI_C_WARN)
+                                 : ui_theme_color(UI_C_TEXT_FAINT);
+    gfx_text(c, x, y, l1, &gfx_font_8x16, col, 1);
+    gfx_text(c, x, y + 18, l2, &gfx_font_8x16, col, 1);
+}
+
 static void draw_page(gfx_canvas_t *c)
 {
     ui_tabs_render(&s.tabs, c);
@@ -1862,15 +1986,12 @@ static void draw_page(gfx_canvas_t *c)
     if (s.tabs.selected == PG_OUTPUT) {
         char l1[64], l2[64];
         snprintf(l1, sizeof(l1), "Fastest with these pulses: %u Hz (%s pause).",
-                 (unsigned)max_rate_for(s.type, s.max_us),
+                 (unsigned)max_rate_for(s.type, cmd_top()),
                  type()->heli ? "0.5 ms" : "1 ms");
         snprintf(l2, sizeof(l2), "Type and rate are STANDARD PWM 50 Hz at start.");
-        const char *const lines[] = {
-            l1, l2,
-            "The coprocessor drives every PWM output at",
-            "50 Hz; the frame rate set here does not reach it.",
-        };
-        draw_note(c, nx, OV_NOTE_Y, lines, 4);
+        const char *const lines[] = { l1, l2 };
+        draw_note(c, nx, OV_NOTE_Y, lines, 2);
+        draw_rate_note(c, nx, OV_NOTE_Y + 2 * 18);
     } else if (s.tabs.selected == PG_TEST) {
         const char *const lines[] = {
             "No automatic test runs in",
@@ -2201,7 +2322,8 @@ static void cancel(void)
      * frame after the one that posted it, and the frame that observes a loss
      * cancels before that forwarding.  A disarm is kept. */
     if (s.pending.kind == SERVO_CMD_ARM) {
-        s.pending.kind = SERVO_CMD_NONE;
+        s.pending.kind  = SERVO_CMD_NONE;
+        s.arm_in_flight = false;
     }
     ui_slider_release(&s.speed);
     ui_hold_reset(&s.arm);

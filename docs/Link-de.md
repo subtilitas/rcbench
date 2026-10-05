@@ -68,7 +68,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der Koprozessor sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.0. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.1. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -144,6 +144,7 @@ Failsafe ist eine solche Nebenwirkung.
 | 0x26 | ARTWORK | lesen | was ein Bild der Platine ist: Blöcke Nutzdaten (0, wenn der Koprozessor keines trägt), Breite und Höhe in Pixeln, Format (0 keines, 1 RGB565 mit dem niederwertigen Byte zuerst), Nutzdatenlänge in zwei Registern und eine CRC (zyklische Redundanzprüfung) über die gesamten Nutzdaten mit Startwert null |
 | 0x27 | ART_DATA | lesen, schreiben | das Bild selbst: Register 0 schreiben, um den Block zu nennen, dann die Page lesen. Register 0 liest den gerade bedienten Block zurück, Register 1 bis 31 tragen 62 Bytes davon. Ein Block rückt beim Lesen nicht vor, eine verlorene Antwort wird also erneut angefordert statt übersprungen |
 | 0x28 | PADS | lesen | die Pads, die keine Pins sind, je ein Register: die Pad-Nummer in 6 Bit, was es ist in 2 (0 kein Pad und die Liste endet, 1 Masse, 2 eine Versorgung, 3 keines von beiden) und die Spannung in 8 Bit zu Zehntelvolt. Null Volt bei einer Versorgung heißt, sie ist keine feste Spannung — das ist nicht dasselbe wie die 0 V einer Masse. 32 Slots, in Pad-Reihenfolge |
+| 0x29 | SERVO | lesen, schreiben | ein Register: die Frame Rate in Hz jedes PWM-Ausgangs, dessen erster Kanal die Rolle surface hat, 40 bis 560, oder 0 für die eigene Rate jedes Slots aus OUTPUTS. Mit BAD_VALUE abgewiesen, und nichts ändert sich, wenn ein PWM-Slice damit zwei Raten hätte; solange sie nicht 0 ist, ebenso ein Schreiben auf CHAN_CFG oder OUTPUTS, das das täte. Nicht gespeichert: Nach einem Neustart des Koprozessors steht dort 0. Seit Protokoll 4.1 |
 
 Fault-Bitmap: Bit 0 Link still, Bit 1 Überstrom, Bit 2 Übertemperatur, Bit 3
 Stall, Bit 4 Heartbeat ausgeblieben, Bit 5 Protokollversion abweichend.

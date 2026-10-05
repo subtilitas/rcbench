@@ -42,6 +42,7 @@ typedef enum {
     LINK_PAGE_ARTWORK   = 0x26, /**< what a picture of the board is        */
     LINK_PAGE_ART_DATA  = 0x27, /**< and the picture itself, a block at a time */
     LINK_PAGE_PADS      = 0x28, /**< the pads that are not pins, read-only  */
+    LINK_PAGE_SERVO     = 0x29, /**< the surfaces' frame rate, not kept     */
 } link_page_id_t;
 
 /*
@@ -52,7 +53,7 @@ typedef enum {
  * older host can ignore.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 0u
+#define LINK_PROTOCOL_MINOR 1u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -126,6 +127,23 @@ enum {
     LINK_OS_STRIDE  = 4,
 };
 #define LINK_OS_COUNT  (LINK_OUT_SLOTS * LINK_OS_STRIDE)
+
+/* --- the SERVO screen's frame rate (protocol 4.1).  One register: the frame
+ *     rate, in Hz, of every PWM output whose first channel is a surface, or
+ *     0 for each slot's own rate from the OUTPUTS page.
+ *
+ *     One register for all of them, so a write is whole: a servo screen that
+ *     moved some surfaces to 560 Hz and not their slice-mates would leave a
+ *     slice asked for two rates.  A rate that would do that against the
+ *     binding in force -- a surface and a throttle on one slice -- is refused
+ *     with BAD_VALUE and nothing changes.
+ *
+ *     Not kept: a coprocessor restart drives every slot at its own rate
+ *     again, which is the binding's 50 Hz for a servo. */
+enum {
+    LINK_SV_FRAME_HZ = 0,
+    LINK_SV_COUNT    = 1,
+};
 
 #define LINK_OS_RANGE_OF(first, count) \
     ((uint16_t)((((unsigned)(first) & 0xFFu) << 8) | ((unsigned)(count) & 0xFFu)))

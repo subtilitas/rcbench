@@ -229,7 +229,11 @@ keep at least 1 ms between pulses, so their fastest rate is 1 / (longest
 pulse + 1 ms): 333 Hz for 2000 us. The heli profiles run at Rotorflight's
 rates for digital cyclic and narrow-band tail servos, with at least 0.5 ms
 between pulses. A frame rate the pulses leave no pause for is refused, and a
-longer PULSE MAX is refused at a rate it does not fit.
+longer PULSE MAX is refused at a rate it does not fit. The pause is kept after
+the longest pulse the coprocessor can render, the top of the range a command
+carries: PULSE MAX, or past it when CENTRE is off the middle, by as much as
+CENTRE lies nearer MAX than MIN. So a CENTRE that would push that top past
+the rate's pause is refused too.
 
 **A heli type, or any frame rate above 60 Hz, can destroy a servo that is not
 made for it.** Choosing one opens a warning in the danger colour that names
@@ -242,6 +246,28 @@ another one.
 
 ![The warning](img/servo-warning.png)
 
+**The frame rate reaches the pins** through the coprocessor's SERVO page
+(protocol 4.1). It applies to every PWM output whose first channel is a
+surface; a PPM output keeps its own frame. It goes with every held position,
+and a profile changed while the armed servo rests restates the rest with it;
+one changed while an arm is on its way is the one the arm uses.
+A faster rate goes after the pulse widths, once all of them have landed; any
+other rate goes before them, and nothing wider goes out until it has landed,
+so the pins never carry a fast rate with a slower profile's wider pulses. The
+OUTPUT page says what became of it:
+
+| Note | Meaning |
+| --- | --- |
+| In force | every PWM surface runs at the rate shown |
+| The rate goes with the next position | not written yet |
+| REFUSED | a surface shares a PWM slice with an output at another rate; the pins keep the rate they had |
+| This coprocessor takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50 Hz |
+
+A coprocessor restart, and every binding written on OUTPUTS, put each slot
+back at its own rate, 50 Hz for a servo; the screen sends its rate again with
+its next position, against the binding then in force. A binding is not
+written while the reset to each slot's own rate goes unanswered.
+
 The OUTPUT settings are kept for the session; the TEST, LIMITS and DUT
 settings are kept in NVS (non-volatile storage) and written as on SUPPLY.
 
@@ -251,8 +277,8 @@ settings are kept in NVS (non-volatile storage) and written as on SUPPLY.
 
 Current limitations:
 
-- The coprocessor drives every PWM output at 50 Hz. The frame rate is shown,
-  kept and carried in the panel's command, and does not reach the pin.
+- Until the screen sends a position, the pins run at the rate the SERVO page
+  holds, which after a restart or a new binding is 50 Hz.
 - No automatic test runs in this build. The TEST, LIMITS and DUT settings are
   kept for it, and no report is written.
 - The supply on the right card is SUPPLY's model: no PD mini driver exists,
