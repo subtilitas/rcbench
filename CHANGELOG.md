@@ -6,6 +6,16 @@ history is in git.
 
 ## Unreleased
 
+## 0.9.1 - 2026-10-05
+
+Two panel fixes. The ESC pulse endpoints, Idle pulse and Full pulse, reach
+the motor channels and no others, and reach them when they change rather than
+with the next pin ticked on OUTPUTS. A touch queue that loses events can no
+longer hand a surviving event to a stale gesture or let a hold complete on a
+finger that has gone: both queues number their events, and an arm is watched
+until the screens have seen it. The link protocol is 4.0, unchanged, so either
+image goes on alone.
+
 ### Fixed
 
 - **A touch queue that filled dropped the release that ends an arming
