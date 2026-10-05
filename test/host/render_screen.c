@@ -124,11 +124,21 @@ static const char *fake_volume(void *ctx)
     return "BENCH SD  14.7 GB FREE";
 }
 
+/* Present so the browse view offers DELETE; the shots stop at the question,
+ * so nothing is ever removed. */
+static bool fake_remove(const char *name, void *ctx)
+{
+    (void)ctx;
+    (void)name;
+    return false;
+}
+
 static const log_viewer_io_t k_io = {
     .list = fake_list,
     .open = fake_open,
     .close = NULL,
     .volume = fake_volume,
+    .remove = fake_remove,
     .ctx = NULL,
 };
 
@@ -168,6 +178,9 @@ static void write_ppm(const char *path, const gfx_color_t *pixels)
 /* IM_BTN_Y from log_viewer_screen.c.  If the layout moves, this moves with
  * it; render_ui --check reports the drift. */
 #define IM_BTN_Y_LOCAL 368
+/* FOOT_Y + 2 and the DELETE button's x from the same file. */
+#define BR_FOOT_Y_LOCAL 392
+#define BR_DELETE_CX    551
 
 static void tap(int x, int y)
 {
@@ -563,7 +576,10 @@ int main(int argc, char **argv)
          * ui_router_event takes panel coordinates and strips it on the way
          * in.
          */
-        if (strcmp(view, "logs") != 0) {
+        if (strcmp(view, "logs-delete") == 0) {
+            tap(400, UI_BAND_H + 36 + 30 + 22);   /* select */
+            tap(BR_DELETE_CX, UI_BAND_H + BR_FOOT_Y_LOCAL + 21);   /* DELETE */
+        } else if (strcmp(view, "logs") != 0) {
             tap(400, UI_BAND_H + 36 + 30 + 22);   /* select */
             tap(400, UI_BAND_H + 36 + 30 + 22);   /* open   */
         }

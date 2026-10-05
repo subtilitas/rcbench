@@ -268,7 +268,18 @@ was too short for rather than a run that was never written. The number in the
 name is what newest means: the panel has no clock that survives a power cycle,
 so every file on the card is dated 1980-01-01. A run outranks a file the bench
 did not write, so a card holding 48 or more runs lists no other file. Delete
-old runs on a computer to get one back.
+old runs to get one back.
+
+DELETE removes the selected file from the card. It asks first: a second panel
+names the file and its size, and only its own DELETE, pressed and released on
+that button, removes the file. CANCEL, or leaving the screen, closes the
+question without deleting. The run the logger has open is refused. A file
+that was open in the import view or the plot is dropped from both when it is
+deleted. The logger numbers each run above the highest it found on the card at
+the first run after boot. A deleted number is used again only if it was above
+every run left on the card, and not before the panel restarts.
+
+![The DELETE question](img/logs-delete.png)
 
 A run is committed to the card every 20 rows or 1000 ms of run, whichever
 comes first. Power lost mid-run costs the rows the commit has not finished

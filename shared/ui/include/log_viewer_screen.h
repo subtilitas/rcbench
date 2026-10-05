@@ -7,7 +7,8 @@
  *
  * Three views, in the order they are used:
  *
- *   BROWSE  the files on the card
+ *   BROWSE  the files on the card, and DELETE for the selected one behind a
+ *           confirmation that names it
  *   IMPORT  what the CSV (comma-separated values) reader detected, and the
  *           controls to override it
  *   PLOT    the traces, on one time base with a scale each
@@ -60,6 +61,13 @@ typedef struct {
     void (*close)(void *ctx);
     /** Volume label for the header, e.g. the card name.  May be NULL. */
     const char *(*volume)(void *ctx);
+    /**
+     * Delete a listed name from the volume; false if it is refused or fails.
+     * May be NULL, and then the browse view offers no DELETE.  The screen
+     * calls it only after the operator has confirmed that name on a second
+     * panel.
+     */
+    bool (*remove)(const char *name, void *ctx);
     void *ctx;
 } log_viewer_io_t;
 
@@ -83,7 +91,10 @@ const log_analysis_t *log_viewer_analysis(void);
 /** The loaded traces, or NULL when nothing is plotted. */
 const log_data_t *log_viewer_data(void);
 
-/** Re-read the directory, e.g. after a card was inserted. */
+/**
+ * Re-read the directory, e.g. after a card was inserted.  Closes an open
+ * DELETE question: the name it asked about may be on another card now.
+ */
 void log_viewer_refresh(void);
 
 const ui_screen_t *log_viewer_screen(void);

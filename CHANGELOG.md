@@ -6,6 +6,16 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- **LOGS deletes a file from the card (#171).** DELETE in the browse footer
+  is active once a file is selected and opens a second panel that names the
+  file and its size. Only that panel's DELETE, pressed and released on the
+  button, removes the file; CANCEL, or leaving the screen, deletes nothing.
+  The panel refuses the run the logger has open. A deleted file that was open
+  in the import view or the plot is dropped from both. `log_viewer_io_t`
+  gains `remove`; with it NULL the browse view offers no DELETE.
+
 ### Changed
 
 - **The link protocol is 4.0.** The write that arms carries ARM, THROTTLE and

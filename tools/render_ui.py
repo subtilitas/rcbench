@@ -92,6 +92,7 @@ SCREENS = {
     "programmer-am32": ("programmer-am32.png", "programmer", "dark"),
     "logs-import":("logs-import.png","logs",       "dark"),
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
+    "logs-delete":("logs-delete.png","logs",       "dark"),
     "setup":      ("setup.png",      "setup",      "dark"),
     "setup-dirty":("setup-dirty.png","setup",      "dark"),
     "outputs":    ("outputs.png",    "outputs",    "dark"),

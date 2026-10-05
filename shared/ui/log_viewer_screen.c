@@ -11,6 +11,10 @@
  * changes, so the plot render walks prepared spans rather than reparsing on
  * every frame.
  *
+ * DELETE in the browse view asks before it acts: a second panel names the
+ * file and its size, and only its own DELETE, pressed and released on that
+ * button, calls the I/O's remove().
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -41,6 +45,17 @@
 /* (352 - 30) / 44 = 7 rows fit the list.  An eighth needs 382 px and would
  * cross the panel border into the footer. */
 #define BR_ROWS   7
+
+/* Footer buttons, in the order browse_event() hit-tests them. */
+#define BR_RESCAN gfx_rect_make(16, FOOT_Y + 2, 150, FOOT_H)
+#define BR_OPEN   gfx_rect_make(634, FOOT_Y + 2, 150, FOOT_H)
+#define BR_DELETE gfx_rect_make(476, FOOT_Y + 2, 150, FOOT_H)
+#define BR_MSG_X  176
+
+/* The DELETE question, drawn in place of the list. */
+#define DQ_BOX    gfx_rect_make(120, 110, 560, 220)
+#define DQ_CANCEL gfx_rect_make(144, 258, 240, 48)
+#define DQ_DELETE gfx_rect_make(416, 258, 240, 48)
 
 /* ------------------------------------------------------------- import ---- */
 
@@ -90,6 +105,15 @@ static struct {
 
     char name[LOG_VIEWER_NAME_MAX];
     char message[80];
+    bool message_ok;  /* a result to report, not a failure */
+
+    /*
+     * The file DELETE asked about, or "" while no question is open.  A copy
+     * of the name rather than an index into the list: the question has to
+     * delete the file it named, whatever happens to the list behind it.
+     */
+    char doomed[LOG_VIEWER_NAME_MAX];
+    uint32_t doomed_size;
 
     log_analysis_t an;
     bool have_analysis;
@@ -160,6 +184,8 @@ void log_viewer_set_io(const log_viewer_io_t *io)
 
 void log_viewer_refresh(void)
 {
+    /* A re-read can be of another card, and a name on it is another file. */
+    s.doomed[0] = '\0';
     s.n_files = 0;
     s.n_card = 0;
     s.sel = -1;
@@ -208,6 +234,7 @@ static void set_message(const char *fmt, ...)
     /* NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized) */
     vsnprintf(s.message, sizeof(s.message), fmt, ap);
     va_end(ap);
+    s.message_ok = false;
 }
 
 static void run_analysis(void)
@@ -473,6 +500,34 @@ static void fmt_size(char *out, size_t n, uint32_t bytes)
     }
 }
 
+/* DELETE is offered for a file the list has selected, and only when the I/O
+ * can delete at all. */
+static bool can_delete(void)
+{
+    return s.io.remove != NULL && s.sel >= 0 && s.sel < s.n_files
+           && !s.files[s.sel].is_dir;
+}
+
+static void render_question(gfx_canvas_t *c)
+{
+    const gfx_rect_t box = DQ_BOX;
+    ui_panel(c, box, "DELETE FROM CARD", UI_DANGER);
+
+    char size[16];
+    char line[LOG_VIEWER_NAME_MAX + 24];
+    fmt_size(size, sizeof(size), s.doomed_size);
+    snprintf(line, sizeof(line), "%s   %s", s.doomed, size);
+    gfx_text_in(c, gfx_rect_make(box.x + 24, box.y + 44, box.w - 48, 20), line,
+                UI_FONT_LABEL, UI_TEXT, 1, GFX_ALIGN_LEFT);
+    gfx_text(c, box.x + 24, box.y + 76, "The file is removed from the card.",
+             UI_FONT_LABEL, UI_TEXT_DIM, 1);
+    gfx_text(c, box.x + 24, box.y + 98, "This cannot be undone.",
+             UI_FONT_LABEL, UI_TEXT_DIM, 1);
+
+    ui_button(c, DQ_CANCEL, "CANCEL", UI_PANEL_HI, s.press_btn == 0, true);
+    ui_button(c, DQ_DELETE, "DELETE", UI_DANGER, s.press_btn == 1, true);
+}
+
 static void render_browse(gfx_canvas_t *c)
 {
     const char *vol = (s.io.volume != NULL) ? s.io.volume(s.io.ctx) : NULL;
@@ -480,6 +535,16 @@ static void render_browse(gfx_canvas_t *c)
     snprintf(head, sizeof(head), "%s", (vol != NULL && vol[0] != '\0') ? vol
                                                                       : "SD CARD");
     gfx_text(c, 300, 12, head, UI_FONT_LABEL, UI_TEXT_DIM, 1);
+
+    /*
+     * The question replaces the list and the footer rather than sitting on
+     * top of them: a footer left on screen is a RESCAN or an OPEN that looks
+     * live while the only answers are CANCEL and DELETE.
+     */
+    if (s.doomed[0] != '\0') {
+        render_question(c);
+        return;
+    }
 
     if (s.listed != 1 || s.n_files == 0) {
         gfx_rect_t box = gfx_rect_make(120, 160, 560, 160);
@@ -533,14 +598,23 @@ static void render_browse(gfx_canvas_t *c)
         }
     }
 
-    ui_button(c, gfx_rect_make(16, FOOT_Y + 2, 150, FOOT_H), "RESCAN",
-              UI_PANEL_HI, s.press_btn == 0, true);
+    ui_button(c, BR_RESCAN, "RESCAN", UI_PANEL_HI, s.press_btn == 0, true);
+    int msg_end = BR_OPEN.x;
     if (s.n_files > 0) {
-        ui_button(c, gfx_rect_make(634, FOOT_Y + 2, 150, FOOT_H), "OPEN",
-                  UI_ACCENT, s.press_btn == 1, s.sel >= 0);
+        ui_button(c, BR_OPEN, "OPEN", UI_ACCENT, s.press_btn == 1, s.sel >= 0);
+        if (s.io.remove != NULL) {
+            ui_button(c, BR_DELETE, "DELETE", UI_DANGER, s.press_btn == 2,
+                      can_delete());
+            msg_end = BR_DELETE.x;
+        }
     }
     if (s.message[0] != '\0') {
-        gfx_text(c, 180, FOOT_Y + 14, s.message, UI_FONT_LABEL, UI_DANGER, 1);
+        /* Clipped to the gap between the buttons: a long name runs out of
+         * room rather than over DELETE. */
+        gfx_text_in(c, gfx_rect_make(BR_MSG_X, FOOT_Y + 2,
+                                     msg_end - 8 - BR_MSG_X, FOOT_H),
+                    s.message, UI_FONT_LABEL,
+                    s.message_ok ? UI_TEXT_DIM : UI_DANGER, 1, GFX_ALIGN_LEFT);
     }
 }
 
@@ -937,16 +1011,89 @@ static void clamp_scroll(int *scroll, int total, int visible)
 
 #define DRAG_SLOP 8
 
-static void browse_event(const touch_event_t *e)
+static void ask_delete(void)
 {
-    const gfx_rect_t btns[2] = {
-        gfx_rect_make(16, FOOT_Y + 2, 150, FOOT_H),
-        gfx_rect_make(634, FOOT_Y + 2, 150, FOOT_H),
-    };
+    if (!can_delete()) {
+        return;
+    }
+    snprintf(s.doomed, sizeof(s.doomed), "%s", s.files[s.sel].name);
+    s.doomed_size = s.files[s.sel].size;
+    s.message[0] = '\0';
+}
+
+static void delete_doomed(void)
+{
+    char name[LOG_VIEWER_NAME_MAX];
+    snprintf(name, sizeof(name), "%s", s.doomed);
+    s.doomed[0] = '\0';
+
+    if (s.io.remove == NULL || !s.io.remove(name, s.io.ctx)) {
+        /* The list stays as it was, selection included: the file is still
+         * there as far as anybody knows, and RESCAN says otherwise if not. */
+        set_message("cannot delete %s", name);
+        return;
+    }
+    /* What the import and plot views hold was read from that file. */
+    if (strcmp(s.name, name) == 0) {
+        drop_data();
+        s.have_analysis = false;
+        s.name[0] = '\0';
+    }
+    /* Re-read rather than drop the row here: the card says what is on it.
+     * The selection goes with the file, so a second DELETE needs a second
+     * choice; the scroll stays near the gap. */
+    const int scroll = s.scroll;
+    log_viewer_refresh();
+    s.scroll = scroll;
+    clamp_scroll(&s.scroll, s.n_files, BR_ROWS);
+    set_message("%s deleted", name);
+    s.message_ok = true;
+}
+
+static void question_event(const touch_event_t *e)
+{
+    const gfx_rect_t btns[2] = { DQ_CANCEL, DQ_DELETE };
 
     switch (e->type) {
     case TOUCH_EVENT_DOWN:
         s.press_btn = hit_button(btns, 2, e->point.x, e->point.y);
+        log_viewer_invalidate();
+        break;
+
+    case TOUCH_EVENT_MOVE:
+        break;
+
+    case TOUCH_EVENT_UP:
+        /*
+         * Pressed and released on the same button, unlike the other footers
+         * here: a finger that slides off DELETE has changed its mind, and
+         * this is the one control on the screen that cannot be taken back.
+         */
+        if (hit_button(btns, 2, e->point.x, e->point.y) == s.press_btn) {
+            if (s.press_btn == 0) {
+                s.doomed[0] = '\0';
+            } else if (s.press_btn == 1) {
+                delete_doomed();
+            }
+        }
+        s.press_btn = -1;
+        log_viewer_invalidate();
+        break;
+    }
+}
+
+static void browse_event(const touch_event_t *e)
+{
+    if (s.doomed[0] != '\0') {
+        question_event(e);
+        return;
+    }
+
+    const gfx_rect_t btns[3] = { BR_RESCAN, BR_OPEN, BR_DELETE };
+
+    switch (e->type) {
+    case TOUCH_EVENT_DOWN:
+        s.press_btn = hit_button(btns, 3, e->point.x, e->point.y);
         s.press_row = -1;
         s.dragged = false;
         if (s.press_btn < 0 && gfx_rect_contains(BR_LIST, e->point.x, e->point.y)) {
@@ -979,6 +1126,8 @@ static void browse_event(const touch_event_t *e)
             log_viewer_refresh();
         } else if (s.press_btn == 1) {
             open_selected();
+        } else if (s.press_btn == 2) {
+            ask_delete();
         } else if (s.pressing && !s.dragged && s.press_row >= 0 &&
                    s.press_row < s.n_files) {
             if (s.sel == s.press_row) {
@@ -1213,6 +1362,9 @@ static void reset(void)
 
 static void enter(void)
 {
+    /* A question left open by leaving the screen is not asked again on the
+     * way back in: the operator has moved on from it. */
+    s.doomed[0] = '\0';
     if (s.listed == 0) {
         log_viewer_refresh();
     }
