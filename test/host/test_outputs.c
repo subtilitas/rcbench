@@ -788,6 +788,52 @@ TEST_CASE(an_impossible_endpoint_is_refused_atomically)
              LINK_NACK_BAD_VALUE);
 }
 
+TEST_CASE(the_throttle_range_reaches_throttles_and_leaves_surfaces_alone)
+{
+    /* A page read back from the coprocessor: a motor on channel 0, a servo on
+     * channel 1 whose range the SERVO screen named, the rest untouched. */
+    fresh_pages();
+    chan_cfg[0 * LINK_CC_STRIDE + LINK_CC_ROLE]   = LINK_CC_ROLE_THROTTLE;
+    chan_cfg[0 * LINK_CC_STRIDE + LINK_CC_SLEW]   = 40u;
+    chan_cfg[1 * LINK_CC_STRIDE + LINK_CC_MIN_US] = 900u;
+    chan_cfg[1 * LINK_CC_STRIDE + LINK_CC_MAX_US] = 2100u;
+    uint16_t before[LINK_CC_COUNT];
+    memcpy(before, chan_cfg, sizeof(before));
+
+    CHECK(outputs_chan_cfg_set_throttle_range(chan_cfg, 980u, 2020u));
+    CHECK_EQ(chan_cfg[0 * LINK_CC_STRIDE + LINK_CC_MIN_US], 980);
+    CHECK_EQ(chan_cfg[0 * LINK_CC_STRIDE + LINK_CC_MAX_US], 2020);
+    /* Everything else on the page is as it was, the motor's slew included. */
+    for (unsigned i = 0; i < LINK_CC_COUNT; ++i) {
+        if (i == 0 * LINK_CC_STRIDE + LINK_CC_MIN_US
+            || i == 0 * LINK_CC_STRIDE + LINK_CC_MAX_US) {
+            continue;
+        }
+        if (chan_cfg[i] != before[i]) {
+            T_FAIL("register %u moved from %u to %u", i, before[i],
+                   chan_cfg[i]);
+        }
+    }
+
+    /* And the result is a page the coprocessor accepts. */
+    uint16_t copy[LINK_CC_COUNT];
+    memcpy(copy, chan_cfg, sizeof(copy));
+    CHECK_EQ(outputs_chan_cfg_write(chan_cfg, 0, LINK_CC_COUNT, copy), 0u);
+}
+
+TEST_CASE(a_throttle_range_the_page_would_refuse_changes_nothing)
+{
+    fresh_pages();
+    chan_cfg[0 * LINK_CC_STRIDE + LINK_CC_ROLE] = LINK_CC_ROLE_THROTTLE;
+    CHECK(!outputs_chan_cfg_set_throttle_range(chan_cfg, 400u, 2000u));
+    CHECK(!outputs_chan_cfg_set_throttle_range(chan_cfg, 1000u, 2600u));
+    CHECK(!outputs_chan_cfg_set_throttle_range(chan_cfg, 2000u, 1000u));
+    CHECK(!outputs_chan_cfg_set_throttle_range(chan_cfg, 1500u, 1500u));
+    CHECK(!outputs_chan_cfg_set_throttle_range(NULL, 1000u, 2000u));
+    CHECK_EQ(chan_cfg[0 * LINK_CC_STRIDE + LINK_CC_MIN_US], LINK_CC_DEFAULT_MIN);
+    CHECK_EQ(chan_cfg[0 * LINK_CC_STRIDE + LINK_CC_MAX_US], LINK_CC_DEFAULT_MAX);
+}
+
 /* An unknown driver number is refused before it reaches the table. */
 TEST_CASE(an_unknown_driver_is_refused)
 {
@@ -1228,6 +1274,8 @@ int main(void)
     RUN(a_servo_is_configured_then_commanded);
     RUN(clearing_the_slot_stops_the_output);
     RUN(an_impossible_endpoint_is_refused_atomically);
+    RUN(the_throttle_range_reaches_throttles_and_leaves_surfaces_alone);
+    RUN(a_throttle_range_the_page_would_refuse_changes_nothing);
     RUN(an_unknown_driver_is_refused);
     RUN(the_slew_is_span_units);
     RUN(the_range_register_packs_first_and_count);

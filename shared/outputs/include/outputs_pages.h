@@ -40,6 +40,24 @@ uint8_t outputs_chan_cfg_write(uint16_t *regs, uint8_t off, uint8_t n,
                                const uint16_t *in);
 void    outputs_chan_cfg_apply(outputs_t *o, const uint16_t *regs);
 
+/**
+ * Give every channel @p regs marks as a throttle the endpoints @p min_us and
+ * @p max_us, and leave every other channel as it is.
+ *
+ * The bench's two pulse settings are a throttle's: an ESC (electronic speed
+ * controller) calibrated on a transmitter takes that transmitter's shortest
+ * pulse as zero.  A surface keeps its own range -- the schema's default, or
+ * the one the SERVO screen named for the servo on it -- because a surface
+ * that took an ESC's range would rest at that range's midpoint, off centre
+ * whenever the range is not symmetric about 1500 us.
+ *
+ * Returns false and changes nothing for endpoints the page would refuse:
+ * below LINK_CC_FLOOR_US, above LINK_CC_CEILING_US, or not @p min_us below
+ * @p max_us.  A refused write would take the roles down with it.
+ */
+bool    outputs_chan_cfg_set_throttle_range(uint16_t *regs, uint16_t min_us,
+                                            uint16_t max_us);
+
 /* --- OUTPUTS: which driver renders which channels, on which pin, how often */
 void    outputs_slots_defaults(uint16_t *regs);
 uint8_t outputs_slots_write(uint16_t *regs, uint8_t off, uint8_t n,
