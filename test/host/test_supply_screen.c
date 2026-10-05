@@ -510,6 +510,20 @@ TEST_CASE(a_switch_in_the_settings_flips_on_a_tap)
     CHECK_EQ(supply_screen_limits().trip_i, 0.0f);
 }
 
+TEST_CASE(a_start_value_read_over_its_cap_is_corrected_and_kept)
+{
+    /* Read back over the cap, as a save that reached one key and not the
+     * other leaves them: brought down, and a save asked for. */
+    fresh();
+    settings_set(SET_SUPPLY_V_MAX, 8.0f);
+    settings_set(SET_SUPPLY_V_START, 12.0f);
+    CHECK(!settings_save_asked());
+    supply_screen_settings_loaded();
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 8.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_v(), 8.0f, 1e-4f);
+    CHECK(settings_save_asked());
+}
+
 TEST_CASE(the_set_points_start_at_the_start_values)
 {
     fresh();
@@ -1022,6 +1036,7 @@ int main(void)
     RUN(the_settings_overlay_sets_a_cap_the_set_points_obey);
     RUN(a_lowered_cap_brings_the_set_point_and_the_start_down);
     RUN(a_switch_in_the_settings_flips_on_a_tap);
+    RUN(a_start_value_read_over_its_cap_is_corrected_and_kept);
     RUN(the_set_points_start_at_the_start_values);
     RUN(a_card_or_a_value_opens_the_keypad_for_its_set_point);
     RUN(a_change_to_a_live_output_waits_for_the_question);

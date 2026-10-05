@@ -313,6 +313,7 @@ void settings_init(void)
     }
     s.dirty = false;
     s.save_failed = false;
+    s.save_asked = false;   /* what is loaded is what is kept */
 
     if (s.observer) {
         for (int i = 0; i < SETTING_COUNT; ++i) {

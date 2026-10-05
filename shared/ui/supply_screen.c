@@ -343,12 +343,20 @@ static void refresh_limits(void)
     s.lim = limits_from_settings();
     s.eff = supply_caps_limited(&s.caps, &s.lim);
     /* A start value over a cap that was lowered under it comes down with
-     * it, so the overlay never shows one the restart would not use. */
+     * it, so the overlay never shows one the restart would not use -- and
+     * is kept, or a pair read back that way (a save that reached one key
+     * and not the other) would be corrected again at every restart. */
+    bool corrected = false;
     if (settings_get(SET_SUPPLY_V_START) > s.eff.v_max) {
         settings_set(SET_SUPPLY_V_START, s.eff.v_max);
+        corrected = true;
     }
     if (settings_get(SET_SUPPLY_I_START) > s.eff.i_max) {
         settings_set(SET_SUPPLY_I_START, s.eff.i_max);
+        corrected = true;
+    }
+    if (corrected) {
+        settings_request_save();
     }
     apply_caps();
     ++s.set_rev;
