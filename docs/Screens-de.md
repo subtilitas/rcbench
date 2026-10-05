@@ -290,7 +290,9 @@ seine Rate mit der nächsten Stellung erneut, gegen die dann geltende Bindung.
 Eine Bindung wird nicht geschrieben, solange das Zurücksetzen auf die eigene
 Rate jedes Slots unbeantwortet bleibt, und der Prüfstand wird von keinem
 Screen aus scharf, solange die Rate der Surfaces nicht bekannt ist: Der Arm
-wird mit `servo frame rate not known -- arm again` abgelehnt.
+wird mit `servo frame rate not known -- arm again` abgelehnt, und ein Arm, der
+bei unterbrochenem Link gemacht wurde, erreicht den Koprozessor erst, wenn das
+Zurücksetzen angekommen ist.
 
 Die OUTPUT-Einstellungen gelten für die Sitzung; die Einstellungen unter TEST,
 LIMITS und DUT liegen im NVS (Non-Volatile Storage) und werden wie bei SUPPLY

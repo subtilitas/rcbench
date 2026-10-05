@@ -3978,6 +3978,18 @@ static void servo_service(bool link_up)
     if (!link_up) {
         return;   /* nothing can be said, and the debt keeps */
     }
+    /*
+     * A rate not known is settled before anything that depends on it: while
+     * a release is owed, whose rate a binding may refuse until the slots are
+     * back at their own, and while the bank is armed, which poll_bench()
+     * does not pass on to the far end until the rate is known.  Each slot
+     * back at its own rate; a screen holding a position says its own again
+     * with the next hold.
+     */
+    if (s_servo_hz_sent == SERVO_HZ_UNKNOWN
+        && (s_servo_release_owed || outputs_armed(&s_out))) {
+        (void)servo_rate_reset();
+    }
     if (s_servo_release_owed) {
         /* At the screen's rate, in the same order as a position: a release
          * restates the range, and a profile chosen since the last position
@@ -4293,9 +4305,13 @@ static bool poll_bench(bench_state_t *bench)
          * cable pulled -- reaches this the moment one answers, and the far end
          * would render that old command before the centre arrived.
          * servo_service() pays the debt every pass, so this holds for one.
+         * Nor while the rate the surfaces run at is not known: the far end
+         * may hold a heli rate from before a panel restart, and
+         * servo_service() settles that every pass too.
          */
         const bool armed = outputs_armed(&s_out) && !s_servo_release_owed
-                           && !s_endpoints_hold;
+                           && !s_endpoints_hold
+                           && s_servo_hz_sent != SERVO_HZ_UNKNOWN;
         /*
          * The pole count, when an edit or a write that did not land leaves
          * one owed.  Between arms this is the path an edit takes to the far
