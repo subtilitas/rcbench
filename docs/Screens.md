@@ -258,7 +258,9 @@ the tap. Every change is written at the next frame the bench is disarmed, the
 supply's output is off and the board's photograph is not being fetched, and
 with it any change on SETUP that was not saved: a flash write stalls both
 cores, OUTPUT OFF and the trips included. The bottom line says SAVED, SAVE
-WAITING or NOT SAVED.
+WAITING, NOT SAVED (the write was refused), or SETUP CHANGES NOT SAVED: a
+change made on SETUP and left without SAVE, which nothing writes until SAVE
+there or a change here asks for it.
 
 ![The supply's settings](img/supply-settings.png)
 
@@ -275,7 +277,10 @@ WAITING or NOT SAVED.
 | KEYPAD | ON, OFF | ON | ask before the keypad changes a live output |
 
 A cap lowered under a set point brings the set point down to it at once, and a
-start value with it. A trip of 0 is off. A reading under its trip starts the
+start value with it. A typed value goes onto the setting's step the safe way: a
+cap rounds down, so 12.01 V allows 12.00 V, and a trip typed above 0 is at
+least one step, never OFF. A trip of 0 is off. The time over a trip counts from
+the first reading over it. A reading under its trip starts the
 count again; a reading that did not arrive leaves it where it was. A trip
 switches the output off, MODE shows TRIP until the output is switched on
 again, and the band says which trip fired. The supply holds its current limit
@@ -300,7 +305,8 @@ time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);e
 A reading that did not arrive is an empty cell. `mode` is CV, CC or OFF, and
 empty while the supply does not answer. The bench takes the log: arming during
 a supply run ends that run's file, and an output still on at the disarm starts
-a new file. The supply is stepped and logged on its own 50 ms cadence while
+a new file. That file's charge and energy go on from the totals counted since
+the output came on, as the screen's do, so its first row does not start at 0. The supply is stepped and logged on its own 50 ms cadence while
 the control task waits on the link, so an unanswered coprocessor does not thin
 out the supply's plot or its log.
 

@@ -2945,10 +2945,6 @@ static void apply_supply_cmd(const panel_cmd_t *pc)
     if (c->reset) {
         supply_reset_peaks(&s_supply);
     }
-    if (c->on) {
-        /* Taken, whatever becomes of it; see s_supply_ons_sent. */
-        atomic_fetch_add(&s_supply_ons_taken, 1u);
-    }
     if (c->off) {
         supply_switch(false);
     } else if (c->on) {
@@ -2966,6 +2962,23 @@ static void apply_supply_cmd(const panel_cmd_t *pc)
             arm_watch_begin(&s_supply_watch, pc->loss_gen,
                             atomic_load(&s_drv_gaps), s_supply_gen);
         }
+    }
+    if (c->on) {
+        /* Taken, whatever became of it, and only now: an applied ON has
+         * stored s_supply_live first, so supply_live_or_coming() never
+         * reads the gap between the two. */
+        atomic_fetch_add(&s_supply_ons_taken, 1u);
+    }
+}
+
+/* The supply as it is now, for the screen; the oldest sample goes when the
+ * queue is full, as the bench's do. */
+static void supply_queue_sample(void)
+{
+    if (xQueueSend(s_supply_q, &s_supply, 0) != pdTRUE) {
+        supply_state_t stale;
+        (void)xQueueReceive(s_supply_q, &stale, 0);
+        (void)xQueueSend(s_supply_q, &s_supply, 0);
     }
 }
 
@@ -3003,29 +3016,28 @@ static void supply_step(float step_s)
     const supply_trip_kind_t trip =
         supply_trip_step(&s_supply_trip, &lim, &s_supply, step_s);
     if (trip != SUPPLY_TRIP_NONE) {
+        /* The reading that tripped, as it was taken -- on -- so the plot
+         * keeps it; the sample after the switch-off ends the run. */
+        supply_queue_sample();
         supply_switch(false);
         s_supply.trip = (uint8_t)trip;
+        /* In integers: this can run inside an exchange's wait, deep on the
+         * control task's stack, and a float conversion is the deepest thing
+         * snprintf does. */
+        const unsigned milli = (trip == SUPPLY_TRIP_CURRENT)
+                                   ? atomic_load(&s_supply_trip_ma)
+                                   : atomic_load(&s_supply_trip_mv);
         char line[ALERT_MAX];
-        if (trip == SUPPLY_TRIP_CURRENT) {
-            snprintf(line, sizeof(line),
-                     "supply tripped over %.2f A -- output off",
-                     (double)lim.trip_i);
-        } else {
-            snprintf(line, sizeof(line),
-                     "supply tripped over %.2f V -- output off",
-                     (double)lim.trip_v);
-        }
+        snprintf(line, sizeof(line), "supply tripped over %u.%02u %s -- "
+                 "output off", milli / 1000u, (milli % 1000u) / 10u,
+                 (trip == SUPPLY_TRIP_CURRENT) ? "A" : "V");
         control_alert(line);
     }
     /* Over the time that passed, measured, as the bench's totals are. */
     const uint32_t t = now_ms();
     supply_count_totals(&s_supply, (float)(uint32_t)(t - s_supply_ms) / 1000.0f);
     s_supply_ms = t;
-    if (xQueueSend(s_supply_q, &s_supply, 0) != pdTRUE) {
-        supply_state_t stale;
-        (void)xQueueReceive(s_supply_q, &stale, 0);
-        (void)xQueueSend(s_supply_q, &s_supply, 0);
-    }
+    supply_queue_sample();
 }
 
 /*
@@ -3110,6 +3122,10 @@ static void arm_watch_service(bool link_up)
     if (arm_watch_lost(&s_arm_watch, atomic_load(&s_loss_gen),
                        atomic_load(&s_drv_gaps), atomic_load(&s_arm_ack))) {
         (void)disarm_here(link_up);
+        /* A disarm counts no stop, so the supply is cut here as well: an
+         * arm the watch undid is a stop to the supply wherever it is found
+         * (control_pump() finds it by arming_stop()). */
+        supply_switch(false);
         control_alert("touch lost while arming -- arm again");
     }
 }
@@ -4002,9 +4018,12 @@ static void supply_watch_service(void)
  */
 static void supply_pump(void)
 {
+    /* The cuts first -- a stop, then a lost ON -- and only then the set
+     * points, so a level stored after a touch loss never reaches an output
+     * that loss is about to switch off. */
     supply_follow_stops();
-    supply_service();
     supply_watch_service();
+    supply_service();
 
     const uint32_t since = (uint32_t)(now_ms() - s_supply_step_ms);
     if (since < (uint32_t)(1000.0f / PANEL_SAMPLE_HZ)) {
@@ -4015,9 +4034,17 @@ static void supply_pump(void)
     if (step_s > BENCH_TOTALS_MAX_STEP_S) {
         step_s = BENCH_TOTALS_MAX_STEP_S;
     }
+    /*
+     * The run's edges before the step, so a bench taking the log over ends
+     * the supply's file on the interval up to now, and this step's row is
+     * the new run's.  Never the end of a bench run: that is the outer
+     * loop's, after the pass's bench sample is logged, as it always was.
+     */
+    if (s_log_kind != LOG_RUN_BENCH) {
+        log_follow_runs();
+    }
     supply_step(step_s);
 
-    log_follow_runs();
     if (s_log_kind == LOG_RUN_SUPPLY) {
         s_log_t += step_s;
         log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
@@ -4740,8 +4767,12 @@ static unsigned       s_tq_lost;
  */
 static bool supply_live_or_coming(void)
 {
-    return atomic_load(&s_supply_live)
-           || atomic_load(&s_supply_ons_taken) != atomic_load(&s_supply_ons_sent);
+    /* The counters before the flag.  The control task stores the flag
+     * before it counts an ON taken, so read in this order there is no
+     * moment at which both say nothing is coming while the output is on. */
+    const bool coming = atomic_load(&s_supply_ons_taken)
+                        != atomic_load(&s_supply_ons_sent);
+    return coming || atomic_load(&s_supply_live);
 }
 
 /*

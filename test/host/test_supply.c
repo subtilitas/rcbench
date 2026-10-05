@@ -196,24 +196,45 @@ TEST_CASE(a_trip_fires_once_a_reading_has_been_over_for_its_time)
     st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
     st.v = 6.0f;
     st.i = 2.6f;
-    const supply_limits_t lim = { 21.0f, 5.0f, 2.5f, 0.0f, 0.2f };
+    /* 100 ms over 2.5 A, at 20 Hz: the first reading over starts the count
+     * and the one 100 ms after it fires, two intervals later. */
+    const supply_limits_t lim = { 21.0f, 5.0f, 2.5f, 0.0f, 0.1f };
     supply_trip_t t;
     supply_trip_reset(&t);
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_CURRENT);
+    /* Fired, the count starts again. */
+    CHECK_EQ(t.over_i_s, 0.0f);
+    CHECK(!t.i_over);
 
-    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
-    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
     /* A reading back under starts the count again. */
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
     st.i = 2.4f;
     CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
     st.i = 2.6f;
-    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.1f), SUPPLY_TRIP_NONE);
-    /* One that did not arrive leaves it where it is. */
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
+    /* One that did not arrive leaves it where it is: neither adds nor
+     * starts again. */
     st.ok = SUPPLY_OK_VOLTAGE;
     CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.5f), SUPPLY_TRIP_NONE);
+    CHECK_NEAR(t.over_i_s, 0.05f, 1e-5f);
     st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.1f), SUPPLY_TRIP_CURRENT);
-    /* Fired, the count starts again. */
-    CHECK_EQ(t.over_i_s, 0.0f);
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_CURRENT);
+
+    /* A trip turned off forgets what it had counted: on again, the count
+     * starts from the next reading over. */
+    supply_trip_reset(&t);
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
+    const supply_limits_t paused = { 21.0f, 5.0f, 0.0f, 0.0f, 0.1f };
+    CHECK_EQ(supply_trip_step(&t, &paused, &st, 0.05f), SUPPLY_TRIP_NONE);
+    CHECK(!t.i_over);
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_CURRENT);
 
     /* The voltage trip, at a trip time of 0: the first reading over. */
     const supply_limits_t vlim = { 21.0f, 5.0f, 0.0f, 6.5f, 0.0f };
@@ -226,22 +247,10 @@ TEST_CASE(a_trip_fires_once_a_reading_has_been_over_for_its_time)
     CHECK_EQ(t.over_i_s, 0.0f);
     st.output = true;
     const supply_limits_t slow = { 21.0f, 5.0f, 2.5f, 0.0f, 1.5f };
+    CHECK_EQ(supply_trip_step(&t, &slow, &st, 0.05f), SUPPLY_TRIP_NONE);
     CHECK_EQ(supply_trip_step(&t, &slow, &st, 60.0f), SUPPLY_TRIP_NONE);
     CHECK_NEAR(t.over_i_s, 1.0f, 1e-4f);
     CHECK_EQ(supply_trip_step(&t, &slow, &st, -1.0f), SUPPLY_TRIP_NONE);
-
-    /* A trip turned off forgets what it had counted: on again, the count
-     * starts from nothing rather than from where it stopped. */
-    supply_trip_reset(&t);
-    st.i = 2.6f;
-    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.15f), SUPPLY_TRIP_NONE);
-    const supply_limits_t paused = { 21.0f, 5.0f, 0.0f, 0.0f, 0.2f };
-    st.i = 2.0f;
-    CHECK_EQ(supply_trip_step(&t, &paused, &st, 0.05f), SUPPLY_TRIP_NONE);
-    st.i = 2.6f;
-    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.1f), SUPPLY_TRIP_NONE);
-    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.1f), SUPPLY_TRIP_CURRENT);
 
     /* Off at 0, and nothing without its arguments. */
     const supply_limits_t off = { 21.0f, 5.0f, 0.0f, 0.0f, 0.0f };

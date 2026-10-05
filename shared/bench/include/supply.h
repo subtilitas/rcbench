@@ -99,19 +99,24 @@ typedef enum {
     SUPPLY_TRIP_VOLTAGE,
 } supply_trip_kind_t;
 
-/** How long each reading has been over its threshold, for the trips. */
+/** How long each reading has been over its threshold, counted from the
+ *  first reading seen over it, for the trips. */
 typedef struct {
     float over_i_s;
     float over_v_s;
+    bool  i_over;         /**< the last current that arrived was over  */
+    bool  v_over;         /**< the last voltage that arrived was over  */
 } supply_trip_t;
 
 void supply_trip_reset(supply_trip_t *t);
 
 /**
- * Take @p dt_s of the readings in @p s into the trips.  A reading over its
- * threshold adds the time, one at or under it starts the count again, and
- * one that did not arrive leaves it where it is.  A trip that is off forgets
- * its count.  Returns which trip fired,
+ * Take @p dt_s of the readings in @p s into the trips.  The count starts at
+ * the first reading seen over a threshold, and each reading over it after
+ * that adds the time since the one before; one at or under it starts the
+ * count again, and one that did not arrive leaves it where it is.  A trip
+ * that is off forgets its count.  A trip time of 0 fires on the first
+ * reading over.  Returns which trip fired,
  * once the time over reaches lim->trip_s; nothing while the output is off.
  * @p dt_s is clamped to 0 .. 1 s, as the totals' steps are.
  */

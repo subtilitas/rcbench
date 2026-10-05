@@ -282,8 +282,10 @@ Schalter kippt beim Tippen. Jede Änderung wird im nächsten Frame geschrieben,
 in dem der Prüfstand unscharf ist, der Ausgang des Netzteils aus ist und nicht
 das Foto der Platine geladen wird, und mit ihr jede ungespeicherte Änderung
 aus SETUP: ein Flash-Schreibvorgang hält beide Kerne an, OUTPUT OFF und die
-Trips eingeschlossen. Die unterste Zeile sagt SAVED, SAVE WAITING oder NOT
-SAVED.
+Trips eingeschlossen. Die unterste Zeile sagt SAVED, SAVE WAITING, NOT SAVED
+(der Schreibvorgang wurde abgelehnt) oder SETUP CHANGES NOT SAVED: eine
+Änderung in SETUP, die ohne SAVE verlassen wurde und die nichts schreibt, bis
+SAVE dort oder eine Änderung hier danach fragt.
 
 ![Die Einstellungen des Netzteils](img/supply-settings.png)
 
@@ -300,7 +302,11 @@ SAVED.
 | KEYPAD | ON, OFF | ON | fragen, bevor die Tastatur einen eingeschalteten Ausgang ändert |
 
 Eine Grenze, die unter einen Sollwert gesenkt wird, holt den Sollwert sofort
-auf sie herunter, und einen Startwert mit ihm. Ein Trip von 0 ist aus. Ein
+auf sie herunter, und einen Startwert mit ihm. Ein getippter Wert kommt in der
+sicheren Richtung auf den Schritt der Einstellung: eine Grenze rundet ab, 12,01 V
+erlauben also 12,00 V, und ein Trip über 0 ist mindestens ein Schritt, nie OFF.
+Ein Trip von 0 ist aus. Die Zeit über einem Trip zählt ab dem ersten Messwert
+darüber. Ein
 Messwert unter seinem Trip beginnt die Zählung neu; ein Messwert, der nicht
 ankam, lässt sie stehen. Ein Trip schaltet den Ausgang ab, MODE zeigt TRIP,
 bis der Ausgang wieder eingeschaltet wird, und das Band sagt, welcher Trip
@@ -328,7 +334,9 @@ time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);e
 Ein Messwert, der nicht ankam, ist eine leere Zelle. `mode` ist CV, CC oder
 OFF und leer, solange das Netzteil nicht antwortet. Der Prüfstand hat beim
 Log Vorrang: ARM während eines Netzteil-Laufs beendet dessen Datei, und ein
-Ausgang, der beim Unscharfschalten noch an ist, beginnt eine neue. Das
+Ausgang, der beim Unscharfschalten noch an ist, beginnt eine neue. Ladung und
+Energie dieser Datei zählen von den Summen seit dem Einschalten des Ausgangs
+weiter, wie auf dem Bildschirm; ihre erste Zeile beginnt also nicht bei 0. Das
 Netzteil wird in seinem eigenen 50-ms-Takt geführt und geloggt, auch während
 die Steuer-Task auf den Link wartet; ein Koprozessor, der nicht antwortet,
 dünnt weder den Plot noch das Log des Netzteils aus.

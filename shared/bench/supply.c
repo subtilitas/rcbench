@@ -128,28 +128,41 @@ void supply_trip_reset(supply_trip_t *t)
     if (t != NULL) {
         t->over_i_s = 0.0f;
         t->over_v_s = 0.0f;
+        t->i_over   = false;
+        t->v_over   = false;
     }
 }
 
-/* One reading against its threshold: true once it has been over for
- * @p hold_s.  A threshold of 0 or less is off. */
-static bool over_for(float *over_s, bool arrived, float value, float threshold,
-                     float hold_s, float dt)
+/*
+ * One reading against its threshold: true once it has been over for
+ * @p hold_s, counted from the first reading seen over -- not from the one
+ * before it, which was not over, so the first interval is not credited.  A
+ * threshold of 0 or less is off.
+ */
+static bool over_for(float *over_s, bool *over, bool arrived, float value,
+                     float threshold, float hold_s, float dt)
 {
     if (!(threshold > 0.0f)) {
         /* Off: what was counted is forgotten, so turning it back on starts
          * the count from nothing. */
         *over_s = 0.0f;
+        *over   = false;
         return false;
     }
     if (!arrived) {
         return false;
     }
     if (value > threshold) {
-        *over_s += dt;
+        if (*over) {
+            *over_s += dt;
+        } else {
+            *over   = true;
+            *over_s = 0.0f;
+        }
         return *over_s >= hold_s;
     }
     *over_s = 0.0f;
+    *over   = false;
     return false;
 }
 
@@ -170,10 +183,10 @@ supply_trip_kind_t supply_trip_step(supply_trip_t *t,
     } else if (dt > BENCH_TOTALS_MAX_STEP_S) {
         dt = BENCH_TOTALS_MAX_STEP_S;
     }
-    const bool i_trip = over_for(&t->over_i_s,
+    const bool i_trip = over_for(&t->over_i_s, &t->i_over,
                                  (s->ok & SUPPLY_OK_CURRENT) != 0u, s->i,
                                  lim->trip_i, lim->trip_s, dt);
-    const bool v_trip = over_for(&t->over_v_s,
+    const bool v_trip = over_for(&t->over_v_s, &t->v_over,
                                  (s->ok & SUPPLY_OK_VOLTAGE) != 0u, s->v,
                                  lim->trip_v, lim->trip_s, dt);
     if (!i_trip && !v_trip) {

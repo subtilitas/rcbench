@@ -317,14 +317,6 @@ TEST_CASE(clearing_empties_the_plot_and_the_scales)
     CHECK(p.running);                         /* clearing does not stop it */
 }
 
-/*
- * A held plot is drawn differently from a running one, and the difference
- * stays inside the plot's own rectangle.
- *
- * A frozen picture that reads as live would be a worse fault than the one
- * holding it fixes, and a mark outside the rect would survive the next clear
- * and label a running plot as held.
- */
 /* A set point drawn beside its reading: on the reading's scale, dashed, and
  * out of the legend. */
 static const ui_plot_series_t k_led[] = {
@@ -398,6 +390,14 @@ TEST_CASE(a_follower_takes_no_legend_entry)
     CHECK_EQ(set, 0);
 }
 
+/*
+ * A held plot is drawn differently from a running one, and the difference
+ * stays inside the plot's own rectangle.
+ *
+ * A frozen picture that reads as live would be a worse fault than the one
+ * holding it fixes, and a mark outside the rect would survive the next clear
+ * and label a running plot as held.
+ */
 TEST_CASE(a_stopped_plot_marks_its_right_edge)
 {
     const gfx_rect_t body = { 40, 10, 700, 220 };

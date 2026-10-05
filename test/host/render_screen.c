@@ -312,6 +312,9 @@ int main(int argc, char **argv)
         settings_set(SET_SUPPLY_V_MAX, 8.4f);
         settings_set(SET_SUPPLY_TRIP_I, 2.5f);
         settings_set(SET_SUPPLY_TRIP_MS, 200.0f);
+        /* As the overlay does when one is changed there: a save asked for,
+         * which the harness has no flash to take. */
+        settings_request_save();
         supply_screen_settings_loaded();
         supply_screen_set_model(true);
         supply_sim_output(&m, true);

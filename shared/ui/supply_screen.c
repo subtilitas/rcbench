@@ -504,6 +504,7 @@ void supply_screen_set_caps(const supply_caps_t *caps)
     apply_caps();
     ++s.set_rev;
     ++s.ctrl_rev;
+    ++s.ov_rev;      /* a question open shows the change as snapped now */
 }
 
 void supply_screen_set_model(bool model)
@@ -551,8 +552,13 @@ static bool confirm_needed(int from)
  */
 static void propose(int from)
 {
-    const float v = s.v_slider.value;
-    const float i = s.i_slider.value;
+    /* Snapped here and not on the slider: a slider written during a drag
+     * re-anchors the drag on the written value while the press point stays
+     * where it was, and every move then adds the whole distance again. */
+    const float v = supply_snap(s.v_slider.value, s.eff.v_min, s.eff.v_max,
+                                s.eff.v_step);
+    const float i = supply_snap(s.i_slider.value, s.eff.i_min, s.eff.i_max,
+                                s.eff.i_step);
     if (v == s.cv && i == s.ci) {
         return;
     }
@@ -677,6 +683,18 @@ static void keypad_done(ui_keypad_result_t r, float v)
             s.kp_target = KP_NONE;
             propose(FROM_KEYPAD);
         } else if (s.kp_target == KP_SETTING) {
+            /* Onto the setting's own step the safe way: a cap rounds down,
+             * so a typed 12.01 V allows no more than 12.00 V; a trip typed
+             * above 0 stays a trip, never rounded to off. */
+            const setting_def_t *d = settings_def(s.kp_setting);
+            if (d->step > 0.0f && (s.kp_setting == SET_SUPPLY_V_MAX
+                                   || s.kp_setting == SET_SUPPLY_I_MAX)) {
+                v = d->min + floorf((v - d->min) / d->step + 1e-3f) * d->step;
+            } else if (d->step > 0.0f && v > 0.0f && v < d->step
+                       && (s.kp_setting == SET_SUPPLY_TRIP_I
+                           || s.kp_setting == SET_SUPPLY_TRIP_V)) {
+                v = d->step;
+            }
             /* Kept as soon as the bench allows a flash write; see
              * settings_request_save().  An edit on SETUP that was not saved
              * is written with it. */
@@ -700,15 +718,6 @@ static void nudge(float dv, float di)
                                            s.eff.i_max, s.eff.i_step));
     ++s.set_rev;
     propose(FROM_SLIDER);
-}
-
-static void snap_sliders(void)
-{
-    ui_slider_set(&s.v_slider, supply_snap(s.v_slider.value, s.eff.v_min,
-                                           s.eff.v_max, s.eff.v_step));
-    ui_slider_set(&s.i_slider, supply_snap(s.i_slider.value, s.eff.i_min,
-                                           s.eff.i_max, s.eff.i_step));
-    ++s.set_rev;
 }
 
 static void take(const touch_event_t *evt, int code)
@@ -792,7 +801,7 @@ static void down(const touch_event_t *evt)
         const bool v = gfx_rect_contains(s.v_slider.track, x, y);
         take(evt, v ? P_V_SLIDER : P_I_SLIDER);
         if (ui_slider_event(v ? &s.v_slider : &s.i_slider, evt)) {
-            snap_sliders();
+            ++s.set_rev;
             /* Live as it moves, unless the change needs a question: then
              * the release asks it. */
             if (!confirm_needed(FROM_SLIDER)) {
@@ -933,7 +942,7 @@ static void event(const touch_event_t *evt)
     case P_I_SLIDER: {
         ui_slider_t *sl = (s.pressed == P_V_SLIDER) ? &s.v_slider : &s.i_slider;
         if (ui_slider_event(sl, evt)) {
-            snap_sliders();
+            ++s.set_rev;
             if (!confirm_needed(FROM_SLIDER)) {
                 propose(FROM_SLIDER);
             }
@@ -941,6 +950,12 @@ static void event(const touch_event_t *evt)
         if (up) {
             let_go();
             propose(FROM_SLIDER);
+            /* The drag is over, so the slider can be written: it shows the
+             * set point it was snapped to, or, while a question is open,
+             * the one the supply keeps until it is answered. */
+            ui_slider_set(&s.v_slider, s.cv);
+            ui_slider_set(&s.i_slider, s.ci);
+            ++s.set_rev;
         }
         return;
     }
@@ -1291,13 +1306,20 @@ static void draw_steps(gfx_canvas_t *c)
               s.pressed == P_I_UP, true);
 }
 
-/* Whether the settings reached the medium: 0 saved, 1 waiting, 2 refused. */
+/*
+ * Whether the settings reached the medium: 0 saved, 1 waiting for a quiet
+ * moment, 2 refused, 3 changed on SETUP and not asked to be saved -- which
+ * nothing writes until SAVE there, or a change here, asks for it.
+ */
 static uint8_t save_state(void)
 {
     if (settings_save_failed()) {
         return 2u;
     }
-    return settings_dirty() ? 1u : 0u;
+    if (settings_save_asked()) {
+        return 1u;
+    }
+    return settings_dirty() ? 3u : 0u;
 }
 
 static void row_value_text(int i, char *buf, size_t n)
@@ -1354,7 +1376,8 @@ static void draw_settings(gfx_canvas_t *c)
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
     const uint8_t st = save_state();
-    static const char *const k_save[] = { "SAVED", "SAVE WAITING", "NOT SAVED" };
+    static const char *const k_save[] = { "SAVED", "SAVE WAITING", "NOT SAVED",
+                                          "SETUP CHANGES NOT SAVED" };
     gfx_text(c, lx, a.y + a.h - 26, k_save[st], &gfx_font_8x16,
              (st == 2u) ? ui_theme_color(UI_C_WARN)
                         : ui_theme_color(UI_C_TEXT_DIM), 1);
@@ -1493,7 +1516,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
                       ui_theme_color(UI_C_PANEL));
         draw_table(c);
     }
-    if (data_moved || ctrl_moved) {
+    /* The cards carry the set point in brackets, so a set point that moves
+     * repaints them too, in each buffer. */
+    if (data_moved || ctrl_moved || set_moved) {
         s.drawn_push[buf] = s.plot.pushes;
         draw_cards(c);
         draw_totals(c);
@@ -1535,6 +1560,12 @@ static void render(gfx_canvas_t *c, int buffer_index)
  */
 static void leave(void)
 {
+    /* A press on OUTPUT OFF when the screen is left -- a second finger on
+     * HOME, which the band handles without asking this screen -- is the OFF
+     * the operator was making, and it is sent, as cancel() sends one. */
+    if (s.on && s.pressed == P_OUTPUT && !s.hold.fired) {
+        post_off();
+    }
     ui_slider_release(&s.v_slider);
     ui_slider_release(&s.i_slider);
     ui_hold_reset(&s.hold);

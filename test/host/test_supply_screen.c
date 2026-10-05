@@ -80,6 +80,7 @@ static void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 #define TRACK_X   72           /* both tracks: x 72..485 */
 #define TRACK_W   414
 #define TABLE_X   99           /* the TABLE tab */
+#define PLOT_TAB_X 37          /* the PLOT tab */
 #define TABLE_Y   11
 #define OFF_X     300          /* the plot, clear of every control */
 #define OFF_Y     120
@@ -334,6 +335,25 @@ TEST_CASE(a_touch_loss_drops_an_on_and_keeps_an_off)
     CHECK(c.off);
 }
 
+TEST_CASE(leaving_under_a_press_on_output_off_sends_the_off)
+{
+    /* A second finger on HOME leaves the screen while the first is still
+     * on OUTPUT OFF: the OFF it was making is sent, not lost. */
+    fresh();
+    supply_screen_set_output(true);
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    scr->leave();
+    supply_cmd_t c;
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.off);
+    /* And a hold toward ON left the same way asks for nothing. */
+    fresh();
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS / 2);
+    scr->leave();
+    CHECK(!supply_screen_poll_cmd(NULL));
+}
+
 TEST_CASE(leaving_keeps_the_output_and_drops_the_hold)
 {
     fresh();
@@ -524,6 +544,28 @@ TEST_CASE(a_start_value_read_over_its_cap_is_corrected_and_kept)
     CHECK(settings_save_asked());
 }
 
+TEST_CASE(the_overlay_tells_an_unsaved_setup_change_from_a_waiting_save)
+{
+    /* A change left on SETUP without SAVE is not a save waiting: nothing
+     * will write it.  The overlay's bottom line says which. */
+    fresh();
+    tap(SETB_X, SETB_Y);
+    settings_set(SET_PACK_CELLS, 4.0f);          /* SETUP's, no save asked */
+    supply_invalidate();
+    scr->render(&cv, 0);
+    settings_request_save();
+    supply_invalidate();
+    scr->render(&cv2, 0);
+    /* The bottom line: x 16..300, y 400..420. */
+    int differ = 0;
+    for (int y = 400; y < 420; ++y) {
+        for (int x = 16; x < 300; ++x) {
+            differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
+        }
+    }
+    CHECK(differ > 0);
+}
+
 TEST_CASE(the_set_points_start_at_the_start_values)
 {
     fresh();
@@ -648,6 +690,56 @@ TEST_CASE(each_question_is_switched_on_its_own)
     CHECK_NEAR(supply_screen_set_v(), 7.1f, 1e-4f);
 }
 
+TEST_CASE(a_drag_moves_the_set_point_by_the_distance_dragged)
+{
+    /* Many small moves, as a finger makes them: the set point follows the
+     * finger and does not run ahead of it.  17.7 V over 413 px is about
+     * 43 mV a pixel. */
+    fresh();
+    const float per_px = (21.0f - 3.3f) / (float)(TRACK_W - 1);
+    ev(TRACK_X + 100, V_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    const float start = supply_screen_set_v();
+    for (int k = 1; k <= 20; ++k) {
+        ev(TRACK_X + 100 + k, V_ROW_Y, TOUCH_EVENT_MOVE, 1);
+    }
+    CHECK_NEAR(supply_screen_set_v(), start + 20.0f * per_px, 0.03f);
+    for (int k = 0; k < 5; ++k) {          /* a still finger, jittering in y */
+        ev(TRACK_X + 120, V_ROW_Y + (k & 1), TOUCH_EVENT_MOVE, 1);
+    }
+    CHECK_NEAR(supply_screen_set_v(), start + 20.0f * per_px, 0.03f);
+    ev(TRACK_X + 120, V_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK_NEAR(supply_screen_set_v(), start + 20.0f * per_px, 0.03f);
+
+    /* On a live output with the question on, the question offers the
+     * distance dragged too. */
+    fresh();
+    supply_screen_set_output(true);
+    ev(TRACK_X + 100, V_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    for (int k = 1; k <= 10; ++k) {
+        ev(TRACK_X + 100 + k, V_ROW_Y, TOUCH_EVENT_MOVE, 1);
+    }
+    ev(TRACK_X + 110, V_ROW_Y, TOUCH_EVENT_UP, 1);
+    tap(APPLY_X, ASK_Y);
+    const float at_100 = 3.3f + 100.0f * per_px;
+    CHECK_NEAR(supply_screen_set_v(), at_100 + 10.0f * per_px, 0.03f);
+}
+
+TEST_CASE(a_typed_cap_rounds_down_and_a_typed_trip_stays_a_trip)
+{
+    fresh();
+    tap(SETB_X, SETB_Y);
+    tap(ROW_L_X, VMAX_Y);
+    keys("12.01");
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 12.0f, 1e-4f);
+    tap(ROW_L_X, VMAX_Y + 42);           /* CURRENT MAX */
+    keys("1.03");
+    CHECK_NEAR(settings_get(SET_SUPPLY_I_MAX), 1.0f, 1e-4f);
+    tap(ROW_R_X, TRIPI_Y);
+    keys("0.02");
+    CHECK_NEAR(settings_get(SET_SUPPLY_TRIP_I), 0.05f, 1e-4f);
+    CHECK(supply_screen_limits().trip_i > 0.0f);
+}
+
 TEST_CASE(a_drag_on_a_live_output_changes_nothing_until_it_is_answered)
 {
     fresh();
@@ -766,9 +858,19 @@ TEST_CASE(a_trip_shows_on_the_mode_card)
         }
     }
     CHECK(differ > 0);
+    /* And the voltage trip reads differently from the current trip. */
+    memcpy(fb, fb2, (size_t)W * H * sizeof(gfx_color_t));
     st.trip = SUPPLY_TRIP_VOLTAGE;
     supply_screen_push(&st);
+    supply_invalidate();
     scr->render(&cv2, 0);
+    differ = 0;
+    for (int y = 207; y < 264; ++y) {
+        for (int x = 558; x < 794; ++x) {
+            differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
+        }
+    }
+    CHECK(differ > 0);
 }
 
 /* ------------------------------------------------------------------ plot */
@@ -809,6 +911,30 @@ TEST_CASE(the_heading_says_what_the_output_does_on_either_pane)
     scr->render(&cv2, 0);
     /* The upper panel's title tag: x 6..130, y 24..44. */
     int differ = 0;
+    for (int y = 24; y < 44; ++y) {
+        for (int x = 6; x < 130; ++x) {
+            differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
+        }
+    }
+    CHECK(differ > 0);
+
+    /* After a run: PLOT holds it, TABLE has nothing to hold and is idle --
+     * so TABLE now reads as it did before any run. */
+    supply_screen_set_output(false);
+    supply_invalidate();
+    scr->render(&cv2, 0);                /* TABLE, after the run */
+    int same = 0, total = 0;
+    for (int y = 24; y < 44; ++y) {
+        for (int x = 6; x < 130; ++x) {
+            same += (fb[y * W + x] == fb2[y * W + x]) ? 1 : 0;
+            ++total;
+        }
+    }
+    CHECK_EQ(same, total);
+    tap(PLOT_TAB_X, TABLE_Y);
+    supply_invalidate();
+    scr->render(&cv2, 0);                /* PLOT, holding the run */
+    differ = 0;
     for (int y = 24; y < 44; ++y) {
         for (int x = 6; x < 130; ++x) {
             differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
@@ -953,6 +1079,14 @@ static void b_question(void)
     supply_screen_set_output(true);
     tap(V_UP_X, V_ROW_Y);
 }
+static void b_question_new_caps(void)
+{
+    supply_screen_set_output(true);
+    tap(V_UP_X, V_ROW_Y);
+    scr->render(&cv, 0);
+    const supply_caps_t caps = { 9.0f, 21.0f, 0.02f, 0.5f, 5.0f, 0.05f };
+    supply_screen_set_caps(&caps);
+}
 static void b_closed(void)
 {
     tap(SETB_X, SETB_Y);
@@ -978,6 +1112,28 @@ TEST_CASE(a_redraw_leaves_no_stale_pixels)
     check_redraw(b_keypad);
     check_redraw(b_question);
     check_redraw(b_closed);
+    check_redraw(b_question_new_caps);
+}
+
+TEST_CASE(a_set_point_moved_offline_repaints_the_cards_in_both_buffers)
+{
+    /* Offline, the cards' brackets show the screen's own set point; a drag
+     * that moves it repaints them in each buffer, not only in the one that
+     * also took a sample. */
+    fresh();
+    supply_state_t st = reading(0.0f, 0.0f);
+    st.online = false;
+    st.ok = 0u;
+    ev(TRACK_X + 100, V_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    scr->render(&cv, 0);
+    scr->render(&cv2, 1);                /* both buffers hold the press */
+    supply_screen_push(&st);
+    scr->render(&cv, 0);                 /* A takes the sample */
+    ev(TRACK_X + 160, V_ROW_Y, TOUCH_EVENT_MOVE, 1);
+    scr->render(&cv2, 1);                /* B: the sample and the move */
+    scr->render(&cv, 0);                 /* A: the move alone */
+    CHECK_EQ(memcmp(fb, fb2, (size_t)W * H * sizeof(gfx_color_t)), 0);
+    ev(TRACK_X + 160, V_ROW_Y, TOUCH_EVENT_UP, 1);
 }
 
 TEST_CASE(each_framebuffer_is_updated_independently)
@@ -1028,6 +1184,7 @@ int main(void)
     RUN(a_stop_abandons_the_hold_and_drops_a_posted_on);
     RUN(a_stop_while_the_output_reports_off_strands_no_press);
     RUN(a_touch_loss_drops_an_on_and_keeps_an_off);
+    RUN(leaving_under_a_press_on_output_off_sends_the_off);
     RUN(leaving_keeps_the_output_and_drops_the_hold);
     RUN(reset_peaks_posts_its_own_command);
     RUN(the_fine_steps_move_a_set_point_by_a_tenth);
@@ -1037,12 +1194,15 @@ int main(void)
     RUN(a_lowered_cap_brings_the_set_point_and_the_start_down);
     RUN(a_switch_in_the_settings_flips_on_a_tap);
     RUN(a_start_value_read_over_its_cap_is_corrected_and_kept);
+    RUN(the_overlay_tells_an_unsaved_setup_change_from_a_waiting_save);
     RUN(the_set_points_start_at_the_start_values);
     RUN(a_card_or_a_value_opens_the_keypad_for_its_set_point);
     RUN(a_change_to_a_live_output_waits_for_the_question);
     RUN(an_on_asked_for_counts_as_live_before_it_is_seen);
     RUN(the_heading_says_what_the_output_does_on_either_pane);
     RUN(each_question_is_switched_on_its_own);
+    RUN(a_drag_moves_the_set_point_by_the_distance_dragged);
+    RUN(a_typed_cap_rounds_down_and_a_typed_trip_stays_a_trip);
     RUN(a_drag_on_a_live_output_changes_nothing_until_it_is_answered);
     RUN(the_output_switch_works_under_every_overlay);
     RUN(a_second_finger_on_a_track_changes_nothing_while_off_is_held);
@@ -1052,6 +1212,7 @@ int main(void)
     RUN(a_run_is_traced_from_the_switch_on_and_held_after_it);
     RUN(a_redraw_leaves_no_stale_pixels);
     RUN(each_framebuffer_is_updated_independently);
+    RUN(a_set_point_moved_offline_repaints_the_cards_in_both_buffers);
     RUN(a_screen_without_a_sample_draws);
     free(fb);
     free(fb2);
