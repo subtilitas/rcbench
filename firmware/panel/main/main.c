@@ -3675,6 +3675,11 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
  * screen is up.  A disarm is acted on with or without a link, because the
  * part of it that matters most is at this end.
  */
+/*
+ * A servo command, onto the link.  Its frame_hz is not: the coprocessor
+ * drives every PWM output at 50 Hz and the link carries no frame rate, so
+ * the SERVO screen's rate is shown and kept there and goes no further.
+ */
 static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
 {
     if (sv.kind == SERVO_CMD_ARM) {
@@ -3781,7 +3786,7 @@ static void servo_service(bool link_up)
         return;   /* nothing can be said, and the debt keeps */
     }
     if (s_servo_release_owed) {
-        const servo_cmd_t release = { SERVO_CMD_RELEASE, 0, 0, 0, 0 };
+        const servo_cmd_t release = { SERVO_CMD_RELEASE, 0, 0, 0, 0, 0 };
         /* Only a write the far end acknowledged pays it off.  link_up is a
          * snapshot and the link can go during the transaction; forgetting an
          * unacknowledged clear would leave the slot bound with nothing left
@@ -5157,6 +5162,9 @@ void app_main(void)
         while (xQueueReceive(s_supply_q, &sup, 0) == pdTRUE) {
             supply_screen_set_output(sup.output);
             supply_screen_push(&sup);
+            /* And the SERVO screen's live power plot: the supply feeds the
+             * servo under test. */
+            servo_screen_supply(&sup);
             supply_seen = sup.output;
         }
 

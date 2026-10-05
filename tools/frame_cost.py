@@ -60,6 +60,7 @@ SOURCES = [
     "shared/ui/motor_screen.c",
     "shared/ui/supply_screen.c",
     "shared/ui/ui_keypad.c",
+    "shared/ui/ui_textkey.c",
     "shared/ui/servo_screen.c",
     "shared/ui/analyser_screen.c",
     "shared/ui/balance_screen.c",

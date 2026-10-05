@@ -10,6 +10,7 @@
 #include "greatest.h"
 
 #include "ui_keypad.h"
+#include "ui_textkey.h"
 #include "ui_theme.h"
 
 #define W 800
@@ -222,6 +223,147 @@ TEST_CASE(the_keypad_draws_inside_its_area_and_only_while_open)
     free(fb);
 }
 
+/* ------------------------------------------------------- text keyboard */
+
+static ui_textkey_t tk;
+
+static ui_textkey_result_t tk_press(int key, char *out, size_t n)
+{
+    const gfx_rect_t r = ui_textkey_key_rect(&tk, key);
+    const touch_event_t d = { .type = TOUCH_EVENT_DOWN,
+                              .point = { .id = 1, .x = (int16_t)(r.x + r.w / 2),
+                                         .y = (int16_t)(r.y + r.h / 2) } };
+    touch_event_t u = d;
+    u.type = TOUCH_EVENT_UP;
+    (void)ui_textkey_event(&tk, &d, out, n);
+    return ui_textkey_event(&tk, &u, out, n);
+}
+
+/* The index of a character key. */
+static int tk_key(char ch)
+{
+    static const char chars[] = "1234567890QWERTYUIOPASDFGHJKL-ZXCVBNM_.";
+    const char *p = strchr(chars, ch);
+    return (p != NULL) ? (int)(p - chars) : -1;
+}
+
+TEST_CASE(the_keyboard_edits_the_name_it_was_opened_with)
+{
+    char out[32] = "";
+    ui_textkey_open(&tk, k_area, "NAME", "SERVO", 23);
+    CHECK_EQ(tk.len, 5);
+    (void)tk_press(UI_TK_DEL, out, sizeof(out));
+    CHECK_STR_EQ(tk.text, "SERV");
+    (void)tk_press(tk_key('-'), out, sizeof(out));
+    (void)tk_press(tk_key('7'), out, sizeof(out));
+    (void)tk_press(UI_TK_SPACE, out, sizeof(out));
+    CHECK_STR_EQ(tk.text, "SERV-7 ");
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_OK);
+    CHECK_STR_EQ(out, "SERV-7");              /* the trailing space dropped */
+    CHECK(!tk.open);
+}
+
+TEST_CASE(the_keyboard_refuses_an_empty_name_and_keeps_its_length)
+{
+    char out[8] = "unset";
+    ui_textkey_open(&tk, k_area, "NAME", "AB", 4);
+    (void)tk_press(UI_TK_CLR, out, sizeof(out));
+    (void)tk_press(UI_TK_SPACE, out, sizeof(out));
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_NONE);
+    CHECK(tk.refused);
+    CHECK(tk.open);
+    CHECK_STR_EQ(out, "unset");
+    for (const char *p = "QWERTY"; *p != '\0'; ++p) {
+        (void)tk_press(tk_key(*p), out, sizeof(out));
+    }
+    CHECK_STR_EQ(tk.text, " QWE");            /* four, and no more */
+    CHECK(!tk.refused);
+    /* A name longer than what it is handed back into is cut, terminated. */
+    char small[3];
+    CHECK_EQ(tk_press(UI_TK_OK, small, sizeof(small)), UI_TEXTKEY_OK);
+    CHECK_STR_EQ(small, "QW");
+    ui_textkey_open(&tk, k_area, "NAME", "AB", 23);
+    CHECK_EQ(tk_press(UI_TK_CANCEL, out, sizeof(out)), UI_TEXTKEY_CANCELLED);
+    CHECK(!tk.open);
+}
+
+TEST_CASE(a_keyboard_key_acts_on_its_own_release_only)
+{
+    char out[32] = "";
+    ui_textkey_open(&tk, k_area, "NAME", "", 23);
+    const gfx_rect_t a = ui_textkey_key_rect(&tk, tk_key('A'));
+    const gfx_rect_t b = ui_textkey_key_rect(&tk, tk_key('B'));
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)(a.x + 5),
+                                   .y = (int16_t)(a.y + 5) } };
+    (void)ui_textkey_event(&tk, &e, out, sizeof(out));
+    e.point.id = 2;                           /* a second contact: ignored */
+    e.point.x = (int16_t)(b.x + 5);
+    e.point.y = (int16_t)(b.y + 5);
+    (void)ui_textkey_event(&tk, &e, out, sizeof(out));
+    e.type = TOUCH_EVENT_UP;
+    (void)ui_textkey_event(&tk, &e, out, sizeof(out));
+    CHECK_EQ(tk.len, 0);
+    e.point.id = 1;                           /* the first, slid off onto B */
+    (void)ui_textkey_event(&tk, &e, out, sizeof(out));
+    CHECK_EQ(tk.len, 0);
+    /* A press dropped for a touch loss types nothing. */
+    e.type = TOUCH_EVENT_DOWN;
+    e.point.x = (int16_t)(a.x + 5);
+    e.point.y = (int16_t)(a.y + 5);
+    (void)ui_textkey_event(&tk, &e, out, sizeof(out));
+    ui_textkey_cancel_press(&tk);
+    e.type = TOUCH_EVENT_UP;
+    (void)ui_textkey_event(&tk, &e, out, sizeof(out));
+    CHECK_EQ(tk.len, 0);
+    /* Every key inside the area; none outside the range. */
+    for (int k = 0; k < UI_TK_KEYS; ++k) {
+        const gfx_rect_t r = ui_textkey_key_rect(&tk, k);
+        CHECK(r.x >= k_area.x && r.x + r.w <= k_area.x + k_area.w);
+        CHECK(r.y >= k_area.y && r.y + r.h <= k_area.y + k_area.h);
+        CHECK(r.w >= 40 && r.h >= 40);
+        CHECK(ui_textkey_label(k)[0] != '\0');
+    }
+    CHECK_EQ(ui_textkey_key_rect(&tk, UI_TK_KEYS).w, 0);
+    CHECK_STR_EQ(ui_textkey_label(-1), "");
+    ui_textkey_close(&tk);
+    CHECK_EQ(ui_textkey_event(&tk, &e, out, sizeof(out)), UI_TEXTKEY_NONE);
+}
+
+TEST_CASE(the_keyboard_draws_inside_its_area_and_only_while_open)
+{
+    gfx_color_t *fb = calloc((size_t)W * H, sizeof(gfx_color_t));
+    gfx_canvas_t cv;
+    gfx_canvas_init(&cv, fb, W, H, W);
+    ui_theme_set(UI_THEME_DARK);
+    char out[4];
+    ui_textkey_open(&tk, k_area, "NAME", "", 23);
+    (void)tk_press(UI_TK_OK, out, sizeof(out));   /* refused: in the warning */
+    ui_textkey_render(&tk, &cv);
+    int outside = 0, inside = 0;
+    for (int y = 0; y < H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            if (fb[y * W + x] == 0) {
+                continue;
+            }
+            const bool in = x >= k_area.x && x < k_area.x + k_area.w
+                            && y >= k_area.y && y < k_area.y + k_area.h;
+            if (in) { ++inside; } else { ++outside; }
+        }
+    }
+    CHECK(inside > 0);
+    CHECK_EQ(outside, 0);
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    ui_textkey_close(&tk);
+    ui_textkey_render(&tk, &cv);
+    int any = 0;
+    for (int i = 0; i < W * H; ++i) {
+        any += (fb[i] != 0) ? 1 : 0;
+    }
+    CHECK_EQ(any, 0);
+    free(fb);
+}
+
 int main(void)
 {
     RUN(typed_digits_come_back_on_ok);
@@ -231,5 +373,9 @@ int main(void)
     RUN(a_key_acts_on_its_own_release_only);
     RUN(the_keys_tile_the_area_and_ok_spans_two);
     RUN(the_keypad_draws_inside_its_area_and_only_while_open);
+    RUN(the_keyboard_edits_the_name_it_was_opened_with);
+    RUN(the_keyboard_refuses_an_empty_name_and_keeps_its_length);
+    RUN(a_keyboard_key_acts_on_its_own_release_only);
+    RUN(the_keyboard_draws_inside_its_area_and_only_while_open);
     return test_summary("keypad");
 }

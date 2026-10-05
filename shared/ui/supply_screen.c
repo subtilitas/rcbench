@@ -605,6 +605,11 @@ supply_limits_t supply_screen_limits(void)
     return s.lim;
 }
 
+void supply_screen_limits_changed(void)
+{
+    refresh_limits();
+}
+
 void supply_screen_set_on_coming(bool coming)
 {
     if (!coming && !s.pending.on) {

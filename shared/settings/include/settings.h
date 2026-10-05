@@ -27,13 +27,14 @@ typedef enum {
     SET_CAT_APP,         /**< theme, brightness, language, units      */
     SET_CAT_IFACE,       /**< the sensors that plug into the bench    */
     SET_CAT_SUPPLY,      /**< the SUPPLY screen's limits and start    */
+    SET_CAT_SERVO,       /**< the SERVO screen's test and its limits  */
     SET_CAT_COUNT
 } setting_cat_t;
 
 /**
- * The categories SETUP lists.  SET_CAT_SUPPLY is edited on the SUPPLY
- * screen's LIMITS pane, beside the set points it limits, and SETUP has no
- * room for a fourth category button.
+ * The categories SETUP lists.  SET_CAT_SUPPLY and SET_CAT_SERVO are edited
+ * on their own screens' SETTINGS overlays, beside what they set, and SETUP
+ * has no room for a fourth category button.
  */
 #define SET_CAT_SETUP_COUNT SET_CAT_SUPPLY
 
@@ -84,6 +85,25 @@ typedef enum {
     SET_SUPPLY_TRIP_MS,
     SET_SUPPLY_CONFIRM_SLIDE,
     SET_SUPPLY_CONFIRM_KEYS,
+    /* --- the servo test ------------------------------------------------- */
+    SET_SERVO_CURVE,
+    SET_SERVO_TEST_HZ,
+    SET_SERVO_TEST_RANGE,
+    SET_SERVO_LEN_BY,
+    SET_SERVO_LEN_S,
+    SET_SERVO_LEN_MOVES,
+    SET_SERVO_DWELL_MS,
+    SET_SERVO_SETTLE_MS,
+    SET_SERVO_STEP_48,
+    SET_SERVO_STEP_60,
+    SET_SERVO_STEP_74,
+    SET_SERVO_STEP_84,
+    SET_SERVO_BROWNOUT,
+    SET_SERVO_IDLE_MAX,
+    SET_SERVO_HOLD_MAX,
+    SET_SERVO_TRAVEL_MAX_MS,
+    SET_SERVO_STALL_A,
+    SET_SERVO_REPORT,
 
     SETTING_COUNT
 } setting_id_t;
@@ -106,6 +126,18 @@ typedef struct {
 /** Called after any value actually changes, so the app can act on it. */
 typedef void (*settings_observer_fn)(setting_id_t id);
 
+/*
+ * A few short strings beside the numbers, kept by the same store and saved
+ * by the same request.  A string holds up to SETTINGS_TEXT_MAX - 1
+ * characters.
+ */
+typedef enum {
+    SET_TEXT_DUT_NAME = 0,   /**< the device under test, for the report */
+    SETTING_TEXT_COUNT
+} setting_text_id_t;
+
+#define SETTINGS_TEXT_MAX 24
+
 typedef struct {
     bool (*load)(float *values, int count);
     /*
@@ -115,6 +147,10 @@ typedef struct {
      * not happen and refusing the retry that would notice.
      */
     bool (*save)(const float *values, int count);
+    /* The strings, under the same rules; NULL in a store that keeps none,
+     * which then keeps them for the session only. */
+    bool (*load_text)(char (*texts)[SETTINGS_TEXT_MAX], int count);
+    bool (*save_text)(const char (*texts)[SETTINGS_TEXT_MAX], int count);
 } settings_store_t;
 
 /** Reset to defaults, then load from the store if one is set. */
@@ -144,6 +180,13 @@ int settings_in_category(setting_cat_t cat, setting_id_t *out, int max);
 
 /** Render the value as it should appear on screen, unit excluded. */
 const char *settings_value_text(setting_id_t id, char *buf, size_t n);
+
+/** A string setting.  Never NULL. */
+const char *settings_text(setting_text_id_t id);
+/** Its NVS key, 15 characters or fewer.  NULL for an id out of range. */
+const char *settings_text_key(setting_text_id_t id);
+/** Set it, cut to SETTINGS_TEXT_MAX - 1 characters; an edit like any other. */
+void settings_set_text(setting_text_id_t id, const char *text);
 
 #ifdef ESP_PLATFORM
 /** NVS-backed store; pass to settings_set_store() before settings_init(). */

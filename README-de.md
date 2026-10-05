@@ -52,7 +52,7 @@ warranty of any kind" der MIT-Lizenz gilt.
 | Bildschirm | Funktion | Stand |
 | --- | --- | --- |
 | Motor & ESC | Spannung, Strom, Verbrauch, Drehzahl und Temperaturen live geplottet | Bildschirm gebaut; Drehzahl, Spannung, Strom und ESC-Temperatur aus der bidirektionalen DShot-Telemetrie eines ESC, gegen einen AM32-ESC gelaufen; simulierte Werte, solange kein Coprozessor antwortet |
-| Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos | Bildschirm gebaut und steuert über den Link; treibt die als Ruderflächen gebundenen Pins, auf einem Aufbau-Prüfstand gelaufen, Timing ungemessen |
+| Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos; Servotypen mit ihren Bildwiederholraten, eine Warnung vor denen, die ein Servo zerstören können; die Leistung des Netzteils live | Bildschirm gebaut und steuert über den Link; treibt die als Ruderflächen gebundenen Pins, auf einem Aufbau-Prüfstand gelaufen, Timing ungemessen |
 | Netzteil | der PD mini, ein USB-PD-Netzteil (USB Power Delivery): Spannung und Strombegrenzung einstellen, Ausgang schalten, V, A und W plotten und loggen | Bildschirm gebaut, läuft aus einem Modell; kein Treiber für den PD mini, sein UART-Protokoll (Universal Asynchronous Receiver-Transmitter) liegt nicht in diesem Repository |
 | Analyser | sechzehn Empfängerkanäle mit Verlauf, die Digitalkanäle, LIVE / FRAME LOST / FAILSAFE / SILENT | S.BUS-Decoder gebaut; PIO-Empfänger (Programmable Input/Output) nicht geschrieben |
 | Programmierer | Parametertabellen für BLHeli_S, AM32, ESCape32, VESC und Hitec | Bildschirm gebaut; kein Protokoll auf einer Leitung |

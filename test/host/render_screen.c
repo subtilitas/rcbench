@@ -614,6 +614,38 @@ int main(int argc, char **argv)
             servo_screen_feedback((uint16_t)ss.position_us, a, true);
             ui_router_tick(0.01f);
         }
+        /* The supply feeding it, from the panel's supply model, for the
+         * live power plot. */
+        supply_sim_t sm;
+        supply_sim_init(&sm);
+        supply_sim_output(&sm, true);
+        supply_state_t sst;
+        memset(&sst, 0, sizeof(sst));
+        for (int i = 0; i < 300; ++i) {
+            supply_sim_step(&sm, 0.05f, &sst);
+            servo_screen_supply(&sst);
+        }
+        /*
+         * The overlay, opened the way a finger opens it.  Geometry from
+         * servo_screen.c, offset by the band: SETTINGS at the top of the
+         * right card, the tabs over the left card, the TYPE row and the
+         * list's HELI CYCLIC.
+         */
+        if (strcmp(view, "servo") != 0) {
+            ui_router_goto(SCREEN_SERVO);
+            tap(734, UI_BAND_H + 24);
+        }
+        if (strcmp(view, "servo-test") == 0) {
+            tap(136, UI_BAND_H + 27);
+        } else if (strcmp(view, "servo-limits") == 0) {
+            tap(216, UI_BAND_H + 27);
+        } else if (strcmp(view, "servo-warning") == 0) {
+            tap(100, UI_BAND_H + 71);
+            tap(130, UI_BAND_H + 212);
+        } else if (strcmp(view, "servo-name") == 0) {
+            tap(296, UI_BAND_H + 27);
+            tap(100, UI_BAND_H + 71);
+        }
     }
 
     ui_bench_status_t st = k_status;

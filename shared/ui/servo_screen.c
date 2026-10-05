@@ -5,6 +5,12 @@
  * the arm is drawn at the measured position, so a servo that is slow, stuck
  * or fighting a linkage lags the finger by that much.
  *
+ * SETTINGS, top right, opens the servo's settings over the left card: its
+ * type, frame rate and pulse widths, the automatic test, its limits and the
+ * device under test.  A type or a frame rate that can destroy a servo not
+ * made for it -- a heli profile, anything above 60 Hz -- is applied only
+ * after a warning held for two seconds, and is never kept past a restart.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -14,10 +20,16 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ui_theme.h"
-#include "ui_slider.h"
-#include "ui_widgets.h"
 #include "outputs.h"
+#include "settings.h"
+#include "supply_screen.h"
+#include "ui_keypad.h"
+#include "ui_plot.h"
+#include "ui_slider.h"
+#include "ui_tabs.h"
+#include "ui_textkey.h"
+#include "ui_theme.h"
+#include "ui_widgets.h"
 
 #define W 800
 #define H (480 - UI_BAND_H)
@@ -62,21 +74,165 @@
  */
 #define PHI(a) (a)
 
-/* A standard servo, and the two the bench meets most often after it. */
+/*
+ * The right card, top to bottom: the readings, the type and frame rate in
+ * force, the supply's live power, then the controls.
+ */
+#define RC_X      (RCARD_X + 12)
+#define RC_W      (RCARD_W - 24)
+#define SETB_W    96
+#define TAG_Y     118
+#define TAG_H     24
+#define PWR_TXT_Y 150
+#define PWR_Y     172
+#define PWR_H     72
+
+/*
+ * The overlay: the settings and the keypad, keyboard, list and warning they
+ * open all cover the left card.  The right card -- ARM, CENTRE, RELEASE and
+ * the readings -- stays where it is and works.
+ */
+#define OV_X      PAD
+#define OV_Y      PAD
+#define OV_W      LCARD_W
+#define OV_H      (H - 2 * PAD)
+#define OV_TAB_Y  (OV_Y + 8)
+#define OV_TAB_H  26
+#define OV_TAB_W  320
+#define OV_ROW0   (OV_Y + 48)
+#define OV_PITCH  42
+#define OV_ROW_H  34
+#define OV_COL_W  ((OV_W - 30) / 2)
+#define OV_VAL_W  100
+#define OV_NOTE_Y (OV_ROW0 + 5 * OV_PITCH + 6)
+
+/* The sample rate of the panel's loop, which is the power plot's time base. */
+#define SAMPLE_HZ 20.0f
+
+/*
+ * A pulse needs a pause before the next frame.  STANDARD PWM, WIDE and
+ * NARROW 760 keep one of at least 1 ms -- a 100 % margin on the 1 ms a
+ * standard servo's own decoder needs -- so their fastest frame rate is
+ * 1 / (longest pulse + 1 ms): 333 Hz for 2000 us.  The heli profiles run
+ * at their published rates, which leave less, so theirs is set by the
+ * profile and a pause of at least 0.5 ms.
+ */
+#define PWM_MIN_PAUSE_US  1000u
+#define HELI_MIN_PAUSE_US 500u
+/* Above this a frame rate needs the warning: an analogue servo overheats. */
+#define SAFE_RATE_HZ      60u
+
+/*
+ * The profiles the bench drives.  STANDARD PWM is the safe one and the one
+ * every restart starts at.  The heli profiles are Rotorflight's for digital
+ * cyclic and narrow-band tail servos: 1520 us centre, +/-700 us, up to
+ * 333 Hz; and 760 us centre, +/-350 us, up to 560 Hz.
+ */
 typedef struct {
-    const char *name;
-    uint16_t    min_us, centre_us, max_us;
+    const char     *name;
+    uint16_t        min_us, centre_us, max_us;
+    const uint16_t *rates;       /* the frame rates offered, Hz           */
+    uint8_t         rate_count;
+    uint16_t        default_hz;
+    uint16_t        max_hz;      /* the profile's ceiling; 0 is the pause */
+    bool            heli;        /* choosing it needs the warning          */
 } servo_type_t;
 
+static const uint16_t k_std_rates[]  = { 50, 60, 100, 150, 200, 250, 300, 333 };
+static const uint16_t k_cyc_rates[]  = { 50, 120, 200, 333 };
+static const uint16_t k_tail_rates[] = { 200, 333, 560 };
+
+#define RATES(a) (a), (uint8_t)(sizeof(a) / sizeof((a)[0]))
 static const servo_type_t k_types[] = {
-    { "STANDARD",   1000, 1500, 2000 },
-    { "NARROW 760", 660,  760,  860  },
-    { "WIDE",       800,  1500, 2200 },
+    { "STANDARD PWM",  1000, 1500, 2000, RATES(k_std_rates),  50,  0,   false },
+    { "NARROW 760",    660,  760,  860,  RATES(k_std_rates),  50,  0,   false },
+    { "WIDE",          800,  1500, 2200, RATES(k_std_rates),  50,  0,   false },
+    { "HELI CYCLIC",   820,  1520, 2220, RATES(k_cyc_rates),  333, 333, true  },
+    { "HELI TAIL 760", 410,  760,  1110, RATES(k_tail_rates), 560, 560, true  },
 };
 #define TYPE_COUNT ((int)(sizeof(k_types) / sizeof(k_types[0])))
 
+/* The overlay's pages. */
+enum { PG_OUTPUT = 0, PG_TEST, PG_LIMITS, PG_DUT, PG_COUNT };
+static const char *const k_pages[PG_COUNT] = { "OUTPUT", "TEST", "LIMITS",
+                                               "DUT" };
+
+/* What a settings row edits. */
+enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTRE, R_MAX, R_TRIM, R_TRAVEL,
+       R_REVERSE, R_SETTING, R_TEXT };
+
+typedef struct {
+    uint8_t      page;
+    uint8_t      kind;
+    setting_id_t id;          /* R_SETTING                              */
+    const char  *label;
+    uint8_t      col, row;
+    bool         wide;        /* the value takes both columns' width    */
+} ov_row_t;
+
+static const ov_row_t k_rows[] = {
+    { PG_OUTPUT, R_TYPE,    SETTING_COUNT, "TYPE",          0, 0, true  },
+    { PG_OUTPUT, R_RATE,    SETTING_COUNT, "FRAME RATE",    0, 1, true  },
+    { PG_OUTPUT, R_MIN,     SETTING_COUNT, "PULSE MIN",     0, 2, false },
+    { PG_OUTPUT, R_CENTRE,  SETTING_COUNT, "PULSE CENTRE",  1, 2, false },
+    { PG_OUTPUT, R_MAX,     SETTING_COUNT, "PULSE MAX",     0, 3, false },
+    { PG_OUTPUT, R_TRIM,    SETTING_COUNT, "TRIM",          1, 3, false },
+    { PG_OUTPUT, R_TRAVEL,  SETTING_COUNT, "TRAVEL",        0, 4, false },
+    { PG_OUTPUT, R_REVERSE, SETTING_COUNT, "REVERSE",       1, 4, false },
+
+    { PG_TEST, R_SETTING, SET_SERVO_CURVE,       "CURVE",      0, 0, false },
+    { PG_TEST, R_SETTING, SET_SERVO_TEST_HZ,     "SPEED",      0, 1, false },
+    { PG_TEST, R_SETTING, SET_SERVO_TEST_RANGE,  "RANGE",      0, 2, false },
+    { PG_TEST, R_SETTING, SET_SERVO_LEN_BY,      "LENGTH BY",  0, 3, false },
+    { PG_TEST, R_SETTING, SET_SERVO_LEN_S,       "TEST TIME",  0, 4, false },
+    { PG_TEST, R_SETTING, SET_SERVO_LEN_MOVES,   "MOVEMENTS",  0, 5, false },
+    { PG_TEST, R_SETTING, SET_SERVO_DWELL_MS,    "DWELL",      0, 6, false },
+    { PG_TEST, R_SETTING, SET_SERVO_SETTLE_MS,   "SETTLE",     0, 7, false },
+    { PG_TEST, R_SETTING, SET_SERVO_STEP_48,     "STEP 4.8 V", 1, 0, false },
+    { PG_TEST, R_SETTING, SET_SERVO_STEP_60,     "STEP 6.0 V", 1, 1, false },
+    { PG_TEST, R_SETTING, SET_SERVO_STEP_74,     "STEP 7.4 V", 1, 2, false },
+    { PG_TEST, R_SETTING, SET_SERVO_STEP_84,     "STEP 8.4 V", 1, 3, false },
+    { PG_TEST, R_SETTING, SET_SERVO_BROWNOUT,    "BROWN-OUT",  1, 4, false },
+
+    { PG_LIMITS, R_SETTING, SET_SUPPLY_V_MAX,        "VOLTAGE MAX",  0, 0, false },
+    { PG_LIMITS, R_SETTING, SET_SUPPLY_I_MAX,        "CURRENT MAX",  0, 1, false },
+    { PG_LIMITS, R_SETTING, SET_SERVO_STALL_A,       "STALL AT",     0, 2, false },
+    { PG_LIMITS, R_SETTING, SET_SERVO_IDLE_MAX,      "IDLE CURRENT", 1, 0, false },
+    { PG_LIMITS, R_SETTING, SET_SERVO_HOLD_MAX,      "HOLD CURRENT", 1, 1, false },
+    { PG_LIMITS, R_SETTING, SET_SERVO_TRAVEL_MAX_MS, "TRAVEL TIME",  1, 2, false },
+
+    { PG_DUT, R_TEXT,    SETTING_COUNT,    "NAME",   0, 0, true  },
+    { PG_DUT, R_SETTING, SET_SERVO_REPORT, "REPORT", 0, 1, false },
+};
+#define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
+
+/* The power plot's series: the supply's voltage, current and power. */
+enum { PS_V = 0, PS_A, PS_W, PS_COUNT };
+static const ui_plot_series_t k_power[PS_COUNT] = {
+    { "V", "V", 0, 2, 5.0f, 0 },
+    { "A", "A", 0, 2, 0.5f, 0 },
+    { "W", "W", 0, 1, 5.0f, 0 },
+};
+
+/* What a press is on, in the overlay and the panels it opens. */
+enum { OP_NONE = 0, OP_TAB, OP_CLOSE, OP_ROW, OP_TRIM_DN, OP_TRIM_UP,
+       OP_KEYPAD, OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY,
+       OP_WARN_CANCEL, OP_SETTINGS };
+
+/* What the list chooses, and what the keypad types. */
+enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM };
+enum { KT_NONE = 0, KT_MIN, KT_CENTRE, KT_MAX, KT_TRAVEL, KT_RATE,
+       KT_SETTING };
+
+#define CHOICE_MAX 10
+
 static struct {
+    /* The profile in force, for this session only: STANDARD PWM at 50 Hz
+     * at every restart. */
     int      type;
+    uint16_t min_us, centre_us, max_us;
+    uint16_t frame_hz;
+    bool     reverse;
     int16_t  trim_us;      /**< added to centre                        */
     float    travel_deg;   /**< how far each way the horn is allowed   */
     int      speed_pct;    /**< how fast the bench slews the command   */
@@ -112,9 +268,48 @@ static struct {
     uint32_t   arm_rev;
     uint32_t   drawn_arm[2];
 
-    gfx_rect_t arm_btn, centre_btn, release_btn;
-    gfx_rect_t trim_dn, trim_up, travel_dn, travel_up, type_btn;
+    gfx_rect_t arm_btn, centre_btn, release_btn, set_btn;
     ui_slider_t speed;
+
+    /* The supply's live power, beside the servo it feeds. */
+    ui_plot_t      power;
+    supply_state_t sup;
+    bool           have_sup;
+    uint32_t       power_rev;
+    uint32_t       drawn_power[2];
+
+    /* The overlay and what it opens. */
+    bool         ov_open;
+    ui_tabs_t    tabs;
+    int          ov_pressed;
+    int          ov_row;
+    uint8_t      ov_id;
+    bool         ov_have;
+    ui_keypad_t  kp;
+    int          kp_target;
+    setting_id_t kp_setting;
+    ui_textkey_t tk;
+    struct {
+        bool  open;
+        int   target;
+        setting_id_t id;
+        char  title[24];
+        char  labels[CHOICE_MAX][20];
+        int   values[CHOICE_MAX];
+        int   count;
+        int   pressed;
+    } ch;
+    struct {
+        bool      open;
+        int       type;
+        uint16_t  hz;
+        ui_hold_t hold;
+        bool      down;
+        uint8_t   id;
+        uint32_t  rev;
+    } warn;
+    uint32_t drawn_warn[2];
+    uint8_t  drawn_save[2];
 
     uint32_t ctrl_rev;
     uint32_t drawn_ctrl[2];
@@ -127,22 +322,23 @@ static const servo_type_t *type(void) { return &k_types[s.type]; }
 
 static uint16_t deg_to_us(float deg)
 {
-    const servo_type_t *t = type();
-    const float span = (float)(t->max_us - t->min_us) * 0.5f;
-    float us = (float)t->centre_us + (float)s.trim_us + deg / 90.0f * span;
-    if (us < (float)t->min_us) { us = (float)t->min_us; }
-    if (us > (float)t->max_us) { us = (float)t->max_us; }
+    const float d = s.reverse ? -deg : deg;
+    const float span = (float)(s.max_us - s.min_us) * 0.5f;
+    float us = (float)s.centre_us + (float)s.trim_us + d / 90.0f * span;
+    if (us < (float)s.min_us) { us = (float)s.min_us; }
+    if (us > (float)s.max_us) { us = (float)s.max_us; }
     return (uint16_t)(us + 0.5f);
 }
 
 static float us_to_deg(uint16_t us)
 {
-    const servo_type_t *t = type();
-    const float span = (float)(t->max_us - t->min_us) * 0.5f;
+    const float span = (float)(s.max_us - s.min_us) * 0.5f;
     if (span <= 0.0f) {
         return 0.0f;
     }
-    return ((float)us - (float)t->centre_us - (float)s.trim_us) * 90.0f / span;
+    const float d = ((float)us - (float)s.centre_us - (float)s.trim_us)
+                    * 90.0f / span;
+    return s.reverse ? -d : d;
 }
 
 static float clamp_travel(float deg)
@@ -150,6 +346,30 @@ static float clamp_travel(float deg)
     if (deg < -s.travel_deg) { return -s.travel_deg; }
     if (deg >  s.travel_deg) { return  s.travel_deg; }
     return deg;
+}
+
+/* The fastest frame rate the profile in force allows with these pulses:
+ * the pause rule, under the profile's own ceiling. */
+static uint16_t max_rate_for(int t, uint16_t max_us)
+{
+    const servo_type_t *ty = &k_types[t];
+    const unsigned pause = ty->heli ? HELI_MIN_PAUSE_US : PWM_MIN_PAUSE_US;
+    unsigned hz = 1000000u / ((unsigned)max_us + pause);
+    if (ty->max_hz != 0u && hz > ty->max_hz) {
+        hz = ty->max_hz;
+    }
+    return (uint16_t)hz;
+}
+
+/* A type or a rate that needs the warning before it is applied. */
+static bool dangerous(int t, uint16_t hz)
+{
+    return k_types[t].heli || hz > SAFE_RATE_HZ;
+}
+
+static bool in_force_dangerous(void)
+{
+    return dangerous(s.type, s.frame_hz);
 }
 
 /*
@@ -203,9 +423,10 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
     s.pending.value_us = us;
     /* The range travels with the pulse: the panel configures the channel
      * from it, and a narrow servo's 760 us centre is below a standard
-     * servo's floor. */
-    s.pending.min_us   = type()->min_us;
-    s.pending.max_us   = type()->max_us;
+     * servo's floor.  The frame rate goes with it. */
+    s.pending.min_us   = s.min_us;
+    s.pending.max_us   = s.max_us;
+    s.pending.frame_hz = s.frame_hz;
     s.pending.slew_per_s = slew_of(s.speed_pct);
     /* The grip only breathes while something is actually being held, so this
      * has to follow the command rather than the screen being open. */
@@ -215,11 +436,11 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
 /*
  * Say the position again under a mapping that has just changed.
  *
- * The pulse a command carries is the angle put through the type, the trim
- * and the travel; change any of them while an output is held and the pulse
- * on the pin belongs to the old one.  Switching a held servo from STANDARD
- * to NARROW 760 would otherwise leave 1500 us on a servo whose maximum is
- * 860 while the screen shows the new range.
+ * The pulse a command carries is the angle put through the profile, the
+ * trim, the reverse and the travel; change any of them while an output is
+ * held and the pulse on the pin belongs to the old one.  Switching a held
+ * servo from STANDARD PWM to NARROW 760 would otherwise leave 1500 us on a
+ * servo whose maximum is 860 while the screen shows the new range.
  */
 static void reissue(void)
 {
@@ -246,8 +467,8 @@ void servo_screen_set_armed(bool armed)
      * starts from nothing -- the panel drops the position and the slot on the
      * way through -- and a disarm holds nothing by definition.  A screen that
      * went on believing it was driving would say a discarded position again
-     * on the next change of type, trim or travel, onto a bench that is now
-     * armed.
+     * on the next change of profile, trim or travel, onto a bench that is
+     * now armed.
      */
     s.driving = false;
     if (armed) {
@@ -256,9 +477,9 @@ void servo_screen_set_armed(bool armed)
         /*
          * Disarmed, however it happened -- this screen's button, a STOP, a
          * dead touch, or the far end.  Nothing is being held any more: the
-         * rings must stop pulsing, and a change to the type, the trim or the
-         * travel must not say a position again and rebuild a command the
-         * stop had just released.
+         * rings must stop pulsing, and a change to the profile, the trim or
+         * the travel must not say a position again and rebuild a command
+         * the stop had just released.
          */
         if (ui_hold_left(&s.arm)) {
             /* The bench disarmed under a finger still down on the button, and
@@ -299,8 +520,8 @@ void servo_screen_cancel_arm(void)
      * And nothing is being held any more.  The armed state need not have
      * moved -- a bench that was not armed is stopped just the same, and the
      * panel centres the surface either way -- so this cannot wait for that
-     * edge: the rings would go on pulsing, and the next change of type, trim
-     * or travel would say the released position again.
+     * edge: the rings would go on pulsing, and the next change of profile,
+     * trim or travel would say the released position again.
      */
     if (s.driving) {
         s.driving = false;
@@ -353,11 +574,80 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)
     }
 }
 
+void servo_screen_supply(const supply_state_t *st)
+{
+    if (st == NULL) {
+        return;
+    }
+    s.sup = *st;
+    s.have_sup = true;
+    /* Only what arrived: a reading that did not is a gap, not a zero. */
+    const bool v_ok = st->online && (st->ok & SUPPLY_OK_VOLTAGE) != 0u;
+    const bool i_ok = st->online && (st->ok & SUPPLY_OK_CURRENT) != 0u;
+    const float v[PS_COUNT] = {
+        v_ok ? st->v : NAN,
+        i_ok ? st->i : NAN,
+        (v_ok && i_ok) ? st->p : NAN,
+    };
+    ui_plot_push(&s.power, v);
+    ui_plot_update_scales(&s.power, RC_W);
+    ++s.power_rev;
+}
+
 uint16_t servo_screen_commanded(void) { return deg_to_us(s.commanded_deg); }
+
+uint16_t servo_screen_frame_hz(void) { return s.frame_hz; }
+
+const char *servo_screen_type_name(void) { return type()->name; }
 
 void servo_screen_set_commanded(float deg)
 {
     command(deg);
+}
+
+/* ------------------------------------------------------------- the profile */
+
+/*
+ * A profile goes into force: a type with its own pulse widths when it is a
+ * different type, and a frame rate no faster than its pulses allow.
+ */
+static void apply_profile(int t, uint16_t hz)
+{
+    if (t != s.type) {
+        s.type      = t;
+        s.min_us    = k_types[t].min_us;
+        s.centre_us = k_types[t].centre_us;
+        s.max_us    = k_types[t].max_us;
+    }
+    const uint16_t top = max_rate_for(s.type, s.max_us);
+    s.frame_hz = (hz > top) ? top : hz;
+    reissue();
+    ++s.ctrl_rev;
+}
+
+/*
+ * A profile asked for: one that can destroy a servo not made for it opens
+ * the warning, and goes into force only once that has been held; any other
+ * goes into force at once.
+ */
+static void ask_profile(int t, uint16_t hz)
+{
+    const uint16_t pulses = (t != s.type) ? k_types[t].max_us : s.max_us;
+    const uint16_t top = max_rate_for(t, pulses);
+    if (hz > top) {
+        hz = top;
+    }
+    if (dangerous(t, hz)) {
+        s.warn.open = true;
+        s.warn.type = t;
+        s.warn.hz   = hz;
+        s.warn.down = false;
+        ui_hold_reset(&s.warn.hold);
+        ++s.warn.rev;
+        ++s.ctrl_rev;
+        return;
+    }
+    apply_profile(t, hz);
 }
 
 /* ------------------------------------------------------------------ layout */
@@ -365,30 +655,38 @@ void servo_screen_set_commanded(float deg)
 void servo_invalidate(void)
 {
     s.drawn_mask = 0;
-    s.drawn_ctrl[0] = UINT32_MAX;
-    s.drawn_ctrl[1] = UINT32_MAX;
-    /* No step the arm can be drawn at, so the next frame draws it. */
-    s.drawn_pulse[0] = -1;
-    s.drawn_pulse[1] = -1;
+    for (int b = 0; b < 2; ++b) {
+        s.drawn_ctrl[b]  = UINT32_MAX;
+        s.drawn_arm[b]   = UINT32_MAX;
+        s.drawn_power[b] = UINT32_MAX;
+        s.drawn_warn[b]  = UINT32_MAX;
+        s.drawn_save[b]  = 0xFFu;
+        /* No step the arm can be drawn at, so the next frame draws it. */
+        s.drawn_pulse[b] = -1;
+    }
+}
+
+static gfx_rect_t overlay_area(void)
+{
+    return (gfx_rect_t){ OV_X, OV_Y, OV_W, OV_H };
 }
 
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
-    s.drawn_ctrl[0] = UINT32_MAX;
-    s.drawn_ctrl[1] = UINT32_MAX;
+    servo_invalidate();
+    s.drawn_mask    = 0;
     s.travel_deg    = 90.0f;
     s.speed_pct     = 100;
+    /* STANDARD PWM at 50 Hz: what every restart starts at, whatever the
+     * session before it used. */
+    s.type      = 0;
+    s.min_us    = k_types[0].min_us;
+    s.centre_us = k_types[0].centre_us;
+    s.max_us    = k_types[0].max_us;
+    s.frame_hz  = k_types[0].default_hz;
 
-    const int x = RCARD_X + 12;
-    const int w = RCARD_W - 24;
-    s.trim_dn   = (gfx_rect_t){ (int16_t)(x + w - 96), 156, 30, 26 };
-    s.trim_up   = (gfx_rect_t){ (int16_t)(x + w - 30), 156, 30, 26 };
-    s.travel_dn = (gfx_rect_t){ (int16_t)(x + w - 96), 194, 30, 26 };
-    s.travel_up = (gfx_rect_t){ (int16_t)(x + w - 30), 194, 30, 26 };
-    s.type_btn  = (gfx_rect_t){ (int16_t)(x + w - 150), 232, 150, 26 };
-
-    ui_slider_init(&s.speed, (gfx_rect_t){ (int16_t)x, 296, (int16_t)w, 22 },
+    ui_slider_init(&s.speed, (gfx_rect_t){ RC_X, 296, RC_W, 22 },
                    10.0f, 100.0f, 0);
     s.speed.value = 100.0f;
     ui_slider_set_ticks(&s.speed, 0);
@@ -396,14 +694,481 @@ static void reset(void)
      * tap is how it is used.  The throttle's rule is the throttle's. */
     ui_slider_set_tap_to_set(&s.speed, true);
 
-    s.centre_btn  = (gfx_rect_t){ (int16_t)x, 350, (int16_t)(w / 2 - 5), 32 };
-    s.release_btn = (gfx_rect_t){ (int16_t)(x + w / 2 + 5), 350,
-                                  (int16_t)(w / 2 - 5), 32 };
+    s.centre_btn  = (gfx_rect_t){ RC_X, 350, (int16_t)(RC_W / 2 - 5), 32 };
+    s.release_btn = (gfx_rect_t){ (int16_t)(RC_X + RC_W / 2 + 5), 350,
+                                  (int16_t)(RC_W / 2 - 5), 32 };
     /* Full width and last, under the two that only shape what is commanded:
      * this is the one that decides whether anything is driven at all. */
-    s.arm_btn     = (gfx_rect_t){ (int16_t)x, 388, (int16_t)w, 32 };
-    s.drawn_arm[0] = UINT32_MAX;
-    s.drawn_arm[1] = UINT32_MAX;
+    s.arm_btn     = (gfx_rect_t){ RC_X, 388, RC_W, 32 };
+    s.set_btn     = (gfx_rect_t){ (int16_t)(RCARD_X + RCARD_W - 12 - SETB_W),
+                                  12, SETB_W, 24 };
+
+    ui_plot_init(&s.power, k_power, PS_COUNT, (float)RC_W / SAMPLE_HZ);
+    ui_tabs_init(&s.tabs, k_pages, PG_COUNT,
+                 (gfx_rect_t){ (int16_t)(OV_X + 10), OV_TAB_Y, OV_TAB_W,
+                               OV_TAB_H });
+    s.kp.pressed = -1;
+    s.tk.pressed = -1;
+    s.ch.pressed = -1;
+}
+
+/* --------------------------------------------------------------- the overlay */
+
+/* A row's rectangle: its column, or both for a wide one. */
+static gfx_rect_t row_rect(int i)
+{
+    const ov_row_t *r = &k_rows[i];
+    const int x = (r->col == 0) ? OV_X + 10 : OV_X + 20 + OV_COL_W;
+    const int w = r->wide ? OV_W - 20 : OV_COL_W;
+    return (gfx_rect_t){ (int16_t)x, (int16_t)(OV_ROW0 + r->row * OV_PITCH),
+                         (int16_t)w, OV_ROW_H };
+}
+
+/* Where a row's value is drawn and tapped. */
+static gfx_rect_t value_rect(int i)
+{
+    const gfx_rect_t r = row_rect(i);
+    const int w = k_rows[i].wide ? r.w - 124 : OV_VAL_W;
+    return (gfx_rect_t){ (int16_t)(r.x + r.w - w), r.y, (int16_t)w, r.h };
+}
+
+/* TRIM's two steps, inside its value. */
+static gfx_rect_t trim_rect(int i, bool up)
+{
+    const gfx_rect_t v = value_rect(i);
+    return (gfx_rect_t){ (int16_t)(up ? v.x + v.w - 30 : v.x), v.y, 30, v.h };
+}
+
+static gfx_rect_t close_rect(void)
+{
+    return (gfx_rect_t){ (int16_t)(OV_X + OV_W - 10 - 90), (int16_t)(OV_Y + 6),
+                         90, 30 };
+}
+
+static gfx_rect_t choice_rect(int i)
+{
+    const int per_col = 5;
+    const int col = i / per_col;
+    const int row = i % per_col;
+    return (gfx_rect_t){ (int16_t)(OV_X + 10 + col * (OV_COL_W + 10)),
+                         (int16_t)(OV_Y + 48 + row * 46),
+                         (int16_t)OV_COL_W, 40 };
+}
+
+static gfx_rect_t choice_cancel_rect(void)
+{
+    return (gfx_rect_t){ (int16_t)(OV_X + OV_W - 10 - 110),
+                         (int16_t)(OV_Y + OV_H - 46), 110, 36 };
+}
+
+static gfx_rect_t warn_apply_rect(void)
+{
+    return (gfx_rect_t){ (int16_t)(OV_X + 20), (int16_t)(OV_Y + OV_H - 76),
+                         240, 56 };
+}
+
+static gfx_rect_t warn_cancel_rect(void)
+{
+    return (gfx_rect_t){ (int16_t)(OV_X + OV_W - 20 - 180),
+                         (int16_t)(OV_Y + OV_H - 76), 180, 56 };
+}
+
+static int decimals_of(setting_id_t id)
+{
+    const setting_def_t *d = settings_def(id);
+    return (d->type == SET_TYPE_FLOAT && d->step < 1.0f) ? 2 : 0;
+}
+
+/* The longest pulse the frame rate in force leaves room for. */
+static uint16_t max_pulse_for_rate(void)
+{
+    const unsigned pause = type()->heli ? HELI_MIN_PAUSE_US : PWM_MIN_PAUSE_US;
+    const unsigned period = 1000000u / (unsigned)s.frame_hz;
+    unsigned top = (period > pause) ? period - pause : 0u;
+    if (top > 2700u) {
+        top = 2700u;
+    }
+    return (uint16_t)top;
+}
+
+static void close_panels(void)
+{
+    ui_keypad_close(&s.kp);
+    ui_textkey_close(&s.tk);
+    s.kp_target = KT_NONE;
+    s.ch.open   = false;
+    s.warn.open = false;
+    s.warn.down = false;
+    ui_hold_reset(&s.warn.hold);
+}
+
+static void open_choice(int target, setting_id_t id, const char *title)
+{
+    s.ch.open    = true;
+    s.ch.target  = target;
+    s.ch.id      = id;
+    s.ch.count   = 0;
+    s.ch.pressed = -1;
+    snprintf(s.ch.title, sizeof(s.ch.title), "%s", title);
+}
+
+static void choice_add(const char *label, int value)
+{
+    if (s.ch.count < CHOICE_MAX) {
+        snprintf(s.ch.labels[s.ch.count], sizeof(s.ch.labels[0]), "%s", label);
+        s.ch.values[s.ch.count] = value;
+        ++s.ch.count;
+    }
+}
+
+static void open_keypad(int target, const char *title, const char *unit,
+                        float value, float lo, float hi, int decimals)
+{
+    ui_keypad_open(&s.kp, overlay_area(), title, unit, value, lo, hi,
+                   decimals);
+    s.kp_target = target;
+}
+
+/* A settings row tapped: the editor its kind takes. */
+static void edit_row(int i)
+{
+    const ov_row_t *r = &k_rows[i];
+    switch (r->kind) {
+    case R_TYPE:
+        open_choice(CH_TYPE, SETTING_COUNT, "SERVO TYPE");
+        for (int t = 0; t < TYPE_COUNT; ++t) {
+            choice_add(k_types[t].name, t);
+        }
+        break;
+    case R_RATE: {
+        open_choice(CH_RATE, SETTING_COUNT, "FRAME RATE");
+        const uint16_t top = max_rate_for(s.type, s.max_us);
+        for (int k = 0; k < type()->rate_count; ++k) {
+            if (type()->rates[k] <= top) {
+                char lbl[16];
+                snprintf(lbl, sizeof(lbl), "%u Hz", (unsigned)type()->rates[k]);
+                choice_add(lbl, type()->rates[k]);
+            }
+        }
+        choice_add("CUSTOM", -1);
+        break;
+    }
+    case R_MIN:
+        open_keypad(KT_MIN, "PULSE MIN", "us", (float)s.min_us, 300.0f,
+                    (float)(s.centre_us - 50u), 0);
+        break;
+    case R_CENTRE:
+        open_keypad(KT_CENTRE, "PULSE CENTRE", "us", (float)s.centre_us,
+                    (float)(s.min_us + 50u), (float)(s.max_us - 50u), 0);
+        break;
+    case R_MAX: {
+        const uint16_t top = max_pulse_for_rate();
+        open_keypad(KT_MAX, "PULSE MAX", "us", (float)s.max_us,
+                    (float)(s.centre_us + 50u),
+                    (float)((top > s.centre_us + 50u) ? top
+                                                      : s.centre_us + 50u), 0);
+        break;
+    }
+    case R_TRAVEL:
+        open_keypad(KT_TRAVEL, "TRAVEL", "deg", s.travel_deg, 10.0f, 90.0f, 0);
+        break;
+    case R_REVERSE:
+        s.reverse = !s.reverse;
+        reissue();
+        break;
+    case R_TEXT:
+        ui_textkey_open(&s.tk, overlay_area(), "DEVICE UNDER TEST",
+                        settings_text(SET_TEXT_DUT_NAME), UI_TEXTKEY_MAX);
+        break;
+    case R_SETTING: {
+        const setting_def_t *d = settings_def(r->id);
+        if (d->type == SET_TYPE_BOOL) {
+            settings_set(r->id, settings_get_bool(r->id) ? 0.0f : 1.0f);
+            settings_request_save();
+        } else if (d->type == SET_TYPE_ENUM) {
+            open_choice(CH_ENUM, r->id, r->label);
+            for (int k = 0; k < d->option_count; ++k) {
+                choice_add(d->options[k], k);
+            }
+        } else {
+            open_keypad(KT_SETTING, r->label, d->unit, settings_get(r->id),
+                        d->min, d->max, decimals_of(r->id));
+            s.kp_setting = r->id;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    ++s.ctrl_rev;
+}
+
+static void choose(int k)
+{
+    const int v = s.ch.values[k];
+    const int target = s.ch.target;
+    const setting_id_t id = s.ch.id;
+    s.ch.open = false;
+    if (target == CH_TYPE) {
+        ask_profile(v, k_types[v].default_hz);
+    } else if (target == CH_RATE) {
+        if (v < 0) {
+            open_keypad(KT_RATE, "FRAME RATE", "Hz", (float)s.frame_hz, 50.0f,
+                        (float)max_rate_for(s.type, s.max_us), 0);
+        } else {
+            ask_profile(s.type, (uint16_t)v);
+        }
+    } else if (target == CH_ENUM) {
+        settings_set(id, (float)v);
+        settings_request_save();
+    }
+    ++s.ctrl_rev;
+}
+
+static void keypad_done(ui_keypad_result_t r, float v)
+{
+    if (r == UI_KEYPAD_NONE) {
+        return;
+    }
+    const int target = s.kp_target;
+    s.kp_target = KT_NONE;
+    if (r == UI_KEYPAD_OK) {
+        const uint16_t us = (uint16_t)lroundf(v);
+        switch (target) {
+        case KT_MIN:    s.min_us = us;    reissue(); break;
+        case KT_CENTRE: s.centre_us = us; reissue(); break;
+        case KT_MAX:
+            s.max_us = us;
+            apply_profile(s.type, s.frame_hz);   /* a rate it no longer fits
+                                                  * comes down; never up */
+            break;
+        case KT_TRAVEL:
+            s.travel_deg = (float)lroundf(v);
+            s.commanded_deg = clamp_travel(s.commanded_deg);
+            reissue();
+            break;
+        case KT_RATE:
+            ask_profile(s.type, us);
+            break;
+        case KT_SETTING: {
+            const setting_def_t *d = settings_def(s.kp_setting);
+            /* A cap rounds down onto its step, as on SUPPLY. */
+            if (d->step > 0.0f && (s.kp_setting == SET_SUPPLY_V_MAX
+                                   || s.kp_setting == SET_SUPPLY_I_MAX)) {
+                v = d->min + floorf((v - d->min) / d->step + 1e-3f) * d->step;
+            }
+            settings_set(s.kp_setting, v);
+            if (s.kp_setting == SET_SUPPLY_V_MAX
+                || s.kp_setting == SET_SUPPLY_I_MAX) {
+                supply_screen_limits_changed();
+            }
+            settings_request_save();
+            break;
+        }
+        default:
+            break;
+        }
+    }
+    ++s.ctrl_rev;
+}
+
+static void ov_take(const touch_event_t *evt, int code, int row)
+{
+    s.ov_have    = true;
+    s.ov_id      = evt->point.id;
+    s.ov_pressed = code;
+    s.ov_row     = row;
+    ++s.ctrl_rev;
+}
+
+static void ov_let_go(void)
+{
+    if (s.ov_have) {
+        s.ov_have    = false;
+        s.ov_pressed = OP_NONE;
+        ++s.ctrl_rev;
+    }
+}
+
+/* A press landing in the overlay: on whichever of its panels is up. */
+static void ov_down(const touch_event_t *evt)
+{
+    const int x = evt->point.x, y = evt->point.y;
+    if (s.warn.open) {
+        if (gfx_rect_contains(warn_apply_rect(), x, y)) {
+            ov_take(evt, OP_WARN_APPLY, -1);
+            s.warn.down = true;
+            ui_hold_begin(&s.warn.hold);
+            ++s.warn.rev;
+        } else if (gfx_rect_contains(warn_cancel_rect(), x, y)) {
+            ov_take(evt, OP_WARN_CANCEL, -1);
+        }
+        return;
+    }
+    if (s.kp.open) {
+        ov_take(evt, OP_KEYPAD, -1);
+        (void)ui_keypad_event(&s.kp, evt, NULL);
+        return;
+    }
+    if (s.tk.open) {
+        ov_take(evt, OP_TEXT, -1);
+        (void)ui_textkey_event(&s.tk, evt, NULL, 0);
+        return;
+    }
+    if (s.ch.open) {
+        for (int k = 0; k < s.ch.count; ++k) {
+            if (gfx_rect_contains(choice_rect(k), x, y)) {
+                ov_take(evt, OP_CHOICE, k);
+                return;
+            }
+        }
+        if (gfx_rect_contains(choice_cancel_rect(), x, y)) {
+            ov_take(evt, OP_CHOICE_CANCEL, -1);
+        }
+        return;
+    }
+    if (gfx_rect_contains((gfx_rect_t){ (int16_t)(OV_X + 10), OV_TAB_Y,
+                                        OV_TAB_W, OV_TAB_H }, x, y)) {
+        ov_take(evt, OP_TAB, -1);
+        (void)ui_tabs_event(&s.tabs, evt);
+        return;
+    }
+    if (gfx_rect_contains(close_rect(), x, y)) {
+        ov_take(evt, OP_CLOSE, -1);
+        return;
+    }
+    for (int i = 0; i < ROW_COUNT; ++i) {
+        if (k_rows[i].page != s.tabs.selected) {
+            continue;
+        }
+        if (k_rows[i].kind == R_TRIM) {
+            /* The steps act on the press, as the old CENTRE buttons did:
+             * a fine step should feel immediate. */
+            const bool up = gfx_rect_contains(trim_rect(i, true), x, y);
+            if (up || gfx_rect_contains(trim_rect(i, false), x, y)) {
+                ov_take(evt, up ? OP_TRIM_UP : OP_TRIM_DN, i);
+                s.trim_us = (int16_t)(s.trim_us + (up ? 5 : -5));
+                if (s.trim_us > 200) { s.trim_us = 200; }
+                if (s.trim_us < -200) { s.trim_us = -200; }
+                reissue();
+                return;
+            }
+            continue;
+        }
+        if (gfx_rect_contains(row_rect(i), x, y)) {
+            ov_take(evt, OP_ROW, i);
+            return;
+        }
+    }
+}
+
+/* The rest of an overlay press: its moves and its release. */
+static void ov_rest(const touch_event_t *evt)
+{
+    const int x = evt->point.x, y = evt->point.y;
+    const bool up = (evt->type == TOUCH_EVENT_UP);
+    const int was = s.ov_pressed;
+    const int row = s.ov_row;
+    switch (was) {
+    case OP_KEYPAD: {
+        float v = 0.0f;
+        const ui_keypad_result_t r = ui_keypad_event(&s.kp, evt, &v);
+        if (up) {
+            ov_let_go();
+        }
+        keypad_done(r, v);
+        ++s.ctrl_rev;
+        return;
+    }
+    case OP_TEXT: {
+        char name[SETTINGS_TEXT_MAX];
+        const ui_textkey_result_t r =
+            ui_textkey_event(&s.tk, evt, name, sizeof(name));
+        if (up) {
+            ov_let_go();
+        }
+        if (r == UI_TEXTKEY_OK) {
+            settings_set_text(SET_TEXT_DUT_NAME, name);
+            settings_request_save();
+        }
+        ++s.ctrl_rev;
+        return;
+    }
+    case OP_TAB:
+        if (ui_tabs_event(&s.tabs, evt)) {
+            ++s.ctrl_rev;
+        }
+        if (up) {
+            ov_let_go();
+        }
+        return;
+    case OP_WARN_APPLY:
+        if (!up) {
+            /* A finger that leaves APPLY abandons the hold, as on ARM. */
+            if (!gfx_rect_contains(warn_apply_rect(), x, y)
+                && ui_hold_leave(&s.warn.hold)) {
+                s.warn.down = false;
+                ++s.warn.rev;
+                ov_let_go();
+            }
+            return;
+        }
+        (void)ui_hold_end(&s.warn.hold);
+        s.warn.down = false;
+        ++s.warn.rev;
+        ov_let_go();
+        return;
+    default:
+        break;
+    }
+    if (!up) {
+        return;
+    }
+    ov_let_go();
+    switch (was) {
+    case OP_CLOSE:
+        if (gfx_rect_contains(close_rect(), x, y)) {
+            s.ov_open = false;
+            close_panels();
+            servo_invalidate();
+        }
+        break;
+    case OP_ROW:
+        if (row >= 0 && gfx_rect_contains(row_rect(row), x, y)) {
+            edit_row(row);
+        }
+        break;
+    case OP_CHOICE:
+        if (row >= 0 && row < s.ch.count
+            && gfx_rect_contains(choice_rect(row), x, y)) {
+            choose(row);
+        }
+        break;
+    case OP_CHOICE_CANCEL:
+        if (gfx_rect_contains(choice_cancel_rect(), x, y)) {
+            s.ch.open = false;
+        }
+        break;
+    case OP_WARN_CANCEL:
+        if (gfx_rect_contains(warn_cancel_rect(), x, y)) {
+            s.warn.open = false;
+        }
+        break;
+    case OP_SETTINGS:
+        if (gfx_rect_contains(s.set_btn, x, y)) {
+            /* SETTINGS opens the overlay and closes it, taking whatever is
+             * open in it; a warning not held is a profile not applied.  The
+             * servo's lead runs out past the left card, where the overlay
+             * does not reach, so the change is a whole repaint. */
+            s.ov_open = !s.ov_open;
+            close_panels();
+            servo_invalidate();
+        }
+        break;
+    default:
+        break;
+    }
+    ++s.ctrl_rev;
 }
 
 /* ------------------------------------------------------------------ events */
@@ -438,31 +1203,35 @@ static void event(const touch_event_t *evt)
     }
     const int px = evt->point.x, py = evt->point.y;
 
+    /* The overlay's own press first: its moves and its release are its. */
+    if (s.ov_have && evt->point.id == s.ov_id
+        && evt->type != TOUCH_EVENT_DOWN) {
+        ov_rest(evt);
+        return;
+    }
+
     if (evt->type == TOUCH_EVENT_DOWN) {
+        if (s.ov_open && gfx_rect_contains(overlay_area(), px, py)) {
+            /* One press at a time in the overlay. */
+            if (!s.ov_have) {
+                ov_down(evt);
+            }
+            return;
+        }
+        if (gfx_rect_contains(s.set_btn, px, py)) {
+            if (!s.ov_have) {
+                ov_take(evt, OP_SETTINGS, -1);
+            }
+            return;
+        }
         float deg;
-        if (on_the_dial(px, py, &deg)) {
+        if (!s.ov_open && on_the_dial(px, py, &deg)) {
             s.dragging = true;
             s.drag_id  = evt->point.id;
             command(deg);
             return;
         }
-        if (gfx_rect_contains(s.trim_dn, px, py))   { s.trim_us -= 5; reissue(); ++s.ctrl_rev; }
-        else if (gfx_rect_contains(s.trim_up, px, py)) { s.trim_us += 5; reissue(); ++s.ctrl_rev; }
-        else if (gfx_rect_contains(s.travel_dn, px, py)) {
-            s.travel_deg -= 5.0f;
-            if (s.travel_deg < 10.0f) { s.travel_deg = 10.0f; }
-            s.commanded_deg = clamp_travel(s.commanded_deg);
-            reissue();
-            ++s.ctrl_rev;
-        } else if (gfx_rect_contains(s.travel_up, px, py)) {
-            s.travel_deg += 5.0f;
-            if (s.travel_deg > 90.0f) { s.travel_deg = 90.0f; }
-            ++s.ctrl_rev;
-        } else if (gfx_rect_contains(s.type_btn, px, py)) {
-            s.type = (s.type + 1) % TYPE_COUNT;
-            reissue();
-            ++s.ctrl_rev;
-        } else if (gfx_rect_contains(s.centre_btn, px, py)) {
+        if (gfx_rect_contains(s.centre_btn, px, py)) {
             s.commanded_deg = 0.0f;
             post(SERVO_CMD_CENTRE, deg_to_us(0.0f));
             ++s.ctrl_rev;
@@ -760,12 +1529,11 @@ static void draw_left(gfx_canvas_t *c)
 
 static void row(gfx_canvas_t *c, int y, const char *label, const char *value)
 {
-    const int x = RCARD_X + 12;
-    gfx_text(c, x, y + 5, label, UI_FONT_LABEL,
+    gfx_text(c, RC_X, y + 5, label, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     if (value != NULL) {
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)(x + 80), (int16_t)(y + 5),
-                                     (int16_t)(RCARD_W - 24 - 80), 16 },
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(RC_X + 80), (int16_t)(y + 5),
+                                     (int16_t)(RC_W - 80), 16 },
                     value, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1,
                     GFX_ALIGN_RIGHT);
     }
@@ -794,15 +1562,95 @@ static void draw_arm(gfx_canvas_t *c)
               s.arm_down, true);
 }
 
-static void draw_right(gfx_canvas_t *c)
+static gfx_rect_t power_rect(void)
 {
-    const int x = RCARD_X + 12;
-    const int w = RCARD_W - 24;
-    gfx_fill_rect(c, RCARD_X + 1, PAD + 1, RCARD_W - 2, H - 2 * PAD - 2,
-                  ui_theme_color(UI_C_PANEL));
+    return (gfx_rect_t){ RC_X, (int16_t)(PWR_TXT_Y - 2), RC_W,
+                         (int16_t)(PWR_Y + PWR_H - PWR_TXT_Y + 2) };
+}
 
-    gfx_text(c, x, 18, "CONFIGURATION", UI_FONT_LABEL,
+/* The supply's voltage, current and power, read and plotted. */
+static void draw_power(gfx_canvas_t *c)
+{
+    const gfx_rect_t r = power_rect();
+    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
+    gfx_text(c, RC_X, PWR_TXT_Y, "SUPPLY", UI_FONT_LABEL,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
+    const bool v_ok = s.have_sup && s.sup.online
+                      && (s.sup.ok & SUPPLY_OK_VOLTAGE) != 0u;
+    const bool i_ok = s.have_sup && s.sup.online
+                      && (s.sup.ok & SUPPLY_OK_CURRENT) != 0u;
+    char v[12], a[12], w[12];
+    if (v_ok) { snprintf(v, sizeof(v), "%.2f V", (double)s.sup.v); }
+    else      { snprintf(v, sizeof(v), "-- V"); }
+    if (i_ok) { snprintf(a, sizeof(a), "%.2f A", (double)s.sup.i); }
+    else      { snprintf(a, sizeof(a), "-- A"); }
+    if (v_ok && i_ok) { snprintf(w, sizeof(w), "%.1f W", (double)s.sup.p); }
+    else              { snprintf(w, sizeof(w), "-- W"); }
+    /* Each in its trace's colour, so the numbers name the lines. */
+    const gfx_color_t col[PS_COUNT] = { ui_theme_color(UI_C_VOLT),
+                                        ui_theme_color(UI_C_CURR),
+                                        ui_theme_color(UI_C_POWER) };
+    const char *txt[PS_COUNT] = { v, a, w };
+    for (int k = 0; k < PS_COUNT; ++k) {
+        s.power.series[k].color = col[k];
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(RC_X + 64 + k * 68), PWR_TXT_Y,
+                                     68, 16 },
+                    txt[k], UI_FONT_LABEL, col[k], 1, GFX_ALIGN_RIGHT);
+    }
+    ui_plot_render(&s.power, c, (gfx_rect_t){ RC_X, PWR_Y, RC_W, PWR_H });
+}
+
+static gfx_rect_t tag_rect(void)
+{
+    return (gfx_rect_t){ RC_X, TAG_Y, RC_W, TAG_H };
+}
+
+/* The profile in force, in the danger colour when it is one that can
+ * destroy a servo not made for it. */
+static void draw_tag(gfx_canvas_t *c)
+{
+    const gfx_rect_t r = tag_rect();
+    const bool danger = in_force_dangerous();
+    const gfx_color_t fill = danger ? ui_theme_color(UI_C_DANGER)
+                                    : ui_theme_color(UI_C_PANEL_SUNK);
+    gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, 4, fill);
+    char line[40];
+    snprintf(line, sizeof(line), "%s  %u Hz", type()->name,
+             (unsigned)s.frame_hz);
+    gfx_text_in(c, r, line, UI_FONT_LABEL,
+                danger ? GFX_WHITE : ui_theme_color(UI_C_TEXT), 1,
+                GFX_ALIGN_CENTER);
+}
+
+/*
+ * The right card.  The power plot only when @p power: a drag of the horn
+ * repaints this card every frame for the COMMANDED line, and the plot
+ * beside it has not moved -- its own samples repaint it, clipped.
+ */
+static void draw_right(gfx_canvas_t *c, bool power)
+{
+    const gfx_rect_t pr = power_rect();
+    if (power) {
+        gfx_fill_rect(c, RCARD_X + 1, PAD + 1, RCARD_W - 2, H - 2 * PAD - 2,
+                      ui_theme_color(UI_C_PANEL));
+    } else {
+        /* Around the plot, which keeps what it shows. */
+        gfx_fill_rect(c, RCARD_X + 1, PAD + 1, RCARD_W - 2,
+                      pr.y - PAD - 1, ui_theme_color(UI_C_PANEL));
+        gfx_fill_rect(c, RCARD_X + 1, pr.y + pr.h, RCARD_W - 2,
+                      H - PAD - 1 - (pr.y + pr.h), ui_theme_color(UI_C_PANEL));
+        gfx_fill_rect(c, RCARD_X + 1, pr.y, pr.x - RCARD_X - 1, pr.h,
+                      ui_theme_color(UI_C_PANEL));
+        gfx_fill_rect(c, pr.x + pr.w, pr.y, RCARD_X + RCARD_W - 1 - (pr.x + pr.w),
+                      pr.h, ui_theme_color(UI_C_PANEL));
+    }
+
+    gfx_text(c, RC_X, 18, "SERVO", UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
+    ui_button(c, s.set_btn, "SETTINGS",
+              s.ov_open ? ui_theme_color(UI_C_ACCENT)
+                        : ui_theme_color(UI_C_PANEL_SUNK),
+              s.ov_have && s.ov_pressed == OP_SETTINGS, true);
 
     char buf[24];
     snprintf(buf, sizeof(buf), "%u us", (unsigned)deg_to_us(s.commanded_deg));
@@ -817,35 +1665,18 @@ static void draw_right(gfx_canvas_t *c)
         row(c, 92, "CURRENT", "---");
     }
 
-    gfx_hline(c, x, 124, w, ui_theme_color(UI_C_EDGE));
-    gfx_text(c, x, 132, "SETTINGS", UI_FONT_LABEL,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
-
-    snprintf(buf, sizeof(buf), "%+d us", (int)s.trim_us);
-    row(c, 156, "CENTRE", NULL);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(x + 90), 161, 72, 16 }, buf,
-                UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1, GFX_ALIGN_RIGHT);
-    ui_button(c, s.trim_dn, "-", ui_theme_color(UI_C_PANEL_HI), false, true);
-    ui_button(c, s.trim_up, "+", ui_theme_color(UI_C_PANEL_HI), false, true);
-
-    snprintf(buf, sizeof(buf), "+/-%d deg", (int)s.travel_deg);
-    row(c, 194, "TRAVEL", NULL);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(x + 90), 199, 72, 16 }, buf,
-                UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1, GFX_ALIGN_RIGHT);
-    ui_button(c, s.travel_dn, "-", ui_theme_color(UI_C_PANEL_HI), false, true);
-    ui_button(c, s.travel_up, "+", ui_theme_color(UI_C_PANEL_HI), false, true);
-
-    row(c, 232, "TYPE", NULL);
-    ui_button(c, s.type_btn, type()->name, ui_theme_color(UI_C_PANEL_HI),
-              false, true);
+    draw_tag(c);
+    if (power) {
+        draw_power(c);
+    }
 
     snprintf(buf, sizeof(buf), "%d %%", s.speed_pct);
     row(c, 264, "SPEED", buf);
     s.speed.color = ui_theme_color(UI_C_ACCENT);
     ui_slider_render(&s.speed, c);
 
-    snprintf(buf, sizeof(buf), "%u - %u us",
-             (unsigned)type()->min_us, (unsigned)type()->max_us);
+    snprintf(buf, sizeof(buf), "%u - %u us", (unsigned)s.min_us,
+             (unsigned)s.max_us);
     row(c, 322, "RANGE", buf);
 
     ui_button(c, s.centre_btn, "CENTRE", ui_theme_color(UI_C_ACCENT),
@@ -853,6 +1684,272 @@ static void draw_right(gfx_canvas_t *c)
     ui_button(c, s.release_btn, "RELEASE", ui_theme_color(UI_C_PANEL_HI),
               false, true);
     draw_arm(c);
+}
+
+/* Whether the settings reached the medium: 0 saved, 1 waiting for a quiet
+ * moment, 2 refused, 3 changed on SETUP and not asked to be saved. */
+static uint8_t save_state(void)
+{
+    if (settings_save_failed()) {
+        return 2u;
+    }
+    if (settings_save_asked()) {
+        return 1u;
+    }
+    return settings_dirty() ? 3u : 0u;
+}
+
+static gfx_rect_t save_line_rect(void)
+{
+    return (gfx_rect_t){ (int16_t)(OV_X + 10), (int16_t)(OV_Y + OV_H - 24),
+                         (int16_t)(OV_W / 2), 18 };
+}
+
+static void draw_save_line(gfx_canvas_t *c)
+{
+    static const char *const k_save[] = { "SAVED", "SAVE WAITING", "NOT SAVED",
+                                          "SETUP CHANGES NOT SAVED" };
+    const gfx_rect_t r = save_line_rect();
+    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
+    const uint8_t st = save_state();
+    gfx_text(c, r.x, r.y + 1, k_save[st], &gfx_font_8x16,
+             (st == 2u) ? ui_theme_color(UI_C_WARN)
+                        : ui_theme_color(UI_C_TEXT_DIM), 1);
+}
+
+/* A test setting that the length rule leaves unused is drawn faint. */
+static bool row_unused(const ov_row_t *r)
+{
+    if (r->kind != R_SETTING) {
+        return false;
+    }
+    const int by = settings_get_int(SET_SERVO_LEN_BY);
+    return (r->id == SET_SERVO_LEN_S && by != 0)
+           || (r->id == SET_SERVO_LEN_MOVES && by == 0);
+}
+
+static void row_value(const ov_row_t *r, char *buf, size_t n)
+{
+    switch (r->kind) {
+    case R_TYPE:    snprintf(buf, n, "%s", type()->name); return;
+    case R_RATE:    snprintf(buf, n, "%u Hz", (unsigned)s.frame_hz); return;
+    case R_MIN:     snprintf(buf, n, "%u us", (unsigned)s.min_us); return;
+    case R_CENTRE:  snprintf(buf, n, "%u us", (unsigned)s.centre_us); return;
+    case R_MAX:     snprintf(buf, n, "%u us", (unsigned)s.max_us); return;
+    case R_TRIM:    snprintf(buf, n, "%+d", (int)s.trim_us); return;
+    case R_TRAVEL:  snprintf(buf, n, "+/-%d", (int)s.travel_deg); return;
+    case R_REVERSE: snprintf(buf, n, "%s", s.reverse ? "ON" : "OFF"); return;
+    case R_TEXT:    snprintf(buf, n, "%s", settings_text(SET_TEXT_DUT_NAME));
+                    return;
+    default:
+        break;
+    }
+    const setting_def_t *d = settings_def(r->id);
+    const float v = settings_get(r->id);
+    const bool limit = (r->id == SET_SERVO_IDLE_MAX
+                        || r->id == SET_SERVO_HOLD_MAX
+                        || r->id == SET_SERVO_TRAVEL_MAX_MS);
+    if (d->type == SET_TYPE_BOOL) {
+        snprintf(buf, n, "%s", (v != 0.0f) ? "ON" : "OFF");
+    } else if (d->type == SET_TYPE_ENUM) {
+        const int k = settings_get_int(r->id);
+        snprintf(buf, n, "%s", (k >= 0 && k < d->option_count)
+                                   ? d->options[k] : "?");
+    } else if (limit && !(v > 0.0f)) {
+        snprintf(buf, n, "OFF");
+    } else {
+        snprintf(buf, n, "%.*f %s", decimals_of(r->id), (double)v, d->unit);
+    }
+}
+
+static void draw_note(gfx_canvas_t *c, int x, int y, const char *const *lines,
+                      int count)
+{
+    for (int i = 0; i < count; ++i) {
+        gfx_text(c, x, y + i * 18, lines[i], &gfx_font_8x16,
+                 ui_theme_color(UI_C_TEXT_FAINT), 1);
+    }
+}
+
+static void draw_page(gfx_canvas_t *c)
+{
+    ui_tabs_render(&s.tabs, c);
+    ui_button(c, close_rect(), "CLOSE", ui_theme_color(UI_C_PANEL_SUNK),
+              s.ov_have && s.ov_pressed == OP_CLOSE, true);
+    for (int i = 0; i < ROW_COUNT; ++i) {
+        const ov_row_t *r = &k_rows[i];
+        if (r->page != s.tabs.selected) {
+            continue;
+        }
+        const gfx_rect_t rr = row_rect(i);
+        const gfx_rect_t vr = value_rect(i);
+        const bool faint = row_unused(r);
+        gfx_text(c, rr.x, rr.y + 9, r->label, &gfx_font_8x16,
+                 faint ? ui_theme_color(UI_C_TEXT_FAINT)
+                       : ui_theme_color(UI_C_TEXT_DIM), 1);
+        char v[32];
+        row_value(r, v, sizeof(v));
+        const bool pressed = s.ov_have && s.ov_pressed == OP_ROW
+                             && s.ov_row == i;
+        if (r->kind == R_TRIM) {
+            gfx_fill_rect(c, vr.x, vr.y, vr.w, vr.h,
+                          ui_theme_color(UI_C_PANEL_SUNK));
+            gfx_text_in(c, vr, v, &gfx_font_8x16, ui_theme_color(UI_C_TEXT),
+                        1, GFX_ALIGN_CENTER);
+            ui_button(c, trim_rect(i, false), "-",
+                      ui_theme_color(UI_C_PANEL_HI),
+                      s.ov_have && s.ov_pressed == OP_TRIM_DN, true);
+            ui_button(c, trim_rect(i, true), "+",
+                      ui_theme_color(UI_C_PANEL_HI),
+                      s.ov_have && s.ov_pressed == OP_TRIM_UP, true);
+            continue;
+        }
+        /* The type and the rate in force in the danger colour when they
+         * are ones that can destroy a servo not made for them. */
+        const bool danger = (r->kind == R_TYPE || r->kind == R_RATE)
+                            && in_force_dangerous();
+        ui_button(c, vr, v,
+                  danger ? ui_theme_color(UI_C_DANGER)
+                         : ui_theme_color(UI_C_PANEL_SUNK),
+                  pressed, !faint);
+    }
+
+    const int nx = OV_X + 10;
+    char l1[64], l2[64];
+    if (s.tabs.selected == PG_OUTPUT) {
+        snprintf(l1, sizeof(l1), "Fastest with these pulses: %u Hz (%s pause).",
+                 (unsigned)max_rate_for(s.type, s.max_us),
+                 type()->heli ? "0.5 ms" : "1 ms");
+        snprintf(l2, sizeof(l2), "Type and rate are STANDARD PWM 50 Hz at start.");
+        const char *const lines[] = {
+            l1, l2,
+            "The coprocessor drives every PWM output at",
+            "50 Hz; the frame rate set here does not reach it.",
+        };
+        draw_note(c, nx, OV_NOTE_Y, lines, 4);
+    } else if (s.tabs.selected == PG_TEST) {
+        const char *const lines[] = {
+            "No automatic test runs in",
+            "this build; these settings",
+            "are kept for it.",
+        };
+        draw_note(c, OV_X + 20 + OV_COL_W, OV_ROW0 + 5 * OV_PITCH + 6, lines,
+                  3);
+    } else if (s.tabs.selected == PG_LIMITS) {
+        const char *const lines[] = {
+            "VOLTAGE MAX and CURRENT MAX are the SUPPLY",
+            "screen's caps.  A pass/fail limit of 0 is",
+            "not checked.  Above STALL AT the servo counts",
+            "as stalled.",
+        };
+        draw_note(c, nx, OV_ROW0 + 3 * OV_PITCH + 6, lines, 4);
+    } else {
+        const char *const lines[] = {
+            "The name heads each test report.",
+        };
+        draw_note(c, nx, OV_ROW0 + 2 * OV_PITCH + 6, lines, 1);
+    }
+    draw_save_line(c);
+}
+
+static void draw_choice(gfx_canvas_t *c)
+{
+    gfx_text(c, OV_X + 10, OV_Y + 16, s.ch.title, &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT), 1);
+    for (int k = 0; k < s.ch.count; ++k) {
+        bool current = false;
+        if (s.ch.target == CH_TYPE) {
+            current = (s.ch.values[k] == s.type);
+        } else if (s.ch.target == CH_RATE) {
+            current = (s.ch.values[k] == (int)s.frame_hz);
+        } else if (s.ch.target == CH_ENUM) {
+            current = (s.ch.values[k] == settings_get_int(s.ch.id));
+        }
+        ui_button(c, choice_rect(k), s.ch.labels[k],
+                  current ? ui_theme_color(UI_C_ACCENT)
+                          : ui_theme_color(UI_C_PANEL_SUNK),
+                  s.ov_have && s.ov_pressed == OP_CHOICE && s.ov_row == k,
+                  true);
+    }
+    ui_button(c, choice_cancel_rect(), "CANCEL",
+              ui_theme_color(UI_C_PANEL_SUNK),
+              s.ov_have && s.ov_pressed == OP_CHOICE_CANCEL, true);
+}
+
+static gfx_color_t warn_fill(void)
+{
+    return ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK),
+                        ui_theme_color(UI_C_DANGER), s.warn.hold.held_s);
+}
+
+static void draw_warn_apply(gfx_canvas_t *c)
+{
+    ui_button(c, warn_apply_rect(), "HOLD TO APPLY", warn_fill(),
+              s.warn.down, true);
+}
+
+/*
+ * The warning a type or a frame rate that can destroy a servo needs before
+ * it is applied: in the danger colour, saying what it is and what it does
+ * to a servo not made for it.
+ */
+static void draw_warning(gfx_canvas_t *c)
+{
+    const gfx_rect_t a = overlay_area();
+    const gfx_color_t red = ui_theme_color(UI_C_DANGER);
+    gfx_draw_rect(c, a.x, a.y, a.w, a.h, red);
+    gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, red);
+    gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, red);
+    gfx_text(c, a.x + 20, a.y + 20, "CAN DESTROY THE SERVO", &gfx_font_8x16,
+             red, 2);
+    const servo_type_t *t = &k_types[s.warn.type];
+    char what[64];
+    snprintf(what, sizeof(what), "%s at %u Hz, %u-%u us",
+             t->name, (unsigned)s.warn.hz,
+             (unsigned)((s.warn.type == s.type) ? s.min_us : t->min_us),
+             (unsigned)((s.warn.type == s.type) ? s.max_us : t->max_us));
+    gfx_text(c, a.x + 20, a.y + 66, what, &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT), 1);
+    const char *const lines[] = {
+        "Only for a servo made for it: check its datasheet.",
+        "A servo that is not overheats or jams within",
+        "seconds, and is destroyed.",
+        "An analogue servo takes no more than 60 Hz.",
+        "Every restart goes back to STANDARD PWM 50 Hz.",
+    };
+    for (int i = 0; i < 5; ++i) {
+        gfx_text(c, a.x + 20, a.y + 104 + i * 22, lines[i], &gfx_font_8x16,
+                 (i < 3) ? ui_theme_color(UI_C_TEXT)
+                         : ui_theme_color(UI_C_TEXT_DIM), 1);
+    }
+    draw_warn_apply(c);
+    ui_button(c, warn_cancel_rect(), "CANCEL",
+              ui_theme_color(UI_C_PANEL_SUNK),
+              s.ov_have && s.ov_pressed == OP_WARN_CANCEL, true);
+}
+
+static void draw_overlay(gfx_canvas_t *c)
+{
+    const gfx_rect_t a = overlay_area();
+    if (s.kp.open) {
+        ui_keypad_render(&s.kp, c);
+        return;
+    }
+    if (s.tk.open) {
+        ui_textkey_render(&s.tk, c);
+        return;
+    }
+    gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
+    if (s.warn.open) {
+        draw_warning(c);
+        return;
+    }
+    gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_ACCENT));
+    if (s.ch.open) {
+        draw_choice(c);
+        return;
+    }
+    draw_page(c);
 }
 
 static void tick(float dt_s)
@@ -865,6 +1962,17 @@ static void tick(float dt_s)
     }
     if (s.arm.flash_left > 0) {
         ++s.arm_rev;   /* keep the frames coming while it flashes */
+    }
+
+    /* The warning's hold: the profile goes into force when it completes. */
+    if (s.warn.open && s.warn.down) {
+        ++s.warn.rev;
+        if (ui_hold_tick(&s.warn.hold, dt_s)) {
+            s.warn.open = false;
+            s.warn.down = false;
+            ov_let_go();
+            apply_profile(s.warn.type, s.warn.hz);
+        }
     }
 
     if (s.driving) {
@@ -899,6 +2007,21 @@ static void tick(float dt_s)
     ++s.ctrl_rev;
 }
 
+/* Draw @p fn clipped to @p box. */
+static void clipped(gfx_canvas_t *c, gfx_rect_t box, void (*fn)(gfx_canvas_t *))
+{
+    gfx_rect_t old_clip = c->clip;
+    if (gfx_clip_set(c, box)) {
+        fn(c);
+    }
+    c->clip = old_clip;
+}
+
+static bool page_shown(void)
+{
+    return s.ov_open && !s.warn.open && !s.kp.open && !s.tk.open && !s.ch.open;
+}
+
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
@@ -912,69 +2035,86 @@ static void render(gfx_canvas_t *c, int buffer_index)
                                  (int16_t)(H - 2 * PAD) },
                 ui_theme_color(UI_C_PANEL));
         s.drawn_mask |= bit;
+        s.drawn_ctrl[buf]  = UINT32_MAX;
+        s.drawn_power[buf] = UINT32_MAX;
     }
 
-    /* How far the grip reaches past the arm's tip, and so how much of the
-     * card a breath alone has to repaint. */
-    const int grip_r = 36;
-
-    /*
-     * ARM animating on its own repaints its own 292 x 32 button and nothing
-     * else.  The right card is 292 x 420 and the fade runs for two seconds:
-     * asking for the card every frame would spend most of the panel's
-     * bandwidth on one button.
-     */
-    if (s.drawn_ctrl[buf] == s.ctrl_rev && s.drawn_arm[buf] != s.arm_rev) {
-        s.drawn_arm[buf] = s.arm_rev;
-        gfx_rect_t old_clip = c->clip;
-        if (gfx_clip_set(c, s.arm_btn)) {
-            draw_arm(c);
+    /* The keypad and the keyboard keep their own counts of what changed. */
+    const uint32_t ov_rev = s.ctrl_rev + s.kp.revision + s.tk.revision;
+    if (s.drawn_ctrl[buf] != ov_rev) {
+        /* The plot when it moved or this buffer has never had it. */
+        const bool power = (s.drawn_power[buf] != s.power_rev);
+        s.drawn_ctrl[buf]  = ov_rev;
+        s.drawn_arm[buf]   = s.arm_rev;
+        s.drawn_power[buf] = s.power_rev;
+        s.drawn_warn[buf]  = s.warn.rev;
+        s.drawn_save[buf]  = save_state();
+        s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
+        if (s.ov_open) {
+            draw_overlay(c);
+        } else {
+            draw_left(c);
         }
-        c->clip = old_clip;
+        draw_right(c, power);
         if (s.arm.flash_left > 0) {
             ui_hold_flash_step(&s.arm);
         }
         return;
     }
 
-    if (s.drawn_ctrl[buf] == s.ctrl_rev) {
-        /*
-         * Nothing moved, so only the grip is repainted, and only while it
-         * breathes.  Clipped to the tip: repainting the 488x418 card at the
-         * frame rate to animate a ring of 36 px radius would cost most of
-         * the panel's bandwidth.
-         */
-        const int step = (int)(s.pulse * 8.0f);
-        if (!s.driving || s.drawn_pulse[buf] == step) {
-            return;
+    /*
+     * Otherwise only what moved on its own, each clipped to itself: ARM's
+     * fade, the warning's hold, the power plot, the save line and the
+     * grip.  The right card is 292 x 420 and the fades run for two seconds:
+     * asking for whole cards every frame would spend most of the panel's
+     * bandwidth on a button.
+     */
+    if (s.drawn_arm[buf] != s.arm_rev) {
+        s.drawn_arm[buf] = s.arm_rev;
+        clipped(c, s.arm_btn, draw_arm);
+        if (s.arm.flash_left > 0) {
+            ui_hold_flash_step(&s.arm);
         }
-        s.drawn_pulse[buf] = step;
-
-        int tx, ty;
-        at(s.shown_deg, HORN_L, &tx, &ty);
-        const gfx_rect_t box = { (int16_t)(tx - grip_r), (int16_t)(ty - grip_r),
-                                 (int16_t)(grip_r * 2), (int16_t)(grip_r * 2) };
-        gfx_rect_t old_clip = c->clip;
-        if (gfx_clip_set(c, box)) {
-            draw_left(c);
-        }
-        c->clip = old_clip;
+    }
+    if (s.drawn_power[buf] != s.power_rev) {
+        s.drawn_power[buf] = s.power_rev;
+        clipped(c, power_rect(), draw_power);
+    }
+    if (s.ov_open && s.warn.open && s.drawn_warn[buf] != s.warn.rev) {
+        s.drawn_warn[buf] = s.warn.rev;
+        clipped(c, warn_apply_rect(), draw_warn_apply);
+    }
+    if (page_shown() && s.drawn_save[buf] != save_state()) {
+        s.drawn_save[buf] = save_state();
+        clipped(c, save_line_rect(), draw_save_line);
+    }
+    if (s.ov_open) {
         return;
     }
-    s.drawn_ctrl[buf] = s.ctrl_rev;
-    s.drawn_arm[buf]  = s.arm_rev;
-    s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
 
-    draw_left(c);
-    draw_right(c);
-    if (s.arm.flash_left > 0) {
-        ui_hold_flash_step(&s.arm);
+    /*
+     * The grip, only while it breathes.  Clipped to the tip: repainting the
+     * 488x418 card at the frame rate to animate a ring of 36 px radius would
+     * cost most of the panel's bandwidth.
+     */
+    const int grip_r = 36;
+    const int step = (int)(s.pulse * 8.0f);
+    if (!s.driving || s.drawn_pulse[buf] == step) {
+        return;
     }
+    s.drawn_pulse[buf] = step;
+    int tx, ty;
+    at(s.shown_deg, HORN_L, &tx, &ty);
+    const gfx_rect_t box = { (int16_t)(tx - grip_r), (int16_t)(ty - grip_r),
+                             (int16_t)(grip_r * 2), (int16_t)(grip_r * 2) };
+    clipped(c, box, draw_left);
 }
 
 /*
  * Leaving releases the output: a screen that is not visible must not hold
  * the servo somewhere, the same rule as the motor bench's disarm on leave.
+ * The overlay closes with it, and a warning not held is a profile not
+ * applied.
  */
 static void leave(void)
 {
@@ -988,7 +2128,13 @@ static void leave(void)
     s.armed = false;
     ui_hold_reset(&s.arm);
     s.arm_down = false;
+    s.ov_open = false;
+    close_panels();
+    ui_tabs_cancel(&s.tabs);
+    s.ov_have = false;
+    s.ov_pressed = OP_NONE;
     ++s.arm_rev;
+    ++s.ctrl_rev;
 }
 
 /*
@@ -1023,7 +2169,18 @@ static void cancel(void)
      * on an armed bench moves the servo.
      */
     s.dragging = false;
+    /* And the overlay's press: the warning's hold above all, which must not
+     * complete on a contact that may have gone. */
+    ui_keypad_cancel_press(&s.kp);
+    ui_textkey_cancel_press(&s.tk);
+    ui_tabs_cancel(&s.tabs);
+    ui_hold_reset(&s.warn.hold);
+    s.warn.down = false;
+    ++s.warn.rev;
+    s.ov_have = false;
+    s.ov_pressed = OP_NONE;
     ++s.arm_rev;
+    ++s.ctrl_rev;
 }
 
 static const ui_screen_t k_screen = {
