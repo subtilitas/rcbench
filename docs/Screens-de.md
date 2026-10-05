@@ -265,7 +265,8 @@ anderes gedacht war.
 (Protokoll 4.1). Sie gilt für jeden PWM-Ausgang, dessen erster Kanal die Rolle
 surface hat; ein PPM-Ausgang behält seinen eigenen Frame. Sie geht mit jeder
 gehaltenen Stellung hinaus, und ein Profilwechsel, während das scharfe Servo
-ruht, setzt die Ruhelage mit ihr neu. Eine schnellere Rate folgt den
+ruht, setzt die Ruhelage mit ihr neu; einer, der während eines laufenden Arm
+geschieht, ist der, den der Arm verwendet. Eine schnellere Rate folgt den
 Impulsbreiten, sobald alle angekommen sind; jede andere Rate geht ihnen voraus,
 und nichts Breiteres geht hinaus, bevor sie angekommen ist. So tragen die Pins
 nie eine schnelle Rate mit den breiteren Impulsen eines langsameren Profils.

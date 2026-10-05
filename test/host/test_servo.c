@@ -704,6 +704,41 @@ TEST_CASE(a_resting_armed_servo_takes_the_new_profile)
     CHECK_EQ(c.frame_hz, 50);
 }
 
+/*
+ * A profile changed between the ARM hold and the arm landing is the one the
+ * pins get: an arm not yet collected carries it, and one already collected
+ * is followed by the rest restated under it.
+ */
+TEST_CASE(a_profile_changed_while_an_arm_is_pending_is_the_one_armed)
+{
+    fresh();
+    arm_press();
+    held(UI_HOLD_S + 0.1f);
+    arm_release();
+    choose_type(1);                            /* NARROW 760 */
+    servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_ARM);
+    CHECK_EQ(c.min_us, 660);
+    CHECK_EQ(c.max_us, 860);
+    servo_screen_set_armed(true);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);   /* nothing changed since */
+
+    fresh();
+    arm_press();
+    held(UI_HOLD_S + 0.1f);
+    arm_release();
+    c = last_cmd();                            /* collected: STANDARD PWM */
+    CHECK_EQ(c.kind, SERVO_CMD_ARM);
+    CHECK_EQ(c.min_us, 1000);
+    choose_type(4);                            /* HELI TAIL 760, held */
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    servo_screen_set_armed(true);
+    c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_RELEASE);
+    CHECK_EQ(c.min_us, 410);
+    CHECK_EQ(c.frame_hz, 560);
+}
+
 /* ------------------------------------------------------- the servo's range */
 
 /*
@@ -1389,6 +1424,7 @@ int main(void)
     RUN(the_trim_says_the_position_again_while_it_is_held);
     RUN(nothing_is_said_again_when_nothing_is_being_held);
     RUN(a_resting_armed_servo_takes_the_new_profile);
+    RUN(a_profile_changed_while_an_arm_is_pending_is_the_one_armed);
     RUN(a_stop_abandons_a_hold_that_is_under_way);
     RUN(a_cancelled_hold_leaves_no_arm_to_be_read_later);
     RUN(a_second_contact_cannot_take_over_the_arm_hold);

@@ -314,6 +314,11 @@ static struct {
     servo_rate_state_t rate_st;   /* what became of the rate rate_hz    */
     uint16_t           rate_hz;
 
+    /* Changes to what a command carries -- the profile, the pulses, trim,
+     * travel -- and how many there had been when ARM was asked for. */
+    uint32_t profile_rev;
+    uint32_t arm_profile_rev;
+
     uint32_t ctrl_rev;
     uint32_t drawn_ctrl[2];
     unsigned drawn_mask;
@@ -453,6 +458,9 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
     }
     s.pending.kind     = kind;
     s.pending.value_us = us;
+    if (kind == SERVO_CMD_ARM) {
+        s.arm_profile_rev = s.profile_rev;
+    }
     /* The range travels with the pulse: the panel configures the channel
      * from it, and a narrow servo's 760 us centre is below a standard
      * servo's floor.  The frame rate goes with it. */
@@ -475,6 +483,20 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
  */
 static void reissue(void)
 {
+    ++s.profile_rev;
+    if (s.pending.kind == SERVO_CMD_ARM) {
+        /*
+         * An arm asked for and not yet collected carries the profile it was
+         * asked under, and the panel centres the surfaces under it before it
+         * arms: it carries the one in force instead.  One already collected
+         * is answered when the arm lands; see servo_screen_set_armed().
+         */
+        cmd_range(&s.pending.min_us, &s.pending.max_us);
+        s.pending.frame_hz   = s.frame_hz;
+        s.pending.slew_per_s = slew_of(s.speed_pct);
+        s.arm_profile_rev    = s.profile_rev;
+        return;
+    }
     if (s.driving) {
         post(SERVO_CMD_POSITION, deg_to_us(s.commanded_deg));
     } else if (s.armed) {
@@ -514,6 +536,17 @@ void servo_screen_set_armed(bool armed)
     s.driving = false;
     if (armed) {
         ui_hold_reached(&s.arm);
+        /*
+         * The profile changed after ARM was asked for, and the panel centred
+         * the surfaces under the one the arm carried: the rest is restated
+         * under the profile in force, its range and rate in the panel's
+         * order, before a heli rate can stay on pins the screen shows as
+         * STANDARD PWM.
+         */
+        if (s.profile_rev != s.arm_profile_rev) {
+            post(SERVO_CMD_RELEASE, 0);
+            s.arm_profile_rev = s.profile_rev;
+        }
     } else {
         /*
          * Disarmed, however it happened -- this screen's button, a STOP, a
