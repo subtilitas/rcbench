@@ -229,7 +229,11 @@ keep at least 1 ms between pulses, so their fastest rate is 1 / (longest
 pulse + 1 ms): 333 Hz for 2000 us. The heli profiles run at Rotorflight's
 rates for digital cyclic and narrow-band tail servos, with at least 0.5 ms
 between pulses. A frame rate the pulses leave no pause for is refused, and a
-longer PULSE MAX is refused at a rate it does not fit.
+longer PULSE MAX is refused at a rate it does not fit. The pause is kept after
+the longest pulse the coprocessor can render, the top of the range a command
+carries: PULSE MAX, or past it when CENTRE is off the middle, by as much as
+CENTRE lies nearer MAX than MIN. So a CENTRE that would push that top past
+the rate's pause is refused too.
 
 **A heli type, or any frame rate above 60 Hz, can destroy a servo that is not
 made for it.** Choosing one opens a warning in the danger colour that names

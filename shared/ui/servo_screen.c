@@ -378,6 +378,19 @@ static void cmd_range(uint16_t *lo, uint16_t *hi)
     *hi = (uint16_t)((unsigned)s.centre_us + half);
 }
 
+/*
+ * The longest pulse the far end can render: the top of the range a command
+ * carries, which is past PULSE MAX when CENTRE is off the middle.  A pulse
+ * of an old span under a new range reaches it between two transactions, so
+ * the frame rate's pause is kept from it rather than from PULSE MAX.
+ */
+static uint16_t cmd_top(void)
+{
+    uint16_t lo, hi;
+    cmd_range(&lo, &hi);
+    return hi;
+}
+
 static float clamp_travel(float deg)
 {
     if (deg < -s.travel_deg) { return -s.travel_deg; }
@@ -705,7 +718,7 @@ static void apply_profile(int t, uint16_t hz)
         s.centre_us = k_types[t].centre_us;
         s.max_us    = k_types[t].max_us;
     }
-    const uint16_t top = max_rate_for(s.type, s.max_us);
+    const uint16_t top = max_rate_for(s.type, cmd_top());
     s.frame_hz = (hz > top) ? top : hz;
     reissue();
     ++s.ctrl_rev;
@@ -718,7 +731,7 @@ static void apply_profile(int t, uint16_t hz)
  */
 static void ask_profile(int t, uint16_t hz)
 {
-    const uint16_t pulses = (t != s.type) ? k_types[t].max_us : s.max_us;
+    const uint16_t pulses = (t != s.type) ? k_types[t].max_us : cmd_top();
     const uint16_t top = max_rate_for(t, pulses);
     if (hz > top) {
         hz = top;
@@ -928,7 +941,7 @@ static void edit_row(int i)
         break;
     case R_RATE: {
         open_choice(CH_RATE, SETTING_COUNT, "FRAME RATE");
-        const uint16_t top = max_rate_for(s.type, s.max_us);
+        const uint16_t top = max_rate_for(s.type, cmd_top());
         for (int k = 0; k < type()->rate_count; ++k) {
             if (type()->rates[k] <= top) {
                 char lbl[16];
@@ -942,20 +955,23 @@ static void edit_row(int i)
     /*
      * Each end at least 50 us from the centre, and the range a command
      * carries -- centred on CENTRE, out to the further end; see cmd_range()
-     * -- inside what the coprocessor takes.  So an end may lie no further
-     * from the centre than the centre lies from the floor or the ceiling.
+     * -- inside what the coprocessor takes and what the frame rate leaves
+     * a pause after (max_pulse_for_rate(), never above the ceiling).  So an
+     * end may lie no further from the centre than the centre lies from the
+     * floor or from that top.
      */
     case R_MIN: {
         const unsigned c = s.centre_us;
-        const unsigned lo = (2u * c > OUT_CEILING_US + OUT_FLOOR_US)
-                                ? 2u * c - OUT_CEILING_US : OUT_FLOOR_US;
+        const unsigned top = max_pulse_for_rate();
+        const unsigned lo = (2u * c > top + OUT_FLOOR_US) ? 2u * c - top
+                                                          : OUT_FLOOR_US;
         open_keypad(KT_MIN, "PULSE MIN", "us", (float)s.min_us, (float)lo,
                     (float)(c - 50u), 0);
         break;
     }
     case R_CENTRE: {
         unsigned lo = (s.max_us + OUT_FLOOR_US + 1u) / 2u;
-        unsigned hi = (OUT_CEILING_US + s.min_us) / 2u;
+        unsigned hi = (max_pulse_for_rate() + s.min_us) / 2u;
         if (lo < s.min_us + 50u) { lo = s.min_us + 50u; }
         if (hi > s.max_us - 50u) { hi = s.max_us - 50u; }
         open_keypad(KT_CENTRE, "PULSE CENTRE", "us", (float)s.centre_us,
@@ -1016,7 +1032,7 @@ static void choose(int k)
     } else if (target == CH_RATE) {
         if (v < 0) {
             open_keypad(KT_RATE, "FRAME RATE", "Hz", (float)s.frame_hz, 50.0f,
-                        (float)max_rate_for(s.type, s.max_us), 0);
+                        (float)max_rate_for(s.type, cmd_top()), 0);
         } else {
             ask_profile(s.type, (uint16_t)v);
         }
@@ -1957,7 +1973,7 @@ static void draw_page(gfx_canvas_t *c)
     if (s.tabs.selected == PG_OUTPUT) {
         char l1[64], l2[64];
         snprintf(l1, sizeof(l1), "Fastest with these pulses: %u Hz (%s pause).",
-                 (unsigned)max_rate_for(s.type, s.max_us),
+                 (unsigned)max_rate_for(s.type, cmd_top()),
                  type()->heli ? "0.5 ms" : "1 ms");
         snprintf(l2, sizeof(l2), "Type and rate are STANDARD PWM 50 Hz at start.");
         const char *const lines[] = { l1, l2 };

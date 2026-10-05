@@ -848,6 +848,57 @@ TEST_CASE(a_pulse_width_the_coprocessor_would_refuse_is_not_taken)
 }
 
 /*
+ * The range a command carries reaches past PULSE MAX when CENTRE is off the
+ * middle, and the far end can render its top between two transactions: the
+ * frame rate's pause is kept from that top.  At HELI TAIL 760's 560 Hz,
+ * 1285 us is the longest pulse with 0.5 ms after it, so CENTRE may not move
+ * the range past it; at 50 Hz a centre of 1700 us carries 1000..2400 us and
+ * leaves 294 Hz as the fastest rate.
+ */
+TEST_CASE(the_pause_is_kept_from_the_top_of_the_range_a_command_carries)
+{
+    fresh();
+    choose_type(4);                            /* HELI TAIL 760, 560 Hz */
+    open_settings();
+    tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
+    keys("1060");                              /* would carry 410..1710 */
+    key(UI_KEY_CANCEL);
+    close_settings();
+    servo_screen_set_commanded(90.0f);
+    servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.max_us, 1110);                  /* refused: still 760 */
+    open_settings();
+    tap(ROW_R_X, ROW_Y(2));
+    keys("840");                               /* 410..1270 fits */
+    close_settings();
+    servo_screen_set_commanded(90.0f);
+    c = last_cmd();
+    CHECK_EQ(c.min_us, 410);
+    CHECK_EQ(c.max_us, 1270);
+    CHECK_EQ(c.frame_hz, 560);
+
+    fresh();
+    open_settings();
+    tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
+    keys("1700");                              /* 1000..2400 */
+    tap(ROW_L_X, ROW_Y(1));                    /* FRAME RATE */
+    tap(CH_X(6), CH_Y(6));                     /* CUSTOM, after 250 Hz */
+    keys("333");                               /* past 294 Hz: refused */
+    key(UI_KEY_CANCEL);
+    CHECK_EQ(servo_screen_frame_hz(), 50);
+    tap(ROW_L_X, ROW_Y(1));
+    tap(CH_X(6), CH_Y(6));
+    keys("290");                               /* fits; past 60 Hz: warned */
+    hold_apply(2.3f);
+    close_settings();
+    CHECK_EQ(servo_screen_frame_hz(), 290);
+    servo_screen_set_commanded(0.0f);
+    c = last_cmd();
+    CHECK_EQ(c.max_us, 2400);
+    CHECK_EQ(c.value_us, 1700);
+}
+
+/*
  * MIN, CENTRE and MAX are set one by one, so each side of centre runs to
  * its own end: -90 deg is MIN and +90 deg is MAX.  The range a command
  * carries is centred on CENTRE, because the far end rests a surface at its
@@ -1438,6 +1489,7 @@ int main(void)
     RUN(every_profile_is_a_range_the_coprocessor_takes);
     RUN(a_pulse_width_the_coprocessor_would_refuse_is_not_taken);
     RUN(each_side_of_centre_runs_to_its_own_end);
+    RUN(the_pause_is_kept_from_the_top_of_the_range_a_command_carries);
     RUN(a_warning_cancelled_dropped_or_left_applies_nothing);
     RUN(a_rate_above_60_hz_needs_the_warning_and_60_does_not);
     RUN(standard_pwm_keeps_a_millisecond_between_pulses);

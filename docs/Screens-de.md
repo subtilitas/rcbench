@@ -247,7 +247,12 @@ also 1 / (längster Impuls + 1 ms): 333 Hz bei 2000 us. Die Heli-Profile laufen
 mit den Raten, die Rotorflight für digitale Taumelscheiben- und
 Schmalband-Heckservos nennt, mit mindestens 0,5 ms zwischen den Impulsen. Eine
 Rate, die den Impulsen keine Pause lässt, wird abgelehnt, ebenso ein längerer
-PULSE MAX bei einer Rate, in die er nicht passt.
+PULSE MAX bei einer Rate, in die er nicht passt. Die Pause gilt nach dem
+längsten Impuls, den der Koprozessor ausgeben kann, dem oberen Ende des
+Bereichs, den ein Befehl trägt: PULSE MAX, oder darüber hinaus, wenn CENTRE
+nicht in der Mitte liegt, um so viel, wie CENTRE näher an MAX liegt als an MIN.
+Ein CENTRE, der dieses Ende über die Pause der Rate schieben würde, wird
+ebenfalls abgelehnt.
 
 **Ein Heli-Typ oder jede Bildwiederholrate über 60 Hz kann ein Servo zerstören,
 das nicht dafür gebaut ist.** Die Wahl öffnet eine Warnung in der
