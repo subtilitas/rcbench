@@ -1,0 +1,391 @@
+{
+ "role": "P4",
+ "category": "R6",
+ "label": "P4-stock-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "Servo supply inductor",
+    "part": "SRP1265A-4R7M",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 108, canPresaleNumber 96; gate need=5x1=5, threshold max(5x5,50)=50; pass",
+      "read": "stockCount 108, canPresaleNumber 96",
+      "source": "vendors.py jlcpcb C780205 (selectSmtComponentList API, HTTP 200, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:44Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "not read: Bourns' product-detail page carries no lifecycle-status field in its body",
+      "read": "not read: the product-detail page (fresh fetch) still carries no lifecycle/status field for SRP1265A-4R7M in its body; only generic UI filter classes (\"active\" as a CSS state, unrelated to product lifecycle)",
+      "source": "https://www.bourns.com/products/magnetic-products/product-detail/power-inductors-smd-high-current-shielded/srp1265a (vendors.py fetch chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:04Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life notice; Bourns' 2017-07-17 PCN is a terminal design change to certain SRP1265A part numbers, not an EOL notice; the obsolescence-memo listing names no SRP1265A part",
+      "read": "confirmed on re-fetch: the PCN listing carries the same single SRP1038A/SRP1238A/SRP1245A/SRP1265A entry dated 2017-07-17, titled \"Terminal Design Change to Certain Part Numbers\" (not an EOL/LTB notice); the product-obsolescence-memos page returns zero hits for \"SRP1265A\"",
+      "source": "https://www.bourns.com/resources/product-change-notifications and https://www.bourns.com/resources/product-obsolescence-memos (vendors.py fetch chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:51Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1; fixed by the specification: one inductor for the one servo converter (IOBoard.md:341)",
+      "read": "IOBoard.md's Servo supply row names one TPS55285 converter for the board and no separate inductor count; one inductor serves that one converter",
+      "source": "hardware/docs/IOBoard.md, checkout e13f5f60d2e553032b27a14f31ed4a93ef4fe828",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board; LCSC C780205",
+      "read": "JLCPCB's exact-match result carries LCSC C780205 for SRP1265A-4R7M; IOBoard.md places the servo converter and its inductor on the IO board (not among the off-board items of rule 1, e.g. R3's external module or R8's external shunt)",
+      "source": "vendors.py jlcpcb C780205 (HTTP 200); hardware/docs/IOBoard.md, checkout e13f5f60d2e5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:30Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no published commitment; bourns.com lists Product Change Notifications, Product Obsolescence Memos and Obsolete Data Sheets resources only",
+      "read": "confirmed: the product-detail page and its resources menu list only Product Change Notifications, Product Obsolescence Memos and Obsolete Data Sheets; no longevity or product-lifecycle programme page found for Bourns",
+      "source": "https://www.bourns.com/products/magnetic-products/product-detail/power-inductors-smd-high-current-shielded/srp1265a; https://www.bourns.com/resources/product-obsolescence-memos (vendors.py fetch chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:50Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "on the market by February 2016 or earlier; current sheet carries only REV. 06/24; first revision date not read",
+      "read": "the web.archive.org capture of 2016-03-27 of the maker's datasheet URL still returns HTTP 200 and shows \"REV. 02/16\" with SRP1265A-4R7M listed in the electrical table; the current maker datasheet (re-fetched) shows only \"REV. 06/24\", no earlier date stated",
+      "source": "https://web.archive.org/web/20160327191233id_/http://www.bourns.com:80/docs/Product-Datasheets/SRP1265A.pdf (vendors.py fetch chrome, HTTP 200); https://www.bourns.com/docs/Product-Datasheets/SRP1265A.pdf (vendors.py fetch chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:55Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB has no status field",
+      "read": "Digi-Key ProductStatus Active (cached same-day reading); JLCPCB's API carries no status field; LCSC's product page shows the part \"In stock\" with no lifecycle disagreement",
+      "source": "vendors.py digikey SRP1265A-4R7M (cached); https://www.lcsc.com/product-detail/C780205.html (vendors.py fetch chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:19:27Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "22 weeks (Digi-Key)",
+      "read": "lead_weeks 22",
+      "source": "vendors.py digikey SRP1265A-4R7M (https://api.digikey.com/products/v4/search/SRP1265A-4R7M/productdetails, cached 2026-09-29T09:56:01Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:01Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 96",
+      "read": "canPresaleNumber 96",
+      "source": "vendors.py jlcpcb C780205 (selectSmtComponentList API, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:44Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "JLCPCB's exact match for C780205 names SRP1265A-4R7M, package SMD 13.5 x 12.5 x 6.2 mm",
+      "read": "exact match: part \"SRP1265A-4R7M\", package \"SMD,13.5x12.5mm\", description \"13.5A 28A 4.7uH 8.4mΩ ±20% SMD,13.5x12.5mm Power Inductors\", maker label BOURNS",
+      "source": "vendors.py jlcpcb C780205 (selectSmtComponentList API, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:44Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand (extended)",
+      "read": "componentLibraryType expand",
+      "source": "vendors.py jlcpcb C780205 (selectSmtComponentList API, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:44Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 10685 >= gate of 50",
+      "read": "stock_available 10685",
+      "source": "vendors.py digikey SRP1265A-4R7M (cached, https://api.digikey.com/products/v4/search/SRP1265A-4R7M/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:56:01Z"
+     }
+    ]
+   },
+   {
+    "function": "Port supply switch",
+    "part": "TPS259474LRPWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 3795, canPresaleNumber 3754; gate need=5x20=100, threshold max(5x100,50)=500; pass",
+      "read": "stockCount 3795, canPresaleNumber 3754",
+      "source": "vendors.py jlcpcb C2864845 (selectSmtComponentList API, HTTP 200, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:45Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE: TI's product page carries marketingStatusDescription ACTIVE for the orderable TPS259474LRPWR",
+      "read": "confirmed on re-fetch: the page's JSON-LD/part data still carries \"marketingStatusDescription\":\"ACTIVE\" and a meta tag \"status\" content=\"ACTIVE\" for TPS259474LRPWR",
+      "source": "https://www.ti.com/product/TPS25947 (vendors.py fetch chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:03Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "TI's PCN URLs answered HTTP 404; no end-of-life mark on the product page",
+      "read": "re-tried https://www.ti.com/product/TPS25947/pcn and /quality-and-reliability: both HTTP 404 again; the product page body carries no EOL/NRND/discontinuation flag tied to TPS259474LRPWR (the only \"discontinuation\" text found is generic preview-part boilerplate unrelated to this part)",
+      "source": "https://www.ti.com/product/TPS25947/pcn, https://www.ti.com/product/TPS25947/quality-and-reliability (vendors.py fetch chrome, HTTP 404); https://www.ti.com/product/TPS25947 (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:05Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "20; fixed by the specification: one per port (IOBoard.md:348)",
+      "read": "IOBoard.md's Port supply switch row states \"one per port, 20, for up to 8.4 V, driven through an I/O expander\"",
+      "source": "hardware/docs/IOBoard.md, checkout e13f5f60d2e553032b27a14f31ed4a93ef4fe828",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board; LCSC C2864845",
+      "read": "JLCPCB's exact-match result carries LCSC C2864845 for TPS259474LRPWR; IOBoard.md places the 20 port supply switches on the IO board",
+      "source": "vendors.py jlcpcb C2864845 (HTTP 200); hardware/docs/IOBoard.md, checkout e13f5f60d2e5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:30Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "'TI's product life cycles are typically 10 to 15 years', no per-part term",
+      "read": "confirmed on re-fetch: the page still states \"TI's product life cycles are typically 10 to 15 years and often extend longer\", with no per-part commitment",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:19:07Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "SLVSFC9C 'OCTOBER 2020 - REVISED MAY 2026'",
+      "read": "re-fetched datasheet PDF header/footer on every page reads \"SLVSFC9C – OCTOBER 2020 – REVISED MAY 2026\"",
+      "source": "https://www.ti.com/lit/ds/symlink/tps25947.pdf (vendors.py fetch chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:30Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB has no status field",
+      "read": "Digi-Key ProductStatus Active (cached same-day reading); JLCPCB's API carries no status field; LCSC's product page shows the part \"In stock\" with no disagreement",
+      "source": "vendors.py digikey TPS259474LRPWR (cached); https://www.lcsc.com/product-detail/C2864845.html (vendors.py fetch chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:19:28Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "16 weeks (Digi-Key)",
+      "read": "lead_weeks 16",
+      "source": "vendors.py digikey TPS259474LRPWR (https://api.digikey.com/products/v4/search/TPS259474LRPWR/productdetails, cached 2026-09-29T09:55:44Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:55:44Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 3754",
+      "read": "canPresaleNumber 3754",
+      "source": "vendors.py jlcpcb C2864845 (selectSmtComponentList API, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:45Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "JLCPCB's exact match for C2864845 names TPS259474LRPWR, package VQFN-HR 10 pins (RPW), 2 x 2 mm",
+      "read": "exact match: part \"TPS259474LRPWR\", package \"VQFN-10-HR(2x2)\", maker label \"Texas Instruments\"",
+      "source": "vendors.py jlcpcb C2864845 (selectSmtComponentList API, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:45Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand (extended)",
+      "read": "componentLibraryType expand",
+      "source": "vendors.py jlcpcb C2864845 (selectSmtComponentList API, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:45Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 40352 >= gate of 500",
+      "read": "stock_available 40352",
+      "source": "vendors.py digikey TPS259474LRPWR (cached, https://api.digikey.com/products/v4/search/TPS259474LRPWR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:55:44Z"
+     }
+    ]
+   },
+   {
+    "function": "I/O expander",
+    "part": "MCP23017T-E/SS",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 6606, canPresaleNumber 6390; gate need=5x2=10, threshold max(5x10,50)=50; pass",
+      "read": "stockCount 6606, canPresaleNumber 6390",
+      "source": "vendors.py jlcpcb C558584 (selectSmtComponentList API, HTTP 200, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:47Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "'productSatus': 'In Production' on Microchip's product page",
+      "read": "confirmed on re-fetch: the page body still carries the text \"In Production\" for this part's status",
+      "source": "https://www.microchip.com/en-us/product/MCP23017 (vendors.py fetch chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:03Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "Microchip's PCN listing loads in a frame and was not read; none seen on the product page",
+      "read": "re-tried https://www.microchip.com/en-us/products/pcn: now HTTP 404 (page moved/changed since the earlier reading), so the PCN listing remains unread; the product page body carries no EOL/NRND/obsolete flag for this part (the only \"obsolete\" hit is an unrelated JS comment about token caching)",
+      "source": "https://www.microchip.com/en-us/products/pcn (vendors.py fetch chrome, HTTP 404); https://www.microchip.com/en-us/product/MCP23017 (HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T17:17:52Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2; range 2 to 2: 26 outputs (V119) over 16 lines a part, GPA7/GPB7 output-only leave 14 bidirectional a part; 2 parts give 28 bidirectional lines, gate at 2",
+      "read": "the datasheet still gives 16 I/O lines a part with GPA7 and GPB7 output-only; V119's 26 required lines (20 port-switch enables + 5 bias selectors + 1 converter enable, all outputs) need ceil(26/16)=2 parts, unchanged",
+      "source": "MCP23017 datasheet DS20001952D, page 1 (vendors.py fetch chrome, HTTP 200); V119 in the shortlist's found_values",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:31Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board; LCSC C558584",
+      "read": "JLCPCB's exact-match result carries LCSC C558584 for MCP23017T-E/SS; IOBoard.md places the I/O expander on the IO board (it drives the onboard port switches and converter enable)",
+      "source": "vendors.py jlcpcb C558584 (HTTP 200); hardware/docs/IOBoard.md, checkout e13f5f60d2e5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:20:30Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no per-part term; Microchip's End-of-Life Policy (Rev. 7/22/2024), linked from its PCN page, states a commitment to 'product longevity and extended product life cycles' with no per-part term",
+      "read": "not read: both https://www.microchip.com/en-us/about/quality-and-reliability/product-longevity and the End-of-Life-Policy-DS00003179.pdf URL now answer HTTP 404; the specific policy document is no longer reachable at the URLs read earlier",
+      "source": "https://www.microchip.com/en-us/about/quality-and-reliability/product-longevity (vendors.py fetch chrome, HTTP 404); https://www.microchip.com/content/dam/mchp/documents/DevAP/ProductDocuments/AppNotes/End-of-Life-Policy-DS00003179.pdf (HTTP 404)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T17:19:18Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "Revision A June 2005, 'Original release of this document' (DS20001952D Appendix A)",
+      "read": "re-fetched datasheet's revision history confirms \"Revision A (June 2005) • Original release of this document.\"; page footers read \"© 2005-2022 Microchip Technology Inc. and its subsidiaries\"",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/MCP23017-Data-Sheet-DS20001952.pdf (vendors.py fetch chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:18:31Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; JLCPCB has no status field",
+      "read": "Digi-Key ProductStatus Active (cached same-day reading); JLCPCB's API carries no status field; LCSC's product page shows the part \"In stock\" with no disagreement",
+      "source": "vendors.py digikey MCP23017T-E/SS (cached); https://www.lcsc.com/product-detail/C558584.html (vendors.py fetch chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:19:28Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "4 weeks (Digi-Key)",
+      "read": "lead_weeks 4",
+      "source": "vendors.py digikey MCP23017T-E/SS (https://api.digikey.com/products/v4/search/MCP23017T-E%2FSS/productdetails, cached 2026-09-29T09:55:57Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:55:57Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 6390",
+      "read": "canPresaleNumber 6390",
+      "source": "vendors.py jlcpcb C558584 (selectSmtComponentList API, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:47Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "JLCPCB's exact match for C558584 names MCP23017T-E/SS, package SSOP-28, 5.30 mm body",
+      "read": "exact match: part \"MCP23017T-E/SS\", package \"SSOP-28\", maker label \"Microchip Tech\"",
+      "source": "vendors.py jlcpcb C558584 (selectSmtComponentList API, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:47Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand (extended)",
+      "read": "componentLibraryType expand",
+      "source": "vendors.py jlcpcb C558584 (selectSmtComponentList API, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T17:16:47Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 17187 >= gate of 50",
+      "read": "stock_available 17187",
+      "source": "vendors.py digikey MCP23017T-E/SS (cached, https://api.digikey.com/products/v4/search/MCP23017T-E%2FSS/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T09:55:57Z"
+     }
+    ]
+   }
+  ]
+ }
+}

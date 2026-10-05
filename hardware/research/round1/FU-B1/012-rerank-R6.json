@@ -1,0 +1,1157 @@
+{
+ "role": "rerank",
+ "category": "R6",
+ "label": "rerank-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "functions": [
+   {
+    "function": "Servo supply",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPS55285VALR",
+      "reason": "Fixed input of the Scope table, ranked first. P3 returned no candidate and no exclusion for this function. P2's record stands. It fails 'Ambient range' at the pack floor (4.0 A out from 6.0 V: junction not shown under 125 degC at 50 degC ambient; estimate from typical figures 89 to 171 degC). It does not deliver the 6.35 A of IOBoard.md:343 from the pack. Both are reported to the owner; the part is not replaced",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPS55285VALR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo supply inductor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "SRP1265A-4R7M",
+      "reason": "Kept at rank 1. DCR 8.4 mOhm max (0.33 W at 6.31 A), Isat 28 A, Irms 13.5 A, 6.2 mm tall, USD 1.01. Its JLCPCB stock, 108/96 against the gate of 50, is thin. ASPIAIG-Q1010-4R7M-T has lower DCR, but its stock is thinner (95), it costs about 3 times as much and it is 9.7 mm tall",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "ETQP5M4R7YFC",
+      "reason": "Kept at rank 2. DCR 11.30 mOhm max (0.45 W), 20.0 A at -30 %, 10.9 A heat rating. Smallest body read (10.0 x 10.7 x 5.4 mm). JLCPCB 337/264 is the deepest margin of the three lowest-loss parts. Digi-Key 39362",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "ASPIAIG-Q1010-4R7M-T",
+      "reason": "P3's find, qualified. DCR 5.70 mOhm max (0.23 W at 6.31 A), Isat 21.4 A typ, Irms 24.0 A typ, AEC-Q200 Grade 0. Ranked below ETQP5M4R7YFC on JLCPCB stock (95/95 against a gate of 50), price (USD 3.31 at the need) and height (9.7 mm). Maker status not read (product page HTTP 404)",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "IHLP5050CEER4R7M01",
+      "reason": "Moved from rank 3 to rank 4. DCR 15 mOhm max (0.60 W at 6.31 A) is the highest of the ranked parts. JLCPCB stock is deeper (727), but Digi-Key has only 476",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "XAL1510-472MED",
+      "reason": "P3's find, qualified. It has the widest margins read: DCR 3.80 mOhm max (0.15 W), Isat 39.0 A, Irms 29 A at 40 degC rise. Ranked last on cost (USD 11.80 a part at the need, about 11 times rank 1), size (15.2 x 16.2 mm, 10.0 mm tall, 12.4 to 15.0 g) and maker status not read",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 3,
+      "part": "ASPIAIG-Q1010-4R7M-T",
+      "maker": "Abracon LLC (data sheet ASPIAIG-Q1010, REV B 01-05-24); S2 allowlist name Abracon",
+      "lcsc": "C3220895",
+      "package": "SMD 11.9 x 11.0 x 9.7 mm (ASPIAIG-Q1010)",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one inductor for the one servo converter (IOBoard.md:341)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Inductance",
+        "required": "4.7 uH nominal; its lowest value with tolerance above 1.2/fSW = 3.33 uH at the 360 kHz minimum of FSW 00b; within 1 to 10 uH",
+        "datasheet": "4.7 uH, tolerance M (+/-20 %) at 0.1 MHz/0.1 V: 3.76 to 5.64 uH",
+        "pass": true,
+        "source": "https://abracon.com/datasheets/ASPIAIG-Q1010.pdf (vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:47:01Z), electrical table"
+       },
+       {
+        "name": "Saturation current",
+        "required": "above 13 A, the TPS55285's peak current limit (typical; no maximum given)",
+        "datasheet": "Isat 21.4 A typ, the current at which inductance drops 30 %",
+        "pass": true,
+        "source": "ASPIAIG-Q1010 REV B, electrical table and notes, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Heat-rating current",
+        "required": "at least 8 A, the typical average inductor current limit reached in overload",
+        "datasheet": "Irms 24.0 A typ at about 40 degC rise from 20 degC ambient",
+        "pass": true,
+        "source": "ASPIAIG-Q1010 REV B, electrical table and notes, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 16.5 mOhm maximum, the highest in TI's recommended set",
+        "datasheet": "5.70 mOhm max: 0.23 W at 6.31 A",
+        "pass": true,
+        "source": "ASPIAIG-Q1010 REV B, electrical table, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC ambient plus self-heating",
+        "datasheet": "operating -55 to +155 degC including self-temperature rise; AEC-Q200 Grade 0",
+        "pass": true,
+        "source": "ASPIAIG-Q1010 REV B, notes, read 2026-09-29T12:47:01Z"
+       }
+      ],
+      "jlcpcb": "stockCount 95, canPresaleNumber 95, componentLibraryType expand, maker label Abracon LLC, price at the need (5): USD 3.309 (1+ break); read 2026-09-29T12:45:34Z, vendors.py jlcpcb C3220895 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "ASPIAIG-Q1010-4R7M-T: stock_available 2733, lead_weeks 18, status Active; read 2026-09-29T12:31:30Z (cached reading of the same UTC day, counted as a reading of this task), vendors.py digikey ASPIAIG-Q1010-4R7M-T (https://api.digikey.com/products/v4/search/ASPIAIG-Q1010-4R7M-T/productdetails)",
+      "gate": "need = 5 boards x 1 = 5; S4 threshold max(25, 50) = 50; stockCount 95 >= 50 and canPresaleNumber 95 >= 0: pass (rule 4), 45 parts of margin",
+      "lifecycle": "Manufacturer status not read: https://abracon.com/parametric/power-inductors/ASPIAIG-Q1010-4R7M-T answered HTTP 404 (vendors.py fetch chrome, 2026-09-29T12:49:22Z); reported to the owner. Longevity: no published commitment read. Market introduction not read: the data sheet carries REV B 01-05-24 and no first revision date. PCN listing: not read. Distributor: Digi-Key Active (12:31:30Z); JLCPCB has no status field",
+      "second_source": "second vendor: Digi-Key stock_available 2733 >= the gate of 50 (read 2026-09-29T12:31:30Z)",
+      "alternates": [],
+      "driver_in_shared": "none (grep of shared/ at e13f5f6 for the part returned nothing)",
+      "reason": "Lowest DCR of the parts that cost under USD 5 (5.70 mOhm max). Thin JLCPCB margin (95 against 50), USD 3.31 a part, 9.7 mm tall, maker status not read",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "XAL1510-472MED",
+      "maker": "Coilcraft (data sheet Document 947-1, revised 05/04/26); S2 allowlist name Coilcraft",
+      "lcsc": "C3911452",
+      "package": "SMD 15.2 x 16.2 mm (JLCPCB package field), 10.0 mm max height (XAL1510-472)",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: one inductor for the one servo converter (IOBoard.md:341)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Inductance",
+        "required": "4.7 uH nominal; its lowest value with tolerance above 1.2/fSW = 3.33 uH at the 360 kHz minimum of FSW 00b; within 1 to 10 uH",
+        "datasheet": "4.7 uH +/-20 % (1 MHz, 0.1 Vrms, 0 Adc): 3.76 to 5.64 uH",
+        "pass": true,
+        "source": "https://www.coilcraft.com/getmedia/cd1cef27-13f0-4568-8894-f7311475209b/xal1510.pdf (vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:47:01Z), table"
+       },
+       {
+        "name": "Saturation current",
+        "required": "above 13 A, the TPS55285's peak current limit (typical; no maximum given)",
+        "datasheet": "Isat 39.0 A (30 % inductance drop, typ, 25 degC)",
+        "pass": true,
+        "source": "Document 947-1, table and note 5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Heat-rating current",
+        "required": "at least 8 A, the typical average inductor current limit reached in overload",
+        "datasheet": "Irms 21 A at 20 degC rise, 29 A at 40 degC rise",
+        "pass": true,
+        "source": "Document 947-1, table and note 6, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "DC resistance",
+        "required": "at most 16.5 mOhm maximum, the highest in TI's recommended set",
+        "datasheet": "3.35 mOhm typ, 3.80 mOhm max: 0.15 W at 6.31 A",
+        "pass": true,
+        "source": "Document 947-1, table, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC ambient plus self-heating",
+        "datasheet": "ambient -40 to +125 degC with the 40 degC-rise Irms current; part temperature up to +165 degC",
+        "pass": true,
+        "source": "Document 947-1, page 1, read 2026-09-29T12:47:01Z"
+       }
+      ],
+      "jlcpcb": "stockCount 291, canPresaleNumber 290, componentLibraryType expand, maker label Coilcraft, price at the need (5): USD 11.7966 (1+ break); read 2026-09-29T12:45:32Z, vendors.py jlcpcb C3911452 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "XAL1510-472MED: stock_available 626, lead_weeks 1, status Active; read 2026-09-29T12:30:55Z (cached reading of the same UTC day, counted as a reading of this task), vendors.py digikey XAL1510-472MED (https://api.digikey.com/products/v4/search/XAL1510-472MED/productdetails)",
+      "gate": "need = 5; S4 threshold 50; stockCount 291 >= 50 and canPresaleNumber 290 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status not read: https://www.coilcraft.com/en-us/products/power/shielded-inductors/molded-inductor/xal/xal1510/ (vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:49:22Z) carries no status in the page body; reported to the owner. Longevity: no published commitment read. Market introduction not read: Document 947-1 carries only 'Revised 05/04/26'. PCN listing: not read. Distributor: Digi-Key Active (12:30:55Z); JLCPCB has no status field",
+      "second_source": "second vendor: Digi-Key stock_available 626 >= the gate of 50 (read 2026-09-29T12:30:55Z)",
+      "alternates": [],
+      "driver_in_shared": "none (grep of shared/ at e13f5f6 for the part returned nothing)",
+      "reason": "Widest value margins read (3.80 mOhm, 39 A, 29 A). Ranked last on price (USD 11.80), size and weight, and maker status not read",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "ETQP4M4R7KVC (C542333)",
+      "maker": "Panasonic",
+      "reason": "rule 5. It passes every value: 4.7 uH +/-20 %, 12.3 mOhm typ and 13.53 mOhm max, 9.2 A at dT 40 K on 4-layer FR4, 13.9 A at -30 % (0.9 A over 13 A) (AGL0000C63, PCC-M1040M-LP table, https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/AGL0000C63.pdf, read 2026-09-29T12:47:01Z). Rule 4 passes: JLCPCB 139/63 (12:45:35Z). Digi-Key ETQ-P4M4R7KVC stock_available 0, Active, 23 weeks (cached 12:30:07Z). No pin-compatible alternate: the maker's land pattern for PCC-M1040M-LP (12.065 mm outer, 5.187 mm gap) differs from ETQP5M4R7YFC's PCC-M1054M (13.7 mm outer, 6.1 mm gap; AGL0000C59, read 12:47:01Z)"
+     },
+     {
+      "part": "SPM10040T-4R7M-HZR (C6818493)",
+      "maker": "TDK",
+      "reason": "Saturation current: 'Rated Current (L Change) 8.7A (20% Down)', under 13 A (https://product.tdk.com/en/search/inductor/inductor/smd/info?part_no=SPM10040T-4R7M-HZR, vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:51:32Z)"
+     },
+     {
+      "part": "SRP7050WA-4R7M (C19947706)",
+      "maker": "Bourns",
+      "reason": "DC resistance: 17.8 mOhm typ, 20.5 mOhm max, over 16.5 mOhm (https://www.bourns.com/docs/product-datasheets/srp7050wa.pdf, REV. 06/24, HTTP 200, read 2026-09-29T12:51:32Z)"
+     },
+     {
+      "part": "SRP8540A-4R7M (C17295004)",
+      "maker": "Bourns",
+      "reason": "DC resistance: 26.8 mOhm typ, 29.5 mOhm max, over 16.5 mOhm (https://www.bourns.com/docs/product-datasheets/srp8540a.pdf, vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:51:32Z; the data sheet P3 could not reach). Rule 4 would pass: JLCPCB 72/72 (12:45:41Z)"
+     },
+     {
+      "part": "SRP1038A-4R7M (C2041319)",
+      "maker": "Bourns",
+      "reason": "rule 4: JLCPCB stockCount 7, canPresaleNumber -115 (vendors.py jlcpcb C2041319, 2026-09-29T12:45:42Z)"
+     },
+     {
+      "part": "SRP1270-4R7M (C6496159)",
+      "maker": "Bourns",
+      "reason": "rule 4: JLCPCB stockCount 25 under 50 (vendors.py jlcpcb C6496159, 2026-09-29T12:45:44Z)"
+     },
+     {
+      "part": "MPX1D1040L4R7 (C3221867)",
+      "maker": "KEMET",
+      "reason": "rule 4: JLCPCB stockCount 40 under 50 (vendors.py jlcpcb C3221867, 2026-09-29T12:45:45Z)"
+     },
+     {
+      "part": "IHLP5050CEER4R7M06 (C2052300)",
+      "maker": "Vishay",
+      "reason": "rule 4: JLCPCB stockCount 30 under 50 (vendors.py jlcpcb C2052300, 2026-09-29T12:45:47Z)"
+     },
+     {
+      "part": "XAL6060-472MEC (C7421717)",
+      "maker": "Coilcraft",
+      "reason": "rule 4: JLCPCB stockCount 0, canPresaleNumber -16 (vendors.py jlcpcb C7421717, 2026-09-29T12:45:48Z)"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "SRP1265A-4R7M",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port supply switch",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPS259474LRPWR",
+      "reason": "Kept at rank 1. Latch-off circuit breaker, 28 V absolute maximum, RON 45 mOhm max, 2 x 2 mm. Its second source is a second vendor that keeps the latch (Digi-Key 40352). A faulted port stays off until the expander cycles EN, as STATUS.md:340 asks",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TPS259470LRPWR",
+      "reason": "P3's overturned exclusion, qualified. The same die and ratings as rank 1 (28 V, 45 mOhm), with an active current limit (3.96 to 4.84 A at 750 Ohm) and latch-off after thermal shutdown. Its FLT pin reports faults. Digi-Key has 326, under 500, so its rule-5 route is the alternate TPS259470ARPWR: the same pins and circuit, which re-arms by itself 110 ms after a thermal fault. The owner decides whether that counts as the same firmware configuration",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TPS25944LRVCR",
+      "reason": "P3's find, qualified. Latched circuit breaker, JLCPCB 15129, Digi-Key 12417. Ranked below the TPS25947 parts for three reasons. Its 20 V absolute maximum meets V136 with no margin. RON is 64 mOhm max. Between I(LIM) and the fast trip (6.51 to 7.59 A) it does not limit current: it runs a fixed 4 ms timer and then shuts off",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "TPS259470ARPWR",
+      "reason": "Moved from rank 2 to rank 4. Same die as rank 2. It auto-retries 110 ms after a thermal fault, which re-arms a port on its own, against STATUS.md:340",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "TPS259480AYWPR",
+      "reason": "Moved from rank 3 to rank 5. Lowest RON read (20 mOhm max). It auto-retries (103 ms). JLCPCB 627 is close to the 500 gate. Its 0.5 mm-pitch 12-ball package is the hardest to place",
+      "option": ""
+     },
+     {
+      "rank": 6,
+      "part": "TPS25942ARVCR",
+      "reason": "P3's find, qualified. Current limiter at 4.09 to 4.81 A with auto-retry 128 ms after thermal shutdown, against STATUS.md:340. 20 V absolute maximum with no margin. RON 64 mOhm max",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "TPS259470LRPWR",
+      "maker": "Texas Instruments (data sheet SLVSFC9C); S1 allowlist name Texas Instruments",
+      "lcsc": "C3662793",
+      "package": "VQFN-HR 10 pins (RPW), 2 x 2 mm",
+      "placements": 20,
+      "placements_basis": "fixed by the specification: one per port, 20 (IOBoard.md:348)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Operating input range",
+        "required": "5.40 V to 8.70 V at IN: the LV set point's low edge to the HV ceiling",
+        "datasheet": "VIN 2.7 to 23 V (6.3)",
+        "pass": true,
+        "source": "SLVSFC9C (October 2020, revised May 2026), https://www.ti.com/lit/ds/symlink/tps25947.pdf, vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:47:01Z, 6.3"
+       },
+       {
+        "name": "Input withstand",
+        "required": "at least 20 V at IN and OUT",
+        "datasheet": "IN absolute maximum 28 V; OUT -0.3 to min(28, VIN + 21) V at -40 to 125 degC (6.1): 21 V with IN at 0 V",
+        "pass": true,
+        "source": "SLVSFC9C 6.1, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Continuous current",
+        "required": "3.0 A continuous at 50 degC ambient",
+        "datasheet": "IMAX 5.5 A at TJ <= 125 degC (6.3). RON 45 mOhm max at 3 A gives 0.41 W. At 74.5 degC/W (6.4) that is a 30 degC rise, TJ 80 degC at 50 degC ambient",
+        "pass": true,
+        "source": "SLVSFC9C 6.3, 6.4, 6.5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Own current limit",
+        "required": "yes; the whole tolerance band between 3.0 A and 6.35 A",
+        "datasheet": "active current limit (Device Comparison Table: TPS259470LRPW, Adjustable OVLO, Active Current Limit, Latch-Off). ILIM 3.960 to 4.840 A at RILM 750 Ohm (6.5), inside 3.0 to 6.35 A. After the ITIMER blanking it regulates to ILIM (7.3.5.3). A persistent limit ends in thermal shutdown, latched off until VIN is cycled or EN/UVLO goes below VSD(F) (Table 7-2)",
+        "pass": true,
+        "source": "SLVSFC9C 4, 6.5, 7.3.5.3, Table 7-2, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Current into a shorted port",
+        "required": "the rail delivers at most 6.35 A into a shorted port; the switch's own limit acts below that",
+        "datasheet": "fast trip at ISC = 2 x ILIM turns the FET off, then it turns on again after 30 us in current limit at ILIM, 4.84 A max at 750 Ohm, under 6.35 A. A persistent short ends in thermal shutdown, latched off (7.3.5.4, Table 7-3)",
+        "pass": true,
+        "source": "SLVSFC9C 7.3.5.4, Table 7-2, Table 7-3, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Voltage drop",
+        "required": "at most 570 mV across the switch at 3.0 A",
+        "datasheet": "RON 28.2 mOhm typ (12 V, 3 A, 25 degC), 45 mOhm max (2.7 to 23 V, 3 A, -40 to 125 degC): 135 mV max at 3 A",
+        "pass": true,
+        "source": "SLVSFC9C 6.5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Off-state leakage",
+        "required": "under 5 mA at 8.4 V",
+        "datasheet": "ISD 28.7 uA max, the whole IN supply current with EN/UVLO below VSD(F)",
+        "pass": true,
+        "source": "SLVSFC9C 6.5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Reverse blocking",
+        "required": "blocks current from the port pin into the rail with the pin up to 12 V, on and off",
+        "datasheet": "back-to-back FETs. Reverse current blocking at VREVTH -36.45 to -22.3 mV, tRCB 1 us (6.5, 6.6). IREVLKG(OFF) 4.86 uA typ with VOUT 12 V and VIN 0 V. OUT rated to min(28, VIN + 21) V",
+        "pass": true,
+        "source": "SLVSFC9C 6.1, 6.5, 6.6, Table 7-3, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Opening time after reset",
+        "required": "every port switch open within 5 ms of an RP2354B reset",
+        "datasheet": "tD,OFF 25.32 us typ at 12 V, 64.44 us at 2.7 V (6.7; no maximum given). With the expander's reset to input and a pull-down on EN, it opens well inside 5 ms on typical figures",
+        "pass": true,
+        "source": "SLVSFC9C 6.7, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Control off when undriven",
+        "required": "off while its control input is undriven and held by a pull-down; driven from a 3.3 V expander output",
+        "datasheet": "EN/UVLO active high: rising 1.183 to 1.223 V, falling 1.076 to 1.116 V; VSD(F) 0.45 V min; 6.5 V absolute maximum. A pull-down holds it off and a 3.3 V output turns it on. OVLO is tied low (active-low enable), not left floating",
+        "pass": true,
+        "source": "SLVSFC9C 5 (pin functions), 6.1, 6.5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Inrush",
+        "required": "peak inrush at most 2.35 A at turn-on; capacitance not found",
+        "datasheet": "output slew set by a dVdt capacitor: 28.1 V/ms open, 1.09 V/ms at 1800 pF, 0.61 V/ms at 3300 pF (12 V). IINRUSH = COUT x SR, so 2.35 A can be set for any capacitance",
+        "pass": true,
+        "source": "SLVSFC9C 6.7, 7.3.5.1, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Not the rail gate",
+        "required": "yes: the port switches are not the servo rail gate; no gate requirement applies",
+        "datasheet": "no gate requirement applies (V121); used as a per-port switch only",
+        "pass": true,
+        "source": "V121"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TJ -40 to 125 degC (6.3); TSD 154 degC; TJ 80 degC at 3 A and 50 degC ambient",
+        "pass": true,
+        "source": "SLVSFC9C 6.3, 6.5, read 2026-09-29T12:47:01Z"
+       }
+      ],
+      "jlcpcb": "stockCount 2797, canPresaleNumber 2756, componentLibraryType expand, maker label Texas Instruments, price at the need (100): USD 0.8984 (100+ break); read 2026-09-29T12:45:58Z, vendors.py jlcpcb C3662793 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "TPS259470LRPWR: stock_available 326, lead_weeks 9, status Active; read 2026-09-29T09:55:48Z (cached reading of the same UTC day, counted as a reading of this task), vendors.py digikey TPS259470LRPWR (https://api.digikey.com/products/v4/search/TPS259470LRPWR/productdetails). 326 is under the gate of 500",
+      "gate": "need = 5 boards x 20 = 100; S4 threshold max(500, 50) = 500; stockCount 2797 >= 500 and canPresaleNumber 2756 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/TPS25947 has status meta ACTIVE and orderable TPS259470LRPWR marketingStatusDescription ACTIVE (vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:49:22Z). TI longevity: 'typically 10 to 15 years', no per-part term (https://www.ti.com/quality-reliability/quality/product-life-cycle.html, HTTP 200, read 2026-09-29T12:49:22Z); S5 records it and does not require it. Market introduction: first data sheet October 2020 (SLVSFC9C header), over 12 months. TI PCN listing not read: https://www.ti.com/productchangenotification answered HTTP 404 (T3 P4, 2026-09-29T10:47:36Z). Distributor: Digi-Key Active (09:55:48Z); JLCPCB has no status field",
+      "second_source": "alternate: TPS259470ARPWR (C3662799), the same RPW package and pins (EN/UVLO 1, OVLO 2, AUXOFF 3, FLT 4), the same OVLO and active current limit, the same surrounding parts and no registers (SLVSFC9C Device Comparison Table and pin functions, read 12:47:01Z). It passes rules 1 to 4: JLCPCB 2620/2531 >= 500 (vendors.py jlcpcb C3662799, 2026-09-29T12:46:00Z); TI ACTIVE (12:49:22Z). It differs in fault response only: auto-retry after tRST 110 ms against latch-off (Table 7-2). The owner decides whether that is the same firmware configuration",
+      "alternates": [
+       "TPS259470ARPWR (C3662799): same pins and circuit, auto-retry after tRST 110 ms; JLCPCB 2620/2531 (12:46:00Z), Digi-Key 59298 (cached 09:55:50Z)"
+      ],
+      "driver_in_shared": "none (grep of shared/ at e13f5f6 for the part family returned nothing)",
+      "reason": "Same die, ratings and footprint as rank 1, with an active current limit and a latch after thermal shutdown. Its second source is an alternate whose fault response re-arms by itself; ranked below rank 1, whose second vendor keeps the latch",
+      "second_source_route": "alternate",
+      "second_source_part": "TPS259470ARPWR"
+     },
+     {
+      "rank": 3,
+      "part": "TPS25944LRVCR",
+      "maker": "Texas Instruments (data sheet SLVSCE9D); S1 allowlist name Texas Instruments",
+      "lcsc": "C2653826",
+      "package": "WQFN 20 pins (RVC), 3 x 4 mm",
+      "placements": 20,
+      "placements_basis": "fixed by the specification: one per port, 20 (IOBoard.md:348)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Operating input range",
+        "required": "5.40 V to 8.70 V at IN: the LV set point's low edge to the HV ceiling",
+        "datasheet": "IN 2.7 to 18 V recommended (7.3)",
+        "pass": true,
+        "source": "SLVSCE9D (June 2014, revised October 2017), https://www.ti.com/lit/ds/symlink/tps25942a.pdf, vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:47:01Z, 7.3"
+       },
+       {
+        "name": "Input withstand",
+        "required": "at least 20 V at IN and OUT",
+        "datasheet": "IN and OUT absolute maximum 20 V; IN 22 V for a 10 ms transient (7.1). This meets 20 V with no margin",
+        "pass": true,
+        "source": "SLVSCE9D 7.1, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Continuous current",
+        "required": "3.0 A continuous at 50 degC ambient",
+        "datasheet": "5 A eFuse (page 1). RON 64 mOhm max at 3 A gives 0.58 W. At RthJA 38.1 degC/W (7.4) that is a 22 degC rise, TJ 72 degC at 50 degC ambient",
+        "pass": true,
+        "source": "SLVSCE9D 1, 7.4, 7.5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Own current limit",
+        "required": "yes; the whole tolerance band between 3.0 A and 6.35 A",
+        "datasheet": "I(FAULT) 4.09 to 4.81 A at R(ILIM) 20 kOhm (7.5), inside 3.0 to 6.35 A. It is a circuit breaker: 'TPS25944 does not limit current but runs the fault timer when I(LOAD) > I(LIM)' (note 3). It shuts off after tCB(dly) 4 ms and stays latched until EN/UVLO is pulled to GND (9.3.4.1, pin 14). Between I(LIM) and the fast trip, 1.5 x I(LIM) + 0.375 A = 6.51 to 7.59 A, current flows unlimited for the 4 ms. The same circuit-breaker reading as P2's rank 1",
+        "pass": true,
+        "source": "SLVSCE9D 6 (pin functions), 7.5, 7.6, 9.3.4.1, 9.4.3 Table 1, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Current into a shorted port",
+        "required": "the rail delivers at most 6.35 A into a shorted port; the switch's own limit acts below that",
+        "datasheet": "a short above I(FASTRIP) turns the FET off within 1 us (200 ns typ). It then turns on again with the current limited to I(LIM), 4.81 A max at 20 kOhm, under 6.35 A. After tCB(dly) 4 ms it shuts off, latched (9.3.4.2, Table 1)",
+        "pass": true,
+        "source": "SLVSCE9D 7.6, 9.3.4.2, 9.4.3 Table 1, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Voltage drop",
+        "required": "at most 570 mV across the switch at 3.0 A",
+        "datasheet": "RON 42 mOhm typ; 58 mOhm max at -40 to 85 degC, 64 mOhm max at -40 to 125 degC (1 to 5 A): 192 mV max at 3 A",
+        "pass": true,
+        "source": "SLVSCE9D 7.5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Off-state leakage",
+        "required": "under 5 mA at 8.4 V",
+        "datasheet": "Ilkg(OUT) -2 to 2 uA sourcing (VIN 18 V, EN 0 V, VOUT 0 V); IQ(OFF) 25 uA max at 18 V",
+        "pass": true,
+        "source": "SLVSCE9D 7.5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Reverse blocking",
+        "required": "blocks current from the port pin into the rail with the pin up to 12 V, on and off",
+        "datasheet": "integrated back-to-back FETs, 'true reverse blocking from output when V(IN) < (V(OUT) - 10 mV)'. V(REVTH) -15 to -3 mV, tREV(dly) 1 us with 10 mV overdrive (9.3.5, 7.6). Off: Ilkg(OUT) sinking 20 uA max with VIN 2.7 V and VOUT 18 V (7.5). The leakage with VIN below 2.7 V is not stated. DMODE is held low (internal pull-down) so the non-ideal diode mode is off",
+        "pass": true,
+        "source": "SLVSCE9D 3, 7.5, 7.6, 9.3.5, 9.4.1, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Opening time after reset",
+        "required": "every port switch open within 5 ms of an RP2354B reset",
+        "datasheet": "tOFF(dly) 2 us typ, EN/UVLO 100 mV below V(ENF) to FLT low (7.6; no maximum given): well inside 5 ms on typical figures",
+        "pass": true,
+        "source": "SLVSCE9D 7.6, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Control off when undriven",
+        "required": "off while its control input is undriven and held by a pull-down; driven from a 3.3 V expander output",
+        "datasheet": "EN/UVLO active high: V(ENR) 0.97 to 1.01 V, V(ENF) 0.90 to 0.94 V, V(SHUTF) 0.30 to 0.63 V; IEN +/-100 nA; 20 V absolute maximum, 0 to 18 V recommended. A pull-down holds it off and a 3.3 V output turns it on",
+        "pass": true,
+        "source": "SLVSCE9D 7.1, 7.3, 7.5, 9.4.2, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Inrush",
+        "required": "peak inrush at most 2.35 A at turn-on; capacitance not found",
+        "datasheet": "dVdT capacitor sets the slew: I(dVdT) 0.85 to 1.15 uA, GAIN(dVdT) 11.65 to 12.05 V/V; IINRUSH = COUT x SR, so 2.35 A can be set once COUT is known. Inrush also stays under I(LIM) during start-up (Table 1)",
+        "pass": true,
+        "source": "SLVSCE9D 7.5, 9.3.3, 9.4.3 Table 1, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Not the rail gate",
+        "required": "yes: the port switches are not the servo rail gate; no gate requirement applies",
+        "datasheet": "no gate requirement applies (V121); used as a per-port switch only",
+        "pass": true,
+        "source": "V121"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TJ -40 to 125 degC (7.3); TSD 160 degC typ; TJ 72 degC at 3 A and 50 degC ambient",
+        "pass": true,
+        "source": "SLVSCE9D 7.3, 7.4, 7.5, read 2026-09-29T12:47:01Z"
+       }
+      ],
+      "jlcpcb": "stockCount 15129, canPresaleNumber 15122, componentLibraryType expand, maker label Texas Instruments, price at the need (100): USD 1.1648 (100+ break); read 2026-09-29T12:45:22Z, vendors.py jlcpcb C2653826 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "TPS25944LRVCR: stock_available 12417, lead_weeks 16, status Active; read 2026-09-29T12:37:43Z (cached reading of the same UTC day, counted as a reading of this task), vendors.py digikey TPS25944LRVCR (https://api.digikey.com/products/v4/search/TPS25944LRVCR/productdetails)",
+      "gate": "need = 5 boards x 20 = 100; S4 threshold 500; stockCount 15129 >= 500 and canPresaleNumber 15122 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/TPS25944L has status meta ACTIVE and orderable TPS25944LRVCR ACTIVE (vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:49:22Z). TI longevity: 'typically 10 to 15 years', no per-part term (https://www.ti.com/quality-reliability/quality/product-life-cycle.html, read 2026-09-29T12:49:22Z). Market introduction: original data sheet June 2014 (SLVSCE9D revision history), over 12 months. TI PCN listing not read (HTTP 404, T3 P4 2026-09-29T10:47:36Z). Distributor: Digi-Key Active (12:37:43Z); JLCPCB has no status field",
+      "second_source": "second vendor: Digi-Key stock_available 12417 >= the gate of 500 (read 2026-09-29T12:37:43Z)",
+      "alternates": [
+       "TPS25942ARVCR (C181295): same data sheet, pins and package; current limiter with auto-retry; JLCPCB 3031/3014 (12:45:24Z)",
+       "TPS25944ARVCR (C140313): the auto-retry circuit breaker; JLCPCB 45/44 fails the 500 gate (12:46:32Z)"
+      ],
+      "driver_in_shared": "none (grep of shared/ at e13f5f6 for the part family returned nothing)",
+      "reason": "Latched circuit breaker with deep stock at both vendors. Ranked below the TPS25947 latch-off parts on its 20 V absolute maximum (no margin against V136), RON 64 mOhm max, and the 4 ms fixed timer during which it does not limit an overload under the fast trip",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 6,
+      "part": "TPS25942ARVCR",
+      "maker": "Texas Instruments (data sheet SLVSCE9D); S1 allowlist name Texas Instruments",
+      "lcsc": "C181295",
+      "package": "WQFN 20 pins (RVC), 3 x 4 mm",
+      "placements": 20,
+      "placements_basis": "fixed by the specification: one per port, 20 (IOBoard.md:348)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Operating input range",
+        "required": "5.40 V to 8.70 V at IN: the LV set point's low edge to the HV ceiling",
+        "datasheet": "IN 2.7 to 18 V recommended (7.3)",
+        "pass": true,
+        "source": "SLVSCE9D, https://www.ti.com/lit/ds/symlink/tps25942a.pdf, vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:47:01Z, 7.3"
+       },
+       {
+        "name": "Input withstand",
+        "required": "at least 20 V at IN and OUT",
+        "datasheet": "IN and OUT absolute maximum 20 V; IN 22 V for a 10 ms transient (7.1): no margin",
+        "pass": true,
+        "source": "SLVSCE9D 7.1, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Continuous current",
+        "required": "3.0 A continuous at 50 degC ambient",
+        "datasheet": "RON 64 mOhm max at 3 A: 0.58 W; 38.1 degC/W gives a 22 degC rise, TJ 72 degC at 50 degC ambient",
+        "pass": true,
+        "source": "SLVSCE9D 7.4, 7.5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Own current limit",
+        "required": "yes; the whole tolerance band between 3.0 A and 6.35 A",
+        "datasheet": "I(LIM) 4.09 to 4.81 A at R(ILIM) 20 kOhm; the current-limit amplifier regulates the output current to I(LIM) (9.3.4.1). Thermal shutdown then auto-retries 128 ms after TJ < T(TSD) - 12 degC",
+        "pass": true,
+        "source": "SLVSCE9D 7.5, 9.3.4.1, 9.3.10, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Current into a shorted port",
+        "required": "the rail delivers at most 6.35 A into a shorted port; the switch's own limit acts below that",
+        "datasheet": "fast trip at 1.5 x I(LIM) + 0.375 A turns the FET off within 1 us, then current limit at I(LIM), 4.81 A max, under 6.35 A (9.3.4.2)",
+        "pass": true,
+        "source": "SLVSCE9D 9.3.4.2, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Voltage drop",
+        "required": "at most 570 mV across the switch at 3.0 A",
+        "datasheet": "RON 64 mOhm max (-40 to 125 degC): 192 mV at 3 A",
+        "pass": true,
+        "source": "SLVSCE9D 7.5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Off-state leakage",
+        "required": "under 5 mA at 8.4 V",
+        "datasheet": "Ilkg(OUT) +/-2 uA sourcing; IQ(OFF) 25 uA max",
+        "pass": true,
+        "source": "SLVSCE9D 7.5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Reverse blocking",
+        "required": "blocks current from the port pin into the rail with the pin up to 12 V, on and off",
+        "datasheet": "back-to-back FETs with true reverse blocking when V(IN) < V(OUT) - 10 mV; V(REVTH) -15 to -3 mV; off-state sinking leakage 20 uA max at VIN 2.7 V, VOUT 18 V; not stated below VIN 2.7 V",
+        "pass": true,
+        "source": "SLVSCE9D 3, 7.5, 9.3.5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Opening time after reset",
+        "required": "every port switch open within 5 ms of an RP2354B reset",
+        "datasheet": "tOFF(dly) 2 us typ (no maximum)",
+        "pass": true,
+        "source": "SLVSCE9D 7.6, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Control off when undriven",
+        "required": "off while its control input is undriven and held by a pull-down; driven from a 3.3 V expander output",
+        "datasheet": "EN/UVLO active high, V(ENR) 0.97 to 1.01 V, IEN +/-100 nA",
+        "pass": true,
+        "source": "SLVSCE9D 7.5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Inrush",
+        "required": "peak inrush at most 2.35 A at turn-on; capacitance not found",
+        "datasheet": "dVdT capacitor sets the slew (1 uA, gain 11.9 V/V typ); inrush limited to I(LIM)",
+        "pass": true,
+        "source": "SLVSCE9D 7.5, 9.4.3 Table 1, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Not the rail gate",
+        "required": "yes: the port switches are not the servo rail gate; no gate requirement applies",
+        "datasheet": "no gate requirement applies (V121)",
+        "pass": true,
+        "source": "V121"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TJ -40 to 125 degC; TJ 72 degC at 3 A and 50 degC ambient",
+        "pass": true,
+        "source": "SLVSCE9D 7.3, 7.4, read 2026-09-29T12:47:01Z"
+       }
+      ],
+      "jlcpcb": "stockCount 3031, canPresaleNumber 3014, componentLibraryType expand, maker label Texas Instruments, price at the need (100): USD 0.606 (100+ break); read 2026-09-29T12:45:24Z, vendors.py jlcpcb C181295 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "TPS25942ARVCR: stock_available 3394, lead_weeks 16, status Active; read 2026-09-29T12:37:44Z (cached reading of the same UTC day, counted as a reading of this task), vendors.py digikey TPS25942ARVCR (https://api.digikey.com/products/v4/search/TPS25942ARVCR/productdetails)",
+      "gate": "need = 100; threshold 500; stockCount 3031 >= 500 and canPresaleNumber 3014 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/TPS25942A has status meta ACTIVE and orderable TPS25942ARVCR ACTIVE (read 2026-09-29T12:49:22Z). TI longevity: 'typically 10 to 15 years', no per-part term (read 2026-09-29T12:49:22Z). Market introduction: June 2014, over 12 months. TI PCN listing not read (HTTP 404, T3 P4 10:47:36Z). Distributor: Digi-Key Active (12:37:44Z)",
+      "second_source": "second vendor: Digi-Key stock_available 3394 >= the gate of 500 (read 2026-09-29T12:37:44Z)",
+      "alternates": [
+       "TPS25944LRVCR (C2653826): same pins and package, latched circuit breaker; JLCPCB 15129/15122 (12:45:22Z)"
+      ],
+      "driver_in_shared": "none (grep of shared/ at e13f5f6 for the part family returned nothing)",
+      "reason": "Passes every value, but it auto-retries against STATUS.md:340, its 20 V absolute maximum has no margin, and RON is 64 mOhm max: ranked last",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "TPS25942LRVCR (C470971)",
+      "maker": "Texas Instruments",
+      "reason": "rule 4: JLCPCB stockCount 18, canPresaleNumber 18, under the 500 gate (vendors.py jlcpcb C470971, 2026-09-29T12:45:26Z). Not held"
+     },
+     {
+      "part": "TPS2121RUXR (C485916)",
+      "maker": "Texas Instruments",
+      "reason": "Control off when undriven: OV1 and OV2 are 'Active Low Enable Supervisor' inputs (pin functions, SLVSEA3F, https://www.ti.com/lit/ds/symlink/tps2121.pdf, HTTP 200, read 2026-09-29T12:51:32Z), so a pull-down holds the channel on. Absolute maximum 24 V. Rule 4 would pass (JLCPCB 32372/31859, 12:45:53Z)"
+     },
+     {
+      "part": "TPS25974LRPWR (TPS2597xx)",
+      "maker": "Texas Instruments",
+      "reason": "V126: SLVSGG5D (revised May 2025, https://www.ti.com/lit/ds/symlink/tps2597.pdf, HTTP 200, read 2026-09-29T12:51:32Z) names no reverse current blocking. A text search of the data sheet for 'reverse' returns nothing"
+     },
+     {
+      "part": "SiP32429DN-T1-GE4 (C141605)",
+      "maker": "Vishay",
+      "reason": "Operating input range: '6 V to 28 V operation', above the 5.40 V low edge. The data sheet names no reverse blocking (SiP32419/SiP32429, JLCPCB's copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588881606194958336, HTTP 200, read 2026-09-29T12:51:32Z). JLCPCB 3648/3462 (12:45:55Z)"
+     },
+     {
+      "part": "SiP32433ADN-T1E4 (C17364911)",
+      "maker": "Vishay",
+      "reason": "rule 4: JLCPCB stockCount 116, canPresaleNumber 116, under 500 (vendors.py jlcpcb C17364911, 2026-09-29T12:45:56Z); data sheet not read"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPS259474LRPWR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "I/O expander",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP23017T-E/SS",
+      "reason": "Kept at rank 1. Eight addresses (0x20 to 0x27) clear of the TPS55285 and the INA parts. Deepest stock at both vendors. Digi-Key lead time 4 weeks. On the market since 2005",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TCA6416APWR",
+      "reason": "Kept at rank 2. 16 push-pull lines a part at 0x20/0x21. JLCPCB 2526, Digi-Key 12068, 16 weeks. Two pin-compatible parts now pass rules 1 to 4 in its footprint: PI4IOE5V6416LEX and TCAL6416PWR",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TCA6424ARGJR",
+      "reason": "Kept at rank 3. 48 lines over two parts at 0x22/0x23. Digi-Key 1709. VQFN-32 5 x 5 mm",
+      "option": ""
+     },
+     {
+      "rank": 4,
+      "part": "PI4IOE5V6416ZDEX",
+      "reason": "P3's find, qualified. The TCA6416A pin map in a 4 x 4 mm TQFN, with the same registers 00h to 07h and addresses 0x20/0x21. Ranked below the TI parts on Digi-Key lead time (48 weeks), JLCPCB stock (490) and maker status not read",
+      "option": ""
+     },
+     {
+      "rank": 5,
+      "part": "PI4IOE5V6416LEX",
+      "reason": "Qualified from P3's return. P3 read 1 in the jlcparts copy and did not count it live; live JLCPCB is 80/80, which passes the gate of 50. It is pin-compatible with TCA6416APWR (TSSOP-24). Ranked below the ZDEX on its thin JLCPCB margin (30 parts) and 52-week Digi-Key lead time",
+      "option": ""
+     },
+     {
+      "rank": 6,
+      "part": "TCAL6416PWR",
+      "reason": "P3's find, qualified by its rule-5 alternate TCA6416APWR, because Digi-Key has 0. JLCPCB 106 against the gate of 50. Its supply tops out at 3.6 V. The data sheet contradicts itself on what RESET resets (7.1 against 7.3.5). Ranked last",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 4,
+      "part": "PI4IOE5V6416ZDEX",
+      "maker": "Diodes Incorporated (data sheet DS40821 Rev 4-2, November 2024); S1 allowlist name Diodes Incorporated",
+      "lcsc": "C2652314",
+      "package": "TQFN-24 (ZD24), 4 x 4 mm",
+      "placements": 2,
+      "placements_basis": "range 2 to 2: 26 outputs (V119) over 16 lines a part. Gate at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Outputs",
+        "required": "26 outputs over the placements: 20 port switch enables, 5 bias selectors, 1 converter enable",
+        "datasheet": "16 I/O a part (P0_0 to P1_7), 32 over 2; output port configuration 4Fh defaults to 00h, push-pull",
+        "pass": true,
+        "source": "https://www.diodes.com/assets/Datasheets/PI4IOE5V6416.pdf (vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:47:01Z), pages 1, 3, 14 (rendered page images)"
+       },
+       {
+        "name": "Hardware reset input",
+        "required": "an active-low reset input that returns every line to an input, driven by an RP2354B GPIO with a pull-down so it is asserted through every RP2354B reset",
+        "datasheet": "active-low RESET (TQFN pin 24): 'The PI4IOE5V6416 registers are changed to their default state once RESET is low' (page 14, f). Configuration 06h/07h default 1111 1111, all inputs; Figure 1 note: 'All I/Os are set to inputs at reset'. tw(rst) 30 ns min, trst 600 ns",
+        "pass": true,
+        "source": "DS40821 Rev 4-2 pages 2, 7, 9, 14, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Power-up state",
+        "required": "every line that drives a load is an input with no internal pull-up at power-up and after reset",
+        "datasheet": "'At power on, the I/Os are configured as inputs' (page 1). Pull-up/pull-down enable 46h/47h default 0000 0000. 'When an I/O is configured as an input, the pull-up FET and pull-down FET are off' (page 14, d)",
+        "pass": true,
+        "source": "DS40821 Rev 4-2 pages 1, 9, 14, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "I2C clock",
+        "required": "at least 400 kHz at 3.3 V",
+        "datasheet": "fSCL 0 to 400 kHz (Fast mode)",
+        "pass": true,
+        "source": "DS40821 Rev 4-2 page 7, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V",
+        "datasheet": "VDD(I2C-bus) and VDD(P) 1.65 to 5.5 V; IDD 75 uA max active at VDD(P) 2.3 to 3.6 V",
+        "pass": true,
+        "source": "DS40821 Rev 4-2 page 5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Address",
+        "required": "addresses outside 0x40 to 0x4F (INA3221, INA238) and 74h/75h (TPS55285)",
+        "datasheet": "0100 00 ADDR: 0x20 or 0x21 (Figure 6), clear of 0x40 to 0x4F and 74h/75h",
+        "pass": true,
+        "source": "DS40821 Rev 4-2 page 8, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC at 3.3 V",
+        "datasheet": "operation temperature -40 to 85 degC",
+        "pass": true,
+        "source": "DS40821 Rev 4-2 page 5, read 2026-09-29T12:47:01Z"
+       }
+      ],
+      "jlcpcb": "stockCount 490, canPresaleNumber 465, componentLibraryType expand, maker label Diodes Incorporated, price at the need (10): USD 1.4734 (10+ break); read 2026-09-29T12:45:29Z, vendors.py jlcpcb C2652314 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "PI4IOE5V6416ZDEX: stock_available 15391, lead_weeks 48, status Active; read 2026-09-29T12:34:24Z (cached reading of the same UTC day, counted as a reading of this task), vendors.py digikey PI4IOE5V6416ZDEX (https://api.digikey.com/products/v4/search/PI4IOE5V6416ZDEX/productdetails)",
+      "gate": "need = 5 boards x 2 = 10; S4 threshold max(50, 50) = 50; stockCount 490 >= 50 and canPresaleNumber 465 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status not read: https://www.diodes.com/part/view/PI4IOE5V6416 (vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:49:22Z) carries no status for the orderable in the page body; reported to the owner. Longevity: no published commitment read. Market introduction not read: DS40821 Rev 4-2 carries no revision history. PCN listing: not read. Distributor: Digi-Key Active (12:34:24Z); JLCPCB has no status field",
+      "second_source": "second vendor: Digi-Key stock_available 15391 >= the gate of 50 (read 2026-09-29T12:34:24Z)",
+      "alternates": [
+       "PI4IOE5V6416LEX (C2652333): the same die in TSSOP-24, a different footprint; JLCPCB 80/80 (12:46:32Z)"
+      ],
+      "driver_in_shared": "none (grep of shared/ at e13f5f6 for the part returned nothing)",
+      "reason": "Passes every value with the TCA6416A's registers and addresses. Digi-Key lead time 48 weeks; maker status and market introduction not read",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "PI4IOE5V6416LEX",
+      "maker": "Diodes Incorporated (data sheet DS40821 Rev 4-2, November 2024); S1 allowlist name Diodes Incorporated",
+      "lcsc": "C2652333",
+      "package": "TSSOP-24 (L24)",
+      "placements": 2,
+      "placements_basis": "range 2 to 2: 26 outputs (V119) over 16 lines a part. Gate at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Outputs",
+        "required": "26 outputs over the placements: 20 port switch enables, 5 bias selectors, 1 converter enable",
+        "datasheet": "16 I/O a part, 32 over 2; push-pull by default (4Fh = 00h)",
+        "pass": true,
+        "source": "https://www.diodes.com/assets/Datasheets/PI4IOE5V6416.pdf (HTTP 200, read 2026-09-29T12:47:01Z), pages 1, 3, 14"
+       },
+       {
+        "name": "Hardware reset input",
+        "required": "an active-low reset input that returns every line to an input, driven by an RP2354B GPIO with a pull-down so it is asserted through every RP2354B reset",
+        "datasheet": "active-low RESET (TSSOP pin 3); registers return to default once RESET is low; configuration defaults to inputs; tw(rst) 30 ns min",
+        "pass": true,
+        "source": "DS40821 Rev 4-2 pages 3, 7, 9, 14, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Power-up state",
+        "required": "every line that drives a load is an input with no internal pull-up at power-up and after reset",
+        "datasheet": "inputs at power on; pull enable 46h/47h default 0; both pull FETs off on an input",
+        "pass": true,
+        "source": "DS40821 Rev 4-2 pages 1, 9, 14, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "I2C clock",
+        "required": "at least 400 kHz at 3.3 V",
+        "datasheet": "fSCL 0 to 400 kHz",
+        "pass": true,
+        "source": "DS40821 Rev 4-2 page 7, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V",
+        "datasheet": "VDD(I2C-bus) and VDD(P) 1.65 to 5.5 V",
+        "pass": true,
+        "source": "DS40821 Rev 4-2 page 5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Address",
+        "required": "addresses outside 0x40 to 0x4F (INA3221, INA238) and 74h/75h (TPS55285)",
+        "datasheet": "0x20 or 0x21 by ADDR (Figure 6)",
+        "pass": true,
+        "source": "DS40821 Rev 4-2 page 8, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC at 3.3 V",
+        "datasheet": "-40 to 85 degC",
+        "pass": true,
+        "source": "DS40821 Rev 4-2 page 5, read 2026-09-29T12:47:01Z"
+       }
+      ],
+      "jlcpcb": "stockCount 80, canPresaleNumber 80, componentLibraryType expand, maker label Diodes Incorporated, price at the need (10): USD 1.2687 (10+ break); read 2026-09-29T12:46:32Z, vendors.py jlcpcb C2652333 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "PI4IOE5V6416LEX: stock_available 8339, lead_weeks 52, status Active; read 2026-09-29T12:46:44Z, vendors.py digikey PI4IOE5V6416LEX (https://api.digikey.com/products/v4/search/PI4IOE5V6416LEX/productdetails)",
+      "gate": "need = 10; S4 threshold 50; stockCount 80 >= 50 and canPresaleNumber 80 >= 0: pass (rule 4), 30 parts of margin",
+      "lifecycle": "Manufacturer status not read: https://www.diodes.com/part/view/PI4IOE5V6416 (HTTP 200, read 2026-09-29T12:49:22Z) carries no status for the orderable in the page body; reported to the owner. Longevity: no published commitment read. Market introduction not read (no revision history in DS40821 Rev 4-2). PCN listing: not read. Distributor: Digi-Key Active (12:46:44Z)",
+      "second_source": "second vendor: Digi-Key stock_available 8339 >= the gate of 50 (read 2026-09-29T12:46:44Z)",
+      "alternates": [
+       "TCA6416APWR (C130203): the same TSSOP-24 pin map (INT 1, VDD(I2C) 2, RESET 3, P0 4 to 11, VSS 12, P1 13 to 20, ADDR 21, SCL 22, SDA 23, VDD(P) 24; SCPS194F Table 5-1, read 12:47:01Z), registers 00h to 07h and addresses 0x20/0x21; JLCPCB 2526/2368 (12:46:33Z)"
+      ],
+      "driver_in_shared": "none (grep of shared/ at e13f5f6 for the part returned nothing)",
+      "reason": "Pin-compatible with TCA6416APWR and passes every value. The JLCPCB margin is thin (80 against 50) and the Digi-Key lead time is 52 weeks",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 6,
+      "part": "TCAL6416PWR",
+      "maker": "Texas Instruments (data sheet SCPS276E); S1 allowlist name Texas Instruments",
+      "lcsc": "C20345827",
+      "package": "TSSOP-24 (PW)",
+      "placements": 2,
+      "placements_basis": "range 2 to 2: 26 outputs (V119) over 16 lines a part. Gate at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "Outputs",
+        "required": "26 outputs over the placements: 20 port switch enables, 5 bias selectors, 1 converter enable",
+        "datasheet": "16 push-pull I/O a part (P00 to P17), 32 over 2",
+        "pass": true,
+        "source": "SCPS276E (June 2022, revised September 2025), https://www.ti.com/lit/ds/symlink/tcal6416.pdf, vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:47:01Z, Table 4-1"
+       },
+       {
+        "name": "Hardware reset input",
+        "required": "an active-low reset input that returns every line to an input, driven by an RP2354B GPIO with a pull-down so it is asserted through every RP2354B reset",
+        "datasheet": "active-low RESET (pin 3). 7.3.5: 'The TCAL6416 registers and I2C/SMBus state machine are changed to their default state once RESET is low'; configuration 06h/07h default 1111 1111. tw 80 ns, tRESET 400 ns. 7.1 says RESET re-initializes the state machine 'without resetting the sticky registers to default values' and names no such register; this conflicts with 7.3.5",
+        "pass": true,
+        "source": "SCPS276E 5.x reset timing, 7.1, 7.3.5, Table 7-4, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Power-up state",
+        "required": "every line that drives a load is an input with no internal pull-up at power-up and after reset",
+        "datasheet": "'At power on, Pxx is configured as an input' (Table 4-1); pull-up/pull-down enable 46h/47h default 0000 0000",
+        "pass": true,
+        "source": "SCPS276E Table 4-1, Table 7-4, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "I2C clock",
+        "required": "at least 400 kHz at 3.3 V",
+        "datasheet": "fscl up to 1000 kHz (Fast-mode plus)",
+        "pass": true,
+        "source": "SCPS276E I2C timing, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Supply",
+        "required": "3.3 V",
+        "datasheet": "VCCI and VCCP 1.08 to 3.6 V (5.3): 3.3 V is inside with 0.3 V of margin",
+        "pass": true,
+        "source": "SCPS276E 5.3, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Address",
+        "required": "addresses outside 0x40 to 0x4F (INA3221, INA238) and 74h/75h (TPS55285)",
+        "datasheet": "ADDR low 0x20, high 0x21 (Table 7-3)",
+        "pass": true,
+        "source": "SCPS276E Table 7-3, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC at 3.3 V",
+        "datasheet": "TA -40 to 125 degC (5.3)",
+        "pass": true,
+        "source": "SCPS276E 5.3, read 2026-09-29T12:47:01Z"
+       }
+      ],
+      "jlcpcb": "stockCount 106, canPresaleNumber 106, componentLibraryType expand, maker label Texas Instruments, price at the need (10): USD 1.8226 (10+ break); read 2026-09-29T12:45:30Z, vendors.py jlcpcb C20345827 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "TCAL6416PWR: stock_available 0, lead_weeks 16, status Active; read 2026-09-29T12:35:17Z (cached reading of the same UTC day, counted as a reading of this task), vendors.py digikey TCAL6416PWR (https://api.digikey.com/products/v4/search/TCAL6416PWR/productdetails)",
+      "gate": "need = 10; S4 threshold 50; stockCount 106 >= 50 and canPresaleNumber 106 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/TCAL6416 has status meta ACTIVE and orderable TCAL6416PWR ACTIVE (vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:49:22Z). TI longevity: 'typically 10 to 15 years', no per-part term (read 2026-09-29T12:49:22Z). Market introduction: revision * June 2022 Advance Information; production data from revision A, August 2022; the TSSOP Product Preview note was deleted in revision B, April 2023 (SCPS276E revision history): over 12 months. TI PCN listing not read (HTTP 404, T3 P4 10:47:36Z). Distributor: Digi-Key Active with 0 in stock (12:35:17Z)",
+      "second_source": "alternate: TCA6416APWR (C130203). Same PW pin map (INT 1, VCCI 2, RESET 3, P00 to P07 4 to 11, GND 12, P10 to P17 13 to 20, ADDR 21, SCL 22, SDA 23, VCCP 24; SCPS194F Table 5-1 and SCPS276E Table 4-1, read 12:47:01Z), registers 00h to 07h, addresses 0x20/0x21 and inputs at power-up. It passes rules 1 to 4: JLCPCB 2526/2368 >= 50 (vendors.py jlcpcb C130203, 2026-09-29T12:46:33Z)",
+      "alternates": [
+       "TCA6416APWR (C130203): same pins, registers and addresses; JLCPCB 2526/2368 (12:46:33Z)",
+       "PI4IOE5V6416LEX (C2652333): same TSSOP-24 pin map; JLCPCB 80/80 (12:46:32Z)"
+      ],
+      "driver_in_shared": "none (grep of shared/ at e13f5f6 for the part returned nothing)",
+      "reason": "Passes every value, with a 1 MHz bus and 125 degC rating. Its own Digi-Key stock is 0, so the second source is the TCA6416APWR. JLCPCB 106 is thin, the supply maximum is 3.6 V, and the RESET wording conflicts",
+      "second_source_route": "alternate",
+      "second_source_part": "TCA6416APWR"
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "PI4IOE5V6416AQ2LEX (C6952788)",
+      "maker": "Diodes Incorporated",
+      "reason": "rule 4: JLCPCB stockCount 15, canPresaleNumber 15, under the gate of 50 (vendors.py jlcpcb C6952788, 2026-09-29T12:46:32Z)"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP23017T-E/SS",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port voltage ceiling",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPS3701DDCR",
+      "reason": "P3's find, qualified and ranked first. It has the TLV6710DDCR's pins and INB limits: VIT+(INB) 397 to 403 mV, IIN +/-25 nA, tpd(HL) 9.9 us. It costs USD 0.41 at the need against 1.54. JLCPCB has 26866 against 3303, the Digi-Key lead time is 9 weeks against 16, and it has been on the market since November 2014 against January 2018. Like the TLV6710 it misses 'Latch until action' (V130); reported to the owner",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TLV6710DDCR",
+      "reason": "P2's rank 1, moved to rank 2. The same thresholds and pins as TPS3701DDCR, at higher price and shallower JLCPCB stock. It also misses V130",
+      "option": ""
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 1,
+      "part": "TPS3701DDCR",
+      "maker": "Texas Instruments (data sheet SBVS240C); S1 allowlist name Texas Instruments",
+      "lcsc": "C132788",
+      "package": "SOT-23-6 thin (DDC)",
+      "placements": 20,
+      "placements_basis": "fixed by the specification at 20 ports (IOBoard.md:350, F16): one part a port, the INB comparator used",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "LV trip band",
+        "required": "may cut off from 5.59 V, must cut off by 6.00 V",
+        "datasheet": "VIT+(INB) 397 to 403 mV at VDD 1.8 to 36 V, TJ -40 to 125 degC (+/-0.75 %). With 0.1 % divider resistors (+/-0.2 % on the ratio), a 5.795 V set point trips at 5.74 to 5.85 V, inside 5.59 to 6.00 V",
+        "pass": true,
+        "source": "SBVS240C (November 2014, revised February 2019), https://www.ti.com/lit/ds/symlink/tps3701.pdf, vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:47:01Z, 6.5; derived"
+       },
+       {
+        "name": "HV trip band",
+        "required": "may cut off from 8.53 V, must cut off by 8.70 V (+/-0.99 % about 8.615 V)",
+        "datasheet": "INB 397 to 403 mV plus +/-0.2 % for 0.1 % resistors: +/-0.95 %. An 8.615 V set point trips at 8.533 to 8.697 V, 3 mV inside each edge. IIN +/-25 nA max (VINB 6.5 V) needs a divider Thevenin resistance under 6.4 kOhm (0.04 % of 400 mV / 25 nA) to keep that margin",
+        "pass": true,
+        "source": "SBVS240C 6.5, read 2026-09-29T12:47:01Z; derived"
+       },
+       {
+        "name": "Cut-off time",
+        "required": "not found; recorded, not a pass or fail limit",
+        "datasheet": "tpd(HL) 9.9 us typ (VDD 24 V, 10 mV overdrive); no maximum given. Recorded only",
+        "pass": true,
+        "source": "SBVS240C 6.6, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Latch until action",
+        "required": "the port stays off until an operator or firmware action",
+        "datasheet": "non-latching: 'OUTB is driven low when the voltage at this comparator exceeds VIT+(INB). The output goes high when the sense voltage falls below VIT-(INB)', 387 to 400 mV (hysteresis 2 to 12 mV). The port reconnects by itself unless firmware opens the switch first or an added latch holds it",
+        "pass": false,
+        "source": "SBVS240C 5 (pin functions), 6.5, read 2026-09-29T12:47:01Z"
+       },
+       {
+        "name": "Input withstand",
+        "required": "the sensed rail at up to 20 V",
+        "datasheet": "VDD 1.8 to 36 V (40 V absolute); INA/INB 7 V absolute, 0 to 6.5 V recommended. The 8.615 V/0.400 V divider puts 0.93 V on INB at 20 V and the 5.795 V divider 1.38 V. Outputs 28 V absolute, 25 V recommended",
+        "pass": true,
+        "source": "SBVS240C 6.1, 6.3, read 2026-09-29T12:47:01Z; derived"
+       },
+       {
+        "name": "Cut-off state readable",
+        "required": "yes, through the port monitor's bus-voltage reading; jumper position not read",
+        "datasheet": "no pin needed (V135); open-drain OUTB can also drive an input",
+        "pass": true,
+        "source": "V135; SBVS240C 5"
+       },
+       {
+        "name": "Jumper selection",
+        "required": "a jumper on each port selects LV or HV",
+        "datasheet": "threshold set by an external divider; a jumper switches the lower resistor",
+        "pass": true,
+        "source": "SBVS240C 8.1"
+       },
+       {
+        "name": "Ambient range",
+        "required": "0 to 50 degC",
+        "datasheet": "TJ -40 to 125 degC; IDD 8 uA typ, 11 uA max",
+        "pass": true,
+        "source": "SBVS240C 6.3, 6.5, read 2026-09-29T12:47:01Z"
+       }
+      ],
+      "jlcpcb": "stockCount 26866, canPresaleNumber 26835, componentLibraryType expand, maker label Texas Instruments, price at the need (100): USD 0.4078 (100+ break); read 2026-09-29T12:45:27Z, vendors.py jlcpcb C132788 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "TPS3701DDCR: stock_available 11792, lead_weeks 9, status Active; read 2026-09-29T12:46:43Z, vendors.py digikey TPS3701DDCR (https://api.digikey.com/products/v4/search/TPS3701DDCR/productdetails)",
+      "gate": "need = 5 boards x 20 = 100; S4 threshold 500; stockCount 26866 >= 500 and canPresaleNumber 26835 >= 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status ACTIVE: https://www.ti.com/product/TPS3701 has status meta ACTIVE and orderable TPS3701DDCR ACTIVE (vendors.py fetch chrome, HTTP 200, read 2026-09-29T12:49:22Z). TI longevity: 'typically 10 to 15 years', no per-part term (https://www.ti.com/quality-reliability/quality/product-life-cycle.html, read 2026-09-29T12:49:22Z). Market introduction: original data sheet November 2014 (SBVS240C revision history), over 12 months. TI PCN listing not read (HTTP 404, T3 P4 2026-09-29T10:47:36Z). Distributor: Digi-Key Active (12:46:43Z); JLCPCB has no status field",
+      "second_source": "second vendor: Digi-Key stock_available 11792 >= the gate of 500 (read 2026-09-29T12:46:43Z)",
+      "alternates": [
+       "TLV6710DDCR (C2863066): same SOT-23-6 pins (OUTA 1, GND 2, INA 3, INB 4, VDD 5, OUTB 6) and INB limits (SNVSAV4B, read 12:47:01Z); INB recommended 0 to 1.7 V against 6.5 V; JLCPCB 3303/3291 (12:46:01Z)",
+       "TPS3701DDCT (C132027): the same part on a small reel"
+      ],
+      "driver_in_shared": "none (grep of shared/ at e13f5f6 for the part returned nothing)",
+      "reason": "Same threshold accuracy as TLV6710DDCR, the only other part that fits the HV band and passes rule 4. It has deeper stock, costs about a quarter as much and has a shorter lead time. It misses V130 as TLV6710DDCR does",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "TPS3702",
+      "maker": "Texas Instruments",
+      "reason": "HV trip band: VIT+(OV) accuracy -0.9 to +0.9 % over temperature. The threshold is fixed, so a divider adds about 0.2 % and the total exceeds +/-0.99 %. VSENSE absolute maximum 7 V (SBVS251A, https://www.ti.com/lit/ds/symlink/tps3702.pdf, HTTP 200, read 2026-09-29T12:51:32Z)"
+     },
+     {
+      "part": "TPS37 (TPS37A)",
+      "maker": "Texas Instruments",
+      "reason": "HV trip band: '800 mV option (1% maximum accuracy)', 1.5 % for 2.7 to 36 V options; revision E 'removed latch functionality' (SNVSBJ1E, https://www.ti.com/lit/ds/symlink/tps37.pdf, HTTP 200, read 2026-09-29T12:51:32Z)"
+     },
+     {
+      "part": "TPS389x (TPS3895, TPS3897)",
+      "maker": "Texas Instruments",
+      "reason": "HV trip band: 'Threshold Accuracy: 1% Over Temperature' (https://www.ti.com/lit/ds/symlink/tps3895.pdf, HTTP 200, read 2026-09-29T12:51:32Z)"
+     },
+     {
+      "part": "TLV4021, TLV4041 (TLV40x1)",
+      "maker": "Texas Instruments",
+      "reason": "HV trip band: threshold 0.4704 to 0.4896 V at -40 to 125 degC, +/-2 % (SNVSB04C, https://www.ti.com/lit/ds/symlink/tlv4021.pdf, HTTP 200, read 2026-09-29T12:51:32Z)"
+     },
+     {
+      "part": "TLV3011, TLV3012",
+      "maker": "Texas Instruments",
+      "reason": "HV trip band: reference 1.223 to 1.260 V (-1.5/+1.4 %), drift 100 ppm/degC max, before comparator offset (SBOS300C, https://www.ti.com/lit/ds/symlink/tlv3012.pdf, HTTP 200, read 2026-09-29T12:51:32Z)"
+     },
+     {
+      "part": "ADCMP350, ADCMP354, ADCMP356",
+      "maker": "Analog Devices",
+      "reason": "HV trip band: rising threshold 0.579 to 0.621 V at -40 to 85 degC, +/-3.5 % (Rev. E, https://www.analog.com/media/en/technical-documentation/data-sheets/ADCMP350_354_356.pdf, vendors.py fetch safari, HTTP 200, read 2026-09-29T12:51:35Z)"
+     },
+     {
+      "part": "ADCMP341YRJZ-REEL7 (C209465), ADCMP343YRJZ-REEL7 (C209477)",
+      "maker": "Analog Devices",
+      "reason": "rule 4: JLCPCB stockCount 0 and canPresaleNumber 0 for both (vendors.py jlcpcb, 2026-09-29T12:45:50Z and 12:45:52Z). The threshold would fit: 397.4 to 403.4 mV at VDD 3.3 V, 0 to 70 degC (Rev. A, https://www.analog.com/media/en/technical-documentation/data-sheets/ADCMP341_343.pdf, safari, HTTP 200, read 12:51:36Z). It does not latch"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPS3701DDCR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "rerank R6 FU-B1: outcome",
+    "value": "P3 returned 7 candidate groups in 4 functions and 1 exclusion that does not hold. Qualified with full records: ASPIAIG-Q1010-4R7M-T and XAL1510-472MED (inductor, ranks 3 and 5); TPS259470LRPWR, TPS25944LRVCR and TPS25942ARVCR (port switch, ranks 2, 3, 6); PI4IOE5V6416ZDEX, PI4IOE5V6416LEX and TCAL6416PWR (expander, ranks 4 to 6); TPS3701DDCR (ceiling, rank 1). Dropped: ETQP4M4R7KVC (rule 5); SPM10040T-4R7M-HZR, SRP7050WA-4R7M and SRP8540A-4R7M (values); SRP1038A-4R7M, SRP1270-4R7M, MPX1D1040L4R7, IHLP5050CEER4R7M06, XAL6060-472MEC, TPS25942LRVCR, SiP32433ADN-T1E4, ADCMP341/343 and PI4IOE5V6416AQ2LEX (rule 4); TPS2121, TPS2597xx, SiP32429, TPS3702, TPS37, TPS389x, TLV40x1, TLV3011/3012 and ADCMP350/354/356 (values). No P2 candidate is dropped. One first-ranked part changes: Port voltage ceiling, TLV6710DDCR to TPS3701DDCR",
+    "source": "this return; readings 2026-09-29T12:45:22Z to 12:51:36Z, and same-day cached Digi-Key readings from 09:55:48Z"
+   },
+   {
+    "figure": "Port voltage ceiling rank change",
+    "value": "TPS3701DDCR and TLV6710DDCR share pins and INB limits (397 to 403 mV, IIN +/-25 nA, tpd(HL) 9.9 us). TPS3701DDCR: USD 0.4078 at 100+, JLCPCB 26866/26835, Digi-Key 11792, 9 weeks, on the market since November 2014. TLV6710DDCR: USD 1.5416, JLCPCB 3303/3291, Digi-Key 17155 (P2, 09:56:03Z), 16 weeks, January 2018. P4 verifies TPS3701DDCR",
+    "source": "SBVS240C and SNVSAV4B 6.5, read 2026-09-29T12:47:01Z; vendors.py jlcpcb C132788 (12:45:27Z) and C2863066 (12:46:01Z); vendors.py digikey TPS3701DDCR (12:46:43Z)"
+   },
+   {
+    "figure": "HV ceiling band with TPS3701DDCR",
+    "value": "+/-0.75 % threshold plus +/-0.2 % for 0.1 % divider resistors: an 8.615 V set point trips at 8.533 to 8.697 V, inside 8.53 to 8.70 V with 3 mV each side. It needs a divider Thevenin resistance under 6.4 kOhm (derived). LV: 5.74 to 5.85 V inside 5.59 to 6.00 V",
+    "source": "SBVS240C 6.5, read 2026-09-29T12:47:01Z; V128; derived"
+   },
+   {
+    "figure": "Ceiling latch gap",
+    "value": "Unchanged. No part that passes rule 4 latches an overvoltage cut-off (V130); TPS3701DDCR and TLV6710DDCR both release OUTB when INB falls below VIT-(INB). The latch has to come from firmware opening the port switch through the expander on the port monitor's reading, or from an added latch part per port. Owner to decide",
+    "source": "SBVS240C 5; SNVSAV4B 5; V130, V135"
+   },
+   {
+    "figure": "Port switch latch-off parts after this re-rank",
+    "value": "Three latch-off parts pass rules 4 and 5. TPS259474LRPWR (rank 1, second vendor). TPS259470LRPWR (rank 2): its second source is the alternate TPS259470ARPWR, which re-arms by itself after tRST 110 ms, and the owner decides whether that counts as the same firmware configuration. TPS25944LRVCR (rank 3, second vendor)",
+    "source": "SLVSFC9C Device Comparison Table, Table 7-2; SLVSCE9D Device Comparison Table; vendors.py jlcpcb C3662793 (12:45:58Z), C3662799 (12:46:00Z), C2653826 (12:45:22Z)"
+   },
+   {
+    "figure": "TPS25944 circuit-breaker overload behaviour",
+    "value": "Between I(LIM) (4.09 to 4.81 A at 20 kOhm) and the fast trip (1.5 x I(LIM) + 0.375 A = 6.51 to 7.59 A), TPS25944 passes the current unlimited for tCB(dly) 4 ms, then shuts off. A soft overload of 4.81 to 6.35 A can therefore reach the rail's 6.35 A limit for up to 4 ms. After a fast trip it limits to I(LIM). Its 20 V absolute maximum equals V136 with no margin",
+    "source": "SLVSCE9D 7.1, 7.5 note 3, 7.6, 9.3.4, 9.4.3 Table 1, https://www.ti.com/lit/ds/symlink/tps25942a.pdf, read 2026-09-29T12:47:01Z"
+   },
+   {
+    "figure": "PI4IOE5V6416LEX live stock",
+    "value": "JLCPCB stockCount 80, canPresaleNumber 80, against a gate of 50: passes rule 4. P3 had excluded it on the jlcparts copy's 1 without a live count",
+    "source": "vendors.py jlcpcb C2652333, 2026-09-29T12:46:32Z; jlcparts copy row C2652333 stock 1"
+   },
+   {
+    "figure": "TCAL6416 RESET wording",
+    "value": "SCPS276E 7.3.5 states that the registers go to their default state while RESET is low. 7.1 states that RESET re-initializes the state machine 'without resetting the sticky registers to default values' and names no sticky register. The pass on 'Hardware reset input' rests on 7.3.5",
+    "source": "SCPS276E 7.1, 7.3.5, https://www.ti.com/lit/ds/symlink/tcal6416.pdf, read 2026-09-29T12:47:01Z"
+   },
+   {
+    "figure": "SRP8540A-4R7M data sheet",
+    "value": "Read this time (HTTP 200): DCR 26.8 mOhm typ, 29.5 mOhm max, Irms 8.5 A, Isat 19 A. It fails the 16.5 mOhm DCR limit. P3 had reached HTTP 522 only",
+    "source": "https://www.bourns.com/docs/product-datasheets/srp8540a.pdf, vendors.py fetch chrome, read 2026-09-29T12:51:32Z"
+   },
+   {
+    "figure": "Servo inductor copper loss at the pack floor, new parts",
+    "value": "6.31 A average: XAL1510-472MED 0.15 W (3.80 mOhm max), ASPIAIG-Q1010-4R7M-T 0.23 W (5.70 mOhm max). SRP1265A-4R7M 0.33 W for comparison. DC loss only; core loss not computed",
+    "source": "I^2 x DCR max; Coilcraft Document 947-1 and Abracon ASPIAIG-Q1010 REV B, read 2026-09-29T12:47:01Z"
+   },
+   {
+    "figure": "ETQP4M4R7KVC footprint against ETQP5M4R7YFC",
+    "value": "Not pin-compatible. The recommended land for PCC-M1040M-LP is 11.7 x 11.0 mm with a 12.065 mm outer span and 5.187 mm gap. For PCC-M1054M it is 11.7 x 11.0 mm with a 13.7 mm outer span and 6.1 mm gap. ETQP4M4R7KVC has 0 at Digi-Key and no alternate, so it fails rule 5",
+    "source": "AGL0000C63 and AGL0000C59 recommended land patterns, https://industrial.panasonic.com/cdbs/www-data/pdf/AGL0000/, read 2026-09-29T12:47:01Z"
+   },
+   {
+    "figure": "Lifecycle not read at the maker, new candidates",
+    "value": "Diodes (PI4IOE5V6416 part page, no orderable status in the body, 12:49:22Z), Coilcraft (XAL1510 page, no status, 12:49:22Z), Abracon (ASPIAIG-Q1010-4R7M-T page HTTP 404, 12:49:22Z). Digi-Key lists all four orderables Active. Reported to the owner",
+    "source": "vendors.py fetch of each page (chrome); Digi-Key readings as in the records"
+   }
+  ]
+ }
+}

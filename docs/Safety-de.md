@@ -124,12 +124,13 @@ Panel als Leitung ohne Flanken gelesen wird.
   Timer fertig wird, ein verlorenes Release schaltet dort also von selbst
   scharf oder quittiert; die Kacheln der Übersicht, die Zellen des Outputs-
   und des Picker-Bildschirms, die Tasten des Einstellungs-Bildschirms, die
-  Tasten und Zeilen des Log-Viewers und die Tab-Zeilen von MOTOR & ESC,
-  ANALYSER und BALANCE wirken stattdessen
-  auf das Release, und ein gehaltener Druck besitzt eine
-  Track-ID, die der Controller wiederverwendet -- ein späterer Kontakt, der
-  woanders begann, wird dann für das fehlende Release gehalten. HOME und STOP
-  sind die eigene Geste des Routers, und er bricht sie selbst ab.
+  Tasten, Zeilen und die DELETE-Rückfrage des Log-Viewers und die Tab-Zeilen
+  von MOTOR & ESC, ANALYSER und BALANCE wirken stattdessen auf das Release,
+  und ein gehaltener Druck besitzt eine Track-ID, die der Controller
+  wiederverwendet -- ein späterer Kontakt, der woanders begann, wird dann für
+  das fehlende Release gehalten. Die DELETE-Rückfrage bleibt bei einem Abbruch
+  offen und nimmt den nächsten frischen Druck an. HOME und STOP sind die eigene
+  Geste des Routers, und er bricht sie selbst ab.
 - Bricht der Touch-Strom ab, während STOP gehalten wird, wird gestoppt. Der
   Control-Task besitzt diesen Druck unabhängig von den Screens, und das
   Release, das den Prüfstand gestoppt hätte, kann genau das verlorene Event

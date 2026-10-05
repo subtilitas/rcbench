@@ -1,0 +1,307 @@
+{
+ "role": "P4",
+ "category": "R9",
+ "label": "P4-datasheet-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "verifier": "datasheet",
+  "parts": [],
+  "figures": [
+   {
+    "figure": "found V181",
+    "verdict": "confirmed",
+    "evidence": "settings.c:33-37 comment 'Ranges are the physical ones: a pack cannot have zero cells'; :38-40 SET_PACK_CELLS 'pack_cells', 'Series count in the pack', SET_TYPE_INT, 1, 14, default 6. IOBoard.md:67 and :435 '1 to 16 cells on the balance lead'; Research.md:543 F15 '16 cells, 67.2 V'. The lowest count is 1 cell.",
+    "source": "checkout c25aa863372d: shared/settings/settings.c:33-40, hardware/docs/IOBoard.md:67 and :435, hardware/docs/Research.md:543",
+    "read_at": "2026-09-28T15:45:00Z"
+   },
+   {
+    "figure": "found V182",
+    "verdict": "confirmed",
+    "evidence": "battery_screen.c:288 prints the mean with '%.3f V' (1 mV); :290 prints the spread with '%d mV'; :204 prints each cell with '%.2f'. 1 mV is the finest step shown for a cell-derived quantity.",
+    "source": "checkout c25aa863372d: shared/ui/battery_screen.c:204, :288, :290",
+    "read_at": "2026-09-28T15:45:00Z"
+   },
+   {
+    "figure": "found V183",
+    "verdict": "confirmed",
+    "evidence": "battery_screen.c:95-105 spread = (hi - lo) × 1000, so it carries two readings' errors; :41 SCALE_FLOOR_MV 12.0f; :46 SPREAD_WATCH_MV 30.0f. 2 × 6 mV = 12 mV, the floor. Research.md:567 V7 answer: '0 to 50 °C ambient, one range for the whole IO board (owner, 2026-09-28)'.",
+    "source": "checkout c25aa863372d: shared/ui/battery_screen.c:41, :46, :95-105; hardware/docs/Research.md:567",
+    "read_at": "2026-09-28T15:45:00Z"
+   },
+   {
+    "figure": "found V184",
+    "verdict": "confirmed",
+    "evidence": "programmer_screen.c 'Low voltage cut', 'Per cell, where it starts pulling power back to save the pack', lo 28, hi 38, decimals 1, unit V (:139-141, :166-168, :202-204). The struct comment at :75 says 'in tenths if decimals is 1'. The lowest setting is 2.8 V a cell.",
+    "source": "checkout c25aa863372d: shared/ui/programmer_screen.c:75, :139-141, :166-168, :202-204",
+    "read_at": "2026-09-28T15:47:00Z"
+   },
+   {
+    "figure": "found V185",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:431 'the coprocessor samples the bench numbers every 20 ms (50 Hz)'. main.c:1011-1016: '(uint32_t)(now - last_sample) >= 20u' then sample().",
+    "source": "checkout c25aa863372d: hardware/docs/IOBoard.md:431, firmware/iomcu/src/main.c:1011-1016",
+    "read_at": "2026-09-28T15:46:00Z"
+   },
+   {
+    "figure": "found V186",
+    "verdict": "refuted",
+    "evidence": "The cited lines and the arithmetic are correct. SET_OUT_RAMP is 5 to 300 %/s (settings.c:61-63), published by publish_throttle_ramp (panel main.c:94-99). The Internal R default is 18 mΩ for the whole pack (settings.c:45-47; the value cites :44-46). The Cells default is 6 (settings.c:38-40). F2 is 150 A continuous. 1 mV / 3 mΩ = 0.333 A, and 0.333 A / 450 A/s = 741 µs. 18/16 mΩ at 900 A/s gives 988 µs, and 6 cells at 900 A/s gives 370 µs. The value states the rule 'the smaller figure holds'. It then sets 370 µs aside because 'No source pairs a 6-cell pack with 300 A'. No source pairs the 6-cell default with the 150 A onboard path either. No source pairs the 18 mΩ whole-pack default with a 16-cell pack, which the 988 µs case uses. The pack settings apply to whichever path carries the current: IOBoard.md:66 gives the external-shunt input for currents above 150 A, and V35 in T2 found 300 A. By the value's own rule, the derived limit is 370 µs, not 741 µs. P2's report 'skew limit on the external path' states the shortlisted parts' 711 µs does not meet 370 µs.",
+    "source": "checkout c25aa863372d: shared/settings/settings.c:38-47, :61-63; firmware/panel/main/main.c:94-104; hardware/docs/Research.md:530 (F2); hardware/docs/IOBoard.md:66; results T2/007-P2-R3.json found V35 '300 A'",
+    "read_at": "2026-09-28T15:47:00Z"
+   },
+   {
+    "figure": "found V187",
+    "verdict": "refuted",
+    "evidence": "The derivation is the same as V186 and has the same gap. At 450 A/s (300 %/s of 150 A), 741 µs moves a 3 mΩ cell by 1 mV, and that part is arithmetically right. On the external path's 300 A (V35 found in T2), 900 A/s and the same 6-cell 18 mΩ default pack give 370 µs. No source ties that default pack to the onboard path alone (settings.c:38-47 hold one set of pack settings; IOBoard.md:66 takes currents above 150 A on the external shunt). The binding figure from these sources is 370 µs.",
+    "source": "checkout c25aa863372d: shared/settings/settings.c:38-47, :61-63; firmware/panel/main/main.c:94-104; hardware/docs/IOBoard.md:66; results T2/007-P2-R3.json V35",
+    "read_at": "2026-09-28T15:47:00Z"
+   },
+   {
+    "figure": "found V188",
+    "verdict": "confirmed",
+    "evidence": "Research.md:281 (R3 row): the clamp level is under the absolute maximum of every part on the pack node, the INA238's 85 V bus input among them. IOBoard.md:415: INA238 bus input rated to 85 V, 17.8 V above 67.2 V. T2 P2-R3 V34 cites INA238 SLYS025B section 5.1, -0.3 V to 85 V (read 2026-09-28T13:17:45Z). 85 - 67.2 = 17.8 V.",
+    "source": "checkout c25aa863372d: hardware/docs/Research.md:281, hardware/docs/IOBoard.md:415; results T2/007-P2-R3.json V34",
+    "read_at": "2026-09-28T15:47:00Z"
+   },
+   {
+    "figure": "found V191",
+    "verdict": "confirmed",
+    "evidence": "F15 (Research.md:543) gives 16 cells, 67.2 V at 4.2 V a cell. A reversed lead puts the pack top (67.2 V) on the input's lowest pin, with every other pin below it. Adjacent pins carry one cell, 4.2 V, of either polarity when shifted or reversed. A shift by one puts up to one cell, 4.2 V, on the lowest input pin.",
+    "source": "checkout c25aa863372d: hardware/docs/Research.md:543",
+    "read_at": "2026-09-28T15:45:00Z"
+   },
+   {
+    "figure": "found V194",
+    "verdict": "confirmed",
+    "evidence": "battery_screen.c:295 prints the pack resistance with '%.1f mOhm' (0.1 mΩ). battery_screen.h:16 holds milliohms per cell, under load. 1 mV / 0.1 mΩ = 10 A.",
+    "source": "checkout c25aa863372d: shared/ui/battery_screen.c:295, shared/ui/include/battery_screen.h:16",
+    "read_at": "2026-09-28T15:45:00Z"
+   },
+   {
+    "figure": "found V195",
+    "verdict": "confirmed",
+    "evidence": "settings.c:38-40 'pack_cells', 'Series count in the pack', 1 to 14. battery_screen.h:19 'valid ... a monitor answered'; :27 'What the balance lead says. NULL, or valid false, means nothing is on.' battery_screen.c:233 'NO PACK', 'nothing on the lead'.",
+    "source": "checkout c25aa863372d: shared/settings/settings.c:38-40, shared/ui/include/battery_screen.h:19, :27, shared/ui/battery_screen.c:233",
+    "read_at": "2026-09-28T15:45:00Z"
+   },
+   {
+    "figure": "P2 report: LTC6813-1 lowest cell count",
+    "verdict": "confirmed",
+    "evidence": "LTC6813-1 Rev. B, 'Using the LTC6813-1 with Fewer than 18 Cells': 'all unused C inputs either shorted to the highest connected cell or left open'. The datasheet states no minimum cell count. Electrical characteristics: V+ Supply Voltage, TME Specifications Met, 16 min, 60 typ, 90 max V; V+ to C18 at least -0.3 V; C13 at least 2.5 V; C7 at least 1 V. Page 1 says it 'can be powered directly from the battery stack or from an isolated supply'.",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf (safari client, HTTP 200), Rev. B",
+    "read_at": "2026-09-28T15:46:25Z"
+   },
+   {
+    "figure": "P2 report: auxiliary V+ supply",
+    "verdict": "confirmed",
+    "evidence": "ADBMS1818 Rev. B Table 3: V+ 16 to 90 V for TME; V+ to C18 at least -0.3 V; V+ current in MEASURE 0.95 mA typical, 1.4 mA maximum over temperature. 3 × 4.2 = 12.6 V and 4 × 4.2 = 16.8 V, so 1 to 3 cells need the supply. 5 × 2.8 = 14.0 V and 6 × 2.8 = 16.8 V, so 1 to 5 cells need it at the 2.8 V floor.",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/adbms1818.pdf (safari client, HTTP 200), Rev. B Table 3",
+    "read_at": "2026-09-28T15:46:25Z"
+   },
+   {
+    "figure": "P2 report: ADBMS1818 supply current",
+    "verdict": "confirmed",
+    "evidence": "Table 3: VREG in MEASURE 15 mA typical, 16.5 mA maximum over temperature; VREG in SLEEP 3.1 µA typical. isoSPI adds 1.0 mA minimum (ISOMD 0, 20 kΩ, ready) to 10.5 mA maximum (ISOMD 1, 2 kΩ, active). V+ in MEASURE 0.95 mA typical, 1.4 mA maximum; V+ in SLEEP with VREG 0 V 6.1 µA typical, 18 µA maximum. Table 14 pin 49: DRIVE drives an NPN base with its collector to V+ and emitter to VREG. VREG supply 4.5 to 5.5 V.",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/adbms1818.pdf, Rev. B Tables 3 and 14",
+    "read_at": "2026-09-28T15:46:25Z"
+   },
+   {
+    "figure": "P2 report: host interface",
+    "verdict": "confirmed",
+    "evidence": "Table 14: pins 53, 54, 61 and 62 are SDI, SDO, CSB and SCK in 4-wire SPI with ISOMD tied to V-, or 2-wire isoSPI with ISOMD tied to VREG. SDO is open drain and needs a 5 kΩ pull-up. Table 15 lists the port pins. The part has no I²C target port: GPIO3 to GPIO5 act only as an I²C or SPI controller. The jlcparts copy of 2026-09-14 has LTC6820HMS#3ZZTRPBF, C514444, stock 2912, and LTC6820IMS#TRPBF, C581009, stock 2544.",
+    "source": "adbms1818.pdf Rev. B Tables 14 and 15 (read 2026-09-28T15:46:25Z); cache.sqlite3 jlc_components lcsc 514444 and 581009, opened read-only",
+    "read_at": "2026-09-28T15:47:40Z"
+   },
+   {
+    "figure": "P2 report: first-to-last cell skew",
+    "verdict": "confirmed",
+    "evidence": "ADBMS1818 Table 4: tSKEW2 (cell 18 to cell 1), normal mode 580 min, 670 typ, 711 max µs; fast mode 248 µs max. Table 1: fast-mode TME at 4.2 V ±12.5 mV over temperature. LTC6813-1 Rev. B: tSKEW2 normal mode 670 typ, 711 max µs; fast mode 248 max µs; fast-mode TME at 4.2 V ±8.3 mV.",
+    "source": "adbms1818.pdf Rev. B Tables 1 and 4; ltc6813-1.pdf Rev. B electrical characteristics",
+    "read_at": "2026-09-28T15:46:25Z"
+   },
+   {
+    "figure": "P2 report: skew limit on the external path",
+    "verdict": "refuted",
+    "evidence": "The figures hold. 370 µs = 0.333 A / 900 A/s, 988 µs = 0.889 A / 900 A/s, and tSKEW2 is 711 µs maximum. MAX14921 is correct: 'Both devices simultaneously sample all cell voltages', VP +6 to +65 V. The BQ79616 statement is wrong. SLUSF21A section 6.3.2.1: 'There are total of 24 inputs (slots) multiplexed to the Main ADC. All inputs are measured in round robin fashion. Each input takes 8 µs (nominal) to measure and a single round robin cycle completes in 192 µs (nominal).' The BQ79616 does not sample all cells at once. It fails V181 anyway (section 6.3.2.1.1.1, 'a minimum of 6 cells').",
+    "source": "https://www.ti.com/lit/ds/symlink/bq79616.pdf (HTTP 200) SLUSF21A section 6.3.2.1; https://www.analog.com/media/en/technical-documentation/data-sheets/MAX14920-MAX14921.pdf (safari, HTTP 200) p. 1 and electrical characteristics",
+    "read_at": "2026-09-28T15:52:27Z"
+   },
+   {
+    "figure": "P2 report: INA238 pairing",
+    "verdict": "confirmed",
+    "evidence": "ADBMS1818 Table 21 and LTC6813-1 Table 5, 7 kHz mode: t0 0, t1M 145, t2M 279, t5M 681, t6M 815 µs. Every cell sample of an 18-channel ADCV lies between 0 and 815 µs. 815 - 400 = 415 µs, under the 741 µs of V187 as stated. That value of V187 is refuted above. Against the 370 µs that the same sources give for the external path, 415 µs does not fit.",
+    "source": "adbms1818.pdf Rev. B Table 21; ltc6813-1.pdf Rev. B Table 5",
+    "read_at": "2026-09-28T15:46:25Z"
+   },
+   {
+    "figure": "P2 report: balance-lead pin currents",
+    "verdict": "confirmed",
+    "evidence": "ADBMS1818 Table 1 and LTC6813-1: C(n) input leakage when not measured 10 nA typ, ±250 nA max; ±1 µA typical when measured; 70 min, 100 typ, 130 max µA during open-wire detection. Table 3: V+ current in SLEEP 6.1 µA typical. V+ draws from the stack top to V-, through every cell.",
+    "source": "adbms1818.pdf Rev. B Tables 1 and 3; ltc6813-1.pdf Rev. B",
+    "read_at": "2026-09-28T15:46:25Z"
+   },
+   {
+    "figure": "P2 report: unused inputs for small packs",
+    "verdict": "confirmed",
+    "evidence": "Table 3 (TME specifications met): C13 at least 2.5 V and C7 at least 1 V. ADBMS1818 p. 86 'Using the ADBMS1818 with Fewer than 18 Cells' lets unused C inputs be shorted to the highest connected cell or left open. An open C13 or C7 cannot hold those minimums, so fewer than 13 cells needs the tie. LTC6813-1 Rev. B says the same.",
+    "source": "adbms1818.pdf Rev. B Table 3 and p. 86; ltc6813-1.pdf Rev. B",
+    "read_at": "2026-09-28T15:46:25Z"
+   },
+   {
+    "figure": "P2 report: LTC6813-1 distributor status",
+    "verdict": "confirmed",
+    "evidence": "Digi-Key API, LTC6813HLWE-1#3ZZPBF: status 'Discontinued at DigiKey', stock 0, lead 36 weeks. LTC6813ILWE-1#3ZZPBF: 'Discontinued at DigiKey', stock 0, lead 39 weeks. LTC6813HLWE-1#3ZZTRPBF: HTTP 404 'Requested Product ... Not Found'.",
+    "source": "vendors.py digikey LTC6813HLWE-1#3ZZPBF, LTC6813ILWE-1#3ZZPBF, LTC6813HLWE-1#3ZZTRPBF",
+    "read_at": "2026-09-28T15:50:18Z"
+   },
+   {
+    "figure": "re-rank report: P3 finds qualified",
+    "verdict": "confirmed",
+    "evidence": "Each re-rank drop below re-reads as stated. ADBMS6832/6833: the data sheet is a 2-page short form, and the ADBMS6833 has no JLCPCB row. INA149 with ADS8588S: the ADC alone reaches 6.13 mV at 4.2 V. LTC6806: 3.0 mV/bit and ±34 to ±40 mV. ADES1830/31, BQ78706/02, the BQ797xx and BQ7697x rows, and the MAX1785x and MC33775 rows fail rule 4. The TLE9018 rows are 'JLCPCB Assembly'. None qualifies. P3's own return was not available to count its 8 entries: dropped_from_p3 holds 9, with ADBMS6832 and 6833 counted as one family.",
+    "source": "vendors.py jlcpcb and jlcpcb-search 2026-09-28T15:48:08Z to 15:49:28Z; datasheets as in the drop entries",
+    "read_at": "2026-09-28T15:49:28Z"
+   },
+   {
+    "figure": "re-rank report: ADS8588S error at 4.2 V",
+    "verdict": "confirmed",
+    "evidence": "SBAS642A: gain error with external reference -64 to +64 LSB at -40 to +85 °C (to 96 LSB at +125 °C). Note 5: positive full-scale error = gain error ÷ 2. Offset ±1.8 mV in the ±5 V range. INL ±1.5 LSB. LSB = 10 V / 65536 = 152.6 µV. 32 × 152.6 µV = 4.88 mV at 5 V and 4.10 mV at 4.2 V. 4.10 + 1.8 + 0.23 = 6.13 mV > 6 mV.",
+    "source": "https://www.ti.com/lit/ds/symlink/ads8588s.pdf (HTTP 200), SBAS642A electrical characteristics and note 5",
+    "read_at": "2026-09-28T15:46:24Z"
+   },
+   {
+    "figure": "re-rank report: INA149 error terms",
+    "verdict": "confirmed",
+    "evidence": "SBOS579B: initial offset 350 typ, 1100 max µV; drift 3 typ, 15 max µV/°C; CMRR at dc over -40 to +125 °C 90 dB min; gain error ±0.02 %FSR max. 15 µV × 25 K = 0.375 mV. 67.2 V × 10^(-90/20) = 2.125 mV. Sum 3.6 mV, before gain error.",
+    "source": "https://www.ti.com/lit/ds/symlink/ina149.pdf (HTTP 200), SBOS579B electrical characteristics",
+    "read_at": "2026-09-28T15:46:24Z"
+   },
+   {
+    "figure": "re-rank report: LTC6806 resolution and TME",
+    "verdict": "confirmed",
+    "evidence": "LTC6806 Rev 0 ADC DC specifications: range ±2.5 V with HIRNG = 0 and ±5.0 V with HIRNG = 1; resolution 1.5 and 3.0 mV/bit. TME.2 (HIRNG = 1) at ±5 V: ±34 mV at 25 °C, ±40 mV over temperature. The lowest is TME.1 at 0 V, ±12 mV.",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6806.pdf (safari, HTTP 200), Rev 0",
+    "read_at": "2026-09-28T15:46:30Z"
+   },
+   {
+    "figure": "re-rank report: LTC6806HLW#3ZZPBF stock",
+    "verdict": "confirmed",
+    "evidence": "C3681818: part LTC6806HLW#3ZZPBF, Analog Devices, LQFP-64(10x10), stockCount 165, canPresaleNumber 165, expand.",
+    "source": "vendors.py jlcpcb C3681818",
+    "read_at": "2026-09-28T15:48:08Z"
+   },
+   {
+    "figure": "re-rank report: ADBMS6832 datasheet",
+    "verdict": "confirmed",
+    "evidence": "The data sheet is 2 pages, Rev. SpC, and says 'For more information ... contact BMS_Doc_Request@analog.com'. It gives: up to 18 (ADBMS6832) or 16 (ADBMS6833) cells; maximum lifetime TME ±1.8 mV at 3.3 V (-40 to +125 °C); input range -2 V to +5.5 V; simultaneous measurement; built-in isoSPI as the host connection. The GPIOs act only as an I²C or SPI controller. It gives no lowest cell count, stack supply range, absolute maximum, 4.2 V error or reading period.",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/adbms6832-6833.pdf (safari, HTTP 200)",
+    "read_at": "2026-09-28T15:46:31Z"
+   },
+   {
+    "figure": "re-rank report: ADBMS6832 JLCPCB stock",
+    "verdict": "confirmed",
+    "evidence": "C18168954 ADBMS6832MWCCSZ-RL: stockCount 6097, presale 6096, price 6.2522 at 1. C18166020 ADBMS6832MWCCSZ: 136, presale 136, price 7.1941 at 1.",
+    "source": "vendors.py jlcpcb C18168954 (15:48:17Z), C18166020 (15:48:18Z)",
+    "read_at": "2026-09-28T15:48:18Z"
+   },
+   {
+    "figure": "re-rank report: shortlist JLCPCB stock",
+    "verdict": "confirmed",
+    "evidence": "stockCount/presale: C5372802 ADBMS1818ASWAZ-RL 12500/12495; C2971928 ADBMS1818ASWZ-RL 2723/2716; C7455595 ADBMS1818ASWAZ-R7 195/195; C2758259 LTC6813HLWE-1#3ZZPBF 350/337; C2979142 LTC6813HLWE-1#3ZZTRPBF 270/247.",
+    "source": "vendors.py jlcpcb C5372802, C2971928, C7455595, C2758259, C2979142",
+    "read_at": "2026-09-28T15:48:26Z"
+   },
+   {
+    "figure": "re-rank report: shortlist Digi-Key",
+    "verdict": "confirmed",
+    "evidence": "ADBMS1818ASWAZ-RL: Active, 564, 38 weeks. ADBMS1818ASWZ-RL: Active, 854, 39 weeks. ADBMS1818ASWAZ-R7: Active, 290, 38 weeks. LTC6813HLWE-1#3ZZPBF: 'Discontinued at DigiKey', 0, 36 weeks. LTC6813HLWE-1#3ZZTRPBF: HTTP 404.",
+    "source": "vendors.py digikey, 2026-09-28T15:50:15Z to 15:50:23Z",
+    "read_at": "2026-09-28T15:50:23Z"
+   },
+   {
+    "figure": "re-rank report: ADBMS1818 error margin",
+    "verdict": "confirmed",
+    "evidence": "Table 1: normal-mode TME at 4.2 V is ±4.8 mV over temperature. 4.8 + 0.96 = 5.76 mV. The 0.96 mV term is 711 µs × 450 A/s × 3 mΩ. Table 4: filtered mode takes 174.2 to 213.8 ms for 18 cells, far above 20 ms. The sum depends on the V186 basis, refuted above. At the external path's 900 A/s the timing term is 1.92 mV, and the sum is 6.72 mV, above ±6 mV.",
+    "source": "adbms1818.pdf Rev. B Tables 1 and 4",
+    "read_at": "2026-09-28T15:46:25Z"
+   },
+   {
+    "figure": "re-rank report: ADBMS1818 package outlines",
+    "verdict": "refuted",
+    "evidence": "The ADBMS1818 ordering guide holds: ASWAZ, -R7 and -RL use SW-64-2; ASWZ, -R7 and -RL use 05-08-1982. Both are 64-lead LQFP_EP, 10.00 mm body, 12.00 mm with leads, 0.50 mm pitch. The exposed pad is 5.50 mm square in SW-64-2 and 5.74 mm in 05-08-1982. The statement 'Rank 2 is the only shortlist row in the other outline' is wrong. The LTC6813HLWE-1#3ZZPBF and #3ZZTRPBF rows are on the same shortlist (report 'shortlist JLCPCB stock'). They use the LWE package, '64-Lead Plastic Exposed Pad LQFP (10mm × 10mm) (Reference LTC DWG #05-08-1982 Rev A)', the ADBMS1818ASWZ outline. JLCPCB labels C2979142 'LQFP-64(10x10)' without EP, against that datasheet.",
+    "source": "adbms1818.pdf Rev. B pp. 91-92 (Figures 113, 114, ordering guide); ltc6813-1.pdf Rev. B p. 88 package description; vendors.py jlcpcb C2979142",
+    "read_at": "2026-09-28T15:50:00Z"
+   },
+   {
+    "figure": "re-rank report: V189 and V190 against the shortlist",
+    "verdict": "confirmed",
+    "evidence": "The found values for V189 and V190 are 'not found', so no part can be checked against them. The part figures re-read: C pin leakage ±250 nA max when not measured; V+ 0.95 mA typical in MEASURE; isoSPI (ISOMD to VREG) as an option.",
+    "source": "found_values V189 and V190; adbms1818.pdf Rev. B Tables 1, 3 and 14",
+    "read_at": "2026-09-28T15:46:25Z"
+   },
+   {
+    "figure": "re-rank drop: Cell monitor: ADBMS6832MWCCSZ (C18166020), ADBMS6832MWCCSZ-RL (C18168954)",
+    "verdict": "confirmed",
+    "evidence": "The data sheet is the 2-page short form, Rev. SpC, with no lowest cell count, stack range, absolute maximum, 4.2 V or 2.8 V error, or reading period. The host port is isoSPI. JLCPCB: C18168954 6097/6096, C18166020 136/136. Digi-Key: HTTP 404 for both. The jlcparts copy also holds C5250296 'ADBMS6832' and C9900260660 'ADBMS6832M', both stock 0, which does not change the drop.",
+    "source": "adbms6832-6833.pdf (15:46:31Z); vendors.py jlcpcb (15:48:17Z, 15:48:18Z); vendors.py digikey (15:50:25Z, 15:50:26Z); cache.sqlite3 read-only",
+    "read_at": "2026-09-28T15:50:26Z"
+   },
+   {
+    "figure": "re-rank drop: Cell monitor: ADBMS6833",
+    "verdict": "confirmed",
+    "evidence": "jlcpcb-search 'ADBMS6833' returned no results. The jlcparts copy has no row with mfr like '%ADBMS6833%'. The data sheet is the same short form as the ADBMS6832.",
+    "source": "vendors.py jlcpcb-search ADBMS6833; cache.sqlite3 read-only",
+    "read_at": "2026-09-28T15:49:21Z"
+   },
+   {
+    "figure": "re-rank drop: Cell monitor: INA149AIDR (C183089) ×16 with ADS8588SIPMR (C575544) ×2",
+    "verdict": "confirmed",
+    "evidence": "The ADC alone reaches 6.13 mV at 4.2 V, over ±6 mV (see 'ADS8588S error at 4.2 V'). The INA149 adds 3.6 mV before gain error. JLCPCB: C183089 591/540; C575544 2068/2042. The gate is 5 × 16 × 5 = 400. Digi-Key: INA149AIDR Active, 0; ADS8588SIPMR Active, 1902.",
+    "source": "ads8588s.pdf, ina149.pdf (15:46:24Z); vendors.py jlcpcb C183089, C575544 (15:48:27Z, 15:48:29Z); vendors.py digikey (15:50:28Z, 15:50:30Z)",
+    "read_at": "2026-09-28T15:50:30Z"
+   },
+   {
+    "figure": "re-rank drop: Cell monitor: LTC6806HLW#3ZZTRPBF (C689553), LTC6806HLW#3ZZPBF (C3681818), LTC6806ILW#3ZZTRPBF (C689554), LTC6806ILW#3ZZPBF (C3682621)",
+    "verdict": "confirmed",
+    "evidence": "A 4.2 V cell needs HIRNG = 1, which gives 3.0 mV/bit, above V182's 1 mV. TME at ±5 V is ±34 mV at 25 °C and ±40 mV over temperature, above ±6 mV. JLCPCB stockCount/presale: C689553 5/4, C689554 0/0, C3682621 0/0, C3681818 165/165.",
+    "source": "ltc6806.pdf Rev 0 (15:46:30Z); vendors.py jlcpcb C689553, C689554, C3682621, C3681818",
+    "read_at": "2026-09-28T15:48:33Z"
+   },
+   {
+    "figure": "re-rank drop: Cell monitor: ADES1830CCSZ (C22463734), ADES1831CCSZ (C37992838)",
+    "verdict": "confirmed",
+    "evidence": "C22463734 4/4 and C37992838 5/5, under the gate of 50. jlcpcb-search and the jlcparts copy show no other row.",
+    "source": "vendors.py jlcpcb C22463734, C37992838; jlcpcb-search ADES1830, ADES1831; cache.sqlite3 read-only",
+    "read_at": "2026-09-28T15:49:25Z"
+   },
+   {
+    "figure": "re-rank drop: Cell monitor: BQ78706PAPR (C44295454), BQ78702BPAPR (C49262227)",
+    "verdict": "confirmed",
+    "evidence": "C44295454 stockCount 10, presale -14. C49262227 0/0. ti.com/product/BQ78706: ACTIVE, 'Number of series cells (max) 14', '(min) 9'.",
+    "source": "vendors.py jlcpcb C44295454, C49262227 (15:48:38Z, 15:48:39Z); vendors.py fetch https://www.ti.com/product/BQ78706 (HTTP 200)",
+    "read_at": "2026-09-28T15:52:18Z"
+   },
+   {
+    "figure": "re-rank drop: Cell monitor: BQ79716BQPAPRQ1 (C52019727), BQ79718BQPAPRQ1 (C50341507), BQ79718VPAPRQ1 (C42394540), BQ79712SBQPHPRQ1 (C53435646), BQ79758QPAPRQ1 (C41921942), BQ79758BQPAPRQ1 (C50498581), BQ7697202PFBR (C22466635), BQ7697204PFBR (C36851807)",
+    "verdict": "confirmed",
+    "evidence": "stockCount/presale: C52019727 3/3; C50341507 1/-8; C42394540 0/0; C53435646 3/3; C41921942 0/0; C50498581 0/0; C22466635 0/0; C36851807 20/20; C22396721 0/0. C9900097422 (BQ76972PFBR) and C9900149498 (BQ79718VCPAPRQ1) are labelled 'JLCPCB Assembly'. Every row fails rule 4.",
+    "source": "vendors.py jlcpcb, 2026-09-28T15:48:41Z to 15:49:05Z",
+    "read_at": "2026-09-28T15:49:05Z"
+   },
+   {
+    "figure": "re-rank drop: Cell monitor: MAX17852ACB/V+ (C3681505), MAX17852ACB/V+T (C3681836), MAX17853ACB/V+ (C7451746), MAX17854ACB/V+ (C17448489), MAX17854ACB/V+T (C17458516), MC33775ATA1AE (C5353387)",
+    "verdict": "confirmed",
+    "evidence": "stockCount/presale: C3681505 13/13; C3681836 0/0; C7451746 0/0; C17448489 0/0; C17458516 0/0; C5353387 0/2. C9900039784 and C9900039785 are labelled 'JLCPCB Assembly'. Every row fails rule 4.",
+    "source": "vendors.py jlcpcb, 2026-09-28T15:48:55Z to 15:49:08Z",
+    "read_at": "2026-09-28T15:49:08Z"
+   },
+   {
+    "figure": "re-rank drop: Cell monitor: TLE9018DQK (C9900248531), TLE9018DQU (C9900113220)",
+    "verdict": "confirmed",
+    "evidence": "jlcpcb-search 'TLE9018' returns only C9900113220 and C9900248531. Both are labelled 'JLCPCB Assembly', with stockCount 0 and presale 0. The jlcparts copy holds only those two rows.",
+    "source": "vendors.py jlcpcb-search TLE9018; vendors.py jlcpcb C9900248531, C9900113220; cache.sqlite3 read-only",
+    "read_at": "2026-09-28T15:49:22Z"
+   }
+  ]
+ }
+}

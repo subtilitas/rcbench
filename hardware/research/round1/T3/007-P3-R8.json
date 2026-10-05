@@ -1,0 +1,48 @@
+{
+ "role": "P3",
+ "category": "R8",
+ "label": "P3-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "missed": [
+   {
+    "function": "Onboard shunt",
+    "part": "BVR-Z-R0002-1.0 (LCSC C6869644)",
+    "maker": "Isabellenhuette (datasheet BVR (4026), Issue 12-September-2024, https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BVR.pdf, read 2026-09-29T10:19:42Z); S2 Isabellenhuette; JLCPCB label Isabellenhuette; Digi-Key 'Isabellenhuette USA'",
+    "why": "This family was not considered. P2 only searched Digi-Key for BVR-Z-R0001, for the external shunt, and that search returned nothing. The part passes every value of the function: 0.2 mOhm, a ZERANIN element, TCR 0 +/-20 ppm/K (the datasheet states it over 20 to 60 degC, the same basis as the BVE that P2 ranked first), P>100 degC 6 W against 150^2 x R = 4.5 W, P70 12 W, 'Constant current up to 245 A (0.2 mOhm)', Rthi 4 K/W, a four-terminal configuration (Kelvin), -65 to +170 degC. Accuracy share at 150 A: terminal 100 degC + 4 K/W x 4.5 W = 118 degC element, 93 K above the 25 degC calibration, x 20 ppm/K = 0.19 % = 0.28 A against the ~1.5 A budget; at 15 A 25 K gives 0.05 %. JLCPCB API C6869644 (read 2026-09-29T10:19:07Z): stockCount 359, canPresaleNumber 354, expand, 1.3873 USD at 100. This passes the gate of 50 (5 boards x 1). Digi-Key API productdetails (read 2026-09-29T10:20:01Z): Active, 11190 (cut tape), lead time 18 weeks. That is a second vendor above the gate. It has a lower TCR than BVE-M-R0002-1.0 (+/-50) and CSS2H-3920R-L200FE (+/-50). It is four-terminal like WSLP2726, which has no second source. The re-rank should qualify it against rank 1. Not read: the manufacturer's lifecycle page, the PCN listing, and the TCR outside 20 to 60 degC."
+   },
+   {
+    "function": "External shunt",
+    "part": "WSBE8518L1000JKA2",
+    "maker": "Vishay Dale (datasheet WSBE Series, document 30424, revision 04-Jun-2024, https://www.vishay.com/docs/30424/wsbeseries.pdf, read 2026-09-29T10:18:06Z); S1/S2 Vishay; Digi-Key 'Vishay Dale'",
+    "why": "This family was not considered. P2 searched WSBS8518, WSBM8518, CSM2F-8518 and BAS only. WSBE is Vishay's low-TCR successor in the same 8518 body: 85 x 18 x 3 mm, two 7 mm holes at 60 mm pitch, the same mounting as the WSBS8518 seed. It passes every value: 100 uOhm, inside 50 to 136 uOhm; NiCr element; TCR +/-10 ppm/degC for 100 uOhm (the table gives no measurement range; a comparison graph covers -55 to 145 degC); 36 W at 70 degC and maximum current (P/R)^1/2 = 600 A, against 9 W at 300 A for 30 s; -65 to +170 degC. The A2 suffix is 'voltage sense pins in position 1 and 4', which gives the defined Kelvin sense points. Tolerance is +/-5 %, as for the ranked BAS-M-R0001-R-5.0, and is removed by the one gain calibration. Accuracy share: 10 ppm/degC allows about 937 K against the (3 A - 0.19 A)/300 A budget, against 187 K for BAS (+/-50) and 53 K for WSBS8518...20. Digi-Key keyword search 'WSBE8518' (read 2026-09-29T10:17:26Z, also the part's reading): Active, 418 in stock (541-WSBE8518L1000JKA2-ND, bulk), lead time 48 weeks. That passes the gate of 50. WSBE8518L1000JKB2 (shrouded header pins, 10 in stock) fails the gate. WSBE8518L1000JK (no pins, 53) fails Kelvin sense. Market introduction is not read (only the revision date 04-Jun-2024 is on the sheet). Vishay's lifecycle page and PCN listing are not read."
+   },
+   {
+    "function": "Onboard shunt temperature sensor",
+    "part": "MCP9808T-E/MS (LCSC C129490)",
+    "maker": "Microchip (datasheet DS20005095B, https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/MCP9808-0.5C-Maximum-Accuracy-Digital-Temperature-Sensor-Data-Sheet-DS20005095B.pdf, read 2026-09-29T10:21:49Z); S1 Microchip; JLCPCB label Microchip Tech",
+    "why": "This family was not considered. It passes every value with the widest margin found: +/-0.5 degC maximum for -20 degC < TA <= +100 degC at VDD 3.3 V, lifetime drift included (Note 1), and +/-1.0 degC maximum from -40 to +125 degC. The allowed error is +/-2 degC over 0 to 100 degC. VDD is 2.7 to 5.5 V and the I2C/SMBus interface runs at 3.3 V. Its address is '0011,A2,A1,A0' (0x18 to 0x1F), clear of the 0x40 to 0x4F range the INA238 and INA3221 use, whereas TMP1075/PCT2075 sit at 0x48 to 0x4F. Microchip product page https://www.microchip.com/en-us/product/mcp9808 (read 2026-09-29T10:21:43Z) shows 'In Production'. JLCPCB API C129490 (read 2026-09-29T10:21:22Z): stockCount 774, canPresaleNumber 723, expand, 1.7885 USD at 30; gate 50. Digi-Key API productdetails (read 2026-09-29T10:21:59Z): Active, 21589, lead time 4 weeks. The package is MSOP-8, not the LM75 SOIC-8 footprint of rank 1. The same die in DFN-8 (MCP9808T-E/MC, C194710, JLCPCB 397 / presale 392 at 10:21:25Z) is a different footprint, so the second source is Digi-Key, not a pin-compatible alternate."
+   },
+   {
+    "function": "Onboard shunt temperature sensor",
+    "part": "LM75BIMMX-3/NOPB (LCSC C543061)",
+    "maker": "Texas Instruments (datasheet SNIS153D, revised October 2015, https://www.ti.com/lit/ds/symlink/lm75b.pdf, read 2026-09-29T10:21:01Z); S1 Texas Instruments",
+    "why": "TI's LM75B was not considered; P2 checked only NXP's LM75B and the UMW copies. It passes, with no margin: +/-2 degC maximum from -25 to 100 degC and +/-3 degC from -55 to 125 degC. The -3 suffix is the 3.3 V version, and accuracy is specified at nominal supply (about 1 degC/V away from it). It is an LM75-pinout VSSOP-8 and register-compatible with the LM75 family, so it can stand in for TMP1075DGKR (VSSOP-8). JLCPCB API C543061 (read 2026-09-29T10:21:17Z): stockCount 3731, canPresaleNumber 3721, expand, 0.5004 USD at 30. Digi-Key API (read 2026-09-29T10:22:03Z): Active, 5258, lead time 16 weeks. TI product-page lifecycle not read. Checked and failed: STLM75M2F (ST, +/-2 degC for -25 < TA < 100 degC, Doc ID 13296 Rev 12, read 10:21:02Z) is Obsolete at Digi-Key (10:22:01Z, 0 in stock). TMP75BIDR fails at 100 degC: +/-2 degC maximum only from -20 to +85 degC and +/-3 degC from -55 to 125 degC (SBOS706B, read 10:21:00Z)."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "PAC1954 (PAC1954T-E/4MX, C3687526), with PAC1944 and INA4235 in the same drop (Port current monitor)",
+    "reason_given": "JLCPCB stock in the jlcparts copy 7 to 71 against gates of 125 or more; PAC1944 bus 0 to 9 V against the 20 V withstand of V171 (DS not read)",
+    "why_it_fails": "Sourcing rule 3 allows the jlcparts copy for finding a part, never for counting it, and a requirement value must come from the datasheet. JLCPCB's API gives PAC1954T-E/4MX (C3687526) stockCount 235 and canPresaleNumber 233 (read 2026-09-29T10:23:48Z). That is at or above the gate of 125: 5 four-channel parts a board x 5 boards = 25, x 5. The copy lists it at 0. So the stock reason does not hold for PAC1954. The part still does not show V174, on the same basis P2 used for PAC1934: VSENSE gain error is +/-0.5 % maximum at +25 degC only, and +/-0.3 % typical over -40 to +125 degC with no maximum. Offset is +/-100 uV maximum, which is 10 mA with 10 mOhm (DS20006539F, DC Electrical Characteristics, https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/PAC1951-2-3-4-Single-Multi-Channel-Power-Monitor-with-Accumulator-32V-Full-Scale-Range-DS20006539.pdf, read 2026-09-29T10:24:09Z). Other figures from the same sheet: SENSE pins 0 to 32 V common mode, 40 V absolute maximum; 16 addresses; 1,024 samples a second on 4 channels. The drop stands on V174, not on stock. For the others, the API confirms the drop with a valid source: PAC1954T-E/J6CX (C3686247) 2, read 10:15:50Z; PAC1944T-E/4MX (C3688047) 44, read 10:15:50Z; PAC1944T-E/J6CX (C5226659) 15, read 10:23:49Z; INA4235AIYBJR (C33440856) 1 with presale -5, read 10:15:45Z. PAC1944's 9 V bus figure is still not from a datasheet."
+   },
+   {
+    "part": "WSBS8518, WSBM8518, CSM2F, BAS busbar parts on the board (Onboard shunt)",
+    "reason_given": "JLCPCB stock 0 to 7 in the jlcparts copy; screw-mounted, not placed by JLCPCB assembly",
+    "why_it_fails": "The first clause counts stock from the jlcparts copy, which rule 3 forbids. The JLCPCB API gives WSBS8518L1000JK14 (C1519252) stockCount 7 and canPresaleNumber 7 (read 2026-09-29T10:23:51Z). The exclusion itself stands on the second clause and on that API reading. Only the stated stock source is invalid."
+   }
+  ],
+  "missed_functions": []
+ }
+}

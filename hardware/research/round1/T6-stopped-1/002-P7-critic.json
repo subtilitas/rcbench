@@ -1,0 +1,1227 @@
+{
+ "role": "P7-critic",
+ "category": "",
+ "label": "P7-critic",
+ "attempt": 0,
+ "data": {
+  "checks": {
+   "check_docs": {
+    "passed": true,
+    "output": "docs agree with the tree"
+   },
+   "ruff": {
+    "passed": true,
+    "output": "All checks passed!"
+   },
+   "jlc_stock": {
+    "passed": false,
+    "output": "49 parts, gate = max(5 x 5 x placements, 50)\n... [FAIL] ADS1235IRHBR (second vendor): stock_available 0, gate 50 ...\nPersonal library (rule 6, export of 2026-09-25):\n  [ok] RP2354B: held 20, need 5\n\n1 problem(s)\n(exit 1: ADS1235IRHBR's second-vendor (Digi-Key) stock reads 0 against gate 50, live on the load-cell bridge ADC; every other of the 49 parts, and the held RP2354B, pass. This reproduces P7's own result exactly on a clean run. Note: repeated re-runs of this same check later in this review, needed to verify the code fix below, exhausted Digi-Key's 1,000-call daily quota -- later runs in this session show many rows as 'Digi-Key unreachable' (HTTP 429 'Daily Ratelimit exceeded'), which is quota exhaustion from this session's own testing, not a defect in the tree or the script.)"
+   }
+  },
+  "reviewed": [
+   "hardware/docs/Parts.md",
+   "hardware/docs/Digital.md",
+   "hardware/docs/PowerSupply.md",
+   "hardware/docs/Sensors.md",
+   "hardware/docs/Power.md",
+   "hardware/docs/IOBoard.md",
+   "hardware/docs/Research.md",
+   "hardware/STATUS.md",
+   "hardware/README.md",
+   "tools/jlc_stock.py"
+  ],
+  "corrections_applied": [
+   "Parts.md's JLCPCB stock and presale figures were truncated at the first thousands comma for 6 rows (the script or agent that condensed the P4-stock returns into the table dropped everything from the comma onward): ADCS7476AIMFX/NOPB (line 41: stock 2 -> 2,312, presale 2 -> 2,279, against FU-C1/017-P4-stock-R10.json), TCA9548APWR (line 47: 39 -> 39,690 / 39 -> 39,348), MAX31856MUD+T (line 49: 11 -> 11,459 / 11 -> 11,205), MB85RC256VPNF-G-AMERE2 (line 50: 6 -> 6,523 / 6 -> 6,467, all three against FU-C1/020-P4-stock-R12.json), MCP2518FDT-E/SL (line 53: 28 -> 28,884 / 28 -> 28,715) and TCAN3413DR (line 54: 14 -> 14,544 / 13 -> 13,883, both against FU-A2/009-P4-stock-R2.json). Sensors.md already carried the correct MAX31856MUD+T ('more than 11,000') and MB85RC256V ('JLCPCB 6,523') figures, confirming the truncation was local to Parts.md's table. As transcribed, several of these (2, 39, 11, 6, 28, 14) read below their own sourcing-rule-4 gate of 50 without being flagged anywhere as a failure, which is the tell that they were wrong rather than a real shortage.",
+   "tools/jlc_stock.py's alternate/rule-5 branch (_check_second_source, the 'elif row.route == \"alternate\"' case) printed a silent [ok] for the case where the row's own part fails rule 4 but its JLCPCB alternate passes, and printed [warn] for the opposite, unremarked case (the part passes and the alternate fails) -- exactly backward from the Outputs table's own description ('A part that fails rule 4 while its alternate passes is printed as a warning'). It also computed a 'mark' variable at that point that was never read (dead store invisible to ruff's F841, since pyflakes only checks whether a name is referenced anywhere in the function, and 'mark' is read from an earlier, different assignment at line 329). Fixed the warn/ok labeling to match the documented case and removed the dead assignment; the exit-code logic (fails only when both the part and its alternate fail rule 4) is unchanged.",
+   "STATUS.md's top summary and 4 rows of its Decided table (3.3 V/5 V rails, servo supply and port switches, pack charger, motor and port current monitors) linked to Power.md for the round-1 R5-R8 result, but Power.md's own text says PowerSupply.md supersedes it for round 1 and carries only the pre-round-1 comparison. Repointed all 5 links to PowerSupply.md, the current page.",
+   "LCSC was used without expansion on its first occurrence in Parts.md (line 35), PowerSupply.md (line 13), Sensors.md (line 13) and Research.md (line 150), violating CONTRIBUTING.md's per-document acronym-expansion rule; only Digital.md expanded it. Added '(Shenzhen LiChuangShiJie Electronics Co., Ltd, the JLCPCB parts library)' at each file's first use, matching Digital.md's existing wording.",
+   "Two uses of the banned word 'just' (CONTRIBUTING.md's Writing section lists it with powerful/seamless/robust/comprehensive/simply/easy): STATUS.md:87 ('not just a stock issue') reworded to 'not only a stock issue'; IOBoard.md:350 ('just above the rail settings of 5.5 V and 8.4 V') replaced with the actual margins already implied by the same sentence's own figures, '0.5 V and 0.3 V above the rail settings of 5.5 V and 8.4 V'."
+  ],
+  "figure_checks": [
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 39,
+    "figure": "15120 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 40,
+    "figure": "4566 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A4/005-P4-stock-R1.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 41,
+    "figure": "2 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-C1/017-P4-stock-R10.json",
+    "kind": "other",
+    "agrees": false
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 42,
+    "figure": "2982 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 43,
+    "figure": "104 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 44,
+    "figure": "48987 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 45,
+    "figure": "339 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 46,
+    "figure": "41679 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-C2/005-P4-stock-R11.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 47,
+    "figure": "39 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": false
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 48,
+    "figure": "311 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 49,
+    "figure": "11 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": false
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 50,
+    "figure": "6 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-C1/020-P4-stock-R12.json",
+    "kind": "other",
+    "agrees": false
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 51,
+    "figure": "1340 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 52,
+    "figure": "3165 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-C1/016-P4-stock-R13.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 53,
+    "figure": "28 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+    "kind": "other",
+    "agrees": false
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 54,
+    "figure": "14 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A2/009-P4-stock-R2.json",
+    "kind": "other",
+    "agrees": false
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 55,
+    "figure": "952 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 56,
+    "figure": "1126 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 57,
+    "figure": "53165 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 58,
+    "figure": "1973 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 59,
+    "figure": "5229 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 60,
+    "figure": "233 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 61,
+    "figure": "630 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 62,
+    "figure": "28320 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 63,
+    "figure": "307 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "20982 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "172635 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "8928 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "5252 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/009-P4-stock-R3.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "401 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "73877 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "94504 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 71,
+    "figure": "392691 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-A3/008-P4-stock-R4.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "671 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "36974 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "331 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "5183 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "3105 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-B3/014-P4-stock-R5.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "6606 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "3795 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-B3/015-P4-stock-R6.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "578 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 80,
+    "figure": "5194 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "301 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-B3/016-P4-stock-R7.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "418 (Digi-Key, off-board part, rule 1; JLCPCB stock does not apply) (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 83,
+    "figure": "359 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "764 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 85,
+    "figure": "8704 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 86,
+    "figure": "4062 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-B3/017-P4-stock-R8.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 87,
+    "figure": "12500 (2026-09-29)",
+    "return_file": "hardware/research/round1/FU-C1/012-P4-stock-R9.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 9,
+    "figure": "49 parts that serve 63",
+    "return_file": "hardware/research/round1/selection.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 10,
+    "figure": "28 functions have no part",
+    "return_file": "hardware/research/round1/selection.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 18,
+    "figure": "commit `be1f2476`",
+    "return_file": "hardware/research/round1/T1/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 20,
+    "figure": "commit `e13f5f60`",
+    "return_file": "hardware/research/round1/T5/task.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 21,
+    "figure": "commit `9460c22e`",
+    "return_file": "hardware/research/round1/selection.json",
+    "kind": "other",
+    "agrees": true
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 24,
+    "figure": "49 parts for 63 of the 91 functions",
+    "return_file": "hardware/research/round1/selection.json",
+    "kind": "other",
+    "agrees": true
+   }
+  ],
+  "sentence_issues": [],
+  "marked": [
+   {
+    "index": 0,
+    "file": "hardware/STATUS.md",
+    "line": 97
+   },
+   {
+    "index": 1,
+    "file": "hardware/STATUS.md",
+    "line": 98
+   },
+   {
+    "index": 2,
+    "file": "hardware/STATUS.md",
+    "line": 99
+   },
+   {
+    "index": 3,
+    "file": "hardware/STATUS.md",
+    "line": 100
+   },
+   {
+    "index": 4,
+    "file": "hardware/STATUS.md",
+    "line": 101
+   },
+   {
+    "index": 5,
+    "file": "hardware/STATUS.md",
+    "line": 102
+   },
+   {
+    "index": 6,
+    "file": "hardware/STATUS.md",
+    "line": 103
+   },
+   {
+    "index": 7,
+    "file": "hardware/STATUS.md",
+    "line": 104
+   },
+   {
+    "index": 8,
+    "file": "hardware/STATUS.md",
+    "line": 105
+   },
+   {
+    "index": 9,
+    "file": "hardware/STATUS.md",
+    "line": 106
+   },
+   {
+    "index": 10,
+    "file": "hardware/STATUS.md",
+    "line": 62
+   },
+   {
+    "index": 11,
+    "file": "hardware/STATUS.md",
+    "line": 61
+   },
+   {
+    "index": 12,
+    "file": "hardware/STATUS.md",
+    "line": 61
+   },
+   {
+    "index": 13,
+    "file": "hardware/STATUS.md",
+    "line": 65
+   },
+   {
+    "index": 14,
+    "file": "hardware/STATUS.md",
+    "line": 66
+   },
+   {
+    "index": 15,
+    "file": "hardware/STATUS.md",
+    "line": 67
+   },
+   {
+    "index": 16,
+    "file": "hardware/STATUS.md",
+    "line": 78
+   },
+   {
+    "index": 17,
+    "file": "hardware/STATUS.md",
+    "line": 84
+   },
+   {
+    "index": 18,
+    "file": "hardware/STATUS.md",
+    "line": 85
+   },
+   {
+    "index": 19,
+    "file": "hardware/STATUS.md",
+    "line": 86
+   },
+   {
+    "index": 20,
+    "file": "hardware/STATUS.md",
+    "line": 87
+   },
+   {
+    "index": 21,
+    "file": "hardware/STATUS.md",
+    "line": 74
+   },
+   {
+    "index": 22,
+    "file": "hardware/STATUS.md",
+    "line": 82
+   },
+   {
+    "index": 23,
+    "file": "hardware/STATUS.md",
+    "line": 76
+   },
+   {
+    "index": 24,
+    "file": "hardware/STATUS.md",
+    "line": 83
+   },
+   {
+    "index": 25,
+    "file": "hardware/STATUS.md",
+    "line": 85
+   },
+   {
+    "index": 26,
+    "file": "hardware/STATUS.md",
+    "line": 61
+   },
+   {
+    "index": 27,
+    "file": "hardware/STATUS.md",
+    "line": 62
+   },
+   {
+    "index": 28,
+    "file": "hardware/STATUS.md",
+    "line": 63
+   },
+   {
+    "index": 29,
+    "file": "hardware/STATUS.md",
+    "line": 64
+   },
+   {
+    "index": 30,
+    "file": "hardware/STATUS.md",
+    "line": 65
+   },
+   {
+    "index": 31,
+    "file": "hardware/STATUS.md",
+    "line": 66
+   },
+   {
+    "index": 32,
+    "file": "hardware/STATUS.md",
+    "line": 67
+   },
+   {
+    "index": 33,
+    "file": "hardware/STATUS.md",
+    "line": 68
+   },
+   {
+    "index": 34,
+    "file": "hardware/STATUS.md",
+    "line": 69
+   },
+   {
+    "index": 35,
+    "file": "hardware/STATUS.md",
+    "line": 70
+   },
+   {
+    "index": 36,
+    "file": "hardware/STATUS.md",
+    "line": 71
+   },
+   {
+    "index": 37,
+    "file": "hardware/STATUS.md",
+    "line": 72
+   },
+   {
+    "index": 38,
+    "file": "hardware/STATUS.md",
+    "line": 73
+   },
+   {
+    "index": 39,
+    "file": "hardware/STATUS.md",
+    "line": 75
+   },
+   {
+    "index": 40,
+    "file": "hardware/STATUS.md",
+    "line": 76
+   },
+   {
+    "index": 41,
+    "file": "hardware/STATUS.md",
+    "line": 77
+   },
+   {
+    "index": 42,
+    "file": "hardware/STATUS.md",
+    "line": 78
+   },
+   {
+    "index": 43,
+    "file": "hardware/STATUS.md",
+    "line": 79
+   },
+   {
+    "index": 44,
+    "file": "hardware/STATUS.md",
+    "line": 80
+   },
+   {
+    "index": 45,
+    "file": "hardware/STATUS.md",
+    "line": 81
+   },
+   {
+    "index": 46,
+    "file": "hardware/STATUS.md",
+    "line": 82
+   },
+   {
+    "index": 47,
+    "file": "hardware/STATUS.md",
+    "line": 83
+   },
+   {
+    "index": 48,
+    "file": "hardware/STATUS.md",
+    "line": 84
+   },
+   {
+    "index": 49,
+    "file": "hardware/STATUS.md",
+    "line": 85
+   },
+   {
+    "index": 50,
+    "file": "hardware/STATUS.md",
+    "line": 86
+   },
+   {
+    "index": 51,
+    "file": "hardware/STATUS.md",
+    "line": 87
+   },
+   {
+    "index": 52,
+    "file": "hardware/STATUS.md",
+    "line": 88
+   },
+   {
+    "index": 53,
+    "file": "hardware/docs/PowerSupply.md",
+    "line": 46
+   },
+   {
+    "index": 54,
+    "file": "hardware/STATUS.md",
+    "line": 74
+   }
+  ],
+  "part_rows": [
+   {
+    "function": "12 MHz crystal",
+    "part": "ABM8-272-T3",
+    "parts_line": 39,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "Core regulator inductor",
+    "part": "AOTA-B201610S3R3-101-T",
+    "parts_line": 40,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "Link CAN controller",
+    "part": "MCP2518FDT-E/SL",
+    "parts_line": 53,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "TCAN3413DR",
+    "parts_line": 54,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "External CAN controller",
+    "part": "MCP2518FDT-E/SL",
+    "parts_line": 53,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "External CAN transceiver",
+    "part": "TCAN3413DR",
+    "parts_line": 54,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "monostable",
+    "part": "74HC423BQ,115",
+    "parts_line": 60,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "OR gate",
+    "part": "74AUP1G32GW,125",
+    "parts_line": 55,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "reset supervisor",
+    "part": "TPS3703A7330DSERQ1",
+    "parts_line": 63,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "latch",
+    "part": "74LVC1G175GW,125",
+    "parts_line": 58,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "latch clear control",
+    "part": "434153017835",
+    "parts_line": 59,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "trigger-path inverter",
+    "part": "SN74AUP1G14DBVR",
+    "parts_line": 67,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "trigger input I_off buffer (Q9)",
+    "part": "SN74AUP1G17DBVR",
+    "parts_line": 66,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "servo rail gate",
+    "part": "BTS7004-1EPP",
+    "parts_line": 64,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "onboard pack switch driver",
+    "part": "TPSI3052DWZR",
+    "parts_line": 56,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "external module driver output",
+    "part": "TPSI3052DWZR",
+    "parts_line": 56,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "pack reverse-polarity protection",
+    "part": "IPT015N10N5ATMA1",
+    "parts_line": 62,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "pack precharge",
+    "part": "CSD19537Q3T",
+    "parts_line": 61,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "servo rail gate driver",
+    "part": "2N7002BK,215",
+    "parts_line": 65,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "inverter on an active-low output enable",
+    "part": "SN74LVC1G04DBVR",
+    "parts_line": 57,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "gated output buffer",
+    "part": "SN74LVC244APWR",
+    "parts_line": 70,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "gated output buffer",
+    "part": "74LVC244APW,118",
+    "parts_line": 70,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "enable inverter",
+    "part": "SN74LVC1G04DBVR",
+    "parts_line": 57,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "bias selector",
+    "part": "SN74LVC1G126DBVR",
+    "parts_line": 69,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "multiprotocol port path",
+    "part": "SN74CBTLV3126PWR",
+    "parts_line": 68,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "UART socket path",
+    "part": "SN74CBTLV3126PWR",
+    "parts_line": 68,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "receiver inputs",
+    "part": "SN74LVC1T45DBVR",
+    "parts_line": 71,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "reply path through the gate",
+    "part": "SN74CBTLV3126PWR",
+    "parts_line": 68,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+    "part": "SN74CBTLV3126PWR",
+    "parts_line": 68,
+    "group_page": "hardware/docs/Digital.md"
+   },
+   {
+    "function": "Cell monitor",
+    "part": "ADBMS1818ASWAZ-RL",
+    "parts_line": 87,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "Converter for the accelerometer",
+    "part": "ADCS7476AIMFX/NOPB",
+    "parts_line": 41,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "accelerometer",
+    "part": "ADXL316WBCSZ",
+    "parts_line": 43,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "magnetic pickup",
+    "part": "DRV5015A1QDBZR",
+    "parts_line": 45,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "phase-wire clip",
+    "part": "TLV3201AIDBVR",
+    "parts_line": 46,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "phase-wire clip",
+    "part": "TLV3601DBVR",
+    "parts_line": 46,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "encoder input",
+    "part": "AM26LV32EIDR",
+    "parts_line": 44,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "encoder decode",
+    "part": "RP2354B",
+    "parts_line": 42,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "rotation from ESC",
+    "part": "RP2354B",
+    "parts_line": 42,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "rotation inputs",
+    "part": "RP2354B",
+    "parts_line": 42,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "BENCH rpm source",
+    "part": "RP2354B",
+    "parts_line": 42,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "servo measured position",
+    "part": "RP2354B",
+    "parts_line": 42,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "motor temperature thermocouple",
+    "part": "MAX31856MUD+T",
+    "parts_line": 49,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "motor temperature infrared",
+    "part": "MLX90614ESF-BCC-000-TU",
+    "parts_line": 48,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "external I2C ports",
+    "part": "TCA9548APWR",
+    "parts_line": 47,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "external I2C ports",
+    "part": "PCA9548APWR",
+    "parts_line": 47,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "non-volatile store",
+    "part": "MB85RC256VPNF-G-AMERE2",
+    "parts_line": 50,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "load-cell bridge ADC",
+    "part": "ADS1235IRHBR",
+    "parts_line": 51,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "load-cell excitation",
+    "part": "BD450M2FP3-CE2",
+    "parts_line": 52,
+    "group_page": "hardware/docs/Sensors.md"
+   },
+   {
+    "function": "source selection",
+    "part": "LM74800QDRRRQ1",
+    "parts_line": 76,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "3.3 V logic buck",
+    "part": "LMQ66430MC3RXBRQ1",
+    "parts_line": 72,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "5 V rail",
+    "part": "TPS62933DRLR",
+    "parts_line": 73,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "display supply",
+    "part": "TPS259474ARPWR",
+    "parts_line": 74,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "encoder 12 V supply",
+    "part": "TPS55288RPMR",
+    "parts_line": 75,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "Port supply switch",
+    "part": "TPS259474LRPWR",
+    "parts_line": 78,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "I/O expander",
+    "part": "MCP23017T-E/SS",
+    "parts_line": 77,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "Pack charger",
+    "part": "BQ25713RSNR",
+    "parts_line": 81,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "Cell balancing",
+    "part": "MAX17320G22+",
+    "parts_line": 79,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "Power path",
+    "part": "BQ25713RSNR",
+    "parts_line": 81,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "Charger input limit",
+    "part": "FUSB303BTMX",
+    "parts_line": 80,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "Pack overcurrent protection",
+    "part": "MAX17320G22+",
+    "parts_line": 79,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "Bench pack balance lead",
+    "part": "MAX17320G22+",
+    "parts_line": 79,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "Onboard shunt",
+    "part": "BVR-Z-R0002-1.0",
+    "parts_line": 83,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "Onboard shunt temperature sensor",
+    "part": "MCP9808T-E/MS",
+    "parts_line": 84,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "External shunt",
+    "part": "WSBE8518L1000JKA2",
+    "parts_line": 82,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "Port current monitor",
+    "part": "INA3221AIRGVR",
+    "parts_line": 85,
+    "group_page": "hardware/docs/PowerSupply.md"
+   },
+   {
+    "function": "Port shunt",
+    "part": "ERJ-6CWDR010V",
+    "parts_line": 86,
+    "group_page": "hardware/docs/PowerSupply.md"
+   }
+  ],
+  "jlc_stock_review": [
+   {
+    "index": 0,
+    "holds": false,
+    "line": 299,
+    "reason": "The digikey-route branch (second_source text matching 'second vendor', the majority of rows) never reads row.alt at all -- only rows whose second_source matches the 'alternate' pattern (jlc_by_part(row.alt) at line 324) get their alternate re-queried at JLCPCB. For a normal row (e.g. ABM8-272-T3, MCP2518FDT-E/SL) the Alternate column's part is never queried anywhere, so the script does not re-query JLCPCB 'for each row's alternate' in general, only for the few rows on the alternate route."
+   },
+   {
+    "index": 1,
+    "holds": true,
+    "line": 137,
+    "reason": "jlc_by_lcsc filters the JLCPCB keyword-search results for componentCode.upper() == lcsc.upper(), i.e. the result whose LCSC number equals the row's."
+   },
+   {
+    "index": 2,
+    "holds": true,
+    "line": 237,
+    "reason": "gate(boards, placements) returns max(5*boards*placements, 50), implementing sourcing rule 4 exactly as the docstring (line 7) states."
+   },
+   {
+    "index": 3,
+    "holds": true,
+    "line": 391,
+    "reason": "_check_r4 appends a problem when jlc_by_lcsc returns 'no_match' (line 282), and main() returns 1 when --check is set and problems is non-empty (line 391), so an LCSC with no exact JLCPCB match exits 1."
+   },
+   {
+    "index": 4,
+    "holds": true,
+    "line": 343,
+    "reason": "In the alternate branch, when the alternate's own stock/presale check fails (not ok) and the row's own rule-4 check failed too (not r4_ok), a problem is appended, causing exit 1 only when both fail."
+   },
+   {
+    "index": 5,
+    "holds": true,
+    "line": 348,
+    "reason": "After the fix applied in this review, the branch '(not r4_ok) and ok' (row fails rule 4, its alternate passes) prints '[warn] ... covered by alternate ...' and adds no problem; before the fix this case was silently printed as [ok] and the unrelated case (alternate fails, row passes) was mislabeled 'warn' instead."
+   },
+   {
+    "index": 6,
+    "holds": true,
+    "line": 304,
+    "reason": "The digikey-route branch calls dk_stock(row.part, dk_head) (line 304), and the off-board branch calls it for the part (line 314) and, when an alternate exists, for the alternate too (line 319); dk_head comes from dk_credentials()/dk_headers(), i.e. DIGIKEY_CLIENT_ID and DIGIKEY_CLIENT_SECRET (or DIGIKEY_ENV_FILE)."
+   },
+   {
+    "index": 7,
+    "holds": false,
+    "line": 316,
+    "reason": "The off-board part's own check is required=True unconditionally (line 316), so it forces exit 1 whenever the part alone is under gate even if its alternate has ample stock -- the alternate cannot rescue it, unlike the on-board 'alternate, rule 5' branch (sentence 4) where both must fail. Conversely when the part passes and only the alternate is under gate, required=not primary_ok is False (line 321), so that case never triggers exit 1 by itself (only warn). Neither half matches a plain 'the part or its alternate is under the gate' reading, and the 'since the alternate is its only second source' framing implies the alternate should be able to cover a primary shortfall, which the code does not let it do."
+   },
+   {
+    "index": 8,
+    "holds": true,
+    "line": 270,
+    "reason": "When dk_head is None, 'Digi-Key not checked: no credentials' is appended to problems (line 270, forcing exit 1 under --check), and each digikey-route or off-board row prints its own '[??] ... not checked, no Digi-Key credentials' line (lines 301-302, 311-312)."
+   },
+   {
+    "index": 9,
+    "holds": true,
+    "line": 256,
+    "reason": "Rows with row.held truthy are collected into held_rows and printed under their own 'Personal library (rule 6, export of {HELD_DATE})' header (lines 256-258), separate from the per-row rule-4/rule-5 loop, with HELD_DATE ('2026-09-25') being the date the held quantity was stated."
+   },
+   {
+    "index": 10,
+    "holds": true,
+    "line": 19,
+    "reason": "The docstring states this directly, and it is corroborated by CONTRIBUTING.md's 'What CI checks' list and ci.yml, neither of which invokes tools/jlc_stock.py; only tools/research/session.py is run in CI for the research scripts."
+   }
+  ]
+ }
+}

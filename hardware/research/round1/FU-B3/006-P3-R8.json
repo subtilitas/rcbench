@@ -1,0 +1,31 @@
+{
+ "role": "P3",
+ "category": "R8",
+ "label": "P3-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "missed": [
+   {
+    "function": "Onboard shunt temperature sensor",
+    "part": "STTS22HTR",
+    "maker": "STMicroelectronics",
+    "why": "STMicroelectronics was never searched for this function (P2's dropped/shortlist makers were only Texas Instruments, NXP, Analog Devices and Microchip). STTS22H is a factory-calibrated I2C temperature sensor, 1.5-3.6 V supply, accuracy +/-0.5 degC max over -10 to +60 degC (ST datasheet DS12606 Rev 8, www.st.com/resource/en/datasheet/stts22h.pdf, read 2026-09-29T17:06:36Z), which fully covers the 0-50 degC board-ambient range and clears the +/-2 degC requirement (V170) with the same margin as the selected MCP9808/TMP116. Package UDFN-6 2x2mm. JLCPCB (LCSC C2969838, STTS22HTR) stockCount 550 live (read 2026-09-29T17:06:11Z, jlcpcb API), well above the 50-unit gate (S4, 1 placement x 5 boards). Digi-Key lists it Active, stock_available 752 across CT/Digi-Reel variations, 24-week lead time (part STTS22HTR, read 2026-09-29T14:16:11Z via vendors.py digikey, cached=true), giving a same-part second source under rule 5. A sibling part, STTS751-0DP3F/-1DP3F (also STMicroelectronics, TDFN/UDFN-6, +/-0.5 degC, JLCPCB stock 874/2795 live 2026-09-29T17:06:13Z-14Z), is the same missed family and would need the same qualification if STTS22H's four-address limit conflicts with the monitor's 0x40-0x4F block. Neither part was checked for address placement against that block, which is the tie-break MCP9808 won on, so this is reported as a passing-on-stated-values candidate P2 never searched, not a re-rank."
+   },
+   {
+    "function": "Port current monitor",
+    "part": "ISL28022FRZ-T",
+    "maker": "Renesas",
+    "why": "Renesas (allowed on S1) was never searched for this function; P2's families were all Texas Instruments and Microchip. The ISL2802x family (ISL28022/23/25, formerly Intersil) is a bidirectional digital I2C power monitor, 0-60 V common-mode (datasheet FN8386 Rev 8.00, https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588952461919072256, read 2026-09-29T17:01:57Z), current-measurement error +/-0.3% typ/+/-1% max over the full -40 to 125 degC range, PSRR 105 dB, and 16 I2C addresses (A0/A1 pins, Table 22) -- on paper it would clear V171, V172, V174 and the two-bus addressing note with more headroom than the INA3221 seed. It fails Sourcing rule 4, though: live JLCPCB stock (2026-09-29T17:03:25Z-17:04:14Z and 17:06:56Z reads) is 118 (ISL28022FRZ-T, C5741743, QFN-16), 69 (ISL28022FUZ, C1529908, MSOP-10), 6 (ISL28022FUZ-T7A, C2650193) and 0 for every ISL28023 SKU checked (C2650168, C5657135, C2657872, C2657875, C3685329) -- all far under the 500-unit gate (20 placements x 5 boards x S4's 5x, never under 50). Per this task's rule, Digi-Key was not read for it because it does not pass every requirement value (the stock gate)."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "ADT7410TRZ-REEL7",
+    "reason_given": "Grouped with PCT2075D,118 and LM75BD,118 under one reason: \"pass; not recorded: 11-bit and 330 at JLCPCB; highest price (4.7563); no margin (+/-2 degC)\"",
+    "why_it_fails": "The '11-bit' and '330 at JLCPCB' facts belong to PCT2075D,118 (11-bit ADC; live JLCPCB stock 330 confirmed for LCSC C192517, read 2026-09-29T17:07:14Z), not to the ADT7410, which is a 13-bit-default/16-bit-optional part. More importantly, 'no margin (+/-2 degC)' misstates the ADT7410's accuracy: Analog Devices' datasheet (Rev. C, Table 1, www.analog.com/media/en/technical-documentation/data-sheets/adt7410.pdf, read 2026-09-29T17:05:01Z) specifies +/-0.5 degC from -40 to +105 degC at 2.7-3.6 V, and +/-0.4 degC at 3.0 V from -40 to +105 degC -- the same accuracy class as the MCP9808 (rank 1) and TMP116 (rank 2) that were ranked ahead of it, not the +/-2 degC figure that actually describes the LM75BD (whose own datasheet accuracy is +/-2 degC). Live JLCPCB stock for ADT7410TRZ-REEL7 (LCSC C660048) is 849, clearing the 50-unit gate. The reason as written does not hold for this part: it should have been compared on price, package or address fit against the accuracy-passing group, not dismissed on a fabricated accuracy shortfall."
+   }
+  ],
+  "missed_functions": []
+ }
+}

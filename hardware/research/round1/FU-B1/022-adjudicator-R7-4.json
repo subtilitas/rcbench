@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R7",
+ "label": "adjudicator-R7-4",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "function": "P2 report: external BATFET and battery sense resistor",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The claim says that at VSYS 6.0 V the BATFET gate sees about 6.3 V, and it gets that figure from the /BATDRV absolute minimum of -0.3 V. Table 8.1 lists -0.3 V only as a stress rating, referred to GND. Its note (1) says these ratings \"do not imply functional operation.\" Table 8.3, Recommended Operating Conditions, gives /BATDRV a minimum of 0 V. /BATDRV is the gate driver for a P-channel BATFET. The pin table (pin 21) says it \"goes 10 V below VSYS to fully turn on BATFET\", and 8.5 gives VBATDRV_ON as 8.5 V min, 10 V typical, 11.5 V max. At VSYS 6.0 V the pin cannot go 8.5 to 11.5 V below VSYS while it stays at or above 0 V. The gate-source drive under recommended conditions is therefore at most about 6.0 V, not 6.3 V. The stated value is wrong. The conclusion that a logic-level P-channel FET is needed still holds, because the part must be fully enhanced at 6.0 V or less. The other values in the figure match the datasheet and do not affect this ruling: Ciss below 5 nF with 1 to 3 nF recommended (9.4.1.1), and SRP-SRN from -0.5 V to 0.5 V (8.1 and 8.3). The sense-resistor arithmetic also checks: 10 mOhm x 12.23 A = 122.3 mV, and 12.23 A squared x 10 mOhm = 1.50 W. Scope is function. The error is in the gate-drive requirement this function sets for the external BATFET, not in any part's lifecycle or identity. No part is selected in this row.",
+  "evidence": "SLUSD83C (June 2018, revised May 2023). 8.1 Absolute Maximum Ratings: \"BTST1, BTST2, HIDRV1, HIDRV2, /BATDRV -0.3 36 V\". Note (2) of 8.1: \"All voltages are with respect to GND\". Note (1) of 8.1: \"stress ratings only, which do not imply functional operation ... beyond those indicated under Recommended Operating Conditions\". 8.3 Recommended Operating Conditions: \"BTST1, BTST2, HIDRV1, HIDRV2, /BATDRV 0 30 V\", and \"SRP-SRN, ACP-ACN -0.5 0.5 V\". Pin 21 BATDRV: \"P-channel battery FET (BATFET) gate driver output ... It goes 10 V below VSYS to fully turn on BATFET.\" 8.5: \"VBATDRV_ON Gate drive voltage on BATFET 8.5 10 11.5 V\". 9.4.1.1: \"The BATDRV pin is only able to drive a battery MOSFET with Ciss lower than 5nF. The Ciss in the range of 1nF~3nF is recommended.\" With VSYS = 6.0 V and a pin floor of 0 V under recommended conditions, the gate-source drive is at most 6.0 V.",
+  "source": "https://www.ti.com/lit/ds/symlink/bq25713.pdf (SLUSD83C, 3,112,472 bytes, HTTP 200, via vendors.py fetch --client chrome): sections 7 (pin 21 BATDRV), 8.1, 8.3, 8.5 (BATFET GATE DRIVER), 9.4.1.1. Local copy: /home/claude/rcbench-research/round1/scratch/FU-B1/adjudicator-R7/adj_bq25713.pdf",
+  "read_at": "2026-09-29T13:18:05Z",
+  "scope": "function"
+ }
+}

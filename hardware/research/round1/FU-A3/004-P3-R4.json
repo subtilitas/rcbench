@@ -1,0 +1,84 @@
+{
+ "role": "P3",
+ "category": "R4",
+ "label": "P3-R4",
+ "attempt": 0,
+ "data": {
+  "category": "R4",
+  "missed": [
+   {
+    "function": "gated output buffer",
+    "part": "SN74LV244APWR (C475502)",
+    "maker": "Texas Instruments (JLCPCB label Texas Instruments; datasheet SCLS383R)",
+    "why": "The LV-A 244 is absent from this P2's shortlist and drops. T2 and FU-A1 read it. It has the 244 pinout, with 1OE and 2OE active low, so it takes the enable inverter like rank 1. Figures from SCLS383R (revised August 2023, https://www.ti.com/lit/ds/symlink/sn74lv244a.pdf, read 2026-09-29T05:01:13Z). Ioff 5 uA at VCC 0 V with VI or VO = 0 to 5.5 V (6.5). VO in the 3-state condition is recommended from 0 to 5.5 V (6.3), and any output in the high-impedance or power-off state is rated to 7 V absolute (6.1), so it takes the 3.6 V connector level. No bus hold is stated. II is +-1 uA at VCC 0 to 5.5 V, so the pad's 113 kOhm reset pull-down holds an input at 0.11 V, under VIL 0.3 x VCC (0.96 V at 3.201 V). VIH is 0.7 x VCC, 2.38 V at 3.399 V, against the pad's 2.62 V VOH. At VCC 3.3 V +-0.3 V and CL 50 pF (6.9): tpd 13.5 ns max, tdis 18 ns max, tsk(o) 1.5 ns. Recommended IOH/IOL is -8/8 mA at 3 to 3.6 V (6.3). TA -40 to 125 C. Supply 2 to 5.5 V. It misses P2's series-resistance line as written: 3.4 V / 142 Ohm = 23.9 mA is 3 times its 8 mA. It meets V75's found value, which sizes the resistor to the element's own recommended current: at least 3.4 V / 8 mA = 425 Ohm. That resistor gives 425 Ohm x 50 pF = 21 ns. The connector then idles at about (3.201 - 0.3 mA x 65 Ohm) x 10/10.425 = 3.05 V into the 10 kOhm pull-down, where 65 Ohm is taken from the -8 mA row as P2 does. That is above EFM8BB21's 2.7 V. The re-rank should decide whether the resistor follows the element. JLCPCB (vendors.py jlcpcb C475502, 2026-09-29T05:05:40Z): stockCount 12478, canPresaleNumber 12437, expand, USD 0.2453 at 1. The need is 2 a board x 5 = 10, so the gate is 50: pass. Digi-Key (vendors.py digikey SN74LV244APWR, productdetails, 2026-09-29T05:06:42Z): stock_available 9528, lead 9 weeks, Active, so the rule-5 second-vendor route passes. Pin-compatible alternate: Nexperia 74LV244APWJ, the next entry. TI's product page was not read in this task."
+   },
+   {
+    "function": "gated output buffer",
+    "part": "74LV244APWJ (C547955)",
+    "maker": "Nexperia (JLCPCB label Nexperia; Digi-Key Nexperia USA Inc.; datasheet 74LV244A Rev. 2)",
+    "why": "A pin-compatible alternate of SN74LV244APWR from a second maker: 1OE on pin 1, 2OE on pin 19, both active low (Table 3). No earlier record of this round names it. Figures from 74LV244A Rev. 2, 4 July 2024; the first revision (v.1) is dated 2016-11-23 (https://assets.nexperia.com/documents/data-sheet/74LV244A.pdf, read 2026-09-29T05:03:11Z). IOFF 5 uA (-40 to 125 C) at VCC 0 V with VI or VO = GND to 5.5 V (Table 6). VO in power-down or 3-state mode is recommended from 0 to 5.5 V, with an absolute limit of 7.0 V (Tables 4 and 5). VIH is 0.7 x VCC. VOH is 2.48 V at -8 mA with VCC 3.0 V. Table 5 has no recommended output-current row. At VCC 3.0 to 3.6 V and CL 50 pF: tpd 13.5 ns max, tdis 18 ns max (-40 to 125 C). Tamb -40 to 125 C. Supply 2.0 to 5.5 V. It carries the same series-resistance condition as SN74LV244APWR: at least 425 Ohm from its 8 mA figure, not 142 Ohm. JLCPCB (vendors.py jlcpcb C547955, 2026-09-29T05:05:40Z): stockCount 232, canPresaleNumber 227, expand, USD 0.3558 at 1. The gate at a need of 10 is 50: pass. Digi-Key (vendors.py digikey 74LV244APWJ, productdetails, 2026-09-29T05:06:43Z): stock_available 444, lead 24 weeks, Active. Nexperia's product page was not read."
+   },
+   {
+    "function": "enable inverter",
+    "part": "SN74AUP1G04DBVR (C2682121); also SN74AUP1G04DCKR (C132032) and Nexperia 74AUP1G04GW,125 (C554911)",
+    "maker": "Texas Instruments; Nexperia for 74AUP1G04GW,125",
+    "why": "No record of this round names the AUP family for this function. SN74AUP1G04DBVR is a SOT-23-5 drop-in for rank 1 SN74LVC1G04DBVR: n.c. 1, A 2, GND 3, Y 4, VCC 5 (Pin Functions). Figures from SCES571K (revised June 2014, https://www.ti.com/lit/ds/symlink/sn74aup1g04.pdf, read 2026-09-29T05:01:13Z). Ioff 0.6 uA (-40 to 85 C) with VI or VO = 0 to 3.6 V at VCC 0 V, so input isolation is met without a resistor. VCC is 0.8 to 3.6 V recommended and 4.6 V absolute, which covers 3.201 to 3.399 V. IOL is 4 mA recommended at VCC 3 V, against 4 OE pull-ups x 0.33 mA = 1.32 mA. tpd is 3.9 ns max at 3.3 V (Features), inside the 1 us budget with the 244's tdis. TA -40 to 85 C. JLCPCB (vendors.py jlcpcb, 2026-09-29T05:05:40Z): C2682121 stockCount 2945, presale 2943; C132032 stockCount 20830, presale 20819. Both pass the gate of 50. Digi-Key (keyword reading, 2026-09-29T05:08:06Z): SN74AUP1G04DBVR Texas Instruments row 16657, lead 9 weeks, Active. SN74AUP1G04DCKR Texas Instruments row 6957, 9 weeks, Active (05:06:47Z). Nexperia 74AUP1G04 Rev. 13, 28 August 2024 (https://assets.nexperia.com/documents/data-sheet/74AUP1G04.pdf, read 05:03:11Z): IOFF +-0.5 uA at VCC 0 V with VI or VO = 0 to 3.6 V (-40 to 85 C), Tamb -40 to 125 C. 74AUP1G04GW,125: JLCPCB 2017, presale 2013 (05:05:40Z); Digi-Key Nexperia USA row 193, 20 weeks, Active (05:06:51Z). TI and Nexperia product pages were not read."
+   },
+   {
+    "function": "enable inverter",
+    "part": "NC7SV04P5X (C891941)",
+    "maker": "onsemi",
+    "why": "No record of this round names the ULP-A family for this function. Figures from NC7SV04/D Rev. 6, March 2026 (https://www.onsemi.com/download/data-sheet/pdf/nc7sv04-d.pdf, read 2026-09-29T05:03:11Z). IOFF 0.5 uA at VCC 0 V with VIN or VOUT = 0 to 3.6 V (DC characteristics; the PDF renders the unit as mA through a glyph substitution). VCC is 0.9 to 3.6 V recommended and 4.3 V absolute. The output is rated at IOL 24 mA with VCC 2.7 to 3.6 V. TA -40 to 85 C. It is SC-70-5, so it is not a footprint alternate of the SOT-23-5 rank 1. JLCPCB (vendors.py jlcpcb C891941, 2026-09-29T05:05:40Z): stockCount 10708, presale 10706, expand, USD 0.0858. Digi-Key (vendors.py digikey NC7SV04P5X, productdetails, 05:06:52Z): stock_available 27000, lead 52 weeks, Active. onsemi's product page was not read."
+   },
+   {
+    "function": "enable inverter",
+    "part": "NL17SZ04DFT2G (C152305)",
+    "maker": "onsemi",
+    "why": "No record of this round names this onsemi family for this function. Figures from NL17SZ04/D Rev. 20, January 2026 (https://www.onsemi.com/download/data-sheet/pdf/nl17sz04-d.pdf, read 2026-09-29T05:03:11Z). IOFF 10 uA (-55 to 125 C) at VCC 0 V with VIN = 5.5 V. VCC is 1.65 to 5.5 V. VOL is 0.4 V at 16 mA with VCC 3.0 V. TA -55 to 125 C. It is SC-88A (SOT-353). JLCPCB (vendors.py jlcpcb C152305, 05:05:40Z): stockCount 2444, presale 2441, USD 0.0558. Digi-Key (productdetails, 05:06:54Z): stock_available 8431, lead 55 weeks, Active. onsemi's product page was not read."
+   },
+   {
+    "function": "enable inverter",
+    "part": "TC7SZ04FU,LJ(CT (C6716822)",
+    "maker": "Toshiba",
+    "why": "No record of this round names the Toshiba single-gate family for this function. Figures from the TC7SZ04FU datasheet Rev.3.0, 2017-05-17, read from JLCPCB's copy (https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8590908166039691264, read 2026-09-29T05:03:11Z). Toshiba's own URL answered 404 at 05:06:13Z and its product page answered 404 at 05:06:27Z, so Toshiba's status is not read. Power-down protection output to 5.5 V. IOFF is 1 uA at 25 C and 10 uA in the next temperature column, with VIN or VOUT = 5.5 V at VCC 0 V. Output current is 24 mA min at VCC 3.0 V. Topr is -40 to 125 C for ordering codes ending J(CT. JLCPCB (vendors.py jlcpcb C6716822, 05:05:40Z): stockCount 3108, presale 3106, USD 0.0865. Digi-Key (productdetails, 05:06:56Z): stock_available 1349, lead 24 weeks, Active."
+   },
+   {
+    "function": "enable inverter",
+    "part": "SN74AHC1G04DBVR (C7465); also Nexperia 74AHC1G04GW,125 (C148197)",
+    "maker": "Texas Instruments; Nexperia",
+    "why": "No record of this round names the AHC family. SCLS318V (revised February 2024, https://www.ti.com/lit/ds/symlink/sn74ahc1g04.pdf, read 2026-09-29T05:01:13Z) states no Ioff. It meets input isolation by the requirement's other branch: a series resistor of 4.7 kOhm or more from the enable node (IOBoard.md:192). With that resistor it passes. VIH is 2.1 V at VCC 3 V. IOH/IOL is -4/4 mA at 3.3 V +-0.3 V, against 1.32 mA for 4 OE pull-ups. VCC 2 to 5.5 V. TA -40 to 125 C. The resistor into a few pF adds tens of ns, and Nexperia's tpd is 12 ns max at 3.0 to 3.6 V and 50 pF (74AHC_AHCT1G04 Rev. 14, 12 November 2024, https://assets.nexperia.com/documents/data-sheet/74AHC_AHCT1G04.pdf, read 05:03:11Z; no IOFF stated there either). It uses the SOT-23-5 pinout of rank 1, but it is a drop-in only if the 4.7 kOhm resistor is fitted. JLCPCB (vendors.py jlcpcb, 05:05:40Z): C7465 stockCount 71195, presale 71036, USD 0.0628; C148197 stockCount 8032, presale 7997. Digi-Key: SN74AHC1G04DBVR 138551, lead 16 weeks, Active (productdetails, 05:06:57Z); 74AHC1G04GW,125 Nexperia USA row 0, 20 weeks, Active (keyword reading, 05:07:01Z)."
+   },
+   {
+    "function": "bias selector",
+    "part": "SN74AUP1G126DBVR (C2675512); also Nexperia 74AUP1G126GW,125 (C554970)",
+    "maker": "Texas Instruments; Nexperia",
+    "why": "No record of this round names the AUP family for this function. SN74AUP1G126DBVR is a SOT-23-5 drop-in for rank 1 SN74LVC1G126DBVR: OE 1, A 2, GND 3, Y 4, VCC 5. Figures from SCES596G (revised August 2017, https://www.ti.com/lit/ds/symlink/sn74aup1g126.pdf, read 2026-09-29T05:01:13Z). Ioff 0.6 uA (-40 to 85 C) at VCC 0 V with VI or VO = 0 to 3.6 V, so it meets connector-side isolation at the 3.6 V limit. VO in the 3-state condition is 0 to 3.6 V recommended, and power-off VO is 4.6 V absolute. IOH is -4 mA recommended at VCC 3 V, which covers the 3.3 mA source. VOH is 2.55 V at -4 mA with VCC 3 V (-40 to 85 C). On P2's method for SN74LVC1G126 (a resistance from that row, (3.0 - 2.55) V / 4 mA = 112.5 Ohm), the line sits at (3.201 - 0.11) x 2.31 / 3.31 = 2.16 V, which meets 2.0 V. The margin is less than the LVC part's 2.21 V. By the next tabulated row alone (2.67 V at -2.7 mA) the bound is 1.86 V, so it passes only on P2's resistance method. TA -40 to 85 C. VCC 0.8 to 3.6 V. JLCPCB (vendors.py jlcpcb C2675512, 05:05:40Z): stockCount 910, presale 909, USD 0.431. The need is 5 x 5 = 25, so the gate is 125: pass. Digi-Key (keyword reading, 05:08:03Z): Texas Instruments row 161343, lead 9 weeks, Active. 74AUP1G126 Rev. 10, 14 July 2023 (https://assets.nexperia.com/documents/data-sheet/74AUP1G126.pdf, read 05:03:11Z): IOFF +-0.5 uA at VCC 0 V with VI or VO = 0 to 3.6 V (-40 to 85 C). 74AUP1G126GW,125: JLCPCB 2133, presale 2133 (05:05:40Z); Digi-Key Nexperia USA row 32063, 20 weeks, Active (05:08:10Z)."
+   },
+   {
+    "function": "bias selector",
+    "part": "NL17SZ126DFT2G (C97775); also NL17SZ125DFT2G (C97774) with the control resistor as a pull-up",
+    "maker": "onsemi",
+    "why": "No record of this round names the NL17SZ family; P2 read onsemi's NC7SZ126. Figures from NL17SZ126/D Rev. 20, January 2026 (https://www.onsemi.com/download/data-sheet/pdf/nl17sz126-d.pdf, read 2026-09-29T05:03:11Z). IOFF 10 uA (-55 to 125 C) at VCC 0 V with VIN = 5.5 V or 0 and VOUT = 5.5 V, so the output is covered. Power-down-mode VOUT is 0 to 5.5 V recommended. VOH is 2.4 V at -16 mA with VCC 3.0 V, the row P2 used for SN74LVC1G126: 37.5 Ohm, and the line sits at 2.21 V. It is rated to 24 mA, which covers 3.3 mA. VCC 1.65 to 5.5 V. TA -55 to 125 C. NL17SZ125/D (https://www.onsemi.com/download/data-sheet/pdf/nl17sz125-d.pdf, read 05:06:13Z) gives the same IOFF and TA. JLCPCB (vendors.py jlcpcb, 05:05:40Z): C97775 stockCount 3623, presale 3615; C97774 stockCount 14447, presale 14419. Both pass the gate of 125. Digi-Key (productdetails): NL17SZ126DFT2G 35909, lead 52 weeks, Active (05:07:02Z); NL17SZ125DFT2G 17860, 61 weeks, Active (05:07:05Z). Both are SC-88A, not a footprint alternate of rank 1's SOT-23-5."
+   },
+   {
+    "function": "bias selector",
+    "part": "TC7SZ126FE,LJ(CT (C2675580); also TC7SZ125FE,LJ(CT (C2676800) with the control resistor as a pull-up",
+    "maker": "Toshiba",
+    "why": "No record of this round names the Toshiba single-gate family. Figures from the TC7SZ126FE datasheet Rev.2.0, 2017-12-21, read from JLCPCB's copy (https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588922711955816448, read 2026-09-29T05:03:11Z). Toshiba's own URL answered 404 at 05:06:13Z, so Toshiba's status is not read. Power-down protection output to 5.5 V. IOFF is 1 uA at 25 C and 10 uA in the next column, with VIN or VOUT = 5.5 V at VCC 0 V. VOUT is 0 to 5.5 V recommended (Note 2). VOH is 2.4 V at -16 mA with VCC 3.0 V, so 2.21 V on P2's method, with 24 mA min output current. VCC 1.65 to 5.5 V. Topr -40 to 125 C for J(CT codes. The TC7SZ125FE copy (https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588922774127984640, read 05:06:13Z) gives the same IOFF and Topr. JLCPCB (vendors.py jlcpcb, 05:05:40Z): C2675580 stockCount 3393, presale 3393, USD 0.1159; C2676800 stockCount 3820, presale 3820. Both pass the gate of 125. Digi-Key (productdetails): TC7SZ126FE,LJ(CT 6953, lead 16 weeks, Active (05:07:04Z); TC7SZ125FE,LJ(CT 16382, 16 weeks, Active (05:07:09Z). Package SOT-553-5."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "SN74LV4T125PWR (C90755), Texas Instruments, dropped under gated output buffer",
+    "reason_given": "fails load and series resistance: every switching figure at CL 15 or 30 pF, none at 50 pF (SCLS749C 6.6); IOH -8 mA and IOL 8 mA at VCC 3.3 V (6.3), so a short through 142 Ohm draws 23.9 mA, three times the recommended output current",
+    "why_it_fails": "The series-resistance ground does not hold. V75's found value sets each line's lower bound from the recommended output current of the element that drives it: 275 Ohm for the pad and 142 Ohm for 'a line driven by a 244' at 24 mA. The resistor is a round-2 part. For an 8 mA element the bound is 3.4 V / 8 mA = 425 Ohm, which meets V75. The 142 Ohm is the 244's figure, not a limit on other parts. The load ground stands. SCLS749C (https://www.ti.com/lit/ds/symlink/sn74lv4t125.pdf, re-read 2026-09-29T05:08:25Z) gives tPZH, tPZL and tPHZ at 15 and 30 pF only. So the drop holds on load alone. The same point about the resistor applies to SN74LV244APWR, which this P2 did not consider."
+   },
+   {
+    "part": "SN74LVC1G06DBVR (C840103) and 74LVC1G06GV,125 (C12510), Texas Instruments and Nexperia, dropped under enable inverter",
+    "reason_given": "fails delay as shown by the datasheets: the open-drain output rises through the 10 kOhm OE pull-ups (2.5 kOhm against at least 21 pF, tau 52.5 ns, 16.4 ns/V at the steepest point), slower than the 10 ns/V input transition rate the 244s allow",
+    "why_it_fails": "The delay value is met. The rise reaches 90 % in 2.3 x 52.5 ns = 121 ns. Adding the 244's tdis, which is under 20 ns, the total is far inside the 1 us disable budget of Monostable.md:112. What the figures violate is the input transition rate of the part the inverter drives. That value is not on P2's list for this function. It also does not hold for both 244s. Nexperia 74LVC244A Rev. 14, 29 November 2024 (https://assets.nexperia.com/documents/data-sheet/74LVC_LVCH244A.pdf, read 2026-09-29T05:09:02Z) gives dt/dV 10 ns/V max at VCC 2.7 to 3.6 V. TI SCAS414AG (revised June 2026, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, read 05:05:27Z) has no dt/dV row in its section 5.3, although its application section refers to one. The drop can stand only if the re-rank adds the driven OE pin's transition rate, from Nexperia's figure for the rank-2 alternate, as a requirement value."
+   }
+  ],
+  "missed_functions": []
+ }
+}

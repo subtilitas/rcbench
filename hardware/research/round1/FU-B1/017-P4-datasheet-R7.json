@@ -1,0 +1,980 @@
+{
+ "role": "P4",
+ "category": "R7",
+ "label": "P4-datasheet-R7",
+ "attempt": 0,
+ "data": {
+  "category": "R7",
+  "verifier": "datasheet",
+  "parts": [
+   {
+    "function": "Pack charger",
+    "part": "BQ25713RSNR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "charge source",
+      "stated": "NVDC buck-boost charge controller; charges only from its VBUS/ACP input; the DC input is not wired to it",
+      "read": "SLUSD83C section 3: synchronous NVDC buck-boost battery charge controller; the charge path is from VBUS/ACP only (pins VBUS, ACP, ACN). The DC input is a board wiring choice, not a part property",
+      "source": "https://www.ti.com/lit/ds/symlink/bq25713.pdf SLUSD83C (JUNE 2018, REVISED MAY 2023), vendors.py fetch",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:41Z"
+     },
+     {
+      "figure": "input voltage",
+      "stated": "VINPUT_OP 3.5 to 26 V; VBUS absolute maximum 30 V",
+      "read": "8.5 VINPUT_OP 3.5 to 26 V; 8.1 VBUS -0.3 to 30 V absolute maximum; 8.3 VBUS recommended 0 to 24 V",
+      "source": "SLUSD83C sections 8.1, 8.3, 8.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:41Z"
+     },
+     {
+      "figure": "input draw",
+      "stated": "IIN_HOST 50 mA steps; IDPM_REG_ACC 0x3C00H 2800 to 3000 mA, 0x1E00H 1300 to 1500 mA, 0x0A00H 300 to 500 mA; ILIM_HIZ +/-200 mA; lower of pin and register; reset 3.25 A",
+      "read": "IIN_HOST LSB 50 mA, 50 to 6400 mA, register gives the maximum current; IDPM_REG_ACC (-40 to 105 degC, 10 mOhm) 0x3C00H 2800/2900/3000 mA, 0x1E00H 1300/1400/1500 mA, 0x0A00H 300/400/500 mA; IDPM_REG_ACC_ILIM 2.2 V 2800 to 3200 mA; pin table: 'The input current limit used by the charger is the lower setting of ILIM_HIZ pin and REG0x0F/0E()'; default 3.25 A (reset 4100h) and reset to 3.25 A on adapter removal, so until the host writes IIN_HOST the ILIM_HIZ pin is the only bound below 3.25 A",
+      "source": "SLUSD83C 8.5, Table 7-1 ILIM_HIZ, 9.6.6.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:41Z"
+     },
+     {
+      "figure": "cell count",
+      "stated": "1S to 4S, set by CELL_BATPRESZ; 2S reset default 8400 mV",
+      "read": "1s-4s; CELL_BATPRESZ selects 1 to 4 cells; MaxChargeVoltage default 2S-8400mV (Table 9-4, 9.6.4)",
+      "source": "SLUSD83C Table 7-1, Table 9-4, 9.6.4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:41Z"
+     },
+     {
+      "figure": "charge voltage",
+      "stated": "8 mV steps, 2S default 8400 mV; VBAT_REG_ACC 0x20D0H -0.6 % to +0.6 % over 0 to 85 degC, 8.3496 to 8.4504 V",
+      "read": "MaxChargeVoltage LSB 8 mV; VBAT_REG_ACC at 0x20D0H (8.4 V) -0.6 % / +0.6 % (0 to 85 degC); 8.4 x 0.994 = 8.3496 V, 8.4 x 1.006 = 8.4504 V (computed)",
+      "source": "SLUSD83C 8.5 VBAT_REG_ACC, Table 9-4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:41Z"
+     },
+     {
+      "figure": "charge current",
+      "stated": "ChargeCurrent 0 to 8128 mA in 64 mA steps with 10 mOhm; precharge clamp 384 mA below MinSystemVoltage",
+      "read": "ChargeCurrent LSB 64 mA, range 0 to 8128 mA; VIREG_CHG_RNG 0 to 81.28 mV; ICLAMP 2s-4s 384 mA; 9.3.10.6 BAT below SYSMIN limits charge to 384 mA",
+      "source": "SLUSD83C 8.5, Table 9-4, 9.3.10.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:41Z"
+     },
+     {
+      "figure": "termination on pack current",
+      "stated": "charge current sensed on SRP/SRN in series with the cells; load on VSYS ahead of the BATFET; the host terminates",
+      "read": "SRP/SRN charge current sense resistor, SRN also battery voltage sense; 9.4.1.1 BATFET separates system from battery; 9.4.1.2 'host terminates charge by setting REG0x00[0] to 1, or setting ChargeCurrent() to zero'",
+      "source": "SLUSD83C Table 7-1, 9.4.1.1, 9.4.1.2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:41Z"
+     },
+     {
+      "figure": "charges with floor disconnect open",
+      "stated": "NVDC instant-on keeps VSYS up from USB-C; host writes ChargeCurrent (reset 0); charge reaches the cells through the R5460 charge FET and discharge FET body diode",
+      "read": "Page 1 'Instant-on with no battery or depleted battery'; 9.4.1.1 system regulated above MinSystemVoltage with a depleted battery; ChargeCurrent reset 0000h (9.6.3); converter starts 150 ms after VBUS above VVBUS_CONVEN. R5460 NO.EA-165-250616: over-discharge turns off only the discharge FET (DOUT 'L'); 'the external FETs do not turn off at the same time'; 'Even if a battery is discharged to 0V, charge current is acceptable'; F version releases after a charger is connected and the cell rises above the released voltage",
+      "source": "SLUSD83C page 1, 9.4.1.1, 9.6.3; https://www.nisshinbo-microdevices.co.jp/en/pdf/datasheet/r5460-ea.pdf (read 2026-09-29T12:54:46Z), OUTLINE and VDET2U/VDET2L section",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:46Z"
+     },
+     {
+      "figure": "pack temperature input",
+      "stated": "no thermistor input; the MAX17320 reads the NTC and blocks charge outside its limits",
+      "read": "Table 7-1 lists no TS or thermistor pin. MAX17320 Rev 12: up to 4 thermistors, OTPC and UTP block charge in 1 degC steps; Table 58 lists Murata NCP15XH103F03RC and Semitec 103AT-2, 10 kOhm, B 3435",
+      "source": "SLUSD83C Table 7-1; https://www.analog.com/media/en/technical-documentation/data-sheets/MAX17320.pdf Rev 12 (read 2026-09-29T12:54:58Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     },
+     {
+      "figure": "operating ambient",
+      "stated": "recommended TJ -20 to 125 degC",
+      "read": "8.3 TJ -20 to 125 degC; continuation row 'Operating free-air temperature range' -40 to 85 degC; covers 0 to 50 degC ambient",
+      "source": "SLUSD83C 8.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:41Z"
+     },
+     {
+      "figure": "charger efficiency",
+      "stated": "about 94 % at 2 A, VIN 5 V, VOUT 7.4 V (Figure 8-4)",
+      "read": "Figure 8-4 (VIN 5 V) VOUT 7.4 V curve, rendered at 250 dpi: about 94.5 % at 2 A, 94.6 % near 1 A, 92.0 % at its end near 3.8 A. Not a gate",
+      "source": "SLUSD83C 8.7 Figure 8-4, page 20",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:41Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments (SLUSD83C); on the S1 list",
+      "read": "data sheet copyright Texas Instruments Incorporated; S1 answer lists Texas Instruments; JLCPCB C2878935 maker label Texas Instruments (13:04:16Z)",
+      "source": "SLUSD83C; Research.md S1 at e13f5f6; vendors.py jlcpcb C2878935",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T13:04:16Z"
+     }
+    ]
+   },
+   {
+    "function": "Cell balancing",
+    "part": "MAX17320G22+",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "cells balanced",
+      "stated": "2S to 4S; internal balancing MOSFETs; Figure 24 2S configuration",
+      "read": "General Description '2 to 4 series'; 'The IC balances the cells using internal MOSFETs'; Figure 24 (page 73) shows 2S: RBAL3 and RBAL2 omitted, CELL3-CELL2 and CELL2-CELL1 capacitors replaced with shorts",
+      "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/MAX17320.pdf 19-100749 Rev 12 (7/25), vendors.py fetch --client safari",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     },
+     {
+      "figure": "balance current",
+      "stated": "RBAL1 40 Ohm, RBAL4 10 Ohm: top cell 51 to 79 mA peak, at least 45 mA average; bottom 60 to 98 mA; under 100 mA pin rating",
+      "read": "IBALMAX CELL1 = VCELLMAX/(RBAL+RSWITCH), others VCELLMAX/(2xRBAL+RSWITCH); RBAL (switch) 3 / 9 / 20 Ohm at VBATT 18 V, IBAL 50 mA; 100 mA pin rating; balancing disabled 45 ms minimum each 351 ms task. Computed: top cell 3.6/(50+20) = 51.4 mA, 4.2/(50+3) = 79.2 mA; x 306/351 = 44.8 mA average at the worst case; bottom 60.0 to 97.7 mA. 44.8 mA meets 43 mA; 'at least 45' is a rounding of 44.8. Limits: the switch resistance is specified at VBATT 18 V only and the 45 ms pause is a minimum, so the average at 2S is not bounded by the data sheet",
+      "source": "MAX17320 Rev 12, Cell Balancing Current, Cell Balancing Duty Cycle, EC RBAL row, Absolute Maximum Ratings",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     },
+     {
+      "figure": "supply range",
+      "stated": "VIN 4.2 to 18 V",
+      "read": "EC Supply Voltage VIN 4.2 to 18 V",
+      "source": "MAX17320 Rev 12 Electrical Characteristics",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     },
+     {
+      "figure": "works beside the charger",
+      "stated": "balances on its own from NVM (nBalTh.BALCFG, factory default disabled, recommended 10 mV) while charging and while VFSOC above FullSOCThr",
+      "read": "Cell Balancing Window of Operation: AvgCurrent above CurrDet (charging) or VFSOC above FullSOCThr; Table 13 BALCFG 000b disabled (factory default), recommended 011b 10.0 mV; nBalTh is an NVM register",
+      "source": "MAX17320 Rev 12, Cell Balancing sections, Table 13, nBalTh",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     },
+     {
+      "figure": "operating ambient",
+      "stated": "-40 to +85 degC",
+      "read": "Operating Temperature Range -40 to +85 degC",
+      "source": "MAX17320 Rev 12 Absolute Maximum Ratings",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Analog Devices (Maxim); counts as Analog Devices on S1",
+      "read": "data sheet footer 'Analog Devices'; JLCPCB label 'Analog Devices Inc./Maxim Integrated'; S1 allows Analog Devices with Maxim",
+      "source": "MAX17320 Rev 12; vendors.py jlcpcb C2914309; Research.md S1 and rule 2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T13:04:14Z"
+     }
+    ]
+   },
+   {
+    "function": "Power path",
+    "part": "BQ25713RSNR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "run while charging",
+      "stated": "NVDC; battery supplements system; BATFET ideal diode in supplement mode",
+      "read": "Page 1 'Battery supplements system when adapter is fully-loaded', 'Battery MOSFET ideal diode operation in supplement mode'",
+      "source": "https://www.ti.com/lit/ds/symlink/bq25713.pdf SLUSD83C page 1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:41Z"
+     },
+     {
+      "figure": "termination on pack current",
+      "stated": "SRP/SRN in series with the cells; BATFET separates system from cells",
+      "read": "Table 7-1 SRP/SRN charge current sense; 9.4.1.1 'BATFET separating system from battery'",
+      "source": "SLUSD83C Table 7-1, 9.4.1.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:41Z"
+     },
+     {
+      "figure": "pack current carried",
+      "stated": "external BATFET sized by the designer; SRP-SRN -0.5 to 0.5 V; gate about 6.3 V at VSYS 6.0 V",
+      "read": "BATDRV drives an external P-channel BATFET, 'goes 10 V below VSYS to fully turn on'; Ciss under 5 nF, 1 to 3 nF recommended; SRP-SRN recommended -0.5 to 0.5 V (122 mV at 12.23 A in 10 mOhm, computed); ADCIBAT discharge full range 32.512 A. /BATDRV recommended minimum is 0 V, so the gate drive at VSYS 6.0 V is up to about 6.0 V, not 6.3 V (the -0.3 V is an absolute maximum); the logic-level BATFET conclusion holds",
+      "source": "SLUSD83C Table 7-1 BATDRV, 8.1, 8.3, 9.4.1.1, Table 9-4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:41Z"
+     },
+     {
+      "figure": "USB-only operation",
+      "stated": "instant-on; VSYS at MinSystemVoltage 6.144 V 2S reset; input limited by IIN_HOST and ILIM_HIZ",
+      "read": "'Instant-on with no battery or depleted battery'; MinSystemVoltage default 2S 6.144 V; input limit is the lower of ILIM_HIZ and IIN_HOST",
+      "source": "SLUSD83C page 1, Table 9-4, 9.6.5, Table 7-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:41Z"
+     },
+     {
+      "figure": "charges with floor disconnect open",
+      "stated": "VSYS stays up from USB-C; charge reaches the cells through the R5460 charge FET and discharge FET's parasitic diode",
+      "read": "As under Pack charger: NVDC keeps VSYS regulated with a depleted battery; R5460 turns off only the discharge FET on over-discharge and accepts charge down to 0 V",
+      "source": "SLUSD83C 9.4.1.1; https://www.nisshinbo-microdevices.co.jp/en/pdf/datasheet/r5460-ea.pdf NO.EA-165-250616 (12:54:46Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:46Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments; on S1",
+      "read": "Texas Instruments data sheet; S1 lists Texas Instruments",
+      "source": "SLUSD83C; Research.md S1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:41Z"
+     }
+    ]
+   },
+   {
+    "function": "Charger input limit",
+    "part": "FUSB303BTMX",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "advertisement detection",
+      "stated": "GPIO OUT1/OUT2 encode Sink Default, 1.5 A, 3 A; I2C BC_LVL[1:0]",
+      "read": "Table 1 GPIO mode: OUT1 Hi-Z/OUT2 Hi-Z Sink Default; OUT1 LOW/OUT2 Hi-Z 1.5 A; OUT1 LOW/OUT2 LOW 3 A; Status 11h BC_LVL[1:0] 01/10/11 for Default, 1.5 A, 3 A",
+      "source": "https://www.onsemi.com/download/data-sheet/pdf/fusb303b-d.pdf FUSB303B/D Rev. 3 (September 2024)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "default current",
+      "stated": "reports Default; the charger's register limit sets 500 mA",
+      "read": "Reports 'Sink with Default Current'; the 500 mA limit is set by the charger (BQ25713 IIN_HOST 0x0A00H 300 to 500 mA)",
+      "source": "FUSB303B/D Rev. 3 Table 1; SLUSD83C 8.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "dead-battery Rd",
+      "stated": "Dead Battery Support; VSNKDB 2.18 V maximum",
+      "read": "Features 'Dead Battery Support (Sink Port role when No Power Applied)'; Dead Battery section turns on the pull-down so the source turns on VBUS; VSNKDB 2.18 V max under all source pull-ups",
+      "source": "FUSB303B/D Rev. 3 features, Dead Battery, Table 6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "supply",
+      "stated": "VDD 2.85 to 5.5 V; 6.0 V absolute maximum; runs from VBUS",
+      "read": "Table 5 VDD 2.85 / 3.3 / 5.5 V; Table 4 VDD -0.5 to 6.0 V; VBUS_DET 4.0 to 22 V recommended, 28 V tolerant",
+      "source": "FUSB303B/D Rev. 3 Tables 4 and 5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "limit output",
+      "stated": "open-drain OUT1/OUT2 in GPIO mode; INT_N in I2C mode",
+      "read": "SDA/OUT1 and SCL/OUT2 open drain; GPIO mode when ADDR/ORIENT floats; INT_N/OUT3 active-low open-drain interrupt in I2C mode",
+      "source": "FUSB303B/D Rev. 3 pin table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "adjust time",
+      "stated": "tPDDebounce 10/15/20 ms; tCCDebounce by TCCDEB; no Rp-change-to-OUT1/OUT2 delay stated",
+      "read": "Table 8 states tRpValueChange 10 to 20 ms, 'Time a Sink port shall wait before it can determine there has been a change in Rp'; the stated value says no such figure is given. Recorded for P5, not a part gate; 20 ms is under the 60 ms tSinkAdj",
+      "source": "FUSB303B/D Rev. 3 Table 8 Timing Parameters",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "operating ambient",
+      "stated": "TA -40 to +85 degC",
+      "read": "Table 5 TA -40 to +85 degC",
+      "source": "FUSB303B/D Rev. 3 Table 5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "onsemi; on S1",
+      "read": "'(c) Semiconductor Components Industries, LLC' (onsemi), www.onsemi.com; JLCPCB C895444 maker label onsemi (13:04:17Z); S1 lists onsemi",
+      "source": "FUSB303B/D Rev. 3; vendors.py jlcpcb C895444; Research.md S1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T13:04:17Z"
+     }
+    ]
+   },
+   {
+    "function": "Pack cells",
+    "part": "INR-18650-P30B",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "chemistry and format",
+      "stated": "lithium-ion, cylindrical, steel can, 18.6 x 65.2 mm max",
+      "read": "'LITHIUM-ION RECHARGEABLE BATTERY MODEL INR-18650-P30B'; Cylindrical, Steel can, 18.6 mm diameter max, 65.2 mm height max, 47 g max",
+      "source": "https://www.molicel.com/wp-content/uploads/Product-Data-Sheet-of-INR-18650-P30B-80111-1.pdf Version 1.0 (PDF created 2023-01-31), vendors.py fetch",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "maker",
+      "stated": "E-One Moli Energy, MOLICEL",
+      "read": "'E-One Moli Energy Sales and Applications or the nearest MOLICEL recognized agent'; molicel.com facilities",
+      "source": "P30B data sheet Version 1.0",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "cells in the pack",
+      "stated": "30 A continuous per cell, above 12.23 A",
+      "read": "Discharge Current Continuous 30 A (80 degC cut-off); one cell carries the 12.23 A pack current in 2S1P",
+      "source": "P30B data sheet Version 1.0",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "charge voltage",
+      "stated": "Cell Voltage Charge 4.2 V",
+      "read": "Cell Voltage Charge 4.2 V",
+      "source": "P30B data sheet Version 1.0",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "discharge floor",
+      "stated": "Cell Voltage Discharge 2.5 V",
+      "read": "Cell Voltage Discharge 2.5 V, under the 3.0 V floor",
+      "source": "P30B data sheet Version 1.0",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "continuous discharge",
+      "stated": "30 A continuous (80 degC cut-off); AC 8 mOhm, DC 17 mOhm; product page 36 A",
+      "read": "Discharge Current Continuous 30 A (80 degC cut-off); impedance AC (30 % SOC) 8 mOhm, DC (50 % SOC) 17 mOhm; product page 'Discharge Current 36 A'",
+      "source": "P30B data sheet Version 1.0; https://www.molicel.com/product/inr-18650-p30b/ (read 2026-09-29T13:00:08Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T13:00:08Z"
+     },
+     {
+      "figure": "charge current",
+      "stated": "Standard 3 A, Maximum 9 A",
+      "read": "Charge Current Standard 3 A, Maximum 9 A (60 degC cut-off)",
+      "source": "P30B data sheet Version 1.0",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "charge temperature",
+      "stated": "0 to 60 degC",
+      "read": "Temperature Charge 0 to 60 degC",
+      "source": "P30B data sheet Version 1.0",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "discharge temperature",
+      "stated": "-40 to 60 degC",
+      "read": "Temperature Discharge -40 to 60 degC",
+      "source": "P30B data sheet Version 1.0",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "capacity",
+      "stated": "Typical 3000 mAh, Minimum 2900 mAh",
+      "read": "Capacity Typical 3000 mAh (10.8 Wh), Minimum 2900 mAh (10.4 Wh)",
+      "source": "P30B data sheet Version 1.0",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     },
+     {
+      "figure": "vendor",
+      "stated": "Liion Wholesale Molicel/NPE listing, inventory_quantity 6536, available true, 5.50 USD",
+      "read": "title 'Molicel/NPE INR-18650-P30B 30A 3000mAh Flat Top 18650 Battery - Authorized Distributor', vendor 'Molicel/NPE', SKU molicelnpe-inr18650p30b, inventory_quantity 6536, available true, price 550 (5.50 USD), created 2023-08-17, published 2023-09-22",
+      "source": "vendors.py fetch https://liionwholesale.com/products/molicel-npe-inr-18650-p30b-36a-3000mah-flat-top-18650-battery-authorized-distributor.js",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T13:00:06Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Molicel (E-One Moli Energy); on S9",
+      "read": "data sheet names E-One Moli Energy / MOLICEL; S9 answer lists Molicel",
+      "source": "P30B data sheet Version 1.0; Research.md S9 at e13f5f6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:42Z"
+     }
+    ]
+   },
+   {
+    "function": "Pack overcurrent protection",
+    "part": "MAX17320G22+",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "location",
+      "stated": "C2914309 at JLCPCB",
+      "read": "exact match C2914309 MAX17320G22+, QFN-24-EP(4x4), stockCount 578, canPresaleNumber 482, expand",
+      "source": "vendors.py jlcpcb C2914309, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T13:04:14Z"
+     },
+     {
+      "figure": "cells",
+      "stated": "2S to 4S; VIN 4.2 to 18 V",
+      "read": "2 to 4 series cells; VIN 4.2 to 18 V",
+      "source": "MAX17320 Rev 12 General Description and EC",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     },
+     {
+      "figure": "discharge overcurrent",
+      "stated": "medium 2.5 to 77.5 mV, 1 to 15 ms; slow 0 to 51.2 mV in 0.2 mV steps, 351 ms to 35 s; 2.5 to 77.5 A and 0 to 51.2 A at 1 mOhm",
+      "read": "Discharging Protection: medium 2.5 to 77.5 mV, 1 to 15 ms; slow 0 to 51.2 mV in 0.2 mV steps, 351 ms to 35 s. Settable inside 12.23 to 35 A, and also at or under the P30B's 30 A continuous rating",
+      "source": "MAX17320 Rev 12 Discharging Protection Functionality",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     },
+     {
+      "figure": "short circuit",
+      "stated": "0 to 155 mV in 5 mV steps, 70 to 985 us",
+      "read": "Fast short-circuit comparator 5 to 155 mV (text) / nODSCTH.SCTH 0 to 155 mV (figure), 5 mV steps, 70 to 985 us; OC/OD/SC comparator offset +/-1.2 mV, gain error +/-5 %. At 1 mOhm the 30 mV step trips at most 30 x 1.05 + 1.2 = 32.7 A (computed), under 35 A",
+      "source": "MAX17320 Rev 12 Discharging Protection Functionality, protection table, EC COMPARATORS",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     },
+     {
+      "figure": "charge overvoltage",
+      "stated": "OVP = ChargeVoltage + dOVP x 10 mV",
+      "read": "nOVPrtTh: 'OVP = ChargeVoltage + dOVP x 10mV'; OVP programmable with 10 mV resolution, so 4.25 V is settable",
+      "source": "MAX17320 Rev 12 nOVPrtTh",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     },
+     {
+      "figure": "over-temperature",
+      "stated": "OTPD, OTPC, UTP in 1 degC steps from up to 4 thermistors; 10 kOhm B 3435 in Table 58",
+      "read": "OTPD, OTPC and UTP programmable in 1 degC steps, hottest/coldest of enabled thermistors; Table 58 Murata NCP15XH103F03RC and Semitec 103AT-2 10 kOhm B 3435",
+      "source": "MAX17320 Rev 12 Protector section, Table 58 (page 100)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     },
+     {
+      "figure": "operating ambient",
+      "stated": "-40 to +85 degC",
+      "read": "Operating Temperature Range -40 to +85 degC",
+      "source": "MAX17320 Rev 12",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Analog Devices (Maxim); on S1",
+      "read": "Analog Devices data sheet; JLCPCB 'Analog Devices Inc./Maxim Integrated'",
+      "source": "MAX17320 Rev 12; vendors.py jlcpcb C2914309; Research.md S1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T13:04:14Z"
+     }
+    ]
+   },
+   {
+    "function": "Bench pack balance lead",
+    "part": "MAX17320G22+",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "separate input",
+      "stated": "the 2S lead lands on this part alone; R9's monitor reads the ESC pack only",
+      "read": "BATTS, CELL1 to CELL3 and GND are the MAX17320's own cell inputs; no shared pin with another monitor",
+      "source": "MAX17320 Rev 12 pin description and Figure 24",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     },
+     {
+      "figure": "taps",
+      "stated": "2S: CELL1-CELL3 shorted at the mid-point through RBAL1; BATTS top via RBAL4; negative at GND/CSP; balancing switches -0.3 to +20 V",
+      "read": "Figure 24 page 73: 'REPLACE CAP WITH SHORT FOR 2S' and 'FOR 2S OR 3S'; RBAL1 to CELL1 at the mid-point, RBAL4 to BATTS at the top, stack bottom to GND/CSP; Absolute Maximum 'CELL2 to CELL1 (Balancing switches) -0.3V to +20V'",
+      "source": "MAX17320 Rev 12 Figure 24, Absolute Maximum Ratings",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     },
+     {
+      "figure": "connector",
+      "stated": "not part of this IC",
+      "read": "Research.md scope: connectors are round 2",
+      "source": "hardware/docs/Research.md at e13f5f6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Analog Devices (Maxim); on S1",
+      "read": "Analog Devices data sheet; S1 allows Analog Devices with Maxim",
+      "source": "MAX17320 Rev 12; Research.md S1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T12:54:58Z"
+     }
+    ]
+   }
+  ],
+  "figures": [
+   {
+    "figure": "found V137",
+    "verdict": "confirmed",
+    "evidence": "P26A data sheet v1.4: Discharge Current Maximum 35 A; Cycle Characteristics 'Discharge: Constant Current, 10A, 20A'. 35 - 12.23 = 22.77 A. The count of 2 cells holds for the now-selected P30B too (30 A continuous, 17.8 A above 12.23 A)",
+    "source": "https://www.molicel.com/wp-content/uploads/INR18650P26A_1.4_Product-Data-Sheet-of-INR-18650-P26A-80087.pdf; P30B data sheet Version 1.0",
+    "read_at": "2026-09-29T12:55:01Z"
+   },
+   {
+    "figure": "found V138",
+    "verdict": "confirmed",
+    "evidence": "P26A 'Cell Voltage Charge 4.2 V', 'CC-CV Charge to 4.2V'; BQ25713 VBAT_REG_ACC 0x20D0H -0.6 %/+0.6 % (0 to 85 degC) = 8.3496 to 8.4504 V; +/-0.5 % rows only at 16.8 V and 12.6 V. The P30B also charges to 4.2 V",
+    "source": "P26A v1.4; https://www.ti.com/lit/ds/symlink/bq25713.pdf SLUSD83C 8.5",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "found V139",
+    "verdict": "confirmed",
+    "evidence": "Figure 8-4 (VIN 5 V) rendered at 250 dpi: VOUT 7.4 V curve about 94.5 % at 2 A, 94.6 % near 1 A, 92.0 % at its end near 3.8 A",
+    "source": "SLUSD83C 8.7 Figure 8-4, page 20",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "found V140",
+    "verdict": "confirmed",
+    "evidence": "Figure 5-3 (VOUT 9 V, FPWM) rendered at 500 dpi and digitized with the log axis calibrated on the 4 A and 5 A gridlines: VIN 5 V curve 90.1 % at 3.4 A, 89.3 % at 3.6 A, 88.8 % at its last point near 3.8 A. 53.34 / 0.887 / 6.0 = 10.02 A. ILIM_AVG 7 A min, 8 A typ, no max, at VIN 8 V, VOUT 15 V; ILIM_PK 13 A typ",
+    "source": "https://www.ti.com/lit/ds/symlink/tps55285.pdf SLVSI72A (April 2025, revised October 2025) Figure 5-3 and 5.5",
+    "read_at": "2026-09-29T12:54:59Z"
+   },
+   {
+    "figure": "found V141",
+    "verdict": "confirmed",
+    "evidence": "Figure 8-22 (TPS62933F, VOUT 5 V, 500 kHz, 6.8 uH) digitized at 500 dpi, Vin 6 V: 97.1 % at 1.0 A, 96.0 % at 1.5 A, 95.8 % at 1.7 A. Figure 8-21 is the TPS62932 and 8-23 the TPS62933O, so no TPS62933 VOUT 5 V curve. 7.5 / 0.960 / 6.0 = 1.30 A",
+    "source": "https://www.ti.com/lit/ds/symlink/tps62933.pdf SLUSEA4D (June 2021, revised August 2022) page 12",
+    "read_at": "2026-09-29T12:54:59Z"
+   },
+   {
+    "figure": "found V142",
+    "verdict": "confirmed",
+    "evidence": "SLYT322: 'most typical capacity imbalances (of less than 5%) can be overcome in one or two cycles' (with 25 to 50 mA effective balancing). P26A Capacity Typical 2600 mAh, Charge Time Standard 1.5 hr. 130 mAh / 3.0 h = 43.3 mA (computed). The derivation assumes balancing only during charge; the P30B (3000 mAh, 1.5 hr) would give 50 mA by the same method",
+    "source": "https://www.ti.com/lit/an/slyt322/slyt322.pdf (read 12:55:00Z); P26A v1.4 (12:55:01Z)",
+    "read_at": "2026-09-29T12:55:01Z"
+   },
+   {
+    "figure": "found V143",
+    "verdict": "confirmed",
+    "evidence": "3.3 V: 1090 mA x 3.3 V = 3.60 W / 0.956 / 6.0 = 0.63 A (Figure 8-18 Vin 6 V near 1.1 A reads about 95.5 to 96 %); encoder 12 V: 1.2 W / 0.88 / 6.0 = 0.23 A (TPS55288 Figure 6-5 VIN 5 V at 0.1 A about 88 to 90 %, eye reading); excitation 0.051 A; 5 V encoder 0.8 W / 0.96 / 6.0 = 0.14 A; sum 0.91 A. 1090 mA in T3/006-P2-R5.json V99, 100 mA and 160 mA in V102, 51.0 mA in FU-C1/013-rerank-R13.json",
+    "source": "https://www.ti.com/lit/ds/symlink/tps62933.pdf Figure 8-18; https://www.ti.com/lit/ds/symlink/tps55288.pdf SLVSF01B Figure 6-5 (12:55:00Z); returns named",
+    "read_at": "2026-09-29T12:55:00Z"
+   },
+   {
+    "figure": "found V144",
+    "verdict": "confirmed",
+    "evidence": "15 W x 0.94 / 8.4 V = 1.68 A; 14.1 W / 6.0 V = 2.35 A; MinSystemVoltage 2S default 6.144 V; ICLAMP 2s-4s 384 mA and 9.3.10.6",
+    "source": "SLUSD83C 8.5, 9.3.10.6, Table 9-4; F8 answer",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "found V145",
+    "verdict": "confirmed",
+    "evidence": "P26A Capacity Typical 2600 mAh; Discharge Rate chart at 300 dpi: 10 A curve crosses 3.0 V near 2450 mAh, 20 A near 2300 mAh; about 2.42 Ah at 12.23 A, 11.9 min. The value names the P26A as selected; the selected cell is now the P30B (3000 mAh typical), which meets the 2600 mAh floor. The run time is for the P26A",
+    "source": "P26A v1.4 CELL CHARACTERISTICS and Discharge Rate Characteristics",
+    "read_at": "2026-09-29T12:55:01Z"
+   },
+   {
+    "figure": "found V146",
+    "verdict": "confirmed",
+    "evidence": "V7 answer 0 to 50 degC for the whole IO board; P26A charge 0 to 60 degC, discharge -40 to 60 degC; P30B the same",
+    "source": "Research.md V7 at e13f5f6; P26A v1.4; P30B Version 1.0",
+    "read_at": "2026-09-29T12:55:01Z"
+   },
+   {
+    "figure": "found V147",
+    "verdict": "confirmed",
+    "evidence": "MAX17320 Table 58 lists Murata NCP15XH103F03RC and Semitec 103AT-2, 10 kOhm, 3435; up to 4 thermistor inputs; BQ25713 Table 7-1 has no thermistor pin",
+    "source": "MAX17320 Rev 12 Table 58 (page 100); SLUSD83C Table 7-1",
+    "read_at": "2026-09-29T12:54:58Z"
+   },
+   {
+    "figure": "found V148",
+    "verdict": "confirmed",
+    "evidence": "V10 answer: one USB-C connector for the F8 charger input and the RP2354B's data lines with CC1 and CC2, 5.5 V, 3 A; V13 answer: 5 lines. No SuperSpeed pair, so Default is 500 mA (T1 P1-R7 reading 4.6.2.1)",
+    "source": "hardware/docs/Research.md V10, V13 at e13f5f6; T1/010-P1-R7.json",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "found V149",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:365 balance lead reaches the IO board. JLCPCB exact matches: C2914309 MAX17320G22+ 578; C157573 BQ28Z610DRZR 6816; C22458649 BQ76907RGRR 2366",
+    "source": "hardware/docs/IOBoard.md at e13f5f6; vendors.py jlcpcb C2914309, C157573, C22458649",
+    "read_at": "2026-09-29T13:04:20Z"
+   },
+   {
+    "figure": "found V150",
+    "verdict": "confirmed",
+    "evidence": "P26A: Discharge Current Maximum 35 A, ambient charge 0 to 60 and discharge -40 to 60 degC; 4.25 - 4.2252 = 24.8 mV. The values rest on the P26A; for the selected P30B the charge voltage (4.2 V) and 60 degC limits are the same, and its product page gives Discharge Current 36 A, so short circuit at or under 35 A still holds. Its data sheet rates 30 A continuous, which bounds discharge overcurrent (see 'function requirements: Pack overcurrent protection')",
+    "source": "P26A v1.4; P30B Version 1.0; https://www.molicel.com/product/inr-18650-p30b/ (13:00:08Z); SLUSD83C VBAT_REG_ACC",
+    "read_at": "2026-09-29T13:00:08Z"
+   },
+   {
+    "figure": "found V151",
+    "verdict": "confirmed",
+    "evidence": "Liion Wholesale publishes counts: P26A flat top (vendor Molicel/NPE) inventory_quantity -1, available false; P26A button listing 0, available false (its vendor field is 'Liion Wholesale'). IMR Batteries P26A available true with no quantity; 18650 Battery Store 'Sold out'; TME HTTP 403 with challenge. The vendor answer holds. Its closing sentence ('No vendor read counts an S9 cell at or above the gate of 50') no longer holds: the same vendor lists the P30B at 6536 (13:00:06Z)",
+    "source": "vendors.py fetch of the liionwholesale.com .js listings (13:00:06Z to 13:00:07Z), imrbatteries.com .js (13:08:12Z), 18650batterystore.com collection (13:08:13Z), tme.com (HTTP 403, 13:08:13Z)",
+    "read_at": "2026-09-29T13:08:13Z"
+   },
+   {
+    "figure": "found V152",
+    "verdict": "confirmed",
+    "evidence": "'Instant-on with no battery or depleted battery'; MinSystemVoltage 2S default 6.144 V; '150 ms after VBUS above VVBUS_CONVEN, converter powers up'; input limit 3.0 A by IIN_HOST",
+    "source": "SLUSD83C page 1, 9.3.3 start-up sequence, Table 9-4",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "found V153",
+    "verdict": "confirmed",
+    "evidence": "R5460: over-discharge turns off the discharge FET with DOUT 'L'; 'the external FETs do not turn off at the same time'; charge accepted from 0 V; F version releases after a charger is connected and the cell passes the released voltage. BQ25713: ChargeCurrent reset 0000h; watchdog 175 s default resets ChargeCurrent to 0; BAT below SYSMIN clamps charge to 384 mA",
+    "source": "https://www.nisshinbo-microdevices.co.jp/en/pdf/datasheet/r5460-ea.pdf NO.EA-165-250616 (12:54:46Z); SLUSD83C 9.3.10.1, 9.3.10.6, 9.6.3",
+    "read_at": "2026-09-29T12:54:46Z"
+   },
+   {
+    "figure": "P2 report: pack current at the 6.0 V floor",
+    "verdict": "confirmed",
+    "evidence": "10.02 + 1.30 + 0.91 = 12.23 A, each term re-read above (V140, V141, V143)",
+    "source": "TPS55285 Figure 5-3; TPS62933 Figures 8-18 and 8-22; TPS55288 Figure 6-5",
+    "read_at": "2026-09-29T12:55:00Z"
+   },
+   {
+    "figure": "P2 report: TPS55285 input current bound from the pack",
+    "verdict": "confirmed",
+    "evidence": "ILIM_AVG 7 A min, 8 A typ, no max, only at VIN 8 V, VOUT 15 V, 400 kHz; ILIM_PK 13 A typ. 7 x 6.0 x 0.887 / 8.4 = 4.4 A (computed)",
+    "source": "https://www.ti.com/lit/ds/symlink/tps55285.pdf SLVSI72A 5.5 CURRENT LIMIT",
+    "read_at": "2026-09-29T12:54:59Z"
+   },
+   {
+    "figure": "P2 report: cell continuous-discharge rating",
+    "verdict": "confirmed",
+    "evidence": "P26A Discharge Current Maximum 35 A, cycle discharge 10 A and 20 A; M30A V2 Discharge Current Maximum 10 A; M35A page Discharge Current 10 A",
+    "source": "P26A v1.4 (12:55:01Z); https://www.molicel.com/wp-content/uploads/INR18650M30A-V2-80088.pdf (13:06:49Z); https://www.molicel.com/product/inr-18650-m35a/ (13:06:52Z)",
+    "read_at": "2026-09-29T13:06:52Z"
+   },
+   {
+    "figure": "P2 report: cell temperature limits",
+    "verdict": "confirmed",
+    "evidence": "P26A Ambient Temperature Charge 0 to 60 degC, Discharge -40 to 60 degC",
+    "source": "P26A v1.4",
+    "read_at": "2026-09-29T12:55:01Z"
+   },
+   {
+    "figure": "P2 report: pack overcurrent protection window",
+    "verdict": "refuted",
+    "evidence": "The MAX17320 ranges read correctly (medium 2.5 to 77.5 mV, 1 to 15 ms; fast 5 to 155 mV, 70 to 985 us; slow 0 to 51.2 mV, 351 ms to 35 s). The 35 A upper bound for discharge overcurrent is the P26A's 'Discharge Current Maximum'. The selected cell is now the INR-18650-P30B, whose data sheet rates 'Discharge Current Continuous 30 A (80 degC cut-off)'. IOBoard.md:360 sets the protection against the cell's continuous-discharge rating, so the discharge overcurrent window is 12.23 to 30 A, not 12.23 to 35 A",
+    "source": "MAX17320 Rev 12 (12:54:58Z); P30B data sheet Version 1.0 (12:54:42Z); IOBoard.md:360 at e13f5f6",
+    "read_at": "2026-09-29T12:54:58Z"
+   },
+   {
+    "figure": "P2 report: pack full-charge voltage",
+    "verdict": "confirmed",
+    "evidence": "VBAT_REG_ACC at 0x20D0H -0.6 %/+0.6 % in SLUSD83C, SLUSCU1A and SLUSD20B: 8.3496 to 8.4504 V; 8.4504 - 8.44 (R5 V92) = 10.4 mV; F16 HV ceiling 8.7 V (IOBoard.md:350)",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25713.pdf; bq25703a.pdf (12:54:48Z); bq25710.pdf (12:58:23Z); T3/006-P2-R5.json V92",
+    "read_at": "2026-09-29T12:58:23Z"
+   },
+   {
+    "figure": "P2 report: charger efficiency 5 V to 2S",
+    "verdict": "confirmed",
+    "evidence": "BQ25713 Figure 8-4 VOUT 7.4 V about 94.5 % at 2 A; BQ25887 SLUSD89B page 1 '93.4% Charge efficiency at 5-V adapter, 7.6-V battery, 1-A charge'",
+    "source": "SLUSD83C Figure 8-4; https://www.ti.com/lit/ds/symlink/bq25887.pdf SLUSD89B (13:06:26Z)",
+    "read_at": "2026-09-29T13:06:26Z"
+   },
+   {
+    "figure": "P2 report: charge current from the 15 W source",
+    "verdict": "confirmed",
+    "evidence": "1.68 A at 8.4 V and 2.35 A at 6.0 V from 14.1 W; 384 mA clamp below MinSystemVoltage; IIN_HOST 0x3C00H 2800 to 3000 mA",
+    "source": "SLUSD83C 8.5, 9.3.10.6",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "P2 report: input current limit accuracy",
+    "verdict": "confirmed",
+    "evidence": "IDPM_REG_ACC 0x3C00H 2800 to 3000, 0x1E00H 1300 to 1500, 0x0A00H 300 to 500 mA; IDPM_REG_ACC_ILIM 2.2 V 2800 to 3200, 1.6 V 1300 to 1700, 1.2 V 300 to 700 mA; lower of pin and register; default 3.25 A",
+    "source": "SLUSD83C 8.5, Table 7-1, 9.6.6.1",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "P2 report: BQ25703A as the BQ25713's alternate",
+    "verdict": "confirmed",
+    "evidence": "SLUSCU1A 8.6.6.1: default 3.3 A, 'The register offset is 50 mA'; IDPM_REG_ACC 0x3BFFH 2830 to 3000, 0x1DFFH 1350 to 1500, 0x09FFH 340 to 500 mA; tWDI 01 = 35 / 44 / 53 s against the BQ25713's 4 / 5.5 / 7 s; 16 mV voltage steps. The BQ25703A register description of bit field [6:5] says '01b: Enabled, 5 sec', contradicting its own EC table. Digi-Key BQ25713RSNR stock_available 2103, Active",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25703a.pdf SLUSCU1A (12:54:48Z); SLUSD83C tWDI; vendors.py digikey BQ25713RSNR (cached reading of 2026-09-29T09:56:00Z)",
+    "read_at": "2026-09-29T12:54:48Z"
+   },
+   {
+    "figure": "P2 report: external BATFET and battery sense resistor",
+    "verdict": "refuted",
+    "evidence": "Ciss under 5 nF (1 to 3 nF recommended), SRP-SRN recommended -0.5 to 0.5 V, charge range 0 to 81.28 mV, 122 mV and 1.50 W in 10 mOhm at 12.23 A: all confirmed. 'at VSYS 6.0 V its gate sees about 6.3 V (/BATDRV absolute minimum -0.3 V)' does not follow: -0.3 V is an absolute maximum stress rating; the recommended /BATDRV minimum is 0 V, so the gate drive is at most about 6.0 V. The logic-level conclusion stands",
+    "source": "SLUSD83C 8.1, 8.3, 9.4.1.1",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "P2 report: charger firmware dependence",
+    "verdict": "confirmed",
+    "evidence": "ChargeCurrent reset 0000h; watchdog 175 s default resets ChargeCurrent to 0 without a write to MaxChargeVoltage or ChargeCurrent; 00b disables it",
+    "source": "SLUSD83C 9.3.10.1, 9.6.3, ChargeOption0 WDTMR_ADJ",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "P2 report: R5 floor disconnect placement",
+    "verdict": "confirmed",
+    "evidence": "R5460 turns off only the discharge FET on over-discharge; charge through the charge FET and the discharge FET's parasitic diode; F version release needs a charger. BQ25713 keeps VSYS regulated with no or a depleted battery",
+    "source": "r5460-ea.pdf NO.EA-165-250616 (12:54:46Z); SLUSD83C 9.4.1.1",
+    "read_at": "2026-09-29T12:54:46Z"
+   },
+   {
+    "figure": "P2 report: balance currents",
+    "verdict": "confirmed",
+    "evidence": "MAX17320 100 mA pin rating, 45 ms per 351 ms pause, 40/10 Ohm computation re-derived (44.8 mA worst-case average); BQ29209 page 1 'up to 15 mA', external mode supported; BQ76907 ICB 0 to 50 mA, R(CB) 53/93/200 Ohm, external bypass FETs; BQ28Z610 RCB 200 Ohm max, 100 Ohm to 1 kOhm input resistors: 4.2 / 400 = 10.5 mA",
+    "source": "MAX17320 Rev 12; https://www.ti.com/lit/ds/symlink/bq29209.pdf, bq76907.pdf, bq28z610.pdf (13:06:17Z to 13:06:18Z)",
+    "read_at": "2026-09-29T13:06:18Z"
+   },
+   {
+    "figure": "P2 report: pack run time",
+    "verdict": "confirmed",
+    "evidence": "P26A discharge rate chart: 3.0 V crossing near 2450 mAh at 10 A and 2300 mAh at 20 A; about 2.42 Ah at 12.23 A, 11.9 min. Stated as a P26A figure; the selected P30B's discharge curves are images not read here",
+    "source": "P26A v1.4 Discharge Rate Characteristics",
+    "read_at": "2026-09-29T12:55:01Z"
+   },
+   {
+    "figure": "P2 report: cell sourcing",
+    "verdict": "refuted",
+    "evidence": "'No vendor read counts an S9 cell at or above the gate of 50 ... The pack cells fail rule 4' no longer holds: Liion Wholesale, the vendor of V151, lists 'Molicel/NPE INR-18650-P30B' with inventory_quantity 6536, available true, over the gate of 50. The P26A counts (0 and -1) are confirmed",
+    "source": "vendors.py fetch https://liionwholesale.com/products/molicel-npe-inr-18650-p30b-36a-3000mah-flat-top-18650-battery-authorized-distributor.js",
+    "read_at": "2026-09-29T13:00:06Z"
+   },
+   {
+    "figure": "P2 report: CC detector VDD minimum",
+    "verdict": "confirmed",
+    "evidence": "FUSB303B 2.85 V; TUSB321AI and TUSB321 4.5 V; TUSB322I 4.5 V; TUSB320/TUSB320I 2.7 to 5 V; TUSB320LI 2.7 to 5 V; FUSB301 2.8 V with note 1 'for functional operation only', 3.0 V in the specification tables",
+    "source": "fusb303b-d.pdf, tusb321ai.pdf, tusb321.pdf (12:55:08Z); tusb322i.pdf, tusb320.pdf, tusb320li.pdf, fusb301-d.pdf (12:58:22Z to 12:58:23Z)",
+    "read_at": "2026-09-29T12:58:23Z"
+   },
+   {
+    "figure": "P2 report: USB-C sink timing",
+    "verdict": "refuted",
+    "evidence": "'No data sheet read gives an Rp-change-to-output delay' is contradicted by FUSB303B/D Rev. 3 Table 8: tRpValueChange 10 to 20 ms, 'Time a Sink port shall wait before it can determine there has been a change in Rp'. tPDDebounce 10/15/20 ms is the detach debounce. TUSB321AI 168 ms and TUSB321 133 ms power-on debounce confirmed; tSinkAdj 60 ms per T1/010-P1-R7.json",
+    "source": "https://www.onsemi.com/download/data-sheet/pdf/fusb303b-d.pdf Table 8; tusb321ai.pdf, tusb321.pdf",
+    "read_at": "2026-09-29T12:55:08Z"
+   },
+   {
+    "figure": "P2 report: Default USB current applied",
+    "verdict": "confirmed",
+    "evidence": "V13 answer: USB Type-C, 5 lines (VBUS, D+, D-, CC1, CC2), no SuperSpeed pair, so 500 mA Default",
+    "source": "Research.md V13 at e13f5f6",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "re-rank report: BQ25723 input limit encoding",
+    "verdict": "confirmed",
+    "evidence": "9.6.23: nominal limit 50 to 6350 mA in 50 mA steps; 'Additional 100-mA (10-mOhm sense resistor) offset should be added ... to obtain the maximum'; IIIN_DPM_REG_ACC 0x3A00H 2800 to 3000, 0x1C00H 1300 to 1500, 0x0800H 300 to 500 mA; default 3.25 A; Table 9-2 2S VSYS_MIN 6.6 V; watchdog 01b 4 / 5.5 / 7 s, 175 s at POR",
+    "source": "https://www.ti.com/lit/ds/symlink/bq25723.pdf SLUSE64 (May 2021)",
+    "read_at": "2026-09-29T12:54:49Z"
+   },
+   {
+    "figure": "re-rank report: BQ40Z50-R2 short-circuit trip with tolerance",
+    "verdict": "refuted",
+    "evidence": "SCD1 range -22.2 to -100 mV, step 11.1 mV (RSNS 0); VOFFSET +/-2.5 mV and scale error +/-5 % post-trim confirmed. 55.5 mV at 2 mOhm: 25.2 to 30.5 A and 33.3 mV at 1 mOhm: 37.6 A confirmed. The 22.2 mV step at 1 mOhm is (22.2 - 2.5) x 0.95 = 18.7 A to (22.2 + 2.5) x 1.05 = 25.9 A, not 26.9 A (computed)",
+    "source": "https://www.ti.com/lit/ds/symlink/bq40z50-r2.pdf SLUSCS4C 7.31",
+    "read_at": "2026-09-29T12:55:07Z"
+   },
+   {
+    "figure": "re-rank report: BQ40Z50-R2 balancing duty and current",
+    "verdict": "confirmed",
+    "evidence": "SLUSCS4C: 'If the device's internal bypass is used, up to 10 mA can be bypassed'; SLUUBK0B 7.2 'DUTY = cell balancing duty cycle, which is 75% typ'; 7.3 external mode ([CBM] = 1) balances one cell at a time; 43 / 0.75 = 57.3 mA, 3.6 V / 57.3 mA = 62.8 Ohm (computed); timers from dQ and QMax",
+    "source": "bq40z50-r2.pdf SLUSCS4C 8.3.5.5; https://www.ti.com/lit/ug/sluubk0b/sluubk0b.pdf 7.2, 7.3",
+    "read_at": "2026-09-29T12:55:07Z"
+   },
+   {
+    "figure": "re-rank report: SLUA420A external balance current",
+    "verdict": "refuted",
+    "evidence": "65 mA at 3.6 V is correct, but it is a calculation, not a measurement: 'With a 50-Ohm resistance placed in series ... the external bypassing path resistance is summed to 55 Ohm. At a nominal cell voltage of 3.6 V, the bypassing current is 65 mA'. The only bench measurement in the note is of the bq29330's Rds(on). The note targets the bq29330/bq29312 AFE, not the BQ40Z50-R2",
+    "source": "https://www.ti.com/lit/an/slua420a/slua420a.pdf SLUA420A page 3",
+    "read_at": "2026-09-29T12:55:07Z"
+   },
+   {
+    "figure": "re-rank report: INR-18650-P30B at V151's vendor",
+    "verdict": "confirmed",
+    "evidence": "inventory_quantity 6536, available true, price 550 (5.50 USD), vendor Molicel/NPE, created 2023-08-17T17:05:51-04:00",
+    "source": "vendors.py fetch https://liionwholesale.com/products/molicel-npe-inr-18650-p30b-36a-3000mah-flat-top-18650-battery-authorized-distributor.js",
+    "read_at": "2026-09-29T13:00:06Z"
+   },
+   {
+    "figure": "re-rank report: INR-18650-P30B lifecycle signal",
+    "verdict": "confirmed",
+    "evidence": "The P30B page shows no lifecycle status and links FSSF00062AL-Molicel-Prototype-...-P30BP50BP22S-1.pdf; the P26A and P28A pages link FSSF00058BJ. The SDS header reads FSSF00062AL; its body reads 'Version number: AK', Issue Date 10-January-2025, and names INR18650P30B without the word prototype. Production or preview is not read",
+    "source": "https://www.molicel.com/product/inr-18650-p30b/ (13:00:08Z), /inr-18650-p28a/ (13:00:09Z), /inr-18650-p26a/ (13:00:12Z); the SDS PDF (13:01:51Z)",
+    "read_at": "2026-09-29T13:01:51Z"
+   },
+   {
+    "figure": "re-rank report: INR-18650-P30B ratings",
+    "verdict": "confirmed",
+    "evidence": "3000 mAh typical, 2900 min; 4.2 V; 2.5 V; charge 3 A standard, 9 A max (60 degC cut-off); 30 A continuous (80 degC cut-off); 0 to 60 and -40 to 60 degC; AC 8 mOhm, DC 17 mOhm; 47 g; Version 1.0, PDF created 2023-01-31; product page 36 A",
+    "source": "P30B data sheet Version 1.0 (12:54:42Z); product page (13:00:08Z)",
+    "read_at": "2026-09-29T13:00:08Z"
+   },
+   {
+    "figure": "re-rank report: P28A button-top listing",
+    "verdict": "confirmed",
+    "evidence": "Button listing: vendor 'Liion Wholesale', inventory 122, 'this button top is manufactured by Liion Wholesale by using a flat top Molicel P28A ... Molicel does not offer this product as a button top', length 67.5 mm; flat top Molicel/NPE listing 0, available false",
+    "source": "liionwholesale.com .js listings (13:00:06Z)",
+    "read_at": "2026-09-29T13:00:06Z"
+   },
+   {
+    "figure": "re-rank report: NXP status pages",
+    "verdict": "confirmed",
+    "evidence": "https://www.nxp.com/products/PTN5150 and /products/PTN5110 (redirect to ...usb-pd-tcpc-phy-ic:PTN5110) carry 'Status - Active'; /part/PTN5150AHXMP, /part/PTN5110NHQZ, /products/PTN5150A answer HTTP 404",
+    "source": "vendors.py fetch, nxp.com",
+    "read_at": "2026-09-29T13:04:57Z"
+   },
+   {
+    "figure": "re-rank report: PTN5150A GPIO encoding",
+    "verdict": "confirmed",
+    "evidence": "PTN5150A Rev. 1: 'OUT1/OUT2 output: detected Rp current source value' in non-I2C mode with no encoding table; I2C register with INTB; unpowered Rd stated without a resistance",
+    "source": "https://www.nxp.com/docs/en/data-sheet/PTN5150A.pdf sections 6.2, 7.1",
+    "read_at": "2026-09-29T12:55:09Z"
+   },
+   {
+    "figure": "re-rank report: TUSB320LAI data sheet location",
+    "verdict": "confirmed",
+    "evidence": "tusb320la.pdf HTTP 404; tusb320lai.pdf HTTP 200, SLLSEQ8D TUSB320LAI, TUSB320HAI; VDD 2.7 to 5 V, ramp within 25 ms; RCC_DB 4.1/5.1/6.1 kOhm",
+    "source": "vendors.py fetch https://www.ti.com/lit/ds/symlink/tusb320la.pdf and tusb320lai.pdf",
+    "read_at": "2026-09-29T12:55:09Z"
+   },
+   {
+    "figure": "re-rank report: BQ40Z50RSMR-R1 status disagreement",
+    "verdict": "confirmed",
+    "evidence": "Digi-Key status 'Not For New Designs', 5933 in stock; https://www.ti.com/product/BQ40Z50-R1 meta status ACTIVE",
+    "source": "vendors.py digikey BQ40Z50RSMR-R1 (cached reading of 2026-09-29T12:35:04Z); vendors.py fetch TI page (13:04:54Z)",
+    "read_at": "2026-09-29T13:04:54Z"
+   },
+   {
+    "figure": "re-rank report: JLCPCB readings of this re-rank",
+    "verdict": "confirmed",
+    "evidence": "C2871889 214/213; C2845123 9979/9881; C2674062 600/581; C544448 2174/2174; C132554 3228/3191; C2651889 10315/10307; C179743 20579/20553; all expand, exact matches",
+    "source": "vendors.py jlcpcb, 13:04:22Z to 13:04:32Z",
+    "read_at": "2026-09-29T13:04:32Z"
+   },
+   {
+    "figure": "function requirements: Pack charger",
+    "verdict": "confirmed",
+    "evidence": "Names IOBoard.md:358 (2S Li-ion), :361 (input limit), :362 (USB-C only), :363 (3 A at 5 V), :365 (NTC), :371 (termination on pack current); F8, F9, V7, V10; V138, V139, V144, V147, V153 at their values. Balancing is carried by the Cell balancing function",
+    "source": "hardware/docs/IOBoard.md and Research.md at e13f5f6",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "function requirements: Cell balancing",
+    "verdict": "confirmed",
+    "evidence": "Names IOBoard.md:358, :364, :365 and V142 (43 mA), with F9 supply range and V7 ambient; the 400 mA and 50 mA at :364 are unsourced and not chosen",
+    "source": "IOBoard.md and Research.md at e13f5f6",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "function requirements: Power path",
+    "verdict": "confirmed",
+    "evidence": "Names IOBoard.md:371 (run while charging, termination), the pack current (R7 row, :326, :359; V140, V141, V143), V152 (the one value found for Power path), and V153",
+    "source": "IOBoard.md and Research.md at e13f5f6",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "function requirements: Charger input limit",
+    "verdict": "confirmed",
+    "evidence": "Names IOBoard.md:361 (Default, 1.5 A, 3 A), V148 (500 mA Default), dead-battery Rd (V152, V153), supply (V10 5.5 V), limit output (R7 row), tSinkAdj, V7 ambient",
+    "source": "IOBoard.md and Research.md at e13f5f6",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "function requirements: Pack cells",
+    "verdict": "confirmed",
+    "evidence": "Names IOBoard.md:359 (2 cells, S9/S2 makers, continuous discharge for the pack current, temperature limits), F9 (Li-ion 18650, 3.0 V floor), V137, V140/V141/V143 (12.23 A), V145 (2600 mAh), V146, V151; charge voltage V138 and charge current V144 added",
+    "source": "IOBoard.md and Research.md at e13f5f6",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "function requirements: Pack overcurrent protection",
+    "verdict": "refuted",
+    "evidence": "IOBoard.md:360 sets the protection 'against the cell's continuous-discharge rating and the pack current'. The list's discharge overcurrent window 'between 12.23 A and 35 A' takes 35 A from the P26A's 'Discharge Current Maximum'. The selected cell, INR-18650-P30B, is rated 'Discharge Current Continuous 30 A (80 degC cut-off)', so the upper bound is 30 A; 35 A is weaker than IOBoard.md's requirement. The other entries (V149 location, 2S, 4.25 V, 60 degC and 0 degC from the NTC, ambient) are complete. The MAX17320 is settable inside 12.23 to 30 A, so the part is not refuted",
+    "source": "IOBoard.md:360 at e13f5f6; P30B data sheet Version 1.0 (12:54:42Z); MAX17320 Rev 12",
+    "read_at": "2026-09-29T12:54:42Z"
+   },
+   {
+    "figure": "function requirements: Bench pack balance lead",
+    "verdict": "confirmed",
+    "evidence": "Names IOBoard.md:365 (own input apart from R9, taps reaching balancer and floor reading), F9 per-cell floor, and Research.md:28 (connector in round 2); no value found for research names this function",
+    "source": "IOBoard.md and Research.md at e13f5f6",
+    "read_at": "2026-09-29T12:54:41Z"
+   },
+   {
+    "figure": "re-rank drop: Pack cells: INR-18650-P28A",
+    "verdict": "confirmed",
+    "evidence": "P28A v1.3 meets the values (2800 mAh, 4.2 V, 2.5 V, 8.4 A charge max, 35 A discharge max, 0 to 60 and -40 to 60 degC). Liion Wholesale Molicel/NPE flat-top listing: inventory_quantity 0, available false. The 122-unit button listing has vendor 'Liion Wholesale', states it is 'manufactured by Liion Wholesale', 'Molicel does not offer this product as a button top', length 67.5 mm over the 65.2 mm maximum",
+    "source": "https://www.molicel.com/wp-content/uploads/INR18650P28A_1.3_Product-Data-Sheet-of-INR-18650-P28A-80093.pdf (12:55:04Z); liionwholesale.com .js listings (13:00:06Z)",
+    "read_at": "2026-09-29T13:00:06Z"
+   }
+  ]
+ }
+}

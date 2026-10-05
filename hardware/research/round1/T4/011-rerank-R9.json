@@ -1,0 +1,176 @@
+{
+ "role": "rerank",
+ "category": "R9",
+ "label": "rerank-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "functions": [
+   {
+    "function": "Cell monitor",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "ADBMS1818ASWAZ-RL",
+      "option": "",
+      "reason": "Kept first. No P3 candidate qualifies, so nothing displaces it. Meets every requirement value P2 recorded. Error at 4.2 V: TME (total measurement error) ±4.8 mV over temperature in normal mode plus a 0.96 mV timing term gives 5.76 mV, inside ±6 mV. Rows under 16 V need an auxiliary V+ supply. The most JLCPCB stock and the lowest price of the survivors: stockCount 12500, presale 12495, 7.5887 at 1, read 2026-09-28T15:39:59Z (vendors.py jlcpcb C5372802). Rule-5 route is the second vendor: Digi-Key stock_available 564, at or above the gate of 50, ProductStatus Active, lead time 38 weeks, read 2026-09-28T15:42:30Z (vendors.py digikey ADBMS1818ASWAZ-RL). P3 disputes 'passes every requirement' on V189 and V190. P2 researched both and found no value, so there is nothing to check a part against. That is a gap for P6, not a failure of this part. The part's own figures are reported."
+     },
+     {
+      "rank": 2,
+      "part": "ADBMS1818ASWZ-RL",
+      "option": "",
+      "reason": "The same die and figures as rank 1, in package outline 05-08-1982 instead of SW-64-2 (ADBMS1818 Rev. B ordering guide, in P2's copy read 2026-09-28T15:11:05Z). The footprint is not proven identical to rank 1's. JLCPCB stockCount 2723, presale 2716, 8.516 at 1, read 2026-09-28T15:40:00Z. Digi-Key 854, Active, 39 weeks, read 2026-09-28T15:42:33Z. Ranked below rank 1 on JLCPCB stock and price."
+     },
+     {
+      "rank": 3,
+      "part": "ADBMS1818ASWAZ-R7",
+      "option": "",
+      "reason": "The same orderable model as rank 1 in the same SW-64-2 outline, on a reel of 300. JLCPCB stockCount 195, presale 195, 7.8112 at 1, read 2026-09-28T15:40:00Z. Digi-Key 290, Active, 38 weeks, read 2026-09-28T15:42:34Z. The least stock of the three ADBMS1818 rows that pass."
+     },
+     {
+      "rank": 4,
+      "part": "LTC6813HLWE-1#3ZZPBF",
+      "option": "",
+      "reason": "Meets every value and has the tightest error: H grade TME ±4.2 mV at 4.2 V, so 5.16 mV with the timing term. Digi-Key ProductStatus reads 'Discontinued at DigiKey' with stock_available 0, read 2026-09-28T15:42:36Z. That value is recorded and reported to the owner. Its rule-5 route is therefore the pin-compatible alternate ADBMS1818ASWAZ-RL. JLCPCB stockCount 350, presale 337, 16.0234 at 1, about twice rank 1's price, read 2026-09-28T15:40:00Z. The ADI (Analog Devices) product page was not read: www.analog.com answered HTTP 403 with a challenge at 2026-09-28T15:42:38Z."
+     },
+     {
+      "rank": 5,
+      "part": "LTC6813HLWE-1#3ZZTRPBF",
+      "option": "",
+      "reason": "Rank 4's model on tape and reel. Digi-Key answered HTTP 404 for it at 2026-09-28T15:42:38Z, so no distributor status was read. Reported to the owner. JLCPCB stockCount 270, presale 247, 16.129 at 1, read 2026-09-28T15:40:01Z. Rule-5 route is the alternate ADBMS1818ASWAZ-RL."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "ADBMS6832MWCCSZ (C18166020), ADBMS6832MWCCSZ-RL (C18168954)",
+      "maker": "Analog Devices (S1)",
+      "reason": "Requirement values not readable, so the part cannot be qualified. Stock itself passes rule 4: C18168954 stockCount 6097, presale 6096, read 2026-09-28T15:39:55Z; C18166020 136, presale 136, read 15:39:54Z. The only public data sheet is a 2-page short form, Rev. SpC (https://www.analog.com/media/en/technical-documentation/data-sheets/adbms6832-6833.pdf, safari client, HTTP 200, read 2026-09-28T15:40:21Z). It states up to 18 cells, TME ±1.8 mV at 3.3 V, an input range of -2 V to +5.5 V, simultaneous sampling, isoSPI and 4 µA sleep. It does not state the lowest cell count (V181), the stack operating range at 67.2 V (F15), the absolute maximum against 85 V (V188), the error at 4.2 V or 2.8 V (V183, V184), the reading period (V185), or a 4-wire SPI host port. It names only isoSPI, which needs a transceiver on the RP2354B side. The full sheet is on request through BMS_Doc_Request@analog.com, a question for the owner. Digi-Key answered HTTP 404 for both orderables (2026-09-28T15:40:34Z and 15:40:36Z), so neither a ProductStatus nor a second vendor is read."
+     },
+     {
+      "part": "ADBMS6833",
+      "maker": "Analog Devices (S1)",
+      "reason": "No JLCPCB row (rule 1): jlcpcb-search 'ADBMS6833' returned no results, read 2026-09-28T15:43:49Z. The jlcparts copy of 2026-09-14 has no ADBMS6833 row either. Same unreadable short-form data sheet as the ADBMS6832."
+     },
+     {
+      "part": "INA149AIDR (C183089) ×16 with ADS8588SIPMR (C575544) ×2",
+      "maker": "Texas Instruments (S1)",
+      "reason": "Fails V183 (±6 mV per cell) on the datasheet limits. The ADC alone at 4.2 V exceeds ±6 mV. ADS8588S (SBAS642A, https://www.ti.com/lit/ds/symlink/ads8588s.pdf, read 2026-09-28T15:40:32Z), ±5 V range: gain error ±64 LSB (least significant bit) max from -40 to +85 °C with an external reference. Note 5 makes the positive full-scale error half of that, 32 LSB × 152.6 µV = 4.88 mV at 5 V, or 4.10 mV at 4.2 V. Adding offset ±1.8 mV and INL ±1.5 LSB (0.23 mV) gives 6.13 mV. That is before the reference's own error and before the INA149 (difference amplifier). INA149 (SBOS579B, https://www.ti.com/lit/ds/symlink/ina149.pdf, read 2026-09-28T15:40:31Z): initial offset 1100 µV max, drift 15 µV/°C max (0.375 mV over 25 K), CMRR 90 dB min (2.13 mV at a 67.2 V common mode). That is 3.6 mV before its ±0.02 %FSR gain error. Stock passes rule 4: INA149AIDR 591, presale 540, against a gate of 400 (16 × 5 × 5); ADS8588SIPMR 2068, presale 2042; read 2026-09-28T15:39:55Z. Digi-Key: INA149AIDR Active, stock 0 (15:40:37Z); ADS8588SIPMR Active, 1902 (15:40:39Z)."
+     },
+     {
+      "part": "LTC6806HLW#3ZZTRPBF (C689553), LTC6806HLW#3ZZPBF (C3681818), LTC6806ILW#3ZZTRPBF (C689554), LTC6806ILW#3ZZPBF (C3682621)",
+      "maker": "Analog Devices (S1)",
+      "reason": "Fails V182 and V183, and fails rule 4 on all but one row. LTC6806 Rev 0 (https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6806.pdf, safari client, read 2026-09-28T15:42:12Z). The HIRNG = 0 range is ±2.5 V, so a 4.2 V cell needs HIRNG = 1. That range resolves 3.0 mV/bit (1.5 mV/bit with HIRNG = 0), against the 1 mV of V182. Its TME at ±5 V is ±34 mV at 25 °C and ±40 mV over temperature; the best cell TME, at 0 V, is ±12 mV. All exceed the ±6 mV of V183. JLCPCB: C689553 stockCount 5, presale 4 (15:39:56Z); C689554 0 (15:41:52Z); C3682621 0 (15:41:55Z); these three fail rule 4. C3681818 has 165, presale 165 (15:41:54Z), and fails on V182 and V183."
+     },
+     {
+      "part": "ADES1830CCSZ (C22463734), ADES1831CCSZ (C37992838)",
+      "maker": "Analog Devices (S1)",
+      "reason": "Fail rule 4: stockCount 4, presale 4, read 2026-09-28T15:39:56Z, and stockCount 5, presale 5, read 15:39:56Z, both under the gate of 50. No other row in the jlcparts copy. Datasheets not read."
+     },
+     {
+      "part": "BQ78706PAPR (C44295454), BQ78702BPAPR (C49262227)",
+      "maker": "Texas Instruments (S1)",
+      "reason": "Fail rule 4. BQ78706: stockCount 10, presale -14, read 2026-09-28T15:39:56Z. BQ78702: stockCount 0, presale 0, read 15:39:57Z. P3 read the BQ78706 at 9 to 14 series cells (ti.com/product/BQ78706, 15:35:38Z), which also misses 1 and 16 cells. Not re-read, because the rule-4 fail stands alone."
+     },
+     {
+      "part": "BQ79716BQPAPRQ1 (C52019727), BQ79718BQPAPRQ1 (C50341507), BQ79718VPAPRQ1 (C42394540), BQ79712SBQPHPRQ1 (C53435646), BQ79758QPAPRQ1 (C41921942), BQ79758BQPAPRQ1 (C50498581), BQ7697202PFBR (C22466635), BQ7697204PFBR (C36851807)",
+      "maker": "Texas Instruments (S1)",
+      "reason": "Every row fails rule 4. C52019727 3/3 (2026-09-28T15:39:57Z); C50341507 1/-8 (15:39:57Z); C42394540 0/0 (15:41:57Z); C53435646 3/3 (15:42:01Z); C41921942 0/0 (15:39:58Z); C50498581 0/0 (15:41:58Z); C22466635 0/0 (15:39:58Z); C36851807 20/20 (15:42:00Z). Figures are stockCount/presale. C22396721 (BQ79718-Q1) 0/0 (15:42:03Z). C9900097422 and C9900149498 are 'JLCPCB Assembly' rows, not candidates by rule 2 (15:42:05Z). Datasheets not read."
+     },
+     {
+      "part": "MAX17852ACB/V+ (C3681505), MAX17852ACB/V+T (C3681836), MAX17853ACB/V+ (C7451746), MAX17854ACB/V+ (C17448489), MAX17854ACB/V+T (C17458516), MC33775ATA1AE (C5353387)",
+      "maker": "Analog Devices (Maxim); NXP (S1)",
+      "reason": "Every row fails rule 4. C3681505 13/13 (2026-09-28T15:39:58Z); C3681836 0/0 (15:41:51Z); C7451746 0/0 (15:39:59Z); C17448489 0/0 (15:39:59Z); C17458516 0/0 (15:42:04Z); C5353387 0/2 (15:39:59Z). Figures are stockCount/presale. C9900039784 and C9900039785 are 'JLCPCB Assembly' rows, not candidates by rule 2 (15:42:05Z). Datasheets not read."
+     },
+     {
+      "part": "TLE9018DQK (C9900248531), TLE9018DQU (C9900113220)",
+      "maker": "Infineon (S1)",
+      "reason": "Not a candidate by rule 2: JLCPCB labels both rows 'JLCPCB Assembly', each with stockCount 0 and presale 0 (jlcpcb-search 'TLE9018', read 2026-09-28T15:40:11Z). No other LCSC row exists, at JLCPCB or in the jlcparts copy of 2026-09-14 (rule 1). Datasheet not read."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "ADBMS1818ASWAZ-RL",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   }
+  ],
+  "report": [
+   {
+    "figure": "P3 finds qualified",
+    "value": "none of P3's 8 missed entries qualifies: 1 family has requirement values not readable (ADBMS6832, with ADBMS6833 off JLCPCB), 2 fail V183 on datasheet limits (INA149 with ADS8588S; LTC6806, which also fails V182), and the rest fail rule 4 or are 'JLCPCB Assembly' rows",
+    "source": "vendors.py jlcpcb and jlcpcb-search, 2026-09-28T15:39:54Z to 15:43:49Z; datasheets as cited in dropped_from_p3"
+   },
+   {
+    "figure": "ADS8588S error at 4.2 V",
+    "value": "6.13 mV worst case from the ADC alone: 4.10 mV gain, from half of ±64 LSB per note 5 scaled to 4.2 V, plus 1.8 mV offset and 0.23 mV INL. P3's 8.2 mV counts the full ±64 LSB at the positive end. Both exceed ±6 mV",
+    "source": "ADS8588S SBAS642A electrical characteristics and note 5, https://www.ti.com/lit/ds/symlink/ads8588s.pdf read 2026-09-28T15:40:32Z"
+   },
+   {
+    "figure": "INA149 error terms",
+    "value": "offset 1100 µV max at 25 °C, drift 15 µV/°C max (0.375 mV over 25 K), CMRR 90 dB min (2.13 mV at a 67.2 V common mode), gain error ±0.02 %FSR max; the 3.6 mV sum excludes the gain error",
+    "source": "INA149 SBOS579B electrical characteristics, https://www.ti.com/lit/ds/symlink/ina149.pdf read 2026-09-28T15:40:31Z"
+   },
+   {
+    "figure": "LTC6806 resolution and TME",
+    "value": "1.5 mV/bit (HIRNG 0, ±2.5 V range), 3.0 mV/bit (HIRNG 1, ±5 V range); cell TME at ±5 V is ±34 mV at 25 °C and ±40 mV over temperature",
+    "source": "LTC6806 Rev 0 ADC DC specifications, https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6806.pdf read 2026-09-28T15:42:12Z"
+   },
+   {
+    "figure": "LTC6806HLW#3ZZPBF stock",
+    "value": "stockCount 165, canPresaleNumber 165: the one LTC6806 row that passes rule 4, dropped on V182 and V183",
+    "source": "vendors.py jlcpcb C3681818, 2026-09-28T15:41:54Z"
+   },
+   {
+    "figure": "ADBMS6832 datasheet",
+    "value": "2-page short form, Rev. SpC: up to 18 cells, TME ±1.8 mV at 3.3 V over -40 to +125 °C, input range -2 V to +5.5 V, isoSPI only. No lowest cell count, stack range, absolute maximum, 4.2 V error or reading period",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/adbms6832-6833.pdf, safari client, read 2026-09-28T15:40:21Z"
+   },
+   {
+    "figure": "ADBMS6832 at Digi-Key",
+    "value": "not read: HTTP 404 for ADBMS6832MWCCSZ-RL and ADBMS6832MWCCSZ",
+    "source": "vendors.py digikey, 2026-09-28T15:40:34Z and 15:40:36Z"
+   },
+   {
+    "figure": "ADBMS6832 JLCPCB stock",
+    "value": "C18168954 (MWCCSZ-RL) 6097, presale 6096, 6.2522 at 1; C18166020 (MWCCSZ) 136, presale 136, 7.1941 at 1",
+    "source": "vendors.py jlcpcb, 2026-09-28T15:39:55Z and 15:39:54Z"
+   },
+   {
+    "figure": "shortlist JLCPCB stock",
+    "value": "ADBMS1818ASWAZ-RL 12500/12495; ADBMS1818ASWZ-RL 2723/2716; ADBMS1818ASWAZ-R7 195/195; LTC6813HLWE-1#3ZZPBF 350/337; LTC6813HLWE-1#3ZZTRPBF 270/247 (stockCount/presale)",
+    "source": "vendors.py jlcpcb C5372802, C2971928, C7455595, C2758259, C2979142, 2026-09-28T15:39:59Z to 15:40:01Z"
+   },
+   {
+    "figure": "shortlist Digi-Key",
+    "value": "ADBMS1818ASWAZ-RL 564 Active 38 weeks; ADBMS1818ASWZ-RL 854 Active 39 weeks; ADBMS1818ASWAZ-R7 290 Active 38 weeks; LTC6813HLWE-1#3ZZPBF 0 'Discontinued at DigiKey' 36 weeks; LTC6813HLWE-1#3ZZTRPBF HTTP 404",
+    "source": "vendors.py digikey, 2026-09-28T15:42:30Z to 15:42:38Z"
+   },
+   {
+    "figure": "ADI product pages",
+    "value": "not read: www.analog.com answered HTTP 403 with a challenge for /en/products/adbms1818.html and /en/products/ltc6813-1.html after 2 datasheet requests in this agent",
+    "source": "vendors.py fetch --client safari, 2026-09-28T15:42:38Z"
+   },
+   {
+    "figure": "ADBMS1818 error margin",
+    "value": "5.76 mV against ±6 mV (normal-mode TME ±4.8 mV at 4.2 V over temperature, plus P2's 0.96 mV timing term); filtered mode (±3.8 mV) does not fit the 20 ms period of V185",
+    "source": "ADBMS1818 Rev. B Table 1, in P2's copy read 2026-09-28T15:11:05Z; V185, V186"
+   },
+   {
+    "figure": "ADBMS1818 package outlines",
+    "value": "ASWAZ rows use outline SW-64-2 and ASWZ rows use 05-08-1982. Both are 64-lead LQFP 10 × 10 mm with an exposed pad. Rank 2 is the only shortlist row in the other outline",
+    "source": "ADBMS1818 Rev. B ordering guide, in P2's copy read 2026-09-28T15:11:05Z"
+   },
+   {
+    "figure": "V189 and V190 against the shortlist",
+    "value": "P3 notes that no survivor was checked against V189 or V190. P2 researched both and found no value, so no part can be checked against them; the open values go to P6 as a gap. The part figures for when the owner answers are in P2's report: C pin leakage ±250 nA max when not measured, V+ 0.95 mA typical in MEASURE, and an isoSPI option that does not depend on the ground offset",
+    "source": "P2 return (T4 P2-R9) found_values V189 and V190, report 'balance-lead pin currents' and 'host interface'"
+   }
+  ]
+ }
+}

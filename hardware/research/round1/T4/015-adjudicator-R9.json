@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R9",
+ "label": "adjudicator-R9",
+ "attempt": 0,
+ "data": {
+  "category": "R9",
+  "function": "found V186",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation holds. The value 741 µs does not follow from its own sources and its own rule. The claim works out three cases and says \"the smaller figure holds\". It then drops the smallest case, 6 cells at 300 A giving 370 µs, because no source pairs a 6-cell pack with 300 A. The same objection applies to the two cases it keeps. No source pairs the 6-cell default (settings.c:40) with the 150 A onboard path. No source pairs the 18 mΩ whole-pack default (settings.c:47) with a 16-cell pack. The pack settings are not tied to a current path. The specification gives one pack setting and two current paths: an onboard shunt for 150 A continuous (F2) and an external-shunt input for currents above 150 A (IOBoard.md:66, Research.md:62), where T2 found V35 = 300 A. Applied the same way to all three computed cases, the rule gives 370 µs, not 741 µs. The claim also cites Internal R at settings.c:44-46; the row is at :45-47, with the 18 default on :47. That line error does not change any number. The same logic allows stricter pairings the claim does not work out. For example, 1 cell (the lower bound of SET_PACK_CELLS, V181) at 18 mΩ and 900 A/s gives about 62 µs. So 370 µs is not established as the limit either. The only ruling is that \"found V186 = 741 µs\" does not stand. Scope is function: the finding is about this function's derived requirement value, not about any part.",
+  "evidence": "settings.c:39-40 SET_PACK_CELLS range 1 to 14, default 6. settings.c:45-47 SET_PACK_MOHM \"Whole pack, for the sag model\", range 0 to 200 mΩ, default 18. settings.c:61-63 SET_OUT_RAMP range 5 to 300 %/s, default 55. main.c:94-99 publish_throttle_ramp converts SET_OUT_RAMP to per_s = OUT_SPAN × pct / 100 and stores it for the control task. Research.md:530 F2 is 150 A continuous (owner, 2026-09-25). Research.md:543 F15 is 16 cells, 67.2 V. IOBoard.md:66 gives the onboard shunt for 150 A continuous (F2) and an external-shunt input for currents above 150 A, to 300 A and more; neither path is tied to a cell count or pack resistance. T2/007-P2-R3.json found_values[6] V35 = \"300 A\". Research.md:746 V186 is \"for research (owner, 2026-09-28)\"; the owner states no value. Recomputed: 18/6 = 3 mΩ a cell; 1 mV / 3 mΩ = 0.333 A; 450 A/s gives 741 µs and 900 A/s gives 370 µs. 18/16 = 1.125 mΩ a cell; 0.889 A / 900 A/s = 988 µs. Minimum of the three computed cases is 370 µs.",
+  "source": "checkout c25aa863372d2e61e3f23a58d47bc3bf19d35702: shared/settings/settings.c:39-47, :61-63; firmware/panel/main/main.c:94-104; hardware/docs/Research.md:62, :530, :543, :741-746; hardware/docs/IOBoard.md:66; /home/claude/rcbench-research/round1/results/hardware/research/round1/T2/007-P2-R3.json found_values[6] (V35)",
+  "read_at": "2026-09-28T15:56:05Z",
+  "scope": "function"
+ }
+}

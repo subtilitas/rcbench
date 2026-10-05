@@ -261,12 +261,31 @@ twenty-first of it. The ordinary edit is the one to watch, because a factor of
 An ESC sent command 13 interleaves temperature, voltage, current, stress and
 status frames between the speed ones, marked by the top nibble of the payload.
 
-The bench sends command 13 on every edge into driving, ten times, before any
-throttle. Ten frames at 1 kHz is 10 ms, and command 13 is inside the command
-range, so nothing turns while it goes out; a throttle already asked for
-arrives 10 ms later than it otherwise would. It is sent again on each edge
-rather than once at bind time, because extended telemetry is a runtime setting
-an ESC forgets when it loses power and an ESC can be swapped between runs.
+The bench asks with command 13 and asks again until the ESC answers. One ask
+is ten frames of command 13 in a row, 10 ms at 1 kHz. An ask goes out only in
+place of a zero-throttle frame, so it never delays a throttle, and command 13
+is inside the command range, so nothing turns while it goes out:
+
+- the first ask starts at the first zero-throttle frame of a run;
+- the next starts 500 ms after the last repeat of the one before, while the
+  throttle stays at zero;
+- a throttle above zero goes out on its own frame, and an ask it interrupts
+  starts again from its first repeat;
+- asking stops at the first extended frame that comes back, or after 10 asks
+  without one;
+- every run asks again, because extended telemetry is a runtime setting an
+  ESC forgets when it restarts, and an ESC can be swapped between runs.
+
+The repetition is for AM32. AM32 2.21 takes a command only while it is armed
+and its motor is stopped, and it arms itself after 1 s of zero throttle,
+counted from the first frame it hears (`Src/dshot.c:157`,
+`Src/main.c:1353-1356`). A disarmed bench sends no frames, and AM32 restarts
+after 0.5 s without one when armed and 2 s when not, so every run starts from
+an AM32 that has not armed. An ask made only in a run's first 10 ms arrives
+before AM32 can take it. `test_dshot_edt` holds the schedule against a model
+of those rules: an AM32 starting from silence at zero throttle takes the third
+ask, 1.02 s into the run. Speed does not depend on any of this: AM32 answers a
+bidirectional frame with a period whether or not it was asked.
 
 Each of the ten frames carries the telemetry bit set. On a value of 1 to 47
 that bit is what marks the frame as a command for the BLHeli_S family
@@ -282,8 +301,10 @@ The two frame kinds cannot be told apart from the bits alone: the nibble that
 marks an extended frame is an ordinary exponent and mantissa in a speed frame,
 and only an ESC with extended telemetry enabled guarantees the normalisation
 that separates them. The decoder therefore takes the mode as an argument
-rather than inferring it, and `outputs_hw.c` passes true once the ten repeats
-have gone.
+rather than inferring it, and `outputs_hw.c` passes true from the first repeat
+of the first ask on. AM32 answers command 13 once, with a status frame
+(`0xE00`) after the sixth repeat, and that frame read as a speed is a period
+of zero and no answer.
 
 An ESC that does not know command 13 ignores it and keeps sending periods.
 Those still read as periods: a frame is taken for an extended one only when
@@ -317,8 +338,8 @@ bidirectional item below is unconfirmed in every sense:
   accepts command 13 at all;
 - whether the specification's "wait at least 35 ms" note belongs to command
   13 or to command 12 (save settings). The table admits both readings, and
-  the bench waits neither way: the throttle follows the tenth repeat at the
-  next 1 ms tick. Settling it needs the specification text rather than a
+  the bench waits neither way: the frame after an ask's tenth repeat is the
+  throttle, or another zero-throttle frame, at the next 1 ms tick. Settling it needs the specification text rather than a
   board;
 - every bit timing, against a real ESC's tolerance rather than against the
   specification.

@@ -1,0 +1,318 @@
+{
+ "role": "P1-critic",
+ "category": "R2",
+ "label": "P1-critic-R2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/Research.md:280",
+    "quantity": "CAN controllers and transceivers on the IO board",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Owner decision. Research.md:63, the Output ports row, reads '(owner, 2026-09-25) ... an external CAN port on its own controller'. hardware/STATUS.md:27 ends 'Owner decision, 2026-09-25'. The message of commit 46f02ad lists it under 'Owner decision, 2026-09-25'. A second bus needs its own transceiver, so two of each follows. Checkout be1f247, read 2026-09-28."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/Research.md:280",
+    "quantity": "external CAN transceiver standby while the enable node is low",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Assumption. `git log -S standby` finds only commit 46f02ad (2026-09-25). That commit's owner-decision list names only the port and its own controller. In the R2 row, '(owner, 2026-09-25)' closes the sentence before the standby sentence. The standby sentence and IOBoard.md:57 and :238 cite no source. F13 (Research.md:541) puts only the 20 output ports and the UART socket behind the gate. The isolation table at Monostable.md:82-88 (commit 23c82ca) has no CAN device. Read 2026-09-28."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/Research.md:280",
+    "quantity": "logic level of every output that reaches an RP2354B pin",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Re-read in P0's saved copy of https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (build-date 2025-07-29, fetched 2026-09-28T10:09:01Z), read 2026-09-28T10:40Z. Table 1426: an FT (fault-tolerant) pin takes 'very little current' below 3.63 V with IOVDD at 0 V, and takes 5.5 V only with IOVDD at 3.3 V. Table 1433: VPIN_FT is 3.63 V at IOVDD 0 V, and VPIN (standard) is IOVDD + 0.5 V. A 5 V logic output can exceed either limit, so 3.3 V logic follows from the ratings (IOBoard.md:105)."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/IOBoard.md:175",
+    "quantity": "controller and transceiver outputs that reach an RP2354B pin",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Link.md:15 gives the SIT65HVD230 as a 3.3 V part. iomcu_pins.h:56-61 puts MISO on GP12 and INT on GP8, the SPI controller's outputs to the RP2350. STATUS.md:317 gives the same. The sources give the values as stated. Checkout be1f247, read 2026-09-28."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/IOBoard.md:167",
+    "quantity": "link bus",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Link.md:12 gives classic CAN without FD, 1 Mbit/s, 29-bit identifiers only. Link.md:65 gives protocol 4.0. xl2515.c:106 gives two nodes. STATUS.md:338-339 says CAN only, with no RS485 (Recommended Standard 485) parts. STATUS.md:103 and :393 record the run at 1 Mbit/s with zero errors on 2026-08-28. Read 2026-09-28."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/IOBoard.md:168",
+    "quantity": "link bit timing",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Link.md:199-205: TWAI (Two-Wire Automotive Interface) uses 20 quanta with tseg1 14 and tseg2 5, so (1+14)/20 = 75 %. The XL2515 uses 8 quanta with tseg1 5 and tseg2 2, so (1+5)/8 = 75 %. can_timing.h:17-21 requires the rate to come out exact and refuses one that cannot. Read 2026-09-28."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/IOBoard.md:169",
+    "quantity": "controller clock on the bring-up module",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Link.md:17 and :205-208, iomcu_pins.h:50-54 and :62 (IOMCU_CAN_CRYSTAL_HZ 16000000), and STATUS.md:315-316. 16 MHz / 2 / 8 quanta = 1 Mbit/s. 8 MHz / 2 / 8 = 500 kbit/s. Read 2026-09-28."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/IOBoard.md:111",
+    "quantity": "CAN bit rate against the controller's clock",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "can_timing.h:17-21 requires an exact rate. It says only that nodes disagreeing by 1 % fail on long frames. Link.md:198-199 agrees. Neither gives a tolerance limit, so 'not stated, R2 states it' is correct. Read 2026-09-28."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/IOBoard.md:170",
+    "quantity": "controller interface on the bring-up module",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "xl2515.c:63-64 sets 10 MHz, CPOL 0 and CPHA 0 (mode 0). xl2515.c:72-74 sets INT as an input with a pull-up. xl2515.c:113 writes CANINTE 0, so the driver polls. iomcu_pins.h:56-65 gives 5 pins (SCK, MOSI, MISO, CS, INT), INT active low. The value describes the module as built. Read 2026-09-28."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/IOBoard.md:109",
+    "quantity": "CAN pins the firmware refuses on the bring-up module",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "iomcu_pins.h:43 puts the heartbeat on GP3. iomcu_pins.h:57-61 puts SCK on 10, MOSI on 11, MISO on 12, CS on 9 and INT on 8. That is 6 pins with the heartbeat. Link.md:173-176 says these pins are refused. Read 2026-09-28."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/IOBoard.md:171",
+    "quantity": "received frames the bring-up module's controller holds",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "STATUS.md:292 and out_store.h:18-20 say the XL2515 holds two frames. xl2515.c:108-112 sets RXB0 with BUKT (rollover) into RXB1, and uses no other buffer. 2 × 130 µs = 260 µs. Read 2026-09-28."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/IOBoard.md:171",
+    "quantity": "CAN frame time at 1 Mbit/s",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "STATUS.md:292 and out_store.h:18-19 give about 130 µs. Arithmetic check: an extended frame with 8 data bytes is 128 bits, plus 3 bits of intermission = 131 µs unstuffed, up to 160 µs with 29 stuff bits. The unit and the figure hold. Read 2026-09-28."
+   },
+   {
+    "index": 12,
+    "where": "hardware/docs/IOBoard.md:171",
+    "quantity": "flash stall in frame times",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Arithmetic on sourced figures. 19,180/130 ≈ 148. 45,000/130 ≈ 346. 400,000/130 ≈ 3,077. 400/130 ≈ 3. 3,000/130 ≈ 23. Sources are STATUS.md:292 and the W25Q16JV figures at Research.md:114-116. Read 2026-09-28."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/IOBoard.md:171",
+    "quantity": "effect of one lost received frame",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "out_store.h:22-26 and STATUS.md:292 say a lost request costs the panel 1000 ms and latches the coprocessor's 200 ms failsafe. link_host.h:29 sets LINK_HOST_TIMEOUT_MS to 1000. link_dev.h:31 sets LINK_DEV_SILENCE_MS to 200. Read 2026-09-28."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/IOBoard.md:116",
+    "quantity": "measured flash window on the bring-up module",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "STATUS.md:292: eight windows printed 19,174 to 19,186 µs, and the overrun count rose from 2 to 8 across nine saves. STATUS.md:111 agrees. firmware/iomcu/CMakeLists.txt:5-7 gives an RP2350A with 4 MB of flash. Read 2026-09-28."
+   },
+   {
+    "index": 15,
+    "where": "hardware/docs/IOBoard.md:116",
+    "quantity": "CAN frames collected during a flash window",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "out_store.c:216-250: erase_sector and program_record call save_and_disable_interrupts around flash_range_erase and flash_range_program. The comment there says the loop takes nothing off the CAN controller for the window. out_store.h:15-17 says the same. Read 2026-09-28."
+   },
+   {
+    "index": 16,
+    "where": "hardware/docs/Research.md:115",
+    "quantity": "W25Q16JV sector erase and page program times",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Fetched on my own with `vendors.py fetch https://www.winbond.com/resource-files/W25Q16JV%20SPI%20RevJ%2005202026%20Plus.pdf` (chrome client) at 2026-09-28T10:44:15Z, HTTP 200, 3,248,710 bytes. It is Revision J, publication release date May 28, 2026. AC characteristics: tPP 0.4 ms typical, 3 ms maximum; tSE (4 KB) 45 ms typical, 400 ms maximum. These match the page's revision D figures. Revision D itself was not read."
+   },
+   {
+    "index": 17,
+    "where": "hardware/docs/Research.md:125",
+    "quantity": "flash stall R2 counts held frames against",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Owner decision of 2026-09-27. Research.md:86 (In-package flash figures) and Research.md:124-126 say Q8 and P5 budget with the packaged parts' maximums, each marked as a packaged-part figure. IOBoard.md:116 repeats it. R2 reports for Q8 (Research.md:242). Read 2026-09-28."
+   },
+   {
+    "index": 18,
+    "where": "hardware/docs/IOBoard.md:138",
+    "quantity": "gap the store opens its flash window in",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "out_store.h:100-116 gives a 50 ms poll in runs, OUT_STORE_QUIET_MS 5, 'up to 45 ms', and says nothing enforces the pattern. firmware/panel/main/main.c:3490 polls every 50 ms while the link is up and every 1000 ms while it is down. Read 2026-09-28."
+   },
+   {
+    "index": 19,
+    "where": "hardware/docs/IOBoard.md:172",
+    "quantity": "error reporting the controller provides",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "xl2515.c:192-215 reads TEC, REC and EFLG and clears EFLG.OVR. main.c:787-790 puts REC and TEC on the STATUS page. can_selftest.h:127-135 carries tx_errors, rx_errors, flags and overflows. Link.md:124 agrees. Read 2026-09-28."
+   },
+   {
+    "index": 20,
+    "where": "hardware/docs/IOBoard.md:173",
+    "quantity": "echo self-test",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Bringup.md:18-20, :43-45 and :88-90. can_selftest.h:40 sets CAN_SELFTEST_PAGE to 0x7E. firmware/panel/main/main.c:196 sets CAN_SELFTEST_MS to 1200, and :1079 runs the test at every start-up. selftest.c:93 checks for a TEC of 128 or more. Read 2026-09-28."
+   },
+   {
+    "index": 21,
+    "where": "hardware/docs/IOBoard.md:174",
+    "quantity": "time to bus-off with no acknowledging node",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Link.md:36-48 and CHANGELOG.md:965-975 state about 4 ms to bus-off and up to about 3 s to return. The value follows from these sources. P1's doubt about the ISO 11898-1 acknowledgement-error exception is noted. It is not a value any part is qualified against. Read 2026-09-28."
+   },
+   {
+    "index": 22,
+    "where": "hardware/docs/IOBoard.md:176",
+    "quantity": "link termination",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Link.md:16 gives 120 Ω at both ends. testbench/WIRING.md:417-419 gives about 60 Ω with everything unpowered. With two nodes, the IO board is always at one end, so no R2 IC depends on the open form in IOBoard.md:205 (fitted, switchable or external). Read 2026-09-28."
+   },
+   {
+    "index": 23,
+    "where": "hardware/docs/IOBoard.md:177",
+    "quantity": "link cable length and routing",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "busfault_screen.c:208-217 prints 'Total bus under 5 m, and each branch under 30 cm' and 'twisted together, away from motor leads'. testbench/WIRING.md:403-407 adopts them. These limits apply to the display link only. Read 2026-09-28."
+   },
+   {
+    "index": 24,
+    "where": "hardware/docs/IOBoard.md:56",
+    "quantity": "supply on the link cable",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Owner decisions. Research.md:61 (2026-09-24) says the display is powered through the link cable. F6 (Research.md:534) gives 5 V (owner, 2026-09-25). Prerequisite 7 (Research.md:489-490) gives 2 A peak and 1.5 A continuous (owner, 2026-09-25). Read 2026-09-28."
+   },
+   {
+    "index": 25,
+    "where": "hardware/docs/IOBoard.md:535",
+    "quantity": "CAN polarity",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "testbench/WIRING.md:456-466 says a crossed pair reads the same 60 Ω and carries no frame. busfault_screen.c:201-202 prints 'CANH to CANH and CANL to CANL, not crossed'. Read 2026-09-28."
+   },
+   {
+    "index": 26,
+    "where": "hardware/docs/IOBoard.md:536",
+    "quantity": "protection on the external CAN and link connectors",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:28 puts ESD (electrostatic discharge) and overvoltage protection on 'signal ... link and heartbeat connectors' in round 2. The external CAN connector falls under 'signal'; it is not named. The transceiver's own bus-fault rating is not covered by this line; P1's questions 8 and 9 ask for it. Read 2026-09-28."
+   },
+   {
+    "index": 27,
+    "where": "hardware/docs/IOBoard.md:540",
+    "quantity": "CAN logic test points",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "testbench/README.md:360-368 and :392, :399 (RXCAN on channel 8, TXCAN on 15, 'XL2515 to transceiver'). testbench/WIRING.md:431-440 and :470-471. The IO board replaces the module in that bench, so the line follows from these sources. Read 2026-09-28."
+   },
+   {
+    "index": 28,
+    "where": "hardware/docs/IOBoard.md:541",
+    "quantity": "analyser channels for the CAN controller",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "testbench/README.md:380-399 lists 16 rows, 0 to 15: CAN SPI on 4 to 7, RXCAN on 8, 'TXCAN, or spare' on 15. Line 380 calls the map a proposal. Read 2026-09-28."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "The R2 row (Research.md:280) says the tree does not state this count and that P1 asks for it. Q8 (Research.md:242) is reported against 'the frame count P1's question returns', so decision-only on Q8 is right. The context checks out: link_host.h:5-7 keeps one request outstanding, link_host.h:29 sets 1000 ms, link_can.h:69-72 gives 4 registers a frame (8 frames for 32 registers), and out_store.h:103-104 describes the polling. One pattern the question does not mention: the start-up self-test (selftest.c:57 and :62-102; can_selftest.c:145-215; main.c:196, :1079) keeps one probe outstanding with a 50 ms timeout. Through a 400 ms stall during that test it sends about one probe every 50 ms. Checkout be1f247, read 2026-09-28."
+   },
+   {
+    "index": 1,
+    "verdict": "confirmed",
+    "reason": "The R2 row asks for each controller's held frames against a stall. For the external controller, the panel's frame count does not apply. Research.md:63, IOBoard.md:65 and hardware/STATUS.md:27 do not say what connects to the port or what traffic it carries. Q8 takes 'each CAN controller' (Research.md:242), so decision-only on Q8 holds. Read 2026-09-28."
+   },
+   {
+    "index": 2,
+    "verdict": "confirmed",
+    "reason": "Marking 1 holds as an assumption, and every assumption is a question to the owner (Research.md:353). Only commit 46f02ad adds the standby text, and its owner-decision list lacks it. F13 (Research.md:541) and Monostable.md:82-88 (commit 23c82ca) do not include a CAN transceiver. The answer decides whether a candidate must have a standby input, so it blocks P2. Read 2026-09-28."
+   },
+   {
+    "index": 3,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:186-188 and Monostable.md:112-116 (commit 23c82ca) give times for the buffer (under 1 µs), the power switches (5 ms) and the 200 ms deadline only. No page gives a time for the transceiver to reach standby. P2 needs a limit to check a mode-change time if the answer to question 2 is yes. Read 2026-09-28."
+   },
+   {
+    "index": 4,
+    "verdict": "confirmed",
+    "reason": "No page gives the external port's frame format. IOBoard.md:167 and Link.md:12 cover the display link only. A classic-only controller such as the MCP2515 seed cannot take part on a CAN FD bus, so the answer drops or keeps candidates. Read 2026-09-28."
+   },
+   {
+    "index": 5,
+    "verdict": "confirmed",
+    "reason": "No page gives the external port's bit rate. The 1 Mbit/s of Link.md:12 and IOBoard.md:167-169 is the link's. A transceiver's data rate and loop delay, and a controller's clock and bit timing, are checked against it. Read 2026-09-28."
+   },
+   {
+    "index": 6,
+    "verdict": "confirmed",
+    "reason": "The under-5 m and under-30 cm limits (busfault_screen.c:208-217; IOBoard.md:177) apply to the link. No page gives the external bus length. The loop delay budget depends on it at the port's bit rate. Read 2026-09-28."
+   },
+   {
+    "index": 7,
+    "verdict": "confirmed",
+    "reason": "No page says whether the external port is isolated or where its ground returns. testbench/WIRING.md:37-53 describes the star ground for the bench only. An isolated port changes every candidate, from a plain transceiver to an isolated transceiver or an added isolator. F15 (67.2 V) and F2 (150 A) are cited correctly (Research.md:543, :530). Read 2026-09-28."
+   },
+   {
+    "index": 8,
+    "verdict": "confirmed",
+    "reason": "Neither IOBoard.md nor Research.md gives a bus-fault voltage for the external transceiver. IOBoard.md:536 puts connector protection in round 2, which runs after R2's selection. The seed transceivers differ in bus-fault rating, so a limit decides which pass. F15's 67.2 V is cited correctly. Read 2026-09-28."
+   },
+   {
+    "index": 9,
+    "verdict": "confirmed",
+    "reason": "No page gives a bus-fault rating for the link transceiver. IOBoard.md:177 and F6 (Research.md:534) put the display's 5 V supply in the same cable as CANH and CANL. P2 cannot keep or drop a link transceiver on this rating without a limit. Read 2026-09-28."
+   },
+   {
+    "index": 10,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:111 says the CAN controller clock's tolerance is not stated and that R2 states it. can_timing.h:17-21 gives only a qualitative 1 %. No page gives a limit in ppm or percent, so P2 and P4 (Research.md:357, which re-reads each controller's clock tolerance) cannot pass or fail a figure. The owner may answer with a value or mark it for research. Read 2026-09-28."
+   },
+   {
+    "index": 11,
+    "verdict": "confirmed",
+    "reason": "The same gap as question 10, for the external controller. Its bit rate and timing are not stated (questions 4 and 5), so the link's figures do not carry over. The R2 row asks for each controller's clock tolerance. Read 2026-09-28."
+   }
+  ],
+  "added": [
+   {
+    "function": "Link CAN controller",
+    "question": "The IO board also powers the display through the link cable. Within what time after power is applied to the IO board must its link CAN controller acknowledge frames on the link, in ms?",
+    "why": "IOBoard.md:210 says this time is not measured, that it runs against the display's 1200 ms start-up self-test (docs/Bringup.md:43-45; firmware/panel/main/main.c:196 and :1079), and that no question asks it. A frame nobody acknowledges raises the panel's transmit error counter. At 128 the self-test reports the coprocessor off the bus (docs/Bringup.md:88-90; firmware/panel/main/selftest.c:88-100). Without a limit, P2 cannot check a controller's oscillator start-up and configuration time or a transceiver's power-up time.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:210",
+    "for_quantity": "time from power-up to the link CAN controller acknowledging frames",
+    "asks": ""
+   }
+  ],
+  "functions_missing": []
+ }
+}

@@ -19,9 +19,9 @@ history is in git.
   holds the press: each screen drops the gesture in progress, which asks
   for nothing. A DISARM that cancellation posts is forwarded in the same
   frame. Every control that holds state between a press and its release
-  cancels, including the log viewer's buttons and rows and the tab rows of
-  MOTOR & ESC, ANALYSER and BALANCE, because a press left latched owns a
-  track id the controller reuses. The
+  cancels, including the log viewer's buttons, rows and DELETE question and
+  the tab rows of MOTOR & ESC, ANALYSER and BALANCE, because a press left
+  latched owns a track id the controller reuses. The
   frame log carries the two counts as `TOUCHLOST <panel>/<driver>`.
   - Two controls are the exception, because asking for nothing is their
     failure. Cancelling an armed bench's disarm still disarms: disarming is
@@ -44,6 +44,26 @@ history is in git.
     frame cannot complete a hold that began while it was dispatching the
     press.
 
+## 0.9.0 - 2026-10-05
+
+Two reports from a bench and one protocol change. Extended telemetry comes on
+with AM32 2.21, which showed speed and nothing else: voltage, current, power
+and ESC temperature stayed empty because the bench asked before the ESC could
+take the command. LOGS deletes a file from the card behind a second panel
+that names it. The link protocol is 4.0: the write that arms carries the pole
+count, and a panel and a coprocessor on different majors do not arm, so both
+images go on together.
+
+### Added
+
+- **LOGS deletes a file from the card (#171).** DELETE in the browse footer
+  is active once a file is selected and opens a second panel that names the
+  file and its size. Only that panel's DELETE, pressed and released on the
+  button, removes the file; CANCEL, or leaving the screen, deletes nothing.
+  The panel refuses the run the logger has open. A deleted file that was open
+  in the import view or the plot is dropped from both. `log_viewer_io_t`
+  gains `remove`; with it NULL the browse view offers no DELETE.
+
 ### Changed
 
 - **The link protocol is 4.0.** The write that arms carries ARM, THROTTLE and
@@ -64,6 +84,21 @@ history is in git.
     panel treats a coprocessor reporting another protocol major as absent,
     keeps the link down and raises `protocol mismatch -- will not arm`, so
     both images go on together.
+
+### Fixed
+
+- **Extended telemetry comes on with AM32 (#172).** The bench sent command 13
+  only as the first ten frames of a run. AM32 2.21 takes a command only once
+  it has armed itself on 1 s of zero throttle, and it restarts after 0.5 s
+  without a frame, which a disarmed bench never sends, so every ask arrived
+  too early: speed showed, and voltage, current, power and ESC temperature
+  stayed empty. The ask is now repeated every 500 ms while the throttle is at
+  zero, until an extended frame comes back or 10 asks have gone, and it never
+  takes the place of a throttle above zero. Replies are read as extended
+  telemetry from the first repeat, so the one status frame AM32 sends when it
+  takes the command is heard. The schedule is `shared/dshot/dshot_edt.c`,
+  held by `test_dshot_edt` against a model of AM32 2.21's command and arming
+  rules; it has not been tried on an ESC.
 
 ## 0.8.2 - 2026-09-10
 

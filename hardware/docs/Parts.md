@@ -1,0 +1,130 @@
+# Parts
+
+One row per part that round 1 of [the component research](Research.md)
+selected for the IO (input/output) board, from
+`hardware/research/round1/selection.json` and the returns of the P4 stock
+and lifecycle verifier named in each row. Every figure in a row is that
+verifier's reading, except the placements of MCP23017T-E/SS, 3 a board from the
+draft [pin map](Pins.md), of the RP2354B, its 12 MHz crystal
+and its core regulator inductor, 2 a board for the owner's two coprocessors
+(2026-09-30), and of SN74LVC1G04DBVR,
+BTS7004-1EPP, 2N7002BK,215 and MCP9808T-E/MS. The SN74LVC1G04DBVR row adds
+the counts of two verifiers, as the research's cross-category check does.
+The other three follow the 3 servo rails and the adjustable supply the owner
+set on 2026-09-30: a rail gate on each servo rail and a temperature sensor
+beside each of the 4 converters. The adjustable supply's gate is not counted:
+the BTS7004-1EPP does not switch its output below about 4.1 V. The owner's 0.8 V lowest servo rail (2026-09-30)
+refutes two rows below it: the BTS7004-1EPP starts at 4.1 V at most, and the
+TPS259474LRPWR takes 2.7 V at least. Follow-ups of R3 and R6 replace them. The Read column gives the time, in UTC (Coordinated
+Universal Time), the JLCPCB figures were read. LCSC is the distributor whose parts library
+JLCPCB assembles from; an LCSC number is `C` followed by digits.
+
+**The stock figures were read on 2026-09-29.** They are not valid after
+that day. `tools/jlc_stock.py` reads them again:
+
+```sh
+python3 tools/jlc_stock.py --check 5
+```
+
+It reads JLCPCB's API (application programming interface) for every LCSC
+number on this page and Digi-Key's API for every row whose second source
+is Digi-Key and for the part off the board. The gate of each part is
+sourcing rule 4 of [Research](Research.md#sourcing-rules): stock at or
+above 5 times the need, never under 50, and a presale count at zero or
+above. The need is 5 boards (question S7) times the placements per board.
+A part held in the owner's personal library passes by rule 6; the Held
+column gives the quantity with the date the owner stated it.
+
+Terms: CAN is Controller Area Network, ESC an electronic speed
+controller, UART a universal asynchronous receiver-transmitter, PWM
+pulse-width modulation, I2C Inter-Integrated Circuit, ADC an
+analogue-to-digital converter, FRAM ferroelectric random-access memory,
+EEPROM electrically erasable programmable read-only memory, rpm
+revolutions per minute, and I_off a datasheet limit on the input current
+of an unpowered part. TI is Texas Instruments and ST is
+STMicroelectronics. S, Q and V followed by a number are the research's
+questions to the owner, P4 its verifiers, and the runs named FU- its
+follow-up tasks.
+
+A function with no part is not on this page. Those functions, and the
+figures no verifier re-read, are listed with the pages of each group:
+[Control](Control.md) for R1 to R4, [Supply](Supply.md) for R5 to R8 and
+[Sensing](Sensing.md) for R9 to R13. Library type is JLCPCB's
+`componentLibraryType`: every row with an LCSC number reads `expand`, the
+extended library, which question S6 allows. The package is the code JLCPCB
+or the datasheet gives it. R1 to R13 in the Function column are the
+research categories of [Research](Research.md#research-categories).
+
+## Selected parts
+
+| Function | Part number | Manufacturer | LCSC | Package | JLCPCB stock | Presale | Library type | Read (UTC) | Placements per board | Held | Second source | Lifecycle status | Longevity | Alternate | Return |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| R1 12 MHz crystal | ABM8-272-T3 | Abracon | C20625731 | SMD3225-4P | 15120 | 14476 | extended | 2026-09-29T09:11:21Z | 2 (one per RP2354B, owner, 2026-09-30) | not held (export of 2026-09-25) | Digi-Key: 28505 (2026-09-29T08:33:53Z) | maker status not read (Abracon pages answered 404 or load by script); Digi-Key Active, reported to the owner | not read | none | `hardware/research/round1/FU-A4/005-P4-stock-R1.json` |
+| R1 core regulator inductor | AOTA-B201610S3R3-101-T | Abracon | C42411119 | 0806 | 4566 | 4075 | extended | 2026-09-29T09:11:22Z | 2 (one per RP2354B, owner, 2026-09-30) | not held (export of 2026-09-25) | Digi-Key: 28115 (2026-09-29T08:33:55Z) | Active (Abracon product page) | not read | none | `hardware/research/round1/FU-A4/005-P4-stock-R1.json` |
+| R2 link CAN controller and external CAN controller | MCP2518FDT-E/SL | Microchip | C626758 | SOIC-14 | 28,884 | 28,715 | extended | 2026-09-29T01:03:12Z | 2 (one per port) | not held (export of 2026-09-25) | Digi-Key: 43,486 (2026-09-29T01:03:15Z) | In Production (Microchip page) | no date per part; Microchip keeps a part with sales in the past 3 years | none | `hardware/research/round1/FU-A2/009-P4-stock-R2.json` |
+| R2 link CAN transceiver and external CAN transceiver | TCAN3413DR | Texas Instruments | C22433320 | SOIC-8 | 14,544 | 13,883 | extended | 2026-09-29T01:03:13Z | 2 (one per port) | not held (export of 2026-09-25) | Digi-Key: 4,455 (2026-09-29T01:03:16Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-A2/009-P4-stock-R2.json` |
+| R3 monostable | 74HC423BQ,115 | Nexperia | C3216364 | DHVQFN-16-EP (2.5 x 3.5 mm) | 233 | 231 | extended | 2026-09-29T05:38:11Z | 1 | not held (export of 2026-09-25) | Digi-Key: 2148 (2026-09-29T04:44:13Z) | Production (Nexperia page) | Nexperia longevity table: 10 years (as of September 2025) | none | `hardware/research/round1/FU-A3/009-P4-stock-R3.json` |
+| R3 OR gate | 74AUP1G32GW,125 | Nexperia | C179324 | TSSOP-5 | 952 | 949 | extended | 2026-09-29T05:38:11Z | 1 | not held (export of 2026-09-25) | Digi-Key: 14211, Nexperia row (2026-09-29T04:44:17Z) | Production (Nexperia page) | Nexperia longevity table: 10 years (as of September 2025) | none | `hardware/research/round1/FU-A3/009-P4-stock-R3.json` |
+| R3 reset supervisor | TPS3703A7330DSERQ1 | Texas Instruments | C1849519 | WSON-6 (1.5 x 1.5 mm) | 307 | 305 | extended | 2026-09-29T05:38:11Z | 1 | not held (export of 2026-09-25) | Digi-Key: 280 (2026-09-29T04:44:19Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-A3/009-P4-stock-R3.json` |
+| R3 latch | 74LVC1G175GW,125 | Nexperia | C282350 | TSSOP-6 | 1973 | 1897 | extended | 2026-09-29T05:38:12Z | 1 | not held (export of 2026-09-25) | Digi-Key: 36048, Nexperia row (2026-09-29T04:44:23Z) | Production (Nexperia page) | Nexperia longevity table: 10 years (as of September 2025) | none | `hardware/research/round1/FU-A3/009-P4-stock-R3.json` |
+| R3 latch clear control | 434153017835 | Würth Elektronik | C2680612 | SMD-4P, 2.9 x 3.5 mm | 5229 | 5079 | extended | 2026-09-29T05:38:12Z | 1 | not held (export of 2026-09-25) | Digi-Key: 27089 (2026-09-29T04:44:25Z) | Active (Würth page) | expected lifetime above 10 years | none | `hardware/research/round1/FU-A3/009-P4-stock-R3.json` |
+| R3 trigger-path inverter | SN74AUP1G14DBVR | Texas Instruments | C2682131 | SOT-23-5 | 5252 | 5231 | extended | 2026-09-29T05:38:12Z | 1 (top of 0 to 1; 0 with the 74HC423) | not held (export of 2026-09-25) | Digi-Key: 28635 (2026-09-29T04:44:27Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-A3/009-P4-stock-R3.json` |
+| R3 trigger input I_off buffer (Q9) and the Schmitt buffer ahead of the latch clock | SN74AUP1G17DBVR | Texas Instruments | C183012 | SOT-23-5 | 8928 | 8807 | extended | 2026-09-29T05:38:12Z | 2 | not held (export of 2026-09-25) | Digi-Key: 88895 (2026-09-29T04:44:30Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-A3/009-P4-stock-R3.json` |
+| R3 servo rail gate | BTS7004-1EPP | Infineon | C534825 | TSDSO-14 | 20982 | 20887 | extended | 2026-09-29T05:38:13Z | 3 (one on each servo rail; R3 counts 1 for one rail) | not held (export of 2026-09-25) | Digi-Key as `BTS70041EPPXUMA1`: 34830 (2026-09-29T04:40:43Z) | Active and preferred (Infineon page) | none read for the part | none | `hardware/research/round1/FU-A3/009-P4-stock-R3.json` |
+| R3 onboard pack switch driver and external module driver output | TPSI3052DWZR | Texas Instruments | C20346001 | SOIC-8 | 1126 | 1107 | extended | 2026-09-29T05:38:13Z | 4 (2 a path, the top of 1 to 2, on the onboard and the external path) | not held (export of 2026-09-25) | Digi-Key: 3184 (2026-09-29T04:44:33Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-A3/009-P4-stock-R3.json` |
+| R3 pack reverse-polarity protection | IPT015N10N5ATMA1 | Infineon | C108964 | HSOF-8 | 28320 | 26365 | extended | 2026-09-29T05:38:13Z | 10 (top of 8 to 10) | not held (export of 2026-09-25) | Digi-Key: 40281 (2026-09-29T04:44:32Z) | Active and preferred (Infineon page) | none that names the part | none | `hardware/research/round1/FU-A3/009-P4-stock-R3.json` |
+| R3 pack precharge | CSD19537Q3T | Texas Instruments | C134143 | VSONP-8 (3.3 x 3.3 mm) | 630 | 593 | extended | 2026-09-29T05:38:13Z | 2 (top of 1 to 2) | not held (export of 2026-09-25) | Digi-Key: 3267 (2026-09-29T04:44:41Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-A3/009-P4-stock-R3.json` |
+| R3 servo rail gate driver | 2N7002BK,215 | Nexperia | C282405 | SOT-23 | 172635 | 172466 | extended | 2026-09-29T05:38:14Z | 3 (top of 0 to 3, one a servo rail; 0 with the BTS7004-1EPP) | not held (export of 2026-09-25) | Digi-Key: 135525 (2026-09-29T04:44:42Z) | Production (Nexperia page) | none that names the part | none | `hardware/research/round1/FU-A3/009-P4-stock-R3.json` |
+| R3 inverter on an active-low output enable and R4 enable inverter | SN74LVC1G04DBVR | Texas Instruments | C7827 | SOT-23-5 | 53165 | 51355 | extended | 2026-09-29T05:36:11Z | 3 (R4 counts 2 and R3 counts 1 for one shared inverter; the true count is not known, and the gate is taken at the sum) | not held (export of 2026-09-25) | Digi-Key: 248297 (2026-09-29T04:37:37Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-A3/008-P4-stock-R4.json` |
+| R4 gated output buffer | SN74LVC244APWR | Texas Instruments | C7668 | TSSOP-20 | 94504 | 94330 | extended | 2026-09-29T05:36:11Z | 2 (16 PWM ports, 8 buffers a part) | not held (export of 2026-09-25) | alternate: 74LVC244APW,118 (Digi-Key holds 0 of SN74LVC244APWR, 2026-09-29T04:37:29Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | 74LVC244APW,118 (C6079) | `hardware/research/round1/FU-A3/008-P4-stock-R4.json` |
+| R4 bias selector | SN74LVC1G126DBVR | Texas Instruments | C7834 | SOT-23-5 | 73877 | 73505 | extended | 2026-09-29T05:36:11Z | 5 (4 multiprotocol ports and the UART socket) | not held (export of 2026-09-25) | Digi-Key: 19254 (2026-09-29T04:37:46Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-A3/008-P4-stock-R4.json` |
+| R4 multiprotocol port path, UART socket path and reply path through the gate | SN74CBTLV3126PWR | Texas Instruments | C543078 | TSSOP-14 | 401 | 395 | extended | 2026-09-29T05:36:12Z | 2 (5 to 6 lines, 4 switches a part) | not held (export of 2026-09-25) | Digi-Key: 3756 (2026-09-29T04:37:54Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-A3/008-P4-stock-R4.json` |
+| R4 receiver inputs | SN74LVC1T45DBVR | Texas Instruments | C7843 | SOT-23-6 | 392691 | 390714 | extended | 2026-09-29T05:36:12Z | 1 (one receiver input, V68) | not held (export of 2026-09-25) | Digi-Key: 90872 (2026-09-29T04:38:01Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-A3/008-P4-stock-R4.json` |
+| R5 source selection | LM74800QDRRRQ1 | Texas Instruments | C3215600 | WSON-12 (3 x 3 mm) | 3105 | 3036 | extended | 2026-09-29T17:15:46Z | 2 (one controller per input) | not held (export of 2026-09-25) | Digi-Key: 7634 (2026-09-29T10:00:06Z) | ACTIVE (TI page) | none on the product page | none | `hardware/research/round1/FU-B3/014-P4-stock-R5.json` |
+| R5 3.3 V logic buck | LMQ66430MC3RXBRQ1 | Texas Instruments | C19271903 | VQFN-FCRLF-14 (2.5 x 2.5 mm) | 671 | 566 | extended | 2026-09-29T17:17:14Z | 1 | not held (export of 2026-09-25) | Digi-Key: 13558 (2026-09-29T15:28:40Z) | ACTIVE (TI page) | none on the product page | none | `hardware/research/round1/FU-B3/014-P4-stock-R5.json` |
+| R5 5 V rail | TPS62933DRLR | Texas Instruments | C3200405 | SOT-583 | 36974 | 36161 | extended | 2026-09-29T17:17:16Z | 1 | not held (export of 2026-09-25) | Digi-Key: 63937 (2026-09-29T10:00:23Z) | ACTIVE (TI page) | none on the product page | none | `hardware/research/round1/FU-B3/014-P4-stock-R5.json` |
+| R5 display supply | TPS259474ARPWR | Texas Instruments | C3662807 | VQFN-10-HR (2 x 2 mm) | 331 | 284 | extended | 2026-09-29T17:17:17Z | 1 | not held (export of 2026-09-25) | Digi-Key: 125 (2026-09-29T09:55:46Z) | ACTIVE (TI page) | none on the product page | none | `hardware/research/round1/FU-B3/014-P4-stock-R5.json` |
+| R5 encoder 12 V supply | TPS55288RPMR | Texas Instruments | C2864583 | VQFN-26-HR (3.5 x 4 mm) | 5183 | 5116 | extended | 2026-09-29T17:17:19Z | 1 | not held (export of 2026-09-25) | Digi-Key: 5262 (2026-09-29T10:00:36Z) | ACTIVE (TI page) | none on the product page | none | `hardware/research/round1/FU-B3/014-P4-stock-R5.json` |
+| R6 port supply switch | TPS259474LRPWR | Texas Instruments | C2864845 | VQFN-10-HR (2 x 2 mm) | 3795 | 3754 | extended | 2026-09-29T17:16:45Z | 20 (one per port) | not held (export of 2026-09-25) | Digi-Key: 40352 (2026-09-29T09:55:44Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-B3/015-P4-stock-R6.json` |
+| R6 I/O expander | MCP23017T-E/SS | Microchip | C558584 | SSOP-28 | 6606 | 6390 | extended | 2026-09-29T17:16:47Z | 3 (33 lines in the draft pin map, 14 usable a part because GPA7 and GPB7 are outputs only; R6 counts 2 for 26 outputs) | not held (export of 2026-09-25) | Digi-Key: 17187 (2026-09-29T09:55:57Z) | In Production (Microchip page) | not read (Microchip pages 404) | none | `hardware/research/round1/FU-B3/015-P4-stock-R6.json` |
+| R7 pack charger and power path | BQ25713RSNR | Texas Instruments | C2878935 | QFN-32-EP (4 x 4 mm) | 301 | 196 | extended | 2026-09-29T17:17:57Z | 1 | not held (export of 2026-09-25) | Digi-Key: 2103 (2026-09-29T09:56:00Z) | ACTIVE (TI page) | not read | none | `hardware/research/round1/FU-B3/016-P4-stock-R7.json` |
+| R7 cell balancing, pack overcurrent protection and bench pack balance lead | MAX17320G22+ | Analog Devices | C2914309 | QFN-24-EP (4 x 4 mm) | 578 | 482 | extended | 2026-09-29T17:18:01Z | 1 | not held (export of 2026-09-25) | Digi-Key: 355 (2026-09-29T09:56:05Z) | Active (Digi-Key, the status of record for Analog Devices) | not read | none | `hardware/research/round1/FU-B3/016-P4-stock-R7.json` |
+| R7 charger input limit | FUSB303BTMX | onsemi | C895444 | X2-QFN-12 (1.6 x 1.6 mm) | 5194 | 5163 | extended | 2026-09-29T17:18:04Z | 1 | not held (export of 2026-09-25) | Digi-Key: 4224 (2026-09-29T09:56:14Z) | Active (onsemi page) | not read | none | `hardware/research/round1/FU-B3/016-P4-stock-R7.json` |
+| R8 onboard shunt | BVR-Z-R0002-1.0 | Isabellenhütte | C6869644 | 4026 | 359 | 354 | extended | 2026-09-29T17:18:35Z | 1 | not held (export of 2026-09-25) | Digi-Key: 11190 (2026-09-29T10:20:01Z) | maker status not read (no status in the page body); Digi-Key Active, reported to the owner | none published | none | `hardware/research/round1/FU-B3/017-P4-stock-R8.json` |
+| R8 onboard shunt temperature sensor and servo supply temperature sensors | MCP9808T-E/MS | Microchip | C129490 | MSOP-8 | 764 | 713 | extended | 2026-09-29T17:18:36Z | 5 (R8 counts 1 beside the onboard shunt; the owner adds 1 beside each of the 4 TPS55285, 2026-09-30) | not held (export of 2026-09-25) | Digi-Key: 21589 (2026-09-29T10:21:59Z) | In Production (Microchip page) | no dated commitment | none | `hardware/research/round1/FU-B3/017-P4-stock-R8.json` |
+| R8 external shunt (off the board) | WSBE8518L1000JKA2 | Vishay | none (off the board, rule 1) | 8518 busbar | not applicable | not applicable | not applicable | Digi-Key 2026-09-29T10:17:26Z | 1 | not held (export of 2026-09-25) | none: no alternate found, so rule 5 has no route (reported to the owner); Digi-Key stock of the part: 418 | maker status not read (no status on the Vishay page); Digi-Key Active, reported to the owner | none published | none | `hardware/research/round1/FU-B3/017-P4-stock-R8.json` |
+| R8 port current monitor | INA3221AIRGVR | Texas Instruments | C181255 | QFN-16-EP (4 x 4 mm) | 8704 | 8561 | extended | 2026-09-29T17:18:38Z | 7 (20 ports, 3 channels a part) | not held (export of 2026-09-25) | Digi-Key: 67241 (2026-09-29T10:02:04Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-B3/017-P4-stock-R8.json` |
+| R8 port shunt | ERJ-6CWDR010V | Panasonic | C236284 | 0805 | 4062 | 4026 | extended | 2026-09-29T17:18:39Z | 20 (one per port) | not held (export of 2026-09-25) | Digi-Key: 12302 (2026-09-29T10:02:12Z) | Active (Panasonic page) | not read (Panasonic support page 404) | none | `hardware/research/round1/FU-B3/017-P4-stock-R8.json` |
+| R9 cell monitor | ADBMS1818ASWAZ-RL | Analog Devices | C5372802 | LQFP-64-EP (10 x 10 mm) | 12500 | 12495 | extended | 2026-09-29T03:15:44Z | 1 | not held (export of 2026-09-25) | Digi-Key: 564 (2026-09-29T03:18:07Z) | Active (Digi-Key, the status of record for Analog Devices) | none per part | none | `hardware/research/round1/FU-C1/012-P4-stock-R9.json` |
+| R10 converter for the accelerometer (Q4: external ADC) | ADCS7476AIMFX/NOPB | Texas Instruments | C91530 | SOT-23-6 | 2,312 | 2,279 | extended | 2026-09-29T03:29:45Z | 2 (one per axis) | not held (export of 2026-09-25) | Digi-Key: 88 (2026-09-29T02:50:49Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-C1/017-P4-stock-R10.json` |
+| R11 accelerometer (on the sensor board, V221) | ADXL316WBCSZ | Analog Devices | C662336 | LFCSP-12 | 104 | 84 | extended | 2026-09-29T07:37:58Z | 1 | not held (export of 2026-09-25) | Digi-Key: 387 (2026-09-29T06:43:02Z) | Active (Digi-Key, the status of record for Analog Devices) | none per part | none | `hardware/research/round1/FU-C2/005-P4-stock-R11.json` |
+| R11 magnetic pickup | DRV5015A1QDBZR | Texas Instruments | C2152440 | SOT-23 | 339 | 336 | extended | 2026-09-29T07:37:58Z | 1 | not held (export of 2026-09-25) | Digi-Key: 2831 (2026-09-29T02:52:55Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-C2/005-P4-stock-R11.json` |
+| R11 phase-wire clip | TLV3201AIDBVR | Texas Instruments | C105188 | SOT-23-5 | 41679 | 40423 | extended | 2026-09-29T07:37:58Z | 2 (the phase-wire clip and the optical index) | not held (export of 2026-09-25) | alternate: TLV3601DBVR (Digi-Key holds 0 of TLV3201AIDBVR, 2026-09-29T02:52:51Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | TLV3601DBVR (C5213958) | `hardware/research/round1/FU-C2/005-P4-stock-R11.json` |
+| R11 encoder input | AM26LV32EIDR | Texas Instruments | C527448 | SOIC-16 | 48987 | 48887 | extended | 2026-09-29T07:37:59Z | 1 | not held (export of 2026-09-25) | Digi-Key: 13484 (2026-09-29T02:53:00Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-C2/005-P4-stock-R11.json` |
+| R11 encoder decode, rotation from ESC, rotation inputs, BENCH (the link page of bench readings) rpm source and servo measured position; R1 microcontroller (the fixed input, not requalified by FU-A4) | RP2354B | Raspberry Pi | C39843328 | QFN-80-EP (10 x 10 mm) | 2982 | 2825 | extended | 2026-09-29T07:37:59Z | 2 (the main and the measurement coprocessor, owner, 2026-09-30) | 20 (2026-09-25) | Digi-Key as `SC1512(13)-A4`: 3560 (2026-09-29T03:48:29Z); the held 20 pass rule 4 by rule 6 | in production (Raspberry Pi RP2350 page) | RP2350 in production until at least January 2045 | none | `hardware/research/round1/FU-C2/005-P4-stock-R11.json` |
+| R12 motor temperature thermocouple | MAX31856MUD+T | Analog Devices | C2653162 | TSSOP-14 | 11,459 | 11,205 | extended | 2026-09-29T03:27:36Z | 1 | not held (export of 2026-09-25) | Digi-Key: 12,023 (2026-09-29T02:47:35Z) | Active (Digi-Key, the status of record for Analog Devices) | none published | none | `hardware/research/round1/FU-C1/020-P4-stock-R12.json` |
+| R12 motor temperature infrared (on the sensor board, V249) | MLX90614ESF-BCC-000-TU | Melexis | C7501763 | TO-39 | 311 | 308 | extended | 2026-09-29T03:27:38Z | 1 | not held (export of 2026-09-25) | Digi-Key: 933 (2026-09-29T02:47:40Z) | Active (Digi-Key, the status of record for Melexis) | not read (Melexis page answered 403) | none | `hardware/research/round1/FU-C1/020-P4-stock-R12.json` |
+| R12 external I2C ports | TCA9548APWR | Texas Instruments | C130026 | TSSOP-24 | 39,690 | 39,348 | extended | 2026-09-29T03:27:39Z | 1 | not held (export of 2026-09-25) | alternate: PCA9548APWR (Digi-Key holds 0 of TCA9548APWR, 2026-09-29T02:47:43Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | PCA9548APWR (C295762) | `hardware/research/round1/FU-C1/020-P4-stock-R12.json` |
+| R12 non-volatile store (Q8: I2C FRAM) | MB85RC256VPNF-G-AMERE2 | RAMXEED (Fujitsu, S1) | C45273903 | SOP-8, 150 mil | 6,523 | 6,467 | extended | 2026-09-29T03:27:42Z | 1 | not held (export of 2026-09-25) | Digi-Key: 484 (2026-09-29T02:47:50Z) | MP, mass produced (RAMXEED's list of FRAM parts) | none published | none | `hardware/research/round1/FU-C1/020-P4-stock-R12.json` |
+| R13 load-cell bridge ADC | ADS1235IRHBR | Texas Instruments | C2669975 | VQFN-32-EP (5 x 5 mm) | 1340 | 1220 | extended | 2026-09-29T03:27:42Z | 1 | not held (export of 2026-09-25) | Digi-Key: 0 against the gate of 50 on 2026-09-29 (2026-09-29T02:48:13Z; ADS1235IRHBT, the 250-piece reel of the same device, 401). The owner's stock exception: Digi-Key, the second vendor, read stock 0 against the gate of 50 on 2026-09-29; the owner keeps the part and notes the exception (owner, 2026-09-29) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-C1/016-P4-stock-R13.json` |
+| R13 load-cell excitation | BD450M2FP3-CE2 | ROHM | C308595 | SOT-223-4 (F) | 3165 | 3062 | extended | 2026-09-29T03:27:43Z | 1 | not held (export of 2026-09-25) | Digi-Key: 3618 (2026-09-29T02:48:18Z) | Active (ROHM page) | not on the ROHM longevity list | none | `hardware/research/round1/FU-C1/016-P4-stock-R13.json` |
+
+Every row on the board passes its gate at JLCPCB on the readings above. Every
+row whose second source is Digi-Key passes the gate there, except
+ADS1235IRHBR, which carries the owner's stock exception in its row.
+WSBE8518L1000JKA2, the external shunt, has no second source: no alternate
+is known for it, and the owner has the report.
+
+## Alternates and Q options
+
+The alternates named in the table above, each the rule-5 second source of
+its part, and the verified option of Q4 and of Q8 that the owner did not
+choose (owner, 2026-09-29).
+
+| Function | Part number | Manufacturer | LCSC | Package | JLCPCB stock | Presale | Library type | Read (UTC) | Placements per board | Held | Second source | Lifecycle status | Longevity | Alternate | Return |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| R4 gated output buffer: alternate of SN74LVC244APWR, and its rule-5 second source | 74LVC244APW,118 | Nexperia | C6079 | TSSOP-20 | 27928 | 27905 | extended | 2026-09-29T05:36:11Z | 2 | not held (export of 2026-09-25) | second source of SN74LVC244APWR | Production (Nexperia page) | Nexperia longevity table: 10 years (as of September 2025) | none | `hardware/research/round1/FU-A3/008-P4-stock-R4.json` |
+| R10 converter for the accelerometer: Q4 reference option, verified, not chosen (owner, 2026-09-29) | LM4040AIM3-3.0/NOPB | Texas Instruments | C544506 | SOT-23 (3 pins) | 2,969 | 2,955 | extended | 2026-09-29T03:29:46Z | 1 | not held (export of 2026-09-25) | Digi-Key: 26,705 (2026-09-29T03:12:13Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-C1/017-P4-stock-R10.json` |
+| R11 phase-wire clip: alternate of TLV3201AIDBVR, and its rule-5 second source | TLV3601DBVR | Texas Instruments | C5213958 | SOT-23-5 | 1623 | 1552 | extended | 2026-09-29T07:37:59Z | 2 | not held (export of 2026-09-25) | second source of TLV3201AIDBVR; Digi-Key 6102 (2026-09-29T02:52:53Z) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-C2/005-P4-stock-R11.json` |
+| R12 external I2C ports: alternate of TCA9548APWR, and its rule-5 second source | PCA9548APWR | Texas Instruments | C295762 | TSSOP-24 | 5,100 | 5,084 | extended | 2026-09-29T03:27:41Z | 1 | not held (export of 2026-09-25) | second source of TCA9548APWR; Digi-Key 13,790 (2026-09-29T02:47:45Z) | ACTIVE (TI page; Digi-Key's Not For New Designs disagrees and is written down) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-C1/020-P4-stock-R12.json` |
+| R12 non-volatile store: Q8 EEPROM option, verified, not chosen (owner, 2026-09-29) | M24256E-FMN6TP | STMicroelectronics | C5221744 | SO-8 | 125,256 | 125,243 | extended | 2026-09-29T03:27:44Z | 1 | not held (export of 2026-09-25) | Digi-Key: 185 (2026-09-29T02:47:53Z) | Active (ST page) | ST longevity: 10 years from 2025-01-01 | none | `hardware/research/round1/FU-C1/020-P4-stock-R12.json` |

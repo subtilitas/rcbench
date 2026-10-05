@@ -1,0 +1,3161 @@
+{
+ "role": "P7",
+ "category": "",
+ "label": "P7",
+ "attempt": 0,
+ "data": {
+  "files": [
+   "hardware/docs/IOBoard.md",
+   "hardware/docs/Parts.md",
+   "hardware/docs/Power.md",
+   "hardware/docs/Research.md",
+   "hardware/STATUS.md",
+   "hardware/README.md",
+   "tools/jlc_stock.py",
+   "hardware/docs/Control.md",
+   "hardware/docs/Supply.md",
+   "hardware/docs/Sensing.md"
+  ],
+  "corrections": [
+   "Parts.md copies every stock, presale and Digi-Key figure verbatim from the P4 stock return named in its row, thousands separators included; T6-stopped-1 truncated six rows at the first comma (ADCS7476AIMFX/NOPB 2,312, TCA9548APWR 39,690, MAX31856MUD+T 11,459, MB85RC256VPNF-G-AMERE2 6,523, MCP2518FDT-E/SL 28,884, TCAN3413DR 14,544).",
+   "Every item the task marks is stated on a required page: the 25 T5 conflicts and gaps as 'not known' with their evidence files (Control.md, Supply.md, Sensing.md 'Not known' sections), the 61 accepted-open functions, unconfirmed figures and T5 meta-items as 'not verified' or 'not known', the two P5 assumptions inside the PIO state machine and UART controller budget rows and the combination they rest on (Control.md), and the ADS1235IRHBR stock exception with its reason in its own Parts.md row; T6-stopped-1 left items 55 to 87 unstated.",
+   "Parts.md carries rows for the verified Q options LM4040AIM3-3.0/NOPB (Q4 reference) and M24256E-FMN6TP (Q8 EEPROM) and for the alternates 74LVC244APW,118, TLV3601DBVR and PCA9548APWR, in a second table, and Sensing.md and Control.md name each; T6-stopped-1 had no row for the two Q options.",
+   "SN74LVC1G04DBVR is booked at 3 placements (R4's 2 plus R3's 1, gate 75) with the disagreement stated as not known, rather than at either agent's count alone.",
+   "Not-held rows read 'not held (export of 2026-09-25)' instead of a bare 0; the RP2354B row carries 20 (2026-09-25) and is checked by rule 6.",
+   "IOBoard.md: 'just above the rail settings of 5.5 V and 8.4 V' (a banned word in CONTRIBUTING.md) replaced by '0.5 V and 0.3 V above the rail settings of 5.5 V and 8.4 V'; Not-known bullets on the CAN controller, the I/O expander, the shunts and the cell monitor updated to the chosen parts; the Q4, Q8 and Q9 lines changed from open to the owner's decisions of 2026-09-29.",
+   "tools/jlc_stock.py prints each problem as one '[FAIL] PART' line in the exact shortfall formats, ends with 'N problem(s)', checks the Digi-Key second-vendor gate unconditionally, prints a part that fails rule 4 while its alternate passes as [warn], resolves Digi-Key 'Duplicate Products found' and unlisted strings by one keyword search filtered by maker, reads DIGIKEY_ENV_FILE as tools/research/vendors.py does, and passes zip(strict=False) for ruff's B905.",
+   "Acronyms expanded on first use in each new page (UART, USB, IO, OE, IEC, IC, HV, API, ADC, EEPROM, TI, ST); 'now in force' reworded to 'that is in force'."
+  ],
+  "checks": {
+   "check_docs": {
+    "passed": true,
+    "output": "docs agree with the tree"
+   },
+   "ruff": {
+    "passed": true,
+    "output": "All checks passed!"
+   },
+   "jlc_stock": {
+    "passed": true,
+    "output": "exit 1: the one problem is ADS1235IRHBR at Digi-Key, the owner's accepted stock exception (owner, 2026-09-29); every other part passes, WSBE8518L1000JKA2 is noted as having no alternate, and the held RP2354B passes rule 6.\nADS1235IRHBR:\n  [ok] ADS1235IRHBR (C2669975): stock 1340, presale 1216, gate 50\n[FAIL] ADS1235IRHBR (second vendor): stock 0, gate 50\nBD450M2FP3-CE2:\n  [ok] BD450M2FP3-CE2 (C308595): stock 3105, presale 3002, gate 50\n  [ok] BD450M2FP3-CE2 at Digi-Key as BD450M2FP3-CE2: stock 3618, gate 50\n  [ok] LM4040AIM3-3.0/NOPB (C544506), not selected: stock 2969, presale 2955, gate 50\n  [ok] M24256E-FMN6TP (C5221744), not selected: stock 125241, presale 125228, gate 50\nPersonal library (rule 6):\n  [ok] RP2354B: held 20 (stated 2026-09-25), need 5; JLCPCB stock 2641, presale 2484\n1 problem(s)"
+   }
+  },
+  "group_pages": {
+   "A": "hardware/docs/Control.md",
+   "B": "hardware/docs/Supply.md",
+   "C": "hardware/docs/Sensing.md"
+  },
+  "figures": [
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 47,
+    "figure": "15120"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 47,
+    "figure": "14476"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 47,
+    "figure": "Digi-Key: 28505"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 47,
+    "figure": "answered 404"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 47,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 48,
+    "figure": "4566"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 48,
+    "figure": "4075"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 48,
+    "figure": "Digi-Key: 28115"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 48,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 49,
+    "figure": "28,884"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 49,
+    "figure": "28,715"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 49,
+    "figure": "Digi-Key: 43,486"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 49,
+    "figure": "past 3 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 49,
+    "figure": "2 (one per port)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 50,
+    "figure": "14,544"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 50,
+    "figure": "13,883"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 50,
+    "figure": "Digi-Key: 4,455"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 50,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 50,
+    "figure": "2 (one per port)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 51,
+    "figure": "233"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 51,
+    "figure": "231"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 51,
+    "figure": "Digi-Key: 2148"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 51,
+    "figure": "10 years (as of September 2025)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 51,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 52,
+    "figure": "952"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 52,
+    "figure": "949"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 52,
+    "figure": "Digi-Key: 14211"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 52,
+    "figure": "10 years (as of September 2025)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 52,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 53,
+    "figure": "307"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 53,
+    "figure": "305"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 53,
+    "figure": "Digi-Key: 280"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 53,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 53,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 54,
+    "figure": "1973"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 54,
+    "figure": "1897"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 54,
+    "figure": "Digi-Key: 36048"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 54,
+    "figure": "10 years (as of September 2025)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 54,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 55,
+    "figure": "5229"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 55,
+    "figure": "5079"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 55,
+    "figure": "Digi-Key: 27089"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 55,
+    "figure": "above 10 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 55,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 56,
+    "figure": "5252"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 56,
+    "figure": "5231"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 56,
+    "figure": "Digi-Key: 28635"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 56,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 56,
+    "figure": "1 (top of 0 to 1; 0 with the 74HC423)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 57,
+    "figure": "8928"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 57,
+    "figure": "8807"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 57,
+    "figure": "Digi-Key: 88895"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 57,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 57,
+    "figure": "2"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 58,
+    "figure": "20982"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 58,
+    "figure": "20887"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 58,
+    "figure": "Digi-Key as `BTS70041EPPXUMA1`: 34830"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 58,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 59,
+    "figure": "1126"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 59,
+    "figure": "1107"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 59,
+    "figure": "Digi-Key: 3184"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 59,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 59,
+    "figure": "4 (2 a path, top of 2 to 4)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 60,
+    "figure": "28320"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 60,
+    "figure": "26365"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 60,
+    "figure": "Digi-Key: 40281"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 60,
+    "figure": "10 (top of 8 to 10)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 61,
+    "figure": "630"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 61,
+    "figure": "593"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 61,
+    "figure": "Digi-Key: 3267"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 61,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 61,
+    "figure": "2 (top of 1 to 2)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 62,
+    "figure": "172635"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 62,
+    "figure": "172466"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 62,
+    "figure": "Digi-Key: 135525"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 62,
+    "figure": "1 (top of 0 to 1; 0 with the BTS7004-1EPP)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 63,
+    "figure": "53165"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 63,
+    "figure": "51355"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 63,
+    "figure": "Digi-Key: 248297"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 63,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 63,
+    "figure": "3 (R4 counts 2 and R3 counts 1 for one shared inverter; the true count is not known, and the gate is taken at the sum)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "94504"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "94330"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "holds 0 of SN74LVC244APWR"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 64,
+    "figure": "2 (16 PWM ports, 8 buffers a part)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "73877"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "73505"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "Digi-Key: 19254"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 65,
+    "figure": "5 (4 multiprotocol ports and the UART socket)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "401"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "395"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "Digi-Key: 3756"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 66,
+    "figure": "2 (5 to 6 lines, 4 switches a part)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "392691"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "390714"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "Digi-Key: 90872"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 67,
+    "figure": "1 (one receiver input, V68)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "3105"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "3036"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "Digi-Key: 7634"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 68,
+    "figure": "2 (one controller per input)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "671"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "566"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "Digi-Key: 13558"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 69,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "36974"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "36161"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "Digi-Key: 63937"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 70,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 71,
+    "figure": "331"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 71,
+    "figure": "284"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 71,
+    "figure": "Digi-Key: 125"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 71,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "5183"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "5116"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "Digi-Key: 5262"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 72,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "3795"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "3754"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "Digi-Key: 40352"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 73,
+    "figure": "20 (one per port)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "6606"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "6390"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "Digi-Key: 17187"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "pages 404"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 74,
+    "figure": "2 (26 outputs, 16 lines a part)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "301"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "196"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "Digi-Key: 2103"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 75,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "578"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "482"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "Digi-Key: 355"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 76,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "5194"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "5163"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "Digi-Key: 4224"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 77,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "359"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "354"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "Digi-Key: 11190"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 78,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "764"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "713"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "Digi-Key: 21589"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 79,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 80,
+    "figure": "Digi-Key stock of the part: 418"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 80,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "8704"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "8561"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "Digi-Key: 67241"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 81,
+    "figure": "7 (20 ports, 3 channels a part)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "4062"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "4026"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "Digi-Key: 12302"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "page 404"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 82,
+    "figure": "20 (one per port)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 83,
+    "figure": "12500"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 83,
+    "figure": "12495"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 83,
+    "figure": "Digi-Key: 564"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 83,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "2,312"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "2,279"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "Digi-Key: 88"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 84,
+    "figure": "2 (one per axis)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 85,
+    "figure": "104"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 85,
+    "figure": "84"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 85,
+    "figure": "Digi-Key: 387"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 85,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 86,
+    "figure": "339"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 86,
+    "figure": "336"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 86,
+    "figure": "Digi-Key: 2831"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 86,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 86,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 87,
+    "figure": "41679"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 87,
+    "figure": "40423"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 87,
+    "figure": "holds 0 of TLV3201AIDBVR"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 87,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 87,
+    "figure": "2 (the phase-wire clip and the optical index)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 88,
+    "figure": "48987"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 88,
+    "figure": "48887"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 88,
+    "figure": "Digi-Key: 13484"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 88,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 88,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "2982"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "2825"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "Digi-Key as SC1512(13)-A4: 3560"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "January 2045"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 89,
+    "figure": "20 (2026-09-25)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 90,
+    "figure": "11,459"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 90,
+    "figure": "11,205"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 90,
+    "figure": "Digi-Key: 12,023"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 90,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "311"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "308"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "Digi-Key: 933"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "answered 403"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 91,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "39,690"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "39,348"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "holds 0 of TCA9548APWR"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 92,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 93,
+    "figure": "6,523"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 93,
+    "figure": "6,467"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 93,
+    "figure": "Digi-Key: 484"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 93,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "1340"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "1220"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "Digi-Key: 0"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "401"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "250-piece reel"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 94,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 95,
+    "figure": "3165"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 95,
+    "figure": "3062"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 95,
+    "figure": "Digi-Key: 3618"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 95,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 111,
+    "figure": "27928"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 111,
+    "figure": "27905"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 111,
+    "figure": "10 years (as of September 2025)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 111,
+    "figure": "2"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 112,
+    "figure": "2,969"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 112,
+    "figure": "2,955"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 112,
+    "figure": "Digi-Key: 26,705"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 112,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 112,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 113,
+    "figure": "1623"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 113,
+    "figure": "1552"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 113,
+    "figure": "Digi-Key 6102"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 113,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 113,
+    "figure": "2"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 114,
+    "figure": "5,100"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 114,
+    "figure": "5,084"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 114,
+    "figure": "Digi-Key 13,790"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 114,
+    "figure": "typically 10 to 15 years"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 114,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 115,
+    "figure": "125,256"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 115,
+    "figure": "125,243"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 115,
+    "figure": "Digi-Key: 185"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 115,
+    "figure": "10 years from 2025-01-01"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 115,
+    "figure": "1"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 22,
+    "figure": "5 times the need, never under 50"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 23,
+    "figure": "5 boards (question S7)"
+   },
+   {
+    "file": "hardware/docs/Parts.md",
+    "line": 15,
+    "figure": "--check 5"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 21,
+    "figure": "15120 / 28505"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 22,
+    "figure": "4566 / 28115"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 22,
+    "figure": "2.0 × 1.6 mm"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 23,
+    "figure": "28,884 / 43,486"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 23,
+    "figure": "holds 32 frames against the 9 of V16"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 24,
+    "figure": "14,544 / 4,455"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 24,
+    "figure": "loop delay 180 ns maximum against 350 ns"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 25,
+    "figure": "233 / 2148"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 26,
+    "figure": "952 / 14211"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 27,
+    "figure": "307 / 280"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 27,
+    "figure": "155 mV"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 28,
+    "figure": "1973 / 36048"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 28,
+    "figure": "24 mA output"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 29,
+    "figure": "5229 / 27089"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 29,
+    "figure": "2.9 × 3.5 mm"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 29,
+    "figure": "stated bounce of 10 ms"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 30,
+    "figure": "5252 / 28635"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 31,
+    "figure": "8928 / 88895"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 32,
+    "figure": "20982 / 34830"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 33,
+    "figure": "172635 / 135525"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 34,
+    "figure": "1126 / 3184"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 34,
+    "figure": "4 a board"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 35,
+    "figure": "28320 / 40281"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 35,
+    "figure": "10 a board"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 35,
+    "figure": "100 V blocks −67.2 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 36,
+    "figure": "630 / 3267"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 36,
+    "figure": "100 V in 3.3 × 3.3 mm"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 37,
+    "figure": "53165 / 248297"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 38,
+    "figure": "94504 / 0"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 38,
+    "figure": "142 Ω series resistor"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 38,
+    "figure": "JLCPCB 27928"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 39,
+    "figure": "73877 / 19254"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 39,
+    "figure": "5 a board"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 40,
+    "figure": "401 / 3756"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 41,
+    "figure": "392691 / 90872"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 41,
+    "figure": "inputs recommended to 5.5 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 53,
+    "figure": "20 in the personal library"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 53,
+    "figure": "a need of 5"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 56,
+    "figure": "read 2982"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 57,
+    "figure": "until at least January 2045"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 65,
+    "figure": "HTTP 404"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 73,
+    "figure": "holds 2 received frames"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 78,
+    "figure": "holds 32 frames"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 78,
+    "figure": "at most 9"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 79,
+    "figure": "400 ms flash stall"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 80,
+    "figure": "at most 8"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 80,
+    "figure": "3 ms one"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 81,
+    "figure": "The MCP2515 holds 2 received frames"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 130,
+    "figure": "about 51 committed signals against 48 GPIO"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 131,
+    "figure": "10 of 12"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 132,
+    "figure": "68 of 96 words"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 132,
+    "figure": "64 for bidirectional DShot"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 132,
+    "figure": "4 for PPM"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 132,
+    "figure": "28 words free"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 133,
+    "figure": "2 of 16"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 134,
+    "figure": "16 of 24 channels"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 135,
+    "figure": "0 of 8"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 135,
+    "figure": "up to 4"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 136,
+    "figure": "up to 5 devices on 2 controllers"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 136,
+    "figure": "10 MHz"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 137,
+    "figure": "2 of 2"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 137,
+    "figure": "115,200 baud"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 138,
+    "figure": "2,088,960 bytes"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 138,
+    "figure": "272,040 bytes"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 138,
+    "figure": "206,000 bytes"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 142,
+    "figure": "3.63 V at an IOVDD (input/output supply) of 0 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 143,
+    "figure": "at 4 (gate 100)"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 143,
+    "figure": "53,165 at JLCPCB"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 143,
+    "figure": "the largest gate, 75"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 148,
+    "figure": "10 of 12 state machines"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 148,
+    "figure": "68 of 96 instruction words"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 148,
+    "figure": "2 of 16 DMA channels"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 149,
+    "figure": "16 of 24 PWM channels"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 149,
+    "figure": "other 15 PWM ports"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 160,
+    "figure": "the 5 lines"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 160,
+    "figure": "3.63 V steady limit"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 160,
+    "figure": "up to 5.2 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 161,
+    "figure": "the 200 ms figures"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 162,
+    "figure": "500 ms timeout"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 163,
+    "figure": "controlled 300 A turn-off"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 163,
+    "figure": "VGS(th) spread of 2.2 to 3.8 V"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 163,
+    "figure": "16.9 µs turn-off"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 163,
+    "figure": "37.5 A average"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 164,
+    "figure": "600 A controlled turn-off"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 164,
+    "figure": "about 136 to 169 A at 85 V a module"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 164,
+    "figure": "100 µs line"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 164,
+    "figure": "600 A shared equally over 5 modules"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 164,
+    "figure": "34 µs turn-off"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 165,
+    "figure": "under 85 V at up to 600 A"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 165,
+    "figure": "113 V at 13.3 A"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 165,
+    "figure": "121 to 126 V at 12 A"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 166,
+    "figure": "books 1 placement"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 166,
+    "figure": "books 2"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 166,
+    "figure": "over 53,000"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 168,
+    "figure": "about 51 signals"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 169,
+    "figure": "25 conflicts and gaps"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 172,
+    "figure": "7 combinations and budgets"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 173,
+    "figure": "6 budgets over their limit"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 174,
+    "figure": "5 ms a channel"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 174,
+    "figure": "P5 assumed 20 ms"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 167,
+    "figure": "115,200 baud link"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 24,
+    "figure": "3.3 V rail alone"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 34,
+    "figure": "3.3 V primary"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 131,
+    "figure": "8 for bidirectional DShot on the 4 multiprotocol ports"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 143,
+    "figure": "at 2 placements"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 143,
+    "figure": "1, 2 or 3 placements"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 160,
+    "figure": "61000-4-2 level 4"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 166,
+    "figure": "4 OE (output enable) pins"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 168,
+    "figure": "against 48 GPIO"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 172,
+    "figure": "carrying 4 port monitors"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 183,
+    "figure": "120 Ohm"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 190,
+    "figure": "3.3 V connector level"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 140,
+    "figure": "3.3 V ramp time"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 142,
+    "figure": "GPIO0 to 39"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 114,
+    "figure": "and 5 others"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 115,
+    "figure": "and 5 others"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 117,
+    "figure": "the same 2 parts"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 146,
+    "figure": "4 multiprotocol ports bound first"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 151,
+    "figure": "1 PIO state machine for the one receiver input"
+   },
+   {
+    "file": "hardware/docs/Control.md",
+    "line": 33,
+    "figure": "so 0 with the BTS7004-1EPP"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 22,
+    "figure": "3105 / 7634"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 22,
+    "figure": "2 a board"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 28,
+    "figure": "2 a board"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 23,
+    "figure": "671 / 13558"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 23,
+    "figure": "2.5 × 2.5 mm"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 23,
+    "figure": "−40 to 150 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 23,
+    "figure": "3 A against a load of 1.36 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 24,
+    "figure": "36974 / 63937"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 24,
+    "figure": "3 A against a load of 2.5 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 25,
+    "figure": "331 / 125"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 26,
+    "figure": "5183 / 5262"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 27,
+    "figure": "3795 / 40352"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 27,
+    "figure": "20 a board"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 36,
+    "figure": "20 a board"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 27,
+    "figure": "3.96 to 4.84 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 28,
+    "figure": "6606 / 17187"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 28,
+    "figure": "0x20 to 0x27"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 29,
+    "figure": "301 / 2103"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 30,
+    "figure": "578 / 355"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 30,
+    "figure": "50 mA average"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 31,
+    "figure": "5194 / 4224"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 31,
+    "figure": "2.85 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 32,
+    "figure": "359 / 11190"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 32,
+    "figure": "0.50 A of 1.5 A at 150 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 33,
+    "figure": "764 / 21589"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 33,
+    "figure": "±0.5 °C at most from −20 to 100 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 33,
+    "figure": "0x18 to 0x1F"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 33,
+    "figure": "0x40 to 0x4F"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 34,
+    "figure": "none / 418"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 34,
+    "figure": "0.73 A of 3 A at 300 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 35,
+    "figure": "8704 / 67241"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 35,
+    "figure": "7 a board"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 36,
+    "figure": "4062 / 12302"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 36,
+    "figure": "±0.5 % part"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 74,
+    "figure": "26 outputs"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 74,
+    "figure": "20 port-switch enables"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 74,
+    "figure": "5 bias selectors"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 75,
+    "figure": "1 converter enable"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 75,
+    "figure": "16 lines a part"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 93,
+    "figure": "Digi-Key 5024"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 93,
+    "figure": "JLCPCB 1"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 93,
+    "figure": "presale count of −115"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 112,
+    "figure": "rated 3 A against 1.36 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 113,
+    "figure": "rated 3 A against 2.5 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 113,
+    "figure": "1.5 A continuous"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 113,
+    "figure": "2 A peak"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 113,
+    "figure": "51 mA"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 114,
+    "figure": "6.0 V in, 8.4 V and 4.0 A out, 50 °C ambient"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 131,
+    "figure": "6.0 V in, 8.4 V and 4.0 A out, 50 °C ambient"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 114,
+    "figure": "89 to 179 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 131,
+    "figure": "89 to 179 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 140,
+    "figure": "89 to 179 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 114,
+    "figure": "125 °C recommended maximum"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 114,
+    "figure": "150 °C absolute maximum"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 115,
+    "figure": "2.25 to 2.75 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 115,
+    "figure": "above the display's 2 A peak"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 116,
+    "figure": "100 mA at 12 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 117,
+    "figure": "12.23 A at the 6.0 V floor"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 117,
+    "figure": "10.02 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 117,
+    "figure": "53.3 W through 88.7 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 117,
+    "figure": "1.30 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 117,
+    "figure": "7.5 W through 96.0 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 117,
+    "figure": "0.91 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 118,
+    "figure": "30 A continuous a cell against 12.23 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 118,
+    "figure": "2900 mAh"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 119,
+    "figure": "against 12.23 A and the P30B's 30 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 120,
+    "figure": "113 to 126 V at 12 to 13 A"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 120,
+    "figure": "85 V ceiling"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 120,
+    "figure": "11 to 45 mJ"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 120,
+    "figure": "5.6 to 22.5 mJ"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 121,
+    "figure": "0 GPIO"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 122,
+    "figure": "at most 20 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 134,
+    "figure": "at most 20 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 122,
+    "figure": "155 to 185 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 134,
+    "figure": "155 to 185 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 122,
+    "figure": "200 ms deadline"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 134,
+    "figure": "200 ms deadline"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 123,
+    "figure": "1 placement, gate 50"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 123,
+    "figure": "2 placements, need 10, gate 50"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 123,
+    "figure": "JLCPCB 0 with a presale count of −99"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 123,
+    "figure": "Digi-Key 0"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 129,
+    "figure": "Digi-Key 0"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 139,
+    "figure": "Digi-Key 0"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 129,
+    "figure": "10 units for 5 boards"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 129,
+    "figure": "stockCount 0"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 139,
+    "figure": "stockCount 0"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 129,
+    "figure": "canPresaleNumber −99"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 139,
+    "figure": "canPresaleNumber −99"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 130,
+    "figure": "−40 V to +40 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 130,
+    "figure": "5 mA pin"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 130,
+    "figure": "85 V fault"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 131,
+    "figure": "the 125 °C recommended maximum"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 132,
+    "figure": "6529 at Liion Wholesale"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 135,
+    "figure": "0x21 or 0x31"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 135,
+    "figure": "0x20 to 0x27 block"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 135,
+    "figure": "2 MCP23017 expanders"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 136,
+    "figure": "P5 assumed 20 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 136,
+    "figure": "5 ms a channel"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 136,
+    "figure": "4 INA3221 on one bus"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 136,
+    "figure": "4.84 ms of conversion"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 136,
+    "figure": "a margin of 0.16 ms"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 137,
+    "figure": "3.0 V a cell floor"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 138,
+    "figure": "off by 8.70 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 138,
+    "figure": "allowed from 8.53 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 138,
+    "figure": "inside ±0.99 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 138,
+    "figure": "about 1.0 to 1.2 %"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 139,
+    "figure": "a gate of 50"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 140,
+    "figure": "4.0 A at 8.4 V from 6.0 V"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 140,
+    "figure": "50 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 140,
+    "figure": "at or under 125 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 142,
+    "figure": "4.7 µH"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 142,
+    "figure": "28 A saturation"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 142,
+    "figure": "8.4 mΩ DC resistance at most"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 142,
+    "figure": "−55 to 150 °C"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 35,
+    "figure": "7 parts for 20 ports"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 129,
+    "figure": "(2 placements)"
+   },
+   {
+    "file": "hardware/docs/Supply.md",
+    "line": 95,
+    "figure": "and 2 others"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 27,
+    "figure": "12500 / 564"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 27,
+    "figure": "±4.8 mV at 4.2 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 27,
+    "figure": "±6 mV check"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 28,
+    "figure": "2,312 / 88"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 28,
+    "figure": "11.34 at least over −40 to 125 °C"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 28,
+    "figure": "aperture jitter 30 ps"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 29,
+    "figure": "104 / 387"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 29,
+    "figure": "100 pF on XOUT"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 29,
+    "figure": "1.000 µs of delay variation at 1,092 Hz"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 29,
+    "figure": "1.244 µs share"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 29,
+    "figure": "210 µg/√Hz"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 30,
+    "figure": "339 / 2831"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 30,
+    "figure": "0.7 mT"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 30,
+    "figure": "20 kHz guaranteed bandwidth"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 31,
+    "figure": "41679 / 0"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 31,
+    "figure": "55 ns maximum delay"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 31,
+    "figure": "40 µA supply current"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 31,
+    "figure": "JLCPCB 1623"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 32,
+    "figure": "48987 / 13484"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 32,
+    "figure": "26 ns maximum delay"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 32,
+    "figure": "6 ns maximum output skew"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 33,
+    "figure": "held 20"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 34,
+    "figure": "11,459 / 12,023"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 34,
+    "figure": "±1.51 °C against ±2 °C"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 34,
+    "figure": "±45 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 35,
+    "figure": "311 / 933"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 35,
+    "figure": "35° view"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 35,
+    "figure": "±3 °C at most over 0 to 200 °C"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 36,
+    "figure": "39,690 / 0"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 36,
+    "figure": "JLCPCB 5,100"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 37,
+    "figure": "6,523 / 484"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 37,
+    "figure": "32,768 bytes against 792"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 37,
+    "figure": "10^12 cycles a byte"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 38,
+    "figure": "1340 / 0"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 38,
+    "figure": "0.13 µV RMS"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 38,
+    "figure": "1200 samples a second"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 38,
+    "figure": "gain 128"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 38,
+    "figure": "0.170 µV"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 39,
+    "figure": "3165 / 3618"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 39,
+    "figure": "0 to 60 mA"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 46,
+    "figure": "stock 0 against the gate of 50"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 47,
+    "figure": "401"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 48,
+    "figure": "250-piece reel"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 55,
+    "figure": "300-piece reel"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 57,
+    "figure": "at least 16 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 57,
+    "figure": "packs under 16 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 65,
+    "figure": "JLCPCB 2,969"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 65,
+    "figure": "Digi-Key 26,705"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 76,
+    "figure": "2 PIO state machines"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 89,
+    "figure": "JLCPCB 125,256"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 89,
+    "figure": "Digi-Key 185"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 99,
+    "figure": "1 mA preload"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 109,
+    "figure": "1 of the 2 SPI"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 109,
+    "figure": "0 of the RP2354B's 8 ADC inputs"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 110,
+    "figure": "up to 4 of the RP2354B's 8 ADC inputs"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 111,
+    "figure": "0x50 to 0x57"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 111,
+    "figure": "0x40 to 0x4F"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 112,
+    "figure": "0x40 to 0x4F"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 118,
+    "figure": "1.244 µs at 1,092 Hz (65,535 rpm)"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 118,
+    "figure": "10 to 70 µs"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 27,
+    "figure": "1 to 16 cells"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 32,
+    "figure": "3.3 V quad receiver"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 35,
+    "figure": "at 3.3 V"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 73,
+    "figure": "and 4 others"
+   },
+   {
+    "file": "hardware/docs/Sensing.md",
+    "line": 75,
+    "figure": "and 2 others"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 10,
+    "figure": "2026-09-28 to 2026-09-30"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 61,
+    "figure": "held 20"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 179,
+    "figure": "32 frames"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 391,
+    "figure": "0x20 to 0x27"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 372,
+    "figure": "50 mA average"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 391,
+    "figure": "0x21"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 358,
+    "figure": "0.5 V and 0.3 V above the rail settings of 5.5 V and 8.4 V"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 454,
+    "figure": "2 PIO state machines"
+   },
+   {
+    "file": "hardware/docs/IOBoard.md",
+    "line": 391,
+    "figure": "2 parts"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 5,
+    "figure": "2026-09-28 to 2026-09-30"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 6,
+    "figure": "9 follow-up tasks"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 6,
+    "figure": "at most 32 agents"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 13,
+    "figure": "`be1f24767452`"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 14,
+    "figure": "`c25aa863372d`"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 15,
+    "figure": "`c25aa863372d`"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 16,
+    "figure": "`249be1e5ea81`"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 17,
+    "figure": "`10b0bade34de`"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 18,
+    "figure": "`e13f5f60d2e5`"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 19,
+    "figure": "`e13f5f60d2e5`"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 20,
+    "figure": "`e13f5f60d2e5`"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 24,
+    "figure": "`e13f5f60d2e5`"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 21,
+    "figure": "`9460c22ec32d`"
+   },
+   {
+    "file": "hardware/docs/Research.md",
+    "line": 24,
+    "figure": "`9460c22ec32d`"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 7,
+    "figure": "2026-09-28 to 2026-09-30"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 85,
+    "figure": "2026-09-28 to 2026-09-30"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 8,
+    "figure": "49 parts"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 40,
+    "figure": "21 parts"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 41,
+    "figure": "15 parts"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 42,
+    "figure": "13 parts"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 40,
+    "figure": "2 of each"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 46,
+    "figure": "stock 0 against the gate of 50"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 56,
+    "figure": "6.0 V in, 8.4 V and 4.0 A out and 50 °C ambient"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 56,
+    "figure": "89 to 179 °C"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 56,
+    "figure": "against 125 °C"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 37,
+    "figure": "JLCPCB 0 with a presale count of −99"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 57,
+    "figure": "JLCPCB 0 with a presale count of −99"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 37,
+    "figure": "Digi-Key 0"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 57,
+    "figure": "Digi-Key 0"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 57,
+    "figure": "10 needed for 5 boards"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 57,
+    "figure": "±40 V differential rating"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 57,
+    "figure": "85 V fault"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 59,
+    "figure": "under 85 V at up to 600 A"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 60,
+    "figure": "the 5 lines"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 60,
+    "figure": "3.63 V limit"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 62,
+    "figure": "±0.99 % HV trip band"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 63,
+    "figure": "1.244 µs delay-variation"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 64,
+    "figure": "about 51 GPIO"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 64,
+    "figure": "against 48"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 64,
+    "figure": "0x21"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 64,
+    "figure": "5 ms a channel"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 64,
+    "figure": "20 ms P5 assumed"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 89,
+    "figure": "9 follow-up tasks"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 89,
+    "figure": "at most 32 agents"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 15,
+    "figure": "20 of them"
+   },
+   {
+    "file": "hardware/STATUS.md",
+    "line": 15,
+    "figure": "12 TPS55285"
+   },
+   {
+    "file": "hardware/README.md",
+    "line": 10,
+    "figure": "2026-09-28 to 2026-09-30"
+   },
+   {
+    "file": "hardware/README.md",
+    "line": 11,
+    "figure": "49 parts"
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 21,
+    "figure": "6.0 V in, 8.4 V and 4.0 A out and 50 °C ambient"
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 21,
+    "figure": "89 to 179 °C"
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 21,
+    "figure": "125 °C recommended maximum"
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 23,
+    "figure": "7 parts"
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 23,
+    "figure": "10 mΩ"
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 23,
+    "figure": "20 ports"
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 24,
+    "figure": "JLCPCB 0 with a presale count of −99"
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 24,
+    "figure": "Digi-Key 0"
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 25,
+    "figure": "150 A"
+   },
+   {
+    "file": "hardware/docs/Power.md",
+    "line": 188,
+    "figure": "300 A"
+   }
+  ]
+ }
+}

@@ -1,0 +1,1284 @@
+{
+ "role": "P4",
+ "category": "R8",
+ "label": "P4-datasheet-R8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "verifier": "datasheet",
+  "parts": [
+   {
+    "function": "Motor monitor",
+    "part": "INA238AIDGSR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "fixed part",
+      "stated": "INA238, DEVICE_ID 3Fh reset 2381h",
+      "read": "INA238, SLYS025B (January 2021, revised May 2025); section 6.6.1.17 DEVICE_ID (address 3Fh) reset 2381h",
+      "source": "https://www.ti.com/lit/ds/symlink/ina238.pdf (vendors.py fetch chrome, HTTP 200), section 6.6.1.17",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "bus and input rating",
+      "stated": "VBUS -0.3 to 85 V, IN+/IN- common mode -0.3 to 85 V absolute maximum; VCM -0.3 to 85 V recommended",
+      "read": "Absolute maximum: VIN+/VIN- common mode -0.3 to 85 V, VVBUS -0.3 to 85 V, differential +/-40 V; recommended VCM -0.3 to 85 V; VBUS input range 0 to 85 V. 67.2 V pack is under 85 V",
+      "source": "SLYS025B sections 5.1, 5.3, 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "trip inside full scale",
+      "stated": "VDIFF +/-40.96 mV (ADCRANGE 1): 150 A x 200 uOhm = 30 mV onboard, 300 A x 100 uOhm = 30 mV external",
+      "read": "VDIFF -40.96 to 40.96 mV at ADCRANGE 1, -40 to 125 degC. 150 A x 200 uOhm = 30 mV (30.3 mV at +1 %), 300 A x 100 uOhm = 30 mV (31.5 mV at +5 %), both inside",
+      "source": "SLYS025B section 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "current accuracy",
+      "stated": "Vos +/-5 uV, drift +/-20 nV/degC; gain +/-0.1 %, drift +/-25 ppm/degC; after calibration 0.5 uV and 0.0625 %; onboard 1.22 A at 150 A, 49 mA at 15 A; external 0.84 A at 300 A, 47 mA at 15 A",
+      "read": "Vos +/-5 uV max at VCM 48 V and at 0 V; drift +/-20 nV/degC; gain +/-0.1 %, drift +/-25 ppm/degC; INL +/-2 m%; CMRR 140 dB min (0.1 uV/V). P2's arithmetic reproduces. It leaves out the common-mode term: 5 to 67.2 V moves the offset by up to 6.2 uV after one calibration, 31 mA on 200 uOhm and 62 mA on 100 uOhm. Totals 1.25 A at 150 A and 80 mA at 15 A onboard, 0.90 A at 300 A and 109 mA at 15 A external, inside 1.5 A, 3 A and 0.15 A. The rank-1 shunts now named (BVR 20 ppm/K, WSBE 10 ppm/K) leave more margin",
+      "source": "SLYS025B section 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "voltage accuracy",
+      "stated": "VBUS gain +/-0.1 %, drift +/-25 ppm/degC; offset +/-5 mV, drift +/-40 uV/degC: 14 mV (0.28 %) at 5 V, 115 mV (0.17 %) at 67.2 V",
+      "read": "GBERR +/-0.1 %, GB_DRFT +/-25 ppm/degC, Vos_bus +/-5 mV, drift +/-40 uV/degC, LSB 3.125 mV: 14.1 mV (0.28 %) at 5 V, 115.2 mV (0.17 %) at 67.2 V over +/-25 K, uncalibrated",
+      "source": "SLYS025B section 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "external-path resolution",
+      "stated": "1 LSB 1.25 uV at ADCRANGE 1: 12.5 mA on 100 uOhm",
+      "read": "shunt LSB 1.25 uV at ADCRANGE 1: 12.5 mA on 100 uOhm, finer than 25 mA",
+      "source": "SLYS025B section 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "reading window",
+      "stated": "conversion time 50 us to 4120 us per channel, averaging 1 to 1024; for example 1052 us shunt plus 1052 us bus times 8 averages = 16.8 ms",
+      "read": "TCT 50, 84, 150, 280, 540, 1052, 2074, 4120 us; AVG field 1, 4, 16, 64, 128, 256, 512 or 1024 (Table 6-6). 8 averages is not a setting, so P2's example cannot be configured; 1052 us + 1052 us x 4 = 8.4 ms and 540 us + 540 us x 16 = 17.3 ms (+1 % oscillator) do fit in 20 ms",
+      "source": "SLYS025B section 5.5 and Table 6-6 (ADC_CONFIG)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "charge and energy",
+      "stated": "CURRENT (07h, 16 bit), POWER (08h, 24 bit); no ENERGY or CHARGE register",
+      "read": "Table 6-3: CURRENT 7h 16 bit, POWER 8h 24 bit; registers 0h to 11h, 3Eh, 3Fh; no energy or charge register",
+      "source": "SLYS025B Table 6-3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "reading of record",
+      "stated": "I2C, 1 to 400 kHz fast mode",
+      "read": "I2C fast mode 1 to 400 kHz and high-speed mode to 2.94 MHz",
+      "source": "SLYS025B section 5.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "switch action",
+      "stated": "ALERT open drain, may go to a GPIO or stay unconnected",
+      "read": "pin 3 ALERT, open-drain output, active low by default; absolute maximum VS + 0.3 V",
+      "source": "SLYS025B Table 4-1, section 5.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "ambient range",
+      "stated": "TA -40 to 125 degC",
+      "read": "TA -40 to 125 degC recommended",
+      "source": "SLYS025B section 5.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "logic and addresses",
+      "stated": "VS 2.7 to 5.5 V, VIH 1.2 V; 16 addresses 1000000b to 1001111b by A0 and A1",
+      "read": "VS 2.7 to 5.5 V; VIH 1.2 V min, VIL 0.4 V max; SDA and SCL absolute maximum 6 V; Table 6-2: 16 addresses 0x40 to 0x4F, 12 of them at 0x44 or above",
+      "source": "SLYS025B sections 5.1, 5.5, Table 6-2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments (datasheet SLYS025B); S1 Texas Instruments",
+      "read": "Texas Instruments on the datasheet; Texas Instruments is on the S1 list",
+      "source": "SLYS025B; Research.md S1 at e13f5f6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     }
+    ]
+   },
+   {
+    "function": "Motor monitor",
+    "part": "INA237AIDGSR",
+    "kind": "alternate",
+    "verdict": "refuted",
+    "refutation": "Current accuracy (V166) is not met after the one calibration. SBOSA20A gives CMRR 120 dB minimum over -0.3 to 85 V (INA238: 140 dB) and specifies Vos only at VCM 0 V. The offset can move 1 uV per volt of pack voltage, 62 uV across 5 to 67.2 V (31 uV with the calibration at mid-range): 0.31 A (0.16 A) on the 200 uOhm onboard shunt and 0.62 A (0.31 A) on the 100 uOhm external shunt, against +/-0.15 A below 15 A. Onboard at 150 A with the BVE figures P2 used: 1.31 A + 0.31 A = 1.62 A against 1.5 A. So it does not function as the INA238 does in this circuit and firmware configuration, though pins, registers and addresses match",
+    "checks": [
+     {
+      "figure": "fixed part",
+      "stated": "INA237: same pin order A1, A0, ALERT, SDA, SCL, VS, GND, VBUS, IN-, IN+; same registers 0h to 11h, 3Eh; no 3Fh DEVICE_ID",
+      "read": "INA237 (SBOSA20A, February 2021, revised May 2022): Table 5-1 pin order as stated; Table 7-3 registers 0h to 11h and 3Eh (MANUFACTURER_ID 5449h), no 3Fh. Not the INA238; it stands in as the rule-5 alternate",
+      "source": "https://www.ti.com/lit/ds/symlink/ina237.pdf (vendors.py fetch chrome, HTTP 200), Table 5-1, Table 7-3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "bus and input rating",
+      "stated": "VBUS and common mode -0.3 to 85 V absolute maximum; differential +/-40 V",
+      "read": "VIN+/VIN- common mode -0.3 to 85 V, VVBUS -0.3 to 85 V, differential +/-40 V absolute maximum; VCM -0.3 to 85 V recommended",
+      "source": "SBOSA20A sections 6.1, 6.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "trip inside full scale",
+      "stated": "VDIFF +/-40.96 mV at ADCRANGE 1; 30 mV with either rank-1 shunt",
+      "read": "VDIFF +/-40.96 mV at ADCRANGE 1, -40 to 125 degC; 30 mV at 150 A x 200 uOhm and 300 A x 100 uOhm",
+      "source": "SBOSA20A section 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "current accuracy",
+      "stated": "Vos +/-50 uV, drift +/-20 nV/degC; gain +/-0.3 %, drift +/-50 ppm/degC. After calibration: 0.5 uV and 0.125 %; onboard 1.31 A at 150 A, 59 mA at 15 A; external 0.84 A plus 0.19 A at 300 A",
+      "read": "Vos +/-50 uV max at VCM 0 V only; drift +/-20 nV/degC; gain +/-0.3 %, drift +/-50 ppm/degC; CMRR 120 dB min (up to 1 uV/V). The common-mode term P2 left out: up to 62 uV across 5 to 67.2 V after one calibration (31 uV at a mid-range calibration point): 0.31 A (0.16 A) on 200 uOhm, 0.62 A (0.31 A) on 100 uOhm, against +/-0.15 A below 15 A; 1.62 A at 150 A onboard against 1.5 A",
+      "source": "SBOSA20A section 6.5",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "voltage accuracy",
+      "stated": "VBUS gain +/-0.3 %, drift +/-50 ppm/degC, offset +/-5 mV, drift +/-100 uV/degC: 29 mV (0.57 %) at 5 V, uncalibrated",
+      "read": "GBERR +/-0.3 %, GB_DRFT +/-50 ppm/degC, Vos_bus +/-5 mV, drift +/-100 uV/degC: 28.8 mV (0.58 %) at 5 V, 293 mV (0.44 %) at 67.2 V over +/-25 K",
+      "source": "SBOSA20A section 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "external-path resolution",
+      "stated": "1.25 uV LSB: 12.5 mA on 100 uOhm",
+      "read": "shunt LSB 1.25 uV at ADCRANGE 1: 12.5 mA on 100 uOhm",
+      "source": "SBOSA20A section 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "reading window",
+      "stated": "50 us to 4120 us conversion, 1 to 1024 averages",
+      "read": "TCT 50 to 4120 us in the same 8 steps as the INA238; ADC_CONFIG fields and reset FB68h identical; 1052 us + 1052 us x 4 = 8.4 ms fits in 20 ms",
+      "source": "SBOSA20A section 6.5 and ADC_CONFIG register",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "charge and energy",
+      "stated": "CURRENT 07h, POWER 08h",
+      "read": "Table 7-3: CURRENT 7h 16 bit, POWER 8h 24 bit",
+      "source": "SBOSA20A Table 7-3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "reading of record",
+      "stated": "I2C",
+      "read": "I2C fast mode 1 to 400 kHz, high-speed to 2.94 MHz",
+      "source": "SBOSA20A section 6.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "switch action",
+      "stated": "ALERT open drain",
+      "read": "pin 3 ALERT open-drain output, active low by default",
+      "source": "SBOSA20A Table 5-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "ambient range",
+      "stated": "-40 to 125 degC",
+      "read": "TA -40 to 125 degC recommended",
+      "source": "SBOSA20A section 6.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "logic and addresses",
+      "stated": "VS 2.7 to 5.5 V; 16 addresses by A0 and A1 (Table 7-2)",
+      "read": "VS 2.7 to 5.5 V, VIH 1.2 V min; Table 7-2: 16 addresses 0x40 to 0x4F, the same pin settings as the INA238's Table 6-2",
+      "source": "SBOSA20A section 6.5, Table 7-2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "pin-for-pin match",
+      "stated": "Same VSSOP-10 pin order, same register map 0h to 11h and 3Eh, same 16 addresses",
+      "read": "DGS VSSOP-10 on both; pins 1 A1, 2 A0, 3 ALERT, 4 SDA, 5 SCL, 6 VS, 7 GND, 8 VBUS, 9 IN-, 10 IN+ on both (SLYS025B Table 4-1, SBOSA20A Table 5-1); same thermal data (RthetaJA 177.6 degC/W)",
+      "source": "SLYS025B Table 4-1; SBOSA20A Table 5-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "functional match",
+      "stated": "same register map, addresses and SHUNT_CAL equation; no DEVICE_ID at 3Fh; meets V166 only after the offset calibration",
+      "read": "Register field names and reset values of 0h to 11h and 3Eh match; SHUNT_CAL = 819.2e6 x CURRENT_LSB x RSHUNT on both; 3Fh absent. It does not meet V166 after the one calibration: CMRR 120 dB against the INA238's 140 dB leaves up to 62 uV of offset change across the pack range (0.31 A onboard, 0.62 A external against 0.15 A below 15 A)",
+      "source": "SLYS025B and SBOSA20A sections 5.5/6.5 and register maps",
+      "agrees": false,
+      "passes": false,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments (datasheet SBOSA20A); S1 Texas Instruments",
+      "read": "Texas Instruments on the datasheet; on the S1 list",
+      "source": "SBOSA20A; Research.md S1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     }
+    ]
+   },
+   {
+    "function": "Onboard shunt temperature sensor",
+    "part": "MCP9808T-E/MS",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "watched temperature",
+      "stated": "digital I2C temperature sensor, placed beside the shunt; 8L-MSOP thermal response 1.4 s typical to 63 % (air to oil bath)",
+      "read": "digital I2C/SMBus temperature sensor; thermal response 25 degC air to 125 degC oil bath, 8L-MSOP 1.4 s typical to 63 %. Placement beside the shunt is a layout matter",
+      "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/MCP9808-0.5C-Maximum-Accuracy-Digital-Temperature-Sensor-Data-Sheet-DS20005095B.pdf (vendors.py fetch chrome, HTTP 200), DC characteristics",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "range",
+      "stated": "specified temperature range -40 to +125 degC",
+      "read": "specified temperature range TA -40 to +125 degC",
+      "source": "DS20005095B temperature characteristics",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "accuracy",
+      "stated": "+/-0.5 degC maximum for -20 degC < TA <= +100 degC at VDD 3.3 V, lifetime drift included; +/-1.0 degC maximum for -40 to +125 degC",
+      "read": "TACY -0.5 to +0.5 degC for -20 < TA <= 100 degC at VDD 3.3 V (Note 1: includes lifetime drift); -1.0 to +1.0 degC for -40 to 125 degC under the table's VDD 2.7 to 5.5 V; supply rejection -0.1 degC/V typical. Worst case +/-1.0 degC against +/-2 degC",
+      "source": "DS20005095B Temperature Sensor DC Characteristics",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "interface",
+      "stated": "VDD 2.7 to 5.5 V; I2C/SMBus; VIH 0.7 VDD; address 0011 A2 A1 A0, 0x18 to 0x1F",
+      "read": "VDD 2.7 to 5.5 V; I2C/SMBus; VIH 0.7 VDD min; Table 3-2 address 0011 A2 A1 A0 (0x18 to 0x1F)",
+      "source": "DS20005095B features, digital I/O characteristics, Table 3-2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "board ambient",
+      "stated": "-40 to +125 degC",
+      "read": "specified -40 to +125 degC",
+      "source": "DS20005095B",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Microchip (datasheet DS20005095B); S1 Microchip",
+      "read": "Microchip Technology on the datasheet; Microchip is on the S1 list",
+      "source": "DS20005095B; Research.md S1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     }
+    ]
+   },
+   {
+    "function": "External shunt",
+    "part": "WSBE8518L1000JKA2",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "resistance",
+      "stated": "100 uOhm (L1000), +/-5 % (J)",
+      "read": "WSBE8518: 100 uOhm available, tolerance +/-5 %; part number L1000 = 0.0001 Ohm, J = +/-5 %: 95 to 105 uOhm, inside 50 to 136 uOhm",
+      "source": "https://www.vishay.com/docs/30424/wsbeseries.pdf (vendors.py fetch chrome, HTTP 200), document 30424 revision 04-Jun-2024, standard electrical specifications and part numbering",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "highest current and duty",
+      "stated": "P70 degC 36 W; maximum current (P/R)^1/2 = 600 A; (300 A)^2 x 100 uOhm = 9 W",
+      "read": "power rating 36 W at 70 degC, full rating below 70 degC ambient; maximum current (P/R)^1/2 = 600 A; 9 W at 300 A",
+      "source": "30424 standard electrical and technical specifications, derating curve",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "accuracy share",
+      "stated": "+/-10 ppm/degC for 100 uOhm: 0.937 % / 10 ppm/K = 937 K of allowed change; no TCR measurement range stated",
+      "read": "TCR +/-10 ppm/degC for 100 uOhm, no measurement range stated; budget (3 A - 0.19 A)/300 A = 0.937 %: 937 K, beyond the -65 to +170 degC range",
+      "source": "30424 technical specifications",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "Kelvin sense",
+      "stated": "A2: 2 pins; voltage sense pins in position 1 and 4, position 2 and 3 blank",
+      "read": "special code A2 = 2 pins; connection options A series: voltage sense pins in position 1 and 4, 2 and 3 blank; drawing WSBE8518L1000JTA2: pins 0.300 in (7.62 mm) apart, 0.320 in (8.13 mm) ref high",
+      "source": "30424 part numbering, page 2 drawing, page 6 connection options",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "vendor",
+      "stated": "Digi-Key 541-WSBE8518L1000JKA2-ND, Bulk",
+      "read": "Digi-Key 541-WSBE8518L1000JKA2-ND, Bulk, stock 418, maker Vishay Dale, Active, lead time 48 weeks (returned cached)",
+      "source": "vendors.py digikey WSBE8518L1000JKA2 (https://api.digikey.com/products/v4/search/keyword reading of 2026-09-29T10:17:26Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:17:26Z"
+     },
+     {
+      "figure": "ambient range",
+      "stated": "operating temperature range -65 to +170 degC",
+      "read": "operating temperature range -65 to +170 degC",
+      "source": "30424 technical specifications",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Vishay Dale (datasheet 30424); S1/S2 Vishay",
+      "read": "Vishay Dale on the datasheet; Vishay is on S1 and so on S2",
+      "source": "30424; Research.md S1, S2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     }
+    ]
+   },
+   {
+    "function": "External shunt",
+    "part": "WSBS8518L1000JK20",
+    "kind": "alternate",
+    "verdict": "refuted",
+    "refutation": "The sense connections are not the same as the WSBE8518L1000JKA2's. The re-rank compared the WSBE's 7.62 mm with 30341's 7.87 mm as the same 'dimension A'; they are different dimensions. On 30424 the 0.300 in (7.62 mm) is the spacing of the two sense pins, which sit in a 4-position header (positions 1 and 4), 8.13 mm ref high. On 30341 the 0.310 in (7.87 mm) is the height of the sense pins, and the pin spacing is dimension B = 0.495 in (12.57 mm) for 100 uOhm, two single pins. A sense lead terminated in a housing for the WSBE's pins does not fit the WSBS8518...20. The bolt mounting matches (85 x 18 x 3 mm, 7 mm holes at 60 mm), and the part fits the same connections only if each sense lead ends in a separate contact per pin",
+    "checks": [
+     {
+      "figure": "resistance",
+      "stated": "100 uOhm, +/-5 %",
+      "read": "100 uOhm available, tolerance +/-5 % (J) or +/-10 % (K); L1000 J: 95 to 105 uOhm",
+      "source": "https://www.vishay.com/doc?30341 (redirect to docs/30341/wsbs8518-20.pdf, vendors.py fetch chrome, HTTP 200), revision 26-May-2026",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "highest current and duty",
+      "stated": "36 W at 70 degC; 9 W at 300 A",
+      "read": "36 W at 70 degC, derating to 0 at 170 degC; maximum current (P/R)^1/2 = 600 A; 9 W at 300 A",
+      "source": "30341 standard electrical specifications and derating curve",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "accuracy share",
+      "stated": "+/-175 ppm/degC for 100 uOhm: holds for a temperature change up to 53 K",
+      "read": "TCR +/-175 ppm/degC for 100 uOhm/125 uOhm (element +/-20); 0.937 %/175 ppm = 53.5 K. Estimated change: 25 K ambient plus at most 18.5 K for 270 J (9 W x 30 s) into 36.9 g (about 14.6 J/K, adiabatic), about 44 K; the thermal resistance of the mounting is not stated",
+      "source": "30341 technical specifications and weight",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "Kelvin sense",
+      "stated": "two sense pins, minimum pull strength 200 N",
+      "read": "special code 20 = sense pins attached; note: minimum pull strength of sense pins 200 N",
+      "source": "30341 part numbering and page 2 note",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "vendor",
+      "stated": "listed",
+      "read": "Digi-Key 541-3323-ND, Bulk, stock 67, Vishay Dale, Active, lead time 49 weeks (returned cached; Digi-Key's datasheet link is 30134)",
+      "source": "vendors.py digikey WSBS8518L1000JK20 (https://api.digikey.com/products/v4/search/WSBS8518L1000JK20/productdetails, reading of 2026-09-29T10:02:17Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:02:17Z"
+     },
+     {
+      "figure": "ambient range",
+      "stated": "-65 to +170 degC",
+      "read": "operating temperature range -65 to +170 degC",
+      "source": "30341 technical specifications",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "pin-for-pin match",
+      "stated": "same 85 x 18 x 3 mm body, 7 mm holes at 60 mm; two sense pins; dimension A 7.87 mm on 30341 against 7.62 mm on the WSBE drawing, a 0.25 mm difference",
+      "read": "Body 85 x 18 x 3 mm and 7 mm holes at 60 mm match. Sense pins do not: WSBE...A2 pins 7.62 mm apart in a 4-position header (positions 1 and 4), 8.13 mm ref high; WSBS8518...20 single pins 12.57 mm apart (B, 100 uOhm), 7.87 mm high. The 7.87 mm is a pin height, not the 7.62 mm spacing",
+      "source": "30424 page 2 drawing WSBE8518L1000JTA2 and page 6; 30341 page 2 drawing and A/B table (rendered and read)",
+      "agrees": false,
+      "passes": false,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "functional match",
+      "stated": "100 uOhm, +/-5 %; +/-175 ppm/degC meets the accuracy share up to 53 K",
+      "read": "100 uOhm +/-5 %: the same INA238 range and SHUNT_CAL after the per-path calibration; +/-175 ppm/degC holds to 53.5 K against an estimated 44 K",
+      "source": "30341; 30424",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Vishay Dale (datasheet 30341); S1 Vishay",
+      "read": "Vishay Dale on the datasheet; Vishay on S1/S2",
+      "source": "30341; Research.md S1, S2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     }
+    ]
+   },
+   {
+    "function": "External shunt sense input",
+    "part": "INA238AIDGSR",
+    "kind": "first",
+    "verdict": "refuted",
+    "refutation": "Input withstand (V179) fails: absolute maximum differential (VIN+) - (VIN-) is -40 to +40 V against 85 V between the leads in either polarity, and input current into any pin is limited to 5 mA (SLYS025B section 5.1). P2 reports the same failure; the part is a fixed input and is reported to the owner, not replaced",
+    "checks": [
+     {
+      "figure": "common mode",
+      "stated": "VCM -0.3 to 85 V",
+      "read": "VCM -0.3 to 85 V (recommended and absolute maximum), covering high-side leads at 67.2 V",
+      "source": "SLYS025B sections 5.1, 5.3, 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "bus-voltage connection",
+      "stated": "VBUS separate pin 8, 0 to 85 V, ZVBUS 0.8 to 1.2 Mohm",
+      "read": "pin 8 VBUS, bus input 0 to 85 V, ZVBUS 0.8 to 1.2 MOhm in active mode (56 to 84 uA at 67.2 V); separate from IN+, so it can be tapped ahead of the IN+ filter resistor",
+      "source": "SLYS025B Table 4-1, section 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "input withstand",
+      "stated": "differential (IN+) - (IN-) absolute maximum +/-40 V; 5 mA into any pin; common mode to 85 V passes",
+      "read": "differential -40 to 40 V absolute maximum; common mode -0.3 to 85 V; 5 mA into any pin. 85 V between the leads exceeds +/-40 V",
+      "source": "SLYS025B section 5.1",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "Kelvin and filter",
+      "stated": "section 7.4.1 Kelvin connection; RDIFF 92 kohm and IB 2.5 nA bound the filter resistor",
+      "read": "7.4.1: connect IN+ and IN- with a Kelvin or 4-wire connection; IB 2.5 nA max at VCM 85 V, RDIFF 92 kOhm",
+      "source": "SLYS025B sections 7.4.1, 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "monitor",
+      "stated": "INA238",
+      "read": "INA238, DEVICE_ID 2381h",
+      "source": "SLYS025B section 6.6.1.17",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments (SLYS025B); S1 Texas Instruments",
+      "read": "Texas Instruments; on S1",
+      "source": "SLYS025B; Research.md S1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     }
+    ]
+   },
+   {
+    "function": "External shunt sense input",
+    "part": "INA237AIDGSR",
+    "kind": "alternate",
+    "verdict": "refuted",
+    "refutation": "Input withstand (V179) fails as for the INA238: differential absolute maximum +/-40 V against 85 V (SBOSA20A section 6.1). The functional match fails on the external path: CMRR 120 dB minimum lets the offset move up to 62 uV across 5 to 67.2 V after one calibration, 0.62 A on the 100 uOhm external shunt against +/-0.15 A below 15 A (V166)",
+    "checks": [
+     {
+      "figure": "common mode",
+      "stated": "not given (no shortlist record for this function)",
+      "read": "VCM -0.3 to 85 V",
+      "source": "SBOSA20A sections 6.1, 6.3, 6.5",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "bus-voltage connection",
+      "stated": "not given (no shortlist record for this function)",
+      "read": "pin 8 VBUS, 0 to 85 V, ZVBUS 0.8 to 1.2 MOhm, separate from IN+",
+      "source": "SBOSA20A Table 5-1, section 6.5",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "input withstand",
+      "stated": "not given (no shortlist record for this function); P2's report: differential +/-40 V also",
+      "read": "differential -40 to 40 V absolute maximum, 5 mA into any pin: fails 85 V between the leads",
+      "source": "SBOSA20A section 6.1",
+      "agrees": false,
+      "passes": false,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "Kelvin and filter",
+      "stated": "not given (no shortlist record for this function)",
+      "read": "IB 2.5 nA max, RDIFF 92 kOhm; IN+ to the supply side, IN- to the load side for high side",
+      "source": "SBOSA20A Table 5-1, section 6.5",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "monitor",
+      "stated": "not given (no shortlist record for this function)",
+      "read": "INA237, the rule-5 alternate standing in for the INA238",
+      "source": "SBOSA20A",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "pin-for-pin match",
+      "stated": "same pinout and ratings (P2's second_source)",
+      "read": "VSSOP-10 pin order identical to the INA238 (A1, A0, ALERT, SDA, SCL, VS, GND, VBUS, IN-, IN+)",
+      "source": "SBOSA20A Table 5-1; SLYS025B Table 4-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "functional match",
+      "stated": "same pinout and ratings: differential +/-40 V also",
+      "read": "ratings match (85 V common mode, +/-40 V differential). Accuracy does not: CMRR 120 dB min against 140 dB, up to 62 uV offset change across the pack range after one calibration: 0.62 A on 100 uOhm against 0.15 A",
+      "source": "SBOSA20A section 6.5; SLYS025B section 5.5",
+      "agrees": false,
+      "passes": false,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "not given (no shortlist record for this function)",
+      "read": "Texas Instruments; on S1",
+      "source": "SBOSA20A; Research.md S1",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     }
+    ]
+   },
+   {
+    "function": "Port current monitor",
+    "part": "INA3221AIRGVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "channels",
+      "stated": "3 channels a part; 7 parts give 21",
+      "read": "3 channels (IN+1/IN-1 to IN+3/IN-3) per part; 7 x 3 = 21 >= 20",
+      "source": "https://www.ti.com/lit/ds/symlink/ina3221.pdf (vendors.py fetch chrome, HTTP 200), SBOS576C (May 2012, revised September 2026) Table 5-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "common-mode range",
+      "stated": "bus voltage input 0 to 26 V",
+      "read": "VBUS 0 to 26 V; CMR specified VIN+ 0 to 26 V",
+      "source": "SBOS576C section 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "input withstand",
+      "stated": "common mode -0.3 to 26 V absolute maximum; differential +/-26 V",
+      "read": "IN+, IN- differential -26 to 26 V, common mode -0.3 to 26 V absolute maximum",
+      "source": "SBOS576C section 6.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "full scale",
+      "stated": "+/-163.84 mV: 16.4 A on 10 mOhm",
+      "read": "VSHUNT -163.84 to 163.8 mV: 16.38 A on 10 mOhm",
+      "source": "SBOS576C section 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "channel refresh",
+      "stated": "shunt-only continuous mode, 3 channels x 1.1 ms (max 1.21 ms) = 3.3 ms (3.63 ms max)",
+      "read": "tCONVERT CT=100: 1.1 ms typ, 1.21 ms max; 3 x 1.21 = 3.63 ms per cycle, under 5 ms",
+      "source": "SBOS576C section 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "accuracy",
+      "stated": "Vos +/-80 uV max, drift 0.5 uV/degC; gain +/-0.25 %, drift 50 ppm/degC: 9.25 mA + 11.25 mA at 3 A; with ERJ-6CWDR010V 22.9 mA: 43.4 mA",
+      "read": "Vos +/-80 uV max, drift 0.5 uV/degC max; gain +/-0.25 % max, drift 50 ppm/degC max; CMR 110 dB min at VIN+ 12 V reference; LSB 40 uV. P2's 43.4 mA reproduces. Adding the common-mode term (12 V to a 4.8 V port, 22.8 uV, 2.3 mA) and half an LSB (2 mA) gives 47.7 mA, still inside 50 mA",
+      "source": "SBOS576C section 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "noise",
+      "stated": "no maximum stated; Figure 7-7 (typical, no averaging) shows the 1.1 ms trace within one 40 uV step each way, 80 uV peak-to-peak = 8 mA on 10 mOhm",
+      "read": "no noise limit in section 6.5. Figure 7-7 (page 18, typical, no averaging): the 1.1 ms trace holds one level with single 40 uV steps either way, 80 uV peak-to-peak, 8 mA on 10 mOhm against 20 mA. A typical figure only",
+      "source": "SBOS576C Figure 7-7, page 18 (rendered and read)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "alert output",
+      "stated": "critical and warning outputs, unused",
+      "read": "Critical (pin 9) and Warning (pin 8) open-drain outputs; not required",
+      "source": "SBOS576C Table 5-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "direction",
+      "stated": "bidirectional +/-163.84 mV",
+      "read": "shunt input -163.84 to 163.8 mV, covers 0 A to positive full scale",
+      "source": "SBOS576C section 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "addresses",
+      "stated": "A0 gives 4 addresses, 0x40 to 0x43: 4 parts on one bus, 3 on the other",
+      "read": "Table 7-1: A0 to GND, VS, SDA, SCL gives 1000000b to 1000011b (0x40 to 0x43)",
+      "source": "SBOS576C Table 7-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments (datasheet SBOS576C); S1 Texas Instruments",
+      "read": "Texas Instruments; on S1",
+      "source": "SBOS576C; Research.md S1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     }
+    ]
+   },
+   {
+    "function": "Port shunt",
+    "part": "ERJ-6CWDR010V",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "value",
+      "stated": "10 mOhm (R010)",
+      "read": "ERJ6CW 0805, resistance range 10 to 30 mOhm; code R010 = 10 mOhm; JLCPCB row C236284 ERJ6CWDR010V 10 mOhm +/-0.5 % 500 mW",
+      "source": "Panasonic ERJ low-resistance datasheet dated 15 Feb. 2018, JLCPCB copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8588894499405221888 (vendors.py fetch chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "power",
+      "stated": "0.5 W at 70 degC",
+      "read": "ERJ6CW 0.5 W at 70 degC ambient, derated to 0 at 125 degC; 0.403 W at 50 degC ambient is inside the rating (case about 94 degC at 110 K/W)",
+      "source": "ERJ datasheet ratings table and power derating curve",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "tolerance and TCR share",
+      "stated": "D = +/-0.5 %; TCR +/-75 x 10^-6/degC (-55 to 125 degC); 0.76 % with 25 K ambient and 10 K self-heating",
+      "read": "ERJ6CW tolerance +/-0.5 % available (D), TCR +/-75 ppm/degC, -55 to 125 degC: 0.5 % + 75 ppm x 35 K = 0.76 %, inside 0.98 % (and inside the 0.84 % left after the INA3221's common-mode and quantization terms)",
+      "source": "ERJ datasheet ratings table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "-",
+      "read": "20 per board, one per port (sourcing rule 4); a count, not a datasheet value",
+      "source": "Research.md sourcing rule 4 at e13f5f6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:44:08Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Panasonic (datasheet ERJ low-resistance); S2 Panasonic",
+      "read": "Panasonic on the datasheet; Panasonic is on S2 (JLCPCB label PANASONIC)",
+      "source": "ERJ datasheet; Research.md S2; vendors.py jlcpcb C236284 2026-09-29T10:36:42Z",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T10:33:01Z"
+     }
+    ]
+   }
+  ],
+  "figures": [
+   {
+    "figure": "found V154",
+    "verdict": "confirmed",
+    "evidence": "Sources hold: STATUS.md:55 'The shunt is the measurement'; Screens.md:147-148 'its own sensors when a measurement front end is fitted'; main.c:714 'There is no other source for any of these on this board' (telemetry branch); OpenYGE.md:380-381 independent measurements; IOBoard.md:406 one path per test. The rule is derived, and the value states that how the firmware picks the cabled INA238 is not stated",
+    "source": "checkout e13f5f6: hardware/STATUS.md, docs/Screens.md, firmware/iomcu/src/main.c, docs/OpenYGE.md, hardware/docs/IOBoard.md",
+    "read_at": "2026-09-29T10:44:01Z"
+   },
+   {
+    "figure": "found V155",
+    "verdict": "confirmed",
+    "evidence": "Research.md:530 F2 '150 A continuous'; :610 V50 'Peak: 300 A for 30 s at most'; :608 V48 '300 A onboard; 600 A external at a 300 A path', twice each trip level",
+    "source": "hardware/docs/Research.md at e13f5f6",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "found V156",
+    "verdict": "confirmed",
+    "evidence": "Research.md:609 V49 answer '7 W for the switch array at 150 A, RDS(on) taken at TJ 100 degC'. 100 degC is an inference from that budget, not a stated trip level; the value says so",
+    "source": "hardware/docs/Research.md:609 at e13f5f6",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "found V157",
+    "verdict": "confirmed",
+    "evidence": "Research.md:62 places the sensor beside the onboard shunt; IOBoard.md:422; OpenYGE.md:321-322 over-temperature and over-current give state POWER_CUT; link_pages.h:234-235 are the ESC and motor temperature registers (reported)",
+    "source": "checkout e13f5f6",
+    "read_at": "2026-09-29T10:44:01Z"
+   },
+   {
+    "figure": "found V158",
+    "verdict": "confirmed",
+    "evidence": "Servo.md:35 'Current ceiling 3.0 A: abort immediately, checked at every sample'; main.c:1013 '(now - last_sample) >= 20u'; IOBoard.md:431 20 ms sampling",
+    "source": "checkout e13f5f6: docs/Servo.md, firmware/iomcu/src/main.c, hardware/docs/IOBoard.md",
+    "read_at": "2026-09-29T10:44:01Z"
+   },
+   {
+    "figure": "found V159",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:57 enable falls 155 to 185 ms after the last edge, every power switch open within 200 ms; IOBoard.md:197 no firmware in the path from GPIO6 to a gate; detection-to-disarm within one 20 ms sample follows from main.c:1013",
+    "source": "checkout e13f5f6",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "found V160",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:197 Not defeatable; Research.md:281 R3 row 'R3's gates follow the enable node alone'; FU-A3/003-P2-R3.json V53 'no switch action from the coprocessor: the ESC pack switches follow the enable node, through the latch, alone'",
+    "source": "checkout e13f5f6; results FU-A3/003-P2-R3.json",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "found V161",
+    "verdict": "confirmed",
+    "evidence": "SLYS025B Table 6-3: registers 0h to 11h, 3Eh, 3Fh; CURRENT 7h, POWER 8h; no energy or charge register. link_pages.h:236-237 CHARGE_MAH and ENERGY_DWH (0.1 Wh). The conflict with IOBoard.md:417 ('from the monitor's own charge and energy accumulators') is stated in the value",
+    "source": "https://www.ti.com/lit/ds/symlink/ina238.pdf; checkout e13f5f6 shared/link/include/link_pages.h",
+    "read_at": "2026-09-29T10:33:01Z"
+   },
+   {
+    "figure": "found V162",
+    "verdict": "confirmed",
+    "evidence": "1.25 uV / 25 mA = 50 uOhm; 40.96 mV / 300 A = 136.5 uOhm (SLYS025B 5.5). The bounds are nominal: a 136 uOhm part at +5 % would reach 42.8 mV at 300 A; the rank-1 100 uOhm +/-5 % part reaches 31.5 mV",
+    "source": "SLYS025B section 5.5; IOBoard.md:424",
+    "read_at": "2026-09-29T10:33:01Z"
+   },
+   {
+    "figure": "found V163",
+    "verdict": "confirmed",
+    "evidence": "Research.md:610 V50 'Peak: 300 A for 30 s at most'; :62 'and more' without a figure; FU-A3 V35 300 A",
+    "source": "hardware/docs/Research.md at e13f5f6; results FU-A3/003-P2-R3.json",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "found V164",
+    "verdict": "confirmed",
+    "evidence": "Research.md:610 V50 answer 'Peak: 300 A for 30 s at most (owner, 2026-09-28)'",
+    "source": "hardware/docs/Research.md:610 at e13f5f6",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "found V165",
+    "verdict": "confirmed",
+    "evidence": "Power.md:160 row '50 uOhm | 15 mV | 37% | 25 mA | 4.5 W'; motor_screen.c:113 CURR with 1 decimal. The quoted STATUS.md sentence 'The INA238's 25 mA step with a 50 uOhm shunt is 0.008 % of 300 A' is at hardware/STATUS.md:58, not :52-54",
+    "source": "checkout e13f5f6: hardware/docs/Power.md, hardware/STATUS.md, shared/ui/motor_screen.c",
+    "read_at": "2026-09-29T10:44:01Z"
+   },
+   {
+    "figure": "found V166",
+    "verdict": "confirmed",
+    "evidence": "Flight Stand 50 Datasheet FSFI50 V5.1 2026-08-10: 'Current accuracy 1% from 15 to 300 A' (both versions); Accuracy defined as 'the maximum allowed average error observed during calibration'. The sheet does not write 'measured value' for current as it does for voltage; reading it as % of reading is the stricter reading. +/-0.15 A below 15 A and 0 to 50 degC are derived (1 % of 15 A; V168)",
+    "source": "https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf (vendors.py fetch chrome, HTTP 200)",
+    "read_at": "2026-09-29T10:35:50Z"
+   },
+   {
+    "figure": "found V167",
+    "verdict": "confirmed",
+    "evidence": "Flight Stand 50 FSFI50 V5.1: 'Voltage accuracy 1% measured value from 5 to 180 V'",
+    "source": "https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf",
+    "read_at": "2026-09-29T10:35:50Z"
+   },
+   {
+    "figure": "found V168",
+    "verdict": "confirmed",
+    "evidence": "Research.md:567 V7 answer '0 to 50 degC ambient, one range for the whole IO board (owner, 2026-09-28)'",
+    "source": "hardware/docs/Research.md:567 at e13f5f6",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "found V169",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:421 and STATUS.md:46: 100 uOhm dissipates 2.25 W and 200 uOhm 4.5 W at 150 A; 4.5 W is the larger, capping the shunt at 200 uOhm",
+    "source": "checkout e13f5f6: hardware/docs/IOBoard.md:421, hardware/STATUS.md:46",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "found V170",
+    "verdict": "confirmed",
+    "evidence": "V7 answer 0 to 50 degC (Research.md:567); V235 answer '+/-2 degC over 0 to 200 degC' for the thermocouple channel (Research.md:795); top of range from V156",
+    "source": "hardware/docs/Research.md at e13f5f6",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "found V171",
+    "verdict": "confirmed",
+    "evidence": "Research.md:544 F16 'cutting the port off above 6.0 V or 8.7 V'; FU-A3 V44 'at least 20 V: the TPS55285 programs up to 15 V with OVP up to 18 V, and the board's DC input reaches 20 V'",
+    "source": "hardware/docs/Research.md:544 at e13f5f6; results FU-A3/003-P2-R3.json",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "found V172",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:343 servo rail current limit stops at 6.35 A; Servo.md:35 3.0 A ceiling; Servo.md:68-69 4.0 A for the pair (the value cites :69); 6.35^2 x 10 mOhm = 0.403 W",
+    "source": "checkout e13f5f6: hardware/docs/IOBoard.md, docs/Servo.md",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "found V173",
+    "verdict": "confirmed",
+    "evidence": "Servo.md:35 'abort immediately, checked at every sample'; test_servo_limit.c:19 '#define SAMPLE_MS 5u /* a 200 Hz current sensor */'; test_servo_sync.c:19 SAMPLE_MS 5u",
+    "source": "checkout e13f5f6: docs/Servo.md, test/host/test_servo_limit.c, test/host/test_servo_sync.c",
+    "read_at": "2026-09-29T10:44:01Z"
+   },
+   {
+    "figure": "found V174",
+    "verdict": "confirmed",
+    "evidence": "servo_sim.c:22 noise_a = 0.02f; :44 (unit - 0.5f) x noise_a, uniform +/-0.01 A; servo_limit.c:56-62 3.0 A, 1.0 A, 1.8x, 0.15 A; servo_sync.c:35-37 0.08 A, 4.0 A. +/-50 mA is derived as half the 0.1 A digit",
+    "source": "checkout e13f5f6: shared/servo/servo_sim.c, servo_limit.c, servo_sync.c, docs/Servo.md",
+    "read_at": "2026-09-29T10:44:01Z"
+   },
+   {
+    "figure": "found V175",
+    "verdict": "confirmed",
+    "evidence": "Servo.md:39 'All three run on the coprocessor'. IOBoard.md:351 still says 'Each part's critical-alert output carries the 3.0 A abort'; the owner decisions of Research.md:64 do not name an alert, so the V175 answer governs and IOBoard.md:351 needs the found value applied",
+    "source": "checkout e13f5f6: docs/Servo.md, hardware/docs/IOBoard.md:351, Research.md:64",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "found V176",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:585 follows the owner decision, one monitor per port, over docs/Manifest.md:28 'INA745A (servo rail)'; Research.md:64 Servo current decision",
+    "source": "checkout e13f5f6",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "found V177",
+    "verdict": "confirmed",
+    "evidence": "testbench/WIRING.md:37-47 ESC pack return to the one ground point; Research.md:281 R3 external module 'is a high-side switch'; V54's question text assumes high-side switches (its answer gives only 0.5 uH); SLYS025B Table 4-1 IN+ to the supply side for high side",
+    "source": "checkout e13f5f6; SLYS025B",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "found V178",
+    "verdict": "confirmed",
+    "evidence": "Screens.md:131-134 pack voltage measured; IOBoard.md:428, :470; SLYS025B pin 8 VBUS, ZVBUS 0.8 to 1.2 MOhm: 67.2 V / 1.2 MOhm = 56 uA, / 0.8 MOhm = 84 uA",
+    "source": "checkout e13f5f6; https://www.ti.com/lit/ds/symlink/ina238.pdf",
+    "read_at": "2026-09-29T10:33:01Z"
+   },
+   {
+    "figure": "found V179",
+    "verdict": "confirmed",
+    "evidence": "Research.md:543 F15 67.2 V; :281 R3 row: clamp under the absolute maximum of every part on the pack node, the INA238's 85 V bus input among them",
+    "source": "hardware/docs/Research.md at e13f5f6",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "found V180",
+    "verdict": "confirmed",
+    "evidence": "servo_limit.c:56-62 and servo_sync.c:35-37: every threshold is a positive current (3.0, 1.0, 0.15, 0.08, 4.0 A)",
+    "source": "checkout e13f5f6: shared/servo/servo_limit.c, shared/servo/servo_sync.c",
+    "read_at": "2026-09-29T10:44:01Z"
+   },
+   {
+    "figure": "P2 report: INA238 stock at JLCPCB",
+    "verdict": "confirmed",
+    "evidence": "exact match C2868250 INA238AIDGSR, Texas Instruments, VSSOP-10-0.5mm: stockCount 1, canPresaleNumber -94, expand; need 10, gate 50: fails rule 4",
+    "source": "vendors.py jlcpcb C2868250 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+    "read_at": "2026-09-29T10:36:39Z"
+   },
+   {
+    "figure": "P2 report: INA238 stock at Digi-Key",
+    "verdict": "confirmed",
+    "evidence": "stock 0 in Tape & Reel, Cut Tape and Digi-Reel; lead time 16 weeks; Active (returned cached)",
+    "source": "vendors.py digikey INA238AIDGSR (https://api.digikey.com/products/v4/search/INA238AIDGSR/productdetails)",
+    "read_at": "2026-09-29T02:34:14Z"
+   },
+   {
+    "figure": "P2 report: INA238 second source",
+    "verdict": "refuted",
+    "evidence": "Stock parts hold: INA228AIDGSR JLCPCB 0, presale -174 (10:36:39Z), Digi-Key 0 (09:56:14Z cached); INA237AIDGSR JLCPCB 5344, presale 5287 (10:36:39Z), Digi-Key 27742 (09:56:11Z cached); pins, registers and addresses match. The claim that the INA237 passes as the alternate and that 'V166 holds only after an offset calibration' does not hold: SBOSA20A gives CMRR 120 dB min (1 uV/V) and Vos only at VCM 0 V, so after one calibration the offset moves up to 62 uV across 5 to 67.2 V: 0.31 A on 200 uOhm and 0.62 A on 100 uOhm against +/-0.15 A below 15 A. The INA238 (140 dB) moves 6.2 uV. No route of rule 5 passes for the INA238 on this reading",
+    "source": "https://www.ti.com/lit/ds/symlink/ina237.pdf section 6.5; vendors.py jlcpcb C2887910, C2864837; vendors.py digikey INA228AIDGSR, INA237AIDGSR",
+    "read_at": "2026-09-29T10:36:39Z"
+   },
+   {
+    "figure": "P2 report: INA238-Q1 purchase route",
+    "verdict": "confirmed",
+    "evidence": "Digi-Key 5024 (Tape & Reel 5000, Cut Tape 5024), lead 16 weeks, Active (09:56:16Z cached); JLCPCB C2876521 stockCount 28, presale -88 (10:36:39Z). SLYS026A section 7.6.1.17 DEVICE_ID reset 2381h; Vos +/-5 uV, drift 20 nV/degC, gain 0.1 %, 25 ppm/degC, CMRR 140 dB min, the same as SLYS025B",
+    "source": "https://www.ti.com/lit/ds/symlink/ina238-q1.pdf; vendors.py digikey INA238AQDGSRQ1; vendors.py jlcpcb C2876521",
+    "read_at": "2026-09-29T10:36:39Z"
+   },
+   {
+    "figure": "P2 report: Motor overcurrent path for P5",
+    "verdict": "confirmed",
+    "evidence": "SLYS025B 5.5 TCT 50 to 4120 us; ADC_CONFIG AVG 1 to 1024 (1, 4, 16, 64, 128, 256, 512, 1024); an averaged reading fits in 20 ms (for example 1052 + 1052 us x 4 = 8.4 ms); found values V155, V158 to V160 as verified above",
+    "source": "https://www.ti.com/lit/ds/symlink/ina238.pdf section 5.5, Table 6-6",
+    "read_at": "2026-09-29T10:33:01Z"
+   },
+   {
+    "figure": "P2 report: Charge and energy",
+    "verdict": "confirmed",
+    "evidence": "SLYS025B Table 6-3: CURRENT 7h, POWER 8h, no accumulator; IOBoard.md:417 asks for the monitor's own accumulators",
+    "source": "https://www.ti.com/lit/ds/symlink/ina238.pdf; hardware/docs/IOBoard.md:417 at e13f5f6",
+    "read_at": "2026-09-29T10:33:01Z"
+   },
+   {
+    "figure": "P2 report: External sense input withstand",
+    "verdict": "confirmed",
+    "evidence": "SLYS025B 5.1: differential (VIN+) - (VIN-) -40 to 40 V; input current into any pin 5 mA; against 85 V between the leads (V179): fails",
+    "source": "https://www.ti.com/lit/ds/symlink/ina238.pdf section 5.1",
+    "read_at": "2026-09-29T10:33:01Z"
+   },
+   {
+    "figure": "P2 report: Parts on the ESC pack node for R3's clamp",
+    "verdict": "confirmed",
+    "evidence": "SLYS025B 5.1 and SBOSA20A 6.1: VIN+/VIN- common mode -0.3 to 85 V and VVBUS -0.3 to 85 V absolute maximum on both",
+    "source": "https://www.ti.com/lit/ds/symlink/ina238.pdf; https://www.ti.com/lit/ds/symlink/ina237.pdf",
+    "read_at": "2026-09-29T10:33:01Z"
+   },
+   {
+    "figure": "P2 report: Onboard shunt dissipation",
+    "verdict": "confirmed",
+    "evidence": "BVE Issue 17-July-2025 electrical specification: BVE-M-R0002 0.2 mOhm, Rthi 3 K/W, TCR 50 +/- 50 ppm/K, 15 W at 70 degC, 10 W at >100 degC; 150^2 x 200 uOhm = 4.5 W. The onboard rank 1 is now BVR-Z-R0002-1.0 (re-rank)",
+    "source": "https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BVE.pdf (vendors.py fetch chrome, HTTP 200)",
+    "read_at": "2026-09-29T10:40:21Z"
+   },
+   {
+    "figure": "P2 report: External shunt dissipation",
+    "verdict": "confirmed",
+    "evidence": "BAS Issue 08-September-2026: BAS-M-R0001 0.1 mOhm, Rthi 2.0 K/W, 36 W at 70 degC, 15 W at 140 degC; 300^2 x 100 uOhm = 9 W",
+    "source": "https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BAS.pdf (vendors.py fetch chrome, HTTP 200)",
+    "read_at": "2026-09-29T10:40:21Z"
+   },
+   {
+    "figure": "P2 report: Current accuracy needs calibration",
+    "verdict": "confirmed",
+    "evidence": "Tolerances: BVE/BVR 1 % (ordering -1.0), BAS 5 %, WSBE and WSBS8518 +/-5 %. settings.c:93-95 SET_INA228_SHUNT 'mOhm', minimum 0.1, maximum 20, step 0.1, default 0.5",
+    "source": "BVE.pdf, BVR.pdf, BAS.pdf, Vishay 30424 and 30341; shared/settings/settings.c at e13f5f6",
+    "read_at": "2026-09-29T10:40:21Z"
+   },
+   {
+    "figure": "P2 report: I2C addresses for P5",
+    "verdict": "confirmed",
+    "evidence": "INA3221 Table 7-1 0x40 to 0x43; INA238 Table 6-2 16 addresses 0x40 to 0x4F; INA226 (SBOS547C) Table 6-2 16 addresses 0x40 to 0x4F. TMP1075 is understated: SBOS854F Table 7-2 gives 32 addresses, 0x40 to 0x5F, with A2 to A0 tied to GND, V+, SDA or SCL; 0x48 to 0x4F is only the GND/V+ subset, and 0x50 to 0x5F sit clear of every INA part",
+    "source": "ina3221.pdf, ina238.pdf, ina226.pdf, https://www.ti.com/lit/ds/symlink/tmp1075.pdf (vendors.py fetch chrome, HTTP 200)",
+    "read_at": "2026-09-29T10:40:21Z"
+   },
+   {
+    "figure": "P2 report: Port monitor timing for P5",
+    "verdict": "confirmed",
+    "evidence": "SBOS576C 6.5 tCONVERT CT=100 1.1 ms typ, 1.21 ms max; 3 channels shunt-only: 3.3 ms (3.63 ms max) inside 5 ms",
+    "source": "https://www.ti.com/lit/ds/symlink/ina3221.pdf section 6.5",
+    "read_at": "2026-09-29T10:33:01Z"
+   },
+   {
+    "figure": "P2 report: Supply currents of R8 parts for the 3.3 V rail",
+    "verdict": "refuted",
+    "evidence": "INA238 750 uA max at 25 degC, 1.1 mA max -40 to 125 degC (SLYS025B 5.5) and INA3221 450 uA max (SBOS576C 6.5) are quoted correctly. The TMP1075 figure is not its maximum: SBOS854F gives IQ (serial bus inactive) 6 uA max only at conversion setting R1=1, R0=0; the default R1=R0=0 is 20 uA max, 85 uA max during the 5.5 ms conversion. The total is at most about 5.37 mA at the default setting, not 5.36 mA; the INA3221's 450 uA is also stated at 25 degC only",
+    "source": "https://www.ti.com/lit/ds/symlink/tmp1075.pdf section 6.5; ina238.pdf; ina3221.pdf",
+    "read_at": "2026-09-29T10:40:21Z"
+   },
+   {
+    "figure": "P2 report: Servo rail monitor",
+    "verdict": "confirmed",
+    "evidence": "V176 verified above; IOBoard.md:585 follows one monitor per port over Manifest.md:28's INA745A",
+    "source": "hardware/docs/IOBoard.md:585, docs/Manifest.md:28 at e13f5f6",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "re-rank report: BVR-Z-R0002-1.0 stock at JLCPCB",
+    "verdict": "confirmed",
+    "evidence": "exact match C6869644 BVR-Z-R0002-1.0, Isabellenhuette, package 4026: stockCount 359, canPresaleNumber 354, expand, 2.0306 at 1; need 5, gate 50: pass",
+    "source": "vendors.py jlcpcb C6869644",
+    "read_at": "2026-09-29T10:36:40Z"
+   },
+   {
+    "figure": "re-rank report: BVR-Z-R0002-1.0 at Digi-Key",
+    "verdict": "confirmed",
+    "evidence": "stock_available 11190 (Cut Tape 11190, Tape & Reel 9800), lead time 18 weeks, Active, maker Isabellenhuette USA (returned cached)",
+    "source": "vendors.py digikey BVR-Z-R0002-1.0",
+    "read_at": "2026-09-29T10:20:01Z"
+   },
+   {
+    "figure": "re-rank report: Onboard shunt accuracy share, rank 1",
+    "verdict": "confirmed",
+    "evidence": "BVR Issue 12-September-2024: BVR-Z-R0002 TCR 0 +/- 20 ppm/K, stated over 20 to 60 degC; Rthi 4 K/W. Terminal 100 degC + 4 x 4.5 = 118 degC; 93 K x 20 ppm = 0.186 %; + 0.0625 % + 2.5 mA = 0.375 A at 150 A; 19 mA at 15 A. The ZERANIN graph (page 4) for TCR(20/60) = -20 ppm/K reads about -0.2 % at 118 degC, in line with 0.186 %. Adding the INA238's common-mode term (6.2 uV, 31 mA) gives 0.41 A and 50 mA, inside 1.5 A and 0.15 A",
+    "source": "https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BVR.pdf (vendors.py fetch chrome, HTTP 200), page 2 table and page 4 graph",
+    "read_at": "2026-09-29T10:40:21Z"
+   },
+   {
+    "figure": "re-rank report: Onboard shunt dissipation, rank 1",
+    "verdict": "confirmed",
+    "evidence": "BVR-Z-R0002: 12 W at 70 degC, 6 W at >100 degC terminal, Rthi 4 K/W; TK = Tmax - Rthi x P = 170 - 4 x 4.5 = 152 degC",
+    "source": "https://www.isabellenhuette.com/hubfs/Files/Data-sheets/BVR.pdf page 2",
+    "read_at": "2026-09-29T10:40:21Z"
+   },
+   {
+    "figure": "re-rank report: WSBE8518L1000JKA2 at Digi-Key",
+    "verdict": "confirmed",
+    "evidence": "541-WSBE8518L1000JKA2-ND, Bulk, stock 418, lead time 48 weeks, Active, Vishay Dale (returned cached); gate 50: pass",
+    "source": "vendors.py digikey WSBE8518L1000JKA2 (keyword search reading)",
+    "read_at": "2026-09-29T10:17:26Z"
+   },
+   {
+    "figure": "re-rank report: External shunt dissipation, rank 1",
+    "verdict": "confirmed",
+    "evidence": "30424: WSBE8518 36 W at 70 degC; maximum current (P/R)^1/2 = 600 A at 100 uOhm; TCR +/-10 ppm/degC for 100 uOhm with no measurement range stated; 9 W at 300 A",
+    "source": "https://www.vishay.com/docs/30424/wsbeseries.pdf",
+    "read_at": "2026-09-29T10:33:01Z"
+   },
+   {
+    "figure": "re-rank report: External shunt alternate mounting",
+    "verdict": "refuted",
+    "evidence": "Body and holes match: both 85 x 18 x 3 mm with 7 mm holes 60 mm apart. The sense-pin comparison is wrong: on 30424 the 0.300 in (7.62 mm) is the spacing between the two sense pins, which sit in a 4-position header (positions 1 and 4), 8.13 mm ref high. On 30341 the 0.310 in (7.87 mm) is the pin height, and the pin spacing is dimension B = 12.57 mm for 100 uOhm, two single pins. The sense connections differ by 4.95 mm in spacing, not 0.25 mm. Digi-Key 67, Active, 49 weeks holds",
+    "source": "30424 page 2 and 6, https://www.vishay.com/docs/30424/wsbeseries.pdf; 30341 page 2, https://www.vishay.com/doc?30341 (drawings rendered and read); vendors.py digikey WSBS8518L1000JK20 (10:02:17Z cached)",
+    "read_at": "2026-09-29T10:33:01Z"
+   },
+   {
+    "figure": "re-rank report: MCP9808T-E/MS stock",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C129490 MCP9808T-E/MS, Microchip Tech, MSOP-8: stockCount 774, canPresaleNumber 723, expand; Digi-Key 21589, lead 4 weeks, Active (cached); gate 50: pass",
+    "source": "vendors.py jlcpcb C129490; vendors.py digikey MCP9808T-E/MS (reading of 2026-09-29T10:21:59Z)",
+    "read_at": "2026-09-29T10:36:40Z"
+   },
+   {
+    "figure": "re-rank report: MCP9808 lifecycle",
+    "verdict": "confirmed",
+    "evidence": "Product page body 'Status: In Production' and JSON productSatus 'In Production'; DS20005095B revision history: Revision A (October 2011) original release, Revision B (May 2018)",
+    "source": "https://www.microchip.com/en-us/product/mcp9808 (vendors.py fetch chrome, HTTP 200); DS20005095B",
+    "read_at": "2026-09-29T10:40:21Z"
+   },
+   {
+    "figure": "re-rank report: I2C addresses for P5, updated",
+    "verdict": "confirmed",
+    "evidence": "MCP9808 Table 3-2 address 0011 A2 A1 A0 (0x18 to 0x1F); INA3221 0x40 to 0x43; INA238 0x44 to 0x4F available. The TMP1075DR line understates its options: SBOS854F Table 7-2 gives 32 addresses 0x40 to 0x5F, not only 0x48 to 0x4F",
+    "source": "DS20005095B Table 3-2; SBOS576C Table 7-1; SLYS025B Table 6-2; https://www.ti.com/lit/ds/symlink/tmp1075.pdf Table 7-2",
+    "read_at": "2026-09-29T10:40:21Z"
+   },
+   {
+    "figure": "re-rank report: Supply currents of R8 rank-1 parts for the 3.3 V rail",
+    "verdict": "confirmed",
+    "evidence": "MCP9808 IDD 400 uA max (table over -40 to 125 degC, 2.7 to 5.5 V); INA238 1.1 mA max -40 to 125 degC x 2 = 2.2 mA; INA3221 450 uA max x 7 = 3.15 mA; total 5.75 mA. The INA3221's 450 uA is specified at 25 degC only; no maximum over temperature is given",
+    "source": "DS20005095B DC characteristics; SLYS025B 5.5; SBOS576C 6.5",
+    "read_at": "2026-09-29T10:33:01Z"
+   },
+   {
+    "figure": "re-rank report: PAC1954 drop reason",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C3687526 PAC1954T-E/4MX stockCount 235, presale 233, expand (10:36:41Z). DS20006539F: VSENSE gain accuracy +/-0.5 % max at +25 degC, +/-0.3 % typical over -40 to +125 degC with no maximum (page 5); VSENSE offset +/-100 uV max (page 6). 15 + 10 + 22.9 = 47.9 mA at 25 degC; no bound over 0 to 50 degC",
+    "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/PAC1951-2-3-4-Single-Multi-Channel-Power-Monitor-with-Accumulator-32V-Full-Scale-Range-DS20006539.pdf (vendors.py fetch chrome, HTTP 200); vendors.py jlcpcb C3687526",
+    "read_at": "2026-09-29T10:40:21Z"
+   },
+   {
+    "figure": "re-rank report: LM75BIMMX-3/NOPB drop reason",
+    "verdict": "confirmed",
+    "evidence": "SNIS153D 6.5: accuracy +/-2 degC max for -25 to 100 degC at +VS 3.3 V for the -3 parts; note 1 'Accuracy will typically degrade 1 degC/V of variation in +VS'; 9 bits. Packaging information dated 18-Sep-2026: LM75BIMMX-3/NOPB Active. JLCPCB C543061 3731, presale 3721 (10:36:41Z); Digi-Key 5258 Active (10:22:03Z cached)",
+    "source": "https://www.ti.com/lit/ds/symlink/lm75b.pdf (vendors.py fetch chrome, HTTP 200); vendors.py jlcpcb C543061; vendors.py digikey LM75BIMMX-3/NOPB",
+    "read_at": "2026-09-29T10:40:21Z"
+   },
+   {
+    "figure": "re-rank report: Onboard busbar exclusion, API reading",
+    "verdict": "confirmed",
+    "evidence": "exact match C1519252 WSBS8518L1000JK14, Vishay Intertech, 0.1 mOhm 36 W screw shunt: stockCount 7, canPresaleNumber 7, expand; gate 50: fails",
+    "source": "vendors.py jlcpcb C1519252",
+    "read_at": "2026-09-29T10:36:41Z"
+   },
+   {
+    "figure": "re-rank report: Lifecycle not read, reported to the owner",
+    "verdict": "confirmed",
+    "evidence": "isabellenhuette.com/solutions/products/bvr and vishay.com/en/product/30424/ answer HTTP 200 and carry no lifecycle status in the page body (no Status, In Production, Active or Obsolete text outside scripts); Digi-Key Active for both (10:20:01Z and 10:17:26Z cached)",
+    "source": "vendors.py fetch chrome https://www.isabellenhuette.com/solutions/products/bvr and https://www.vishay.com/en/product/30424/",
+    "read_at": "2026-09-29T10:40:21Z"
+   },
+   {
+    "figure": "re-rank report: INA238 fixed input",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C2868250 stockCount 1, presale -94 (10:36:39Z); Digi-Key 0 (02:34:14Z cached); SLYS025B 5.1 differential +/-40 V against 85 V (V179)",
+    "source": "vendors.py jlcpcb C2868250; vendors.py digikey INA238AIDGSR; https://www.ti.com/lit/ds/symlink/ina238.pdf",
+    "read_at": "2026-09-29T10:36:39Z"
+   },
+   {
+    "figure": "function requirements: Motor monitor",
+    "verdict": "confirmed",
+    "evidence": "The list names every found value whose row names Motor monitor (V154, V155, V158, V159, V160, V161, V166, V167), V165 and V168, F1 (Research.md:529), F15 and the R3 clamp, IOBoard.md:54 and :464, at no weaker value. IOBoard.md:417 ('from the monitor's own charge and energy accumulators') is replaced by V161's firmware integration, which answers the question raised on that line; the conflict with the fixed INA238 is reported by P2 and IOBoard.md:417 needs the found value applied. IOBoard.md:416 (one footprint for INA228 or INA238) is met by the INA238 itself",
+    "source": "hardware/docs/IOBoard.md:54, :415-417, :427, :431, :464; hardware/docs/Research.md:529, :543, :714-727 at e13f5f6",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "function requirements: Onboard shunt temperature sensor",
+    "verdict": "confirmed",
+    "evidence": "Names V156 (inside range), V157, V170, V168, IOBoard.md:422 and the coprocessor's 3.3 V I2C bus (IOBoard.md:54, :462); no value weaker",
+    "source": "hardware/docs/IOBoard.md:422, :462; Research.md:716, :717, :730 at e13f5f6",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "function requirements: External shunt",
+    "verdict": "confirmed",
+    "evidence": "Names V162, V163, V164, V166, V168, IOBoard.md:426 (Kelvin) and rule 1. V165 (row: External shunt) is carried by the resistance entry: V162's lower bound of 50 uOhm is V165's 25 mA step, so no weaker value. IOBoard.md:424's 50 to 100 uOhm is the range V162 asked about; the answer 'for research' gives 50 to 136 uOhm",
+    "source": "hardware/docs/IOBoard.md:423-426; Research.md:722-726 at e13f5f6",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "function requirements: External shunt sense input",
+    "verdict": "confirmed",
+    "evidence": "Names V177, V178, V179 (rows: External shunt sense input), IOBoard.md:426 Kelvin and RC filter, F1; IOBoard.md:428 and :470 are covered by V178",
+    "source": "hardware/docs/IOBoard.md:426, :428, :470; Research.md:529, :737-739 at e13f5f6",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "function requirements: Port current monitor",
+    "verdict": "confirmed",
+    "evidence": "Names V171 (both), V172, V173, V174 (accuracy and noise), V175, V180, IOBoard.md:64 channels, :351 and :464 addresses. IOBoard.md:351's 'critical-alert output carries the 3.0 A abort' is answered by V175 (not required); its 4 mA resolution and 16.4 A full scale describe the INA3221 seed, which R8 may replace, and V172/V174 set the requirement",
+    "source": "hardware/docs/IOBoard.md:64, :351, :464; Research.md:731-735, :740 at e13f5f6",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "function requirements: Port shunt",
+    "verdict": "confirmed",
+    "evidence": "Names the 10 mOhm of IOBoard.md:351, V172 power, V168 ambient, V174 tolerance and TCR share, and 20 placements (rule 4)",
+    "source": "hardware/docs/IOBoard.md:351; Research.md:186-187, :732, :734 at e13f5f6",
+    "read_at": "2026-09-29T10:44:08Z"
+   },
+   {
+    "figure": "re-rank drop: Onboard shunt: WSBS8518L1000JK14 (C1519252), with the other busbar parts of P2's onboard drop",
+    "verdict": "confirmed",
+    "evidence": "C1519252 stockCount 7, presale 7 (10:36:41Z): fails the gate of 50. Other busbar rows read at the API: C1525723 WSBS8518L1000JK20 0/0, C20250834 WSBE8518L1000JK 0/0, C7152426 WSBS85181L000JK35 5/5, C19842020 BAS-M-R0001-R-5.0 0/0 (10:42:22Z to 10:42:23Z); all are screw-mounted busbars, and no WSBS8518, WSBM8518, CSM2F, BAS or WSBE row in the jlcparts copy lists more than 7",
+    "source": "vendors.py jlcpcb C1519252, C1525723, C20250834, C7152426, C19842020; jlcparts cache.sqlite3 (read-only)",
+    "read_at": "2026-09-29T10:42:23Z"
+   },
+   {
+    "figure": "re-rank drop: Onboard shunt temperature sensor: LM75BIMMX-3/NOPB (C543061)",
+    "verdict": "confirmed",
+    "evidence": "SNIS153D 6.5: +/-2 degC max from -25 to 100 degC at nominal 3.3 V, the whole V170 allowance; note 1: typically degrades 1 degC/V off nominal, no maximum; 9-bit resolution",
+    "source": "https://www.ti.com/lit/ds/symlink/lm75b.pdf section 6.5",
+    "read_at": "2026-09-29T10:40:21Z"
+   },
+   {
+    "figure": "re-rank drop: Port current monitor: PAC1954T-E/4MX (C3687526)",
+    "verdict": "confirmed",
+    "evidence": "Stock clause: 235, presale 233 at or above 125 (10:36:41Z). Accuracy: VSENSE gain +/-0.5 % max at +25 degC only, +/-0.3 % typical over temperature; offset +/-100 uV max: 47.9 mA at 25 degC and no bound over 0 to 50 degC against 50 mA",
+    "source": "DS20006539F DC electrical characteristics pages 5-6; vendors.py jlcpcb C3687526",
+    "read_at": "2026-09-29T10:40:21Z"
+   }
+  ]
+ }
+}

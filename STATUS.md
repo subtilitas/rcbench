@@ -112,7 +112,7 @@ is taken in a gap ahead of the save that needs it.
 | Other receiver buses | not started |
 | Servo limit search, servo synchronisation | built and tested against a modelled servo |
 | OpenYGE codec | built and tested; not wired in. The implementation is pursued in a separate repository |
-| Measurement front end | parts selected, nothing fitted: [hardware](hardware/STATUS.md) |
+| Measurement front end | parts chosen, nothing fitted: the INA228 as motor monitor and three TPS55285 servo converters with a fourth as the adjustable supply (owner, 2026-09-30); 7 INA3221 port monitors, both motor shunts and the BQ25713 pack charger from round 1 of the component research: [hardware](hardware/STATUS.md) |
 | Servo programmer | Hitec table in the programmer screen; KST (a servo manufacturer) held at the owner's request |
 
 ## The tree
@@ -126,7 +126,7 @@ rcbench/
   docs/                   the wiki source, English and German
   tools/                  render_ui · coverage · check_docs · frame_cost
                           gen_font · gen_board_art · wiki_links
-                          check_sanitizers
+                          check_sanitizers · research/ (component research scripts)
   hardware/               board design record: README, STATUS, docs/
   testbench/              the measurement bench: README, WIRING, host scripts,
                           decoders. Nothing on it has been run
@@ -186,11 +186,11 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload; the font, frame-cost, screenshot, docs and wiki-link checks; clang-tidy, cppcheck and ruff; the ESP-IDF (Espressif Internet-of-Things Development Framework) matrix (v5.4, v5.5) building the panel; the pico-sdk build of the coprocessor; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload; the font, frame-cost, screenshot, docs, wiki-link and research-script checks; clang-tidy, cppcheck and ruff; the ESP-IDF (Espressif Internet-of-Things Development Framework) matrix (v5.4, v5.5) building the panel; the pico-sdk build of the coprocessor; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
 
-The host suite is 44 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 45 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_bench`, `test_motor`, `test_servo`,
 `test_analyser`, `test_programmer`, `test_balance`, `test_battery`,
 `test_settings`, `test_logfile`, `test_link_crc`, `test_link_pages`,
@@ -198,7 +198,7 @@ The host suite is 44 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_link_can`, `test_link_artxfer`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outstore`,
 `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_servo_limit`,
-`test_servo_sync`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`,
+`test_servo_sync`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_openyge_frame`, `test_openyge_status`,
 `test_openyge_params`, `test_logview` and `test_logwriter`. The harness is
 `test/host/greatest.h`, written for this project. `tools/check_docs.py` holds
@@ -206,7 +206,7 @@ this list to `test/host/CMakeLists.txt`.
 
 Coverage floors: 94% overall, 85% for every file except `stub_screen.c`, which
 is exempt by name. `tools/coverage.py --check` fails on drift of the table
-below. `render_ui.py --check` holds 34 committed screenshots to the current
+below. `render_ui.py --check` holds 35 committed screenshots to the current
 render; `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000.
 
@@ -235,7 +235,7 @@ chrome-cached screen to 2,000.
 | `shared/ui/balance_screen.c` | 306 | 306 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
 | `shared/ui/programmer_screen.c` | 316 | 299 | 94.6% |
-| `shared/ui/log_viewer_screen.c` | 693 | 633 | 91.3% |
+| `shared/ui/log_viewer_screen.c` | 771 | 713 | 92.5% |
 | `shared/ui/log_select.c` | 26 | 26 | 100.0% |
 | `shared/ui/settings_screen.c` | 298 | 288 | 96.6% |
 | `shared/ui/outputs_screen.c` | 236 | 234 | 99.2% |
@@ -257,6 +257,7 @@ chrome-cached screen to 2,000.
 | `shared/sbus/sbus.c` | 54 | 53 | 98.2% |
 | `shared/dshot/dshot_frame.c` | 23 | 23 | 100.0% |
 | `shared/dshot/dshot_telem.c` | 126 | 122 | 96.8% |
+| `shared/dshot/dshot_edt.c` | 33 | 33 | 100.0% |
 | `shared/ppm/ppm.c` | 42 | 42 | 100.0% |
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
 | `shared/can/can_selftest.c` | 145 | 140 | 96.5% |
@@ -278,7 +279,7 @@ chrome-cached screen to 2,000.
 | `shared/outputs/out_store_map.c` | 68 | 68 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/log_writer.c` | 66 | 62 | 93.9% |
-| **total** | **10115** | **9702** | **95.9%** |
+| **total** | **10226** | **9815** | **96.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -295,11 +296,11 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The browse list shows 48 of a card's entries | a card takes 999 runs and the list holds `LOG_VIEWER_MAX_FILES`, so it keeps the newest runs -- by the number in `BENCHnnn.CSV`, the only age on a card whose every FAT timestamp is 1980-01-01 -- and its tab says how many entries the card holds. A run is the only entry with a known age, so on a card holding 48 or more runs nothing else is listed: an imported `SWEEP.CSV` is outranked by every run and cannot be reached | a second page, or a filter on the browse list |
 | Betaflight logs are listed nowhere | the log viewer opens `.csv` only. Nothing in the tree decodes a Betaflight blackbox log, so `.bfl` is neither offered on the card nor named on the screen | a BFL decoder, and the suffix back in `CARD_SUFFIXES` and in the viewer's empty-card line |
 | An unbound output slot is invisible from the panel | the coprocessor leaves a slot the silicon cannot serve unbound: a reserved pin, a pin the package does not have, a PWM (pulse-width modulation) compare register another bound pin already holds, or no free PIO (programmable input/output) block. The OUTPUTS page reads back what was asked for and carries no register saying whether a slot is bound, so the outputs screen draws an unbound slot exactly as it draws a driving one and the refusal reaches the operator as a lead that does not move | a bound bit per slot on the OUTPUTS page, and the outputs screen drawing the difference |
-| Coprocessor board file | the build uses `pimoroni_pico_plus2_rp2350` (RP2350B, 16 MB flash); the bring-up module is a Waveshare RP2350-CAN (RP2350A, 4 MB flash) | a board header for the module, or a `-DPICO_BOARD` in CI; the final board is an RP2350B for the 27 to 32 GPIO (general-purpose input/output) the pin budget needs |
+| Coprocessor board file | the build uses `pimoroni_pico_plus2_rp2350` (RP2350B, 16 MB flash); the bring-up module is a Waveshare RP2350-CAN (RP2350A, 4 MB flash) | a board header for the module, or a `-DPICO_BOARD` in CI. The IO board carries two RP2354B (the RP2350B die with 2 MB of flash in the package), a main and a measurement coprocessor (owner, 2026-09-30); the draft pin map uses 44 and 32 of their 48 GPIO (general-purpose input/output) each ([Pins](hardware/docs/Pins.md)). The tree builds one coprocessor image; the measurement coprocessor's image is not written. With 2 MB, the output store in `out_store.c` sits in the last two sectors of the 2 MB, and the `-DLIMIT` image guard in `firmware/iomcu/CMakeLists.txt` becomes 2,088,960 bytes in place of 4,186,112: [IO (input/output) board research](hardware/docs/Research.md#consequence-of-the-rp2354bs-2-mb-flash) |
 | Panel TWAI pins | GPIO19 (RX) and GPIO20 (TX) inferred from the multiplexer; confirmed empirically by the bring-up | trace on the schematic |
 | UART (universal asynchronous receiver-transmitter) socket GPIOs | UART0's default pins assumed for the bridged USB-C socket; the secondary USB-Serial-JTAG (the ESP32-S3's built-in USB (Universal Serial Bus) serial and debug bridge) console covers a mismatch | read off the schematic |
 | S.BUS receiver | decoder built; the inverted 8E2 receiver at 100 kbaud is a PIO program that is not written | PIO program |
-| Measurement front end | INA238 (motor), INA745A (servo rail), BQ25887 (pack) and TPS55288 (servo supply) selected; no schematic | [hardware record](hardware/STATUS.md) |
+| Measurement front end | round 1 of [the component research](hardware/docs/Research.md) ran from 2026-09-28 to 2026-09-30 and selected 49 parts. The motor monitor is the INA228 and the servo supply three TPS55285, which the owner keeps although round 1 refutes one at 4.0 A continuous from the pack floor (owner, 2026-09-30). The 20 output ports take a channel each of 7 INA3221. Round 2 selects the parts round 1 left open and is planned in the research page. No schematic exists. [The IO board specification](hardware/docs/IOBoard.md) is a draft | [hardware record](hardware/STATUS.md) |
 | Monostable | not on any board | hardware |
 | The release publishes without waiting for CI | `release.yml` and `ci.yml` both trigger on a `v*` tag and run in parallel. `release.yml`'s publish job needs only its own two build jobs, so the host suite, the sanitizer run, the coverage floors, clang-tidy, cppcheck, ruff, `check_docs.py`, the frame-cost ceilings and the screenshot check cannot stop `gh release create`. Both files build the two images with the same steps, so the artefacts are the ones CI would have built; what is unguarded is everything CI checks that is not a build. A tag added a `version` job that refuses a tag not matching `rcbench_version.h`, which is the narrow case that was worth making structural | a `workflow_run` trigger on a successful CI run for tag refs, or the host suite folded into `release.yml` as a job the builds need. Until then: confirm CI is green on the commit before pushing the tag |
 | OpenYGE wire facts | seven items want a capture: rpm scale, CRC (cyclic redundancy check) seed, frame length, legacy header, turnaround, parameter indices, `status2` | an ESC and a logic analyser; [list](docs/OpenYGE.md#8-what-to-measure-before-trusting-this-page) |
@@ -319,9 +320,10 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
   the 3.3 V rail comes up after the 5 V rail on a module build.
 - Native USB and CAN are exclusive on GPIO19/20. The console is UART0 with
   USB-Serial-JTAG as secondary.
-- The motor monitor is the INA238. The INA228 has no stock at either vendor
-  (checked 2026-09-01); one footprint takes either, and DEVICE_ID says which is
-  fitted.
+- The motor monitor is the INA228 (owner, 2026-09-30). Its stock is not read
+  after 2026-09-01, when JLCPCB held 29 with a presale count of -477 and
+  Digi-Key 0. The INA238 takes the same footprint, and DEVICE_ID (register
+  0x3F: 0x2281 or 0x2381) says which is fitted.
 - The monostable window is 150 ms.
 - A main-flash operation stops the panel scanning for its duration. The bounce
   buffer holds 10 lines (512 us at the 16 MHz pixel clock) and is refilled

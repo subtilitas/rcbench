@@ -1,0 +1,394 @@
+{
+ "role": "rerank",
+ "category": "R5",
+ "label": "rerank-R5",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "functions": [
+   {
+    "function": "reverse-polarity protection",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "LM74800QDRRRQ1",
+      "reason": "Unchanged from P2: reverse survival to -65 V, forward/transient to 65-70 V, DGATE blocks the pack from the DC pins in 0.875 us maximum, passes rule 4 (JLCPCB 3108/3039) and rule 5 (Digi-Key 7634, second-vendor). P3's onsemi candidate for this slot does not qualify (see dropped_from_p3), so the order stands.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "LM74810QDRRRQ1",
+      "reason": "Unchanged: rank 1's pins and thresholds with a faster DGATE turn-on, at USD 3.10 against 2.36 at the need.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "LM74800MDRRR",
+      "reason": "Unchanged: rank 1's die as the non-automotive orderable, at the highest price of the three.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "NCV68261MTWAITBG",
+      "maker": "onsemi",
+      "reason": "Fails 'reverse voltage survived' (-25.2 V required): NCV68261/D Rev. 1 (May 2022) Table 2 gives Input and Source Voltage DC (V_S) -18 V to 45 V, so continuous reverse survival stops at -18 V, short of -25.2 V; the -40 V figure P3 found is an ISO 7637-2 transient pulse, not the continuous value this requirement asks for. onsemi is S1-allowed and P2 never searched it for this controller slot, but the part itself does not qualify."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "LM74800QDRRRQ1",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "overvoltage protection",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "LM74800QDRRRQ1",
+      "reason": "Unchanged from P2: OV comparator spans 5.9 %, inside the 10 % band with margin at both corners, cuts off in 5.4 us maximum; the same part serves reverse polarity, inrush and source selection so the function adds no part.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "LM74810QDRRRQ1",
+      "reason": "Unchanged: rank 1's comparator and timing in the same footprint at a higher price.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "LM74800MDRRR",
+      "reason": "Unchanged: rank 1's comparator and timing as the non-automotive orderable at the highest price of the three.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "NCV68261MTWAITBG",
+      "maker": "onsemi",
+      "reason": "Fails 'cut-off band' (a trip that stays between 20.0 V and 22.0 V is required): the datasheet's page-1 Features state a fixed overvoltage disconnect at V_IN = 35.6 V typical with no external programming pin (Table 6 gives only a 3-32 V recommended input range), so the trip point cannot be set inside the required band at all. onsemi is S1-allowed and unsearched by P2 for this function, but the part does not qualify."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "LM74800QDRRRQ1",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "inrush limiting",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "LM74800QDRRRQ1",
+      "reason": "Unchanged from P2: a capacitor on HGATE sets the inrush with the part already on each input; the function adds no part.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "LM74810QDRRRQ1",
+      "reason": "Unchanged: rank 1's HGATE source current and equation in the same footprint at a higher price.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "LM74800MDRRR",
+      "reason": "Unchanged: rank 1's inrush circuit as the non-automotive orderable at the highest price of the three.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "NCV68261MTWAITBG",
+      "maker": "onsemi",
+      "reason": "Fails 'operating input range' as stated ('where it sits at a terminal it survives -25.2 V and 25.2 V'): Table 2's Input and Source Voltage DC is -18 V to 45 V, so -25.2 V is not survived. onsemi is S1-allowed and unsearched by P2 for this function, but the part does not qualify."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "LM74800QDRRRQ1",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "source selection",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "LM74800QDRRRQ1",
+      "reason": "Unchanged from P2: a two-input ideal-diode OR with a UV-gated DC path meets both V88 corners with no switchover gap; the same part as the protection functions.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "LM74810QDRRRQ1",
+      "reason": "Unchanged: rank 1's OR circuit and thresholds in the same footprint at a higher price.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "LM74800MDRRR",
+      "reason": "Unchanged: rank 1's OR circuit as the non-automotive orderable at the highest price.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "NCV68261MTWAITBG",
+      "maker": "onsemi",
+      "reason": "Fails 'input survival' (-25.2 V and 25.2 V on either input required): Table 2 gives V_S -18 V to 45 V, so the -25.2 V corner is not survived. onsemi is S1-allowed and unsearched by P2 for this function, but the part does not qualify."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "LM74800QDRRRQ1",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "pack disconnect",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "3.3 V logic buck",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "LMQ66430MC3RXBRQ1",
+      "reason": "Unchanged from P2: the tightest output row read, stated across the whole input range in FPWM and over TJ -40 to 150 degC, with no divider terms; 3 A against 1.36 A; stock at both vendors. P3's ROHM candidate for this function does not qualify (see dropped_from_p3).",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "LM61460AFSQRJRRQ1",
+      "reason": "Unchanged: reference +/-1 % across the input range in FPWM; below rank 1 because a divider adds resistor and leakage terms.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "LMR43620MSC3RPERQ1",
+      "reason": "Unchanged: output row as tight as rank 1 in the smallest package, but no second source and a higher price.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "BD9P235EFV-CE2",
+      "maker": "ROHM",
+      "reason": "Fails '3.3 V tolerance at the monostable' as stated: ROHM datasheet TSZ02201-0J1J0AL01490-1-2 Rev.002's Electrical Characteristics table is headed 'Ta = -40 degC to +125 degC, VIN = 12 V' and its Output Voltage row (3.250 V to 3.366 V, PWM mode) is stated only under that single VIN condition, with no sweep across 5.8-22 V -- the same standard P2 already applied to reject LMR51420YFDDCR, LMR51430YFDDCR, L6981N33DR, MAX17504ATP+T and TPS62933DRLR/FDRLR's single-condition rows. It also has an undocumented auto PFM/PWM SLEEP light-load mode unless the MODE pin is forced high. ROHM is S1-allowed and unsearched by P2 for either buck function, but the part does not qualify."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "LMQ66430MC3RXBRQ1",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "5 V rail",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPS62933DRLR",
+      "reason": "Unchanged from P2: 3 A against 2.5 A, 98 % duty at the 5.8 V floor, tolerance 3.5 %, the largest stock at both vendors. P3 raised no candidate against this function.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TPS563300DRLR",
+      "reason": "Unchanged: rank 1's reference, duty and switch in the same pins, with less stock and a lower absolute-maximum input.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "LMR51430YFDDCR",
+      "reason": "Unchanged: tightest reference of the three for this rail, but no second source.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPS62933DRLR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "display supply",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPS259474ARPWR",
+      "reason": "Unchanged from P2: true reverse blocking and a circuit breaker with auto-retry that turns a cable short off. P3 raised no candidate against this function.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TPS259470ARPWR",
+      "reason": "Unchanged: the same switch holding a short at 2.5 A rather than breaking it, with the largest stock at both vendors.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TPS259474LRPWR",
+      "reason": "Unchanged: latch-off needs an EN toggle the tree does not provide.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPS259474ARPWR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "receiver supply",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "encoder 12 V supply",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPS55288RPMR",
+      "reason": "Unchanged from P2: integrated switches and a stated output current limit; needs the I2C address opposite the TPS55285 and firmware writes for HICCUP and OE. P3's Renesas candidates for this function fail rule 4 today (see dropped_from_p3).",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "LM5175PWPR",
+      "reason": "Unchanged: meets every value with no I2C and no firmware step, but four external MOSFETs and two sense resistors for a 160 mA load.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "LM5176PWPR",
+      "reason": "Unchanged: rank 2's circuit pin for pin at a higher price and less Digi-Key stock.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "ISL81401AFRZ",
+      "maker": "Renesas",
+      "reason": "Fails sourcing rule 4 today: JLCPCB C1019003, read live 2026-09-29T17:12:41Z, stockCount 0 and canPresaleNumber -1 (a negative presale count fails outright, rule 4), against a gate of 50 (need 5 boards x 1). The family's better-stocked package variant, ISL81401FRZ (C3189250), is also far under the gate at stockCount 11, canPresaleNumber 11 (read 2026-09-29T17:12:46Z). Renesas is S1-allowed and unsearched by P2 for this function, but no orderable reaches the gate, so the datasheet values were not checked further."
+     },
+     {
+      "part": "ISL81601FVEZ",
+      "maker": "Renesas",
+      "reason": "Fails sourcing rule 4 today: JLCPCB C1019005, read live 2026-09-29T17:12:43Z, stockCount 0 and canPresaleNumber 0, against a gate of 50. The family's better-stocked package variant, ISL81601FRZ-T (C3189243), is also far under the gate at stockCount 10, canPresaleNumber 10 (read 2026-09-29T17:12:44Z). Renesas is S1-allowed and unsearched by P2 for this function, but no orderable reaches the gate."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPS55288RPMR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "2S pack connector",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "logic supply from the RP2354B's USB port (IOBoard.md:384, marked R5)",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "NCV68261MTWAITBG (onsemi) disqualified from all four controller functions",
+    "value": "Fails every function P3 proposed it for. Datasheet NCV68261/D Rev. 1 (May 2022), Table 2: Input and Source Voltage DC (V_S) -18 V to 45 V -- reverse-polarity protection's 'reverse voltage survived' (-25.2 V), inrush limiting's and source selection's input-survival clauses (-25.2 V and 25.2 V at a terminal) all fail on the -18 V continuous limit (the -40 V P3 cited is an ISO 7637-2 transient pulse, not a continuous rating). Overvoltage protection's 'cut-off band' (a trip staying inside 20.0-22.0 V) fails separately: page 1's Features state a fixed disconnect at V_IN = 35.6 V typical with no external programming pin, and Table 6 gives only a 3-32 V recommended input range. onsemi is S1-allowed and P2 never searched it for this ideal-diode/high-side-switch controller slot, as P3 found, but the part itself does not qualify for any of the four functions.",
+    "source": "P3's reading of NCV68261/D Rev. 1 Table 2 and page-1 Features (fetched 2026-09-29T17:00:11Z); JLCPCB erpComponentName read 2026-09-29T16:59:39Z"
+   },
+   {
+    "figure": "BD9P235EFV-CE2 (ROHM) disqualified from the 3.3 V logic buck",
+    "value": "Fails '3.3 V tolerance at the monostable' as stated. ROHM datasheet TSZ02201-0J1J0AL01490-1-2 Rev.002's Electrical Characteristics table is headed 'Ta = -40 degC to +125 degC, VIN = 12 V' and its Output Voltage row (3.250 V to 3.366 V, PWM mode) is stated only under that single VIN condition, with no sweep across the 5.8-22 V operating range -- the same standard that already dropped LMR51420YFDDCR, LMR51430YFDDCR, L6981N33DR, MAX17504ATP+T and TPS62933DRLR/FDRLR's single-condition rows in P2's return. It also carries an undocumented auto PFM/PWM SLEEP light-load mode with its own thresholds (page 11) unless the MODE pin is forced high. ROHM is S1-allowed and P2 never searched it for either buck function, as P3 found, but the part does not qualify.",
+    "source": "P3's reading of TSZ02201-0J1J0AL01490-1-2 Rev.002 (fetched via JLCPCB's hosted copy, 2026-09-29T17:04:02Z), Electrical Characteristics table and page 11 SLEEP thresholds"
+   },
+   {
+    "figure": "ISL8140x/ISL8160x family (Renesas) fails rule 4 today, live figures",
+    "value": "Checked live against the gate of 50 (need 5 boards x 1 placement): ISL81401AFRZ (C1019003) stockCount 0, canPresaleNumber -1 (a negative presale count fails outright, sourcing rule 4); ISL81601FVEZ (C1019005) stockCount 0, canPresaleNumber 0. The family's better-stocked package variants also fail: ISL81601FRZ-T (C3189243) stockCount 10, canPresaleNumber 10; ISL81401FRZ (C3189250) stockCount 11, canPresaleNumber 11; every other orderable in the 2026-09-14 jlcparts snapshot for this family shows 0 stock. Renesas is S1-allowed and P2 never searched it for the encoder 12 V supply, as P3 found, but no orderable in the family reaches the gate, so the datasheet's input range, output accuracy, current-limit and hiccup-behaviour values were not checked.",
+    "source": "vendors.py jlcpcb C1019003 (2026-09-29T17:12:41Z), C1019005 (17:12:43Z), C3189243 (17:12:44Z), C3189250 (17:12:46Z)"
+   },
+   {
+    "figure": "LTC4368IMS-2#TRPBF drop reason corrected; drop itself stands",
+    "value": "P2's identical drop text for reverse-polarity protection, overvoltage protection and inrush limiting cited JLCPCB C580890 (34/33) as evidence the part has 'no route of rule 5'. C580890 is not this part's own LCSC: read live today it is LTC4368CMS-2#PBF (Commercial grade, tube), stockCount 34, canPresaleNumber 33 -- a different orderable from the Industrial-grade LTC4368IMS-2#TRPBF under review, confirming P3's finding. This part's own LCSC, C688403, read live today, is confirmed as LTC4368IMS-2#TRPBF itself: stockCount 79, canPresaleNumber 77 -- above the gate of 50 (need 5 boards x 2 placements), so sourcing rule 4 (JLCPCB stock) passes for the part actually under review, not fails. The drop still stands, but on rule 5 alone: Digi-Key stock_available is 1 for the #TRPBF suffix (Cut Tape 1, Tape & Reel 0, Digi-Reel 1) and 0 for the #PBF suffix, both far under the gate of 50, and no pin-compatible alternate passing rules 1-4 in the same ideal-diode-OR circuit was identified for it.",
+    "source": "vendors.py jlcpcb C688403 and C580890 (read 2026-09-29T17:12:55Z and 17:12:56Z); vendors.py digikey LTC4368IMS-2#TRPBF (cached reading of 2026-09-29T12:48:49Z) and LTC4368IMS-2#PBF (cached reading of 2026-09-29T12:51:52Z); P3's finding under exclusions_not_holding"
+   }
+  ]
+ }
+}

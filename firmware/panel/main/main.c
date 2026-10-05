@@ -1126,11 +1126,52 @@ static const char *card_volume(void *ctx)
     return storage_card_name();
 }
 
+/*
+ * Delete a run the operator confirmed on the screen.
+ *
+ * Refused for the run the logger has open, for the reason card_open() refuses
+ * it: the name can come from a list taken before the run started.  Deleting
+ * it would pull the directory entry out from under the logger's handle, and
+ * the logger would go on writing a run nobody can find.
+ *
+ * And refused for anything that is not a plain name in the card's root: the
+ * viewer only ever lists those, so a separator here is a caller defect and
+ * not a path to follow.
+ */
+static bool card_remove(const char *name, void *ctx)
+{
+    (void)ctx;
+    if (name == NULL || name[0] == '\0' || strchr(name, '/') != NULL
+        || strcmp(name, ".") == 0 || strcmp(name, "..") == 0) {
+        return false;
+    }
+    const unsigned open_run = atomic_load(&s_log_open_run);
+    if (open_run != 0u && log_run_number(name) == (int)open_run) {
+        ESP_LOGW(TAG, "%s is still being written", name);
+        return false;
+    }
+    /* The viewer closes what it reads before it lists again, so nothing is
+     * open here; closed anyway, because FAT will not delete an open file. */
+    if (s_card_file != NULL) {
+        fclose(s_card_file);
+        s_card_file = NULL;
+    }
+    char path[STORAGE_NAME_MAX + sizeof(STORAGE_MOUNT_POINT) + 2];
+    storage_path(CARD_DIR, name, path, sizeof(path));
+    if (remove(path) != 0) {
+        ESP_LOGW(TAG, "could not delete %s", path);
+        return false;
+    }
+    ESP_LOGI(TAG, "deleted %s", path);
+    return true;
+}
+
 static const log_viewer_io_t k_card_io = {
     .list   = card_list,
     .open   = card_open,
     .close  = card_close,
     .volume = card_volume,
+    .remove = card_remove,
     .ctx    = NULL,
 };
 

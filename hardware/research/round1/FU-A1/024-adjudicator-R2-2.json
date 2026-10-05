@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R2",
+ "label": "adjudicator-R2-2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "function": "function requirements: Link CAN controller",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands on both counts. First, the list leaves out the operating ambient range. The owner's answer to V7 sets 0 to 50 °C ambient as \"one range for the whole IO board\". That makes it a requirement for every part on the board, the link CAN controller included, and the list names no temperature range. Second, the interface entry reads \"SPI mode 0 at 10 MHz or more, and an interrupt output\". IOBoard.md:170 requires \"an active-low interrupt line with a pull-up\". The list's entry is weaker: a controller with an active-high or push-pull-only interrupt passes the list but fails the specification. The other entries match their sources: bus :167, bit timing :168, clock :169, error reporting :172, logic level :175, RXCAN and TXCAN test points :560, and V26, V28 and V16 as for research. V16 feeds Q8 only. Both defects are in this function's requirement list, not in any part, so the scope is function. The MCP2518FD may meet both missing values (E grade -40 to +125 °C, active-low INT). That figure comes from the verifier's reading of DS20006027B, which this adjudication did not re-read. It does not repair the list either way.",
+  "evidence": "Research.md:567 (V7, R1, 12 MHz crystal), Answer column: \"0 to 50 °C ambient, one range for the whole IO board (owner, 2026-09-28)\". The claim's 9 entries carry no temperature range. IOBoard.md:170, Controller interface: \"SPI at 10 MHz, mode 0, and an active-low interrupt line with a pull-up: 5 GPIO\". The claim reads \"an interrupt output\". Research.md:576 (V16) ends \"(feeds Q8 only)\" and is answered \"for research\". The P4 datasheet return for R3 (T2/032-P4-datasheet-R3.json) carries \"V38 (0 to 50 degC)\" as a requirement. The claims that the R4 and R10 returns (T2/004-P2-R4, T4/002-P2-R10) carry the range were not confirmed by a text search for \"0 to 50\" or \"V7\". The ruling does not depend on them. selection.json has R2 \"Link CAN controller\" with part null and rank null.",
+  "source": "checkout /home/claude/rcbench-research/round1/checkout-10b0bade34de at 10b0bade34dea67341eff3d05793d6d50a7878b4: hardware/docs/Research.md:280, :358, :567, :576; hardware/docs/IOBoard.md:167-172, :175, :560; results/hardware/research/round1/T2/032-P4-datasheet-R3.json; results/hardware/research/round1/selection.json",
+  "read_at": "2026-09-28T18:37:45Z",
+  "scope": "function"
+ }
+}

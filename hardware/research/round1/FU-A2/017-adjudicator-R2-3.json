@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R2",
+ "label": "adjudicator-R2-3",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "function": "function requirements: Link CAN transceiver",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. Scope: function. The loop-delay entry takes the cable path as the bus alone, 2 x 5 m. IOBoard.md:177 sets 'the bus under 5 m; each board's branch under 30 cm'. With two nodes, the path from one transceiver to the other is branch + bus + branch, up to 5.6 m. The method the claim uses (sample point at 75 % of the 1 us bit = 750 ns; propagation at 5 ns/m; the display's transceiver taken as equal) then gives (750 ns - 2 x 5.6 m x 5 ns/m) / 2 = 694 / 2 = 347 ns per transceiver, not 350 ns. The 350 ns entry is 3 ns looser than the sources allow, so the requirement value is wrong as written. It should read 'TXD-to-RXD loop delay at most 347 ns', derived from 5.6 m. Two assumptions carry over from the claim. First, the display's transceiver delay is taken as equal to this one's, because no page in the tree states it. Second, the budget leaves out oscillator tolerance and resynchronisation margin. The other entries were not refuted and this ruling does not change them. Whether a ranked part changes was not re-read here. By the verifier's figures (TCAN3413DR 180 ns, SN65HVD233DR 135 ns, TCAN1044VDRQ1 210 ns), all of them meet 347 ns.",
+  "evidence": "IOBoard.md:177 (checkout e13f5f60d2e5), Link cable row: 'the bus under 5 m; each board's branch under 30 cm'. IOBoard.md:168 and docs/Link.md:196-209: 'Both ends sample at 75% of the bit', at exactly 1 Mbit/s, so the sample point falls 750 ns into the bit. The DroneCAN hardware design recommendations page, read 2026-09-29T01:26:55Z, says bus length limits assume 'the propagation delay does not exceed 5 ns/m, not including additional delay times of CAN transceivers'. The same page gives a maximum stub length of 0.3 m at 1000 kbit/s. Round trip = loop(IO board) + loop(display) + 2 x cable delay <= 750 ns. The cable is 0.3 + 5 + 0.3 = 5.6 m, so its delay is 5.6 m x 5 ns/m = 28 ns and twice that is 56 ns. With equal loops: (750 - 56) / 2 = 347 ns. The claim's 2 x 5 m gives (750 - 50) / 2 = 350 ns.",
+  "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:168, :177; docs/Link.md:196-209; https://dronecan.github.io/Specification/8._Hardware_design_recommendations/ fetched with vendors.py fetch (saved as /home/claude/rcbench-research/round1/scratch/FU-A2/adjudicator-R2/dc.html)",
+  "read_at": "2026-09-29T01:26:55Z",
+  "scope": "function"
+ }
+}

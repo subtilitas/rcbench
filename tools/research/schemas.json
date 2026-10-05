@@ -1,0 +1,1770 @@
+{
+ "defs": {
+  "str": {
+   "type": "string"
+  },
+  "strs": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "requirement": {
+   "type": "object",
+   "properties": {
+    "name": {
+     "type": "string"
+    },
+    "required": {
+     "type": "string",
+     "description": "value and unit the specification or an answer fixes"
+    },
+    "datasheet": {
+     "type": "string",
+     "description": "the datasheet's value and unit, with its table or page"
+    },
+    "pass": {
+     "type": "boolean"
+    },
+    "source": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "name",
+    "required",
+    "datasheet",
+    "pass",
+    "source"
+   ]
+  },
+  "candidate": {
+   "type": "object",
+   "properties": {
+    "rank": {
+     "type": "integer"
+    },
+    "part": {
+     "type": "string"
+    },
+    "p3_part": {
+     "type": "string",
+     "description": "the re-rank's record of a P3 candidate only: the part text of the entry of P3's it answers, copied exactly"
+    },
+    "maker": {
+     "type": "string",
+     "description": "from the datasheet; the allowlist name it counts as"
+    },
+    "lcsc": {
+     "type": "string",
+     "description": "C number, or none for a part off the board C followed by digits, or none for a part off the board"
+    },
+    "package": {
+     "type": "string"
+    },
+    "placements": {
+     "type": "integer",
+     "minimum": 1,
+     "description": "placements per board, at least 1 (sourcing rule 4)"
+    },
+    "held": {
+     "type": "integer",
+     "description": "quantity in the owner's personal library, 0 if not held"
+    },
+    "requirements": {
+     "type": "array",
+     "items": {
+      "$ref": "requirement"
+     }
+    },
+    "jlcpcb": {
+     "type": "string",
+     "description": "stockCount, canPresaleNumber, componentLibraryType, price at the need, time read, API call; or not read and why"
+    },
+    "digikey": {
+     "type": "string",
+     "description": "stock_available, lead_weeks, status, time read, API call; or not read and why"
+    },
+    "gate": {
+     "type": "string",
+     "description": "need = 5 boards x placements, threshold per S4, pass or fail per sourcing rule 4 or 6"
+    },
+    "lifecycle": {
+     "type": "string",
+     "description": "status and its source, longevity, first datasheet date, notices, distributor status"
+    },
+    "second_source": {
+     "type": "string",
+     "description": "the route of sourcing rule 5 that passes, with evidence, or none"
+    },
+    "alternates": {
+     "$ref": "strs"
+    },
+    "driver_in_shared": {
+     "type": "string",
+     "description": "path under shared/ or none"
+    },
+    "reason": {
+     "type": "string",
+     "description": "why this rank"
+    },
+    "placements_basis": {
+     "type": "string",
+     "description": "fixed by the specification, or the range and its basis; placements is the top of the range (sourcing rule 4)"
+    },
+    "second_source_route": {
+     "type": "string",
+     "enum": [
+      "alternate",
+      "second-vendor",
+      "none"
+     ],
+     "description": "the route of sourcing rule 5 this part passes by"
+    },
+    "second_source_part": {
+     "type": "string",
+     "description": "the alternate's part number when the route is alternate, else empty"
+    }
+   },
+   "required": [
+    "rank",
+    "part",
+    "maker",
+    "lcsc",
+    "package",
+    "placements",
+    "placements_basis",
+    "held",
+    "requirements",
+    "jlcpcb",
+    "digikey",
+    "gate",
+    "lifecycle",
+    "second_source",
+    "alternates",
+    "driver_in_shared",
+    "reason",
+    "second_source_route",
+    "second_source_part"
+   ]
+  },
+  "dropped": {
+   "type": "object",
+   "properties": {
+    "part": {
+     "type": "string"
+    },
+    "maker": {
+     "type": "string"
+    },
+    "reason": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "part",
+    "maker",
+    "reason"
+   ]
+  },
+  "question": {
+   "type": "object",
+   "properties": {
+    "function": {
+     "type": "string"
+    },
+    "question": {
+     "type": "string",
+     "description": "one question the owner answers with a value, with its unit"
+    },
+    "why": {
+     "type": "string",
+     "description": "what P2 cannot qualify without it"
+    },
+    "blocks": {
+     "type": "string",
+     "enum": [
+      "p2",
+      "decision-only"
+     ]
+    },
+    "decision": {
+     "type": "string",
+     "enum": [
+      "none",
+      "Q4",
+      "Q8",
+      "Q9"
+     ]
+    },
+    "for_where": {
+     "type": "string",
+     "description": "the where (file:line) of the value this question asks for, or empty"
+    },
+    "for_quantity": {
+     "type": "string",
+     "description": "the quantity of the value this question asks for, as P1's values name it, or empty"
+    },
+    "asks": {
+     "type": "string",
+     "description": "the name of the \"P1 asks\" item this question raises, as the prompt lists it, or empty"
+    }
+   },
+   "required": [
+    "function",
+    "question",
+    "why",
+    "blocks",
+    "decision",
+    "for_where",
+    "for_quantity",
+    "asks"
+   ]
+  },
+  "conflict": {
+   "type": "object",
+   "properties": {
+    "parts": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "each part exactly as hardware/research/round1/selection.json writes it"
+    },
+    "categories": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "each category by its ID alone, R1 to R13"
+    },
+    "kind": {
+     "type": "string"
+    },
+    "description": {
+     "type": "string"
+    },
+    "evidence": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "parts",
+    "categories",
+    "kind",
+    "description",
+    "evidence"
+   ]
+  },
+  "gap": {
+   "type": "object",
+   "properties": {
+    "spec_line": {
+     "type": "string"
+    },
+    "kind": {
+     "type": "string",
+     "enum": [
+      "no-part",
+      "no-date",
+      "unanswered",
+      "value-not-found",
+      "other"
+     ]
+    },
+    "category": {
+     "type": "string",
+     "description": "the category the line belongs to, by its ID alone, R1 to R13"
+    },
+    "description": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "spec_line",
+    "kind",
+    "category",
+    "description"
+   ]
+  },
+  "checks": {
+   "type": "object",
+   "properties": {
+    "check_docs": {
+     "type": "object",
+     "properties": {
+      "passed": {
+       "type": "boolean"
+      },
+      "output": {
+       "type": "string",
+       "description": "the command's last lines"
+      }
+     },
+     "required": [
+      "passed",
+      "output"
+     ]
+    },
+    "ruff": {
+     "type": "object",
+     "properties": {
+      "passed": {
+       "type": "boolean"
+      },
+      "output": {
+       "type": "string",
+       "description": "the command's last lines"
+      }
+     },
+     "required": [
+      "passed",
+      "output"
+     ]
+    },
+    "jlc_stock": {
+     "type": "object",
+     "properties": {
+      "passed": {
+       "type": "boolean"
+      },
+      "output": {
+       "type": "string",
+       "description": "the command's last lines, and every line of its report that starts [FAIL]"
+      }
+     },
+     "required": [
+      "passed",
+      "output"
+     ]
+    }
+   },
+   "required": [
+    "check_docs",
+    "ruff",
+    "jlc_stock"
+   ]
+  },
+  "figure": {
+   "type": "object",
+   "properties": {
+    "figure": {
+     "type": "string",
+     "description": "a short name, unique within the return"
+    },
+    "value": {
+     "type": "string"
+    },
+    "source": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "figure",
+    "value",
+    "source"
+   ]
+  }
+ },
+ "roles": {
+  "P0": {
+   "type": "object",
+   "properties": {
+    "versions": {
+     "type": "string",
+     "description": "Claude Code, git, python3, ruff, 7-Zip, curl_cffi"
+    },
+    "hosts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "host": {
+        "type": "string"
+       },
+       "url": {
+        "type": "string"
+       },
+       "client": {
+        "type": "string"
+       },
+       "http_status": {
+        "type": "integer"
+       },
+       "bytes": {
+        "type": "integer"
+       },
+       "status_marker": {
+        "type": "string",
+        "description": "the text the marker matched; for a host without a marker, the lifecycle status as the page body states it; none where the page states none"
+       },
+       "reachable": {
+        "type": "boolean"
+       },
+       "note": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "host",
+       "url",
+       "client",
+       "http_status",
+       "bytes",
+       "status_marker",
+       "reachable",
+       "note"
+      ]
+     }
+    },
+    "jlcparts": {
+     "type": "object",
+     "properties": {
+      "path": {
+       "type": "string"
+      },
+      "sha256": {
+       "type": "string"
+      },
+      "sha256_ok": {
+       "type": "boolean"
+      },
+      "rows": {
+       "type": "integer"
+      },
+      "missing_lcsc": {
+       "$ref": "strs"
+      }
+     },
+     "required": [
+      "path",
+      "sha256",
+      "sha256_ok",
+      "rows",
+      "missing_lcsc"
+     ]
+    },
+    "monostable": {
+     "type": "object",
+     "properties": {
+      "commit": {
+       "type": "string"
+      },
+      "path": {
+       "type": "string"
+      },
+      "fetched": {
+       "type": "boolean"
+      }
+     },
+     "required": [
+      "commit",
+      "path",
+      "fetched"
+     ]
+    },
+    "checkout_head": {
+     "type": "string",
+     "description": "git rev-parse HEAD of the read-only checkout"
+    },
+    "stop": {
+     "type": "boolean"
+    },
+    "stop_reasons": {
+     "$ref": "strs"
+    },
+    "held": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "category": {
+        "type": "string"
+       },
+       "host": {
+        "type": "string"
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "category",
+       "host",
+       "reason"
+      ]
+     }
+    },
+    "snapshot": {
+     "type": "string",
+     "description": "the created time of the parts database's manifest.json"
+    }
+   },
+   "required": [
+    "versions",
+    "hosts",
+    "jlcparts",
+    "snapshot",
+    "monostable",
+    "checkout_head",
+    "stop",
+    "stop_reasons",
+    "held"
+   ]
+  },
+  "P1": {
+   "type": "object",
+   "properties": {
+    "category": {
+     "type": "string",
+     "pattern": "^R([1-9]|1[0-3])$",
+     "description": "the category's ID, R1 to R13, not its name"
+    },
+    "values": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "where": {
+        "type": "string",
+        "description": "file:line in the checkout"
+       },
+       "quantity": {
+        "type": "string"
+       },
+       "value": {
+        "type": "string"
+       },
+       "marking": {
+        "type": "string",
+        "enum": [
+         "sourced",
+         "owner",
+         "assumption"
+        ]
+       },
+       "source": {
+        "type": "string"
+       },
+       "refutation_tried": {
+        "type": "string"
+       },
+       "question": {
+        "type": "integer",
+        "description": "0-based index of the question in questions that asks for this value, or -1"
+       }
+      },
+      "required": [
+       "where",
+       "quantity",
+       "value",
+       "marking",
+       "source",
+       "refutation_tried",
+       "question"
+      ]
+     }
+    },
+    "questions": {
+     "type": "array",
+     "items": {
+      "$ref": "question"
+     }
+    },
+    "functions": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "every function the category row and its lines in IOBoard.md name, one short name each; P2 returns an entry for each by this name"
+    }
+   },
+   "required": [
+    "category",
+    "values",
+    "questions",
+    "functions"
+   ]
+  },
+  "P1-critic": {
+   "type": "object",
+   "properties": {
+    "category": {
+     "type": "string",
+     "pattern": "^R([1-9]|1[0-3])$",
+     "description": "the category's ID, R1 to R13, not its name"
+    },
+    "marking_verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer",
+        "description": "0-based index into P1's values"
+       },
+       "where": {
+        "type": "string"
+       },
+       "quantity": {
+        "type": "string"
+       },
+       "verdict": {
+        "type": "string",
+        "enum": [
+         "holds",
+         "wrong"
+        ]
+       },
+       "correct_marking": {
+        "type": "string",
+        "enum": [
+         "sourced",
+         "owner",
+         "assumption",
+         "unchanged"
+        ]
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "where",
+       "quantity",
+       "verdict",
+       "correct_marking",
+       "reason"
+      ]
+     }
+    },
+    "question_verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer",
+        "description": "0-based index into P1's questions"
+       },
+       "verdict": {
+        "type": "string",
+        "enum": [
+         "confirmed",
+         "rejected"
+        ]
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "verdict",
+       "reason"
+      ]
+     }
+    },
+    "added": {
+     "type": "array",
+     "items": {
+      "$ref": "question"
+     }
+    },
+    "functions_missing": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "functions the row or its lines name that P1's functions list lacks"
+    }
+   },
+   "required": [
+    "category",
+    "marking_verdicts",
+    "question_verdicts",
+    "added",
+    "functions_missing"
+   ]
+  },
+  "P1-recheck": {
+   "type": "object",
+   "properties": {
+    "verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "category": {
+        "type": "string"
+       },
+       "index": {
+        "type": "integer",
+        "description": "0-based index into that critic's added list"
+       },
+       "verdict": {
+        "type": "string",
+        "enum": [
+         "confirmed",
+         "rejected"
+        ]
+       },
+       "evidence": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "category",
+       "index",
+       "verdict",
+       "evidence"
+      ]
+     }
+    }
+   },
+   "required": [
+    "verdicts"
+   ]
+  },
+  "P2": {
+   "type": "object",
+   "properties": {
+    "category": {
+     "type": "string",
+     "pattern": "^R([1-9]|1[0-3])$",
+     "description": "the category's ID, R1 to R13, not its name"
+    },
+    "found_values": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "question_id": {
+        "type": "string"
+       },
+       "value": {
+        "type": "string"
+       },
+       "source": {
+        "type": "string"
+       },
+       "read_at": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "question_id",
+       "value",
+       "source",
+       "read_at"
+      ]
+     }
+    },
+    "functions": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "function": {
+        "type": "string"
+       },
+       "requirements": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "name": {
+           "type": "string"
+          },
+          "value": {
+           "type": "string"
+          },
+          "source": {
+           "type": "string"
+          }
+         },
+         "required": [
+          "name",
+          "value",
+          "source"
+         ]
+        }
+       },
+       "shortlist": {
+        "type": "array",
+        "items": {
+         "$ref": "candidate"
+        }
+       },
+       "dropped": {
+        "type": "array",
+        "items": {
+         "$ref": "dropped"
+        }
+       }
+      },
+      "required": [
+       "function",
+       "requirements",
+       "shortlist",
+       "dropped"
+      ]
+     }
+    },
+    "report": {
+     "type": "array",
+     "items": {
+      "$ref": "figure"
+     },
+     "description": "the figures the category reports for a decision or for P5 (R1 errata, pin ratings, pad figures and in-package flash, R2 frames held, R3 on the '423 behaviour with I_off, R10 on Q4, R12 on Q8)"
+    }
+   },
+   "required": [
+    "category",
+    "found_values",
+    "functions",
+    "report"
+   ]
+  },
+  "P3": {
+   "type": "object",
+   "properties": {
+    "category": {
+     "type": "string",
+     "pattern": "^R([1-9]|1[0-3])$",
+     "description": "the category's ID, R1 to R13, not its name"
+    },
+    "missed": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "function": {
+        "type": "string"
+       },
+       "part": {
+        "type": "string"
+       },
+       "maker": {
+        "type": "string"
+       },
+       "why": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "function",
+       "part",
+       "maker",
+       "why"
+      ]
+     }
+    },
+    "exclusions_not_holding": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "functions": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        },
+        "minItems": 1,
+        "description": "every function P2 dropped the part under for the reason that does not hold, named as P2 names it"
+       },
+       "part": {
+        "type": "string"
+       },
+       "reason_given": {
+        "type": "string"
+       },
+       "why_it_fails": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "functions",
+       "part",
+       "reason_given",
+       "why_it_fails"
+      ]
+     }
+    },
+    "missed_functions": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "function": {
+        "type": "string"
+       },
+       "why": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "function",
+       "why"
+      ]
+     },
+     "description": "functions the category row names that P2 returned no entry for"
+    }
+   },
+   "required": [
+    "category",
+    "missed",
+    "exclusions_not_holding",
+    "missed_functions"
+   ]
+  },
+  "rerank": {
+   "type": "object",
+   "properties": {
+    "category": {
+     "type": "string",
+     "pattern": "^R([1-9]|1[0-3])$",
+     "description": "the category's ID, R1 to R13, not its name"
+    },
+    "functions": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "function": {
+        "type": "string"
+       },
+       "ranking": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "rank": {
+           "type": "integer"
+          },
+          "part": {
+           "type": "string",
+           "description": "a part of P2's shortlist or of new_candidates, by its exact part number"
+          },
+          "reason": {
+           "type": "string"
+          },
+          "option": {
+           "type": "string",
+           "description": "on the Q4 or Q8 function, the part's option class (categories.json q_options); empty elsewhere"
+          }
+         },
+         "required": [
+          "rank",
+          "part",
+          "reason",
+          "option"
+         ]
+        }
+       },
+       "new_candidates": {
+        "type": "array",
+        "items": {
+         "$ref": "candidate"
+        },
+        "description": "full records of the P3 candidates that qualify"
+       },
+       "dropped_from_p3": {
+        "type": "array",
+        "items": {
+         "$ref": "dropped"
+        },
+        "description": "P3 candidates the re-rank drops, each with its reason: one entry for each entry of P3's it drops, its part text copied exactly from P3's entry"
+       },
+       "verify": {
+        "type": "array",
+        "description": "the parts P4 must verify: the first-ranked part, the sourcing-rule-5 alternate where the second source is an alternate, and in R10 and R12 the first-ranked part of each Q4 or Q8 alternative",
+        "items": {
+         "type": "object",
+         "properties": {
+          "part": {
+           "type": "string"
+          },
+          "kind": {
+           "type": "string",
+           "enum": [
+            "first",
+            "alternate",
+            "q-alternative"
+           ]
+          },
+          "option": {
+           "type": "string",
+           "description": "for a q-alternative, its option class (categories.json q_options); empty otherwise"
+          }
+         },
+         "required": [
+          "part",
+          "kind",
+          "option"
+         ]
+        }
+       },
+       "dropped_from_shortlist": {
+        "type": "array",
+        "items": {
+         "$ref": "dropped"
+        },
+        "description": "P2 candidates the re-rank removes, each with its reason"
+       },
+       "decision": {
+        "type": "string",
+        "enum": [
+         "none",
+         "Q4",
+         "Q8"
+        ],
+        "description": "Q4 on the R10 function that implements Q4, Q8 on the R12 function that implements Q8 (the non-volatile store), none elsewhere; that function's q-alternatives are the owner's choices"
+       },
+       "kept_option": {
+        "type": "string",
+        "description": "on the Q4 or Q8 function, the option class of its first-ranked part (categories.json q_options); empty elsewhere"
+       }
+      },
+      "required": [
+       "function",
+       "ranking",
+       "new_candidates",
+       "dropped_from_p3",
+       "dropped_from_shortlist",
+       "verify",
+       "decision",
+       "kept_option"
+      ]
+     }
+    },
+    "report": {
+     "type": "array",
+     "items": {
+      "$ref": "figure"
+     }
+    }
+   },
+   "required": [
+    "category",
+    "functions",
+    "report"
+   ]
+  },
+  "P4": {
+   "type": "object",
+   "properties": {
+    "category": {
+     "type": "string",
+     "pattern": "^R([1-9]|1[0-3])$",
+     "description": "the category's ID, R1 to R13, not its name"
+    },
+    "verifier": {
+     "type": "string",
+     "enum": [
+      "stock",
+      "datasheet"
+     ]
+    },
+    "parts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "function": {
+        "type": "string"
+       },
+       "part": {
+        "type": "string"
+       },
+       "kind": {
+        "type": "string",
+        "enum": [
+         "first",
+         "alternate",
+         "q-alternative"
+        ]
+       },
+       "verdict": {
+        "type": "string",
+        "enum": [
+         "confirmed",
+         "refuted"
+        ]
+       },
+       "checks": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "figure": {
+           "type": "string"
+          },
+          "stated": {
+           "type": "string"
+          },
+          "read": {
+           "type": "string"
+          },
+          "source": {
+           "type": "string"
+          },
+          "agrees": {
+           "type": "boolean",
+           "description": "the value read matches the value stated"
+          },
+          "passes": {
+           "type": "boolean",
+           "description": "the value read meets its requirement, or the rule-4, rule-5 or lifecycle gate passes"
+          },
+          "read_at": {
+           "type": "string",
+           "description": "the time the value was read (sourcing rule 7)"
+          }
+         },
+         "required": [
+          "figure",
+          "stated",
+          "read",
+          "source",
+          "agrees",
+          "passes",
+          "read_at"
+         ]
+        }
+       },
+       "refutation": {
+        "type": "string",
+        "description": "empty when confirmed"
+       }
+      },
+      "required": [
+       "function",
+       "part",
+       "kind",
+       "verdict",
+       "checks",
+       "refutation"
+      ]
+     }
+    },
+    "figures": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "figure": {
+        "type": "string"
+       },
+       "verdict": {
+        "type": "string",
+        "enum": [
+         "confirmed",
+         "refuted"
+        ]
+       },
+       "evidence": {
+        "type": "string"
+       },
+       "source": {
+        "type": "string",
+        "description": "the URL, datasheet table or API call the figure was re-read from"
+       },
+       "read_at": {
+        "type": "string",
+        "description": "the time the figure was re-read"
+       }
+      },
+      "required": [
+       "figure",
+       "verdict",
+       "evidence",
+       "source",
+       "read_at"
+      ]
+     },
+     "description": "from the datasheet verifier, one entry for every name in figures_to_check, with that exact name; from the stock verifier, none"
+    }
+   },
+   "required": [
+    "category",
+    "verifier",
+    "parts",
+    "figures"
+   ]
+  },
+  "adjudicator": {
+   "type": "object",
+   "properties": {
+    "category": {
+     "type": "string",
+     "pattern": "^R([1-9]|1[0-3])$",
+     "description": "the category's ID, R1 to R13, not its name"
+    },
+    "function": {
+     "type": "string"
+    },
+    "part": {
+     "type": "string"
+    },
+    "stands": {
+     "type": "boolean",
+     "description": "true when the refutation holds"
+    },
+    "ruling": {
+     "type": "string"
+    },
+    "evidence": {
+     "type": "string"
+    },
+    "source": {
+     "type": "string",
+     "description": "the URL, datasheet table or API call the ruling re-read"
+    },
+    "read_at": {
+     "type": "string",
+     "description": "the time the ruling's evidence was read"
+    },
+    "scope": {
+     "type": "string",
+     "enum": [
+      "part",
+      "function"
+     ],
+     "description": "part: what holds is about the part itself (lifecycle, end-of-life notice, maker allowlist, LCSC identity) and fails it in every function; function: about this function's requirements or quantity"
+    }
+   },
+   "required": [
+    "category",
+    "function",
+    "part",
+    "stands",
+    "ruling",
+    "evidence",
+    "source",
+    "read_at",
+    "scope"
+   ]
+  },
+  "P5": {
+   "type": "object",
+   "properties": {
+    "conflicts": {
+     "type": "array",
+     "items": {
+      "$ref": "conflict"
+     }
+    },
+    "combinations": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "bind_order": {
+        "type": "string"
+       },
+       "outputs": {
+        "type": "string"
+       },
+       "fits": {
+        "type": "boolean"
+       },
+       "resources": {
+        "type": "string"
+       },
+       "source": {
+        "type": "string",
+        "description": "the files, datasheet tables and lines the combination's resource count rests on"
+       },
+       "read_at": {
+        "type": "string",
+        "description": "the time the combination was worked out: its time as ISO 8601 UTC first (2026-10-03T08:37:16Z), alone or after one word naming the source (FU-2I 2026-10-03T00:13:52Z), then further readings and notes"
+       }
+      },
+      "required": [
+       "bind_order",
+       "outputs",
+       "fits",
+       "resources",
+       "source",
+       "read_at"
+      ]
+     }
+    },
+    "budgets": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "item": {
+        "type": "string"
+       },
+       "value": {
+        "type": "string"
+       },
+       "within": {
+        "type": "boolean",
+        "description": "the value is within its limit, or the check passes; true for a conditional check that does not apply"
+       },
+       "source": {
+        "type": "string"
+       },
+       "read_at": {
+        "type": "string",
+        "description": "the time each figure of the budget was read (sourcing rule 7): its time as ISO 8601 UTC first (2026-10-03T08:37:16Z), alone or after one word naming the source (FU-2I 2026-10-03T00:13:52Z), then further readings and notes"
+       }
+      },
+      "required": [
+       "item",
+       "value",
+       "within",
+       "source",
+       "read_at"
+      ]
+     }
+    },
+    "assumptions": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "item": {
+        "type": "string"
+       },
+       "value": {
+        "type": "string"
+       },
+       "why": {
+        "type": "string"
+       },
+       "source": {
+        "type": "string",
+        "description": "where the assumed value comes from"
+       },
+       "read_at": {
+        "type": "string",
+        "description": "the time the value was read or set: its time as ISO 8601 UTC first (2026-10-03T08:37:16Z), alone or after one word naming the source (FU-2I 2026-10-03T00:13:52Z), then further readings and notes"
+       }
+      },
+      "required": [
+       "item",
+       "value",
+       "why",
+       "source",
+       "read_at"
+      ]
+     }
+    }
+   },
+   "required": [
+    "conflicts",
+    "combinations",
+    "budgets",
+    "assumptions"
+   ]
+  },
+  "P5-critic": {
+   "type": "object",
+   "properties": {
+    "verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer"
+       },
+       "holds": {
+        "type": "boolean"
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "holds",
+       "reason"
+      ]
+     }
+    },
+    "added": {
+     "type": "array",
+     "items": {
+      "$ref": "conflict"
+     }
+    },
+    "combination_verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer"
+       },
+       "holds": {
+        "type": "boolean"
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "holds",
+       "reason"
+      ]
+     }
+    },
+    "budget_verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer"
+       },
+       "holds": {
+        "type": "boolean"
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "holds",
+       "reason"
+      ]
+     }
+    },
+    "assumption_verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer"
+       },
+       "holds": {
+        "type": "boolean"
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "holds",
+       "reason"
+      ]
+     }
+    },
+    "budgets_missing": {
+     "$ref": "strs",
+     "description": "each rail, I2C bus or other instance of a budget item the prompt lists that P5 returned no budget for, as NAME: DETAIL"
+    }
+   },
+   "required": [
+    "verdicts",
+    "added",
+    "combination_verdicts",
+    "budget_verdicts",
+    "assumption_verdicts",
+    "budgets_missing"
+   ]
+  },
+  "P6": {
+   "type": "object",
+   "properties": {
+    "gaps": {
+     "type": "array",
+     "items": {
+      "$ref": "gap"
+     }
+    }
+   },
+   "required": [
+    "gaps"
+   ]
+  },
+  "P6-critic": {
+   "type": "object",
+   "properties": {
+    "verdicts": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer"
+       },
+       "holds": {
+        "type": "boolean"
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "holds",
+       "reason"
+      ]
+     }
+    },
+    "added": {
+     "type": "array",
+     "items": {
+      "$ref": "gap"
+     }
+    }
+   },
+   "required": [
+    "verdicts",
+    "added"
+   ]
+  },
+  "P7": {
+   "type": "object",
+   "properties": {
+    "files": {
+     "$ref": "strs"
+    },
+    "corrections": {
+     "$ref": "strs"
+    },
+    "checks": {
+     "$ref": "checks"
+    },
+    "group_pages": {
+     "type": "object",
+     "properties": {
+      "A": {
+       "type": "string"
+      },
+      "B": {
+       "type": "string"
+      },
+      "C": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "A",
+      "B",
+      "C"
+     ],
+     "description": "the page written for each category group: a new file hardware/docs/NAME.md in the form of Power.md, none of them an output the Outputs table names"
+    },
+    "figures": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "file": {
+        "type": "string"
+       },
+       "line": {
+        "type": "integer"
+       },
+       "figure": {
+        "type": "string",
+        "description": "the figure as the page states it, with its unit"
+       }
+      },
+      "required": [
+       "file",
+       "line",
+       "figure"
+      ]
+     },
+     "description": "every figure written on the pages, repository-relative file and line; the critic checks each by the same file and figure text"
+    }
+   },
+   "required": [
+    "files",
+    "corrections",
+    "checks",
+    "group_pages",
+    "figures"
+   ]
+  },
+  "P7-critic": {
+   "type": "object",
+   "properties": {
+    "figure_checks": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "file": {
+        "type": "string"
+       },
+       "line": {
+        "type": "integer",
+        "description": "the line of the page, after your corrections, that states the figure in the text given in figure; 1 or more"
+       },
+       "figure": {
+        "type": "string"
+       },
+       "return_file": {
+        "type": "string",
+        "description": "the committed return, or selection.json, the figure comes from, repository-relative: hardware/research/round1/RUN/FILE.json"
+       },
+       "kind": {
+        "type": "string",
+        "enum": [
+         "budget",
+         "combination",
+         "other"
+        ],
+        "description": "budget or combination for a budget or combination of P5, other for every other figure"
+       },
+       "agrees": {
+        "type": "boolean"
+       },
+       "p7_figure": {
+        "type": "string",
+        "description": "where you corrected the text that states a figure P7 listed: P7's figure text for it; empty otherwise"
+       }
+      },
+      "required": [
+       "file",
+       "line",
+       "figure",
+       "return_file",
+       "kind",
+       "agrees"
+      ]
+     },
+     "description": "every figure on the pages as they stand after your corrections, each against its return"
+    },
+    "sentence_issues": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "file": {
+        "type": "string"
+       },
+       "line": {
+        "type": "integer"
+       },
+       "issue": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "file",
+       "line",
+       "issue"
+      ]
+     },
+     "description": "writing-rule issues left on the pages after your corrections"
+    },
+    "corrections_applied": {
+     "$ref": "strs"
+    },
+    "checks": {
+     "$ref": "checks"
+    },
+    "reviewed": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "every file the critic checked"
+    },
+    "marked": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer"
+       },
+       "file": {
+        "type": "string"
+       },
+       "line": {
+        "type": "integer"
+       }
+      },
+      "required": [
+       "index",
+       "file",
+       "line"
+      ]
+     },
+     "description": "each item the prompt lists to be stated on the pages, by its 0-based index, with the repository-relative file and the line that state it as the list says; an item the pages do not state so is left out"
+    },
+    "part_rows": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "function": {
+        "type": "string"
+       },
+       "part": {
+        "type": "string"
+       },
+       "parts_line": {
+        "type": "integer"
+       },
+       "group_page": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "function",
+       "part",
+       "parts_line",
+       "group_page"
+      ]
+     },
+     "description": "each part the prompt lists from selection.json, under its function: the line of its row in hardware/docs/Parts.md and the group page, repository-relative, that names it"
+    },
+    "jlc_stock_review": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "integer"
+       },
+       "holds": {
+        "type": "boolean"
+       },
+       "line": {
+        "type": "integer"
+       },
+       "reason": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "holds",
+       "line",
+       "reason"
+      ]
+     },
+     "description": "each sentence of the Outputs row of tools/jlc_stock.py the prompt lists, by its 0-based index: whether tools/jlc_stock.py does what it states, the line that does it, and why"
+    }
+   },
+   "required": [
+    "figure_checks",
+    "sentence_issues",
+    "corrections_applied",
+    "checks",
+    "reviewed",
+    "marked",
+    "part_rows",
+    "jlc_stock_review"
+   ]
+  }
+ }
+}

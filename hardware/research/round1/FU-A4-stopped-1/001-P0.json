@@ -1,0 +1,468 @@
+{
+ "role": "P0",
+ "category": "",
+ "label": "P0",
+ "attempt": 0,
+ "data": {
+  "versions": "Claude Code 2.1.284, git 2.43.0, Python 3.12.3, ruff 0.16.5, 7-Zip 23.01 (x64), curl_cffi 0.16.3 (read 2026-09-29 about 08:10Z from the tools' own version output; Claude Code differs from the 2.1.283 that Research.md prerequisite 1 records for 2026-09-27)",
+  "hosts": [
+   {
+    "host": "jlcpcb.com",
+    "url": "python3 /home/claude/rcbench-research/round1/tools/61c14de491406041/vendors.py jlcpcb C39843328",
+    "client": "jlcpcb-api",
+    "http_status": 200,
+    "bytes": 811,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:20Z from https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList. It returned an exact match for C39843328: RP2354B, maker label Raspberry Pi, QFN-80-EP(10x10), stockCount 2982, canPresaleNumber 2825, componentLibraryType expand, erpComponentName SC1512(13)-A4, other_results 0. bytes is the size of the printed JSON reading; the API's raw response size is not exposed. The API carries no lifecycle field."
+   },
+   {
+    "host": "api.digikey.com",
+    "url": "python3 /home/claude/rcbench-research/round1/tools/61c14de491406041/vendors.py digikey INA238AIDGSR",
+    "client": "digikey-api",
+    "http_status": 200,
+    "bytes": 953,
+    "status_marker": "Active",
+    "reachable": true,
+    "note": "Run with DIGIKEY_ENV_FILE and DIGIKEY_CACHE_DIR set. The answer came back cached: true, read 2026-09-29T02:34:14Z (same UTC day) from https://api.digikey.com/products/v4/search/INA238AIDGSR/productdetails. It gives maker Texas Instruments, ProductStatus Active, lead time 16 weeks, stock 0 on all three packagings. To confirm the API answers live, vendors.py digikey-quota was run at 2026-09-29T08:15:12Z: HTTP 200, 568 calls left today. bytes is the size of the printed JSON reading."
+   },
+   {
+    "host": "www.lcsc.com",
+    "url": "https://www.lcsc.com/product-detail/C39843328.html",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 384035,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Title 'RP2354B | Microcontrollers | Raspberry Pi | LCSC'. No challenge page. No discontinued, obsolete, EOL or lifecycle wording found in the body."
+   },
+   {
+    "host": "datasheets.raspberrypi.com",
+    "url": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 7968417,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. It redirected to https://pip-assets.raspberrypi.com/categories/1214-rp2350/documents/RP-008373-DS-2-rp2350-datasheet.pdf, so pip-assets.raspberrypi.com was reached too. The body starts %PDF-1.5."
+   },
+   {
+    "host": "github.com",
+    "url": "git fetch --depth 1 https://github.com/raspberrypi/pico-sdk master",
+    "client": "git",
+    "http_status": 200,
+    "bytes": 2721447,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Run 2026-09-29T08:15:09Z into a scratch bare repository under /home/claude/rcbench-research/round1/scratch/FU-A4/P0/gitprobe. Exit 0. GIT_TRACE_CURL shows three HTTP/2 200 responses. FETCH_HEAD is 079c6f39023649b154152db30f1d781e884879bc, 'SDK 2.3.1 Release', committed 2026-09-04. bytes is the size of the fetched objects directory. Commit 23c82ca6ca976d956098cfafd25dbefa11584f5d was checked locally: git cat-file -e succeeds in the checkout."
+   },
+   {
+    "host": "raw.githubusercontent.com",
+    "url": "https://raw.githubusercontent.com/raspberrypi/pico-sdk/master/README.md",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 9794,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. The body is the pico-sdk README."
+   },
+   {
+    "host": "www.winbond.com",
+    "url": "https://www.winbond.com/hq/product/code-storage-flash-memory/serial-nor-flash/?__locale=en&partNo=W25Q16JV",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 71145,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. It redirected to https://www.winbond.com/hq/new-online-purchasing-guide/?__locale=en&pLine=/product/code-storage-flash/qspi-nor/&pNo=W25Q16JV, titled 'Winbond W25Q16JV QSPI NOR parts catalog'. The body names W25Q16JV. No datasheet PDF link and no lifecycle status found in the body."
+   },
+   {
+    "host": "www.ti.com",
+    "url": "https://www.ti.com/product/INA238",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 301342,
+    "status_marker": "<meta name=\"status\" content=\"ACTIVE\"",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. The marker matched."
+   },
+   {
+    "host": "www.microchip.com",
+    "url": "https://www.microchip.com/en-us/product/MCP2518FD",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 723783,
+    "status_marker": "\"productSatus\": \"In Production\"",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. The marker matched."
+   },
+   {
+    "host": "www.nxp.com",
+    "url": "https://www.nxp.com/products/TJA1462",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 191242,
+    "status_marker": "Status - Active",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. The marker matched."
+   },
+   {
+    "host": "www.nexperia.com",
+    "url": "https://www.nexperia.com/product/74LVC1G32GW",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 98978,
+    "status_marker": "product-status--production",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. The marker matched."
+   },
+   {
+    "host": "www.infineon.com",
+    "url": "https://www.infineon.com/part/2ED4820-EM",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 2262499,
+    "status_marker": "productStatusInfo\" value=\"active and preferred\"",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. The marker matched."
+   },
+   {
+    "host": "www.raspberrypi.com",
+    "url": "https://www.raspberrypi.com/products/rp2350/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 390955,
+    "status_marker": "remain in production until at least <!-- -->January 2045",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. The marker matched."
+   },
+   {
+    "host": "www.onsemi.com",
+    "url": "https://www.onsemi.com/products/discrete-power-modules/mosfets/NTMFS6H800N",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 344613,
+    "status_marker": "Active",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:11:19Z. There is no probe row, so P0 picked NTMFS6H800N, an onsemi 80 V N-channel MOSFET, for the seed '80 V and 100 V N-channel MOSFETs from onsemi' (R3). The body states 'N-Channel Power MOSFET 80V, 203A, 2.1mΩ'. The URL redirected to https://www.onsemi.com/products/discrete-power-modules/mosfets/low-medium-voltage-mosfets/ntmfs6h800n. The body's status field reads <p class=\"mb-0 ps-2 text-black fs-7 fw-bold\">Active</p>, and the table cell has data-value=\"Active\"."
+   },
+   {
+    "host": "www.vishay.com",
+    "url": "https://www.vishay.com/en/product/30134/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 765413,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:12:59Z. This is the WSBS8518 product page, titled 'WSBS8518 Power Metal Strip Resistors | Vishay'. The id 30134 was found on https://www.vishay.com/en/resistors-fixed/power-metal-strip/. The body states no lifecycle status: there is no lifecycle, obsolete, EOL, NRND or production-status wording, only 'RECAST RoHS Status'. The status is reachable but not read (Lifecycle check). The Vishay site search https://www.vishay.com/en/search/?query=WSBS8518 answered HTTP 500."
+   },
+   {
+    "host": "www.isabellenhuette.com",
+    "url": "https://www.isabellenhuette.com/solutions/products/bvs",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 216511,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:12:03Z. This is the BVS product page of the BV series (seed of R8), titled 'BVS Current Sensing Resistor 3920 – 2.5–12 W | Isabellenhütte'. The link came from https://www.isabellenhuette.com/solutions/products?product_area-Resistor=true, which lists BVB, BVE, BVH, BVN, BVR, BVR-PW, BVS, BVT and BVZ. The body states no lifecycle status. The status is reachable but not read. https://www.isabellenhuette.com/en/ answered HTTP 404."
+   },
+   {
+    "host": "www.analog.com",
+    "url": "https://www.analog.com/en/products/adxl1002.html",
+    "client": "safari",
+    "http_status": 200,
+    "bytes": 209554,
+    "status_marker": "RECOMMENDED FOR NEW DESIGNS",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:14:11Z. One request only. The body carries \"lifeCycle\":null. It also shows a badge beside the ADXL1002 heading: <span class=\"adi__badge adi__badge--success\"> RECOMMENDED FOR NEW DESIGNS. Research.md says ADI pages carried no lifecycle status in the body on 2026-09-27, and this reading differs. By the Lifecycle check, the status for Analog Devices stays Digi-Key's ProductStatus."
+   },
+   {
+    "host": "www.melexis.com",
+    "url": "https://www.melexis.com/",
+    "client": "chrome",
+    "http_status": 403,
+    "bytes": 5918,
+    "status_marker": "none",
+    "reachable": false,
+    "note": "Read 2026-09-29T08:10:38Z. HTTP 403 with a challenge page titled 'Just a moment...'. This matches the refusal of 2026-09-27. Per Research.md the status comes from Digi-Key, and an unreachable Melexis site holds no category."
+   },
+   {
+    "host": "www.allegromicro.com",
+    "url": "https://www.allegromicro.com/en/products/sense/current-sensor-ics/integrated-current-sensors/acs711",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 211899,
+    "status_marker": "This part is in production and has been determined to be NOT FOR NEW DESIGN.",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Title 'Hall-Effect Linear Current Sensor IC with Overcurrent Fault - ACS711| Allegro MicroSystems'. The body of this family page carries the sentence recorded as status_marker. The body does not show which ACS711 ordering numbers it covers, so that is not read. Held part ACS711KLCTR-12AB-T (C459305, R8) belongs to this family. Per the Lifecycle check the Allegro status is Digi-Key's ProductStatus; this page text is recorded for the owner, not as the status."
+   },
+   {
+    "host": "www.renesas.com",
+    "url": "https://www.renesas.com/en",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 250062,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. This is the home page, so it has no lifecycle status."
+   },
+   {
+    "host": "www.rohm.com",
+    "url": "https://www.rohm.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 377594,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Home page."
+   },
+   {
+    "host": "www.st.com",
+    "url": "https://www.st.com/content/st_com/en.html",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 245661,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Home page."
+   },
+   {
+    "host": "toshiba.semicon-storage.com",
+    "url": "https://toshiba.semicon-storage.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 141576,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. It redirected to https://toshiba.semicon-storage.com/eu/top.html. Home page."
+   },
+   {
+    "host": "www.diodes.com",
+    "url": "https://www.diodes.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 300746,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Home page."
+   },
+   {
+    "host": "ams-osram.com",
+    "url": "https://ams-osram.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 335174,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Home page."
+   },
+   {
+    "host": "www.bosch-sensortec.com",
+    "url": "https://www.bosch-sensortec.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 151404,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. It redirected to https://www.bosch-sensortec.com/en. Home page."
+   },
+   {
+    "host": "www.ramxeed.com",
+    "url": "https://www.ramxeed.com/products/feram/feram-products.html",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 395110,
+    "status_marker": "MB85RC256VPNF-G-AMERE2</td> <td>Industrial</td> <td> I2C </td> <td> 256Kbit </td> <td> 2.7V </td> <td> 5.5V</td> <td> 1MHz</td> <td> -40～+85℃ </td> <td>SOP-8 (150mil)</td> <td>Tape</td> <td>MP</td>",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. The marker matched, and the Status column for MB85RC256VPNF-G-AMERE2 reads MP."
+   },
+   {
+    "host": "www.nisshinbo-microdevices.co.jp",
+    "url": "https://www.nisshinbo-microdevices.co.jp/en/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 148671,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Home page."
+   },
+   {
+    "host": "www.torexsemi.com",
+    "url": "https://www.torexsemi.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 54135,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Home page."
+   },
+   {
+    "host": "www.murata.com",
+    "url": "https://www.murata.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 88111,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Home page."
+   },
+   {
+    "host": "product.tdk.com",
+    "url": "https://product.tdk.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 491464,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. It redirected to https://product.tdk.com/en/index.html, titled 'TDK Product Center'."
+   },
+   {
+    "host": "www.we-online.com",
+    "url": "https://www.we-online.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 172771,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. It redirected to https://www.we-online.com/en/. Home page."
+   },
+   {
+    "host": "www.coilcraft.com",
+    "url": "https://www.coilcraft.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 169020,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Home page."
+   },
+   {
+    "host": "www.bourns.com",
+    "url": "https://www.bourns.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 180237,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Home page."
+   },
+   {
+    "host": "yageogroup.com",
+    "url": "https://yageogroup.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 1052052,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Title 'YAGEO Group – Built into Tomorrow'. The host is known to answer HTTP 200 for paths that do not exist; this probe is the home page, whose title confirms real content."
+   },
+   {
+    "host": "industry.panasonic.com",
+    "url": "https://industry.panasonic.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 3587752,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Title 'Automation Controls Top - Panasonic'."
+   },
+   {
+    "host": "www.samsungsem.com",
+    "url": "https://www.samsungsem.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 76762,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Korean home page."
+   },
+   {
+    "host": "abracon.com",
+    "url": "https://abracon.com/parametric/crystals?searchstring=ABM8-272-T3",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 108705,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:13:30Z. The host answers HTTP 200, but no product page for either seed was found. https://abracon.com/parts/ABM8-272-T3 answered HTTP 404 at 08:11:27Z, and /parts/abm8-272-t3, /products/ABM8-272-T3 and /part/ABM8-272-T3 answered 404 too. The parametric search above and /search?q=ABM8-272-T3 load their results by script: neither ABM8-272-T3 nor AOTA-B201610S3R3-101-T is in the body. The MHz-crystal and power-inductor listing pages link only family datasheets. The status of both seeds is not read."
+   },
+   {
+    "host": "www.epsondevice.com",
+    "url": "https://www.epsondevice.com/crystal/en/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 56690,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Title 'Epson Crystal Device'."
+   },
+   {
+    "host": "www.ndk.com",
+    "url": "https://www.ndk.com/en/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 125754,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:10:38Z. Home page."
+   },
+   {
+    "host": "www.samsungsdi.com",
+    "url": "https://www.samsungsdi.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 56067,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:14:31Z. This is the home page; no cell seed is named, so there is no status."
+   },
+   {
+    "host": "www.lgensol.com",
+    "url": "https://www.lgensol.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 75063,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:14:34Z. It redirected to https://www.lgensol.com/en/index. Home page."
+   },
+   {
+    "host": "www.molicel.com",
+    "url": "https://www.molicel.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 57369,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:14:36Z. Home page."
+   },
+   {
+    "host": "www.evebattery.com",
+    "url": "https://www.evebattery.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 131734,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "Read 2026-09-29T08:14:38Z. Title 'EVE-亿纬锂能'. Home page."
+   }
+  ],
+  "jlcparts": {
+   "path": "/home/claude/rcbench-research/jlcparts-2026-09-14/cache.sqlite3",
+   "sha256": "48b41b803d7b6bbe0fa7e25b5db430a8421f8175ad559e2c4b4bfc3a73d28c26",
+   "sha256_ok": true,
+   "rows": 7161863,
+   "missing_lcsc": []
+  },
+  "snapshot": "2026-09-14T09:56:01+00:00 (manifest.json \"created\", equal to 2026-09-14T09:56:01Z)",
+  "monostable": {
+   "commit": "23c82ca6ca976d956098cfafd25dbefa11584f5d",
+   "path": "/home/claude/rcbench-research/round1/monostable-23c82ca",
+   "fetched": true
+  },
+  "checkout_head": "e13f5f60d2e553032b27a14f31ed4a93ef4fe828",
+  "stop": false,
+  "stop_reasons": [],
+  "held": []
+ }
+}

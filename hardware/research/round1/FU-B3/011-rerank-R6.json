@@ -1,0 +1,193 @@
+{
+ "role": "rerank",
+ "category": "R6",
+ "label": "rerank-R6",
+ "attempt": 0,
+ "data": {
+  "category": "R6",
+  "functions": [
+   {
+    "function": "Servo supply",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPS55285VALR",
+      "reason": "Fixed input of the Scope table (TPS55285, 12 held, owner 2026-09-25) and P2's only candidate for this function; kept at rank 1 as the specification requires. P3 returned no candidate for Servo supply, so nothing changes. It fails 'Ambient range' at the pack floor (89 to 179 degC of junction temperature on typical figures at 50 degC ambient and the 4.0 A load of V110), which P2 already reported to the owner rather than replacing the fixed input; it passes every other requirement value, including the restated V134/adjudicator figure for 'Current into a shorted port'.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPS55285VALR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Servo supply inductor",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "SRP1265A-4R7M",
+      "reason": "Lowest DC resistance of the three recorded (8.4 mOhm max, 0.33 W copper loss at the 6.31 A pack-floor current) at the lowest price, USD 1.01 at the need; 28 A saturation, 13.5 A heat rating. P3 returned no candidate for this function, so P2's ranking is unchanged.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "ETQP5M4R7YFC",
+      "reason": "Smallest body read (10.0 x 10.7 x 5.4 mm) and the deepest JLCPCB (337/264) and Digi-Key (39362) margins of the three; DCR 11.30 mOhm max, 0.45 W. Unchanged from P2.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "ASPIAIG-Q1010-4R7M-T",
+      "reason": "Lowest DC resistance of the three (5.70 mOhm max, 0.23 W) but the thinnest JLCPCB stock margin (95/95 against the gate of 50), the highest price (USD 3.31 at the need) and tallest body (9.7 mm); maker lifecycle status and market introduction not read. Unchanged from P2.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "SRP1265A-4R7M",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port supply switch",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TPS259474LRPWR",
+      "reason": "Latch-off circuit breaker (3.96 to 4.84 A) matching 'Every stop latches; nothing re-arms on its own' (STATUS.md:340); second-vendor second source, Digi-Key 40352. Neither P3 candidate for this function qualifies on re-check: BTS716G and VN5050JTR-E both let reverse current flow through an intrinsic OUT-to-VCC (drain-source) diode instead of blocking it, the same V126 failure P2 already found in TPS25946xx and TPS1663x, and BTS716G also fails the stock gate (JLCPCB 0/-25). P2's ranking is unchanged.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TPS259470LRPWR",
+      "reason": "Same die and ratings as rank 1 with an active current limit and a latch after thermal shutdown; its only second source is the alternate TPS259470ARPWR, whose auto-retry re-arms a port on its own, so it ranks below the latch-off parts. Unchanged from P2.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TPS259470ARPWR",
+      "reason": "The sourcing-rule-5 alternate for rank 2, already carried on P2's shortlist with a full record; it auto-retries 110 ms after a thermal fault, which re-arms a port on its own against STATUS.md:340. Unchanged from P2.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "BTS716G",
+      "maker": "Infineon Technologies",
+      "reason": "Confirmed on re-read of its own datasheet (JLCPCB C85135): section on reverse battery operation states 'the reverse load current through the intrinsic drain-source diode' flows during reverse current operation, i.e. the part conducts reverse current rather than blocking it, the same V126 (reverse blocking) failure P2 already found in TPS25946xx and TPS1663x. It also now fails the stock gate: JLCPCB stockCount 0, canPresaleNumber -25, under the 500-unit threshold this function uses. P3 named the wider Infineon PROFET/BTS family as a miss; only BTS716G, the part on the JLCPCB board, was re-checked here."
+     },
+     {
+      "part": "VN5050JTR-E",
+      "maker": "STMicroelectronics",
+      "reason": "Confirmed on re-read of its own datasheet (JLCPCB C75918, passes the stock gate at 1699/1697): the electrical table gives an 'Output - VCC diode voltage' VF of 0.7 V max at -IOUT 2 A, and the absolute maximum ratings give a 12 A 'Reverse DC output current' rating. The part carries an intrinsic diode from OUT to VCC that conducts a reverse current rather than blocking it, so it fails V126 (reverse blocking) for the same reason as BTS716G, TPS25946xx and TPS1663x; its 'reverse battery protection' feature covers a reversed VCC connection, not current fed back into the rail from the port pin."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TPS259474LRPWR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "I/O expander",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MCP23017T-E/SS",
+      "reason": "Eight addresses (0x20 to 0x27) clear of the TPS55285 and the INA parts, a hardware RESET pin, and the deepest stock at both vendors (JLCPCB 6606, Digi-Key 17187). The P3 candidate NCA9535PWJ does not qualify: its 24-pin table (INT, A0-A2, SCL, SDA, VCC, GND, 16 I/O) carries no external RESET pin, only the internal power-on reset described in sections 6.4 and 8.2, so it fails Hardware reset input for the same reason P2 already gave for TCA9535/PCA9535. P2's ranking is unchanged.",
+      "option": ""
+     },
+     {
+      "rank": 2,
+      "part": "TCA6416APWR",
+      "reason": "16 push-pull I/O lines a part at 0x20/0x21 with a hardware RESET pin; unchanged from P2.",
+      "option": ""
+     },
+     {
+      "rank": 3,
+      "part": "TCA6424ARGJR",
+      "reason": "48 lines over two parts at 0x22/0x23; the thinnest Digi-Key margin of the three (1709). Unchanged from P2.",
+      "option": ""
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "NCA9535PWJ",
+      "maker": "Nexperia",
+      "reason": "Confirmed on re-read of its own datasheet (JLCPCB C20235689, Rev. 2, 18 October 2023, passes the stock gate at 2431/2431): the pin description table lists only INT, A0, A1, A2, SCL, SDA, VCC, GND and 16 parallel I/O pins (24 pins total, TSSOP-24); no external RESET pin exists. The block diagram's 'POWER-ON RESET' block and 'All I/Os are set to inputs at reset' (section 6.4/8.2) describe only the internal power-on reset, not a pin an RP2354B GPIO can drive. It fails Hardware reset input for the same reason as TCA9535/PCA9535 (P2's dropped list); JLCPCB's 'Reset function' attribute names that internal POR, not an external pin."
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MCP23017T-E/SS",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "Port voltage ceiling",
+    "ranking": [],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "BTS716G qualification recheck",
+    "value": "JLCPCB C85135: stockCount 0, canPresaleNumber -25, under the 500-unit gate this function uses. Its own datasheet's reverse-battery section (note 17, page with lines 329-364 of the extracted text) states 'the reverse load current through the intrinsic drain-source diode' flows during reverse current operation: the part conducts a fed-back current rather than blocking it, so it fails V126 (reverse blocking) the same way TPS25946xx and TPS1663x already do. Confirms P3's finding; not qualified, moved to dropped_from_p3 under Port supply switch.",
+    "source": "vendors.py jlcpcb C85135 (selectSmtComponentList API, HTTP 200), read 2026-09-29T17:11:51Z; BTS716G datasheet via jlcpcb.com/api/file/downloadByFileSystemAccessId/8588884724097540096 (vendors.py fetch chrome, HTTP 200), read 2026-09-29T17:12:01Z, pdftotext -layout lines 329-364"
+   },
+   {
+    "figure": "VN5050JTR-E qualification recheck",
+    "value": "JLCPCB C75918: stockCount 1699, canPresaleNumber 1697, passes the 500-unit gate. Its datasheet's electrical table gives an 'Output - VCC diode voltage' VF of 0.7 V max at -IOUT 2 A (Tj 150 degC), and its absolute maximum ratings give a 12 A 'Reverse DC output current': an intrinsic OUT-to-VCC diode conducts reverse current instead of blocking it, so V126 fails for the same reason as BTS716G, TPS25946xx and TPS1663x; the part's 'reverse battery protection' addresses a reversed VCC connection, not current fed back from the port pin while VCC is normal. Confirms P3's finding; not qualified.",
+    "source": "vendors.py jlcpcb C75918, read 2026-09-29T17:11:53Z; VN5050JTR-E datasheet via jlcpcb.com/api/file/downloadByFileSystemAccessId/8588917154171531264 (vendors.py fetch chrome, HTTP 200), read 2026-09-29T17:12:14Z, pdftotext -layout lines 283, 299-305, 380"
+   },
+   {
+    "figure": "NCA9535PWJ reset pin recheck",
+    "value": "JLCPCB C20235689: stockCount 2431, canPresaleNumber 2431, passes the 50-unit gate. The pin description table (Table 2, TSSOP-24/HWQFN24) lists 24 pins: INT, A0, A1, A2, SCL, SDA, VCC, GND and 16 parallel I/O (P0_0 to P0_7, P1_0 to P1_7); no external RESET pin is present. The block diagram's 'POWER-ON RESET' block and 'All I/Os are set to inputs at reset' (sections 6.4 and 8.2) describe only the internal power-on reset triggered by VCC ramping past VPORR/VPORF, not a pin an RP2354B GPIO can drive. Fails Hardware reset input for the same reason P2 already gave for TCA9535/PCA9535; JLCPCB's 'Reset function' attribute names that internal circuit, not a pin. Confirms P3's finding; not qualified.",
+    "source": "vendors.py jlcpcb C20235689, read 2026-09-29T17:11:55Z; NCA9535 datasheet Rev. 2 (18 October 2023) via jlcpcb.com/api/file/downloadByFileSystemAccessId/8604338695147708416 (vendors.py fetch chrome, HTTP 200), read 2026-09-29T17:12:43Z, pdftotext -layout Table 2 and sections 6.4, 8.2"
+   },
+   {
+    "figure": "No P3 candidate qualifies for R6",
+    "value": "All three parts P3 returned for R6 (BTS716G and VN5050JTR-E for Port supply switch, NCA9535PWJ for I/O expander) fail qualification on re-check against the same requirement values P2 already applied, so none is added to any function's shortlist and no new_candidates entry is recorded for R6. P3 returned no candidate at all for Servo supply, Servo supply inductor or Port voltage ceiling, and reported no exclusion of P2's as not holding and no missed function.",
+    "source": "P3's return for R6 (missed, exclusions_not_holding, missed_functions); the three rechecks above"
+   },
+   {
+    "figure": "Port voltage ceiling shortlist stays empty",
+    "value": "No part read by P2 meets both the HV/LV trip-band accuracy (V128) and Latch until action (V130); P2 reported this as the 'Ceiling latch gap' to the owner rather than shortlisting a part, and P3 returned no candidate for this function. The re-rank carries the empty shortlist forward unchanged; no part exists to rank first or to send to P4.",
+    "source": "P2's return for R6, function 'Port voltage ceiling' (empty shortlist) and report item 'Ceiling latch gap'; P3's return for R6 (no entry for Port voltage ceiling)"
+   }
+  ]
+ }
+}

@@ -1,0 +1,511 @@
+{
+ "role": "P1",
+ "category": "R5",
+ "label": "P1-R5",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "functions": [
+   "reverse-polarity protection",
+   "overvoltage protection",
+   "inrush limiting",
+   "source selection",
+   "pack disconnect",
+   "3.3 V logic buck",
+   "5 V rail",
+   "display supply",
+   "receiver supply",
+   "encoder 12 V supply"
+  ],
+  "values": [
+   {
+    "where": "hardware/docs/IOBoard.md:322",
+    "quantity": "DC input voltage range",
+    "value": "12 to 20 V",
+    "marking": "owner",
+    "source": "owner, 2026-09-25: Research.md:61 (Power decision), hardware/STATUS.md:25; checkout be1f247, read 2026-09-28",
+    "refutation_tried": "Checked against the TPS55285 input rating, 2.4 to 22 V (www.ti.com/product/TPS55285, read 2026-09-28T10:25:41Z). 20 V is 2 V under it. Neither page says whether 12 V and 20 V include the source's own tolerance. Questions 6 and 10 ask for the thresholds that depend on it.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:324",
+    "quantity": "source selection",
+    "value": "automatic: the DC input when present, the pack otherwise",
+    "marking": "owner",
+    "source": "owner, 2026-09-24: Research.md:61, hardware/STATUS.md:25; read 2026-09-28",
+    "refutation_tried": "The rule follows from the decision. No voltage defines 'present' (question 10). The interruption allowed at a switchover is not stated (question 11).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:325",
+    "quantity": "lowest pack voltage",
+    "value": "6.0 V (2 cells x 3.0 V)",
+    "marking": "owner",
+    "source": "F9 answer, Research.md:537 (owner, 2026-09-25): floor 3.0 V a cell; 2S: Research.md:61; read 2026-09-28",
+    "refutation_tried": "2 x 3.0 V = 6.0 V holds. It is the pack terminal voltage with both cells at the trip point. A trip point whose tolerance reaches below 3.0 V, or a trip delay under load, takes a cell under 3.0 V (questions 17 and 18). The converters see 6.0 V less the drops across the disconnect switch, the selection and the connector.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:325",
+    "quantity": "highest pack voltage",
+    "value": "8.4 V (2 cells x 4.2 V)",
+    "marking": "assumption",
+    "source": "IOBoard.md:325 cites F9. F9's answer (Research.md:537) gives lithium-ion 18650 and the 3.0 V floor but no charge voltage. F9's question text calls 4.2 V lithium-ion cells a candidate 'with no source in the tree'. hardware/STATUS.md:25 repeats 8.4 V without a source. Read 2026-09-28",
+    "refutation_tried": "Searched the answers to S9 (makers only), F8 (charge current only) and the Power decision: none states a cell charge voltage. 4.2 V is the common lithium-ion value, but the charger R7 selects sets it.",
+    "question": 14
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:329",
+    "quantity": "discharge floor",
+    "value": "3.0 V a cell, read per cell from the balance lead; lithium-ion 18650 cells",
+    "marking": "owner",
+    "source": "F9 answer, Research.md:537 (owner, 2026-09-25); read 2026-09-28",
+    "refutation_tried": "The value matches F9 word for word. Neither page says whether 3.0 V is a nominal or a lowest trip point, or over what filter time it applies (questions 17 and 18).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:327",
+    "quantity": "pack disconnect",
+    "value": "in hardware, when any cell falls to the 3.0 V floor",
+    "marking": "owner",
+    "source": "owner, 2026-09-24 (Research.md:61) and F9 (Research.md:537); read 2026-09-28",
+    "refutation_tried": "'In hardware' does not say whether a protector whose threshold firmware writes at start-up qualifies. It also does not say whether R7's pack protection may be the same part (question 20).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:328",
+    "quantity": "pack disconnect hysteresis",
+    "value": "the load returning after a disconnect does not reconnect the pack; width not stated",
+    "marking": "assumption",
+    "source": "IOBoard.md:328 cites only R5. Research.md:283 states it too. F9's answer sets the floor only. The reconnection rule in F9's proposed answer is not an answer. Read 2026-09-28",
+    "refutation_tried": "Searched the answers to F8 and F9 and the Power decision (Research.md:61) for hysteresis or a reconnection rule: none states either.",
+    "question": 16
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:326",
+    "quantity": "pack path current at 90 % servo efficiency",
+    "value": "53.3 W out, 59.3 W in at an assumed 90 %: 7.1 A from the pack at 8.4 V, 9.9 A at 6.0 V",
+    "marking": "assumption",
+    "source": "hardware/docs/Power.md:68 gives 90 % for the DC input with no source. IOBoard.md:326 states that the efficiency from the pack is not stated. Read 2026-09-28",
+    "refutation_tried": "Recomputed: 8.4 V x 6.35 A = 53.34 W; / 0.9 = 59.27 W; / 8.4 V = 7.06 A; / 6.0 V = 9.88 A. The TPS55285 product page (www.ti.com/product/TPS55285, read 2026-09-28T10:25:41Z) gives a switch current limit of 8 A typical. That is below the 9.9 A input current at 6.0 V in boost mode, so the converter may not deliver 53.3 W from a 6.0 V pack. R6 checks this.",
+    "question": 12
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:326",
+    "quantity": "display power on the pack path",
+    "value": "7.5 W continuous (5 V x 1.5 A), 10 W peak (5 V x 2 A), before the 5 V rail's losses",
+    "marking": "owner",
+    "source": "prerequisite 7, Research.md:489-491 (owner, 2026-09-25); read 2026-09-28",
+    "refutation_tried": "Arithmetic holds. The figure is the 5 V rail's output. The pack current also includes the 5 V converter's loss, which comes from R5's own part.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:334",
+    "quantity": "display supply path",
+    "value": "through the link cable, from the selected source",
+    "marking": "owner",
+    "source": "owner, 2026-09-24: Research.md:61, hardware/STATUS.md:25; read 2026-09-28",
+    "refutation_tried": "Pull request #167 (Monostable.md:60 at 23c82ca) and testbench/WIRING.md:75 power the panel from its own USB. IOBoard.md:580 records this conflict, and the owner decision holds.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:335",
+    "quantity": "display supply voltage",
+    "value": "5 V",
+    "marking": "owner",
+    "source": "F6 answer, Research.md:534 (owner, 2026-09-25); read 2026-09-28",
+    "refutation_tried": "Matches F6. No tolerance at either end of the cable is stated (questions 0 and 3).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:336",
+    "quantity": "display current",
+    "value": "2 A peak, 1.5 A continuous at 5 V",
+    "marking": "owner",
+    "source": "prerequisite 7, Research.md:489-491 (owner, 2026-09-25); hardware/STATUS.md:30; read 2026-09-28",
+    "refutation_tried": "F6 (Research.md:534) says the current is measured first. Prerequisite 7 records the owner's figure, and the tree records no measurement. The peak's duration is not stated; R5 rates for 2 A. The unit is correct.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:386",
+    "quantity": "reverse-current blocking on the display supply",
+    "value": "the link-cable supply blocks reverse current, so the display's USB-C feeds nothing into the IO board",
+    "marking": "assumption",
+    "source": "Research.md:283 and IOBoard.md:386 state it with no owner decision. The owner decision (Research.md:61) says only that the display is powered through the link cable. Read 2026-09-28",
+    "refutation_tried": "Searched F6, prerequisite 7 and the Power decision for a reverse-current rule: none states one.",
+    "question": 2
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:177",
+    "quantity": "link cable length",
+    "value": "bus under 5 m; each board's branch under 30 cm",
+    "marking": "sourced",
+    "source": "testbench/WIRING.md:403-407, shared/ui/busfault_screen.c:208-217; read 2026-09-28",
+    "refutation_tried": "Follows from WIRING.md. The limits are for CAN signal integrity; the cable's actual length is not stated. The supply drop at 2 A is R5's to state and round 2's to meet with conductors.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "3.3 V rail tolerance",
+    "value": "3.3 V +/-3 % (3.201 to 3.399 V) at the monostable, including reference accuracy, feedback resistors, ripple, load regulation and drift",
+    "marking": "sourced",
+    "source": "hardware/docs/Monostable.md:27 and :36 at commit 23c82ca (window corners at a rail of 3.3 V +/-3 %; supply is the coprocessor board's 3.3 V rail); IOBoard.md:184, :198; read 2026-09-28",
+    "refutation_tried": "The monostable page specifies the 155 to 185 ms window only at rail corners of 3.3 V +/-3 %, so the tolerance binds the rail. 3.3 V x 0.97 = 3.201 V; 3.3 V x 1.03 = 3.399 V.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "3.3 V rail temperature range",
+    "value": "0 to 50 °C",
+    "marking": "sourced",
+    "source": "hardware/docs/Monostable.md:27 at commit 23c82ca; IOBoard.md:184; read 2026-09-28",
+    "refutation_tried": "Matches the monostable page. Behaviour outside 0 to 50 °C is not analysed (IOBoard.md:220).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "encoder supply voltage",
+    "value": "12 V or 5 V, selected by a jumper; 12 V needs a source while the board runs from the 2S pack",
+    "marking": "owner",
+    "source": "F4 answer, Research.md:532 (owner, 2026-09-25); IOBoard.md:445; read 2026-09-28",
+    "refutation_tried": "Matches F4. F4 gives neither the encoder's current nor the tolerance of its 12 V supply (questions 24 and 25).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "12 V supply input range",
+    "value": "6.0 to 20 V, below and above the 12 V output, so a buck-boost converter",
+    "marking": "owner",
+    "source": "derived from F4 (Research.md:532), F9 (Research.md:537) and the DC input range (Research.md:61); read 2026-09-28",
+    "refutation_tried": "At the 12 V DC input a step-down stage is in dropout: holds. The low end is 6.0 V at the pack terminals, less the drops across the disconnect, the selection and the connector, so the converter's minimum input is below 6.0 V.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:338",
+    "quantity": "5 V rail loads",
+    "value": "the display, 1.5 A continuous and 2 A peak; the load-cell excitation at 5 V (F3); the encoder's supply when its jumper selects 5 V (F4)",
+    "marking": "owner",
+    "source": "prerequisite 7 (Research.md:489-491), F3 (Research.md:531), F4 (Research.md:532); read 2026-09-28",
+    "refutation_tried": "Each load matches its answer. The excitation and encoder currents are not stated (questions 23 and 24).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "servo rail power",
+    "value": "8.4 V x 6.35 A = 53.3 W",
+    "marking": "owner",
+    "source": "Servo rail and Servo supply, hardware/STATUS.md:34 and :37 (owner, 2026-09-25); Research.md:48; read 2026-09-28",
+    "refutation_tried": "8.4 x 6.35 = 53.34 W: holds; the unit is correct.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/IOBoard.md:344",
+    "quantity": "TPS55285 input range",
+    "value": "2.4 to 22 V",
+    "marking": "sourced",
+    "source": "Research.md:48 (fixed input); www.ti.com/product/TPS55285 via vendors.py fetch, read 2026-09-28T10:25:41Z: Vin (min) 2.4 V, Vin (max) 22 V, status ACTIVE",
+    "refutation_tried": "Confirmed on TI's product page. It bounds the overvoltage threshold (question 6).",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "TPS25947 input rating",
+    "value": "operates to 23 V, 3 V above the 20 V input",
+    "marking": "sourced",
+    "source": "www.ti.com/product/TPS25947 via vendors.py fetch, read 2026-09-28T10:25:42Z: Vin 2.7 to 23 V, Vabsmax_cont 28 V, current limit 0.5 to 6 A, title rating 5.5 A, status ACTIVE",
+    "refutation_tried": "Confirmed. Its 5.5 A rating is under the DC input's current at 12 V: 4.9 A for the servo supply at the assumed 90 % (Power.md:68), plus the display and the logic rails. P2 checks this.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "LM66200 input rating",
+    "value": "5.5 V at most",
+    "marking": "sourced",
+    "source": "www.ti.com/product/LM66200 via vendors.py fetch, read 2026-09-28T10:25:42Z: input 1.6 to 5.5 V, 2.5 A",
+    "refutation_tried": "Confirmed; it does not fit a 6.0 to 20 V selection.",
+    "question": -1
+   },
+   {
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "BQ29700 cell count",
+    "value": "one cell",
+    "marking": "sourced",
+    "source": "www.ti.com/product/BQ29700 via vendors.py fetch (redirected to /product/BQ2970), read 2026-09-28T10:25:43Z: number of series cells 1 to 1",
+    "refutation_tried": "Confirmed; it does not protect a 2S pack.",
+    "question": -1
+   }
+  ],
+  "questions": [
+   {
+    "function": "display supply",
+    "question": "What is the lowest voltage, in V, the display takes at its end of the link cable while it draws 2 A?",
+    "why": "Without it, R5 cannot state the cable's allowed drop at 2 A or qualify the 5 V rail's setpoint and tolerance at the IO board's connector. The tree names no display board and no input range for it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Research.md:283",
+    "for_quantity": "lowest voltage at the display",
+    "asks": "lowest voltage at the display"
+   },
+   {
+    "function": "display supply",
+    "question": "Does the display's own power path isolate the VBUS of each of its USB-C sockets from the 5 V it takes from the link cable: yes or no? The sockets are the native USB socket and the USB-UART bridge's socket (docs/Link.md:19-23). If no, what joins them: a diode, a switch or a direct connection?",
+    "why": "If link power reaches a host's VBUS through the display, R5 states a conflict (Research.md R5 row). Until this is known, connecting both at once is not specified as safe (IOBoard.md:386). The tree does not describe the display's power path.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:386",
+    "for_quantity": "display power path to its USB-C VBUS",
+    "asks": "display power path to its USB-C VBUS"
+   },
+   {
+    "function": "display supply",
+    "question": "Does the link cable's supply block current from the display back into the IO board while the display is on its own USB-C and the IO board is unpowered or running from the pack: yes or no?",
+    "why": "The pages state it with no owner decision. The answer decides whether P2 needs a reverse-blocking part (ideal diode or eFuse) on the display supply at all.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:386",
+    "for_quantity": "reverse-current blocking on the display supply",
+    "asks": ""
+   },
+   {
+    "function": "display supply",
+    "question": "What is the highest voltage, in V, the display takes at its end of the link cable at no load?",
+    "why": "R5 can raise the 5 V setpoint, or regulate at the display's end, to cover the cable drop only up to this voltage. Without it, P2 cannot qualify the setpoint.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Research.md:283",
+    "for_quantity": "highest voltage at the display",
+    "asks": ""
+   },
+   {
+    "function": "display supply",
+    "question": "At which current, in A, does the link cable's supply limit a short on the cable so that the IO board's own rails stay up? Answer 'none' if it has no limit.",
+    "why": "The answer decides between an ideal diode, which has no limit, and an eFuse, which limits current. The busfault screen names a connector only nearly seated as a known fault. No requirement states a limit.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:334",
+    "for_quantity": "display supply current limit",
+    "asks": ""
+   },
+   {
+    "function": "overvoltage protection",
+    "question": "What is the highest continuous voltage, in V, the DC input survives without damage? Examples: a 24 V supply, or a 6S pack at 25.2 V, connected by mistake.",
+    "why": "It sets the absolute maximum rating P2 qualifies the input protection against. The pages give only the 12 to 20 V operating range. The TPS25947 seed is rated 28 V continuous.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:332",
+    "for_quantity": "overvoltage withstand",
+    "asks": ""
+   },
+   {
+    "function": "overvoltage protection",
+    "question": "At which DC input voltage, in V, does the overvoltage protection cut the input off? It lies above the 20 V maximum and at or below the TPS55285's 22 V input rating. Does 20 V include the DC source's own tolerance?",
+    "why": "IOBoard.md:332 and :374 state that the threshold is not stated. P2 cannot check a protector's trip point or its tolerance band without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:332",
+    "for_quantity": "overvoltage threshold",
+    "asks": ""
+   },
+   {
+    "function": "overvoltage protection",
+    "question": "What transient does the DC input's protection absorb: its peak in V and its duration in µs? An example is the ringing of a lead hot-plugged onto ceramic input capacitors.",
+    "why": "Without a transient level, P2 cannot size a TVS (transient-voltage-suppression) clamp or check a protector's transient rating. The pages name no transient for the board input; R3 covers transients only on the ESC pack path.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:332",
+    "for_quantity": "input transient",
+    "asks": ""
+   },
+   {
+    "function": "reverse-polarity protection",
+    "question": "Do the reverse-polarity, overvoltage and inrush protection sit on the 2S pack input as well as on the 12 to 20 V DC input: yes or no?",
+    "why": "IOBoard.md:331-333 place each one 'on the board's power input', and the board has two inputs. P2 qualifies a protection part for the pack input only if the answer is yes.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:331",
+    "for_quantity": "inputs the protection covers",
+    "asks": ""
+   },
+   {
+    "function": "inrush limiting",
+    "question": "What is the highest inrush current, in A, the board may draw when the DC input or the 2S pack is connected?",
+    "why": "IOBoard.md:333 and :374 state that the limit is not stated. P2 cannot set or check a soft-start or current-limit part without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:333",
+    "for_quantity": "inrush limit",
+    "asks": ""
+   },
+   {
+    "function": "source selection",
+    "question": "Below which DC input voltage, in V, does the board treat the DC input as absent and run from the pack? Is 12 V the lowest the DC source delivers including its own tolerance?",
+    "why": "IOBoard.md:374 lists the lowest input voltage the board runs from as not known. Without it, P2 cannot set the selection's switchover threshold or the DC input's undervoltage lockout.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:374",
+    "for_quantity": "lowest input voltage the board runs from",
+    "asks": ""
+   },
+   {
+    "function": "source selection",
+    "question": "What is the longest interruption, in ms, the 3.3 V rail and the 5 V rail with the display may see when the DC input is connected or removed while the board runs? Answer 0 for none.",
+    "why": "A drop at the display stops the heartbeat and opens every gate (docs/Safety.md:24-30). A drop on the 3.3 V rail resets the RP2354B. P2 cannot choose between diode-OR selection, a priority switch with hold-up capacitance and a make-before-break controller without this figure.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:324",
+    "for_quantity": "switchover interruption",
+    "asks": ""
+   },
+   {
+    "function": "source selection",
+    "question": "Which pack path current, in A, does R5 size the source selection and the pack disconnect for? Option 1: 9.9 A for the servo supply at 6.0 V, on the 90 % efficiency Power.md assumes, plus the display and the logic rails. Option 2: the TPS55285's input current from its datasheet efficiency at 6.0 V in and 8.4 V, 6.35 A out ('for research').",
+    "why": "Power.md:68 gives 90 % without a source, and IOBoard.md:326 states that the efficiency from the pack is not stated. The current rating of the selection switch and of the disconnect FETs follows from this figure.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:326",
+    "for_quantity": "pack path current at 90 % servo efficiency",
+    "asks": ""
+   },
+   {
+    "function": "source selection",
+    "question": "Does the RP2354B's USB port power the board's logic when neither the DC input nor the pack is present: yes or no? If yes, which rails: the 3.3 V rail only, or also the 5 V rail and the display?",
+    "why": "IOBoard.md:384 states it is not known. A yes adds a third source, with its own current limit, to the selection P2 qualifies.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:384",
+    "for_quantity": "USB power to the logic",
+    "asks": ""
+   },
+   {
+    "function": "pack disconnect",
+    "question": "What is the highest 2S pack voltage, in V, that R5 designs the pack path for: 8.4 V (4.2 V a cell), or the charge voltage of the cells R7 selects?",
+    "why": "The 8.4 V figure has no source: F9 gives the floor and the chemistry only. It sets the voltage rating of the disconnect, the selection and the pack-side protection.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:325",
+    "for_quantity": "highest pack voltage",
+    "asks": ""
+   },
+   {
+    "function": "pack disconnect",
+    "question": "What reconnects the pack after a floor disconnect: the USB-C charger present, the DC input present, every cell above a stated voltage, or an operator action? Name one or more.",
+    "why": "IOBoard.md:330 states that the condition is not stated, and F9's answer sets the floor only. The condition decides whether P2 needs a voltage comparator with hysteresis, a latch, or a charger-present input.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:330",
+    "for_quantity": "pack reconnect condition",
+    "asks": ""
+   },
+   {
+    "function": "pack disconnect",
+    "question": "If the pack reconnects on cell voltage, at which cell voltage, in V, does it reconnect? This is the hysteresis above the 3.0 V floor that keeps the returning load from reconnecting it.",
+    "why": "IOBoard.md:328 states that the hysteresis width is not stated. P2 cannot check a protector's release threshold without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:328",
+    "for_quantity": "pack disconnect hysteresis",
+    "asks": ""
+   },
+   {
+    "function": "pack disconnect",
+    "question": "Is 3.0 V the lowest cell voltage at which the disconnect trips at every tolerance corner, or its nominal trip point? What tolerance, in mV, does the trip point hold over 0 to 50 °C?",
+    "why": "Without it, P2 cannot check a protector's undervoltage threshold accuracy, or pick a factory-trim or resistor-set threshold.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:329",
+    "for_quantity": "floor trip tolerance",
+    "asks": ""
+   },
+   {
+    "function": "pack disconnect",
+    "question": "How long, in ms, must a cell stay at or below the floor before the pack disconnects? This is the filter that keeps a cell's sag under a load step from tripping it.",
+    "why": "The pack sources up to about 9.9 A. Without a delay, a servo current step can sag a cell below 3.0 V and disconnect the pack. P2 cannot check a protector's undervoltage delay without this figure.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:327",
+    "for_quantity": "floor trip delay",
+    "asks": ""
+   },
+   {
+    "function": "pack disconnect",
+    "question": "What is the highest current, in µA, the board may draw from the pack while the pack is disconnected?",
+    "why": "The circuit that holds a pack at 3.0 V a cell off keeps drawing from it. P2 cannot rank monitors and protectors by their quiescent current without a limit.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:327",
+    "for_quantity": "disconnected-pack drain",
+    "asks": ""
+   },
+   {
+    "function": "pack disconnect",
+    "question": "Which of these may the pack's floor disconnect be: (a) a part of its own, with the 3.0 V threshold fixed by resistors or factory trim; (b) the pack protection R7 selects; (c) a protector whose threshold firmware writes over I²C at start-up?",
+    "why": "'In hardware' (owner, 2026-09-24) does not settle (b) or (c). R5 and R7 run side by side in T3, and the answer decides whether R5 selects a disconnect part at all.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:327",
+    "for_quantity": "disconnect implementation",
+    "asks": ""
+   },
+   {
+    "function": "3.3 V logic buck",
+    "question": "What current margin, in %, do the 3.3 V logic buck and the 5 V rail each hold above their load? The load is summed from the parts T2 and T4 select and the display. The margin covers the parts R6, R7 and R8 select in the same task.",
+    "why": "R5 sizes the rails without the R6 to R8 parts (Research.md R5 row). Without a margin, P2 ranks a part rated exactly at the partial sum, and P5 then returns a conflict.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Research.md:283",
+    "for_quantity": "rail current margin",
+    "asks": ""
+   },
+   {
+    "function": "5 V rail",
+    "question": "Which tolerance, in %, does the 5 V rail hold at the IO board's own 5 V loads: the load-cell excitation (F3) and the encoder's 5 V supply (F4)?",
+    "why": "No accuracy is stated for the 5 V rail. P2 cannot check the regulator's setpoint accuracy, load regulation and ripple without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:338",
+    "for_quantity": "5 V rail tolerance",
+    "asks": ""
+   },
+   {
+    "function": "5 V rail",
+    "question": "What is the lowest bridge resistance, in Ω, of the load cells on the 3 channels (F3)?",
+    "why": "The bridge resistance sets the excitation current on the 5 V rail: 5 V divided by it, for each cell. IOBoard.md:338 states that the excitation current is not stated. The load cells are sensors, not parts T4 selects.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:338",
+    "for_quantity": "load-cell excitation current",
+    "asks": ""
+   },
+   {
+    "function": "encoder 12 V supply",
+    "question": "What is the highest supply current, in mA, of the encoder at 12 V and at 5 V (F4)?",
+    "why": "IOBoard.md:387 states that the encoder's current is not stated. The encoder is the operator's device, not a part T2 or T4 selects. P2 cannot size the 12 V buck-boost or the encoder's share of the 5 V rail without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:387",
+    "for_quantity": "encoder supply current",
+    "asks": ""
+   },
+   {
+    "function": "encoder 12 V supply",
+    "question": "Which voltage range, in V, does the encoder's 12 V supply hold at the encoder's connector?",
+    "why": "F4 gives 12 V with no tolerance. P2 cannot check the buck-boost's output accuracy across the 6.0 to 20 V input without it.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/Research.md:283",
+    "for_quantity": "12 V supply tolerance",
+    "asks": ""
+   },
+   {
+    "function": "receiver supply",
+    "question": "Does the IO board power the receiver: yes or no? If yes, from which rail, at which voltage in V, and at which highest current in mA?",
+    "why": "The R5 row includes the receiver's supply only if the board powers one. IOBoard.md:287 and docs/Receivers.md:15-16 name signal and ground only, and docs/Receivers.md:29 names receiver power as a cause of a silent bus. P2 cannot qualify a supply or switch for it without the answer.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:287",
+    "for_quantity": "receiver supply",
+    "asks": ""
+   }
+  ]
+ }
+}

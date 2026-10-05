@@ -1,0 +1,2146 @@
+{
+ "role": "P2",
+ "category": "R11",
+ "label": "P2-R11",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "found_values": [
+   {
+    "question_id": "V209",
+    "value": "The F4 encoder mounted on the servo output shaft. R11 selects no position sensor of its own; the receiver of 'encoder input' and the RP2354B's PIO decoder of 'encoder decode' serve it, and the RP2354B converts the count to the pulse width the servo screen takes (servo_screen_feedback(uint16_t position_us, ...)). An accelerometer on the control surface is not the source: rotation about the gravity vector is not observable, so a vertical hinge line reads zero across its throw. The encoder measures the servo shaft only while the operator mounts it there (F4)",
+    "source": "checkout e13f5f60d2e5: hardware/docs/Research.md:532 (F4 answer, owner 2026-09-25); hardware/docs/IOBoard.md:445, :454; shared/ui/stub_screen.c:37-43; shared/ui/include/servo_screen.h:67",
+    "read_at": "2026-09-29T06:46:24Z"
+   },
+   {
+    "question_id": "V210",
+    "value": "Not applicable: V209 names the F4 encoder, so no angular resolution or horn travel is asked of another sensor",
+    "source": "found value V209; checkout e13f5f60d2e5: hardware/docs/Research.md:770",
+    "read_at": "2026-09-29T06:46:24Z"
+   },
+   {
+    "question_id": "V211",
+    "value": "The one input a panel setting picks fills the BENCH rpm register and feeds the motor stall action. The panel already enables and places a rotation input by setting ('Optical tacho', 'Tacho pin'), and the BENCH page carries one rpm register with one valid bit. Hardware consequence: every rotation input keeps its own front end and GPIO, none is multiplexed, so any one can be picked. Derived from the tree; no owner figure",
+    "source": "checkout e13f5f60d2e5: shared/settings/settings.c:99-104; shared/link/include/link_pages.h:233; hardware/docs/IOBoard.md:432, :434",
+    "read_at": "2026-09-29T06:46:24Z"
+   },
+   {
+    "question_id": "V212",
+    "value": "65,535 rpm, the highest speed the BENCH rpm register carries: to_u16 saturates there. The owner's V225 answer uses the same figure as the highest rpm ('2.54 us of delay variation at 65,535 rpm'), and the owner's V225 decision of 2026-09-29 keeps 1 degree at the highest rpm. Consequences: once-per-revolution inputs and the vibration fundamental reach 1,092 Hz; an input at the motor's electrical frequency reaches 22,937 Hz at 21 pole pairs (MOTOR_POLES even, 2 to 42). For comparison, a commercial stand's optical probe reads up to 30,000 rpm (Flight Stand 50 datasheet: 'RPM: up to 30,000 RPM') and its electrical probe 0 to 190k eRPM (Series 1585 datasheet page 3)",
+    "source": "checkout e13f5f60d2e5: shared/bench/bench_state.c:21-28; hardware/docs/IOBoard.md:430, :487; docs/Link.md:159-160; hardware/docs/Research.md:785; https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf (read 2026-09-29T06:46:34Z); https://cdn.rcbenchmark.com/landing_pages/Manuals/Series%201585%20Datasheet.pdf (read 2026-09-29T06:46:33Z)",
+    "read_at": "2026-09-29T06:46:34Z"
+   },
+   {
+    "question_id": "V213",
+    "value": "10 rpm, read by at least one of the optical index, the magnetic pickup or the encoder, the coast-down after a disarm included. The phase-wire clip is not required below 500 rpm: the Series 1585 datasheet says its optical probe 'measures speeds from 10 to 30,000 RPM' and that 'the electrical RPM probe does not work effectively when the motor is running at low RPM (<500)'. With the tree's 200 ms staleness rule (RPM_STALE_MS), a once-per-revolution input gives a fresh period within 200 ms only above 300 rpm",
+    "source": "https://cdn.rcbenchmark.com/landing_pages/Manuals/Series%201585%20Datasheet.pdf, Series 1585 Datasheet V2.4, page 8 (read 2026-09-29T06:46:33Z); checkout e13f5f60d2e5: firmware/iomcu/src/main.c:663; hardware/docs/IOBoard.md:489",
+    "read_at": "2026-09-29T06:46:33Z"
+   },
+   {
+    "question_id": "V214",
+    "value": "100 V at the clip's input (the divider and clamp, round 2). The phase node swings between the IO board ground and the pack node, which R3's clamp keeps under the INA238's 85 V absolute maximum; R3's V34 found a 100 V rating meets that node. The switching overshoot of a motor phase above the pack node is not found at a primary source; 100 V is applied and leaves 15 V above the 85 V clamp ceiling",
+    "source": "/home/claude/rcbench-research/round1/results/hardware/research/round1/FU-A2/010-P2-R3.json, found value V34 (INA238 SLYS025B 5.1, VVBUS -0.3 to 85 V, read 2026-09-29T00:20:02Z); checkout e13f5f60d2e5: hardware/docs/IOBoard.md:415; hardware/docs/Research.md:543 (F15), :281",
+    "read_at": "2026-09-29T06:46:24Z"
+   },
+   {
+    "question_id": "V215",
+    "value": "Galvanically, clipped onto the bare conductor or a lug of the motor phase lead. A commercial stand measures the motor's electrical rpm and its winding resistance through its own connection to the motor wires ('Three lug connectors can accommodate bullet connectors up to 6 mm or bare wires'); a winding resistance is not measurable without contact",
+    "source": "https://cdn.rcbenchmark.com/landing_pages/Manuals/Series%201585%20Datasheet.pdf, Series 1585 Datasheet V2.4: pages 2, 3 and 8 (read 2026-09-29T06:46:33Z)",
+    "read_at": "2026-09-29T06:46:33Z"
+   },
+   {
+    "question_id": "V216",
+    "value": "Not isolated: referenced to the IO board ground, which the ESC pack's return reaches at the star point by its own lead. The INA238 already measures the pack node against that ground, so the clip adds no new ground path and no isolator is selected",
+    "source": "checkout e13f5f60d2e5: hardware/docs/IOBoard.md:547 (Star ground: 'The ESC pack's return reaches the star by its own lead'), :415",
+    "read_at": "2026-09-29T06:46:24Z"
+   },
+   {
+    "question_id": "V217",
+    "value": "A Hall-effect bipolar latch with a digital output, selected by R11, on a sensor board of its own that JLCPCB assembles (as V221), supplied at 3.3 V from the IO board's logic rail. An open-drain output is pulled up to 3.3 V on the IO board, so it never drives an RP2354B pin above the rail. A latch switches on a south pole and releases on a north pole, which V218's two opposite magnets present once a turn",
+    "source": "DRV5015 datasheet SBAS915A (June 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-09-29T06:44:33Z, sections 1, 5 and 7.1; checkout e13f5f60d2e5: hardware/docs/IOBoard.md:105; hardware/docs/Research.md:134-139",
+    "read_at": "2026-09-29T06:44:33Z"
+   },
+   {
+    "question_id": "V218",
+    "value": "One pulse per revolution, from two equal magnets of opposite polarity fixed 180 degrees apart on the rotating part; two equal masses at equal radius 180 degrees apart add no static unbalance as far as their masses and radii match. Reading the rotor's own poles (MOTOR_POLES / 2 pulses, up to 21) would put the latch at 22,937 Hz at 65,535 rpm, above the guaranteed 20 kHz of DRV5015 and AH1711. With one pulse a turn the highest rate is 1,092 Hz and the reading does not use MOTOR_POLES",
+    "source": "checkout e13f5f60d2e5: docs/Balance.md:36-37 ('Anything attached to the bell is mass on the part being balanced'); DRV5015 datasheet SBAS915A (June 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-09-29T06:44:33Z, section 6.6; AH1711/AH1712/AH1713/AH1714 datasheet DS45410 Rev. 3-2 (January 2024), https://www.diodes.com/datasheet/download/AH1711%2FAH1712%2FAH1713%2FAH1714.pdf, read 2026-09-29T06:44:34Z, page 3",
+    "read_at": "2026-09-29T06:44:34Z"
+   },
+   {
+    "question_id": "V219",
+    "value": "R11 selects the sensor itself: a reflective infrared sensor on a probe board of its own that JLCPCB assembles, on a lead, aimed from below at the pen line, supplied at 3.3 V from the IO board's logic rail. Its analogue output runs on the lead to a comparator with hysteresis on the IO board (the seeds TLV3201 and TLV7011 are comparators), whose push-pull output drives the GPIO. A commercial stand's optical rpm probe is likewise a circuit carrying the optical sensor, powered from the stand ('powered by a 5V power'). No sensor found meets 'delay variation' at 65,535 rpm (report 'index front end delay variation')",
+    "source": "https://www.tytorobotics.com/blogs/series-1520-1580-1585-troubleshooting/optical-probe (read 2026-09-29T06:46:35Z); checkout e13f5f60d2e5: hardware/docs/Research.md:289; hardware/docs/IOBoard.md:105, :441; docs/Balance.md:32-37",
+    "read_at": "2026-09-29T06:46:35Z"
+   },
+   {
+    "question_id": "V220",
+    "value": "5 mm: the sensor's stated operating range includes 5 mm. The maker of a commercial stand gives the sensor-to-motor distance as 'less than 5mm' (Series 1520/1580/1585 probe), 'around 5mm' (Series 1780 probe) and '5 - 15 mm' (Flight Stand 15 and 50 probe). All three read reflective tape, which the first page asks to be 'longer than 10mm'; the bench's mark is a pen line (docs/Balance.md:36-37), whose width is not stated",
+    "source": "https://www.tytorobotics.com/blogs/series-1520-1580-1585-troubleshooting/optical-probe (06:46:35Z); https://www.tytorobotics.com/blogs/series-1780-troubleshooting/optical-rpm-probe (06:46:35Z); https://www.tytorobotics.com/products/optical-rpm-probe-flight-stand-15-50 (06:46:36Z); checkout e13f5f60d2e5: docs/Balance.md:36-37",
+    "read_at": "2026-09-29T06:46:36Z"
+   },
+   {
+    "question_id": "V221",
+    "value": "On a sensor board of its own that JLCPCB assembles, with parts that carry LCSC numbers under the IO board's sourcing rules, connected to the IO board by the lead of V222. Every analogue accelerometer found is a surface-mount package that needs a board: LFCSP 4 x 4 mm (ADXL316, ADXL326), LCC 5 x 5 mm (AD22035), LCC-14 (ADXL356), LFCSP 5 x 5 mm (ADXL1002)",
+    "source": "ADXL316 data sheet Rev. C (5/2019), https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), page 1; ADXL326 data sheet Rev. 0 (8/2009), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL326.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), page 1; ADXL103/ADXL203 data sheet Rev. F (covers AD22035/AD22037), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL103_203.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), page 1; vendors.py jlcpcb C662336, C579451, C649092, C662368, C662288 (2026-09-29T06:42:14Z to 06:49:15Z); checkout e13f5f60d2e5: docs/Balance.md:38-46; hardware/docs/Research.md:134-139",
+    "read_at": "2026-09-29T06:49:15Z"
+   },
+   {
+    "question_id": "V222",
+    "value": "2 m at most: the owner's answer in the Answer column, not a research finding. Applied to the accelerometer as 'lead length'; its capacitance counts in the accelerometer's output node (report 'accelerometer output node')",
+    "source": "checkout e13f5f60d2e5: hardware/docs/Research.md:782 (V222, owner 2026-09-28); :767 (V207)",
+    "read_at": "2026-09-29T06:46:24Z"
+   },
+   {
+    "question_id": "V223",
+    "value": "±16 g. The owner's answer to V199 gives ±16 g for the same quantity on the vibration path. ArduPilot counts an accelerometer as clipping at 'its maximum limit (16G)' and says 'levels above 60m/s/s nearly always have problems'; a sine of 60 m/s/s RMS peaks at 8.65 g, inside 16 g",
+    "source": "checkout e13f5f60d2e5: hardware/docs/Research.md:759 (V199); https://ardupilot.org/copter/docs/common-measuring-vibration.html (read 2026-09-29T06:46:36Z)",
+    "read_at": "2026-09-29T06:46:36Z"
+   },
+   {
+    "question_id": "V224",
+    "value": "1 mg at the fundamental, after one run's averaging, which V208 sets at 5 s at steady speed: the owner's answer, not a research finding. Applied to the accelerometer as 'smallest amplitude resolved': the sensor's noise in the 0.2 Hz band of a 5 s record stays under 1 mg",
+    "source": "checkout e13f5f60d2e5: hardware/docs/Research.md:784 (V224), :768 (V208)",
+    "read_at": "2026-09-29T06:46:24Z"
+   },
+   {
+    "question_id": "V225",
+    "value": "1 degree at the highest rpm across the whole chain (accelerometer, index pulse front end and converter), V202's converter share inside it: 2.54 us of delay variation at 65,535 rpm, 16.7 us at 10,000 rpm (owner, 2026-09-28, Answer column). The owner's decision of 2026-09-29, carried in this follow-up task's items and not on the page at e13f5f6, keeps 1 degree at the highest rpm and derives each part's delay variation from what its datasheet states: for an analogue accelerometer the output pole RFILT x CX with the stated RFILT range and a CX the function chooses; for an optical or magnetic sensor its stated rise, fall and propagation times. Applied with the split of the report figure 'V225 budget split': 1.244 us each to the accelerometer and the optical index sensor, 55 ns to the index comparator, 30 ps to the converter",
+    "source": "checkout e13f5f60d2e5: hardware/docs/Research.md:785; hardware/docs/IOBoard.md:449; docs/Balance.md:65-69; follow-up item of task FU (owner, 2026-09-29)",
+    "read_at": "2026-09-29T06:46:24Z"
+   },
+   {
+    "question_id": "V226",
+    "value": "Analogue. The specification requires an analogue sensor into an ADC on the IO board and requires the accelerometer and the index pulse to be sampled on one timebase on the coprocessor. A digital accelerometer samples on its own oscillator, so its sampling instant is not on the coprocessor's timebase",
+    "source": "checkout e13f5f60d2e5: hardware/docs/IOBoard.md:447, :450; docs/Manifest.md:30; docs/Balance.md:57-63",
+    "read_at": "2026-09-29T06:46:24Z"
+   },
+   {
+    "question_id": "V227",
+    "value": "The frequency of each of A and B, in Hz. Encoder datasheets state the highest rate per channel: Broadcom's 'Count Frequency f 100 kHz, Velocity (rpm) x N/60'; US Digital's 'Max. A/B Frequency' of 300 kHz. So 5 MHz on RS-422 is 20 million counts per second (50 ns between quadrature edges) and 1 MHz single-ended is 4 million counts per second",
+    "source": "https://docs.broadcom.com/doc/AV02-1046EN (Count Frequency row, read 2026-09-29T06:46:37Z); https://cdn.usdigital.com/assets/datasheets/datasheet-e5.pdf (Max. A/B Frequency, read 2026-09-29T06:46:39Z)",
+    "read_at": "2026-09-29T06:46:39Z"
+   },
+   {
+    "question_id": "V228",
+    "value": "12 V withstand, 5 V operation. The single-ended form reads 5 V logic (F4), and every line input withstands 12 V without damage, the supply the second jumper can put on the encoder: an encoder whose push-pull outputs swing to its supply, or the jumper at 12 V with a 5 V encoder, then puts up to 12 V on the signal pins. Derived from F4",
+    "source": "checkout e13f5f60d2e5: hardware/docs/Research.md:532 (F4); hardware/docs/IOBoard.md:445",
+    "read_at": "2026-09-29T06:46:24Z"
+   },
+   {
+    "question_id": "V229",
+    "value": "8 to 288 kHz, wider than the 24, 48 and 96 kHz the programmer screen offers. AM32 takes a PWM frequency setting from 8 to 144 kHz (pwm_frequency < 145 && > 7; TIMER1_MAX_ARR = TIM1_AUTORELOAD * 400 / (setting * 100 / 6)), and its variable-PWM mode 1 maps the auto-reload between TIMER1_MAX_ARR / 2 and TIMER1_MAX_ARR, up to twice the setting. The clip passes up to 22,937 Hz, which overlaps an 8 kHz PWM",
+    "source": "https://raw.githubusercontent.com/am32-firmware/AM32/main/Src/main.c lines 637-639 and 1977-1979 (read 2026-09-29T06:46:41Z); checkout e13f5f60d2e5: shared/ui/programmer_screen.c:115",
+    "read_at": "2026-09-29T06:46:41Z"
+   },
+   {
+    "question_id": "V230",
+    "value": "1,000 rpm, a 16.7 Hz fundamental: the owner's answer, not a research finding. Applied to the accelerometer as 'lowest balance speed'",
+    "source": "checkout e13f5f60d2e5: hardware/docs/Research.md:790 (V230)",
+    "read_at": "2026-09-29T06:46:24Z"
+   },
+   {
+    "question_id": "V231",
+    "value": "0 to 85 °C at the sensor mount: the owner's answer, not a research finding. Applied as 'ambient temperature' to the accelerometer, the optical index sensor and the magnetic pickup",
+    "source": "checkout e13f5f60d2e5: hardware/docs/Research.md:791 (V231)",
+    "read_at": "2026-09-29T06:46:24Z"
+   }
+  ],
+  "functions": [
+   {
+    "function": "accelerometer",
+    "requirements": [
+     {
+      "name": "output type",
+      "value": "analogue voltage output into an ADC on the IO board",
+      "source": "V226; hardware/docs/IOBoard.md:447"
+     },
+     {
+      "name": "sensing axis",
+      "value": "at least one axis in the mounting plane, across the shaft, when mounted flat",
+      "source": "hardware/docs/IOBoard.md:451; docs/Balance.md:45-48"
+     },
+     {
+      "name": "full scale",
+      "value": "at least ±16 g without clipping",
+      "source": "V223; V199 (owner, 2026-09-28)"
+     },
+     {
+      "name": "bandwidth on the used axis",
+      "value": "passes the fundamental up to 1,092 Hz (65,535 rpm) inside its stated bandwidth",
+      "source": "V212; hardware/docs/IOBoard.md:448 (167 Hz at 10,000 rpm, a weaker value)"
+     },
+     {
+      "name": "lowest balance speed",
+      "value": "responds at the 16.7 Hz fundamental of a 1,000 rpm balance run",
+      "source": "V230 (owner, 2026-09-28)"
+     },
+     {
+      "name": "smallest amplitude resolved",
+      "value": "1 mg at the fundamental after one run's 5 s of averaging: the sensor's noise in a 0.2 Hz band under 1 mg",
+      "source": "V224 and V208 (owner, 2026-09-28)"
+     },
+     {
+      "name": "delay variation",
+      "value": "at most 1.244 us of delay variation at 1,092 Hz (65,535 rpm): the accelerometer's share of V225's 1 degree for the whole chain (2.543 us), after the converter's 30 ps (aperture jitter of R10's ADCS7476AIMFX/NOPB) and the index comparator's 55 ns (TLV3201AIDBVR maximum delay), the remaining 2.488 us split equally with the optical index sensor. Derived as V225 (owner, 2026-09-29) sets: from the output pole RFILT x CX, the delay atan(2 pi f R C) / (2 pi f) at 1,092 Hz taken at the stated RFILT minimum and maximum, with the capacitance the function chooses on the output node, the lead's included; the difference is the variation",
+      "source": "V225 (owner, 2026-09-28, hardware/docs/Research.md:785) and the owner's decision on V225 of 2026-09-29 carried in this follow-up task's items (not on the page at e13f5f6); R10 selection ADCS7476AIMFX/NOPB (selection.json, FU-C1 P4 datasheet verifier: tAJ 30 ps typical, SNAS192G 6.5); TLV3201 SBOS561C 6.6; hardware/docs/IOBoard.md:449; docs/Balance.md:65-69"
+     },
+     {
+      "name": "lead length",
+      "value": "drives the lead of up to 2 m from the rig arm or firewall to the IO board",
+      "source": "V222 (owner, 2026-09-28)"
+     },
+     {
+      "name": "supply",
+      "value": "from the IO board's 3.3 V rail (3.3 V ±3 %), so its output is unpowered while the rail is down",
+      "source": "hardware/docs/Research.md:270-272, :283; hardware/docs/IOBoard.md:453"
+     },
+     {
+      "name": "build and sourcing",
+      "value": "on a sensor board JLCPCB assembles: an LCSC number and rule 4 at JLCPCB",
+      "source": "V221; sourcing rules 1 and 4"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 85 °C at the sensor mount",
+      "source": "V231 (owner, 2026-09-28)"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "ADXL316WBCSZ",
+      "maker": "Analog Devices (datasheet); counts as Analog Devices (S1)",
+      "lcsc": "C662336",
+      "package": "LFCSP-12 4 x 4 x 1.45 mm (CS-12-3)",
+      "placements": 1,
+      "placements_basis": "fixed: one accelerometer on the sensor board, one sensor board for each IO board (V221, V201: one axis used)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "output type",
+        "required": "analogue voltage output into an ADC on the IO board",
+        "datasheet": "signal-conditioned voltage outputs XOUT, YOUT, ZOUT, each behind an internal RFILT of 32 kOhm nominal",
+        "pass": true,
+        "source": "ADXL316 data sheet Rev. C (5/2019), https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), page 1 and Figure 1"
+       },
+       {
+        "name": "sensing axis",
+        "required": "at least one axis in the mounting plane, across the shaft, when mounted flat",
+        "datasheet": "X and Y axes in the package plane (Axes of Acceleration Sensitivity); mounted flat on the firewall, X or Y lies across the shaft",
+        "pass": true,
+        "source": "ADXL316 data sheet Rev. C (5/2019), https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Axes of Acceleration Sensitivity"
+       },
+       {
+        "name": "full scale",
+        "required": "at least ±16 g without clipping",
+        "datasheet": "measurement range ±16 g minimum, ±19 g typical (Table 1)",
+        "pass": true,
+        "source": "ADXL316 data sheet Rev. C (5/2019), https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Table 1"
+       },
+       {
+        "name": "bandwidth on the used axis",
+        "required": "passes the fundamental up to 1,092 Hz (65,535 rpm) inside its stated bandwidth",
+        "datasheet": "X and Y bandwidth 1,600 Hz typical with no external filter (Table 1); bandwidths selectable 0.5 Hz to 1,600 Hz (page 1); sensor resonance 4.2 kHz typical. 1,092 Hz lies inside 1,600 Hz; the phase of the internal response at 1,092 Hz is not stated",
+        "pass": true,
+        "source": "ADXL316 data sheet Rev. C (5/2019), https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), page 1 and Table 1"
+       },
+       {
+        "name": "lowest balance speed",
+        "required": "responds at the 16.7 Hz fundamental of a 1,000 rpm balance run",
+        "datasheet": "DC-coupled: measures static acceleration (page 1), so it responds at 16.7 Hz",
+        "pass": true,
+        "source": "ADXL316 data sheet Rev. C (5/2019), https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), page 1"
+       },
+       {
+        "name": "smallest amplitude resolved",
+        "required": "1 mg at the fundamental after one run's 5 s of averaging: the sensor's noise in a 0.2 Hz band under 1 mg",
+        "datasheet": "noise density 210 µg/√Hz rms X and Y (Table 1): 94 µg rms in the 0.2 Hz band of a 5 s run, under 1 mg",
+        "pass": true,
+        "source": "ADXL316 data sheet Rev. C (5/2019), https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Table 1"
+       },
+       {
+        "name": "delay variation",
+        "required": "at most 1.244 us of delay variation at 1,092 Hz (65,535 rpm): the accelerometer's share of V225's 1 degree for the whole chain (2.543 us), after the converter's 30 ps (aperture jitter of R10's ADCS7476AIMFX/NOPB) and the index comparator's 55 ns (TLV3201AIDBVR maximum delay), the remaining 2.488 us split equally with the optical index sensor. Derived as V225 (owner, 2026-09-29) sets: from the output pole RFILT x CX, the delay atan(2 pi f R C) / (2 pi f) at 1,092 Hz taken at the stated RFILT minimum and maximum, with the capacitance the function chooses on the output node, the lead's included; the difference is the variation",
+        "datasheet": "RFILT 27 / 32 / 37 kOhm (min / typ / max, Table 1, TA 25 °C); f-3dB = 1 / (2 pi x 32 kOhm x C) (page 11). Capacitance chosen: 100 pF on XOUT in total, the lead and the converter input included. Pole 58.9 kHz at 27 kOhm and 43.0 kHz at 37 kOhm; delay at 1,092 Hz 2.700 us and 3.699 us; variation 1.000 us (0.393 degrees), under 1.244 us. Up to 124.5 pF on the node keeps the share. The datasheet recommends at least 4.7 nF for CX 'in all cases' (page 11) and gives no reason; at 4.7 nF the variation is 22.9 us (8.99 degrees) and fails, so 100 pF is below that recommendation. The internal response ahead of RFILT (1,600 Hz typical with no external filter, 4.2 kHz resonance with no Q) states no delay or delay variation: not derived",
+        "pass": true,
+        "source": "ADXL316 data sheet Rev. C (5/2019), https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Table 1 (RFILT tolerance, TA 25 °C) and page 11 (Setting the Bandwidth); derivation in the report figure 'accelerometer delay variation'"
+       },
+       {
+        "name": "lead length",
+        "required": "drives the lead of up to 2 m from the rig arm or firewall to the IO board",
+        "datasheet": "the output amplifier drives XOUT through RFILT; output short-circuit duration to COM indefinite (Table 2). The lead's capacitance adds to the output node and counts inside the 100 pF of 'delay variation'; the cable is not chosen (round 2) and its capacitance is not known, so a lead that takes more than the 100 pF is buffered on the sensor board (report 'accelerometer output node')",
+        "pass": true,
+        "source": "ADXL316 data sheet Rev. C (5/2019), https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Table 2 and Figure 1"
+       },
+       {
+        "name": "supply",
+        "required": "from the IO board's 3.3 V rail (3.3 V ±3 %), so its output is unpowered while the rail is down",
+        "datasheet": "operating voltage 1.8 to 3.6 V, VS absolute maximum 4.5 V; all other pins COM - 0.3 V to VS + 0.3 V; 3.201 to 3.399 V lies inside; supply current 350 µA typical",
+        "pass": true,
+        "source": "ADXL316 data sheet Rev. C (5/2019), https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Tables 1 and 2"
+       },
+       {
+        "name": "build and sourcing",
+        "required": "on a sensor board JLCPCB assembles: an LCSC number and rule 4 at JLCPCB",
+        "datasheet": "LCSC C662336, JLCPCB stockCount 104, canPresaleNumber 84 (2026-09-29T06:42:14Z): passes rule 4 on a sensor board JLCPCB assembles",
+        "pass": true,
+        "source": "vendors.py jlcpcb C662336 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match), read 2026-09-29T06:42:14Z"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 85 °C at the sensor mount",
+        "datasheet": "operating temperature range -40 to +105 °C (Table 1); covers 0 to 85 °C",
+        "pass": true,
+        "source": "ADXL316 data sheet Rev. C (5/2019), https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Table 1"
+       }
+      ],
+      "jlcpcb": "stockCount 104, canPresaleNumber 84, componentLibraryType expand, price USD 12.8281 a part at the 1 break (need 5), read 2026-09-29T06:42:14Z, vendors.py jlcpcb C662336 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 387, manufacturer lead time 46 weeks, ProductStatus Active, read 2026-09-29T06:43:02Z, vendors.py digikey ADXL316WBCSZ (https://api.digikey.com/products/v4/search/ADXL316WBCSZ/productdetails)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 104 >= 50 and canPresaleNumber 84 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status: Digi-Key ProductStatus Active, recorded as a distributor figure for Analog Devices (owner, 2026-09-27; read 2026-09-29T06:43:02Z, vendors.py digikey ADXL316WBCSZ); discontinued false, end of life false; longevity commitment not read; first datasheet revision October 2015 (Revision 0, revision history of Rev. C), over 12 months; change and end-of-life notices not read; JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 387 >= 50 (2026-09-29T06:43:02Z). ADXL316WBCSZ-RL7 (C662338, the same model on a reel, same CS-12-3 package) fails rule 4 at JLCPCB: 25, under 50 (2026-09-29T06:42:19Z)",
+      "alternates": [
+       "ADXL316WBCSZ-RL7"
+      ],
+      "driver_in_shared": "none (analogue output into the converter of R10)",
+      "reason": "Meets every value once the output node is held to 100 pF: 1.000 us of derived delay variation at 1,092 Hz against a 1.244 us share, the lowest noise of the two (210 ug/rtHz), -40 to 105 °C, and a second vendor (Digi-Key 387). Ranked first over ADXL326BCPZ-RL7, which has no second source. Its 100 pF node is below the datasheet's recommended 4.7 nF minimum for CX, and a 2 m lead needs a buffer unless its capacitance fits inside the 100 pF; both are reported",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "ADXL326BCPZ-RL7",
+      "maker": "Analog Devices (datasheet); counts as Analog Devices (S1)",
+      "lcsc": "C579451",
+      "package": "LFCSP_LQ-16 4 x 4 x 1.45 mm (CP-16-5a)",
+      "placements": 1,
+      "placements_basis": "fixed: one accelerometer on the sensor board, one sensor board for each IO board (V221, V201: one axis used)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "output type",
+        "required": "analogue voltage output into an ADC on the IO board",
+        "datasheet": "signal-conditioned voltage outputs XOUT, YOUT, ZOUT, each behind an internal RFILT of 32 kOhm nominal",
+        "pass": true,
+        "source": "ADXL326 data sheet Rev. 0 (8/2009), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL326.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), page 1 and Figure 1"
+       },
+       {
+        "name": "sensing axis",
+        "required": "at least one axis in the mounting plane, across the shaft, when mounted flat",
+        "datasheet": "X and Y axes in the package plane (Axes of Acceleration Sensitivity); mounted flat on the firewall, X or Y lies across the shaft",
+        "pass": true,
+        "source": "ADXL326 data sheet Rev. 0 (8/2009), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL326.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Axes of Acceleration Sensitivity"
+       },
+       {
+        "name": "full scale",
+        "required": "at least ±16 g without clipping",
+        "datasheet": "measurement range ±16 g minimum, ±19 g typical (Table 1)",
+        "pass": true,
+        "source": "ADXL326 data sheet Rev. 0 (8/2009), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL326.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Table 1"
+       },
+       {
+        "name": "bandwidth on the used axis",
+        "required": "passes the fundamental up to 1,092 Hz (65,535 rpm) inside its stated bandwidth",
+        "datasheet": "X and Y bandwidth 1,600 Hz typical with no external filter (Table 1); bandwidths selectable 0.5 Hz to 1,600 Hz (page 1); sensor resonance 5.5 kHz typical. 1,092 Hz lies inside 1,600 Hz; the phase of the internal response at 1,092 Hz is not stated",
+        "pass": true,
+        "source": "ADXL326 data sheet Rev. 0 (8/2009), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL326.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), page 1 and Table 1"
+       },
+       {
+        "name": "lowest balance speed",
+        "required": "responds at the 16.7 Hz fundamental of a 1,000 rpm balance run",
+        "datasheet": "DC-coupled: measures static acceleration (page 1), so it responds at 16.7 Hz",
+        "pass": true,
+        "source": "ADXL326 data sheet Rev. 0 (8/2009), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL326.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), page 1"
+       },
+       {
+        "name": "smallest amplitude resolved",
+        "required": "1 mg at the fundamental after one run's 5 s of averaging: the sensor's noise in a 0.2 Hz band under 1 mg",
+        "datasheet": "noise density 300 µg/√Hz rms X and Y (Table 1): 134 µg rms in the 0.2 Hz band of a 5 s run, under 1 mg",
+        "pass": true,
+        "source": "ADXL326 data sheet Rev. 0 (8/2009), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL326.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Table 1"
+       },
+       {
+        "name": "delay variation",
+        "required": "at most 1.244 us of delay variation at 1,092 Hz (65,535 rpm): the accelerometer's share of V225's 1 degree for the whole chain (2.543 us), after the converter's 30 ps (aperture jitter of R10's ADCS7476AIMFX/NOPB) and the index comparator's 55 ns (TLV3201AIDBVR maximum delay), the remaining 2.488 us split equally with the optical index sensor. Derived as V225 (owner, 2026-09-29) sets: from the output pole RFILT x CX, the delay atan(2 pi f R C) / (2 pi f) at 1,092 Hz taken at the stated RFILT minimum and maximum, with the capacitance the function chooses on the output node, the lead's included; the difference is the variation",
+        "datasheet": "RFILT 32 kOhm ± 15 % (27.2 to 36.8 kOhm, Table 1, TA 25 °C); f-3dB = 1 / (2 pi x 32 kOhm x C). Capacitance chosen: 100 pF on XOUT in total, the lead and the converter input included. Pole 58.5 kHz at 27.2 kOhm and 43.2 kHz at 36.8 kOhm; delay at 1,092 Hz 2.720 us and 3.679 us; variation 0.960 us (0.377 degrees), under 1.244 us. Up to 129.7 pF keeps the share. The datasheet recommends at least 4.7 nF for CX 'in all cases' and gives no reason; at 4.7 nF the variation is 21.9 us (8.63 degrees) and fails, so 100 pF is below that recommendation. The internal response (1,600 Hz typical with no external filter, 5.5 kHz resonance with no Q) states no delay or delay variation: not derived",
+        "pass": true,
+        "source": "ADXL326 data sheet Rev. 0 (8/2009), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL326.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Table 1 (RFILT tolerance, TA 25 °C) and page 11 (Setting the Bandwidth); derivation in the report figure 'accelerometer delay variation'"
+       },
+       {
+        "name": "lead length",
+        "required": "drives the lead of up to 2 m from the rig arm or firewall to the IO board",
+        "datasheet": "the output amplifier drives XOUT through RFILT; output short-circuit duration to COM indefinite (Table 2). The lead's capacitance adds to the output node and counts inside the 100 pF of 'delay variation'; the cable is not chosen (round 2) and its capacitance is not known, so a lead that takes more than the 100 pF is buffered on the sensor board (report 'accelerometer output node')",
+        "pass": true,
+        "source": "ADXL326 data sheet Rev. 0 (8/2009), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL326.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Table 2 and Figure 1"
+       },
+       {
+        "name": "supply",
+        "required": "from the IO board's 3.3 V rail (3.3 V ±3 %), so its output is unpowered while the rail is down",
+        "datasheet": "operating voltage 1.8 to 3.6 V, VS absolute maximum 4.5 V; all other pins COM - 0.3 V to VS + 0.3 V; 3.201 to 3.399 V lies inside; supply current 350 µA typical",
+        "pass": true,
+        "source": "ADXL326 data sheet Rev. 0 (8/2009), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL326.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Tables 1 and 2"
+       },
+       {
+        "name": "build and sourcing",
+        "required": "on a sensor board JLCPCB assembles: an LCSC number and rule 4 at JLCPCB",
+        "datasheet": "LCSC C579451, JLCPCB stockCount 922, canPresaleNumber 911 (2026-09-29T06:42:16Z): passes rule 4 on a sensor board JLCPCB assembles",
+        "pass": true,
+        "source": "vendors.py jlcpcb C579451 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match), read 2026-09-29T06:42:16Z"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 85 °C at the sensor mount",
+        "datasheet": "operating temperature range -40 to +85 °C (Table 1); covers 0 to 85 °C",
+        "pass": true,
+        "source": "ADXL326 data sheet Rev. 0 (8/2009), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL326.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Table 1"
+       }
+      ],
+      "jlcpcb": "stockCount 922, canPresaleNumber 911, componentLibraryType expand, price USD 19.5873 a part at the 1 break (need 5), read 2026-09-29T06:42:16Z, vendors.py jlcpcb C579451 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 0, manufacturer lead time 52 weeks, ProductStatus Active, read 2026-09-29T06:43:04Z, vendors.py digikey ADXL326BCPZ-RL7 (https://api.digikey.com/products/v4/search/ADXL326BCPZ-RL7/productdetails)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 922 >= 50 and canPresaleNumber 911 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status: Digi-Key ProductStatus Active, recorded as a distributor figure for Analog Devices (owner, 2026-09-27; read 2026-09-29T06:43:04Z, vendors.py digikey ADXL326BCPZ-RL7); discontinued false, end of life false; longevity commitment not read; first datasheet revision August 2009 (Revision 0), over 12 months; change and end-of-life notices not read; JLCPCB's API carries no status",
+      "second_source": "none: Digi-Key 0 (2026-09-29T06:43:04Z), under 50; the pin-identical ADXL326BCPZ (C579450: 0, presale -1, 2026-09-29T06:42:21Z) and ADXL326BCPZ-RL (C662324: 0, 2026-09-29T06:49:24Z) fail rule 4 at JLCPCB",
+      "alternates": [
+       "ADXL326BCPZ",
+       "ADXL326BCPZ-RL"
+      ],
+      "driver_in_shared": "none (analogue output into the converter of R10)",
+      "reason": "Meets every value with the 100 pF node (0.960 us of derived variation) and has the larger JLCPCB stock (922), but no second source: Digi-Key 0 and its reel variants at 0 at JLCPCB. Ranked second also for 300 ug/rtHz against 210 and an 85 °C upper temperature at the edge of the 0 to 85 °C mount range",
+      "second_source_route": "none",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "AD22035Z",
+      "maker": "Analog Devices",
+      "reason": "delay variation: the datasheet states a CX range of 0.002 to 10 uF (Table 1) with RFILT 24 / 32 / 40 kOhm; at its 2 nF minimum the pole's delay at 1,092 Hz varies by 26.8 us (10.5 degrees) across RFILT, over the 1.244 us share, and the least capacitance that keeps the share, 77.8 pF, is outside the stated range (ADXL103/ADXL203 data sheet Rev. F (covers AD22035/AD22037), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL103_203.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Table 1). JLCPCB C649092 83, presale 83 (2026-09-29T06:42:18Z); Digi-Key not read: the part fails a requirement"
+     },
+     {
+      "part": "ADXL316WBCSZ-RL7",
+      "maker": "Analog Devices",
+      "reason": "fails rule 4: JLCPCB C662338 stockCount 25, under 50 (2026-09-29T06:42:19Z); listed as the alternate of ADXL316WBCSZ"
+     },
+     {
+      "part": "ADXL326BCPZ, ADXL326BCPZ-RL",
+      "maker": "Analog Devices",
+      "reason": "fail rule 4: JLCPCB C579450 0 (presale -1), C662324 0 (2026-09-29T06:42:21Z, 2026-09-29T06:49:24Z)"
+     },
+     {
+      "part": "ADXL1002BCPZ, ADXL1002BCPZ-RL, ADXL1002BCPZ-RL7",
+      "maker": "Analog Devices",
+      "reason": "fail rule 4: JLCPCB C579442 0 (presale -17), C662287 0, C662288 0 (presale -1) (2026-09-29T06:48:56Z to 06:49:26Z)"
+     },
+     {
+      "part": "ADXL1001BCPZ, ADXL1001BCPZ-RL, ADXL1001BCPZ-RL7",
+      "maker": "Analog Devices",
+      "reason": "fail rule 4: JLCPCB C514384 0 (presale -5), C662285 2, C662286 11 (2026-09-29T06:49:04Z to 06:49:07Z)"
+     },
+     {
+      "part": "ADXL1003BCPZ, ADXL1003BCPZ-RL7, ADXL1004BCPZ-RL7",
+      "maker": "Analog Devices",
+      "reason": "fail rule 4: JLCPCB C579443 0, C662290 0, C662292 3 (2026-09-29T06:49:09Z to 06:49:12Z)"
+     },
+     {
+      "part": "ADXL1005BCPZ, ADXL1005BCPZ-RL, ADXL1005BCPZ-RL7",
+      "maker": "Analog Devices",
+      "reason": "fail rule 4: JLCPCB C662293 0, C662294 0 (presale 60), C662295 0 (2026-09-29T06:48:59Z to 06:49:02Z)"
+     },
+     {
+      "part": "ADXL356BEZ, ADXL356CEZ, ADXL356CEZ-RL",
+      "maker": "Analog Devices",
+      "reason": "fail rule 4: JLCPCB C662368 7, C579461 2, C662371 24, under 50 (2026-09-29T06:49:13Z to 06:49:17Z)"
+     },
+     {
+      "part": "ADXL377BCPZ-RL, ADXL377BCPZ-RL7, AD22037Z, ADXL358BCCZ",
+      "maker": "Analog Devices",
+      "reason": "fail rule 4: JLCPCB C662328 0, C579467 0, C649093 0, C22441787 0 (presale -5) (2026-09-29T06:49:18Z to 06:49:23Z)"
+     },
+     {
+      "part": "ADXL335BCPZ-RL7, ADXL325BCPZ-RL7, ADXL327BCPZ, ADXL203CE-REEL, ADXL103CE-REEL, ADXL354BEZ(-RL7)",
+      "maker": "Analog Devices",
+      "reason": "full scale: ±3.6 g, ±6 g, ±2.5 g, ±1.7 g, ±1.7 g and ±8 g, under ±16 g (jlcparts copy 2026-09-14 descriptions; not counted at JLCPCB)"
+     },
+     {
+      "part": "ADXL345, ADXL343, ADXL355, ADXL357, ADXL359, ADXL362, ADXL372, ADXL375, ADXL380, KXTJ3-1057, MMA8451Q, MMA8452Q, IIS3DWB and other digital accelerometers",
+      "maker": "Analog Devices, ROHM, NXP, STMicroelectronics",
+      "reason": "output type: digital output on SPI or I2C, not analogue (V226; hardware/docs/IOBoard.md:447, :450; jlcparts copy 2026-09-14 descriptions)"
+     },
+     {
+      "part": "PKGS-00LDP1-R, SCA630-EDCV1B-1",
+      "maker": "Murata",
+      "reason": "fail rule 4: JLCPCB C152583 0 and C439974 0 (FU-C1 re-rank reading, 2026-09-29T03:50:01Z and 03:50:03Z; not re-read in this task)"
+     },
+     {
+      "part": "MMA1200KEG575, MMA2202KEGR2,518, MMA3202KEG574",
+      "maker": "NXP",
+      "reason": "fail rule 4 in the jlcparts copy (stock 5, 0, 0 on 2026-09-14); not counted at JLCPCB"
+     }
+    ]
+   },
+   {
+    "function": "optical index",
+    "requirements": [
+     {
+      "name": "sensor selected",
+      "value": "a reflective infrared sensor on a probe board JLCPCB assembles, on a lead, aimed from below at the pen line on the motor bell",
+      "source": "V219; hardware/docs/IOBoard.md:441; docs/Balance.md:32-37"
+     },
+     {
+      "name": "working distance",
+      "value": "its stated operating range includes 5 mm",
+      "source": "V220"
+     },
+     {
+      "name": "pulse rate",
+      "value": "one pulse a revolution up to 1,092 a second (65,535 rpm) with a stated switching time, and a static reading down to 10 rpm",
+      "source": "V212; V213"
+     },
+     {
+      "name": "supply",
+      "value": "3.3 V ±3 % from the IO board, unpowered while the RP2354B's rail is down",
+      "source": "V219; hardware/docs/Research.md:283"
+     },
+     {
+      "name": "output",
+      "value": "analogue, into the comparator with hysteresis on the IO board (the second placement of the function 'phase-wire clip')",
+      "source": "V219"
+     },
+     {
+      "name": "delay variation",
+      "value": "at most 1.244 us of delay variation at 1,092 Hz (65,535 rpm): the optical sensor's share of V225's 1 degree for the whole chain (2.543 us), after the converter's 30 ps and the index comparator's 55 ns, the remaining 2.488 us split equally with the accelerometer. Derived as V225 (owner, 2026-09-29) sets: from the sensor's stated rise, fall and propagation times; the comparator's threshold can fall anywhere in the output's transition, so the variation is bounded by the stated propagation time plus the transition time of the edge used",
+      "source": "V225 (owner, 2026-09-28, hardware/docs/Research.md:785) and the owner's decision on V225 of 2026-09-29 carried in this follow-up task's items (not on the page at e13f5f6); R10 selection ADCS7476AIMFX/NOPB (selection.json, FU-C1 P4 datasheet verifier: tAJ 30 ps typical, SNAS192G 6.5); TLV3201 SBOS561C 6.6; hardware/docs/IOBoard.md:441, :449"
+     },
+     {
+      "name": "build and sourcing",
+      "value": "on a probe board JLCPCB assembles: an LCSC number and rule 4 at JLCPCB",
+      "source": "V219; sourcing rules 1 and 4"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 85 °C at the sensor mount",
+      "source": "V231 (owner, 2026-09-28)"
+     }
+    ],
+    "shortlist": [],
+    "dropped": [
+     {
+      "part": "VCNT2030",
+      "maker": "Vishay",
+      "reason": "delay variation: tr 10 us and tf 15 us typical at IC 0.8 mA, VCE 5 V, RL 100 Ohm, no propagation time stated (VCNT2030 datasheet Rev. 1.4 (27-Feb-2024), https://www.vishay.com/docs/80223/vcnt2030.pdf, read 2026-09-29T06:37:57Z, basic characteristics); the derived variation is 10 us on the rising edge and 15 us on the falling edge, over the 1.244 us share and over the whole chain's 2.543 us. Otherwise 5 mm lies inside its range and -40 to 85 °C covers the mount. JLCPCB C18186160 59, presale 44 (2026-09-29T06:42:38Z); Digi-Key not read: the part fails a requirement"
+     },
+     {
+      "part": "VCNT2020",
+      "maker": "Vishay",
+      "reason": "delay variation: tr 10 us typical, 70 us maximum and tf 15 us typical, 70 us maximum at IC 0.8 mA, VCE 5 V, RL 100 Ohm (VCNT2020 datasheet, https://www.vishay.com/docs/80362/vcnt2020.pdf, read 2026-09-29T06:48:47Z), over 1.244 us; working distance 0 to 2 mm on the 18 % grey card (FU-C1 re-rank reading of Rev. 1.3; not re-read). JLCPCB C2655173 540 (2026-09-29T06:42:46Z)"
+     },
+     {
+      "part": "VCNT2025X01",
+      "maker": "Vishay",
+      "reason": "delay variation: tr 10 us and tf 15 us typical at IC 0.8 mA, VCE 5 V, RL 100 Ohm (FU-C1 re-rank reading of Rev. 1.6, document 84895, 2026-09-29T03:50:57Z; not re-read), over 1.244 us; working distance 0 to 4 mm on the 18 % grey card. JLCPCB C7431257 5959, presale 5846 (2026-09-29T06:49:28Z)"
+     },
+     {
+      "part": "QRD1114",
+      "maker": "onsemi",
+      "reason": "delay variation: tr 10 us and tf 50 us at VCE 5 V, RL 100 Ohm, IC(ON) 5 mA (QRD1114 datasheet, https://www.onsemi.com/download/data-sheet/pdf/qrd1114-d.pdf, read 2026-09-29T06:48:47Z), over 1.244 us; working distance about 0.12 of peak at 5 mm (T4 P3 reading; not re-read). JLCPCB C258245 1183 (2026-09-29T06:42:51Z)"
+     },
+     {
+      "part": "QRE1113GR",
+      "maker": "onsemi",
+      "reason": "delay variation: tr 20 us and tf 20 us at VCC 5 V, IC(ON) 100 uA, RL 1 kOhm (QRE1113 datasheet, https://www.onsemi.com/download/data-sheet/pdf/qre1113-d.pdf, read 2026-09-29T06:48:46Z), over 1.244 us; working distance at 5 mm not stated (tested at 1 mm). JLCPCB C232862 9850 (2026-09-29T06:42:49Z)"
+     },
+     {
+      "part": "RPR-220",
+      "maker": "ROHM",
+      "reason": "delay variation: response time tr, tf 10 us typical (RPR-220 datasheet, https://fscdn.rohm.com/en/products/databook/datasheet/opto/optical_sensor/photosensor/rpr-220.pdf, read 2026-09-29T06:48:46Z), over 1.244 us; working distance at 5 mm given only as a curve. JLCPCB C21062 1395 (2026-09-29T06:42:47Z)"
+     },
+     {
+      "part": "TCND5000",
+      "maker": "Vishay",
+      "reason": "delay variation: the only times stated are the emitter's tr and tf of 15 ns at IF 100 mA; the PIN photodiode states a capacitance (1.8 pF at VR 5 V) and no rise, fall or propagation time, so its share is not derivable as V225 sets. Its output is a reverse light current of 110 to 260 nA in the test set-up, which needs an amplifier on the probe board that R11 does not select (TCND5000 datasheet Rev. 1.6 (12-Jun-14), https://www.vishay.com/docs/83795/tcnd5000.pdf, read 2026-09-29T06:37:56Z, basic characteristics). JLCPCB C145489 308, presale 279 (2026-09-29T06:42:40Z)"
+     },
+     {
+      "part": "TCRT5000, TCRT5000L",
+      "maker": "Vishay",
+      "reason": "pulse rate and delay variation: no switching, rise, fall or response time stated in the datasheet (TCRT5000 Rev. 1.7, FU-C1 P2 reading 2026-09-29T02:54:10Z; not re-read). JLCPCB C2984661 4070, C24085 4635 (2026-09-29T06:42:43Z, 2026-09-29T06:42:41Z)"
+     },
+     {
+      "part": "CNY70",
+      "maker": "Vishay",
+      "reason": "pulse rate and delay variation: no switching time stated; 5 mm is the edge of its 0 to 5 mm range (CNY70 Rev. 1.8, FU-C1 P2 reading 2026-09-29T02:54:11Z; not re-read). JLCPCB C145423 1355 (2026-09-29T06:42:44Z)"
+     },
+     {
+      "part": "TCRT1000",
+      "maker": "Vishay",
+      "reason": "working distance: 0.2 to 4 mm at relative output above 20 %, 5 mm outside (re-rank reading of Rev. 2.0, 2026-09-28; not re-read). JLCPCB C144871 2189 (2026-09-29T06:49:35Z)"
+     },
+     {
+      "part": "TCRT1010",
+      "maker": "Vishay",
+      "reason": "fails rule 4: JLCPCB C1526946 45, under 50 (2026-09-29T06:49:34Z)"
+     },
+     {
+      "part": "SFH 9206",
+      "maker": "ams OSRAM",
+      "reason": "fails rule 4: JLCPCB C2655176 4, under 50 (2026-09-29T06:49:29Z)"
+     },
+     {
+      "part": "NJL5820R-TE4 and the NJL59xx reflectors",
+      "maker": "Nisshinbo",
+      "reason": "fail rule 4: JLCPCB C3271782 1 (presale -1) (2026-09-29T06:49:31Z); the NJL5901/5902/5908/5912/5501 rows 0 (FU-C1 re-rank reading, 03:50Z)"
+     },
+     {
+      "part": "RPR-359F",
+      "maker": "ROHM",
+      "reason": "fails rule 4: JLCPCB C17601151 0 (2026-09-29T06:49:32Z)"
+     },
+     {
+      "part": "RPR-0720",
+      "maker": "ROHM",
+      "reason": "output: a digital proximity sensor with a VCSEL and an I2C interface (JLCPCB erpComponentName, vendors.py jlcpcb C24264297, 2026-09-29T06:39:04Z), not an analogue output into the comparator; JLCPCB 63, presale 57"
+     },
+     {
+      "part": "ITR20001, ITR8307 and other Everlight sensors; GP2S60B, GP2S700HCP; ST150, ZGY and TONYU rows",
+      "maker": "Everlight, Sharp, Chau Light, TONYU",
+      "reason": "maker not on S1 or S2 (rule 2)"
+     }
+    ]
+   },
+   {
+    "function": "magnetic pickup",
+    "requirements": [
+     {
+      "name": "sensor type",
+      "value": "Hall-effect bipolar latch with a digital output",
+      "source": "V217"
+     },
+     {
+      "name": "pulses per revolution",
+      "value": "one, from two opposite magnets 180° apart on the bell: a stated switching bandwidth of at least 1,092 Hz (65,535 rpm)",
+      "source": "V218; V212"
+     },
+     {
+      "name": "lowest speed",
+      "value": "holds its state with the rotor stopped, so it reads down to 10 rpm",
+      "source": "V213"
+     },
+     {
+      "name": "supply",
+      "value": "3.3 V ±3 % from the IO board's logic rail",
+      "source": "V217; hardware/docs/Research.md:283"
+     },
+     {
+      "name": "output",
+      "value": "open-drain pulled up to 3.3 V on the IO board, or push-pull from its own 3.3 V supply",
+      "source": "V217; hardware/docs/IOBoard.md:105"
+     },
+     {
+      "name": "build and sourcing",
+      "value": "on a sensor board JLCPCB assembles: an LCSC number and rule 4 at JLCPCB",
+      "source": "V217; V221; sourcing rules 1 and 4"
+     },
+     {
+      "name": "sensitivity",
+      "value": "operate and release points stated; the magnet and gap are not stated, so no limit applies and the operate point ranks",
+      "source": "V217; V218"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 85 °C at the sensor mount",
+      "source": "V231 (owner, 2026-09-28)"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "DRV5015A1QDBZR",
+      "maker": "Texas Instruments (datasheet SBAS915A); counts as Texas Instruments (S1)",
+      "lcsc": "C2152440",
+      "package": "SOT-23 (DBZ), 3 pins",
+      "placements": 1,
+      "placements_basis": "fixed: one latch on the magnetic pickup's sensor board, one board for each IO board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "sensor type",
+        "required": "Hall-effect bipolar latch with a digital output",
+        "datasheet": "low-voltage digital-latch Hall effect sensor; the output switches at BOP (south) and releases at BRP (north)",
+        "pass": true,
+        "source": "DRV5015 datasheet SBAS915A (June 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-09-29T06:44:33Z, page 1 and section 7.1"
+       },
+       {
+        "name": "pulses per revolution",
+        "required": "one, from two opposite magnets 180° apart on the bell: a stated switching bandwidth of at least 1,092 Hz (65,535 rpm)",
+        "datasheet": "fBW 20 kHz minimum, 30 kHz typical (6.6); td 13 us typical, 25 us maximum (6.5): 20 kHz is 18 x the 1,092 Hz of one pulse a turn",
+        "pass": true,
+        "source": "DRV5015 datasheet SBAS915A (June 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-09-29T06:44:33Z, sections 6.5 and 6.6"
+       },
+       {
+        "name": "lowest speed",
+        "required": "holds its state with the rotor stopped, so it reads down to 10 rpm",
+        "datasheet": "digital latch: the output changes only at BOP or BRP and holds between them, so a stopped rotor keeps its state",
+        "pass": true,
+        "source": "DRV5015 datasheet SBAS915A (June 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-09-29T06:44:33Z, section 7.1"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 % from the IO board's logic rail",
+        "datasheet": "VCC 2.5 to 5.5 V recommended, -0.3 to 6.0 V absolute maximum; ICC 2.3 mA typical, 2.8 mA maximum; tON 40 us typical, 70 us maximum",
+        "pass": true,
+        "source": "DRV5015 datasheet SBAS915A (June 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-09-29T06:44:33Z, sections 6.1, 6.3 and 6.5"
+       },
+       {
+        "name": "output",
+        "required": "open-drain pulled up to 3.3 V on the IO board, or push-pull from its own 3.3 V supply",
+        "datasheet": "open-drain output (pin 2); pulled up to 3.3 V on the IO board it never exceeds the rail; pins VCC 1, OUT 2, GND 3",
+        "pass": true,
+        "source": "DRV5015 datasheet SBAS915A (June 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-09-29T06:44:33Z, pin functions"
+       },
+       {
+        "name": "build and sourcing",
+        "required": "on a sensor board JLCPCB assembles: an LCSC number and rule 4 at JLCPCB",
+        "datasheet": "LCSC C2152440, JLCPCB stockCount 339, canPresaleNumber 336 (2026-09-29T06:42:22Z): passes rule 4 on a sensor board JLCPCB assembles",
+        "pass": true,
+        "source": "vendors.py jlcpcb C2152440 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match), read 2026-09-29T06:42:22Z"
+       },
+       {
+        "name": "sensitivity",
+        "required": "operate and release points stated; the magnet and gap are not stated, so no limit applies and the operate point ranks",
+        "datasheet": "DRV5015A1: BOP -0.2 / 0.7 / 2.0 mT, BRP -2.0 / -0.7 / 0.2 mT, BHYS 0.35 / 1.4 mT (min / typ)",
+        "pass": true,
+        "source": "DRV5015 datasheet SBAS915A (June 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-09-29T06:44:33Z, section 6.6"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 85 °C at the sensor mount",
+        "datasheet": "TA -40 to 125 °C operating; covers 0 to 85 °C",
+        "pass": true,
+        "source": "DRV5015 datasheet SBAS915A (June 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-09-29T06:44:33Z, section 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 339, canPresaleNumber 336, componentLibraryType expand, price USD 0.385 a part at the 1 break (need 5), read 2026-09-29T06:42:22Z, vendors.py jlcpcb C2152440 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 2831, manufacturer lead time 9 weeks, ProductStatus Active, read 2026-09-29T02:52:55Z (cached: true, a reading of this UTC day), vendors.py digikey DRV5015A1QDBZR (https://api.digikey.com/products/v4/search/DRV5015A1QDBZR/productdetails)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 339 >= 50 and canPresaleNumber 336 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/DRV5015, meta status ACTIVE and orderable DRV5015A1QDBZR marketingStatusDescription ACTIVE, read 2026-09-29T06:43:33Z; longevity commitment not read; first datasheet revision June 2018 (SBAS915), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-09-29T02:52:55Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 2831 >= 50 (2026-09-29T02:52:55Z); pin-compatible alternates DRV5015A1EDBZRQ1 and AH1711-SA-7 (VCC or VDD 1, OUT 2, GND 3 on SOT-23)",
+      "alternates": [
+       "DRV5015A1EDBZRQ1",
+       "AH1711-SA-7"
+      ],
+      "driver_in_shared": "none (GPIO edge)",
+      "reason": "The most sensitive latch found (BOP 0.7 mT typical) with a 20 kHz guaranteed bandwidth, open-drain, 2.5 to 5.5 V, stock at both vendors and the shortest lead time (9 weeks)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "DRV5015A1EDBZRQ1",
+      "maker": "Texas Instruments (datasheet SBAS916B); counts as Texas Instruments (S1)",
+      "lcsc": "C2152679",
+      "package": "SOT-23 (DBZ), 3 pins",
+      "placements": 1,
+      "placements_basis": "fixed: one latch on the magnetic pickup's sensor board, one board for each IO board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "sensor type",
+        "required": "Hall-effect bipolar latch with a digital output",
+        "datasheet": "low-voltage digital-latch Hall effect sensor; the output switches at BOP (south) and releases at BRP (north)",
+        "pass": true,
+        "source": "DRV5015-Q1 datasheet SBAS916B (September 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015-q1.pdf, read 2026-09-29T06:44:33Z, page 1 and section 7.1"
+       },
+       {
+        "name": "pulses per revolution",
+        "required": "one, from two opposite magnets 180° apart on the bell: a stated switching bandwidth of at least 1,092 Hz (65,535 rpm)",
+        "datasheet": "fBW 20 kHz minimum, 30 kHz typical (6.6); td 13 us typical, 25 us maximum (6.5): 20 kHz is 18 x the 1,092 Hz of one pulse a turn",
+        "pass": true,
+        "source": "DRV5015-Q1 datasheet SBAS916B (September 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015-q1.pdf, read 2026-09-29T06:44:33Z, sections 6.5 and 6.6"
+       },
+       {
+        "name": "lowest speed",
+        "required": "holds its state with the rotor stopped, so it reads down to 10 rpm",
+        "datasheet": "digital latch: the output changes only at BOP or BRP and holds between them, so a stopped rotor keeps its state",
+        "pass": true,
+        "source": "DRV5015-Q1 datasheet SBAS916B (September 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015-q1.pdf, read 2026-09-29T06:44:33Z, section 7.1"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 % from the IO board's logic rail",
+        "datasheet": "VCC 2.5 to 5.5 V recommended, -0.3 to 6.0 V absolute maximum; ICC 2.3 mA typical, 2.8 mA maximum; tON 40 us typical, 70 us maximum",
+        "pass": true,
+        "source": "DRV5015-Q1 datasheet SBAS916B (September 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015-q1.pdf, read 2026-09-29T06:44:33Z, sections 6.1, 6.3 and 6.5"
+       },
+       {
+        "name": "output",
+        "required": "open-drain pulled up to 3.3 V on the IO board, or push-pull from its own 3.3 V supply",
+        "datasheet": "open-drain output (pin 2); pulled up to 3.3 V on the IO board it never exceeds the rail; pins VCC 1, OUT 2, GND 3",
+        "pass": true,
+        "source": "DRV5015-Q1 datasheet SBAS916B (September 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015-q1.pdf, read 2026-09-29T06:44:33Z, pin functions"
+       },
+       {
+        "name": "build and sourcing",
+        "required": "on a sensor board JLCPCB assembles: an LCSC number and rule 4 at JLCPCB",
+        "datasheet": "LCSC C2152679, JLCPCB stockCount 6187, canPresaleNumber 6185 (2026-09-29T06:42:24Z): passes rule 4 on a sensor board JLCPCB assembles",
+        "pass": true,
+        "source": "vendors.py jlcpcb C2152679 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match), read 2026-09-29T06:42:24Z"
+       },
+       {
+        "name": "sensitivity",
+        "required": "operate and release points stated; the magnet and gap are not stated, so no limit applies and the operate point ranks",
+        "datasheet": "DRV5015A1-Q1: BOP -0.2 / 0.7 / 2.0 mT and BRP -2.0 / -0.7 / 0.2 mT; BHYS 0.35 / 1.4 mT over -40 to 125 °C (min / typ)",
+        "pass": true,
+        "source": "DRV5015-Q1 datasheet SBAS916B (September 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015-q1.pdf, read 2026-09-29T06:44:33Z, section 6.6"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 85 °C at the sensor mount",
+        "datasheet": "TA -40 to 150 °C operating (grade 0); covers 0 to 85 °C",
+        "pass": true,
+        "source": "DRV5015-Q1 datasheet SBAS916B (September 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015-q1.pdf, read 2026-09-29T06:44:33Z, section 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 6187, canPresaleNumber 6185, componentLibraryType expand, price USD 0.385 a part at the 1 break (need 5), read 2026-09-29T06:42:24Z, vendors.py jlcpcb C2152679 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 680, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-29T02:52:56Z (cached: true, a reading of this UTC day), vendors.py digikey DRV5015A1EDBZRQ1 (https://api.digikey.com/products/v4/search/DRV5015A1EDBZRQ1/productdetails)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 6187 >= 50 and canPresaleNumber 6185 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/DRV5015-Q1, meta status ACTIVE and orderable DRV5015A1EDBZRQ1 marketingStatusDescription ACTIVE, read 2026-09-29T06:43:52Z; longevity commitment not read; first datasheet revision September 2018 (SBAS916), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-09-29T02:52:56Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 680 >= 50 (2026-09-29T02:52:56Z); pin-compatible alternates DRV5015A1QDBZR and AH1711-SA-7",
+      "alternates": [
+       "DRV5015A1QDBZR",
+       "AH1711-SA-7"
+      ],
+      "driver_in_shared": "none (GPIO edge)",
+      "reason": "Rank 1's automotive grade with the same thresholds, bandwidth and pins and the larger JLCPCB stock (6187); ranked second for Digi-Key 680 against 2831 and 16 weeks against 9",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "AH1711-SA-7",
+      "maker": "Diodes Incorporated (datasheet DS45410); counts as Diodes Incorporated (S1)",
+      "lcsc": "C7071848",
+      "package": "SOT23 (SA), 3 pins",
+      "placements": 1,
+      "placements_basis": "fixed: one latch on the magnetic pickup's sensor board, one board for each IO board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "sensor type",
+        "required": "Hall-effect bipolar latch with a digital output",
+        "datasheet": "Hall effect latch: the open-drain output switches on (pulled low) with a south pole above Bop and stays latched until the field falls below Brp (north pole)",
+        "pass": true,
+        "source": "AH1711/AH1712/AH1713/AH1714 datasheet DS45410 Rev. 3-2 (January 2024), https://www.diodes.com/datasheet/download/AH1711%2FAH1712%2FAH1713%2FAH1714.pdf, read 2026-09-29T06:44:34Z, page 1 description"
+       },
+       {
+        "name": "pulses per revolution",
+        "required": "one, from two opposite magnets 180° apart on the bell: a stated switching bandwidth of at least 1,092 Hz (65,535 rpm)",
+        "datasheet": "fBW sensing bandwidth 20 kHz minimum, 30 kHz typical (B at least ±400 G, square-wave field; Note 9); td 10 us typical, 20 us maximum; tr 0.2 / 1 us, tf 0.1 / 1 us at RL 1 kOhm, CL 20 pF. 20 kHz is 18 x the 1,092 Hz of one pulse a turn",
+        "pass": true,
+        "source": "AH1711/AH1712/AH1713/AH1714 datasheet DS45410 Rev. 3-2 (January 2024), https://www.diodes.com/datasheet/download/AH1711%2FAH1712%2FAH1713%2FAH1714.pdf, read 2026-09-29T06:44:34Z, page 3, Electrical Characteristics"
+       },
+       {
+        "name": "lowest speed",
+        "required": "holds its state with the rotor stopped, so it reads down to 10 rpm",
+        "datasheet": "latch: the output is held latched until the flux density reverses below Brp, so a stopped rotor keeps its state",
+        "pass": true,
+        "source": "AH1711/AH1712/AH1713/AH1714 datasheet DS45410 Rev. 3-2 (January 2024), https://www.diodes.com/datasheet/download/AH1711%2FAH1712%2FAH1713%2FAH1714.pdf, read 2026-09-29T06:44:34Z, page 1 description"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 % from the IO board's logic rail",
+        "datasheet": "VDD 2.4 to 5.5 V recommended, -0.3 to 6.0 V absolute maximum; IDD 2.0 mA typical, 2.8 mA maximum at 25 °C, 3.2 mA maximum over -40 to 125 °C; tP_ON 38 us typical, 70 us maximum",
+        "pass": true,
+        "source": "AH1711/AH1712/AH1713/AH1714 datasheet DS45410 Rev. 3-2 (January 2024), https://www.diodes.com/datasheet/download/AH1711%2FAH1712%2FAH1713%2FAH1714.pdf, read 2026-09-29T06:44:34Z, pages 2 and 3"
+       },
+       {
+        "name": "output",
+        "required": "open-drain pulled up to 3.3 V on the IO board, or push-pull from its own 3.3 V supply",
+        "datasheet": "open-drain output (pin 2), VOL 0.4 V maximum at 20 mA, leakage 3 uA maximum at 5.5 V; pulled up to 3.3 V on the IO board it never exceeds the rail. Pins VDD 1, OUTPUT 2, GND 3, the order of DRV5015A1",
+        "pass": true,
+        "source": "AH1711/AH1712/AH1713/AH1714 datasheet DS45410 Rev. 3-2 (January 2024), https://www.diodes.com/datasheet/download/AH1711%2FAH1712%2FAH1713%2FAH1714.pdf, read 2026-09-29T06:44:34Z, pages 2 and 3"
+       },
+       {
+        "name": "build and sourcing",
+        "required": "on a sensor board JLCPCB assembles: an LCSC number and rule 4 at JLCPCB",
+        "datasheet": "LCSC C7071848, JLCPCB stockCount 100, canPresaleNumber 100 (2026-09-29T06:42:26Z): passes rule 4 on a sensor board JLCPCB assembles",
+        "pass": true,
+        "source": "vendors.py jlcpcb C7071848 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match), read 2026-09-29T06:42:26Z"
+       },
+       {
+        "name": "sensitivity",
+        "required": "operate and release points stated; the magnet and gap are not stated, so no limit applies and the operate point ranks",
+        "datasheet": "AH1711: Bop -2 / 7 / 20 G (-0.2 / 0.7 / 2.0 mT), Brp -20 / -7 / 2 G, stated over -40 to 125 °C and VDD 2.4 to 5.5 V; BHY 3.5 / 14 G (min / typ); the thresholds of DRV5015A1",
+        "pass": true,
+        "source": "AH1711/AH1712/AH1713/AH1714 datasheet DS45410 Rev. 3-2 (January 2024), https://www.diodes.com/datasheet/download/AH1711%2FAH1712%2FAH1713%2FAH1714.pdf, read 2026-09-29T06:44:34Z, page 4, Magnetic Characteristics"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 85 °C at the sensor mount",
+        "datasheet": "TA -40 to +125 °C operating; covers 0 to 85 °C",
+        "pass": true,
+        "source": "AH1711/AH1712/AH1713/AH1714 datasheet DS45410 Rev. 3-2 (January 2024), https://www.diodes.com/datasheet/download/AH1711%2FAH1712%2FAH1713%2FAH1714.pdf, read 2026-09-29T06:44:34Z, page 3, Recommended Operating Conditions"
+       }
+      ],
+      "jlcpcb": "stockCount 100, canPresaleNumber 100, componentLibraryType expand, price USD 0.2502 a part at the 1 break (need 5), read 2026-09-29T06:42:26Z, vendors.py jlcpcb C7071848 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 2995, manufacturer lead time 40 weeks, ProductStatus Active, read 2026-09-29T03:24:59Z (cached: true, a reading of this UTC day), vendors.py digikey AH1711-SA-7 (https://api.digikey.com/products/v4/search/AH1711-SA-7/productdetails)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 100 >= 50 and canPresaleNumber 100 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status not read: https://www.diodes.com/part/view/AH1711 answered HTTP 200 (2026-09-29T06:44:16Z) with no status in the page body (the only 'Active' is the parameter 'Active Output State'); reported to the owner. Longevity commitment not read. First datasheet revision not read; Rev. 3-2 is dated January 2024, over 12 months. Change notices on the part page: PCN-2789 (issued 2026-01-27, implemented 2026-04-27, bond wire Au/Cu to PdCu) and PCN-2770 (2025-10-30, labels); no end-of-life notice (06:44:16Z). Distributor: Digi-Key ProductStatus Active, discontinued false, end of life false (2026-09-29T03:24:59Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 2995 >= 50 (2026-09-29T03:24:59Z); pin- and polarity-compatible alternates DRV5015A1QDBZR and DRV5015A1EDBZRQ1",
+      "alternates": [
+       "DRV5015A1QDBZR",
+       "DRV5015A1EDBZRQ1"
+      ],
+      "driver_in_shared": "none (GPIO edge)",
+      "reason": "Rank 1's thresholds, bandwidth, pins and output polarity from a second maker; ranked third for JLCPCB 100 (twice the gate), a 40-week lead time and a manufacturer status that is not in the page body",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "TLE4961-1M (orderable TLE49611MXTSA1)",
+      "maker": "Infineon",
+      "reason": "not recorded: meets every value on the FU-C1 readings (2 mT typical operate point, 0 to 10 kHz, JLCPCB C539839 733 at 03:38:03Z; Digi-Key 1462, 15 weeks) and ranks fourth, below the three recorded, for its operate point and frequency limit; not re-read in this task"
+     },
+     {
+      "part": "TMAG5110B2AQDBVRQ1, TLE4963-2M, TLI4966GHTSA1, DRV5011ADDBZR, DRV5013ADQDBZR",
+      "maker": "Texas Instruments, Infineon",
+      "reason": "not recorded: meet the values on the FU-C1 P2 and re-rank readings and rank below the three recorded (typical-only bandwidth, higher operate points or supply current); not re-read in this task"
+     },
+     {
+      "part": "TLE4966-2K, TLE4966K, AH3775-SA-7",
+      "maker": "Infineon, Diodes Incorporated",
+      "reason": "lifecycle: Infineon part pages carry 'not for new design'; the AH3775 datasheet says 'NOT RECOMMENDED FOR NEW DESIGNS' (FU-C1 re-rank readings 03:52Z, confirmed by the FU-C1 P4 datasheet verifier; not re-read)"
+     },
+     {
+      "part": "AH1712Q-SA-7, AH1712-SA-7, AH1713-SA-7, DRV5013FAQDBZR, AH3763Q-SA-7, TLE49631MXTSA1, TLI49611MXTSA1, TMAG5111B2AQDBVRQ1, A1250LLHLT-T",
+      "maker": "Diodes Incorporated, Texas Instruments, Infineon, Allegro",
+      "reason": "fail rule 4 on the FU-C1 readings (JLCPCB 16, 0, 0, 44, 0, 17, 49, 1, 13, 2026-09-29T02:58Z to 03:50Z); not re-read"
+     },
+     {
+      "part": "TMAG5111A2AQDBVRQ1, TMAG5111C2AQDBVR, TCS40DLR,LF, MLX92213ELD-AAA-000-RE, AH3722-W-7, AH3724-SA-7, A1220LLHLT-T, APS12205ELHALT, MLX92211LSE-AAA-000-RE, MLX92212LSE-ABA",
+      "maker": "Texas Instruments, Toshiba, Melexis, Diodes Incorporated, Allegro",
+      "reason": "sensor type, pulse rate or supply on the FU-C1 and T4 readings (speed-and-direction outputs, 25 Hz or 714 Hz operating frequency, no switching bandwidth stated, thresholds not stated at 3.3 V, unipolar switch); not re-read"
+     },
+     {
+      "part": "HAL248",
+      "maker": "Hallwee",
+      "reason": "maker not on S1 (rule 2)"
+     }
+    ]
+   },
+   {
+    "function": "phase-wire clip",
+    "requirements": [
+     {
+      "name": "coupling",
+      "value": "galvanic, clipped onto the bare phase conductor or its lug",
+      "source": "V215"
+     },
+     {
+      "name": "isolation",
+      "value": "none: referenced to the IO board ground, which the ESC pack's return reaches at the star point",
+      "source": "V216"
+     },
+     {
+      "name": "input withstand",
+      "value": "100 V at the clip's input; the divider and clamp (round 2) keep the comparator input inside its rating",
+      "source": "V214; hardware/docs/IOBoard.md:443 (67.2 V, a weaker value)"
+     },
+     {
+      "name": "electrical frequency passed",
+      "value": "up to 22,937 Hz (65,535 rpm × 21 pole pairs / 60)",
+      "source": "V212; docs/Link.md:159-160 (MOTOR_POLES 2 to 42)"
+     },
+     {
+      "name": "PWM rejected",
+      "value": "8 to 288 kHz of ESC PWM",
+      "source": "V229"
+     },
+     {
+      "name": "lowest speed",
+      "value": "not required below 500 rpm; the optical index, magnetic pickup or encoder cover down to 10 rpm",
+      "source": "V213"
+     },
+     {
+      "name": "comparator supply",
+      "value": "3.3 V ±3 % logic rail",
+      "source": "hardware/docs/Research.md:283"
+     },
+     {
+      "name": "comparator output",
+      "value": "push-pull at 3.3 V into a GPIO",
+      "source": "hardware/docs/IOBoard.md:105"
+     },
+     {
+      "name": "comparator input range",
+      "value": "includes 0 V (the divided phase signal sits near ground)",
+      "source": "V216"
+     },
+     {
+      "name": "comparator delay",
+      "value": "under 21.8 µs (half the period at 22,937 Hz) at both placements; at the optical index placement a maximum stated over 0 to 50 °C of at most 55 ns, the comparator's share of V225's 2.543 µs in the split of the accelerometer's and the optical index's 'delay variation'",
+      "source": "V212; V225 (owner, 2026-09-28 and 2026-09-29); V7"
+     },
+     {
+      "name": "placements",
+      "value": "2 comparators: one for the phase-wire clip, one for the optical index",
+      "source": "V219"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 °C (the IO board)",
+      "source": "V7 (owner, 2026-09-28)"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "TLV3201AIDBVR",
+      "maker": "Texas Instruments (datasheet SBOS561C); counts as Texas Instruments (S1)",
+      "lcsc": "C105188",
+      "package": "SOT-23-5 (DBV)",
+      "placements": 2,
+      "placements_basis": "fixed: one comparator for the phase-wire clip and one for the optical index (V219)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "coupling",
+        "required": "galvanic, clipped onto the bare phase conductor or its lug",
+        "datasheet": "not a comparator figure: the clip is galvanic; the comparator input is ground-referenced, VCM (VEE) - 0.2 V to (VCC) + 0.2 V",
+        "pass": true,
+        "source": "TLV3201 datasheet SBOS561C (March 2012, revised May 2024), https://www.ti.com/lit/ds/symlink/tlv3201.pdf, read 2026-09-29T06:44:35Z, section 6.5"
+       },
+       {
+        "name": "isolation",
+        "required": "none: referenced to the IO board ground, which the ESC pack's return reaches at the star point",
+        "datasheet": "not a comparator figure: no isolation is required (V216); the inputs are referenced to GND (pin 2), the IO board ground",
+        "pass": true,
+        "source": "TLV3201 datasheet SBOS561C (March 2012, revised May 2024), https://www.ti.com/lit/ds/symlink/tlv3201.pdf, read 2026-09-29T06:44:35Z, Pin Functions"
+       },
+       {
+        "name": "input withstand",
+        "required": "100 V at the clip's input; the divider and clamp (round 2) keep the comparator input inside its rating",
+        "datasheet": "signal input pins -0.5 V to (VCC) + 0.5 V absolute maximum, ±10 mA; 'Input pins are diode-clamped to the power-supply rails'. The 100 V belongs to the divider and clamp of round 2, which keep the input inside that rating",
+        "pass": true,
+        "source": "TLV3201 datasheet SBOS561C (March 2012, revised May 2024), https://www.ti.com/lit/ds/symlink/tlv3201.pdf, read 2026-09-29T06:44:35Z, section 6.1 and note 2"
+       },
+       {
+        "name": "electrical frequency passed",
+        "required": "up to 22,937 Hz (65,535 rpm × 21 pole pairs / 60)",
+        "datasheet": "tPD 50 ns maximum at 25 °C and 55 ns maximum over -40 to 125 °C (6.6, VCC 5 V; 6.8, VCC 2.7 V); tR 2.9 ns, tF 3.7 ns typical: against a 43.6 us period at 22,937 Hz the comparator follows it",
+        "pass": true,
+        "source": "TLV3201 datasheet SBOS561C (March 2012, revised May 2024), https://www.ti.com/lit/ds/symlink/tlv3201.pdf, read 2026-09-29T06:44:35Z, sections 6.6 and 6.8"
+       },
+       {
+        "name": "PWM rejected",
+        "required": "8 to 288 kHz of ESC PWM",
+        "datasheet": "not a comparator figure: the comparator filters nothing; the rejection is the round-2 network's, and the overlap of the passed and rejected bands is reported under 'phase-wire clip frequency overlap'",
+        "pass": true,
+        "source": "TLV3201 datasheet SBOS561C (March 2012, revised May 2024), https://www.ti.com/lit/ds/symlink/tlv3201.pdf, read 2026-09-29T06:44:35Z, page 1"
+       },
+       {
+        "name": "lowest speed",
+        "required": "not required below 500 rpm; the optical index, magnetic pickup or encoder cover down to 10 rpm",
+        "datasheet": "DC-coupled comparator; nothing is required below 500 rpm (V213)",
+        "pass": true,
+        "source": "TLV3201 datasheet SBOS561C (March 2012, revised May 2024), https://www.ti.com/lit/ds/symlink/tlv3201.pdf, read 2026-09-29T06:44:35Z, section 6.5"
+       },
+       {
+        "name": "comparator supply",
+        "required": "3.3 V ±3 % logic rail",
+        "datasheet": "VS 2.7 to 5.5 V recommended, 7 V absolute maximum; 3.201 to 3.399 V lies inside",
+        "pass": true,
+        "source": "TLV3201 datasheet SBOS561C (March 2012, revised May 2024), https://www.ti.com/lit/ds/symlink/tlv3201.pdf, read 2026-09-29T06:44:35Z, sections 6.1 and 6.3"
+       },
+       {
+        "name": "comparator output",
+        "required": "push-pull at 3.3 V into a GPIO",
+        "datasheet": "push-pull output (title: '40ns, microPOWER, Push-Pull Output Comparators')",
+        "pass": true,
+        "source": "TLV3201 datasheet SBOS561C (March 2012, revised May 2024), https://www.ti.com/lit/ds/symlink/tlv3201.pdf, read 2026-09-29T06:44:35Z, page 1"
+       },
+       {
+        "name": "comparator input range",
+        "required": "includes 0 V (the divided phase signal sits near ground)",
+        "datasheet": "VCM (VEE) - 0.2 V to (VCC) + 0.2 V over -40 to 125 °C: includes 0 V",
+        "pass": true,
+        "source": "TLV3201 datasheet SBOS561C (March 2012, revised May 2024), https://www.ti.com/lit/ds/symlink/tlv3201.pdf, read 2026-09-29T06:44:35Z, section 6.5"
+       },
+       {
+        "name": "comparator delay",
+        "required": "under 21.8 µs (half the period at 22,937 Hz) at both placements; at the optical index placement a maximum stated over 0 to 50 °C of at most 55 ns, the comparator's share of V225's 2.543 µs in the split of the accelerometer's and the optical index's 'delay variation'",
+        "datasheet": "tPD 55 ns maximum over -40 to 125 °C, low to high and high to low, input overdrive 20 mV or 100 mV, CL 15 pF, stated at VCC 5 V (6.6) and at VCC 2.7 V (6.8), 3.3 V lying between; 50 ns maximum at 25 °C. 55 ns meets the 55 ns share and is under 21.8 us",
+        "pass": true,
+        "source": "TLV3201 datasheet SBOS561C (March 2012, revised May 2024), https://www.ti.com/lit/ds/symlink/tlv3201.pdf, read 2026-09-29T06:44:35Z, sections 6.6 and 6.8"
+       },
+       {
+        "name": "placements",
+        "required": "2 comparators: one for the phase-wire clip, one for the optical index",
+        "datasheet": "one comparator per SOT-23-5 package; the function's 2 placements take 2 packages (need 10)",
+        "pass": true,
+        "source": "TLV3201 datasheet SBOS561C (March 2012, revised May 2024), https://www.ti.com/lit/ds/symlink/tlv3201.pdf, read 2026-09-29T06:44:35Z, Pin Functions: TLV3201"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C (the IO board)",
+        "datasheet": "specified -40 to 125 °C; covers 0 to 50 °C",
+        "pass": true,
+        "source": "TLV3201 datasheet SBOS561C (March 2012, revised May 2024), https://www.ti.com/lit/ds/symlink/tlv3201.pdf, read 2026-09-29T06:44:35Z, section 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 41646, canPresaleNumber 40390, componentLibraryType expand, price USD 0.8545 a part at the 10 break (need 10), read 2026-09-29T06:42:27Z, vendors.py jlcpcb C105188 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 0, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-29T02:52:51Z (cached: true, a reading of this UTC day), vendors.py digikey TLV3201AIDBVR (https://api.digikey.com/products/v4/search/TLV3201AIDBVR/productdetails)",
+      "gate": "need 5 boards x 2 = 10; threshold max(5 x 10, 50) = 50; stockCount 41646 >= 50 and canPresaleNumber 40390 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/TLV3201, meta status ACTIVE and orderable TLV3201AIDBVR marketingStatusDescription ACTIVE, read 2026-09-29T06:43:35Z; longevity commitment not read; first datasheet revision March 2012 (SBOS561), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-09-29T02:52:51Z); JLCPCB's API carries no status",
+      "second_source": "alternate TLV3601DBVR (Texas Instruments): same DBV pin order (OUT 1, VEE 2, IN+ 3, IN- 4, VCC 5), push-pull, 2.4 to 5.5 V, 4.5 ns maximum; passes rules 1 to 4 at JLCPCB (C5213958, 1623, presale 1552, 2026-09-29T06:42:30Z); record below. The second-vendor route fails: Digi-Key 0 (2026-09-29T02:52:51Z)",
+      "alternates": [
+       "TLV3601DBVR"
+      ],
+      "driver_in_shared": "none (GPIO edge)",
+      "reason": "Meets every value with a maximum delay stated over temperature (55 ns, the index placement's share), 40 uA supply current, the largest JLCPCB stock (41646) and the lowest price; its second source rests on the alternate TLV3601DBVR because Digi-Key has 0. Its inputs clamp to VCC + 0.5 V (report 'comparator inputs with the 3.3 V rail down')",
+      "second_source_route": "alternate",
+      "second_source_part": "TLV3601DBVR"
+     },
+     {
+      "rank": 2,
+      "part": "TLV3501AIDBVR",
+      "maker": "Texas Instruments (datasheet SBOS321E); counts as Texas Instruments (S1)",
+      "lcsc": "C193413",
+      "package": "SOT-23-6 (DBV)",
+      "placements": 2,
+      "placements_basis": "fixed: one comparator for the phase-wire clip and one for the optical index (V219)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "coupling",
+        "required": "galvanic, clipped onto the bare phase conductor or its lug",
+        "datasheet": "not a comparator figure: the clip is galvanic; the comparator input is ground-referenced, common-mode range from (V-) - 0.2 V",
+        "pass": true,
+        "source": "TLV3501 datasheet SBOS321E (March 2005, revised April 2016), https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-09-29T06:44:35Z, section 6.6"
+       },
+       {
+        "name": "isolation",
+        "required": "none: referenced to the IO board ground, which the ESC pack's return reaches at the star point",
+        "datasheet": "not a comparator figure: no isolation is required (V216); the inputs are referenced to V- (pin 2), the IO board ground",
+        "pass": true,
+        "source": "TLV3501 datasheet SBOS321E (March 2005, revised April 2016), https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-09-29T06:44:35Z, section 5"
+       },
+       {
+        "name": "input withstand",
+        "required": "100 V at the clip's input; the divider and clamp (round 2) keep the comparator input inside its rating",
+        "datasheet": "signal input terminals (V-) - 0.3 V to (V+) + 0.3 V absolute maximum, 10 mA; 'Input terminals are diode-clamped to the power-supply rails'. The 100 V belongs to the divider and clamp of round 2, which keep the input inside that rating",
+        "pass": true,
+        "source": "TLV3501 datasheet SBOS321E (March 2005, revised April 2016), https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-09-29T06:44:35Z, section 6.1 and note 2"
+       },
+       {
+        "name": "electrical frequency passed",
+        "required": "up to 22,937 Hz (65,535 rpm × 21 pole pairs / 60)",
+        "datasheet": "t(pd) 4.5 ns typical, 6.4 ns maximum at 25 °C and 7 ns maximum over -40 to 125 °C (20 mV overdrive, VS 2.7 to 5.5 V); fMAX 80 MHz typical at 5 V: against a 43.6 us period at 22,937 Hz the comparator follows it",
+        "pass": true,
+        "source": "TLV3501 datasheet SBOS321E (March 2005, revised April 2016), https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-09-29T06:44:35Z, section 6.7"
+       },
+       {
+        "name": "PWM rejected",
+        "required": "8 to 288 kHz of ESC PWM",
+        "datasheet": "not a comparator figure: the comparator filters nothing; the rejection is the round-2 network's, and the overlap of the passed and rejected bands is reported under 'phase-wire clip frequency overlap'",
+        "pass": true,
+        "source": "TLV3501 datasheet SBOS321E (March 2005, revised April 2016), https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-09-29T06:44:35Z, page 1"
+       },
+       {
+        "name": "lowest speed",
+        "required": "not required below 500 rpm; the optical index, magnetic pickup or encoder cover down to 10 rpm",
+        "datasheet": "DC-coupled comparator; nothing is required below 500 rpm (V213)",
+        "pass": true,
+        "source": "TLV3501 datasheet SBOS321E (March 2005, revised April 2016), https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-09-29T06:44:35Z, section 6.6"
+       },
+       {
+        "name": "comparator supply",
+        "required": "3.3 V ±3 % logic rail",
+        "datasheet": "specified 2.7 to 5.5 V; 3.201 to 3.399 V lies inside; IQ 3.2 mA typical, 5 mA maximum at 5 V",
+        "pass": true,
+        "source": "TLV3501 datasheet SBOS321E (March 2005, revised April 2016), https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-09-29T06:44:35Z, sections 6.1 and 6.6"
+       },
+       {
+        "name": "comparator output",
+        "required": "push-pull at 3.3 V into a GPIO",
+        "datasheet": "push-pull CMOS output stage (page 1); swing 30 mV typical, 50 mV maximum from the rails at 1 mA. SHDN (pin 6) enables the part when more than 1.7 V below V+, so it is tied to ground",
+        "pass": true,
+        "source": "TLV3501 datasheet SBOS321E (March 2005, revised April 2016), https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-09-29T06:44:35Z, page 1, section 6.6"
+       },
+       {
+        "name": "comparator input range",
+        "required": "includes 0 V (the divided phase signal sits near ground)",
+        "datasheet": "VCM from (V-) - 0.2 V (CMRR stated for VCM -0.2 V to (V+) + 0.2 V): includes 0 V",
+        "pass": true,
+        "source": "TLV3501 datasheet SBOS321E (March 2005, revised April 2016), https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-09-29T06:44:35Z, section 6.6"
+       },
+       {
+        "name": "comparator delay",
+        "required": "under 21.8 µs (half the period at 22,937 Hz) at both placements; at the optical index placement a maximum stated over 0 to 50 °C of at most 55 ns, the comparator's share of V225's 2.543 µs in the split of the accelerometer's and the optical index's 'delay variation'",
+        "datasheet": "t(pd) 7 ns maximum over -40 to 125 °C at 20 mV overdrive and 12 ns maximum at 5 mV overdrive, for VS 2.7 to 5.5 V (not production tested; ensured by characterization and testing at 100 mV overdrive). 12 ns is under the 55 ns share and under 21.8 us",
+        "pass": true,
+        "source": "TLV3501 datasheet SBOS321E (March 2005, revised April 2016), https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-09-29T06:44:35Z, section 6.7 and notes 1 and 2"
+       },
+       {
+        "name": "placements",
+        "required": "2 comparators: one for the phase-wire clip, one for the optical index",
+        "datasheet": "one comparator per SOT-23-6 package; the function's 2 placements take 2 packages (need 10)",
+        "pass": true,
+        "source": "TLV3501 datasheet SBOS321E (March 2005, revised April 2016), https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-09-29T06:44:35Z, section 5"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C (the IO board)",
+        "datasheet": "specified and operating -40 to 125 °C; covers 0 to 50 °C",
+        "pass": true,
+        "source": "TLV3501 datasheet SBOS321E (March 2005, revised April 2016), https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-09-29T06:44:35Z, section 6.6"
+       }
+      ],
+      "jlcpcb": "stockCount 9756, canPresaleNumber 9610, componentLibraryType expand, price USD 1.6651 a part at the 10 break (need 10), read 2026-09-29T06:42:29Z, vendors.py jlcpcb C193413 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 26629, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-29T03:29:01Z (cached: true, a reading of this UTC day), vendors.py digikey TLV3501AIDBVR (https://api.digikey.com/products/v4/search/TLV3501AIDBVR/productdetails)",
+      "gate": "need 5 boards x 2 = 10; threshold max(5 x 10, 50) = 50; stockCount 9756 >= 50 and canPresaleNumber 9610 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/TLV3501, meta status ACTIVE and orderable TLV3501AIDBVR marketingStatusDescription ACTIVE, read 2026-09-29T06:43:35Z; longevity commitment not read; first datasheet revision March 2005 (SBOS321), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-09-29T03:29:01Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 26629 >= 50 (2026-09-29T03:29:01Z). TLV3501AQDBVRQ1 (C133251, SBOS533B) has the same DBV pinout (-IN 1, V- 2, +IN 3, V+ 4, OUT 5, SHDN 6) and delay limits; not a rule-5 route here (Digi-Key 19 on the FU-C1 reading)",
+      "alternates": [
+       "TLV3501AQDBVRQ1"
+      ],
+      "driver_in_shared": "none (GPIO edge)",
+      "reason": "A maximum delay stated over temperature and over the whole 2.7 to 5.5 V supply (7 ns at 20 mV, 12 ns at 5 mV), a second vendor with Digi-Key 26629, and 6 times TLV3601DBVR's JLCPCB stock at half its price. Below rank 1 for 3.2 mA typical against 40 uA, a SOT-23-6 footprint with a shutdown pin that rank 1 does not share, and a fast part on a slow input that relies on its 6 mV hysteresis or an external network against chatter",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "TLV3601DBVR",
+      "maker": "Texas Instruments (datasheet SNOSDB1E); counts as Texas Instruments (S1)",
+      "lcsc": "C5213958",
+      "package": "SOT-23-5 (DBV)",
+      "placements": 2,
+      "placements_basis": "fixed: one comparator for the phase-wire clip and one for the optical index (V219)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "coupling",
+        "required": "galvanic, clipped onto the bare phase conductor or its lug",
+        "datasheet": "not a comparator figure: the clip is galvanic; the comparator input is ground-referenced, VCM VEE - 0.2 V to VCC + 0.2 V",
+        "pass": true,
+        "source": "TLV3601 datasheet SNOSDB1E (June 2021, revised April 2023), https://www.ti.com/lit/ds/symlink/tlv3601.pdf, read 2026-09-29T06:44:36Z, section 6.5"
+       },
+       {
+        "name": "isolation",
+        "required": "none: referenced to the IO board ground, which the ESC pack's return reaches at the star point",
+        "datasheet": "not a comparator figure: no isolation is required (V216); the inputs are referenced to VEE (pin 2), the IO board ground",
+        "pass": true,
+        "source": "TLV3601 datasheet SNOSDB1E (June 2021, revised April 2023), https://www.ti.com/lit/ds/symlink/tlv3601.pdf, read 2026-09-29T06:44:36Z, section 5"
+       },
+       {
+        "name": "input withstand",
+        "required": "100 V at the clip's input; the divider and clamp (round 2) keep the comparator input inside its rating",
+        "datasheet": "IN+, IN- VEE - 0.3 V to VCC + 0.3 V absolute maximum, ±10 mA; 'Input terminals are diode-clamped to the power-supply rails'. The 100 V belongs to the divider and clamp of round 2, which keep the input inside that rating",
+        "pass": true,
+        "source": "TLV3601 datasheet SNOSDB1E (June 2021, revised April 2023), https://www.ti.com/lit/ds/symlink/tlv3601.pdf, read 2026-09-29T06:44:36Z, section 6.1 and note 2"
+       },
+       {
+        "name": "electrical frequency passed",
+        "required": "up to 22,937 Hz (65,535 rpm × 21 pole pairs / 60)",
+        "datasheet": "tPD 2.5 ns typical, 3.5 ns maximum at 25 °C, 4.5 ns maximum over -40 to 125 °C (50 mV overdrive and underdrive): against a 43.6 us period at 22,937 Hz the comparator follows it",
+        "pass": true,
+        "source": "TLV3601 datasheet SNOSDB1E (June 2021, revised April 2023), https://www.ti.com/lit/ds/symlink/tlv3601.pdf, read 2026-09-29T06:44:36Z, section 6.5"
+       },
+       {
+        "name": "PWM rejected",
+        "required": "8 to 288 kHz of ESC PWM",
+        "datasheet": "not a comparator figure: the comparator filters nothing; the rejection is the round-2 network's, and the overlap of the passed and rejected bands is reported under 'phase-wire clip frequency overlap'",
+        "pass": true,
+        "source": "TLV3601 datasheet SNOSDB1E (June 2021, revised April 2023), https://www.ti.com/lit/ds/symlink/tlv3601.pdf, read 2026-09-29T06:44:36Z, page 1"
+       },
+       {
+        "name": "lowest speed",
+        "required": "not required below 500 rpm; the optical index, magnetic pickup or encoder cover down to 10 rpm",
+        "datasheet": "DC-coupled comparator; nothing is required below 500 rpm (V213)",
+        "pass": true,
+        "source": "TLV3601 datasheet SNOSDB1E (June 2021, revised April 2023), https://www.ti.com/lit/ds/symlink/tlv3601.pdf, read 2026-09-29T06:44:36Z, section 6.5"
+       },
+       {
+        "name": "comparator supply",
+        "required": "3.3 V ±3 % logic rail",
+        "datasheet": "VCC - VEE 2.4 to 5.5 V recommended, 6 V absolute maximum; 3.201 to 3.399 V lies inside",
+        "pass": true,
+        "source": "TLV3601 datasheet SNOSDB1E (June 2021, revised April 2023), https://www.ti.com/lit/ds/symlink/tlv3601.pdf, read 2026-09-29T06:44:36Z, sections 6.1 and 6.3"
+       },
+       {
+        "name": "comparator output",
+        "required": "push-pull at 3.3 V into a GPIO",
+        "datasheet": "push-pull output (pin functions: OUT, output (push-pull))",
+        "pass": true,
+        "source": "TLV3601 datasheet SNOSDB1E (June 2021, revised April 2023), https://www.ti.com/lit/ds/symlink/tlv3601.pdf, read 2026-09-29T06:44:36Z, Table 5-1"
+       },
+       {
+        "name": "comparator input range",
+        "required": "includes 0 V (the divided phase signal sits near ground)",
+        "datasheet": "VCM VEE - 0.2 V to VCC + 0.2 V over -40 to 125 °C: includes 0 V",
+        "pass": true,
+        "source": "TLV3601 datasheet SNOSDB1E (June 2021, revised April 2023), https://www.ti.com/lit/ds/symlink/tlv3601.pdf, read 2026-09-29T06:44:36Z, section 6.5"
+       },
+       {
+        "name": "comparator delay",
+        "required": "under 21.8 µs (half the period at 22,937 Hz) at both placements; at the optical index placement a maximum stated over 0 to 50 °C of at most 55 ns, the comparator's share of V225's 2.543 µs in the split of the accelerometer's and the optical index's 'delay variation'",
+        "datasheet": "tPD 4.5 ns maximum over -40 to 125 °C, 50 mV overdrive and underdrive ('Ensured by characterization'); under the 55 ns share and under 21.8 us",
+        "pass": true,
+        "source": "TLV3601 datasheet SNOSDB1E (June 2021, revised April 2023), https://www.ti.com/lit/ds/symlink/tlv3601.pdf, read 2026-09-29T06:44:36Z, section 6.5"
+       },
+       {
+        "name": "placements",
+        "required": "2 comparators: one for the phase-wire clip, one for the optical index",
+        "datasheet": "one comparator per SOT-23-5 (DBV) package; the function's 2 placements take 2 packages (need 10)",
+        "pass": true,
+        "source": "TLV3601 datasheet SNOSDB1E (June 2021, revised April 2023), https://www.ti.com/lit/ds/symlink/tlv3601.pdf, read 2026-09-29T06:44:36Z, Figure 5-1"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C (the IO board)",
+        "datasheet": "TA -40 to 125 °C recommended; covers 0 to 50 °C",
+        "pass": true,
+        "source": "TLV3601 datasheet SNOSDB1E (June 2021, revised April 2023), https://www.ti.com/lit/ds/symlink/tlv3601.pdf, read 2026-09-29T06:44:36Z, section 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 1623, canPresaleNumber 1552, componentLibraryType expand, price USD 3.5137 a part at the 10 break (need 10), read 2026-09-29T06:42:30Z, vendors.py jlcpcb C5213958 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 6102, manufacturer lead time 9 weeks, ProductStatus Active, read 2026-09-29T02:52:53Z (cached: true, a reading of this UTC day), vendors.py digikey TLV3601DBVR (https://api.digikey.com/products/v4/search/TLV3601DBVR/productdetails)",
+      "gate": "need 5 boards x 2 = 10; threshold max(5 x 10, 50) = 50; stockCount 1623 >= 50 and canPresaleNumber 1552 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/TLV3601, meta status ACTIVE and orderable TLV3601DBVR marketingStatusDescription ACTIVE, read 2026-09-29T06:43:36Z; longevity commitment not read; first datasheet revision June 2021 (SNOSDB1), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-09-29T02:52:53Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 6102 >= 50 (2026-09-29T02:52:53Z). TLV3201AIDBVR shares its DBV pin order",
+      "alternates": [
+       "TLV3201AIDBVR"
+      ],
+      "driver_in_shared": "none (GPIO edge)",
+      "reason": "The tightest stated maximum delay (4.5 ns over temperature), both rule-5 routes, and rank 1's rule-5 alternate on the same DBV pins; ranked third for 4.9 mA typical, JLCPCB 1623 at USD 3.5137 at the 10 break, 6 times fewer than TLV3501AIDBVR at twice its price",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "TLV3501AQDBVRQ1",
+      "maker": "Texas Instruments",
+      "reason": "not recorded: the automotive grade of TLV3501AIDBVR (SBOS533B: t(pd) 7 ns maximum over -40 to 125 °C, same DBV pinout), its listed pin-compatible part; Digi-Key 19, under 50, and JLCPCB 677 on the FU-C1 re-rank readings (03:38:31Z, 03:37:51Z); not re-read"
+     },
+     {
+      "part": "TLV7011DBVR, TLV7031DBVR, TLV1811DBVR",
+      "maker": "Texas Instruments",
+      "reason": "comparator delay: typical delays only (TLV7011 260 / 310 ns, TLV7031 3 us, TLV1811 420 to 900 ns), no maximum, so the index placement's 55 ns share is not shown (FU-C1 P2 readings of SLVSDM5F, SLVSE13J, SNOSDC8E, 02:49:41Z to 02:49:43Z; not re-read)"
+     },
+     {
+      "part": "MCP6561T-E/OT",
+      "maker": "Microchip",
+      "reason": "comparator delay: 80 ns maximum at 25 °C only, over the 55 ns share and not stated over 0 to 50 °C (FU-C1 P2 reading of DS20002139E, 02:50:53Z; not re-read)"
+     },
+     {
+      "part": "LMV7219M5X/NOPB",
+      "maker": "Texas Instruments",
+      "reason": "comparator delay: 20 ns maximum at TJ 25 °C only, none over temperature (FU-C1 P2 reading of SNOS458I, 02:51:23Z; not re-read)"
+     },
+     {
+      "part": "NCS2250SQ2T2G, NCV2250SN2T1G",
+      "maker": "onsemi",
+      "reason": "comparator delay: the 64 ns and 68 ns maxima are 25 °C figures (regular type in tables whose bold type marks -40 to 125 °C), over the 55 ns share and not stated over 0 to 50 °C; 3.3 V not tabulated (FU-C1 re-rank reading of NCS2250/D Rev. 6, confirmed by the FU-C1 P4 datasheet verifier; not re-read)"
+     },
+     {
+      "part": "ADCMP600BRJZ-REEL7, LT1719IS6#TRPBF, LMV7239, LMV761, TLV3491, TLV1805QDBVRQ1, TLV3012BIDBVR, TS3021ILT, MAX985EUK+T, MAX9031AXK+T, NCS2200SQ2T2G",
+      "maker": "Analog Devices, Texas Instruments, STMicroelectronics, onsemi",
+      "reason": "comparator delay on the FU-C1 P3 readings (not re-read): typical only, a maximum at 5 V only (LT1719), 4 us maximum (TLV3012), or 25 °C only (TS3021)"
+     },
+     {
+      "part": "LMV331TP-TR, LMV331M5X, MCP6561UT-E(MS), LMV7219M5/TR (clone rows)",
+      "maker": "3PEAK, TECH PUBLIC, MSKSEMI, HGSEMI",
+      "reason": "maker not on S1 (rule 2); 3PEAK is not allowed by the S1 answer"
+     }
+    ]
+   },
+   {
+    "function": "encoder input",
+    "requirements": [
+     {
+      "name": "signal forms",
+      "value": "RS-422 differential and 5 V single-ended on one input, selected by a jumper; the single-ended form reads each line against a reference on the inverting input",
+      "source": "F4 (hardware/docs/Research.md:532); hardware/docs/IOBoard.md:445"
+     },
+     {
+      "name": "channels",
+      "value": "3: A, B and the index I",
+      "source": "hardware/docs/Research.md:65; hardware/docs/IOBoard.md:71"
+     },
+     {
+      "name": "per-channel frequency",
+      "value": "5 MHz on each of A and B in RS-422 (20 Mcounts/s), 1 MHz single-ended (4 Mcounts/s)",
+      "source": "V227; F4"
+     },
+     {
+      "name": "channel skew",
+      "value": "under 50 ns, the quadrature edge spacing at 5 MHz",
+      "source": "V227"
+     },
+     {
+      "name": "input withstand",
+      "value": "12 V on every line input",
+      "source": "V228"
+     },
+     {
+      "name": "supply",
+      "value": "outputs at 3.3 V logic at the GPIO: a receiver on the 3.3 V rail (3.3 V ±3 %), or a 5 V receiver behind a translator",
+      "source": "hardware/docs/IOBoard.md:105; hardware/docs/Research.md:289 (R11 concern on SN65LBC175)"
+     },
+     {
+      "name": "powered-off behaviour",
+      "value": "no damaging current into or out of the receiver while the 3.3 V rail is down and the encoder's 5 V or 12 V supply is up",
+      "source": "hardware/docs/IOBoard.md:105; hardware/docs/Research.md:270-272"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 °C (the IO board)",
+      "source": "V7 (owner, 2026-09-28)"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "AM26LV32EIDR",
+      "maker": "Texas Instruments (datasheet SLLS849E); counts as Texas Instruments (S1)",
+      "lcsc": "C527448",
+      "package": "SOIC-16 (D)",
+      "placements": 1,
+      "placements_basis": "fixed: one quad receiver takes A, B and I; the fourth receiver is spare",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "signal forms",
+        "required": "RS-422 differential and 5 V single-ended on one input, selected by a jumper; the single-ended form reads each line against a reference on the inverting input",
+        "datasheet": "meets TIA/EIA-422-B; VIT+ 0.2 V maximum, VIT- -0.2 V minimum, hysteresis 35 mV typical; VIC and VID -7 to 7 V recommended. A 5 V single-ended line against a reference on the inverting input stays within ±7 V",
+        "pass": true,
+        "source": "AM26LV32E datasheet SLLS849E (April 2008, revised August 2023), https://www.ti.com/lit/ds/symlink/am26lv32e.pdf, read 2026-09-29T06:44:37Z, sections 1, 6.3 and 6.5"
+       },
+       {
+        "name": "channels",
+        "required": "3: A, B and the index I",
+        "datasheet": "quadruple differential line receiver: 4 receivers for the 3 channels A, B, I; one spare",
+        "pass": true,
+        "source": "AM26LV32E datasheet SLLS849E (April 2008, revised August 2023), https://www.ti.com/lit/ds/symlink/am26lv32e.pdf, read 2026-09-29T06:44:37Z, section 3"
+       },
+       {
+        "name": "per-channel frequency",
+        "required": "5 MHz on each of A and B in RS-422 (20 Mcounts/s), 1 MHz single-ended (4 Mcounts/s)",
+        "datasheet": "tPLH, tPHL 8 / 16 / 26 ns (min / typ / max); 26 ns maximum against the 100 ns half-period at 5 MHz",
+        "pass": true,
+        "source": "AM26LV32E datasheet SLLS849E (April 2008, revised August 2023), https://www.ti.com/lit/ds/symlink/am26lv32e.pdf, read 2026-09-29T06:44:37Z, section 6.6"
+       },
+       {
+        "name": "channel skew",
+        "required": "under 50 ns, the quadrature edge spacing at 5 MHz",
+        "datasheet": "tsk(p) 4 / 6 ns, tsk(o) 4 / 6 ns, tsk(pp) 6 / 9 ns (typ / max): under 50 ns",
+        "pass": true,
+        "source": "AM26LV32E datasheet SLLS849E (April 2008, revised August 2023), https://www.ti.com/lit/ds/symlink/am26lv32e.pdf, read 2026-09-29T06:44:37Z, section 6.6"
+       },
+       {
+        "name": "input withstand",
+        "required": "12 V on every line input",
+        "datasheet": "A or B inputs -14 to 14 V absolute maximum, no VCC condition: covers 12 V",
+        "pass": true,
+        "source": "AM26LV32E datasheet SLLS849E (April 2008, revised August 2023), https://www.ti.com/lit/ds/symlink/am26lv32e.pdf, read 2026-09-29T06:44:37Z, section 6.1"
+       },
+       {
+        "name": "supply",
+        "required": "outputs at 3.3 V logic at the GPIO: a receiver on the 3.3 V rail (3.3 V ±3 %), or a 5 V receiver behind a translator",
+        "datasheet": "VCC 3 / 3.3 / 3.6 V: a 3.3 V receiver, 3.3 V logic into the GPIO",
+        "pass": true,
+        "source": "AM26LV32E datasheet SLLS849E (April 2008, revised August 2023), https://www.ti.com/lit/ds/symlink/am26lv32e.pdf, read 2026-09-29T06:44:37Z, section 6.3"
+       },
+       {
+        "name": "powered-off behaviour",
+        "required": "no damaging current into or out of the receiver while the 3.3 V rail is down and the encoder's 5 V or 12 V supply is up",
+        "datasheet": "Ioff ±100 uA maximum at VCC 0 V, VO 0 or 5.5 V ('Ioff circuitry disables the outputs, preventing damaging current back-flow through the device when it is powered down'); A and B rated ±14 V with no VCC condition",
+        "pass": true,
+        "source": "AM26LV32E datasheet SLLS849E (April 2008, revised August 2023), https://www.ti.com/lit/ds/symlink/am26lv32e.pdf, read 2026-09-29T06:44:37Z, sections 1 and 6.5"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C (the IO board)",
+        "datasheet": "TA -40 to 85 °C recommended; covers 0 to 50 °C",
+        "pass": true,
+        "source": "AM26LV32E datasheet SLLS849E (April 2008, revised August 2023), https://www.ti.com/lit/ds/symlink/am26lv32e.pdf, read 2026-09-29T06:44:37Z, section 6.3"
+       }
+      ],
+      "jlcpcb": "stockCount 48972, canPresaleNumber 48872, componentLibraryType expand, price USD 0.7392 a part at the 1 break (need 5), read 2026-09-29T06:42:32Z, vendors.py jlcpcb C527448 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 13484, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-29T02:53:00Z (cached: true, a reading of this UTC day), vendors.py digikey AM26LV32EIDR (https://api.digikey.com/products/v4/search/AM26LV32EIDR/productdetails)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 48972 >= 50 and canPresaleNumber 48872 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/AM26LV32E, meta status ACTIVE and orderable AM26LV32EIDR marketingStatusDescription ACTIVE, read 2026-09-29T06:43:37Z; longevity commitment not read; first datasheet revision April 2008 (SLLS849), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-09-29T02:53:00Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 13484 >= 50 (2026-09-29T02:53:00Z); pin-compatible alternates DS34LV86TMX/NOPB and ISL32273EIBZ-T on the same SOIC-16 signal pins, with pins 4 and 12 both tied to 3.3 V",
+      "alternates": [
+       "DS34LV86TMX/NOPB",
+       "ISL32273EIBZ-T"
+      ],
+      "driver_in_shared": "none (GPIO into the PIO decoder; no decoder program in the tree)",
+      "reason": "3.3 V quad receiver with ±14 V line inputs, a stated Ioff at VCC 0 V, 26 ns maximum delay and 9 ns device-to-device skew; stock at both vendors and two pin-compatible alternates",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "DS34LV86TMX/NOPB",
+      "maker": "Texas Instruments (datasheet SNLS115D, formerly National Semiconductor); counts as Texas Instruments (S1)",
+      "lcsc": "C140249",
+      "package": "SOIC-16 (D)",
+      "placements": 1,
+      "placements_basis": "fixed: one quad receiver takes A, B and I; the fourth receiver is spare",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "signal forms",
+        "required": "RS-422 differential and 5 V single-ended on one input, selected by a jumper; the single-ended form reads each line against a reference on the inverting input",
+        "datasheet": "meets TIA/EIA-422-B and ITU-T V.11; VTH -200 / +200 mV over -7 V < VCM < +7 V, hysteresis 35 mV typical. A 5 V single-ended line against a reference on the inverting input puts the common mode at most at 5 V, inside ±7 V",
+        "pass": true,
+        "source": "DS34LV86T datasheet SNLS115D (June 2000, revised April 2013), https://www.ti.com/lit/ds/symlink/ds34lv86t.pdf, read 2026-09-29T06:44:37Z, page 1 and Electrical Characteristics"
+       },
+       {
+        "name": "channels",
+        "required": "3: A, B and the index I",
+        "datasheet": "quad differential line receiver: 4 receivers for the 3 channels A, B, I; one spare",
+        "pass": true,
+        "source": "DS34LV86T datasheet SNLS115D (June 2000, revised April 2013), https://www.ti.com/lit/ds/symlink/ds34lv86t.pdf, read 2026-09-29T06:44:37Z, page 1"
+       },
+       {
+        "name": "per-channel frequency",
+        "required": "5 MHz on each of A and B in RS-422 (20 Mcounts/s), 1 MHz single-ended (4 Mcounts/s)",
+        "datasheet": "tPHL 6 / 17.5 / 35 ns and tPLH 6 / 17.8 / 35 ns (min / typ / max, CL 15 pF); fMAX 32 MHz minimum. 35 ns maximum against the 100 ns half-period at 5 MHz",
+        "pass": true,
+        "source": "DS34LV86T datasheet SNLS115D (June 2000, revised April 2013), https://www.ti.com/lit/ds/symlink/ds34lv86t.pdf, read 2026-09-29T06:44:37Z, Switching Characteristics"
+       },
+       {
+        "name": "channel skew",
+        "required": "under 50 ns, the quadrature edge spacing at 5 MHz",
+        "datasheet": "tSK2 pin to pin 0.6 ns typical, 4 ns maximum; tSK3 part to part 7 ns typical, 17 ns maximum: under 50 ns",
+        "pass": true,
+        "source": "DS34LV86T datasheet SNLS115D (June 2000, revised April 2013), https://www.ti.com/lit/ds/symlink/ds34lv86t.pdf, read 2026-09-29T06:44:37Z, Switching Characteristics"
+       },
+       {
+        "name": "input withstand",
+        "required": "12 V on every line input",
+        "datasheet": "receiver input voltage VID and VCM (RI+, RI-) ±14 V absolute maximum, no VCC condition: covers 12 V",
+        "pass": true,
+        "source": "DS34LV86T datasheet SNLS115D (June 2000, revised April 2013), https://www.ti.com/lit/ds/symlink/ds34lv86t.pdf, read 2026-09-29T06:44:37Z, Absolute Maximum Ratings"
+       },
+       {
+        "name": "supply",
+        "required": "outputs at 3.3 V logic at the GPIO: a receiver on the 3.3 V rail (3.3 V ±3 %), or a 5 V receiver behind a translator",
+        "datasheet": "VCC 3.0 / 3.3 / 3.6 V: a 3.3 V receiver, 3.3 V logic into the GPIO",
+        "pass": true,
+        "source": "DS34LV86T datasheet SNLS115D (June 2000, revised April 2013), https://www.ti.com/lit/ds/symlink/ds34lv86t.pdf, read 2026-09-29T06:44:37Z, Recommended Operating Conditions"
+       },
+       {
+        "name": "powered-off behaviour",
+        "required": "no damaging current into or out of the receiver while the 3.3 V rail is down and the encoder's 5 V or 12 V supply is up",
+        "datasheet": "input current IIN 1.1 mA typical, 1.8 mA maximum at VIN +10 V, stated for 'Power On or VCC = 0V' (12 V is not tabulated); inputs rated ±14 V with no VCC condition. No Ioff figure for RO is stated; RO is driven by nothing while the RP2354B shares the unpowered 3.3 V rail",
+        "pass": true,
+        "source": "DS34LV86T datasheet SNLS115D (June 2000, revised April 2013), https://www.ti.com/lit/ds/symlink/ds34lv86t.pdf, read 2026-09-29T06:44:37Z, Absolute Maximum Ratings and Electrical Characteristics"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C (the IO board)",
+        "datasheet": "TA -40 to +85 °C; covers 0 to 50 °C",
+        "pass": true,
+        "source": "DS34LV86T datasheet SNLS115D (June 2000, revised April 2013), https://www.ti.com/lit/ds/symlink/ds34lv86t.pdf, read 2026-09-29T06:44:37Z, Recommended Operating Conditions"
+       }
+      ],
+      "jlcpcb": "stockCount 2737, canPresaleNumber 2725, componentLibraryType expand, price USD 2.1703 a part at the 1 break (need 5), read 2026-09-29T06:42:33Z, vendors.py jlcpcb C140249 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 2999, manufacturer lead time 9 weeks, ProductStatus Active, read 2026-09-29T03:30:26Z (cached: true, a reading of this UTC day), vendors.py digikey DS34LV86TMX_NOPB (https://api.digikey.com/products/v4/search/DS34LV86TMX%2FNOPB/productdetails)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 2737 >= 50 and canPresaleNumber 2725 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status ACTIVE: https://www.ti.com/product/DS34LV86T, meta status ACTIVE and orderable DS34LV86TMX/NOPB marketingStatusDescription ACTIVE, read 2026-09-29T06:43:37Z; longevity commitment not read; first datasheet revision June 2000 (SNLS115), over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-09-29T03:30:26Z); JLCPCB's API carries no status",
+      "second_source": "second vendor: Digi-Key 2999 >= 50 (2026-09-29T03:30:26Z). Its SOIC-16 signal pins match AM26LV32EIDR and ISL32273EIBZ-T (inverting inputs 1, 7, 9, 15; non-inverting 2, 6, 10, 14; outputs 3, 5, 11, 13; GND 8; VCC 16); its pin 4 enables receivers 1 and 2 and pin 12 receivers 3 and 4, both active high, so with pins 4 and 12 tied to 3.3 V one footprint takes any of the three",
+      "alternates": [
+       "AM26LV32EIDR",
+       "ISL32273EIBZ-T"
+      ],
+      "driver_in_shared": "none (GPIO into the PIO decoder; no decoder program in the tree)",
+      "reason": "Meets every value on rank 1's footprint with pins 4 and 12 tied high, ±14 V inputs and stock at both vendors; below rank 1 for 35 against 26 ns, no Ioff figure on its outputs, 15 mA maximum supply current and 3 times rank 1's price",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "ISL32273EIBZ-T",
+      "maker": "Renesas (datasheet FN7529, Intersil); counts as Renesas (S1)",
+      "lcsc": "C1015816",
+      "package": "SOIC-16",
+      "placements": 1,
+      "placements_basis": "fixed: one quad receiver takes A, B and I; the fourth receiver is spare",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "signal forms",
+        "required": "RS-422 differential and 5 V single-ended on one input, selected by a jumper; the single-ended form reads each line against a reference on the inverting input",
+        "datasheet": "RS-485/RS-422 receivers; differential threshold -200 to 200 mV over -7 to 12 V common mode; hysteresis 30 mV typical",
+        "pass": true,
+        "source": "ISL32173E/ISL32273E datasheet FN7529 Rev 5.00, https://www.renesas.com/en/document/dst/isl32173e-isl32177e-isl32273e-isl32275e-isl32277e-datasheet, read 2026-09-29T06:44:55Z, pages 6 and 7"
+       },
+       {
+        "name": "channels",
+        "required": "3: A, B and the index I",
+        "datasheet": "4 receivers (ISL32273E, 4 Rx, 20 Mbps): A, B, I and one spare",
+        "pass": true,
+        "source": "ISL32173E/ISL32273E datasheet FN7529 Rev 5.00, https://www.renesas.com/en/document/dst/isl32173e-isl32177e-isl32273e-isl32275e-isl32277e-datasheet, read 2026-09-29T06:44:55Z, page 1"
+       },
+       {
+        "name": "per-channel frequency",
+        "required": "5 MHz on each of A and B in RS-422 (20 Mcounts/s), 1 MHz single-ended (4 Mcounts/s)",
+        "datasheet": "20 Mbps version: fMAX 20 Mbps minimum, tPLH and tPHL 37 ns typical, 55 ns maximum over the full range: 55 ns against the 100 ns half-period at 5 MHz",
+        "pass": true,
+        "source": "ISL32173E/ISL32273E datasheet FN7529 Rev 5.00, https://www.renesas.com/en/document/dst/isl32173e-isl32177e-isl32273e-isl32275e-isl32277e-datasheet, read 2026-09-29T06:44:55Z, page 8"
+       },
+       {
+        "name": "channel skew",
+        "required": "under 50 ns, the quadrature edge spacing at 5 MHz",
+        "datasheet": "tSKD 6 ns, tSKC-C 8 ns, tSKP-P 20 ns maximum: under 50 ns",
+        "pass": true,
+        "source": "ISL32173E/ISL32273E datasheet FN7529 Rev 5.00, https://www.renesas.com/en/document/dst/isl32173e-isl32177e-isl32273e-isl32275e-isl32277e-datasheet, read 2026-09-29T06:44:55Z, page 8"
+       },
+       {
+        "name": "input withstand",
+        "required": "12 V on every line input",
+        "datasheet": "A, B -9 V to +13 V absolute maximum: covers 12 V with 1 V to spare",
+        "pass": true,
+        "source": "ISL32173E/ISL32273E datasheet FN7529 Rev 5.00, https://www.renesas.com/en/document/dst/isl32173e-isl32177e-isl32273e-isl32275e-isl32277e-datasheet, read 2026-09-29T06:44:55Z, page 7"
+       },
+       {
+        "name": "supply",
+        "required": "outputs at 3.3 V logic at the GPIO: a receiver on the 3.3 V rail (3.3 V ±3 %), or a 5 V receiver behind a translator",
+        "datasheet": "VCC 3.0 to 5.5 V: on the 3.3 V rail its output is 3.3 V logic into the GPIO",
+        "pass": true,
+        "source": "ISL32173E/ISL32273E datasheet FN7529 Rev 5.00, https://www.renesas.com/en/document/dst/isl32173e-isl32177e-isl32273e-isl32275e-isl32277e-datasheet, read 2026-09-29T06:44:55Z, pages 1 and 7"
+       },
+       {
+        "name": "powered-off behaviour",
+        "required": "no damaging current into or out of the receiver while the 3.3 V rail is down and the encoder's 5 V or 12 V supply is up",
+        "datasheet": "A, B input current IIN3 0.2 mA maximum at VIN 12 V with VCC 0 V or 5.5 V; no Ioff figure for RO is stated; RO is driven by nothing while the RP2354B shares the unpowered 3.3 V rail",
+        "pass": true,
+        "source": "ISL32173E/ISL32273E datasheet FN7529 Rev 5.00, https://www.renesas.com/en/document/dst/isl32173e-isl32177e-isl32273e-isl32275e-isl32277e-datasheet, read 2026-09-29T06:44:55Z, pages 7 and 8"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C (the IO board)",
+        "datasheet": "ISL32273EI: -40 to 85 °C; covers 0 to 50 °C",
+        "pass": true,
+        "source": "ISL32173E/ISL32273E datasheet FN7529 Rev 5.00, https://www.renesas.com/en/document/dst/isl32173e-isl32177e-isl32273e-isl32275e-isl32277e-datasheet, read 2026-09-29T06:44:55Z, pages 3 and 7"
+       }
+      ],
+      "jlcpcb": "stockCount 874, canPresaleNumber 874, componentLibraryType expand, price USD 1.4929 a part at the 1 break (need 5), read 2026-09-29T06:42:35Z, vendors.py jlcpcb C1015816 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 0, manufacturer lead time 15 weeks, ProductStatus Active, read 2026-09-29T02:53:04Z (cached: true, a reading of this UTC day), vendors.py digikey ISL32273EIBZ-T (https://api.digikey.com/products/v4/search/ISL32273EIBZ-T/productdetails)",
+      "gate": "need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 874 >= 50 and canPresaleNumber 874 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status Active: https://www.renesas.com/en/products/isl32273e, product status 'Active' in the page header ('released to the market and is available for purchase ... appropriate for new designs'), read 2026-09-29T06:43:52Z; longevity commitment not read; first datasheet revision before Rev 5.00, over 12 months; change and end-of-life notices not read; distributor: Digi-Key ProductStatus Active (2026-09-29T02:53:04Z); JLCPCB's API carries no status",
+      "second_source": "alternate AM26LV32EIDR (Texas Instruments): same SOIC-16 signal pins, enables at 4 and 12, GND 8, VCC 16; passes rules 1 to 4 at JLCPCB (C527448, 48972, presale 48872, 2026-09-29T06:42:32Z); record above. The second-vendor route fails: Digi-Key 0 (2026-09-29T02:53:04Z)",
+      "alternates": [
+       "AM26LV32EIDR",
+       "DS34LV86TMX/NOPB"
+      ],
+      "driver_in_shared": "none (GPIO into the PIO decoder; no decoder program in the tree)",
+      "reason": "A second maker on rank 1's footprint; ranked third for Digi-Key 0, a -9 to +13 V input rating with 1 V above 12 V, 55 ns maximum delay and 20 ns part-to-part skew",
+      "second_source_route": "alternate",
+      "second_source_part": "AM26LV32EIDR"
+     }
+    ],
+    "dropped": [
+     {
+      "part": "AM26LV32EIPWR",
+      "maker": "Texas Instruments",
+      "reason": "not recorded: rank 1's die in TSSOP-16 with the same figures (FU-C1 readings: JLCPCB C404024 48394, Digi-Key 41613); fourth, below the three recorded, because no second maker on its footprint was checked; not re-read"
+     },
+     {
+      "part": "AM26LV32IDR, AM26LV32CD, AM26LV32INSR",
+      "maker": "Texas Instruments",
+      "reason": "input withstand: VI -4 to 8 V absolute maximum (SLLS202H 6.1, FU-C1 re-rank reading, confirmed by the FU-C1 P4 datasheet verifier; not re-read), under 12 V"
+     },
+     {
+      "part": "MAX3280EAUK+T",
+      "maker": "Analog Devices (Maxim)",
+      "reason": "not recorded: a single receiver taking 3 packages a board, with 12 V at 0.5 V under its +12.5 V absolute maximum (T4 re-rank reading; not re-read)"
+     },
+     {
+      "part": "AM26C32IDR, ST26C32ABDR",
+      "maker": "Texas Instruments, STMicroelectronics",
+      "reason": "not recorded: 5 V receivers that meet 'supply' only behind a translator R11 does not select (T4 re-rank readings; not re-read)"
+     },
+     {
+      "part": "MAX3097EEEE+T, MAX3096ESE+T, ISL32173EIVZ, SN65LBC175ADR, SN65LBC175DR, SN65LBC175DWR",
+      "maker": "Analog Devices (Maxim), Renesas, Texas Instruments",
+      "reason": "fail rule 4 on the FU-C1 P2 readings (JLCPCB 39, 0, 47, 11, 2, 10; 2026-09-29T02:58:51Z to 02:59:09Z); not re-read"
+     },
+     {
+      "part": "SN75175DR",
+      "maker": "Texas Instruments",
+      "reason": "channel skew and delay over temperature not stated (T4 re-rank reading of SLLS145D; not re-read)"
+     }
+    ]
+   },
+   {
+    "function": "encoder decode",
+    "requirements": [
+     {
+      "name": "count rate",
+      "value": "20 Mcounts/s (5 MHz on each of A and B, RS-422) and 4 Mcounts/s (1 MHz, single-ended)",
+      "source": "V227; F4; hardware/docs/IOBoard.md:446"
+     },
+     {
+      "name": "direction",
+      "value": "quadrature decoding with direction from A and B",
+      "source": "hardware/docs/IOBoard.md:445 (servo output shaft or motor shaft); V209"
+     },
+     {
+      "name": "index",
+      "value": "the index pulse captured on the coprocessor's timebase",
+      "source": "hardware/docs/IOBoard.md:71, :444"
+     },
+     {
+      "name": "resources",
+      "value": "PIO state machines, instruction words, DMA channels, PWM slices and GPIO reported for P5",
+      "source": "hardware/docs/IOBoard.md:446; hardware/docs/Research.md:289"
+     },
+     {
+      "name": "external decoder maker",
+      "value": "an external decoder only from an allowlisted maker",
+      "source": "sourcing rule 2; S1"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "maker": "Raspberry Pi (RP2350 datasheet); counts as Raspberry Pi (S1)",
+      "lcsc": "C39843328",
+      "package": "QFN-80 10 x 10 mm",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: the board's one microcontroller (hardware/docs/IOBoard.md:103); the decoder is two of its PIO state machines; no part and no placement beyond the RP2354B already counted",
+      "held": 20,
+      "requirements": [
+       {
+        "name": "count rate",
+        "required": "20 Mcounts/s (5 MHz on each of A and B, RS-422) and 4 Mcounts/s (1 MHz, single-ended)",
+        "datasheet": "not a datasheet figure; derived from datasheet timing and not run on hardware. Each state machine executes one instruction a system clock cycle unless it stalls (11.2.2); clk_sys up to 150 MHz. quad_edge.pio (19 words) runs on one state machine per channel: WAIT for this channel's edge, JMP PIN on the other channel, JMP X-- or JMP Y--, MOV ISR, MOV RXFIFO[i]; at most 6 cycles (40 ns) an edge against 100 ns (15 cycles) between edges at 5 MHz a channel, 80 ns (12 cycles) at 40/60 duty; 2 state machines give 20 Mcounts/s. The cycle model decoded 40,000 counts at 5 MHz without error for A-to-B spacing 30 to 70 ns, duty 40 to 60 %, 3 ns jitter and 200 reversals, and 1 MHz with 50 reversals",
+        "pass": true,
+        "source": "RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T06:44:38Z, sections 11.2.2 and 11.4; /home/claude/rcbench-research/round1/scratch/FU-C2/P2-R11/quad_edge.pio (copy of the FU-C1 re-rank program, assembled by pioasm 2.3.0 to 19 words identical to FU-C1's quad_edge.hex) and quad_sim.py, run 2026-09-29T06:46:01Z"
+       },
+       {
+        "name": "direction",
+        "required": "quadrature decoding with direction from A and B",
+        "datasheet": "on each edge of its channel a state machine samples the other channel with JMP PIN (EXECCTRL_JMP_PIN): low counts in X, high in Y, reversed on the other edge; net count = Y(A) - X(A) + X(B) - Y(B) modulo 2^32, which matched the true count through reversals in the model",
+        "pass": true,
+        "source": "RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T06:44:38Z, section 11.4.2; /home/claude/rcbench-research/round1/scratch/FU-C2/P2-R11/quad_edge.pio (copy of the FU-C1 re-rank program, assembled by pioasm 2.3.0 to 19 words identical to FU-C1's quad_edge.hex) and quad_sim.py, run 2026-09-29T06:46:01Z"
+       },
+       {
+        "name": "index",
+        "required": "the index pulse captured on the coprocessor's timebase",
+        "datasheet": "the index I on its own GPIO, captured by a GPIO edge interrupt reading the 64-bit microsecond system timer (12.8.1), or counted on a PWM slice's B pin in edge-sensitive mode (12.5.2.5); both on the RP2354B's own clock",
+        "pass": true,
+        "source": "RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T06:44:38Z, sections 12.5.2.5 and 12.8.1"
+       },
+       {
+        "name": "resources",
+        "required": "PIO state machines, instruction words, DMA channels, PWM slices and GPIO reported for P5",
+        "datasheet": "2 state machines in one PIO block running one copy of the 19-word program (13 of the block's 32 words left, fewer than the 16 a bidirectional DShot port takes); the two state machines' RX FIFOs in put mode (FJOIN_RX_PUT), read at any time through RXFn_PUTGET0 and RXFn_PUTGET1; 0 DMA channels; A and B on any 2 GPIO inside the block's 32-GPIO window, I on 1 more GPIO; 0 PWM slices, or 1 if the index is counted",
+        "pass": true,
+        "source": "RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T06:44:38Z, section 11.4 (FJOIN_RX_PUT, RXF0_PUTGET0); /home/claude/rcbench-research/round1/scratch/FU-C2/P2-R11/quad_edge.pio (copy of the FU-C1 re-rank program, assembled by pioasm 2.3.0 to 19 words identical to FU-C1's quad_edge.hex) and quad_sim.py, run 2026-09-29T06:46:01Z"
+       },
+       {
+        "name": "external decoder maker",
+        "required": "an external decoder only from an allowlisted maker",
+        "datasheet": "none: no external decoder; the decoder is the RP2354B's PIO. No quadrature decoder from an allowlisted maker is in the jlcparts copy (the LS7366R, LS7184, LS7183 and LS7083 rows are LSI/CSI)",
+        "pass": true,
+        "source": "jlcparts copy 2026-09-14 (read-only search by the FU-C1 P2; the dropped list below)"
+       }
+      ],
+      "jlcpcb": "stockCount 2980, canPresaleNumber 2823, componentLibraryType expand, price USD 1.5335 a part at the 1 break (need 5), read 2026-09-29T06:42:36Z, vendors.py jlcpcb C39843328 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "RP2354B is not a Digi-Key part number (HTTP 404, 2026-09-29T03:38:34Z, cached, vendors.py digikey RP2354B); the orderable SC1512(13)-A4, Raspberry Pi, which JLCPCB's C39843328 carries as its erpComponentName: stock_available 3560, manufacturer lead time 22 weeks, ProductStatus Active, read 2026-09-29T03:48:29Z (cached: true, a reading of this UTC day), vendors.py digikey 'SC1512(13)-A4' (https://api.digikey.com/products/v4/search/SC1512%2813%29-A4/productdetails)",
+      "gate": "held part: 20 in the personal library (inventory 2026-09-25) >= 5 boards x 1 = 5: pass by rule 6. Also need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 2980 >= 50 and canPresaleNumber 2823 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status in production: https://www.raspberrypi.com/products/rp2350/ lists 'RP2354B 48 GPIO 10x10 QFN 80 pin Stacked 2MB flash' and states under Obsolescence 'RP2350 will remain in production until at least January 2045', read 2026-09-29T06:44:16Z; longevity: until at least January 2045 (same page); first datasheet release 8 August 2024 (release history of the RP2350 datasheet build-date 2025-07-29, read 06:44:38Z), over 12 months; change notices: PCN 28 moves production to stepping A4 (R1's reading, FU-A2/003-P2-R1.json; not re-read); distributor: Digi-Key SC1512(13)-A4 ProductStatus Active (2026-09-29T03:48:29Z, cached); JLCPCB's API carries no status. The microcontroller is R1's fixed input and selection; this record adds no part",
+      "second_source": "second vendor: Digi-Key SC1512(13)-A4 3560 >= 50 (2026-09-29T03:48:29Z); held 20 in the personal library",
+      "alternates": [],
+      "driver_in_shared": "none: no decoder program in the tree; quad_edge.pio in the scratch directories is not committed",
+      "reason": "The only candidate: two PIO state machines decode 20 Mcounts/s at 6 of the 15 cycles an edge allows at 150 MHz, by the datasheet's instruction timing and a cycle model re-run in this task; no external decoder from an allowlisted maker is in the jlcparts copy. Not run on hardware; the program is not in the tree",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "LS7366R-S, LS7366R-TS, LS7184N-S, LS7183N-S, LS7083N-S",
+      "maker": "LSI Computer Systems (LSI/CSI)",
+      "reason": "maker not on S1 (rule 2)"
+     }
+    ]
+   },
+   {
+    "function": "rotation from ESC",
+    "requirements": [
+     {
+      "name": "source",
+      "value": "the electrical speed from the bidirectional DShot reply period, divided by MOTOR_POLES / 2; MOTOR_POLES even, 2 to 42; 0 gives no speed",
+      "source": "hardware/docs/IOBoard.md:440"
+     },
+     {
+      "name": "staleness",
+      "value": "a reply older than 200 ms is not reported; DShot frames stop at the disarm",
+      "source": "hardware/docs/IOBoard.md:440, :489; firmware/iomcu/src/main.c:663"
+     },
+     {
+      "name": "hardware",
+      "value": "the reply reaches an RP2354B pin through R4's gated buffer and is received by the RP2354B's PIO; R11 adds no part of its own",
+      "source": "hardware/docs/Research.md:282 (R4), :359 (P5 row: bidirectional DShot takes two state machines in one block)"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "maker": "Raspberry Pi (RP2350 datasheet); counts as Raspberry Pi (S1)",
+      "lcsc": "C39843328",
+      "package": "QFN-80 10 x 10 mm",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: the board's one microcontroller (hardware/docs/IOBoard.md:103); the DShot reply is received by its PIO and turned into rpm by its firmware; no part and no placement beyond the RP2354B already counted",
+      "held": 20,
+      "requirements": [
+       {
+        "name": "source",
+        "required": "the electrical speed from the bidirectional DShot reply period, divided by MOTOR_POLES / 2; MOTOR_POLES even, 2 to 42; 0 gives no speed",
+        "datasheet": "the coprocessor divides the electrical rpm of the DShot reply by MOTOR_POLES / 2 and reports no speed at MOTOR_POLES 0 (firmware/iomcu/src/main.c:700-707; dshot_rpm in shared/dshot/include/dshot.h:195; erpm from the reply period in shared/dshot/dshot_telem.c:120-129); the reply is received by a PIO state machine",
+        "pass": true,
+        "source": "checkout e13f5f60d2e5, read 2026-09-29T06:46:24Z; RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T06:44:38Z, section 11"
+       },
+       {
+        "name": "staleness",
+        "required": "a reply older than 200 ms is not reported; DShot frames stop at the disarm",
+        "datasheet": "RPM_STALE_MS 200 (firmware/iomcu/src/main.c:663): a speed older than 200 ms is not reported",
+        "pass": true,
+        "source": "checkout e13f5f60d2e5, firmware/iomcu/src/main.c:663, read 2026-09-29T06:46:24Z"
+       },
+       {
+        "name": "hardware",
+        "required": "the reply reaches an RP2354B pin through R4's gated buffer and is received by the RP2354B's PIO; R11 adds no part of its own",
+        "datasheet": "bidirectional DShot claims a second state machine in the transmitter's block (firmware/iomcu/src/out_dshot.h:35); the RP2350 has 3 PIO blocks of 4 state machines; the line reaches the pin through R4's buffer. Bidirectional DShot has driven nothing on hardware (hardware/docs/IOBoard.md:440)",
+        "pass": true,
+        "source": "checkout e13f5f60d2e5, read 2026-09-29T06:46:24Z; RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T06:44:38Z, section 11"
+       }
+      ],
+      "jlcpcb": "stockCount 2980, canPresaleNumber 2823, componentLibraryType expand, price USD 1.5335 a part at the 1 break (need 5), read 2026-09-29T06:42:36Z, vendors.py jlcpcb C39843328 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "RP2354B is not a Digi-Key part number (HTTP 404, 2026-09-29T03:38:34Z, cached, vendors.py digikey RP2354B); the orderable SC1512(13)-A4, Raspberry Pi, which JLCPCB's C39843328 carries as its erpComponentName: stock_available 3560, manufacturer lead time 22 weeks, ProductStatus Active, read 2026-09-29T03:48:29Z (cached: true, a reading of this UTC day), vendors.py digikey 'SC1512(13)-A4' (https://api.digikey.com/products/v4/search/SC1512%2813%29-A4/productdetails)",
+      "gate": "held part: 20 in the personal library (inventory 2026-09-25) >= 5 boards x 1 = 5: pass by rule 6. Also need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 2980 >= 50 and canPresaleNumber 2823 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status in production: https://www.raspberrypi.com/products/rp2350/ lists 'RP2354B 48 GPIO 10x10 QFN 80 pin Stacked 2MB flash' and states under Obsolescence 'RP2350 will remain in production until at least January 2045', read 2026-09-29T06:44:16Z; longevity: until at least January 2045 (same page); first datasheet release 8 August 2024 (release history of the RP2350 datasheet build-date 2025-07-29, read 06:44:38Z), over 12 months; change notices: PCN 28 moves production to stepping A4 (R1's reading, FU-A2/003-P2-R1.json; not re-read); distributor: Digi-Key SC1512(13)-A4 ProductStatus Active (2026-09-29T03:48:29Z, cached); JLCPCB's API carries no status. The microcontroller is R1's fixed input and selection; this record adds no part",
+      "second_source": "second vendor: Digi-Key SC1512(13)-A4 3560 >= 50 (2026-09-29T03:48:29Z); held 20 in the personal library",
+      "alternates": [],
+      "driver_in_shared": "shared/dshot/dshot_telem.c and shared/dshot/include/dshot.h (dshot_rpm)",
+      "reason": "The only part the function takes: the RP2354B receives the DShot reply in its PIO and computes the speed; R4's gated buffer carries the line. R11 adds no part",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": []
+   },
+   {
+    "function": "rotation inputs",
+    "requirements": [
+     {
+      "name": "highest shaft speed",
+      "value": "65,535 rpm: 1,092 Hz once a turn, 22,937 Hz electrical at 21 pole pairs",
+      "source": "V212"
+     },
+     {
+      "name": "lowest shaft speed",
+      "value": "10 rpm by at least one input (optical index, magnetic pickup or encoder), the coast-down after a disarm included; the phase-wire clip not below 500 rpm",
+      "source": "V213; hardware/docs/IOBoard.md:489"
+     },
+     {
+      "name": "inputs",
+      "value": "optical index, magnetic pickup, phase-wire clip, ESC telemetry and encoder, each on its own front end and GPIO",
+      "source": "hardware/docs/IOBoard.md:71; V211"
+     },
+     {
+      "name": "edge timing",
+      "value": "each input's edges timed on the coprocessor, over periods from 43.6 µs (22,937 Hz) to 6 s (10 rpm once a turn)",
+      "source": "V212; V213; hardware/docs/IOBoard.md:450"
+     },
+     {
+      "name": "hardware",
+      "value": "the front ends of the functions optical index, magnetic pickup, phase-wire clip and encoder input, each into an RP2354B GPIO; the RP2354B times them",
+      "source": "hardware/docs/IOBoard.md:441-445"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "maker": "Raspberry Pi (RP2350 datasheet); counts as Raspberry Pi (S1)",
+      "lcsc": "C39843328",
+      "package": "QFN-80 10 x 10 mm",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: the board's one microcontroller (hardware/docs/IOBoard.md:103); it times every rotation input on its own clock; no part and no placement beyond the RP2354B already counted",
+      "held": 20,
+      "requirements": [
+       {
+        "name": "highest shaft speed",
+        "required": "65,535 rpm: 1,092 Hz once a turn, 22,937 Hz electrical at 21 pole pairs",
+        "datasheet": "each input edge on a GPIO, counted on a PWM slice's B pin in edge-sensitive mode (12.5.2.5) or sampled by a PIO state machine at one instruction a clk_sys cycle, up to 150 MHz (11.2.2); the system timer counts 1 us (12.8.1). 1,092 Hz is a 915.5 us period and 22,937 Hz a 43.6 us period, both many timer ticks and PIO cycles long",
+        "pass": true,
+        "source": "RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T06:44:38Z, sections 11.2.2, 12.5.2.5 and 12.8.1"
+       },
+       {
+        "name": "lowest shaft speed",
+        "required": "10 rpm by at least one input (optical index, magnetic pickup or encoder), the coast-down after a disarm included; the phase-wire clip not below 500 rpm",
+        "datasheet": "10 rpm once a turn is a 6 s period; the system timer is a 64-bit counter at 1 us that 'effectively cannot overflow' (12.8.1). The magnetic pickup's latch, the optical index and the encoder hold their states at standstill, so a slow edge is timed",
+        "pass": true,
+        "source": "RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T06:44:38Z, section 12.8.1"
+       },
+       {
+        "name": "inputs",
+        "required": "optical index, magnetic pickup, phase-wire clip, ESC telemetry and encoder, each on its own front end and GPIO",
+        "datasheet": "48 GPIO on the RP2354B; R11 takes 6 (report 'R11 pins'), one for each input's front end, and ESC telemetry arrives on the DShot line of R4",
+        "pass": true,
+        "source": "RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T06:44:38Z, chapter 1 (RP2350B: 48 GPIO)"
+       },
+       {
+        "name": "edge timing",
+        "required": "each input's edges timed on the coprocessor, over periods from 43.6 µs (22,937 Hz) to 6 s (10 rpm once a turn)",
+        "datasheet": "periods from 43.6 us to 6 s on the 1 us system timer, or in PIO cycles of 6.7 ns at 150 MHz; all inputs on the one coprocessor clock",
+        "pass": true,
+        "source": "RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T06:44:38Z, sections 11.2.2 and 12.8.1"
+       },
+       {
+        "name": "hardware",
+        "required": "the front ends of the functions optical index, magnetic pickup, phase-wire clip and encoder input, each into an RP2354B GPIO; the RP2354B times them",
+        "datasheet": "the front ends of the functions optical index, magnetic pickup, phase-wire clip and encoder input drive RP2354B GPIO; the RP2354B adds no part",
+        "pass": true,
+        "source": "this return's functions; RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T06:44:38Z"
+       }
+      ],
+      "jlcpcb": "stockCount 2980, canPresaleNumber 2823, componentLibraryType expand, price USD 1.5335 a part at the 1 break (need 5), read 2026-09-29T06:42:36Z, vendors.py jlcpcb C39843328 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "RP2354B is not a Digi-Key part number (HTTP 404, 2026-09-29T03:38:34Z, cached, vendors.py digikey RP2354B); the orderable SC1512(13)-A4, Raspberry Pi, which JLCPCB's C39843328 carries as its erpComponentName: stock_available 3560, manufacturer lead time 22 weeks, ProductStatus Active, read 2026-09-29T03:48:29Z (cached: true, a reading of this UTC day), vendors.py digikey 'SC1512(13)-A4' (https://api.digikey.com/products/v4/search/SC1512%2813%29-A4/productdetails)",
+      "gate": "held part: 20 in the personal library (inventory 2026-09-25) >= 5 boards x 1 = 5: pass by rule 6. Also need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 2980 >= 50 and canPresaleNumber 2823 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status in production: https://www.raspberrypi.com/products/rp2350/ lists 'RP2354B 48 GPIO 10x10 QFN 80 pin Stacked 2MB flash' and states under Obsolescence 'RP2350 will remain in production until at least January 2045', read 2026-09-29T06:44:16Z; longevity: until at least January 2045 (same page); first datasheet release 8 August 2024 (release history of the RP2350 datasheet build-date 2025-07-29, read 06:44:38Z), over 12 months; change notices: PCN 28 moves production to stepping A4 (R1's reading, FU-A2/003-P2-R1.json; not re-read); distributor: Digi-Key SC1512(13)-A4 ProductStatus Active (2026-09-29T03:48:29Z, cached); JLCPCB's API carries no status. The microcontroller is R1's fixed input and selection; this record adds no part",
+      "second_source": "second vendor: Digi-Key SC1512(13)-A4 3560 >= 50 (2026-09-29T03:48:29Z); held 20 in the personal library",
+      "alternates": [],
+      "driver_in_shared": "none: no rotation-input timing in shared/ (settings.c carries only SET_OPTICAL_EN and SET_OPTICAL_PIN)",
+      "reason": "The only part the function takes beyond the front ends of the other R11 functions: the RP2354B times every input on one clock, from 43.6 us to 6 s",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": []
+   },
+   {
+    "function": "BENCH rpm source",
+    "requirements": [
+     {
+      "name": "selection",
+      "value": "the one input a panel setting picks fills the BENCH rpm register and feeds the motor stall action",
+      "source": "V211"
+     },
+     {
+      "name": "register",
+      "value": "1 rpm a count, saturating at 65,535, one valid bit",
+      "source": "hardware/docs/IOBoard.md:430, :432; shared/bench/bench_state.c:21-28"
+     },
+     {
+      "name": "hardware",
+      "value": "no selector part: every input keeps its own front end and GPIO, and the coprocessor makes the selection",
+      "source": "V211"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "maker": "Raspberry Pi (RP2350 datasheet); counts as Raspberry Pi (S1)",
+      "lcsc": "C39843328",
+      "package": "QFN-80 10 x 10 mm",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: the board's one microcontroller (hardware/docs/IOBoard.md:103); its firmware makes the selection; no part and no placement beyond the RP2354B already counted",
+      "held": 20,
+      "requirements": [
+       {
+        "name": "selection",
+        "required": "the one input a panel setting picks fills the BENCH rpm register and feeds the motor stall action",
+        "datasheet": "the coprocessor's firmware reads the panel setting and fills the register; the setting that picks the input is not written in the tree (shared/settings/settings.c:99-104 carries 'Optical tacho' and 'Tacho pin' only), firmware work",
+        "pass": true,
+        "source": "checkout e13f5f60d2e5, shared/settings/settings.c:99-104, read 2026-09-29T06:46:24Z"
+       },
+       {
+        "name": "register",
+        "required": "1 rpm a count, saturating at 65,535, one valid bit",
+        "datasheet": "LINK_BN_RPM (shared/link/include/link_pages.h:233) filled through to_u16, which saturates at 65,535 (shared/bench/bench_state.c:21-28, :82); valid bit LINK_BN_RPM_OK set by the coprocessor (firmware/iomcu/src/main.c:706)",
+        "pass": true,
+        "source": "checkout e13f5f60d2e5, read 2026-09-29T06:46:24Z"
+       },
+       {
+        "name": "hardware",
+        "required": "no selector part: every input keeps its own front end and GPIO, and the coprocessor makes the selection",
+        "datasheet": "no selector part: each input on its own RP2354B GPIO (48 GPIO)",
+        "pass": true,
+        "source": "RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T06:44:38Z, chapter 1"
+       }
+      ],
+      "jlcpcb": "stockCount 2980, canPresaleNumber 2823, componentLibraryType expand, price USD 1.5335 a part at the 1 break (need 5), read 2026-09-29T06:42:36Z, vendors.py jlcpcb C39843328 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "RP2354B is not a Digi-Key part number (HTTP 404, 2026-09-29T03:38:34Z, cached, vendors.py digikey RP2354B); the orderable SC1512(13)-A4, Raspberry Pi, which JLCPCB's C39843328 carries as its erpComponentName: stock_available 3560, manufacturer lead time 22 weeks, ProductStatus Active, read 2026-09-29T03:48:29Z (cached: true, a reading of this UTC day), vendors.py digikey 'SC1512(13)-A4' (https://api.digikey.com/products/v4/search/SC1512%2813%29-A4/productdetails)",
+      "gate": "held part: 20 in the personal library (inventory 2026-09-25) >= 5 boards x 1 = 5: pass by rule 6. Also need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 2980 >= 50 and canPresaleNumber 2823 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status in production: https://www.raspberrypi.com/products/rp2350/ lists 'RP2354B 48 GPIO 10x10 QFN 80 pin Stacked 2MB flash' and states under Obsolescence 'RP2350 will remain in production until at least January 2045', read 2026-09-29T06:44:16Z; longevity: until at least January 2045 (same page); first datasheet release 8 August 2024 (release history of the RP2350 datasheet build-date 2025-07-29, read 06:44:38Z), over 12 months; change notices: PCN 28 moves production to stepping A4 (R1's reading, FU-A2/003-P2-R1.json; not re-read); distributor: Digi-Key SC1512(13)-A4 ProductStatus Active (2026-09-29T03:48:29Z, cached); JLCPCB's API carries no status. The microcontroller is R1's fixed input and selection; this record adds no part",
+      "second_source": "second vendor: Digi-Key SC1512(13)-A4 3560 >= 50 (2026-09-29T03:48:29Z); held 20 in the personal library",
+      "alternates": [],
+      "driver_in_shared": "shared/bench/bench_state.c (the BENCH register encoding); the selection itself is not written",
+      "reason": "The only part the function takes: the selection is the coprocessor's firmware, with each input on its own GPIO; no selector part",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": []
+   },
+   {
+    "function": "servo measured position",
+    "requirements": [
+     {
+      "name": "sensor",
+      "value": "the F4 encoder mounted on the servo output shaft",
+      "source": "V209"
+     },
+     {
+      "name": "resolution and travel",
+      "value": "not applicable: no sensor other than the F4 encoder",
+      "source": "V210"
+     },
+     {
+      "name": "scale on the link",
+      "value": "the servo screen takes the position as a pulse width in µs",
+      "source": "shared/ui/include/servo_screen.h:67"
+     },
+     {
+      "name": "hardware",
+      "value": "the F4 encoder's A, B and I through the receiver of the function encoder input into the RP2354B's PIO decoder of the function encoder decode",
+      "source": "V209; hardware/docs/IOBoard.md:445-446, :454"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "RP2354B",
+      "maker": "Raspberry Pi (RP2350 datasheet); counts as Raspberry Pi (S1)",
+      "lcsc": "C39843328",
+      "package": "QFN-80 10 x 10 mm",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: the board's one microcontroller (hardware/docs/IOBoard.md:103); it decodes the F4 encoder and converts the count to a position; no part and no placement beyond the RP2354B already counted",
+      "held": 20,
+      "requirements": [
+       {
+        "name": "sensor",
+        "required": "the F4 encoder mounted on the servo output shaft",
+        "datasheet": "the F4 encoder's A, B and I reach the RP2354B through the receiver of the function encoder input",
+        "pass": true,
+        "source": "checkout e13f5f60d2e5, hardware/docs/Research.md:532 (F4), hardware/docs/IOBoard.md:445, read 2026-09-29T06:46:24Z"
+       },
+       {
+        "name": "resolution and travel",
+        "required": "not applicable: no sensor other than the F4 encoder",
+        "datasheet": "not applicable: the F4 encoder gives the position (V209)",
+        "pass": true,
+        "source": "V209, V210"
+       },
+       {
+        "name": "scale on the link",
+        "required": "the servo screen takes the position as a pulse width in µs",
+        "datasheet": "the firmware maps the decoded count to a pulse width in us for servo_screen_feedback(uint16_t position_us, ...) (shared/ui/include/servo_screen.h:67); the mapping is not written in the tree",
+        "pass": true,
+        "source": "checkout e13f5f60d2e5, shared/ui/include/servo_screen.h:66-67, read 2026-09-29T06:46:24Z"
+       },
+       {
+        "name": "hardware",
+        "required": "the F4 encoder's A, B and I through the receiver of the function encoder input into the RP2354B's PIO decoder of the function encoder decode",
+        "datasheet": "the PIO decoder of the function encoder decode: 2 state machines running quad_edge.pio, 20 Mcounts/s derived",
+        "pass": true,
+        "source": "RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T06:44:38Z, section 11; /home/claude/rcbench-research/round1/scratch/FU-C2/P2-R11/quad_edge.pio (copy of the FU-C1 re-rank program, assembled by pioasm 2.3.0 to 19 words identical to FU-C1's quad_edge.hex) and quad_sim.py, run 2026-09-29T06:46:01Z"
+       }
+      ],
+      "jlcpcb": "stockCount 2980, canPresaleNumber 2823, componentLibraryType expand, price USD 1.5335 a part at the 1 break (need 5), read 2026-09-29T06:42:36Z, vendors.py jlcpcb C39843328 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "RP2354B is not a Digi-Key part number (HTTP 404, 2026-09-29T03:38:34Z, cached, vendors.py digikey RP2354B); the orderable SC1512(13)-A4, Raspberry Pi, which JLCPCB's C39843328 carries as its erpComponentName: stock_available 3560, manufacturer lead time 22 weeks, ProductStatus Active, read 2026-09-29T03:48:29Z (cached: true, a reading of this UTC day), vendors.py digikey 'SC1512(13)-A4' (https://api.digikey.com/products/v4/search/SC1512%2813%29-A4/productdetails)",
+      "gate": "held part: 20 in the personal library (inventory 2026-09-25) >= 5 boards x 1 = 5: pass by rule 6. Also need 5 boards x 1 = 5; threshold max(5 x 5, 50) = 50; stockCount 2980 >= 50 and canPresaleNumber 2823 >= 0: pass (rule 4)",
+      "lifecycle": "manufacturer status in production: https://www.raspberrypi.com/products/rp2350/ lists 'RP2354B 48 GPIO 10x10 QFN 80 pin Stacked 2MB flash' and states under Obsolescence 'RP2350 will remain in production until at least January 2045', read 2026-09-29T06:44:16Z; longevity: until at least January 2045 (same page); first datasheet release 8 August 2024 (release history of the RP2350 datasheet build-date 2025-07-29, read 06:44:38Z), over 12 months; change notices: PCN 28 moves production to stepping A4 (R1's reading, FU-A2/003-P2-R1.json; not re-read); distributor: Digi-Key SC1512(13)-A4 ProductStatus Active (2026-09-29T03:48:29Z, cached); JLCPCB's API carries no status. The microcontroller is R1's fixed input and selection; this record adds no part",
+      "second_source": "second vendor: Digi-Key SC1512(13)-A4 3560 >= 50 (2026-09-29T03:48:29Z); held 20 in the personal library",
+      "alternates": [],
+      "driver_in_shared": "none: no count-to-position mapping in shared/ (servo_screen_feedback takes the result)",
+      "reason": "The only part the function takes beyond the encoder input's receiver: the RP2354B decodes the F4 encoder on the servo output shaft and converts the count to microseconds for the servo screen",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": []
+   }
+  ],
+  "report": [
+   {
+    "figure": "encoder decoding",
+    "value": "Two PIO state machines in one RP2354B PIO block, one per channel, run one copy of quad_edge.pio (19 instruction words); no external decoder, no DMA channel, no PWM slice for A and B. Each edge takes at most 6 clk_sys cycles (40 ns at 150 MHz) against 100 ns between edges at 5 MHz a channel (80 ns at 40/60 duty), so 2 state machines decode 20 Mcounts/s; 1 MHz single-ended is 4 Mcounts/s. A cycle model with the 2-flip-flop input synchroniser decodes 40,000 counts at 5 MHz without error for A-to-B spacing 30 to 70 ns, duty 40 to 60 %, 3 ns jitter and 200 reversals, and 1 MHz with 50 reversals; it holds down to 14 ns of A-to-B spacing and fails at 13 ns (AM26LV32EIDR adds 9 ns maximum part-to-part skew to the 50 ns quadrature spacing). The counts sit in the RX FIFO in put mode, read at any time; net = Y(A) - X(A) + X(B) - Y(B) modulo 2^32; a read while the shaft turns can mix counts a few edges apart, and the error does not accumulate. The index I is captured by a GPIO edge interrupt on the 1 us system timer or counted on a PWM slice's B pin. pico-examples' one-state-machine quadrature_encoder reads only sysclk / 10 = 15 Msteps/s. No quadrature decoder from an allowlisted maker is in the jlcparts copy. Derived from the datasheet's instruction timing and the model; not run on hardware; the program is not in the tree",
+    "source": "/home/claude/rcbench-research/round1/scratch/FU-C2/P2-R11/quad_edge.pio (copy of the FU-C1 re-rank program, assembled by pioasm 2.3.0 to 19 words identical to FU-C1's quad_edge.hex) and quad_sim.py, run 2026-09-29T06:46:01Z; RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T06:44:38Z, sections 11.2.2, 11.4, 11.5.6.3, 12.5.2.5, 12.8.1; pico-examples quadrature_encoder.pio (FU-C1 P2 reading, 2026-09-29T02:54:59Z)"
+   },
+   {
+    "figure": "encoder decode resources for P5",
+    "value": "2 PIO state machines in one block; 19 of its 32 instruction words, 13 left, so no bidirectional DShot port (16 words) fits beside it in that block; the two state machines' RX FIFOs in put mode (FJOIN_RX_PUT), each keeping a 4-entry TX FIFO; 0 DMA channels; A and B on any 2 GPIO inside the block's 32-GPIO window; the index on 1 more GPIO; 0 PWM slices, or 1 if the index is counted on a B pin; clk_sys at least 75 MHz at 5 MHz a channel with 40/60 duty (6 cycles in 80 ns), the pico-sdk default being 150 MHz",
+    "source": "/home/claude/rcbench-research/round1/scratch/FU-C2/P2-R11/quad_edge.pio (copy of the FU-C1 re-rank program, assembled by pioasm 2.3.0 to 19 words identical to FU-C1's quad_edge.hex) and quad_sim.py, run 2026-09-29T06:46:01Z; RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com), read 2026-09-29T06:44:38Z, section 11.4; checkout e13f5f60d2e5: hardware/docs/Research.md:359 (P5 row)"
+   },
+   {
+    "figure": "R11 pins",
+    "value": "6 GPIO: encoder A, B and I from one receiver whatever the jumper; the optical index comparator; the magnetic latch; the phase-wire comparator. The accelerometer takes 1 converter channel for the one in-plane axis (R10's V201; V206 adds a second for the static angle), on R10's converter",
+    "source": "this return's functions; checkout e13f5f60d2e5: hardware/docs/IOBoard.md:451; results FU-C1/003-P2-R10.json (V201)"
+   },
+   {
+    "figure": "V225 budget split",
+    "value": "1 degree at 65,535 rpm is 2.543 us for the whole chain. Converter: 30 ps typical aperture jitter (R10's ADCS7476AIMFX/NOPB, confirmed by the FU-C1 P4 datasheet verifier). Index comparator: 55 ns maximum over temperature (TLV3201AIDBVR; TLV3501AIDBVR 12 ns, TLV3601DBVR 4.5 ns). The remaining 2.488 us is split equally: 1.244 us for the accelerometer and 1.244 us for the optical index sensor. The split is this return's; the owner states none. At 10,000 rpm the whole chain has 16.7 us",
+    "source": "V225 (owner, 2026-09-28, hardware/docs/Research.md:785) and the owner's decision on V225 of 2026-09-29 carried in this follow-up task's items (not on the page at e13f5f6); R10 selection ADCS7476AIMFX/NOPB (selection.json, FU-C1 P4 datasheet verifier: tAJ 30 ps typical, SNAS192G 6.5); TLV3201 SBOS561C 6.6"
+   },
+   {
+    "figure": "accelerometer delay variation",
+    "value": "Derived as V225 (owner, 2026-09-29) sets, from the output pole RFILT x CX: delay = atan(2 pi f R C) / (2 pi f) at 1,092 Hz, at the stated RFILT minimum and maximum. ADXL316WBCSZ (RFILT 27 to 37 kOhm): 1.000 us (0.393 degrees) with 100 pF on the node; 124.5 pF keeps the 1.244 us share; 22.9 us (8.99 degrees) with the recommended minimum CX of 4.7 nF, which holds 1 degree alone only up to 3,557 rpm. ADXL326BCPZ-RL7 (27.2 to 36.8 kOhm): 0.960 us with 100 pF; 129.7 pF keeps the share; 21.9 us (8.63 degrees) at 4.7 nF. AD22035Z (24 to 40 kOhm, stated CX range 0.002 to 10 uF): 26.8 us (10.5 degrees) at its 2 nF minimum; 77.8 pF would keep the share, outside the stated range. The RFILT spread is stated at 25 °C only; no temperature coefficient of RFILT and no delay, phase or Q of the internal response (1,600 Hz typical with no filter, 4.2 or 5.5 kHz resonance) is stated, so those are not derived. Balance.md notes that a constant delay cancels because the trial run measures the whole chain; the RFILT spread between units is such a constant for one unit",
+    "source": "ADXL316 data sheet Rev. C (5/2019), https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Table 1 and page 11; ADXL326 data sheet Rev. 0 (8/2009), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL326.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Table 1; ADXL103/ADXL203 data sheet Rev. F (covers AD22035/AD22037), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL103_203.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), Table 1; checkout e13f5f60d2e5: docs/Balance.md:65-69"
+   },
+   {
+    "figure": "accelerometer output node",
+    "value": "The chosen 100 pF on XOUT is the whole node: CX, the lead and the converter input. Both datasheets recommend at least 4.7 nF for CX 'in all cases' and give no reason; 100 pF is 47 times below it, and the output's behaviour there is not stated. The 2 m lead's capacitance is not known (cable round 2); a lead above what is left of the 100 pF needs a buffer on the sensor board, which no function selects. The owner decides whether the node below the recommendation is accepted and whether R11 selects that buffer",
+    "source": "ADXL316 data sheet Rev. C (5/2019), https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), page 11; ADXL326 data sheet Rev. 0 (8/2009), https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL326.pdf, read 2026-09-29T06:34:44Z (vendors.py fetch, safari), page 11; V222"
+   },
+   {
+    "figure": "index front end delay variation",
+    "value": "No optical sensor found meets its 1.244 us share, nor the whole chain's 2.543 us alone, so the optical index has no survivor. Derived as V225 (owner, 2026-09-29) sets, from stated times: VCNT2030 10 us (rising edge) or 15 us (falling edge) typical at RL 100 Ohm; VCNT2020 10 / 15 us typical, 70 us maximum; VCNT2025X01 10 / 15 us; QRD1114 10 / 50 us; QRE1113GR 20 / 20 us; RPR-220 10 us; TCRT5000, TCRT5000L and CNY70 state no time; TCND5000 states only its emitter's 15 ns. With the accelerometer's 1.000 us and the comparator's 55 ns, 1 degree holds with VCNT2030 on its rising edge up to 15,076 rpm and on its falling edge up to 10,381 rpm. VCNT2030 has JLCPCB C18186160 59, presale 44 (2026-09-29T06:42:38Z). The owner decides whether the optical index is qualified at a lower highest rpm, or whether a faster detector with an amplifier on the probe board is selected",
+    "source": "VCNT2030 datasheet Rev. 1.4 (27-Feb-2024), https://www.vishay.com/docs/80223/vcnt2030.pdf, read 2026-09-29T06:37:57Z; TCND5000 datasheet Rev. 1.6 (12-Jun-14), https://www.vishay.com/docs/83795/tcnd5000.pdf, read 2026-09-29T06:37:56Z; VCNT2020, QRD1114, QRE1113, RPR-220 datasheets (06:48:46Z to 06:48:47Z)"
+   },
+   {
+    "figure": "magnetic pickup as index",
+    "value": "Not in V225's chain: the magnetic pickup is an rpm input (IOBoard.md:442), the optical index the phase reference. If it served as the index, its delay variation from stated times would be 25 us maximum (DRV5015 td) or 21 us (AH1711 td 20 us plus tr 1 us, maximum): with the accelerometer's 1.000 us, 1 degree holds up to 6,410 rpm (DRV5015) or 7,576 rpm (AH1711)",
+    "source": "DRV5015 datasheet SBAS915A (June 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-09-29T06:44:33Z, section 6.5; AH1711/AH1712/AH1713/AH1714 datasheet DS45410 Rev. 3-2 (January 2024), https://www.diodes.com/datasheet/download/AH1711%2FAH1712%2FAH1713%2FAH1714.pdf, read 2026-09-29T06:44:34Z, page 3; checkout e13f5f60d2e5: hardware/docs/IOBoard.md:441-442"
+   },
+   {
+    "figure": "phase-wire clip frequency overlap",
+    "value": "The clip passes the electrical frequency up to 22,937 Hz (65,535 rpm x 21 pole pairs) and rejects ESC PWM from 8 kHz to 288 kHz (AM32). The bands overlap below 22.9 kHz, so no fixed low-pass meets both at every setting; against the programmer screen's 24 kHz the margin is 1.05 x. The front end needs a method that does not rest on frequency separation alone, or the owner narrows V212 or V229 for this input. No comparator changes this",
+    "source": "V212, V229; https://raw.githubusercontent.com/am32-firmware/AM32/main/Src/main.c lines 637-639, 1977-1979 (read 2026-09-29T06:46:41Z)"
+   },
+   {
+    "figure": "magnetic pickup rate",
+    "value": "1,092 Hz at 65,535 rpm with V218's one pulse a turn. Reading the rotor's own poles (up to 21 pairs) needs 22,937 Hz, above the guaranteed 20 kHz of DRV5015 and AH1711",
+    "source": "DRV5015 datasheet SBAS915A (June 2018, revised April 2019), https://www.ti.com/lit/ds/symlink/drv5015.pdf, read 2026-09-29T06:44:33Z, section 6.6; AH1711/AH1712/AH1713/AH1714 datasheet DS45410 Rev. 3-2 (January 2024), https://www.diodes.com/datasheet/download/AH1711%2FAH1712%2FAH1713%2FAH1714.pdf, read 2026-09-29T06:44:34Z, page 3"
+   },
+   {
+    "figure": "comparator inputs with the 3.3 V rail down",
+    "value": "TLV3201 (signal inputs -0.5 V to VCC + 0.5 V), TLV3501 ((V-) - 0.3 V to (V+) + 0.3 V) and TLV3601 (VEE - 0.3 V to VCC + 0.3 V) clamp their inputs to both rails, limited to 10 mA: with the 3.3 V rail down a coasting motor's divided phase signal flows into the rail through the divider's resistance. Round 2 sizes the divider so the current stays under the rating",
+    "source": "TLV3201 datasheet SBOS561C (March 2012, revised May 2024), https://www.ti.com/lit/ds/symlink/tlv3201.pdf, read 2026-09-29T06:44:35Z, 6.1; TLV3501 datasheet SBOS321E (March 2005, revised April 2016), https://www.ti.com/lit/ds/symlink/tlv3501.pdf, read 2026-09-29T06:44:35Z, 6.1; TLV3601 datasheet SNOSDB1E (June 2021, revised April 2023), https://www.ti.com/lit/ds/symlink/tlv3601.pdf, read 2026-09-29T06:44:36Z, 6.1"
+   },
+   {
+    "figure": "functions served by the RP2354B",
+    "value": "rotation from ESC, rotation inputs, BENCH rpm source, servo measured position and encoder decode each rank the RP2354B, R1's fixed input: its PIO receives the DShot reply and decodes the encoder, its timer and PWM slices time the rotation inputs, and its firmware selects the rpm source and scales the servo position. None adds a part or a placement; the placements of 1 are the one microcontroller already counted by R1",
+    "source": "this return's functions; checkout e13f5f60d2e5: hardware/docs/IOBoard.md:103, :440-446, :454"
+   },
+   {
+    "figure": "values answered by the owner",
+    "value": "V222 (2 m lead), V224 (1 mg after 5 s), V225 (1 degree, 2.54 us at 65,535 rpm), V230 (1,000 rpm) and V231 (0 to 85 °C at the sensor mount) carry owner answers in the Answer column at e13f5f6; the owner's V225 decision of 2026-09-29 (derive each part's delay variation from its datasheet) comes from this task's follow-up items and is not on the page at that commit. They are recorded under found_values and applied as requirements; none is a research finding",
+    "source": "checkout e13f5f60d2e5: hardware/docs/Research.md:782, :784, :785, :790, :791"
+   }
+  ]
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R4",
+ "label": "adjudicator-R4-2",
+ "attempt": 0,
+ "data": {
+  "category": "R4",
+  "function": "found V75",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The fault list in V75 holds: a continuous short to ground and a continuous short to the supply pin at up to 8.7 V. The lower bound holds: 3.3 V / 275 Ω = 12.0 mA, the top IOL/IOH setting in Table 1436. The clamp current holds: (8.7 - 3.6) V / 300 Ω = 17 mA. The upper bound of 320 Ω does not follow from the claim's own test. 3.3 × R / (1000 + R) = 0.8 V gives exactly R = 320 Ω, and that only holds with the pad at 0 V. Table 1436 guarantees only VOL <= 0.5 V at IOVDD = 3.3 V. With the pad at 0.5 V and only the 1 kΩ pull-up of the Hitec library, the connector low is 1.10 V at 275 Ω, 1.15 V at 300 Ω and 1.18 V at 320 Ω. With the servo's 3 kΩ pull-down it is 1.03, 1.06 and 1.09 V. With the 10 kΩ pull-down added it is 1.01, 1.04 and 1.07 V. The switch's ron (7 Ω maximum) raises every one of these slightly. All are above 0.8 V. With a 0.5 V pad, the largest series resistance that keeps the low at or below 0.8 V is 120 Ω with no pull-down and 134 Ω with the 3 kΩ pull-down. Both are below the claimed 275 Ω lower bound, so under the guaranteed VOL the claimed 275 to 320 Ω range is empty. This concerns the requirement derivation for this function, not a part, so the scope is function. The source of the 10 kΩ pull-down was not re-read. It does not change the outcome, because the result exceeds 0.8 V without it.",
+  "evidence": "RP2350 datasheet, build-date 2025-07-29, Table 1436, IOVDD = 3.3 V: VOL 0 to 0.5 V at IOL = 2, 4, 8 or 12 mA depending on the setting. VIL maximum is 0.8 V. SN74CBTLV3126 (SCDS038N, revised July 2026), section 5.5, D/DGV/DBQ/PW/RGY packages: ron is 5 Ω typical and 7 Ω maximum at VCC = 3 V, VI = 0, II = 24 or 64 mA. Section 5.6 gives 9 Ω maximum. The Hitec library README (line 11) specifies a 1 kΩ pull-up to 3.3 V for a 3.3 V controller. HitecDServoInternal.h:25 says the servo contains a 3 kΩ pull-down to ground. The connector low was computed as V = (3.3/1000 + Vpad/R) / (1/1000 + 1/R + sum of 1/Rpd). The results are in the ruling.",
+  "source": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (vendors.py fetch, final URL pip-assets.raspberrypi.com RP-008373-DS-2, 7968417 bytes) Table 1436; https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf (vendors.py fetch, SCDS038N) sections 5.5 and 5.6; Hitec library README.md:11 and HitecDServoInternal.h:25 (copies at /home/claude/rcbench-research/round1/scratch/T2/P2-R4/); hardware/docs/IOBoard.md:531, :536; Research.md:544 (F16), :635 (V75)",
+  "read_at": "2026-09-28T14:14:16Z (RP2350 datasheet); 2026-09-28T14:14:00Z (SN74CBTLV3126 datasheet)",
+  "scope": "function"
+ }
+}

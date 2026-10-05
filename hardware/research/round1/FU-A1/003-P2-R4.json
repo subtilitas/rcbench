@@ -1,0 +1,2789 @@
+{
+ "role": "P2",
+ "category": "R4",
+ "label": "P2-R4",
+ "attempt": 0,
+ "data": {
+  "category": "R4",
+  "found_values": [
+   {
+    "question_id": "V56",
+    "value": "One output of the I/O expander per biased line, 5 in all: one for each of the 4 multiprotocol ports and one for the UART socket. A resistor holds each control input at the pull-down selection, so the reset and unpowered state selects the pull-down, which is the condition of V57's answer. The expander resets with the RP2354B and its driving pin is then an input (IOBoard.md:340). A jumper cannot follow a mode that firmware sets per binding (IOBoard.md:64). A circuit that follows the signal cannot tell the modes apart: bidirectional DShot and the UART-based modes idle high, and servo PWM and plain DShot idle low (IOBoard.md:251, :253, :256). An RP2354B GPIO also meets V57, because the pads reset pulled low (RP2350 section 9.3), but it costs 5 GPIO. How many outputs the expander has is V119 (R6, for research)",
+    "source": "V57 answer (Research.md:617, owner 2026-09-28); hardware/docs/IOBoard.md:64, :251, :253, :256, :340 at 10b0bade34de; RP2350 datasheet build-date 2025-07-29, section 9.3, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served as RP-008373-DS-2 from pip-assets.raspberrypi.com)",
+    "read_at": "2026-09-28T17:16:34Z (RP2350 datasheet); tree read at 10b0bade34de"
+   },
+   {
+    "question_id": "V58",
+    "value": "With the pin released, the UART socket and a multiprotocol port in ESC bootloader, ESC telemetry, servo configuration or VESC mode take a switched 1 kΩ pull-up to 3.3 V. It sits in parallel with the fixed 10 kΩ pull-down, which puts the idle at 3.0 V. With the gate disabled, the line has the 10 kΩ pull-down alone while the selector is at its reset or unpowered state (V57). A disabled line whose pull-up firmware keeps selected idles at 3.0 V. Evidence: AM32's bootloader samples the line against its own pull-down and stays only when the line reads high and never low (bootloader/main.c:1097-1138); it then receives with its pull-up (main.c:516). BLHeli_S's bootloader sets its pin open-drain and high ('Disable pushpull', 'Set data high') and waits while the line is high, so its high level comes from a pull-up. AM32's G071 KISS telemetry pin is open-drain with the MCU pull-up (serial_telemetry.c:27-28). A Hitec D-series servo drives low only and holds a 3 kΩ pull-down, and the library asks for a 1 kΩ pull-up to 3.3 V on a 3.3 V controller (HitecDServoInternal.h, Fundamentals; README.md:11). OpenYGE is UART 8N1 (docs/OpenYGE.md:21) and idles high. Why 1 kΩ: against the servo's 3 kΩ and the board's 10 kΩ (2.31 kΩ together), the line sits at 3.3 × 2.31 / 3.31 = 2.30 V, above the RP2350's 2.0 V V_IH (Table 1436). A pull-up above 1.50 kΩ puts it below 2.0 V",
+    "source": "https://raw.githubusercontent.com/am32-firmware/AM32-bootloader/master/bootloader/main.c; https://raw.githubusercontent.com/bitdump/BLHeli/master/BLHeli_S%20SiLabs/BLHeliBootLoad.inc; https://raw.githubusercontent.com/am32-firmware/AM32/main/Mcu/g071/Src/serial_telemetry.c; https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServoInternal.h and README.md; docs/OpenYGE.md:21; RP2350 datasheet build-date 2025-07-29 Table 1436",
+    "read_at": "2026-09-28T17:16:26Z (AM32 bootloader, AM32 telemetry), 17:16:28Z (BLHeli_S), 17:16:14Z and 17:16:25Z (Hitec), 17:16:34Z (RP2350)"
+   },
+   {
+    "question_id": "V59",
+    "value": "38,400 baud 8N1, on the signal line. The console opens when the signal line is held high for 2 s at start-up",
+    "source": "ESCape32 wiki, Configuration page, section CLI, https://github.com/neoxic/ESCape32/wiki/Configuration (page last edited 2026-09-24T12:11:28Z)",
+    "read_at": "2026-09-28T17:16:32Z"
+   },
+   {
+    "question_id": "V60",
+    "value": "The programmer (Hitec DPC-11) drives the line high at about 2 V and low at 0 V. The servo drives the line low only. While the servo transmits, the programmer pulls the line up at about 1.3 mA. The servo's input-high threshold is not stated; it reads the DPC-11's roughly 2 V as high. The library runs from a 3.3 V controller with a 1 kΩ pull-up to 3.3 V. Source status: the only source found is a reverse-engineered library that states it is not endorsed by Hitec. No Hitec publication of the protocol was found",
+    "source": "https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServoInternal.h (Fundamentals, Reading a register); https://raw.githubusercontent.com/timmaxw/HitecDServo/main/README.md:2, :6, :11",
+    "read_at": "2026-09-28T17:16:25Z (HitecDServoInternal.h), 17:16:14Z (README.md)"
+   },
+   {
+    "question_id": "V61",
+    "value": "One signal wire, the servo's PWM signal line, at half duplex. UART with inverted polarity: idle low, 8 data bits, no parity, 1 stop bit. The servo's output drives low only, and the servo holds a 3 kΩ pull-down; the programmer supplies the pull-up. After power-up or a write to the REBOOT register, the servo ignores PWM and serial for 1000 ms and holds the line low. After a serial command it ignores PWM until it reboots. Source status as V60",
+    "source": "https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServoInternal.h (Fundamentals; Bootup behavior)",
+    "read_at": "2026-09-28T17:16:25Z"
+   },
+   {
+    "question_id": "V62",
+    "value": "115,200 baud. Source status as V60",
+    "source": "https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServoInternal.h (Fundamentals); https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServo.cpp:571",
+    "read_at": "2026-09-28T17:16:25Z"
+   },
+   {
+    "question_id": "V63",
+    "value": "3.3 V, driven from the 3.3 V rail, on the 16 PWM ports, the 4 multiprotocol ports and the UART socket. No supply is sensed from the device. Evidence: an ESCape32 ESC's own signal line reads about 3.3 V after a power cycle (Installation page). SRXL2 is standard 3.3 V logic. CRSF runs at 3.3 V at half duplex and at 3.0 to 3.3 V at full duplex. A Hitec D-series servo reads about 2 V as high. KISS telemetry is sent at 3.6 V. No source read requires 5 V. The input thresholds of servos other than Hitec D-series are not read. The connector side takes at least 3.6 V, with the board powered or unpowered",
+    "source": "https://github.com/neoxic/ESCape32/wiki/Installation (line 'It should read around 3.3V'); SRXL2 Specification Rev K section 5, https://raw.githubusercontent.com/SpektrumRC/SRXL2/master/Docs/SRXL2%20Specification.pdf; https://raw.githubusercontent.com/tbs-fpv/tbs-crsf-spec/main/crsf.md:134, :138; https://raw.githubusercontent.com/betaflight/betaflight/master/src/main/sensors/esc_sensor.c:60; HitecDServoInternal.h",
+    "read_at": "2026-09-28T17:16:33Z (ESCape32), 17:16:29Z (SRXL2, CRSF), 17:16:31Z (Betaflight), 17:16:25Z (Hitec)"
+   },
+   {
+    "question_id": "V64",
+    "value": "1 kΩ to 3.3 V. It is the switched pull-up of V58, in parallel with the fixed 10 kΩ pull-down, and the idle sits at 3.0 V. The pull-up only holds the idle, because both ESC firmwares read drive the reply push-pull. AM32 drives it from a timer output (Mcu/g071/Src/IO.c, sendDshotDma). Bluejay sets its pin push-pull for the reply (src/Modules/Isrs.asm, 'Set output mode to push-pull'). AM32 targets pull their input up, except NEUTRONRC_G071, which pulls it down (Src/main.c:1930-1934). With the pull-up selected, the RP2354B sinks (3.3 − 0.5) V / 1 kΩ = 2.8 mA while it drives low. That is within the 4 mA drive setting at V_OL ≤ 0.5 V (Table 1436). One value serves every mode that idles high, because Hitec servo configuration needs 1.50 kΩ or less (V58)",
+    "source": "https://raw.githubusercontent.com/am32-firmware/AM32/main/Mcu/g071/Src/IO.c; https://raw.githubusercontent.com/am32-firmware/AM32/main/Src/main.c; https://raw.githubusercontent.com/bird-sanctuary/bluejay/main/src/Modules/Isrs.asm; RP2350 datasheet build-date 2025-07-29 Table 1436",
+    "read_at": "2026-09-28T17:16:27Z (AM32 IO.c, main.c), 17:16:28Z (Bluejay), 17:16:34Z (RP2350)"
+   },
+   {
+    "question_id": "V68",
+    "value": "1 receiver input. Each bus is one signal wire plus ground into one coprocessor pin (docs/Receivers.md:10-16). The analyser screen takes one decoded frame stream (shared/ui/include/analyser_screen.h:24-30, analyser_screen_push). No source read names a second input",
+    "source": "docs/Receivers.md:10-16; shared/ui/include/analyser_screen.h:24-30, in the checkout at 10b0bade34de",
+    "read_at": "2026-09-28T17:17Z (tree read)"
+   },
+   {
+    "question_id": "V69",
+    "value": "3.3 V where a source states it. SRXL2 is 3.3 V logic and idles at 3.3 V. CRSF runs at 3.3 V at half duplex and at 3.0 to 3.3 V at full duplex. JETI EX Bus states only a minimum logic one of 3.0 V and a maximum logic zero of 1.5 V, with no maximum high level. SUMD (HoTT SUMD spec Rev 01) states no level. S.BUS and iBUS: no maker specification was read, so their level is not read",
+    "source": "SRXL2 Specification Rev K section 5 (lines 'Signal is standard 3.3V logic', 'Pin 1 – SRXL2 Tx/Rx Signal (+3.3V/GND)'); crsf.md:134, :138; JETI EX Bus communication protocol v1.21 (18.12.2013), Physical layer, https://www.jetimodel.cz/uloz/c6d00c58-78ab-4c4d-9f15-34e84523479e.pdf/?1626095164; HoTT SUMD spec Rev 01, copy at https://www.deviationtx.com/media/kunena/attachments/98/HoTT-SUMD-Spec-REV01-12062012-pdf.pdf",
+    "read_at": "2026-09-28T17:16:29Z (SRXL2, CRSF), 17:16:30Z (EX Bus, SUMD)"
+   },
+   {
+    "question_id": "V70",
+    "value": "2,000,000 baud (CRSF). The single-wire half-duplex link defaults to 400 kbaud and supports 1 and 2 Mbaud depending on hardware (crsf.md:134). The full-duplex link defaults to 416,666 baud and can be negotiated higher (crsf.md:138). The other buses: SRXL2 400,000 baud, 115,200 by default (BaudRate field); EX Bus 250,000 baud at high speed; SUMD 115,200 baud; S.BUS 100,000 baud. iBUS: not read",
+    "source": "crsf.md:134, :138; SRXL2 Specification Rev K, handshake BaudRate field (0 = 115200 only, 1 = 400000 supported); EX Bus protocol v1.21 Physical layer; SUMD spec Rev 01 ('115200 bit/s serial data stream')",
+    "read_at": "2026-09-28T17:16:29Z (CRSF, SRXL2), 17:16:30Z (EX Bus, SUMD)"
+   },
+   {
+    "question_id": "V72",
+    "value": "No. The gate removes drive between the RP2350's output pins and the output connector (Monostable.md:361-367 at 23c82ca), and F13's answer names the 20 output ports and the UART socket (Research.md:541). On the receiver input the bench transmits only telemetry to the receiver (EX Bus and SRXL2, V71 answer), and nothing on that line reaches a servo or an ESC",
+    "source": "hardware/docs/Monostable.md:361-367 at 23c82ca6ca976d956098cfafd25dbefa11584f5d; F13 (Research.md:541); V71 answer (Research.md:631)",
+    "read_at": "2026-09-28T17:17Z (tree read)"
+   },
+   {
+    "question_id": "V73",
+    "value": "Low, on every gated line, both while the RP2354B is held in reset and while it restarts through the watchdog. Held in reset by RUN or by a brownout, the pads return to their reset state: output at high impedance, input disabled, pulled low at 36 to 113 kΩ (section 9.3; Table 1436). The isolation latches reset with them (section 9.7). A 244's inputs then read low: its input leakage of ±5 µA through 113 kΩ gives 0.57 V, under V_IL 0.8 V, so it drives low. The switch passes the pad's low, and the 10 kΩ pull-down holds the line. The expander resets with the RP2354B, and the control resistors select the pull-down. Through a watchdog reset, the pads return to the same state when the watchdog's reset level includes RESETS. pico-sdk's _watchdog_enable sets PSM_WDSEL for every stage except ROSC and XOSC (section 12.9.6.1, lines 52-53). Bit 4 of PSM WDSEL is RESETS (Table 532). The RESETS reset value holds PADS_BANK0 (bit 9) and IO_BANK0 (bit 6) in reset (Table 535). A PADS reset returns each pad whose ISO bit software has cleared to its reset state (section 9.7), and gpio_set_function() clears ISO (section 9.3). If firmware leaves RESETS out of PSM_WDSEL, and PADS_BANK0 and IO_BANK0 out of RESETS_WDSEL, the pads keep their pre-reset level. The tree enables no watchdog yet (IOBoard.md:221). Not established: whether a watchdog reset with POWMAN_WDSEL.RESET_SWCORE set (Table 490, reset value 0, not set by the SDK) asserts the isolation signal and latches the pre-reset pad state",
+    "source": "RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf: sections 9.3, 9.7, 12.9.4, 12.9.6.1; Tables 490, 532, 535, 853, 1436; SN74LVC244A SCAS414AG section 5.5 (II); IOBoard.md:221, :340",
+    "read_at": "2026-09-28T17:16:34Z (RP2350), 17:22:24Z (SN74LVC244A)"
+   },
+   {
+    "question_id": "V74",
+    "value": "Yes, on the 4 multiprotocol ports, the UART socket and the receiver input. Devices on their own supply drive these lines while the IO board is unpowered: a receiver on its own pack; SRXL2 devices on servo-bus power of 3.5 to 8.4 V (SRXL2 spec section 5); an ESC on the operator's pack during programming (V78). The RP2354B's fault-tolerant pins take 3.63 V with IOVDD at 0 V, and 'very little current' flows, with no figure given (Tables 1426 and 1433). The powered-off isolation rule covers every interlock input driven while its own supply is absent (Monostable.md:65-88)",
+    "source": "SRXL2 Specification Rev K section 5; RP2350 datasheet build-date 2025-07-29 Tables 1426, 1433; Monostable.md:65-88 at 23c82ca",
+    "read_at": "2026-09-28T17:16:29Z (SRXL2), 17:16:34Z (RP2350)"
+   },
+   {
+    "question_id": "V75",
+    "value": "Both faults, continuous: a short to ground, and a short to the port's supply pin at up to 8.7 V (F16). The lead carries signal, ground and rail in one plug (IOBoard.md:531), and nothing in the tree limits the current into a shorted signal line (IOBoard.md:536). Derived series resistance per gated line, placed between the gate element and the connector, with the clamp and the bias network (switched 1 kΩ pull-up, 10 kΩ pull-down) on the gate element's side. Lower bound: a line driven by the RP2354B pad through the switch takes at least 275 Ω (3.3 V / 12 mA, the highest drive setting Table 1436 characterises); a line driven by a 244 takes at least 142 Ω (3.4 V at its 24 mA recommended output current). Upper bound on the multiprotocol and UART lines in servo configuration mode: the servo's open-drain low reaches the RP2354B pin through the resistor, against the 1 kΩ pull-up. At 275 Ω it stays at or below V_IL 0.8 V (Table 1436) only while the servo's output-low voltage is 0.13 V or less; with the servo at 0 V it is 0.70 V. At 300 Ω the servo's output-low voltage must be 0.05 V or less. No source read states the servo's output-low voltage, so no value is shown to meet both bounds. With the bias network on the connector side instead, the bench's low reaches the connector at 1.02 V through 275 Ω with the pad at its guaranteed V_OL of 0.5 V, and the servo's input-low threshold is not stated. A short to 8.7 V puts (8.7 − 3.6) / 275 = 18.5 mA into a 3.6 V clamp and 95 mW into the resistor. The resistor and the clamp are round 2 parts (Research.md, Scope)",
+    "source": "IOBoard.md:531, :536; F16 (Research.md:544); RP2350 datasheet build-date 2025-07-29 Table 1436; SN74LVC244A SCAS414AG section 5.3 (IOH −24 mA at 3 V); SN74CBTLV3126 SCDS038N section 5.5 (ron); HitecDServoInternal.h (3 kΩ pull-down); nodal derivation in this return",
+    "read_at": "2026-09-28T17:16:34Z (RP2350), 17:22:24Z (SCAS414AG), 17:22:28Z (SCDS038N), 17:16:25Z (Hitec)"
+   },
+   {
+    "question_id": "V76",
+    "value": "Named devices: OpenYGE ESCs at 115,200 baud 8N1 (docs/OpenYGE.md:21). Also the ESC telemetry protocols of the open decision in docs/OpenYGE.md:400-403 (Hobbywing, Kontronik, Scorpion, OMP, ZTW, APD, FLY, Graupner, XDFly); their rates are not read. KISS telemetry runs at 115,200 baud. The highest rate found is 115,200 baud",
+    "source": "docs/OpenYGE.md:21, :400-403 at 10b0bade34de; https://raw.githubusercontent.com/betaflight/betaflight/master/src/main/sensors/esc_sensor.c:60, :113",
+    "read_at": "2026-09-28T17:16:31Z (Betaflight); tree read at 10b0bade34de"
+   },
+   {
+    "question_id": "V77",
+    "value": "KISS ESC telemetry, on the ESC's separate telemetry wire, ESC to bench only, 115,200 baud 8N1, in 10-byte frames. AM32 on the G071 sends it at 115,200 baud from an open-drain pin with the MCU pull-up (serial_telemetry.c:27-28, :53), so the port takes V58's pull-up. ESCape32's default telemetry mode is KISS (telem_mode 0). Highest rate found: 115,200 baud",
+    "source": "https://raw.githubusercontent.com/betaflight/betaflight/master/src/main/sensors/esc_sensor.c:56-72, :113; https://raw.githubusercontent.com/am32-firmware/AM32/main/Mcu/g071/Src/serial_telemetry.c; https://github.com/neoxic/ESCape32/wiki/Settings (telem_mode)",
+    "read_at": "2026-09-28T17:16:31Z (Betaflight), 17:16:26Z (AM32), 17:16:33Z (ESCape32)"
+   },
+   {
+    "question_id": "V78",
+    "value": "A STOP, then the operator clear of the F11 latch; no separate switch. The ESC pack switch and the buffer enable both follow the enable node alone (R3 row, Research.md:281). The pack switch closes within 500 ms of the enable rising (V46 answer, Research.md:606), and the gate enables at once. With the programming mode bound before the clear, the RP2354B holds the line high with the pull-up selected, so the ESC powers up with its line high. What the bootloaders need: AM32 stays in its bootloader only when the line reads high and never low at start-up (bootloader/main.c:1097-1138). BLHeli_S waits while the line is high and leaves after about 250 ms (BLHeliBootLoad.inc, BOOT_DELAY). ESCape32 needs the line high for 2 s at start-up. A Hitec D-series servo needs no power cycle: firmware reboots it through its REBOOT register, and it accepts serial 1000 ms later. VESC's UART needs none. Whether the latch sets on the level or on the edge (V52, R3) does not change this",
+    "source": "AM32-bootloader main.c; BLHeliBootLoad.inc; ESCape32 wiki Configuration (CLI); HitecDServoInternal.h (Bootup behavior, REBOOT); Research.md:281, :606",
+    "read_at": "2026-09-28T17:16:26Z (AM32), 17:16:28Z (BLHeli_S), 17:16:32Z (ESCape32), 17:16:25Z (Hitec)"
+   }
+  ],
+  "functions": [
+   {
+    "function": "gated output buffer",
+    "requirements": [
+     {
+      "name": "lines",
+      "value": "16 one-way lines, RP2354B to connector: the 16 PWM ports (servo PWM, one switchable to PPM). The 4 multiprotocol ports and the UART socket take the reply-path element",
+      "source": "owner 2026-09-25, Research.md:63; IOBoard.md:64"
+     },
+     {
+      "name": "enable source and polarity",
+      "value": "from the enable node, which is active high (low = disabled); an active-low enable takes the node through the enable inverter",
+      "source": "Monostable.md:369-376, :422 at 23c82ca"
+     },
+     {
+      "name": "disabled state",
+      "value": "outputs at high impedance under 1 µs after the enable node falls; each connector line pulled down by 10 kΩ",
+      "source": "Monostable.md:112, :361-366; IOBoard.md:187"
+     },
+     {
+      "name": "I_off on inputs and enable",
+      "value": "a datasheet limit on input current with VCC = 0 V, on every RP2354B-side input and on the enable",
+      "source": "Monostable.md:65-88; IOBoard.md:192"
+     },
+     {
+      "name": "enable pin pull",
+      "value": "10 kΩ to the disabled level at each enable pin of the part",
+      "source": "Monostable.md:369-375"
+     },
+     {
+      "name": "supply",
+      "value": "3.3 V rail, ±3 %",
+      "source": "IOBoard.md, Interlock supply row; Monostable.md"
+     },
+     {
+      "name": "DShot bit rate",
+      "value": "1200 kbit/s: a 833 ns bit, zero-bit high 312 ns (37.5 %)",
+      "source": "V65 answer (Research.md:625, owner 2026-09-28); IOBoard.md:251"
+     },
+     {
+      "name": "load",
+      "value": "0.3 m lead; 50 pF at the connector",
+      "source": "V66 answer (Research.md:626, owner 2026-09-28)"
+     },
+     {
+      "name": "servo PWM and PPM timing",
+      "value": "40 to 400 Hz, pulse 500 to 2500 µs at 1 µs resolution; PPM 300 µs marks",
+      "source": "IOBoard.md:249-250"
+     },
+     {
+      "name": "connector high level",
+      "value": "3.3 V",
+      "source": "V63 (found)"
+     },
+     {
+      "name": "connector voltage tolerated",
+      "value": "at least 3.6 V on the connector side, powered, disabled or unpowered",
+      "source": "V63, V77 (found)"
+     },
+     {
+      "name": "connector side unpowered",
+      "value": "outputs isolated with VCC = 0 V (an output power-off rating or I_off)",
+      "source": "V74 (found)"
+     },
+     {
+      "name": "idle level in RP2354B reset",
+      "value": "low: the pad's 36 to 113 kΩ pull-down against the part's input leakage keeps the input under V_IL 0.8 V",
+      "source": "V73 (found); RP2350 Table 1436"
+     },
+     {
+      "name": "no bus hold on data inputs",
+      "value": "a bus-hold input keeps its last level against the pad's reset pull-down, so the low of V73 would not follow",
+      "source": "V73 (found)"
+     },
+     {
+      "name": "series resistance",
+      "value": "at least 142 Ω per buffered line (3.4 V at 24 mA), resistor and clamp in round 2",
+      "source": "V75 (found)"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 °C",
+      "source": "V7 answer (Research.md:567, owner 2026-09-28): one range for the whole IO board"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "SN74LVC244APWR",
+      "maker": "Texas Instruments (datasheet SCAS414AG); counts as Texas Instruments (S1); JLCPCB label Texas Instruments",
+      "lcsc": "C7668",
+      "package": "TSSOP-20",
+      "placements": 2,
+      "placements_basis": "fixed: 16 lines / 8 buffers a part = 2 a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "lines",
+        "required": "16 one-way lines",
+        "datasheet": "8 buffers in 2 groups of 4 (pin table)",
+        "pass": true,
+        "source": "SN74LVC244A SCAS414AG (November 1992, revised June 2026), https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, read 2026-09-28T17:22:24Z, section 4"
+       },
+       {
+        "name": "enable source and polarity",
+        "required": "from the enable node; active-low takes the inverter",
+        "datasheet": "1OE pin 1 and 2OE pin 19, active low: needs the enable inverter and a 10 kΩ pull-up at each OE pin",
+        "pass": true,
+        "source": "SCAS414AG pin functions"
+       },
+       {
+        "name": "disabled state",
+        "required": "high impedance under 1 µs",
+        "datasheet": "tdis 6.5 ns max at VCC 3.3 V ±0.3 V, −40 to 85 °C",
+        "pass": true,
+        "source": "SCAS414AG section 5.6"
+       },
+       {
+        "name": "I_off on inputs and enable",
+        "required": "input current limit at VCC = 0 V",
+        "datasheet": "Ioff ±10 µA at VI or VO = 5.5 V, VCC = 0, −40 to 85 °C",
+        "pass": true,
+        "source": "SCAS414AG section 5.5"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 %",
+        "datasheet": "1.65 to 3.6 V",
+        "pass": true,
+        "source": "SCAS414AG section 5.3"
+       },
+       {
+        "name": "DShot bit rate and load",
+        "required": "1200 kbit/s at 50 pF",
+        "datasheet": "tpd 5.9 ns max at 3.3 V ±0.3 V; tsk(o) 1 ns; test load 50 pF",
+        "pass": true,
+        "source": "SCAS414AG section 5.6"
+       },
+       {
+        "name": "connector high level",
+        "required": "3.3 V",
+        "datasheet": "VOH VCC − 0.2 V at −100 µA; 2.2 V at −24 mA, VCC 3 V",
+        "pass": true,
+        "source": "SCAS414AG section 5.5"
+       },
+       {
+        "name": "connector voltage tolerated",
+        "required": "≥ 3.6 V, disabled or unpowered",
+        "datasheet": "VO in the high-impedance or power-off state −0.5 to 6.5 V",
+        "pass": true,
+        "source": "SCAS414AG section 5.1"
+       },
+       {
+        "name": "idle level in RP2354B reset",
+        "required": "input reads low against the pad's 113 kΩ pull-down",
+        "datasheet": "II ±5 µA at 3.6 V, −40 to 85 °C: 0.57 V < V_IL 0.8 V",
+        "pass": true,
+        "source": "SCAS414AG sections 5.3, 5.5"
+       },
+       {
+        "name": "no bus hold",
+        "required": "no bus hold on data inputs",
+        "datasheet": "none stated (the bus-hold variant is SN74LVCH244A)",
+        "pass": true,
+        "source": "SCAS414AG"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "−40 to 125 °C",
+        "pass": true,
+        "source": "SCAS414AG section 5.3"
+       }
+      ],
+      "jlcpcb": "stockCount 94539, canPresaleNumber 94364, componentLibraryType expand, USD 0.299 a part at the 1 to 49 break (need 10), read 2026-09-28T17:20:12Z, vendors.py jlcpcb C7668 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "digikey": "stock_available 0, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-28T17:21:00Z, vendors.py digikey SN74LVC244APWR (api.digikey.com/products/v4/search/SN74LVC244APWR/productdetails)",
+      "gate": "need 5 boards × 2 = 10; threshold max(5 × 10, 50) = 50 (S4); stockCount 94539 ≥ 50 and canPresaleNumber 94364 ≥ 0: pass (rule 4)",
+      "lifecycle": "manufacturer status ACTIVE: www.ti.com/product/SN74LVC244A, meta status ACTIVE and orderable SN74LVC244APWR marketingStatusDescription ACTIVE, read 2026-09-28T17:28:06Z; longevity commitment: not read (no maker programme page fetched in this task); first datasheet revision November 1992 (SCAS414 header), over 12 months on the market; change and end-of-life notices: not read; distributor: Digi-Key ProductStatus Active (17:21:00Z), the JLCPCB API carries no status",
+      "second_source": "alternate 74LVC244APW,118 (Nexperia): the same TSSOP-20 pinout (1OE pin 1, 2OE pin 19, GND 10, VCC 20, inputs and outputs in the 244 order), OE active low, IOFF ±10 µA, 1.65 to 3.6 V; JLCPCB stockCount 27938 ≥ 50, canPresaleNumber 27915 (2026-09-28T17:20:12Z). The second-vendor route fails: Digi-Key stock 0 (17:21:00Z)",
+      "alternates": [
+       "74LVC244APW,118",
+       "74LCX244MTCX",
+       "74LCX244FT"
+      ],
+      "driver_in_shared": "none (no register interface; no driver needed)",
+      "reason": "Ranked first. It meets every value, drives 24 mA, has the largest JLCPCB stock of the candidates, and its rule-5 route passes through the Nexperia alternate. Two further pin-compatible alternates from onsemi and Toshiba pass rule 4. Its active-low OE needs the enable inverter",
+      "second_source_route": "alternate",
+      "second_source_part": "74LVC244APW,118"
+     },
+     {
+      "rank": 2,
+      "part": "74LVC244APW,118",
+      "maker": "Nexperia (datasheet 74LVC244A; 74LVCH244A Rev. 14); counts as Nexperia (S1); JLCPCB label Nexperia",
+      "lcsc": "C6079",
+      "package": "TSSOP-20 (SOT360-1)",
+      "placements": 2,
+      "placements_basis": "fixed: 16 lines / 8 buffers a part = 2 a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "lines",
+        "required": "16 one-way lines",
+        "datasheet": "8 buffers, 1OE and 2OE each controlling 4 (Table 2)",
+        "pass": true,
+        "source": "74LVC244A; 74LVCH244A Rev. 14, 29 November 2024, https://assets.nexperia.com/documents/data-sheet/74LVC_LVCH244A.pdf, read 2026-09-28T17:22:50Z"
+       },
+       {
+        "name": "enable source and polarity",
+        "required": "from the enable node; active-low takes the inverter",
+        "datasheet": "1OE, 2OE pins 1, 19, active low",
+        "pass": true,
+        "source": "Rev. 14 Table 2"
+       },
+       {
+        "name": "disabled state",
+        "required": "high impedance under 1 µs",
+        "datasheet": "tdis 5.8 ns max at VCC 3.0 to 3.6 V, −40 to 85 °C",
+        "pass": true,
+        "source": "Rev. 14 section 10"
+       },
+       {
+        "name": "I_off on inputs and enable",
+        "required": "input current limit at VCC = 0 V",
+        "datasheet": "IOFF ±10 µA at VI or VO = 5.5 V, VCC = 0 V, −40 to 85 °C",
+        "pass": true,
+        "source": "Rev. 14 section 9"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 %",
+        "datasheet": "1.2 to 3.6 V",
+        "pass": true,
+        "source": "Rev. 14 section 8"
+       },
+       {
+        "name": "DShot bit rate and load",
+        "required": "1200 kbit/s at 50 pF",
+        "datasheet": "tpd 5.9 ns max at VCC 3.0 to 3.6 V; tsk(o) 1.0 ns",
+        "pass": true,
+        "source": "Rev. 14 section 10"
+       },
+       {
+        "name": "connector high level",
+        "required": "3.3 V",
+        "datasheet": "VOH VCC − 0.2 V at −100 µA; 2.2 V at −24 mA, VCC 3.0 V",
+        "pass": true,
+        "source": "Rev. 14 section 9"
+       },
+       {
+        "name": "connector voltage tolerated",
+        "required": "≥ 3.6 V, disabled or unpowered",
+        "datasheet": "VO output 3-state −0.5 to 6.5 V",
+        "pass": true,
+        "source": "Rev. 14 Table 4"
+       },
+       {
+        "name": "idle level in RP2354B reset",
+        "required": "input reads low against 113 kΩ",
+        "datasheet": "II ±5 µA at VCC 3.6 V: 0.57 V < 0.8 V",
+        "pass": true,
+        "source": "Rev. 14 section 9"
+       },
+       {
+        "name": "no bus hold",
+        "required": "no bus hold on data inputs",
+        "datasheet": "the 74LVC244A has none; the 74LVCH244A variant has bus hold and is not this part",
+        "pass": true,
+        "source": "Rev. 14 section 1"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "Tamb −40 to +125 °C",
+        "pass": true,
+        "source": "Rev. 14 section 8"
+       }
+      ],
+      "jlcpcb": "stockCount 27938, canPresaleNumber 27915, componentLibraryType expand, USD 0.2159 a part at the 1 to 49 break (need 10), read 2026-09-28T17:20:12Z, vendors.py jlcpcb C6079 (exact LCSC match)",
+      "digikey": "stock_available 0, manufacturer lead time 20 weeks, ProductStatus Active, read 2026-09-28T17:21:02Z, vendors.py digikey 74LVC244APW,118 (api.digikey.com/products/v4/search/74LVC244APW%2C118/productdetails)",
+      "gate": "need 5 × 2 = 10; threshold 50; stockCount 27938 ≥ 50 and canPresaleNumber 27915 ≥ 0: pass",
+      "lifecycle": "manufacturer status Production: www.nexperia.com/product/74LVC244APW, marker product-status--production, read 2026-09-28T17:28:33Z; longevity commitment: not read (no maker programme page fetched in this task); first revision 74LVC244A_74LVCH244A v.1, 1996-09-06 (revision history of Rev. 14), over 12 months; change and end-of-life notices: not read; distributor: Digi-Key Active (17:21:02Z)",
+      "second_source": "alternate SN74LVC244APWR (Texas Instruments): same pinout and function; JLCPCB stockCount 94539 ≥ 50, canPresaleNumber 94364 (17:20:12Z). The second-vendor route fails: Digi-Key stock 0 (17:21:02Z)",
+      "alternates": [
+       "SN74LVC244APWR",
+       "74LCX244MTCX",
+       "74LCX244FT"
+      ],
+      "driver_in_shared": "none (no register interface; no driver needed)",
+      "reason": "Rank 1's alternate from a second maker, with the same values and pinout. Ranked second because rank 1 holds more stock",
+      "second_source_route": "alternate",
+      "second_source_part": "SN74LVC244APWR"
+     },
+     {
+      "rank": 3,
+      "part": "74LCX244MTCX",
+      "maker": "onsemi (datasheet 74LCX244/D); counts as onsemi (S1); JLCPCB label onsemi",
+      "lcsc": "C255589",
+      "package": "TSSOP-20 (case 948AQ)",
+      "placements": 2,
+      "placements_basis": "fixed: 16 lines / 8 buffers a part = 2 a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "lines",
+        "required": "16 one-way lines",
+        "datasheet": "8 buffers, OE1 and OE2 each controlling 4",
+        "pass": true,
+        "source": "74LCX244/D Rev. 2, July 2024, https://www.onsemi.com/download/data-sheet/pdf/74lcx244-d.pdf, read 2026-09-28T17:22:54Z, page 2"
+       },
+       {
+        "name": "enable source and polarity",
+        "required": "from the enable node; active-low takes the inverter",
+        "datasheet": "OE1 pin 1, OE2 pin 19, active low (truth tables)",
+        "pass": true,
+        "source": "74LCX244/D page 2"
+       },
+       {
+        "name": "disabled state",
+        "required": "high impedance under 1 µs",
+        "datasheet": "tPHZ, tPLZ 7.0 ns max at VCC 3.0 to 3.6 V",
+        "pass": true,
+        "source": "74LCX244/D AC characteristics"
+       },
+       {
+        "name": "I_off on inputs and enable",
+        "required": "input current limit at VCC = 0 V",
+        "datasheet": "IOFF 10 µA at VI = 5.5 V or VO = 5.5 V, VCC 0 (page 4 rendered; pdftotext drops the µ glyph); power-down high impedance inputs and outputs",
+        "pass": true,
+        "source": "74LCX244/D page 4 and features"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 %",
+        "datasheet": "1.65 to 5.5 V",
+        "pass": true,
+        "source": "74LCX244/D recommended operating conditions"
+       },
+       {
+        "name": "DShot bit rate and load",
+        "required": "1200 kbit/s at 50 pF",
+        "datasheet": "tPLH, tPHL 6.5 ns max at 3.0 to 3.6 V; skew 1.0 ns",
+        "pass": true,
+        "source": "74LCX244/D AC characteristics"
+       },
+       {
+        "name": "connector high level",
+        "required": "3.3 V",
+        "datasheet": "VOH VCC − 0.1 V at −100 µA; 2.2 V at −24 mA, VCC 3.0 V",
+        "pass": true,
+        "source": "74LCX244/D page 4"
+       },
+       {
+        "name": "connector voltage tolerated",
+        "required": "≥ 3.6 V, disabled or unpowered",
+        "datasheet": "VO tri-state and power-down (VCC = 0 V) −0.5 to 6.5 V",
+        "pass": true,
+        "source": "74LCX244/D maximum ratings"
+       },
+       {
+        "name": "idle level in RP2354B reset",
+        "required": "input reads low against 113 kΩ",
+        "datasheet": "II ±5.0 µA at 3.6 V: 0.57 V < 0.8 V",
+        "pass": true,
+        "source": "74LCX244/D page 4"
+       },
+       {
+        "name": "no bus hold",
+        "required": "no bus hold on data inputs",
+        "datasheet": "none stated",
+        "pass": true,
+        "source": "74LCX244/D"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TA −40 to +125 °C",
+        "pass": true,
+        "source": "74LCX244/D recommended operating conditions"
+       }
+      ],
+      "jlcpcb": "stockCount 9161, canPresaleNumber 9160, componentLibraryType expand, USD 0.3557 a part at the 10 to 29 break (need 10), read 2026-09-28T17:20:14Z, vendors.py jlcpcb C255589 (exact LCSC match)",
+      "digikey": "stock_available 53274, manufacturer lead time 33 weeks, ProductStatus Active, read 2026-09-28T17:21:04Z, vendors.py digikey 74LCX244MTCX (api.digikey.com/products/v4/search/74LCX244MTCX/productdetails)",
+      "gate": "need 10; threshold 50; stockCount 9161 ≥ 50 and canPresaleNumber 9160 ≥ 0: pass",
+      "lifecycle": "manufacturer status Active: www.onsemi.com/products/standard-products/logic/buffers/74lcx244, product heading Active and orderable row 74LCX244MTCX Active, read 2026-09-28T17:28:34Z; longevity commitment: not read (no maker programme page fetched in this task); first datasheet revision: not read (current Rev. 2, July 2024); change and end-of-life notices: not read; distributor: Digi-Key Active (17:21:04Z)",
+      "second_source": "second vendor: Digi-Key stock_available 53274 ≥ 50 (17:21:04Z). Also pin-compatible alternates SN74LVC244APWR (JLCPCB 94539) and 74LVC244APW,118 (JLCPCB 27938)",
+      "alternates": [
+       "SN74LVC244APWR",
+       "74LVC244APW,118",
+       "74LCX244FT"
+      ],
+      "driver_in_shared": "none (no register interface; no driver needed)",
+      "reason": "Pin-compatible with rank 1 from a third maker, and both rule-5 routes pass. Ranked below the TI and Nexperia pair on JLCPCB stock and price (0.3557 against 0.299 and 0.2159)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 4,
+      "part": "SN74LVC16244ADGGR",
+      "maker": "Texas Instruments (datasheet SCAS699C); counts as Texas Instruments (S1)",
+      "lcsc": "C7822",
+      "package": "TSSOP-48 (DGG, 6.1 mm)",
+      "placements": 1,
+      "placements_basis": "fixed: 16 lines / 16 buffers a part = 1 a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "lines",
+        "required": "16 one-way lines",
+        "datasheet": "16 buffers in 4 groups of 4",
+        "pass": true,
+        "source": "SN74LVC16244A SCAS699C (August 2003, revised June 2014), https://www.ti.com/lit/ds/symlink/sn74lvc16244a.pdf, read 2026-09-28T17:22:26Z"
+       },
+       {
+        "name": "enable source and polarity",
+        "required": "from the enable node; active-low takes the inverter",
+        "datasheet": "1OE pin 1, 2OE pin 48, 3OE pin 25, 4OE pin 24, active low: 4 OE pins, each with its own 10 kΩ pull-up",
+        "pass": true,
+        "source": "SCAS699C pin functions"
+       },
+       {
+        "name": "disabled state",
+        "required": "high impedance under 1 µs",
+        "datasheet": "tdis 5.8 ns max at 3.3 V ±0.3 V, −40 to 85 °C",
+        "pass": true,
+        "source": "SCAS699C section 7.6"
+       },
+       {
+        "name": "I_off on inputs and enable",
+        "required": "input current limit at VCC = 0 V",
+        "datasheet": "Ioff ±10 µA at VI or VO = 5.5 V, VCC 0",
+        "pass": true,
+        "source": "SCAS699C electrical characteristics"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 %",
+        "datasheet": "1.65 to 3.6 V",
+        "pass": true,
+        "source": "SCAS699C recommended operating conditions"
+       },
+       {
+        "name": "DShot bit rate and load",
+        "required": "1200 kbit/s at 50 pF",
+        "datasheet": "tpd 4.1 ns max at 3.3 V ±0.3 V; tsk(o) 1 ns",
+        "pass": true,
+        "source": "SCAS699C section 7.6"
+       },
+       {
+        "name": "connector high level",
+        "required": "3.3 V",
+        "datasheet": "VOH 2.2 V at −24 mA, VCC 3 V",
+        "pass": true,
+        "source": "SCAS699C electrical characteristics"
+       },
+       {
+        "name": "connector voltage tolerated",
+        "required": "≥ 3.6 V, disabled or unpowered",
+        "datasheet": "VO high-impedance or power-off state −0.5 to 6.5 V",
+        "pass": true,
+        "source": "SCAS699C absolute maximum ratings"
+       },
+       {
+        "name": "idle level in RP2354B reset",
+        "required": "input reads low against 113 kΩ",
+        "datasheet": "II ±5 µA at 3.6 V: 0.57 V < 0.8 V",
+        "pass": true,
+        "source": "SCAS699C electrical characteristics"
+       },
+       {
+        "name": "no bus hold",
+        "required": "no bus hold on data inputs",
+        "datasheet": "none stated",
+        "pass": true,
+        "source": "SCAS699C"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TA −40 to 125 °C",
+        "pass": true,
+        "source": "SCAS699C recommended operating conditions"
+       }
+      ],
+      "jlcpcb": "stockCount 2841, canPresaleNumber 2833, componentLibraryType expand, USD 1.6857 a part at the 1 to 9 break (need 5), read 2026-09-28T17:20:16Z, vendors.py jlcpcb C7822 (exact LCSC match)",
+      "digikey": "stock_available 15401, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-28T17:21:07Z, vendors.py digikey SN74LVC16244ADGGR (productdetails)",
+      "gate": "need 5 × 1 = 5; threshold max(25, 50) = 50; stockCount 2841 ≥ 50 and canPresaleNumber 2833 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE: www.ti.com/product/SN74LVC16244A, meta status ACTIVE and orderable SN74LVC16244ADGGR marketingStatusDescription ACTIVE, read 2026-09-28T17:28:06Z; longevity commitment: not read; first datasheet revision August 2003 (SCAS699 header), over 12 months; change and end-of-life notices: not read; distributor: Digi-Key Active (17:21:07Z)",
+      "second_source": "second vendor: Digi-Key stock_available 15401 ≥ 50 (17:21:07Z). Also alternate 74LVC16244ADGG,118 (Nexperia): 1OE, 2OE, 3OE, 4OE on pins 1, 48, 25, 24 in both pin tables; JLCPCB 6280 (17:20:17Z)",
+      "alternates": [
+       "74LVC16244ADGG,118"
+      ],
+      "driver_in_shared": "none (no register interface; no driver needed)",
+      "reason": "One part carries all 16 lines, and both rule-5 routes pass. Ranked below the 244 parts on JLCPCB stock (2841 against 94539), price (1.6857 a board against 0.598), a 0.5 mm pitch against 0.65 mm, and 4 OE pull-ups against 4 on two 244s with simpler routing",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "74LVC16244ADGG,118",
+      "maker": "Nexperia (datasheet 74LVC16244A; 74LVCH16244A Rev. 18); counts as Nexperia (S1)",
+      "lcsc": "C6070",
+      "package": "TSSOP-48 (SOT362-1)",
+      "placements": 1,
+      "placements_basis": "fixed: 16 lines / 16 buffers a part = 1 a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "lines",
+        "required": "16 one-way lines",
+        "datasheet": "16 buffers, 4 output enables each controlling 4",
+        "pass": true,
+        "source": "74LVC16244A; 74LVCH16244A Rev. 18, 9 April 2024, https://assets.nexperia.com/documents/data-sheet/74LVC_LVCH16244A.pdf, read 2026-09-28T17:22:51Z"
+       },
+       {
+        "name": "enable source and polarity",
+        "required": "from the enable node; active-low takes the inverter",
+        "datasheet": "1OE, 2OE, 3OE, 4OE on pins 1, 48, 25, 24, active low",
+        "pass": true,
+        "source": "Rev. 18 pin description"
+       },
+       {
+        "name": "disabled state",
+        "required": "high impedance under 1 µs",
+        "datasheet": "tdis 5.2 ns max at VCC 3.0 to 3.6 V, −40 to 85 °C",
+        "pass": true,
+        "source": "Rev. 18 section 10"
+       },
+       {
+        "name": "I_off on inputs and enable",
+        "required": "input current limit at VCC = 0 V",
+        "datasheet": "IOFF ±10 µA at VCC 0 V, VI or VO = 5.5 V, −40 to 85 °C",
+        "pass": true,
+        "source": "Rev. 18 section 9"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 %",
+        "datasheet": "1.2 to 3.6 V",
+        "pass": true,
+        "source": "Rev. 18 section 8"
+       },
+       {
+        "name": "DShot bit rate and load",
+        "required": "1200 kbit/s at 50 pF",
+        "datasheet": "tpd and tdis in single-digit ns at VCC 3.0 to 3.6 V",
+        "pass": true,
+        "source": "Rev. 18 section 10"
+       },
+       {
+        "name": "connector high level",
+        "required": "3.3 V",
+        "datasheet": "VOH 2.2 V at −24 mA, VCC 3.0 V",
+        "pass": true,
+        "source": "Rev. 18 section 9"
+       },
+       {
+        "name": "connector voltage tolerated",
+        "required": "≥ 3.6 V, disabled or unpowered",
+        "datasheet": "VO output 3-state −0.5 to +6.5 V",
+        "pass": true,
+        "source": "Rev. 18 Table 4"
+       },
+       {
+        "name": "idle level in RP2354B reset",
+        "required": "input reads low against 113 kΩ",
+        "datasheet": "II ±5 µA at VCC 3.6 V: 0.57 V < 0.8 V",
+        "pass": true,
+        "source": "Rev. 18 section 9"
+       },
+       {
+        "name": "no bus hold",
+        "required": "no bus hold on data inputs",
+        "datasheet": "the 74LVC16244A has none; the 74LVCH16244A variant has bus hold and is not this part",
+        "pass": true,
+        "source": "Rev. 18 section 1"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "Tamb −40 to +125 °C",
+        "pass": true,
+        "source": "Rev. 18 section 8"
+       }
+      ],
+      "jlcpcb": "stockCount 6280, canPresaleNumber 6278, componentLibraryType expand, USD 0.7097 a part at the 1 to 9 break (need 5), read 2026-09-28T17:20:17Z, vendors.py jlcpcb C6070 (exact LCSC match)",
+      "digikey": "productdetails returned HTTP 404, duplicate products (2026-09-28T17:21:09Z). Keyword search, row 74LVC16244ADGG,118 of Nexperia USA Inc.: stock_available 2000, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-28T17:22:01Z, vendors.py digikey-search 74LVC16244ADGG,118 (api.digikey.com/products/v4/search/keyword)",
+      "gate": "need 5; threshold 50; stockCount 6280 ≥ 50 and canPresaleNumber 6278 ≥ 0: pass",
+      "lifecycle": "manufacturer status Production: www.nexperia.com/product/74LVC16244ADGG, marker product-status--production, read 2026-09-28T17:28:34Z; longevity commitment: not read; first revision listed 1997-10-28 (revision history of Rev. 18), over 12 months; change and end-of-life notices: not read; distributor: Digi-Key Active (keyword row, 17:22:01Z)",
+      "second_source": "second vendor: Digi-Key 2000 ≥ 50 (17:22:01Z). Also alternate SN74LVC16244ADGGR (JLCPCB 2841, 17:20:16Z), same pinout",
+      "alternates": [
+       "SN74LVC16244ADGGR"
+      ],
+      "driver_in_shared": "none (no register interface; no driver needed)",
+      "reason": "Rank 4's pin-for-pin alternate from Nexperia, with the same values",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "SN74LVC8T245PWR (C27643)",
+      "maker": "Texas Instruments",
+      "reason": "Not dropped on a requirement; a survivor ranked below the five shortlisted parts. The adjudicated ruling puts its enable I_off back in: SCES584D (revised May 2026, read 2026-09-28T17:22:29Z) section 7.3.2 gives Ioff (±2 µA, VI or VO 0 to 5.5 V, either supply at 0 V) as the limit on any input or output pin. With DIR tied to VCCA it is a one-way 8-bit buffer. OE is active low, TA −40 to 85 °C, VOH 2.4 V at −24 mA and 3 V, and OE-to-B tPHZ 8.6 ns max at VCCA and VCCB 3.3 V. JLCPCB 63551, presale 60344 (17:20:25Z); Digi-Key 85929, Active, 16 weeks (17:21:22Z); both routes pass. Ranked sixth: it takes a 24-pin part, a tied DIR pin and a supply on each side for a one-way buffer that the 244 does in 20 pins"
+     },
+     {
+      "part": "74LCX244FT (C2675684)",
+      "maker": "Toshiba",
+      "reason": "Not dropped on a requirement; a survivor below the five. Datasheet Rev. 3.0.A (https://toshiba.semicon-storage.com/info/docget.jsp?did=14591&prodName=74LCX244FT, read 2026-09-28T17:22:57Z): power-down protection on all inputs and outputs, IOFF 10.0 µA at VIN/VOUT = 5.5 V and VCC 0, Topr −40 to 85 °C, 244 pinout. JLCPCB 5936, presale 5935 (17:20:14Z); Digi-Key 15687, Active, 16 weeks (17:21:06Z). Ranked below because Toshiba's product page carries no lifecycle status in its body (not read, 17:29:22Z), and rank 1 already has two passing alternates"
+     },
+     {
+      "part": "SN74LVC541APWR (C113281)",
+      "maker": "Texas Instruments",
+      "reason": "Not dropped on a requirement; the P3 exclusion holds, and it is a survivor below the five. SCAS298O (revised June 2026, read 2026-09-28T17:22:25Z): Ioff ±10 µA at VI or VO 5.5 V, OE1 and OE2 active low, TA to 125 °C. JLCPCB 15628, presale 15242 (17:20:20Z); Digi-Key 0 (17:21:12Z). Its rule-5 route is an alternate: onsemi MC74LCX541DTR2G (JLCPCB 2550, Digi-Key 21603) or Toshiba 74LCX541FT(AE) (JLCPCB 2098). Ranked below the 244 family, which has more stock and a read maker status on every alternate"
+     },
+     {
+      "part": "MC74LCX541DTR2G (C7354)",
+      "maker": "onsemi",
+      "reason": "Not dropped on a requirement; a survivor below the five. MC74LCX541/D Rev. 11, January 2025 (https://www.onsemi.com/download/data-sheet/pdf/mc74lcx541-d.pdf, read 2026-09-28T17:22:56Z): IOFF 10 µA at VI or VO 5.5 V and VCC 0 (page 5 rendered), tPHZ and tPLZ 7.5 ns at 3.0 to 3.6 V, TA −40 to +125 °C, OE1 pin 1 and OE2 pin 19 active low. JLCPCB 2550, presale 2550 (17:20:22Z); Digi-Key 21603, Active, 40 weeks (17:21:15Z). A pin-compatible alternate of SN74LVC541APWR"
+     },
+     {
+      "part": "74LCX541FT(AE) (C7194124)",
+      "maker": "Toshiba",
+      "reason": "Not dropped on a requirement; a survivor below the five. Rev. 3.0.A (https://toshiba.semicon-storage.com/info/docget.jsp?did=15179&prodName=74LCX541FT, read 2026-09-28T17:22:59Z): power-down protection on all inputs and outputs, IOFF 10.0 µA at 5.5 V and VCC 0, Topr −40 to 85 °C. JLCPCB 2098, presale 2098 (17:20:20Z). Digi-Key: productdetails for 74LCX541FT(AE) not found (17:21:14Z); the keyword row 74LCX541FT holds 11 (17:22:03Z), below 50, so its route is the alternate SN74LVC541APWR. Toshiba's status is not read"
+     },
+     {
+      "part": "SN74LVC245APWR (C7848) and 74LVC245APW,118 (C6082)",
+      "maker": "Texas Instruments, Nexperia",
+      "reason": "Not dropped on a requirement; survivors below the five. The 74LVC245A is a seed. With DIR tied, it is a one-way 8-bit buffer. SCAS218X (revised January 2015, read 2026-09-28T17:22:24Z) gives Ioff ±10 µA at 5.5 V. JLCPCB 27462 and 270712 (17:20:28Z, 17:20:29Z). Digi-Key: SN74LVC245APWR 0 (17:21:26Z); the 74LVC245APW,118 keyword row holds 36 (17:22:08Z), below 50. So each passes rule 5 only through the other. Ranked below the 244, which needs no tied direction pin"
+     },
+     {
+      "part": "SN74LV244APWR (C475502)",
+      "maker": "Texas Instruments",
+      "reason": "Not dropped on a requirement; a survivor below the five. SCLS383R (revised August 2023, read 2026-09-28T17:22:26Z): Ioff 5 µA at VI or VO 0 to 5.5 V, VIH 0.7 × VCC (2.38 V at 3.4 V against the pad's 2.62 V V_OH), IOH −8 mA at 3 to 3.6 V. JLCPCB 12488, presale 12447 (17:20:19Z); Digi-Key 9528, Active (17:21:11Z). It has the least drive and input margin of the buffers"
+     },
+     {
+      "part": "SN74LVC2G126DCUR (C2652104)",
+      "maker": "Texas Instruments",
+      "reason": "Not dropped on a requirement; a survivor below the five. SCES205N (revised September 2020, read 2026-09-28T17:22:27Z): Ioff ±10 µA, 1OE and 2OE active high, TA −40 to 125 °C. It takes 8 parts a board, and its 16 OE pins, each with its own 10 kΩ pull-down, load the enable node with 16 × 3.3 V / 10 kΩ = 5.3 mA. JLCPCB 17289 (17:20:23Z), Digi-Key 19091 (17:21:17Z)"
+     },
+     {
+      "part": "TXU0104PWR (C2938871)",
+      "maker": "Texas Instruments",
+      "reason": "Not dropped on a requirement; a survivor below the five. SCES937B (revised February 2025, read 2026-09-28T17:22:30Z): OE pin 8 is active high (pull it to GND for high impedance), so it needs no inverter. Ioff ±2 µA over −40 to 85 °C covers any input or output pin (section 7.3.4; the adjudicated ruling). OE-to-B tdis is 112 ns max at 3.3 V, under 1 µs, and VOH 2.2 V at −10 mA and 3 V. It takes 4 parts a board. JLCPCB 15172, presale 13687 (17:20:25Z); Digi-Key 0 (17:21:23Z), and no pin-compatible alternate passes, so rule 5 has no route"
+     },
+     {
+      "part": "SN74CBTLV3126PWR as the PWM-port gate (C543078)",
+      "maker": "Texas Instruments",
+      "reason": "Not dropped on a requirement; a survivor below the five for this function. It passes the RP2354B pad to the connector without buffering it, and 4 parts a board would carry the 16 lines. Its selection is under multiprotocol port path"
+     },
+     {
+      "part": "74LVC126APW,118 (C2442297) / 74LVC126APW (C6060)",
+      "maker": "Nexperia",
+      "reason": "rule 4: JLCPCB stockCount 0, canPresaleNumber 0 (C2442297, 2026-09-28T17:20:26Z); C6060 stockCount 0 (17:20:27Z). Digi-Key holds 5676 (keyword search, 17:22:05Z), which does not stand in for rule 4 on a part placed on the board"
+     },
+     {
+      "part": "SN74LVC126APWR (C7815)",
+      "maker": "Texas Instruments",
+      "reason": "fails I_off on the inputs and the enable: SCAS339U (revised July 2024, read 2026-09-28T17:22:35Z) states no Ioff and no partial-power-down feature"
+     },
+     {
+      "part": "74LCX244FT(AJ) (C7421266)",
+      "maker": "Toshiba",
+      "reason": "rule 4: JLCPCB stockCount 49 < 50 (2026-09-28T17:20:15Z)"
+     },
+     {
+      "part": "74LCX16244MTDX (C6013)",
+      "maker": "onsemi",
+      "reason": "rule 4: JLCPCB stockCount 38 < 50 (2026-09-28T17:20:18Z)"
+     },
+     {
+      "part": "74LVC541APW,118 (C6093)",
+      "maker": "Nexperia",
+      "reason": "rule 4: JLCPCB stockCount 0, canPresaleNumber −12 (2026-09-28T17:20:48Z)"
+     },
+     {
+      "part": "bus-hold variants (74LVCH244A, 74LVCH16244A, SN74LVCH8T245, ALVCH and LVTH families)",
+      "maker": "Nexperia, Texas Instruments",
+      "reason": "fails the no-bus-hold requirement: a bus-hold input holds its last level against the pad's 36 to 113 kΩ reset pull-down, so the low at the connector in reset (V73) does not follow"
+     },
+     {
+      "part": "LSF0108PWR (seed)",
+      "maker": "Texas Instruments",
+      "reason": "a passive FET translator. SDLS966M (revised May 2023, read 2026-09-28T17:31:55Z) line 600: pull-up resistors are always required on the high side, so it cannot drive the connector high against the 10 kΩ pull-down. EN is tied to Vref_B through 200 kΩ (pin table), not driven from the enable node"
+     },
+     {
+      "part": "SN74LVC1T45, 74LVC1T45, SN74LXC1T45 (seeds)",
+      "maker": "Texas Instruments, Nexperia, Diodes Incorporated",
+      "reason": "no output-enable pin (pins VCCA, GND, A, B, DIR, VCCB: SCES515N, SCES934A read 2026-09-28T17:22:33Z and 17:31:56Z), so the enable node cannot put the output at high impedance"
+     }
+    ]
+   },
+   {
+    "function": "enable inverter",
+    "requirements": [
+     {
+      "name": "need",
+      "value": "only where the gate element's enable is active low: the 244s of the gated output buffer, and SN74CBTLV3125 if it replaces SN74CBTLV3126 on the switch path",
+      "source": "Monostable.md:369-376 at 23c82ca"
+     },
+     {
+      "name": "input isolation",
+      "value": "I_off on its input, or a series resistor of 4.7 kΩ or more from the enable node",
+      "source": "Monostable.md:87; IOBoard.md:192"
+     },
+     {
+      "name": "output pull",
+      "value": "each active-low OE pin it drives carries its own 10 kΩ pull-up, so an unpowered inverter and an undriven node both read disabled",
+      "source": "Monostable.md:373-376"
+     },
+     {
+      "name": "supply",
+      "value": "3.3 V ±3 %",
+      "source": "IOBoard.md, Interlock supply row"
+     },
+     {
+      "name": "delay",
+      "value": "with the buffer, within the 1 µs disable budget",
+      "source": "Monostable.md:112"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 °C",
+      "source": "V7 answer (Research.md:567)"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "SN74LVC1G04DBVR",
+      "maker": "Texas Instruments (datasheet SCES214AF); counts as Texas Instruments (S1)",
+      "lcsc": "C7827",
+      "package": "SOT-23-5 (DBV)",
+      "placements": 2,
+      "placements_basis": "range 1 to 2: one inverter drives the 4 OE pins of the two 244s, each with its own 10 kΩ pull-up (1.3 mA); 2 if each buffer part takes its own. The gate applies at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "input isolation",
+        "required": "I_off on the input",
+        "datasheet": "Ioff ±10 µA at VI or VO = 5.5 V, VCC 0",
+        "pass": true,
+        "source": "SN74LVC1G04 SCES214AF (April 1999, revised October 2025), https://www.ti.com/lit/ds/symlink/sn74lvc1g04.pdf, read 2026-09-28T17:22:31Z, electrical characteristics"
+       },
+       {
+        "name": "output pull",
+        "required": "drive 4 × 10 kΩ pull-ups low",
+        "datasheet": "output sinks 24 mA at 3 V (VOL table); the load is 1.3 mA",
+        "pass": true,
+        "source": "SCES214AF"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 %",
+        "datasheet": "1.65 to 5.5 V",
+        "pass": true,
+        "source": "SCES214AF recommended operating conditions"
+       },
+       {
+        "name": "delay",
+        "required": "within 1 µs with the buffer",
+        "datasheet": "tpd 3.7 ns max at 3.3 V ±0.3 V, CL 30 or 50 pF, −40 to 85 °C",
+        "pass": true,
+        "source": "SCES214AF section 5.7"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TA −40 to 125 °C",
+        "pass": true,
+        "source": "SCES214AF"
+       }
+      ],
+      "jlcpcb": "stockCount 53258, canPresaleNumber 51452, componentLibraryType expand, USD 0.0811 a part at the 1 to 49 break (need 10), read 2026-09-28T17:20:31Z, vendors.py jlcpcb C7827 (exact LCSC match)",
+      "digikey": "productdetails returned HTTP 404, duplicate products (2026-09-28T17:21:30Z). Keyword search, row SN74LVC1G04DBVR of Texas Instruments: stock_available 248323, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-28T17:22:10Z, vendors.py digikey-search SN74LVC1G04DBVR (api.digikey.com/products/v4/search/keyword)",
+      "gate": "need 5 × 2 = 10; threshold 50; stockCount 53258 ≥ 50 and canPresaleNumber 51452 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE: www.ti.com/product/SN74LVC1G04, meta status ACTIVE and orderable SN74LVC1G04DBVR marketingStatusDescription ACTIVE, read 2026-09-28T17:28:07Z; longevity commitment: not read; first datasheet revision April 1999, over 12 months; change and end-of-life notices: not read; distributor: Digi-Key Active (17:22:10Z)",
+      "second_source": "second vendor: Digi-Key 248323 ≥ 50 (17:22:10Z). Also alternates 74LVC1G04GV,125 and NC7SZ04M5X (NC 1, A 2, GND 3, Y 4, VCC 5)",
+      "alternates": [
+       "74LVC1G04GV,125",
+       "NC7SZ04M5X"
+      ],
+      "driver_in_shared": "none (no register interface; no driver needed)",
+      "reason": "Meets every value, both rule-5 routes pass, and TI's status is read",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "74LVC1G04GV,125",
+      "maker": "Nexperia (datasheet 74LVC1G04 Rev. 18.1); counts as Nexperia (S1)",
+      "lcsc": "C12509",
+      "package": "SOT-753 (SC-74A)",
+      "placements": 2,
+      "placements_basis": "range 1 to 2, as rank 1; the gate applies at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "input isolation",
+        "required": "I_off on the input",
+        "datasheet": "IOFF ±2 µA at VCC 0 V, VI or VO = 5.5 V",
+        "pass": true,
+        "source": "74LVC1G04 Rev. 18.1, 2 September 2024, https://assets.nexperia.com/documents/data-sheet/74LVC1G04.pdf, read 2026-09-28T17:22:51Z, section 9"
+       },
+       {
+        "name": "output pull",
+        "required": "drive 4 × 10 kΩ pull-ups low",
+        "datasheet": "±24 mA output at VCC 3.0 V",
+        "pass": true,
+        "source": "Rev. 18.1 section 9"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 %",
+        "datasheet": "1.65 to 5.5 V",
+        "pass": true,
+        "source": "Rev. 18.1 section 8"
+       },
+       {
+        "name": "delay",
+        "required": "within 1 µs with the buffer",
+        "datasheet": "tpd 4.2 ns max at VCC 3.0 to 3.6 V, −40 to 85 °C",
+        "pass": true,
+        "source": "Rev. 18.1 section 10"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "Tamb −40 to +125 °C",
+        "pass": true,
+        "source": "Rev. 18.1 section 8"
+       }
+      ],
+      "jlcpcb": "stockCount 22013, canPresaleNumber 21981, componentLibraryType expand, USD 0.1532 a part at the 1 to 49 break (need 10), read 2026-09-28T17:20:31Z, vendors.py jlcpcb C12509 (exact LCSC match)",
+      "digikey": "productdetails returned HTTP 404, duplicate products (2026-09-28T17:21:31Z). Keyword search, row 74LVC1G04GV,125 of Nexperia USA Inc.: stock_available 67979, manufacturer lead time 20 weeks, ProductStatus Active, read 2026-09-28T17:22:12Z, vendors.py digikey-search 74LVC1G04GV,125",
+      "gate": "need 10; threshold 50; stockCount 22013 ≥ 50 and canPresaleNumber 21981 ≥ 0: pass",
+      "lifecycle": "manufacturer status Production: www.nexperia.com/product/74LVC1G04GV, marker product-status--production, read 2026-09-28T17:28:34Z; longevity commitment: not read; earliest revision in the history of Rev. 18.1: v.10, 2011-12-07 (earlier ones not listed), over 12 months; change and end-of-life notices: not read; distributor: Digi-Key Active (17:22:12Z)",
+      "second_source": "second vendor: Digi-Key 67979 ≥ 50 (17:22:12Z). Also alternate SN74LVC1G04DBVR (same pin order)",
+      "alternates": [
+       "SN74LVC1G04DBVR",
+       "NC7SZ04M5X"
+      ],
+      "driver_in_shared": "none (no register interface; no driver needed)",
+      "reason": "Equivalent to rank 1 from a second maker; ranked second on JLCPCB stock and price",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "NC7SZ04M5X",
+      "maker": "onsemi (datasheet NC7SZ04/D); counts as onsemi (S1)",
+      "lcsc": "C32090",
+      "package": "SC-74A-5 (onsemi case 318BQ, 3.00 × 1.50 mm, 0.95 mm pitch); JLCPCB lists SC-74A-5",
+      "placements": 2,
+      "placements_basis": "range 1 to 2, as rank 1; the gate applies at 2",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "input isolation",
+        "required": "I_off on the input",
+        "datasheet": "IOFF 10 µA max at VIN or VOUT = 5.5 V, VCC 0, −40 to 85 °C (page 4 rendered)",
+        "pass": true,
+        "source": "NC7SZ04/D Rev. 7, August 2024, https://www.onsemi.com/download/data-sheet/pdf/nc7sz04-d.pdf, read 2026-09-28T17:22:55Z, page 4"
+       },
+       {
+        "name": "output pull",
+        "required": "drive 4 × 10 kΩ pull-ups low",
+        "datasheet": "VOL 0.55 V at IOL 24 mA, VCC 3.0 V",
+        "pass": true,
+        "source": "NC7SZ04/D page 4"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 %",
+        "datasheet": "1.65 to 5.5 V",
+        "pass": true,
+        "source": "NC7SZ04/D"
+       },
+       {
+        "name": "delay",
+        "required": "within 1 µs with the buffer",
+        "datasheet": "tPLH, tPHL 5.2 ns max at 3.3 V ±0.3 V, CL 50 pF, −40 to 85 °C",
+        "pass": true,
+        "source": "NC7SZ04/D AC characteristics"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TA −40 to +85 °C",
+        "pass": true,
+        "source": "NC7SZ04/D recommended operating conditions"
+       }
+      ],
+      "jlcpcb": "stockCount 8868, canPresaleNumber 8840, componentLibraryType expand, USD 0.0689 a part at the 1 to 99 break (need 10), read 2026-09-28T17:20:33Z, vendors.py jlcpcb C32090 (exact LCSC match)",
+      "digikey": "stock_available 0, manufacturer lead time 55 weeks, ProductStatus Active, read 2026-09-28T17:21:33Z, vendors.py digikey NC7SZ04M5X (productdetails)",
+      "gate": "need 10; threshold 50; stockCount 8868 ≥ 50 and canPresaleNumber 8840 ≥ 0: pass",
+      "lifecycle": "manufacturer status Active: www.onsemi.com/products/standard-products/logic/logic-gates/nc7sz04 (reached from www.onsemi.com/PowerSolutions/product.do?id=NC7SZ04), product heading Active and orderable row NC7SZ04M5X Active, read 2026-09-28T17:29:05Z; the -L22090 and -L22175 rows show Last Shipments and are discontinued in the datasheet's ordering table; longevity commitment: not read; first datasheet revision: not read (current Rev. 7, August 2024); change and end-of-life notices: not read; distributor: Digi-Key Active (17:21:33Z)",
+      "second_source": "alternate SN74LVC1G04DBVR (Texas Instruments): NC 1, A 2, GND 3, Y 4, VCC 5 in both pin tables; JLCPCB stockCount 53258 ≥ 50, canPresaleNumber 51452 (17:20:31Z). The second-vendor route fails: Digi-Key stock 0 (17:21:33Z)",
+      "alternates": [
+       "SN74LVC1G04DBVR",
+       "74LVC1G04GV,125"
+      ],
+      "driver_in_shared": "none (no register interface; no driver needed)",
+      "reason": "Meets every value, but Digi-Key holds none, so its rule-5 route rests on the TI alternate. The ordering code NC7SZ04M5X is onsemi's SC-74A, not its discontinued SOT23-5 code",
+      "second_source_route": "alternate",
+      "second_source_part": "SN74LVC1G04DBVR"
+     }
+    ],
+    "dropped": [
+     {
+      "part": "74LVC1G04W5-7 (C460517)",
+      "maker": "Diodes Incorporated",
+      "reason": "rule 4: JLCPCB stockCount 19 < 50 (2026-09-28T17:20:32Z)"
+     }
+    ]
+   },
+   {
+    "function": "bias selector",
+    "requirements": [
+     {
+      "name": "bias per mode",
+      "value": "a 1 kΩ pull-up to 3.3 V for bidirectional DShot, ESC bootloader, ESC telemetry, servo configuration, VESC and the UART socket; otherwise the fixed 10 kΩ pull-down",
+      "source": "F14 (Research.md:542); V58, V64 (found)"
+     },
+     {
+      "name": "control",
+      "value": "one I/O expander output per line, 5 in all, with a resistor that holds the control at the pull-down selection",
+      "source": "V56 (found)"
+     },
+     {
+      "name": "reset and unpowered state",
+      "value": "selects the pull-down: the pull-up element is off or at high impedance",
+      "source": "V57 answer (Research.md:617, owner 2026-09-28)"
+     },
+     {
+      "name": "lines",
+      "value": "5: the 4 multiprotocol ports and the UART socket",
+      "source": "F13 (Research.md:541); IOBoard.md:64-65"
+     },
+     {
+      "name": "connector-side isolation",
+      "value": "no back-power from a line driven to 3.6 V while the board is unpowered: I_off on the element's output",
+      "source": "V74, V63 (found)"
+     },
+     {
+      "name": "drive",
+      "value": "source 3.3 mA into the 1 kΩ with the line held at 2.0 V or more against the servo's 3 kΩ and the 10 kΩ pull-downs",
+      "source": "V58, V64 (found)"
+     },
+     {
+      "name": "supply",
+      "value": "3.3 V ±3 %",
+      "source": "IOBoard.md, Logic rail row"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 °C",
+      "source": "V7 answer (Research.md:567)"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "SN74LVC1G126DBVR",
+      "maker": "Texas Instruments (datasheet SCES224S); counts as Texas Instruments (S1)",
+      "lcsc": "C7834",
+      "package": "SOT-23-5 (DBV)",
+      "placements": 5,
+      "placements_basis": "fixed: one a biased line, 5 lines (V56). A tied to 3.3 V, Y to the line through 1 kΩ, OE from the expander with a pull-down",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "reset and unpowered state",
+        "required": "off with the control low or undriven",
+        "datasheet": "OE pin 1 active high: Y at high impedance with OE low (function table)",
+        "pass": true,
+        "source": "SN74LVC1G126 SCES224S (April 1999, revised August 2026), https://www.ti.com/lit/ds/symlink/sn74lvc1g126.pdf, read 2026-09-28T17:22:32Z"
+       },
+       {
+        "name": "connector-side isolation",
+        "required": "I_off on Y",
+        "datasheet": "Ioff ±10 µA at VI or VO = 5.5 V, VCC 0; VO in the high-impedance or power-off state −0.5 to 6.5 V",
+        "pass": true,
+        "source": "SCES224S sections 5.1, 5.5"
+       },
+       {
+        "name": "drive",
+        "required": "source 3.3 mA",
+        "datasheet": "VOH VCC − 0.1 V at −100 µA; 2.4 V at −16 mA, VCC 3 V",
+        "pass": true,
+        "source": "SCES224S section 5.5"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 %",
+        "datasheet": "1.65 to 5.5 V",
+        "pass": true,
+        "source": "SCES224S"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TA −40 to 125 °C",
+        "pass": true,
+        "source": "SCES224S"
+       }
+      ],
+      "jlcpcb": "stockCount 73651, canPresaleNumber 73279, componentLibraryType expand, USD 0.0748 a part at the 1 to 99 break (need 25), read 2026-09-28T17:20:34Z, vendors.py jlcpcb C7834 (exact LCSC match)",
+      "digikey": "productdetails returned HTTP 404, duplicate products (2026-09-28T17:21:34Z). Keyword search, row SN74LVC1G126DBVR of Texas Instruments: stock_available 19459, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-28T17:22:15Z, vendors.py digikey-search SN74LVC1G126DBVR",
+      "gate": "need 5 × 5 = 25; threshold max(125, 50) = 125; stockCount 73651 ≥ 125 and canPresaleNumber 73279 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE: www.ti.com/product/SN74LVC1G126, meta status ACTIVE and orderable SN74LVC1G126DBVR marketingStatusDescription ACTIVE, read 2026-09-28T17:28:07Z; longevity commitment: not read; first datasheet revision April 1999, over 12 months; change and end-of-life notices: not read; distributor: Digi-Key Active (17:22:15Z)",
+      "second_source": "second vendor: Digi-Key 19459 ≥ 125 (17:22:15Z). Also alternates 74LVC1G126GV,125, NC7SZ126M5X and 74LVC1G126W5-7 (OE 1, A 2, GND 3, Y 4, VCC 5)",
+      "alternates": [
+       "74LVC1G126GV,125",
+       "NC7SZ126M5X",
+       "74LVC1G126W5-7"
+      ],
+      "driver_in_shared": "none (no register interface; the expander output drives OE)",
+      "reason": "Meets every value. A buffer that is off is at high impedance, so reset gives the pull-down, and it is isolated when unpowered. Both rule-5 routes pass, and TI's status is read",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "74LVC1G126GV,125",
+      "maker": "Nexperia (datasheet 74LVC1G126 Rev. 18.1); counts as Nexperia (S1)",
+      "lcsc": "C12520",
+      "package": "SOT-753 (SC-74A)",
+      "placements": 5,
+      "placements_basis": "fixed: one a biased line, 5 lines (V56)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "reset and unpowered state",
+        "required": "off with the control low or undriven",
+        "datasheet": "OE pin 1, active high; Y at high impedance with OE low",
+        "pass": true,
+        "source": "74LVC1G126 Rev. 18.1, 3 September 2024, https://assets.nexperia.com/documents/data-sheet/74LVC1G126.pdf, read 2026-09-28T17:22:52Z"
+       },
+       {
+        "name": "connector-side isolation",
+        "required": "I_off on Y",
+        "datasheet": "IOFF ±2 µA at VCC 0 V, VI or VO = 5.5 V",
+        "pass": true,
+        "source": "Rev. 18.1 section 9"
+       },
+       {
+        "name": "drive",
+        "required": "source 3.3 mA",
+        "datasheet": "VOH 2.3 V at −24 mA, VCC 3.0 V, −40 to 85 °C",
+        "pass": true,
+        "source": "Rev. 18.1 section 9"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 %",
+        "datasheet": "1.65 to 5.5 V",
+        "pass": true,
+        "source": "Rev. 18.1 section 8"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "Tamb −40 to +125 °C",
+        "pass": true,
+        "source": "Rev. 18.1 section 8"
+       }
+      ],
+      "jlcpcb": "stockCount 14331, canPresaleNumber 14317, componentLibraryType expand, USD 0.1076 a part at the 1 to 49 break (need 25), read 2026-09-28T17:20:35Z, vendors.py jlcpcb C12520 (exact LCSC match)",
+      "digikey": "productdetails returned HTTP 404, duplicate products (2026-09-28T17:21:36Z). Keyword search, row 74LVC1G126GV,125 of Nexperia USA Inc.: stock_available 383214, manufacturer lead time 20 weeks, ProductStatus Active, read 2026-09-28T17:22:16Z, vendors.py digikey-search 74LVC1G126GV,125",
+      "gate": "need 25; threshold 125; stockCount 14331 ≥ 125 and canPresaleNumber 14317 ≥ 0: pass",
+      "lifecycle": "manufacturer status Production: www.nexperia.com/product/74LVC1G126GV, marker product-status--production, read 2026-09-28T17:28:34Z; longevity commitment: not read; earliest revision in the history: v.8, 2009-04-09, over 12 months; change and end-of-life notices: not read; distributor: Digi-Key Active (17:22:16Z)",
+      "second_source": "second vendor: Digi-Key 383214 ≥ 125 (17:22:16Z). Also alternate SN74LVC1G126DBVR (same pin order)",
+      "alternates": [
+       "SN74LVC1G126DBVR",
+       "NC7SZ126M5X",
+       "74LVC1G126W5-7"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Equivalent to rank 1 from a second maker; ranked second on JLCPCB stock and price",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "NC7SZ126M5X",
+      "maker": "onsemi (datasheet NC7SZ126/D); counts as onsemi (S1)",
+      "lcsc": "C7421",
+      "package": "SC-74A-5 (onsemi case 318BQ, 3.00 × 1.50 × 0.95 mm, 0.95 mm pitch); JLCPCB lists SOT-23-5",
+      "placements": 5,
+      "placements_basis": "fixed: one a biased line, 5 lines (V56)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "reset and unpowered state",
+        "required": "off with the control low or undriven",
+        "datasheet": "OE pin 1: OE low gives Y at high impedance (function table); pins OE 1, A 2, GND 3, Y 4, VCC 5",
+        "pass": true,
+        "source": "NC7SZ126/D Rev. 8, August 2024, https://www.onsemi.com/download/data-sheet/pdf/nc7sz126-d.pdf, read 2026-09-28T17:22:55Z"
+       },
+       {
+        "name": "connector-side isolation",
+        "required": "I_off on Y",
+        "datasheet": "IOFF 10 µA max at VIN or VOUT = 5.5 V, VCC 0, −40 to 85 °C (page 4 rendered); power-down high-impedance inputs and outputs",
+        "pass": true,
+        "source": "NC7SZ126/D page 4"
+       },
+       {
+        "name": "drive",
+        "required": "source 3.3 mA",
+        "datasheet": "VOH 2.40 V at −16 mA and 2.30 V at −24 mA, VCC 3.0 V",
+        "pass": true,
+        "source": "NC7SZ126/D page 4"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 %",
+        "datasheet": "1.65 to 5.5 V",
+        "pass": true,
+        "source": "NC7SZ126/D"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TA −40 to +85 °C",
+        "pass": true,
+        "source": "NC7SZ126/D recommended operating conditions"
+       }
+      ],
+      "jlcpcb": "stockCount 5356, canPresaleNumber 5344, componentLibraryType expand, USD 0.0723 a part at the 10 to 29 break (need 25), read 2026-09-28T17:33:26Z, vendors.py jlcpcb C7421 (exact LCSC match)",
+      "digikey": "stock_available 57324, manufacturer lead time 55 weeks, ProductStatus Active, read 2026-09-28T17:21:40Z, vendors.py digikey NC7SZ126M5X (productdetails)",
+      "gate": "need 25; threshold 125; stockCount 5356 ≥ 125 and canPresaleNumber 5344 ≥ 0: pass",
+      "lifecycle": "manufacturer status Active: www.onsemi.com/products/standard-products/logic/buffers/nc7sz126, product heading Active and orderable row NC7SZ126M5X Active, read 2026-09-28T17:28:41Z; the -L22090, -F22057 and -L22175 rows show Last Shipments and are discontinued in the datasheet's ordering table; longevity commitment: not read; first datasheet revision: not read (current Rev. 8, August 2024); change and end-of-life notices: not read; distributor: Digi-Key Active (17:21:40Z)",
+      "second_source": "second vendor: Digi-Key 57324 ≥ 125 (17:21:40Z). Also alternates SN74LVC1G126DBVR and 74LVC1G126GV,125",
+      "alternates": [
+       "SN74LVC1G126DBVR",
+       "74LVC1G126GV,125"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Same pinout and function from onsemi, with its status read. Ranked below the TI and Nexperia parts for its 55-week Digi-Key lead time and −40 to 85 °C range, and because its SC-74A package is not the DBV outline, so the land-pattern match is for P4",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 4,
+      "part": "SN74LVC2G126DCUR",
+      "maker": "Texas Instruments (datasheet SCES205N); counts as Texas Instruments (S1)",
+      "lcsc": "C2652104",
+      "package": "VSSOP-8 (DCU)",
+      "placements": 3,
+      "placements_basis": "fixed: 5 lines on 2-buffer parts = 3 a board, one buffer spare",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "reset and unpowered state",
+        "required": "off with the control low or undriven",
+        "datasheet": "1OE pin 1 and 2OE pin 7, active high, one per buffer",
+        "pass": true,
+        "source": "SN74LVC2G126 SCES205N (April 1999, revised September 2020), https://www.ti.com/lit/ds/symlink/sn74lvc2g126.pdf, read 2026-09-28T17:22:27Z"
+       },
+       {
+        "name": "connector-side isolation",
+        "required": "I_off on Y",
+        "datasheet": "Ioff ±10 µA at VI or VO = 5.5 V, VCC 0; VO high-impedance or power-off −0.5 to 6.5 V",
+        "pass": true,
+        "source": "SCES205N sections 6.1, 6.5"
+       },
+       {
+        "name": "drive",
+        "required": "source 3.3 mA",
+        "datasheet": "VOH 2.4 V at −16 mA, VCC 3 V",
+        "pass": true,
+        "source": "SCES205N"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 %",
+        "datasheet": "1.65 to 5.5 V",
+        "pass": true,
+        "source": "SCES205N"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TA −40 to 125 °C",
+        "pass": true,
+        "source": "SCES205N"
+       }
+      ],
+      "jlcpcb": "stockCount 17289, canPresaleNumber 17275, componentLibraryType expand, USD 0.218 a part at the 1 to 49 break (need 15), read 2026-09-28T17:20:23Z, vendors.py jlcpcb C2652104 (exact LCSC match)",
+      "digikey": "stock_available 19091, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-28T17:21:17Z, vendors.py digikey SN74LVC2G126DCUR (productdetails)",
+      "gate": "need 5 × 3 = 15; threshold max(75, 50) = 75; stockCount 17289 ≥ 75 and canPresaleNumber 17275 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE: www.ti.com/product/SN74LVC2G126, meta status ACTIVE and orderable SN74LVC2G126DCUR marketingStatusDescription ACTIVE, read 2026-09-28T17:28:07Z; longevity commitment: not read; first datasheet revision April 1999, over 12 months; change and end-of-life notices: not read; distributor: Digi-Key Active (17:21:17Z)",
+      "second_source": "second vendor: Digi-Key 19091 ≥ 75 (17:21:17Z). The Nexperia 74LVC2G126DC,125 (C548589) has JLCPCB stockCount 0 (17:20:47Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "3 parts cover the 5 lines where single buffers need 5, with the same values. Ranked below the single buffers because two ports' selectors share one VSSOP-8, and its only pin-compatible alternate has no JLCPCB stock",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "74LVC1G126W5-7",
+      "maker": "Diodes Incorporated (datasheet DS32203); counts as Diodes Incorporated (S1)",
+      "lcsc": "C460529",
+      "package": "SOT-25",
+      "placements": 5,
+      "placements_basis": "fixed: one a biased line, 5 lines (V56)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "reset and unpowered state",
+        "required": "off with the control low or undriven",
+        "datasheet": "OE pin 1, active high; pins OE 1, A 2, GND 3, Y 4, VCC 5",
+        "pass": true,
+        "source": "74LVC1G126 DS32203 Rev. 11-2, https://www.diodes.com/assets/Datasheets/74LVC1G126.pdf, read 2026-09-28T17:23:01Z"
+       },
+       {
+        "name": "connector-side isolation",
+        "required": "I_off on Y",
+        "datasheet": "IOFF ±10 µA at VI or VO = 5.5 V, VCC 0 V (25 °C column); ±200 µA in the wide-temperature column",
+        "pass": true,
+        "source": "DS32203 electrical characteristics"
+       },
+       {
+        "name": "drive",
+        "required": "source 3.3 mA",
+        "datasheet": "VOH 2.3 V at −24 mA",
+        "pass": true,
+        "source": "DS32203"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 %",
+        "datasheet": "1.65 to 5.5 V",
+        "pass": true,
+        "source": "DS32203"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TA −40 to +125 °C",
+        "pass": true,
+        "source": "DS32203"
+       }
+      ],
+      "jlcpcb": "stockCount 5203, canPresaleNumber 5144, componentLibraryType expand, USD 0.0811 a part at the 1 to 99 break (need 25), read 2026-09-28T17:20:36Z, vendors.py jlcpcb C460529 (exact LCSC match)",
+      "digikey": "stock_available 58054, manufacturer lead time 12 weeks, ProductStatus Active, read 2026-09-28T17:21:38Z, vendors.py digikey 74LVC1G126W5-7 (productdetails)",
+      "gate": "need 25; threshold 125; stockCount 5203 ≥ 125 and canPresaleNumber 5144 ≥ 0: pass",
+      "lifecycle": "manufacturer status not read: www.diodes.com/part/view/74LVC1G126 (read 2026-09-28T17:28:49Z) carries no status in the page body; reported to the owner. Distributor figure: Digi-Key ProductStatus Active (17:21:38Z). Longevity commitment: not read; first datasheet revision: not read (current Rev. 11-2); change and end-of-life notices: not read",
+      "second_source": "second vendor: Digi-Key 58054 ≥ 125 (17:21:38Z)",
+      "alternates": [
+       "SN74LVC1G126DBVR",
+       "74LVC1G126GV,125"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Meets the values. Ranked last because the maker's status is not read and its IOFF over the full temperature range is ±200 µA",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": []
+   },
+   {
+    "function": "level translation",
+    "requirements": [
+     {
+      "name": "connector high level",
+      "value": "3.3 V from the 3.3 V rail; no rail is sensed from the device",
+      "source": "V63 (found)"
+     },
+     {
+      "name": "connector voltage tolerated",
+      "value": "at least 3.6 V, with the board powered or unpowered",
+      "source": "V63, V77 (found)"
+     },
+     {
+      "name": "RP2354B pin rating",
+      "value": "GPIO0 to 39: 5.5 V with IOVDD at 3.3 V, 3.63 V with IOVDD at 0 V",
+      "source": "RP2350 datasheet build-date 2025-07-29 Table 1433, read 2026-09-28T17:16:34Z"
+     },
+     {
+      "name": "part",
+      "value": "none of its own. The gate elements (the 244 and SN74CBTLV3126) run at 3.3 V on both sides and meet the tolerance above",
+      "source": "this return"
+     }
+    ],
+    "shortlist": [],
+    "dropped": [
+     {
+      "part": "SN74LVC8T245, SN74LXC1T45, 74LVC1T45, LSF0108 (seeds) as translators",
+      "maker": "Texas Instruments, Nexperia, Diodes Incorporated",
+      "reason": "No level translation is required: the connector level found is 3.3 V (V63). Under the gate functions: SN74LVC8T245 survives as a one-way buffer below the five; the 1T45 parts have no OE; LSF0108 cannot drive the pulled-down line high"
+     }
+    ]
+   },
+   {
+    "function": "multiprotocol port path",
+    "requirements": [
+     {
+      "name": "ports",
+      "value": "4",
+      "source": "owner 2026-09-25, Research.md:63"
+     },
+     {
+      "name": "modes and rates",
+      "value": "servo PWM; DShot to 1200 kbit/s; bidirectional DShot, reply at 5/4 of the rate (1500 kbit/s at DShot1200); ESC telemetry, KISS at 115,200 baud in; ESC bootloader 19,200 baud half duplex; ESCape32 CLI 38,400 baud; Hitec D-series at 115,200 baud, inverted, half duplex, open-drain servo; VESC at 115,200 baud 8N1 on separate TX and RX lines (2), one switch channel for each",
+      "source": "V65, V67 answers; V59, V60-V62, V77 (found); IOBoard.md:253, :262"
+     },
+     {
+      "name": "directions",
+      "value": "both directions through the gate while enabled with no direction pin; high impedance within 1 µs when disabled",
+      "source": "IOBoard.md:240-243, :254; Monostable.md:112"
+     },
+     {
+      "name": "enable",
+      "value": "active high from the enable node, or active low through the enable inverter, with a 10 kΩ pull at each enable pin",
+      "source": "Monostable.md:369-376, :422"
+     },
+     {
+      "name": "I_off on RP2354B side and enable",
+      "value": "a limit on input current at VCC = 0 V",
+      "source": "Monostable.md:88"
+     },
+     {
+      "name": "connector-side isolation",
+      "value": "I_off on the connector side, with the board unpowered",
+      "source": "V74 (found)"
+     },
+     {
+      "name": "connector level",
+      "value": "3.3 V; takes 3.6 V at the connector while enabled (KISS telemetry)",
+      "source": "V63, V77 (found)"
+     },
+     {
+      "name": "load",
+      "value": "50 pF, 0.3 m",
+      "source": "V66 answer"
+     },
+     {
+      "name": "bias",
+      "value": "1 kΩ pull-up to 3.3 V or 10 kΩ pull-down, by mode",
+      "source": "V58, V64 (found)"
+     },
+     {
+      "name": "series resistance",
+      "value": "at least 275 Ω; the upper bound rests on the servo's output-low voltage, which is not stated (V75)",
+      "source": "V75 (found)"
+     },
+     {
+      "name": "idle level in RP2354B reset",
+      "value": "low",
+      "source": "V73 (found)"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 °C",
+      "source": "V7 answer"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "SN74CBTLV3126PWR",
+      "maker": "Texas Instruments (datasheet SCDS038N); counts as Texas Instruments (S1)",
+      "lcsc": "C543078",
+      "package": "TSSOP-14 (PW)",
+      "placements": 2,
+      "placements_basis": "fixed: 5 lines (4 multiprotocol ports and the UART socket) / 4 switches a part = 2 a board, 3 channels spare; the same 2 parts serve the UART socket path and the reply path",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "directions",
+        "required": "both directions while enabled, no direction pin",
+        "datasheet": "FET bus switch, 5 Ω switch connection between two ports; tpd 0.25 ns max A or B to B or A",
+        "pass": true,
+        "source": "SN74CBTLV3126 SCDS038N (December 1997, revised July 2026), https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, read 2026-09-28T17:22:28Z, sections 1, 5.6"
+       },
+       {
+        "name": "enable",
+        "required": "active high from the node",
+        "datasheet": "1OE 1, 2OE 4, 3OE 10, 4OE 13, output enable active high; switch off with OE low",
+        "pass": true,
+        "source": "SCDS038N pin functions"
+       },
+       {
+        "name": "disabled state",
+        "required": "high impedance under 1 µs",
+        "datasheet": "tdis 4.8 ns max, −40 to 85 °C",
+        "pass": true,
+        "source": "SCDS038N section 5.6"
+       },
+       {
+        "name": "I_off on RP2354B side and enable",
+        "required": "limit at VCC = 0 V",
+        "datasheet": "Ioff 10 µA at VCC 0, VI or VO = 0 to 3.6 V (−40 to 85 °C). VI in section 5.1 is the input voltage of every input; the Ioff row does not name OE separately",
+        "pass": true,
+        "source": "SCDS038N sections 5.1, 5.5"
+       },
+       {
+        "name": "connector-side isolation",
+        "required": "I_off on the connector side",
+        "datasheet": "the same Ioff row covers the B port to 3.6 V",
+        "pass": true,
+        "source": "SCDS038N section 5.5"
+       },
+       {
+        "name": "connector level",
+        "required": "3.3 V; 3.6 V at the connector while enabled",
+        "datasheet": "rail-to-rail switching on data I/O; ron 15 Ω max at VI 2.4 V, 15 mA, VCC 3 V; VI absolute maximum 4.6 V; no recommended switch-I/O range is stated",
+        "pass": true,
+        "source": "SCDS038N sections 1, 5.1, 5.3, 5.5"
+       },
+       {
+        "name": "modes and rates",
+        "required": "reply 1500 kbit/s at 50 pF",
+        "datasheet": "tpd 0.25 ns; Cio(OFF) 7 pF; with 300 Ω and 57 pF the RC is 17 ns against a 667 ns reply bit",
+        "pass": true,
+        "source": "SCDS038N sections 5.5, 5.6"
+       },
+       {
+        "name": "supply",
+        "required": "3.3 V ±3 %",
+        "datasheet": "VCC 2.3 to 3.6 V",
+        "pass": true,
+        "source": "SCDS038N section 5.3"
+       },
+       {
+        "name": "idle level in RP2354B reset",
+        "required": "passes the pad's low",
+        "datasheet": "a closed switch; the connector sits at the pad's 36 to 113 kΩ pull-down in parallel with 10 kΩ",
+        "pass": true,
+        "source": "SCDS038N; RP2350 Table 1436"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TA −40 to 85 °C for the PW package",
+        "pass": true,
+        "source": "SCDS038N section 5.3"
+       }
+      ],
+      "jlcpcb": "stockCount 401, canPresaleNumber 395, componentLibraryType expand, USD 0.3882 a part at the 10 to 29 break (need 10), read 2026-09-28T17:20:24Z, vendors.py jlcpcb C543078 (exact LCSC match)",
+      "digikey": "stock_available 3756, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-28T17:21:19Z, vendors.py digikey SN74CBTLV3126PWR (productdetails)",
+      "gate": "need 5 × 2 = 10; threshold 50; stockCount 401 ≥ 50 and canPresaleNumber 395 ≥ 0: pass. It would still pass at 6 a board (threshold 150) if it also took the 16 PWM lines",
+      "lifecycle": "manufacturer status ACTIVE: www.ti.com/product/SN74CBTLV3126, meta status ACTIVE and orderable SN74CBTLV3126PWR marketingStatusDescription ACTIVE, read 2026-09-28T17:28:08Z; longevity commitment: not read; first datasheet revision December 1997, over 12 months; change and end-of-life notices: not read; distributor: Digi-Key Active (17:21:19Z)",
+      "second_source": "second vendor: Digi-Key 3756 ≥ 50 (17:21:19Z)",
+      "alternates": [
+       "SN74CBTLV3125PWR (active-low OE, through the enable inverter)"
+      ],
+      "driver_in_shared": "none (no register interface; the enable node drives OE)",
+      "reason": "A switch passes both directions with one enable and no direction pin, so the firmware's release-and-read on the same pin (IOBoard.md:253) is unchanged, and so are the PIO programs. It is the only candidate that meets every I_off requirement and takes 3.6 V through the enabled switch",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "SN74CBTLV3125PWR",
+      "maker": "Texas Instruments (datasheet SCDS037K); counts as Texas Instruments (S1)",
+      "lcsc": "C406866",
+      "package": "TSSOP-14 (PW)",
+      "placements": 2,
+      "placements_basis": "fixed: 5 lines / 4 switches a part = 2 a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "directions",
+        "required": "both directions while enabled, no direction pin",
+        "datasheet": "FET bus switch, same pinout as SN74CBTLV3126 (1OE 1, 2OE 4, 3OE 10, 4OE 13)",
+        "pass": true,
+        "source": "SN74CBTLV3125 SCDS037K (December 1997, revised July 2026), https://www.ti.com/lit/ds/symlink/sn74cbtlv3125.pdf, read 2026-09-28T17:22:28Z"
+       },
+       {
+        "name": "enable",
+        "required": "active low through the enable inverter, 10 kΩ pull-up at each OE",
+        "datasheet": "each switch is disabled when its OE is high (description; the DBQ pin table's 'active high' contradicts the description)",
+        "pass": true,
+        "source": "SCDS037K section 3, Table 4-2"
+       },
+       {
+        "name": "disabled state",
+        "required": "high impedance under 1 µs",
+        "datasheet": "tdis from OE in single-digit ns",
+        "pass": true,
+        "source": "SCDS037K switching characteristics"
+       },
+       {
+        "name": "I_off on RP2354B side and enable",
+        "required": "limit at VCC = 0 V",
+        "datasheet": "Ioff 10 µA at VCC 0, VI or VO = 0 to 3.6 V",
+        "pass": true,
+        "source": "SCDS037K electrical characteristics"
+       },
+       {
+        "name": "connector level",
+        "required": "3.6 V through the enabled switch",
+        "datasheet": "ron 15 Ω max at VI 2.4 V, 15 mA (−40 to 85 °C); no recommended switch-I/O range stated",
+        "pass": true,
+        "source": "SCDS037K"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TA −40 to 85 °C for PW",
+        "pass": true,
+        "source": "SCDS037K recommended operating conditions"
+       }
+      ],
+      "jlcpcb": "stockCount 392, canPresaleNumber 382, componentLibraryType expand, USD 0.4775 a part at the 10 to 29 break (need 10), read 2026-09-28T17:20:44Z, vendors.py jlcpcb C406866 (exact LCSC match)",
+      "digikey": "stock_available 0, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-28T17:21:51Z, vendors.py digikey SN74CBTLV3125PWR (productdetails)",
+      "gate": "need 10; threshold 50; stockCount 392 ≥ 50 and canPresaleNumber 382 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE: www.ti.com/product/SN74CBTLV3125, meta status ACTIVE and orderable SN74CBTLV3125PWR marketingStatusDescription ACTIVE, read 2026-09-28T17:28:09Z; longevity commitment: not read; first datasheet revision December 1997, over 12 months; change and end-of-life notices: not read; distributor: Digi-Key Active (17:21:51Z)",
+      "second_source": "none. Digi-Key stock 0 (17:21:51Z). The pin-compatible Nexperia 74CBTLV3125PW,118 (C456149) has JLCPCB stockCount 0 (17:20:43Z), and its switch voltage is recommended at 0 to VCC (Rev. 7), below the 3.6 V device level",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Meets the values, but it needs the enable inverter, and no rule-5 route passes",
+      "second_source_route": "none",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "TC7MBL3126CFT(EL) (C2675020)",
+      "maker": "Toshiba",
+      "reason": "Fails the 3.6 V connector level while enabled (V63, V77). The datasheet recommends switch I/O at 0 to VCC with the switch on, and 0 to 3.6 V only with VCC 0 V or the switch off; its absolute maximum with the switch on is VCC + 0.5 V (Rev. 7.0.A, https://toshiba.semicon-storage.com/info/docget.jsp?did=12250&prodName=TC7MBL3126CFT, read 2026-09-28T17:23:00Z, recommended operating conditions). VCC is 3.20 to 3.40 V. It is pin-compatible, with IOFF 10 µA stated on OE, A and B. JLCPCB stockCount 50, canPresaleNumber 50 (17:20:41Z); Digi-Key 3493, Active (17:21:50Z)"
+     },
+     {
+      "part": "74CBTLV3126PW,118 (C478017)",
+      "maker": "Nexperia",
+      "reason": "rule 4: JLCPCB stockCount 0, canPresaleNumber 0 (2026-09-28T17:20:41Z). It also fails the 3.6 V device level: VSW is recommended at 0 to VCC in enable and disable mode (74CBTLV3126 Rev. 7, 11 April 2024, https://assets.nexperia.com/documents/data-sheet/74CBTLV3126.pdf, read 17:22:53Z). The P3 exclusion holds in part: its absolute maximum VCC + 0.5 V is 3.70 to 3.90 V at VCC 3.20 to 3.40 V, above 3.6 V, so that clause is not a ground"
+     },
+     {
+      "part": "74CBTLV3126DS,118 (C546436)",
+      "maker": "Nexperia",
+      "reason": "Fails the 3.6 V device level: VSW is recommended at 0 to VCC in enable and disable mode (Rev. 7, read 2026-09-28T17:22:53Z), and a KISS line at 3.6 V exceeds VCC at 3.3 V. JLCPCB 3983 (17:20:42Z). The P3 exclusion holds as for the PW part: only the recommended range drops it"
+     },
+     {
+      "part": "TMUX1511PWR (C2866750)",
+      "maker": "Texas Instruments",
+      "reason": "Fails I_off on the enable. SCDS390B (revised March 2025, read 2026-09-28T17:22:34Z): IPOFF (±2 µA) covers the I/O pins only; SEL's IIH and IIL are stated only with VDD powered; the fail-safe logic statement is a voltage tolerance, not a current limit. Otherwise it passes, and it is pin-compatible with SN74CBTLV3126. JLCPCB 4587 (17:20:45Z)"
+     },
+     {
+      "part": "TMUX1574PWR",
+      "maker": "Texas Instruments",
+      "reason": "a 2:1 multiplexer with one select (SEL) and one active-low EN for all 4 channels (SCDS391, read 2026-09-28T17:22:38Z), so one element cannot switch per port; SEL and EN leakage is stated only with VDD powered"
+     },
+     {
+      "part": "SN74CB3Q3125PWR (C2653302)",
+      "maker": "Texas Instruments",
+      "reason": "Fails I_off on the enable: Ioff is stated for the switch outputs only (VO 0 to 5.5 V, VI = 0), and the control-input IIN only at VCC 3.6 V (SCDS143E, revised September 2026, read 2026-09-28T17:22:36Z). JLCPCB 64, presale 56 (17:20:46Z)"
+     },
+     {
+      "part": "SN74CB3T3125PWR (C130198)",
+      "maker": "Texas Instruments",
+      "reason": "rule 4: JLCPCB stockCount 0 (2026-09-28T17:20:46Z)"
+     },
+     {
+      "part": "SN74LVC8T245PWR (C27643)",
+      "maker": "Texas Instruments",
+      "reason": "Its enable I_off now passes (ruling on SCES584D section 7.3.2), but one DIR pin sets all 8 bits. The 4 ports and the UART socket turn around independently, so no single DIR state serves them, and a direction pin driven by firmware changes the DShot PIO programs"
+     },
+     {
+      "part": "TXU0104PWR (C2938871)",
+      "maker": "Texas Instruments",
+      "reason": "fixed direction A to B (SCES937B pin functions, read 2026-09-28T17:22:30Z): it cannot pass the reply or the receive direction"
+     },
+     {
+      "part": "SN74LVC1T45 / 74LVC1T45 / SN74LXC1T45",
+      "maker": "Texas Instruments, Nexperia, Diodes Incorporated",
+      "reason": "no output enable, so it cannot be the gate"
+     }
+    ]
+   },
+   {
+    "function": "UART socket path",
+    "requirements": [
+     {
+      "name": "line",
+      "value": "one pin, half duplex; OpenYGE at 115,200 baud 8N1; the highest rate found is 115,200 baud",
+      "source": "docs/OpenYGE.md:17-31; V76 (found)"
+     },
+     {
+      "name": "gate",
+      "value": "passes the gate",
+      "source": "F13 (Research.md:541)"
+     },
+     {
+      "name": "directions",
+      "value": "both directions while enabled, no direction pin",
+      "source": "IOBoard.md:240-243, :273"
+     },
+     {
+      "name": "connector-side isolation",
+      "value": "I_off, with the board unpowered",
+      "source": "V74 (found)"
+     },
+     {
+      "name": "connector level",
+      "value": "3.3 V; takes 3.6 V",
+      "source": "V63 (found)"
+     },
+     {
+      "name": "bias",
+      "value": "1 kΩ pull-up to 3.3 V when bound; 10 kΩ pull-down at the selector's reset state",
+      "source": "V58 (found)"
+     },
+     {
+      "name": "series resistance",
+      "value": "at least 275 Ω (pad-driven line)",
+      "source": "V75 (found)"
+     },
+     {
+      "name": "idle level in RP2354B reset",
+      "value": "low",
+      "source": "V73 (found)"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "SN74CBTLV3126PWR",
+      "maker": "Texas Instruments (datasheet SCDS038N); counts as Texas Instruments (S1)",
+      "lcsc": "C543078",
+      "package": "TSSOP-14 (PW)",
+      "placements": 2,
+      "placements_basis": "one channel of the second of the 2 parts the multiprotocol port path places; counted once, 2 a board",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "directions",
+        "required": "both directions while enabled",
+        "datasheet": "FET bus switch, 5 Ω, tpd 0.25 ns",
+        "pass": true,
+        "source": "SCDS038N (revised July 2026), https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, read 2026-09-28T17:22:28Z"
+       },
+       {
+        "name": "line",
+        "required": "115,200 baud",
+        "datasheet": "tpd 0.25 ns against an 8.68 µs bit",
+        "pass": true,
+        "source": "SCDS038N section 5.6"
+       },
+       {
+        "name": "connector-side isolation",
+        "required": "I_off",
+        "datasheet": "Ioff 10 µA at VCC 0, VI or VO = 0 to 3.6 V",
+        "pass": true,
+        "source": "SCDS038N section 5.5"
+       },
+       {
+        "name": "connector level",
+        "required": "3.6 V while enabled",
+        "datasheet": "rail-to-rail switching; VI absolute maximum 4.6 V",
+        "pass": true,
+        "source": "SCDS038N sections 1, 5.1"
+       },
+       {
+        "name": "enable",
+        "required": "active high from the node",
+        "datasheet": "OE active high",
+        "pass": true,
+        "source": "SCDS038N pin functions"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "−40 to 85 °C (PW)",
+        "pass": true,
+        "source": "SCDS038N section 5.3"
+       }
+      ],
+      "jlcpcb": "stockCount 401, canPresaleNumber 395, componentLibraryType expand, USD 0.3882 a part at the 10 to 29 break (need 10), read 2026-09-28T17:20:24Z, vendors.py jlcpcb C543078 (exact LCSC match)",
+      "digikey": "stock_available 3756, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-28T17:21:19Z, vendors.py digikey SN74CBTLV3126PWR (productdetails)",
+      "gate": "need 10; threshold 50; stockCount 401 ≥ 50 and canPresaleNumber 395 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE: www.ti.com/product/SN74CBTLV3126, orderable SN74CBTLV3126PWR ACTIVE, read 2026-09-28T17:28:08Z; longevity commitment: not read; first datasheet revision December 1997; change and end-of-life notices: not read; distributor: Digi-Key Active (17:21:19Z)",
+      "second_source": "second vendor: Digi-Key 3756 ≥ 50 (17:21:19Z)",
+      "alternates": [
+       "SN74CBTLV3125PWR (active-low OE, through the enable inverter)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "The same element as the multiprotocol ports. The socket takes one of the 3 spare channels",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "SN74CBTLV3125PWR",
+      "maker": "Texas Instruments (datasheet SCDS037K); counts as Texas Instruments (S1)",
+      "lcsc": "C406866",
+      "package": "TSSOP-14 (PW)",
+      "placements": 2,
+      "placements_basis": "as the multiprotocol port path, counted once",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "directions",
+        "required": "both directions while enabled",
+        "datasheet": "FET bus switch",
+        "pass": true,
+        "source": "SCDS037K (revised July 2026), https://www.ti.com/lit/ds/symlink/sn74cbtlv3125.pdf, read 2026-09-28T17:22:28Z"
+       },
+       {
+        "name": "connector-side isolation",
+        "required": "I_off",
+        "datasheet": "Ioff 10 µA at VCC 0, VI or VO = 0 to 3.6 V",
+        "pass": true,
+        "source": "SCDS037K"
+       },
+       {
+        "name": "enable",
+        "required": "active low through the inverter",
+        "datasheet": "switch disabled with OE high",
+        "pass": true,
+        "source": "SCDS037K section 3"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "−40 to 85 °C (PW)",
+        "pass": true,
+        "source": "SCDS037K"
+       }
+      ],
+      "jlcpcb": "stockCount 392, canPresaleNumber 382, componentLibraryType expand, USD 0.4775 a part at the 10 to 29 break (need 10), read 2026-09-28T17:20:44Z, vendors.py jlcpcb C406866",
+      "digikey": "stock_available 0, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-28T17:21:51Z, vendors.py digikey SN74CBTLV3125PWR",
+      "gate": "need 10; threshold 50; 392 ≥ 50, presale 382 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE (www.ti.com/product/SN74CBTLV3125, orderable SN74CBTLV3125PWR ACTIVE, read 2026-09-28T17:28:09Z); longevity commitment: not read; first datasheet revision December 1997; change and end-of-life notices: not read; distributor: Digi-Key Active",
+      "second_source": "none: Digi-Key 0 (17:21:51Z); Nexperia 74CBTLV3125PW,118 has JLCPCB 0 (17:20:43Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "As on the multiprotocol port path: it passes, but it needs the inverter and has no rule-5 route",
+      "second_source_route": "none",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "TC7MBL3126CFT(EL) (C2675020)",
+      "maker": "Toshiba",
+      "reason": "the same element as on the multiprotocol ports: switch I/O recommended at 0 to VCC with the switch on (Rev. 7.0.A, read 2026-09-28T17:23:00Z), below the 3.6 V the connector side must take (V63)"
+     },
+     {
+      "part": "74CBTLV3126PW,118 and 74CBTLV3126DS,118",
+      "maker": "Nexperia",
+      "reason": "as on the multiprotocol port path: VSW recommended at 0 to VCC in enable and disable mode (Rev. 7); the PW part also fails rule 4 (JLCPCB 0, 17:20:41Z)"
+     },
+     {
+      "part": "SN74LVC1T45DBVR",
+      "maker": "Texas Instruments",
+      "reason": "no output enable; F13 puts the UART socket behind the gate"
+     }
+    ]
+   },
+   {
+    "function": "receiver inputs",
+    "requirements": [
+     {
+      "name": "count",
+      "value": "1",
+      "source": "V68 (found)"
+     },
+     {
+      "name": "highest level in",
+      "value": "3.3 V (SRXL2, CRSF); EX Bus logic one at least 3.0 V with no maximum; S.BUS and iBUS not read",
+      "source": "V69 (found)"
+     },
+     {
+      "name": "highest baud",
+      "value": "2,000,000 baud (CRSF)",
+      "source": "V70 (found)"
+     },
+     {
+      "name": "transmit",
+      "value": "yes, half duplex on the same wire: EX Bus and SRXL2 telemetry",
+      "source": "V71 answer (Research.md:631, owner 2026-09-28)"
+     },
+     {
+      "name": "bench levels at the receiver",
+      "value": "logic one at least 3.0 V, logic zero at most 1.5 V",
+      "source": "EX Bus protocol v1.21, Physical layer, read 2026-09-28T17:16:30Z"
+     },
+     {
+      "name": "gate",
+      "value": "not through the gate",
+      "source": "V72 (found)"
+     },
+     {
+      "name": "connector-side isolation",
+      "value": "I_off with the IO board unpowered, both supplies of the part at 0 V",
+      "source": "V74 (found)"
+     },
+     {
+      "name": "direction at reset",
+      "value": "receive (B to A) while the RP2354B is in reset, so the bench drives nothing onto the receiver line",
+      "source": "V73 (found); RP2350 section 9.3"
+     },
+     {
+      "name": "ambient temperature",
+      "value": "0 to 50 °C",
+      "source": "V7 answer"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "SN74LVC1T45DBVR",
+      "maker": "Texas Instruments (datasheet SCES515N); counts as Texas Instruments (S1)",
+      "lcsc": "C7843",
+      "package": "SOT-23-6 (DBV)",
+      "placements": 1,
+      "placements_basis": "fixed: 1 input (V68); VCCA and VCCB at 3.3 V; DIR from an RP2354B GPIO, low (B to A) at reset through the pad pull-down",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "transmit",
+        "required": "both directions, half duplex",
+        "datasheet": "DIR pin 5: high A to B, low B to A; pins VCCA 1, GND 2, A 3, B 4, DIR 5, VCCB 6",
+        "pass": true,
+        "source": "SN74LVC1T45 SCES515N (December 2003, revised June 2024), https://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf, read 2026-09-28T17:22:33Z"
+       },
+       {
+        "name": "connector-side isolation",
+        "required": "I_off with both supplies at 0 V",
+        "datasheet": "Ioff B port ±2 µA (−40 to 85 °C) at VI or VO 0 to 5.5 V, VCCB 0 V, VCCA 0 to 5.5 V; section 7.3.3 makes Ioff the limit on any input or output",
+        "pass": true,
+        "source": "SCES515N section 5.5, 7.3.3"
+       },
+       {
+        "name": "highest level in",
+        "required": "3.3 V, more not excluded",
+        "datasheet": "VI 0 to 5.5 V recommended",
+        "pass": true,
+        "source": "SCES515N section 5.3"
+       },
+       {
+        "name": "bench levels at the receiver",
+        "required": "≥ 3.0 V high, ≤ 1.5 V low",
+        "datasheet": "VOH VCCO − 0.1 V at −100 µA",
+        "pass": true,
+        "source": "SCES515N section 5.5"
+       },
+       {
+        "name": "highest baud",
+        "required": "2 Mbaud",
+        "datasheet": "tPLH, tPHL 5.8 ns max A to B and B to A at VCCA and VCCB 3.3 V ±0.3 V",
+        "pass": true,
+        "source": "SCES515N section 5.8"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TA −40 to 85 °C",
+        "pass": true,
+        "source": "SCES515N section 5.3"
+       }
+      ],
+      "jlcpcb": "stockCount 393327, canPresaleNumber 391306, componentLibraryType expand, USD 0.0838 a part at the 1 to 49 break (need 5), read 2026-09-28T17:20:36Z, vendors.py jlcpcb C7843 (exact LCSC match)",
+      "digikey": "stock_available 91082, manufacturer lead time 9 weeks, ProductStatus Active, read 2026-09-28T17:21:41Z, vendors.py digikey SN74LVC1T45DBVR (productdetails)",
+      "gate": "need 5 × 1 = 5; threshold 50; stockCount 393327 ≥ 50 and canPresaleNumber 391306 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE: www.ti.com/product/SN74LVC1T45, meta status ACTIVE and orderable SN74LVC1T45DBVR marketingStatusDescription ACTIVE, read 2026-09-28T17:28:09Z; longevity commitment: not read; first datasheet revision December 2003, over 12 months; change and end-of-life notices: not read; distributor: Digi-Key Active (17:21:41Z)",
+      "second_source": "second vendor: Digi-Key 91082 ≥ 50 (17:21:41Z). Also alternates SN74AXC1T45DBVR, 74LVC1T45W6-7 and SN74LXC1T45DBVR (same SOT-23-6 pin order)",
+      "alternates": [
+       "SN74AXC1T45DBVR",
+       "74LVC1T45W6-7",
+       "SN74LXC1T45DBVR"
+      ],
+      "driver_in_shared": "none (the RP2354B drives DIR as a GPIO)",
+      "reason": "Meets every value, takes inputs to 5.5 V, and both rule-5 routes pass. It costs 1 GPIO for DIR",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "SN74AXC1T45DBVR",
+      "maker": "Texas Instruments (datasheet SCES882E); counts as Texas Instruments (S1)",
+      "lcsc": "C2677376",
+      "package": "SOT-23-6 (DBV)",
+      "placements": 1,
+      "placements_basis": "fixed: 1 input (V68)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "transmit",
+        "required": "both directions",
+        "datasheet": "DIR, referenced to VCCA; pins VCCA 1, GND 2, A 3, B 4, DIR 5, VCCB 6",
+        "pass": true,
+        "source": "SN74AXC1T45 SCES882E (December 2017, revised December 2023), https://www.ti.com/lit/ds/symlink/sn74axc1t45.pdf, read 2026-09-28T17:22:33Z"
+       },
+       {
+        "name": "connector-side isolation",
+        "required": "I_off with both supplies at 0 V",
+        "datasheet": "Ioff ±5 µA (25 °C), ±7.5 µA over temperature, at Vi or Vo 0 to 3.6 V with VCCA 0 V and VCCB 0 to 3.6 V, or the reverse",
+        "pass": true,
+        "source": "SCES882E electrical characteristics"
+       },
+       {
+        "name": "highest level in",
+        "required": "3.3 V",
+        "datasheet": "VI 0 to 3.6 V recommended; B port 4.2 V absolute",
+        "pass": true,
+        "source": "SCES882E sections 5.1, 5.3"
+       },
+       {
+        "name": "bench levels at the receiver",
+        "required": "≥ 3.0 V",
+        "datasheet": "VOH VCCO − 0.1 V at −100 µA",
+        "pass": true,
+        "source": "SCES882E"
+       },
+       {
+        "name": "highest baud",
+        "required": "2 Mbaud",
+        "datasheet": "tpd 4 ns max at VCCA and VCCB 3.3 V",
+        "pass": true,
+        "source": "SCES882E Table 5-8"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "−40 to 125 °C",
+        "pass": true,
+        "source": "SCES882E"
+       }
+      ],
+      "jlcpcb": "stockCount 5912, canPresaleNumber 5622, componentLibraryType expand, USD 0.3992 a part at the 1 to 9 break (need 5), read 2026-09-28T17:20:37Z, vendors.py jlcpcb C2677376 (exact LCSC match)",
+      "digikey": "stock_available 28049, manufacturer lead time 9 weeks, ProductStatus Active, read 2026-09-28T17:21:43Z, vendors.py digikey SN74AXC1T45DBVR (productdetails)",
+      "gate": "need 5; threshold 50; stockCount 5912 ≥ 50 and canPresaleNumber 5622 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE: www.ti.com/product/SN74AXC1T45, orderable SN74AXC1T45DBVR ACTIVE, read 2026-09-28T17:28:10Z; longevity commitment: not read; first datasheet revision December 2017, over 12 months; change and end-of-life notices: not read; distributor: Digi-Key Active (17:21:43Z)",
+      "second_source": "second vendor: Digi-Key 28049 ≥ 50 (17:21:43Z). Also alternate SN74LVC1T45DBVR",
+      "alternates": [
+       "SN74LVC1T45DBVR"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Pin-for-pin with rank 1, meets every found value, and TI's status is read. Its data inputs are recommended to 3.6 V against 5.5 V for rank 1, and the S.BUS and iBUS levels are not read",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 3,
+      "part": "74LVC1T45W6-7",
+      "maker": "Diodes Incorporated (datasheet DS35804); counts as Diodes Incorporated (S1)",
+      "lcsc": "C168856",
+      "package": "SOT-26",
+      "placements": 1,
+      "placements_basis": "fixed: 1 input (V68)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "transmit",
+        "required": "both directions",
+        "datasheet": "DIR pin 5; VCC(A) 1, GND 2, A 3, B 4, DIR 5, VCC(B) 6",
+        "pass": true,
+        "source": "74LVC1T45 DS35804 Rev. 4-2, https://www.diodes.com/assets/Datasheets/74LVC1T45.pdf, read 2026-09-28T17:23:04Z"
+       },
+       {
+        "name": "connector-side isolation",
+        "required": "I_off with both supplies at 0 V",
+        "datasheet": "IOFF B pin ±2 µA (−40 to 85 °C) at VI or VO 0 to 5.5 V, VCC(B) 0 V, VCC(A) 0 to 5.5 V",
+        "pass": true,
+        "source": "DS35804 electrical characteristics"
+       },
+       {
+        "name": "highest level in",
+        "required": "3.3 V, more not excluded",
+        "datasheet": "VI 0 to 5.5 V",
+        "pass": true,
+        "source": "DS35804"
+       },
+       {
+        "name": "bench levels at the receiver",
+        "required": "≥ 3.0 V",
+        "datasheet": "VOH VCC − 0.1 V at −100 µA",
+        "pass": true,
+        "source": "DS35804"
+       },
+       {
+        "name": "highest baud",
+        "required": "2 Mbaud",
+        "datasheet": "tpLH, tpHL 5.8 ns max at VCC(A) and VCC(B) 3.3 V ±0.3 V",
+        "pass": true,
+        "source": "DS35804 switching characteristics"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TA −40 to +125 °C",
+        "pass": true,
+        "source": "DS35804"
+       }
+      ],
+      "jlcpcb": "stockCount 17195, canPresaleNumber 16972, componentLibraryType expand, USD 0.098 a part at the 1 to 49 break (need 5), read 2026-09-28T17:20:38Z, vendors.py jlcpcb C168856 (exact LCSC match)",
+      "digikey": "stock_available 23374, manufacturer lead time 24 weeks, ProductStatus Active, read 2026-09-28T17:21:45Z, vendors.py digikey 74LVC1T45W6-7 (productdetails)",
+      "gate": "need 5; threshold 50; 17195 ≥ 50 and presale 16972 ≥ 0: pass",
+      "lifecycle": "manufacturer status not read: www.diodes.com/part/view/74LVC1T45 (read 2026-09-28T17:28:53Z) carries no status in the page body; reported to the owner. Distributor figure: Digi-Key Active (17:21:45Z). Longevity commitment: not read; first datasheet revision: not read (current Rev. 4-2, October 2018); change and end-of-life notices: not read",
+      "second_source": "second vendor: Digi-Key 23374 ≥ 50 (17:21:45Z)",
+      "alternates": [
+       "SN74LVC1T45DBVR"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Equivalent to rank 1; ranked third because the maker's status is not read",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 4,
+      "part": "SN74LXC1T45DBVR",
+      "maker": "Texas Instruments (datasheet SCES934A); counts as Texas Instruments (S1)",
+      "lcsc": "C4364198",
+      "package": "SOT-23-6 (DBV)",
+      "placements": 1,
+      "placements_basis": "fixed: 1 input (V68)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "transmit",
+        "required": "both directions",
+        "datasheet": "DIR pin 5 with an integrated 5 MΩ static pull-down (B to A when undriven); pins VCCA 1, GND 2, A 3, B 4, DIR 5, VCCB 6",
+        "pass": true,
+        "source": "SN74LXC1T45 SCES934A (September 2021, revised December 2021), https://www.ti.com/lit/ds/symlink/sn74lxc1t45.pdf, read 2026-09-28T17:31:56Z, sections 4, 8.3.1.2"
+       },
+       {
+        "name": "connector-side isolation",
+        "required": "I_off with both supplies at 0 V",
+        "datasheet": "Ioff ±2 µA (−40 to 85 °C) at VI or VO 0 to 5.5 V with VCCA 0 V and VCCB 0 to 5.5 V, or the reverse",
+        "pass": true,
+        "source": "SCES934A electrical characteristics"
+       },
+       {
+        "name": "highest level in",
+        "required": "3.3 V, more not excluded",
+        "datasheet": "VI 0 to 5.5 V",
+        "pass": true,
+        "source": "SCES934A recommended operating conditions"
+       },
+       {
+        "name": "bench levels at the receiver",
+        "required": "≥ 3.0 V",
+        "datasheet": "VOH at −100 µA stated for 1.1 to 5.5 V; an external pull-up must be 15 kΩ or less against the 100 kΩ dynamic pull-downs (section 8.3.1.1)",
+        "pass": true,
+        "source": "SCES934A"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "TA −40 to 125 °C",
+        "pass": true,
+        "source": "SCES934A"
+       }
+      ],
+      "jlcpcb": "stockCount 4692, canPresaleNumber 4106, componentLibraryType expand, USD 0.4401 a part at the 1 to 9 break (need 5), read 2026-09-28T17:35:29Z, vendors.py jlcpcb C4364198 (exact LCSC match)",
+      "digikey": "stock_available 787, manufacturer lead time 9 weeks, ProductStatus Active, read 2026-09-28T17:35:30Z, vendors.py digikey SN74LXC1T45DBVR (productdetails)",
+      "gate": "need 5; threshold 50; 4692 ≥ 50 and presale 4106 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE: www.ti.com/product/SN74LXC1T45, meta status ACTIVE and orderable SN74LXC1T45DBVR ACTIVE, read 2026-09-28T17:35:50Z; longevity commitment: not read; first datasheet revision September 2021, over 12 months; change and end-of-life notices: not read; distributor: Digi-Key Active (17:35:30Z)",
+      "second_source": "second vendor: Digi-Key 787 ≥ 50 (17:35:30Z). Also alternate SN74LVC1T45DBVR",
+      "alternates": [
+       "SN74LVC1T45DBVR"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Pin-for-pin with rank 1, and its DIR pull-down fixes the receive direction with DIR undriven. Ranked fourth on price (0.4401) and the lowest Digi-Key stock of the four",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 5,
+      "part": "SN74LVC1T45DCKR",
+      "maker": "Texas Instruments (datasheet SCES515N); counts as Texas Instruments (S1)",
+      "lcsc": "C9382",
+      "package": "SC-70-6 (DCK)",
+      "placements": 1,
+      "placements_basis": "fixed: 1 input (V68)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "transmit",
+        "required": "both directions",
+        "datasheet": "same die and pin order as rank 1 in the DCK package",
+        "pass": true,
+        "source": "SCES515N (revised June 2024), read 2026-09-28T17:22:33Z, pin table for DBV, DCK and DRL"
+       },
+       {
+        "name": "connector-side isolation",
+        "required": "I_off with both supplies at 0 V",
+        "datasheet": "as rank 1",
+        "pass": true,
+        "source": "SCES515N section 5.5"
+       },
+       {
+        "name": "highest baud",
+        "required": "2 Mbaud",
+        "datasheet": "5.8 ns max at 3.3 V",
+        "pass": true,
+        "source": "SCES515N section 5.8"
+       },
+       {
+        "name": "ambient temperature",
+        "required": "0 to 50 °C",
+        "datasheet": "−40 to 85 °C",
+        "pass": true,
+        "source": "SCES515N"
+       }
+      ],
+      "jlcpcb": "stockCount 52910, canPresaleNumber 52170, componentLibraryType expand, USD 0.2404 a part at the 1 to 49 break (need 5), read 2026-09-28T17:20:40Z, vendors.py jlcpcb C9382 (exact LCSC match)",
+      "digikey": "stock_available 132105, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-28T17:21:48Z, vendors.py digikey SN74LVC1T45DCKR (productdetails)",
+      "gate": "need 5; threshold 50; 52910 ≥ 50 and presale 52170 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE: www.ti.com/product/SN74LVC1T45, orderable SN74LVC1T45DCKR marketingStatusDescription ACTIVE, read 2026-09-28T17:28:09Z; longevity commitment: not read; first datasheet revision December 2003; change and end-of-life notices: not read; distributor: Digi-Key Active (17:21:48Z)",
+      "second_source": "second vendor: Digi-Key 132105 ≥ 50 (17:21:48Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "The rank 1 die in an SC-70-6 footprint that differs from rank 1's SOT-23-6; ranked last for the smaller package",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "74LVC1T45GW,125 (C478004)",
+      "maker": "Nexperia",
+      "reason": "Fails connector-side I_off with the board unpowered (V74). Rev. 10 (4 August 2023, https://assets.nexperia.com/documents/data-sheet/74LVC_LVCH1T45.pdf, read 2026-09-28T17:22:52Z) states the B-port IOFF (±10 µA over temperature) only with VCC(B) 0 V and VCC(A) at 1.2 to 5.5 V. The case with both supplies at 0 V has only the text 'when it is powered down', with no figure. Its Digi-Key stock is also 0 (17:21:46Z); JLCPCB 24561 (17:20:39Z)"
+     },
+     {
+      "part": "SN74CBTLV3126PWR (spare channel)",
+      "maker": "Texas Instruments",
+      "reason": "The EX Bus logic one of 3.0 V at the receiver is not shown: through the switch the line is driven by the RP2354B pad, whose V_OH is stated as ≥ 2.62 V at the 2 to 12 mA settings only (Table 1436, read 2026-09-28T17:16:34Z)"
+     }
+    ]
+   },
+   {
+    "function": "series resistance and clamps",
+    "requirements": [
+     {
+      "name": "faults",
+      "value": "a continuous short to ground, and a continuous short to the port's supply pin at up to 8.7 V",
+      "source": "V75 (found); F16"
+     },
+     {
+      "name": "series resistance on pad-driven lines",
+      "value": "at least 275 Ω on the 4 multiprotocol lines and the UART socket (3.3 V / 12 mA, the highest drive setting Table 1436 characterises)",
+      "source": "V75 (found)"
+     },
+     {
+      "name": "series resistance on buffered lines",
+      "value": "at least 142 Ω on the 16 PWM lines (3.4 V at the 244's 24 mA recommended output current, SCAS414AG section 5.3)",
+      "source": "V75 (found)"
+     },
+     {
+      "name": "upper bound in servo configuration mode",
+      "value": "not shown: at 275 Ω the servo's open-drain low reaches the RP2354B pin at 0.70 V plus 0.77 × its output-low voltage, which must stay at or below 0.8 V; the servo's output-low voltage is not stated in any source read",
+      "source": "V75 (found); RP2350 Table 1436; HitecDServoInternal.h"
+     },
+     {
+      "name": "placement",
+      "value": "the resistor between the gate element and the connector; the clamp and the bias network on the gate element's side",
+      "source": "V75 (found)"
+     },
+     {
+      "name": "clamp level",
+      "value": "the gate element's connector pin held at or below 3.6 V: SN74CBTLV3126 VI absolute maximum 4.6 V; SN74LVC244A VO in the high or low state VCC + 0.5 V (3.7 V at VCC 3.2 V); RP2354B pins 3.63 V with IOVDD at 0 V. The clamp must not feed the unpowered 3.3 V rail (V74)",
+      "source": "SCDS038N section 5.1; SCAS414AG section 5.1; RP2350 Table 1433"
+     },
+     {
+      "name": "clamp current and resistor dissipation",
+      "value": "(8.7 − 3.6) / 275 = 18.5 mA continuous per faulted line; 95 mW in the resistor",
+      "source": "derived"
+     },
+     {
+      "name": "selection round",
+      "value": "the resistor is a passive and the clamp is overvoltage protection on the signal connectors: both are selected in round 2",
+      "source": "Research.md, Scope; IOBoard.md:536"
+     }
+    ],
+    "shortlist": [],
+    "dropped": []
+   },
+   {
+    "function": "reset idle level",
+    "requirements": [
+     {
+      "name": "level",
+      "value": "low on every gated line while the RP2354B is held in reset or restarts through the watchdog",
+      "source": "V73 (found)"
+     },
+     {
+      "name": "mechanism in RUN or brownout reset",
+      "value": "pads at high impedance and pulled low at 36 to 113 kΩ; each 244 input reads low (±5 µA through 113 kΩ = 0.57 V) and the 244 drives low; the switch passes the pad's low; the 10 kΩ pull-down holds the line; the expander resets with the RP2354B and the control resistors select the pull-down",
+      "source": "RP2350 datasheet sections 9.3, 9.7, Table 1436; SCAS414AG section 5.5; IOBoard.md:340; V57"
+     },
+     {
+      "name": "watchdog reset condition",
+      "value": "the same state follows when the watchdog's reset level includes RESETS (PSM_WDSEL bit 4) and RESETS_WDSEL covers PADS_BANK0 and IO_BANK0, as pico-sdk's _watchdog_enable sets. POWMAN_WDSEL.RESET_SWCORE is not established",
+      "source": "RP2350 datasheet sections 9.7, 12.9.4, 12.9.6.1, Tables 490, 532, 535, read 2026-09-28T17:16:34Z"
+     },
+     {
+      "name": "part",
+      "value": "none of its own: carried by the gate elements, the 10 kΩ pull-downs and the bias selector",
+      "source": "this return"
+     }
+    ],
+    "shortlist": [],
+    "dropped": []
+   },
+   {
+    "function": "programming supply switching",
+    "requirements": [
+     {
+      "name": "power-up for bootloader or CLI entry",
+      "value": "a STOP and the operator clear of the F11 latch: the ESC pack switch and the buffer enable follow the enable node together, the pack switch closing within 500 ms (V46)",
+      "source": "V78 (found); Research.md:281, :606"
+     },
+     {
+      "name": "servo",
+      "value": "a Hitec D-series servo needs no power cycle: firmware writes its REBOOT register and it accepts serial 1000 ms later",
+      "source": "V78 (found)"
+     },
+     {
+      "name": "part",
+      "value": "none: no separate switch",
+      "source": "V78 (found)"
+     }
+    ],
+    "shortlist": [],
+    "dropped": []
+   },
+   {
+    "function": "reply path through the gate",
+    "requirements": [
+     {
+      "name": "lines",
+      "value": "the 4 multiprotocol ports and the UART socket",
+      "source": "IOBoard.md:240-243, :254; F13"
+     },
+     {
+      "name": "directions",
+      "value": "passes the bidirectional DShot reply and the half-duplex receive direction to the same RP2354B pin while enabled; high impedance within 1 µs when disabled",
+      "source": "IOBoard.md:254, :278; Monostable.md:112"
+     },
+     {
+      "name": "reply rate",
+      "value": "1500 kbit/s at DShot1200 (5/4 of 1200 kbit/s), 50 pF",
+      "source": "V65, V66 answers; IOBoard.md:253"
+     },
+     {
+      "name": "turnaround",
+      "value": "no direction pin: the pin releases 27 µs after a DShot600 frame and the ESC answers about 30 µs later",
+      "source": "IOBoard.md:253"
+     },
+     {
+      "name": "I_off",
+      "value": "on the RP2354B side, on the enable, and on the connector side",
+      "source": "Monostable.md:88; V74 (found)"
+     },
+     {
+      "name": "connector level",
+      "value": "3.6 V passes through the enabled element",
+      "source": "V63, V77 (found)"
+     },
+     {
+      "name": "enable",
+      "value": "from the enable node, active high, or active low through the enable inverter",
+      "source": "Monostable.md:369-376, :422"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "SN74CBTLV3126PWR",
+      "maker": "Texas Instruments (datasheet SCDS038N); counts as Texas Instruments (S1)",
+      "lcsc": "C543078",
+      "package": "TSSOP-14 (PW)",
+      "placements": 2,
+      "placements_basis": "the same 2 parts as the multiprotocol port path, counted once",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "directions",
+        "required": "both directions with one enable, no direction pin",
+        "datasheet": "FET bus switch, 5 Ω; tpd 0.25 ns either way",
+        "pass": true,
+        "source": "SCDS038N (revised July 2026), https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, read 2026-09-28T17:22:28Z, sections 1, 5.6"
+       },
+       {
+        "name": "disabled state",
+        "required": "high impedance under 1 µs",
+        "datasheet": "tdis 4.8 ns max",
+        "pass": true,
+        "source": "SCDS038N section 5.6"
+       },
+       {
+        "name": "reply rate",
+        "required": "1500 kbit/s at 50 pF",
+        "datasheet": "Cio(OFF) 7 pF; RC 17 ns at 300 Ω against a 667 ns bit",
+        "pass": true,
+        "source": "SCDS038N section 5.5"
+       },
+       {
+        "name": "I_off",
+        "required": "all sides at VCC = 0 V",
+        "datasheet": "Ioff 10 µA, VI or VO 0 to 3.6 V",
+        "pass": true,
+        "source": "SCDS038N section 5.5"
+       },
+       {
+        "name": "connector level",
+        "required": "3.6 V through the switch",
+        "datasheet": "rail-to-rail switching; VI 4.6 V absolute; no recommended switch-I/O range",
+        "pass": true,
+        "source": "SCDS038N sections 1, 5.1, 5.3"
+       },
+       {
+        "name": "enable",
+        "required": "active high from the node",
+        "datasheet": "OE active high, 10 kΩ pull-down at each part",
+        "pass": true,
+        "source": "SCDS038N pin functions"
+       }
+      ],
+      "jlcpcb": "stockCount 401, canPresaleNumber 395, componentLibraryType expand, USD 0.3882 a part at the 10 to 29 break (need 10), read 2026-09-28T17:20:24Z, vendors.py jlcpcb C543078 (exact LCSC match)",
+      "digikey": "stock_available 3756, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-28T17:21:19Z, vendors.py digikey SN74CBTLV3126PWR (productdetails)",
+      "gate": "need 10; threshold 50; 401 ≥ 50, presale 395 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE: www.ti.com/product/SN74CBTLV3126, orderable SN74CBTLV3126PWR ACTIVE, read 2026-09-28T17:28:08Z; longevity commitment: not read; first datasheet revision December 1997; change and end-of-life notices: not read; distributor: Digi-Key Active (17:21:19Z)",
+      "second_source": "second vendor: Digi-Key 3756 ≥ 50 (17:21:19Z)",
+      "alternates": [
+       "SN74CBTLV3125PWR (active-low OE, through the enable inverter)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "A switch passes both directions with one enable and no direction pin, and it meets every I_off requirement. None of P3's finds for this function qualifies",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "SN74CBTLV3125PWR",
+      "maker": "Texas Instruments (datasheet SCDS037K); counts as Texas Instruments (S1)",
+      "lcsc": "C406866",
+      "package": "TSSOP-14 (PW)",
+      "placements": 2,
+      "placements_basis": "as the multiprotocol port path",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "directions",
+        "required": "both directions, no direction pin",
+        "datasheet": "FET bus switch",
+        "pass": true,
+        "source": "SCDS037K (revised July 2026), https://www.ti.com/lit/ds/symlink/sn74cbtlv3125.pdf, read 2026-09-28T17:22:28Z"
+       },
+       {
+        "name": "I_off",
+        "required": "all sides at VCC = 0 V",
+        "datasheet": "Ioff 10 µA, VI or VO 0 to 3.6 V",
+        "pass": true,
+        "source": "SCDS037K"
+       },
+       {
+        "name": "enable",
+        "required": "active low through the inverter",
+        "datasheet": "switch disabled with OE high",
+        "pass": true,
+        "source": "SCDS037K section 3"
+       }
+      ],
+      "jlcpcb": "stockCount 392, canPresaleNumber 382, componentLibraryType expand, USD 0.4775 a part at the 10 to 29 break (need 10), read 2026-09-28T17:20:44Z, vendors.py jlcpcb C406866",
+      "digikey": "stock_available 0, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-28T17:21:51Z, vendors.py digikey SN74CBTLV3125PWR",
+      "gate": "need 10; threshold 50; 392 ≥ 50, presale 382 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE (www.ti.com/product/SN74CBTLV3125, read 2026-09-28T17:28:09Z); longevity commitment: not read; first datasheet revision December 1997; change and end-of-life notices: not read; distributor: Digi-Key Active",
+      "second_source": "none: Digi-Key 0; 74CBTLV3125PW,118 JLCPCB 0 (17:20:43Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Passes, but needs the inverter and has no rule-5 route",
+      "second_source_route": "none",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "TC7MBL3126CFT(EL) (C2675020)",
+      "maker": "Toshiba",
+      "reason": "switch I/O recommended at 0 to VCC with the switch on, absolute maximum VCC + 0.5 V (Rev. 7.0.A, read 2026-09-28T17:23:00Z), below the 3.6 V a KISS telemetry line brings through the enabled switch (V63, V77)"
+     },
+     {
+      "part": "TXB0104",
+      "maker": "Texas Instruments",
+      "reason": "external pull resistors are not recommended, and must be above 50 kΩ if used (SCES650K, revised March 2025, read 2026-09-28T17:22:36Z, section 8.2.2); section 7.3.5 excludes an open-drain driver on the line. The line carries the 10 kΩ pull-down and the 1 kΩ pull-up (V58, V64) and the Hitec servo's open-drain output (V61). By its own equation, the 1 kΩ pull-up gives V_OL = 3.3 × 4.5 / (1 + 4.5) = 2.7 V"
+     },
+     {
+      "part": "TXS0104E",
+      "maker": "Texas Instruments",
+      "reason": "each A and B I/O has an internal 10 kΩ pull-up to its supply (SCES651K, revised October 2023, read 2026-09-28T17:22:37Z). With the RP2354B in reset and the gate enabled, the B side sits at 3.3 × 10 / 20 = 1.65 V against the 10 kΩ pull-down, not low (V73)"
+     },
+     {
+      "part": "74CBTLV3126PW,118 and 74CBTLV3126DS,118",
+      "maker": "Nexperia",
+      "reason": "VSW recommended at 0 to VCC in enable and disable mode (Rev. 7, read 2026-09-28T17:22:53Z); the PW part also fails rule 4 (JLCPCB 0, 17:20:41Z)"
+     },
+     {
+      "part": "TMUX1511PWR",
+      "maker": "Texas Instruments",
+      "reason": "enable (SEL) current at VDD 0 V not stated (SCDS390B, read 2026-09-28T17:22:34Z); see multiprotocol port path"
+     },
+     {
+      "part": "74LVC1G125 anti-parallel pairs, 74LVC2G241",
+      "maker": "Texas Instruments, Nexperia",
+      "reason": "The outward buffer would need its OE gated by firmware's direction as well as by the enable node, which puts firmware in the enable path (Monostable.md:449-455). With the enable alone, both buffers drive in a loop that holds the line"
+     }
+    ]
+   },
+   {
+    "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+    "requirements": [
+     {
+      "name": "lines",
+      "value": "the 4 multiprotocol ports and the UART socket",
+      "source": "IOBoard.md:240-243, :254; F13"
+     },
+     {
+      "name": "directions",
+      "value": "passes the bidirectional DShot reply and the half-duplex receive direction to the same RP2354B pin while enabled; high impedance within 1 µs when disabled",
+      "source": "IOBoard.md:254, :278; Monostable.md:112"
+     },
+     {
+      "name": "reply rate",
+      "value": "1500 kbit/s at DShot1200, 50 pF",
+      "source": "V65, V66 answers; IOBoard.md:253"
+     },
+     {
+      "name": "turnaround",
+      "value": "no direction pin",
+      "source": "IOBoard.md:253"
+     },
+     {
+      "name": "I_off",
+      "value": "on the RP2354B side, on the enable, and on the connector side",
+      "source": "Monostable.md:88; V74 (found)"
+     },
+     {
+      "name": "connector level",
+      "value": "3.6 V passes through the enabled element",
+      "source": "V63, V77 (found)"
+     },
+     {
+      "name": "enable",
+      "value": "from the enable node, active high, or active low through the enable inverter",
+      "source": "Monostable.md:369-376, :422"
+     }
+    ],
+    "shortlist": [
+     {
+      "rank": 1,
+      "part": "SN74CBTLV3126PWR",
+      "maker": "Texas Instruments (datasheet SCDS038N); counts as Texas Instruments (S1)",
+      "lcsc": "C543078",
+      "package": "TSSOP-14 (PW)",
+      "placements": 2,
+      "placements_basis": "the same 2 parts as the multiprotocol port path, counted once",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "directions",
+        "required": "both directions with one enable, no direction pin",
+        "datasheet": "FET bus switch, 5 Ω; tpd 0.25 ns either way",
+        "pass": true,
+        "source": "SCDS038N (revised July 2026), https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, read 2026-09-28T17:22:28Z"
+       },
+       {
+        "name": "disabled state",
+        "required": "high impedance under 1 µs",
+        "datasheet": "tdis 4.8 ns max",
+        "pass": true,
+        "source": "SCDS038N section 5.6"
+       },
+       {
+        "name": "reply rate",
+        "required": "1500 kbit/s at 50 pF",
+        "datasheet": "Cio(OFF) 7 pF; RC 17 ns at 300 Ω",
+        "pass": true,
+        "source": "SCDS038N section 5.5"
+       },
+       {
+        "name": "I_off",
+        "required": "all sides at VCC = 0 V",
+        "datasheet": "Ioff 10 µA, VI or VO 0 to 3.6 V",
+        "pass": true,
+        "source": "SCDS038N section 5.5"
+       },
+       {
+        "name": "connector level",
+        "required": "3.6 V through the switch",
+        "datasheet": "rail-to-rail switching; VI 4.6 V absolute",
+        "pass": true,
+        "source": "SCDS038N sections 1, 5.1"
+       },
+       {
+        "name": "enable",
+        "required": "active high from the node",
+        "datasheet": "OE active high",
+        "pass": true,
+        "source": "SCDS038N pin functions"
+       }
+      ],
+      "jlcpcb": "stockCount 401, canPresaleNumber 395, componentLibraryType expand, USD 0.3882 a part at the 10 to 29 break (need 10), read 2026-09-28T17:20:24Z, vendors.py jlcpcb C543078 (exact LCSC match)",
+      "digikey": "stock_available 3756, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-28T17:21:19Z, vendors.py digikey SN74CBTLV3126PWR (productdetails)",
+      "gate": "need 10; threshold 50; 401 ≥ 50, presale 395 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE: www.ti.com/product/SN74CBTLV3126, orderable SN74CBTLV3126PWR ACTIVE, read 2026-09-28T17:28:08Z; longevity commitment: not read; first datasheet revision December 1997; change and end-of-life notices: not read; distributor: Digi-Key Active (17:21:19Z)",
+      "second_source": "second vendor: Digi-Key 3756 ≥ 50 (17:21:19Z)",
+      "alternates": [
+       "SN74CBTLV3125PWR (active-low OE, through the enable inverter)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "As under reply path through the gate: one enable and no direction pin, and every I_off requirement met",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     },
+     {
+      "rank": 2,
+      "part": "SN74CBTLV3125PWR",
+      "maker": "Texas Instruments (datasheet SCDS037K); counts as Texas Instruments (S1)",
+      "lcsc": "C406866",
+      "package": "TSSOP-14 (PW)",
+      "placements": 2,
+      "placements_basis": "as the multiprotocol port path",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "directions",
+        "required": "both directions, no direction pin",
+        "datasheet": "FET bus switch",
+        "pass": true,
+        "source": "SCDS037K (revised July 2026), https://www.ti.com/lit/ds/symlink/sn74cbtlv3125.pdf, read 2026-09-28T17:22:28Z"
+       },
+       {
+        "name": "I_off",
+        "required": "all sides at VCC = 0 V",
+        "datasheet": "Ioff 10 µA, VI or VO 0 to 3.6 V",
+        "pass": true,
+        "source": "SCDS037K"
+       },
+       {
+        "name": "enable",
+        "required": "active low through the inverter",
+        "datasheet": "switch disabled with OE high",
+        "pass": true,
+        "source": "SCDS037K section 3"
+       }
+      ],
+      "jlcpcb": "stockCount 392, canPresaleNumber 382, componentLibraryType expand, USD 0.4775 a part at the 10 to 29 break (need 10), read 2026-09-28T17:20:44Z, vendors.py jlcpcb C406866",
+      "digikey": "stock_available 0, manufacturer lead time 16 weeks, ProductStatus Active, read 2026-09-28T17:21:51Z, vendors.py digikey SN74CBTLV3125PWR",
+      "gate": "need 10; threshold 50; 392 ≥ 50, presale 382 ≥ 0: pass",
+      "lifecycle": "manufacturer status ACTIVE (www.ti.com/product/SN74CBTLV3125, read 2026-09-28T17:28:09Z); longevity commitment: not read; first datasheet revision December 1997; change and end-of-life notices: not read; distributor: Digi-Key Active",
+      "second_source": "none: Digi-Key 0; 74CBTLV3125PW,118 JLCPCB 0 (17:20:43Z)",
+      "alternates": [],
+      "driver_in_shared": "none",
+      "reason": "Passes, but needs the inverter and has no rule-5 route",
+      "second_source_route": "none",
+      "second_source_part": ""
+     }
+    ],
+    "dropped": [
+     {
+      "part": "TC7MBL3126CFT(EL) (C2675020)",
+      "maker": "Toshiba",
+      "reason": "switch I/O recommended at 0 to VCC with the switch on (Rev. 7.0.A, read 2026-09-28T17:23:00Z), below the 3.6 V the enabled switch must pass (V63, V77)"
+     },
+     {
+      "part": "TXB0104, TXS0104E",
+      "maker": "Texas Instruments",
+      "reason": "TXB0104: pull resistors must be above 50 kΩ (SCES650K section 8.2.2, read 2026-09-28T17:22:36Z). TXS0104E: internal 10 kΩ pull-ups put the line at 1.65 V in reset (SCES651K, read 17:22:37Z). See reply path through the gate"
+     },
+     {
+      "part": "74CBTLV3126PW,118 and 74CBTLV3126DS,118",
+      "maker": "Nexperia",
+      "reason": "VSW recommended at 0 to VCC (Rev. 7, read 2026-09-28T17:22:53Z); the PW part also fails rule 4"
+     }
+    ]
+   }
+  ],
+  "report": [
+   {
+    "figure": "programming supply switching",
+    "value": "A programming session powers the ESC up to enter its bootloader or CLI: AM32, BLHeli_S and ESCape32 need the line high at start-up. The bench does this with a STOP and the operator clear of the F11 latch, not with a switch driven by firmware: the ESC pack switch (closing within 500 ms, V46) and the buffer enable both follow the enable node. A Hitec D-series servo needs no power cycle (REBOOT register). VESC needs none",
+    "source": "V78 found value; AM32-bootloader main.c:1097-1138 (read 2026-09-28T17:16:26Z); BLHeliBootLoad.inc (17:16:28Z); ESCape32 wiki Configuration (17:16:32Z); HitecDServoInternal.h (17:16:25Z)"
+   },
+   {
+    "figure": "connector level in RP2354B reset (RUN, brownout)",
+    "value": "low on all 21 gated lines: the 16 PWM ports through SN74LVC244A, and the 4 multiprotocol ports and the UART socket through SN74CBTLV3126. The pads are at high impedance and pulled low at 36 to 113 kΩ, and a 244 input reads 0.57 V at most (±5 µA through 113 kΩ, under V_IL 0.8 V). The 10 kΩ pull-downs hold the lines, and the bias selector's reset state selects the pull-down",
+    "source": "RP2350 datasheet build-date 2025-07-29 section 9.3, Table 1436 (read 2026-09-28T17:16:34Z); SCAS414AG section 5.5 (17:22:24Z); IOBoard.md:340"
+   },
+   {
+    "figure": "connector level through a watchdog reset",
+    "value": "low, when the watchdog's reset level includes RESETS: pico-sdk's _watchdog_enable sets PSM_WDSEL for all stages but ROSC and XOSC (section 12.9.6.1), RESETS is PSM WDSEL bit 4 (Table 532), and its reset value holds PADS_BANK0 (bit 9) and IO_BANK0 (bit 6) in reset (Table 535). A PADS reset returns each pad with ISO cleared to high impedance, pulled low (section 9.7); gpio_set_function() clears ISO (section 9.3). A firmware whose WDSEL settings leave those stages out keeps the pre-reset pad level, so the level is set by the WDSEL configuration, for R1 and P5. The tree enables no watchdog yet (IOBoard.md:221). Not established: POWMAN_WDSEL.RESET_SWCORE (Table 490, reset 0)",
+    "source": "RP2350 datasheet build-date 2025-07-29 sections 9.3, 9.7, 12.9.4, 12.9.6.1, Tables 490, 532, 535, 853, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, read 2026-09-28T17:16:34Z"
+   },
+   {
+    "figure": "buffer enable polarity for P5",
+    "value": "SN74CBTLV3126 OE is active high and takes the active-high enable node directly, with a 10 kΩ pull-down at its OE. SN74LVC244A 1OE and 2OE are active low and take the node through SN74LVC1G04, with a 10 kΩ pull-up at each OE pin. Both agree with R3's enable node, which is high while retriggered (Monostable.md:422)",
+    "source": "SCDS038N and SCAS414AG pin tables (read 2026-09-28T17:22:28Z, 17:22:24Z); Monostable.md:422 at 23c82ca"
+   },
+   {
+    "figure": "GPIO and expander outputs for P5",
+    "value": "The receiver input's SN74LVC1T45 needs 1 RP2354B GPIO for DIR, low (receive) at reset. The bias selector needs 5 I/O expander outputs, one for each multiprotocol port and one for the UART socket (bears on V119, R6), or 5 GPIO. The switch path needs no direction pin, so the DShot PIO programs and their instruction counts are unchanged. VESC takes 2 signal lines (V67): two multiprotocol ports' lines, or one port and the UART socket; the specification does not say which",
+    "source": "this return; V56, V67; IOBoard.md:253, :258-259; SCES515N pin table (read 2026-09-28T17:22:33Z)"
+   },
+   {
+    "figure": "enable node load for P5",
+    "value": "The two SN74CBTLV3126 parts put their OE inputs and 10 kΩ pull-downs on the enable node: 0.66 mA at 3.3 V with one pull-down per part (the part's 4 OE pins joined), or 2.64 mA with one per pin (8 pins), plus the SN74LVC1G04 input (Ioff and II ±10 µA max). The 244s' OE pull-ups load the inverter output, not the node. With SN74LVC2G126 as the PWM gate instead, 16 pull-downs add 5.3 mA. For P5 and R3's OR gate",
+    "source": "derived; SCDS038N section 5.5, SCES214AF section 5.5 (read 2026-09-28T17:22:28Z, 17:22:31Z); Monostable.md:369-376"
+   },
+   {
+    "figure": "enable I_off reading",
+    "value": "Restated after the ruling. SN74LVC8T245 (SCES584D section 7.3.2) and TXU0104 (SCES937B section 7.3.4) state Ioff as the limit on any input or output pin, so they meet I_off on the enable. Both qualify as one-way buffers for the PWM ports and survive below the five shortlisted parts. Neither passes both directions: one DIR serves 8 bits on the 8T245, and the TXU0104 has a fixed direction. TMUX1511 (SCDS390B: IPOFF on I/O pins only; SEL leakage only with VDD powered), SN74CB3Q3125 (SCDS143E: control IIN only at VCC 3.6 V) and SN74LVC126A (SCAS339U: no Ioff) remain dropped. SN74CBTLV3126 states Ioff with 'VI or VO', where VI is the input voltage of every input (section 5.1), and it passes",
+    "source": "https://www.ti.com/lit/ds/symlink/sn74lvc8t245.pdf (17:22:29Z), txu0104.pdf (17:22:30Z), tmux1511.pdf (17:22:34Z), sn74cb3q3125.pdf (17:22:36Z), sn74lvc126a.pdf (17:22:35Z), sn74cbtlv3126.pdf (17:22:28Z), all read 2026-09-28"
+   },
+   {
+    "figure": "Hitec low level",
+    "value": "In servo configuration mode, with the 1 kΩ pull-up: with the bias network on the connector side of a 275 to 320 Ω resistor, the bench's low reaches the servo at 1.02 to 1.08 V with the pad at its guaranteed V_OL of 0.5 V (0.69 V only with the pad at 0 V). With the bias network on the switch side, the bench's low at the servo is 0.52 V at most, and the servo's low at the RP2354B pin is 0.70 V at 275 Ω with the servo at 0 V. The servo's input-low threshold and output-low voltage are not stated in any source read",
+    "source": "RP2350 Table 1436 (read 2026-09-28T17:16:34Z); SCDS038N section 5.5 (ron 7 Ω max at VI 0, 17:22:28Z); HitecDServoInternal.h (3 kΩ pull-down, 17:16:25Z); README.md:11 (17:16:14Z); nodal derivation"
+   },
+   {
+    "figure": "series resistance range",
+    "value": "Pad-driven lines (multiprotocol, UART): at least 275 Ω. Buffered PWM lines: at least 142 Ω. On the pad-driven lines no upper bound is shown: at 275 Ω the servo's low reads at or below 0.8 V at the pin only while its output-low voltage is 0.13 V or less, which no source states. Reported to the owner. A short to 8.7 V puts 18.5 mA into a 3.6 V clamp and 95 mW into a 275 Ω resistor",
+    "source": "V75 found value; RP2350 Table 1436; SCAS414AG section 5.3"
+   },
+   {
+    "figure": "SN74CBTLV3126 high level",
+    "value": "ron is tabulated only up to VI 2.4 V (15 Ω max at 15 mA, VCC 3 V). The passing of a 3.3 V high and a 3.6 V line rests on the 'rail-to-rail switching on data I/O ports' statement (features and section 7.3) and the 4.6 V absolute maximum. No recommended switch-I/O range is stated. For P4 to verify",
+    "source": "SCDS038N (revised July 2026) sections 1, 5.1, 5.3, 5.5, 7.3, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, read 2026-09-28T17:22:28Z"
+   },
+   {
+    "figure": "SN74CBTLV3126PWR stock margin",
+    "value": "JLCPCB stockCount 401, canPresaleNumber 395: the gate is 50 at 2 a board for the switch path, and 150 at 6 a board if it also takes the 16 PWM ports; both pass. Digi-Key 3756, Active, 16 weeks",
+    "source": "vendors.py jlcpcb C543078 (2026-09-28T17:20:24Z); vendors.py digikey SN74CBTLV3126PWR (17:21:19Z)"
+   },
+   {
+    "figure": "SN74LVC541APWR second source",
+    "value": "P2's 'no second source' does not hold. SN74LVC541APWR: JLCPCB 15628, presale 15242; Digi-Key 0. Pin-compatible alternates that pass rule 4: onsemi MC74LCX541DTR2G (C7354) JLCPCB 2550, presale 2550, Digi-Key 21603; Toshiba 74LCX541FT(AE) (C7194124) JLCPCB 2098, presale 2098, Digi-Key 11 for 74LCX541FT. Nexperia 74LVC541APW,118 (C6093): JLCPCB 0, presale −12",
+    "source": "vendors.py jlcpcb C113281, C7354, C7194124, C6093 (2026-09-28T17:20:20Z to 17:20:48Z); vendors.py digikey SN74LVC541APWR (17:21:12Z), MC74LCX541DTR2G (17:21:15Z); digikey-search 74LCX541FT (17:22:03Z)"
+   },
+   {
+    "figure": "NC7SZ126M5X package",
+    "value": "NC7SZ126M5X is onsemi's SC-74A, case 318BQ (3.00 × 1.50 × 0.95 mm, 0.95 mm pitch). The SOT23-5 ordering code NC7SZ126M5X-L22090 is in the datasheet's discontinued table and shows Last Shipments on the product page. JLCPCB lists C7421 as SOT-23-5. The land-pattern match to SN74LVC1G126DBVR is for P4",
+    "source": "NC7SZ126/D Rev. 8 ordering information (read 2026-09-28T17:22:55Z); onsemi nc7sz126 product page (17:28:41Z); vendors.py jlcpcb C7421 (17:33:26Z)"
+   },
+   {
+    "figure": "Nexperia 74CBTLV3126 switch range",
+    "value": "Absolute maximum VSW is VCC + 0.5 V, which is 3.70 to 3.90 V at VCC 3.20 to 3.40 V, so P3's correction holds. The recommended VSW is 0 to VCC in enable and disable mode, which a 3.6 V line exceeds; that clause drops the DS part. The PW part is also at JLCPCB stockCount 0",
+    "source": "74CBTLV3126 Rev. 7, 11 April 2024, https://assets.nexperia.com/documents/data-sheet/74CBTLV3126.pdf, read 2026-09-28T17:22:53Z; vendors.py jlcpcb C478017, C546436 (17:20:41Z, 17:20:42Z)"
+   },
+   {
+    "figure": "74LVC1T45GW,125 at Digi-Key",
+    "value": "stock_available 0, lead time 20 weeks, ProductStatus Active. The part is dropped for the receiver input: its B-port IOFF is stated only with VCC(A) at 1.2 to 5.5 V, not with both supplies at 0 V (V74)",
+    "source": "vendors.py digikey 74LVC1T45GW,125 (2026-09-28T17:21:46Z); 74LVC_LVCH1T45 Rev. 10 section 9 (17:22:52Z)"
+   },
+   {
+    "figure": "TC7MBL3126CFT(EL) stock",
+    "value": "JLCPCB stockCount 50, canPresaleNumber 50: this equals the gate of 50 at 2 a board and fails the gate of 150 at 6 a board. Digi-Key 3493, Active, lead time 16 weeks. The part is dropped on its switch-on range",
+    "source": "vendors.py jlcpcb C2675020 (2026-09-28T17:20:41Z); vendors.py digikey TC7MBL3126CFT(EL) (17:21:50Z)"
+   },
+   {
+    "figure": "manufacturer status not read",
+    "value": "Diodes Incorporated's part pages for 74LVC1G126 and 74LVC1T45, and Toshiba's product pages for 74LCX244FT, 74LCX541FT and TC7MBL3126CFT, carry no lifecycle status in the page body. Digi-Key's Active is recorded as a distributor figure. Reported to the owner under the Lifecycle check",
+    "source": "www.diodes.com/part/view/74LVC1G126 (2026-09-28T17:28:49Z), /74LVC1T45 (17:28:53Z); toshiba.semicon-storage.com/eu/semiconductor/product/general-purpose-logic-ics/detail.74LCX244FT.html, detail.74LCX541FT.html, detail.TC7MBL3126CFT.html (17:29:22Z)"
+   },
+   {
+    "figure": "Hitec protocol source",
+    "value": "No Hitec publication of the D-series protocol was found. The only source is the reverse-engineered HitecDServo library, which states it is not endorsed by Hitec: 115,200 baud, inverted, half duplex, a servo that drives low only with a 3 kΩ pull-down. docs/Manifest.md:32 calls the protocol published",
+    "source": "https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServoInternal.h (2026-09-28T17:16:25Z); README.md:2, :6 (17:16:14Z)"
+   },
+   {
+    "figure": "drive on the switch path",
+    "value": "The multiprotocol and UART lines are driven by the RP2354B pads through SN74CBTLV3126 and the series resistor: V_OH ≥ 2.62 V and V_OL ≤ 0.5 V at the 2, 4, 8 or 12 mA setting. The 1 kΩ pull-up needs a 4 mA setting or higher (2.8 mA sunk). The sum of all GPIO source current is 100 mA at most",
+    "source": "RP2350 datasheet build-date 2025-07-29 Table 1436, read 2026-09-28T17:16:34Z"
+   }
+  ]
+ }
+}

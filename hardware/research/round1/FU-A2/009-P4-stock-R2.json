@@ -1,0 +1,517 @@
+{
+ "role": "P4",
+ "category": "R2",
+ "label": "P4-stock-R2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "verifier": "stock",
+  "parts": [
+   {
+    "function": "Link CAN controller",
+    "part": "MCP2518FDT-E/SL",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 28,884 (2026-09-29T00:13:50Z); need 5 boards x 2 = 10, threshold max(5 x 10, 50) = 50",
+      "read": "stockCount 28,884, maker label 'Microchip Tech'; 28,884 >= 50: rule 4 passes",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:12Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 28,715",
+      "read": "canPresaleNumber 28,715 >= 0",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:12Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended); S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:12Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C626758, MCP2518FDT-E/SL, SOIC-14",
+      "read": "exact result for C626758: part MCP2518FDT-E/SL, package SOIC-14, maker label 'Microchip Tech', other_results 0",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:12Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 43,486, Active (00:19:57Z)",
+      "read": "stock_available 43,486 (Cut Tape 43,486, Digi-Reel 43,486, Tape & Reel 41,600), ProductStatus Active; 43,486 >= 50: rule 4 gate passes at Digi-Key; no cached marker in the answer",
+      "source": "vendors.py digikey MCP2518FDT-E/SL (https://api.digikey.com/products/v4/search/MCP2518FDT-E%2FSL/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:15Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "In Production (productSatus, family page MCP2518FD, 00:20:31Z), no status per orderable",
+      "read": "'productSatus': 'In Production' in the page JSON and 'Status: In Production' in the page body; no 'Not recommended', NRND, obsolete, last-time-buy or discontinued text on the page; the family page names no orderable, so no status per MCP2518FDT-E/SL is published there",
+      "source": "https://www.microchip.com/en-us/product/MCP2518FD (vendors.py fetch, chrome client)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:29Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "Microchip Client-Driven Obsolescence, no discontinuation of a product with business activity in the past three years if it can be manufactured, no date per part",
+      "read": "'We pledge not to discontinue products with business activity in the past three years (potentially longer for specialized sectors) if they can be manufactured' under 'Client-Driven Obsolescence'; no date per part. S5 does not make it a gate",
+      "source": "https://www.microchip.com/en-us/support/quality/product-longevity (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:33Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "Revision A, April 2019 (DS20006027B Appendix A), 89 months, not flagged",
+      "read": "Appendix A: 'Revision A (April 2019)'; Revision B December 2020; April 2019 to September 2026 is 89 months, over 12, not flagged",
+      "source": "DS20006027B Appendix A, https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/External-CAN-FD-Controller-with-SPI-Interface-DS20006027B.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:05:30Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "Microchip PCN API, FilterText MCP2518FD: 9 notices, 3 manufacturing and 6 document changes, none end of life",
+      "read": "FilterText MCP2518FD, filterType 0: 9 notices (3 Manufacturing Change, 6 Document Change; newest 9/25/2026 JPZA-16CPDL798, CuPdAu wire for QBB parts); filterType 5: 0 notices. FilterText MCP2518FDT-E/SL: 7 notices (1 manufacturing, 6 document), filterType 5: 0. No notice of type End of Life and no title naming end of life or last-time buy",
+      "source": "POST https://www.microchip.com/PCNWebAPI/api/Pcn/AllPCNsWithFilters (pageSize 100, filterText MCP2518FD and MCP2518FDT-E/SL, filterType 0 and 5)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:04:33Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; LCSC C626758 stockNumber 28,675, no status text; JLCPCB row carries no status field; no disagreement",
+      "read": "Digi-Key ProductStatus Active, discontinued false, end_of_life false (01:03:15Z); LCSC C626758 page: MCP2518FDT-E/SL, SOIC-14, stockNumber 28,675, isPreSale false, no discontinued, obsolete, end-of-life, NRND, not-recommended or last-time-buy text (01:03:32Z); the JLCPCB exact-match record carries no status field (01:03:12Z). All agree with the maker's In Production",
+      "source": "vendors.py digikey MCP2518FDT-E/SL; https://www.lcsc.com/product-detail/C626758.html (vendors.py fetch); vendors.py jlcpcb C626758",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:32Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 42",
+      "read": "ManufacturerLeadWeeks 42",
+      "source": "vendors.py digikey MCP2518FDT-E/SL (https://api.digikey.com/products/v4/search/MCP2518FDT-E%2FSL/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:15Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2 (range 1 to 2: one controller per port; 2 when the same part serves both ports; gate taken at 2)",
+      "read": "The specification does not fix the count: one controller for the link (IOBoard.md:55) and one for the external port, separate from the link's (IOBoard.md:65). P2's range 1 to 2, top 2, basis one part number on both ports; the candidate's count 2 >= 2",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:55, :57, :65, :238; shortlist placements_basis",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:05:57Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C626758",
+      "read": "IOBoard.md:55 'R2 selects the IO board's controller and transceiver'; :65 'an external CAN port on a controller of its own': on the board (rule 1). LCSC number C626758 (C and digits) says the same",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:55, :57, :65, :238; shortlist placements_basis",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:05:57Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "TCAN3413DR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 14,544 (2026-09-29T00:13:51Z); need 5 boards x 2 = 10, threshold 50",
+      "read": "stockCount 14,544, maker label 'Texas Instruments'; 14,544 >= 50: rule 4 passes",
+      "source": "vendors.py jlcpcb C22433320 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:13Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 13,883",
+      "read": "canPresaleNumber 13,883 >= 0",
+      "source": "vendors.py jlcpcb C22433320 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:13Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended); S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C22433320 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:13Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C22433320, TCAN3413DR, SOIC-8",
+      "read": "exact result for C22433320: part TCAN3413DR, package SOIC-8, maker label 'Texas Instruments', other_results 0",
+      "source": "vendors.py jlcpcb C22433320 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:13Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 4,455, Active (00:20:02Z)",
+      "read": "stock_available 4,455 (Cut Tape 4,455, Digi-Reel 4,455, Tape & Reel 2,500), ProductStatus Active; 4,455 >= 50: rule 4 gate passes at Digi-Key; no cached marker in the answer",
+      "source": "vendors.py digikey TCAN3413DR (https://api.digikey.com/products/v4/search/TCAN3413DR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:16Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE, marketingStatusDescription of the orderable TCAN3413DR, hasReplacements false",
+      "read": "orderable TCAN3413DR: marketingStatusDescription ACTIVE, hasReplacements false, 'This product has been released to the market and is available for purchase'; TCAN3413DDFR and TCAN3413DRBR also ACTIVE. The part-details page https://www.ti.com/product/TCAN3413/part-details/TCAN3413DR also shows 'TCAN3413DR ACTIVE' (01:05:00Z)",
+      "source": "https://www.ti.com/product/TCAN3413 (vendors.py fetch, chrome client)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:32Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "TI product life cycle page: life cycles typically 10 to 15 years, not eligible for obsolescence with any sales in the last five years (seven for automotive), no date per part",
+      "read": "'TI's product life cycles are typically 10 to 15 years'; not eligible for obsolescence if the product had any sales within the last five years (seven for automotive or high-reliability), can be manufactured and has been in production under 10 years, or has current demand; no date per part. S5 does not make it a gate",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:33Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet March 2023 (SLLSFS8A, Advance Information; production data November 2023), 42 months, not flagged",
+      "read": "SLLSFS8A header 'MARCH 2023 - REVISED NOVEMBER 2023'; March 2023 to September 2026 is 42 months, over 12, not flagged. The copy served held 10 pages and no revision-history page, so the Advance Information marking of the first revision was not re-read",
+      "source": "SLLSFS8A page 1 header, https://www.ti.com/lit/ds/symlink/tcan3413.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:05:31Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "TI PCN listing not read; no TI PCN source was queried",
+      "read": "No end-of-life or last-time-buy notice found. TI's PCN listing was not read: no public TI PCN page was found (https://www.ti.com/support-quality/quality/product-change-notification.html and https://www.ti.com/quality-reliability/quality/pcn.html answer 404 at 01:05:13Z to 01:05:14Z, and the product, part-details and life-cycle pages link to none). Standing in: TI states it designates each product preview, active, NRND, last time buy or obsolete (life-cycle page, 01:03:33Z), and TCAN3413DR reads ACTIVE with hasReplacements false (01:03:32Z); Digi-Key end_of_life false, discontinued false (01:03:16Z)",
+      "source": "https://www.ti.com/product/TCAN3413; https://www.ti.com/quality-reliability/quality/product-life-cycle.html; vendors.py digikey TCAN3413DR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:05:14Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; LCSC C22433320 stockNumber 13,238, no status text; addendum Active; JLCPCB row carries no status field; no disagreement",
+      "read": "Digi-Key ProductStatus Active, discontinued false, end_of_life false (01:03:16Z); LCSC C22433320 page: TCAN3413DR, SOIC-8, stockNumber 13,238, isPreSale false, no discontinued, obsolete, end-of-life, NRND, not-recommended or last-time-buy text (01:03:33Z); the JLCPCB exact-match record carries no status field (01:03:13Z). All agree with the maker's ACTIVE",
+      "source": "vendors.py digikey TCAN3413DR; https://www.lcsc.com/product-detail/C22433320.html (vendors.py fetch); vendors.py jlcpcb C22433320",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:33Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 16",
+      "read": "ManufacturerLeadWeeks 16",
+      "source": "vendors.py digikey TCAN3413DR (https://api.digikey.com/products/v4/search/TCAN3413DR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:16Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2 (range 1 to 2: one transceiver per port; 2 when the same part serves both ports; gate taken at 2)",
+      "read": "The specification does not fix the count: one transceiver for the link (IOBoard.md:55) and the external port's transceiver with its standby input (IOBoard.md:57, :238). P2's range 1 to 2, top 2, basis one part number on both ports; the candidate's count 2 >= 2",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:55, :57, :65, :238; shortlist placements_basis",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:05:57Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C22433320",
+      "read": "IOBoard.md:55 'R2 selects the IO board's controller and transceiver'; :57 and :238 place the external CAN transceiver under the board's enable node: on the board (rule 1). LCSC number C22433320 (C and digits) says the same",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:55, :57, :65, :238; shortlist placements_basis",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:05:57Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "External CAN controller",
+    "part": "MCP2518FDT-E/SL",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 28,884 (2026-09-29T00:13:50Z); need 5 boards x 2 = 10, threshold max(5 x 10, 50) = 50",
+      "read": "stockCount 28,884, maker label 'Microchip Tech'; 28,884 >= 50: rule 4 passes",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:12Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 28,715",
+      "read": "canPresaleNumber 28,715 >= 0",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:12Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended); S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:12Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C626758, MCP2518FDT-E/SL, SOIC-14",
+      "read": "exact result for C626758: part MCP2518FDT-E/SL, package SOIC-14, maker label 'Microchip Tech', other_results 0",
+      "source": "vendors.py jlcpcb C626758 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:12Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 43,486, Active (00:19:57Z)",
+      "read": "stock_available 43,486 (Cut Tape 43,486, Digi-Reel 43,486, Tape & Reel 41,600), ProductStatus Active; 43,486 >= 50: rule 4 gate passes at Digi-Key; no cached marker in the answer",
+      "source": "vendors.py digikey MCP2518FDT-E/SL (https://api.digikey.com/products/v4/search/MCP2518FDT-E%2FSL/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:15Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "In Production (productSatus, family page MCP2518FD, 00:20:31Z), no status per orderable",
+      "read": "'productSatus': 'In Production' in the page JSON and 'Status: In Production' in the page body; no 'Not recommended', NRND, obsolete, last-time-buy or discontinued text on the page; the family page names no orderable, so no status per MCP2518FDT-E/SL is published there",
+      "source": "https://www.microchip.com/en-us/product/MCP2518FD (vendors.py fetch, chrome client)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:29Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "Microchip Client-Driven Obsolescence, no discontinuation of a product with business activity in the past three years if it can be manufactured, no date per part",
+      "read": "'We pledge not to discontinue products with business activity in the past three years (potentially longer for specialized sectors) if they can be manufactured' under 'Client-Driven Obsolescence'; no date per part. S5 does not make it a gate",
+      "source": "https://www.microchip.com/en-us/support/quality/product-longevity (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:33Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "Revision A, April 2019 (DS20006027B Appendix A), 89 months, not flagged",
+      "read": "Appendix A: 'Revision A (April 2019)'; Revision B December 2020; April 2019 to September 2026 is 89 months, over 12, not flagged",
+      "source": "DS20006027B Appendix A, https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/External-CAN-FD-Controller-with-SPI-Interface-DS20006027B.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:05:30Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "Microchip PCN API, FilterText MCP2518FD: 9 notices, 3 manufacturing and 6 document changes, none end of life",
+      "read": "FilterText MCP2518FD, filterType 0: 9 notices (3 Manufacturing Change, 6 Document Change; newest 9/25/2026 JPZA-16CPDL798, CuPdAu wire for QBB parts); filterType 5: 0 notices. FilterText MCP2518FDT-E/SL: 7 notices (1 manufacturing, 6 document), filterType 5: 0. No notice of type End of Life and no title naming end of life or last-time buy",
+      "source": "POST https://www.microchip.com/PCNWebAPI/api/Pcn/AllPCNsWithFilters (pageSize 100, filterText MCP2518FD and MCP2518FDT-E/SL, filterType 0 and 5)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:04:33Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; LCSC C626758 stockNumber 28,675, no status text; JLCPCB row carries no status field; no disagreement",
+      "read": "Digi-Key ProductStatus Active, discontinued false, end_of_life false (01:03:15Z); LCSC C626758 page: MCP2518FDT-E/SL, SOIC-14, stockNumber 28,675, isPreSale false, no discontinued, obsolete, end-of-life, NRND, not-recommended or last-time-buy text (01:03:32Z); the JLCPCB exact-match record carries no status field (01:03:12Z). All agree with the maker's In Production",
+      "source": "vendors.py digikey MCP2518FDT-E/SL; https://www.lcsc.com/product-detail/C626758.html (vendors.py fetch); vendors.py jlcpcb C626758",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:32Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 42",
+      "read": "ManufacturerLeadWeeks 42",
+      "source": "vendors.py digikey MCP2518FDT-E/SL (https://api.digikey.com/products/v4/search/MCP2518FDT-E%2FSL/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:15Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2 (range 1 to 2: one controller per port; 2 when the same part serves both ports; gate taken at 2)",
+      "read": "The specification does not fix the count: one controller for the link (IOBoard.md:55) and one for the external port, separate from the link's (IOBoard.md:65). P2's range 1 to 2, top 2, basis one part number on both ports; the candidate's count 2 >= 2",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:55, :57, :65, :238; shortlist placements_basis",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:05:57Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C626758",
+      "read": "IOBoard.md:55 'R2 selects the IO board's controller and transceiver'; :65 'an external CAN port on a controller of its own': on the board (rule 1). LCSC number C626758 (C and digits) says the same",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:55, :57, :65, :238; shortlist placements_basis",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:05:57Z"
+     }
+    ],
+    "refutation": ""
+   },
+   {
+    "function": "External CAN transceiver",
+    "part": "TCAN3413DR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 14,544 (2026-09-29T00:13:51Z); need 5 boards x 2 = 10, threshold 50",
+      "read": "stockCount 14,544, maker label 'Texas Instruments'; 14,544 >= 50: rule 4 passes",
+      "source": "vendors.py jlcpcb C22433320 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:13Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 13,883",
+      "read": "canPresaleNumber 13,883 >= 0",
+      "source": "vendors.py jlcpcb C22433320 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:13Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended); S6 allows basic and extended",
+      "source": "vendors.py jlcpcb C22433320 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:13Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C22433320, TCAN3413DR, SOIC-8",
+      "read": "exact result for C22433320: part TCAN3413DR, package SOIC-8, maker label 'Texas Instruments', other_results 0",
+      "source": "vendors.py jlcpcb C22433320 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:13Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 4,455, Active (00:20:02Z)",
+      "read": "stock_available 4,455 (Cut Tape 4,455, Digi-Reel 4,455, Tape & Reel 2,500), ProductStatus Active; 4,455 >= 50: rule 4 gate passes at Digi-Key; no cached marker in the answer",
+      "source": "vendors.py digikey TCAN3413DR (https://api.digikey.com/products/v4/search/TCAN3413DR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:16Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE, marketingStatusDescription of the orderable TCAN3413DR, hasReplacements false",
+      "read": "orderable TCAN3413DR: marketingStatusDescription ACTIVE, hasReplacements false, 'This product has been released to the market and is available for purchase'; TCAN3413DDFR and TCAN3413DRBR also ACTIVE. The part-details page https://www.ti.com/product/TCAN3413/part-details/TCAN3413DR also shows 'TCAN3413DR ACTIVE' (01:05:00Z)",
+      "source": "https://www.ti.com/product/TCAN3413 (vendors.py fetch, chrome client)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:32Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "TI product life cycle page: life cycles typically 10 to 15 years, not eligible for obsolescence with any sales in the last five years (seven for automotive), no date per part",
+      "read": "'TI's product life cycles are typically 10 to 15 years'; not eligible for obsolescence if the product had any sales within the last five years (seven for automotive or high-reliability), can be manufactured and has been in production under 10 years, or has current demand; no date per part. S5 does not make it a gate",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:33Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet March 2023 (SLLSFS8A, Advance Information; production data November 2023), 42 months, not flagged",
+      "read": "SLLSFS8A header 'MARCH 2023 - REVISED NOVEMBER 2023'; March 2023 to September 2026 is 42 months, over 12, not flagged. The copy served held 10 pages and no revision-history page, so the Advance Information marking of the first revision was not re-read",
+      "source": "SLLSFS8A page 1 header, https://www.ti.com/lit/ds/symlink/tcan3413.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:05:31Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "TI PCN listing not read; no TI PCN source was queried",
+      "read": "No end-of-life or last-time-buy notice found. TI's PCN listing was not read: no public TI PCN page was found (https://www.ti.com/support-quality/quality/product-change-notification.html and https://www.ti.com/quality-reliability/quality/pcn.html answer 404 at 01:05:13Z to 01:05:14Z, and the product, part-details and life-cycle pages link to none). Standing in: TI states it designates each product preview, active, NRND, last time buy or obsolete (life-cycle page, 01:03:33Z), and TCAN3413DR reads ACTIVE with hasReplacements false (01:03:32Z); Digi-Key end_of_life false, discontinued false (01:03:16Z)",
+      "source": "https://www.ti.com/product/TCAN3413; https://www.ti.com/quality-reliability/quality/product-life-cycle.html; vendors.py digikey TCAN3413DR",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:05:14Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; LCSC C22433320 stockNumber 13,238, no status text; addendum Active; JLCPCB row carries no status field; no disagreement",
+      "read": "Digi-Key ProductStatus Active, discontinued false, end_of_life false (01:03:16Z); LCSC C22433320 page: TCAN3413DR, SOIC-8, stockNumber 13,238, isPreSale false, no discontinued, obsolete, end-of-life, NRND, not-recommended or last-time-buy text (01:03:33Z); the JLCPCB exact-match record carries no status field (01:03:13Z). All agree with the maker's ACTIVE",
+      "source": "vendors.py digikey TCAN3413DR; https://www.lcsc.com/product-detail/C22433320.html (vendors.py fetch); vendors.py jlcpcb C22433320",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:33Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 16",
+      "read": "ManufacturerLeadWeeks 16",
+      "source": "vendors.py digikey TCAN3413DR (https://api.digikey.com/products/v4/search/TCAN3413DR/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:03:16Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2 (range 1 to 2: one transceiver per port; 2 when the same part serves both ports; gate taken at 2)",
+      "read": "The specification does not fix the count: one transceiver for the link (IOBoard.md:55) and the external port's transceiver with its standby input (IOBoard.md:57, :238). P2's range 1 to 2, top 2, basis one part number on both ports; the candidate's count 2 >= 2",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:55, :57, :65, :238; shortlist placements_basis",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:05:57Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C22433320",
+      "read": "IOBoard.md:55 'R2 selects the IO board's controller and transceiver'; :57 and :238 place the external CAN transceiver under the board's enable node: on the board (rule 1). LCSC number C22433320 (C and digits) says the same",
+      "source": "checkout e13f5f60d2e5 hardware/docs/IOBoard.md:55, :57, :65, :238; shortlist placements_basis",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T01:05:57Z"
+     }
+    ],
+    "refutation": ""
+   }
+  ],
+  "figures": []
+ }
+}

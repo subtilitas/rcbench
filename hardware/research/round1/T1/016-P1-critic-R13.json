@@ -1,0 +1,232 @@
+{
+ "role": "P1-critic",
+ "category": "R13",
+ "label": "P1-critic-R13",
+ "attempt": 0,
+ "data": {
+  "category": "R13",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/Research.md:65",
+    "quantity": "sensor for thrust and torque",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:65 (checkout be1f24767452, read 2026-09-28 10:28 to 10:37 UTC) is the Sensor inputs row of the table headed 'Owner decisions of 2026-09-24' (:56-57). It reads 'load cells for thrust and torque'. hardware/STATUS.md:28 says the same. A grep of the checkout for load cell, thrust, torque, strain, bridge and excitation finds no other sensor for thrust or torque. Owner decision."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/Research.md:291",
+    "quantity": "R13 parts: bridge ADC and excitation",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The R13 row reads 'Load cells for thrust and torque: bridge ADC and excitation (F3)'. It is part of the plan the owner accepted on 2026-09-25 (Research.md:4-5). Load cells are the owner's choice of 2026-09-24 (:65), and F3's Answer column gives the excitation (:531). Research.md:270-271 says the seeds are starting points, not choices. Owner."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/Research.md:531",
+    "quantity": "load-cell channel count",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F3's Answer column reads '3 channels: thrust, and torque on 2 cells; 5 V excitation (owner, 2026-09-25)'. The Proposed answer column reads 'owner to state', and it was not the one read. 3 = 1 thrust + 2 torque. IOBoard.md:73, :133 and :461 and hardware/STATUS.md:28 agree. Owner."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/Research.md:531",
+    "quantity": "load-cell excitation voltage",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The value is '5 V excitation', in F3's Answer column (owner, 2026-09-25). The unit is V. F3 does not say which supply gives it. That is the separate value at IOBoard.md:338 (index 6), which P1's question 0 asks. Owner."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/IOBoard.md:73",
+    "quantity": "thrust and torque summary",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:73 reads 'load cells on 3 channels, 1 for thrust and 2 for torque, at 5 V excitation (F3)', with the state 'required; channels decided (F3)'. The line matches F3's Answer at Research.md:531. IOBoard.md:37-38 defines a question ID given as a source as the owner's answer. Owner."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/IOBoard.md:133",
+    "quantity": "load-cell channels in the pin budget",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:133 lists 'the load cells on 3 channels (F3)' among the sensor inputs, and says P5 counts the whole board against 48 GPIO. The channel count is F3 (owner). The 48 GPIO is the fixed input RP2354B (Research.md Scope, owner). P5's count is the plan the owner accepted. The line states as not known whether the 27 to 32 GPIO budget covers these inputs. P5 settles that from the part R13 selects, so it is not a value for the owner."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/IOBoard.md:338",
+    "quantity": "load-cell excitation supply",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Correctly marked assumption. IOBoard.md:338 lists 'the load-cell excitation (F3)' as a load on the 5 V rail. Its Source column cites R5 and T2 to T4 only. F3's Answer (Research.md:531) gives the voltage, 5 V, and not where it comes from. The R5 row (:283) names the 5 V rail and no excitation. A separate 5 V regulator for the bridges, fed from the 6.0 to 8.4 V pack or the 12 to 20 V DC input, fits F3 equally well. No source puts the excitation on the rail."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/IOBoard.md:392",
+    "quantity": "quantities the IO board measures",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:391-392 lists thrust and torque among the quantities the IO board measures. This matches the owner decision of 2026-09-24 (Research.md:65) and hardware/STATUS.md:28. Owner."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/IOBoard.md:396",
+    "quantity": "link page for thrust and torque",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "shared/link/include/link_pages.h: the BENCH enum spans :229-244 (P1 gives :228-243, one line early, which starts on the comment close; the value is unaffected). It holds registers 0 to 12: voltage, current, power, rpm, 2 temperatures, charge, energy, 4 extremes and flags. None is thrust or torque. A grep of shared/link/ and docs/Link.md for thrust, torque and load finds no page. Research.md:31-35 puts that link page outside every round. Sourced."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/IOBoard.md:495",
+    "quantity": "BENCH register for thrust and torque",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "link_pages.h:230 is LINK_BN_VOLTAGE_CV = 0 and :243 is LINK_BN_COUNT = 13. No register between them carries thrust or torque. Sourced. The same line states the ranges as not stated and assigns them to R13; P1's question 4 asks for them."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/IOBoard.md:496",
+    "quantity": "capability bit for the load cells",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "link_pages.h:173-183 defines bits 0 to 8: ESC drive, ESC telemetry, servo PWM, servo sense, pack sense, receiver, vibration, cells and program. None covers load cells. Sourced. The bit is firmware work, and Research.md:31-35 keeps that out of round 1, so it asks nothing of an R13 part."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/IOBoard.md:460",
+    "quantity": "thrust and torque sensing method",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:460 reads 'load cells, with a bridge ADC and excitation (R13)'. Its sources are 'owner, 2026-09-24; R13'. Load cells are the owner's decision (Research.md:65). The bridge ADC and excitation are the wording of the R13 row, in the plan the owner accepted (Research.md:4-5, :291). No part is chosen, so the state 'required' holds. Owner."
+   },
+   {
+    "index": 12,
+    "where": "hardware/docs/IOBoard.md:461",
+    "quantity": "load-cell channels and excitation",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:461 reads '3 channels: thrust, and torque on 2 cells; 5 V excitation', with source F3 and state 'decided'. It matches F3's Answer at Research.md:531 word for word. Owner."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/IOBoard.md:558",
+    "quantity": "load-cell connectors and input protection",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The Scope table (Research.md:28) puts connectors, and ESD and overvoltage protection on the sensor connectors, in round 2. Research.md:150-151 says round 1 selects no connector. IOBoard.md:536 also names the sensor connectors' protection as round 2. That table is the plan the owner accepted on 2026-09-25. Owner."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/Research.md:34",
+    "quantity": "link pages and code for thrust and torque",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:31-40 lists thrust and torque among the link pages and coprocessor code outside every round. The only items it brings back into round 1 are the servo position sensor (R11) and the sources of the BENCH registers (R8, R11). This is the plan the owner accepted (:4-5). Owner."
+   },
+   {
+    "index": 15,
+    "where": "hardware/docs/IOBoard.md:105",
+    "quantity": "logic level at RP2354B pins",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "RP2350 datasheet, build-date 2025-07-29, re-read from https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (final URL pip-assets.raspberrypi.com/categories/1214-rp2350/documents/RP-008373-DS-2-rp2350-datasheet.pdf) at 2026-09-28T10:32:02Z. Table 1426 says 'very little current flows into the pin whilst it is below 3.63 V and IOVDD is 0 V', tolerates 'up to 5.5 V, provided IOVDD is powered to 3.3 V', and gives no current figure. Table 1427 lists GPIO0 to GPIO39 as Digital IO (FT). Table 1433 gives VPIN_FT from -0.5 to 5.5 V at IOVDD = 3.3 V and from -0.5 to 3.63 V at IOVDD = 0 V. The figures match. Sourced."
+   },
+   {
+    "index": 16,
+    "where": "hardware/docs/IOBoard.md:453",
+    "quantity": "ADC-input front end rating while the 3.3 V rail is down",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Same datasheet read, 2026-09-28T10:32:02Z. Table 1433 gives VPIN (Standard) from -0.5 V to IOVDD + 0.5 V. Table 1427 lists GPIO40_ADC0 to GPIO47_ADC7 as 'Digital IO / Analogue', not FT. The rule for every category is at Research.md:270-272. The rating is sourced, and it binds R13 only if the design drives an RP2354B ADC input."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "The value at IOBoard.md:338 is an assumption (marking 6), and every assumption is a question to the owner (P1 row, Research.md Agent layout). The answer decides whether the excitation is the rail itself or a part R13 selects, and which rail R5 sizes for it. It also bounds the bridge ADC's analogue supply. On the ADS1232 and ADS1234 seeds, AVDD is 2.7 to 5.3 V and VREF is at most AVDD + 0.1 V. A 5 V ratiometric excitation therefore needs AVDD between 5 and 5.3 V. Source: TI SBAS350H (revised June 2025), https://www.ti.com/lit/ds/symlink/ads1234.pdf, read 2026-09-28T10:36:42Z."
+   },
+   {
+    "index": 1,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:338 says 'The excitation and encoder currents are not stated'. R5 sizes the 5 V rail from the supply currents of the parts T2 and T4 select, plus the display's draw (Research.md:283, IOBoard.md:338). No round selects the load cells: the Scope table (Research.md:25-29) lists none, and the R13 row selects only the bridge ADC and excitation. So no P4 reports the cells' draw. Each cell draws 5 V divided by its bridge resistance. No bridge resistance appears anywhere in the checkout."
+   },
+   {
+    "index": 2,
+    "verdict": "confirmed",
+    "reason": "The checkout names no load cell and states no rated output. Rated output × 5 V gives each channel's full-scale input. It decides the gain a part needs. On the ADS123x seeds the PGA gives full-scale ranges of ±19.5 mV at gain 128 and ±39 mV at gain 64 (SBAS350H, read 2026-09-28T10:36:42Z). Whether a cell's output fits one of them depends on this value."
+   },
+   {
+    "index": 3,
+    "verdict": "confirmed",
+    "reason": "A grep of the checkout finds no capacity for any cell. Capacity and rated output together turn a force step in N into a voltage step at the ADC input. Without the capacity, the resolution in N (question 5) cannot become a noise-free resolution in µV that P2 can check against a datasheet."
+   },
+   {
+    "index": 4,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:495 reads 'The thrust and torque ranges: not stated. F3's answer gives the channels and the excitation, not the ranges (R13).' The line itself assigns this missing value to R13. The sign matters: a part must read both polarities if thrust reverses or torque changes direction. Converting the torque range in N·m to force on each cell also needs the cells' distance from the axis. A critic addition asks for that distance."
+   },
+   {
+    "index": 5,
+    "verdict": "confirmed",
+    "reason": "Neither IOBoard.md nor Research.md states a resolution for thrust or torque (grep for thrust, torque and load cell, read 2026-09-28). With questions 2 and 3, the answer gives the step at the ADC input in µV, at the rate of question 7. That is the figure a bridge ADC's noise table is checked against."
+   },
+   {
+    "index": 6,
+    "verdict": "confirmed",
+    "reason": "No accuracy is stated for the load-cell channels. IOBoard.md:476 states accuracy as not stated only for the pack voltage and the motor current. Accuracy is one of the value kinds the P1 row lists (range, resolution, rate, accuracy). The answer bounds the gain, offset, nonlinearity and drift a part may have. The temperature span over which the drift counts is not stated either. A critic addition asks for it."
+   },
+   {
+    "index": 7,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:431 gives 20 ms sampling for the BENCH numbers, and no BENCH register carries thrust or torque (link_pages.h:229-244). No rate is stated for the load cells. A multiplexed part pays a settling delay on each channel change: SBAS350H section 7.3.7 gives a digital filter settling time of 4 conversions, with data rates of 10 or 80 SPS (read 2026-09-28T10:36:42Z). So the rate per channel decides between one multiplexed part and one part per channel."
+   },
+   {
+    "index": 8,
+    "verdict": "confirmed",
+    "reason": "F3 (Research.md:531) takes torque from 2 cells, so the reading combines two channels. Neither page states how far apart in time the readings may be taken. The answer decides whether one multiplexed part is enough, like the 4-channel ADS1234 seed, or whether simultaneous or per-channel conversion is needed. That fixes placements per board, and so the need in the stock gate of sourcing rule 4 (need = boards × placements)."
+   },
+   {
+    "index": 9,
+    "verdict": "confirmed",
+    "reason": "F3 gives only the channels and the excitation, and the checkout names no cell or wiring. On the ADS1232 and ADS1234 seeds, one REFP/REFN pair serves all 2 or 4 channels (pins 16/15 and 20/19; SBAS350H, read 2026-09-28T10:36:42Z). So 3 six-wire cells whose sense leads each need a reference input do not fit one such part. P2 needs 4-wire or 6-wire to count the reference inputs."
+   }
+  ],
+  "added": [
+   {
+    "function": "load-cell bridge ADC",
+    "question": "At what distance from the motor axis, in mm, does each of the 2 torque cells take its load?",
+    "why": "P1's question 4 asks the torque range in N·m, and questions 3 and 5 ask each cell's capacity and resolution in N. The force on a torque cell is the torque divided by its distance from the axis. Without that distance, P2 cannot turn the torque range into each torque cell's force range. It then cannot find the mV the channel's input spans or choose its gain. F3 (Research.md:531) says only 'torque on 2 cells', and neither page states where the cells sit.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "torque cell distance from the motor axis",
+    "asks": ""
+   },
+   {
+    "function": "load-cell bridge ADC",
+    "question": "Over what ambient temperature range, in °C, must each load-cell channel hold the accuracy asked for it?",
+    "why": "P1's question 6 asks an accuracy that counts drift with temperature. A datasheet gives drift per °C (ppm/°C, nV/°C), so the error it adds depends on the temperature span. The only range in the tree is 0 to 50 °C. It is stated for the monostable window (IOBoard.md:184) and the 3.3 V rail (Research.md:283), not for any measurement. Without the span, P2 cannot turn a part's drift figures into % of rated output.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "load-cell accuracy temperature range",
+    "asks": ""
+   },
+   {
+    "function": "load-cell bridge ADC",
+    "question": "What is the longest time, in ms, from a step change in thrust or torque to a fully settled reading on that channel?",
+    "why": "A delta-sigma bridge ADC's digital filter delays a step by several conversions. On the ADS1232 and ADS1234 seeds, a fully settled reading after an input step takes 5 readings: 62.5 ms at 80 SPS and 500 ms at 10 SPS (TI SBAS350H, section 7.3.7 and the data-rate table, https://www.ti.com/lit/ds/symlink/ads1234.pdf, read 2026-09-28T10:36:42Z). The output rate of P1's question 7 does not bound this delay, because parts at the same rate differ in filter order. Neither page states a step response for thrust or torque.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "",
+    "for_quantity": "load-cell settling time after a load step",
+    "asks": ""
+   }
+  ],
+  "functions_missing": []
+ }
+}

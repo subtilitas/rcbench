@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R2",
+ "label": "adjudicator-R2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "function": "re-rank report: CAN controller clock (P3's missed function)",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation holds. The claim's main conclusion is correct: no function is added, and the controllers' crystals belong to round 2 (Research.md:28). One sentence of the claim is wrong: \"For the MCP2518FD it is a 40 or 20 MHz crystal or resonator\". The datasheet allows 40, 20 or 4 MHz, so the sentence leaves out 4 MHz. The datasheet also caps the SPI (Serial Peripheral Interface) clock at 0.85 x SYSCLK/2, where SYSCLK is the controller's internal system clock. The x10 PLL (phase-locked loop) works only on a 4 MHz input, so a 20 MHz crystal gives a 20 MHz SYSCLK at most. That caps the SPI clock at 8.5 MHz. The link requires SPI at 10 MHz (IOBoard.md:170, and IOMCU_CAN_SPI_HZ = 10,000,000 in iomcu_pins.h). On the link, the MCP2518FD therefore needs a 40 MHz crystal, or a 4 MHz one through the PLL, which adds up to 10 ppm of drift. A 20 MHz crystal would bit-time 1 Mbit/s exactly (20 quanta, 75 % sample point) but misses the SPI requirement. As written, the sentence would hand round 2 a 20 MHz option that breaks the link. The fault concerns this function's requirement (the link's SPI rate), not the part itself, so the scope is function.",
+  "evidence": "Datasheet DS20006027B, re-downloaded (HTTP 200, 1,173,292 bytes).\n- Page 1, oscillator options: \"40, 20 or 4 MHz Crystal or Ceramic Resonator; External Clock Input\".\n- Section 5 (page 75): \"The PLL can be enabled to multiply the 4 MHz clock by 10. The internal 40/20 MHz can be divided by two.\"\n- Register 3-1, PLLEN bit: 1 = system clock from the 10x PLL; SCLKDIV: SYSCLK divided by 1 or 2.\n- Table 7-3: FOSC1,4M / 20M / 40M each nominal +/-0.5 %; FDRIFT 10 ppm at most, added by the PLL at 4 MHz.\n- Table 7-6: FSCK 17 MHz at most; Note 3: \"FSCK must be less than or equal to 0.85*(FSYSCLK/2)\".\n- Computed: a 20 MHz SYSCLK caps FSCK at 8.5 MHz. A 40 MHz SYSCLK allows 17 MHz.\n\nCheckout e13f5f60d2e5:\n- IOBoard.md:170, Controller interface, \"SPI at 10 MHz, mode 0\", state built.\n- IOBoard.md:169, the MCP2515 takes a 16 MHz crystal.\n- firmware/iomcu/include/iomcu_pins.h: IOMCU_CAN_SPI_HZ 10000000u.\n- Research.md:27-28: round 1 fixes only the RP2354B's crystal; round 2 takes \"crystals and inductors not fixed in round 1\".\n- Research.md:586-587: V26 and V27 are marked \"for research\"; they are the questions on clock tolerance.",
+  "source": "python3 tools/research/vendors.py fetch --out ds.pdf https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/External-CAN-FD-Controller-with-SPI-Interface-DS20006027B.pdf (page 1, Section 5 / Figure 5-1, Register 3-1, Tables 7-3 and 7-6); checkout e13f5f60d2e5 hardware/docs/IOBoard.md:169-170, firmware/iomcu/include/iomcu_pins.h (IOMCU_CAN_SPI_HZ), hardware/docs/Research.md:27-28, :586-587",
+  "read_at": "2026-09-29T01:23:52Z",
+  "scope": "function"
+ }
+}

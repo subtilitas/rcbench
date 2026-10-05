@@ -1,0 +1,265 @@
+{
+ "role": "P4",
+ "category": "R10",
+ "label": "P4-stock-R10",
+ "attempt": 0,
+ "data": {
+  "category": "R10",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "Converter for the accelerometer",
+    "part": "ADCS7476AIMFX/NOPB",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 2,312 (JLCPCB, 2026-09-29T02:50:28Z); gate: need 5 boards x 2 = 10, threshold max(5 x 10, 50) = 50",
+      "read": "stockCount 2,312, exact LCSC match C91530; 2,312 >= 50",
+      "source": "python3 vendors.py jlcpcb C91530 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact_match.lcsc C91530)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:45Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 2,279",
+      "read": "canPresaleNumber 2,279, >= 0",
+      "source": "python3 vendors.py jlcpcb C91530 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:45Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 88 >= gate 50 (2026-09-29T02:50:49Z)",
+      "read": "stock_available 88 (Cut Tape 88, Digi-Reel 88, Tape & Reel 0); 88 >= rule-4 gate 50 (need 10). Returned cached: true, the reading of 2026-09-29T02:50:49Z on this UTC day",
+      "source": "python3 vendors.py digikey ADCS7476AIMFX/NOPB (https://api.digikey.com/products/v4/search/ADCS7476AIMFX%2FNOPB/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:50:49Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (TI product page meta status and orderable marketingStatusDescription)",
+      "read": "ACTIVE: product page meta name=status content=ACTIVE; the orderable object for OPN=ADCS7476AIMFX/NOPB (SOT-23 (DBV), 6 pins) carries marketingStatusDescription ACTIVE; the part-details page shows 'ADCS7476AIMFX/NOPB ACTIVE ... DBV | 6 | -40 to 125' (read 03:31:04Z)",
+      "source": "python3 vendors.py fetch https://www.ti.com/product/ADCS7476 (HTTP 200); https://www.ti.com/product/ADCS7476/part-details/ADCS7476AIMFX/NOPB (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:56Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "TI standard products not eligible for obsolescence while sold within 5 years, in production under 10 years, or in demand; no per-part date",
+      "read": "TI states product life cycles 'typically 10 to 15 years'; standard products are not eligible for obsolescence if sold within the last five years (seven for automotive or high-reliability), in production under 10 years, or with current demand. No per-part date. S5 records it, no gate",
+      "source": "python3 vendors.py fetch https://www.ti.com/quality-reliability/quality/product-life-cycle.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:56Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet April 2003 (SNAS192G header), over 12 months",
+      "read": "SNAS192G - APRIL 2003 - REVISED MAY 2016 (header); about 281 months on the market, over 12",
+      "source": "python3 vendors.py fetch https://www.ti.com/lit/ds/symlink/adcs7476.pdf (HTTP 200, 1,365,704 bytes), page header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:30:40Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the product page; TI PCN listing not read",
+      "read": "none found: no PCN, end-of-life or last-time-buy text on the product page or the part-details page; Digi-Key API discontinued false, end_of_life false. TI PCN listing not read: https://www.ti.com/support-quality/quality-reliability/pcn-and-eol.html answered HTTP 404 (03:31:19Z) and no public listing URL was found",
+      "source": "https://www.ti.com/product/ADCS7476; https://www.ti.com/product/ADCS7476/part-details/ADCS7476AIMFX/NOPB (03:31:04Z); vendors.py digikey ADCS7476AIMFX/NOPB (02:50:49Z, cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:31:04Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; LCSC page no discontinuation text; JLCPCB API row carries no status",
+      "read": "Digi-Key ProductStatus Active (02:50:49Z, cached). LCSC page's own record for C91530: productModel ADCS7476AIMFX/NOPB, brand TI, SOT-23-6, stockNumber 2,312, no discontinued, obsolete, end-of-life, NRND or last-time-buy text (03:29:56Z). JLCPCB API row carries no status field (03:29:45Z). No disagreement with TI's ACTIVE",
+      "source": "vendors.py digikey ADCS7476AIMFX/NOPB; vendors.py fetch https://www.lcsc.com/product-detail/C91530.html (HTTP 200); vendors.py jlcpcb C91530",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:56Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 16",
+      "read": "ManufacturerLeadWeeks 16 (cached reading of 02:50:49Z)",
+      "source": "python3 vendors.py digikey ADCS7476AIMFX/NOPB (https://api.digikey.com/products/v4/search/ADCS7476AIMFX%2FNOPB/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:50:49Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows extended",
+      "source": "python3 vendors.py jlcpcb C91530",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:45Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C91530, ADCS7476AIMFX/NOPB, SOT-23-6",
+      "read": "exact result lcsc C91530: part ADCS7476AIMFX/NOPB, package SOT-23-6, maker label Texas Instruments; other_results 0",
+      "source": "python3 vendors.py jlcpcb C91530",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:45Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2, one single-channel converter per axis for the 2 axes of V206; not fixed by the specification; gate at 2",
+      "read": "not fixed by the specification (IOBoard.md 'Converter for the accelerometer': open, Q4); P2's range tops at 2, one 1-input converter per channel for 2 channels (V206, V201); candidate count 2 >= 2, gate applied at 10 = 5 x 2",
+      "source": "hardware/docs/IOBoard.md 'Converter for the accelerometer' and 'Vibration sensor' rows, checkout e13f5f60d2e5; shortlist placements_basis",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C91530",
+      "read": "on the IO board: 'an analogue sensor ... into an ADC on the IO board: the RP2354B's own or an external one (Q4)' (IOBoard.md 'Vibration sensor'); LCSC number C91530 is C and digits",
+      "source": "hardware/docs/IOBoard.md 'Vibration sensor' row, checkout e13f5f60d2e5; vendors.py jlcpcb C91530",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:00Z"
+     }
+    ]
+   },
+   {
+    "function": "Converter for the accelerometer",
+    "part": "LM4040AIM3-3.0/NOPB",
+    "kind": "q-alternative",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 2,969 (JLCPCB, 2026-09-29T03:18:04Z); gate: need 5 boards x 1 = 5, threshold max(5 x 5, 50) = 50",
+      "read": "stockCount 2,969, exact LCSC match C544506; 2,969 >= 50",
+      "source": "python3 vendors.py jlcpcb C544506 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact_match.lcsc C544506)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:46Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 2,955",
+      "read": "canPresaleNumber 2,955, >= 0",
+      "source": "python3 vendors.py jlcpcb C544506",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:46Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 26,705 >= gate 50 (2026-09-29T03:12:13Z)",
+      "read": "stock_available 26,705 (Cut Tape 26,705, Digi-Reel 26,705, Tape & Reel 24,000); 26,705 >= rule-4 gate 50 (need 5). Returned cached: true, the reading of 2026-09-29T03:12:13Z on this UTC day",
+      "source": "python3 vendors.py digikey LM4040AIM3-3.0/NOPB (https://api.digikey.com/products/v4/search/LM4040AIM3-3.0%2FNOPB/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:12:13Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (TI product page LM4040-N meta status and orderable LM4040AIM3-3.0/NOPB marketingStatusDescription)",
+      "read": "ACTIVE: product page meta name=status content=ACTIVE; the orderable object for OPN=LM4040AIM3-3.0/NOPB (SOT-23 (DBZ), 3 pins) carries marketingStatusDescription ACTIVE; the part-details page shows 'LM4040AIM3-3.0/NOPB ACTIVE ... DBZ | 3' (03:31:04Z). The one OBSOLETE entry on the family page is LM4040BIM3-2.5, not this part",
+      "source": "python3 vendors.py fetch https://www.ti.com/product/LM4040-N (HTTP 200); https://www.ti.com/product/LM4040-N/part-details/LM4040AIM3-3.0/NOPB (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:56Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "TI standard products not eligible for obsolescence while sold within 5 years, in production under 10 years, or in demand; no per-part date",
+      "read": "TI states life cycles 'typically 10 to 15 years'; standard products not eligible for obsolescence if sold within the last five years, in production under 10 years, or with current demand. No per-part date. S5 records it, no gate",
+      "source": "python3 vendors.py fetch https://www.ti.com/quality-reliability/quality/product-life-cycle.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:56Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first data sheet December 1991 (SNOS633N header), over 12 months",
+      "read": "SNOS633N - DECEMBER 1991 - REVISED AUGUST 2025 (header); about 417 months on the market, over 12",
+      "source": "python3 vendors.py fetch https://www.ti.com/lit/ds/symlink/lm4040-n.pdf (HTTP 200, 1,980,947 bytes), page header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:30:41Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "none on the product page; TI PCN listing not read",
+      "read": "none found: no PCN, end-of-life or last-time-buy text on the product page or the part-details page for this part; Digi-Key API discontinued false, end_of_life false. TI PCN listing not read: https://www.ti.com/support-quality/quality-reliability/pcn-and-eol.html answered HTTP 404 (03:31:19Z) and no public listing URL was found",
+      "source": "https://www.ti.com/product/LM4040-N; https://www.ti.com/product/LM4040-N/part-details/LM4040AIM3-3.0/NOPB (03:31:04Z); vendors.py digikey LM4040AIM3-3.0/NOPB (03:12:13Z, cached)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:31:04Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; LCSC page no discontinuation text; JLCPCB API row carries no status",
+      "read": "Digi-Key ProductStatus Active (03:12:13Z, cached). LCSC page's own record for C544506: productModel LM4040AIM3-3.0/NOPB, brand TI, SOT-23, stockNumber 2,939, no discontinued, obsolete, end-of-life, NRND or last-time-buy text (03:29:57Z). JLCPCB API row carries no status field (03:29:46Z). No disagreement with TI's ACTIVE",
+      "source": "vendors.py digikey LM4040AIM3-3.0/NOPB; vendors.py fetch https://www.lcsc.com/product-detail/C544506.html (HTTP 200); vendors.py jlcpcb C544506",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:57Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "lead_weeks 9",
+      "read": "ManufacturerLeadWeeks 9 (cached reading of 03:12:13Z)",
+      "source": "python3 vendors.py digikey LM4040AIM3-3.0/NOPB (https://api.digikey.com/products/v4/search/LM4040AIM3-3.0%2FNOPB/productdetails)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:12:13Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand (extended)",
+      "read": "componentLibraryType expand (extended); S6 allows extended",
+      "source": "python3 vendors.py jlcpcb C544506",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:46Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C544506, LM4040AIM3-3.0/NOPB, SOT-23-3 (DBZ)",
+      "read": "exact result lcsc C544506: part LM4040AIM3-3.0/NOPB, package SOT-23 (3-pin; TI orderable is SOT-23 (DBZ), 3 pins), maker label Texas Instruments; other_results 0",
+      "source": "python3 vendors.py jlcpcb C544506; https://www.ti.com/product/LM4040-N orderable record",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:46Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 per board, for the RP2354B's one ADC_AVDD pin (QFN-80 pin 59)",
+      "read": "not fixed by IOBoard.md (Q4 open); P2's basis: 1 reference for the one ADC_AVDD pin; candidate count 1 >= 1, gate applied at 5 = 5 x 1. The ADC_AVDD pin count itself is a datasheet figure, not re-read here",
+      "source": "hardware/docs/IOBoard.md 'Converter for the accelerometer' row, checkout e13f5f60d2e5; shortlist placements_basis",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C544506",
+      "read": "on the IO board: the reference sets ADC_AVDD of the RP2354B's ADC, which the specification places on the IO board ('into an ADC on the IO board', IOBoard.md 'Vibration sensor'); LCSC number C544506 is C and digits",
+      "source": "hardware/docs/IOBoard.md 'Vibration sensor' row, checkout e13f5f60d2e5; vendors.py jlcpcb C544506",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:00Z"
+     }
+    ]
+   }
+  ]
+ }
+}

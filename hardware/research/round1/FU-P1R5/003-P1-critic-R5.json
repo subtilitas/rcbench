@@ -1,0 +1,249 @@
+{
+ "role": "P1-critic",
+ "category": "R5",
+ "label": "P1-critic-R5",
+ "attempt": 0,
+ "data": {
+  "category": "R5",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/IOBoard.md:386",
+    "quantity": "reverse-current blocking on the display supply",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:386 and Research.md:283 state the blocking at checkout 249be1e, read 2026-09-28. The Power decision (Research.md:61), F6 (Research.md:534) and prerequisite 7 (Research.md:489-490) do not contain it. git log -S'blocks reverse current' finds only commit 8d8964f (2026-09-25), whose message reads 'The plan adds ... reverse-current blocking on the display's supply': a plan addition, not an owner answer. No row V1 to V264 asks it; V80 asks the forward direction only. Assumption holds."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/IOBoard.md:322",
+    "quantity": "DC input voltage range",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:61 reads '12 to 20 V (owner, 2026-09-25)'; hardware/STATUS.md:25 repeats it. TPS55285 Vin (max) 22 V re-read at https://www.ti.com/product/TPS55285, 2026-09-28T19:39:50Z."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/IOBoard.md:324",
+    "quantity": "source selection",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:61: the DC input runs the board 'when present', the pack 'otherwise', 'the selection is automatic' (owner decisions of 2026-09-24)."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/IOBoard.md:325",
+    "quantity": "lowest pack voltage",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Derived from owner values only: 2S (Research.md:61) and 3.0 V a cell (F9, Research.md:537, owner 2026-09-25). 2 x 3.0 V = 6.0 V."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/IOBoard.md:325",
+    "quantity": "highest pack voltage",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F9's answer (Research.md:537) gives lithium-ion 18650 and the 3.0 V floor, no charge voltage; 4.2 V a cell appears only in F9's proposed answer, which is not an answer. STATUS.md:25 states 8.4 V without a source. Already asked as V92 (Research.md:652) and V131, both 'for research (owner, 2026-09-28)'; no new question needed."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/IOBoard.md:329",
+    "quantity": "discharge floor",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F9 answer, Research.md:537: 'lithium-ion (18650), floor 3.0 V a cell, read per cell from the pack's balance lead (owner, 2026-09-25)'."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/IOBoard.md:327",
+    "quantity": "pack disconnect",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:61: 'disconnected in hardware below a discharge floor (question F9)'; F9 makes the floor per cell, so 'any cell' follows."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/IOBoard.md:328",
+    "quantity": "pack disconnect hysteresis",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Stated only in the R5 row (Research.md:283), a research plan, and IOBoard.md:328, which cites R5. F9's answer sets the floor only; its proposed reconnect rule is not an answer. Asked as V93 and V94 (Research.md:653-654), answered 'for research'."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/IOBoard.md:326",
+    "quantity": "pack path current at 90 % servo efficiency",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The 90 % comes from Power.md:68 with no source; IOBoard.md:326 says the pack efficiency is not stated. Recomputed 53.34 W / 0.9 = 59.27 W; / 8.4 V = 7.06 A; / 6.0 V = 9.88 A. TPS55285 'Switch current limit (typ) (A) 8' re-read 2026-09-28T19:39:50Z at https://www.ti.com/product/TPS55285. Asked as V90 and V132."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/Power.md:68",
+    "quantity": "DC input current at 90 % servo efficiency",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Power.md:67-68 gives 90 % with no source. 59.27 W / 12 V = 4.94 A, / 20 V = 2.96 A. Asked as V105 (Research.md:665)."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/IOBoard.md:326",
+    "quantity": "display power on the pack path",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Prerequisite 7, Research.md:489-490: '2 A peak and 1.5 A continuous at 5 V (owner, 2026-09-25)'; F6 gives 5 V. 5 x 1.5 = 7.5 W, 5 x 2 = 10 W."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/IOBoard.md:334",
+    "quantity": "display supply path",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:61: 'The display is powered through the link cable.' Monostable.md:60 at 23c82ca ('The panel is powered on its own USB') and testbench/WIRING.md:75 conflict; IOBoard.md:580 records the conflict and follows the owner decision."
+   },
+   {
+    "index": 12,
+    "where": "hardware/docs/IOBoard.md:335",
+    "quantity": "display supply voltage",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F6 answer, Research.md:534: '5 V (owner, 2026-09-25)'."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/IOBoard.md:336",
+    "quantity": "display current",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Prerequisite 7, Research.md:489-490 (owner, 2026-09-25); hardware/STATUS.md:30 repeats it."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/IOBoard.md:373",
+    "quantity": "2S pack connector",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "IOBoard.md:373 states the connector is not in the tree and assigns it to R5 and round 2. Research.md:28 puts 'connectors' in round 2. Its current and voltage are the pack path current (V90) and the highest pack voltage (V92)."
+   },
+   {
+    "index": 15,
+    "where": "hardware/docs/IOBoard.md:177",
+    "quantity": "link cable length",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "testbench/WIRING.md:403-407: branch under 30 cm, bus under 5 m, from the panel's self-test text; IOBoard.md:177 matches."
+   },
+   {
+    "index": 16,
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "3.3 V rail tolerance",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:27 at 23c82ca: window holds 'at every corner of drift over 0 to 50 deg C and a rail of 3.3 V +/-3 %'; :36: supply is 'the coprocessor board's 3.3 V rail'. 3.3 x 0.97 = 3.201 V, x 1.03 = 3.399 V."
+   },
+   {
+    "index": 17,
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "3.3 V rail temperature range",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:27 at 23c82ca and IOBoard.md:184 give 0 to 50 deg C. The owner's answer to V7 (Research.md:567, '0 to 50 deg C ambient, one range for the whole IO board (owner, 2026-09-28)') corroborates it; the value needs no question either way."
+   },
+   {
+    "index": 18,
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "encoder supply voltage",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F4 answer, Research.md:532: 'Its supply is 5 V or 12 V, selected by a jumper; 12 V needs a source while the board runs from the 2S pack (R5) (owner, 2026-09-25)'."
+   },
+   {
+    "index": 19,
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "12 V supply input range",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Derived from owner values only: 12 V (F4), pack floor 6.0 V (F9 x 2S) and the 20 V DC maximum (Research.md:61). A span below and above 12 V needs buck-boost; the pack path drop is V113."
+   },
+   {
+    "index": 20,
+    "where": "hardware/docs/IOBoard.md:338",
+    "quantity": "5 V rail loads",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Prerequisite 7 (Research.md:489-490), F3 5 V excitation (Research.md:531), F4 5 V encoder supply (Research.md:532), each owner 2026-09-25. Currents asked as V101 and V102."
+   },
+   {
+    "index": 21,
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "servo rail power",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "STATUS.md:34 and :37 give 'up to 8.4 V' and '4 to 6.35 A' (owner, 2026-09-25); 8.4 x 6.35 = 53.34 W is the bound from those owner limits. Whether 6.35 A applies at the 8.4 V setting is V109 (R6); the bound stands as an upper limit."
+   },
+   {
+    "index": 22,
+    "where": "hardware/docs/IOBoard.md:344",
+    "quantity": "TPS55285 input range",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "https://www.ti.com/product/TPS55285 via vendors.py fetch, HTTP 200, read 2026-09-28T19:39:50Z: 'Vin (min) (V) 2.4', 'Vin (max) (V) 22', tiBadge ACTIVE_true."
+   },
+   {
+    "index": 23,
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "TPS25947 input rating",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "https://www.ti.com/product/TPS25947 via vendors.py fetch, HTTP 200, read 2026-09-28T19:39:50Z: Vin 2.7 to 23 V, Vabsmax_cont 28 V, current limit 0.5 to 6 A, '2.7-V to 23-V, 28-mOhm, 5.5-A eFuse with integrated reverse polarity protection', ACTIVE. 23 - 20 = 3 V."
+   },
+   {
+    "index": 24,
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "LM66200 input rating",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "https://www.ti.com/product/LM66200 via vendors.py fetch, HTTP 200, read 2026-09-28T19:39:50Z: Vin (min) 1.6 V, Vin (max) 5.5 V, Imax 2.5 A, ACTIVE."
+   },
+   {
+    "index": 25,
+    "where": "hardware/docs/Research.md:283",
+    "quantity": "BQ29700 cell count",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "https://www.ti.com/product/BQ29700 via vendors.py fetch, HTTP 200, redirected to /product/BQ2970, read 2026-09-28T19:39:51Z: 'Number of series cells (min) 1', '(max) 1', ACTIVE."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "It carries the assumption at marking 0, which the gap names: an assumption with no confirmed question, and Research.md:353 makes every assumption a question to the owner. No row V1 to V264 asks it; V80 asks the forward direction only. In T1 the critic rejected this wording for leaving out the DC-input state, and the re-check rejected the critic's all-states version because the pages already state the blocking. That page statement comes from commit 8d8964f's plan, not from the owner, so it does not settle the assumption. The omitted state is covered: IOBoard.md:334 and :338 put the display on the 5 V rail made from the selected source, so with the DC input or with the pack the rail is up and faces the display's VBUS through the cable. The pack-case answer therefore holds for the DC-input case. A yes or no decides whether P2 qualifies a reverse-blocking part, so it blocks P2."
+   }
+  ],
+  "added": [
+   {
+    "function": "reverse-polarity protection",
+    "question": "What is the highest reverse voltage, in V, the DC input must survive without damage: the 20 V maximum reversed (-20 V), or the highest continuous voltage of V83 reversed?",
+    "why": "IOBoard.md:331 places reverse-polarity protection 'on the board's power input' with no voltage, and no row V1 to V264 gives one. V83 asks the forward overvoltage only. A protection part is qualified against its reverse rating. The TPS25947 seed's product page (https://www.ti.com/product/TPS25947, read 2026-09-28T19:39:50Z) lists 'Reverse polarity protection' but no reverse voltage; its datasheet was not read.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:331",
+    "for_quantity": "reverse voltage the DC input survives",
+    "asks": ""
+   },
+   {
+    "function": "source selection",
+    "question": "While the board runs from the 2S pack, must the source selection keep the pack's voltage off the DC input connector's pins, with the DC input unplugged or its source switched off: yes or no?",
+    "why": "IOBoard.md:324 and Research.md:61 state only that the selection is automatic. F8 (Research.md:536, owner 2026-09-25) says the pack does not charge from the DC input, so the selection blocks current from the DC input into the pack. No page states the other direction, pack out through the DC input's pins. It decides whether P2 needs reverse blocking on the DC input's side. A reverse-polarity stage built as a series P-channel MOSFET does not block it; an ideal diode or an eFuse with reverse blocking does.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:324",
+    "for_quantity": "pack voltage back-fed onto the DC input connector",
+    "asks": ""
+   }
+  ],
+  "functions_missing": []
+ }
+}

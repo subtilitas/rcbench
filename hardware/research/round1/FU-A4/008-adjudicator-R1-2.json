@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R1",
+ "label": "adjudicator-R1-2",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "function": "P2 report: board header",
+  "part": "",
+  "stands": true,
+  "scope": "function",
+  "ruling": "Refutation stands. The report says that lines 85-86 of olimex_rp2350_xl.h set PICO_RP2350_A2_SUPPORTED and can be changed to 0. Those lines are only the C preprocessor side. The build reads the value from line 84, 'pico_board_cmake_set_default(PICO_RP2350_A2_SUPPORTED, 1)'. pico-sdk 2.3.0 cmake/generic_board.cmake lines 28-30 parse that line from the board header into a CMake variable. tools/CMakeLists.txt lines 615-620 then add '--abs-block' to picotool's UF2 arguments whenever that variable is true. A header that changes only lines 85-86 to 0 still sets the CMake default to 1, so the UF2 file still carries the A2 absolute block. For an A4-only board the change is lines 84-86. The kept flash-size entry spans lines 79-82 (79 is its CMake default), not 80-81. That value is kept, so this mistake changes nothing. The other line numbers and values in the report match the file. The error is in the report's figure for this function, not in the part, so the scope is function.",
+  "evidence": "olimex_rp2350_xl.h (pico-sdk 2.3.0, SHA-256 258158c9fbf38111f769e27df4210158bd976fab1d2b1244ae47878b908818c3, the same hash the claim and the verifier give): line 84 'pico_board_cmake_set_default(PICO_RP2350_A2_SUPPORTED, 1)', lines 85-87 '#ifndef PICO_RP2350_A2_SUPPORTED / #define PICO_RP2350_A2_SUPPORTED 1 / #endif'. Line 79 'pico_board_cmake_set_default(PICO_FLASH_SIZE_BYTES, (2 * 1024 * 1024))', lines 80-82 the #ifndef/#define/#endif. Other lines match the report: 22 '#define OLIMEX_RP2350_XL'; 25 'PICO_RP2350A 0'; 28-35 UART 0 TX 0 RX 1; 39-40 LED 25; 44-51 I2C 1 SDA 2 SCL 3; 55-68 SPI 0, SCK 6, TX 7, RX 4, CSN 5; 73 'PICO_BOOT_STAGE2_CHOOSE_W25Q080 1'; 75-76 'PICO_FLASH_SPI_CLKDIV 2'; no PSRAM define. cmake/generic_board.cmake (SHA-256 37797fe487e73c25757f4a19fd224c5c9f342f260e0e9ee55846ee657754f6e7) lines 19-33: 'we parse the header file to configure the defaults'. A line matching '^[ \\t]*pico_board_cmake_set_default(var, value)' sets the CMake variable when it is not already defined. tools/CMakeLists.txt (SHA-256 b710263d46f7a97c40b173b1e2ece84acf541067ce47f3cfe8b405b00b339e22) lines 615-620: 'if (PICO_RP2350_A2_SUPPORTED)' sets or appends '--abs-block' to extra_uf2_args. firmware/iomcu/CMakeLists.txt lines 92-99 in the checkout: pico_enable_stdio_usb(rcbench-iomcu 1) and pico_enable_stdio_uart(rcbench-iomcu 0), which matches the claim's USB-only console.",
+  "source": "https://raw.githubusercontent.com/raspberrypi/pico-sdk/2.3.0/src/boards/include/boards/olimex_rp2350_xl.h (HTTP 200, 2,018 bytes, read 2026-09-29T09:30:59Z); https://raw.githubusercontent.com/raspberrypi/pico-sdk/2.3.0/tools/CMakeLists.txt (HTTP 200, 29,575 bytes, read 2026-09-29T09:30:59Z, lines 615-620); https://raw.githubusercontent.com/raspberrypi/pico-sdk/2.3.0/cmake/generic_board.cmake (HTTP 200, read 2026-09-29T09:31:17Z, lines 19-33). All fetched with vendors.py fetch --client chrome and saved in /home/claude/rcbench-research/round1/scratch/FU-A4/adjudicator-R1/. Also read: firmware/iomcu/CMakeLists.txt lines 92-99 in checkout e13f5f60d2e5.",
+  "read_at": "2026-09-29T09:31:17Z"
+ }
+}

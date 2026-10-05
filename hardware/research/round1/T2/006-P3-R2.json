@@ -1,0 +1,150 @@
+{
+ "role": "P3",
+ "category": "R2",
+ "label": "P3-R2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "missed": [
+   {
+    "function": "Link CAN transceiver",
+    "part": "TCAN3413DR (C22433320)",
+    "maker": "Texas Instruments (JLCPCB API label 'Texas Instruments'; the jlcparts copy's maker field is blank); S1 Texas Instruments",
+    "why": "Family not considered. SLLSFS8A (https://www.ti.com/lit/ds/symlink/tcan3413.pdf, read 2026-09-28T13:24:06Z): VCC 3.0 to 3.6 V, so it runs from the 3.3 V rail alone; VIO 1.7 to 3.6 V; CANH/CANL -58 to +58 V (V25 needs 5.5 V); tPROP(LOOP1) 180 ns max and tPROP(LOOP2) 180 ns max at VCC = VIO = 3 to 3.6 V (limit 350 ns); STB pin, integrated pull-up. JLCPCB stockCount 14554, canPresaleNumber 13894, 1.0751 USD at 1 (vendors.py jlcpcb C22433320, 2026-09-28T13:21:45Z). Digi-Key TCAN3413DR 4455, Active, lead 16 weeks (api.digikey.com productdetails, 2026-09-28T13:22:34Z). TI product page https://www.ti.com/product/TCAN3413: status ACTIVE, orderable TCAN3413DR ACTIVE (2026-09-28T13:30:06Z). First datasheet revision March 2023. It also meets the external transceiver (see that entry), so one part could serve both ports."
+   },
+   {
+    "function": "External CAN transceiver",
+    "part": "TCAN3413DR (C22433320)",
+    "maker": "Texas Instruments; S1 Texas Instruments",
+    "why": "Family not considered. SLLSFS8A (read 2026-09-28T13:24:06Z): STB standby input with integrated pull-up (V18; high means standby, so the enable node drives it through an inverter, as for P2's TCAN1042HGV); tMODE normal-to-standby 30 us max (V19: 5 ms); CANH/CANL -58 to +58 V (V24: 30 V); classic CAN and CAN FD at 2, 5 and 8 Mbps (V21: 5000 kbit/s); tPROP(LOOP1/2) 180 ns max at VCC = VIO = 3 to 3.6 V (V22: 237 ns); VIO 1.7 to 3.6 V. ILKG(OFF) 1 uA max is given for TXD, RXD and SHDN with VCC = VIO = 0 V; none is given for STB, so IOBoard.md:192 takes the 4.7 kOhm series resistor. Stock and status as in the link entry: JLCPCB 14554/13894 (13:21:45Z), Digi-Key 4455 Active (13:22:34Z), TI ACTIVE (13:30:06Z). Price 1.0751 USD at 1."
+   },
+   {
+    "function": "External CAN transceiver",
+    "part": "ATA6561-GAQW-N (C616016)",
+    "maker": "Microchip Technology (data sheet DS20005991B); S1 Microchip",
+    "why": "Family not considered. DS20005991B (https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/20005991B.pdf, read 2026-09-28T13:26:11Z): STBY input, high selects standby, internal pull-up (V18); tdel(norm-stby) 5 us max, rising edge on STBY, Note 3 'ensured by design' (V19); DC voltage at CANH, CANL -27 to +42 V (V24: 30 V); up to 5 Mbps (V21); tPD(TXD-RXD) 210 ns max rising, 200 ns max falling, RL 60 Ohm, CL 100 pF (V22: 237 ns); VCC 4.5 to 5.5 V from the 5 V rail, VIO 2.8 to 5.5 V. JLCPCB 6971, presale 6946, 0.7195 USD at 1 (2026-09-28T13:21:49Z). Digi-Key 43290, Active, 7 weeks (2026-09-28T13:22:41Z). Microchip product page 'Status: In Production' (https://www.microchip.com/en-us/product/ATA6561, 2026-09-28T13:25:33Z). Pinout TXD, GND, VCC, RXD, VIO, CANL, CANH, STBY, the same 8-pin layout as TCAN1042V/TCAN1044AV. ATA6561-GAQW (C2929602) is a second orderable: JLCPCB 3990 (13:21:50Z), Digi-Key 3809 (13:29:46Z)."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "ATA6561-GAQW-N (C616016)",
+    "maker": "Microchip Technology; S1 Microchip",
+    "why": "Meets the link requirements, figures from DS20005991B (read 2026-09-28T13:26:11Z): VIO 2.8 to 5.5 V, so RXD is at 3.3 V; -27/+42 V bus rating (V25: 5.5 V); loop 210 ns max (limit 350 ns); VCC from the 5 V rail. Stock and status as in the external entry: JLCPCB 6971 (13:21:49Z), Digi-Key 43290 (13:22:41Z), In Production (13:25:33Z)."
+   },
+   {
+    "function": "External CAN transceiver",
+    "part": "ATA6563-GAQW1 (C5127614)",
+    "maker": "Microchip Technology (data sheet DS20005790E); S1 Microchip",
+    "why": "Family not considered. DS20005790E (https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/ATA6562.3-Data-Sheet-20005790E.pdf, read 2026-09-28T13:26:11Z): ATA6563 has pin 5 VIO (2.8 to 5.5 V) and pin 8 STBY; tdel(norm-stby) 5 us max (Note 3); CANH/CANL -27 to +42 V; up to 5 Mbps; tPD(TXD-RXD) 210 ns max at 60 Ohm/100 pF. JLCPCB 1905, presale 1886, 0.8802 USD at 1 (2026-09-28T13:21:50Z). Digi-Key 2924, Active, 7 weeks (2026-09-28T13:22:43Z). Microchip page In Production (2026-09-28T13:25:36Z). It has the ATA6561's pinout, so it is a pin-compatible alternate for rule 5. It also meets the link transceiver requirements."
+   },
+   {
+    "function": "External CAN transceiver",
+    "part": "MAX33040EAKA+T (C5221297)",
+    "maker": "Analog Devices (Maxim), JLCPCB label 'Analog Devices Inc./Maxim Integrated'; S1 Analog Devices",
+    "why": "Family not considered. Data sheet 19-100746 Rev 3 (https://www.analog.com/media/en/technical-documentation/data-sheets/max33040e-max33041e.pdf, client safari, read 2026-09-28T13:28:40Z): VDD 3.0 to 3.6 V, a 3.3 V part; CANH or CANL continuous -40 to +40 V (V24); up to 5 Mbps (V21); tLOOP 140 ns max in both directions (V22); STBY pin, logic high selects standby, pull-up 100 to 250 kOhm (V18). The normal-to-standby delay tD_NSTBY is given as 30 us typical with no maximum, so V19 (5 ms) rests on a typical figure only; P2 dropped parts with no stated time. JLCPCB 434, presale 426, 2.7737 USD at 1 (2026-09-28T13:21:49Z). Digi-Key 13862, Active, 10 weeks (2026-09-28T13:22:39Z); status read at Digi-Key per the Lifecycle check for Analog Devices. It also meets the link transceiver requirements."
+   },
+   {
+    "function": "External CAN transceiver",
+    "part": "TCAN1043ADRQ1 (C5215847)",
+    "maker": "Texas Instruments; S1 Texas Instruments",
+    "why": "Family not considered. SLLSFD1F (https://www.ti.com/lit/ds/symlink/tcan1043a-q1.pdf, read 2026-09-28T13:24:07Z): nSTB, active-low standby input with integrated pull-down, so the enable node can drive it with no inverter; with EN held low, nSTB low is Standby (Table 7-4) (V18); tMODE2 10 us max between normal, silent and standby (V19); CANH/CANL -58 to +58 V (V24); up to 8 Mbps (V21); tPROP(LOOP1) 215 ns max and tPROP(LOOP2) 205 ns max (V22: 237 ns); VIO pin. Constraint: VSUP pin needed, UVSUP rising 3.85 to 4.4 V, so it takes the 5 V rail; SOIC-14. JLCPCB 5678, presale 5674, 0.5814 USD at 1 (2026-09-28T13:21:46Z). Digi-Key 1124, Active, 16 weeks (2026-09-28T13:22:49Z). TI page ACTIVE, orderable ACTIVE (2026-09-28T13:30:07Z)."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "TJA1044GT/3Z (C961486)",
+    "maker": "NXP Semiconductors (JLCPCB API 'NXP Semicon'; the copy's maker field is blank); S1 NXP",
+    "why": "P2 read only TJA1044T/1Z and dropped it for having no VIO. The /3 variant has one: TJA1044 Rev. 8.0 Table 3 lists pin 5 as VIO for the 'TJA1044BT(K) and TJA1044GT(K)/3 variants' (https://www.nxp.com/docs/en/data-sheet/TJA1044.pdf, read 2026-09-28T13:25:03Z). VIO 2.91 to 5.5 V; VCANH -42 to +42 V; td(TXDL-RXDL) and td(TXDH-RXDH) 210 ns max for 'all other variants' (limit 350 ns); timing up to 5 Mbit/s. JLCPCB 39134, presale 38846, 0.5278 USD at 1 (2026-09-28T13:21:29Z). Digi-Key 5558, Active, 10 weeks (2026-09-28T13:22:26Z). NXP status page not read. As an external transceiver it lists only td(stb-norm), 47 us max, so it fails V19 on P2's own standard."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "TJA1042T/3/1J (C132227)",
+    "maker": "NXP Semiconductors (JLCPCB API 'NXP Semicon'); S1 NXP",
+    "why": "P2 considered it only for the external port. For the link it passes: TJA1042 Rev. 11 (read 2026-09-28T13:25:04Z) gives a VIO pin on T(K)/3 (2.8 to 5.5 V), VCANH -58 to +58 V, and td(TXDL-RXDL)/td(TXDH-RXDH) 250 ns max for TJA1042T(K)/3 (limit 350 ns). JLCPCB 55628, presale 54539, 0.4872 USD at 1 (2026-09-28T13:21:21Z). Digi-Key 9562, Active, 10 weeks (2026-09-28T13:22:28Z). NXP status page not read."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "TJA1057GT/3J (C112947)",
+    "maker": "NXP Semiconductors (JLCPCB API 'NXP Semicon'); S1 NXP",
+    "why": "Family not considered. TJA1057 Rev. 8.1 (https://www.nxp.com/docs/en/data-sheet/TJA1057.pdf, read 2026-09-28T13:25:04Z): pin 5 VIO on TJA1057GT(K)/3, 2.91 to 5.5 V; pin 8 S (silent); VCANH -42 to +42 V; td(TXDL-RXDL) 230 ns max, 210 ns at VCC 4.75 to 5.25 V (limit 350 ns). JLCPCB 10984, presale 10795, 0.7178 USD at 1 (2026-09-28T13:21:32Z). Digi-Key 10388, Active, 10 weeks (2026-09-28T13:22:31Z). NXP status page not read."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "TCAN1057AVDRQ1 (C3235000)",
+    "maker": "Texas Instruments; S1 Texas Instruments",
+    "why": "Family not considered. SLLSFM8C (https://www.ti.com/lit/ds/symlink/tcan1057a-q1.pdf, read 2026-09-28T13:24:07Z): VIO 1.7 to 5.5 V; VBUS -58 to +58 V; tPROP(LOOP1/2) 210 ns max in one test condition and 255 ns max in another (which condition applies at VIO = 3.3 V was not resolved; both are under 350 ns); pin 8 S, silent. JLCPCB 4764, presale 4732, 0.6058 USD at 1 (2026-09-28T13:21:42Z). Digi-Key 3627, Active, 16 weeks (2026-09-28T13:22:33Z). TI page ACTIVE, orderable ACTIVE (2026-09-28T13:30:07Z)."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "TCAN1051HVDR (C130130)",
+    "maker": "Texas Instruments; S1 Texas Instruments",
+    "why": "Family not considered. SLLSES8E (https://www.ti.com/lit/ds/symlink/tcan1051h.pdf, read 2026-09-28T13:24:09Z): V variants have VIO; VBUS -70 to +70 V for the H suffix; tPROP(LOOP1) 160 ns max and tPROP(LOOP2) 175 ns max; pin 8 S, silent. JLCPCB 671, presale 664, 1.2781 USD at 1 (2026-09-28T13:21:43Z). Digi-Key 1787, Active, 16 weeks (2026-09-28T13:29:39Z). TI lifecycle page not read."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "MAX3051EKA+T (C112005); MAX3051ESA+T (C15648)",
+    "maker": "Analog Devices (Maxim), JLCPCB label 'Analog Devices Inc./Maxim Integrated'; S1 Analog Devices",
+    "why": "Family not considered. Data sheet 19-3274 Rev 5 (https://www.analog.com/media/en/technical-documentation/data-sheets/MAX3051.pdf, client safari, read 2026-09-28T13:28:37Z): a 3.3 V part, VCC 3.14 to 3.47 V (3.3 V +-5 %); CANH, CANL -7.5 to +12.5 V (V25: 5.5 V); at VRS = 0 V the maximums are tONTXD 50 ns + tONRXD 80 ns = 130 ns and tOFFTXD 70 ns + tOFFRXD 100 ns = 170 ns. The sums are bounds; no loop delay is specified. Limit 350 ns. Up to 1 Mbps. JLCPCB C112005 (SOT-23-8) 15089, presale 14762, 1.3625 USD (2026-09-28T13:21:48Z); C15648 (SOIC-8) 13589, presale 13505 (13:21:48Z). Digi-Key MAX3051EKA+T 45081 Active 10 weeks (13:22:38Z); MAX3051ESA+T 4786 Active 19 weeks (13:22:36Z). The SOIC pinout matches SN65HVD230 except pin 5, which is SHDN with a 50 to 100 kOhm pull-down."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "SN65HVD232DR (C30530)",
+    "maker": "Texas Instruments; S1 Texas Instruments",
+    "why": "Family member not considered; it shares data sheet SLOS346O with the SN65HVD230 (https://www.ti.com/lit/ds/symlink/sn65hvd230.pdf, read 2026-09-28T13:24:06Z). 3.3 V supply; bus terminal -4 to 16 V; no RS pin, so it runs in high-speed mode only: t(LOOP1) 115 ns max and t(LOOP2) 135 ns max at V(Rs) = 0 V (limit 350 ns). Pins 5 and 8 are NC. JLCPCB 42376, presale 41910, 0.9484 USD at 1 (2026-09-28T13:21:47Z). Digi-Key 471, Active, 16 weeks (2026-09-28T13:22:22Z), over the gate of 50. TI orderable SN65HVD232DR ACTIVE (https://www.ti.com/product/SN65HVD232, 2026-09-28T13:30:08Z)."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "MCP2562T-E/SN (C191417)",
+    "maker": "Microchip Technology (data sheet DS20005167C); S1 Microchip",
+    "why": "Family not considered. DS20005167C (https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/20005167C.pdf, read 2026-09-28T13:26:12Z): 1 Mb/s; VIO 1.8 to 5.5 V on MCP2562 only; DC voltage at CANH, CANL -58 to +58 V; tTXD-RXD 125 ns max on the negative edge and 235 ns max on the positive edge (limit 350 ns). JLCPCB 9943, presale 9898, 1.1287 USD at 1 (2026-09-28T13:21:52Z). Digi-Key 60670, Active, lead 52 weeks (2026-09-28T13:22:46Z). Microchip page In Production (2026-09-28T13:25:37Z)."
+   },
+   {
+    "function": "Link CAN transceiver",
+    "part": "MCP2542FD-E/SN (C220598); MCP2542FDT-E/SN (C191251)",
+    "maker": "Microchip Technology (data sheet DS20005514C); S1 Microchip",
+    "why": "Family not considered. DS20005514C (https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/MCP2542FD-MCP2542WFD-4WFD-Data-Sheet-DS20005514C.pdf, read 2026-09-28T13:29:56Z): VIO pin on MCP2542FD; DC voltage at CANH and CANL -58 to +58 V; tTXD-RXD 120 ns max. Only tWAKE, standby to normal, 30 us max, is stated, so like MCP2562FD it cannot show V19 for the external port. JLCPCB C220598 819, presale 796 (2026-09-28T13:21:51Z); C191251 108, presale 104 (13:21:50Z). Digi-Key MCP2542FD-E/SN 1112 Active 5 weeks (13:29:41Z); MCP2542FDT-E/SN 14725 Active 4 weeks (13:29:42Z). Microchip page In Production (https://www.microchip.com/en-us/product/MCP2542FD, 2026-09-28T13:29:47Z)."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "MCP25625T-E/ML (C191253), Link CAN controller",
+    "reason_given": "Not shortlisted. Classic CAN only, with the MCP2515 core's 2 receive buffers, the same as rank 3; the data sheet was fetched but not qualified. Five survivors at most.",
+    "why_it_fails": "The link-controller shortlist has 3 entries, so a cap of 5 does not exclude it. P2 kept the MCP2515 (rank 3) because V16 feeds Q8 only, and the same 2-buffer figure applies here. DS20005282C (https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/MCP25625-CAN-Controller-Data-Sheet-20005282C.pdf, read 2026-09-28T13:26:12Z) gives the values P2 did not qualify. The controller's TxCAN and RxCAN are separate pins, and the transceiver's TXD and RXD 'must be externally connected' to them (section 1.3), so the RXCAN and TXCAN test points of IOBoard.md:540 exist, unlike on TCAN4550. VIO sets 3.3 V logic ('Interfaces Directly with Microcontrollers with 2.7V to 5.5V I/Os'); VDDA 4.5 to 5.5 V from the 5 V rail; CANH, CANL -58 to +58 V; tTXD-RXD 235 ns max; up to 1 Mb/s. JLCPCB 2398, presale 2348, 1.9017 USD at 1 (2026-09-28T13:21:57Z). Digi-Key 3513, Active, lead 49 weeks (2026-09-28T13:22:52Z). Microchip page In Production (2026-09-28T13:25:39Z). It qualifies as a link controller on the same terms as rank 3, with the transceiver built in."
+   },
+   {
+    "part": "SN65HVD230DR (C12084), Link CAN transceiver",
+    "reason_given": "No second source (rule 5): Digi-Key stock 0 (2026-09-28T13:05:27Z); SN65HVD230D is Obsolete at Digi-Key and on the TI page; no pin-compatible alternate (pin 5 Vref, pin 8 Rs).",
+    "why_it_fails": "The Digi-Key figure holds: 0, Active (2026-09-28T13:22:18Z). The claim of no alternate does not. SN65HVD232DR shares SLOS346O (read 2026-09-28T13:24:06Z) and pins 1 to 4, 6 and 7. Its pins 5 and 8 are NC. The 1 Mbit/s link runs the '230 in high-speed mode with RS at 0 V and does not use Vref, so the '232 fits the same circuit. Whether grounding NC pin 8 is permitted is not stated and is for P4 to check. SN65HVD232DR has JLCPCB 42376, presale 41910 (2026-09-28T13:21:47Z), which passes rules 1 to 4. Digi-Key also holds 471 (13:22:22Z). A second route is MAX3051ESA+T (C15648). It shares pin 8 RS and pins 1 to 4, 6 and 7. Its pin 5 is SHDN with a 50 to 100 kOhm pull-down, so it stays in normal mode where the '230's Vref is left open. JLCPCB 13589 (13:21:48Z), data sheet 19-3274 Rev 5 (13:28:37Z). The SN65HVD230DR therefore has a rule-5 alternate."
+   },
+   {
+    "part": "TCAN1462VDRBRQ1 (C5215833), External CAN transceiver",
+    "reason_given": "SON-8: JLCPCB 1,900 but Digi-Key 0 (13:07:05Z), and no SON-8 alternate qualified, so no second source.",
+    "why_it_fails": "TCAN1044AVDRBRQ1 (C3234119) is a SON-8 (DRB) alternate with the same pinout: pin 1 TXD, 4 RXD, 5 VIO, 8 STB with integrated pull-up (SLLSFJ3D, https://www.ti.com/lit/ds/symlink/tcan1044a-q1.pdf, read 2026-09-28T13:31:51Z; TCAN1462-Q1 SLLSFF2B, read 13:24:08Z). P2's own shortlist records TCAN1044AV as meeting every external requirement. JLCPCB 41538, presale 41319 (2026-09-28T13:21:56Z) passes rules 1 to 4. The JLCPCB figure for TCAN1462VDRBRQ1 matches P2: 1900, presale 1481 (13:22:00Z). The SOIC-8 drop stands: C7399456 has 0, presale -1 (13:22:01Z)."
+   },
+   {
+    "part": "MCP2517FDT-H/SL (C512185), MCP2517FD (C133861), Link CAN controller and External CAN controller",
+    "reason_given": "Not shortlisted: predecessor of the MCP2518FD (product page In Production); datasheet not read.",
+    "why_it_fails": "Being a predecessor is not a rule-based reason. The drop stands on the lifecycle gate instead. The Microchip product page shows the 'Status: In Production' badge, but its summary reads: 'Not recommended for new designs. Consider using the pin- and functionally compatible MCP2518FD' (https://www.microchip.com/en-us/product/MCP2517FD, read 2026-09-28T13:25:40Z). NRND fails the gate, and the disagreement is to be written down. C512185 also fails rule 4 at JLCPCB: 34, presale 29 (2026-09-28T13:21:56Z). C133861 has 364 (13:21:57Z)."
+   },
+   {
+    "part": "TJA1044T/1Z (C520388), SN65HVD1050DR, SN65HVD251DR, MCP2551-I/SN, Link CAN transceiver",
+    "reason_given": "Not qualified. JLCPCB descriptions give a 5 V supply with no VIO pin, so RXD would be at 5 V against 3.3 V logic (IOBoard.md:175). Datasheets not read.",
+    "why_it_fails": "The drop stands on a different source. IOBoard.md:175 limits outputs that reach an RP2354B pin, and with an SPI controller the transceiver's RXD reaches the controller instead. The limit that applies is the controller's. MCP2518FD DS20006027B section 7.1 gives 'DC Voltage at all I/O w.r.t GND -0.3V to VDD + 0.3V' (read 2026-09-28T13:26:13Z), which is 3.6 V at VDD 3.3 V, so a 5 V RXD on RXCAN is out of rating. The part values must come from datasheets, not JLCPCB descriptions. TJA1044 Rev. 8.0 Table 3 (read 13:25:03Z) confirms pin 5 is n.c. on TJA1044T. The same table gives a VIO pin on TJA1044GT/3, which P2 missed (see the missed entries)."
+   },
+   {
+    "part": "TCAN4551RGYRQ1 (C2867967), External CAN controller",
+    "reason_given": "Not qualified: datasheet not read; a TCAN455x device with the TCAN4550's SPI-only mode control; JLCPCB maker field blank.",
+    "why_it_fails": "Rule 3 forbids dropping a row because its maker field is blank. The JLCPCB API labels it 'Texas Instruments' (2026-09-28T13:21:58Z); JLCPCB holds 6513, and Digi-Key 547, Active (13:23:01Z). The drop stands on the datasheet. SLLSEZ4A (https://www.ti.com/lit/ds/symlink/tcan4551-q1.pdf, read 2026-09-28T13:24:08Z) lists normal, standby and sleep modes, with the RST pin only as a reset pulse ('Set high to reset device. Once finished set back low'). So no input holds standby while the enable node is low (V18). TCAN4550 SLLSF91A section 8.3.8 says the same: RST pulsed high for at least tPULSE_WIDTH, 30 us, resets the device into standby."
+   },
+   {
+    "part": "MCP2510 family, IA82527 (C661918), Link CAN controller",
+    "reason_given": "JLCPCB stock 0 to 3 in the 2026-09-14 copy, under the gate of 50 (rule 4); IA82527 is a parallel-bus part.",
+    "why_it_fails": "Rule 3 uses the copy to find parts and never to count them. The drop stands on the JLCPCB API: MCP2510-I/P C646750 has 2, and C646749, C220751, C511268, C638679, C631464, C631465 and C627063 have 0 (2026-09-28T13:21:59Z to 13:28:08Z). The IA82527 LCSC number in the API reading is C661928, not C661918: 0 (13:21:59Z)."
+   },
+   {
+    "part": "SJA1000T/N1,118 (C6910), Link CAN controller",
+    "reason_given": "Not qualified. The JLCPCB description gives a 5 V supply and it has a parallel bus interface. Datasheet not read.",
+    "why_it_fails": "The drop stands, now on the datasheet. SJA1000 Product specification 2000 Jan 04 (https://www.nxp.com/docs/en/data-sheet/SJA1000.pdf, read 2026-09-28T13:27:44Z): VDD 4.5 to 5.5 V; AD7 to AD0 form a multiplexed address/data bus. The JLCPCB API labels the maker 'NXP Semicon' (2026-09-28T13:21:59Z), not blank."
+   }
+  ],
+  "missed_functions": []
+ }
+}

@@ -1,0 +1,2929 @@
+{
+ "task": "FU",
+ "run": "FU-B1",
+ "run_id": "c7df594d3d3daaf8",
+ "commit": "e13f5f60d2e553032b27a14f31ed4a93ef4fe828",
+ "date": "2026-09-29",
+ "run_info": {
+  "claude_code": "2.1.284 (Claude Code)",
+  "cpus": 48,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "concurrency": 16,
+  "concurrency_setting": "unset",
+  "digikey_calls_left": 357,
+  "vendors_sha256": "214b14a3af0a4a1e0edfab77124a786c4e0fade844ec4d0c72149c1571ff8bf6"
+ },
+ "followup": {
+  "phases": "P2-P4",
+  "round": 1,
+  "categories": [
+   "R5",
+   "R6",
+   "R7",
+   "R8"
+  ],
+  "items": [
+   {
+    "role": "rerank",
+    "category": "R8",
+    "part": "WSBS8518, WSBM8518, CSM2F, BAS busbar parts on the board (Onboard shunt)",
+    "functions": [
+     "Onboard shunt"
+    ],
+    "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "Motor monitor",
+    "part": "INA238AIDGSR",
+    "reason": "shortlisted states other values than the function for: fixed part, bus and input rating, trip inside full scale, current accuracy, voltage accuracy, reading window, charge and energy, reading of record, switch action, logic and addresses; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "Motor monitor",
+    "part": "INA237AIDGSR",
+    "reason": "shortlisted states other values than the function for: fixed part, bus and input rating, trip inside full scale, current accuracy, voltage accuracy, reading window, charge and energy, reading of record, switch action, logic and addresses; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "Motor monitor",
+    "part": "INA238AQDGSRQ1",
+    "reason": "shortlisted states other values than the function for: fixed part, bus and input rating, trip inside full scale, current accuracy, voltage accuracy, external-path resolution, reading window, charge and energy, reading of record, switch action, logic and addresses; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "Onboard shunt temperature sensor",
+    "part": "MCP9808T-E/MS",
+    "reason": "shortlisted states other values than the function for: watched temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "Onboard shunt temperature sensor",
+    "part": "TMP1075DR",
+    "reason": "shortlisted states other values than the function for: watched temperature, range, accuracy, interface; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "Onboard shunt temperature sensor",
+    "part": "TMP112AIDRLR",
+    "reason": "shortlisted states other values than the function for: watched temperature, range, accuracy, interface; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "Onboard shunt temperature sensor",
+    "part": "PCT2075D,118",
+    "reason": "shortlisted states other values than the function for: watched temperature, range, accuracy, interface; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "External shunt",
+    "part": "WSBE8518L1000JKA2",
+    "reason": "shortlisted states other values than the function for: resistance, highest current and duty, accuracy share; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "External shunt",
+    "part": "BAS-M-R0001-R-5.0",
+    "reason": "shortlisted states other values than the function for: highest current and duty, accuracy share, Kelvin sense, vendor; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "External shunt",
+    "part": "CSM2F-8518-L100J01",
+    "reason": "shortlisted states other values than the function for: highest current and duty, accuracy share, Kelvin sense, vendor; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "External shunt",
+    "part": "WSBS8518L1000JK20",
+    "reason": "shortlisted states other values than the function for: highest current and duty, accuracy share, Kelvin sense, vendor; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "rerank",
+    "category": "R8",
+    "function": "External shunt sense input",
+    "part": "INA237AIDGSR",
+    "reason": "part to verify has no record"
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "External shunt sense input",
+    "part": "INA238AIDGSR",
+    "reason": "shortlisted states other values than the function for: common mode, bus-voltage connection, input withstand, Kelvin and filter, monitor; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "Port current monitor",
+    "part": "INA3221AIRGVR",
+    "reason": "shortlisted states other values than the function for: channels, common-mode range, full scale, channel refresh, accuracy, noise, direction, addresses; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "Port current monitor",
+    "part": "INA226AIDGSR",
+    "reason": "shortlisted states other values than the function for: channels, common-mode range, full scale, channel refresh, accuracy, noise, direction, addresses; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "Port shunt",
+    "part": "ERJ-6CWDR010V",
+    "reason": "shortlisted states other values than the function for: value, power, tolerance and TCR share, placements; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "Port shunt",
+    "part": "PE1206DRM470R01L",
+    "reason": "shortlisted states other values than the function for: value, power, tolerance and TCR share, placements; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "Port shunt",
+    "part": "PA1206DRE470R01Z",
+    "reason": "shortlisted states other values than the function for: value, power, tolerance and TCR share, placements; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "rerank",
+    "category": "R8",
+    "function": "Servo rail monitor",
+    "reason": "the re-rank ranked no part"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Pack charger",
+    "part": "BQ25713RSNR",
+    "reason": "shortlisted states other values than the function for: charge source, input voltage, input draw, cell count, charge voltage, charge current, termination on pack current, charges behind open floor disconnect, pack temperature input, charger efficiency; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Pack charger",
+    "part": "BQ25703ARSNR",
+    "reason": "shortlisted states other values than the function for: charge source, input voltage, input draw, cell count, charge voltage, charge current, termination on pack current, charges behind open floor disconnect, pack temperature input, charger efficiency; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Pack charger",
+    "part": "BQ25710RSNR",
+    "reason": "shortlisted states other values than the function for: charge source, input voltage, input draw, cell count, charge voltage, charge current, termination on pack current, charges behind open floor disconnect, pack temperature input, charger efficiency; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Pack charger",
+    "part": "BQ25700ARSNR",
+    "reason": "shortlisted states other values than the function for: charge source, input voltage, input draw, cell count, charge voltage, charge current, termination on pack current, charges behind open floor disconnect, pack temperature input, charger efficiency; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Pack charger",
+    "part": "BQ25713BRSNR",
+    "reason": "shortlisted states other values than the function for: charge source, input voltage, input draw, cell count, charge voltage, charge current, termination on pack current, charges behind open floor disconnect, pack temperature input, charger efficiency; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Pack charger",
+    "part": "BQ25731RSNR",
+    "reason": "shortlisted states other values than the function for: charge source, input voltage, input draw, cell count, charge voltage, charge current, termination on pack current, charges behind open floor disconnect, pack temperature input, charger efficiency; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Pack charger",
+    "part": "LTC4020EUHF#TRPBF",
+    "reason": "shortlisted states other values than the function for: charge source, input voltage, input draw, cell count, charge voltage, charge current, termination on pack current, charges behind open floor disconnect, pack temperature input, charger efficiency; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Cell balancing",
+    "part": "MAX17320G22+",
+    "reason": "shortlisted states other values than the function for: cells balanced, balance current, supply range, works beside the charger; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Cell balancing",
+    "part": "BQ28Z610DRZR",
+    "reason": "shortlisted states other values than the function for: cells balanced, balance current, supply range, works beside the charger; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Cell balancing",
+    "part": "BQ76907RGRR",
+    "reason": "shortlisted states other values than the function for: cells balanced, balance current, supply range, works beside the charger; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Cell balancing",
+    "part": "BQ29209DRBR",
+    "reason": "shortlisted states other values than the function for: cells balanced, balance current, supply range, works beside the charger; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Cell balancing",
+    "part": "BQ29200DRBR",
+    "reason": "shortlisted states other values than the function for: cells balanced, balance current, supply range, works beside the charger; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Power path",
+    "part": "BQ25713RSNR",
+    "reason": "shortlisted states other values than the function for: run while charging, termination on pack current, pack current carried, USB-only operation, charger on cells side; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Power path",
+    "part": "BQ25703ARSNR",
+    "reason": "shortlisted states other values than the function for: run while charging, termination on pack current, pack current carried, USB-only operation, charger on cells side; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Power path",
+    "part": "BQ25710RSNR",
+    "reason": "shortlisted states other values than the function for: run while charging, termination on pack current, pack current carried, USB-only operation, charger on cells side; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Power path",
+    "part": "BQ25700ARSNR",
+    "reason": "shortlisted states other values than the function for: run while charging, termination on pack current, pack current carried, USB-only operation, charger on cells side; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Power path",
+    "part": "LTC4020EUHF#TRPBF",
+    "reason": "shortlisted states other values than the function for: run while charging, termination on pack current, pack current carried, USB-only operation, charger on cells side; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "FUSB303BTMX",
+    "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "TUSB321AIRWBR",
+    "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "TUSB321RWBR",
+    "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "TUSB320LIRWBR",
+    "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "TUSB320IRWBR",
+    "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "STUSB4500QTR",
+    "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "FUSB301TMX",
+    "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "FUSB302BMPX",
+    "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "TUSB322IRWBR",
+    "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "TPS25751DREFR",
+    "reason": "shortlisted states other values than the function for: advertisement detection, default current, dead-battery Rd, supply, limit output; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "FUSB303BTMX",
+    "reason": "shortlisted lacks the function's requirements: adjust time"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "TUSB321AIRWBR",
+    "reason": "shortlisted lacks the function's requirements: adjust time"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "TUSB321RWBR",
+    "reason": "shortlisted lacks the function's requirements: adjust time"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "TUSB320LIRWBR",
+    "reason": "shortlisted lacks the function's requirements: adjust time"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "TUSB320IRWBR",
+    "reason": "shortlisted lacks the function's requirements: adjust time"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "STUSB4500QTR",
+    "reason": "shortlisted lacks the function's requirements: adjust time"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "FUSB301TMX",
+    "reason": "shortlisted lacks the function's requirements: adjust time"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "FUSB302BMPX",
+    "reason": "shortlisted lacks the function's requirements: adjust time"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "TUSB322IRWBR",
+    "reason": "shortlisted lacks the function's requirements: adjust time"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "TPS25751DREFR",
+    "reason": "shortlisted lacks the function's requirements: adjust time"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Pack cells",
+    "part": "INR-18650-P26A",
+    "reason": "shortlisted states other values than the function for: maker, charge voltage, discharge floor, continuous discharge, charge current, charge temperature, discharge temperature, capacity; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Pack cells",
+    "part": "INR-18650-P26A",
+    "reason": "shortlisted lacks the function's requirements: cells in the pack, vendor"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Pack overcurrent protection",
+    "part": "MAX17320G22+",
+    "reason": "shortlisted states other values than the function for: location, discharge overcurrent, short circuit, charge overvoltage, over-temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Pack overcurrent protection",
+    "part": "BQ28Z610DRZR",
+    "reason": "shortlisted states other values than the function for: location, discharge overcurrent, short circuit, charge overvoltage, over-temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Pack overcurrent protection",
+    "part": "BQ76907RGRR",
+    "reason": "shortlisted states other values than the function for: location, cells, discharge overcurrent, short circuit, charge overvoltage, over-temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Bench pack balance lead",
+    "part": "MAX17320G22+",
+    "reason": "shortlisted states other values than the function for: separate input, taps, connector; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Bench pack balance lead",
+    "part": "BQ28Z610DRZR",
+    "reason": "shortlisted states other values than the function for: separate input, taps, connector; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "function": "Bench pack balance lead",
+    "part": "BQ76907RGRR",
+    "reason": "shortlisted states other values than the function for: separate input, taps, connector; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "question": "V140",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "question": "V141",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "question": "V142",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "question": "V143",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "question": "V145",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "P2",
+    "category": "R7",
+    "question": "V151",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "rerank",
+    "category": "R6",
+    "function": "Port voltage ceiling",
+    "part": "TPS3703 (e.g. TPS3703A4085DSERQ1, TPS3703A7080DSERQ1)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "Servo supply",
+    "part": "TPS55285VALR",
+    "reason": "shortlisted states other values than the function for: Highest steady VIN, Pack input range, Output current from the DC input, Output current from the pack at 8.4 V, Efficiency from the pack, Pack current at 6.0 V, Current into a shorted port, Enable off at RP2354B reset; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "Servo supply",
+    "part": "TPS55285VALR",
+    "reason": "shortlisted lacks the function's requirements: Converter part"
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "Servo supply inductor",
+    "part": "SRP1265A-4R7M",
+    "reason": "shortlisted states other values than the function for: Inductance, Heat-rating current, DC resistance; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "Servo supply inductor",
+    "part": "ETQP5M4R7YFC",
+    "reason": "shortlisted states other values than the function for: Inductance, Saturation current, Heat-rating current, DC resistance, Ambient range; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "Servo supply inductor",
+    "part": "IHLP5050CEER4R7M01",
+    "reason": "shortlisted states other values than the function for: Inductance, Heat-rating current, DC resistance; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "Servo supply inductor",
+    "part": "IHLP4040DZER4R7M01",
+    "reason": "shortlisted states other values than the function for: Inductance, Heat-rating current, DC resistance; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "Servo supply inductor",
+    "part": "XAL1010-472MED",
+    "reason": "shortlisted states other values than the function for: Inductance, Heat-rating current, DC resistance; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "Servo supply inductor",
+    "part": "ETQP8M4R7JFA",
+    "reason": "shortlisted states other values than the function for: Inductance, Heat-rating current, DC resistance; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "Servo supply inductor",
+    "part": "XAL7070-472MEC",
+    "reason": "shortlisted states other values than the function for: Inductance, Heat-rating current, DC resistance; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "Servo supply inductor",
+    "part": "XAL8080-472MED",
+    "reason": "shortlisted states other values than the function for: Inductance, Heat-rating current, DC resistance; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "Port supply switch",
+    "part": "TPS259474LRPWR",
+    "reason": "shortlisted states other values than the function for: Operating input range, Continuous current, Own current limit, Reverse blocking, Control off when undriven, Inrush, Not the rail gate; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "Port supply switch",
+    "part": "TPS259470ARPWR",
+    "reason": "shortlisted states other values than the function for: Operating input range, Continuous current, Own current limit, Reverse blocking, Control off when undriven, Inrush, Not the rail gate; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "Port supply switch",
+    "part": "TPS259480AYWPR",
+    "reason": "shortlisted states other values than the function for: Operating input range, Input withstand, Continuous current, Own current limit, Voltage drop, Off-state leakage, Reverse blocking, Opening time after reset, Inrush, Not the rail gate; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "Port supply switch",
+    "part": "TPS25940AQRVCRQ1",
+    "reason": "shortlisted states other values than the function for: Operating input range, Continuous current, Own current limit, Reverse blocking, Control off when undriven, Inrush, Not the rail gate; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "I/O expander",
+    "part": "MCP23017T-E/SS",
+    "reason": "shortlisted states other values than the function for: Outputs, Hardware reset input, Power-up state, I2C clock, Address; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "I/O expander",
+    "part": "TCA6416APWR",
+    "reason": "shortlisted states other values than the function for: Outputs, Hardware reset input, I2C clock, Address, Ambient range; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "I/O expander",
+    "part": "TCA6424ARGJR",
+    "reason": "shortlisted states other values than the function for: Hardware reset input, Address; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "I/O expander",
+    "part": "PCAL6416AHF,128",
+    "reason": "shortlisted states other values than the function for: Outputs, Hardware reset input, Power-up state, I2C clock, Address; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "I/O expander",
+    "part": "PCAL6524HEAZ",
+    "reason": "shortlisted states other values than the function for: Hardware reset input, Address; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "I/O expander",
+    "part": "PCA9698DGG,518",
+    "reason": "shortlisted states other values than the function for: Hardware reset input, Address; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "I/O expander",
+    "part": "TCA9539PWR",
+    "reason": "shortlisted states other values than the function for: Outputs, Hardware reset input, Power-up state, I2C clock, Address; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "function": "I/O expander",
+    "part": "NCA9539PW-Q100J",
+    "reason": "shortlisted states other values than the function for: Hardware reset input, Address; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "question": "V129",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "P2",
+    "category": "R6",
+    "question": "V133",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "P4",
+    "category": "R8",
+    "function": "External shunt",
+    "part": "WSBE8518L1000JKA2",
+    "figure": "longevity commitment",
+    "reason": "recorded as not read: not read: this verifier found no Vishay longevity or product-lifecycle programme page, and the product page carries none. S5 does not require one",
+    "notice": true
+   },
+   {
+    "role": "P4",
+    "category": "R8",
+    "function": "External shunt",
+    "part": "WSBE8518L1000JKA2",
+    "figure": "market introduction",
+    "reason": "recorded as not read: not read: datasheet 30424 carries only its current revision, 04-Jun-2024, and no revision history. Vishay's notice PCN-DR-00012-2024-REV-0 (WSBE pin coat change, parts 'WSBE*', submitted 2024-07-31) shows the series on the market since July 2024 at the latest, over 2 years",
+    "notice": true
+   },
+   {
+    "role": "P4",
+    "category": "R8",
+    "function": "External shunt",
+    "part": "WSBS8518L1000JK20",
+    "figure": "longevity commitment",
+    "reason": "recorded as not read: not read: no Vishay longevity programme page found, and none on the product page. S5 does not require one",
+    "notice": true
+   },
+   {
+    "role": "P4",
+    "category": "R8",
+    "function": "External shunt",
+    "part": "WSBS8518L1000JK20",
+    "figure": "market introduction",
+    "reason": "recorded as not read: not read: datasheet 30341 carries only its current revision, 26-May-2026, and no revision history. Vishay's PCN-DR-00006-2018-Rev-0 (submitted 2018-05-01) lists WSBS8518L1000JK20 among its parts. The part has therefore been on the market since May 2018 at the latest, over 8 years",
+    "notice": true
+   },
+   {
+    "role": "P4",
+    "category": "R8",
+    "function": "Port shunt",
+    "part": "ERJ-6CWDR010V",
+    "figure": "longevity commitment",
+    "reason": "recorded as not read: not read: this verifier found no Panasonic longevity or product-lifecycle programme page, and the model page carries none. S5 does not require one",
+    "notice": true
+   },
+   {
+    "role": "P4",
+    "category": "R8",
+    "function": "Port shunt",
+    "part": "ERJ-6CWDR010V",
+    "figure": "market introduction",
+    "reason": "recorded as not read: not read: Panasonic's current datasheet AOA0000C313 ('ERJ 2BW, 3BW, 6BW, 8BW, 6CW, 8CW series') carries only its date, 10-May-24, and no revision history. The JLCPCB copy of 15 Feb. 2018 that P2 cites puts the series on the market over 8 years ago",
+    "notice": true
+   },
+   {
+    "role": "P4",
+    "category": "R8",
+    "function": "Onboard shunt",
+    "part": "BVR-Z-R0002-1.0",
+    "reason": "stock verifier listed a part it was not asked to verify; ignored"
+   },
+   {
+    "role": "owner",
+    "category": "R8",
+    "function": "Motor monitor",
+    "part": "INA238AIDGSR",
+    "reason": "fixed input INA238 refuted; reported to the owner, not re-selected"
+   },
+   {
+    "role": "P4",
+    "category": "R8",
+    "function": "Motor monitor",
+    "part": "INA237AIDGSR",
+    "reason": "alternate refuted; the primary has no second source by it"
+   },
+   {
+    "role": "P4",
+    "category": "R8",
+    "function": "External shunt",
+    "part": "WSBS8518L1000JK20",
+    "reason": "alternate refuted; the primary has no second source by it"
+   },
+   {
+    "role": "P4",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "FUSB303BTMX",
+    "figure": "longevity commitment",
+    "reason": "recorded as not read: not read: the product page carries no longevity statement, and no onsemi longevity programme page was found or read. Not a gate (S5)",
+    "notice": true
+   },
+   {
+    "role": "P4",
+    "category": "R7",
+    "function": "Charger input limit",
+    "part": "FUSB303BTMX",
+    "figure": "market introduction",
+    "reason": "recorded as not read: not read: FUSB303B/D Rev. 3 (September 2024) carries '(c) Semiconductor Components Industries, LLC, 2020' and no revision history, and onsemi's public PCN listing holds no notice naming FUSB303BTMX to date it",
+    "notice": true
+   },
+   {
+    "role": "P4",
+    "category": "R7",
+    "function": "Pack cells",
+    "part": "INR-18650-P26A",
+    "figure": "longevity commitment",
+    "reason": "recorded as not read: not read: the product page carries no longevity statement, and no Molicel longevity programme page was found. Not a gate (S5)",
+    "notice": true
+   },
+   {
+    "role": "P4",
+    "category": "R7",
+    "function": "Pack cells",
+    "part": "INR-18650-P26A",
+    "figure": "market introduction",
+    "reason": "recorded as not read: not read: the data sheet reads 'Version: 1.4' with no date and no revision history. The PDF's creation date, 2023-06-14, dates version 1.4 only",
+    "notice": true
+   },
+   {
+    "role": "P4",
+    "category": "R8",
+    "function": "External shunt sense input",
+    "part": "INA237AIDGSR",
+    "reason": "alternate refuted; the primary has no second source by it"
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "function": "External shunt sense input",
+    "part": "INA238AIDGSR",
+    "reason": "refuted, and no next-ranked candidate"
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "figure": "P2 report: INA238 second source",
+    "reason": "figure refuted"
+   },
+   {
+    "role": "P4",
+    "category": "R7",
+    "function": "Pack charger",
+    "part": "BQ25703ARSNR",
+    "reason": "alternate refuted; the primary has no second source by it"
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "figure": "P2 report: Supply currents of R8 parts for the 3.3 V rail",
+    "reason": "figure refuted"
+   },
+   {
+    "role": "P2",
+    "category": "R8",
+    "figure": "re-rank report: External shunt alternate mounting",
+    "reason": "figure refuted"
+   },
+   {
+    "role": "P4",
+    "category": "R7",
+    "function": "Power path",
+    "part": "BQ25703ARSNR",
+    "reason": "alternate refuted; the primary has no second source by it"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R7",
+    "function": "Pack cells",
+    "part": "INR-18650-P26A",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R7",
+    "function": "Bench pack balance lead",
+    "part": "MAX17320G22+",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R7",
+    "figure": "found V138",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R7",
+    "figure": "found V150",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R7",
+    "figure": "found V153",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R7",
+    "figure": "P2 report: TPS55285 input current bound from the pack",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R7",
+    "figure": "P2 report: pack full-charge voltage",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R7",
+    "figure": "re-rank report: CC detector VDD minimum",
+    "reason": "no free agent"
+   },
+   {
+    "role": "P4",
+    "category": "R6",
+    "function": "Servo supply inductor",
+    "part": "SRP1265A-4R7M",
+    "figure": "longevity commitment",
+    "reason": "recorded as not read: not read: no longevity programme page found on bourns.com; its resources menu lists Product Change Notifications and Product Obsolescence Memos only",
+    "notice": true
+   },
+   {
+    "role": "P4",
+    "category": "R6",
+    "function": "Servo supply inductor",
+    "part": "SRP1265A-4R7M",
+    "figure": "market introduction",
+    "reason": "recorded as not read: not read: the data sheet carries only 'REV. 06/24' and no revision history. Bourns' PCN of 2017-07-17 (terminal design change, SRP1038A, SRP1238A, SRP1245A and SRP1265A series) shows the series on the market since 2017 or earlier, over 12 months",
+    "notice": true
+   },
+   {
+    "role": "P4",
+    "category": "R6",
+    "function": "I/O expander",
+    "part": "MCP23017T-E/SS",
+    "figure": "longevity commitment",
+    "reason": "recorded as not read: not read: the MCP23017 page links no longevity or obsolescence programme page, and four guessed microchip.com policy URLs (about/legal-information/customer-driven-obsolescence and similar) answered HTTP 404",
+    "notice": true
+   },
+   {
+    "role": "adjudicator",
+    "category": "R6",
+    "function": "Servo supply",
+    "part": "TPS55285VALR",
+    "reason": "no free agent"
+   },
+   {
+    "role": "P4",
+    "category": "R6",
+    "function": "Servo supply inductor",
+    "part": "SRP1265A-4R7M",
+    "reason": "a verifier gave no required check for some figures"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R6",
+    "figure": "found V114",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R6",
+    "figure": "found V124",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R6",
+    "figure": "found V128",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R6",
+    "figure": "re-rank report: rerank R6: outcome",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R6",
+    "figure": "re-rank report: Servo inductor copper loss at the pack floor",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R6",
+    "figure": "function requirements: Servo supply",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R6",
+    "figure": "function requirements: Port supply switch",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R6",
+    "figure": "re-rank drop: Port supply switch: TPS26632RGET (C2862529) and the TPS2663x family",
+    "reason": "no free agent"
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "reverse-polarity protection",
+    "part": "LM74800QDRRRQ1",
+    "reason": "shortlisted states other values than the function for: reverse voltage survived, forward continuous voltage survived, input transient survived, operating input range, current carried, DC pins kept free of the pack voltage, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "reverse-polarity protection",
+    "part": "LTC4365IDDB#TRPBF",
+    "reason": "shortlisted states other values than the function for: reverse voltage survived, forward continuous voltage survived, input transient survived, operating input range, current carried, DC pins kept free of the pack voltage, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "reverse-polarity protection",
+    "part": "LM74502DDFR",
+    "reason": "shortlisted states other values than the function for: reverse voltage survived, forward continuous voltage survived, input transient survived, operating input range, current carried, DC pins kept free of the pack voltage, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "overvoltage protection",
+    "part": "LM74800QDRRRQ1",
+    "reason": "shortlisted states other values than the function for: cut-off band, continuous overvoltage survived, transient survived, cut-off response, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "overvoltage protection",
+    "part": "LTC4365IDDB#TRPBF",
+    "reason": "shortlisted states other values than the function for: cut-off band, continuous overvoltage survived, transient survived, cut-off response, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "overvoltage protection",
+    "part": "LM74801QDRRRQ1",
+    "reason": "shortlisted states other values than the function for: cut-off band, continuous overvoltage survived, transient survived, cut-off response, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "inrush limiting",
+    "part": "LM74800QDRRRQ1",
+    "reason": "shortlisted states other values than the function for: inrush limit, current carried, operating input range, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "inrush limiting",
+    "part": "LM5060MM/NOPB",
+    "reason": "shortlisted states other values than the function for: inrush limit, current carried, operating input range, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "inrush limiting",
+    "part": "LTC4365IDDB#TRPBF",
+    "reason": "shortlisted states other values than the function for: inrush limit, current carried, operating input range, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "source selection",
+    "part": "LM74800QDRRRQ1",
+    "reason": "shortlisted states other values than the function for: DC input selected when present, switchover interruption, pack kept off the DC pins, DC kept out of the pack, current carried, input survival, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "source selection",
+    "part": "LM74801QDRRRQ1",
+    "reason": "shortlisted states other values than the function for: DC input selected when present, switchover interruption, pack kept off the DC pins, DC kept out of the pack, current carried, input survival, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "pack disconnect",
+    "part": "R5460N212AF-TR-FE",
+    "reason": "shortlisted states other values than the function for: per-cell floor, cells, reconnect condition, trip filter, current while disconnected, threshold set in hardware, balance lead open, pack voltage, pack current, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "3.3 V logic buck",
+    "part": "TPS62933DRLR",
+    "reason": "shortlisted states other values than the function for: output current, input range, 3.3 V tolerance at the monostable, start-up ramp, rail order, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "3.3 V logic buck",
+    "part": "LMR36015BRNXR",
+    "reason": "shortlisted states other values than the function for: output current, input range, 3.3 V tolerance at the monostable, start-up ramp, rail order, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "3.3 V logic buck",
+    "part": "LMR33630ADDAR",
+    "reason": "shortlisted states other values than the function for: output current, input range, 3.3 V tolerance at the monostable, start-up ramp, rail order, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "5 V rail",
+    "part": "TPS62933DRLR",
+    "reason": "shortlisted states other values than the function for: output current, regulation at the lowest input, input range, tolerance at the IO board loads, voltage at the display end, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "5 V rail",
+    "part": "TPS563300DRLR",
+    "reason": "shortlisted states other values than the function for: output current, regulation at the lowest input, input range, tolerance at the IO board loads, voltage at the display end, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "5 V rail",
+    "part": "LMR33630ADDAR",
+    "reason": "shortlisted states other values than the function for: output current, regulation at the lowest input, input range, tolerance at the IO board loads, voltage at the display end, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "display supply",
+    "part": "TPS259474ARPWR",
+    "reason": "shortlisted states other values than the function for: reverse current blocked, current limit, current carried, input voltage, voltage drop at 2 A, reverse polarity on the cable, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "display supply",
+    "part": "TPS259470ARPWR",
+    "reason": "shortlisted states other values than the function for: reverse current blocked, current limit, current carried, input voltage, voltage drop at 2 A, reverse polarity on the cable, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "display supply",
+    "part": "TPS259474LRPWR",
+    "reason": "shortlisted states other values than the function for: reverse current blocked, current limit, current carried, input voltage, voltage drop at 2 A, reverse polarity on the cable, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "rerank",
+    "category": "R5",
+    "function": "receiver supply",
+    "reason": "the re-rank ranked no part"
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "encoder 12 V supply",
+    "part": "TPS55288RPMR",
+    "reason": "shortlisted states other values than the function for: input range, output current, output current limit, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R5",
+    "function": "encoder 12 V supply",
+    "part": "TPS55289RYQR",
+    "reason": "shortlisted states other values than the function for: input range, output current, output current limit, maker allowed; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "rerank",
+    "category": "R5",
+    "function": "2S pack connector",
+    "reason": "the re-rank ranked no part"
+   },
+   {
+    "role": "P3",
+    "category": "R5",
+    "function": "logic supply from the RP2354B's USB port (IOBoard.md:384, marked R5)",
+    "reason": "function the row names that P2 did not return: IOBoard.md:384 names 'Whether the IO board's USB port powers the logic when neither the DC input nor the pack is present' as R5's. P2 answered it only as found value V91 ('No': no rail runs from VBUS, and whether the charger power path runs the board is R7, V152). It returned no function entry for it, whereas the equivalent 'no' answer for the receiver supply got an entry with its requirement and an empty shortlist."
+   },
+   {
+    "role": "P4",
+    "category": "R5",
+    "function": "pack disconnect",
+    "part": "R5460N212AF-TR-FE",
+    "figure": "market introduction",
+    "reason": "recorded as not read: not read: the datasheet NO.EA-165-250616 (39 pages, PDF created 2025-07-22) carries no revision history or first-issue date",
+    "notice": true
+   },
+   {
+    "role": "adjudicator",
+    "category": "R5",
+    "function": "3.3 V logic buck",
+    "part": "TPS62933DRLR",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R5",
+    "figure": "found V88",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R5",
+    "figure": "P2 report: link cable allowed drop at 2 A",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R5",
+    "figure": "P2 report: input TVS",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R5",
+    "figure": "re-rank report: LTC4418 stock at the gate",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R5",
+    "figure": "function requirements: overvoltage protection",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R5",
+    "figure": "function requirements: inrush limiting",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R5",
+    "figure": "function requirements: source selection",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R5",
+    "figure": "function requirements: display supply",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R5",
+    "figure": "function requirements: encoder 12 V supply",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R5",
+    "figure": "re-rank drop: inrush limiting: LTC4417IUF#TRPBF",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R5",
+    "figure": "re-rank drop: source selection: LTC4417IUF#TRPBF",
+    "reason": "no free agent"
+   }
+  ]
+ },
+ "accept_open": {
+  "reason": "Owner, 2026-09-29: accepted open for T3 and its follow-ups on R5 to R8 (the same items). Round-2 passives, which round 2 selects (Scope; S2 names the round 1 passives): R2 link terminator, R2 CAN controller clock, R3 timing network, R3 heartbeat-node series resistors, links and pull-downs, R4 series resistance and clamps, R4 reset idle level. Functions with no part of their own: R4 level translation (none needed at the 3.3 V connector level, V63). The parts and figures the follow-ups FU-A3, FU-A4, FU-C1 and FU-C2 left open, among them R1 Microcontroller (the held, fixed RP2354B, not requalified by FU-A4), R1 USB protection, R3 onboard pack switch MOSFETs, external pack switch module and overvoltage clamp, R4 programming supply switching, R11 optical index, and the unconfirmed figures; the P6 and P7 pages state them as not verified.",
+  "functions": [
+   "R1: Microcontroller (RP2354B not requalified by FU-A4)",
+   "R1: USB protection",
+   "R2: Link terminator (the 120 Ohm at the IO board's end: fitted, switchable or external)",
+   "R2: CAN controller clock (the crystal, resonator or oscillator each controller takes)",
+   "R3: onboard pack switch MOSFETs",
+   "R3: external pack switch module",
+   "R3: pack overvoltage and transient clamp",
+   "R3: timing network (C and R of the monostable)",
+   "R3: heartbeat-node series resistors, links and fail-safe pull-downs",
+   "R4: level translation",
+   "R4: series resistance and clamps",
+   "R4: reset idle level",
+   "R4: programming supply switching",
+   "R11: optical index",
+   "R1: figure found V1 not confirmed in FU-A4",
+   "R1: figure P2 report: board header not confirmed in FU-A4",
+   "R1: figure P2 report: USB protection: no survivor not confirmed in FU-A4",
+   "R2: figure re-rank report: CAN controller clock (P3's missed function) not confirmed in FU-A2",
+   "R2: figure re-rank report: External CAN transceiver: P3 finds against the ranked parts not confirmed in FU-A2",
+   "R2: figure function requirements: Link CAN transceiver not confirmed in FU-A2",
+   "R2: figure function requirements: External CAN transceiver not confirmed in FU-A2",
+   "R3: figure P2 report: onboard switch turn-off not confirmed in FU-A3",
+   "R3: figure re-rank drop: reset supervisor: TPS3850H33DRCT not confirmed in FU-A3",
+   "R4: figure found V75 not confirmed in FU-A3",
+   "R4: figure P2 report: series resistance range not confirmed in FU-A3",
+   "R4: figure P2 report: clamp level against the switch alternates not confirmed in FU-A3",
+   "R4: figure re-rank report: rerank R4: series resistance on the PWM lines not confirmed in FU-A3",
+   "R9: figure found V186 not confirmed in FU-C1",
+   "R9: figure found V187 not confirmed in FU-C1",
+   "R9: figure P2 report: skew limit on the external path, corrected not confirmed in FU-C1",
+   "R10: figure P2 report: Q4 reference supply headroom not confirmed in FU-C1",
+   "R11: figure P2 report: encoder decoding not confirmed in FU-C2",
+   "R11: figure re-rank report: separate receivers and the decoder not confirmed in FU-C2",
+   "R11: figure re-rank report: comparator input bias not confirmed in FU-C2",
+   "R11: figure function requirements: accelerometer not confirmed in FU-C2",
+   "R12: figure P2 report: Q8 store candidate: M24256E-FMN6TP not confirmed in FU-C1",
+   "R12: figure function requirements: external I2C ports not confirmed in FU-C1"
+  ]
+ },
+ "decisions": {
+  "Q4": "",
+  "Q8": "",
+  "Q9": ""
+ },
+ "planned": 21,
+ "started": 32,
+ "extra_used": 11,
+ "free": 11,
+ "skipped": [],
+ "summary": {
+  "categories": [
+   "R5",
+   "R6",
+   "R7",
+   "R8"
+  ],
+  "held": [],
+  "results": [
+   {
+    "category": "R5",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "reverse-polarity protection",
+      "part": "LM74800QDRRRQ1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "inrush limiting",
+      "part": "LM74800QDRRRQ1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "source selection",
+      "part": "LM74800QDRRRQ1",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "pack disconnect",
+      "part": "R5460N212AF-TR-FE",
+      "as": "primary",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "function": "3.3 V logic buck",
+      "part": "LMR51420YFDDCR",
+      "as": "primary",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "function": "3.3 V logic buck",
+      "part": "LMR51430YFDDCR",
+      "as": "alternate",
+      "for": "LMR51420YFDDCR",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "function": "5 V rail",
+      "part": "TPS62933DRLR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "display supply",
+      "part": "TPS259474ARPWR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "encoder 12 V supply",
+      "part": "TPS55288RPMR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "figure": "found V102",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "found V107",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "P2 report: 3.3 V tolerance budget",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "re-rank report: 3.3 V buck candidates from P3: output rows at VIN 24 V",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "function requirements: source selection",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "re-rank drop: reverse-polarity protection: LTC4359HDCB#TRPBF",
+      "status": "refuted, not adjudicated"
+     }
+    ],
+    "figures_open": [
+     "found V102",
+     "found V107",
+     "P2 report: 3.3 V tolerance budget",
+     "re-rank report: 3.3 V buck candidates from P3: output rows at VIN 24 V",
+     "function requirements: source selection",
+     "re-rank drop: reverse-polarity protection: LTC4359HDCB#TRPBF"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "reverse-polarity protection",
+      "decision": "none",
+      "part": "LM74800QDRRRQ1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "overvoltage protection",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "inrush limiting",
+      "decision": "none",
+      "part": "LM74800QDRRRQ1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "source selection",
+      "decision": "none",
+      "part": "LM74800QDRRRQ1",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "pack disconnect",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "3.3 V logic buck",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "5 V rail",
+      "decision": "none",
+      "part": "TPS62933DRLR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "display supply",
+      "decision": "none",
+      "part": "TPS259474ARPWR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "receiver supply",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "encoder 12 V supply",
+      "decision": "none",
+      "part": "TPS55288RPMR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "2S pack connector",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "logic supply from the RP2354B's USB port (IOBoard.md:384, marked R5)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   },
+   {
+    "category": "R6",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "Servo supply",
+      "part": "TPS55285VALR",
+      "as": "primary",
+      "status": "refuted",
+      "scope": "function"
+     },
+     {
+      "function": "Servo supply inductor",
+      "part": "SRP1265A-4R7M",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "Port supply switch",
+      "part": "TPS259474LRPWR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "I/O expander",
+      "part": "MCP23017T-E/SS",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Port voltage ceiling",
+      "part": "TPS3701DDCR",
+      "as": "primary",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "P2 report: HV ceiling band and detector accuracy",
+      "status": "refuted, not adjudicated"
+     }
+    ],
+    "figures_open": [
+     "found V129",
+     "P2 report: HV ceiling band and detector accuracy"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "Servo supply",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Servo supply inductor",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Port supply switch",
+      "decision": "none",
+      "part": "TPS259474LRPWR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "I/O expander",
+      "decision": "none",
+      "part": "MCP23017T-E/SS",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Port voltage ceiling",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   },
+   {
+    "category": "R7",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "Pack charger",
+      "part": "BQ25713RSNR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Cell balancing",
+      "part": "MAX17320G22+",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Power path",
+      "part": "BQ25713RSNR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Charger input limit",
+      "part": "FUSB303BTMX",
+      "as": "primary",
+      "status": "verified; refutation did not stand",
+      "reason": ""
+     },
+     {
+      "function": "Pack cells",
+      "part": "INR-18650-P30B",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "refutation did not stand, but one verifier did not cover it"
+     },
+     {
+      "function": "Pack overcurrent protection",
+      "part": "MAX17320G22+",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Bench pack balance lead",
+      "part": "MAX17320G22+",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "figure": "P2 report: pack overcurrent protection window",
+      "status": "refuted"
+     },
+     {
+      "figure": "P2 report: external BATFET and battery sense resistor",
+      "status": "refuted"
+     },
+     {
+      "figure": "P2 report: cell sourcing",
+      "status": "refuted"
+     },
+     {
+      "figure": "P2 report: USB-C sink timing",
+      "status": "refuted"
+     },
+     {
+      "figure": "re-rank report: BQ40Z50-R2 short-circuit trip with tolerance",
+      "status": "refuted"
+     },
+     {
+      "figure": "re-rank report: SLUA420A external balance current",
+      "status": "refuted"
+     },
+     {
+      "figure": "function requirements: Pack overcurrent protection",
+      "status": "refuted"
+     }
+    ],
+    "figures_open": [
+     "P2 report: pack overcurrent protection window",
+     "P2 report: external BATFET and battery sense resistor",
+     "P2 report: cell sourcing",
+     "P2 report: USB-C sink timing",
+     "re-rank report: BQ40Z50-R2 short-circuit trip with tolerance",
+     "re-rank report: SLUA420A external balance current",
+     "function requirements: Pack overcurrent protection"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "Pack charger",
+      "decision": "none",
+      "part": "BQ25713RSNR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Cell balancing",
+      "decision": "none",
+      "part": "MAX17320G22+",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Power path",
+      "decision": "none",
+      "part": "BQ25713RSNR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Charger input limit",
+      "decision": "none",
+      "part": "FUSB303BTMX",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Pack cells",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Pack overcurrent protection",
+      "decision": "none",
+      "part": "MAX17320G22+",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Bench pack balance lead",
+      "decision": "none",
+      "part": "MAX17320G22+",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   },
+   {
+    "category": "R8",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "Motor monitor",
+      "part": "INA238AIDGSR",
+      "as": "primary",
+      "status": "refuted",
+      "scope": "function"
+     },
+     {
+      "function": "Onboard shunt",
+      "part": "BVR-Z-R0002-1.0",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Onboard shunt temperature sensor",
+      "part": "MCP9808T-E/MS",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "External shunt",
+      "part": "WSBS8518L1000JK20",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "External shunt",
+      "part": "WSBS8518L1000JT20",
+      "as": "alternate",
+      "for": "WSBS8518L1000JK20",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "External shunt sense input",
+      "part": "INA238AIDGSR",
+      "as": "primary",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "function": "Port current monitor",
+      "part": "INA3221AIRGVR",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Port shunt",
+      "part": "ERJ-6CWDR010V",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "figure": "P2 report: External-path accuracy margin",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "re-rank report: Temperature sensor addresses",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "function requirements: Motor monitor",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "function requirements: Port current monitor",
+      "status": "refuted, not adjudicated"
+     }
+    ],
+    "figures_open": [
+     "P2 report: External-path accuracy margin",
+     "re-rank report: Temperature sensor addresses",
+     "function requirements: Motor monitor",
+     "function requirements: Port current monitor"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "Motor monitor",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [
+       "INA238AIDGSR"
+      ],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Onboard shunt",
+      "decision": "none",
+      "part": "BVR-Z-R0002-1.0",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Onboard shunt temperature sensor",
+      "decision": "none",
+      "part": "MCP9808T-E/MS",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "External shunt",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "External shunt sense input",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Port current monitor",
+      "decision": "none",
+      "part": "INA3221AIRGVR",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Port shunt",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Servo rail monitor",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   }
+  ],
+  "selection": {
+   "R5": [
+    {
+     "function": "reverse-polarity protection",
+     "decision": "none",
+     "part": "LM74800QDRRRQ1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "overvoltage protection",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "inrush limiting",
+     "decision": "none",
+     "part": "LM74800QDRRRQ1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "source selection",
+     "decision": "none",
+     "part": "LM74800QDRRRQ1",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "pack disconnect",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "3.3 V logic buck",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "5 V rail",
+     "decision": "none",
+     "part": "TPS62933DRLR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "display supply",
+     "decision": "none",
+     "part": "TPS259474ARPWR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "receiver supply",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "encoder 12 V supply",
+     "decision": "none",
+     "part": "TPS55288RPMR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "2S pack connector",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "logic supply from the RP2354B's USB port (IOBoard.md:384, marked R5)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ],
+   "R6": [
+    {
+     "function": "Servo supply",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Servo supply inductor",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Port supply switch",
+     "decision": "none",
+     "part": "TPS259474LRPWR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "I/O expander",
+     "decision": "none",
+     "part": "MCP23017T-E/SS",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Port voltage ceiling",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ],
+   "R7": [
+    {
+     "function": "Pack charger",
+     "decision": "none",
+     "part": "BQ25713RSNR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Cell balancing",
+     "decision": "none",
+     "part": "MAX17320G22+",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Power path",
+     "decision": "none",
+     "part": "BQ25713RSNR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Charger input limit",
+     "decision": "none",
+     "part": "FUSB303BTMX",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Pack cells",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Pack overcurrent protection",
+     "decision": "none",
+     "part": "MAX17320G22+",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Bench pack balance lead",
+     "decision": "none",
+     "part": "MAX17320G22+",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ],
+   "R8": [
+    {
+     "function": "Motor monitor",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [
+      "INA238AIDGSR"
+     ],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Onboard shunt",
+     "decision": "none",
+     "part": "BVR-Z-R0002-1.0",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Onboard shunt temperature sensor",
+     "decision": "none",
+     "part": "MCP9808T-E/MS",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "External shunt",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "External shunt sense input",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Port current monitor",
+     "decision": "none",
+     "part": "INA3221AIRGVR",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Port shunt",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Servo rail monitor",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ]
+  },
+  "figures_open": {
+   "R5": [
+    "found V102",
+    "found V107",
+    "P2 report: 3.3 V tolerance budget",
+    "re-rank report: 3.3 V buck candidates from P3: output rows at VIN 24 V",
+    "function requirements: source selection",
+    "re-rank drop: reverse-polarity protection: LTC4359HDCB#TRPBF"
+   ],
+   "R6": [
+    "found V129",
+    "P2 report: HV ceiling band and detector accuracy"
+   ],
+   "R7": [
+    "P2 report: pack overcurrent protection window",
+    "P2 report: external BATFET and battery sense resistor",
+    "P2 report: cell sourcing",
+    "P2 report: USB-C sink timing",
+    "re-rank report: BQ40Z50-R2 short-circuit trip with tolerance",
+    "re-rank report: SLUA420A external balance current",
+    "function requirements: Pack overcurrent protection"
+   ],
+   "R8": [
+    "P2 report: External-path accuracy margin",
+    "re-rank report: Temperature sensor addresses",
+    "function requirements: Motor monitor",
+    "function requirements: Port current monitor"
+   ]
+  },
+  "part_refuted": {
+   "R5": [],
+   "R6": [],
+   "R7": [],
+   "R8": []
+  },
+  "q_missing": [],
+  "chain_failed": []
+ },
+ "followUps": [
+  {
+   "role": "P0",
+   "host": "www.vishay.com",
+   "categories": [
+    "R3",
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P0",
+   "host": "www.isabellenhuette.com",
+   "categories": [
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P2",
+   "category": "R8",
+   "function": "External shunt sense input",
+   "part": "INA238AIDGSR",
+   "reason": "shortlisted with a failed requirement: input withstand"
+  },
+  {
+   "role": "rerank",
+   "category": "R8",
+   "function": "Servo rail monitor",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R6",
+   "function": "Servo supply",
+   "part": "TPS55285VALR",
+   "reason": "shortlisted with a failed requirement: Ambient range"
+  },
+  {
+   "role": "P2",
+   "category": "R6",
+   "function": "Port voltage ceiling",
+   "part": "TPS3701DDCR",
+   "reason": "shortlisted with a failed requirement: Latch until action"
+  },
+  {
+   "role": "P2",
+   "category": "R6",
+   "function": "Port voltage ceiling",
+   "part": "TLV6710DDCR",
+   "reason": "shortlisted with a failed requirement: Latch until action"
+  },
+  {
+   "role": "P2",
+   "category": "R6",
+   "question": "V129",
+   "reason": "value marked for research not found"
+  },
+  {
+   "role": "rerank",
+   "category": "R5",
+   "part": "LM74910QRGERQ1",
+   "functions": [
+    "overvoltage protection"
+   ],
+   "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+  },
+  {
+   "role": "rerank",
+   "category": "R5",
+   "function": "receiver supply",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R5",
+   "function": "2S pack connector",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R5",
+   "function": "logic supply from the RP2354B's USB port (IOBoard.md:384, marked R5)",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P4",
+   "category": "R7",
+   "function": "Charger input limit",
+   "part": "FUSB303BTMX",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: the product page carries no longevity statement, and no onsemi longevity programme page was located. Not a gate (S5)",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R7",
+   "function": "Charger input limit",
+   "part": "FUSB303BTMX",
+   "figure": "market introduction",
+   "reason": "recorded as not read: not read: FUSB303B/D Rev. 3 (September 2024) carries no revision history; its footer reads '(c) Semiconductor Components Industries, LLC, 2020', so the first revision date is not stated. The copyright year puts it at 2020 or later; not flagged on that basis",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R7",
+   "function": "Pack cells",
+   "part": "INR-18650-P30B",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: no Molicel longevity or product-lifecycle programme page was found, and the product pages carry no longevity statement. Not a gate (S5)",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R7",
+   "function": "Pack cells",
+   "part": "INR-18650-P30B",
+   "figure": "market introduction",
+   "reason": "recorded as not read: not read: the data sheet reads 'Version 1.0' with no date and no revision history. Its PDF CreationDate is 2023-01-31T01:34:27Z (44 months before today), and Liion Wholesale's listing was created 2023-08-17. Not flagged",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R7",
+   "function": "Pack cells",
+   "part": "INR-18650-P30B",
+   "reason": "not covered by both verifiers"
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "figure": "P2 report: pack overcurrent protection window",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "figure": "P2 report: external BATFET and battery sense resistor",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P4",
+   "category": "R6",
+   "function": "Servo supply inductor",
+   "part": "SRP1265A-4R7M",
+   "figure": "market introduction",
+   "reason": "recorded as not read: not read: the data sheet carries only 'REV. 06/24' and no revision history or first revision date. Bourns' PCN listing has 'Monday, July 17, 2017: Bourns Model SRP1038A, SRP1238A, SRP1245A and SRP1265A Series Shielded Power Inductors - Terminal Design Change to Certain Part Numbers'. That puts the series on the market in 2017 or earlier, over 12 months",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "figure": "P2 report: cell sourcing",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "figure": "P2 report: USB-C sink timing",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "figure": "re-rank report: BQ40Z50-R2 short-circuit trip with tolerance",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P4",
+   "category": "R8",
+   "function": "Onboard shunt",
+   "part": "BVR-Z-R0002-1.0",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: no longevity or product-lifecycle programme page found. The product page carries none. The company quality page (https://www.isabellenhuette.com/company/quality, HTTP 200, 13:02:57Z) names no PCN, discontinuation, longevity or life-cycle programme. S5 does not require one",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R8",
+   "function": "Onboard shunt",
+   "part": "BVR-Z-R0002-1.0",
+   "figure": "market introduction",
+   "reason": "recorded as not read: not read: the first datasheet revision date is not given. BVR.pdf carries only 'Issue 12-September-2024' on each of its 5 pages and no revision history. That issue bounds the introduction at 12-September-2024 at the latest, 24.5 months ago, so the part is not flagged",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R8",
+   "function": "External shunt",
+   "part": "WSBS8518L1000JK20",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: no Vishay longevity or product-lifecycle programme page found, and the product page carries none. S5 does not require one",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R8",
+   "function": "External shunt",
+   "part": "WSBS8518L1000JT20",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: no Vishay longevity or product-lifecycle programme page found, and the product page carries none. S5 does not require one",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R8",
+   "function": "Port shunt",
+   "part": "ERJ-6CWDR010V",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: no Panasonic longevity or product-lifecycle programme page found, and the model page carries none. S5 does not require one",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "figure": "re-rank report: SLUA420A external balance current",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "owner",
+   "category": "R8",
+   "function": "Motor monitor",
+   "part": "INA238AIDGSR",
+   "reason": "fixed input INA238 refuted; reported to the owner, not re-selected"
+  },
+  {
+   "role": "P4",
+   "category": "R8",
+   "function": "External shunt",
+   "part": "WSBS8518L1000JK20",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R8",
+   "function": "External shunt",
+   "part": "WSBS8518L1000JT20",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R8",
+   "function": "External shunt sense input",
+   "part": "INA238AIDGSR",
+   "reason": "no free agent"
+  },
+  {
+   "role": "P4",
+   "category": "R8",
+   "function": "Port shunt",
+   "part": "ERJ-6CWDR010V",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R8",
+   "figure": "P2 report: External-path accuracy margin",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R8",
+   "figure": "re-rank report: Temperature sensor addresses",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R8",
+   "figure": "function requirements: Motor monitor",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R8",
+   "figure": "function requirements: Port current monitor",
+   "reason": "no free agent"
+  },
+  {
+   "role": "owner",
+   "category": "R6",
+   "function": "Servo supply",
+   "part": "TPS55285VALR",
+   "reason": "fixed input TPS55285 refuted; reported to the owner, not re-selected"
+  },
+  {
+   "role": "P4",
+   "category": "R6",
+   "function": "Servo supply inductor",
+   "part": "SRP1265A-4R7M",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R6",
+   "function": "Port voltage ceiling",
+   "part": "TPS3701DDCR",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R6",
+   "figure": "P2 report: HV ceiling band and detector accuracy",
+   "reason": "no free agent"
+  },
+  {
+   "role": "P2",
+   "category": "R7",
+   "figure": "function requirements: Pack overcurrent protection",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R5",
+   "function": "pack disconnect",
+   "part": "R5460N212AF-TR-FE",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R5",
+   "function": "3.3 V logic buck",
+   "part": "LMR51420YFDDCR",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R5",
+   "function": "3.3 V logic buck",
+   "part": "LMR51430YFDDCR",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R5",
+   "figure": "found V102",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R5",
+   "figure": "found V107",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R5",
+   "figure": "P2 report: 3.3 V tolerance budget",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R5",
+   "figure": "re-rank report: 3.3 V buck candidates from P3: output rows at VIN 24 V",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R5",
+   "figure": "function requirements: source selection",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R5",
+   "figure": "re-rank drop: reverse-polarity protection: LTC4359HDCB#TRPBF",
+   "reason": "no free agent"
+  }
+ ],
+ "missing": [],
+ "sequence": 13,
+ "output_sha256": "ead65a7a0cfe20bb86c41c7c3b523c6483d234d5646c9c938bfe7a76b534aac6"
+}

@@ -1,0 +1,420 @@
+{
+ "role": "rerank",
+ "category": "R12",
+ "label": "rerank-R12",
+ "attempt": 0,
+ "data": {
+  "category": "R12",
+  "functions": [
+   {
+    "function": "motor temperature thermocouple",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MAX31856MUD+T",
+      "option": "",
+      "reason": "Meets every requirement value in voltage mode at gain 32 (Configuration 1 TC TYPE 11xx). Its guaranteed budget is ±1.51 °C against ±2 °C and needs no firmware offset calibration. It detects an open thermocouple on chip (OPEN bit, FAULT pin) and has the highest input rating here, ±45 V on T+, T- and BIAS, so round 2 protection has the least to carry toward 67.2 V. Deep stock at both vendors: JLCPCB 11,459 (03:19:06Z), Digi-Key 12,023 (02:47:35Z). The type K conversion runs in firmware, as for the ADS1220."
+     },
+     {
+      "rank": 2,
+      "part": "ADS1220IPWR",
+      "option": "",
+      "reason": "P2's record: meets every value, with the tightest budget, ±1.35 °C, but only after a firmware offset calibration (input offset at gain 2 to 128 has a typical figure only). Its burn-out sources must be off during the measurement (SBAS501D section 8.3.10), so open detection is a separate test step. Its inputs are rated to AVDD + 0.3 V only. The most JLCPCB stock (16,924) and less at Digi-Key (660). Below the MAX31856 for the calibration dependency and the lower input rating."
+     },
+     {
+      "rank": 3,
+      "part": "ADS122C04IPWR",
+      "option": "",
+      "reason": "The I2C counterpart of the ADS1220. It meets every value with ±1.65 °C against ±2 °C after a firmware offset calibration before each reading, the thinnest margin of the three. Its 16 addresses are 0x40 to 0x4F (Table 14), the band of the port monitors (0x40 to 0x43) and the INA238s (0x44 and up), so P5 must find it a free address or another bus. Stocked at both vendors: JLCPCB 4,147 (03:19:05Z), Digi-Key 2,585 (03:10:09Z)."
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 1,
+      "part": "MAX31856MUD+T",
+      "maker": "Maxim Integrated, now Analog Devices (datasheet 19-7534 Rev 0, 2/15); counts as Analog Devices (S1, Maxim counts as Analog Devices under rule 2); JLCPCB label 'Analog Devices Inc./Maxim Integrated'",
+      "lcsc": "C2653162",
+      "package": "TSSOP-14",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: F5 gives 1 thermocouple channel (Research.md:533; IOBoard.md:72, :458), one converter for the channel",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channel count",
+        "required": "1 thermocouple channel",
+        "datasheet": "one thermocouple input pair (T+ pin 4, T- pin 3) with the BIAS pin and one internal cold-junction sensor; one device for the one channel",
+        "pass": true,
+        "source": "MAX31856 datasheet 19-7534 Rev 0, pin configuration and Electrical Characteristics, https://www.analog.com/media/en/technical-documentation/data-sheets/MAX31856.pdf (vendors.py fetch --client safari, HTTP 200, read 2026-09-29T03:19:32Z)"
+       },
+       {
+        "name": "register channel",
+        "required": "the thermocouple reading fills BENCH register 5 (0.1 °C, signed) and valid bit 4",
+        "datasheet": "in voltage mode at gain 32 the 19-bit signed code in registers 0Ch to 0Eh is 32 x 1.6 x 2^17 x VIN (Configuration 1, TC TYPE 11xx); the cold-junction temperature is in registers 0Ah and 0Bh at 0.015625 °C. Firmware converts both with the NIST ITS-90 type K table, writes register 5 in 0.1 °C signed and sets bit 4",
+        "pass": true,
+        "source": "MAX31856 datasheet 19-7534 Rev 0, register map (0Ah to 0Eh), Configuration 1 register, section 'Using Unsupported Thermocouple Types', read 2026-09-29T03:19:32Z"
+       },
+       {
+        "name": "thermocouple type",
+        "required": "type K",
+        "datasheet": "type K through voltage mode at gain 32 and the firmware ITS-90 conversion: 'When voltage mode is selected, no linearization is performed on the conversion data. Use the voltage data and the cold-junction temperature to calculate the thermocouple's hot-junction temperature.' The built-in type K mode (TC TYPE 0011, gain 8) is not used: its ±0.15 %FS on the ±78.125 mV range misses ±2 °C (P2's reading)",
+        "pass": true,
+        "source": "MAX31856 datasheet 19-7534 Rev 0, page 28 and Configuration 1 TC TYPE table, read 2026-09-29T03:19:32Z"
+       },
+       {
+        "name": "measured temperature range",
+        "required": "0 to 200 °C",
+        "datasheet": "full-scale input ±19.531 mV at gain 32 (Note 7). Type K from 0 to 200 °C with the cold junction at 0 to 50 °C spans -2.023 to +8.138 mV (NIST ITS-90 type K table: E(50 °C) = 2.023 mV, E(200 °C) = 8.138 mV); inside ±19.531 mV. Input common-mode range 0.5 to 1.4 V, held by BIAS at 0.735 V",
+        "pass": true,
+        "source": "MAX31856 datasheet 19-7534 Rev 0, Electrical Characteristics Note 7, page 28, read 2026-09-29T03:19:32Z; https://its90.nist.gov/downloadFiles/type_k.tab.txt (vendors.py fetch, HTTP 200, read 2026-09-29T03:24:37Z)"
+       },
+       {
+        "name": "accuracy",
+        "required": "±2 °C over 0 to 200 °C at 0 to 50 °C board ambient, converter and cold junction together, probe tolerance excluded",
+        "datasheet": "at TA -20 to +85 °C: Full-Scale and INL Error ±0.15 %FS, taken as an absolute bound on the gain-32 full scale of 19.531 mV (Note 7 defines the full scale per gain; the row has no gain condition) = ±29.3 µV = ±0.74 °C at 39.7 µV/°C (type K from 0 to 10 °C, the lowest slope in 0 to 200 °C); Input Offset Voltage at AV = 32 ±2.9 µV max = ±0.07 °C; Cold-Junction Temperature Error ±0.7 °C max. Sum ±1.51 °C, before the firmware ITS-90 conversion error, which depends on its table and is not counted. No offset calibration is needed: offset carries a maximum. Note 6 holds the figures at the VBIAS common mode, so BIAS is wired to T- as the datasheet shows. Note 4: limits over temperature are guaranteed by design and characterisation",
+        "pass": true,
+        "source": "MAX31856 datasheet 19-7534 Rev 0, Electrical Characteristics pages 2 to 5, Notes 4, 6 and 7, read 2026-09-29T03:19:32Z; NIST ITS-90 type K table, read 2026-09-29T03:24:37Z"
+       },
+       {
+        "name": "reading interval",
+        "required": "a new reading at least every 2,000 ms (0.5 Hz)",
+        "datasheet": "tCONV (thermocouple + cold junction) 155 ms max for a one-shot or first conversion at 60 Hz, 185 ms at 50 Hz; 90 and 110 ms max for conversions 2 to n in auto mode; the open-circuit test adds up to 154 ms once in 16 conversions (Table 4)",
+        "pass": true,
+        "source": "MAX31856 datasheet 19-7534 Rev 0, Electrical Characteristics page 4, Table 4 page 14, read 2026-09-29T03:19:32Z"
+       },
+       {
+        "name": "input withstand",
+        "required": "67.2 V between either lead and the IO board's ground, met by round 2's sensor-connector protection in front of the converter; the converter's own input rating recorded",
+        "datasheet": "T+, T-, BIAS ±45 V and ±20 mA absolute maximum ('±45V Input Protection'); below 67.2 V alone, so round 2 protection carries the rest (Figure 9 adds series resistors for faults above ±45 V)",
+        "pass": true,
+        "source": "MAX31856 datasheet 19-7534 Rev 0, Absolute Maximum Ratings page 2, Figure 9, read 2026-09-29T03:19:32Z; Research.md:28"
+       },
+       {
+        "name": "open thermocouple detection",
+        "required": "yes: an open or unplugged thermocouple is detected, so valid bit 4 stays clear while none is fitted",
+        "datasheet": "open-circuit fault detection by OCFAULT[1:0] (Configuration 0 bits 5:4), once every 16 conversions, result in the OPEN bit (Fault Status 0Fh bit 0) and on the FAULT pin; the datasheet restricts only the TC Range bit in voltage mode ('The TC Range bit should be ignored in voltage mode'), not the open-circuit test",
+        "pass": true,
+        "source": "MAX31856 datasheet 19-7534 Rev 0, section Open-Circuit Fault Detection and Table 4 page 14, Fault Status register page 28, read 2026-09-29T03:19:32Z"
+       },
+       {
+        "name": "cold-junction ambient range",
+        "required": "0 to 50 °C",
+        "datasheet": "Cold-Junction Temperature Error ±0.7 °C at TA -20 to +85 °C; operating -55 to +125 °C (ordering information)",
+        "pass": true,
+        "source": "MAX31856 datasheet 19-7534 Rev 0, Electrical Characteristics page 3, Ordering Information, read 2026-09-29T03:19:32Z"
+       },
+       {
+        "name": "3.3 V logic at the RP2354B",
+        "required": "every output that reaches an RP2354B pin at 3.3 V logic",
+        "datasheet": "VAVDD and VDVDD 3.0 to 3.6 V (3.3 V typical); SDO VOH VCC - 0.4 V at -1.6 mA, VOL 0.4 V; SPI to 5 MHz; FAULT and DRDY outputs on the same 3.3 V supply",
+        "pass": true,
+        "source": "MAX31856 datasheet 19-7534 Rev 0, Recommended DC Operating Conditions and Electrical Characteristics pages 2 and 5, read 2026-09-29T03:19:32Z"
+       }
+      ],
+      "jlcpcb": "stockCount 11,459; canPresaleNumber 11,205; componentLibraryType expand; price 4.3307 at the 1-piece break, which covers a need of 5 (currency not in the reading); read 2026-09-29T03:19:06Z, vendors.py jlcpcb C2653162 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match, other_results 0, maker label 'Analog Devices Inc./Maxim Integrated')",
+      "digikey": "stock_available 12,023; manufacturer lead time 27 weeks; ProductStatus Active; discontinued false; end_of_life false; read 2026-09-29T02:47:35Z (returned cached: true in this task at 03:19), vendors.py digikey MAX31856MUD+T (https://api.digikey.com/products/v4/search/MAX31856MUD%2BT/productdetails)",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; threshold max(5 x 5, 50) = 50 (S4); stockCount 11,459 >= 50 and canPresaleNumber 11,205 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "Active: Digi-Key ProductStatus, the status of record for an Analog Devices part (Lifecycle check), read 2026-09-29T02:47:35Z; longevity: not read, the Analog Devices product page was not fetched in this task (it answered HTTP 403 with a challenge on 2026-09-28T16:02:38Z, T4 P4); none recorded, not a gate (S5); first datasheet: 19-7534 Rev 0, 2/15, the only revision, over 12 months; change and discontinuation notices: not read; distributor: Digi-Key Active; LCSC productCycle 'normal' (https://www.lcsc.com/product-detail/C2653162.html, HTTP 200, read 2026-09-29T03:22:24Z), no disagreement; the JLCPCB API row carries no status field",
+      "second_source": "second vendor: Digi-Key stock_available 12,023 >= gate 50, read 2026-09-29T02:47:35Z (rule 5)",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "MAX31856MUD+ (C116632): the same part in tubes, same datasheet and TSSOP-14 pinout; JLCPCB stockCount 66, canPresaleNumber 97 (vendors.py jlcpcb C116632, read 2026-09-29T03:23:33Z)"
+      ],
+      "driver_in_shared": "none (shared/ holds artwork, bench, can, dshot, gfx, link, logfile, openyge, outputs, ppm, safety, sbus, servo, settings, touch, ui; no file names the part)",
+      "reason": "Rank 1: every value met in voltage mode at gain 32 with a guaranteed ±1.51 °C and no calibration step, on-chip open detection, ±45 V input protection, and more than 11,000 in stock at each vendor."
+     },
+     {
+      "rank": 3,
+      "part": "ADS122C04IPWR",
+      "maker": "Texas Instruments (datasheet SBAS751B, October 2017, revised October 2018, https://www.ti.com/lit/ds/symlink/ads122c04.pdf); S1 Texas Instruments; JLCPCB label Texas Instruments",
+      "lcsc": "C2872338",
+      "package": "TSSOP-16",
+      "placements": 1,
+      "placements_basis": "fixed by the specification: F5 gives 1 thermocouple channel, one converter for the channel",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "channel count",
+        "required": "1 thermocouple channel",
+        "datasheet": "two differential or four single-ended inputs; one differential pair (AIN0, AIN1) takes the thermocouple, with the internal temperature sensor for the cold junction; one device for the channel",
+        "pass": true,
+        "source": "SBAS751B (vendors.py fetch, HTTP 200, read 2026-09-29T03:19:31Z), page 1, section 9.2.1"
+       },
+       {
+        "name": "register channel",
+        "required": "the thermocouple reading fills BENCH register 5 (0.1 °C, signed) and valid bit 4",
+        "datasheet": "24-bit conversion of the thermocouple voltage and a 14-bit internal temperature reading at 0.03125 °C (Table 13); firmware computes the signed temperature with the NIST ITS-90 type K table, writes register 5 in 0.1 °C and sets bit 4",
+        "pass": true,
+        "source": "SBAS751B (read 2026-09-29T03:19:31Z), Electrical Characteristics TEMPERATURE SENSOR, Table 13"
+       },
+       {
+        "name": "thermocouple type",
+        "required": "type K",
+        "datasheet": "any type through the firmware conversion; the datasheet design example is type K (Table 24)",
+        "pass": true,
+        "source": "SBAS751B (read 2026-09-29T03:19:31Z), section 9.2.1.1, Table 24"
+       },
+       {
+        "name": "measured temperature range",
+        "required": "0 to 200 °C",
+        "datasheet": "differential input ±VREF/gain: ±64 mV at gain 32 on the 2.048 V internal reference; type K spans -2.023 to +8.138 mV over 0 to 200 °C with the cold junction at 0 to 50 °C (NIST ITS-90 table)",
+        "pass": true,
+        "source": "SBAS751B (read 2026-09-29T03:19:31Z), Recommended Operating Conditions; https://its90.nist.gov/downloadFiles/type_k.tab.txt, read 2026-09-29T03:24:37Z"
+       },
+       {
+        "name": "accuracy",
+        "required": "±2 °C over 0 to 200 °C at 0 to 50 °C board ambient, converter and cold junction together, probe tolerance excluded",
+        "datasheet": "at gain 32 on the internal reference, with an offset calibration before each reading (MUX 1110 shorts AINP and AINN to (AVDD + AVSS)/2, section 8.3.11; TI recommends it in section 8.5.3): gain error ±0.05 % max at 25 °C plus 2 ppm/°C max x 25 °C, reference ±0.15 % max at 25 °C (TSSOP) plus 30 ppm/°C max x 25 °C, together ±0.28 % of 8.138 mV = ±22.8 µV = ±0.57 °C at 39.9 µV/°C (type K 190 to 200 °C); INL ±15 ppm of the 128 mV FSR = ±1.9 µV = ±0.05 °C (specified with an external reference); cold-junction sensor ±1.0 °C max at TA 0 to 85 °C; its supply sensitivity 0.25 °C/V max x an assumed ±0.1 V on AVDD = ±0.03 °C (the regulator's tolerance is not known). Sum ±1.65 °C, the firmware ITS-90 conversion error not counted. Without the calibration the budget is not shown: input offset at gain 2 to 128 is ±4 µV typical with no maximum",
+        "pass": true,
+        "source": "SBAS751B (read 2026-09-29T03:19:31Z), Electrical Characteristics pages 5 and 6, sections 8.3.11 and 8.5.3; NIST ITS-90 type K table, read 2026-09-29T03:24:37Z"
+       },
+       {
+        "name": "reading interval",
+        "required": "a new reading at least every 2,000 ms (0.5 Hz)",
+        "datasheet": "data rates 20 to 1,000 SPS in normal mode; at 20 SPS the thermocouple reading, the temperature-sensor reading and the offset reading take well under 2,000 ms",
+        "pass": true,
+        "source": "SBAS751B (read 2026-09-29T03:19:31Z), Electrical Characteristics, data rate"
+       },
+       {
+        "name": "input withstand",
+        "required": "67.2 V between either lead and the IO board's ground, met by round 2's sensor-connector protection in front of the converter; the converter's own input rating recorded",
+        "datasheet": "AIN0 to AIN3 AVSS - 0.3 V to AVDD + 0.3 V absolute maximum, 10 mA continuous input current; round 2 protection carries 67.2 V",
+        "pass": true,
+        "source": "SBAS751B (read 2026-09-29T03:19:31Z), 6.1 Absolute Maximum Ratings; Research.md:28"
+       },
+       {
+        "name": "open thermocouple detection",
+        "required": "yes: an open or unplugged thermocouple is detected, so valid bit 4 stays clear while none is fitted",
+        "datasheet": "10 µA burn-out current sources (BCS, register 2 bit 3) pull an open sensor to full scale (section 8.3.8), to be enabled only for the fault test; the biasing resistors RB1 and RB2 (1 to 50 MΩ) also pull an open lead to AVDD and AVSS, so the ADC reads full scale (section 9.2.1.2)",
+        "pass": true,
+        "source": "SBAS751B (read 2026-09-29T03:19:31Z), sections 8.3.8 and 9.2.1.2"
+       },
+       {
+        "name": "cold-junction ambient range",
+        "required": "0 to 50 °C",
+        "datasheet": "temperature sensor ±1 °C max at TA 0 to 85 °C, ±1.5 °C at -40 to +125 °C; operating -40 to +125 °C",
+        "pass": true,
+        "source": "SBAS751B (read 2026-09-29T03:19:31Z), Electrical Characteristics TEMPERATURE SENSOR, Recommended Operating Conditions"
+       },
+       {
+        "name": "3.3 V logic at the RP2354B",
+        "required": "every output that reaches an RP2354B pin at 3.3 V logic",
+        "datasheet": "DVDD 2.3 to 5.5 V, run at 3.3 V (the characterisation condition); SDA and DRDY are open-drain, pulled up to DVDD (pin table); SCL, SDA, A0, A1, DRDY rated to 7 V; I2C Standard, Fast and Fast-mode Plus",
+        "pass": true,
+        "source": "SBAS751B (read 2026-09-29T03:19:31Z), Pin Functions, 6.1, 6.3, 6.6"
+       }
+      ],
+      "jlcpcb": "stockCount 4,147; canPresaleNumber 4,022; componentLibraryType expand; price 7.9694 at the 1-piece break, which covers a need of 5 (currency not in the reading); read 2026-09-29T03:19:05Z, vendors.py jlcpcb C2872338 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match, other_results 0, maker label 'Texas Instruments')",
+      "digikey": "stock_available 2,585; manufacturer lead time 16 weeks; ProductStatus Active; discontinued false; end_of_life false; read 2026-09-29T03:10:09Z (returned cached: true in this task at 03:19), vendors.py digikey ADS122C04IPWR (https://api.digikey.com/products/v4/search/ADS122C04IPWR/productdetails)",
+      "gate": "need = 5 boards (S7) x 1 placement = 5; threshold max(5 x 5, 50) = 50 (S4); stockCount 4,147 >= 50 and canPresaleNumber 4,022 >= 0: pass (sourcing rule 4)",
+      "lifecycle": "ACTIVE (TI product page https://www.ti.com/product/ADS122C04, marketingStatusDescription for OPN ADS122C04IPWR, vendors.py fetch HTTP 200, read 2026-09-29T03:22:06Z); longevity: no TI programme page read, none recorded; first datasheet: SBAS751, October 2017, over 12 months; notices: TI PCN listing not read; distributor: Digi-Key Active (03:10:09Z); LCSC productCycle 'normal' (https://www.lcsc.com/product-detail/C2872338.html, HTTP 200, read 2026-09-29T03:22:24Z); the JLCPCB API row carries no status field",
+      "second_source": "second vendor: Digi-Key stock_available 2,585 >= gate 50, read 2026-09-29T03:10:09Z (rule 5)",
+      "second_source_route": "second-vendor",
+      "second_source_part": "",
+      "alternates": [
+       "ADS122C04IRTER (C2670105): the same die in WQFN-16 3 x 3 mm, not pin-compatible; JLCPCB 203, presale 134 (read 2026-09-29T03:19:07Z)",
+       "ADS112C04IPWR (C701615): the 16-bit sibling in TSSOP-16; pin table not compared here; JLCPCB 2,146, presale 2,139 (03:19:05Z)"
+      ],
+      "driver_in_shared": "none",
+      "reason": "Rank 3: every value met, ±1.65 °C with a calibration before each reading, the thinnest margin; its I2C addresses fall in the 0x40 to 0x4F band that the port monitors and INA238s use; stocked at both vendors."
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "MCP9600-E/MX (C220851), MCP9600T-E/MX (C623918)",
+      "maker": "Microchip Technology",
+      "reason": "Not shortlisted: three survivors at most (owner, 2026-09-28), and MAX31856MUD+T, ADS1220IPWR and ADS122C04IPWR outrank it. Its open-thermocouple detection (V250) rests on less firm ground than theirs. Section 6.3.3.1 detects an open lead with the Input Range bit and 1 MΩ resistors. Register 5-6 sends the reader to errata DS80000741 for the date codes that carry this bit, and DS80000741B (read 2026-09-29T03:21:18Z) names only the TH accuracy fix from date code 1723 (Device ID/Revision 0x4012), not the bit. So whether a stocked part carries it is not shown. Section 6.3.3 also states that an added passive input circuit calls for system calibration to ensure accuracy, which contradicts 6.3.3.1's statement that the circuit does not affect accuracy. Its I2C runs to 100 kHz only. On-chip accuracy ±1.5 °C max (TH, TA 0 to 85 °C). JLCPCB C220851 2,731, presale 2,700 (03:19:05Z); C623918 99, presale 96 (03:19:06Z); Digi-Key 812 and 3,109, Active (03:15:20Z, 03:15:22Z, cached). DS20005426F, https://ww1.microchip.com/downloads/en/DeviceDoc/MCP960X-L0X-RL0X-Data-Sheet-20005426F.pdf (read 2026-09-29T03:19:32Z), sections 6.3.3 and 6.3.3.1, Register 5-6"
+     },
+     {
+      "part": "MAX31856MUD+ (C116632)",
+      "maker": "Analog Devices (Maxim Integrated)",
+      "reason": "the rank-1 MAX31856 in tubes, same datasheet and pinout; named among the rank-1 part's alternates, not listed twice. JLCPCB 66, presale 97 (03:23:33Z)"
+     },
+     {
+      "part": "ADS112C04IPWR (C701615)",
+      "maker": "Texas Instruments",
+      "reason": "not shortlisted, three survivors at most: the 16-bit sibling of ADS122C04IPWR, with the same interface and address band. It adds no function over the 24-bit part ranked 3rd. Named among that part's alternates. JLCPCB 2,146, presale 2,139 (03:19:05Z); Digi-Key 2,247, Active (03:10:11Z, cached)"
+     }
+    ],
+    "dropped_from_shortlist": [
+     {
+      "part": "MCP9601-E/MX",
+      "maker": "Microchip Technology",
+      "reason": "Not kept: three survivors at most (owner, 2026-09-28). It meets every value on chip, but it has the thinnest stock of the qualified parts: JLCPCB 72, presale 67 (vendors.py jlcpcb C5229264, read 2026-09-29T03:23:55Z) against a gate of 50, and Digi-Key 2 (P2, 02:47:38Z). No route of rule 5 passes (P2's record). MAX31856MUD+T, ADS1220IPWR and ADS122C04IPWR each have a second vendor at or above the gate."
+     }
+    ],
+    "verify": [
+     {
+      "part": "MAX31856MUD+T",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "motor temperature infrared",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MLX90614ESF-BCC-000-TU",
+      "option": "",
+      "reason": "P2's record: meets every value (35° view, ±3 °C at most over 0 to 200 °C at 0 to 85 °C ambient, 3.3 V); stocked at both vendors (JLCPCB 311, Digi-Key 933). P3 returned nothing for this function."
+     },
+     {
+      "rank": 2,
+      "part": "MLX90614ESF-DCC-000-TU",
+      "option": "",
+      "reason": "P2's record: the same optics, interface and accuracy at a motor as rank 1; less Digi-Key stock (178 against 933)."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MLX90614ESF-BCC-000-TU",
+      "kind": "first",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "external I2C ports",
+    "decision": "none",
+    "kept_option": "",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "TCA9548APWR",
+      "option": "",
+      "reason": "P2's record: meets every value, the most JLCPCB stock (39,690). Digi-Key holds 0, so its second source is the pin- and register-compatible PCA9548APWR. P3 returned nothing for this function."
+     },
+     {
+      "rank": 2,
+      "part": "PCA9548APW,118",
+      "option": "",
+      "reason": "P2's record: same function, pin table and address; stocked at both vendors (JLCPCB 24,771, Digi-Key 23,508)."
+     },
+     {
+      "rank": 3,
+      "part": "PCA9548APWR",
+      "option": "",
+      "reason": "P2's record: the least JLCPCB stock of the three (5,100). Digi-Key's Not For New Designs disagrees with TI's ACTIVE, which is the status of record."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "TCA9548APWR",
+      "kind": "first",
+      "option": ""
+     },
+     {
+      "part": "PCA9548APWR",
+      "kind": "alternate",
+      "option": ""
+     }
+    ]
+   },
+   {
+    "function": "non-volatile store",
+    "decision": "Q8",
+    "kept_option": "FRAM",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "MB85RC256VPNF-G-AMERE2",
+      "option": "FRAM",
+      "reason": "P2's record: Q8's FRAM option. 32,768 bytes against 792 needed, 10^12 cycles a byte, no write wait, 1 MHz; stocked at both vendors (JLCPCB 6,523, Digi-Key 484)."
+     },
+     {
+      "rank": 2,
+      "part": "FM24CL64B-GTR",
+      "option": "FRAM",
+      "reason": "P2's record: FRAM with 8,192 bytes and 10^14 cycles, the most stock at both vendors. Below the MB85RC256V for less capacity headroom and a 3.65 V supply ceiling."
+     },
+     {
+      "rank": 3,
+      "part": "M24256E-FMN6TP",
+      "option": "EEPROM",
+      "reason": "P2's record: Q8's EEPROM option, endurance stated at 85 °C, 87,600,000 rotated saves. It stays ahead of P3's BR24H128FVT-5ACE2: twice the capacity, JLCPCB 125,256 against 100, and a second vendor (Digi-Key 185 against 0)."
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "BR24H128FVT-5ACE2 (C6132320)",
+      "maker": "ROHM",
+      "reason": "Not shortlisted: three survivors at most (owner, 2026-09-28). It meets the store's values: 16,384 bytes; 1,200,000 writes at 85 °C per 4-byte unit (Note 17), so 36 rotated slots of 448 bytes give 43,200,000 saves; 1.7 to 5.5 V; 0x50 to 0x57. ROHM status 'Recommended' (read 03:22:25Z). But it has no second source: JLCPCB stockCount 100, presale 100 (vendors.py jlcpcb C6132320, 03:19:06Z), and Digi-Key 0, Active, lead 15 weeks (03:14:24Z, cached), so the second-vendor route of rule 5 fails and no alternate was read. The EEPROM option already has M24256E-FMN6TP, with twice the capacity, JLCPCB 125,256 and Digi-Key 185. Datasheet TSZ02201-0G1G0G100450-1-2 Rev.002 (17 Sep 2021), https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8602561207639556096 (HTTP 200, read 2026-09-29T03:19:34Z), Memory Cell Characteristics, Device Addressing"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "MB85RC256VPNF-G-AMERE2",
+      "kind": "first",
+      "option": ""
+     },
+     {
+      "part": "MB85RC256VPNF-G-AMERE2",
+      "kind": "q-alternative",
+      "option": "FRAM"
+     },
+     {
+      "part": "M24256E-FMN6TP",
+      "kind": "q-alternative",
+      "option": "EEPROM"
+     }
+    ]
+   }
+  ],
+  "report": [
+   {
+    "figure": "Q8 store candidate: MAX31856MUD+T",
+    "value": "not applicable: a thermocouple-to-digital converter for the motor temperature thermocouple function, not a store",
+    "source": "MAX31856 datasheet 19-7534 Rev 0 (2/15), https://www.analog.com/media/en/technical-documentation/data-sheets/MAX31856.pdf (vendors.py fetch --client safari, HTTP 200), read 2026-09-29T03:19:32Z, page 1"
+   },
+   {
+    "figure": "Q8 store candidate: ADS122C04IPWR",
+    "value": "not applicable: a 24-bit delta-sigma ADC for the motor temperature thermocouple function, not a store",
+    "source": "ADS122C04 datasheet SBAS751B (October 2017, revised October 2018), https://www.ti.com/lit/ds/symlink/ads122c04.pdf, read 2026-09-29T03:19:31Z, page 1"
+   },
+   {
+    "figure": "Q8 store candidate: BR24H128FVT-5ACE2",
+    "value": "EEPROM, Q8 option EEPROM, dropped from the shortlist (no second source; three survivors at most). 16,384 bytes (16 K x 8), 64-byte pages. Write cycles min 4,000,000 at Ta 25 °C and 1,200,000 at 85 °C per unit of 4 data bytes (Note 17). A 396-byte record is 7 page writes; 36 slots of 448 bytes give 43,200,000 saves on the 85 °C figure. tWR 3.5 ms max; 1 MHz; 1.7 to 5.5 V; -40 to +125 °C; device code 1010 with A2 to A0, 0x50 to 0x57. ROHM status 'Recommended'. JLCPCB 100, presale 100 (03:19:06Z); Digi-Key 0, Active, lead 15 weeks (03:14:24Z, cached)",
+    "source": "BR24H128xxx-5AC datasheet TSZ02201-0G1G0G100450-1-2 Rev.002 (17 Sep 2021), JLCPCB-hosted copy https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8602561207639556096, read 2026-09-29T03:19:34Z, Key Specifications, Memory Cell Characteristics, Device Addressing; https://www.rohm.com/products/memory/serial-eeprom/automotive/i2c-bus-2-wire/br24h128fvt-5ac-product (vendors.py fetch, HTTP 200), read 2026-09-29T03:22:25Z; vendors.py jlcpcb C6132320; vendors.py digikey BR24H128FVT-5ACE2"
+   },
+   {
+    "figure": "thermocouple accuracy budget: MAX31856MUD+T in voltage mode",
+    "value": "±1.51 °C against ±2 °C (V235), in voltage mode at gain 32 (TC TYPE 11xx, full scale ±19.531 mV per Note 7), TA -20 to +85 °C. Terms: Full-Scale and INL ±0.15 %FS = ±29.3 µV = ±0.74 °C at 39.7 µV/°C; input offset ±2.9 µV = ±0.07 °C; cold junction ±0.7 °C. The firmware ITS-90 conversion error is not counted. The built-in type K mode (gain 8, ±78.125 mV) gives up to ±3.95 °C (P2's reading) and is not the configuration. Type K spans -2.023 to +8.138 mV over 0 to 200 °C with the cold junction at 0 to 50 °C",
+    "source": "MAX31856 datasheet 19-7534 Rev 0, Electrical Characteristics pages 2 to 5, Notes 6 and 7, page 28, read 2026-09-29T03:19:32Z; NIST ITS-90 type K table https://its90.nist.gov/downloadFiles/type_k.tab.txt, read 2026-09-29T03:24:37Z"
+   },
+   {
+    "figure": "thermocouple accuracy budget: ADS122C04IPWR",
+    "value": "±1.65 °C against ±2 °C (V235), gain 32, internal 2.048 V reference, offset calibration (MUX 1110) before each reading. Terms: gain ±0.05 % + 2 ppm/°C x 25 °C and reference ±0.15 % + 30 ppm/°C x 25 °C, together ±0.28 % of 8.138 mV = ±22.8 µV = ±0.57 °C; INL ±15 ppm of 128 mV = ±0.05 °C; cold-junction sensor ±1.0 °C (TA 0 to 85 °C); supply sensitivity ±0.03 °C at an assumed ±0.1 V. Without the calibration it is not shown: offset at gain 2 to 128 is ±4 µV typical only",
+    "source": "ADS122C04 datasheet SBAS751B, Electrical Characteristics pages 5 and 6, section 8.3.11, read 2026-09-29T03:19:31Z; NIST ITS-90 type K table, read 2026-09-29T03:24:37Z"
+   },
+   {
+    "figure": "MCP9600 open-circuit detection reading",
+    "value": "Section 6.3.3.1 detects an open lead on the MCP9600/L00/RL00 with RB = 1 MΩ resistors, which set STATUS bit 4 (Input Range). Register 5-6 ties the bit to date codes in DS80000741. DS80000741B names only the TH_ACY fix (date code 1723, Device ID/Revision 0x4012 at register 0x20), not the bit. Section 6.3.3 states that an added passive circuit calls for system calibration to ensure proper accuracy, which contradicts 6.3.3.1. Dropped under the three-survivor limit, below the three ranked parts",
+    "source": "DS20005426F, https://ww1.microchip.com/downloads/en/DeviceDoc/MCP960X-L0X-RL0X-Data-Sheet-20005426F.pdf, read 2026-09-29T03:19:32Z, pages 29, 40 and 41; DS80000741B, https://ww1.microchip.com/downloads/en/DeviceDoc/80000741B.pdf, read 2026-09-29T03:21:18Z"
+   },
+   {
+    "figure": "thermocouple converter bus for P5 (re-rank)",
+    "value": "MAX31856MUD+T (rank 1): SPI to 5 MHz, one chip select, plus FAULT and DRDY outputs at 3.3 V. ADS1220IPWR (rank 2): SPI. ADS122C04IPWR (rank 3): I2C to Fast-mode Plus. Its 16 addresses are 0x40 to 0x4F from A0 and A1 (Table 14), inside the band of the port monitors (0x40 to 0x43) and the INA238s (0x44 and up, IOBoard.md:464), so it needs a free address in that band, another bus or a switch channel",
+    "source": "MAX31856 datasheet 19-7534 Rev 0, page 5, read 2026-09-29T03:19:32Z; ADS122C04 datasheet SBAS751B, Table 14, read 2026-09-29T03:19:31Z; checkout e13f5f6 hardware/docs/IOBoard.md:464"
+   },
+   {
+    "figure": "thermocouple stock re-read",
+    "value": "JLCPCB exact matches: MAX31856MUD+T C2653162 11,459 / presale 11,205 (03:19:06Z); MAX31856MUD+ C116632 66 / 97 (03:23:33Z); ADS122C04IPWR C2872338 4,147 / 4,022 (03:19:05Z); ADS122C04IRTER C2670105 203 / 134 (03:19:07Z); ADS112C04IPWR C701615 2,146 / 2,139 (03:19:05Z); MCP9600-E/MX C220851 2,731 / 2,700 (03:19:05Z); MCP9600T-E/MX C623918 99 / 96 (03:19:06Z); MCP9601-E/MX C5229264 72 / 67 (03:23:55Z)",
+    "source": "vendors.py jlcpcb C<digits> (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match), 2026-09-29"
+   }
+  ]
+ }
+}

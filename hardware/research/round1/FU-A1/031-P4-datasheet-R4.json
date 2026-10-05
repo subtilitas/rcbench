@@ -1,0 +1,1526 @@
+{
+ "role": "P4",
+ "category": "R4",
+ "label": "P4-datasheet-R4",
+ "attempt": 0,
+ "data": {
+  "category": "R4",
+  "verifier": "datasheet",
+  "parts": [
+   {
+    "function": "gated output buffer",
+    "part": "SN74LVC244APWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "lines",
+      "stated": "8 buffers in 2 groups of 4 (pin table)",
+      "read": "Table 4-1: 1A1 to 1A4 (pins 2, 4, 6, 8) drive 1Y1 to 1Y4 (18, 16, 14, 12) under 1OE (pin 1); 2A1 to 2A4 (11, 13, 15, 17) drive 2Y1 to 2Y4 (9, 7, 5, 3) under 2OE (pin 19). Section 7.1: 8 buffers in two 4-bit banks. 2 parts carry the 16 one-way PWM lines",
+      "source": "SN74LVC244A SCAS414AG (November 1992, revised June 2026), https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf (vendors.py fetch), Table 4-1, section 7.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "enable source and polarity",
+      "stated": "1OE pin 1 and 2OE pin 19, active low: needs the enable inverter and a 10 kΩ pull-up at each OE pin",
+      "read": "Table 7-1: OE L passes A to Y, OE H gives Z. Section 7.1: a high xOE disables bank x. Active low, so the enable node reaches it through the enable inverter, which the requirement allows",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, Table 7-1, section 7.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "disabled state",
+      "stated": "tdis 6.5 ns max at VCC 3.3 V ±0.3 V, −40 to 85 °C",
+      "read": "Section 5.6: tdis OE to Y at 3.3 V ±0.3 V: 6.3 ns max at 25 °C, 6.5 ns max at −40 to 85 °C, 8 ns max at −40 to 125 °C. With the inverter (4.2 ns max, SCES214AF 5.7) the path is about 10.7 ns, under 1 µs. IOZ ±10 µA (−40 to 85 °C) into the 10 kΩ pull-down is 0.1 V",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, sections 5.5, 5.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "I_off on inputs and enable",
+      "stated": "Ioff ±10 µA at VI or VO = 5.5 V, VCC = 0, −40 to 85 °C",
+      "read": "Section 5.5: Ioff at VI or VO = 5.5 V, VCC 0: ±1 µA at 25 °C, ±10 µA at −40 to 85 °C, ±20 µA at −40 to 125 °C. VI is the input voltage of the A and OE inputs (5.1). Section 7.3.4: inputs and outputs have negative clamp diodes only, so no diode to VCC",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, sections 5.1, 5.5, 7.3.4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "supply",
+      "stated": "1.65 to 3.6 V",
+      "read": "Section 5.3: VCC operating 1.65 to 3.6 V; the rail's 3.201 to 3.399 V is inside",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, section 5.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "DShot bit rate and load",
+      "stated": "tpd 5.9 ns max at 3.3 V ±0.3 V; tsk(o) 1 ns; test load 50 pF",
+      "read": "Section 5.6: tpd A to Y 5.9 ns max (−40 to 85 °C) at 3.3 V ±0.3 V; tsk(o) 1 ns. Figure 6-1: CL 50 pF, RL 500 Ω at 3.3 V ±0.3 V. Against an 833 ns bit and a 312 ns zero-bit high at 1200 kbit/s",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, section 5.6, Figure 6-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "connector high level",
+      "stated": "VOH VCC − 0.2 V at −100 µA; 2.2 V at −24 mA, VCC 3 V",
+      "read": "Section 5.5 (−40 to 85 °C): VOH VCC − 0.2 V at −100 µA (3.0 V at VCC 3.201 V), 2.2 V at −24 mA and VCC 3 V. The 10 kΩ pull-down draws 0.33 mA, so the line sits within 0.2 V of the 3.3 V rail",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, section 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "connector voltage tolerated",
+      "stated": "VO in the high-impedance or power-off state −0.5 to 6.5 V",
+      "read": "Section 5.1: VO in the high-impedance or power-off state −0.5 to 6.5 V; in the high or low state −0.5 to VCC + 0.5 V (3.70 V at VCC 3.201 V). Section 5.5: IOZ ±10 µA at VO 0 to 5.5 V, VCC 3.6 V. Features: 5 V input or output voltage with 3.3 V VCC on all ports. Section 5.3 gives VO 0 to VCC with no separate 3-state row",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, Features, sections 5.1, 5.3, 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "idle level in RP2354B reset",
+      "stated": "II ±5 µA at 3.6 V, −40 to 85 °C: 0.57 V < V_IL 0.8 V",
+      "read": "Section 5.5: II ±5 µA (−40 to 85 °C) at VI 5.5 V or GND, VCC 3.6 V. RP2350 Table 1436: RPD 36 to 113 kΩ at IOVDD 3.3 V, VIL 0.8 V. 5 µA × 113 kΩ = 0.57 V; with the pad's own 1 µA IIN added, 0.68 V; both under 0.8 V (the 244's VIL is also 0.8 V)",
+      "source": "SCAS414AG section 5.5; RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, Table 1436",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "no bus hold",
+      "stated": "none stated (the bus-hold variant is SN74LVCH244A)",
+      "read": "Section 7.3.3: standard CMOS inputs. No bus-hold feature and no bus-hold current row anywhere in the datasheet",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, section 7.3.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "−40 to 125 °C",
+      "read": "Section 5.3: TA −40 to 125 °C for every package but BGA; PW included. Covers 0 to 50 °C",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, section 5.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "enable pin pull",
+      "stated": "not given",
+      "read": "Section 7.1: to hold the high-impedance state through power-up and power-down, tie both OE pins to VCC through a pull-up, its minimum set by the driver's sinking current and the pin leakage. A 10 kΩ pull-up to 3.3 V takes 0.33 mA a pin, 1.3 mA for 4 pins, into SN74LVC1G04 (IOL 24 mA at 3 V); the OE leakage of ±5 µA drops 0.05 V across it",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, sections 5.5, 7.1",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "DShot bit rate",
+      "stated": "not given",
+      "read": "tpd 5.9 ns max and tsk(o) 1 ns (5.6) against the 833 ns bit and 312 ns zero-bit high of 1200 kbit/s: a pulse-width error under 6 ns",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, section 5.6",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "load",
+      "stated": "not given",
+      "read": "Switching figures are specified into CL 50 pF, RL 500 Ω (Figure 6-1), the 50 pF of the requirement. The 0.3 m lead is not characterised by the datasheet",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, Figure 6-1",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "servo PWM and PPM timing",
+      "stated": "not given",
+      "read": "A static buffer: tpd 5.9 ns max (5.6) against the 1 µs pulse resolution and the 300 µs PPM marks",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, section 5.6",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "connector side unpowered",
+      "stated": "not given",
+      "read": "Section 7.3.2: the outputs are disabled with VCC at 0 V; section 5.5: Ioff ±10 µA at VO 5.5 V, VCC 0 (−40 to 85 °C); section 5.1: VO in the power-off state −0.5 to 6.5 V",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, sections 5.1, 5.5, 7.3.2",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "no bus hold on data inputs",
+      "stated": "not given",
+      "read": "Standard CMOS inputs (7.3.3), no bus hold, so the pad's 36 to 113 kΩ reset pull-down sets the input low",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, section 7.3.3",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "series resistance",
+      "stated": "not given",
+      "read": "Section 5.3: IOH and IOL recommended at 24 mA at VCC 3 V; section 5.1: IO ±50 mA continuous. 3.4 V / 142 Ω = 23.9 mA into one shorted line, within 24 mA. The resistor is external (round 2). A limit to record, outside this per-line requirement: section 5.1 also gives ±100 mA through VCC or GND, which 5 or more of one part's 8 lines shorted at 23.9 mA at the same time would exceed",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf, sections 5.1, 5.3",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments",
+      "read": "The datasheet names Texas Instruments as its maker; Texas Instruments is on the S1 list of allowed IC makers",
+      "source": "SCAS414AG, https://www.ti.com/lit/ds/symlink/sn74lvc244a.pdf; Research.md S1 answer (owner, 2026-09-25) at 10b0bade34de",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     }
+    ]
+   },
+   {
+    "function": "gated output buffer",
+    "part": "74LVC244APW,118",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "lines",
+      "stated": "8 buffers, 1OE and 2OE each controlling 4 (Table 2)",
+      "read": "Table 2: 1A0 to 1A3 (2, 4, 6, 8) and 2A0 to 2A3 (17, 15, 13, 11) data inputs, 1Y0 to 1Y3 (18, 16, 14, 12) and 2Y0 to 2Y3 (3, 5, 7, 9) outputs; section 1: two output enables each controlling four outputs. 2 parts carry the 16 lines",
+      "source": "74LVC244A; 74LVCH244A Rev. 14 (29 November 2024), https://assets.nexperia.com/documents/data-sheet/74LVC_LVCH244A.pdf (vendors.py fetch), section 1, Table 2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "enable source and polarity",
+      "stated": "1OE, 2OE pins 1, 19, active low",
+      "read": "Table 2: 1OE, 2OE on pins 1 and 19, output enable input (active low); Table 3: nOE H gives Z. Takes the node through the enable inverter",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, Tables 2, 3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "disabled state",
+      "stated": "tdis 5.8 ns max at VCC 3.0 to 3.6 V, −40 to 85 °C",
+      "read": "Table 7: tdis nOE to nYn 5.8 ns max at VCC 3.0 to 3.6 V, −40 to 85 °C (7.5 ns to 125 °C); IOZ ±5 µA (Table 6) into 10 kΩ is 0.05 V",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, Tables 6, 7",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "I_off on inputs and enable",
+      "stated": "IOFF ±10 µA at VI or VO = 5.5 V, VCC = 0 V, −40 to 85 °C",
+      "read": "Table 6: IOFF ±10 µA at VI or VO = 5.5 V, VCC 0.0 V, −40 to 85 °C (±20 µA to 125 °C). Section 1: fully specified for partial power down using IOFF; section 2: inputs overvoltage tolerant to 5.5 V; Table 4: VI −0.5 to 6.5 V",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, sections 1, 2, Tables 4, 6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "supply",
+      "stated": "1.2 to 3.6 V",
+      "read": "Section 2: supply range 1.2 to 3.6 V; Table 5: VCC 1.65 to 3.6 V, functional from 1.2 V. 3.201 to 3.399 V is inside",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, section 2, Table 5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "DShot bit rate and load",
+      "stated": "tpd 5.9 ns max at VCC 3.0 to 3.6 V; tsk(o) 1.0 ns",
+      "read": "Table 7: tpd 5.9 ns max at VCC 3.0 to 3.6 V (−40 to 85 °C); tsk(o) 1.0 ns. Table 9: CL 50 pF, RL 500 Ω at 3.0 to 3.6 V",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, Tables 7, 9",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "connector high level",
+      "stated": "VOH VCC − 0.2 V at −100 µA; 2.2 V at −24 mA, VCC 3.0 V",
+      "read": "Table 6 (−40 to 85 °C): VOH VCC − 0.2 V at −100 µA, 2.4 V at −18 mA, 2.2 V at −24 mA and VCC 3.0 V",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, Table 6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "connector voltage tolerated",
+      "stated": "VO output 3-state −0.5 to 6.5 V",
+      "read": "Table 4: VO output 3-state −0.5 to +6.5 V (output high or low −0.5 to VCC + 0.5 V); Table 5: VO output 3-state recommended 0 to 5.5 V; IOFF at VO 5.5 V with VCC 0",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, Tables 4, 5, 6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "idle level in RP2354B reset",
+      "stated": "II ±5 µA at VCC 3.6 V: 0.57 V < 0.8 V",
+      "read": "Table 6: II ±5 µA at VI 5.5 V or GND, VCC 3.6 V (−40 to 85 °C); VIL 0.8 V. 5 µA × 113 kΩ (RP2350 Table 1436 RPD maximum) = 0.57 V, 0.68 V with the pad's 1 µA IIN",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, Table 6; RP2350 datasheet build-date 2025-07-29, Table 1436",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "no bus hold",
+      "stated": "the 74LVC244A has none; the 74LVCH244A variant has bus hold and is not this part",
+      "read": "Section 2: bus hold on all data inputs for the 74LVCH244A only; Table 6 note 3: the bus-hold rows are valid for the 74LVCH244A only",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, section 2, Table 6 note 3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "Tamb −40 to +125 °C",
+      "read": "Table 5: Tamb −40 to +125 °C; Table 1 lists 74LVC244APW at −40 to +125 °C",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, Tables 1, 5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "enable pin pull",
+      "stated": "not given",
+      "read": "No datasheet limit prevents it: an external 10 kΩ pull-up at each OE pin, 0.33 mA a pin into the inverter; II ±5 µA drops 0.05 V across it. Control inputs have no bus hold (Table 6 note 3)",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, Table 6",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "DShot bit rate",
+      "stated": "not given",
+      "read": "tpd 5.9 ns max, tsk(o) 1.0 ns (Table 7) against the 833 ns bit and 312 ns zero-bit high",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, Table 7",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "load",
+      "stated": "not given",
+      "read": "Switching figures specified into CL 50 pF, RL 500 Ω at VCC 3.0 to 3.6 V (Table 9). The 0.3 m lead is not characterised",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, Table 9",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "servo PWM and PPM timing",
+      "stated": "not given",
+      "read": "A static buffer, tpd 5.9 ns max (Table 7) against the 1 µs resolution",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, Table 7",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "connector side unpowered",
+      "stated": "not given",
+      "read": "Section 1: the IOFF circuitry disables the output when powered down; Table 6: IOFF ±10 µA at VO 5.5 V, VCC 0 V",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, section 1, Table 6",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "no bus hold on data inputs",
+      "stated": "not given",
+      "read": "The 74LVC244A has no bus hold (section 2; Table 6 note 3)",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, section 2",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "series resistance",
+      "stated": "not given",
+      "read": "Table 6: VOH 2.2 V at −24 mA and VCC 3.0 V; Table 4: IO ±50 mA, ICC 100 mA, IGND −100 mA. 3.4 V / 142 Ω = 23.9 mA a line. The resistor is external. The same 100 mA package limit as the TI part applies to simultaneous shorts",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, Tables 4, 6",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Nexperia",
+      "read": "The datasheet names Nexperia as its maker; Nexperia is on the S1 list of allowed IC makers",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14; Research.md S1 answer (owner, 2026-09-25) at 10b0bade34de",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "pin-for-pin match",
+      "stated": "the same TSSOP-20 pinout (1OE pin 1, 2OE pin 19, GND 10, VCC 20, inputs and outputs in the 244 order), stands in for SN74LVC244APWR",
+      "read": "Input-to-output pin pairs are identical: under the pin-1 enable 2→18, 4→16, 6→14, 8→12; under the pin-19 enable 11→9, 13→7, 15→5, 17→3; GND 10 and VCC 20 in both (TI Table 4-1, Nexperia Table 2; Nexperia numbers its bits from 0). Package: Nexperia SOT360-1 TSSOP20, D 6.4 to 6.6 mm, E 4.3 to 4.5 mm, HE 6.2 to 6.6 mm, e 0.65 mm, JEDEC MO-153; TI PW 6.2 to 6.6 mm span, 0.65 mm pitch, MO-153",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14, Table 2, Fig. 8; SCAS414AG Table 4-1 and PW package drawing",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "functional match",
+      "stated": "OE active low, IOFF ±10 µA, 1.65 to 3.6 V; the same values as SN74LVC244APWR",
+      "read": "Same function table (nOE L: Y = A; H: Z), same enable polarity and banks, IOFF ±10 µA at 5.5 V and VCC 0, inputs to 5.5 V, 3-state output to 5.5 V, tpd 5.9 ns max, VOH 2.2 V at −24 mA, II ±5 µA, Tamb to 125 °C, no bus hold. Differences that do not change the circuit: Schmitt-trigger inputs (Nexperia section 1), tdis 5.8 against 6.5 ns, IOZ ±5 against ±10 µA. No register, address or start-up state; the same inverter and 10 kΩ OE pull-ups serve both",
+      "source": "Nexperia 74LVC_LVCH244A Rev. 14; SCAS414AG",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     }
+    ]
+   },
+   {
+    "function": "enable inverter",
+    "part": "SN74LVC1G04DBVR",
+    "kind": "first",
+    "verdict": "refuted",
+    "refutation": "The stated delay does not match the datasheet: SCES214AF section 5.7 (CL 30 or 50 pF, −40 to 85 °C) gives tpd 4.2 ns max at VCC 3.3 V ±0.3 V; 3.7 ns is the 5 V ±0.5 V column. The requirement itself is met with the corrected figure: 4.2 ns plus the 244's 6.5 ns tdis is 10.7 ns, under 1 µs. Every other value agrees and passes.",
+    "checks": [
+     {
+      "figure": "input isolation",
+      "stated": "Ioff ±10 µA at VI or VO = 5.5 V, VCC 0",
+      "read": "Section 5.5: Ioff ±10 µA at VI or VO = 5.5 V, VCC 0 (−40 to 85 and −40 to 125 °C); section 7.3: the Ioff feature allows voltages on the inputs and outputs when VCC is 0 V",
+      "source": "SN74LVC1G04 SCES214AF (April 1999, revised October 2025), https://www.ti.com/lit/ds/symlink/sn74lvc1g04.pdf (vendors.py fetch), sections 5.5, 7.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "output pull",
+      "stated": "output sinks 24 mA at 3 V (VOL table); the load is 1.3 mA",
+      "read": "Section 5.3: IOL 24 mA at VCC 3 V; section 5.5: VOL 0.55 V at 24 mA, 0.4 V at 16 mA, VCC 3 V. Four 10 kΩ pull-ups to 3.3 V (the two 244s) take 1.32 mA. Unpowered, the inverter's output is disabled (7.1) and the pull-ups hold the OE pins high",
+      "source": "SCES214AF, https://www.ti.com/lit/ds/symlink/sn74lvc1g04.pdf, sections 5.3, 5.5, 7.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "supply",
+      "stated": "1.65 to 5.5 V",
+      "read": "Section 5.3: VCC operating 1.65 to 5.5 V",
+      "source": "SCES214AF, https://www.ti.com/lit/ds/symlink/sn74lvc1g04.pdf, section 5.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "delay",
+      "stated": "tpd 3.7 ns max at 3.3 V ±0.3 V, CL 30 or 50 pF, −40 to 85 °C",
+      "read": "Section 5.7 (CL 30 or 50 pF, −40 to 85 °C), page 6 rendered: tpd A to Y 4.2 ns max at VCC 3.3 V ±0.3 V (1 ns min). 3.7 ns max is the VCC 5 V ±0.5 V column. With the 244's tdis of 6.5 ns max the path is 10.7 ns, under 1 µs",
+      "source": "SCES214AF, https://www.ti.com/lit/ds/symlink/sn74lvc1g04.pdf, section 5.7 (page 6 rendered with pdftoppm)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "TA −40 to 125 °C",
+      "read": "Section 5.3: TA −40 to 125 °C",
+      "source": "SCES214AF, https://www.ti.com/lit/ds/symlink/sn74lvc1g04.pdf, section 5.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "need",
+      "stated": "not given",
+      "read": "Section 7.4 function table: A H gives Y L, A L gives Y H, an inverter. Pins NC 1, A 2, GND 3, Y 4, VCC 5 (DBV). It turns the active-high enable node into the active-low 1OE and 2OE of the 244s, the case the requirement names",
+      "source": "SCES214AF, https://www.ti.com/lit/ds/symlink/sn74lvc1g04.pdf, Pin Functions, section 7.4",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments",
+      "read": "The datasheet names Texas Instruments as its maker; Texas Instruments is on the S1 list of allowed IC makers",
+      "source": "SCES214AF; Research.md S1 answer (owner, 2026-09-25) at 10b0bade34de",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     }
+    ]
+   },
+   {
+    "function": "bias selector",
+    "part": "SN74LVC1G126DBVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "reset and unpowered state",
+      "stated": "OE pin 1 active high: Y at high impedance with OE low (function table)",
+      "read": "Table 7-1: OE L gives Z whatever A is; section 7.1: output disabled when OE is low, and OE is tied to GND to keep the high-impedance state through power-up and power-down. Unpowered, section 7.3.2 disables the output. With the expander in reset and the control resistor pulling OE low, the pull-up is off and the 10 kΩ pull-down selects",
+      "source": "SN74LVC1G126 SCES224S (April 1999, revised August 2026), https://www.ti.com/lit/ds/symlink/sn74lvc1g126.pdf (vendors.py fetch), Pin Functions, sections 7.1, 7.3.2, Table 7-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "connector-side isolation",
+      "stated": "Ioff ±10 µA at VI or VO = 5.5 V, VCC 0; VO in the high-impedance or power-off state −0.5 to 6.5 V",
+      "read": "Section 5.5: Ioff ±10 µA at VI or VO = 5.5 V, VCC 0; section 5.1: VO in the high-impedance or power-off state −0.5 to 6.5 V. A line at 3.6 V through the 1 kΩ with the board unpowered meets it",
+      "source": "SCES224S, https://www.ti.com/lit/ds/symlink/sn74lvc1g126.pdf, sections 5.1, 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "drive",
+      "stated": "VOH VCC − 0.1 V at −100 µA; 2.4 V at −16 mA, VCC 3 V",
+      "read": "Section 5.5: VOH VCC − 0.1 V at −100 µA; 2.4 V at −16 mA and 2.3 V at −24 mA, VCC 3 V; section 5.3: IOH −16 mA recommended at 3 V covers the 3.3 mA the 1 kΩ takes when the line is driven low. At the idle load (the 1 kΩ into 10 kΩ ∥ 3 kΩ, about 1 mA) a straight line between the −100 µA and −16 mA rows gives VOH of 3.07 V or more at VCC 3.201 V, and the line sits at 2.14 V or more, above 2.0 V. The datasheet gives no VOH row at 1 mA, so this rests on that interpolation",
+      "source": "SCES224S, https://www.ti.com/lit/ds/symlink/sn74lvc1g126.pdf, sections 5.3, 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "supply",
+      "stated": "1.65 to 5.5 V",
+      "read": "Section 5.3: VCC operating 1.65 to 5.5 V",
+      "source": "SCES224S, https://www.ti.com/lit/ds/symlink/sn74lvc1g126.pdf, section 5.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "TA −40 to 125 °C",
+      "read": "Section 5.3: TA −40 to 125 °C",
+      "source": "SCES224S, https://www.ti.com/lit/ds/symlink/sn74lvc1g126.pdf, section 5.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "bias per mode",
+      "stated": "not given",
+      "read": "With A tied to 3.3 V, Table 7-1 gives Y H while OE is H and Z while OE is L, so the part switches the 1 kΩ pull-up in and out per line and the fixed 10 kΩ pull-down remains otherwise",
+      "source": "SCES224S, https://www.ti.com/lit/ds/symlink/sn74lvc1g126.pdf, Table 7-1",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "control",
+      "stated": "not given",
+      "read": "One OE input per part (pin 1), II ±5 µA (5.5), VIH 2 V and VIL 0.8 V at 3 to 3.6 V (5.3): one expander output per line with a pull-down that holds OE low, as section 7.1 recommends",
+      "source": "SCES224S, https://www.ti.com/lit/ds/symlink/sn74lvc1g126.pdf, sections 5.3, 5.5, 7.1",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "lines",
+      "stated": "not given",
+      "read": "One buffer a part, 5 parts for the 4 multiprotocol ports and the UART socket",
+      "source": "SCES224S, https://www.ti.com/lit/ds/symlink/sn74lvc1g126.pdf, Pin Functions",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments",
+      "read": "The datasheet names Texas Instruments as its maker; Texas Instruments is on the S1 list of allowed IC makers",
+      "source": "SCES224S; Research.md S1 answer (owner, 2026-09-25) at 10b0bade34de",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     }
+    ]
+   },
+   {
+    "function": "multiprotocol port path",
+    "part": "SN74CBTLV3126PWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "directions",
+      "stated": "FET bus switch, 5 Ω switch connection between two ports; tpd 0.25 ns max A or B to B or A",
+      "read": "Sections 1 and 7.3: 5 Ω switch connection between two ports, rail-to-rail switching; Table 7-1: OE H, A port = B port; OE L, disconnect; no direction pin. Section 5.7 (PW, −40 to 85 °C): tpd A or B to B or A 0.25 ns max at 3.3 V ±0.3 V, tdis 4.8 ns max",
+      "source": "SN74CBTLV3126 SCDS038N (December 1997, revised July 2026), https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf (vendors.py fetch), sections 1, 5.7, 7.3, Table 7-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "enable",
+      "stated": "1OE 1, 2OE 4, 3OE 10, 4OE 13, output enable active high; switch off with OE low",
+      "read": "Table 4-1 (PW): 1OE 1, 2OE 4, 3OE 10, 4OE 13, 'Output enable, active high'; Table 7-1: OE L disconnects. Section 7.1: tie OE to GND through a pull-down to hold the high-impedance state through power-up and power-down, which the 10 kΩ pull-down at each enable pin does. Takes the active-high node directly",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, Table 4-1, section 7.1, Table 7-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "disabled state",
+      "stated": "tdis 4.8 ns max, −40 to 85 °C",
+      "read": "Section 5.7: tdis OE to A or B 4.8 ns max at 3.3 V ±0.3 V (PW, −40 to 85 °C); under 1 µs",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, section 5.7",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "I_off on RP2354B side and enable",
+      "stated": "Ioff 10 µA at VCC 0, VI or VO = 0 to 3.6 V (−40 to 85 °C). VI in section 5.1 is the input voltage of every input; the Ioff row does not name OE separately",
+      "read": "Section 5.5 (PW, −40 to 85 °C): Ioff 10 µA at VCC 0, VI or VO = 0 to 3.6 V. VI is the input voltage of every input (5.1), and the II row (VI = VCC or GND) is the OE input; the Ioff row names no pin, and the feature text calls the part isolated during power off",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 1, 5.1, 5.5, 7.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "connector-side isolation",
+      "stated": "the same Ioff row covers the B port to 3.6 V",
+      "read": "Section 5.5: Ioff 10 µA at VCC 0, VI or VO 0 to 3.6 V, which covers the B port at the 3.6 V a KISS line brings, and no more",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, section 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "connector level",
+      "stated": "rail-to-rail switching on data I/O; ron 15 Ω max at VI 2.4 V, 15 mA, VCC 3 V; VI absolute maximum 4.6 V; no recommended switch-I/O range is stated",
+      "read": "Sections 1 and 7.3: rail-to-rail switching on data I/O; section 5.1: VI −0.5 to 4.6 V; section 5.3 states no switch-I/O range; section 5.5: ron 15 Ω max at VI 2.4 V, 15 mA, VCC 3 V; Figure 5-2 (typical, VDD 3.3 V) shows ron 5 to 7.5 Ω up to a 3.3 V input and stops there. Section 8.2.1.2, marked as not part of the specification, says signals must fall within the recommended conditions including signal range and uses 0 to 3.3 V in its example. A 3.6 V line breaks no stated limit; above 3.3 V the switch is not characterised",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 1, 5.1, 5.3, 5.5, 7.3, 8.2.1.2, Figure 5-2 (page 8 rendered)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "modes and rates",
+      "stated": "tpd 0.25 ns; Cio(OFF) 7 pF; with 300 Ω and 57 pF the RC is 17 ns against a 667 ns reply bit",
+      "read": "Section 5.5: Cio(OFF) 7 pF; section 5.7: tpd 0.25 ns max (the RC of the typical ron into the 50 pF load). 300 Ω × 57 pF = 17 ns against the 667 ns bit at 1500 kbit/s; no on-state capacitance is given, and twice Cio(OFF) still gives 19 ns. UART rates of 19,200 to 115,200 baud and 1200 kbit/s DShot pass with more margin",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 5.5, 5.7",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "supply",
+      "stated": "VCC 2.3 to 3.6 V",
+      "read": "Section 5.3: VCC 2.3 to 3.6 V; 3.201 to 3.399 V is inside",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, section 5.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "idle level in RP2354B reset",
+      "stated": "a closed switch; the connector sits at the pad's 36 to 113 kΩ pull-down in parallel with 10 kΩ",
+      "read": "The enabled switch (Table 7-1) joins the RP2354B pad, high impedance and pulled down at 36 to 113 kΩ in reset (RP2350 section 9.3, Table 1436), to the connector's 10 kΩ pull-down; the OE input leakage is ±1 µA (5.5). The line reads low",
+      "source": "SCDS038N sections 5.5, Table 7-1; RP2350 datasheet build-date 2025-07-29, section 9.3, Table 1436",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "TA −40 to 85 °C for the PW package",
+      "read": "Section 5.3: TA −40 to 85 °C for D, DGV, PW, RGY and DBQ",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, section 5.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "ports",
+      "stated": "not given",
+      "read": "4 switches a part (Table 4-1); 2 parts give 8 channels for the 4 ports, the UART socket and VESC's second line, 2 spare",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, Table 4-1",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "load",
+      "stated": "not given",
+      "read": "Figure 6-1: CL 50 pF, RL 500 Ω at 3.3 V ±0.3 V for the switching figures; a passive switch whose ron (7 Ω max at VI 0) adds to the driver's series resistance",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, Figure 6-1, section 5.5",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "bias",
+      "stated": "not given",
+      "read": "A passive switch: the switched 1 kΩ pull-up or the 10 kΩ pull-down on its connector side reaches the RP2354B pin through ron of 15 Ω or less (5.5), and it passes DC both ways",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, section 5.5",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "series resistance",
+      "stated": "not given",
+      "read": "The resistor is external (round 2); ron 7 Ω max at VI 0 and 15 Ω max at VI 2.4 V (5.5) adds to it. Section 5.1: continuous channel current 128 mA, above the 12 mA a pad drives into a short through 275 Ω; the clamp on the switch side keeps its B port at 3.6 V or less, inside VI 4.6 V",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 5.1, 5.5",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments",
+      "read": "The datasheet names Texas Instruments as its maker; Texas Instruments is on the S1 list of allowed IC makers",
+      "source": "SCDS038N; Research.md S1 answer (owner, 2026-09-25) at 10b0bade34de",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     }
+    ]
+   },
+   {
+    "function": "UART socket path",
+    "part": "SN74CBTLV3126PWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "directions",
+      "stated": "FET bus switch, 5 Ω, tpd 0.25 ns",
+      "read": "Sections 1 and 7.3: 5 Ω switch connection between two ports; Table 7-1: OE H, A port = B port; no direction pin. Section 5.7 (PW, −40 to 85 °C): tpd 0.25 ns max, tdis 4.8 ns max",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 1, 5.7, 7.3, Table 7-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "line",
+      "stated": "tpd 0.25 ns against an 8.68 µs bit",
+      "read": "Section 5.7: tpd 0.25 ns max; one 115,200 baud bit is 8.68 µs; a single half-duplex pin passes through one channel",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, section 5.7",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "connector-side isolation",
+      "stated": "Ioff 10 µA at VCC 0, VI or VO = 0 to 3.6 V",
+      "read": "Section 5.5: Ioff 10 µA at VCC 0, VI or VO 0 to 3.6 V (PW, −40 to 85 °C)",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, section 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "connector level",
+      "stated": "rail-to-rail switching; VI absolute maximum 4.6 V",
+      "read": "Rail-to-rail switching on data I/O (1, 7.3); VI −0.5 to 4.6 V (5.1); no switch-I/O range in 5.3; ron 15 Ω max at VI 2.4 V (5.5); Figure 5-2 typical ron 5 to 7.5 Ω up to 3.3 V input; section 8.2.1.2 (informative) example range 0 to 3.3 V. A 3.6 V line breaks no stated limit; above 3.3 V the switch is not characterised",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 1, 5.1, 5.3, 5.5, 7.3, 8.2.1.2, Figure 5-2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "enable",
+      "stated": "OE active high",
+      "read": "Table 4-1: each OE 'Output enable, active high'; Table 7-1: OE H joins A and B",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, Table 4-1, Table 7-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "−40 to 85 °C (PW)",
+      "read": "Section 5.3: TA −40 to 85 °C for PW",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, section 5.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "gate",
+      "stated": "not given",
+      "read": "Its OE (active high) takes the enable node, and OE low disconnects the line within 4.8 ns (5.7), so the socket's line passes the gate",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, Table 7-1, section 5.7",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "bias",
+      "stated": "not given",
+      "read": "A passive switch that passes DC both ways through ron of 15 Ω or less; the 1 kΩ pull-up and 10 kΩ pull-down act through it",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, section 5.5",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "series resistance",
+      "stated": "not given",
+      "read": "External resistor of 275 Ω or more; ron 7 Ω max at VI 0 adds to it; channel current 128 mA continuous (5.1)",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 5.1, 5.5",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "idle level in RP2354B reset",
+      "stated": "not given",
+      "read": "The enabled switch passes the pad's reset pull-down (36 to 113 kΩ, RP2350 Table 1436) to the line with its 10 kΩ pull-down: low",
+      "source": "SCDS038N Table 7-1; RP2350 datasheet build-date 2025-07-29, Table 1436",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments",
+      "read": "The datasheet names Texas Instruments as its maker; Texas Instruments is on the S1 list of allowed IC makers",
+      "source": "SCDS038N; Research.md S1 answer (owner, 2026-09-25) at 10b0bade34de",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     }
+    ]
+   },
+   {
+    "function": "receiver inputs",
+    "part": "SN74LVC1T45DBVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "transmit",
+      "stated": "DIR pin 5: high A to B, low B to A; pins VCCA 1, GND 2, A 3, B 4, DIR 5, VCCB 6",
+      "read": "Table 4-1 (DBV): VCCA 1, GND 2, A 3, B 4, DIR 5, VCCB 6; Table 7-1: DIR L B data to A bus, DIR H A data to B bus. One wire, both directions under firmware's DIR",
+      "source": "SN74LVC1T45 SCES515N (December 2003, revised June 2024), https://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf (vendors.py fetch), Tables 4-1, 7-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "connector-side isolation",
+      "stated": "Ioff B port ±2 µA (−40 to 85 °C) at VI or VO 0 to 5.5 V, VCCB 0 V, VCCA 0 to 5.5 V; section 7.3.3 makes Ioff the limit on any input or output",
+      "read": "Section 5.5: Ioff B port ±1 µA (25 °C), ±2 µA (−40 to 85 °C) at VI or VO 0 to 5.5 V with VCCB 0 V and VCCA 0 to 5.5 V, which includes both supplies at 0 V; sections 7.3.3 and 7.3.6: Ioff is the maximum leakage into or out of any input or output pin",
+      "source": "SCES515N, https://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf, sections 5.5, 7.3.3, 7.3.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "highest level in",
+      "stated": "VI 0 to 5.5 V recommended",
+      "read": "Section 5.3: VI 0 to 5.5 V; 5.1: VI −0.5 to 6.5 V. Covers the 3.3 V of SRXL2 and CRSF and an EX Bus high up to 5.5 V; S.BUS and iBUS levels are not read",
+      "source": "SCES515N, https://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf, sections 5.1, 5.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "bench levels at the receiver",
+      "stated": "VOH VCCO − 0.1 V at −100 µA",
+      "read": "Section 5.5: VOH VCCO − 0.1 V at −100 µA (VCCO 1.65 to 4.5 V): 3.10 V at VCCB 3.201 V, above EX Bus's 3.0 V; VOL 0.1 V at 100 µA, under 1.5 V",
+      "source": "SCES515N, https://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf, section 5.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "highest baud",
+      "stated": "tPLH, tPHL 5.8 ns max A to B and B to A at VCCA and VCCB 3.3 V ±0.3 V",
+      "read": "Section 5.8 (VCCA 3.3 V ±0.3 V, VCCB 3.3 V ±0.3 V): A to B tPLH 5.8 ns, tPHL 5 ns max; B to A tPLH 5.8 ns, tPHL 5 ns max; against a 500 ns bit at 2,000,000 baud",
+      "source": "SCES515N, https://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf, section 5.8",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "TA −40 to 85 °C",
+      "read": "Section 5.3: TA −40 to 85 °C",
+      "source": "SCES515N, https://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf, section 5.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "count",
+      "stated": "not given",
+      "read": "One bit a part (Table 4-1); 1 part for the 1 input",
+      "source": "SCES515N, https://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf, Table 4-1",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "gate",
+      "stated": "not given",
+      "read": "No enable pin; DIR is its only control, driven by an RP2354B GPIO, not the enable node, so the input does not pass the gate",
+      "source": "SCES515N, https://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf, Table 4-1",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "direction at reset",
+      "stated": "not given",
+      "read": "Table 7-1: DIR L is B to A (receive). In reset the RP2354B pad is high impedance and pulled down at 36 to 113 kΩ (RP2350 section 9.3, Table 1436); DIR II ±2 µA (5.5) gives 0.23 V at most, under VIL 0.8 V (5.3, DIR referenced to VCCA). Section 7.3.5: supplies sequence without glitches",
+      "source": "SCES515N sections 5.3, 5.5, 7.3.5, Table 7-1; RP2350 datasheet build-date 2025-07-29, section 9.3, Table 1436",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments",
+      "read": "The datasheet names Texas Instruments as its maker; Texas Instruments is on the S1 list of allowed IC makers",
+      "source": "SCES515N; Research.md S1 answer (owner, 2026-09-25) at 10b0bade34de",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     }
+    ]
+   },
+   {
+    "function": "reply path through the gate",
+    "part": "SN74CBTLV3126PWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "directions",
+      "stated": "FET bus switch, 5 Ω; tpd 0.25 ns either way",
+      "read": "Sections 1 and 7.3: 5 Ω switch connection; Table 7-1: OE H, A port = B port, no direction pin; section 5.7: tpd A or B to B or A 0.25 ns max, tdis 4.8 ns max (PW, −40 to 85 °C)",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 1, 5.7, 7.3, Table 7-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "disabled state",
+      "stated": "tdis 4.8 ns max",
+      "read": "Section 5.7: tdis 4.8 ns max at 3.3 V ±0.3 V (PW, −40 to 85 °C)",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, section 5.7",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "reply rate",
+      "stated": "Cio(OFF) 7 pF; RC 17 ns at 300 Ω against a 667 ns bit",
+      "read": "Section 5.5: Cio(OFF) 7 pF; 300 Ω × 57 pF = 17 ns against the 667 ns bit at 1500 kbit/s; tpd 0.25 ns max (5.7)",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 5.5, 5.7",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "I_off",
+      "stated": "Ioff 10 µA, VI or VO 0 to 3.6 V",
+      "read": "Section 5.5 (PW, −40 to 85 °C): Ioff 10 µA at VCC 0, VI or VO = 0 to 3.6 V; VI is the input voltage of every input (5.1), the II row is the OE input; the row names no pin and covers the RP2354B side, the OE input and the connector side",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 1, 5.1, 5.5, 7.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "connector level",
+      "stated": "rail-to-rail switching; VI 4.6 V absolute; no recommended switch-I/O range",
+      "read": "Rail-to-rail switching (1, 7.3); VI −0.5 to 4.6 V (5.1); no switch-I/O range in 5.3; Figure 5-2 typical ron 5 to 7.5 Ω up to 3.3 V input; section 8.2.1.2 (informative) example range 0 to 3.3 V. 3.6 V breaks no stated limit; above 3.3 V the switch is not characterised",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 1, 5.1, 5.3, 5.5, 7.3, 8.2.1.2, Figure 5-2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "enable",
+      "stated": "OE active high, 10 kΩ pull-down at each part",
+      "read": "Table 4-1: OE active high; section 7.1: OE tied to GND through a pull-down for the high-impedance state at power-up; takes the active-high node directly",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, Table 4-1, section 7.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "lines",
+      "stated": "not given",
+      "read": "8 channels on 2 parts for the 4 multiprotocol ports and the UART socket (Table 4-1)",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, Table 4-1",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "turnaround",
+      "stated": "not given",
+      "read": "No direction pin: A = B while OE is high (Table 7-1), so the ESC's reply about 30 µs after release passes with no turnaround step",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, Table 7-1",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments",
+      "read": "The datasheet names Texas Instruments as its maker; Texas Instruments is on the S1 list of allowed IC makers",
+      "source": "SCDS038N; Research.md S1 answer (owner, 2026-09-25) at 10b0bade34de",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     }
+    ]
+   },
+   {
+    "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+    "part": "SN74CBTLV3126PWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "directions",
+      "stated": "FET bus switch, 5 Ω; tpd 0.25 ns either way",
+      "read": "Sections 1 and 7.3: 5 Ω switch connection; Table 7-1: OE H, A port = B port, no direction pin; section 5.7: tpd A or B to B or A 0.25 ns max, tdis 4.8 ns max (PW, −40 to 85 °C)",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 1, 5.7, 7.3, Table 7-1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "disabled state",
+      "stated": "tdis 4.8 ns max",
+      "read": "Section 5.7: tdis 4.8 ns max at 3.3 V ±0.3 V (PW, −40 to 85 °C)",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, section 5.7",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "reply rate",
+      "stated": "Cio(OFF) 7 pF; RC 17 ns at 300 Ω",
+      "read": "Section 5.5: Cio(OFF) 7 pF; 300 Ω × 57 pF = 17 ns against the 667 ns bit at 1500 kbit/s; tpd 0.25 ns max (5.7)",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 5.5, 5.7",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "I_off",
+      "stated": "Ioff 10 µA, VI or VO 0 to 3.6 V",
+      "read": "Section 5.5 (PW, −40 to 85 °C): Ioff 10 µA at VCC 0, VI or VO = 0 to 3.6 V; VI is the input voltage of every input (5.1), the II row is the OE input; the row names no pin and covers the RP2354B side, the OE input and the connector side",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 1, 5.1, 5.5, 7.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "connector level",
+      "stated": "rail-to-rail switching; VI 4.6 V absolute",
+      "read": "Rail-to-rail switching (1, 7.3); VI −0.5 to 4.6 V (5.1); no switch-I/O range in 5.3; Figure 5-2 typical ron 5 to 7.5 Ω up to 3.3 V input; section 8.2.1.2 (informative) example range 0 to 3.3 V. 3.6 V breaks no stated limit; above 3.3 V the switch is not characterised",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 1, 5.1, 5.3, 5.5, 7.3, 8.2.1.2, Figure 5-2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "enable",
+      "stated": "OE active high",
+      "read": "Table 4-1: OE active high; section 7.1: OE tied to GND through a pull-down for the high-impedance state at power-up; takes the active-high node directly",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, Table 4-1, section 7.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "lines",
+      "stated": "not given",
+      "read": "8 channels on 2 parts for the 4 multiprotocol ports and the UART socket (Table 4-1)",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, Table 4-1",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "turnaround",
+      "stated": "not given",
+      "read": "No direction pin: A = B while OE is high (Table 7-1), so the ESC's reply about 30 µs after release passes with no turnaround step",
+      "source": "SCDS038N, https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, Table 7-1",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments",
+      "read": "The datasheet names Texas Instruments as its maker; Texas Instruments is on the S1 list of allowed IC makers",
+      "source": "SCDS038N; Research.md S1 answer (owner, 2026-09-25) at 10b0bade34de",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:31:23Z"
+     }
+    ]
+   }
+  ],
+  "figures": [
+   {
+    "figure": "found V56",
+    "verdict": "confirmed",
+    "evidence": "Each premise holds. IOBoard.md:64 sets each multiprotocol port's mode per port; :251 plain DShot idles low; :253 bidirectional DShot idles high on the pull-up; :256 servo PWM idles low; :340 the expander resets with the RP2354B, its driving pin is then an input, and a resistor holds each control input inactive. V57's answer (Research.md:617) requires the pull-down at the reset and unpowered state. RP2350 section 9.3: Bank 0 pads reset pulled low. 4 ports plus the UART socket make 5 outputs.",
+    "source": "hardware/docs/IOBoard.md:64, :251, :253, :256, :340 and Research.md:617 at 10b0bade34de; RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, section 9.3",
+    "read_at": "2026-09-28T18:26Z to 18:47Z (tree read); 2026-09-28T18:31:23Z (RP2350)"
+   },
+   {
+    "figure": "found V58",
+    "verdict": "confirmed",
+    "evidence": "AM32-bootloader main.c:1097-1138 samples against GPIO_PULL_DOWN, jumps to the application after more than 450 of 4000 low samples, then with GPIO_PULL_UP stays only if no sample is low; setReceive uses GPIO_PULL_UP (:516). BLHeliBootLoad.inc:71-72 'Disable pushpull' and 'Set data high'. AM32 g071 serial_telemetry.c:27-28 open-drain with pull-up. HitecDServoInternal.h: servo drives low only, 3k pull-down; README.md:11: 1 kΩ to 3.3 V for a 3.3 V controller. docs/OpenYGE.md:21 UART 8N1. RP2350 Table 1436 VIH 2.0 V. Arithmetic: 10k ∥ 3k = 2.31 kΩ, 3.3 × 2.31/3.31 = 2.30 V; idle 3.3 × 10/11 = 3.0 V; the 2.0 V limit falls at 1.50 kΩ. The arithmetic leaves out the series resistor of V75: with 275 Ω between the bias node and the servo the connector sits at 2.15 V and the RP2354B pin at 2.35 V, still above 2.0 V.",
+    "source": "https://raw.githubusercontent.com/am32-firmware/AM32-bootloader/master/bootloader/main.c; https://raw.githubusercontent.com/bitdump/BLHeli/master/BLHeli_S%20SiLabs/BLHeliBootLoad.inc; https://raw.githubusercontent.com/am32-firmware/AM32/main/Mcu/g071/Src/serial_telemetry.c; https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServoInternal.h and README.md; docs/OpenYGE.md:21; RP2350 datasheet build-date 2025-07-29, Table 1436",
+    "read_at": "2026-09-28T18:37:53Z (sources); 2026-09-28T18:31:23Z (RP2350)"
+   },
+   {
+    "figure": "found V59",
+    "verdict": "confirmed",
+    "evidence": "Configuration page, CLI section: 'UNIX-style console (no echo, LF as EOL) on the signal line at 38400 baud 8N1. To enter CLI mode, the signal line must be held high for 2 seconds on startup.' Page edited Sep 24, 2026.",
+    "source": "https://github.com/neoxic/ESCape32/wiki/Configuration (vendors.py fetch)",
+    "read_at": "2026-09-28T18:37:53Z"
+   },
+   {
+    "figure": "found V60",
+    "verdict": "confirmed",
+    "evidence": "HitecDServoInternal.h Fundamentals: the DPC-11 drives the line low (0 V) or high (about 2 V); when the servo transmits, the programmer pulls high and the servo drives low; Reading a register step 2: the programmer pulls high weakly, about 1.3 mA. No input-high threshold is stated. README.md:2, :6 not endorsed by Hitec; :11 a 1 kΩ pull-up to 3.3 V for a 3.3 V controller (2 kΩ to 5 V for 5 V); :73 tested on a 3.3 V Pro Micro.",
+    "source": "https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServoInternal.h; https://raw.githubusercontent.com/timmaxw/HitecDServo/main/README.md",
+    "read_at": "2026-09-28T18:37:53Z"
+   },
+   {
+    "figure": "found V61",
+    "verdict": "confirmed",
+    "evidence": "HitecDServoInternal.h: half-duplex serial on the PWM data line, 115200 baud, inverted polarity, 8N1, idle low; the servo drives low to transmit and has a 3k pull-down; Bootup behavior: after power-on or a REBOOT write it ignores PWM and serial for 1000 ms and drives the line low; after a serial command it ignores PWM until rebooted. The library holds the pin as an output driven low when idle (HitecDServo.cpp:13-14, :476) and releases it to the pull-up only while reading.",
+    "source": "https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServoInternal.h; https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServo.cpp",
+    "read_at": "2026-09-28T18:37:53Z"
+   },
+   {
+    "figure": "found V62",
+    "verdict": "confirmed",
+    "evidence": "HitecDServoInternal.h Fundamentals: 115200 baud; HitecDServo.cpp:571 'We're bit-banging a 115200 baud serial connection'.",
+    "source": "https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServoInternal.h; https://raw.githubusercontent.com/timmaxw/HitecDServo/main/src/HitecDServo.cpp",
+    "read_at": "2026-09-28T18:37:53Z"
+   },
+   {
+    "figure": "found V63",
+    "verdict": "confirmed",
+    "evidence": "ESCape32 Installation: 'Power cycle the ESC and check voltage on the signal line. It should read around 3.3V.' SRXL2 Rev K section 5: 'standard 3.3V logic with normal UART levels (3.3V = idle line)'. crsf.md: half duplex at 3.3 V level, full duplex at 3.0 to 3.3 V. Betaflight esc_sensor.c KISS comment: '115200 baud and 3.6V'. HitecDServoInternal.h: DPC-11 high about 2 V. No source read asks for 5 V.",
+    "source": "https://github.com/neoxic/ESCape32/wiki/Installation; https://raw.githubusercontent.com/SpektrumRC/SRXL2/master/Docs/SRXL2%20Specification.pdf; https://raw.githubusercontent.com/tbs-fpv/tbs-crsf-spec/main/crsf.md; https://raw.githubusercontent.com/betaflight/betaflight/master/src/main/sensors/esc_sensor.c; HitecDServoInternal.h",
+    "read_at": "2026-09-28T18:37:53Z"
+   },
+   {
+    "figure": "found V64",
+    "verdict": "confirmed",
+    "evidence": "AM32 Mcu/g071/Src/IO.c sendDshotDma sets CCMR1 0x60 (timer output) for the reply. AM32 Src/main.c: #ifdef NEUTRONRC_G071 setInputPullDown() else setInputPullUp(). Bluejay Isrs.asm:481 'Set output mode to push-pull'. RP2350 Table 1436: VOL 0 to 0.5 V at IOL 2, 4, 8 or 12 mA by setting. (3.3 − 0.5) V / 1 kΩ = 2.8 mA, within the 4 mA setting. With the bias network on the switch side the pad sinks it through ron (15 Ω max), not through the series resistor.",
+    "source": "https://raw.githubusercontent.com/am32-firmware/AM32/main/Mcu/g071/Src/IO.c; https://raw.githubusercontent.com/am32-firmware/AM32/main/Src/main.c; https://raw.githubusercontent.com/bird-sanctuary/bluejay/main/src/Modules/Isrs.asm; RP2350 datasheet build-date 2025-07-29, Table 1436",
+    "read_at": "2026-09-28T18:37:53Z (sources); 2026-09-28T18:31:23Z (RP2350)"
+   },
+   {
+    "figure": "found V68",
+    "verdict": "confirmed",
+    "evidence": "docs/Receivers.md:10-16: every bus is one signal wire plus ground into a coprocessor pin, one pin each. shared/ui/include/analyser_screen.h:27 analyser_screen_push takes one decoded frame at a time. No file read names a second receiver input.",
+    "source": "docs/Receivers.md:10-16; shared/ui/include/analyser_screen.h:22-31 at 10b0bade34de",
+    "read_at": "2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "found V69",
+    "verdict": "confirmed",
+    "evidence": "SRXL2 Rev K section 5: 3.3 V logic, 3.3 V idle, 'Pin 1 – SRXL2 Tx/Rx Signal (+3.3V/GND)'. crsf.md: half duplex at 3.3 V, full duplex at 3.0 to 3.3 V. EX Bus v1.21 Physical layer: maximum logical zero 1.5 V, minimum logical one 3.0 V, no maximum. SUMD Rev 01 states 115200 bit/s and no voltage. No S.BUS or iBUS maker specification was read.",
+    "source": "SRXL2 Specification PDF (SpektrumRC GitHub); crsf.md; https://www.jetimodel.cz/uloz/c6d00c58-78ab-4c4d-9f15-34e84523479e.pdf/?1626095164; https://www.deviationtx.com/media/kunena/attachments/98/HoTT-SUMD-Spec-REV01-12062012-pdf.pdf",
+    "read_at": "2026-09-28T18:37:53Z"
+   },
+   {
+    "figure": "found V70",
+    "verdict": "confirmed",
+    "evidence": "crsf.md: single-wire half duplex (RC to TX module) at 400 kbaud by default, also 115.2 kbaud, 1 and 2 Mbaud depending on hardware; dual-wire full duplex (the receiver's side) at 416,666 baud, 'can be negotiated to be higher' with no ceiling stated. SRXL2 BaudRate: 0 = 115200 only, 1 = 400000. EX Bus 125 or 250 kBaud. SUMD 115200. 2,000,000 baud is the highest rate stated; the full-duplex link states none, so a faster negotiated CRSF link is not excluded.",
+    "source": "crsf.md; SRXL2 Specification Rev K section 7.2.1; EX Bus v1.21 Physical layer; SUMD Rev 01",
+    "read_at": "2026-09-28T18:37:53Z"
+   },
+   {
+    "figure": "found V72",
+    "verdict": "confirmed",
+    "evidence": "Monostable.md:361-367 at 23c82ca: the gated buffer sits between the RP2350's output pins and the output connector. F13 answer (Research.md:541): the 20 output ports and the UART socket. V71 answer (Research.md:631): the bench transmits EX Bus and SRXL2 telemetry to the receiver only.",
+    "source": "hardware/docs/Monostable.md:361-367 at 23c82ca6ca976d956098cfafd25dbefa11584f5d; Research.md:541, :631 at 10b0bade34de",
+    "read_at": "2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "found V73",
+    "verdict": "confirmed",
+    "evidence": "Section 9.3: the pads return to the reset state (output high impedance, input disabled, pulled low, isolation latched) on brownout, RUN low, SW-DP CDBGRSTREQ and RP-AP rescue reset. Section 9.7: those same resets reset the isolation latches; ISO bits are not reset by a PADS block reset, which returns non-isolated pads to their reset state; the SDK clears ISO in gpio_set_function. Table 1436: RPD 36 to 113 kΩ, VIL 0.8 V. Section 12.9.6.1 lines 52-53: _watchdog_enable sets PSM_WDSEL except ROSC and XOSC. Table 532: PSM WDSEL bit 4 is RESETS. Table 535: RESETS reset value 0x1 at PADS_BANK0 (bit 9) and IO_BANK0 (bit 6). Table 853: GPIO0 PDE resets to 1, PUE to 0. Table 490: POWMAN WDSEL RESET_SWCORE bit 8, reset 0x0. SCAS414AG II ±5 µA; 5 µA × 113 kΩ = 0.57 V. IOBoard.md:221: no watchdog enabled in the image; :340 expander resets with the RP2354B.",
+    "source": "RP2350 datasheet build-date 2025-07-29, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, sections 9.3, 9.7, 12.9.4, 12.9.6.1, Tables 490, 532, 535, 853, 1436; SCAS414AG section 5.5; IOBoard.md:221, :340",
+    "read_at": "2026-09-28T18:31:23Z (datasheets); 2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "found V74",
+    "verdict": "confirmed",
+    "evidence": "SRXL2 Rev K section 5: the protocol runs on servo-bus power of 3.5 to 8.4 V. RP2350 Table 1426: fault-tolerant pins pass 'very little current' below 3.63 V with IOVDD at 0 V, no figure; Table 1433: VPIN_FT −0.5 to 3.63 V at IOVDD 0 V, 5.5 V at IOVDD 3.3 V. Monostable.md:65-88: every interlock input driven while its supply is absent takes I_off or 4.7 kΩ.",
+    "source": "SRXL2 Specification Rev K section 5; RP2350 datasheet build-date 2025-07-29, Tables 1426, 1433; Monostable.md:65-88 at 23c82ca",
+    "read_at": "2026-09-28T18:37:53Z (SRXL2); 2026-09-28T18:31:23Z (RP2350); 2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "found V75",
+    "verdict": "confirmed",
+    "evidence": "Fault list: IOBoard.md:531 (signal, ground and rail on one lead), :536 (nothing limits current into a shorted signal line), F16 8.7 V. Lower bounds: 3.3 V / 12 mA = 275 Ω (Table 1436 top setting); 3.4 V / 24 mA = 142 Ω (SCAS414AG 5.3 IOH −24 mA at 3 V). Upper bound, bias on the switch side: node = (3.3/1000 + Vs/275)/(1/1000 + 1/10000 + 1/275) = 0.70 V + 0.77 × Vs, so Vs ≤ 0.13 V keeps it at 0.8 V: reproduced. Bench low with bias on the connector side, pad at 0.5 V through 275 Ω plus 7 Ω ron: 1.02 V: reproduced. 18.5 mA and 95 mW: reproduced. One figure is not reproduced exactly: at 300 Ω the same node equation gives Vs ≤ 0.074 V, not 0.05 V (0.057 V with the 7 Ω ron added in series); the stated 0.05 V is the stricter of the two and changes nothing, because no source states the servo's output-low voltage.",
+    "source": "IOBoard.md:531, :536 at 10b0bade34de; RP2350 datasheet build-date 2025-07-29, Table 1436; SCAS414AG section 5.3; SCDS038N section 5.5; HitecDServoInternal.h; nodal re-derivation",
+    "read_at": "2026-09-28T18:31:23Z; 2026-09-28T18:37:53Z; 2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "found V76",
+    "verdict": "confirmed",
+    "evidence": "docs/OpenYGE.md:21 'UART ..., 115200 baud, 8N1'; :400-403 open decision naming Hobbywing, Kontronik, Scorpion, OMP, ZTW, APD, FLY, Graupner and XDFly, with no rates. Betaflight esc_sensor.c: ESC_SENSOR_BAUDRATE 115200.",
+    "source": "docs/OpenYGE.md:21, :400-403 at 10b0bade34de; https://raw.githubusercontent.com/betaflight/betaflight/master/src/main/sensors/esc_sensor.c",
+    "read_at": "2026-09-28T18:26Z to 18:47Z (tree read); 2026-09-28T18:37:53Z"
+   },
+   {
+    "figure": "found V77",
+    "verdict": "confirmed",
+    "evidence": "Betaflight esc_sensor.c KISS comment: 10 bytes at 115200 baud and 3.6 V; ESC_SENSOR_BAUDRATE 115200. AM32 g071 serial_telemetry.c: PB6 open-drain with pull-up, USART 115200 8N1. ESCape32 Settings: telem_mode 0 = KISS (default 0). Page edited Sep 24, 2026.",
+    "source": "https://raw.githubusercontent.com/betaflight/betaflight/master/src/main/sensors/esc_sensor.c; https://raw.githubusercontent.com/am32-firmware/AM32/main/Mcu/g071/Src/serial_telemetry.c; https://github.com/neoxic/ESCape32/wiki/Settings",
+    "read_at": "2026-09-28T18:37:53Z"
+   },
+   {
+    "figure": "found V78",
+    "verdict": "confirmed",
+    "evidence": "Research.md:281-282: R3's gates and the buffer enable follow the enable node. V46 answer (Research.md:606): 500 ms. AM32-bootloader main.c:1097-1138 stays only when high and never low. BLHeliBootLoad.inc: wait_for_low loops while the line is high with no timeout, and BOOT_DELAY (about 250 ms, :10) runs once the line is low, so 'leaves after about 250 ms' counts from the line going low. ESCape32 Configuration: high for 2 s at start-up. HitecDServoInternal.h: REBOOT, 1000 ms. The conclusion holds.",
+    "source": "Research.md:281-282, :606 at 10b0bade34de; AM32-bootloader main.c; BLHeliBootLoad.inc; ESCape32 wiki Configuration; HitecDServoInternal.h",
+    "read_at": "2026-09-28T18:37:53Z; 2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "P2 report: programming supply switching",
+    "verdict": "confirmed",
+    "evidence": "Same sources as V78, re-read: AM32 and ESCape32 need the line high at start-up, BLHeli_S waits while it is high; the pack switch and the buffer enable follow the enable node (Research.md:281); V46 gives 500 ms; the Hitec REBOOT register makes a power cycle unnecessary. VESC needs no power cycle: no source read says otherwise.",
+    "source": "as found V78",
+    "read_at": "2026-09-28T18:37:53Z; 2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "P2 report: connector level in RP2354B reset (RUN, brownout)",
+    "verdict": "confirmed",
+    "evidence": "16 + 4 + 1 = 21 lines. Section 9.3 and Table 1436: pads high impedance, pulled low at 36 to 113 kΩ. SCAS414AG II ±5 µA (−40 to 85 °C): 0.57 V; with the pad's own IIN of 1 µA (Table 1436) 0.68 V, still under VIL 0.8 V, so the 244 drives low. The switch passes the pad's low with the 10 kΩ pull-down. IOBoard.md:340: the expander resets with the RP2354B and resistors hold its controls; SN74LVC1G126 with OE low is Z (SCES224S Table 7-1).",
+    "source": "RP2350 datasheet build-date 2025-07-29, section 9.3, Table 1436; SCAS414AG section 5.5; SCES224S Table 7-1; IOBoard.md:340",
+    "read_at": "2026-09-28T18:31:23Z; 2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "P2 report: connector level through a watchdog reset",
+    "verdict": "confirmed",
+    "evidence": "Re-read as found V73: section 12.9.6.1 lines 52-53, Table 532 bit 4 RESETS, Table 535 bits 9 and 6 reset to 1, section 9.7 on ISO bits and PADS resets, section 9.3 on gpio_set_function clearing ISO, Table 490 RESET_SWCORE reset 0. IOBoard.md:221 no watchdog enabled yet. The statement that the level follows the WDSEL configuration holds.",
+    "source": "RP2350 datasheet build-date 2025-07-29, sections 9.3, 9.7, 12.9.6.1, Tables 490, 532, 535; IOBoard.md:221",
+    "read_at": "2026-09-28T18:31:23Z; 2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "P2 report: buffer enable polarity for P5",
+    "verdict": "confirmed",
+    "evidence": "SCDS038N Table 4-1: 1OE to 4OE 'Output enable, active high'; section 7.1 OE to GND through a pull-down. SCAS414AG Table 7-1: OE L enables, 1OE pin 1, 2OE pin 19; section 7.1 OE to VCC through a pull-up. SCES214AF: an inverter. Monostable.md:422: the enable node is active high; :369-376: 10 kΩ pull-down on an active-high enable, pull-up after the inverter on an active-low one.",
+    "source": "SCDS038N; SCAS414AG; SCES214AF; Monostable.md:369-376, :422 at 23c82ca",
+    "read_at": "2026-09-28T18:31:23Z; 2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "P2 report: GPIO and expander outputs for P5",
+    "verdict": "confirmed",
+    "evidence": "SCES515N Table 4-1: DIR pin 5, one control; Table 7-1: DIR L receive; V71 needs both directions, so 1 GPIO. V56: 5 expander outputs. SCDS038N: OE only, no direction pin, so the DShot PIO programs are untouched. V67 answer: VESC on separate TX and RX lines (2); the answer does not say which ports carry them.",
+    "source": "SCES515N; SCDS038N; Research.md V56, V67, V71 rows at 10b0bade34de",
+    "read_at": "2026-09-28T18:31:23Z; 2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "P2 report: enable node load for P5",
+    "verdict": "confirmed",
+    "evidence": "3.3 V / 10 kΩ = 0.33 mA; 2 parts × 0.33 = 0.66 mA; 8 pins × 0.33 = 2.64 mA; 16 × 0.33 = 5.28 mA. SN74CBTLV3126 OE II ±1 µA (SCDS038N 5.5). SN74LVC1G04 II ±5 µA powered and Ioff ±10 µA unpowered (SCES214AF 5.5), so ±10 µA max covers both. The 244s' OE pull-ups load the inverter output.",
+    "source": "SCDS038N section 5.5; SCES214AF section 5.5; Monostable.md:369-376",
+    "read_at": "2026-09-28T18:31:23Z"
+   },
+   {
+    "figure": "P2 report: enable I_off reading",
+    "verdict": "confirmed",
+    "evidence": "SCES584D section 7.3.2 and SCES937B section 7.3.4 both say Ioff is the maximum leakage into or out of any input or output pin. TMUX1511 SCDS390B 5.5: IPOFF on I/O pins only (±2 µA at VS 0 to 3.6 V, VDD 0); IIH, IIL ±2 µA under VDD 1.5 to 5.5 V. SN74CB3Q3125 SCDS143E: Ioff at VO 0 to 5.5 V with VI 0, control IIN only at VCC 3.6 V, and the note 'VIN and IIN refer to control inputs. VI, VO, II, and IO refer to data pins'. SN74LVC126A SCAS339U: no Ioff anywhere. SN74CBTLV3126: Ioff at VI or VO 0 to 3.6 V.",
+    "source": "https://www.ti.com/lit/ds/symlink/sn74lvc8t245.pdf, txu0104.pdf, tmux1511.pdf, sn74cb3q3125.pdf, sn74lvc126a.pdf, sn74cbtlv3126.pdf (vendors.py fetch)",
+    "read_at": "2026-09-28T18:31:23Z"
+   },
+   {
+    "figure": "P2 report: Hitec low level",
+    "verdict": "confirmed",
+    "evidence": "Re-derived with 1 kΩ to 3.3 V, 10 kΩ and the servo's 3 kΩ pull-downs and 7 Ω ron. Bias on the connector side, pad at 0.5 V: 1.02 V at 275 Ω and 1.08 V at 320 Ω, as stated. Pad at 0 V: 0.66 V at 275 Ω and 0.73 V at 320 Ω; the stated single 0.69 V is the value near 300 Ω, inside that range. Bias on the switch side: the bias node sits at 0.52 V with the pad at 0.5 V (0.48 V at the servo); servo at 0 V gives 0.70 V at the pin through 275 Ω. Table 1436 VOL ≤ 0.5 V; SCDS038N ron 7 Ω max at VI 0. No source states the servo's thresholds.",
+    "source": "RP2350 datasheet build-date 2025-07-29, Table 1436; SCDS038N section 5.5; HitecDServoInternal.h; README.md:11; nodal re-derivation",
+    "read_at": "2026-09-28T18:31:23Z; 2026-09-28T18:37:53Z"
+   },
+   {
+    "figure": "P2 report: series resistance range",
+    "verdict": "confirmed",
+    "evidence": "As found V75: 275 Ω and 142 Ω lower bounds, the upper bound not shown for want of the servo's output-low voltage, 18.5 mA into a 3.6 V clamp and 95 mW in 275 Ω. Reproduced.",
+    "source": "RP2350 datasheet build-date 2025-07-29, Table 1436; SCAS414AG section 5.3",
+    "read_at": "2026-09-28T18:31:23Z"
+   },
+   {
+    "figure": "P2 report: SN74CBTLV3126 high level",
+    "verdict": "confirmed",
+    "evidence": "Re-read: ron is tabulated at VI 0 (64 and 24 mA) and VI 2.4 V (15 Ω max at 15 mA, VCC 3 V) only (5.5); features and 7.3 state rail-to-rail switching; 5.1 VI −0.5 to 4.6 V; 5.3 lists VCC, the control-input levels and TA, no switch-I/O range. Two more readings for the record: Figure 5-2 (typical, VDD 3.3 V, 64 mA) plots ron of 5 to 7.5 Ω up to a 3.3 V input and stops there; section 8.2.1.2, which the datasheet marks as not part of the specification, says signals must fall within the recommended conditions 'including signal range' and uses 0 to 3.3 V, powered and at VDD 0 V, in its example. So a 3.3 V high passes on the typical curve, and 3.6 V breaks no stated limit but is not characterised.",
+    "source": "SCDS038N (revised July 2026), https://www.ti.com/lit/ds/symlink/sn74cbtlv3126.pdf, sections 1, 5.1, 5.3, 5.5, 7.3, 8.2.1.2, Figure 5-2 (page 8 rendered)",
+    "read_at": "2026-09-28T18:31:23Z"
+   },
+   {
+    "figure": "P2 report: SN74CBTLV3126PWR stock margin",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C543078 exact match SN74CBTLV3126PWR, Texas Instruments, TSSOP-14: stockCount 401, canPresaleNumber 395, expand. Gates 50 (2 a board) and 150 (6 a board) both pass. Digi-Key not read: every api.digikey.com call answered HTTP 429 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, remaining 0, reset 2026-09-29T00:00:00Z), so the Digi-Key 3756, Active, 16 weeks is not re-read here.",
+    "source": "vendors.py jlcpcb C543078 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact LCSC match); vendors.py digikey SN74CBTLV3126PWR (api.digikey.com/products/v4/search/SN74CBTLV3126PWR/productdetails, HTTP 429)",
+    "read_at": "2026-09-28T18:40:50Z (JLCPCB); 2026-09-28T18:40:52Z (Digi-Key, HTTP 429)"
+   },
+   {
+    "figure": "P2 report: SN74LVC541APWR second source",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB exact matches: C113281 SN74LVC541APWR 15628 / presale 15242; C7354 MC74LCX541DTR2G onsemi TSSOP-20 2550 / 2550; C7194124 74LCX541FT(AE) Toshiba TSSOP-20 2098 / 2098; C6093 74LVC541APW,118 0 / −12. Pinouts: SCAS298O OE1 1, OE2 19 active low; MC74LCX541/D Rev. 11 OE1 1, D0 to D7 2 to 9, GND 10, O7 to O0 11 to 18, OE2 19, VCC 20, IOFF 10 µA; 74LCX541FT Rev. 3.0.A page 2 rendered: OE1 1, A1 to A8 2 to 9, GND 10, Y8 to Y1 11 to 18, OE2 19, VCC 20, power-down protection on all inputs and outputs, IOFF 10.0 µA at 5.5 V. Both alternates pass rule 4 at the gate of 50, so a second source exists. Digi-Key not read (HTTP 429, daily limit of 1000 exhausted, reset 2026-09-29T00:00:00Z): the Digi-Key 0, 21603 and 11 are not re-read.",
+    "source": "vendors.py jlcpcb C113281, C7354, C7194124, C6093 (exact LCSC match); https://www.ti.com/lit/ds/symlink/sn74lvc541a.pdf; https://www.onsemi.com/download/data-sheet/pdf/mc74lcx541-d.pdf; https://toshiba.semicon-storage.com/info/docget.jsp?did=15179&prodName=74LCX541FT",
+    "read_at": "2026-09-28T18:40:50Z (JLCPCB); 2026-09-28T18:31:23Z (TI, onsemi); 2026-09-28T18:41:51Z (Toshiba); 2026-09-28T18:40:53Z (Digi-Key, HTTP 429)"
+   },
+   {
+    "figure": "P2 report: NC7SZ126M5X package",
+    "verdict": "confirmed",
+    "evidence": "NC7SZ126/D Rev. 8 ordering: NC7SZ126M5X SC−74A; under DISCONTINUED, NC7SZ126M5X−L22090 SOT23−5. Case 318BQ (page 8 rendered): SC-74A-5 3.00 × 1.50 × 0.95, e 0.95, E 2.75 BSC, L 0.20 to 0.60, recommended land 0.70 × 1.00 mm pads on a 2.40 mm row span. onsemi product page: NC7SZ126M5X Active, SC-74A-5, 318BQ; NC7SZ126M5X-L22090 Last Shipments, SOT-23-5. JLCPCB C7421: NC7SZ126M5X, onsemi, SOT-23-5, 5356 / 5344. Pin order OE 1, A 2, GND 3, Y 4, VCC 5 matches SN74LVC1G126 DBV. The figure leaves the land-pattern check open for a verifier of that part, which holds; this task's verify list does not include it.",
+    "source": "https://www.onsemi.com/download/data-sheet/pdf/nc7sz126-d.pdf; https://www.onsemi.com/products/standard-products/logic/buffers/nc7sz126; vendors.py jlcpcb C7421 (exact LCSC match)",
+    "read_at": "2026-09-28T18:31:23Z; 2026-09-28T18:41:51Z; 2026-09-28T18:40:50Z"
+   },
+   {
+    "figure": "P2 report: Nexperia 74CBTLV3126 switch range",
+    "verdict": "confirmed",
+    "evidence": "74CBTLV3126 Rev. 7 (11 April 2024): limiting VSW −0.5 to VCC + 0.5 V in enable and disable mode; recommended VSW 0 to VCC; VCC + 0.5 at 3.201 to 3.399 V is 3.70 to 3.90 V. JLCPCB C478017 74CBTLV3126PW,118 0 / 0; C546436 74CBTLV3126DS,118 3983 / 3983.",
+    "source": "https://assets.nexperia.com/documents/data-sheet/74CBTLV3126.pdf; vendors.py jlcpcb C478017, C546436 (exact LCSC match)",
+    "read_at": "2026-09-28T18:31:23Z; 2026-09-28T18:40:50Z"
+   },
+   {
+    "figure": "P2 report: 74LVC1T45GW,125 at Digi-Key",
+    "verdict": "confirmed",
+    "evidence": "The drop reason re-read: 74LVC_LVCH1T45 Rev. 10 (4 August 2023) section 9: B-port IOFF ±1 µA (25 °C) and ±10 µA over temperature only with VCC(B) 0 V and VCC(A) 1.2 to 5.5 V; the both-supplies-at-0 V case has only the text 'when it is powered down' (section 1). Digi-Key not read: api.digikey.com answered HTTP 429 'Daily Ratelimit exceeded' (limit 1000, reset 2026-09-29T00:00:00Z), so the stock 0, 20 weeks and Active are not re-read.",
+    "source": "https://assets.nexperia.com/documents/data-sheet/74LVC_LVCH1T45.pdf; vendors.py digikey 74LVC1T45GW,125 (HTTP 429)",
+    "read_at": "2026-09-28T18:31:23Z; 2026-09-28T18:40:55Z (Digi-Key, HTTP 429)"
+   },
+   {
+    "figure": "P2 report: TC7MBL3126CFT(EL) stock",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C2675020 TC7MBL3126CFT(EL), TOSHIBA, TSSOP-14: stockCount 50, canPresaleNumber 50: at the gate of 50, under the gate of 150. The drop reason re-read in TC7MBL3125CFT/3126CFT Rev.7.0.A (2026-04-21): operating range VS 0 to VCC with the switch on, 0 to 3.6 V with VCC 0 V or the switch off; absolute maximum VCC + 0.5 with the switch on. Digi-Key not read (HTTP 429, daily limit exhausted, reset 2026-09-29T00:00:00Z): the 3493, Active, 16 weeks are not re-read.",
+    "source": "vendors.py jlcpcb C2675020 (exact LCSC match); https://toshiba.semicon-storage.com/info/docget.jsp?did=12250&prodName=TC7MBL3126CFT; vendors.py digikey TC7MBL3126CFT(EL) (HTTP 429)",
+    "read_at": "2026-09-28T18:40:50Z; 2026-09-28T18:41:51Z; 2026-09-28T18:40:57Z (Digi-Key, HTTP 429)"
+   },
+   {
+    "figure": "P2 report: manufacturer status not read",
+    "verdict": "confirmed",
+    "evidence": "Re-fetched, scripts and styles stripped: www.diodes.com/part/view/74LVC1G126 and /74LVC1T45 answer HTTP 200 with a description, datasheet link and PCN tab and no lifecycle status. The Toshiba detail pages for 74LCX244FT, 74LCX541FT and TC7MBL3126CFT list documents (datasheets Sep 2014, Oct 2022) and no part status; their only 'Not Recommended for New Design and EOL announced' text is the site menu.",
+    "source": "https://www.diodes.com/part/view/74LVC1G126; https://www.diodes.com/part/view/74LVC1T45; https://toshiba.semicon-storage.com/eu/semiconductor/product/general-purpose-logic-ics/detail.74LCX244FT.html, detail.74LCX541FT.html, detail.TC7MBL3126CFT.html (vendors.py fetch --client chrome)",
+    "read_at": "2026-09-28T18:41:51Z"
+   },
+   {
+    "figure": "P2 report: Hitec protocol source",
+    "verdict": "confirmed",
+    "evidence": "README.md:2 and :6: not endorsed by Hitec, developed by reverse-engineering; HitecDServoInternal.h: 'lab notes' from reverse-engineering, 115200 baud, inverted, half duplex, servo drives low, 3k pull-down. docs/Manifest.md:32: 'The Hitec D-series protocol is published'. No Hitec publication was found in this re-read either.",
+    "source": "https://raw.githubusercontent.com/timmaxw/HitecDServo/main/README.md; HitecDServoInternal.h; docs/Manifest.md:32 at 10b0bade34de",
+    "read_at": "2026-09-28T18:37:53Z; 2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "P2 report: drive on the switch path",
+    "verdict": "confirmed",
+    "evidence": "Table 1436 at IOVDD 3.3 V: VOH 2.62 V min and VOL 0.5 V max at 2, 4, 8 or 12 mA by setting; IIOVDD_MAX 100 mA is the sum of all current sourced by GPIO pins (and IIOVSS_MAX 100 mA sunk). 2.8 mA needs the 4 mA setting or higher.",
+    "source": "RP2350 datasheet build-date 2025-07-29, Table 1436",
+    "read_at": "2026-09-28T18:31:23Z"
+   },
+   {
+    "figure": "re-rank report: rerank: P3 finds qualified",
+    "verdict": "confirmed",
+    "evidence": "The shortlist carries every qualified part the figure names with a full record (74LVC2244APW,118 rank 6 with SN74LVC2244APWR; 74LVC125APW,118 rank 7 with 74LCX125MTC; 74LVC125AD,118 rank 8; 74LVC125AS14-13 rank 9; SN74LVC1G14DBVR rank 3 with 74LVC1G14GV,125; SN74CBTLV1G125DCKR rank 2 and SN74CBTLV3245APWR rank 3 with 74CBTLV3245PGG8 in the switch functions; SN74AVC1T45DBVR rank 6), and the six drops and the two P2 exclusions under dropped_from_p3. The first-ranked parts are P2's: SN74LVC244APWR, SN74LVC1G04DBVR, SN74LVC1G126DBVR, SN74CBTLV3126PWR, SN74LVC1T45DBVR. The drops themselves are checked under their own names.",
+    "source": "the shortlist of this task as given; datasheets as listed under the re-rank drop figures",
+    "read_at": "2026-09-28T18:31:23Z"
+   },
+   {
+    "figure": "re-rank report: rerank: functions with no part",
+    "verdict": "confirmed",
+    "evidence": "The shortlist gives no part for level translation, series resistance and clamps, reset idle level and programming supply switching, each with the reason the figure states: V63 3.3 V at the connector, round 2 for passives and signal-connector protection (Research.md Scope table, round 2 row), the gate elements and pull-downs for the reset level (V73), and V78.",
+    "source": "Research.md:23-29 at 10b0bade34de; the shortlist as given",
+    "read_at": "2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "re-rank report: rerank: Diodes 74LVC125A disabled output",
+    "verdict": "confirmed",
+    "evidence": "DS35265 Rev. 4-2: recommended VO active mode 0 to VCC and VCC = 0 V power-down mode 0 to 5.5 V, no row for a powered, disabled output; absolute maximum VO −0.5 to 6.5 V applied to an output in the high-impedance or IOFF state; IOZ ±10 µA at VO GND or 5.5 V, VCC 3.6 V (−40 to 85 °C). SCLS749C 6.3: VO in H-Z 0 to VCC. Both readings are right, and the ruling treats the TI 244A the same way (its section 5.3 gives VO 0 to VCC with no 3-state row).",
+    "source": "https://www.diodes.com/assets/Datasheets/74LVC125A.pdf; https://www.ti.com/lit/ds/symlink/sn74lv4t125.pdf",
+    "read_at": "2026-09-28T18:31:23Z"
+   },
+   {
+    "figure": "re-rank report: rerank: 74LVC2244A series resistance",
+    "verdict": "confirmed",
+    "evidence": "Nexperia 74LVC2244A Rev. 7: integrated 30 Ω termination resistors; Table 6 VOH 2.2 V at −12 mA, VCC 3.0 V. SCAS572L: outputs 'include equivalent 26-ohm resistors'; recommended IOH −12 mA at VCC 3 V. 3.4 V / 12 mA = 283 Ω; 283 − 26 = 257 Ω, 283 − 30 = 253 Ω, so 257 Ω covers both; 283 Ω × 50 pF = 14 ns.",
+    "source": "https://assets.nexperia.com/documents/data-sheet/74LVC2244A.pdf; https://www.ti.com/lit/ds/symlink/sn74lvc2244a.pdf",
+    "read_at": "2026-09-28T18:31:23Z"
+   },
+   {
+    "figure": "re-rank report: rerank: SN74CBTLV3245APWR second source",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB: C2674855 74CBTLV3245PGG8 RENESAS TSSOP-20 50 / 50 (at the gate of 50); C458790 74CBTLV3245PW,118 Nexperia 4792 / 4792; C2674866 PI3B3245LEX Diodes 128 / 128. Renesas DSC-5170/6 (May 2019): NC 1, A1 to A8 2 to 9, GND 10, B8 to B1 11 to 18, OE 19 active low, VCC 20, the same as SCDS034N Table 3-1; IOFF 50 µA at VCC 0, VI or VO 0 to 3.6 V. Renesas product page: 74CBTLV3245 Active, 'appropriate for new designs'. Nexperia 74CBTLV3245 Rev. 6: VSW recommended 0 to VCC in enable and disable mode. Diodes PI3B3245 DS40710 Rev 3-2: no IOFF row; 'Always apply VCC and GND before applying signals'. Digi-Key not read (HTTP 429, daily limit exhausted, reset 2026-09-29T00:00:00Z): the Digi-Key 0 and 4479 are not re-read.",
+    "source": "vendors.py jlcpcb C2674855, C458790, C2674866 (exact LCSC match); https://www.renesas.com/us/en/document/dst/74cbtlv3245-datasheet; https://www.renesas.com/us/en/products/74cbtlv3245; https://assets.nexperia.com/documents/data-sheet/74CBTLV3245.pdf; https://www.diodes.com/assets/Datasheets/PI3B3245.pdf; https://www.ti.com/lit/ds/symlink/sn74cbtlv3245a.pdf",
+    "read_at": "2026-09-28T18:40:50Z (JLCPCB); 2026-09-28T18:31:23Z (datasheets); 2026-09-28T18:41:51Z (Renesas page); 2026-09-28T18:40:58Z (Digi-Key, HTTP 429)"
+   },
+   {
+    "figure": "re-rank report: rerank: SN74CBTLV3245APWR idle leakage",
+    "verdict": "confirmed",
+    "evidence": "SCDS034N 4.5 (PW, −40 to 85 °C): II ±60 µA at VCC 3.6 V, VI = VCC or GND, with no pin named; applied to the data line as the worst case. 10 kΩ ∥ 36 kΩ = 7.83 kΩ; 60 µA × 7.83 kΩ = 0.47 V, under 0.8 V. SCDS057H II ±1 µA.",
+    "source": "https://www.ti.com/lit/ds/symlink/sn74cbtlv3245a.pdf; https://www.ti.com/lit/ds/symlink/sn74cbtlv1g125.pdf; RP2350 datasheet build-date 2025-07-29, Table 1436",
+    "read_at": "2026-09-28T18:31:23Z"
+   },
+   {
+    "figure": "re-rank report: rerank: enable inverter load",
+    "verdict": "confirmed",
+    "evidence": "16 × 3.3 V / 10 kΩ = 5.28 mA; 21 to 22 pins give 6.9 to 7.3 mA. SCES218AA 5.3 IOL 24 mA at VCC 3 V; SCES214AF 5.3 IOL 24 mA at 3 V. The 1 to 4 placements follow from one inverter per buffer part with four 125s.",
+    "source": "https://www.ti.com/lit/ds/symlink/sn74lvc1g14.pdf; https://www.ti.com/lit/ds/symlink/sn74lvc1g04.pdf",
+    "read_at": "2026-09-28T18:31:23Z"
+   },
+   {
+    "figure": "re-rank report: rerank: SN74LVC1G14DBVR at Digi-Key",
+    "verdict": "confirmed",
+    "evidence": "The consequence re-read: JLCPCB C131093 74LVC1G14GV,125 Nexperia SOT-753 3337 / 3293, above the gate of 100, so the rule-5 route through the alternate holds whatever the Digi-Key row shows; JLCPCB C7835 SN74LVC1G14DBVR 319139 / 317399. Digi-Key not read: api.digikey.com answered HTTP 429 'Daily Ratelimit exceeded' (limit 1000, reset 2026-09-29T00:00:00Z), so the keyword rows (TI 0, UMW 26630, EVVO 6263, the Q1 part 6326) are not re-read.",
+    "source": "vendors.py jlcpcb C131093, C7835 (exact LCSC match); vendors.py digikey-search SN74LVC1G14DBVR (HTTP 429)",
+    "read_at": "2026-09-28T18:40:50Z; 2026-09-28T18:41:03Z (Digi-Key, HTTP 429)"
+   },
+   {
+    "figure": "re-rank report: rerank: onsemi 74LCX125 status",
+    "verdict": "confirmed",
+    "evidence": "Product page body: 74LCX125 heading Active; orderable 74LCX125BQX Active, 74LCX125MTC Active (TSSOP-14, 948G), 74LCX125MTCX Active; 74LCX125M and 74LCX125MX Last Shipments (SOIC-14).",
+    "source": "https://www.onsemi.com/products/standard-products/logic/buffers/74lcx125 (vendors.py fetch --client chrome)",
+    "read_at": "2026-09-28T18:41:51Z"
+   },
+   {
+    "figure": "re-rank report: rerank: manufacturer status not read",
+    "verdict": "confirmed",
+    "evidence": "www.diodes.com/part/view/74LVC125A answers HTTP 200; the body, scripts stripped, holds the description, datasheet link and PCN tab, and no lifecycle status.",
+    "source": "https://www.diodes.com/part/view/74LVC125A (vendors.py fetch --client chrome)",
+    "read_at": "2026-09-28T18:41:51Z"
+   },
+   {
+    "figure": "re-rank report: rerank: SN74AVC1T45 high level",
+    "verdict": "confirmed",
+    "evidence": "SCES530L 5.5: VOH VCCO − 0.2 V at −100 µA (VCCA, VCCB 1.2 to 3.6 V); 3.201 − 0.2 = 3.00 V. SCES515N 5.5: VOH VCCO − 0.1 V at −100 µA.",
+    "source": "https://www.ti.com/lit/ds/symlink/sn74avc1t45.pdf; https://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf",
+    "read_at": "2026-09-28T18:31:23Z"
+   },
+   {
+    "figure": "function requirements: gated output buffer",
+    "verdict": "confirmed",
+    "evidence": "The list names every requirement set for the 16 PWM lines: lines (F13, owner decision on 20 ports), the enable source and its 10 kΩ pull and the under-1 µs disabled state with the 10 kΩ pull-down (IOBoard.md:187, Monostable.md:112, :361-376), I_off on inputs and enable (IOBoard.md:192), supply 3.3 V ±3 % (IOBoard.md:198), DShot 1200 kbit/s (V65) and 50 pF, 0.3 m (V66), servo PWM and PPM timing (IOBoard.md:249-250), connector level 3.3 V and 3.6 V tolerance (V63, V77), connector side unpowered (V74, which names the function; stronger here than V74's own scope), idle level and no bus hold (V73), series resistance 142 Ω (V75), 0 to 50 °C (V7). No value is weaker than its source.",
+    "source": "IOBoard.md:187, :192, :198, :249-252, :255-257 and Research.md V7, V63, V65, V66, V73 to V75 at 10b0bade34de; Monostable.md at 23c82ca",
+    "read_at": "2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "function requirements: enable inverter",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:192 and Monostable.md:87, :373-376: I_off or 4.7 kΩ from the enable node, and the 10 kΩ pull-up of each active-low OE so an unpowered inverter reads disabled: both listed. Delay within the 1 µs budget (Monostable.md:112), 3.3 V ±3 % (IOBoard.md:198), 0 to 50 °C (V7), and the need: listed. No Raised-by-P1 row names this function.",
+    "source": "IOBoard.md:191-192, :198; Monostable.md:87, :112, :373-376; Research.md V7 at 10b0bade34de",
+    "read_at": "2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "function requirements: bias selector",
+    "verdict": "confirmed",
+    "evidence": "V56 (control), V57 answer (reset and unpowered state selects the pull-down), V58 and V64 (1 kΩ to 3.3 V per mode, drive against 3 kΩ and 10 kΩ), F14, F13 and V58 (5 lines), V74 (I_off on the output), 3.3 V ±3 %, 0 to 50 °C: all listed, none weaker.",
+    "source": "Research.md F13, F14, V56 to V58, V64, V74, V7 at 10b0bade34de; IOBoard.md:256",
+    "read_at": "2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "function requirements: multiprotocol port path",
+    "verdict": "refuted",
+    "evidence": "The list omits the supply. IOBoard.md:198 (Interlock supply) puts the interlock's devices on the 3.3 V rail at 3.3 V ±3 %, and Monostable.md:88 lists the output buffer or translator among those devices; the gated output buffer's list carries it from the same row, this list does not. Every other requirement is named: V59 to V62, V67, V77 in modes and rates; directions and the under-1 µs disable (IOBoard.md:240-243, :254, Monostable.md:112); enable with its 10 kΩ pull (IOBoard.md:187); I_off (IOBoard.md:192, V74); connector level (V63, V77); load (V66); bias (V58, V64); series resistance (V75); idle level (V73); 0 to 50 °C (V7).",
+    "source": "IOBoard.md:187, :192, :198 at 10b0bade34de; Monostable.md:75-88 at 23c82ca; Research.md V58 to V67, V73 to V77",
+    "read_at": "2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "function requirements: UART socket path",
+    "verdict": "refuted",
+    "evidence": "The list omits requirements IOBoard.md sets for the socket's gate element (F13 puts the UART socket behind the gate): the disabled state, high impedance under 1 µs after the enable node falls (IOBoard.md:187, Monostable.md:112); I_off on the RP2354B side and on the enable (IOBoard.md:192); the 10 kΩ pull at the enable pin (IOBoard.md:187); the supply, 3.3 V ±3 % (IOBoard.md:198); and the ambient range 0 to 50 °C that V7's answer sets for the whole board. The candidate rows add enable and ambient; the function list does not carry them. V76, the only Raised-by-P1 row that names the function, is carried in 'line'.",
+    "source": "IOBoard.md:187, :192, :198, :273 at 10b0bade34de; Monostable.md:112 at 23c82ca; Research.md F13, V7, V76",
+    "read_at": "2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "function requirements: receiver inputs",
+    "verdict": "confirmed",
+    "evidence": "V68 count, V69 level, V70 baud, V71 transmit, EX Bus levels, V72 not through the gate, V74 I_off with both supplies at 0 V, V73 direction at reset, V7 0 to 50 °C: all listed at their answered or found values. IOBoard.md:266-268 adds no value beyond one wire per bus.",
+    "source": "Research.md V7, V68 to V74 at 10b0bade34de; IOBoard.md:266-268; EX Bus v1.21 Physical layer",
+    "read_at": "2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "function requirements: reply path through the gate",
+    "verdict": "refuted",
+    "evidence": "The list omits: the ambient range 0 to 50 °C (V7's answer, one range for the whole board); the supply, 3.3 V ±3 % (IOBoard.md:198); the bias the reply is passed with, a pull-up for bidirectional DShot (F14, IOBoard.md:256, and the R4 row 'passed while enabled with the bias of F14'); and the 10 kΩ pull at the enable pin (IOBoard.md:187), which 'enable' leaves out. Lines, directions, reply rate at 50 pF, turnaround, I_off on all three sides and the 3.6 V connector level are listed.",
+    "source": "IOBoard.md:187, :198, :253-256 and Research.md R4 row, F14, V7 at 10b0bade34de",
+    "read_at": "2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "function requirements: reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+    "verdict": "refuted",
+    "evidence": "The same list as 'reply path through the gate' with 'reply rate' and 'turnaround' shortened, and the same omissions: 0 to 50 °C (V7), 3.3 V ±3 % (IOBoard.md:198), the F14 bias (IOBoard.md:256, R4 row), and the 10 kΩ pull at the enable pin (IOBoard.md:187).",
+    "source": "IOBoard.md:187, :198, :253-256, :278 and Research.md R4 row, F14, V7 at 10b0bade34de",
+    "read_at": "2026-09-28T18:26Z to 18:47Z (tree read)"
+   },
+   {
+    "figure": "re-rank drop: gated output buffer: SN74LV4T125PWR (C90755)",
+    "verdict": "confirmed",
+    "evidence": "SCLS749C (revised June 2022) 6.3: VO high or low state 0 to VCC and H-Z 0 to VCC; IOH −8 mA at VCC 3.3 V. A disabled output at 3.6 V is above VCC of 3.201 to 3.399 V. JLCPCB C90755 now 7168 / 7121 (moved from 7188 / 7141, a moving figure).",
+    "source": "https://www.ti.com/lit/ds/symlink/sn74lv4t125.pdf; vendors.py jlcpcb C90755 (exact LCSC match)",
+    "read_at": "2026-09-28T18:31:23Z; 2026-09-28T18:40:50Z"
+   },
+   {
+    "figure": "re-rank drop: gated output buffer: SN74LVC16T245DGGR (C148170)",
+    "verdict": "confirmed",
+    "evidence": "SCES636B (revised April 2015): Ioff ±1 / ±2 µA at VI or VO 0 to 5.5 V labelled 'A or B port' with one supply at 0 V; control-input II ±1 / ±2 µA only with VCCA and VCCB at 1.65 to 5.5 V; section 9.3.3: Ioff prevents backflow by disabling I/O output circuits; no any-pin statement as in SCES584D. JLCPCB C148170 3791 / 3759.",
+    "source": "https://www.ti.com/lit/ds/symlink/sn74lvc16t245.pdf; vendors.py jlcpcb C148170 (exact LCSC match)",
+    "read_at": "2026-09-28T18:31:23Z; 2026-09-28T18:40:50Z"
+   },
+   {
+    "figure": "re-rank drop: gated output buffer: SN74LVT125PWR (C2675577)",
+    "verdict": "confirmed",
+    "evidence": "SCBS133F (revised October 2003) features: 'Bus-Hold Data Inputs Eliminate the Need for External Pullup'; 'Active bus-hold circuitry holds unused or undriven inputs at a valid logic state'. The input would hold its last level against the pad's reset pull-down.",
+    "source": "https://www.ti.com/lit/ds/symlink/sn74lvt125.pdf",
+    "read_at": "2026-09-28T18:31:23Z"
+   },
+   {
+    "figure": "re-rank drop: gated output buffer: LSF0108PWR",
+    "verdict": "confirmed",
+    "evidence": "SDLS966M (revised May 2023): 8.3.2 EN low for high impedance, disabled by an open-drain driver without a pull-up; 8.4.1.1 'Pull-up resistors are always required on the high side'; 9.2.4 Vref_B must be greater than Vref_A; Table 9-2 note 1 Vref_A is the lowest level on any I/O. A pull-up that drives the connector against 10 kΩ holds it high with EN low and with the pad released, against the disabled state and V73.",
+    "source": "https://www.ti.com/lit/ds/symlink/lsf0108.pdf",
+    "read_at": "2026-09-28T18:31:23Z"
+   },
+   {
+    "figure": "re-rank drop: multiprotocol port path: PI3B3126LEX (C3001683)",
+    "verdict": "confirmed",
+    "evidence": "DS40753 Rev 3-2 (PI3B3125/PI3B3126): IOFF 10 µA at VCC 0 with VOUT 3 to 3.6 V only; control II ±1 µA at VCC 3.6 V; 'The logic control inputs can be driven up to +3.6V regardless of the supply voltage', a voltage tolerance; 'Always apply VCC and GND before applying signals'. JLCPCB C3001683 2401 / 2401.",
+    "source": "https://www.diodes.com/datasheet/download/PI3B3125.pdf; vendors.py jlcpcb C3001683 (exact LCSC match)",
+    "read_at": "2026-09-28T18:31:23Z; 2026-09-28T18:40:50Z"
+   },
+   {
+    "figure": "re-rank drop: multiprotocol port path: SN74CB3T3245PWR (C15298) and SN74CB3T1G125DBVR (C134001)",
+    "verdict": "confirmed",
+    "evidence": "SCDS136E (revised May 2026) and SCDS150A (revised September 2006): Ioff 10 µA at VCC 0, VO 0 to 5.5 V, VI 0; control IIN ±10 µA only at VCC 3.6 V; both note 'VIN and IIN refer to control inputs. VI, VO, II, and IO refer to data pins'. JLCPCB C15298 4280 / 3957; C134001 168 / 55.",
+    "source": "https://www.ti.com/lit/ds/symlink/sn74cb3t3245.pdf; https://www.ti.com/lit/ds/symlink/sn74cb3t1g125.pdf; vendors.py jlcpcb C15298, C134001 (exact LCSC match)",
+    "read_at": "2026-09-28T18:31:23Z; 2026-09-28T18:40:50Z"
+   },
+   {
+    "figure": "re-rank drop: multiprotocol port path: TMUX1574PWR",
+    "verdict": "confirmed",
+    "evidence": "SCDS391C (revised December 2019) 6.5, under VDD 1.5 to 5.5 V: IIH and IIL ±2 µA on the logic pins, RPD 6 MΩ internal pull-down; IPOFF (±10 nA at 25 °C, ±2 µA) only for I/O pins with VDD 0 V; tOFF(EN) 95 ns max. One SEL and one EN serve all 4 channels.",
+    "source": "https://www.ti.com/lit/ds/symlink/tmux1574.pdf",
+    "read_at": "2026-09-28T18:31:23Z"
+   }
+  ]
+ }
+}

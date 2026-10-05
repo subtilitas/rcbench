@@ -1,0 +1,643 @@
+{
+ "role": "P4",
+ "category": "R3",
+ "label": "P4-stock-R3",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "monostable",
+    "part": "74HC423BQ,115",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C3216364 stockCount 233 (2026-09-28T13:11:42Z); need 5 x 1 = 5, S4 gate max(5 x 5, 50) = 50",
+      "read": "stockCount 233 at JLCPCB, exact row C3216364; gate 50 (need 5 boards x 1 placement = 5, S4 max(25, 50)); 233 >= 50",
+      "source": "vendors.py jlcpcb C3216364, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList (exact match, 0 other results)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:52Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 231",
+      "read": "canPresaleNumber 231 (>= 0)",
+      "source": "vendors.py jlcpcb C3216364, JLCPCB selectSmtComponentList API (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:52Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "production, https://www.nexperia.com/product/74HC423BQ (product-status--production)",
+      "read": "Production: the product page body carries 'product-status product-status--production' and the hero text '74HC423BQ Production' for type 74HC423BQ; the ordering table that lists the orderable 74HC423BQ,115 is filled by script and is not in the page body. Digi-Key ProductStatus Active for 74HC423BQ,115",
+      "source": "https://www.nexperia.com/product/74HC423BQ (vendors.py fetch, chrome, HTTP 200, 100,478 bytes)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:21Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock 2148 (2026-09-28T13:12:25Z), at or above the rule-4 gate of 50",
+      "read": "Digi-Key quantity available 2148 (Cut Tape 1727-7950-1-ND 2148, Digi-Reel 2148, Tape & Reel 0); gate 50: pass",
+      "source": "vendors.py digikey 74HC423BQ,115, https://api.digikey.com/products/v4/search/74HC423BQ%2C115/productdetails",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:58Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no commitment found on the product page read",
+      "read": "refuted as stated: the Nexperia Longevity Program page (linked from the product page) lists Standard logic, families including HC(T), 16 pin DHVQFN SOT763-1 at 10 years as of September 2025. The 74HC423BQ is HC in SOT763-1, so a 10-year longevity statement applies. The programme states 'No legal rights can be derived from our program'. Not a gate (S5)",
+      "source": "https://www.nexperia.com/support/customer-support/longevity (vendors.py fetch, chrome, HTTP 200), Logic table 'Standard logic longevity based on package pin count'",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T14:19:03Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "earliest revision 1998-07-08 (74HC_HCT423_CNV v.2); on the market more than 12 months",
+      "read": "Table 11 revision history: earliest entry 74HC_HCT423_CNV v.2, 19980708, Product specification; current 74HC423 v.8.1, 20240313. On the market more than 12 months (about 28 years)",
+      "source": "https://assets.nexperia.com/documents/data-sheet/74HC423.pdf rev. 8.1, section 14 Table 11",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:21:28Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; JLCPCB API has no lifecycle field; LCSC page not read",
+      "read": "Digi-Key ProductStatus Active, discontinued false, end_of_life false; JLCPCB API row carries no lifecycle field; LCSC page C3216364 (HTTP 200) carries no lifecycle field and no discontinued mark, stock 233. No disagreement with the maker's Production",
+      "source": "vendors.py digikey 74HC423BQ,115 (14:17:58Z); vendors.py jlcpcb C3216364 (14:17:52Z); https://www.lcsc.com/product-detail/C3216364.html (vendors.py fetch, 14:20:42Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:20:42Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "14 weeks",
+      "read": "ManufacturerLeadWeeks 14",
+      "source": "vendors.py digikey 74HC423BQ,115, Digi-Key Product Information V4 productdetails",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:58Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand (extended); S6 allows it",
+      "source": "vendors.py jlcpcb C3216364, JLCPCB selectSmtComponentList API (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:52Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C3216364, 74HC423BQ,115, DHVQFN-16 (SOT763-1) 2.5 x 3.5 mm",
+      "read": "exact row C3216364: part 74HC423BQ115 (the ,115 packing suffix without the comma), maker label Nexperia, package DHVQFN-16-EP(2.5x3.5), description 'Monostable Multivibrators'",
+      "source": "vendors.py jlcpcb C3216364, JLCPCB selectSmtComponentList API (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:52Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one dual part carries both halves (IOBoard.md:182)",
+      "read": "1: IOBoard.md:182 at c25aa86 'a dual retriggerable monostable, one half per edge polarity, the two outputs combined by an OR gate'",
+      "source": "hardware/docs/IOBoard.md@c25aa86:182",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:16:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C3216364",
+      "read": "on the IO board (monostable topology, IOBoard.md:182; interlock supply is the IO board's 3.3 V rail, :198); LCSC number C3216364 is C and digits",
+      "source": "hardware/docs/IOBoard.md@c25aa86:182, :198; vendors.py jlcpcb C3216364",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:52Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life notice on the product page read; PCN listing not read",
+      "read": "none found: product page shows Production and no end-of-life or last-time-buy text; Digi-Key end_of_life false, discontinued false. Nexperia's change-notification listing is not public: the page https://www.nexperia.com/support/customer-support/product-change-notification redirects to My Nexperia login (/my/login), so it was not read",
+      "source": "https://www.nexperia.com/product/74HC423BQ (14:18:21Z); https://www.nexperia.com/support/customer-support/product-change-notification (vendors.py fetch, HTTP 200, 14:19:36Z); vendors.py digikey 74HC423BQ,115 (14:17:58Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:19:36Z"
+     }
+    ]
+   },
+   {
+    "function": "latch clear control",
+    "part": "434153017835",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C2680612 stockCount 5229 (2026-09-28T13:11:45Z); need 5, gate 50",
+      "read": "stockCount 5229, exact row C2680612; gate 50 (need 5 x 1 = 5, S4 max(25, 50)); pass",
+      "source": "vendors.py jlcpcb C2680612, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList (exact match, 0 other results)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:54Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 5079",
+      "read": "canPresaleNumber 5079 (>= 0)",
+      "source": "vendors.py jlcpcb C2680612, JLCPCB selectSmtComponentList API (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:54Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Active, 'Production is active. Expected lifetime: >10 years' (WS-TASV page, row 434153017835)",
+      "read": "row 434153017835 of the WS-TASV product table carries 'Production is active. Expected lifetime: >10 years.'",
+      "source": "https://www.we-online.com/en/components/products/WS-TASV (vendors.py fetch, chrome, HTTP 200, 1,586,389 bytes)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:22Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock 27089",
+      "read": "Digi-Key quantity available 27089; gate 50: pass",
+      "source": "vendors.py digikey 434153017835, https://api.digikey.com/products/v4/search/434153017835/productdetails",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:00Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "expected lifetime more than 10 years (product page)",
+      "read": "'Expected lifetime: >10 years' in the row of 434153017835 on the maker's page; not a gate (S5)",
+      "source": "https://www.we-online.com/en/components/products/WS-TASV",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:22Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "drawing revision 001.002 dated 2021-01-07, first revision date not read",
+      "read": "not read: the drawing carries only revision 001.002, DATE 2021-01-07, 'Valid', on each of 7 pages, and no revision history; the first revision date is not stated. The part is on the market since at least 2021-01-07, more than 12 months",
+      "source": "https://www.we-online.com/components/products/datasheet/434153017835.pdf (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:21:29Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; LCSC page not read",
+      "read": "Digi-Key ProductStatus Active, discontinued false, end_of_life false; JLCPCB API row has no lifecycle field; LCSC page not read: https://www.lcsc.com/product-detail/C2680612.html answered HTTP 404 'Page Not Found', and the LCSC search page renders its results by script. No disagreement with the maker's 'Production is active'",
+      "source": "vendors.py digikey 434153017835 (14:18:00Z); vendors.py jlcpcb C2680612 (14:17:54Z); https://www.lcsc.com/product-detail/C2680612.html (14:20:43Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:20:43Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "17 weeks",
+      "read": "ManufacturerLeadWeeks 17",
+      "source": "vendors.py digikey 434153017835, Digi-Key Product Information V4 productdetails",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:00Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand (extended); S6 allows it",
+      "source": "vendors.py jlcpcb C2680612",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:54Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2680612, 434153017835, SMD J-bend 3.5 x 2.9 mm (WS-TASV)",
+      "read": "exact row C2680612: part 434153017835, maker label Wurth Elektronik, package SMD-4P,2.9x3.5mm",
+      "source": "vendors.py jlcpcb C2680612",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:54Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one clear control on the IO board (V31)",
+      "read": "1: V31 found value, one momentary normally-open push button on the IO board wired to the latch clock",
+      "source": "V31 found value (Research.md@c25aa86:539 F11; IOBoard.md@c25aa86:197)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:16:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C2680612",
+      "read": "on the IO board (V31); LCSC number C2680612 is C and digits",
+      "source": "V31 found value; vendors.py jlcpcb C2680612",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:54Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life notice on the page read, PCN listing not read",
+      "read": "none found: the product row reads 'Production is active'; the WS-TASV page has no end-of-life, discontinued or not-recommended text; Digi-Key end_of_life false. A Wurth PCN listing was not found (the page links none) and was not read",
+      "source": "https://www.we-online.com/en/components/products/WS-TASV (14:18:22Z); vendors.py digikey 434153017835 (14:18:00Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:22Z"
+     }
+    ]
+   },
+   {
+    "function": "external module driver output",
+    "part": "2N7002BK,215",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C282405 stockCount 172700; need 5, gate 50",
+      "read": "stockCount 172700, exact row C282405; gate 50 (need 5 x 1 = 5); pass",
+      "source": "vendors.py jlcpcb C282405, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList (exact match, 0 other results)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:55Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 172531",
+      "read": "canPresaleNumber 172531 (>= 0)",
+      "source": "vendors.py jlcpcb C282405",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:55Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "production, https://www.nexperia.com/product/2N7002BK",
+      "read": "Production: page body carries 'product-status product-status--production' and '2N7002BK Production'; the ordering table with 2N7002BK,215 is filled by script. Digi-Key ProductStatus Active for 2N7002BK,215",
+      "source": "https://www.nexperia.com/product/2N7002BK (vendors.py fetch, chrome, HTTP 200, 96,505 bytes)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:21Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 135,525",
+      "read": "Digi-Key quantity available 135525; gate 50: pass",
+      "source": "vendors.py digikey 2N7002BK,215, https://api.digikey.com/products/v4/search/2N7002BK%2C215/productdetails",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:02Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no commitment found on the product page read",
+      "read": "none that names the part: the Nexperia Longevity Program page has no small-signal MOSFET table; its Automotive MOSFETs table gives 10 years for technology T6 in SOT23, and the page does not say which technology the 2N7002BK is. Not a gate (S5)",
+      "source": "https://www.nexperia.com/support/customer-support/longevity (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:19:03Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "earliest revision 2010-06-17 (v.1)",
+      "read": "Table 8 revision history: 2N7002BK v.1 20100617, v.2 20241017; more than 12 months",
+      "source": "https://assets.nexperia.com/documents/data-sheet/2N7002BK.pdf (17 October 2024), section 14",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:21:28Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; LCSC page not read",
+      "read": "Digi-Key Active, discontinued false, end_of_life false; JLCPCB API has no lifecycle field; LCSC page C282405 (HTTP 200) has no lifecycle field and no discontinued mark, stock 172700. No disagreement with the maker",
+      "source": "vendors.py digikey 2N7002BK,215 (14:18:02Z); https://www.lcsc.com/product-detail/C282405.html (vendors.py fetch, 14:20:43Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:20:43Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "30 weeks",
+      "read": "ManufacturerLeadWeeks 30",
+      "source": "vendors.py digikey 2N7002BK,215",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:02Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand (extended); S6 allows it",
+      "source": "vendors.py jlcpcb C282405",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:55Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C282405, 2N7002BK,215, SOT-23",
+      "read": "exact row C282405: part 2N7002BK,215, maker label Nexperia, package SOT-23",
+      "source": "vendors.py jlcpcb C282405",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:55Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed: one output for the external module (IOBoard.md:190)",
+      "read": "1: IOBoard.md:190, 'a driven external module, whose driver output is on the IO board'",
+      "source": "hardware/docs/IOBoard.md@c25aa86:190",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:16:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C282405",
+      "read": "on the IO board (IOBoard.md:190: driver output on the IO board); C282405 is C and digits",
+      "source": "hardware/docs/IOBoard.md@c25aa86:190; vendors.py jlcpcb C282405",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:55Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life notice on the product page read; PCN listing not read",
+      "read": "none found: product page Production, no end-of-life or last-time-buy text; Digi-Key end_of_life false. Nexperia's change-notification listing needs a My Nexperia login and was not read",
+      "source": "https://www.nexperia.com/product/2N7002BK (14:18:21Z); https://www.nexperia.com/support/customer-support/product-change-notification (14:19:36Z); vendors.py digikey 2N7002BK,215",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:19:36Z"
+     }
+    ]
+   },
+   {
+    "function": "pack precharge",
+    "part": "CSD19537Q3T",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C134143 stockCount 630; need 5 x 2 = 10, gate 50",
+      "read": "stockCount 630, exact row C134143; gate 50 (need 5 x 2 = 10, S4 max(50, 50)); pass",
+      "source": "vendors.py jlcpcb C134143, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList (exact match, 0 other results)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:57Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 593",
+      "read": "canPresaleNumber 593 (>= 0)",
+      "source": "vendors.py jlcpcb C134143",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:57Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE, https://www.ti.com/product/CSD19537Q3 (<meta name=\"status\">)",
+      "read": "ACTIVE: <meta name=\"status\" content=\"ACTIVE\"/>, and the page's orderable data gives orderablePartNumber CSD19537Q3T marketingStatusDescription ACTIVE",
+      "source": "https://www.ti.com/product/CSD19537Q3 (vendors.py fetch, chrome, HTTP 200, 322,619 bytes)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:22Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 3267",
+      "read": "Digi-Key quantity available 3267; gate 50: pass",
+      "source": "vendors.py digikey CSD19537Q3T, https://api.digikey.com/products/v4/search/CSD19537Q3T/productdetails",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:03Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no commitment found on the product page read",
+      "read": "refuted as stated: TI's product life cycle page (linked from the status badge) states life cycles 'typically 10 to 15 years' and that a TI standard product is not eligible for obsolescence while it has sales within 5 years, has been in production under 10 years, or has current demand. A general policy, not a per-part date. Not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T14:20:05Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "SLPS549 first issued August 2015",
+      "read": "SLPS549B 'AUGUST 2015 - REVISED NOVEMBER 2022'; revision history: Revision * August 2015, A May 2016, B November 2022; more than 12 months",
+      "source": "https://www.ti.com/lit/ds/symlink/csd19537q3.pdf (SLPS549B), section 4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:21:28Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; LCSC page not read",
+      "read": "Digi-Key Active, discontinued false, end_of_life false; JLCPCB API has no lifecycle field; LCSC page C134143 (HTTP 200) has no lifecycle field and no discontinued mark, stock 630. No disagreement with TI's ACTIVE",
+      "source": "vendors.py digikey CSD19537Q3T (14:18:03Z); https://www.lcsc.com/product-detail/C134143.html (vendors.py fetch, 14:20:44Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:20:44Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "9 weeks",
+      "read": "ManufacturerLeadWeeks 9",
+      "source": "vendors.py digikey CSD19537Q3T",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:03Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand (extended); S6 allows it",
+      "source": "vendors.py jlcpcb C134143",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:57Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C134143, CSD19537Q3T, SON 3.3 x 3.3 mm (VSONP)",
+      "read": "exact row C134143: part CSD19537Q3T, maker label Texas Instruments, package VSONP-8(3.3x3.3)",
+      "source": "vendors.py jlcpcb C134143",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:57Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "2, top of P2's range 1 to 2: one on the onboard path, a second if the external path precharges on the board",
+      "read": "specification does not fix the count; P2's range 1 to 2 with its stated basis, top 2; the candidate's count 2 meets it",
+      "source": "shortlist placements_basis; hardware/docs/IOBoard.md@c25aa86:189 (onboard path)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:16:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C134143",
+      "read": "on the IO board (precharge on the onboard pack path, IOBoard.md:189); C134143 is C and digits",
+      "source": "hardware/docs/IOBoard.md@c25aa86:189; vendors.py jlcpcb C134143",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:57Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life notice on the product page read; PCN listing not read",
+      "read": "none found: product page ACTIVE for CSD19537Q3 and CSD19537Q3T, no NRND, last-time-buy or obsolete text; Digi-Key end_of_life false. TI's PCN listing was not read",
+      "source": "https://www.ti.com/product/CSD19537Q3 (14:18:22Z); vendors.py digikey CSD19537Q3T (14:18:03Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:22Z"
+     }
+    ]
+   },
+   {
+    "function": "servo rail gate driver",
+    "part": "2N7002BK,215",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB C282405 stockCount 172700; need 5, gate 50",
+      "read": "stockCount 172700, exact row C282405; gate 50 (need 5 x 1 = 5, top of range 0 to 1); pass",
+      "source": "vendors.py jlcpcb C282405, https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList (exact match)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:55Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 172531",
+      "read": "canPresaleNumber 172531 (>= 0)",
+      "source": "vendors.py jlcpcb C282405",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:55Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "production, https://www.nexperia.com/product/2N7002BK",
+      "read": "Production (page body 'product-status--production'); Digi-Key Active",
+      "source": "https://www.nexperia.com/product/2N7002BK (vendors.py fetch, chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:21Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key 135,525",
+      "read": "Digi-Key quantity available 135525; gate 50: pass",
+      "source": "vendors.py digikey 2N7002BK,215, https://api.digikey.com/products/v4/search/2N7002BK%2C215/productdetails",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:02Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no commitment found on the product page read",
+      "read": "none that names the part: no small-signal MOSFET table on the Nexperia Longevity Program page; the Automotive MOSFETs T6/SOT23 entry (10 years) is not mapped to this part on the page. Not a gate (S5)",
+      "source": "https://www.nexperia.com/support/customer-support/longevity",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:19:03Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "earliest revision 2010-06-17 (v.1)",
+      "read": "2N7002BK v.1 20100617; more than 12 months",
+      "source": "https://assets.nexperia.com/documents/data-sheet/2N7002BK.pdf, Table 8",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:21:28Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus Active; LCSC page not read",
+      "read": "Digi-Key Active; JLCPCB no lifecycle field; LCSC C282405 page no lifecycle field, no discontinued mark. No disagreement with the maker",
+      "source": "vendors.py digikey 2N7002BK,215 (14:18:02Z); https://www.lcsc.com/product-detail/C282405.html (14:20:43Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:20:43Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "30 weeks",
+      "read": "ManufacturerLeadWeeks 30",
+      "source": "vendors.py digikey 2N7002BK,215",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:18:02Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "expand",
+      "read": "componentLibraryType expand (extended); S6 allows it",
+      "source": "vendors.py jlcpcb C282405",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:55Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C282405, 2N7002BK,215, SOT-23",
+      "read": "exact row C282405: 2N7002BK,215, Nexperia, SOT-23",
+      "source": "vendors.py jlcpcb C282405",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:55Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, top of 0 to 1: none with the TPS25982 eFuse, one with the discrete P-channel switch",
+      "read": "specification does not fix the count; P2's range 0 to 1 with its basis, top 1; the candidate's count 1 meets it",
+      "source": "shortlist placements_basis; hardware/docs/IOBoard.md@c25aa86:188",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:16:30Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C282405",
+      "read": "on the IO board (servo rail gate on the IO board's servo rail, IOBoard.md:188); C282405 is C and digits",
+      "source": "hardware/docs/IOBoard.md@c25aa86:188; vendors.py jlcpcb C282405",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:17:55Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "no end-of-life notice on the product page read; PCN listing not read",
+      "read": "none found on the product page or in Digi-Key (end_of_life false); Nexperia change-notification listing behind My Nexperia login, not read",
+      "source": "https://www.nexperia.com/product/2N7002BK (14:18:21Z); https://www.nexperia.com/support/customer-support/product-change-notification (14:19:36Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T14:19:36Z"
+     }
+    ]
+   }
+  ]
+ }
+}

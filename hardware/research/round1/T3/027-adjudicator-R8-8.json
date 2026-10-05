@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R8",
+ "label": "adjudicator-R8-8",
+ "attempt": 0,
+ "data": {
+  "category": "R8",
+  "function": "re-rank report: External shunt alternate mounting",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. The claim compares 7.62 mm against 7.87 mm as if both were the same dimension \"A\". They are not the same dimension. Body and holes do match: both drawings give 85 ± 0.4 mm x 18 ± 0.2 mm x 3 ± 0.05 mm, with Ø 7 ± 0.13 mm holes 60 ± 0.30 mm apart. The sense connections do not match. On WSBE8518L1000JTA2 (30424), 0.300 ± 0.008 in (7.62 ± 0.20 mm) is the horizontal spacing between the two sense pins. The pins sit in a 4-position header, at positions 1 and 4 with 2 and 3 blank, and stand 0.320 in (8.13 mm) ref high. On WSBS8518...20 (30341), 0.310 ± 0.016 in (7.87 ± 0.4 mm) is the height of the bent single pins above the body. The pin spacing there is dimension B, 0.495 ± 0.005 in (12.57 ± 0.13 mm) for 100 µΩ. In both drawings \"A\" is a separate dimension; on 30341 it is 0.370 in (9.40 mm) ref for 100 µΩ. The two sense-pin spacings therefore differ by 12.57 - 7.62 = 4.95 mm, not 0.25 mm. They also differ in form: a header on the WSBE, two single pins on the WSBS. The Digi-Key part of the claim is not refuted: WSBS8518L1000JK20 is Active, 67 in stock, 49 weeks lead time, Vishay Dale. The scope is function. What fails is the claimed mechanical match of this alternate to the part it stands in for. The WSBS8518 part's lifecycle and identity are not affected.",
+  "evidence": "30424 (Revision 04-Jun-2024) page 2, drawing WSBE8518L1000JTA2, rendered at 150 dpi and read. The 0.300 ± 0.008 (7.62 ± 0.20) arrow spans the two sense pins horizontally. 0.320 ref (8.13) is the pin height. A and B are unvalued callouts. Page 6 \"Connection options\", A series: \"Voltage sense pins in position 1 and 4, position 2 and 3 are blank.\" 30341 (Revision 26-May-2026) page 2, rendered at 200 dpi and read. 0.310 ± 0.016 (7.87 ± 0.4) is a vertical dimension from the body to the pin top. B spans the two pins. The table for 100 µΩ gives A reference 0.370 (9.40) and B 0.495 ± 0.005 (12.57 ± 0.13). Both drawings: 3.346 ± 0.016 (85 ± 0.4) long, 0.708 ± 0.008 (18 ± 0.2) wide, 0.118 ± 0.002 (3 ± 0.05) thick, Ø 0.276 ± 0.005 (7 ± 0.13) holes, 2.362 ± 0.012 (60 ± 0.30) apart. Digi-Key WSBS8518L1000JK20: maker Vishay Dale, status Active, lead 49 weeks, stock 67 (541-3323-ND, Bulk), discontinued false, end_of_life false. That answer was read 2026-09-29T10:02:17Z and is marked cached. Files: /home/claude/rcbench-research/round1/scratch/T3/adjudicator-R8/shunt-alt/wsbe.pdf, wsbs.pdf, wsbe-2.png, wsbs-2.png",
+  "source": "https://www.vishay.com/docs/30424/wsbeseries.pdf pages 2 and 6 (vendors.py fetch, chrome, HTTP 200, 149221 bytes); https://www.vishay.com/doc?30341, redirected to https://www.vishay.com/docs/30341/wsbs8518-20.pdf, page 2 (vendors.py fetch, chrome, HTTP 200, 108577 bytes); vendors.py digikey WSBS8518L1000JK20, https://api.digikey.com/products/v4/search/WSBS8518L1000JK20/productdetails (cached, read 2026-09-29T10:02:17Z)",
+  "read_at": "2026-09-29T11:04:23Z (both datasheets); Digi-Key 2026-09-29T10:02:17Z (cached, returned again at 2026-09-29T11:04:49Z)",
+  "scope": "function"
+ }
+}

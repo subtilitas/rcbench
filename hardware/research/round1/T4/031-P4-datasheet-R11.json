@@ -1,0 +1,844 @@
+{
+ "role": "P4",
+ "category": "R11",
+ "label": "P4-datasheet-R11",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "verifier": "datasheet",
+  "parts": [
+   {
+    "function": "accelerometer",
+    "part": "ADXL316WBCSZ",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "output type",
+      "stated": "signal conditioned voltage outputs XOUT, YOUT, ZOUT (General Description)",
+      "read": "complete 3-axis accelerometer with signal conditioned voltage outputs (General Description); output signals are analog voltages proportional to acceleration (Theory of Operation)",
+      "source": "ADXL316 datasheet Rev. C, pages 1 and 10, https://www.analog.com/media/en/technical-documentation/data-sheets/adxl316.pdf (safari client)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "sensing axis",
+      "stated": "3 axes; AX and AY in the package plane, AZ normal to it (Figure 22)",
+      "read": "Figure 22: AX and AY in the package plane, AZ normal to it; package alignment error ±1°, cross-axis sensitivity ±2 % typical (Table 1). One in-plane axis serves across the shaft when mounted flat",
+      "source": "ADXL316 Rev. C, Axes of Acceleration Sensitivity (page 11) and Table 1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "full scale",
+      "stated": "measurement range ±16 g min, ±19 g typ",
+      "read": "Measurement range ±16 g minimum, ±19 g typical, each axis (Table 1, TA 25 °C, VS 3 V; note 1: guaranteed by measurement of initial offset and sensitivity). Sensitivity and 0 g level are ratiometric to VS (78 mV/g typical at 3.6 V), so the range in g follows at 3.3 V; the table does not restate it at 3.3 V",
+      "source": "ADXL316 Rev. C Table 1 and 'Use with Operating Voltages other than 3 V'",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "bandwidth on the used axis",
+      "stated": "XOUT and YOUT 1,600 Hz with no external filter (CX = CY = 0.003 µF); ZOUT 550 Hz; resonance 4.2 kHz; RFILT 27 to 37 kΩ",
+      "read": "XOUT and YOUT bandwidth 1,600 Hz typical with no external filter, no minimum stated; ZOUT 550 Hz; RFILT 27 / 32 / 37 kΩ min / typ / max; sensor resonance 4.2 kHz; note 5: f = 1/(2π × 32 kΩ × C), CX = CY = 0.003 µF gives 1.6 kHz. 1,600 Hz is 1.47 × the 1,092 Hz required, a typical figure",
+      "source": "ADXL316 Rev. C Table 1 and note 5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "supply",
+      "stated": "operating 1.8 to 3.6 V; outputs ratiometric, 0 g at VS/2; all pins COM - 0.3 V to VS + 0.3 V",
+      "read": "Operating voltage 1.8 to 3.6 V (3.201 to 3.399 V lies inside); VS absolute maximum −0.3 to +4.5 V; all other pins (COM − 0.3 V) to (VS + 0.3 V); output swing 0.1 to 2.8 V typical at VS 3 V, no load; 0 g output at VS/2. Supplied from the same 3.3 V rail, the outputs are unpowered with it and stay under VS, within the ADC inputs' IOVDD + 0.5 V",
+      "source": "ADXL316 Rev. C Tables 1 and 2, 'Use with Operating Voltages other than 3 V'",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "build and sourcing",
+      "stated": "C662336, see jlcpcb and gate",
+      "read": "exact JLCPCB match for C662336: ADXL316WBCSZ, Analog Devices, LFCSP-12, stockCount 104, canPresaleNumber 84, componentLibraryType expand; need 5, gate max(25, 50) = 50: passes rule 4",
+      "source": "vendors.py jlcpcb C662336 (jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:11:48Z"
+     },
+     {
+      "figure": "noise density",
+      "stated": "XOUT and YOUT 210 µg/√Hz rms; output noise 1 mV below 4 kHz at 3 V",
+      "read": "Noise density XOUT and YOUT 210 µg/√Hz rms, ZOUT 450 µg/√Hz rms; output noise 1 mV below 4 kHz at VS 3 V; 150 µg/√Hz typical at VS 3.6 V",
+      "source": "ADXL316 Rev. C Table 1 and page 11",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "−40 to +105 °C operating",
+      "read": "Operating temperature range −40 to +105 °C; powered −55 to +125 °C absolute maximum; covers 0 to 50 °C",
+      "source": "ADXL316 Rev. C Tables 1 and 2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "smallest amplitude resolved",
+      "stated": "not given",
+      "read": "no resolution figure; noise density 210 µg/√Hz is the related figure. The requirement is not applied (V224 not found)",
+      "source": "ADXL316 Rev. C Table 1; found value V224",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "delay variation",
+      "stated": "not given",
+      "read": "no delay or delay-tolerance figure; the output pole is set by RFILT 27 to 37 kΩ with CX. The requirement is not applied (V225 not found)",
+      "source": "ADXL316 Rev. C Table 1 and note 5; found value V225",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "lead length",
+      "stated": "not given",
+      "read": "no output drive or capacitive-load figure; the outputs leave through the 32 kΩ RFILT (Theory of Operation). The requirement is not applied (V222 not found)",
+      "source": "ADXL316 Rev. C page 10; found value V222",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Analog Devices (datasheet ADXL316 Rev. C); counts as Analog Devices (S1)",
+      "read": "datasheet published by Analog Devices, Inc. (©2015–2019 Analog Devices); Analog Devices is on the S1 list",
+      "source": "ADXL316 Rev. C page 1; hardware/docs/Research.md S1 answer (checkout c25aa863)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     }
+    ]
+   },
+   {
+    "function": "optical index",
+    "part": "TCRT5000",
+    "kind": "first",
+    "verdict": "refuted",
+    "refutation": "pulse rate not shown: the TCRT5000 datasheet (Rev. 1.7, 17-Aug-09) states no switching, rise, fall or response time and no frequency response anywhere (tables on pages 1-2, Figs. 1 to 9). The static reading at 10 rpm holds (DC-coupled phototransistor), but the applied requirement of up to 1,092 pulses a second has no datasheet figure behind it. The function leaves switching times ungated because the pen line's width is unknown, but without any time figure the rate itself is unverified. VCNT2030 in the same shortlist states tr 10 µs and tf 15 µs typical (Rev. 1.4, basic characteristics); TCRT5000L shares the TCRT5000 datasheet and the same gap.",
+    "checks": [
+     {
+      "figure": "sensor selected",
+      "stated": "infrared emitter and phototransistor, daylight blocking filter",
+      "read": "reflective sensor with an infrared emitter and a phototransistor in a leaded package that blocks visible light; daylight blocking filter; emitter 950 nm",
+      "source": "TCRT5000 datasheet Rev. 1.7, 17-Aug-09, document 83760, page 1, https://www.vishay.com/docs/83760/tcrt5000.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "working distance",
+      "stated": "operating range with relative collector current above 20 %: 0.2 to 15 mm; peak operating distance 2.5 mm",
+      "read": "operating range within > 20 % relative collector current 0.2 to 15 mm; peak operating distance 2.5 mm (features and product summary); 5 mm lies inside",
+      "source": "TCRT5000 Rev. 1.7 page 1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "pulse rate",
+      "stated": "DC-coupled phototransistor; switching times not stated in the datasheet",
+      "read": "no switching, rise, fall or response time and no frequency response in the datasheet (tables pages 1-2; Figs. 1 to 9 are power dissipation, test circuits, forward current, CTR, saturation voltage and distance). DC-coupled, so a static reading at 10 rpm holds; 1,092 pulses a second is not shown",
+      "source": "TCRT5000 Rev. 1.7, all pages",
+      "agrees": true,
+      "passes": false,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "supply",
+      "stated": "emitter VF 1.25 V typ; VCEO 70 V; IC 1 mA typ at IF 10 mA, VCE 5 V, D 12 mm",
+      "read": "emitter VF 1.25 V typical, 1.5 V maximum at IF 60 mA; IF 60 mA absolute maximum; VCEO 70 V; IC 0.5 / 1 / 2.1 mA at VCE 5 V, IF 10 mA, D 12 mm (mirror). VF 1.5 V maximum is under 3.201 V, so the emitter runs from the 3.3 V rail through a resistor and is unpowered with it",
+      "source": "TCRT5000 Rev. 1.7 page 2, absolute maximum ratings and basic characteristics",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "−25 to +85 °C",
+      "read": "ambient temperature range −25 to +85 °C (absolute maximum ratings, sensor); covers 0 to 50 °C",
+      "source": "TCRT5000 Rev. 1.7 page 2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "output",
+      "stated": "not given",
+      "read": "transistor output: phototransistor collector current, an analogue signal for the comparator on the IO board (title and description)",
+      "source": "TCRT5000 Rev. 1.7 page 1",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "pulse width at the top speed",
+      "stated": "not given",
+      "read": "no switching time stated; the requirement is not bounded (the pen line's width is not stated) and is not applied",
+      "source": "TCRT5000 Rev. 1.7; function requirement 'pulse width at the top speed'",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Vishay (datasheet Vishay Semiconductors, document 83760); counts as Vishay (S1)",
+      "read": "datasheet header 'Vishay Semiconductors', document 83760; Vishay is on the S1 list",
+      "source": "TCRT5000 Rev. 1.7 page 1; hardware/docs/Research.md S1 answer",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     }
+    ]
+   },
+   {
+    "function": "magnetic pickup",
+    "part": "DRV5015A1QDBZR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "sensor type",
+      "stated": "Hall-effect latch; output switches at BOP (south) and releases at BRP (north)",
+      "read": "low-voltage digital-latch Hall effect sensor; alternating north and south poles are required to toggle the output; magnetic response switches at BOP (south), releases at BRP (north)",
+      "source": "DRV5015 datasheet SBAS915A, June 2018, revised April 2019, sections 1 and 3, https://www.ti.com/lit/ds/symlink/drv5015.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "pulses per revolution",
+      "stated": "sensing bandwidth fBW 20 kHz min, 30 kHz typ; propagation delay 13 µs typ, 25 µs max",
+      "read": "fBW 20 kHz minimum, 30 kHz typical (6.6); td 13 µs typical, 25 µs maximum (6.5). 20 kHz is 18 × the 1,092 Hz of one pulse a turn",
+      "source": "SBAS915A sections 6.5 and 6.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "lowest speed",
+      "stated": "latch holds its output between BOP and BRP",
+      "read": "digital latch: the output changes only at BOP or BRP and holds between them, so a stopped rotor keeps its state",
+      "source": "SBAS915A sections 1, 3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "supply",
+      "stated": "VCC 2.5 to 5.5 V; ICC 2.3 mA typ, 2.8 mA max",
+      "read": "VCC 2.5 to 5.5 V recommended, −0.3 to 6.0 V absolute maximum; ICC 2.3 mA typical, 2.8 mA maximum; tON 40 µs typical, 70 µs maximum",
+      "source": "SBAS915A sections 6.1, 6.3, 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "output",
+      "stated": "open-drain, 20 mA; output absolute maximum 6.0 V",
+      "read": "open-drain output (pin 2); VOUT 0 to 5.5 V recommended, −0.3 to 6.0 V absolute maximum; sink 0 to 20 mA; IOZ 100 nA maximum at 5.5 V; pulled up to 3.3 V on the IO board it never exceeds the rail",
+      "source": "SBAS915A pin functions, sections 6.1, 6.3, 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "sensitivity",
+      "stated": "A1: BOP −0.2 / 0.7 / 2.0 mT (min / typ / max), BRP −2.0 / −0.7 / 0.2 mT",
+      "read": "DRV5015A1: BOP −0.2 / 0.7 / 2.0 mT, BRP −2.0 / −0.7 / 0.2 mT, BHYS 0.35 / 1.4 mT (min / typ)",
+      "source": "SBAS915A section 6.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "−40 to +125 °C",
+      "read": "TA −40 to 125 °C recommended; covers 0 to 50 °C",
+      "source": "SBAS915A section 6.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     },
+     {
+      "figure": "build and sourcing",
+      "stated": "not given",
+      "read": "exact JLCPCB match for C2152440: DRV5015A1QDBZR, Texas Instruments, SOT-23, stockCount 339, canPresaleNumber 336, expand; need 5, gate 50: passes rule 4 (a sensor board JLCPCB assembles)",
+      "source": "vendors.py jlcpcb C2152440",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T16:11:49Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments (datasheet SBAS915A); counts as Texas Instruments (S1)",
+      "read": "datasheet SBAS915A, ©2018–2019 Texas Instruments; on the S1 list",
+      "source": "SBAS915A; hardware/docs/Research.md S1 answer",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:30Z"
+     }
+    ]
+   },
+   {
+    "function": "phase-wire clip",
+    "part": "TLV7011DBVR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "comparator supply",
+      "stated": "VS 1.6 to 5.5 V recommended; 6 V absolute maximum",
+      "read": "single: VS 1.6 to 5.5 V recommended (6.4), 6 V absolute maximum (6.1); the front page's 1.6 to 6.5 V is the dual's range. 3.201 to 3.399 V lies inside",
+      "source": "TLV7011 datasheet SLVSDM5F, September 2017, revised March 2020, sections 6.1 and 6.4, https://www.ti.com/lit/ds/symlink/tlv7011.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "comparator output",
+      "stated": "push-pull (TLV7011; TLV7021 is the open-drain part); VOH 4.7 V minimum at VS 5 V, IO 3 mA; output absolute maximum VCC + 0.3 V",
+      "read": "push-pull for TLV7011 (TLV7021 open-drain); VOH 4.7 V minimum at VS 5 V, IO 3 mA; VOL 220 mV maximum; output VEE − 0.3 V to VCC + 0.3 V absolute maximum; tR, tF 5 ns typical",
+      "source": "SLVSDM5F sections 6.1, 6.8, 6.9",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "comparator input range",
+      "stated": "VCM VEE to VCC + 0.1 V at VS 2.5 to 5 V, −40 to 125 °C; input pins absolute maximum VEE − 0.3 V to 6 V, not referenced to VCC; inputs diode-clamped to VEE only",
+      "read": "VCM VEE to VCC + 0.1 V at VS 2.5 to 5 V over −40 to 125 °C (6.8); input pins VEE − 0.3 V to 6 V absolute maximum, ±10 mA; note 2: input terminals are diode-clamped to VEE. Includes 0 V",
+      "source": "SLVSDM5F sections 6.1 and 6.8",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "comparator delay",
+      "stated": "tPHL 260 ns, tPLH 310 ns typical at VCC 5 V, 100 mV overdrive, CL 15 pF; no maximum stated; tON 20 µs",
+      "read": "tPHL 260 ns, tPLH 310 ns typical at VCC 5 V, VCM 2.5 V, CL 15 pF, 100 mV overdrive; no maximum; tON 20 µs. Typical only, 70 × under 21.8 µs",
+      "source": "SLVSDM5F section 6.9",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "hysteresis",
+      "stated": "internal 1.2 / 4.2 / 14 mV (min / typ / max); external hysteresis by resistors (round 2)",
+      "read": "VHYS 1.2 / 4.2 / 14 mV at VS 1.8 and 5 V, −40 to 125 °C",
+      "source": "SLVSDM5F section 6.8",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "TA −40 to 125 °C",
+      "read": "TA −40 to 125 °C recommended",
+      "source": "SLVSDM5F section 6.4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "pin order",
+      "stated": "DBV: OUT 1, VEE 2, IN+ 3, IN− 4, VCC 5",
+      "read": "DBV and DCK package: OUT 1, VEE 2, IN+ 3, IN− 4, VCC 5",
+      "source": "SLVSDM5F pin configuration and functions",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "coupling",
+      "stated": "not given",
+      "read": "not a comparator figure: galvanic coupling is the clip's; the comparator input is ground-referenced (VCM from VEE)",
+      "source": "SLVSDM5F section 6.8; found value V215",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "isolation",
+      "stated": "not given",
+      "read": "not a comparator figure: no isolation is required (V216); inputs referenced to VEE, the IO board ground",
+      "source": "SLVSDM5F section 6.8; found value V216",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "input withstand",
+      "stated": "not given",
+      "read": "inputs VEE − 0.3 V to 6 V absolute maximum, ±10 mA; the 100 V belongs to the divider and clamp of round 2 (V214), which keeps the comparator's input within 6 V",
+      "source": "SLVSDM5F section 6.1; found value V214",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "electrical frequency passed",
+      "stated": "not given",
+      "read": "260 / 310 ns typical delay and 5 ns edges against a 43.6 µs period at 22,937 Hz: the comparator follows it",
+      "source": "SLVSDM5F section 6.9",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "PWM rejected",
+      "stated": "not given",
+      "read": "not a comparator figure: the comparator filters nothing; rejection is the round-2 network's, and the band overlap is reported under 'P2 report: phase-wire clip frequency overlap'",
+      "source": "SLVSDM5F; found value V229",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "lowest speed",
+      "stated": "not given",
+      "read": "DC-coupled comparator; nothing required below 500 rpm (V213)",
+      "source": "SLVSDM5F; found value V213",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "not given",
+      "read": "one comparator per SOT-23-5 package; the function's 2 placements take 2 packages (need 10)",
+      "source": "SLVSDM5F pin configuration; found value V219",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments (datasheet SLVSDM5F); counts as Texas Instruments (S1)",
+      "read": "datasheet SLVSDM5F, Texas Instruments; on the S1 list",
+      "source": "SLVSDM5F; hardware/docs/Research.md S1 answer",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     }
+    ]
+   },
+   {
+    "function": "encoder input",
+    "part": "AM26LV32EIDR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "signal forms",
+      "stated": "TIA/EIA-422-B receivers; VIT+ 0.2 V, VIT− −0.2 V, hysteresis 35 mV; common-mode −7 to 7 V, differential −7 to 7 V",
+      "read": "meets TIA/EIA-422-B; VIT+ 0.2 V maximum, VIT− −0.2 V minimum, Vhys 35 mV typical; VIC and VID −7 to 7 V recommended. A 5 V single-ended line against a reference on the inverting input stays within ±7 V differential and common mode",
+      "source": "AM26LV32E datasheet SLLS849E, April 2008, revised August 2023, sections 1, 6.3, 6.5, https://www.ti.com/lit/ds/symlink/am26lv32e.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "channels",
+      "stated": "4 receivers",
+      "read": "quadruple differential line receiver: 4 receivers for the 3 channels A, B, I",
+      "source": "SLLS849E description and pin functions",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "per-channel frequency",
+      "stated": "f(max) 32 MHz; tPLH, tPHL 26 ns max",
+      "read": "tPLH, tPHL 8 / 16 / 26 ns (min / typ / max); transition time 5 ns typical; f(max) 32 MHz sits in the TYP column (no minimum). 26 ns maximum against 100 ns half-periods at 5 MHz",
+      "source": "SLLS849E section 6.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "channel skew",
+      "stated": "tsk(p) 6 ns max, tsk(o) 6 ns max",
+      "read": "tsk(p) 4 / 6 ns, tsk(o) 4 / 6 ns, tsk(pp) 6 / 9 ns (typ / max); under 50 ns",
+      "source": "SLLS849E section 6.6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "input withstand",
+      "stated": "A or B inputs −14 to 14 V absolute maximum; VID ±14 V",
+      "read": "VI, A or B inputs −14 to 14 V; VID −14 to 14 V absolute maximum, with no VCC condition; covers 12 V",
+      "source": "SLLS849E section 6.1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "supply",
+      "stated": "VCC 3 to 3.6 V; VOH 2.4 V min at −5 mA",
+      "read": "VCC 3 / 3.3 / 3.6 V; VOH 2.4 V minimum at IOH −5 mA, VCC − 0.1 V minimum at −100 µA; against the RP2350's VIH of 2 V at IOVDD 3.3 V (Table 1436)",
+      "source": "SLLS849E sections 6.3, 6.5; RP2350 datasheet build 2025-07-29 Table 1436, https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:09:34Z"
+     },
+     {
+      "figure": "powered-off behaviour",
+      "stated": "Ioff ±100 µA at VCC 0 V, VO 0 or 5.5 V; 'Ioff circuitry disables the outputs, preventing damaging current back-flow'; open-circuit fail-safe high",
+      "read": "Ioff ±100 µA maximum at VCC 0 V, VO 0 or 5.5 V; description: 'Ioff circuitry disables the outputs, preventing damaging current back-flow through the device when it is powered down'; A/B absolute maximum ±14 V holds with no VCC condition. The line input current at VCC 0 V is not stated (II 1.5 mA maximum at VI 10 V over the recommended supply)",
+      "source": "SLLS849E description, sections 6.1 and 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "ambient temperature",
+      "stated": "−40 to 85 °C",
+      "read": "TA −40 to 85 °C recommended",
+      "source": "SLLS849E section 6.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments (datasheet SLLS849E); counts as Texas Instruments (S1)",
+      "read": "datasheet SLLS849E, ©2023 Texas Instruments; on the S1 list",
+      "source": "SLLS849E; hardware/docs/Research.md S1 answer",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T16:04:31Z"
+     }
+    ]
+   }
+  ],
+  "figures": [
+   {
+    "figure": "found V209",
+    "verdict": "confirmed",
+    "evidence": "Research.md:532 F4 answer: 'It measures either the servo output shaft or the motor shaft, wherever the operator mounts it'. IOBoard.md:454: no input specified; the F4 encoder can sit on the servo output shaft; an accelerometer on the surface cannot observe rotation about the gravity vector. shared/ui/stub_screen.c:37-43 says the same. servo_screen.h:67: 'void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)'. docs/Screens.md:156-158: solid arm measured, faint arm commanded",
+    "source": "checkout c25aa863: hardware/docs/Research.md:532; hardware/docs/IOBoard.md:445, :454; shared/ui/stub_screen.c:37-43; shared/ui/include/servo_screen.h:67; docs/Screens.md:156-158",
+    "read_at": "2026-09-28T16:18:43Z"
+   },
+   {
+    "figure": "found V210",
+    "verdict": "confirmed",
+    "evidence": "The question applies only 'If a sensor other than the F4 encoder gives the servo's measured position' (Research.md:770); V209 names the F4 encoder, so no resolution or travel is asked",
+    "source": "checkout c25aa863 hardware/docs/Research.md:770; found value V209",
+    "read_at": "2026-09-28T16:18:43Z"
+   },
+   {
+    "figure": "found V211",
+    "verdict": "confirmed",
+    "evidence": "settings.c:99-104: SET_OPTICAL_EN 'Optical tacho', SET_OPTICAL_PIN 'Tacho pin' (GPIO −1 to 48). link_pages.h:233: one register LINK_BN_RPM. IOBoard.md:432: rpm carries one valid bit; :434: the rpm source for the stall action is not stated. Stated as derived from the tree, no owner figure",
+    "source": "checkout c25aa863: shared/settings/settings.c:99-104; shared/link/include/link_pages.h:233; hardware/docs/IOBoard.md:432, :434",
+    "read_at": "2026-09-28T16:18:43Z"
+   },
+   {
+    "figure": "found V212",
+    "verdict": "confirmed",
+    "evidence": "bench_state.c:21-28: to_u16 returns 65535 when scaled >= 65535. Link.md:159-160: MOTOR_POLES even, 2 to 42. 65,535 / 60 = 1,092.25 Hz; × 21 = 22,937 Hz. Flight Stand 50 datasheet: 'RPM: up to 30,000 RPM'. Series 1585 V2.4 page 3 Table 1: angular speed 0 to 190k eRPM",
+    "source": "checkout c25aa863 shared/bench/bench_state.c:21-28, docs/Link.md:159-160, hardware/docs/IOBoard.md:430, :487; https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf (16:07:50Z); https://cdn.rcbenchmark.com/landing_pages/Manuals/Series%201585%20Datasheet.pdf (16:07:49Z)",
+    "read_at": "2026-09-28T16:07:50Z"
+   },
+   {
+    "figure": "found V213",
+    "verdict": "confirmed",
+    "evidence": "Series 1585 V2.4 2024-08-01, Optical RPM Probe: 'It measures speeds from 10 to 30,000 RPM. However, because of the hardware limit, the electrical RPM probe does not work effectively when the motor is running at low RPM (<500)'. The passage is on page 8 of 9, not page 7 as cited. main.c:663 RPM_STALE_MS 200u; 60 s / 0.2 s = 300 rpm",
+    "source": "https://cdn.rcbenchmark.com/landing_pages/Manuals/Series%201585%20Datasheet.pdf page 8/9; checkout c25aa863 firmware/iomcu/src/main.c:663, hardware/docs/IOBoard.md:489",
+    "read_at": "2026-09-28T16:07:49Z"
+   },
+   {
+    "figure": "found V214",
+    "verdict": "confirmed",
+    "evidence": "T2/007-P2-R3.json V34: 'at least 17.8 V above 67.2 V (85 V), met by a 100 V drain-source rating', from INA238 SLYS025B 5.1 (85 V absolute maximum); confirmed by T2's P4 datasheet verifier of R3. The R3 row sets the clamp under the INA238's 85 V. 100 − 85 = 15 V. The overshoot above the pack node is stated as not found and 100 V as applied, not found",
+    "source": "/home/claude/rcbench-research/round1/results/hardware/research/round1/T2/007-P2-R3.json, 032-P4-datasheet-R3.json; checkout c25aa863 hardware/docs/Research.md:281, :543",
+    "read_at": "2026-09-28T16:18:43Z"
+   },
+   {
+    "figure": "found V215",
+    "verdict": "confirmed",
+    "evidence": "Series 1585 V2.4: page 2 direct measurements 'Rotations per minute (RPM)', 'Motor winding resistance (Ohm)'; page 3 Table 1 angular speed 0 to 190k eRPM, coil resistance 0.003 to 240 Ω; No-solder board 'Three lug connectors can accommodate bullet connectors up to 6 mm or bare wires' on page 8 of 9 (cited as page 7)",
+    "source": "https://cdn.rcbenchmark.com/landing_pages/Manuals/Series%201585%20Datasheet.pdf",
+    "read_at": "2026-09-28T16:07:49Z"
+   },
+   {
+    "figure": "found V216",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:547: 'The ESC pack's return reaches the star by its own lead'. The INA238 row ('bus input rated to 85 V') is IOBoard.md:415; the cited :414 is the table's separator line. testbench/WIRING.md:37-53: star point, the ESC pack's return on its own lead",
+    "source": "checkout c25aa863 hardware/docs/IOBoard.md:415, :547; testbench/WIRING.md:37-53",
+    "read_at": "2026-09-28T16:18:43Z"
+   },
+   {
+    "figure": "found V217",
+    "verdict": "confirmed",
+    "evidence": "DRV5015 SBAS915A: digital-latch Hall sensor, 2.5 to 5.5 V, open-drain output; 'Alternating north and south magnetic poles are required to toggle the output'; switches at BOP (south), releases at BRP (north). The translation rule quoted is at IOBoard.md:105 (Pin ratings); the cited :104 is the Flash supply row. Research.md:134-139 is sourcing rule 1",
+    "source": "https://www.ti.com/lit/ds/symlink/drv5015.pdf (16:04:30Z); checkout c25aa863 hardware/docs/IOBoard.md:105; hardware/docs/Research.md:134-139",
+    "read_at": "2026-09-28T16:04:30Z"
+   },
+   {
+    "figure": "found V218",
+    "verdict": "confirmed",
+    "evidence": "DRV5015 SBAS915A 6.6 fBW 20 kHz min, 30 kHz typ; DRV5013 SLIS150N fBW 20 min, 30 typ; TLE4961-1M Rev 1.2 Table 5 magnetic signal input frequency 0 to 10 kHz. 22,937 Hz exceeds each guaranteed figure; one pulse a turn gives 1,092 Hz. Balance.md quote is at lines 36-37 (cited 35-36). Two equal magnets 180° apart cancel static unbalance only as far as their masses and radii match; that residual is not quantified",
+    "source": "https://www.ti.com/lit/ds/symlink/drv5015.pdf (16:04:30Z); https://www.ti.com/lit/ds/symlink/drv5013.pdf (16:09:27Z); https://www.infineon.com/assets/row/public/documents/24/49/infineon-tle4961-1m-datasheet-en.pdf (16:09:29Z); checkout c25aa863 docs/Balance.md:36-37",
+    "read_at": "2026-09-28T16:09:29Z"
+   },
+   {
+    "figure": "found V219",
+    "verdict": "confirmed",
+    "evidence": "Tyto Series 1520/1580/1585 probe page: 'the optical sensor on the optical RPM probe circuit', 'powered by a 5V power'. Research.md:289 seeds TLV3201 and TLV7011, both comparators (SBOS561C, SLVSDM5F). IOBoard.md:441 index from below at the pen line. The translation rule is IOBoard.md:105, cited as :104",
+    "source": "https://www.tytorobotics.com/blogs/series-1520-1580-1585-troubleshooting/optical-probe; checkout c25aa863 hardware/docs/Research.md:289, hardware/docs/IOBoard.md:105, :441, docs/Balance.md:32-37",
+    "read_at": "2026-09-28T16:07:51Z"
+   },
+   {
+    "figure": "found V220",
+    "verdict": "refuted",
+    "evidence": "The value says 5 mm 'lies in all three'. The Series 1520/1580/1585 page says the distance 'needs to be less than 5mm': 5 mm is that range's excluded bound, not inside it. The Series 1780 page ('around 5mm') and the Flight Stand 15/50 probe page ('sits 5 - 15 mm away') include 5 mm. All three pages read reflective tape, not a pen line. No shortlisted part changes: TCRT5000's stated range, 0.2 to 15 mm, covers any distance up to 5 mm",
+    "source": "https://www.tytorobotics.com/blogs/series-1520-1580-1585-troubleshooting/optical-probe (16:07:51Z); https://www.tytorobotics.com/blogs/series-1780-troubleshooting/optical-rpm-probe (16:07:51Z); https://www.tytorobotics.com/products/optical-rpm-probe-flight-stand-15-50 (16:07:52Z)",
+    "read_at": "2026-09-28T16:07:52Z"
+   },
+   {
+    "figure": "found V221",
+    "verdict": "refuted",
+    "evidence": "The sentence 'Every analogue accelerometer found comes in a 4 x 4 mm or 5 x 5 mm LFCSP' is false for analogue parts P2 found and dropped. ADXL377 (C579467) is in a 3 mm × 3 mm × 1.45 mm 16-lead LFCSP (ADXL377 datasheet page 1). ADXL356CEZ (C579461) is in a 14-terminal 6 mm × 5.6 mm × 2.2 mm LCC (ADXL356/357 datasheet page 1). NXP MMA1200KEG575 is SOIC-16 (jlcparts copy, C3224858). ADXL316 (12-lead 4 × 4 mm LFCSP) and ADXL326 (16-lead 4 × 4 mm LFCSP) are as stated. The answer itself holds: a sensor board JLCPCB assembles, because each of those packages also needs a board",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/adxl377.pdf (16:12:57Z); https://www.analog.com/media/en/technical-documentation/data-sheets/adxl356-357.pdf (16:12:58Z); adxl316.pdf (16:04:30Z); ADXL326.pdf (16:09:33Z); /home/claude/rcbench-research/jlcparts-2026-09-14/cache.sqlite3 (read-only)",
+    "read_at": "2026-09-28T16:12:58Z"
+   },
+   {
+    "figure": "found V223",
+    "verdict": "confirmed",
+    "evidence": "ArduPilot: Clip0, Clip1 and Clip2 'increase each time one of the accelerometers reaches its maximum limit (16G)'; 'levels above 60m/s/s nearly always have problems'; VibeX, Y, Z 'show the standard deviation of the primary accelerometer's output in m/s/s'. 60 × √2 = 84.9 m/s² = 8.65 g",
+    "source": "https://ardupilot.org/copter/docs/common-measuring-vibration.html",
+    "read_at": "2026-09-28T16:07:49Z"
+   },
+   {
+    "figure": "found V226",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:447: an analogue sensor, piezo or analogue accelerometer, into an ADC on the IO board; :450 accelerometer and index pulse sampled on one timebase on the coprocessor. Manifest.md:30: 'Both sensors on the coprocessor, sampled on one timebase'. Balance.md:57-63: use an analogue sensor into the coprocessor's ADC",
+    "source": "checkout c25aa863 hardware/docs/IOBoard.md:447, :450; docs/Manifest.md:30; docs/Balance.md:57-63",
+    "read_at": "2026-09-28T16:18:43Z"
+   },
+   {
+    "figure": "found V227",
+    "verdict": "confirmed",
+    "evidence": "HEDS-55xx: 'Count Frequency f 100 kHz, Velocity (rpm) x N/60', N the cycles per shaft rotation. US Digital E5: 'Max. A/B Frequency' 300, 360 and 720 kHz; 32 to 5,000 CPR (128 to 20,000 PPR). 5 MHz × 4 = 20 Mcounts/s (50 ns); 1 MHz × 4 = 4 Mcounts/s (250 ns)",
+    "source": "https://docs.broadcom.com/doc/AV02-1046EN (16:07:52Z); https://cdn.usdigital.com/assets/datasheets/datasheet-e5.pdf (16:07:53Z)",
+    "read_at": "2026-09-28T16:07:53Z"
+   },
+   {
+    "figure": "found V228",
+    "verdict": "confirmed",
+    "evidence": "Research.md:532 F4: 5 V single-ended up to 1 MHz; supply 5 V or 12 V selected by a jumper. IOBoard.md:445 says the same. A 12 V supply on a push-pull encoder, or the jumper at 12 V, can put 12 V on the signal pins, so a 12 V withstand with 5 V operation follows",
+    "source": "checkout c25aa863 hardware/docs/Research.md:532; hardware/docs/IOBoard.md:445",
+    "read_at": "2026-09-28T16:18:43Z"
+   },
+   {
+    "figure": "found V229",
+    "verdict": "refuted",
+    "evidence": "The range holds. AM32 Src/main.c:637-644 accepts pwm_frequency < 145 && > 7 and sets TIMER1_MAX_ARR = TIM1_AUTORELOAD × 24 / setting. :1977-1980 variable_pwm 1 maps tim1_arr from TIMER1_MAX_ARR / 2 to TIMER1_MAX_ARR, up to twice the setting: 8 to 288 kHz. 24 / 22.937 = 1.05. The statement 'The 24/48/96 kHz list is BLHeli_S's (shared/ui/programmer_screen.c:115)' contradicts the tree: k_pwm at :115 is the PWM frequency list of the BLHeli_S table (:129), the AM32 table (:156) and the ESCape32 table (:180)",
+    "source": "https://raw.githubusercontent.com/am32-firmware/AM32/main/Src/main.c lines 637-644, 1977-1980 (16:07:48Z); checkout c25aa863 shared/ui/programmer_screen.c:115, :120-182",
+    "read_at": "2026-09-28T16:07:48Z"
+   },
+   {
+    "figure": "P2 report: encoder decoding",
+    "verdict": "confirmed",
+    "evidence": "quadrature_encoder.pio: 'The worst case sampling loop takes 10 cycles, so this program is able to read step rates up to sysclk / 10'. RP2350 clk_sys 150 MHz: 15 Msteps/s = 3.75 MHz a channel, under 20 Mcounts/s. RP2350 12.5.2.5 and DIVMODE: B pin level, rising-edge or falling-edge counting only, no direction. LS7366R and LS7184 are LSI/CSI, not on S1",
+    "source": "https://raw.githubusercontent.com/raspberrypi/pico-examples/master/pio/quadrature_encoder/quadrature_encoder.pio (16:07:48Z); https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf build 2025-07-29, clock table and section 12.5.2.5 (16:09:34Z)",
+    "read_at": "2026-09-28T16:09:34Z"
+   },
+   {
+    "figure": "P2 report: encoder decode resources for P5",
+    "verdict": "confirmed",
+    "evidence": "The program has 12 + 2 table jumps, 1 'JMP Y--' decrement and 9 loop instructions: 24 words. It has '.origin 0' (computed jumps), 'PUSH noblock' (no DMA) and 'IN PINS, 2' (2 consecutive pins). 32 − 24 = 8 words, under the 16 a bidirectional DShot port takes. The PIO reach row is IOBoard.md:107; the cited :105 is Pin ratings",
+    "source": "quadrature_encoder.pio (16:07:48Z); checkout c25aa863 hardware/docs/IOBoard.md:107; hardware/docs/Research.md:359",
+    "read_at": "2026-09-28T16:07:48Z"
+   },
+   {
+    "figure": "P2 report: R11 pins",
+    "verdict": "confirmed",
+    "evidence": "6 GPIO: encoder A, B, I (one input set, the form chosen by jumper), the optical index comparator, the magnetic latch and the phase-wire comparator, each one GPIO. The accelerometer takes 1 or 2 ADC inputs; the ADXL316 is analogue. Research.md:288 is the R10 row, and V201 asks 1 or 2 axes",
+    "source": "this return's functions; checkout c25aa863 hardware/docs/Research.md:288, V201; ADXL316 Rev. C",
+    "read_at": "2026-09-28T16:18:43Z"
+   },
+   {
+    "figure": "P2 report: phase-wire clip frequency overlap",
+    "verdict": "confirmed",
+    "evidence": "65,535 × 21 / 60 = 22,937 Hz against AM32's 8 to 288 kHz (main.c:637-644, 1977-1980): overlap below 22.9 kHz. 24 kHz / 22.937 kHz = 1.05",
+    "source": "AM32 Src/main.c (16:07:48Z); found values V212, V229",
+    "read_at": "2026-09-28T16:07:48Z"
+   },
+   {
+    "figure": "P2 report: magnetic pickup rate",
+    "verdict": "confirmed",
+    "evidence": "DRV5015 fBW 20 kHz min, 30 kHz typ (SBAS915A 6.6); DRV5013 fBW 20 kHz min, 30 kHz typ; TLE4961-1M fSW 0 to 10 kHz (Table 5). The A1220 datasheet gives an 800 kHz chopping frequency and no bandwidth or magnetic frequency limit. All are under 22,937 Hz as guaranteed; 1,092 Hz with one pulse a turn",
+    "source": "drv5015.pdf (16:04:30Z); drv5013.pdf (16:09:27Z); TLE4961-1M Rev 1.2 (16:09:29Z); https://www.allegromicro.com/-/media/files/datasheets/a1220-1-2-3-datasheet.pdf (16:09:29Z)",
+    "read_at": "2026-09-28T16:09:29Z"
+   },
+   {
+    "figure": "P2 report: accelerometer output drive",
+    "verdict": "confirmed",
+    "evidence": "ADXL316 RFILT 27 / 32 / 37 kΩ (Table 1); ADXL326 RFILT 32 kΩ ± 15 % (Table 1), both with f = 1/(2π × 32 kΩ × C). ADXL1001/1002 datasheet: output amplifier drives 100 pF directly, series resistor of 8 kΩ minimum above that. JLCPCB C662288 ADXL1002BCPZ-RL7: stockCount 0, canPresaleNumber −1",
+    "source": "adxl316.pdf (16:04:30Z); ADXL326.pdf (16:09:33Z); https://www.analog.com/media/en/technical-documentation/data-sheets/adxl1001-1002.pdf (16:12:57Z); vendors.py jlcpcb C662288 (16:11:50Z)",
+    "read_at": "2026-09-28T16:11:50Z"
+   },
+   {
+    "figure": "P2 report: values for research not found",
+    "verdict": "confirmed",
+    "evidence": "No refuting source found. The tree has no lead length (IOBoard.md:493 'not stated'), no ambient range at the motor and no lowest balance-run speed; Balance.md names 10,000 rpm only as an example. The delay figure (Balance.md:65-69, IOBoard.md:449) is a property, not a limit. The Tyto balancing page gives grade 6.3G with no acceleration. A grep of docs/ and hardware/docs/ for ambient and lead length finds none",
+    "source": "checkout c25aa863 hardware/docs/IOBoard.md:449, :493; docs/Balance.md; https://www.tytorobotics.com/pages/propeller-balancing (16:07:55Z)",
+    "read_at": "2026-09-28T16:18:43Z"
+   },
+   {
+    "figure": "P2 report: manufacturer status not read",
+    "verdict": "confirmed",
+    "evidence": "https://www.vishay.com/en/product/83760/ HTTP 200 with no status, active or lifecycle text in its body or scripts. Digi-Key ProductStatus Active for TCRT5000, TCRT5000L, TCND5000 and CNY70. ROHM product page HTTP 404 (redirected to /404notfound). Digi-Key RPR-220 Last Time Buy",
+    "source": "https://www.vishay.com/en/product/83760/ (16:14:43Z); https://www.rohm.com/products/sensors-mems/optical-sensors/photointerrupters/reflective/rpr-220-product (16:14:41Z); vendors.py digikey TCRT5000, TCRT5000L, TCND5000, CNY70, RPR-220 (16:15:17Z to 16:15:24Z)",
+    "read_at": "2026-09-28T16:15:24Z"
+   },
+   {
+    "figure": "re-rank report: comparator inputs with the 3.3 V rail down",
+    "verdict": "confirmed",
+    "evidence": "TLV7011 6.1: input pins VEE − 0.3 V to 6 V; note 2 'Input terminals are diode-clamped to VEE'; recommended input range VEE − 0.1 V to VCC + 0.2 V. TLV7031: input pins VEE − 0.3 V to 7 V, clamped to VEE. TLV3201 6.1: signal inputs −0.5 V to VCC + 0.5 V; note 2 'Input pins are diode-clamped to the power-supply rails'",
+    "source": "https://www.ti.com/lit/ds/symlink/tlv7011.pdf (16:04:31Z); https://www.ti.com/lit/ds/symlink/tlv7031.pdf SLVSE13J (16:09:26Z); https://www.ti.com/lit/ds/symlink/tlv3201.pdf SBOS561C (16:09:26Z)",
+    "read_at": "2026-09-28T16:09:26Z"
+   },
+   {
+    "figure": "re-rank report: RP2354B input-high threshold",
+    "verdict": "confirmed",
+    "evidence": "RP2350 build 2025-07-29 Table 1436: VIH 2 V minimum at IOVDD 3.3 V, standard and FT IO; input leakage 1 µA maximum. MAX3097E VOH VCC − 1.0 V at IO −1 mA, VCC 3.0 V: 2.0 V. AM26LV32E VOH 2.4 V at −5 mA. MAX3280E VOH VCC − 0.4 V at −4 mA",
+    "source": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf (served from pip-assets.raspberrypi.com, 16:09:34Z); MAX3097E-MAX3098E.pdf (16:09:31Z); am26lv32e.pdf (16:04:31Z); MAX3280E-MAX3284E.pdf (16:09:32Z)",
+    "read_at": "2026-09-28T16:09:34Z"
+   },
+   {
+    "figure": "re-rank report: MAX3097E switching columns",
+    "verdict": "confirmed",
+    "evidence": "Switching table header columns MIN 102, TYP 112, MAX 122 in the text extraction. 75 and 85 (tPLH, tPHL) sit at column 122; the ±10 skews at 123; fMAX 32 at 103, the MIN column. Revision history: Rev 0 7/00",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/MAX3097E-MAX3098E.pdf, 19-1727 Rev 1, safari client",
+    "read_at": "2026-09-28T16:09:31Z"
+   },
+   {
+    "figure": "re-rank report: 5 V encoder receivers",
+    "verdict": "confirmed",
+    "evidence": "AM26C32 VCC 4.5 to 5.5 V, VOH 3.8 V at −6 mA. ST26C32AB VCC 4.5 to 5.5 V (DocID7970 Rev 5). SN65LBC175 JLCPCB C2671018 11, C2671435 2, C2863114 10. SN75175 switching table at VCC 5 V, TA 25 °C only. V100 is at Research.md:660; the cited :241 is a held-parts row",
+    "source": "am26c32.pdf (16:09:27Z); st26c32.pdf (16:15:42Z); sn75175.pdf (16:09:27Z); vendors.py jlcpcb C2671018, C2671435, C2863114 (16:11:50Z to 16:11:51Z); checkout c25aa863 hardware/docs/Research.md:289, :660",
+    "read_at": "2026-09-28T16:15:42Z"
+   },
+   {
+    "figure": "re-rank report: reflective sensor drop reasons",
+    "verdict": "confirmed",
+    "evidence": "TCRT1000 Rev. 2.0 (83752): 0.2 to 4 mm at relative Iout > 20 %, peak 1 mm. VCNT2020 Rev. 1.3 (80362): 0 to 2 mm on 18 % grey, 0 to 7 mm on 90 % white, IOUT > 0.5 mA at IF max. VCNT2030 Rev. 1.4 (80223): 0 to 7 mm on 18 % grey, 0 to 38 mm on white. The earlier URLs used document numbers 83751 (CNY70's) and 84285",
+    "source": "https://www.vishay.com/docs/83752/tcrt1000.pdf; https://www.vishay.com/docs/80362/vcnt2020.pdf; https://www.vishay.com/docs/80223/vcnt2030.pdf (all 16:09:28Z)",
+    "read_at": "2026-09-28T16:09:28Z"
+   },
+   {
+    "figure": "re-rank report: RPR-220 status and distance",
+    "verdict": "confirmed",
+    "evidence": "Datasheet 2017.03 Rev.B: IC 0.08 / 0.3 / 0.8 mA at VCE 2 V, IF 10 mA, reflector standard white paper (90 %), no distance; distance only in Fig. 1. ROHM product page HTTP 404. Digi-Key ProductStatus Last Time Buy, stock 32460, lead 12 weeks",
+    "source": "https://fscdn.rohm.com/en/products/databook/datasheet/opto/optical_sensor/photosensor/rpr-220.pdf (16:09:29Z); rohm.com product page (16:14:41Z); vendors.py digikey RPR-220 (16:15:24Z)",
+    "read_at": "2026-09-28T16:15:24Z"
+   },
+   {
+    "figure": "re-rank report: manufacturer status read",
+    "verdict": "confirmed",
+    "evidence": "TI product pages, marketingStatusDescription ACTIVE at the orderable part and meta status ACTIVE: TLV7011DBVR, TLV7031DBVR, DRV5011ADDBZR, AM26C32IDR, SN75175DR, TLV3201AIDBVR. ST: ST26C32ABDR 'Active Product is in volume production', Longevity Commitment '-'. Vishay 80223 page: no status in its body. Digi-Key Active for MAX3097EEEE+T and MAX3280EAUK+T",
+    "source": "https://www.ti.com/product/{TLV7011,TLV7031,DRV5011,AM26C32,SN75175,TLV3201} (16:14:44Z to 16:14:45Z); https://www.st.com/en/interfaces-and-transceivers/st26c32ab.html (16:14:46Z); https://www.vishay.com/en/product/80223/ (16:14:43Z); vendors.py digikey (16:15:26Z, 16:15:27Z)",
+    "read_at": "2026-09-28T16:15:27Z"
+   },
+   {
+    "figure": "re-rank report: P4 verification set for R11",
+    "verdict": "confirmed",
+    "evidence": "Each function with a shortlist has a verify list holding its rank-1 part only, kind first: ADXL316WBCSZ, TCRT5000, DRV5015A1QDBZR, TLV7011DBVR, AM26LV32EIDR. Each has second_source_route second-vendor, so no rule-5 alternate. R11 has no Q4 or Q8 option (option fields empty)",
+    "source": "this task's shortlist",
+    "read_at": "2026-09-28T16:18:43Z"
+   },
+   {
+    "figure": "function requirements: accelerometer",
+    "verdict": "refuted",
+    "evidence": "V230 ('R11, accelerometer': lowest shaft speed of a balance run, found as not found) is missing from the list. V222, V224 and V225, also not found, are listed as 'not applied'. The timebase rule (IOBoard.md:450) is covered through V226, which output type cites. The rest are present with no weaker value: IOBoard.md:447 (analogue), :448 (167 Hz, weaker than 1,092 Hz), :449, :451, :453; V221, V223, V231, V212. No part changes: the ADXL316 responds from DC",
+    "source": "checkout c25aa863 hardware/docs/Research.md:769-791 (V209 to V231), hardware/docs/IOBoard.md:70, :447-453, :493",
+    "read_at": "2026-09-28T16:18:43Z"
+   },
+   {
+    "figure": "function requirements: optical index",
+    "verdict": "confirmed",
+    "evidence": "The list names V219 (sensor, supply, output), V220 (5 mm), V212 and V213 (1,092 a second; static to 10 rpm, stronger than V213's 'at least one input'), V231 (0 to 50 °C floor), and IOBoard.md:441. The timebase (IOBoard.md:450) is met through the comparator into a GPIO. No requirement found missing or weakened",
+    "source": "checkout c25aa863 hardware/docs/Research.md:772-791; hardware/docs/IOBoard.md:441, :450, :491",
+    "read_at": "2026-09-28T16:18:43Z"
+   },
+   {
+    "figure": "function requirements: magnetic pickup",
+    "verdict": "confirmed",
+    "evidence": "The list names V217 (latch, 3.3 V, open-drain or push-pull, sensor board), V218 (one pulse, 1,092 Hz), V212, V213 (static), V221 (build route), V231, IOBoard.md:442 (an rpm input), :490 and :491 (answered by V217, V218). None missing or weakened",
+    "source": "checkout c25aa863 hardware/docs/Research.md:772-791; hardware/docs/IOBoard.md:442, :490-491",
+    "read_at": "2026-09-28T16:18:43Z"
+   },
+   {
+    "figure": "function requirements: phase-wire clip",
+    "verdict": "confirmed",
+    "evidence": "The list names V214 (100 V, above IOBoard.md:443's 67.2 V), V215, V216, V229, V212 (22,937 Hz), V213 (not below 500 rpm), the 3.3 V ±3 % rail (Research.md:283), push-pull 3.3 V output (Pin ratings, IOBoard.md:105, cited as :104) and 2 placements (V219). None missing or weakened",
+    "source": "checkout c25aa863 hardware/docs/Research.md:283, :289, :772-789; hardware/docs/IOBoard.md:105, :443, :491",
+    "read_at": "2026-09-28T16:18:43Z"
+   },
+   {
+    "figure": "function requirements: encoder input",
+    "verdict": "confirmed",
+    "evidence": "The list names F4 (both forms, 5 MHz RS-422, 1 MHz single-ended, 5 V or 12 V supply), 3 channels ABI (Research.md:65), V227 (per-channel frequency), V228 (12 V withstand), the 3.3 V ±3 % supply, and 3.3 V outputs with no back-flow (IOBoard.md:105, cited as :104). It also names 0 to 50 °C. IOBoard.md:444's pin budget is P5's. None missing or weakened",
+    "source": "checkout c25aa863 hardware/docs/Research.md:65, :283, :532, :787-788; hardware/docs/IOBoard.md:71, :105, :444-446",
+    "read_at": "2026-09-28T16:18:43Z"
+   },
+   {
+    "figure": "re-rank drop: optical index: TCRT1000",
+    "verdict": "confirmed",
+    "evidence": "Product summary: distance range for relative Iout > 20 % 0.2 to 4 mm; distance for maximum CTRrel 1 mm; 5 mm is outside",
+    "source": "https://www.vishay.com/docs/83752/tcrt1000.pdf Rev. 2.0, 13-Oct-2021, page 1",
+    "read_at": "2026-09-28T16:09:28Z"
+   },
+   {
+    "figure": "re-rank drop: optical index: VCNT2020",
+    "verdict": "confirmed",
+    "evidence": "Product summary: range for IOUT > 0.5 mA with IF max 0 to 2 mm on Kodak grey (18 %) and 0 to 7 mm on white (90 %); peak 0.5 mm. The grey figure excludes 5 mm, the standard under which VCNT2030's 0 to 7 mm on grey qualifies",
+    "source": "https://www.vishay.com/docs/80362/vcnt2020.pdf Rev. 1.3, 25-Oct-2023, page 1",
+    "read_at": "2026-09-28T16:09:28Z"
+   },
+   {
+    "figure": "re-rank drop: optical index: RPR-220",
+    "verdict": "confirmed",
+    "evidence": "Rev.B 2017.03: IC 0.08 / 0.3 / 0.8 mA at VCE 2 V, IF 10 mA on standard white paper (90 %) with no distance; distance only in Fig. 1 (relative output vs distance). No stated range, the same standard as QRE1113GR. ROHM product page HTTP 404; Digi-Key Last Time Buy, recorded as a distributor figure",
+    "source": "https://fscdn.rohm.com/en/products/databook/datasheet/opto/optical_sensor/photosensor/rpr-220.pdf (16:09:29Z); rohm.com product page (16:14:41Z); vendors.py digikey RPR-220 (16:15:24Z)",
+    "read_at": "2026-09-28T16:15:24Z"
+   },
+   {
+    "figure": "re-rank drop: encoder input: SN65LBC175 (SN65LBC175ADR, SN65LBC175DR, SN65LBC175DWR)",
+    "verdict": "confirmed",
+    "evidence": "Exact JLCPCB matches: C2671018 SN65LBC175ADR stockCount 11, C2671435 SN65LBC175DR 2, C2863114 SN65LBC175DWR 10, each under 50. The other SN65LBC175 rows of the 2026-09-14 copy list 0, except SN65LBC175AMDREP with 3. A part on the board is counted at JLCPCB (rule 1)",
+    "source": "vendors.py jlcpcb C2671018, C2671435, C2863114 (16:11:50Z to 16:11:51Z); /home/claude/rcbench-research/jlcparts-2026-09-14/cache.sqlite3 (read-only)",
+    "read_at": "2026-09-28T16:11:51Z"
+   },
+   {
+    "figure": "re-rank drop: encoder input: SN75175DR",
+    "verdict": "confirmed",
+    "evidence": "SLLS145D revised October 2023, 5.6 Switching Characteristics under 'VCC = 5 V, CL = 15 pF, TA = 25°C' only: tPLH 22 / 35 ns, tPHL 25 / 35 ns; no skew row. VCC 4.75 to 5.25 V",
+    "source": "https://www.ti.com/lit/ds/symlink/sn75175.pdf",
+    "read_at": "2026-09-28T16:09:27Z"
+   }
+  ]
+ }
+}

@@ -1,0 +1,468 @@
+{
+ "role": "P0",
+ "category": "",
+ "label": "P0",
+ "attempt": 0,
+ "data": {
+  "versions": "Claude Code 2.1.284; git 2.43.0; Python 3.12.3; ruff 0.16.5; 7-Zip 23.01 (x64); curl_cffi 0.16.3 (read 2026-09-29T11:48Z on the server). Claude Code differs from the 2.1.283 that Research.md prerequisite 1 records for 2026-09-27.",
+  "hosts": [
+   {
+    "host": "jlcpcb.com",
+    "url": "python3 /home/claude/rcbench-research/round1/tools/c7df594d3d3daaf8/vendors.py jlcpcb C39843328",
+    "client": "jlcpcb-api",
+    "http_status": 200,
+    "bytes": 0,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:48:25Z, API https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList. Exact match C39843328 RP2354B, maker label Raspberry Pi, stockCount 2956, canPresaleNumber 2799, componentLibraryType expand, other_results 0. bytes not reported by the API client."
+   },
+   {
+    "host": "api.digikey.com",
+    "url": "python3 /home/claude/rcbench-research/round1/tools/c7df594d3d3daaf8/vendors.py digikey INA238AIDGSR",
+    "client": "digikey-api",
+    "http_status": 200,
+    "bytes": 0,
+    "status_marker": "Active",
+    "reachable": true,
+    "note": "answer came back cached: true, read 2026-09-29T02:34:14Z (same UTC day), https://api.digikey.com/products/v4/search/INA238AIDGSR/productdetails: maker Texas Instruments, ProductStatus Active, stock 0, manufacturer lead time 16 weeks. Live check: vendors.py digikey-quota at 2026-09-29T11:48:32Z answered HTTP 200 with 356 calls left today. bytes not reported by the API client."
+   },
+   {
+    "host": "www.lcsc.com",
+    "url": "https://www.lcsc.com/product-detail/C39843328.html",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 384023,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:01Z. Title 'RP2354B | Microcontrollers | Raspberry Pi | LCSC'; meta description gives 2,956 in stock. No lifecycle status in the body."
+   },
+   {
+    "host": "datasheets.raspberrypi.com",
+    "url": "https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 7968417,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:01Z. Redirected to https://pip-assets.raspberrypi.com/categories/1214-rp2350/documents/RP-008373-DS-2-rp2350-datasheet.pdf; the body starts %PDF-1.5, so pip-assets.raspberrypi.com is reachable too."
+   },
+   {
+    "host": "github.com",
+    "url": "https://github.com/raspberrypi/pico-sdk",
+    "client": "git",
+    "http_status": 0,
+    "bytes": 2661123,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "git fetch --depth 1 https://github.com/raspberrypi/pico-sdk HEAD into a bare repository at /home/claude/rcbench-research/round1/scratch/FU-B1/P0/picosdk.git, 2026-09-29T11:49:48Z to 11:49:50Z; exit 0, FETCH_HEAD 079c6f39023649b154152db30f1d781e884879bc. bytes is the pack size. git reports no HTTP status. Commit 23c82ca is checked locally (see monostable)."
+   },
+   {
+    "host": "raw.githubusercontent.com",
+    "url": "https://raw.githubusercontent.com/raspberrypi/pico-sdk/master/README.md",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 9794,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:48:42Z; no redirect, no challenge."
+   },
+   {
+    "host": "www.winbond.com",
+    "url": "https://www.winbond.com/hq/product/code-storage-flash-memory/serial-nor-flash/?__locale=en&partNo=W25Q16JV",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 71145,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:02Z. Redirected to https://www.winbond.com/hq/new-online-purchasing-guide/?__locale=en&pLine=/product/code-storage-flash/qspi-nor/&pNo=W25Q16JV, title 'Winbond W25Q16JV QSPI NOR parts catalog'; W25Q16JV appears in the body. No lifecycle status in the body."
+   },
+   {
+    "host": "www.ti.com",
+    "url": "https://www.ti.com/product/INA238",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 301342,
+    "status_marker": "<meta name=\"status\" content=\"ACTIVE\"",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:03Z; marker matched."
+   },
+   {
+    "host": "www.microchip.com",
+    "url": "https://www.microchip.com/en-us/product/MCP2518FD",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 723783,
+    "status_marker": "\"productSatus\": \"In Production\"",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:04Z; marker matched."
+   },
+   {
+    "host": "www.nxp.com",
+    "url": "https://www.nxp.com/products/TJA1462",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 191241,
+    "status_marker": "Status - Active",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:04Z; marker matched."
+   },
+   {
+    "host": "www.nexperia.com",
+    "url": "https://www.nexperia.com/product/74LVC1G32GW",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 98978,
+    "status_marker": "product-status--production",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:04Z; marker matched."
+   },
+   {
+    "host": "www.infineon.com",
+    "url": "https://www.infineon.com/part/2ED4820-EM",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 2290111,
+    "status_marker": "productStatusInfo\" value=\"active and preferred\"",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:05Z; marker matched."
+   },
+   {
+    "host": "www.raspberrypi.com",
+    "url": "https://www.raspberrypi.com/products/rp2350/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 390955,
+    "status_marker": "remain in production until at least <!-- -->January 2045",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:05Z; marker matched."
+   },
+   {
+    "host": "www.onsemi.com",
+    "url": "https://www.onsemi.com/products/discrete-power-modules/mosfets/NTMFS6H800N",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 344616,
+    "status_marker": "Active",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:26Z. No part named in the seeds; NTMFS6H800N is an 80 V N-channel MOSFET (body: 'Single N-Channel Power MOSFET 80V, 203A, 2.1mΩ'); URL taken from the FU-C2 P0 return and fetched again here. Redirected to https://www.onsemi.com/products/discrete-power-modules/mosfets/low-medium-voltage-mosfets/ntmfs6h800n, title 'NTMFS6H800N'. The body carries a status badge '<p class=\"mb-0 ps-2 text-black fs-7 fw-bold\">Active</p>' and a table cell data-value=\"Active\"."
+   },
+   {
+    "host": "www.vishay.com",
+    "url": "https://www.vishay.com/en/product/30134/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 765413,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:27Z. Seed WSBS8518 product page (URL from the FU-C2 P0 return, fetched again here), title 'WSBS8518 Power Metal Strip Resistors | Vishay'. No lifecycle status in the body: reachable, status not read."
+   },
+   {
+    "host": "www.isabellenhuette.com",
+    "url": "https://www.isabellenhuette.com/solutions/products/bvs",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 216511,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:27Z. BV series page for BVS (URL from the FU-C2 P0 return, fetched again here), title 'BVS Current Sensing Resistor 3920 – 2.5–12 W | Isabellenhütte'. No lifecycle status in the body: reachable, status not read."
+   },
+   {
+    "host": "www.analog.com",
+    "url": "https://www.analog.com/en/products/adxl1002.html",
+    "client": "safari",
+    "http_status": 200,
+    "bytes": 209554,
+    "status_marker": "RECOMMENDED FOR NEW DESIGNS",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:05Z, one request. Title 'ADXL1002 Datasheet and Product Info | Analog Devices'. The body carries '\"lifeCycle\":null' and a badge '<span class=\"adi__badge adi__badge--success\"> RECOMMENDED FOR NEW DESIGNS', which differs from the 2026-09-27 observation in Research.md that the page body carries no lifecycle status. Status of record stays Digi-Key's (owner, 2026-09-27)."
+   },
+   {
+    "host": "www.melexis.com",
+    "url": "https://www.melexis.com/",
+    "client": "chrome",
+    "http_status": 403,
+    "bytes": 5918,
+    "status_marker": "none",
+    "reachable": false,
+    "note": "read 2026-09-29T11:49:06Z. Cloudflare challenge page, title 'Just a moment...', challenge: true. Status of Melexis parts is read at Digi-Key (owner, 2026-09-27)."
+   },
+   {
+    "host": "www.allegromicro.com",
+    "url": "https://www.allegromicro.com/en/products/sense/current-sensor-ics/integrated-current-sensors/acs711",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 211899,
+    "status_marker": "This part is in production and has been determined to be NOT FOR NEW DESIGN.",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:06Z. Title 'Hall-Effect Linear Current Sensor IC with Overcurrent Fault - ACS711| Allegro MicroSystems'. The family page body states that text, followed by 'Please refer to ACS71240 or ACS37041/2 for new designs'. Status of record stays Digi-Key's (owner, 2026-09-27); the held ACS711KLCTR-12AB-T (C459305) is in this family."
+   },
+   {
+    "host": "www.renesas.com",
+    "url": "https://www.renesas.com/en",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 250062,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:07Z; home page, no product status."
+   },
+   {
+    "host": "www.rohm.com",
+    "url": "https://www.rohm.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 377594,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:07Z; home page, title 'ROHM Semiconductor - ROHM Co., Ltd.'."
+   },
+   {
+    "host": "www.st.com",
+    "url": "https://www.st.com/content/st_com/en.html",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 245661,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:09Z; home page."
+   },
+   {
+    "host": "toshiba.semicon-storage.com",
+    "url": "https://toshiba.semicon-storage.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 141576,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:09Z; redirected to https://toshiba.semicon-storage.com/eu/top.html."
+   },
+   {
+    "host": "www.diodes.com",
+    "url": "https://www.diodes.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 300746,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:10Z; home page, og:title 'Diodes Incorporated - Analog and Power Solutions'."
+   },
+   {
+    "host": "ams-osram.com",
+    "url": "https://ams-osram.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 335174,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:11Z; home page."
+   },
+   {
+    "host": "www.bosch-sensortec.com",
+    "url": "https://www.bosch-sensortec.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 151404,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:12Z; redirected to https://www.bosch-sensortec.com/en."
+   },
+   {
+    "host": "www.ramxeed.com",
+    "url": "https://www.ramxeed.com/products/feram/feram-products.html",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 395110,
+    "status_marker": "MB85RC256VPNF-G-AMERE2</td> <td>Industrial</td> <td> I2C </td> <td> 256Kbit </td> <td> 2.7V </td> <td> 5.5V</td> <td> 1MHz</td> <td> -40～+85℃ </td> <td>SOP-8 (150mil)</td> <td>Tape</td> <td>MP</td>",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:12Z; marker matched, Status column MP."
+   },
+   {
+    "host": "www.nisshinbo-microdevices.co.jp",
+    "url": "https://www.nisshinbo-microdevices.co.jp/en/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 148671,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:13Z; home page."
+   },
+   {
+    "host": "www.torexsemi.com",
+    "url": "https://www.torexsemi.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 54135,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:15Z; home page."
+   },
+   {
+    "host": "www.murata.com",
+    "url": "https://www.murata.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 88111,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:15Z; home page, og:title 'HOME | Murata Manufacturing Co., Ltd.'."
+   },
+   {
+    "host": "product.tdk.com",
+    "url": "https://product.tdk.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 493190,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:17Z; redirected to https://product.tdk.com/en/index.html."
+   },
+   {
+    "host": "www.we-online.com",
+    "url": "https://www.we-online.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 172511,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:17Z; redirected to https://www.we-online.com/en/."
+   },
+   {
+    "host": "www.coilcraft.com",
+    "url": "https://www.coilcraft.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 169020,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:19Z; home page."
+   },
+   {
+    "host": "www.bourns.com",
+    "url": "https://www.bourns.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 180237,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:20Z; home page, no challenge, 'bourns' appears 208 times in the body."
+   },
+   {
+    "host": "yageogroup.com",
+    "url": "https://yageogroup.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 1052052,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:21Z; home page, title 'YAGEO Group – Built into Tomorrow'. The host answers HTTP 200 for paths that do not exist; the title confirms this is the real home page."
+   },
+   {
+    "host": "industry.panasonic.com",
+    "url": "https://industry.panasonic.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 3587752,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:21Z; home page."
+   },
+   {
+    "host": "www.samsungsem.com",
+    "url": "https://www.samsungsem.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 76762,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:22Z; home page, title '삼성전기'."
+   },
+   {
+    "host": "abracon.com",
+    "url": "https://abracon.com/parametric/inductors/AOTA-B201610S3R3-101-T",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 159642,
+    "status_marker": "Part Status: Active",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:28Z; title 'Abracon | AOTA-B201610S3R3-101-T', body '<li class=\"lbl\"> Part Status</li> <li> Active </li>'. URL from the FU-C2 P0 return, fetched again here; the crystal seed ABM8-272-T3 was not fetched in this task (FU-C2 P0 recorded HTTP 404 for its page URLs)."
+   },
+   {
+    "host": "www.epsondevice.com",
+    "url": "https://www.epsondevice.com/crystal/en/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 56690,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:23Z; crystal home page, title 'Epson Crystal Device'."
+   },
+   {
+    "host": "www.ndk.com",
+    "url": "https://www.ndk.com/en/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 125754,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:25Z; home page."
+   },
+   {
+    "host": "www.samsungsdi.com",
+    "url": "https://www.samsungsdi.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 56067,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:29Z; home page (no seed cell named), title 'Samsung Li-Ion Battery & Renewable Energy | Samsung SDI Official Site'."
+   },
+   {
+    "host": "www.lgensol.com",
+    "url": "https://www.lgensol.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 75063,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:31Z; redirected to https://www.lgensol.com/en/index; no seed cell named."
+   },
+   {
+    "host": "www.molicel.com",
+    "url": "https://www.molicel.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 57369,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:34Z; home page, title 'Molicel - Ultra-high Power Cell Manufacturer'; no seed cell named."
+   },
+   {
+    "host": "www.evebattery.com",
+    "url": "https://www.evebattery.com/",
+    "client": "chrome",
+    "http_status": 200,
+    "bytes": 131734,
+    "status_marker": "none",
+    "reachable": true,
+    "note": "read 2026-09-29T11:49:36Z; home page, title 'EVE-亿纬锂能'; no seed cell named."
+   }
+  ],
+  "jlcparts": {
+   "path": "/home/claude/rcbench-research/jlcparts-2026-09-14/cache.sqlite3",
+   "sha256": "48b41b803d7b6bbe0fa7e25b5db430a8421f8175ad559e2c4b4bfc3a73d28c26",
+   "sha256_ok": true,
+   "rows": 7161863,
+   "missing_lcsc": []
+  },
+  "snapshot": "2026-09-14T09:56:01Z",
+  "monostable": {
+   "commit": "23c82ca6ca976d956098cfafd25dbefa11584f5d",
+   "path": "/home/claude/rcbench-research/round1/monostable-23c82ca",
+   "fetched": true
+  },
+  "checkout_head": "e13f5f60d2e553032b27a14f31ed4a93ef4fe828",
+  "stop": false,
+  "stop_reasons": [],
+  "held": []
+ }
+}

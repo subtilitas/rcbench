@@ -1,0 +1,439 @@
+{
+ "role": "P1-critic",
+ "category": "R4",
+ "label": "P1-critic-R4",
+ "attempt": 0,
+ "data": {
+  "category": "R4",
+  "marking_verdicts": [
+   {
+    "index": 0,
+    "where": "hardware/docs/Research.md:282",
+    "quantity": "output stage",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:361-367 at 23c82ca specifies a buffer or level translator with an enable pin, following the RP2350 pins while enabled, high impedance while disabled, enable taken from the enable node. Research.md:282 restates it as pull request #167's. Sourced, not an owner decision."
+   },
+   {
+    "index": 1,
+    "where": "hardware/docs/IOBoard.md:192",
+    "quantity": "powered-off isolation of the output buffer",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:88 at 23c82ca: the buffer is driven while unpowered by the RP2350's pins and the enable node, and takes I_off on every RP2350-side input, the data inputs and the enable. IOBoard.md:192 says the same."
+   },
+   {
+    "index": 2,
+    "where": "hardware/docs/IOBoard.md:192",
+    "quantity": "isolation of an inverter on an active-low output enable",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:87 gives I_off or a 4.7 kΩ series resistor from the enable node. Monostable.md:79-80 gives at most 1 mA into the input at 3.3 V, so 4.7 kΩ or more. 3.3 V / 4.7 kΩ = 0.70 mA."
+   },
+   {
+    "index": 3,
+    "where": "hardware/docs/IOBoard.md:187",
+    "quantity": "disable time of the output gate",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:112 gives under 1 µs, measured in test step 12 and kept out of the budget, and :120 repeats it. The value follows from its source."
+   },
+   {
+    "index": 4,
+    "where": "hardware/docs/IOBoard.md:186",
+    "quantity": "deadline for the output buffer disabled",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:28 and :115 give the buffer disabled and every switch open within 200 ms of the last edge."
+   },
+   {
+    "index": 5,
+    "where": "hardware/docs/IOBoard.md:187",
+    "quantity": "connector-side pull-down",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:365 gives 10 kΩ on each connector-side line. F14 replaces it with a pull-up on bidirectional DShot lines, and value 8 carries that. As a pull request #167 figure it is sourced."
+   },
+   {
+    "index": 6,
+    "where": "hardware/docs/IOBoard.md:187",
+    "quantity": "pull at the buffer's enable pin",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:369-375 gives a 10 kΩ pull-down at an active-high enable pin and a 10 kΩ pull-up at an active-low one, each at the device's own pin."
+   },
+   {
+    "index": 7,
+    "where": "hardware/docs/IOBoard.md:257",
+    "quantity": "pins behind the gate",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F13's Answer column (Research.md:541) gives the 20 output ports and the UART socket (owner, 2026-09-25). The count of 21 takes one signal wire per port (IOBoard.md:531: signal, ground and rail) and a one-pin socket (IOBoard.md:65). The count changes only if question 11 gives VESC two lines."
+   },
+   {
+    "index": 8,
+    "where": "hardware/docs/IOBoard.md:256",
+    "quantity": "bias per protocol",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "F14's Answer column (Research.md:542) reads 'selected per protocol: a pull-up for bidirectional DShot, a pull-down otherwise (owner, 2026-09-25)'. This is an owner decision."
+   },
+   {
+    "index": 9,
+    "where": "hardware/docs/IOBoard.md:256",
+    "quantity": "RP2354B pad pull-up",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Re-read in the RP2350 datasheet build-date 2025-07-29 (https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf, served as RP-008373-DS-2 from pip-assets.raspberrypi.com, read 2026-09-28T10:39:24Z). Table 1436 gives RPU at IOVDD=3.3V as 32 kΩ minimum and 86 kΩ maximum."
+   },
+   {
+    "index": 10,
+    "where": "hardware/docs/IOBoard.md:256",
+    "quantity": "line level with a 10 kΩ pull-down against the pad pull-up",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "3.3 V × 10/(10+86) = 0.344 V and 3.3 V × 10/(10+32) = 0.786 V. Table 1436 of the same read (2026-09-28T10:39:24Z) gives VIL maximum 0.8 V at IOVDD=3.3V. The value is derived from sourced figures."
+   },
+   {
+    "index": 11,
+    "where": "hardware/docs/IOBoard.md:256",
+    "quantity": "pull request #167's pull-up and line level",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:395-397 gives a pull-up of about 50 kΩ and a line at about 0.55 V, and 3.3 V × 10/60 = 0.55 V. The value follows from its source."
+   },
+   {
+    "index": 12,
+    "where": "hardware/docs/IOBoard.md:252",
+    "quantity": "fastest edge on an output",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "out_bind.c:566-569 binds only DSHOT300 and DSHOT600, plain and bidirectional, and outputs.c:29 gives 150 to 1200. DShot.md:140 gives 37.5 %, and 0.375 × 1.667 µs = 0.625 µs. WIRING.md:663 gives the 1.67 µs bit."
+   },
+   {
+    "index": 13,
+    "where": "hardware/docs/IOBoard.md:253",
+    "quantity": "bidirectional DShot turnaround",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "out_dshot.h:7-8 reads 'about 30 us after a frame that is itself 27 us long'. DShot.md:181 gives 21 bits at five quarters of the rate, and :223 gives five samples a bit. The 53 µs at DShot300 is arithmetic: 16 / 300 kbit/s = 53.3 µs."
+   },
+   {
+    "index": 14,
+    "where": "hardware/docs/IOBoard.md:251",
+    "quantity": "plain DShot idle level",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "out_dshot.h:4 holds the line low between frames. out_dshot.c:255-259 drives a stopped plain DShot pin low (gpio_put(s->pin, 0))."
+   },
+   {
+    "index": 15,
+    "where": "hardware/docs/IOBoard.md:249",
+    "quantity": "servo PWM",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "DShot.md:81-83 gives 40 to 400 Hz, 500 to 2500 µs and 1 µs. outputs.c:18 carries 40 and 400."
+   },
+   {
+    "index": 16,
+    "where": "hardware/docs/IOBoard.md:250",
+    "quantity": "PPM",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "DShot.md:105-121 gives 300 µs marks, a sync gap of 3000 µs or more and a 2500 µs ceiling. outputs.c:24 gives 20 to 50 Hz. out_bind.c:548-551 gives 8 × 2500 + 300 + 3000 = 23,300 µs, so 40 Hz binds."
+   },
+   {
+    "index": 17,
+    "where": "hardware/docs/IOBoard.md:262",
+    "quantity": "one-wire bootloader baud",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Found in programmer_screen.c:238-241 and Manifest.md:29. Re-read at the primary sources: AM32-bootloader bootloader/main.c:396 '#define BAUDRATE 19200' and :831; BLHeli_S 'BLHeli_S SiLabs/BLHeliBootLoad.inc':11 'BOOT_BAUDRATE EQU 19200'. Both from raw.githubusercontent.com, read 2026-09-28T10:38:07Z."
+   },
+   {
+    "index": 18,
+    "where": "hardware/docs/IOBoard.md:263",
+    "quantity": "ESCape32 baud",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The only figure in the tree is channel 12 of a map that testbench/README.md:380 calls proposed (README.md:396). No owner answer gives a rate. ESCape32's wiki gives 38400 baud 8N1 on the signal line (https://github.com/neoxic/ESCape32/wiki/Configuration, read 2026-09-28T10:38:07Z). Assumption is the right marking, and question 3 asks it."
+   },
+   {
+    "index": 19,
+    "where": "hardware/docs/IOBoard.md:264",
+    "quantity": "VESC baud",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "programmer_screen.c:5-6 and :244-245 state it. VESC's firmware confirms it: applications/appconf_default.h:230 'APPCONF_UART_BAUDRATE 115200' and applications/app_uartcomm.c:32 'BAUDRATE 115200' (raw.githubusercontent.com/vedderb/bldc/master/..., read 2026-09-28T10:41:54Z). P1's path appconf/appconf_default.h returns 404 because the file is under applications/."
+   },
+   {
+    "index": 20,
+    "where": "hardware/docs/IOBoard.md:273",
+    "quantity": "OpenYGE line",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "OpenYGE.md:21 gives 115200 baud 8N1, :23 half duplex with up to 127 ESCs, :24 about 20 Hz, :27 TX and RX commoned, and :29-31 a hardware UART through a resistor or a PIO soft UART."
+   },
+   {
+    "index": 21,
+    "where": "hardware/docs/IOBoard.md:267",
+    "quantity": "S.BUS input",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Receivers.md:12 and sbus.h:4-6 both give an inverted 8E2 UART at 100 kbaud."
+   },
+   {
+    "index": 22,
+    "where": "hardware/docs/IOBoard.md:266",
+    "quantity": "external parts on a receiver bus",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Receivers.md:15-16 states 'one signal wire plus ground into a coprocessor pin. No external parts are needed.' The value follows from its source. That source is the module's pin, and its conflict with IOBoard.md:105 goes to questions 13 and 18."
+   },
+   {
+    "index": 23,
+    "where": "hardware/docs/IOBoard.md:255",
+    "quantity": "connector-side signal level",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "testbench/README.md:410-414 and WIRING.md:25 are bench guides. 'Commonly 5 V' is not a figure, and IOBoard.md:277 states the IO board's level as not known. ESCape32's Installation page gives the signal line at about 3.3 V (read 2026-09-28T10:38:08Z). Assumption is the right marking, and question 7 asks it."
+   },
+   {
+    "index": 24,
+    "where": "hardware/docs/IOBoard.md:255",
+    "quantity": "one-wire programming line idle",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Found in testbench/README.md:411-412. Confirmed at the primary sources. AM32-bootloader main.c:516 receives with an input pull-up, and :522-524 sets the pin high before switching to push-pull. BLHeliBootLoad.inc:70-72 sets its pin open-drain and high. Both read 2026-09-28T10:38:07Z."
+   },
+   {
+    "index": 25,
+    "where": "hardware/docs/Research.md:282",
+    "quantity": "buffer enable through a watchdog reset",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:282 dates this to the owner, 2026-09-25. hardware/STATUS.md's Coprocessor watchdog row records the watchdog as an owner decision of that date. The enable coming from the enable node agrees with Monostable.md:367."
+   },
+   {
+    "index": 26,
+    "where": "hardware/docs/Research.md:282",
+    "quantity": "RP2350 reset-state pad bias",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Datasheet build 2025-07-29, read 2026-09-28T10:39:24Z. Section 9.3: output buffer high impedance, input disabled, pulled low. The pads return to that state on brownout, RUN low, CDBGRSTREQ or RP-AP rescue reset, and the watchdog is not on that list. Table 1427 gives Pull-Down for GPIO0-47, and Table 1436 gives RPD 36-113 kΩ at 3.3 V. Section 9.7: the PADS block reset does not clear ISO."
+   },
+   {
+    "index": 27,
+    "where": "hardware/docs/IOBoard.md:197",
+    "quantity": "Not defeatable rule",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:451-453 lists the path from J8 to the gates and reads 'No processor, no register and no firmware is in it'. Monostable.md:34 reads 'no programmable element'."
+   },
+   {
+    "index": 28,
+    "where": "hardware/docs/IOBoard.md:198",
+    "quantity": "interlock supply",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:27 specifies the window over 3.3 V ±3 %, and :36 names the coprocessor board's 3.3 V rail."
+   },
+   {
+    "index": 29,
+    "where": "hardware/docs/IOBoard.md:105",
+    "quantity": "RP2354B pin rating for a line driven back into it",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Table 1433 of build 2025-07-29 (read 2026-09-28T10:39:24Z) gives VPIN_FT 5.5 V at IOVDD=3.3V, 3.63 V at IOVDD=0V, and VPIN IOVDD + 0.5 V. Table 1427 types QFN-80 GPIO0-39 as Digital IO (FT) and GPIO40-47 as ADC pins. Table 1426 carries the 'very little current' wording."
+   },
+   {
+    "index": 30,
+    "where": "hardware/docs/IOBoard.md:64",
+    "quantity": "port types",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The Output ports decision at Research.md:63 (owner, 2026-09-25) and hardware/STATUS.md's Output ports row give 16 PWM ports and 4 multiprotocol ports with the six modes."
+   },
+   {
+    "index": 31,
+    "where": "hardware/docs/IOBoard.md:65",
+    "quantity": "UART socket",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Research.md:63 (owner, 2026-09-25) gives 'a one-pin UART socket'. IOBoard.md:65 adds 'for ESC telemetry and other serial devices' under the same owner date, and names no rate or level for it."
+   },
+   {
+    "index": 32,
+    "where": "hardware/docs/IOBoard.md:348",
+    "quantity": "port supply switch drive",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "The decision rows at Research.md:63-64 name one supply switch per port but not the expander. Commit 46f02ad, 'Replace the 8 servo sockets with 20 typed output ports', records 'Owner decision, 2026-09-25: ... Each port has a supply switch through an I/O expander'. IOBoard.md:348 cites owner, 2026-09-25, so owner holds. The reason 'exceed the free GPIO' is not counted; IOBoard.md:133 leaves the count to P5."
+   },
+   {
+    "index": 33,
+    "where": "hardware/docs/IOBoard.md:543",
+    "quantity": "high-impedance test pull",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:528-530 gives a 4.7 kΩ pull to 3.3 V: above 2.0 V with it (2.24 V) and below 0.4 V without. 3.3 V × 10/14.7 = 2.245 V."
+   },
+   {
+    "index": 34,
+    "where": "hardware/docs/IOBoard.md:546",
+    "quantity": "buffer supply-removal test",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:599-602 (test step 13) lifts the buffer's supply lead with the RP2350 toggling and the enable high. It passes with the supply pin below 0.3 V and the pull test of step 12."
+   },
+   {
+    "index": 35,
+    "where": "hardware/docs/IOBoard.md:539",
+    "quantity": "logic test point level",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "testbench/WIRING.md:546 reads 'An LA2016 input is rated to 5 V', within the cited range :542-548."
+   },
+   {
+    "index": 36,
+    "where": "hardware/docs/IOBoard.md:257",
+    "quantity": "lines the bring-up module's buffer covers",
+    "verdict": "holds",
+    "correct_marking": "unchanged",
+    "reason": "Monostable.md:384 reads 'The buffer covers GP0, GP1 and GP2.' F13 supersedes it for the IO board."
+   }
+  ],
+  "question_verdicts": [
+   {
+    "index": 0,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:256 states that what selects the bias is not stated, and Research.md:282 has P1 ask it. F14's answer gives the bias, not its selector. Monostable.md:680-684 at 23c82ca says per-protocol selection 'asks who selects it, since firmware is not in this path'. No Answer column gives it."
+   },
+   {
+    "index": 1,
+    "verdict": "confirmed",
+    "reason": "Research.md:282 and IOBoard.md:256 name it as a P1 ask. Monostable.md:682-683 reads firmware as outside the gate path, and IOBoard.md:197 carries the rule. No owner answer decides whether a selector off the enable path but setting a disabled line's level falls under the rule."
+   },
+   {
+    "index": 2,
+    "verdict": "confirmed",
+    "reason": "This is a named P1 ask (Research.md:282; IOBoard.md:256, :280), and F14's 'otherwise' reads as a pull-down on lines that idle high. The BLHeli_S bootloader drives open-drain and high (BLHeliBootLoad.inc:70-72), so its reply's high comes from a pull-up alone. The AM32 bootloader jumps to its application when the line reads mostly low at start-up (main.c:1095-1122). Both read 2026-09-28T10:38:07Z."
+   },
+   {
+    "index": 3,
+    "verdict": "confirmed",
+    "reason": "The tree's 19,200 baud is a proposed analyser map (testbench/README.md:380, :396). ESCape32's wiki gives 38400 baud 8N1 (Configuration page, read 2026-09-28T10:38:07Z). IOBoard.md:263 and Research.md:282's concerns column make it a P1 ask."
+   },
+   {
+    "index": 4,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:265 says the Hitec D-series levels are not stated and that P1 asks them. Research.md:282's concerns column says the same. Manifest.md:32 says only that the protocol is published."
+   },
+   {
+    "index": 5,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:265 says the electrical form is not stated and names it as a P1 ask. It decides whether servo configuration mode needs both directions on one line."
+   },
+   {
+    "index": 6,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:265 says the Hitec baud is not stated and names it as a P1 ask. No source in the tree or its Answer columns gives a rate."
+   },
+   {
+    "index": 7,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:277 says the signal level at the output ports and the UART socket is not stated for the IO board. 'Commonly 5 V' comes from bench guides (testbench/README.md:411; WIRING.md:25). ESCape32's signal line reads about 3.3 V (Installation page, read 2026-09-28T10:38:08Z). The answer decides between the 3.3 V seed (74LVC245A) and the translator seeds."
+   },
+   {
+    "index": 8,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:256 says the pull-up's value is not stated. F14's answer and Monostable.md:398-399 give none. The value and rail set the idle level at the ESC and the load the buffer sinks."
+   },
+   {
+    "index": 9,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:282 lists the DShot rate the output path is specified for as not known. The bind list is 300 and 600 (out_bind.c:566-569), and the driver range is 150 to 1200 kbit/s (outputs.c:29). The answer halves or keeps the 0.625 µs zero-bit high."
+   },
+   {
+    "index": 10,
+    "verdict": "confirmed",
+    "reason": "Neither IOBoard.md nor Monostable.md states a lead length or load. The seed LSF0108 needs pull-ups on the high side ('Pull-up resistors are always required on the high side'). It states its rate at ≤30 pF and 50 pF loads (TI SDLS966M, revised May 2023, https://www.ti.com/lit/ds/symlink/lsf0108.pdf, read 2026-09-28T10:44:39Z), so its rate at the connector depends on the load."
+   },
+   {
+    "index": 11,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:286 says the wire and line count are not stated. VESC's firmware configures separate RX and TX pins (applications/app_uartcomm.c:114-115, raw.githubusercontent.com/vedderb/bldc/master, read 2026-09-28T10:41:54Z), so one half-duplex line is not VESC's default form."
+   },
+   {
+    "index": 12,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:61 and :287 say how many receiver pins the board brings out is not stated. No Answer column gives a count."
+   },
+   {
+    "index": 13,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:277 says the receiver inputs' signal level is not stated. Receivers.md:15-16 lands the wire on a pin. Table 1433 (read 2026-09-28T10:39:24Z) limits GPIO0-39 to 3.63 V with IOVDD at 0 V and GPIO40-47 to IOVDD + 0.5 V."
+   },
+   {
+    "index": 14,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:287 says the baud of iBUS, SUMD, CRSF, SRXL2 and JETI EX Bus is not stated. The owner can answer with a value or mark it for research."
+   },
+   {
+    "index": 15,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:287 lists whether the bench transmits on a receiver pin as not stated. Manifest.md:37-39 puts EX Bus telemetry in scope. A transmit direction changes the part from one-way to bidirectional."
+   },
+   {
+    "index": 16,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:279 lists whether the receiver pins pass the output gate as not known. F13's answer names the 20 output ports and the UART socket only."
+   },
+   {
+    "index": 17,
+    "verdict": "confirmed",
+    "reason": "The R4 row requires 'its idle level' in reset. A multiprotocol port's mode is firmware state. The pads reset pulled low with the output disabled (datasheet section 9.3, read 2026-09-28T10:39:24Z), and the expander resets with the RP2354B (IOBoard.md:340). So the row fixes no hardware level for these ports in reset. IOBoard.md:256 does give bidirectional DShot's idle as high; the gap is the reset case."
+   },
+   {
+    "index": 18,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:192 lists the buffer's RP2354B-side inputs and enable only (Monostable.md:88), while its first sentence covers any interlock input driven while its supply is absent. Whether a connector-side device can be powered while the board is not is not stated; a receiver's supply is open (IOBoard.md:287). The answer decides whether B-side I_off is required."
+   },
+   {
+    "index": 19,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:536 states that no requirement limits the current into a shorted signal line at an output connector. Research.md:282 seeds series resistance and clamps. The port rail reaches 8.7 V (F16)."
+   },
+   {
+    "index": 20,
+    "verdict": "confirmed",
+    "reason": "IOBoard.md:65 names 'other serial devices' with no protocol, rate or level. IOBoard.md:290 and OpenYGE.md:400-403 record the ESC telemetry protocols beyond OpenYGE as an open decision."
+   }
+  ],
+  "added": [
+   {
+    "function": "multiprotocol port path",
+    "question": "Which protocol does a multiprotocol port carry in its ESC telemetry mode: the ESC's separate serial telemetry wire (ESC to bench only), OpenYGE (half duplex), or another? In which direction, and at what highest baud rate, in baud?",
+    "why": "The owner's port decision lists ESC telemetry as a multiprotocol port mode (Research.md:63; IOBoard.md:64). The specification states no protocol, direction or rate for that mode. IOBoard.md:289 says whether the board reads the ESC's separate serial telemetry wire is not stated and no question asks it. IOBoard.md:290 records the telemetry protocols beyond OpenYGE as an open decision. P2 cannot check the multiprotocol path's direction, rate and bias for this mode without the answer.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:289",
+    "for_quantity": "ESC telemetry mode protocol, direction and baud",
+    "asks": ""
+   },
+   {
+    "function": "programming supply switching",
+    "question": "When an ESC or a servo has to start up with its signal line held high to enter its bootloader or CLI, what powers it up? The choices: the operator by hand; a STOP and the operator clear of the F11 latch, since the ESC pack switch follows the enable node alone; the port's supply switch under firmware, for a servo; or a separate switch, giving its voltage in V and current in A.",
+    "why": "The AM32 bootloader stays in the bootloader only when the line reads high at start-up and jumps to the application when it reads mostly low (AM32-bootloader bootloader/main.c:1095-1138). The BLHeli_S bootloader waits while the line is high and leaves for the application after about 250 ms from a low line (BLHeliBootLoad.inc:10, :89-99). Both read 2026-09-28T10:38:07Z. ESCape32 enters its CLI only with the line held high for 2 s on startup (wiki Configuration, read 2026-09-28T10:38:07Z). IOBoard.md:291 leaves this not stated. P2 cannot tell whether a switch is a part to qualify without the answer.",
+    "blocks": "p2",
+    "decision": "none",
+    "for_where": "hardware/docs/IOBoard.md:291",
+    "for_quantity": "power-up of an ESC or servo for bootloader or CLI entry",
+    "asks": ""
+   }
+  ],
+  "functions_missing": [
+   "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)"
+  ]
+ }
+}

@@ -1,0 +1,235 @@
+{
+ "role": "rerank",
+ "category": "R13",
+ "label": "rerank-R13",
+ "attempt": 0,
+ "data": {
+  "category": "R13",
+  "functions": [
+   {
+    "function": "load-cell bridge ADC",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "ADS1235IRHBR",
+      "option": "",
+      "reason": "P2's rank stands. It meets every requirement value on 1 placement. It has the most noise margin: 0.13 µV RMS at 1200 SPS, sinc3, gain 128, VREF 5 V (SBAS824 Table 1, re-read 2026-09-29T03:24:37Z), against the 0.170 µV limit. It has the lowest price at the need (10.0503 USD at 1 to 9) and the most JLCPCB stock of the three: C2669975 stockCount 1340, presale 1220 (vendors.py jlcpcb C2669975, 2026-09-29T03:22:09Z). Its rule-5 route is the second vendor through ADS1235IRHBT: Digi-Key 401, Active (2026-09-29T02:48:13Z, cached reading). SBAS824's Packaging Information (re-read 03:24:37Z) lists ADS1235IRHBR and ADS1235IRHBT as the same VQFN (RHB) 32-pin device with the same NIPDAU finish, MSL level 3, −40 to 125 °C range and marking \"ADS 1235\". They differ only in reel size, 3000 against 250. The IRHBR orderable itself has 0 at Digi-Key (02:48:11Z, cached). If P4 does not accept the reel variant as the same part, ADS1262IPWR is the fallback, and the exact orderable is stocked at Digi-Key"
+     },
+     {
+      "rank": 2,
+      "part": "ADS1262IPWR",
+      "option": "",
+      "reason": "P2's rank stands. It meets every requirement value on 1 placement in a leaded TSSOP-28, and the exact orderable is stocked at Digi-Key: 2127, Active (P2, 2026-09-29T02:48:15Z). It costs 56 % more than rank 1 at the need (15.6448 USD). Its noise margin is smaller: 0.148 µV RMS against the 0.170 µV limit"
+     },
+     {
+      "rank": 3,
+      "part": "ADS1261IRHBR",
+      "option": "",
+      "reason": "P2's rank stands. It meets every requirement value on 1 placement and has the largest Digi-Key stock of the three (4090, P2, 02:48:16Z). It ranks below ADS1262IPWR on price at the need (16.098 against 15.6448 USD) and on JLCPCB stock (413 against 658)"
+     }
+    ],
+    "new_candidates": [],
+    "dropped_from_p3": [
+     {
+      "part": "ADS1235QWRHMRQ1",
+      "maker": "Texas Instruments",
+      "reason": "Fails rule 4. Need 5 boards × 1 = 5, gate max(5 × 5, 50) = 50. JLCPCB C2876667 has stockCount 48 < 50, canPresaleNumber 44, 12.945 USD at 1 (vendors.py jlcpcb C2876667, exact match, read 2026-09-29T03:22:04Z). The part is not held, so rule 6 does not apply. Digi-Key has 802 (Cut Tape), Active, lead 26 weeks (vendors.py digikey ADS1235QWRHMRQ1, 2026-09-29T03:22:25Z), which does not count for an on-board part's rule-4 gate. It also comes in the RHM package, not rank 1's RHB. Its pin-for-pin match to ADS1235IRHBR was not checked, so it cannot serve as rank 1's rule-5 alternate either"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "ADS1235IRHBR",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   },
+   {
+    "function": "load-cell excitation",
+    "ranking": [
+     {
+      "rank": 1,
+      "part": "BD450M2FP3-CE2",
+      "option": "",
+      "reason": "P2's rank stands. It is the only ranked part whose output band covers the function's full load range of 0 to 60 mA as written, with no added part: 4.90 to 5.10 V for 0 mA ≤ IOUT ≤ 50 mA, and 4.80 to 5.10 V to 200 mA, for 6 V ≤ VCC ≤ 42 V (BD4xxM2-C Rev.006 Electrical Characteristics, as P2 read it at 02:45:39Z and the T4 P4 datasheet verifier confirmed). It has the lowest price (0.6726 USD at 1 to 9) and a SOT-223 footprint. JLCPCB C308595 has stockCount 3165, presale 3062 (vendors.py jlcpcb C308595, 2026-09-29T03:22:10Z). Its thermal margin is the smallest of the ranked parts: Tj 136.2 °C at 22 V and 60 mA, which holds only with the JEDEC 4-layer copper behind the 83.3 °C/W figure"
+     },
+     {
+      "rank": 2,
+      "part": "TLE42754D",
+      "option": "",
+      "reason": "New from P3. It meets every requirement value on one condition: a preload of at least 1 mA on the output, because its 4.9 to 5.1 V band is specified for 1 mA < IQ. A 4.7 kΩ ±1 % resistor draws 1.03 to 1.10 mA. It has the most thermal margin of any candidate: Tj 84.1 °C on a 2s2p board and 122.1 °C on 1s0p with 300 mm² of copper. It has the deepest stock at both vendors (JLCPCB 6544, Digi-Key 29141), costs 0.7034 USD at the need, and Infineon states it is planned to be available until at least 2038. It ranks below BD450M2FP3-CE2 for four reasons: it needs the preload, its band is stated for 6 V < VI (open at exactly 6.0 V), it needs at least 22 µF with ESR at most 3 Ω on the output, and its TO-252 footprint is larger"
+     },
+     {
+      "rank": 3,
+      "part": "TPS7B8250QDGNRQ1",
+      "option": "",
+      "reason": "It has the tightest band (±1.5 %) and Tj 115.5 °C. P2's record passes 'load 0 to 60 mA' against 'IOUT = 1 mA to 300 mA'. The datasheet does not specify the 0 to 1 mA end (SLVSDQ0K 5.5, re-read 2026-09-29T03:20:01Z), as P3 found. It meets the value only with the same preload of at least 1 mA as rank 2: 4.7 kΩ ±1 % draws 1.04 to 1.09 mA across 4.925 to 5.075 V. It ranks below TLE42754D because it costs 1.514 USD against 0.7034 USD and has less stock (JLCPCB 2043, presale 2005, vendors.py jlcpcb C424924, 03:22:12Z; Digi-Key 1616) and less thermal margin"
+     },
+     {
+      "rank": 4,
+      "part": "TPS7B8150DGNR",
+      "option": "",
+      "reason": "Same band, footprint and thermal figures as rank 3, for 1.1209 USD. Its band is also specified from IOUT = 1 mA only (TPS7B81 SBVS402 6.5, re-read 2026-09-29T03:20:01Z), so it needs the same preload of at least 1 mA. It ranks below rank 3 for its 150 mA rating and its lower JLCPCB stock: 661, presale 661 (vendors.py jlcpcb C2864577, 03:22:13Z)"
+     }
+    ],
+    "new_candidates": [
+     {
+      "rank": 2,
+      "part": "TLE42754D",
+      "maker": "Infineon Technologies (datasheet OPTIREG linear TLE42754 Rev. 1.31, 2023-11-27); S1 Infineon",
+      "lcsc": "C90364",
+      "package": "PG-TO252-5 (JLCPCB's label: TO-252-4)",
+      "placements": 1,
+      "placements_basis": "fixed at 1: one excitation for the 3 bridges and the ADC's AVDD (F3, V254)",
+      "held": 0,
+      "requirements": [
+       {
+        "name": "output voltage",
+        "required": "5.0 V nominal, held within 4.75 to 5.25 V over input 6.0 to 22 V, load 0 to 60 mA and 0 to 50 °C ambient, because it is also the bridge ADC's AVDD",
+        "datasheet": "The datasheet gives VQ 4.9 to 5.1 V for 1 mA < IQ < 400 mA and 6 V < VI < 28 V, over Tj −40 to 150 °C (Table 5, P_5.1.2). That is inside 4.75 to 5.25 V. Two conditions apply. First, loads below 1 mA are not specified, so the pass holds with a preload of at least 1 mA on the output. A 4.7 kΩ ±1 % resistor draws 1.03 mA at 4.9 V and 1.10 mA at 5.1 V and dissipates 5.6 mW, which keeps IQ above 1 mA while the bridges and the ADC draw 0 to 60 mA. Second, 6.0 V is the open end of '6 V < VI'. At 6.0 V the input is 0.9 V above the output, above the 0.5 V maximum dropout at 300 mA (P_5.1.7)",
+        "pass": true,
+        "source": "https://www.infineon.com/assets/row/public/documents/10/49/infineon-tle42754-datasheet-en.pdf, Rev. 1.31 (2023-11-27), Table 5, read 2026-09-29T03:20:00Z"
+       },
+       {
+        "name": "output current",
+        "required": "at least 60 mA continuous: 3 bridges of 345 Ω at 5.25 V draw 45.7 mA, plus up to 13.8 mA of analogue supply for a 2-placement bridge ADC (AD7190 2 × 6.75 mA, Rev. C; AD7195 2 × 6.9 mA, T4 re-rank reading)",
+        "datasheet": "The band is specified to IQ < 400 mA (P_5.1.2), and the current limit is 450 to 1100 mA at VQ = 4.8 V (P_5.1.4). With the 1.10 mA preload the regulator carries at most 61.1 mA",
+        "pass": true,
+        "source": "https://www.infineon.com/assets/row/public/documents/10/49/infineon-tle42754-datasheet-en.pdf, Rev. 1.31, Table 5, read 2026-09-29T03:20:00Z"
+       },
+       {
+        "name": "input voltage range",
+        "required": "operates from 6.0 to 22 V: the selected input bus spans 6.0 to 20 V (R5 row; 2 cells at the 3.0 V floor of F9), and 22 V is the highest the DC input's cut-off may sit at (V84, open)",
+        "datasheet": "Functional range VI 5.5 to 42 V (Table 3, P_4.2.1); absolute maximum VI −42 to 45 V (P_4.1.1)",
+        "pass": true,
+        "source": "https://www.infineon.com/assets/row/public/documents/10/49/infineon-tle42754-datasheet-en.pdf, Rev. 1.31, Tables 2 and 3, read 2026-09-29T03:20:00Z"
+       },
+       {
+        "name": "dropout",
+        "required": "at most 1.0 V at 60 mA, so the output stays in regulation from 6.0 V",
+        "datasheet": "Vdr is 500 mV maximum at IQ = 300 mA, measured where VQ has dropped 100 mV from its value at VI = 13.5 V (P_5.1.7). No figure is given at 60 mA. The 300 mA maximum is below 1.0 V",
+        "pass": true,
+        "source": "https://www.infineon.com/assets/row/public/documents/10/49/infineon-tle42754-datasheet-en.pdf, Rev. 1.31, Table 5, read 2026-09-29T03:20:00Z"
+       },
+       {
+        "name": "junction temperature",
+        "required": "junction temperature at or below the part's maximum operating junction temperature at 22 V in, 60 mA out and 50 °C ambient, from the datasheet's θJA and its ground current",
+        "datasheet": "Tj max is 150 °C (P_4.2.4). RthJA is 27 K/W on a 2s2p board (P_4.3.2), 57 K/W on 1s0p with 300 mm² of copper (P_4.3.4) and 110 K/W on the bare footprint (P_4.3.3). Ground current is 220 µA maximum at 1 mA (P_5.2.2), 10 mA maximum at 250 mA (P_5.2.3) and 25 mA maximum at 400 mA (P_5.2.4); no figure is given at 60 mA. The pass element dissipates (22 − 4.9) V × 61.1 mA = 1.045 W, preload included. Taking 10 mA of ground current as the bound gives 1.265 W, so Tj is 84.1 °C on 2s2p, 122.1 °C on 1s0p with 300 mm², and 189 °C on the bare footprint, which fails. Without assuming any ground current at 60 mA, the headroom to 150 °C covers 121 mA of ground current at 22 V on 2s2p and 32 mA on 1s0p with 300 mm². Both are above the 25 mA maximum at 400 mA. Condition: the part needs a 2s2p board or at least 300 mm² of copper",
+        "pass": true,
+        "source": "https://www.infineon.com/assets/row/public/documents/10/49/infineon-tle42754-datasheet-en.pdf, Rev. 1.31, Tables 3, 4 and 6, read 2026-09-29T03:20:00Z"
+       },
+       {
+        "name": "output protection",
+        "required": "internal current limit and thermal shutdown: the excitation leaves the board on the load-cell leads",
+        "datasheet": "Output current limitation is 450 to 1100 mA at VQ = 4.8 V (P_5.1.4). Overtemperature shutdown is at 151 to 200 °C with 20 °C typical hysteresis (P_5.1.10, P_5.1.11). The features list also names reverse polarity protection",
+        "pass": true,
+        "source": "https://www.infineon.com/assets/row/public/documents/10/49/infineon-tle42754-datasheet-en.pdf, Rev. 1.31, Table 5 and page 1, read 2026-09-29T03:20:00Z"
+       },
+       {
+        "name": "operating temperature",
+        "required": "rated for 0 to 50 °C ambient",
+        "datasheet": "Tj −40 to 150 °C (P_4.2.4); no ambient range is given; Tj is 84.1 °C (2s2p) or 122.1 °C (1s0p, 300 mm²) at 50 °C ambient, 22 V and 60 mA",
+        "pass": true,
+        "source": "https://www.infineon.com/assets/row/public/documents/10/49/infineon-tle42754-datasheet-en.pdf, Rev. 1.31, Table 3, read 2026-09-29T03:20:00Z"
+       }
+      ],
+      "jlcpcb": "stockCount 6544, canPresaleNumber 6498, componentLibraryType expand, 0.7034 USD each at 5 (break 1 to 9; 0.567 USD from 10). Read 2026-09-29T03:22:01Z with vendors.py jlcpcb C90364 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList, exact match, other_results 0). Maker label Infineon Technologies; package label TO-252-4. The separate row C3751553 (TLE42754DATMA1) has stockCount 0 and presale 0 (vendors.py jlcpcb C3751553, 03:23:50Z)",
+      "digikey": "TLE42754DATMA1: stock_available 29141 (Cut Tape 29141, Tape & Reel 27500), lead_weeks 13, status Active, discontinued false, end_of_life false. Read 2026-09-29T03:15:16Z; this task's call returned it as the cached reading of the same UTC day. Call: vendors.py digikey TLE42754DATMA1 (https://api.digikey.com/products/v4/search/TLE42754DATMA1/productdetails)",
+      "gate": "need 5 boards × 1 = 5; threshold max(5 × 5, 50) = 50 (S4); JLCPCB stock 6544 ≥ 50 and presale 6498 ≥ 0: pass (rule 4)",
+      "lifecycle": "Manufacturer status: 'active and preferred' for the orderable TLE42754DATMA1 (PG-TO252-5, tape and reel of 2500). Read from the Product Status field of the page's JSON-LD entry and from data-productstatusinfo at https://www.infineon.com/part/TLE42754D (vendors.py fetch, 2026-09-29T03:22:33Z). Longevity: the same page gives 'Planned to be available until at least 2038'. Market introduction: datasheet Rev. 1.0 of 2008-05-29 (revision history of Rev. 1.31), more than 12 months, not flagged. Change and discontinuation notices: Infineon's PCN listing was not read. Rev. 1.31 records only that the TLE42754E package variant was discontinued and removed, which is not this part. Distributor: Digi-Key Active (03:15:16Z). JLCPCB lists C90364 with stock, and its API row carries no status field (03:22:01Z). The LCSC page was not read",
+      "second_source": "second-vendor: TLE42754DATMA1 at Digi-Key, 29141 ≥ 50 (2026-09-29T03:15:16Z). TLE42754DATMA1 is Infineon's orderable of TLE42754D: the part page lists it as the one orderable, PG-TO252-5, tape and reel of 2500 (https://www.infineon.com/part/TLE42754D, read 03:22:33Z)",
+      "alternates": [
+       "TLE4275QKVURQ1 (Texas Instruments, TO-252 KVU, JLCPCB C781809 stockCount 4855, presale 4854, 1.0965 USD at 1, read 2026-09-29T03:22:07Z). In SLVS647J Table 4-1, IN is pin 1, GND pin 3 and DELAY pin 4. Its 4.9 to 5.1 V band starts at IOUT 5 mA (SLVS647J 5.5, read 03:20:02Z). The pin-for-pin and circuit match was not checked, and the part is not qualified"
+      ],
+      "driver_in_shared": "none (no firmware)",
+      "reason": "Meets every requirement value on one condition: a preload of at least 1 mA on the output (4.7 kΩ ±1 %, 1.03 to 1.10 mA), because the band is specified for 1 mA < IQ. It has the most thermal margin (Tj 84.1 °C on 2s2p, 122.1 °C on 1s0p with 300 mm²), the deepest stock at both vendors, a price of 0.7034 USD at the need, and a published availability plan to at least 2038. It ranks below BD450M2FP3-CE2, which needs no preload, is specified from exactly 6 V and has a smaller footprint. TLE42754D also needs at least 22 µF with ESR at most 3 Ω on the output (P_4.2.2, P_4.2.3). RO (pin 2) and D (pin 4) are left open when the reset is not used (Table 1)",
+      "second_source_route": "second-vendor",
+      "second_source_part": ""
+     }
+    ],
+    "dropped_from_p3": [
+     {
+      "part": "TL720M05QKVURQ1",
+      "maker": "Texas Instruments",
+      "reason": "output voltage: SGLS380J 5.5 (KVU, re-read 2026-09-29T03:20:02Z) specifies the legacy die at 4.9 to 5.1 V for IOUT 5 to 400 mA. The new die is specified at ±1.15 % from IOUT 100 µA. The package addendum lists TL720M05QKVURQ1 and TL720M05QKVURQ1M3 as separate orderables and names no die for either, so the 5 mA floor binds. The function's load starts at 0 mA. The part meets that only with a preload of at least 5 mA: 953 Ω ±1 % draws 5.09 to 5.41 mA and dissipates 27.6 mW. That is five times the 1 mA preload ranks 2 to 4 need, and it is not recorded beyond those. Other values pass: KVU RθJA is 45.3 °C/W (legacy) and 30 °C/W (new), both JEDEC high-K; TJ is −40 to 150 °C; current limit is 450 to 950 mA (legacy). JLCPCB C486028 has stockCount 2725, presale 2633, 1.194 USD at 1 (vendors.py jlcpcb C486028, 03:22:03Z). Digi-Key has 7050, Active, lead 16 weeks (vendors.py digikey TL720M05QKVURQ1, 03:22:23Z)"
+     }
+    ],
+    "dropped_from_shortlist": [],
+    "verify": [
+     {
+      "part": "BD450M2FP3-CE2",
+      "kind": "first",
+      "option": ""
+     }
+    ],
+    "decision": "none",
+    "kept_option": ""
+   }
+  ],
+  "report": [
+   {
+    "figure": "excitation load floors",
+    "value": "The lowest load at which each excitation candidate's output band is specified: BD450M2FP3-CE2 0 mA (0 mA ≤ IOUT ≤ 50 mA). TPS7B8250QDGNRQ1 1 mA (IOUT = 1 mA to 300 mA). TPS7B8150DGNR 1 mA (IOUT = 1 mA to 150 mA). TLE42754D 1 mA, an open bound (1 mA < IQ). TL720M05QKVURQ1 5 mA on the legacy die and 100 µA on the new die. TLE4275QKVURQ1 5 mA. The function's load is 0 to 60 mA, so every part except BD450M2FP3-CE2 meets it only with a preload",
+    "source": "BD4xxM2-C Rev.006 Electrical Characteristics as recorded by P2 (02:45:39Z) and the T4 P4 datasheet verifier; SLVSDQ0K 5.5 and SBVS402 6.5 (re-read 2026-09-29T03:20:01Z); TLE42754 Rev. 1.31 Table 5 (03:20:00Z); SGLS380J 5.5 and SLVS647J 5.5 (03:20:02Z)"
+   },
+   {
+    "figure": "preload for the 1 mA floor",
+    "value": "4.7 kΩ ±1 % from the excitation output to ground draws 1.032 mA at 4.9 V and 1.096 mA at 5.1 V, and dissipates 5.6 mW at most. Across the TPS7B82/TPS7B81 band of 4.925 to 5.075 V it draws 1.037 to 1.091 mA. With it, ranks 2 to 4 carry at most 61.1 mA at the function's 60 mA, inside every rating",
+    "source": "arithmetic on the bands of TLE42754 Rev. 1.31 Table 5, SLVSDQ0K 5.5 and SBVS402 6.5, read 2026-09-29T03:20:00Z to 03:20:01Z"
+   },
+   {
+    "figure": "TLE42754D junction temperature",
+    "value": "At 22 V in, 60 mA out plus the 1.10 mA preload, and 50 °C ambient, the pass element dissipates (22 − 4.9) V × 61.1 mA = 1.045 W. Taking the 10 mA maximum ground current stated at 250 mA as the bound adds 0.22 W. Tj is then 84.1 °C at 27 K/W (2s2p), 122.1 °C at 57 K/W (1s0p, 300 mm²) and 189 °C at 110 K/W (footprint only). The last is above the 150 °C maximum. Ground current at 60 mA is not stated. The headroom to 150 °C covers 121 mA of it at 22 V on 2s2p and 32 mA on 1s0p with 300 mm²",
+    "source": "TLE42754 Rev. 1.31 Tables 3, 4, 5 and 6, https://www.infineon.com/assets/row/public/documents/10/49/infineon-tle42754-datasheet-en.pdf, read 2026-09-29T03:20:00Z"
+   },
+   {
+    "figure": "excitation load on the input bus with TLE42754D",
+    "value": "The regulator's output load is 51.95 mA at most with a ranked ADC. The 3 bridges of 345 Ω at the 5.10 V maximum draw 44.35 mA, the ADC's IAVDD adds 6.5 mA at most, and the preload adds 1.10 mA. The input bus also carries the regulator's ground current at that load, which the datasheet does not state (220 µA maximum at 1 mA, 10 mA maximum at 250 mA). With BD450M2FP3-CE2, P2's 51.0 mA stands",
+    "source": "V255 (345 Ω); TLE42754 Rev. 1.31 Tables 5 and 6 (03:20:00Z); IAVDD 6.5 mA maximum as P2 recorded for ADS1235, ADS1262 and ADS1261"
+   },
+   {
+    "figure": "TLE42754D JLCPCB",
+    "value": "C90364 stockCount 6544, canPresaleNumber 6498, expand, 0.7034 USD at 1 to 9, 0.567 USD at 10; package label TO-252-4. The row C3751553 TLE42754DATMA1 has 0, presale 0",
+    "source": "vendors.py jlcpcb C90364, 2026-09-29T03:22:01Z; vendors.py jlcpcb C3751553, 03:23:50Z"
+   },
+   {
+    "figure": "TLE42754DATMA1 Digi-Key",
+    "value": "stock_available 29141, lead 13 weeks, Active, discontinued false, end_of_life false",
+    "source": "vendors.py digikey TLE42754DATMA1 (https://api.digikey.com/products/v4/search/TLE42754DATMA1/productdetails), read 2026-09-29T03:15:16Z, returned cached in this task"
+   },
+   {
+    "figure": "TLE42754D manufacturer status",
+    "value": "TLE42754DATMA1 is 'active and preferred', PG-TO252-5, tape and reel of 2500, and the only orderable on the page. The page states 'Planned to be available until at least 2038'",
+    "source": "https://www.infineon.com/part/TLE42754D (vendors.py fetch, JSON-LD Product Status and data-productstatusinfo), read 2026-09-29T03:22:33Z"
+   },
+   {
+    "figure": "TL720M05QKVURQ1 readings",
+    "value": "JLCPCB C486028 stockCount 2725, presale 2633, 1.194 USD at 1. Digi-Key 7050, Active, lead 16 weeks. TI product page status ACTIVE",
+    "source": "vendors.py jlcpcb C486028, 2026-09-29T03:22:03Z; vendors.py digikey TL720M05QKVURQ1, 03:22:23Z; https://www.ti.com/product/TL720M05-Q1 meta status, 03:22:33Z"
+   },
+   {
+    "figure": "ADS1235QWRHMRQ1 readings",
+    "value": "JLCPCB C2876667 stockCount 48, presale 44, 12.945 USD at 1, below the gate of 50. Digi-Key 802, Active, lead 26 weeks",
+    "source": "vendors.py jlcpcb C2876667, 2026-09-29T03:22:04Z; vendors.py digikey ADS1235QWRHMRQ1, 03:22:25Z"
+   },
+   {
+    "figure": "ADS1235 reel orderables",
+    "value": "ADS1235IRHBR (3000, large T&R) and ADS1235IRHBT (250, small T&R) are both Active and Production in SBAS824's Packaging Information: VQFN (RHB) 32, NIPDAU, Level-3-260C-168 HR, −40 to 125 °C, marking ADS 1235. Digi-Key has IRHBR 0 and IRHBT 401",
+    "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf, SBAS824 Packaging Information, read 2026-09-29T03:24:37Z; vendors.py digikey ADS1235IRHBR and ADS1235IRHBT, 02:48:11Z and 02:48:13Z (cached)"
+   },
+   {
+    "figure": "ADS1235 noise at the rate used",
+    "value": "0.13 µV RMS (1 µVPP) at 1200 SPS, sinc3, gain 128, VREF 5 V, TA 25 °C, below the 0.170 µV limit",
+    "source": "SBAS824 Table 1, https://www.ti.com/lit/ds/symlink/ads1235.pdf, read 2026-09-29T03:24:37Z"
+   },
+   {
+    "figure": "first-ranked parts re-read at JLCPCB",
+    "value": "ADS1235IRHBR C2669975: 1340, presale 1220, 10.0503 USD at 1 to 9. BD450M2FP3-CE2 C308595: 3165, presale 3062, 0.6726 USD at 1 to 9. Both pass the gate of 50",
+    "source": "vendors.py jlcpcb C2669975, 2026-09-29T03:22:09Z; vendors.py jlcpcb C308595, 03:22:10Z"
+   }
+  ]
+ }
+}

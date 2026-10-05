@@ -1,0 +1,139 @@
+{
+ "role": "P4",
+ "category": "R1",
+ "label": "P4-stock-R1-2",
+ "attempt": 0,
+ "data": {
+  "category": "R1",
+  "verifier": "stock",
+  "parts": [
+   {
+    "function": "USB protection",
+    "part": "VBUS54CV-HSF-G4-08",
+    "kind": "first",
+    "verdict": "refuted",
+    "refutation": "Rule 5 is not shown, and only for want of a reading: the second-vendor stock could not be re-read. Digi-Key's API answered HTTP 429 'Daily Ratelimit exceeded' to productdetails VBUS54CV-HSF-G4-08 at 2026-09-28T18:22:57Z and again at 18:23:20Z (x-ratelimit-limit 1000, remaining 0, x-ratelimit-resettime 2026-09-29T00:00:00.000Z, retry-after 20199 s). No Digi-Key stock below the gate was read. The stock, lead time and Digi-Key status stay P2's readings of 17:19:23Z, not re-verified. Every other reading passes. JLCPCB C511465 is an exact match with stockCount 2924 and canPresaleNumber 2913 against a gate of 50. LCSC productCycle is 'normal'. Vishay's PCN listing of 2532 notices names no VBUS54CV part. The Vishay product page gives no maker status, so that status is not read and goes to the owner. The Digi-Key reading goes to a follow-up after the limit resets at 2026-09-29T00:00Z.",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "stockCount 2924 at JLCPCB, exact match C511465, need 5 = 5 boards x 1, gate 50 (read 2026-09-28T17:18:36Z)",
+      "read": "JLCPCB stockCount 2924, exact match C511465, other_results 0. Need 5 = 5 boards (S7) x 1 placement; S4 gate max(5 x 5, 50) = 50; 2924 >= 50",
+      "source": "vendors.py jlcpcb C511465 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList), HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:22:55Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 2913",
+      "read": "canPresaleNumber 2913, >= 0",
+      "source": "vendors.py jlcpcb C511465 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList), HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:22:55Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType 'expand' (extended); S6 allows extended parts",
+      "source": "vendors.py jlcpcb C511465 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:22:55Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C511465 is VBUS54CV-HSF-G4-08, LLP75-6L (JLCPCB UFDFN-6-EP)",
+      "read": "The exact result for C511465 names part VBUS54CV-HSF-G4-08, package UFDFN-6-EP, maker label 'Vishay Intertech', description '... 1.2pF, 190pF ... 5.5V ... ESD Four channels IEC 61000-4-2 ... UFDFN-6-EP'; other_results 0. The LCSC page for C511465 gives productModel VBUS54CV-HSF-G4-08, brandNameEn VISHAY, encapStandard UFDFN-6-EP (18:26:34Z). The datasheet's ordering code for VBUS54CV-HSF in LLP75-6L is VBUS54CV-HSF-G4-08",
+      "source": "vendors.py jlcpcb C511465 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList); https://www.lcsc.com/product-detail/C511465.html; https://www.vishay.com/docs/84145/vbus54cvhsf.pdf ordering information",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:22:55Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key VBUS54CV-HSF-G4-08 stock_available 55692 >= 50 (2026-09-28T17:19:23Z)",
+      "read": "not read: Digi-Key's API answered HTTP 429 'Daily Ratelimit exceeded' (x-ratelimit-limit 1000, x-ratelimit-remaining 0, x-ratelimit-resettime 2026-09-29T00:00:00.000Z, retry-after 20199 s) at 18:22:57Z and 18:23:20Z. No stock figure was returned, so rule 5's second-vendor route is not shown by this verifier. This is not a reading below the gate of 50",
+      "source": "vendors.py digikey VBUS54CV-HSF-G4-08 (https://api.digikey.com/products/v4/search/VBUS54CV-HSF-G4-08/productdetails), HTTP 429, and the same call's response headers",
+      "agrees": false,
+      "passes": false,
+      "read_at": "2026-09-28T18:23:20Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Maker status not read: the product page body carries no lifecycle status (https://www.vishay.com/en/product/84145/, 17:19:57Z); Digi-Key Active",
+      "read": "Maker status not read, reported to the owner. https://www.vishay.com/en/product/84145/ answered HTTP 200 (751,618 bytes). Its body and its embedded page data (__NEXT_DATA__ pageProps: pCorResults, featuresResults, documentsTabResults, lcpData, getPPGElementsStatus, automotiveGrade and others) carry no lifecycle or status field. lcpData holds only the ordering code 'VBUS54CV-HSF-G4-08' for the Buy Now button. Not a failing status: Vishay's notice listing names no VBUS54CV part (see end-of-life notices). Digi-Key's ProductStatus is not re-read (HTTP 429)",
+      "source": "https://www.vishay.com/en/product/84145/ via vendors.py fetch (client chrome); https://www.vishay.com/en/quality/pcn-search/ (18:25:41Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:24:11Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "Notices: none found",
+      "read": "None for this part. Vishay's PCN search page embeds its whole notice list: 2532 entries, submitted 2009-11-02 to 2026-09-17 12:13:59, 911 of them classified 'Product Obsolescence'. No entry's id, title, parts or description contains 'VBUS54CV'. Nearby notices are for other parts. PTN-DD-007-2024-REV-0 (2024-03-18, Product Obsolescence) lists VBUS54FD-SD1-G4-08, a different part. PCN-DD-015-2012-Rev-00 (2012-08-13) discontinues VBUS054CV-HS3-GS08 in the 0.75 mm LLP75-6A package, a different ordering code and package. PCN-SSP-396-2010-Rev-0 covers the LLP75-7A package",
+      "source": "https://www.vishay.com/en/quality/pcn-search/ via vendors.py fetch (client chrome), HTTP 200, 3,735,344 bytes, embedded notice records parsed",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:25:41Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "Longevity commitment: not read",
+      "read": "not read: the product page https://www.vishay.com/en/product/84145/ (18:24:11Z) carries no longevity commitment, and this verifier found no Vishay longevity programme page to read. None is recorded; S5 does not require one",
+      "source": "https://www.vishay.com/en/product/84145/ via vendors.py fetch",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:24:11Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "not read; the datasheet carries Rev. 1.3, 04-Jan-2019, so at least 7 years",
+      "read": "not read: the first datasheet revision's date is not given. The served datasheet (SHA-256 26a39d9afeea200b4b5496f449623b867e2eb8887e9f92d29be190e7ee04fd08, PDF created 2026-04-03) carries only 'Rev. 1.3, 04-Jan-2019', Document Number 84145, and has no revision history. The web archive's capture index answered HTTP 503 at 18:25:11Z. Rev. 1.3 alone is 7 years 8 months old, so the part is over 12 months on the market: not flagged",
+      "source": "https://www.vishay.com/docs/84145/vbus54cvhsf.pdf via vendors.py fetch, HTTP 200, 178,604 bytes; https://web.archive.org/cdx/search/cdx?url=vishay.com/docs/84145/vbus54cvhsf.pdf (HTTP 503)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:25:02Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "LCSC productCycle 'normal' (17:24:32Z); Digi-Key Active (17:19:23Z)",
+      "read": "LCSC: productCycle 'normal' in the record of productCode C511465 (productModel VBUS54CV-HSF-G4-08, stockNumber 2920). JLCPCB: the API row has no status field, and https://jlcpcb.com/partdetail/C511465 (HTTP 200, 18:26:41Z) carries no lifecycle or discontinued text. Digi-Key: ProductStatus not re-read, because the API answered HTTP 429 (18:22:57Z). No reading disagrees with the maker, whose status is not read",
+      "source": "https://www.lcsc.com/product-detail/C511465.html via vendors.py fetch (HTTP 200); https://jlcpcb.com/partdetail/C511465; vendors.py jlcpcb C511465; vendors.py digikey VBUS54CV-HSF-G4-08 (HTTP 429)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:26:34Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 11 weeks (Digi-Key, 17:19:23Z)",
+      "read": "not read: Digi-Key's API answered HTTP 429 'Daily Ratelimit exceeded' (limit resets 2026-09-29T00:00:00Z), so ManufacturerLeadWeeks was not returned",
+      "source": "vendors.py digikey VBUS54CV-HSF-G4-08 (https://api.digikey.com/products/v4/search/VBUS54CV-HSF-G4-08/productdetails), HTTP 429",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-28T18:22:57Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 a board; not fixed by the specification, range 1 to 1",
+      "read": "The specification does not fix the count. IOBoard.md:118 gives one USB port whose protection is selected in R1. V13 (owner, 2026-09-28) sets 5 lines on the USB Type-C connector: VBUS, D+, D-, CC1 and CC2. The part has 4 I/O clamps (pins 1, 3, 4, 6) and a VBUS clamp (pin 5), 5 lines in all, so 1 placement covers them. The top of the range is 1, and the candidate's count 1 >= 1",
+      "source": "hardware/docs/IOBoard.md:118 and hardware/docs/Research.md:573 (V13) at commit 10b0bade34de; https://www.vishay.com/docs/84145/vbus54cvhsf.pdf",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:27:06Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C511465",
+      "read": "The specification places the USB port, and so its protection, on the IO board, on the RP2354B's own USB pins (IOBoard.md:118; :536 'the USB protection in R1'). LCSC number C511465 is C and digits, so it is on the board, and rule 1 agrees",
+      "source": "hardware/docs/IOBoard.md:118 and :536 at commit 10b0bade34de; vendors.py jlcpcb C511465",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-28T18:27:06Z"
+     }
+    ]
+   }
+  ],
+  "figures": []
+ }
+}

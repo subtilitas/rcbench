@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R4",
+ "label": "adjudicator-R4-4",
+ "attempt": 0,
+ "data": {
+  "category": "R4",
+  "function": "P2 report: enable I_off reading",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands. P2's drop reason for SN74LVC8T245 and TXU0104 does not hold as written. Both datasheets do state a limit for the enable input at a supply of 0 V, by reference. Each one states that Ioff limits the leakage into or out of any input or output pin. The Ioff row covers VI 0 to 5.5 V with one supply at 0 V, and the absolute maximum of the enable input is -0.5 to 6.5 V whatever the supply voltage. That meets the IOBoard.md definition of I_off in the powered-off isolation row: a datasheet limit on input current with the input above the device's supply and that supply at 0 V, with no diode to the supply pin. Both parts therefore go back to qualification on the enable I_off requirement of R4 ('The output buffer takes I_off on every input on the RP2354B side and on its enable'). One inconsistency is recorded, not ruled on: in each table the Ioff parameter row is labelled 'A or B port', and the enable limit comes only from the feature-description text. The drops of TMUX1511, SN74CB3Q3125 and SN74LVC126A are not disputed by the refutation. They stay as P2 reported, and this ruling does not re-rule them. The ruling concerns this function's requirement, not the parts' lifecycle, allowlist or LCSC identity, so its scope is function.",
+  "evidence": "SN74LVC8T245, SCES584D (June 2005, revised May 2026). Section 7.3.2 'Ioff Supports Partial-Power-Down Mode Operation' says: 'The maximum leakage into or out of any input or output pin on the device is specified by Ioff in the Electrical Characteristics.' Section 7.3.5 repeats this. Table 5.6, Ioff, 'A or B port', VI or VO = 0 to 5.5 V: at VCCA = 0 V and VCCB 0 to 5.5 V, +/-1 uA at 25 C and +/-2 uA max over the operating range; the same with VCCB = 0 V. Pin table: OE is pin 22, referenced to VCCA ('pins (DIR and OE) are supplied by VCCA'). Table 5.1: VI for control inputs is -0.5 to 6.5 V, with no VCC-relative limit. TXU0104, SCES937B (May 2021, revised February 2025). Section 7.3.4 'Partial Power Down (Ioff)' says: 'The Ioff in the Section 5.5 specifies the maximum leakage into or out of any input or output pin on the device.' Section 7.1 says the Ioff circuitry 'ensures that no excessive current is drawn from or sourced into an input or output while the device is powered down.' Table 5.5, Ioff, 'A Port or B Port', VI or VO = 0 to 5.5 V, one supply at 0 V: +/-1.5 uA at 25 C, +/-2 uA at -40 to 85 C and +/-2.5 uA at -40 to 125 C. Ioff-float with a floating supply has the same limits. Table 5.1: OE input voltage is -0.5 to 6.5 V. OE can be referenced to VCCA or VCCB (section 7.3.2). In both tables the Ioff row is labelled for the A and B ports only.",
+  "source": "python3 tools/research/vendors.py fetch https://www.ti.com/lit/ds/symlink/sn74lvc8t245.pdf (client chrome, HTTP 200, read 2026-09-28T14:17:35Z; SCES584D sections 5.1, 5.6, 7.3.2, 7.3.5); python3 tools/research/vendors.py fetch https://www.ti.com/lit/ds/symlink/txu0104.pdf (client chrome, HTTP 200, read 2026-09-28T14:17:36Z; SCES937B sections 5.1, 5.5, 7.1, 7.3.2, 7.3.4, 7.3.5). Copies: /home/claude/rcbench-research/round1/scratch/T2/adjudicator-R4/ioff-sn74lvc8t245.pdf and ioff-txu0104.pdf. Requirement: hardware/docs/IOBoard.md 'Powered-off isolation' row and hardware/docs/Research.md row R4 at commit c25aa863372d.",
+  "read_at": "2026-09-28T14:17:35Z",
+  "scope": "function"
+ }
+}

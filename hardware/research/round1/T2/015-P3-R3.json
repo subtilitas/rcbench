@@ -1,0 +1,115 @@
+{
+ "role": "P3",
+ "category": "R3",
+ "label": "P3-R3",
+ "attempt": 0,
+ "data": {
+  "category": "R3",
+  "missed": [
+   {
+    "function": "OR gate",
+    "part": "74AUP1G32GW,125 (LCSC C179324)",
+    "maker": "Nexperia",
+    "why": "The AUP family has a lower I_off limit than P2's rank 1, and P2 ranks on I_off. 74AUP1G32 data sheet Rev. 13 (https://assets.nexperia.com/documents/data-sheet/74AUP1G32.pdf, read 2026-09-28T13:46:38Z): IOFF +/-0.2 uA at 25 degC, +/-0.5 uA at -40 to 85 degC, +/-0.75 uA at -40 to 125 degC. The 74LVC1G32 has +/-2 uA (https://assets.nexperia.com/documents/data-sheet/74LVC1G32.pdf, read 13:46:40Z). VCC 0.8 V to 3.6 V. VI 0 V to 3.6 V, also with VCC 0 V. VIH 2.0 V at VCC 3.0 V to 3.6 V. Same TSSOP5/SOT353 package and pinout as the 74LVC1G32GW. JLCPCB C179324: stockCount 952, canPresaleNumber 949, expand (vendors.py jlcpcb C179324, 2026-09-28T13:47:12Z). Digi-Key: 14,211 in stock, Active, lead time 20 weeks (vendors.py digikey-search '74AUP1G32GW,125', 13:47:44Z). Nexperia product page: product-status--production (https://www.nexperia.com/product/74AUP1G32GW, 13:47:52Z). TI alternate: SN74AUP1G32DBVR (C469878), JLCPCB 3492, presale 3259 (13:47:14Z). SN74AUP1G32 datasheet (https://www.ti.com/lit/ds/symlink/sn74aup1g32.pdf, read 13:46:39Z): Ioff 0.2 uA at 25 degC, 0.6 uA over the range."
+   },
+   {
+    "function": "latch",
+    "part": "74AUP1G175GW,125 (LCSC C545618)",
+    "maker": "Nexperia",
+    "why": "Not considered. It is the same D flip-flop as the 74LVC1G175 with an active-low MR and no preset. Pinout matches the 74LVC1G175GW: CP 1, GND 2, D 3, Q 4, VCC 5, MR 6. I_off is lower than both ranked parts. 74AUP1G175 data sheet Rev. 8 (https://assets.nexperia.com/documents/data-sheet/74AUP1G175.pdf, read 2026-09-28T13:48:07Z): IOFF +/-0.2 uA at 25 degC, +/-0.5 uA at -40 to 85 degC, +/-0.75 uA at -40 to 125 degC. The 74LVC1G175 has +/-2 uA (https://assets.nexperia.com/documents/data-sheet/74LVC1G175.pdf, read 13:48:08Z). VCC 0.8 V to 3.6 V. Input transition rate 200 ns/V maximum. JLCPCB C545618: stockCount 1599, canPresaleNumber 1590 (13:47:15Z). Nexperia page: production (https://www.nexperia.com/product/74AUP1G175GW, 13:47:59Z). Digi-Key: not read."
+   },
+   {
+    "function": "trigger input I_off buffer (Q9)",
+    "part": "SN74AUP1G17DBVR (LCSC C183012) / SN74AUP1G17DCKR (LCSC C2652099)",
+    "maker": "Texas Instruments",
+    "why": "Not considered. Schmitt buffer, from SCES579J (https://www.ti.com/lit/ds/symlink/sn74aup1g17.pdf, read 2026-09-28T13:48:22Z). Ioff on inputs and outputs (VI or VO 0 V to 3.6 V, VCC 0 V): 0.2 uA at 25 degC, 0.6 uA at -40 to 85 degC. The Nexperia LVC rank 1 has +/-2 uA. VT+ 1.88 V to 2.29 V at VCC 3 V, below 3.15 V. Inputs rated to 3.6 V. JLCPCB: C183012 stockCount 8928, presale 8807 (13:48:37Z); C2652099 stockCount 335, presale 329 (13:47:15Z). Digi-Key SN74AUP1G17DCKR: 8728, Active, lead time 9 weeks (13:58:53Z). TI product page status ACTIVE (https://www.ti.com/product/SN74AUP1G17, read about 13:58:50Z). The Nexperia 74AUP1G17GW,125 (C545626) has 3 in the copy of the parts database and was not counted at the API."
+   },
+   {
+    "function": "trigger-path inverter",
+    "part": "SN74AUP1G14DBVR (LCSC C2682131) / SN74AUP1G14DCKR (LCSC C2682132)",
+    "maker": "Texas Instruments",
+    "why": "Not considered. Schmitt inverter, from SCES578J (https://www.ti.com/lit/ds/symlink/sn74aup1g14.pdf, read 2026-09-28T13:58:46Z). IOFF 0.2 uA at 25 degC, 0.6 uA at -40 to 85 degC. VT+ 1.88 V to 2.29 V at VCC 3 V. JLCPCB: C2682131 stockCount 5252, presale 5231 (13:48:38Z); C2682132 stockCount 820, presale 813 (13:48:25Z). Digi-Key SN74AUP1G14DCKR: 6509, Active, lead time 16 weeks (13:58:56Z). TI page status ACTIVE (https://www.ti.com/product/SN74AUP1G14, about 13:58:50Z)."
+   },
+   {
+    "function": "reset supervisor",
+    "part": "TLV809EA30DBZR (LCSC C2860914)",
+    "maker": "Texas Instruments",
+    "why": "Not considered. It is push-pull and states its maximum hysteresis. Its band is 183 mV, between P2's rank 1 (169 mV) and rank 2 (198 mV). From SLVSES2J (https://www.ti.com/lit/ds/symlink/tlv809e.pdf, read 2026-09-28T13:49:51Z): VIT- 3.08 V, accuracy +/-2 % at -40 to 125 degC, so 3.018 V to 3.142 V. VHYS 0.9 % to 1.5 % of VIT-, so the release is at most 3.142 x 1.015 = 3.189 V, at or below 3.201 V. The band from 3.018 V to 3.201 V is 183 mV. The threshold minimum is above 2.0 V and 1.65 V. Push-pull active-low output; VPOR 700 mV maximum. Delay variant A, tD 130 ms to 270 ms, meets V43. VDD 1.7 V to 6 V. JLCPCB C2860914: stockCount 851, canPresaleNumber 848 (13:50:27Z). Digi-Key: 15,950, Active, lead time 16 weeks (13:50:39Z). TI product page: status ACTIVE (https://www.ti.com/product/TLV809E, 13:50:38Z). Checked in the same class and not better: TLV840 (VHYS 2.5 % to 7 %, SNVS... https://www.ti.com/lit/ds/symlink/tlv840.pdf, read 13:49:52Z) fails the release rule at 3.1 V. TPS3808G01 (adjustable) has 2 % accuracy and 3 % maximum hysteresis (SBVS050N, read 13:49:53Z), which is wider than the TPS3808G33."
+   },
+   {
+    "function": "servo rail gate",
+    "part": "BTS7004-1EPP (LCSC C534825; Digi-Key BTS70041EPPXUMA1)",
+    "maker": "Infineon",
+    "why": "P2 did not consider smart high-side switches (Infineon PROFET+2, ST VIPower). Data sheet Rev. 1.11 (https://www.infineon.com/dgdl/Infineon-BTS7004-1EPP-DS-v01_00-EN.pdf?fileId=5546d4626102d35a016147550a725555, read 2026-09-28T13:52:45Z). VS(OP) 4.1 V maximum rising, so it conducts at 4.8 V (V55). VS 28 V maximum; load dump 35 V; meets the 20 V of V44. IL(NOM) 15 A at TA 85 degC, above 6.35 A. tOFF 30 us to 220 us at VS 13.5 V. IL(OFF) 0.5 uA maximum at 85 degC. Truth table: IN low gives OFF. The digital input sinks IDI 2 uA to 25 uA. The data sheet shows the input driven through RIN = 4.7 kOhm. Parameters are specified in full over VS(NOR) 6 V to 18 V only; from 4.1 V to 6 V the extended range applies (P_4.3.0.x). JLCPCB C534825: stockCount 21000, presale 20905 (13:52:33Z). Digi-Key BTS70041EPPXUMA1: 34,830, Active, lead time 20 weeks (13:52:38Z). Infineon page: productStatusInfo 'active and preferred' (https://www.infineon.com/part/BTS7004-1EPP, 13:53:00Z). Same family, not read: BTS7008-1EPP (C534828, JLCPCB 582 at 13:52:33Z) and ST VN7007AHTR (C2150197, JLCPCB 2265 at 13:52:34Z). Also not considered: the TI eFuse sibling TPS259830ONRGER (C20611808, JLCPCB 694 at 13:52:34Z); the copy lists its maker as empty; datasheet not read."
+   },
+   {
+    "function": "onboard pack switch MOSFETs",
+    "part": "IAUT300N10S5N015 (LCSC C5151439)",
+    "maker": "Infineon",
+    "why": "Missed because the copy of the parts database leaves its maker field empty. JLCPCB's API names Infineon Technologies. Data sheet Rev. 1.2, 2025-02-19 (https://www.infineon.com/dgdl/Infineon-IAUT300N10S5N015-DS-v01_00-EN.pdf?fileId=5546d4625ee5d4cd015f2469d7203245, read 2026-09-28T13:53:58Z). VDS 100 V. RDS(on) 1.5 mOhm maximum at VGS 10 V and 100 A, the same as the IPT015N10N5. ID 300 A. EAS 652 mJ at 150 A. IDSS 1 uA maximum at 25 degC (20 uA at 85 degC, VDS 50 V). AEC-qualified. Package PG-HSOF-8-1, the TOLL footprint of the rank 1 IPT015N10N5, so it is a same-footprint alternate for rule 5. JLCPCB C5151439: stockCount 615, canPresaleNumber 590 (13:53:47Z), above P2's gate of 400 at 16 placements. Digi-Key IAUT300N10S5N015ATMA1: 12,057, Active, lead time 26 weeks (13:53:49Z). Infineon page: 'active and preferred' (https://www.infineon.com/part/IAUT300N10S5N015, 13:53:58Z)."
+   },
+   {
+    "function": "onboard pack switch driver",
+    "part": "VOM1271T (LCSC C146286); TLP3906(TPL,E (LCSC C146278)",
+    "maker": "Vishay; Toshiba",
+    "why": "Photovoltaic MOSFET drivers, not considered. The output is isolated and floats on the array's source. It holds the switch on statically at any pack voltage, 3.0 V (V51) included. With no LED current it is open, and it has no register. VOM1271, document 83469 Rev. 1.9 (https://www.vishay.com/docs/83469/vom1271.pdf, read 2026-09-28T13:54:56Z): VOC 7.8 V minimum at IF 10 mA; ISC 6 uA minimum, 15 uA typical; integrated fast turn-off; toff 65 us typical at CL 200 pF, no maximum. TLP3906 datasheet dated 2019-12-22 (https://toshiba.semicon-storage.com/info/docget.jsp?did=15186&prodName=TLP3906, read 13:55:42Z): VOC 7 V minimum; ISC 12 uA minimum at IF 10 mA; toff 1 ms maximum at CL 1000 pF; no internal turn-off. Not stated by either datasheet: the opening time at the array's gate charge against 5 ms, and the closing time (V46 not found). An external discharge stage may be needed. I_off is not defined for an LED input; the owner or P5 decides whether it meets IOBoard.md:192. JLCPCB: VOM1271T stockCount 5786, presale 5476 (13:54:54Z); TLP3906(TPL,E stockCount 4970, presale 4851 (13:54:56Z). Digi-Key TLP3906(TPL,E: 47,729, Active, lead time 24 weeks (13:55:26Z). Manufacturer status: not read; Toshiba product URLs answered 404 at 13:55:13Z and 13:55:23Z, and the Vishay page was not fetched."
+   }
+  ],
+  "exclusions_not_holding": [
+   {
+    "part": "74AUP1G32GW,125 / SN74AUP1G32DBVR",
+    "reason_given": "not qualified further: AUP output drive 4 mA against LVC 32 mA, and its maximum supply 3.6 V leaves 0.2 V above the rail; the LVC parts pass every requirement",
+    "why_it_fails": "None of P2's requirements for the OR gate names output drive. The enable node carries a 100 kOhm pull-down and the latch input. The 3.6 V maximum is above 3.399 V. On P2's own ranking criterion, the lowest I_off, the AUP part ranks first: IOFF +/-0.5 uA at -40 to 85 degC against +/-2 uA for the 74LVC1G32 (74AUP1G32 Rev. 13, read 2026-09-28T13:46:38Z). Stock, status and figures are in the missed entry for the OR gate."
+   },
+   {
+    "part": "EVQ-Q2B03W",
+    "reason_given": "requirement values not read: Panasonic's datasheet URLs answered 404 or an HTML page",
+    "why_it_fails": "The values are readable. Source 1: the catalog at Digi-Key's datasheet link (https://www3.panasonic.biz/ac/cdn/e/control/switch/light-touch/catalog/sw_lt_eng_6s_th.pdf, served from industry.panasonic.com, read 2026-09-28T13:51:12Z). Source 2: the product page (https://industry.panasonic.com/global/en/products/control/switch/light-touch/number/evqq2b03w, 13:51:29Z). Rating 10 uA at 2 V DC to 20 mA at 15 V DC, which covers 3.3 V and 0.33 mA. Bouncing 10 ms maximum (ON, OFF), the same limit as the rank 1 Wurth part. Operating temperature -40 to +85 degC. 2,000,000 cycles. JLCPCB C79178: stockCount 13,656, presale 13,333 (13:51:28Z). Digi-Key: 9,994, Active, lead time 14 weeks (13:50:53Z). The manufacturer's lifecycle status is not in the page body: not read."
+   },
+   {
+    "part": "74LVC1G17SE-7",
+    "reason_given": "not shortlisted: its datasheet was not read, and its Digi-Key stock is 0 (lead time 52 weeks)",
+    "why_it_fails": "Datasheet DS35124 Rev. 8-2 (https://www.diodes.com/assets/Datasheets/74LVC1G17.pdf, read 2026-09-28T13:56:52Z): IOFF +/-10 uA at VI or VO 5.5 V; VT+ 1.50 V to 2.00 V at VCC 3 V. Both requirement values are met. Digi-Key stock 0 removes only the second-vendor route of rule 5; it does not exclude the part. JLCPCB C212314: stockCount 5368, presale 5330 (13:56:51Z). Its I_off is higher than the Nexperia rank 1's +/-2 uA, so it ranks below."
+   },
+   {
+    "part": "TC74HC4538AF(EL,F)",
+    "reason_given": "datasheet not read; whether its reset release triggers is not known",
+    "why_it_fails": "The datasheet is readable (https://toshiba.semicon-storage.com/info/docget.jsp?did=16381&prodName=TC74HC4538AF, dated 2026-04-21, read 2026-09-28T13:45:40Z). The exclusion holds, on this ground: the truth table has no CD rising row, and the 'Reset operation' text does not say whether the release triggers, so the '423 behaviour is not stated (Monostable.md:229-236). Also: operating range -40 to 85 degC; parameters at 2.0, 4.5 and 6.0 V only; T2 pin leakage +/-5 uA at 85 degC and 6 V. The outcome does not change."
+   },
+   {
+    "part": "CD14538B, HEF4538B, CD4098B",
+    "reason_given": "4000-series parts at or near their 3 V minimum on the 3.3 V rail with timing specified at 5 V and above; datasheets not read, not qualified",
+    "why_it_fails": "Read on 2026-09-28. CD14538B, SCHS093C (https://www.ti.com/lit/ds/symlink/cd14538b.pdf, 13:44:23Z): VDD 3 V to 18 V; '5-V, 10-V, and 15-V parametric ratings'; the reset is described only as preventing output pulses at power-on. CD4098B, SCHS065C (https://www.ti.com/lit/ds/symlink/cd4098b.pdf, 13:44:24Z): the same. HEF4538B Rev. 13 (https://assets.nexperia.com/documents/data-sheet/HEF4538B.pdf, 13:44:24Z): 3.0 V to 15.0 V; function table without an nCD rising row. The exclusion holds, on these grounds: no characteristic below 5 V, and the reset release is not stated as non-triggering. The outcome does not change."
+   },
+   {
+    "part": "IPT020N10N5, FDBL86063-F085",
+    "reason_given": "not qualified: the parts database copy lists 305 / 30, under the gate of 400; not counted at JLCPCB's API",
+    "why_it_fails": "Rule 3 does not allow the copy's count as a stock figure. Counted at the API: C531202 IPT020N10N5 stockCount 21, presale 16. C900879 FDBL86063-F085 stockCount 30, presale 29. C3288772 IPT020N10N5ATMA1 stockCount 0 (vendors.py jlcpcb, 2026-09-28T13:53:18Z to 13:53:19Z). The exclusion holds on the API count; the outcome does not change."
+   },
+   {
+    "part": "AEVA1251",
+    "reason_given": "requirement values not read ...; an EV relay of the family read above releases in up to 30 ms",
+    "why_it_fails": "The 30 ms figure is from the AEVB datasheet (mech_eng_evb), not from AEVA1251. The part's release time and carrying current are not read, so the relay is unqualified rather than excluded. P3 could not read them either: the Panasonic product URLs answered 404 at 2026-09-28T13:57:26Z and 13:57:28Z. P2 read Digi-Key 56, Active; that is above the gate of 50."
+   },
+   {
+    "part": "TPS25947, TPS2663, TPS1663",
+    "reason_given": "TPS25947: 5.5 A maximum (Research.md:283 concerns; not re-read). TPS2663/TPS1663: 6 A class, below 6.35 A (parts database descriptions); datasheets not read",
+    "why_it_fails": "The sources cited are the research page and the parts database, not the datasheets. Datasheets read on 2026-09-28: SLVSFC9C (https://www.ti.com/lit/ds/symlink/tps25947.pdf, 13:56:53Z) gives 2.7 V to 23 V, 5.5 A. SLVSET9G (https://www.ti.com/lit/ds/symlink/tps1663.pdf, 13:56:54Z) gives 60 V, 6 A, current limit 0.6 A to 6 A. SLVSE94G (https://www.ti.com/lit/ds/symlink/tps2663.pdf, 13:56:55Z) gives 60 V, 6 A, current limit 0.6 A to 6 A. Each is below 6.35 A. The exclusions hold; the outcome does not change."
+   }
+  ],
+  "missed_functions": [
+   {
+    "function": "timing network (C and R of the monostable)",
+    "why": "IOBoard.md@c25aa86:185 names it: C in a dielectric with a stated temperature coefficient, and R from E96, 50 kOhm to 150 kOhm, set on test. C's drift enters the same window budget as V36 and V37. P2 has no entry. Research.md:28 puts passives in round 2, and the R3 row does not name the timing capacitor. If P6 marks it not round 1, no gap remains."
+   },
+   {
+    "function": "inverter on an active-low output enable",
+    "why": "IOBoard.md@c25aa86:192 (Powered-off isolation, sources PR #167, R3, R4) requires I_off or a 4.7 kOhm series resistor from the enable node. P2 lists only the trigger-path inverter. The output buffer is R4's choice (R4 row), so this inverter exists only if R4 picks a buffer with an active-low enable. R3 or R4 must own it; nothing on the page assigns it."
+   },
+   {
+    "function": "heartbeat-node series resistors, links and fail-safe pull-downs",
+    "why": "IOBoard.md@c25aa86:191 and :193 name the 100 kOhm pull-downs on the trigger input, each OR input and the enable node, the 4.7 kOhm series resistors, and the removable links in the display and trigger branches. P2 has no entry. Research.md:28 puts passives and connectors in round 2, so these are not round 1 unless P6 decides otherwise."
+   }
+  ]
+ }
+}

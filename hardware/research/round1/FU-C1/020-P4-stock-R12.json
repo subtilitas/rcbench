@@ -1,0 +1,751 @@
+{
+ "role": "P4",
+ "category": "R12",
+ "label": "P4-stock-R12",
+ "attempt": 0,
+ "data": {
+  "category": "R12",
+  "verifier": "stock",
+  "figures": [],
+  "parts": [
+   {
+    "function": "motor temperature thermocouple",
+    "part": "MAX31856MUD+T",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 11,459 (03:19:06Z)",
+      "read": "stockCount 11,459; exact LCSC match C2653162, other_results 0; gate: need 5 boards (S7) x 1 = 5, threshold max(5 x 5, 50) = 50 (S4); 11,459 >= 50",
+      "source": "vendors.py jlcpcb C2653162 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList), HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:36Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 11,205",
+      "read": "canPresaleNumber 11,205 >= 0",
+      "source": "vendors.py jlcpcb C2653162, HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:36Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Active: Digi-Key ProductStatus, the status of record for an Analog Devices part",
+      "read": "Digi-Key ProductStatus Active, discontinued false, end_of_life false (status of record for Analog Devices, Lifecycle check). The Analog Devices product page also answered this time: family badge PRODUCTION, and the Product Lifecycle table gives MAX31856MUD+T PRODUCTION and MAX31856MUD+ PRODUCTION",
+      "source": "vendors.py digikey MAX31856MUD+T (https://api.digikey.com/products/v4/search/MAX31856MUD%2BT/productdetails), read 02:47:35Z, returned cached: true in this task at about 03:28Z; https://www.analog.com/en/products/max31856.html (vendors.py fetch --client safari, HTTP 200, no challenge, read 03:29:36Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:47:35Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 12,023 >= gate 50",
+      "read": "Digi-Key stock_available 12,023 (Cut Tape 12,023, Digi-Reel 12,023, Tape & Reel 10,000 at minimum order 2,500) >= gate 50 (rule 4 and 5)",
+      "source": "vendors.py digikey MAX31856MUD+T (https://api.digikey.com/products/v4/search/MAX31856MUD%2BT/productdetails), HTTP 200, cached: true",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:47:35Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read, the Analog Devices product page was not fetched; none recorded",
+      "read": "none published on the Analog Devices product page (no longevity entry in the page body); no Analog Devices longevity programme page read. Not a gate (S5)",
+      "source": "https://www.analog.com/en/products/max31856.html (vendors.py fetch --client safari, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:36Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "19-7534 Rev 0, 2/15, the only revision, over 12 months",
+      "read": "datasheet 19-7534; Rev 0; 2/15 (February 2015), about 11 years 7 months on the market; the Analog Devices page lists Data Sheet (Rev. 0) as the most up-to-date revision",
+      "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/MAX31856.pdf (vendors.py fetch --client safari, HTTP 200, read 03:30:55Z), page 1 footer; https://www.analog.com/en/products/max31856.html (03:29:36Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:30:55Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "change and discontinuation notices: not read",
+      "read": "no end-of-life or last-time-buy notice: the Analog Devices PCN/PDN tab lists two notices for the part, PCN 1754N (11 Dec 2018, additional TSSOP assembler Greatek, 'no changes to the form, fit, function or quality') and PIN 2571B (20 Apr 2026, reel shipping box change, 'THIS IS NOT A PCN'); neither is a discontinuance. Digi-Key end_of_life false, discontinued false",
+      "source": "https://www.analog.com/en/products/max31856.html (03:29:36Z); https://www.analog.com/media/en/pcn/pcn_1754n.pdf and https://www.analog.com/media/en/pcn/pcn_2571b.pdf (vendors.py fetch --client safari, HTTP 200, 03:30:34Z and 03:30:33Z); vendors.py digikey MAX31856MUD+T (02:47:35Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:30:34Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; LCSC productCycle 'normal'; the JLCPCB API row carries no status field; no disagreement",
+      "read": "Digi-Key Active (02:47:35Z); LCSC productCycle 'normal' in the C2653162 product object (03:29:04Z); the vendors.py jlcpcb reading carries no status field; no disagreement with the status of record (Digi-Key) or with the Analog Devices page (PRODUCTION)",
+      "source": "vendors.py digikey MAX31856MUD+T; https://www.lcsc.com/product-detail/C2653162.html (vendors.py fetch, HTTP 200); vendors.py jlcpcb C2653162",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:04Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 27 weeks",
+      "read": "lead_weeks 27",
+      "source": "vendors.py digikey MAX31856MUD+T (https://api.digikey.com/products/v4/search/MAX31856MUD%2BT/productdetails), cached: true",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:47:35Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand (extended; S6 allows both)",
+      "source": "vendors.py jlcpcb C2653162",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:36Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C2653162, MAX31856MUD+T, TSSOP-14",
+      "read": "exact row C2653162: part MAX31856MUD+T, package TSSOP-14, maker label 'Analog Devices Inc./Maxim Integrated'",
+      "source": "vendors.py jlcpcb C2653162",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:36Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1, fixed by the specification: F5 gives 1 thermocouple channel",
+      "read": "1: F5 '2 channels: 1 infrared and 1 thermocouple' (Research.md:533), IOBoard.md:72; one converter for the one channel; candidate count 1 >= 1",
+      "source": "checkout e13f5f6 hardware/docs/Research.md:533, hardware/docs/IOBoard.md:72, :458",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:26:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C2653162",
+      "read": "on the IO board: 'Motor temperature input: on the IO board' (IOBoard.md:457); LCSC number C2653162 (C and digits), which says the same (rule 1)",
+      "source": "checkout e13f5f6 hardware/docs/IOBoard.md:457; vendors.py jlcpcb C2653162",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:36Z"
+     }
+    ]
+   },
+   {
+    "function": "motor temperature infrared",
+    "part": "MLX90614ESF-BCC-000-TU",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 311 (02:47:18Z)",
+      "read": "stockCount 311; exact LCSC match C7501763, other_results 0. The part sits on the JLCPCB-assembled sensor board of V249 (parts with LCSC numbers), so the gate is read at JLCPCB: need 5 sensor boards x 1 = 5, threshold 50 (S4); 311 >= 50. Digi-Key, read as well: 933 >= 50",
+      "source": "vendors.py jlcpcb C7501763 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList), HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:38Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 308",
+      "read": "canPresaleNumber 308 >= 0",
+      "source": "vendors.py jlcpcb C7501763, HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:38Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Active: Digi-Key ProductStatus, discontinued false, end_of_life false",
+      "read": "Digi-Key ProductStatus Active, discontinued false, end_of_life false; Digi-Key is the status of record for Melexis (Lifecycle check). The Melexis product page answered HTTP 403 with a challenge",
+      "source": "vendors.py digikey MLX90614ESF-BCC-000-TU (https://api.digikey.com/products/v4/search/MLX90614ESF-BCC-000-TU/productdetails), read 02:47:40Z, cached: true in this task; https://www.melexis.com/en/product/MLX90614/Digital-Plug-Play-Infrared-Thermometer-TO-Can (vendors.py fetch, HTTP 403, challenge true, 03:29:36Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:47:40Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 933 >= gate 50",
+      "read": "Digi-Key stock_available 933 (Tube 933) >= gate 50 (rule 5)",
+      "source": "vendors.py digikey MLX90614ESF-BCC-000-TU, HTTP 200, cached: true",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:47:40Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no Melexis page read",
+      "read": "not read: the Melexis product page answered HTTP 403 with a challenge (vendors.py fetch, client chrome, 03:29:36Z); no Melexis longevity programme page was reachable",
+      "source": "https://www.melexis.com/en/product/MLX90614/Digital-Plug-Play-Infrared-Thermometer-TO-Can",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:36Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet date not read (Datasheet Rev 021, 02-Jun-2026, no revision history)",
+      "read": "not read: the copy is 'Doc server Rev 012, Datasheet Rev 021 - 02-Jun-2026' with no revision history and no earlier date; Rev 021 implies 20 earlier revisions, so the part is not new, but the first date is not stated",
+      "source": "https://www.melexis.com/-/media/files/documents/datasheets/mlx90614-datasheet-melexis.pdf (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:31:00Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "notices: not read",
+      "read": "no end-of-life or last-time-buy notice found: Digi-Key end_of_life false, discontinued false, ProductStatus Active; the Melexis change-notice listing was not read (melexis.com refused with HTTP 403)",
+      "source": "vendors.py digikey MLX90614ESF-BCC-000-TU (02:47:40Z); melexis.com product page HTTP 403 (03:29:36Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:47:40Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active; the JLCPCB API row carries no status field",
+      "read": "Digi-Key Active (status of record); LCSC productCycle 'normal' in the C7501763 product object (03:29:05Z); the vendors.py jlcpcb reading carries no status field; no disagreement",
+      "source": "vendors.py digikey MLX90614ESF-BCC-000-TU; https://www.lcsc.com/product-detail/C7501763.html (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:05Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 12 weeks",
+      "read": "lead_weeks 12",
+      "source": "vendors.py digikey MLX90614ESF-BCC-000-TU, cached: true",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:47:40Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand",
+      "source": "vendors.py jlcpcb C7501763",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:38Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C7501763, MLX90614ESF-BCC-000-TU, TO-39, 4 leads",
+      "read": "exact row C7501763: part MLX90614ESF-BCC-000-TU, package TO-39, maker label 'Melexis'",
+      "source": "vendors.py jlcpcb C7501763",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:38Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1 on each sensor board (V249), one sensor board per IO board",
+      "read": "1: F5 gives 1 infrared channel (Research.md:533); V249 places the sensor on a small sensor board of its own, so 1 per sensor board and 1 sensor board per IO board; candidate count 1 >= 1",
+      "source": "checkout e13f5f6 hardware/docs/Research.md:533, :809",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:26:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "off the IO board on a sensor board JLCPCB assembles (parts with LCSC numbers); LCSC C7501763",
+      "read": "off the IO board, on the sensor board V249 fixes: 'on a small sensor board of its own that JLCPCB assembles (parts with LCSC numbers)' (owner, 2026-09-28). The part is JLCPCB-placed there, so it carries an LCSC number, C7501763, as rule 1 asks of a part JLCPCB assembly places; the page's owner answer overrides the plain on-board/off-board split of rule 1 for this sensor board",
+      "source": "checkout e13f5f6 hardware/docs/Research.md:809 (V249), rule 1; vendors.py jlcpcb C7501763",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:38Z"
+     }
+    ]
+   },
+   {
+    "function": "external I2C ports",
+    "part": "TCA9548APWR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 39,690 (02:47:19Z)",
+      "read": "stockCount 39,690; exact LCSC match C130026, other_results 0; gate 50 (need 5 x 1); 39,690 >= 50",
+      "source": "vendors.py jlcpcb C130026 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList), HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:39Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 39,348",
+      "read": "canPresaleNumber 39,348 >= 0",
+      "source": "vendors.py jlcpcb C130026, HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:39Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (TI product page, marketingStatusDescription for OPN TCA9548APWR)",
+      "read": "ACTIVE for OPN TCA9548APWR ('This product has been released to the market and is available for purchase'), hasReplacements false; all 7 TCA9548A orderables ACTIVE; family status badge 'released to the market'",
+      "source": "https://www.ti.com/product/TCA9548A (vendors.py fetch, client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:12Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "no TI programme page read, none recorded",
+      "read": "no per-part commitment; TI's product life cycle page: 'TI's product life cycles are typically 10 to 15 years and often extend longer', and a standard product is not eligible for obsolescence while it has had sales in the last five years, has been in production under 10 years, or has current demand. Not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T03:32:14Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "SCPS207, May 2012, over 12 months",
+      "read": "SCPS207H – MAY 2012 – REVISED SEPTEMBER 2024: first release May 2012, about 14 years on the market",
+      "source": "https://www.ti.com/lit/ds/symlink/tca9548a.pdf (vendors.py fetch, HTTP 200), page header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:30:56Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "TI PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: TI page status ACTIVE for every TCA9548A orderable (no LAST TIME BUY or NRND); Digi-Key end_of_life false, discontinued false. TI's PCN listing itself was not read",
+      "source": "https://www.ti.com/product/TCA9548A (03:28:12Z); vendors.py digikey TCA9548APWR (02:47:43Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:12Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active, discontinued false, end_of_life false; the JLCPCB API row carries no status field",
+      "read": "Digi-Key Active (02:47:43Z); LCSC productCycle 'normal' for C130026 (03:29:05Z); the vendors.py jlcpcb reading carries no status field; no disagreement with TI's ACTIVE",
+      "source": "vendors.py digikey TCA9548APWR (https://api.digikey.com/products/v4/search/TCA9548APWR/productdetails, cached: true); https://www.lcsc.com/product-detail/C130026.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:05Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "lead_weeks 16 (Digi-Key stock_available 0 in all three packagings; the second source is the alternate PCA9548APWR)",
+      "source": "vendors.py digikey TCA9548APWR, cached: true",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:47:43Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand",
+      "source": "vendors.py jlcpcb C130026",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:39Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C130026, TCA9548APWR, TSSOP-24",
+      "read": "exact row C130026: part TCA9548APWR, package TSSOP-24, maker label 'Texas Instruments'",
+      "source": "vendors.py jlcpcb C130026",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:39Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1: one switch of 2 or more channels carries both ports of Q7",
+      "read": "1: Q7 gives 2 ports (Research.md:545, IOBoard.md:74, :463); the specification does not fix the switch count; P2's basis, one switch of 2 or more channels for both ports, gives 1 as the top of the range; candidate count 1 >= 1",
+      "source": "checkout e13f5f6 hardware/docs/Research.md:545; hardware/docs/IOBoard.md:74, :463",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:26:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C130026",
+      "read": "on the IO board: the 2 Qwiic ports are on the IO board (IOBoard.md:74, :463) and the switch sits between the coprocessor's bus and the ports; LCSC C130026 (C and digits) says the same",
+      "source": "checkout e13f5f6 hardware/docs/IOBoard.md:74, :463; vendors.py jlcpcb C130026",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:39Z"
+     }
+    ]
+   },
+   {
+    "function": "external I2C ports",
+    "part": "PCA9548APWR",
+    "kind": "alternate",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB 5,100 (02:47:20Z)",
+      "read": "stockCount 5,100; exact LCSC match C295762, other_results 0; gate 50 (need 5 x 1); 5,100 >= 50 (rule 5 alternate passes rule 4)",
+      "source": "vendors.py jlcpcb C295762 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList), HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:41Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "presale 5,084",
+      "read": "canPresaleNumber 5,084 >= 0",
+      "source": "vendors.py jlcpcb C295762, HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:41Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "ACTIVE (TI product page, OPN PCA9548APWR); Digi-Key Not For New Designs written down as a disagreement",
+      "read": "TI: OPN PCA9548APWR marketingStatusDescription ACTIVE, long description 'This product has been released to the market and is available for purchase. For some products, newer alternatives may be available.'; hasReplacements true. Other PCA9548A orderables differ: PCA9548ADB and PCA9548ADBR ACTIVE with the long description 'available for existing designs... recommend considering an alternate', and PCA9548ADGV, ADGVR, ADW, ADWR, ARGER NOT RECOMMENDED FOR NEW DESIGNS. The manufacturer's page is the status for TI (Lifecycle check): ACTIVE passes",
+      "source": "https://www.ti.com/product/PCA9548A (vendors.py fetch, client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:12Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "no per-part commitment; TI's product life cycle page: life cycles 'typically 10 to 15 years and often extend longer'; not eligible for obsolescence while sold in the last five years, under 10 years in production, or in current demand. Not a gate (S5)",
+      "source": "https://www.ti.com/quality-reliability/quality/product-life-cycle.html (vendors.py fetch, HTTP 200)",
+      "agrees": false,
+      "passes": true,
+      "read_at": "2026-09-29T03:32:14Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet June 2009",
+      "read": "SCPS143G – JUNE 2009 – REVISED MARCH 2021: first release June 2009, about 17 years on the market",
+      "source": "https://www.ti.com/lit/ds/symlink/pca9548a.pdf (vendors.py fetch, HTTP 200), page header",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:30:56Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "notices: not read",
+      "read": "no end-of-life or last-time-buy notice found for PCA9548APWR: TI status ACTIVE (not LAST TIME BUY or OBSOLETE); Digi-Key end_of_life false, discontinued false. Digi-Key's 'Not For New Designs' is a status, not a notice, and disagrees with TI. TI's PCN listing itself was not read",
+      "source": "https://www.ti.com/product/PCA9548A (03:28:12Z); vendors.py digikey PCA9548APWR (02:47:45Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:12Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key ProductStatus 'Not For New Designs', disagreeing with TI's ACTIVE",
+      "read": "Digi-Key ProductStatus 'Not For New Designs', discontinued false, end_of_life false (02:47:45Z); LCSC productCycle 'normal' for C295762 (03:29:05Z); the vendors.py jlcpcb reading carries no status field. Disagreement written down: Digi-Key 'Not For New Designs' against TI's ACTIVE for this OPN; TI's page is the status of record",
+      "source": "vendors.py digikey PCA9548APWR (https://api.digikey.com/products/v4/search/PCA9548APWR/productdetails, cached: true); https://www.lcsc.com/product-detail/C295762.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:05Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 16 weeks",
+      "read": "lead_weeks 16 (Digi-Key stock_available 13,790)",
+      "source": "vendors.py digikey PCA9548APWR, cached: true",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:47:45Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand",
+      "source": "vendors.py jlcpcb C295762",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:41Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C295762, PCA9548APWR, TSSOP-24",
+      "read": "exact row C295762: part PCA9548APWR, package TSSOP-24, maker label 'Texas Instruments'",
+      "source": "vendors.py jlcpcb C295762",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:41Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1: one switch carries both ports",
+      "read": "1, the same position as TCA9548APWR (one switch for the 2 ports of Q7); candidate count 1 >= 1",
+      "source": "checkout e13f5f6 hardware/docs/Research.md:545; hardware/docs/IOBoard.md:74, :463",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:26:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C295762",
+      "read": "on the IO board, in the TCA9548APWR's place; LCSC C295762 (C and digits) says the same",
+      "source": "checkout e13f5f6 hardware/docs/IOBoard.md:74, :463; vendors.py jlcpcb C295762",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:41Z"
+     }
+    ]
+   },
+   {
+    "function": "non-volatile store",
+    "part": "MB85RC256VPNF-G-AMERE2",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 6,523 (02:47:21Z)",
+      "read": "stockCount 6,523; exact LCSC match C45273903, other_results 0; gate 50 (need 5 x 1); 6,523 >= 50. Verified as the first-ranked part and as Q8's FRAM option part",
+      "source": "vendors.py jlcpcb C45273903 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList), HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:42Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 6,467",
+      "read": "canPresaleNumber 6,467 >= 0",
+      "source": "vendors.py jlcpcb C45273903, HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:42Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "MP (mass production) in RAMXEED's FeRAM product list",
+      "read": "MP for MB85RC256VPNF-G-AMERE2 in an uncommented row of the FeRAM product list (Industrial, I2C, 256Kbit, 2.7 V to 5.5 V, 1 MHz, -40 to +85 °C, SOP-8 (150mil), Tape); the page's legend: 'MP: Mass Produced', beside ES Sampling, UD Under Development and NRND",
+      "source": "https://www.ramxeed.com/products/feram/feram-products.html (vendors.py fetch, client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:34Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 484 >= gate 50",
+      "read": "Digi-Key stock_available 484 (Cut Tape 484, Digi-Reel 484, Tape & Reel 0), maker RAMXEED, >= gate 50 (rule 5)",
+      "source": "vendors.py digikey MB85RC256VPNF-G-AMERE2 (https://api.digikey.com/products/v4/search/MB85RC256VPNF-G-AMERE2/productdetails), HTTP 200, cached: true",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:47:50Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "not read",
+      "read": "none published on RAMXEED's FeRAM product list (no longevity entry); no separate RAMXEED programme page read. Not a gate (S5)",
+      "source": "https://www.ramxeed.com/products/feram/feram-products.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:34Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "first datasheet date not read (edition 11v3)",
+      "read": "not read: the copy DS501-00017-11v3-E (copyright 2025.10) carries no revision history or first date; edition 11 implies earlier editions",
+      "source": "https://www.ramxeed.com/assets/images/products/datasheet/FeRAM/i3/MB85RC256V-DS11v3-E.pdf (vendors.py fetch, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:30:57Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "notices: not read",
+      "read": "no end-of-life or last-time-buy notice found: RAMXEED status MP (not NRND); Digi-Key end_of_life false, discontinued false. A RAMXEED change-notice listing was not read",
+      "source": "https://www.ramxeed.com/products/feram/feram-products.html (03:29:34Z); vendors.py digikey MB85RC256VPNF-G-AMERE2 (02:47:50Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:34Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active, discontinued false, end_of_life false; the JLCPCB API row carries no status field",
+      "read": "Digi-Key Active (02:47:50Z); LCSC status not read: https://www.lcsc.com/product-detail/C45273903.html answered HTTP 404 'Page Not Found' with the chrome (03:29:06Z) and safari (03:29:26Z) clients; the vendors.py jlcpcb reading carries no status field; no disagreement with RAMXEED's MP",
+      "source": "vendors.py digikey MB85RC256VPNF-G-AMERE2 (cached: true); vendors.py fetch https://www.lcsc.com/product-detail/C45273903.html",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:26Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 30 weeks",
+      "read": "lead_weeks 30",
+      "source": "vendors.py digikey MB85RC256VPNF-G-AMERE2, cached: true",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:47:50Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand",
+      "source": "vendors.py jlcpcb C45273903",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:42Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C45273903, MB85RC256VPNF-G-AMERE2, SOP-8 (150 mil)",
+      "read": "exact row C45273903: part MB85RC256VPNF-G-AMERE2, package SOP-8-150mil, maker label 'RAMXEED/FUJITSU'",
+      "source": "vendors.py jlcpcb C45273903",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:42Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1: one store for the output binding (Q8)",
+      "read": "1: one output binding store (IOBoard.md:75, :115; Q8); candidate count 1 >= 1",
+      "source": "checkout e13f5f6 hardware/docs/IOBoard.md:75, :115; hardware/docs/Research.md:841",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:26:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C45273903",
+      "read": "on the IO board: the output binding store belongs to the IO board's coprocessor (IOBoard.md:75, :115); LCSC C45273903 (C and digits) says the same",
+      "source": "checkout e13f5f6 hardware/docs/IOBoard.md:75, :115; vendors.py jlcpcb C45273903",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:42Z"
+     }
+    ]
+   },
+   {
+    "function": "non-volatile store",
+    "part": "M24256E-FMN6TP",
+    "kind": "q-alternative",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "stock",
+      "stated": "JLCPCB stockCount 125,256 (02:47:21Z)",
+      "read": "stockCount 125,256; exact LCSC match C5221744, other_results 0; gate 50 (need 5 x 1); 125,256 >= 50",
+      "source": "vendors.py jlcpcb C5221744 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList), HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:44Z"
+     },
+     {
+      "figure": "presale",
+      "stated": "canPresaleNumber 125,243",
+      "read": "canPresaleNumber 125,243 >= 0",
+      "source": "vendors.py jlcpcb C5221744, HTTP 200",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:44Z"
+     },
+     {
+      "figure": "lifecycle status",
+      "stated": "Active, 'Product is in volume production' (ST product page, row M24256E-FMN6TP)",
+      "read": "M24256E-FMN6TP: Marketing Status Active, 'Product is in volume production.', SO8, Industrial; family M24256E-F Active",
+      "source": "https://www.st.com/en/memories/m24256e-f.html (vendors.py fetch, client chrome, HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:36Z"
+     },
+     {
+      "figure": "second-vendor stock",
+      "stated": "Digi-Key stock_available 185 >= gate 50",
+      "read": "Digi-Key stock_available 185 (Cut Tape 185, Digi-Reel 185, Tape & Reel 0) >= gate 50 (rule 5)",
+      "source": "vendors.py digikey M24256E-FMN6TP (https://api.digikey.com/products/v4/search/M24256E-FMN6TP/productdetails), HTTP 200, cached: true",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:47:53Z"
+     },
+     {
+      "figure": "longevity commitment",
+      "stated": "'Available until: 01/2035' on the ST page",
+      "read": "ST Longevity Commitment 10 years from Longevity Starting Date 2025-01-01 for M24256E-FMN6TP; page header 'Available until: 01/2035'. Not a gate (S5)",
+      "source": "https://www.st.com/en/memories/m24256e-f.html (HTTP 200), Quality and Reliability table",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:36Z"
+     },
+     {
+      "figure": "market introduction",
+      "stated": "DS12687 Rev 1, initial release 01-Mar-2022, over 12 months",
+      "read": "DS12687 revision history: Rev 1, 01-Mar-2022, 'Initial release'; current Rev 5; about 4 years 7 months on the market",
+      "source": "https://www.st.com/resource/en/datasheet/m24256e-f.pdf (vendors.py fetch, HTTP 200), Table 21 Document revision history",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:30:59Z"
+     },
+     {
+      "figure": "end-of-life notices",
+      "stated": "ST PCN listing not read",
+      "read": "no end-of-life or last-time-buy notice found: ST status Active, volume production, available until 01/2035; Digi-Key end_of_life false, discontinued false. ST's PCN listing itself was not read",
+      "source": "https://www.st.com/en/memories/m24256e-f.html (03:29:36Z); vendors.py digikey M24256E-FMN6TP (02:47:53Z)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:36Z"
+     },
+     {
+      "figure": "distributor status",
+      "stated": "Digi-Key Active, discontinued false, end_of_life false; the JLCPCB API row carries no status field",
+      "read": "Digi-Key Active (02:47:53Z); LCSC productCycle 'normal' for C5221744 (03:29:06Z); the vendors.py jlcpcb reading carries no status field; no disagreement with ST's Active",
+      "source": "vendors.py digikey M24256E-FMN6TP (cached: true); https://www.lcsc.com/product-detail/C5221744.html (HTTP 200)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:29:06Z"
+     },
+     {
+      "figure": "lead time",
+      "stated": "manufacturer lead time 26 weeks",
+      "read": "lead_weeks 26",
+      "source": "vendors.py digikey M24256E-FMN6TP, cached: true",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T02:47:53Z"
+     },
+     {
+      "figure": "library type",
+      "stated": "componentLibraryType expand",
+      "read": "componentLibraryType expand",
+      "source": "vendors.py jlcpcb C5221744",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:44Z"
+     },
+     {
+      "figure": "LCSC identity",
+      "stated": "C5221744, M24256E-FMN6TP, SO-8 (SO8N)",
+      "read": "exact row C5221744: part M24256E-FMN6TP, package SO-8, maker label 'STMicroelectronics'",
+      "source": "vendors.py jlcpcb C5221744",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:44Z"
+     },
+     {
+      "figure": "placements",
+      "stated": "1: one store (Q8)",
+      "read": "1: one output binding store (IOBoard.md:75, :115; Q8); candidate count 1 >= 1",
+      "source": "checkout e13f5f6 hardware/docs/IOBoard.md:75, :115; hardware/docs/Research.md:841",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:26:00Z"
+     },
+     {
+      "figure": "board placement",
+      "stated": "on the IO board, LCSC C5221744",
+      "read": "on the IO board (IOBoard.md:75, :115); LCSC C5221744 (C and digits) says the same",
+      "source": "checkout e13f5f6 hardware/docs/IOBoard.md:75, :115; vendors.py jlcpcb C5221744",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:27:44Z"
+     }
+    ]
+   }
+  ]
+ }
+}

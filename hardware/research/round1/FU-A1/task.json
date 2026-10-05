@@ -1,0 +1,3228 @@
+{
+ "task": "FU",
+ "run": "FU-A1",
+ "run_id": "cc9af80f8efc40e0",
+ "commit": "10b0bade34dea67341eff3d05793d6d50a7878b4",
+ "date": "2026-09-28",
+ "run_info": {
+  "claude_code": "2.1.283 (Claude Code)",
+  "cpus": 48,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "concurrency": 16,
+  "concurrency_setting": "unset"
+ },
+ "followup": {
+  "phases": "P2-P4",
+  "round": 1,
+  "categories": [
+   "R1",
+   "R2",
+   "R3",
+   "R4"
+  ],
+  "items": [
+   {
+    "role": "rerank",
+    "category": "R1",
+    "function": "Core regulator inductor",
+    "part": "XAL4030-332MEC (LCSC C2937437)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R1",
+    "function": "Core regulator inductor",
+    "part": "XEL4030-332MEC (LCSC C19191691)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R1",
+    "function": "Core regulator inductor",
+    "part": "XAL6030-332MEC (LCSC C19191620) and XAL5030-332MEC (LCSC C5342047)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R1",
+    "function": "USB protection",
+    "part": "VBUS54CV-HSF-G4-08 (LCSC C511465)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R1",
+    "part": "NUP4114UCW1T2G (C463643), IP4234CZ6,125 (C455086), DT1240-04LP-7 (C444992), PRTR5V0U2F,115 (C478118), D5V0F4U6SO-7 (C445539)",
+    "functions": [
+     "USB protection"
+    ],
+    "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "function": "Microcontroller",
+    "part": "RP2354B",
+    "reason": "shortlisted states other values than the function for: part, in-package flash, flash supply range, GPIO0-39 fault tolerance, GPIO40-47 rating, SWDIO reset bias, USB device port, operating ambient, watchdog window (V1, V2), image watchdog timeout (V4); checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "function": "12 MHz crystal",
+    "part": "ABM8-272-T3",
+    "reason": "shortlisted states other values than the function for: cut and mode, shunt capacitance C0, ESR, drive level rating, total frequency error, DShot clock budget, operating temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "question": "V12",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "function": "Link CAN transceiver",
+    "part": "TCAN3413DR (C22433320)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "function": "External CAN transceiver",
+    "part": "TCAN3413DR (C22433320)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "function": "External CAN transceiver",
+    "part": "ATA6561-GAQW-N (C616016)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "function": "Link CAN transceiver",
+    "part": "ATA6561-GAQW-N (C616016)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "function": "External CAN transceiver",
+    "part": "ATA6563-GAQW1 (C5127614)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "function": "Link CAN transceiver",
+    "part": "TJA1044GT/3Z (C961486)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "function": "Link CAN transceiver",
+    "part": "TJA1042T/3/1J (C132227)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "function": "Link CAN transceiver",
+    "part": "MAX3051EKA+T (C112005); MAX3051ESA+T (C15648)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "function": "Link CAN transceiver",
+    "part": "MCP2542FD-E/SN (C220598); MCP2542FDT-E/SN (C191251)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "part": "MCP25625T-E/ML (C191253), Link CAN controller",
+    "functions": [
+     "Link CAN controller",
+     "Link CAN transceiver",
+     "External CAN controller",
+     "External CAN transceiver"
+    ],
+    "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "part": "SN65HVD230DR (C12084), Link CAN transceiver",
+    "functions": [
+     "Link CAN controller",
+     "Link CAN transceiver",
+     "External CAN controller",
+     "External CAN transceiver"
+    ],
+    "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "part": "TCAN1462VDRBRQ1 (C5215833), External CAN transceiver",
+    "functions": [
+     "Link CAN controller",
+     "Link CAN transceiver",
+     "External CAN controller",
+     "External CAN transceiver"
+    ],
+    "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "part": "MCP2517FDT-H/SL (C512185), MCP2517FD (C133861), Link CAN controller and External CAN controller",
+    "functions": [
+     "Link CAN controller",
+     "Link CAN transceiver",
+     "External CAN controller",
+     "External CAN transceiver"
+    ],
+    "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "part": "TJA1044T/1Z (C520388), SN65HVD1050DR, SN65HVD251DR, MCP2551-I/SN, Link CAN transceiver",
+    "functions": [
+     "Link CAN controller",
+     "Link CAN transceiver",
+     "External CAN controller",
+     "External CAN transceiver"
+    ],
+    "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "part": "TCAN4551RGYRQ1 (C2867967), External CAN controller",
+    "functions": [
+     "Link CAN controller",
+     "Link CAN transceiver",
+     "External CAN controller",
+     "External CAN transceiver"
+    ],
+    "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "part": "MCP2510 family, IA82527 (C661918), Link CAN controller",
+    "functions": [
+     "Link CAN controller",
+     "Link CAN transceiver",
+     "External CAN controller",
+     "External CAN transceiver"
+    ],
+    "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R2",
+    "part": "SJA1000T/N1,118 (C6910), Link CAN controller",
+    "functions": [
+     "Link CAN controller",
+     "Link CAN transceiver",
+     "External CAN controller",
+     "External CAN transceiver"
+    ],
+    "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "gated output buffer",
+    "part": "SN74LVC16244ADGGR (C7822)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "gated output buffer",
+    "part": "74LVC16244ADGG,118 (C6070)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "gated output buffer",
+    "part": "74LCX244MTCX (C255589)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "gated output buffer",
+    "part": "74LCX244FT (C2675684)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "gated output buffer",
+    "part": "SN74LV244APWR (C475502)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "gated output buffer",
+    "part": "SN74LVC2G126DCUR (C2652104)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "gated output buffer",
+    "part": "74LCX541FT(AE) (C7194124)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "gated output buffer",
+    "part": "74LVC126APW,118",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "multiprotocol port path",
+    "part": "TC7MBL3126CFT(EL) (C2675020)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "reply path through the gate",
+    "part": "TC7MBL3126CFT(EL) (C2675020)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "UART socket path",
+    "part": "TC7MBL3126CFT(EL) (C2675020)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "reply path through the gate",
+    "part": "TXB0104, TXS0104E",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "bias selector",
+    "part": "NC7SZ126M5X (C7421)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "bias selector",
+    "part": "SN74LVC2G126DCUR (C2652104)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "receiver inputs",
+    "part": "SN74AXC1T45DBVR (C2677376)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "receiver inputs",
+    "part": "74LVC1T45GW,125 (C478004)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "part": "SN74LVC541APWR (rank 4, gated output buffer)",
+    "functions": [
+     "gated output buffer",
+     "enable inverter",
+     "bias selector",
+     "level translation",
+     "multiprotocol port path",
+     "UART socket path",
+     "receiver inputs",
+     "series resistance and clamps",
+     "reset idle level",
+     "programming supply switching",
+     "reply path through the gate"
+    ],
+    "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "part": "74CBTLV3126PW,118 and 74CBTLV3126DS,118 (multiprotocol port path)",
+    "functions": [
+     "gated output buffer",
+     "enable inverter",
+     "bias selector",
+     "level translation",
+     "multiprotocol port path",
+     "UART socket path",
+     "receiver inputs",
+     "series resistance and clamps",
+     "reset idle level",
+     "programming supply switching",
+     "reply path through the gate"
+    ],
+    "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "level translation",
+    "reason": "the re-rank ranked no part"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "series resistance and clamps",
+    "reason": "the re-rank ranked no part"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "reset idle level",
+    "reason": "the re-rank ranked no part"
+   },
+   {
+    "role": "rerank",
+    "category": "R4",
+    "function": "programming supply switching",
+    "reason": "the re-rank ranked no part"
+   },
+   {
+    "role": "P2",
+    "category": "R4",
+    "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+    "reason": "function of the P1 inventory that P2 did not return"
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "figure": "re-rank report: XAL5030-332MEC",
+    "reason": "figure refuted"
+   },
+   {
+    "role": "P4",
+    "category": "R2",
+    "function": "Link CAN controller",
+    "part": "MCP2518FDT-E/SL",
+    "reason": "stock verifier listed a part it was not asked to verify; ignored"
+   },
+   {
+    "role": "P4",
+    "category": "R2",
+    "function": "External CAN controller",
+    "part": "MCP2518FDT-E/SL",
+    "reason": "stock verifier listed a part it was not asked to verify; ignored"
+   },
+   {
+    "role": "P4",
+    "category": "R2",
+    "function": "Link CAN transceiver",
+    "part": "TCAN3413DR",
+    "reason": "stock verifier listed a part it was not asked to verify; ignored"
+   },
+   {
+    "role": "P4",
+    "category": "R2",
+    "function": "External CAN transceiver",
+    "part": "TCAN3413DR",
+    "reason": "stock verifier listed a part it was not asked to verify; ignored"
+   },
+   {
+    "role": "P4",
+    "category": "R2",
+    "figure": "found V16",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P4",
+    "category": "R2",
+    "figure": "P2 report: frames the panel sends during the flash stall",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P4",
+    "category": "R2",
+    "figure": "re-rank drop: Link CAN controller: MCP2510 family, IA82527 (C661928)",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P2",
+    "category": "R1",
+    "figure": "function requirements: Microcontroller",
+    "reason": "figure refuted"
+   },
+   {
+    "role": "P2",
+    "category": "R2",
+    "figure": "found V17",
+    "reason": "figure refuted"
+   },
+   {
+    "role": "P2",
+    "category": "R2",
+    "figure": "found V27",
+    "reason": "figure refuted"
+   },
+   {
+    "role": "P2",
+    "category": "R2",
+    "figure": "P2 report: frames arriving on the external CAN port during the flash stall",
+    "reason": "figure refuted"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "function": "gated output buffer",
+    "part": "SN74LVC244APWR",
+    "reason": "stock verifier listed a part it was not asked to verify; ignored"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "function": "gated output buffer",
+    "part": "74LVC244APW,118",
+    "reason": "stock verifier listed a part it was not asked to verify; ignored"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "function": "enable inverter",
+    "part": "SN74LVC1G04DBVR",
+    "reason": "stock verifier listed a part it was not asked to verify; ignored"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "function": "bias selector",
+    "part": "SN74LVC1G126DBVR",
+    "reason": "stock verifier listed a part it was not asked to verify; ignored"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "function": "multiprotocol port path",
+    "part": "SN74CBTLV3126PWR",
+    "reason": "stock verifier listed a part it was not asked to verify; ignored"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "function": "UART socket path",
+    "part": "SN74CBTLV3126PWR",
+    "reason": "stock verifier listed a part it was not asked to verify; ignored"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "function": "reply path through the gate",
+    "part": "SN74CBTLV3126PWR",
+    "reason": "stock verifier listed a part it was not asked to verify; ignored"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "function": "receiver inputs",
+    "part": "SN74LVC1T45DBVR",
+    "reason": "stock verifier listed a part it was not asked to verify; ignored"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "figure": "found V56",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "figure": "found V64",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "figure": "found V68",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "figure": "found V72",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "figure": "P2 report: GPIO and expander outputs for P5",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "figure": "P2 report: SN74CBTLV3126PWR stock margin",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "figure": "re-rank report: SN74LVC541APWR second source",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "figure": "re-rank report: NC7SZ126M5X package",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "figure": "re-rank report: P3's Nexperia 74CBTLV3126 correction",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "figure": "re-rank report: 74LVC1T45GW,125 at Digi-Key",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "figure": "re-rank report: TC7MBL3126CFT(EL) stock",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "figure": "re-rank drop: gated output buffer: 74LVCH126APW,118 / 74LVC126APW,118",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P4",
+    "category": "R4",
+    "figure": "re-rank drop: multiprotocol port path: TC7MBL3126CFT(EL)",
+    "reason": "figure not verified"
+   },
+   {
+    "role": "P2",
+    "category": "R2",
+    "figure": "re-rank drop: External CAN transceiver: TCAN1043ADRQ1 (C5215847)",
+    "reason": "figure refuted"
+   },
+   {
+    "role": "P2",
+    "category": "R4",
+    "figure": "found V73",
+    "reason": "figure refuted"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R4",
+    "function": "found V75",
+    "part": "",
+    "reason": "the ruling gives no evidence, source and time read"
+   },
+   {
+    "role": "P2",
+    "category": "R4",
+    "figure": "found V75",
+    "reason": "figure refuted without a ruling"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R4",
+    "function": "P2 report: connector level through a watchdog reset",
+    "part": "",
+    "reason": "the ruling gives no evidence, source and time read"
+   },
+   {
+    "role": "P2",
+    "category": "R4",
+    "figure": "P2 report: connector level through a watchdog reset",
+    "reason": "figure refuted without a ruling"
+   },
+   {
+    "role": "rerank",
+    "category": "R3",
+    "function": "OR gate",
+    "part": "74AUP1G32GW,125 (LCSC C179324)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R3",
+    "function": "latch",
+    "part": "74AUP1G175GW,125 (LCSC C545618)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R3",
+    "function": "trigger input I_off buffer (Q9)",
+    "part": "SN74AUP1G17DBVR (LCSC C183012) / SN74AUP1G17DCKR (LCSC C2652099)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R3",
+    "function": "trigger-path inverter",
+    "part": "SN74AUP1G14DBVR (LCSC C2682131) / SN74AUP1G14DCKR (LCSC C2682132)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R3",
+    "function": "reset supervisor",
+    "part": "TLV809EA30DBZR (LCSC C2860914)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R3",
+    "function": "servo rail gate",
+    "part": "BTS7004-1EPP (LCSC C534825; Digi-Key BTS70041EPPXUMA1)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R3",
+    "function": "onboard pack switch MOSFETs",
+    "part": "IAUT300N10S5N015 (LCSC C5151439)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R3",
+    "function": "onboard pack switch driver",
+    "part": "VOM1271T (LCSC C146286); TLP3906(TPL,E (LCSC C146278)",
+    "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "rerank",
+    "category": "R3",
+    "part": "74AUP1G32GW,125 / SN74AUP1G32DBVR",
+    "functions": [
+     "OR gate"
+    ],
+    "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "function": "monostable",
+    "part": "74HC423BQ,115",
+    "reason": "shortlisted states other values than the function for: clear release does not trigger ('423 behaviour), stated in the datasheet, dual retriggerable, one half per edge polarity, supply, trigger input isolation, Q low while clear is active, timing resistor range, timing constant k drift, timing-pin leakage at 50 degC, window at every corner, ambient temperature, trigger high level; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "function": "latch clear control",
+    "part": "434153017835",
+    "reason": "shortlisted states other values than the function for: operator control and place, no relay or firmware clear, contact rating, contact bounce, ambient temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "function": "latch clear control",
+    "part": "EVQ-Q2B03W",
+    "reason": "shortlisted states other values than the function for: operator control and place, no relay or firmware clear, contact rating, contact bounce, ambient temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "function": "latch clear control",
+    "part": "7914J-1-000E",
+    "reason": "shortlisted states other values than the function for: operator control and place, no relay or firmware clear, contact rating, contact bounce, ambient temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "rerank",
+    "category": "R3",
+    "function": "external pack switch module",
+    "reason": "the re-rank ranked no part"
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "function": "external module driver output",
+    "part": "2N7002BK,215",
+    "reason": "shortlisted states other values than the function for: drain-source rating, module control input, fail-open, single control input from the enable, ambient temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "function": "external module driver output",
+    "part": "2N7002KT1G",
+    "reason": "shortlisted states other values than the function for: drain-source rating, module control input, fail-open, single control input from the enable, ambient temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "function": "external module driver output",
+    "part": "2N7002K-7",
+    "reason": "shortlisted states other values than the function for: drain-source rating, module control input, fail-open, single control input from the enable, ambient temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "rerank",
+    "category": "R3",
+    "function": "pack reverse-polarity protection",
+    "reason": "the re-rank ranked no part"
+   },
+   {
+    "role": "rerank",
+    "category": "R3",
+    "function": "pack overvoltage and transient clamp",
+    "reason": "the re-rank ranked no part"
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "function": "pack precharge",
+    "part": "CSD19537Q3T",
+    "reason": "shortlisted states other values than the function for: drain-source rating, ESC input capacitance precharged, closing time, open path leakage, fail-open, ambient temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "function": "pack precharge",
+    "part": "CSD19538Q3A",
+    "reason": "shortlisted states other values than the function for: drain-source rating, ESC input capacitance precharged, closing time, open path leakage, fail-open, ambient temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "function": "servo rail gate driver",
+    "part": "2N7002BK,215",
+    "reason": "shortlisted states other values than the function for: drain-source rating, fail-open, ambient temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "function": "servo rail gate driver",
+    "part": "2N7002KT1G",
+    "reason": "shortlisted states other values than the function for: drain-source rating, fail-open, ambient temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "function": "servo rail gate driver",
+    "part": "2N7002K-7",
+    "reason": "shortlisted states other values than the function for: drain-source rating, fail-open, ambient temperature; checked against the function's",
+    "notice": true
+   },
+   {
+    "role": "P3",
+    "category": "R3",
+    "function": "timing network (C and R of the monostable)",
+    "reason": "function the row names that P2 did not return: IOBoard.md@c25aa86:185 names it: C in a dielectric with a stated temperature coefficient, and R from E96, 50 kOhm to 150 kOhm, set on test. C's drift enters the same window budget as V36 and V37. P2 has no entry. Research.md:28 puts passives in round 2, and the R3 row does not name the timing capacitor. If P6 marks it not round 1, no gap remains."
+   },
+   {
+    "role": "P3",
+    "category": "R3",
+    "function": "inverter on an active-low output enable",
+    "reason": "function the row names that P2 did not return: IOBoard.md@c25aa86:192 (Powered-off isolation, sources PR #167, R3, R4) requires I_off or a 4.7 kOhm series resistor from the enable node. P2 lists only the trigger-path inverter. The output buffer is R4's choice (R4 row), so this inverter exists only if R4 picks a buffer with an active-low enable. R3 or R4 must own it; nothing on the page assigns it."
+   },
+   {
+    "role": "P3",
+    "category": "R3",
+    "function": "heartbeat-node series resistors, links and fail-safe pull-downs",
+    "reason": "function the row names that P2 did not return: IOBoard.md@c25aa86:191 and :193 name the 100 kOhm pull-downs on the trigger input, each OR input and the enable node, the 4.7 kOhm series resistors, and the removable links in the display and trigger branches. P2 has no entry. Research.md:28 puts passives and connectors in round 2, so these are not round 1 unless P6 decides otherwise."
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "question": "V40",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "question": "V42",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "question": "V45",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "question": "V46",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "question": "V48",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "question": "V49",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "question": "V50",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "P2",
+    "category": "R3",
+    "question": "V54",
+    "reason": "value marked for research not found"
+   },
+   {
+    "role": "P2",
+    "category": "R4",
+    "figure": "P2 report: enable I_off reading",
+    "reason": "figure refuted"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R4",
+    "figure": "P2 report: Hitec low level",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R3",
+    "function": "monostable",
+    "part": "74HC423BQ,115",
+    "reason": "no free agent"
+   },
+   {
+    "role": "P4",
+    "category": "R3",
+    "function": "latch clear control",
+    "part": "434153017835",
+    "reason": "a verifier gave no required check for some figures"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R3",
+    "figure": "found V36",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R3",
+    "figure": "found V43",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R3",
+    "figure": "found V51",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R3",
+    "figure": "P2 report: Q9 parts that meet one requirement alone",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R3",
+    "figure": "P2 report: monostable window with the 74HC423's figures",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R3",
+    "figure": "function requirements: external module driver output",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R3",
+    "figure": "function requirements: pack precharge",
+    "reason": "no free agent"
+   },
+   {
+    "role": "adjudicator",
+    "category": "R3",
+    "figure": "function requirements: servo rail gate driver",
+    "reason": "no free agent"
+   }
+  ]
+ },
+ "accept_open": null,
+ "decisions": {
+  "Q4": "",
+  "Q8": "",
+  "Q9": ""
+ },
+ "planned": 21,
+ "started": 32,
+ "extra_used": 11,
+ "free": 11,
+ "skipped": [],
+ "summary": {
+  "categories": [
+   "R1",
+   "R2",
+   "R3",
+   "R4"
+  ],
+  "held": [],
+  "results": [
+   {
+    "category": "R1",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "Microcontroller",
+      "part": "RP2354B",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "12 MHz crystal",
+      "part": "ABM8-272-T3",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "Core regulator inductor",
+      "part": "AOTA-B201610S3R3-101-T",
+      "as": "primary",
+      "status": "verified"
+     },
+     {
+      "function": "USB protection",
+      "part": "TPD6E05U06RVZR",
+      "as": "primary",
+      "status": "refuted",
+      "scope": "function"
+     },
+     {
+      "figure": "P2 report: stepping-A4 errata",
+      "status": "refuted"
+     },
+     {
+      "figure": "function requirements: Microcontroller",
+      "status": "refuted"
+     },
+     {
+      "function": "USB protection",
+      "part": "VBUS54CV-HSF-G4-08",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "refutation did not stand, but one verifier did not cover it"
+     }
+    ],
+    "figures_open": [
+     "P2 report: stepping-A4 errata",
+     "function requirements: Microcontroller"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "Microcontroller",
+      "decision": "none",
+      "part": "RP2354B",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "12 MHz crystal",
+      "decision": "none",
+      "part": "ABM8-272-T3",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Core regulator inductor",
+      "decision": "none",
+      "part": "AOTA-B201610S3R3-101-T",
+      "rank": 1,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "USB protection",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [
+       "TPD6E05U06RVZR"
+      ],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   },
+   {
+    "category": "R2",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "Link CAN controller",
+      "part": "MCP2518FDT-E/SL",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "Link CAN transceiver",
+      "part": "TCAN3413DR",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "External CAN controller",
+      "part": "MCP2518FDT-E/SL",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "figure": "P2 report: clock tolerance: MCP2518FDT-E/SL",
+      "status": "refuted"
+     },
+     {
+      "figure": "function requirements: Link CAN controller",
+      "status": "refuted"
+     },
+     {
+      "figure": "function requirements: Link CAN transceiver",
+      "status": "refuted"
+     },
+     {
+      "figure": "function requirements: External CAN controller",
+      "status": "refuted"
+     },
+     {
+      "figure": "re-rank drop: External CAN transceiver: TLE9252VSK (C540122)",
+      "status": "refuted"
+     }
+    ],
+    "figures_open": [
+     "P2 report: clock tolerance: MCP2518FDT-E/SL",
+     "function requirements: Link CAN controller",
+     "function requirements: Link CAN transceiver",
+     "function requirements: External CAN controller",
+     "re-rank drop: External CAN transceiver: TLE9252VSK (C540122)"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "Link CAN controller",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Link CAN transceiver",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "External CAN controller",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "External CAN transceiver",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "Link terminator (the 120 Ohm at the IO board's end: fitted, switchable or external)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   },
+   {
+    "category": "R3",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "monostable",
+      "part": "74HC423BQ,115",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "OR gate",
+      "part": "74AUP1G32GW,125",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "reset supervisor",
+      "part": "TPS3808G33DBVR",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "latch",
+      "part": "74LVC1G175GW,125",
+      "as": "primary",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "function": "latch clear control",
+      "part": "434153017835",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "trigger-path inverter",
+      "part": "SN74AUP1G14DCKR",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "trigger input I_off buffer (Q9)",
+      "part": "SN74AUP1G17DCKR",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "servo rail gate",
+      "part": "TPS259824ONRGER",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "servo rail gate",
+      "part": "TPS259827ONRGET",
+      "as": "alternate",
+      "for": "TPS259824ONRGER",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "onboard pack switch MOSFETs",
+      "part": "IPT015N10N5ATMA1",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "onboard pack switch driver",
+      "part": "TPSI3050QDWZRQ1",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "onboard pack switch driver",
+      "part": "TPSI3050DWZR",
+      "as": "alternate",
+      "for": "TPSI3050QDWZRQ1",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "external pack switch module",
+      "part": "VS-FC420SA10",
+      "as": "primary",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "function": "external pack switch module",
+      "part": "VS-FC270SA20",
+      "as": "alternate",
+      "for": "VS-FC420SA10",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "function": "external module driver output",
+      "part": "LTC7001IMSE#PBF",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "servo rail gate driver",
+      "part": "2N7002BK,215",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "figure": "P2 report: LTC7001 count on the board",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "P2 report: gate opening times",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "re-rank report: monostable: temperature term of K",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "function requirements: onboard pack switch MOSFETs",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "re-rank drop: onboard pack switch driver: 2ED4820-EM (2ED4820EMXUMA2)",
+      "status": "refuted, not adjudicated"
+     }
+    ],
+    "figures_open": [
+     "P2 report: LTC7001 count on the board",
+     "P2 report: gate opening times",
+     "re-rank report: monostable: temperature term of K",
+     "function requirements: onboard pack switch MOSFETs",
+     "re-rank drop: onboard pack switch driver: 2ED4820-EM (2ED4820EMXUMA2)"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "monostable",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "OR gate",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "reset supervisor",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "latch",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "latch clear control",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "trigger-path inverter",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "trigger input I_off buffer (Q9)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "servo rail gate",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "onboard pack switch MOSFETs",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "onboard pack switch driver",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "external pack switch module",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "external module driver output",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "pack reverse-polarity protection",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "pack overvoltage and transient clamp",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "pack precharge",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "servo rail gate driver",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "timing network (C and R of the monostable)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "inverter on an active-low output enable",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "heartbeat-node series resistors, links and fail-safe pull-downs",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   },
+   {
+    "category": "R4",
+    "status": "done",
+    "ledger": [
+     {
+      "function": "gated output buffer",
+      "part": "SN74LVC244APWR",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "gated output buffer",
+      "part": "74LVC244APW,118",
+      "as": "alternate",
+      "for": "SN74LVC244APWR",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "enable inverter",
+      "part": "SN74LVC1G04DBVR",
+      "as": "primary",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "function": "bias selector",
+      "part": "SN74LVC1G126DBVR",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "multiprotocol port path",
+      "part": "SN74CBTLV3126PWR",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "UART socket path",
+      "part": "SN74CBTLV3126PWR",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "receiver inputs",
+      "part": "SN74LVC1T45DBVR",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "reply path through the gate",
+      "part": "SN74CBTLV3126PWR",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+      "part": "SN74CBTLV3126PWR",
+      "as": "primary",
+      "status": "not verified",
+      "reason": "a verifier gave no required check for some figures"
+     },
+     {
+      "figure": "function requirements: multiprotocol port path",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "function requirements: UART socket path",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "function requirements: reply path through the gate",
+      "status": "refuted, not adjudicated"
+     },
+     {
+      "figure": "function requirements: reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+      "status": "refuted, not adjudicated"
+     }
+    ],
+    "figures_open": [
+     "function requirements: multiprotocol port path",
+     "function requirements: UART socket path",
+     "function requirements: reply path through the gate",
+     "function requirements: reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)"
+    ],
+    "q_missing": false,
+    "part_refuted": [],
+    "selection": [
+     {
+      "function": "gated output buffer",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "enable inverter",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "bias selector",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "level translation",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "multiprotocol port path",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "UART socket path",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "receiver inputs",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "series resistance and clamps",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "reset idle level",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "programming supply switching",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "reply path through the gate",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     },
+     {
+      "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+      "decision": "none",
+      "part": null,
+      "rank": null,
+      "alternate": "",
+      "refuted": [],
+      "alternate_unverified": [],
+      "second_source_missing": false,
+      "q_alternatives": [],
+      "q_options_missing": []
+     }
+    ]
+   }
+  ],
+  "selection": {
+   "R1": [
+    {
+     "function": "Microcontroller",
+     "decision": "none",
+     "part": "RP2354B",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "12 MHz crystal",
+     "decision": "none",
+     "part": "ABM8-272-T3",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Core regulator inductor",
+     "decision": "none",
+     "part": "AOTA-B201610S3R3-101-T",
+     "rank": 1,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "USB protection",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [
+      "TPD6E05U06RVZR"
+     ],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ],
+   "R2": [
+    {
+     "function": "Link CAN controller",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Link CAN transceiver",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "External CAN controller",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "External CAN transceiver",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "Link terminator (the 120 Ohm at the IO board's end: fitted, switchable or external)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ],
+   "R3": [
+    {
+     "function": "monostable",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "OR gate",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "reset supervisor",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "latch",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "latch clear control",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "trigger-path inverter",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "trigger input I_off buffer (Q9)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "servo rail gate",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "onboard pack switch MOSFETs",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "onboard pack switch driver",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "external pack switch module",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "external module driver output",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "pack reverse-polarity protection",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "pack overvoltage and transient clamp",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "pack precharge",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "servo rail gate driver",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "timing network (C and R of the monostable)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "inverter on an active-low output enable",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "heartbeat-node series resistors, links and fail-safe pull-downs",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ],
+   "R4": [
+    {
+     "function": "gated output buffer",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "enable inverter",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "bias selector",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "level translation",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "multiprotocol port path",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "UART socket path",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "receiver inputs",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "series resistance and clamps",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "reset idle level",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "programming supply switching",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "reply path through the gate",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    },
+    {
+     "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+     "decision": "none",
+     "part": null,
+     "rank": null,
+     "alternate": "",
+     "refuted": [],
+     "alternate_unverified": [],
+     "second_source_missing": false,
+     "q_alternatives": [],
+     "q_options_missing": []
+    }
+   ]
+  },
+  "figures_open": {
+   "R1": [
+    "P2 report: stepping-A4 errata",
+    "function requirements: Microcontroller"
+   ],
+   "R2": [
+    "P2 report: clock tolerance: MCP2518FDT-E/SL",
+    "function requirements: Link CAN controller",
+    "function requirements: Link CAN transceiver",
+    "function requirements: External CAN controller",
+    "re-rank drop: External CAN transceiver: TLE9252VSK (C540122)"
+   ],
+   "R3": [
+    "P2 report: LTC7001 count on the board",
+    "P2 report: gate opening times",
+    "re-rank report: monostable: temperature term of K",
+    "function requirements: onboard pack switch MOSFETs",
+    "re-rank drop: onboard pack switch driver: 2ED4820-EM (2ED4820EMXUMA2)"
+   ],
+   "R4": [
+    "function requirements: multiprotocol port path",
+    "function requirements: UART socket path",
+    "function requirements: reply path through the gate",
+    "function requirements: reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)"
+   ]
+  },
+  "part_refuted": {
+   "R1": [],
+   "R2": [],
+   "R3": [],
+   "R4": []
+  },
+  "q_missing": [],
+  "chain_failed": []
+ },
+ "followUps": [
+  {
+   "role": "P0",
+   "host": "www.vishay.com",
+   "categories": [
+    "R3",
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "P0",
+   "host": "www.isabellenhuette.com",
+   "categories": [
+    "R8"
+   ],
+   "reason": "lifecycle status not read from the page"
+  },
+  {
+   "role": "rerank",
+   "category": "R2",
+   "part": "SN65HVD230DR (C12084), Link CAN transceiver",
+   "functions": [
+    "External CAN transceiver"
+   ],
+   "reason": "P2 exclusion P3 overturned, neither qualified nor dropped by the re-rank"
+  },
+  {
+   "role": "P3",
+   "category": "R2",
+   "function": "Link terminator (the 120 Ohm at the IO board's end: fitted, switchable or external)",
+   "reason": "function the row names that P2 did not return: hardware/docs/IOBoard.md:205 (Not known) names R2 for it: 'Whether the IO board's terminator is fitted, switchable or external: not stated in the tree. ... R2, and round 2'. IOBoard.md:176 requires 120 Ohm at the IO board's end. P2 returned no entry for it. The resistor and any switch are passives, which round 2 selects (Research.md Scope). R2's share is the choice among fitted, switchable and external, or a question to the owner, and P2 returned neither."
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "figure": "P2 report: stepping-A4 errata",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R1",
+   "figure": "function requirements: Microcontroller",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "gated output buffer",
+   "part": "SN74LVC244APWR",
+   "reason": "shortlisted states other values than the function for: lines, enable source and polarity, disabled state, I_off on inputs and enable, supply, connector voltage tolerated, idle level in RP2354B reset; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "gated output buffer",
+   "part": "74LVC244APW,118",
+   "reason": "shortlisted states other values than the function for: lines, enable source and polarity, disabled state, I_off on inputs and enable, supply, connector voltage tolerated, idle level in RP2354B reset; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "gated output buffer",
+   "part": "74LCX244MTCX",
+   "reason": "shortlisted states other values than the function for: lines, enable source and polarity, disabled state, I_off on inputs and enable, supply, connector voltage tolerated, idle level in RP2354B reset; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "gated output buffer",
+   "part": "SN74LVC16244ADGGR",
+   "reason": "shortlisted states other values than the function for: lines, enable source and polarity, disabled state, I_off on inputs and enable, supply, connector voltage tolerated, idle level in RP2354B reset; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "gated output buffer",
+   "part": "74LVC16244ADGG,118",
+   "reason": "shortlisted states other values than the function for: lines, enable source and polarity, disabled state, I_off on inputs and enable, supply, connector voltage tolerated, idle level in RP2354B reset; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "gated output buffer",
+   "part": "SN74LVC244APWR",
+   "reason": "shortlisted lacks the function's requirements: enable pin pull, DShot bit rate, load, servo PWM and PPM timing, connector side unpowered, no bus hold on data inputs, series resistance"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "gated output buffer",
+   "part": "74LVC244APW,118",
+   "reason": "shortlisted lacks the function's requirements: enable pin pull, DShot bit rate, load, servo PWM and PPM timing, connector side unpowered, no bus hold on data inputs, series resistance"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "gated output buffer",
+   "part": "74LCX244MTCX",
+   "reason": "shortlisted lacks the function's requirements: enable pin pull, DShot bit rate, load, servo PWM and PPM timing, connector side unpowered, no bus hold on data inputs, series resistance"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "gated output buffer",
+   "part": "SN74LVC16244ADGGR",
+   "reason": "shortlisted lacks the function's requirements: enable pin pull, DShot bit rate, load, servo PWM and PPM timing, connector side unpowered, no bus hold on data inputs, series resistance"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "gated output buffer",
+   "part": "74LVC16244ADGG,118",
+   "reason": "shortlisted lacks the function's requirements: enable pin pull, DShot bit rate, load, servo PWM and PPM timing, connector side unpowered, no bus hold on data inputs, series resistance"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "enable inverter",
+   "part": "SN74LVC1G04DBVR",
+   "reason": "shortlisted states other values than the function for: input isolation, output pull, delay; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "enable inverter",
+   "part": "74LVC1G04GV,125",
+   "reason": "shortlisted states other values than the function for: input isolation, output pull, delay; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "enable inverter",
+   "part": "NC7SZ04M5X",
+   "reason": "shortlisted states other values than the function for: input isolation, output pull, delay; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "enable inverter",
+   "part": "SN74LVC1G04DBVR",
+   "reason": "shortlisted lacks the function's requirements: need"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "enable inverter",
+   "part": "74LVC1G04GV,125",
+   "reason": "shortlisted lacks the function's requirements: need"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "enable inverter",
+   "part": "NC7SZ04M5X",
+   "reason": "shortlisted lacks the function's requirements: need"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "bias selector",
+   "part": "SN74LVC1G126DBVR",
+   "reason": "shortlisted states other values than the function for: reset and unpowered state, connector-side isolation, drive; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "bias selector",
+   "part": "74LVC1G126GV,125",
+   "reason": "shortlisted states other values than the function for: reset and unpowered state, connector-side isolation, drive; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "bias selector",
+   "part": "NC7SZ126M5X",
+   "reason": "shortlisted states other values than the function for: reset and unpowered state, connector-side isolation, drive; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "bias selector",
+   "part": "SN74LVC2G126DCUR",
+   "reason": "shortlisted states other values than the function for: reset and unpowered state, connector-side isolation, drive; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "bias selector",
+   "part": "74LVC1G126W5-7",
+   "reason": "shortlisted states other values than the function for: reset and unpowered state, connector-side isolation, drive; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "bias selector",
+   "part": "SN74LVC1G126DBVR",
+   "reason": "shortlisted lacks the function's requirements: bias per mode, control, lines"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "bias selector",
+   "part": "74LVC1G126GV,125",
+   "reason": "shortlisted lacks the function's requirements: bias per mode, control, lines"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "bias selector",
+   "part": "NC7SZ126M5X",
+   "reason": "shortlisted lacks the function's requirements: bias per mode, control, lines"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "bias selector",
+   "part": "SN74LVC2G126DCUR",
+   "reason": "shortlisted lacks the function's requirements: bias per mode, control, lines"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "bias selector",
+   "part": "74LVC1G126W5-7",
+   "reason": "shortlisted lacks the function's requirements: bias per mode, control, lines"
+  },
+  {
+   "role": "rerank",
+   "category": "R4",
+   "function": "level translation",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "multiprotocol port path",
+   "part": "SN74CBTLV3126PWR",
+   "reason": "shortlisted states other values than the function for: directions, enable, I_off on RP2354B side and enable, connector-side isolation, connector level, modes and rates, idle level in RP2354B reset; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "multiprotocol port path",
+   "part": "SN74CBTLV3125PWR",
+   "reason": "shortlisted states other values than the function for: directions, enable, I_off on RP2354B side and enable, connector level; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "multiprotocol port path",
+   "part": "SN74CBTLV3126PWR",
+   "reason": "shortlisted lacks the function's requirements: ports, load, bias, series resistance"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "multiprotocol port path",
+   "part": "SN74CBTLV3125PWR",
+   "reason": "shortlisted lacks the function's requirements: ports, modes and rates, connector-side isolation, load, bias, series resistance, idle level in RP2354B reset"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "UART socket path",
+   "part": "SN74CBTLV3126PWR",
+   "reason": "shortlisted states other values than the function for: directions, line, connector-side isolation, connector level; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "UART socket path",
+   "part": "SN74CBTLV3125PWR",
+   "reason": "shortlisted states other values than the function for: directions, connector-side isolation; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "UART socket path",
+   "part": "SN74CBTLV3126PWR",
+   "reason": "shortlisted lacks the function's requirements: gate, bias, series resistance, idle level in RP2354B reset"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "UART socket path",
+   "part": "SN74CBTLV3125PWR",
+   "reason": "shortlisted lacks the function's requirements: line, gate, connector level, bias, series resistance, idle level in RP2354B reset"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "receiver inputs",
+   "part": "SN74LVC1T45DBVR",
+   "reason": "shortlisted states other values than the function for: transmit, connector-side isolation, highest level in, bench levels at the receiver, highest baud; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "receiver inputs",
+   "part": "SN74AXC1T45DBVR",
+   "reason": "shortlisted states other values than the function for: transmit, connector-side isolation, highest level in, bench levels at the receiver, highest baud; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "receiver inputs",
+   "part": "74LVC1T45W6-7",
+   "reason": "shortlisted states other values than the function for: transmit, connector-side isolation, highest level in, bench levels at the receiver, highest baud; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "receiver inputs",
+   "part": "SN74LXC1T45DBVR",
+   "reason": "shortlisted states other values than the function for: transmit, connector-side isolation, highest level in, bench levels at the receiver; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "receiver inputs",
+   "part": "SN74LVC1T45DCKR",
+   "reason": "shortlisted states other values than the function for: transmit, connector-side isolation, highest baud; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "receiver inputs",
+   "part": "SN74LVC1T45DBVR",
+   "reason": "shortlisted lacks the function's requirements: count, gate, direction at reset"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "receiver inputs",
+   "part": "SN74AXC1T45DBVR",
+   "reason": "shortlisted lacks the function's requirements: count, gate, direction at reset"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "receiver inputs",
+   "part": "74LVC1T45W6-7",
+   "reason": "shortlisted lacks the function's requirements: count, gate, direction at reset"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "receiver inputs",
+   "part": "SN74LXC1T45DBVR",
+   "reason": "shortlisted lacks the function's requirements: count, highest baud, gate, direction at reset"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "receiver inputs",
+   "part": "SN74LVC1T45DCKR",
+   "reason": "shortlisted lacks the function's requirements: count, highest level in, bench levels at the receiver, gate, direction at reset"
+  },
+  {
+   "role": "rerank",
+   "category": "R4",
+   "function": "series resistance and clamps",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R4",
+   "function": "reset idle level",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R4",
+   "function": "programming supply switching",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "reply path through the gate",
+   "part": "SN74CBTLV3126PWR",
+   "reason": "shortlisted states other values than the function for: directions, reply rate, I_off, connector level, enable; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "reply path through the gate",
+   "part": "SN74CBTLV3125PWR",
+   "reason": "shortlisted states other values than the function for: directions, I_off, enable; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "reply path through the gate",
+   "part": "SN74CBTLV3126PWR",
+   "reason": "shortlisted lacks the function's requirements: lines, turnaround"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "reply path through the gate",
+   "part": "SN74CBTLV3125PWR",
+   "reason": "shortlisted lacks the function's requirements: lines, reply rate, turnaround, connector level"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+   "part": "SN74CBTLV3126PWR",
+   "reason": "shortlisted states other values than the function for: directions, reply rate, I_off, connector level, enable; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+   "part": "SN74CBTLV3125PWR",
+   "reason": "shortlisted states other values than the function for: directions, I_off, enable; checked against the function's",
+   "notice": true
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+   "part": "SN74CBTLV3126PWR",
+   "reason": "shortlisted lacks the function's requirements: lines, turnaround"
+  },
+  {
+   "role": "P2",
+   "category": "R4",
+   "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+   "part": "SN74CBTLV3125PWR",
+   "reason": "shortlisted lacks the function's requirements: lines, reply rate, turnaround, connector level"
+  },
+  {
+   "role": "P4",
+   "category": "R1",
+   "function": "USB protection",
+   "part": "VBUS54CV-HSF-G4-08",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: the product page https://www.vishay.com/en/product/84145/ (18:24:11Z) carries no longevity commitment, and this verifier found no Vishay longevity programme page to read. None is recorded; S5 does not require one",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R1",
+   "function": "USB protection",
+   "part": "VBUS54CV-HSF-G4-08",
+   "figure": "market introduction",
+   "reason": "recorded as not read: not read: the first datasheet revision's date is not given. The served datasheet (SHA-256 26a39d9afeea200b4b5496f449623b867e2eb8887e9f92d29be190e7ee04fd08, PDF created 2026-04-03) carries only 'Rev. 1.3, 04-Jan-2019', Document Number 84145, and has no revision history. The web archive's capture index answered HTTP 503 at 18:25:11Z. Rev. 1.3 alone is 7 years 8 months old, so the part is over 12 months on the market: not flagged",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R1",
+   "function": "USB protection",
+   "part": "VBUS54CV-HSF-G4-08",
+   "reason": "not covered by both verifiers"
+  },
+  {
+   "role": "P4",
+   "category": "R2",
+   "function": "Link CAN controller",
+   "part": "MCP2518FDT-E/SL",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R2",
+   "function": "Link CAN transceiver",
+   "part": "TCAN3413DR",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R2",
+   "function": "External CAN controller",
+   "part": "MCP2518FDT-E/SL",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "figure": "P2 report: clock tolerance: MCP2518FDT-E/SL",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "figure": "function requirements: Link CAN controller",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "figure": "function requirements: Link CAN transceiver",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "figure": "function requirements: External CAN controller",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "rerank",
+   "category": "R3",
+   "function": "pack precharge",
+   "part": "TPSI3050QDWZRQ1 (LCSC C17341959) as the precharge MOSFET's gate driver",
+   "reason": "P3 candidate neither qualified nor dropped by the re-rank"
+  },
+  {
+   "role": "rerank",
+   "category": "R3",
+   "function": "pack reverse-polarity protection",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R3",
+   "function": "pack overvoltage and transient clamp",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R3",
+   "function": "timing network (C and R of the monostable)",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R3",
+   "function": "inverter on an active-low output enable",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "rerank",
+   "category": "R3",
+   "function": "heartbeat-node series resistors, links and fail-safe pull-downs",
+   "reason": "the re-rank ranked no part"
+  },
+  {
+   "role": "P2",
+   "category": "R2",
+   "figure": "re-rank drop: External CAN transceiver: TLE9252VSK (C540122)",
+   "reason": "figure refuted"
+  },
+  {
+   "role": "P4",
+   "category": "R4",
+   "function": "gated output buffer",
+   "part": "SN74LVC244APWR",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R4",
+   "function": "gated output buffer",
+   "part": "74LVC244APW,118",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R4",
+   "function": "enable inverter",
+   "part": "SN74LVC1G04DBVR",
+   "reason": "no free agent"
+  },
+  {
+   "role": "P4",
+   "category": "R4",
+   "function": "bias selector",
+   "part": "SN74LVC1G126DBVR",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R4",
+   "function": "multiprotocol port path",
+   "part": "SN74CBTLV3126PWR",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R4",
+   "function": "UART socket path",
+   "part": "SN74CBTLV3126PWR",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R4",
+   "function": "receiver inputs",
+   "part": "SN74LVC1T45DBVR",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R4",
+   "function": "reply path through the gate",
+   "part": "SN74CBTLV3126PWR",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R4",
+   "function": "reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+   "part": "SN74CBTLV3126PWR",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R4",
+   "figure": "function requirements: multiprotocol port path",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R4",
+   "figure": "function requirements: UART socket path",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R4",
+   "figure": "function requirements: reply path through the gate",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R4",
+   "figure": "function requirements: reply path through the gate (the element that passes the bidirectional DShot reply and the half-duplex receive direction while enabled, IOBoard.md:254 and :278)",
+   "reason": "no free agent"
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "external pack switch module",
+   "part": "VS-FC420SA10",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: Vishay's product page carries no longevity or lifecycle text in its body, and no Vishay longevity programme page was located",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "external pack switch module",
+   "part": "VS-FC420SA10",
+   "figure": "market introduction",
+   "reason": "recorded as not read: not read: document 95793 carries only 'Revision: 10-Sep-2019' and no revision history; on the market at least since 2019-09-10, not under 12 months",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "external pack switch module",
+   "part": "VS-FC270SA20",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: Vishay's product page carries no longevity or lifecycle text in its body, and no Vishay longevity programme page was located",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "external pack switch module",
+   "part": "VS-FC270SA20",
+   "figure": "market introduction",
+   "reason": "recorded as not read: not read: document 96103 carries only 'Revision: 08-Jan-2021' and no revision history; on the market at least since 2021-01-08, not under 12 months",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "external module driver output",
+   "part": "LTC7001IMSE#PBF",
+   "figure": "longevity commitment",
+   "reason": "recorded as not read: not read: the LTC7001 product page carries no longevity statement, and no Analog Devices longevity programme page was read",
+   "notice": true
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "monostable",
+   "part": "74HC423BQ,115",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "OR gate",
+   "part": "74AUP1G32GW,125",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "reset supervisor",
+   "part": "TPS3808G33DBVR",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R3",
+   "function": "latch",
+   "part": "74LVC1G175GW,125",
+   "reason": "no free agent"
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "latch clear control",
+   "part": "434153017835",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "trigger-path inverter",
+   "part": "SN74AUP1G14DCKR",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "trigger input I_off buffer (Q9)",
+   "part": "SN74AUP1G17DCKR",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "servo rail gate",
+   "part": "TPS259824ONRGER",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "servo rail gate",
+   "part": "TPS259827ONRGET",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "onboard pack switch MOSFETs",
+   "part": "IPT015N10N5ATMA1",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "onboard pack switch driver",
+   "part": "TPSI3050QDWZRQ1",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "onboard pack switch driver",
+   "part": "TPSI3050DWZR",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R3",
+   "function": "external pack switch module",
+   "part": "VS-FC420SA10",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R3",
+   "function": "external pack switch module",
+   "part": "VS-FC270SA20",
+   "reason": "no free agent"
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "external module driver output",
+   "part": "LTC7001IMSE#PBF",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "P4",
+   "category": "R3",
+   "function": "servo rail gate driver",
+   "part": "2N7002BK,215",
+   "reason": "a verifier gave no required check for some figures"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R3",
+   "figure": "P2 report: LTC7001 count on the board",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R3",
+   "figure": "P2 report: gate opening times",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R3",
+   "figure": "re-rank report: monostable: temperature term of K",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R3",
+   "figure": "function requirements: onboard pack switch MOSFETs",
+   "reason": "no free agent"
+  },
+  {
+   "role": "adjudicator",
+   "category": "R3",
+   "figure": "re-rank drop: onboard pack switch driver: 2ED4820-EM (2ED4820EMXUMA2)",
+   "reason": "no free agent"
+  }
+ ],
+ "missing": [],
+ "sequence": 4,
+ "output_sha256": "9c623c06231ce2137ca457a30ae3a447e129bfa1345e30d381106572a010b200"
+}

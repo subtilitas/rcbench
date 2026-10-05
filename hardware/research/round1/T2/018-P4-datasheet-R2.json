@@ -1,0 +1,503 @@
+{
+ "role": "P4",
+ "category": "R2",
+ "label": "P4-datasheet-R2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "verifier": "datasheet",
+  "parts": [],
+  "figures": [
+   {
+    "figure": "found V16",
+    "verdict": "confirmed",
+    "evidence": "Re-derived from the tree and tried to break it at the boundary between the self-test and polling. link_host.c start() refuses a request while one is pending. LINK_HOST_TIMEOUT_MS is 1000. LINK_MAX_REGS is 32 and LINK_CAN_REGS_PER_FRAME is 4, so a request is at most 8 frames. can_twai_send is called only at main.c:1663, selftest.c:33 and selftest.c:66. Probes run one at a time and are released by can_selftest_tick after 50 ms (can_selftest.c:209). The status requests of can_ask_remote are also 50 ms apart. The worst boundary case is the last probe followed by the first after-status request. They are at least about 22 ms apart: the 20 ms receive wait plus the 2 ms delay. poll_identity is 1 frame and comes at least 50 ms after the fifth status try. A sequence spaced 50 ms apart with one 22 ms gap still fits at most 9 frames in 400 ms. A 3 ms window holds at most the 8 frames of one request.",
+    "source": "checkout c25aa863372d: shared/link/include/link_host.h:5-7,:29; shared/link/link_host.c:32-60; shared/link/include/link_msg.h:21; shared/link/include/link_can.h:69-72; firmware/panel/main/main.c:196,:1063-1101,:1652-1719; firmware/panel/main/selftest.c:28-116; shared/can/can_selftest.c:136-142,:204-215",
+    "read_at": "2026-09-28T13:51Z to 13:56Z"
+   },
+   {
+    "figure": "found V17",
+    "verdict": "refuted",
+    "evidence": "The 44 + 8N data frame (Figure 2-1, printed on page 9, not page 8) and the 3-bit intermission (section 2.6, page 8) read as stated, so the classic-CAN bound of 8,511 and 64 holds. The claim 'A CAN FD frame is longer, so the bound holds for FD traffic too' is false for the traffic V20 and V21 set: CAN FD with bit-rate switching to a 5000 kbit/s data phase. CiA's CAN FD page gives the frame fields: FDF, BRS, ESI, a 3-bit Gray-coded stuff count with a parity bit and fixed stuff bits, and a 17-bit CRC for payloads up to 16 bytes, with the data-phase rate applied after BRS. An FD frame with no data then has about 30 bits at 1 Mbit/s: SOF to BRS 17, CRC delimiter, ACK, EOF 7 and IFS 3. It also has about 32 bits at 5 Mbit/s: ESI 1, DLC 4, stuff count 4, CRC 17 and 6 fixed stuff bits. That is about 36.4 us against 47 us. A saturated port can therefore deliver about 10,990 frames in 400 ms and about 83 in 3 ms. These counts are derived here and not read from a data sheet; ISO 11898-1:2015 was not read. The FD frame is longer than 47 us only without bit-rate switching.",
+    "source": "MCP2515 DS20001801K pages 8-9, https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/MCP2515-Family-Data-Sheet-DS20001801K.pdf (read 13:49:14Z); https://www.can-cia.org/can-knowledge/can-fd-the-basic-idea (read 13:53:12Z); DroneCAN 4.4 Bus rates, https://dronecan.github.io/Specification/4.4_CANFD_bus_transport_layer/ (read 13:49:14Z)",
+    "read_at": "2026-09-28T13:53:12Z"
+   },
+   {
+    "figure": "found V18",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:57 and :238 and the R2 row (Research.md:280) state that the external transceiver is in standby while the enable is low. Monostable.md:28-34 at 23c82ca names only the output buffer and the two power switches as gates and says nothing on CAN. Nothing found states otherwise. One caveat: the Not defeatable rule (IOBoard.md:197; Monostable.md:34) covers the path from GPIO6 to 'either gate', and the transceiver is not one of the named gates. The inference that the rule keeps firmware out of the standby path therefore goes further than the rule's text. The value 'yes' stands on the specification's own lines.",
+    "source": "checkout c25aa863372d hardware/docs/IOBoard.md:57,:197,:238; hardware/docs/Research.md:280; monostable-23c82ca hardware/docs/Monostable.md:28-34",
+    "read_at": "2026-09-28T13:52Z"
+   },
+   {
+    "figure": "found V19",
+    "verdict": "confirmed",
+    "evidence": "Monostable.md at 23c82ca gives these rows: enable node upper bound 185 ms (:111), power switch open 5 ms after the enable node falls (:113), reserve 10 ms (:114) and deadline 200 ms (:115). 185 + 5 + 10 = 200.",
+    "source": "monostable-23c82ca (git HEAD 23c82ca6ca976d956098cfafd25dbefa11584f5d) hardware/docs/Monostable.md:100-116",
+    "read_at": "2026-09-28T13:52Z"
+   },
+   {
+    "figure": "found V20",
+    "verdict": "confirmed",
+    "evidence": "The DroneCAN 4.4 page says DroneCAN 'operates on CANFD' and that 'frames can be up to 64 bytes'. Page 4.1 defines the classic transport. README.md:108-111 and STATUS.md:383 name DroneCAN, and no other CAN application protocol appears in the tree's .md files.",
+    "source": "https://dronecan.github.io/Specification/4.4_CANFD_bus_transport_layer/ and https://dronecan.github.io/Specification/4.1_CAN_bus_transport_layer/ (read 13:49:14Z); checkout c25aa863372d README.md:108-111, STATUS.md:383",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "found V21",
+    "verdict": "confirmed",
+    "evidence": "The DroneCAN section 8 table lists 1000 kbit/s as the highest recommended rate. DroneCAN 4.4 says BRS usually runs 'with a nominal bit rate of 1MBps, with payload switching to 1, 2, 4, 5 or 8 MBit depending on hardware capabilities'. SLLSFJ3D page 1 says 'to 5 megabits per second (Mbps). Up to 8Mbps operation in simpler networks'. The 5000 kbit/s figure is a choice limited by the transceivers, and it is stated as such.",
+    "source": "https://dronecan.github.io/Specification/8._Hardware_design_recommendations/, https://dronecan.github.io/Specification/4.4_CANFD_bus_transport_layer/, https://www.ti.com/lit/ds/symlink/tcan1044a-q1.pdf SLLSFJ3D page 1",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "found V22",
+    "verdict": "confirmed",
+    "evidence": "The CAN bus parameters table gives these values at 1000 kbit/s: sample point 75% to 90%, recommended 87.5%, maximum bus length 40 m, maximum stub 0.3 m. The page also says the limits are 'based on the assumption that the propagation delay does not exceed 5 ns/m, not including additional delay times of CAN transceivers'.",
+    "source": "https://dronecan.github.io/Specification/8._Hardware_design_recommendations/",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "found V23",
+    "verdict": "confirmed",
+    "evidence": "D-Sub pin 3, CAN Ground: 'Must be interconnected with Ground (pin 6) within the device'. The M8 pinout carries Ground on pin 5, and the Micro pinout carries Ground as well. The tree states no isolation.",
+    "source": "https://dronecan.github.io/Specification/8._Hardware_design_recommendations/",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "found V24",
+    "verdict": "confirmed",
+    "evidence": "The D-Sub and M8 sections say: 'Devices that deliver power to the bus are required to provide 23.0-30.0 V on the bus power line, 24 V nominal'. Bus-powered devices should expect 18.0 to 30.0 V. The Micro connector gives 5.0 to 5.5 V. A CAN line shorted to bus power therefore sees up to 30.0 V.",
+    "source": "https://dronecan.github.io/Specification/8._Hardware_design_recommendations/",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "found V25",
+    "verdict": "confirmed",
+    "evidence": "The Micro connector section reads 'Devices that deliver power to the bus are required to provide 5.0-5.5 V'. IOBoard.md:56 gives 5 V (F6) on the link cable, and :177 says the cable carries the display's supply. The figure is taken by analogy, because the link is not a DroneCAN bus, and the answer states that.",
+    "source": "https://dronecan.github.io/Specification/8._Hardware_design_recommendations/ (13:49:14Z); checkout c25aa863372d hardware/docs/IOBoard.md:56,:177",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "found V26",
+    "verdict": "confirmed",
+    "evidence": "DS20001801K section 5.6, page 43: 'A maximum node-to-node oscillator variation of 1.7% is allowed' and a quartz oscillator is required for full bus speed. AN754 page 7 gives 10tbit(A) > 10tbit(B) + tSJW(B). Tried to refute it with condition 2 of MCP25625 DS20005282C Eq. 3-7, df <= min(PHSEG1,PHSEG2)/(2(13NBT - PHSEG2)), at the link's timing. The IO board side is 8 TQ with PHSEG1 3 and PHSEG2 2 (can_timing.c:194-198), which gives 0.98%. The TWAI side is 20 TQ with PS2 5 and SJW 4, which gives 0.98% and 1.0%. The +/-0.85% taken is tighter than every condition, so the value is not weaker than its sources.",
+    "source": "MCP2515 DS20001801K p.43; AN754 DS00754A p.7, https://ww1.microchip.com/downloads/en/AppNotes/00754.pdf; MCP25625 DS20005282C section 3.8.5; checkout docs/Link.md:202-205, shared/can/can_timing.c:186-205",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "found V27",
+    "verdict": "refuted",
+    "evidence": "The +/-0.5% input ranges read correctly: MCP2518FD Table 7-3 gives FOSC1,20M/40M at nominal -0.5% to +0.5%, and SLLSF91A says 0.5% frequency accuracy. The derivation that ±0.5% is inside what CAN allows fails. It uses only the SJW condition, 1.25% node to node at 87.5%. Microchip's condition 2, df <= min(PHSEG1,PHSEG2)/(2 x (13 x NBT - PHSEG2)) (DS20005282C Eq. 3-7), gives 0.125/(2 x 12.875) = 0.485% a node at the 87.5% sample point V27 itself uses. That is ±4,854 ppm, and it applies at any NBT. ±5,000 ppm is therefore weaker than the classic-CAN limit at that sample point, and at DroneCAN's 90% end it is 0.388%. The CAN FD data-phase tolerance conditions at 5000 kbit/s were not read from a primary source and were not evaluated. They can only tighten the limit.",
+    "source": "MCP2518FD DS20006027B Table 7-3 p.79; TCAN4550 SLLSF91A crystal section; MCP25625 DS20005282C section 3.8.5 Eq. 3-5 to 3-7, https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/MCP25625-CAN-Controller-Data-Sheet-20005282C.pdf; AN754 p.7",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "found V28",
+    "verdict": "confirmed",
+    "evidence": "main.c:204-206 says the multiplexer 'hands to CAN about a second into boot'. main.c:1063-1079 opens TWAI and runs can_selftest_run(1200 ms) before the identity poll. selftest.c:82-100 says the transmit error counter climbs by 8 per retry and prints 'nothing is acknowledging' at 128. Bringup.md:43-45 and IOBoard.md:210 agree. The figure of about 1000 ms is a reading of 'about a second' in a comment, and the answer states it as approximate.",
+    "source": "checkout c25aa863372d firmware/panel/main/main.c:201-209,:1063-1087; firmware/panel/main/selftest.c:28-100; docs/Bringup.md:43-45; hardware/docs/IOBoard.md:210",
+    "read_at": "2026-09-28T13:55Z"
+   },
+   {
+    "figure": "P2 report: frames the panel sends during the flash stall",
+    "verdict": "confirmed",
+    "evidence": "The same reading as V16, re-derived: at most 9 frames in 400 ms, including the boundary between the self-test and polling, and at most 8 in 3 ms from one 32-register write. Outside the self-test, a single outstanding request with a 1000 ms timeout gives at most 8.",
+    "source": "checkout c25aa863372d shared/link/link_host.c:32-60; shared/link/include/link_can.h:69-72; firmware/panel/main/main.c:1652-1719; firmware/panel/main/selftest.c:28-116; shared/can/can_selftest.c:204-215",
+    "read_at": "2026-09-28T13:51Z to 13:56Z"
+   },
+   {
+    "figure": "P2 report: frames arriving on the external CAN port during the flash stall",
+    "verdict": "refuted",
+    "evidence": "This is the V17 figure. 8,511 and 64 bound a classic-CAN port only. With the CAN FD and 5000 kbit/s data phase of V20 and V21, a 0-byte FD frame with bit-rate switching takes about 36.4 us, not 47 us. That allows about 10,990 frames in 400 ms and 83 in 3 ms (derived; see found V17).",
+    "source": "MCP2515 DS20001801K pp.8-9; https://www.can-cia.org/can-knowledge/can-fd-the-basic-idea (13:53:12Z); DroneCAN 4.4",
+    "read_at": "2026-09-28T13:53:12Z"
+   },
+   {
+    "figure": "P2 report: frames held: MCP2518FDT-E/SL",
+    "verdict": "confirmed",
+    "evidence": "Page 1 lists 31 FIFOs configurable as transmit or receive, and message objects in 2 KB of RAM. FSIZE[4:0] goes up to 'FIFO is 32 Messages deep'. Table 3-6 gives the receive object as words R0 and R1, an optional timestamp word R2, then the data, so 8 + 8 = 16 bytes without a timestamp, and 2048/16 = 128 objects. It holds V16's 9 and 8 frames. It does not hold V17's figure, which is itself too low for FD traffic (V17 refuted), so the conclusion that it does not hold the external port's saturated count only gets stronger.",
+    "source": "MCP2518FD DS20006027B page 1, section 3.3 page 66, Table 3-6, FSIZE field, https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/External-CAN-FD-Controller-with-SPI-Interface-DS20006027B.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "P2 report: frames held: MCP251863T-E/SS",
+    "verdict": "confirmed",
+    "evidence": "DS20006624B page 1 lists 31 FIFOs and message objects in 2 KB of RAM. The FSIZE field goes up to 32 messages deep, the same controller as the MCP2518FD.",
+    "source": "MCP251863 DS20006624B page 1 and FSIZE field, https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/MCP251863-External-CAN-FD-Controller-with-Integrated-Transceiver-DS20006624.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "P2 report: frames held: MCP2515T-I/ST",
+    "verdict": "confirmed",
+    "evidence": "DS20001801K page 1 gives 'Two receive buffers with prioritized message storage'. xl2515.c:105-112 sets BUKT on RXB0. The counts follow: 9 - 2 = 7 lost and 8 - 2 = 6 lost.",
+    "source": "MCP2515 DS20001801K page 1; checkout c25aa863372d firmware/iomcu/src/xl2515.c:105-112",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "P2 report: frames held: TJA1051T/3/1J",
+    "verdict": "confirmed",
+    "evidence": "A transceiver with no message storage. The data sheet read is TJA1051 Rev. 9, 28 November 2017.",
+    "source": "https://www.nxp.com/docs/en/data-sheet/TJA1051.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "P2 report: frames held: TCAN1044AVDRQ1",
+    "verdict": "confirmed",
+    "evidence": "A transceiver with no message storage. SLLSFJ3D.",
+    "source": "https://www.ti.com/lit/ds/symlink/tcan1044a-q1.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "P2 report: frames held: TCAN1042HGVDRQ1",
+    "verdict": "confirmed",
+    "evidence": "A transceiver with no message storage. SLLSES9D.",
+    "source": "https://www.ti.com/lit/ds/symlink/tcan1042-q1.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "P2 report: frames held: MCP2562FDT-E/SN",
+    "verdict": "confirmed",
+    "evidence": "A transceiver with no message storage. DS20005284B.",
+    "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/MCP2561-2FD-High-Speed-CAN-Flexible-Data-Rate-Transceiver-DS20005284.pdf",
+    "read_at": "2026-09-28T13:49:30Z"
+   },
+   {
+    "figure": "P2 report: frames held: TCAN334DR",
+    "verdict": "confirmed",
+    "evidence": "A transceiver with no message storage. SLLSEQ7F.",
+    "source": "https://www.ti.com/lit/ds/symlink/tcan334.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "P2 report: clock tolerance: MCP2518FDT-E/SL",
+    "verdict": "confirmed",
+    "evidence": "Table 7-3 reads: FOSC1,20M and 40M at nominal -0.5% to +0.5%; FDRIFT 10 ppm maximum from the PLL at 4 MHz; TOSCSTAB 3 ms maximum. The data sheet reading is correct. The ±5,000 ppm requirement it quotes for the external port is V27, which is refuted: the classic-CAN limit is 0.485% at 87.5%.",
+    "source": "MCP2518FD DS20006027B Table 7-3, page 79",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "P2 report: clock tolerance: MCP251863T-E/SS",
+    "verdict": "confirmed",
+    "evidence": "Table 9-4 gives the same figures: FOSC1 20 and 40 MHz within ±0.5%, 10 ppm FDRIFT at 4 MHz, TOSCSTAB 3 ms. V27, which it is compared against, is refuted.",
+    "source": "MCP251863 DS20006624B Table 9-4",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "P2 report: clock tolerance: MCP2515T-I/ST",
+    "verdict": "confirmed",
+    "evidence": "Table 13-2 gives Clock In Frequency of 1 to 25 MHz at VDD 2.7 to 5.5 V and no tolerance limit. Section 5.6 on page 43 gives 1.7% node to node and requires a quartz oscillator for the full bus speed range.",
+    "source": "MCP2515 DS20001801K Table 13-2 and section 5.6",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "P2 report: clock tolerance: TJA1051T/3/1J",
+    "verdict": "confirmed",
+    "evidence": "A transceiver has no bit clock. The TJA1051 Rev. 9 data sheet was read.",
+    "source": "https://www.nxp.com/docs/en/data-sheet/TJA1051.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "P2 report: clock tolerance: TCAN1044AVDRQ1",
+    "verdict": "confirmed",
+    "evidence": "A transceiver has no bit clock. SLLSFJ3D.",
+    "source": "https://www.ti.com/lit/ds/symlink/tcan1044a-q1.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "P2 report: clock tolerance: TCAN1042HGVDRQ1",
+    "verdict": "confirmed",
+    "evidence": "A transceiver has no bit clock. SLLSES9D.",
+    "source": "https://www.ti.com/lit/ds/symlink/tcan1042-q1.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "P2 report: clock tolerance: MCP2562FDT-E/SN",
+    "verdict": "confirmed",
+    "evidence": "A transceiver has no bit clock. DS20005284B.",
+    "source": "MCP2561/2FD DS20005284B",
+    "read_at": "2026-09-28T13:49:30Z"
+   },
+   {
+    "figure": "P2 report: clock tolerance: TCAN334DR",
+    "verdict": "confirmed",
+    "evidence": "A transceiver has no bit clock. SLLSEQ7F.",
+    "source": "https://www.ti.com/lit/ds/symlink/tcan334.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "P2 report: link terminator",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:176 gives 120 Ω at each end, one at the IO board. :205 leaves open whether it is fitted, switchable or external. Research.md:28 puts passives in round 2.",
+    "source": "checkout c25aa863372d hardware/docs/IOBoard.md:176,:205; hardware/docs/Research.md:28",
+    "read_at": "2026-09-28T13:52Z"
+   },
+   {
+    "figure": "re-rank report: frames held: MCP25625T-E/ML",
+    "verdict": "confirmed",
+    "evidence": "Page 1 lists 'Two Receive Buffers'. Section 3.7.1.1 (page 15) describes the MAB, which assembles every received message ahead of RXB0 and RXB1. Held frames: 2.",
+    "source": "MCP25625 DS20005282C page 1, page 15, https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/MCP25625-CAN-Controller-Data-Sheet-20005282C.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank report: clock tolerance: MCP25625T-E/ML",
+    "verdict": "confirmed",
+    "evidence": "Table 7-2 gives FOSC 1 to 25 MHz and no tolerance. can_timing.c:194-198 splits tseg1 5 into PHSEG1 3 and PRSEG 2, with PHSEG2 2 and SJW 2. Eq. 3-6 gives 2/(2 x 10 x 8) = 1.25%. Eq. 3-7 gives 2/(2 x (104 - 2)) = 0.98%.",
+    "source": "MCP25625 DS20005282C section 3.8.5, Table 7-2; checkout shared/can/can_timing.c:186-205, docs/Link.md:203-205",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank report: frames held: TCAN3413DR",
+    "verdict": "confirmed",
+    "evidence": "A transceiver with no message storage. SLLSFS8A, March 2023.",
+    "source": "https://www.ti.com/lit/ds/symlink/tcan3413.pdf",
+    "read_at": "2026-09-28T13:48:58Z"
+   },
+   {
+    "figure": "re-rank report: clock tolerance: TCAN3413DR",
+    "verdict": "confirmed",
+    "evidence": "A transceiver has no bit clock. SLLSFS8A.",
+    "source": "https://www.ti.com/lit/ds/symlink/tcan3413.pdf",
+    "read_at": "2026-09-28T13:48:58Z"
+   },
+   {
+    "figure": "re-rank report: frames held: TJA1044GT/3Z",
+    "verdict": "confirmed",
+    "evidence": "A transceiver with no message storage. TJA1044 Rev. 8.0, 6 November 2024.",
+    "source": "https://www.nxp.com/docs/en/data-sheet/TJA1044.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank report: clock tolerance: TJA1044GT/3Z",
+    "verdict": "confirmed",
+    "evidence": "A transceiver has no bit clock. TJA1044 Rev. 8.0.",
+    "source": "https://www.nxp.com/docs/en/data-sheet/TJA1044.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank report: frames held: ATA6561-GAQW-N",
+    "verdict": "confirmed",
+    "evidence": "A transceiver with no message storage. DS20005991B.",
+    "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/20005991B.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank report: clock tolerance: ATA6561-GAQW-N",
+    "verdict": "confirmed",
+    "evidence": "A transceiver has no bit clock. DS20005991B.",
+    "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/20005991B.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank report: frames held: TJA1042T/3/1J",
+    "verdict": "confirmed",
+    "evidence": "A transceiver with no message storage. TJA1042 Rev. 11, 16 January 2023.",
+    "source": "https://www.nxp.com/docs/en/data-sheet/TJA1042.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank report: clock tolerance: TJA1042T/3/1J",
+    "verdict": "confirmed",
+    "evidence": "A transceiver has no bit clock. TJA1042 Rev. 11.",
+    "source": "https://www.nxp.com/docs/en/data-sheet/TJA1042.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank report: frames held: ATA6563-GAQW1",
+    "verdict": "confirmed",
+    "evidence": "A transceiver with no message storage. DS20005790E.",
+    "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/ATA6562.3-Data-Sheet-20005790E.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank report: clock tolerance: ATA6563-GAQW1",
+    "verdict": "confirmed",
+    "evidence": "A transceiver has no bit clock. DS20005790E.",
+    "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/ATA6562.3-Data-Sheet-20005790E.pdf",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank report: TCAN3413DR STB unpowered leakage",
+    "verdict": "confirmed",
+    "evidence": "Section 5.8 (continued), STB terminal: ILKG(OFF), unpowered leakage current, STB = 3.6 V, VCC = VIO = 0 V, -1 min, 0 typ, 1 max, in µA.",
+    "source": "TCAN3413 SLLSFS8A section 5.8, https://www.ti.com/lit/ds/symlink/tcan3413.pdf",
+    "read_at": "2026-09-28T13:48:58Z"
+   },
+   {
+    "figure": "re-rank report: MCP2518FDT-E/SL Digi-Key stock",
+    "verdict": "confirmed",
+    "evidence": "Stock 43,486, status Active, lead time 42 weeks.",
+    "source": "vendors.py digikey MCP2518FDT-E/SL (https://api.digikey.com/products/v4/search/MCP2518FDT-E%2FSL/productdetails)",
+    "read_at": "2026-09-28T13:50:37Z"
+   },
+   {
+    "figure": "re-rank report: SN65HVD230DR stock",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C12084: stockCount 82,789, canPresaleNumber 65,950, 0.5246 at 10. The stock moves, and the report read 82,794 and 65,955. Digi-Key: stock 0 across all three packagings, Active, 9 weeks.",
+    "source": "vendors.py jlcpcb C12084 (13:50:32Z); vendors.py digikey SN65HVD230DR (13:50:37Z)",
+    "read_at": "2026-09-28T13:50:37Z"
+   },
+   {
+    "figure": "re-rank report: MCP2517FD lifecycle",
+    "verdict": "confirmed",
+    "evidence": "The page carries '\"productSatus\": \"In Production\"' and an 'In Production' badge. Its summary reads 'Not recommended for new designs. Consider using the pin- and functionally compatible MCP2518FD'.",
+    "source": "https://www.microchip.com/en-us/product/MCP2517FD",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank report: MAX33040E normal-to-standby delay",
+    "verdict": "confirmed",
+    "evidence": "The timing table gives 'Normal to Standby Dominant Delay tD_NSTBY CL = 15pF, Figure 6', with 30 in the TYP column and nothing in MIN or MAX. tD_STBYN is 20 us typical. The data sheet is 19-100746 Rev 3, 9/21.",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/max33040e-max33041e.pdf (client safari)",
+    "read_at": "2026-09-28T13:49:30Z"
+   },
+   {
+    "figure": "re-rank report: TCAN1043A-Q1 mode table",
+    "verdict": "confirmed",
+    "evidence": "Table 7-4 gives these modes. Normal: EN high, nSTB high. Silent: EN low, nSTB high. EN high, nSTB low: Standby with WAKERQ set, and Go-to-sleep once it is cleared, then Sleep after tGOTOSLEEP; the report's 'Sleep' shortens that. EN low, nSTB low: Standby. The data sheet is SLLSFD1F, revised July 2025.",
+    "source": "https://www.ti.com/lit/ds/symlink/tcan1043a-q1.pdf SLLSFD1F Table 7-4, Figure 7-4",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank report: NXP longevity rows",
+    "verdict": "confirmed",
+    "evidence": "TJA1051: Dec 2008 to Dec 2033. TJA1044G: May 2013 to May 2035. TJA1042B and TJA1042C: Jun 2023 to Jun 2038, with no row for plain TJA1042. TJA1057G: May 2013 to May 2028.",
+    "source": "https://www.nxp.com/products/nxp-product-information/nxp-product-programs/product-longevity:PRDCT_LONGEVITY_HM",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank drop: Link CAN controller: MCP2517FDT-H/SL (C512185), MCP2517FD (C133861)",
+    "verdict": "confirmed",
+    "evidence": "The product page summary reads 'Not recommended for new designs...', beside the In Production field. NRND fails the lifecycle gate, and the drop stands on that.",
+    "source": "https://www.microchip.com/en-us/product/MCP2517FD",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank drop: Link CAN controller: SJA1000T/N1,118 (C6910)",
+    "verdict": "confirmed",
+    "evidence": "The recommended operating VDD is 4.5 to 5.5 V, and the VDD1 to VDD3 pins are '5 V supply'. Pins 'AD7 to AD0' form a 'multiplexed address/data bus'. This conflicts with 3.3 V logic and with an SPI interface. Product specification dated 2000 Jan 04. JLCPCB C6910 today: 2,661 in stock, maker NXP Semicon.",
+    "source": "https://www.nxp.com/docs/en/data-sheet/SJA1000.pdf (13:49:14Z); vendors.py jlcpcb C6910 (13:50:29Z)",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank drop: Link CAN controller: MCP2510 family, IA82527 (C661928)",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB exact matches: MCP2510-I/P C646750 has stockCount 2 (presale 2). C220751, C511268, C627063, C631464, C631465, C638679 and C646749 have 0. IA82527PLC44AR2 C661928 has 0, and IA82527PQF44AR2 C661918 also has 0. All are under the gate of 50.",
+    "source": "vendors.py jlcpcb for each LCSC number",
+    "read_at": "2026-09-28T13:50:26Z to 13:50:29Z"
+   },
+   {
+    "figure": "re-rank drop: Link CAN transceiver: TJA1057GT/3J (C112947)",
+    "verdict": "confirmed",
+    "evidence": "TJA1057 Rev. 8.1 gives VIO 2.91 to 5.5 V, CANH and CANL -42 to +42 V, and td(TXDL-RXDL) and td(TXDH-RXDH) 230 ns max for the other variants. NXP longevity for TJA1057G ends May 2028. JLCPCB: 10,984 in stock, presale 10,795, 0.596 at 10. TJA1044GT/3Z C961486 is 0.4158 at 10. Digi-Key: 10,388, Active.",
+    "source": "https://www.nxp.com/docs/en/data-sheet/TJA1057.pdf (13:49:14Z); NXP longevity page (13:49:14Z); vendors.py jlcpcb C112947 (13:50:30Z), C961486 (13:58:34Z); vendors.py digikey TJA1057GT/3J (13:50:38Z)",
+    "read_at": "2026-09-28T13:58:34Z"
+   },
+   {
+    "figure": "re-rank drop: Link CAN transceiver: TCAN1057AVDRQ1 (C3235000)",
+    "verdict": "confirmed",
+    "evidence": "SLLSFM8C gives VIO 1.7 to 5.5 V and ±58 V. tPROP(LOOP1) and tPROP(LOOP2) are 210 ns max, and 255 ns in the second condition set, both under 350 ns. JLCPCB: 4,764 in stock, presale 4,732, 0.4824 at 10. Digi-Key: 3,627, Active.",
+    "source": "https://www.ti.com/lit/ds/symlink/tcan1057a-q1.pdf; vendors.py jlcpcb C3235000 (13:50:30Z); vendors.py digikey TCAN1057AVDRQ1 (13:50:38Z)",
+    "read_at": "2026-09-28T13:50:38Z"
+   },
+   {
+    "figure": "re-rank drop: Link CAN transceiver: TCAN1051HVDR (C130130)",
+    "verdict": "confirmed",
+    "evidence": "SLLSES8E gives ±70 V on H variants, a VIO pin on V variants, and tPROP(LOOP1) 160 and LOOP2 175 ns max. JLCPCB: 671 in stock, presale 664, 1.0686 at 10.",
+    "source": "https://www.ti.com/lit/ds/symlink/tcan1051h.pdf; vendors.py jlcpcb C130130",
+    "read_at": "2026-09-28T13:50:30Z"
+   },
+   {
+    "figure": "re-rank drop: Link CAN transceiver: MAX3051EKA+T (C112005), MAX3051ESA+T (C15648)",
+    "verdict": "confirmed",
+    "evidence": "Absolute maximum CANH and CANL to GND is -7.5 V to +12.5 V. At VRS = 0 V the maxima are tONTXD 50, tOFFTXD 70, tONRXD 80 and tOFFRXD 100 ns. The data sheet gives no loop-delay row, and tOFFTXD + tOFFRXD = 170 ns. The data sheet is 19-3274 Rev 5, 9/18. JLCPCB: 15,089 at 1.2083 and 13,589 at 1.4502 at 10. Digi-Key: 45,081 and 4,786.",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/MAX3051.pdf (safari, 13:49:30Z); vendors.py jlcpcb C112005, C15648 (13:50:31Z); vendors.py digikey (13:50:39Z)",
+    "read_at": "2026-09-28T13:50:39Z"
+   },
+   {
+    "figure": "re-rank drop: Link CAN transceiver: SN65HVD232DR (C30530)",
+    "verdict": "confirmed",
+    "evidence": "SLOS346O gives a single 3.3 V supply, bus terminals -4 to 16 V, and t(LOOP2) 135 ns max at V(Rs) = 0 V (the '232 has no Rs pin). Digi-Key: 471, Active, 16 weeks. JLCPCB: 42,376 in stock, presale 41,910, 0.7942 at 10.",
+    "source": "https://www.ti.com/lit/ds/symlink/sn65hvd230.pdf; vendors.py digikey SN65HVD232DR (13:50:37Z); vendors.py jlcpcb C30530 (13:50:31Z)",
+    "read_at": "2026-09-28T13:50:37Z"
+   },
+   {
+    "figure": "re-rank drop: Link CAN transceiver: SN65HVD230DR (C12084)",
+    "verdict": "confirmed",
+    "evidence": "The Pin Functions table gives pin 5 as Vref on the '230 and NC on the '232, and pin 8 as RS on the '230 and 'NC, I, No Connect' on the '232. Whether pin 8 of the '232 may be tied to ground is not stated. Digi-Key: 0. Bus terminals -4 to 16 V. JLCPCB: 82,789 in stock, presale 65,950, 0.5246 at 10.",
+    "source": "https://www.ti.com/lit/ds/symlink/sn65hvd230.pdf (13:49:14Z); vendors.py digikey SN65HVD230DR (13:50:37Z); vendors.py jlcpcb C12084 (13:50:32Z)",
+    "read_at": "2026-09-28T13:50:37Z"
+   },
+   {
+    "figure": "re-rank drop: Link CAN transceiver: MCP2562T-E/SN (C191417)",
+    "verdict": "confirmed",
+    "evidence": "DS20005167C gives VIO 1.8 to 5.5 V and CANH, CANL and SPLIT -58 V to +58 V. tTXD-RXD is 125 ns max on a negative TXD edge and 235 ns on a positive edge. Digi-Key: 60,670, 52 weeks. JLCPCB: 9,943 in stock, 0.9241 at 10.",
+    "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/20005167C.pdf (13:49:30Z); vendors.py digikey MCP2562T-E/SN (13:50:40Z); vendors.py jlcpcb C191417 (13:50:32Z)",
+    "read_at": "2026-09-28T13:50:40Z"
+   },
+   {
+    "figure": "re-rank drop: Link CAN transceiver: MCP2542FD-E/SN (C220598), MCP2542FDT-E/SN (C191251)",
+    "verdict": "confirmed",
+    "evidence": "DS20005514C gives a VIO pin on the MCP2542FD, DC voltage at CANH and CANL of -58 to +58 V, and tTXD-RXD 120 ns max. JLCPCB: 819 in stock at 1.8952 and 108 at 1.8416 at 10.",
+    "source": "https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/MCP2542FD-MCP2542WFD-4WFD-Data-Sheet-DS20005514C.pdf (13:49:30Z); vendors.py jlcpcb C220598, C191251 (13:50:32Z)",
+    "read_at": "2026-09-28T13:50:32Z"
+   },
+   {
+    "figure": "re-rank drop: Link CAN transceiver: MAX33040EAKA+T (C5221297)",
+    "verdict": "confirmed",
+    "evidence": "The +3.3 V part is rated CANH and CANL -40 V to +40 V, with tLOOP 140 ns max. JLCPCB: 434 in stock, presale 426, 2.3483 at 10.",
+    "source": "max33040e-max33041e.pdf 19-100746 Rev 3 (safari, 13:49:30Z); vendors.py jlcpcb C5221297 (13:50:33Z)",
+    "read_at": "2026-09-28T13:50:33Z"
+   },
+   {
+    "figure": "re-rank drop: Link CAN transceiver: ATA6563-GAQW1 (C5127614)",
+    "verdict": "confirmed",
+    "evidence": "DS20005790E gives VVIO 2.8 to 5.5 V and CANH and CANL -27 to +42 V. tPD(TXD-RXD) is 210 ns max at RL = 60 Ω and 300 ns at 150 Ω. JLCPCB: 1,905 against 6,971 for ATA6561-GAQW-N C616016. Digi-Key: 2,924 against 43,290.",
+    "source": "ATA6562.3 DS20005790E (13:49:14Z); vendors.py jlcpcb C5127614, C616016 (13:50:33Z); vendors.py digikey (13:50:40Z to 13:50:41Z)",
+    "read_at": "2026-09-28T13:50:41Z"
+   },
+   {
+    "figure": "re-rank drop: Link CAN transceiver: TJA1044T/1Z (C520388), SN65HVD1050DR, SN65HVD251DR, MCP2551-I/SN",
+    "verdict": "confirmed",
+    "evidence": "TJA1044 Rev. 8.0 Table 3 gives pin 5 as 'n.c.; TJA1044T, TJA1044CT(K) and TJA1044GT(K) variants', with VCC 4.5 to 5.5 V. MCP2518FD section 7.1 rates all I/O at -0.3 V to VDD + 0.3 V. The other three parts also have no VIO pin: the SN65HVD1050 has VCC 4.5 to 5.5 V, the SN65HVD251 has VCC 4.5 to 5.5 V, and the MCP2551 has VDD 4.5 to 5.5 V.",
+    "source": "https://www.nxp.com/docs/en/data-sheet/TJA1044.pdf, MCP2518FD DS20006027B 7.1 (13:49:14Z); https://www.ti.com/lit/ds/symlink/sn65hvd1050.pdf, https://www.ti.com/lit/ds/symlink/sn65hvd251.pdf, https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/20001667G.pdf (13:59:57Z)",
+    "read_at": "2026-09-28T13:59:57Z"
+   },
+   {
+    "figure": "re-rank drop: External CAN controller: MCP2517FDT-H/SL (C512185), MCP2517FD (C133861)",
+    "verdict": "confirmed",
+    "evidence": "Same product page: the summary is NRND beside an In Production field. The lifecycle gate fails.",
+    "source": "https://www.microchip.com/en-us/product/MCP2517FD",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank drop: External CAN controller: TCAN4551RGYRQ1 (C2867967)",
+    "verdict": "confirmed",
+    "evidence": "The inputs listed in Pin Functions are OSC1, SCLK, SDI, nCS, WAKE and RST. Section 8.3.8 says RST 'can be pulsed high and then back low for greater than tPULSE_WIDTH to perform a power on reset', and the device then enters standby mode. Table 1 lists RST L in every mode. Holding RST high is not described, and no input holds the transceiver in standby.",
+    "source": "https://www.ti.com/lit/ds/symlink/tcan4551-q1.pdf SLLSEZ4A",
+    "read_at": "2026-09-28T13:49:14Z"
+   },
+   {
+    "figure": "re-rank drop: External CAN transceiver: MAX33040EAKA+T (C5221297)",
+    "verdict": "confirmed",
+    "evidence": "tD_NSTBY is 30 us typical with no minimum or maximum, so V19 (5 ms) cannot be shown. The standard is the same one P2 applied to the MCP2562FD and TJA1042.",
+    "source": "max33040e-max33041e.pdf 19-100746 Rev 3 (safari)",
+    "read_at": "2026-09-28T13:49:30Z"
+   },
+   {
+    "figure": "re-rank drop: External CAN transceiver: TCAN1043ADRQ1 (C5215847)",
+    "verdict": "refuted",
+    "evidence": "The drop rests on 'Holding Standby from the enable node alone needs EN and nSTB driven together, which the datasheet does not describe'. The datasheet does describe it. Figure 7-4, the state machine, gives Normal to Standby on '(EN = low and nSTB = low)' and Standby to Normal on 'EN = high and nSTB = high and VIO > UVIO'. Table 7-4 gives EN low with nSTB low as Standby for either WAKERQ state. EN and nSTB both tied to the enable node therefore give Normal while it is high and Standby while it is low. Both inputs have I_off: ILKG(OFF) is ±1 µA on nSTB (VIO = 0 V) and on EN (VCC = VIO = 0 V). tMODE2 is 10 µs max. A qualification has to weigh a different limit that the drop does not name. The SWE timer moves Standby to Sleep after tINACTIVE, 3 to 5 min (typical 4). The driver stays disabled in Sleep, and the next rising enable gives the low-to-high nSTB edge that Sleep needs to leave. The other figures read as stated: ±58 V, tPROP(LOOP1) 215 and LOOP2 205 ns max, VSUP 4.5 to 40 V, SOIC-14. JLCPCB: 5,678 in stock, 0.4629 at 10. Digi-Key: 1,124.",
+    "source": "https://www.ti.com/lit/ds/symlink/tcan1043a-q1.pdf SLLSFD1F Figure 7-4, Table 7-4, notes 3 and 4, electrical characteristics (13:49:14Z); vendors.py jlcpcb C5215847 (13:50:34Z); vendors.py digikey TCAN1043ADRQ1 (13:50:42Z)",
+    "read_at": "2026-09-28T13:50:42Z"
+   },
+   {
+    "figure": "re-rank drop: External CAN transceiver: TCAN1462VDRBRQ1 (C5215833)",
+    "verdict": "confirmed",
+    "evidence": "The pin functions match: TXD 1, GND 2, VCC 3, RXD 4, VIO 5, CANL 6, CANH 7, STB 8 on both SLLSFF2B and SLLSFJ3D. TCAN1044AV is ±58 V with a loop delay of 210 ns max. TCAN1044AVDRBRQ1 C3234119 is SON-8(3x3) with 41,538 in stock, presale 41,319. Digi-Key has 0 of TCAN1462VDRBRQ1. JLCPCB C5215833: 1,900 in stock, presale 1,481, 3.5061 at 10.",
+    "source": "https://www.ti.com/lit/ds/symlink/tcan1462-q1.pdf, https://www.ti.com/lit/ds/symlink/tcan1044a-q1.pdf (13:49:14Z); vendors.py jlcpcb C3234119, C5215833 (13:50:34Z); vendors.py digikey TCAN1462VDRBRQ1 (13:50:42Z)",
+    "read_at": "2026-09-28T13:50:42Z"
+   }
+  ]
+ }
+}

@@ -83,6 +83,7 @@ TRACKED = [
     "shared/sbus/sbus.c",
     "shared/dshot/dshot_frame.c",
     "shared/dshot/dshot_telem.c",
+    "shared/dshot/dshot_edt.c",
     "shared/ppm/ppm.c",
     "shared/can/can_timing.c",
     "shared/can/can_selftest.c",

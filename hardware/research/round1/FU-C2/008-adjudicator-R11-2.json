@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R11",
+ "label": "adjudicator-R11-2",
+ "attempt": 0,
+ "data": {
+  "category": "R11",
+  "function": "re-rank report: separate receivers and the decoder",
+  "part": "",
+  "stands": true,
+  "ruling": "The refutation stands for the AM26LV32EIDR half of the figure. The THVD half re-derives. The figure's \"6 ns maximum output skew (tsk(o)), leaving 44 ns\" is not a bound that SLLS849E gives. Section 6.6 of that datasheet labels tsk(o) \"Pulse skew\", with the same label as tsk(p). It defines neither term and draws no skew test figure other than Figure 7-1/7-2. A quadrature signal alternates edge directions: A rise, B rise, A fall, B fall. So the spacing from B rise to A fall pairs a rising edge on one receiver with a falling edge on another. A skew between outputs switching in the same direction does not bound that spacing. From the datasheet's delay limits (tPLH and tPHL 8 min, 26 max ns), the bound is 26 - 8 = 18 ns, which leaves 50 - 18 = 32 ns at 5 MHz. Taking tsk(o) + tsk(p) = 12 ns instead leaves 38 ns. Neither route gives 44 ns. The figure's conclusion does not change. The THVD1450/1451/1452 receivers (SLLSEY3E 7.8: tPHL and tPLH 25 typ, 40 max ns at CL 15 pF, no minimum) leave 50 - 40 = 10 ns. That is under the 14 ns minimum of P2's quad_edge model. 1 / (4 x 54 ns) = 4.63 MHz. The AM26LV32E leaves 32 ns, which is above 14 ns. Only the stated 44 ns margin is unsupported. The scope is function: the ruling concerns a timing figure in this function's decoder analysis, not the part's lifecycle, maker or LCSC identity.",
+  "evidence": "SLLS849E (AM26LV32E, revised August 2023), section 6.6 Switching Characteristics: tPLH 8 / 16 / 26 ns and tPHL 8 / 16 / 26 ns (min / typ / max); tsk(p) \"Pulse skew\" 4 typ, 6 max ns; tsk(o) \"Pulse skew\" 4 typ, 6 max ns; tsk(pp) \"Pulse skew (device to device)\" 6 typ, 9 max ns. No definition of tsk(o) and no skew waveform in the document. Worst-case A-to-B spacing: max minus min delay 26 - 8 = 18 ns, leaving 32 ns; tsk(o) + tsk(p) = 12 ns, leaving 38 ns; the figure states 44 ns. SLLSEY3E (THVD1410/1450/1451/1452, revised May 2019), section 7.8, Receiver THVD1450/1451/1452: tPHL and tPLH 25 typ, 40 max ns, CL 15 pF, no minimum; tSK(P) 3.5 ns max. 50 - 40 = 10 ns is under 14 ns. The quad_sim.py cycle model (quad_edge.pio, 150 MHz) was re-run at 2026-09-29T08:05Z: at 5 MHz, A-to-B spacing of 14 ns decodes and 13 ns does not.",
+  "source": "https://www.ti.com/lit/ds/symlink/am26lv32e.pdf SLLS849E section 6.6 (vendors.py fetch, HTTP 200, 1,278,801 bytes); https://www.ti.com/lit/ds/symlink/thvd1451.pdf SLLSEY3E section 7.8 (vendors.py fetch, HTTP 200, 2,012,884 bytes); quad_sim.py in /home/claude/rcbench-research/round1/scratch/FU-C2/adjudicator-R11/",
+  "read_at": "2026-09-29T08:04:40Z",
+  "scope": "function"
+ }
+}

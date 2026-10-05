@@ -3,7 +3,7 @@
 # coprocessor's PIO (programmable input/output) programs put the edges on the
 # pin and capture the samples, and everything about what the bits mean is
 # tested here.
-set(SRCS dshot_frame.c dshot_telem.c)
+set(SRCS dshot_frame.c dshot_telem.c dshot_edt.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)

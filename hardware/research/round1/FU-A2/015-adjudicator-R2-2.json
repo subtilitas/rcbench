@@ -1,0 +1,17 @@
+{
+ "role": "adjudicator",
+ "category": "R2",
+ "label": "adjudicator-R2-2",
+ "attempt": 0,
+ "data": {
+  "category": "R2",
+  "function": "re-rank report: External CAN transceiver: P3 finds against the ranked parts",
+  "part": "",
+  "stands": true,
+  "scope": "function",
+  "ruling": "The refutation stands. The figure is wrong in its count, not in its per-part values. It says \"Four external P3 finds qualify\" and then names five parts as meeting every value: TCAN1472VDRQ1, TCAN1472VDRBRQ1, TCAN1462VDRBRQ1, TCAN1044AEVDRQ1, and ATA6563-GAQW1 with the 4.7 kOhm resistor on STBY. That resistor is a board component, not a failed requirement, so ATA6563-GAQW1 qualifies as well. Against the 237 ns the figure states, five parts qualify. The per-part timing figures hold at the datasheets I re-read. The TJA1462/TJA1463 sentence and \"TCAN3413DR is the only ranked part that runs from the 3.3 V rail alone\" were not re-read at their sources here and are not part of this ruling. The verifier's further remark, that TCAN1044AEVDRQ1 and ATA6563-GAQW1 fail if the limit is 175 ns, is about the function-requirements figure. This ruling does not depend on it. The count fails with either limit: at 237 ns five qualify, not four, and at 175 ns three would. Not read: the re-rank's own drop entry for ATA6563-GAQW1, which the verifier quotes as \"Qualifies\". The FU-A2 re-rank return is not yet under results/ and is not in scratch/FU-A2/rerank-R2. The ruling rests on the claim text as quoted, which contradicts itself.",
+  "evidence": "Claim value, verbatim: \"Four external P3 finds qualify: TCAN1472VDRQ1, TCAN1472VDRBRQ1, TCAN1462VDRBRQ1 and TCAN1044AEVDRQ1 meet every value, and ATA6563-GAQW1 meets every value with the 4.7 kOhm resistor on STBY.\" That lists 5 parts. Datasheet re-reads, 2026-09-29T01:25:44Z to 01:25:45Z, all HTTP 200. TCAN1472-Q1 (SLLSFW8A): tPROP(LOOP1) max 155 ns and tPROP(LOOP2) max 160 ns at VIO 3 to 3.6 V; tMODE 30 us. TCAN1462-Q1 (SLLSFF2B): tMODE 30 us. TCAN1044AEV-Q1 (SLLSFN9): tPROP(LOOP1) and tPROP(LOOP2) max 210 ns each at VIO 2.8 to 5.5 V; tMODE 20 us. ATA6562/3 (DS20005790E): tPD(TXD-RXD) max 210 ns on the rising edge and 200 ns on the falling edge (RL 60 Ohm, CL 100 pF); tdel(norm-stby) max 5 us; STBY internal pull-up Rpu 75 to 175 kOhm. Every one of the five is at or under 237 ns. TCAN1044AEVDRQ1 at 210 ns and ATA6563-GAQW1 at 210 ns are both over 175 ns.",
+  "source": "Claim text as quoted in the refutation. vendors.py fetch --out: https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/ATA6562.3-Data-Sheet-20005790E.pdf (01:25:44Z); https://www.ti.com/lit/ds/symlink/tcan1044aev-q1.pdf (01:25:44Z); https://www.ti.com/lit/ds/symlink/tcan1472-q1.pdf (01:25:45Z); https://www.ti.com/lit/ds/symlink/tcan1462-q1.pdf (01:25:45Z). Copies in /home/claude/rcbench-research/round1/scratch/FU-A2/adjudicator-R2/.",
+  "read_at": "2026-09-29T01:25:44Z to 2026-09-29T01:25:45Z"
+ }
+}

@@ -1,0 +1,473 @@
+{
+ "role": "P4",
+ "category": "R13",
+ "label": "P4-datasheet-R13",
+ "attempt": 0,
+ "data": {
+  "category": "R13",
+  "verifier": "datasheet",
+  "parts": [
+   {
+    "function": "load-cell bridge ADC",
+    "part": "ADS1235IRHBR",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "channels",
+      "stated": "3 differential or 5 single-ended inputs; REFP0/REFN0 on standalone pins (8.1 Overview; Pin Functions, pins 25 to 32)",
+      "read": "Features and 8.1: 'three differential or five single-ended input measurement configurations' on AIN0 to AIN5 (pins 30 to 25), so AIN0/AIN1, AIN2/AIN3 and AIN4/AIN5 carry thrust, torque 1 and torque 2. 8.1: 'The primary reference input pair (REFP0/REFN0) is available as standalone input pins' (pins 32 and 31). The second pair REFP1/REFN1 shares AIN0/AIN1 and is not needed. One reference input serves the 3 cells on one excitation (V263)",
+      "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf, SBAS824 (October 2018, initial release), Features, 8.1 and Pin Functions; vendors.py fetch",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "differential input range",
+      "stated": "±VREF/Gain = ±0.039 V at gain 128 and VREF 5 V (Table 3; scales with VREF)",
+      "read": "Table 3: ±0.039 V at gain 128, VREF 5 V; note: range scales with VREF. 6.3 note (1) also limits the PGA-mode range to ±(AVDD − AVSS − 0.6 V)/Gain when VREF ≥ AVDD − AVSS − 0.6 V. At gain 128 that is ±32.4 mV at AVDD 4.75 V and ±34.4 mV at 5.0 V. Both are above ±10.1 mV. The stated figure matches Table 3. It leaves out note (1), which does not change the pass",
+      "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf, SBAS824, 8.3.2.1 Table 3 and 6.3 note (1)",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "input common mode",
+      "stated": "Equation 3, gain 32 used for gains 64 and 128: 0.457 V to 4.293 V at AVDD 4.75 V and 10.1 mV; 2.375 to 2.625 V is inside",
+      "read": "Equation 3: AVSS + 0.3 V + VIN·(Gain − 1)/2 < VAINP, VAINN < AVDD − 0.3 V − VIN·(Gain − 1)/2, using 32 for gains 64 and 128 and the minimum AVDD. 10.1 mV × 31/2 = 0.157 V. Limits: 0.457 V to 4.293 V at AVDD 4.75 V. The inputs sit at 2.375 to 2.625 V ± 5.05 mV, inside",
+      "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf, SBAS824, 8.3.2.1 Equation 3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "ratiometric reference input",
+      "stated": "VREF 0.9 V to AVDD − AVSS; V(REFPx) up to AVDD + 0.05 V (6.3)",
+      "read": "6.3: VREF = V(REFPx) − V(REFNx) 0.9 V min, AVDD − AVSS max; V(REFPx) up to AVDD + 0.05 V; V(REFNx) from AVSS − 0.05 V. The excitation is AVDD itself (V254), so 4.75 to 5.25 V at REFP0 stays within AVDD + 0.05 V and VREF ≤ AVDD − AVSS. 9.2 connects the excitation sense lines to the reference inputs",
+      "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf, SBAS824, 6.3 and 9.2",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "analogue supply",
+      "stated": "AVDD to AVSS 4.75 to 5.25 V (6.3); IAVDD 4.3 mA typical, 6.5 mA maximum in PGA mode at gain 64 and 128 (6.5)",
+      "read": "6.3: AVDD to AVSS 4.75 min, 5 nom, 5.25 max V. 6.5: IAVDD 4.3 mA typ, 6.5 mA max, PGA mode, gain 64 and 128",
+      "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf, SBAS824, 6.3 and 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "digital supply and logic",
+      "stated": "DVDD 2.7 to 5.25 V (6.3); digital inputs DGND to DVDD; VOH at least 0.8 × DVDD",
+      "read": "6.3: DVDD to DGND 2.7 to 5.25 V; digital inputs other than GPIO DGND to DVDD. 6.5: VOH ≥ 0.8·DVDD at 1 mA, VOL ≤ 0.2·DVDD at −1 mA, VIH ≥ 0.7·DVDD, VIL ≤ 0.3·DVDD. With DVDD at 3.3 V, DOUT/DRDY and DRDY swing to 3.3 V at most. The analog GPIO share AIN0 to AIN3 and are referred to AVDD; they are not wired to the RP2354B",
+      "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf, SBAS824, 6.3 and 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "input-referred noise",
+      "stated": "0.13 µV RMS (1 µVPP) at 1200 SPS, sinc3, gain 128, VREF 5 V (Table 1); 0.13 ≤ 0.170 µV RMS",
+      "read": "Table 1 (TA 25 °C, VREF 5 V, inputs shorted, typical): 1200 SPS sinc3 gain 128 0.13 µVRMS (1 µVPP); gain 64 0.14 µVRMS. 0.13 µV ≤ 0.170 µV for thrust and ≤ 0.333 µV for torque; 3σ = 0.39 µV < 0.510 µV. The figure is typical; the datasheet gives no maximum",
+      "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf, SBAS824, 7.x Noise Performance, Table 1",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "output rate per channel",
+      "stated": "t(STDR) 2.925 ms at 1200 SPS, sinc3, chop off, start delay 50 µs (Table 6): 3 channels in 8.78 ms, 114 SPS of settled data a channel",
+      "read": "Table 6: conversion latency t(STDR) 2.925 ms at 1200 SPS sinc3, chop mode off, conversion-start delay 50 µs; 8.4.1.3: latency is start to fully settled data and includes the 50 µs delay and processing overhead; chop and ac-excitation modes double it. 3 × 2.925 = 8.775 ms, 114.0 settled readings a second a channel. The 50 µs delay covers the PGA antialias filter (8.4.1.4); external input filters would need more delay",
+      "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf, SBAS824, 8.4.1.3 Table 6 and 8.4.1.4",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "channel skew",
+      "stated": "8.78 ms for the set of 3 (Table 6, 3 × 2.925 ms)",
+      "read": "3 × 2.925 ms = 8.775 ms from the start of the first conversion to the end of the third (Table 6); ≤ 10 ms",
+      "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf, SBAS824, Table 6",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "step settling",
+      "stated": "at most 11.7 ms: a step just after its channel's conversion starts is fully inside that channel's next conversion, which ends 8.78 + 2.925 ms later",
+      "read": "8.4.1.3: each started conversion delivers fully settled data after t(STDR) when the input is settled; a step inside a conversion gives mixed data (Figure 58). In the 3-channel sequence the channel's next conversion starts at most 8.775 ms after the step and ends 2.925 ms later: 11.7 ms ≤ 20 ms",
+      "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf, SBAS824, 8.4.1.3, Table 6, Figure 58",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "temperature drift",
+      "stated": "offset drift 50 nV/°C max at gain 64 and 128; gain drift 4 ppm/°C max; over 25 K 2.3 µV, 0.023 % of 10.0 mV",
+      "read": "6.5 (min/max over −40 to 125 °C): offset voltage drift 50 nV/°C max at gain 64 and 128 (chop off); gain drift 4 ppm/°C max. 25 K × 50 nV = 1.25 µV; 25 K × 4 ppm = 100 ppm × 10.1 mV = 1.01 µV; sum 2.26 µV = 0.023 % of 10.0 mV, below 51 µV",
+      "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf, SBAS824, 6.5",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "operating temperature",
+      "stated": "TA −40 to +125 °C (6.3)",
+      "read": "6.3: TA operating ambient −40 to 125 °C; covers 0 to 50 °C",
+      "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf, SBAS824, 6.3",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "Texas Instruments (datasheet SBAS824, October 2018); S1 Texas Instruments",
+      "read": "SBAS824 is a Texas Instruments datasheet (Copyright © 2018, Texas Instruments Incorporated); its package addendum lists ADS1235IRHBR. S1 Answer (owner, 2026-09-25) allows Texas Instruments. JLCPCB labels C2669975 Texas Instruments (03:30:42Z)",
+      "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf; hardware/docs/Research.md S1 at checkout e13f5f60d2e5; vendors.py jlcpcb C2669975",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     }
+    ]
+   },
+   {
+    "function": "load-cell excitation",
+    "part": "BD450M2FP3-CE2",
+    "kind": "first",
+    "verdict": "confirmed",
+    "refutation": "",
+    "checks": [
+     {
+      "figure": "output voltage",
+      "stated": "VOUT 4.80 to 5.10 V for 6 V ≤ VCC ≤ 42 V, IOUT ≤ 200 mA, −40 °C ≤ Tj ≤ +150 °C (4.90 to 5.10 V to 50 mA)",
+      "read": "Electrical Characteristics (page 9, −40 °C ≤ Tj ≤ +150 °C), BD450 parts: VOUT 4.90/5.00/5.10 V at 6 V ≤ VCC ≤ 42 V, 0 mA ≤ IOUT ≤ 50 mA; 4.80/5.00/5.10 V at 6 V ≤ VCC ≤ 42 V, IOUT ≤ 200 mA. Over 6.0 to 22 V and 0 to 60 mA the output stays within 4.80 to 5.10 V, inside 4.75 to 5.25 V and inside the ADS1235's AVDD range",
+      "source": "https://fscdn.rohm.com/en/products/databook/datasheet/ic/power/linear_regulator/bd4xxm2-c-e.pdf, BD4xxM2-C / BD4xxU2-C Series Rev.006 (22.May.2025), Electrical Characteristics; vendors.py fetch",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "output current",
+      "stated": "IOUT 0 to 200 mA (Operating Conditions, page 7)",
+      "read": "Operating Conditions: Output Current IOUT 0 min, 200 max mA; ≥ 60 mA",
+      "source": "https://fscdn.rohm.com/en/products/databook/datasheet/ic/power/linear_regulator/bd4xxm2-c-e.pdf, Rev.006, Operating Conditions",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "input voltage range",
+      "stated": "VCC 5.8 to 42.0 V at IOUT ≤ 200 mA for the BD450 parts (note *2); absolute maximum 45.0 V",
+      "read": "Operating Conditions: Supply Voltage (IOUT ≤ 200 mA) *2 (BD450 parts incl. BD450M2FP3-C) 5.8 to 42.0 V; (IOUT ≤ 100 mA) 5.5 to 42.0 V. Absolute Maximum: VCC −0.3 to +45.0 V. Covers 6.0 to 22 V",
+      "source": "https://fscdn.rohm.com/en/products/databook/datasheet/ic/power/linear_regulator/bd4xxm2-c-e.pdf, Rev.006, Operating Conditions and Absolute Maximum Ratings",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "dropout",
+      "stated": "ΔVd 0.35 V maximum at IOUT 100 mA, VCC = 0.95 × VOUT; VOUT is specified from VCC = 6 V",
+      "read": "Dropout Voltage ΔVd (BD450): 0.16 typ, 0.35 max V at VCC = VOUT × 0.95 (4.75 V), IOUT = 100 mA. The VOUT band is specified from VCC = 6 V at IOUT ≤ 200 mA, so the output is in regulation at 6.0 V and 60 mA; 0.35 V ≤ 1.0 V",
+      "source": "https://fscdn.rohm.com/en/products/databook/datasheet/ic/power/linear_regulator/bd4xxm2-c-e.pdf, Rev.006, Electrical Characteristics",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "junction temperature",
+      "stated": "θja 83.3 °C/W (JEDEC 4-layer, 74.2 × 74.2 mm backside copper); Icc 150 µA max; 1.035 W → Tj 136.2 °C at 50 °C, below Tjmax 150 °C; the 0.60 W Pd rating is 1-layer (0.48 W at 50 °C), so the pass holds only with the 4-layer copper",
+      "read": "Thermal Resistance: SOT223-4(F) θja 83.3 °C/W on 114.3 × 76.2 × 1.6 mm JEDEC board, 4-layer, 74.2 × 74.2 mm backside copper. Icc 150 µA max at IOUT ≤ 200 mA, Tj ≤ 150 °C. Tjmax +150 °C. Pd 0.60 W on a 1-layer board, derate 4.8 mW/°C above 25 °C (0.48 W at 50 °C). (22 − 4.80) V × 60 mA + 22 V × 0.15 mA = 1.035 W; × 83.3 = 86.2 K; Tj 136.2 °C. The pass holds with the 4-layer copper condition, as stated",
+      "source": "https://fscdn.rohm.com/en/products/databook/datasheet/ic/power/linear_regulator/bd4xxm2-c-e.pdf, Rev.006, Thermal Resistance, Absolute Maximum Ratings, Electrical Characteristics",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "output protection",
+      "stated": "OCP: 'If the output current reaches ca. 550 mA (Typ.), the output is turned off'; TSD 175 °C typical",
+      "read": "Block functions: OCP 'If the output current reaches ca. 550 mA (Typ.), the output is turned off'; TSD 'If the chip temperature (Tj) reaches ca. 175 °C (Typ.), the output is turned off'; Electrical Characteristics TSD 175 °C typ. Both typical only, no min/max",
+      "source": "https://fscdn.rohm.com/en/products/databook/datasheet/ic/power/linear_regulator/bd4xxm2-c-e.pdf, Rev.006, page 6 and Electrical Characteristics",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "operating temperature",
+      "stated": "Tj −40 to +150 °C (Operating Conditions); no ambient range is given; Tj 136.2 °C at 50 °C ambient and 60 mA",
+      "read": "Operating Conditions: Tj −40 to +150 °C; no ambient range in the datasheet. At 0 to 50 °C ambient Tj stays at or below 136.2 °C on the 4-layer board",
+      "source": "https://fscdn.rohm.com/en/products/databook/datasheet/ic/power/linear_regulator/bd4xxm2-c-e.pdf, Rev.006, Operating Conditions",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     },
+     {
+      "figure": "manufacturer allowlist",
+      "stated": "ROHM (datasheet BD4xxM2-C / BD4xxU2-C Series Rev.006); S1 ROHM",
+      "read": "The datasheet is ROHM's (© 2013 ROHM Co., Ltd.) and its Ordering Information lists BD450M2FP3-CE2 (SOT223-4(F)). S1 Answer (owner, 2026-09-25) allows ROHM. JLCPCB labels C308595 'ROHM Semicon' (03:30:42Z)",
+      "source": "https://fscdn.rohm.com/en/products/databook/datasheet/ic/power/linear_regulator/bd4xxm2-c-e.pdf, Ordering Information; hardware/docs/Research.md S1 at checkout e13f5f60d2e5; vendors.py jlcpcb C308595",
+      "agrees": true,
+      "passes": true,
+      "read_at": "2026-09-29T03:28:08Z"
+     }
+    ]
+   }
+  ],
+  "figures": [
+   {
+    "figure": "found V254",
+    "verdict": "confirmed",
+    "evidence": "SBAS824 9.2 reads: 'The excitation voltage provided to the bridge is the ADC power supply voltage (5 V) ... The excitation voltage sense lines are connected to the reference inputs of the ADC with a noise filter. This configuration provides ratiometric operation that cancels noise and drift of the excitation voltage.' 6.3 gives AVDD to AVSS 4.75 to 5.25 V. IOBoard.md:338 puts the display (1.5 A continuous, 2 A peak) on the 5 V rail. The R5 row gives the 12 V supply's input as 6.0 to 20 V. V84 and V100 are both 'for research'. The value follows from its sources",
+    "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf (SBAS824 9.2, 6.3); hardware/docs/IOBoard.md:338 and Research.md R5 row, V84, V100 at checkout e13f5f60d2e5",
+    "read_at": "2026-09-29T03:28:08Z (datasheet); 2026-09-29T03:36:02Z (checkout)"
+   },
+   {
+    "figure": "found V255",
+    "verdict": "confirmed",
+    "evidence": "TAS501 Specifications: input resistance 350 ± 5 Ω, output resistance 350 ± 3 Ω, capacity 5 kg to 5 t. Minimum 345 Ω. 5.00/345 = 14.49 mA, × 3 = 43.5 mA. 5.25/345 = 15.22 mA, × 3 = 45.7 mA",
+    "source": "https://cdn.sparkfun.com/assets/parts/1/2/2/3/8/TAS501.pdf (vendors.py fetch)",
+    "read_at": "2026-09-29T03:28:11Z"
+   },
+   {
+    "figure": "found V256",
+    "verdict": "confirmed",
+    "evidence": "TAS501: rated output 2.0 ± 0.005 mV/V; zero balance ±1.0 %FS; excitation voltage 9 to 12 Vdc. At 5 V: 10.0 mV at capacity, ±0.1 mV zero balance, ±10.1 mV = 2.02 mV/V",
+    "source": "https://cdn.sparkfun.com/assets/parts/1/2/2/3/8/TAS501.pdf",
+    "read_at": "2026-09-29T03:28:11Z"
+   },
+   {
+    "figure": "found V257",
+    "verdict": "confirmed",
+    "evidence": "TAS501 capacities 5, 10, 20, 30, 50, 100, 150 ... kg; safe overload 150 %FS. 100 kg × 9.80665 = 980.7 N ≥ 500 N; 50 kg = 490.3 N < 500 N. Torque cell capacity is correctly stated as not read: the lever arm is not in the tree",
+    "source": "https://cdn.sparkfun.com/assets/parts/1/2/2/3/8/TAS501.pdf; V258",
+    "read_at": "2026-09-29T03:28:11Z"
+   },
+   {
+    "figure": "found V258",
+    "verdict": "confirmed",
+    "evidence": "Flight Stand 50 Datasheet, Document ID FSFI50 V5.1 2026-08-10. Key Specs: Thrust ±500 N, Torque ±30 Nm, Voltage up to 180 V, Current up to 300 A. Product Specifications: Range ±500 N and ±30 Nm. Research.md Motor current row: above 150 A to 300 A and more (owner, 2026-09-25). F15: 67.2 V",
+    "source": "https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf; Research.md Scope and F15 at checkout e13f5f60d2e5",
+    "read_at": "2026-09-29T03:28:11Z"
+   },
+   {
+    "figure": "found V259",
+    "verdict": "confirmed",
+    "evidence": "Flight Stand 50: Thrust Resolution 0.05 N, Torque Resolution 0.003 Nm (= 1/10,000 of ±30 Nm). Resolution: 'Three times the standard deviation of the noise floor measured during a 1-second static recording at the full sample rate.' 0.05/980.7 × 10.0 mV = 0.510 µV; /3 = 0.170 µV RMS. 1/10,000 × 10.0 mV = 1.0 µV; /3 = 0.333 µV RMS",
+    "source": "https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf; V256, V257",
+    "read_at": "2026-09-29T03:28:11Z"
+   },
+   {
+    "figure": "found V260",
+    "verdict": "confirmed",
+    "evidence": "Flight Stand 50 Standard: Thrust Accuracy ±5 N, Torque Accuracy ±0.4 Nm. 5/980.7 = 0.51 % of the thrust cell's rated output; 0.4/30 = 1.33 % of the torque range; 0.51 % of 10.0 mV = 51 µV. Accuracy is defined as the maximum average error during calibration. The ratiometric cancellation is supported by SBAS824 9.2",
+    "source": "https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf; https://www.ti.com/lit/ds/symlink/ads1235.pdf 9.2",
+    "read_at": "2026-09-29T03:28:11Z"
+   },
+   {
+    "figure": "found V261",
+    "verdict": "confirmed",
+    "evidence": "Flight Stand 50: Sampling rate 100 Hz Standard, 1,000 Hz Pro. IOBoard.md:431 reads 'the coprocessor samples the bench numbers every 20 ms (50 Hz)'; firmware/iomcu/src/main.c:1013 has 'if ((uint32_t)(now - last_sample) >= 20u) { sample();'",
+    "source": "https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf; hardware/docs/IOBoard.md:431 and firmware/iomcu/src/main.c:1011-1016 at checkout e13f5f60d2e5",
+    "read_at": "2026-09-29T03:28:11Z (datasheet); 2026-09-29T03:36:02Z (checkout)"
+   },
+   {
+    "figure": "found V262",
+    "verdict": "confirmed",
+    "evidence": "The value is a derivation from V261: one set every 10 ms at 100 SPS. The Flight Stand 50 datasheet states one sampling rate and no simultaneous conversion, and the checkout requires none. It is marked as a derivation",
+    "source": "V261; https://cdn.tytorobotics.com/Documents/Datasheets/Flight-Stand-50-Datasheet.pdf",
+    "read_at": "2026-09-29T03:28:11Z"
+   },
+   {
+    "figure": "found V263",
+    "verdict": "confirmed",
+    "evidence": "TAS501 Electrical connection: '4 core shielded PVC cable, Ø 5 × 3m, excitation(+):Red excitation(-):Black signal(+):Green signal(-):White'",
+    "source": "https://cdn.sparkfun.com/assets/parts/1/2/2/3/8/TAS501.pdf",
+    "read_at": "2026-09-29T03:28:11Z"
+   },
+   {
+    "figure": "found V264",
+    "verdict": "confirmed",
+    "evidence": "Research.md V7 Answer reads '0 to 50 °C ambient, one range for the whole IO board (owner, 2026-09-28)'. TAS501: operating −10 to +40 °C, compensated −20 to +55 °C. Flight Stand 50: operating 0 to 40 °C",
+    "source": "Research.md V7 at checkout e13f5f60d2e5; TAS501.pdf; Flight-Stand-50-Datasheet.pdf",
+    "read_at": "2026-09-29T03:36:02Z (checkout); 2026-09-29T03:28:11Z (datasheets)"
+   },
+   {
+    "figure": "found V265",
+    "verdict": "confirmed",
+    "evidence": "IOBoard.md:431 gives a 20 ms (50 Hz) sampling; main.c:1011-1016 samples when 20 ms have passed. The 20 ms limit and the cycle-plus-conversion bound derive from these and V261/V262",
+    "source": "hardware/docs/IOBoard.md:431, firmware/iomcu/src/main.c:1011-1016 at checkout e13f5f60d2e5",
+    "read_at": "2026-09-29T03:36:02Z"
+   },
+   {
+    "figure": "P2 report: R13 row report figures",
+    "verdict": "confirmed",
+    "evidence": "The P4 row lists figures for R1, R2, R3, R10 and R12 only. The R13 row names none",
+    "source": "hardware/docs/Research.md Agent layout P4 row and R13 row at checkout e13f5f60d2e5",
+    "read_at": "2026-09-29T03:36:02Z"
+   },
+   {
+    "figure": "P2 report: excitation load on the input bus",
+    "verdict": "confirmed",
+    "evidence": "BD4xxM2-C: VOUT max 5.10 V, Icc 150 µA max. 3 × 5.10/345 = 44.35 mA. IAVDD 6.5 mA max: ADS1235 6.5 (PGA gain 64/128), ADS1262 6.5 (reference on; 4 mA typ with it off, no max), ADS1261 6.5 (gain 64/128; 6 mA at gain 1 to 32). 44.35 + 6.5 + 0.15 = 51.0 mA. TPS7B82/TPS7B81 ±1.5 %: 5.075 V; 3 × 5.075/345 = 44.13 mA. AD7190 Rev. C B grade AIDD 6.75 mA max at gain 16 to 128, buffer on; 44.35 + 13.5 + 0.15 = 58.0 mA",
+    "source": "bd4xxm2-c-e.pdf Rev.006; ads1235.pdf 6.5; https://www.ti.com/lit/ds/symlink/ads1262.pdf (SBAS661C 7.5); https://www.ti.com/lit/ds/symlink/ads1261.pdf (SBAS760C 7.5); https://www.analog.com/media/en/technical-documentation/data-sheets/AD7190.pdf (Rev. C, --client safari); tps7b82-q1.pdf; tps7b81.pdf",
+    "read_at": "2026-09-29T03:32:42Z"
+   },
+   {
+    "figure": "P2 report: load-cell load on the 5 V rail",
+    "verdict": "confirmed",
+    "evidence": "V254 puts the excitation and the ADC's AVDD on a regulator of their own on the input bus. IOBoard.md:338 still lists 'the load-cell excitation (F3)' among the 5 V rail loads",
+    "source": "V254; hardware/docs/IOBoard.md:338 at checkout e13f5f60d2e5",
+    "read_at": "2026-09-29T03:36:02Z"
+   },
+   {
+    "figure": "P2 report: bridge ADC interface at rank 1",
+    "verdict": "confirmed",
+    "evidence": "SBAS824 Pin Functions: 7 PWDN, 8 RESET, 9 START, 10 CS, 11 SCLK, 12 DIN, 13 DRDY, 14 DOUT/DRDY, 8 digital lines on DVDD. That is the upper bound of 8. 8.1 notes 'The ADC serial interface can be implemented with as little as three pins by tying CS low'. The lower bound of 4 keeps CS. The upper bound, which P5 budgets, holds. ADS1262 (START, CS, SCLK, DIN, DOUT/DRDY, DRDY, RESET/PWDN) and ADS1261 (PWDN, RESET, START, CS, SCLK, ...) have the same SPI signals and 1 chip select",
+    "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf Pin Functions and 8.1; ads1262.pdf and ads1261.pdf Pin Functions",
+    "read_at": "2026-09-29T03:32:41Z"
+   },
+   {
+    "figure": "P2 report: excitation regulator dissipation at rank 1",
+    "verdict": "confirmed",
+    "evidence": "(22 − 5.10) × 50.85 mA + 22 × 0.15 mA = 0.859 + 0.003 = 0.863 W. × 83.3 °C/W = 71.9 K, so Tj is 121.9 °C. The worst output is 5.10 V, which dissipates more than 4.80 V (0.833 W). At 60 mA: 1.035 W, Tj 136.2 °C. Pd is 0.60 W on a 1-layer board, derated 4.8 mW/°C, so 0.48 W at 50 °C",
+    "source": "https://fscdn.rohm.com/en/products/databook/datasheet/ic/power/linear_regulator/bd4xxm2-c-e.pdf Rev.006",
+    "read_at": "2026-09-29T03:28:08Z"
+   },
+   {
+    "figure": "P2 report: TLE42644G orderable status",
+    "verdict": "confirmed",
+    "evidence": "JSON-LD product entries: TLE42644GHTMA1 'active and preferred', PG-SOT223-4, TAPE & REEL 4000; TLE42644GHTSA3 'discontinued', TAPE & REEL 1000. JLCPCB C539683 names only 'TLE42644G' (Infineon Technologies, SOT-223-4, stock 257, presale 257)",
+    "source": "https://www.infineon.com/part/TLE42644G (vendors.py fetch); vendors.py jlcpcb C539683",
+    "read_at": "2026-09-29T03:32:40Z (Infineon); 2026-09-29T03:34:56Z (JLCPCB)"
+   },
+   {
+    "figure": "P2 report: AD7730BRZ-REEL qualification",
+    "verdict": "confirmed",
+    "evidence": "Table III (CHP = 0, typical) gives 1200 Hz with 20.8 ms normal-mode settling (25 outputs) and 210 nV on the 20 mV range. Table III stops at 1200 Hz. Table XV allows CHP 0, SKIP 0 up to 2.048 kHz, but no noise figure is stated above 1200 Hz. SKIP Mode text: 20 mV range, SF 1536, CHP = 0 gives 80 → 200 nV. Table I (CHP = 1): 400 Hz, 57.5 ms, 160 nV on 20 mV. FASTStep: 'complete settling time to where the part is back within the specified noise number is the same for FASTStep mode and normal mode'. The ranges are ±10 mV nominal with no overrange figure, so ±10.1 mV needs ±20 mV. Even on ±10 mV, 150 nV at 1200 Hz comes with 20.8 ms settling, above 20 ms. No stated configuration meets both",
+    "source": "https://www.analog.com/media/en/technical-documentation/data-sheets/AD7730_7730L.pdf Rev. B (vendors.py fetch --client safari), Tables I, III, XV, FASTStep and SKIP Mode sections",
+    "read_at": "2026-09-29T03:32:41Z"
+   },
+   {
+    "figure": "P2 report: AD7193 stock against rule 4",
+    "verdict": "confirmed",
+    "evidence": "C650628 AD7193BCPZ-RL7: stock 43, presale 41. C125128 AD7193BRUZ-REEL: 0, presale −5. C650629 AD7193BRUZ: 0, presale −13. All exact matches, all below the gate of 50",
+    "source": "vendors.py jlcpcb C650628, C125128, C650629 (https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList)",
+    "read_at": "2026-09-29T03:30:43Z"
+   },
+   {
+    "figure": "re-rank report: excitation load floors",
+    "verdict": "confirmed",
+    "evidence": "BD4xxM2-C: 0 mA ≤ IOUT ≤ 50 mA. SLVSDQ0K 5.5 (DGN, 5.0 V): IOUT = 1 mA to 300 mA. SBVS402 6.5: IOUT = 1 mA to 150 mA. TLE42754 Table 5 P_5.1.1 to P_5.1.3: '1 mA < IQ', an open bound. SGLS380J 5.5 (KVU): legacy IOUT 5 to 400 mA; new chip IOUT from 100 µA. SLVS647J 5.5: IOUT 5 mA to 400 mA (6 to 28 V) and 5 mA to 200 mA (6 to 40 V)",
+    "source": "bd4xxm2-c-e.pdf; https://www.ti.com/lit/ds/symlink/tps7b82-q1.pdf; https://www.ti.com/lit/ds/symlink/tps7b81.pdf; infineon-tle42754-datasheet-en.pdf Rev. 1.31; https://www.ti.com/lit/ds/symlink/tl720m05-q1.pdf; https://www.ti.com/lit/ds/symlink/tle4275-q1.pdf",
+    "read_at": "2026-09-29T03:28:10Z"
+   },
+   {
+    "figure": "re-rank report: preload for the 1 mA floor",
+    "verdict": "confirmed",
+    "evidence": "4.7 kΩ −1 % = 4653 Ω, +1 % = 4747 Ω. Current: 4.9/4747 = 1.032 mA; 5.1/4653 = 1.096 mA; 5.1²/4653 = 5.6 mW. 4.925/4747 = 1.037 mA; 5.075/4653 = 1.091 mA. 60 + 1.10 = 61.1 mA, below the 150, 300 and 400 mA ratings",
+    "source": "arithmetic on TLE42754 Table 5, SLVSDQ0K 5.5, SBVS402 6.5",
+    "read_at": "2026-09-29T03:28:09Z"
+   },
+   {
+    "figure": "re-rank report: TLE42754D junction temperature",
+    "verdict": "confirmed",
+    "evidence": "Table 4: RthJA 27 K/W (2s2p, P_4.3.2), 110 K/W (1s0p footprint, P_4.3.3), 57 K/W (1s0p 300 mm², P_4.3.4). Tj max 150 °C (P_4.2.4). Table 6: Iq 220 µA at 1 mA (85 °C), 10 mA at 250 mA, 25 mA at 400 mA. Dissipation: 17.1 V × 61.1 mA = 1.045 W; + 0.22 W = 1.265 W. Tj: 84.2 °C (2s2p), 122.1 °C (300 mm²), 189 °C (footprint). Headroom: (3.704 − 1.045)/22 = 121 mA; (1.754 − 1.045)/22 = 32 mA",
+    "source": "https://www.infineon.com/assets/row/public/documents/10/49/infineon-tle42754-datasheet-en.pdf Rev. 1.31 (2023-11-27)",
+    "read_at": "2026-09-29T03:28:09Z"
+   },
+   {
+    "figure": "re-rank report: excitation load on the input bus with TLE42754D",
+    "verdict": "confirmed",
+    "evidence": "44.35 + 6.5 + 1.10 = 51.95 mA. Table 6 states no ground current at that load: 220 µA max at 1 mA, 10 mA max at 250 mA",
+    "source": "TLE42754 Rev. 1.31 Tables 5 and 6; ads1235.pdf 6.5; V255",
+    "read_at": "2026-09-29T03:28:09Z"
+   },
+   {
+    "figure": "re-rank report: TLE42754D JLCPCB",
+    "verdict": "confirmed",
+    "evidence": "C90364 TLE42754D: Infineon Technologies, TO-252-4, stock 6544, presale 6498, expand, 0.7034 USD at 1, 0.567 USD at 10, other_results 0. C3751553 TLE42754DATMA1: 0, presale 0",
+    "source": "vendors.py jlcpcb C90364 and C3751553",
+    "read_at": "2026-09-29T03:30:43Z"
+   },
+   {
+    "figure": "re-rank report: TLE42754DATMA1 Digi-Key",
+    "verdict": "confirmed",
+    "evidence": "Infineon Technologies: stock_available 29141 (Cut Tape 29141, Tape & Reel 27500), lead 13 weeks, Active, discontinued false, end_of_life false. Cached reading of the same UTC day",
+    "source": "vendors.py digikey TLE42754DATMA1 (https://api.digikey.com/products/v4/search/TLE42754DATMA1/productdetails)",
+    "read_at": "2026-09-29T03:15:16Z"
+   },
+   {
+    "figure": "re-rank report: TLE42754D manufacturer status",
+    "verdict": "confirmed",
+    "evidence": "JSON-LD: TLE42754DATMA1 'Product Status': 'active and preferred', PG-TO252-5, TAPE & REEL, 2500. It is the only orderable Product entry. data-productstatusinfo is 'active and preferred'. 'Planned to be available until at least', value '2038'",
+    "source": "https://www.infineon.com/part/TLE42754D (vendors.py fetch)",
+    "read_at": "2026-09-29T03:32:40Z"
+   },
+   {
+    "figure": "re-rank report: TL720M05QKVURQ1 readings",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C486028 TL720M05QKVURQ1: stock 2725, presale 2633, 1.194 USD at 1. Digi-Key: 7050 (Cut Tape 7050), Active, 16 weeks (cached reading from 03:22:23Z). TI page: <meta name=\"status\" content=\"ACTIVE\" />",
+    "source": "vendors.py jlcpcb C486028; vendors.py digikey TL720M05QKVURQ1; https://www.ti.com/product/TL720M05-Q1",
+    "read_at": "2026-09-29T03:30:44Z (JLCPCB); 03:22:23Z (Digi-Key); 03:32:40Z (TI)"
+   },
+   {
+    "figure": "re-rank report: ADS1235QWRHMRQ1 readings",
+    "verdict": "confirmed",
+    "evidence": "JLCPCB C2876667: stock 48, presale 44, 12.945 USD at 1, below 50. Digi-Key: 802 (Cut Tape 802, Tape & Reel 0), Active, 26 weeks (cached reading from 03:22:25Z)",
+    "source": "vendors.py jlcpcb C2876667; vendors.py digikey ADS1235QWRHMRQ1",
+    "read_at": "2026-09-29T03:30:44Z (JLCPCB); 03:22:25Z (Digi-Key)"
+   },
+   {
+    "figure": "re-rank report: ADS1235 reel orderables",
+    "verdict": "confirmed",
+    "evidence": "Packaging Information (addendum 10-Nov-2025): ADS1235IRHBR Active, Production, VQFN (RHB) 32, 3000 LARGE T&R. ADS1235IRHBT: same, 250 SMALL T&R. Both NIPDAU, Level-3-260C-168 HR, −40 to 125 °C, marking ADS 1235. Digi-Key (cached): IRHBR 0; IRHBT 401 (Cut Tape 401)",
+    "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf Packaging Information; vendors.py digikey ADS1235IRHBR, ADS1235IRHBT",
+    "read_at": "2026-09-29T03:28:08Z (datasheet); 02:48:11Z and 02:48:13Z (Digi-Key)"
+   },
+   {
+    "figure": "re-rank report: ADS1235 noise at the rate used",
+    "verdict": "confirmed",
+    "evidence": "Table 1 (TA 25 °C, VREF 5 V): 1200 SPS Sinc3, gain 128 = 0.13 µVRMS (1 µVPP), typical",
+    "source": "https://www.ti.com/lit/ds/symlink/ads1235.pdf Table 1",
+    "read_at": "2026-09-29T03:28:08Z"
+   },
+   {
+    "figure": "re-rank report: first-ranked parts re-read at JLCPCB",
+    "verdict": "confirmed",
+    "evidence": "C2669975 ADS1235IRHBR: 1340, presale 1220, 10.0503 USD at 1. C308595 BD450M2FP3-CE2: 3165, presale 3062, 0.6726 USD at 1. Both exact matches, both at or above 50",
+    "source": "vendors.py jlcpcb C2669975 and C308595",
+    "read_at": "2026-09-29T03:30:42Z"
+   },
+   {
+    "figure": "function requirements: load-cell bridge ADC",
+    "verdict": "confirmed",
+    "evidence": "The list covers F3 (3 channels, 5 V), V256 (±10.1 mV), V259 with V257 (0.170 and 0.333 µV RMS), V261 (100 SPS), V262 (10 ms), V263 (4-wire, one reference input), V265 (20 ms), V260 with V264 (51 µV over 0 to 50 °C, ±25 K from a 25 °C calibration, as V260 states), V264/V7 (0 to 50 °C), V254 (AVDD 4.75 to 5.25 V, reference on the excitation) and IOBoard.md:54 (3.3 V logic). No entry is weaker than its source. V100 and V101 name R5, not this function",
+    "source": "Research.md Raised by P1 V7, V254 to V265, F3 at checkout e13f5f60d2e5; hardware/docs/IOBoard.md:54, 73, 460, 461",
+    "read_at": "2026-09-29T03:36:02Z"
+   },
+   {
+    "figure": "function requirements: load-cell excitation",
+    "verdict": "confirmed",
+    "evidence": "The list covers V254 (own regulator on the 6.0 to 20 V bus, up to 22 V while V84 is open; AVDD 4.75 to 5.25 V), V255 (345 Ω minimum, 45.7 mA at 5.25 V, raised to 60 mA with 13.8 mA of ADC supply), F3 (5 V), the R5 row and F9 (6.0 V floor), V84 (22 V), IOBoard.md:558 (leads leave the board, so current limit and thermal shutdown), and V264/V7 (0 to 50 °C). No entry is weaker than its source",
+    "source": "Research.md V254, V255, V84, R5 row, F3, F9, V7 at checkout e13f5f60d2e5; hardware/docs/IOBoard.md:338, 558",
+    "read_at": "2026-09-29T03:36:02Z"
+   },
+   {
+    "figure": "re-rank drop: load-cell bridge ADC: ADS1235QWRHMRQ1",
+    "verdict": "confirmed",
+    "evidence": "Rule 4 fails: need 5 × 1 = 5, so the gate is 50. JLCPCB C2876667 has 48 < 50 (presale 44). The part is not in Held parts. Digi-Key stock does not count for an on-board part's gate. SBAS970 (ADS1235-Q1) Packaging Information lists ADS1235QWRHMRQ1 as VQFN (RHM) 32 with NIPDAUAG finish, not rank 1's RHB with NIPDAU",
+    "source": "vendors.py jlcpcb C2876667; https://www.ti.com/lit/ds/symlink/ads1235-q1.pdf (SBAS970, October 2019) Packaging Information; Research.md rules 4 and 6",
+    "read_at": "2026-09-29T03:30:44Z (JLCPCB); 03:28:11Z (datasheet)"
+   },
+   {
+    "figure": "re-rank drop: load-cell excitation: TL720M05QKVURQ1",
+    "verdict": "confirmed",
+    "evidence": "SGLS380J 5.5 (KVU): legacy 4.9 to 5.1 V at IOUT 5 to 400 mA (VIN 6 to 28 V); new chip ±1.15 % from IOUT 100 µA. The Packaging Information lists TL720M05QKVURQ1 and TL720M05QKVURQ1M3 as separate Active orderables and names no die for either; Device Nomenclature names none; the revision history only 'Added M3 devices'. So the 5 mA floor binds. 953 Ω ±1 %: 4.9/962.5 = 5.09 mA, 5.1/943.5 = 5.41 mA, 27.6 mW. RθJA (KVU) 45.3 °C/W legacy and 30 °C/W new, JEDEC high-K. TJ −40 to 150 °C. Legacy ICL 450 to 950 mA. JLCPCB 2725/2633; Digi-Key 7050, Active, 16 weeks. The drop is a ranking choice, not a requirement miss, as stated",
+    "source": "https://www.ti.com/lit/ds/symlink/tl720m05-q1.pdf (SGLS380J, revised August 2025) 5.4, 5.5, 9.1.2, Packaging Information; vendors.py jlcpcb C486028; vendors.py digikey TL720M05QKVURQ1",
+    "read_at": "2026-09-29T03:28:10Z (datasheet); 03:30:44Z (JLCPCB); 03:22:23Z (Digi-Key)"
+   }
+  ]
+ }
+}
