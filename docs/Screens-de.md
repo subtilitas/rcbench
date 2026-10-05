@@ -497,7 +497,8 @@ beiden Einstellungen gehen an die als Motor gebundenen Kanäle und an keine
 anderen: ein SERVO-PWM-Kanal behält 1000 bis 2000 us oder den Bereich, den der
 SERVO-Bildschirm für das dort gewählte Servo sendet. Eine Änderung erreicht
 den Coprozessor 300 ms nach der letzten Eingabe, solange der Prüfstand nicht
-scharf ist; eine Änderung im scharfen Zustand wartet auf das Entschärfen. Ein
+scharf ist; eine Änderung im scharfen Zustand wartet auf das Entschärfen.
+Ein Coprozessor, der sich verbindet, bekommt die beiden Einstellungen ebenfalls. Ein
 Idle pulse, der nicht unter dem Full pulse liegt, wird nicht gesendet, und das
 Band zeigt `idle pulse must be below full pulse -- not sent`.
 

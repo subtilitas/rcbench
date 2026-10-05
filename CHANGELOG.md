@@ -17,8 +17,9 @@ history is in git.
   changed value did nothing until a pin on OUTPUTS was ticked again. The
   endpoints now go to throttle channels only
   (`outputs_chan_cfg_set_throttle_range()`), and an edit is sent 300 ms after
-  the last change while the bench is disarmed: the panel reads CHAN_CFG back,
-  sets the throttle channels and writes the page only if it changed. The
+  the last change while the bench is disarmed, and at every link-up: the
+  panel reads CHAN_CFG back, sets the throttle channels and writes the page
+  only if it changed. The
   case behind it is #170: an ESC calibrated on a 985 to 2012 us transmitter
   needs an Idle pulse of 980 us.
 

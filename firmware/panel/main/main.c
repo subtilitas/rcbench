@@ -3602,6 +3602,15 @@ static void link_came_up(const link_msg_t *reply)
                       "read empty");
     }
     /*
+     * The throttle's pulse endpoints, for the same reason: a coprocessor
+     * replaced or reflashed since the debt was last paid holds its own
+     * CHAN_CFG, and the panel would go on showing a range the motor channels
+     * do not have.  Paid by endpoints_service() at the next disarmed poll,
+     * which reads the page and writes it only if the throttle channels
+     * differ, so an edge to a coprocessor that already agrees costs a read.
+     */
+    atomic_store(&s_endpoints_owed, true);
+    /*
      * And what its outputs already are.  The screen shows what is configured
      * over there, not what this panel last sent: after a panel restart those
      * are different things, and only one of them is driving pins.
