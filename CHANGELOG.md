@@ -6,6 +6,22 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- **Idle pulse and Full pulse reached servo channels, and an edit reached no
+  channel until the binding was written again.** The two ESC / BENCH
+  settings went into every channel the OUTPUTS binding wrote, so a SERVO PWM
+  channel bound beside a motor took the ESC's range and rested at its
+  midpoint, off centre for any range not symmetric about 1500 us. And the
+  settings reached the coprocessor only inside that binding write, so a
+  changed value did nothing until a pin on OUTPUTS was ticked again. The
+  endpoints now go to throttle channels only
+  (`outputs_chan_cfg_set_throttle_range()`), and an edit is sent 300 ms after
+  the last change while the bench is disarmed: the panel reads CHAN_CFG back,
+  sets the throttle channels and writes the page only if it changed. The
+  case behind it is #170: an ESC calibrated on a 985 to 2012 us transmitter
+  needs an Idle pulse of 980 us.
+
 ## 0.9.0 - 2026-10-05
 
 Two reports from a bench and one protocol change. Extended telemetry comes on

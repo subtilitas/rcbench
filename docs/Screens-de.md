@@ -492,13 +492,21 @@ und lässt die Servokanäle in Ruhe.
 
 Ein MOTOR-PWM-Kanal sendet 0 % Gas als Idle pulse und 100 % als Full pulse:
 1000 us und 2000 us ab Werk, einstellbar unter SETUP, ESC / BENCH, in Schritten
-von 10 us (Idle pulse 800 bis 1600 us, Full pulse 1400 bis 2400 us). Ein ESC,
-dessen Gasweg an einem Sender kalibriert wurde, nimmt den kürzesten Puls dieses
-Senders als null. Ein Idle pulse darüber liest der ESC als Gas, das nicht ganz
-unten ist, und er schaltet nicht scharf; viele ESCs piepen dann schnell. Den
-Idle pulse auf oder unter den kürzesten Puls des Senders stellen und den Full
-pulse auf oder über seinen längsten: bei einem Sender mit 985 bis 2012 us also
-980 us und 2020 us.
+von 10 us (Idle pulse 800 bis 1600 us, Full pulse 1400 bis 2400 us). Die
+beiden Einstellungen gehen an die als Motor gebundenen Kanäle und an keine
+anderen: ein SERVO-PWM-Kanal behält 1000 bis 2000 us oder den Bereich, den der
+SERVO-Bildschirm für das dort gewählte Servo sendet. Eine Änderung erreicht
+den Coprozessor 300 ms nach der letzten Eingabe, solange der Prüfstand nicht
+scharf ist; eine Änderung im scharfen Zustand wartet auf das Entschärfen. Ein
+Idle pulse, der nicht unter dem Full pulse liegt, wird nicht gesendet, und das
+Band zeigt `idle pulse must be below full pulse -- not sent`.
+
+Ein ESC, dessen Gasweg an einem Sender kalibriert wurde, nimmt den kürzesten
+Puls dieses Senders als null. Ein Idle pulse darüber liest der ESC als Gas,
+das nicht ganz unten ist, und er schaltet nicht scharf; viele ESCs piepen dann
+schnell. Den Idle pulse auf oder unter den kürzesten Puls des Senders stellen
+und den Full pulse auf oder über seinen längsten: bei einem Sender mit 985 bis
+2012 us also 980 us und 2020 us.
 
 Wenn das Protokoll keinen Pin mehr nehmen kann, steht der Grund in Bernstein
 darunter: `NEEDS 8 CHANNELS, 4 FREE`, `ALL 8 SLOTS IN USE` oder `SERVO PWM

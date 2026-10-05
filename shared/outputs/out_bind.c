@@ -1051,15 +1051,12 @@ void outbind_to_chan_cfg(const outbind_t *b, uint16_t *regs,
                                   ? (uint16_t)LINK_CC_ROLE_THROTTLE
                                   : (uint16_t)LINK_CC_ROLE_SURFACE;
         for (uint8_t c = channel; c < channel + p->channels; ++c) {
-            uint16_t *r = &regs[(size_t)c * LINK_CC_STRIDE];
-            r[LINK_CC_ROLE] = role;
-            if (min_us >= LINK_CC_FLOOR_US && max_us <= LINK_CC_CEILING_US
-                && min_us < max_us) {
-                r[LINK_CC_MIN_US] = min_us;
-                r[LINK_CC_MAX_US] = max_us;
-            }
+            regs[(size_t)c * LINK_CC_STRIDE + LINK_CC_ROLE] = role;
         }
         channel = (uint8_t)(channel + p->channels);
         ++slot;
     }
+    /* The endpoints are a throttle's; a surface keeps the schema's range.
+     * One rule, shared with the panel's rewrite of a page read back. */
+    (void)outputs_chan_cfg_set_throttle_range(regs, min_us, max_us);
 }
