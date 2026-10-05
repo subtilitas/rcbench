@@ -4055,18 +4055,21 @@ static void advance_model_and_log(bool link_up, float emitted,
             telemetry_sim_step(sim, emitted, 1.0f / PANEL_SAMPLE_HZ, bench);
             *new_sample = true;
         }
-        /*
-         * The run's totals, from the sample either source just wrote, over
-         * the time since the last one -- measured, not the 50 ms this cadence
-         * aims at: a link probe can hold this loop for a second.
-         */
-        if (*new_sample) {
-            const uint32_t t = now_ms();
-            bench_totals_count(&s_totals, bench,
-                               (float)(uint32_t)(t - s_totals_ms) / 1000.0f,
-                               outputs_armed(&s_out));
-            s_totals_ms = t;
-        }
+    }
+    /*
+     * The run's totals, from the sample either source just wrote, over the
+     * time since the last one -- measured, not the 50 ms the model's cadence
+     * aims at: a link probe can hold this loop for a second.  Outside that
+     * cadence's gate, because a coprocessor sample arrives on the poll's
+     * clock, not on this one, and one that landed between two of its ticks
+     * would otherwise go uncounted.
+     */
+    if (*new_sample) {
+        const uint32_t t = now_ms();
+        bench_totals_count(&s_totals, bench,
+                           (float)(uint32_t)(t - s_totals_ms) / 1000.0f,
+                           outputs_armed(&s_out));
+        s_totals_ms = t;
     }
     /*
      * Written over the source's own charge and energy before the screen or
