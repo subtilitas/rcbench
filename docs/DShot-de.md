@@ -261,10 +261,41 @@ Ein ESC, dem Command 13 gesendet wurde, schiebt zwischen die Drehzahl-Frames
 Frames für Temperatur, Spannung, Strom, Stress und Status, markiert durch das
 oberste Nibble der Nutzdaten.
 
-Der Prüfstand sendet dieses Command bei jeder Flanke ins Treiben, zehn Frames
-bei 1.000 Hz, also in den ersten 10 ms eines Scharfschaltens. Quittiert wird es
-nicht, danach werden Antworten als Extended Telemetry gelesen, ob der ESC
-zugestimmt hat oder nicht.
+Der Prüfstand fragt mit Command 13 und fragt erneut, bis der ESC antwortet.
+Eine Anfrage sind zehn Frames Command 13 hintereinander, 10 ms bei 1.000 Hz.
+Eine Anfrage geht nur anstelle eines Frames mit Throttle null hinaus, sie
+verzögert also nie ein Throttle, und Command 13 liegt im Command-Bereich, es
+dreht sich also nichts, während sie hinausgeht:
+
+- die erste Anfrage beginnt mit dem ersten Frame mit Throttle null eines
+  Laufs;
+- die nächste beginnt 500 ms nach der letzten Wiederholung der vorigen,
+  solange das Throttle auf null bleibt;
+- ein Throttle über null geht in seinem eigenen Frame hinaus, und eine
+  Anfrage, die es unterbricht, beginnt wieder bei ihrer ersten Wiederholung;
+- das Fragen endet mit dem ersten Extended-Frame, der zurückkommt, oder nach
+  10 Anfragen ohne einen;
+- jeder Lauf fragt neu, denn Extended Telemetry ist eine Laufzeit-Einstellung,
+  die ein ESC bei einem Neustart vergisst, und zwischen zwei Läufen kann ein
+  anderer ESC angesteckt werden.
+
+Das Wiederholen ist für AM32. AM32 2.21 nimmt ein Command nur an, solange es
+scharf ist und der Motor steht, und es schaltet sich nach 1 s Throttle null
+selbst scharf, gezählt ab dem ersten Frame, den es hört (`Src/dshot.c:157`,
+`Src/main.c:1353-1356`). Ein nicht scharfer Prüfstand sendet keine Frames, und
+AM32 startet nach 0,5 s ohne Frame neu, wenn es scharf ist, und nach 2 s, wenn
+nicht. Jeder Lauf beginnt also mit einem AM32, das nicht scharf ist. Eine
+Anfrage nur in den ersten 10 ms eines Laufs kommt an, bevor AM32 sie annehmen
+kann. `test_dshot_edt` prüft den Ablauf gegen ein Modell dieser Regeln: ein
+AM32, das aus der Stille bei Throttle null startet, nimmt die dritte Anfrage
+an, 1,02 s nach Beginn des Laufs. Die Drehzahl hängt davon nicht ab: AM32
+beantwortet einen bidirektionalen Frame mit einer Periode, ob gefragt wurde
+oder nicht.
+
+Gelesen werden Antworten als Extended Telemetry ab der ersten Wiederholung der
+ersten Anfrage. AM32 beantwortet Command 13 einmal, mit einem Status-Frame
+(`0xE00`) nach der sechsten Wiederholung, und als Drehzahl gelesen wäre dieser
+Frame eine Periode von null und keine Antwort.
 
 Jeder der zehn Frames trägt das Telemetry-Bit gesetzt. Bei einem Wert von 1
 bis 47 markiert dieses Bit den Frame für die BLHeli_S-Familie (Bluejay) als
@@ -306,8 +337,9 @@ unbestätigt:
 - die Frame-Typen der Extended Telemetry und ihre Einheiten;
 - ob der Hinweis "mindestens 35 ms warten" in der Spezifikation zu Command 13
   oder zu Command 12 (Save Settings) gehört. Die Tabelle lässt beide Lesarten
-  zu, und der Prüfstand wartet in keinem Fall: das Throttle folgt der zehnten
-  Wiederholung beim nächsten 1-ms-Takt. Das klärt der Text der Spezifikation
+  zu, und der Prüfstand wartet in keinem Fall: auf die zehnte Wiederholung
+  einer Anfrage folgt beim nächsten 1-ms-Takt das Throttle oder ein weiterer
+  Frame mit Throttle null. Das klärt der Text der Spezifikation
   und keine Platine;
 - jedes Bit-Timing, gegen die Toleranz eines echten ESC statt gegen die
   Spezifikation.

@@ -194,6 +194,65 @@ uint16_t dshot_telem_value(dshot_telem_kind_t kind, uint16_t payload);
  */
 uint32_t dshot_rpm(uint32_t erpm, uint8_t pole_pairs);
 
+/* ---------------------------------------- asking for extended telemetry */
+
+/** Between the starts of two asks that got no answer. */
+#define DSHOT_EDT_RETRY_MS  500u
+
+/** Asks per run before an ESC that never answers is left alone. */
+#define DSHOT_EDT_ASKS       10u
+
+/**
+ * When to send DSHOT_CMD_EDT_ENABLE, and whether the ESC has answered.
+ *
+ * One ask is DSHOT_CMD_REPEATS frames of the command in a row.  An ESC only
+ * acts on a command while its motor is stopped, and AM32 only once it has
+ * armed itself on about a second of zero throttle.  Every run on this bench
+ * starts from silence -- a disarmed bench sends nothing, and AM32 restarts
+ * after 0.5 s without a signal -- so an ask made only in a run's first 10 ms
+ * lands before AM32 can take it and extended telemetry never comes on.
+ *
+ * So the ask is repeated, every DSHOT_EDT_RETRY_MS while the throttle is at
+ * zero, until an extended frame arrives or DSHOT_EDT_ASKS have gone without
+ * one.  An ask only starts, and only continues, on a frame whose throttle is
+ * zero: a throttle the operator has asked for goes out on that frame, and an
+ * ask it interrupts is abandoned and started again from its first repeat.
+ *
+ * Two lifetimes.  What a run has asked and heard is owed again on every run,
+ * because an ESC forgets the setting when it restarts.  @c asked follows the
+ * binding: from the first repeat of the first ask, replies are read as
+ * extended telemetry, because an ESC that kept power kept the setting and
+ * AM32 answers the command once, on a reply after its sixth repeat.
+ */
+typedef struct {
+    uint8_t  left;      /**< repeats still to send in the ask under way   */
+    uint8_t  asks;      /**< asks completed this run                      */
+    uint32_t due_ms;    /**< when the next ask may start                  */
+    bool     answered;  /**< an extended frame arrived this run           */
+    bool     asked;     /**< an ask has started since the binding         */
+} dshot_edt_t;
+
+/** A new binding: nothing asked, nothing heard, an ask due at once. */
+void dshot_edt_bind(dshot_edt_t *e, uint32_t now_ms);
+
+/**
+ * Not driving: the next run owes the ask again, due from its first frame.
+ * Called on every service while disarmed, so it is idempotent; @c asked is
+ * kept.
+ */
+void dshot_edt_idle(dshot_edt_t *e, uint32_t now_ms);
+
+/**
+ * Whether the frame about to go out is a repeat of DSHOT_CMD_EDT_ENABLE.
+ *
+ * @p stopped says the throttle this frame would carry is zero.  False means
+ * send the throttle.
+ */
+bool dshot_edt_frame(dshot_edt_t *e, bool stopped, uint32_t now_ms);
+
+/** A reply arrived; an extended kind after an ask ends the asking. */
+void dshot_edt_heard(dshot_edt_t *e, dshot_telem_kind_t kind);
+
 /* --------------------------------------------------- the captured samples */
 
 /**

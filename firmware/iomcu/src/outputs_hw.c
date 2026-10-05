@@ -33,27 +33,21 @@ typedef struct {
     uint32_t next_us;      /* DShot only: when the next frame is due */
     /*
      * Extended telemetry, which an ESC only sends after it has been asked.
-     *
-     * edt_left counts the repeats still owed: a command is an ordinary frame
-     * and an ESC tells one from a glitch by counting them, so it is sent
-     * DSHOT_CMD_REPEATS times before anything else goes out.  Zero with
-     * edt_asked set means the asking is done and the replies may carry the
-     * other frame types.
-     *
-     * The two have different lifetimes and that is the point.  edt_left is
-     * owed again on every edge into driving, because extended telemetry is a
-     * runtime setting an ESC forgets when it loses power and an ESC can be
-     * swapped between runs.  edt_asked follows the binding instead: an ESC
-     * that keeps power keeps the setting across a disarm, so a run that
-     * started by reading replies as periods again would take an interleaved
-     * temperature or current frame for a speed.
+     * When to ask, when to stop and when to read replies as extended frames
+     * is dshot_edt_*() in shared/dshot, where the host suite holds it against
+     * a model of AM32's command handling.  Bidirectional slots only.
      */
-    uint8_t  edt_left;
-    bool     edt_asked;
+    dshot_edt_t edt;
 } slot_state_t;
 
 static out_slot_t   s_shadow[OUT_MAX_SLOTS];
 static slot_state_t s_state[OUT_MAX_SLOTS];
+
+/* The millisecond clock the telemetry ages and the ask schedule run on. */
+static uint32_t now_ms(void)
+{
+    return (uint32_t)to_ms_since_boot(get_absolute_time());
+}
 
 /*
  * The last readings an ESC gave, with the clock each arrived on.
@@ -179,7 +173,7 @@ void outputs_hw_apply(const outputs_t *o)
              * too: a failed bind leaves no output but the readings from
              * before it would otherwise still be published. */
             forget_slot_telem(i);
-            s_state[i].edt_asked = false;
+            dshot_edt_bind(&s_state[i].edt, now_ms());
         }
         if (moved[i] && s_state[i].bound) {
             unbind(&s_shadow[i]);
@@ -205,8 +199,7 @@ void outputs_hw_apply(const outputs_t *o)
         s_state[i].bound   = bind(&s_shadow[i]);
         s_state[i].next_us = time_us_32();
         /* A pin that has just been taken has told its ESC nothing yet. */
-        s_state[i].edt_left  = (uint8_t)DSHOT_CMD_REPEATS;
-        s_state[i].edt_asked = false;
+        dshot_edt_bind(&s_state[i].edt, now_ms());
     }
 }
 
@@ -225,7 +218,7 @@ static void record_telem(unsigned slot, const dshot_telem_t *t)
         return;
     }
     telem_t *c = &s_telem[slot];
-    const uint32_t now = (uint32_t)to_ms_since_boot(get_absolute_time());
+    const uint32_t now = now_ms();
     if (t->kind == DSHOT_TELEM_ERPM) {
         c->erpm      = t->erpm;
         c->erpm_ms   = now;
@@ -286,8 +279,9 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
      */
     if (s->driver == OUT_DRIVER_DSHOT_BIDIR) {
         dshot_telem_t t;
-        if (out_dshot_poll(s->pin, st->edt_asked, &t)) {
+        if (out_dshot_poll(s->pin, st->edt.asked, &t)) {
             record_telem(slot, &t);
+            dshot_edt_heard(&st->edt, t.kind);
         }
     }
 
@@ -303,19 +297,19 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
         st->next_us = time_us_32();
         /*
          * And the ask is owed again.  Extended telemetry is a runtime setting
-         * an ESC forgets when it loses power, and an ESC can be swapped on a
-         * bench between one run and the next; asking again costs ten frames
-         * at the start of a run and nothing after that.
+         * an ESC forgets when it restarts -- AM32 restarts after 0.5 s
+         * without a frame, and a disarmed bench sends none -- and an ESC can
+         * be swapped on a bench between one run and the next.
          *
-         * What is not forgotten is that it was asked.  The setting lives in
-         * the ESC, and an ESC that keeps power keeps it across this bench's
-         * disarm: reading the next run's first replies as periods would take
-         * an interleaved temperature or current frame for a speed, and a
-         * current of 120 A decodes as 8,900 rpm -- a number nobody questions,
-         * latched into the run's peak.  edt_asked follows the binding, not
-         * the run; only a slot that moves or a restart clears it.
+         * What is not forgotten is that it was asked.  An ESC that keeps
+         * power keeps the setting across a short disarm: reading the next
+         * run's first replies as periods would take an interleaved
+         * temperature or current frame for a speed, and a current of 120 A
+         * decodes as 8,900 rpm -- a number nobody questions, latched into the
+         * run's peak.  dshot_edt_idle() keeps asked; only a slot that moves or
+         * a restart clears it.
          */
-        st->edt_left = (uint8_t)DSHOT_CMD_REPEATS;
+        dshot_edt_idle(&st->edt, now_ms());
         return;
     }
     const uint32_t now = time_us_32();
@@ -325,13 +319,15 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
     st->next_us = now + DSHOT_PERIOD_US;
 
     /*
-     * The ask goes first, before any throttle.  A command is an ordinary
-     * frame and an ESC tells one from a glitch by counting repeats, so this
-     * takes the first DSHOT_CMD_REPEATS frames of a run: ten at
-     * DSHOT_UPDATE_HZ, which is 10 ms.  DSHOT_CMD_EDT_ENABLE is in the
-     * command range, so nothing turns while it is being sent, and a throttle
-     * the operator has already asked for arrives 10 ms later than it would
-     * have.
+     * The ask goes out in place of a stop frame and never in place of a
+     * throttle.  A command is an ordinary frame and an ESC tells one from a
+     * glitch by counting repeats, so one ask is DSHOT_CMD_REPEATS frames in a
+     * row, 10 ms at DSHOT_UPDATE_HZ, and it is repeated every
+     * DSHOT_EDT_RETRY_MS while the throttle is zero until an extended frame
+     * comes back: AM32 takes a command only once it has armed itself on a
+     * second of zero throttle, which a run's first 10 ms never are.
+     * DSHOT_CMD_EDT_ENABLE is in the command range, so nothing turns while
+     * it is being sent.
      *
      * An ESC that does not know the command ignores it and keeps sending
      * periods.  Those still read as periods: this decoder only takes a frame
@@ -351,16 +347,15 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
      * the separate serial telemetry wire; nothing on this bench reads that
      * wire.
      */
-    if (s->driver == OUT_DRIVER_DSHOT_BIDIR && st->edt_left > 0u) {
+    const uint16_t value =
+        dshot_throttle(outputs_actual(o, s->first_channel), OUT_SPAN);
+    if (s->driver == OUT_DRIVER_DSHOT_BIDIR
+        && dshot_edt_frame(&st->edt, value == DSHOT_CMD_MOTOR_STOP,
+                           now_ms())) {
         out_dshot_send(s->pin, (uint16_t)DSHOT_CMD_EDT_ENABLE, true);
-        if (--st->edt_left == 0u) {
-            st->edt_asked = true;
-        }
         return;
     }
-
-    const uint16_t command = outputs_actual(o, s->first_channel);
-    out_dshot_send(s->pin, dshot_throttle(command, OUT_SPAN), false);
+    out_dshot_send(s->pin, value, false);
 }
 
 void outputs_hw_service(const outputs_t *o)
@@ -431,8 +426,7 @@ bool outputs_hw_erpm(uint32_t *erpm, uint32_t *age_ms)
         return false;
     }
     *erpm   = s_telem[slot].erpm;
-    *age_ms = (uint32_t)(to_ms_since_boot(get_absolute_time())
-                         - s_telem[slot].erpm_ms);
+    *age_ms = now_ms() - s_telem[slot].erpm_ms;
     return true;
 }
 
@@ -445,7 +439,6 @@ bool outputs_hw_edt(dshot_telem_kind_t kind, uint16_t *value, uint32_t *age_ms)
         return false;
     }
     *value  = s_telem[slot].edt[kind];
-    *age_ms = (uint32_t)(to_ms_since_boot(get_absolute_time())
-                         - s_telem[slot].edt_ms[kind]);
+    *age_ms = now_ms() - s_telem[slot].edt_ms[kind];
     return true;
 }

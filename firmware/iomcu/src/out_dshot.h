@@ -15,9 +15,9 @@
  *
  * Extended telemetry is asked for by the caller, not here: this file has no
  * frame rate of its own and a command has to be repeated on one.  outputs_hw.c
- * sends DSHOT_CMD_EDT_ENABLE DSHOT_CMD_REPEATS times on the edge into driving
- * and then passes edt to out_dshot_poll(), which is the only thing that tells
- * an extended frame from an electrical period.
+ * sends DSHOT_CMD_EDT_ENABLE on the schedule dshot_edt_frame() sets and
+ * passes edt to out_dshot_poll(), which is the only thing that tells an
+ * extended frame from an electrical period.
  *
  * SPDX-License-Identifier: MIT
  */
