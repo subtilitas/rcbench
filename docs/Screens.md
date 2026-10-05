@@ -446,6 +446,16 @@ entry says it: bind an ESC as MOTOR PWM and a control surface as SERVO PWM.
 The MOTOR & ESC throttle drives every channel bound as a motor — MOTOR PWM
 and the DShot entries — and leaves the servo channels alone.
 
+A MOTOR PWM channel sends 0 % throttle as the Idle pulse and 100 % as the
+Full pulse: 1000 us and 2000 us by default, set under SETUP, ESC / BENCH, in
+steps of 10 us (Idle pulse 800 to 1600 us, Full pulse 1400 to 2400 us). An ESC
+whose throttle range was calibrated on a transmitter takes that transmitter's
+shortest pulse as zero. An Idle pulse above it reads to the ESC as throttle
+not at the bottom, and the ESC does not arm; many ESCs beep rapidly in that
+state. Set the Idle pulse at or below the transmitter's shortest pulse and the
+Full pulse at or above its longest: for a transmitter that sends 985 to
+2012 us, 980 us and 2020 us.
+
 When the protocol can take no more pins, the reason is under it in amber:
 `NEEDS 8 CHANNELS, 4 FREE`, `ALL 8 SLOTS IN USE`, or `SERVO PWM TAKES 8
 PINS`. A board drawn entirely in grey with nothing beside it reads as a
