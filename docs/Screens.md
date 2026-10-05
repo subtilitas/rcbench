@@ -254,9 +254,11 @@ second finger does nothing anywhere on the screen.
 SETTINGS, at the right of the strip above both columns, opens the supply's
 settings over the left column. Each is kept in the panel's NVS (non-volatile
 storage) and survives a restart. A value opens the keypad; a switch flips on
-the tap. Every change is written at the next frame the bench is disarmed and not
-fetching the board's photograph, and with it any change on SETUP that was not
-saved; the bottom line says SAVED, SAVE WAITING or NOT SAVED.
+the tap. Every change is written at the next frame the bench is disarmed, the
+supply's output is off and the board's photograph is not being fetched, and
+with it any change on SETUP that was not saved: a flash write stalls both
+cores, OUTPUT OFF and the trips included. The bottom line says SAVED, SAVE
+WAITING or NOT SAVED.
 
 ![The supply's settings](img/supply-settings.png)
 

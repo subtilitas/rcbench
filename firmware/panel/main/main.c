@@ -2803,13 +2803,26 @@ static void supply_switch(bool on)
         return;
     }
     if (!on) {
-        /* The run's last interval, up to now on the reading that held
+        /*
+         * The run's last interval, up to now on the reading that held
          * through it, before the output is marked off: an OFF taken inside
-         * an exchange's wait can end a second-long interval. */
+         * an exchange's wait can end a second-long interval.  And the row
+         * that carries it, so the log's last totals are the ones the screen
+         * shows; the run ends before another row would be written.
+         */
         const uint32_t t = now_ms();
-        supply_count_totals(&s_supply, (float)(uint32_t)(t - s_supply_ms)
-                                           / 1000.0f);
+        float dt = (float)(uint32_t)(t - s_supply_ms) / 1000.0f;
+        if (dt > BENCH_TOTALS_MAX_STEP_S) {
+            dt = BENCH_TOTALS_MAX_STEP_S;
+        }
+        supply_count_totals(&s_supply, dt);
         s_supply_ms = t;
+        if (s_log_kind == LOG_RUN_SUPPLY) {
+            s_log_t += dt;
+            log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
+            row.u.supply = s_supply;
+            log_post(&row);
+        }
         arm_watch_end(&s_supply_watch);
     }
     supply_sim_output(&s_supply_sim, on);
@@ -2821,6 +2834,10 @@ static void supply_switch(bool on)
         s_supply.trip  = (uint8_t)SUPPLY_TRIP_NONE;
         s_supply_ms    = now_ms();
         s_supply_fresh = true;
+        /* And the step clock: the run's first step, and its first row's
+         * time, count from the switch-on and not from the last step taken
+         * with the output off. */
+        s_supply_step_ms = now_ms();
     }
 }
 
@@ -5203,6 +5220,15 @@ void app_main(void)
             && (uint32_t)(now_ms() - lost_ms) >= LINK_LOST_SCREEN_MS
             && ui_router_current() != SCREEN_SPLASH
             && ui_router_current() != SCREEN_BUSFAULT) {
+            /*
+             * The screen has no STOP, so it opens on a supply that is off
+             * and stays off: an ON this frame already queued, which the
+             * snapshot read above cannot show, is cancelled the way OUTPUT
+             * OFF cancels one -- the count it carries goes stale, and the
+             * flag switches it off again should it have been applied.
+             */
+            atomic_fetch_add(&s_supply_offs, 1u);
+            atomic_store(&s_supply_off_request, true);
             busfault_report_t r;
             link_lost_report(&r);
             busfault_screen_set(&r);
@@ -5251,13 +5277,16 @@ void app_main(void)
          * is armed -- the control task beats the safety line and its ceiling
          * is HEARTBEAT_MAX_GAP_MS (150 ms) -- or while the board's
          * photograph is being fetched or written, which is a quarter of a
-         * megabyte already spoken for.
+         * megabyte already spoken for.  Nor while the supply's output is on:
+         * OUTPUT OFF, STOP and the trips are the control task's, and a flash
+         * write would stall them for its length.
          *
          * Waiting costs nothing.  The request stands until a quiet frame
          * comes, and disarmed -- which is where the settings screen is used
          * -- the next frame is one.
          */
-        (void)settings_save_tick(!armed && !s_artbusy && !s_keeping);
+        (void)settings_save_tick(!armed && !supply_now && !supply_seen
+                                 && !s_artbusy && !s_keeping);
         /* And the ramp, from the task that owns the values, for the control
          * task to read on its next pump. */
         publish_throttle_ramp();

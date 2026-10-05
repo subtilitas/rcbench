@@ -279,9 +279,11 @@ SETTINGS, rechts in der Leiste über beiden Spalten, öffnet die Einstellungen
 des Netzteils über der linken Spalte. Jede liegt im NVS (Non-Volatile Storage)
 des Panels und übersteht einen Neustart. Ein Wert öffnet die Tastatur, ein
 Schalter kippt beim Tippen. Jede Änderung wird im nächsten Frame geschrieben,
-in dem der Prüfstand unscharf ist und nicht das Foto der Platine lädt, und mit
-ihr jede ungespeicherte Änderung aus SETUP; die unterste Zeile sagt SAVED, SAVE
-WAITING oder NOT SAVED.
+in dem der Prüfstand unscharf ist, der Ausgang des Netzteils aus ist und nicht
+das Foto der Platine geladen wird, und mit ihr jede ungespeicherte Änderung
+aus SETUP: ein Flash-Schreibvorgang hält beide Kerne an, OUTPUT OFF und die
+Trips eingeschlossen. Die unterste Zeile sagt SAVED, SAVE WAITING oder NOT
+SAVED.
 
 ![Die Einstellungen des Netzteils](img/supply-settings.png)
 
