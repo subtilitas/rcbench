@@ -574,6 +574,44 @@ TEST_CASE(a_change_to_a_live_output_waits_for_the_question)
     CHECK(!supply_screen_poll_cmd(NULL));
 }
 
+TEST_CASE(an_on_asked_for_counts_as_live_before_it_is_seen)
+{
+    /* The ON has gone; the first sample to show it has not arrived.  A step
+     * in between still asks. */
+    fresh();
+    hold_on();
+    supply_cmd_t c;
+    CHECK(supply_screen_poll_cmd(&c) && c.on);
+    tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    tap(APPLY_X, ASK_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+    /* Seen applied, then off: no longer live, nothing asked. */
+    supply_screen_set_output(true);
+    supply_screen_set_output(false);
+    tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.2f, 1e-4f);
+    /* An ON a stop dropped is not waited for. */
+    hold_on();
+    supply_screen_cancel_on();
+    tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.3f, 1e-4f);
+    /* Nor one a touch loss dropped. */
+    hold_on();
+    (void)supply_screen_poll_cmd(&c);
+    scr->cancel();
+    tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.4f, 1e-4f);
+    /* Nor one an OFF overtook. */
+    hold_on();
+    supply_screen_set_output(true);
+    supply_screen_set_output(false);
+    tap(OUT_X, OUT_Y);                   /* off: nothing to switch off */
+    hold_on();
+    tap(OUT_X, OUT_Y);
+    (void)supply_screen_poll_cmd(&c);
+}
+
 TEST_CASE(each_question_is_switched_on_its_own)
 {
     fresh();
@@ -739,6 +777,30 @@ static void render_both(void)
     scr->render(&cv, 0);
     supply_invalidate();
     scr->render(&cv, 0);
+}
+
+TEST_CASE(the_heading_says_what_the_output_does_on_either_pane)
+{
+    /* TABLE with the output off reads as PLOT with nothing recorded does,
+     * not as a live output. */
+    fresh();
+    tap(TABLE_X, TABLE_Y);
+    supply_invalidate();
+    scr->render(&cv, 0);
+    supply_screen_set_output(true);
+    supply_state_t st = reading(6.0f, 1.0f);
+    st.output = true;
+    supply_screen_push(&st);
+    supply_invalidate();
+    scr->render(&cv2, 0);
+    /* The upper panel's title tag: x 6..130, y 24..44. */
+    int differ = 0;
+    for (int y = 24; y < 44; ++y) {
+        for (int x = 6; x < 130; ++x) {
+            differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
+        }
+    }
+    CHECK(differ > 0);
 }
 
 TEST_CASE(a_reading_that_did_not_arrive_is_not_plotted_as_the_last_one)
@@ -963,6 +1025,8 @@ int main(void)
     RUN(the_set_points_start_at_the_start_values);
     RUN(a_card_or_a_value_opens_the_keypad_for_its_set_point);
     RUN(a_change_to_a_live_output_waits_for_the_question);
+    RUN(an_on_asked_for_counts_as_live_before_it_is_seen);
+    RUN(the_heading_says_what_the_output_does_on_either_pane);
     RUN(each_question_is_switched_on_its_own);
     RUN(a_drag_on_a_live_output_changes_nothing_until_it_is_answered);
     RUN(the_output_switch_works_under_every_overlay);

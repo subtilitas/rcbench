@@ -618,6 +618,17 @@ static atomic_uint s_supply_trip_ms;
  */
 static atomic_uint s_supply_ack;
 /*
+ * Whether the output is on, stored by the control task the moment it
+ * switches, and the ONs the render side has queued against the ones the
+ * control task has taken (applied or dropped).  Together they say, at any
+ * moment of a frame, whether the output is live or about to be: the
+ * snapshot is a frame old, and an ON queued in this frame is in neither.
+ * See supply_live_or_coming().
+ */
+static atomic_bool s_supply_live;
+static atomic_uint s_supply_ons_sent;
+static atomic_uint s_supply_ons_taken;
+/*
  * The two touch queues, numbered.  See touch_loss.h for why numbers and not
  * counts: a count raised on one core after the eviction it reports can be
  * read on the other only once a surviving event has already been handled.
@@ -2797,36 +2808,44 @@ static uint32_t       s_supply_step_ms;
 static arm_watch_t    s_supply_watch;
 static uint32_t       s_supply_gen;
 
+/*
+ * The interval since the last step, up to now, on the reading that held
+ * through it: counted into the totals and, while a supply run is being
+ * logged, written as the run's last row, so the log ends on the totals the
+ * screen shows.  For the moments a supply run ends between two steps -- the
+ * output switched off, or the bench taking the log over.
+ */
+static void supply_log_tail(void)
+{
+    const uint32_t t = now_ms();
+    float dt = (float)(uint32_t)(t - s_supply_ms) / 1000.0f;
+    if (dt > BENCH_TOTALS_MAX_STEP_S) {
+        dt = BENCH_TOTALS_MAX_STEP_S;
+    }
+    supply_count_totals(&s_supply, dt);
+    s_supply_ms = t;
+    if (s_log_kind == LOG_RUN_SUPPLY) {
+        s_log_t += dt;
+        log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
+        row.u.supply = s_supply;
+        log_post(&row);
+    }
+}
+
 static void supply_switch(bool on)
 {
     if (s_supply_sim.output == on) {
         return;
     }
     if (!on) {
-        /*
-         * The run's last interval, up to now on the reading that held
-         * through it, before the output is marked off: an OFF taken inside
-         * an exchange's wait can end a second-long interval.  And the row
-         * that carries it, so the log's last totals are the ones the screen
-         * shows; the run ends before another row would be written.
-         */
-        const uint32_t t = now_ms();
-        float dt = (float)(uint32_t)(t - s_supply_ms) / 1000.0f;
-        if (dt > BENCH_TOTALS_MAX_STEP_S) {
-            dt = BENCH_TOTALS_MAX_STEP_S;
-        }
-        supply_count_totals(&s_supply, dt);
-        s_supply_ms = t;
-        if (s_log_kind == LOG_RUN_SUPPLY) {
-            s_log_t += dt;
-            log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
-            row.u.supply = s_supply;
-            log_post(&row);
-        }
+        /* The run's last interval, before the output is marked off: an OFF
+         * taken inside an exchange's wait can end a second-long one. */
+        supply_log_tail();
         arm_watch_end(&s_supply_watch);
     }
     supply_sim_output(&s_supply_sim, on);
     s_supply.output = on;
+    atomic_store(&s_supply_live, on);
     if (on) {
         /* A run starts with nothing counted and nothing tripped. */
         supply_reset_totals(&s_supply);
@@ -2925,6 +2944,10 @@ static void apply_supply_cmd(const panel_cmd_t *pc)
     const supply_cmd_t *c = &pc->supply;
     if (c->reset) {
         supply_reset_peaks(&s_supply);
+    }
+    if (c->on) {
+        /* Taken, whatever becomes of it; see s_supply_ons_sent. */
+        atomic_fetch_add(&s_supply_ons_taken, 1u);
     }
     if (c->off) {
         supply_switch(false);
@@ -3909,6 +3932,11 @@ static void log_follow_runs(void)
     if (wanted == s_log_kind) {
         return;
     }
+    if (s_log_kind == LOG_RUN_SUPPLY && s_supply.output) {
+        /* The bench takes the log from a supply that stays on: the supply
+         * run's file ends on its totals up to now. */
+        supply_log_tail();
+    }
     if (s_log_kind != LOG_RUN_NONE) {
         atomic_store(&s_log_run_now, 0u);
         /*
@@ -4687,7 +4715,12 @@ static void send_cmd(const panel_cmd_t *pc)
         return;
     }
     panel_cmd_t stale;
-    (void)xQueueReceive(s_cmd_q, &stale, 0);
+    if (xQueueReceive(s_cmd_q, &stale, 0) == pdTRUE
+        && stale.kind == PANEL_CMD_SUPPLY && stale.supply.on) {
+        /* An ON the control task will never see is one it will never take
+         * either; counted here, so nothing waits on it for ever. */
+        atomic_fetch_add(&s_supply_ons_taken, 1u);
+    }
     if (xQueueSend(s_cmd_q, pc, 0) != pdTRUE) {
         ESP_LOGW(TAG, "control queue full; a command was lost");
     }
@@ -4699,6 +4732,17 @@ static void send_cmd(const panel_cmd_t *pc)
  */
 static touch_seq_rx_t s_tq_rx = { .next = 1u };    /* touch_seq_rx_init() */
 static unsigned       s_tq_lost;
+
+/*
+ * Whether the supply's output is on, or an ON for it is queued and not yet
+ * taken.  Read at the moment it is asked, from what the control task stores
+ * when it switches, so an ON queued earlier in this frame counts.
+ */
+static bool supply_live_or_coming(void)
+{
+    return atomic_load(&s_supply_live)
+           || atomic_load(&s_supply_ons_taken) != atomic_load(&s_supply_ons_sent);
+}
 
 /*
  * The supply screen's limits and set points, as the levels the control task
@@ -4751,6 +4795,9 @@ static void flush_screen_commands(uint32_t stops_now)
     publish_supply_levels();
     supply_cmd_t sc;
     if (supply_screen_poll_cmd(&sc)) {
+        if (sc.on) {
+            atomic_fetch_add(&s_supply_ons_sent, 1u);
+        }
         panel_cmd_t pc = { .kind = PANEL_CMD_SUPPLY, .supply = sc,
                            .stops = stops_now,
                            .supply_offs = atomic_load(&s_supply_offs),
@@ -5215,7 +5262,7 @@ void app_main(void)
          * passes, and the screen takes over on a link that is up.
          */
         const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
-        if (!armed && !supply_now && !supply_seen
+        if (!armed && !supply_now && !supply_seen && !supply_live_or_coming()
             && lost_ms != 0u && !s_link_lost_shown
             && (uint32_t)(now_ms() - lost_ms) >= LINK_LOST_SCREEN_MS
             && ui_router_current() != SCREEN_SPLASH
@@ -5285,7 +5332,7 @@ void app_main(void)
          * comes, and disarmed -- which is where the settings screen is used
          * -- the next frame is one.
          */
-        (void)settings_save_tick(!armed && !supply_now && !supply_seen
+        (void)settings_save_tick(!armed && !supply_live_or_coming()
                                  && !s_artbusy && !s_keeping);
         /* And the ramp, from the task that owns the values, for the control
          * task to read on its next pump. */

@@ -173,6 +173,9 @@ static struct {
      * see propose().
      */
     float           cv, ci;
+    /* An ON this screen has asked for and not yet seen applied: the output
+     * is treated as live from the moment it is asked; see confirm_needed(). */
+    bool            on_asked;
     bool            confirm_open;
     float           pend_v, pend_i;
     gfx_rect_t      apply_btn, discard_btn;
@@ -400,6 +403,7 @@ static void post_on(void)
      * let an ON land on top of it. */
     if (!s.pending.off) {
         s.pending.on = true;
+        s.on_asked   = true;
     }
 }
 
@@ -407,6 +411,7 @@ static void post_off(void)
 {
     s.pending.off = true;
     s.pending.on  = false;
+    s.on_asked    = false;
 }
 
 bool supply_screen_poll_cmd(supply_cmd_t *out)
@@ -466,6 +471,9 @@ void supply_screen_set_output(bool on)
         }
         ui_plot_set_running(&s.plot, on);
     }
+    if (on) {
+        s.on_asked = false;   /* seen applied */
+    }
     if (s.on != on) {
         s.on = on;
         if (on) {
@@ -519,7 +527,9 @@ void supply_screen_settings_loaded(void)
  */
 static bool confirm_needed(int from)
 {
-    if (!s.on) {
+    /* Live from the moment an ON is asked for: the first sample to show it
+     * can be 50 ms behind, and a step button acts on its press. */
+    if (!s.on && !s.on_asked) {
         return false;
     }
     return settings_get_bool((from == FROM_KEYPAD) ? SET_SUPPLY_CONFIRM_KEYS
@@ -576,6 +586,8 @@ supply_limits_t supply_screen_limits(void)
 void supply_screen_cancel_on(void)
 {
     bool changed = false;
+    /* A stop drops an ON wherever it is, so none is waiting any more. */
+    s.on_asked = false;
     if (s.pending.on) {
         s.pending.on = false;
         changed = true;
@@ -1383,12 +1395,15 @@ static void draw_confirm(gfx_canvas_t *c)
 enum { TAG_LIVE = 0, TAG_HELD, TAG_IDLE };
 static const char *const k_tag[] = { "LIVE OUTPUT", "OUTPUT HELD", "OUTPUT IDLE" };
 
+/* The heading says what the output is doing, on either pane: a held run is
+ * the plot's to show, so TABLE says IDLE where PLOT says HELD. */
 static uint8_t output_tag(void)
 {
-    if (s.tabs.selected != SUPPLY_PANE_PLOT || s.plot.running) {
+    if (s.plot.running) {
         return (uint8_t)TAG_LIVE;
     }
-    return (uint8_t)((s.plot.filled > 0) ? TAG_HELD : TAG_IDLE);
+    return (uint8_t)((s.tabs.selected == SUPPLY_PANE_PLOT && s.plot.filled > 0)
+                         ? TAG_HELD : TAG_IDLE);
 }
 
 static void render(gfx_canvas_t *c, int buffer_index)
@@ -1544,6 +1559,7 @@ static void cancel(void)
         post_off();
     }
     s.pending.on = false;
+    s.on_asked   = false;
     ui_slider_release(&s.v_slider);
     ui_slider_release(&s.i_slider);
     /* A drag whose release went missing changes nothing: the slider goes
