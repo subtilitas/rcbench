@@ -88,6 +88,14 @@ static int g_card_runs;
 static int g_dir_index = -1;
 static log_mem_ctx_t g_ctx;
 
+/* What DELETE has done to the fixture card: which entries are gone, how many
+ * times remove() was asked, the last name it was asked for, and whether it
+ * refuses -- the panel's refuses the run the logger still has open. */
+static bool g_removed[16];
+static int g_remove_calls;
+static char g_removed_name[LOG_VIEWER_NAME_MAX];
+static bool g_remove_refuses;
+
 static int fake_list(log_viewer_file_t *out, int max_entries, void *ctx)
 {
     (void)ctx;
@@ -112,6 +120,9 @@ static int fake_list(log_viewer_file_t *out, int max_entries, void *ctx)
     int n = 0;
     for (size_t i = 0; i < sizeof(k_card) / sizeof(k_card[0]) && n < max_entries;
          ++i) {
+        if (g_removed[i]) {
+            continue;
+        }
         snprintf(out[n].name, sizeof(out[n].name), "%s", k_card[i].name);
         out[n].size = sizes[i % (sizeof(sizes) / sizeof(sizes[0]))];
         out[n].is_dir = ((int)i == g_dir_index);
@@ -124,7 +135,7 @@ static bool fake_open(const char *name, log_source_t *src, void *ctx)
 {
     (void)ctx;
     for (size_t i = 0; i < sizeof(k_card) / sizeof(k_card[0]); ++i) {
-        if (strcmp(name, k_card[i].name) == 0) {
+        if (strcmp(name, k_card[i].name) == 0 && !g_removed[i]) {
             if (k_card[i].text == NULL) {
                 return false; /* listed, but gone by the time it was opened */
             }
@@ -142,11 +153,29 @@ static const char *fake_volume(void *ctx)
     return g_no_card ? "" : "BENCH01";
 }
 
+static bool fake_remove(const char *name, void *ctx)
+{
+    (void)ctx;
+    ++g_remove_calls;
+    snprintf(g_removed_name, sizeof(g_removed_name), "%s", name);
+    if (g_remove_refuses) {
+        return false;
+    }
+    for (size_t i = 0; i < sizeof(k_card) / sizeof(k_card[0]); ++i) {
+        if (strcmp(name, k_card[i].name) == 0 && !g_removed[i]) {
+            g_removed[i] = true;
+            return true;
+        }
+    }
+    return false;
+}
+
 static const log_viewer_io_t k_io = {
     .list = fake_list,
     .open = fake_open,
     .close = NULL,
     .volume = fake_volume,
+    .remove = fake_remove,
     .ctx = NULL,
 };
 
@@ -171,6 +200,10 @@ static void reset_screen(void)
     g_no_card = false;
     g_empty_card = false;
     g_card_runs = 0;
+    memset(g_removed, 0, sizeof(g_removed));
+    g_remove_calls = 0;
+    g_removed_name[0] = '\0';
+    g_remove_refuses = false;
     screen()->reset();
     log_viewer_set_io(&k_io);
     screen()->enter();
@@ -187,13 +220,18 @@ static void fresh(void)
     reset_screen();
 }
 
-static void send(int type, int x, int y)
+static void send_id(int type, int id, int x, int y)
 {
     touch_event_t e = {
         .type = (touch_event_type_t)type,
-        .point = { .id = 1, .x = (int16_t)x, .y = (int16_t)y },
+        .point = { .id = (uint8_t)id, .x = (int16_t)x, .y = (int16_t)y },
     };
     screen()->event(&e);
+}
+
+static void send(int type, int x, int y)
+{
+    send_id(type, 1, x, y);
 }
 
 static void tap(int x, int y)
@@ -221,6 +259,13 @@ static void draw(void)
 #define BACK_X      500
 #define PLOT_X      690
 #define FOOT_CY     411
+#define OPEN_X      709
+#define DELETE_X    551
+#define RESCAN_X    91
+/* The DELETE question's two buttons. */
+#define DQ_CY       282
+#define DQ_CANCEL_X 264
+#define DQ_DELETE_X 536
 
 static int pixels_of(gfx_color_t color)
 {
@@ -1140,6 +1185,237 @@ TEST_CASE(a_count_above_the_list_does_not_reach_past_it)
     CHECK_STR_EQ(log_viewer_open_name(), want);
 }
 
+/* ------------------------------------------------------------- deleting -- */
+
+/* Select a row and ask to delete it: the question, not the deletion. */
+static void ask_to_delete(int row)
+{
+    tap(400, BR_ROW_Y(row));
+    tap(DELETE_X, FOOT_CY);
+}
+
+TEST_CASE(delete_asks_first_and_deletes_only_the_file_it_named)
+{
+    fresh();
+    ask_to_delete(0);
+    draw();
+    CHECK_EQ(g_remove_calls, 0);
+
+    /* While the question is open, nothing behind it answers: not OPEN, not
+     * RESCAN, not a row. */
+    tap(OPEN_X, FOOT_CY);
+    tap(RESCAN_X, FOOT_CY);
+    tap(400, BR_ROW_Y(1));
+    draw();
+    CHECK_EQ(g_remove_calls, 0);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    CHECK(log_viewer_analysis() == NULL);
+
+    tap(DQ_DELETE_X, DQ_CY);
+    draw();
+    CHECK_EQ(g_remove_calls, 1);
+    CHECK_STR_EQ(g_removed_name, "BENCH_01.CSV");
+
+    /* The list is read again, so the first row is now the second file. */
+    ask_to_delete(0);
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK_EQ(g_remove_calls, 2);
+    CHECK_STR_EQ(g_removed_name, "PRUEFUNG.CSV");
+}
+
+TEST_CASE(cancel_deletes_nothing_and_keeps_the_selection)
+{
+    fresh();
+    ask_to_delete(2);
+    tap(DQ_CANCEL_X, DQ_CY);
+    draw();
+    CHECK_EQ(g_remove_calls, 0);
+
+    /* Back on the list with the row still chosen: DELETE asks about it again
+     * without a second tap on the row. */
+    tap(DELETE_X, FOOT_CY);
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK_EQ(g_remove_calls, 1);
+    CHECK_STR_EQ(g_removed_name, "README.CSV");
+}
+
+TEST_CASE(a_finger_that_slides_off_delete_deletes_nothing)
+{
+    fresh();
+    ask_to_delete(0);
+    send(TOUCH_EVENT_DOWN, DQ_DELETE_X, DQ_CY);
+    send(TOUCH_EVENT_MOVE, DQ_DELETE_X, DQ_CY + 120);
+    send(TOUCH_EVENT_UP, DQ_DELETE_X, DQ_CY + 120);
+    draw();
+    CHECK_EQ(g_remove_calls, 0);
+
+    /* And from CANCEL onto DELETE is neither: the question stays open. */
+    send(TOUCH_EVENT_DOWN, DQ_CANCEL_X, DQ_CY);
+    send(TOUCH_EVENT_UP, DQ_DELETE_X, DQ_CY);
+    CHECK_EQ(g_remove_calls, 0);
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK_EQ(g_remove_calls, 1);
+}
+
+TEST_CASE(only_the_finger_that_pressed_delete_can_release_it)
+{
+    /* The panel reports up to five contacts.  A second finger that lands
+     * beside the button, slides onto it and lifts did not press DELETE. */
+    fresh();
+    ask_to_delete(0);
+    send_id(TOUCH_EVENT_DOWN, 2, 400, 160);              /* B, off the buttons */
+    send_id(TOUCH_EVENT_DOWN, 1, DQ_DELETE_X, DQ_CY);    /* A, on DELETE       */
+    send_id(TOUCH_EVENT_MOVE, 2, DQ_DELETE_X, DQ_CY);
+    send_id(TOUCH_EVENT_UP, 2, DQ_DELETE_X, DQ_CY);
+    draw();
+    CHECK_EQ(g_remove_calls, 0);
+
+    /* Nor does a finger landing on CANCEL while A is down take the press. */
+    send_id(TOUCH_EVENT_DOWN, 3, DQ_CANCEL_X, DQ_CY);
+    send_id(TOUCH_EVENT_UP, 3, DQ_CANCEL_X, DQ_CY);
+    CHECK_EQ(g_remove_calls, 0);
+
+    send_id(TOUCH_EVENT_UP, 1, DQ_DELETE_X, DQ_CY);      /* A lifts on DELETE  */
+    CHECK_EQ(g_remove_calls, 1);
+    CHECK_STR_EQ(g_removed_name, "BENCH_01.CSV");
+}
+
+TEST_CASE(delete_needs_a_selected_file)
+{
+    fresh();
+    tap(DELETE_X, FOOT_CY);            /* nothing selected */
+    tap(DQ_DELETE_X, DQ_CY);           /* lands on the list, not a question */
+    draw();
+    CHECK_EQ(g_remove_calls, 0);
+
+    g_dir_index = 0;
+    log_viewer_refresh();
+    ask_to_delete(0);                  /* a folder */
+    tap(DQ_DELETE_X, DQ_CY);
+    draw();
+    CHECK_EQ(g_remove_calls, 0);
+}
+
+TEST_CASE(without_remove_there_is_no_delete)
+{
+    fresh();
+    log_viewer_io_t io = k_io;
+    io.remove = NULL;
+    log_viewer_set_io(&io);
+    log_viewer_refresh();
+    ask_to_delete(0);
+    tap(DQ_DELETE_X, DQ_CY);
+    draw();
+    CHECK_EQ(g_remove_calls, 0);
+}
+
+TEST_CASE(deleting_the_open_file_drops_what_was_read_from_it)
+{
+    fresh();
+    open_file(0);
+    tap(PLOT_X, IM_BTN_CY);
+    CHECK(log_viewer_data() != NULL);
+    tap(80, FOOT_CY);                  /* FIELDS */
+    tap(BACK_X, IM_BTN_CY);            /* the list, row 0 still chosen */
+
+    tap(DELETE_X, FOOT_CY);
+    tap(DQ_DELETE_X, DQ_CY);
+    draw();
+    CHECK_STR_EQ(g_removed_name, "BENCH_01.CSV");
+    CHECK(log_viewer_data() == NULL);
+    CHECK(log_viewer_analysis() == NULL);
+    CHECK_STR_EQ(log_viewer_open_name(), "");
+}
+
+TEST_CASE(deleting_another_file_keeps_the_open_one)
+{
+    fresh();
+    open_file(0);
+    tap(BACK_X, IM_BTN_CY);
+    ask_to_delete(1);
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK_STR_EQ(g_removed_name, "PRUEFUNG.CSV");
+    CHECK(log_viewer_analysis() != NULL);
+    CHECK_STR_EQ(log_viewer_open_name(), "BENCH_01.CSV");
+}
+
+TEST_CASE(a_refused_delete_keeps_the_file_listed)
+{
+    fresh();
+    g_remove_refuses = true;
+    ask_to_delete(0);
+    tap(DQ_DELETE_X, DQ_CY);
+    draw();
+    CHECK_EQ(g_remove_calls, 1);
+
+    /* Still listed and still chosen: DELETE asks about the same file. */
+    g_remove_refuses = false;
+    tap(DELETE_X, FOOT_CY);
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK_EQ(g_remove_calls, 2);
+    CHECK_STR_EQ(g_removed_name, "BENCH_01.CSV");
+}
+
+TEST_CASE(a_rescan_or_leaving_the_screen_closes_the_question)
+{
+    /* A re-read can be of another card, where the same name is another
+     * file. */
+    fresh();
+    ask_to_delete(0);
+    log_viewer_refresh();
+    tap(DQ_DELETE_X, DQ_CY);
+    draw();
+    CHECK_EQ(g_remove_calls, 0);
+
+    ask_to_delete(0);
+    screen()->enter();
+    tap(DQ_DELETE_X, DQ_CY);
+    draw();
+    CHECK_EQ(g_remove_calls, 0);
+}
+
+TEST_CASE(the_question_leaves_no_stale_pixels)
+{
+    /* The question replaces the list; drawn over a frame of the list, it must
+     * leave nothing of it behind, and the list drawn back must too. */
+    if (s_fb_b == NULL) {
+        s_fb_b = calloc((size_t)W * H, sizeof(gfx_color_t));
+    }
+    gfx_canvas_t cb;
+
+    fresh();
+    tap(400, BR_ROW_Y(3));
+    screen()->render(&s_c, 0);
+    tap(DELETE_X, FOOT_CY);
+    screen()->render(&s_c, 0);
+
+    memset(s_fb_b, 0, (size_t)W * H * sizeof(gfx_color_t));
+    gfx_canvas_init(&cb, s_fb_b, W, H, W);
+    reset_screen();
+    tap(400, BR_ROW_Y(3));
+    tap(DELETE_X, FOOT_CY);
+    screen()->render(&cb, 0);
+
+    int count = 0;
+    int at = first_diff(s_fb, s_fb_b, &count);
+    if (at >= 0) {
+        T_FAIL("question over list: %d stale pixel(s), first at (%d,%d)",
+               count, at % W, at / W);
+    }
+
+    tap(DQ_CANCEL_X, DQ_CY);
+    screen()->render(&s_c, 0);
+    memset(s_fb_b, 0, (size_t)W * H * sizeof(gfx_color_t));
+    reset_screen();
+    tap(400, BR_ROW_Y(3));
+    screen()->render(&cb, 0);
+    at = first_diff(s_fb, s_fb_b, &count);
+    if (at >= 0) {
+        T_FAIL("list over question: %d stale pixel(s), first at (%d,%d)",
+               count, at % W, at / W);
+    }
+}
+
 int main(void)
 {
     RUN(every_view_draws_something);
@@ -1171,5 +1447,16 @@ int main(void)
     RUN(a_full_list_keeps_runs_over_what_it_cannot_date);
     RUN(a_list_that_was_cut_says_so);
     RUN(a_count_above_the_list_does_not_reach_past_it);
+    RUN(delete_asks_first_and_deletes_only_the_file_it_named);
+    RUN(cancel_deletes_nothing_and_keeps_the_selection);
+    RUN(a_finger_that_slides_off_delete_deletes_nothing);
+    RUN(only_the_finger_that_pressed_delete_can_release_it);
+    RUN(delete_needs_a_selected_file);
+    RUN(without_remove_there_is_no_delete);
+    RUN(deleting_the_open_file_drops_what_was_read_from_it);
+    RUN(deleting_another_file_keeps_the_open_one);
+    RUN(a_refused_delete_keeps_the_file_listed);
+    RUN(a_rescan_or_leaving_the_screen_closes_the_question);
+    RUN(the_question_leaves_no_stale_pixels);
     return test_summary("logview");
 }

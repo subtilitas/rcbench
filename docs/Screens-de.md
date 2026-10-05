@@ -294,7 +294,21 @@ wurde. Was neu heißt, steht in der Nummer im Namen: die Panel-Platine hat
 keine Uhr, die einen Stromausfall übersteht, deshalb trägt jede Datei auf der
 Karte das Datum 1980-01-01. Ein Lauf geht einer Datei vor, die der Prüfstand
 nicht geschrieben hat, also listet eine Karte mit 48 oder mehr Läufen keine
-andere Datei mehr. Alte Läufe am Rechner löschen, um eine zurückzuholen.
+andere Datei mehr. Alte Läufe löschen, um eine zurückzuholen.
+
+DELETE löscht die ausgewählte Datei von der Karte. Vorher kommt eine Rückfrage:
+ein zweites Feld nennt die Datei und ihre Größe, und erst dessen eigenes
+DELETE, auf dem Knopf gedrückt und losgelassen, löscht sie. CANCEL oder das
+Verlassen des Bildschirms schließt die Rückfrage, ohne zu löschen. Der Lauf,
+den der Logger offen hat, wird abgewiesen. Eine Datei, die in der
+Importansicht oder im Plot offen war, verschwindet beim Löschen aus beiden.
+Der Logger nummeriert jeden Lauf über dem höchsten Lauf, den er auf der Karte
+gefunden hat. Er liest die Karte beim ersten Lauf nach dem Start und nach einem
+Lauf, der sich nicht öffnen ließ, und zählt sonst von dort weiter. Eine
+gelöschte Nummer wird nur wieder vergeben, wenn sie bei diesem Lesen über allen
+verbliebenen Läufen lag.
+
+![Die DELETE-Rückfrage](img/logs-delete.png)
 
 Ein Lauf wird alle 20 Zeilen oder 1000 ms Laufzeit auf die Karte festgeschrieben,
 je nachdem, was zuerst eintritt. Ein Stromausfall mitten im Lauf kostet die
