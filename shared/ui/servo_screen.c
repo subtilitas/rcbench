@@ -590,6 +590,16 @@ static bool same_sweep(const sweep_cfg_t *a, const sweep_cfg_t *b)
 
 bool servo_screen_sweeping(void) { return s.sweeping; }
 
+void servo_screen_sweep_started(uint32_t age_ms)
+{
+    /* The far end's curve began age_ms ago: this one is drawn from then,
+     * rather than from the tap that asked for it a queue and a few
+     * transactions earlier. */
+    if (s.sweeping) {
+        s.sw.start_ms = s.clock_ms - age_ms;
+    }
+}
+
 void servo_screen_set_sweep(bool able)
 {
     if (able == s.sweep_able) {
@@ -626,7 +636,15 @@ static void reissue(void)
         return;
     }
     if (s.sweeping) {
-        return;   /* tick() restarts a sweep whose curve this changed */
+        /*
+         * Said again under the profile now in force -- its range and its
+         * frame rate, which a changed type or rate moves even where the
+         * curve in command units stays the same.  A curve that did change
+         * is started over by tick(); one that did not carries on, here and
+         * at the far end.
+         */
+        post(SERVO_CMD_SWEEP, 0);
+        return;
     }
     if (s.driving) {
         post(SERVO_CMD_POSITION, deg_to_us(s.commanded_deg));
@@ -1487,9 +1505,11 @@ static void event(const touch_event_t *evt)
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.sweep_btn, px, py)) {
             if (s.sweeping) {
-                /* HOLD: the sweep stops where the horn is, and holds it. */
+                /* HOLD: the sweep stops where the horn is, and holds it --
+                 * where the output has got to, which SPEED can leave well
+                 * behind the curve. */
                 stop_sweep();
-                command(s.commanded_deg);
+                command(s.shown_deg);
             } else {
                 start_sweep();
             }

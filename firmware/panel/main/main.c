@@ -3507,6 +3507,12 @@ static void servo_cfg(const servo_cmd_t *sv, uint16_t *cfg)
 static bool        s_servo_sweep_page;
 static bool        s_servo_sweeping;
 static atomic_bool s_servo_sweep_able;   /* for the screen's SWEEP */
+/* The curve the far end last took, and when it started one: a curve that
+ * differs from the one running starts over there, and the screen draws the
+ * horn from that moment rather than from its tap. */
+static uint16_t    s_servo_curve[4];
+static atomic_uint s_sweep_start_ms;
+static atomic_bool s_sweep_start_new;
 
 static bool write_servo(const servo_cmd_t sv)
 {
@@ -3673,6 +3679,12 @@ static bool write_servo(const servo_cmd_t sv)
                             &reply)
                 || reply.op != LINK_OP_ACK) {
                 return false;
+            }
+            if (!s_servo_sweeping
+                || memcmp(curve, s_servo_curve, sizeof(curve)) != 0) {
+                memcpy(s_servo_curve, curve, sizeof(curve));
+                atomic_store(&s_sweep_start_ms, now_ms());
+                atomic_store(&s_sweep_start_new, true);
             }
             s_servo_sweeping = true;
             /* Every surface is moving, so a release owes each a centre. */
@@ -5456,6 +5468,10 @@ void app_main(void)
             servo_screen_rate((servo_rate_state_t)(r >> 16),
                               (uint16_t)(r & 0xFFFFu));
             servo_screen_set_sweep(atomic_load(&s_servo_sweep_able));
+            if (atomic_exchange(&s_sweep_start_new, false)) {
+                servo_screen_sweep_started(
+                    now_ms() - atomic_load(&s_sweep_start_ms));
+            }
         }
 
         /*

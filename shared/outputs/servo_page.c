@@ -126,6 +126,21 @@ void servo_page_read(servo_page_t *p, uint8_t off, uint8_t n, uint16_t *out)
     }
 }
 
+/*
+ * Every surface held where its output has got to.  The last command a sweep
+ * left would otherwise be slewed towards for as long again as the channel's
+ * own timeout, past the moment the sweep stopped.  The channel's clock is
+ * left alone, so it rests when it would have.
+ */
+static void freeze_surfaces(outputs_t *o)
+{
+    for (uint8_t ch = 0; ch < (uint8_t)LINK_OUT_CHANNELS; ++ch) {
+        if (o->channel[ch].role == OUT_ROLE_SURFACE) {
+            o->channel[ch].command = outputs_actual(o, ch);
+        }
+    }
+}
+
 bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
 {
     if (p == NULL || o == NULL || !p->sweep.running) {
@@ -142,6 +157,7 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
     if (!outputs_armed(o)
         || (uint32_t)(now_ms - p->heard_ms) > OUT_DEFAULT_TIMEOUT_MS) {
         sweep_stop(&p->sweep);
+        freeze_surfaces(o);
         p->regs[LINK_SV_SWEEP] = 0u;
         return false;
     }

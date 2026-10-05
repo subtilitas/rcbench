@@ -213,12 +213,16 @@ TEST-Seite, um PULSE CENTRE herum. RANGE ist ein Anteil des Wegs, den das
 Servo machen darf: von TRAVEL und vom näheren von PULSE MIN und MAX, damit die
 Kurve kein Ende erreicht, das sie nicht erreichen darf. SPEED auf der rechten
 Karte begrenzt sie wie ein Ziehen, Trim gilt nicht. Das Horn folgt derselben
-Kurve, im Panel gerechnet. Während sie läuft, heißt der Knopf HOLD; ein Tippen
-hält die Kurve dort an, wo das Horn steht, und hält es dort. Ein Finger auf der
+Kurve, im Panel gerechnet und ab dem Moment, in dem der Koprozessor seine
+gestartet hat. Während sie läuft, heißt der Knopf HOLD; ein Tippen hält die
+Kurve dort an, wo der Ausgang gerade steht -- SPEED kann ihn hinter der Kurve
+zurücklassen --, und hält ihn dort. Ein Finger auf der
 Skala, CENTRE, RELEASE, ein Disarm und das Verlassen des Screens beenden sie
-ebenfalls. Eine geänderte Einstellung startet sie mit der neuen Kurve neu.
+ebenfalls. Eine geänderte Einstellung startet sie mit der neuen Kurve neu; ein
+geändertes Profil oder eine geänderte Frame Rate geht sofort mit.
 SWEEP gibt es bei scharfem Prüfstand und einem Koprozessor mit Protokoll 4.2;
-der Koprozessor hält eine Kurve an, die das Panel 500 ms nicht wiederholt hat.
+der Koprozessor hält eine Kurve an, die das Panel 500 ms nicht wiederholt hat,
+und lässt jede Surface dort stehen, wo ihr Ausgang gerade ist.
 
 ### Einstellungen
 

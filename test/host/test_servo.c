@@ -1539,6 +1539,56 @@ TEST_CASE(a_changed_setting_starts_the_sweep_over)
     CHECK_EQ(c.sweep_span, 125u);
 }
 
+/* A profile changed while it sweeps is said again with the sweep: NARROW
+ * 760's range and rate, though its curve in command units is the same. */
+TEST_CASE(a_profile_changed_while_it_sweeps_goes_with_the_sweep)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);
+    frames(0.2f);
+    (void)last_cmd();
+    choose_type(1);                            /* NARROW 760 */
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
+    CHECK_EQ(c.min_us, 660u);
+    CHECK_EQ(c.max_us, 860u);
+    CHECK_EQ(c.sweep_span, 400u);
+    CHECK(servo_screen_sweeping());
+}
+
+/* HOLD keeps the horn where the output has got to, which a slow SPEED
+ * leaves well behind the curve. */
+TEST_CASE(hold_keeps_the_output_where_it_has_got_to)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(ARM_X + 1, SPEED_Y);                   /* SPEED 10 %: 36 deg/s */
+    tap(SWEEP_X, BTN_Y);
+    frames(0.3f);                              /* the curve is near 58 deg */
+    tap(SWEEP_X, BTN_Y);                       /* HOLD */
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_POSITION);
+    CHECK(c.value_us > 1500u && c.value_us < 1600u);   /* about 11 deg */
+}
+
+/* The horn is drawn along the far end's curve from when it started there. */
+TEST_CASE(the_horn_follows_the_curve_from_where_the_far_end_started_it)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);
+    frames(0.5f);                              /* the peak, as drawn */
+    CHECK(servo_screen_commanded() > 1880u);
+    servo_screen_sweep_started(0u);            /* it began just now */
+    scr->tick(0.001f);
+    const uint16_t at = servo_screen_commanded();
+    CHECK(at > 1490u && at < 1520u);
+}
+
 /*
  * Leaving disarms, the same rule as the motor bench's: a screen that does
  * not show the horn must not be holding it somewhere, and it must not leave
@@ -1643,6 +1693,9 @@ int main(void)
     RUN(the_horn_follows_the_sweep_and_hold_keeps_it_where_it_is);
     RUN(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave);
     RUN(a_changed_setting_starts_the_sweep_over);
+    RUN(a_profile_changed_while_it_sweeps_goes_with_the_sweep);
+    RUN(hold_keeps_the_output_where_it_has_got_to);
+    RUN(the_horn_follows_the_curve_from_where_the_far_end_started_it);
     RUN(drags_and_samples_leave_both_buffers_as_a_full_redraw_would);
     RUN(a_cancelled_gesture_does_not_arm);
     return test_summary("servo");

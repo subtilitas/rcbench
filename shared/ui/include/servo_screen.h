@@ -139,6 +139,10 @@ void servo_screen_set_sweep(bool able);
 /** Whether a sweep is running, for the application and tests. */
 bool servo_screen_sweeping(void);
 
+/** The coprocessor started the sweep @p age_ms ago: the horn is drawn along
+ *  its curve from then. */
+void servo_screen_sweep_started(uint32_t age_ms);
+
 /**
  * Set the commanded angle without a touch event.
  *

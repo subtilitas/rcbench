@@ -166,6 +166,28 @@ TEST_CASE(a_finished_sweep_is_not_started_again_by_a_repeat)
     CHECK_EQ(reg(LINK_SV_SWEEP), SWEEP_SINE);
 }
 
+/* A sweep that stops for silence leaves each surface where its output has
+ * got to rather than slewing on towards the curve's last command. */
+TEST_CASE(a_sweep_stopped_by_silence_leaves_the_surfaces_where_they_are)
+{
+    fresh(true);
+    CHECK(outputs_set_slew(&o, 0, 200u));      /* 200 units a second */
+    CHECK_EQ(sweep(SWEEP_SQUARE, 1000u, 400u, 0u, T0), 0u);
+    uint32_t t = T0;
+    for (; t <= T0 + OUT_DEFAULT_TIMEOUT_MS + 1u; ++t) {
+        (void)servo_page_step(&pg, &o, t);
+        outputs_step(&o, t);
+    }
+    CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
+    const uint16_t held = outputs_actual(&o, 0);
+    CHECK(held < 900u);                        /* still on its way */
+    CHECK_EQ(o.channel[0].command, held);
+    for (; t <= T0 + OUT_DEFAULT_TIMEOUT_MS + 200u; ++t) {
+        outputs_step(&o, t);
+    }
+    CHECK_EQ(outputs_actual(&o, 0), held);
+}
+
 int main(void)
 {
     RUN(a_sweep_needs_the_bench_armed);
@@ -174,5 +196,6 @@ int main(void)
     RUN(a_repeated_sweep_keeps_its_curve_and_a_changed_one_starts_over);
     RUN(a_sweep_stops_when_nobody_writes_it_and_on_a_disarm);
     RUN(a_finished_sweep_is_not_started_again_by_a_repeat);
+    RUN(a_sweep_stopped_by_silence_leaves_the_surfaces_where_they_are);
     return test_summary("servo_page");
 }
