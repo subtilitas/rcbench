@@ -325,22 +325,39 @@ The implementation is written from the published description of the protocol.
 Everything below is exercised by the host suite against frames the same code
 builds, which proves the arithmetic and not the wire.
 
-One thing is not on this list. **Plain DShot has run a motor from the panel on
-the bring-up bench**, which puts its bit timing inside that one ESC's
-tolerance -- against one ESC, with no instrument on the pin, so it is evidence
-and not a measurement. Nothing here has been on an oscilloscope, and every
-bidirectional item below is unconfirmed in every sense:
+Two things are not on this list, each against one ESC with no instrument on
+the pin, so each is evidence and not a measurement.
+
+- **Plain DShot has run a motor from the panel on the bring-up bench**, which
+  puts its bit timing inside that one ESC's tolerance.
+- **Bidirectional DShot600 has answered on a tester's bench** (#172): a
+  Skystars 35A running AM32 2.21, target `JUPITER_35A_F421` (the AM32
+  configurator shows it cut to `JUPITER_35A_F42`), on a 4S pack, bound to
+  GP0. Release 0.8.2 decoded its speed (2593 rpm). Release 0.9.1, with the
+  repeated ask above, turned its extended telemetry on: at 0 % throttle
+  MOTOR & ESC showed 14.75 V, 72.0 A and an ESC temperature of 41 °C. The
+  tester reported the voltage as correct. The current and the temperature
+  were decoded and checked against nothing: 72.0 A at idle, and 81.00 A read
+  by DshotDisplay from the same ESC on another day, look like an input with
+  no current sensor behind it rather than a measurement.
+
+Nothing here has been on an oscilloscope, and every bidirectional item below
+is unconfirmed beyond that one ESC:
 
 - the reply rate of five quarters of the DShot rate;
 - the leading-bit convention of the group code;
 - the turnaround delay, and whether 30 µs is what an ESC actually waits;
-- the extended-telemetry frame types and their units, and whether an ESC
-  accepts command 13 at all;
+- the units of the extended-telemetry current (1 A per count) and
+  temperature (1 °C per count) frames, and the stress, status and debug
+  frames; only the voltage (0.25 V per count) has been read against a value
+  the tester knew;
+- whether ESCs other than AM32 accept command 13 under the repeated ask:
+  Bluejay and BLHeli_32 are untested;
 - whether the specification's "wait at least 35 ms" note belongs to command
   13 or to command 12 (save settings). The table admits both readings, and
   the bench waits neither way: the frame after an ask's tenth repeat is the
-  throttle, or another zero-throttle frame, at the next 1 ms tick. Settling it needs the specification text rather than a
-  board;
+  throttle, or another zero-throttle frame, at the next 1 ms tick. Settling
+  it needs the specification text rather than a board;
 - every bit timing, against a real ESC's tolerance rather than against the
   specification.
 
