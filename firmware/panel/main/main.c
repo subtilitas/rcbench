@@ -3680,37 +3680,41 @@ static void servo_rate_show(servo_rate_state_t st, uint16_t hz)
     atomic_store(&s_servo_rate_shown, ((unsigned)st << 16) | hz);
 }
 
-/* True when the far end runs the surfaces at @p hz after this. */
-static bool write_servo_rate(uint16_t hz)
+/* What became of a rate written: the pins run at it, the binding will not
+ * have it -- final until something changes -- or nothing answered. */
+typedef enum { RATE_LANDED, RATE_REFUSED, RATE_NO_ANSWER } rate_result_t;
+
+static rate_result_t write_servo_rate(uint16_t hz)
 {
     if (hz == 0u) {
-        return true;   /* a command that names no rate */
+        return RATE_LANDED;   /* a command that names no rate */
     }
     if (!s_servo_rate_page) {
         /* Every PWM output at its binding's rate, which no profile is
          * faster than. */
         servo_rate_show(SERVO_RATE_UNSUPPORTED, hz);
-        return true;
+        return RATE_LANDED;
     }
     if (hz == s_servo_hz_refused) {
-        return false;
+        return RATE_REFUSED;
     }
     link_msg_t reply;
     if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_FRAME_HZ, 1u, &hz,
                     &reply)) {
-        return false;
+        return RATE_NO_ANSWER;
     }
     if (reply.op == LINK_OP_ACK) {
         s_servo_hz_sent    = hz;
         s_servo_hz_refused = 0u;
         servo_rate_show(SERVO_RATE_IN_FORCE, hz);
-        return true;
+        return RATE_LANDED;
     }
     if (reply.op == LINK_OP_NACK) {
         s_servo_hz_refused = hz;
         servo_rate_show(SERVO_RATE_REFUSED, hz);
+        return RATE_REFUSED;
     }
-    return false;
+    return RATE_NO_ANSWER;
 }
 
 /* The rate the surfaces run at as far as this end knows, or
@@ -3731,6 +3735,11 @@ static uint16_t servo_rate_now(void)
  * one of them landed; any other rate leads them, and a position waits for
  * it unless the pins are known to run no faster than it.  A rate not known
  * counts as fast.  A position held back is asked again with the next hold.
+ *
+ * Done only when the rate is settled too: a rate nobody answered leaves a
+ * release owed, so it is written again.  A refused one is settled -- the
+ * screen says REFUSED and the pins keep the slower rate -- because a release
+ * owed for ever would stop the bench arming.
  */
 static bool write_servo_and_rate(const servo_cmd_t sv)
 {
@@ -3739,10 +3748,9 @@ static bool write_servo_and_rate(const servo_cmd_t sv)
         if (!write_servo(sv)) {
             return false;
         }
-        (void)write_servo_rate(sv.frame_hz);
-        return true;
+        return write_servo_rate(sv.frame_hz) != RATE_NO_ANSWER;
     }
-    if (!write_servo_rate(sv.frame_hz)
+    if (write_servo_rate(sv.frame_hz) != RATE_LANDED
         && (now_hz == SERVO_HZ_UNKNOWN || now_hz > sv.frame_hz)) {
         return false;
     }

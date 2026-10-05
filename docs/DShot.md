@@ -90,7 +90,10 @@ move an output that nobody touched.
 The SERVO page sets one frame rate for every PWM output whose first channel is
 a surface, over the rate the binding gives the slot. It is refused with
 BAD_VALUE when it would move a surface away from the rate of the output beside
-it on its slice, and it is not kept: a restart runs each slot at its own rate.
+it on its slice, and while it holds a rate a CHAN_CFG or OUTPUTS write that
+would do the same -- a surface turned throttle, a throttle bound beside a
+surface -- is refused too. It is not kept: a restart runs each slot at its own
+rate.
 
 GPIO numbers fold onto the 12 slices. GP0 to GP31 take slice (pin / 2) modulo
 8; GP32 to GP47 take slice 8 + (pin / 2) modulo 4; the channel is the low bit

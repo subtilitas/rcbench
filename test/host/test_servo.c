@@ -707,7 +707,8 @@ TEST_CASE(a_resting_armed_servo_takes_the_new_profile)
 /*
  * A profile changed between the ARM hold and the arm landing is the one the
  * pins get: an arm not yet collected carries it, and one already collected
- * is followed by the rest restated under it.
+ * is followed at once by the rest restated under it, which the panel writes
+ * before it arms.
  */
 TEST_CASE(a_profile_changed_while_an_arm_is_pending_is_the_one_armed)
 {
@@ -731,12 +732,12 @@ TEST_CASE(a_profile_changed_while_an_arm_is_pending_is_the_one_armed)
     CHECK_EQ(c.kind, SERVO_CMD_ARM);
     CHECK_EQ(c.min_us, 1000);
     choose_type(4);                            /* HELI TAIL 760, held */
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
-    servo_screen_set_armed(true);
     c = last_cmd();
     CHECK_EQ(c.kind, SERVO_CMD_RELEASE);
     CHECK_EQ(c.min_us, 410);
     CHECK_EQ(c.frame_hz, 560);
+    servo_screen_set_armed(true);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);   /* already answered */
 }
 
 /* ------------------------------------------------------- the servo's range */

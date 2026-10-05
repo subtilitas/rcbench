@@ -318,6 +318,9 @@ static struct {
      * travel -- and how many there had been when ARM was asked for. */
     uint32_t profile_rev;
     uint32_t arm_profile_rev;
+    /* An ARM posted whose arm has not landed yet: collected by the panel,
+     * which arms only once the release it owes has been written. */
+    bool     arm_in_flight;
 
     uint32_t ctrl_rev;
     uint32_t drawn_ctrl[2];
@@ -473,6 +476,9 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
     s.pending.value_us = us;
     if (kind == SERVO_CMD_ARM) {
         s.arm_profile_rev = s.profile_rev;
+        s.arm_in_flight   = true;
+    } else if (kind == SERVO_CMD_DISARM) {
+        s.arm_in_flight = false;
     }
     /* The range travels with the pulse: the panel configures the channel
      * from it, and a narrow servo's 760 us centre is below a standard
@@ -512,7 +518,7 @@ static void reissue(void)
     }
     if (s.driving) {
         post(SERVO_CMD_POSITION, deg_to_us(s.commanded_deg));
-    } else if (s.armed) {
+    } else if (s.armed || s.arm_in_flight) {
         /*
          * Resting on an armed bench: the rest restated under the profile now
          * in force, its range and its frame rate, which the panel orders so
@@ -520,8 +526,14 @@ static void reissue(void)
          * servo would rest at a standard servo's centre, past its stop, and
          * a servo would go on running at a heli rate after STANDARD PWM was
          * chosen.
+         *
+         * An arm on its way is answered the same way, at once: the panel
+         * takes commands in order and arms only once the release it owes is
+         * written, so a release that reaches it before the arm lands is the
+         * profile the pins arm under.
          */
         post(SERVO_CMD_RELEASE, 0);
+        s.arm_profile_rev = s.profile_rev;
     }
 }
 
@@ -538,6 +550,7 @@ void servo_screen_set_armed(bool armed)
         return;
     }
     s.armed = armed;
+    s.arm_in_flight = false;
     /*
      * Nothing is being held across this edge, in either direction.  An arm
      * starts from nothing -- the panel drops the position and the slot on the
@@ -550,11 +563,10 @@ void servo_screen_set_armed(bool armed)
     if (armed) {
         ui_hold_reached(&s.arm);
         /*
-         * The profile changed after ARM was asked for, and the panel centred
-         * the surfaces under the one the arm carried: the rest is restated
-         * under the profile in force, its range and rate in the panel's
-         * order, before a heli rate can stay on pins the screen shows as
-         * STANDARD PWM.
+         * The profile changed after ARM was asked for and nothing answered
+         * it yet: the rest is restated under the profile in force, its
+         * range and rate in the panel's order.  reissue() answers a change
+         * while the arm is on its way, so this is the backstop.
          */
         if (s.profile_rev != s.arm_profile_rev) {
             post(SERVO_CMD_RELEASE, 0);
@@ -591,6 +603,7 @@ void servo_screen_cancel_arm(void)
      * forwarded a frame later and clear the latch the stop had just set.
      */
     bool changed = false;
+    s.arm_in_flight = false;   /* the stop ends the arm on its way too */
     if (s.pending.kind == SERVO_CMD_ARM) {
         s.pending.kind = SERVO_CMD_NONE;
         changed = true;
@@ -2309,7 +2322,8 @@ static void cancel(void)
      * frame after the one that posted it, and the frame that observes a loss
      * cancels before that forwarding.  A disarm is kept. */
     if (s.pending.kind == SERVO_CMD_ARM) {
-        s.pending.kind = SERVO_CMD_NONE;
+        s.pending.kind  = SERVO_CMD_NONE;
+        s.arm_in_flight = false;
     }
     ui_slider_release(&s.speed);
     ui_hold_reset(&s.arm);

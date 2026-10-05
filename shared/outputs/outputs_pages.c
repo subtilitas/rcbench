@@ -129,13 +129,6 @@ void outputs_chan_cfg_apply(outputs_t *o, const uint16_t *regs)
 
 /* ---------------------------------------------------------------- SERVO */
 
-void outputs_servo_defaults(uint16_t *regs)
-{
-    if (regs != NULL) {
-        regs[LINK_SV_FRAME_HZ] = 0u;   /* each slot's own rate */
-    }
-}
-
 /* Whether the SERVO page's rate, when not 0, is the one slot @p i runs at. */
 static bool servo_rate_reaches(const outputs_t *o, unsigned i)
 {
@@ -157,19 +150,11 @@ void outputs_slot_rates(const outputs_t *o, uint16_t servo_hz, uint16_t *rate)
     }
 }
 
-uint8_t outputs_servo_write(uint16_t *regs, uint8_t off, uint8_t n,
-                            const uint16_t *in, const outputs_t *o)
+uint8_t outputs_servo_rate_check(const outputs_t *o, uint16_t hz)
 {
-    if (regs == NULL || in == NULL || o == NULL) {
-        return LINK_NACK_BAD_RANGE;
+    if (o == NULL) {
+        return LINK_NACK_BAD_VALUE;
     }
-    if ((unsigned)off + (unsigned)n > (unsigned)LINK_SV_COUNT) {
-        return LINK_NACK_BAD_RANGE;
-    }
-    if (n == 0u) {
-        return 0u;
-    }
-    const uint16_t hz = in[0];
     const out_driver_def_t *pwm = out_driver(OUT_DRIVER_PWM);
     if (hz != 0u && (hz < pwm->rate_min_hz || hz > pwm->rate_max_hz)) {
         return LINK_NACK_BAD_VALUE;
@@ -199,8 +184,41 @@ uint8_t outputs_servo_write(uint16_t *regs, uint8_t off, uint8_t n,
             }
         }
     }
-    regs[LINK_SV_FRAME_HZ] = hz;
     return 0u;
+}
+
+/* The bank a page write would leave, judged on a copy: the bank itself is
+ * what drives, and a refused write must leave it as it was.  Static rather
+ * than on the stack, which on the coprocessor is the link task's. */
+static outputs_t s_trial;
+
+uint8_t outputs_chan_cfg_rate_check(const outputs_t *o,
+                                    const uint16_t *chan_cfg,
+                                    uint16_t servo_hz)
+{
+    if (o == NULL || chan_cfg == NULL) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    if (servo_hz == 0u) {
+        return 0u;
+    }
+    s_trial = *o;
+    outputs_chan_cfg_apply(&s_trial, chan_cfg);
+    return outputs_servo_rate_check(&s_trial, servo_hz);
+}
+
+uint8_t outputs_slots_rate_check(const outputs_t *o, const uint16_t *slots,
+                                 uint16_t servo_hz)
+{
+    if (o == NULL || slots == NULL) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    if (servo_hz == 0u) {
+        return 0u;
+    }
+    s_trial = *o;
+    outputs_slots_apply(&s_trial, slots);
+    return outputs_servo_rate_check(&s_trial, servo_hz);
 }
 
 /* -------------------------------------------------------------- OUTPUTS */

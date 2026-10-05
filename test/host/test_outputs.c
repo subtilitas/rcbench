@@ -1262,27 +1262,20 @@ TEST_CASE(the_servo_rate_reaches_pwm_surfaces_and_nothing_else)
     CHECK_EQ(rate[0], 50u);
 }
 
-/* A rate outside the PWM driver's 40 to 560 Hz, or off the page, is refused
- * and stores nothing; 0 and the ends are taken. */
+/* A rate outside the PWM driver's 40 to 560 Hz is refused; 0 and the ends
+ * are taken. */
 TEST_CASE(a_servo_rate_outside_the_pwm_range_is_refused)
 {
     fresh();
-    uint16_t sv[LINK_SV_COUNT];
-    outputs_servo_defaults(sv);
-    CHECK_EQ(sv[LINK_SV_FRAME_HZ], 0u);
     const uint16_t bad[] = { 39u, 561u, 0xFFFFu };
     for (unsigned i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
-        CHECK_EQ(outputs_servo_write(sv, 0, 1, &bad[i], &o),
-                 LINK_NACK_BAD_VALUE);
-        CHECK_EQ(sv[LINK_SV_FRAME_HZ], 0u);
+        CHECK_EQ(outputs_servo_rate_check(&o, bad[i]), LINK_NACK_BAD_VALUE);
     }
     const uint16_t good[] = { 40u, 560u, 0u };
     for (unsigned i = 0; i < sizeof(good) / sizeof(good[0]); ++i) {
-        CHECK_EQ(outputs_servo_write(sv, 0, 1, &good[i], &o), 0u);
-        CHECK_EQ(sv[LINK_SV_FRAME_HZ], good[i]);
+        CHECK_EQ(outputs_servo_rate_check(&o, good[i]), 0u);
     }
-    CHECK_EQ(outputs_servo_write(sv, 1, 1, good, &o), LINK_NACK_BAD_RANGE);
-    CHECK_EQ(outputs_servo_write(sv, 0, 1, good, NULL), LINK_NACK_BAD_RANGE);
+    CHECK_EQ(outputs_servo_rate_check(NULL, 50u), LINK_NACK_BAD_VALUE);
 }
 
 /*
@@ -1298,22 +1291,61 @@ TEST_CASE(a_servo_rate_that_would_split_a_slice_is_refused)
     CHECK(outputs_set_role(&o, 1, OUT_ROLE_THROTTLE));
     CHECK(put_pwm(0, 0, 0));                   /* GP0: slice 0, A */
     CHECK(put_pwm(1, 1, 1));                   /* GP1: slice 0, B */
-    uint16_t sv[LINK_SV_COUNT];
-    outputs_servo_defaults(sv);
-    const uint16_t fast = 560u, same = 50u, own = 0u;
-    CHECK_EQ(outputs_servo_write(sv, 0, 1, &fast, &o), LINK_NACK_BAD_VALUE);
-    CHECK_EQ(sv[LINK_SV_FRAME_HZ], 0u);
-    CHECK_EQ(outputs_servo_write(sv, 0, 1, &same, &o), 0u);   /* no split */
-    CHECK_EQ(outputs_servo_write(sv, 0, 1, &own, &o), 0u);
+    CHECK_EQ(outputs_servo_rate_check(&o, 560u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(outputs_servo_rate_check(&o, 50u), 0u);   /* no split */
+    CHECK_EQ(outputs_servo_rate_check(&o, 0u), 0u);
 
     CHECK(outputs_set_role(&o, 1, OUT_ROLE_SURFACE));
-    CHECK_EQ(outputs_servo_write(sv, 0, 1, &fast, &o), 0u);
-    CHECK_EQ(sv[LINK_SV_FRAME_HZ], 560u);
+    CHECK_EQ(outputs_servo_rate_check(&o, 560u), 0u);
     uint16_t rate[OUT_MAX_SLOTS];
-    outputs_slot_rates(&o, sv[LINK_SV_FRAME_HZ], rate);
+    outputs_slot_rates(&o, 560u, rate);
     CHECK_EQ(rate[0], 560u);
     CHECK_EQ(rate[1], 560u);
-    CHECK_EQ(outputs_servo_write(sv, 0, 1, &own, &o), 0u);
+}
+
+/*
+ * Under a SERVO rate, a CHAN_CFG that turns one of two surfaces on a slice
+ * into a throttle, or an OUTPUTS page that binds a throttle beside a
+ * surface, would split the slice: both are refused.  Neither matters while
+ * the rate is each slot's own.
+ */
+TEST_CASE(a_page_that_would_split_a_slice_under_the_servo_rate_is_refused)
+{
+    fresh_pages();
+    for (unsigned ch = 0; ch < 2u; ++ch) {
+        uint16_t *r = &chan_cfg[ch * LINK_CC_STRIDE];
+        r[LINK_CC_ROLE] = LINK_CC_ROLE_SURFACE;
+    }
+    chan_cfg[2 * LINK_CC_STRIDE + LINK_CC_ROLE] = LINK_CC_ROLE_THROTTLE;
+    outputs_chan_cfg_apply(&o, chan_cfg);
+    for (unsigned sl = 0; sl < 2u; ++sl) {
+        uint16_t *r = &slots[sl * LINK_OS_STRIDE];
+        r[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
+        r[LINK_OS_PIN]     = (uint16_t)sl;          /* GP0, GP1: slice 0 */
+        r[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(sl, 1);
+        r[LINK_OS_RATE_HZ] = 50u;
+    }
+    outputs_slots_apply(&o, slots);
+    CHECK_EQ(outputs_servo_rate_check(&o, 560u), 0u);
+
+    uint16_t cc[LINK_CC_COUNT];
+    memcpy(cc, chan_cfg, sizeof(cc));
+    cc[1 * LINK_CC_STRIDE + LINK_CC_ROLE] = LINK_CC_ROLE_THROTTLE;
+    CHECK_EQ(outputs_chan_cfg_rate_check(&o, cc, 560u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(outputs_chan_cfg_rate_check(&o, cc, 0u), 0u);
+    CHECK_EQ(outputs_chan_cfg_rate_check(&o, chan_cfg, 560u), 0u);
+    CHECK_EQ(o.channel[1].role, OUT_ROLE_SURFACE);   /* the bank untouched */
+
+    /* Slot 1 becomes a throttle on GP1 (channel 2), beside the surface. */
+    uint16_t os[LINK_OS_COUNT];
+    memcpy(os, slots, sizeof(os));
+    os[1 * LINK_OS_STRIDE + LINK_OS_RANGE] = LINK_OS_RANGE_OF(2, 1);
+    CHECK_EQ(outputs_slots_rate_check(&o, os, 560u), LINK_NACK_BAD_VALUE);
+    os[1 * LINK_OS_STRIDE + LINK_OS_PIN] = 4u;     /* GP4: slice 2 */
+    CHECK_EQ(outputs_slots_rate_check(&o, os, 560u), 0u);
+    CHECK_EQ(o.slot[1].pin, 1u);                   /* the bank untouched */
+    CHECK_EQ(outputs_chan_cfg_rate_check(NULL, cc, 560u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(outputs_slots_rate_check(&o, NULL, 560u), LINK_NACK_BAD_VALUE);
 }
 
 TEST_CASE(a_pin_past_the_bank_reaches_no_slice)
@@ -1386,5 +1418,6 @@ int main(void)
     RUN(the_servo_rate_reaches_pwm_surfaces_and_nothing_else);
     RUN(a_servo_rate_outside_the_pwm_range_is_refused);
     RUN(a_servo_rate_that_would_split_a_slice_is_refused);
+    RUN(a_page_that_would_split_a_slice_under_the_servo_rate_is_refused);
     return test_summary("outputs");
 }

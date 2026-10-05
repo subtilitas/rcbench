@@ -210,10 +210,20 @@ static uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
                               const uint16_t *in)
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
-    const uint8_t nack = outputs_chan_cfg_write(s->chan_cfg, off, n, in);
+    uint16_t next[LINK_CC_COUNT];
+    memcpy(next, s->chan_cfg, sizeof(next));
+    const uint8_t nack = outputs_chan_cfg_write(next, off, n, in);
     if (nack != 0u) {
         return nack;
     }
+    /* Not a role change that would split a PWM slice under the SERVO
+     * page's rate: refused whole, rather than taken with an output left
+     * unbound. */
+    if (outputs_chan_cfg_rate_check(&s_outputs, next,
+                                    s->servo[LINK_SV_FRAME_HZ]) != 0u) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    memcpy(s->chan_cfg, next, sizeof(next));
     outputs_chan_cfg_apply(&s_outputs, s->chan_cfg);
     /* A channel that became a surface, or stopped being one, moves to or
      * from the SERVO page's rate. */
@@ -246,10 +256,17 @@ static uint8_t servo_write(void *ctx, uint8_t off, uint8_t n,
                            const uint16_t *in)
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
-    const uint8_t nack = outputs_servo_write(s->servo, off, n, in, &s_outputs);
+    if ((unsigned)off + (unsigned)n > (unsigned)LINK_SV_COUNT) {
+        return LINK_NACK_BAD_RANGE;
+    }
+    if (n == 0u) {
+        return 0u;
+    }
+    const uint8_t nack = outputs_servo_rate_check(&s_outputs, in[0]);
     if (nack != 0u) {
         return nack;
     }
+    s->servo[LINK_SV_FRAME_HZ] = in[0];
     hw_apply(s);
     return 0u;
 }
@@ -258,10 +275,18 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
                            const uint16_t *in)
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
-    const uint8_t nack = outputs_slots_write(s->slots, off, n, in);
+    uint16_t next[LINK_OS_COUNT];
+    memcpy(next, s->slots, sizeof(next));
+    const uint8_t nack = outputs_slots_write(next, off, n, in);
     if (nack != 0u) {
         return nack;
     }
+    /* Nor a slot bound beside a surface at another rate. */
+    if (outputs_slots_rate_check(&s_outputs, next,
+                                 s->servo[LINK_SV_FRAME_HZ]) != 0u) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    memcpy(s->slots, next, sizeof(next));
     outputs_slots_apply(&s_outputs, s->slots);
     /* The bank has decided what the slots are; this makes the silicon agree
      * with it before the next pass renders anything. */
@@ -897,7 +922,7 @@ int main(void)
     outputs_channels_defaults(s_state.channels);
     outputs_chan_cfg_defaults(s_state.chan_cfg);
     outputs_slots_defaults(s_state.slots);
-    outputs_servo_defaults(s_state.servo);
+    s_state.servo[LINK_SV_FRAME_HZ] = 0u;   /* each slot's own rate */
 
     /*
      * Then what was saved, over the defaults.  This configures the outputs;

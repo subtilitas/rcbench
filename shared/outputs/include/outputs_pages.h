@@ -35,17 +35,14 @@
 uint16_t link_driver_of(out_driver_t d);
 
 /* --- SERVO: the frame rate of every PWM output rendering a surface */
-void    outputs_servo_defaults(uint16_t *regs);
 
 /**
- * Validate and store a SERVO page write against the bank @p o as it is.
- * Refused with LINK_NACK_BAD_VALUE, storing nothing: a rate that is neither
- * 0 nor in the PWM driver's range, or one that would leave a PWM slice asked
- * for two rates -- a surface it moves sharing a slice with an output it
- * does not.
+ * Whether the SERVO page may take the frame rate @p hz against the bank @p o
+ * as it is: 0, or LINK_NACK_BAD_VALUE for a rate that is neither 0 nor in
+ * the PWM driver's range, or one that would leave a PWM slice asked for two
+ * rates -- a surface it moves sharing a slice with an output it does not.
  */
-uint8_t outputs_servo_write(uint16_t *regs, uint8_t off, uint8_t n,
-                            const uint16_t *in, const outputs_t *o);
+uint8_t outputs_servo_rate_check(const outputs_t *o, uint16_t hz);
 
 /**
  * The frame rate each slot of @p o is bound at, into @p rate
@@ -55,6 +52,20 @@ uint8_t outputs_servo_write(uint16_t *regs, uint8_t off, uint8_t n,
  */
 void    outputs_slot_rates(const outputs_t *o, uint16_t servo_hz,
                            uint16_t *rate);
+
+/**
+ * Whether the bank @p o, given the CHAN_CFG page @p chan_cfg or the OUTPUTS
+ * page @p slots, would leave the SERVO page's rate @p servo_hz splitting a
+ * PWM slice: 0, or LINK_NACK_BAD_VALUE.  A role that stops being a surface,
+ * or a slot bound beside one, moves the rate the slice is asked for; the
+ * silicon would refuse whichever bound second and the page would read back
+ * a binding no pin has.  Always 0 while @p servo_hz is 0.
+ */
+uint8_t outputs_chan_cfg_rate_check(const outputs_t *o,
+                                    const uint16_t *chan_cfg,
+                                    uint16_t servo_hz);
+uint8_t outputs_slots_rate_check(const outputs_t *o, const uint16_t *slots,
+                                 uint16_t servo_hz);
 
 /* --- CHAN_CFG: what each channel is -- role, slew, and its pulse endpoints */
 void    outputs_chan_cfg_defaults(uint16_t *regs);
