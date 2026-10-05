@@ -741,6 +741,40 @@ static void render_both(void)
     scr->render(&cv, 0);
 }
 
+TEST_CASE(a_reading_that_did_not_arrive_is_not_plotted_as_the_last_one)
+{
+    /* Two runs alike but for the value left in a reading whose flag says it
+     * did not arrive: the plot draws them the same. */
+    gfx_color_t *want = malloc((size_t)W * H * sizeof(gfx_color_t));
+    for (int pass = 0; pass < 2; ++pass) {
+        fresh();
+        supply_screen_set_output(true);
+        supply_state_t st = reading(6.0f, 1.5f);
+        st.output = true;
+        for (int k = 0; k < 20; ++k) {
+            supply_screen_push(&st);
+        }
+        /* The readings stop arriving; one run keeps the stale numbers. */
+        st.ok = 0u;
+        if (pass == 1) {
+            st.v = 0.0f;
+            st.i = 0.0f;
+            st.p = 0.0f;
+        }
+        for (int k = 0; k < 20; ++k) {
+            supply_screen_push(&st);
+        }
+        supply_invalidate();
+        scr->render(&cv, 0);
+        if (pass == 0) {
+            memcpy(want, fb, (size_t)W * H * sizeof(gfx_color_t));
+        }
+    }
+    const int same = memcmp(fb, want, (size_t)W * H * sizeof(gfx_color_t));
+    free(want);
+    CHECK_EQ(same, 0);
+}
+
 TEST_CASE(a_run_is_traced_from_the_switch_on_and_held_after_it)
 {
     fresh();
@@ -934,6 +968,7 @@ int main(void)
     RUN(the_output_switch_works_under_every_overlay);
     RUN(a_second_finger_on_a_track_changes_nothing_while_off_is_held);
     RUN(leaving_drops_the_question_and_the_overlays);
+    RUN(a_reading_that_did_not_arrive_is_not_plotted_as_the_last_one);
     RUN(a_trip_shows_on_the_mode_card);
     RUN(a_run_is_traced_from_the_switch_on_and_held_after_it);
     RUN(a_redraw_leaves_no_stale_pixels);

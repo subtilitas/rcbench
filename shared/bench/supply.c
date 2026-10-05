@@ -136,7 +136,13 @@ void supply_trip_reset(supply_trip_t *t)
 static bool over_for(float *over_s, bool arrived, float value, float threshold,
                      float hold_s, float dt)
 {
-    if (!(threshold > 0.0f) || !arrived) {
+    if (!(threshold > 0.0f)) {
+        /* Off: what was counted is forgotten, so turning it back on starts
+         * the count from nothing. */
+        *over_s = 0.0f;
+        return false;
+    }
+    if (!arrived) {
         return false;
     }
     if (value > threshold) {

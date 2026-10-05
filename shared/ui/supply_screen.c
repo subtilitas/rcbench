@@ -430,7 +430,17 @@ void supply_screen_push(const supply_state_t *st)
         return;
     }
     s.sup = *st;
-    const float v[S_COUNT] = { st->v, st->i, st->p, st->set_v, st->set_i };
+    /* Only what arrived: a reading that did not is not drawn as the last
+     * one that did, which would hide the gap.  The plot draws it at 0. */
+    const bool v_ok = st->online && (st->ok & SUPPLY_OK_VOLTAGE) != 0u;
+    const bool i_ok = st->online && (st->ok & SUPPLY_OK_CURRENT) != 0u;
+    const float v[S_COUNT] = {
+        v_ok ? st->v : NAN,
+        i_ok ? st->i : NAN,
+        (v_ok && i_ok) ? st->p : NAN,
+        st->online ? st->set_v : s.cv,
+        st->online ? st->set_i : s.ci,
+    };
     ui_plot_push(&s.plot, v);
     ui_plot_update_scales(&s.plot, PLOT_W);
 }

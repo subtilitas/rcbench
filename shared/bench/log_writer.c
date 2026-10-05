@@ -129,6 +129,43 @@ static bool finish_row(log_writer_t *w, float t_s, char *line, int n)
     return true;
 }
 
+/*
+ * One cell of a row: the separator, then the value if @p present.  False
+ * once the row no longer fits, checked before anything is written past what
+ * the last cell left: snprintf answers the length it wanted, not the one it
+ * had, so an offset taken from it unchecked points past the line.
+ */
+static bool cell(char *line, size_t cap, int *n, bool present, float v,
+                 int decimals)
+{
+    if (*n < 0 || (size_t)*n + 2u >= cap) {
+        return false;
+    }
+    line[(*n)++] = LOG_WRITER_SEP;
+    if (present) {
+        const int k = fmt(line + *n, cap - (size_t)*n, v, decimals);
+        if (k < 0 || (size_t)*n + (size_t)k >= cap) {
+            return false;
+        }
+        *n += k;
+    }
+    return true;
+}
+
+static bool text_cell(char *line, size_t cap, int *n, const char *text)
+{
+    if (*n < 0 || (size_t)*n + 2u >= cap) {
+        return false;
+    }
+    line[(*n)++] = LOG_WRITER_SEP;
+    const int k = snprintf(line + *n, cap - (size_t)*n, "%s", text);
+    if (k < 0 || (size_t)*n + (size_t)k >= cap) {
+        return false;
+    }
+    *n += k;
+    return true;
+}
+
 bool log_writer_supply_row(log_writer_t *w, float t_s,
                            const supply_state_t *s)
 {
@@ -154,29 +191,22 @@ bool log_writer_supply_row(log_writer_t *w, float t_s,
     const bool i_ok = (s->ok & SUPPLY_OK_CURRENT) != 0u;
     const char *mode = (s->mode == SUPPLY_MODE_CC) ? "CC"
                        : (s->mode == SUPPLY_MODE_CV) ? "CV" : "OFF";
-    /* What was asked is always known; what arrived only when it did. */
-    n += snprintf(line + n, sizeof(line) - (size_t)n, ";");
-    n += fmt(line + n, sizeof(line) - (size_t)n, s->set_v, 2);
-    n += snprintf(line + n, sizeof(line) - (size_t)n, ";");
-    if (v_ok) { n += fmt(line + n, sizeof(line) - (size_t)n, s->v, 2); }
-    n += snprintf(line + n, sizeof(line) - (size_t)n, ";");
-    n += fmt(line + n, sizeof(line) - (size_t)n, s->set_i, 2);
-    n += snprintf(line + n, sizeof(line) - (size_t)n, ";");
-    if (i_ok) { n += fmt(line + n, sizeof(line) - (size_t)n, s->i, 3); }
-    n += snprintf(line + n, sizeof(line) - (size_t)n, ";");
-    if ((s->ok & both) == both) {
-        n += fmt(line + n, sizeof(line) - (size_t)n, s->p, 2);
-    }
-    n += snprintf(line + n, sizeof(line) - (size_t)n, ";%s;",
-                  s->online ? mode : "");
-    if ((s->counted & BENCH_COUNTED_CHARGE) != 0u) {
-        n += fmt(line + n, sizeof(line) - (size_t)n, s->charge_mah, 0);
-    }
-    n += snprintf(line + n, sizeof(line) - (size_t)n, ";");
-    if ((s->counted & BENCH_COUNTED_ENERGY) != 0u) {
-        n += fmt(line + n, sizeof(line) - (size_t)n, s->energy_wh, 2);
-    }
-    if (n <= 0 || (size_t)n + 2u >= sizeof(line)) {
+    /* What was asked is always known; what arrived only when it did.  A row
+     * that does not fit -- a value no supply gives, from a driver that has
+     * gone wrong -- fails the log as an oversized bench row does. */
+    const size_t cap = sizeof(line);
+    const bool fits =
+        cell(line, cap, &n, true, s->set_v, 2)
+        && cell(line, cap, &n, v_ok, s->v, 2)
+        && cell(line, cap, &n, true, s->set_i, 2)
+        && cell(line, cap, &n, i_ok, s->i, 3)
+        && cell(line, cap, &n, (s->ok & both) == both, s->p, 2)
+        && text_cell(line, cap, &n, s->online ? mode : "")
+        && cell(line, cap, &n, (s->counted & BENCH_COUNTED_CHARGE) != 0u,
+                s->charge_mah, 0)
+        && cell(line, cap, &n, (s->counted & BENCH_COUNTED_ENERGY) != 0u,
+                s->energy_wh, 2);
+    if (!fits || (size_t)n + 2u >= cap) {
         w->failed = true;
         return false;
     }

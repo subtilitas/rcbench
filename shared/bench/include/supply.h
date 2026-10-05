@@ -110,7 +110,8 @@ void supply_trip_reset(supply_trip_t *t);
 /**
  * Take @p dt_s of the readings in @p s into the trips.  A reading over its
  * threshold adds the time, one at or under it starts the count again, and
- * one that did not arrive leaves it where it is.  Returns which trip fired,
+ * one that did not arrive leaves it where it is.  A trip that is off forgets
+ * its count.  Returns which trip fired,
  * once the time over reaches lim->trip_s; nothing while the output is off.
  * @p dt_s is clamped to 0 .. 1 s, as the totals' steps are.
  */

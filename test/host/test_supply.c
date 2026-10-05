@@ -230,6 +230,19 @@ TEST_CASE(a_trip_fires_once_a_reading_has_been_over_for_its_time)
     CHECK_NEAR(t.over_i_s, 1.0f, 1e-4f);
     CHECK_EQ(supply_trip_step(&t, &slow, &st, -1.0f), SUPPLY_TRIP_NONE);
 
+    /* A trip turned off forgets what it had counted: on again, the count
+     * starts from nothing rather than from where it stopped. */
+    supply_trip_reset(&t);
+    st.i = 2.6f;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.15f), SUPPLY_TRIP_NONE);
+    const supply_limits_t paused = { 21.0f, 5.0f, 0.0f, 0.0f, 0.2f };
+    st.i = 2.0f;
+    CHECK_EQ(supply_trip_step(&t, &paused, &st, 0.05f), SUPPLY_TRIP_NONE);
+    st.i = 2.6f;
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.1f), SUPPLY_TRIP_NONE);
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.1f), SUPPLY_TRIP_CURRENT);
+
     /* Off at 0, and nothing without its arguments. */
     const supply_limits_t off = { 21.0f, 5.0f, 0.0f, 0.0f, 0.0f };
     st.i = 9.0f;
@@ -312,6 +325,26 @@ TEST_CASE(a_supply_row_leaves_what_did_not_arrive_empty)
     CHECK(!log_writer_supply_row(&w2, 1.0f, NULL));
 }
 
+TEST_CASE(a_row_that_does_not_fit_fails_the_log_and_writes_nothing_past_it)
+{
+    /* Values no supply gives -- a driver gone wrong -- format to dozens of
+     * digits each.  The row is refused, the writer latches, and nothing is
+     * written past the line (the sanitizer build holds the stack to it). */
+    log_writer_t w = fresh_writer();
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.set_v = 3e38f; st.set_i = 3e38f;
+    st.v = 3e38f; st.i = 3e38f; st.p = 3e38f;
+    st.charge_mah = 3e38f; st.energy_wh = 3e38f;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    st.counted = BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY;
+    st.online = true;
+    st.mode = SUPPLY_MODE_CV;
+    CHECK(!log_writer_supply_row(&w, 1.0f, &st));
+    CHECK(log_writer_failed(&w));
+    CHECK(strchr(second_line(), '\n') == NULL);   /* no row went out */
+}
+
 int main(void)
 {
     RUN(a_set_point_is_clamped_and_stepped);
@@ -323,5 +356,6 @@ int main(void)
     RUN(a_trip_fires_once_a_reading_has_been_over_for_its_time);
     RUN(a_supply_row_writes_its_own_header_and_columns);
     RUN(a_supply_row_leaves_what_did_not_arrive_empty);
+    RUN(a_row_that_does_not_fit_fails_the_log_and_writes_nothing_past_it);
     return test_summary("supply");
 }
