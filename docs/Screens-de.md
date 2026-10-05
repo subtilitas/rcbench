@@ -302,10 +302,11 @@ DELETE, auf dem Knopf gedrückt und losgelassen, löscht sie. CANCEL oder das
 Verlassen des Bildschirms schließt die Rückfrage, ohne zu löschen. Der Lauf,
 den der Logger offen hat, wird abgewiesen. Eine Datei, die in der
 Importansicht oder im Plot offen war, verschwindet beim Löschen aus beiden.
-Der Logger nummeriert jeden Lauf über dem höchsten, den er beim ersten Lauf
-nach dem Start auf der Karte gefunden hat. Eine gelöschte Nummer wird nur
-wieder vergeben, wenn sie über allen verbliebenen Läufen lag, und nicht vor
-einem Neustart des Panels.
+Der Logger nummeriert jeden Lauf über dem höchsten Lauf, den er auf der Karte
+gefunden hat. Er liest die Karte beim ersten Lauf nach dem Start und nach einem
+Lauf, der sich nicht öffnen ließ, und zählt sonst von dort weiter. Eine
+gelöschte Nummer wird nur wieder vergeben, wenn sie bei diesem Lesen über allen
+verbliebenen Läufen lag.
 
 ![Die DELETE-Rückfrage](img/logs-delete.png)
 

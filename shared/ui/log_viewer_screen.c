@@ -114,6 +114,10 @@ static struct {
      */
     char doomed[LOG_VIEWER_NAME_MAX];
     uint32_t doomed_size;
+    /* The one contact whose press on the question counts: the panel reports
+     * up to five, and a second finger lifting off DELETE did not press it. */
+    bool q_down;
+    uint8_t q_id;
 
     log_analysis_t an;
     bool have_analysis;
@@ -1018,6 +1022,7 @@ static void ask_delete(void)
     }
     snprintf(s.doomed, sizeof(s.doomed), "%s", s.files[s.sel].name);
     s.doomed_size = s.files[s.sel].size;
+    s.q_down = false;
     s.message[0] = '\0';
 }
 
@@ -1056,19 +1061,32 @@ static void question_event(const touch_event_t *e)
 
     switch (e->type) {
     case TOUCH_EVENT_DOWN:
-        s.press_btn = hit_button(btns, 2, e->point.x, e->point.y);
-        log_viewer_invalidate();
+        /* The first contact on a button owns the press; any other finger
+         * that lands while it is down is not part of it. */
+        if (!s.q_down) {
+            s.press_btn = hit_button(btns, 2, e->point.x, e->point.y);
+            if (s.press_btn >= 0) {
+                s.q_down = true;
+                s.q_id = e->point.id;
+            }
+            log_viewer_invalidate();
+        }
         break;
 
     case TOUCH_EVENT_MOVE:
         break;
 
     case TOUCH_EVENT_UP:
+        if (!s.q_down || e->point.id != s.q_id) {
+            break;
+        }
         /*
-         * Pressed and released on the same button, unlike the other footers
-         * here: a finger that slides off DELETE has changed its mind, and
-         * this is the one control on the screen that cannot be taken back.
+         * Pressed and released on the same button by the same contact,
+         * unlike the other footers here: a finger that slides off DELETE has
+         * changed its mind, and this is the one control on the screen that
+         * cannot be taken back.
          */
+        s.q_down = false;
         if (hit_button(btns, 2, e->point.x, e->point.y) == s.press_btn) {
             if (s.press_btn == 0) {
                 s.doomed[0] = '\0';

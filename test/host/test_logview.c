@@ -220,13 +220,18 @@ static void fresh(void)
     reset_screen();
 }
 
-static void send(int type, int x, int y)
+static void send_id(int type, int id, int x, int y)
 {
     touch_event_t e = {
         .type = (touch_event_type_t)type,
-        .point = { .id = 1, .x = (int16_t)x, .y = (int16_t)y },
+        .point = { .id = (uint8_t)id, .x = (int16_t)x, .y = (int16_t)y },
     };
     screen()->event(&e);
+}
+
+static void send(int type, int x, int y)
+{
+    send_id(type, 1, x, y);
 }
 
 static void tap(int x, int y)
@@ -1252,6 +1257,29 @@ TEST_CASE(a_finger_that_slides_off_delete_deletes_nothing)
     CHECK_EQ(g_remove_calls, 1);
 }
 
+TEST_CASE(only_the_finger_that_pressed_delete_can_release_it)
+{
+    /* The panel reports up to five contacts.  A second finger that lands
+     * beside the button, slides onto it and lifts did not press DELETE. */
+    fresh();
+    ask_to_delete(0);
+    send_id(TOUCH_EVENT_DOWN, 2, 400, 160);              /* B, off the buttons */
+    send_id(TOUCH_EVENT_DOWN, 1, DQ_DELETE_X, DQ_CY);    /* A, on DELETE       */
+    send_id(TOUCH_EVENT_MOVE, 2, DQ_DELETE_X, DQ_CY);
+    send_id(TOUCH_EVENT_UP, 2, DQ_DELETE_X, DQ_CY);
+    draw();
+    CHECK_EQ(g_remove_calls, 0);
+
+    /* Nor does a finger landing on CANCEL while A is down take the press. */
+    send_id(TOUCH_EVENT_DOWN, 3, DQ_CANCEL_X, DQ_CY);
+    send_id(TOUCH_EVENT_UP, 3, DQ_CANCEL_X, DQ_CY);
+    CHECK_EQ(g_remove_calls, 0);
+
+    send_id(TOUCH_EVENT_UP, 1, DQ_DELETE_X, DQ_CY);      /* A lifts on DELETE  */
+    CHECK_EQ(g_remove_calls, 1);
+    CHECK_STR_EQ(g_removed_name, "BENCH_01.CSV");
+}
+
 TEST_CASE(delete_needs_a_selected_file)
 {
     fresh();
@@ -1422,6 +1450,7 @@ int main(void)
     RUN(delete_asks_first_and_deletes_only_the_file_it_named);
     RUN(cancel_deletes_nothing_and_keeps_the_selection);
     RUN(a_finger_that_slides_off_delete_deletes_nothing);
+    RUN(only_the_finger_that_pressed_delete_can_release_it);
     RUN(delete_needs_a_selected_file);
     RUN(without_remove_there_is_no_delete);
     RUN(deleting_the_open_file_drops_what_was_read_from_it);

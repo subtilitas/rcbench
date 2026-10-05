@@ -275,9 +275,10 @@ names the file and its size, and only its own DELETE, pressed and released on
 that button, removes the file. CANCEL, or leaving the screen, closes the
 question without deleting. The run the logger has open is refused. A file
 that was open in the import view or the plot is dropped from both when it is
-deleted. The logger numbers each run above the highest it found on the card at
-the first run after boot. A deleted number is used again only if it was above
-every run left on the card, and not before the panel restarts.
+deleted. The logger numbers each run above the highest run it found on the
+card. It reads the card at the first run after boot and after a run that could
+not be opened, and counts on from there otherwise. A deleted number is used
+again only if it was above every run left on the card at that read.
 
 ![The DELETE question](img/logs-delete.png)
 
