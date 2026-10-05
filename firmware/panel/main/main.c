@@ -4307,11 +4307,16 @@ static bool poll_bench(bench_state_t *bench)
          * servo_service() pays the debt every pass, so this holds for one.
          * Nor while the rate the surfaces run at is not known: the far end
          * may hold a heli rate from before a panel restart, and
-         * servo_service() settles that every pass too.
+         * servo_service() settles that every pass too.  And not after a
+         * stop or a disarm asked for since the bank armed: the exchanges
+         * that settle those debts let the pump apply a STOP, and the bank
+         * itself is disarmed only on the next service_arming() pass.
          */
         const bool armed = outputs_armed(&s_out) && !s_servo_release_owed
                            && !s_endpoints_hold
-                           && s_servo_hz_sent != SERVO_HZ_UNKNOWN;
+                           && s_servo_hz_sent != SERVO_HZ_UNKNOWN
+                           && !arming_stopped(&s_arm)
+                           && !atomic_load(&s_disarm_request);
         /*
          * The pole count, when an edit or a write that did not land leaves
          * one owed.  Between arms this is the path an edit takes to the far
