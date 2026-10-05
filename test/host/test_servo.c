@@ -13,6 +13,7 @@
 #include "greatest.h"
 
 #include "servo_screen.h"
+#include "servo_sweep.h"
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_keypad.h"
@@ -151,7 +152,7 @@ static void dial_at(float deg, int r, int *x, int *y)
 
 static servo_cmd_t last_cmd(void)
 {
-    servo_cmd_t c = { SERVO_CMD_NONE, 0, 0, 0, 0, 0 };
+    servo_cmd_t c = { .kind = SERVO_CMD_NONE };
     servo_screen_take(&c);
     return c;
 }
@@ -1404,6 +1405,140 @@ TEST_CASE(the_horn_travels_and_breathes_as_a_full_redraw_would)
     free(early);
 }
 
+/* ------------------------------------------------------------------ sweep */
+
+#define SWEEP_X (ARM_X + ARM_W / 2)
+#define BTN_Y   (350 + 16)
+
+static void frames(float secs)
+{
+    for (int i = 0; i < (int)(secs * 39.0f + 0.5f); ++i) {
+        scr->tick(1.0f / 39.0f);
+    }
+}
+
+/* SWEEP asks the coprocessor for the TEST page's curve, and only on an armed
+ * bench and a coprocessor that sweeps: anything else would refuse it. */
+TEST_CASE(a_sweep_needs_an_armed_bench_and_a_coprocessor_that_sweeps)
+{
+    fresh();
+    tap(SWEEP_X, BTN_Y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    servo_screen_set_armed(true);
+    tap(SWEEP_X, BTN_Y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    CHECK(!servo_screen_sweeping());
+
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
+    CHECK_EQ(c.sweep_kind, SWEEP_SINE);         /* CURVE: SINE */
+    CHECK_EQ(c.sweep_mhz, 500u);                /* SPEED: 0.5 Hz */
+    CHECK_EQ(c.sweep_span, 400u);               /* RANGE: 80 % of +/-500 */
+    CHECK_EQ(c.sweep_dwell_ms, 200u);
+    CHECK_EQ(c.min_us, 1000u);
+    CHECK_EQ(c.max_us, 2000u);
+    CHECK(servo_screen_sweeping());
+}
+
+/* The horn follows the curve the coprocessor runs; HOLD stops it where it
+ * is and holds it there. */
+TEST_CASE(the_horn_follows_the_sweep_and_hold_keeps_it_where_it_is)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    two_buffers();
+    tap(SWEEP_X, BTN_Y);
+    (void)last_cmd();
+    for (int i = 0; i < 20; ++i) {             /* half a second, 0.5 Hz sine */
+        scr->tick(1.0f / 39.0f);
+        scr->render((i % 2) ? &cv1 : &cv, i % 2);
+    }
+    CHECK(both_whole());
+    const uint16_t at = servo_screen_commanded();
+    CHECK(at > 1880u && at <= 1900u);          /* 1500 + 400 at the peak */
+    tap(SWEEP_X, BTN_Y);                       /* HOLD */
+    CHECK(!servo_screen_sweeping());
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_POSITION);
+    CHECK(c.value_us > 1880u && c.value_us <= 1900u);
+}
+
+/* A finger on the dial, CENTRE, RELEASE, a disarm and leaving each end the
+ * sweep, with the command that ends it. */
+TEST_CASE(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave)
+{
+    int x, y;
+    dial_at(30.0f, ARC_R - 20, &x, &y);
+    const struct { int px, py; servo_cmd_kind_t kind; } by[] = {
+        { 0, 0, SERVO_CMD_POSITION },          /* the dial, below */
+        { ARM_X + 40, BTN_Y, SERVO_CMD_CENTRE },
+        { ARM_X + ARM_W - 40, BTN_Y, SERVO_CMD_RELEASE },
+    };
+    for (int k = 0; k < 3; ++k) {
+        fresh();
+        servo_screen_set_armed(true);
+        servo_screen_set_sweep(true);
+        tap(SWEEP_X, BTN_Y);
+        frames(0.2f);
+        (void)last_cmd();
+        tap(k == 0 ? x : by[k].px, k == 0 ? y : by[k].py);
+        CHECK(!servo_screen_sweeping());
+        CHECK_EQ(last_cmd().kind, by[k].kind);
+    }
+
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);
+    servo_screen_set_armed(false);
+    CHECK(!servo_screen_sweeping());
+
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);
+    scr->leave();
+    CHECK(!servo_screen_sweeping());
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_DISARM);
+
+    /* And a coprocessor that cannot sweep any more. */
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);
+    servo_screen_set_sweep(false);
+    CHECK(!servo_screen_sweeping());
+}
+
+/* A setting changed while it runs starts the sweep over with it, as the
+ * coprocessor's does when it is written. */
+TEST_CASE(a_changed_setting_starts_the_sweep_over)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);
+    frames(0.3f);
+    (void)last_cmd();
+    settings_set(SET_SERVO_TEST_RANGE, 50.0f);
+    frames(0.05f);
+    servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
+    CHECK_EQ(c.sweep_span, 250u);
+    /* TRAVEL limits it too: half the travel is half the sweep. */
+    open_settings();
+    tap(ROW_L_X, ROW_Y(4));                    /* TRAVEL */
+    keys("45");
+    close_settings();
+    frames(0.05f);
+    c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
+    CHECK_EQ(c.sweep_span, 125u);
+}
+
 /*
  * Leaving disarms, the same rule as the motor bench's: a screen that does
  * not show the horn must not be holding it somewhere, and it must not leave
@@ -1504,6 +1639,10 @@ int main(void)
     RUN(a_refused_save_repaints_only_the_save_line);
     RUN(the_output_page_says_whether_the_rate_reached_the_pins);
     RUN(the_horn_travels_and_breathes_as_a_full_redraw_would);
+    RUN(a_sweep_needs_an_armed_bench_and_a_coprocessor_that_sweeps);
+    RUN(the_horn_follows_the_sweep_and_hold_keeps_it_where_it_is);
+    RUN(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave);
+    RUN(a_changed_setting_starts_the_sweep_over);
     RUN(drags_and_samples_leave_both_buffers_as_a_full_redraw_would);
     RUN(a_cancelled_gesture_does_not_arm);
     return test_summary("servo");

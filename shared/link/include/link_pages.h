@@ -53,7 +53,7 @@ typedef enum {
  * older host can ignore.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 1u
+#define LINK_PROTOCOL_MINOR 2u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -128,21 +128,36 @@ enum {
 };
 #define LINK_OS_COUNT  (LINK_OUT_SLOTS * LINK_OS_STRIDE)
 
-/* --- the SERVO screen's frame rate (protocol 4.1).  One register: the frame
- *     rate, in Hz, of every PWM output whose first channel is a surface, or
- *     0 for each slot's own rate from the OUTPUTS page.
+/* --- the SERVO screen's page: the surfaces' frame rate (protocol 4.1) and
+ *     the sweep that drives them through a curve (4.2).
  *
- *     One register for all of them, so a write is whole: a servo screen that
- *     moved some surfaces to 560 Hz and not their slice-mates would leave a
- *     slice asked for two rates.  A rate that would do that against the
- *     binding in force -- a surface and a throttle on one slice -- is refused
- *     with BAD_VALUE and nothing changes.
+ *     FRAME_HZ is the frame rate, in Hz, of every PWM output whose first
+ *     channel is a surface, or 0 for each slot's own rate from the OUTPUTS
+ *     page.  One register for all of them, so a write is whole: a servo
+ *     screen that moved some surfaces to 560 Hz and not their slice-mates
+ *     would leave a slice asked for two rates.  A rate that would do that
+ *     against the binding in force -- a surface and a throttle on one slice
+ *     -- is refused with BAD_VALUE and nothing changes.
+ *
+ *     SWEEP to SWEEP_DWELL_MS are a sweep (servo_sweep.h), four registers so
+ *     a start fits one frame.  SWEEP is the curve, 0 stopped, 1 square,
+ *     2 sine, 3 triangle; MHZ thousandths of a cycle a second, 50 to 5000;
+ *     SPAN command units either side of the centre, 0 to 500; DWELL_MS the
+ *     hold at each end, 0 to 5000.  A sweep needs the bench armed
+ *     (NOT_ARMED) and stops after 500 ms unwritten, on a disarm, or after
+ *     SWEEP_MOVES ends (0 for no end), read back in SWEEP_DONE.
  *
  *     Not kept: a coprocessor restart drives every slot at its own rate
- *     again, which is the binding's 50 Hz for a servo. */
+ *     again, which is the binding's 50 Hz for a servo, and runs no sweep. */
 enum {
-    LINK_SV_FRAME_HZ = 0,
-    LINK_SV_COUNT    = 1,
+    LINK_SV_FRAME_HZ       = 0,
+    LINK_SV_SWEEP          = 1,
+    LINK_SV_SWEEP_MHZ      = 2,
+    LINK_SV_SWEEP_SPAN     = 3,
+    LINK_SV_SWEEP_DWELL_MS = 4,
+    LINK_SV_SWEEP_MOVES    = 5,
+    LINK_SV_SWEEP_DONE     = 6,   /**< read only */
+    LINK_SV_COUNT          = 7,
 };
 
 #define LINK_OS_RANGE_OF(first, count) \

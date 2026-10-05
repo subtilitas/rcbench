@@ -34,7 +34,8 @@
  */
 uint16_t link_driver_of(out_driver_t d);
 
-/* --- SERVO: the frame rate of every PWM output rendering a surface */
+/* --- SERVO: the frame rate of every PWM output rendering a surface; the
+ *     page itself is servo_page.h */
 
 /**
  * Whether the SERVO page may take the frame rate @p hz against the bank @p o

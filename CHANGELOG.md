@@ -36,6 +36,15 @@ history is in git.
   The OUTPUT page shows whether the rate is in force, refused, or not taken
   by a protocol 4.0 coprocessor. The PWM
   driver's ceiling is 560 Hz.
+- **SWEEP drives the servo through a curve on the coprocessor.** The
+  SERVO page's registers 1 to 4 (protocol 4.2) start a square, sine or
+  triangle about the surfaces' centre, at the TEST page's speed, range and
+  dwell, run each pass by `servo_sweep` where the pins are; register 5
+  ends it after a number of movements and register 6 counts them. It needs
+  the bench armed, stops on a disarm and after 500 ms unwritten, and a
+  finished sweep is not restarted by a repeat. The right card's SWEEP
+  starts it, its HOLD stops it where the horn is, and the horn follows the
+  same curve.
 - **An on-screen keyboard** (`ui_textkey`) for names, and string settings
   beside the numbers (`settings_text()`), kept by the same store.
 

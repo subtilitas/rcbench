@@ -36,7 +36,7 @@ set(SRCS
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
-                           REQUIRES gfx touch bench logfile settings sbus link outputs can)
+                           REQUIRES gfx touch bench logfile settings sbus link outputs servo can)
 else()
     add_library(rcbench_ui STATIC ${SRCS})
     target_include_directories(rcbench_ui PUBLIC include "${CMAKE_CURRENT_LIST_DIR}/../link/include" "${CMAKE_CURRENT_LIST_DIR}/../can/include")

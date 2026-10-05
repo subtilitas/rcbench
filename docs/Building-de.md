@@ -59,8 +59,9 @@ Includes sind flach: `#include "gfx.h"`.
 | Modul | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
-| `link` · `bench` · `outputs` · `safety` · `can` | ✔ | ✔ | ✔ |
-| `servo` · `openyge` | | ✔ | ✔ |
+| `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
+| `artwork` | ✔ | | ✔ |
+| `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
 
 ## Toolchains
 

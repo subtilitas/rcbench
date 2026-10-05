@@ -2,12 +2,13 @@
 # staleness in one place, with a table of what each protocol is shaped like.
 # Pure logic with no pin, so it is host-tested before anything toggles.
 
-set(SRCS outputs.c outputs_pages.c out_bind.c out_pwm_map.c out_store_map.c)
+set(SRCS outputs.c outputs_pages.c out_bind.c out_pwm_map.c out_store_map.c
+         servo_page.c)
 
 if(ESP_PLATFORM)
-    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES link)
+    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES link servo)
 else()
     add_library(rcbench_outputs STATIC ${SRCS})
     target_include_directories(rcbench_outputs PUBLIC include)
-    target_link_libraries(rcbench_outputs PUBLIC rcbench_link)
+    target_link_libraries(rcbench_outputs PUBLIC rcbench_link rcbench_servo)
 endif()

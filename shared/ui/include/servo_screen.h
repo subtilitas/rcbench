@@ -30,6 +30,12 @@ typedef enum {
      * bound behind a bench it had just disarmed.
      */
     SERVO_CMD_DISARM,
+    /**
+     * Drive the surfaces through the curve in sweep_*, on the coprocessor.
+     * Repeated while it runs, which keeps it running; any other command
+     * stops it.
+     */
+    SERVO_CMD_SWEEP,
 } servo_cmd_kind_t;
 
 typedef struct {
@@ -63,6 +69,10 @@ typedef struct {
      * first channel is a surface at it; see servo_screen_rate().
      */
     uint16_t         frame_hz;
+    /** SERVO_CMD_SWEEP's curve, as the SERVO page takes it (servo_sweep.h):
+     *  the curve, thousandths of a cycle a second, command units either
+     *  side of the centre and the hold at each end.  Zero otherwise. */
+    uint16_t         sweep_kind, sweep_mhz, sweep_span, sweep_dwell_ms;
 } servo_cmd_t;
 
 /** Drop the cached chrome, so the next frame repaints it. */
@@ -121,6 +131,13 @@ typedef enum {
  * SERVO_RATE_UNSENT for it.
  */
 void servo_screen_rate(servo_rate_state_t st, uint16_t hz);
+
+/** Whether the coprocessor can sweep: protocol 4.2 or later.  SWEEP is
+ *  offered only then. */
+void servo_screen_set_sweep(bool able);
+
+/** Whether a sweep is running, for the application and tests. */
+bool servo_screen_sweeping(void);
 
 /**
  * Set the commanded angle without a touch event.

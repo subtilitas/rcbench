@@ -61,9 +61,9 @@ flat: `#include "gfx.h"`.
 | Module | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
-| `link` · `bench` · `outputs` · `safety` · `can` | ✔ | ✔ | ✔ |
+| `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` | ✔ | | ✔ |
-| `servo` · `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
+| `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
 
 ## Toolchains
 

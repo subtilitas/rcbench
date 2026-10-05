@@ -3497,9 +3497,29 @@ static void servo_cfg(const servo_cmd_t *sv, uint16_t *cfg)
     }
 }
 
+/*
+ * The sweep on the SERVO page (protocol 4.2).  While one runs the
+ * coprocessor commands the surfaces itself every pass, so a centre or a
+ * position written under it would last one pass: anything but a sweep stops
+ * it first.  Not known after the link comes up, so taken to be running and
+ * stopped by the next command.
+ */
+static bool        s_servo_sweep_page;
+static bool        s_servo_sweeping;
+static atomic_bool s_servo_sweep_able;   /* for the screen's SWEEP */
+
 static bool write_servo(const servo_cmd_t sv)
 {
     link_msg_t reply;
+    if (sv.kind != SERVO_CMD_SWEEP && s_servo_sweeping) {
+        const uint16_t stop = 0u;
+        if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 1u, &stop,
+                        &reply)
+            || reply.op != LINK_OP_ACK) {
+            return false;
+        }
+        s_servo_sweeping = false;
+    }
     /*
      * Every command, a release included, goes to the channels the binding
      * marks as surfaces now -- never to the ones this process wrote earlier.
@@ -3618,6 +3638,46 @@ static bool write_servo(const servo_cmd_t sv)
         servo_cfg(&sv, cfg);
         for (uint8_t i = 0; i < LINK_OUT_CHANNELS; ++i) {
             cmd[i] = span;
+        }
+        if (sv.kind == SERVO_CMD_SWEEP) {
+            /*
+             * The range first, as for a position, then the curve in one
+             * frame.  A sweep that is starting first clears the movement
+             * count, so it runs until it is stopped; one that is running is
+             * only repeated, which keeps it going.
+             */
+            for (uint8_t at = 0u; servo_next_run(mask, at, &first, &count);
+                 at = (uint8_t)(first + count)) {
+                if (!write_regs(&s_host, LINK_PAGE_CHAN_CFG,
+                                (uint8_t)(first * LINK_CC_STRIDE),
+                                (uint8_t)(count * LINK_CC_STRIDE),
+                                &cfg[(size_t)first * LINK_CC_STRIDE], &reply)
+                    || reply.op != LINK_OP_ACK) {
+                    return false;
+                }
+                if (servo_countermanded()) {
+                    return false;
+                }
+            }
+            if (!s_servo_sweeping) {
+                const uint16_t endless = 0u;
+                if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP_MOVES,
+                                1u, &endless, &reply)
+                    || reply.op != LINK_OP_ACK) {
+                    return false;
+                }
+            }
+            const uint16_t curve[4] = { sv.sweep_kind, sv.sweep_mhz,
+                                        sv.sweep_span, sv.sweep_dwell_ms };
+            if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 4u, curve,
+                            &reply)
+                || reply.op != LINK_OP_ACK) {
+                return false;
+            }
+            s_servo_sweeping = true;
+            /* Every surface is moving, so a release owes each a centre. */
+            s_servo_written |= mask;
+            return true;
         }
         /*
          * What the channel is, then what it is to do.  Each is its own
@@ -3994,7 +4054,7 @@ static void servo_service(bool link_up)
         /* At the screen's rate, in the same order as a position: a release
          * restates the range, and a profile chosen since the last position
          * may be slower than the rate the pins still run at. */
-        servo_cmd_t release = { SERVO_CMD_RELEASE, 0, 0, 0, 0, 0 };
+        servo_cmd_t release = { .kind = SERVO_CMD_RELEASE };
         release.frame_hz = s_servo_range.frame_hz;
         /* Only a write the far end acknowledged pays it off.  link_up is a
          * snapshot and the link can go during the transaction; forgetting an
@@ -4577,6 +4637,9 @@ static void link_came_up(const link_msg_t *reply)
      */
     s_servo_rate_page = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 1u;
     (void)servo_rate_reset();
+    s_servo_sweep_page = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 2u;
+    s_servo_sweeping   = s_servo_sweep_page;
+    atomic_store(&s_servo_sweep_able, s_servo_sweep_page);
 
     /*
      * A board this build ships no catalogue for describes its own pins, so a
@@ -5392,6 +5455,7 @@ void app_main(void)
             const unsigned r = atomic_load(&s_servo_rate_shown);
             servo_screen_rate((servo_rate_state_t)(r >> 16),
                               (uint16_t)(r & 0xFFFFu));
+            servo_screen_set_sweep(atomic_load(&s_servo_sweep_able));
         }
 
         /*
