@@ -3511,6 +3511,7 @@ static atomic_bool s_servo_sweep_able;   /* for the screen's SWEEP */
  * differs from the one running starts over there, and the screen draws the
  * horn from that moment rather than from its tap. */
 static uint16_t    s_servo_curve[4];
+static uint32_t    s_servo_curve_ms;   /* when the far end last took it */
 static atomic_uint s_sweep_start_ms;
 static atomic_bool s_sweep_start_new;
 
@@ -3680,12 +3681,19 @@ static bool write_servo(const servo_cmd_t sv)
                 || reply.op != LINK_OP_ACK) {
                 return false;
             }
+            /* A start there: no sweep running, a changed curve, or one the
+             * far end stopped because nothing repeated it for as long as a
+             * channel command is trusted, and starts again from zero. */
+            const uint32_t took = now_ms();
+            const uint32_t gap = took - s_servo_curve_ms;
             if (!s_servo_sweeping
-                || memcmp(curve, s_servo_curve, sizeof(curve)) != 0) {
+                || memcmp(curve, s_servo_curve, sizeof(curve)) != 0
+                || gap > OUT_DEFAULT_TIMEOUT_MS) {
                 memcpy(s_servo_curve, curve, sizeof(curve));
-                atomic_store(&s_sweep_start_ms, now_ms());
+                atomic_store(&s_sweep_start_ms, took);
                 atomic_store(&s_sweep_start_new, true);
             }
+            s_servo_curve_ms = took;
             s_servo_sweeping = true;
             /* Every surface is moving, so a release owes each a centre. */
             s_servo_written |= mask;
@@ -3747,7 +3755,7 @@ static bool write_servo(const servo_cmd_t sv)
  * asked again until it changes, the binding is rewritten or the link comes
  * back.
  */
-#define SERVO_BIND_HZ    50u      /* the binding's SERVO PWM rate (out_bind.c) */
+#define SERVO_BIND_HZ    50u      /* the binding's SERVO PWM rate         */
 #define SERVO_HZ_UNKNOWN 0xFFFFu  /* not known: perhaps a faster rate        */
 static bool     s_servo_rate_page;
 static uint16_t s_servo_hz_sent = SERVO_HZ_UNKNOWN;  /* acknowledged; 0 own */

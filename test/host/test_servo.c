@@ -1558,6 +1558,25 @@ TEST_CASE(a_profile_changed_while_it_sweeps_goes_with_the_sweep)
     CHECK(servo_screen_sweeping());
 }
 
+/* A range changed while it sweeps goes out with the amplitude it gives,
+ * not the one before it: half the travel is half the sweep at once. */
+TEST_CASE(a_range_changed_while_it_sweeps_goes_with_its_own_amplitude)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);
+    frames(0.2f);
+    (void)last_cmd();
+    open_settings();
+    tap(ROW_L_X, ROW_Y(4));                    /* TRAVEL */
+    keys("45");
+    const servo_cmd_t c = last_cmd();          /* before any tick */
+    CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
+    CHECK_EQ(c.sweep_span, 200u);
+    CHECK(servo_screen_sweeping());
+}
+
 /* HOLD keeps the horn where the output has got to, which a slow SPEED
  * leaves well behind the curve. */
 TEST_CASE(hold_keeps_the_output_where_it_has_got_to)
@@ -1695,6 +1714,7 @@ int main(void)
     RUN(a_changed_setting_starts_the_sweep_over);
     RUN(a_profile_changed_while_it_sweeps_goes_with_the_sweep);
     RUN(hold_keeps_the_output_where_it_has_got_to);
+    RUN(a_range_changed_while_it_sweeps_goes_with_its_own_amplitude);
     RUN(the_horn_follows_the_curve_from_where_the_far_end_started_it);
     RUN(drags_and_samples_leave_both_buffers_as_a_full_redraw_would);
     RUN(a_cancelled_gesture_does_not_arm);

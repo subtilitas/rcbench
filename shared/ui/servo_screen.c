@@ -643,7 +643,17 @@ static void reissue(void)
          * is started over by tick(); one that did not carries on, here and
          * at the far end.
          */
-        post(SERVO_CMD_SWEEP, 0);
+        const sweep_cfg_t now = sweep_cfg_now();
+        if (same_sweep(&now, &s.sw.cfg)) {
+            post(SERVO_CMD_SWEEP, 0);
+        } else {
+            /* The curve changed with the range -- MIN, CENTRE, MAX or
+             * TRAVEL move its amplitude -- so it starts over now, rather
+             * than going out once with the old amplitude under the new
+             * range before tick() catches it. */
+            stop_sweep();
+            start_sweep();
+        }
         return;
     }
     if (s.driving) {
