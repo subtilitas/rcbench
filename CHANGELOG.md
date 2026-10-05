@@ -6,6 +6,16 @@ history is in git.
 
 ## Unreleased
 
+## 0.9.0 - 2026-10-05
+
+Two reports from a bench and one protocol change. Extended telemetry comes on
+with AM32 2.21, which showed speed and nothing else: voltage, current, power
+and ESC temperature stayed empty because the bench asked before the ESC could
+take the command. LOGS deletes a file from the card behind a second panel
+that names it. The link protocol is 4.0: the write that arms carries the pole
+count, and a panel and a coprocessor on different majors do not arm, so both
+images go on together.
+
 ### Added
 
 - **LOGS deletes a file from the card (#171).** DELETE in the browse footer
