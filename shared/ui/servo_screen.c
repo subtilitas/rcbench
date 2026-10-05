@@ -477,6 +477,16 @@ static void reissue(void)
 {
     if (s.driving) {
         post(SERVO_CMD_POSITION, deg_to_us(s.commanded_deg));
+    } else if (s.armed) {
+        /*
+         * Resting on an armed bench: the rest restated under the profile now
+         * in force, its range and its frame rate, which the panel orders so
+         * a faster rate never meets wider pulses.  Left alone, a narrow
+         * servo would rest at a standard servo's centre, past its stop, and
+         * a servo would go on running at a heli rate after STANDARD PWM was
+         * chosen.
+         */
+        post(SERVO_CMD_RELEASE, 0);
     }
 }
 

@@ -615,7 +615,8 @@ TEST_CASE(arming_drops_a_position_held_before_it)
      * the panel drops the held command and the slot so that an arm starts
      * from nothing.  A screen still believing it was driving would say that
      * discarded position again on the next change of type, trim or travel --
-     * onto a bench that is armed by then.
+     * onto a bench that is armed by then.  What the change says is the rest,
+     * under the new type.
      */
     fresh();
     int x, y;
@@ -625,7 +626,7 @@ TEST_CASE(arming_drops_a_position_held_before_it)
 
     servo_screen_set_armed(true);
     choose_type(1);
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
 }
 
 TEST_CASE(a_stop_on_a_bench_that_was_not_armed_still_lets_go)
@@ -675,6 +676,32 @@ TEST_CASE(nothing_is_said_again_when_nothing_is_being_held)
     fresh();
     choose_type(1);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+}
+
+/*
+ * Resting on an armed bench is different: the rest is restated under the
+ * new profile, so its range and its rate follow the type chosen rather than
+ * the one before it.
+ */
+TEST_CASE(a_resting_armed_servo_takes_the_new_profile)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    choose_type(1);                            /* NARROW 760 */
+    servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_RELEASE);
+    CHECK_EQ(c.min_us, 660);
+    CHECK_EQ(c.max_us, 860);
+    CHECK_EQ(c.frame_hz, 50);
+    choose_type(4);                            /* HELI TAIL 760, held */
+    c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_RELEASE);
+    CHECK_EQ(c.frame_hz, 560);
+    choose_type(0);                            /* back to STANDARD PWM */
+    c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_RELEASE);
+    CHECK_EQ(c.min_us, 1000);
+    CHECK_EQ(c.frame_hz, 50);
 }
 
 /* ------------------------------------------------------- the servo's range */
@@ -1361,6 +1388,7 @@ int main(void)
     RUN(changing_the_type_says_the_position_again);
     RUN(the_trim_says_the_position_again_while_it_is_held);
     RUN(nothing_is_said_again_when_nothing_is_being_held);
+    RUN(a_resting_armed_servo_takes_the_new_profile);
     RUN(a_stop_abandons_a_hold_that_is_under_way);
     RUN(a_cancelled_hold_leaves_no_arm_to_be_read_later);
     RUN(a_second_contact_cannot_take_over_the_arm_hold);

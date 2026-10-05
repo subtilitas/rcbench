@@ -244,10 +244,12 @@ another one.
 
 **The frame rate reaches the pins** through the coprocessor's SERVO page
 (protocol 4.1). It applies to every PWM output whose first channel is a
-surface; a PPM output keeps its own frame. It goes with the next position: a
-faster rate after the pulse widths, a slower one before them, so the pins
-never carry a fast rate with a slower profile's wider pulses. The OUTPUT page
-says what became of it:
+surface; a PPM output keeps its own frame. It goes with every held position,
+and a profile changed while the armed servo rests restates the rest with it.
+A faster rate goes after the pulse widths, once all of them have landed; any
+other rate goes before them, and nothing wider goes out until it has landed,
+so the pins never carry a fast rate with a slower profile's wider pulses. The
+OUTPUT page says what became of it:
 
 | Note | Meaning |
 | --- | --- |
@@ -258,7 +260,8 @@ says what became of it:
 
 A coprocessor restart, and every binding written on OUTPUTS, put each slot
 back at its own rate, 50 Hz for a servo; the screen sends its rate again with
-its next position, against the binding then in force.
+its next position, against the binding then in force. A binding is not
+written while the reset to each slot's own rate goes unanswered.
 
 The OUTPUT settings are kept for the session; the TEST, LIMITS and DUT
 settings are kept in NVS (non-volatile storage) and written as on SUPPLY.

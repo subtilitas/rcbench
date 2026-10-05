@@ -263,11 +263,13 @@ anderes gedacht war.
 
 **Die Frame Rate erreicht die Pins** über die SERVO-Page des Koprozessors
 (Protokoll 4.1). Sie gilt für jeden PWM-Ausgang, dessen erster Kanal die Rolle
-surface hat; ein PPM-Ausgang behält seinen eigenen Frame. Sie geht mit der
-nächsten Stellung hinaus: eine schnellere Rate nach den Impulsbreiten, eine
-langsamere davor, damit die Pins nie eine schnelle Rate mit den breiteren
-Impulsen eines langsameren Profils tragen. Die OUTPUT-Seite sagt, was aus ihr
-wurde:
+surface hat; ein PPM-Ausgang behält seinen eigenen Frame. Sie geht mit jeder
+gehaltenen Stellung hinaus, und ein Profilwechsel, während das scharfe Servo
+ruht, setzt die Ruhelage mit ihr neu. Eine schnellere Rate folgt den
+Impulsbreiten, sobald alle angekommen sind; jede andere Rate geht ihnen voraus,
+und nichts Breiteres geht hinaus, bevor sie angekommen ist. So tragen die Pins
+nie eine schnelle Rate mit den breiteren Impulsen eines langsameren Profils.
+Die OUTPUT-Seite sagt, was aus ihr wurde:
 
 | Hinweis | Bedeutung |
 | --- | --- |
@@ -279,6 +281,8 @@ wurde:
 Ein Neustart des Koprozessors und jede auf OUTPUTS geschriebene Bindung setzen
 jeden Slot auf seine eigene Rate zurück, 50 Hz für ein Servo; der Screen sendet
 seine Rate mit der nächsten Stellung erneut, gegen die dann geltende Bindung.
+Eine Bindung wird nicht geschrieben, solange das Zurücksetzen auf die eigene
+Rate jedes Slots unbeantwortet bleibt.
 
 Die OUTPUT-Einstellungen gelten für die Sitzung; die Einstellungen unter TEST,
 LIMITS und DUT liegen im NVS (Non-Volatile Storage) und werden wie bei SUPPLY
