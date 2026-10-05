@@ -50,13 +50,22 @@ typedef struct {
 typedef struct {
     telemetry_sim_cfg_t cfg;
     float rpm;             /**< the lagged state                  */
-    float drawn_mah;
+    float drawn_mah;       /**< from the pack, since init: its charge state */
     float drawn_wh;
+    float run_mah;         /**< this run's, reported as charge_mah          */
+    float run_wh;          /**< this run's, reported as energy_wh           */
     float temp_esc;
     float temp_motor;
 } telemetry_sim_t;
 
 void telemetry_sim_init(telemetry_sim_t *s, const telemetry_sim_cfg_t *cfg);
+
+/**
+ * A run begins: the charge and energy reported start again from zero, as the
+ * coprocessor's do at each arm.  The pack keeps what it has given, because
+ * its voltage follows its charge state.
+ */
+void telemetry_sim_new_run(telemetry_sim_t *s);
 
 /**
  * Advance by @p dt_s at @p throttle_pct and fill @p out.

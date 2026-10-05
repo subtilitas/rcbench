@@ -4037,6 +4037,17 @@ static void advance_model_and_log(bool link_up, float emitted,
     if ((uint32_t)(now_ms() - *last_sample)
         >= (uint32_t)(1000.0f / PANEL_SAMPLE_HZ)) {
         *last_sample = now_ms();
+        /*
+         * A run's charge and energy are that run's, as the coprocessor's are
+         * from its arm: the model starts its totals again on the bank's arm
+         * edge, and the pack keeps what it has given.
+         */
+        static bool s_sim_was_armed;
+        const bool armed = outputs_armed(&s_out);
+        if (armed && !s_sim_was_armed) {
+            telemetry_sim_new_run(sim);
+        }
+        s_sim_was_armed = armed;
         if (!link_up) {
             telemetry_sim_step(sim, emitted, 1.0f / PANEL_SAMPLE_HZ, bench);
             *new_sample = true;

@@ -340,6 +340,28 @@ TEST_CASE(charge_and_energy_only_accumulate)
     CHECK(last_mah > 0.0f);
 }
 
+TEST_CASE(the_simulator_starts_each_run_from_zero_and_keeps_the_pack)
+{
+    telemetry_sim_t s;
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    telemetry_sim_init(&s, NULL);
+    for (int i = 0; i < 200; ++i) {
+        telemetry_sim_step(&s, 80.0f, 0.05f, &b);
+    }
+    CHECK(b.charge_mah > 0.0f);
+    const float drawn = s.drawn_mah;
+
+    telemetry_sim_new_run(&s);
+    telemetry_sim_step(&s, 80.0f, 0.05f, &b);
+    /* One step's worth, not the first run's on top. */
+    CHECK(b.charge_mah < drawn / 100.0f);
+    CHECK(b.energy_wh >= 0.0f);
+    /* The pack is not refilled: its charge state carries on. */
+    CHECK(s.drawn_mah > drawn);
+    telemetry_sim_new_run(NULL);
+}
+
 /* ------------------------------------------- the run's charge and energy */
 
 static bench_state_t measured(float v, float a, uint16_t flags)
@@ -459,6 +481,7 @@ int main(void)
     RUN(rpm_lags_a_step_rather_than_following_it);
     RUN(the_simulator_accumulates_peaks_like_the_coprocessor_would);
     RUN(charge_and_energy_only_accumulate);
+    RUN(the_simulator_starts_each_run_from_zero_and_keeps_the_pack);
     RUN(charge_and_energy_count_what_was_measured_while_driving);
     RUN(nothing_is_counted_while_disarmed_or_unmeasured);
     RUN(a_total_outlives_a_lapse_and_the_run_and_resets_at_the_next);
