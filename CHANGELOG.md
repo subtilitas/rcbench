@@ -8,6 +8,24 @@ history is in git.
 
 ### Added
 
+- **SERVO has SETTINGS of its own.** The overlay sets the servo type --
+  STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC (1520 us, +/-700 us, up to
+  333 Hz) and HELI TAIL 760 (+/-350 us, up to 560 Hz) -- the frame rate,
+  the pulse widths, trim, travel and reverse, and the automatic test's
+  curve, speed, range, length, dwell, settle, supply steps, brown-out, its
+  pass/fail limits, stall threshold and the device under test's name.
+  STANDARD PWM keeps at least 1 ms between pulses, so its fastest rate is
+  1 / (longest pulse + 1 ms). A heli type or a frame rate above 60 Hz opens
+  a warning that it can destroy a servo not made for it and applies only
+  after a 2 s hold; the profile in force shows red, and every restart is
+  STANDARD PWM at 50 Hz. The test, limit and name settings are kept in NVS
+  (non-volatile storage). The coprocessor still drives PWM at 50 Hz and no
+  automatic test runs: those settings are kept for both.
+- **SERVO plots the supply's live power.** Voltage, current and power of the
+  supply that feeds the servo, read and plotted on the right card.
+- **An on-screen keyboard** (`ui_textkey`) for names, and string settings
+  beside the numbers (`settings_text()`), kept by the same store.
+
 - **MOTOR & ESC counts the run's charge and energy.** Both read 0 on hardware
   because nothing filled them. The panel now counts them from the current and
   voltage it shows, while the bank is armed, from the arm
@@ -48,6 +66,16 @@ history is in git.
 
 ### Changed
 
+- **SERVO's trim (the CENTRE row), TRAVEL and TYPE are in its SETTINGS
+  overlay** (trim as TRIM); the supply's plot takes their place on the right
+  card.
+- **The plot leaves a gap for a reading that did not arrive** instead of
+  drawing it as zero.
+- **A channel's endpoints may go down to 400 us** (`OUT_FLOOR_US`,
+  `LINK_CC_FLOOR_US`), from 500 us, so a 760 us tail servo's travel, 410 to
+  1110 us, reaches the pin. The coprocessor and the panel must both carry
+  it: a coprocessor with the 500 us floor refuses HELI TAIL 760's range with
+  BAD_VALUE.
 - **The menu is five tiles by two**, 150 x 204 px each, with SUPPLY third.
   The tiles' lines are 16 characters or fewer to fit.
 

@@ -192,7 +192,7 @@ Output-Treiber](DShot-de.md) hat den Rest.
 
 Einträge in CHAN_CFG und OUTPUTS werden ganz geschrieben, vier Register auf
 einmal. Der Pulsbereich eines Kanals ist standardmäßig 1000..2000 µs;
-Endpunkte außerhalb von 500..2500 µs werden mit BAD_VALUE abgewiesen. Ein
+Endpunkte außerhalb von 400..2500 µs werden mit BAD_VALUE abgewiesen. Ein
 Kommando außerhalb seines Bereichs wird begrenzt. Zwei Slots auf einem Pin
 oder zwei Slots, die denselben Kanal ausgeben, werden abgewiesen. Über das
 Schärfen entscheidet der Koprozessor: ein Schreiben von ARM wird mit

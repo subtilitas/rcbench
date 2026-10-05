@@ -50,7 +50,7 @@ Institute of Technology) licence's "without warranty of any kind" applies.
 | Screen | Function | State |
 | --- | --- | --- |
 | Motor & ESC | voltage, current, consumption, RPM (revolutions per minute) and temperatures plotted live | screen built; speed, voltage, current and ESC temperature from an ESC's bidirectional DShot telemetry, run against one AM32 ESC; simulated values while no coprocessor answers |
-| Servo | commanded and measured position; installed-limit search; two-servo synchronisation | screen built and commanding over the link; drives the pins bound as surfaces, run on a bring-up bench, timing unmeasured |
+| Servo | commanded and measured position; installed-limit search; two-servo synchronisation; servo types with their frame rates, a warning for those that can destroy a servo; the supply's live power | screen built and commanding over the link; drives the pins bound as surfaces, run on a bring-up bench, timing unmeasured |
 | Supply | the PD mini, a USB-PD (USB Power Delivery) supply: voltage and current limit set, output switched, V, A and W plotted and logged | screen built and run from a model; no PD mini driver, its UART (universal asynchronous receiver-transmitter) protocol is not in this repository |
 | Analyser | sixteen receiver channels with history, the digital channels, LIVE / FRAME LOST / FAILSAFE / SILENT | S.BUS decoder built; PIO (programmable input/output) receiver not written |
 | Programmer | BLHeli_S, AM32, ESCape32, VESC and Hitec parameter tables | screen built; no protocol on a wire |

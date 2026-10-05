@@ -176,7 +176,7 @@ slot it refuses is left unbound while the page still reads back what was asked
 for. [DShot and the output drivers](DShot.md) has the rest.
 
 CHAN_CFG and OUTPUTS entries are written whole, four registers at a time. A
-channel's pulse range defaults to 1000..2000 µs; endpoints outside 500..2500 µs
+channel's pulse range defaults to 1000..2000 µs; endpoints outside 400..2500 µs
 are refused with BAD_VALUE. A command outside its range is clamped. Two slots
 on one pin, or two slots rendering the same channel, are refused. Arming is
 decided by the coprocessor: a write of ARM is refused with NOT_ARMED while the

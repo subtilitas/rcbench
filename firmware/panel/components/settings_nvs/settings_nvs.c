@@ -10,6 +10,8 @@
 
 #include "settings.h"
 
+#include <string.h>
+
 #include "esp_log.h"
 #include "nvs.h"
 #include "nvs_flash.h"
@@ -88,7 +90,57 @@ static bool nvs_save(const float *values, int count)
     return wrote;
 }
 
-static const settings_store_t s_store = { nvs_load, nvs_save };
+/* The strings, one NVS string key each, under the same namespace.  A key
+ * that is missing keeps its default, as a number's does. */
+static bool nvs_load_text(char (*texts)[SETTINGS_TEXT_MAX], int count)
+{
+    nvs_handle_t h;
+    if (nvs_open(NAMESPACE, NVS_READONLY, &h) != ESP_OK) {
+        return false;
+    }
+    for (int i = 0; i < count; ++i) {
+        const char *key = settings_text_key((setting_text_id_t)i);
+        if (key == NULL) {
+            continue;
+        }
+        char buf[SETTINGS_TEXT_MAX];
+        size_t len = sizeof(buf);
+        if (nvs_get_str(h, key, buf, &len) == ESP_OK) {
+            buf[sizeof(buf) - 1] = '\0';
+            memcpy(texts[i], buf, sizeof(buf));
+        }
+    }
+    nvs_close(h);
+    return true;
+}
+
+static bool nvs_save_text(const char (*texts)[SETTINGS_TEXT_MAX], int count)
+{
+    nvs_handle_t h;
+    esp_err_t err = nvs_open(NAMESPACE, NVS_READWRITE, &h);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "nvs_open: %s", esp_err_to_name(err));
+        return false;
+    }
+    bool wrote = true;
+    for (int i = 0; i < count; ++i) {
+        const char *key = settings_text_key((setting_text_id_t)i);
+        if (key == NULL) {
+            continue;
+        }
+        const esp_err_t set = nvs_set_str(h, key, texts[i]);
+        if (set != ESP_OK) {
+            ESP_LOGE(TAG, "nvs_set_str(%s): %s", key, esp_err_to_name(set));
+            wrote = false;
+        }
+    }
+    err = nvs_commit(h);
+    nvs_close(h);
+    return wrote && err == ESP_OK;
+}
+
+static const settings_store_t s_store = { nvs_load, nvs_save, nvs_load_text,
+                                          nvs_save_text };
 
 /*
  * A store that cannot be brought up must not stop the bench from booting:

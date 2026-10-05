@@ -200,6 +200,86 @@ Bildschirms schaltet unscharf und gibt den Pin frei: ein Bildschirm, den man
 nicht sieht, darf weder ein Servo halten noch den Prüfstand scharf
 zurücklassen.
 
+Die rechte Karte zeigt, was befohlen und gemessen ist, Typ und Bildwiederholrate,
+die gelten -- in der Gefahrenfarbe, solange sie ein Servo zerstören können, das
+nicht dafür gebaut ist -- und das Netzteil, das das Servo versorgt: Spannung,
+Strom und Leistung, abgelesen und über die letzten 13 s geplottet. Ohne Sample
+vom Netzteil stehen dort `--`.
+
+### Einstellungen
+
+SETTINGS, oben auf der rechten Karte, öffnet die Einstellungen des Servos über
+der linken Karte. ARM, CENTRE, RELEASE und STOP bleiben, wo sie sind, und
+funktionieren. Ein Wert öffnet die Tastatur, eine Liste eine Liste, ein
+Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
+
+![Die Einstellungen des Servos](img/servo-settings.png)
+
+| Seite | Einstellung | Wirkung |
+| --- | --- | --- |
+| OUTPUT | TYPE | das Servoprofil: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC oder HELI TAIL 760 |
+| OUTPUT | FRAME RATE | wie oft ein Impuls gesendet wird; die Liste des Typs oder CUSTOM über die Tastatur |
+| OUTPUT | PULSE MIN, CENTRE, MAX | die Impulsbreiten, auf die der Weg abgebildet wird, 400 bis 2500 us: -90 Grad ist MIN, 0 ist CENTRE, +90 Grad ist MAX, und RELEASE ruht auf CENTRE. Ein Ende liegt nicht weiter von CENTRE entfernt als CENTRE von 400 us oder 2500 us |
+| OUTPUT | TRIM | zur Mitte addiert, 5 us je Schritt, bis 200 us in jede Richtung |
+| OUTPUT | TRAVEL | wie weit der Arm in jede Richtung darf, 10 bis 90 Grad |
+| OUTPUT | REVERSE | die Richtung, in der der Winkel auf den Impuls abgebildet wird |
+| TEST | CURVE, SPEED, RANGE | die Bewegung des automatischen Tests: Rechteck, Sinus oder Dreieck, 0,05 bis 5 Hz, 10 bis 100 % des Wegs |
+| TEST | LENGTH BY, TEST TIME, MOVEMENTS | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen |
+| TEST | DWELL, SETTLE | Haltezeit an jedem Ende; Wartezeit nach einer Spannungsstufe vor dem Messen |
+| TEST | STEP 4,8 / 6,0 / 7,4 / 8,4 V, BROWN-OUT | die Spannungsstufen und der Brown-out-Lauf ab 5,0 V abwärts |
+| LIMITS | VOLTAGE MAX, CURRENT MAX | die Grenzen des Bildschirms SUPPLY, dieselben Einstellungen |
+| LIMITS | STALL AT | über diesem Strom gilt das Servo als blockiert |
+| LIMITS | IDLE CURRENT, HOLD CURRENT, TRAVEL TIME | Pass/Fail-Grenzen; 0 wird nicht geprüft |
+| DUT | NAME | das Testobjekt, bis 23 Zeichen, für den Bericht |
+| DUT | REPORT | ein Textbericht neben dem Log jedes Tests |
+
+| Typ | Mitte | Weg | Bildwiederholraten |
+| --- | --- | --- | --- |
+| STANDARD PWM | 1500 us | 1000-2000 us | 50, 60, 100, 150, 200, 250, 300, 333 Hz |
+| NARROW 760 | 760 us | 660-860 us | wie STANDARD PWM |
+| WIDE | 1500 us | 800-2200 us | wie STANDARD PWM, bis 312 Hz |
+| HELI CYCLIC | 1520 us | 820-2220 us | 50, 120, 200, 333 Hz |
+| HELI TAIL 760 | 760 us | 410-1110 us | 200, 333, 560 Hz |
+
+Ein Impuls braucht eine Pause vor dem nächsten Frame. STANDARD PWM, NARROW 760
+und WIDE halten mindestens 1 ms zwischen den Impulsen, ihre höchste Rate ist
+also 1 / (längster Impuls + 1 ms): 333 Hz bei 2000 us. Die Heli-Profile laufen
+mit den Raten, die Rotorflight für digitale Taumelscheiben- und
+Schmalband-Heckservos nennt, mit mindestens 0,5 ms zwischen den Impulsen. Eine
+Rate, die den Impulsen keine Pause lässt, wird abgelehnt, ebenso ein längerer
+PULSE MAX bei einer Rate, in die er nicht passt.
+
+**Ein Heli-Typ oder jede Bildwiederholrate über 60 Hz kann ein Servo zerstören,
+das nicht dafür gebaut ist.** Die Wahl öffnet eine Warnung in der
+Gefahrenfarbe, die nennt, was gewählt ist und was es mit einem nicht dafür
+gebauten Servo macht; angewendet wird es erst, nachdem HOLD TO APPLY 2 s
+gehalten wurde. CANCEL, ein abrutschender Finger, ein Touch-Verlust und das
+Verlassen des Bildschirms wenden nichts an. Typ und Rate bleiben auf der
+rechten Karte rot, und jeder Neustart geht auf STANDARD PWM mit 50 Hz zurück:
+ein nach einem Neustart angestecktes Servo bekommt nie eine Rate, die für ein
+anderes gedacht war.
+
+![Die Warnung](img/servo-warning.png)
+
+Die OUTPUT-Einstellungen gelten für die Sitzung; die Einstellungen unter TEST,
+LIMITS und DUT liegen im NVS (Non-Volatile Storage) und werden wie bei SUPPLY
+geschrieben.
+
+![Die Einstellungen des automatischen Tests](img/servo-test.png)
+![Die Grenzen](img/servo-limits.png)
+![Der Name](img/servo-name.png)
+
+Aktuelle Einschränkungen:
+
+- Der Koprozessor treibt jeden PWM-Ausgang mit 50 Hz. Die Bildwiederholrate
+  wird angezeigt, gehalten und im Befehl des Panels mitgeführt und erreicht
+  den Pin nicht.
+- In diesem Build läuft kein automatischer Test. Die Einstellungen unter TEST,
+  LIMITS und DUT werden für ihn gehalten, und es wird kein Bericht geschrieben.
+- Das Netzteil auf der rechten Karte ist das Modell von SUPPLY: Es gibt keinen
+  Treiber für den PD mini, also sind Spannung, Strom und Leistung simuliert,
+  nicht gemessen.
+
 ## Netzteil
 
 ![Netzteil](img/supply.png)

@@ -183,6 +183,81 @@ armed disarms. Leaving the screen disarms and lets go of the pin: a screen
 that is not visible must not be holding a servo somewhere, or leaving the
 bench armed behind it.
 
+The right card shows what is commanded and measured, the type and frame rate
+in force -- in the danger colour while they are ones that can destroy a servo
+not made for them -- and the supply that feeds the servo: its voltage, current
+and power, read and plotted over the last 13 s. Without a supply sample the
+readings are `--`.
+
+### Settings
+
+SETTINGS, at the top of the right card, opens the servo's settings over the
+left card. ARM, CENTRE, RELEASE and STOP stay where they are and work. A value
+opens the keypad, a list opens a list, a switch flips on the tap, and the
+name opens a keyboard.
+
+![The servo's settings](img/servo-settings.png)
+
+| Page | Setting | What it does |
+| --- | --- | --- |
+| OUTPUT | TYPE | the servo profile: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC or HELI TAIL 760 |
+| OUTPUT | FRAME RATE | how often a pulse is sent; the type's list, or CUSTOM on the keypad |
+| OUTPUT | PULSE MIN, CENTRE, MAX | the pulse widths the travel maps onto, 400 to 2500 us: -90 deg is MIN, 0 is CENTRE, +90 deg is MAX, and RELEASE rests at CENTRE. An end lies no further from CENTRE than CENTRE lies from 400 us or 2500 us |
+| OUTPUT | TRIM | added to the centre, 5 us a step, up to 200 us either way |
+| OUTPUT | TRAVEL | how far the horn may go each way, 10 to 90 degrees |
+| OUTPUT | REVERSE | the direction the horn's angle maps onto the pulse |
+| TEST | CURVE, SPEED, RANGE | the automatic test's movement: square, sine or triangle, 0.05 to 5 Hz, 10 to 100 % of the travel |
+| TEST | LENGTH BY, TEST TIME, MOVEMENTS | how long each supply step runs: a time, or a number of movements |
+| TEST | DWELL, SETTLE | held at each end; waited after a supply step before measuring |
+| TEST | STEP 4.8 / 6.0 / 7.4 / 8.4 V, BROWN-OUT | the supply steps, and the brown-out run from 5.0 V down |
+| LIMITS | VOLTAGE MAX, CURRENT MAX | the SUPPLY screen's caps, the same settings |
+| LIMITS | STALL AT | above this current the servo counts as stalled |
+| LIMITS | IDLE CURRENT, HOLD CURRENT, TRAVEL TIME | pass/fail limits; 0 is not checked |
+| DUT | NAME | the device under test, up to 23 characters, for the report |
+| DUT | REPORT | a text report beside each test's log |
+
+| Type | Centre | Travel | Frame rates |
+| --- | --- | --- | --- |
+| STANDARD PWM | 1500 us | 1000-2000 us | 50, 60, 100, 150, 200, 250, 300, 333 Hz |
+| NARROW 760 | 760 us | 660-860 us | as STANDARD PWM |
+| WIDE | 1500 us | 800-2200 us | as STANDARD PWM, up to 312 Hz |
+| HELI CYCLIC | 1520 us | 820-2220 us | 50, 120, 200, 333 Hz |
+| HELI TAIL 760 | 760 us | 410-1110 us | 200, 333, 560 Hz |
+
+A pulse needs a pause before the next frame. STANDARD PWM, NARROW 760 and WIDE
+keep at least 1 ms between pulses, so their fastest rate is 1 / (longest
+pulse + 1 ms): 333 Hz for 2000 us. The heli profiles run at Rotorflight's
+rates for digital cyclic and narrow-band tail servos, with at least 0.5 ms
+between pulses. A frame rate the pulses leave no pause for is refused, and a
+longer PULSE MAX is refused at a rate it does not fit.
+
+**A heli type, or any frame rate above 60 Hz, can destroy a servo that is not
+made for it.** Choosing one opens a warning in the danger colour that names
+what is chosen and what it does to a servo not made for it; it is applied only
+after HOLD TO APPLY has been held for 2 s. CANCEL, a finger that slides off,
+a touch loss and leaving the screen apply nothing. The type and frame rate in
+force stay red on the right card, and every restart goes back to STANDARD PWM
+at 50 Hz: a servo plugged in after a restart never meets a rate meant for
+another one.
+
+![The warning](img/servo-warning.png)
+
+The OUTPUT settings are kept for the session; the TEST, LIMITS and DUT
+settings are kept in NVS (non-volatile storage) and written as on SUPPLY.
+
+![The automatic test's settings](img/servo-test.png)
+![The limits](img/servo-limits.png)
+![The name](img/servo-name.png)
+
+Current limitations:
+
+- The coprocessor drives every PWM output at 50 Hz. The frame rate is shown,
+  kept and carried in the panel's command, and does not reach the pin.
+- No automatic test runs in this build. The TEST, LIMITS and DUT settings are
+  kept for it, and no report is written.
+- The supply on the right card is SUPPLY's model: no PD mini driver exists,
+  so its voltage, current and power are simulated, not measured.
+
 ## Supply
 
 ![Supply](img/supply.png)

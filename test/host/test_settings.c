@@ -73,7 +73,7 @@ static bool mem_save(const float *values, int count)
     return true;
 }
 
-static const settings_store_t s_mem_store = { mem_load, mem_save };
+static const settings_store_t s_mem_store = { mem_load, mem_save, NULL, NULL };
 
 /* A store that is asked and answers no.  It writes nothing, so a later load
  * returns what was there before the refused save. */
@@ -85,7 +85,34 @@ static bool refuse_save(const float *values, int count)
     return false;
 }
 
-static const settings_store_t s_refusing_store = { mem_load, refuse_save };
+static const settings_store_t s_refusing_store = { mem_load, refuse_save, NULL, NULL };
+
+/* A store that keeps the strings too. */
+static char s_saved_text[SETTING_TEXT_COUNT][SETTINGS_TEXT_MAX];
+static bool s_has_text;
+
+static bool mem_load_text(char (*texts)[SETTINGS_TEXT_MAX], int count)
+{
+    if (!s_has_text) {
+        return false;
+    }
+    for (int i = 0; i < count && i < SETTING_TEXT_COUNT; ++i) {
+        memcpy(texts[i], s_saved_text[i], SETTINGS_TEXT_MAX);
+    }
+    return true;
+}
+
+static bool mem_save_text(const char (*texts)[SETTINGS_TEXT_MAX], int count)
+{
+    for (int i = 0; i < count && i < SETTING_TEXT_COUNT; ++i) {
+        memcpy(s_saved_text[i], texts[i], SETTINGS_TEXT_MAX);
+    }
+    s_has_text = true;
+    return true;
+}
+
+static const settings_store_t s_text_store = { mem_load, mem_save,
+                                               mem_load_text, mem_save_text };
 
 static int s_observed;
 static setting_id_t s_last_observed;
@@ -220,6 +247,46 @@ TEST_CASE(nvs_keys_are_unique_and_short_enough)
             }
         }
     }
+}
+
+TEST_CASE(a_string_setting_is_kept_cut_and_saved_with_the_numbers)
+{
+    s_has_saved = false;
+    s_has_text  = false;
+    settings_set_store(&s_text_store);
+    settings_init();
+    CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "SERVO");
+    CHECK(!settings_dirty());
+
+    settings_set_text(SET_TEXT_DUT_NAME, "SAVOX SH-0255");
+    CHECK(settings_dirty());
+    CHECK(settings_save());
+    CHECK(!settings_dirty());
+
+    /* Cut to what it holds, and the same text again is no edit. */
+    settings_set_text(SET_TEXT_DUT_NAME, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    CHECK_EQ(strlen(settings_text(SET_TEXT_DUT_NAME)),
+             (size_t)(SETTINGS_TEXT_MAX - 1));
+    CHECK(settings_save());
+    settings_set_text(SET_TEXT_DUT_NAME, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    CHECK(!settings_dirty());
+
+    /* Back at the next start; the defaults when the store keeps none. */
+    settings_init();
+    CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "ABCDEFGHIJKLMNOPQRSTUVW");
+    settings_reset_all();
+    CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "SERVO");
+    settings_set_store(&s_mem_store);
+    settings_init();
+    CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "SERVO");
+
+    /* Ids out of range are survivable. */
+    CHECK_STR_EQ(settings_text((setting_text_id_t)99), "");
+    CHECK(settings_text_key((setting_text_id_t)99) == NULL);
+    CHECK(strlen(settings_text_key(SET_TEXT_DUT_NAME)) <= 15);
+    settings_set_text((setting_text_id_t)99, "X");
+    settings_set_text(SET_TEXT_DUT_NAME, NULL);
+    settings_set_store(NULL);
 }
 
 TEST_CASE(values_are_clamped_to_the_schema)
@@ -1157,6 +1224,7 @@ int main(void)
     RUN(defaults_come_from_the_schema);
     RUN(every_schema_row_is_internally_consistent);
     RUN(nvs_keys_are_unique_and_short_enough);
+    RUN(a_string_setting_is_kept_cut_and_saved_with_the_numbers);
     RUN(values_are_clamped_to_the_schema);
     RUN(enums_and_booleans_cycle);
     RUN(steps_follow_the_schema);

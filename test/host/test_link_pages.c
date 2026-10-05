@@ -216,7 +216,7 @@ TEST_CASE(a_refused_chan_cfg_write_stores_none_of_its_registers)
     /*
      * One channel, four registers.  The role and the slew differ from the
      * defaults so a half-applied write shows, and the minimum is 100 us,
-     * below the LINK_CC_FLOOR_US of 500 us.
+     * below the LINK_CC_FLOOR_US of 400 us.
      */
     const uint16_t in[LINK_CC_STRIDE] = {
         [LINK_CC_ROLE]   = LINK_CC_ROLE_THROTTLE,

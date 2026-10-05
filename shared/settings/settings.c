@@ -27,6 +27,8 @@ static const char *const k_theme[]     = { "DARK", "LIGHT" };
 static const char *const k_language[]  = { "ENGLISH", "DEUTSCH" };
 static const char *const k_units[]     = { "METRIC", "IMPERIAL" };
 static const char *const k_ina_addr[]  = { "0x40", "0x41", "0x44", "0x45" };
+static const char *const k_servo_curve[] = { "SQUARE", "SINE", "TRIANGLE" };
+static const char *const k_servo_len_by[] = { "TIME", "MOVES" };
 /* The PD mini's own UART Baudrate setting, 0 to 6, in its order. */
 static const char *const k_pdmini_baud[] = {
     "9600", "19200", "38400", "57600", "115200", "230400", "460800",
@@ -163,14 +165,84 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_SUPPLY_CONFIRM_KEYS] = {
         "sup_conf_kp", "Confirm keypad", "Ask before the keypad changes a live output", "",
         SET_CAT_SUPPLY, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
+
+    /*
+     * The servo test's.  What it moves through -- a curve, how fast, how far
+     * and for how long -- the supply steps it repeats that at, and the
+     * limits it judges the servo by.  A pass/fail limit of 0 is not
+     * checked.  The servo's own type, pulse widths and frame rate are not
+     * here: they start at STANDARD PWM and 50 Hz at every restart, so a
+     * servo plugged in later never meets a rate meant for another.
+     */
+    [SET_SERVO_CURVE] = {
+        "srv_curve", "Curve", "How the test moves the servo", "",
+        SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 1, ENUM_OPTS(k_servo_curve) },
+    [SET_SERVO_TEST_HZ] = {
+        "srv_test_hz", "Speed", "Curves a second", "Hz",
+        SET_CAT_SERVO, SET_TYPE_FLOAT, 0.05f, 5.0f, 0.05f, 0.5f, NULL, 0 },
+    [SET_SERVO_TEST_RANGE] = {
+        "srv_range", "Range", "Share of the travel the test moves through", "%",
+        SET_CAT_SERVO, SET_TYPE_INT, 10, 100, 5, 80, NULL, 0 },
+    [SET_SERVO_LEN_BY] = {
+        "srv_len_by", "Length by", "A time, or a number of movements", "",
+        SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_servo_len_by) },
+    [SET_SERVO_LEN_S] = {
+        "srv_len_s", "Test time", "How long each supply step runs", "s",
+        SET_CAT_SERVO, SET_TYPE_INT, 5, 3600, 5, 60, NULL, 0 },
+    [SET_SERVO_LEN_MOVES] = {
+        "srv_len_moves", "Movements", "How many movements each step makes", "",
+        SET_CAT_SERVO, SET_TYPE_INT, 1, 1000, 1, 20, NULL, 0 },
+    [SET_SERVO_DWELL_MS] = {
+        "srv_dwell_ms", "Dwell", "Held at each end before moving on", "ms",
+        SET_CAT_SERVO, SET_TYPE_INT, 0, 5000, 10, 200, NULL, 0 },
+    [SET_SERVO_SETTLE_MS] = {
+        "srv_settle_ms", "Settle", "Waited after a supply step before measuring", "ms",
+        SET_CAT_SERVO, SET_TYPE_INT, 0, 10000, 50, 500, NULL, 0 },
+    [SET_SERVO_STEP_48] = {
+        "srv_step48", "Step 4.8 V", "", "",
+        SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
+    [SET_SERVO_STEP_60] = {
+        "srv_step60", "Step 6.0 V", "", "",
+        SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
+    [SET_SERVO_STEP_74] = {
+        "srv_step74", "Step 7.4 V", "", "",
+        SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
+    [SET_SERVO_STEP_84] = {
+        "srv_step84", "Step 8.4 V", "", "",
+        SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
+    [SET_SERVO_BROWNOUT] = {
+        "srv_brownout", "Brown-out", "From 5.0 V down until the servo stops moving", "",
+        SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
+    [SET_SERVO_IDLE_MAX] = {
+        "srv_idle_max", "Idle current max", "Fail above this at rest; 0 is not checked", "A",
+        SET_CAT_SERVO, SET_TYPE_FLOAT, 0.0f, 5.0f, 0.01f, 0.0f, NULL, 0 },
+    [SET_SERVO_HOLD_MAX] = {
+        "srv_hold_max", "Holding current max", "Fail above this holding an end; 0 is not checked", "A",
+        SET_CAT_SERVO, SET_TYPE_FLOAT, 0.0f, 5.0f, 0.01f, 0.0f, NULL, 0 },
+    [SET_SERVO_TRAVEL_MAX_MS] = {
+        "srv_travel_ms", "Travel time max", "Fail above this end to end; 0 is not checked", "ms",
+        SET_CAT_SERVO, SET_TYPE_INT, 0, 5000, 10, 0, NULL, 0 },
+    [SET_SERVO_STALL_A] = {
+        "srv_stall_a", "Stall threshold", "Above this the servo counts as stalled", "A",
+        SET_CAT_SERVO, SET_TYPE_FLOAT, 0.1f, 5.0f, 0.05f, 2.0f, NULL, 0 },
+    [SET_SERVO_REPORT] = {
+        "srv_report", "Report", "A text report beside each test's log", "",
+        SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
 };
 
 static const char *const k_cat_names[SET_CAT_COUNT] = {
-    "ESC / BENCH", "APPLICATION", "INTERFACES", "SUPPLY",
+    "ESC / BENCH", "APPLICATION", "INTERFACES", "SUPPLY", "SERVO TEST",
+};
+
+/* The string settings' keys and defaults; NVS keys, 15 characters or fewer. */
+static const struct { const char *key; const char *def; }
+    k_text_defs[SETTING_TEXT_COUNT] = {
+    [SET_TEXT_DUT_NAME] = { "srv_dut", "SERVO" },
 };
 
 static struct {
     float values[SETTING_COUNT];
+    char  texts[SETTING_TEXT_COUNT][SETTINGS_TEXT_MAX];
     bool  dirty;
     bool     save_asked;   /* asked for, not yet taken */
     bool     save_failed;  /* the last attempt did not reach the medium */
@@ -284,6 +356,12 @@ void settings_reset_all(void)
         moved = moved || (s.values[i] != before);
         notify_changed(i, before);
     }
+    for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
+        if (strcmp(s.texts[i], k_text_defs[i].def) != 0) {
+            snprintf(s.texts[i], SETTINGS_TEXT_MAX, "%s", k_text_defs[i].def);
+            moved = true;
+        }
+    }
     if (moved) {
         mark_dirty();
     }
@@ -309,6 +387,13 @@ void settings_init(void)
             for (int i = 0; i < SETTING_COUNT; ++i) {
                 s.values[i] = coerce(&k_defs[i], s.values[i]);
             }
+        }
+    }
+    if (s.store && s.store->load_text) {
+        (void)s.store->load_text(s.texts, SETTING_TEXT_COUNT);
+        /* Terminated whatever the medium held. */
+        for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
+            s.texts[i][SETTINGS_TEXT_MAX - 1] = '\0';
         }
     }
     s.dirty = false;
@@ -430,8 +515,14 @@ bool settings_dirty(void)
 
 bool settings_save(void)
 {
+    /* The strings with the numbers, so one request keeps both; a store with
+     * no place for them keeps the numbers. */
     const bool wrote = s.store && s.store->save
-                       && s.store->save(s.values, SETTING_COUNT);
+                       && s.store->save(s.values, SETTING_COUNT)
+                       && (s.store->save_text == NULL
+                           || s.store->save_text(
+                                  (const char (*)[SETTINGS_TEXT_MAX])s.texts,
+                                  SETTING_TEXT_COUNT));
     /*
      * The request is answered either way, so a failure returns the button
      * to SAVE and the operator can try again without first nudging a value.
@@ -448,6 +539,35 @@ bool settings_save(void)
         s.dirty = false;
     }
     return wrote;
+}
+
+const char *settings_text(setting_text_id_t id)
+{
+    if (id < 0 || id >= SETTING_TEXT_COUNT) {
+        return "";
+    }
+    return s.texts[id];
+}
+
+const char *settings_text_key(setting_text_id_t id)
+{
+    if (id < 0 || id >= SETTING_TEXT_COUNT) {
+        return NULL;
+    }
+    return k_text_defs[id].key;
+}
+
+void settings_set_text(setting_text_id_t id, const char *text)
+{
+    if (id < 0 || id >= SETTING_TEXT_COUNT || text == NULL) {
+        return;
+    }
+    char next[SETTINGS_TEXT_MAX];
+    snprintf(next, sizeof(next), "%s", text);
+    if (strcmp(next, s.texts[id]) != 0) {
+        memcpy(s.texts[id], next, sizeof(next));
+        mark_dirty();
+    }
 }
 
 bool settings_save_failed(void)

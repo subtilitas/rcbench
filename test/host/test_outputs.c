@@ -389,8 +389,14 @@ TEST_CASE(endpoints_are_refused_and_commands_are_clamped)
     fresh();
     CHECK(!outputs_set_endpoints(&o, 0, 100u, 2000u));
     CHECK(!outputs_set_endpoints(&o, 0, 1000u, 9000u));
+    CHECK(!outputs_set_endpoints(&o, 0, OUT_FLOOR_US - 1u, 1110u));
     /* Refused, so the defaults still stand. */
     CHECK_EQ(outputs_pulse_us(&o, 0), 1500u);
+
+    /* A 760 us tail servo's travel, 410 to 1110 us, is a range. */
+    CHECK(outputs_set_endpoints(&o, 0, 410u, 1110u));
+    CHECK_EQ(outputs_pulse_us(&o, 0), 760u);
+    CHECK(outputs_set_endpoints(&o, 0, 1000u, 2000u));
 
     outputs_arm(&o, true, 1000u);
     CHECK(outputs_set(&o, 0, 5000u, 1000u));   /* clamped, not refused */
@@ -825,7 +831,8 @@ TEST_CASE(a_throttle_range_the_page_would_refuse_changes_nothing)
 {
     fresh_pages();
     chan_cfg[0 * LINK_CC_STRIDE + LINK_CC_ROLE] = LINK_CC_ROLE_THROTTLE;
-    CHECK(!outputs_chan_cfg_set_throttle_range(chan_cfg, 400u, 2000u));
+    CHECK(!outputs_chan_cfg_set_throttle_range(chan_cfg, LINK_CC_FLOOR_US - 1u,
+                                                2000u));
     CHECK(!outputs_chan_cfg_set_throttle_range(chan_cfg, 1000u, 2600u));
     CHECK(!outputs_chan_cfg_set_throttle_range(chan_cfg, 2000u, 1000u));
     CHECK(!outputs_chan_cfg_set_throttle_range(chan_cfg, 1500u, 1500u));

@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "supply.h"
 #include "ui_screen.h"
 
 typedef enum {
@@ -35,7 +36,10 @@ typedef struct {
     servo_cmd_kind_t kind;
     uint16_t         value_us;
     /**
-     * The endpoints the selected servo type has, carried with the command.
+     * The range the channel is configured with, carried with the command:
+     * centred on the servo's PULSE CENTRE and reaching the further of its
+     * PULSE MIN and MAX, so its midpoint -- where the far end rests a
+     * surface -- is the centre.  value_us stays within MIN..MAX.
      *
      * The pulse means nothing without them: 760 us is the centre of a narrow
      * servo and below the bottom of a standard one, so a command clamped
@@ -53,6 +57,12 @@ typedef struct {
      * the thing under test.
      */
     uint16_t         slew_per_s;
+    /**
+     * The frame rate the profile in force runs at, in Hz.  The coprocessor
+     * drives every PWM output at 50 Hz and does not take this from the
+     * panel; the screen keeps it, shows it and carries it.
+     */
+    uint16_t         frame_hz;
 } servo_cmd_t;
 
 /** Drop the cached chrome, so the next frame repaints it. */
@@ -86,6 +96,14 @@ void servo_screen_cancel_arm(void);
 
 /** Commanded pulse width, for the application and for tests. */
 uint16_t servo_screen_commanded(void);
+
+/** The frame rate and the type in force, for the application and tests. */
+uint16_t servo_screen_frame_hz(void);
+const char *servo_screen_type_name(void);
+
+/** One sample of the supply that feeds the servo, for the live power plot
+ *  on the right card. */
+void servo_screen_supply(const supply_state_t *s);
 
 /**
  * Set the commanded angle without a touch event.

@@ -13,10 +13,16 @@
 #include "greatest.h"
 
 #include "servo_screen.h"
+#include "settings.h"
+#include "supply_screen.h"
+#include "ui_keypad.h"
 #include "ui_screen.h"
+#include "ui_textkey.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "link_pages.h"
 #include "outputs.h"
+#include "outputs_pages.h"
 
 #define W 800
 #define H 480
@@ -39,6 +45,10 @@ static void fresh(void)
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     gfx_canvas_init(&cv, fb, W, H, W);
     ui_theme_set(UI_THEME_DARK);
+    settings_set_store(NULL);
+    settings_init();
+    supply_screen()->reset();
+    supply_screen_settings_loaded();
     scr = servo_screen();
     scr->reset();
     servo_cmd_t junk;
@@ -55,6 +65,82 @@ static void ev(int x, int y, touch_event_type_t t, uint8_t id)
 static void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
                                 ev(x, y, TOUCH_EVENT_UP, 1); }
 
+/*
+ * The SETTINGS overlay, mirrored from servo_screen.c: the button at the top
+ * of the right card, then over the left card its tabs, CLOSE, the rows of a
+ * page (left column at x 16, right at x 255, 42 px apart from y 54), the
+ * list a row opens (two columns of five, 46 px apart from y 54) and the
+ * warning's HOLD TO APPLY and CANCEL.
+ */
+#define SETB_X   734
+#define SETB_Y   24
+#define CLOSE_X  439
+#define CLOSE_Y  27
+#define TAB_X(i) (56 + 80 * (i))
+#define TAB_Y    27
+#define ROW_L_X  100
+#define ROW_R_X  330
+#define ROW_Y(r) (71 + 42 * (r))
+#define TRIM_DN_X 399
+#define TRIM_UP_X 469
+#define CH_X(i)  (130 + 239 * ((i) / 5))
+#define CH_Y(i)  (74 + 46 * ((i) % 5))
+#define CH_CANCEL_X 429
+#define CH_CANCEL_Y 398
+#define WARN_APPLY_X  146
+#define WARN_CANCEL_X 384
+#define WARN_Y        378
+
+static void open_settings(void)  { tap(SETB_X, SETB_Y); }
+static void close_settings(void) { tap(CLOSE_X, CLOSE_Y); }
+
+/* Hold the warning's HOLD TO APPLY for @p s seconds and let go. */
+static void hold_apply(float secs)
+{
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < (int)(secs * 39.0f + 0.5f); ++i) {
+        scr->tick(1.0f / 39.0f);
+    }
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
+}
+
+/* A type chosen from the list on OUTPUT: STANDARD PWM 0, NARROW 760 1,
+ * WIDE 2, HELI CYCLIC 3, HELI TAIL 760 4.  A heli type is held through its
+ * warning.  The overlay is closed again after. */
+static void choose_type(int t)
+{
+    open_settings();
+    tap(ROW_L_X, ROW_Y(0));
+    tap(CH_X(t), CH_Y(t));
+    if (t >= 3) {
+        hold_apply(2.3f);
+    }
+    close_settings();
+}
+
+/* A key of the keypad, where the screen opens it over the left card. */
+static void key(ui_key_t k)
+{
+    ui_keypad_t probe;
+    memset(&probe, 0, sizeof(probe));
+    ui_keypad_open(&probe, (gfx_rect_t){ 6, 6, 488, 420 }, "", "", 0.0f,
+                   0.0f, 1.0f, 2);
+    const gfx_rect_t r = ui_keypad_key_rect(&probe, k);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
+
+static void keys(const char *text)
+{
+    static const ui_key_t digit[10] = {
+        UI_KEY_0, UI_KEY_1, UI_KEY_2, UI_KEY_3, UI_KEY_4,
+        UI_KEY_5, UI_KEY_6, UI_KEY_7, UI_KEY_8, UI_KEY_9,
+    };
+    for (const char *p = text; *p != '\0'; ++p) {
+        key((*p == '.') ? UI_KEY_DOT : digit[*p - '0']);
+    }
+    key(UI_KEY_OK);
+}
+
 /* A point on the dial at the given servo angle. */
 static void dial_at(float deg, int r, int *x, int *y)
 {
@@ -65,7 +151,7 @@ static void dial_at(float deg, int r, int *x, int *y)
 
 static servo_cmd_t last_cmd(void)
 {
-    servo_cmd_t c = { SERVO_CMD_NONE, 0 };
+    servo_cmd_t c = { SERVO_CMD_NONE, 0, 0, 0, 0, 0 };
     servo_screen_take(&c);
     return c;
 }
@@ -138,9 +224,10 @@ TEST_CASE(the_case_is_not_the_dial)
 TEST_CASE(the_travel_limit_clamps_rather_than_refuses)
 {
     fresh();
-    for (int i = 0; i < 8; ++i) {
-        tap(701, 194 + 13);             /* TRAVEL down, five degrees a tap */
-    }
+    open_settings();
+    tap(ROW_L_X, ROW_Y(4));             /* TRAVEL */
+    keys("50");
+    close_settings();
     while (last_cmd().kind != SERVO_CMD_NONE) { }
 
     int x, y;
@@ -183,10 +270,6 @@ TEST_CASE(centre_and_release_post_their_own_commands)
 /* The SPEED track, mirrored from the screen: x, w and y of the slider. */
 #define SPEED_X_HALF (508 + 12 + (800 - 508 - 6 - 24) / 2)
 #define SPEED_Y (296 + 11)
-#define TRIM_UP_X (508 + 12 + (800 - 508 - 6 - 24) - 15)
-#define TRIM_UP_Y (156 + 13)
-#define TYPE_X (508 + 12 + (800 - 508 - 6 - 24) - 75)
-#define TYPE_Y (232 + 13)
 #define ARM_X (508 + 12)
 #define ARM_W (800 - 508 - 6 - 24)
 #define ARM_Y 388
@@ -437,7 +520,7 @@ TEST_CASE(changing_the_type_says_the_position_again)
     CHECK_EQ(first.kind, SERVO_CMD_POSITION);
     CHECK_EQ(first.max_us, 2000);
 
-    tap(TYPE_X, TYPE_Y);                       /* STANDARD -> NARROW 760 */
+    choose_type(1);                            /* STANDARD -> NARROW 760 */
     const servo_cmd_t again = last_cmd();
     CHECK_EQ(again.kind, SERVO_CMD_POSITION);
     CHECK_EQ(again.max_us, 860);
@@ -452,7 +535,8 @@ TEST_CASE(the_trim_says_the_position_again_while_it_is_held)
     tap(x, y);
     const uint16_t was = last_cmd().value_us;
 
-    tap(TRIM_UP_X, TRIM_UP_Y);
+    open_settings();
+    tap(TRIM_UP_X, ROW_Y(3));
     const servo_cmd_t after = last_cmd();
     CHECK_EQ(after.kind, SERVO_CMD_POSITION);
     CHECK_EQ(after.value_us, was + 5);
@@ -540,7 +624,7 @@ TEST_CASE(arming_drops_a_position_held_before_it)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
 
     servo_screen_set_armed(true);
-    tap(TYPE_X, TYPE_Y);
+    choose_type(1);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
@@ -560,7 +644,7 @@ TEST_CASE(a_stop_on_a_bench_that_was_not_armed_still_lets_go)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
 
     servo_screen_cancel_arm();       /* what a stop calls */
-    tap(TYPE_X, TYPE_Y);
+    choose_type(1);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
@@ -580,7 +664,7 @@ TEST_CASE(a_stop_stops_the_screen_holding_anything)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
 
     servo_screen_set_armed(false);
-    tap(TYPE_X, TYPE_Y);
+    choose_type(1);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
@@ -589,7 +673,7 @@ TEST_CASE(nothing_is_said_again_when_nothing_is_being_held)
     /* A screen that is not driving anything commands nothing by having its
      * settings changed. */
     fresh();
-    tap(TYPE_X, TYPE_Y);
+    choose_type(1);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
@@ -610,14 +694,562 @@ TEST_CASE(a_command_carries_the_endpoints_of_the_type_it_was_made_for)
     CHECK_EQ(got.min_us, 1000);
     CHECK_EQ(got.max_us, 2000);
 
-    /* TYPE steps to the next servo, and the endpoints follow it. */
-    tap(TYPE_X, TYPE_Y);
+    /* Another type, and the endpoints follow it. */
+    choose_type(1);
     tap(x, y);
     got = last_cmd();
     CHECK_EQ(got.min_us, 660);
     CHECK_EQ(got.max_us, 860);
     /* And the pulse it asks for is inside them. */
     CHECK(got.value_us >= got.min_us && got.value_us <= got.max_us);
+}
+
+/* ------------------------------------------------ profiles and the warning */
+
+TEST_CASE(a_heli_type_waits_for_the_warning_held_two_seconds)
+{
+    fresh();
+    open_settings();
+    tap(ROW_L_X, ROW_Y(0));                    /* TYPE */
+    tap(CH_X(3), CH_Y(3));                     /* HELI CYCLIC */
+    CHECK_STR_EQ(servo_screen_type_name(), "STANDARD PWM");
+    hold_apply(0.5f);                          /* not long enough */
+    CHECK_STR_EQ(servo_screen_type_name(), "STANDARD PWM");
+    hold_apply(2.3f);
+    CHECK_STR_EQ(servo_screen_type_name(), "HELI CYCLIC");
+    CHECK_EQ(servo_screen_frame_hz(), 333);
+
+    /* The command carries the profile: its endpoints and its rate. */
+    close_settings();
+    int x, y;
+    dial_at(0.0f, ARC_R - 20, &x, &y);
+    tap(x, y);
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.min_us, 820);
+    CHECK_EQ(c.max_us, 2220);
+    CHECK_EQ(c.frame_hz, 333);
+    CHECK_EQ(c.value_us, 1520);
+}
+
+/*
+ * Every profile's endpoints are a range the coprocessor takes: one it
+ * refused would leave the panel driving a range the profile never named.
+ * HELI TAIL 760's end of travel, 410 us, is the narrowest of them.
+ */
+TEST_CASE(every_profile_is_a_range_the_coprocessor_takes)
+{
+    for (int t = 0; t < 5; ++t) {
+        fresh();
+        choose_type(t);
+        servo_screen_set_commanded(-90.0f);
+        const servo_cmd_t c = last_cmd();
+        CHECK(c.min_us >= LINK_CC_FLOOR_US);
+        CHECK(c.max_us <= LINK_CC_CEILING_US);
+        CHECK_EQ(c.value_us, c.min_us);
+        uint16_t regs[LINK_CC_COUNT];
+        outputs_chan_cfg_defaults(regs);
+        const uint16_t in[LINK_CC_STRIDE] = {
+            [LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE,
+            [LINK_CC_SLEW]   = 0u,
+            [LINK_CC_MIN_US] = c.min_us,
+            [LINK_CC_MAX_US] = c.max_us,
+        };
+        CHECK_EQ(outputs_chan_cfg_write(regs, 0, LINK_CC_STRIDE, in), 0u);
+    }
+    CHECK_STR_EQ(servo_screen_type_name(), "HELI TAIL 760");
+    servo_screen_set_commanded(-90.0f);
+    CHECK_EQ(last_cmd().value_us, 410);
+}
+
+/* And a pulse width typed outside that range is refused at the keypad. */
+TEST_CASE(a_pulse_width_the_coprocessor_would_refuse_is_not_taken)
+{
+    fresh();
+    open_settings();
+    tap(ROW_L_X, ROW_Y(2));                    /* PULSE MIN */
+    keys("350");
+    key(UI_KEY_CANCEL);
+    tap(ROW_L_X, ROW_Y(3));                    /* PULSE MAX */
+    keys("2600");
+    key(UI_KEY_CANCEL);
+    /* A centre further from one end than the ceiling allows the other:
+     * 1800 us with MIN at 1000 would carry 1000..2600. */
+    tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
+    keys("1800");
+    key(UI_KEY_CANCEL);
+    close_settings();
+    servo_screen_set_commanded(0.0f);
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.value_us, 1500);
+    CHECK_EQ(c.min_us, 1000);
+    CHECK_EQ(c.max_us, 2000);
+}
+
+/*
+ * MIN, CENTRE and MAX are set one by one, so each side of centre runs to
+ * its own end: -90 deg is MIN and +90 deg is MAX.  The range a command
+ * carries is centred on CENTRE, because the far end rests a surface at its
+ * midpoint -- on RELEASE and before an arm -- and that rest is the centre.
+ */
+TEST_CASE(each_side_of_centre_runs_to_its_own_end)
+{
+    fresh();
+    open_settings();
+    tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
+    keys("1520");
+    tap(ROW_L_X, ROW_Y(2));                    /* PULSE MIN */
+    keys("900");
+    close_settings();
+    servo_screen_set_commanded(-90.0f);
+    CHECK_EQ(last_cmd().value_us, 900);
+    servo_screen_set_commanded(-45.0f);
+    CHECK_EQ(last_cmd().value_us, 1210);
+    servo_screen_set_commanded(45.0f);
+    CHECK_EQ(last_cmd().value_us, 1760);
+    servo_screen_set_commanded(90.0f);
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.value_us, 2000);
+    CHECK_EQ(c.min_us, 900);
+    CHECK_EQ(c.max_us, 2140);                  /* 1520 +/- 620 */
+    tap(ARM_X + ARM_W - 40, 350 + 16);         /* RELEASE */
+    const servo_cmd_t r = last_cmd();
+    CHECK_EQ(r.kind, SERVO_CMD_RELEASE);
+    CHECK_EQ(r.min_us, 900);
+    CHECK_EQ(r.max_us, 2140);
+}
+
+TEST_CASE(a_warning_cancelled_dropped_or_left_applies_nothing)
+{
+    fresh();
+    open_settings();
+    tap(ROW_L_X, ROW_Y(0));
+    tap(CH_X(4), CH_Y(4));                     /* HELI TAIL 760 */
+    tap(WARN_CANCEL_X, WARN_Y);
+    for (int i = 0; i < 120; ++i) {
+        scr->tick(1.0f / 39.0f);
+    }
+    CHECK_STR_EQ(servo_screen_type_name(), "STANDARD PWM");
+
+    /* A hold the touch stream lost does not complete on its own. */
+    tap(ROW_L_X, ROW_Y(0));
+    tap(CH_X(4), CH_Y(4));
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 40; ++i) {
+        scr->tick(1.0f / 39.0f);
+    }
+    scr->cancel();
+    for (int i = 0; i < 120; ++i) {
+        scr->tick(1.0f / 39.0f);
+    }
+    CHECK_STR_EQ(servo_screen_type_name(), "STANDARD PWM");
+
+    /* A finger that slides off APPLY abandons it. */
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+    ev(WARN_CANCEL_X, WARN_Y, TOUCH_EVENT_MOVE, 1);
+    for (int i = 0; i < 120; ++i) {
+        scr->tick(1.0f / 39.0f);
+    }
+    ev(WARN_CANCEL_X, WARN_Y, TOUCH_EVENT_UP, 1);
+    CHECK_STR_EQ(servo_screen_type_name(), "STANDARD PWM");
+
+    /* Leaving the screen with the warning open drops it. */
+    scr->leave();
+    for (int i = 0; i < 120; ++i) {
+        scr->tick(1.0f / 39.0f);
+    }
+    CHECK_STR_EQ(servo_screen_type_name(), "STANDARD PWM");
+}
+
+TEST_CASE(a_rate_above_60_hz_needs_the_warning_and_60_does_not)
+{
+    fresh();
+    open_settings();
+    tap(ROW_L_X, ROW_Y(1));                    /* FRAME RATE */
+    tap(CH_X(1), CH_Y(1));                     /* 60 Hz */
+    CHECK_EQ(servo_screen_frame_hz(), 60);
+    tap(ROW_L_X, ROW_Y(1));
+    tap(CH_X(2), CH_Y(2));                     /* 100 Hz: asked first */
+    CHECK_EQ(servo_screen_frame_hz(), 60);
+    hold_apply(2.3f);
+    CHECK_EQ(servo_screen_frame_hz(), 100);
+}
+
+TEST_CASE(standard_pwm_keeps_a_millisecond_between_pulses)
+{
+    /* 1 / (2000 us + 1 ms) is 333 Hz: the list stops there, a custom rate
+     * above it is refused, and at 333 Hz the longest pulse is 2003 us. */
+    fresh();
+    open_settings();
+    tap(ROW_L_X, ROW_Y(1));
+    tap(CH_X(7), CH_Y(7));                     /* 333 Hz, the last */
+    hold_apply(2.3f);
+    CHECK_EQ(servo_screen_frame_hz(), 333);
+    tap(ROW_L_X, ROW_Y(3));                    /* PULSE MAX */
+    keys("2100");                              /* refused: no pause left */
+    key(UI_KEY_CANCEL);
+    tap(ROW_L_X, ROW_Y(3));
+    keys("2003");
+    int x, y;
+    close_settings();
+    dial_at(90.0f, ARC_R - 20, &x, &y);
+    tap(x, y);
+    CHECK_EQ(last_cmd().max_us, 2003);
+
+    /* WIDE's 2200 us leaves 312 Hz: CUSTOM refuses 320, takes 300. */
+    fresh();
+    choose_type(2);
+    open_settings();
+    tap(ROW_L_X, ROW_Y(1));
+    tap(CH_X(7), CH_Y(7));                     /* CUSTOM: 7 rates fit 312 Hz */
+    keys("320");
+    key(UI_KEY_CANCEL);
+    CHECK_EQ(servo_screen_frame_hz(), 50);
+    tap(ROW_L_X, ROW_Y(1));
+    tap(CH_X(7), CH_Y(7));                     /* CUSTOM */
+    keys("55");                                /* 60 Hz or under: no warning */
+    CHECK_EQ(servo_screen_frame_hz(), 55);
+}
+
+TEST_CASE(a_restart_is_standard_pwm_at_50_hz)
+{
+    fresh();
+    choose_type(4);
+    CHECK_STR_EQ(servo_screen_type_name(), "HELI TAIL 760");
+    CHECK_EQ(servo_screen_frame_hz(), 560);
+    scr->reset();                              /* what a restart does */
+    CHECK_STR_EQ(servo_screen_type_name(), "STANDARD PWM");
+    CHECK_EQ(servo_screen_frame_hz(), 50);
+}
+
+TEST_CASE(reverse_and_the_pulse_widths_reshape_the_command)
+{
+    fresh();
+    int x, y;
+    dial_at(45.0f, ARC_R - 20, &x, &y);
+    tap(x, y);
+    const uint16_t ahead = last_cmd().value_us;
+    CHECK(ahead > 1500);
+    open_settings();
+    tap(ROW_R_X, ROW_Y(4));                    /* REVERSE */
+    CHECK(last_cmd().value_us < 1500);         /* said again, mirrored */
+
+    fresh();
+    open_settings();
+    tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
+    keys("1520");
+    tap(ROW_L_X, ROW_Y(2));                    /* PULSE MIN */
+    keys("900");
+    close_settings();
+    dial_at(0.0f, ARC_R - 20, &x, &y);
+    tap(x, y);
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.value_us, 1520);
+    CHECK_EQ(c.min_us, 900);
+}
+
+TEST_CASE(the_test_and_limit_settings_are_kept)
+{
+    fresh();
+    open_settings();
+    tap(TAB_X(1), TAB_Y);                      /* TEST */
+    tap(ROW_R_X, ROW_Y(0));                    /* STEP 4.8 V: a switch */
+    CHECK(!settings_get_bool(SET_SERVO_STEP_48));
+    tap(ROW_L_X, ROW_Y(0));                    /* CURVE: a list */
+    tap(CH_X(2), CH_Y(2));                     /* TRIANGLE */
+    CHECK_EQ(settings_get_int(SET_SERVO_CURVE), 2);
+    tap(ROW_L_X, ROW_Y(1));                    /* SPEED: the keypad */
+    keys("1.25");
+    CHECK_NEAR(settings_get(SET_SERVO_TEST_HZ), 1.25f, 1e-4f);
+    CHECK(settings_save_asked());
+
+    tap(TAB_X(2), TAB_Y);                      /* LIMITS */
+    tap(ROW_L_X, ROW_Y(0));                    /* VOLTAGE MAX: SUPPLY's cap */
+    keys("8.41");
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 8.40f, 1e-4f);
+    CHECK_NEAR(supply_screen_limits().v_max, 8.40f, 1e-4f);
+    tap(ROW_R_X, ROW_Y(0));                    /* IDLE CURRENT */
+    keys("0.3");
+    CHECK_NEAR(settings_get(SET_SERVO_IDLE_MAX), 0.3f, 1e-4f);
+
+    tap(TAB_X(3), TAB_Y);                      /* DUT */
+    tap(ROW_L_X, ROW_Y(0));                    /* NAME: the keyboard */
+    ui_textkey_t probe;
+    memset(&probe, 0, sizeof(probe));
+    ui_textkey_open(&probe, (gfx_rect_t){ 6, 6, 488, 420 }, "", "", 23);
+    const int seq[] = { UI_TK_CLR, 31 /* X */, 15 /* Y */, 0 /* 1 */,
+                        UI_TK_OK };
+    for (size_t i = 0; i < sizeof(seq) / sizeof(seq[0]); ++i) {
+        const gfx_rect_t r = ui_textkey_key_rect(&probe, seq[i]);
+        tap(r.x + r.w / 2, r.y + r.h / 2);
+    }
+    CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "XY1");
+    tap(ROW_L_X, ROW_Y(1));                    /* REPORT */
+    CHECK(!settings_get_bool(SET_SERVO_REPORT));
+}
+
+TEST_CASE(the_overlay_leaves_the_right_card_working)
+{
+    /* ARM, CENTRE and RELEASE work under the overlay; the dial under it
+     * does not. */
+    fresh();
+    open_settings();
+    tap(ARM_X + 40, 350 + 16);                 /* CENTRE */
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_CENTRE);
+    int x, y;
+    dial_at(45.0f, ARC_R - 20, &x, &y);
+    tap(x, y);                                 /* on the overlay, not the dial */
+    CHECK(servo_screen_commanded() == 1500);
+    arm_press();
+    held(2.2f);
+    arm_release();
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
+}
+
+TEST_CASE(the_tag_is_red_while_a_dangerous_profile_is_in_force)
+{
+    fresh();
+    scr->render(&cv, 0);
+    const gfx_color_t calm = fb[130 * W + 520];
+    CHECK(calm != ui_theme_color(UI_C_DANGER));
+    choose_type(3);
+    scr->render(&cv, 0);
+    CHECK_EQ(fb[130 * W + 520], ui_theme_color(UI_C_DANGER));
+}
+
+TEST_CASE(drags_and_samples_leave_both_buffers_as_a_full_redraw_would)
+{
+    /* The horn's drag repaints the right card without its plot, and the
+     * plot repaints itself on its own samples; through any mix of the two,
+     * each buffer ends as one drawn whole. */
+    fresh();
+    gfx_color_t *fb1 = calloc((size_t)W * H, sizeof(gfx_color_t));
+    gfx_color_t *ref = calloc((size_t)W * H, sizeof(gfx_color_t));
+    gfx_canvas_t cv1, cref;
+    gfx_canvas_init(&cv1, fb1, W, H, W);
+    gfx_canvas_init(&cref, ref, W, H, W);
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    st.v = 6.0f;
+    for (int step = 0; step < 24; ++step) {
+        st.i = 0.1f * (float)(step % 7);
+        st.p = st.v * st.i;
+        if (step % 3 != 1) {
+            servo_screen_supply(&st);
+        }
+        if (step % 2 == 0) {
+            int x, y;
+            dial_at((float)(step * 5 - 60), ARC_R - 20, &x, &y);
+            tap(x, y);
+        }
+        scr->render((step % 2) ? &cv1 : &cv, step % 2);
+    }
+    scr->render(&cv, 0);
+    scr->render(&cv1, 1);
+    CHECK_EQ(memcmp(fb, fb1, (size_t)W * H * sizeof(gfx_color_t)), 0);
+    servo_invalidate();
+    scr->render(&cref, 0);
+    CHECK_EQ(memcmp(fb, ref, (size_t)W * H * sizeof(gfx_color_t)), 0);
+    free(fb1);
+    free(ref);
+}
+
+TEST_CASE(a_supply_sample_repaints_only_the_power_plot)
+{
+    fresh();
+    scr->render(&cv, 0);
+    gfx_color_t *was = malloc((size_t)W * H * sizeof(gfx_color_t));
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    for (int i = 0; i < 30; ++i) {
+        st.v = 6.0f; st.i = 0.2f + 0.02f * (float)i; st.p = st.v * st.i;
+        servo_screen_supply(&st);
+    }
+    scr->render(&cv, 0);
+    memcpy(was, fb, (size_t)W * H * sizeof(gfx_color_t));
+    st.i = 1.5f; st.p = 9.0f;
+    servo_screen_supply(&st);
+    scr->render(&cv, 0);
+    int outside = 0, inside = 0;
+    for (int y = 0; y < H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            if (fb[y * W + x] == was[y * W + x]) {
+                continue;
+            }
+            const bool in = x >= 514 && x < 514 + 268 && y >= 148 && y < 244;
+            if (in) { ++inside; } else { ++outside; }
+        }
+    }
+    free(was);
+    CHECK(inside > 0);
+    CHECK_EQ(outside, 0);
+    servo_screen_supply(NULL);
+}
+
+/* A second buffer, and a full redraw to hold the first against. */
+static gfx_color_t *fb1, *ref;
+static gfx_canvas_t cv1, cref;
+#define FB_BYTES ((size_t)W * H * sizeof(gfx_color_t))
+
+static void two_buffers(void)
+{
+    if (fb1 == NULL) {
+        fb1 = calloc((size_t)W * H, sizeof(gfx_color_t));
+        ref = calloc((size_t)W * H, sizeof(gfx_color_t));
+    }
+    gfx_canvas_init(&cv1, fb1, W, H, W);
+    gfx_canvas_init(&cref, ref, W, H, W);
+    scr->render(&cv, 0);
+    scr->render(&cv1, 1);
+}
+
+/* Both buffers drawn once more, each then held against one drawn whole. */
+static bool both_whole(void)
+{
+    scr->render(&cv, 0);
+    scr->render(&cv1, 1);
+    const bool same = memcmp(fb, fb1, FB_BYTES) == 0;
+    servo_invalidate();
+    scr->render(&cref, 0);
+    return same && memcmp(fb, ref, FB_BYTES) == 0;
+}
+
+/* A key of the text keyboard, where the screen opens it over the left
+ * card. */
+static void text_key(int k)
+{
+    ui_textkey_t probe;
+    memset(&probe, 0, sizeof(probe));
+    ui_textkey_open(&probe, (gfx_rect_t){ 6, 6, 488, 420 }, "", "", 23);
+    const gfx_rect_t r = ui_textkey_key_rect(&probe, k);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
+
+/*
+ * Each face of the overlay -- the four pages, a list, the keypad, the
+ * keyboard and the warning with a hold let go part way -- leaves both
+ * buffers as one drawn whole, and a list or a warning cancelled leaves the
+ * page as it was.  Opening and closing it leave nothing behind either: the
+ * servo's lead runs out past the left card, where the overlay ends.
+ */
+TEST_CASE(each_face_of_the_overlay_draws_as_a_full_redraw_would)
+{
+    fresh();
+    two_buffers();
+    open_settings();
+    CHECK(both_whole());
+    CHECK_EQ(fb[6 * W + 6], ui_theme_color(UI_C_ACCENT));
+    gfx_color_t *page = malloc(FB_BYTES);
+    memcpy(page, fb, FB_BYTES);
+
+    for (int tab = 1; tab < 4; ++tab) {
+        tap(TAB_X(tab), TAB_Y);
+        CHECK(both_whole());
+        CHECK(memcmp(fb, page, FB_BYTES) != 0);
+    }
+    tap(ROW_L_X, ROW_Y(0));                    /* DUT NAME: the keyboard */
+    CHECK(both_whole());
+    text_key(UI_TK_CANCEL);
+    CHECK_STR_EQ(settings_text(SET_TEXT_DUT_NAME), "SERVO");
+
+    tap(TAB_X(0), TAB_Y);
+    tap(ROW_L_X, ROW_Y(4));                    /* TRAVEL: the keypad */
+    CHECK(both_whole());
+    key(UI_KEY_CANCEL);
+    CHECK(both_whole());
+    CHECK_EQ(memcmp(fb, page, FB_BYTES), 0);
+
+    tap(ROW_L_X, ROW_Y(0));                    /* TYPE: the list */
+    CHECK(both_whole());
+    tap(CH_CANCEL_X, CH_CANCEL_Y);
+    CHECK_STR_EQ(servo_screen_type_name(), "STANDARD PWM");
+    CHECK(both_whole());
+    CHECK_EQ(memcmp(fb, page, FB_BYTES), 0);
+
+    tap(ROW_L_X, ROW_Y(0));
+    tap(CH_X(3), CH_Y(3));                     /* HELI CYCLIC: the warning */
+    CHECK(both_whole());
+    CHECK_EQ(fb[6 * W + 6], ui_theme_color(UI_C_DANGER));
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 39; ++i) {             /* a second of the two */
+        scr->tick(1.0f / 39.0f);
+        scr->render((i % 2) ? &cv1 : &cv, i % 2);
+    }
+    CHECK(both_whole());
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
+    CHECK_STR_EQ(servo_screen_type_name(), "STANDARD PWM");
+    CHECK(both_whole());
+    tap(WARN_CANCEL_X, WARN_Y);
+    CHECK(both_whole());
+    CHECK_EQ(memcmp(fb, page, FB_BYTES), 0);
+    close_settings();
+    CHECK(both_whole());
+    free(page);
+}
+
+/*
+ * The save line follows the store and not the page: a save refused after
+ * the change repaints that line alone, in the warning colour.
+ */
+TEST_CASE(a_refused_save_repaints_only_the_save_line)
+{
+    fresh();
+    two_buffers();
+    open_settings();
+    tap(TAB_X(1), TAB_Y);
+    tap(ROW_R_X, ROW_Y(0));                    /* STEP 4.8 V: asks to save */
+    CHECK(settings_save_asked());
+    CHECK(both_whole());
+    gfx_color_t *was = malloc(FB_BYTES);
+    memcpy(was, fb, FB_BYTES);
+    CHECK(!settings_save());                   /* no store: refused */
+    scr->render(&cv, 0);
+    scr->render(&cv1, 1);
+    int outside = 0, warn = 0;
+    for (int y = 0; y < H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            const bool in = x >= 16 && x < 16 + 244 && y >= 402 && y < 420;
+            if (in && fb[y * W + x] == ui_theme_color(UI_C_WARN)) {
+                ++warn;
+            }
+            if (!in && fb[y * W + x] != was[y * W + x]) {
+                ++outside;
+            }
+        }
+    }
+    free(was);
+    CHECK(warn > 0);
+    CHECK_EQ(outside, 0);
+    CHECK(both_whole());
+}
+
+/*
+ * With nothing reporting, the horn chases the command at the set speed
+ * rather than jumping to it, and its grip breathes while it is driven:
+ * every frame of either leaves both buffers as a full redraw would.
+ */
+TEST_CASE(the_horn_travels_and_breathes_as_a_full_redraw_would)
+{
+    fresh();
+    two_buffers();
+    tap(ARM_X + 1, SPEED_Y);                   /* the slowest sweep, 10 % */
+    int x, y;
+    dial_at(60.0f, ARC_R - 20, &x, &y);
+    tap(x, y);
+    scr->tick(1.0f / 39.0f);
+    CHECK(both_whole());
+    gfx_color_t *early = malloc(FB_BYTES);
+    memcpy(early, fb, FB_BYTES);
+    for (int i = 0; i < 4 * 39; ++i) {         /* 60 deg at 36 deg/s, and on */
+        scr->tick(1.0f / 39.0f);
+        scr->render((i % 2) ? &cv1 : &cv, i % 2);
+    }
+    CHECK(both_whole());
+    CHECK(memcmp(fb, early, FB_BYTES) != 0);
+    free(early);
 }
 
 /*
@@ -646,8 +1278,11 @@ TEST_CASE(trim_shifts_the_pulse_and_not_the_angle)
     ev(x, y, TOUCH_EVENT_UP, 1);
     CHECK_EQ(servo_screen_commanded(), 1500);
 
-    tap(766, 156 + 13);                 /* trim up, five microseconds */
+    open_settings();
+    tap(TRIM_UP_X, ROW_Y(3));           /* trim up, five microseconds */
     CHECK_EQ(servo_screen_commanded(), 1505);
+    tap(TRIM_DN_X, ROW_Y(3));
+    CHECK_EQ(servo_screen_commanded(), 1500);
 }
 
 /* Feedback places the arm rather than animating towards it: a servo already
@@ -697,6 +1332,23 @@ int main(void)
     RUN(leaving_disarms_and_lets_go_of_the_output);
     RUN(trim_shifts_the_pulse_and_not_the_angle);
     RUN(feedback_is_shown_rather_than_travelled_to);
+    RUN(a_heli_type_waits_for_the_warning_held_two_seconds);
+    RUN(every_profile_is_a_range_the_coprocessor_takes);
+    RUN(a_pulse_width_the_coprocessor_would_refuse_is_not_taken);
+    RUN(each_side_of_centre_runs_to_its_own_end);
+    RUN(a_warning_cancelled_dropped_or_left_applies_nothing);
+    RUN(a_rate_above_60_hz_needs_the_warning_and_60_does_not);
+    RUN(standard_pwm_keeps_a_millisecond_between_pulses);
+    RUN(a_restart_is_standard_pwm_at_50_hz);
+    RUN(reverse_and_the_pulse_widths_reshape_the_command);
+    RUN(the_test_and_limit_settings_are_kept);
+    RUN(the_overlay_leaves_the_right_card_working);
+    RUN(the_tag_is_red_while_a_dangerous_profile_is_in_force);
+    RUN(a_supply_sample_repaints_only_the_power_plot);
+    RUN(each_face_of_the_overlay_draws_as_a_full_redraw_would);
+    RUN(a_refused_save_repaints_only_the_save_line);
+    RUN(the_horn_travels_and_breathes_as_a_full_redraw_would);
+    RUN(drags_and_samples_leave_both_buffers_as_a_full_redraw_would);
     RUN(a_cancelled_gesture_does_not_arm);
     return test_summary("servo");
 }

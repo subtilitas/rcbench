@@ -228,7 +228,7 @@ Versorgungen tragen ihre Spannung.
 | | |
 |---|---|
 | Framerate | 40 bis 400 Hz (voreingestellt 50 Hz) |
-| Puls | 500 bis 2500 µs, außerhalb verweigert |
+| Puls | 400 bis 2500 µs, außerhalb verweigert |
 | Auflösung | 1 µs |
 
 **Messen und aufschreiben:** die tatsächliche Frameperiode, den Puls an
