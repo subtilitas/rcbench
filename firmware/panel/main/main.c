@@ -4047,12 +4047,24 @@ static void advance_model_and_log(bool link_up, float emitted,
                                   uint32_t *last_sample, bool *new_sample)
 {
     bool due = false;
-    if ((uint32_t)(now_ms() - *last_sample)
-        >= (uint32_t)(1000.0f / PANEL_SAMPLE_HZ)) {
+    /*
+     * The step is the time that passed, not the 50 ms this cadence aims at.
+     * While the link is down a probe for the coprocessor's identity can hold
+     * this loop for its whole 1000 ms timeout, and a fixed step would run
+     * the model, the plot's run and the log's clock twenty times slow for as
+     * long as the outage lasts.  Capped at a second, like the totals.
+     */
+    float step_s = 0.0f;
+    const uint32_t since = (uint32_t)(now_ms() - *last_sample);
+    if (since >= (uint32_t)(1000.0f / PANEL_SAMPLE_HZ)) {
         *last_sample = now_ms();
         due = true;
+        step_s = (float)since / 1000.0f;
+        if (step_s > BENCH_TOTALS_MAX_STEP_S) {
+            step_s = BENCH_TOTALS_MAX_STEP_S;
+        }
         if (!link_up) {
-            telemetry_sim_step(sim, emitted, 1.0f / PANEL_SAMPLE_HZ, bench);
+            telemetry_sim_step(sim, emitted, step_s, bench);
             *new_sample = true;
         }
     }
@@ -4079,7 +4091,7 @@ static void advance_model_and_log(bool link_up, float emitted,
      */
     bench_totals_show(&s_totals, bench);
     if (due && *new_sample && s_log_armed) {
-        s_log_t += 1.0f / PANEL_SAMPLE_HZ;
+        s_log_t += step_s;
         log_post(s_log_t, bench);
     }
 }
