@@ -6,6 +6,25 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- **MOTOR & ESC counts the run's charge and energy from the ESC's own
+  telemetry.** The coprocessor integrates the extended-telemetry current, and
+  voltage times current, while the bank drives, and starts again at each
+  arm (`bench_state_count_totals()`); a step longer than 1 s counts as 1 s.
+  Before, both totals read 0 on hardware because nothing filled them. Two
+  BENCH flags say whether each total has counted a measurement, and the
+  screen and the CSV show `--` and an empty cell when it has not, instead of
+  a 0 that reads as one. The totals count what the ESC reports: an ESC
+  without a current sensor, such as the one in #172 that reports 72 A at
+  idle, gives meaningless ones.
+
+### Changed
+
+- **The link protocol is 4.1.** BENCH flags gain bit 5 (charge counted) and
+  bit 6 (energy counted). A 4.0 panel ignores them; either image goes on
+  alone.
+
 ## 0.9.1 - 2026-10-05
 
 Two panel fixes. The ESC pulse endpoints, Idle pulse and Full pulse, reach

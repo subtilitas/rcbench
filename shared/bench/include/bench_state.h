@@ -40,6 +40,12 @@ typedef struct {
     float rpm_max;
 
     uint16_t flags;     /**< link_bench_flag_t                            */
+    /**
+     * LINK_BN_CHARGE_OK and LINK_BN_ENERGY_OK as this run has earned them.
+     * Kept apart from flags, which the coprocessor rebuilds every sample,
+     * and folded into it by bench_state_count_totals().
+     */
+    uint16_t totals;
     bool     valid;     /**< a poll has answered at least once            */
     /**
      * Whether voltage_min is a measurement yet.
@@ -73,6 +79,28 @@ void bench_state_to_regs(const bench_state_t *b, uint16_t *regs);
 
 /** Clear the peaks without disturbing the live readings. */
 void bench_state_reset_peaks(bench_state_t *b);
+
+/** A run begins: charge and energy start again from zero, uncounted. */
+void bench_state_reset_totals(bench_state_t *b);
+
+/** The longest step bench_state_count_totals() counts, in seconds. */
+#define BENCH_TOTALS_MAX_STEP_S 1.0f
+
+/**
+ * Add @p dt_s of the live readings to the run's charge and energy.
+ *
+ * Only while @p driving, and only what the flags mark measured: charge from
+ * a current, energy from a power that has both halves.  @p dt_s is clamped
+ * to 0 .. BENCH_TOTALS_MAX_STEP_S, so a sampler that stalled does not count
+ * its last reading across the whole stall.  Every call folds the run's
+ * LINK_BN_CHARGE_OK and LINK_BN_ENERGY_OK into flags, driving or not, so the
+ * totals stay readable after the run until the next one resets them.
+ *
+ * The totals are only as good as the current.  An ESC that reports a
+ * current without measuring one -- no current sensor, an input left
+ * floating -- is counted as faithfully as one that measures it.
+ */
+void bench_state_count_totals(bench_state_t *b, float dt_s, bool driving);
 
 /**
  * Take the live readings into the peaks.

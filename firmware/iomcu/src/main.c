@@ -746,8 +746,25 @@ static void sample(void)
     const bool driving = outputs_driving(&s_outputs);
     if (driving && !s_was_driving) {
         bench_state_reset_peaks(&s_bench);
+        bench_state_reset_totals(&s_bench);
     }
     s_was_driving = driving;
+
+    /*
+     * The run's charge and energy, from the ESC's own current and voltage
+     * while the bank drives, over the time since the last sample.  Only what
+     * arrived is counted, and the flags say whether anything has been; an
+     * ESC with no current sensor reports a current all the same, and it is
+     * counted as faithfully (bench_state_count_totals()).
+     */
+    const uint32_t t_ms = (uint32_t)to_ms_since_boot(get_absolute_time());
+    static uint32_t s_last_sample_ms;
+    const float dt_s = (s_last_sample_ms == 0u)
+                           ? 0.0f
+                           : (float)(uint32_t)(t_ms - s_last_sample_ms)
+                                 / 1000.0f;
+    s_last_sample_ms = t_ms;
+    bench_state_count_totals(&s_bench, dt_s, driving);
 
     /* Peaks only from readings that arrived, and a sag floor seeded by the
      * first voltage of the run rather than by the reset that opened it. */

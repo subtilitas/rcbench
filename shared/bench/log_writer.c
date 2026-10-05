@@ -117,8 +117,9 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
      * zero any more than the screen may draw them as zero.
      *
      * Power carries both halves because it is their product.  Charge and
-     * energy carry none: they are accumulators this file does not own, and
-     * zero is where they legitimately start.
+     * energy carry the run's own flags (LINK_BN_CHARGE_OK, _ENERGY_OK): a
+     * coprocessor with no current to count leaves them clear, and a run's
+     * record must not show a consumption of 0 mAh that nothing counted.
      */
     static const struct { int decimals; size_t offset; uint16_t flag; } k_cols[] = {
         { 2, offsetof(bench_state_t, voltage),    LINK_BN_VOLTAGE_OK },
@@ -128,8 +129,8 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
         { 0, offsetof(bench_state_t, rpm),        LINK_BN_RPM_OK },
         { 1, offsetof(bench_state_t, temp_esc),   LINK_BN_TEMP_OK },
         { 1, offsetof(bench_state_t, temp_motor), LINK_BN_TEMP_MOT_OK },
-        { 0, offsetof(bench_state_t, charge_mah), 0u },
-        { 2, offsetof(bench_state_t, energy_wh),  0u },
+        { 0, offsetof(bench_state_t, charge_mah), LINK_BN_CHARGE_OK },
+        { 2, offsetof(bench_state_t, energy_wh),  LINK_BN_ENERGY_OK },
     };
 
     char line[160];

@@ -87,6 +87,7 @@ void telemetry_sim_step(telemetry_sim_t *s, float throttle_pct, float dt_s,
      * separate precisely because a real ESC reports only its own. */
     out->flags = LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
                | LINK_BN_RPM_OK | LINK_BN_TEMP_OK | LINK_BN_TEMP_MOT_OK
+               | LINK_BN_CHARGE_OK | LINK_BN_ENERGY_OK
                | LINK_BN_SIMULATED;
     out->valid = true;
 }
