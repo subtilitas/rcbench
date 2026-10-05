@@ -6,6 +6,13 @@
  * the plot and the output switch beside them.  The output comes on with a
  * hold, as ARM does, and goes off with a tap.
  *
+ * A set point is shown beside its reading everywhere: in brackets on the
+ * rail's cards and dashed in the plot.  A tap on a card or on a set point's
+ * value opens a keypad over the left column.  SETTINGS, top right, opens the
+ * operator's limits over the same column -- caps on the set points, the set
+ * points after a restart, and the trips -- kept in the settings model.  The
+ * right column stays live under both, so OUTPUT OFF is always a tap away.
+ *
  * Owns no hardware and performs no I/O (input/output): it is handed a
  * supply_state_t and touch events, and commands are read back out.
  *
@@ -61,6 +68,16 @@ void supply_screen_set_model(bool model);
 /** The set points as the screen holds them, snapped to the caps. */
 float supply_screen_set_v(void);
 float supply_screen_set_i(void);
+
+/**
+ * The settings have been loaded: take the limits from them and start the
+ * set points at the start values.  Called once after settings_init(); the
+ * screen reads nothing from the settings before it.
+ */
+void supply_screen_settings_loaded(void);
+
+/** The operator's limits as the screen last read them from the settings. */
+supply_limits_t supply_screen_limits(void);
 
 /** A hold under way is abandoned and a pending ON dropped: STOP. */
 void supply_screen_cancel_on(void);

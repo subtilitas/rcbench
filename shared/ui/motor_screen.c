@@ -109,10 +109,10 @@
 enum { S_VOLT = 0, S_CURR, S_POWER, S_RPM, S_COUNT };
 
 static const ui_plot_series_t k_series[S_COUNT] = {
-    { "VOLT", "V",   0, 2, 5.0f },
-    { "CURR", "A",   0, 1, 1.0f },
-    { "PWR",  "W",   0, 0, 50.0f },
-    { "RPM",  "RPM", 0, 0, 1000.0f },
+    { "VOLT", "V",   0, 2, 5.0f,    0 },
+    { "CURR", "A",   0, 1, 1.0f,    0 },
+    { "PWR",  "W",   0, 0, 50.0f,   0 },
+    { "RPM",  "RPM", 0, 0, 1000.0f, 0 },
 };
 
 /* Voltage's interesting extreme is the minimum -- what the pack does under

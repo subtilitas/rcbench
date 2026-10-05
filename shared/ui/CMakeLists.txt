@@ -13,6 +13,7 @@ set(SRCS
     ui_hero.c
     ui_slider.c
     ui_tabs.c
+    ui_keypad.c
     ui_router.c
     splash_screen.c
     overview_screen.c

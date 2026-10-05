@@ -13,8 +13,10 @@
 
 #include "greatest.h"
 
+#include "settings.h"
 #include "supply.h"
 #include "supply_screen.h"
+#include "ui_keypad.h"
 #include "ui_screen.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -45,8 +47,11 @@ static void fresh(void)
     gfx_canvas_init(&cv, fb, W, H, W);
     gfx_canvas_init(&cv2, fb2, W, H, W);
     ui_theme_set(UI_THEME_DARK);
+    settings_set_store(NULL);
+    settings_init();
     scr = supply_screen();
     scr->reset();
+    supply_screen_settings_loaded();
     drain();
 }
 
@@ -79,6 +84,31 @@ static void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 #define OFF_X     300          /* the plot, clear of every control */
 #define OFF_Y     120
 
+/* The overlays, from supply_screen.c: SETTINGS at the strip's right end,
+ * CLOSE, the settings' value rows, the rail's cards, the set points' values,
+ * and the question's two buttons. */
+#define SETB_X    746
+#define SETB_Y    11
+#define CLOSE_X   487
+#define CLOSE_Y   49
+#define ROW_L_X   144          /* the left column's rows */
+#define ROW_R_X   413          /* the right column's */
+#define VMAX_Y    120
+#define VSTART_Y  238
+#define ISTART_Y  280
+#define TRIPI_Y   120
+#define CONF_SL_Y 342
+#define CONF_KP_Y 386
+#define CARD_X    676
+#define CARD_V_Y  52
+#define CARD_I_Y  113
+#define TEXT_X    412
+#define TEXT_V_Y  305
+#define TEXT_I_Y  367
+#define APPLY_X   151
+#define DISCARD_X 407
+#define ASK_Y     365          /* inside both, and on no control without them */
+
 #define TICK_S     0.05f
 #define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)
 
@@ -87,6 +117,29 @@ static void tick_for(int steps)
     for (int i = 0; i < steps; ++i) {
         scr->tick(TICK_S);
     }
+}
+
+/* A key of the keypad, where the screen opens it: over the left column. */
+static void key(ui_key_t k)
+{
+    ui_keypad_t probe;
+    memset(&probe, 0, sizeof(probe));
+    ui_keypad_open(&probe, (gfx_rect_t){ 6, 24, 546, 402 }, "", "", 0.0f,
+                   0.0f, 1.0f, 2);
+    const gfx_rect_t r = ui_keypad_key_rect(&probe, k);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
+
+static void keys(const char *text)
+{
+    static const ui_key_t digit[10] = {
+        UI_KEY_0, UI_KEY_1, UI_KEY_2, UI_KEY_3, UI_KEY_4,
+        UI_KEY_5, UI_KEY_6, UI_KEY_7, UI_KEY_8, UI_KEY_9,
+    };
+    for (const char *p = text; *p != '\0'; ++p) {
+        key((*p == '.') ? UI_KEY_DOT : digit[*p - '0']);
+    }
+    key(UI_KEY_OK);
 }
 
 static void hold_on(void)
@@ -382,6 +435,290 @@ TEST_CASE(new_caps_pull_the_set_points_into_range)
     CHECK(!supply_screen_poll_cmd(NULL));     /* caps are not a command */
 }
 
+/* ------------------------------------------------- settings and keypad */
+
+TEST_CASE(the_settings_overlay_sets_a_cap_the_set_points_obey)
+{
+    fresh();
+    tap(SETB_X, SETB_Y);                 /* SETTINGS */
+    tap(ROW_L_X, VMAX_Y);                /* VOLTAGE MAX */
+    keys("8.4");
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 8.4f, 1e-4f);
+    CHECK_NEAR(supply_screen_limits().v_max, 8.4f, 1e-4f);
+    CHECK(settings_save_asked());
+    /* The set point's controls are under the overlay. */
+    tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    tap(CLOSE_X, CLOSE_Y);
+    for (int k = 0; k < 40; ++k) {
+        tap(V_UP_X, V_ROW_Y);
+    }
+    CHECK_NEAR(supply_screen_set_v(), 8.4f, 1e-4f);
+    /* SETTINGS opens and closes. */
+    tap(SETB_X, SETB_Y);
+    tap(SETB_X, SETB_Y);
+    tap(V_DOWN_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 8.3f, 1e-4f);
+    CHECK(!supply_screen_poll_cmd(NULL));
+}
+
+TEST_CASE(a_lowered_cap_brings_the_set_point_and_the_start_down)
+{
+    fresh();
+    tap(SETB_X, SETB_Y);
+    tap(ROW_L_X, VSTART_Y);
+    keys("12");
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 12.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);   /* at a restart only */
+    tap(CLOSE_X, CLOSE_Y);
+    tap(CARD_X, CARD_V_Y);
+    keys("12");
+    CHECK_NEAR(supply_screen_set_v(), 12.0f, 1e-4f);
+    tap(SETB_X, SETB_Y);
+    tap(ROW_L_X, VMAX_Y);
+    keys("8");
+    CHECK_NEAR(supply_screen_set_v(), 8.0f, 1e-4f);
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 8.0f, 1e-4f);
+    /* And the keypad for a start value offers only what the cap allows:
+     * 12 V is refused, and the start stays where it was. */
+    tap(ROW_L_X, VSTART_Y);
+    keys("7");
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 7.0f, 1e-4f);
+    tap(ROW_L_X, VSTART_Y);
+    keys("12");
+    key(UI_KEY_CANCEL);
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 7.0f, 1e-4f);
+}
+
+TEST_CASE(a_switch_in_the_settings_flips_on_a_tap)
+{
+    fresh();
+    tap(SETB_X, SETB_Y);
+    tap(ROW_R_X, CONF_SL_Y);
+    CHECK(!settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE));
+    CHECK(settings_get_bool(SET_SUPPLY_CONFIRM_KEYS));
+    tap(ROW_R_X, CONF_KP_Y);
+    CHECK(!settings_get_bool(SET_SUPPLY_CONFIRM_KEYS));
+    tap(ROW_R_X, CONF_SL_Y);
+    CHECK(settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE));
+    /* A trip is typed, in amps, and 0 turns it off. */
+    tap(ROW_R_X, TRIPI_Y);
+    keys("2.5");
+    CHECK_NEAR(supply_screen_limits().trip_i, 2.5f, 1e-4f);
+    tap(ROW_R_X, TRIPI_Y);
+    keys("0");
+    CHECK_EQ(supply_screen_limits().trip_i, 0.0f);
+}
+
+TEST_CASE(the_set_points_start_at_the_start_values)
+{
+    fresh();
+    settings_set(SET_SUPPLY_V_START, 7.5f);
+    settings_set(SET_SUPPLY_I_START, 1.0f);
+    settings_set(SET_SUPPLY_TRIP_MS, 250.0f);
+    supply_screen_settings_loaded();
+    CHECK_NEAR(supply_screen_set_v(), 7.5f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 1.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_limits().trip_s, 0.25f, 1e-4f);
+}
+
+TEST_CASE(a_card_or_a_value_opens_the_keypad_for_its_set_point)
+{
+    fresh();
+    tap(CARD_X, CARD_V_Y);
+    keys("7.4");
+    CHECK_NEAR(supply_screen_set_v(), 7.4f, 1e-4f);
+    tap(CARD_X, CARD_I_Y);
+    keys("1.5");
+    CHECK_NEAR(supply_screen_set_i(), 1.5f, 1e-4f);
+    tap(TEXT_X, TEXT_V_Y);
+    keys("9");
+    CHECK_NEAR(supply_screen_set_v(), 9.0f, 1e-4f);
+    tap(TEXT_X, TEXT_I_Y);
+    keys("30");                         /* refused: the keypad stays */
+    key(UI_KEY_CANCEL);
+    CHECK_NEAR(supply_screen_set_i(), 1.5f, 1e-4f);
+    /* A typed value is rounded to the supply's step. */
+    tap(CARD_X, CARD_V_Y);
+    keys("5.01");
+    CHECK_NEAR(supply_screen_set_v(), 5.02f, 1e-4f);
+    CHECK(!supply_screen_poll_cmd(NULL));
+}
+
+TEST_CASE(a_change_to_a_live_output_waits_for_the_question)
+{
+    fresh();
+    supply_screen_set_output(true);
+    tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    tap(APPLY_X, ASK_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+    tap(V_UP_X, V_ROW_Y);
+    tap(DISCARD_X, ASK_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+    /* From the keypad, the same question. */
+    tap(CARD_X, CARD_I_Y);
+    keys("1.2");
+    CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-4f);
+    tap(APPLY_X, ASK_Y);
+    CHECK_NEAR(supply_screen_set_i(), 1.2f, 1e-4f);
+    /* A tap on the track asks on the release. */
+    tap(TRACK_X + TRACK_W / 2, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+    tap(APPLY_X, ASK_Y);
+    CHECK(supply_screen_set_v() > 11.0f);
+    /* With the output off, nothing is asked. */
+    supply_screen_set_output(false);
+    tap(V_DOWN_X, V_ROW_Y);
+    CHECK(supply_screen_set_v() < 12.7f);
+    CHECK(!supply_screen_poll_cmd(NULL));
+}
+
+TEST_CASE(each_question_is_switched_on_its_own)
+{
+    fresh();
+    supply_screen_set_output(true);
+    settings_set(SET_SUPPLY_CONFIRM_SLIDE, 0.0f);
+    tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+    tap(CARD_X, CARD_V_Y);
+    keys("7");
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+    tap(DISCARD_X, ASK_Y);
+    settings_set(SET_SUPPLY_CONFIRM_SLIDE, 1.0f);
+    settings_set(SET_SUPPLY_CONFIRM_KEYS, 0.0f);
+    tap(CARD_X, CARD_V_Y);
+    keys("7");
+    CHECK_NEAR(supply_screen_set_v(), 7.0f, 1e-4f);
+    tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 7.0f, 1e-4f);
+    tap(APPLY_X, ASK_Y);
+    CHECK_NEAR(supply_screen_set_v(), 7.1f, 1e-4f);
+}
+
+TEST_CASE(a_drag_on_a_live_output_changes_nothing_until_it_is_answered)
+{
+    fresh();
+    supply_screen_set_output(true);
+    ev(TRACK_X + 20, V_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    ev(TRACK_X + 200, V_ROW_Y, TOUCH_EVENT_MOVE, 1);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    ev(TRACK_X + 200, V_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    tap(DISCARD_X, ASK_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+
+    /* Without the question it is live as it moves. */
+    settings_set(SET_SUPPLY_CONFIRM_SLIDE, 0.0f);
+    ev(TRACK_X + 20, V_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    const float first = supply_screen_set_v();
+    ev(TRACK_X + 200, V_ROW_Y, TOUCH_EVENT_MOVE, 1);
+    CHECK(supply_screen_set_v() > first);
+    ev(TRACK_X + 200, V_ROW_Y, TOUCH_EVENT_UP, 1);
+
+    /* And a drag whose release went missing goes back to the set point. */
+    settings_set(SET_SUPPLY_CONFIRM_SLIDE, 1.0f);
+    const float was = supply_screen_set_v();
+    ev(TRACK_X + 20, V_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    ev(TRACK_X + 300, V_ROW_Y, TOUCH_EVENT_MOVE, 1);
+    scr->cancel();
+    ev(TRACK_X + 300, V_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK_NEAR(supply_screen_set_v(), was, 1e-4f);
+    tap(APPLY_X, ASK_Y);                 /* no question was asked */
+    CHECK_NEAR(supply_screen_set_v(), was, 1e-4f);
+    /* The next step starts from the set point, not from where the lost
+     * drag had left the slider. */
+    tap(V_UP_X, V_ROW_Y);
+    tap(APPLY_X, ASK_Y);
+    CHECK_NEAR(supply_screen_set_v(), was + 0.1f, 1e-3f);
+}
+
+TEST_CASE(the_output_switch_works_under_every_overlay)
+{
+    supply_cmd_t c;
+    fresh();
+    supply_screen_set_output(true);
+    tap(SETB_X, SETB_Y);                 /* the settings */
+    tap(OUT_X, OUT_Y);
+    CHECK(supply_screen_poll_cmd(&c) && c.off);
+    tap(CARD_X, CARD_V_Y);               /* the keypad */
+    tap(OUT_X, OUT_Y);
+    CHECK(supply_screen_poll_cmd(&c) && c.off);
+    key(UI_KEY_CANCEL);
+    tap(SETB_X, SETB_Y);
+    tap(V_UP_X, V_ROW_Y);                /* the question */
+    tap(OUT_X, OUT_Y);
+    CHECK(supply_screen_poll_cmd(&c) && c.off);
+    tap(RESET_X, RESET_Y);
+    CHECK(supply_screen_poll_cmd(&c) && c.reset);
+    /* While a question is asked, SETTINGS and the cards wait for it. */
+    tap(SETB_X, SETB_Y);
+    tap(CARD_X, CARD_V_Y);
+    tap(APPLY_X, ASK_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+}
+
+TEST_CASE(a_second_finger_on_a_track_changes_nothing_while_off_is_held)
+{
+    fresh();
+    settings_set(SET_SUPPLY_CONFIRM_SLIDE, 0.0f);
+    supply_screen_set_output(true);
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    ev(TRACK_X + TRACK_W - 2, V_ROW_Y, TOUCH_EVENT_DOWN, 2);
+    ev(TRACK_X + TRACK_W - 2, V_ROW_Y, TOUCH_EVENT_UP, 2);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
+    supply_cmd_t c;
+    CHECK(supply_screen_poll_cmd(&c) && c.off);
+}
+
+TEST_CASE(leaving_drops_the_question_and_the_overlays)
+{
+    fresh();
+    supply_screen_set_output(true);
+    tap(V_UP_X, V_ROW_Y);
+    scr->leave();
+    tap(APPLY_X, ASK_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    tap(SETB_X, SETB_Y);
+    scr->leave();
+    settings_set(SET_SUPPLY_CONFIRM_SLIDE, 0.0f);
+    tap(V_UP_X, V_ROW_Y);                /* the overlay is gone */
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+    tap(CARD_X, CARD_V_Y);
+    scr->leave();
+    tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.2f, 1e-4f);
+}
+
+TEST_CASE(a_trip_shows_on_the_mode_card)
+{
+    fresh();
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    st.mode = SUPPLY_MODE_OFF;
+    supply_screen_push(&st);
+    supply_invalidate();
+    scr->render(&cv, 0);
+    st.trip = SUPPLY_TRIP_CURRENT;
+    supply_screen_push(&st);
+    supply_invalidate();
+    scr->render(&cv2, 0);
+    /* The MODE card, the rail's fourth: x 558..794, y 207..264. */
+    int differ = 0;
+    for (int y = 207; y < 264; ++y) {
+        for (int x = 558; x < 794; ++x) {
+            differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
+        }
+    }
+    CHECK(differ > 0);
+    st.trip = SUPPLY_TRIP_VOLTAGE;
+    supply_screen_push(&st);
+    scr->render(&cv2, 0);
+}
+
 /* ------------------------------------------------------------------ plot */
 
 static supply_state_t reading(float v, float i)
@@ -499,6 +836,19 @@ static void b_table_then_set(void)
     tap(V_DOWN_X, I_ROW_Y);
     drain();
 }
+static void b_settings(void) { tap(SETB_X, SETB_Y); }
+static void b_keypad(void)   { tap(CARD_X, CARD_V_Y); key(UI_KEY_7); }
+static void b_question(void)
+{
+    supply_screen_set_output(true);
+    tap(V_UP_X, V_ROW_Y);
+}
+static void b_closed(void)
+{
+    tap(SETB_X, SETB_Y);
+    scr->render(&cv, 0);
+    tap(CLOSE_X, CLOSE_Y);
+}
 static void b_hold_half(void)
 {
     ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
@@ -514,6 +864,10 @@ TEST_CASE(a_redraw_leaves_no_stale_pixels)
     check_redraw(b_offline);
     check_redraw(b_table_then_set);
     check_redraw(b_hold_half);
+    check_redraw(b_settings);
+    check_redraw(b_keypad);
+    check_redraw(b_question);
+    check_redraw(b_closed);
 }
 
 TEST_CASE(each_framebuffer_is_updated_independently)
@@ -569,6 +923,18 @@ int main(void)
     RUN(the_fine_steps_move_a_set_point_by_a_tenth);
     RUN(a_tap_on_a_track_sets_a_value_the_supply_takes);
     RUN(new_caps_pull_the_set_points_into_range);
+    RUN(the_settings_overlay_sets_a_cap_the_set_points_obey);
+    RUN(a_lowered_cap_brings_the_set_point_and_the_start_down);
+    RUN(a_switch_in_the_settings_flips_on_a_tap);
+    RUN(the_set_points_start_at_the_start_values);
+    RUN(a_card_or_a_value_opens_the_keypad_for_its_set_point);
+    RUN(a_change_to_a_live_output_waits_for_the_question);
+    RUN(each_question_is_switched_on_its_own);
+    RUN(a_drag_on_a_live_output_changes_nothing_until_it_is_answered);
+    RUN(the_output_switch_works_under_every_overlay);
+    RUN(a_second_finger_on_a_track_changes_nothing_while_off_is_held);
+    RUN(leaving_drops_the_question_and_the_overlays);
+    RUN(a_trip_shows_on_the_mode_card);
     RUN(a_run_is_traced_from_the_switch_on_and_held_after_it);
     RUN(a_redraw_leaves_no_stale_pixels);
     RUN(each_framebuffer_is_updated_independently);

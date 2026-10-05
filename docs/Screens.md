@@ -200,22 +200,89 @@ supply holds: CV (constant voltage) at the set voltage, or CC (constant
 current) at the current limit. CC is drawn in the warning colour: a supply in
 CC is not giving the load the voltage it was set to.
 
+A set point is shown beside its reading. VOLT and CURR carry it in brackets
+after the label, and the plot draws it as a dashed line in the reading's
+colour, on the reading's scale. TABLE lists both. The bracketed value is the
+set point the supply reports holding; while it does not answer, the one the
+screen holds.
+
 | Set point | Range | Slider step | Buttons |
 | --- | --- | --- | --- |
 | VOLTAGE | 3.3 to 21 V | 20 mV | 0.1 V |
 | CURRENT LIMIT | 0.5 to 5 A | 50 mA | 0.1 A |
 
 The ranges are a USB-PD PPS (Programmable Power Supply) source's widest
-profile, 3.3 to 21 V at up to 5 A. A driver reports the range its source
-offers, and the sliders follow it. A tap on a track sets the value under the
-finger. A set point takes effect at once, with the output on or off.
+profile, 3.3 to 21 V at up to 5 A, narrowed by the caps in SETTINGS. A driver
+reports the range its source offers, and the sliders follow it. A tap on a
+track sets the value under the finger.
+
+**A tap on the VOLT or CURR card, or on a set point's value, opens a keypad**
+over the left column. It shows the range in the title row and the current
+value faint until a digit is typed. OK takes a value inside the range,
+rounded to the supply's step; a value outside it is refused and the range
+turns to the warning colour. OK with nothing typed, and CANCEL, leave the set
+point as it was.
+
+![The keypad](img/supply-keypad.png)
+
+**A change to a live output asks first.** While the output is on, a new set
+point from the slider or its step buttons, or from the keypad, opens a
+question that names the change. APPLY gives it to the supply; CANCEL drops it
+and the slider goes back. A drag asks once, on the release, and the supply
+holds the old set point until then. With the output off nothing is asked.
+SETTINGS switches the question off for the slider and for the keypad
+separately.
+
+![The question](img/supply-confirm.png)
 
 **OUTPUT ON is a two-second hold**, the gesture and the fade ARM uses. OUTPUT
 OFF is a tap. STOP switches the output off on every screen. So does every
-other stop the bench counts -- touch that stops answering, and the
-coprocessor refusing to stay armed -- and a supply that stops answering. The
-output stays off until it is switched on again. Leaving the screen keeps the output on, so a servo or an ESC fed by the
-supply stays powered on the screen that tests it.
+other stop the bench counts -- touch that stops answering, an ON whose touch
+events went missing before the screen showed it, and the coprocessor refusing
+to stay armed -- and a supply that stops answering, and a trip. The output
+stays off until it is switched on again. Leaving the screen keeps the output
+on, so a servo or an ESC fed by the supply stays powered on the screen that
+tests it, and the link-lost screen, which has no STOP, does not open while
+the output is on.
+
+OUTPUT ON and OFF, RESET PEAKS and the readings stay live under the keypad,
+the question and SETTINGS. One finger at a time: while one holds a control, a
+second finger does nothing anywhere on the screen.
+
+### Settings
+
+SETTINGS, at the right of the strip above both columns, opens the supply's
+settings over the left column. Each is kept in the panel's NVS (non-volatile
+storage) and survives a restart. A value opens the keypad; a switch flips on
+the tap. Every change is written at the next frame the bench is disarmed and not
+fetching the board's photograph, and with it any change on SETUP that was not
+saved; the bottom line says SAVED, SAVE WAITING or NOT SAVED.
+
+![The supply's settings](img/supply-settings.png)
+
+| Setting | Range | Default | What it does |
+| --- | --- | --- | --- |
+| VOLTAGE MAX | 3.3 to 21 V | 21.00 V | the highest voltage a set point takes |
+| CURRENT MAX | 0.5 to 5 A | 5.00 A | the highest current limit a set point takes |
+| START VOLTAGE | up to VOLTAGE MAX | 6.00 V | the voltage set point after a restart |
+| START CURRENT | up to CURRENT MAX | 2.00 A | the current limit after a restart |
+| CURRENT TRIP | 0 to 5 A | OFF | output off once the current has been over it for TRIP TIME |
+| VOLTAGE TRIP | 0 to 21 V | OFF | output off once the voltage has been over it for TRIP TIME |
+| TRIP TIME | 0 to 5000 ms | 100 ms | how long a reading is over a trip before it fires |
+| SLIDER AND STEPS | ON, OFF | ON | ask before the slider changes a live output |
+| KEYPAD | ON, OFF | ON | ask before the keypad changes a live output |
+
+A cap lowered under a set point brings the set point down to it at once, and a
+start value with it. A trip of 0 is off. A reading under its trip starts the
+count again; a reading that did not arrive leaves it where it was. A trip
+switches the output off, MODE shows TRIP until the output is switched on
+again, and the band says which trip fired. The supply holds its current limit
+in CC, so a current trip at or above CURRENT LIMIT does not fire; set it below
+the limit to switch off a load that draws too much for too long.
+
+The output stays off at a restart, whatever the start values.
+
+### The log
 
 A run is one switch-on of the output. The plot clears when the output comes on
 and holds the run after it goes off. The mAh and Wh under the switch count the
@@ -231,12 +298,17 @@ time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);e
 A reading that did not arrive is an empty cell. `mode` is CV, CC or OFF, and
 empty while the supply does not answer. The bench takes the log: arming during
 a supply run ends that run's file, and an output still on at the disarm starts
-a new file.
+a new file. The supply is stepped and logged on its own 50 ms cadence while
+the control task waits on the link, so an unanswered coprocessor does not thin
+out the supply's plot or its log.
 
 The model is a 6 ohm load with a 1.4 A burst for 0.6 s every 3 s, behind a
 0.05 ohm source resistance. At the starting set points, 6.00 V and 2.00 A, the
 burst takes it into CC. Its readings are not measured and nothing on the bench
 is powered.
+
+The PD mini's wiring -- PD mini, PD mini TX, PD mini RX and PD mini baud -- is
+on SETUP under INTERFACES. No driver reads those settings.
 
 ## Analyser
 

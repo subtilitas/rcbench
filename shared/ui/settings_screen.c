@@ -303,7 +303,7 @@ static void event(const touch_event_t *evt)
         s.repeating = false;
         s.held_for = 0.0f;
 
-        for (int i = 0; i < SET_CAT_COUNT; ++i) {
+        for (int i = 0; i < SET_CAT_SETUP_COUNT; ++i) {
             if (gfx_rect_contains(cat_rect(i), x, y)) {
                 s.hit_kind = HIT_CAT;
                 s.hit_index = i;
@@ -433,7 +433,7 @@ static void event(const touch_event_t *evt)
 
 static void draw_categories(gfx_canvas_t *c)
 {
-    for (int i = 0; i < SET_CAT_COUNT; ++i) {
+    for (int i = 0; i < SET_CAT_SETUP_COUNT; ++i) {
         gfx_rect_t r = cat_rect(i);
         bool active = (s.cat == (setting_cat_t)i);
         bool pressed = (s.hit_kind == HIT_CAT && s.hit_index == i);

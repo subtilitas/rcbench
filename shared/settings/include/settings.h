@@ -26,8 +26,16 @@ typedef enum {
     SET_CAT_ESC = 0,     /**< pack, motor, telemetry, throttle output */
     SET_CAT_APP,         /**< theme, brightness, language, units      */
     SET_CAT_IFACE,       /**< the sensors that plug into the bench    */
+    SET_CAT_SUPPLY,      /**< the SUPPLY screen's limits and start    */
     SET_CAT_COUNT
 } setting_cat_t;
+
+/**
+ * The categories SETUP lists.  SET_CAT_SUPPLY is edited on the SUPPLY
+ * screen's LIMITS pane, beside the set points it limits, and SETUP has no
+ * room for a fourth category button.
+ */
+#define SET_CAT_SETUP_COUNT SET_CAT_SUPPLY
 
 typedef enum {
     SET_TYPE_INT = 0,
@@ -62,6 +70,20 @@ typedef enum {
     SET_OPTICAL_EN,
     SET_OPTICAL_PIN,
     SET_I2C_KHZ,
+    SET_PDMINI_EN,
+    SET_PDMINI_TX,
+    SET_PDMINI_RX,
+    SET_PDMINI_BAUD,
+    /* --- the programmable supply --------------------------------------- */
+    SET_SUPPLY_V_MAX,
+    SET_SUPPLY_I_MAX,
+    SET_SUPPLY_V_START,
+    SET_SUPPLY_I_START,
+    SET_SUPPLY_TRIP_I,
+    SET_SUPPLY_TRIP_V,
+    SET_SUPPLY_TRIP_MS,
+    SET_SUPPLY_CONFIRM_SLIDE,
+    SET_SUPPLY_CONFIRM_KEYS,
 
     SETTING_COUNT
 } setting_id_t;

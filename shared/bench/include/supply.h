@@ -58,6 +58,9 @@ typedef struct {
     bool          output;     /**< the output is switched on             */
     bool          online;     /**< the supply answers                    */
     uint8_t       ok;         /**< SUPPLY_OK_*                           */
+    /** The trip that switched the output off last, as supply_trip_kind_t;
+     *  kept until the output is switched on again. */
+    uint8_t       trip;
 
     /* The run's extremes, from the output's switch-on: how far the voltage
      * sagged, and the most current and power it gave. */
@@ -71,6 +74,49 @@ typedef struct {
     float         energy_wh;
     uint8_t       counted;    /**< BENCH_COUNTED_* from bench_state.h    */
 } supply_state_t;
+
+/**
+ * What the operator allows, on top of what the supply can do: caps on the
+ * set points, and trips that switch the output off.  A trip threshold of 0
+ * is off.
+ */
+typedef struct {
+    float v_max;          /**< highest voltage set point, V             */
+    float i_max;          /**< highest current limit, A                 */
+    float trip_i;         /**< output off above this current, A; 0 off  */
+    float trip_v;         /**< output off above this voltage, V; 0 off  */
+    float trip_s;         /**< how long over before a trip, s           */
+} supply_limits_t;
+
+/** The supply's caps narrowed by @p lim: the set points a screen offers.
+ *  A cap below the supply's own minimum leaves the range at that minimum. */
+supply_caps_t supply_caps_limited(const supply_caps_t *caps,
+                                  const supply_limits_t *lim);
+
+typedef enum {
+    SUPPLY_TRIP_NONE = 0,
+    SUPPLY_TRIP_CURRENT,
+    SUPPLY_TRIP_VOLTAGE,
+} supply_trip_kind_t;
+
+/** How long each reading has been over its threshold, for the trips. */
+typedef struct {
+    float over_i_s;
+    float over_v_s;
+} supply_trip_t;
+
+void supply_trip_reset(supply_trip_t *t);
+
+/**
+ * Take @p dt_s of the readings in @p s into the trips.  A reading over its
+ * threshold adds the time, one at or under it starts the count again, and
+ * one that did not arrive leaves it where it is.  Returns which trip fired,
+ * once the time over reaches lim->trip_s; nothing while the output is off.
+ * @p dt_s is clamped to 0 .. 1 s, as the totals' steps are.
+ */
+supply_trip_kind_t supply_trip_step(supply_trip_t *t,
+                                    const supply_limits_t *lim,
+                                    const supply_state_t *s, float dt_s);
 
 /** @p value clamped to @p min .. @p max and rounded to a multiple of @p step
  *  above @p min.  A step of 0 or less only clamps. */

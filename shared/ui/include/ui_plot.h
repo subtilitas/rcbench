@@ -15,6 +15,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "gfx.h"
 
@@ -34,6 +35,14 @@ typedef struct {
     /** Lower bound of the autorange: a 0 to 0.4 A scale on an idle bench
      *  draws noise at full height. */
     float       floor;
+    /**
+     * 0 for a series with a scale of its own.  1 + the index of another
+     * series for one drawn on that series' scale: a set point beside its
+     * reading.  Such a follower is drawn dashed, takes no legend entry, is
+     * hidden with its leader, and its samples count in the leader's
+     * autorange, so it is never drawn off the top of the plot.
+     */
+    uint8_t     follows;
 } ui_plot_series_t;
 
 typedef struct {

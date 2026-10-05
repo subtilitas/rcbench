@@ -174,9 +174,10 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
  * with the rest of the servo's wire handling. */
 static void servo_let_go(void);
 static void servo_service(bool link_up);
-/* The supply's output against the stop count; defined with the supply.
- * control_pump() calls it, so a stop cuts the output where it lands. */
-static void supply_follow_stops(void);
+/* The supply's service, defined with the supply.  control_pump() calls it,
+ * so a stop or an OFF cuts the output where it lands and the supply keeps
+ * its cadence while an exchange waits. */
+static void supply_pump(void);
 /* Defined with the rest of the link's reads; the OUTPUTS screen's write asks
  * for one straight afterwards. */
 static void read_outputs_binding(void);
@@ -469,6 +470,7 @@ static SemaphoreHandle_t s_snap_lock;
 static struct {
     bench_state_t bench;
     supply_state_t supply;
+    uint32_t      supply_gen;  /**< which ON, for the render side's ack */
     bool          link_up;
     bool          armed;
     uint32_t      arm_gen;     /**< which arm, for the render side's ack */
@@ -598,6 +600,23 @@ static atomic_uint s_supply_offs;
  */
 static atomic_uint s_supply_set_mv;
 static atomic_uint s_supply_set_ma;
+/*
+ * And the operator's limits, the same way: caps on the set points in mV and
+ * mA, the trips in mA and mV (0 is off) and the trip time in ms.  The screen
+ * already keeps its set points under the caps; the control task applies
+ * them again, because it is what the supply obeys.
+ */
+static atomic_uint s_supply_vmax_mv;
+static atomic_uint s_supply_imax_ma;
+static atomic_uint s_supply_trip_ma;
+static atomic_uint s_supply_trip_mv;
+static atomic_uint s_supply_trip_ms;
+/*
+ * The newest ON the render side has seen applied, from a frame that found
+ * the touch stream whole: the supply's counterpart of s_arm_ack.  See
+ * supply_watch_service().
+ */
+static atomic_uint s_supply_ack;
 /*
  * The two touch queues, numbered.  See touch_loss.h for why numbers and not
  * counts: a count raised on one core after the eviction it reports can be
@@ -962,9 +981,10 @@ static void control_pump(void)
     /* And judged here, at the rate touch is judged: this runs inside the
      * link's wait, where arming_step() does not. */
     arming_touch_poll(&s_arm, now_ms());
-    /* And the supply's output, off at every stop counted above.  It needs
-     * no link, so nothing here waits on it. */
-    supply_follow_stops();
+    /* And the supply: off at every stop counted above and at an OFF, and
+     * stepped on its own cadence.  It needs no link, so nothing here waits
+     * on it. */
+    supply_pump();
 
     /* The setting can change under this loop, and a ramp read once at
      * start-up would be the one the panel booted with.  The value read here
@@ -2764,20 +2784,57 @@ static uint32_t       s_supply_ms;
 static bool           s_supply_fresh;
 /* The stop count the supply has answered; see supply_follow_stops(). */
 static uint32_t       s_supply_stops_served;
+/* The trips' time over their thresholds; see supply_trip_step(). */
+static supply_trip_t  s_supply_trip;
+/* When the supply was last stepped, on its own cadence; see supply_pump(). */
+static uint32_t       s_supply_step_ms;
+/*
+ * The ON in flight, watched as an arm is (s_arm_watch): a hold that completed
+ * on a contact whose events went missing is an ON the operator may not have
+ * made, and the render side can cancel only an ON it has not yet handed
+ * over.  s_supply_gen numbers the ONs applied; the snapshot carries it.
+ */
+static arm_watch_t    s_supply_watch;
+static uint32_t       s_supply_gen;
 
 static void supply_switch(bool on)
 {
     if (s_supply_sim.output == on) {
         return;
     }
+    if (!on) {
+        /* The run's last interval, up to now on the reading that held
+         * through it, before the output is marked off: an OFF taken inside
+         * an exchange's wait can end a second-long interval. */
+        const uint32_t t = now_ms();
+        supply_count_totals(&s_supply, (float)(uint32_t)(t - s_supply_ms)
+                                           / 1000.0f);
+        s_supply_ms = t;
+        arm_watch_end(&s_supply_watch);
+    }
     supply_sim_output(&s_supply_sim, on);
     s_supply.output = on;
     if (on) {
-        /* A run starts with nothing counted. */
+        /* A run starts with nothing counted and nothing tripped. */
         supply_reset_totals(&s_supply);
+        supply_trip_reset(&s_supply_trip);
+        s_supply.trip  = (uint8_t)SUPPLY_TRIP_NONE;
         s_supply_ms    = now_ms();
         s_supply_fresh = true;
     }
+}
+
+/* The operator's limits as the render side last stored them. */
+static supply_limits_t supply_limits_now(void)
+{
+    const supply_limits_t l = {
+        (float)atomic_load(&s_supply_vmax_mv) / 1000.0f,
+        (float)atomic_load(&s_supply_imax_ma) / 1000.0f,
+        (float)atomic_load(&s_supply_trip_ma) / 1000.0f,
+        (float)atomic_load(&s_supply_trip_mv) / 1000.0f,
+        (float)atomic_load(&s_supply_trip_ms) / 1000.0f,
+    };
+    return l;
 }
 
 /*
@@ -2804,8 +2861,18 @@ static unsigned s_supply_set_ma_applied;
 
 static void supply_follow_set(void)
 {
-    const unsigned mv = atomic_load(&s_supply_set_mv);
-    const unsigned ma = atomic_load(&s_supply_set_ma);
+    unsigned mv = atomic_load(&s_supply_set_mv);
+    unsigned ma = atomic_load(&s_supply_set_ma);
+    /* Under the caps, whatever the screen sent: the screen keeps its set
+     * points under them already, and this is what the supply obeys. */
+    const unsigned vmax = atomic_load(&s_supply_vmax_mv);
+    const unsigned imax = atomic_load(&s_supply_imax_ma);
+    if (mv > vmax) {
+        mv = vmax;
+    }
+    if (ma > imax) {
+        ma = imax;
+    }
     if (mv == s_supply_set_mv_applied && ma == s_supply_set_ma_applied) {
         return;
     }
@@ -2832,9 +2899,9 @@ static void supply_service(void)
 /*
  * What the supply screen asked for.  An ON completes a hold, so it goes the
  * way an arm does: not past a stop, an OFF or a touch loss that came after
- * the screen posted it.  The operator repeats the hold.  Unlike an arm it is
- * not watched after it is taken: a loss the render side finds after this
- * leaves the output on, and OUTPUT OFF or STOP switches it off.
+ * the screen posted it, and watched after it is taken until the render side
+ * has seen the output on (supply_watch_service()).  The operator repeats the
+ * hold.
  */
 static void apply_supply_cmd(const panel_cmd_t *pc)
 {
@@ -2855,6 +2922,9 @@ static void apply_supply_cmd(const panel_cmd_t *pc)
             /* At the set points stored before this ON was queued. */
             supply_follow_set();
             supply_switch(true);
+            ++s_supply_gen;
+            arm_watch_begin(&s_supply_watch, pc->loss_gen,
+                            atomic_load(&s_drv_gaps), s_supply_gen);
         }
     }
 }
@@ -2886,6 +2956,26 @@ static void supply_step(float step_s)
         } else {
             supply_track_peaks(&s_supply);
         }
+    }
+    /* The operator's trips, on this reading.  The output goes off and the
+     * trip stays on the MODE card until the output is switched on again. */
+    const supply_limits_t lim = supply_limits_now();
+    const supply_trip_kind_t trip =
+        supply_trip_step(&s_supply_trip, &lim, &s_supply, step_s);
+    if (trip != SUPPLY_TRIP_NONE) {
+        supply_switch(false);
+        s_supply.trip = (uint8_t)trip;
+        char line[ALERT_MAX];
+        if (trip == SUPPLY_TRIP_CURRENT) {
+            snprintf(line, sizeof(line),
+                     "supply tripped over %.2f A -- output off",
+                     (double)lim.trip_i);
+        } else {
+            snprintf(line, sizeof(line),
+                     "supply tripped over %.2f V -- output off",
+                     (double)lim.trip_v);
+        }
+        control_alert(line);
     }
     /* Over the time that passed, measured, as the bench's totals are. */
     const uint32_t t = now_ms();
@@ -2927,7 +3017,8 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     /* The supply starts switched off, its readings those of an off output. */
     supply_sim_init(&s_supply_sim);
     supply_sim_step(&s_supply_sim, 0.0f, &s_supply);
-    s_supply_ms = now_ms();
+    s_supply_ms      = now_ms();
+    s_supply_step_ms = now_ms();
     s_pump_live = true;
 }
 
@@ -3838,6 +3929,64 @@ static void log_follow_runs(void)
 }
 
 /*
+ * The ON in flight, against the touch stream: the arm watch's rules on the
+ * supply's output.  Until the render side has acknowledged this ON from a
+ * frame that began with the output on and found the stream whole, a loss of
+ * either kind switches the output off again.
+ */
+static void supply_watch_service(void)
+{
+    if (!s_supply.output) {
+        arm_watch_end(&s_supply_watch);
+        return;
+    }
+    if (arm_watch_lost(&s_supply_watch, atomic_load(&s_loss_gen),
+                       atomic_load(&s_drv_gaps), atomic_load(&s_supply_ack))) {
+        supply_switch(false);
+        control_alert("touch lost while switching on -- output off");
+    }
+}
+
+/*
+ * The supply, from control_pump(): at the top of every pass and inside every
+ * exchange's wait, which can last LINK_HOST_TIMEOUT_MS (1000 ms) a time.  A
+ * stop, an OFF and a touch loss cut the output here, and the supply is
+ * stepped, logged and published every 1/PANEL_SAMPLE_HZ whatever the link is
+ * doing -- the supply is the panel's own and an unanswered coprocessor is
+ * no reason for its plot or its log to thin out.
+ */
+static void supply_pump(void)
+{
+    supply_follow_stops();
+    supply_service();
+    supply_watch_service();
+
+    const uint32_t since = (uint32_t)(now_ms() - s_supply_step_ms);
+    if (since < (uint32_t)(1000.0f / PANEL_SAMPLE_HZ)) {
+        return;
+    }
+    s_supply_step_ms = now_ms();
+    float step_s = (float)since / 1000.0f;
+    if (step_s > BENCH_TOTALS_MAX_STEP_S) {
+        step_s = BENCH_TOTALS_MAX_STEP_S;
+    }
+    supply_step(step_s);
+
+    log_follow_runs();
+    if (s_log_kind == LOG_RUN_SUPPLY) {
+        s_log_t += step_s;
+        log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
+        row.u.supply = s_supply;
+        log_post(&row);
+    }
+
+    snap_lock();
+    s_snap.supply     = s_supply;
+    s_snap.supply_gen = s_supply_gen;
+    snap_unlock();
+}
+
+/*
  * The bench page, and the control page in the same pass.
  *
  * While the far end answers, the bench page is what is asked for; identity is
@@ -4305,9 +4454,6 @@ static void advance_model_and_log(bool link_up, float emitted,
             telemetry_sim_step(sim, emitted, step_s, bench);
             *new_sample = true;
         }
-        /* The supply's model on the same cadence, link or none: it is the
-         * panel's own. */
-        supply_step(step_s);
     }
     /*
      * The run's totals, from the sample either source just wrote, over the
@@ -4331,15 +4477,11 @@ static void advance_model_and_log(bool link_up, float emitted,
      * coprocessor's own empty registers over the totals.
      */
     bench_totals_show(&s_totals, bench);
+    /* A supply run's rows are supply_pump()'s, on the supply's cadence. */
     if (due && *new_sample && s_log_kind == LOG_RUN_BENCH) {
         s_log_t += step_s;
         log_row_t row = { .kind = LOG_RUN_BENCH, .t_s = s_log_t };
         row.u.bench = *bench;
-        log_post(&row);
-    } else if (due && s_log_kind == LOG_RUN_SUPPLY) {
-        s_log_t += step_s;
-        log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
-        row.u.supply = s_supply;
         log_post(&row);
     }
 }
@@ -4354,6 +4496,7 @@ static void publish_snapshot(const bench_state_t *bench, bool link_up,
     snap_lock();
     s_snap.bench       = *bench;
     s_snap.supply      = s_supply;
+    s_snap.supply_gen  = s_supply_gen;
     s_snap.link_up     = link_up;
     s_snap.armed       = outputs_armed(&s_out);
     s_snap.arm_gen     = s_arm_gen;
@@ -4541,6 +4684,24 @@ static touch_seq_rx_t s_tq_rx = { .next = 1u };    /* touch_seq_rx_init() */
 static unsigned       s_tq_lost;
 
 /*
+ * The supply screen's limits and set points, as the levels the control task
+ * reads.  Every frame, from the render loop that owns the screen.
+ */
+static void publish_supply_levels(void)
+{
+    const supply_limits_t lim = supply_screen_limits();
+    atomic_store(&s_supply_vmax_mv, (unsigned)lroundf(lim.v_max * 1000.0f));
+    atomic_store(&s_supply_imax_ma, (unsigned)lroundf(lim.i_max * 1000.0f));
+    atomic_store(&s_supply_trip_ma, (unsigned)lroundf(lim.trip_i * 1000.0f));
+    atomic_store(&s_supply_trip_mv, (unsigned)lroundf(lim.trip_v * 1000.0f));
+    atomic_store(&s_supply_trip_ms, (unsigned)lroundf(lim.trip_s * 1000.0f));
+    atomic_store(&s_supply_set_mv,
+                 (unsigned)lroundf(supply_screen_set_v() * 1000.0f));
+    atomic_store(&s_supply_set_ma,
+                 (unsigned)lroundf(supply_screen_set_i() * 1000.0f));
+}
+
+/*
  * Stamped with what this loop knows of the touch stream as it queues the
  * command: the gestures it has dropped (s_loss_gen, which only this loop
  * writes) and the number of the last event it took.  The control task
@@ -4568,11 +4729,9 @@ static void flush_screen_commands(uint32_t stops_now)
                            .consumed_seq = consumed };
         send_cmd(&pc);
     }
-    /* The set points first, as a level; see s_supply_set_mv. */
-    atomic_store(&s_supply_set_mv,
-                 (unsigned)lroundf(supply_screen_set_v() * 1000.0f));
-    atomic_store(&s_supply_set_ma,
-                 (unsigned)lroundf(supply_screen_set_i() * 1000.0f));
+    /* The limits and the set points first, as levels; see
+     * s_supply_set_mv. */
+    publish_supply_levels();
     supply_cmd_t sc;
     if (supply_screen_poll_cmd(&sc)) {
         panel_cmd_t pc = { .kind = PANEL_CMD_SUPPLY, .supply = sc,
@@ -4733,14 +4892,13 @@ void app_main(void)
     const supply_caps_t supply_caps = SUPPLY_CAPS_PPS_DEFAULT;
     supply_screen_set_caps(&supply_caps);
     supply_screen_set_model(true);
-    /* And where the screen's set points start, before the control task
-     * reads them. */
-    atomic_store(&s_supply_set_mv,
-                 (unsigned)lroundf(supply_screen_set_v() * 1000.0f));
-    atomic_store(&s_supply_set_ma,
-                 (unsigned)lroundf(supply_screen_set_i() * 1000.0f));
 
     const bool healthy = bring_up();
+    /* The settings are loaded now: the supply screen takes its limits and
+     * starts its set points from them, and both reach the control task's
+     * levels before that task exists. */
+    supply_screen_settings_loaded();
+    publish_supply_levels();
 
     s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_item_t));
     s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));
@@ -4800,13 +4958,15 @@ void app_main(void)
          */
         bool     armed_now;
         bool     supply_now;
+        uint32_t supply_gen_now;
         uint32_t stops_now;
         uint32_t arm_gen_now;
         snap_lock();
-        armed_now   = s_snap.armed;
-        supply_now  = s_snap.supply.output;
-        stops_now   = s_snap.stops;
-        arm_gen_now = s_snap.arm_gen;
+        armed_now      = s_snap.armed;
+        supply_now     = s_snap.supply.output;
+        supply_gen_now = s_snap.supply_gen;
+        stops_now      = s_snap.stops;
+        arm_gen_now    = s_snap.arm_gen;
         snap_unlock();
         /* Whether this frame found the touch stream broken; an arm is
          * acknowledged only by a frame that did not.  See the end of the
@@ -4881,25 +5041,19 @@ void app_main(void)
         servo_screen_set_armed(armed_now);
 
         /*
-         * The supply's run, bounded the same way by its output: the switch-on
-         * before this frame's samples, with what was queued before it
-         * dropped, and the switch-off after them.
+         * The supply's run, bounded by each sample's own output: a sample
+         * taken with it on starts or continues the run, one taken with it
+         * off ends it before its readings are shown.  The snapshot's edge
+         * cannot place them, because the control task steps the supply
+         * inside an exchange's wait and publishes the snapshot only after.
+         * supply_seen is the output the newest sample reported.
          */
-        static bool supply_on;
-        if (supply_now && !supply_on) {
-            supply_state_t stale;
-            while (xQueueReceive(s_supply_q, &stale, 0) == pdTRUE) { }
-        }
-        if (supply_now) {
-            supply_screen_set_output(true);
-        }
-        supply_on = supply_now;
+        static bool supply_seen;
         supply_state_t sup;
         while (xQueueReceive(s_supply_q, &sup, 0) == pdTRUE) {
+            supply_screen_set_output(sup.output);
             supply_screen_push(&sup);
-        }
-        if (!supply_now) {
-            supply_screen_set_output(false);
+            supply_seen = sup.output;
         }
 
         if (drain_touch(stops_now)) {
@@ -5032,7 +5186,10 @@ void app_main(void)
          * Never while armed.  This screen carries no band and therefore no
          * STOP, and a bench with something spinning must not have its stop
          * button covered by a diagnosis.  Armed, the alert band already says
-         * the link is gone, and the screen waits for the disarm.
+         * the link is gone, and the screen waits for the disarm.  Nor while
+         * the supply's output is on, by the snapshot or by the newest
+         * sample: the supply does not need the link, and STOP and OUTPUT
+         * OFF stay on screen for as long as it is live.
          *
          * The timestamp is read once and tested twice.  The control task
          * clears it on the other core the moment the link answers, and a
@@ -5041,7 +5198,8 @@ void app_main(void)
          * passes, and the screen takes over on a link that is up.
          */
         const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
-        if (!armed && lost_ms != 0u && !s_link_lost_shown
+        if (!armed && !supply_now && !supply_seen
+            && lost_ms != 0u && !s_link_lost_shown
             && (uint32_t)(now_ms() - lost_ms) >= LINK_LOST_SCREEN_MS
             && ui_router_current() != SCREEN_SPLASH
             && ui_router_current() != SCREEN_BUSFAULT) {
@@ -5076,6 +5234,10 @@ void app_main(void)
          */
         if (armed_now && !frame_lost) {
             atomic_store(&s_arm_ack, arm_gen_now);
+        }
+        /* And the supply's ON the same way; see supply_watch_service(). */
+        if (supply_now && !frame_lost) {
+            atomic_store(&s_supply_ack, supply_gen_now);
         }
 
         /*

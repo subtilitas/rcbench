@@ -157,6 +157,88 @@ TEST_CASE(the_extremes_take_only_what_arrived)
     supply_track_peaks(NULL);
 }
 
+/* ------------------------------------------------------------- limits */
+
+TEST_CASE(the_limits_narrow_the_caps_and_never_below_the_floor)
+{
+    const supply_caps_t caps = SUPPLY_CAPS_PPS_DEFAULT;
+    supply_limits_t lim = { 8.4f, 3.0f, 0.0f, 0.0f, 0.1f };
+    supply_caps_t e = supply_caps_limited(&caps, &lim);
+    CHECK_NEAR(e.v_max, 8.4f, 1e-4f);
+    CHECK_NEAR(e.i_max, 3.0f, 1e-4f);
+    CHECK_NEAR(e.v_min, caps.v_min, 1e-4f);
+    CHECK_NEAR(e.v_step, caps.v_step, 1e-6f);
+
+    /* A limit above the supply's own changes nothing. */
+    lim.v_max = 30.0f;
+    lim.i_max = 9.0f;
+    e = supply_caps_limited(&caps, &lim);
+    CHECK_NEAR(e.v_max, caps.v_max, 1e-4f);
+    CHECK_NEAR(e.i_max, caps.i_max, 1e-4f);
+
+    /* One below the supply's minimum leaves a single value, not an empty
+     * range. */
+    lim.v_max = 1.0f;
+    lim.i_max = 0.1f;
+    e = supply_caps_limited(&caps, &lim);
+    CHECK_NEAR(e.v_max, caps.v_min, 1e-4f);
+    CHECK_NEAR(e.i_max, caps.i_min, 1e-4f);
+
+    e = supply_caps_limited(NULL, NULL);
+    CHECK_NEAR(e.v_max, caps.v_max, 1e-4f);
+}
+
+TEST_CASE(a_trip_fires_once_a_reading_has_been_over_for_its_time)
+{
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.output = true;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    st.v = 6.0f;
+    st.i = 2.6f;
+    const supply_limits_t lim = { 21.0f, 5.0f, 2.5f, 0.0f, 0.2f };
+    supply_trip_t t;
+    supply_trip_reset(&t);
+
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
+    /* A reading back under starts the count again. */
+    st.i = 2.4f;
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
+    st.i = 2.6f;
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.1f), SUPPLY_TRIP_NONE);
+    /* One that did not arrive leaves it where it is. */
+    st.ok = SUPPLY_OK_VOLTAGE;
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.5f), SUPPLY_TRIP_NONE);
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.1f), SUPPLY_TRIP_CURRENT);
+    /* Fired, the count starts again. */
+    CHECK_EQ(t.over_i_s, 0.0f);
+
+    /* The voltage trip, at a trip time of 0: the first reading over. */
+    const supply_limits_t vlim = { 21.0f, 5.0f, 0.0f, 6.5f, 0.0f };
+    st.v = 6.6f;
+    CHECK_EQ(supply_trip_step(&t, &vlim, &st, 0.05f), SUPPLY_TRIP_VOLTAGE);
+
+    /* Nothing counts while the output is off, and a long stall counts 1 s. */
+    st.output = false;
+    CHECK_EQ(supply_trip_step(&t, &lim, &st, 5.0f), SUPPLY_TRIP_NONE);
+    CHECK_EQ(t.over_i_s, 0.0f);
+    st.output = true;
+    const supply_limits_t slow = { 21.0f, 5.0f, 2.5f, 0.0f, 1.5f };
+    CHECK_EQ(supply_trip_step(&t, &slow, &st, 60.0f), SUPPLY_TRIP_NONE);
+    CHECK_NEAR(t.over_i_s, 1.0f, 1e-4f);
+    CHECK_EQ(supply_trip_step(&t, &slow, &st, -1.0f), SUPPLY_TRIP_NONE);
+
+    /* Off at 0, and nothing without its arguments. */
+    const supply_limits_t off = { 21.0f, 5.0f, 0.0f, 0.0f, 0.0f };
+    st.i = 9.0f;
+    st.v = 30.0f;
+    CHECK_EQ(supply_trip_step(&t, &off, &st, 1.0f), SUPPLY_TRIP_NONE);
+    CHECK_EQ(supply_trip_step(NULL, &off, &st, 1.0f), SUPPLY_TRIP_NONE);
+    supply_trip_reset(NULL);
+}
+
 /* ------------------------------------------------------------ the CSV */
 
 static char g_buf[2048];
@@ -237,6 +319,8 @@ int main(void)
     RUN(set_points_follow_the_caps);
     RUN(a_run_counts_only_while_the_output_is_on);
     RUN(the_extremes_take_only_what_arrived);
+    RUN(the_limits_narrow_the_caps_and_never_below_the_floor);
+    RUN(a_trip_fires_once_a_reading_has_been_over_for_its_time);
     RUN(a_supply_row_writes_its_own_header_and_columns);
     RUN(a_supply_row_leaves_what_did_not_arrive_empty);
     return test_summary("supply");

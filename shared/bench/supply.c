@@ -99,6 +99,84 @@ void supply_count_totals(supply_state_t *s, float dt_s)
     }
 }
 
+/* ----------------------------------------------------------------- limits */
+
+supply_caps_t supply_caps_limited(const supply_caps_t *caps,
+                                  const supply_limits_t *lim)
+{
+    const supply_caps_t pps = SUPPLY_CAPS_PPS_DEFAULT;
+    supply_caps_t out = (caps != NULL) ? *caps : pps;
+    if (lim != NULL) {
+        if (lim->v_max < out.v_max) {
+            out.v_max = lim->v_max;
+        }
+        if (lim->i_max < out.i_max) {
+            out.i_max = lim->i_max;
+        }
+    }
+    if (!(out.v_max >= out.v_min)) {
+        out.v_max = out.v_min;
+    }
+    if (!(out.i_max >= out.i_min)) {
+        out.i_max = out.i_min;
+    }
+    return out;
+}
+
+void supply_trip_reset(supply_trip_t *t)
+{
+    if (t != NULL) {
+        t->over_i_s = 0.0f;
+        t->over_v_s = 0.0f;
+    }
+}
+
+/* One reading against its threshold: true once it has been over for
+ * @p hold_s.  A threshold of 0 or less is off. */
+static bool over_for(float *over_s, bool arrived, float value, float threshold,
+                     float hold_s, float dt)
+{
+    if (!(threshold > 0.0f) || !arrived) {
+        return false;
+    }
+    if (value > threshold) {
+        *over_s += dt;
+        return *over_s >= hold_s;
+    }
+    *over_s = 0.0f;
+    return false;
+}
+
+supply_trip_kind_t supply_trip_step(supply_trip_t *t,
+                                    const supply_limits_t *lim,
+                                    const supply_state_t *s, float dt_s)
+{
+    if (t == NULL || lim == NULL || s == NULL) {
+        return SUPPLY_TRIP_NONE;
+    }
+    if (!s->output) {
+        supply_trip_reset(t);
+        return SUPPLY_TRIP_NONE;
+    }
+    float dt = dt_s;
+    if (!(dt > 0.0f)) {
+        dt = 0.0f;
+    } else if (dt > BENCH_TOTALS_MAX_STEP_S) {
+        dt = BENCH_TOTALS_MAX_STEP_S;
+    }
+    const bool i_trip = over_for(&t->over_i_s,
+                                 (s->ok & SUPPLY_OK_CURRENT) != 0u, s->i,
+                                 lim->trip_i, lim->trip_s, dt);
+    const bool v_trip = over_for(&t->over_v_s,
+                                 (s->ok & SUPPLY_OK_VOLTAGE) != 0u, s->v,
+                                 lim->trip_v, lim->trip_s, dt);
+    if (!i_trip && !v_trip) {
+        return SUPPLY_TRIP_NONE;
+    }
+    supply_trip_reset(t);
+    return i_trip ? SUPPLY_TRIP_CURRENT : SUPPLY_TRIP_VOLTAGE;
+}
+
 /* ------------------------------------------------------------------ model */
 
 void supply_sim_init(supply_sim_t *m)

@@ -26,14 +26,25 @@ history is in git.
   a UART (universal asynchronous receiver-transmitter): a voltage of 3.3 to
   21 V in 20 mV steps, a current limit of 0.5 to 5 A in 50 mA steps, a plot
   of voltage, current and power, the run's extremes, CV or CC, and the run's
-  mAh and Wh. OUTPUT ON is a 2 s hold and OUTPUT OFF a tap. Every stop
-  the bench counts (STOP, touch that stops answering, the coprocessor
-  refusing to stay armed) and a supply that stops answering switch the
-  output off; leaving the screen does not. A run is one switch-on, recorded to a `BENCHnnn.CSV` of its own
-  with the columns time, set voltage, voltage, limit, current, power, mode,
-  charge and energy; an armed bench takes the log over. The PD mini's
-  protocol is not in this repository, so the panel runs a model of a supply
+  mAh and Wh. Each set point is shown beside its reading, in brackets on the
+  rail and dashed in the plot. A tap on a card or a set point opens a
+  keypad. OUTPUT ON is a 2 s hold and OUTPUT OFF a tap. Every stop the bench
+  counts, a trip, an ON whose touch events went missing and a supply that
+  stops answering switch the output off; leaving the screen does not. A run
+  is one switch-on, recorded to a `BENCHnnn.CSV` of its own with the columns
+  time, set voltage, voltage, limit, current, power, mode, charge and
+  energy; an armed bench takes the log over. The PD mini's protocol is not
+  in this repository, so the panel runs a model of a supply
   (`supply_sim_t`) and the tile is marked MODELLED.
+- **SUPPLY has SETTINGS of its own**, kept in NVS (non-volatile storage):
+  caps on the set points, the set points after a restart, a current trip
+  and a voltage trip with a trip time, and whether a change to a live output
+  asks first, for the slider and for the keypad separately. Both questions
+  default to on. The PD mini's wiring -- enable, TX and RX pins, baud rate --
+  is on SETUP under INTERFACES; no driver reads it.
+- **The plot draws a series on another's scale** (`ui_plot_series_t.follows`),
+  dashed and without a legend entry, and a numeric keypad widget
+  (`ui_keypad`) is available to every screen.
 
 ### Changed
 

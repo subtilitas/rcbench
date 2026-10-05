@@ -307,6 +307,12 @@ int main(int argc, char **argv)
         supply_sim_set(&m, 6.0f, 2.0f);
         supply_state_t st;
         memset(&st, 0, sizeof(st));
+        /* Limits an operator testing a standard servo would set: an HV
+         * servo's 8.4 V cap and a trip under the stall current. */
+        settings_set(SET_SUPPLY_V_MAX, 8.4f);
+        settings_set(SET_SUPPLY_TRIP_I, 2.5f);
+        settings_set(SET_SUPPLY_TRIP_MS, 200.0f);
+        supply_screen_settings_loaded();
         supply_screen_set_model(true);
         supply_sim_output(&m, true);
         supply_sim_step(&m, 0.0f, &st);
@@ -318,6 +324,27 @@ int main(int argc, char **argv)
             supply_track_peaks(&st);
             supply_count_totals(&st, 0.05f);
             supply_screen_push(&st);
+        }
+        /*
+         * The overlays, opened the way a finger opens them.  Geometry from
+         * supply_screen.c and ui_keypad.c, offset by the band: SETTINGS at
+         * the strip's right end, the VOLT card at the top of the rail, and
+         * the keypad's 7, point and 4.
+         */
+        if (strcmp(view, "supply-settings") == 0) {
+            ui_router_goto(SCREEN_SUPPLY);
+            tap(746, UI_BAND_H + 11);
+        } else if (strcmp(view, "supply-confirm") == 0) {
+            /* +0.1 V on a live output: the question, as the settings'
+             * default asks it. */
+            ui_router_goto(SCREEN_SUPPLY);
+            tap(519, UI_BAND_H + 335);
+        } else if (strcmp(view, "supply-keypad") == 0) {
+            ui_router_goto(SCREEN_SUPPLY);
+            tap(676, UI_BAND_H + 52);
+            tap(78, UI_BAND_H + 153);
+            tap(212, UI_BAND_H + 381);
+            tap(78, UI_BAND_H + 229);
         }
     }
 
