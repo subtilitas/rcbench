@@ -597,6 +597,24 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
 }
 
+/*
+ * Touch events were lost between two frames, so this screen's record of what
+ * is on the glass cannot be trusted.  A hit held open acts on its release
+ * and a drag owns its track id, and the GT911 reuses ids: a later contact
+ * that began somewhere else would be taken for this one and press a control
+ * nobody touched.  The repeat on the plus and minus keys runs on the frame
+ * timer while a hit stands, so it stops here too.
+ */
+static void cancel(void)
+{
+    s.hit_kind  = HIT_NONE;
+    s.hit_index = -1;
+    s.dragging  = false;
+    s.held_for  = 0.0f;
+    s.repeating = false;
+    settings_screen_invalidate();
+}
+
 static const ui_screen_t s_screen = {
     .title = "SETTINGS",
     .reset = reset,
@@ -604,6 +622,7 @@ static const ui_screen_t s_screen = {
     .leave = leave,
     .tick = tick,
     .event = event,
+    .cancel = cancel,
     .render = render,
 };
 

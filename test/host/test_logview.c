@@ -509,6 +509,31 @@ TEST_CASE(an_empty_card_is_not_the_same_as_no_card)
     free(no_card);
 }
 
+/*
+ * A cancel abandons the press in progress.  Every view here acts on the
+ * release, and a press left standing after a lost event would let a later
+ * contact's release open the file that was selected.
+ */
+TEST_CASE(a_cancelled_press_opens_nothing)
+{
+    fresh();
+    tap(400, BR_ROW_Y(0));                      /* selects */
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = 400,
+                                   .y = (int16_t)BR_ROW_Y(0), .strength = 40 } };
+    log_viewer_screen()->event(&e);
+    log_viewer_screen()->cancel();
+    e.type = TOUCH_EVENT_UP;
+    log_viewer_screen()->event(&e);              /* would have opened */
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+
+    /* And nothing is stuck: a fresh tap on the selected row opens. */
+    tap(400, BR_ROW_Y(0));
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+}
+
 TEST_CASE(a_second_tap_opens_the_file_and_analyses_it)
 {
     fresh();
@@ -1280,6 +1305,35 @@ TEST_CASE(only_the_finger_that_pressed_delete_can_release_it)
     CHECK_STR_EQ(g_removed_name, "BENCH_01.CSV");
 }
 
+TEST_CASE(a_touch_loss_drops_the_press_on_delete)
+{
+    /*
+     * Lost events leave this screen's record of the glass stale.  The release
+     * of the contact holding DELETE may be one of them, so the question has
+     * to take the next fresh press rather than wait for a release that will
+     * not come.
+     */
+    fresh();
+    ask_to_delete(0);
+    send_id(TOUCH_EVENT_DOWN, 1, DQ_DELETE_X, DQ_CY);
+    log_viewer_screen()->cancel();                 /* its UP was lost      */
+    send_id(TOUCH_EVENT_DOWN, 2, DQ_DELETE_X, DQ_CY);
+    send_id(TOUCH_EVENT_UP, 2, DQ_DELETE_X, DQ_CY);
+    draw();
+    CHECK_EQ(g_remove_calls, 1);
+
+    /* And a release of that contact that does arrive after the cancel is not
+     * an answer. */
+    fresh();
+    ask_to_delete(0);
+    send_id(TOUCH_EVENT_DOWN, 1, DQ_DELETE_X, DQ_CY);
+    log_viewer_screen()->cancel();
+    send_id(TOUCH_EVENT_UP, 1, DQ_DELETE_X, DQ_CY);
+    CHECK_EQ(g_remove_calls, 0);
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK_EQ(g_remove_calls, 1);
+}
+
 TEST_CASE(delete_needs_a_selected_file)
 {
     fresh();
@@ -1428,6 +1482,7 @@ int main(void)
     RUN(no_card_says_so_and_stays_put);
     RUN(an_empty_card_is_not_the_same_as_no_card);
     RUN(a_second_tap_opens_the_file_and_analyses_it);
+    RUN(a_cancelled_press_opens_nothing);
     RUN(a_german_file_is_read_as_german);
     RUN(plotting_loads_exactly_the_picked_columns);
     RUN(tapping_a_column_toggles_it_and_the_time_axis_is_not_offered);
@@ -1451,6 +1506,7 @@ int main(void)
     RUN(cancel_deletes_nothing_and_keeps_the_selection);
     RUN(a_finger_that_slides_off_delete_deletes_nothing);
     RUN(only_the_finger_that_pressed_delete_can_release_it);
+    RUN(a_touch_loss_drops_the_press_on_delete);
     RUN(delete_needs_a_selected_file);
     RUN(without_remove_there_is_no_delete);
     RUN(deleting_the_open_file_drops_what_was_read_from_it);

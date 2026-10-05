@@ -64,8 +64,21 @@ bool touch_pressed(touch_point_t *out);
 /**
  * Pop the next input event.  @p timeout_ms of 0 polls, UINT32_MAX blocks.
  * Returns false when nothing arrived in time.
+ *
+ * @p seq, when not NULL, receives the event's number.  The driver numbers
+ * every event it offers to its queue, from 1 and in order, whether or not the
+ * queue kept it, so a number skipped is an event the queue dropped because
+ * nobody collected it.  touch_loss.h turns the numbers into losses.
  */
-bool touch_wait_event(touch_event_t *out, uint32_t timeout_ms);
+bool touch_wait_event(touch_event_t *out, uint32_t *seq, uint32_t timeout_ms);
+
+/**
+ * The number of the last event the driver offered to its queue, stored after
+ * the offer.  Read before draining the queue: an event up to it that the
+ * drain did not deliver was dropped, which a loss at the end of the stream,
+ * with no later event to show the gap, needs.
+ */
+uint32_t touch_published(void);
 
 /** Drop any queued events (useful after a screen change). */
 void touch_flush_events(void);
@@ -86,6 +99,7 @@ uint16_t touch_i2c_address(void);
  * age as a fault rather than as quiet.
  */
 uint32_t touch_age_ms(void);
+
 
 #ifdef __cplusplus
 }

@@ -461,6 +461,21 @@ static void render(gfx_canvas_t *c, int buffer_index)
     draw_right(c);
 }
 
+/*
+ * The panel could not hand over every touch event, so this screen's record
+ * of the glass is stale.  The tab row is the one control here that holds
+ * state between a press and its release: a press it kept would own a track
+ * id the controller reuses, and a later contact that began elsewhere and
+ * lifts over the tab would switch the pane on a tap nobody made.
+ */
+static void cancel(void)
+{
+    ui_tabs_cancel(&s.tabs);
+    /* The tab row may already be drawn pressed in both framebuffers; a
+     * cleared press with the same revision would leave it painted held. */
+    ++s.rev;
+}
+
 static const ui_screen_t k_screen = {
     .title  = "ANALYSER",
     .reset  = reset,
@@ -468,6 +483,7 @@ static const ui_screen_t k_screen = {
     .leave  = NULL,
     .tick   = NULL,
     .event  = event,
+    .cancel = cancel,
     .render = render,
 };
 

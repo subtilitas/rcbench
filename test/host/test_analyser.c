@@ -122,6 +122,67 @@ TEST_CASE(frame_lost_warns_without_claiming_failsafe)
     CHECK_EQ(count_of(ui_theme_color(UI_C_OK)), 0);
 }
 
+/*
+ * A cancel abandons a tab press: the panel's record of the glass is stale,
+ * and the track id the press owned is one the controller reuses, so a later
+ * contact lifting over the tab must not switch the pane.
+ */
+TEST_CASE(a_cancelled_tab_press_does_not_switch_the_pane)
+{
+    fresh();
+    push(false, false);
+    scr->render(&cv, 0);
+    gfx_color_t *chan = malloc((size_t)W * H * sizeof(gfx_color_t));
+    memcpy(chan, fb, (size_t)W * H * sizeof(gfx_color_t));
+
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+        .point = { .id = 1, .x = 200, .y = 20, .strength = 40 } };
+    scr->event(&e);
+    scr->cancel();
+    e.type = TOUCH_EVENT_UP;
+    scr->event(&e);
+    scr->render(&cv, 0);
+    CHECK_EQ(memcmp(chan, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
+
+    /* And the row is not stuck. */
+    e.type = TOUCH_EVENT_DOWN;
+    scr->event(&e);
+    e.type = TOUCH_EVENT_UP;
+    scr->event(&e);
+    scr->render(&cv, 0);
+    CHECK(memcmp(chan, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
+    free(chan);
+}
+
+/*
+ * A press already drawn is drawn released once it is cancelled.  The screen
+ * caches its frame per buffer by revision, so a cancel that cleared the
+ * press without moving the revision would leave the tab painted held.
+ */
+TEST_CASE(a_cancelled_tab_press_already_drawn_is_redrawn_released)
+{
+    fresh();
+    push(false, false);
+    scr->render(&cv, 0);
+    gfx_color_t *idle = malloc((size_t)W * H * sizeof(gfx_color_t));
+    memcpy(idle, fb, (size_t)W * H * sizeof(gfx_color_t));
+
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+        .point = { .id = 1, .x = 200, .y = 20, .strength = 40 } };
+    scr->event(&e);
+    /* A tab press alone does not repaint; telemetry arriving under the
+     * finger does, which is what paints the press.  Forced here. */
+    analyser_invalidate();
+    scr->render(&cv, 0);
+    /* The press is visible, or this case proves nothing. */
+    CHECK(memcmp(idle, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
+
+    scr->cancel();
+    scr->render(&cv, 0);
+    CHECK_EQ(memcmp(idle, fb, (size_t)W * H * sizeof(gfx_color_t)), 0);
+    free(idle);
+}
+
 /* Both panes draw, and they draw different things. */
 TEST_CASE(both_panes_render_and_differ)
 {
@@ -208,5 +269,7 @@ int main(void)
     RUN(both_panes_render_and_differ);
     RUN(a_moved_channel_changes_the_trace);
     RUN(a_frame_after_silence_is_live_again);
+    RUN(a_cancelled_tab_press_does_not_switch_the_pane);
+    RUN(a_cancelled_tab_press_already_drawn_is_redrawn_released);
     return test_summary("analyser");
 }

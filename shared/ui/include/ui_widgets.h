@@ -99,6 +99,14 @@ void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color);
  */
 #define UI_HOLD_S 2.0f
 
+/*
+ * The most one frame can add to a hold.  A frame's duration is measured at
+ * its top and applied at its end, so without a cap a single late frame
+ * completes a hold that began inside that same frame.  0.25 s puts at least
+ * eight frames with the press standing between a press and an arm.
+ */
+#define UI_HOLD_MAX_CREDIT_S 0.25f
+
 /** Frames per flash cycle and how many cycles: white, black, settled. */
 #define UI_HOLD_FLASH_CYCLE  3
 #define UI_HOLD_FLASH_TIMES  2
@@ -153,6 +161,14 @@ bool ui_hold_leave(ui_hold_t *h);
 /** The press lifted. Returns whether it was the press that fired, which the
  *  release consumes: a release that fired is not also a press. */
 bool ui_hold_end(ui_hold_t *h);
+
+/**
+ * What one frame is worth to a hold: @p dt_s, capped at
+ * UI_HOLD_MAX_CREDIT_S and floored at zero. Used by ui_hold_tick() and by
+ * any screen that keeps its own hold timer, so a late frame cannot complete
+ * a gesture that began inside it.
+ */
+float ui_hold_credit(float dt_s);
 
 /** Time passed. True on the one frame the hold completes, and never again
  *  until the press is lifted and made afresh. */

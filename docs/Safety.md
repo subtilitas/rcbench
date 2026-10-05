@@ -80,6 +80,75 @@ unpowered or unplugged panel reads as a line that is not edging.
 - STOP latches. The bench stays disarmed until it is armed again.
 - Arming is a two-second hold on ARM, and the command goes when the hold
   completes rather than when the finger lifts. Disarming is a press.
+- A hold is credited at most 250 ms per frame, so it spans at least eight
+  frames with the press standing. A frame's duration is measured at its top
+  and applied at its end, and without the cap one late frame credits a hold
+  that began while that same frame was dispatching its touch events. Both
+  the arming hold and the bus-fault acknowledgement take the cap.
+- A frame that lost touch events cancels the gesture in progress. A full
+  touch queue drops its oldest entry to take the newest, and no choice there
+  is safe on its own: a release that never arrives leaves a screen holding a
+  press, a press that never arrives orphans the release after it, and the
+  movement where a finger leaves a button is what abandons the hold. The
+  render task drains the queue from the other core, so inspecting an entry
+  does not decide which one is removed. Instead each queue's one producer
+  numbers every event it offers, whether or not the queue keeps it, and the
+  consumer finds a loss as a gap in the numbers: on the first event after it,
+  before that event is handled, or, at the end of a drain, against the number
+  the producer published before the drain began. No count raised on one core
+  has to be read in time on the other. The render task then tells every
+  screen that its record of the glass is stale, not only the one on top,
+  because an event that survived the loss can have navigated away from the
+  screen holding the press; each screen drops any gesture in progress. That
+  asks for nothing, exactly as letting go early does, with the one exception
+  below. Both queues are numbered -- the driver's own event queue evicts its
+  oldest for the same reason, and a gap the control task finds there travels
+  to the render task as an item of its own, ahead of the events that followed
+  it. The render task drains once more right before the frame's tick, so an
+  event lost while the loop is running is answered in that frame rather than
+  the next. The frame log carries the events found missing in each queue as
+  `TOUCHLOST <panel>/<driver>`.
+- Every control that holds state between a press and its release cancels.
+  MOTOR & ESC, SERVO and CAN BUS FAULT have a gesture that completes on a
+  timer, so a lost release there arms or acknowledges on its own; the
+  overview's tiles, the outputs and picker screens' cells, the settings
+  screen's keys, the log viewer's buttons, rows and DELETE question and the
+  tab rows of MOTOR & ESC, ANALYSER and BALANCE act on the release instead,
+  and a press left latched owns a track id the controller reuses, so a later
+  contact that began elsewhere is taken for the missing release. The DELETE
+  question stays open through a cancel and takes the next fresh press. HOME
+  and STOP are the router's own gesture and it cancels those itself.
+- A touch stream that breaks while STOP is held stops the bench. The control
+  task owns that press independently of the screens, and the release that
+  would have stopped the bench may be the event that went missing -- or it may
+  arrive and satisfy neither owner, because the render side cancels the band's
+  press for the same loss. Nothing else would stop it, and the operator has
+  already pressed STOP. What this gives up: a press that began on STOP and
+  would have been carried off it before lifting, which asks for nothing today,
+  stops the bench instead.
+- Cancelling an armed bench's disarm still disarms. Abandoning a gesture asks
+  for nothing, and on an armed bench that is the wrong direction for one of
+  them: disarming is a press, so its release is the whole command, and a
+  release lost to a full queue is a disarm the operator made and the bench
+  never saw. Arming has already sent its command by the time the finger
+  lifts, so an arm cancelled part way asks for nothing, which is correct. A
+  cancel also drops an arm the screen has posted and the application has not
+  yet collected. An arm already handed to the control task carries how many
+  times the render task had dropped gestures and the number of the last
+  event it had taken. The control task drains the driver's queue first, then
+  drops an arm when the render task has dropped gestures since, or has a
+  loss notice it had not yet taken. Once the arm is applied, any loss -- the
+  render task dropping gestures, or a gap in the driver's stream -- undoes it
+  until the render task acknowledges the armed bench, which a frame does
+  only when it began armed and found the stream whole. The control task
+  looks inside every link exchange's wait, not only once a pass, and stops
+  the bench from there as it does for STOP: the heartbeat drops at once and
+  the coprocessor fails safe within 150 ms, however long the exchange
+  backlog behind the arm. A frame that
+  began before the arm was published cancels screens that still believe the
+  bench is disarmed, which posts no disarm, so the control task has to.
+  After the acknowledgement a loss is seen by the screens against an armed
+  bench. Nothing arms across a loss. A posted disarm stays.
 - The throttle moves by how far a finger travels, not to where it lands. A
   press on the track commands nothing, so a touch at the far end asks for
   nothing; a drag across the whole track asks for the whole span, and one

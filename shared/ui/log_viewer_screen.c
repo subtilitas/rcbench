@@ -1365,6 +1365,28 @@ static void event(const touch_event_t *e)
     }
 }
 
+/*
+ * The panel could not hand over every touch event, so this screen's record
+ * of the glass is stale.  Every view here acts on the release -- a button
+ * refreshes the card, opens a file or changes an import setting, a row
+ * selects or opens -- so a press left standing would let a later contact's
+ * release do any of those without a press of its own.
+ *
+ * The DELETE question's press goes with them, and that one matters most: the
+ * contact it is bound to may be among the events lost, and the controller
+ * reuses track ids, so a later finger lifting off DELETE could carry it.  The
+ * question itself stays open; it needs a fresh press to answer it.
+ */
+static void cancel(void)
+{
+    s.pressing  = false;
+    s.press_btn = -1;
+    s.press_row = -1;
+    s.dragged   = false;
+    s.q_down    = false;
+    log_viewer_invalidate();
+}
+
 static void reset(void)
 {
     log_viewer_io_t io = s.io;
@@ -1396,6 +1418,7 @@ static const ui_screen_t s_screen = {
     .leave = NULL,
     .tick = NULL,
     .event = event,
+    .cancel = cancel,
     .render = render,
 };
 
