@@ -19,7 +19,10 @@ history is in git.
   (`outputs_chan_cfg_set_throttle_range()`), and an edit is sent 300 ms after
   the last change while the bench is disarmed, and at every link-up: the
   panel reads CHAN_CFG back, sets the throttle channels and writes the page
-  only if it changed. The
+  only if it changed. The rewrite runs only in a poll whose control write
+  put ARM = 0 at the far end and was acknowledged, and a coprocessor that
+  links up while the bench is armed is held disarmed until it has the
+  range. The
   case behind it is #170: an ESC calibrated on a 985 to 2012 us transmitter
   needs an Idle pulse of 980 us.
 

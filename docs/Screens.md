@@ -453,7 +453,9 @@ two settings reach the channels bound as a motor and no others: a SERVO PWM
 channel keeps 1000 to 2000 us, or the range the SERVO screen sends for the
 servo chosen there. An edit reaches the coprocessor 300 ms after the last
 change while the bench is disarmed; one made while it is armed waits for the
-disarm. A coprocessor that links up is brought to the two settings too. An Idle pulse that is not below the Full pulse is not sent, and the
+disarm. A coprocessor that links up is brought to the two settings before
+the bench drives it: on a bench already armed, the coprocessor is held
+disarmed until it has them. An Idle pulse that is not below the Full pulse is not sent, and the
 band says `idle pulse must be below full pulse -- not sent`.
 
 An ESC whose throttle range was calibrated on a transmitter takes that
