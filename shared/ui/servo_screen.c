@@ -320,11 +320,22 @@ static struct {
 
 static const servo_type_t *type(void) { return &k_types[s.type]; }
 
+/*
+ * Each side of centre runs to its own end: MIN, CENTRE and MAX are set one
+ * by one, so -90 deg is MIN and +90 deg is MAX however far each lies from
+ * the centre.
+ */
+static float half_travel_us(bool below)
+{
+    return below ? (float)s.centre_us - (float)s.min_us
+                 : (float)s.max_us - (float)s.centre_us;
+}
+
 static uint16_t deg_to_us(float deg)
 {
     const float d = s.reverse ? -deg : deg;
-    const float span = (float)(s.max_us - s.min_us) * 0.5f;
-    float us = (float)s.centre_us + (float)s.trim_us + d / 90.0f * span;
+    float us = (float)s.centre_us + (float)s.trim_us
+               + d / 90.0f * half_travel_us(d < 0.0f);
     if (us < (float)s.min_us) { us = (float)s.min_us; }
     if (us > (float)s.max_us) { us = (float)s.max_us; }
     return (uint16_t)(us + 0.5f);
@@ -332,12 +343,12 @@ static uint16_t deg_to_us(float deg)
 
 static float us_to_deg(uint16_t us)
 {
-    const float span = (float)(s.max_us - s.min_us) * 0.5f;
-    if (span <= 0.0f) {
+    const float off = (float)us - (float)s.centre_us - (float)s.trim_us;
+    const float half = half_travel_us(off < 0.0f);
+    if (half <= 0.0f) {
         return 0.0f;
     }
-    const float d = ((float)us - (float)s.centre_us - (float)s.trim_us)
-                    * 90.0f / span;
+    const float d = off * 90.0f / half;
     return s.reverse ? -d : d;
 }
 
@@ -749,9 +760,9 @@ static gfx_rect_t choice_rect(int i)
 {
     const int per_col = 5;
     const int col = i / per_col;
-    const int row = i % per_col;
+    const int line = i % per_col;
     return (gfx_rect_t){ (int16_t)(OV_X + 10 + col * (OV_COL_W + 10)),
-                         (int16_t)(OV_Y + 48 + row * 46),
+                         (int16_t)(OV_Y + 48 + line * 46),
                          (int16_t)OV_COL_W, 40 };
 }
 
@@ -785,8 +796,8 @@ static uint16_t max_pulse_for_rate(void)
     const unsigned pause = type()->heli ? HELI_MIN_PAUSE_US : PWM_MIN_PAUSE_US;
     const unsigned period = 1000000u / (unsigned)s.frame_hz;
     unsigned top = (period > pause) ? period - pause : 0u;
-    if (top > 2700u) {
-        top = 2700u;
+    if (top > OUT_CEILING_US) {
+        top = OUT_CEILING_US;   /* what the coprocessor takes */
     }
     return (uint16_t)top;
 }
@@ -854,7 +865,8 @@ static void edit_row(int i)
         break;
     }
     case R_MIN:
-        open_keypad(KT_MIN, "PULSE MIN", "us", (float)s.min_us, 300.0f,
+        open_keypad(KT_MIN, "PULSE MIN", "us", (float)s.min_us,
+                    (float)OUT_FLOOR_US,
                     (float)(s.centre_us - 50u), 0);
         break;
     case R_CENTRE:
@@ -972,12 +984,12 @@ static void keypad_done(ui_keypad_result_t r, float v)
     ++s.ctrl_rev;
 }
 
-static void ov_take(const touch_event_t *evt, int code, int row)
+static void ov_take(const touch_event_t *evt, int code, int which)
 {
     s.ov_have    = true;
     s.ov_id      = evt->point.id;
     s.ov_pressed = code;
-    s.ov_row     = row;
+    s.ov_row     = which;
     ++s.ctrl_rev;
 }
 
@@ -1068,7 +1080,7 @@ static void ov_rest(const touch_event_t *evt)
     const int x = evt->point.x, y = evt->point.y;
     const bool up = (evt->type == TOUCH_EVENT_UP);
     const int was = s.ov_pressed;
-    const int row = s.ov_row;
+    const int which = s.ov_row;
     switch (was) {
     case OP_KEYPAD: {
         float v = 0.0f;
@@ -1134,14 +1146,14 @@ static void ov_rest(const touch_event_t *evt)
         }
         break;
     case OP_ROW:
-        if (row >= 0 && gfx_rect_contains(row_rect(row), x, y)) {
-            edit_row(row);
+        if (which >= 0 && gfx_rect_contains(row_rect(which), x, y)) {
+            edit_row(which);
         }
         break;
     case OP_CHOICE:
-        if (row >= 0 && row < s.ch.count
-            && gfx_rect_contains(choice_rect(row), x, y)) {
-            choose(row);
+        if (which >= 0 && which < s.ch.count
+            && gfx_rect_contains(choice_rect(which), x, y)) {
+            choose(which);
         }
         break;
     case OP_CHOICE_CANCEL:
@@ -1815,8 +1827,8 @@ static void draw_page(gfx_canvas_t *c)
     }
 
     const int nx = OV_X + 10;
-    char l1[64], l2[64];
     if (s.tabs.selected == PG_OUTPUT) {
+        char l1[64], l2[64];
         snprintf(l1, sizeof(l1), "Fastest with these pulses: %u Hz (%s pause).",
                  (unsigned)max_rate_for(s.type, s.max_us),
                  type()->heli ? "0.5 ms" : "1 ms");

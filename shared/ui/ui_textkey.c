@@ -71,7 +71,6 @@ void ui_textkey_cancel_press(ui_textkey_t *k)
 
 const char *ui_textkey_label(int key)
 {
-    static char one[2];
     if (key < 0 || key >= UI_TK_KEYS) {
         return "";
     }
@@ -79,6 +78,7 @@ const char *ui_textkey_label(int key)
         return "DEL";
     }
     if (key < UI_TEXTKEY_CHARS) {
+        static char one[2];
         one[0] = k_chars[key];
         one[1] = '\0';
         return one;

@@ -217,7 +217,7 @@ carry their voltage.
 | | |
 |---|---|
 | Frame rate | 40 to 400 Hz (50 Hz by default) |
-| Pulse | 500 to 2500 µs, refused outside |
+| Pulse | 400 to 2500 µs, refused outside |
 | Resolution | 1 µs |
 
 **Measure and record:** the actual frame period, the pulse at both ends of

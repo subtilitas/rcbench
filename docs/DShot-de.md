@@ -88,7 +88,7 @@ durch die Rate.
 | | |
 | --- | --- |
 | Frame Rate | 40 bis 400 Hz |
-| Puls | 500 bis 2500 µs, außerhalb verweigert |
+| Puls | 400 bis 2500 µs, außerhalb verweigert |
 | Auflösung | 1 µs |
 
 Ein Slice sind zwei Kanäle an einem Zähler, zwei Pins auf demselben Slice laufen

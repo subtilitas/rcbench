@@ -71,6 +71,11 @@ history is in git.
   card.
 - **The plot leaves a gap for a reading that did not arrive** instead of
   drawing it as zero.
+- **A channel's endpoints may go down to 400 us** (`OUT_FLOOR_US`,
+  `LINK_CC_FLOOR_US`), from 500 us, so a 760 us tail servo's travel, 410 to
+  1110 us, reaches the pin. The coprocessor and the panel must both carry
+  it: a coprocessor with the 500 us floor refuses HELI TAIL 760's range with
+  BAD_VALUE.
 - **The menu is five tiles by two**, 150 x 204 px each, with SUPPLY third.
   The tiles' lines are 16 characters or fewer to fit.
 

@@ -20,7 +20,7 @@
  * modulation) servo; both have a proportion of travel, and 1000 steps is
  * finer than any of these protocols resolve.
  *
- * Refused and clamped are different answers.  An endpoint outside 500 to
+ * Refused and clamped are different answers.  An endpoint outside 400 to
  * 2500 us is refused: it is a configuration mistake, and accepting it leaves
  * the range looking set when it is not.  A command outside its span is
  * clamped: commands arrive many times a second from a host that may be
@@ -45,8 +45,9 @@ extern "C" {
 #define OUT_MAX_SLOTS        8u
 
 /** What a pulse driver may render, in microseconds.  Endpoints outside this
- *  are refused: no servo made takes them, so they are a typo, not a range. */
-#define OUT_FLOOR_US       500u
+ *  are refused: no servo made takes them, so they are a typo, not a range.
+ *  The floor is below a 760 us tail servo's end of travel, 410 us. */
+#define OUT_FLOOR_US       400u
 #define OUT_CEILING_US    2500u
 
 /**

@@ -202,7 +202,7 @@ name opens a keyboard.
 | --- | --- | --- |
 | OUTPUT | TYPE | the servo profile: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC or HELI TAIL 760 |
 | OUTPUT | FRAME RATE | how often a pulse is sent; the type's list, or CUSTOM on the keypad |
-| OUTPUT | PULSE MIN, CENTRE, MAX | the pulse widths the travel maps onto, in us |
+| OUTPUT | PULSE MIN, CENTRE, MAX | the pulse widths the travel maps onto, 400 to 2500 us: -90 deg is MIN, 0 is CENTRE, +90 deg is MAX |
 | OUTPUT | TRIM | added to the centre, 5 us a step, up to 200 us either way |
 | OUTPUT | TRAVEL | how far the horn may go each way, 10 to 90 degrees |
 | OUTPUT | REVERSE | the direction the horn's angle maps onto the pulse |

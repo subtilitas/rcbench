@@ -79,7 +79,7 @@ count of microseconds and the frame period is 1,000,000 divided by the rate.
 | | |
 | --- | --- |
 | Frame rate | 40 to 400 Hz |
-| Pulse | 500 to 2500 µs, refused outside |
+| Pulse | 400 to 2500 µs, refused outside |
 | Resolution | 1 µs |
 
 A slice is two channels sharing one counter, so two pins on the same slice run

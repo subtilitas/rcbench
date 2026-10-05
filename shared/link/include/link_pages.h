@@ -98,7 +98,8 @@ enum {
 
 /*
  * A channel's range before anything is written, and the widest range the
- * coprocessor accepts for the limits themselves: a servo asked for 400 us
+ * coprocessor accepts for the limits themselves.  The floor is a 760 us tail
+ * servo's: its travel ends at 410 us, and a standard servo asked for that
  * buzzes rather than moves.
  *
  * The limits are enforced at the coprocessor, the end holding the wire, so a
@@ -106,7 +107,7 @@ enum {
  */
 #define LINK_CC_DEFAULT_MIN 1000u
 #define LINK_CC_DEFAULT_MAX 2000u
-#define LINK_CC_FLOOR_US     500u
+#define LINK_CC_FLOOR_US     400u
 #define LINK_CC_CEILING_US  2500u
 
 /* --- which driver drives what.  Four registers a slot, written whole for the

@@ -20,7 +20,9 @@
 #include "ui_textkey.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "link_pages.h"
 #include "outputs.h"
+#include "outputs_pages.h"
 
 #define W 800
 #define H 480
@@ -729,6 +731,77 @@ TEST_CASE(a_heli_type_waits_for_the_warning_held_two_seconds)
     CHECK_EQ(c.value_us, 1520);
 }
 
+/*
+ * Every profile's endpoints are a range the coprocessor takes: one it
+ * refused would leave the panel driving a range the profile never named.
+ * HELI TAIL 760's end of travel, 410 us, is the narrowest of them.
+ */
+TEST_CASE(every_profile_is_a_range_the_coprocessor_takes)
+{
+    for (int t = 0; t < 5; ++t) {
+        fresh();
+        choose_type(t);
+        servo_screen_set_commanded(-90.0f);
+        const servo_cmd_t c = last_cmd();
+        CHECK(c.min_us >= LINK_CC_FLOOR_US);
+        CHECK(c.max_us <= LINK_CC_CEILING_US);
+        CHECK_EQ(c.value_us, c.min_us);
+        uint16_t regs[LINK_CC_COUNT];
+        outputs_chan_cfg_defaults(regs);
+        const uint16_t in[LINK_CC_STRIDE] = {
+            [LINK_CC_ROLE]   = LINK_CC_ROLE_SURFACE,
+            [LINK_CC_SLEW]   = 0u,
+            [LINK_CC_MIN_US] = c.min_us,
+            [LINK_CC_MAX_US] = c.max_us,
+        };
+        CHECK_EQ(outputs_chan_cfg_write(regs, 0, LINK_CC_STRIDE, in), 0u);
+    }
+    CHECK_STR_EQ(servo_screen_type_name(), "HELI TAIL 760");
+    servo_screen_set_commanded(-90.0f);
+    CHECK_EQ(last_cmd().value_us, 410);
+}
+
+/* And a pulse width typed outside that range is refused at the keypad. */
+TEST_CASE(a_pulse_width_the_coprocessor_would_refuse_is_not_taken)
+{
+    fresh();
+    open_settings();
+    tap(ROW_L_X, ROW_Y(2));                    /* PULSE MIN */
+    keys("350");
+    key(UI_KEY_CANCEL);
+    tap(ROW_L_X, ROW_Y(3));                    /* PULSE MAX */
+    keys("2600");
+    key(UI_KEY_CANCEL);
+    close_settings();
+    servo_screen_set_commanded(0.0f);
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.min_us, 1000);
+    CHECK_EQ(c.max_us, 2000);
+}
+
+/*
+ * MIN, CENTRE and MAX are set one by one, so each side of centre runs to
+ * its own end: -90 deg is MIN and +90 deg is MAX.
+ */
+TEST_CASE(each_side_of_centre_runs_to_its_own_end)
+{
+    fresh();
+    open_settings();
+    tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
+    keys("1520");
+    tap(ROW_L_X, ROW_Y(2));                    /* PULSE MIN */
+    keys("900");
+    close_settings();
+    servo_screen_set_commanded(-90.0f);
+    CHECK_EQ(last_cmd().value_us, 900);
+    servo_screen_set_commanded(-45.0f);
+    CHECK_EQ(last_cmd().value_us, 1210);
+    servo_screen_set_commanded(45.0f);
+    CHECK_EQ(last_cmd().value_us, 1760);
+    servo_screen_set_commanded(90.0f);
+    CHECK_EQ(last_cmd().value_us, 2000);
+}
+
 TEST_CASE(a_warning_cancelled_dropped_or_left_applies_nothing)
 {
     fresh();
@@ -1244,6 +1317,9 @@ int main(void)
     RUN(trim_shifts_the_pulse_and_not_the_angle);
     RUN(feedback_is_shown_rather_than_travelled_to);
     RUN(a_heli_type_waits_for_the_warning_held_two_seconds);
+    RUN(every_profile_is_a_range_the_coprocessor_takes);
+    RUN(a_pulse_width_the_coprocessor_would_refuse_is_not_taken);
+    RUN(each_side_of_centre_runs_to_its_own_end);
     RUN(a_warning_cancelled_dropped_or_left_applies_nothing);
     RUN(a_rate_above_60_hz_needs_the_warning_and_60_does_not);
     RUN(standard_pwm_keeps_a_millisecond_between_pulses);
