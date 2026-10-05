@@ -1191,6 +1191,44 @@ TEST_CASE(each_face_of_the_overlay_draws_as_a_full_redraw_would)
 }
 
 /*
+ * The OUTPUT page says whether the frame rate reached the pins, and in the
+ * warning colour when it did not: refused by the binding, or a coprocessor
+ * that takes none.  News about another rate is not news about this one.
+ */
+TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
+{
+    fresh();
+    two_buffers();
+    open_settings();
+    CHECK(both_whole());
+    gfx_color_t *unsent = malloc(FB_BYTES);
+    memcpy(unsent, fb, FB_BYTES);
+    int warn = 0;
+
+    servo_screen_rate(SERVO_RATE_IN_FORCE, 50u);
+    CHECK(both_whole());
+    CHECK(memcmp(fb, unsent, FB_BYTES) != 0);
+    servo_screen_rate(SERVO_RATE_IN_FORCE, 333u);   /* not the rate shown */
+    CHECK(both_whole());
+    CHECK_EQ(memcmp(fb, unsent, FB_BYTES), 0);
+
+    const servo_rate_state_t bad[] = { SERVO_RATE_REFUSED,
+                                       SERVO_RATE_UNSUPPORTED };
+    for (int k = 0; k < 2; ++k) {
+        servo_screen_rate(bad[k], 50u);
+        CHECK(both_whole());
+        warn = 0;
+        for (int y = 260; y < 400; ++y) {
+            for (int x = 6; x < 494; ++x) {
+                warn += fb[y * W + x] == ui_theme_color(UI_C_WARN);
+            }
+        }
+        CHECK(warn > 0);
+    }
+    free(unsent);
+}
+
+/*
  * The save line follows the store and not the page: a save refused after
  * the change repaints that line alone, in the warning colour.
  */
@@ -1347,6 +1385,7 @@ int main(void)
     RUN(a_supply_sample_repaints_only_the_power_plot);
     RUN(each_face_of_the_overlay_draws_as_a_full_redraw_would);
     RUN(a_refused_save_repaints_only_the_save_line);
+    RUN(the_output_page_says_whether_the_rate_reached_the_pins);
     RUN(the_horn_travels_and_breathes_as_a_full_redraw_would);
     RUN(drags_and_samples_leave_both_buffers_as_a_full_redraw_would);
     RUN(a_cancelled_gesture_does_not_arm);

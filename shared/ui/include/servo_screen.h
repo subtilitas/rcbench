@@ -58,9 +58,9 @@ typedef struct {
      */
     uint16_t         slew_per_s;
     /**
-     * The frame rate the profile in force runs at, in Hz.  The coprocessor
-     * drives every PWM output at 50 Hz and does not take this from the
-     * panel; the screen keeps it, shows it and carries it.
+     * The frame rate the profile in force runs at, in Hz.  The panel writes
+     * it to the coprocessor's SERVO page, which runs every PWM output whose
+     * first channel is a surface at it; see servo_screen_rate().
      */
     uint16_t         frame_hz;
 } servo_cmd_t;
@@ -104,6 +104,23 @@ const char *servo_screen_type_name(void);
 /** One sample of the supply that feeds the servo, for the live power plot
  *  on the right card. */
 void servo_screen_supply(const supply_state_t *s);
+
+/** What became of a frame rate the panel wrote to the SERVO page. */
+typedef enum {
+    SERVO_RATE_UNSENT = 0,  /**< not written yet: it goes with a position   */
+    SERVO_RATE_IN_FORCE,    /**< every PWM surface runs at it               */
+    SERVO_RATE_REFUSED,     /**< a surface shares a PWM slice with an output
+                                 at another rate; the pins kept theirs      */
+    SERVO_RATE_UNSUPPORTED, /**< the coprocessor has no SERVO page: protocol
+                                 4.0 runs each slot at its binding's rate   */
+} servo_rate_state_t;
+
+/**
+ * What the panel last heard about the frame rate @p hz.  Called every frame;
+ * a state about a rate other than the one the screen shows reads as
+ * SERVO_RATE_UNSENT for it.
+ */
+void servo_screen_rate(servo_rate_state_t st, uint16_t hz);
 
 /**
  * Set the commanded angle without a touch event.

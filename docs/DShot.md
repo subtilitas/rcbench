@@ -78,7 +78,7 @@ count of microseconds and the frame period is 1,000,000 divided by the rate.
 
 | | |
 | --- | --- |
-| Frame rate | 40 to 400 Hz |
+| Frame rate | 40 to 560 Hz |
 | Pulse | 400 to 2500 µs, refused outside |
 | Resolution | 1 µs |
 
@@ -86,6 +86,11 @@ A slice is two channels sharing one counter, so two pins on the same slice run
 at the same frame rate. A second binding that asks for a different rate on a
 slice already in use is refused rather than retimed, because retiming would
 move an output that nobody touched.
+
+The SERVO page sets one frame rate for every PWM output whose first channel is
+a surface, over the rate the binding gives the slot. It is refused with
+BAD_VALUE when it would move a surface away from the rate of the output beside
+it on its slice, and it is not kept: a restart runs each slot at its own rate.
 
 GPIO numbers fold onto the 12 slices. GP0 to GP31 take slice (pin / 2) modulo
 8; GP32 to GP47 take slice 8 + (pin / 2) modulo 4; the channel is the low bit

@@ -625,6 +625,8 @@ int main(int argc, char **argv)
             supply_sim_step(&sm, 0.05f, &sst);
             servo_screen_supply(&sst);
         }
+        /* A coprocessor that took the screen's 50 Hz. */
+        servo_screen_rate(SERVO_RATE_IN_FORCE, 50u);
         /*
          * The overlay, opened the way a finger opens it.  Geometry from
          * servo_screen.c, offset by the band: SETTINGS at the top of the

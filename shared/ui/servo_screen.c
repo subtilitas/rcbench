@@ -311,6 +311,9 @@ static struct {
     uint32_t drawn_warn[2];
     uint8_t  drawn_save[2];
 
+    servo_rate_state_t rate_st;   /* what became of the rate rate_hz    */
+    uint16_t           rate_hz;
+
     uint32_t ctrl_rev;
     uint32_t drawn_ctrl[2];
     unsigned drawn_mask;
@@ -627,6 +630,18 @@ uint16_t servo_screen_commanded(void) { return deg_to_us(s.commanded_deg); }
 uint16_t servo_screen_frame_hz(void) { return s.frame_hz; }
 
 const char *servo_screen_type_name(void) { return type()->name; }
+
+void servo_screen_rate(servo_rate_state_t st, uint16_t hz)
+{
+    if (st == s.rate_st && hz == s.rate_hz) {
+        return;
+    }
+    s.rate_st = st;
+    s.rate_hz = hz;
+    if (s.ov_open) {
+        ++s.ctrl_rev;   /* the OUTPUT page's note says it */
+    }
+}
 
 void servo_screen_set_commanded(float deg)
 {
@@ -1815,6 +1830,43 @@ static void draw_note(gfx_canvas_t *c, int x, int y, const char *const *lines,
     }
 }
 
+/* Whether the frame rate reached the pins, in two lines. */
+static void draw_rate_note(gfx_canvas_t *c, int x, int y)
+{
+    const servo_rate_state_t st = (s.rate_hz == s.frame_hz
+                                   || s.rate_st == SERVO_RATE_UNSUPPORTED)
+                                      ? s.rate_st
+                                      : SERVO_RATE_UNSENT;
+    char l1[64], l2[64];
+    bool warn = true;
+    switch (st) {
+    case SERVO_RATE_IN_FORCE:
+        snprintf(l1, sizeof(l1), "In force: every PWM surface runs at %u Hz.",
+                 (unsigned)s.frame_hz);
+        snprintf(l2, sizeof(l2), "A PPM output keeps its own frame.");
+        warn = false;
+        break;
+    case SERVO_RATE_REFUSED:
+        snprintf(l1, sizeof(l1), "REFUSED: a surface shares a PWM slice with");
+        snprintf(l2, sizeof(l2), "an output at another rate. The pins kept theirs.");
+        break;
+    case SERVO_RATE_UNSUPPORTED:
+        snprintf(l1, sizeof(l1), "This coprocessor takes no frame rate: every");
+        snprintf(l2, sizeof(l2), "PWM output runs at its binding's, 50 Hz.");
+        break;
+    case SERVO_RATE_UNSENT:
+    default:
+        snprintf(l1, sizeof(l1), "The rate goes to the coprocessor with the");
+        snprintf(l2, sizeof(l2), "next position.");
+        warn = false;
+        break;
+    }
+    const gfx_color_t col = warn ? ui_theme_color(UI_C_WARN)
+                                 : ui_theme_color(UI_C_TEXT_FAINT);
+    gfx_text(c, x, y, l1, &gfx_font_8x16, col, 1);
+    gfx_text(c, x, y + 18, l2, &gfx_font_8x16, col, 1);
+}
+
 static void draw_page(gfx_canvas_t *c)
 {
     ui_tabs_render(&s.tabs, c);
@@ -1865,12 +1917,9 @@ static void draw_page(gfx_canvas_t *c)
                  (unsigned)max_rate_for(s.type, s.max_us),
                  type()->heli ? "0.5 ms" : "1 ms");
         snprintf(l2, sizeof(l2), "Type and rate are STANDARD PWM 50 Hz at start.");
-        const char *const lines[] = {
-            l1, l2,
-            "The coprocessor drives every PWM output at",
-            "50 Hz; the frame rate set here does not reach it.",
-        };
-        draw_note(c, nx, OV_NOTE_Y, lines, 4);
+        const char *const lines[] = { l1, l2 };
+        draw_note(c, nx, OV_NOTE_Y, lines, 2);
+        draw_rate_note(c, nx, OV_NOTE_Y + 2 * 18);
     } else if (s.tabs.selected == PG_TEST) {
         const char *const lines[] = {
             "No automatic test runs in",

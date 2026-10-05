@@ -216,7 +216,7 @@ carry their voltage.
 
 | | |
 |---|---|
-| Frame rate | 40 to 400 Hz (50 Hz by default) |
+| Frame rate | 40 to 560 Hz (50 Hz by default) |
 | Pulse | 400 to 2500 µs, refused outside |
 | Resolution | 1 µs |
 

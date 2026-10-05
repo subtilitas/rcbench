@@ -47,6 +47,7 @@ typedef struct {
     uint16_t channels[LINK_CH_COUNT];   /* what each output is asked for   */
     uint16_t chan_cfg[LINK_CC_COUNT];   /* what each channel is            */
     uint16_t slots[LINK_OS_COUNT];      /* which driver drives what        */
+    uint16_t servo[LINK_SV_COUNT];      /* the surfaces' frame rate, unkept */
 } iomcu_state_t;
 
 static iomcu_state_t s_state;
@@ -186,6 +187,17 @@ static uint8_t channels_write(void *ctx, uint8_t off, uint8_t n,
     return 0u;
 }
 
+/*
+ * The silicon made to agree with the bank, every slot at the rate it runs
+ * at: its own, or the SERVO page's for a PWM surface.
+ */
+static void hw_apply(const iomcu_state_t *s)
+{
+    uint16_t rate[OUT_MAX_SLOTS];
+    outputs_slot_rates(&s_outputs, s->servo[LINK_SV_FRAME_HZ], rate);
+    outputs_hw_apply(&s_outputs, rate);
+}
+
 static void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     const iomcu_state_t *s = (const iomcu_state_t *)ctx;
@@ -203,6 +215,9 @@ static uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
         return nack;
     }
     outputs_chan_cfg_apply(&s_outputs, s->chan_cfg);
+    /* A channel that became a surface, or stopped being one, moves to or
+     * from the SERVO page's rate. */
+    hw_apply(s);
     save_outputs(s);
     return 0u;
 }
@@ -213,6 +228,30 @@ static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     for (uint8_t i = 0; i < n; ++i) {
         out[i] = s->slots[off + i];
     }
+}
+
+static void servo_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    const iomcu_state_t *s = (const iomcu_state_t *)ctx;
+    for (uint8_t i = 0; i < n; ++i) {
+        out[i] = s->servo[off + i];
+    }
+}
+
+/*
+ * Not saved: a restart drives every slot at the binding's rate again, so a
+ * servo plugged in after it never meets a rate meant for another.
+ */
+static uint8_t servo_write(void *ctx, uint8_t off, uint8_t n,
+                           const uint16_t *in)
+{
+    iomcu_state_t *s = (iomcu_state_t *)ctx;
+    const uint8_t nack = outputs_servo_write(s->servo, off, n, in, &s_outputs);
+    if (nack != 0u) {
+        return nack;
+    }
+    hw_apply(s);
+    return 0u;
 }
 
 static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
@@ -226,7 +265,7 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
     outputs_slots_apply(&s_outputs, s->slots);
     /* The bank has decided what the slots are; this makes the silicon agree
      * with it before the next pass renders anything. */
-    outputs_hw_apply(&s_outputs);
+    hw_apply(s);
     save_outputs(s);
     return 0u;
 }
@@ -441,6 +480,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_ARTWORK,   LINK_AW_COUNT,  artwork_read,   NULL },
     { LINK_PAGE_ART_DATA,  LINK_AD_COUNT,  art_data_read,  art_data_write },
     { LINK_PAGE_PADS,      LINK_PAD_COUNT, pads_read,      NULL },
+    { LINK_PAGE_SERVO,     LINK_SV_COUNT,  servo_read,     servo_write },
 };
 
 /* ------------------------------------------------------------ the heartbeat */
@@ -857,6 +897,7 @@ int main(void)
     outputs_channels_defaults(s_state.channels);
     outputs_chan_cfg_defaults(s_state.chan_cfg);
     outputs_slots_defaults(s_state.slots);
+    outputs_servo_defaults(s_state.servo);
 
     /*
      * Then what was saved, over the defaults.  This configures the outputs;
@@ -910,7 +951,7 @@ int main(void)
      */
     outputs_channels_from_bank(&s_outputs, s_state.channels);
     outputs_hw_init();
-    outputs_hw_apply(&s_outputs);
+    hw_apply(&s_state);
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 
     heartbeat_init();

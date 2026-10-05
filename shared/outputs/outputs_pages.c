@@ -11,6 +11,7 @@
 
 #include "link_msg.h"
 #include "link_pages.h"
+#include "out_pwm_map.h"
 
 /*
  * The wire's driver numbers are a contract, so they are mapped rather than
@@ -124,6 +125,82 @@ void outputs_chan_cfg_apply(outputs_t *o, const uint16_t *regs)
         (void)outputs_set_endpoints(o, (uint8_t)c,
                                     r[LINK_CC_MIN_US], r[LINK_CC_MAX_US]);
     }
+}
+
+/* ---------------------------------------------------------------- SERVO */
+
+void outputs_servo_defaults(uint16_t *regs)
+{
+    if (regs != NULL) {
+        regs[LINK_SV_FRAME_HZ] = 0u;   /* each slot's own rate */
+    }
+}
+
+/* Whether the SERVO page's rate, when not 0, is the one slot @p i runs at. */
+static bool servo_rate_reaches(const outputs_t *o, unsigned i)
+{
+    const out_slot_t *sl = &o->slot[i];
+    return sl->driver == OUT_DRIVER_PWM
+           && sl->first_channel < OUT_MAX_CHANNELS
+           && o->channel[sl->first_channel].role == OUT_ROLE_SURFACE;
+}
+
+void outputs_slot_rates(const outputs_t *o, uint16_t servo_hz, uint16_t *rate)
+{
+    if (o == NULL || rate == NULL) {
+        return;
+    }
+    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+        rate[i] = (servo_hz != 0u && servo_rate_reaches(o, i))
+                      ? servo_hz
+                      : o->slot[i].rate_hz;
+    }
+}
+
+uint8_t outputs_servo_write(uint16_t *regs, uint8_t off, uint8_t n,
+                            const uint16_t *in, const outputs_t *o)
+{
+    if (regs == NULL || in == NULL || o == NULL) {
+        return LINK_NACK_BAD_RANGE;
+    }
+    if ((unsigned)off + (unsigned)n > (unsigned)LINK_SV_COUNT) {
+        return LINK_NACK_BAD_RANGE;
+    }
+    if (n == 0u) {
+        return 0u;
+    }
+    const uint16_t hz = in[0];
+    const out_driver_def_t *pwm = out_driver(OUT_DRIVER_PWM);
+    if (hz != 0u && (hz < pwm->rate_min_hz || hz > pwm->rate_max_hz)) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    /*
+     * A slice counts against one wrap register, so its two channels run at
+     * one rate.  Moving a surface off the rate of the output beside it on
+     * its slice would leave the silicon refusing whichever binds second, and
+     * the page reading back a rate no pin runs at.  Only pairs the rate
+     * moves are asked about: two slots the OUTPUTS page itself put on one
+     * slice at two rates are that page's to answer for, and 0 always goes
+     * back to them.
+     */
+    uint16_t rate[OUT_MAX_SLOTS];
+    outputs_slot_rates(o, hz, rate);
+    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
+        for (unsigned j = i + 1u; j < OUT_MAX_SLOTS; ++j) {
+            const out_slot_t *a = &o->slot[i];
+            const out_slot_t *b = &o->slot[j];
+            if (a->driver != OUT_DRIVER_PWM || b->driver != OUT_DRIVER_PWM
+                || !out_pwm_same_slice(a->pin, b->pin)
+                || rate[i] == rate[j]) {
+                continue;
+            }
+            if (rate[i] != a->rate_hz || rate[j] != b->rate_hz) {
+                return LINK_NACK_BAD_VALUE;
+            }
+        }
+    }
+    regs[LINK_SV_FRAME_HZ] = hz;
+    return 0u;
 }
 
 /* -------------------------------------------------------------- OUTPUTS */

@@ -261,6 +261,25 @@ anderes gedacht war.
 
 ![Die Warnung](img/servo-warning.png)
 
+**Die Frame Rate erreicht die Pins** über die SERVO-Page des Koprozessors
+(Protokoll 4.1). Sie gilt für jeden PWM-Ausgang, dessen erster Kanal die Rolle
+surface hat; ein PPM-Ausgang behält seinen eigenen Frame. Sie geht mit der
+nächsten Stellung hinaus: eine schnellere Rate nach den Impulsbreiten, eine
+langsamere davor, damit die Pins nie eine schnelle Rate mit den breiteren
+Impulsen eines langsameren Profils tragen. Die OUTPUT-Seite sagt, was aus ihr
+wurde:
+
+| Hinweis | Bedeutung |
+| --- | --- |
+| In force | jede PWM-Surface läuft mit der angezeigten Rate |
+| The rate goes with the next position | noch nicht geschrieben |
+| REFUSED | eine Surface teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
+| This coprocessor takes no frame rate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50 Hz seiner Bindung |
+
+Ein Neustart des Koprozessors und jede auf OUTPUTS geschriebene Bindung setzen
+jeden Slot auf seine eigene Rate zurück, 50 Hz für ein Servo; der Screen sendet
+seine Rate mit der nächsten Stellung erneut, gegen die dann geltende Bindung.
+
 Die OUTPUT-Einstellungen gelten für die Sitzung; die Einstellungen unter TEST,
 LIMITS und DUT liegen im NVS (Non-Volatile Storage) und werden wie bei SUPPLY
 geschrieben.
@@ -271,9 +290,8 @@ geschrieben.
 
 Aktuelle Einschränkungen:
 
-- Der Koprozessor treibt jeden PWM-Ausgang mit 50 Hz. Die Bildwiederholrate
-  wird angezeigt, gehalten und im Befehl des Panels mitgeführt und erreicht
-  den Pin nicht.
+- Bis der Screen eine Stellung sendet, laufen die Pins mit der Rate, die die
+  SERVO-Page hält; nach einem Neustart oder einer neuen Bindung sind das 50 Hz.
 - In diesem Build läuft kein automatischer Test. Die Einstellungen unter TEST,
   LIMITS und DUT werden für ihn gehalten, und es wird kein Bericht geschrieben.
 - Das Netzteil auf der rechten Karte ist das Modell von SUPPLY: Es gibt keinen

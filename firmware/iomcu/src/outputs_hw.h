@@ -26,14 +26,16 @@
 void outputs_hw_init(void);
 
 /**
- * Make the bindings match the bank's slot table.
+ * Make the bindings match the bank's slot table, each slot at the rate in
+ * @p rate_hz (OUT_MAX_SLOTS entries, from outputs_slot_rates()) rather than
+ * its own.
  *
- * Call after anything that changes a slot.  A slot that has not changed is
- * left alone rather than rebuilt, so reconfiguring one output does not
- * interrupt another; a slot the silicon cannot serve is left unbound, and
- * outputs_hw_bound() says so.
+ * Call after anything that changes a slot, a role or a rate.  A slot that
+ * has not changed is left alone rather than rebuilt, so reconfiguring one
+ * output does not interrupt another; a slot the silicon cannot serve is left
+ * unbound, and outputs_hw_bound() says so.
  */
-void outputs_hw_apply(const outputs_t *o);
+void outputs_hw_apply(const outputs_t *o, const uint16_t *rate_hz);
 
 /**
  * Render the bank onto the pins.  Call every pass.

@@ -242,6 +242,24 @@ another one.
 
 ![The warning](img/servo-warning.png)
 
+**The frame rate reaches the pins** through the coprocessor's SERVO page
+(protocol 4.1). It applies to every PWM output whose first channel is a
+surface; a PPM output keeps its own frame. It goes with the next position: a
+faster rate after the pulse widths, a slower one before them, so the pins
+never carry a fast rate with a slower profile's wider pulses. The OUTPUT page
+says what became of it:
+
+| Note | Meaning |
+| --- | --- |
+| In force | every PWM surface runs at the rate shown |
+| The rate goes with the next position | not written yet |
+| REFUSED | a surface shares a PWM slice with an output at another rate; the pins keep the rate they had |
+| This coprocessor takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50 Hz |
+
+A coprocessor restart, and every binding written on OUTPUTS, put each slot
+back at its own rate, 50 Hz for a servo; the screen sends its rate again with
+its next position, against the binding then in force.
+
 The OUTPUT settings are kept for the session; the TEST, LIMITS and DUT
 settings are kept in NVS (non-volatile storage) and written as on SUPPLY.
 
@@ -251,8 +269,8 @@ settings are kept in NVS (non-volatile storage) and written as on SUPPLY.
 
 Current limitations:
 
-- The coprocessor drives every PWM output at 50 Hz. The frame rate is shown,
-  kept and carried in the panel's command, and does not reach the pin.
+- Until the screen sends a position, the pins run at the rate the SERVO page
+  holds, which after a restart or a new binding is 50 Hz.
 - No automatic test runs in this build. The TEST, LIMITS and DUT settings are
   kept for it, and no report is written.
 - The supply on the right card is SUPPLY's model: no PD mini driver exists,

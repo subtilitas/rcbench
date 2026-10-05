@@ -14,6 +14,7 @@
 #include "outputs.h"
 #include "outputs_pages.h"
 #include "out_pwm_map.h"
+#include "link_msg.h"
 #include "link_pages.h"
 
 static outputs_t o;
@@ -1230,6 +1231,91 @@ TEST_CASE(the_only_pins_sharing_a_compare_register_are_the_folded_pairs)
 }
 
 /* A pin the part does not have reaches no register, so it shares none. */
+/*
+ * The SERVO page: one frame rate for every PWM output whose first channel
+ * is a surface.  A throttle, a PPM frame and a DShot bit rate keep their
+ * own, and 0 is each slot's own.
+ */
+TEST_CASE(the_servo_rate_reaches_pwm_surfaces_and_nothing_else)
+{
+    fresh();
+    CHECK(outputs_set_role(&o, 0, OUT_ROLE_SURFACE));
+    CHECK(outputs_set_role(&o, 1, OUT_ROLE_THROTTLE));
+    CHECK(outputs_set_role(&o, 2, OUT_ROLE_SURFACE));
+    CHECK(outputs_set_role(&o, 3, OUT_ROLE_THROTTLE));
+    CHECK(put_pwm(0, 0, 4));                   /* surface, slice 2 */
+    CHECK(put_pwm(1, 1, 9));                   /* throttle, slice 4 */
+    const out_slot_t ppm = { .driver = OUT_DRIVER_PPM, .first_channel = 2,
+                             .channels = 1, .pin = 13, .rate_hz = 40 };
+    CHECK(outputs_configure(&o, 2, &ppm));
+    const out_slot_t dshot = { .driver = OUT_DRIVER_DSHOT, .first_channel = 3,
+                               .channels = 1, .pin = 15, .rate_hz = 300 };
+    CHECK(outputs_configure(&o, 3, &dshot));
+
+    uint16_t rate[OUT_MAX_SLOTS];
+    outputs_slot_rates(&o, 333u, rate);
+    CHECK_EQ(rate[0], 333u);
+    CHECK_EQ(rate[1], 50u);
+    CHECK_EQ(rate[2], 40u);
+    CHECK_EQ(rate[3], 300u);
+    outputs_slot_rates(&o, 0u, rate);
+    CHECK_EQ(rate[0], 50u);
+}
+
+/* A rate outside the PWM driver's 40 to 560 Hz, or off the page, is refused
+ * and stores nothing; 0 and the ends are taken. */
+TEST_CASE(a_servo_rate_outside_the_pwm_range_is_refused)
+{
+    fresh();
+    uint16_t sv[LINK_SV_COUNT];
+    outputs_servo_defaults(sv);
+    CHECK_EQ(sv[LINK_SV_FRAME_HZ], 0u);
+    const uint16_t bad[] = { 39u, 561u, 0xFFFFu };
+    for (unsigned i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        CHECK_EQ(outputs_servo_write(sv, 0, 1, &bad[i], &o),
+                 LINK_NACK_BAD_VALUE);
+        CHECK_EQ(sv[LINK_SV_FRAME_HZ], 0u);
+    }
+    const uint16_t good[] = { 40u, 560u, 0u };
+    for (unsigned i = 0; i < sizeof(good) / sizeof(good[0]); ++i) {
+        CHECK_EQ(outputs_servo_write(sv, 0, 1, &good[i], &o), 0u);
+        CHECK_EQ(sv[LINK_SV_FRAME_HZ], good[i]);
+    }
+    CHECK_EQ(outputs_servo_write(sv, 1, 1, good, &o), LINK_NACK_BAD_RANGE);
+    CHECK_EQ(outputs_servo_write(sv, 0, 1, good, NULL), LINK_NACK_BAD_RANGE);
+}
+
+/*
+ * The two channels of a slice share a frame rate.  A rate that would move a
+ * surface away from the throttle beside it on its slice is refused, and
+ * nothing changes; two surfaces on one slice move together, and 0 always
+ * goes back.
+ */
+TEST_CASE(a_servo_rate_that_would_split_a_slice_is_refused)
+{
+    fresh();
+    CHECK(outputs_set_role(&o, 0, OUT_ROLE_SURFACE));
+    CHECK(outputs_set_role(&o, 1, OUT_ROLE_THROTTLE));
+    CHECK(put_pwm(0, 0, 0));                   /* GP0: slice 0, A */
+    CHECK(put_pwm(1, 1, 1));                   /* GP1: slice 0, B */
+    uint16_t sv[LINK_SV_COUNT];
+    outputs_servo_defaults(sv);
+    const uint16_t fast = 560u, same = 50u, own = 0u;
+    CHECK_EQ(outputs_servo_write(sv, 0, 1, &fast, &o), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(sv[LINK_SV_FRAME_HZ], 0u);
+    CHECK_EQ(outputs_servo_write(sv, 0, 1, &same, &o), 0u);   /* no split */
+    CHECK_EQ(outputs_servo_write(sv, 0, 1, &own, &o), 0u);
+
+    CHECK(outputs_set_role(&o, 1, OUT_ROLE_SURFACE));
+    CHECK_EQ(outputs_servo_write(sv, 0, 1, &fast, &o), 0u);
+    CHECK_EQ(sv[LINK_SV_FRAME_HZ], 560u);
+    uint16_t rate[OUT_MAX_SLOTS];
+    outputs_slot_rates(&o, sv[LINK_SV_FRAME_HZ], rate);
+    CHECK_EQ(rate[0], 560u);
+    CHECK_EQ(rate[1], 560u);
+    CHECK_EQ(outputs_servo_write(sv, 0, 1, &own, &o), 0u);
+}
+
 TEST_CASE(a_pin_past_the_bank_reaches_no_slice)
 {
     CHECK_EQ(out_pwm_slice_of((uint8_t)OUT_PWM_GPIOS), OUT_PWM_NONE);
@@ -1297,5 +1383,8 @@ int main(void)
     RUN(two_header_pins_sixteen_apart_are_one_compare_register);
     RUN(the_only_pins_sharing_a_compare_register_are_the_folded_pairs);
     RUN(a_pin_past_the_bank_reaches_no_slice);
+    RUN(the_servo_rate_reaches_pwm_surfaces_and_nothing_else);
+    RUN(a_servo_rate_outside_the_pwm_range_is_refused);
+    RUN(a_servo_rate_that_would_split_a_slice_is_refused);
     return test_summary("outputs");
 }

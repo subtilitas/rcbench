@@ -12,10 +12,11 @@
 static const out_driver_def_t k_drivers[OUT_DRIVER_COUNT] = {
     [OUT_DRIVER_NONE]  = { "none",  0, 0, 0, false, false,   0,     0 },
     /*
-     * PWM (pulse-width modulation): the 400 Hz ceiling is the frame rate a
-     * narrow-band digital servo takes; below 40 Hz a servo audibly steps.
+     * PWM (pulse-width modulation): the 560 Hz ceiling is a 760 us tail
+     * servo's frame rate, the fastest a servo takes; below 40 Hz a servo
+     * audibly steps.
      */
-    [OUT_DRIVER_PWM]   = { "PWM",   1, 1, 1, false, true,   40,   400 },
+    [OUT_DRIVER_PWM]   = { "PWM",   1, 1, 1, false, true,   40,   560 },
     /*
      * PPM (pulse-position modulation) is the reason the channel count is a
      * range.  Eight channels in a 22.5 ms frame is the convention; more fits

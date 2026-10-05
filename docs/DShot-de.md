@@ -87,7 +87,7 @@ durch die Rate.
 
 | | |
 | --- | --- |
-| Frame Rate | 40 bis 400 Hz |
+| Frame Rate | 40 bis 560 Hz |
 | Puls | 400 bis 2500 µs, außerhalb verweigert |
 | Auflösung | 1 µs |
 
@@ -95,6 +95,12 @@ Ein Slice sind zwei Kanäle an einem Zähler, zwei Pins auf demselben Slice lauf
 also mit derselben Frame Rate. Eine zweite Bindung, die auf einem belegten Slice
 eine andere Rate verlangt, wird verweigert statt umgestellt: Umstellen würde
 einen Output verschieben, den niemand angefasst hat.
+
+Die SERVO-Page setzt eine Frame Rate für jeden PWM-Ausgang, dessen erster Kanal
+die Rolle surface hat, über die Rate, die die Bindung dem Slot gibt. Sie wird
+mit BAD_VALUE verweigert, wenn sie eine Surface von der Rate des Ausgangs neben
+ihr auf demselben Slice wegbewegen würde, und sie wird nicht gespeichert: Nach
+einem Neustart läuft jeder Slot mit seiner eigenen Rate.
 
 GPIO-Nummern falten sich auf die 12 Slices. GP0 bis GP31 nehmen Slice
 (Pin / 2) modulo 8, GP32 bis GP47 nehmen Slice 8 + (Pin / 2) modulo 4, und der

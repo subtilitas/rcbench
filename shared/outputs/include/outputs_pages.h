@@ -34,6 +34,28 @@
  */
 uint16_t link_driver_of(out_driver_t d);
 
+/* --- SERVO: the frame rate of every PWM output rendering a surface */
+void    outputs_servo_defaults(uint16_t *regs);
+
+/**
+ * Validate and store a SERVO page write against the bank @p o as it is.
+ * Refused with LINK_NACK_BAD_VALUE, storing nothing: a rate that is neither
+ * 0 nor in the PWM driver's range, or one that would leave a PWM slice asked
+ * for two rates -- a surface it moves sharing a slice with an output it
+ * does not.
+ */
+uint8_t outputs_servo_write(uint16_t *regs, uint8_t off, uint8_t n,
+                            const uint16_t *in, const outputs_t *o);
+
+/**
+ * The frame rate each slot of @p o is bound at, into @p rate
+ * (OUT_MAX_SLOTS entries): the slot's own, or @p servo_hz for a PWM slot
+ * whose first channel is a surface when @p servo_hz is not 0.  A slot that
+ * is not PWM keeps its own rate, which for DShot is a bit rate.
+ */
+void    outputs_slot_rates(const outputs_t *o, uint16_t servo_hz,
+                           uint16_t *rate);
+
 /* --- CHAN_CFG: what each channel is -- role, slew, and its pulse endpoints */
 void    outputs_chan_cfg_defaults(uint16_t *regs);
 uint8_t outputs_chan_cfg_write(uint16_t *regs, uint8_t off, uint8_t n,
