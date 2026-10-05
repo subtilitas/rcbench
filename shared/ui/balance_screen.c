@@ -660,6 +660,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
 static void cancel(void)
 {
     ui_tabs_cancel(&s.tabs);
+    /* The tab row may already be drawn pressed in both framebuffers; a
+     * cleared press with the same revision would leave it painted held. */
+    ++s.rev;
 }
 
 static const ui_screen_t k_screen = {

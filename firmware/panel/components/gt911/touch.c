@@ -49,13 +49,25 @@ typedef struct {
     volatile uint32_t last_ok_ms;
 
     /*
-     * Events this queue had to drop because the consumer was behind.  The
-     * gesture that loses one is in the same state as one that loses it
-     * further downstream, so the application folds this into its own count
-     * and cancels on the difference.
+     * Every event offered to the queue is numbered, from 1, by this task --
+     * the queue's one producer -- whether or not the queue keeps it.  The
+     * consumer finds a dropped event as a gap in the numbers (touch_loss.h),
+     * on the first event after it and before that event is handled, so no
+     * count published on one core has to be read in time on the other.
+     *
+     * seq is this task's alone.  published is the number of the last event
+     * offered, stored after the offer, for a loss at the end of the stream
+     * with nothing after it to show the gap.
      */
-    atomic_uint lost;
+    uint32_t    seq;
+    atomic_uint published;
 } touch_state_t;
+
+/* What the queue carries: the event and its number. */
+typedef struct {
+    touch_event_t evt;
+    uint32_t      seq;
+} queued_t;
 
 static uint32_t now_ms(void)
 {
@@ -89,32 +101,22 @@ static void publish(const touch_point_t *pts, int count)
 
     if (s_touch.events) {
         for (int i = 0; i < n; ++i) {
-            if (xQueueSend(s_touch.events, &evts[i], 0) != pdTRUE) {
+            const queued_t q = { .evt = evts[i], .seq = ++s_touch.seq };
+            if (xQueueSend(s_touch.events, &q, 0) != pdTRUE) {
                 /*
-                 * The consumer is behind: drop the oldest, keep the newest,
-                 * and count it.  A gesture that loses an event here is in
-                 * the same state as one that loses it downstream -- the
-                 * screen goes on holding a press whose release is gone --
-                 * so the count is published for the render loop to fold
-                 * into its own and cancel on.
+                 * The consumer is behind: drop the oldest and keep the
+                 * newest.  Nothing is counted here.  The dropped event's
+                 * number is missing from what the consumer takes, and it
+                 * sees the gap on the event after it.  The retry runs
+                 * whether or not the receive took anything: the consumer
+                 * can empty the queue between the two, and then there is
+                 * room without anything having been evicted.
                  */
-                touch_event_t dropped;
-                const bool took =
-                    (xQueueReceive(s_touch.events, &dropped, 0) == pdTRUE);
-                const bool sent =
-                    (xQueueSend(s_touch.events, &evts[i], 0) == pdTRUE);
-                /*
-                 * Only when an event actually went.  The consumer can drain
-                 * this queue between the failed send and the receive, in
-                 * which case nothing was evicted and the retry succeeds --
-                 * counting that would tell the render loop the stream broke
-                 * when it did not, and it would cancel a gesture that is
-                 * still on the glass.
-                 */
-                if (took || !sent) {
-                    atomic_fetch_add(&s_touch.lost, 1u);
-                }
+                queued_t dropped;
+                (void)xQueueReceive(s_touch.events, &dropped, 0);
+                (void)xQueueSend(s_touch.events, &q, 0);
             }
+            atomic_store(&s_touch.published, q.seq);
         }
     }
 }
@@ -200,7 +202,7 @@ esp_err_t touch_init(const touch_config_t *cfg)
 
     if (s_touch.cfg.event_queue_len > 0) {
         s_touch.events = xQueueCreate(s_touch.cfg.event_queue_len,
-                                      sizeof(touch_event_t));
+                                      sizeof(queued_t));
         ESP_RETURN_ON_FALSE(s_touch.events, ESP_ERR_NO_MEM, TAG, "event queue");
     }
 
@@ -295,14 +297,27 @@ bool touch_pressed(touch_point_t *out)
     return n > 0;
 }
 
-bool touch_wait_event(touch_event_t *out, uint32_t timeout_ms)
+bool touch_wait_event(touch_event_t *out, uint32_t *seq, uint32_t timeout_ms)
 {
     if (!s_touch.events || !out) {
         return false;
     }
     TickType_t ticks = (timeout_ms == UINT32_MAX) ? portMAX_DELAY
                                                   : pdMS_TO_TICKS(timeout_ms);
-    return xQueueReceive(s_touch.events, out, ticks) == pdTRUE;
+    queued_t q;
+    if (xQueueReceive(s_touch.events, &q, ticks) != pdTRUE) {
+        return false;
+    }
+    *out = q.evt;
+    if (seq != NULL) {
+        *seq = q.seq;
+    }
+    return true;
+}
+
+uint32_t touch_published(void)
+{
+    return atomic_load(&s_touch.published);
 }
 
 void touch_flush_events(void)
@@ -325,7 +340,4 @@ uint32_t touch_age_ms(void)
     return now_ms() - s_touch.last_ok_ms;
 }
 
-unsigned touch_lost(void)
-{
-    return atomic_load(&s_touch.lost);
-}
+

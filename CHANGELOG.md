@@ -13,16 +13,20 @@ history is in git.
   choice of which one is safe: a release that never arrives leaves a screen
   holding a press, a press that never arrives orphans the release after it,
   and the movement where a finger leaves a button is what abandons the hold.
-  The loss is counted now, in the panel's queue and the driver's, and the
-  frame that observes it tells every screen that its record of the glass is
-  stale, since a surviving event can have navigated away from the one that
-  holds the press: each screen drops the gesture in progress, which asks
-  for nothing. A DISARM that cancellation posts is forwarded in the same
-  frame. Every control that holds state between a press and its release
-  cancels, including the log viewer's buttons, rows and DELETE question and
-  the tab rows of MOTOR & ESC, ANALYSER and BALANCE, because a press left
-  latched owns a track id the controller reuses. The
-  frame log carries the two counts as `TOUCHLOST <panel>/<driver>`.
+  Both queues, the panel's and the driver's, now number every event their
+  one producer offers, and the consumer finds a loss as a gap in the
+  numbers, on the first event after it and before that event is handled,
+  or at the end of a drain against the number published before it
+  (`shared/safety/touch_loss.c`). The render task then tells every screen
+  that its record of the glass is stale, since a surviving event can have
+  navigated away from the one that holds the press: each screen drops the
+  gesture in progress, which asks for nothing. A DISARM that cancellation
+  posts is forwarded at once. Every control that holds state between a
+  press and its release cancels, including the log viewer's buttons, rows
+  and DELETE question and the tab rows of MOTOR & ESC, ANALYSER and
+  BALANCE, because a press left latched owns a track id the controller
+  reuses; a cancelled tab is redrawn released. The frame log carries the
+  events found missing in each queue as `TOUCHLOST <panel>/<driver>`.
   - Two controls are the exception, because asking for nothing is their
     failure. Cancelling an armed bench's disarm still disarms: disarming is
     a press, so a release lost to a full queue is a disarm the operator made
@@ -34,12 +38,13 @@ history is in git.
     command is collected on the frame after the one that posts it, and the
     frame that observes a loss cancels before that collection, so an arm
     completed by a hold whose contact was lost is dropped before it reaches
-    the bench. An arm already handed to the control task carries the count
-    of lost touch events it was posted under, and the control task drops an
-    arm whose count has moved, and looks again once the armed snapshot has
-    been handed to the screens, so a loss anywhere between the posting and
-    that handover retires it and a later one is seen against an armed
-    bench. A hold
+    the bench. An arm already handed to the control task carries how many
+    times the render task had dropped gestures and the last event it had
+    taken; the control task drains the driver's queue, drops an arm the
+    render task has had a loss since, and after applying it disarms on any
+    loss until the render task acknowledges the armed bench, which a frame
+    does only when it began armed and found the stream whole. A later loss
+    is seen by the screens against an armed bench. A hold
     is credited at most 250 ms per frame, so one late
     frame cannot complete a hold that began while it was dispatching the
     press.

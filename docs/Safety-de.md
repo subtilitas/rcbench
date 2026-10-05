@@ -103,19 +103,24 @@ Panel als Leitung ohne Flanken gelesen wird.
   macht das Release danach elternlos, und die Bewegung, mit der ein Finger
   eine Taste verlässt, ist das, was das Halten aufgibt. Der Render-Task
   leert die Queue vom anderen Kern, das Prüfen eines Eintrags entscheidet
-  also nicht, welcher entfernt wird. Stattdessen wird der Verlust gezählt,
-  und der Frame, der ihn bemerkt, sagt jedem Screen, dass sein Bild vom
-  Glas veraltet ist, nicht nur dem obersten, weil ein Event, das den Verlust
-  überlebt hat, vom Screen mit dem Druck weg navigiert haben kann; jeder
-  Screen verwirft jede laufende Geste. Das
-  kommandiert nichts, genau wie ein frühes Loslassen, mit der einen Ausnahme
-  weiter unten. Beide Queues werden gezählt -- die Event-Queue des Treibers
-  verwirft ihren ältesten Eintrag aus demselben Grund -- und die Zahl wird
-  zweimal gelesen: bevor die Events dieses Frames zugestellt werden, damit
-  die Überlebenden rund um das fehlende Event nicht auf einem veralteten
-  Bild handeln, und erneut vor dem Tick des Frames, damit ein Event, das
-  während des Durchlaufs verloren geht, in diesem Frame beantwortet wird und
-  nicht erst im nächsten. Das Frame-Log führt beide Zahlen als
+  also nicht, welcher entfernt wird. Stattdessen nummeriert der eine
+  Erzeuger jeder Queue jedes Event, das er anbietet, ob die Queue es behält
+  oder nicht, und der Verbraucher findet einen Verlust als Lücke in den
+  Nummern: am ersten Event danach, bevor es behandelt wird, oder am Ende
+  eines Leerens gegen die Nummer, die der Erzeuger vor dem Leeren
+  veröffentlicht hat. Kein Zähler, der auf einem Kern steigt, muss rechtzeitig
+  auf dem anderen gelesen werden. Der Render-Task sagt dann jedem Screen, dass
+  sein Bild vom Glas veraltet ist, nicht nur dem obersten, weil ein Event,
+  das den Verlust überlebt hat, vom Screen mit dem Druck weg navigiert haben
+  kann; jeder Screen verwirft jede laufende Geste. Das kommandiert nichts,
+  genau wie ein frühes Loslassen, mit der einen Ausnahme weiter unten. Beide
+  Queues sind nummeriert -- die Event-Queue des Treibers verwirft ihren
+  ältesten Eintrag aus demselben Grund, und eine Lücke, die der Control-Task
+  dort findet, reist als eigener Eintrag zum Render-Task, vor den Events, die
+  ihr folgten. Der Render-Task leert die Queue unmittelbar vor dem Tick des
+  Frames noch einmal, damit ein Event, das während des Durchlaufs verloren
+  geht, in diesem Frame beantwortet wird und nicht erst im nächsten. Das
+  Frame-Log führt die in jeder Queue fehlenden Events als
   `TOUCHLOST <Panel>/<Treiber>`. Der Control-Task verwirft aus demselben
   Grund seinen eigenen Vermerk eines STOP-Drucks bei einem Verlust im
   Treiber: Er besitzt diesen Druck unabhängig von den Screens.
@@ -151,15 +156,20 @@ Panel als Leitung ohne Flanken gelesen wird.
   Screen bereits abgesetzt hat und die Anwendung noch nicht abgeholt hat --
   ein Kommando wird im Frame nach dem absetzenden weitergereicht, und der
   Frame, der einen Verlust bemerkt, bricht vor diesem Weiterreichen ab. Ein
-  Scharfschalten, das schon beim Control-Task liegt, trägt den Zählerstand
-  der verlorenen Touch-Events, unter dem es abgesetzt wurde: der Control-Task
-  verwirft ein Scharfschalten, dessen Zähler sich bewegt hat, und sieht
-  noch einmal nach, sobald der scharfe Snapshot an die Screens übergeben
-  ist, weil die Transaktionen dazwischen zwei Sekunden dauern können; ein
-  Verlust zwischen den beiden Blicken entschärft sofort, und einen Verlust
-  nach dem zweiten sehen die Screens gegen einen scharfen Prüfstand. Über
-  einen Verlust hinweg schaltet also nichts scharf. Ein abgesetztes
-  Entschärfen bleibt.
+  Scharfschalten, das schon beim Control-Task liegt, trägt, wie oft der
+  Render-Task Gesten verworfen hatte, und die Nummer des letzten Events, das
+  er genommen hatte. Der Control-Task leert zuerst die Queue des Treibers und
+  verwirft dann ein Scharfschalten, wenn der Render-Task seither Gesten
+  verworfen hat oder einen Verlust-Eintrag noch nicht genommen hatte. Ist
+  das Scharfschalten ausgeführt, entschärft jeder Verlust -- der Render-Task
+  verwirft Gesten, oder im Strom des Treibers fehlt eine Nummer -- sofort,
+  bis der Render-Task den scharfen Prüfstand bestätigt; das tut ein Frame
+  nur, wenn er scharf begann und den Strom vollständig fand. Ein Frame, der
+  vor dem Veröffentlichen begann, bricht Screens ab, die den Prüfstand noch
+  für entschärft halten, und die setzen kein Entschärfen ab; also muss der
+  Control-Task es tun. Nach der Bestätigung sehen die Screens einen Verlust
+  gegen einen scharfen Prüfstand. Über einen Verlust hinweg schaltet also
+  nichts scharf. Ein abgesetztes Entschärfen bleibt.
 - Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
   Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, eine
   Berührung am Ende fordert also nichts an; ein Drag über den ganzen Track

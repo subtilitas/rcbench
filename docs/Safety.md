@@ -91,17 +91,23 @@ unpowered or unplugged panel reads as a line that is not edging.
   press, a press that never arrives orphans the release after it, and the
   movement where a finger leaves a button is what abandons the hold. The
   render task drains the queue from the other core, so inspecting an entry
-  does not decide which one is removed. The loss is counted instead, and the
-  frame that observes it tells every screen that its record of the glass is
-  stale, not only the one on top, because an event that survived the loss
-  can have navigated away from the screen holding the press; each screen
-  drops any gesture in progress. That asks for nothing,
-  exactly as letting go early does, with the one exception below. Both queues
-  are counted -- the driver's
-  own event queue evicts its oldest for the same reason -- and the count is
-  read after the drain and before the frame's tick, so an event lost while
-  the loop is running is answered in that frame rather than the next. The
-  frame log carries the two counts as `TOUCHLOST <panel>/<driver>`.
+  does not decide which one is removed. Instead each queue's one producer
+  numbers every event it offers, whether or not the queue keeps it, and the
+  consumer finds a loss as a gap in the numbers: on the first event after it,
+  before that event is handled, or, at the end of a drain, against the number
+  the producer published before the drain began. No count raised on one core
+  has to be read in time on the other. The render task then tells every
+  screen that its record of the glass is stale, not only the one on top,
+  because an event that survived the loss can have navigated away from the
+  screen holding the press; each screen drops any gesture in progress. That
+  asks for nothing, exactly as letting go early does, with the one exception
+  below. Both queues are numbered -- the driver's own event queue evicts its
+  oldest for the same reason, and a gap the control task finds there travels
+  to the render task as an item of its own, ahead of the events that followed
+  it. The render task drains once more right before the frame's tick, so an
+  event lost while the loop is running is answered in that frame rather than
+  the next. The frame log carries the events found missing in each queue as
+  `TOUCHLOST <panel>/<driver>`.
 - Every control that holds state between a press and its release cancels.
   MOTOR & ESC, SERVO and CAN BUS FAULT have a gesture that completes on a
   timer, so a lost release there arms or acknowledges on its own; the
@@ -127,13 +133,18 @@ unpowered or unplugged panel reads as a line that is not edging.
   never saw. Arming has already sent its command by the time the finger
   lifts, so an arm cancelled part way asks for nothing, which is correct. A
   cancel also drops an arm the screen has posted and the application has not
-  yet collected, and an arm already handed to the control task carries the
-  count of lost touch events it was posted under: the control task drops an
-  arm whose count has moved, and looks again once the armed snapshot has
-  been handed to the screens, since the exchanges between the two can take
-  two seconds; a loss between the two looks disarms at once, and a loss
-  after the second is seen by the screens against an armed bench. Nothing
-  arms across a loss. A posted disarm stays.
+  yet collected. An arm already handed to the control task carries how many
+  times the render task had dropped gestures and the number of the last
+  event it had taken. The control task drains the driver's queue first, then
+  drops an arm when the render task has dropped gestures since, or has a
+  loss notice it had not yet taken. Once the arm is applied, any loss -- the
+  render task dropping gestures, or a gap in the driver's stream -- disarms at
+  once until the render task acknowledges the armed bench, which a frame
+  does only when it began armed and found the stream whole. A frame that
+  began before the arm was published cancels screens that still believe the
+  bench is disarmed, which posts no disarm, so the control task has to.
+  After the acknowledgement a loss is seen by the screens against an armed
+  bench. Nothing arms across a loss. A posted disarm stays.
 - The throttle moves by how far a finger travels, not to where it lands. A
   press on the track commands nothing, so a touch at the far end asks for
   nothing; a drag across the whole track asks for the whole span, and one
