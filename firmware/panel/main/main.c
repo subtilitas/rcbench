@@ -2671,6 +2671,16 @@ static void link_report(void)
  * them.  When it does not, the panel models locally and sets the same flag.
  * Nothing above this function knows the difference.
  */
+/*
+ * The run's charge and energy across a change of source; see bench_carry_t.
+ * Control task only.  s_carry_src is which source last wrote the totals, so
+ * the carry is taken from what is shown just before the other one first
+ * writes over it, whichever of the two paths notices the change first.
+ */
+typedef enum { CARRY_SRC_NONE = 0, CARRY_SRC_LINK, CARRY_SRC_MODEL } carry_src_t;
+static bench_carry_t s_carry;
+static carry_src_t   s_carry_src;
+
 static bool read_bench(link_host_t *host, bench_state_t *out)
 {
     link_msg_t reply;
@@ -2680,7 +2690,24 @@ static bool read_bench(link_host_t *host, bench_state_t *out)
     if (reply.op == LINK_OP_NACK) {
         return false;
     }
+    /*
+     * The model was counting this run and the coprocessor is back.  It
+     * re-armed after its failsafe and counts from zero again, so what the
+     * run had is carried.  A link down for less than its 200 ms failsafe
+     * never reaches here: the panel takes much longer to call the link
+     * lost.
+     */
+    if (s_carry_src == CARRY_SRC_MODEL && outputs_armed(&s_out)) {
+        bench_carry_take(&s_carry, out);
+    }
     bench_state_from_regs(out, reply.regs, reply.offset, reply.count);
+    /* Only over a read that wrote the totals: a partial read leaves them as
+     * they were, carry included. */
+    if (reply.offset <= LINK_BN_CHARGE_MAH
+        && (unsigned)reply.offset + reply.count > LINK_BN_ENERGY_DWH) {
+        bench_carry_apply(&s_carry, out);
+        s_carry_src = CARRY_SRC_LINK;
+    }
     return true;
 }
 
@@ -2724,6 +2751,9 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
  */
 static void arm_applied(void)
 {
+    /* A run starts with nothing carried from the last one. */
+    bench_carry_reset(&s_carry);
+    s_carry_src = CARRY_SRC_NONE;
     ++s_arm_gen;
     arm_watch_begin(&s_arm_watch, s_arm_take_gen, s_arm_take_drv, s_arm_gen);
 }
@@ -4049,7 +4079,18 @@ static void advance_model_and_log(bool link_up, float emitted,
         }
         s_sim_was_armed = armed;
         if (!link_up) {
+            /*
+             * The coprocessor was counting this run and the link is gone:
+             * what the run had is carried, and the model counts on from
+             * zero on top of it.
+             */
+            if (s_carry_src == CARRY_SRC_LINK && armed) {
+                bench_carry_take(&s_carry, bench);
+                telemetry_sim_new_run(sim);
+            }
             telemetry_sim_step(sim, emitted, 1.0f / PANEL_SAMPLE_HZ, bench);
+            bench_carry_apply(&s_carry, bench);
+            s_carry_src = CARRY_SRC_MODEL;
             *new_sample = true;
         }
         if (*new_sample && s_log_armed) {

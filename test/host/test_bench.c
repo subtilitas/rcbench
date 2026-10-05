@@ -466,6 +466,46 @@ TEST_CASE(the_totals_flags_survive_the_wire)
     CHECK_NEAR(out.charge_mah, 10.0f, 1.0f);
 }
 
+TEST_CASE(a_run_that_changes_source_never_counts_backwards)
+{
+    /* The coprocessor counts 100 mAh, the link drops and the model counts
+     * 20 more, the link comes back and the re-armed coprocessor counts 30. */
+    bench_carry_t c;
+    bench_carry_reset(&c);
+    bench_state_t shown;
+    memset(&shown, 0, sizeof(shown));
+
+    shown.charge_mah = 100.0f; shown.energy_wh = 2.0f;
+    shown.flags = LINK_BN_CHARGE_OK | LINK_BN_ENERGY_OK;
+    bench_carry_apply(&c, &shown);
+    CHECK_NEAR(shown.charge_mah, 100.0f, 0.001f);
+
+    bench_carry_take(&c, &shown);                /* link lost */
+    shown.charge_mah = 20.0f; shown.energy_wh = 0.4f;
+    shown.flags = 0u;                            /* model, before it counts */
+    bench_carry_apply(&c, &shown);
+    CHECK_NEAR(shown.charge_mah, 120.0f, 0.001f);
+    CHECK_NEAR(shown.energy_wh, 2.4f, 0.001f);
+    CHECK((shown.flags & LINK_BN_CHARGE_OK) != 0u);
+
+    bench_carry_take(&c, &shown);                /* link back */
+    shown.charge_mah = 30.0f; shown.energy_wh = 0.5f;
+    shown.flags = LINK_BN_CHARGE_OK | LINK_BN_ENERGY_OK;
+    bench_carry_apply(&c, &shown);
+    CHECK_NEAR(shown.charge_mah, 150.0f, 0.001f);
+    CHECK_NEAR(shown.energy_wh, 2.9f, 0.001f);
+
+    /* A new run starts from nothing carried. */
+    bench_carry_reset(&c);
+    shown.charge_mah = 5.0f; shown.flags = 0u;
+    bench_carry_apply(&c, &shown);
+    CHECK_NEAR(shown.charge_mah, 5.0f, 0.001f);
+    CHECK_EQ(shown.flags & (LINK_BN_CHARGE_OK | LINK_BN_ENERGY_OK), 0u);
+    bench_carry_reset(NULL);
+    bench_carry_take(NULL, &shown);
+    bench_carry_apply(NULL, &shown);
+}
+
 int main(void)
 {
     RUN(every_field_survives_the_round_trip);
@@ -487,5 +527,6 @@ int main(void)
     RUN(a_total_outlives_a_lapse_and_the_run_and_resets_at_the_next);
     RUN(a_stalled_sampler_counts_at_most_one_step);
     RUN(the_totals_flags_survive_the_wire);
+    RUN(a_run_that_changes_source_never_counts_backwards);
     return test_summary("bench");
 }

@@ -15,9 +15,13 @@ history is in git.
   Before, both totals read 0 on hardware because nothing filled them. Two
   BENCH flags say whether each total has counted a measurement, and the
   screen and the CSV show `--` and an empty cell when it has not, instead of
-  a 0 that reads as one. The totals count what the ESC reports: an ESC
-  without a current sensor, such as the one in #172 that reports 72 A at
-  idle, gives meaningless ones.
+  a 0 that reads as one. A run whose source changes -- the link lost to the
+  panel's model and back, where the coprocessor counts from zero again after
+  its failsafe -- carries its totals across (`bench_carry_t`), so they never
+  go backwards within one log; the model's consumption for the outage is in
+  them. The totals count what the ESC reports: an ESC without a current
+  sensor, such as the one in #172 that reports 72 A at idle, gives
+  meaningless ones.
 
 ### Changed
 

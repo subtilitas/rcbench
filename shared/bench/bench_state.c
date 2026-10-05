@@ -143,6 +143,40 @@ void bench_state_count_totals(bench_state_t *b, float dt_s, bool driving)
     b->flags |= b->totals;
 }
 
+void bench_carry_reset(bench_carry_t *c)
+{
+    if (c != NULL) {
+        c->mah   = 0.0f;
+        c->wh    = 0.0f;
+        c->flags = 0u;
+    }
+}
+
+void bench_carry_take(bench_carry_t *c, const bench_state_t *shown)
+{
+    if (c == NULL || shown == NULL) {
+        return;
+    }
+    /* What is shown already includes any earlier carry, so this replaces
+     * the carry rather than adding to it. */
+    c->mah   = shown->charge_mah;
+    c->wh    = shown->energy_wh;
+    c->flags = (uint16_t)(shown->flags
+                          & (uint16_t)(LINK_BN_CHARGE_OK | LINK_BN_ENERGY_OK));
+}
+
+void bench_carry_apply(const bench_carry_t *c, bench_state_t *b)
+{
+    if (c == NULL || b == NULL) {
+        return;
+    }
+    b->charge_mah += c->mah;
+    b->energy_wh  += c->wh;
+    /* A total the run had stays a total, even before the new source has
+     * counted anything of its own. */
+    b->flags |= c->flags;
+}
+
 void bench_state_track_peaks(bench_state_t *b)
 {
     if (b == NULL) {

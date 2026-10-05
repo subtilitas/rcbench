@@ -103,6 +103,29 @@ void bench_state_reset_totals(bench_state_t *b);
 void bench_state_count_totals(bench_state_t *b, float dt_s, bool driving);
 
 /**
+ * A run's totals, carried across a change of the source that counts them.
+ *
+ * The panel shows the coprocessor's totals while the link is up and its own
+ * model's while it is down, and each source counts from its own start: the
+ * model from where it took over, the coprocessor from the arm it accepted
+ * after its failsafe.  Without a carry the run's charge and energy would
+ * jump back towards zero in the middle of one log.
+ *
+ * Reset when the run starts.  Taken from what is shown, just before a new
+ * source first writes; added to every update after that, because each
+ * source writes its own count over the field every time.
+ */
+typedef struct {
+    float    mah;
+    float    wh;
+    uint16_t flags;   /**< LINK_BN_CHARGE_OK, LINK_BN_ENERGY_OK carried */
+} bench_carry_t;
+
+void bench_carry_reset(bench_carry_t *c);
+void bench_carry_take(bench_carry_t *c, const bench_state_t *shown);
+void bench_carry_apply(const bench_carry_t *c, bench_state_t *b);
+
+/**
  * Take the live readings into the peaks.
  *
  * Only what the flags mark valid: an empty field is not a measurement of
