@@ -49,6 +49,7 @@
 #include "log_writer.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
+#include "supply_screen.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
 #include "rcbench_version.h"
@@ -173,6 +174,10 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
  * with the rest of the servo's wire handling. */
 static void servo_let_go(void);
 static void servo_service(bool link_up);
+/* The supply's service, defined with the supply.  control_pump() calls it,
+ * so a stop or an OFF cuts the output where it lands and the supply keeps
+ * its cadence while an exchange waits. */
+static void supply_pump(void);
 /* Defined with the rest of the link's reads; the OUTPUTS screen's write asks
  * for one straight afterwards. */
 static void read_outputs_binding(void);
@@ -340,13 +345,15 @@ static void beat(bool alive)
 #define PANEL_SAMPLE_HZ   20.0f
 
 typedef enum { PANEL_CMD_MOTOR = 0, PANEL_CMD_SERVO,
-               PANEL_CMD_STOP, PANEL_CMD_OUTPUTS } panel_cmd_kind_t;
+               PANEL_CMD_STOP, PANEL_CMD_OUTPUTS,
+               PANEL_CMD_SUPPLY } panel_cmd_kind_t;
 
 typedef struct {
     panel_cmd_kind_t kind;
     motor_cmd_t      motor;
     servo_cmd_t      servo;
     outbind_t        bind;   /**< PANEL_CMD_OUTPUTS: the protocols and their pins */
+    supply_cmd_t     supply; /**< PANEL_CMD_SUPPLY: set points and the switch */
     /**
      * How many stops the sender had seen when it queued this.
      *
@@ -360,6 +367,9 @@ typedef struct {
     uint32_t         stops;
     /** And how many times it had been told to let go; see s_lets_go. */
     uint32_t         lets_go;
+    /** And how many times the supply's output had been asked off; see
+     *  s_supply_offs. */
+    uint32_t         supply_offs;
     /**
      * And what the render side knew of the touch stream when it queued
      * this: how many times it had dropped the screens' gestures for a loss
@@ -452,11 +462,15 @@ static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
  * 400 ms out of date is worth less than one that is current.
  */
 static QueueHandle_t     s_sample_q;  /**< control task -> app_main */
+/* The supply's samples, one entry each, for the same reason. */
+static QueueHandle_t     s_supply_q;  /**< control task -> app_main */
 static SemaphoreHandle_t s_snap_lock;
 
 /* What the screen reads.  Written by the control task, copied by app_main. */
 static struct {
     bench_state_t bench;
+    supply_state_t supply;
+    uint32_t      supply_gen;  /**< which ON, for the render side's ack */
     bool          link_up;
     bool          armed;
     uint32_t      arm_gen;     /**< which arm, for the render side's ack */
@@ -568,6 +582,52 @@ static atomic_bool s_servo_release_request;
  * one would otherwise put back what it let go of.
  */
 static atomic_uint s_lets_go;
+/*
+ * And how many times the supply's output has been asked off, for the same
+ * reason: an OFF is a flag as well as a queue entry, so an ON still behind it
+ * in the queue would otherwise switch the output back on.  See
+ * supply_service().
+ */
+static atomic_bool s_supply_off_request;
+static atomic_uint s_supply_offs;
+/*
+ * The supply's set points as the screen holds them, in mV and mA: a level the
+ * render loop stores every frame and the control task reads, not a queue
+ * entry.  A set point lost to an eviction would leave the screen showing one
+ * voltage and the supply holding another.  Stored before any command of the
+ * same frame is queued, so an ON taken from the queue is never applied ahead
+ * of the set points it was asked under.
+ */
+static atomic_uint s_supply_set_mv;
+static atomic_uint s_supply_set_ma;
+/*
+ * And the operator's limits, the same way: caps on the set points in mV and
+ * mA, the trips in mA and mV (0 is off) and the trip time in ms.  The screen
+ * already keeps its set points under the caps; the control task applies
+ * them again, because it is what the supply obeys.
+ */
+static atomic_uint s_supply_vmax_mv;
+static atomic_uint s_supply_imax_ma;
+static atomic_uint s_supply_trip_ma;
+static atomic_uint s_supply_trip_mv;
+static atomic_uint s_supply_trip_ms;
+/*
+ * The newest ON the render side has seen applied, from a frame that found
+ * the touch stream whole: the supply's counterpart of s_arm_ack.  See
+ * supply_watch_service().
+ */
+static atomic_uint s_supply_ack;
+/*
+ * Whether the output is on, stored by the control task the moment it
+ * switches, and the ONs the render side has queued against the ones the
+ * control task has taken (applied or dropped).  Together they say, at any
+ * moment of a frame, whether the output is live or about to be: the
+ * snapshot is a frame old, and an ON queued in this frame is in neither.
+ * See supply_live_or_coming().
+ */
+static atomic_bool s_supply_live;
+static atomic_uint s_supply_ons_sent;
+static atomic_uint s_supply_ons_taken;
 /*
  * The two touch queues, numbered.  See touch_loss.h for why numbers and not
  * counts: a count raised on one core after the eviction it reports can be
@@ -932,6 +992,10 @@ static void control_pump(void)
     /* And judged here, at the rate touch is judged: this runs inside the
      * link's wait, where arming_step() does not. */
     arming_touch_poll(&s_arm, now_ms());
+    /* And the supply: off at every stop counted above and at an OFF, and
+     * stepped on its own cadence.  It needs no link, so nothing here waits
+     * on it. */
+    supply_pump();
 
     /* The setting can change under this loop, and a ramp read once at
      * start-up would be the one the panel booted with.  The value read here
@@ -1477,17 +1541,34 @@ static bool bring_up(void)
  */
 
 /*
+ * A run is one arming of the bench, or one switch-on of the supply's output
+ * while the bench is not armed.  The bench takes the log: arming during a
+ * supply run ends that run, and a supply output still on at the disarm starts
+ * a run of its own.  One run is one file, and a file holds one kind of row,
+ * so its header names every column it has.
+ */
+typedef enum {
+    LOG_RUN_NONE = 0,
+    LOG_RUN_BENCH,
+    LOG_RUN_SUPPLY,
+} log_run_kind_t;
+
+/*
  * One sample on its way to the card, filled by the control task.
  *
- * It carries which arming it belongs to, because that is the only thing that
+ * It carries which run it belongs to, because that is the only thing that
  * says which file it goes in: a disarm and an arm inside one pass of the
  * logger would otherwise put two runs in one file, with a time column that
  * goes backwards halfway down.
  */
 typedef struct {
-    uint32_t      arm;
-    float         t_s;
-    bench_state_t bench;
+    uint32_t       run;
+    float          t_s;
+    log_run_kind_t kind;     /**< which of the two below */
+    union {
+        bench_state_t  bench;
+        supply_state_t supply;
+    } u;
 } log_row_t;
 
 /*
@@ -1523,55 +1604,55 @@ static QueueHandle_t s_log_q;    /**< control task -> logger, one row each */
 static QueueHandle_t s_note_q;   /**< control task -> logger, one line each */
 
 /*
- * Which arming is being recorded, or 0 for none.
+ * Which run is being recorded, or 0 for none.
  *
  * A level rather than a queued event, for the reason send_cmd() gives for the
  * disarm: a queue drops its oldest entry when it is full, and an arm or a
  * disarm that was dropped would lose a run or leave a file open across the
  * next one.  A number rather than a flag, so that two runs are two runs even
  * when the logger never saw the gap between them.  Written by the control
- * task on the arming edge, read by the logger; atomic because the two are
+ * task on a run's edges, read by the logger; atomic because the two are
  * different tasks and either can be preempted mid-word.  Both are pinned to
  * core 1, the control task at priority 10 and the logger at 3, so the
  * preemption that matters is the control task taking the core back.
  */
-static atomic_uint s_log_arm_now;
+static atomic_uint s_log_run_now;
 
 /*
  * The run's rows, counted by the task that posts them.
  *
- * Not shared with the logger, and not per arming in any table: the control
- * task is the one that drops a row, it is the one that knows which arming it
- * was dropping from, and it sees the disarm edge exactly.  Handing the count
- * across to be reported at the close instead needs a slot per arming in
+ * Not shared with the logger, and not per run in any table: the control
+ * task is the one that drops a row, it is the one that knows which run it
+ * was dropping from, and it sees the run's end exactly.  Handing the count
+ * across to be reported at the close instead needs a slot per run in
  * flight, and a stalled card is what puts three of them in flight -- the run
  * whose rows are still queued, and two the operator has run since.
  *
- * So the count is reported where it is kept, on the disarm edge.  The logger
+ * So the count is reported where it is kept, at the run's end.  The logger
  * reports what the logger knows: rows written, and a write that failed.
  */
 static uint32_t    s_log_run_lost;
 static uint32_t    s_log_run_sent;
 
-/* The control task's own: the arming it numbers rows with, and whether it
- * has seen the bank arm.  The counter never takes the value 0, because 0 is
- * what s_log_arm_now says for no run at all. */
-static uint32_t    s_log_arm_ctr;
-static bool        s_log_armed;
+/* The control task's own: the run it numbers rows with, and which kind of
+ * run it has seen start.  The counter never takes the value 0, because 0 is
+ * what s_log_run_now says for no run at all. */
+static uint32_t       s_log_run_ctr;
+static log_run_kind_t s_log_kind;
 
 /* The logger task's own, from here down: nothing else reads or writes them. */
 static FILE        *s_log_file;
 /*
- * Which arming this task has a run open for, or 0 for none.  Not the same
+ * Which run this task has a file open for, or 0 for none.  Not the same
  * question as whether a file is open: a card that is full or unwritable
  * leaves s_log_file NULL, and reading the run's existence off that pointer
- * would make every pass look like a fresh arm and run the whole file-name
- * scan again for as long as the bench stayed armed.  A failed open is a run
+ * would make every pass look like a fresh run and run the whole file-name
+ * scan again for as long as the run lasted.  A failed open is a run
  * without a log, not a retry.
  */
-static uint32_t     s_log_arm;
+static uint32_t     s_log_run_id;
 /*
- * Where the numbering got to.  One directory read at the first arming edge
+ * Where the numbering got to.  One directory read at the first run's start
  * puts it above every number the card already carries; after that it starts
  * from what it handed out last.
  */
@@ -1642,11 +1723,11 @@ static bool file_flush(void *ctx)
  * Every probe is a card transaction and the loop can make hundreds of them,
  * which is why the scan is here and not on the task that beats the safety
  * line.  It runs when the run's first row arrives, one sample interval
- * (50 ms) after the arm.
+ * (50 ms) after the arm or the supply's switch-on.
  */
-static void log_open(uint32_t arm)
+static void log_open(uint32_t run)
 {
-    s_log_arm         = arm;
+    s_log_run_id      = run;
     s_log_file        = NULL;
     s_log_last_row_ms = now_ms();
 
@@ -1654,7 +1735,7 @@ static void log_open(uint32_t arm)
      * Said, not swallowed, and said on the panel rather than to a console.
      *
      * A card that is not there when the run's first row arrives means this
-     * run is not recorded and nothing tries again until the next arm, so it
+     * run is not recorded and nothing tries again until the next run, so it
      * has to be visible: the panel's console is not reachable on every bench.
      */
     if (!storage_mounted()) {
@@ -1764,7 +1845,7 @@ static void log_open(uint32_t arm)
 
 static void log_close(void)
 {
-    s_log_arm = 0u;
+    s_log_run_id = 0u;
     if (s_log_file == NULL) {
         return;
     }
@@ -1775,7 +1856,7 @@ static void log_close(void)
         /* On the band as well as the console.  A write that failed mid-run
          * is the difference between an experiment and half of one, and the
          * operator at the bench has no console.  Dropped rows are the control
-         * task's to report; see log_follow_arming(). */
+         * task's to report; see log_follow_runs(). */
         control_alert("the card stopped taking rows -- the log is short");
     }
     /*
@@ -1844,27 +1925,27 @@ static void log_task(void *arg)
              == pdTRUE);
 
         /*
-         * A row belongs to the arming it was sampled in, and that is what
-         * decides its file.  A row for an arming this task has no file for
-         * ends the run it does have open and starts one for that arming --
+         * A row belongs to the run it was sampled in, and that is what
+         * decides its file.  A row for a run this task has no file for
+         * ends the run it does have open and starts one for that run --
          * which is what keeps two runs out of one file when the bench is
          * disarmed and armed again faster than a pass, whether or not this
          * task ever saw the level between them go down.
          *
-         * A file is opened by the first row and never by the arm, so a run
-         * that produces no row leaves no empty CSV (comma-separated values)
-         * file behind and costs the card nothing.
+         * A file is opened by the first row and never by the run's start, so
+         * a run that produces no row leaves no empty CSV (comma-separated
+         * values) file behind and costs the card nothing.
          */
-        if (got && row.arm != s_log_arm) {
-            if (s_log_arm != 0u) {
+        if (got && row.run != s_log_run_id) {
+            if (s_log_run_id != 0u) {
                 log_close();
             }
-            log_open(row.arm);
+            log_open(row.run);
         }
         /*
          * A failed write latches the writer and every later row is rejected,
-         * so the run stops being recorded at that point rather than at the
-         * disarm.  Said on the edge, so the operator can stop and see to the
+         * so the run stops being recorded at that point rather than at its
+         * end.  Said on the edge, so the operator can stop and see to the
          * card while the run still means something -- and the edge is taken
          * around both calls that can fail, because a run whose rows have
          * paused fails at the commit and would otherwise be latched before
@@ -1873,7 +1954,11 @@ static void log_task(void *arg)
         const bool was_failed = log_writer_failed(&s_log);
 
         if (got && s_log_file != NULL) {
-            (void)log_writer_row(&s_log, row.t_s, &row.bench);
+            if (row.kind == LOG_RUN_SUPPLY) {
+                (void)log_writer_supply_row(&s_log, row.t_s, &row.u.supply);
+            } else {
+                (void)log_writer_row(&s_log, row.t_s, &row.u.bench);
+            }
             s_log_last_row_ms = now_ms();
         }
 
@@ -1894,9 +1979,9 @@ static void log_task(void *arg)
         /*
          * And the end of the run, which is the only thing the level decides.
          * The close waits for the queue: the rows sampled in front of the
-         * disarm are still in it and they belong in this file.
+         * run's end are still in it and they belong in this file.
          */
-        if (s_log_arm != 0u && atomic_load(&s_log_arm_now) != s_log_arm
+        if (s_log_run_id != 0u && atomic_load(&s_log_run_now) != s_log_run_id
             && uxQueueMessagesWaiting(s_log_q) == 0u) {
             log_close();
         }
@@ -1917,13 +2002,13 @@ static void log_task(void *arg)
  * dropped, so what the file holds is the run up to the stall, and its time
  * column shows the gap.
  */
-static void log_post(float t_s, const bench_state_t *b)
+static void log_post(log_row_t *row)
 {
     if (s_log_q == NULL) {
         return;
     }
-    const log_row_t row = { .arm = s_log_arm_ctr, .t_s = t_s, .bench = *b };
-    if (xQueueSend(s_log_q, &row, 0) == pdTRUE) {
+    row->run = s_log_run_ctr;
+    if (xQueueSend(s_log_q, row, 0) == pdTRUE) {
         ++s_log_run_sent;
     } else {
         ++s_log_run_lost;
@@ -2688,6 +2773,275 @@ static bool read_bench(link_host_t *host, bench_state_t *out)
 
 /* --------------------------------------------------------- the control task */
 
+/* ------------------------------------------------------------- the supply */
+
+/*
+ * The programmable supply, as the panel's model of one.
+ *
+ * The PD mini's driver does not exist: its UART (universal asynchronous
+ * receiver-transmitter) protocol is not in this repository, and which board
+ * will talk to it is not decided.  Until then this task runs supply_sim_t in
+ * its place, so the screen, the log and the rules here are the ones a driver
+ * reports into.  Control task only, beside the bench, because every stop is
+ * seen here and a stop switches the output off whatever screen is up.
+ *
+ * s_supply_ms is when the totals last counted.  s_supply_fresh says the next
+ * reading starts the run's extremes: the output has just come on, and the
+ * reading in s_supply is still the one taken with it off.
+ */
+static supply_sim_t   s_supply_sim;
+static supply_state_t s_supply;
+static uint32_t       s_supply_ms;
+static bool           s_supply_fresh;
+/* The stop count the supply has answered; see supply_follow_stops(). */
+static uint32_t       s_supply_stops_served;
+/* The trips' time over their thresholds; see supply_trip_step(). */
+static supply_trip_t  s_supply_trip;
+/* When the supply was last stepped, on its own cadence; see supply_pump(). */
+static uint32_t       s_supply_step_ms;
+/*
+ * The ON in flight, watched as an arm is (s_arm_watch): a hold that completed
+ * on a contact whose events went missing is an ON the operator may not have
+ * made, and the render side can cancel only an ON it has not yet handed
+ * over.  s_supply_gen numbers the ONs applied; the snapshot carries it.
+ */
+static arm_watch_t    s_supply_watch;
+static uint32_t       s_supply_gen;
+
+/*
+ * The interval since the last step, up to now, on the reading that held
+ * through it: counted into the totals and, while a supply run is being
+ * logged, written as the run's last row, so the log ends on the totals the
+ * screen shows.  For the moments a supply run ends between two steps -- the
+ * output switched off, or the bench taking the log over.
+ */
+static void supply_log_tail(void)
+{
+    const uint32_t t = now_ms();
+    float dt = (float)(uint32_t)(t - s_supply_ms) / 1000.0f;
+    if (dt > BENCH_TOTALS_MAX_STEP_S) {
+        dt = BENCH_TOTALS_MAX_STEP_S;
+    }
+    supply_count_totals(&s_supply, dt);
+    s_supply_ms = t;
+    if (s_log_kind == LOG_RUN_SUPPLY) {
+        s_log_t += dt;
+        log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
+        row.u.supply = s_supply;
+        log_post(&row);
+    }
+}
+
+static void supply_switch(bool on)
+{
+    if (s_supply_sim.output == on) {
+        return;
+    }
+    if (!on) {
+        /* The run's last interval, before the output is marked off: an OFF
+         * taken inside an exchange's wait can end a second-long one. */
+        supply_log_tail();
+        arm_watch_end(&s_supply_watch);
+    }
+    supply_sim_output(&s_supply_sim, on);
+    s_supply.output = on;
+    atomic_store(&s_supply_live, on);
+    if (on) {
+        /* A run starts with nothing counted and nothing tripped. */
+        supply_reset_totals(&s_supply);
+        supply_trip_reset(&s_supply_trip);
+        s_supply.trip  = (uint8_t)SUPPLY_TRIP_NONE;
+        s_supply_ms    = now_ms();
+        s_supply_fresh = true;
+        /* And the step clock: the run's first step, and its first row's
+         * time, count from the switch-on and not from the last step taken
+         * with the output off. */
+        s_supply_step_ms = now_ms();
+    }
+}
+
+/* The operator's limits as the render side last stored them. */
+static supply_limits_t supply_limits_now(void)
+{
+    const supply_limits_t l = {
+        (float)atomic_load(&s_supply_vmax_mv) / 1000.0f,
+        (float)atomic_load(&s_supply_imax_ma) / 1000.0f,
+        (float)atomic_load(&s_supply_trip_ma) / 1000.0f,
+        (float)atomic_load(&s_supply_trip_mv) / 1000.0f,
+        (float)atomic_load(&s_supply_trip_ms) / 1000.0f,
+    };
+    return l;
+}
+
+/*
+ * Every stop switches the output off: STOP, touch that died, an arm the
+ * watch undid, the far end's refusal.  Called from control_pump(), which
+ * runs inside every exchange's wait, and again wherever the supply is
+ * stepped or switched, so a stop counted anywhere cuts the output before
+ * the next reading is taken or logged.
+ */
+static void supply_follow_stops(void)
+{
+    const uint32_t stops = arming_stop_count(&s_arm);
+    if (stops != s_supply_stops_served) {
+        s_supply_stops_served = stops;
+        supply_switch(false);
+    }
+}
+
+/* The set points the screen holds, applied when they change; see
+ * s_supply_set_mv.  Compared as stored, in mV and mA, because the supply
+ * snaps what it is given and a snapped value need not equal it. */
+static unsigned s_supply_set_mv_applied;
+static unsigned s_supply_set_ma_applied;
+
+static void supply_follow_set(void)
+{
+    unsigned mv = atomic_load(&s_supply_set_mv);
+    unsigned ma = atomic_load(&s_supply_set_ma);
+    /* Under the caps, whatever the screen sent: the screen keeps its set
+     * points under them already, and this is what the supply obeys. */
+    const unsigned vmax = atomic_load(&s_supply_vmax_mv);
+    const unsigned imax = atomic_load(&s_supply_imax_ma);
+    if (mv > vmax) {
+        mv = vmax;
+    }
+    if (ma > imax) {
+        ma = imax;
+    }
+    if (mv == s_supply_set_mv_applied && ma == s_supply_set_ma_applied) {
+        return;
+    }
+    s_supply_set_mv_applied = mv;
+    s_supply_set_ma_applied = ma;
+    supply_sim_set(&s_supply_sim, (float)mv / 1000.0f, (float)ma / 1000.0f);
+    s_supply.set_v = s_supply_sim.set_v;
+    s_supply.set_i = s_supply_sim.set_i;
+}
+
+/*
+ * An OFF asked for, whether or not its queue entry survived; applying it
+ * twice costs nothing.  Called before the drain, so an OFF is never left
+ * waiting behind the queue's backlog.  And the set points, every pass.
+ */
+static void supply_service(void)
+{
+    if (atomic_exchange(&s_supply_off_request, false)) {
+        supply_switch(false);
+    }
+    supply_follow_set();
+}
+
+/*
+ * What the supply screen asked for.  An ON completes a hold, so it goes the
+ * way an arm does: not past a stop, an OFF or a touch loss that came after
+ * the screen posted it, and watched after it is taken until the render side
+ * has seen the output on (supply_watch_service()).  The operator repeats the
+ * hold.
+ */
+static void apply_supply_cmd(const panel_cmd_t *pc)
+{
+    const supply_cmd_t *c = &pc->supply;
+    if (c->reset) {
+        supply_reset_peaks(&s_supply);
+    }
+    if (c->off) {
+        supply_switch(false);
+    } else if (c->on) {
+        /* The pump first, so a STOP or a loss still in the driver's queue
+         * is counted before the ON is judged against them. */
+        control_pump();
+        if (pc->stops == arming_stop_count(&s_arm)
+            && pc->supply_offs == atomic_load(&s_supply_offs)
+            && arm_watch_take_ok(pc->loss_gen, atomic_load(&s_loss_gen),
+                                 s_lost_notice_seq, pc->consumed_seq)) {
+            /* At the set points stored before this ON was queued. */
+            supply_follow_set();
+            supply_switch(true);
+            ++s_supply_gen;
+            arm_watch_begin(&s_supply_watch, pc->loss_gen,
+                            atomic_load(&s_drv_gaps), s_supply_gen);
+        }
+    }
+    if (c->on) {
+        /* Taken, whatever became of it, and only now: an applied ON has
+         * stored s_supply_live first, so supply_live_or_coming() never
+         * reads the gap between the two. */
+        atomic_fetch_add(&s_supply_ons_taken, 1u);
+    }
+}
+
+/* The supply as it is now, for the screen; the oldest sample goes when the
+ * queue is full, as the bench's do. */
+static void supply_queue_sample(void)
+{
+    if (xQueueSend(s_supply_q, &s_supply, 0) != pdTRUE) {
+        supply_state_t stale;
+        (void)xQueueReceive(s_supply_q, &stale, 0);
+        (void)xQueueSend(s_supply_q, &s_supply, 0);
+    }
+}
+
+/*
+ * One step of the supply at the sample cadence: its readings, the run's
+ * extremes and totals, and a sample for the screen.
+ */
+static void supply_step(float step_s)
+{
+    /* A stop counted outside the pump -- the far end's refusal, or STOP
+     * from the queue -- is answered before this reading is taken. */
+    supply_follow_stops();
+    supply_sim_step(&s_supply_sim, step_s, &s_supply);
+    /*
+     * A supply that stops answering takes its output with it, switched off
+     * here so that it does not come back on by itself when the supply
+     * answers again.  The model always answers; this is the rule a driver
+     * reports into.
+     */
+    if (!s_supply.online && s_supply_sim.output) {
+        supply_switch(false);
+        control_alert("supply not answering -- output off");
+    }
+    if (s_supply.output) {
+        if (s_supply_fresh) {
+            supply_reset_peaks(&s_supply);
+            s_supply_fresh = false;
+        } else {
+            supply_track_peaks(&s_supply);
+        }
+    }
+    /* The operator's trips, on this reading.  The output goes off and the
+     * trip stays on the MODE card until the output is switched on again. */
+    const supply_limits_t lim = supply_limits_now();
+    const supply_trip_kind_t trip =
+        supply_trip_step(&s_supply_trip, &lim, &s_supply, step_s);
+    if (trip != SUPPLY_TRIP_NONE) {
+        /* The reading that tripped, as it was taken -- on -- so the plot
+         * keeps it; the sample after the switch-off ends the run. */
+        supply_queue_sample();
+        supply_switch(false);
+        s_supply.trip = (uint8_t)trip;
+        /* In integers: this can run inside an exchange's wait, deep on the
+         * control task's stack, and a float conversion is the deepest thing
+         * snprintf does. */
+        /* The threshold the trip was judged against, from the same
+         * snapshot, not one an edit may have stored since. */
+        const unsigned milli = (unsigned)lroundf(
+            ((trip == SUPPLY_TRIP_CURRENT) ? lim.trip_i : lim.trip_v)
+            * 1000.0f);
+        char line[ALERT_MAX];
+        snprintf(line, sizeof(line), "supply tripped over %u.%02u %s -- "
+                 "output off", milli / 1000u, (milli % 1000u) / 10u,
+                 (trip == SUPPLY_TRIP_CURRENT) ? "A" : "V");
+        control_alert(line);
+    }
+    /* Over the time that passed, measured, as the bench's totals are. */
+    const uint32_t t = now_ms();
+    supply_count_totals(&s_supply, (float)(uint32_t)(t - s_supply_ms) / 1000.0f);
+    s_supply_ms = t;
+    supply_queue_sample();
+}
+
 /*
  * The bench's own state, before the loop that maintains it.
  *
@@ -2714,6 +3068,11 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     (void)outputs_set_slew(&s_out, PANEL_CH_THROTTLE, panel_throttle_ramp());
     arming_init(&s_arm, now_ms(),
                 HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS + HEARTBEAT_PERIOD_MS);
+    /* The supply starts switched off, its readings those of an off output. */
+    supply_sim_init(&s_supply_sim);
+    supply_sim_step(&s_supply_sim, 0.0f, &s_supply);
+    s_supply_ms      = now_ms();
+    s_supply_step_ms = now_ms();
     s_pump_live = true;
 }
 
@@ -2765,6 +3124,10 @@ static void arm_watch_service(bool link_up)
     if (arm_watch_lost(&s_arm_watch, atomic_load(&s_loss_gen),
                        atomic_load(&s_drv_gaps), atomic_load(&s_arm_ack))) {
         (void)disarm_here(link_up);
+        /* A disarm counts no stop, so the supply is cut here as well: an
+         * arm the watch undid is a stop to the supply wherever it is found
+         * (control_pump() finds it by arming_stop()). */
+        supply_switch(false);
         control_alert("touch lost while arming -- arm again");
     }
 }
@@ -2859,6 +3222,7 @@ static void service_arming(bool link_up)
         throttle_to_zero();
         servo_let_go();
     }
+    supply_follow_stops();
 
     /*
      * One place decides, and it is the one under test.  A disarm here is the
@@ -3453,6 +3817,14 @@ static void drain_commands(bool link_up, bench_state_t *bench)
          * exchanges and a disarm asked for during it must not wait them out.
          */
         service_disarm(link_up);
+        supply_service();
+
+        /* The supply is the panel's own and touches no link; its ON carries
+         * its own checks.  See apply_supply_cmd(). */
+        if (pc.kind == PANEL_CMD_SUPPLY) {
+            apply_supply_cmd(&pc);
+            continue;
+        }
 
         /*
          * Nothing asked for before a stop drives anything after it.
@@ -3554,20 +3926,37 @@ static void drain_commands(bool link_up, bench_state_t *bench)
 }
 
 /*
- * A run is one arming: the log opens when the bank arms and closes when it
- * disarms.  s_log_armed is the record of which of the two happened last, and
- * s_log_arm_now is the level the logger follows; nothing here opens or
- * writes a file.
+ * Which run the log should be recording now; see log_run_kind_t.  The bench
+ * comes first: an armed bench is the run whatever the supply is doing.
  */
-static void log_follow_arming(void)
+static log_run_kind_t log_run_wanted(void)
 {
-    const bool armed_now = outputs_armed(&s_out);
-    if (armed_now == s_log_armed) {
+    if (outputs_armed(&s_out)) {
+        return LOG_RUN_BENCH;
+    }
+    return s_supply.output ? LOG_RUN_SUPPLY : LOG_RUN_NONE;
+}
+
+/*
+ * A run's start and end: the log opens when the bank arms or the supply's
+ * output comes on, and closes when that ends.  s_log_kind is the record of
+ * which run started last, and s_log_run_now is the level the logger follows;
+ * nothing here opens or writes a file.  A change from one kind to the other
+ * is an end and a start in the same call, so the two land in two files.
+ */
+static void log_follow_runs(void)
+{
+    const log_run_kind_t wanted = log_run_wanted();
+    if (wanted == s_log_kind) {
         return;
     }
-    s_log_armed = armed_now;
-    if (!armed_now) {
-        atomic_store(&s_log_arm_now, 0u);
+    if (s_log_kind == LOG_RUN_SUPPLY && s_supply.output) {
+        /* The bench takes the log from a supply that stays on: the supply
+         * run's file ends on its totals up to now. */
+        supply_log_tail();
+    }
+    if (s_log_kind != LOG_RUN_NONE) {
+        atomic_store(&s_log_run_now, 0u);
         /*
          * The run's rows, answered here because the run has just ended and
          * this task has both numbers.  Every row of a run is posted between
@@ -3585,18 +3974,97 @@ static void log_follow_arming(void)
         } else if (s_log_run_lost > 0u) {
             control_alert("the card fell behind -- the log has gaps");
         }
+    }
+    s_log_kind = wanted;
+    if (wanted == LOG_RUN_NONE) {
         return;
+    }
+    if (wanted == LOG_RUN_SUPPLY) {
+        /* The run's first row counts from here, not from the last supply
+         * step, which a bench run that has just ended may have taken. */
+        s_supply_step_ms = now_ms();
     }
     /* The run's clock, its row counts and its number, all set before the
      * level goes up so the logger cannot see a run half started.  Zero means
-     * no run, so the count skips it on the one wrap in 2^32 arms. */
+     * no run, so the count skips it on the one wrap in 2^32 runs. */
     s_log_t = 0.0f;
     s_log_run_lost = 0u;
     s_log_run_sent = 0u;
-    if (++s_log_arm_ctr == 0u) {
-        s_log_arm_ctr = 1u;
+    if (++s_log_run_ctr == 0u) {
+        s_log_run_ctr = 1u;
     }
-    atomic_store(&s_log_arm_now, s_log_arm_ctr);
+    atomic_store(&s_log_run_now, s_log_run_ctr);
+}
+
+/*
+ * The ON in flight, against the touch stream: the arm watch's rules on the
+ * supply's output.  Until the render side has acknowledged this ON from a
+ * frame that began with the output on and found the stream whole, a loss of
+ * either kind switches the output off again.
+ */
+static void supply_watch_service(void)
+{
+    if (!s_supply.output) {
+        arm_watch_end(&s_supply_watch);
+        return;
+    }
+    if (arm_watch_lost(&s_supply_watch, atomic_load(&s_loss_gen),
+                       atomic_load(&s_drv_gaps), atomic_load(&s_supply_ack))) {
+        supply_switch(false);
+        control_alert("touch lost while switching on -- output off");
+    }
+}
+
+/*
+ * The supply, from control_pump(): at the top of every pass and inside every
+ * exchange's wait, which can last LINK_HOST_TIMEOUT_MS (1000 ms) a time.  A
+ * stop, an OFF and a touch loss cut the output here, and the supply is
+ * stepped, logged and published every 1/PANEL_SAMPLE_HZ whatever the link is
+ * doing -- the supply is the panel's own and an unanswered coprocessor is
+ * no reason for its plot or its log to thin out.
+ */
+static void supply_pump(void)
+{
+    /* The cuts first -- a stop, then a lost ON -- and only then the set
+     * points, so a level stored after a touch loss never reaches an output
+     * that loss is about to switch off. */
+    supply_follow_stops();
+    supply_watch_service();
+    supply_service();
+
+    const uint32_t since = (uint32_t)(now_ms() - s_supply_step_ms);
+    if (since < (uint32_t)(1000.0f / PANEL_SAMPLE_HZ)) {
+        return;
+    }
+    s_supply_step_ms = now_ms();
+    float step_s = (float)since / 1000.0f;
+    if (step_s > BENCH_TOTALS_MAX_STEP_S) {
+        step_s = BENCH_TOTALS_MAX_STEP_S;
+    }
+    /*
+     * The run's edges before the step, so a bench taking the log over ends
+     * the supply's file on the interval up to now, and this step's row is
+     * the new run's.  Never the end of a bench run: that is the outer
+     * loop's, after the pass's bench sample is logged, as it always was.
+     */
+    if (s_log_kind != LOG_RUN_BENCH) {
+        log_follow_runs();
+    }
+    supply_step(step_s);
+
+    /* Not after a trip or a lost supply in this step: the switch-off wrote
+     * the run's last row already, and the run ends at the next edge. */
+    if (s_log_kind == LOG_RUN_SUPPLY && s_supply.output) {
+        s_log_t += step_s;
+        log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
+        row.u.supply = s_supply;
+        log_post(&row);
+    }
+
+    snap_lock();
+    s_snap.supply     = s_supply;
+    s_snap.supply_gen = s_supply_gen;
+    snap_unlock();
 }
 
 /*
@@ -4090,9 +4558,12 @@ static void advance_model_and_log(bool link_up, float emitted,
      * coprocessor's own empty registers over the totals.
      */
     bench_totals_show(&s_totals, bench);
-    if (due && *new_sample && s_log_armed) {
+    /* A supply run's rows are supply_pump()'s, on the supply's cadence. */
+    if (due && *new_sample && s_log_kind == LOG_RUN_BENCH) {
         s_log_t += step_s;
-        log_post(s_log_t, bench);
+        log_row_t row = { .kind = LOG_RUN_BENCH, .t_s = s_log_t };
+        row.u.bench = *bench;
+        log_post(&row);
     }
 }
 
@@ -4105,6 +4576,8 @@ static void publish_snapshot(const bench_state_t *bench, bool link_up,
 {
     snap_lock();
     s_snap.bench       = *bench;
+    s_snap.supply      = s_supply;
+    s_snap.supply_gen  = s_supply_gen;
     s_snap.link_up     = link_up;
     s_snap.armed       = outputs_armed(&s_out);
     s_snap.arm_gen     = s_arm_gen;
@@ -4171,12 +4644,13 @@ static void control_task(void *arg)
          * can be served first without an older arm undoing it.
          */
         service_arming(link_up);
+        supply_service();
 
         drain_commands(link_up, &bench);
         (void)outputs_keepalive(&s_out, PANEL_CH_THROTTLE, now_ms());
         servo_service(link_up);
 
-        log_follow_arming();
+        log_follow_runs();
 
         const float emitted =
             (float)outputs_actual(&s_out, PANEL_CH_THROTTLE) * 100.0f
@@ -4267,13 +4741,22 @@ static void send_cmd(const panel_cmd_t *pc)
          */
         atomic_fetch_add(&s_lets_go, 1u);
         atomic_store(&s_servo_release_request, true);
+    } else if (pc->kind == PANEL_CMD_SUPPLY && pc->supply.off) {
+        /* The supply's OFF, for the same reason as the disarm. */
+        atomic_fetch_add(&s_supply_offs, 1u);
+        atomic_store(&s_supply_off_request, true);
     }
 
     if (xQueueSend(s_cmd_q, pc, pdMS_TO_TICKS(5)) == pdTRUE) {
         return;
     }
     panel_cmd_t stale;
-    (void)xQueueReceive(s_cmd_q, &stale, 0);
+    if (xQueueReceive(s_cmd_q, &stale, 0) == pdTRUE
+        && stale.kind == PANEL_CMD_SUPPLY && stale.supply.on) {
+        /* An ON the control task will never see is one it will never take
+         * either; counted here, so nothing waits on it for ever. */
+        atomic_fetch_add(&s_supply_ons_taken, 1u);
+    }
     if (xQueueSend(s_cmd_q, pc, 0) != pdTRUE) {
         ESP_LOGW(TAG, "control queue full; a command was lost");
     }
@@ -4285,6 +4768,39 @@ static void send_cmd(const panel_cmd_t *pc)
  */
 static touch_seq_rx_t s_tq_rx = { .next = 1u };    /* touch_seq_rx_init() */
 static unsigned       s_tq_lost;
+
+/*
+ * Whether the supply's output is on, or an ON for it is queued and not yet
+ * taken.  Read at the moment it is asked, from what the control task stores
+ * when it switches, so an ON queued earlier in this frame counts.
+ */
+static bool supply_live_or_coming(void)
+{
+    /* The counters before the flag.  The control task stores the flag
+     * before it counts an ON taken, so read in this order there is no
+     * moment at which both say nothing is coming while the output is on. */
+    const bool coming = atomic_load(&s_supply_ons_taken)
+                        != atomic_load(&s_supply_ons_sent);
+    return coming || atomic_load(&s_supply_live);
+}
+
+/*
+ * The supply screen's limits and set points, as the levels the control task
+ * reads.  Every frame, from the render loop that owns the screen.
+ */
+static void publish_supply_levels(void)
+{
+    const supply_limits_t lim = supply_screen_limits();
+    atomic_store(&s_supply_vmax_mv, (unsigned)lroundf(lim.v_max * 1000.0f));
+    atomic_store(&s_supply_imax_ma, (unsigned)lroundf(lim.i_max * 1000.0f));
+    atomic_store(&s_supply_trip_ma, (unsigned)lroundf(lim.trip_i * 1000.0f));
+    atomic_store(&s_supply_trip_mv, (unsigned)lroundf(lim.trip_v * 1000.0f));
+    atomic_store(&s_supply_trip_ms, (unsigned)lroundf(lim.trip_s * 1000.0f));
+    atomic_store(&s_supply_set_mv,
+                 (unsigned)lroundf(supply_screen_set_v() * 1000.0f));
+    atomic_store(&s_supply_set_ma,
+                 (unsigned)lroundf(supply_screen_set_i() * 1000.0f));
+}
 
 /*
  * Stamped with what this loop knows of the touch stream as it queues the
@@ -4310,6 +4826,21 @@ static void flush_screen_commands(uint32_t stops_now)
         panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
                            .stops = stops_now,
                            .lets_go = atomic_load(&s_lets_go),
+                           .loss_gen = loss_gen,
+                           .consumed_seq = consumed };
+        send_cmd(&pc);
+    }
+    /* The limits and the set points first, as levels; see
+     * s_supply_set_mv. */
+    publish_supply_levels();
+    supply_cmd_t sc;
+    if (supply_screen_poll_cmd(&sc)) {
+        if (sc.on) {
+            atomic_fetch_add(&s_supply_ons_sent, 1u);
+        }
+        panel_cmd_t pc = { .kind = PANEL_CMD_SUPPLY, .supply = sc,
+                           .stops = stops_now,
+                           .supply_offs = atomic_load(&s_supply_offs),
                            .loss_gen = loss_gen,
                            .consumed_seq = consumed };
         send_cmd(&pc);
@@ -4460,12 +4991,23 @@ void app_main(void)
      */
     picker_screen_set_apply(outputs_apply);
     picker_screen_set_artwork_source(art_for_picker);
+    /* The supply screen shows the panel's model, and the range a PPS
+     * (Programmable Power Supply) source offers; see supply.h. */
+    const supply_caps_t supply_caps = SUPPLY_CAPS_PPS_DEFAULT;
+    supply_screen_set_caps(&supply_caps);
+    supply_screen_set_model(true);
 
     const bool healthy = bring_up();
+    /* The settings are loaded now: the supply screen takes its limits and
+     * starts its set points from them, and both reach the control task's
+     * levels before that task exists. */
+    supply_screen_settings_loaded();
+    publish_supply_levels();
 
     s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_item_t));
     s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));
     s_sample_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(bench_state_t));
+    s_supply_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(supply_state_t));
     s_log_q     = xQueueCreate(LOG_Q_LEN, sizeof(log_row_t));
     s_note_q    = xQueueCreate(LOG_NOTE_Q_LEN, LOG_NOTE_MAX);
     s_snap_lock = xSemaphoreCreateMutex();
@@ -4473,7 +5015,8 @@ void app_main(void)
      * "--" until the control task has published one. */
     s_snap.mcu_temp_c = NAN;
     ESP_ERROR_CHECK((s_touch_q != NULL && s_cmd_q != NULL
-                     && s_sample_q != NULL && s_log_q != NULL
+                     && s_sample_q != NULL && s_supply_q != NULL
+                     && s_log_q != NULL
                      && s_note_q != NULL && s_snap_lock != NULL)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
@@ -4518,12 +5061,16 @@ void app_main(void)
          * screen showing nothing driven while the panel held one.
          */
         bool     armed_now;
+        bool     supply_now;
+        uint32_t supply_gen_now;
         uint32_t stops_now;
         uint32_t arm_gen_now;
         snap_lock();
-        armed_now   = s_snap.armed;
-        stops_now   = s_snap.stops;
-        arm_gen_now = s_snap.arm_gen;
+        armed_now      = s_snap.armed;
+        supply_now     = s_snap.supply.output;
+        supply_gen_now = s_snap.supply_gen;
+        stops_now      = s_snap.stops;
+        arm_gen_now    = s_snap.arm_gen;
         snap_unlock();
         /* Whether this frame found the touch stream broken; an arm is
          * acknowledged only by a frame that did not.  See the end of the
@@ -4543,6 +5090,7 @@ void app_main(void)
         if (stops_now != last_stops) {
             motor_screen_cancel_arm();
             servo_screen_cancel_arm();
+            supply_screen_cancel_on();
         }
         last_stops = stops_now;
 
@@ -4596,6 +5144,22 @@ void app_main(void)
         }
         servo_screen_set_armed(armed_now);
 
+        /*
+         * The supply's run, bounded by each sample's own output: a sample
+         * taken with it on starts or continues the run, one taken with it
+         * off ends it before its readings are shown.  The snapshot's edge
+         * cannot place them, because the control task steps the supply
+         * inside an exchange's wait and publishes the snapshot only after.
+         * supply_seen is the output the newest sample reported.
+         */
+        static bool supply_seen;
+        supply_state_t sup;
+        while (xQueueReceive(s_supply_q, &sup, 0) == pdTRUE) {
+            supply_screen_set_output(sup.output);
+            supply_screen_push(&sup);
+            supply_seen = sup.output;
+        }
+
         if (drain_touch(stops_now)) {
             frame_lost = true;
         }
@@ -4644,6 +5208,9 @@ void app_main(void)
             (outputs_result_t)atomic_load(&s_outputs_result));
 
         flush_screen_commands(stops_now);
+        /* An ON the supply screen sent and the control task dropped -- stale,
+         * or lost to a full queue -- stops counting as live there. */
+        supply_screen_set_on_coming(supply_live_or_coming());
         /*
          * Whether a STOP is on screen to press.  The control task hit-tests
          * the band's rectangle and cannot see which screen is up.
@@ -4726,7 +5293,10 @@ void app_main(void)
          * Never while armed.  This screen carries no band and therefore no
          * STOP, and a bench with something spinning must not have its stop
          * button covered by a diagnosis.  Armed, the alert band already says
-         * the link is gone, and the screen waits for the disarm.
+         * the link is gone, and the screen waits for the disarm.  Nor while
+         * the supply's output is on, by the snapshot or by the newest
+         * sample: the supply does not need the link, and STOP and OUTPUT
+         * OFF stay on screen for as long as it is live.
          *
          * The timestamp is read once and tested twice.  The control task
          * clears it on the other core the moment the link answers, and a
@@ -4735,10 +5305,20 @@ void app_main(void)
          * passes, and the screen takes over on a link that is up.
          */
         const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
-        if (!armed && lost_ms != 0u && !s_link_lost_shown
+        if (!armed && !supply_now && !supply_seen && !supply_live_or_coming()
+            && lost_ms != 0u && !s_link_lost_shown
             && (uint32_t)(now_ms() - lost_ms) >= LINK_LOST_SCREEN_MS
             && ui_router_current() != SCREEN_SPLASH
             && ui_router_current() != SCREEN_BUSFAULT) {
+            /*
+             * The screen has no STOP, so it opens on a supply that is off
+             * and stays off: an ON this frame already queued, which the
+             * snapshot read above cannot show, is cancelled the way OUTPUT
+             * OFF cancels one -- the count it carries goes stale, and the
+             * flag switches it off again should it have been applied.
+             */
+            atomic_fetch_add(&s_supply_offs, 1u);
+            atomic_store(&s_supply_off_request, true);
             busfault_report_t r;
             link_lost_report(&r);
             busfault_screen_set(&r);
@@ -4771,6 +5351,10 @@ void app_main(void)
         if (armed_now && !frame_lost) {
             atomic_store(&s_arm_ack, arm_gen_now);
         }
+        /* And the supply's ON the same way; see supply_watch_service(). */
+        if (supply_now && !frame_lost) {
+            atomic_store(&s_supply_ack, supply_gen_now);
+        }
 
         /*
          * The save the settings screen asked for, taken at a moment that can
@@ -4783,13 +5367,16 @@ void app_main(void)
          * is armed -- the control task beats the safety line and its ceiling
          * is HEARTBEAT_MAX_GAP_MS (150 ms) -- or while the board's
          * photograph is being fetched or written, which is a quarter of a
-         * megabyte already spoken for.
+         * megabyte already spoken for.  Nor while the supply's output is on:
+         * OUTPUT OFF, STOP and the trips are the control task's, and a flash
+         * write would stall them for its length.
          *
          * Waiting costs nothing.  The request stands until a quiet frame
          * comes, and disarmed -- which is where the settings screen is used
          * -- the next frame is one.
          */
-        (void)settings_save_tick(!armed && !s_artbusy && !s_keeping);
+        (void)settings_save_tick(!armed && !supply_live_or_coming()
+                                 && !s_artbusy && !s_keeping);
         /* And the ramp, from the task that owns the values, for the control
          * task to read on its next pump. */
         publish_throttle_ramp();

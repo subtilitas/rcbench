@@ -27,6 +27,10 @@ static const char *const k_theme[]     = { "DARK", "LIGHT" };
 static const char *const k_language[]  = { "ENGLISH", "DEUTSCH" };
 static const char *const k_units[]     = { "METRIC", "IMPERIAL" };
 static const char *const k_ina_addr[]  = { "0x40", "0x41", "0x44", "0x45" };
+/* The PD mini's own UART Baudrate setting, 0 to 6, in its order. */
+static const char *const k_pdmini_baud[] = {
+    "9600", "19200", "38400", "57600", "115200", "230400", "460800",
+};
 
 #define ENUM_OPTS(a) .options = (a), .option_count = (uint8_t)(sizeof(a) / sizeof((a)[0]))
 
@@ -105,10 +109,64 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_I2C_KHZ] = {
         "i2c_khz", "I2C speed", "Shared with the touch controller", "kHz",
         SET_CAT_IFACE, SET_TYPE_INT, 100, 400, 100, 400, NULL, 0 },
+    /*
+     * The PD mini's UART: the module's DM is its RX and DP its TX, at 3.3 V.
+     * Stored for a driver to read; no PD mini driver exists, so nothing
+     * reads them.  The pins are -1 until the module is wired.
+     */
+    [SET_PDMINI_EN] = {
+        "pdm_en", "PD mini", "Programmable supply on a UART", "",
+        SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    [SET_PDMINI_TX] = {
+        "pdm_tx", "PD mini TX", "Our TX, to the module's DM; -1 until wired", "GPIO",
+        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, -1, NULL, 0 },
+    [SET_PDMINI_RX] = {
+        "pdm_rx", "PD mini RX", "Our RX, from the module's DP; -1 until wired", "GPIO",
+        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, -1, NULL, 0 },
+    [SET_PDMINI_BAUD] = {
+        "pdm_baud", "PD mini baud", "The module's UART Baudrate setting", "",
+        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 1, ENUM_OPTS(k_pdmini_baud) },
+
+    /*
+     * The supply's.  The ranges are a USB-PD PPS (Programmable Power Supply)
+     * source's widest profile, SUPPLY_CAPS_PPS_DEFAULT; a supply that offers
+     * less narrows them again where they are used.  The caps default to the
+     * whole range and the trips to off, so nothing is limited until the
+     * operator limits it; the start set points are a servo rail's.
+     */
+    [SET_SUPPLY_V_MAX] = {
+        "sup_v_max", "Voltage max", "The highest voltage a set point takes", "V",
+        SET_CAT_SUPPLY, SET_TYPE_FLOAT, 3.3f, 21.0f, 0.02f, 21.0f, NULL, 0 },
+    [SET_SUPPLY_I_MAX] = {
+        "sup_i_max", "Current max", "The highest current limit a set point takes", "A",
+        SET_CAT_SUPPLY, SET_TYPE_FLOAT, 0.5f, 5.0f, 0.05f, 5.0f, NULL, 0 },
+    [SET_SUPPLY_V_START] = {
+        "sup_v_start", "Start voltage", "The voltage set point after a restart", "V",
+        SET_CAT_SUPPLY, SET_TYPE_FLOAT, 3.3f, 21.0f, 0.02f, 6.0f, NULL, 0 },
+    [SET_SUPPLY_I_START] = {
+        "sup_i_start", "Start current", "The current limit after a restart", "A",
+        SET_CAT_SUPPLY, SET_TYPE_FLOAT, 0.5f, 5.0f, 0.05f, 2.0f, NULL, 0 },
+    [SET_SUPPLY_TRIP_I] = {
+        "sup_trip_i", "Current trip", "Output off above this current; 0 is off", "A",
+        SET_CAT_SUPPLY, SET_TYPE_FLOAT, 0.0f, 5.0f, 0.05f, 0.0f, NULL, 0 },
+    [SET_SUPPLY_TRIP_V] = {
+        "sup_trip_v", "Voltage trip", "Output off above this voltage; 0 is off", "V",
+        SET_CAT_SUPPLY, SET_TYPE_FLOAT, 0.0f, 21.0f, 0.02f, 0.0f, NULL, 0 },
+    [SET_SUPPLY_TRIP_MS] = {
+        "sup_trip_ms", "Trip time", "How long over before a trip", "ms",
+        SET_CAT_SUPPLY, SET_TYPE_INT, 0, 5000, 10, 100, NULL, 0 },
+    /* Whether a set point changed while the output is on waits for a
+     * confirmation: from the slider and its steps, and from the keypad. */
+    [SET_SUPPLY_CONFIRM_SLIDE] = {
+        "sup_conf_sl", "Confirm slider", "Ask before the slider changes a live output", "",
+        SET_CAT_SUPPLY, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
+    [SET_SUPPLY_CONFIRM_KEYS] = {
+        "sup_conf_kp", "Confirm keypad", "Ask before the keypad changes a live output", "",
+        SET_CAT_SUPPLY, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
 };
 
 static const char *const k_cat_names[SET_CAT_COUNT] = {
-    "ESC / BENCH", "APPLICATION", "INTERFACES",
+    "ESC / BENCH", "APPLICATION", "INTERFACES", "SUPPLY",
 };
 
 static struct {
@@ -255,6 +313,7 @@ void settings_init(void)
     }
     s.dirty = false;
     s.save_failed = false;
+    s.save_asked = false;   /* what is loaded is what is kept */
 
     if (s.observer) {
         for (int i = 0; i < SETTING_COUNT; ++i) {

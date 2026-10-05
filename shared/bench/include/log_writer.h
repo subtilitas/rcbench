@@ -15,6 +15,7 @@
 #include <stdint.h>
 
 #include "bench_state.h"
+#include "supply.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -101,6 +102,19 @@ bool log_writer_header(log_writer_t *w);
  * value and a time that only ever increases by 1/PANEL_SAMPLE_HZ.
  */
 bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b);
+
+/**
+ * Append one supply sample, for a run that is the supply's output being on.
+ *
+ * The file's first row writes the supply header -- time; set (V);
+ * voltage (V); limit (A); current (A); power (W); mode; charge (mAh);
+ * energy (Wh) -- so a file is one kind or the other and the caller keeps it
+ * so.  Readings that did not arrive, and totals nothing counted, are empty
+ * cells; the mode is CV, CC or OFF, and empty while the supply does not
+ * answer.  Same returns, commits and latch as log_writer_row().
+ */
+bool log_writer_supply_row(log_writer_t *w, float t_s,
+                           const supply_state_t *s);
 
 /**
  * Commit the rows written since the last commit.

@@ -15,6 +15,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "gfx.h"
 
@@ -34,6 +35,14 @@ typedef struct {
     /** Lower bound of the autorange: a 0 to 0.4 A scale on an idle bench
      *  draws noise at full height. */
     float       floor;
+    /**
+     * 0 for a series with a scale of its own.  1 + the index of another
+     * series for one drawn on that series' scale: a set point beside its
+     * reading.  Such a follower is drawn dashed, takes no legend entry, is
+     * hidden with its leader, and its samples count in the leader's
+     * autorange, so it is never drawn off the top of the plot.
+     */
+    uint8_t     follows;
 } ui_plot_series_t;
 
 typedef struct {
@@ -98,6 +107,7 @@ void ui_plot_init(ui_plot_t *p, const ui_plot_series_t *series, int count,
                   float span_s);
 
 /** Push one sample per series, newest last.  @p values must have `count`.
+ *  A non-finite value is a gap: not drawn and not in the autorange.
  *  A stopped plot counts the call and drops the sample. */
 void ui_plot_push(ui_plot_t *p, const float *values);
 
@@ -114,7 +124,8 @@ void ui_plot_set_running(ui_plot_t *p, bool running);
  *  the time base, the focus and what is hidden. */
 void ui_plot_clear(ui_plot_t *p);
 
-/** Newest is @p back = 0.  Returns 0 for samples that have not arrived. */
+/** Newest is @p back = 0.  Returns 0 for samples that have not arrived, and
+ *  not-a-number for a gap pushed as a non-finite value. */
 float ui_plot_sample(const ui_plot_t *p, int series, int back);
 
 /**

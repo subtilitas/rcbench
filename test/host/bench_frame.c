@@ -13,6 +13,8 @@
  *   overview  the menu, whose tiles are chrome and are never in a frame
  *   servo     the servo card, whose arm and grip are drawn from coverage
  *   servo-grip  the same, repainting only the breathing grip
+ *   supply    the supply screen with its output on, a sample every frame
+ *   supply-chrome  the same, repainted in full every frame
  *   sim       the same steady state with the SIMULATION watermark over it,
  *             the only mode that blends rather than writes
  *   frame-idle the bench between samples: the panel refreshes at 39 Hz and
@@ -35,6 +37,8 @@
 #include "overview_screen.h"
 #include "servo_screen.h"
 #include "splash_screen.h"
+#include "supply.h"
+#include "supply_screen.h"
 #include "stub_screen.h"
 #include "telemetry_sim.h"
 #include "ui_screen.h"
@@ -106,9 +110,14 @@ int main(int argc, char **argv)
     }
 
     const bool servo = (strncmp(mode, "servo", 5) == 0);
+    const bool supply = (strncmp(mode, "supply", 6) == 0);
     ui_screen_id_t start = SCREEN_MOTOR;
     if (strcmp(mode, "overview") == 0) {
         start = SCREEN_OVERVIEW;
+    } else if (supply) {
+        start = SCREEN_SUPPLY;
+        supply_screen_set_model(true);
+        supply_screen_set_output(true);
     } else if (servo) {
         start = SCREEN_SERVO;
         servo_screen_set_commanded(38.0f);
@@ -165,6 +174,12 @@ int main(int argc, char **argv)
     telemetry_sim_init(&sim, NULL);
     const bool feed = (strcmp(mode, "frame-idle") != 0);
 
+    supply_sim_t   sup_sim;
+    supply_state_t sup;
+    memset(&sup, 0, sizeof(sup));
+    supply_sim_init(&sup_sim);
+    supply_sim_output(&sup_sim, true);
+
     /*
      * "held" measures the frame between two runs, so the run has to be over
      * before the first measured frame.  It is filled and ended here rather
@@ -201,6 +216,18 @@ int main(int argc, char **argv)
                 servo_screen_set_commanded(38.0f + (float)((i % 20) - 10));
             }
             servo_screen_feedback(servo_screen_commanded(), 0.4f, true);
+            ui_router_tick(0.026f);
+            ui_router_render(&c, i & 1);
+            continue;
+        }
+        if (supply) {
+            /* A sample every frame is the plot's worst case, as `frame` is
+             * the motor bench's. */
+            supply_sim_step(&sup_sim, 0.05f, &sup);
+            supply_screen_push(&sup);
+            if (strcmp(mode, "supply-chrome") == 0) {
+                ui_router_invalidate();
+            }
             ui_router_tick(0.026f);
             ui_router_render(&c, i & 1);
             continue;

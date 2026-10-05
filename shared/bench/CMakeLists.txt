@@ -10,6 +10,7 @@ set(SRCS
     bench_state.c
     telemetry_sim.c
     log_writer.c
+    supply.c
 )
 
 if(ESP_PLATFORM)

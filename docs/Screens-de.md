@@ -31,7 +31,8 @@ ARM sitzt unten auf einem Prüfstandsbildschirm; STOP sitzt oben im Band.
 
 Die Marke wird aus den Capability-Bits abgeleitet, die der Koprozessor beim
 Hochfahren meldet. Ein Bildschirm ohne seine Hardware öffnet trotzdem und
-arbeitet aus dem Modell.
+arbeitet aus dem Modell. SUPPLY trägt MODELLED unabhängig davon, was der
+Koprozessor meldet: einen Treiber für seine Hardware gibt es nicht.
 
 Das Menü im hellen Theme:
 
@@ -199,6 +200,156 @@ Bildschirms schaltet unscharf und gibt den Pin frei: ein Bildschirm, den man
 nicht sieht, darf weder ein Servo halten noch den Prüfstand scharf
 zurücklassen.
 
+## Netzteil
+
+![Netzteil](img/supply.png)
+
+Stellt ein programmierbares Netzteil ein, schaltet es und zeichnet es auf: den
+PD mini, einen USB-PD-Trigger (USB Power Delivery), der über einen UART
+(Universal Asynchronous Receiver-Transmitter) gesteuert wird. Einen Treiber
+für den PD mini gibt es nicht, weil sein UART-Protokoll nicht in diesem
+Repository liegt. Das Panel rechnet an seiner Stelle ein Modell eines
+Netzteils: die Kopfzeile sagt SUPPLY MODEL, und die Kachel im Menü trägt
+MODELLED.
+
+Das Layout ist das von MOTOR & ESC. Der Plot zeigt Spannung, Strom und
+Leistung der letzten 27 s. Die Leiste rechts zeigt die Messwerte, die
+niedrigste Spannung des Laufs und seinen höchsten Strom und seine höchste
+Leistung. MODE sagt, welchen Sollwert das Netzteil hält: CV (constant voltage)
+bei der eingestellten Spannung oder CC (constant current) an der
+Strombegrenzung. CC steht in der Warnfarbe: ein Netzteil in CC liefert der
+Last nicht die Spannung, auf die es gestellt ist.
+
+Ein Sollwert steht neben seinem Messwert. VOLT und CURR tragen ihn in Klammern
+hinter dem Namen, und der Plot zeichnet ihn gestrichelt in der Farbe und auf
+der Skala des Messwerts. TABLE führt beide auf. Der Wert in Klammern ist der
+Sollwert, den das Netzteil zu halten meldet; solange es nicht antwortet, der
+des Bildschirms.
+
+| Sollwert | Bereich | Schritt am Schieber | Knöpfe |
+| --- | --- | --- | --- |
+| VOLTAGE | 3,3 bis 21 V | 20 mV | 0,1 V |
+| CURRENT LIMIT | 0,5 bis 5 A | 50 mA | 0,1 A |
+
+Die Bereiche sind das weiteste Profil einer USB-PD-PPS-Quelle (Programmable
+Power Supply), 3,3 bis 21 V bei bis zu 5 A, eingeengt durch die Grenzen unter
+SETTINGS. Ein Treiber meldet den Bereich, den seine Quelle anbietet, und die
+Schieber folgen ihm. Ein Tippen auf eine Spur setzt den Wert unter dem Finger.
+
+**Ein Tippen auf die Karte VOLT oder CURR oder auf den Wert eines Sollwerts
+öffnet eine Tastatur** über der linken Spalte. Sie zeigt den Bereich in der
+Titelzeile und den aktuellen Wert blass, bis eine Ziffer getippt ist. OK
+übernimmt einen Wert im Bereich, gerundet auf den Schritt des Netzteils; ein
+Wert außerhalb wird abgelehnt, und der Bereich wechselt in die Warnfarbe. OK
+ohne Eingabe und CANCEL lassen den Sollwert, wie er war.
+
+![Die Tastatur](img/supply-keypad.png)
+
+**Eine Änderung an einem eingeschalteten Ausgang fragt zuerst.** Solange der
+Ausgang an ist, öffnet ein neuer Sollwert vom Schieber oder seinen
+Schrittknöpfen oder von der Tastatur eine Frage, die die Änderung nennt.
+APPLY gibt sie dem Netzteil; CANCEL verwirft sie, und der Schieber geht
+zurück. Ein Ziehen fragt einmal, beim Loslassen, und bis dahin hält das
+Netzteil den alten Sollwert. Bei ausgeschaltetem Ausgang wird nichts gefragt.
+SETTINGS schaltet die Frage für den Schieber und für die Tastatur getrennt
+ab.
+
+![Die Frage](img/supply-confirm.png)
+
+**OUTPUT ON ist ein Zwei-Sekunden-Halten**, dieselbe Geste und dieselbe Blende
+wie ARM. OUTPUT OFF ist ein Tippen. STOP schaltet den Ausgang auf jedem
+Bildschirm ab. Ebenso jeder andere Stopp, den der Prüfstand zählt -- ein
+Touch, der nicht mehr antwortet, ein ON, dessen Touch-Ereignisse verloren
+gingen, bevor der Bildschirm es zeigte, und ein Koprozessor, der nicht scharf
+bleiben will -- sowie ein Netzteil, das nicht mehr antwortet, und ein Trip.
+Der Ausgang bleibt aus, bis er wieder eingeschaltet wird. Das Verlassen des
+Bildschirms lässt den Ausgang an, damit ein Servo oder ein ESC am Netzteil auf
+dem Bildschirm versorgt bleibt, der es testet; der Bildschirm für den
+verlorenen Link, der kein STOP hat, öffnet sich nicht, solange der Ausgang an
+ist.
+
+OUTPUT ON und OFF, RESET PEAKS und die Messwerte bleiben unter der Tastatur,
+der Frage und SETTINGS bedienbar. Ein Finger zur Zeit: solange einer ein
+Bedienelement hält, bewirkt ein zweiter Finger nirgends auf dem Bildschirm
+etwas.
+
+### Einstellungen
+
+SETTINGS, rechts in der Leiste über beiden Spalten, öffnet die Einstellungen
+des Netzteils über der linken Spalte. Jede liegt im NVS (Non-Volatile Storage)
+des Panels und übersteht einen Neustart. Ein Wert öffnet die Tastatur, ein
+Schalter kippt beim Tippen. Jede Änderung wird im nächsten Frame geschrieben,
+in dem der Prüfstand unscharf ist, der Ausgang des Netzteils aus ist und nicht
+das Foto der Platine geladen wird, und mit ihr jede ungespeicherte Änderung
+aus SETUP: ein Flash-Schreibvorgang hält beide Kerne an, OUTPUT OFF und die
+Trips eingeschlossen. Die unterste Zeile sagt SAVED, SAVE WAITING, NOT SAVED
+(der Schreibvorgang wurde abgelehnt) oder SETUP CHANGES NOT SAVED: eine
+Änderung in SETUP, die ohne SAVE verlassen wurde und die nichts schreibt, bis
+SAVE dort oder eine Änderung hier danach fragt.
+
+![Die Einstellungen des Netzteils](img/supply-settings.png)
+
+| Einstellung | Bereich | Vorgabe | Wirkung |
+| --- | --- | --- | --- |
+| VOLTAGE MAX | 3,3 bis 21 V | 21,00 V | die höchste Spannung, die ein Sollwert annimmt |
+| CURRENT MAX | 0,5 bis 5 A | 5,00 A | die höchste Strombegrenzung, die ein Sollwert annimmt |
+| START VOLTAGE | bis VOLTAGE MAX | 6,00 V | der Spannungs-Sollwert nach einem Neustart |
+| START CURRENT | bis CURRENT MAX | 2,00 A | die Strombegrenzung nach einem Neustart |
+| CURRENT TRIP | 0 bis 5 A | OFF | Ausgang aus, wenn der Strom TRIP TIME lang darüber lag |
+| VOLTAGE TRIP | 0 bis 21 V | OFF | Ausgang aus, wenn die Spannung TRIP TIME lang darüber lag |
+| TRIP TIME | 0 bis 5000 ms | 100 ms | wie lange ein Messwert über einem Trip liegt, bevor er auslöst |
+| SLIDER AND STEPS | ON, OFF | ON | fragen, bevor der Schieber einen eingeschalteten Ausgang ändert |
+| KEYPAD | ON, OFF | ON | fragen, bevor die Tastatur einen eingeschalteten Ausgang ändert |
+
+Eine Grenze, die unter einen Sollwert gesenkt wird, holt den Sollwert sofort
+auf sie herunter, und einen Startwert mit ihm. Ein getippter Wert kommt in der
+sicheren Richtung auf den Schritt der Einstellung: eine Grenze rundet ab, 12,01 V
+erlauben also 12,00 V, und ein Trip über 0 ist mindestens ein Schritt, nie OFF.
+Ein Trip von 0 ist aus. Die Zeit über einem Trip zählt ab dem ersten Messwert
+darüber. Ein
+Messwert unter seinem Trip beginnt die Zählung neu; ein Messwert, der nicht
+ankam, lässt sie stehen. Ein Trip schaltet den Ausgang ab, MODE zeigt TRIP,
+bis der Ausgang wieder eingeschaltet wird, und das Band sagt, welcher Trip
+ausgelöst hat. Das Netzteil hält seine Strombegrenzung in CC, daher löst ein
+Strom-Trip auf oder über CURRENT LIMIT nicht aus; unter der Begrenzung
+gesetzt, schaltet er eine Last ab, die zu lange zu viel zieht.
+
+Nach einem Neustart ist der Ausgang aus, welche Startwerte auch gelten.
+
+### Das Log
+
+Ein Lauf ist ein Einschalten des Ausgangs. Der Plot leert sich, wenn der
+Ausgang angeht, und hält den Lauf, nachdem er ausgeht. mAh und Wh unter dem
+Schalter zählen den Lauf aus den angezeigten Messwerten, jeder Schritt auf 1 s
+begrenzt. RESET PEAKS beginnt die niedrigsten und höchsten Werte neu ab dem
+aktuellen Messwert.
+
+Ein Lauf wird in eine eigene `BENCHnnn.CSV` geschrieben, eine Zeile alle
+50 ms:
+
+```
+time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh)
+```
+
+Ein Messwert, der nicht ankam, ist eine leere Zelle. `mode` ist CV, CC oder
+OFF und leer, solange das Netzteil nicht antwortet. Der Prüfstand hat beim
+Log Vorrang: ARM während eines Netzteil-Laufs beendet dessen Datei, und ein
+Ausgang, der beim Unscharfschalten noch an ist, beginnt eine neue. Ladung und
+Energie dieser Datei zählen von den Summen seit dem Einschalten des Ausgangs
+weiter, wie auf dem Bildschirm; ihre erste Zeile beginnt also nicht bei 0. Das
+Netzteil wird in seinem eigenen 50-ms-Takt geführt und geloggt, auch während
+die Steuer-Task auf den Link wartet; ein Koprozessor, der nicht antwortet,
+dünnt weder den Plot noch das Log des Netzteils aus.
+
+Das Modell ist eine Last von 6 Ohm mit einem Stoß von 1,4 A für 0,6 s alle
+3 s, hinter einem Quellwiderstand von 0,05 Ohm. Bei den Startwerten, 6,00 V
+und 2,00 A, bringt der Stoß es in CC. Seine Messwerte sind nicht gemessen,
+und am Prüfstand wird nichts versorgt.
+
+Die Verdrahtung des PD mini -- PD mini, PD mini TX, PD mini RX und PD mini
+baud -- steht in SETUP unter INTERFACES. Kein Treiber liest diese
+Einstellungen.
+
 ## Analyser
 
 ![Analyser](img/analyser.png)
@@ -284,7 +435,9 @@ Der Reader für CSV (Comma-Separated Values) akzeptiert Dezimalkomma und
 Dezimalpunkt, eine Einheitenzeile und Zeilen ungleicher Länge; die
 Importansicht zeigt, was er entschieden hat, bevor die Datei geplottet wird.
 Vom Prüfstand aufgezeichnete Läufe werden als `BENCH001.CSV` bis
-`BENCH999.CSV` im Wurzelverzeichnis der Karte abgelegt.
+`BENCH999.CSV` im Wurzelverzeichnis der Karte abgelegt. Ein Lauf ist ein
+Scharfschalten oder, solange der Prüfstand nicht scharf ist, ein Einschalten
+des SUPPLY-Ausgangs.
 
 Die Liste fasst 48 Einträge, die Karte bis zu 999 Läufe. Passen nicht alle
 hinein, behält die Liste die neuesten Läufe, und ihr Reiter zeigt

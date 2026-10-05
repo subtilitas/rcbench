@@ -136,7 +136,7 @@ jobs:
       # sample.  Above it the panel cannot deliver a frame per sample.
       # 2,000 catches a menu that has stopped caching its chrome.
       - name: The bench frame still fits one telemetry sample
-        run: python3 tools/frame_cost.py frame sim --max-lines 15600
+        run: python3 tools/frame_cost.py frame sim supply --max-lines 15600
 
       - name: The chrome-cached screens have not started repainting
         run: python3 tools/frame_cost.py overview --max-lines 2000
@@ -165,7 +165,7 @@ jobs:
       - name: A full repaint of every screen stays bounded
         run: python3 tools/frame_cost.py analyser-chrome balance-chrome
              battery-chrome programmer-chrome logs-chrome settings-chrome
-             picker-chrome --max-lines 45000
+             picker-chrome supply-chrome --max-lines 45000
 
       - name: The frame-cost table in the docs is current
         run: python3 tools/frame_cost.py --check-doc

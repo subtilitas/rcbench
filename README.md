@@ -51,11 +51,12 @@ Institute of Technology) licence's "without warranty of any kind" applies.
 | --- | --- | --- |
 | Motor & ESC | voltage, current, consumption, RPM (revolutions per minute) and temperatures plotted live | screen built; speed, voltage, current and ESC temperature from an ESC's bidirectional DShot telemetry, run against one AM32 ESC; simulated values while no coprocessor answers |
 | Servo | commanded and measured position; installed-limit search; two-servo synchronisation | screen built and commanding over the link; drives the pins bound as surfaces, run on a bring-up bench, timing unmeasured |
+| Supply | the PD mini, a USB-PD (USB Power Delivery) supply: voltage and current limit set, output switched, V, A and W plotted and logged | screen built and run from a model; no PD mini driver, its UART (universal asynchronous receiver-transmitter) protocol is not in this repository |
 | Analyser | sixteen receiver channels with history, the digital channels, LIVE / FRAME LOST / FAILSAFE / SILENT | S.BUS decoder built; PIO (programmable input/output) receiver not written |
 | Programmer | BLHeli_S, AM32, ESCape32, VESC and Hitec parameter tables | screen built; no protocol on a wire |
 | Balance | blade count, correction mass and angle, sensor placement guides | screen built; sensors not fitted |
 | Battery | per-cell spread and verdict | screen built; cell monitor not fitted |
-| Logs | browse, import and plot CSV (comma-separated values) from the card; runs are recorded while armed | built |
+| Logs | browse, import and plot CSV (comma-separated values) from the card; runs are recorded while armed or while the supply's output is on | built |
 | Setup | settings in both themes, stored in NVS | built; persistence confirmed on hardware |
 
 ## Building

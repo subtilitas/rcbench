@@ -4,6 +4,8 @@
 
 #include "log_writer.h"
 
+#include "supply.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,6 +18,12 @@
 static const char *const k_header =
     "time (s);voltage (V);current (A);power (W);rpm (rpm);"
     "esc (C);motor (C);charge (mAh);energy (Wh)\n";
+
+/* A supply run's file: what was asked beside what was delivered, and which
+ * of the two the supply was holding. */
+static const char *const k_supply_header =
+    "time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;"
+    "charge (mAh);energy (Wh)\n";
 
 static bool put(log_writer_t *w, const char *s, size_t n)
 {
@@ -98,6 +106,113 @@ static int fmt(char *out, size_t cap, float v, int decimals)
     return snprintf(out, cap, "%.*f", decimals, (double)v);
 }
 
+/*
+ * The end of every row, whichever kind: the line goes out, the counts move,
+ * and the commit comes on rows or on the run's own clock, whichever is first.
+ * The clock bound is what holds when rows arrive slower than 20 Hz -- the far
+ * end answering every other poll, say -- where waiting for
+ * LOG_WRITER_FLUSH_ROWS would leave more than a second of run at risk.
+ */
+static bool finish_row(log_writer_t *w, float t_s, char *line, int n)
+{
+    line[n++] = '\n';
+    if (!put(w, line, (size_t)n)) {
+        return false;
+    }
+    ++w->rows;
+    ++w->pending;
+    w->last_s = t_s;
+    if (w->pending >= LOG_WRITER_FLUSH_ROWS
+        || (t_s - w->committed_s) >= LOG_WRITER_FLUSH_S) {
+        return commit(w);
+    }
+    return true;
+}
+
+/*
+ * One cell of a row: the separator, then the value if @p present.  False
+ * once the row no longer fits, checked before anything is written past what
+ * the last cell left: snprintf answers the length it wanted, not the one it
+ * had, so an offset taken from it unchecked points past the line.
+ */
+static bool cell(char *line, size_t cap, int *n, bool present, float v,
+                 int decimals)
+{
+    if (*n < 0 || (size_t)*n + 2u >= cap) {
+        return false;
+    }
+    line[(*n)++] = LOG_WRITER_SEP;
+    if (present) {
+        const int k = fmt(line + *n, cap - (size_t)*n, v, decimals);
+        if (k < 0 || (size_t)*n + (size_t)k >= cap) {
+            return false;
+        }
+        *n += k;
+    }
+    return true;
+}
+
+static bool text_cell(char *line, size_t cap, int *n, const char *text)
+{
+    if (*n < 0 || (size_t)*n + 2u >= cap) {
+        return false;
+    }
+    line[(*n)++] = LOG_WRITER_SEP;
+    const int k = snprintf(line + *n, cap - (size_t)*n, "%s", text);
+    if (k < 0 || (size_t)*n + (size_t)k >= cap) {
+        return false;
+    }
+    *n += k;
+    return true;
+}
+
+bool log_writer_supply_row(log_writer_t *w, float t_s,
+                           const supply_state_t *s)
+{
+    if (w == NULL || s == NULL) {
+        return false;
+    }
+    if (!w->header_done) {
+        w->header_done = true;   /* one attempt per file, as the bench's */
+        if (!put(w, k_supply_header, strlen(k_supply_header))) {
+            return false;
+        }
+    }
+    if (w->failed) {
+        return false;
+    }
+    char line[160];
+    int n = fmt(line, sizeof(line), t_s, 3);
+    if (n <= 0) {
+        return false;   /* a row with no time is not a row */
+    }
+    const uint8_t both = (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
+    const bool v_ok = (s->ok & SUPPLY_OK_VOLTAGE) != 0u;
+    const bool i_ok = (s->ok & SUPPLY_OK_CURRENT) != 0u;
+    const char *mode = (s->mode == SUPPLY_MODE_CC) ? "CC"
+                       : (s->mode == SUPPLY_MODE_CV) ? "CV" : "OFF";
+    /* What was asked is always known; what arrived only when it did.  A row
+     * that does not fit -- a value no supply gives, from a driver that has
+     * gone wrong -- fails the log as an oversized bench row does. */
+    const size_t cap = sizeof(line);
+    const bool fits =
+        cell(line, cap, &n, true, s->set_v, 2)
+        && cell(line, cap, &n, v_ok, s->v, 2)
+        && cell(line, cap, &n, true, s->set_i, 2)
+        && cell(line, cap, &n, i_ok, s->i, 3)
+        && cell(line, cap, &n, (s->ok & both) == both, s->p, 2)
+        && text_cell(line, cap, &n, s->online ? mode : "")
+        && cell(line, cap, &n, (s->counted & BENCH_COUNTED_CHARGE) != 0u,
+                s->charge_mah, 0)
+        && cell(line, cap, &n, (s->counted & BENCH_COUNTED_ENERGY) != 0u,
+                s->energy_wh, 2);
+    if (!fits || (size_t)n + 2u >= cap) {
+        w->failed = true;
+        return false;
+    }
+    return finish_row(w, t_s, line, n);
+}
+
 bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
 {
     if (w == NULL || b == NULL) {
@@ -158,24 +273,9 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
         memcpy(&v, (const char *)b + k_cols[i].offset, sizeof(v));
         n += fmt(line + n, sizeof(line) - (size_t)n, v, k_cols[i].decimals);
     }
-    line[n++] = '\n';
-
-    if (!put(w, line, (size_t)n)) {
+    if ((size_t)n + 2u >= sizeof(line)) {
+        w->failed = true;
         return false;
     }
-    ++w->rows;
-    ++w->pending;
-    w->last_s = t_s;
-
-    /*
-     * Committed on rows or on the run's own clock, whichever comes first.
-     * The clock bound is what holds when rows arrive slower than 20 Hz --
-     * the far end answering every other poll, say -- where waiting for
-     * LOG_WRITER_FLUSH_ROWS would leave more than a second of run at risk.
-     */
-    if (w->pending >= LOG_WRITER_FLUSH_ROWS
-        || (t_s - w->committed_s) >= LOG_WRITER_FLUSH_S) {
-        return commit(w);
-    }
-    return true;
+    return finish_row(w, t_s, line, n);
 }

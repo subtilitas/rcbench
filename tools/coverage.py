@@ -56,6 +56,8 @@ TRACKED = [
     "shared/ui/overview_screen.c",
     "shared/ui/stub_screen.c",
     "shared/ui/motor_screen.c",
+    "shared/ui/supply_screen.c",
+    "shared/ui/ui_keypad.c",
     "shared/ui/servo_screen.c",
     "shared/ui/analyser_screen.c",
     "shared/ui/balance_screen.c",
@@ -105,6 +107,7 @@ TRACKED = [
     "shared/outputs/out_pwm_map.c",
     "shared/outputs/out_store_map.c",
     "shared/bench/telemetry_sim.c",
+    "shared/bench/supply.c",
     "shared/bench/log_writer.c",
 ]
 

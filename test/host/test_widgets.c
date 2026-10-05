@@ -62,8 +62,8 @@ TEST_CASE(the_scale_ladder_has_its_fine_steps)
 }
 
 static const ui_plot_series_t k_series[] = {
-    { "VOLT", "V", 0x1234, 2, 5.0f },
-    { "CURR", "A", 0x4321, 1, 1.0f },
+    { "VOLT", "V", 0x1234, 2, 5.0f, 0 },
+    { "CURR", "A", 0x4321, 1, 1.0f, 0 },
 };
 
 static void push(ui_plot_t *p, float a, float b)
@@ -101,13 +101,44 @@ TEST_CASE(a_non_finite_sample_cannot_poison_the_plot)
     push(&p, NAN, INFINITY);
     push(&p, 10.0f, 1.0f);
 
-    CHECK_EQ(ui_plot_sample(&p, 0, 1), 0.0f);
+    /* A gap, not a zero: a missing reading is not a measurement of 0. */
+    CHECK(isnan(ui_plot_sample(&p, 0, 1)));
+    CHECK(isnan(ui_plot_sample(&p, 1, 1)));
     for (int i = 0; i < 200; ++i) {
         ui_plot_update_scales(&p, 100);
     }
     CHECK(isfinite(p.scale[0]));
     CHECK(isfinite(p.scale[1]));
     CHECK(p.scale[0] > 0.0f);
+}
+
+TEST_CASE(a_gap_breaks_the_trace_and_draws_nothing_at_zero)
+{
+    /* A steady 10 V with gaps: nothing of the series' colour on the zero
+     * line, and columns of nothing where the gaps are. */
+    ui_plot_t p;
+    ui_plot_init(&p, k_series, 1, 24.0f);
+    p.series[0].color = 0x1234;
+    for (int i = 0; i < 100; ++i) {
+        const float v[1] = { (i % 10 < 3) ? NAN : 10.0f };
+        ui_plot_push(&p, v);
+    }
+    ui_plot_update_scales(&p, 700);
+    const gfx_rect_t body = { 40, 10, 700, 220 };
+    canvas();
+    ui_plot_render(&p, &cv, body);
+    const int y0 = ui_plot_map_y(&p, 0, 0.0f, body.y, body.h);
+    int at_zero = 0, empty_cols = 0;
+    for (int x = body.x + body.w - 100; x < body.x + body.w; ++x) {
+        at_zero += (fb[y0 * W + x] == 0x1234) ? 1 : 0;
+        int any = 0;
+        for (int y = body.y; y < body.y + body.h; ++y) {
+            any += (fb[y * W + x] == 0x1234) ? 1 : 0;
+        }
+        empty_cols += (any == 0) ? 1 : 0;
+    }
+    CHECK_EQ(at_zero, 0);
+    CHECK(empty_cols >= 25);
 }
 
 /* Grows at once, shrinks on patience: a brief spike must not make the whole
@@ -315,6 +346,79 @@ TEST_CASE(clearing_empties_the_plot_and_the_scales)
     CHECK_EQ(p.focus, 1);                     /* not a property of the run */
     CHECK_EQ(p.span_s, 24.0f);
     CHECK(p.running);                         /* clearing does not stop it */
+}
+
+/* A set point drawn beside its reading: on the reading's scale, dashed, and
+ * out of the legend. */
+static const ui_plot_series_t k_led[] = {
+    { "VOLT", "V", 0x1234, 2, 5.0f, 0 },
+    { "SET",  "V", 0x5678, 2, 5.0f, 1 },   /* follows series 0 */
+    { "CURR", "A", 0x4321, 1, 1.0f, 0 },
+};
+
+TEST_CASE(a_follower_is_drawn_on_its_leaders_scale)
+{
+    ui_plot_t p;
+    ui_plot_init(&p, k_led, 3, 24.0f);
+    for (int i = 0; i < 60; ++i) {
+        const float v[3] = { 6.0f, 12.0f, 1.0f };
+        ui_plot_push(&p, v);
+    }
+    ui_plot_update_scales(&p, 700);
+    /* The set point, not the reading, sets the voltage scale: 12 V with
+     * headroom is 15 V.  The follower draws on it. */
+    CHECK_NEAR(p.scale[0], 15.0f, 1e-3f);
+    CHECK_EQ(ui_plot_map_y(&p, 1, 15.0f, 0, 101), 0);
+    CHECK_EQ(ui_plot_map_y(&p, 0, 15.0f, 0, 101), 0);
+    CHECK_EQ(ui_plot_map_y(&p, 1, 7.5f, 0, 101), 50);
+
+    /* A tap cannot focus or hide a follower; hiding its leader hides it. */
+    ui_plot_touch_series(&p, 1);
+    CHECK_EQ(p.focus, -1);
+    CHECK(!p.hidden[1]);
+
+    const gfx_rect_t body = { 40, 10, 700, 220 };
+    canvas();
+    ui_plot_render(&p, &cv, body);
+    /* Dashed: the follower's row has its colour in some columns and not in
+     * the ones next to them. */
+    const int y = ui_plot_map_y(&p, 1, 12.0f, body.y, body.h);
+    int on = 0, off = 0;
+    for (int x = body.x + body.w - 60; x < body.x + body.w; ++x) {
+        if (fb[y * W + x] == 0x5678) {
+            ++on;
+        } else {
+            ++off;
+        }
+    }
+    CHECK(on >= 24 && off >= 24);
+
+    ui_plot_touch_series(&p, 0);
+    ui_plot_touch_series(&p, 0);         /* focus, then hide */
+    CHECK(p.hidden[0]);
+    canvas();
+    ui_plot_render(&p, &cv, body);
+    int any = 0;
+    for (int x = body.x; x < body.x + body.w; ++x) {
+        any += (fb[y * W + x] == 0x5678) ? 1 : 0;
+    }
+    CHECK_EQ(any, 0);
+}
+
+TEST_CASE(a_follower_takes_no_legend_entry)
+{
+    ui_plot_t p;
+    ui_plot_init(&p, k_led, 3, 24.0f);
+    canvas();
+    ui_plot_render_legend(&p, &cv, (gfx_rect_t){ 0, 0, 600, 30 });
+    /* Two entries of 300 px: the second swatch is at x 300, in CURR's
+     * colour, and nothing is in the follower's. */
+    CHECK_EQ(fb[15 * W + 300], 0x4321);
+    int set = 0;
+    for (int i = 0; i < 600 * 30; ++i) {
+        set += (fb[(i / 600) * W + (i % 600)] == 0x5678) ? 1 : 0;
+    }
+    CHECK_EQ(set, 0);
 }
 
 /*
@@ -922,10 +1026,13 @@ int main(void)
     RUN(the_scale_ladder_has_its_fine_steps);
     RUN(the_ring_holds_its_history_and_wraps);
     RUN(a_non_finite_sample_cannot_poison_the_plot);
+    RUN(a_gap_breaks_the_trace_and_draws_nothing_at_zero);
     RUN(a_stopped_plot_does_not_advance);
     RUN(a_stopped_plot_keeps_its_scales);
     RUN(a_stopped_plot_still_counts_the_call);
     RUN(clearing_empties_the_plot_and_the_scales);
+    RUN(a_follower_is_drawn_on_its_leaders_scale);
+    RUN(a_follower_takes_no_legend_entry);
     RUN(a_stopped_plot_marks_its_right_edge);
     RUN(a_held_frame_does_not_cover_the_newest_sample);
     RUN(the_right_edge_label_follows_the_running_state);

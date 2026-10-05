@@ -28,32 +28,34 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame            8,856     1107 KiB     29.1      19.5
-frame-idle        1,274      159 KiB      4.2      39.0
-held             4,777      597 KiB     15.7      39.0
-sim              9,817     1227 KiB     32.2      19.5
-throttle        10,598     1325 KiB     34.8      19.5
-chrome          33,106     4138 KiB    108.7       7.8
-overview           953      119 KiB      3.1      39.0
-servo           15,759     1970 KiB     51.7      13.0
-servo-grip        3,026      378 KiB      9.9      39.0
-analyser           871      109 KiB      2.9      39.0
-logs               937      117 KiB      3.1      39.0
-settings           862      108 KiB      2.8      39.0
-battery            871      109 KiB      2.9      39.0
-balance            865      108 KiB      2.8      39.0
-programmer          895      112 KiB      2.9      39.0
-balance-sim        2,395      299 KiB      7.9      39.0
-settings-sim        2,407      301 KiB      7.9      39.0
-battery-sim        2,401      300 KiB      7.9      39.0
-analyser-chrome       39,234     4904 KiB    128.8       6.5
-logs-chrome       16,061     2008 KiB     52.7      13.0
-settings-chrome       23,591     2949 KiB     77.4       9.8
-battery-chrome       36,987     4623 KiB    121.4       7.8
-balance-chrome       40,685     5086 KiB    133.5       6.5
-programmer-chrome       28,480     3560 KiB     93.5       9.8
-picker             902      113 KiB      3.0      39.0
-picker-chrome       15,883     1985 KiB     52.1      13.0
+frame            8,855     1107 KiB     29.1      19.5
+frame-idle        1,293      162 KiB      4.2      39.0
+held             4,774      597 KiB     15.7      39.0
+sim              9,815     1227 KiB     32.2      19.5
+throttle        10,580     1322 KiB     34.7      19.5
+chrome          33,058     4132 KiB    108.5       7.8
+overview           941      118 KiB      3.1      39.0
+servo           15,740     1968 KiB     51.7      13.0
+servo-grip        3,015      377 KiB      9.9      39.0
+supply           8,547     1068 KiB     28.1      19.5
+supply-chrome       31,488     3936 KiB    103.3       7.8
+analyser           895      112 KiB      2.9      39.0
+logs               935      117 KiB      3.1      39.0
+settings           882      110 KiB      2.9      39.0
+battery            873      109 KiB      2.9      39.0
+balance            870      109 KiB      2.9      39.0
+programmer          913      114 KiB      3.0      39.0
+balance-sim        2,400      300 KiB      7.9      39.0
+settings-sim        2,413      302 KiB      7.9      39.0
+battery-sim        2,398      300 KiB      7.9      39.0
+analyser-chrome       39,236     4904 KiB    128.8       6.5
+logs-chrome       16,065     2008 KiB     52.7      13.0
+settings-chrome       23,719     2965 KiB     77.8       9.8
+battery-chrome       36,980     4622 KiB    121.4       7.8
+balance-chrome       40,697     5087 KiB    133.6       6.5
+programmer-chrome       28,476     3560 KiB     93.5       9.8
+picker             905      113 KiB      3.0      39.0
+picker-chrome       15,889     1986 KiB     52.1      13.0
 clear           12,006     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
@@ -71,6 +73,7 @@ hlines               0        0 KiB      0.0      39.0
 | `overview` | das Menü, Chrome gecacht |
 | `servo` | der Servobildschirm mit neu gezeichnetem Arm |
 | `servo-grip` | der Servobildschirm, nur der Griff neu gezeichnet |
+| `supply` | der Netzteilbildschirm mit eingeschaltetem Ausgang, ein Sample in jedem Frame |
 | `analyser`, `logs`, `settings`, `battery`, `balance`, `programmer`, `picker` | ein ruhiger Frame dieses Bildschirms, Chrome gecacht |
 | `<screen>-sim` | derselbe Bildschirm mit dem SIMULATION-Watermark |
 | `<screen>-chrome` | derselbe Bildschirm, auf jedem Frame invalidiert |
@@ -150,13 +153,13 @@ jeden Modus an eine Obergrenze:
 
 | Modi | Obergrenze (Fills) | Fängt |
 | --- | ---: | --- |
-| `frame`, `sim` | 15 600 | einen Prüfstandsframe, der ein Telemetriesample überschreitet |
+| `frame`, `sim`, `supply` | 15 600 | einen Prüfstandsframe, der ein Telemetriesample überschreitet |
 | `overview` | 2 000 | einen Bildschirm mit gecachtem Chrome, der neu zu zeichnen begonnen hat |
 | `servo` | 17 000 | ein Wachsen der Arm- und Griffzeichnung |
 | `servo-grip` | 4 000 | ein Atmen, das die ganze Karte neu zeichnet |
 | die sieben Bildschirmmodi | 1 200 | einen Bildschirm, der neu zu zeichnen begonnen hat |
 | die drei `-sim`-Modi | 2 800 | ein Watermark, das über die volle Canvas hinauswächst |
-| die sieben `-chrome`-Modi | 45 000 | ein wachsendes vollständiges Neuzeichnen |
+| die acht `-chrome`-Modi | 45 000 | ein wachsendes vollständiges Neuzeichnen |
 
 Braucht ein künftiger Bereich mehr Platz, sind die verbleibenden Hebel vom
 gröbsten zum feinsten: die Höhe des Plots, seine Breite, und das

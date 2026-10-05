@@ -40,6 +40,17 @@ float ui_plot_nice_ceil(float v)
     return 10.0f * mag;
 }
 
+/* The series whose scale @p k is drawn on: its leader's, or its own.  A
+ * follower of a follower, or of nothing, keeps its own. */
+static int leader_of(const ui_plot_t *p, int k)
+{
+    const int f = (int)p->series[k].follows - 1;
+    if (f >= 0 && f < p->count && f != k && p->series[f].follows == 0u) {
+        return f;
+    }
+    return k;
+}
+
 void ui_plot_init(ui_plot_t *p, const ui_plot_series_t *series, int count,
                   float span_s)
 {
@@ -74,10 +85,11 @@ void ui_plot_push(ui_plot_t *p, const float *values)
         return;
     }
     for (int k = 0; k < p->count; ++k) {
-        /* A non-finite reading is stored as zero, so it cannot poison the
-         * scale; the trace dips to zero at that sample. */
+        /* A non-finite reading is a gap: kept as not-a-number, left out of
+         * the autorange, and not drawn, so the trace breaks there.  A zero
+         * would read as a measurement of zero. */
         const float v = values[k];
-        p->ring[k][p->head] = isfinite(v) ? v : 0.0f;
+        p->ring[k][p->head] = isfinite(v) ? v : NAN;
     }
     p->head = (p->head + 1) % UI_PLOT_HISTORY;
     if (p->filled < UI_PLOT_HISTORY) {
@@ -148,11 +160,19 @@ void ui_plot_update_scales(ui_plot_t *p, int visible_samples)
         n = 0;
     }
     for (int k = 0; k < p->count; ++k) {
+        if (leader_of(p, k) != k) {
+            continue;   /* a follower is drawn on its leader's scale */
+        }
         float mx = 0.0f;
-        for (int i = 0; i < n; ++i) {
-            const float v = ui_plot_sample(p, k, i);
-            if (v > mx) {
-                mx = v;
+        for (int j = 0; j < p->count; ++j) {
+            if (leader_of(p, j) != k) {
+                continue;
+            }
+            for (int i = 0; i < n; ++i) {
+                const float v = ui_plot_sample(p, j, i);
+                if (v > mx) {
+                    mx = v;
+                }
             }
         }
         float target = ui_plot_nice_ceil(mx * HEADROOM);
@@ -176,7 +196,8 @@ void ui_plot_update_scales(ui_plot_t *p, int visible_samples)
 
 void ui_plot_touch_series(ui_plot_t *p, int series)
 {
-    if (p == NULL || series < 0 || series >= p->count) {
+    if (p == NULL || series < 0 || series >= p->count
+        || leader_of(p, series) != series) {
         return;
     }
     if (p->hidden[series]) {
@@ -197,7 +218,8 @@ int ui_plot_map_y(const ui_plot_t *p, int series, float value, int y0, int h)
     if (p == NULL || series < 0 || series >= p->count || h <= 1) {
         return y0;
     }
-    const float scale = p->scale[series] > 0.0f ? p->scale[series] : 1.0f;
+    const int lead = leader_of(p, series);
+    const float scale = p->scale[lead] > 0.0f ? p->scale[lead] : 1.0f;
     float frac = value / scale;
     if (frac < 0.0f) { frac = 0.0f; }
     if (frac > 1.0f) { frac = 1.0f; }
@@ -220,12 +242,23 @@ void ui_plot_render_legend(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
     if (p == NULL || c == NULL || p->count <= 0) {
         return;
     }
-    const int slot = r.w / p->count;
+    int leaders = 0;
     for (int k = 0; k < p->count; ++k) {
+        leaders += (leader_of(p, k) == k) ? 1 : 0;
+    }
+    if (leaders <= 0) {
+        return;   /* a follower always has a leader; nothing to name without */
+    }
+    const int slot = r.w / leaders;
+    int at = 0;
+    for (int k = 0; k < p->count; ++k) {
+        if (leader_of(p, k) != k) {
+            continue;   /* a follower is named by its leader's entry */
+        }
         const bool off = p->hidden[k];
         const gfx_color_t col = off ? ui_theme_color(UI_C_TEXT_FAINT)
                                     : p->series[k].color;
-        const int x = r.x + k * slot;
+        const int x = r.x + (at++) * slot;
         const int cy = r.y + r.h / 2;
 
         gfx_fill_round_rect(c, x, cy - 1, 12, 3, 1, col);
@@ -277,22 +310,31 @@ void ui_plot_render(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
     const int cols = (r.w < UI_PLOT_HISTORY) ? r.w : UI_PLOT_HISTORY;
 
     for (int k = 0; k < p->count; ++k) {
-        if (p->hidden[k]) {
+        const int lead = leader_of(p, k);
+        if (p->hidden[k] || p->hidden[lead]) {
             continue;
         }
+        const bool follower = (lead != k);
         const bool focused = (p->focus == k);
         const gfx_color_t col = p->series[k].color;
 
         int prev_y = -1;
         for (int i = 0; i < cols; ++i) {
             const int back = cols - 1 - i;
-            if (back >= p->filled) {
+            /* A follower is dashed, 4 px drawn and 4 px left out.  The
+             * pattern is fixed to the screen's columns and the trace scrolls
+             * through it, so a level set point reads as a steady dash. */
+            if (back >= p->filled || (follower && ((back >> 2) & 1) != 0)) {
                 prev_y = -1;
                 continue;
             }
+            const float sample = ui_plot_sample(p, k, back);
+            if (!isfinite(sample)) {
+                prev_y = -1;          /* a gap: the trace breaks here */
+                continue;
+            }
             const int x = r.x + i;
-            const int y = ui_plot_map_y(p, k, ui_plot_sample(p, k, back),
-                                        r.y, r.h);
+            const int y = ui_plot_map_y(p, k, sample, r.y, r.h);
             if (prev_y >= 0) {
                 /* Join to the previous column so a fast edge is a line
                  * rather than two unrelated dots. */

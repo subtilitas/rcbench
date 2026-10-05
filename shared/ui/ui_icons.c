@@ -181,3 +181,21 @@ void ui_icon_balance(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
     gfx_fill_rect(c, x - (r * 3) / 4, y + (r * 2) / 3, r / 3, 2, color);
     gfx_fill_rect(c, x - (r * 2) / 3, y + (r * 3) / 4, 2, r / 3, color);
 }
+
+/*
+ * A bench supply's front: the case, a set-point dial on the left and the two
+ * output terminals on the right.
+ */
+void ui_icon_supply(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
+{
+    const int w = size;
+    const int h = (size * 3) / 5;
+    const int left = x - w / 2;
+    const int top  = y - h / 2;
+    gfx_draw_round_rect(c, left, top, w, h, 3, color);
+    gfx_draw_circle(c, left + w / 4, y, h / 4, color);
+    gfx_fill_rect(c, left + w / 4 - 1, y - h / 4, 2, h / 4, color);
+    gfx_fill_circle(c, left + (w * 5) / 8, y + h / 6, 2, color);
+    gfx_fill_circle(c, left + (w * 13) / 16, y + h / 6, 2, color);
+    gfx_fill_rect(c, left + (w * 9) / 16, y - h / 4, w / 3, 2, color);
+}
