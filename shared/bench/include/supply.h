@@ -77,9 +77,10 @@ typedef struct {
 float supply_snap(float value, float min, float max, float step);
 
 /**
- * The run's extremes start again from what is shown.  The minimum voltage is
- * a reading only while the output is on: an output switched off reads 0 V,
- * and a floor of 0 V reads as a collapsed rail.
+ * The run's extremes start again from what is shown, and only from readings
+ * that arrived; a maximum with nothing under it starts at 0.  The minimum
+ * voltage is a reading only while the output is on: an output switched off
+ * reads 0 V, and a floor of 0 V reads as a collapsed rail.
  */
 void supply_reset_peaks(supply_state_t *s);
 

@@ -360,6 +360,12 @@ static void event(const touch_event_t *evt)
 
     const int x = evt->point.x, y = evt->point.y;
     if (evt->type == TOUCH_EVENT_DOWN) {
+        /* One press at a time: a second contact on any button would take
+         * over the record of the first, and the first one's release -- an
+         * OUTPUT OFF -- would then be ignored. */
+        if (s.have_press && evt->point.id != s.press_id) {
+            return;
+        }
         const struct { gfx_rect_t r; int code; float dv, di; } k_steps[] = {
             { s.v_down, P_V_DOWN, -NUDGE_V, 0.0f },
             { s.v_up,   P_V_UP,    NUDGE_V, 0.0f },

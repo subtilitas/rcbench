@@ -37,9 +37,13 @@ void supply_reset_peaks(supply_state_t *s)
     if (s == NULL) {
         return;
     }
+    /* Only what arrived; a reading that did not is left over from before
+     * and would hold the run's maxima above anything this run delivers.
+     * Current and power do not go below 0, so 0 is no maximum. */
+    const uint8_t both = (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
     s->v_min = s->v;
-    s->i_max = s->i;
-    s->p_max = s->p;
+    s->i_max = ((s->ok & SUPPLY_OK_CURRENT) != 0u) ? s->i : 0.0f;
+    s->p_max = ((s->ok & both) == both) ? s->p : 0.0f;
     s->sag_seeded = s->output && (s->ok & SUPPLY_OK_VOLTAGE) != 0u;
 }
 

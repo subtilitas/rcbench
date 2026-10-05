@@ -174,6 +174,9 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
  * with the rest of the servo's wire handling. */
 static void servo_let_go(void);
 static void servo_service(bool link_up);
+/* The supply's output against the stop count; defined with the supply.
+ * control_pump() calls it, so a stop cuts the output where it lands. */
+static void supply_follow_stops(void);
 /* Defined with the rest of the link's reads; the OUTPUTS screen's write asks
  * for one straight afterwards. */
 static void read_outputs_binding(void);
@@ -959,6 +962,9 @@ static void control_pump(void)
     /* And judged here, at the rate touch is judged: this runs inside the
      * link's wait, where arming_step() does not. */
     arming_touch_poll(&s_arm, now_ms());
+    /* And the supply's output, off at every stop counted above.  It needs
+     * no link, so nothing here waits on it. */
+    supply_follow_stops();
 
     /* The setting can change under this loop, and a ramp read once at
      * start-up would be the one the panel booted with.  The value read here
@@ -2756,6 +2762,8 @@ static supply_sim_t   s_supply_sim;
 static supply_state_t s_supply;
 static uint32_t       s_supply_ms;
 static bool           s_supply_fresh;
+/* The stop count the supply has answered; see supply_follow_stops(). */
+static uint32_t       s_supply_stops_served;
 
 static void supply_switch(bool on)
 {
@@ -2769,6 +2777,22 @@ static void supply_switch(bool on)
         supply_reset_totals(&s_supply);
         s_supply_ms    = now_ms();
         s_supply_fresh = true;
+    }
+}
+
+/*
+ * Every stop switches the output off: STOP, touch that died, an arm the
+ * watch undid, the far end's refusal.  Called from control_pump(), which
+ * runs inside every exchange's wait, and again wherever the supply is
+ * stepped or switched, so a stop counted anywhere cuts the output before
+ * the next reading is taken or logged.
+ */
+static void supply_follow_stops(void)
+{
+    const uint32_t stops = arming_stop_count(&s_arm);
+    if (stops != s_supply_stops_served) {
+        s_supply_stops_served = stops;
+        supply_switch(false);
     }
 }
 
@@ -2820,11 +2844,14 @@ static void apply_supply_cmd(const panel_cmd_t *pc)
     }
     if (c->off) {
         supply_switch(false);
-    } else if (c->on && pc->stops == arming_stop_count(&s_arm)
-               && pc->supply_offs == atomic_load(&s_supply_offs)) {
+    } else if (c->on) {
+        /* The pump first, so a STOP or a loss still in the driver's queue
+         * is counted before the ON is judged against them. */
         control_pump();
-        if (arm_watch_take_ok(pc->loss_gen, atomic_load(&s_loss_gen),
-                              s_lost_notice_seq, pc->consumed_seq)) {
+        if (pc->stops == arming_stop_count(&s_arm)
+            && pc->supply_offs == atomic_load(&s_supply_offs)
+            && arm_watch_take_ok(pc->loss_gen, atomic_load(&s_loss_gen),
+                                 s_lost_notice_seq, pc->consumed_seq)) {
             /* At the set points stored before this ON was queued. */
             supply_follow_set();
             supply_switch(true);
@@ -2838,6 +2865,9 @@ static void apply_supply_cmd(const panel_cmd_t *pc)
  */
 static void supply_step(float step_s)
 {
+    /* A stop counted outside the pump -- the far end's refusal, or STOP
+     * from the queue -- is answered before this reading is taken. */
+    supply_follow_stops();
     supply_sim_step(&s_supply_sim, step_s, &s_supply);
     /*
      * A supply that stops answering takes its output with it, switched off
@@ -3042,9 +3072,8 @@ static void service_arming(bool link_up)
         s_stops_served = stops;
         throttle_to_zero();
         servo_let_go();
-        /* And the supply's output, which a stop cuts with the rest. */
-        supply_switch(false);
     }
+    supply_follow_stops();
 
     /*
      * One place decides, and it is the one under test.  A disarm here is the

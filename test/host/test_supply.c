@@ -140,6 +140,19 @@ TEST_CASE(the_extremes_take_only_what_arrived)
     supply_track_peaks(&st);
     CHECK_NEAR(st.v_min, 3.6f, 1e-4f);
     CHECK_NEAR(st.i_max, 2.0f, 1e-4f);
+
+    /* Nor does it seed a reset: a stale 9 A would hold the maximum above
+     * every current the next run delivers. */
+    st.i = 9.0f; st.p = 54.0f;
+    st.ok = SUPPLY_OK_VOLTAGE;
+    supply_reset_peaks(&st);
+    CHECK_EQ(st.i_max, 0.0f);
+    CHECK_EQ(st.p_max, 0.0f);
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    st.i = 1.5f; st.p = 9.0f;
+    supply_track_peaks(&st);
+    CHECK_NEAR(st.i_max, 1.5f, 1e-4f);
+    CHECK_NEAR(st.p_max, 9.0f, 1e-4f);
     supply_reset_peaks(NULL);
     supply_track_peaks(NULL);
 }

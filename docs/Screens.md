@@ -211,9 +211,10 @@ offers, and the sliders follow it. A tap on a track sets the value under the
 finger. A set point takes effect at once, with the output on or off.
 
 **OUTPUT ON is a two-second hold**, the gesture and the fade ARM uses. OUTPUT
-OFF is a tap. STOP switches the output off on every screen, and so does a
-supply that stops answering. The output stays off until it is switched on
-again. Leaving the screen keeps the output on, so a servo or an ESC fed by the
+OFF is a tap. STOP switches the output off on every screen. So does every
+other stop the bench counts -- touch that stops answering, and the
+coprocessor refusing to stay armed -- and a supply that stops answering. The
+output stays off until it is switched on again. Leaving the screen keeps the output on, so a servo or an ESC fed by the
 supply stays powered on the screen that tests it.
 
 A run is one switch-on of the output. The plot clears when the output comes on

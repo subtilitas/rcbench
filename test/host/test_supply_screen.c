@@ -206,6 +206,27 @@ TEST_CASE(a_second_contact_cannot_steal_the_release)
     CHECK(supply_screen_poll_cmd(&c) && c.off);
 }
 
+TEST_CASE(a_second_contact_on_another_button_cannot_steal_the_off)
+{
+    fresh();
+    supply_cmd_t c;
+    supply_screen_set_output(true);
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    ev(RESET_X, RESET_Y, TOUCH_EVENT_DOWN, 2);
+    ev(RESET_X, RESET_Y, TOUCH_EVENT_UP, 2);
+    ev(V_UP_X, V_ROW_Y, TOUCH_EVENT_DOWN, 3);
+    ev(V_UP_X, V_ROW_Y, TOUCH_EVENT_UP, 3);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.off);
+    CHECK(!c.reset);
+
+    /* And the buttons answer again once the first contact has lifted. */
+    tap(RESET_X, RESET_Y);
+    CHECK(supply_screen_poll_cmd(&c) && c.reset);
+}
+
 TEST_CASE(a_stop_abandons_the_hold_and_drops_a_posted_on)
 {
     fresh();
@@ -539,6 +560,7 @@ int main(void)
     RUN(the_release_that_ends_the_hold_does_not_switch_off);
     RUN(an_off_outranks_an_on_in_the_same_poll);
     RUN(a_second_contact_cannot_steal_the_release);
+    RUN(a_second_contact_on_another_button_cannot_steal_the_off);
     RUN(a_stop_abandons_the_hold_and_drops_a_posted_on);
     RUN(a_stop_while_the_output_reports_off_strands_no_press);
     RUN(a_touch_loss_drops_an_on_and_keeps_an_off);

@@ -233,7 +233,9 @@ eingeschaltetem wie ausgeschaltetem Ausgang.
 
 **OUTPUT ON ist ein Zwei-Sekunden-Halten**, dieselbe Geste und dieselbe Blende
 wie ARM. OUTPUT OFF ist ein Tippen. STOP schaltet den Ausgang auf jedem
-Bildschirm ab, ebenso ein Netzteil, das nicht mehr antwortet. Der Ausgang
+Bildschirm ab. Ebenso jeder andere Stopp, den der Prüfstand zählt -- ein
+Touch, der nicht mehr antwortet, und ein Koprozessor, der nicht scharf
+bleiben will -- und ein Netzteil, das nicht mehr antwortet. Der Ausgang
 bleibt aus, bis er wieder eingeschaltet wird. Das Verlassen des Bildschirms
 lässt den Ausgang an, damit ein Servo oder ein ESC am Netzteil auf dem
 Bildschirm versorgt bleibt, der es testet.
