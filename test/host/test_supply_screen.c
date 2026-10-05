@@ -668,6 +668,39 @@ TEST_CASE(an_on_asked_for_counts_as_live_before_it_is_seen)
     (void)supply_screen_poll_cmd(&c);
 }
 
+TEST_CASE(an_on_dropped_on_its_way_stops_counting_as_live)
+{
+    /* Handed over and then dropped by the application: told nothing is
+     * coming, the screen stops asking.  One still held is not dropped. */
+    fresh();
+    hold_on();
+    supply_screen_set_on_coming(false);     /* still held: kept */
+    tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    tap(DISCARD_X, ASK_Y);
+    supply_cmd_t c;
+    CHECK(supply_screen_poll_cmd(&c) && c.on);
+    supply_screen_set_on_coming(true);      /* on its way */
+    tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    tap(DISCARD_X, ASK_Y);
+    supply_screen_set_on_coming(false);     /* dropped */
+    tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+}
+
+TEST_CASE(the_question_closes_when_the_output_goes_off)
+{
+    fresh();
+    supply_screen_set_output(true);
+    tap(V_UP_X, V_ROW_Y);                    /* asked */
+    supply_screen_set_output(false);         /* STOP, a trip, OFF */
+    tap(APPLY_X, ASK_Y);                     /* no question to answer */
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    tap(V_UP_X, V_ROW_Y);                    /* off: no question */
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+}
+
 TEST_CASE(each_question_is_switched_on_its_own)
 {
     fresh();
@@ -1200,6 +1233,8 @@ int main(void)
     RUN(a_change_to_a_live_output_waits_for_the_question);
     RUN(an_on_asked_for_counts_as_live_before_it_is_seen);
     RUN(the_heading_says_what_the_output_does_on_either_pane);
+    RUN(an_on_dropped_on_its_way_stops_counting_as_live);
+    RUN(the_question_closes_when_the_output_goes_off);
     RUN(each_question_is_switched_on_its_own);
     RUN(a_drag_moves_the_set_point_by_the_distance_dragged);
     RUN(a_typed_cap_rounds_down_and_a_typed_trip_stays_a_trip);

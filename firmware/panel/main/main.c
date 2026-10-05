@@ -3979,6 +3979,11 @@ static void log_follow_runs(void)
     if (wanted == LOG_RUN_NONE) {
         return;
     }
+    if (wanted == LOG_RUN_SUPPLY) {
+        /* The run's first row counts from here, not from the last supply
+         * step, which a bench run that has just ended may have taken. */
+        s_supply_step_ms = now_ms();
+    }
     /* The run's clock, its row counts and its number, all set before the
      * level goes up so the logger cannot see a run half started.  Zero means
      * no run, so the count skips it on the one wrap in 2^32 runs. */
@@ -5203,6 +5208,9 @@ void app_main(void)
             (outputs_result_t)atomic_load(&s_outputs_result));
 
         flush_screen_commands(stops_now);
+        /* An ON the supply screen sent and the control task dropped -- stale,
+         * or lost to a full queue -- stops counting as live there. */
+        supply_screen_set_on_coming(supply_live_or_coming());
         /*
          * Whether a STOP is on screen to press.  The control task hit-tests
          * the band's rectangle and cannot see which screen is up.

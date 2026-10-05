@@ -489,6 +489,14 @@ void supply_screen_set_output(bool on)
         } else if (ui_hold_left(&s.hold) && s.pressed == P_OUTPUT) {
             let_go();
         }
+        if (!on && s.confirm_open) {
+            /* The question was about a live output and there is none: it
+             * would go on saying OUTPUT IS ON beside a switch that says off.
+             * The change it held is dropped, unanswered. */
+            s.confirm_open = false;
+            ++s.set_rev;
+            supply_invalidate();
+        }
         ++s.out_rev;
         ++s.ctrl_rev;
     }
@@ -595,6 +603,13 @@ static void confirm_close(bool apply)
 supply_limits_t supply_screen_limits(void)
 {
     return s.lim;
+}
+
+void supply_screen_set_on_coming(bool coming)
+{
+    if (!coming && !s.pending.on) {
+        s.on_asked = false;
+    }
 }
 
 void supply_screen_cancel_on(void)

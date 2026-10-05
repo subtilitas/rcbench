@@ -82,6 +82,14 @@ supply_limits_t supply_screen_limits(void);
 /** A hold under way is abandoned and a pending ON dropped: STOP. */
 void supply_screen_cancel_on(void);
 
+/**
+ * Whether an ON this screen asked for can still be on its way: false once
+ * the application has taken every ON it sent and the output is not on, so
+ * an ON it dropped -- stale, or lost to a full queue -- stops counting as
+ * live.  An ON this screen holds and has not handed over still counts.
+ */
+void supply_screen_set_on_coming(bool coming);
+
 /** True when anything was asked; clears it. */
 bool supply_screen_poll_cmd(supply_cmd_t *out);
 
