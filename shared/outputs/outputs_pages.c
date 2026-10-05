@@ -90,6 +90,23 @@ uint8_t outputs_chan_cfg_write(uint16_t *regs, uint8_t off, uint8_t n,
     return 0u;
 }
 
+bool outputs_chan_cfg_set_throttle_range(uint16_t *regs, uint16_t min_us,
+                                         uint16_t max_us)
+{
+    if (regs == NULL || min_us < LINK_CC_FLOOR_US
+        || max_us > LINK_CC_CEILING_US || min_us >= max_us) {
+        return false;
+    }
+    for (unsigned c = 0; c < LINK_OUT_CHANNELS; ++c) {
+        uint16_t *r = &regs[(size_t)c * LINK_CC_STRIDE];
+        if (r[LINK_CC_ROLE] == LINK_CC_ROLE_THROTTLE) {
+            r[LINK_CC_MIN_US] = min_us;
+            r[LINK_CC_MAX_US] = max_us;
+        }
+    }
+    return true;
+}
+
 void outputs_chan_cfg_apply(outputs_t *o, const uint16_t *regs)
 {
     if (o == NULL || regs == NULL) {

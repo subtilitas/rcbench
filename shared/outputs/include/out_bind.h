@@ -435,6 +435,11 @@ bool outbind_from_slots(outbind_t *b, uint16_t board,
  * protocol bound the roles are mixed, and each channel takes the role of the
  * protocol whose pin renders it.  Channels the selection does not use keep
  * the schema's defaults.
+ *
+ * @p min_us and @p max_us go to the throttle channels only, through
+ * outputs_chan_cfg_set_throttle_range(); every surface channel keeps the
+ * schema's 1000 to 2000 us.  Endpoints that page would refuse are not
+ * written at all.
  */
 void outbind_to_chan_cfg(const outbind_t *b, uint16_t *regs,
                          uint16_t min_us, uint16_t max_us);

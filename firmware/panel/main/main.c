@@ -595,10 +595,59 @@ static void publish_poles(void)
     atomic_store(&s_poles_owed, true);
 }
 
+/*
+ * The throttle's pulse endpoints, Idle pulse and Full pulse, on their way to
+ * the coprocessor.
+ *
+ * Published the way the pole count is, and for the same reason: the settings
+ * screen writes the model from app_main and the control task owns the link,
+ * so the values travel in an atomic beside the debt rather than being read
+ * from settings.c on the control task.  Both in one word, min in the high
+ * half, so a write never pairs one edit's minimum with another's maximum.
+ *
+ * The time of the last edit travels too.  A key held on + or - steps the
+ * value every few hundred milliseconds, and each write of CHAN_CFG is a
+ * flash write at the far end; the debt is paid once the value has rested for
+ * ENDPOINTS_SETTLE_MS.
+ */
+#define ENDPOINTS_SETTLE_MS 300u
+static atomic_bool s_endpoints_owed;
+/*
+ * Raised at a link-up edge, control task only: the far end is held disarmed
+ * until its throttle endpoints have been brought to the settings.  A bench
+ * armed with no link -- the simulator, or a cable pulled mid-run -- would
+ * otherwise arm a coprocessor that has just answered on whatever range it
+ * kept in flash, and keep that range for the whole run.
+ */
+static bool        s_endpoints_hold;
+static atomic_uint s_endpoints_value;
+static atomic_uint s_endpoints_at_ms;
+
+static void publish_endpoints(void)
+{
+    const unsigned lo = (unsigned)settings_get_int(SET_OUT_MIN_US);
+    const unsigned hi = (unsigned)settings_get_int(SET_OUT_MAX_US);
+    atomic_store(&s_endpoints_value, (lo << 16) | (hi & 0xFFFFu));
+    atomic_store(&s_endpoints_at_ms, (unsigned)now_ms());
+    atomic_store(&s_endpoints_owed, true);
+}
+
+static uint16_t endpoints_min(void)
+{
+    return (uint16_t)(atomic_load(&s_endpoints_value) >> 16);
+}
+
+static uint16_t endpoints_max(void)
+{
+    return (uint16_t)(atomic_load(&s_endpoints_value) & 0xFFFFu);
+}
+
 static void settings_changed(setting_id_t id)
 {
     if (id == SET_MOTOR_POLES) {
         publish_poles();
+    } else if (id == SET_OUT_MIN_US || id == SET_OUT_MAX_US) {
+        publish_endpoints();
     }
 }
 
@@ -1053,8 +1102,13 @@ static bool bring_up(void)
     settings_init();
     /* And once unconditionally: settings_init() fires the observer only for
      * a value that differs from the schema default, and a bench left at the
-     * default still has to tell the far end what it is. */
+     * default still has to tell the far end what it is.  The pulse
+     * endpoints the same way: the far end keeps CHAN_CFG in flash, so a
+     * range written by another panel, or before a reset to defaults, would
+     * otherwise stay on the motor channels.  Nothing is written when the
+     * page already agrees. */
     publish_poles();
+    publish_endpoints();
     settings_apply_ui();
 
     display_config_t dcfg = DISPLAY_CONFIG_DEFAULT();
@@ -2154,6 +2208,83 @@ static bool poles_service(void)
     return true;
 }
 
+/*
+ * Bring the throttle channels' endpoints at the far end to the settings.
+ *
+ * Read, change, write: the page is read back, the throttle channels take the
+ * two values (outputs_chan_cfg_set_throttle_range()) and every other channel
+ * keeps what it holds -- a servo's range the SERVO screen named included.
+ * Nothing is written when nothing changed, which is the case at every
+ * link-up after the first: the far end keeps the page in flash.
+ *
+ * Only when @p far_disarmed: the control write of this same pass put
+ * ARM = 0 at the far end and was acknowledged.  The bank's own flag is not
+ * enough -- a disarm whose write never left leaves the far end driving
+ * while this end reads disarmed -- and a pulse range that moves under a
+ * running motor moves its throttle.  An edit made during a run waits for
+ * the disarm; the hold after a link-up (s_endpoints_hold) is what makes the
+ * far end disarmed for that pass on a bench armed here.
+ *
+ * The same refusal rules as poles_service(): a write nobody answered is
+ * owed again, one the far end refused is reported and waits for a new edit.
+ * The hold ends with every outcome but a missing answer, so a coprocessor
+ * that refuses the page is armed on its own range rather than never.
+ */
+static void endpoints_service(bool far_disarmed)
+{
+    if (!atomic_load(&s_endpoints_owed)) {
+        s_endpoints_hold = false;
+        return;
+    }
+    if (!far_disarmed) {
+        return;
+    }
+    if ((uint32_t)(now_ms() - atomic_load(&s_endpoints_at_ms))
+        < ENDPOINTS_SETTLE_MS) {
+        return;
+    }
+    if (!atomic_exchange(&s_endpoints_owed, false)) {
+        return;
+    }
+    const uint16_t lo = endpoints_min();
+    const uint16_t hi = endpoints_max();
+
+    link_msg_t ccr;
+    memset(&ccr, 0, sizeof(ccr));
+    if (!poll_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, &ccr)) {
+        atomic_store(&s_endpoints_owed, true);
+        return;
+    }
+    const bool held = s_endpoints_hold;
+    s_endpoints_hold = false;
+    if (ccr.op == LINK_OP_NACK) {
+        control_alert("coprocessor would not report its pulse range");
+        return;
+    }
+    uint16_t cfg[LINK_CC_COUNT];
+    memcpy(cfg, ccr.regs, sizeof(cfg));
+    if (!outputs_chan_cfg_set_throttle_range(cfg, lo, hi)) {
+        /* Idle pulse and Full pulse overlap in their ranges (800 to 1600 and
+         * 1400 to 2400 us), so the pair can be inverted while it is being
+         * edited.  Said, and the far end keeps the last pair it took. */
+        control_alert("idle pulse must be below full pulse -- not sent");
+        return;
+    }
+    if (memcmp(cfg, ccr.regs, sizeof(cfg)) == 0) {
+        return;
+    }
+    link_msg_t reply;
+    memset(&reply, 0, sizeof(reply));
+    if (!write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, cfg, &reply)) {
+        atomic_store(&s_endpoints_owed, true);
+        s_endpoints_hold = held;
+        return;
+    }
+    if (reply.op != LINK_OP_ACK) {
+        control_alert("coprocessor refused the pulse range");
+    }
+}
+
 static bool control_clear_failsafe(link_msg_t *reply)
 {
     const uint16_t magic = LINK_CLEAR_MAGIC;
@@ -2595,9 +2726,7 @@ static void write_output_binding(const outbind_t *bind)
      */
     uint16_t cfg[LINK_CC_COUNT];
     uint16_t slots[LINK_OS_COUNT];
-    outbind_to_chan_cfg(bind, cfg,
-                        (uint16_t)settings_get_int(SET_OUT_MIN_US),
-                        (uint16_t)settings_get_int(SET_OUT_MAX_US));
+    outbind_to_chan_cfg(bind, cfg, endpoints_min(), endpoints_max());
     (void)outbind_to_slots(bind, slots);
 
     /*
@@ -3212,7 +3341,8 @@ static bool poll_bench(bench_state_t *bench)
          * would render that old command before the centre arrived.
          * servo_service() pays the debt every pass, so this holds for one.
          */
-        const bool armed = outputs_armed(&s_out) && !s_servo_release_owed;
+        const bool armed = outputs_armed(&s_out) && !s_servo_release_owed
+                           && !s_endpoints_hold;
         /*
          * The pole count, when an edit or a write that did not land leaves
          * one owed.  Between arms this is the path an edit takes to the far
@@ -3226,7 +3356,17 @@ static bool poll_bench(bench_state_t *bench)
          * per edit.
          */
         (void)poles_service();
-        if (!control_write(armed, &ack) && armed && ack.op == LINK_OP_NACK) {
+        const bool written = control_write(armed, &ack);
+        /*
+         * The throttle's endpoints, when an edit or a link-up leaves them
+         * owed -- after the control write, and only when that write put
+         * ARM = 0 at the far end and was acknowledged, with the bench
+         * disarmed here or held for this very debt.  Costs a read, and a
+         * write only when the page differs.
+         */
+        endpoints_service(written && !armed
+                          && (!outputs_armed(&s_out) || s_endpoints_hold));
+        if (!written && armed && ack.op == LINK_OP_NACK) {
             /*
              * The coprocessor is in failsafe or has lost the heartbeat.  A
              * stop latches at this end too.
@@ -3489,6 +3629,17 @@ static void link_came_up(const link_msg_t *reply)
         ESP_LOGW(TAG, "coprocessor did not take the pole count -- rpm will "
                       "read empty");
     }
+    /*
+     * The throttle's pulse endpoints, for the same reason: a coprocessor
+     * replaced or reflashed since the debt was last paid holds its own
+     * CHAN_CFG, and the panel would go on showing a range the motor channels
+     * do not have.  The far end is held disarmed until it is paid
+     * (s_endpoints_hold), by endpoints_service() at the next poll,
+     * which reads the page and writes it only if the throttle channels
+     * differ, so an edge to a coprocessor that already agrees costs a read.
+     */
+    atomic_store(&s_endpoints_owed, true);
+    s_endpoints_hold = true;
     /*
      * And what its outputs already are.  The screen shows what is configured
      * over there, not what this panel last sent: after a panel restart those

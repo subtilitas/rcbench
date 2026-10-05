@@ -340,16 +340,41 @@ TEST_CASE(a_throttle_protocol_makes_throttles_and_a_pulse_one_makes_surfaces)
     CHECK(outbind_toggle(&b, idx(0)));
     outbind_to_chan_cfg(&b, cc, 1100u, 1900u);
     CHECK_EQ(cc[0 * LINK_CC_STRIDE + LINK_CC_ROLE], LINK_CC_ROLE_SURFACE);
-    CHECK_EQ(cc[0 * LINK_CC_STRIDE + LINK_CC_MIN_US], 1100);
-    CHECK_EQ(cc[0 * LINK_CC_STRIDE + LINK_CC_MAX_US], 1900);
+    /* The endpoints are a throttle's; a surface keeps the schema's range. */
+    CHECK_EQ(cc[0 * LINK_CC_STRIDE + LINK_CC_MIN_US], LINK_CC_DEFAULT_MIN);
+    CHECK_EQ(cc[0 * LINK_CC_STRIDE + LINK_CC_MAX_US], LINK_CC_DEFAULT_MAX);
 }
 
-TEST_CASE(endpoints_a_servo_cannot_take_are_ignored_rather_than_written)
+TEST_CASE(the_esc_endpoints_reach_the_motor_and_not_the_servo_beside_it)
+{
+    /* MOTOR PWM and SERVO PWM bound together, the case the OUTPUTS screen
+     * allows.  An ESC calibrated on a transmitter sending 985 to 2012 us
+     * needs 980 and 2020; a servo given that range would rest at 1500, and
+     * one given an asymmetric range would rest off centre while the motor
+     * runs. */
+    outbind_t b;
+    uint16_t cc[LINK_CC_COUNT];
+    init(&b);
+    outbind_set_proto(&b, proto_named("MOTOR PWM"));
+    CHECK(outbind_toggle(&b, idx(0)));
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    CHECK(outbind_toggle(&b, idx(1)));
+    outbind_to_chan_cfg(&b, cc, 980u, 2020u);
+
+    CHECK_EQ(cc[0 * LINK_CC_STRIDE + LINK_CC_ROLE], LINK_CC_ROLE_THROTTLE);
+    CHECK_EQ(cc[0 * LINK_CC_STRIDE + LINK_CC_MIN_US], 980);
+    CHECK_EQ(cc[0 * LINK_CC_STRIDE + LINK_CC_MAX_US], 2020);
+    CHECK_EQ(cc[1 * LINK_CC_STRIDE + LINK_CC_ROLE], LINK_CC_ROLE_SURFACE);
+    CHECK_EQ(cc[1 * LINK_CC_STRIDE + LINK_CC_MIN_US], LINK_CC_DEFAULT_MIN);
+    CHECK_EQ(cc[1 * LINK_CC_STRIDE + LINK_CC_MAX_US], LINK_CC_DEFAULT_MAX);
+}
+
+TEST_CASE(endpoints_the_page_would_refuse_are_ignored_rather_than_written)
 {
     outbind_t b;
     uint16_t cc[LINK_CC_COUNT];
     init(&b);
-    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    outbind_set_proto(&b, proto_named("MOTOR PWM"));
     CHECK(outbind_toggle(&b, idx(0)));
 
     /* The page refuses these with BAD_VALUE, so writing them would make the
@@ -1837,7 +1862,8 @@ int main(void)
     RUN(ppm_claims_the_whole_channel_range_on_its_one_pin);
     RUN(the_two_dshot_drivers_are_told_apart_on_the_wire);
     RUN(a_throttle_protocol_makes_throttles_and_a_pulse_one_makes_surfaces);
-    RUN(endpoints_a_servo_cannot_take_are_ignored_rather_than_written);
+    RUN(the_esc_endpoints_reach_the_motor_and_not_the_servo_beside_it);
+    RUN(endpoints_the_page_would_refuse_are_ignored_rather_than_written);
     RUN(what_this_writes_is_what_the_bank_accepts);
     RUN(a_selection_survives_the_round_trip_through_the_page);
     RUN(two_protocols_at_once_are_the_ordinary_case);
