@@ -390,9 +390,8 @@ started again). The output is switched off too, and not on
 again until a new hold, when the module switches it off itself -- its
 overcurrent protection or its button. The band also says when the pins are
 refused, when the output would not switch, and when the set points would not
-take. A pin or
-baud change waits until the output is off; enabling or disabling the PD mini
-switches the output off.
+take. A pin or baud change, and enabling or disabling the PD mini, switch the
+output off.
 
 OUTPUT ON and OFF, RESET PEAKS and the readings stay live under the keypad,
 the question and SETTINGS. One finger at a time: while one holds a control, a

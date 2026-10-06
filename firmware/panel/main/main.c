@@ -3062,8 +3062,21 @@ static void supply_queue_sample(void)
  */
 static void supply_real_follow(void)
 {
+    /*
+     * Any change to the PD mini's wiring, not only enabling it: the page
+     * takes new pins only with the output off, so a change under a live
+     * output would otherwise wait for an OFF nobody asks for.
+     */
+    static unsigned wiring_seen;
+    const unsigned wiring = atomic_load(&s_pdmini_wiring);
+    const bool rewired = wiring != wiring_seen;
+    wiring_seen = wiring;
     const bool real = pdmini_wiring().en;
     if (real == s_supply_is_real) {
+        if (rewired && real && s_supply_on) {
+            supply_switch(false);
+            control_alert("PD mini wiring changed in SETUP -- output off");
+        }
         return;
     }
     if (s_supply_on) {

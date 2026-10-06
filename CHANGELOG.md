@@ -33,6 +33,8 @@ been run against a module.
     coprocessor without the page, an ON refused or let go at the far end.
     The band also says when the pins are refused, the output would not
     switch, or the set points would not take.
+  - A change to the PD mini's pins or baud on SETUP switches the output
+    off, as enabling or disabling it does.
 - **The coprocessor drives the PD mini** on a PIO UART, on the two pins the
   SUPPLY link page (0x2A, protocol 4.3) names.
   - Wiring: refused on a pin that is reserved, bound to an output or the
