@@ -128,6 +128,13 @@ void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma)
     d->want_ma     = ma;
 }
 
+void pdmini_restored(pdmini_t *d)
+{
+    if (d != NULL) {
+        d->restored = true;
+    }
+}
+
 void pdmini_want_off(pdmini_t *d)
 {
     if (d == NULL) {
@@ -152,7 +159,9 @@ bool pdmini_may_be_on(const pdmini_t *d)
      * its output may have come on by itself since it was last read. */
     return d != NULL
            && (d->st.output || (d->en_pending && d->en_for) || d->off_owed
-               || d->on_sent || (d->answered && !d->state_known));
+               || d->on_sent || (d->answered && !d->state_known)
+               || (d->restored && !d->answered
+                   && d->who_misses < PDMINI_ABSENT_TRIES));
 }
 
 /* ------------------------------------------------------------ transactions */
@@ -193,6 +202,10 @@ static void finish(pdmini_t *d, uint32_t now, bool ok)
     if (d->cmd == PDMINI_READ_INPUT && d->rx_n == 0u
         && d->input_misses < PDMINI_INPUT_MISSES) {
         ++d->input_misses;        /* firmware before v1.0.2.0 has none */
+    }
+    if (d->cmd == PDMINI_WHO_AM_I && d->rx_n == 0u
+        && d->who_misses < PDMINI_ABSENT_TRIES) {
+        ++d->who_misses;
     }
     if (d->cmd == PDMINI_WHO_AM_I && d->rx_n == 0u) {
         /* Not a byte back: silence, where a blind OFF may be heard.  Any

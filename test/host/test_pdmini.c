@@ -1257,6 +1257,26 @@ TEST_CASE(an_output_not_read_may_be_on)
     CHECK(!pdmini_may_be_on(NULL));
 }
 
+/* Wiring restored after a restart: the module may be on until read off,
+ * and a module that answers nothing for 10 s is taken not to be there. */
+TEST_CASE(a_restored_module_may_be_on_until_read)
+{
+    fresh();
+    pdmini_restored(&d);
+    CHECK(pdmini_may_be_on(&d));
+    run(1500u, false);
+    CHECK(!pdmini_may_be_on(&d));              /* answered and read off */
+
+    fresh();
+    m.powered = false;
+    pdmini_restored(&d);
+    run(5000u, false);
+    CHECK(pdmini_may_be_on(&d));
+    run(7000u, false);
+    CHECK(!pdmini_may_be_on(&d));              /* nothing there */
+    pdmini_restored(NULL);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -1331,5 +1351,6 @@ int main(void)
     RUN(state_reads_that_fail_are_not_hidden_by_the_rest);
     RUN(state_reads_answered_wrongly_send_nothing_blind);
     RUN(an_output_not_read_may_be_on);
+    RUN(a_restored_module_may_be_on_until_read);
     return test_summary("pdmini");
 }

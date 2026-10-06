@@ -376,8 +376,9 @@ static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
     }
     if (rewired) {
         /* Attached once the wiring is in flash, so a restart in between
-         * finds the pins of the module it may have to switch off. */
-        if (s_supply_unsaved) {
+         * finds the pins of the module it may have to switch off; a page
+         * now disabled has nothing to attach. */
+        if (s_supply_unsaved && supply_page_enabled(&s_supply)) {
             s_supply_attach = true;
         } else {
             (void)supply_rewire();
@@ -1167,10 +1168,15 @@ int main(void)
      */
     if (have_saved
         && supply_page_write(&s_supply, LINK_SP_ENABLE, LINK_SP_OUTPUT,
-                             saved.supply, &s_outputs, false) == 0u
-        && !supply_rewire()) {
-        supply_page_init(&s_supply);
-        (void)supply_rewire();
+                             saved.supply, &s_outputs, false) == 0u) {
+        if (!supply_rewire()) {
+            supply_page_init(&s_supply);
+            (void)supply_rewire();
+        } else if (s_pd_open) {
+            /* Left on before the restart, perhaps: held as maybe on until
+             * read off, so no wiring write can let go of it first. */
+            pdmini_restored(&s_pd);
+        }
     }
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 

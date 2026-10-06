@@ -120,6 +120,9 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
 #define PDMINI_SLOT_MS     1000u   /**< the active slot read again          */
 #define PDMINI_RETRY_MS    2000u   /**< a write that did not take, again    */
 #define PDMINI_FAILS          3u   /**< failed transactions in a row: gone */
+#define PDMINI_ABSENT_TRIES  10u   /**< WHO_AM_I unanswered by a byte this
+                                        many times, about 10 s: a restored
+                                        module is taken not to be there   */
 #define PDMINI_INPUT_MISSES   3u   /**< READ_INPUT_STATE unanswered this many
                                         times is not asked again until the
                                         module is identified again: the
@@ -174,6 +177,8 @@ typedef struct {
     /* What is known. */
     bool     identified;
     bool     answered;       /* identified once since pdmini_init()      */
+    bool     restored;       /* wiring from before a restart: maybe on   */
+    uint8_t  who_misses;     /* WHO_AM_I answered by not a byte, so far  */
     bool     state_known;    /* READ_OUTPUT_STATE answered since online */
     int      slot;           /* the active slot, -1 until read           */
     bool     data_known;     /* set_mv/set_ma read back from it          */
@@ -220,6 +225,11 @@ void pdmini_init(pdmini_t *d, const pdmini_io_t *io, uint32_t now_ms);
  *  output switched off because its set points would not take stays off,
  *  whatever is asked, until an OFF is asked. */
 void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma);
+
+/** The wiring came back from before a restart: the module may be on.
+ *  pdmini_may_be_on() says so until a state read shows it off, or until
+ *  PDMINI_ABSENT_TRIES WHO_AM_I in a row go unanswered by a byte. */
+void pdmini_restored(pdmini_t *d);
 
 /** The output off, and no set points asked: the module's are left as
  *  they are until pdmini_want() names some. */
