@@ -309,7 +309,8 @@ static uint16_t target_mv(const pdmini_t *d)
     if (vin <= PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV) {
         return d->want_mv;      /* not read yet, or no room to cap into */
     }
-    const uint32_t cap = vin - PDMINI_HEADROOM_MV;
+    /* On the 10 mV grid the screen offers, rounded down. */
+    const uint32_t cap = (vin - PDMINI_HEADROOM_MV) / 10u * 10u;
     return (d->want_mv > cap) ? (uint16_t)cap : d->want_mv;
 }
 
@@ -654,8 +655,14 @@ static bool next_job(pdmini_t *d, uint32_t now)
     /* Due, it is read before a set point or an ON as well: set points
      * changing faster than the readings come round -- a slider dragged --
      * or an ON after a pause, are judged on a fresh reading. */
-    if (d->want_set && d->input_known
-        && (uint32_t)(now - d->last_input) >= PDMINI_STATE_MS) {
+    const bool fallback_due = !d->input_seen
+                              && d->input_misses >= PDMINI_INPUT_MISSES
+                              && (uint32_t)(now - d->last_input)
+                                     >= PDMINI_INPUT_RETRY_MS;
+    if (d->want_set
+        && ((d->input_known
+             && (uint32_t)(now - d->last_input) >= PDMINI_STATE_MS)
+            || fallback_due)) {
         d->last_input = now;
         read1(d, now, PDMINI_READ_INPUT);
         return true;

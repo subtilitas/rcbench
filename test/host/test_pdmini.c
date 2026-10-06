@@ -1121,11 +1121,15 @@ TEST_CASE(an_unanswered_input_read_is_given_up)
     CHECK(m.reads[PDMINI_READ_INPUT] <= asked + 1u);
 
     m.no_input = false;                       /* it answers after all */
-    m.input_mv = 4880u;
-    run(6000u, false);
+    m.input_mv = 4885u;                       /* off the 10 mV grid */
+    for (int k = 0; k < 700; ++k) {           /* set points all the while */
+        pdmini_want(&d, false, (uint16_t)(6000u + 10u * (unsigned)(k % 50)),
+                    1000u);
+        run(10u, false);
+    }
     pdmini_want(&d, false, 8000u, 1000u);
     run(1500u, false);
-    CHECK_EQ(m.mv[0], 4880u - PDMINI_HEADROOM_MV);
+    CHECK_EQ(m.mv[0], 4380u);                 /* 4885 - 500, rounded down */
 }
 
 /* The same module, on, goes quiet, answers again and goes quiet again: the
