@@ -164,15 +164,20 @@ static void finish(pdmini_t *d, uint32_t now, bool ok)
         return;
     }
     ++d->st.errors;
+    if (d->cmd == PDMINI_WHO_AM_I) {
+        d->blind_due = true;      /* nothing answered who it is */
+    }
     if (++d->fails >= PDMINI_FAILS) {
         /*
          * Gone: nothing it said before is known any more, and the next
          * thing asked is who is there.  A write unanswered by its confirming
          * read looks the same as a module that is not there, so the pending
          * write is dropped with the rest and made again once it answers.
+         * An OFF owed stays owed until a state read says otherwise.
          */
         d->fails        = 0u;
-        d->off_owed     = d->st.output || (d->en_pending && d->en_for);
+        d->off_owed     = d->off_owed || d->st.output
+                          || (d->en_pending && d->en_for);
         d->identified   = false;
         d->st.online    = false;
         d->state_known  = false;
@@ -180,6 +185,7 @@ static void finish(pdmini_t *d, uint32_t now, bool ok)
         d->data_known   = false;
         d->en_pending   = false;
         d->data_pending = false;
+        d->last_identify = now - PDMINI_IDENTIFY_MS;
     }
 }
 
@@ -191,6 +197,10 @@ static void take_reply(pdmini_t *d, uint32_t now)
         d->identified  = true;
         d->st.online   = true;
         d->state_known = false;
+        d->blind_due   = false;
+        /* Perhaps another module than the last: its argument for on is
+         * shown again by a read-back before it is relied on. */
+        d->on_confirmed = false;
         break;
     case PDMINI_READ_STATE:
         d->st.output   = (r[1] & 1u) != 0u;
@@ -199,13 +209,19 @@ static void take_reply(pdmini_t *d, uint32_t now)
         d->off_owed    = false;
         if (d->en_pending && d->en_for != d->want_output) {
             /*
-             * An OFF asked for while an ON was waiting to be confirmed: the
-             * output is watched until the ON has had its time.  On, and the
-             * OFF that follows switches it off; still off once the time is
-             * up, and the ON never came.
+             * An OFF asked for while an ON, its argument not yet shown to
+             * mean on, waited to be confirmed: the output is watched for
+             * PDMINI_WATCH_MS.  On, and the argument is learnt and the OFF
+             * that follows switches it off; still off once the time is up,
+             * and the ON is taken never to have come -- one that does come
+             * later is an output on while OFF is asked, seen by the next
+             * state read.
              */
-            if (d->st.output
-                || (uint32_t)(now - d->en_at) >= PDMINI_CONFIRM_MS) {
+            if (d->st.output) {
+                d->on_value     = d->en_value;
+                d->on_confirmed = true;
+                d->en_pending   = false;
+            } else if ((uint32_t)(now - d->en_at) >= PDMINI_WATCH_MS) {
                 d->en_pending = false;
             }
             break;
@@ -224,12 +240,18 @@ static void take_reply(pdmini_t *d, uint32_t now)
         }
         d->en_pending = false;
         break;
-    case PDMINI_READ_ID:
+    case PDMINI_READ_ID: {
+        const int slot = (r[1] <= 4u) ? (int)r[1] : 0;
+        if (d->on_step == 3u && slot == d->slot) {
+            d->on_step = 4u;   /* the slot the set points were just read from */
+            break;
+        }
         /* Read again every second: the module's own buttons can change the
          * slot, or what is in it, so its data is read again with it. */
-        d->slot       = (r[1] <= 4u) ? (int)r[1] : 0;
+        d->slot       = slot;
         d->data_known = false;
         break;
+    }
     case PDMINI_READ_DATA:
         if ((int)r[1] == d->slot) {
             d->st.set_mv    = (uint16_t)(r[2] | (r[3] << 8));
@@ -239,6 +261,9 @@ static void take_reply(pdmini_t *d, uint32_t now)
             if (d->st.set_mv == d->want_mv && d->st.set_ma == d->want_ma) {
                 d->data_tries   = 0u;
                 d->st.set_stuck = false;
+                if (d->on_step == 1u) {
+                    d->on_step = 2u;
+                }
             }
         }
         break;
@@ -281,26 +306,39 @@ void pdmini_rx(pdmini_t *d, uint8_t byte, uint32_t now_ms)
 /* --------------------------------------------------------------- the jobs */
 
 /*
- * OUTPUT_EN towards what is asked: first with the argument known to mean
- * it, then twice with the other, in case this module reads it the way the
- * vendor's sheet says.  Only ever written when the output reads otherwise,
- * so an OFF goes only to an output that is on and cannot switch on one that
- * was off.  Four writes that do not take leave it stuck -- an input not
- * ready for an ON -- and it is tried again two seconds on.  False when it
- * is waiting out that pause.
+ * Whether OUTPUT_EN may be written: four writes that do not take leave the
+ * output stuck -- an input not ready for an ON -- and it is tried again two
+ * seconds on.  False while it waits out that pause.
  */
-static bool write_en(pdmini_t *d, uint32_t now)
+static bool en_ready(pdmini_t *d, uint32_t now)
 {
     if (d->en_tries >= 4u) {
         d->st.stuck = true;
-        if ((uint32_t)(now - d->en_at) >= PDMINI_RETRY_MS) {
-            d->en_tries = 0u;
+        if ((uint32_t)(now - d->en_at) < PDMINI_RETRY_MS) {
+            return false;
         }
+        d->en_tries = 0u;
+    }
+    return true;
+}
+
+/*
+ * OUTPUT_EN towards what is asked: twice with the argument taken to mean
+ * it, then -- until a read-back has shown which argument means on -- twice
+ * with the other, in case this module reads it the way the vendor's sheet
+ * says.  Written when the output reads otherwise, so an OFF that tries the
+ * other argument goes only to an output that is on and cannot switch on
+ * one that was off.  False when en_ready() says not now.
+ */
+static bool write_en(pdmini_t *d, uint32_t now)
+{
+    if (!en_ready(d, now)) {
         return false;
     }
     const uint8_t mean = d->want_output ? d->on_value
                                         : (uint8_t)(1u - d->on_value);
-    d->en_value = (d->en_tries < 2u) ? mean : (uint8_t)(1u - mean);
+    d->en_value = (d->en_tries < 2u || d->on_confirmed)
+                      ? mean : (uint8_t)(1u - mean);
     ++d->en_tries;
     const uint8_t req[2] = { PDMINI_OUTPUT_EN, d->en_value };
     start(d, now, req, 2u, true);
@@ -313,28 +351,44 @@ static bool write_en(pdmini_t *d, uint32_t now)
 /* The next transaction, or false for none now. */
 static bool next_job(pdmini_t *d, uint32_t now)
 {
-    /* Who is there, before anything else is said to it -- but an OFF owed
-     * to a module that went quiet with its output on goes first, blind. */
+    /* The reads before an ON go one straight after the other: anything else
+     * chosen here starts them again. */
+    const uint8_t on_step = d->on_step;
+    d->on_step = 0u;
+
+    /*
+     * Who is there, before anything else is said to it.  An OFF owed to a
+     * module that went quiet with its output on goes blind, straight after
+     * a WHO_AM_I nothing answered -- never to a module that answers, which
+     * may be another one, and is read before anything is written to it.
+     */
     if (!d->identified) {
+        const bool blind = d->blind_due;
+        d->blind_due = false;
+        if (blind && d->off_owed && !d->want_output && d->on_confirmed) {
+            const uint8_t req[2] = { PDMINI_OUTPUT_EN,
+                                     (uint8_t)(1u - d->on_value) };
+            start(d, now, req, 2u, true);
+            return true;
+        }
         if ((uint32_t)(now - d->last_identify) >= PDMINI_IDENTIFY_MS) {
-            if (d->off_owed && !d->want_output && d->on_confirmed
-                && !d->blind_sent) {
-                const uint8_t req[2] = { PDMINI_OUTPUT_EN,
-                                         (uint8_t)(1u - d->on_value) };
-                start(d, now, req, 2u, true);
-                d->blind_sent = true;
-                return true;
-            }
-            d->blind_sent    = false;
             d->last_identify = now;
             read1(d, now, PDMINI_WHO_AM_I);
             return true;
         }
         return false;
     }
-    /* An OFF asked for while an ON waits to be confirmed: the state now,
-     * not in 250 ms. */
+    /*
+     * An OFF asked for while an ON waits to be confirmed.  With the
+     * argument for off shown by a read-back, it is written at once, and the
+     * module takes it after the ON.  Without, the state is read now and
+     * again until the ON has had PDMINI_WATCH_MS, and the output switched
+     * off the moment it reads on.
+     */
     if (d->en_pending && d->en_for && !d->want_output) {
+        if (d->on_confirmed && write_en(d, now)) {
+            return true;
+        }
         d->last_state = now;
         read1(d, now, PDMINI_READ_STATE);
         return true;
@@ -393,19 +447,37 @@ static bool next_job(pdmini_t *d, uint32_t now)
             }
         }
     }
-    /* An ON, once the set points are what is asked. */
+    /*
+     * An ON, once the set points are what is asked -- read back straight
+     * before it, then the slot, with nothing between, so a slot chosen or
+     * a set point turned on the module's own buttons since is not what
+     * comes on.
+     */
     const bool set_ok = d->want_set && d->data_known
                         && d->st.set_mv == d->want_mv
                         && d->st.set_ma == d->want_ma;
-    if (!d->en_pending && !d->st.output && d->want_output && set_ok) {
-        if (write_en(d, now)) {
+    if (!d->en_pending && !d->st.output && d->want_output && set_ok
+        && en_ready(d, now)) {
+        if (on_step == 4u && write_en(d, now)) {
             return true;
         }
+        if (on_step == 2u) {
+            d->on_step   = 3u;
+            d->last_slot = now;
+            read1(d, now, PDMINI_READ_ID);
+            return true;
+        }
+        d->on_step = 1u;
+        const uint8_t req[2] = { PDMINI_READ_DATA, (uint8_t)d->slot };
+        start(d, now, req, 2u, false);
+        return true;
     }
     /*
      * And what it is doing: whichever reading is furthest past its due,
      * so a slow module answering every display read near its period does
-     * not starve the others.
+     * not starve the others.  Unsigned, so a reading untaken for 2^31 ms
+     * or more -- a module first seen 25 days after start -- is late rather
+     * than early.
      */
     struct { uint32_t *last; uint32_t period; uint8_t cmd; } polls[4] = {
         { &d->last_display, PDMINI_DISPLAY_MS, PDMINI_READ_DISPLAY },
@@ -414,14 +486,17 @@ static bool next_job(pdmini_t *d, uint32_t now)
         { &d->last_slot,    PDMINI_SLOT_MS,    PDMINI_READ_ID },
     };
     int best = -1;
-    int32_t late_most = -1;
+    uint32_t late_most = 0u;
     for (int k = 0; k < 4; ++k) {
         if (polls[k].cmd == PDMINI_READ_STATE && d->en_pending) {
             continue;   /* the confirming read is the next state read */
         }
-        const int32_t late = (int32_t)(now - *polls[k].last)
-                             - (int32_t)polls[k].period;
-        if (late >= 0 && late > late_most) {
+        const uint32_t since = now - *polls[k].last;
+        if (since < polls[k].period) {
+            continue;
+        }
+        const uint32_t late = since - polls[k].period;
+        if (best < 0 || late > late_most) {
             late_most = late;
             best = k;
         }
@@ -445,6 +520,18 @@ void pdmini_step(pdmini_t *d, uint32_t now_ms)
         break;
     case PD_ATTACH:
         if ((uint32_t)(now_ms - d->t) >= PDMINI_ATTACH_MS) {
+            if (d->cmd == PDMINI_OUTPUT_EN && d->en_pending
+                && d->en_for != d->want_output) {
+                /* Asked otherwise while the pins were handed over: not
+                 * sent, and the next job is the one now asked. */
+                d->en_pending = false;
+                if (d->io.detach != NULL) {
+                    d->io.detach(d->io.ctx);
+                }
+                d->phase = PD_GAP;
+                d->t     = now_ms;
+                break;
+            }
             d->rx_n = 0u;
             if (d->io.send != NULL) {
                 d->io.send(d->io.ctx, d->req, d->req_n);

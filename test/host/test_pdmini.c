@@ -47,6 +47,8 @@ typedef struct {
     uint16_t on_at_mv;        /* the active slot's mV when it came on    */
     bool     mute;            /* takes writes, answers nothing           */
     uint32_t on_since;        /* when the output last came on            */
+    int      switch_to;       /* the buttons choose this slot, -1 none,  */
+    uint16_t switch_mv;       /* once a READ_DATA answers with this      */
     uint32_t on_ms;           /* how long it was on, all told            */
 } module_t;
 
@@ -126,6 +128,10 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
                                (uint8_t)(m.mv[s] & 0xFFu), (uint8_t)(m.mv[s] >> 8),
                                (uint8_t)(m.ma[s] & 0xFFu), (uint8_t)(m.ma[s] >> 8) };
         reply(r, 6u, true);
+        if (m.switch_to >= 0 && m.mv[s] == m.switch_mv) {
+            m.slot      = m.switch_to;
+            m.switch_to = -1;
+        }
         break;
     }
     case PDMINI_READ_DISPLAY: {
@@ -142,12 +148,18 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
         reply(r, 6u, true);
         break;
     }
-    case PDMINI_OUTPUT_EN:
+    case PDMINI_OUTPUT_EN: {
         ++m.en_writes;
-        m.pending = true;
-        m.target  = (p[1] == m.on_arg) && m.input_ok;
-        m.en_at   = now;
+        /* The later write wins; one for what is already on its way
+         * changes nothing. */
+        const bool target = (p[1] == m.on_arg) && m.input_ok;
+        if (!m.pending || target != m.target) {
+            m.pending = true;
+            m.target  = target;
+            m.en_at   = now;
+        }
         break;
+    }
     case PDMINI_OUTPUT_DATA:
         ++m.data_writes;
         if (p[1] <= 4u && !m.ignore_data) {
@@ -171,6 +183,7 @@ static void fresh(void)
     m.slot     = 0;
     m.mv[0] = 5000u;
     m.ma[0] = 1000u;
+    m.switch_to = -1;
     now = 1000u;
     pdmini_init(&d, &k_io, now);
 }
@@ -561,6 +574,197 @@ TEST_CASE(an_off_reaches_a_module_that_stopped_answering)
     CHECK_EQ(m.en_writes, 1u);                 /* the one before it went quiet */
 }
 
+/* Run until the driver has written OUTPUT_EN @p n times, at most 3 s. */
+static void run_to_en_write(unsigned n)
+{
+    for (unsigned k = 0u; m.en_writes < n && k < 3000u; ++k) {
+        run(1u, false);
+    }
+}
+
+/* With the argument for off known, an OFF asked for while an ON waits to be
+ * confirmed is written at once, and an ON slower than the confirmation never
+ * shows; with it not yet known, the ON is watched past its 250 ms. */
+TEST_CASE(an_off_cancels_a_slow_on)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(600u, false);
+    CHECK(!m.output);
+    CHECK(d.on_confirmed);
+    m.settle_ms = 300u;
+    pdmini_want(&d, true, 5000u, 1000u);
+    run_to_en_write(3u);
+    run(10u, false);
+    pdmini_want(&d, false, 5000u, 1000u);
+    m.on_ms = 0u;
+    run(1500u, false);
+    CHECK(!m.output);
+    CHECK_EQ(m.on_ms, 0u);
+    CHECK_EQ(m.en_writes, 4u);
+
+    fresh();
+    m.settle_ms = 300u;
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run_to_en_write(1u);
+    run(10u, false);
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(!m.output);
+    /* Seen on as it came on, at 300 ms, and its 300 ms to go off. */
+    CHECK(m.on_ms < 400u);
+    CHECK(d.on_confirmed);
+}
+
+/* A module that reads OUTPUT_EN the way the sheet says, its ON cancelled
+ * while the third write is being confirmed: seen on, the argument is learnt
+ * there, and the OFF is right first time. */
+TEST_CASE(a_watched_on_teaches_the_argument)
+{
+    fresh();
+    m.on_arg = 0u;
+    m.settle_ms = 100u;
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run_to_en_write(3u);
+    run(10u, false);
+    pdmini_want(&d, false, 5000u, 1000u);
+    m.on_ms = 0u;
+    run(1500u, false);
+    CHECK(!m.output);
+    CHECK_EQ(d.on_value, 0u);
+    CHECK_EQ(m.en_writes, 4u);
+    CHECK(m.on_ms < 200u);
+}
+
+/* Once a read-back has shown which argument means off, an OFF slower than
+ * two confirmations is written again with that argument only: the other
+ * would be an ON, and undo it. */
+TEST_CASE(a_known_argument_is_not_tried_the_other_way)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(d.on_confirmed);
+    m.settle_ms = 600u;
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(3000u, true);
+    CHECK(!m.output);
+    CHECK(!m.switched_on_by_off);
+}
+
+/* An ON whose pins are still being handed over when an OFF is asked for is
+ * not sent. */
+TEST_CASE(an_on_not_yet_sent_is_dropped_by_an_off)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    for (unsigned k = 0u; k < 3000u
+         && !(d.phase == PD_ATTACH && d.cmd == PDMINI_OUTPUT_EN); ++k) {
+        run(1u, false);
+    }
+    CHECK(d.phase == PD_ATTACH);
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(1000u, true);
+    CHECK(!m.output);
+    CHECK_EQ(m.on_ms, 0u);
+    CHECK_EQ(m.en_writes, 0u);
+}
+
+/* A slot chosen on the module's buttons once its set points read back right
+ * is not the one switched on: the slot is read again straight before the
+ * ON, and the new slot given the set points first. */
+TEST_CASE(the_slot_is_read_again_straight_before_an_on)
+{
+    fresh();
+    m.mv[3] = 20000u;
+    m.ma[3] = 3000u;
+    m.switch_to = 3;
+    m.switch_mv = 12000u;
+    run(100u, false);
+    pdmini_want(&d, true, 12000u, 1500u);
+    run(2000u, false);
+    CHECK(m.output);
+    CHECK_EQ(m.slot, 3);
+    CHECK_EQ(m.on_at_mv, 12000u);
+}
+
+/* A module that goes quiet straight after an ON is owed the OFF however
+ * many rounds of WHO_AM_I go unanswered before it is asked for. */
+TEST_CASE(an_owed_off_outlasts_the_rounds_that_find_nothing)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(600u, false);
+    CHECK(d.on_confirmed);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run_to_en_write(3u);
+    m.mute = true;
+    run(8000u, false);
+    CHECK(!pdmini_status(&d)->online);
+    CHECK(m.output);
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(2500u, true);
+    CHECK(!m.output);
+    CHECK(!m.switched_on_by_off);
+}
+
+/* Another module, the other way round, in place of one that went quiet
+ * with its output on: it answers who it is, and is read rather than sent
+ * the old one's OFF, which would be its ON. */
+TEST_CASE(no_blind_off_goes_to_a_module_that_answers)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(d.on_confirmed);
+    m.mute = true;
+    run(2500u, false);
+    CHECK(!pdmini_status(&d)->online);
+    for (unsigned k = 0u; k < 2000u && d.phase != PD_IDLE; ++k) {
+        run(1u, false);                        /* changed between rounds */
+    }
+    m.mute   = false;                          /* the other module */
+    m.output = false;
+    m.on_arg = 0u;
+    const unsigned writes = m.en_writes;
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(3000u, true);
+    CHECK(pdmini_status(&d)->online);
+    CHECK(!m.output);
+    CHECK(!m.switched_on_by_off);
+    CHECK_EQ(m.en_writes, writes);
+    /* And its argument for on is learnt afresh, not taken from the last. */
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(2500u, false);
+    CHECK(m.output);
+    CHECK_EQ(d.on_value, 0u);
+}
+
+/* Readings start on time when the millisecond count is past 2^31. */
+TEST_CASE(readings_are_taken_past_half_the_clock)
+{
+    fresh();
+    now = 0x80001000u;
+    pdmini_init(&d, &k_io, now);
+    m.v_mv = 12050u;
+    run(1500u, false);
+    CHECK(pdmini_status(&d)->online);
+    CHECK(pdmini_status(&d)->samples >= 8u);
+    CHECK_EQ(pdmini_status(&d)->v_mv, 12050u);
+    CHECK_EQ(pdmini_status(&d)->in_state, 5u);
+}
+
 /* A byte left on the line by the pin handover is not taken for the start of
  * the reply. */
 TEST_CASE(a_byte_from_the_handover_is_not_the_reply)
@@ -592,5 +796,13 @@ int main(void)
     RUN(stuck_clears_when_the_output_is_seen_as_asked);
     RUN(an_off_does_not_wait_behind_an_on_being_confirmed);
     RUN(an_off_reaches_a_module_that_stopped_answering);
+    RUN(an_off_cancels_a_slow_on);
+    RUN(a_watched_on_teaches_the_argument);
+    RUN(a_known_argument_is_not_tried_the_other_way);
+    RUN(an_on_not_yet_sent_is_dropped_by_an_off);
+    RUN(the_slot_is_read_again_straight_before_an_on);
+    RUN(an_owed_off_outlasts_the_rounds_that_find_nothing);
+    RUN(no_blind_off_goes_to_a_module_that_answers);
+    RUN(readings_are_taken_past_half_the_clock);
     return test_summary("pdmini");
 }

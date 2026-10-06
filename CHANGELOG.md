@@ -22,21 +22,29 @@ history is in git.
     - the output confirmed 250 ms after OUTPUT_EN, with no state read in
       between;
     - a module that misses three transactions in a row is taken as gone.
-  - OUTPUT_EN's argument for on is learnt from the module: 1 first, then 0.
-    The output is written only when it reads otherwise than asked, so an
-    OFF cannot switch on an output that was off.
-  - Ordering: an OFF goes first. An OFF asked for while an ON is being
-    confirmed reads the state at once and switches the output off the
-    moment it reads on. An ON waits until the active slot reads back the
-    set points asked for, so the output never comes on at what the slot
-    held before.
-  - A module that stops answering with its output on is sent an OFF blind
-    once a second, while one is asked for, with the argument a read-back
-    showed to mean on.
+  - OUTPUT_EN's argument for on is learnt from the module: 1 first, then 0,
+    and learnt again from a module that answers after none did. Once a
+    read-back has shown it, only that argument is written. The output is
+    written only when it reads otherwise than asked, so an OFF cannot
+    switch on an output that was off.
+  - Ordering: an OFF goes first.
+    - An ON not yet sent when an OFF is asked for is dropped.
+    - An OFF asked for while an ON is being confirmed is written at once
+      when the argument is known. Otherwise the state is read back to back
+      for 1000 ms from the ON, and the output switched off the moment it
+      reads on.
+    - An ON waits until the active slot reads back the set points asked
+      for. The set points and then the slot are read again straight before
+      it, so the output never comes on at what a slot held before.
+  - A module that stops answering with its output on is owed an OFF until
+    a state read shows it off. The OFF is sent blind after each WHO_AM_I
+    that goes unanswered, while one is asked for, with the argument a
+    read-back showed to mean on. A module that answers is read, never
+    written blind.
   - The slot and its set points are read again every second, so a change
     made on the module's buttons is put back.
   - The readings take turns by how late each is, so a slow module does
-    not starve any of them.
+    not starve any of them, past 2^31 ms of uptime too.
   - Set points that do not take are retried three times, then flagged and
     retried two seconds on.
 

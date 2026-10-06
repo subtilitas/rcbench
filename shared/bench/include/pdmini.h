@@ -13,21 +13,34 @@
  * a set point with READ_OUTPUT_DATA.
  *
  * An OFF goes first, before anything else waiting.  An OFF asked for while
- * an ON is being confirmed reads the state at once, and again until the ON
- * has had its 250 ms, and switches the output off the moment it reads on.
+ * an ON is being confirmed is written at once when a read-back has shown
+ * which argument means off; before that, the state is read back to back
+ * for 1000 ms from the ON and the output switched off the moment it reads
+ * on.  An ON that comes later than that is an output on while OFF is
+ * asked, switched off at the next state read, at most 500 ms on.
+ *
  * An ON waits for the set points: it is written only once the active slot
- * reads back what is asked, so the output never comes on at the voltage it
- * held before.
+ * reads back what is asked, read again straight before the ON together
+ * with which slot is active, so the output never comes on at the voltage
+ * it held before.  A slot chosen or a set point turned on the module's own
+ * buttons in the 15 ms between those reads and the ON is seen by the next
+ * slot read, at most 1000 ms on, and put back.
  *
  * A module that stops answering while its output is on may still be
- * listening: while an OFF is asked for, it is sent blind once a second
- * until the module answers again -- only with an argument a read-back has
- * shown to mean on, so the blind OFF cannot switch on an output that was
- * off.
+ * listening: while an OFF is asked for, it is sent blind straight after
+ * each WHO_AM_I that goes unanswered, once a second, until a state read
+ * shows the output off -- only with an argument a read-back has shown to
+ * mean on, so the blind OFF cannot switch on an output that was off.  A
+ * module that answers WHO_AM_I is read, never written blind, as it may be
+ * another one.  Not closed: a module put in place of the quiet one while a
+ * WHO_AM_I is on its way, up to 410 ms before the blind OFF, is sent that
+ * OFF, and one that reads OUTPUT_EN the other way round comes on until it
+ * has answered, been read and been switched off.
  *
  * Which OUTPUT_EN argument means on is learnt from the module rather than
  * taken from the sheet, which has it backwards: 1 first, the bench's and the
- * vendor's Python's, then 0.  The output is written only when it reads
+ * vendor's Python's, then 0 -- and learnt again from a module that answers
+ * WHO_AM_I after none did.  The output is written only when it reads
  * otherwise than asked, so an OFF goes only to an output that is on and the
  * learning cannot switch on one that was off.
  *
@@ -79,6 +92,8 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
 #define PDMINI_REPLY_MS    400u    /**< the window for a reply             */
 #define PDMINI_BYTE_MS      60u    /**< and longer by this on every byte   */
 #define PDMINI_CONFIRM_MS  250u    /**< OUTPUT_EN to the read that confirms */
+#define PDMINI_WATCH_MS   1000u    /**< an ON cancelled before its argument
+                                        is known, watched this long         */
 #define PDMINI_GAP_MS       10u    /**< pins at rest between transactions  */
 #define PDMINI_DISPLAY_MS  100u    /**< how often the output is read       */
 #define PDMINI_STATE_MS    500u    /**< the output state and the input     */
@@ -142,7 +157,7 @@ typedef struct {
     bool     en_for;         /* the state it was written towards         */
     bool     on_confirmed;   /* on_value seen to work by a read-back     */
     bool     off_owed;       /* gone while on: an OFF is sent blind      */
-    bool     blind_sent;     /* this identify round's blind OFF is out   */
+    bool     blind_due;      /* a WHO_AM_I went unanswered: OFF blind   */
     uint8_t  en_tries;       /* OUTPUT_EN writes towards the wanted state */
     bool     en_pending;     /* written, waiting for the confirming read */
     uint32_t en_at;
@@ -150,6 +165,8 @@ typedef struct {
     uint8_t  data_tries;     /* OUTPUT_DATA writes towards the set points */
     uint32_t data_at;
     uint8_t  fails;          /* consecutive                              */
+    uint8_t  on_step;        /* reads before an ON: 1 data asked, 2 data
+                                seen, 3 slot asked, 4 slot seen          */
 
     /* The transaction under way. */
     enum { PD_IDLE, PD_ATTACH, PD_WAIT, PD_GAP } phase;
