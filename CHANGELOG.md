@@ -8,6 +8,65 @@ history is in git.
 
 ### Added
 
+- **A driver for the WeAct PD Power Mini V1 Buck** (`pdmini`), not yet
+  wired to the coprocessor.
+  - Protocol: the CRC8 (polynomial 0x31, initial 0xFF) checked against all
+    fifteen values the vendor's sheet prints. Reply framing with WHO_AM_I
+    ending in 0x0A or a CRC. A reply has 400 ms to start, 60 ms more per
+    byte, and 600 ms from the request in all. Set points clamped to the module's 1 to 20 V
+    and 0.05 to 3 A.
+  - Behaviour:
+    - one transaction at a time, with the pins pulled down between them;
+    - nothing said before WHO_AM_I is answered with a text holding
+      "PD Power Mini", so another device on the pins is never written;
+    - every write confirmed by the matching read, since the module answers
+      a write with nothing;
+    - the output confirmed 250 ms after OUTPUT_EN, with no state read in
+      between;
+    - a module that misses three transactions in a row is taken as gone;
+    - a slot number past 4, or set points for another slot than asked,
+      fail the transaction.
+  - OUTPUT_EN's argument for on is learnt from the module: 1 first, then 0,
+    and kept across a module going quiet and answering again. It is
+    learnt only from an output seen to come on after a write towards on,
+    and relied on once two ONs with it have taken,
+    never from one seen to go off, which the module's overcurrent
+    protection does by itself. Once a
+    read-back has shown it, only that argument is written. The output is
+    written only when it reads otherwise than asked, so an OFF cannot
+    switch on an output that was off.
+  - Ordering: an OFF goes first.
+    - An ON not yet sent when an OFF is asked for, or when the set points
+      read back for it change, is dropped, and so are set points no longer
+      the ones asked, or any while the output is or may be on. A read under way other
+      than the state's is left.
+    - An OFF that does not take is written again without pause; four
+      that do not take raise the stuck flag.
+    - An OFF asked for while an ON is being confirmed is written at once
+      when the argument is known. Otherwise the state is read back to back
+      for 1000 ms from the ON, and the output switched off the moment it
+      reads on.
+    - An ON waits until the active slot reads back the set points asked
+      for. The set points and then the slot are read again straight before
+      it, so the output never comes on at what a slot held before.
+  - A module that stops answering with its output on is owed an OFF until
+    a state read shows it off. The OFF is sent blind after each WHO_AM_I
+    answered by not one byte, while one is asked for, with the argument a
+    read-back showed to mean on. A module that answers is read, never
+    written blind.
+  - The slot and its set points are read again every second, so a change
+    made on the module's buttons is put back.
+  - The readings take turns by how late each is, so a slow module does
+    not starve any of them, past 2^31 ms of uptime too.
+  - Four OUTPUT_EN writes that do not take put the learnt argument in
+    doubt, and both are tried again. READ_INPUT_STATE unanswered 3 times
+    is not asked again until the module is identified again.
+  - Set points that do not take, or replies naming no slot or another, are
+    tried three times, then flagged and left alone for two seconds while
+    the readings go on.
+    With the output on, that switches it off, and it stays off until an
+    OFF and a new ON are asked for.
+
 - **SERVO has SETTINGS of its own.** The overlay sets the servo type --
   STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC (1520 us, +/-700 us, up to
   333 Hz) and HELI TAIL 760 (+/-350 us, up to 560 Hz) -- the frame rate,
