@@ -6,6 +6,15 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- **The PD mini is never asked for more than its input.** A set point over
+  the module's input voltage put it into ERR until it was power cycled
+  (bench, 2026-10-06: 5.88 V asked from a 4.88 V input). The driver now
+  writes no more than the reported input less 0.5 V, and the SUPPLY
+  screen's voltage cap follows the input the same way. The 0.5 V margin is
+  not measured.
+
 ### Added
 
 - **PD mini baud AUTO.** With "PD mini baud" at AUTO, the default, the

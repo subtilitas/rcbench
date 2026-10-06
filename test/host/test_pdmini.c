@@ -29,6 +29,7 @@ typedef struct {
     uint16_t mv[5], ma[5];
     uint16_t v_mv, i_ma;
     bool     input_ok;        /* PD negotiated: the output can switch on */
+    uint16_t input_mv;        /* what READ_INPUT_STATE reports, 0: 24 V  */
     bool     bad_crc;         /* answer every read with a broken CRC     */
     bool     whoami_crc;      /* end WHO_AM_I with a CRC, not 0x0A       */
     uint8_t  junk;            /* a byte the handover leaves, 0 for none  */
@@ -178,7 +179,9 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
     }
     case PDMINI_READ_INPUT: {
         const uint8_t r[6] = { PDMINI_READ_INPUT, m.input_ok ? 5u : 1u,
-                               0xC0u, 0x5Du, 200u, 0u };   /* 24000 mV, 20.0 V */
+                               (uint8_t)((m.input_mv ? m.input_mv : 24000u) & 0xFFu),
+                               (uint8_t)((m.input_mv ? m.input_mv : 24000u) >> 8),
+                               200u, 0u };   /* 24000 mV unless set, 20.0 V */
         reply(r, 6u, true);
         break;
     }
@@ -1088,18 +1091,26 @@ TEST_CASE(stale_set_points_are_not_sent)
 }
 
 /* Firmware that does not answer READ_INPUT_STATE is asked three times and
- * then left alone, so its 400 ms windows do not hold up the rest. */
+ * then only every 5 s, so its 400 ms windows do not hold up the rest; a
+ * module that only lost those three answers is capped once it answers. */
 TEST_CASE(an_unanswered_input_read_is_given_up)
 {
     fresh();
     m.no_input = true;
     run(100u, false);
-    run(5000u, false);
+    run(3000u, false);
     const unsigned asked = m.reads[PDMINI_READ_INPUT];
     CHECK_EQ(asked, PDMINI_INPUT_MISSES);
     CHECK(pdmini_status(&d)->online);
     run(3000u, false);
-    CHECK_EQ(m.reads[PDMINI_READ_INPUT], asked);
+    CHECK(m.reads[PDMINI_READ_INPUT] <= asked + 1u);
+
+    m.no_input = false;                       /* it answers after all */
+    m.input_mv = 4880u;
+    run(6000u, false);
+    pdmini_want(&d, false, 8000u, 1000u);
+    run(1500u, false);
+    CHECK_EQ(m.mv[0], 4880u - PDMINI_HEADROOM_MV);
 }
 
 /* The same module, on, goes quiet, answers again and goes quiet again: the
@@ -1315,6 +1326,106 @@ TEST_CASE(an_output_the_module_switched_off_stays_off)
     CHECK(m.output);
 }
 
+/* Fed 4.88 V and asked for 5.88 V: the module is given no more than its
+ * input less the headroom, and comes on at that. */
+TEST_CASE(a_set_point_over_the_input_is_kept_under_it)
+{
+    fresh();
+    m.input_mv = 4880u;
+    pdmini_want(&d, true, 5880u, 1000u);      /* asked before anything read */
+    run(3000u, false);
+    CHECK_EQ(m.data_writes, 1u);              /* one write, already capped */
+    CHECK_EQ(m.mv[0], 4880u - PDMINI_HEADROOM_MV);
+    CHECK(m.output);
+    CHECK_EQ(m.on_at_mv, 4880u - PDMINI_HEADROOM_MV);
+    CHECK(!pdmini_status(&d)->set_stuck);
+    /* Under the cap, the set point is the one asked. */
+    pdmini_want(&d, true, 3300u, 1000u);
+    run(1500u, false);
+    CHECK_EQ(m.mv[0], 3300u);
+}
+
+/* A slot already holding the voltage asked still waits for the input to be
+ * read before it is switched on; and an input that can no longer be read
+ * holds back the set points and the ON, not the other readings. */
+TEST_CASE(nothing_is_switched_on_before_the_input_is_read)
+{
+    fresh();
+    m.input_mv = 4880u;
+    m.mv[0] = 3000u;                          /* the slot already holds it */
+    m.no_input = true;
+    m.input_ok = true;
+    run(100u, false);
+    run(400u, false);
+    pdmini_want(&d, true, 3000u, 1000u);
+    run(300u, false);
+    CHECK_EQ(m.en_writes, 0u);               /* the input not yet given up */
+    m.no_input = false;
+    run(2000u, false);
+    CHECK(m.output);
+
+    /* Read once, then no more: no new set point, the readings go on. */
+    fresh();
+    m.input_mv = 4880u;
+    run(100u, false);
+    pdmini_want(&d, false, 3000u, 1000u);
+    run(1500u, false);
+    CHECK_EQ(m.mv[0], 3000u);
+    m.no_input = true;
+    run(3000u, false);
+    const unsigned writes = m.data_writes;
+    const uint32_t samples = pdmini_status(&d)->samples;
+    pdmini_want(&d, false, 4000u, 1000u);
+    run(2000u, false);
+    CHECK_EQ(m.data_writes, writes);
+    CHECK(pdmini_status(&d)->samples > samples + 5u);
+    /* Set points read back before, the input not known now: no ON. */
+    pdmini_want(&d, true, 3000u, 1000u);
+    run(2000u, false);
+    CHECK_EQ(m.en_writes, 0u);
+    CHECK(!m.output);
+}
+
+/* Set points changed every 50 ms, faster than a write goes round: the input
+ * is still read every half second, and a drop in it caps the next write. */
+TEST_CASE(a_dragged_slider_does_not_starve_the_input)
+{
+    fresh();
+    m.input_mv = 12000u;
+    run(100u, false);
+    run(1500u, false);
+    const unsigned inputs = m.reads[PDMINI_READ_INPUT];
+    for (int k = 0; k < 40; ++k) {
+        pdmini_want(&d, false, (uint16_t)(6000u + 100u * (unsigned)(k % 20)),
+                    1000u);
+        if (k == 20) {
+            m.input_mv = 5000u;                /* the source sagged */
+        }
+        run(50u, false);
+    }
+    CHECK(m.reads[PDMINI_READ_INPUT] >= inputs + 3u);
+    pdmini_want(&d, false, 7000u, 1000u);
+    run(1500u, false);
+    CHECK_EQ(m.mv[0], 5000u - PDMINI_HEADROOM_MV);
+}
+
+/* An ON after a pause is judged on a fresh input: the source sagged since
+ * the last reading, and the slot already holds the voltage asked. */
+TEST_CASE(an_on_after_a_pause_reads_the_input_first)
+{
+    fresh();
+    m.input_mv = 12000u;
+    m.mv[0] = 8000u;
+    run(100u, false);
+    pdmini_want(&d, false, 8000u, 1000u);
+    run(1500u, false);
+    m.input_mv = 6000u;                       /* sagged, unread */
+    d.last_input = now - PDMINI_STATE_MS;     /* the reading is due */
+    pdmini_want(&d, true, 8000u, 1000u);
+    run(2000u, false);
+    CHECK_EQ(m.on_at_mv, 6000u - PDMINI_HEADROOM_MV);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -1382,6 +1493,10 @@ int main(void)
     RUN(a_learnt_argument_that_stops_working_is_doubted);
     RUN(stale_set_points_are_not_sent);
     RUN(an_unanswered_input_read_is_given_up);
+    RUN(a_set_point_over_the_input_is_kept_under_it);
+    RUN(nothing_is_switched_on_before_the_input_is_read);
+    RUN(a_dragged_slider_does_not_starve_the_input);
+    RUN(an_on_after_a_pause_reads_the_input_first);
     RUN(an_argument_outlasts_a_module_that_comes_back);
     RUN(an_output_that_came_on_by_itself_is_not_relied_on);
     RUN(an_on_sent_and_unsettled_is_owed_an_off);

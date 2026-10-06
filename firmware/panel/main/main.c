@@ -49,6 +49,7 @@
 #include "log_writer.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
+#include "pdmini.h"
 #include "supply_link.h"
 #include "supply_screen.h"
 #include "outputs_screen.h"
@@ -655,6 +656,9 @@ static atomic_uint s_pdmini_edits;
  * app_main for the screen's header, caps and the menu's badge.
  */
 static atomic_bool s_supply_real;
+/* The PD mini's input in mV as its page last read, 0 while not known: the
+ * screen keeps the voltage under it (PDMINI_HEADROOM_MV). */
+static atomic_uint s_supply_vin_mv;
 /*
  * The two touch queues, numbered.  See touch_loss.h for why numbers and not
  * counts: a count raised on one core after the eviction it reports can be
@@ -3086,6 +3090,9 @@ static void supply_real_follow(void)
     wiring_seen = wiring;
     const bool real = pdmini_wiring().en;
     if (real == s_supply_is_real) {
+        if (rewired) {
+            atomic_store(&s_supply_vin_mv, 0u);   /* other pins, perhaps */
+        }
         if (rewired && real && s_supply_on) {
             supply_switch(false);
             control_alert("PD mini wiring changed in SETUP -- output off");
@@ -3097,6 +3104,7 @@ static void supply_real_follow(void)
         control_alert("supply changed in SETUP -- output off");
     }
     s_supply_is_real = real;
+    atomic_store(&s_supply_vin_mv, 0u);   /* another module, perhaps */
     supply_link_command(&s_supply_link, false,
                         (uint16_t)s_supply_set_mv_applied,
                         (uint16_t)s_supply_set_ma_applied);
@@ -4660,6 +4668,9 @@ static void supply_link_service(void)
             reply.regs[LINK_SP_BAUD_FOUND] = SUPPLY_LINK_BAUD_AUTO;
         }
         supply_link_read(&s_supply_link, read ? reply.regs : NULL, now_ms());
+        if (read) {
+            atomic_store(&s_supply_vin_mv, reply.regs[LINK_SP_VIN_MV]);
+        }
     }
     supply_link_alerts();
 }
@@ -4967,6 +4978,7 @@ static void link_came_up(const link_msg_t *reply)
      * that only went quiet may hold an ON this panel has since let go.
      */
     s_supply_page = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 3u;
+    atomic_store(&s_supply_vin_mv, 0u);
     /* 4.4 finds the module's rate itself, and has BAUD_FOUND. */
     s_supply_auto = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 4u;
     supply_link_lost(&s_supply_link);
@@ -5101,6 +5113,7 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
              * switches an ON off as a supply not answering. */
             s_supply_page = false;
             supply_link_lost(&s_supply_link);
+            atomic_store(&s_supply_vin_mv, 0u);
         }
         /*
          * A sample exists only if the bench page was read.  A poll that timed
@@ -5831,10 +5844,30 @@ void app_main(void)
         /* Which supply the control task drives: the screen's header, caps
          * and the menu's badge follow it. */
         static bool supply_real_shown;
+        static unsigned supply_vcap_shown;
         const bool supply_real = atomic_load(&s_supply_real);
-        if (supply_real != supply_real_shown) {
+        /* The PD mini can give no more than its input less the headroom:
+         * the screen's voltage cap follows the input as the page reads it,
+         * moved only on a change of 100 mV or more. */
+        unsigned vcap = 0u;
+        if (supply_real) {
+            const unsigned vin = atomic_load(&s_supply_vin_mv);
+            vcap = 20000u;
+            if (vin > PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV
+                && vin - PDMINI_HEADROOM_MV < vcap) {
+                vcap = vin - PDMINI_HEADROOM_MV;
+            }
+        }
+        const unsigned vcap_moved = (vcap > supply_vcap_shown)
+                                        ? vcap - supply_vcap_shown
+                                        : supply_vcap_shown - vcap;
+        if (supply_real != supply_real_shown || vcap_moved >= 100u) {
             supply_real_shown = supply_real;
-            const supply_caps_t pdmini = SUPPLY_CAPS_PDMINI;
+            supply_vcap_shown = vcap;
+            supply_caps_t pdmini = SUPPLY_CAPS_PDMINI;
+            if (vcap != 0u) {
+                pdmini.v_max = (float)vcap / 1000.0f;
+            }
             const supply_caps_t pps = SUPPLY_CAPS_PPS_DEFAULT;
             supply_screen_set_caps(supply_real ? &pdmini : &pps);
             supply_screen_set_model(!supply_real);

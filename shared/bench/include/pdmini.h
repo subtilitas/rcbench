@@ -83,6 +83,12 @@ extern "C" {
 #define PDMINI_V_MAX_MV  20000u
 #define PDMINI_I_MIN_MA     50u
 #define PDMINI_I_MAX_MA   3000u
+/** A voltage set point is kept this far under the input the module reports:
+ *  a buck cannot put out more than it is fed, and a module asked to shows
+ *  ERR and needs a power cycle (seen on the bench, 2026-10-06, 5.88 V asked
+ *  from a 4.88 V input).  The margin it needs is not measured; 4.00 V from
+ *  4.85 V worked. */
+#define PDMINI_HEADROOM_MV  500u
 
 /** What WHO_AM_I's reply holds from this module: "WeAct Studio PD Power
  *  Mini V1 BUCK" in the bench station's notes of its 2026-09-11 run.  A
@@ -128,6 +134,7 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
                                         module is identified again: the
                                         vendor's client has it from firmware
                                         v1.0.2.0 on                        */
+#define PDMINI_INPUT_RETRY_MS 5000u /**< and asked again this often after */
 
 /** CRC8, polynomial 0x31, initial 0xFF, over @p n bytes. */
 uint8_t pdmini_crc8(const uint8_t *p, size_t n);
@@ -203,6 +210,8 @@ typedef struct {
     uint8_t  fails;          /* consecutive                              */
     uint8_t  state_fails;    /* READ_OUTPUT_STATE failed, consecutive    */
     uint8_t  input_misses;   /* READ_INPUT_STATE unanswered, consecutive */
+    bool     input_known;    /* READ_INPUT_STATE answered, the last read */
+    bool     input_seen;     /* and this firmware has answered it at all */
     uint8_t  on_step;        /* reads before an ON: 1 data asked, 2 data
                                 seen, 3 slot asked, 4 slot seen          */
 

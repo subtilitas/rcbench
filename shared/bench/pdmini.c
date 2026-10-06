@@ -201,9 +201,12 @@ static void finish(pdmini_t *d, uint32_t now, bool ok)
         return;
     }
     ++d->st.errors;
-    if (d->cmd == PDMINI_READ_INPUT && d->rx_n == 0u
-        && d->input_misses < PDMINI_INPUT_MISSES) {
-        ++d->input_misses;        /* firmware before v1.0.2.0 has none */
+    if (d->cmd == PDMINI_READ_INPUT) {
+        /* Not read: the last reading is no cap to trust any more. */
+        d->input_known = false;
+        if (d->rx_n == 0u && d->input_misses < PDMINI_INPUT_MISSES) {
+            ++d->input_misses;    /* firmware before v1.0.2.0 has none */
+        }
     }
     if (d->cmd == PDMINI_WHO_AM_I) {
         ++d->who_failed;          /* for a caller looking for the rate */
@@ -275,6 +278,22 @@ static bool holds(const uint8_t *p, size_t n, const char *s)
  * module's own button or its AUTO OUT setting can switch the output on in
  * the same 250 ms as one guess.
  */
+/*
+ * The voltage set point the module is given: the one asked, but no more
+ * than PDMINI_HEADROOM_MV under the input it reports.  A buck cannot put
+ * out more than it is fed, and a module asked to shows ERR and needs a
+ * power cycle.  As asked while the input is not known.
+ */
+static uint16_t target_mv(const pdmini_t *d)
+{
+    const uint32_t vin = d->input_known ? d->st.vin_mv : 0u;
+    if (vin <= PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV) {
+        return d->want_mv;      /* not read yet, or no room to cap into */
+    }
+    const uint32_t cap = vin - PDMINI_HEADROOM_MV;
+    return (d->want_mv > cap) ? (uint16_t)cap : d->want_mv;
+}
+
 static void learn_on(pdmini_t *d)
 {
     if (d->on_seen && d->on_value == d->en_value) {
@@ -299,6 +318,9 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->answered    = true;
         d->identified  = true;
         d->st.online   = true;
+        d->input_known = false;    /* read again before a set point */
+        d->input_seen  = false;    /* perhaps other firmware: asked again */
+        d->st.vin_mv   = 0u;
         d->state_known = false;
         d->blind_due   = false;
         /* The argument learnt is kept: the same module back after a fault
@@ -404,7 +426,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->st.set_ma    = (uint16_t)(r[4] | (r[5] << 8));
         d->data_known   = true;
         d->data_pending = false;
-        if (d->st.set_mv == d->want_mv && d->st.set_ma == d->want_ma) {
+        if (d->st.set_mv == target_mv(d) && d->st.set_ma == d->want_ma) {
             d->data_tries   = 0u;
             d->st.set_stuck = false;
             if (d->on_step == 1u) {
@@ -421,6 +443,8 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->st.in_state = r[1];
         d->st.vin_mv   = (uint16_t)(r[2] | (r[3] << 8));
         d->input_misses = 0u;
+        d->input_known = true;
+        d->input_seen  = true;
         break;
     default:
         break;
@@ -583,6 +607,32 @@ static bool next_job(pdmini_t *d, uint32_t now)
      * are stuck, and the set points left alone for two seconds while the
      * readings go on.
      */
+    /*
+     * The input, before any set point is written or any ON, so the cap
+     * under it holds from the first: read again whenever it is not known.
+     * Firmware that has never answered the read gets the set point as
+     * asked once the read has gone unanswered PDMINI_INPUT_MISSES times.
+     */
+    const bool input_ok = d->input_known
+                          || (!d->input_seen
+                              && d->input_misses >= PDMINI_INPUT_MISSES);
+    /* Once a second: an unanswered read waits out PDMINI_REPLY_MS, and the
+     * other readings need the rest of the line. */
+    if (d->want_set && !input_ok
+        && (uint32_t)(now - d->last_input) >= PDMINI_SLOT_MS) {
+        d->last_input = now;
+        read1(d, now, PDMINI_READ_INPUT);
+        return true;
+    }
+    /* Due, it is read before a set point or an ON as well: set points
+     * changing faster than the readings come round -- a slider dragged --
+     * or an ON after a pause, are judged on a fresh reading. */
+    if (d->want_set && d->input_known
+        && (uint32_t)(now - d->last_input) >= PDMINI_STATE_MS) {
+        d->last_input = now;
+        read1(d, now, PDMINI_READ_INPUT);
+        return true;
+    }
     bool data_paused = false;
     if (d->data_tries >= 3u) {
         d->st.set_stuck = true;
@@ -598,7 +648,7 @@ static bool next_job(pdmini_t *d, uint32_t now)
             d->data_tries = 0u;
         }
     }
-    if (d->want_set && !data_paused) {
+    if (d->want_set && !data_paused && input_ok) {
         if (d->slot < 0) {
             d->last_slot = now;
             read1(d, now, PDMINI_READ_ID);
@@ -609,10 +659,11 @@ static bool next_job(pdmini_t *d, uint32_t now)
             start(d, now, req, 2u, false);
             return true;
         }
-        if (d->st.set_mv != d->want_mv || d->st.set_ma != d->want_ma) {
+        const uint16_t mv = target_mv(d);
+        if (d->st.set_mv != mv || d->st.set_ma != d->want_ma) {
             const uint8_t req[6] = {
                 PDMINI_OUTPUT_DATA, (uint8_t)d->slot,
-                (uint8_t)(d->want_mv & 0xFFu), (uint8_t)(d->want_mv >> 8),
+                (uint8_t)(mv & 0xFFu), (uint8_t)(mv >> 8),
                 (uint8_t)(d->want_ma & 0xFFu), (uint8_t)(d->want_ma >> 8),
             };
             ++d->data_tries;
@@ -629,9 +680,9 @@ static bool next_job(pdmini_t *d, uint32_t now)
      * comes on.
      */
     const bool set_ok = d->want_set && d->data_known
-                        && d->st.set_mv == d->want_mv
+                        && d->st.set_mv == target_mv(d)
                         && d->st.set_ma == d->want_ma;
-    if (!d->en_pending && !d->st.output && d->want_output && set_ok
+    if (!d->en_pending && !d->st.output && d->want_output && set_ok && input_ok
         && en_ready(d, now)) {
         if (on_step == 4u && write_en(d, now)) {
             return true;
@@ -657,7 +708,10 @@ static bool next_job(pdmini_t *d, uint32_t now)
     struct { uint32_t *last; uint32_t period; uint8_t cmd; } polls[4] = {
         { &d->last_display, PDMINI_DISPLAY_MS, PDMINI_READ_DISPLAY },
         { &d->last_state,   PDMINI_STATE_MS,   PDMINI_READ_STATE },
-        { &d->last_input,   PDMINI_STATE_MS,   PDMINI_READ_INPUT },
+        /* An input that has stopped answering is asked once a second, as
+         * the read before a set point asks it, sharing its time. */
+        { &d->last_input,   d->input_known ? PDMINI_STATE_MS : PDMINI_SLOT_MS,
+          PDMINI_READ_INPUT },
         { &d->last_slot,    PDMINI_SLOT_MS,    PDMINI_READ_ID },
     };
     int best = -1;
@@ -666,15 +720,17 @@ static bool next_job(pdmini_t *d, uint32_t now)
         if (polls[k].cmd == PDMINI_READ_STATE && d->en_pending) {
             continue;   /* the confirming read is the next state read */
         }
-        if (polls[k].cmd == PDMINI_READ_INPUT
-            && d->input_misses >= PDMINI_INPUT_MISSES) {
-            continue;   /* not answered by this module's firmware */
-        }
+        /* Taken to have no input reading: still asked now and then, so a
+         * module that only lost a few packets is capped once it answers. */
+        const uint32_t period =
+            (polls[k].cmd == PDMINI_READ_INPUT && !d->input_seen
+             && d->input_misses >= PDMINI_INPUT_MISSES)
+                ? PDMINI_INPUT_RETRY_MS : polls[k].period;
         const uint32_t since = now - *polls[k].last;
-        if (since < polls[k].period) {
+        if (since < period) {
             continue;
         }
-        const uint32_t late = since - polls[k].period;
+        const uint32_t late = since - period;
         if (best < 0 || late > late_most) {
             late_most = late;
             best = k;
@@ -717,7 +773,7 @@ static bool overtaken(const pdmini_t *d)
          * read back for it, are no longer the ones asked. */
         return d->en_pending
                && (d->en_for != d->want_output
-                   || (d->en_for && (d->st.set_mv != d->want_mv
+                   || (d->en_for && (d->st.set_mv != target_mv(d)
                                      || d->st.set_ma != d->want_ma)));
     }
     if (d->cmd != PDMINI_OUTPUT_DATA) {
@@ -725,7 +781,7 @@ static bool overtaken(const pdmini_t *d)
     }
     const uint16_t mv = (uint16_t)(d->req[2] | (d->req[3] << 8));
     const uint16_t ma = (uint16_t)(d->req[4] | (d->req[5] << 8));
-    return mv != d->want_mv || ma != d->want_ma
+    return mv != target_mv(d) || ma != d->want_ma
            || (!d->want_output
                && (d->st.output || (d->en_pending && d->en_for)));
 }

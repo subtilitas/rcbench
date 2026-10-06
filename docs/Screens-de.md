@@ -372,7 +372,12 @@ des Bildschirms.
 
 Die Bereiche des Modells sind das weiteste Profil einer USB-PD-PPS-Quelle
 (Programmable Power Supply), 3,3 bis 21 V bei bis zu 5 A. Die des PD mini
-stammen von der Seite des Herstellers und sind nicht gemessen. Beide engen
+stammen von der Seite des Herstellers und sind nicht gemessen. Der PD mini
+ist ein Abwärtswandler und gibt nicht mehr ab, als er bekommt: seine
+Spannung ist zusätzlich auf 0,5 V unter der Eingangsspannung begrenzt, die
+er meldet, an 5 V Eingang also höchstens 4,5 V. Ein Sollwert über dem
+Eingang bringt das Modul in ERR, bis es stromlos war; die 0,5 V Abstand
+sind nicht gemessen. Beide engen
 die Grenzen unter SETTINGS ein, und die Schieber folgen dem Netzteil, das
 in Gebrauch ist. Ein Tippen auf eine Spur setzt den Wert unter dem Finger.
 
