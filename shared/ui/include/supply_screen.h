@@ -131,6 +131,9 @@ void supply_screen_ask_on(void);
 /** OUTPUT OFF tapped elsewhere: an OFF is posted, and any ON dropped. */
 void supply_screen_ask_off(void);
 
+/** Whether an OFF is posted and not yet taken by supply_screen_poll_cmd(). */
+bool supply_screen_off_pending(void);
+
 /** A hold under way is abandoned and a pending ON dropped: STOP. */
 void supply_screen_cancel_on(void);
 

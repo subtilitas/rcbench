@@ -254,7 +254,10 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
   6,0 V, gleich wo er eingestellt wurde, öffnet OUTPUT ON stattdessen HV
   SERVOS ONLY mit der Spannung, und der Ausgang geht erst an, nachdem HOLD TO
   APPLY 2 s gehalten wurde; das Halten des Schalters selbst und ein Tippen
-  auf APPLY schalten nichts ein. Beim Verlassen von SERVO bleibt
+  auf APPLY schalten nichts ein. Ein Sollwert, der während des gewöhnlichen
+  Haltens über 6,0 V steigt -- auf SUPPLY, oder nach einem Lauf
+  zurückgesetzt --, wird beim Abschluss des Haltens gesehen: HV SERVOS ONLY
+  öffnet sich, und nichts geht an. Beim Verlassen von SERVO bleibt
   der Ausgang, wie er ist; ein Druck auf OUTPUT OFF beim Verlassen wird als
   das OFF gesendet, das er war.
 
@@ -286,8 +289,11 @@ wird durch die dort gewählten Spannungen geführt, sein Strom in Ruhe, in
 Bewegung und beim Halten gemessen, seine Stellzeit gemessen, und die
 Spannung gesucht, bei der es sich nicht mehr bewegt. [Servoverfahren](Servo-de.md#automatischer-test)
 beschreibt das Verfahren und die Dateien. START TEST braucht einen scharfen
-Prüfstand und ein Netzteil, das antwortet; die Zeile darunter sagt ARM FIRST
-oder, warum ein Lauf abgelehnt wurde. Es ist ein Halten über zwei Sekunden,
+Prüfstand und ein Netzteil, das antwortet; die Zeile darunter sagt ARM FIRST,
+A STEP IS OUTSIDE THE CAPS (eine gewählte Stufe über der geltenden
+Spannungsgrenze, geprüft, bevor eine Warnung aufgeht), LAST REPORT STILL
+WRITING oder, warum ein Lauf abgelehnt wurde, und folgt dem Prüfstand, wenn
+sich das ändert. Es ist ein Halten über zwei Sekunden,
 die Geste von OUTPUT ON, weil ein Lauf das Netzteil einschaltet und das Servo
 bewegt. Ist HV SERVO an und eine Stufe über 6,0 V gewählt, öffnet ein Tippen
 stattdessen HV SERVOS ONLY mit der höchsten Stufe, und der Lauf startet erst,
@@ -303,15 +309,18 @@ Verlassen des Screens, bei einem Finger auf der Skala, CENTRE, SWEEP,
 RELEASE, einem Tippen auf einen Sollwert, einer Änderung an Typ, Impulsen,
 Trim, Weg, Reverse oder SPEED des Servos, bei verlorenen Touch-Ereignissen
 und beim Netzteil: siehe [die Liste](Servo-de.md#was-einen-lauf-beendet).
-Nach jedem Lauf gehen die Sollwerte auf ihre Werte vor dem Lauf zurück,
-sobald der Ausgang aus meldet.
+Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
+Lauf zurück, gleich welcher Screen oben ist. Das wartet, bis das OFF des
+Laufs gesendet ist, ein danach genommener Messwert den Ausgang aus zeigt,
+kein ON unterwegs ist und OUTPUT ON nicht gehalten wird. Sollwerte, die nach
+dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 
 ![Ein Lauf](img/servo-run.png)
 
 Das Ergebnis bleibt bis CLOSE auf der linken Karte: PASS, FAIL oder ABORTED
 und der Grund, die längste Stellzeit und der höchste Haltestrom, und die
-Dateien, die die Karte angenommen hat, `BENCHnnn.CSV` und mit REPORT an
-`BENCHnnn.TXT`.
+Dateien, die die Karte angenommen hat: `BENCHnnn.CSV`, und `+ .TXT`, sobald
+die Karte den Bericht vollständig angenommen hat.
 
 ![Ein Ergebnis](img/servo-result.png)
 
@@ -702,7 +711,9 @@ Vom Prüfstand aufgezeichnete Läufe werden als `BENCH001.CSV` bis
 Scharfschalten oder, solange der Prüfstand nicht scharf ist, ein Einschalten
 des SUPPLY-Ausgangs. Ein automatischer Servotest nimmt ebenfalls die nächste
 Nummer: sein Log ist `BENCHnnn.CSV`, das die Liste als Lauf zeigt, sein
-Bericht `BENCHnnn.TXT`, den die Liste nicht zeigt.
+Bericht `BENCHnnn.TXT`, den die Liste nicht zeigt. Eine Nummer, die eine der
+beiden Dateien trägt, ist vergeben, und DELETE auf einem Lauf löscht seinen
+Bericht mit.
 
 Die Liste fasst 48 Einträge, die Karte bis zu 999 Läufe. Passen nicht alle
 hinein, behält die Liste die neuesten Läufe, und ihr Reiter zeigt

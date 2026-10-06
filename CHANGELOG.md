@@ -15,16 +15,25 @@ history is in git.
   the set point to read back and for SETTLE, then measures the idle current,
   the moving current, the holding current at each end and the travel time
   end to end, timed from the supply's current: from the command to the first
-  reading back within 0.05 A of the holding level. A brown-out walk follows,
-  from 5.0 V down in 0.2 V steps until no reading of a move lies 0.1 A from
-  the level before it. The run writes `BENCHnnn.CSV`, one row per supply
-  reading, and with REPORT on `BENCHnnn.TXT`: the device, the settings in
+  reading back within 0.05 A of the destination end's holding level, after a
+  reading 0.1 A above it, so ends held at different currents do not end a
+  move early. A brown-out walk follows, from 5.0 V (or the voltage cap in
+  force) down in 0.2 V steps to 3.0 V or the supply's lowest set point, until
+  no reading of a move lies 0.1 A from the level before it. A step above the
+  caps is refused before any warning opens. The run writes `BENCHnnn.CSV`,
+  one row per supply reading, and with REPORT on `BENCHnnn.TXT`: the device,
+  the settings in
   force, the results per step, the brown-out voltage, the reading rate and
   its time resolution, and PASS or FAIL against the LIMITS page. STOP, a
   disarm, link loss, leaving the screen, taking the servo, a supply that
   trips, goes off, stops answering or sends no reading for 1.5 s, and 1 s
   above STALL AT end a run with the output off and the report marked
-  ABORTED. Progress and the result show on the left card. The engine is
+  ABORTED. Afterwards, whichever screen is up, SUPPLY's set points go back
+  to their values before the run, once its OFF has gone, a reading after it
+  shows the output off and OUTPUT ON is not held; not if they were changed
+  since. A number carried by a `BENCHnnn.TXT` alone is not reused, and the
+  log viewer's DELETE removes a run's report with it. Progress and the
+  result show on the left card. The engine is
   `shared/servo/servo_test.c`, host-tested against the servo and supply
   models; nothing of it has run on hardware. The supply's state carries the
   reading count and the time the panel had each reading.
@@ -36,8 +45,9 @@ history is in git.
   set point above 6.0 V made on SUPPLY, or already in force, reached the
   servo after the ordinary 2 s OUTPUT ON hold with no warning. OUTPUT ON on
   SERVO with a set point above 6.0 V now opens HV SERVOS ONLY, and the
-  output comes on only after its HOLD TO APPLY is held for 2 s. OUTPUT ON on
-  SUPPLY is unchanged.
+  output comes on only after its HOLD TO APPLY is held for 2 s. A set point
+  that rises above 6.0 V during the ordinary hold opens the warning as the
+  hold completes, and nothing comes on. OUTPUT ON on SUPPLY is unchanged.
 - **OUTPUT ON's flash on SERVO ends with the output.** An output switched
   off during the flash that marks it coming on left one of the two screen
   buffers drawing the button in the flash's red until the next change.

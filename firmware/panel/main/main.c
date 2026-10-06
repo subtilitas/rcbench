@@ -1482,6 +1482,17 @@ static bool card_remove(const char *name, void *ctx)
         return false;
     }
     ESP_LOGI(TAG, "deleted %s", path);
+    /* A servo test's report goes with its run: left behind, it would be
+     * the only file carrying the number. */
+    const int run = log_run_number(name);
+    if (run > 0) {
+        char txt[LOG_RUN_NAME_MAX];
+        log_report_name(txt, sizeof(txt), run);
+        storage_path(CARD_DIR, txt, path, sizeof(path));
+        if (remove(path) == 0) {
+            ESP_LOGI(TAG, "deleted %s", path);
+        }
+    }
     return true;
 }
 
@@ -1870,16 +1881,49 @@ static void log_highest(const storage_entry_t *entry, void *ctx)
 {
     int *highest = (int *)ctx;
     /*
+     * A servo test's report counts as its run does: a number carried only
+     * by a BENCHnnn.TXT whose CSV was deleted is still taken, so the next
+     * run neither truncates that report nor writes its CSV beside it.
+     *
      * Directories count.  The viewer skips them because it cannot open one,
      * but this is about which numbers are taken, and a directory called
      * BENCH003.CSV takes that number as surely as a file does: fopen refuses
      * it in both modes, so a run numbered into it would be a run that cannot
      * be created.  Numbering above it costs a number and nothing else.
      */
-    const int n = log_run_number(entry->name);
+    int n = log_run_number(entry->name);
+    const int r = log_report_number(entry->name);
+    if (r > n) {
+        n = r;
+    }
     if (n > *highest) {
         *highest = n;
     }
+}
+
+/* What the numbering walk looks at: runs and the reports beside them. */
+#define NUMBERED_SUFFIXES ".csv .txt"
+
+/* Whether @p number is free: neither BENCHnnn.CSV nor BENCHnnn.TXT is on
+ * the card.  @p path is left holding the CSV's path. */
+static bool log_number_free(int number, char *path, size_t n)
+{
+    char name[LOG_RUN_NAME_MAX];
+    log_report_name(name, sizeof(name), number);
+    storage_path(CARD_DIR, name, path, n);
+    FILE *probe = fopen(path, "r");
+    if (probe != NULL) {
+        fclose(probe);
+        return false;
+    }
+    log_run_name(name, sizeof(name), number);
+    storage_path(CARD_DIR, name, path, n);
+    probe = fopen(path, "r");
+    if (probe != NULL) {
+        fclose(probe);
+        return false;
+    }
+    return true;
 }
 static log_writer_t s_log;
 static uint32_t     s_log_last_row_ms;
@@ -1922,7 +1966,7 @@ static bool log_numbering(void)
         return true;
     }
     int highest = LOG_RUN_FIRST - 1;
-    if (storage_walk(CARD_DIR, CARD_SUFFIXES, log_highest, &highest,
+    if (storage_walk(CARD_DIR, NUMBERED_SUFFIXES, log_highest, &highest,
                      NULL) < 0) {
         return false;
     }
@@ -1994,13 +2038,8 @@ static void log_open(uint32_t run)
      */
     unsigned refused = 0u;
     for (int i = s_log_next; i <= LOG_RUN_LAST && s_log_file == NULL; ++i) {
-        char name[LOG_RUN_NAME_MAX];
         char path[64];
-        log_run_name(name, sizeof(name), i);
-        storage_path(CARD_DIR, name, path, sizeof(path));
-        FILE *probe = fopen(path, "r");
-        if (probe != NULL) {
-            fclose(probe);
+        if (!log_number_free(i, path, sizeof(path))) {
             continue;
         }
         /*
@@ -2117,6 +2156,8 @@ static QueueHandle_t s_test_q;           /**< render loop -> logger */
 static atomic_uint s_test_opens_sent;
 static atomic_uint s_test_opens_done;
 static atomic_int  s_test_file;
+/* Whether the last run's report reached the card whole; set at its END. */
+static atomic_bool s_test_report;
 
 /* The logger task's own. */
 static FILE    *s_test_fp;
@@ -2124,14 +2165,16 @@ static int      s_test_num;
 static bool     s_test_txt;      /* s_test_fp is the report               */
 static unsigned s_test_lines;    /* since the last commit                 */
 static bool     s_test_failed;
+static bool     s_test_txt_bad;  /* a write or the close of the report failed */
 
 /* BENCHnnn.CSV, or with @p txt BENCHnnn.TXT, as a path on the card. */
 static void test_path(int number, bool txt, char *path, size_t n)
 {
     char name[LOG_RUN_NAME_MAX];
-    log_run_name(name, sizeof(name), number);
-    if (txt && strlen(name) == LOG_RUN_NAME_MAX - 1u) {
-        memcpy(name + LOG_RUN_NAME_MAX - 4u, "TXT", 3u);
+    if (txt) {
+        log_report_name(name, sizeof(name), number);
+    } else {
+        log_run_name(name, sizeof(name), number);
     }
     storage_path(CARD_DIR, name, path, n);
 }
@@ -2147,6 +2190,9 @@ static void test_close(void)
     if (fclose(s_test_fp) != 0) {
         s_test_failed = true;
     }
+    if (s_test_failed && s_test_txt) {
+        s_test_txt_bad = true;
+    }
     s_test_fp = NULL;
     if (!s_test_txt) {
         atomic_store(&s_test_open_run, 0u);
@@ -2161,14 +2207,13 @@ static void test_open(void)
     s_test_txt    = false;
     s_test_lines  = 0u;
     s_test_failed = false;
+    s_test_txt_bad = false;
+    atomic_store(&s_test_report, false);
     if (storage_mounted() && log_numbering()) {
         unsigned refused = 0u;
         for (int i = s_log_next; i <= LOG_RUN_LAST && s_test_fp == NULL; ++i) {
             char path[64];
-            test_path(i, false, path, sizeof(path));
-            FILE *probe = fopen(path, "r");
-            if (probe != NULL) {
-                fclose(probe);
+            if (!log_number_free(i, path, sizeof(path))) {
                 continue;
             }
             atomic_store(&s_test_open_run, (unsigned)i);
@@ -2203,6 +2248,10 @@ static void test_write(const test_line_t *l)
     }
     if (l->kind == SERVO_TEST_OUT_END) {
         test_close();
+        /* The report is on the card when it was opened and nothing about
+         * it failed: what the SERVO screen names, and only then. */
+        atomic_store(&s_test_report,
+                     s_test_num > 0 && s_test_txt && !s_test_txt_bad);
         if (s_test_num > 0 && s_test_failed) {
             control_alert("the card failed -- the servo test files are short");
         }
@@ -2220,20 +2269,23 @@ static void test_write(const test_line_t *l)
         s_test_txt = true;
         s_test_fp = fopen(path, "w");
         if (s_test_fp == NULL) {
-            s_test_failed = true;
+            s_test_failed  = true;
+            s_test_txt_bad = true;
         }
     }
     if (s_test_fp == NULL) {
         return;
     }
     if (fputs(l->text, s_test_fp) < 0 || fputc('\n', s_test_fp) == EOF) {
-        s_test_failed = true;
+        s_test_failed  = true;
+        s_test_txt_bad = s_test_txt_bad || s_test_txt;
     }
     /* Committed as the run log is, every LOG_WRITER_FLUSH_ROWS lines. */
     if (++s_test_lines >= LOG_WRITER_FLUSH_ROWS) {
         s_test_lines = 0u;
         if (fflush(s_test_fp) != 0 || fsync(fileno(s_test_fp)) != 0) {
-            s_test_failed = true;
+            s_test_failed  = true;
+            s_test_txt_bad = s_test_txt_bad || s_test_txt;
         }
     }
 }
@@ -5822,7 +5874,8 @@ static void test_lines_service(void)
     const unsigned sent = atomic_load(&s_test_opens_sent);
     if (sent != 0u && !open_waits
         && atomic_load(&s_test_opens_done) == sent) {
-        servo_screen_test_files(atomic_load(&s_test_file));
+        servo_screen_test_files(atomic_load(&s_test_file),
+                                atomic_load(&s_test_report));
     }
 }
 
@@ -6300,6 +6353,9 @@ void app_main(void)
         /* An ON the supply screen sent and the control task dropped -- stale,
          * or lost to a full queue -- stops counting as live there. */
         supply_screen_set_on_coming(supply_live_or_coming());
+        /* A servo test's end and the set points it put back, whichever
+         * screen is up: after this frame's OFF went and its samples. */
+        servo_screen_service();
         /*
          * Whether a STOP is on screen to press.  The control task hit-tests
          * the band's rectangle and cannot see which screen is up.

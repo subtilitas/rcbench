@@ -653,6 +653,8 @@ void supply_screen_ask_on(void) { post_on(); }
 
 void supply_screen_ask_off(void) { post_off(); }
 
+bool supply_screen_off_pending(void) { return s.pending.off; }
+
 void supply_screen_limits_changed(void)
 {
     refresh_limits();

@@ -207,8 +207,11 @@ nicht bekannt.
 Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und
 schreibt trotzdem den Bericht, als ABORTED mit dem Grund markiert. Der
 Prüfstand bleibt scharf, außer das Ende war ein Disarm, STOP oder das
-Verlassen des Screens, die entschärfen. Sobald der Ausgang aus meldet, gehen
-die Sollwerte von SUPPLY auf ihre Werte vor dem Lauf zurück.
+Verlassen des Screens, die entschärfen. Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
+Lauf zurück, gleich welcher Screen oben ist. Das wartet, bis das OFF des
+Laufs gesendet ist, ein danach genommener Messwert den Ausgang aus zeigt,
+kein ON unterwegs ist und OUTPUT ON nicht gehalten wird. Sollwerte, die nach
+dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 
 | Grund im Bericht | Ursache |
 | --- | --- |
@@ -252,7 +255,10 @@ Ein Lauf nimmt die nächste Laufnummer auf der Karte, wie ein scharfer
 Prüfstand, und die eigene Task der SD-Karte schreibt seine Dateien:
 `BENCHnnn.CSV`, eine Zeile je Messwert des Netzteils, und mit REPORT an
 (DUT-Seite) `BENCHnnn.TXT`. Das eigene Lauflog eines scharfen Prüfstands
-läuft daneben in einer eigenen Datei weiter. Ein Lauf, den die Karte nicht
+läuft daneben in einer eigenen Datei weiter. Eine Nummer, die nur ein
+`BENCHnnn.TXT` trägt, dessen CSV am Computer gelöscht wurde, ist trotzdem
+vergeben, damit kein Bericht überschrieben wird, und DELETE in der
+Log-Ansicht löscht mit einem Lauf seinen Bericht. Ein Lauf, den die Karte nicht
 annimmt, sagt das in der Leiste und im Ergebnis, `NOT RECORDED`. Zeilen, für
 die die Warteschlange zur Karte keinen Platz hatte, zählt der Bericht.
 

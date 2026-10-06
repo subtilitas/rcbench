@@ -411,18 +411,36 @@ static struct {
     uint32_t  now_ms;        /**< the panel's clock, servo_screen_clock() */
     bool      have_now;
     bool      link_up;
-    int       test_note;     /**< servo_str_t refusing a START, 0 none  */
+    int       test_note;     /**< servo_str_t the engine refused a START
+                                  with, 0 none; test_blocked() is live  */
     int       test_file;     /**< its files' number; 0 not yet, -1 none */
+    bool      test_report;   /**< the card took its .TXT whole          */
+    int       test_blocked_seen; /**< test_blocked() at the last tick   */
+    bool      test_online_seen;  /**< the supply answering, likewise    */
     bool      test_box;      /**< the left card shows the run          */
-    bool      test_seen;     /**< the run was running at the last tick */
-    bool      test_restore;  /**< the set points go back once it is off */
-    float     test_v0, test_i0;
+    bool      test_seen;     /**< the run was running when last looked */
+    /*
+     * SUPPLY's set points go back to what they were before a run once it
+     * is over, whichever screen is up (servo_screen_service()): only once
+     * its OFF has gone, a sample taken after that shows the output off,
+     * nothing would switch it on, and nobody has set them since it ended.
+     */
+    bool      test_restore;
+    uint8_t   restore_stage; /**< RS_* below                             */
+    uint32_t  restore_ms;    /**< the clock at the stage's start         */
+    float     test_v0, test_i0;  /**< before the run                     */
+    float     test_v1, test_i1;  /**< as the run left them               */
     uint32_t  test_sig;      /**< what the box last showed              */
 
     uint32_t ctrl_rev;
     uint32_t drawn_ctrl[2];
     unsigned drawn_mask;
 } s;
+
+/* The restore's stages: the OFF the run's end posted not yet taken; taken,
+ * waiting for the next frame; waiting for a sample taken since; a sample
+ * showed the output off. */
+enum { RS_OFF_POSTED = 0, RS_OFF_SENT, RS_SAMPLE, RS_OFF_SEEN };
 
 /* The clock the run and the supply's readings share. */
 static uint32_t test_now(void)
@@ -1072,6 +1090,12 @@ void servo_screen_supply(const supply_state_t *st)
     }
     s.sup = *st;
     s.have_sup = true;
+    /* A restore waits for a sample taken after the run's OFF went that
+     * shows the output off. */
+    if (s.test_restore && s.restore_stage == RS_SAMPLE && !st->output
+        && (int32_t)(test_reading_of(st).taken_ms - s.restore_ms) >= 0) {
+        s.restore_stage = RS_OFF_SEEN;
+    }
     /* The run's reading, with the horn's position where it is measured. */
     const servo_test_reading_t r = test_reading_of(st);
     servo_test_reading(&s.test, &r,
@@ -1544,6 +1568,62 @@ static void test_apply(const servo_test_do_t *d)
     }
 }
 
+/* A run that was running is over, however it ended: its OFF is posted
+ * (test_apply()), and the restore of the set points starts waiting. */
+static void test_ended(void)
+{
+    if (!s.test_seen || servo_test_running(&s.test)) {
+        return;
+    }
+    s.test_seen     = false;
+    s.test_restore  = true;
+    s.restore_stage = RS_OFF_POSTED;
+    s.test_v1       = supply_screen_set_v();
+    s.test_i1       = supply_screen_set_i();
+    ++s.test_rev;
+    ++s.ctrl_rev;
+}
+
+/* The set points back to what they were before the run, in stages; see
+ * test_restore.  Dropped if they were set since the run ended. */
+static void test_restore_service(void)
+{
+    if (!s.test_restore) {
+        return;
+    }
+    if (supply_screen_set_v() != s.test_v1
+        || supply_screen_set_i() != s.test_i1) {
+        s.test_restore = false;         /* the operator's, now */
+        return;
+    }
+    switch (s.restore_stage) {
+    case RS_OFF_POSTED:
+        if (!supply_screen_off_pending()) {
+            s.restore_stage = RS_OFF_SENT;
+            s.restore_ms    = test_now();
+        }
+        break;
+    case RS_OFF_SENT:
+        /* The frame after the one the OFF went in: a sample stamped from
+         * here on was taken after it was sent. */
+        if (test_now() != s.restore_ms) {
+            s.restore_stage = RS_SAMPLE;
+            s.restore_ms    = test_now();
+        }
+        break;
+    case RS_OFF_SEEN:
+        /* Not under OUTPUT ON's hold, nor with an ON on its way: the set
+         * point an ON lands at is the one the operator held for. */
+        if (!s.out_down && !supply_screen_output_live()) {
+            s.test_restore = false;
+            supply_screen_put(s.test_v0, s.test_i0);
+        }
+        break;
+    default:
+        break;                          /* RS_SAMPLE: servo_screen_supply() */
+    }
+}
+
 /* End a run now, and do what that asks -- the output off, the servo let
  * go -- before whatever ended it acts. */
 static void test_end_now(servo_test_abort_t why)
@@ -1556,6 +1636,7 @@ static void test_end_now(servo_test_abort_t why)
     servo_test_do_t d;
     servo_test_step(&s.test, test_now(), &in, &d);
     test_apply(&d);
+    test_ended();
 }
 
 /* Why a START cannot run now, before any hold: SERVO_STR_*, or 0. */
@@ -1567,6 +1648,16 @@ static int test_blocked(void)
     if (!servo_test_drained(&s.test)) {
         return SERVO_STR_START_BUSY;
     }
+    /* A step the supply's caps do not reach: refused here, before a
+     * warning names a voltage the run would not use. */
+    float v[SERVO_TEST_STEPS_MAX];
+    const uint8_t n = test_steps(v);
+    const supply_caps_t caps = supply_screen_caps();
+    for (uint8_t k = 0; k < n; ++k) {
+        if (v[k] > caps.v_max + 0.001f || v[k] < caps.v_min - 0.001f) {
+            return SERVO_STR_START_ABOVE_CAP;
+        }
+    }
     return 0;
 }
 
@@ -1574,9 +1665,14 @@ static int test_blocked(void)
  * the settings close so the left card shows it. */
 static void test_begin(void)
 {
-    s.test_note = test_blocked();
-    if (s.test_note != 0) {
-        ++s.ctrl_rev;
+    /* The hold that started it is spent, whatever comes of it: a press
+     * the overlay let go of never reaches ui_hold_end(). */
+    ui_hold_reset(&s.test_hold);
+    s.test_down = false;
+    ++s.test_rev;
+    s.test_note = 0;
+    if (test_blocked() != 0) {
+        ++s.ctrl_rev;                   /* the line under it says why */
         return;
     }
     servo_test_cfg_t c;
@@ -1600,7 +1696,9 @@ static void test_begin(void)
     s.test_v0      = v0;
     s.test_i0      = i0;
     s.test_restore = false;
+    s.test_seen    = true;
     s.test_file    = 0;
+    s.test_report  = false;
     s.test_box     = true;
     s.ov_open      = false;
     s.kp_alone     = false;
@@ -1634,12 +1732,19 @@ servo_test_out_t servo_screen_test_peek(const char **text)
 
 void servo_screen_test_pop(void) { servo_test_pop(&s.test); }
 
-void servo_screen_test_files(int number)
+void servo_screen_test_files(int number, bool report)
 {
-    if (number != s.test_file) {
-        s.test_file = number;
+    if (number != s.test_file || report != s.test_report) {
+        s.test_file   = number;
+        s.test_report = report;
         ++s.ctrl_rev;
     }
+}
+
+void servo_screen_service(void)
+{
+    test_ended();
+    test_restore_service();
 }
 
 void servo_screen_clock(uint32_t now_ms)
@@ -2005,8 +2110,8 @@ static void ov_down(const touch_event_t *evt)
         /* A hold, unless a run is under way (a tap stops it), a step is
          * past 6.0 V (a tap opens the HV warning, whose hold starts it), or
          * it cannot run now (a tap says why). */
-        s.test_note = servo_test_running(&s.test) ? 0 : test_blocked();
-        if (!servo_test_running(&s.test) && s.test_note == 0
+        s.test_note = 0;
+        if (!servo_test_running(&s.test) && test_blocked() == 0
             && !test_needs_hv()) {
             s.test_down = true;
             ui_hold_begin(&s.test_hold);
@@ -2199,7 +2304,7 @@ static void ov_rest(const touch_event_t *evt)
         }
         if (servo_test_running(&s.test)) {
             test_end_now(SERVO_TEST_AB_OPERATOR);
-        } else if (s.test_note == 0 && test_needs_hv()) {
+        } else if (test_blocked() == 0 && test_needs_hv()) {
             ask_hv_test();
         }
         ++s.test_rev;
@@ -2697,7 +2802,7 @@ static void draw_test_box(gfx_canvas_t *c)
         char f[LOG_RUN_NAME_MAX + 4];
         test_file_name(f, sizeof(f));
         snprintf(l3, sizeof(l3), "%s%s", f,
-                 (s.test_file > 0 && t->cfg.report) ? " + .TXT" : "");
+                 (s.test_file > 0 && s.test_report) ? " + .TXT" : "");
     }
     gfx_text(c, b.x + 10, b.y + 8, l1, &gfx_font_8x16, head, 1);
     gfx_text(c, b.x + 10, b.y + 28, l2, &gfx_font_8x16,
@@ -3123,8 +3228,11 @@ static void draw_test_lines(gfx_canvas_t *c)
 
     char line[40];
     gfx_color_t col = ui_theme_color(UI_C_TEXT_FAINT);
-    if (s.test_note != 0) {
-        snprintf(line, sizeof(line), "%s", servo_str((servo_str_t)s.test_note));
+    const int blocked = servo_test_running(&s.test) ? 0 : test_blocked();
+    if (blocked != 0 || s.test_note != 0) {
+        snprintf(line, sizeof(line), "%s",
+                 servo_str((servo_str_t)((blocked != 0) ? blocked
+                                                        : s.test_note)));
         col = ui_theme_color(UI_C_WARN);
     } else if (servo_test_running(&s.test)) {
         snprintf(line, sizeof(line), "RUNNING: STEP %u OF %u",
@@ -3425,9 +3533,17 @@ static void draw_overlay(gfx_canvas_t *c)
 static uint32_t test_signature(void)
 {
     const servo_test_t *t = &s.test;
-    return (uint32_t)t->state + 4u * (uint32_t)t->phase
-           + 32u * (uint32_t)t->step + 1024u * (uint32_t)t->moves_done
-           + 0x4000000u * (uint32_t)(s.test_file + 2);
+    const uint32_t f[] = {
+        (uint32_t)t->state, (uint32_t)t->phase, (uint32_t)t->step,
+        (uint32_t)t->moves_done, (uint32_t)(s.test_file + 2),
+        s.test_report ? 1u : 0u, (uint32_t)test_blocked(),
+        (uint32_t)s.test_note,
+    };
+    uint32_t h = 2166136261u;           /* FNV-1a over the fields */
+    for (size_t k = 0; k < sizeof(f) / sizeof(f[0]); ++k) {
+        h = (h ^ f[k]) * 16777619u;
+    }
+    return h;
 }
 
 /*
@@ -3441,15 +3557,18 @@ static void test_tick(void)
     servo_test_do_t d;
     servo_test_step(&s.test, test_now(), &in, &d);
     test_apply(&d);
-    const bool running = servo_test_running(&s.test);
-    if (s.test_seen && !running) {
-        s.test_restore = true;          /* however it ended */
+    test_ended();
+    test_restore_service();
+    /* A refusal the engine gave goes once what it was about changes: the
+     * bench armed or disarmed, a report taken, a cap moved, the supply
+     * answering or not. */
+    const int blocked = test_blocked();
+    const bool online = s.have_sup && s.sup.online;
+    if (blocked != s.test_blocked_seen || online != s.test_online_seen) {
+        s.test_blocked_seen = blocked;
+        s.test_online_seen  = online;
+        s.test_note = 0;
         ++s.test_rev;
-    }
-    s.test_seen = running;
-    if (s.test_restore && !supply_screen_output_live()) {
-        s.test_restore = false;
-        supply_screen_put(s.test_v0, s.test_i0);
     }
     /* The box and the TEST page say the step, the phase and the move. */
     const uint32_t sig = test_signature();
@@ -3529,7 +3648,9 @@ static void tick(float dt_s)
     /* A cap that came down while the question stands takes the waiting
      * value down with it, for good, as SUPPLY does with its own: one that
      * recovers before APPLY does not bring the old value back. */
-    if (s.ask.open) {
+    /* Not the run's warning: it names the run's top step, which the run
+     * either reaches or refuses, never a value snapped under it. */
+    if (s.ask.open && s.ask.purpose != ASK_TEST) {
         const supply_caps_t caps = supply_screen_caps();
         const float v = supply_snap(s.ask.v, caps.v_min, caps.v_max,
                                     caps.v_step);
@@ -3552,7 +3673,19 @@ static void tick(float dt_s)
     if (s.out_down && !s.out_press_on && !on) {
         ++s.sup_rev;
         if (ui_hold_tick(&s.out_hold, dt_s)) {
-            supply_screen_ask_on();
+            /* The set point is looked at again as the hold completes: it
+             * can have risen past a standard servo's rating since the press
+             * -- a run's end putting it back, or SUPPLY -- and then the ON
+             * goes through the HV warning instead. */
+            if (hv_set_point()) {
+                ui_hold_reset(&s.out_hold);
+                s.out_down = false;
+                if (!s.ov_have) {
+                    ask_hv_on();
+                }
+            } else {
+                supply_screen_ask_on();
+            }
         }
     }
     if (s.out_hold.flash_left > 0) {

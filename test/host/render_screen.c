@@ -284,7 +284,7 @@ static void servo_run_view(bool to_the_end)
         }
     }
     if (to_the_end) {
-        servo_screen_test_files(12);
+        servo_screen_test_files(12, true);
         ui_router_tick(0.02f);
     }
 }

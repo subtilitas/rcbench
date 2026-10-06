@@ -192,9 +192,12 @@ the PD mini averages a reading is not known.
 
 Every ending switches the output off, releases the servo to its centre, and
 still writes the report, marked ABORTED with the reason. The bench stays armed
-unless the ending was a disarm, STOP or leaving the screen, which disarm. Once
-the output reads off, SUPPLY's set points go back to what they were before the
-run.
+unless the ending was a disarm, STOP or leaving the screen, which disarm.
+Once a run is over, whichever screen is up, SUPPLY's set points go back to
+what they were before it. That waits until the run's OFF has been sent, a
+reading taken after that shows the output off, no ON is on its way and
+OUTPUT ON is not being held. Set points changed after the run ended are
+left as they are.
 
 | Reason in the report | Cause |
 | --- | --- |
@@ -236,7 +239,10 @@ A LIMITS value of 0 is not checked; STALL AT always is.
 A run takes the next run number on the card, as an armed bench does, and the
 SD card's own task writes its files: `BENCHnnn.CSV`, one row per supply
 reading, and with the DUT page's REPORT on, `BENCHnnn.TXT`. An armed bench's
-own run log goes on beside it in a file of its own. A run the card cannot
+own run log goes on beside it in a file of its own. A number carried by a
+`BENCHnnn.TXT` alone, its CSV deleted on a computer, is taken all the same,
+so no report is overwritten, and the log viewer's DELETE on a run removes its
+report with it. A run the card cannot
 take says so on the band and on the result, `NOT RECORDED`. Rows the queue to
 the card had no room for are counted in the report.
 

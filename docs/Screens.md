@@ -233,7 +233,10 @@ the change on both.
   a hold under way. With a voltage set point above 6.0 V, wherever it was
   set, OUTPUT ON opens HV SERVOS ONLY instead, naming the voltage, and the
   output comes on only after HOLD TO APPLY is held for 2 s; the switch's own
-  hold and a tap on APPLY switch nothing on. Leaving SERVO leaves the output as it is; a press on
+  hold and a tap on APPLY switch nothing on. A set point that rises above
+  6.0 V during the ordinary hold -- on SUPPLY, or put back after a run --
+  is seen as the hold completes: HV SERVOS ONLY opens and nothing comes on.
+  Leaving SERVO leaves the output as it is; a press on
   OUTPUT OFF as the screen is left is sent as the OFF it was.
 
 **SWEEP drives the servo through a curve** on the coprocessor, where its
@@ -263,7 +266,10 @@ through the supply voltages chosen there, its current measured at rest,
 moving and holding, its travel timed, and the voltage at which it stops
 moving. [Servo procedures](Servo.md#automatic-test) gives the method and the
 files. START TEST needs an armed bench and a supply that answers; the line
-under it says ARM FIRST, or why a run was refused. It is a two-second hold,
+under it says ARM FIRST, A STEP IS OUTSIDE THE CAPS (a chosen step above the
+voltage cap in force, checked before any warning opens), LAST REPORT STILL
+WRITING, or why a run was refused, and follows the bench as that changes.
+It is a two-second hold,
 the gesture OUTPUT ON uses, because a run switches the supply on and moves
 the servo. With HV SERVO on and a step above 6.0 V chosen, a tap opens HV
 SERVOS ONLY instead, naming the highest step, and the run starts only after
@@ -277,14 +283,18 @@ to its centre, on STOP TEST (on the left card or the TEST page), STOP, a
 disarm, the link going, leaving the screen, a finger on the dial, CENTRE,
 SWEEP, RELEASE, a tap on a set point, a change to the servo's type, pulses,
 trim, travel, reverse or SPEED, touch events going missing, and on the
-supply: see [the list](Servo.md#what-ends-a-run). After any run, once the
-output reads off, the set points go back to what they were before it.
+supply: see [the list](Servo.md#what-ends-a-run). Once a run is over, whichever screen is up, SUPPLY's set points go back to
+what they were before it. That waits until the run's OFF has been sent, a
+reading taken after that shows the output off, no ON is on its way and
+OUTPUT ON is not being held. Set points changed after the run ended are
+left as they are.
 
 ![A run](img/servo-run.png)
 
 The result stays on the left card until CLOSE: PASS, FAIL or ABORTED and
 why, the longest travel time and the highest holding current, and the files
-the card took, `BENCHnnn.CSV` and, with REPORT on, `BENCHnnn.TXT`.
+the card took: `BENCHnnn.CSV`, and `+ .TXT` once the card has taken the
+report whole.
 
 ![A result](img/servo-result.png)
 
@@ -646,7 +656,8 @@ before the file is plotted. Runs recorded by the bench are written as
 arming, or one switch-on of the SUPPLY output while the bench is not armed.
 An automatic servo test takes the next number too: its log is `BENCHnnn.CSV`,
 which the list shows as a run, and its report `BENCHnnn.TXT`, which the list
-does not show.
+does not show. A number carried by either file is taken, and DELETE on a run
+removes its report too.
 
 The list holds 48 entries and a card holds up to 999 runs. When there are more
 than fit, the list keeps the newest runs and its tab reads `48 OF 137 FILES`
