@@ -1324,11 +1324,9 @@ TEST_CASE(a_set_point_over_the_input_is_kept_under_it)
 {
     fresh();
     m.input_mv = 4880u;
-    run(100u, false);
-    run(1000u, false);                        /* the input read */
-    CHECK_EQ(pdmini_status(&d)->vin_mv, 4880u);
-    pdmini_want(&d, true, 5880u, 1000u);
-    run(2000u, false);
+    pdmini_want(&d, true, 5880u, 1000u);      /* asked before anything read */
+    run(3000u, false);
+    CHECK_EQ(m.data_writes, 1u);              /* one write, already capped */
     CHECK_EQ(m.mv[0], 4880u - PDMINI_HEADROOM_MV);
     CHECK(m.output);
     CHECK_EQ(m.on_at_mv, 4880u - PDMINI_HEADROOM_MV);

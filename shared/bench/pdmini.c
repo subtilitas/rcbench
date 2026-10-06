@@ -315,6 +315,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->answered    = true;
         d->identified  = true;
         d->st.online   = true;
+        d->input_known = false;    /* read again before a set point */
         d->state_known = false;
         d->blind_due   = false;
         /* The argument learnt is kept: the same module back after a fault
@@ -437,6 +438,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->st.in_state = r[1];
         d->st.vin_mv   = (uint16_t)(r[2] | (r[3] << 8));
         d->input_misses = 0u;
+        d->input_known = true;
         break;
     default:
         break;
@@ -627,6 +629,13 @@ static bool next_job(pdmini_t *d, uint32_t now)
         }
         const uint16_t mv = target_mv(d);
         if (d->st.set_mv != mv || d->st.set_ma != d->want_ma) {
+            /* The input first, so the cap under it holds from the first
+             * write -- unless this firmware does not answer the read. */
+            if (!d->input_known && d->input_misses < PDMINI_INPUT_MISSES) {
+                d->last_input = now;
+                read1(d, now, PDMINI_READ_INPUT);
+                return true;
+            }
             const uint8_t req[6] = {
                 PDMINI_OUTPUT_DATA, (uint8_t)d->slot,
                 (uint8_t)(mv & 0xFFu), (uint8_t)(mv >> 8),
