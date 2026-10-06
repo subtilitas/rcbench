@@ -206,6 +206,7 @@ static void finish(pdmini_t *d, uint32_t now, bool ok)
         ++d->input_misses;        /* firmware before v1.0.2.0 has none */
     }
     if (d->cmd == PDMINI_WHO_AM_I) {
+        ++d->who_failed;          /* for a caller looking for the rate */
         /* Silence in a row; any answer, even a wrong one, is something
          * there. */
         if (d->rx_n != 0u) {

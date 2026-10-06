@@ -28,22 +28,37 @@
 extern "C" {
 #endif
 
-/** The module's UART Baudrate settings, 0 to 6. */
+/** The module's UART Baudrate settings, 0 to 6, and 7 to find it. */
 #define SUPPLY_BAUD_COUNT 7u
+#define SUPPLY_BAUD_AUTO  7u
 uint32_t supply_page_baud(uint16_t setting);
 
 typedef struct {
     uint16_t regs[LINK_SP_COUNT];
     bool     commanded;   /**< set points written since init          */
+    uint8_t  scan;        /**< the rate being tried under AUTO, 0..6   */
+    uint16_t scan_seen;   /**< the driver's who_failed when last looked */
 } supply_page_t;
 
 void supply_page_init(supply_page_t *p);
 
 /**
+ * The rate the UART is to run at now, 0 to 6.  The setting itself, or under
+ * AUTO the one being tried: the next after every WHO_AM_I @p drv reports
+ * without a valid answer, until a module has answered once, from when the
+ * rate holds.  Publishes it in BAUD_FOUND -- 7 while AUTO has found none.
+ * @p drv NULL leaves the scan where it is.
+ */
+uint8_t supply_page_rate(supply_page_t *p, const pdmini_t *drv);
+
+/** The baud the UART is to be opened at now. */
+uint32_t supply_page_uart_baud(const supply_page_t *p);
+
+/**
  * A write, validated whole before any of it is stored.  Refused: off the
  * page (BAD_RANGE); a read-only register (READ_ONLY); a wiring change while
  * the output is asked on or may be on, a pin past the bank, reserved, bound to an output or
- * the other pin, a baud setting past 6, an ON without the supply enabled
+ * the other pin, a baud setting past 7 (AUTO), an ON without the supply enabled
  * or without its set points in the same frame,
  * a set point above the module's range (BAD_VALUE); an ON without a live
  * heartbeat (NOT_ARMED).

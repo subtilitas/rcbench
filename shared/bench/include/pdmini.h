@@ -180,6 +180,7 @@ typedef struct {
     bool     answered;       /* identified once since pdmini_init()      */
     bool     restored;       /* wiring from before a restart: maybe on   */
     uint8_t  who_misses;     /* WHO_AM_I answered by not a byte, so far  */
+    uint16_t who_failed;     /* WHO_AM_I without a valid answer, all told */
     bool     state_known;    /* READ_OUTPUT_STATE answered since online */
     int      slot;           /* the active slot, -1 until read           */
     bool     data_known;     /* set_mv/set_ma read back from it          */

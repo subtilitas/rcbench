@@ -467,7 +467,10 @@ The PD mini's wiring -- PD mini, PD mini TX, PD mini RX and PD mini baud -- is
 on SETUP under INTERFACES. TX and RX are coprocessor GPIO numbers: TX goes to
 the module's DM, RX comes from its DP. The coprocessor refuses a pin that is
 reserved, bound to an output or the other pin. PD mini baud is the module's
-own UART Baudrate setting, 19200 as shipped.
+own UART Baudrate setting: 9600, 19200 (as shipped), 38400, 57600,
+115200, 230400 or 460800 baud, or AUTO. AUTO, the default, lets the
+coprocessor find it: it tries each of the 7 rates, one a second, and the
+band says the rate the module answered at.
 
 ## Analyser
 

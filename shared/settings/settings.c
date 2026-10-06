@@ -31,7 +31,7 @@ static const char *const k_servo_curve[] = { "SQUARE", "SINE", "TRIANGLE" };
 static const char *const k_servo_len_by[] = { "TIME", "MOVES" };
 /* The PD mini's own UART Baudrate setting, 0 to 6, in its order. */
 static const char *const k_pdmini_baud[] = {
-    "9600", "19200", "38400", "57600", "115200", "230400", "460800",
+    "9600", "19200", "38400", "57600", "115200", "230400", "460800", "AUTO",
 };
 
 #define ENUM_OPTS(a) .options = (a), .option_count = (uint8_t)(sizeof(a) / sizeof((a)[0]))
@@ -126,8 +126,8 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "pdm_rx", "PD mini RX", "Our RX, from the module's DP; -1 until wired", "GPIO",
         SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, -1, NULL, 0 },
     [SET_PDMINI_BAUD] = {
-        "pdm_baud", "PD mini baud", "The module's UART Baudrate setting", "",
-        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 1, ENUM_OPTS(k_pdmini_baud) },
+        "pdm_baud", "PD mini baud", "The module's UART Baudrate; AUTO finds it", "",
+        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 7, ENUM_OPTS(k_pdmini_baud) },
 
     /*
      * The supply's.  The ranges are a USB-PD PPS (Programmable Power Supply)

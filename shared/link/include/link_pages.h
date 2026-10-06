@@ -54,7 +54,7 @@ typedef enum {
  * older host can ignore.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 3u
+#define LINK_PROTOCOL_MINOR 4u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -174,7 +174,10 @@ enum {
  *
  *     ENABLE to BAUD are its wiring, one frame: 1 to drive it, the GPIO the
  *     UART transmits on (to the module's DM) and receives on (its DP), and
- *     the module's UART Baudrate setting, 0 to 6 for 9600 to 460800 baud.
+ *     the module's UART Baudrate setting, 0 to 6 for 9600 to 460800 baud,
+ *     or 7 (protocol 4.4) to find it: the UART steps to the next rate
+ *     after every WHO_AM_I without a valid answer, until a module has
+ *     answered once, and BAUD_FOUND says which rate is in use.
  *     Refused with BAD_VALUE: a pin that is reserved, bound to an output or
  *     the other pin, a baud out of range, or any change while the output is
  *     asked on or may be on (FLAGS bit 6).  The pins it takes are no
@@ -216,7 +219,8 @@ enum {
     LINK_SP_VIN_MV    = 13,
     LINK_SP_SAMPLES   = 14,
     LINK_SP_ERRORS    = 15,
-    LINK_SP_COUNT     = 16,
+    LINK_SP_BAUD_FOUND = 16,  /**< protocol 4.4: the rate in use, 0..6, 7 none */
+    LINK_SP_COUNT     = 17,
 };
 #define LINK_SP_ONLINE  0x01u
 #define LINK_SP_ON      0x02u

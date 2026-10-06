@@ -2854,6 +2854,8 @@ static supply_sim_t   s_supply_sim;
 static supply_link_t  s_supply_link;
 /* The coprocessor that answered speaks protocol 4.3: it has the page. */
 static bool           s_supply_page;
+/* And speaks 4.4: AUTO baud and the BAUD_FOUND register. */
+static bool           s_supply_auto;
 /* The PD mini, not the model, is the supply; see supply_real_follow(). */
 static bool           s_supply_is_real;
 static bool           s_supply_on;
@@ -4587,6 +4589,17 @@ static void supply_link_alerts(void)
     if ((ev & SUPPLY_LINK_EV_SET_STUCK) != 0u) {
         control_alert("PD mini set points would not take");
     }
+    if ((ev & SUPPLY_LINK_EV_BAUD_FOUND) != 0u) {
+        static const unsigned k_baud[] = { 9600u, 19200u, 38400u, 57600u,
+                                           115200u, 230400u, 460800u };
+        const unsigned found = s_supply_link.regs[LINK_SP_BAUD_FOUND];
+        if (found < 7u) {
+            char line[ALERT_MAX];
+            snprintf(line, sizeof(line), "PD mini answers at %u baud",
+                     k_baud[found]);
+            control_alert(line);
+        }
+    }
 }
 
 /*
@@ -4605,7 +4618,10 @@ static void supply_link_service(void)
      * anything is written: an ON taken in the gap is switched off before it
      * can reach the page. */
     supply_real_follow();
-    const supply_wiring_t w = pdmini_wiring();
+    supply_wiring_t w = pdmini_wiring();
+    if (w.baud >= SUPPLY_LINK_BAUD_AUTO && !s_supply_auto) {
+        w.baud = 1u;   /* a 4.3 coprocessor has no AUTO: the as-shipped 19200 */
+    }
     supply_link_wire(&s_supply_link, &w);
     for (int k = 0; k < 3; ++k) {
         uint8_t off = 0u;
@@ -4634,9 +4650,15 @@ static void supply_link_service(void)
     if ((w.en || !supply_link_settled(&s_supply_link))
         && supply_link_read_due(&s_supply_link, now_ms())) {
         link_msg_t reply = { 0 };
+        /* A 4.3 coprocessor's page ends before BAUD_FOUND. */
         const bool read = poll_page(&s_host, LINK_PAGE_SUPPLY,
-                                    (uint8_t)LINK_SP_COUNT, &reply)
+                                    s_supply_auto ? (uint8_t)LINK_SP_COUNT
+                                                  : (uint8_t)LINK_SP_BAUD_FOUND,
+                                    &reply)
                           && reply.op == LINK_OP_DATA;
+        if (read && !s_supply_auto) {
+            reply.regs[LINK_SP_BAUD_FOUND] = SUPPLY_LINK_BAUD_AUTO;
+        }
         supply_link_read(&s_supply_link, read ? reply.regs : NULL, now_ms());
     }
     supply_link_alerts();
@@ -4945,6 +4967,8 @@ static void link_came_up(const link_msg_t *reply)
      * that only went quiet may hold an ON this panel has since let go.
      */
     s_supply_page = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 3u;
+    /* 4.4 finds the module's rate itself, and has BAUD_FOUND. */
+    s_supply_auto = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 4u;
     supply_link_lost(&s_supply_link);
     if (!s_supply_page && pdmini_wiring().en) {
         control_alert("coprocessor has no SUPPLY page -- PD mini not driven");

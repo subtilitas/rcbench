@@ -6,6 +6,16 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- **PD mini baud AUTO.** With "PD mini baud" at AUTO, the default, the
+  coprocessor finds the module's UART rate itself: after every WHO_AM_I
+  without a valid answer it tries the next of the 7 rates, starting at
+  19200, until a module has answered once, and holds that rate. The band
+  says the rate found. Link protocol 4.4: SUPPLY's BAUD takes 7 for AUTO
+  and register 16 (BAUD_FOUND) reports the rate in use. A 4.3 coprocessor
+  is sent 19200 for AUTO, and its 16-register page is read as it is.
+
 ## 0.10.0 - 2026-10-06
 
 The servo tester's first three steps (#223) and the PD mini. SERVO gets a

@@ -24,6 +24,10 @@
  *  nothing held, when no PIO block can reach the pins or has room. */
 bool pd_uart_open(uint8_t tx, uint8_t rx, uint32_t baud);
 
+/** Another rate for both machines, between transactions only: nothing
+ *  happens while the UART is attached. */
+void pd_uart_baud(uint32_t baud);
+
 /** Release them; the pins stay at rest. */
 void pd_uart_close(void);
 

@@ -60,6 +60,7 @@ static servo_page_t s_servo;
 static supply_page_t s_supply;
 static pdmini_t      s_pd;
 static bool          s_pd_open;      /* the UART claimed for its pins */
+static uint8_t       s_pd_rate;      /* the rate it runs at, 0..6     */
 /* Wiring taken and not yet in flash: no ON until it is, so a restart in
  * the run finds the wiring that drives the module and can switch it off. */
 static bool          s_supply_unsaved;
@@ -273,7 +274,7 @@ static bool supply_rewire(void)
         return true;
     }
     if (!pd_uart_open(supply_page_tx(&s_supply), supply_page_rx(&s_supply),
-                      supply_page_baud(s_supply.regs[LINK_SP_BAUD]))) {
+                      supply_page_uart_baud(&s_supply))) {
         return false;
     }
     const pdmini_io_t io = { pd_uart_attach, pd_uart_detach, pd_uart_send,
@@ -283,6 +284,7 @@ static bool supply_rewire(void)
      * on before a restart, or on from its own button -- is not known: it
      * is held as maybe on until read off. */
     pdmini_restored(&s_pd);
+    s_pd_rate = supply_page_rate(&s_supply, NULL);
     s_pd_open = true;
     return true;
 }
@@ -302,7 +304,7 @@ static bool supply_probe(void)
         return true;
     }
     if (!pd_uart_open(supply_page_tx(&s_supply), supply_page_rx(&s_supply),
-                      supply_page_baud(s_supply.regs[LINK_SP_BAUD]))) {
+                      supply_page_uart_baud(&s_supply))) {
         return false;
     }
     pd_uart_close();
@@ -463,8 +465,7 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
          * PIO block, tried now, or the attach would fail unseen. */
         refused = !pd_uart_open(supply_page_tx(&s_supply),
                                 supply_page_rx(&s_supply),
-                                supply_page_baud(
-                                    s_supply.regs[LINK_SP_BAUD]));
+                                supply_page_uart_baud(&s_supply));
         pd_uart_close();
     }
     if (refused) {
@@ -1284,6 +1285,14 @@ int main(void)
                 pdmini_rx(&s_pd, b, now);
             }
             pdmini_step(&s_pd, now);
+            /* Under AUTO, the next rate after a WHO_AM_I nothing answered
+             * validly -- between transactions, with the pins at rest. */
+            const uint8_t rate = supply_page_rate(&s_supply, &s_pd);
+            if (rate != s_pd_rate
+                && (s_pd.phase == PD_IDLE || s_pd.phase == PD_GAP)) {
+                pd_uart_baud(supply_page_baud(rate));
+                s_pd_rate = rate;
+            }
         }
         outputs_step(&s_outputs, now);
         /* Straight after the step, so what reaches a pin is what the bank
