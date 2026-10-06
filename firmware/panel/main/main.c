@@ -4601,6 +4601,10 @@ static void supply_link_service(void)
     if (!s_supply_page) {
         return;
     }
+    /* An edit on SETUP since the step is followed here too, straight before
+     * anything is written: an ON taken in the gap is switched off before it
+     * can reach the page. */
+    supply_real_follow();
     const supply_wiring_t w = pdmini_wiring();
     supply_link_wire(&s_supply_link, &w);
     for (int k = 0; k < 3; ++k) {
