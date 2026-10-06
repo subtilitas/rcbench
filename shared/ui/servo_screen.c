@@ -910,6 +910,23 @@ void servo_screen_cancel_arm(void)
         s.out_down = false;
         ++s.sup_rev;
     }
+    /* And the two warnings' holds: a voltage past a standard servo's rating
+     * or a profile that can destroy one is not applied by a hold the stop
+     * interrupted.  The warnings stay open; a new hold applies them. */
+    if (s.ask.down || s.warn.down) {
+        if (s.ov_have && (s.ov_pressed == OP_ASK_APPLY
+                          || s.ov_pressed == OP_WARN_APPLY)) {
+            s.ov_have    = false;       /* the press is over, as ov_let_go() */
+            s.ov_pressed = OP_NONE;
+            ++s.ctrl_rev;
+        }
+        ui_hold_reset(&s.ask.hold);
+        ui_hold_reset(&s.warn.hold);
+        s.ask.down  = false;
+        s.warn.down = false;
+        ++s.ask.rev;
+        ++s.warn.rev;
+    }
     /*
      * And nothing is being held any more.  The armed state need not have
      * moved -- a bench that was not armed is stopped just the same, and the

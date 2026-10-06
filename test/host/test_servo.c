@@ -2217,6 +2217,41 @@ TEST_CASE(the_set_lines_gestures_draw_and_end_as_they_should)
     CHECK(c.off);
 }
 
+/* STOP ends the warnings' holds as it ends ARM's: the rest of the two
+ * seconds applies neither the voltage nor the profile. */
+TEST_CASE(stop_ends_the_warning_holds)
+{
+    fresh();
+    supply_screen_put(5.0f, 1.0f);
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("7.4");
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 40; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    servo_screen_cancel_arm();
+    for (int i = 0; i < 80; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
+    tap(WARN_CANCEL_X, WARN_Y);
+
+    open_settings();
+    tap(ROW_L_X, ROW_Y(0));
+    tap(CH_X(3), CH_Y(3));                      /* HELI CYCLIC: the warning */
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 40; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    servo_screen_cancel_arm();
+    for (int i = 0; i < 80; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
+    CHECK_STR_EQ(servo_screen_type_name(), "STANDARD PWM");
+}
+
 int main(void)
 {
     RUN(a_touch_on_the_dial_points_the_horn_there);
@@ -2297,5 +2332,6 @@ int main(void)
     RUN(settings_shuts_a_set_points_keypad_cleanly);
     RUN(a_cap_lowered_under_the_question_lowers_its_value);
     RUN(the_set_lines_gestures_draw_and_end_as_they_should);
+    RUN(stop_ends_the_warning_holds);
     return test_summary("servo");
 }

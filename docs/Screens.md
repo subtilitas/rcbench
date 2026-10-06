@@ -223,7 +223,7 @@ the change on both.
   only a servo specified as HV (high voltage) is within its rating; a
   standard servo above it can be destroyed immediately. The
   voltage is applied after HOLD TO APPLY is held for 2 s, the gesture of the
-  profile warning; CANCEL drops it. With the output on it replaces SUPPLY's
+  profile warning; CANCEL drops it. STOP ends the hold. With the output on it replaces SUPPLY's
   question, and it stays if the output goes off. A voltage already above
   6.0 V changes without it. A voltage set on SUPPLY does not open it.
 

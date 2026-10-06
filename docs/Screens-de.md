@@ -242,7 +242,7 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
   Servo innerhalb seiner Spezifikation; ein Standardservo kann darüber sofort
   zerstört werden. Die Spannung gilt erst, nachdem HOLD
   TO APPLY 2 s gehalten wurde, dieselbe Geste wie bei der Profilwarnung;
-  CANCEL verwirft sie. Bei eingeschaltetem Ausgang ersetzt sie die Rückfrage
+  CANCEL verwirft sie. STOP beendet das Halten. Bei eingeschaltetem Ausgang ersetzt sie die Rückfrage
   von SUPPLY und bleibt stehen, wenn der Ausgang ausgeht. Eine Spannung, die
   schon über 6,0 V liegt, ändert sich ohne sie. Eine auf SUPPLY eingestellte
   Spannung öffnet sie nicht.
