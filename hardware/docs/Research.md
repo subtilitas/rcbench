@@ -38,6 +38,46 @@ the battery eliminator circuit of an ESC (electronic speed controller), its
 servo supply, I2C Inter-Integrated Circuit, AC alternating
 current and EEPROM electrically erasable programmable read-only memory.
 
+## Goals
+
+The goals the owner sets after round 1, in order. Each holds for every run
+that starts after its date and for the pages those runs write.
+
+1. **Cost (owner, 2026-10-06).** The IO board costs about one third of the
+   estimate of 2026-10-06: about €135 a board in place of about €400. The
+   estimate is $399 to $485 a board, each part bought in the quantity 10
+   boards need, without shipping, customs or VAT (value-added tax): the
+   parts after round 2 at JLCPCB and LCSC prices ($286), passives,
+   connectors, heatsinks and the sensor board ($52 to $109, an allowance,
+   none of them selected), a 6-layer PCB (printed circuit board, $15 to
+   $35) and assembly at JLCPCB ($46 to $55, of which $27 to $30 is the $3
+   fee for each distinct extended-library part). The target is on the same
+   basis. A run ranks every candidate by its unit price at the 10-board
+   quantity beside its fit, prefers JLCPCB's basic library, and counts the
+   distinct extended parts it adds. Where a requirement makes the target
+   unreachable, the run names the requirement and what it costs a board,
+   and the owner decides; a run does not relax a requirement on its own.
+   The largest items a board in the estimate:
+
+   | Part | Function | Count | Unit | A board |
+   | --- | --- | --- | --- | --- |
+   | INA301A1IDGKR | port supply current limit | 20 | $1.85 | $37.06 |
+   | LTM8068EY#PBF | cell monitor pack-side supply | 1 | $21.98 | $21.98 |
+   | TPSI3052DWZR | ESC pack switch driver | 4 | $4.62 | $18.49 |
+   | TPS55285VALR | servo rails and adjustable supply | 4 | $4.34 | $17.35 |
+   | BUK7K6R8-40E,115 | port supply switch | 20 | $0.79 | $15.78 |
+   | BAS-M-R0001-E-5.0 | external shunt | 1 | $13.69 | $13.69 |
+   | TPS3701DDCR | port voltage ceiling | 20 | $0.51 | $10.19 |
+   | ADXL316WBCSZ | accelerometer | 1 | $9.50 | $9.50 |
+   | INA228AIDGSR | motor current, two shunt paths | 2 | $4.73 | $9.46 |
+   | MCP9808T-E/MS | shunt and converter temperature | 5 | $1.88 | $9.40 |
+
+   The estimate's prices are from the jlcparts copy of 2026-09-14, except the
+   BSC014N04LSATMA1's, Digi-Key's on 2026-10-06. Round 2 records no
+   placements a board; the counts follow each function (20 for a part on
+   each port, 3 or 4 for a part on each rail). Per-port circuits are 100 of
+   the 217 placements and $81 of the $286.
+
 The IO board is the coprocessor board: the RP2354B, the CAN (Controller Area
 Network) link to the display, the outputs, the receiver inputs, the sensor
 front ends and the power path. [The specification](IOBoard.md) lists what it
