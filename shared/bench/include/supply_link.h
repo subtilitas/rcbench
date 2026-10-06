@@ -113,7 +113,8 @@ void supply_link_lost(supply_link_t *s);
 /** The wiring the settings name now. */
 void supply_link_wire(supply_link_t *s, const supply_wiring_t *w);
 
-/** What the output is to be; set points clamped to 20000 mV, 3000 mA. */
+/** What the output is to be; set points clamped to the page's 1000 to
+ *  20000 mV and 50 to 3000 mA. */
 void supply_link_command(supply_link_t *s, bool on, uint16_t mv, uint16_t ma);
 
 /**

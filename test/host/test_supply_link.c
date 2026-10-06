@@ -281,6 +281,9 @@ TEST_CASE(unanswered_writes_and_a_lost_link)
     supply_link_command(&sl, false, 25000u, 5000u);
     CHECK_EQ(sl.mv, 20000u);
     CHECK_EQ(sl.ma, 3000u);
+    supply_link_command(&sl, false, 0u, 10u);
+    CHECK_EQ(sl.mv, 1000u);
+    CHECK_EQ(sl.ma, 50u);
     /* And set points refused with the output off are not asked again. */
     supply_link_written(&sl, SUPPLY_LINK_ACK);
     supply_link_read(&sl, NULL, now);

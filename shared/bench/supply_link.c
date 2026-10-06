@@ -9,8 +9,12 @@
 #include <stddef.h>
 #include <string.h>
 
-/* The page's own bounds on the set points (shared/outputs/supply_page.c). */
+/* The page's own bounds on the set points (shared/outputs/supply_page.c):
+ * it refuses more and stores less as the module's least, so both ends are
+ * kept here and a read-back matches what was written. */
+#define PAGE_MIN_MV  1000u
 #define PAGE_MAX_MV 20000u
+#define PAGE_MIN_MA    50u
 #define PAGE_MAX_MA  3000u
 
 void supply_link_init(supply_link_t *s)
@@ -20,6 +24,8 @@ void supply_link_init(supply_link_t *s)
         s->want.tx = -1;
         s->want.rx = -1;
         s->want.baud = 1u;
+        s->mv = (uint16_t)PAGE_MIN_MV;
+        s->ma = (uint16_t)PAGE_MIN_MA;
     }
 }
 
@@ -79,8 +85,10 @@ void supply_link_command(supply_link_t *s, bool on, uint16_t mv, uint16_t ma)
         return;
     }
     s->on = on;
-    s->mv = (mv > PAGE_MAX_MV) ? (uint16_t)PAGE_MAX_MV : mv;
-    s->ma = (ma > PAGE_MAX_MA) ? (uint16_t)PAGE_MAX_MA : ma;
+    s->mv = (mv > PAGE_MAX_MV) ? (uint16_t)PAGE_MAX_MV
+            : (mv < PAGE_MIN_MV) ? (uint16_t)PAGE_MIN_MV : mv;
+    s->ma = (ma > PAGE_MAX_MA) ? (uint16_t)PAGE_MAX_MA
+            : (ma < PAGE_MIN_MA) ? (uint16_t)PAGE_MIN_MA : ma;
 }
 
 supply_link_write_t supply_link_next(supply_link_t *s, uint8_t *off,
