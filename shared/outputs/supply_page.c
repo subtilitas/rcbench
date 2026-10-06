@@ -149,6 +149,9 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
         }
     }
     memcpy(p->regs, next, sizeof(next));
+    if (command) {
+        p->commanded = true;
+    }
     return 0u;
 }
 
@@ -192,8 +195,14 @@ void supply_page_step(supply_page_t *p, bool beat_alive, pdmini_t *drv)
         p->regs[LINK_SP_FLAGS] = 0u;
         return;
     }
-    pdmini_want(drv, p->regs[LINK_SP_OUTPUT] != 0u, p->regs[LINK_SP_SET_MV],
-                p->regs[LINK_SP_SET_MA]);
+    if (p->commanded) {
+        pdmini_want(drv, p->regs[LINK_SP_OUTPUT] != 0u,
+                    p->regs[LINK_SP_SET_MV], p->regs[LINK_SP_SET_MA]);
+    } else {
+        /* Wired with no command yet: off, and the module's set points left
+         * as they are rather than written at the page's zeros. */
+        pdmini_want_off(drv);
+    }
     const pdmini_status_t *st = pdmini_status(drv);
     uint16_t flags = 0u;
     if (st->online) { flags |= LINK_SP_ONLINE; }

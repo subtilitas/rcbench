@@ -185,6 +185,25 @@ TEST_CASE(low_set_points_read_back_as_the_module_takes_them)
     CHECK_EQ(reg(LINK_SP_SET_MA), PDMINI_I_MIN_MA);
 }
 
+/* Wired with no command yet, the driver is asked for the output off and
+ * for no set points, so the module's are not overwritten with zeros. */
+TEST_CASE(no_set_points_go_out_before_a_command)
+{
+    fresh();
+    pdmini_t drv;
+    pdmini_init(&drv, NULL, 0u);
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
+    drv.want_output = true;
+    supply_page_step(&pg, true, &drv);
+    CHECK(!drv.want_output);
+    CHECK(!drv.want_set);
+    CHECK_EQ(command(0u, 9000u, 800u, true), 0u);
+    supply_page_step(&pg, true, &drv);
+    CHECK(drv.want_set);
+    CHECK_EQ(drv.want_mv, 9000u);
+    pdmini_want_off(NULL);
+}
+
 TEST_CASE(read_only_registers_and_the_page_end_are_refused)
 {
     fresh();
@@ -262,6 +281,7 @@ int main(void)
     RUN(an_on_needs_its_whole_frame);
     RUN(no_slot_binds_a_held_pin);
     RUN(low_set_points_read_back_as_the_module_takes_them);
+    RUN(no_set_points_go_out_before_a_command);
     RUN(read_only_registers_and_the_page_end_are_refused);
     RUN(the_step_passes_the_page_to_the_driver_and_back);
     return test_summary("supply_page");

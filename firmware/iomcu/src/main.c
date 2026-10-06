@@ -341,9 +341,13 @@ static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
     if (nack != 0u) {
         return nack;
     }
+    /* Each register on its own: TX and RX swapped hold the same pins. */
     const bool rewired =
-        supply_page_pins(&s_supply) != supply_page_pins(&was)
-        || s_supply.regs[LINK_SP_BAUD] != was.regs[LINK_SP_BAUD];
+        supply_page_enabled(&s_supply) != supply_page_enabled(&was)
+        || (supply_page_enabled(&s_supply)
+            && (s_supply.regs[LINK_SP_TX_PIN] != was.regs[LINK_SP_TX_PIN]
+                || s_supply.regs[LINK_SP_RX_PIN] != was.regs[LINK_SP_RX_PIN]
+                || s_supply.regs[LINK_SP_BAUD] != was.regs[LINK_SP_BAUD]));
     const bool wiring =
         memcmp(&s_supply.regs[LINK_SP_ENABLE], &was.regs[LINK_SP_ENABLE],
                LINK_SP_OUTPUT * sizeof(uint16_t)) != 0;
@@ -355,9 +359,15 @@ static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
     }
     if (rewired && !supply_probe()) {
         /* No UART for those pins: the wiring is as it was, and the panel
-         * is told rather than shown a supply that is never there. */
+         * is told rather than shown a supply that is never there.  Wiring
+         * still waiting for flash goes back to waiting, detached. */
         s_supply = was;
-        (void)supply_rewire();
+        if (s_supply_unsaved) {
+            (void)supply_probe();
+            s_supply_attach = true;
+        } else {
+            (void)supply_rewire();
+        }
         return LINK_NACK_BAD_VALUE;
     }
     if (wiring) {
@@ -435,16 +445,28 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
      * unbound: a restart binds the outputs first, and the supply would be
      * the one left out.
      */
+    bool refused = false;
     if (s_pd_open) {
         for (uint8_t i = 0; i < OUT_MAX_SLOTS; ++i) {
             if (s_outputs.slot[i].driver != OUT_DRIVER_NONE
                 && !outputs_hw_bound(i)) {
-                memcpy(s->slots, prev, sizeof(prev));
-                outputs_slots_apply(&s_outputs, s->slots);
-                hw_apply();
-                return LINK_NACK_BAD_VALUE;
+                refused = true;
             }
         }
+    } else if (s_supply_attach) {
+        /* The supply's UART waits for its save: the slots must leave it a
+         * PIO block, tried now, or the attach would fail unseen. */
+        refused = !pd_uart_open(supply_page_tx(&s_supply),
+                                supply_page_rx(&s_supply),
+                                supply_page_baud(
+                                    s_supply.regs[LINK_SP_BAUD]));
+        pd_uart_close();
+    }
+    if (refused) {
+        memcpy(s->slots, prev, sizeof(prev));
+        outputs_slots_apply(&s_outputs, s->slots);
+        hw_apply();
+        return LINK_NACK_BAD_VALUE;
     }
     save_outputs(s);
     return 0u;

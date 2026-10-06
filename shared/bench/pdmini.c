@@ -128,6 +128,19 @@ void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma)
     d->want_ma     = ma;
 }
 
+void pdmini_want_off(pdmini_t *d)
+{
+    if (d == NULL) {
+        return;
+    }
+    if (d->want_output) {
+        d->en_tries = 0u;
+        d->st.stuck = false;
+    }
+    d->held_off    = false;
+    d->want_output = false;
+}
+
 const pdmini_status_t *pdmini_status(const pdmini_t *d)
 {
     return (d != NULL) ? &d->st : NULL;

@@ -221,6 +221,10 @@ void pdmini_init(pdmini_t *d, const pdmini_io_t *io, uint32_t now_ms);
  *  whatever is asked, until an OFF is asked. */
 void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma);
 
+/** The output off, and no set points asked: the module's are left as
+ *  they are until pdmini_want() names some. */
+void pdmini_want_off(pdmini_t *d);
+
 /** A byte from the module. */
 void pdmini_rx(pdmini_t *d, uint8_t byte, uint32_t now_ms);
 
