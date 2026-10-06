@@ -61,20 +61,25 @@
 
 #include "link_pages.h"
 
-/** What is kept: the two pages that describe the outputs, and nothing else. */
+/** What is kept: the two pages that describe the outputs, and the PD
+ *  mini's wiring -- SUPPLY's ENABLE to BAUD -- so a module left on can be
+ *  switched off after a restart before any panel has written the page.
+ *  The command is not kept. */
 typedef struct {
     uint16_t slots[LINK_OS_COUNT];
     uint16_t chan_cfg[LINK_CC_COUNT];
+    uint16_t supply[LINK_SP_OUTPUT];
 } out_store_t;
 
 /**
  * Read what was saved.
  *
  * Takes the valid record with the highest sequence number across both
- * sectors.  Returns false when no slot holds one -- a store never written,
- * one written by a build with a different record in it, or one whose records
- * are all torn -- and then @p out is untouched, so the caller keeps the
- * defaults it already had.
+ * sectors.  A record of the build before, without the wiring, is read too,
+ * with the supply left disabled.  Returns false when no slot holds one -- a
+ * store never written, one written by a build with another record in it,
+ * or one whose records are all torn -- and then @p out is untouched, so the
+ * caller keeps the defaults it already had.
  */
 bool out_store_load(out_store_t *out);
 

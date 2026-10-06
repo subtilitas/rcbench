@@ -43,7 +43,7 @@ typedef enum {
     LINK_PAGE_ART_DATA  = 0x27, /**< and the picture itself, a block at a time */
     LINK_PAGE_PADS      = 0x28, /**< the pads that are not pins, read-only  */
     LINK_PAGE_SERVO     = 0x29, /**< the surfaces' frame rate, not kept     */
-    LINK_PAGE_SUPPLY    = 0x2A, /**< the PD mini on a PIO UART, not kept    */
+    LINK_PAGE_SUPPLY    = 0x2A, /**< the PD mini on a PIO UART; wiring kept */
 } link_page_id_t;
 
 /*
@@ -195,7 +195,9 @@ enum {
  *     the input's state and voltage, and the counts of readings taken and
  *     of transactions that failed, modulo 65536.
  *
- *     Not kept: a coprocessor restart drives no supply until written. */
+ *     The wiring is kept in the coprocessor's flash and driven at boot with
+ *     the output off, so a module left on is switched off after a restart;
+ *     the command is not kept. */
 enum {
     LINK_SP_ENABLE    = 0,
     LINK_SP_TX_PIN    = 1,

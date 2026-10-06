@@ -169,6 +169,8 @@ static void save_outputs(const iomcu_state_t *s)
     out_store_t cfg;
     memcpy(cfg.slots, s->slots, sizeof(cfg.slots));
     memcpy(cfg.chan_cfg, s->chan_cfg, sizeof(cfg.chan_cfg));
+    /* And the supply's wiring, so a restart can still switch a module off. */
+    memcpy(cfg.supply, &s_supply.regs[LINK_SP_ENABLE], sizeof(cfg.supply));
     out_store_save(&cfg, s_now_ms);
 }
 
@@ -301,6 +303,10 @@ static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
         s_supply = was;
         (void)supply_rewire();
         return LINK_NACK_BAD_VALUE;
+    }
+    if (memcmp(&s_supply.regs[LINK_SP_ENABLE], &was.regs[LINK_SP_ENABLE],
+               LINK_SP_OUTPUT * sizeof(uint16_t)) != 0) {
+        save_outputs(&s_state);
     }
     return 0u;
 }
@@ -1001,7 +1007,8 @@ int main(void)
      * throttle it was given is exactly what must not happen.
      */
     out_store_t saved;
-    if (out_store_load(&saved)) {
+    const bool have_saved = out_store_load(&saved);
+    if (have_saved) {
         memcpy(s_state.slots, saved.slots, sizeof(s_state.slots));
         memcpy(s_state.chan_cfg, saved.chan_cfg, sizeof(s_state.chan_cfg));
     }
@@ -1031,6 +1038,19 @@ int main(void)
     (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
     outputs_chan_cfg_apply(&s_outputs, s_state.chan_cfg);
     outputs_slots_apply(&s_outputs, s_state.slots);
+    /*
+     * The PD mini's wiring, as last written, driven with the output off: a
+     * module this end left on before it restarted is identified, read on and
+     * switched off before any panel has written the page.  Through the
+     * page's own checks, after the slots, so a pin a slot holds is refused.
+     */
+    if (have_saved && saved.supply[LINK_SP_ENABLE] != 0u
+        && supply_page_write(&s_supply, LINK_SP_ENABLE, LINK_SP_OUTPUT,
+                             saved.supply, &s_outputs, false) == 0u
+        && !supply_rewire()) {
+        supply_page_init(&s_supply);
+        (void)supply_rewire();
+    }
     /*
      * The page takes its values from the bank, not the other way round.
      * Nobody has commanded anything yet, and the defaults above filled the

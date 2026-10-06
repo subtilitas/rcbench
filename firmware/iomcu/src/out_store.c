@@ -56,7 +56,10 @@ _Static_assert(STORE_SLOTS <= 255u,
                "the store has more slots than a slot index holds");
 
 #define STORE_MAGIC    0x7263626FuL    /* "rcbo" */
-#define STORE_VERSION  3u
+#define STORE_VERSION  4u
+/* The record before the PD mini's wiring was kept: still read, so the
+ * output bindings an earlier build saved survive the update. */
+#define STORE_VERSION_V3 3u
 
 /*
  * One flash page holds a record, so a save is one program.  The checksum is
@@ -109,6 +112,30 @@ typedef struct {
 _Static_assert(sizeof(record_t) <= FLASH_PAGE_SIZE,
                "the record has outgrown one flash page");
 
+/* The same record as version 3 wrote it, for its size: the checksum and the
+ * zero count cover it to its own end. */
+typedef struct {
+    uint32_t magic;
+    uint32_t zeros;
+    uint32_t zeros_inv;
+    uint16_t crc;
+    uint16_t version;
+    uint32_t seq;
+    uint16_t slots[LINK_OS_COUNT];
+    uint16_t chan_cfg[LINK_CC_COUNT];
+} record_v3_t;
+
+_Static_assert(offsetof(record_v3_t, slots) == offsetof(record_t, cfg),
+               "version 3's configuration starts where this one's does");
+
+/* How many bytes a record of @p version spans, or 0 for one not read. */
+static size_t record_size(uint16_t version)
+{
+    return (version == STORE_VERSION)    ? sizeof(record_t)
+           : (version == STORE_VERSION_V3) ? sizeof(record_v3_t)
+                                           : 0u;
+}
+
 static bool        s_pending;
 static uint32_t    s_asked_ms;
 static out_store_t s_want;
@@ -151,21 +178,21 @@ static union {
     record_t rec;
 } s_page;
 
-static uint16_t record_crc(const record_t *r)
+static uint16_t record_crc(const record_t *r, size_t size)
 {
     return link_crc(LINK_CRC_INIT, &r->version,
-                    sizeof(*r) - offsetof(record_t, version));
+                    size - offsetof(record_t, version));
 }
 
 /*
  * The 0 bits from crc onwards: everything the record carries except the count
  * itself and the magic that says the slot has been written at all.
  */
-static uint32_t record_zeros(const record_t *r)
+static uint32_t record_zeros(const record_t *r, size_t size)
 {
     const uint8_t *p = (const uint8_t *)(const void *)r
                        + offsetof(record_t, crc);
-    const size_t n = sizeof(*r) - offsetof(record_t, crc);
+    const size_t n = size - offsetof(record_t, crc);
     uint32_t zeros = 0u;
     for (size_t i = 0; i < n; ++i) {
         uint8_t v = (uint8_t)~p[i];
@@ -202,13 +229,14 @@ static void survey(out_store_rec_t *recs)
             }
         }
         const record_t *r = record_at(i);
+        const size_t size = erased ? 0u : record_size(r->version);
         recs[i].erased = erased;
         recs[i].valid  = !erased
                          && r->magic == STORE_MAGIC
-                         && r->version == STORE_VERSION
+                         && size != 0u
                          && out_store_intact(r->zeros, r->zeros_inv,
-                                             record_zeros(r))
-                         && r->crc == record_crc(r);
+                                             record_zeros(r, size))
+                         && r->crc == record_crc(r, size);
         recs[i].seq    = recs[i].valid ? r->seq : 0u;
     }
 }
@@ -262,8 +290,15 @@ bool out_store_load(out_store_t *out)
         return false;
     }
     const record_t *r = record_at((uint8_t)newest);
-    *out = r->cfg;
-    s_saved = r->cfg;
+    if (r->version == STORE_VERSION) {
+        *out = r->cfg;
+    } else {
+        /* Version 3: the bindings, and no supply wired. */
+        memset(out, 0, sizeof(*out));
+        memcpy(out->slots, r->cfg.slots, sizeof(out->slots));
+        memcpy(out->chan_cfg, r->cfg.chan_cfg, sizeof(out->chan_cfg));
+    }
+    s_saved = *out;
     s_have_saved = true;
     s_last_record = (uint8_t)newest;
     return true;
@@ -344,9 +379,9 @@ out_store_step_t out_store_tick(bool driving, uint32_t quiet_ms,
     r->version = STORE_VERSION;
     r->seq     = w.seq;
     r->cfg     = s_want;
-    r->crc     = record_crc(r);
+    r->crc     = record_crc(r, sizeof(*r));
     /* Last, because it counts everything above it. */
-    r->zeros     = record_zeros(r);
+    r->zeros     = record_zeros(r, sizeof(*r));
     r->zeros_inv = ~r->zeros;
 
     s_last_program_us = program_record(w.at);

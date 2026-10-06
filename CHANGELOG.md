@@ -19,6 +19,10 @@ history is in git.
     the driver before it steps, so an ON queued in that pass is not sent.
   - No output slot is bound on a pin the supply holds: the OUTPUTS write is
     refused rather than stored.
+  - The wiring is kept in the coprocessor's flash with the output bindings
+    and driven at boot with the output off, so a module left on is
+    switched off after a restart. The store's record is version 4; output
+    bindings saved by the build before still load.
   - The PD mini driver counts failed state reads on their own: three in a
     row take the module for gone however the other readings are answered,
     and an OFF it is owed goes blind.
