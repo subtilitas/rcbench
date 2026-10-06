@@ -139,8 +139,13 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
                 return LINK_NACK_NOT_ARMED;
             }
         }
-        /* Up to the module's least, as the driver will take them, so the
-         * page reads back what the module is asked. */
+    }
+    /* Set points written: up to the module's least, as the driver will take
+     * them, so the page reads back what the module is asked.  An OFF alone
+     * names none, and leaves the page asking for none. */
+    const bool sets = (unsigned)off + (unsigned)n > (unsigned)LINK_SP_SET_MV
+                      && off <= (uint8_t)LINK_SP_SET_MA;
+    if (sets) {
         if (next[LINK_SP_SET_MV] < PDMINI_V_MIN_MV) {
             next[LINK_SP_SET_MV] = (uint16_t)PDMINI_V_MIN_MV;
         }
@@ -149,7 +154,7 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
         }
     }
     memcpy(p->regs, next, sizeof(next));
-    if (command) {
+    if (sets) {
         p->commanded = true;
     }
     return 0u;

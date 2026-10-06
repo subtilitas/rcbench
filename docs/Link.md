@@ -82,7 +82,7 @@ with no payload.
 
 | Bits | Field | Width | Values |
 | --- | --- | ---: | --- |
-| 28..26 | priority | 3 | 0 control, 1 normal, 2 bulk (reserved); lower wins arbitration |
+| 28..26 | priority | 3 | 0 control (CONTROL, LIMITS, FAILSAFE and SUPPLY pages, their acknowledgements included), 1 normal, 2 bulk (reserved); lower wins arbitration |
 | 25..22 | op | 4 | 1 READ, 2 WRITE, 3 DATA, 4 ACK (acknowledge), 5 NACK (negative acknowledge) |
 | 21..14 | page | 8 | page map below |
 | 13..6 | offset | 8 | first register in this frame |

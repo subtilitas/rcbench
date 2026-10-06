@@ -89,7 +89,7 @@ ein Frame ohne Nutzdaten.
 
 | Bits | Feld | Breite | Werte |
 | --- | --- | ---: | --- |
-| 28..26 | Priorität | 3 | 0 control, 1 normal, 2 bulk (reserviert); niedriger gewinnt die Arbitrierung |
+| 28..26 | Priorität | 3 | 0 control (die Pages CONTROL, LIMITS, FAILSAFE und SUPPLY, ihre Quittungen eingeschlossen), 1 normal, 2 bulk (reserviert); niedriger gewinnt die Arbitrierung |
 | 25..22 | op | 4 | 1 READ, 2 WRITE, 3 DATA, 4 ACK (Acknowledge), 5 NACK (Negative Acknowledge) |
 | 21..14 | page | 8 | Page Map unten |
 | 13..6 | offset | 8 | erstes Register in diesem Frame |

@@ -91,9 +91,10 @@ typedef struct {
  * The arbitration class a page and op belong to.
  *
  * Derived rather than chosen per call site, so a new page cannot be added at
- * the wrong priority.  The control, limits and failsafe pages stop a bench,
- * and everything that touches them outranks everything else, their own
- * acknowledgements included.
+ * the wrong priority.  The control, limits, failsafe and supply pages stop a
+ * bench -- the supply's OFF switches off a powered load -- and everything
+ * that touches them outranks everything else, their own acknowledgements
+ * included.
  */
 link_can_prio_t link_can_priority(uint8_t page, uint8_t op);
 

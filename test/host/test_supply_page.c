@@ -197,6 +197,12 @@ TEST_CASE(no_set_points_go_out_before_a_command)
     supply_page_step(&pg, true, &drv);
     CHECK(!drv.want_output);
     CHECK(!drv.want_set);
+    /* An OFF alone names no set points either. */
+    const uint16_t off = 0u;
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_OUTPUT, 1u, &off, &o, true), 0u);
+    CHECK_EQ(reg(LINK_SP_SET_MV), 0u);
+    supply_page_step(&pg, true, &drv);
+    CHECK(!drv.want_set);
     CHECK_EQ(command(0u, 9000u, 800u, true), 0u);
     supply_page_step(&pg, true, &drv);
     CHECK(drv.want_set);

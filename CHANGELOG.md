@@ -24,6 +24,9 @@ history is in git.
     as maybe on until a state read shows it off, or until 10 WHO_AM_I in
     a row, about 10 s, get not a byte back; any answer starts that count
     again. Disabling the supply schedules no attach.
+  - SUPPLY traffic goes at control priority on CAN, as CONTROL, LIMITS
+    and FAILSAFE do, so telemetry cannot hold back the supply's OFF. An
+    OFF written alone names no set points.
   - Until a command is written the driver is asked for the output off and
     no set points, so attaching or restoring the wiring leaves the
     module's own set points alone. TX and RX swapped count as rewiring.

@@ -34,7 +34,7 @@ uint32_t supply_page_baud(uint16_t setting);
 
 typedef struct {
     uint16_t regs[LINK_SP_COUNT];
-    bool     commanded;   /**< a command has been written since init */
+    bool     commanded;   /**< set points written since init          */
 } supply_page_t;
 
 void supply_page_init(supply_page_t *p);
