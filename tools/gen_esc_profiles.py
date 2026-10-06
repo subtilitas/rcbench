@@ -162,7 +162,9 @@ def check(path: pathlib.Path) -> dict:
     want(re.fullmatch(r"[a-z0-9-]{1,48}", pid) is not None, f"{w}.id",
          "not 1-48 of a-z 0-9 -")
     want(pid == path.stem, f"{w}.id", "differs from the file name")
-    want(d.get("verified") in (True, False), f"{w}.verified", "not a boolean")
+    # isinstance, not membership: 0 == False and 1 == True in Python.
+    want(isinstance(d.get("verified"), bool), f"{w}.verified",
+         "not a boolean")
     auto = pick(d, "automatable", w, AUTO)
     note = optional(d, "automatable_note", w, str, "")
     want(auto == "ESC_AUTO_FULL" or note != "", f"{w}.automatable_note",
@@ -264,7 +266,7 @@ def check(path: pathlib.Path) -> dict:
             want(vn not in vnums, f"{vw}.number", "duplicate")
             vnums.add(vn)
             dflt = v.get("default", False)
-            want(dflt in (True, False), f"{vw}.default", "not a boolean")
+            want(isinstance(dflt, bool), f"{vw}.default", "not a boolean")
             defaults += dflt
             out.append({"name": text(v, "name", vw), "n": vn,
                         "d": "true" if dflt else "false"})
@@ -384,6 +386,12 @@ def self_test() -> list[str]:
         "cell_type false": at('"cell_type": "lipo"', '"cell_type": false'),
         "nested 17": at(head, head + ' "n": ' + "[" * 16 + "1" + "]" * 16
                         + ","),
+        "verified 0": at('"verified": false', '"verified": 0'),
+        "default 1": at('"number": 1,\n          "name": "disabled',
+                        '"number": 1, "default": 1,\n'
+                        '          "name": "disabled'),
+        "raw and escaped key twice": at(head, head
+                                        + ' "\u00e9": 1, "\\u00e9": 1,'),
         "65 members": at(head, head + ' "x": {' + ", ".join(
             f'"k{i}": 1' for i in range(65)) + "},"),
         "too large": at(head, head + ' "pad": "' + "x" * MAX_BYTES + '",'),

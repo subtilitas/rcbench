@@ -288,19 +288,33 @@ static unsigned decode_unit(const char *s, uint32_t *i, uint8_t out[4])
 }
 
 /* Whether two string tokens' texts decode to the same bytes, so "schema" and
- * "sch\u0065ma" are one key, as json.loads() has them. */
+ * "sch\u0065ma" are one key, as json.loads() has them.  The two decoded
+ * streams are compared byte by byte, not unit by unit: a raw "\xC3\xA9" comes
+ * a byte at a time and "\u00e9" as both bytes at once, and they are the same
+ * character. */
 static bool same_text(const char *s, const tok_t *a, const tok_t *b)
 {
     uint32_t i = a->start, j = b->start;
-    while (i < a->end && j < b->end) {
-        uint8_t x[4], y[4];
-        const unsigned n = decode_unit(s, &i, x);
-        const unsigned m = decode_unit(s, &j, y);
-        if (n != m || memcmp(x, y, n) != 0) {
+    uint8_t x[4], y[4];
+    unsigned xn = 0, xi = 0, yn = 0, yi = 0;
+    for (;;) {
+        if (xi == xn && i < a->end) {
+            xn = decode_unit(s, &i, x);
+            xi = 0;
+        }
+        if (yi == yn && j < b->end) {
+            yn = decode_unit(s, &j, y);
+            yi = 0;
+        }
+        const bool x_done = (xi == xn);
+        const bool y_done = (yi == yn);
+        if (x_done || y_done) {
+            return x_done && y_done;
+        }
+        if (x[xi++] != y[yi++]) {
             return false;
         }
     }
-    return i == a->end && j == b->end;
 }
 
 /* Whether a string token's text decodes to the plain @p lit. */

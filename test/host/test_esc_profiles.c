@@ -276,6 +276,9 @@ TEST_CASE(a_broken_profile_is_refused_with_its_place_named)
         { "\"test-esc\"", "\"Test ESC\"", "id: not 1-48" },
         { "\"brand\": \"Test\"", "\"brand\": \"\"", "brand: empty" },
         { "\"verified\": false", "\"verified\": 0", "verified: not a boolean" },
+        { "{\"number\": 1, \"name\": \"off\", \"default\": true}",
+          "{\"number\": 1, \"name\": \"off\", \"default\": 1}",
+          "items[0].values[0].default: not a boolean" },
         { "\"automatable\": \"full\"", "\"automatable\": \"assisted\"",
           "automatable_note: needed" },
         { "\"type\": \"short_long\"", "\"type\": \"morse\"",
@@ -425,6 +428,12 @@ TEST_CASE(input_the_generator_refuses_is_refused_here_too)
     } k[] = {
         { "\"schema\": 1,", "\"schema\": 1, \"schema\": 1,", "a key twice" },
         { "\"schema\": 1,", "\"schema\": 1, \"sch\\u0065ma\": 1,",
+          "a key twice" },
+        /* A raw character and its escape are one key, whatever the
+         * byte count of each spelling. */
+        { "\"schema\": 1,", "\"schema\": 1, \"\xC3\xA9\": 1, \"\\u00e9\": 1,",
+          "a key twice" },
+        { "\"schema\": 1,", "\"schema\": 1, \"\\u00e9\": 1, \"\xC3\xA9\": 1,",
           "a key twice" },
         { "\"Test 30\"", "\"Test\\u0000 30\"", "a string holds" },
         /* In a field the panel never reads: refused all the same. */
