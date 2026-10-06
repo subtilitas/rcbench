@@ -289,8 +289,15 @@ TEST_CASE(hold_keeps_the_surfaces_where_their_outputs_are)
         CHECK(!outputs_overdue(&o, 0, t));
     }
     CHECK_EQ(outputs_actual(&o, 0), held);
-    /* Unrepeated, it ends and the channel rests as any command does. */
-    for (; t <= T0 + 3100u; ++t) {
+    /* Unrepeated, the channel rests 500 ms after the last repeat, as it
+     * would after any command, and the hold ends with it. */
+    const uint32_t last = T0 + 2000u;
+    for (; t < last + OUT_DEFAULT_TIMEOUT_MS; ++t) {
+        (void)servo_page_step(&pg, &o, t);
+        outputs_step(&o, t);
+        CHECK(!outputs_overdue(&o, 0, t));
+    }
+    for (; t <= last + OUT_DEFAULT_TIMEOUT_MS + 10u; ++t) {
         (void)servo_page_step(&pg, &o, t);
         outputs_step(&o, t);
     }

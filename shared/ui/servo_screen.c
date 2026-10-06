@@ -658,12 +658,12 @@ void servo_screen_released(void)
  * for anything older. */
 static float shown_cmd_ago(uint32_t ago_ms)
 {
-    const uint32_t at = s.clock_ms - ago_ms;
+    const uint32_t when = s.clock_ms - ago_ms;
     float best = s.shown_cmd;
     for (unsigned k = 0; k < s.trail_n; ++k) {
         const unsigned i = (s.trail_head + 64u - 1u - k) % 64u;
         best = s.trail[i].cmd;
-        if ((int32_t)(s.trail[i].t - at) <= 0) {
+        if ((int32_t)(s.trail[i].t - when) <= 0) {
             break;
         }
     }

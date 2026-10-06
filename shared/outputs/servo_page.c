@@ -185,9 +185,11 @@ void servo_page_read(servo_page_t *p, uint8_t off, uint8_t n, uint16_t *out)
 bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
 {
     /*
-     * A hold keeps each surface at the command it was frozen at, stamped
-     * each pass while the panel repeats it; on silence or a disarm it ends
-     * and the channels rest as any command does.
+     * A hold keeps each surface at the command it was frozen at, while the
+     * panel repeats it.  Stamped with the time of the last repeat, not this
+     * pass, so the channel's own timeout runs from the panel's last word as
+     * it does for any command: silence rests it 500 ms after that, not
+     * 500 ms after this end stopped holding.
      */
     if (p != NULL && o != NULL && p->holding) {
         if (!outputs_armed(o)
@@ -197,7 +199,8 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
         } else {
             for (uint8_t ch = 0; ch < (uint8_t)LINK_OUT_CHANNELS; ++ch) {
                 if (o->channel[ch].role == OUT_ROLE_SURFACE) {
-                    (void)outputs_set(o, ch, o->channel[ch].command, now_ms);
+                    (void)outputs_set(o, ch, o->channel[ch].command,
+                                      p->heard_ms);
                 }
             }
             p->regs[LINK_SV_SWEEP] = (uint16_t)LINK_SV_HOLD;
