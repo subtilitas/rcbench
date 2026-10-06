@@ -7,6 +7,7 @@
 #include "pd_uart.h"
 
 #include "hardware/gpio.h"
+#include "hardware/clocks.h"
 #include "hardware/pio.h"
 #include "pd_uart.pio.h"
 
@@ -84,6 +85,16 @@ static void reset_machines(void)
     pio_sm_restart(s.rx_pio, s.rx_sm);
     pio_sm_exec(s.tx_pio, s.tx_sm, pio_encode_jmp(s.tx_off));
     pio_sm_exec(s.rx_pio, s.rx_sm, pio_encode_jmp(s.rx_off));
+}
+
+void pd_uart_baud(uint32_t baud)
+{
+    if (!s.open || s.attached || baud == 0u) {
+        return;
+    }
+    const float div = (float)clock_get_hz(clk_sys) / (8.0f * (float)baud);
+    pio_sm_set_clkdiv(s.tx_pio, s.tx_sm, div);
+    pio_sm_set_clkdiv(s.rx_pio, s.rx_sm, div);
 }
 
 void pd_uart_attach(void *ctx)

@@ -506,7 +506,10 @@ baud -- steht in SETUP unter INTERFACES. TX und RX sind GPIO-Nummern des
 Koprozessors: TX geht zum DM des Moduls, RX kommt von seinem DP. Der
 Koprozessor weist einen Pin ab, der reserviert, an einen Ausgang gebunden
 oder der andere Pin ist. PD mini baud ist die eigene UART-Baudrate-
-Einstellung des Moduls, ab Werk 19200.
+Einstellung des Moduls: 9600, 19200 (ab Werk), 38400, 57600, 115200, 230400
+oder 460800 Baud, oder AUTO. AUTO, die Vorgabe, lässt den Koprozessor sie
+finden: er versucht jede der 7 Raten, eine pro Sekunde, und
+das Band sagt, bei welcher Rate das Modul geantwortet hat.
 
 ## Analyser
 

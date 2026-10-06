@@ -48,11 +48,14 @@ extern "C" {
 /** How often the page is read while the supply is in use. */
 #define SUPPLY_LINK_READ_MS  100u
 
+/** The baud setting that asks the coprocessor to find the rate (4.4). */
+#define SUPPLY_LINK_BAUD_AUTO 7u
+
 /** Where the PD mini is wired, as SETUP INTERFACES has it. */
 typedef struct {
     bool    en;
     int8_t  tx, rx;   /**< coprocessor GPIO; -1 not set          */
-    uint8_t baud;     /**< the module's UART Baudrate, 0 to 6     */
+    uint8_t baud;     /**< the module's UART Baudrate, 0 to 6, 7 AUTO */
 } supply_wiring_t;
 
 /** What came of a write or a read: ACK or DATA, a NACK's reason, or none. */
@@ -67,6 +70,7 @@ enum {
     SUPPLY_LINK_EV_STUCK          = 0x08,  /**< would not switch          */
     SUPPLY_LINK_EV_SET_STUCK      = 0x10,  /**< set points would not take */
     SUPPLY_LINK_EV_TRIPPED        = 0x20,  /**< the module switched it off */
+    SUPPLY_LINK_EV_BAUD_FOUND     = 0x40,  /**< AUTO found the module's rate */
 };
 
 typedef enum {
@@ -103,6 +107,7 @@ typedef struct {
     uint32_t asked_ms;       /* when the last read was asked for        */
 
     uint8_t  events;
+    uint8_t  found;          /* the rate AUTO last reported, 7 none    */
 } supply_link_t;
 
 void supply_link_init(supply_link_t *s);

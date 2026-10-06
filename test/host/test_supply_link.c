@@ -382,6 +382,36 @@ TEST_CASE(stuck_is_reported_once)
     CHECK_EQ(supply_link_events(NULL), 0u);
 }
 
+/* With AUTO, the rate the far end found is reported once. */
+TEST_CASE(a_found_rate_is_reported_once)
+{
+    fresh();
+    const supply_wiring_t automatic = { true, 8, 9, SUPPLY_LINK_BAUD_AUTO };
+    supply_link_wire(&sl, &automatic);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_BAUD), SUPPLY_LINK_BAUD_AUTO);
+    CHECK_EQ(supply_link_events(&sl), 0u);
+    drv.answered = true;
+    ++drv.who_failed;
+    (void)supply_page_rate(&pg, &drv);
+    far_step_and_read(true);
+    CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_BAUD_FOUND);
+    CHECK_EQ(sl.regs[LINK_SP_BAUD_FOUND], 1u);
+    far_step_and_read(true);
+    CHECK_EQ(supply_link_events(&sl), 0u);
+    /* New wiring scans again; the same rate found is said again. */
+    const supply_wiring_t moved = { true, 10, 11, SUPPLY_LINK_BAUD_AUTO };
+    supply_link_wire(&sl, &moved);
+    pdmini_init(&drv, NULL, 0u);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_BAUD_FOUND), SUPPLY_LINK_BAUD_AUTO);
+    (void)supply_link_events(&sl);
+    drv.answered = true;
+    (void)supply_page_rate(&pg, &drv);
+    far_step_and_read(true);
+    CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_BAUD_FOUND);
+}
+
 int main(void)
 {
     RUN(an_off_then_the_wiring_then_the_command);
@@ -394,5 +424,6 @@ int main(void)
     RUN(unanswered_writes_and_a_lost_link);
     RUN(the_state_is_what_the_page_says);
     RUN(stuck_is_reported_once);
+    RUN(a_found_rate_is_reported_once);
     return test_summary("supply_link");
 }

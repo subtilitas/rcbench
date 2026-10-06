@@ -24,6 +24,8 @@ void supply_page_init(supply_page_t *p)
     if (p != NULL) {
         memset(p, 0, sizeof(*p));
         p->regs[LINK_SP_BAUD] = 1u;   /* 19200, the module's as shipped */
+        p->regs[LINK_SP_BAUD_FOUND] = SUPPLY_BAUD_AUTO;
+        p->scan = 1u;                 /* AUTO starts there too          */
     }
 }
 
@@ -107,7 +109,7 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
             return LINK_NACK_BAD_VALUE;
         }
         if (next[LINK_SP_ENABLE] > 1u
-            || next[LINK_SP_BAUD] >= SUPPLY_BAUD_COUNT) {
+            || next[LINK_SP_BAUD] > SUPPLY_BAUD_AUTO) {
             return LINK_NACK_BAD_VALUE;
         }
         if (next[LINK_SP_ENABLE] != 0u
@@ -153,11 +155,50 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
             next[LINK_SP_SET_MA] = (uint16_t)PDMINI_I_MIN_MA;
         }
     }
+    if (wiring && memcmp(&next[LINK_SP_ENABLE], &p->regs[LINK_SP_ENABLE],
+                         4u * sizeof(uint16_t)) != 0) {
+        /* New wiring: a new driver, and AUTO looks again from 19200. */
+        p->scan      = 1u;
+        p->scan_seen = 0u;
+        next[LINK_SP_BAUD_FOUND] = SUPPLY_BAUD_AUTO;
+    }
     memcpy(p->regs, next, sizeof(next));
     if (sets) {
         p->commanded = true;
     }
     return 0u;
+}
+
+uint8_t supply_page_rate(supply_page_t *p, const pdmini_t *drv)
+{
+    if (p == NULL) {
+        return 1u;
+    }
+    if (p->regs[LINK_SP_BAUD] < SUPPLY_BAUD_COUNT) {
+        p->regs[LINK_SP_BAUD_FOUND] = p->regs[LINK_SP_BAUD];
+        return (uint8_t)p->regs[LINK_SP_BAUD];
+    }
+    if (drv != NULL) {
+        if (drv->answered) {
+            p->regs[LINK_SP_BAUD_FOUND] = p->scan;   /* found: held */
+            return p->scan;
+        }
+        if (drv->who_failed != p->scan_seen) {
+            p->scan_seen = drv->who_failed;
+            p->scan = (uint8_t)((p->scan + 1u) % SUPPLY_BAUD_COUNT);
+        }
+    }
+    p->regs[LINK_SP_BAUD_FOUND] = SUPPLY_BAUD_AUTO;
+    return p->scan;
+}
+
+uint32_t supply_page_uart_baud(const supply_page_t *p)
+{
+    if (p == NULL) {
+        return 0u;
+    }
+    return supply_page_baud((p->regs[LINK_SP_BAUD] < SUPPLY_BAUD_COUNT)
+                                ? p->regs[LINK_SP_BAUD] : p->scan);
 }
 
 uint8_t supply_page_slots_check(const supply_page_t *p, const uint16_t *slots)

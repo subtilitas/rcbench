@@ -26,6 +26,7 @@ void supply_link_init(supply_link_t *s)
         s->want.baud = 1u;
         s->mv = (uint16_t)PAGE_MIN_MV;
         s->ma = (uint16_t)PAGE_MIN_MA;
+        s->found = SUPPLY_LINK_BAUD_AUTO;
     }
 }
 
@@ -40,6 +41,7 @@ void supply_link_lost(supply_link_t *s)
     s->pending   = SUPPLY_LINK_W_NONE;
     s->read_any  = false;
     s->asked     = false;
+    s->found     = SUPPLY_LINK_BAUD_AUTO;
     /* The caller sees the supply stop answering and switches its own ON
      * off with the operator told; this end only stops asking for it. */
     s->on = false;
@@ -280,6 +282,13 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
     }
     if ((f & LINK_SP_SET_STUCK) != 0u && (was & LINK_SP_SET_STUCK) == 0u) {
         s->events |= SUPPLY_LINK_EV_SET_STUCK;
+    }
+    if (regs[LINK_SP_BAUD_FOUND] >= SUPPLY_LINK_BAUD_AUTO) {
+        s->found = SUPPLY_LINK_BAUD_AUTO;   /* looking again: say it again */
+    } else if (s->page.baud == SUPPLY_LINK_BAUD_AUTO
+               && s->found != regs[LINK_SP_BAUD_FOUND]) {
+        s->found = (uint8_t)regs[LINK_SP_BAUD_FOUND];
+        s->events |= SUPPLY_LINK_EV_BAUD_FOUND;
     }
     if ((f & LINK_SP_TRIPPED) != 0u && (was & LINK_SP_TRIPPED) == 0u) {
         /* The module switched its output off: the ON is over here too, and

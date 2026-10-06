@@ -57,7 +57,7 @@ TEST_CASE(wiring_is_refused_on_pins_that_are_not_free)
     CHECK_EQ(wire(1u, 4u, 9u, 1u), LINK_NACK_BAD_VALUE);    /* an output's */
     CHECK_EQ(wire(1u, 9u, 9u, 1u), LINK_NACK_BAD_VALUE);    /* both the same */
     CHECK_EQ(wire(1u, 64u, 9u, 1u), LINK_NACK_BAD_VALUE);   /* past the bank */
-    CHECK_EQ(wire(1u, 8u, 9u, 7u), LINK_NACK_BAD_VALUE);    /* no such baud */
+    CHECK_EQ(wire(1u, 8u, 9u, 8u), LINK_NACK_BAD_VALUE);    /* no such baud */
     CHECK_EQ(wire(2u, 8u, 9u, 1u), LINK_NACK_BAD_VALUE);
     CHECK(!supply_page_enabled(&pg));
     CHECK_EQ(supply_page_pins(&pg), 0u);
@@ -210,6 +210,44 @@ TEST_CASE(no_set_points_go_out_before_a_command)
     pdmini_want_off(NULL);
 }
 
+/* AUTO steps to the next rate after every WHO_AM_I without a valid
+ * answer, wraps after the seventh, and holds the rate once a module has
+ * answered; a set rate is used as it is. */
+TEST_CASE(auto_baud_tries_each_rate_and_holds_the_one_that_answers)
+{
+    fresh();
+    pdmini_t drv;
+    pdmini_init(&drv, NULL, 0u);
+    CHECK_EQ(wire(1u, 8u, 9u, SUPPLY_BAUD_AUTO), 0u);
+    CHECK_EQ(supply_page_rate(&pg, &drv), 1u);         /* 19200 first */
+    CHECK_EQ(reg(LINK_SP_BAUD_FOUND), SUPPLY_BAUD_AUTO);
+    CHECK_EQ(supply_page_uart_baud(&pg), 19200u);
+    for (unsigned k = 0u; k < 7u; ++k) {
+        ++drv.who_failed;
+        CHECK_EQ(supply_page_rate(&pg, &drv), (uint8_t)((2u + k) % 7u));
+        CHECK_EQ(supply_page_rate(&pg, &drv), (uint8_t)((2u + k) % 7u));
+    }
+    CHECK_EQ(supply_page_rate(&pg, NULL), 1u);          /* left as it is */
+    ++drv.who_failed;                                   /* now 38400 */
+    CHECK_EQ(supply_page_rate(&pg, &drv), 2u);
+    drv.answered = true;
+    ++drv.who_failed;                                   /* found: held */
+    CHECK_EQ(supply_page_rate(&pg, &drv), 2u);
+    CHECK_EQ(reg(LINK_SP_BAUD_FOUND), 2u);
+    CHECK_EQ(supply_page_uart_baud(&pg), 38400u);
+
+    /* New wiring looks again from 19200; a set rate is the rate. */
+    pdmini_init(&drv, NULL, 0u);
+    CHECK_EQ(wire(1u, 10u, 11u, SUPPLY_BAUD_AUTO), 0u);
+    CHECK_EQ(supply_page_rate(&pg, &drv), 1u);
+    CHECK_EQ(wire(1u, 10u, 11u, 4u), 0u);
+    CHECK_EQ(supply_page_rate(&pg, &drv), 4u);
+    CHECK_EQ(reg(LINK_SP_BAUD_FOUND), 4u);
+    CHECK_EQ(wire(1u, 10u, 11u, 8u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(supply_page_rate(NULL, &drv), 1u);
+    CHECK_EQ(supply_page_uart_baud(NULL), 0u);
+}
+
 TEST_CASE(read_only_registers_and_the_page_end_are_refused)
 {
     fresh();
@@ -292,6 +330,7 @@ int main(void)
     RUN(no_slot_binds_a_held_pin);
     RUN(low_set_points_read_back_as_the_module_takes_them);
     RUN(no_set_points_go_out_before_a_command);
+    RUN(auto_baud_tries_each_rate_and_holds_the_one_that_answers);
     RUN(read_only_registers_and_the_page_end_are_refused);
     RUN(the_step_passes_the_page_to_the_driver_and_back);
     return test_summary("supply_page");
