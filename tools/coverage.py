@@ -84,6 +84,8 @@ TRACKED = [
     "shared/openyge/openyge_frame.c",
     "shared/openyge/openyge_status.c",
     "shared/openyge/openyge_params.c",
+    "shared/esc/esc_json.c",
+    "shared/esc/esc_registry.c",
     "shared/servo/servo_sim.c",
     "shared/sbus/sbus.c",
     "shared/dshot/dshot_frame.c",

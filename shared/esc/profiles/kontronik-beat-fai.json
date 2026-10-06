@@ -1,0 +1,149 @@
+{
+  "schema": 1,
+  "id": "kontronik-beat-fai",
+  "brand": "Kontronik",
+  "family": "BEAT FAI",
+  "verified": false,
+  "models": [
+    {
+      "name": "BEAT FAI 7/10",
+      "cells_min": 6,
+      "cells_max": 18,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 27000,
+      "current_a": 150,
+      "bec": "opto",
+      "firmware_note": "200 A for 15 s",
+      "spec_source": "Kontronik_Beat.pdf p.2: 6-18 NiCd/NiMH cells, 150 A continuous; v_max = 18 cells x 1500 mV"
+    },
+    {
+      "name": "BEAT FAI 24",
+      "cells_min": 8,
+      "cells_max": 24,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 36000,
+      "current_a": 150,
+      "bec": "opto",
+      "firmware_note": "200 A for 15 s",
+      "spec_source": "Kontronik_Beat.pdf p.2: 8-24 NiCd/NiMH cells, 150 A continuous; v_max = 24 cells x 1500 mV"
+    },
+    {
+      "name": "BEAT FAI 27",
+      "cells_min": 8,
+      "cells_max": 30,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 45000,
+      "current_a": 100,
+      "bec": "opto",
+      "firmware_note": "150 A for 15 s",
+      "spec_source": "Kontronik_Beat.pdf p.2: 8-30 NiCd/NiMH cells, 100 A continuous; v_max = 30 cells x 1500 mV"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Beat_FAI.pdf",
+      "pages": "1",
+      "language": "de/en",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/Beat_FAI.pdf"
+    },
+    {
+      "file": "Kontronik_Beat.pdf",
+      "pages": "2-17",
+      "language": "de",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/Beat.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": 2000,
+      "confirm_signal": "As BEAT.",
+      "steps": [
+        "As the BEAT procedure (jumper on, power on, wait 2 s, pull the jumper), programmed like mode 5 of the BEAT: signal count equals the mode number.",
+        "Wait for the series of the wanted mode and move the throttle (motor switch) to full."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "The ESC sounds mode 1 as one tone, mode 2 as two tones, and so on, one series after another with a pause between series."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Throttle or motor switch to full during the wanted series."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip."
+    },
+    "confirm_signal": "Mode repeated as tones.",
+    "exit": "Disconnect power.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Mode 1 (APM) is unchanged: reset.",
+    "description": "Same procedure as the BEAT. Modes 2 to 6 are FAI modes that differ in start-up speed, faster from 2 to 6. Modes 1 and 7 are unchanged."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "APM / reset"
+        },
+        {
+          "number": 2,
+          "name": "FAI mode, slowest start-up"
+        },
+        {
+          "number": 3,
+          "name": "FAI mode"
+        },
+        {
+          "number": 4,
+          "name": "FAI mode"
+        },
+        {
+          "number": 5,
+          "name": "FAI mode"
+        },
+        {
+          "number": 6,
+          "name": "FAI mode, fastest start-up"
+        },
+        {
+          "number": 7,
+          "name": "Reverse motor rotation"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone in ms is not stated.",
+    "Gap between tones inside one mode series in ms is not stated.",
+    "Pause between two mode series in ms is not stated.",
+    "Whether the mode series loops until a mode is selected is not stated.",
+    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
+    "Which FAI mode suits which model is not stated (the manual says to test)."
+  ],
+  "notes": [
+    "The addendum replaces the BEAT mode meanings for modes 2 to 6."
+  ]
+}

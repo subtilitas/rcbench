@@ -1,0 +1,159 @@
+{
+  "id": "hacker-master-basic",
+  "brand": "Hacker",
+  "family": "Master Basic",
+  "models": [
+    {
+      "name": "Master Basic 44",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 6000,
+      "v_max_mv": 26000,
+      "current_a": 44,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_Basic.pdf p.16"
+    },
+    {
+      "name": "Master Basic 55",
+      "cells_min": 2,
+      "cells_max": 8,
+      "v_min_mv": 6000,
+      "v_max_mv": 34000,
+      "current_a": 55,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_Basic.pdf p.16"
+    },
+    {
+      "name": "Master Basic 70",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 6000,
+      "v_max_mv": 26000,
+      "current_a": 70,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_Basic.pdf p.16"
+    },
+    {
+      "name": "Master Basic 90 Opto",
+      "cells_min": 4,
+      "cells_max": 12,
+      "v_min_mv": 12000,
+      "v_max_mv": 50000,
+      "current_a": 90,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_Basic.pdf p.16"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Hacker_Master_Basic.pdf",
+      "pages": "8-11, 16-17",
+      "language": "en",
+      "url": "https://www.hacker-motor.com/daten/anleitungen/MASTER-Basic-Manualengl.pdf"
+    },
+    {
+      "file": "Hacker_Master_Basic_de.pdf",
+      "pages": "8-11, 16-17",
+      "language": "de",
+      "url": "https://www.hacker-motor.com/daten/anleitungen/MasterBasic-Anleitung.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": null,
+  "scheme": {
+    "type": "melody_groups",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "Four-tone melody about 5 s after power-up; the motor does not start.",
+      "steps": [
+        "Throttle signal at full power (transmitter on).",
+        "Connect the drive battery; switch the BEC on where fitted.",
+        "Wait about 5 s for the four-tone melody.",
+        "Wait about 5 s more; the groups start."
+      ]
+    },
+    "announce": {
+      "what": "value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": 5,
+      "description": "Groups of 1, 2, 3, 4 and 5 beeps, each group repeated five times in a row before the next group. Group N is mode N. A group ends after its fifth repetition. Whether the series loops is not stated."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Move the throttle to the stop position while the wanted group is sounding. The German edition says 'five times one to six tones' in the intro line but lists five groups."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Keep full throttle; the next group follows."
+    },
+    "confirm_signal": "Tone sequence for the brake setting of the new mode; the ESC is then armed.",
+    "exit": "Disconnect the battery. The motor runs on throttle movement right after the confirmation.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": null,
+    "description": "Throttle at full, then power: four-tone melody after about 5 s, groups of 1 to 5 beeps after about 5 s more, each five times. Throttle to stop during the wanted group selects that mode and stores it. One mode per power-up."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "brake on/off toggle (factory state: brake off)"
+        },
+        {
+          "number": 2,
+          "name": "battery NiCd/NiMH, cutoff 0.7 V per cell, slow down"
+        },
+        {
+          "number": 3,
+          "name": "battery Li-Ion/LiPo, cutoff 3.2 V per cell, slow down",
+          "default": true
+        },
+        {
+          "number": 4,
+          "name": "battery LiFe, cutoff 2.5 V per cell, slow down"
+        },
+        {
+          "number": 5,
+          "name": "operating mode switch from normal (plane) to heli mode: acceleration 10 s instead of 1 s, brake disabled"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10",
+      "note": "Value numbers are the beep counts of the group. Other factory defaults on p8-9: brake off, operating mode normal, timing auto, 8 kHz, acceleration 1 s (1.5 s for Master Basic 90 Opto), cell count auto, rotation left, cutoff by slow down. Programming by transmitter resets all parameters to the chosen mode (p6)."
+    }
+  ],
+  "unknowns": [
+    "Beep length, gap between beeps, gap between groups (ms): not stated.",
+    "Wait before the melody and between melody and groups: 'about 5 s', no tolerance.",
+    "Whether the group series loops after group 5: not stated.",
+    "Whether value 5 toggles back to normal mode on a second pass: implied by 'change', not stated.",
+    "Beep pattern of the confirmation: only note symbols."
+  ],
+  "notes": [
+    "Cutoff voltage per LiPo cell: items table and defaults say 3.2 V (Hacker_Master_Basic.pdf p9-10; Hacker_Master_Basic_de.pdf p9-10), the FAQ in the English edition says slow down at 3.0 V (Hacker_Master_Basic.pdf p17).",
+    "Hacker_Master_Basic_de.pdf p11 states 'five times one to six tones' but lists groups 1 to 5 only; Hacker_Master_Basic.pdf p11 says one to 5.",
+    "After a normal power-up the ESC beeps once (brake on) or twice (brake off); sounded only on the first connection after the battery is attached (p8).",
+    "Servo testers are advised against; the manual wants a receiver signal (p4).",
+    "The JetiBox gives access to all settings; not a stick method."
+  ],
+  "schema": 1,
+  "verified": false
+}

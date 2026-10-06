@@ -1,0 +1,479 @@
+{
+  "id": "spektrum-avian-smart",
+  "brand": "Spektrum",
+  "family": "Avian Smart ESC 15-100 A",
+  "models": [
+    {
+      "name": "Avian 15A (SPMXAE1015)",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 15,
+      "bec": null,
+      "firmware_note": "BEC 5.2 V at 3 A (type not stated)",
+      "spec_source": "Spektrum_Avian_Smart_series.pdf p.4 (cells and continuous current per model)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Avian 30A (SPMXAE1030)",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 30,
+      "bec": null,
+      "firmware_note": "BEC 6 V / 7.2 V at 7 A (type not stated)",
+      "spec_source": "Spektrum_Avian_Smart_series.pdf p.4 (cells and continuous current per model)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Avian 45A (SPMXAE1045)",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 45,
+      "bec": null,
+      "firmware_note": "BEC 6 V / 7.2 V at 7 A (type not stated)",
+      "spec_source": "Spektrum_Avian_Smart_series.pdf p.4 (cells and continuous current per model)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Avian 60A (SPMXAE1060)",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 60,
+      "bec": null,
+      "firmware_note": "BEC 6 V / 7.2 V at 7 A (type not stated)",
+      "spec_source": "Spektrum_Avian_Smart_series.pdf p.4 (cells and continuous current per model)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Avian 80A (SPMXAE1080)",
+      "cells_min": 3,
+      "cells_max": 8,
+      "v_min_mv": null,
+      "v_max_mv": 33600,
+      "current_a": 80,
+      "bec": null,
+      "firmware_note": "BEC 6 V / 7.4 V / 8.4 V at 8 A (type not stated)",
+      "spec_source": "Spektrum_Avian_Smart_series.pdf p.4 (cells and continuous current per model)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Avian 100A (SPMXAE1100)",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 100,
+      "bec": null,
+      "firmware_note": "BEC 6 V / 7.4 V / 8.4 V at 8 A (type not stated)",
+      "spec_source": "Spektrum_Avian_Smart_series.pdf p.4 (3-6S LiPo, 100 A)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Spektrum_Avian_Smart_series.pdf",
+      "pages": "4, 7-12",
+      "language": "en",
+      "url": "https://www.horizonhobby.com/on/demandware.static/-/Sites-horizon-master/default/Manuals/Avian-Manual-EN.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": null,
+  "scheme": {
+    "type": "short_long",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "Two short tones, then the tone series of the first parameter.",
+      "steps": [
+        "Transmitter on with throttle at full.",
+        "Connect the battery: three ascending tones, then two short tones (full throttle accepted).",
+        "Keep full throttle for more than 5 s (do not lower the stick): the ESC plays another tone series and enters programming.",
+        "Two short tones, then the tones of parameter 1."
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "short_long",
+      "long_equals_short": 5,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "Parameters sound as tones: 1-4 short tones = parameter 1-4; one long = 5; long plus 1-4 short = 6-9; two long = 10; two long plus 1-2 short = 11-12. Options of a selected parameter sound with the same code (option N = same tones as parameter N)."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": 3000,
+      "description": "Select a parameter by moving the stick to the bottom position within 3 s of its tones. Choose an option by moving the stick to full throttle during its tones."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Do not move the stick within 3 s: the ESC goes on to the next parameter. If nothing is selected the list repeats."
+    },
+    "confirm_signal": "After a selection the ESC continues down the parameter list; no separate stored-tone is named.",
+    "exit": "Select parameter 13 (two long tones plus a series of short tones), then lower the throttle: the ESC arms.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": "Parameter 12 (two long, two short tones): factory reset.",
+    "description": "Full throttle at power-up for more than 5 s after the two acceptance tones enters programming. Parameters sound in sequence as short and long tones; bottom stick within 3 s selects one, full throttle selects an option, and the list continues. Parameter 13 saves and exits."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Aircraft type",
+      "key": "aircraft_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "airplane",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "helicopter (governor)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10"
+    },
+    {
+      "number": 2,
+      "name": "Brake type",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "disabled",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "normal"
+        },
+        {
+          "number": 3,
+          "name": "proportional"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10"
+    },
+    {
+      "number": 3,
+      "name": "Brake force",
+      "key": "brake_force",
+      "values": [
+        {
+          "number": 1,
+          "name": "disabled",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "level 1"
+        },
+        {
+          "number": 3,
+          "name": "level 2"
+        },
+        {
+          "number": 4,
+          "name": "level 3"
+        },
+        {
+          "number": 5,
+          "name": "level 4"
+        },
+        {
+          "number": 6,
+          "name": "level 5"
+        },
+        {
+          "number": 7,
+          "name": "level 6"
+        },
+        {
+          "number": 8,
+          "name": "level 7"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10"
+    },
+    {
+      "number": 4,
+      "name": "Voltage cutoff type",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "soft",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "hard"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10"
+    },
+    {
+      "number": 5,
+      "name": "Number of LiPo cells",
+      "key": "cell_count",
+      "values": [
+        {
+          "number": 1,
+          "name": "auto calc.",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "3S"
+        },
+        {
+          "number": 3,
+          "name": "4S"
+        },
+        {
+          "number": 4,
+          "name": "5S"
+        },
+        {
+          "number": 5,
+          "name": "6S"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10"
+    },
+    {
+      "number": 6,
+      "name": "Cutoff voltage",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "disabled"
+        },
+        {
+          "number": 2,
+          "name": "2.8 V"
+        },
+        {
+          "number": 3,
+          "name": "3.0 V",
+          "default": true
+        },
+        {
+          "number": 4,
+          "name": "3.2 V"
+        },
+        {
+          "number": 5,
+          "name": "3.4 V"
+        },
+        {
+          "number": 6,
+          "name": "3.6 V"
+        },
+        {
+          "number": 7,
+          "name": "3.8 V"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10",
+      "note": "Per cell."
+    },
+    {
+      "number": 7,
+      "name": "BEC voltage",
+      "key": "bec_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "5.2 V",
+          "default": true
+        }
+      ],
+      "applies_to": [
+        "Avian 15A (SPMXAE1015)"
+      ],
+      "source_page": "10"
+    },
+    {
+      "number": 7,
+      "name": "BEC voltage",
+      "key": "bec_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "6 V",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "7.2 V"
+        }
+      ],
+      "applies_to": [
+        "Avian 30A (SPMXAE1030)",
+        "Avian 45A (SPMXAE1045)",
+        "Avian 60A (SPMXAE1060)"
+      ],
+      "source_page": "10"
+    },
+    {
+      "number": 7,
+      "name": "BEC voltage",
+      "key": "bec_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "6 V",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "7.4 V"
+        },
+        {
+          "number": 3,
+          "name": "8.4 V"
+        }
+      ],
+      "applies_to": [
+        "Avian 80A (SPMXAE1080)",
+        "Avian 100A (SPMXAE1100)"
+      ],
+      "source_page": "10"
+    },
+    {
+      "number": 8,
+      "name": "Start-up mode",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "normal"
+        },
+        {
+          "number": 2,
+          "name": "soft",
+          "default": true
+        }
+      ],
+      "applies_to": null,
+      "source_page": "11"
+    },
+    {
+      "number": 9,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "low"
+        },
+        {
+          "number": 2,
+          "name": "medium",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "high"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "11"
+    },
+    {
+      "number": 10,
+      "name": "Motor rotation",
+      "key": "direction",
+      "values": [
+        {
+          "number": 1,
+          "name": "CW",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "CCW"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "11"
+    },
+    {
+      "number": 11,
+      "name": "Freewheel mode",
+      "key": "freewheel",
+      "values": [
+        {
+          "number": 1,
+          "name": "enabled",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "disabled"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "11"
+    },
+    {
+      "number": 12,
+      "name": "Factory reset",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "reset"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "11"
+    },
+    {
+      "number": 13,
+      "name": "Exit",
+      "key": "exit",
+      "values": [
+        {
+          "number": 1,
+          "name": "exit (save and leave)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "11"
+    }
+  ],
+  "unknowns": [
+    "Tone durations of short and long tones and the gap between tones: not stated.",
+    "How long the ESC holds a parameter's tones before moving on: the manual gives only the 3 s window for selecting.",
+    "How options sound inside a parameter: the manual says the options are announced by tones; the one-short/two-short column headers of the options table are used for the option numbers.",
+    "Entry timing: programming starts when more than 5 s pass at full throttle after the two short tones; exact moment not stated.",
+    "Whether the options list wraps after the last option: the manual says the list cycles.",
+    "Exit tones and the 'series of short tones' count for parameter 13: not stated.",
+    "The manual says parameter 12 factory reset has an empty options cell; the confirmation of a reset is not described.",
+    "Defaults come from black table cells in the page image."
+  ],
+  "notes": [
+    "The list of parameters (13) in this manual includes factory reset and exit as items 12 and 13; Spektrum_Avian_130Pro.pdf lists 15 parameters with no reset and no exit item, while its text still says to select the last parameter (#13) to save and exit."
+  ],
+  "schema": 1,
+  "verified": false
+}

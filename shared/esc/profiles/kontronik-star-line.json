@@ -1,0 +1,172 @@
+{
+  "schema": 1,
+  "id": "kontronik-star-line",
+  "brand": "Kontronik",
+  "family": "Star-Line (brushed)",
+  "verified": false,
+  "models": [
+    {
+      "name": "StarBEC 40-6-12",
+      "cells_min": 6,
+      "cells_max": 12,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 18000,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "NiCd cells; BEC 1.5 A for 4 servos; 50 A for 15 s limited",
+      "spec_source": "Kontronik_Star-Line.pdf p.2: 6-12 NiCd/NiMH cells, 40 A continuous; v_max = 12 cells x 1500 mV"
+    },
+    {
+      "name": "StarBEC 50-6-14",
+      "cells_min": 6,
+      "cells_max": 14,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 21000,
+      "current_a": 50,
+      "bec": null,
+      "firmware_note": "BEC 5 A; 60 A for 15 s",
+      "spec_source": "Kontronik_Star-Line.pdf p.2: 6-14 NiCd/NiMH cells, 50 A continuous; v_max = 14 cells x 1500 mV"
+    },
+    {
+      "name": "StarOPT 40-6-18",
+      "cells_min": 6,
+      "cells_max": 18,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 27000,
+      "current_a": 40,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "Kontronik_Star-Line.pdf p.2: 6-18 NiCd/NiMH cells, 40 A continuous; v_max = 18 cells x 1500 mV"
+    },
+    {
+      "name": "StarOPT 40-10-30",
+      "cells_min": 10,
+      "cells_max": 30,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 45000,
+      "current_a": 40,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "Kontronik_Star-Line.pdf p.2: 10-30 NiCd/NiMH cells, 40 A continuous; v_max = 30 cells x 1500 mV"
+    },
+    {
+      "name": "StarOPT 70-6-18",
+      "cells_min": 6,
+      "cells_max": 18,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 27000,
+      "current_a": 70,
+      "bec": "opto",
+      "firmware_note": "90 A for 15 s",
+      "spec_source": "Kontronik_Star-Line.pdf p.2: 6-18 NiCd/NiMH cells, 70 A continuous; v_max = 18 cells x 1500 mV"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Star-Line.pdf",
+      "pages": "5-10",
+      "language": "de/en",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/Star-Line.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "Tone sequence after the 5 s wait.",
+      "steps": [
+        "Operator: fit the jumper. Connect the motor if tones are to be audible.",
+        "Transmitter and receiver on. Throttle to brake (stick back); mode 3: motor-off (stick back); mode 6: motor-off (stick middle).",
+        "Apply drive power.",
+        "Wait 5 s or until the ESC sounds its tone sequence.",
+        "Operator: pull the jumper off.",
+        "Mode series sounds.",
+        "Move the throttle to full when the wanted mode sounds. Mode 6: then stick to brake (back). Mode 4: the jumper can be fitted again to enable a start button.",
+        "Control output repeats the mode. Disconnect power."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "The ESC sounds mode 1 as one tone, mode 2 as two tones, and so on, one series after another with a pause between series."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Throttle to full during the wanted series."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip."
+    },
+    "confirm_signal": "Mode repeated as tones.",
+    "exit": "Disconnect power.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Program mode 1 (APM).",
+    "description": "Jumper procedure with a 5 s wait (the other jumper families wait 2 s). Mode N is N tones. The ESC drives brushed motors."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "APM: reset, stick range learned at every power-up",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "Glider: brake about 0.3 s, cutoff 0.8 V per cell, optional separate motor-off position"
+        },
+        {
+          "number": 3,
+          "name": "Motor plane / boat: brake off, cutoff off, power reduced below 5.5 V"
+        },
+        {
+          "number": 4,
+          "name": "Helicopter: throttle compensation for falling battery voltage, linear curve, optional start button"
+        },
+        {
+          "number": 5,
+          "name": "Competition F5B / F5B 10 cells / F5D"
+        },
+        {
+          "number": 6,
+          "name": "Car: proportional brake"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5-10"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone in ms is not stated.",
+    "Gap between tones inside one mode series in ms is not stated.",
+    "Pause between two mode series in ms is not stated.",
+    "Whether the mode series loops until a mode is selected is not stated.",
+    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
+    "The 'or until' event ending the 5 s wait is a pictogram; its tone pattern is not stated.",
+    "BEC type of the BEC models is not stated beyond the current rating; 'linear' is not claimed by the manual.",
+    "Mode 7 to 9 do not exist in this manual."
+  ],
+  "notes": [
+    "The BEC type for StarBEC 40-6-12 is not stated; the bec field there reflects no manual statement."
+  ]
+}

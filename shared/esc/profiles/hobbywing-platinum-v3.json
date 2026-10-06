@@ -1,0 +1,420 @@
+{
+  "id": "hobbywing-platinum-v3",
+  "brand": "Hobbywing",
+  "family": "Platinum V3 50A/100A",
+  "models": [
+    {
+      "name": "Platinum-100A-V3",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 5200,
+      "v_max_mv": 25200,
+      "current_a": 100,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Platinum_V3_50A-100A.pdf p.1 (Specifications: 2-6S LiPo, 5.2-25.2 V)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Platinum-50A-V3",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 5200,
+      "v_max_mv": 25200,
+      "current_a": 50,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Platinum_V3_50A-100A.pdf p.1 (Specifications: 2-6S LiPo, 5.2-25.2 V)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Hobbywing_Platinum_V3_50A-100A.pdf",
+      "pages": "1",
+      "language": "en",
+      "url": "https://www.hobbywing.com/en/uploads/file/20221025/9a5dc7a676bdc2910f0ee2c35441d1c3.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "",
+  "scheme": {
+    "type": "short_long",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 7000,
+      "confirm_signal": "Two short beeps about 2 s after power-up, then a special tone about 5 s later (written as 56712 or a rising tone in the manuals)",
+      "steps": [
+        "Transmitter on, throttle at max",
+        "Connect battery",
+        "Wait about 2000 ms: two short beeps",
+        "Wait about 5000 ms more: special tone, programming mode entered"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "short_long",
+      "long_equals_short": 5,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "12 item tones loop: items 1-4 are 1-4 short beeps, item 5 is 1 long, 6-9 are 1 long plus 1-4 short, item 10 is 2 long, item 11 is 3 long + 1 short, item 12 is 3 long + 2 short. Value N is sounded the same way (long = 5 short)."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": 3000,
+      "description": "Item: move the throttle to min within 3000 ms after the wanted item tone."
+    },
+    "value_select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Value: move the throttle to max while the wanted value tone sounds. The window length is not stated."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Leave the throttle unchanged and wait for the next tone."
+    },
+    "confirm_signal": "Special tone (written 1515) after a value is stored.",
+    "exit": "Item 12 (3 long + 2 short beeps) then throttle to min within 3000 ms; or after a stored value (tone 1515) throttle to min within 2000 ms. After a change made by stick, program card or box, the ESC emits 5 long beeps and can be restarted 5 s later.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": "Item 11 (3 long + 1 short beeps) selects 'reset to factory default'.",
+    "description": "Throttle at max, then battery on. Two short beeps after about 2 s and a special tone after about 5 s mark programming mode. The ESC loops item tones; throttle to min within 3 s of the wanted item selects it. Value tones then loop; throttle to max on the wanted tone stores it and returns to the item loop."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "off",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft"
+        },
+        {
+          "number": 3,
+          "name": "hard"
+        },
+        {
+          "number": 4,
+          "name": "very hard"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 2,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "LiPo",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "NiMH"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 3,
+      "name": "Cutoff type",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "soft cut",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "hard cut"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 4,
+      "name": "Low-voltage cutoff threshold",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "off"
+        },
+        {
+          "number": 2,
+          "name": "low (2.85 V/cell; NiMH 50 %)"
+        },
+        {
+          "number": 3,
+          "name": "middle (3.15 V/cell; NiMH 62.5 %)",
+          "default": true
+        },
+        {
+          "number": 4,
+          "name": "high (3.30 V/cell; NiMH 75 %)"
+        },
+        {
+          "number": 5,
+          "name": "customized 2.8-25.2 V, 0.1 V steps (PC or LCD program box only)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 5,
+      "name": "Flight mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "airplane fixed wing"
+        },
+        {
+          "number": 2,
+          "name": "heli governor off"
+        },
+        {
+          "number": 3,
+          "name": "heli governor (Elf)",
+          "default": true
+        },
+        {
+          "number": 4,
+          "name": "heli governor store"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 6,
+      "name": "Auto rotation restart time",
+      "key": "autorotation_restart",
+      "values": [
+        {
+          "number": 1,
+          "name": "off"
+        },
+        {
+          "number": 2,
+          "name": "5 s"
+        },
+        {
+          "number": 3,
+          "name": "10 s",
+          "default": true
+        },
+        {
+          "number": 4,
+          "name": "15 s"
+        },
+        {
+          "number": 5,
+          "name": "30 s"
+        },
+        {
+          "number": 6,
+          "name": "90 s"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 7,
+      "name": "Advanced timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "0 deg"
+        },
+        {
+          "number": 2,
+          "name": "4 deg"
+        },
+        {
+          "number": 3,
+          "name": "8 deg"
+        },
+        {
+          "number": 4,
+          "name": "12 deg"
+        },
+        {
+          "number": 5,
+          "name": "15 deg",
+          "default": true
+        },
+        {
+          "number": 6,
+          "name": "18 deg"
+        },
+        {
+          "number": 7,
+          "name": "22 deg"
+        },
+        {
+          "number": 8,
+          "name": "26 deg"
+        },
+        {
+          "number": 9,
+          "name": "30 deg"
+        },
+        {
+          "number": 10,
+          "name": "customized 0-30 deg, 1 deg steps (PC or LCD program box only)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 8,
+      "name": "PWM frequency",
+      "key": "pwm_freq",
+      "values": [
+        {
+          "number": 1,
+          "name": "8 kHz"
+        },
+        {
+          "number": 2,
+          "name": "16 kHz"
+        },
+        {
+          "number": 3,
+          "name": "24 kHz"
+        },
+        {
+          "number": 4,
+          "name": "32 kHz",
+          "default": true
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 9,
+      "name": "BEC voltage",
+      "key": "bec_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "5.2 V",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "6.0 V"
+        },
+        {
+          "number": 3,
+          "name": "7.4 V"
+        },
+        {
+          "number": 4,
+          "name": "8.4 V"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 10,
+      "name": "LiPo cells",
+      "key": "cell_count",
+      "values": [
+        {
+          "number": 1,
+          "name": "auto",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "1 cell"
+        },
+        {
+          "number": 3,
+          "name": "2 cells"
+        },
+        {
+          "number": 4,
+          "name": "3 cells"
+        },
+        {
+          "number": 5,
+          "name": "4 cells"
+        },
+        {
+          "number": 6,
+          "name": "5 cells"
+        },
+        {
+          "number": 7,
+          "name": "6 cells"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 11,
+      "name": "Reset to factory default",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "restore defaults"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 12,
+      "name": "Exit",
+      "key": "exit",
+      "values": [
+        {
+          "number": 1,
+          "name": "exit programming"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    }
+  ],
+  "unknowns": [
+    "Beep duration in ms is not stated.",
+    "Gap between beeps and between tones in ms is not stated.",
+    "Window for selecting a value after its tone is not stated (only 'move to max when the tone sounds').",
+    "Pause between tone repetitions before the loop restarts is not stated.",
+    "Whether the entry hold (2 s then 5 s) has a tolerance is not stated.",
+    "Customised cutoff and customised timing values cannot be set by stick.",
+    "How many value tones the cell-count item (7 values) plays before looping is not stated beyond the table."
+  ],
+  "notes": [
+    "BEC: Platinum-50A-V3 offers 5.2/6.0/7.4 V (8.4 V selection outputs 7.4 V); Platinum-100A-V3 offers 6.0/7.4/8.4 V (5.2 V selection outputs 6.0 V).",
+    "Value table: in the program card/box table, the item 4 threshold default is 'middle' and item 5 default is Heli Governor (Elf)."
+  ],
+  "schema": 1,
+  "verified": false
+}

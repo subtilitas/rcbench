@@ -30,6 +30,7 @@ rcbench/
     dshot/                DShot frames · GCR decode · eRPM
     ppm/                  PPM frame layout
     openyge/              OpenYGE framing, status and parameter cache
+    esc/                  ESC programming profiles, their JSON reader and registry
   firmware/
     panel/                ESP-IDF project (ESP32-S3)
     iomcu/                pico-sdk project (RP2350)
@@ -62,7 +63,7 @@ flat: `#include "gfx.h"`.
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
-| `artwork` | ✔ | | ✔ |
+| `artwork` · `esc` | ✔ | | ✔ |
 | `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
 
 ## Toolchains

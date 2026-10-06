@@ -1,0 +1,361 @@
+{
+  "id": "hacker-masterspin",
+  "brand": "Hacker",
+  "family": "MasterSpin",
+  "models": [
+    {
+      "name": "MasterSpin 11",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": 5000,
+      "v_max_mv": 17000,
+      "current_a": 11,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 22",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": 5000,
+      "v_max_mv": 17000,
+      "current_a": 22,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 33",
+      "cells_min": 2,
+      "cells_max": 5,
+      "v_min_mv": 5000,
+      "v_max_mv": 21000,
+      "current_a": 33,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 44",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 6000,
+      "v_max_mv": 26000,
+      "current_a": 44,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 55",
+      "cells_min": 2,
+      "cells_max": 8,
+      "v_min_mv": 6000,
+      "v_max_mv": 34000,
+      "current_a": 55,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 66",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 6000,
+      "v_max_mv": 26000,
+      "current_a": 70,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 70 Opto",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 6000,
+      "v_max_mv": 26000,
+      "current_a": 70,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 48 Opto",
+      "cells_min": 4,
+      "cells_max": 10,
+      "v_min_mv": 12000,
+      "v_max_mv": 42000,
+      "current_a": 48,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 75 Opto",
+      "cells_min": 4,
+      "cells_max": 10,
+      "v_min_mv": 12000,
+      "v_max_mv": 42000,
+      "current_a": 75,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin F5B Opto",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": 7000,
+      "v_max_mv": 26000,
+      "current_a": 200,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin F5D Opto",
+      "cells_min": 2,
+      "cells_max": 5,
+      "v_min_mv": 5000,
+      "v_max_mv": 24000,
+      "current_a": 140,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin F5F Opto",
+      "cells_min": 2,
+      "cells_max": 5,
+      "v_min_mv": 5000,
+      "v_max_mv": 24000,
+      "current_a": 125,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 77 Opto",
+      "cells_min": 4,
+      "cells_max": 12,
+      "v_min_mv": 12000,
+      "v_max_mv": 50000,
+      "current_a": 75,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 99 Opto",
+      "cells_min": 4,
+      "cells_max": 12,
+      "v_min_mv": 12000,
+      "v_max_mv": 50000,
+      "current_a": 90,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 170 Opto",
+      "cells_min": 6,
+      "cells_max": 14,
+      "v_min_mv": 18000,
+      "v_max_mv": 59000,
+      "current_a": 170,
+      "bec": "opto",
+      "firmware_note": "Listed in the 0110 editions",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 220 Opto",
+      "cells_min": 6,
+      "cells_max": 14,
+      "v_min_mv": 18000,
+      "v_max_mv": 59000,
+      "current_a": 220,
+      "bec": "opto",
+      "firmware_note": "Listed in the 0110 editions",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 200 Opto",
+      "cells_min": 6,
+      "cells_max": 14,
+      "v_min_mv": 18000,
+      "v_max_mv": 59000,
+      "current_a": 200,
+      "bec": "opto",
+      "firmware_note": "Listed only in the earlier English edition (Release 0107) in place of the 170 Opto",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 300 Opto",
+      "cells_min": 6,
+      "cells_max": 14,
+      "v_min_mv": 18000,
+      "v_max_mv": 59000,
+      "current_a": 300,
+      "bec": "opto",
+      "firmware_note": "Listed only in the earlier English edition (Release 0107) in place of the 220 Opto",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 70 Navy",
+      "cells_min": 2,
+      "cells_max": 5,
+      "v_min_mv": 6000,
+      "v_max_mv": 21000,
+      "current_a": 70,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    },
+    {
+      "name": "MasterSpin 99 Navy",
+      "cells_min": 4,
+      "cells_max": 10,
+      "v_min_mv": 12000,
+      "v_max_mv": 42000,
+      "current_a": 90,
+      "bec": null,
+      "firmware_note": "BEC column empty in the table",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_MasterSpin.pdf p.16"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Hacker_MasterSpin.pdf",
+      "pages": "8-11, 16",
+      "language": "en",
+      "url": "https://www.hacker-motor.com/daten/anleitungen/MasterSpin-Manuel.pdf"
+    },
+    {
+      "file": "Hacker_MasterSpin_old_en.pdf",
+      "pages": "8-11, 16",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/http://www.hacker-motor.com/images/MASTERSPIN-Manualenglish.pdf"
+    },
+    {
+      "file": "Hacker_MasterSpin_de.pdf",
+      "pages": "8-11, 16",
+      "language": "de",
+      "url": "https://www.hacker-motor.com/daten/anleitungen/MasterSpin-Anleitung.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": null,
+  "scheme": {
+    "type": "melody_groups",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "Four-tone melody about 5 s after power-up; the motor does not start.",
+      "steps": [
+        "Throttle signal at full power (transmitter on).",
+        "Connect the drive battery; switch the BEC on where fitted (MasterSpin 11 has no switch).",
+        "Wait about 5 s for the four-tone melody.",
+        "Wait about 5 s more; the groups start."
+      ]
+    },
+    "announce": {
+      "what": "value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": 5,
+      "description": "Groups of 1 to 6 beeps, each group repeated five times in a row, then the next count. Group N is mode N. A group ends after its fifth repetition. Competition types have fewer modes: the manual says six modes 'except the special competition types' without naming the count. Whether the series loops is not stated."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Move the throttle to the stop position while the wanted group is sounding."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Keep full throttle; the next group follows."
+    },
+    "confirm_signal": "Tone sequence for the brake setting of the new mode (one beep brake, two beeps no brake); the ESC is then armed.",
+    "exit": "Disconnect the battery. The motor runs on throttle movement right after the confirmation.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": null,
+    "description": "Throttle at full, then power: four-tone melody after about 5 s, groups of 1 to 6 beeps after about 5 s more, each five times. Throttle to stop during the wanted group selects that mode and stores it. Factory state is mode 1."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "Acro inrunner: no brake, timing 0 degrees, LiPo autodetect, slow down at 3.0 V per cell",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "Acro outrunner: no brake, timing 24 degrees, LiPo autodetect, slow down at 3.0 V per cell"
+        },
+        {
+          "number": 3,
+          "name": "Glider inrunner: brake on, timing 0 degrees, LiPo autodetect, slow down at 3.0 V per cell"
+        },
+        {
+          "number": 4,
+          "name": "Glider outrunner: brake on, timing 24 degrees, LiPo autodetect, slow down at 3.0 V per cell"
+        },
+        {
+          "number": 5,
+          "name": "Heli constant rpm, normal speed correction (no fast speed changes), timing 0 degrees"
+        },
+        {
+          "number": 6,
+          "name": "Heli constant rpm 3D, fast speed correction, timing 0 degrees"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10-11",
+      "note": "Mode 1 suits Hacker B and C inrunners and other 2-pole inrunners; modes 2 and 4 suit A-series and 10 to 14 pole outrunners. LiPo autodetect needs a fully charged pack."
+    }
+  ],
+  "unknowns": [
+    "Beep length, gap between beeps, gap between groups (ms): not stated.",
+    "Wait before the melody and between melody and groups: 'about 5 s', no tolerance.",
+    "Whether the group series loops after group 6: not stated.",
+    "Number of modes on the competition types (F5B, F5D, F5F): not stated.",
+    "Beep pattern of the confirmation: only note symbols."
+  ],
+  "notes": [
+    "Model table: Hacker_MasterSpin.pdf p16 and Hacker_MasterSpin_de.pdf p16 list MasterSpin 170 Opto and 220 Opto; Hacker_MasterSpin_old_en.pdf p16 (Release 0107) lists 200 Opto and 300 Opto in their place with the same size and voltage data.",
+    "Hacker_MasterSpin_de.pdf lists the tables with several rows broken across lines; values were read from the English editions where the text layout is ambiguous.",
+    "The table row 'MasterSpin 66' states a current of 70 A.",
+    "After a normal power-up the ESC beeps once (brake on) or twice (brake off), then after about 5 s plays timing monitor beeps (can be disabled with the JetiBox) (p8).",
+    "All three editions list six groups, 1 to 6 beeps."
+  ],
+  "schema": 1,
+  "verified": false
+}

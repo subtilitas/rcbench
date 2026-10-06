@@ -1,0 +1,121 @@
+{
+  "id": "hacker-master-senstrol",
+  "brand": "Hacker",
+  "family": "Master Senstrol 120/180 Opto (sine commutation)",
+  "models": [
+    {
+      "name": "Master Senstrol 120",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": 18000,
+      "v_max_mv": 50400,
+      "current_a": 120,
+      "bec": "none",
+      "firmware_note": "Art. 14000120; needs the motor identification chip",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_Senstrol_120-180_2020_de.pdf p.4"
+    },
+    {
+      "name": "Master Senstrol 180",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": 18000,
+      "v_max_mv": 50400,
+      "current_a": 180,
+      "bec": "none",
+      "firmware_note": "Art. 14000180; needs the motor identification chip",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_Senstrol_120-180_2020_de.pdf p.4"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Hacker_Master_Senstrol_120-180_2018_de.pdf",
+      "pages": "4, 6-11",
+      "language": "de/en",
+      "url": "https://www.hacker-motor.com/daten/anleitungen/regler/Anleitung_Master_Senstrol_120_180_20122018.pdf"
+    },
+    {
+      "file": "Hacker_Master_Senstrol_120-180_2020_de.pdf",
+      "pages": "4, 6-11",
+      "language": "de/en",
+      "url": "https://www.hacker-motor.com/daten/anleitungen/regler/Anleitung_Master_Senstrol_120_180_25032020.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "The ESC runs only with its motor and the motor identification chip connected. Parameters are set with the JetiBox, not by stick. Stick teaching covers the throttle range only. Modes 1 to 3 also need a second PWM channel from a switch; the supply range of the ESC starts at 18 V.",
+  "scheme": {
+    "type": "stick_position",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "Two beeps after the battery is connected.",
+      "steps": [
+        "Connect the three motor cables and the motor chip plug.",
+        "Connect the receiver. Modes 1 to 3: both the throttle (black) and the switch (blue) plugs.",
+        "Throttle channel at full; modes 1 to 3: switch at OFF.",
+        "Connect the drive battery.",
+        "After two beeps: throttle to minimum.",
+        "Modes 4 and 5: one long beep, teaching done. Modes 1 to 3: one beep, then switch to position 2 (mode 1) or ON (modes 2, 3): one beep; switch to OFF: one long beep."
+      ]
+    },
+    "announce": {
+      "what": "value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "No menu is announced. The ESC answers each taught position with beeps: two beeps for full throttle, one beep for minimum (modes 1 to 3) or one long beep (modes 4, 5), one beep for the switch-on position, one long beep for the switch-off position."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Move throttle to minimum after the two beeps; for modes 1 to 3 then move the mode switch."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "None."
+    },
+    "confirm_signal": "One long beep after the last taught position.",
+    "exit": "After the final long beep the ESC is ready for operation.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": null,
+    "description": "Stick teaching of the transmitter range. Full throttle at power-up gives two beeps; minimum throttle is taught next. With switch modes 1 to 3 the switch positions are taught after that. Mode (1 to 5, factory mode 1), temperature limits, cell count, cutoff, direction, gear, rpm limit, dynamic and brake are set with the JetiBox only."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Throttle and switch range teach",
+      "key": "throttle_range",
+      "values": [
+        {
+          "number": 1,
+          "name": "teach full, minimum and switch positions"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "11",
+      "note": "Switch modes (set with the JetiBox): MODE 1 three-position switch (0 off, 1 rpm, 2 torque), MODE 2 two-position (off, rpm), MODE 3 two-position (off, torque), MODE 4 no switch, rpm mode, MODE 5 no switch, torque mode. Default MODE 1."
+    }
+  ],
+  "unknowns": [
+    "Duration of the two beeps, the single beeps and the long beeps (ms): not stated.",
+    "How long full throttle must be held before the two beeps: not stated.",
+    "Time window for the move to minimum after the two beeps: not stated.",
+    "Whether the teaching repeats on each power-up or only when the ranges are unknown: not stated.",
+    "Pulse widths (ms) for the switch positions: given only as -100 %, 0 %, +100 %.",
+    "Operation with the bench supply of 1-20 V: the ESC specifies 18 to 50.4 V (6 to 12 cells); only 18 to 20 V overlaps.",
+    "Whether the ESC starts without the motor and its chip connected: the manual says it cannot be operated without the chip."
+  ],
+  "notes": [
+    "Weight of Master Senstrol 120: about 151 g in Hacker_Master_Senstrol_120-180_2018_de.pdf p4, about 125 g in Hacker_Master_Senstrol_120-180_2020_de.pdf p4.",
+    "The 2018 and 2020 editions carry the same teaching sequence; the 2020 edition renames the product 'Hacker Master Senstrol' and adds the RoHS reference.",
+    "The manual forbids operation from a power supply, only batteries.",
+    "The Opto type has no BEC (table); the manual lists the receiver as powered before the drive battery and gives no receiver supply data."
+  ],
+  "schema": 1,
+  "verified": false
+}

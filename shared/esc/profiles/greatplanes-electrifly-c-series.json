@@ -1,0 +1,151 @@
+{
+  "id": "greatplanes-electrifly-c-series",
+  "brand": "Great Planes",
+  "family": "C-25, C-35, C-55 brushed ESC",
+  "models": [
+    {
+      "name": "C-25",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 25,
+      "bec": null,
+      "firmware_note": "NiCd/NiMH 6-10 cells; 5 V / 1.5 A BEC; brushed motors only",
+      "spec_source": "GreatPlanes_Electrifly_C-25_C-35_C-55.pdf p.1 (Li-Po cells, continuous current)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "C-35",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 35,
+      "bec": null,
+      "firmware_note": "NiCd/NiMH 6-12 cells; 5 V / 1.5 A BEC; brushed motors only",
+      "spec_source": "GreatPlanes_Electrifly_C-25_C-35_C-55.pdf p.1 (Li-Po cells, continuous current)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "C-55",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 50,
+      "bec": null,
+      "firmware_note": "NiCd/NiMH 6-12 cells; 5 V / 1.5 A BEC; brushed motors only",
+      "spec_source": "GreatPlanes_Electrifly_C-25_C-35_C-55.pdf p.1 (Li-Po cells, continuous current)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "GreatPlanes_Electrifly_C-25_C-35_C-55.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "http://manuals.hobbico.com/gpm/gpmm2025-2035-2055-manual.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "Brake and battery setup start with a press of the ESC on/off button (battery setup: hold 4-5 s, red LED out). The button is not a throttle or power action.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "min",
+      "when": "after_power_on",
+      "hold_ms": null,
+      "confirm_signal": "Three beeps after the button press with the stick at the brake position.",
+      "steps": [
+        "Transmitter on, stick at brake position (towards you).",
+        "Press the ESC on/off button: 3 beeps (brake setup state).",
+        "Move stick to full power: 5 beeps; wait 5 s: 7 beeps.",
+        "Move stick to the brake position while the wanted count sounds."
+      ]
+    },
+    "announce": {
+      "what": "value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "At full power the motor beeps 5 times; after 5 s it beeps 7 times. The operation section reads 5 beeps as brake on and 7 beeps as brake off."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Return the stick to the brake position to choose the state being announced. Three beeps follow: the ESC is ready."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Not described."
+    },
+    "confirm_signal": "Three beeps after the stick returns to the brake position.",
+    "exit": "Setting is kept after the ESC is switched off.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Not described.",
+    "description": "A press of the on/off button with the stick at brake gives 3 beeps. Full power gives 5 beeps, then 7 beeps after 5 s. Returning the stick to brake stores the state announced and gives 3 beeps. Repeating the process switches back."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 5,
+          "name": "brake on (5 beeps), factory default",
+          "default": true
+        },
+        {
+          "number": 7,
+          "name": "brake off (7 beeps)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2",
+      "note": "Value numbers are the beep counts at full power."
+    },
+    {
+      "number": 2,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "NiCd/NiMH (blue LED steady)"
+        },
+        {
+          "number": 2,
+          "name": "2-cell Li-Po (blue LED blinks 2)"
+        },
+        {
+          "number": 3,
+          "name": "3-cell Li-Po (blue LED blinks 3)"
+        },
+        {
+          "number": 4,
+          "name": "4-cell Li-Po (blue LED blinks 4)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2",
+      "note": "Set with the button and the blue LED only; the manual gives no beeps for this item."
+    }
+  ],
+  "unknowns": [
+    "Duration, gap and pitch of the 3, 5 and 7 beeps: not stated.",
+    "Whether the 5 s wait between the 5-beep and 7-beep announcements is exact: manual says 'wait 5 seconds'.",
+    "Which stick position selects brake on versus brake off: the setup section says move to brake to finish; the operation section reads 5 as brake on and 7 as brake off.",
+    "Default battery type: not stated.",
+    "Whether the brake announcement loops after 7 beeps: not stated."
+  ],
+  "notes": [
+    "Setup step 1 says the factory brake default is 'brake on'; step 4 of 'ESC OPERATION' reads 5 beeps as brake on and 7 as brake off, consistent with the table above, while the brake setup text only says 'switch the brake on, repeat the process'."
+  ],
+  "schema": 1,
+  "verified": false
+}

@@ -1,0 +1,207 @@
+{
+  "id": "yge-aureus",
+  "brand": "YGE",
+  "family": "Aureus (105, 135, 185, 265; 6-mode setup)",
+  "models": [
+    {
+      "name": "Aureus 105",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 105,
+      "bec": null,
+      "firmware_note": "BEC 5.5-12 V, 12 A / 25 A peak; cells 4s (English) or 6s (German) minimum",
+      "spec_source": "YGE_Aureus_105-265.pdf p.1 (6-12s, 105 A); YGE_Aureus_105-265_en.pdf states 4-12s",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Aureus 135 V1",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 135,
+      "bec": null,
+      "firmware_note": "2020 edition; BEC 5.0-8.4 V, 10 A / 25 A peak; cells min 4s (English) or 6s (German)",
+      "spec_source": "YGE_Aureus135_v1_de.pdf p.1 (6-12s); YGE_Aureus135_v1_en.pdf states 4-12s; 135 A from model name and table",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Aureus 135 V2",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 135,
+      "bec": null,
+      "firmware_note": "BEC 5.5-12 V; 12 A continuous (English) or 10 A (German) / 25 A peak",
+      "spec_source": "YGE_Aureus_135_V2_de.pdf p.1 (6-12s, 135 A); YGE_Aureus_105-135_V2_en.pdf states 4-12s",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Aureus 185",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 185,
+      "bec": null,
+      "firmware_note": "BEC 5.5-12 V, 12 A / 25 A peak; temperature-controlled fan",
+      "spec_source": "YGE_Aureus_105-265.pdf p.1 (6-12s, 185 A); YGE_Aureus_105-265_en.pdf states 4-12s",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Aureus 265",
+      "cells_min": 6,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 265,
+      "bec": null,
+      "firmware_note": "BEC 5.5-12 V, 15 A / 30 A peak; temperature-controlled fan",
+      "spec_source": "YGE_Aureus_105-265.pdf p.1 (6-14s, 265 A); YGE_Aureus_105-265_en.pdf states 4-14s",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "YGE_Aureus135_v1_en.pdf",
+      "pages": "1-3",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2020/09/YGE-Aureus135-eng.pdf"
+    },
+    {
+      "file": "YGE_Aureus135_v1_de.pdf",
+      "pages": "1-3",
+      "language": "de",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2020/09/YGE-Aureus135.pdf"
+    },
+    {
+      "file": "YGE_Aureus_105-135_V2_en.pdf",
+      "pages": "1-3",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2024/03/YGE-Aureus-105-135-V2-eng.pdf"
+    },
+    {
+      "file": "YGE_Aureus_135_V2_de.pdf",
+      "pages": "1-3",
+      "language": "de",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2024/02/YGE-Aureus-135-V2.pdf"
+    },
+    {
+      "file": "YGE_Aureus_105-265_en.pdf",
+      "pages": "1-3",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2025/07/YGE-Aureus-105-135-185-265_eng.pdf"
+    },
+    {
+      "file": "YGE_Aureus_105-265.pdf",
+      "pages": "1-3",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a67bc4c57b633240585bf85_YGE-Aureus-105-135-185-265.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "Needs only throttle signal and power. The manuals forbid supply-only operation (battery only); bench behaviour untested.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "Repeating interval beeps; after 20 of them, 2 confirmation tones. Setup is then active.",
+      "steps": [
+        "Remove propeller or rotor blades",
+        "Switch transmitter on, throttle stick at maximum (100%)",
+        "Connect battery to the ESC (motor connected; the motor winding is the sound source)",
+        "Wait for 20 interval beeps, then 2 confirmation beeps",
+        "Move throttle stick to minimum",
+        "Listen to the menu: N beeps = mode N",
+        "At the wanted mode, move throttle stick to maximum; 2 confirmation beeps",
+        "Move throttle stick to minimum; 2 confirmation beeps; ESC arms"
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "With the stick at minimum the ESC sounds the modes in order, mode N as N beeps (1 to 6). The menu starts again at mode 1 when no mode is selected. Beep length, gap and pause between modes are not stated."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Move the stick to maximum while the wanted mode is the one being announced (the manual says 'at the desired mode'). Two confirmation beeps follow. The permitted delay after the last beep of the mode is not stated."
+    },
+    "skip": {
+      "throttle": "min",
+      "description": "Leave the stick at minimum; the ESC continues with the next mode."
+    },
+    "confirm_signal": "2 beeps after the stick goes to maximum (mode selected), 2 beeps after the stick returns to minimum (ESC armed). Cell count follows (long beep = 5 cells, short beep = 1 cell, e.g. long, short = 6 cells), then 4 ascending tones with the stick at minimum (English and German 6-mode manuals agree).",
+    "exit": "Moving the stick back to minimum after selecting a mode arms the ESC and ends programming. The next change needs a power cycle with throttle at maximum.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Selecting a mode loads that mode's complete parameter set, which overwrites earlier ProgCard or PC-tool settings. No separate reset sequence is described.",
+    "description": "Throttle at maximum, then battery on: after 20 interval beeps and 2 confirmation beeps the ESC is in mode setup. Throttle to minimum; the ESC sounds mode 1 to 6 as 1 to 6 beeps. Throttle to maximum at the wanted mode (2 beeps), then to minimum (2 beeps) to arm. One mode per power cycle."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "V-Stabi governor (external governor, rpm signal to flight controller)"
+        },
+        {
+          "number": 2,
+          "name": "Governor"
+        },
+        {
+          "number": 3,
+          "name": "Gov-Store (governor with learned motor parameters)"
+        },
+        {
+          "number": 4,
+          "name": "Glider with folding propeller and brake"
+        },
+        {
+          "number": 5,
+          "name": "Motor plane without brake"
+        },
+        {
+          "number": 6,
+          "name": "Motor plane with F3A (Acro) brake"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    }
+  ],
+  "unknowns": [
+    "Duration of one beep, gap between beeps, and pause between menu modes: not stated; measure from supply current.",
+    "Period of the 20 interval beeps before setup entry: not stated.",
+    "Maximum delay between the last beep of a mode and the stick move to maximum: not stated.",
+    "Whether a minimum stick-at-maximum time at power-on is needed for entry: not stated.",
+    "Number of menu cycles before the ESC leaves setup without a selection: not stated.",
+    "Throttle signal type and pulse range for max and min: not stated for this manual (the 60HV/90HV and 120HV-200HV manuals mention 1.1 to 1.9 ms end points for mode 2).",
+    "Supply-current amplitude of the beeps through the motor winding: not stated; the motor must be connected.",
+    "The manuals state the ESC may only be powered from batteries, not from power supplies. Behaviour on a 1-20 V / 3 A supply (cell-count detection, undervoltage cutoff, inrush limit) is not stated.",
+    "Parameter values set by each mode: not listed.",
+    "BEC type (linear or switching): not stated.",
+    "Behaviour of the fan output during setup: not stated."
+  ],
+  "notes": [
+    "Cell range conflict: English Aureus 105-265 and Aureus 135 V1 manuals give 4s-12s (265 up to 14s); German Aureus 105-265 and Aureus 135 V1/V2 manuals give 6s-12s.",
+    "BEC rating conflict for Aureus 135 V2: YGE_Aureus_105-135_V2_en.pdf gives 12 A continuous; YGE_Aureus_135_V2_de.pdf gives 10 A.",
+    "The 2025 manual and the 2024 V2 manuals say mode programming is not needed with a Mikado VBC and NEO (auto-detect).",
+    "Menu identical to yge-hvt, yge-saphir and yge-hvt-navy.",
+    "Mode 3 (Gov-Store): switch once to a high rpm over 70% with blades after programming; learning occurs after start-up, no restart."
+  ],
+  "schema": 1,
+  "verified": false
+}

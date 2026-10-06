@@ -1,0 +1,159 @@
+{
+  "id": "eflite-10a-pro",
+  "brand": "E-flite",
+  "family": "10 A Pro Brushless ESC (EFLA1010)",
+  "models": [
+    {
+      "name": "10-Amp Pro Brushless ESC (EFLA1010)",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 10,
+      "bec": null,
+      "firmware_note": "Also 6-10 NiMH/NiCd cells; 12 A burst for 15 s; BEC type not stated; supports up to four sub-micro servos",
+      "spec_source": "Eflite_10A_Pro.pdf p.1 (Cells 2-3S Li-Po)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Eflite_10A_Pro.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://www.stevensaero.com/wp-content/uploads/2020/09/EFLA1010_manual.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": null,
+  "scheme": {
+    "type": "stick_position",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "Two sets of fast ringing tones after 5 s at full throttle.",
+      "steps": [
+        "Battery disconnected, transmitter on, throttle full (above 1.7 ms).",
+        "Connect battery and hold full throttle for 5 s: two sets of fast tones.",
+        "Throttle to centre (1.4-1.6 ms): 1 beep = menu 1."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "Menu N is N beeps after the stick returns to centre. The offered options are not announced; the manual numbers them 1 and 2 and ties each to a stick position (full throttle above 1.7 ms or idle below 1.3 ms)."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": 5000,
+      "description": "Within 5 s of the menu beeps, hold full throttle to choose option 1 or idle (below 1.3 ms) to choose option 2. One lower-pitched beep confirms."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Make no selection for 5 s; the ESC advances to the next menu."
+    },
+    "confirm_signal": "One lower-pitched beep after a valid selection.",
+    "exit": "Idle for about 8 s until three rising tones (armed), or unplug the battery.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": null,
+    "description": "At full throttle power-up the ESC enters programming after 5 s. Centre stick gives menu N as N beeps. Full throttle or idle within 5 s picks option 1 or 2 of that menu; centre stick moves on. Menu 1 has a hidden third value reached by holding full throttle for 7 s until 7 beeps."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Voltage cutoff",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "3S Li-Po cutoff (9 V), stick full throttle",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "2S Li-Po or Ni-Cd/Ni-MH cutoff (6 V), stick idle"
+        },
+        {
+          "number": 3,
+          "name": "70% Smart Cut soft cutoff, hold full throttle 7 s until 7 beeps"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2",
+      "note": "Default 3S (9 V) as stated in the manual defaults list."
+    },
+    {
+      "number": 2,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "brake off, stick full throttle",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "brake on, stick idle"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 3,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "4 poles and more, stick full throttle",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "2-pole motors, stick idle"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 4,
+      "name": "Throttle input range",
+      "key": "throttle_range",
+      "values": [
+        {
+          "number": 1,
+          "name": "1.1-1.9 ms, stick full throttle"
+        },
+        {
+          "number": 2,
+          "name": "auto select, stick idle",
+          "default": true
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    }
+  ],
+  "unknowns": [
+    "Duration, gap and pitch of the menu beeps: not stated.",
+    "Whether the 7 s hold in menu 1 re-announces 7 beeps once or repeats: not stated.",
+    "Wait between the 5 s power-up hold and the two tone sets is exactly 5 s per the manual; tolerance not stated.",
+    "Beep count for confirmation: 'one lower tone'; its length is not stated.",
+    "BEC type and BEC voltage: not stated."
+  ],
+  "notes": [
+    "Option numbers 1 and 2 are the manual's own list numbering, not beeps; each is selected by stick position.",
+    "The 70% Smart Cut value is reached only by holding full throttle in menu 1 for 7 s, not by a stick position of its own."
+  ],
+  "schema": 1,
+  "verified": false
+}

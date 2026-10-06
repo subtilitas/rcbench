@@ -1,0 +1,401 @@
+{
+  "id": "hobbywing-flyfun-8item",
+  "brand": "Hobbywing",
+  "family": "FlyFun 6A-100A sensorless, 8-item menu",
+  "models": [
+    {
+      "name": "FlyFun-6A",
+      "cells_min": 2,
+      "cells_max": 2,
+      "v_min_mv": null,
+      "v_max_mv": 8400,
+      "current_a": 6,
+      "bec": "linear",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Sensorless_2022-15.pdf p.1 (Fentium series table: cont. current, LiPo cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyFun-10A",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 10,
+      "bec": "linear",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Sensorless_2022-15.pdf p.1 (Fentium series table: cont. current, LiPo cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyFun-12A",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 12,
+      "bec": "linear",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Sensorless_2022-15.pdf p.1 (Fentium series table: cont. current, LiPo cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyFun-18A",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 18,
+      "bec": "linear",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Sensorless_2022-15.pdf p.1 (Fentium series table: cont. current, LiPo cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyFun-25A",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 25,
+      "bec": "linear",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Sensorless_2022-15.pdf p.1 (Fentium series table: cont. current, LiPo cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyFun-30A",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 30,
+      "bec": "linear",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Sensorless_2022-15.pdf p.1 (Fentium series table: cont. current, LiPo cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyFun-40A",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 40,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Sensorless_2022-15.pdf p.1 (Fentium series table: cont. current, LiPo cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyFun-40A-OPTO",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 40,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Sensorless_2022-15.pdf p.1 (Fentium series table: cont. current, LiPo cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyFun-60A",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 60,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Sensorless_2022-15.pdf p.1 (Fentium series table: cont. current, LiPo cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyFun-60A-OPTO",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 60,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Sensorless_2022-15.pdf p.1 (Fentium series table: cont. current, LiPo cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyFun-80A",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 80,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Sensorless_2022-15.pdf p.1 (Fentium series table: cont. current, LiPo cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyFun-80A-OPTO",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 80,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Sensorless_2022-15.pdf p.1 (Fentium series table: cont. current, LiPo cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyFun-100A",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 100,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Sensorless_2022-15.pdf p.1 (Fentium series table: cont. current, LiPo cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FlyFun-100A-OPTO",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 100,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_Sensorless_2022-15.pdf p.1 (Fentium series table: cont. current, LiPo cells)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Hobbywing_Sensorless_2022-15.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://www.hobbywing.com/en/uploads/file/20221015/7e7628e06047f99a5b65b58cc5c4f84d.pdf"
+    },
+    {
+      "file": "Hobbywing_FlyFun_HW-SM001DUL.pdf",
+      "pages": "3-4",
+      "language": "en+zh",
+      "url": "https://www.hobbywing.com/uploads/file/20220817/bad88d0e3d07afab5c0eb00235f305cf.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "OPTO models have no BEC; the manual does not say how the throttle signal side is powered on the bench.",
+  "scheme": {
+    "type": "short_long",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 7000,
+      "confirm_signal": "Two short beeps about 2 s after power-up, then a special tone about 5 s later (written as 56712 or a rising tone in the manuals)",
+      "steps": [
+        "Transmitter on, throttle at max",
+        "Connect battery",
+        "Wait about 2000 ms: two short beeps",
+        "Wait about 5000 ms more: special tone, programming mode entered"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "short_long",
+      "long_equals_short": 5,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "After entry the ESC loops through 8 item tones, one after another. Item N is N short beeps for N 1-4 and 1 long beep plus (N-5) short beeps for N 5-9; two long beeps start at N 10. After an item is selected, the value tones play in a loop, value N sounded the same way."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": 3000,
+      "description": "Item: move the throttle to min within 3000 ms after the wanted item tone."
+    },
+    "value_select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Value: move the throttle to max while the wanted value tone sounds. The window length is not stated."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Leave the throttle unchanged and wait for the next tone."
+    },
+    "confirm_signal": "Special tone (written 1515) after a value is stored.",
+    "exit": "Item 8 (two long beeps) then throttle to min within 3000 ms; or after a stored value (special tone) throttle to min within 2000 ms; or disconnect the battery.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": "Item 7 (1 long + 2 short beeps) selects 'set all to default'.",
+    "description": "Throttle at max, then battery on. Two short beeps after about 2 s and a special tone after about 5 s mark programming mode. The ESC loops item tones; throttle to min within 3 s of the wanted item selects it. Value tones then loop; throttle to max on the wanted tone stores it and returns to the item loop."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "off",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "on"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 2,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "Li-ion / LiPo",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "NiMH / NiCd"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 3,
+      "name": "Cutoff mode",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "soft cutoff",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "hard cutoff"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 4,
+      "name": "Cutoff threshold",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "low (2.85 V/cell; Ni 0 %)"
+        },
+        {
+          "number": 2,
+          "name": "medium (3.15 V/cell; Ni 50 %)",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "high (3.3 V/cell; Ni 65 %)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 5,
+      "name": "Startup mode",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "normal (300 ms)",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft (6 s)"
+        },
+        {
+          "number": 3,
+          "name": "super soft (12 s)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 6,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "low (3.75 deg)",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "medium (15 deg)"
+        },
+        {
+          "number": 3,
+          "name": "high (26.25 deg)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 7,
+      "name": "Set all to default",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "restore defaults"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 8,
+      "name": "Exit",
+      "key": "exit",
+      "values": [
+        {
+          "number": 1,
+          "name": "exit programming"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    }
+  ],
+  "unknowns": [
+    "Beep duration in ms is not stated.",
+    "Gap between beeps and between tones in ms is not stated.",
+    "Window for selecting a value after its tone is not stated (only 'move to max when the tone sounds').",
+    "Pause between tone repetitions before the loop restarts is not stated.",
+    "Whether the entry hold (2 s then 5 s) has a tolerance is not stated.",
+    "Cell count for models with several cells is auto-detected; manual gives no item to set it.",
+    "Tone played after item 7 is selected is not described.",
+    "Which value tone sequence is used for items with 2 values (whether a third tone is skipped) is not stated.",
+    "Spec table of the 2014 edition (Hobbywing_Sensorless_2022-15.pdf) was read as an image; model list taken from it and matches the 2015 edition."
+  ],
+  "notes": [
+    "Hobbywing_Sensorless_2022-15.pdf (HW-SM001DUL-20140715) and Hobbywing_FlyFun_HW-SM001DUL.pdf (HW-SM001DUL-20150707) give the same menu and values.",
+    "Program example in both manuals: each value tone is followed by about 3 s of waiting (beep, wait 3 s, beep-beep, wait 3 s, beep-beep-beep).",
+    "Item names in the 20150707 edition use 'Brake setting Enabled/Disabled' in the feature text and Off/On in the tone table."
+  ],
+  "schema": 1,
+  "verified": false
+}

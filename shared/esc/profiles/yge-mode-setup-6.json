@@ -1,0 +1,248 @@
+{
+  "schema": 1,
+  "id": "yge-mode-setup-6",
+  "brand": "YGE",
+  "family": "Mode setup, 6 modes (35-135 LVT, 135 Slim, Opto 135, Opto 255)",
+  "verified": false,
+  "models": [
+    {
+      "name": "YGE 35LVT",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 35,
+      "bec": "switching",
+      "firmware_note": "BEC 5.5-8.4 V adjustable by PC setup; 5 A continuous / 10 A peak",
+      "spec_source": "YGE_35-135LVT_Slim.pdf p.1 (2-6s; table 35 A, 65 A, 95 A, 135 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE 65LVT",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 65,
+      "bec": "switching",
+      "firmware_note": "BEC 5.5-8.4 V adjustable by PC setup; 8 A continuous / 18 A peak",
+      "spec_source": "YGE_35-135LVT_Slim.pdf p.1 (2-6s; table 35 A, 65 A, 95 A, 135 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE 95LVT",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 95,
+      "bec": "switching",
+      "firmware_note": "BEC 5.5-8.4 V adjustable by PC setup; 8 A continuous / 18 A peak, plus BEC slave cable",
+      "spec_source": "YGE_35-135LVT_Slim.pdf p.1 (2-6s; table 35 A, 65 A, 95 A, 135 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE 135LVT",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 135,
+      "bec": "switching",
+      "firmware_note": "BEC 5.5-8.4 V adjustable by PC setup; 8 A continuous / 18 A peak",
+      "spec_source": "YGE_35-135LVT_Slim.pdf p.1 (2-6s; table 35 A, 65 A, 95 A, 135 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE 135 Slim",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 135,
+      "bec": "switching",
+      "firmware_note": "BEC 5.5-8.4 V adjustable by PC setup; 8 A continuous / 18 A peak; current of the Slim is not given in the manual table",
+      "spec_source": "YGE_35-135LVT_Slim.pdf p.1 (2-6s; table column has no ampere value); current 135 A from model name (LVT series names carry the current); lindinger.at lists 135 A continuous",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE Opto 135",
+      "cells_min": 4,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 135,
+      "bec": "opto",
+      "firmware_note": "Current rating not given as a number in the manual; the model name carries 135",
+      "spec_source": "YGE_Opto135_en.pdf p.1 (4-12s; no ampere value in manual); current 135 A from model name; alltron.ch lists 135 A continuous, 190 A peak",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE Opto 255",
+      "cells_min": 6,
+      "cells_max": 16,
+      "v_min_mv": null,
+      "v_max_mv": 68000,
+      "current_a": 255,
+      "bec": "opto",
+      "firmware_note": "Max terminal voltage 68 V, nominal 63 V; 400 A peak",
+      "spec_source": "YGE_Opto255_en.pdf p.1 (6-16s, max terminal voltage 68 V, 255 A)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "YGE_35-135LVT_en.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2019/08/YGE-35-135LVT-eng-1.pdf"
+    },
+    {
+      "file": "YGE_35-135LVT_Slim.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f47ce179074d6190a5de2_YGE-35-135LVT-Slim-1.pdf"
+    },
+    {
+      "file": "YGE_35-65LVT_2017_de.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2017/11/YGE-35-65LVT.pdf"
+    },
+    {
+      "file": "YGE_35-95LVT.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a66149ce4ed77a63e60fcbf_YGE-35-95LVT.pdf"
+    },
+    {
+      "file": "YGE_35-95LVT_en.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2021/01/YGE-35-95LVT-eng.pdf"
+    },
+    {
+      "file": "YGE_Opto135.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6e75b0c13831cf353f767d_YGE-Opto135.pdf"
+    },
+    {
+      "file": "YGE_Opto135_en.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2020/09/YGE-Opto135-eng.pdf"
+    },
+    {
+      "file": "YGE_Opto255_en.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2021/09/YGE-Opto255-eng.pdf"
+    },
+    {
+      "file": "YGE_YGE-Opto-255.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a67bc4c7fb2fd6ec0156e70_YGE-Opto-255.pdf"
+    }
+  ],
+  "automatable": "full",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "20 repeated interval tones, then 2 tones; the 2 tones say the mode menu is entered",
+      "steps": [
+        "Remove rotor blades or propeller; the motor must stay connected because it makes the tones",
+        "Throttle signal at maximum (100 %) before power is applied",
+        "Apply supply power; wait for 20 interval tones, then 2 confirmation tones",
+        "Throttle to minimum; the ESC sounds mode 1, mode 2, ... in turn"
+      ]
+    },
+    "announce": {
+      "what": "value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "The mode number is sounded as that many equal tones (1 to 6). The sequence runs through the modes in order and starts again at mode 1 when no mode is selected. Number of cycles before a restart, tone length and gaps are not stated."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Throttle to maximum while the wanted mode is being sounded (or just after its tones; the manual does not say which); the ESC answers with 2 tones."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip. Leaving the throttle at minimum lets the sequence pass every mode; it then restarts at mode 1."
+    },
+    "confirm_signal": "2 tones after selecting at maximum throttle; 2 tones after the return to minimum throttle (armed)",
+    "exit": "Throttle to minimum after selection: 2 tones, then the cell-count tones and the arming tones; the ESC is then armed. Power cycle also leaves the menu.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Selecting a mode sets every parameter of that mode to its default; there is no separate reset.",
+    "description": "Power is applied with the throttle at maximum. After 20 interval tones and 2 confirmation tones the throttle goes to minimum and the ESC counts through the modes, one tone count per mode. Throttle to maximum at the wanted count selects it (2 tones). Throttle back to minimum stores it (2 tones) and arms the ESC."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "V-Stabi governor (external governor)"
+        },
+        {
+          "number": 2,
+          "name": "Governor"
+        },
+        {
+          "number": 3,
+          "name": "Governor store (learns the motor parameters at high rpm once)"
+        },
+        {
+          "number": 4,
+          "name": "Motor glider with folding propeller and brake"
+        },
+        {
+          "number": 5,
+          "name": "Motor plane without brake"
+        },
+        {
+          "number": 6,
+          "name": "Motor plane with F3A brake"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone, gap between tones in a count and pause between two mode counts: not stated",
+    "Duration of the 20 interval tones before entry: not stated, so the time from power-on to the 2 confirmation tones is unmeasured",
+    "Whether maximum throttle selects during the count or only after the last tone of a count: not stated",
+    "Number of times the mode sequence repeats before it ends or restarts: not stated",
+    "Minimum supply voltage at which the menu is entered: not stated; ESC cell detection needs a voltage matching the cell count and a 1-20 V bench supply covers at most 4 cells at 4.2 V",
+    "Behaviour on a current-limited 3 A bench supply: not stated; the manuals say the ESC is to be powered from batteries only, power supplies are not allowed",
+    "Idle current of the ESC with the motor connected: not stated, needed to separate tones from the idle level when counting beeps from supply current",
+    "As-delivered mode: not stated for the LVT and Opto models (only the 5-mode family says mode 2 is preprogrammed)",
+    "Minimum voltage for Opto 135 (4-12 cells) and Opto 255 (6-16 cells) to start: Opto 255 starts at 6 cells nominal = 25.2 V by cell count, which is above the 20 V bench supply; whether the menu is reachable below that voltage is not stated",
+    "Current rating of 135 Slim and Opto 135: not stated as a number"
+  ],
+  "notes": [
+    "The motor must be connected: the motor windings produce all tones. Without a motor no tones are heard.",
+    "Manuals state that the ESC may only be powered from batteries; power supplies are not allowed. The bench supply is outside the manual's intended use.",
+    "Power applied with the throttle at maximum enters programming; the manuals tell the user to unplug the battery, set the throttle to minimum and reconnect to leave without changes.",
+    "Start-up sequence: 3 descending tones, then cell tones (a long tone counts 5 cells, a short tone 1 cell, e.g. long-long-short-short = 12 cells), then 4 ascending tones at stop throttle.",
+    "Mode 1 needs the rpm output wired to a flight controller; mode 3 (Governor store) learns the motor at over 70 % throttle after the first start-up; mode 2 governor works from 50 % throttle.",
+    "YGE_35-65LVT_2017_de.pdf covers 35LVT and 65LVT only; YGE_35-95LVT.pdf and YGE_35-95LVT_en.pdf cover 35/65/95LVT; the 135 and Slim appear in YGE_35-135LVT_en.pdf and YGE_35-135LVT_Slim.pdf. All show the same 6-mode menu.",
+    "The German LVT editions say the mode setup also learns the throttle range automatically; the English editions do not say so.",
+    "YGE_35-95LVT_en.pdf states that with Vbar Control and NEO the mode setup is not needed (auto-detect).",
+    "Mode 5 in YGE_Opto255_Navy_en.pdf is labelled Navy; the Navy edition is in yge-mode-setup-navy.",
+    "No ProgCard: fine adjustment is by PC setup with a USB adapter (outside stick programming)."
+  ]
+}

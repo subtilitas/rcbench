@@ -1,0 +1,239 @@
+{
+  "id": "dualsky-xcontroller",
+  "brand": "Dualsky",
+  "family": "XController, 8-item count menu (5-6-5 melody)",
+  "models": [
+    {
+      "name": "XController (model not named in the programming sheet)",
+      "cells_min": null,
+      "cells_max": null,
+      "v_min_mv": null,
+      "v_max_mv": null,
+      "current_a": null,
+      "bec": null,
+      "firmware_note": null,
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Dualsky_XController_Lite_programming.pdf",
+      "pages": "1",
+      "language": "en",
+      "url": "https://mlhobby.com/produktfiler/XC%20Lite%20Manual.pdf"
+    },
+    {
+      "file": "Dualsky_XController_FR.pdf",
+      "pages": "1-2",
+      "language": "fr",
+      "url": "https://www.flashrc.com/images/Controleur%20brushless%20XC%20DUALSKY_FR.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 7000,
+      "confirm_signal": "Long tone about 2 s after power-up, then the melody 5-6-5 about 5 s later",
+      "steps": [
+        "Transmitter on, throttle at max",
+        "Connect battery",
+        "Wait about 2000 ms: long tone",
+        "Wait about 5000 ms more: melody 5-6-5, programming mode entered"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "8 item tones loop. Item N is a tone of N short beeps, written beep, beep-beep, beep-b-beep, beep-b-b-beep and so on (a longer first and last beep around N-2 short ones is implied by the notation, not stated). Values are 1, 2 or 3 short beeps."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": 3000,
+      "description": "Item: throttle to min within 3000 ms after the tone."
+    },
+    "value_select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Value: throttle to max after hearing the value tone."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Leave the throttle unchanged."
+    },
+    "confirm_signal": "Melody 5-6-5 after a value is stored.",
+    "exit": "After 5-6-5, throttle to min within 2000 ms; or item 8 then throttle to min within 3000 ms.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": "Item 7 selects 'set all to default'.",
+    "description": "Throttle max, battery on, long tone at about 2 s, melody 5-6-5 at about 5 s later. Eight item tones loop; throttle to min within 3 s selects one. Value tones loop; throttle to max on the wanted tone stores it (5-6-5) and returns to the item loop."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "off"
+        },
+        {
+          "number": 2,
+          "name": "on"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 2,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "Li-ion / Li-poly"
+        },
+        {
+          "number": 2,
+          "name": "NiMH / NiCd"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 3,
+      "name": "Cutoff mode",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "reduce power"
+        },
+        {
+          "number": 2,
+          "name": "shut down"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 4,
+      "name": "Cutoff threshold",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "low (2.5 V/cell)"
+        },
+        {
+          "number": 2,
+          "name": "medium (2.75 V/cell)"
+        },
+        {
+          "number": 3,
+          "name": "high (3.0 V/cell)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 5,
+      "name": "Startup mode",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "normal",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft (about 1 s)"
+        },
+        {
+          "number": 3,
+          "name": "super soft (about 2 s)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 6,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "low (0)"
+        },
+        {
+          "number": 2,
+          "name": "medium (10)",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "high (20)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 7,
+      "name": "Set all to default",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "restore defaults"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 8,
+      "name": "Exit",
+      "key": "exit",
+      "values": [
+        {
+          "number": 1,
+          "name": "exit programming"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    }
+  ],
+  "unknowns": [
+    "Beep duration in ms is not stated.",
+    "Gap between beeps and between tones is not stated.",
+    "Window to select a value after its tone is not stated.",
+    "Whether 'beep-b-beep' means a long first and last beep is not stated.",
+    "Models covered by the sheet are not named; the mlhobby copy is titled 'XC Lite Manual' and says XController.",
+    "Defaults of brake and cutoff threshold are in conflict, see notes."
+  ],
+  "notes": [
+    "Dualsky_XController_FR.pdf (Flash RC, French) and Dualsky_XController_Lite_programming.pdf (English) carry the same menu.",
+    "Conflict: English sheet says brake default is Disabled; French sheet says brake active by default. No default flag set on item 1.",
+    "Conflict: English sheet default cutoff threshold is High; French sheet says medium. Nixx cutoff: English 0 %/50 %/60 % of start voltage; French 60 %/65 %/70 %. No default flag set on item 4.",
+    "French sheet names value 3 of item 3 'stop' and value 3 of item 5 'tres doux'.",
+    "Dualsky_XController_Lite.pdf (XC-xx-Lite, Roxxy-style) uses a different gesture set and is a separate profile."
+  ],
+  "schema": 1,
+  "verified": false
+}

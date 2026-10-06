@@ -1,0 +1,151 @@
+{
+  "schema": 1,
+  "id": "kontronik-pix",
+  "brand": "Kontronik",
+  "family": "PIX",
+  "verified": false,
+  "models": [
+    {
+      "name": "PIX 1000",
+      "cells_min": 6,
+      "cells_max": 12,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 17000,
+      "current_a": 40,
+      "bec": "switching",
+      "firmware_note": "data given for the PIX 1000/3000 manual: 6-12 NiCd/NiMH cells or 2-4 Li-Ion cells (5.5 to 17 V), BEC 2 A for 4 servos, 45 A for 15 s",
+      "spec_source": "Kontronik_Pix1000_3000.pdf p.6: 6-12 NiCd/NiMH cells; also 2-4 Li-Ion cells, 5.5-17 V; 40 A continuous"
+    },
+    {
+      "name": "PIX 3000",
+      "cells_min": 6,
+      "cells_max": 12,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 17000,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "same data as PIX 1000",
+      "spec_source": "Kontronik_Pix1000_3000.pdf p.6: 6-12 NiCd/NiMH cells; also 2-4 Li-Ion cells, 5.5-17 V; 40 A continuous"
+    },
+    {
+      "name": "PIX 4000",
+      "cells_min": 6,
+      "cells_max": 12,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 17000,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "same data printed in the PIX 4000 manual",
+      "spec_source": "Kontronik_Pix4000.pdf p.6: 6-12 NiCd/NiMH cells; also 2-4 Li-Ion cells, 5.5-17 V; 40 A continuous"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Pix1000_3000.pdf",
+      "pages": "4-6, 10-12",
+      "language": "de/en",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/Pix1000_3000.pdf"
+    },
+    {
+      "file": "Kontronik_Pix4000.pdf",
+      "pages": "4-6, 10-12",
+      "language": "de/en",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/Pix4000.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "The button on the ESC must be pressed after the 2 s wait. The bench has no actuator for it.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": 2000,
+      "confirm_signal": "Ascending tone sequence after the wait; descending tone sequence after the button.",
+      "steps": [
+        "Connect the motor if tones are to be audible. Transmitter on, throttle to the brake position (stick back).",
+        "Apply drive power.",
+        "Wait 2 s or until the ESC sounds an ascending tone sequence.",
+        "Operator: press and release the button marked 'Taster' on the ESC label.",
+        "The ESC sounds a descending tone sequence, then the mode series with pauses between series (mode 7 after 7 tones, mode 9 after 9 tones).",
+        "Move the throttle to full (stick forward) when the wanted mode sounds. The ESC confirms with a descending tone sequence.",
+        "Mode 2 only: move the throttle to the brake position (stick back); the ESC confirms with a descending sequence. Then optionally move to a separate motor-off position (stick middle); the ESC confirms again.",
+        "Control output: the mode is repeated as tones. Disconnect power."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "The ESC sounds mode 1 as one tone, mode 2 as two tones, and so on, one series after another with a pause between series."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Move the throttle to full when the wanted mode sounds."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip."
+    },
+    "confirm_signal": "Descending tone sequence, then the mode as tones.",
+    "exit": "Disconnect power after the control output.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Program mode 1 (APM); it clears all settings.",
+    "description": "Throttle at brake, power on, wait 2 s or until the ascending sequence, press the ESC button. The ESC counts modes as tones. Full throttle at the wanted mode stores it. Modes 7 and 9 are added on top of another stored mode."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "APM: reset, stick range learned at every power-up",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "Glider: EMK brake and undervoltage cutoff on, optional separate motor-off position"
+        },
+        {
+          "number": 3,
+          "name": "Motor plane / boat: brake off, undervoltage reduction instead of cutoff"
+        },
+        {
+          "number": 7,
+          "name": "Reverse motor rotation"
+        },
+        {
+          "number": 9,
+          "name": "LiPo undervoltage detection: switches between 0.7 to 0.8 V per NiCd/NiMH cell and 2.7 to 3 V per LiPo cell"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4-5"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone in ms is not stated.",
+    "Gap between tones inside one mode series in ms is not stated.",
+    "Pause between two mode series in ms is not stated.",
+    "Whether the mode series loops until a mode is selected is not stated.",
+    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
+    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2 s minimum; the end of the wait is the ESC's tone sequence.",
+    "Model-specific data of PIX 1000, 3000 and 4000 differ in the type names only; the manuals print one data set.",
+    "Position of the button on the ESC is given only as the 'Taster' label."
+  ],
+  "notes": [
+    "Kontronik_Pix1000_3000.pdf and Kontronik_Pix4000.pdf print the same technical data and procedures; the PIX 4000 manual adds ProgCARD notes.",
+    "Modes 7 and 9 do not change other stored settings; the PIX manuals do not state a prerequisite for them."
+  ]
+}

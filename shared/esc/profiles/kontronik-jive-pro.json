@@ -1,0 +1,211 @@
+{
+  "schema": 1,
+  "id": "kontronik-jive-pro",
+  "brand": "Kontronik",
+  "family": "JIVE Pro",
+  "verified": false,
+  "models": [
+    {
+      "name": "JIVE Pro 80+ HV",
+      "cells_min": 5,
+      "cells_max": 12,
+      "cell_type": "lipo",
+      "v_min_mv": null,
+      "v_max_mv": 50000,
+      "current_a": 80,
+      "bec": "switching",
+      "firmware_note": "BEC 5.6 V default, 5 to 8 V adjustable; 8 A continuous, 20 A peak",
+      "spec_source": "https://aeropanda.com/products/jive-pro-80-hv and https://myhelis.com/en/RC-Models/Electric-Motors-Speed-Controllers/Speed-Controllers/Kontronik-ESC/JIVE-Pro-120-HV.html (dealer pages quoting Kontronik): 5-12 LiPo, 16-50 V, 80 A continuous; the manual lists no ratings"
+    },
+    {
+      "name": "JIVE Pro 120+ HV",
+      "cells_min": 5,
+      "cells_max": 12,
+      "cell_type": "lipo",
+      "v_min_mv": null,
+      "v_max_mv": 50000,
+      "current_a": 120,
+      "bec": "switching",
+      "firmware_note": "same BEC data as the 80+ HV; two BEC sockets",
+      "spec_source": "https://aeropanda.com/products/jive-pro-80-hv and https://myhelis.com/en/RC-Models/Electric-Motors-Speed-Controllers/Speed-Controllers/Kontronik-ESC/JIVE-Pro-120-HV.html (dealer pages quoting Kontronik): 5-12 LiPo, 16-50 V, 120 A continuous; the manual lists no ratings"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Jive_Pro.pdf",
+      "pages": "3-10",
+      "language": "de",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/JIVE_Pro.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "A jumper cable must be plugged into the ESC socket before power-up and pulled after the first tone sequence. The bench cannot do this.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "Ascending three-tone sequence plus cell-count tones at power-up; descending three-tone sequence when the jumper is pulled.",
+      "steps": [
+        "Transmitter on, throttle at motor-off (0 %). Connect the ESC master cable to the receiver throttle channel; receiver on.",
+        "Operator: plug in the jumper cable.",
+        "Connect the motor. Apply drive power.",
+        "The ESC sounds an ascending three-tone sequence and single tones for the detected cell count (long tone = 4 cells, short tone = 1 cell). The LED flashes.",
+        "Operator: pull the jumper cable. The ESC sounds a descending three-tone sequence.",
+        "The ESC sounds mode series 1, 2, 3 ... one tone more per series; the LED flashes the same count.",
+        "Move the throttle to full (100 %) after the wanted tone count.",
+        "The ESC confirms with an ascending three-tone sequence and the mode as tones. Mode 2: a further stick position can then be set. Mode 6: move the stick to reverse (0 %) after the full-throttle confirmation.",
+        "Wait for the confirmation before disconnecting power; otherwise the ESC treats programming as incomplete and locks (9 LED flashes)."
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "The ESC sounds mode 1 as one tone, mode 2 as two tones, and so on, one series after another with a pause between series."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Move the throttle to 100 % when the series of the wanted mode sounds."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip. Disconnecting power before the confirmation locks the ESC."
+    },
+    "confirm_signal": "Ascending three-tone sequence, then the mode as single tones.",
+    "exit": "Wait for the confirmation, then disconnect drive power (the manual says to wait a short moment).",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Program mode 1.",
+    "description": "Throttle at 0 %, jumper cable plugged in, apply power, pull the jumper cable. The ESC counts modes as single tones. Full throttle at the wanted count stores the mode. Mode 10 then runs a BEC voltage stage."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "APM: reset, clears all settings"
+        },
+        {
+          "number": 2,
+          "name": "Glider, ESC operation with EMK brake (default strength 92 %), optional separate motor-off position"
+        },
+        {
+          "number": 3,
+          "name": "Motor plane, ESC operation, no brake"
+        },
+        {
+          "number": 4,
+          "name": "Helicopter governor with autorotation (AR on at 25 % throttle)"
+        },
+        {
+          "number": 6,
+          "name": "Forward / reverse, motor-off at stick centre"
+        },
+        {
+          "number": 10,
+          "name": "BEC voltage setting, 5 to 8 V"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "6-10"
+    },
+    {
+      "number": 2,
+      "name": "BEC voltage (mode 10 only)",
+      "key": "bec_voltage",
+      "values": [
+        {
+          "number": 0,
+          "name": "5.0 V (no tone)"
+        },
+        {
+          "number": 1,
+          "name": "5.2 V"
+        },
+        {
+          "number": 2,
+          "name": "5.4 V"
+        },
+        {
+          "number": 3,
+          "name": "5.6 V"
+        },
+        {
+          "number": 4,
+          "name": "5.8 V"
+        },
+        {
+          "number": 5,
+          "name": "6.0 V"
+        },
+        {
+          "number": 6,
+          "name": "6.2 V"
+        },
+        {
+          "number": 7,
+          "name": "6.4 V"
+        },
+        {
+          "number": 8,
+          "name": "6.6 V"
+        },
+        {
+          "number": 9,
+          "name": "6.8 V"
+        },
+        {
+          "number": 10,
+          "name": "7.0 V"
+        },
+        {
+          "number": 11,
+          "name": "7.2 V"
+        },
+        {
+          "number": 12,
+          "name": "7.4 V"
+        },
+        {
+          "number": 13,
+          "name": "7.6 V"
+        },
+        {
+          "number": 14,
+          "name": "7.8 V"
+        },
+        {
+          "number": 15,
+          "name": "8.0 V"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone in ms is not stated.",
+    "Gap between tones inside one mode series in ms is not stated.",
+    "Pause between two mode series in ms is not stated.",
+    "Whether the mode series loops until a mode is selected is not stated.",
+    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
+    "Entry has no timed wait; the time allowed between power-up and pulling the jumper cable is not stated.",
+    "Input voltage range and rated current of the 80+ HV and 120+ HV are not given in the manual (only the update step mentions a 20 to 50 V battery).",
+    "Tone count of the BEC stage is derived from the 0.2 V per tone rule; the manual does not list a table.",
+    "Item number 2 is an index chosen here."
+  ],
+  "notes": [
+    "Modes 1 to 6 can only be set by mode programming, not with the programming unit, per the manual.",
+    "Mode 4 on this ESC always includes autorotation; the manual states it cannot be programmed with or without AR."
+  ]
+}

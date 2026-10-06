@@ -1,0 +1,578 @@
+{
+  "schema": 1,
+  "id": "yge-rc-setup",
+  "brand": "YGE",
+  "family": "RC-Setup stick menu (7S, 8S/12S, 40-120 V4, 75/120 Navy V4, 155 V3)",
+  "verified": false,
+  "models": [
+    {
+      "name": "YGE 7 S",
+      "cells_min": 1,
+      "cells_max": 2,
+      "v_min_mv": null,
+      "v_max_mv": 8400,
+      "current_a": 7,
+      "bec": "none",
+      "firmware_note": "Receiver runs from battery voltage directly; at 2S the receiver sees full pack voltage",
+      "spec_source": "YGE_YGE-7S.pdf p.1 (1-2s LiPo, max 7 A continuous)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE 8 S",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 8,
+      "bec": null,
+      "firmware_note": "BEC 5 V, 2 A, type not stated; 10 A for 15 s",
+      "spec_source": "YGE_8S-12S_en.pdf p.1 (2-3s; manual gives 10 A for 15 s, no continuous value); 8 A continuous from model name and live-hobby.de/en/1-sorto/YGE-8A-Brushless-ESC-2-3S-YGE-8-S.html",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE 12 S",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 12,
+      "bec": null,
+      "firmware_note": "BEC 5 V, 2 A, type not stated; 14 A for 5 s",
+      "spec_source": "YGE_8S-12S_en.pdf p.1 (2-3s; manual gives 14 A for 5 s, no continuous value); 12 A continuous from model name and live-hobby.de YGE-12A-Brushless-Regler-Steller-2-3S-YGE-12-S",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE 40 (V4)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 40,
+      "bec": "switching",
+      "firmware_note": "BEC 5.5 V, 3 A continuous, 5 A peak",
+      "spec_source": "YGE_YGE-60_V4.pdf p.1 (2-6s; table 40 A, 60 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE 60 (V4)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 60,
+      "bec": "switching",
+      "firmware_note": "BEC 5.5 V, 3 A continuous, 5 A peak",
+      "spec_source": "YGE_YGE-60_V4.pdf p.1 (2-6s; table 40 A, 60 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE 100 (V4)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 100,
+      "bec": "switching",
+      "firmware_note": "BEC 5.5 V, 3 A continuous, 5 A peak",
+      "spec_source": "YGE_YGE-100-V4.pdf p.1 (2-6s; table 100 A, 120 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE 120 (V4)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 120,
+      "bec": "switching",
+      "firmware_note": "BEC 5.5 V, 3 A continuous, 5 A peak",
+      "spec_source": "YGE_YGE-100-V4.pdf p.1 (2-6s; table 100 A, 120 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE 75 Navy (V4)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 75,
+      "bec": "switching",
+      "firmware_note": "Water cooled; forward/reverse; BEC 5.5 V, 3 A continuous, 5 A peak",
+      "spec_source": "YGE_YGE-120-Navy.pdf p.1 (2-6s; 75 A, 120 A with water cooling)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE 120 Navy (V4)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 120,
+      "bec": "switching",
+      "firmware_note": "Water cooled; forward/reverse; BEC 5.5 V, 3 A continuous, 5 A peak",
+      "spec_source": "YGE_YGE-120-Navy.pdf p.1 (2-6s; 75 A, 120 A with water cooling)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE 155 BEC (V3)",
+      "cells_min": 2,
+      "cells_max": 8,
+      "v_min_mv": null,
+      "v_max_mv": 33600,
+      "current_a": 155,
+      "bec": "switching",
+      "firmware_note": "BEC 5.5 V, 3 A continuous, 5 A peak; 200 A for 5 s",
+      "spec_source": "YGE_YGE-155-Opto-BEC.pdf p.1 (2-8s, 155 A continuous, 200 A for 5 s)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE 155 Opto (V3)",
+      "cells_min": 2,
+      "cells_max": 8,
+      "v_min_mv": null,
+      "v_max_mv": 33600,
+      "current_a": 155,
+      "bec": "opto",
+      "firmware_note": "Receiver battery with optocoupler; 200 A for 5 s",
+      "spec_source": "YGE_YGE-155-Opto-BEC.pdf p.1 (2-8s, 155 A continuous, 200 A for 5 s)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "YGE 155 Navy Opto (V3)",
+      "cells_min": 2,
+      "cells_max": 8,
+      "v_min_mv": 6000,
+      "v_max_mv": 34000,
+      "current_a": 155,
+      "bec": "opto",
+      "firmware_note": "Water cooled; forward/reverse; 6-34 V; 200 A for 5 s",
+      "spec_source": "YGE_YGE-155-Navy-Opto-V3.pdf p.1 (2-8s, 6-34 V, 155 A with water cooling)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "120HV",
+      "cells_min": 4,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 120,
+      "bec": "opto",
+      "firmware_note": "V4",
+      "spec_source": "YGE_YGE-120HV-160HVK-V4-S24.pdf p.1 (4-14s; table 120HV, 120HVK, 160HV, 160HVK)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "120HV K",
+      "cells_min": 4,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 120,
+      "bec": "opto",
+      "firmware_note": "V4, heat-sink version",
+      "spec_source": "YGE_YGE-120HV-160HVK-V4-S24.pdf p.1 (4-14s; table 120HV, 120HVK, 160HV, 160HVK)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "160HV",
+      "cells_min": 4,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 160,
+      "bec": "opto",
+      "firmware_note": "V4",
+      "spec_source": "YGE_YGE-120HV-160HVK-V4-S24.pdf p.1 (4-14s; table 120HV, 120HVK, 160HV, 160HVK)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "160HV K",
+      "cells_min": 4,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 160,
+      "bec": "opto",
+      "firmware_note": "V4, heat-sink version",
+      "spec_source": "YGE_YGE-120HV-160HVK-V4-S24.pdf p.1 (4-14s; table 120HV, 120HVK, 160HV, 160HVK)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "150HV FAI",
+      "cells_min": 4,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": null,
+      "bec": "opto",
+      "firmware_note": "150 A about 30 s",
+      "spec_source": "YGE_Bedienungsanleitung-150HV-FAI.pdf p.1 (4-12s); only 150 A for 30 s stated, no continuous current",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "160 FAI V3",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 160,
+      "bec": "switching",
+      "firmware_note": "BEC 5.7/7.4/8.0 V, 8 A continuous, 18 A peak",
+      "spec_source": "YGE_160FAI_V3_en.pdf p.1 (3-6s; specified current is continuous)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "200HV FAI",
+      "cells_min": 4,
+      "cells_max": 10,
+      "v_min_mv": null,
+      "v_max_mv": 42000,
+      "current_a": null,
+      "bec": "opto",
+      "firmware_note": "200 A about 30 s",
+      "spec_source": "YGE_Bedienungsanleitung-200HV-FAI.pdf p.1 (4-10s); only 200 A for 30 s stated, no continuous current",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "300 FAI",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": null,
+      "bec": "none",
+      "firmware_note": "no BEC; receiver battery 4.8-8.4 V",
+      "spec_source": "YGE_Bedienungsanleitung-300FAI.pdf p.1 (3-6s); only maximum full-throttle current 300 A stated, 150 A for 5 s part load, no continuous current",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "YGE_rc_setup.pdf",
+      "pages": "1-5",
+      "language": "en",
+      "url": "http://f5bdec.weebly.com/uploads/2/5/8/0/25805878/yge_rc_setup.pdf"
+    },
+    {
+      "file": "YGE_YGE-7S.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f8d699d522950407d3_YGE-7S.pdf"
+    },
+    {
+      "file": "YGE_8S-12S_en.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2017/05/Manual-8S-12S.pdf"
+    },
+    {
+      "file": "YGE_Bedienungsanleitung-8S-12S.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f19d2a71023a545dcf_Bedienungsanleitung-8S-12S.pdf"
+    },
+    {
+      "file": "YGE_YGE-60_V4.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f49b897dc237a6a83a_YGE-60_V4.pdf"
+    },
+    {
+      "file": "YGE_YGE-100-V4.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f8a1ff6f59ec58c8cc_YGE-100-V4.pdf"
+    },
+    {
+      "file": "YGE_YGE-120-Navy.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f44d226c7dd47716af_YGE-120-Navy.pdf"
+    },
+    {
+      "file": "YGE_YGE-155-Navy-Opto-V3.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f913f05253e2e40851_YGE-155-Navy-Opto-V3.pdf"
+    },
+    {
+      "file": "YGE_YGE-155-Opto-BEC.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f9dc811fd00ecc49bf_YGE-155-Opto-BEC.pdf"
+    },
+    {
+      "file": "YGE_YGE-120HV-160HVK-V4-S24.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f99b82105cde9b5cab_YGE-120HV-160HVK-V4-S24.pdf"
+    },
+    {
+      "file": "YGE_150HV-FAI_en.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2017/05/Manual-150HV-FAI.pdf"
+    },
+    {
+      "file": "YGE_Bedienungsanleitung-150HV-FAI.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f30ad91bcb028af334_Bedienungsanleitung-150HV-FAI.pdf"
+    },
+    {
+      "file": "YGE_160FAI_V3_en.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/http://yge.de/wp-content/uploads/2017/05/Manual-160FAI-V3.pdf"
+    },
+    {
+      "file": "YGE_200HV-FAI_en.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2017/05/Manual-200HV-FAI.pdf"
+    },
+    {
+      "file": "YGE_Bedienungsanleitung-200HV-FAI.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f3d21b3c94c8273aaa_Bedienungsanleitung-200HV-FAI.pdf"
+    },
+    {
+      "file": "YGE_Bedienungsanleitung-300FAI.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f2a1ff6f59ec58c834_Bedienungsanleitung-300FAI.pdf"
+    }
+  ],
+  "automatable": "full",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "Basic setup: constant monotone tone while the throttle is at maximum. Advanced setup: after about 20 tones of that constant tone, a confirmation tone (the manual shows one note symbol, count not certain).",
+      "steps": [
+        "Throttle signal at maximum before power is applied",
+        "Apply supply power; a constant monotone tone means programming mode is active",
+        "Advanced setup only: keep the throttle at maximum until about 20 tones have sounded; this works only after the basic setup has been completed once",
+        "Throttle to minimum; the menu items are sounded as 1, 2, 3, 4, 5 tones in turn"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "Items are sounded as 1 to 5 equal tones. After an item is selected and the throttle returns to minimum, its values are sounded as 1, 2, 3 ... equal tones. Each sequence restarts when nothing is selected. Tone length and gaps are not stated."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Throttle to maximum while the wanted item or value is being sounded; the ESC answers with one tone. Selecting an item opens its values; selecting a value stores it."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip. Leaving the throttle at minimum passes every item or value; the menu then restarts."
+    },
+    "confirm_signal": "One tone after each selection (item or value), per the manual's acknowledgement symbol; the manual draws one note per acknowledgement",
+    "exit": "After a value is stored, throttle back to minimum arms the ESC when the arming signal sounds. Power can also be removed and re-applied to change a further item.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": null,
+    "description": "Power on with the throttle at maximum starts programming. The basic setup (constant tone, then stick positions) must have been done once. In the advanced setup, 20 tones after power-on enter the item menu. Throttle to minimum sounds items 1-5; throttle to maximum selects one. The values of that item are then sounded the same way; maximum throttle selects a value and stores it. One item is changed per power cycle."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "no brake"
+        },
+        {
+          "number": 2,
+          "name": "brake active (when the stored neutral position leaves room for it)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4"
+    },
+    {
+      "number": 2,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "NiMH"
+        },
+        {
+          "number": 2,
+          "name": "LiPo, automatic cell count (2-6 cells)"
+        },
+        {
+          "number": 3,
+          "name": "Voltage freely defined (PC setup)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4"
+    },
+    {
+      "number": 3,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "30 degrees"
+        },
+        {
+          "number": 2,
+          "name": "24 degrees"
+        },
+        {
+          "number": 3,
+          "name": "18 degrees"
+        },
+        {
+          "number": 4,
+          "name": "12 degrees"
+        },
+        {
+          "number": 5,
+          "name": "6 degrees"
+        },
+        {
+          "number": 6,
+          "name": "0 degrees"
+        },
+        {
+          "number": 7,
+          "name": "automatic"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5"
+    },
+    {
+      "number": 4,
+      "name": "PWM frequency",
+      "key": "pwm_freq",
+      "values": [
+        {
+          "number": 1,
+          "name": "8 kHz"
+        },
+        {
+          "number": 2,
+          "name": "9 kHz"
+        },
+        {
+          "number": 3,
+          "name": "10 kHz"
+        },
+        {
+          "number": 4,
+          "name": "11 kHz"
+        },
+        {
+          "number": 5,
+          "name": "12 kHz"
+        },
+        {
+          "number": 6,
+          "name": "13 kHz"
+        },
+        {
+          "number": 7,
+          "name": "14 kHz"
+        },
+        {
+          "number": 8,
+          "name": "15 kHz"
+        },
+        {
+          "number": 9,
+          "name": "16 kHz"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5"
+    },
+    {
+      "number": 5,
+      "name": "Speed control",
+      "key": "governor",
+      "values": [
+        {
+          "number": 1,
+          "name": "off"
+        },
+        {
+          "number": 2,
+          "name": "on (learns the operating speed at the next start)"
+        }
+      ],
+      "applies_to": [
+        "YGE 7 S",
+        "YGE 8 S",
+        "YGE 12 S",
+        "YGE 40 (V4)",
+        "YGE 60 (V4)",
+        "YGE 100 (V4)",
+        "YGE 120 (V4)",
+        "YGE 155 BEC (V3)",
+        "YGE 155 Opto (V3)"
+      ],
+      "source_page": "5"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone, gap between tones in a count and pause between two mode counts: not stated",
+    "Duration of the 20 interval tones before entry: not stated, so the time from power-on to the 2 confirmation tones is unmeasured",
+    "Whether maximum throttle selects during the count or only after the last tone of a count: not stated",
+    "Number of times the mode sequence repeats before it ends or restarts: not stated",
+    "Minimum supply voltage at which the menu is entered: not stated; ESC cell detection needs a voltage matching the cell count and a 1-20 V bench supply covers at most 4 cells at 4.2 V",
+    "Behaviour on a current-limited 3 A bench supply: not stated; the manuals say the ESC is to be powered from batteries only, power supplies are not allowed",
+    "Idle current of the ESC with the motor connected: not stated, needed to separate tones from the idle level when counting beeps from supply current",
+    "Whether the RC-Setup in YGE_rc_setup.pdf (unofficial English translation dated 2012, source ESC generation not named) applies unchanged to every model listed: the model manuals point to an RC-Setup / Knüppel-Setup manual without reproducing it",
+    "Whether Navy models and the 155 Navy Opto (forward/reverse; no governor in their data lists) have extra or fewer items than the 5 listed, or lack Speed control: not stated",
+    "Default value of each item: not stated in the RC-Setup text",
+    "Which tone count the ESC announces first within a value list: the Tip says the sequence starts with the previously set value; not tested",
+    "Count and tone of the acknowledgement after a selection: the manual's symbols are ambiguous in the text extraction (one note shown)",
+    "Voltage needed to enter setup on 155 models (2-8 cells) and on 8S/12S: not stated",
+    "BEC type of 8S/12S (linear or switching): not stated",
+    "Complete RC-Setup (stick) menu: the manual refers to a separate RC-Setup manual on www.yge.de that is not in the corpus; items, values, beep encoding, select and exit are unknown.",
+    "Beep durations, gaps and entry timings: not stated.",
+    "Whether the 20-interval-beep entry of the YGE mode setup (see yge-hv) applies to this ESC: not stated in this manual."
+  ],
+  "notes": [
+    "The motor must be connected: the motor windings produce all tones. Without a motor no tones are heard.",
+    "Manuals state that the ESC may only be powered from batteries; power supplies are not allowed. The bench supply is outside the manual's intended use.",
+    "Power applied with the throttle at maximum enters programming; the manuals tell the user to unplug the battery, set the throttle to minimum and reconnect to leave without changes.",
+    "YGE_rc_setup.pdf is an unofficial translation (R. Whitehead, 2012) of YGE's RC-Setup; it is the only source of the menu. The model manuals in this file only say that stick programming exists and refer to it.",
+    "Basic setup (done before the advanced setup): throttle at maximum, power on, constant tone; then move the stick to the neutral position (fully back for no brake, in the bottom quarter for brake) and wait for the acknowledgement; this stores both end positions. Next the soft start is chosen with the stick position: maximum throttle for fastest, further back for softer, middle as a compromise; wait for the acknowledgement, then move the stick back and the ESC arms.",
+    "Stick positions of the basic setup are stored; throttle range is therefore learned in this procedure.",
+    "Tone sequences in normal operation: descending tones = receiver signal recognised; ascending tones = stop position recognised and ESC armed; after the descending tones, tones for cell count follow (n identical tones = n LiPo cells, 2-6 cells; above 6 cells a different high-low sequence).",
+    "NiMH is announced as 2 different high / low tones; free voltage as 2x2 low / high tones (default 12 V for the future PC setup).",
+    "Start-up sequences: 3 descending tones, cell tones, 3 ascending tones on 7S, 8S/12S, 40/60/100/120 V4, Navy V4 and 155; the 155 models give 2 high and 2 low tones for 7 and 8 cells.",
+    "YGE_YGE-7S.pdf: to enter RC-Setup the ESC must see full throttle at power-up; where a receiver outputs a stop signal at power-up this only works if the ESC is disconnected from the receiver, full throttle is given after binding and the ESC is plugged in again. A bench throttle source that outputs full throttle at power-on avoids this.",
+    "YGE_8S-12S_en.pdf and YGE_Bedienungsanleitung-8S-12S.pdf disagree on the brake steps (5 in the English edition, 3 in the German one) and on battery types (German edition adds 4-10 NiMH cells; English edition lists 2-3 LiPo only).",
+    "YGE_YGE-100-V4.pdf is titled for the L series 40 to 160 A but its type table lists 40, 60, 100 and 120 A.",
+    "On the 155 models the battery must be connected in a fixed order (negative first, then the thin positive lead for anti-spark, then the thick positive lead) before any throttle is given.",
+    "A fault stored in the ESC is cleared by powering up at full throttle and unplugging after the interval tone; leaving the stick at full throttle for longer enters the RC-Setup instead (all small-ESC manuals in this file).",
+    "HV V4 (120HV K, 160HV K; ProgCard / RC-Setup only): the model manual names the ProgCard as the main tool and refers stick setup to the YGE RC-setup manual; that this menu applies to these models is inferred from the reference, not stated per model.",
+    "HV V4 (120HV K, 160HV K; ProgCard / RC-Setup only): Governor modes are named in the text ('one of the two Gov modes') but no mode menu is listed; the defaults after activating one are timing 18 deg, brake off, active freewheel on, P-gain 0.9, I-gain 0.05, startup speed heli slow, PWM 8 kHz, startup power auto 1-32%.",
+    "HV V4 (120HV K, 160HV K; ProgCard / RC-Setup only): Error clearing: connect battery with stick at full power, disconnect after the interval beep while keeping full power; releasing the stick first enters RC-Setup.",
+    "FAI (pylon racing / hotliner; ProgCard / RC-Setup only): the model manual names the ProgCard as the main tool and refers stick setup to the YGE RC-setup manual; that this menu applies to these models is inferred from the reference, not stated per model.",
+    "FAI (pylon racing / hotliner; ProgCard / RC-Setup only): 150HV FAI partial-load rating: English manual says 100 A for about 5 s, German manual says 90 A for 5 s (YGE_150HV-FAI_en.pdf vs YGE_Bedienungsanleitung-150HV-FAI.pdf).",
+    "FAI (pylon racing / hotliner; ProgCard / RC-Setup only): Delivery state stated: timing 18 deg, brake middle, undervoltage cutoff LiPo mode 3.1 V per cell. Brake steps: smooth 0.5 s, middle 0.3 s, hard 0.2 s (150HV and 200HV FAI).",
+    "FAI (pylon racing / hotliner; ProgCard / RC-Setup only): The 160 FAI V3 manual gives 3 to 6s LiPo and an adjustable switching BEC; the 300 FAI has no BEC."
+  ]
+}

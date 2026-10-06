@@ -1,0 +1,262 @@
+{
+  "id": "hobbywing-flyfun-hv-9item",
+  "brand": "Hobbywing",
+  "family": "FlyFun HV sensorless, 9-item menu",
+  "models": [
+    {
+      "name": "FLYFUN-80-HV",
+      "cells_min": 5,
+      "cells_max": 10,
+      "v_min_mv": null,
+      "v_max_mv": 42000,
+      "current_a": 80,
+      "bec": "none",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_FlyFun_sensorless_2022.pdf p.1 (specification table)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FLYFUN-100-HV",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 100,
+      "bec": "none",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_FlyFun_sensorless_2022.pdf p.1 (specification table)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Hobbywing_FlyFun_sensorless_2022.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://www.hobbywing.com/en/uploads/file/20221015/21b88c6b2896a66db39e2497b478c3b5.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "Models have no BEC (N/A); the manual does not say how the throttle signal side is powered.",
+  "scheme": {
+    "type": "short_long",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 7000,
+      "confirm_signal": "Two short beeps about 2 s after power-up, then a special tone about 5 s later (written as 56712 or a rising tone in the manuals)",
+      "steps": [
+        "Transmitter on, throttle at max",
+        "Connect battery",
+        "Wait about 2000 ms: two short beeps",
+        "Wait about 5000 ms more: special tone, programming mode entered"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "short_long",
+      "long_equals_short": 5,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "After entry the ESC loops through 9 item tones, one after another. Item N is N short beeps for N 1-4 and 1 long beep plus (N-5) short beeps for N 5-9; two long beeps start at N 10. After an item is selected, the value tones play in a loop, value N sounded the same way."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": 3000,
+      "description": "Item: move the throttle to min within 3000 ms after the wanted item tone."
+    },
+    "value_select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Value: move the throttle to max while the wanted value tone sounds. The window length is not stated."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Leave the throttle unchanged and wait for the next tone."
+    },
+    "confirm_signal": "Special tone (written 1515) after a value is stored.",
+    "exit": "Item 9 (two long beeps) then throttle to min within 3000 ms; or after a stored value throttle to min within 2000 ms.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": "Item 8 (1 long + 3 short beeps) selects 'set all to default'.",
+    "description": "Throttle at max, then battery on. Two short beeps after about 2 s and a special tone after about 5 s mark programming mode. The ESC loops item tones; throttle to min within 3 s of the wanted item selects it. Value tones then loop; throttle to max on the wanted tone stores it and returns to the item loop."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "off",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "on"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 2,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "Li-xx",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "Ni-xx"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 3,
+      "name": "Cutoff mode",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "soft cutoff",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "hard cutoff"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 4,
+      "name": "Cutoff threshold",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "low (2.6 V/cell; Ni 0 %)"
+        },
+        {
+          "number": 2,
+          "name": "medium (2.85 V/cell; Ni 45 %)",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "high (3.1 V/cell; Ni 60 %)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 5,
+      "name": "Startup mode",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "normal",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft (3 s)"
+        },
+        {
+          "number": 3,
+          "name": "super soft (6 s)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 6,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "low",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "medium"
+        },
+        {
+          "number": 3,
+          "name": "high"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 7,
+      "name": "LiPo cell count",
+      "key": "cell_count",
+      "values": [
+        {
+          "number": 1,
+          "name": "value N = N cells; N of 4 or less means auto detect"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 8,
+      "name": "Set all to default",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "restore defaults"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 9,
+      "name": "Exit",
+      "key": "exit",
+      "values": [
+        {
+          "number": 1,
+          "name": "exit programming"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    }
+  ],
+  "unknowns": [
+    "Beep duration in ms is not stated.",
+    "Gap between beeps and between tones in ms is not stated.",
+    "Window for selecting a value after its tone is not stated (only 'move to max when the tone sounds').",
+    "Pause between tone repetitions before the loop restarts is not stated.",
+    "Whether the entry hold (2 s then 5 s) has a tolerance is not stated.",
+    "Item 7 value tones: a cell count above 4 is sounded as N beeps with long = 5 short; the highest accepted N and the behaviour for N of 4 or less (auto detect) per tone are only given as a rule.",
+    "Tone played after item 8 is selected is not described.",
+    "Default for timing is stated as Low in the feature text."
+  ],
+  "notes": [
+    "The tone table gives item 7 as 'N beep tones represent N cells (N <= 4 means Auto Detect)'.",
+    "Startup mode times in this manual (3 s soft, 6 s super soft) differ from the 8-item family in Hobbywing_FlyFun_HW-SM001DUL.pdf (6 s, 12 s)."
+  ],
+  "schema": 1,
+  "verified": false
+}
