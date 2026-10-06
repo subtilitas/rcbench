@@ -8,8 +8,52 @@ history is in git.
 
 ### Added
 
-- **A driver for the WeAct PD Power Mini V1 Buck** (`pdmini`), not yet
-  wired to the coprocessor.
+- **The coprocessor drives the PD mini** on a PIO UART, on the two pins the
+  SUPPLY link page (0x2A, protocol 4.3) names.
+  - Wiring: refused on a pin that is reserved, bound to an output or the
+    other pin, and while the output is asked on or may be on -- read on,
+    an ON not yet confirmed, or an OFF owed to a module that stopped
+    answering. The pins are reserved from the outputs while held.
+  - Output: an ON needs a live heartbeat and its set points in the same
+    frame, and the output goes off when the heartbeat stops -- applied to
+    the driver before it steps, so an ON queued in that pass is not sent.
+  - New wiring is attached only once it is in flash; until then the pins
+    are reserved and the UART only tried. A module that has answered and
+    is not read off now counts as maybe on, so its wiring is held.
+  - Wiring attached -- restored at boot or newly given -- holds the module
+    as maybe on until a state read shows it off, or until 10 WHO_AM_I in
+    a row, about 10 s, get not a byte back; any answer starts that count
+    again. Disabling the supply schedules no attach.
+  - SUPPLY traffic goes at control priority on CAN, as CONTROL, LIMITS
+    and FAILSAFE do, so telemetry cannot hold back the supply's OFF. An
+    OFF written alone names no set points.
+  - Until a command is written the driver is asked for the output off and
+    no set points, so attaching or restoring the wiring leaves the
+    module's own set points alone. TX and RX swapped count as rewiring.
+  - An ON waits for wiring just written to reach flash (NOT_ARMED until
+    then), and the wiring is restored at boot whether or not it is
+    enabled. An OUTPUTS write whose slot the UART leaves no PIO for is
+    refused rather than kept unbound.
+  - Set points under the module's least, 1000 mV and 50 mA, are taken and
+    read back at it.
+  - Flash saves wait while the supply is asked on or may be on, as they do
+    while the outputs drive; a wiring write checks the driver itself, not
+    the flags of the pass before.
+  - No output slot is bound on a pin the supply holds: the OUTPUTS write is
+    refused rather than stored.
+  - The wiring is kept in the coprocessor's flash with the output bindings
+    and driven at boot, after the outputs' hardware, with the output off,
+    so a module left on is
+    switched off after a restart. The store's record is version 4; output
+    bindings saved by the build before still load.
+  - The PD mini driver counts failed state reads on their own: three in a
+    row take the module for gone however the other readings are answered,
+    and an OFF it is owed goes blind if the last of them was silent.
+  - Reading back: the page carries what the module last said, with flags
+    for an output that would not switch, set points that would not take,
+    and an output that is or may be on.
+  - The panel does not write the page yet.
+- **A driver for the WeAct PD Power Mini V1 Buck** (`pdmini`).
   - Protocol: the CRC8 (polynomial 0x31, initial 0xFF) checked against all
     fifteen values the vendor's sheet prints. Reply framing with WHO_AM_I
     ending in 0x0A or a CRC. A reply has 400 ms to start, 60 ms more per

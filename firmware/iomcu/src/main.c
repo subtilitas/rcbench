@@ -35,7 +35,10 @@
 #include "outputs.h"
 #include "outputs_hw.h"
 #include "outputs_pages.h"
+#include "pd_uart.h"
+#include "pdmini.h"
 #include "servo_page.h"
+#include "supply_page.h"
 #include "xl2515.h"
 
 /* ------------------------------------------------------------- the pages */
@@ -53,6 +56,17 @@ typedef struct {
 static iomcu_state_t s_state;
 /* The SERVO page: the surfaces' frame rate and their sweep.  Not kept. */
 static servo_page_t s_servo;
+/* The SUPPLY page and the PD mini it drives on a PIO UART.  Not kept. */
+static supply_page_t s_supply;
+static pdmini_t      s_pd;
+static bool          s_pd_open;      /* the UART claimed for its pins */
+/* Wiring taken and not yet in flash: no ON until it is, so a restart in
+ * the run finds the wiring that drives the module and can switch it off. */
+static bool          s_supply_unsaved;
+/* New wiring taken, the UART to attach once it is saved. */
+static bool          s_supply_attach;
+/* What the board and this file hold, before the supply takes its pins. */
+static uint64_t      s_base_reserved;
 static link_dev_t    s_dev;
 
 /*
@@ -160,6 +174,8 @@ static void save_outputs(const iomcu_state_t *s)
     out_store_t cfg;
     memcpy(cfg.slots, s->slots, sizeof(cfg.slots));
     memcpy(cfg.chan_cfg, s->chan_cfg, sizeof(cfg.chan_cfg));
+    /* And the supply's wiring, so a restart can still switch a module off. */
+    memcpy(cfg.supply, &s_supply.regs[LINK_SP_ENABLE], sizeof(cfg.supply));
     out_store_save(&cfg, s_now_ms);
 }
 
@@ -242,6 +258,139 @@ static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     }
 }
 
+/*
+ * The supply's pins: reserved from the outputs while it holds them, and the
+ * PIO UART claimed for them.  False when no PIO block can reach them or has
+ * room.
+ */
+static bool supply_rewire(void)
+{
+    pd_uart_close();
+    s_pd_open = false;
+    outputs_reserve_pins(&s_outputs,
+                         s_base_reserved | supply_page_pins(&s_supply));
+    if (!supply_page_enabled(&s_supply)) {
+        return true;
+    }
+    if (!pd_uart_open(supply_page_tx(&s_supply), supply_page_rx(&s_supply),
+                      supply_page_baud(s_supply.regs[LINK_SP_BAUD]))) {
+        return false;
+    }
+    const pdmini_io_t io = { pd_uart_attach, pd_uart_detach, pd_uart_send,
+                             NULL };
+    pdmini_init(&s_pd, &io, s_now_ms);
+    /* Whatever the module was doing before these pins reached it -- left
+     * on before a restart, or on from its own button -- is not known: it
+     * is held as maybe on until read off. */
+    pdmini_restored(&s_pd);
+    s_pd_open = true;
+    return true;
+}
+
+/*
+ * The UART released and the pins this page names reserved, without
+ * attaching: true when a PIO block can serve them, tried and let go again.
+ */
+static bool supply_probe(void)
+{
+    s_supply_attach = false;
+    pd_uart_close();
+    s_pd_open = false;
+    outputs_reserve_pins(&s_outputs,
+                         s_base_reserved | supply_page_pins(&s_supply));
+    if (!supply_page_enabled(&s_supply)) {
+        return true;
+    }
+    if (!pd_uart_open(supply_page_tx(&s_supply), supply_page_rx(&s_supply),
+                      supply_page_baud(s_supply.regs[LINK_SP_BAUD]))) {
+        return false;
+    }
+    pd_uart_close();
+    return true;
+}
+
+static void supply_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    supply_page_read(&s_supply, off, n, out);
+}
+
+static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
+                            const uint16_t *in)
+{
+    (void)ctx;
+    /* What the driver says now, not what the last pass published: replies
+     * taken since may have shown the module come on by itself. */
+    if (s_pd_open) {
+        /* Bytes already in the FIFO first: a reply there may show the
+         * module come on by itself, and a rewire would throw it away. */
+        uint8_t b;
+        while (pd_uart_getc(&b)) {
+            pdmini_rx(&s_pd, b, s_now_ms);
+        }
+        if (pdmini_may_be_on(&s_pd)) {
+            s_supply.regs[LINK_SP_FLAGS] |= LINK_SP_LIVE;
+        } else {
+            s_supply.regs[LINK_SP_FLAGS] &= (uint16_t)~LINK_SP_LIVE;
+        }
+    }
+    const supply_page_t was = s_supply;
+    if (s_supply_unsaved && (unsigned)off <= (unsigned)LINK_SP_OUTPUT
+        && (unsigned)off + (unsigned)n > (unsigned)LINK_SP_OUTPUT
+        && in[LINK_SP_OUTPUT - off] != 0u) {
+        return LINK_NACK_NOT_ARMED;
+    }
+    const uint8_t nack = supply_page_write(&s_supply, off, n, in, &s_outputs,
+                                           s_beat.alive && !s_dev.failsafe);
+    if (nack != 0u) {
+        return nack;
+    }
+    /* Each register on its own: TX and RX swapped hold the same pins. */
+    const bool rewired =
+        supply_page_enabled(&s_supply) != supply_page_enabled(&was)
+        || (supply_page_enabled(&s_supply)
+            && (s_supply.regs[LINK_SP_TX_PIN] != was.regs[LINK_SP_TX_PIN]
+                || s_supply.regs[LINK_SP_RX_PIN] != was.regs[LINK_SP_RX_PIN]
+                || s_supply.regs[LINK_SP_BAUD] != was.regs[LINK_SP_BAUD]));
+    const bool wiring =
+        memcmp(&s_supply.regs[LINK_SP_ENABLE], &was.regs[LINK_SP_ENABLE],
+               LINK_SP_OUTPUT * sizeof(uint16_t)) != 0;
+    if (wiring && s_supply.regs[LINK_SP_OUTPUT] != 0u) {
+        /* An ON in the same frame as new wiring: that wiring is not in
+         * flash yet, and the ON waits for it. */
+        s_supply = was;
+        return LINK_NACK_NOT_ARMED;
+    }
+    if (rewired && !supply_probe()) {
+        /* No UART for those pins: the wiring is as it was, and the panel
+         * is told rather than shown a supply that is never there.  Wiring
+         * still waiting for flash goes back to waiting, detached. */
+        s_supply = was;
+        if (s_supply_unsaved) {
+            (void)supply_probe();
+            s_supply_attach = supply_page_enabled(&s_supply);
+        } else {
+            (void)supply_rewire();
+        }
+        return LINK_NACK_BAD_VALUE;
+    }
+    if (wiring) {
+        save_outputs(&s_state);
+        s_supply_unsaved = out_store_pending();
+    }
+    if (rewired) {
+        /* Attached once the wiring is in flash, so a restart in between
+         * finds the pins of the module it may have to switch off; a page
+         * now disabled has nothing to attach. */
+        if (s_supply_unsaved && supply_page_enabled(&s_supply)) {
+            s_supply_attach = true;
+        } else {
+            (void)supply_rewire();
+        }
+    }
+    return 0u;
+}
+
 static void servo_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
@@ -278,16 +427,52 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
     if (nack != 0u) {
         return nack;
     }
+    /* Nor one on a pin the supply holds: the bank would leave it unbound,
+     * and a restart would drive it on the module's pin. */
+    if (supply_page_slots_check(&s_supply, next) != 0u) {
+        return LINK_NACK_BAD_VALUE;
+    }
     /* Nor a slot bound beside a surface at another rate. */
     if (outputs_slots_rate_check(&s_outputs, next,
                                  servo_page_hz(&s_servo)) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
+    uint16_t prev[LINK_OS_COUNT];
+    memcpy(prev, s->slots, sizeof(prev));
     memcpy(s->slots, next, sizeof(next));
     outputs_slots_apply(&s_outputs, s->slots);
     /* The bank has decided what the slots are; this makes the silicon agree
      * with it before the next pass renders anything. */
     hw_apply();
+    /*
+     * With the supply's UART holding two PIO state machines, a slot the
+     * bank took that the silicon could not bind is refused rather than kept
+     * unbound: a restart binds the outputs first, and the supply would be
+     * the one left out.
+     */
+    bool refused = false;
+    if (s_pd_open) {
+        for (uint8_t i = 0; i < OUT_MAX_SLOTS; ++i) {
+            if (s_outputs.slot[i].driver != OUT_DRIVER_NONE
+                && !outputs_hw_bound(i)) {
+                refused = true;
+            }
+        }
+    } else if (s_supply_attach) {
+        /* The supply's UART waits for its save: the slots must leave it a
+         * PIO block, tried now, or the attach would fail unseen. */
+        refused = !pd_uart_open(supply_page_tx(&s_supply),
+                                supply_page_rx(&s_supply),
+                                supply_page_baud(
+                                    s_supply.regs[LINK_SP_BAUD]));
+        pd_uart_close();
+    }
+    if (refused) {
+        memcpy(s->slots, prev, sizeof(prev));
+        outputs_slots_apply(&s_outputs, s->slots);
+        hw_apply();
+        return LINK_NACK_BAD_VALUE;
+    }
     save_outputs(s);
     return 0u;
 }
@@ -503,6 +688,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_ART_DATA,  LINK_AD_COUNT,  art_data_read,  art_data_write },
     { LINK_PAGE_PADS,      LINK_PAD_COUNT, pads_read,      NULL },
     { LINK_PAGE_SERVO,     LINK_SV_COUNT,  servo_read,     servo_write },
+    { LINK_PAGE_SUPPLY,    LINK_SP_COUNT,  supply_read,    supply_write },
 };
 
 /* ------------------------------------------------------------ the heartbeat */
@@ -932,7 +1118,8 @@ int main(void)
      * throttle it was given is exactly what must not happen.
      */
     out_store_t saved;
-    if (out_store_load(&saved)) {
+    const bool have_saved = out_store_load(&saved);
+    if (have_saved) {
         memcpy(s_state.slots, saved.slots, sizeof(s_state.slots));
         memcpy(s_state.chan_cfg, saved.chan_cfg, sizeof(s_state.chan_cfg));
     }
@@ -955,9 +1142,10 @@ int main(void)
      * file assigns, so the two disagreeing costs a pin rather than the safety
      * line.
      */
-    outputs_reserve_pins(&s_outputs,
-                         outbind_reserved_mask(IOMCU_BOARD_ID)
-                             | IOMCU_RESERVED_PINS | IOMCU_ABSENT_PINS);
+    s_base_reserved = outbind_reserved_mask(IOMCU_BOARD_ID)
+                      | IOMCU_RESERVED_PINS | IOMCU_ABSENT_PINS;
+    outputs_reserve_pins(&s_outputs, s_base_reserved);
+    supply_page_init(&s_supply);
     (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
     outputs_chan_cfg_apply(&s_outputs, s_state.chan_cfg);
     outputs_slots_apply(&s_outputs, s_state.slots);
@@ -974,6 +1162,22 @@ int main(void)
     outputs_channels_from_bank(&s_outputs, s_state.channels);
     outputs_hw_init();
     hw_apply();
+    /*
+     * The PD mini's wiring, as last written, driven with the output off: a
+     * module this end left on before it restarted is identified, read on and
+     * switched off before any panel has written the page.  Through the
+     * page's own checks, after the slots, so a pin a slot holds is refused;
+     * and after the slots' hardware, so the UART takes what PIO the outputs
+     * leave, as it does when written at run time, and never displaces one.
+     */
+    if (have_saved
+        && supply_page_write(&s_supply, LINK_SP_ENABLE, LINK_SP_OUTPUT,
+                             saved.supply, &s_outputs, false) == 0u) {
+        if (!supply_rewire()) {
+            supply_page_init(&s_supply);
+            (void)supply_rewire();
+        }
+    }
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 
     heartbeat_init();
@@ -1068,6 +1272,19 @@ int main(void)
                     now);
         /* The sweep's command for this pass, before the step slews to it. */
         (void)servo_page_step(&s_servo, &s_outputs, now);
+        /* The supply: its bytes in, a step of its driver, and the output off
+         * whenever the panel's heartbeat is not there to switch it off. */
+        /* The page first, so a heartbeat lost this pass reaches the driver
+         * as an OFF before it steps and can send an ON already queued. */
+        supply_page_step(&s_supply, s_beat.alive && !s_dev.failsafe,
+                         s_pd_open ? &s_pd : NULL);
+        if (s_pd_open) {
+            uint8_t b;
+            while (pd_uart_getc(&b)) {
+                pdmini_rx(&s_pd, b, now);
+            }
+            pdmini_step(&s_pd, now);
+        }
         outputs_step(&s_outputs, now);
         /* Straight after the step, so what reaches a pin is what the bank
          * has just decided rather than what it decided a pass ago. */
@@ -1110,10 +1327,20 @@ int main(void)
          * much of the gap after it is left.
          */
         const uint32_t quiet = (uint32_t)(now - s_last_rx_ms);
-        const bool driving = outputs_driving(&s_outputs);
+        /* And the supply, asked on or perhaps on: its UART replies would
+         * overrun the 8-byte FIFO in a 19 ms window, and an OFF asked over
+         * the link would wait for it. */
+        const bool driving = outputs_driving(&s_outputs)
+                             || s_supply.regs[LINK_SP_OUTPUT] != 0u
+                             || (s_pd_open && pdmini_may_be_on(&s_pd));
         const out_store_step_t step = out_store_tick(driving, quiet, now);
         switch (step) {
         case OUT_STORE_WROTE:
+            s_supply_unsaved = false;
+            if (s_supply_attach) {
+                s_supply_attach = false;
+                (void)supply_rewire();
+            }
             /*
              * Printed because it is the number that decides whether a save
              * costs a frame: this core answers nothing while it writes, the

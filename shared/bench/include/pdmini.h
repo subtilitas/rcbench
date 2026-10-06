@@ -28,6 +28,9 @@
  * buttons in the 15 ms between those reads and the ON is seen by the next
  * slot read, at most 1000 ms on, and put back.
  *
+ * Three state reads in a row that fail take the module for gone, however
+ * the other readings are answered: its output state is what matters.
+ *
  * A module that stops answering while its output is on may still be
  * listening: while an OFF is asked for, it is sent blind straight after
  * each WHO_AM_I that is answered by not one byte, once a second, until a state read
@@ -117,6 +120,9 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
 #define PDMINI_SLOT_MS     1000u   /**< the active slot read again          */
 #define PDMINI_RETRY_MS    2000u   /**< a write that did not take, again    */
 #define PDMINI_FAILS          3u   /**< failed transactions in a row: gone */
+#define PDMINI_ABSENT_TRIES  10u   /**< WHO_AM_I unanswered by a byte this
+                                        many times, about 10 s: a restored
+                                        module is taken not to be there   */
 #define PDMINI_INPUT_MISSES   3u   /**< READ_INPUT_STATE unanswered this many
                                         times is not asked again until the
                                         module is identified again: the
@@ -170,6 +176,9 @@ typedef struct {
 
     /* What is known. */
     bool     identified;
+    bool     answered;       /* identified once since pdmini_init()      */
+    bool     restored;       /* wiring from before a restart: maybe on   */
+    uint8_t  who_misses;     /* WHO_AM_I answered by not a byte, so far  */
     bool     state_known;    /* READ_OUTPUT_STATE answered since online */
     int      slot;           /* the active slot, -1 until read           */
     bool     data_known;     /* set_mv/set_ma read back from it          */
@@ -190,6 +199,7 @@ typedef struct {
     uint8_t  data_tries;     /* OUTPUT_DATA writes towards the set points */
     uint32_t data_at;
     uint8_t  fails;          /* consecutive                              */
+    uint8_t  state_fails;    /* READ_OUTPUT_STATE failed, consecutive    */
     uint8_t  input_misses;   /* READ_INPUT_STATE unanswered, consecutive */
     uint8_t  on_step;        /* reads before an ON: 1 data asked, 2 data
                                 seen, 3 slot asked, 4 slot seen          */
@@ -216,6 +226,16 @@ void pdmini_init(pdmini_t *d, const pdmini_io_t *io, uint32_t now_ms);
  *  whatever is asked, until an OFF is asked. */
 void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma);
 
+/** Attached to a module whose state is not known -- wiring restored after
+ *  a restart, or newly given: it may be on.  pdmini_may_be_on() says so
+ *  until a state read shows it off, or until PDMINI_ABSENT_TRIES WHO_AM_I
+ *  in a row go unanswered by a byte. */
+void pdmini_restored(pdmini_t *d);
+
+/** The output off, and no set points asked: the module's are left as
+ *  they are until pdmini_want() names some. */
+void pdmini_want_off(pdmini_t *d);
+
 /** A byte from the module. */
 void pdmini_rx(pdmini_t *d, uint8_t byte, uint32_t now_ms);
 
@@ -223,6 +243,12 @@ void pdmini_rx(pdmini_t *d, uint8_t byte, uint32_t now_ms);
 void pdmini_step(pdmini_t *d, uint32_t now_ms);
 
 const pdmini_status_t *pdmini_status(const pdmini_t *d);
+
+/** Whether the output is on or may be: it reads on, an ON waits to be sent
+ *  or confirmed or went out unsettled, an OFF is owed to a module that went
+ *  quiet with it on, or a module that has answered is not read off now.
+ *  Its wiring is not to be taken from under it while this holds. */
+bool pdmini_may_be_on(const pdmini_t *d);
 
 #ifdef __cplusplus
 }

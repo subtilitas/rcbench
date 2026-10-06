@@ -39,7 +39,7 @@ link_can_prio_t link_can_priority(uint8_t page, uint8_t op)
      * what it was told, and must not queue behind telemetry.
      */
     if (page == LINK_PAGE_CONTROL || page == LINK_PAGE_FAILSAFE
-        || page == LINK_PAGE_LIMITS) {
+        || page == LINK_PAGE_LIMITS || page == LINK_PAGE_SUPPLY) {
         return LINK_CAN_PRIO_CONTROL;
     }
     return LINK_CAN_PRIO_NORMAL;

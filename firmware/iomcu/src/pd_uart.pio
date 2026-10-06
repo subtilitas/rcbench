@@ -1,0 +1,94 @@
+;
+; A UART for the PD mini (shared/bench/pdmini.h), 8N1, on any two pins:
+; transmit and receive as two state machines, eight cycles a bit.
+; pd_uart.c attaches them to the pins for one transaction only; between
+; transactions the pins are pulled-down inputs, so the transmit line never
+; idles high into an unpowered module.
+;
+; The two programs are the pico-examples' uart_tx and uart_rx, the receiver
+; without the framing-error interrupt this firmware has no use for.
+;
+; Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are met:
+;
+; 1. Redistributions of source code must retain the above copyright notice,
+;    this list of conditions and the following disclaimer.
+; 2. Redistributions in binary form must reproduce the above copyright notice,
+;    this list of conditions and the following disclaimer in the documentation
+;    and/or other materials provided with the distribution.
+; 3. Neither the name of the copyright holder nor the names of its
+;    contributors may be used to endorse or promote products derived from this
+;    software without specific prior written permission.
+;
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+; IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+; ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+; LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+; CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+; SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+; INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+; CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+; ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+; POSSIBILITY OF SUCH DAMAGE.
+;
+; SPDX-License-Identifier: BSD-3-Clause
+;
+
+.program pd_uart_tx
+.side_set 1 opt
+
+; A byte at a time from the FIFO (first in, first out), least significant bit
+; first.  Waiting for one is the stop bit and the idle line: side-set high.
+    pull       side 1 [7]
+    set x, 7   side 0 [7]   ; the start bit, eight cycles low
+bitloop:
+    out pins, 1             ; a data bit
+    jmp x-- bitloop   [6]   ; eight cycles each
+
+.program pd_uart_rx
+
+start:
+    wait 0 pin 0            ; the start bit
+    set x, 7    [10]        ; and on to the middle of the first data bit
+bitloop:
+    in pins, 1
+    jmp x-- bitloop [6]     ; eight cycles a bit
+    jmp pin good_stop       ; a stop bit that is high: a whole byte
+    wait 1 pin 0            ; otherwise a framing error or a break: dropped
+    jmp start
+good_stop:
+    push
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+static inline void pd_uart_tx_program_init(PIO pio, uint sm, uint offset,
+                                           uint pin, uint baud)
+{
+    pio_sm_config c = pd_uart_tx_program_get_default_config(offset);
+    /* Right shift, so the least significant bit goes first; no autopull,
+     * the program pulls each byte itself. */
+    sm_config_set_out_shift(&c, true, false, 32);
+    sm_config_set_out_pins(&c, pin, 1);
+    sm_config_set_sideset_pins(&c, pin);
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+    sm_config_set_clkdiv(&c, (float)clock_get_hz(clk_sys) / (8.0f * (float)baud));
+    pio_sm_init(pio, sm, offset, &c);
+}
+
+static inline void pd_uart_rx_program_init(PIO pio, uint sm, uint offset,
+                                           uint pin, uint baud)
+{
+    pio_sm_config c = pd_uart_rx_program_get_default_config(offset);
+    sm_config_set_in_pins(&c, pin);
+    sm_config_set_jmp_pin(&c, pin);
+    /* Right shift, so a byte lands in the top eight bits of the word. */
+    sm_config_set_in_shift(&c, true, false, 32);
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
+    sm_config_set_clkdiv(&c, (float)clock_get_hz(clk_sys) / (8.0f * (float)baud));
+    pio_sm_init(pio, sm, offset, &c);
+}
+%}

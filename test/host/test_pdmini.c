@@ -50,6 +50,8 @@ typedef struct {
     int      id_says;         /* READ_ID answers this, -1 the slot       */
     bool     other_slot;      /* READ_DATA answers for the next slot     */
     bool     no_input;        /* firmware without READ_INPUT_STATE       */
+    bool     no_state;        /* READ_OUTPUT_STATE unanswered             */
+    bool     junk_state;      /* answered with a broken CRC instead      */
     const char *who;          /* WHO_AM_I's text, NULL the module's      */
     unsigned ignore_en;       /* OUTPUT_EN writes taken and not applied  */
     uint32_t byte_gap;        /* ms between reply bytes, 0 for 1         */
@@ -115,6 +117,15 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
         return;
     }
     ++m.reads[p[0]];
+    if (m.no_state && p[0] == PDMINI_READ_STATE) {
+        return;
+    }
+    if (m.junk_state && p[0] == PDMINI_READ_STATE) {
+        const uint8_t r[2] = { PDMINI_READ_STATE, 0x55u };
+        reply(r, 2u, true);
+        m.out[2] ^= 0x5Au;                     /* the CRC broken */
+        return;
+    }
     if (m.no_input && p[0] == PDMINI_READ_INPUT) {
         return;
     }
@@ -1185,6 +1196,99 @@ TEST_CASE(live_set_points_that_will_not_take_switch_the_output_off)
     CHECK_EQ(m.on_at_mv, 5000u);
 }
 
+/* Only the state reads go unanswered, the rest still do, after an ON went
+ * out and its OFF was lost: the module is taken for gone, and the OFF it is
+ * owed goes blind. */
+TEST_CASE(state_reads_that_fail_are_not_hidden_by_the_rest)
+{
+    fresh();
+    run(100u, false);
+    learn_on_twice();
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(600u, false);
+    CHECK(!m.output);
+    m.settle_ms = 100u;
+    pdmini_want(&d, true, 5000u, 1000u);
+    run_to_en_write(m.en_writes + 1u);
+    m.ignore_en = 1u;                          /* the OFF is lost */
+    m.no_state  = true;
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(5000u, true);
+    CHECK(!m.output);
+    CHECK(pdmini_status(&d)->errors >= 3u);
+}
+
+/* State reads answered with garbage are not silence: no blind OFF goes,
+ * and the module is asked who it is first. */
+TEST_CASE(state_reads_answered_wrongly_send_nothing_blind)
+{
+    fresh();
+    run(100u, false);
+    learn_on_twice();
+    m.junk_state = true;
+    m.ignore_en  = 1u;                         /* the OFF itself is lost */
+    pdmini_want(&d, false, 5000u, 1000u);
+    run_to_en_write(m.en_writes + 1u);         /* the ordinary OFF */
+    const unsigned writes = m.en_writes;
+    const unsigned asked = m.reads[PDMINI_WHO_AM_I];
+    run(3000u, false);
+    CHECK_EQ(m.en_writes, writes);
+    CHECK(m.reads[PDMINI_WHO_AM_I] > asked);
+}
+
+/* Not knowing is not off: a module that has answered and is not read off
+ * now may be on; one that never answered on these pins is not. */
+TEST_CASE(an_output_not_read_may_be_on)
+{
+    fresh();
+    m.powered = false;
+    run(1500u, false);
+    CHECK(!pdmini_may_be_on(&d));              /* nothing ever answered */
+    m.powered = true;
+    run(1500u, false);
+    CHECK(pdmini_status(&d)->online);
+    CHECK(!pdmini_may_be_on(&d));              /* read off */
+    m.no_state = true;
+    run(3000u, false);
+    CHECK(pdmini_may_be_on(&d));               /* answered, not read now */
+    m.no_state = false;
+    run(2000u, false);
+    CHECK(!pdmini_may_be_on(&d));
+    CHECK(!pdmini_may_be_on(NULL));
+}
+
+/* Wiring restored after a restart: the module may be on until read off,
+ * and a module that answers nothing for 10 s is taken not to be there. */
+TEST_CASE(a_restored_module_may_be_on_until_read)
+{
+    fresh();
+    pdmini_restored(&d);
+    CHECK(pdmini_may_be_on(&d));
+    run(1500u, false);
+    CHECK(!pdmini_may_be_on(&d));              /* answered and read off */
+
+    fresh();
+    m.powered = false;
+    pdmini_restored(&d);
+    run(5000u, false);
+    CHECK(pdmini_may_be_on(&d));
+    run(7000u, false);
+    CHECK(!pdmini_may_be_on(&d));              /* nothing there */
+
+    /* Silence broken by any answer starts the count again. */
+    fresh();
+    m.powered = false;
+    pdmini_restored(&d);
+    run(6000u, false);
+    m.powered = true;
+    m.who = "SOMETHING ELSE";                  /* answers, but wrongly */
+    run(2000u, false);
+    m.powered = false;
+    run(6000u, false);
+    CHECK(pdmini_may_be_on(&d));
+    pdmini_restored(NULL);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -1256,5 +1360,9 @@ int main(void)
     RUN(an_output_that_came_on_by_itself_is_not_relied_on);
     RUN(an_on_sent_and_unsettled_is_owed_an_off);
     RUN(live_set_points_that_will_not_take_switch_the_output_off);
+    RUN(state_reads_that_fail_are_not_hidden_by_the_rest);
+    RUN(state_reads_answered_wrongly_send_nothing_blind);
+    RUN(an_output_not_read_may_be_on);
+    RUN(a_restored_module_may_be_on_until_read);
     return test_summary("pdmini");
 }

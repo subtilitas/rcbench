@@ -128,9 +128,40 @@ void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma)
     d->want_ma     = ma;
 }
 
+void pdmini_restored(pdmini_t *d)
+{
+    if (d != NULL) {
+        d->restored = true;
+    }
+}
+
+void pdmini_want_off(pdmini_t *d)
+{
+    if (d == NULL) {
+        return;
+    }
+    if (d->want_output) {
+        d->en_tries = 0u;
+        d->st.stuck = false;
+    }
+    d->held_off    = false;
+    d->want_output = false;
+}
+
 const pdmini_status_t *pdmini_status(const pdmini_t *d)
 {
     return (d != NULL) ? &d->st : NULL;
+}
+
+bool pdmini_may_be_on(const pdmini_t *d)
+{
+    /* Not knowing is not off, once something has answered on these pins:
+     * its output may have come on by itself since it was last read. */
+    return d != NULL
+           && (d->st.output || (d->en_pending && d->en_for) || d->off_owed
+               || d->on_sent || (d->answered && !d->state_known)
+               || (d->restored && !d->answered
+                   && d->who_misses < PDMINI_ABSENT_TRIES));
 }
 
 /* ------------------------------------------------------------ transactions */
@@ -172,12 +203,33 @@ static void finish(pdmini_t *d, uint32_t now, bool ok)
         && d->input_misses < PDMINI_INPUT_MISSES) {
         ++d->input_misses;        /* firmware before v1.0.2.0 has none */
     }
+    if (d->cmd == PDMINI_WHO_AM_I) {
+        /* Silence in a row; any answer, even a wrong one, is something
+         * there. */
+        if (d->rx_n != 0u) {
+            d->who_misses = 0u;
+        } else if (d->who_misses < PDMINI_ABSENT_TRIES) {
+            ++d->who_misses;
+        }
+    }
     if (d->cmd == PDMINI_WHO_AM_I && d->rx_n == 0u) {
         /* Not a byte back: silence, where a blind OFF may be heard.  Any
          * answer -- garbled, or another device's -- is not silence. */
         d->blind_due = true;
     }
-    if (++d->fails >= PDMINI_FAILS) {
+    /* State reads counted on their own: other readings answered would
+     * otherwise keep a module online whose output state is not known. */
+    const bool state_lost = d->cmd == PDMINI_READ_STATE
+                            && ++d->state_fails >= PDMINI_FAILS;
+    if (state_lost) {
+        /* The same module, answering all but this: an OFF it is owed is
+         * sent blind straight away, as after a silent WHO_AM_I -- only if
+         * this read was silent too.  Any answer to it is re-identified
+         * first, as it may not be the module. */
+        d->state_fails = 0u;
+        d->blind_due   = d->rx_n == 0u;
+    }
+    if (++d->fails >= PDMINI_FAILS || state_lost) {
         /*
          * Gone: nothing it said before is known any more, and the next
          * thing asked is who is there.  A write unanswered by its confirming
@@ -241,6 +293,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         if (!holds(&r[2], r[1], PDMINI_WHO)) {
             return false;
         }
+        d->answered    = true;
         d->identified  = true;
         d->st.online   = true;
         d->state_known = false;
@@ -255,6 +308,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->st.output   = (r[1] & 1u) != 0u;
         d->st.mode     = (uint8_t)((r[1] >> 1) & 3u);
         d->state_known = true;
+        d->state_fails = 0u;
         d->off_owed    = false;
         /* An ON sent is settled by a read that shows it on, or off with no
          * ON on its way and the last write given its time. */
