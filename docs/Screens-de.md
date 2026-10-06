@@ -236,6 +236,19 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
   SUPPLY, OUTPUT IS ON, mit APPLY und CANCEL, außer SUPPLYs SETTINGS, CONFIRM
   WHILE ON, KEYPAD ist aus. Die Rückfrage verschwindet unbeantwortet, wenn
   der Ausgang ausgeht.
+- Eine Spannung, die von 6,0 V oder darunter auf mehr als 6,0 V erhöht wird,
+  öffnet die Warnung HV SERVOS ONLY: Standardservos sind für 4,8 bis 6,0 V
+  ausgelegt, darüber arbeitet nur ein als HV (high voltage) spezifiziertes
+  Servo innerhalb seiner Spezifikation; ein Standardservo kann darüber sofort
+  zerstört werden. Die Spannung gilt erst, nachdem HOLD
+  TO APPLY 2 s gehalten wurde, dieselbe Geste wie bei der Profilwarnung;
+  CANCEL verwirft sie. Bei eingeschaltetem Ausgang ersetzt sie die Rückfrage
+  von SUPPLY und bleibt stehen, wenn der Ausgang ausgeht. Eine Spannung, die
+  schon über 6,0 V liegt, ändert sich ohne sie. Eine auf SUPPLY eingestellte
+  Spannung öffnet sie nicht.
+
+  ![Die HV-Warnung](img/servo-hv.png)
+
 - OUTPUT ON ist ein Halten über zwei Sekunden, OUTPUT OFF ein Tippen, wie auf
   SUPPLY. STOP beendet ein laufendes Halten. Beim Verlassen von SERVO bleibt
   der Ausgang, wie er ist; ein Druck auf OUTPUT OFF beim Verlassen wird als

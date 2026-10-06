@@ -1804,8 +1804,8 @@ TEST_CASE(a_set_point_typed_on_servo_is_the_supplys)
 {
     fresh();
     tap(SUP_V_X, SUP_ROW_Y);
-    keys("7.4");
-    CHECK(fabsf(supply_screen_set_v() - 7.4f) < 1e-4f);
+    keys("5.5");
+    CHECK(fabsf(supply_screen_set_v() - 5.5f) < 1e-4f);
     tap(SUP_I_X, SUP_ROW_Y);
     keys("0.5");
     CHECK(fabsf(supply_screen_set_i() - 0.5f) < 1e-4f);
@@ -1820,7 +1820,7 @@ TEST_CASE(a_set_point_typed_on_servo_is_the_supplys)
     /* CANCEL leaves the set point as it was. */
     tap(SUP_V_X, SUP_ROW_Y);
     key(UI_KEY_CANCEL);
-    CHECK(fabsf(supply_screen_set_v() - 7.4f) < 1e-4f);
+    CHECK(fabsf(supply_screen_set_v() - 5.5f) < 1e-4f);
 }
 
 /* Typed outside the caps, it is snapped into them, as on SUPPLY. */
@@ -1959,6 +1959,52 @@ TEST_CASE(a_set_point_changed_on_supply_is_redrawn_here)
     free(before);
 }
 
+/* A voltage raised past 6.0 V, a standard servo's rating, waits for the HV
+ * warning's two-second hold: a tap does nothing, CANCEL drops it. */
+TEST_CASE(a_voltage_raised_past_6_v_takes_the_hv_hold)
+{
+    fresh();
+    supply_screen_put(5.0f, 1.0f);
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("6");                              /* at the rating: no warning */
+    CHECK(fabsf(supply_screen_set_v() - 6.0f) < 1e-4f);
+
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("7.4");
+    CHECK(fabsf(supply_screen_set_v() - 6.0f) < 1e-4f);
+    tap(WARN_APPLY_X, WARN_Y);              /* a tap is not the hold */
+    CHECK(fabsf(supply_screen_set_v() - 6.0f) < 1e-4f);
+    tap(WARN_CANCEL_X, WARN_Y);
+    CHECK(fabsf(supply_screen_set_v() - 6.0f) < 1e-4f);
+
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("7.4");
+    hold_apply(2.3f);
+    CHECK(fabsf(supply_screen_set_v() - 7.4f) < 1e-4f);
+
+    /* Already past it: the warning was given, and a further change is a
+     * plain set point again. */
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("8");
+    CHECK(fabsf(supply_screen_set_v() - 8.0f) < 1e-4f);
+}
+
+/* With the output on, the HV hold stands in for SUPPLY's question, and the
+ * output going off does not drop it: it is about the servo. */
+TEST_CASE(the_hv_hold_stands_for_the_live_question)
+{
+    fresh();
+    supply_screen_put(5.0f, 1.0f);
+    supply_screen_set_output(true);
+    scr->tick(0.025f);
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("8.4");
+    supply_screen_set_output(false);
+    scr->tick(0.025f);
+    hold_apply(2.3f);
+    CHECK(fabsf(supply_screen_set_v() - 8.4f) < 1e-4f);
+}
+
 int main(void)
 {
     RUN(a_touch_on_the_dial_points_the_horn_there);
@@ -2028,5 +2074,7 @@ int main(void)
     RUN(a_set_point_for_a_live_output_waits_for_apply);
     RUN(the_question_goes_with_the_live_output);
     RUN(a_set_point_changed_on_supply_is_redrawn_here);
+    RUN(a_voltage_raised_past_6_v_takes_the_hv_hold);
+    RUN(the_hv_hold_stands_for_the_live_question);
     return test_summary("servo");
 }

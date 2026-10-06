@@ -95,6 +95,9 @@
 #define SUP_VAL_X (RC_X + 32)
 #define SUP_VAL_W 66
 #define SUP_OUT_X (SUP_VAL_X + 2 * (SUP_VAL_W + 4))
+/* The top of a standard servo's rating.  A set point raised past it is
+ * applied only after the HV warning is held for two seconds. */
+#define STD_SERVO_V_MAX 6.0f
 
 /*
  * The overlay: the settings and the keypad, keyboard, list and warning they
@@ -304,11 +307,18 @@ static struct {
     uint32_t   sup_rev;
     uint32_t   drawn_sup[2];
     bool       kp_alone;      /**< the keypad opened the overlay itself  */
-    /* A set point typed while the output is live, waiting for APPLY. */
+    /* A set point waiting for APPLY: typed while the output is live, or a
+     * voltage raised past a standard servo's rating (hv), which takes the
+     * two-second hold the profile warning takes. */
     struct {
-        bool  open;
-        float v, i;
+        bool      open;
+        bool      hv;
+        float     v, i;
+        ui_hold_t hold;
+        bool      down;
+        uint32_t  rev;
     } ask;
+    uint32_t drawn_ask[2];
 
     /* The overlay and what it opens. */
     bool         ov_open;
@@ -1056,6 +1066,7 @@ void servo_invalidate(void)
         s.drawn_power[b] = UINT32_MAX;
         s.drawn_sup[b]   = UINT32_MAX;
         s.drawn_warn[b]  = UINT32_MAX;
+        s.drawn_ask[b]   = UINT32_MAX;
         s.drawn_save[b]  = 0xFFu;
         /* No step the arm can be drawn at, so the next frame draws it. */
         s.drawn_pulse[b] = -1;
@@ -1214,6 +1225,8 @@ static void close_panels(void)
     s.warn.down = false;
     ui_hold_reset(&s.warn.hold);
     s.ask.open  = false;    /* a set point not applied is dropped */
+    s.ask.down  = false;
+    ui_hold_reset(&s.ask.hold);
 }
 
 /* The overlay goes when the keypad that opened it for a set point is done:
@@ -1264,15 +1277,32 @@ static void set_point_typed(int target, float typed)
         close_alone();
         return;
     }
-    if (supply_screen_typed_asks()) {
+    /* Raised past a standard servo's rating, from at or under it: the HV
+     * warning, which stands in for the live output's question too. */
+    const bool hv = v > STD_SERVO_V_MAX + 0.001f
+                    && supply_screen_set_v() <= STD_SERVO_V_MAX + 0.001f;
+    if (hv || supply_screen_typed_asks()) {
         s.ask.open = true;
+        s.ask.hv   = hv;
         s.ask.v    = v;
         s.ask.i    = i;
+        s.ask.down = false;
+        ui_hold_reset(&s.ask.hold);
         servo_invalidate();
         return;
     }
     supply_screen_put(v, i);
     close_alone();
+}
+
+/* The question answered with APPLY, or the HV warning's hold completed. */
+static void ask_apply(void)
+{
+    s.ask.open = false;
+    s.ask.down = false;
+    supply_screen_put(s.ask.v, s.ask.i);
+    close_alone();
+    servo_invalidate();
 }
 
 static void open_choice(int target, setting_id_t id, const char *title)
@@ -1498,6 +1528,11 @@ static void ov_down(const touch_event_t *evt)
     if (s.ask.open) {
         if (gfx_rect_contains(warn_apply_rect(), x, y)) {
             ov_take(evt, OP_ASK_APPLY, -1);
+            if (s.ask.hv) {
+                s.ask.down = true;
+                ui_hold_begin(&s.ask.hold);
+                ++s.ask.rev;
+            }
         } else if (gfx_rect_contains(warn_cancel_rect(), x, y)) {
             ov_take(evt, OP_ASK_CANCEL, -1);
         }
@@ -1611,6 +1646,25 @@ static void ov_rest(const touch_event_t *evt)
             ov_let_go();
         }
         return;
+    case OP_ASK_APPLY:
+        if (!s.ask.hv) {
+            break;                      /* a tap: the release applies it */
+        }
+        if (!up) {
+            /* A finger that leaves APPLY abandons the hold, as on ARM. */
+            if (!gfx_rect_contains(warn_apply_rect(), x, y)
+                && ui_hold_leave(&s.ask.hold)) {
+                s.ask.down = false;
+                ++s.ask.rev;
+                ov_let_go();
+            }
+            return;
+        }
+        (void)ui_hold_end(&s.ask.hold);
+        s.ask.down = false;
+        ++s.ask.rev;
+        ov_let_go();
+        return;
     case OP_WARN_APPLY:
         if (!up) {
             /* A finger that leaves APPLY abandons the hold, as on ARM. */
@@ -1673,10 +1727,7 @@ static void ov_rest(const touch_event_t *evt)
     }
     case OP_ASK_APPLY:
         if (gfx_rect_contains(warn_apply_rect(), x, y)) {
-            s.ask.open = false;
-            supply_screen_put(s.ask.v, s.ask.i);
-            close_alone();
-            servo_invalidate();
+            ask_apply();
         }
         break;
     case OP_ASK_CANCEL:
@@ -2602,6 +2653,54 @@ static void draw_warning(gfx_canvas_t *c)
               s.ov_have && s.ov_pressed == OP_WARN_CANCEL, true);
 }
 
+static void draw_ask_apply(gfx_canvas_t *c)
+{
+    ui_button(c, warn_apply_rect(), "HOLD TO APPLY",
+              ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK),
+                           ui_theme_color(UI_C_DANGER), s.ask.hold.held_s),
+              s.ask.down, true);
+}
+
+/*
+ * A voltage raised past a standard servo's rating: in the danger colour of
+ * the profile warning, saying what it does to a servo not rated for it.
+ */
+static void draw_hv(gfx_canvas_t *c)
+{
+    const gfx_rect_t a = overlay_area();
+    const gfx_color_t red = ui_theme_color(UI_C_DANGER);
+    gfx_draw_rect(c, a.x, a.y, a.w, a.h, red);
+    gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, red);
+    gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, red);
+    gfx_text(c, a.x + 20, a.y + 20, "HV SERVOS ONLY", &gfx_font_8x16, red, 2);
+    char what[48];
+    snprintf(what, sizeof(what), "VOLTAGE %.2f -> %.2f V",
+             (double)supply_screen_set_v(), (double)s.ask.v);
+    gfx_text(c, a.x + 20, a.y + 66, what, &gfx_font_8x16,
+             ui_theme_color(UI_C_VOLT), 1);
+    const char *const lines[] = {
+        "Standard servos are rated for 4.8 to 6.0 V.",
+        "Above 6.0 V, only a servo specified as HV",
+        "(high voltage) operates within its rating.",
+        "A standard servo can be destroyed immediately.",
+        "Check the servo's datasheet before applying.",
+    };
+    for (int i = 0; i < 5; ++i) {
+        gfx_text(c, a.x + 20, a.y + 104 + i * 22, lines[i], &gfx_font_8x16,
+                 (i < 4) ? ui_theme_color(UI_C_TEXT)
+                         : ui_theme_color(UI_C_TEXT_DIM), 1);
+    }
+    if (supply_screen_output_on()) {
+        gfx_text(c, a.x + 20, a.y + 104 + 5 * 22 + 8,
+                 "The output is on: the voltage changes at once.",
+                 &gfx_font_8x16, ui_theme_color(UI_C_WARN), 1);
+    }
+    draw_ask_apply(c);
+    ui_button(c, warn_cancel_rect(), "CANCEL",
+              ui_theme_color(UI_C_PANEL_SUNK),
+              s.ov_have && s.ov_pressed == OP_ASK_CANCEL, true);
+}
+
 /*
  * SUPPLY's question before a set point changes a live output, with its
  * words: the change reaches the load at once.
@@ -2609,6 +2708,10 @@ static void draw_warning(gfx_canvas_t *c)
 static void draw_ask(gfx_canvas_t *c)
 {
     const gfx_rect_t a = overlay_area();
+    if (s.ask.hv) {
+        draw_hv(c);
+        return;
+    }
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_WARN));
     gfx_text(c, a.x + 20, a.y + 20, "OUTPUT IS ON", &gfx_font_8x16,
              ui_theme_color(UI_C_WARN), 2);
@@ -2721,9 +2824,10 @@ static void tick(float dt_s)
         } else if (ui_hold_left(&s.out_hold) && s.out_down) {
             s.out_down = false;
         }
-        if (!on && s.ask.open) {
+        if (!on && s.ask.open && !s.ask.hv) {
             /* The question was about a live output and there is none; the
-             * change it held is dropped, unanswered, as on SUPPLY. */
+             * change it held is dropped, unanswered, as on SUPPLY.  The HV
+             * warning is about the servo, and stays. */
             s.ask.open = false;
             close_alone();
             servo_invalidate();
@@ -2743,6 +2847,16 @@ static void tick(float dt_s)
         s.sup_v = supply_screen_set_v();
         s.sup_i = supply_screen_set_i();
         ++s.sup_rev;
+    }
+
+    /* The HV warning's hold: the voltage goes to the supply when it
+     * completes. */
+    if (s.ask.open && s.ask.down) {
+        ++s.ask.rev;
+        if (ui_hold_tick(&s.ask.hold, dt_s)) {
+            ov_let_go();
+            ask_apply();
+        }
     }
 
     /* The warning's hold: the profile goes into force when it completes. */
@@ -2844,6 +2958,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         s.drawn_sup[buf]   = s.sup_rev;
         s.drawn_power[buf] = s.power_rev;
         s.drawn_warn[buf]  = s.warn.rev;
+        s.drawn_ask[buf]   = s.ask.rev;
         s.drawn_save[buf]  = save_state();
         s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
         if (s.ov_open) {
@@ -2883,6 +2998,11 @@ static void render(gfx_canvas_t *c, int buffer_index)
     if (s.ov_open && s.warn.open && s.drawn_warn[buf] != s.warn.rev) {
         s.drawn_warn[buf] = s.warn.rev;
         clipped(c, warn_apply_rect(), draw_warn_apply);
+    }
+    if (s.ov_open && s.ask.open && s.ask.hv
+        && s.drawn_ask[buf] != s.ask.rev) {
+        s.drawn_ask[buf] = s.ask.rev;
+        clipped(c, warn_apply_rect(), draw_ask_apply);
     }
     if (page_shown() && s.drawn_save[buf] != save_state()) {
         s.drawn_save[buf] = save_state();
@@ -3002,6 +3122,9 @@ static void cancel(void)
     ui_hold_reset(&s.warn.hold);
     s.warn.down = false;
     ++s.warn.rev;
+    ui_hold_reset(&s.ask.hold);
+    s.ask.down = false;
+    ++s.ask.rev;
     s.ov_have = false;
     s.ov_pressed = OP_NONE;
     ++s.arm_rev;

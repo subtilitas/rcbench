@@ -218,6 +218,17 @@ the change on both.
   OUTPUT IS ON, with APPLY and CANCEL, unless SUPPLY's SETTINGS, CONFIRM
   WHILE ON, KEYPAD is off. The question goes, unanswered, when the output
   goes off.
+- A voltage raised from 6.0 V or below to above it opens the warning HV
+  SERVOS ONLY: standard servos are rated for 4.8 to 6.0 V, and above that
+  only a servo specified as HV (high voltage) is within its rating; a
+  standard servo above it can be destroyed immediately. The
+  voltage is applied after HOLD TO APPLY is held for 2 s, the gesture of the
+  profile warning; CANCEL drops it. With the output on it replaces SUPPLY's
+  question, and it stays if the output goes off. A voltage already above
+  6.0 V changes without it. A voltage set on SUPPLY does not open it.
+
+  ![The HV warning](img/servo-hv.png)
+
 - OUTPUT ON is a two-second hold, OUTPUT OFF a tap, as on SUPPLY. STOP ends
   a hold under way. Leaving SERVO leaves the output as it is; a press on
   OUTPUT OFF as the screen is left is sent as the OFF it was.
