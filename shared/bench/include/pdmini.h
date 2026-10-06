@@ -226,9 +226,10 @@ void pdmini_init(pdmini_t *d, const pdmini_io_t *io, uint32_t now_ms);
  *  whatever is asked, until an OFF is asked. */
 void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma);
 
-/** The wiring came back from before a restart: the module may be on.
- *  pdmini_may_be_on() says so until a state read shows it off, or until
- *  PDMINI_ABSENT_TRIES WHO_AM_I in a row go unanswered by a byte. */
+/** Attached to a module whose state is not known -- wiring restored after
+ *  a restart, or newly given: it may be on.  pdmini_may_be_on() says so
+ *  until a state read shows it off, or until PDMINI_ABSENT_TRIES WHO_AM_I
+ *  in a row go unanswered by a byte. */
 void pdmini_restored(pdmini_t *d);
 
 /** The output off, and no set points asked: the module's are left as

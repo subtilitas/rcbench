@@ -1274,6 +1274,18 @@ TEST_CASE(a_restored_module_may_be_on_until_read)
     CHECK(pdmini_may_be_on(&d));
     run(7000u, false);
     CHECK(!pdmini_may_be_on(&d));              /* nothing there */
+
+    /* Silence broken by any answer starts the count again. */
+    fresh();
+    m.powered = false;
+    pdmini_restored(&d);
+    run(6000u, false);
+    m.powered = true;
+    m.who = "SOMETHING ELSE";                  /* answers, but wrongly */
+    run(2000u, false);
+    m.powered = false;
+    run(6000u, false);
+    CHECK(pdmini_may_be_on(&d));
     pdmini_restored(NULL);
 }
 

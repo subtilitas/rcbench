@@ -203,9 +203,14 @@ static void finish(pdmini_t *d, uint32_t now, bool ok)
         && d->input_misses < PDMINI_INPUT_MISSES) {
         ++d->input_misses;        /* firmware before v1.0.2.0 has none */
     }
-    if (d->cmd == PDMINI_WHO_AM_I && d->rx_n == 0u
-        && d->who_misses < PDMINI_ABSENT_TRIES) {
-        ++d->who_misses;
+    if (d->cmd == PDMINI_WHO_AM_I) {
+        /* Silence in a row; any answer, even a wrong one, is something
+         * there. */
+        if (d->rx_n != 0u) {
+            d->who_misses = 0u;
+        } else if (d->who_misses < PDMINI_ABSENT_TRIES) {
+            ++d->who_misses;
+        }
     }
     if (d->cmd == PDMINI_WHO_AM_I && d->rx_n == 0u) {
         /* Not a byte back: silence, where a blind OFF may be heard.  Any

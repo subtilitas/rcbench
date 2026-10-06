@@ -20,9 +20,10 @@ history is in git.
   - New wiring is attached only once it is in flash; until then the pins
     are reserved and the UART only tried. A module that has answered and
     is not read off now counts as maybe on, so its wiring is held.
-  - Wiring restored at boot holds the module as maybe on until a state
-    read shows it off, or until 10 WHO_AM_I in a row, about 10 s, get not
-    a byte back; disabling the supply schedules no attach.
+  - Wiring attached -- restored at boot or newly given -- holds the module
+    as maybe on until a state read shows it off, or until 10 WHO_AM_I in
+    a row, about 10 s, get not a byte back; any answer starts that count
+    again. Disabling the supply schedules no attach.
   - Until a command is written the driver is asked for the output off and
     no set points, so attaching or restoring the wiring leaves the
     module's own set points alone. TX and RX swapped count as rewiring.

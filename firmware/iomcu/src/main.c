@@ -279,6 +279,10 @@ static bool supply_rewire(void)
     const pdmini_io_t io = { pd_uart_attach, pd_uart_detach, pd_uart_send,
                              NULL };
     pdmini_init(&s_pd, &io, s_now_ms);
+    /* Whatever the module was doing before these pins reached it -- left
+     * on before a restart, or on from its own button -- is not known: it
+     * is held as maybe on until read off. */
+    pdmini_restored(&s_pd);
     s_pd_open = true;
     return true;
 }
@@ -364,7 +368,7 @@ static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
         s_supply = was;
         if (s_supply_unsaved) {
             (void)supply_probe();
-            s_supply_attach = true;
+            s_supply_attach = supply_page_enabled(&s_supply);
         } else {
             (void)supply_rewire();
         }
@@ -1172,10 +1176,6 @@ int main(void)
         if (!supply_rewire()) {
             supply_page_init(&s_supply);
             (void)supply_rewire();
-        } else if (s_pd_open) {
-            /* Left on before the restart, perhaps: held as maybe on until
-             * read off, so no wiring write can let go of it first. */
-            pdmini_restored(&s_pd);
         }
     }
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
