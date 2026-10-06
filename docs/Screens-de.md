@@ -25,15 +25,17 @@ Eine Störung, die der Bildschirm selbst nicht zeigt, erscheint in einem roten
 Band, 34 px hoch, unten über jedem Bildschirm mit Statusband. Solange es
 steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
 
-- Es verschwindet nach 30 s. Ein neuer Alert, auch mit demselben Text,
-  startet die 30 s neu.
+- Es verschwindet 30 s nach dem Frame, in dem es kam. Ein neuer Alert, auch
+  mit demselben Text, startet die 30 s neu.
 - Ein Tippen auf das Band löscht es früher: auf dem Band drücken und
   loslassen, rechts mit einem `x` markiert. Der Bildschirm darunter bekommt
-  dieses Tippen nicht.
+  weder dieses Tippen noch das eines zweiten Fingers auf dem Band; nur das
+  Loslassen des ersten Fingers löscht.
 - Ein Alert, der kommt, während ein Finger auf dem Band liegt, wird durch
   dieses Loslassen nicht gelöscht.
 - "touch did not answer -- the bench will not arm" beim Start bleibt bis zum
   Neustart und hat kein `x`: es gibt keinen Touch, mit dem man tippen könnte.
+  Ein späterer Alert erscheint darüber; ist er gelöscht, steht wieder dieser.
 
 ## Marken im Menü
 

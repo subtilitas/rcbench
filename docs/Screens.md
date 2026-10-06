@@ -23,14 +23,16 @@ A fault the screen itself does not show appears in a red band, 34 px high,
 across the bottom of every screen that has the status band. It covers the
 bottom of the screen, ARM included, while it shows.
 
-- It clears after 30 s. A new alert, even with the same text, starts the 30 s
-  again.
+- It clears 30 s after the frame it arrived in. A new alert, even with the
+  same text, starts the 30 s again.
 - A tap on the band clears it earlier: press and lift on the band, marked
-  with an `x` at its right end. The screen beneath does not receive that tap.
+  with an `x` at its right end. The screen beneath receives neither that tap
+  nor a second finger's on the band; only the first finger's lift clears.
 - An alert that arrives while a finger is on the band is not cleared by
   that lift.
 - "touch did not answer -- the bench will not arm", shown at start, stays
-  until restart and has no `x`: no touch is there to tap with.
+  until restart and has no `x`: no touch is there to tap with. A later alert
+  shows over it; once that one clears, it shows again.
 
 ## Menu marks
 

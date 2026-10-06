@@ -174,11 +174,15 @@ bool ui_router_take_stop(void);
 void ui_router_set_alert(const char *text);
 
 /**
- * As ui_router_set_alert(), but neither time nor a tap clears it: for a
+ * An alert that neither time nor a tap clears, or NULL to clear it: for a
  * fault that lasts until restart and leaves no touch to tap with, such as a
- * touch controller that did not answer at start.
+ * touch controller that did not answer at start.  It is kept apart from the
+ * alert ui_router_set_alert() shows: that one shows over it, without an x
+ * for the held one, and once cleared the held one shows again.
  */
 void ui_router_hold_alert(const char *text);
+
+/** The alert showing: the passing one, else the held one, else NULL. */
 const char *ui_router_alert(void);
 
 #ifdef __cplusplus

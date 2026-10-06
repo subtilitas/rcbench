@@ -398,18 +398,60 @@ static int alert_band_x_over_a_tile(void)
     return -1;
 }
 
+/* The frame the alert arrives in, then 30 s. */
+static void expire_alert(void)
+{
+    ui_router_tick(0.0f);
+    ui_router_tick(UI_ALERT_SHOW_S);
+}
+
 TEST_CASE(an_alert_clears_after_30_s_and_a_new_one_starts_again)
 {
     fresh();
     to_overview();
     ui_router_set_alert("PD mini output would not switch");
+    ui_router_tick(0.0f);
     ui_router_tick(UI_ALERT_SHOW_S - 0.5f);
     CHECK(ui_router_alert() != NULL);
     ui_router_set_alert("PD mini output would not switch");   /* again */
+    ui_router_tick(0.0f);
     ui_router_tick(UI_ALERT_SHOW_S - 0.5f);
     CHECK(ui_router_alert() != NULL);
     ui_router_tick(1.0f);
     CHECK(ui_router_alert() == NULL);
+}
+
+/* The frame's interval was measured before the alert was set: a stall that
+ * long must not clear the alert before it is drawn. */
+TEST_CASE(the_frame_an_alert_arrives_in_does_not_count)
+{
+    fresh();
+    to_overview();
+    ui_router_set_alert("the card did not keep up -- run not recorded");
+    ui_router_tick(2.0f * UI_ALERT_SHOW_S);
+    CHECK(ui_router_alert() != NULL);
+    ui_router_tick(UI_ALERT_SHOW_S);
+    CHECK(ui_router_alert() == NULL);
+}
+
+/* A second finger on the band takes nothing from the first: the first one's
+ * lift still clears, and the second's events reach no screen. */
+TEST_CASE(a_second_contact_cannot_take_the_alert)
+{
+    fresh();
+    const int x = alert_band_x_over_a_tile();
+    CHECK(x >= 0);
+    to_overview();
+    ui_router_set_alert("coprocessor refused the pulse range");
+    touch(400, H - 10, TOUCH_EVENT_DOWN, 1);
+    touch(x, H - 10, TOUCH_EVENT_DOWN, 2);
+    touch(x, 200, TOUCH_EVENT_MOVE, 2);
+    touch(x, 200, TOUCH_EVENT_UP, 2);           /* slid off: clears nothing */
+    CHECK(ui_router_alert() != NULL);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    touch(400, H - 10, TOUCH_EVENT_UP, 1);
+    CHECK(ui_router_alert() == NULL);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
 
 TEST_CASE(a_tap_on_the_alert_clears_it_and_reaches_no_screen)
@@ -457,7 +499,7 @@ TEST_CASE(a_press_on_an_alert_that_expires_stays_off_the_screen)
     to_overview();
     ui_router_set_alert("card full or unwritable -- run not recorded");
     touch(x, H - 10, TOUCH_EVENT_DOWN, 1);
-    ui_router_tick(UI_ALERT_SHOW_S);
+    expire_alert();
     CHECK(ui_router_alert() == NULL);
     touch(x, H - 10, TOUCH_EVENT_UP, 1);
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
@@ -491,8 +533,29 @@ TEST_CASE(a_held_alert_stays_and_lets_taps_through)
     tap(x, H - 10);
     CHECK(ui_router_alert() != NULL);
     CHECK(ui_router_current() != SCREEN_OVERVIEW);
-    ui_router_set_alert(NULL);
+    ui_router_set_alert(NULL);                  /* not the held one */
+    CHECK(ui_router_alert() != NULL);
+    ui_router_hold_alert(NULL);
     CHECK(ui_router_alert() == NULL);
+}
+
+/* A passing alert shows over the held one and, cleared by time or by a tap,
+ * gives way to it again. */
+TEST_CASE(a_held_alert_returns_after_a_passing_one)
+{
+    fresh();
+    to_overview();
+    ui_router_hold_alert("touch did not answer -- the bench will not arm");
+    ui_router_set_alert("protocol mismatch -- will not arm");
+    CHECK_STR_EQ(ui_router_alert(), "protocol mismatch -- will not arm");
+    expire_alert();
+    CHECK_STR_EQ(ui_router_alert(),
+                 "touch did not answer -- the bench will not arm");
+    ui_router_set_alert("protocol mismatch -- will not arm");
+    tap(400, H - 10);
+    CHECK_STR_EQ(ui_router_alert(),
+                 "touch did not answer -- the bench will not arm");
+    ui_router_hold_alert(NULL);
 }
 
 /* The screens cache what they drew per framebuffer, and the band was drawn
@@ -503,7 +566,7 @@ TEST_CASE(a_cleared_alert_leaves_no_red_behind)
     to_overview();
     ui_router_set_alert("PD mini set points would not take");
     ui_router_render(&cv, 0);
-    ui_router_tick(UI_ALERT_SHOW_S);
+    expire_alert();
     CHECK(ui_router_alert() == NULL);
     ui_router_render(&cv, 0);
     int danger_bottom = 0;
@@ -1038,6 +1101,9 @@ int main(void)
     RUN(no_line_of_stub_copy_runs_off_the_screen);
     RUN(an_alert_survives_navigation);
     RUN(an_alert_clears_after_30_s_and_a_new_one_starts_again);
+    RUN(the_frame_an_alert_arrives_in_does_not_count);
+    RUN(a_second_contact_cannot_take_the_alert);
+    RUN(a_held_alert_returns_after_a_passing_one);
     RUN(a_tap_on_the_alert_clears_it_and_reaches_no_screen);
     RUN(a_lift_clears_only_the_alert_it_was_pressed_on);
     RUN(a_press_on_an_alert_that_expires_stays_off_the_screen);
