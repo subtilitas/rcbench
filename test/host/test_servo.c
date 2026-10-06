@@ -1596,6 +1596,55 @@ TEST_CASE(hold_keeps_the_output_where_it_has_got_to)
     CHECK(c.value_us > 1500u && c.value_us < 1600u);   /* about 11 deg */
 }
 
+/*
+ * Without feedback the horn is drawn where the far end's output is, slewing
+ * as the coprocessor slews -- in its command units -- so HOLD keeps the
+ * servo where it got to, with CENTRE off the middle as well.  The far end
+ * here is the bank the coprocessor runs, fed the same sweep.
+ */
+TEST_CASE(hold_without_feedback_matches_the_far_ends_slew)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    open_settings();
+    tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
+    keys("1520");
+    tap(ROW_L_X, ROW_Y(2));                    /* PULSE MIN */
+    keys("900");
+    close_settings();
+    tap(ARM_X + 1, SPEED_Y);                   /* SPEED 10 % */
+    (void)last_cmd();
+    tap(SWEEP_X, BTN_Y);
+    servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
+
+    outputs_t far;
+    outputs_init(&far, 0u);
+    CHECK(outputs_set_role(&far, 0, OUT_ROLE_SURFACE));
+    CHECK(outputs_set_endpoints(&far, 0, c.min_us, c.max_us));
+    CHECK(outputs_set_slew(&far, 0, c.slew_per_s));
+    outputs_arm(&far, true, 0u);
+    sweep_t w;
+    const sweep_cfg_t cfg = { (sweep_kind_t)c.sweep_kind, c.sweep_mhz,
+                              c.sweep_span, c.sweep_dwell_ms, 0u };
+    CHECK(sweep_start(&w, &cfg, 0u));
+    for (int i = 1; i <= 20; ++i) {            /* half a second */
+        scr->tick(1.0f / 39.0f);
+        const uint32_t t = (uint32_t)((float)i * 1000.0f / 39.0f);
+        uint16_t cmd = 0;
+        (void)sweep_step(&w, t, &cmd);
+        (void)outputs_set(&far, 0, cmd, t);
+        outputs_step(&far, t);
+    }
+    tap(SWEEP_X, BTN_Y);                       /* HOLD */
+    c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_POSITION);
+    const int far_us = (int)outputs_pulse_us(&far, 0);
+    CHECK(far_us > 1560);                      /* well on its way */
+    CHECK(abs((int)c.value_us - far_us) <= 6);
+}
+
 /* The horn is drawn along the far end's curve from when it started there. */
 TEST_CASE(the_horn_follows_the_curve_from_where_the_far_end_started_it)
 {
@@ -1717,6 +1766,7 @@ int main(void)
     RUN(a_changed_setting_starts_the_sweep_over);
     RUN(a_profile_changed_while_it_sweeps_goes_with_the_sweep);
     RUN(hold_keeps_the_output_where_it_has_got_to);
+    RUN(hold_without_feedback_matches_the_far_ends_slew);
     RUN(a_range_changed_while_it_sweeps_goes_with_its_own_amplitude);
     RUN(the_horn_follows_the_curve_from_where_the_far_end_started_it);
     RUN(drags_and_samples_leave_both_buffers_as_a_full_redraw_would);

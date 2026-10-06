@@ -240,6 +240,7 @@ static struct {
 
     float    commanded_deg;
     float    shown_deg;    /**< what the horn is drawn at              */
+    float    shown_cmd;    /**< the same, as the far end's command     */
     float    measured_deg;
     float    current_a;
     bool     have_feedback;
@@ -351,25 +352,35 @@ static float half_travel_us(bool below)
                  : (float)s.max_us - (float)s.centre_us;
 }
 
-static uint16_t deg_to_us(float deg)
+static float deg_to_us_f(float deg)
 {
     const float d = s.reverse ? -deg : deg;
     float us = (float)s.centre_us + (float)s.trim_us
                + d / 90.0f * half_travel_us(d < 0.0f);
     if (us < (float)s.min_us) { us = (float)s.min_us; }
     if (us > (float)s.max_us) { us = (float)s.max_us; }
-    return (uint16_t)(us + 0.5f);
+    return us;
 }
 
-static float us_to_deg(uint16_t us)
+static uint16_t deg_to_us(float deg)
 {
-    const float off = (float)us - (float)s.centre_us - (float)s.trim_us;
+    return (uint16_t)(deg_to_us_f(deg) + 0.5f);
+}
+
+static float us_to_deg_f(float us)
+{
+    const float off = us - (float)s.centre_us - (float)s.trim_us;
     const float half = half_travel_us(off < 0.0f);
     if (half <= 0.0f) {
         return 0.0f;
     }
     const float d = off * 90.0f / half;
     return s.reverse ? -d : d;
+}
+
+static float us_to_deg(uint16_t us)
+{
+    return us_to_deg_f((float)us);
 }
 
 /*
@@ -388,6 +399,23 @@ static void cmd_range(uint16_t *lo, uint16_t *hi)
     const unsigned half  = (below > above) ? below : above;
     *lo = (uint16_t)((unsigned)s.centre_us - half);
     *hi = (uint16_t)((unsigned)s.centre_us + half);
+}
+
+/* A pulse as the far end's command, 0..OUT_SPAN of the range a command
+ * carries, and back: the units it slews in. */
+static float us_to_cmd(float us)
+{
+    uint16_t lo, hi;
+    cmd_range(&lo, &hi);
+    return (hi > lo) ? (us - (float)lo) * (float)OUT_SPAN / (float)(hi - lo)
+                     : (float)OUT_SPAN / 2.0f;
+}
+
+static float cmd_to_us(float cmd)
+{
+    uint16_t lo, hi;
+    cmd_range(&lo, &hi);
+    return (float)lo + (float)(hi - lo) * cmd / (float)OUT_SPAN;
 }
 
 /*
@@ -938,6 +966,7 @@ static void reset(void)
     s.drawn_mask    = 0;
     s.travel_deg    = 90.0f;
     s.speed_pct     = 100;
+    s.shown_cmd     = (float)OUT_SPAN / 2.0f;
     /* STANDARD PWM at 50 Hz: what every restart starts at, whatever the
      * session before it used. */
     s.type      = 0;
@@ -2345,20 +2374,31 @@ static void tick(float dt_s)
      * because the measurement has already placed the arm.
      */
     if (s.have_feedback) {
+        s.shown_cmd = us_to_cmd(deg_to_us_f(s.shown_deg));
         return;
     }
-    const float full = 360.0f;   /* degrees per second at 100% */
-    const float step = full * (float)s.speed_pct / 100.0f * dt_s;
-    const float d = s.commanded_deg - s.shown_deg;
+    /*
+     * In the units the far end slews in -- its command across the range a
+     * command carries -- and at its rate, SPEED_FULL_SPAN_S at 100%.  An
+     * angle a second would not be: with CENTRE off the middle a degree is a
+     * different share of the command on either side, and HOLD, which keeps
+     * the servo where the horn is drawn, would keep it somewhere else.
+     */
+    const float step = (float)SPEED_FULL_SPAN_S * (float)s.speed_pct / 100.0f
+                       * dt_s;
+    const float want = us_to_cmd(deg_to_us_f(s.commanded_deg));
+    const float d = want - s.shown_cmd;
 
     if (fabsf(d) <= step) {
+        s.shown_cmd = want;
         if (s.shown_deg != s.commanded_deg) {
             s.shown_deg = s.commanded_deg;
             ++s.ctrl_rev;
         }
         return;
     }
-    s.shown_deg += (d > 0.0f) ? step : -step;
+    s.shown_cmd += (d > 0.0f) ? step : -step;
+    s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
     ++s.ctrl_rev;
 }
 
