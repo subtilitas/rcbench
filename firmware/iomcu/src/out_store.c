@@ -293,10 +293,12 @@ bool out_store_load(out_store_t *out)
     if (r->version == STORE_VERSION) {
         *out = r->cfg;
     } else {
-        /* Version 3: the bindings, and no supply wired. */
+        /* Version 3: the bindings, and the supply as a page starts --
+         * disabled, at the module's 19200 baud as shipped. */
         memset(out, 0, sizeof(*out));
         memcpy(out->slots, r->cfg.slots, sizeof(out->slots));
         memcpy(out->chan_cfg, r->cfg.chan_cfg, sizeof(out->chan_cfg));
+        out->supply[LINK_SP_BAUD] = 1u;
     }
     s_saved = *out;
     s_have_saved = true;

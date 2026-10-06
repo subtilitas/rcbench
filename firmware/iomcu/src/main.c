@@ -60,6 +60,9 @@ static servo_page_t s_servo;
 static supply_page_t s_supply;
 static pdmini_t      s_pd;
 static bool          s_pd_open;      /* the UART claimed for its pins */
+/* Wiring taken and not yet in flash: no ON until it is, so a restart in
+ * the run finds the wiring that drives the module and can switch it off. */
+static bool          s_supply_unsaved;
 /* What the board and this file hold, before the supply takes its pins. */
 static uint64_t      s_base_reserved;
 static link_dev_t    s_dev;
@@ -290,10 +293,25 @@ static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
     (void)ctx;
     /* What the driver says now, not what the last pass published: replies
      * taken since may have shown the module come on by itself. */
-    if (s_pd_open && pdmini_may_be_on(&s_pd)) {
-        s_supply.regs[LINK_SP_FLAGS] |= LINK_SP_LIVE;
+    if (s_pd_open) {
+        /* Bytes already in the FIFO first: a reply there may show the
+         * module come on by itself, and a rewire would throw it away. */
+        uint8_t b;
+        while (pd_uart_getc(&b)) {
+            pdmini_rx(&s_pd, b, s_now_ms);
+        }
+        if (pdmini_may_be_on(&s_pd)) {
+            s_supply.regs[LINK_SP_FLAGS] |= LINK_SP_LIVE;
+        } else {
+            s_supply.regs[LINK_SP_FLAGS] &= (uint16_t)~LINK_SP_LIVE;
+        }
     }
     const supply_page_t was = s_supply;
+    if (s_supply_unsaved && (unsigned)off <= (unsigned)LINK_SP_OUTPUT
+        && (unsigned)off + (unsigned)n > (unsigned)LINK_SP_OUTPUT
+        && in[LINK_SP_OUTPUT - off] != 0u) {
+        return LINK_NACK_NOT_ARMED;
+    }
     const uint8_t nack = supply_page_write(&s_supply, off, n, in, &s_outputs,
                                            s_beat.alive && !s_dev.failsafe);
     if (nack != 0u) {
@@ -312,6 +330,15 @@ static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
     if (memcmp(&s_supply.regs[LINK_SP_ENABLE], &was.regs[LINK_SP_ENABLE],
                LINK_SP_OUTPUT * sizeof(uint16_t)) != 0) {
         save_outputs(&s_state);
+        s_supply_unsaved = out_store_pending();
+        if (s_supply_unsaved && s_supply.regs[LINK_SP_OUTPUT] != 0u) {
+            /* An ON in the same frame as new wiring waits for the save. */
+            s_supply = was;
+            (void)supply_rewire();
+            save_outputs(&s_state);      /* the wiring kept is the old one */
+            s_supply_unsaved = out_store_pending();
+            return LINK_NACK_NOT_ARMED;
+        }
     }
     return 0u;
 }
@@ -362,11 +389,30 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
                                  servo_page_hz(&s_servo)) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
+    uint16_t prev[LINK_OS_COUNT];
+    memcpy(prev, s->slots, sizeof(prev));
     memcpy(s->slots, next, sizeof(next));
     outputs_slots_apply(&s_outputs, s->slots);
     /* The bank has decided what the slots are; this makes the silicon agree
      * with it before the next pass renders anything. */
     hw_apply();
+    /*
+     * With the supply's UART holding two PIO state machines, a slot the
+     * bank took that the silicon could not bind is refused rather than kept
+     * unbound: a restart binds the outputs first, and the supply would be
+     * the one left out.
+     */
+    if (s_pd_open) {
+        for (uint8_t i = 0; i < OUT_MAX_SLOTS; ++i) {
+            if (s_outputs.slot[i].driver != OUT_DRIVER_NONE
+                && !outputs_hw_bound(i)) {
+                memcpy(s->slots, prev, sizeof(prev));
+                outputs_slots_apply(&s_outputs, s->slots);
+                hw_apply();
+                return LINK_NACK_BAD_VALUE;
+            }
+        }
+    }
     save_outputs(s);
     return 0u;
 }
@@ -1064,7 +1110,7 @@ int main(void)
      * and after the slots' hardware, so the UART takes what PIO the outputs
      * leave, as it does when written at run time, and never displaces one.
      */
-    if (have_saved && saved.supply[LINK_SP_ENABLE] != 0u
+    if (have_saved
         && supply_page_write(&s_supply, LINK_SP_ENABLE, LINK_SP_OUTPUT,
                              saved.supply, &s_outputs, false) == 0u
         && !supply_rewire()) {
@@ -1229,6 +1275,7 @@ int main(void)
         const out_store_step_t step = out_store_tick(driving, quiet, now);
         switch (step) {
         case OUT_STORE_WROTE:
+            s_supply_unsaved = false;
             /*
              * Printed because it is the number that decides whether a save
              * costs a frame: this core answers nothing while it writes, the
