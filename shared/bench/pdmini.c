@@ -275,6 +275,22 @@ static bool holds(const uint8_t *p, size_t n, const char *s)
  * module's own button or its AUTO OUT setting can switch the output on in
  * the same 250 ms as one guess.
  */
+/*
+ * The voltage set point the module is given: the one asked, but no more
+ * than PDMINI_HEADROOM_MV under the input it reports.  A buck cannot put
+ * out more than it is fed, and a module asked to shows ERR and needs a
+ * power cycle.  As asked while the input is not known.
+ */
+static uint16_t target_mv(const pdmini_t *d)
+{
+    const uint32_t vin = d->st.vin_mv;
+    if (vin <= PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV) {
+        return d->want_mv;      /* not read yet, or no room to cap into */
+    }
+    const uint32_t cap = vin - PDMINI_HEADROOM_MV;
+    return (d->want_mv > cap) ? (uint16_t)cap : d->want_mv;
+}
+
 static void learn_on(pdmini_t *d)
 {
     if (d->on_seen && d->on_value == d->en_value) {
@@ -404,7 +420,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->st.set_ma    = (uint16_t)(r[4] | (r[5] << 8));
         d->data_known   = true;
         d->data_pending = false;
-        if (d->st.set_mv == d->want_mv && d->st.set_ma == d->want_ma) {
+        if (d->st.set_mv == target_mv(d) && d->st.set_ma == d->want_ma) {
             d->data_tries   = 0u;
             d->st.set_stuck = false;
             if (d->on_step == 1u) {
@@ -609,10 +625,11 @@ static bool next_job(pdmini_t *d, uint32_t now)
             start(d, now, req, 2u, false);
             return true;
         }
-        if (d->st.set_mv != d->want_mv || d->st.set_ma != d->want_ma) {
+        const uint16_t mv = target_mv(d);
+        if (d->st.set_mv != mv || d->st.set_ma != d->want_ma) {
             const uint8_t req[6] = {
                 PDMINI_OUTPUT_DATA, (uint8_t)d->slot,
-                (uint8_t)(d->want_mv & 0xFFu), (uint8_t)(d->want_mv >> 8),
+                (uint8_t)(mv & 0xFFu), (uint8_t)(mv >> 8),
                 (uint8_t)(d->want_ma & 0xFFu), (uint8_t)(d->want_ma >> 8),
             };
             ++d->data_tries;
@@ -629,7 +646,7 @@ static bool next_job(pdmini_t *d, uint32_t now)
      * comes on.
      */
     const bool set_ok = d->want_set && d->data_known
-                        && d->st.set_mv == d->want_mv
+                        && d->st.set_mv == target_mv(d)
                         && d->st.set_ma == d->want_ma;
     if (!d->en_pending && !d->st.output && d->want_output && set_ok
         && en_ready(d, now)) {
@@ -717,7 +734,7 @@ static bool overtaken(const pdmini_t *d)
          * read back for it, are no longer the ones asked. */
         return d->en_pending
                && (d->en_for != d->want_output
-                   || (d->en_for && (d->st.set_mv != d->want_mv
+                   || (d->en_for && (d->st.set_mv != target_mv(d)
                                      || d->st.set_ma != d->want_ma)));
     }
     if (d->cmd != PDMINI_OUTPUT_DATA) {
@@ -725,7 +742,7 @@ static bool overtaken(const pdmini_t *d)
     }
     const uint16_t mv = (uint16_t)(d->req[2] | (d->req[3] << 8));
     const uint16_t ma = (uint16_t)(d->req[4] | (d->req[5] << 8));
-    return mv != d->want_mv || ma != d->want_ma
+    return mv != target_mv(d) || ma != d->want_ma
            || (!d->want_output
                && (d->st.output || (d->en_pending && d->en_for)));
 }

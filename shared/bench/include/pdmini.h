@@ -83,6 +83,12 @@ extern "C" {
 #define PDMINI_V_MAX_MV  20000u
 #define PDMINI_I_MIN_MA     50u
 #define PDMINI_I_MAX_MA   3000u
+/** A voltage set point is kept this far under the input the module reports:
+ *  a buck cannot put out more than it is fed, and a module asked to shows
+ *  ERR and needs a power cycle (seen on the bench, 2026-10-06, 5.88 V asked
+ *  from a 4.88 V input).  The margin it needs is not measured; 4.00 V from
+ *  4.85 V worked. */
+#define PDMINI_HEADROOM_MV  500u
 
 /** What WHO_AM_I's reply holds from this module: "WeAct Studio PD Power
  *  Mini V1 BUCK" in the bench station's notes of its 2026-09-11 run.  A

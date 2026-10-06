@@ -29,6 +29,7 @@ typedef struct {
     uint16_t mv[5], ma[5];
     uint16_t v_mv, i_ma;
     bool     input_ok;        /* PD negotiated: the output can switch on */
+    uint16_t input_mv;        /* what READ_INPUT_STATE reports, 0: 24 V  */
     bool     bad_crc;         /* answer every read with a broken CRC     */
     bool     whoami_crc;      /* end WHO_AM_I with a CRC, not 0x0A       */
     uint8_t  junk;            /* a byte the handover leaves, 0 for none  */
@@ -178,7 +179,9 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
     }
     case PDMINI_READ_INPUT: {
         const uint8_t r[6] = { PDMINI_READ_INPUT, m.input_ok ? 5u : 1u,
-                               0xC0u, 0x5Du, 200u, 0u };   /* 24000 mV, 20.0 V */
+                               (uint8_t)((m.input_mv ? m.input_mv : 24000u) & 0xFFu),
+                               (uint8_t)((m.input_mv ? m.input_mv : 24000u) >> 8),
+                               200u, 0u };   /* 24000 mV unless set, 20.0 V */
         reply(r, 6u, true);
         break;
     }
@@ -1315,6 +1318,27 @@ TEST_CASE(an_output_the_module_switched_off_stays_off)
     CHECK(m.output);
 }
 
+/* Fed 4.88 V and asked for 5.88 V: the module is given no more than its
+ * input less the headroom, and comes on at that. */
+TEST_CASE(a_set_point_over_the_input_is_kept_under_it)
+{
+    fresh();
+    m.input_mv = 4880u;
+    run(100u, false);
+    run(1000u, false);                        /* the input read */
+    CHECK_EQ(pdmini_status(&d)->vin_mv, 4880u);
+    pdmini_want(&d, true, 5880u, 1000u);
+    run(2000u, false);
+    CHECK_EQ(m.mv[0], 4880u - PDMINI_HEADROOM_MV);
+    CHECK(m.output);
+    CHECK_EQ(m.on_at_mv, 4880u - PDMINI_HEADROOM_MV);
+    CHECK(!pdmini_status(&d)->set_stuck);
+    /* Under the cap, the set point is the one asked. */
+    pdmini_want(&d, true, 3300u, 1000u);
+    run(1500u, false);
+    CHECK_EQ(m.mv[0], 3300u);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -1382,6 +1406,7 @@ int main(void)
     RUN(a_learnt_argument_that_stops_working_is_doubted);
     RUN(stale_set_points_are_not_sent);
     RUN(an_unanswered_input_read_is_given_up);
+    RUN(a_set_point_over_the_input_is_kept_under_it);
     RUN(an_argument_outlasts_a_module_that_comes_back);
     RUN(an_output_that_came_on_by_itself_is_not_relied_on);
     RUN(an_on_sent_and_unsettled_is_owed_an_off);
