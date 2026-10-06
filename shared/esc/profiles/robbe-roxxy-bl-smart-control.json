@@ -1,0 +1,240 @@
+{
+  "id": "robbe-roxxy-bl-smart-control",
+  "brand": "Robbe",
+  "family": "ROXXY BL-Smart Control 940-6",
+  "models": [
+    {
+      "name": "ROXXY BL-Smart Control 940-6 SV (8573)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "Burst 45 A; BEC 5-7.4 V, 5 A (type not stated); NiCd/NiMH 6-18 cells; S.BUS2 telemetry",
+      "cell_type": "lipo",
+      "spec_source": "Robbe_Roxxy_BL-Smart_940-6.pdf p.2"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Robbe_Roxxy_BL-Smart_940-6.pdf",
+      "pages": "3-4",
+      "language": "de",
+      "url": "https://www.live-hobby.de/out/media/Anleitungen/Anleitung-Robbe/Anleitung_Robbe_ROXXY_Smart_Control_940-6_SV_Brushless_Regler_8573.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": null,
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 8000,
+      "confirm_signal": "Long beep about 4 s after power-up, melody (5-6-5) about 4 s later.",
+      "steps": [
+        "Receiver connected, transmitter on, throttle forward (full).",
+        "Connect power: after about 4 s a long beep.",
+        "After 4 s more: melody 5-6-5.",
+        "Parameters then sound in a loop."
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": 0,
+      "description": "Parameter N is N beeps, looping through 1 to 8. Inside a parameter the options loop the same way: option N is N beeps."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Select a parameter by moving the stick to the stop position while its beeps sound. Select an option by moving to full throttle while its beeps sound; a 5-6-5 melody confirms."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Do nothing while a parameter's beeps repeat; the loop moves on."
+    },
+    "confirm_signal": "Melody 5-6-5 after an option is stored; the parameter loop then continues.",
+    "exit": "Parameter 8 (8 beeps), then stick to stop: melody 6-5-6; switch the ESC off.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": "Parameter 7 (7 beeps) resets all data; the sub-menu behaviour is not described.",
+    "description": "Full throttle at power-up gives a long beep after about 4 s and melody 5-6-5 after 4 s more. Parameters 1 to 8 loop as 1 to 8 beeps. Stick to stop while the wanted parameter sounds opens its options (N beeps for option N); full throttle stores the option with melody 5-6-5. Parameter 8 exits."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake force",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "off",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "50%"
+        },
+        {
+          "number": 3,
+          "name": "100%"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3-4"
+    },
+    {
+      "number": 2,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "LiPo",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "NiCd/NiMH"
+        },
+        {
+          "number": 3,
+          "name": "LiFe"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3-4"
+    },
+    {
+      "number": 3,
+      "name": "Cutoff mode",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "reduce slowly",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "cut off"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3-4"
+    },
+    {
+      "number": 4,
+      "name": "Cutoff voltage",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "low"
+        },
+        {
+          "number": 2,
+          "name": "medium",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "high"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3-4",
+      "note": "LiPo 3.0/3.1/3.2 V per cell; NiCd/NiMH 25%/50%/60% of start voltage (minimum 4.6 V); LiFe 2.5/2.8/2.9 V per cell."
+    },
+    {
+      "number": 5,
+      "name": "Motor start-up",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "normal",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft"
+        },
+        {
+          "number": 3,
+          "name": "super soft"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3-4"
+    },
+    {
+      "number": 6,
+      "name": "Motor timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "low"
+        },
+        {
+          "number": 2,
+          "name": "medium",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "high"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3-4"
+    },
+    {
+      "number": 7,
+      "name": "Reset all data",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "reset"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3"
+    },
+    {
+      "number": 8,
+      "name": "Exit",
+      "key": "exit",
+      "values": [
+        {
+          "number": 1,
+          "name": "exit"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3-4"
+    }
+  ],
+  "unknowns": [
+    "Beep duration and gaps: not stated.",
+    "Defaults are read from grey table cells in the page image; text does not state them.",
+    "Reset (parameter 7): how confirmation is given and whether a sub-menu is sounded: not stated.",
+    "Exit (parameter 8): the manual says to leave via 8 beeps and then stop stick; the melody 6-5-6 is stated, any wait is not.",
+    "Stick to stop selects a parameter; whether a sub-menu starts at option 1 immediately: not stated.",
+    "Program Card (accessory 85731000) offers brake force 0/25/50/75/100%, cutoff soft/hard/off, start mode, timing, acceleration and governor; none of this is available from sticks."
+  ],
+  "notes": [
+    "The stick menu has 3 brake force values (off, 50%, 100%); the Program Card table has 5 values (0%, 25%, 50%, 75%, 100%).",
+    "The stick menu offers three start-up modes (normal, soft, super soft); the Program Card names them normal, medium, soft.",
+    "announce.repeat 0 means the sequence repeats until a choice is made (manual: \"continuous\")."
+  ],
+  "schema": 1,
+  "verified": false
+}

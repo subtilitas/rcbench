@@ -1,0 +1,425 @@
+{
+  "id": "ztw-gecko",
+  "brand": "ZTW",
+  "family": "Gecko series, 10-item short/long menu",
+  "models": [
+    {
+      "name": "Gecko 45A SBEC 5A",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 45,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "ZTW_Gecko.pdf p.3 (specification table: cont. current, battery cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Gecko 65A SBEC 8A",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 65,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "ZTW_Gecko.pdf p.3 (specification table: cont. current, battery cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Gecko 85A SBEC 8A",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 85,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "ZTW_Gecko.pdf p.3 (specification table: cont. current, battery cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Gecko 125A SBEC 8A",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 125,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "ZTW_Gecko.pdf p.3 (specification table: cont. current, battery cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Gecko 155A SBEC 8A",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 155,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "ZTW_Gecko.pdf p.3 (specification table: cont. current, battery cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Gecko 120A OPTO HV",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 120,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "ZTW_Gecko.pdf p.3 (specification table: cont. current, battery cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Gecko 150A OPTO HV",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 150,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "ZTW_Gecko.pdf p.3 (specification table: cont. current, battery cells)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "ZTW_Gecko.pdf",
+      "pages": "3-8",
+      "language": "en",
+      "url": "https://badasspower.com/downloads/ZTW-Gecko-Series-ESC-Manual.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "OPTO HV models have no BEC; the manual does not say how the signal side is powered.",
+  "scheme": {
+    "type": "short_long",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 2000,
+      "confirm_signal": "Two short beeps after about 2 s",
+      "steps": [
+        "Transmitter on, throttle at max",
+        "Connect battery",
+        "Wait about 2000 ms: two short beeps, programming mode entered"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "short_long",
+      "long_equals_short": 5,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": 4,
+      "description": "10 item tones loop. Each item tone sounds 4 times. Items 1-4 are 1-4 short beeps, items 5-9 are 1 long + 0-4 short, item 10 is 2 long. Value tones follow the same coding (value 5 is 1 long)."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Item: throttle to min while the wanted item tone sounds; one special tone confirms the item is entered."
+    },
+    "value_select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Value: throttle to max on the wanted value tone; one special tone confirms the value is stored."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Wait for the next item or value tone."
+    },
+    "confirm_signal": "One special tone after the value is stored.",
+    "exit": "Disconnect the battery; or keep waiting to pick the next item.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": "Item 4 (4 short beeps) 'Restore factory setup defaults'.",
+    "description": "Throttle max, battery on, two short beeps after 2 s. Ten item tones loop, each four times. Throttle to min on the wanted item enters it; value tones then loop; throttle to max on the wanted value stores it. Disconnect the battery to leave."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake type",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "brake off",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft brake (30 %)"
+        },
+        {
+          "number": 3,
+          "name": "mid brake (60 %)"
+        },
+        {
+          "number": 4,
+          "name": "hard brake (100 %)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4, 8"
+    },
+    {
+      "number": 2,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "NiCd / NiMH"
+        },
+        {
+          "number": 2,
+          "name": "LiPo (auto cell count)",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "LiFe"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4, 8"
+    },
+    {
+      "number": 3,
+      "name": "Cutoff voltage threshold",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "2.8 V / 50 %"
+        },
+        {
+          "number": 2,
+          "name": "3.0 V / 60 %",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "3.2 V / 60 % (table) or 65 % (text)"
+        },
+        {
+          "number": 4,
+          "name": "no protection"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4, 8"
+    },
+    {
+      "number": 4,
+      "name": "Restore factory setup defaults",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "restore"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4, 8"
+    },
+    {
+      "number": 5,
+      "name": "Motor timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "auto",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "2 deg"
+        },
+        {
+          "number": 3,
+          "name": "8 deg"
+        },
+        {
+          "number": 4,
+          "name": "15 deg"
+        },
+        {
+          "number": 5,
+          "name": "22 deg"
+        },
+        {
+          "number": 6,
+          "name": "30 deg"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5, 8"
+    },
+    {
+      "number": 6,
+      "name": "SBEC voltage output",
+      "key": "bec_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "5.0 V",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "6.0 V"
+        },
+        {
+          "number": 3,
+          "name": "7.4 V (not on Gecko 45A)"
+        },
+        {
+          "number": 4,
+          "name": "8.4 V (not on Gecko 45A)"
+        }
+      ],
+      "applies_to": [
+        "Gecko 65A SBEC 8A",
+        "Gecko 85A SBEC 8A",
+        "Gecko 125A SBEC 8A",
+        "Gecko 155A SBEC 8A"
+      ],
+      "source_page": "5, 8"
+    },
+    {
+      "number": 7,
+      "name": "Governor mode",
+      "key": "governor",
+      "values": [
+        {
+          "number": 1,
+          "name": "RPM off",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "1st soft start (8 s)"
+        },
+        {
+          "number": 3,
+          "name": "2nd soft start (15 s)"
+        },
+        {
+          "number": 4,
+          "name": "governor mode 1 (low KV)"
+        },
+        {
+          "number": 5,
+          "name": "governor mode 2 (high KV)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5, 8"
+    },
+    {
+      "number": 8,
+      "name": "Motor rotation",
+      "key": "direction",
+      "values": [
+        {
+          "number": 1,
+          "name": "forward",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "reverse"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5, 8"
+    },
+    {
+      "number": 9,
+      "name": "Start-up strength",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "10 %"
+        },
+        {
+          "number": 2,
+          "name": "15 %"
+        },
+        {
+          "number": 3,
+          "name": "20 %"
+        },
+        {
+          "number": 4,
+          "name": "25 %"
+        },
+        {
+          "number": 5,
+          "name": "30 %",
+          "default": true
+        },
+        {
+          "number": 6,
+          "name": "35 %"
+        },
+        {
+          "number": 7,
+          "name": "40 %"
+        },
+        {
+          "number": 8,
+          "name": "45 %"
+        },
+        {
+          "number": 9,
+          "name": "50 %"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5, 8"
+    },
+    {
+      "number": 10,
+      "name": "Low-voltage cutoff type",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "reduce power",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "cut off power"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5, 8"
+    }
+  ],
+  "unknowns": [
+    "Beep duration, gap and loop length in ms are not stated.",
+    "No window in ms for the min or max gesture is given.",
+    "Whether the loop returns to item selection after a stored value (the manual says 'keep waiting to the next programmable item') is clear but the delay is not stated.",
+    "How long the first beeps after power-on (entry) hold is 'about 2 seconds'.",
+    "The special-tone sound is not described."
+  ],
+  "notes": [
+    "Cutoff threshold value 3 is 3.2 V/60 % in the tone table and 3.2 V/65 % in the text (settings 3).",
+    "Restore list gives 'Cut Off Voltage Threshold 3.0V/60%'.",
+    "INDEX.csv groups Mystery with Gecko; Mystery uses a different tone scheme (mystery-ztw-melody-menu).",
+    "Items 6 values 7.4 V and 8.4 V: the manual says Gecko 45A has only 5.0 V and 6.0 V."
+  ],
+  "schema": 1,
+  "verified": false
+}

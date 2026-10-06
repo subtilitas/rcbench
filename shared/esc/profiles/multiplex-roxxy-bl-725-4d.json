@@ -1,0 +1,112 @@
+{
+  "id": "multiplex-roxxy-bl-725-4d",
+  "brand": "Multiplex",
+  "family": "ROXXY BL-Control 725 S-BEC 4D",
+  "models": [
+    {
+      "name": "ROXXY BL-Control 725 S-BEC 4D",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 25,
+      "bec": "switching",
+      "firmware_note": "Order 1-01171; burst 35 A; pulse frequency 41.6 kHz; S-BEC 5.5 V max 2.0 A (burst 3 A)",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_BL-725_S-BEC_4D.pdf p.1"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Multiplex_Roxxy_BL-725_S-BEC_4D.pdf",
+      "pages": "3-4 (English)",
+      "language": "de/en/fr",
+      "url": "https://www.multiplex-rc.de/userdata/filegallery/original/4449_1-01170-bedienungsanleitung-roxxy-bl-725-s-bec-4d--de-de-fr.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": null,
+  "scheme": {
+    "type": "other",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "Three-way tone sequence, a pause of about 3 s, then a longer fourth sound.",
+      "steps": [
+        "Battery disconnected, transmitter on, throttle stick at maximum.",
+        "Connect a charged flight battery: three-way tone sequence.",
+        "After about 3 s a longer fourth sound.",
+        "Stick to minimum: ascending tone sequence, throttle calibrated, controller ready in standard mode."
+      ]
+    },
+    "announce": {
+      "what": "value",
+      "encoding": "melody",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "No numbered menu. The mode is chosen by the stick position at power-up (off for forward only, centre for forward and reverse). The ready signal is a three-way tone sequence followed by a fourth sound."
+    },
+    "select": {
+      "throttle": "mid",
+      "within_ms": null,
+      "description": "Stick at centre at power-up selects forward and reverse (4D)."
+    },
+    "skip": {
+      "throttle": "min",
+      "description": "Stick at motor OFF at power-up selects normal forward-only operation."
+    },
+    "confirm_signal": "Three-way tone sequence followed by a fourth sound means ready.",
+    "exit": "Disconnect battery.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": null,
+    "description": "The stick position at power-up picks the mode: motor OFF for forward only, centre for forward and reverse (4D). Throttle range is calibrated by powering up at maximum, waiting for the long fourth sound after about 3 s, and moving the stick to minimum."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "forward only, stick at motor OFF at power-up"
+        },
+        {
+          "number": 2,
+          "name": "forward and reverse (4D), stick at centre at power-up"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3-4"
+    },
+    {
+      "number": 2,
+      "name": "Throttle range calibration",
+      "key": "throttle_range",
+      "values": [
+        {
+          "number": 1,
+          "name": "calibrate: maximum at power-up, minimum after the long fourth sound"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4"
+    }
+  ],
+  "unknowns": [
+    "Tone durations and gaps: not stated.",
+    "Default mode: not stated; first manual step shows forward-only commissioning.",
+    "Whether the stored throttle range survives a power cycle: not stated.",
+    "How the controller stores or confirms the mode choice: the manual describes only the ready tones.",
+    "Item numbers 1 and 2 are the order of the manual's sections; the ESC does not sound them."
+  ],
+  "notes": [
+    "The throttle-range calibration (maximum at power-up, minimum after the fourth sound) appears under 'Programming the Throttle' (steps 3.1-3.4) on page 4."
+  ],
+  "schema": 1,
+  "verified": false
+}

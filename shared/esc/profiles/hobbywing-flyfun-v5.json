@@ -1,0 +1,473 @@
+{
+  "id": "hobbywing-flyfun-v5",
+  "brand": "Hobbywing",
+  "family": "FlyFun V5 60A-160A, 12-item menu",
+  "models": [
+    {
+      "name": "FLYFUN 60A V5",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 60,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_FlyFun_Tower_HWI30214002.pdf p.1 (03 Specifications)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FLYFUN 80A V5",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 80,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_FlyFun_Tower_HWI30214002.pdf p.1 (03 Specifications)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FLYFUN 80A OPTO V5",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 80,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_FlyFun_Tower_HWI30214002.pdf p.1 (03 Specifications)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FLYFUN 120A V5",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 120,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_FlyFun_Tower_HWI30214002.pdf p.1 (03 Specifications)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FLYFUN 120A OPTO V5",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 120,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_FlyFun_Tower_HWI30214002.pdf p.1 (03 Specifications)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FLYFUN 130A HV OPTO V5",
+      "cells_min": 6,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 130,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_FlyFun_Tower_HWI30214002.pdf p.1 (03 Specifications)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "FLYFUN 160A HV OPTO V5",
+      "cells_min": 6,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 160,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_FlyFun_Tower_HWI30214002.pdf p.1 (03 Specifications)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Hobbywing_FlyFun_Tower_HWI30214002.pdf",
+      "pages": "1-2",
+      "language": "en+zh",
+      "url": "https://www.towerhobbies.com/on/demandware.static/-/Sites-horizon-master/default/dwaee8da49/Manuals/HWI30214002-Manual-EN.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "OPTO models have no BEC; the manual does not say how the throttle signal side is powered.",
+  "scheme": {
+    "type": "short_long",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 7000,
+      "confirm_signal": "Two short beeps about 2 s after power-up, then a special tone about 5 s later (written as 56712 or a rising tone in the manuals)",
+      "steps": [
+        "Transmitter on, throttle at max",
+        "Connect battery",
+        "Wait about 2000 ms: two short beeps",
+        "Wait about 5000 ms more: special tone, programming mode entered"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "short_long",
+      "long_equals_short": 5,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "12 item tones loop. Items 1-4 are 1-4 short beeps, items 5-9 are 1 long beep plus 0-4 short beeps, item 10 is 2 long beeps, item 11 is 2 long + 1 short, item 12 is 2 long + 2 short. Value N is sounded the same way."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": 3000,
+      "description": "Item: move the throttle to min within 3000 ms after the wanted item tone."
+    },
+    "value_select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Value: move the throttle to max while the wanted value tone sounds. The window length is not stated."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Leave the throttle unchanged and wait for the next tone."
+    },
+    "confirm_signal": "Special tone (written 1515) after a value is stored.",
+    "exit": "Item 12 (2 long + 2 short beeps) then throttle to min within 3000 ms.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": "Item 11 (2 long + 1 short beeps) selects 'factory reset'.",
+    "description": "Throttle at max, then battery on. Two short beeps after about 2 s and a special tone after about 5 s mark programming mode. The ESC loops item tones; throttle to min within 3 s of the wanted item selects it. Value tones then loop; throttle to max on the wanted tone stores it and returns to the item loop."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake type",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "disabled",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "normal"
+        },
+        {
+          "number": 3,
+          "name": "proportional"
+        },
+        {
+          "number": 4,
+          "name": "reverse"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 2,
+      "name": "Brake force",
+      "key": "brake_force",
+      "values": [
+        {
+          "number": 1,
+          "name": "disabled",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "level 1"
+        },
+        {
+          "number": 3,
+          "name": "level 2"
+        },
+        {
+          "number": 4,
+          "name": "level 3"
+        },
+        {
+          "number": 5,
+          "name": "level 4"
+        },
+        {
+          "number": 6,
+          "name": "level 5"
+        },
+        {
+          "number": 7,
+          "name": "level 6"
+        },
+        {
+          "number": 8,
+          "name": "level 7"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 3,
+      "name": "Voltage cutoff type",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "soft",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "hard"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 4,
+      "name": "LiPo cells",
+      "key": "cell_count",
+      "values": [
+        {
+          "number": 1,
+          "name": "auto",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "3S (HV: 6S)"
+        },
+        {
+          "number": 3,
+          "name": "4S (HV: 8S)"
+        },
+        {
+          "number": 4,
+          "name": "5S (HV: 10S)"
+        },
+        {
+          "number": 5,
+          "name": "6S (HV: 12S)"
+        },
+        {
+          "number": 6,
+          "name": "HV only: 14S"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 5,
+      "name": "Cutoff voltage",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "disabled"
+        },
+        {
+          "number": 2,
+          "name": "2.8 V"
+        },
+        {
+          "number": 3,
+          "name": "3.0 V",
+          "default": true
+        },
+        {
+          "number": 4,
+          "name": "3.2 V"
+        },
+        {
+          "number": 5,
+          "name": "3.4 V"
+        },
+        {
+          "number": 6,
+          "name": "3.6 V"
+        },
+        {
+          "number": 7,
+          "name": "3.8 V"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 6,
+      "name": "BEC voltage",
+      "key": "bec_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "5.2 V",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "6.0 V"
+        },
+        {
+          "number": 3,
+          "name": "7.4 V"
+        }
+      ],
+      "applies_to": [
+        "FLYFUN 60A V5",
+        "FLYFUN 80A V5",
+        "FLYFUN 120A V5"
+      ],
+      "source_page": "1-2"
+    },
+    {
+      "number": 7,
+      "name": "Start-up mode",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "normal",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft"
+        },
+        {
+          "number": 3,
+          "name": "very soft"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 8,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "0 deg"
+        },
+        {
+          "number": 2,
+          "name": "5 deg"
+        },
+        {
+          "number": 3,
+          "name": "8 deg"
+        },
+        {
+          "number": 4,
+          "name": "12 deg"
+        },
+        {
+          "number": 5,
+          "name": "15 deg",
+          "default": true
+        },
+        {
+          "number": 6,
+          "name": "20 deg"
+        },
+        {
+          "number": 7,
+          "name": "25 deg"
+        },
+        {
+          "number": 8,
+          "name": "30 deg"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 9,
+      "name": "Motor direction",
+      "key": "direction",
+      "values": [
+        {
+          "number": 1,
+          "name": "CW",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "CCW"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 10,
+      "name": "Freewheeling",
+      "key": "freewheeling",
+      "values": [
+        {
+          "number": 1,
+          "name": "on",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "off"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 11,
+      "name": "Factory reset",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "restore defaults"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 12,
+      "name": "Exit",
+      "key": "exit",
+      "values": [
+        {
+          "number": 1,
+          "name": "exit programming"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    }
+  ],
+  "unknowns": [
+    "Beep duration in ms is not stated.",
+    "Gap between beeps and between tones in ms is not stated.",
+    "Window for selecting a value after its tone is not stated (only 'move to max when the tone sounds').",
+    "Pause between tone repetitions before the loop restarts is not stated.",
+    "Whether the entry hold (2 s then 5 s) has a tolerance is not stated.",
+    "Cell-count values: per-model mapping read from the Chinese-language table (page 2); 14S value position is value 6.",
+    "Whether the Reverse brake value (4) of item 1 exists on 130A/160A HV OPTO V5 is stated as absent in the feature list; the value is kept in the table.",
+    "Which of the OPTO V5 models lack the BEC voltage item: the features text lists 80A/120A/130A/160A HV OPTO V5 as having no adjustable BEC."
+  ],
+  "notes": [
+    "Item 6 (BEC voltage) applies_to lists only the non-OPTO models.",
+    "The page 1 value table gives 14S in the high-voltage row only."
+  ],
+  "schema": 1,
+  "verified": false
+}

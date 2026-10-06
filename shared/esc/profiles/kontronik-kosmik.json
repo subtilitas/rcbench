@@ -1,0 +1,389 @@
+{
+  "schema": 1,
+  "id": "kontronik-kosmik",
+  "brand": "Kontronik",
+  "family": "KOSMIK HV / HV-I",
+  "verified": false,
+  "models": [
+    {
+      "name": "KOSMIK 160 HV",
+      "cells_min": 5,
+      "cells_max": 14,
+      "cell_type": "lipo",
+      "v_min_mv": null,
+      "v_max_mv": 59000,
+      "current_a": 160,
+      "bec": "switching",
+      "firmware_note": "BEC 7 A continuous, 20 A peak (HV); 10 A / 30 A on HV-I variants",
+      "spec_source": "https://kontronik.com/en/produkt/2-wahl-kosmik-160-hv: 5-14 S LiPo, 20-59 V, 160 A"
+    },
+    {
+      "name": "COOL KOSMIK 160 HV",
+      "cells_min": 5,
+      "cells_max": 14,
+      "cell_type": "lipo",
+      "v_min_mv": null,
+      "v_max_mv": 59000,
+      "current_a": 160,
+      "bec": "switching",
+      "firmware_note": "BEC 7 A / 20 A",
+      "spec_source": "https://kontronik.com/produkt/2-wahl-cool-kosmik-160-hv: 5-14 S LiPo, 20-59 V, 160 A continuous"
+    },
+    {
+      "name": "KOSMIK 200 HV",
+      "cells_min": 5,
+      "cells_max": 14,
+      "cell_type": "lipo",
+      "v_min_mv": null,
+      "v_max_mv": 59000,
+      "current_a": 200,
+      "bec": "switching",
+      "firmware_note": "BEC 10 A / 30 A",
+      "spec_source": "https://aeropanda.com/products/kosmik-200-hv (dealer quoting Kontronik): 5-14 S LiPo, 20-59 V, 200 A continuous"
+    },
+    {
+      "name": "COOL KOSMIK 200 HV",
+      "cells_min": 5,
+      "cells_max": 14,
+      "cell_type": "lipo",
+      "v_min_mv": null,
+      "v_max_mv": 59000,
+      "current_a": 200,
+      "bec": "switching",
+      "firmware_note": "BEC 10 A / 30 A",
+      "spec_source": "https://aeropanda.com/products/coolkosmik-200-hv (dealer quoting Kontronik): 5-14 S LiPo, 20-59 V, 200 A continuous"
+    },
+    {
+      "name": "KOSMIK 170 HV-I+",
+      "cells_min": 5,
+      "cells_max": 14,
+      "cell_type": "lipo",
+      "v_min_mv": null,
+      "v_max_mv": 59000,
+      "current_a": 170,
+      "bec": "switching",
+      "firmware_note": "integrated telemetry; BEC 10 A / 30 A; HV-I+ BEC maximum 12.2 V",
+      "spec_source": "https://kontronik.com/en/produkt/kosmik-170-hv-i-kopie: 5-14 S LiPo, 20-59 V, 170 A"
+    },
+    {
+      "name": "KOSMIK 210 HV-I",
+      "cells_min": 5,
+      "cells_max": 14,
+      "cell_type": "lipo",
+      "v_min_mv": null,
+      "v_max_mv": 59000,
+      "current_a": 210,
+      "bec": "switching",
+      "firmware_note": "integrated telemetry; BEC 10 A / 30 A",
+      "spec_source": "https://kontronik.com/en/produkt/kosmik-210-hv-i: 5-14 S LiPo, 20-59 V, 210 A"
+    },
+    {
+      "name": "KOSMIK 210 HV-I+",
+      "cells_min": 5,
+      "cells_max": 14,
+      "cell_type": "lipo",
+      "v_min_mv": null,
+      "v_max_mv": 59000,
+      "current_a": 210,
+      "bec": "switching",
+      "firmware_note": "integrated telemetry; BEC 10 A / 30 A; HV-I+ BEC maximum 12.2 V",
+      "spec_source": "https://kontronik.com/en/produkt/kosmik-210-hv-i-kopie: 5-14 S LiPo, 20-59 V, 210 A"
+    },
+    {
+      "name": "COOL KOSMIK 170 HV-I+",
+      "cells_min": 5,
+      "cells_max": 14,
+      "cell_type": "lipo",
+      "v_min_mv": null,
+      "v_max_mv": 59000,
+      "current_a": 170,
+      "bec": "switching",
+      "firmware_note": "integrated telemetry; BEC 10 A / 30 A; HV-I+ BEC maximum 12.2 V",
+      "spec_source": "https://kontronik.com/en/produkt/cool-kosmik-170-hv-i-kopie-2: 5-14 S LiPo, 20-59 V, 170 A"
+    },
+    {
+      "name": "COOL KOSMIK 210 HV-I+",
+      "cells_min": 5,
+      "cells_max": 14,
+      "cell_type": "lipo",
+      "v_min_mv": null,
+      "v_max_mv": 59000,
+      "current_a": 210,
+      "bec": "switching",
+      "firmware_note": "integrated telemetry; BEC 10 A / 30 A; HV-I+ BEC maximum 12.2 V",
+      "spec_source": "https://kontronik.com/en/produkt/cool-kosmik-210-hv-i-kopie: 5-14 S LiPo, 20-59 V, 210 A"
+    },
+    {
+      "name": "COOL KOSMIK 250 HV-I+",
+      "cells_min": 5,
+      "cells_max": 14,
+      "cell_type": "lipo",
+      "v_min_mv": null,
+      "v_max_mv": 59000,
+      "current_a": 250,
+      "bec": "switching",
+      "firmware_note": "integrated telemetry; BEC 10 A / 30 A; HV-I+ BEC maximum 12.2 V",
+      "spec_source": "https://kontronik.com/en/produkt/cool-kosmik-250-hv-i-kopie: 5-14 S LiPo, 20-59 V, 250 A"
+    },
+    {
+      "name": "WaterCOOL KOSMIK 300 HV-I+",
+      "cells_min": 5,
+      "cells_max": 14,
+      "cell_type": "lipo",
+      "v_min_mv": null,
+      "v_max_mv": 59000,
+      "current_a": 300,
+      "bec": "switching",
+      "firmware_note": "integrated telemetry; BEC 10 A / 30 A; HV-I+ BEC maximum 12.2 V",
+      "spec_source": "https://kontronik.com/en/produkt/watercool-kosmik-300-hv-i-kopie: 5-14 S LiPo, 20-59 V, 300 A"
+    },
+    {
+      "name": "DuoCOOL KOSMIK 300 HV-I+",
+      "cells_min": 5,
+      "cells_max": 14,
+      "cell_type": "lipo",
+      "v_min_mv": null,
+      "v_max_mv": 59000,
+      "current_a": 300,
+      "bec": "switching",
+      "firmware_note": "integrated telemetry; BEC 10 A / 30 A; HV-I+ BEC maximum 12.2 V",
+      "spec_source": "https://kontronik.com/en/produkt/duocool-kosmik-300-hv-i-kopie-2: 5-14 S LiPo, 20-59 V, 300 A"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_KOSMIK_HV_HV-I_2025.pdf",
+      "pages": "8-13, 20-25",
+      "language": "de/en",
+      "url": "https://kontronik.com/wp-content/uploads/2025/05/KOSMIK_HV_KOSMIK_HV-I_20250515_BW.pdf"
+    },
+    {
+      "file": "Kontronik_KOSMIK_Mode10_guide.pdf",
+      "pages": "1-2",
+      "language": "de/en",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/KOSMIK_Zusatzblatt_Modus_10.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "The ESC's own button (marked PRESS on the ESC (on shrink-tube versions on the back near the sensor slot)) must be pressed after the power-up tones. The bench has no actuator for it.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "Ascending three-tone sequence plus cell-count tones; descending three-tone sequence after the button press.",
+      "steps": [
+        "Transmitter on, throttle at motor-off (0 %). Connect the ESC master cable to the receiver throttle channel; receiver on.",
+        "Connect the motor. Apply drive power.",
+        "The ESC sounds an ascending three-tone sequence and single tones for the detected LiPo cell count (long tone = 4 cells, short tone = 1 cell).",
+        "Operator: press the button marked PRESS on the ESC (on shrink-tube versions on the back near the sensor slot).",
+        "The ESC sounds a descending three-tone sequence, then the mode series 1, 2, 3 ... one tone more per series.",
+        "Move the throttle to full (100 %) after the wanted tone count.",
+        "The ESC confirms with an ascending three-tone sequence and repeats the mode as tones. Mode 2: a further stick position may be set. Mode 6: move the stick to reverse (0 %) after the full-throttle confirmation.",
+        "Wait for the confirmation (up to about 2 s for mode 4) before disconnecting power; otherwise the ESC locks (10 red LED flashes)."
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "The ESC sounds mode 1 as one tone, mode 2 as two tones, and so on, one series after another with a pause between series."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Move the throttle to 100 % when the series of the wanted mode sounds."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip. Disconnecting power before the confirmation locks the ESC."
+    },
+    "confirm_signal": "Ascending three-tone sequence, then the mode as single tones.",
+    "exit": "Wait for the confirmation, then disconnect drive power.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Program mode 1 (APM).",
+    "description": "Throttle at 0 %, apply power, press the ESC button after the cell-count tones. The ESC counts modes as single tones. Full throttle at the wanted count stores the mode. Modes 8, 9 and 10 continue with a second stage that counts protocol or voltage steps."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "APM: reset, unlocks the delivery state"
+        },
+        {
+          "number": 2,
+          "name": "Glider, ESC operation, EMK brake (default 92 %), optional separate motor-off position"
+        },
+        {
+          "number": 3,
+          "name": "Motor plane, ESC operation, no brake"
+        },
+        {
+          "number": 4,
+          "name": "Helicopter governor with autorotation (AR at 25 % throttle); soft start 12 s default, 8 to 60 s with a programming unit"
+        },
+        {
+          "number": 6,
+          "name": "Forward / reverse, no RPM control"
+        },
+        {
+          "number": 7,
+          "name": "Reverse motor rotation"
+        },
+        {
+          "number": 8,
+          "name": "Telemetry protocol, port 1 (BEC side); only on HV-I variants"
+        },
+        {
+          "number": 9,
+          "name": "Telemetry protocol, port 2 (LED side); only on HV-I variants"
+        },
+        {
+          "number": 10,
+          "name": "BEC voltage setting, 5 to 8 V (HV-I+ up to 12.2 V)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "8-13"
+    },
+    {
+      "number": 2,
+      "name": "Telemetry protocol (modes 8 and 9)",
+      "key": "telemetry_protocol",
+      "values": [
+        {
+          "number": 1,
+          "name": "KONTRONIK"
+        },
+        {
+          "number": 2,
+          "name": "Graupner"
+        },
+        {
+          "number": 3,
+          "name": "not used, no sound"
+        },
+        {
+          "number": 4,
+          "name": "Multiplex"
+        },
+        {
+          "number": 5,
+          "name": "Mikado"
+        },
+        {
+          "number": 6,
+          "name": "Jeti"
+        },
+        {
+          "number": 7,
+          "name": "PowerBox CORE"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "12-13"
+    },
+    {
+      "number": 3,
+      "name": "BEC voltage (mode 10)",
+      "key": "bec_voltage",
+      "values": [
+        {
+          "number": 0,
+          "name": "5.0 V (no tone)"
+        },
+        {
+          "number": 1,
+          "name": "5.2 V"
+        },
+        {
+          "number": 2,
+          "name": "5.4 V"
+        },
+        {
+          "number": 3,
+          "name": "5.6 V"
+        },
+        {
+          "number": 4,
+          "name": "5.8 V"
+        },
+        {
+          "number": 5,
+          "name": "6.0 V"
+        },
+        {
+          "number": 6,
+          "name": "6.2 V"
+        },
+        {
+          "number": 7,
+          "name": "6.4 V"
+        },
+        {
+          "number": 8,
+          "name": "6.6 V"
+        },
+        {
+          "number": 9,
+          "name": "6.8 V"
+        },
+        {
+          "number": 10,
+          "name": "7.0 V"
+        },
+        {
+          "number": 11,
+          "name": "7.2 V"
+        },
+        {
+          "number": 12,
+          "name": "7.4 V"
+        },
+        {
+          "number": 13,
+          "name": "7.6 V"
+        },
+        {
+          "number": 14,
+          "name": "7.8 V"
+        },
+        {
+          "number": 15,
+          "name": "8.0 V"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "11"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone in ms is not stated.",
+    "Gap between tones inside one mode series in ms is not stated.",
+    "Pause between two mode series in ms is not stated.",
+    "Whether the mode series loops until a mode is selected is not stated.",
+    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
+    "No timed wait before the button press; the time allowed after power-up is not stated.",
+    "Item number 2 is an index chosen here.",
+    "Input voltage range, cell count and rated current of the KOSMIK models are not given in the sections read; the type names carry 160 and 200 only.",
+    "Wait time after pressing the button before the series starts is not stated.",
+    "Tone count for BEC voltages above 8 V on the HV-I+ (maximum 12.2 V) is not given; the value list stops at 8 V.",
+    "The mode 10 guide states a double beep at 8 V; its length is not stated."
+  ],
+  "notes": [
+    "Kontronik_KOSMIK_Mode10_guide.pdf (software V4.5 supplement) gives mode 10 as 5 to 8 V in 0.2 V steps. Kontronik_KOSMIK_HV_HV-I_2025.pdf repeats this and adds an HV-I+ maximum of 12.2 V.",
+    "The mode 10 guide numbers the section 7.6 and the 2025 manual numbers it 7.7.",
+    "The 2025 manual states modes 1 to 6 can only be set by stick programming, not by the programming unit.",
+    "The mode 10 guide English heading says 'BEC Current' while the text describes the BEC voltage."
+  ]
+}

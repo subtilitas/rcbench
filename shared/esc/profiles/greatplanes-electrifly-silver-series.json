@@ -1,0 +1,193 @@
+{
+  "id": "greatplanes-electrifly-silver-series",
+  "brand": "Great Planes",
+  "family": "Silver Series brushless ESC",
+  "models": [
+    {
+      "name": "SS-8",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 20000,
+      "current_a": 8,
+      "bec": null,
+      "firmware_note": "5 V / 1.5 A BEC; NiCd/NiMH 6-12 cells",
+      "spec_source": "GreatPlanes_Electrifly_SilverSeries.pdf p.4 (2-4 LiPo, 4 LiPo for SS-45D; manual says \"20V max w/o BEC\", v_max_mv is that stated 20 V)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SS-12",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 20000,
+      "current_a": 12,
+      "bec": null,
+      "firmware_note": "5 V / 1.5 A BEC; NiCd/NiMH 6-12 cells",
+      "spec_source": "GreatPlanes_Electrifly_SilverSeries.pdf p.4 (2-4 LiPo, 4 LiPo for SS-45D; manual says \"20V max w/o BEC\", v_max_mv is that stated 20 V)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SS-25",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 20000,
+      "current_a": 25,
+      "bec": null,
+      "firmware_note": "5 V / 2.0 A BEC; NiCd/NiMH 6-12 cells",
+      "spec_source": "GreatPlanes_Electrifly_SilverSeries.pdf p.4 (2-4 LiPo, 4 LiPo for SS-45D; manual says \"20V max w/o BEC\", v_max_mv is that stated 20 V)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SS-35",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 20000,
+      "current_a": 35,
+      "bec": null,
+      "firmware_note": "5 V / 2.0 A BEC; NiCd/NiMH 6-12 cells",
+      "spec_source": "GreatPlanes_Electrifly_SilverSeries.pdf p.4 (2-4 LiPo, 4 LiPo for SS-45D; manual says \"20V max w/o BEC\", v_max_mv is that stated 20 V)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SS-45",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 20000,
+      "current_a": 45,
+      "bec": null,
+      "firmware_note": "5 V / 2.0 A BEC; NiCd/NiMH 6-12 cells",
+      "spec_source": "GreatPlanes_Electrifly_SilverSeries.pdf p.4 (2-4 LiPo, 4 LiPo for SS-45D; manual says \"20V max w/o BEC\", v_max_mv is that stated 20 V)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SS-45D",
+      "cells_min": 4,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 20000,
+      "current_a": 45,
+      "bec": null,
+      "firmware_note": "5 V / 2.0 A BEC; NiCd/NiMH 7-14 cells",
+      "spec_source": "GreatPlanes_Electrifly_SilverSeries.pdf p.4 (2-4 LiPo, 4 LiPo for SS-45D; manual says \"20V max w/o BEC\", v_max_mv is that stated 20 V)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SS-60",
+      "cells_min": 4,
+      "cells_max": 12,
+      "v_min_mv": 12400,
+      "v_max_mv": 50000,
+      "current_a": 60,
+      "bec": "opto",
+      "firmware_note": "No BEC, opto-isolated; low-voltage cutoff at 0.74 x start voltage; Programming Card GPMM1895 sets direction, timing, frequency, cutoff",
+      "spec_source": "GreatPlanes_Electrifly_SS-60_SS-80.pdf p.3 (4-12 LiPo cells, 12.4-50 V, continuous current)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SS-80",
+      "cells_min": 4,
+      "cells_max": 12,
+      "v_min_mv": 12400,
+      "v_max_mv": 50000,
+      "current_a": 80,
+      "bec": "opto",
+      "firmware_note": "No BEC, opto-isolated; low-voltage cutoff at 0.74 x start voltage; Programming Card GPMM1895 sets direction, timing, frequency, cutoff",
+      "spec_source": "GreatPlanes_Electrifly_SS-60_SS-80.pdf p.3 (4-12 LiPo cells, 12.4-50 V, continuous current)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "GreatPlanes_Electrifly_SilverSeries.pdf",
+      "pages": "3-4",
+      "language": "en",
+      "url": "http://manuals.hobbico.com/gpm/gpmm1800-1841-manual-v1_2.pdf"
+    },
+    {
+      "file": "GreatPlanes_Electrifly_SS-60_SS-80.pdf",
+      "pages": "2-3",
+      "language": "en",
+      "url": "http://manuals.hobbico.com/gpm/gpmm1850-1860-manual.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": null,
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "Two beeps 5 s after power-up at full throttle.",
+      "steps": [
+        "Throttle full, transmitter on, connect battery.",
+        "After 5 s: two beeps.",
+        "Throttle to off (towards you): two beeps.",
+        "Throttle to full: two beeps (brake now on).",
+        "Throttle to off: four beeps (armed)."
+      ]
+    },
+    "announce": {
+      "what": "value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "Each stick movement is acknowledged with the same number of beeps: 2 beeps while setting brake on, 1 beep while setting brake off. At normal power-up with the stick at off or brake the ESC beeps once (brake off) or twice (brake on); a second set follows when the stick goes to full."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "The procedure toggles the stored brake state: stick off, then full, then off."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Skip programming by powering up with the stick at off or brake."
+    },
+    "confirm_signal": "Two beeps for brake on or one beep for brake off at each of three stick moves; four beeps at the end (armed).",
+    "exit": "After the four arming beeps the ESC is armed and programming is finished.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": null,
+    "description": "Full throttle at power-up for 5 s, off, full, off toggles the brake. The beep count per move (2 or 1) tells the new state; four beeps mean armed. Normal power-up at stick off beeps the stored state."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "brake off (1 beep per move), factory default",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "brake on (2 beeps per move)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3 (Silver Series) / 2 (SS-60, SS-80)",
+      "note": "Number is the beep count per stick move."
+    }
+  ],
+  "unknowns": [
+    "Beep duration, gap and the 5 s hold tolerance: not stated.",
+    "Whether the repeat procedure always inverts the stored state: manual says 'repeat the process' to switch the brake off.",
+    "BEC type for SS-8 to SS-45D: not stated.",
+    "SS-60 and SS-80 settings other than brake (direction, timing 12 or 20 degrees, frequency 8 or 16 kHz, cutoff 5.6-37.0 V) need the Programming Card GPMM1895; no stick procedure given.",
+    "Cell and voltage limits: SS-8 to SS-45 list 2-4 LiPo; SS-45D lists 4 LiPo; SS-60 and SS-80 list 4-12 LiPo cells (12.4-50 V). v_min of 12400 mV is the manual's own number."
+  ],
+  "notes": [
+    "The two manuals give the same brake procedure; GreatPlanes_Electrifly_SS-60_SS-80.pdf adds that the brake state is stored until changed.",
+    "Low-voltage cutoff differs: battery voltage x 0.67 in GreatPlanes_Electrifly_SilverSeries.pdf, battery voltage x 0.74 in GreatPlanes_Electrifly_SS-60_SS-80.pdf."
+  ],
+  "schema": 1,
+  "verified": false
+}

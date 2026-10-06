@@ -1,0 +1,377 @@
+{
+  "id": "hobbywing-seaking-boat",
+  "brand": "Hobbywing",
+  "family": "SeaKing V1/V3 boat ESC, 4-item menu",
+  "models": [
+    {
+      "name": "SEAKING-25A (V1)",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 25,
+      "bec": "linear",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_SeaKing_V1_Turnigy.pdf p.1 (specification table)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SEAKING-35A (V1)",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 35,
+      "bec": "linear",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_SeaKing_V1_Turnigy.pdf p.1 (specification table)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SEAKING-60A (V1)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 60,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_SeaKing_V1_Turnigy.pdf p.1 (specification table)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SEAKING-90A (V1)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 90,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_SeaKing_V1_Turnigy.pdf p.1 (specification table)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SEAKING-120A (V1)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 120,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_SeaKing_V1_Turnigy.pdf p.1 (specification table)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SEAKING-180A (V1)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 180,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_SeaKing_V1_Turnigy.pdf p.1 (specification table)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SEAKING-80A-HV (V1)",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 80,
+      "bec": "none",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_SeaKing_V1_Turnigy.pdf p.1 (specification table)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SEAKING-130A-HV (V1)",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 130,
+      "bec": "none",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_SeaKing_V1_Turnigy.pdf p.1 (specification table)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SEAKING-30A-V3",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 30,
+      "bec": "linear",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_SeaKing_2022.pdf p.1 (Specifications)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SEAKING-60A-V3",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 60,
+      "bec": "linear",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_SeaKing_2022.pdf p.1 (Specifications)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SEAKING-60A-V3.1",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 60,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_SeaKing_2022.pdf p.1 (Specifications)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SEAKING-120A-V3",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 120,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_SeaKing_2022.pdf p.1 (Specifications)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SEAKING-180A-V3",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 180,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_SeaKing_2022.pdf p.1 (Specifications)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "SEAKING-130A-HV-V3",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 130,
+      "bec": "none",
+      "firmware_note": null,
+      "spec_source": "Hobbywing_SeaKing_2022.pdf p.1 (Specifications)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Hobbywing_SeaKing_2022.pdf",
+      "pages": "1",
+      "language": "en",
+      "url": "https://www.hobbywing.com/en/uploads/file/20221017/624821b6141a512c2e803913902b3f87.pdf"
+    },
+    {
+      "file": "Hobbywing_SeaKing_V1_Turnigy.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://www.offshoreelectrics.com/downloads/hobbywing/Hobbywing_V1_Seaking_TURNIGY_manual.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "Boat ESCs: the throttle range must be calibrated first; neutral/brake positions matter for the 'forward and backward' mode.",
+  "scheme": {
+    "type": "short_long",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 7000,
+      "confirm_signal": "Two short beeps after about 2 s, special tone (56712) after about 5 s more",
+      "steps": [
+        "Transmitter on, throttle at max",
+        "Connect battery (ESC switch on where fitted)",
+        "Wait about 2000 ms: Beep-Beep",
+        "Wait about 5000 ms more: special tone, programming mode entered"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "short_long",
+      "long_equals_short": 5,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "4 item tones loop: 1-4 short beeps for items 1-4. Value N is N short beeps for N 1-4, 1 long beep plus (N-5) short for N 5-8."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": 3000,
+      "description": "Item: throttle to min (full brake) within 3000 ms after the wanted item tone. V1 manual also accepts neutral."
+    },
+    "value_select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Value: throttle to max (full throttle) when the wanted value tone sounds. Holding max for over 2 s after the saved tone returns to the item loop."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Leave the throttle unchanged and wait for the next tone."
+    },
+    "confirm_signal": "Special tone (1515) after a value is stored.",
+    "exit": "After the saved tone move the throttle to min within 2000 ms, or disconnect the battery.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": null,
+    "description": "Same gesture set as the Hobbywing FlyFun menu with only four items: running mode, cell count, cutoff threshold, timing. No exit or reset item exists."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Running mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "forward only"
+        },
+        {
+          "number": 2,
+          "name": "forward and backward"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 2,
+      "name": "LiPo cells",
+      "key": "cell_count",
+      "values": [
+        {
+          "number": 1,
+          "name": "auto",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "normal-voltage ESC: 2S / HV ESC: 5S"
+        },
+        {
+          "number": 3,
+          "name": "3S / 6S"
+        },
+        {
+          "number": 4,
+          "name": "4S / 8S"
+        },
+        {
+          "number": 5,
+          "name": "5S / 10S"
+        },
+        {
+          "number": 6,
+          "name": "6S / 12S"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 3,
+      "name": "Low-voltage cutoff threshold",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "no protection"
+        },
+        {
+          "number": 2,
+          "name": "2.8 V/cell"
+        },
+        {
+          "number": 3,
+          "name": "3.0 V/cell"
+        },
+        {
+          "number": 4,
+          "name": "3.2 V/cell",
+          "default": true
+        },
+        {
+          "number": 5,
+          "name": "3.4 V/cell"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 4,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "0 deg"
+        },
+        {
+          "number": 2,
+          "name": "3.75 deg"
+        },
+        {
+          "number": 3,
+          "name": "7.5 deg"
+        },
+        {
+          "number": 4,
+          "name": "11.25 deg"
+        },
+        {
+          "number": 5,
+          "name": "15 deg",
+          "default": true
+        },
+        {
+          "number": 6,
+          "name": "18.75 deg"
+        },
+        {
+          "number": 7,
+          "name": "22.5 deg"
+        },
+        {
+          "number": 8,
+          "name": "26.25 deg"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    }
+  ],
+  "unknowns": [
+    "Beep duration in ms is not stated.",
+    "Gap between beeps and between tones in ms is not stated.",
+    "Window for selecting a value after its tone is not stated (only 'move to max when the tone sounds').",
+    "Pause between tone repetitions before the loop restarts is not stated.",
+    "Whether the entry hold (2 s then 5 s) has a tolerance is not stated.",
+    "Item cell-count values for the HV models: 5S, 6S, 8S, 10S, 12S (values 2-6), normal models 2S-6S (values 2-6); per-model use follows the manual notes.",
+    "SeaKing-30A-V3 lists the external programming port as not available; stick programming is described for all V3 models without exception.",
+    "Running-mode default differs between editions, see notes. SeaKing-130A-HV offers forward only in the V1 manual."
+  ],
+  "notes": [
+    "Default running mode conflict: Hobbywing_SeaKing_V1_Turnigy.pdf marks 'Forward Only' as default; Hobbywing_SeaKing_2022.pdf (V3) marks 'Forward and Backward'. No default flag is set on item 1.",
+    "The V1 manual is the Turnigy-branded SeaKing manual; the Turnigy-branded model name is not stated in the text.",
+    "V1 manual also states a 3000 ms item window and exit at neutral or bottom within 2000 ms."
+  ],
+  "schema": 1,
+  "verified": false
+}

@@ -35,6 +35,7 @@
 #include "can_selftest.h"
 #include "selftest.h"
 #include "display.h"
+#include "esc_profile.h"
 #include "gfx.h"
 #include "arming.h"
 #include "art_flash_esp.h"
@@ -1115,6 +1116,113 @@ static void pump(void)
 #define IDENTITY_WAIT_MS 3000u
 
 
+/* ------------------------------------------------- ESC profiles on the card */
+
+/*
+ * Every ESC (electronic speed controller) profile is compiled in.  A file
+ * in /ESC/ on the card replaces the built-in profile with the same id, or
+ * adds one with a new id: a corrected default or an ESC the build does not
+ * know needs a file copied to the card, not a firmware release.  Read once,
+ * at start-up; a card changed later is read at the next start.
+ */
+#define ESC_CARD_DIR "ESC"
+/* Names are collected first and read after the walk, so no file is open
+ * while the directory is.  Twice the registry's room: a card with more files
+ * than that is refused past the first ones, and the log says how many. */
+#define ESC_CARD_MAX (2u * ESC_PROFILE_MAX_OVERRIDES)
+
+typedef struct {
+    char     name[ESC_CARD_MAX][STORAGE_NAME_MAX];
+    unsigned held;
+    unsigned files;
+} esc_card_t;
+
+static void esc_card_take(const storage_entry_t *entry, void *ctx)
+{
+    esc_card_t *c = (esc_card_t *)ctx;
+    if (entry->is_dir) {
+        return;
+    }
+    ++c->files;
+    if (c->held < ESC_CARD_MAX) {
+        memcpy(c->name[c->held], entry->name, STORAGE_NAME_MAX);
+        c->name[c->held][STORAGE_NAME_MAX - 1u] = '\0';
+        ++c->held;
+    }
+}
+
+static void esc_profiles_load(void)
+{
+    esc_profiles_clear_overrides();
+    if (!storage_mounted()) {
+        return;
+    }
+    /* 4 KiB of names: static, off the start-up task's stack. */
+    static esc_card_t c;
+    memset(&c, 0, sizeof(c));
+    if (storage_walk(ESC_CARD_DIR, ".json", esc_card_take, &c, NULL) < 0) {
+        return;                         /* no /ESC/: nothing to add */
+    }
+    /* One byte past the limit, so a file that fills it is seen to be
+     * larger rather than parsed cut off. */
+    char *buf = heap_caps_malloc(ESC_PROFILE_MAX_BYTES + 1u,
+                                 MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (buf == NULL) {
+        ESP_LOGW(TAG, "ESC profiles: no memory to read the card");
+        return;
+    }
+    unsigned added = 0;
+    for (unsigned i = 0; i < c.held; ++i) {
+        char path[STORAGE_NAME_MAX + 32];
+        storage_path(ESC_CARD_DIR, c.name[i], path, sizeof(path));
+        FILE *f = fopen(path, "rb");
+        if (f == NULL) {
+            ESP_LOGW(TAG, "ESC profiles: %s will not open", c.name[i]);
+            continue;
+        }
+        const size_t len = fread(buf, 1, ESC_PROFILE_MAX_BYTES + 1u, f);
+        /* A short read is the end of the file or a card fault; parsing what
+         * a fault left could accept a file that is not what the card holds. */
+        const bool read_failed = (ferror(f) != 0);
+        fclose(f);
+        if (read_failed) {
+            ESP_LOGW(TAG, "ESC profiles: %s refused: read error", c.name[i]);
+            continue;
+        }
+        esc_profile_t p;
+        void *block = NULL;
+        char err[96];
+        if (!esc_profile_parse(buf, len, &p, &block, err, sizeof(err))) {
+            ESP_LOGW(TAG, "ESC profiles: %s refused: %s", c.name[i], err);
+            continue;
+        }
+        if (!esc_profile_file_is(c.name[i], p.id)) {
+            ESP_LOGW(TAG, "ESC profiles: %s refused: its id is %s", c.name[i],
+                     p.id);
+            free(block);
+            continue;
+        }
+        const bool replaces = (esc_profiles_find(p.id) != NULL);
+        if (!esc_profiles_override(&p, block)) {
+            ESP_LOGW(TAG, "ESC profiles: %s refused: more than %u on the card",
+                     c.name[i], (unsigned)ESC_PROFILE_MAX_OVERRIDES);
+            continue;
+        }
+        ++added;
+        ESP_LOGI(TAG, "ESC profiles: %s %s %s", c.name[i],
+                 replaces ? "replaces" : "adds", p.id);
+    }
+    heap_caps_free(buf);
+    if (c.files > c.held) {
+        ESP_LOGW(TAG, "ESC profiles: %u files in /%s, the first %u read",
+                 c.files, ESC_CARD_DIR, c.held);
+    }
+    ESP_LOGI(TAG, "ESC profiles: %u built in, %u read from the card, %u "
+             "offered", (unsigned)esc_profiles_builtin_count, added,
+             (unsigned)esc_profiles_count());
+}
+
+
 /* ------------------------------------------------------- the card, listed */
 
 /*
@@ -1468,6 +1576,9 @@ static bool bring_up(void)
     /* And the viewer is told how to reach it.  Without this it has no way to
      * list anything and reports no card whatever is mounted. */
     log_viewer_set_io(&k_card_io);
+    /* Before anything can ask for a profile; with no card, the built-in
+     * ones alone. */
+    esc_profiles_load();
     splash_screen_set(SPLASH_STEP_STORAGE,
                       storage_mounted() ? SPLASH_OK : SPLASH_WARN,
                       storage_status());

@@ -1,0 +1,156 @@
+{
+  "schema": 1,
+  "id": "kontronik-smile",
+  "brand": "Kontronik",
+  "family": "SMILE",
+  "verified": false,
+  "models": [
+    {
+      "name": "Smile 30-6-12",
+      "cells_min": 6,
+      "cells_max": 12,
+      "cell_type": "nimh",
+      "v_min_mv": 6200,
+      "v_max_mv": 17000,
+      "current_a": 30,
+      "bec": null,
+      "firmware_note": "NiCd cells; BEC 2 A for 4 servos; 40 A for 15 s",
+      "spec_source": "Kontronik_Smile.pdf p.2: 6-12 NiCd/NiMH cells, 30 A continuous, 17 V stated"
+    },
+    {
+      "name": "Smile 45-6-12",
+      "cells_min": 6,
+      "cells_max": 12,
+      "cell_type": "nimh",
+      "v_min_mv": 6200,
+      "v_max_mv": 17000,
+      "current_a": 45,
+      "bec": null,
+      "firmware_note": "NiCd cells; BEC 2 A for 4 servos; 55 A for 15 s",
+      "spec_source": "Kontronik_Smile.pdf p.2: 6-12 NiCd/NiMH cells, 45 A continuous, 17 V stated"
+    },
+    {
+      "name": "Smile 45-6-18",
+      "cells_min": 6,
+      "cells_max": 18,
+      "cell_type": "nimh",
+      "v_min_mv": 6200,
+      "v_max_mv": 24000,
+      "current_a": 45,
+      "bec": "opto",
+      "firmware_note": "NiCd cells; 55 A for 15 s",
+      "spec_source": "Kontronik_Smile.pdf p.2: 6-18 NiCd/NiMH cells, 45 A continuous, 24 V stated"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Smile.pdf",
+      "pages": "4-10",
+      "language": "de",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/Smile.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "These ESCs use a button, not a jumper. The INDEX.csv summary names a jumper; the procedure text says 'press and release the button'. The button must be pressed by hand after the entry wait.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": 2000,
+      "confirm_signal": "Tone sequence after the 2 s wait; mode series after the button press.",
+      "steps": [
+        "Connect the motor. Transmitter and receiver on. Throttle to brake (stick back) for modes 1, 2 and 5; to motor-off (stick back) for modes 3, 4 and 7; to motor-off (stick middle) for mode 6.",
+        "Apply drive power.",
+        "Wait 2 s or until the ESC sounds its tone sequence.",
+        "Operator: press and release the button on the ESC ('Taster').",
+        "Wait for the mode series; modes 7 and 9 are reached by waiting for the 7-fold or 9-fold signal.",
+        "Move the throttle to full (stick forward) when the wanted mode sounds. Mode 6: then move the stick to brake (back).",
+        "The ESC repeats the mode as control output. Disconnect power."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "The ESC sounds mode 1 as one tone, mode 2 as two tones, and so on, one series after another with a pause between series."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Move the throttle to full when the wanted mode sounds."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip."
+    },
+    "confirm_signal": "Control output: the mode is repeated as tones.",
+    "exit": "Disconnect power.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Program mode 1 (APM); it clears all settings.",
+    "description": "Brushless ESC with button entry. Mode N is N tones. Modes 7 and 9 are programmed like mode 3 and only differ in waiting for the 7-fold or 9-fold signal. Mode 8 does not exist."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "APM: reset, stick range learned at every power-up",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "Glider: brake and cutoff on, optional separate motor-off position"
+        },
+        {
+          "number": 3,
+          "name": "Motor plane / boat: brake off, undervoltage reduction"
+        },
+        {
+          "number": 4,
+          "name": "Helicopter governor"
+        },
+        {
+          "number": 5,
+          "name": "Competition: maximum brake response, undervoltage and overtemperature cutoff off, current limit off"
+        },
+        {
+          "number": 6,
+          "name": "Car: proportional brake"
+        },
+        {
+          "number": 7,
+          "name": "Reverse motor rotation"
+        },
+        {
+          "number": 9,
+          "name": "LiPo undervoltage cutoff, 3 V per cell, added on top of another mode"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4-8"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone in ms is not stated.",
+    "Gap between tones inside one mode series in ms is not stated.",
+    "Pause between two mode series in ms is not stated.",
+    "Whether the mode series loops until a mode is selected is not stated.",
+    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
+    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2 s minimum; the end of the wait is the ESC's tone sequence.",
+    "Button location on the ESC is not stated.",
+    "Mode 9 needs a mode other than mode 1 programmed first; the manual says 'any mode except mode 1'."
+  ],
+  "notes": [
+    "INDEX.csv summarises the entry with a jumper; the manual describes a button. The summary is wrong for this file.",
+    "Mode 8 does not exist: the manual prints 'Modus 8 - nicht vorhanden'."
+  ]
+}

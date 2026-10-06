@@ -1,0 +1,335 @@
+{
+  "id": "hitec-energy-sport",
+  "brand": "Hitec",
+  "family": "Energy Sport programmable ESC, melody tone menu",
+  "models": [
+    {
+      "name": "Energy Sport 20 amp",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 20,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hitec_Energy_ESC.pdf p.2"
+    },
+    {
+      "name": "Energy Sport 40 amp",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 40,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hitec_Energy_ESC.pdf p.2"
+    },
+    {
+      "name": "Energy Sport 50 amp",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 50,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hitec_Energy_ESC.pdf p.2"
+    },
+    {
+      "name": "Energy Sport 60 amp",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 60,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hitec_Energy_ESC.pdf p.2"
+    },
+    {
+      "name": "Energy Sport 80 amp",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 80,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hitec_Energy_ESC.pdf p.2"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Hitec_Energy_ESC.pdf",
+      "pages": "5-14",
+      "language": "en",
+      "url": "https://media.zenobuilder.com/upload/gatcxyxclp/Energy-Manual-Web-58600382.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "The tones differ in rhythm and pitch; the bench counts current pulses only, whether the tones can be told apart by current is untested.",
+  "scheme": {
+    "type": "melody_groups",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 2000,
+      "confirm_signal": "4 groups of two fast beeps, then a cycle of distinct tones and melodies",
+      "steps": [
+        "Transmitter on, throttle at max",
+        "Connect battery",
+        "Wait 2000 ms: 4 groups of two fast beeps (within 4 s of power-up per the tone chart)",
+        "Distinct tones then play in a loop"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "melody",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": 4,
+      "description": "Each setting option has its own tone, repeated four times. The tone alone identifies both function and value; there are no item or value numbers. Numbers in this profile follow the manual's chart order."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "While the tone of the wanted option plays, move the throttle to min (the manual says lowest, OFF). The tone stops when the setting is saved."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Keep the throttle at max and wait for the next tone."
+    },
+    "confirm_signal": "The tone stops.",
+    "exit": "The ESC saves and exits the function after one change. Power-cycle to change another.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Select the restore-defaults tone (long dashes) and move the throttle to min.",
+    "description": "Throttle at max, battery on, wait 2 s for 4 groups of two fast beeps. Tones for every setting option loop. Moving the throttle to min while the wanted tone plays saves it; the sound stops. One setting per power cycle."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "brake on (selected from the default off)",
+          "tone": "_* _* _* _*"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "6, 14"
+    },
+    {
+      "number": 2,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "NiCd / NiMH",
+          "tone": "~ ~ ~ ~"
+        },
+        {
+          "number": 2,
+          "name": "LiPo (default, auto cell count)",
+          "default": true,
+          "tone": "~~ ~~ ~~ ~~"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "6-7, 14"
+    },
+    {
+      "number": 3,
+      "name": "Low-voltage cutoff threshold",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "low (2.8 V / 50 %)",
+          "tone": "*_ _* x4"
+        },
+        {
+          "number": 2,
+          "name": "medium (3.0 V / 60 %)",
+          "default": true,
+          "tone": "*_ _ _* x4"
+        },
+        {
+          "number": 3,
+          "name": "high (3.2 V / 65 %)",
+          "tone": "*_ _ _ _* x4"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "7, 14"
+    },
+    {
+      "number": 4,
+      "name": "Restore factory defaults",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "restore",
+          "tone": "- - - - (long dashes)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "8, 14"
+    },
+    {
+      "number": 5,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "automatic (7-30 deg)",
+          "default": true,
+          "tone": "- - - -"
+        },
+        {
+          "number": 2,
+          "name": "low (7-22 deg)",
+          "tone": "-- -- -- --"
+        },
+        {
+          "number": 3,
+          "name": "high (22-30 deg)",
+          "tone": "--- --- --- ---"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "9, 14"
+    },
+    {
+      "number": 6,
+      "name": "Acceleration",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "soft",
+          "default": true,
+          "tone": "VV VV VV VV"
+        },
+        {
+          "number": 2,
+          "name": "normal",
+          "tone": "V V V V"
+        },
+        {
+          "number": 3,
+          "name": "hard",
+          "tone": "VVV VVV VVV VVV"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "9-10, 14"
+    },
+    {
+      "number": 7,
+      "name": "Heli governor mode",
+      "key": "governor",
+      "values": [
+        {
+          "number": 1,
+          "name": "off",
+          "default": true,
+          "tone": "_*_ x4"
+        },
+        {
+          "number": 2,
+          "name": "heli mode 1 (5 s ramp)",
+          "tone": "_**_ x4"
+        },
+        {
+          "number": 3,
+          "name": "heli mode 2 (15 s ramp)",
+          "tone": "_***_ x4"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10-11, 14"
+    },
+    {
+      "number": 8,
+      "name": "Motor rotation",
+      "key": "direction",
+      "values": [
+        {
+          "number": 1,
+          "name": "reverse (selected from the default off)",
+          "tone": "W W W W"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "11-12, 14"
+    },
+    {
+      "number": 9,
+      "name": "Switching frequency",
+      "key": "pwm_freq",
+      "values": [
+        {
+          "number": 1,
+          "name": "8 kHz",
+          "default": true,
+          "tone": "// // // //"
+        },
+        {
+          "number": 2,
+          "name": "16 kHz",
+          "tone": "\\\\ \\\\ \\\\ \\\\"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "12, 14"
+    },
+    {
+      "number": 10,
+      "name": "Low-voltage cutoff type",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "reduce power",
+          "default": true,
+          "tone": "_ - _ - _ - _ -"
+        },
+        {
+          "number": 2,
+          "name": "hard cutoff",
+          "tone": "- _ - _ - _ - _"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "12-13, 14"
+    }
+  ],
+  "unknowns": [
+    "Number of tones in the loop and their order is given only by the chart; the text says '4 varying beeps, tones and melodies' while the chart lists 21 tones.",
+    "Beep duration, gap and loop length in ms are not stated.",
+    "Whether the throttle must stay at max between tones is not stated.",
+    "Duration of the 'two fast beeps' groups is not stated.",
+    "For brake and motor rotation (one tone each) the manual does not say how to select the opposite of the stored value.",
+    "Chart tone glyphs in the PDF are text approximations; pitch information is not available."
+  ],
+  "notes": [
+    "The manual has no item numbers; item and value numbers here follow the order of the 'Programming Tone Reference Chart'.",
+    "Manual calls Heli Mode 2 'Heli Mode 1' in step 6 of the governor section (typo); chart and bullet list give Mode 2.",
+    "Same tone chart as the Mystery/Readytosky ESC in mystery-ztw-melody-menu; the manual does not state a common origin."
+  ],
+  "schema": 1,
+  "verified": false
+}

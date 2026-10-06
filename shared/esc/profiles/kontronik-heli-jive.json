@@ -1,0 +1,167 @@
+{
+  "schema": 1,
+  "id": "kontronik-heli-jive",
+  "brand": "Kontronik",
+  "family": "HELI JIVE",
+  "verified": false,
+  "models": [
+    {
+      "name": "HELI JIVE 120+ HV",
+      "cells_min": 5,
+      "cells_max": 12,
+      "cell_type": "lipo",
+      "v_min_mv": 16000,
+      "v_max_mv": 50000,
+      "current_a": 120,
+      "bec": "switching",
+      "firmware_note": "BEC 5.6 V default, 5 to 6 V adjustable; 5 A continuous, 15 A peak",
+      "spec_source": "Kontronik_Heli-Jive.pdf p.3: input voltage 16-50 V, 120 A continuous; cells: https://www.hobbyexclusiv.de/KONTRONIK-HeliJive-120-HV (dealer, 5-12 LiPo, 16-50V, 120A)"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Heli-Jive.pdf",
+      "pages": "5-9, 14-19",
+      "language": "de/en",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/HELI-JIVE-1.pdf"
+    },
+    {
+      "file": "Kontronik_Heli-Jive_es.pdf",
+      "pages": "4-8",
+      "language": "es",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/HELI-JIVE_Version1_3_Spanisch.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps. Autorotation additionally needs a third throttle position set on the transmitter.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": 2000,
+      "confirm_signal": "Tone sequence after the 2 s wait, second sequence after the jumper is removed.",
+      "steps": [
+        "Operator: fit the jumper on 2 of the 3 programming contacts. Connect the motor if tones are to be audible.",
+        "Transmitter on, receiver on. Throttle stick or switch to the brake position.",
+        "Apply drive power.",
+        "Wait 2 s or until the ESC sounds its tone sequence.",
+        "Operator: pull the jumper off within 10 s after power-up.",
+        "The ESC sounds a second tone sequence, then the mode series, mode N as N tones.",
+        "Move the throttle to full when the wanted mode sounds. The ESC confirms with 3 tones.",
+        "To program autorotation, move the stick or switch to the AR position (modes 2 to 6). To leave it off, keep the throttle at full.",
+        "The ESC repeats the mode and adds a warning tone if AR is on, then a bell tone. Disconnect power. The jumper may be fitted again and stay on the ESC in flight."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "The ESC sounds mode 1 as one tone, mode 2 as two tones, and so on, one series after another with a pause between series."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Move the throttle or switch to full while the wanted mode series sounds."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip."
+    },
+    "confirm_signal": "Three tones after the full-throttle selection; the mode is repeated; a bell tone marks a successful AR position.",
+    "exit": "Disconnect drive power.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Program mode 1 (APM); the manual says mode 1 is usable only as reset.",
+    "description": "Jumper procedure with a 10 s limit for removing the jumper after power-up. Modes 1 to 8 are sounded as 1 to 8 tones in the German text. After selecting a mode the throttle can go to a third (AR) position to store autorotation."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "APM: reset only"
+        },
+        {
+          "number": 2,
+          "name": "Motor / ESC operation over the whole throttle range (throttle curve in the transmitter)"
+        },
+        {
+          "number": 3,
+          "name": "Combi: ESC operation below a transition point (default 50 %), governor above it"
+        },
+        {
+          "number": 4,
+          "name": "Helicopter governor: parameters relearned at every power-up"
+        },
+        {
+          "number": 5,
+          "name": "Helicopter fixed governor: parameters learned once after programming"
+        },
+        {
+          "number": 6,
+          "name": "Continuous governor over the whole throttle range"
+        },
+        {
+          "number": 7,
+          "name": "Reverse motor rotation (needs a mode other than 1 programmed first)"
+        },
+        {
+          "number": 8,
+          "name": "External governor (flybarless), stick range fixed at about 1 ms motor off and 2 ms full; needs software version 11 or higher"
+        },
+        {
+          "number": 9,
+          "name": "KSA special application mode; cleared when another mode is programmed"
+        },
+        {
+          "number": 10,
+          "name": "LRPM low-RPM mode for high-KV motors (Spanish manual only)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5-8"
+    },
+    {
+      "number": 2,
+      "name": "Autorotation position (a stick position, not a tone count)",
+      "key": "autorotation",
+      "values": [
+        {
+          "number": 1,
+          "name": "off: throttle stays at full"
+        },
+        {
+          "number": 2,
+          "name": "on: throttle moved to the AR position after the confirmation tones"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "8"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone in ms is not stated.",
+    "Gap between tones inside one mode series in ms is not stated.",
+    "Pause between two mode series in ms is not stated.",
+    "Whether the mode series loops until a mode is selected is not stated.",
+    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
+    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2 s minimum; the end of the wait is the ESC's tone sequence.",
+    "Whether mode 9 and 10 tones are sounded is not stated: both manuals state the series only to 8 tones in the procedure text.",
+    "AR position range (the transmitter example uses 15 to 20 %) and the tolerance the ESC accepts are not stated as a window.",
+    "Item number 2 is an index chosen here; the ESC does not sound an item number for AR."
+  ],
+  "notes": [
+    "Kontronik_Heli-Jive.pdf (German) lists modes 1 to 9. Kontronik_Heli-Jive_es.pdf adds mode 10 (LRPM).",
+    "Soft start range: German text 8 to 25 s, Spanish text 8 to 12 s.",
+    "Both manuals state 'mode 8: eight tones' as the end of the series in the procedure, while the tables list modes 9 and 10.",
+    "The AR step is not an own mode; it is added to modes 2 to 6."
+  ]
+}

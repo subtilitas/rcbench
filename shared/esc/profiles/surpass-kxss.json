@@ -1,0 +1,246 @@
+{
+  "id": "surpass-kxss",
+  "brand": "Surpass",
+  "family": "Kinexsis KXSS2401/KXSS2402, 8-item menu",
+  "models": [
+    {
+      "name": "KXSS2401",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 10,
+      "bec": "linear",
+      "firmware_note": null,
+      "spec_source": "Surpass_KXSS2401_Horizon.pdf p.1 (2-4 cell Li-Po, continuous current 10 A / 18 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "KXSS2402",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 18,
+      "bec": "linear",
+      "firmware_note": null,
+      "spec_source": "Surpass_KXSS2401_Horizon.pdf p.1 (2-4 cell Li-Po, continuous current 10 A / 18 A)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Surpass_KXSS2401_Horizon.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://www.horizonhobby.com/on/demandware.static/Sites-horizon-us-Site/Sites-horizon-master/default/Manuals/KXSS2401-Manual-EN.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "",
+  "scheme": {
+    "type": "short_long",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 7000,
+      "confirm_signal": "2 beeps after about 2 s, a rising tone about 5 s later",
+      "steps": [
+        "Transmitter on, throttle at max",
+        "Connect battery",
+        "Wait about 2000 ms: 2 beeps",
+        "Wait about 5000 ms more: rising tone, programming mode entered"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "short_long",
+      "long_equals_short": 5,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "8 item tones loop: items 1-4 are 1-4 short beeps, item 5 is 1 long, 6 is 1 long + 1 short, 7 is 1 long + 4 short as printed (see notes), 8 is 2 long. Values are 1, 2 or 3 short beeps."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": 3000,
+      "description": "Item: throttle to idle within 3000 ms after the wanted tone."
+    },
+    "value_select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Value: throttle to full on the wanted value tone."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Leave the throttle unchanged."
+    },
+    "confirm_signal": "An alternating tone after a value is stored.",
+    "exit": "Item 8 (2 long beeps) then throttle to bottom within 3000 ms; or after the alternating tone throttle to bottom within 2000 ms. Holding full throttle returns to the item loop.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": "Item 7 'Set All to Default'.",
+    "description": "Throttle max, battery on, 2 beeps at 2 s, rising tone at 5 s more. Eight item tones loop; throttle to idle within 3 s selects. Value tones loop; throttle to full stores the value and an alternating tone follows; holding full returns to the items."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "off",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "on"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 2,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "Li-ion / Li-Po",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "NiMH / NiCd"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 3,
+      "name": "Cut-off mode",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "soft cut",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "cut-off"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 4,
+      "name": "Cut-off threshold",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "low (3.0 V/cell)"
+        },
+        {
+          "number": 2,
+          "name": "medium (3.15 V/cell)",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "high (3.3 V/cell)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 5,
+      "name": "Startup mode",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "normal (300 ms)",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft"
+        },
+        {
+          "number": 3,
+          "name": "super soft"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 6,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "low (3.75 deg)",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "medium"
+        },
+        {
+          "number": 3,
+          "name": "high"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 7,
+      "name": "Set all to default",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "restore defaults"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 8,
+      "name": "Exit",
+      "key": "exit",
+      "values": [
+        {
+          "number": 1,
+          "name": "exit programming"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    }
+  ],
+  "unknowns": [
+    "Beep duration, gap and the value-select window are not stated.",
+    "Item 7 tone: printed as '1 long, 4 short' while the pattern beep-----beep-beep- shows 2 short; the Hobbywing equivalent is 1 long + 2 short. Verify on the bench.",
+    "Timing values medium and high are given as names only, no degrees.",
+    "Startup mode soft and super soft ramp times are not stated.",
+    "The 'Break' item name is a misprint of Brake."
+  ],
+  "notes": [
+    "Same menu and gestures as hobbywing-flyfun-8item; the Surpass manual says Horizon Hobby distributes it and does not name the maker. Threshold values differ (3.0/3.15/3.3 V against 2.85/3.15/3.3 V).",
+    "Cells per Horizon: 2-4 LiPo/LiFe, 5-12 NiMH/NiCd; BEC 5 V/2 A linear."
+  ],
+  "schema": 1,
+  "verified": false
+}

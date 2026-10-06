@@ -1,0 +1,444 @@
+{
+  "id": "castle-phoenix-edge",
+  "brand": "Castle Creations",
+  "family": "Phoenix Edge and Edge HV (2013 guides)",
+  "models": [
+    {
+      "name": "Phoenix Edge 50",
+      "cells_min": 2,
+      "cells_max": 8,
+      "v_min_mv": null,
+      "v_max_mv": 33600,
+      "current_a": 50,
+      "bec": null,
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-50-010-0102-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge 75",
+      "cells_min": 2,
+      "cells_max": 8,
+      "v_min_mv": null,
+      "v_max_mv": 33600,
+      "current_a": 75,
+      "bec": null,
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-75-010-0101-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge 100",
+      "cells_min": 2,
+      "cells_max": 8,
+      "v_min_mv": null,
+      "v_max_mv": 33600,
+      "current_a": 100,
+      "bec": null,
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-100-010-0100-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge 130",
+      "cells_min": 2,
+      "cells_max": 8,
+      "v_min_mv": null,
+      "v_max_mv": 33600,
+      "current_a": 130,
+      "bec": null,
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-130-010-0099-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge 200",
+      "cells_min": 2,
+      "cells_max": 8,
+      "v_min_mv": null,
+      "v_max_mv": 33600,
+      "current_a": 200,
+      "bec": null,
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-200-010-0098-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge Lite 50",
+      "cells_min": 2,
+      "cells_max": 8,
+      "v_min_mv": null,
+      "v_max_mv": 34000,
+      "current_a": 50,
+      "bec": null,
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-lite-50-010-0113-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge Lite 75",
+      "cells_min": 2,
+      "cells_max": 8,
+      "v_min_mv": null,
+      "v_max_mv": 33600,
+      "current_a": 75,
+      "bec": null,
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-lite-75-010-0112-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge Lite 100",
+      "cells_min": 2,
+      "cells_max": 8,
+      "v_min_mv": null,
+      "v_max_mv": 33600,
+      "current_a": 100,
+      "bec": null,
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-lite-100-010-0111-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge Lite 130",
+      "cells_min": 2,
+      "cells_max": 8,
+      "v_min_mv": null,
+      "v_max_mv": 33600,
+      "current_a": 130,
+      "bec": null,
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-lite-130-010-0110-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge Lite 200",
+      "cells_min": 2,
+      "cells_max": 8,
+      "v_min_mv": null,
+      "v_max_mv": 33600,
+      "current_a": 200,
+      "bec": null,
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-lite-200-010-0109-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge HV 40",
+      "cells_min": 3,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 40,
+      "bec": "none",
+      "firmware_note": "Edge HV: no battery eliminator circuit, external BEC or receiver battery required",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-40-hv-010-0107-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge HV 60",
+      "cells_min": 3,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 60,
+      "bec": "none",
+      "firmware_note": "Edge HV: no battery eliminator circuit, external BEC or receiver battery required",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-60-hv-010-0106-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge HV 80",
+      "cells_min": 3,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 80,
+      "bec": "none",
+      "firmware_note": "Edge HV: no battery eliminator circuit, external BEC or receiver battery required",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-80-hv-010-0105-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge HV 120",
+      "cells_min": 3,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 120,
+      "bec": "none",
+      "firmware_note": "Edge HV: no battery eliminator circuit, external BEC or receiver battery required",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-120-hv-010-0104-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge HV 160",
+      "cells_min": 3,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 160,
+      "bec": "none",
+      "firmware_note": "Edge HV: no battery eliminator circuit, external BEC or receiver battery required",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-160-hv-esc-010-0103-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge Lite HV 40",
+      "cells_min": 3,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 40,
+      "bec": "none",
+      "firmware_note": "Edge HV: no battery eliminator circuit, external BEC or receiver battery required",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-lite-40-hv-010-0116-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge Lite HV 60",
+      "cells_min": 3,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 60,
+      "bec": "none",
+      "firmware_note": "Edge HV: no battery eliminator circuit, external BEC or receiver battery required",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-lite-60-hv-010-0117-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge Lite HV 80",
+      "cells_min": 3,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 80,
+      "bec": "none",
+      "firmware_note": "Edge HV: no battery eliminator circuit, external BEC or receiver battery required",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-lite-80-hv-010-0118-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge Lite HV 120",
+      "cells_min": 3,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 120,
+      "bec": "none",
+      "firmware_note": "Edge HV: no battery eliminator circuit, external BEC or receiver battery required",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-lite-120-hv-010-0119-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Phoenix Edge Lite HV 160",
+      "cells_min": 3,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 160,
+      "bec": "none",
+      "firmware_note": "Edge HV: no battery eliminator circuit, external BEC or receiver battery required",
+      "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-lite-160-hv-010-0114-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Castle_Phoenix_Edge.pdf",
+      "pages": "4-5",
+      "language": "en",
+      "url": "https://www.astramodel.cz/manualy/castle_creations/castle-edge_guide.pdf"
+    },
+    {
+      "file": "Castle_Phoenix_Edge_HV.pdf",
+      "pages": "4-5",
+      "language": "en",
+      "url": "https://www.astramodel.cz/manualy/castle_creations/castle-edge_hv_guide.pdf"
+    },
+    {
+      "file": "Castle_Phoenix_Edge_HV_leomotion.pdf",
+      "pages": "2",
+      "language": "en",
+      "url": "https://download.leomotion.com/Regler/Castle%20Edge%20HV%20Manual.pdf"
+    },
+    {
+      "file": "Castle_Phoenix_Edge_qsg.pdf",
+      "pages": "1",
+      "language": "en",
+      "url": "https://www.horizonhobby.com/on/demandware.static/-/Sites-horizon-master/default/dw4b4b4d74/Manuals/CSE_Edge_ESC_qsg.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": null,
+  "scheme": {
+    "type": "yes_no",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "After the second full-throttle step: one short tone; after the final mid step: four short tones in a row (LED: single flash, long pause).",
+      "steps": [
+        "Transmitter on, ESC unpowered, throttle full.",
+        "Connect battery: initialisation tones, then after a short unspecified delay one short tone.",
+        "Throttle to mid: one short tone.",
+        "Throttle to full: after a short unspecified delay one short tone.",
+        "Throttle to mid: four short tones. Programming mode is active."
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": 0,
+      "description": "The ESC beeps the setting number, then the value number, and repeats the pair until answered. Example: setting 3 value 2 is 3 beeps then 2 beeps. Values are offered in order from 1; the ESC does not announce the stored value."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Answer yes with full throttle to store the offered value; the ESC then jumps to the next setting."
+    },
+    "skip": {
+      "throttle": "min",
+      "description": "Answer no with low throttle: the ESC offers the next value of the same setting. No on every value keeps the stored value."
+    },
+    "confirm_signal": "Rapid LED flashing and a constant beep after an answer. Return the stick to mid for the next question.",
+    "exit": "Power cycle after the last wanted change; the ESC then arms as normal.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": null,
+    "description": "Full throttle at power-up, then mid, full, mid enters programming. The ESC asks each value of a setting in turn as setting-number beeps followed by value-number beeps. Full throttle answers yes and stores, low throttle answers no and advances to the next value, mid throttle moves to the next setting after an answer."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Low-voltage cutoff, cell voltage",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "3.0 V per cell"
+        },
+        {
+          "number": 2,
+          "name": "3.1 V per cell"
+        },
+        {
+          "number": 3,
+          "name": "3.2 V per cell",
+          "default": true
+        },
+        {
+          "number": 4,
+          "name": "3.3 V per cell"
+        },
+        {
+          "number": 5,
+          "name": "3.4 V per cell"
+        },
+        {
+          "number": 6,
+          "name": "disabled"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "Castle_Phoenix_Edge.pdf p5"
+    },
+    {
+      "number": 2,
+      "name": "Brake type",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "soft delayed brake"
+        },
+        {
+          "number": 2,
+          "name": "hard delayed brake"
+        },
+        {
+          "number": 3,
+          "name": "soft brake, no delay"
+        },
+        {
+          "number": 4,
+          "name": "hard brake, no delay"
+        },
+        {
+          "number": 5,
+          "name": "brake disabled",
+          "default": true
+        }
+      ],
+      "applies_to": null,
+      "source_page": "Castle_Phoenix_Edge.pdf p5"
+    },
+    {
+      "number": 3,
+      "name": "Low-voltage cutoff type",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "hard cutoff"
+        },
+        {
+          "number": 2,
+          "name": "soft cutoff",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "RPM decrease"
+        },
+        {
+          "number": 4,
+          "name": "pulsing RPM"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "Castle_Phoenix_Edge.pdf p5"
+    },
+    {
+      "number": 4,
+      "name": "PWM switching rate",
+      "key": "pwm_freq",
+      "values": [
+        {
+          "number": 1,
+          "name": "8 kHz (outrunners)"
+        },
+        {
+          "number": 2,
+          "name": "12 kHz",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "16 kHz"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "Castle_Phoenix_Edge.pdf p5"
+    }
+  ],
+  "unknowns": [
+    "Beep duration, gap and setting-to-value gap not stated.",
+    "Delay between power-up and the first short tone (entry step 2) and between the third and fourth step: only 'a short period of time'.",
+    "Time the ESC waits for an answer before repeating or advancing: not stated.",
+    "Whether the ESC leaves programming by itself after setting 4: not stated; the manual says to power cycle.",
+    "Number of cells, current rating and voltage limits of each model: not stated in these guides.",
+    "Pulse width (ms) of the full, mid and low positions the ESC accepts: not stated; the full position can be re-learned by the ESC at power-up."
+  ],
+  "notes": [
+    "Castle_Phoenix_Edge.pdf, Castle_Phoenix_Edge_HV.pdf, Castle_Phoenix_Edge_HV_leomotion.pdf (revision 11/2014) and Castle_Phoenix_Edge_qsg.pdf give the same four settings and the same entry sequence.",
+    "The quick start guide and the Edge manuals list the same four settings; the quick start guide lists additional defaults (Castle Link only) that stick programming does not reach.",
+    "announce.repeat 0 means the sequence repeats until a choice is made (manual: \"until answered\")."
+  ],
+  "schema": 1,
+  "verified": false
+}

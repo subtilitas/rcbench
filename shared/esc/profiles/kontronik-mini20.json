@@ -1,0 +1,116 @@
+{
+  "schema": 1,
+  "id": "kontronik-mini20",
+  "brand": "Kontronik",
+  "family": "MINI20",
+  "verified": false,
+  "models": [
+    {
+      "name": "MINI 20",
+      "cells_min": 6,
+      "cells_max": 10,
+      "cell_type": "nimh",
+      "v_min_mv": 6000,
+      "v_max_mv": 14000,
+      "current_a": 20,
+      "bec": null,
+      "firmware_note": "NiCd cells; BEC 3 servos up to 8 cells, 2 servos at 10 cells; brushed (2 motor wires)",
+      "spec_source": "Kontronik_Mini20.pdf p.1: 6-14 V (6-10 NiCd cells), 20 A continuous"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Mini20.pdf",
+      "pages": "3-4",
+      "language": "de",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/MIN20.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "A jumper must be fitted on the gold contacts before power-up and pulled in the middle of phase 2; power is disconnected and reconnected. The bench cannot place the jumper.",
+  "scheme": {
+    "type": "stick_position",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "LED flash with a beep if the motor is connected after power-up.",
+      "steps": [
+        "Operator: fit the jumper on the gold contacts. Radio on.",
+        "Phase 1: throttle to brake (off) stop, connect drive power; flash and beep.",
+        "Move to full throttle; flash. Move to neutral; two flashes.",
+        "Reconnect drive power without the jumper.",
+        "Phase 2 (optional): throttle at full, connect power; flash then three flashes; pull the jumper if cutoff should be off; three flashes confirm.",
+        "Reconnect drive power without the jumper."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "Signals are LED flashes with a beep when the motor is connected."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Throttle moved to each requested position after each flash."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Not applicable: the sequence has no menu; every step is taught in order."
+    },
+    "confirm_signal": "Two flashes after phase 1; three flashes after phase 2.",
+    "exit": "Disconnect power, reconnect without the jumper.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": null,
+    "description": "Phase 1 teaches brake, full and neutral positions and whether the short-circuit brake is used. Phase 2 sets undervoltage cutoff (0.8 V per cell) on or off by the jumper state at the final three flashes."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Throttle positions and brake yes/no (phase 1)",
+      "key": "throttle_range",
+      "values": [
+        {
+          "number": 1,
+          "name": "neutral equals full: no brake; brake stop equals off"
+        },
+        {
+          "number": 2,
+          "name": "neutral and brake position equal: motor-off equals brake"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4"
+    },
+    {
+      "number": 2,
+      "name": "Undervoltage cutoff (phase 2)",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "on (0.8 V per cell): jumper still fitted"
+        },
+        {
+          "number": 2,
+          "name": "off: jumper removed"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4"
+    }
+  ],
+  "unknowns": [
+    "Item numbers are step order chosen here.",
+    "Beep and LED timing not stated.",
+    "Time allowed between steps is not stated.",
+    "Reset to defaults not described.",
+    "Factory stick positions are 'usual' ones; the values are not stated."
+  ],
+  "notes": []
+}

@@ -1,0 +1,153 @@
+{
+  "schema": 1,
+  "id": "kontronik-sun-plus",
+  "brand": "Kontronik",
+  "family": "SUN PLUS",
+  "verified": false,
+  "models": [
+    {
+      "name": "SUN 1002",
+      "cells_min": 6,
+      "cells_max": 12,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 16000,
+      "current_a": 18,
+      "bec": null,
+      "firmware_note": "6-12 NiCd cells or 2-3 Li-Ion cells (5.5 to 16 V); BEC 2 A for 4 servos; 22 A for 15 s; motors up to Speed 480",
+      "spec_source": "Kontronik_Sun_Plus.pdf p.2: 6-12 NiCd cells; also 2-3 Li-Ion cells, 5.5-16 V; 18 A continuous"
+    },
+    {
+      "name": "SUN 3002",
+      "cells_min": 6,
+      "cells_max": 12,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 16000,
+      "current_a": 30,
+      "bec": null,
+      "firmware_note": "40 A for 15 s; motors up to Speed 600",
+      "spec_source": "Kontronik_Sun_Plus.pdf p.2: 6-12 NiCd cells; also 2-3 Li-Ion cells, 5.5-16 V; 30 A continuous"
+    },
+    {
+      "name": "SUN 4002",
+      "cells_min": 6,
+      "cells_max": 12,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 16000,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "50 A for 15 s",
+      "spec_source": "Kontronik_Sun_Plus.pdf p.2: 6-12 NiCd cells; also 2-3 Li-Ion cells, 5.5-16 V; 40 A continuous"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Sun_Plus.pdf",
+      "pages": "3-6, 10-14",
+      "language": "de/en",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/SUN_PLUS.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "The ESC button must be pressed after the entry wait. The bench has no actuator for it.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": 2000,
+      "confirm_signal": "Ascending tone sequence after the wait; descending sequence after the button press.",
+      "steps": [
+        "Connect the motor if tones are to be audible. Transmitter on. Throttle to brake for mode 1; to neutral for modes 2 to 6.",
+        "Apply drive power. The ESC sounds 3 tones for NiCd/NiMH or 6 tones for LiPo detection.",
+        "Wait 2 s (modes 1, 2, 3) or 5 s (modes 4, 5, 6) or until the ESC sounds an ascending tone sequence.",
+        "Operator: press the ESC button ('Taster').",
+        "The ESC sounds a descending tone sequence, then the mode series.",
+        "Move the throttle to full (stick forward) when the wanted mode sounds.",
+        "The ESC confirms with a descending tone sequence. Mode 2: a separate brake position can then be set (optional). Mode 6: move the stick to the brake position afterwards.",
+        "Control output: the mode is repeated as tones. Disconnect power."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "The ESC sounds mode 1 as one tone, mode 2 as two tones, and so on, one series after another with a pause between series."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Move the throttle to full when the wanted mode sounds."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip."
+    },
+    "confirm_signal": "Descending tone sequence, then the mode as tones.",
+    "exit": "Disconnect power after the control output.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Program mode 1 (APM).",
+    "description": "Brushed ESC with mode programming through the ESC button. The entry wait is 2 s for modes 1 to 3 and 5 s for modes 4 to 6. The series counts modes as tones; full throttle stores the selected mode."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "APM: reset, EMK brake and undervoltage cutoff on, stick range learned at every power-up",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "Glider: brake and undervoltage cutoff on, optional separate motor-off position"
+        },
+        {
+          "number": 3,
+          "name": "Motor plane / boat: brake off, undervoltage reduction instead of cutoff"
+        },
+        {
+          "number": 4,
+          "name": "Helicopter: throttle compensation for falling battery voltage, linear throttle curve"
+        },
+        {
+          "number": 5,
+          "name": "Competition: maximum brake response, undervoltage and overtemperature cutoff off"
+        },
+        {
+          "number": 6,
+          "name": "Car: proportional brake, undervoltage cutoff off"
+        },
+        {
+          "number": 9,
+          "name": "LiPo undervoltage detection (2.7 to 3 V per cell instead of 0.7 to 0.8 V)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3-6"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone in ms is not stated.",
+    "Gap between tones inside one mode series in ms is not stated.",
+    "Pause between two mode series in ms is not stated.",
+    "Whether the mode series loops until a mode is selected is not stated.",
+    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
+    "The manual's drawings for modes 4 and 5 show '5 sec' between the first and second tone series; whether it is the pause between series is not stated in text.",
+    "Entry wait is 2 s in modes 1 to 3 and 5 s in modes 4 to 6; whether the 5 s is a minimum or the same as the 'until the ESC signals' condition is not stated.",
+    "Position of the button on the ESC is not stated."
+  ],
+  "notes": [
+    "INDEX.csv lists 'ProgCard'; the manual names the ProgCARD (order no. 9305) for individual parameters.",
+    "The motor drive is brushed ('Kollektormotoren'), 3-wire inputs only."
+  ]
+}

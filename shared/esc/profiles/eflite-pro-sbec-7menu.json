@@ -1,0 +1,300 @@
+{
+  "id": "eflite-pro-sbec-7menu",
+  "brand": "E-flite",
+  "family": "Pro Switch-Mode BEC ESC, seven-menu series",
+  "models": [
+    {
+      "name": "30-Amp Pro Switch-Mode BEC ESC",
+      "cells_min": 3,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 30,
+      "bec": "switching",
+      "firmware_note": "Default cutoff 74%. 5 V BEC, 700 mA continuous",
+      "spec_source": "Eflite_30A_Pro_SBEC.pdf p.1 (Cells 3-4S)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "40-Amp Pro Switch-Mode BEC ESC (V1)",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 40,
+      "bec": "switching",
+      "firmware_note": "Default cutoff 70%. 5 V BEC, 2.5 A continuous",
+      "spec_source": "Eflite_40A_Pro_SBEC.pdf p.1 (Cells 3-6S)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "40-Amp Pro Switch-Mode BEC ESC V2 (EFLA1040B)",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 40,
+      "bec": "switching",
+      "firmware_note": "Default cutoff 70%. 5 V BEC, 5 A continuous",
+      "spec_source": "Eflite_40A_Pro_SBEC_V2.pdf p.1 (Cells 3-6S)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "40-Amp Lite Pro Switch-Mode BEC ESC V2 (EFLA1040LB)",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 40,
+      "bec": "switching",
+      "firmware_note": "Default cutoff 74%. 5 V BEC, 5 A continuous",
+      "spec_source": "Eflite_40A_LitePro_SBEC_V2.pdf p.1 (Cells 3-6S)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Eflite_30A_Pro_SBEC.pdf",
+      "pages": "2-3",
+      "language": "en",
+      "url": "https://www.horizonhobby.com/on/demandware.static/Sites-horizon-us-Site/Sites-horizon-master/default/Manuals/EFL30AProBrushlessESCInstSheet.pdf"
+    },
+    {
+      "file": "Eflite_40A_Pro_SBEC.pdf",
+      "pages": "2-3",
+      "language": "en",
+      "url": "https://www.horizonhobby.com/on/demandware.static/Sites-horizon-us-Site/Sites-horizon-master/default/Manuals/EFL40ABrushlessESCInstSheet.pdf"
+    },
+    {
+      "file": "Eflite_40A_Pro_SBEC_V2.pdf",
+      "pages": "1",
+      "language": "en/de",
+      "url": "https://www.horizonhobby.com/on/demandware.static/-/Sites-horizon-master/default/Manuals/EFLA1040B_Manual.pdf"
+    },
+    {
+      "file": "Eflite_40A_LitePro_SBEC_V2.pdf",
+      "pages": "1",
+      "language": "en/de",
+      "url": "https://www.horizonhobby.com/on/demandware.static/-/Sites-horizon-master/default/Manuals/EFLA1040LB_Manual.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": null,
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "Two sets of fast ringing tones after 5 s at full throttle.",
+      "steps": [
+        "Battery disconnected, transmitter on, throttle full (above 1.7 ms).",
+        "Connect battery, hold full throttle 5 s: two sets of fast ringing tones.",
+        "Throttle to centre for 5 s: 1 beep = menu 1."
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "Menu N is N beeps after the stick rests at centre for 5 s. With full throttle held, the ESC then beeps the options one after another: option N is N short beeps."
+    },
+    "select": {
+      "throttle": "mid",
+      "within_ms": null,
+      "description": "Hold full throttle while the wanted option is beeped, then move to centre (1.4-1.6 ms). Two beeps confirm the stored option."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Leave full throttle in place for 5 s: the ESC beeps the next option; after the last option it returns to the first. Leave the stick at centre after the menu beeps and make no move for 5 s to pass to the next menu."
+    },
+    "confirm_signal": "Two beeps after centre stick on a beeped option.",
+    "exit": "Idle stick or unplug the battery after the last wanted change.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": null,
+    "description": "Full throttle at power-up for 5 s enters programming; centre stick for 5 s gives menu 1 as one beep. Full throttle makes the ESC beep its options in turn (N beeps = option N); centre stick while an option is beeped stores it with two beeps. Menus advance after 5 s without a selection."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Voltage cutoff",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 3,
+          "name": "3-cell cutoff (3 beeps)"
+        },
+        {
+          "number": 4,
+          "name": "4-cell cutoff (4 beeps)"
+        },
+        {
+          "number": 5,
+          "name": "5-cell cutoff (5 beeps), 40 A V1 only"
+        },
+        {
+          "number": 6,
+          "name": "6-cell cutoff (6 beeps), 40 A V1 only"
+        },
+        {
+          "number": 7,
+          "name": "soft cutoff at a share of start voltage (7 beeps): 70% on 40 A Pro, 74% or 9.2 V whichever is higher on 30 A Pro and 40 A Lite Pro V2"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "30A p2; 40A V1 p2; V2 p1",
+      "note": "Value numbers are the beep counts. The default is the percent option on every model."
+    },
+    {
+      "number": 2,
+      "name": "Brake type",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "brake off",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft brake"
+        },
+        {
+          "number": 3,
+          "name": "medium brake"
+        },
+        {
+          "number": 4,
+          "name": "hard brake"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "30A p2-3"
+    },
+    {
+      "number": 3,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "5 degrees"
+        },
+        {
+          "number": 2,
+          "name": "10 degrees"
+        },
+        {
+          "number": 3,
+          "name": "15 degrees",
+          "default": true
+        },
+        {
+          "number": 4,
+          "name": "20 degrees"
+        },
+        {
+          "number": 5,
+          "name": "25 degrees"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "30A p3"
+    },
+    {
+      "number": 4,
+      "name": "Throttle input range",
+      "key": "throttle_range",
+      "values": [
+        {
+          "number": 1,
+          "name": "1.2-1.8 ms",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "1.1-1.9 ms"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "30A p3"
+    },
+    {
+      "number": 5,
+      "name": "Start-up rate",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "0.25 s",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "1 s"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "30A p3"
+    },
+    {
+      "number": 6,
+      "name": "PWM switching frequency",
+      "key": "pwm_freq",
+      "values": [
+        {
+          "number": 1,
+          "name": "8 kHz",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "16 kHz"
+        },
+        {
+          "number": 3,
+          "name": "32 kHz"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "30A p3"
+    },
+    {
+      "number": 7,
+      "name": "Operating mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "normal (airplane)",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "helicopter (5 s soft start after a stop of more than 5 s)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "30A p3-4"
+    }
+  ],
+  "unknowns": [
+    "Beep length, gap between beeps of one option and gap between options: not stated.",
+    "Time from the end of the option beeps to the next option when full throttle is held: manual says 5 s.",
+    "Whether the stored option is announced before it is changed: not stated.",
+    "Cell count (3-6) and voltage limits per model for the V2 models are taken from the specification block; cutoff-by-cell options 5 and 6 are listed for the 40 A V1 only.",
+    "The 40 A Pro V2 feature list names 5-cell (15 V) and 6-cell (18 V) cutoffs but its menu 1 lists only 3-cell, 4-cell and 70%: whether options 5 and 6 exist on V2 is unknown."
+  ],
+  "notes": [
+    "Eflite_30A_Pro_SBEC.pdf gives the centre window as 1.4-1.7 ms in entry step 3 and 1.4-1.6 ms elsewhere; Eflite_40A_Pro_SBEC.pdf gives 1.4-1.7 ms in step 3 and 1.4-1.6 ms in option steps.",
+    "Eflite_30A_Pro_SBEC.pdf and Eflite_40A_Pro_SBEC.pdf label the start-up rate entry as 'Menu 3' although they say five beeps; Eflite_40A_Pro_SBEC.pdf also says six beeps for the throttle range menu in one line and four beeps in the next. The menu order and the beep counts used here are 1..7 in the manuals' own menu headings.",
+    "Cutoff percent differs between manuals: 74% in Eflite_30A_Pro_SBEC.pdf and Eflite_40A_LitePro_SBEC_V2.pdf, 70% in Eflite_40A_Pro_SBEC.pdf and Eflite_40A_Pro_SBEC_V2.pdf.",
+    "Eflite_40A_Pro_SBEC_V2.pdf and Eflite_40A_LitePro_SBEC_V2.pdf are one-sheet English/German/French/Italian manuals; the pages cited are the English columns."
+  ],
+  "schema": 1,
+  "verified": false
+}

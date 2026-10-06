@@ -1,0 +1,640 @@
+{
+  "id": "hacker-master-gen3",
+  "brand": "Hacker",
+  "family": "Master (third generation: Flight, F5, Acro, Heli, Navy, Car; OPTO, BEC, S-BEC)",
+  "models": [
+    {
+      "name": "Master 4-B-Flight",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": 4000,
+      "v_max_mv": 13000,
+      "current_a": 4,
+      "bec": null,
+      "firmware_note": "BEC present (table column 'normal'); type not stated",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 8-SB-Flight",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": 5000,
+      "v_max_mv": 17000,
+      "current_a": 8,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 18-SB-Flight",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": 5000,
+      "v_max_mv": 17000,
+      "current_a": 18,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 30-SB-Flight",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": 5000,
+      "v_max_mv": 17000,
+      "current_a": 30,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 40-SB-Flight",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 5000,
+      "v_max_mv": 25000,
+      "current_a": 40,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 70-SB-Flight",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 5000,
+      "v_max_mv": 25000,
+      "current_a": 70,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 40-O-Flight",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 5000,
+      "v_max_mv": 25000,
+      "current_a": 40,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 70-O-Flight",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 5000,
+      "v_max_mv": 25000,
+      "current_a": 70,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 48-O-Flight",
+      "cells_min": 3,
+      "cells_max": 10,
+      "v_min_mv": 7000,
+      "v_max_mv": 42000,
+      "current_a": 48,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 77-O-Flight",
+      "cells_min": 3,
+      "cells_max": 10,
+      "v_min_mv": 7000,
+      "v_max_mv": 42000,
+      "current_a": 77,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 135-O-F5B",
+      "cells_min": 3,
+      "cells_max": 10,
+      "v_min_mv": 7000,
+      "v_max_mv": 42000,
+      "current_a": 100,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 195-O-F5B",
+      "cells_min": 3,
+      "cells_max": 6,
+      "v_min_mv": 7000,
+      "v_max_mv": 26000,
+      "current_a": 200,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 90-O-F5D",
+      "cells_min": 2,
+      "cells_max": 5,
+      "v_min_mv": 5000,
+      "v_max_mv": 24000,
+      "current_a": 80,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 140-O-F5D",
+      "cells_min": 2,
+      "cells_max": 5,
+      "v_min_mv": 5000,
+      "v_max_mv": 24000,
+      "current_a": 140,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 125-O-F5F",
+      "cells_min": 2,
+      "cells_max": 5,
+      "v_min_mv": 5000,
+      "v_max_mv": 24000,
+      "current_a": 90,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 90-O-Acro Competition",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": 14000,
+      "v_max_mv": 50000,
+      "current_a": 90,
+      "bec": "opto",
+      "firmware_note": "F3A/3D type with a special brake function; the stick menu for it is not described",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 40-SB-Navy",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 5000,
+      "v_max_mv": 25000,
+      "current_a": 40,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 70-SB-Navy",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 5000,
+      "v_max_mv": 25000,
+      "current_a": 70,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 70-O-Navy",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 5000,
+      "v_max_mv": 25000,
+      "current_a": 70,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 77-O-Navy",
+      "cells_min": 3,
+      "cells_max": 10,
+      "v_min_mv": 7000,
+      "v_max_mv": 42000,
+      "current_a": 75,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 99-O-Navy",
+      "cells_min": 3,
+      "cells_max": 10,
+      "v_min_mv": 7000,
+      "v_max_mv": 42000,
+      "current_a": 90,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 8-SB-Heli",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": 5000,
+      "v_max_mv": 17000,
+      "current_a": 8,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 18-SB-Heli",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": 5000,
+      "v_max_mv": 17000,
+      "current_a": 18,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 40-SB-Heli",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 5000,
+      "v_max_mv": 25000,
+      "current_a": 30,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 40-O-Heli",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 5000,
+      "v_max_mv": 25000,
+      "current_a": 30,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 48-O-Heli",
+      "cells_min": 4,
+      "cells_max": 10,
+      "v_min_mv": 12000,
+      "v_max_mv": 42000,
+      "current_a": 30,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master 77-O-Heli",
+      "cells_min": 4,
+      "cells_max": 10,
+      "v_min_mv": 12000,
+      "v_max_mv": 42000,
+      "current_a": 40,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master B-Car Mini",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": 4000,
+      "v_max_mv": 12000,
+      "current_a": 10,
+      "bec": null,
+      "firmware_note": "BEC present (table column 'normal'); type not stated",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master B-Car Sport",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": 4500,
+      "v_max_mv": 12000,
+      "current_a": 60,
+      "bec": null,
+      "firmware_note": "BEC present (table column 'normal'); type not stated",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    },
+    {
+      "name": "Master B-Car Comp",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": 4500,
+      "v_max_mv": 12000,
+      "current_a": 90,
+      "bec": null,
+      "firmware_note": "BEC present (table column 'normal'); type not stated",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_Master_OPTO-BEC-SBEC_de.pdf p.22"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Hacker_Master_OPTO-BEC-SBEC_de.pdf",
+      "pages": "7-18, 22",
+      "language": "de",
+      "url": "https://www.hacker-motor.com/daten/anleitungen/MasterBasic-Manuel.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "Only throttle signal and supply are needed. Car types use a centre-neutral throttle and the current-limit item starts from the max-brake end, so the bench must output those throttle positions. Navy types need a full-then-centre teach once. OPTO types are specified with a separate 4.5-6.0 V receiver supply for programming through the programming box; whether stick programming needs it is not stated.",
+  "scheme": {
+    "type": "melody_groups",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "Four-tone melody about 5 s after power-up. The motor does not start although the throttle is at full.",
+      "steps": [
+        "Throttle signal at full power, then connect the drive battery (switch the BEC on where fitted).",
+        "Wait about 5 s for the four-tone melody (programming mode entered).",
+        "Mode toggle (item 1): move throttle to stop immediately after the melody.",
+        "Timing (item 2): keep full throttle, wait about 5 s more, then listen to the groups of 1 to 4 beeps; move to stop during the wanted group.",
+        "PWM frequency, cutoff voltage or direction (items 3, 4): keep full throttle through all timing groups, then the long/short patterns follow; move to stop during the wanted pattern."
+      ]
+    },
+    "announce": {
+      "what": "value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": 5,
+      "description": "After the melody and a further wait of about 5 s, the ESC plays groups of 1, 2, 3 and 4 beeps in turn (timing, items 2). Each group is repeated five times in a row before the next count starts. A group ends after its fifth repetition. For item 3 and item 4 the ESC afterwards plays three patterns of long and short tones, each also shown five times: all long, alternating long and short, all short; a long-short-long pattern stands for direction reversal. The manual does not say whether the sequence loops after the last pattern. Car current limit (item 5) plays groups of 1 to 4 beeps, five repetitions each, directly after the melody."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Move the throttle to the stop position while the wanted group or pattern is sounding. The stop position is minimum throttle on aircraft types and the centre position on Car types. Selecting the mode toggle needs the move right after the melody."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Keeping the throttle at full lets the sequence run on to the next stage; there is no explicit skip signal."
+    },
+    "confirm_signal": "One or two beeps for the active operating mode (one = brake / Steller / forward-brake, two = no brake / Regler / forward-brake-reverse), then the ESC is armed.",
+    "exit": "The ESC is armed after the confirmation and the motor starts on throttle movement. Disconnect the battery to leave and to start another change.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": null,
+    "description": "Throttle at full power before connecting the battery gives a four-tone melody after about 5 s. Stop right after the melody toggles the operating mode. Staying at full throttle starts the timing groups (1 to 4 beeps, five times each), then the PWM-frequency or cutoff-voltage patterns with the direction-reversal pattern. Stop during one group or pattern stores that single setting; further changes need a new power-up."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Operating mode (toggle)",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "mode A: one beep at power-up (Flight: brake on; Heli: Steller mode; Car: forward-brake)",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "mode B: two beeps at power-up (Flight: no brake; Heli: Regler mode with active speed control; Car: forward-brake-reverse)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "12-13",
+      "note": "Not selectable by number: each stop move right after the melody flips the mode. Heli: one pass from the factory state gives mode B, a second pass returns to mode A. Navy: the manual names forward-only and forward-reverse modes but gives no beep mapping."
+    },
+    {
+      "number": 2,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "stage 1, 2 degrees",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "stage 2, 8 degrees"
+        },
+        {
+          "number": 3,
+          "name": "stage 3, 15 degrees"
+        },
+        {
+          "number": 4,
+          "name": "stage 4, 30 degrees"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "14-15"
+    },
+    {
+      "number": 3,
+      "name": "PWM frequency",
+      "key": "pwm_freq",
+      "values": [
+        {
+          "number": 1,
+          "name": "8 kHz (long tones)",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "16 kHz (alternating long and short)"
+        },
+        {
+          "number": 3,
+          "name": "32 kHz (short tones)"
+        }
+      ],
+      "applies_to": [
+        "Master 40-SB-Flight",
+        "Master 70-SB-Flight",
+        "Master 40-O-Flight",
+        "Master 70-O-Flight",
+        "Master 48-O-Flight",
+        "Master 77-O-Flight",
+        "Master 135-O-F5B",
+        "Master 195-O-F5B",
+        "Master 90-O-F5D",
+        "Master 140-O-F5D",
+        "Master 125-O-F5F",
+        "Master 90-O-Acro Competition",
+        "Master 77-O-Heli"
+      ],
+      "source_page": "16-17",
+      "note": "applies_to expanded from the manual's rule: all models rated 40 A or more, except Navy and Car."
+    },
+    {
+      "number": 3,
+      "name": "Cutoff voltage",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "NiCd/NiMH: 33 % of pack voltage at connection, minimum 4 V (long tones)"
+        },
+        {
+          "number": 2,
+          "name": "about 6.0 V, 2 LiPo cells (alternating long and short)"
+        },
+        {
+          "number": 3,
+          "name": "about 9.0 V, 3 LiPo cells (short tones)"
+        }
+      ],
+      "applies_to": [
+        "Master 4-B-Flight",
+        "Master 8-SB-Flight",
+        "Master 18-SB-Flight",
+        "Master 30-SB-Flight",
+        "Master 8-SB-Heli",
+        "Master B-Car Mini"
+      ],
+      "source_page": "17",
+      "note": "Replaces the PWM-frequency item on the types up to 30 A. Default not stated."
+    },
+    {
+      "number": 4,
+      "name": "Direction reversal",
+      "key": "direction",
+      "values": [
+        {
+          "number": 1,
+          "name": "reverse rotation (long, short, long)"
+        }
+      ],
+      "applies_to": [
+        "Master 4-B-Flight",
+        "Master 8-SB-Flight",
+        "Master 18-SB-Flight",
+        "Master 30-SB-Flight",
+        "Master 40-SB-Flight",
+        "Master 70-SB-Flight",
+        "Master 40-O-Flight",
+        "Master 70-O-Flight",
+        "Master 48-O-Flight",
+        "Master 77-O-Flight",
+        "Master 135-O-F5B",
+        "Master 195-O-F5B",
+        "Master 90-O-F5D",
+        "Master 140-O-F5D",
+        "Master 125-O-F5F",
+        "Master 90-O-Acro Competition",
+        "Master 8-SB-Heli",
+        "Master 18-SB-Heli",
+        "Master 40-SB-Heli",
+        "Master 40-O-Heli",
+        "Master 48-O-Heli",
+        "Master 77-O-Heli"
+      ],
+      "source_page": "16-17",
+      "note": "Same stage as item 3. applies_to expanded from the manual's rule: all except Navy and Car types."
+    },
+    {
+      "number": 5,
+      "name": "Current limit",
+      "key": "current_limit",
+      "values": [
+        {
+          "number": 1,
+          "name": "about 20 A"
+        },
+        {
+          "number": 2,
+          "name": "about 40 A"
+        },
+        {
+          "number": 3,
+          "name": "about 60 A"
+        },
+        {
+          "number": 4,
+          "name": "no limit"
+        }
+      ],
+      "applies_to": [
+        "Master B-Car Mini",
+        "Master B-Car Sport",
+        "Master B-Car Comp"
+      ],
+      "source_page": "18",
+      "note": "Entered with the throttle at max brake instead of full power. Groups of 1 to 4 beeps, five repetitions each. Default not stated."
+    },
+    {
+      "number": 6,
+      "name": "Throttle range teach (Navy)",
+      "key": "throttle_range",
+      "values": [
+        {
+          "number": 1,
+          "name": "teach full power, then centre or neutral position"
+        }
+      ],
+      "applies_to": [
+        "Master 40-SB-Navy",
+        "Master 70-SB-Navy",
+        "Master 70-O-Navy",
+        "Master 77-O-Navy",
+        "Master 99-O-Navy"
+      ],
+      "source_page": "10-11",
+      "note": "Throttle at full before power-up, tone sequence, then centre (normal transmitter) or the self-centring position (pistol-grip transmitter) right after it; the ESC answers with one tone. Stored settings keep until repeated."
+    }
+  ],
+  "unknowns": [
+    "Beep, tone and gap durations (ms) for every group and pattern: not stated.",
+    "Duration of the wait from power-up to the four-tone melody: 'about 5 s', no tolerance.",
+    "Duration of the wait between the melody and the first timing group: 'about 5 s', no tolerance.",
+    "Pause between the five repetitions of a group and between groups: not stated.",
+    "Length of the window after the melody in which the mode toggle must be triggered ('immediately'): not stated.",
+    "Whether the group and pattern sequence loops after the last pattern: not stated.",
+    "Navy: which beep count belongs to forward-only and which to forward-reverse mode: not stated.",
+    "Navy: tone sequence after the full-power detection and length of the window for the centre move: not stated.",
+    "Car: which throttle end is 'max brake' for the current-limit entry: not stated.",
+    "Default values of cutoff voltage (up to 30 A types), current limit and direction: not stated.",
+    "Acknowledgement melody for each stored change: shown only as note symbols, no durations.",
+    "Whether OPTO types need an external 4.5-6.0 V supply for stick programming: given for the programming box only.",
+    "Master 90-O-Acro Competition special brake and its stick menu: only referenced, not described."
+  ],
+  "notes": [
+    "The PWM-frequency stage exists from the 40 A types up; types up to 30 A use the cutoff-voltage stage instead (p16-17).",
+    "The programming-box table (p24-25) lists further settings that have no stick sequence; those are not in this profile.",
+    "The manual forbids operation from a power supply because motor braking can raise the input voltage. A bench supply needs a clamp or sink if the motor is connected; with no motor connected the risk is not stated.",
+    "Pages cited are the printed page numbers."
+  ],
+  "schema": 1,
+  "verified": false
+}

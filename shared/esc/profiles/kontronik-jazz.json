@@ -1,0 +1,195 @@
+{
+  "schema": 1,
+  "id": "kontronik-jazz",
+  "brand": "Kontronik",
+  "family": "JAZZ / MINIJAZZ",
+  "verified": false,
+  "models": [
+    {
+      "name": "JAZZ 40 LV",
+      "cells_min": null,
+      "cells_max": null,
+      "cell_type": null,
+      "v_min_mv": 6000,
+      "v_max_mv": 25000,
+      "current_a": 40,
+      "bec": "switching",
+      "firmware_note": "BEC 2.5 A continuous, about 3 A for 10 s; 50 A limited current",
+      "spec_source": "Kontronik_Jazz.pdf p.3 (German) / p.13 (English): input voltage 6-25 V, continuous current in type table; cell count not stated"
+    },
+    {
+      "name": "JAZZ 55 LV",
+      "cells_min": 2,
+      "cells_max": 6,
+      "cell_type": "lipo",
+      "v_min_mv": 6000,
+      "v_max_mv": 25000,
+      "current_a": 55,
+      "bec": "switching",
+      "firmware_note": "BEC 2.5 A / 3 A; 65 A limited current (German side), 70 A (English side)",
+      "spec_source": "Kontronik_Jazz.pdf p.3 (German) / p.13 (English): input voltage 6-25 V, continuous current in type table; cells: https://www.modellsport.ch/Hubschrauber/Regler-BEC/Kontronik/Kontronik-JAZZ-55-LV-Regler.html (dealer, 2 bis 6 LiPo)"
+    },
+    {
+      "name": "JAZZ 80 LV",
+      "cells_min": 2,
+      "cells_max": 6,
+      "cell_type": "lipo",
+      "v_min_mv": 6000,
+      "v_max_mv": 25000,
+      "current_a": 80,
+      "bec": "switching",
+      "firmware_note": "BEC 4 A / 5 A; 100 A limited current",
+      "spec_source": "Kontronik_Jazz.pdf p.3 (German) / p.13 (English): input voltage 6-25 V, continuous current in type table; cells: http://www.deheli.ch/shop/xtcommerce/product_info.php/info/p1089_Regler-Jazz-80-LV.html (dealer, Zellenzahl LiPo 2-6)"
+    },
+    {
+      "name": "MINIJAZZ 15 LV",
+      "cells_min": 2,
+      "cells_max": 3,
+      "cell_type": "lipo",
+      "v_min_mv": 5500,
+      "v_max_mv": 13000,
+      "current_a": 15,
+      "bec": "switching",
+      "firmware_note": "20 A short term; BEC 1.5 A continuous",
+      "spec_source": "Kontronik_MiniJazz.pdf p.3: 2-3 LiPo, 5.5-13 V, 15 A continuous"
+    },
+    {
+      "name": "MINIJAZZ 20 LV",
+      "cells_min": 2,
+      "cells_max": 3,
+      "cell_type": "lipo",
+      "v_min_mv": 5500,
+      "v_max_mv": 13000,
+      "current_a": 20,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Kontronik_MiniJazz.pdf p.3: 2-3 LiPo, 5.5-13 V, 20 A continuous"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Jazz.pdf",
+      "pages": "5-9, 13-17",
+      "language": "de/en",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/JAZZ-1.pdf"
+    },
+    {
+      "file": "Kontronik_MiniJazz.pdf",
+      "pages": "5-9, 13-17",
+      "language": "de/en",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/MiniJazz.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": 2000,
+      "confirm_signal": "Three-tone sequence after the 2 s wait, a second three-tone sequence after the jumper is removed.",
+      "steps": [
+        "Operator: fit the jumper on any 2 of the 3 programming contacts. Connect the motor to the ESC if the tones are to be audible.",
+        "Switch the transmitter on. Throttle to the brake position (stick back). For modes 6 and 8 use the motor-off position instead.",
+        "Apply drive power.",
+        "Wait 2 s or until the ESC sounds its three-tone sequence (pictogram in the manual).",
+        "Operator: pull the jumper off.",
+        "The ESC sounds a second three-tone sequence, then the mode series 1, 2, 3 ... 9 with a pause between series.",
+        "Move the throttle to full (stick forward) while the wanted mode series sounds.",
+        "Mode 2 only: move the throttle to the wanted separate motor-off position after the ESC's confirmation tones. Modes 6 and 8: move the throttle to maximum brake (stick back).",
+        "The ESC repeats the stored mode as a check. Then disconnect drive power."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "The ESC sounds mode 1 as one tone, mode 2 as two tones, and so on, one series after another with a pause between series."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Move the throttle from the starting position to full while the series for the wanted mode is sounding."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip. The series for every mode sounds in turn; disconnect power without selecting to leave the settings unchanged (manual does not state this explicitly)."
+    },
+    "confirm_signal": "The ESC repeats the stored mode as tones (control output). Mode 2 and the car modes first confirm the extra stick position with a three-tone sequence.",
+    "exit": "Disconnect drive power after the control output.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Program mode 1 (APM). This clears every stored setting.",
+    "description": "Fit the jumper, set the stick, apply power and wait for the tone sequence, then pull the jumper. The ESC cycles through the modes as 1 to 9 tones. Moving the throttle to full during the wanted series stores that mode. One mode is stored per power cycle."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "APM: stick range is learned at every power-up; programming it clears all settings",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "Glider: brake on, undervoltage cutoff on, optional separate motor-off stick position"
+        },
+        {
+          "number": 3,
+          "name": "Motor plane / boat"
+        },
+        {
+          "number": 4,
+          "name": "Helicopter: speed governor, stick range stored"
+        },
+        {
+          "number": 5,
+          "name": "Competition F5B / F5D: maximum brake response, undervoltage cutoff off"
+        },
+        {
+          "number": 6,
+          "name": "Car, one direction, proportional brake"
+        },
+        {
+          "number": 7,
+          "name": "Reverse motor rotation (needs a mode other than 1 programmed first)"
+        },
+        {
+          "number": 8,
+          "name": "Car, forward and reverse"
+        },
+        {
+          "number": 9,
+          "name": "LiPo undervoltage cutoff, 2.7 to 3 V per cell, added on top of another mode"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5-8"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone in ms is not stated.",
+    "Gap between tones inside one mode series in ms is not stated.",
+    "Pause between two mode series in ms is not stated.",
+    "Whether the mode series loops until a mode is selected is not stated.",
+    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
+    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2 s minimum; the end of the wait is the ESC's tone sequence.",
+    "Time allowed between connecting power and removing the jumper is not stated for JAZZ / MINIJAZZ.",
+    "MINIJAZZ 20 LV continuous current is not given in the manual.",
+    "Cell count range of JAZZ 40/55/80 LV is not stated; only the 6 to 25 V input range.",
+    "Whether the symbols in step 4 are ascending or descending is not readable in the pictogram."
+  ],
+  "notes": [
+    "Kontronik_Jazz.pdf lists the JAZZ 55 LV limited current as 65 A on the German side and 70 A on the English side.",
+    "Kontronik_MiniJazz.pdf follows the JAZZ procedure and mode list; its type table lists 15 LV and 20 LV only.",
+    "INDEX.csv names 'Jazz 40-6-18'; the manual uses 'JAZZ 40 LV'."
+  ]
+}

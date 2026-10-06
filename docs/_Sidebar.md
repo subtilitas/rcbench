@@ -20,6 +20,7 @@ Reference
 - [The link](Link.md)
 - [DShot and the output drivers](DShot.md)
 - [The OpenYGE protocol](OpenYGE.md)
+- [ESC programming profiles](EscProfiles.md)
 - [Performance](Performance.md)
 
 _Deutsch_
@@ -42,4 +43,5 @@ Referenz
 - [Der Link](Link-de.md)
 - [DShot und die Output-Treiber](DShot-de.md)
 - [Das OpenYGE-Protokoll](OpenYGE-de.md)
+- [ESC-Programmierprofile](EscProfiles-de.md)
 - [Performance](Performance-de.md)

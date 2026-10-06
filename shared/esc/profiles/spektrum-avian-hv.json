@@ -1,0 +1,471 @@
+{
+  "id": "spektrum-avian-hv",
+  "brand": "Spektrum",
+  "family": "Avian 160 A / 200 A HV Smart ESC",
+  "models": [
+    {
+      "name": "Avian 160A HV (SPMXAE1160HV)",
+      "cells_min": 6,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 160,
+      "bec": null,
+      "firmware_note": "BEC 6.0/7.4/8.4 V at 10 A (25 A peak listed); type not stated",
+      "spec_source": "Spektrum_Avian_160-200HV.pdf p.4 (6-14S LiPo, 160 A / 200 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Avian 200A HV (SPMXAE1200HV)",
+      "cells_min": 6,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 200,
+      "bec": null,
+      "firmware_note": "BEC 6.0/7.4/8.4 V at 10 A (25 A peak listed); type not stated",
+      "spec_source": "Spektrum_Avian_160-200HV.pdf p.4 (6-14S LiPo, 160 A / 200 A)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Spektrum_Avian_160-200HV.pdf",
+      "pages": "7-9",
+      "language": "en",
+      "url": "https://www.spektrumrc.com/on/demandware.static/-/Sites-horizon-master/default/dw71772f5d/Manuals/SPMXAE1160HV-SPMXAE1200HV-Manual-EN.pdf"
+    }
+  ],
+  "automatable": "none",
+  "automatable_note": "This manual gives the tone codes and options but no stick procedure for selecting a parameter or option; it describes the programming box and SmartLink only. The calibration tip says more than 5 s at full throttle enters programming mode.",
+  "scheme": {
+    "type": "short_long",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "Another series of tones after more than 5 s at full throttle following the two acceptance tones.",
+      "steps": [
+        "Transmitter on, throttle full.",
+        "Connect battery: three ascending tones.",
+        "After 5 s: two short tones (maximum throttle accepted).",
+        "Leave the stick at full for more than 5 s: tones signal programming mode."
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "short_long",
+      "long_equals_short": 5,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "Parameter code: 1-4 short tones = 1-4, one long = 5, long plus 1-4 short = 6-9, two long = 10 and so on, as in the options table. Option N of a parameter uses the same tone count as the table columns."
+    },
+    "select": {
+      "throttle": "none",
+      "within_ms": null,
+      "description": "Not described in this manual."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Not described in this manual."
+    },
+    "confirm_signal": "Not described.",
+    "exit": "Not described; the box procedure says to switch the ESC off and on after saving.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": null,
+    "description": "The manual describes programming with the Smart Programmer Box and SmartLink; it does not describe the stick selection or option steps. The calibration tip says the ESC enters programming mode after more than 5 s at full throttle."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Aircraft type",
+      "key": "aircraft_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "airplane",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "helicopter"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "8-9"
+    },
+    {
+      "number": 2,
+      "name": "Brake type",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "disabled",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "normal"
+        },
+        {
+          "number": 3,
+          "name": "proportional"
+        },
+        {
+          "number": 4,
+          "name": "reverse"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "8-9"
+    },
+    {
+      "number": 3,
+      "name": "Brake force",
+      "key": "brake_force",
+      "values": [
+        {
+          "number": 1,
+          "name": "disabled",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "level 1"
+        },
+        {
+          "number": 3,
+          "name": "level 2"
+        },
+        {
+          "number": 4,
+          "name": "level 3"
+        },
+        {
+          "number": 5,
+          "name": "level 4"
+        },
+        {
+          "number": 6,
+          "name": "level 5"
+        },
+        {
+          "number": 7,
+          "name": "level 6"
+        },
+        {
+          "number": 8,
+          "name": "level 7"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "8-9"
+    },
+    {
+      "number": 4,
+      "name": "Voltage cutoff type",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "soft"
+        },
+        {
+          "number": 2,
+          "name": "hard"
+        },
+        {
+          "number": 3,
+          "name": "surge SW",
+          "default": true
+        }
+      ],
+      "applies_to": null,
+      "source_page": "8-9"
+    },
+    {
+      "number": 5,
+      "name": "Number of LiPo cells",
+      "key": "cell_count",
+      "values": [
+        {
+          "number": 1,
+          "name": "auto calc.",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "6S"
+        },
+        {
+          "number": 3,
+          "name": "8S"
+        },
+        {
+          "number": 4,
+          "name": "10S"
+        },
+        {
+          "number": 5,
+          "name": "12S"
+        },
+        {
+          "number": 6,
+          "name": "14S"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "8-9"
+    },
+    {
+      "number": 6,
+      "name": "Cutoff voltage",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "disabled"
+        },
+        {
+          "number": 2,
+          "name": "3.0 V"
+        },
+        {
+          "number": 3,
+          "name": "3.2 V"
+        },
+        {
+          "number": 4,
+          "name": "3.4 V",
+          "default": true
+        },
+        {
+          "number": 5,
+          "name": "3.6 V"
+        },
+        {
+          "number": 6,
+          "name": "3.8 V"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "9",
+      "note": "Per cell."
+    },
+    {
+      "number": 7,
+      "name": "BEC voltage",
+      "key": "bec_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "6.0 V",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "7.4 V"
+        },
+        {
+          "number": 3,
+          "name": "8.4 V"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "9"
+    },
+    {
+      "number": 8,
+      "name": "Start-up mode",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "normal"
+        },
+        {
+          "number": 2,
+          "name": "soft",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "very soft"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "9"
+    },
+    {
+      "number": 9,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "low (5 degrees)"
+        },
+        {
+          "number": 2,
+          "name": "medium (15 degrees)",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "high (30 degrees)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "9"
+    },
+    {
+      "number": 10,
+      "name": "Motor rotation",
+      "key": "direction",
+      "values": [
+        {
+          "number": 1,
+          "name": "CW",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "CCW"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "9"
+    },
+    {
+      "number": 11,
+      "name": "Freewheel mode",
+      "key": "freewheel",
+      "values": [
+        {
+          "number": 1,
+          "name": "enabled"
+        },
+        {
+          "number": 2,
+          "name": "disabled",
+          "default": true
+        }
+      ],
+      "applies_to": null,
+      "source_page": "9"
+    },
+    {
+      "number": 12,
+      "name": "Governor gain",
+      "key": "governor_gain",
+      "values": [
+        {
+          "number": 1,
+          "name": "level 1",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "level 2"
+        },
+        {
+          "number": 3,
+          "name": "level 3"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "9"
+    },
+    {
+      "number": 13,
+      "name": "Auto restart time",
+      "key": "auto_restart",
+      "values": [
+        {
+          "number": 1,
+          "name": "0 s"
+        },
+        {
+          "number": 2,
+          "name": "45 s",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "90 s"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "9"
+    },
+    {
+      "number": 14,
+      "name": "Restart acceleration time",
+      "key": "restart_accel",
+      "values": [
+        {
+          "number": 1,
+          "name": "1.0 s"
+        },
+        {
+          "number": 2,
+          "name": "1.5 s",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "2.0 s"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "9"
+    },
+    {
+      "number": 15,
+      "name": "Thrust reverse",
+      "key": "thrust_reverse",
+      "values": [
+        {
+          "number": 1,
+          "name": "CH5"
+        },
+        {
+          "number": 2,
+          "name": "CH6"
+        },
+        {
+          "number": 3,
+          "name": "CH7",
+          "default": true
+        },
+        {
+          "number": 4,
+          "name": "CH8"
+        },
+        {
+          "number": 5,
+          "name": "CH9"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "9"
+    }
+  ],
+  "unknowns": [
+    "Stick procedure for selecting a parameter and an option: not in this manual. The contents page lists 'Stick Programming' (page 8) but page 8 is the programmer-box section.",
+    "Tone durations and gaps: not stated.",
+    "Whether the stick procedure of Spektrum_Avian_Smart_series.pdf (bottom stick within 3 s, full throttle for an option) applies to this ESC: not stated.",
+    "Exit and save: only the box and a power cycle are described.",
+    "Item numbers follow the parameter list; the tone code for 12-15 is read from the table header, which names only the first eight columns.",
+    "Defaults come from black table cells in the page image."
+  ],
+  "notes": [
+    "Spektrum_Avian_160-200HV.pdf has the same 15 parameters as Spektrum_Avian_130Pro.pdf but different values for cells (6S-14S), BEC (6.0/7.4/8.4 V) and timing degrees (5, 15, 30), and the contents page shows a stick-programming section whose text is absent.",
+    "The page 8 note says power the ESC off and on after adjusting parameters; changes are not applied otherwise."
+  ],
+  "schema": 1,
+  "verified": false
+}
