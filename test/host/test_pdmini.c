@@ -959,6 +959,66 @@ TEST_CASE(an_output_that_went_off_by_itself_teaches_nothing)
     CHECK(!m.output);
 }
 
+/* ON asked again while a slow OFF waits to be confirmed: the output still
+ * reading on is not taken to show that the OFF's argument means on. */
+TEST_CASE(an_on_asked_over_a_pending_off_teaches_nothing)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(d.on_confirmed);
+    m.settle_ms = 300u;
+    const unsigned writes = m.en_writes;
+    pdmini_want(&d, false, 5000u, 1000u);
+    run_to_en_write(writes + 1u);
+    run(10u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(3000u, false);
+    CHECK_EQ(d.on_value, 1u);
+    CHECK(m.output);
+}
+
+/* A set point dropped for an OFF that also changes the set points leaves
+ * nothing stuck: the new ones are written straight after the OFF. */
+TEST_CASE(a_dropped_set_point_leaves_nothing_stuck)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    pdmini_want(&d, true, 15000u, 1000u);
+    for (unsigned k = 0u; k < 3000u
+         && !(d.phase == PD_ATTACH && d.cmd == PDMINI_OUTPUT_DATA); ++k) {
+        run(1u, false);
+    }
+    CHECK(d.phase == PD_ATTACH);
+    pdmini_want(&d, false, 9000u, 700u);
+    run(600u, false);
+    CHECK(!m.output);
+    CHECK(!pdmini_status(&d)->set_stuck);
+    CHECK_EQ(m.mv[0], 9000u);
+}
+
+/* Set points changed while an ON read back for the old ones waits for its
+ * pins: that ON is not sent, and the output comes on at the new ones. */
+TEST_CASE(an_on_is_dropped_when_its_set_points_change)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 20000u, 1000u);
+    for (unsigned k = 0u; k < 3000u
+         && !(d.phase == PD_ATTACH && d.cmd == PDMINI_OUTPUT_EN); ++k) {
+        run(1u, false);
+    }
+    CHECK(d.phase == PD_ATTACH);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(2000u, false);
+    CHECK(m.output);
+    CHECK_EQ(m.on_at_mv, 5000u);
+    CHECK_EQ(m.en_writes, 1u);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -1020,5 +1080,8 @@ int main(void)
     RUN(no_blind_off_goes_to_another_device_that_answers);
     RUN(a_slow_reply_holds_neither_the_pins_nor_an_off);
     RUN(an_output_that_went_off_by_itself_teaches_nothing);
+    RUN(an_on_asked_over_a_pending_off_teaches_nothing);
+    RUN(a_dropped_set_point_leaves_nothing_stuck);
+    RUN(an_on_is_dropped_when_its_set_points_change);
     return test_summary("pdmini");
 }

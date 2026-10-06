@@ -28,14 +28,16 @@ history is in git.
       fail the transaction.
   - OUTPUT_EN's argument for on is learnt from the module: 1 first, then 0,
     and learnt again from a module that answers after none did. It is
-    learnt only from an output seen to come on, never from one seen to go
-    off, which the module's overcurrent protection does by itself. Once a
+    learnt only from an output seen to come on after a write towards on,
+    never from one seen to go off, which the module's overcurrent
+    protection does by itself. Once a
     read-back has shown it, only that argument is written. The output is
     written only when it reads otherwise than asked, so an OFF cannot
     switch on an output that was off.
   - Ordering: an OFF goes first.
-    - An ON not yet sent when an OFF is asked for is dropped, and so is a
-      set point while the output is or may be on. A read under way other
+    - An ON not yet sent when an OFF is asked for, or when the set points
+      read back for it change, is dropped, and so is a set point while the
+      output is or may be on. A read under way other
       than the state's is left.
     - An OFF that does not take is written again without pause; four
       that do not take raise the stuck flag.

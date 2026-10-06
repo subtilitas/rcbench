@@ -228,7 +228,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->st.mode     = (uint8_t)((r[1] >> 1) & 3u);
         d->state_known = true;
         d->off_owed    = false;
-        if (d->en_pending && d->en_for != d->want_output) {
+        if (d->en_pending && d->en_for && !d->want_output) {
             /*
              * An OFF asked for while an ON, its argument not yet shown to
              * mean on, waited to be confirmed: the output is watched for
@@ -251,7 +251,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
             /* There, however it got there: nothing is stuck. */
             d->en_tries = 0u;
             d->st.stuck = false;
-            if (d->en_pending && d->want_output) {
+            if (d->en_pending && d->en_for && d->want_output) {
                 /*
                  * And the argument just written means on.  Learnt only from
                  * an output that came on, which it does not do by itself;
@@ -580,7 +580,8 @@ static bool off_now(const pdmini_t *d)
 
 /*
  * Whether the write waiting for its pins has been overtaken: an OUTPUT_EN
- * towards what is no longer asked, or a set point while an OFF is asked
+ * towards what is no longer asked, an ON whose set points have changed
+ * since they were read back for it, or a set point while an OFF is asked
  * and the output is or may be on -- the OFF goes first.
  */
 static bool overtaken(const pdmini_t *d)
@@ -589,7 +590,12 @@ static bool overtaken(const pdmini_t *d)
         return false;
     }
     if (d->cmd == PDMINI_OUTPUT_EN) {
-        return d->en_pending && d->en_for != d->want_output;
+        /* Towards what is no longer asked -- or an ON whose set points,
+         * read back for it, are no longer the ones asked. */
+        return d->en_pending
+               && (d->en_for != d->want_output
+                   || (d->en_for && (d->st.set_mv != d->want_mv
+                                     || d->st.set_ma != d->want_ma)));
     }
     return d->cmd == PDMINI_OUTPUT_DATA && !d->want_output
            && (d->st.output || (d->en_pending && d->en_for));
@@ -611,9 +617,14 @@ void pdmini_step(pdmini_t *d, uint32_t now_ms)
                  * sent, and the next job is the one now asked. */
                 if (d->cmd == PDMINI_OUTPUT_EN) {
                     d->en_pending = false;
+                    if (d->en_tries > 0u) {
+                        --d->en_tries;     /* not if pdmini_want() reset it */
+                    }
                 } else {
                     d->data_pending = false;
-                    --d->data_tries;
+                    if (d->data_tries > 0u) {
+                        --d->data_tries;   /* not if pdmini_want() reset it */
+                    }
                 }
                 if (d->io.detach != NULL) {
                     d->io.detach(d->io.ctx);

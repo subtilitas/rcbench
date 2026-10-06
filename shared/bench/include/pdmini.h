@@ -13,7 +13,7 @@
  * a set point with READ_OUTPUT_DATA.
  *
  * An OFF goes first, before anything else waiting: an ON or a set point
- * not yet sent is dropped, a read under way other than the state's is
+ * not yet sent is dropped -- an ON also when its set points change -- a read under way other than the state's is
  * left, and an OFF that does not take is written again without pause.  An OFF asked for while
  * an ON is being confirmed is written at once when a read-back has shown
  * which argument means off; before that, the state is read back to back
@@ -43,7 +43,7 @@
  * taken from the sheet, which has it backwards: 1 first, the bench's and the
  * vendor's Python's, then 0 -- and learnt again from a module that answers
  * WHO_AM_I after none did.  It is learnt only from an output seen to come
- * on after an ON, never from one seen to go off, which the module's
+ * on after a write towards on, never from one seen to go off, which the module's
  * overcurrent protection does by itself.  The output is written only when it reads
  * otherwise than asked, so an OFF goes only to an output that is on and the
  * learning cannot switch on one that was off.
