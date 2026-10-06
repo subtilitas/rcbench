@@ -139,8 +139,6 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
                 return LINK_NACK_NOT_ARMED;
             }
         }
-    }
-    if (command) {
         /* Up to the module's least, as the driver will take them, so the
          * page reads back what the module is asked. */
         if (next[LINK_SP_SET_MV] < PDMINI_V_MIN_MV) {
