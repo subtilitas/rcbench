@@ -40,6 +40,14 @@ typedef struct {
 
     unsigned en_writes, sends, sends_detached;
     bool     switched_on_by_off;   /* an OFF request turned it on      */
+    unsigned reads[256];      /* requests by command                     */
+    unsigned data_writes;
+    bool     ignore_data;     /* OUTPUT_DATA taken and not applied       */
+    uint32_t display_delay;   /* extra ms before a display reply         */
+    uint16_t on_at_mv;        /* the active slot's mV when it came on    */
+    bool     mute;            /* takes writes, answers nothing           */
+    uint32_t on_since;        /* when the output last came on            */
+    uint32_t on_ms;           /* how long it was on, all told            */
 } module_t;
 
 static module_t m;
@@ -88,6 +96,10 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
     if (!m.powered || n < 2u || pdmini_crc8(p, n - 1u) != p[n - 1u]) {
         return;
     }
+    ++m.reads[p[0]];
+    if (m.mute && p[0] != PDMINI_OUTPUT_EN && p[0] != PDMINI_OUTPUT_DATA) {
+        return;   /* its transmit line is gone, its receiver is not */
+    }
     switch (p[0]) {
     case PDMINI_WHO_AM_I: {
         static const char who[] = "WeAct Studio PD Power Mini V1 BUCK";
@@ -121,6 +133,7 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
                                (uint8_t)(m.v_mv & 0xFFu), (uint8_t)(m.v_mv >> 8),
                                (uint8_t)(m.i_ma & 0xFFu), (uint8_t)(m.i_ma >> 8) };
         reply(r, 5u, true);
+        m.out_at += m.display_delay;
         break;
     }
     case PDMINI_READ_INPUT: {
@@ -136,7 +149,8 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
         m.en_at   = now;
         break;
     case PDMINI_OUTPUT_DATA:
-        if (p[1] <= 4u) {
+        ++m.data_writes;
+        if (p[1] <= 4u && !m.ignore_data) {
             m.mv[p[1]] = (uint16_t)(p[2] | (p[3] << 8));
             m.ma[p[1]] = (uint16_t)(p[4] | (p[5] << 8));
         }
@@ -171,7 +185,13 @@ static void run(uint32_t ms, bool want_off_seen_on_check)
             if (want_off_seen_on_check && !m.output && m.target) {
                 m.switched_on_by_off = true;
             }
+            if (!m.output && m.target) {
+                m.on_at_mv = m.mv[m.slot];
+            }
             m.output = m.target;
+        }
+        if (m.output) {
+            ++m.on_ms;
         }
         if (m.attached && m.out_i < m.out_n
             && (int32_t)(now - m.out_at) >= 0) {
@@ -393,6 +413,154 @@ TEST_CASE(a_module_that_is_not_there_or_goes_quiet_is_noticed)
     CHECK(pdmini_status(&d)->errors >= 2u);
 }
 
+/* An ON waits for the set points: the output never comes on at what the
+ * active slot held before. */
+TEST_CASE(an_on_waits_for_the_set_points)
+{
+    fresh();
+    m.mv[0] = 5000u;
+    run(100u, false);
+    pdmini_want(&d, true, 12000u, 1500u);
+    run(1500u, false);
+    CHECK(m.output);
+    CHECK_EQ(m.on_at_mv, 12000u);
+}
+
+/* A module slow to answer the display reads does not starve the state and
+ * the input. */
+TEST_CASE(slow_display_reads_do_not_starve_the_others)
+{
+    fresh();
+    m.display_delay = 120u;
+    run(4000u, false);
+    CHECK(m.reads[PDMINI_READ_DISPLAY] >= 10u);
+    CHECK(m.reads[PDMINI_READ_STATE] >= 4u);
+    CHECK(m.reads[PDMINI_READ_INPUT] >= 4u);
+}
+
+/* The active slot and what is in it are read again: a change made on the
+ * module's own buttons is put back to what is asked. */
+TEST_CASE(the_slot_is_read_again_and_put_back)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, false, 9000u, 700u);
+    run(1000u, false);
+    CHECK_EQ(m.mv[0], 9000u);
+    m.mv[0] = 3300u;                           /* turned on the module */
+    run(2000u, false);
+    CHECK_EQ(m.mv[0], 9000u);
+    m.slot = 3;                                /* another slot chosen */
+    run(2500u, false);
+    CHECK_EQ(m.mv[3], 9000u);
+    CHECK_EQ(m.ma[3], 700u);
+}
+
+/* Set points the module will not take: three writes and they are stuck,
+ * tried again two seconds on; the readings go on meanwhile, and the ON
+ * that waits on them does not come. */
+TEST_CASE(set_points_that_do_not_take_are_stuck_and_bounded)
+{
+    fresh();
+    m.ignore_data = true;
+    run(100u, false);
+    pdmini_want(&d, true, 12000u, 1500u);
+    run(1000u, false);
+    CHECK(pdmini_status(&d)->set_stuck);
+    CHECK_EQ(m.data_writes, 3u);
+    const uint32_t samples = pdmini_status(&d)->samples;
+    run(1000u, false);
+    CHECK(pdmini_status(&d)->samples > samples + 5u);
+    run(3000u, false);
+    CHECK(m.data_writes >= 6u && m.data_writes <= 9u);
+    CHECK(!m.output);
+    CHECK_EQ(m.en_writes, 0u);
+}
+
+/* Stuck clears whenever the output is seen where it was asked, however it
+ * got there. */
+TEST_CASE(stuck_clears_when_the_output_is_seen_as_asked)
+{
+    fresh();
+    m.input_ok = false;
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(pdmini_status(&d)->stuck);
+    m.output = true;                           /* switched on at the module */
+    run(800u, false);
+    CHECK(!pdmini_status(&d)->stuck);
+    CHECK(pdmini_status(&d)->output);
+}
+
+/* An OFF asked for while an ON waits to be confirmed does not wait out the
+ * 250 ms: the state is read at once, and the output switched off the
+ * moment it reads on. */
+TEST_CASE(an_off_does_not_wait_behind_an_on_being_confirmed)
+{
+    fresh();
+    m.settle_ms = 60u;
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    unsigned guard = 0u;
+    while (m.en_writes == 0u && guard++ < 2000u) {
+        run(1u, false);
+    }
+    run(10u, false);
+    pdmini_want(&d, false, 5000u, 1000u);
+    m.on_ms = 0u;
+    run(600u, false);
+    CHECK(!m.output);
+    /* On for its 60 ms to come on, a read or two, and its 60 ms to go off:
+     * waiting out the confirmation would be 250 ms and the same again. */
+    CHECK(m.on_ms < 150u);
+    CHECK_EQ(m.en_writes, 2u);
+
+    /* An ON that never comes is not answered with an OFF. */
+    fresh();
+    m.input_ok = false;
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    guard = 0u;
+    while (m.en_writes == 0u && guard++ < 2000u) {
+        run(1u, false);
+    }
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(1000u, true);
+    CHECK(!m.output);
+    CHECK_EQ(m.en_writes, 1u);
+}
+
+/* A module whose replies stop while its output is on still gets an OFF:
+ * sent blind while one is asked for, with the argument a read-back showed
+ * to mean on -- and none goes to a module whose polarity was never shown. */
+TEST_CASE(an_off_reaches_a_module_that_stopped_answering)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(m.output);
+    m.mute = true;
+    run(2500u, false);
+    CHECK(!pdmini_status(&d)->online);
+    CHECK(m.output);                           /* nothing asked otherwise */
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(2500u, true);
+    CHECK(!m.output);
+    CHECK(!m.switched_on_by_off);
+
+    /* On from the module's own buttons: no read-back has shown which
+     * argument means off, so nothing is sent blind. */
+    fresh();
+    m.output = true;
+    run(1000u, false);
+    m.mute = true;
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(3000u, false);
+    CHECK_EQ(m.en_writes, 1u);                 /* the one before it went quiet */
+}
+
 /* A byte left on the line by the pin handover is not taken for the start of
  * the reply. */
 TEST_CASE(a_byte_from_the_handover_is_not_the_reply)
@@ -417,5 +585,12 @@ int main(void)
     RUN(an_on_that_does_not_take_is_stuck_and_tried_again);
     RUN(a_module_that_is_not_there_or_goes_quiet_is_noticed);
     RUN(a_byte_from_the_handover_is_not_the_reply);
+    RUN(an_on_waits_for_the_set_points);
+    RUN(slow_display_reads_do_not_starve_the_others);
+    RUN(the_slot_is_read_again_and_put_back);
+    RUN(set_points_that_do_not_take_are_stuck_and_bounded);
+    RUN(stuck_clears_when_the_output_is_seen_as_asked);
+    RUN(an_off_does_not_wait_behind_an_on_being_confirmed);
+    RUN(an_off_reaches_a_module_that_stopped_answering);
     return test_summary("pdmini");
 }

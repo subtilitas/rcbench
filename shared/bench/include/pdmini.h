@@ -12,6 +12,19 @@
  * an early read of a module still settling is not taken for the answer --
  * a set point with READ_OUTPUT_DATA.
  *
+ * An OFF goes first, before anything else waiting.  An OFF asked for while
+ * an ON is being confirmed reads the state at once, and again until the ON
+ * has had its 250 ms, and switches the output off the moment it reads on.
+ * An ON waits for the set points: it is written only once the active slot
+ * reads back what is asked, so the output never comes on at the voltage it
+ * held before.
+ *
+ * A module that stops answering while its output is on may still be
+ * listening: while an OFF is asked for, it is sent blind once a second
+ * until the module answers again -- only with an argument a read-back has
+ * shown to mean on, so the blind OFF cannot switch on an output that was
+ * off.
+ *
  * Which OUTPUT_EN argument means on is learnt from the module rather than
  * taken from the sheet, which has it backwards: 1 first, the bench's and the
  * vendor's Python's, then 0.  The output is written only when it reads
@@ -70,6 +83,8 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
 #define PDMINI_DISPLAY_MS  100u    /**< how often the output is read       */
 #define PDMINI_STATE_MS    500u    /**< the output state and the input     */
 #define PDMINI_IDENTIFY_MS 1000u   /**< WHO_AM_I again while nothing answers */
+#define PDMINI_SLOT_MS     1000u   /**< the active slot read again          */
+#define PDMINI_RETRY_MS    2000u   /**< a write that did not take, again    */
 #define PDMINI_FAILS          3u   /**< failed transactions in a row: gone */
 
 /** CRC8, polynomial 0x31, initial 0xFF, over @p n bytes. */
@@ -103,6 +118,7 @@ typedef struct {
     uint8_t  in_state;    /**< READ_INPUT_STATE: 5 PD, 4 QC, 6 DC, ...   */
     uint16_t vin_mv;
     bool     stuck;       /**< the output would not reach what was asked */
+    bool     set_stuck;   /**< the set points would not take             */
     uint32_t samples;     /**< readings of the output taken              */
     uint32_t errors;      /**< transactions that failed                  */
 } pdmini_status_t;
@@ -123,10 +139,16 @@ typedef struct {
     bool     data_known;     /* set_mv/set_ma read back from it          */
     uint8_t  on_value;       /* OUTPUT_EN's argument for on; learnt      */
     uint8_t  en_value;       /* the argument last written                */
+    bool     en_for;         /* the state it was written towards         */
+    bool     on_confirmed;   /* on_value seen to work by a read-back     */
+    bool     off_owed;       /* gone while on: an OFF is sent blind      */
+    bool     blind_sent;     /* this identify round's blind OFF is out   */
     uint8_t  en_tries;       /* OUTPUT_EN writes towards the wanted state */
     bool     en_pending;     /* written, waiting for the confirming read */
     uint32_t en_at;
     bool     data_pending;   /* OUTPUT_DATA written, not yet read back   */
+    uint8_t  data_tries;     /* OUTPUT_DATA writes towards the set points */
+    uint32_t data_at;
     uint8_t  fails;          /* consecutive                              */
 
     /* The transaction under way. */
@@ -140,7 +162,7 @@ typedef struct {
     uint32_t t;              /* when the phase began, or the deadline   */
     uint32_t deadline;
 
-    uint32_t last_display, last_state, last_input, last_identify;
+    uint32_t last_display, last_state, last_input, last_identify, last_slot;
 } pdmini_t;
 
 void pdmini_init(pdmini_t *d, const pdmini_io_t *io, uint32_t now_ms);
