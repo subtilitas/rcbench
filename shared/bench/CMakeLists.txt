@@ -12,6 +12,7 @@ set(SRCS
     log_writer.c
     supply.c
     pdmini.c
+    supply_link.c
 )
 
 if(ESP_PLATFORM)

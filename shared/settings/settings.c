@@ -113,8 +113,8 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         SET_CAT_IFACE, SET_TYPE_INT, 100, 400, 100, 400, NULL, 0 },
     /*
      * The PD mini's UART: the module's DM is its RX and DP its TX, at 3.3 V.
-     * Stored for a driver to read; no PD mini driver exists, so nothing
-     * reads them.  The pins are -1 until the module is wired.
+     * Coprocessor GPIO, written to its SUPPLY page by the panel; the pins
+     * are -1 until the module is wired, and the page drives nothing then.
      */
     [SET_PDMINI_EN] = {
         "pdm_en", "PD mini", "Programmable supply on a UART", "",

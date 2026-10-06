@@ -33,7 +33,8 @@ typedef struct {
     bool           live;    /**< the screen exists                        */
     uint16_t       needs;   /**< the hardware it needs, as link_cap_t     */
     /** Modelled on the panel whatever the coprocessor reports: no link
-     *  capability names the hardware yet. */
+     *  capability names the hardware.  SUPPLY's holds only until SETUP
+     *  enables the PD mini; see overview_screen_set_supply_real(). */
     bool           model_only;
 } tile_t;
 
@@ -48,7 +49,7 @@ static const tile_t k_tiles[] = {
     { SCREEN_SERVO,      "SERVO",       "travel, current",    ui_icon_servo,   true,
       LINK_CAP_SERVO_PWM, false },
     { SCREEN_SUPPLY,     "SUPPLY",      "set and log V/A",    ui_icon_supply,  true,
-      0, true },   /* the PD mini's driver is not written; the panel models it */
+      0, true },   /* modelled unless SETUP enables the PD mini */
     { SCREEN_ANALYSER,   "ANALYSER",    "buses and frames",   ui_icon_chart,   true,
       LINK_CAP_RECEIVER, false },
     { SCREEN_LOGS,       "LOGS",        "record and read",    ui_icon_record,  true,
@@ -72,7 +73,19 @@ static struct {
     bool     have_press;
 } s;
 
+/* Outside s, which entering the screen clears: the control task's word on
+ * the supply holds whichever screen is up. */
+static bool s_supply_real;
+
 void overview_invalidate(void) { s.drawn_mask = 0; }
+
+void overview_screen_set_supply_real(bool real)
+{
+    if (s_supply_real != real) {
+        s_supply_real = real;
+        overview_invalidate();
+    }
+}
 
 static void reset(void)
 {
@@ -173,7 +186,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
          * modelled.  No badge: the hardware is fitted.
          */
         const uint16_t have = ui_router_status()->capabilities;
-        const bool fitted = !t->model_only
+        const bool modelled = t->model_only
+                              && !(t->id == SCREEN_SUPPLY && s_supply_real);
+        const bool fitted = !modelled
                             && ((t->needs == 0)
                                 || ((have & t->needs) == t->needs));
         if (!t->live || !fitted) {

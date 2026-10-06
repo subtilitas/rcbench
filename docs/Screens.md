@@ -29,8 +29,9 @@ ARM is at the bottom of a bench screen; STOP is at the top of the band.
 
 The mark is derived from the capability bits the coprocessor reports at
 bring-up. A screen whose hardware is missing opens and runs from the model.
-SUPPLY is marked MODELLED whatever the coprocessor reports: no driver for its
-hardware exists.
+SUPPLY is marked MODELLED while the PD mini is disabled on SETUP under
+INTERFACES, whatever the coprocessor reports: the panel then runs its own
+model of a supply.
 
 The menu in the light theme:
 
@@ -307,8 +308,9 @@ Current limitations:
   holds, which after a restart or a new binding is 50 Hz.
 - No automatic test runs in this build. The TEST, LIMITS and DUT settings are
   kept for it, and no report is written.
-- The supply on the right card is SUPPLY's model: no PD mini driver exists,
-  so its voltage, current and power are simulated, not measured.
+- The supply on the right card is SUPPLY's: the PD mini when SETUP enables
+  it, the panel's model otherwise, whose voltage, current and power are
+  simulated, not measured.
 
 ## Supply
 
@@ -316,9 +318,13 @@ Current limitations:
 
 Sets, switches and records a programmable supply: the PD mini, a USB-PD (USB
 Power Delivery) trigger controlled over a UART (universal asynchronous
-receiver-transmitter). No driver for the PD mini exists, because its UART
-protocol is not in this repository. The panel runs a model of a supply in its
-place: the header says SUPPLY MODEL and the menu tile is marked MODELLED.
+receiver-transmitter). The coprocessor drives it on a PIO (programmable
+input/output) UART on two of its pins, through the SUPPLY link page
+(protocol 4.3). The panel writes the page and reads it every 100 ms. With
+the PD mini enabled on SETUP under INTERFACES, the header says PD MINI. With
+it disabled, the panel runs a model of a supply in its place: the header
+says SUPPLY MODEL and the menu tile is marked MODELLED. The PD mini has not
+been run against a module.
 
 The layout is the one MOTOR & ESC uses. The plot shows voltage, current and
 power over the last 27 s. The rail shows the readings, the run's lowest
@@ -333,15 +339,16 @@ colour, on the reading's scale. TABLE lists both. The bracketed value is the
 set point the supply reports holding; while it does not answer, the one the
 screen holds.
 
-| Set point | Range | Slider step | Buttons |
+| Set point | Model | PD mini | Buttons |
 | --- | --- | --- | --- |
-| VOLTAGE | 3.3 to 21 V | 20 mV | 0.1 V |
-| CURRENT LIMIT | 0.5 to 5 A | 50 mA | 0.1 A |
+| VOLTAGE | 3.3 to 21 V, 20 mV steps | 1 to 20 V, 10 mV steps | 0.1 V |
+| CURRENT LIMIT | 0.5 to 5 A, 50 mA steps | 0.05 to 3 A, 10 mA steps | 0.1 A |
 
-The ranges are a USB-PD PPS (Programmable Power Supply) source's widest
-profile, 3.3 to 21 V at up to 5 A, narrowed by the caps in SETTINGS. A driver
-reports the range its source offers, and the sliders follow it. A tap on a
-track sets the value under the finger.
+The model's ranges are a USB-PD PPS (Programmable Power Supply) source's
+widest profile, 3.3 to 21 V at up to 5 A. The PD mini's are from the
+vendor's page, not measured. Both are narrowed by the caps in SETTINGS, and
+the sliders follow the supply in use. A tap on a track sets the value under
+the finger.
 
 **A tap on the VOLT or CURR card, or on a set point's value, opens a keypad**
 over the left column. It shows the range in the title row and the current
@@ -371,6 +378,18 @@ stays off until it is switched on again. Leaving the screen keeps the output
 on, so a servo or an ESC fed by the supply stays powered on the screen that
 tests it, and the link-lost screen, which has no STOP, does not open while
 the output is on.
+
+**With the PD mini**, an OFF goes to the SUPPLY page before anything else
+the panel owes it, and the coprocessor switches the output off itself when
+the panel's heartbeat stops. An enabled PD mini reads NOT ANSWERING while no
+coprocessor that speaks protocol 4.3 answers, or while the page's readings
+are older than 1500 ms; an output that is on is switched off then. The
+output is also switched off, with a line in the band, when the coprocessor
+refuses an ON (no heartbeat) or lets one go (its heartbeat stopped, or it
+started again). The band also says when the pins are refused, when the
+output would not switch, and when the set points would not take. A pin or
+baud change waits until the output is off; enabling or disabling the PD mini
+switches the output off.
 
 OUTPUT ON and OFF, RESET PEAKS and the readings stay live under the keypad,
 the question and SETTINGS. One finger at a time: while one holds a control, a
@@ -443,7 +462,10 @@ burst takes it into CC. Its readings are not measured and nothing on the bench
 is powered.
 
 The PD mini's wiring -- PD mini, PD mini TX, PD mini RX and PD mini baud -- is
-on SETUP under INTERFACES. No driver reads those settings.
+on SETUP under INTERFACES. TX and RX are coprocessor GPIO numbers: TX goes to
+the module's DM, RX comes from its DP. The coprocessor refuses a pin that is
+reserved, bound to an output or the other pin. PD mini baud is the module's
+own UART Baudrate setting, 19200 as shipped.
 
 ## Analyser
 

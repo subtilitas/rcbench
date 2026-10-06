@@ -8,6 +8,17 @@ history is in git.
 
 ### Added
 
+- **SUPPLY drives the PD mini** when SETUP INTERFACES enables it, through
+  the coprocessor's SUPPLY page; the panel's model otherwise.
+  - The panel writes the page and reads it every 100 ms: an OFF first,
+    then the wiring once a read shows the output off, then the command.
+  - The header says PD MINI and the menu tile drops MODELLED. The set
+    points are capped to the module's 1 to 20 V and 0.05 to 3 A, in 10 mV
+    and 10 mA steps.
+  - Output off, with a line in the band: readings older than 1500 ms, a
+    coprocessor without the page, an ON refused or let go at the far end.
+    The band also says when the pins are refused, the output would not
+    switch, or the set points would not take.
 - **The coprocessor drives the PD mini** on a PIO UART, on the two pins the
   SUPPLY link page (0x2A, protocol 4.3) names.
   - Wiring: refused on a pin that is reserved, bound to an output or the
@@ -52,7 +63,6 @@ history is in git.
   - Reading back: the page carries what the module last said, with flags
     for an output that would not switch, set points that would not take,
     and an output that is or may be on.
-  - The panel does not write the page yet.
 - **A driver for the WeAct PD Power Mini V1 Buck** (`pdmini`).
   - Protocol: the CRC8 (polynomial 0x31, initial 0xFF) checked against all
     fifteen values the vendor's sheet prints. Reply framing with WHO_AM_I

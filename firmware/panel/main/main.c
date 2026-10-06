@@ -49,8 +49,10 @@
 #include "log_writer.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
+#include "supply_link.h"
 #include "supply_screen.h"
 #include "outputs_screen.h"
+#include "overview_screen.h"
 #include "picker_screen.h"
 #include "rcbench_version.h"
 #include "settings.h"
@@ -634,6 +636,19 @@ static atomic_bool s_supply_live;
 static atomic_uint s_supply_ons_sent;
 static atomic_uint s_supply_ons_taken;
 /*
+ * Where the PD mini is wired, from SETUP INTERFACES, in one word so a write
+ * never pairs one edit's TX with another's RX: bit 24 enabled, bits 23..16
+ * the TX GPIO and 15..8 the RX, each plus one with 0 for unset, bits 7..0
+ * the baud setting.  Published as the pole count is; see publish_pdmini().
+ */
+static atomic_uint s_pdmini_wiring;
+/*
+ * Whether the SUPPLY screen drives the PD mini rather than the panel's
+ * model: SETUP INTERFACES enables it.  Stored by the control task, read by
+ * app_main for the screen's header, caps and the menu's badge.
+ */
+static atomic_bool s_supply_real;
+/*
  * The two touch queues, numbered.  See touch_loss.h for why numbers and not
  * counts: a count raised on one core after the eviction it reports can be
  * read on the other only once a surviving event has already been handled.
@@ -774,12 +789,41 @@ static uint16_t endpoints_max(void)
     return (uint16_t)(atomic_load(&s_endpoints_value) & 0xFFFFu);
 }
 
+/* The PD mini's wiring, as the settings screen left it; see
+ * s_pdmini_wiring. */
+static void publish_pdmini(void)
+{
+    const int tx = settings_get_int(SET_PDMINI_TX);
+    const int rx = settings_get_int(SET_PDMINI_RX);
+    const unsigned word =
+        ((settings_get_int(SET_PDMINI_EN) != 0) ? (1u << 24) : 0u)
+        | ((unsigned)((tx < 0) ? 0 : tx + 1) & 0xFFu) << 16
+        | ((unsigned)((rx < 0) ? 0 : rx + 1) & 0xFFu) << 8
+        | ((unsigned)settings_get_int(SET_PDMINI_BAUD) & 0xFFu);
+    atomic_store(&s_pdmini_wiring, word);
+}
+
+static supply_wiring_t pdmini_wiring(void)
+{
+    const unsigned word = atomic_load(&s_pdmini_wiring);
+    const supply_wiring_t w = {
+        .en   = (word & (1u << 24)) != 0u,
+        .tx   = (int8_t)((int)((word >> 16) & 0xFFu) - 1),
+        .rx   = (int8_t)((int)((word >> 8) & 0xFFu) - 1),
+        .baud = (uint8_t)(word & 0xFFu),
+    };
+    return w;
+}
+
 static void settings_changed(setting_id_t id)
 {
     if (id == SET_MOTOR_POLES) {
         publish_poles();
     } else if (id == SET_OUT_MIN_US || id == SET_OUT_MAX_US) {
         publish_endpoints();
+    } else if (id == SET_PDMINI_EN || id == SET_PDMINI_TX
+               || id == SET_PDMINI_RX || id == SET_PDMINI_BAUD) {
+        publish_pdmini();
     }
 }
 
@@ -1376,6 +1420,7 @@ static bool bring_up(void)
      * page already agrees. */
     publish_poles();
     publish_endpoints();
+    publish_pdmini();
     settings_apply_ui();
 
     display_config_t dcfg = DISPLAY_CONFIG_DEFAULT();
@@ -2781,20 +2826,27 @@ static bool read_bench(link_host_t *host, bench_state_t *out)
 /* ------------------------------------------------------------- the supply */
 
 /*
- * The programmable supply, as the panel's model of one.
+ * The programmable supply.
  *
- * The PD mini's driver does not exist: its UART (universal asynchronous
- * receiver-transmitter) protocol is not in this repository, and which board
- * will talk to it is not decided.  Until then this task runs supply_sim_t in
- * its place, so the screen, the log and the rules here are the ones a driver
- * reports into.  Control task only, beside the bench, because every stop is
- * seen here and a stop switches the output off whatever screen is up.
+ * The PD mini, driven by the coprocessor over the SUPPLY page (protocol 4.3)
+ * when one answers that speaks it and SETUP INTERFACES enables the module;
+ * the panel's model, supply_sim_t, otherwise, so the screen, the log and the
+ * rules here are the same either way.  s_supply_on is what the operator
+ * asked; the readings come from the source in use.  Control task only,
+ * beside the bench, because every stop is seen here and a stop switches the
+ * output off whatever screen is up.
  *
  * s_supply_ms is when the totals last counted.  s_supply_fresh says the next
  * reading starts the run's extremes: the output has just come on, and the
  * reading in s_supply is still the one taken with it off.
  */
 static supply_sim_t   s_supply_sim;
+static supply_link_t  s_supply_link;
+/* The coprocessor that answered speaks protocol 4.3: it has the page. */
+static bool           s_supply_page;
+/* The PD mini, not the model, is the supply; see supply_real_follow(). */
+static bool           s_supply_is_real;
+static bool           s_supply_on;
 static supply_state_t s_supply;
 static uint32_t       s_supply_ms;
 static bool           s_supply_fresh;
@@ -2837,9 +2889,15 @@ static void supply_log_tail(void)
     }
 }
 
+/* The set points the screen holds, applied when they change; see
+ * s_supply_set_mv.  Compared as stored, in mV and mA, because the supply
+ * snaps what it is given and a snapped value need not equal it. */
+static unsigned s_supply_set_mv_applied;
+static unsigned s_supply_set_ma_applied;
+
 static void supply_switch(bool on)
 {
-    if (s_supply_sim.output == on) {
+    if (s_supply_on == on) {
         return;
     }
     if (!on) {
@@ -2848,7 +2906,14 @@ static void supply_switch(bool on)
         supply_log_tail();
         arm_watch_end(&s_supply_watch);
     }
-    supply_sim_output(&s_supply_sim, on);
+    s_supply_on = on;
+    if (s_supply_is_real) {
+        supply_link_command(&s_supply_link, on,
+                            (uint16_t)s_supply_set_mv_applied,
+                            (uint16_t)s_supply_set_ma_applied);
+    } else {
+        supply_sim_output(&s_supply_sim, on);
+    }
     s_supply.output = on;
     atomic_store(&s_supply_live, on);
     if (on) {
@@ -2894,12 +2959,6 @@ static void supply_follow_stops(void)
     }
 }
 
-/* The set points the screen holds, applied when they change; see
- * s_supply_set_mv.  Compared as stored, in mV and mA, because the supply
- * snaps what it is given and a snapped value need not equal it. */
-static unsigned s_supply_set_mv_applied;
-static unsigned s_supply_set_ma_applied;
-
 static void supply_follow_set(void)
 {
     unsigned mv = atomic_load(&s_supply_set_mv);
@@ -2919,9 +2978,17 @@ static void supply_follow_set(void)
     }
     s_supply_set_mv_applied = mv;
     s_supply_set_ma_applied = ma;
+    /* The model takes them whichever supply is in use, so a return to it
+     * starts where the screen is. */
     supply_sim_set(&s_supply_sim, (float)mv / 1000.0f, (float)ma / 1000.0f);
-    s_supply.set_v = s_supply_sim.set_v;
-    s_supply.set_i = s_supply_sim.set_i;
+    if (s_supply_is_real) {
+        /* Shown as the module reads them back, once it has. */
+        supply_link_command(&s_supply_link, s_supply_on, (uint16_t)mv,
+                            (uint16_t)ma);
+    } else {
+        s_supply.set_v = s_supply_sim.set_v;
+        s_supply.set_i = s_supply_sim.set_i;
+    }
 }
 
 /*
@@ -2988,6 +3055,29 @@ static void supply_queue_sample(void)
 }
 
 /*
+ * Which supply the screen drives: the PD mini whenever SETUP INTERFACES
+ * enables it -- not answering while no coprocessor that speaks the SUPPLY
+ * page does -- and the model otherwise.  A change switches the output off.
+ * No exchange here: called from the step, inside the pump.
+ */
+static void supply_real_follow(void)
+{
+    const bool real = pdmini_wiring().en;
+    if (real == s_supply_is_real) {
+        return;
+    }
+    if (s_supply_on) {
+        supply_switch(false);
+        control_alert("supply changed in SETUP -- output off");
+    }
+    s_supply_is_real = real;
+    supply_link_command(&s_supply_link, false,
+                        (uint16_t)s_supply_set_mv_applied,
+                        (uint16_t)s_supply_set_ma_applied);
+    atomic_store(&s_supply_real, real);
+}
+
+/*
  * One step of the supply at the sample cadence: its readings, the run's
  * extremes and totals, and a sample for the screen.
  */
@@ -2996,14 +3086,19 @@ static void supply_step(float step_s)
     /* A stop counted outside the pump -- the far end's refusal, or STOP
      * from the queue -- is answered before this reading is taken. */
     supply_follow_stops();
-    supply_sim_step(&s_supply_sim, step_s, &s_supply);
+    supply_real_follow();
+    if (s_supply_is_real) {
+        supply_link_state(&s_supply_link, now_ms(), &s_supply);
+        s_supply.output = s_supply_on;
+    } else {
+        supply_sim_step(&s_supply_sim, step_s, &s_supply);
+    }
     /*
      * A supply that stops answering takes its output with it, switched off
      * here so that it does not come back on by itself when the supply
-     * answers again.  The model always answers; this is the rule a driver
-     * reports into.
+     * answers again.  The model always answers.
      */
-    if (!s_supply.online && s_supply_sim.output) {
+    if (!s_supply.online && s_supply_on) {
         supply_switch(false);
         control_alert("supply not answering -- output off");
     }
@@ -3076,6 +3171,7 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     /* The supply starts switched off, its readings those of an off output. */
     supply_sim_init(&s_supply_sim);
     supply_sim_step(&s_supply_sim, 0.0f, &s_supply);
+    supply_link_init(&s_supply_link);
     s_supply_ms      = now_ms();
     s_supply_step_ms = now_ms();
     s_pump_live = true;
@@ -4443,6 +4539,79 @@ static void supply_pump(void)
 }
 
 /*
+ * What the SUPPLY page said that the operator is told, and an ON it refused
+ * or let go switched off here too.
+ */
+static void supply_link_alerts(void)
+{
+    const uint8_t ev = supply_link_events(&s_supply_link);
+    if ((ev & (SUPPLY_LINK_EV_ON_REFUSED | SUPPLY_LINK_EV_ON_LOST)) != 0u) {
+        supply_switch(false);
+        control_alert(((ev & SUPPLY_LINK_EV_ON_LOST) != 0u)
+                          ? "supply switched off at the coprocessor"
+                          : "supply refused ON -- output off");
+    }
+    if ((ev & SUPPLY_LINK_EV_WIRING_REFUSED) != 0u) {
+        control_alert("PD mini pins refused -- see SETUP INTERFACES");
+    }
+    if ((ev & SUPPLY_LINK_EV_STUCK) != 0u) {
+        control_alert("PD mini output would not switch");
+    }
+    if ((ev & SUPPLY_LINK_EV_SET_STUCK) != 0u) {
+        control_alert("PD mini set points would not take");
+    }
+}
+
+/*
+ * The SUPPLY page: what is owed written -- an OFF first -- and the page read
+ * every SUPPLY_LINK_READ_MS.  From poll_bench(), outside the pump: the pump
+ * runs inside an exchange and switches the supply by asking
+ * (supply_switch()), which this pays.  A coprocessor without the page is
+ * left alone, and the PD mini reads as not answering.
+ */
+static void supply_link_service(void)
+{
+    if (!s_supply_page) {
+        return;
+    }
+    const supply_wiring_t w = pdmini_wiring();
+    supply_link_wire(&s_supply_link, &w);
+    for (int k = 0; k < 3; ++k) {
+        uint8_t off = 0u;
+        uint8_t n = 0u;
+        uint16_t regs[LINK_SP_FLAGS];
+        if (supply_link_next(&s_supply_link, &off, &n, regs)
+            == SUPPLY_LINK_W_NONE) {
+            break;
+        }
+        link_msg_t reply = { 0 };
+        int result = SUPPLY_LINK_NO_ANSWER;
+        if (write_regs(&s_host, LINK_PAGE_SUPPLY, off, n, regs, &reply)) {
+            result = (reply.op == LINK_OP_NACK) ? (int)reply.regs[0]
+                                                : SUPPLY_LINK_ACK;
+        }
+        supply_link_written(&s_supply_link, result);
+        /* Before the next exchange, whose pump could ask again for an ON
+         * this one refused. */
+        supply_link_alerts();
+        if (result == SUPPLY_LINK_NO_ANSWER) {
+            break;
+        }
+    }
+    /* Read while the PD mini is in use, or while something written waits on
+     * a read; a disabled one settled costs nothing. */
+    if ((w.en || !supply_link_settled(&s_supply_link))
+        && supply_link_read_due(&s_supply_link, now_ms())) {
+        link_msg_t reply = { 0 };
+        const bool read = poll_page(&s_host, LINK_PAGE_SUPPLY,
+                                    (uint8_t)LINK_SP_COUNT, &reply)
+                          && reply.op == LINK_OP_DATA;
+        supply_link_read(&s_supply_link, read ? reply.regs : NULL, now_ms());
+    }
+    supply_link_alerts();
+}
+
+/*
  * The bench page, and the control page in the same pass.
  *
  * While the far end answers, the bench page is what is asked for; identity is
@@ -4498,6 +4667,8 @@ static bool poll_bench(bench_state_t *bench)
          */
         endpoints_service(written && !armed
                           && (!outputs_armed(&s_out) || s_endpoints_hold));
+        /* And the supply's page, a write only when one is owed. */
+        supply_link_service();
         if (!written && armed && ack.op == LINK_OP_NACK) {
             /*
              * The coprocessor is in failsafe or has lost the heartbeat.  A
@@ -4738,6 +4909,17 @@ static void link_came_up(const link_msg_t *reply)
     atomic_store(&s_servo_sweep_able, s_servo_sweep_page);
 
     /*
+     * Whether it drives the PD mini (4.3), and its page written again from
+     * the start: a coprocessor that started again holds nothing, and one
+     * that only went quiet may hold an ON this panel has since let go.
+     */
+    s_supply_page = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 3u;
+    supply_link_lost(&s_supply_link);
+    if (!s_supply_page && pdmini_wiring().en) {
+        control_alert("coprocessor has no SUPPLY page -- PD mini not driven");
+    }
+
+    /*
      * A board this build ships no catalogue for describes its own pins, so a
      * coprocessor newer than this panel is usable rather than blank.
      *
@@ -4860,6 +5042,10 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
         } else if (*link_up) {
             /* The edge: it was up until this poll. */
             atomic_store(&s_link_lost_ms, now_ms());
+            /* The PD mini goes with it: its readings stop, and the step
+             * switches an ON off as a supply not answering. */
+            s_supply_page = false;
+            supply_link_lost(&s_supply_link);
         }
         /*
          * A sample exists only if the bench page was read.  A poll that timed
@@ -5586,6 +5772,18 @@ void app_main(void)
          * supply_seen is the output the newest sample reported.
          */
         static bool supply_seen;
+        /* Which supply the control task drives: the screen's header, caps
+         * and the menu's badge follow it. */
+        static bool supply_real_shown;
+        const bool supply_real = atomic_load(&s_supply_real);
+        if (supply_real != supply_real_shown) {
+            supply_real_shown = supply_real;
+            const supply_caps_t pdmini = SUPPLY_CAPS_PDMINI;
+            const supply_caps_t pps = SUPPLY_CAPS_PPS_DEFAULT;
+            supply_screen_set_caps(supply_real ? &pdmini : &pps);
+            supply_screen_set_model(!supply_real);
+            overview_screen_set_supply_real(supply_real);
+        }
         supply_state_t sup;
         while (xQueueReceive(s_supply_q, &sup, 0) == pdTRUE) {
             supply_screen_set_output(sup.output);

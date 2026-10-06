@@ -113,6 +113,7 @@ TRACKED = [
     "shared/bench/telemetry_sim.c",
     "shared/bench/supply.c",
     "shared/bench/pdmini.c",
+    "shared/bench/supply_link.c",
     "shared/bench/log_writer.c",
 ]
 

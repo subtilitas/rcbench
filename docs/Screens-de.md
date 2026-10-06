@@ -31,8 +31,9 @@ ARM sitzt unten auf einem Prüfstandsbildschirm; STOP sitzt oben im Band.
 
 Die Marke wird aus den Capability-Bits abgeleitet, die der Koprozessor beim
 Hochfahren meldet. Ein Bildschirm ohne seine Hardware öffnet trotzdem und
-arbeitet aus dem Modell. SUPPLY trägt MODELLED unabhängig davon, was der
-Koprozessor meldet: einen Treiber für seine Hardware gibt es nicht.
+arbeitet aus dem Modell. SUPPLY trägt MODELLED, solange der PD mini in SETUP
+unter INTERFACES abgeschaltet ist, unabhängig davon, was der Koprozessor
+meldet: Das Panel rechnet dann sein eigenes Modell eines Netzteils.
 
 Das Menü im hellen Theme:
 
@@ -331,9 +332,9 @@ Aktuelle Einschränkungen:
   SERVO-Page hält; nach einem Neustart oder einer neuen Bindung sind das 50 Hz.
 - In diesem Build läuft kein automatischer Test. Die Einstellungen unter TEST,
   LIMITS und DUT werden für ihn gehalten, und es wird kein Bericht geschrieben.
-- Das Netzteil auf der rechten Karte ist das Modell von SUPPLY: Es gibt keinen
-  Treiber für den PD mini, also sind Spannung, Strom und Leistung simuliert,
-  nicht gemessen.
+- Das Netzteil auf der rechten Karte ist das von SUPPLY: der PD mini, wenn
+  SETUP ihn einschaltet, sonst das Modell des Panels, dessen Spannung, Strom
+  und Leistung simuliert und nicht gemessen sind.
 
 ## Netzteil
 
@@ -341,11 +342,14 @@ Aktuelle Einschränkungen:
 
 Stellt ein programmierbares Netzteil ein, schaltet es und zeichnet es auf: den
 PD mini, einen USB-PD-Trigger (USB Power Delivery), der über einen UART
-(Universal Asynchronous Receiver-Transmitter) gesteuert wird. Einen Treiber
-für den PD mini gibt es nicht, weil sein UART-Protokoll nicht in diesem
-Repository liegt. Das Panel rechnet an seiner Stelle ein Modell eines
+(Universal Asynchronous Receiver-Transmitter) gesteuert wird. Der
+Koprozessor steuert ihn über einen PIO-UART (PIO: Programmable
+Input/Output) auf zwei seiner Pins, über die SUPPLY-Link-Page (Protokoll
+4.3). Das Panel schreibt die Page und liest sie alle 100 ms. Ist der PD mini
+in SETUP unter INTERFACES eingeschaltet, sagt die Kopfzeile PD MINI. Ist er
+abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
 Netzteils: die Kopfzeile sagt SUPPLY MODEL, und die Kachel im Menü trägt
-MODELLED.
+MODELLED. Gegen ein Modul ist der PD mini noch nicht gelaufen.
 
 Das Layout ist das von MOTOR & ESC. Der Plot zeigt Spannung, Strom und
 Leistung der letzten 27 s. Die Leiste rechts zeigt die Messwerte, die
@@ -361,15 +365,16 @@ der Skala des Messwerts. TABLE führt beide auf. Der Wert in Klammern ist der
 Sollwert, den das Netzteil zu halten meldet; solange es nicht antwortet, der
 des Bildschirms.
 
-| Sollwert | Bereich | Schritt am Schieber | Knöpfe |
+| Sollwert | Modell | PD mini | Knöpfe |
 | --- | --- | --- | --- |
-| VOLTAGE | 3,3 bis 21 V | 20 mV | 0,1 V |
-| CURRENT LIMIT | 0,5 bis 5 A | 50 mA | 0,1 A |
+| VOLTAGE | 3,3 bis 21 V, Schritte von 20 mV | 1 bis 20 V, Schritte von 10 mV | 0,1 V |
+| CURRENT LIMIT | 0,5 bis 5 A, Schritte von 50 mA | 0,05 bis 3 A, Schritte von 10 mA | 0,1 A |
 
-Die Bereiche sind das weiteste Profil einer USB-PD-PPS-Quelle (Programmable
-Power Supply), 3,3 bis 21 V bei bis zu 5 A, eingeengt durch die Grenzen unter
-SETTINGS. Ein Treiber meldet den Bereich, den seine Quelle anbietet, und die
-Schieber folgen ihm. Ein Tippen auf eine Spur setzt den Wert unter dem Finger.
+Die Bereiche des Modells sind das weiteste Profil einer USB-PD-PPS-Quelle
+(Programmable Power Supply), 3,3 bis 21 V bei bis zu 5 A. Die des PD mini
+stammen von der Seite des Herstellers und sind nicht gemessen. Beide engen
+die Grenzen unter SETTINGS ein, und die Schieber folgen dem Netzteil, das
+in Gebrauch ist. Ein Tippen auf eine Spur setzt den Wert unter dem Finger.
 
 **Ein Tippen auf die Karte VOLT oder CURR oder auf den Wert eines Sollwerts
 öffnet eine Tastatur** über der linken Spalte. Sie zeigt den Bereich in der
@@ -402,6 +407,19 @@ Bildschirms lässt den Ausgang an, damit ein Servo oder ein ESC am Netzteil auf
 dem Bildschirm versorgt bleibt, der es testet; der Bildschirm für den
 verlorenen Link, der kein STOP hat, öffnet sich nicht, solange der Ausgang an
 ist.
+
+**Mit dem PD mini** geht ein OFF vor allem anderen an die SUPPLY-Page, was
+das Panel ihr schuldet, und der Koprozessor schaltet den Ausgang selbst ab,
+wenn der Heartbeat des Panels ausbleibt. Ein eingeschalteter PD mini zeigt
+NOT ANSWERING, solange kein Koprozessor antwortet, der Protokoll 4.3
+spricht, oder solange die Messwerte der Page älter als 1500 ms sind; ein
+Ausgang, der an ist, wird dann abgeschaltet. Ebenfalls abgeschaltet, mit
+einer Zeile im Band, wird der Ausgang, wenn der Koprozessor ein ON abweist
+(kein Heartbeat) oder eines fallen lässt (sein Heartbeat blieb aus, oder er
+ist neu gestartet). Das Band sagt außerdem, wenn die Pins abgewiesen werden,
+wenn der Ausgang nicht schalten will und wenn die Sollwerte nicht übernommen
+werden. Eine Änderung der Pins oder der Baudrate wartet, bis der Ausgang aus
+ist; das Ein- oder Ausschalten des PD mini schaltet den Ausgang ab.
 
 OUTPUT ON und OFF, RESET PEAKS und die Messwerte bleiben unter der Tastatur,
 der Frage und SETTINGS bedienbar. Ein Finger zur Zeit: solange einer ein
@@ -482,8 +500,11 @@ und 2,00 A, bringt der Stoß es in CC. Seine Messwerte sind nicht gemessen,
 und am Prüfstand wird nichts versorgt.
 
 Die Verdrahtung des PD mini -- PD mini, PD mini TX, PD mini RX und PD mini
-baud -- steht in SETUP unter INTERFACES. Kein Treiber liest diese
-Einstellungen.
+baud -- steht in SETUP unter INTERFACES. TX und RX sind GPIO-Nummern des
+Koprozessors: TX geht zum DM des Moduls, RX kommt von seinem DP. Der
+Koprozessor weist einen Pin ab, der reserviert, an einen Ausgang gebunden
+oder der andere Pin ist. PD mini baud ist die eigene UART-Baudrate-
+Einstellung des Moduls, ab Werk 19200.
 
 ## Analyser
 
