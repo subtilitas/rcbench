@@ -210,6 +210,30 @@ TEST_CASE(a_sweep_stopped_by_the_panel_leaves_the_surfaces_where_they_are)
     CHECK_EQ(outputs_actual(&o, 0), held);
 }
 
+/* A sweep starts and changes only from its four registers in one write;
+ * one register stops it. */
+TEST_CASE(a_sweep_starts_only_from_all_four_registers)
+{
+    fresh(true);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    const uint16_t span = 300u;
+    CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP_SPAN, 1u, &span, &o, T0 + 10u),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_SV_SWEEP_SPAN), 400u);
+    const uint16_t stop = 0u;
+    CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP, 1u, &stop, &o, T0 + 20u), 0u);
+    CHECK(!servo_page_step(&pg, &o, T0 + 30u));
+    const uint16_t sine = SWEEP_SINE;
+    CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP, 1u, &sine, &o, T0 + 40u),
+             LINK_NACK_BAD_VALUE);
+    CHECK(!servo_page_step(&pg, &o, T0 + 50u));
+    CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
+    /* The frame rate and the curve together are whole too. */
+    const uint16_t all[5] = { 50u, SWEEP_TRIANGLE, 1000u, 400u, 0u };
+    CHECK_EQ(servo_page_write(&pg, LINK_SV_FRAME_HZ, 5u, all, &o, T0 + 60u), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 70u));
+}
+
 int main(void)
 {
     RUN(a_sweep_needs_the_bench_armed);
@@ -220,5 +244,6 @@ int main(void)
     RUN(a_finished_sweep_is_not_started_again_by_a_repeat);
     RUN(a_sweep_stopped_by_silence_leaves_the_surfaces_where_they_are);
     RUN(a_sweep_stopped_by_the_panel_leaves_the_surfaces_where_they_are);
+    RUN(a_sweep_starts_only_from_all_four_registers);
     return test_summary("servo_page");
 }

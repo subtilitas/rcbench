@@ -94,6 +94,17 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
     }
     const sweep_cfg_t cfg = cfg_of(next);
     if (sweep && next[LINK_SV_SWEEP] != 0u) {
+        /*
+         * A sweep starts, or changes, only from its four registers written
+         * together: a curve rebuilt from a register or two and what the page
+         * held before is one nobody asked for.  A stop is one register.
+         */
+        const bool whole = off <= (uint8_t)LINK_SV_SWEEP
+                           && (unsigned)off + (unsigned)n
+                                  > (unsigned)LINK_SV_SWEEP_DWELL_MS;
+        if (!whole) {
+            return LINK_NACK_BAD_VALUE;
+        }
         if (next[LINK_SV_SWEEP] >= (uint16_t)SWEEP_KIND_COUNT
             || !sweep_cfg_valid(&cfg)) {
             return LINK_NACK_BAD_VALUE;

@@ -49,10 +49,11 @@ void servo_page_init(servo_page_t *p);
 
 /**
  * A write to the page, validated whole against the bank @p o before any of
- * it is stored.  A stop holds each surface where its output has got to.  Refused: off the page (BAD_RANGE); register 6 (READ_ONLY);
- * a frame rate outputs_servo_rate_check() refuses, or a sweep
- * sweep_cfg_valid() refuses (BAD_VALUE); a sweep while the bank is not
- * armed (NOT_ARMED).
+ * it is stored.  A stop holds each surface where its output has got to.
+ * Refused: off the page (BAD_RANGE); register 6 (READ_ONLY); a frame rate
+ * outputs_servo_rate_check() refuses, a sweep sweep_cfg_valid() refuses, or
+ * a sweep started or changed by a write that does not carry all four of its
+ * registers (BAD_VALUE); a sweep while the bank is not armed (NOT_ARMED).
  */
 uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
                          const uint16_t *in, outputs_t *o, uint32_t now_ms);
