@@ -66,6 +66,13 @@ void supply_screen_set_caps(const supply_caps_t *caps);
 /** Whether the numbers come from the panel's model rather than a supply. */
 void supply_screen_set_model(bool model);
 
+/**
+ * The PD mini's UART (universal asynchronous receiver-transmitter) rate in
+ * baud, shown after ONLINE in the header ("ONLINE 38400"); 0 shows none.
+ * Not shown for the model, nor while the module does not answer.
+ */
+void supply_screen_set_baud(uint32_t baud);
+
 /** The set points as the screen holds them, snapped to the caps. */
 float supply_screen_set_v(void);
 float supply_screen_set_i(void);
