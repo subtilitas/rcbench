@@ -8,8 +8,8 @@ history is in git.
 
 ## 0.11.0 - 2026-10-06
 
-SERVO sets and switches the supply itself, with a warning held for 2 s
-before a voltage above 6.0 V reaches a servo. 72 ESC programming profiles
+SERVO sets and switches the supply itself; raising its voltage past
+6.0 V there opens a warning applied after a 2 s hold. 72 ESC programming profiles
 are built in and replaceable from the SD card; nothing uses them yet. An
 alert clears after 30 s or on a tap. The link protocol stays 4.4, so a
 0.10.1 coprocessor works with this panel; flash both images all the same.
