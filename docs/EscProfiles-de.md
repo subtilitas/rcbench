@@ -40,9 +40,12 @@ ist jedes Zeitfeld null, bis eine Aufnahme am Prüfstand es misst.
 | Eingebaut | `shared/esc/profiles/*.json`, in das Panel-Image übersetzt | immer |
 | SD-Karte | `/ESC/*.json` | einmal, beim Start |
 
-Eine Datei auf der Karte mit der id eines eingebauten Profils ersetzt dieses
-Profil. Eine Datei mit neuer id fügt ein Profil hinter den eingebauten an.
-Tragen zwei Dateien auf der Karte dieselbe id, gilt die zuletzt gelesene. Die
+Eine Datei auf der Karte heißt wie ihre id: `/ESC/hobbywing-flyfun-8item.json`
+enthält `"id": "hobbywing-flyfun-8item"`. Groß- und Kleinschreibung dürfen
+abweichen; alles andere wird abgelehnt. Eine Datei mit der id eines
+eingebauten Profils ersetzt dieses Profil. Eine Datei mit neuer id fügt ein
+Profil hinter den eingebauten an. Dateinamen ab 64 Zeichen werden nicht
+gelesen. Die
 Karte hält höchstens 32 Profile; das Panel liest die Namen der ersten 64
 `.json`-Dateien in `/ESC/`. Eine abgelehnte Datei wird auf der Konsole mit
 Grund genannt, zum Beispiel:
@@ -51,8 +54,9 @@ Grund genannt, zum Beispiel:
 ESC profiles: MYESC.JSON refused: items[2].values: not 1-255 entries
 ```
 
-Abgelehnt wird eine Datei, die größer als 64 KiB ist, kein JSON ist oder
-eine Regel unten verletzt. Das Panel läuft ohne Karte; dann sind die
+Abgelehnt wird eine Datei, die größer als 64 KiB ist, kein JSON ist, in
+einem Objekt einen Schlüssel zweimal hat, in einem String `\u0000` enthält,
+anders heißt als ihre id oder eine Regel unten verletzt. Das Panel läuft ohne Karte; dann sind die
 eingebauten Profile der ganze Satz.
 
 ## Die Datei

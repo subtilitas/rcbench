@@ -1185,6 +1185,12 @@ static void esc_profiles_load(void)
             ESP_LOGW(TAG, "ESC profiles: %s refused: %s", c.name[i], err);
             continue;
         }
+        if (!esc_profile_file_is(c.name[i], p.id)) {
+            ESP_LOGW(TAG, "ESC profiles: %s refused: its id is %s", c.name[i],
+                     p.id);
+            free(block);
+            continue;
+        }
         const bool replaces = (esc_profiles_find(p.id) != NULL);
         if (!esc_profiles_override(&p, block)) {
             ESP_LOGW(TAG, "ESC profiles: %s refused: more than %u on the card",

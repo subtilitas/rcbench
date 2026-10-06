@@ -17,7 +17,6 @@
 
 #include "esc_profile.h"
 
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,6 +42,7 @@ typedef struct {
     tok_t      *tok;    /* NULL: count only */
     uint32_t    n;
     uint32_t    cap;
+    bool        dup;    /* stopped at a key an object already had */
 } lex_t;
 
 /* ------------------------------------------------------------ the tokens */
@@ -124,31 +124,58 @@ static bool lex_string(lex_t *l)
     return false;                               /* no closing quote */
 }
 
+static bool is_digit(char c)
+{
+    return c >= '0' && c <= '9';
+}
+
+/* -? (0 | [1-9][0-9]*) (. [0-9]+)? ([eE] [+-]? [0-9]+)?, as JSON has it and
+ * as the generator's json.loads() takes it, so a file one refuses the other
+ * refuses too, whichever field the number sits in. */
 static bool lex_number(lex_t *l)
 {
     const uint32_t start = l->pos;
-    if (l->s[l->pos] == '-') {
-        l->pos++;
+    uint32_t i = l->pos;
+    const char *s = l->s;
+    if (i < l->len && s[i] == '-') {
+        i++;
     }
-    bool digits = false;
-    while (l->pos < l->len) {
-        const char c = l->s[l->pos];
-        if ((c >= '0' && c <= '9') || c == '.' || c == 'e' || c == 'E'
-            || c == '+' || c == '-') {
-            digits = digits || (c >= '0' && c <= '9');
-            l->pos++;
-        } else {
-            break;
+    if (i < l->len && s[i] == '0') {
+        i++;
+    } else if (i < l->len && s[i] >= '1' && s[i] <= '9') {
+        while (i < l->len && is_digit(s[i])) {
+            i++;
+        }
+    } else {
+        return false;
+    }
+    if (i < l->len && s[i] == '.') {
+        i++;
+        if (i >= l->len || !is_digit(s[i])) {
+            return false;
+        }
+        while (i < l->len && is_digit(s[i])) {
+            i++;
         }
     }
-    if (!digits) {
+    if (i < l->len && (s[i] == 'e' || s[i] == 'E')) {
+        i++;
+        if (i < l->len && (s[i] == '+' || s[i] == '-')) {
+            i++;
+        }
+        if (i >= l->len || !is_digit(s[i])) {
+            return false;
+        }
+        while (i < l->len && is_digit(s[i])) {
+            i++;
+        }
+    }
+    l->pos = i;
+    const int64_t t = add(l, T_NUM, start);
+    if (t < 0) {
         return false;
     }
-    const int64_t i = add(l, T_NUM, start);
-    if (i < 0) {
-        return false;
-    }
-    close_tok(l, i, l->pos, 0u);
+    close_tok(l, t, l->pos, 0u);
     return true;
 }
 
@@ -165,6 +192,29 @@ static bool lex_word(lex_t *l, const char *w, ttype_t t)
     l->pos += (uint32_t)n;
     close_tok(l, i, l->pos, 0u);
     return true;
+}
+
+/*
+ * Whether the key just read is one of the @p members before it in the object
+ * at token @p obj.  json.loads() keeps the last of two and a reader that
+ * stops at the first keeps the first, so a file with a key twice is refused
+ * rather than read two ways.  Only once the tokens exist: the counting pass
+ * has nothing to compare.
+ */
+static bool key_seen(const lex_t *l, uint32_t obj, uint32_t members)
+{
+    const tok_t *k = &l->tok[l->n - 1u];
+    const uint32_t klen = k->end - k->start;
+    uint32_t i = obj + 1u;
+    for (uint32_t m = 0; m < members; ++m) {
+        const tok_t *o = &l->tok[i];
+        if (o->end - o->start == klen
+            && memcmp(l->s + o->start, l->s + k->start, klen) == 0) {
+            return true;
+        }
+        i = l->tok[i + 1u].next;
+    }
+    return false;
 }
 
 static bool lex_container(lex_t *l, int depth, bool obj)
@@ -186,6 +236,10 @@ static bool lex_container(lex_t *l, int depth, bool obj)
         if (obj) {
             ws(l);
             if (l->pos >= l->len || l->s[l->pos] != '"' || !lex_string(l)) {
+                return false;
+            }
+            if (l->tok != NULL && key_seen(l, (uint32_t)i, size)) {
+                l->dup = true;
                 return false;
             }
             ws(l);
@@ -260,19 +314,18 @@ typedef struct {
     bool         failed;
 } dec_t;
 
-static void fail(dec_t *d, const char *fmt, ...)
-{
-    if (d->failed) {
-        return;                                 /* the first reason stands */
-    }
-    d->failed = true;
-    if (d->err != NULL && d->err_size > 0) {
-        va_list ap;
-        va_start(ap, fmt);
-        (void)vsnprintf(d->err, d->err_size, fmt, ap);
-        va_end(ap);
-    }
-}
+/* The first reason stands.  A macro rather than a variadic function: the
+ * arguments go straight to snprintf(), and there is no va_list to get
+ * wrong. */
+#define FAIL(d, ...)                                                      \
+    do {                                                                  \
+        if (!(d)->failed) {                                               \
+            (d)->failed = true;                                           \
+            if ((d)->err != NULL && (d)->err_size > 0u) {                 \
+                (void)snprintf((d)->err, (d)->err_size, __VA_ARGS__);     \
+            }                                                             \
+        }                                                                 \
+    } while (0)
 
 static void *take(dec_t *d, size_t n, size_t align)
 {
@@ -282,7 +335,7 @@ static void *take(dec_t *d, size_t n, size_t align)
         /* The sizing pass measured this block, so this cannot be short; it
          * is checked so that a mistake there fails here, not past the end. */
         if (d->used + n > d->cap) {
-            fail(d, "internal: block too small");
+            FAIL(d, "internal: block too small");
         } else {
             p = d->base + d->used;
         }
@@ -344,6 +397,12 @@ static const char *copy_str(dec_t *d, uint32_t ti)
                 if (cp >= 0xD800u && cp <= 0xDFFFu) {
                     cp = '?';
                 }
+                if (cp == 0u) {
+                    /* A NUL would end the C string early: the name read
+                     * would not be the name written. */
+                    FAIL(d, "a string holds \\u0000");
+                    cp = '?';
+                }
                 /* Never longer than the six bytes of text it came from. */
                 if (cp < 0x80u) {
                     c = (char)cp;
@@ -384,11 +443,11 @@ static const char *get_str(dec_t *d, uint32_t obj, const char *key,
         return (d->base != NULL) ? "" : NULL;
     }
     if (v < 0 || d->t[v].type != T_STR) {
-        fail(d, "%s%s%s: not a string", where, *where ? "." : "", key);
+        FAIL(d, "%s%s%s: not a string", where, *where ? "." : "", key);
         return "";
     }
     if (!empty_ok && d->t[v].end == d->t[v].start) {
-        fail(d, "%s%s%s: empty", where, *where ? "." : "", key);
+        FAIL(d, "%s%s%s: empty", where, *where ? "." : "", key);
         return "";
     }
     return copy_str(d, (uint32_t)v);
@@ -401,13 +460,13 @@ static bool get_num(dec_t *d, uint32_t obj, const char *key, const char *where,
     const int64_t v = member(d, obj, key);
     if (v < 0 || d->t[v].type == T_NULL) {
         if (!null_ok) {
-            fail(d, "%s%s%s: missing", where, *where ? "." : "", key);
+            FAIL(d, "%s%s%s: missing", where, *where ? "." : "", key);
         }
         return false;
     }
     const tok_t *t = &d->t[v];
     if (t->type != T_NUM) {
-        fail(d, "%s%s%s: not a whole number", where, *where ? "." : "", key);
+        FAIL(d, "%s%s%s: not a whole number", where, *where ? "." : "", key);
         return false;
     }
     int64_t n = 0;
@@ -418,13 +477,13 @@ static bool get_num(dec_t *d, uint32_t obj, const char *key, const char *where,
         i++;
     }
     if (i == t->end) {
-        fail(d, "%s%s%s: not a whole number", where, *where ? "." : "", key);
+        FAIL(d, "%s%s%s: not a whole number", where, *where ? "." : "", key);
         return false;
     }
     for (; i < t->end; ++i) {
         const char c = d->s[i];
         if (c < '0' || c > '9' || n > 100000000) {
-            fail(d, "%s%s%s: not a whole number", where, *where ? "." : "", key);
+            FAIL(d, "%s%s%s: not a whole number", where, *where ? "." : "", key);
             return false;
         }
         n = n * 10 + (c - '0');
@@ -433,7 +492,7 @@ static bool get_num(dec_t *d, uint32_t obj, const char *key, const char *where,
         n = -n;
     }
     if (n < lo || n > hi) {
-        fail(d, "%s%s%s: outside %lld..%lld", where, *where ? "." : "", key,
+        FAIL(d, "%s%s%s: outside %lld..%lld", where, *where ? "." : "", key,
              (long long)lo, (long long)hi);
         return false;
     }
@@ -449,13 +508,13 @@ static bool get_bool(dec_t *d, uint32_t obj, const char *key,
         return false;
     }
     if (v < 0 || (d->t[v].type != T_TRUE && d->t[v].type != T_FALSE)) {
-        fail(d, "%s%s%s: not a boolean", where, *where ? "." : "", key);
+        FAIL(d, "%s%s%s: not a boolean", where, *where ? "." : "", key);
         return false;
     }
     return d->t[v].type == T_TRUE;
 }
 
-/* The index of @p key's string value in @p names, or -1 after a fail(). */
+/* The index of @p key's string value in @p names, or -1 after a FAIL(). */
 static int get_enum(dec_t *d, uint32_t obj, const char *key,
                     const char *where, const char *const *names, int count)
 {
@@ -470,7 +529,7 @@ static int get_enum(dec_t *d, uint32_t obj, const char *key,
             }
         }
     }
-    fail(d, "%s%s%s: not a known value", where, *where ? "." : "", key);
+    FAIL(d, "%s%s%s: not a known value", where, *where ? "." : "", key);
     return -1;
 }
 
@@ -479,7 +538,7 @@ static int64_t get_obj(dec_t *d, uint32_t obj, const char *key,
 {
     const int64_t v = member(d, obj, key);
     if (v < 0 || d->t[v].type != type) {
-        fail(d, "%s%s%s: not an %s", where, *where ? "." : "", key,
+        FAIL(d, "%s%s%s: not an %s", where, *where ? "." : "", key,
              type == T_OBJ ? "object" : "array");
         return -1;
     }
@@ -525,7 +584,7 @@ static void decode_models(dec_t *d, uint32_t root, esc_profile_t *p)
     }
     const uint32_t n = d->t[arr].size;
     if (n == 0 || n > 1000u) {
-        fail(d, "models: not 1-1000 entries");
+        FAIL(d, "models: not 1-1000 entries");
         return;
     }
     esc_model_t *m = take(d, n * sizeof(*m), _Alignof(esc_model_t));
@@ -534,7 +593,7 @@ static void decode_models(dec_t *d, uint32_t root, esc_profile_t *p)
         char w[24];
         (void)snprintf(w, sizeof(w), "models[%u]", (unsigned)i);
         if (d->t[ti].type != T_OBJ) {
-            fail(d, "%s: not an object", w);
+            FAIL(d, "%s: not an object", w);
             return;
         }
         int64_t cmin = 0, cmax = 0, v = 0, a = 0;
@@ -558,7 +617,7 @@ static void decode_models(dec_t *d, uint32_t root, esc_profile_t *p)
         for (uint32_t i = 0; i < n; ++i) {
             for (uint32_t j = i + 1u; j < n; ++j) {
                 if (strcmp(m[i].name, m[j].name) == 0) {
-                    fail(d, "models[%u].name: duplicate", (unsigned)j);
+                    FAIL(d, "models[%u].name: duplicate", (unsigned)j);
                     return;
                 }
             }
@@ -583,7 +642,7 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
 {
     const uint32_t n = d->t[arr].size;
     if (n == 0 || n > 255u) {
-        fail(d, "%s.values: not 1-255 entries", iw);
+        FAIL(d, "%s.values: not 1-255 entries", iw);
         return;
     }
     esc_value_t *v = take(d, n * sizeof(*v), _Alignof(esc_value_t));
@@ -593,7 +652,7 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
         char w[48];
         (void)snprintf(w, sizeof(w), "%s.values[%u]", iw, (unsigned)j);
         if (d->t[ti].type != T_OBJ) {
-            fail(d, "%s: not an object", w);
+            FAIL(d, "%s: not an object", w);
             return;
         }
         int64_t num = 0;
@@ -604,7 +663,7 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
         if (v != NULL && !d->failed) {
             for (uint32_t k = 0; k < j; ++k) {
                 if (v[k].number == (uint8_t)num) {
-                    fail(d, "%s.number: duplicate", w);
+                    FAIL(d, "%s.number: duplicate", w);
                     return;
                 }
             }
@@ -612,7 +671,7 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
         }
     }
     if (defaults > 1u) {
-        fail(d, "%s.values: more than one default", iw);
+        FAIL(d, "%s.values: more than one default", iw);
     }
     it->value_count = (uint8_t)n;
     it->values = v;
@@ -626,11 +685,11 @@ static void decode_items(dec_t *d, uint32_t root, esc_profile_t *p)
     }
     const uint32_t n = d->t[arr].size;
     if (n > 255u) {
-        fail(d, "items: more than 255");
+        FAIL(d, "items: more than 255");
         return;
     }
     if (n == 0 && p->automatable != ESC_AUTO_NONE) {
-        fail(d, "items: empty for a profile the bench may run");
+        FAIL(d, "items: empty for a profile the bench may run");
         return;
     }
     esc_item_t *it = take(d, n * sizeof(*it), _Alignof(esc_item_t));
@@ -639,7 +698,7 @@ static void decode_items(dec_t *d, uint32_t root, esc_profile_t *p)
         char w[24];
         (void)snprintf(w, sizeof(w), "items[%u]", (unsigned)i);
         if (d->t[ti].type != T_OBJ) {
-            fail(d, "%s: not an object", w);
+            FAIL(d, "%s: not an object", w);
             return;
         }
         esc_item_t x = { 0 };
@@ -649,14 +708,14 @@ static void decode_items(dec_t *d, uint32_t root, esc_profile_t *p)
         x.name = get_str(d, ti, "name", w, false, false);
         x.key = get_str(d, ti, "key", w, false, false);
         if (x.key != NULL && !d->failed && !key_ok(x.key, 32u, false)) {
-            fail(d, "%s.key: not 1-32 of a-z 0-9 _", w);
+            FAIL(d, "%s.key: not 1-32 of a-z 0-9 _", w);
         }
         x.applies_when = get_str(d, ti, "applies_when", w, true, true);
         const int64_t ap = member(d, ti, "applies_to");
         if (ap >= 0 && d->t[ap].type == T_ARR && d->t[ap].size > 0u) {
             const uint32_t an = d->t[ap].size;
             if (an > 255u) {
-                fail(d, "%s.applies_to: more than 255", w);
+                FAIL(d, "%s.applies_to: more than 255", w);
                 return;
             }
             const char **names = (const char **)take(d, an * sizeof(*names),
@@ -664,13 +723,13 @@ static void decode_items(dec_t *d, uint32_t root, esc_profile_t *p)
             uint32_t ai = (uint32_t)ap + 1u;
             for (uint32_t k = 0; k < an; ++k, ai = d->t[ai].next) {
                 if (d->t[ai].type != T_STR) {
-                    fail(d, "%s.applies_to: not a list of names", w);
+                    FAIL(d, "%s.applies_to: not a list of names", w);
                     return;
                 }
                 const char *s = copy_str(d, ai);
                 if (names != NULL) {
                     if (!has_model(p, s)) {
-                        fail(d, "%s.applies_to: not a model of this profile",
+                        FAIL(d, "%s.applies_to: not a model of this profile",
                              w);
                         return;
                     }
@@ -681,7 +740,7 @@ static void decode_items(dec_t *d, uint32_t root, esc_profile_t *p)
             x.applies_to = (const char *const *)names;
         } else if (ap >= 0 && d->t[ap].type != T_NULL
                    && d->t[ap].type != T_ARR) {
-            fail(d, "%s.applies_to: not a list of names", w);
+            FAIL(d, "%s.applies_to: not a list of names", w);
             return;
         }
         const int64_t va = get_obj(d, ti, "values", w, T_ARR);
@@ -701,7 +760,7 @@ static void decode_items(dec_t *d, uint32_t root, esc_profile_t *p)
                 const bool cj = it[j].applies_count > 0u
                                 || it[j].applies_when[0] != '\0';
                 if (it[i].number == it[j].number && !(ci && cj)) {
-                    fail(d, "items: number %u twice without applies_to or "
+                    FAIL(d, "items: number %u twice without applies_to or "
                          "applies_when", (unsigned)it[i].number);
                     return;
                 }
@@ -716,19 +775,19 @@ static void decode(dec_t *d, esc_profile_t *p)
 {
     const uint32_t root = 0;
     if (d->t[root].type != T_OBJ) {
-        fail(d, "not an object");
+        FAIL(d, "not an object");
         return;
     }
     int64_t schema = 0;
     if (!get_num(d, root, "schema", "", 1, 1, false, &schema)) {
         if (!d->failed) {
-            fail(d, "schema: missing");
+            FAIL(d, "schema: missing");
         }
         return;
     }
     p->id = get_str(d, root, "id", "", false, false);
     if (p->id != NULL && !d->failed && !key_ok(p->id, 48u, true)) {
-        fail(d, "id: not 1-48 of a-z 0-9 -");
+        FAIL(d, "id: not 1-48 of a-z 0-9 -");
     }
     p->brand  = get_str(d, root, "brand", "", false, false);
     p->family = get_str(d, root, "family", "", false, false);
@@ -738,7 +797,7 @@ static void decode(dec_t *d, esc_profile_t *p)
     p->automatable_note = get_str(d, root, "automatable_note", "", true, true);
     if (!d->failed && p->automatable != ESC_AUTO_FULL
         && p->automatable_note != NULL && p->automatable_note[0] == '\0') {
-        fail(d, "automatable_note: needed when not full");
+        FAIL(d, "automatable_note: needed when not full");
     }
 
     const int64_t s = get_obj(d, root, "scheme", "", T_OBJ);
@@ -786,7 +845,7 @@ static void decode(dec_t *d, esc_profile_t *p)
                            ? (uint8_t)v : 0u;
     if (!d->failed && p->encoding == ESC_ENC_SHORT_LONG
         && p->long_equals_short == 0u) {
-        fail(d, "scheme.announce.long_equals_short: needed for short_long");
+        FAIL(d, "scheme.announce.long_equals_short: needed for short_long");
     }
     v = 0;
     p->beep_ms = get_num(d, (uint32_t)an, "beep_ms", "scheme.announce", 0,
@@ -809,7 +868,7 @@ static void decode(dec_t *d, esc_profile_t *p)
     }
     const uint32_t sn = d->t[st].size;
     if (sn == 0 || sn > 255u) {
-        fail(d, "scheme.entry.steps: not 1-255 strings");
+        FAIL(d, "scheme.entry.steps: not 1-255 strings");
         return;
     }
     const char **steps = (const char **)take(d, sn * sizeof(*steps),
@@ -817,7 +876,7 @@ static void decode(dec_t *d, esc_profile_t *p)
     uint32_t ti = (uint32_t)st + 1u;
     for (uint32_t i = 0; i < sn; ++i, ti = d->t[ti].next) {
         if (d->t[ti].type != T_STR || d->t[ti].end == d->t[ti].start) {
-            fail(d, "scheme.entry.steps: not 1-255 strings");
+            FAIL(d, "scheme.entry.steps: not 1-255 strings");
             return;
         }
         const char *str = copy_str(d, ti);
@@ -857,7 +916,7 @@ bool esc_profile_parse(const char *json, size_t len, esc_profile_t *out,
         return false;
     }
 
-    lex_t l = { json, (uint32_t)len, 0u, NULL, 0u, 0u };
+    lex_t l = { json, (uint32_t)len, 0u, NULL, 0u, 0u, false };
     if (!lex_all(&l)) {
         if (err != NULL && err_size > 0) {
             (void)snprintf(err, err_size, "not JSON near byte %u",
@@ -874,7 +933,16 @@ bool esc_profile_parse(const char *json, size_t len, esc_profile_t *out,
     }
     l.tok = tok;
     l.cap = l.n;
-    (void)lex_all(&l);                          /* same text, same answer */
+    /* Same text, same tokens; what this pass adds is the duplicate check. */
+    if (!lex_all(&l)) {
+        free(tok);
+        if (err != NULL && err_size > 0) {
+            (void)snprintf(err, err_size, l.dup ? "a key twice near byte %u"
+                                                : "not JSON near byte %u",
+                           (unsigned)l.pos);
+        }
+        return false;
+    }
 
     esc_profile_t p = { 0 };
     dec_t d = { json, tok, NULL, 0u, 0u, err, err_size, false };

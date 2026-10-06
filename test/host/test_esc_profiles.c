@@ -373,6 +373,62 @@ TEST_CASE(a_file_over_the_limit_is_refused_before_it_is_read)
     CHECK(!esc_profile_parse(NULL, 0, &p, &block, err, sizeof(err)));
 }
 
+TEST_CASE(a_card_file_is_named_after_its_id)
+{
+    CHECK(esc_profile_file_is("hobbywing-flyfun-8item.json",
+                              "hobbywing-flyfun-8item"));
+    CHECK(esc_profile_file_is("HOBBYWING-FLYFUN-8ITEM.JSON",
+                              "hobbywing-flyfun-8item"));
+    CHECK(!esc_profile_file_is("hobbywing-flyfun-8item copy.json",
+                               "hobbywing-flyfun-8item"));
+    CHECK(!esc_profile_file_is("hobbywing.json", "hobbywing-flyfun-8item"));
+    CHECK(!esc_profile_file_is("hobbywing-flyfun-8item.jso",
+                               "hobbywing-flyfun-8item"));
+    CHECK(!esc_profile_file_is("hobbywing-flyfun-8item.txt",
+                               "hobbywing-flyfun-8item"));
+    CHECK(!esc_profile_file_is(NULL, "x"));
+    CHECK(!esc_profile_file_is("x.json", NULL));
+}
+
+/* What the generator refuses, the card reader refuses: a key twice, a NUL
+ * inside a string, a number JSON does not allow, even in a field the panel
+ * never reads. */
+TEST_CASE(input_the_generator_refuses_is_refused_here_too)
+{
+    static const struct {
+        const char *from, *to, *err;
+    } k[] = {
+        { "\"schema\": 1,", "\"schema\": 1, \"schema\": 1,", "a key twice" },
+        { "\"Test 30\"", "\"Test\\u0000 30\"", "a string holds" },
+        { "\"schema\": 1,", "\"schema\": 1, \"n\": 1e,", "not JSON" },
+        { "\"schema\": 1,", "\"schema\": 1, \"n\": 1+2,", "not JSON" },
+        { "\"schema\": 1,", "\"schema\": 1, \"n\": 01,", "not JSON" },
+        { "\"schema\": 1,", "\"schema\": 1, \"n\": 1.,", "not JSON" },
+        { "\"schema\": 1,", "\"schema\": 1, \"n\": .5,", "not JSON" },
+        { "\"schema\": 1,", "\"schema\": 1, \"n\": NaN,", "not JSON" },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        char *j = subst(k[i].from, k[i].to);
+        char err[96] = "";
+        if (j == NULL) {
+            T_FAIL("case %u: not in the base profile", (unsigned)i);
+            continue;
+        }
+        if (parses(j, err, sizeof(err))) {
+            T_FAIL("case %u accepted: %s", (unsigned)i, k[i].to);
+        } else if (strncmp(err, k[i].err, strlen(k[i].err)) != 0) {
+            T_FAIL("case %u: got \"%s\", want \"%s...\"", (unsigned)i, err,
+                   k[i].err);
+        }
+        free(j);
+    }
+    /* And what JSON does allow is still read. */
+    char *j = subst("\"schema\": 1,",
+                    "\"schema\": 1, \"n\": [-0, 0.5, 1e3, 2E-2, 10],");
+    CHECK(parses(j, NULL, 0));
+    free(j);
+}
+
 static bool add_card(const char *json)
 {
     esc_profile_t p;
@@ -454,6 +510,8 @@ int main(void)
     RUN(text_that_is_not_json_is_refused);
     RUN(nesting_past_the_limit_is_refused_not_followed);
     RUN(a_file_over_the_limit_is_refused_before_it_is_read);
+    RUN(a_card_file_is_named_after_its_id);
+    RUN(input_the_generator_refuses_is_refused_here_too);
     RUN(a_card_profile_takes_a_built_in_profiles_place);
     RUN(a_card_profile_with_a_new_id_follows_the_built_in_ones);
     RUN(the_registry_refuses_past_its_capacity);

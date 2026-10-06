@@ -15,6 +15,7 @@
 
 #include "esc_profile.h"
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -127,4 +128,24 @@ bool esc_profiles_is_override(const esc_profile_t *p)
         }
     }
     return false;
+}
+
+bool esc_profile_file_is(const char *file_name, const char *id)
+{
+    if (file_name == NULL || id == NULL) {
+        return false;
+    }
+    static const char k_ext[] = ".json";
+    const size_t n = strlen(id);
+    if (strlen(file_name) != n + sizeof(k_ext) - 1u) {
+        return false;
+    }
+    for (size_t i = 0; i < n + sizeof(k_ext) - 1u; ++i) {
+        const char want = (i < n) ? id[i] : k_ext[i - n];
+        if (tolower((unsigned char)file_name[i])
+            != tolower((unsigned char)want)) {
+            return false;
+        }
+    }
+    return true;
 }

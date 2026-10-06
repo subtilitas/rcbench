@@ -78,10 +78,44 @@ def pick(d: dict, key: str, where: str, table: dict) -> str:
     return table[v]
 
 
+def no_twice(pairs: list[tuple[str, object]]) -> dict:
+    """An object, refused if a key comes twice: json.loads() would keep the
+    last and esc_profile_parse() refuses the file, so neither may pass it."""
+    out: dict = {}
+    for k, v in pairs:
+        if k in out:
+            raise Bad(f"key {k!r} twice")
+        out[k] = v
+    return out
+
+
+def no_constant(name: str) -> float:
+    raise Bad(f"{name} is not a JSON number")
+
+
+def no_nul(v: object, where: str) -> None:
+    """No string holds U+0000: in C it would end the string early."""
+    if isinstance(v, str):
+        want("\0" not in v, where, "a string holds \\u0000")
+    elif isinstance(v, dict):
+        for k, x in v.items():
+            no_nul(k, where)
+            no_nul(x, f"{where}.{k}")
+    elif isinstance(v, list):
+        for i, x in enumerate(v):
+            no_nul(x, f"{where}[{i}]")
+
+
 def check(path: pathlib.Path) -> dict:
     """The profile, reduced to what the firmware carries; raises Bad."""
-    d = json.loads(path.read_text(encoding="utf-8"))
     w = path.name
+    try:
+        d = json.loads(path.read_text(encoding="utf-8"),
+                       object_pairs_hook=no_twice,
+                       parse_constant=no_constant)
+    except Bad as e:
+        raise Bad(f"{w}: {e}") from None
+    no_nul(d, w)
     want(isinstance(d, dict), w, "not an object")
     want(d.get("schema") == 1, f"{w}.schema", "not 1")
     pid = text(d, "id", w)

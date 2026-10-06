@@ -39,9 +39,11 @@ bench recording measures it.
 | Built in | `shared/esc/profiles/*.json`, compiled into the panel image | always |
 | SD card | `/ESC/*.json` | once, at start-up |
 
-A card file with the id of a built-in profile replaces that profile. A card
-file with a new id adds a profile after the built-in ones. If two card files
-carry the same id, the one read last is used. The card holds at most 32
+A card file is named after its id: `/ESC/hobbywing-flyfun-8item.json` holds
+`"id": "hobbywing-flyfun-8item"`. Upper and lower case may differ; anything
+else is refused. A card file with the id of a built-in profile replaces that
+profile. A card file with a new id adds a profile after the built-in ones.
+File names of 64 characters or more are not read. The card holds at most 32
 profiles; the panel reads the names of the first 64 `.json` files in
 `/ESC/`. A refused file is named on the console with its reason, for example:
 
@@ -49,8 +51,9 @@ profiles; the panel reads the names of the first 64 `.json` files in
 ESC profiles: MYESC.JSON refused: items[2].values: not 1-255 entries
 ```
 
-A file is refused when it is larger than 64 KiB, is not JSON, or breaks a
-rule below. The panel runs without a card; the built-in profiles are then
+A file is refused when it is larger than 64 KiB, is not JSON, has a key
+twice in one object, holds `\u0000` in a string, is named other than its id,
+or breaks a rule below. The panel runs without a card; the built-in profiles are then
 the whole set.
 
 ## The file

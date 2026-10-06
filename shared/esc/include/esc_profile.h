@@ -166,6 +166,16 @@ extern const size_t        esc_profiles_builtin_count;
 bool esc_profile_parse(const char *json, size_t len, esc_profile_t *out,
                        void **block, char *err, size_t err_size);
 
+/**
+ * Whether @p file_name is the name the profile @p id belongs in: the id with
+ * ".json" after it, letters compared without regard to case, since a card
+ * written on another computer may change them.  A card file whose name and
+ * id differ is refused, as tools/gen_esc_profiles.py refuses one in the
+ * repository: a renamed copy would otherwise replace a profile its name
+ * does not mention.
+ */
+bool esc_profile_file_is(const char *file_name, const char *id);
+
 /* -------------------------------------------------------- the registry */
 
 /**
