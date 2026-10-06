@@ -50,6 +50,7 @@ typedef struct {
     int      id_says;         /* READ_ID answers this, -1 the slot       */
     bool     other_slot;      /* READ_DATA answers for the next slot     */
     bool     no_input;        /* firmware without READ_INPUT_STATE       */
+    bool     no_state;        /* READ_OUTPUT_STATE unanswered             */
     const char *who;          /* WHO_AM_I's text, NULL the module's      */
     unsigned ignore_en;       /* OUTPUT_EN writes taken and not applied  */
     uint32_t byte_gap;        /* ms between reply bytes, 0 for 1         */
@@ -115,6 +116,9 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
         return;
     }
     ++m.reads[p[0]];
+    if (m.no_state && p[0] == PDMINI_READ_STATE) {
+        return;
+    }
     if (m.no_input && p[0] == PDMINI_READ_INPUT) {
         return;
     }
@@ -1185,6 +1189,28 @@ TEST_CASE(live_set_points_that_will_not_take_switch_the_output_off)
     CHECK_EQ(m.on_at_mv, 5000u);
 }
 
+/* Only the state reads go unanswered, the rest still do, after an ON went
+ * out and its OFF was lost: the module is taken for gone, and the OFF it is
+ * owed goes blind. */
+TEST_CASE(state_reads_that_fail_are_not_hidden_by_the_rest)
+{
+    fresh();
+    run(100u, false);
+    learn_on_twice();
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(600u, false);
+    CHECK(!m.output);
+    m.settle_ms = 100u;
+    pdmini_want(&d, true, 5000u, 1000u);
+    run_to_en_write(m.en_writes + 1u);
+    m.ignore_en = 1u;                          /* the OFF is lost */
+    m.no_state  = true;
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(5000u, true);
+    CHECK(!m.output);
+    CHECK(pdmini_status(&d)->errors >= 3u);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -1256,5 +1282,6 @@ int main(void)
     RUN(an_output_that_came_on_by_itself_is_not_relied_on);
     RUN(an_on_sent_and_unsettled_is_owed_an_off);
     RUN(live_set_points_that_will_not_take_switch_the_output_off);
+    RUN(state_reads_that_fail_are_not_hidden_by_the_rest);
     return test_summary("pdmini");
 }

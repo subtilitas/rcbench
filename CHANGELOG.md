@@ -16,6 +16,9 @@ history is in git.
     answering. The pins are reserved from the outputs while held.
   - Output: an ON needs a live heartbeat, and the output goes off when the
     heartbeat stops.
+  - The PD mini driver counts failed state reads on their own: three in a
+    row take the module for gone however the other readings are answered,
+    and an OFF it is owed goes blind.
   - Reading back: the page carries what the module last said, with flags
     for an output that would not switch, set points that would not take,
     and an output that is or may be on.

@@ -184,7 +184,17 @@ static void finish(pdmini_t *d, uint32_t now, bool ok)
          * answer -- garbled, or another device's -- is not silence. */
         d->blind_due = true;
     }
-    if (++d->fails >= PDMINI_FAILS) {
+    /* State reads counted on their own: other readings answered would
+     * otherwise keep a module online whose output state is not known. */
+    const bool state_lost = d->cmd == PDMINI_READ_STATE
+                            && ++d->state_fails >= PDMINI_FAILS;
+    if (state_lost) {
+        /* The same module, answering all but this: an OFF it is owed is
+         * sent blind straight away, as after a silent WHO_AM_I. */
+        d->state_fails = 0u;
+        d->blind_due   = true;
+    }
+    if (++d->fails >= PDMINI_FAILS || state_lost) {
         /*
          * Gone: nothing it said before is known any more, and the next
          * thing asked is who is there.  A write unanswered by its confirming
@@ -262,6 +272,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->st.output   = (r[1] & 1u) != 0u;
         d->st.mode     = (uint8_t)((r[1] >> 1) & 3u);
         d->state_known = true;
+        d->state_fails = 0u;
         d->off_owed    = false;
         /* An ON sent is settled by a read that shows it on, or off with no
          * ON on its way and the last write given its time. */

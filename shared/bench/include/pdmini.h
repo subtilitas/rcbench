@@ -28,6 +28,9 @@
  * buttons in the 15 ms between those reads and the ON is seen by the next
  * slot read, at most 1000 ms on, and put back.
  *
+ * Three state reads in a row that fail take the module for gone, however
+ * the other readings are answered: its output state is what matters.
+ *
  * A module that stops answering while its output is on may still be
  * listening: while an OFF is asked for, it is sent blind straight after
  * each WHO_AM_I that is answered by not one byte, once a second, until a state read
@@ -190,6 +193,7 @@ typedef struct {
     uint8_t  data_tries;     /* OUTPUT_DATA writes towards the set points */
     uint32_t data_at;
     uint8_t  fails;          /* consecutive                              */
+    uint8_t  state_fails;    /* READ_OUTPUT_STATE failed, consecutive    */
     uint8_t  input_misses;   /* READ_INPUT_STATE unanswered, consecutive */
     uint8_t  on_step;        /* reads before an ON: 1 data asked, 2 data
                                 seen, 3 slot asked, 4 slot seen          */
