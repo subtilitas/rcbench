@@ -6,13 +6,19 @@ history is in git.
 
 ## Unreleased
 
-### Fixed
+## 0.10.0 - 2026-10-06
 
-- **An output the PD mini switches off by itself stays off.** Its
-  overcurrent protection or its button switching the output off while ON
-  is asked no longer gets it switched on again: the driver holds it off
-  and says so (SUPPLY flags bit 7), and the panel switches its own output
-  off with a line in the band. A new 2 s hold switches it on again.
+The servo tester's first three steps (#223) and the PD mini. SERVO gets a
+SETTINGS overlay with the servo type, frame rate, pulse widths, trim,
+travel and reverse, a text keyboard and the supply's live power plot; the
+coprocessor runs the frame rate and a square, sine or triangle sweep, and
+holds a position on HOLD. The PD mini (WeAct PD Power Mini V1 Buck) is
+driven by the coprocessor on a PIO UART on two pins SETUP INTERFACES
+names, and the SUPPLY screen drives it through the coprocessor when it is
+enabled. The link protocol is 4.3: a panel and a coprocessor of this
+release use the SERVO and SUPPLY pages; with an older coprocessor the
+frame rate, the sweep and the PD mini are not offered. The PD mini has not
+been run against a module.
 
 ### Added
 
@@ -223,6 +229,12 @@ history is in git.
   The tiles' lines are 16 characters or fewer to fit.
 
 ### Fixed
+
+- **An output the PD mini switches off by itself stays off.** Its
+  overcurrent protection or its button switching the output off while ON
+  is asked no longer gets it switched on again: the driver holds it off
+  and says so (SUPPLY flags bit 7), and the panel switches its own output
+  off with a line in the band. A new 2 s hold switches it on again.
 
 - **The bench does not arm while the SERVO page's rate is unknown.** A
   panel that restarted while the coprocessor held a heli rate, and whose
