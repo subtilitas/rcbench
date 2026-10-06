@@ -807,8 +807,10 @@ static void publish_pdmini(void)
         | ((unsigned)((tx < 0) ? 0 : tx + 1) & 0xFFu) << 16
         | ((unsigned)((rx < 0) ? 0 : rx + 1) & 0xFFu) << 8
         | ((unsigned)settings_get_int(SET_PDMINI_BAUD) & 0xFFu);
-    atomic_store(&s_pdmini_wiring, word);
+    /* The count first: an ON stamped before it is dropped by the time the
+     * new wiring can be seen. */
     atomic_fetch_add(&s_pdmini_edits, 1u);
+    atomic_store(&s_pdmini_wiring, word);
 }
 
 static supply_wiring_t pdmini_wiring(void)
