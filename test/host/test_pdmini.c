@@ -1091,18 +1091,26 @@ TEST_CASE(stale_set_points_are_not_sent)
 }
 
 /* Firmware that does not answer READ_INPUT_STATE is asked three times and
- * then left alone, so its 400 ms windows do not hold up the rest. */
+ * then only every 5 s, so its 400 ms windows do not hold up the rest; a
+ * module that only lost those three answers is capped once it answers. */
 TEST_CASE(an_unanswered_input_read_is_given_up)
 {
     fresh();
     m.no_input = true;
     run(100u, false);
-    run(5000u, false);
+    run(3000u, false);
     const unsigned asked = m.reads[PDMINI_READ_INPUT];
     CHECK_EQ(asked, PDMINI_INPUT_MISSES);
     CHECK(pdmini_status(&d)->online);
     run(3000u, false);
-    CHECK_EQ(m.reads[PDMINI_READ_INPUT], asked);
+    CHECK(m.reads[PDMINI_READ_INPUT] <= asked + 1u);
+
+    m.no_input = false;                       /* it answers after all */
+    m.input_mv = 4880u;
+    run(6000u, false);
+    pdmini_want(&d, false, 8000u, 1000u);
+    run(1500u, false);
+    CHECK_EQ(m.mv[0], 4880u - PDMINI_HEADROOM_MV);
 }
 
 /* The same module, on, goes quiet, answers again and goes quiet again: the

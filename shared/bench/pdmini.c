@@ -720,15 +720,17 @@ static bool next_job(pdmini_t *d, uint32_t now)
         if (polls[k].cmd == PDMINI_READ_STATE && d->en_pending) {
             continue;   /* the confirming read is the next state read */
         }
-        if (polls[k].cmd == PDMINI_READ_INPUT && !d->input_seen
-            && d->input_misses >= PDMINI_INPUT_MISSES) {
-            continue;   /* not answered by this module's firmware */
-        }
+        /* Taken to have no input reading: still asked now and then, so a
+         * module that only lost a few packets is capped once it answers. */
+        const uint32_t period =
+            (polls[k].cmd == PDMINI_READ_INPUT && !d->input_seen
+             && d->input_misses >= PDMINI_INPUT_MISSES)
+                ? PDMINI_INPUT_RETRY_MS : polls[k].period;
         const uint32_t since = now - *polls[k].last;
-        if (since < polls[k].period) {
+        if (since < period) {
             continue;
         }
-        const uint32_t late = since - polls[k].period;
+        const uint32_t late = since - period;
         if (best < 0 || late > late_most) {
             late_most = late;
             best = k;

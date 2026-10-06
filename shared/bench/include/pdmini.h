@@ -134,6 +134,7 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
                                         module is identified again: the
                                         vendor's client has it from firmware
                                         v1.0.2.0 on                        */
+#define PDMINI_INPUT_RETRY_MS 5000u /**< and asked again this often after */
 
 /** CRC8, polynomial 0x31, initial 0xFF, over @p n bytes. */
 uint8_t pdmini_crc8(const uint8_t *p, size_t n);
