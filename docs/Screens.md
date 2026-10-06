@@ -198,7 +198,11 @@ neither end it may not. SPEED on the right card limits it as it limits a
 drag, and trim is not applied. The horn follows the same curve, computed on
 the panel and timed from when the coprocessor started its own. While it runs
 the button reads HOLD, and a tap stops the sweep where the output has got to
--- which SPEED can leave behind the curve -- and holds it there; a finger on the dial, CENTRE, RELEASE,
+-- which SPEED can leave behind the curve -- and holds it there. The
+coprocessor does the holding, because only it knows exactly where that is;
+without feedback the horn drawn on the panel is an estimate of it. A HOLD
+does not wait behind sweep writes already on the wire. A finger on the dial,
+CENTRE, RELEASE,
 a disarm and leaving the screen stop it too, and touch events going missing
 stop it as HOLD would. A changed setting starts it over
 with the new curve; a changed profile or frame rate goes with it at once. SWEEP is offered on an armed bench and a coprocessor

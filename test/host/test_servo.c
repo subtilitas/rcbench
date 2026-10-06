@@ -1442,8 +1442,8 @@ TEST_CASE(a_sweep_needs_an_armed_bench_and_a_coprocessor_that_sweeps)
     CHECK(servo_screen_sweeping());
 }
 
-/* The horn follows the curve the coprocessor runs; HOLD stops it where it
- * is and holds it there. */
+/* The horn follows the curve the coprocessor runs; HOLD asks the
+ * coprocessor to hold the output where it is, and the drawing stops there. */
 TEST_CASE(the_horn_follows_the_sweep_and_hold_keeps_it_where_it_is)
 {
     fresh();
@@ -1461,9 +1461,9 @@ TEST_CASE(the_horn_follows_the_sweep_and_hold_keeps_it_where_it_is)
     CHECK(at > 1880u && at <= 1900u);          /* 1500 + 400 at the peak */
     tap(SWEEP_X, BTN_Y);                       /* HOLD */
     CHECK(!servo_screen_sweeping());
-    const servo_cmd_t c = last_cmd();
-    CHECK_EQ(c.kind, SERVO_CMD_POSITION);
-    CHECK(c.value_us > 1880u && c.value_us <= 1900u);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_HOLD);
+    const uint16_t held_at = servo_screen_commanded();
+    CHECK(held_at > 1880u && held_at <= 1900u);
 }
 
 /* A finger on the dial, CENTRE, RELEASE, a disarm and leaving each end the
@@ -1514,7 +1514,7 @@ TEST_CASE(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave)
     (void)last_cmd();
     scr->cancel();
     CHECK(!servo_screen_sweeping());
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_HOLD);
 
     /* And a coprocessor that cannot sweep any more: what the panel holds is
      * ended with a release. */
@@ -1603,15 +1603,16 @@ TEST_CASE(hold_keeps_the_output_where_it_has_got_to)
     tap(SWEEP_X, BTN_Y);
     frames(0.3f);                              /* the curve is near 58 deg */
     tap(SWEEP_X, BTN_Y);                       /* HOLD */
-    const servo_cmd_t c = last_cmd();
-    CHECK_EQ(c.kind, SERVO_CMD_POSITION);
-    CHECK(c.value_us > 1500u && c.value_us < 1600u);   /* about 11 deg */
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_HOLD);
+    const uint16_t at = servo_screen_commanded();   /* drawn where it got to */
+    CHECK(at > 1500u && at < 1600u);           /* about 11 deg */
 }
 
 /*
  * Without feedback the horn is drawn where the far end's output is, slewing
- * as the coprocessor slews -- in its command units -- so HOLD keeps the
- * servo where it got to, with CENTRE off the middle as well.  The far end
+ * as the coprocessor slews -- in its command units -- so the horn HOLD
+ * leaves drawn is where the coprocessor holds the servo, with CENTRE off
+ * the middle as well.  The far end
  * here is the bank the coprocessor runs, fed the same sweep.
  */
 TEST_CASE(hold_without_feedback_matches_the_far_ends_slew)
@@ -1650,11 +1651,10 @@ TEST_CASE(hold_without_feedback_matches_the_far_ends_slew)
         outputs_step(&far, t);
     }
     tap(SWEEP_X, BTN_Y);                       /* HOLD */
-    c = last_cmd();
-    CHECK_EQ(c.kind, SERVO_CMD_POSITION);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_HOLD);
     const int far_us = (int)outputs_pulse_us(&far, 0);
     CHECK(far_us > 1560);                      /* well on its way */
-    CHECK(abs((int)c.value_us - far_us) <= 6);
+    CHECK(abs((int)servo_screen_commanded() - far_us) <= 6);
 }
 
 /*
@@ -1672,9 +1672,9 @@ TEST_CASE(the_drawn_output_starts_where_the_far_ends_output_starts)
     frames(0.3f);                              /* drawn on its way */
     servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
     tap(SWEEP_X, BTN_Y);                       /* HOLD at once */
-    servo_cmd_t c = last_cmd();
-    CHECK_EQ(c.kind, SERVO_CMD_POSITION);
-    CHECK(c.value_us >= 1499u && c.value_us <= 1501u);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_HOLD);
+    uint16_t c = servo_screen_commanded();
+    CHECK(c >= 1499u && c <= 1501u);
 
     fresh();
     servo_screen_set_armed(true);
@@ -1683,7 +1683,7 @@ TEST_CASE(the_drawn_output_starts_where_the_far_ends_output_starts)
     tap(SWEEP_X, BTN_Y);
     frames(0.2f);
     tap(SWEEP_X, BTN_Y);                       /* where it was at 0.2 s */
-    const uint16_t at_02 = last_cmd().value_us;
+    const uint16_t at_02 = servo_screen_commanded();
 
     fresh();
     servo_screen_set_armed(true);
@@ -1693,9 +1693,9 @@ TEST_CASE(the_drawn_output_starts_where_the_far_ends_output_starts)
     frames(0.5f);
     servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_FROZEN, 300u);
     tap(SWEEP_X, BTN_Y);
-    c = last_cmd();
+    c = servo_screen_commanded();
     CHECK(at_02 > 1520u);
-    CHECK(abs((int)c.value_us - (int)at_02) <= 3);
+    CHECK(abs((int)c - (int)at_02) <= 3);
 }
 
 /* The horn is drawn along the far end's curve from when it started there. */

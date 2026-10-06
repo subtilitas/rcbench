@@ -43,6 +43,7 @@ typedef struct {
     sweep_t  sweep;
     uint32_t heard_ms;   /**< when the sweep was last written          */
     bool     finished;   /**< made its movements; the curve not changed */
+    bool     holding;    /**< LINK_SV_HOLD in force                     */
 } servo_page_t;
 
 void servo_page_init(servo_page_t *p);

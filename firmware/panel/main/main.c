@@ -574,6 +574,10 @@ static atomic_bool s_stop_request;
 static atomic_bool s_stop_counted;
 static atomic_bool s_disarm_request;
 static atomic_bool s_servo_release_request;
+/* HOLD asked for: a sweep being written, which can take several exchanges,
+ * gives way to it at once.  Cleared when the drain reaches a servo
+ * command, the HOLD itself or one after it. */
+static atomic_bool s_servo_hold_request;
 /*
  * How many times the panel has been told to let go: a disarm, or an explicit
  * release of the servo's pin.
@@ -3460,7 +3464,8 @@ static bool servo_countermanded(void)
 {
     return arming_stopped(&s_arm)
            || atomic_load(&s_disarm_request)
-           || atomic_load(&s_servo_release_request);
+           || atomic_load(&s_servo_release_request)
+           || atomic_load(&s_servo_hold_request);
 }
 
 /*
@@ -3507,6 +3512,7 @@ static void servo_cfg(const servo_cmd_t *sv, uint16_t *cfg)
  */
 static bool        s_servo_sweep_page;
 static bool        s_servo_sweeping;
+static bool        s_servo_holding;      /* LINK_SV_HOLD in force there */
 static bool        s_servo_sweep_unknown;
 static atomic_bool s_servo_sweep_able;   /* for the screen's SWEEP */
 /* The curve the far end last took, and when it started one: a curve that
@@ -3523,7 +3529,8 @@ static bool write_servo(const servo_cmd_t sv)
 {
     link_msg_t reply;
     if (s_servo_sweep_unknown
-        || (sv.kind != SERVO_CMD_SWEEP && s_servo_sweeping)) {
+        || ((s_servo_sweeping || s_servo_holding)
+            && sv.kind != SERVO_CMD_SWEEP && sv.kind != SERVO_CMD_HOLD)) {
         const uint16_t stop = 0u;
         if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 1u, &stop,
                         &reply)
@@ -3531,7 +3538,28 @@ static bool write_servo(const servo_cmd_t sv)
             return false;
         }
         s_servo_sweeping      = false;
+        s_servo_holding       = false;
         s_servo_sweep_unknown = false;
+    }
+    if (sv.kind == SERVO_CMD_HOLD) {
+        /*
+         * The far end freezes every surface where its output is and keeps
+         * it there while this is repeated.  A coprocessor that cannot sweep
+         * has nothing to hold.
+         */
+        if (!s_servo_sweep_page) {
+            return true;
+        }
+        const uint16_t hold = LINK_SV_HOLD;
+        if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 1u, &hold,
+                        &reply)
+            || reply.op != LINK_OP_ACK) {
+            return false;
+        }
+        s_servo_sweeping = false;
+        s_servo_holding  = true;
+        s_servo_written |= s_servo_channels;
+        return true;
     }
     /*
      * Every command, a release included, goes to the channels the binding
@@ -3718,6 +3746,7 @@ static bool write_servo(const servo_cmd_t sv)
             }
             s_servo_curve_ms = took;
             s_servo_sweeping = true;
+            s_servo_holding  = false;
             /* Every surface is moving, so a release owes each a centre. */
             s_servo_written |= mask;
             return true;
@@ -3973,6 +4002,8 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
  */
 static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
 {
+    /* The drain has reached a command at least as new as any HOLD. */
+    atomic_store(&s_servo_hold_request, false);
     /* Every command from the screen carries its range, a release included,
      * and the release the arm owes is paid with it. */
     if (servo_named(&sv)) {
@@ -4163,7 +4194,8 @@ static void drain_commands(bool link_up, bench_state_t *bench)
                                 && (pc.servo.kind == SERVO_CMD_ARM
                                     || pc.servo.kind == SERVO_CMD_POSITION
                                     || pc.servo.kind == SERVO_CMD_CENTRE
-                                    || pc.servo.kind == SERVO_CMD_SWEEP));
+                                    || pc.servo.kind == SERVO_CMD_SWEEP
+                                    || pc.servo.kind == SERVO_CMD_HOLD));
         if (drives
             && (pc.stops != arming_stop_count(&s_arm)
                 || pc.lets_go != atomic_load(&s_lets_go))) {
@@ -4683,6 +4715,7 @@ static void link_came_up(const link_msg_t *reply)
     (void)servo_rate_reset();
     s_servo_sweep_page    = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 2u;
     s_servo_sweeping      = false;
+    s_servo_holding       = false;
     s_servo_sweep_unknown = s_servo_sweep_page;
     atomic_store(&s_servo_sweep_able, s_servo_sweep_page);
 
@@ -5064,8 +5097,10 @@ static void control_task(void *arg)
  */
 static void flush_screen_commands(uint32_t stops_now);
 
-static void send_cmd(const panel_cmd_t *pc)
+static void send_cmd(const panel_cmd_t *in)
 {
+    panel_cmd_t cmd = *in;
+    const panel_cmd_t *pc = &cmd;
     /*
      * A disarm does not depend on the queue.
      *
@@ -5093,6 +5128,16 @@ static void send_cmd(const panel_cmd_t *pc)
          */
         atomic_fetch_add(&s_lets_go, 1u);
         atomic_store(&s_servo_release_request, true);
+    } else if (pc->kind == PANEL_CMD_SERVO
+               && pc->servo.kind == SERVO_CMD_HOLD) {
+        /*
+         * HOLD stops a moving servo, so it does not wait either: a sweep
+         * being written gives way to it at once, and one queued before it
+         * is dropped as stale.  It is a drive itself, so it carries the
+         * generation it opens.
+         */
+        cmd.lets_go = atomic_fetch_add(&s_lets_go, 1u) + 1u;
+        atomic_store(&s_servo_hold_request, true);
     } else if (pc->kind == PANEL_CMD_SUPPLY && pc->supply.off) {
         /* The supply's OFF, for the same reason as the disarm. */
         atomic_fetch_add(&s_supply_offs, 1u);

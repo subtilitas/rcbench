@@ -63,7 +63,7 @@ TEST_CASE(a_sweep_out_of_range_is_refused_whole)
 {
     fresh(true);
     CHECK_EQ(sweep(SWEEP_SINE, 49u, 400u, 0u, T0), LINK_NACK_BAD_VALUE);
-    CHECK_EQ(sweep(SWEEP_KIND_COUNT, 1000u, 400u, 0u, T0), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(sweep(LINK_SV_HOLD + 1u, 1000u, 400u, 0u, T0), LINK_NACK_BAD_VALUE);
     CHECK_EQ(sweep(SWEEP_SINE, 1000u, 501u, 0u, T0), LINK_NACK_BAD_VALUE);
     CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 5001u, T0), LINK_NACK_BAD_VALUE);
     CHECK_EQ(reg(LINK_SV_SWEEP_MHZ), 0u);
@@ -257,6 +257,47 @@ TEST_CASE(a_finished_sweep_keeps_its_centre_while_repeated)
     CHECK_EQ(outputs_actual(&o, 0), SWEEP_CENTRE);
 }
 
+/*
+ * HOLD keeps each surface exactly where its output had got to when a sweep
+ * was stopped -- with a slew, between the curve and where it started -- as
+ * long as the panel repeats it, and ends on silence like a sweep.
+ */
+TEST_CASE(hold_keeps_the_surfaces_where_their_outputs_are)
+{
+    fresh(false);
+    const uint16_t hold = LINK_SV_HOLD;
+    CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP, 1u, &hold, &o, T0),
+             LINK_NACK_NOT_ARMED);
+    outputs_arm(&o, true, T0);
+    CHECK(outputs_set_slew(&o, 0, 200u));
+    CHECK_EQ(sweep(SWEEP_SQUARE, 1000u, 400u, 0u, T0), 0u);
+    uint32_t t = T0;
+    for (; t <= T0 + 300u; ++t) {
+        (void)servo_page_step(&pg, &o, t);
+        outputs_step(&o, t);
+    }
+    CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP, 1u, &hold, &o, t), 0u);
+    const uint16_t held = outputs_actual(&o, 0);
+    CHECK(held > 500u && held < 900u);
+    CHECK_EQ(reg(LINK_SV_SWEEP), LINK_SV_HOLD);
+    for (; t <= T0 + 2000u; ++t) {
+        if (t % 100u == 0u) {
+            CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP, 1u, &hold, &o, t), 0u);
+        }
+        (void)servo_page_step(&pg, &o, t);
+        outputs_step(&o, t);
+        CHECK(!outputs_overdue(&o, 0, t));
+    }
+    CHECK_EQ(outputs_actual(&o, 0), held);
+    /* Unrepeated, it ends and the channel rests as any command does. */
+    for (; t <= T0 + 3100u; ++t) {
+        (void)servo_page_step(&pg, &o, t);
+        outputs_step(&o, t);
+    }
+    CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
+    CHECK(outputs_overdue(&o, 0, t));
+}
+
 int main(void)
 {
     RUN(a_sweep_needs_the_bench_armed);
@@ -269,5 +310,6 @@ int main(void)
     RUN(a_sweep_stopped_by_the_panel_leaves_the_surfaces_where_they_are);
     RUN(a_sweep_starts_only_from_all_four_registers);
     RUN(a_finished_sweep_keeps_its_centre_while_repeated);
+    RUN(hold_keeps_the_surfaces_where_their_outputs_are);
     return test_summary("servo_page");
 }

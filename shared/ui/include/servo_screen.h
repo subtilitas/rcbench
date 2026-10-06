@@ -36,6 +36,12 @@ typedef enum {
      * stops it.
      */
     SERVO_CMD_SWEEP,
+    /**
+     * Stop a sweep and hold every surface where its output is, which only
+     * the coprocessor knows exactly.  Repeated while held; any other
+     * command ends it.
+     */
+    SERVO_CMD_HOLD,
 } servo_cmd_kind_t;
 
 typedef struct {

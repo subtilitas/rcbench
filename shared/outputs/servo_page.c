@@ -77,7 +77,7 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
      */
     uint16_t next[LINK_SV_COUNT];
     memcpy(next, p->regs, sizeof(next));
-    if (!p->sweep.running) {
+    if (!p->sweep.running && !p->holding) {
         next[LINK_SV_SWEEP] = 0u;
     }
     for (uint8_t i = 0; i < n; ++i) {
@@ -93,7 +93,11 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
         }
     }
     const sweep_cfg_t cfg = cfg_of(next);
-    if (sweep && next[LINK_SV_SWEEP] != 0u) {
+    const bool hold = sweep && next[LINK_SV_SWEEP] == LINK_SV_HOLD;
+    if (hold && !outputs_armed(o)) {
+        return LINK_NACK_NOT_ARMED;
+    }
+    if (sweep && next[LINK_SV_SWEEP] != 0u && !hold) {
         /*
          * A sweep starts, or changes, only from its four registers written
          * together: a curve rebuilt from a register or two and what the page
@@ -119,7 +123,23 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
     const bool was_running = p->sweep.running;
     const sweep_cfg_t was  = p->sweep.cfg;
     memcpy(p->regs, next, sizeof(next));
+    if (hold) {
+        /*
+         * Held where the outputs are: a sweep stopped exactly where its
+         * output had got to, which only this end knows -- the panel's
+         * drawing is an estimate without feedback.  Each write keeps it.
+         */
+        if (!p->holding) {
+            sweep_stop(&p->sweep);
+            freeze_surfaces(o);
+        }
+        p->holding  = true;
+        p->finished = false;
+        p->heard_ms = now_ms;
+        return 0u;
+    }
     if (sweep) {
+        p->holding = false;
         if (next[LINK_SV_SWEEP] == 0u) {
             /* Stopped where the outputs are, as silence stops it: the
              * command the panel follows this with takes a transaction or
@@ -154,7 +174,7 @@ void servo_page_read(servo_page_t *p, uint8_t off, uint8_t n, uint16_t *out)
         || (unsigned)off + (unsigned)n > (unsigned)LINK_SV_COUNT) {
         return;
     }
-    if (!p->sweep.running) {
+    if (!p->sweep.running && !p->holding) {
         p->regs[LINK_SV_SWEEP] = 0u;
     }
     for (uint8_t i = 0; i < n; ++i) {
@@ -164,6 +184,26 @@ void servo_page_read(servo_page_t *p, uint8_t off, uint8_t n, uint16_t *out)
 
 bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
 {
+    /*
+     * A hold keeps each surface at the command it was frozen at, stamped
+     * each pass while the panel repeats it; on silence or a disarm it ends
+     * and the channels rest as any command does.
+     */
+    if (p != NULL && o != NULL && p->holding) {
+        if (!outputs_armed(o)
+            || (uint32_t)(now_ms - p->heard_ms) > OUT_DEFAULT_TIMEOUT_MS) {
+            p->holding = false;
+            p->regs[LINK_SV_SWEEP] = 0u;
+        } else {
+            for (uint8_t ch = 0; ch < (uint8_t)LINK_OUT_CHANNELS; ++ch) {
+                if (o->channel[ch].role == OUT_ROLE_SURFACE) {
+                    (void)outputs_set(o, ch, o->channel[ch].command, now_ms);
+                }
+            }
+            p->regs[LINK_SV_SWEEP] = (uint16_t)LINK_SV_HOLD;
+            return false;
+        }
+    }
     /*
      * A sweep that has made its movements and is still being repeated holds
      * the surfaces at the centre it ended on: stamped each pass, so a slow

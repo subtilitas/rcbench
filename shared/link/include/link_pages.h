@@ -147,6 +147,11 @@ enum {
  *     (NOT_ARMED) and stops after 500 ms unwritten, on a disarm, or after
  *     SWEEP_MOVES ends (0 for no end), read back in SWEEP_DONE.
  *
+ *     SWEEP = 4 (LINK_SV_HOLD), one register, holds every surface where
+ *     its output is -- a sweep stopped part way, exactly where it got to,
+ *     slew and all -- for as long as it is written, on the same 500 ms and
+ *     disarm rules.
+ *
  *     Not kept: a coprocessor restart drives every slot at its own rate
  *     again, which is the binding's 50 Hz for a servo, and runs no sweep. */
 enum {
@@ -159,6 +164,8 @@ enum {
     LINK_SV_SWEEP_DONE     = 6,   /**< read only */
     LINK_SV_COUNT          = 7,
 };
+/** SWEEP's value for holding the surfaces where their outputs are. */
+#define LINK_SV_HOLD 4u
 
 #define LINK_OS_RANGE_OF(first, count) \
     ((uint16_t)((((unsigned)(first) & 0xFFu) << 8) | ((unsigned)(count) & 0xFFu)))

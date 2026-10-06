@@ -216,7 +216,10 @@ Karte begrenzt sie wie ein Ziehen, Trim gilt nicht. Das Horn folgt derselben
 Kurve, im Panel gerechnet und ab dem Moment, in dem der Koprozessor seine
 gestartet hat. Während sie läuft, heißt der Knopf HOLD; ein Tippen hält die
 Kurve dort an, wo der Ausgang gerade steht -- SPEED kann ihn hinter der Kurve
-zurücklassen --, und hält ihn dort. Ein Finger auf der
+zurücklassen --, und hält ihn dort. Das Halten übernimmt der Koprozessor,
+weil nur er genau weiß, wo das ist; ohne Rückmeldung ist das im Panel
+gezeichnete Horn eine Schätzung davon. Ein HOLD wartet nicht hinter
+Sweep-Schreibvorgängen, die schon auf dem Draht sind. Ein Finger auf der
 Skala, CENTRE, RELEASE, ein Disarm und das Verlassen des Screens beenden sie
 ebenfalls, und verlorene Touch-Ereignisse halten sie an wie HOLD. Eine geänderte Einstellung startet sie mit der neuen Kurve neu; ein
 geändertes Profil oder eine geänderte Frame Rate geht sofort mit.

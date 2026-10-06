@@ -532,7 +532,7 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
     /* The grip only breathes while something is actually being held, so this
      * has to follow the command rather than the screen being open. */
     s.driving = (kind == SERVO_CMD_POSITION || kind == SERVO_CMD_CENTRE
-                 || kind == SERVO_CMD_SWEEP);
+                 || kind == SERVO_CMD_SWEEP || kind == SERVO_CMD_HOLD);
     const bool sw = kind == SERVO_CMD_SWEEP;
     s.pending.sweep_kind     = sw ? (uint16_t)s.sw.cfg.kind : 0u;
     s.pending.sweep_mhz      = sw ? s.sw.cfg.mhz : 0u;
@@ -595,6 +595,20 @@ static void stop_sweep(void)
         s.sweeping = false;
         ++s.ctrl_rev;
     }
+}
+
+/*
+ * HOLD: the sweep stops and every surface stays where its output had got
+ * to.  The coprocessor holds it there, because only it knows where that is:
+ * SPEED can leave the output well behind the curve, and without feedback the
+ * horn drawn here is an estimate.  The drawing stops where it was.
+ */
+static void hold_sweep(void)
+{
+    stop_sweep();
+    s.commanded_deg = s.shown_deg;
+    post(SERVO_CMD_HOLD, 0);
+    ++s.ctrl_rev;
 }
 
 /*
@@ -1590,11 +1604,7 @@ static void event(const touch_event_t *evt)
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.sweep_btn, px, py)) {
             if (s.sweeping) {
-                /* HOLD: the sweep stops where the horn is, and holds it --
-                 * where the output has got to, which SPEED can leave well
-                 * behind the curve. */
-                stop_sweep();
-                command(s.shown_deg);
+                hold_sweep();
             } else {
                 start_sweep();
             }
@@ -2613,8 +2623,7 @@ static void cancel(void)
      * stop it, and the panel would go on repeating it.  Held where the
      * output has got to, as HOLD holds it. */
     if (s.sweeping) {
-        stop_sweep();
-        command(s.shown_deg);
+        hold_sweep();
     }
     ui_slider_release(&s.speed);
     ui_hold_reset(&s.arm);
