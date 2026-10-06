@@ -1702,6 +1702,7 @@ static void ov_rest(const touch_event_t *evt)
     case OP_CLOSE:
         if (gfx_rect_contains(close_rect(), x, y)) {
             s.ov_open = false;
+            s.kp_alone = false;
             close_panels();
             servo_invalidate();
         }
@@ -1757,6 +1758,7 @@ static void ov_rest(const touch_event_t *evt)
              * servo's lead runs out past the left card, where the overlay
              * does not reach, so the change is a whole repaint. */
             s.ov_open = !s.ov_open;
+            s.kp_alone = false;     /* whatever opened it, it is shut now */
             close_panels();
             servo_invalidate();
         }

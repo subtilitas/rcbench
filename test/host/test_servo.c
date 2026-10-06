@@ -2124,6 +2124,23 @@ TEST_CASE(the_hv_warning_redraws_when_the_output_changes)
     free(before);
 }
 
+/* A set point's keypad shut by SETTINGS leaves nothing behind: SETTINGS
+ * opened afterwards stays open when a keypad from its own rows is done. */
+TEST_CASE(settings_shuts_a_set_points_keypad_cleanly)
+{
+    fresh();
+    tap(SUP_V_X, SUP_ROW_Y);                    /* the keypad, on its own */
+    open_settings();                            /* shuts it */
+    open_settings();                            /* the settings */
+    tap(SUP_V_X, SUP_ROW_Y);                    /* a set point over them */
+    key(UI_KEY_CANCEL);                         /* back to the settings */
+    int x, y;
+    dial_at(40.0f, ARC_R - 30, &x, &y);
+    ev(x, y, TOUCH_EVENT_DOWN, 1);
+    ev(x, y, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(servo_screen_commanded(), 1500);   /* the overlay is over it */
+}
+
 int main(void)
 {
     RUN(a_touch_on_the_dial_points_the_horn_there);
@@ -2201,5 +2218,6 @@ int main(void)
     RUN(apply_sets_only_the_set_point_that_was_typed);
     RUN(an_off_press_before_the_tick_is_still_an_off);
     RUN(the_hv_warning_redraws_when_the_output_changes);
+    RUN(settings_shuts_a_set_points_keypad_cleanly);
     return test_summary("servo");
 }
