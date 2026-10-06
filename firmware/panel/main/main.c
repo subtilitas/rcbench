@@ -373,6 +373,9 @@ typedef struct {
     /** And how many times the supply's output had been asked off; see
      *  s_supply_offs. */
     uint32_t         supply_offs;
+    /** And the PD mini's wiring as published then (s_pdmini_wiring): an ON
+     *  queued before an edit on SETUP is not applied after it. */
+    uint32_t         pdmini_wiring;
     /**
      * And what the render side knew of the touch stream when it queued
      * this: how many times it had dropped the screens' gestures for a loss
@@ -3006,8 +3009,8 @@ static void supply_service(void)
 
 /*
  * What the supply screen asked for.  An ON completes a hold, so it goes the
- * way an arm does: not past a stop, an OFF or a touch loss that came after
- * the screen posted it, and watched after it is taken until the render side
+ * way an arm does: not past a stop, an OFF, a change to the PD mini's
+ * wiring or a touch loss that came after the screen posted it, and watched after it is taken until the render side
  * has seen the output on (supply_watch_service()).  The operator repeats the
  * hold.
  */
@@ -3025,6 +3028,7 @@ static void apply_supply_cmd(const panel_cmd_t *pc)
         control_pump();
         if (pc->stops == arming_stop_count(&s_arm)
             && pc->supply_offs == atomic_load(&s_supply_offs)
+            && pc->pdmini_wiring == atomic_load(&s_pdmini_wiring)
             && arm_watch_take_ok(pc->loss_gen, atomic_load(&s_loss_gen),
                                  s_lost_notice_seq, pc->consumed_seq)) {
             /* At the set points stored before this ON was queued. */
@@ -5459,6 +5463,7 @@ static void flush_screen_commands(uint32_t stops_now)
         panel_cmd_t pc = { .kind = PANEL_CMD_SUPPLY, .supply = sc,
                            .stops = stops_now,
                            .supply_offs = atomic_load(&s_supply_offs),
+                           .pdmini_wiring = atomic_load(&s_pdmini_wiring),
                            .loss_gen = loss_gen,
                            .consumed_seq = consumed };
         send_cmd(&pc);

@@ -34,7 +34,8 @@ been run against a module.
     The band also says when the pins are refused, the output would not
     switch, or the set points would not take.
   - A change to the PD mini's pins or baud on SETUP switches the output
-    off, as enabling or disabling it does.
+    off, as enabling or disabling it does. An ON queued before such a change is
+    dropped rather than applied after it.
 - **The coprocessor drives the PD mini** on a PIO UART, on the two pins the
   SUPPLY link page (0x2A, protocol 4.3) names.
   - Wiring: refused on a pin that is reserved, bound to an output or the
