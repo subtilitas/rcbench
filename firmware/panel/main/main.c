@@ -51,6 +51,7 @@
 #include "servo_screen.h"
 #include "pdmini.h"
 #include "supply_link.h"
+#include "supply_page.h"
 #include "supply_screen.h"
 #include "outputs_screen.h"
 #include "overview_screen.h"
@@ -659,6 +660,9 @@ static atomic_bool s_supply_real;
 /* The PD mini's input in mV as its page last read, 0 while not known: the
  * screen keeps the voltage under it (PDMINI_HEADROOM_MV). */
 static atomic_uint s_supply_vin_mv;
+/* The PD mini's UART rate in baud as the coprocessor last reported it, for
+ * the SUPPLY screen's header; 0 while not known. */
+static atomic_uint s_supply_baud;
 /*
  * The two touch queues, numbered.  See touch_loss.h for why numbers and not
  * counts: a count raised on one core after the eviction it reports can be
@@ -3102,6 +3106,7 @@ static void supply_real_follow(void)
     if (real == s_supply_is_real) {
         if (rewired) {
             atomic_store(&s_supply_vin_mv, 0u);   /* other pins, perhaps */
+            atomic_store(&s_supply_baud, 0u);
         }
         if (rewired && real && s_supply_on) {
             supply_switch(false);
@@ -3115,6 +3120,7 @@ static void supply_real_follow(void)
     }
     s_supply_is_real = real;
     atomic_store(&s_supply_vin_mv, 0u);   /* another module, perhaps */
+    atomic_store(&s_supply_baud, 0u);
     supply_link_command(&s_supply_link, false,
                         (uint16_t)s_supply_set_mv_applied,
                         (uint16_t)s_supply_set_ma_applied);
@@ -4607,17 +4613,9 @@ static void supply_link_alerts(void)
     if ((ev & SUPPLY_LINK_EV_SET_STUCK) != 0u) {
         control_alert("PD mini set points would not take");
     }
-    if ((ev & SUPPLY_LINK_EV_BAUD_FOUND) != 0u) {
-        static const unsigned k_baud[] = { 9600u, 19200u, 38400u, 57600u,
-                                           115200u, 230400u, 460800u };
-        const unsigned found = s_supply_link.regs[LINK_SP_BAUD_FOUND];
-        if (found < 7u) {
-            char line[ALERT_MAX];
-            snprintf(line, sizeof(line), "PD mini answers at %u baud",
-                     k_baud[found]);
-            control_alert(line);
-        }
-    }
+    /* A rate AUTO found is not a fault: it is in the SUPPLY screen's
+     * header, not in the alert band, which stays until another alert
+     * replaces it. */
 }
 
 /*
@@ -4680,6 +4678,10 @@ static void supply_link_service(void)
         supply_link_read(&s_supply_link, read ? reply.regs : NULL, now_ms());
         if (read) {
             atomic_store(&s_supply_vin_mv, reply.regs[LINK_SP_VIN_MV]);
+            /* 0 for a rate still being looked for: no rate in the header. */
+            atomic_store(&s_supply_baud,
+                         (unsigned)supply_page_baud(
+                             reply.regs[LINK_SP_BAUD_FOUND]));
         }
     }
     supply_link_alerts();
@@ -4989,6 +4991,7 @@ static void link_came_up(const link_msg_t *reply)
      */
     s_supply_page = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 3u;
     atomic_store(&s_supply_vin_mv, 0u);
+    atomic_store(&s_supply_baud, 0u);
     /* 4.4 finds the module's rate itself, and has BAUD_FOUND. */
     s_supply_auto = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 4u;
     supply_link_lost(&s_supply_link);
@@ -5124,6 +5127,7 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
             s_supply_page = false;
             supply_link_lost(&s_supply_link);
             atomic_store(&s_supply_vin_mv, 0u);
+            atomic_store(&s_supply_baud, 0u);
         }
         /*
          * A sample exists only if the bench page was read.  A poll that timed
@@ -5883,6 +5887,8 @@ void app_main(void)
             supply_screen_set_model(!supply_real);
             overview_screen_set_supply_real(supply_real);
         }
+        supply_screen_set_baud(supply_real ? atomic_load(&s_supply_baud)
+                                           : 0u);
         supply_state_t sup;
         while (xQueueReceive(s_supply_q, &sup, 0) == pdTRUE) {
             supply_screen_set_output(sup.output);

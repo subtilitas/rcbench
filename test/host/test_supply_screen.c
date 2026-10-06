@@ -869,6 +869,68 @@ TEST_CASE(leaving_drops_the_question_and_the_overlays)
     CHECK_NEAR(supply_screen_set_v(), 6.2f, 1e-4f);
 }
 
+/* Pixels that differ in the header strip, y 0..23, between the two
+ * buffers. */
+static int header_differs(void)
+{
+    int differ = 0;
+    for (int y = 0; y < 24; ++y) {
+        for (int x = 0; x < W; ++x) {
+            differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
+        }
+    }
+    return differ;
+}
+
+/*
+ * The rate AUTO found is in the header, after ONLINE, and not in the alert
+ * band, which stays until another alert replaces it.  A change redraws the
+ * header without anything else moving.
+ */
+TEST_CASE(the_pd_minis_rate_is_shown_after_online)
+{
+    fresh();
+    supply_screen_set_model(false);
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    supply_screen_push(&st);
+    supply_screen_set_baud(0u);
+    scr->render(&cv, 0);
+    memcpy(fb2, fb, (size_t)W * H * sizeof(gfx_color_t));
+
+    supply_screen_set_baud(38400u);
+    scr->render(&cv, 0);
+    CHECK(header_differs() > 0);
+
+    /* The same rate again changes nothing. */
+    memcpy(fb2, fb, (size_t)W * H * sizeof(gfx_color_t));
+    supply_screen_set_baud(38400u);
+    scr->render(&cv, 0);
+    CHECK_EQ(header_differs(), 0);
+
+    /* Not while the module does not answer: NOT ANSWERING alone. */
+    st.online = false;
+    supply_screen_push(&st);
+    supply_screen_set_baud(0u);
+    scr->render(&cv, 0);
+    memcpy(fb2, fb, (size_t)W * H * sizeof(gfx_color_t));
+    supply_screen_set_baud(38400u);
+    scr->render(&cv, 0);
+    CHECK_EQ(header_differs(), 0);
+
+    /* Nor for the model. */
+    supply_screen_set_model(true);
+    st.online = true;
+    supply_screen_push(&st);
+    supply_screen_set_baud(0u);
+    scr->render(&cv, 0);
+    memcpy(fb2, fb, (size_t)W * H * sizeof(gfx_color_t));
+    supply_screen_set_baud(38400u);
+    scr->render(&cv, 0);
+    CHECK_EQ(header_differs(), 0);
+}
+
 TEST_CASE(a_trip_shows_on_the_mode_card)
 {
     fresh();
@@ -1273,6 +1335,7 @@ int main(void)
     RUN(each_framebuffer_is_updated_independently);
     RUN(a_set_point_moved_offline_repaints_the_cards_in_both_buffers);
     RUN(a_screen_without_a_sample_draws);
+    RUN(the_pd_minis_rate_is_shown_after_online);
     free(fb);
     free(fb2);
     return test_summary("supply_screen");

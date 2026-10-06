@@ -181,6 +181,7 @@ static struct {
     float           pend_v, pend_i;
     gfx_rect_t      apply_btn, discard_btn;
     bool            model;
+    uint32_t        baud;          /* PD mini UART rate; 0: not shown */
     /* The output as this screen believes it: what the supply reported, and
      * an OFF this screen has asked for and not yet seen answered. */
     bool            on;
@@ -518,6 +519,14 @@ void supply_screen_set_caps(const supply_caps_t *caps)
     ++s.set_rev;
     ++s.ctrl_rev;
     ++s.ov_rev;      /* a question open shows the change as snapped now */
+}
+
+void supply_screen_set_baud(uint32_t baud)
+{
+    if (s.baud != baud) {
+        s.baud = baud;
+        ++s.ctrl_rev;                   /* the header says it */
+    }
 }
 
 void supply_screen_set_model(bool model)
@@ -1121,9 +1130,13 @@ static void draw_header(gfx_canvas_t *c)
     const int x1 = SETB_X - 8;
     gfx_fill_rect(c, x0, 0, W - x0, UP_Y - 1, ui_theme_color(UI_C_BG));
     char line[64];
-    snprintf(line, sizeof(line), "%s   %s",
+    char rate[16] = "";
+    if (!s.model && s.sup.online && s.baud != 0u) {
+        snprintf(rate, sizeof(rate), " %lu", (unsigned long)s.baud);
+    }
+    snprintf(line, sizeof(line), "%s   %s%s",
              s.model ? "SUPPLY MODEL" : "PD MINI",
-             s.sup.online ? "ONLINE" : "NOT ANSWERING");
+             s.sup.online ? "ONLINE" : "NOT ANSWERING", rate);
     gfx_text(c, x0, HDR_Y + 1, line, &gfx_font_8x16,
              s.sup.online ? ui_theme_color(UI_C_TEXT_DIM)
                           : ui_theme_color(UI_C_WARN), 1);

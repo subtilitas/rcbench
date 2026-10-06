@@ -480,8 +480,9 @@ the module's DM, RX comes from its DP. The coprocessor refuses a pin that is
 reserved, bound to an output or the other pin. PD mini baud is the module's
 own UART Baudrate setting: 9600, 19200 (as shipped), 38400, 57600,
 115200, 230400 or 460800 baud, or AUTO. AUTO, the default, lets the
-coprocessor find it: it tries each of the 7 rates, one a second, and the
-band says the rate the module answered at.
+coprocessor find it: it tries each of the 7 rates, one a second. The
+SUPPLY header shows the rate in use after ONLINE, e.g. `ONLINE 38400`, with
+AUTO and with a fixed rate alike.
 
 ## Analyser
 
