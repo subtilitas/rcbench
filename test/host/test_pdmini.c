@@ -47,6 +47,10 @@ typedef struct {
     uint16_t on_at_mv;        /* the active slot's mV when it came on    */
     bool     mute;            /* takes writes, answers nothing           */
     uint32_t on_since;        /* when the output last came on            */
+    int      id_says;         /* READ_ID answers this, -1 the slot       */
+    bool     other_slot;      /* READ_DATA answers for the next slot     */
+    const char *who;          /* WHO_AM_I's text, NULL the module's      */
+    unsigned ignore_en;       /* OUTPUT_EN writes taken and not applied  */
     int      switch_to;       /* the buttons choose this slot, -1 none,  */
     uint16_t switch_mv;       /* once a READ_DATA answers with this      */
     uint32_t on_ms;           /* how long it was on, all told            */
@@ -104,12 +108,14 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
     }
     switch (p[0]) {
     case PDMINI_WHO_AM_I: {
-        static const char who[] = "WeAct Studio PD Power Mini V1 BUCK";
+        const char *who = (m.who != NULL) ? m.who
+                                          : "WeAct Studio PD Power Mini V1 BUCK";
+        const size_t len = strlen(who);
         uint8_t r[64];
         r[0] = PDMINI_WHO_AM_I;
-        r[1] = (uint8_t)(sizeof(who) - 1u);
-        memcpy(&r[2], who, sizeof(who) - 1u);
-        reply(r, 2u + sizeof(who) - 1u, m.whoami_crc);
+        r[1] = (uint8_t)len;
+        memcpy(&r[2], who, len);
+        reply(r, 2u + len, m.whoami_crc);
         break;
     }
     case PDMINI_READ_STATE: {
@@ -118,13 +124,15 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
         break;
     }
     case PDMINI_READ_ID: {
-        const uint8_t r[2] = { PDMINI_READ_ID, (uint8_t)m.slot };
+        const uint8_t r[2] = { PDMINI_READ_ID,
+                               (uint8_t)(m.id_says >= 0 ? m.id_says : m.slot) };
         reply(r, 2u, true);
         break;
     }
     case PDMINI_READ_DATA: {
         const uint8_t s = p[1];
-        const uint8_t r[6] = { PDMINI_READ_DATA, s,
+        const uint8_t r[6] = { PDMINI_READ_DATA,
+                               (uint8_t)(m.other_slot ? (s + 1u) % 5u : s),
                                (uint8_t)(m.mv[s] & 0xFFu), (uint8_t)(m.mv[s] >> 8),
                                (uint8_t)(m.ma[s] & 0xFFu), (uint8_t)(m.ma[s] >> 8) };
         reply(r, 6u, true);
@@ -150,6 +158,10 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
     }
     case PDMINI_OUTPUT_EN: {
         ++m.en_writes;
+        if (m.ignore_en > 0u) {
+            --m.ignore_en;
+            break;
+        }
         /* The later write wins; one for what is already on its way
          * changes nothing. */
         const bool target = (p[1] == m.on_arg) && m.input_ok;
@@ -184,6 +196,7 @@ static void fresh(void)
     m.mv[0] = 5000u;
     m.ma[0] = 1000u;
     m.switch_to = -1;
+    m.id_says   = -1;
     now = 1000u;
     pdmini_init(&d, &k_io, now);
 }
@@ -751,6 +764,94 @@ TEST_CASE(no_blind_off_goes_to_a_module_that_answers)
     CHECK_EQ(d.on_value, 0u);
 }
 
+/* An OFF that does not take is written again without the pause an ON
+ * waits out: four ignored, and the fifth goes straight on. */
+TEST_CASE(an_off_is_not_paused_by_writes_that_did_not_take)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(d.on_confirmed);
+    const unsigned writes = m.en_writes;
+    m.ignore_en = 4u;
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(!m.output);
+    CHECK_EQ(m.en_writes, writes + 5u);
+    run(600u, false);
+    CHECK(!pdmini_status(&d)->stuck);          /* seen off: not stuck */
+}
+
+/* A set point waiting for its pins when an OFF is asked for, with the
+ * output on, is not sent: the OFF goes first. */
+TEST_CASE(a_set_point_not_yet_sent_is_dropped_by_an_off)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(m.output);
+    pdmini_want(&d, true, 15000u, 1000u);
+    for (unsigned k = 0u; k < 3000u
+         && !(d.phase == PD_ATTACH && d.cmd == PDMINI_OUTPUT_DATA); ++k) {
+        run(1u, false);
+    }
+    CHECK(d.phase == PD_ATTACH);
+    pdmini_want(&d, false, 15000u, 1000u);
+    const unsigned data = m.data_writes;
+    run(5u, false);
+    CHECK_EQ(m.data_writes, data);
+    run(600u, false);
+    CHECK(!m.output);
+}
+
+/* A slot number past the module's five is no slot: nothing is written to
+ * a slot taken for it, and nothing switched on. */
+TEST_CASE(a_slot_past_four_is_no_slot)
+{
+    fresh();
+    m.slot    = 2;
+    m.mv[2]   = 20000u;
+    m.id_says = 7;
+    run(100u, false);
+    pdmini_want(&d, true, 12000u, 1500u);
+    run(4000u, false);
+    CHECK(!m.output);
+    CHECK_EQ(m.en_writes, 0u);
+    CHECK_EQ(m.data_writes, 0u);
+    CHECK(pdmini_status(&d)->errors >= 3u);
+}
+
+/* Set points answered for another slot than asked fail, and do not hold
+ * the driver asking for them again and again. */
+TEST_CASE(set_points_for_another_slot_fail)
+{
+    fresh();
+    m.other_slot = true;
+    run(100u, false);
+    pdmini_want(&d, false, 9000u, 700u);
+    run(3000u, false);
+    CHECK(pdmini_status(&d)->errors >= 3u);
+    CHECK(m.reads[PDMINI_READ_DATA] < 20u);
+    CHECK_EQ(m.data_writes, 0u);
+}
+
+/* Another device that frames a WHO_AM_I reply the same way is not taken
+ * for the module, and nothing is written to it. */
+TEST_CASE(another_device_is_not_the_module)
+{
+    fresh();
+    m.who = "SOMETHING ELSE V2";
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(3000u, false);
+    CHECK(!pdmini_status(&d)->online);
+    CHECK_EQ(m.en_writes, 0u);
+    CHECK_EQ(m.data_writes, 0u);
+    CHECK_EQ(m.reads[PDMINI_READ_STATE], 0u);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -804,5 +905,10 @@ int main(void)
     RUN(an_owed_off_outlasts_the_rounds_that_find_nothing);
     RUN(no_blind_off_goes_to_a_module_that_answers);
     RUN(readings_are_taken_past_half_the_clock);
+    RUN(an_off_is_not_paused_by_writes_that_did_not_take);
+    RUN(a_set_point_not_yet_sent_is_dropped_by_an_off);
+    RUN(a_slot_past_four_is_no_slot);
+    RUN(set_points_for_another_slot_fail);
+    RUN(another_device_is_not_the_module);
     return test_summary("pdmini");
 }

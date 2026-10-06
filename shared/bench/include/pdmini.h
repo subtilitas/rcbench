@@ -12,7 +12,9 @@
  * an early read of a module still settling is not taken for the answer --
  * a set point with READ_OUTPUT_DATA.
  *
- * An OFF goes first, before anything else waiting.  An OFF asked for while
+ * An OFF goes first, before anything else waiting: an ON or a set point
+ * not yet sent is dropped, and an OFF that does not take is written again
+ * without pause.  An OFF asked for while
  * an ON is being confirmed is written at once when a read-back has shown
  * which argument means off; before that, the state is read back to back
  * for 1000 ms from the ON and the output switched off the moment it reads
@@ -71,6 +73,11 @@ extern "C" {
 #define PDMINI_V_MAX_MV  20000u
 #define PDMINI_I_MIN_MA     50u
 #define PDMINI_I_MAX_MA   3000u
+
+/** What WHO_AM_I's reply holds from this module: "WeAct Studio PD Power
+ *  Mini V1 BUCK" in the bench station's notes of its 2026-09-11 run.  A
+ *  reply without it is another device, and nothing is written to it. */
+#define PDMINI_WHO "PD Power Mini"
 
 /** Commands this driver sends. */
 enum {
