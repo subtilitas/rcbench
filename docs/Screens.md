@@ -266,7 +266,11 @@ OUTPUT page says what became of it:
 A coprocessor restart, and every binding written on OUTPUTS, put each slot
 back at its own rate, 50 Hz for a servo; the screen sends its rate again with
 its next position, against the binding then in force. A binding is not
-written while the reset to each slot's own rate goes unanswered.
+written while the reset to each slot's own rate goes unanswered, and the bench
+does not arm, from any screen, while the rate the surfaces run at is not
+known: the arm is refused with `servo frame rate not known -- arm again`, and
+an arm made while the link was down reaches the coprocessor only once the
+reset has landed.
 
 The OUTPUT settings are kept for the session; the TEST, LIMITS and DUT
 settings are kept in NVS (non-volatile storage) and written as on SUPPLY.
