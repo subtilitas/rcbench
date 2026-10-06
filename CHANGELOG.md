@@ -8,8 +8,19 @@ history is in git.
 
 ### Added
 
-- **A driver for the WeAct PD Power Mini V1 Buck** (`pdmini`), not yet
-  wired to the coprocessor.
+- **The coprocessor drives the PD mini** on a PIO UART, on the two pins the
+  SUPPLY link page (0x2A, protocol 4.3) names.
+  - Wiring: refused on a pin that is reserved, bound to an output or the
+    other pin, and while the output is asked on or may be on -- read on,
+    an ON not yet confirmed, or an OFF owed to a module that stopped
+    answering. The pins are reserved from the outputs while held.
+  - Output: an ON needs a live heartbeat, and the output goes off when the
+    heartbeat stops.
+  - Reading back: the page carries what the module last said, with flags
+    for an output that would not switch, set points that would not take,
+    and an output that is or may be on.
+  - The panel does not write the page yet.
+- **A driver for the WeAct PD Power Mini V1 Buck** (`pdmini`).
   - Protocol: the CRC8 (polynomial 0x31, initial 0xFF) checked against all
     fifteen values the vendor's sheet prints. Reply framing with WHO_AM_I
     ending in 0x0A or a CRC. A reply has 400 ms to start, 60 ms more per

@@ -108,6 +108,7 @@ TRACKED = [
     "shared/outputs/out_bind.c",
     "shared/outputs/out_pwm_map.c",
     "shared/outputs/servo_page.c",
+    "shared/outputs/supply_page.c",
     "shared/outputs/out_store_map.c",
     "shared/bench/telemetry_sim.c",
     "shared/bench/supply.c",

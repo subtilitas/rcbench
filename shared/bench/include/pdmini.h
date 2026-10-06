@@ -224,6 +224,12 @@ void pdmini_step(pdmini_t *d, uint32_t now_ms);
 
 const pdmini_status_t *pdmini_status(const pdmini_t *d);
 
+/** Whether the output is on or may be: it reads on, an ON waits to be sent
+ *  or confirmed or went out unsettled, or an OFF is owed to a module that
+ *  went quiet with it on.
+ *  Its wiring is not to be taken from under it while this holds. */
+bool pdmini_may_be_on(const pdmini_t *d);
+
 #ifdef __cplusplus
 }
 #endif

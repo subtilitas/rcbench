@@ -47,6 +47,7 @@ add_executable(rcbench-iomcu
     src/xl2515.c
     src/out_pwm.c
     src/out_ppm.c
+    src/pd_uart.c
     src/out_dshot.c
     src/outputs_hw.c
     src/out_store.c
@@ -63,6 +64,8 @@ pico_generate_pio_header(rcbench-iomcu
     "${CMAKE_CURRENT_LIST_DIR}/src/ppm.pio")
 pico_generate_pio_header(rcbench-iomcu
     "${CMAKE_CURRENT_LIST_DIR}/src/dshot.pio")
+pico_generate_pio_header(rcbench-iomcu
+    "${CMAKE_CURRENT_LIST_DIR}/src/pd_uart.pio")
 
 # The coprocessor's own sources are held to the same warnings as the host
 # build, scoped to this target so the SDK's headers are not judged by them.

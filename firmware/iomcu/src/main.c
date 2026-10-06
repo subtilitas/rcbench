@@ -35,7 +35,10 @@
 #include "outputs.h"
 #include "outputs_hw.h"
 #include "outputs_pages.h"
+#include "pd_uart.h"
+#include "pdmini.h"
 #include "servo_page.h"
+#include "supply_page.h"
 #include "xl2515.h"
 
 /* ------------------------------------------------------------- the pages */
@@ -53,6 +56,12 @@ typedef struct {
 static iomcu_state_t s_state;
 /* The SERVO page: the surfaces' frame rate and their sweep.  Not kept. */
 static servo_page_t s_servo;
+/* The SUPPLY page and the PD mini it drives on a PIO UART.  Not kept. */
+static supply_page_t s_supply;
+static pdmini_t      s_pd;
+static bool          s_pd_open;      /* the UART claimed for its pins */
+/* What the board and this file hold, before the supply takes its pins. */
+static uint64_t      s_base_reserved;
 static link_dev_t    s_dev;
 
 /*
@@ -240,6 +249,60 @@ static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     for (uint8_t i = 0; i < n; ++i) {
         out[i] = s->slots[off + i];
     }
+}
+
+/*
+ * The supply's pins: reserved from the outputs while it holds them, and the
+ * PIO UART claimed for them.  False when no PIO block can reach them or has
+ * room.
+ */
+static bool supply_rewire(void)
+{
+    pd_uart_close();
+    s_pd_open = false;
+    outputs_reserve_pins(&s_outputs,
+                         s_base_reserved | supply_page_pins(&s_supply));
+    if (!supply_page_enabled(&s_supply)) {
+        return true;
+    }
+    if (!pd_uart_open(supply_page_tx(&s_supply), supply_page_rx(&s_supply),
+                      supply_page_baud(s_supply.regs[LINK_SP_BAUD]))) {
+        return false;
+    }
+    const pdmini_io_t io = { pd_uart_attach, pd_uart_detach, pd_uart_send,
+                             NULL };
+    pdmini_init(&s_pd, &io, s_now_ms);
+    s_pd_open = true;
+    return true;
+}
+
+static void supply_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    supply_page_read(&s_supply, off, n, out);
+}
+
+static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
+                            const uint16_t *in)
+{
+    (void)ctx;
+    const supply_page_t was = s_supply;
+    const uint8_t nack = supply_page_write(&s_supply, off, n, in, &s_outputs,
+                                           s_beat.alive && !s_dev.failsafe);
+    if (nack != 0u) {
+        return nack;
+    }
+    const bool rewired =
+        supply_page_pins(&s_supply) != supply_page_pins(&was)
+        || s_supply.regs[LINK_SP_BAUD] != was.regs[LINK_SP_BAUD];
+    if (rewired && !supply_rewire()) {
+        /* No UART for those pins: the wiring is as it was, and the panel
+         * is told rather than shown a supply that is never there. */
+        s_supply = was;
+        (void)supply_rewire();
+        return LINK_NACK_BAD_VALUE;
+    }
+    return 0u;
 }
 
 static void servo_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -503,6 +566,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_ART_DATA,  LINK_AD_COUNT,  art_data_read,  art_data_write },
     { LINK_PAGE_PADS,      LINK_PAD_COUNT, pads_read,      NULL },
     { LINK_PAGE_SERVO,     LINK_SV_COUNT,  servo_read,     servo_write },
+    { LINK_PAGE_SUPPLY,    LINK_SP_COUNT,  supply_read,    supply_write },
 };
 
 /* ------------------------------------------------------------ the heartbeat */
@@ -955,9 +1019,10 @@ int main(void)
      * file assigns, so the two disagreeing costs a pin rather than the safety
      * line.
      */
-    outputs_reserve_pins(&s_outputs,
-                         outbind_reserved_mask(IOMCU_BOARD_ID)
-                             | IOMCU_RESERVED_PINS | IOMCU_ABSENT_PINS);
+    s_base_reserved = outbind_reserved_mask(IOMCU_BOARD_ID)
+                      | IOMCU_RESERVED_PINS | IOMCU_ABSENT_PINS;
+    outputs_reserve_pins(&s_outputs, s_base_reserved);
+    supply_page_init(&s_supply);
     (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
     outputs_chan_cfg_apply(&s_outputs, s_state.chan_cfg);
     outputs_slots_apply(&s_outputs, s_state.slots);
@@ -1068,6 +1133,17 @@ int main(void)
                     now);
         /* The sweep's command for this pass, before the step slews to it. */
         (void)servo_page_step(&s_servo, &s_outputs, now);
+        /* The supply: its bytes in, a step of its driver, and the output off
+         * whenever the panel's heartbeat is not there to switch it off. */
+        if (s_pd_open) {
+            uint8_t b;
+            while (pd_uart_getc(&b)) {
+                pdmini_rx(&s_pd, b, now);
+            }
+            pdmini_step(&s_pd, now);
+        }
+        supply_page_step(&s_supply, s_beat.alive && !s_dev.failsafe,
+                         s_pd_open ? &s_pd : NULL);
         outputs_step(&s_outputs, now);
         /* Straight after the step, so what reaches a pin is what the bank
          * has just decided rather than what it decided a pass ago. */

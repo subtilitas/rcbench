@@ -43,6 +43,7 @@ typedef enum {
     LINK_PAGE_ART_DATA  = 0x27, /**< and the picture itself, a block at a time */
     LINK_PAGE_PADS      = 0x28, /**< the pads that are not pins, read-only  */
     LINK_PAGE_SERVO     = 0x29, /**< the surfaces' frame rate, not kept     */
+    LINK_PAGE_SUPPLY    = 0x2A, /**< the PD mini on a PIO UART, not kept    */
 } link_page_id_t;
 
 /*
@@ -53,7 +54,7 @@ typedef enum {
  * older host can ignore.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 2u
+#define LINK_PROTOCOL_MINOR 3u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -166,6 +167,60 @@ enum {
 };
 /** SWEEP's value for holding the surfaces where their outputs are. */
 #define LINK_SV_HOLD 4u
+
+/* --- the SUPPLY page (protocol 4.3): a WeAct PD Power Mini V1 Buck on a
+ *     PIO UART the coprocessor runs on two of its pins (shared/bench/
+ *     pdmini.h).
+ *
+ *     ENABLE to BAUD are its wiring, one frame: 1 to drive it, the GPIO the
+ *     UART transmits on (to the module's DM) and receives on (its DP), and
+ *     the module's UART Baudrate setting, 0 to 6 for 9600 to 460800 baud.
+ *     Refused with BAD_VALUE: a pin that is reserved, bound to an output or
+ *     the other pin, a baud out of range, or any change while the output is
+ *     asked on or may be on (FLAGS bit 6).  The pins it takes are no
+ *     output's while it holds them.
+ *
+ *     OUTPUT to SET_MA are what it is to do, one frame: 1 for the output
+ *     on, the set points in mV and mA, clamped to the module's 1 to 20 V
+ *     and 0.05 to 3 A.  An ON is refused with NOT_ARMED without a live
+ *     heartbeat, and the output goes off when the heartbeat stops.
+ *
+ *     FLAGS onwards are read only, what the module last said: bit 0
+ *     online, bit 1 output on, bits 3..2 the mode (0 normal, 1 constant
+ *     current, 2 overcurrent), bit 4 an output that would not switch,
+ *     bit 5 set points that would not take, bit 6 an output that is on or
+ *     may be -- read on, an ON not yet confirmed, or an OFF owed to a
+ *     module that stopped answering;
+ *     the output's voltage and current, the set points read back from it,
+ *     the input's state and voltage, and the counts of readings taken and
+ *     of transactions that failed, modulo 65536.
+ *
+ *     Not kept: a coprocessor restart drives no supply until written. */
+enum {
+    LINK_SP_ENABLE    = 0,
+    LINK_SP_TX_PIN    = 1,
+    LINK_SP_RX_PIN    = 2,
+    LINK_SP_BAUD      = 3,
+    LINK_SP_OUTPUT    = 4,
+    LINK_SP_SET_MV    = 5,
+    LINK_SP_SET_MA    = 6,
+    LINK_SP_FLAGS     = 7,   /**< read only from here */
+    LINK_SP_V_MV      = 8,
+    LINK_SP_I_MA      = 9,
+    LINK_SP_SET_MV_RB = 10,
+    LINK_SP_SET_MA_RB = 11,
+    LINK_SP_IN_STATE  = 12,
+    LINK_SP_VIN_MV    = 13,
+    LINK_SP_SAMPLES   = 14,
+    LINK_SP_ERRORS    = 15,
+    LINK_SP_COUNT     = 16,
+};
+#define LINK_SP_ONLINE  0x01u
+#define LINK_SP_ON      0x02u
+#define LINK_SP_MODE(f) (((f) >> 2) & 3u)
+#define LINK_SP_STUCK   0x10u
+#define LINK_SP_SET_STUCK 0x20u
+#define LINK_SP_LIVE      0x40u
 
 #define LINK_OS_RANGE_OF(first, count) \
     ((uint16_t)((((unsigned)(first) & 0xFFu) << 8) | ((unsigned)(count) & 0xFFu)))

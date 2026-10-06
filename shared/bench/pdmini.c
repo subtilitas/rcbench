@@ -133,6 +133,13 @@ const pdmini_status_t *pdmini_status(const pdmini_t *d)
     return (d != NULL) ? &d->st : NULL;
 }
 
+bool pdmini_may_be_on(const pdmini_t *d)
+{
+    return d != NULL
+           && (d->st.output || (d->en_pending && d->en_for) || d->off_owed
+               || d->on_sent);
+}
+
 /* ------------------------------------------------------------ transactions */
 
 static void start(pdmini_t *d, uint32_t now, const uint8_t *req, size_t n,
