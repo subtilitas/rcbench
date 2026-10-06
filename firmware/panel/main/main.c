@@ -373,9 +373,10 @@ typedef struct {
     /** And how many times the supply's output had been asked off; see
      *  s_supply_offs. */
     uint32_t         supply_offs;
-    /** And the PD mini's wiring as published then (s_pdmini_wiring): an ON
-     *  queued before an edit on SETUP is not applied after it. */
-    uint32_t         pdmini_wiring;
+    /** And how many edits the PD mini's wiring had had (s_pdmini_edits):
+     *  an ON queued before an edit on SETUP is not applied after it, even
+     *  one undone since. */
+    uint32_t         pdmini_edits;
     /**
      * And what the render side knew of the touch stream when it queued
      * this: how many times it had dropped the screens' gestures for a loss
@@ -645,6 +646,9 @@ static atomic_uint s_supply_ons_taken;
  * the baud setting.  Published as the pole count is; see publish_pdmini().
  */
 static atomic_uint s_pdmini_wiring;
+/* And how many times it has been edited: an edit undone before a queued ON
+ * is applied leaves the word as it was, but not this count. */
+static atomic_uint s_pdmini_edits;
 /*
  * Whether the SUPPLY screen drives the PD mini rather than the panel's
  * model: SETUP INTERFACES enables it.  Stored by the control task, read by
@@ -804,6 +808,7 @@ static void publish_pdmini(void)
         | ((unsigned)((rx < 0) ? 0 : rx + 1) & 0xFFu) << 8
         | ((unsigned)settings_get_int(SET_PDMINI_BAUD) & 0xFFu);
     atomic_store(&s_pdmini_wiring, word);
+    atomic_fetch_add(&s_pdmini_edits, 1u);
 }
 
 static supply_wiring_t pdmini_wiring(void)
@@ -3028,7 +3033,7 @@ static void apply_supply_cmd(const panel_cmd_t *pc)
         control_pump();
         if (pc->stops == arming_stop_count(&s_arm)
             && pc->supply_offs == atomic_load(&s_supply_offs)
-            && pc->pdmini_wiring == atomic_load(&s_pdmini_wiring)
+            && pc->pdmini_edits == atomic_load(&s_pdmini_edits)
             && arm_watch_take_ok(pc->loss_gen, atomic_load(&s_loss_gen),
                                  s_lost_notice_seq, pc->consumed_seq)) {
             /* At the set points stored before this ON was queued. */
@@ -5463,7 +5468,7 @@ static void flush_screen_commands(uint32_t stops_now)
         panel_cmd_t pc = { .kind = PANEL_CMD_SUPPLY, .supply = sc,
                            .stops = stops_now,
                            .supply_offs = atomic_load(&s_supply_offs),
-                           .pdmini_wiring = atomic_load(&s_pdmini_wiring),
+                           .pdmini_edits = atomic_load(&s_pdmini_edits),
                            .loss_gen = loss_gen,
                            .consumed_seq = consumed };
         send_cmd(&pc);
