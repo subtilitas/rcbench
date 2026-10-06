@@ -319,6 +319,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->identified  = true;
         d->st.online   = true;
         d->input_known = false;    /* read again before a set point */
+        d->input_seen  = false;    /* perhaps other firmware: asked again */
         d->state_known = false;
         d->blind_due   = false;
         /* The argument learnt is kept: the same module back after a fault
@@ -650,6 +651,14 @@ static bool next_job(pdmini_t *d, uint32_t now)
         }
         const uint16_t mv = target_mv(d);
         if (d->st.set_mv != mv || d->st.set_ma != d->want_ma) {
+            /* Set points changing faster than the readings come round --
+             * a slider dragged -- still have the input read on time. */
+            if (d->input_seen
+                && (uint32_t)(now - d->last_input) >= PDMINI_STATE_MS) {
+                d->last_input = now;
+                read1(d, now, PDMINI_READ_INPUT);
+                return true;
+            }
             const uint8_t req[6] = {
                 PDMINI_OUTPUT_DATA, (uint8_t)d->slot,
                 (uint8_t)(mv & 0xFFu), (uint8_t)(mv >> 8),

@@ -1378,6 +1378,29 @@ TEST_CASE(nothing_is_switched_on_before_the_input_is_read)
     CHECK(!m.output);
 }
 
+/* Set points changed every 50 ms, faster than a write goes round: the input
+ * is still read every half second, and a drop in it caps the next write. */
+TEST_CASE(a_dragged_slider_does_not_starve_the_input)
+{
+    fresh();
+    m.input_mv = 12000u;
+    run(100u, false);
+    run(1500u, false);
+    const unsigned inputs = m.reads[PDMINI_READ_INPUT];
+    for (int k = 0; k < 40; ++k) {
+        pdmini_want(&d, false, (uint16_t)(6000u + 100u * (unsigned)(k % 20)),
+                    1000u);
+        if (k == 20) {
+            m.input_mv = 5000u;                /* the source sagged */
+        }
+        run(50u, false);
+    }
+    CHECK(m.reads[PDMINI_READ_INPUT] >= inputs + 3u);
+    pdmini_want(&d, false, 7000u, 1000u);
+    run(1500u, false);
+    CHECK_EQ(m.mv[0], 5000u - PDMINI_HEADROOM_MV);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -1447,6 +1470,7 @@ int main(void)
     RUN(an_unanswered_input_read_is_given_up);
     RUN(a_set_point_over_the_input_is_kept_under_it);
     RUN(nothing_is_switched_on_before_the_input_is_read);
+    RUN(a_dragged_slider_does_not_starve_the_input);
     RUN(an_argument_outlasts_a_module_that_comes_back);
     RUN(an_output_that_came_on_by_itself_is_not_relied_on);
     RUN(an_on_sent_and_unsettled_is_owed_an_off);
