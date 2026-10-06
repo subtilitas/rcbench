@@ -17,15 +17,21 @@ history is in git.
   - Output: an ON needs a live heartbeat and its set points in the same
     frame, and the output goes off when the heartbeat stops -- applied to
     the driver before it steps, so an ON queued in that pass is not sent.
+  - Set points under the module's least, 1000 mV and 50 mA, are taken and
+    read back at it.
+  - Flash saves wait while the supply is asked on or may be on, as they do
+    while the outputs drive; a wiring write checks the driver itself, not
+    the flags of the pass before.
   - No output slot is bound on a pin the supply holds: the OUTPUTS write is
     refused rather than stored.
   - The wiring is kept in the coprocessor's flash with the output bindings
-    and driven at boot with the output off, so a module left on is
+    and driven at boot, after the outputs' hardware, with the output off,
+    so a module left on is
     switched off after a restart. The store's record is version 4; output
     bindings saved by the build before still load.
   - The PD mini driver counts failed state reads on their own: three in a
     row take the module for gone however the other readings are answered,
-    and an OFF it is owed goes blind.
+    and an OFF it is owed goes blind if the last of them was silent.
   - Reading back: the page carries what the module last said, with flags
     for an output that would not switch, set points that would not take,
     and an output that is or may be on.

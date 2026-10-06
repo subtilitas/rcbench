@@ -51,6 +51,7 @@ typedef struct {
     bool     other_slot;      /* READ_DATA answers for the next slot     */
     bool     no_input;        /* firmware without READ_INPUT_STATE       */
     bool     no_state;        /* READ_OUTPUT_STATE unanswered             */
+    bool     junk_state;      /* answered with a broken CRC instead      */
     const char *who;          /* WHO_AM_I's text, NULL the module's      */
     unsigned ignore_en;       /* OUTPUT_EN writes taken and not applied  */
     uint32_t byte_gap;        /* ms between reply bytes, 0 for 1         */
@@ -117,6 +118,12 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
     }
     ++m.reads[p[0]];
     if (m.no_state && p[0] == PDMINI_READ_STATE) {
+        return;
+    }
+    if (m.junk_state && p[0] == PDMINI_READ_STATE) {
+        const uint8_t r[2] = { PDMINI_READ_STATE, 0x55u };
+        reply(r, 2u, true);
+        m.out[2] ^= 0x5Au;                     /* the CRC broken */
         return;
     }
     if (m.no_input && p[0] == PDMINI_READ_INPUT) {
@@ -1211,6 +1218,24 @@ TEST_CASE(state_reads_that_fail_are_not_hidden_by_the_rest)
     CHECK(pdmini_status(&d)->errors >= 3u);
 }
 
+/* State reads answered with garbage are not silence: no blind OFF goes,
+ * and the module is asked who it is first. */
+TEST_CASE(state_reads_answered_wrongly_send_nothing_blind)
+{
+    fresh();
+    run(100u, false);
+    learn_on_twice();
+    m.junk_state = true;
+    m.ignore_en  = 1u;                         /* the OFF itself is lost */
+    pdmini_want(&d, false, 5000u, 1000u);
+    run_to_en_write(m.en_writes + 1u);         /* the ordinary OFF */
+    const unsigned writes = m.en_writes;
+    const unsigned asked = m.reads[PDMINI_WHO_AM_I];
+    run(3000u, false);
+    CHECK_EQ(m.en_writes, writes);
+    CHECK(m.reads[PDMINI_WHO_AM_I] > asked);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -1283,5 +1308,6 @@ int main(void)
     RUN(an_on_sent_and_unsettled_is_owed_an_off);
     RUN(live_set_points_that_will_not_take_switch_the_output_off);
     RUN(state_reads_that_fail_are_not_hidden_by_the_rest);
+    RUN(state_reads_answered_wrongly_send_nothing_blind);
     return test_summary("pdmini");
 }

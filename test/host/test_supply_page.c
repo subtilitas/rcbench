@@ -174,6 +174,17 @@ TEST_CASE(no_slot_binds_a_held_pin)
     CHECK_EQ(supply_page_slots_check(&pg, NULL), LINK_NACK_BAD_VALUE);
 }
 
+/* Set points under the module's least are taken at its least, and read
+ * back so. */
+TEST_CASE(low_set_points_read_back_as_the_module_takes_them)
+{
+    fresh();
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
+    CHECK_EQ(command(0u, 0u, 10u, true), 0u);
+    CHECK_EQ(reg(LINK_SP_SET_MV), PDMINI_V_MIN_MV);
+    CHECK_EQ(reg(LINK_SP_SET_MA), PDMINI_I_MIN_MA);
+}
+
 TEST_CASE(read_only_registers_and_the_page_end_are_refused)
 {
     fresh();
@@ -250,6 +261,7 @@ int main(void)
     RUN(the_wiring_waits_for_an_output_that_may_still_be_on);
     RUN(an_on_needs_its_whole_frame);
     RUN(no_slot_binds_a_held_pin);
+    RUN(low_set_points_read_back_as_the_module_takes_them);
     RUN(read_only_registers_and_the_page_end_are_refused);
     RUN(the_step_passes_the_page_to_the_driver_and_back);
     return test_summary("supply_page");

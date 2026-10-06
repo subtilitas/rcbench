@@ -140,6 +140,16 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
             }
         }
     }
+    if (command) {
+        /* Up to the module's least, as the driver will take them, so the
+         * page reads back what the module is asked. */
+        if (next[LINK_SP_SET_MV] < PDMINI_V_MIN_MV) {
+            next[LINK_SP_SET_MV] = (uint16_t)PDMINI_V_MIN_MV;
+        }
+        if (next[LINK_SP_SET_MA] < PDMINI_I_MIN_MA) {
+            next[LINK_SP_SET_MA] = (uint16_t)PDMINI_I_MIN_MA;
+        }
+    }
     memcpy(p->regs, next, sizeof(next));
     return 0u;
 }

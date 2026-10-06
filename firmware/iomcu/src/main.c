@@ -288,6 +288,11 @@ static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
                             const uint16_t *in)
 {
     (void)ctx;
+    /* What the driver says now, not what the last pass published: replies
+     * taken since may have shown the module come on by itself. */
+    if (s_pd_open && pdmini_may_be_on(&s_pd)) {
+        s_supply.regs[LINK_SP_FLAGS] |= LINK_SP_LIVE;
+    }
     const supply_page_t was = s_supply;
     const uint8_t nack = supply_page_write(&s_supply, off, n, in, &s_outputs,
                                            s_beat.alive && !s_dev.failsafe);
@@ -1039,19 +1044,6 @@ int main(void)
     outputs_chan_cfg_apply(&s_outputs, s_state.chan_cfg);
     outputs_slots_apply(&s_outputs, s_state.slots);
     /*
-     * The PD mini's wiring, as last written, driven with the output off: a
-     * module this end left on before it restarted is identified, read on and
-     * switched off before any panel has written the page.  Through the
-     * page's own checks, after the slots, so a pin a slot holds is refused.
-     */
-    if (have_saved && saved.supply[LINK_SP_ENABLE] != 0u
-        && supply_page_write(&s_supply, LINK_SP_ENABLE, LINK_SP_OUTPUT,
-                             saved.supply, &s_outputs, false) == 0u
-        && !supply_rewire()) {
-        supply_page_init(&s_supply);
-        (void)supply_rewire();
-    }
-    /*
      * The page takes its values from the bank, not the other way round.
      * Nobody has commanded anything yet, and the defaults above filled the
      * page with zero -- which is a throttle's rest and a surface's low
@@ -1064,6 +1056,21 @@ int main(void)
     outputs_channels_from_bank(&s_outputs, s_state.channels);
     outputs_hw_init();
     hw_apply();
+    /*
+     * The PD mini's wiring, as last written, driven with the output off: a
+     * module this end left on before it restarted is identified, read on and
+     * switched off before any panel has written the page.  Through the
+     * page's own checks, after the slots, so a pin a slot holds is refused;
+     * and after the slots' hardware, so the UART takes what PIO the outputs
+     * leave, as it does when written at run time, and never displaces one.
+     */
+    if (have_saved && saved.supply[LINK_SP_ENABLE] != 0u
+        && supply_page_write(&s_supply, LINK_SP_ENABLE, LINK_SP_OUTPUT,
+                             saved.supply, &s_outputs, false) == 0u
+        && !supply_rewire()) {
+        supply_page_init(&s_supply);
+        (void)supply_rewire();
+    }
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 
     heartbeat_init();
@@ -1213,7 +1220,12 @@ int main(void)
          * much of the gap after it is left.
          */
         const uint32_t quiet = (uint32_t)(now - s_last_rx_ms);
-        const bool driving = outputs_driving(&s_outputs);
+        /* And the supply, asked on or perhaps on: its UART replies would
+         * overrun the 8-byte FIFO in a 19 ms window, and an OFF asked over
+         * the link would wait for it. */
+        const bool driving = outputs_driving(&s_outputs)
+                             || s_supply.regs[LINK_SP_OUTPUT] != 0u
+                             || (s_pd_open && pdmini_may_be_on(&s_pd));
         const out_store_step_t step = out_store_tick(driving, quiet, now);
         switch (step) {
         case OUT_STORE_WROTE:

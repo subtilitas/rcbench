@@ -190,9 +190,11 @@ static void finish(pdmini_t *d, uint32_t now, bool ok)
                             && ++d->state_fails >= PDMINI_FAILS;
     if (state_lost) {
         /* The same module, answering all but this: an OFF it is owed is
-         * sent blind straight away, as after a silent WHO_AM_I. */
+         * sent blind straight away, as after a silent WHO_AM_I -- only if
+         * this read was silent too.  Any answer to it is re-identified
+         * first, as it may not be the module. */
         d->state_fails = 0u;
-        d->blind_due   = true;
+        d->blind_due   = d->rx_n == 0u;
     }
     if (++d->fails >= PDMINI_FAILS || state_lost) {
         /*
