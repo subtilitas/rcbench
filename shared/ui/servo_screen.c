@@ -913,13 +913,15 @@ void servo_screen_cancel_arm(void)
     /* And the two warnings' holds: a voltage past a standard servo's rating
      * or a profile that can destroy one is not applied by a hold the stop
      * interrupted.  The warnings stay open; a new hold applies them. */
+    /* An APPLY being pressed -- a tap on the question as well as a hold --
+     * is let go of: its release must not apply a set point after the stop. */
+    if (s.ov_have && (s.ov_pressed == OP_ASK_APPLY
+                      || s.ov_pressed == OP_WARN_APPLY)) {
+        s.ov_have    = false;           /* the press is over, as ov_let_go() */
+        s.ov_pressed = OP_NONE;
+        ++s.ctrl_rev;
+    }
     if (s.ask.down || s.warn.down) {
-        if (s.ov_have && (s.ov_pressed == OP_ASK_APPLY
-                          || s.ov_pressed == OP_WARN_APPLY)) {
-            s.ov_have    = false;       /* the press is over, as ov_let_go() */
-            s.ov_pressed = OP_NONE;
-            ++s.ctrl_rev;
-        }
         ui_hold_reset(&s.ask.hold);
         ui_hold_reset(&s.warn.hold);
         s.ask.down  = false;

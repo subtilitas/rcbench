@@ -1352,6 +1352,20 @@ TEST_CASE(a_dropped_question_lets_go_of_its_apply)
     CHECK_EQ(supply_screen_set_v(), was);
 }
 
+/* The same on SUPPLY with the output already on: STOP lets go of APPLY. */
+TEST_CASE(stop_lets_go_of_supplys_apply)
+{
+    fresh();
+    supply_screen_set_output(true);
+    const float was = supply_screen_set_v();
+    tap(CARD_X, CARD_V_Y);
+    keys("7");
+    ev(APPLY_X, ASK_Y, TOUCH_EVENT_DOWN, 1);
+    supply_screen_cancel_on();
+    ev(APPLY_X, ASK_Y, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(supply_screen_set_v(), was);
+}
+
 int main(void)
 {
     RUN(reset_pd_mini_is_offered_only_for_the_module);
@@ -1403,6 +1417,7 @@ int main(void)
     RUN(a_question_for_an_on_that_was_dropped_goes);
     RUN(an_apply_held_as_its_on_is_dropped_applies_nothing);
     RUN(a_dropped_question_lets_go_of_its_apply);
+    RUN(stop_lets_go_of_supplys_apply);
     free(fb);
     free(fb2);
     return test_summary("supply_screen");

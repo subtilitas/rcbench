@@ -2252,6 +2252,23 @@ TEST_CASE(stop_ends_the_warning_holds)
     CHECK_STR_EQ(servo_screen_type_name(), "STANDARD PWM");
 }
 
+/* APPLY tapped on the question while the output is on, and STOP before the
+ * finger lifts: the release applies nothing. */
+TEST_CASE(stop_lets_go_of_an_apply_press)
+{
+    fresh();
+    supply_screen_put(5.0f, 1.0f);
+    supply_screen_set_output(true);
+    scr->tick(0.025f);
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("5.5");
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+    servo_screen_cancel_arm();
+    supply_screen_cancel_on();
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
+}
+
 int main(void)
 {
     RUN(a_touch_on_the_dial_points_the_horn_there);
@@ -2333,5 +2350,6 @@ int main(void)
     RUN(a_cap_lowered_under_the_question_lowers_its_value);
     RUN(the_set_lines_gestures_draw_and_end_as_they_should);
     RUN(stop_ends_the_warning_holds);
+    RUN(stop_lets_go_of_an_apply_press);
     return test_summary("servo");
 }

@@ -670,6 +670,12 @@ void supply_screen_cancel_on(void)
         let_go();
         changed = true;
     }
+    /* And an APPLY being pressed on the question: its release must not
+     * change a set point after the stop. */
+    if (s.pressed == P_APPLY) {
+        let_go();
+        changed = true;
+    }
     if (s.hold.down || s.hold.held_s > 0.0f) {
         changed = true;
     }
