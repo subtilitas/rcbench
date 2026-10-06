@@ -196,6 +196,7 @@ static void begin_move(servo_test_t *t, uint8_t end, bool counted,
     t->counted = counted;
     t->rose    = false;
     t->left    = false;
+    t->near_prev = false;
     t->ref_a   = to;
     t->rise_a  = start;
     memset(&t->move_now, 0, sizeof(t->move_now));
@@ -283,8 +284,12 @@ static void end_step(servo_test_t *t, uint32_t now_ms)
         return;
     }
     /* Down a step while it still moves; done at the first that shows no
-     * movement, or below the floor. */
-    const float next = s->set_v - SERVO_TEST_BROWNOUT_STEP_V;
+     * movement, or at the floor.  A floor off the step's grid -- a supply
+     * whose lowest set point is 3.3 V -- is the last step itself. */
+    float next = s->set_v - SERVO_TEST_BROWNOUT_STEP_V;
+    if (next < t->floor_v - 0.001f && s->set_v > t->floor_v + 0.001f) {
+        next = t->floor_v;
+    }
     if (!s->moved || next < t->floor_v - 0.001f) {
         finish(t, SERVO_TEST_AB_NONE, now_ms);
         return;
@@ -477,18 +482,42 @@ static void measure(servo_test_t *t, const servo_test_reading_t *r)
         if ((int32_t)(at - t->cmd_ms) < 0) {
             break;
         }
-        /* Away from where it was is movement; away from where it goes and
-         * back again is the move there. */
+        /*
+         * Movement is a reading away from the level before the command:
+         * above it, or below it when the servo leaves an end it was
+         * pushing on.  A servo moving draws more than it holds with, so
+         * the move is under way once a reading, after movement, lies above
+         * the destination's holding level, and has arrived when one falls
+         * back to it.  In that order: the ends' holding levels can differ
+         * by more than the band, and a reading still at the start end's
+         * level, or one passing the destination's level on its way up, is
+         * not the move arriving.
+         *
+         * A destination held harder than the servo moves -- an end pushing
+         * on a stop -- is never passed on the way up.  There the move has
+         * arrived when, after movement, two readings in a row lie within
+         * the band of that level and of each other: settled, at the first
+         * of the two.  A current climbing through the level steps more
+         * than the band between two readings unless it climbs slower than
+         * SERVO_TEST_BAND_A a reading.
+         */
         if (fabsf(i - t->rise_a) > SERVO_TEST_MOVE_A) {
             t->rose = true;
         }
-        if (fabsf(i - t->ref_a) > SERVO_TEST_MOVE_A) {
+        const bool near = fabsf(i - t->ref_a) <= SERVO_TEST_BAND_A;
+        if (t->rose && i > t->ref_a + SERVO_TEST_MOVE_A) {
             t->left = true;
-        } else if (t->left && t->rose
-                   && fabsf(i - t->ref_a) <= SERVO_TEST_BAND_A) {
+        } else if (t->left && i <= t->ref_a + SERVO_TEST_BAND_A) {
             end_move(t, true, at);
             break;
+        } else if (!t->left && t->rose && near && t->near_prev
+                   && fabsf(i - t->prev_i) <= SERVO_TEST_BAND_A) {
+            end_move(t, true, t->prev_at);
+            break;
         }
+        t->near_prev = t->rose && near;
+        t->prev_i    = i;
+        t->prev_at   = at;
         mean_add(&t->move_now, i);
         if (i > t->move_peak_now) {
             t->move_peak_now = i;

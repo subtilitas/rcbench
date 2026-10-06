@@ -134,20 +134,34 @@ unteren Ende und weiter zum oberen, werden nicht gezählt: sie messen den Haltes
 Ende. Danach gehen die gezählten Bewegungen von Ende zu Ende, MOVEMENTS viele
 oder für TEST TIME, wie LENGTH BY sagt, höchstens 1000 je Stufe.
 
-- **Ankunft:** der erste Messwert, der wieder auf 0,05 A (`SERVO_TEST_BAND_A`)
-  am Haltestrom des Endes liegt, nach einem, der mehr als 0,10 A
-  (`SERVO_TEST_MOVE_A`) davon entfernt war.
+- **Bewegung:** ein Messwert, der mehr als 0,10 A (`SERVO_TEST_MOVE_A`) vom
+  Wert vor dem Befehl entfernt ist: darüber, oder darunter, wenn das Servo
+  ein Ende verlässt, an dem es gegen einen Anschlag gedrückt hat.
+- **Ankunft:** nach Bewegung ein Messwert mehr als 0,10 A über dem
+  Haltestrom des Zielendes, dann der erste Messwert, der wieder auf 0,05 A
+  (`SERVO_TEST_BAND_A`) daran liegt. Die Halteströme der beiden Enden können
+  sich um mehr als 0,05 A unterscheiden; ein Messwert, der noch auf dem
+  Wert des Startendes liegt, oder ein steigender Strom, der den Wert des
+  Ziels durchläuft, ist keine Ankunft.
+- **Ankunft an einem Ende, das härter gehalten wird, als das Servo sich
+  bewegt**, einem Ende am Anschlag: dieser Wert wird nie überschritten,
+  also ist die Bewegung beim ersten von zwei Messwerten in Folge angekommen,
+  die nach Bewegung auf 0,05 A am Wert und aneinander liegen. Ein Strom, der
+  den Wert des Ziels mit weniger als 0,05 A je Messwert durchsteigt, kann
+  dort für eine Ankunft gehalten werden.
 - **Stellzeit:** vom Befehl bis zum Messwert der Ankunft.
 - **Strom in Bewegung:** der Mittelwert der Messwerte zwischen Befehl und
   Ankunft; der Spitzenwert ist der höchste davon.
-- **Bewegung:** ein Messwert, der mehr als 0,10 A vom Wert vor dem Befehl
-  entfernt ist.
 
 **Brown-out.** Nach den Stufen, mit BROWN-OUT an: ab 5,00 V
-(`SERVO_TEST_BROWNOUT_START_V`) oder VOLTAGE MAX, wenn niedriger, in Schritten
-von 0,20 V (`SERVO_TEST_BROWNOUT_STEP_V`) abwärts bis 3,00 V
-(`SERVO_TEST_BROWNOUT_FLOOR_V`) oder bis zum kleinsten Sollwert des Netzteils,
-wenn der höher liegt: beim Modell 3,3 V. Jede Spannung durchläuft SET, SETTLE
+(`SERVO_TEST_BROWNOUT_START_V`) oder der geltenden Spannungsgrenze, wenn
+die niedriger ist, in Schritten von 0,20 V (`SERVO_TEST_BROWNOUT_STEP_V`)
+abwärts bis 3,00 V (`SERVO_TEST_BROWNOUT_FLOOR_V`) oder bis zum kleinsten
+Sollwert des Netzteils, wenn der höher liegt. Die geltende Grenze ist die
+niedrigste aus VOLTAGE MAX, dem Höchstwert des Netzteils und beim PD mini
+seiner Eingangsspannung abzüglich 0,5 V Reserve. Eine Untergrenze neben dem
+0,20-V-Raster ist die letzte Stufe: am Modell, dessen kleinster Sollwert
+3,3 V ist, geht der Lauf 5,0, 4,8 ... 3,4, 3,3 V. Jede Spannung durchläuft SET, SETTLE
 und IDLE, dann zwei Bewegungen (`SERVO_TEST_BROWNOUT_MOVES`), von der Mitte
 zum oberen Ende und weiter zum unteren, jede 600 ms gehalten. Eine Spannung
 zeigt **keine Bewegung**, wenn kein Messwert der beiden Bewegungen mehr als
@@ -157,7 +171,7 @@ bei der sich das Servo noch bewegt hat.
 
 | Konstante | Wert | Bedeutung |
 | --- | ---: | --- |
-| `SERVO_TEST_MOVE_A` | 0,10 A | Bewegung, und noch nicht angekommen |
+| `SERVO_TEST_MOVE_A` | 0,10 A | Bewegung; über dem Wert des Ziels, noch nicht angekommen |
 | `SERVO_TEST_BAND_A` | 0,05 A | am Haltestrom angekommen |
 | `SERVO_TEST_IDLE_MS` | 1000 ms | die Ruhestrommessung |
 | `SERVO_TEST_HOLD_MIN_MS` | 600 ms | das kürzeste gemessene Halten |

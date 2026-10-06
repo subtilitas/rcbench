@@ -347,6 +347,106 @@ TEST_CASE(length_by_time_moves_for_the_test_time)
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_PASS);
 }
 
+/*
+ * A servo whose ends hold at different currents -- 0.40 A at the low end,
+ * which is loaded, 0.05 A at the high end and the centre -- and whose
+ * current ramps up from where it was at 0.95 A a second while it moves,
+ * for 1200 ms end to end.  Neither the first reading of a move, still at
+ * the start end's level, nor the ramp passing the destination's level on
+ * its way up is the arrival: every travel time is the 1200 ms the servo
+ * takes, late by no more than a reading.
+ */
+static float ramp_level(uint16_t us) { return (us < 1300u) ? 0.40f : 0.05f; }
+
+TEST_CASE(unequal_end_levels_do_not_arrive_early)
+{
+    servo_test_t t;
+    servo_test_cfg_t c;
+    cfg_defaults(&c);
+    c.step_count = 1u;
+    c.settle_ms  = 0u;
+    c.report     = false;
+    servo_test_init(&t);
+    uint32_t now = 1000u, cmd_at = 0u, next = now;
+    uint16_t cmd = CENTRE, from = CENTRE, samples = 1u;
+    servo_test_reading_t r;
+    memset(&r, 0, sizeof(r));
+    r.v = 4.8f;
+    r.set_v = 4.8f;
+    r.output = true;
+    r.online = true;
+    r.ok = true;
+    r.mode = 1u;
+    r.taken_ms = now;
+    CHECK_EQ(servo_test_start(&t, &c, now, &r, 1.0f, 20.0f),
+             SERVO_TEST_START_OK);
+    for (int k = 0; k < 6000 && servo_test_running(&t); ++k) {
+        now += 10u;
+        if (now >= next) {
+            next += 100u;
+            const uint32_t dt = now - cmd_at;
+            float i = ramp_level(cmd);
+            if (cmd != from && dt < 1200u) {
+                i = ramp_level(from) + 0.00095f * (float)dt;
+                if (i > 1.0f) {
+                    i = 1.0f;
+                }
+            }
+            r.samples = ++samples;
+            r.taken_ms = now;
+            r.i = i;
+            servo_test_reading(&t, &r, 0u);
+        }
+        const servo_test_in_t in = { true, 20.0f };
+        servo_test_do_t d;
+        servo_test_step(&t, now, &in, &d);
+        if (d.command) {
+            from = cmd;
+            cmd = d.cmd_us;
+            cmd_at = now;
+        }
+        while (servo_test_peek(&t, NULL) != SERVO_TEST_OUT_NONE) {
+            servo_test_pop(&t);
+        }
+    }
+    const servo_test_step_t *s = &t.steps[0];
+    CHECK_EQ(t.why, SERVO_TEST_AB_NONE);
+    CHECK_EQ(s->moves, 4u);
+    CHECK_EQ(s->travels, 4u);
+    CHECK_EQ(s->timeouts, 0u);
+    CHECK(s->travel_sum_ms / s->travels >= 1200u);   /* none early */
+    CHECK(s->travel_max_ms <= 1200u + 100u + 10u);
+    /* And each end's level is that end's, not a reading of the ramp. */
+    CHECK_NEAR(s->hold[0].sum / (float)s->hold[0].n, 0.40f, 0.001f);
+    CHECK_NEAR(s->hold[1].sum / (float)s->hold[1].n, 0.05f, 0.001f);
+    CHECK_EQ(servo_test_verdict(&t), SERVO_TEST_PASS);
+}
+
+/* HV SERVO in the report says what ran: on with neither of its steps
+ * chosen runs nothing above 6.0 V. */
+TEST_CASE(the_report_says_whether_a_step_above_6_v_ran)
+{
+    servo_test_cfg_t c;
+    rig_fresh();
+    cfg_defaults(&c);
+    c.step_count = 1u;
+    c.hv = true;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(60000u);
+    CHECK(strstr(g.report, "HV servo:       ON, no step above 6.0 V chosen")
+          != NULL);
+
+    rig_fresh();
+    cfg_defaults(&c);
+    c.steps_v[0] = 7.4f;
+    c.step_count = 1u;
+    c.hv = true;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(60000u);
+    CHECK(strstr(g.report, "HV servo:       ON, steps above 6.0 V run")
+          != NULL);
+}
+
 /* The brown-out walk stops at the first voltage that shows no movement. */
 TEST_CASE(the_brownout_walk_stops_where_the_servo_stops)
 {
@@ -387,7 +487,12 @@ TEST_CASE(the_brownout_walk_ends_at_the_floor)
     bool stopped = true;
     CHECK(servo_test_brownout(&g.t, &moved, &stopped));
     CHECK(!stopped);
-    CHECK_NEAR(moved, 3.4f, 0.001f);       /* 5.0 - 8 x 0.2; 3.2 < 3.3 */
+    /* 5.0 down in 0.2 V steps to 3.4, then the floor itself: 3.3 V, the
+     * model's lowest set point, as the report says. */
+    CHECK_NEAR(moved, 3.3f, 0.001f);
+    CHECK_NEAR(g.t.steps[g.t.step_count - 1u].set_v, 3.3f, 0.001f);
+    CHECK(strstr(g.report, "in 0.20 V steps to 3.30 V") != NULL);
+    CHECK(strstr(g.report, "down to 3.30 V") != NULL);
     CHECK(strstr(g.report, "lower not tested") != NULL);
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_PASS);
 
@@ -787,6 +892,8 @@ int main(void)
     RUN(a_run_measures_each_step_and_passes);
     RUN(the_travel_time_is_late_by_at_most_a_reading);
     RUN(length_by_time_moves_for_the_test_time);
+    RUN(unequal_end_levels_do_not_arrive_early);
+    RUN(the_report_says_whether_a_step_above_6_v_ran);
     RUN(the_brownout_walk_stops_where_the_servo_stops);
     RUN(the_brownout_walk_ends_at_the_floor);
     RUN(the_brownout_walk_starts_under_the_cap);

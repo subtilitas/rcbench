@@ -253,8 +253,16 @@ static bool settings_lines(const servo_test_t *t, cursor_t *c)
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "HV servo:       %s", g->hv ? "ON, steps above 6.0 V run"
-                                                   : "OFF, no step above 6.0 V");
+        /* What ran, not only the switch: HV SERVO on with both of its
+         * steps off runs nothing above 6.0 V. */
+        bool above = false;
+        for (unsigned s = 0; s < g->step_count; ++s) {
+            above = above || g->steps_v[s] > SERVO_TEST_HV_ABOVE_V + 0.001f;
+        }
+        snprintf(b, n, "HV servo:       %s",
+                 !g->hv  ? "OFF, no step above 6.0 V"
+                 : above ? "ON, steps above 6.0 V run"
+                         : "ON, no step above 6.0 V chosen");
         return true;
     }
     if (here(c)) {

@@ -125,19 +125,31 @@ high end, are not counted: they measure each end's holding level. The counted mo
 end to end, MOVEMENTS of them or for TEST TIME, as LENGTH BY says, at most
 1000 a step.
 
-- **Arrival:** the first reading back within 0.05 A (`SERVO_TEST_BAND_A`) of
-  the end's holding level, after a reading more than 0.10 A
-  (`SERVO_TEST_MOVE_A`) away from it.
+- **Movement:** a reading more than 0.10 A (`SERVO_TEST_MOVE_A`) away from
+  the level before the command: above it, or below it when the servo leaves
+  an end it was pushing on.
+- **Arrival:** after movement, a reading more than 0.10 A above the
+  destination end's holding level, then the first reading back within
+  0.05 A (`SERVO_TEST_BAND_A`) of it. The two ends' holding levels can
+  differ by more than 0.05 A, so a reading still at the start end's level,
+  or a rising current passing the destination's level, is not an arrival.
+- **Arrival at an end held harder than the servo moves**, an end pushing on
+  a stop: that level is never passed, so the move has arrived at the first
+  of two readings in a row, after movement, within 0.05 A of the level and
+  of each other. A current that climbs through the destination's level by
+  less than 0.05 A a reading can be taken for an arrival there.
 - **Travel time:** from the command to the arrival's reading.
 - **Moving current:** the mean of the readings between the command and the
   arrival; the peak is the highest of them.
-- **Movement:** a reading more than 0.10 A away from the level before the
-  command.
 
 **Brown-out.** After the steps, with BROWN-OUT on: from 5.00 V
-(`SERVO_TEST_BROWNOUT_START_V`), or VOLTAGE MAX if lower, down in 0.20 V steps
-(`SERVO_TEST_BROWNOUT_STEP_V`) to 3.00 V (`SERVO_TEST_BROWNOUT_FLOOR_V`), or the
-supply's lowest set point if higher: the model's is 3.3 V. Each voltage runs
+(`SERVO_TEST_BROWNOUT_START_V`), or the voltage cap in force if lower, down
+in 0.20 V steps (`SERVO_TEST_BROWNOUT_STEP_V`) to 3.00 V
+(`SERVO_TEST_BROWNOUT_FLOOR_V`), or the supply's lowest set point if higher.
+The cap in force is the lowest of VOLTAGE MAX, the supply's own maximum, and
+for the PD mini its input voltage less 0.5 V of headroom. A floor off the
+0.20 V grid is the last step: on the model, whose lowest set point is
+3.3 V, the walk goes 5.0, 4.8 ... 3.4, 3.3 V. Each voltage runs
 SET, SETTLE and IDLE, then two moves (`SERVO_TEST_BROWNOUT_MOVES`), centre to
 the high end and on to the low end, each held 600 ms. A voltage shows **no
 movement** when no reading of either move lies more than 0.10 A from the level
@@ -146,7 +158,7 @@ report gives that voltage and the lowest one the servo moved at.
 
 | Constant | Value | What it is |
 | --- | ---: | --- |
-| `SERVO_TEST_MOVE_A` | 0.10 A | movement, and not there yet |
+| `SERVO_TEST_MOVE_A` | 0.10 A | movement; above the destination's level, not there yet |
 | `SERVO_TEST_BAND_A` | 0.05 A | arrived at the holding level |
 | `SERVO_TEST_IDLE_MS` | 1000 ms | the idle measurement |
 | `SERVO_TEST_HOLD_MIN_MS` | 600 ms | the shortest hold measured |

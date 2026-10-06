@@ -15,13 +15,17 @@
  *           the first step also waits for the output to read on;
  *   SETTLE  the TEST page's SETTLE, with the servo at its centre;
  *   IDLE    SERVO_TEST_IDLE_MS at the centre: the idle current;
- *   MOVE    a step command to the far end.  The move has arrived at the
- *           first reading back within SERVO_TEST_BAND_A of that end's
- *           holding level after one more than SERVO_TEST_MOVE_A away from
- *           it; the travel time runs from the command to that reading.  A
- *           move that does not arrive in SERVO_TEST_TRAVEL_TIMEOUT_MS is
- *           late.  A move shows movement when a reading lies more than
- *           SERVO_TEST_MOVE_A from the level before the command;
+ *   MOVE    a step command to the far end.  A move shows movement when a
+ *           reading lies more than SERVO_TEST_MOVE_A from the level before
+ *           the command.  It has arrived at the first reading back
+ *           within SERVO_TEST_BAND_A of that end's holding level, after a
+ *           reading of the movement more than SERVO_TEST_MOVE_A above that
+ *           level; the travel time runs from the command to that reading.
+ *           A destination held harder than the servo moves, an end pushing
+ *           on a stop, is never passed: there the move has arrived at the
+ *           first of two readings in a row within SERVO_TEST_BAND_A of the
+ *           level and of each other, after movement.  A move that does not
+ *           arrive in SERVO_TEST_TRAVEL_TIMEOUT_MS is late;
  *   HOLD    the longer of DWELL and SERVO_TEST_HOLD_MIN_MS at that end:
  *           the holding current there, and the holding level the next move
  *           to that end falls back to.
@@ -37,7 +41,8 @@
  * and IDLE as above and then SERVO_TEST_BROWNOUT_MOVES moves, centre to the
  * high end and back to the low end.  A voltage shows no movement when no
  * reading of any of those moves lies more than SERVO_TEST_MOVE_A from the
- * level before its command; the walk stops there, or at the floor.
+ * level before its command; the walk stops there, or at the floor, which
+ * is the last step when it lies off the step's grid.
  *
  * The run is aborted -- the output asked off, the servo let go -- by STOP,
  * a disarm, link loss, leaving the screen, the operator taking the servo or
@@ -88,7 +93,7 @@ extern "C" {
 #define SERVO_TEST_BROWNOUT_MOVES    2u
 
 /** A reading this far from the level before a command is the servo
- *  moving, and this far from an end's holding level is the move not yet
+ *  moving, and this far above an end's holding level is the move not yet
  *  there. */
 #define SERVO_TEST_MOVE_A            0.10f
 /** Back within this of the holding level is the move arrived. */
@@ -300,7 +305,11 @@ typedef struct {
     uint32_t cmd_ms;
     bool     counted;       /**< the move counts                          */
     bool     rose;          /**< movement seen: away from rise_a          */
-    bool     left;          /**< away from ref_a: not there yet           */
+    bool     left;          /**< since then above ref_a: not there yet    */
+    bool     near_prev;     /**< the last reading, after movement, was
+                                 within the band of ref_a                */
+    float    prev_i;
+    uint32_t prev_at;
     float    ref_a;         /**< the level the move falls back to         */
     float    rise_a;        /**< the level before the command             */
     float    hold_ref[2];
