@@ -1337,6 +1337,47 @@ TEST_CASE(a_set_point_over_the_input_is_kept_under_it)
     CHECK_EQ(m.mv[0], 3300u);
 }
 
+/* A slot already holding the voltage asked still waits for the input to be
+ * read before it is switched on; and an input that can no longer be read
+ * holds back the set points and the ON, not the other readings. */
+TEST_CASE(nothing_is_switched_on_before_the_input_is_read)
+{
+    fresh();
+    m.input_mv = 4880u;
+    m.mv[0] = 3000u;                          /* the slot already holds it */
+    m.no_input = true;
+    m.input_ok = true;
+    run(100u, false);
+    run(400u, false);
+    pdmini_want(&d, true, 3000u, 1000u);
+    run(300u, false);
+    CHECK_EQ(m.en_writes, 0u);               /* the input not yet given up */
+    m.no_input = false;
+    run(2000u, false);
+    CHECK(m.output);
+
+    /* Read once, then no more: no new set point, the readings go on. */
+    fresh();
+    m.input_mv = 4880u;
+    run(100u, false);
+    pdmini_want(&d, false, 3000u, 1000u);
+    run(1500u, false);
+    CHECK_EQ(m.mv[0], 3000u);
+    m.no_input = true;
+    run(3000u, false);
+    const unsigned writes = m.data_writes;
+    const uint32_t samples = pdmini_status(&d)->samples;
+    pdmini_want(&d, false, 4000u, 1000u);
+    run(2000u, false);
+    CHECK_EQ(m.data_writes, writes);
+    CHECK(pdmini_status(&d)->samples > samples + 5u);
+    /* Set points read back before, the input not known now: no ON. */
+    pdmini_want(&d, true, 3000u, 1000u);
+    run(2000u, false);
+    CHECK_EQ(m.en_writes, 0u);
+    CHECK(!m.output);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -1405,6 +1446,7 @@ int main(void)
     RUN(stale_set_points_are_not_sent);
     RUN(an_unanswered_input_read_is_given_up);
     RUN(a_set_point_over_the_input_is_kept_under_it);
+    RUN(nothing_is_switched_on_before_the_input_is_read);
     RUN(an_argument_outlasts_a_module_that_comes_back);
     RUN(an_output_that_came_on_by_itself_is_not_relied_on);
     RUN(an_on_sent_and_unsettled_is_owed_an_off);

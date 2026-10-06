@@ -201,9 +201,12 @@ static void finish(pdmini_t *d, uint32_t now, bool ok)
         return;
     }
     ++d->st.errors;
-    if (d->cmd == PDMINI_READ_INPUT && d->rx_n == 0u
-        && d->input_misses < PDMINI_INPUT_MISSES) {
-        ++d->input_misses;        /* firmware before v1.0.2.0 has none */
+    if (d->cmd == PDMINI_READ_INPUT) {
+        /* Not read: the last reading is no cap to trust any more. */
+        d->input_known = false;
+        if (d->rx_n == 0u && d->input_misses < PDMINI_INPUT_MISSES) {
+            ++d->input_misses;    /* firmware before v1.0.2.0 has none */
+        }
     }
     if (d->cmd == PDMINI_WHO_AM_I) {
         ++d->who_failed;          /* for a caller looking for the rate */
@@ -439,6 +442,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->st.vin_mv   = (uint16_t)(r[2] | (r[3] << 8));
         d->input_misses = 0u;
         d->input_known = true;
+        d->input_seen  = true;
         break;
     default:
         break;
@@ -601,6 +605,23 @@ static bool next_job(pdmini_t *d, uint32_t now)
      * are stuck, and the set points left alone for two seconds while the
      * readings go on.
      */
+    /*
+     * The input, before any set point is written or any ON, so the cap
+     * under it holds from the first: read again whenever it is not known.
+     * Firmware that has never answered the read gets the set point as
+     * asked once the read has gone unanswered PDMINI_INPUT_MISSES times.
+     */
+    const bool input_ok = d->input_known
+                          || (!d->input_seen
+                              && d->input_misses >= PDMINI_INPUT_MISSES);
+    /* Once a second: an unanswered read waits out PDMINI_REPLY_MS, and the
+     * other readings need the rest of the line. */
+    if (d->want_set && !input_ok
+        && (uint32_t)(now - d->last_input) >= PDMINI_SLOT_MS) {
+        d->last_input = now;
+        read1(d, now, PDMINI_READ_INPUT);
+        return true;
+    }
     bool data_paused = false;
     if (d->data_tries >= 3u) {
         d->st.set_stuck = true;
@@ -616,7 +637,7 @@ static bool next_job(pdmini_t *d, uint32_t now)
             d->data_tries = 0u;
         }
     }
-    if (d->want_set && !data_paused) {
+    if (d->want_set && !data_paused && input_ok) {
         if (d->slot < 0) {
             d->last_slot = now;
             read1(d, now, PDMINI_READ_ID);
@@ -629,13 +650,6 @@ static bool next_job(pdmini_t *d, uint32_t now)
         }
         const uint16_t mv = target_mv(d);
         if (d->st.set_mv != mv || d->st.set_ma != d->want_ma) {
-            /* The input first, so the cap under it holds from the first
-             * write -- unless this firmware does not answer the read. */
-            if (!d->input_known && d->input_misses < PDMINI_INPUT_MISSES) {
-                d->last_input = now;
-                read1(d, now, PDMINI_READ_INPUT);
-                return true;
-            }
             const uint8_t req[6] = {
                 PDMINI_OUTPUT_DATA, (uint8_t)d->slot,
                 (uint8_t)(mv & 0xFFu), (uint8_t)(mv >> 8),
@@ -657,7 +671,7 @@ static bool next_job(pdmini_t *d, uint32_t now)
     const bool set_ok = d->want_set && d->data_known
                         && d->st.set_mv == target_mv(d)
                         && d->st.set_ma == d->want_ma;
-    if (!d->en_pending && !d->st.output && d->want_output && set_ok
+    if (!d->en_pending && !d->st.output && d->want_output && set_ok && input_ok
         && en_ready(d, now)) {
         if (on_step == 4u && write_en(d, now)) {
             return true;
@@ -683,7 +697,10 @@ static bool next_job(pdmini_t *d, uint32_t now)
     struct { uint32_t *last; uint32_t period; uint8_t cmd; } polls[4] = {
         { &d->last_display, PDMINI_DISPLAY_MS, PDMINI_READ_DISPLAY },
         { &d->last_state,   PDMINI_STATE_MS,   PDMINI_READ_STATE },
-        { &d->last_input,   PDMINI_STATE_MS,   PDMINI_READ_INPUT },
+        /* An input that has stopped answering is asked once a second, as
+         * the read before a set point asks it, sharing its time. */
+        { &d->last_input,   d->input_known ? PDMINI_STATE_MS : PDMINI_SLOT_MS,
+          PDMINI_READ_INPUT },
         { &d->last_slot,    PDMINI_SLOT_MS,    PDMINI_READ_ID },
     };
     int best = -1;
@@ -692,7 +709,7 @@ static bool next_job(pdmini_t *d, uint32_t now)
         if (polls[k].cmd == PDMINI_READ_STATE && d->en_pending) {
             continue;   /* the confirming read is the next state read */
         }
-        if (polls[k].cmd == PDMINI_READ_INPUT
+        if (polls[k].cmd == PDMINI_READ_INPUT && !d->input_seen
             && d->input_misses >= PDMINI_INPUT_MISSES) {
             continue;   /* not answered by this module's firmware */
         }

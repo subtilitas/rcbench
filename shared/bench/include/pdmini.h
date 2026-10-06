@@ -209,7 +209,8 @@ typedef struct {
     uint8_t  fails;          /* consecutive                              */
     uint8_t  state_fails;    /* READ_OUTPUT_STATE failed, consecutive    */
     uint8_t  input_misses;   /* READ_INPUT_STATE unanswered, consecutive */
-    bool     input_known;    /* READ_INPUT_STATE answered since identified */
+    bool     input_known;    /* READ_INPUT_STATE answered, the last read */
+    bool     input_seen;     /* and this firmware has answered it at all */
     uint8_t  on_step;        /* reads before an ON: 1 data asked, 2 data
                                 seen, 3 slot asked, 4 slot seen          */
 
