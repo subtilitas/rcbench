@@ -11,6 +11,7 @@ set(SRCS
     telemetry_sim.c
     log_writer.c
     supply.c
+    pdmini.c
 )
 
 if(ESP_PLATFORM)

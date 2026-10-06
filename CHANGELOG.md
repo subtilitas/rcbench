@@ -8,6 +8,24 @@ history is in git.
 
 ### Added
 
+- **A driver for the WeAct PD Power Mini V1 Buck** (`pdmini`), not yet
+  wired to the coprocessor.
+  - Protocol: the CRC8 (polynomial 0x31, initial 0xFF) checked against all
+    fifteen values the vendor's sheet prints. Reply framing with WHO_AM_I
+    ending in 0x0A or a CRC. Set points clamped to the module's 1 to 20 V
+    and 0.05 to 3 A.
+  - Behaviour:
+    - one transaction at a time, with the pins pulled down between them;
+    - nothing said before WHO_AM_I is answered;
+    - every write confirmed by the matching read, since the module answers
+      a write with nothing;
+    - the output confirmed 250 ms after OUTPUT_EN, with no state read in
+      between;
+    - a module that misses three transactions in a row is taken as gone.
+  - OUTPUT_EN's argument for on is learnt from the module: 1 first, then 0.
+    The output is written only when it reads otherwise than asked, so an
+    OFF cannot switch on an output that was off.
+
 - **SERVO has SETTINGS of its own.** The overlay sets the servo type --
   STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC (1520 us, +/-700 us, up to
   333 Hz) and HELI TAIL 760 (+/-350 us, up to 560 Hz) -- the frame rate,
