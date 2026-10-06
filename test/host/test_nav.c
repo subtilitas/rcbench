@@ -840,6 +840,26 @@ TEST_CASE(the_menu_marks_what_is_not_fitted)
     }
     /* But the two that have no screen still say so. */
     CHECK(full > 0);
+
+    /* SUPPLY is marked whatever the coprocessor reports -- until SETUP
+     * enables the PD mini, and again once it is disabled. */
+    overview_screen_set_supply_real(true);
+    ui_router_render(&cv, 0);
+    int real = 0;
+    for (int i = 0; i < W * H; ++i) {
+        if (fb[i] == ui_theme_color(UI_C_PANEL_SUNK)) { ++real; }
+    }
+    if (real >= full) {
+        T_FAIL("the PD mini enabled left SUPPLY marked: %d then %d",
+               full, real);
+    }
+    overview_screen_set_supply_real(false);
+    ui_router_render(&cv, 0);
+    int again = 0;
+    for (int i = 0; i < W * H; ++i) {
+        if (fb[i] == ui_theme_color(UI_C_PANEL_SUNK)) { ++again; }
+    }
+    CHECK_EQ(again, full);
 }
 
 /*

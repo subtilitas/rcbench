@@ -17,6 +17,10 @@ extern "C" {
 void overview_invalidate(void);
 const ui_screen_t *overview_screen(void);
 
+/** Whether SUPPLY drives the PD mini; the tile is marked MODELLED while it
+ *  does not. */
+void overview_screen_set_supply_real(bool real);
+
 #ifdef __cplusplus
 }
 #endif
