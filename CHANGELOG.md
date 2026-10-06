@@ -28,6 +28,11 @@ history is in git.
   the SUPPLY current limit, until another alert replaced it (bench,
   2026-10-06). The SUPPLY header shows it after ONLINE instead, e.g.
   `ONLINE 38400`, for AUTO and a fixed rate alike.
+- **An alert clears.** The red alert band at the foot of the screen stayed
+  until another alert replaced it, covering ARM and the controls beneath. It
+  now clears after 30 s, or on a tap on the band, marked `x`; that tap
+  reaches no screen. "touch did not answer -- the bench will not arm" at
+  start stays until restart, as nothing can tap it away.
 
 ## 0.10.1 - 2026-10-06
 

@@ -29,13 +29,31 @@
 
 #define PANEL_W 800
 #define PANEL_H 480
+#define ALERT_H 34    /* the alert band, across the bottom */
 
 static struct {
     ui_screen_id_t    current;
     ui_bench_status_t status;
     char              alert[UI_ALERT_MAX];
     bool              has_alert;
+    float             alert_age_s;
+    bool              alert_fresh;    /**< set since the last tick          */
+    uint32_t          alert_gen;      /**< counts alerts set                */
+    /* The held alert, apart from the passing one: a passing alert shows over
+     * it and, once cleared, shows it again. */
+    char              held[UI_ALERT_MAX];
+    bool              has_held;
     bool              stop_latched;
+
+    /* A press that began on the alert band, by track id, held until its
+     * release even if the alert clears meanwhile: the screen beneath never
+     * saw the press, so it must not see the release either. */
+    bool     alert_press;
+    uint8_t  alert_id;
+    uint32_t alert_press_gen;   /**< the alert the press began on         */
+    /* Every contact that came down on the alert band, owner or not, so a
+     * second finger's events reach no screen either. */
+    uint8_t  alert_ids[256u / 8u];
 
     /* Which contact owns a press on the band.  The GT911 reports up to five,
      * and every event carries its track id, so a second finger or a resting
@@ -105,6 +123,8 @@ void ui_router_goto(ui_screen_id_t id)
     }
     /* A press that began on the old screen must not land on the new one. */
     s.band_press = false;
+    s.alert_press = false;
+    memset(s.alert_ids, 0, sizeof(s.alert_ids));
     ui_router_invalidate();
 }
 
@@ -129,8 +149,32 @@ void ui_router_invalidate(void)
     supply_invalidate();
 }
 
+static void clear_alert(void)
+{
+    if (s.has_alert) {
+        /* Screens cache what they drew per framebuffer, and the band was
+         * drawn over it; without a repaint its red would stay. */
+        ui_router_invalidate();
+    }
+    s.has_alert   = false;
+    s.alert_fresh = false;
+    s.alert_age_s = 0.0f;
+    s.alert[0]    = '\0';
+}
+
 void ui_router_tick(float dt_s)
 {
+    /* The frame an alert arrives in does not count: its interval passed
+     * before the alert was set, and after a long stall it would clear the
+     * alert before it was ever drawn. */
+    if (s.alert_fresh) {
+        s.alert_fresh = false;
+    } else if (s.has_alert && dt_s > 0.0f) {
+        s.alert_age_s += dt_s;
+        if (s.alert_age_s >= UI_ALERT_SHOW_S) {
+            clear_alert();
+        }
+    }
     const ui_screen_t *scr = screen_for(s.current);
     if (scr != NULL && scr->tick != NULL) {
         scr->tick(dt_s);
@@ -184,6 +228,13 @@ static bool has_band(ui_screen_id_t id)
  * without asking would latch a stop on a tap that pressed nothing.
  */
 bool ui_router_stop_live(void) { return has_band(s.current); }
+
+static bool in_alert(const touch_event_t *evt)
+{
+    return evt->point.y >= PANEL_H - ALERT_H && evt->point.y < PANEL_H
+           && evt->point.x >= 0 && evt->point.x < PANEL_W;
+}
+
 static bool has_home(ui_screen_id_t id)
 {
     return id != SCREEN_SPLASH && id != SCREEN_OVERVIEW
@@ -233,6 +284,35 @@ void ui_router_event(const touch_event_t *evt)
         }
     }
 
+    const uint8_t id  = evt->point.id;
+    const uint8_t bit = (uint8_t)(1u << (id & 7u));
+    if ((s.alert_ids[id >> 3] & bit) != 0u) {
+        if (evt->type == TOUCH_EVENT_UP) {
+            s.alert_ids[id >> 3] &= (uint8_t)~bit;
+            /* Only the first contact's lift, and only on the alert that
+             * was showing when it came down: one that arrived meanwhile has
+             * not been read. */
+            if (s.alert_press && id == s.alert_id) {
+                s.alert_press = false;
+                if (s.has_alert && in_alert(evt)
+                    && s.alert_gen == s.alert_press_gen) {
+                    clear_alert();
+                }
+            }
+        }
+        return;
+    }
+    if (evt->type == TOUCH_EVENT_DOWN && s.has_alert && has_band(s.current)
+        && in_alert(evt)) {
+        s.alert_ids[id >> 3] |= bit;
+        if (!s.alert_press) {
+            s.alert_press     = true;
+            s.alert_id        = id;
+            s.alert_press_gen = s.alert_gen;
+        }
+        return;   /* the band covers the screen here, so the screen gets none */
+    }
+
     if (scr != NULL && scr->event != NULL) {
         /* Screens work in their own coordinates; the band's height is
          * removed here. */
@@ -263,7 +343,11 @@ void ui_router_cancel_gestures(void)
      * until it is entered again, so a tab press whose release went missing
      * would meet a recycled id on the next visit.  Cancelling a screen with
      * no gesture in progress asks for nothing, so every screen is told.
+     * The alert band's presses go the same way: their releases may never
+     * come.
      */
+    s.alert_press = false;
+    memset(s.alert_ids, 0, sizeof(s.alert_ids));
     for (int id = 0; id < SCREEN_COUNT; ++id) {
         const ui_screen_t *scr = screen_for((ui_screen_id_t)id);
         if (scr != NULL && scr->cancel != NULL) {
@@ -275,26 +359,42 @@ void ui_router_cancel_gestures(void)
 void ui_router_set_alert(const char *text)
 {
     if (text == NULL) {
-        s.has_alert = false;
-        s.alert[0]  = '\0';
+        clear_alert();
         return;
     }
     snprintf(s.alert, sizeof(s.alert), "%s", text);
-    s.has_alert = true;
+    s.has_alert   = true;
+    s.alert_fresh = true;
+    s.alert_age_s = 0.0f;
+    ++s.alert_gen;
+}
+
+void ui_router_hold_alert(const char *text)
+{
+    if (s.has_held && !s.has_alert) {
+        ui_router_invalidate();         /* the band's red, as clear_alert() */
+    }
+    s.has_held = (text != NULL);
+    (void)snprintf(s.held, sizeof(s.held), "%s", s.has_held ? text : "");
 }
 
 const char *ui_router_alert(void)
 {
-    return s.has_alert ? s.alert : NULL;
+    if (s.has_alert) {
+        return s.alert;
+    }
+    return s.has_held ? s.held : NULL;
 }
 
-#define ALERT_H 34
-
-static void draw_alert(gfx_canvas_t *c, const char *text)
+static void draw_alert(gfx_canvas_t *c, const char *text, bool closable)
 {
     const int y = PANEL_H - ALERT_H;
     gfx_fill_rect(c, 0, y, PANEL_W, ALERT_H, ui_theme_color(UI_C_DANGER));
     gfx_text(c, 12, y + 9, text, &gfx_font_8x16, ui_theme_color(UI_C_TEXT), 1);
+    if (closable) {
+        gfx_text(c, PANEL_W - 12 - 8, y + 9, "x", &gfx_font_8x16,
+                 ui_theme_color(UI_C_TEXT), 1);
+    }
 }
 
 void ui_router_render(gfx_canvas_t *c, int buffer_index)
@@ -327,8 +427,8 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
         scr->render(&sub, buffer_index);
     }
 
-    if (s.has_alert) {
-        draw_alert(c, s.alert);
+    if (s.has_alert || s.has_held) {
+        draw_alert(c, ui_router_alert(), s.has_alert);
     }
 
     /*
