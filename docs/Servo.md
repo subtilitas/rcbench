@@ -174,13 +174,21 @@ report gives that voltage and the lowest one the servo moved at.
 
 ### Time resolution
 
-A reading counts once: the supply's own count of its readings tells a new one
-from the same one read again, and each is stamped with the panel's time of
-the SUPPLY page read that brought it. The coprocessor reads the PD mini's
-output every 100 ms (`PDMINI_DISPLAY_MS`) and the panel reads the page every
-100 ms (`SUPPLY_LINK_READ_MS`), so a new reading reaches the test every 100 ms
-at best; the model gives one every 50 ms. The report states both rates as
-measured during the run, and the mean interval between two readings.
+A reading counts once. For the PD mini the count is the SUPPLY page's
+SAMPLES register: the coprocessor's count of the module's output readings
+that answered. A page read whose SAMPLES has not moved brings no new reading,
+whatever voltage and current it carries -- a display read on the coprocessor
+that was slow (up to 400 ms, `PDMINI_REPLY_MS`) or failed leaves the last
+ones standing -- and a run with no new reading for 1.5 s ends. A reading is
+stamped with the panel's time of the first page read that showed its count;
+the model counts and stamps its own steps. The coprocessor reads the PD
+mini's output every 100 ms (`PDMINI_DISPLAY_MS`) and the panel reads the page
+every 100 ms (`SUPPLY_LINK_READ_MS`), so a new reading reaches the test every
+100 ms at best; the model gives one every 50 ms. When SAMPLES steps by more
+than one between two page reads, the readings in between never reach the
+test: the report counts them on its `Skipped` line, and the rate taken by the
+supply includes them. The report states both rates as measured during the
+run, and the mean interval between two readings that reached the test.
 
 A travel time ends at the first reading back at the holding level, so it is
 late by up to one interval. It also holds the command's way from the panel
@@ -276,6 +284,7 @@ Firmware:       rcbench 0.11.0
 Log:            the .CSV with this file's number, one row per supply reading
 Supply:         PD mini
 Readings:       10.0 /s taken by the supply, 10.0 /s reached the test
+Skipped:        0 readings the supply took never reached the test
 Resolution:     one reading every 100 ms: a travel time is late by up to that
 Duration:       46.5 s
 Log rows:       466 written, 0 lost to a full queue

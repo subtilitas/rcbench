@@ -187,13 +187,23 @@ bei der sich das Servo noch bewegt hat.
 
 ### Zeitauflösung
 
-Ein Messwert zählt einmal: der eigene Zähler des Netzteils unterscheidet
-einen neuen von demselben, noch einmal gelesenen, und jeder trägt die
-Panelzeit des Lesens der SUPPLY-Seite, das ihn gebracht hat. Der Koprozessor
-liest den Ausgang des PD mini alle 100 ms (`PDMINI_DISPLAY_MS`), das Panel die
-Seite alle 100 ms (`SUPPLY_LINK_READ_MS`); ein neuer Messwert erreicht den
-Test also bestenfalls alle 100 ms, beim Modell alle 50 ms. Der Bericht nennt
-beide Raten, im Lauf gemessen, und den mittleren Abstand zweier Messwerte.
+Ein Messwert zählt einmal. Beim PD mini ist der Zähler das Register SAMPLES
+der SUPPLY-Seite: die Zahl der beantworteten Ausgangsmessungen des Moduls,
+vom Koprozessor gezählt. Ein Lesen der Seite, bei dem SAMPLES stehen
+geblieben ist, bringt keinen neuen Messwert, gleich welche Spannung und
+welchen Strom es trägt -- ein Display-Lesen auf dem Koprozessor, das langsam
+war (bis 400 ms, `PDMINI_REPLY_MS`) oder fehlschlug, lässt die letzten stehen
+--, und ein Lauf ohne neuen Messwert über 1,5 s endet. Ein Messwert trägt die
+Panelzeit des ersten Lesens der Seite, das seinen Zählerstand zeigte; das
+Modell zählt und stempelt seine eigenen Schritte. Der Koprozessor liest den
+Ausgang des PD mini alle 100 ms (`PDMINI_DISPLAY_MS`), das Panel die Seite
+alle 100 ms (`SUPPLY_LINK_READ_MS`); ein neuer Messwert erreicht den Test
+also bestenfalls alle 100 ms, beim Modell alle 50 ms. Springt SAMPLES
+zwischen zwei Lesevorgängen um mehr als eins, erreichen die Messwerte
+dazwischen den Test nie: der Bericht zählt sie in seiner Zeile `Skipped`, und
+die Rate des Netzteils schließt sie ein. Der Bericht nennt beide Raten, im
+Lauf gemessen, und den mittleren Abstand zweier Messwerte, die den Test
+erreicht haben.
 
 Eine Stellzeit endet am ersten Messwert, der wieder am Haltestrom liegt; sie
 ist also um bis zu einen Abstand zu lang. Sie enthält auch den Weg des Befehls

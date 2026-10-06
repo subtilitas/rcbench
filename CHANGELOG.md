@@ -36,7 +36,10 @@ history is in git.
   result show on the left card. The engine is
   `shared/servo/servo_test.c`, host-tested against the servo and supply
   models; nothing of it has run on hardware. The supply's state carries the
-  reading count and the time the panel had each reading.
+  module's reading count (the SUPPLY page's SAMPLES) and the time of the
+  page read that first showed it, so a page read with no new reading behind
+  it is not taken for one; readings skipped between two page reads are
+  counted in the report.
 
 ### Fixed
 

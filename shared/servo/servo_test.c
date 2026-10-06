@@ -559,7 +559,15 @@ void servo_test_reading(servo_test_t *t, const servo_test_reading_t *r,
         return;
     }
     if (t->have_reading) {
-        t->module_samples += (uint16_t)(r->samples - t->samples);
+        const uint16_t step = (uint16_t)(r->samples - t->samples);
+        t->module_samples += step;
+        /* Readings the supply took between two the test saw: not measured,
+         * and counted for the report.  A move between them is timed from
+         * the next one that arrives, so the interval the report states is
+         * the measured one, skips included. */
+        if (step > 1u) {
+            t->skipped += (uint32_t)step - 1u;
+        }
     } else {
         t->first_ms = r->taken_ms;
     }

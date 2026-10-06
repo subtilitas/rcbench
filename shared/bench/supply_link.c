@@ -269,6 +269,12 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
         return;
     }
     const uint16_t was = s->read_any ? s->regs[LINK_SP_FLAGS] : 0u;
+    /* A new reading of the module only when SAMPLES moved: the voltage and
+     * current on a page whose count stands are the last reading's again. */
+    if (!s->read_any || regs[LINK_SP_SAMPLES] != s->samples_seen) {
+        s->samples_seen = regs[LINK_SP_SAMPLES];
+        s->sample_ms    = now_ms;
+    }
     memcpy(s->regs, regs, sizeof(s->regs));
     s->read_any = true;
     s->read_ms  = now_ms;
@@ -345,9 +351,10 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
     st->set_i  = (float)s->regs[LINK_SP_SET_MA_RB] / 1000.0f;
     st->ok     = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
     /* Which reading this is, and when the panel had it: the coprocessor
-     * counts the module's readings, and the page read brought this one. */
-    st->samples  = s->regs[LINK_SP_SAMPLES];
-    st->taken_ms = s->read_ms;
+     * counts the module's readings, and the page read that first showed
+     * this count brought it -- not a later read of the same count. */
+    st->samples  = s->samples_seen;
+    st->taken_ms = s->sample_ms;
 }
 
 uint8_t supply_link_events(supply_link_t *s)

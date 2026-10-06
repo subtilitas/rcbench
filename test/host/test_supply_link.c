@@ -347,6 +347,27 @@ TEST_CASE(the_state_is_what_the_page_says)
     CHECK_EQ(st.samples, (uint16_t)(70001u & 0xFFFFu));
     CHECK_EQ(st.taken_ms, now);
 
+    /* A display read on the coprocessor that is slow or fails leaves
+     * SAMPLES where it was, and the current on the page with it: later
+     * page reads are the same reading, stamped when it first came. */
+    const uint32_t first = now;
+    drv.st.i_ma = 1234u;                        /* not a reading: no count */
+    for (int k = 0; k < 5; ++k) {
+        now += 100u;
+        far_step_and_read(true);
+    }
+    supply_link_state(&sl, now, &st);
+    CHECK(st.online);                           /* the page answers */
+    CHECK_EQ(st.samples, (uint16_t)(70001u & 0xFFFFu));
+    CHECK_EQ(st.taken_ms, first);
+    /* And three readings between two page reads: the count says so. */
+    drv.st.samples = 70004u;
+    now += 100u;
+    far_step_and_read(true);
+    supply_link_state(&sl, now, &st);
+    CHECK_EQ((uint16_t)(st.samples - (uint16_t)(70001u & 0xFFFFu)), 3u);
+    CHECK_EQ(st.taken_ms, now);
+
     drv.st.mode = PDMINI_MODE_NORMAL;
     far_step_and_read(true);
     supply_link_state(&sl, now, &st);

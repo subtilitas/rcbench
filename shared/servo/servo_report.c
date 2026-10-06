@@ -200,6 +200,11 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
         return true;
     }
     if (here(c)) {
+        snprintf(b, n, "Skipped:        %lu readings the supply took never "
+                       "reached the test", (unsigned long)t->skipped);
+        return true;
+    }
+    if (here(c)) {
         if (rated) {
             snprintf(b, n, "Resolution:     one reading every %lu ms: a travel "
                            "time is late by up to that",

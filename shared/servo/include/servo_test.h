@@ -329,6 +329,9 @@ typedef struct {
     uint32_t first_ms, last_ms;   /**< taken_ms of the first and last    */
     uint32_t readings;      /**< new readings during the run              */
     uint32_t module_samples;
+    uint32_t skipped;       /**< readings the supply took that never
+                                 reached the test: its count stepped by
+                                 more than one between two samples       */
     bool     stalling;
     uint32_t stall_since_ms;
     bool     stalled;       /**< a characterisation reading over STALL AT */

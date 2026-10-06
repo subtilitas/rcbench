@@ -45,6 +45,9 @@ typedef struct {
     bool     take_on;        /* and switches on */
     uint8_t  trip;
     bool     drain;
+    bool     frozen;         /* the supply's count and current stand still */
+    uint16_t sample_step;    /* how far its count moves a reading */
+    float    frozen_a;
     float    set_v_max;      /* the highest voltage ever asked */
     bool     released;
     bool     off_asked;
@@ -175,7 +178,17 @@ static servo_test_reading_t reading(float amps)
     r.v      = st.output ? st.set_v - r.i * SUPPLY_SIM_SOURCE_OHMS : 0.0f;
     r.mode   = st.output ? 1u : 0u;
     r.trip   = g.trip;
-    r.samples = ++g.samples;
+    if (g.frozen) {
+        /* A page read with no new module reading behind it: the count and
+         * the current as they were, the stamp of when they came. */
+        r.i = g.frozen_a;
+        r.samples = g.samples;
+        r.taken_ms = g.now;
+        return r;
+    }
+    g.samples = (uint16_t)(g.samples + (g.sample_step ? g.sample_step : 1u));
+    g.frozen_a = r.i;
+    r.samples = g.samples;
     r.taken_ms = g.now;
     return r;
 }
@@ -715,6 +728,53 @@ TEST_CASE(every_abort_switches_off_lets_go_and_reports)
     CHECK(strstr(g.report, " 6.00  not run") != NULL);
 }
 
+/* A supply whose reading count stops while its page goes on answering --
+ * display reads on the coprocessor that are slow or fail -- shows the same
+ * current over and over.  None of it is a new reading: no row is logged,
+ * nothing is measured, and 1.5 s on the run ends as STALE. */
+TEST_CASE(a_frozen_current_is_no_reading)
+{
+    rig_fresh();
+    servo_test_cfg_t c;
+    cfg_defaults(&c);
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_ms(4000u);
+    CHECK(servo_test_running(&g.t));
+    const uint32_t readings = g.t.readings;
+    const unsigned rows = g.csv;
+    g.frozen = true;
+    run_ms(SERVO_TEST_STALE_MS - 100u);
+    CHECK(servo_test_running(&g.t));
+    CHECK_EQ(g.t.readings, readings);
+    CHECK_EQ(g.csv, rows);
+    run_ms(400u);
+    CHECK_EQ(g.t.why, SERVO_TEST_AB_STALE);
+    CHECK(g.off_asked);
+    run_out(10000u);
+    CHECK(strstr(g.report, "ABORTED - no new supply reading") != NULL);
+}
+
+/* Readings the supply took between two that reached the test are counted
+ * and named in the report; the rate taken by the supply counts them. */
+TEST_CASE(skipped_readings_are_reported)
+{
+    rig_fresh();
+    g.sample_step = 3u;                  /* two skipped between each */
+    servo_test_cfg_t c;
+    cfg_defaults(&c);
+    c.step_count = 1u;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(60000u);
+    CHECK_EQ(g.t.skipped, 2u * (g.t.readings - 1u));
+    float per_s = 0.0f, mod_s = 0.0f;
+    CHECK(servo_test_rates(&g.t, &per_s, &mod_s, NULL));
+    CHECK_NEAR(mod_s, 3.0f * per_s, 0.01f);
+    char want[64];
+    snprintf(want, sizeof(want), "Skipped:        %lu readings",
+             (unsigned long)g.t.skipped);
+    CHECK(strstr(g.report, want) != NULL);
+}
+
 /* An abort mid-step marks that step cut short. */
 TEST_CASE(a_step_cut_short_is_said_so)
 {
@@ -901,6 +961,8 @@ int main(void)
     RUN(a_servo_pushing_on_a_stop_ends_the_run);
     RUN(a_servo_that_does_not_move_fails);
     RUN(every_abort_switches_off_lets_go_and_reports);
+    RUN(a_frozen_current_is_no_reading);
+    RUN(skipped_readings_are_reported);
     RUN(a_step_cut_short_is_said_so);
     RUN(a_start_is_refused_for_what_cannot_run);
     RUN(an_output_already_on_is_used_as_it_is);
