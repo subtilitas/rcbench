@@ -51,6 +51,11 @@ typedef struct {
     bool     other_slot;      /* READ_DATA answers for the next slot     */
     const char *who;          /* WHO_AM_I's text, NULL the module's      */
     unsigned ignore_en;       /* OUTPUT_EN writes taken and not applied  */
+    uint32_t byte_gap;        /* ms between reply bytes, 0 for 1         */
+    uint32_t self_off_ms;     /* goes off by itself this long after any
+                                 OUTPUT_EN that left it on, 0 never      */
+    uint32_t last_en_ms;
+    uint32_t attach_at, attach_max;
     int      switch_to;       /* the buttons choose this slot, -1 none,  */
     uint16_t switch_mv;       /* once a READ_DATA answers with this      */
     uint32_t on_ms;           /* how long it was on, all told            */
@@ -63,7 +68,8 @@ static uint32_t now;
 static void m_attach(void *ctx)
 {
     (void)ctx;
-    m.attached = true;
+    m.attached  = true;
+    m.attach_at = now;
     if (m.junk != 0u && m.powered) {
         m.out[0] = m.junk;        /* a framing error from the handover */
         m.out_n = 1u;
@@ -75,6 +81,9 @@ static void m_attach(void *ctx)
 static void m_detach(void *ctx)
 {
     (void)ctx;
+    if (m.attached && (uint32_t)(now - m.attach_at) > m.attach_max) {
+        m.attach_max = (uint32_t)(now - m.attach_at);
+    }
     m.attached = false;
     m.out_n = m.out_i = 0u;       /* whatever was on its way is lost */
 }
@@ -158,6 +167,7 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
     }
     case PDMINI_OUTPUT_EN: {
         ++m.en_writes;
+        m.last_en_ms = now;
         if (m.ignore_en > 0u) {
             --m.ignore_en;
             break;
@@ -216,13 +226,17 @@ static void run(uint32_t ms, bool want_off_seen_on_check)
             }
             m.output = m.target;
         }
+        if (m.self_off_ms != 0u && m.output && m.en_writes > 0u
+            && (uint32_t)(now - m.last_en_ms) == m.self_off_ms) {
+            m.output = false;                  /* its overcurrent protection */
+        }
         if (m.output) {
             ++m.on_ms;
         }
         if (m.attached && m.out_i < m.out_n
             && (int32_t)(now - m.out_at) >= 0) {
             pdmini_rx(&d, m.out[m.out_i++], now);
-            m.out_at = now + 1u;
+            m.out_at = now + ((m.byte_gap != 0u) ? m.byte_gap : 1u);
         }
         pdmini_step(&d, now);
     }
@@ -852,6 +866,99 @@ TEST_CASE(another_device_is_not_the_module)
     CHECK_EQ(m.reads[PDMINI_READ_STATE], 0u);
 }
 
+/* A module that answers who it is with another device's text, in place of
+ * one that went quiet with its output on, is not silence: it is sent no
+ * blind OFF, which may be its ON. */
+TEST_CASE(no_blind_off_goes_to_another_device_that_answers)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(d.on_confirmed);
+    m.mute = true;
+    run(2500u, false);
+    CHECK(!pdmini_status(&d)->online);
+    for (unsigned k = 0u; k < 2000u && d.phase != PD_IDLE; ++k) {
+        run(1u, false);
+    }
+    m.mute   = false;
+    m.who    = "SOMETHING ELSE V2";
+    m.output = false;
+    m.on_arg = 0u;
+    const unsigned writes = m.en_writes;
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(3000u, true);
+    CHECK(!m.output);
+    CHECK_EQ(m.en_writes, writes);
+}
+
+/* A reply that drips is not waited for past the whole transaction's time,
+ * and an OFF does not wait behind a slow read. */
+TEST_CASE(a_slow_reply_holds_neither_the_pins_nor_an_off)
+{
+    fresh();
+    m.byte_gap = 59u;                          /* a 36-byte WHO_AM_I: 2.1 s */
+    run(3000u, false);
+    CHECK(!pdmini_status(&d)->online);
+    CHECK(m.attach_max <= PDMINI_ATTACH_MS + PDMINI_TXN_MS + 2u);
+
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(m.output);
+    m.display_delay = 300u;
+    for (unsigned k = 0u; k < 3000u
+         && !(d.phase == PD_WAIT && d.cmd == PDMINI_READ_DISPLAY); ++k) {
+        run(1u, false);
+    }
+    const unsigned writes = m.en_writes;
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(30u, false);
+    CHECK_EQ(m.en_writes, writes + 1u);        /* the OFF, not the reply */
+    run(600u, false);
+    CHECK(!m.output);
+
+    /* And with an ON still being confirmed, the watch reads at once. */
+    fresh();
+    run(100u, false);
+    m.settle_ms = 200u;
+    pdmini_want(&d, true, 5000u, 1000u);
+    run_to_en_write(1u);
+    m.display_delay = 300u;
+    for (unsigned k = 0u; k < 300u
+         && !(d.phase == PD_WAIT && d.cmd == PDMINI_READ_DISPLAY); ++k) {
+        run(1u, false);
+    }
+    CHECK(d.phase == PD_WAIT && d.cmd == PDMINI_READ_DISPLAY);
+    const unsigned states = m.reads[PDMINI_READ_STATE];
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(30u, false);
+    CHECK(m.reads[PDMINI_READ_STATE] > states);
+}
+
+/* A module the other way round, on from its own buttons: the first OFF
+ * guessed is its ON, and its overcurrent protection switches it off in the
+ * meantime.  That is not taken to show which argument is which, so once
+ * it is on again an OFF still tries both. */
+TEST_CASE(an_output_that_went_off_by_itself_teaches_nothing)
+{
+    fresh();
+    m.on_arg = 0u;
+    m.output = true;
+    m.self_off_ms = 200u;
+    run(100u, false);
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(1000u, false);
+    CHECK(!m.output);
+    CHECK(!d.on_confirmed);
+    m.self_off_ms = 0u;
+    m.output = true;                           /* on again from its buttons */
+    run(3000u, true);
+    CHECK(!m.output);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -910,5 +1017,8 @@ int main(void)
     RUN(a_slot_past_four_is_no_slot);
     RUN(set_points_for_another_slot_fail);
     RUN(another_device_is_not_the_module);
+    RUN(no_blind_off_goes_to_another_device_that_answers);
+    RUN(a_slow_reply_holds_neither_the_pins_nor_an_off);
+    RUN(an_output_that_went_off_by_itself_teaches_nothing);
     return test_summary("pdmini");
 }

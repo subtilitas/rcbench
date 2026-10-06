@@ -13,8 +13,8 @@
  * a set point with READ_OUTPUT_DATA.
  *
  * An OFF goes first, before anything else waiting: an ON or a set point
- * not yet sent is dropped, and an OFF that does not take is written again
- * without pause.  An OFF asked for while
+ * not yet sent is dropped, a read under way other than the state's is
+ * left, and an OFF that does not take is written again without pause.  An OFF asked for while
  * an ON is being confirmed is written at once when a read-back has shown
  * which argument means off; before that, the state is read back to back
  * for 1000 ms from the ON and the output switched off the moment it reads
@@ -30,7 +30,7 @@
  *
  * A module that stops answering while its output is on may still be
  * listening: while an OFF is asked for, it is sent blind straight after
- * each WHO_AM_I that goes unanswered, once a second, until a state read
+ * each WHO_AM_I that is answered by not one byte, once a second, until a state read
  * shows the output off -- only with an argument a read-back has shown to
  * mean on, so the blind OFF cannot switch on an output that was off.  A
  * module that answers WHO_AM_I is read, never written blind, as it may be
@@ -42,7 +42,9 @@
  * Which OUTPUT_EN argument means on is learnt from the module rather than
  * taken from the sheet, which has it backwards: 1 first, the bench's and the
  * vendor's Python's, then 0 -- and learnt again from a module that answers
- * WHO_AM_I after none did.  The output is written only when it reads
+ * WHO_AM_I after none did.  It is learnt only from an output seen to come
+ * on after an ON, never from one seen to go off, which the module's
+ * overcurrent protection does by itself.  The output is written only when it reads
  * otherwise than asked, so an OFF goes only to an output that is on and the
  * learning cannot switch on one that was off.
  *
@@ -98,6 +100,8 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
 #define PDMINI_ATTACH_MS     5u    /**< pins handed over before a request  */
 #define PDMINI_REPLY_MS    400u    /**< the window for a reply             */
 #define PDMINI_BYTE_MS      60u    /**< and longer by this on every byte   */
+#define PDMINI_TXN_MS      600u    /**< but never past this from the request;
+                                        a 37-byte reply is 20 ms at 19200  */
 #define PDMINI_CONFIRM_MS  250u    /**< OUTPUT_EN to the read that confirms */
 #define PDMINI_WATCH_MS   1000u    /**< an ON cancelled before its argument
                                         is known, watched this long         */

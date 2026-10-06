@@ -12,7 +12,8 @@ history is in git.
   wired to the coprocessor.
   - Protocol: the CRC8 (polynomial 0x31, initial 0xFF) checked against all
     fifteen values the vendor's sheet prints. Reply framing with WHO_AM_I
-    ending in 0x0A or a CRC. Set points clamped to the module's 1 to 20 V
+    ending in 0x0A or a CRC. A reply has 400 ms to start, 60 ms more per
+    byte, and 600 ms from the request in all. Set points clamped to the module's 1 to 20 V
     and 0.05 to 3 A.
   - Behaviour:
     - one transaction at a time, with the pins pulled down between them;
@@ -26,13 +27,16 @@ history is in git.
     - a slot number past 4, or set points for another slot than asked,
       fail the transaction.
   - OUTPUT_EN's argument for on is learnt from the module: 1 first, then 0,
-    and learnt again from a module that answers after none did. Once a
+    and learnt again from a module that answers after none did. It is
+    learnt only from an output seen to come on, never from one seen to go
+    off, which the module's overcurrent protection does by itself. Once a
     read-back has shown it, only that argument is written. The output is
     written only when it reads otherwise than asked, so an OFF cannot
     switch on an output that was off.
   - Ordering: an OFF goes first.
     - An ON not yet sent when an OFF is asked for is dropped, and so is a
-      set point while the output is or may be on.
+      set point while the output is or may be on. A read under way other
+      than the state's is left.
     - An OFF that does not take is written again without pause; four
       that do not take raise the stuck flag.
     - An OFF asked for while an ON is being confirmed is written at once
@@ -44,7 +48,7 @@ history is in git.
       it, so the output never comes on at what a slot held before.
   - A module that stops answering with its output on is owed an OFF until
     a state read shows it off. The OFF is sent blind after each WHO_AM_I
-    that goes unanswered, while one is asked for, with the argument a
+    answered by not one byte, while one is asked for, with the argument a
     read-back showed to mean on. A module that answers is read, never
     written blind.
   - The slot and its set points are read again every second, so a change

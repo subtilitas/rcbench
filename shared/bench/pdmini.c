@@ -164,8 +164,10 @@ static void finish(pdmini_t *d, uint32_t now, bool ok)
         return;
     }
     ++d->st.errors;
-    if (d->cmd == PDMINI_WHO_AM_I) {
-        d->blind_due = true;      /* nothing answered who it is */
+    if (d->cmd == PDMINI_WHO_AM_I && d->rx_n == 0u) {
+        /* Not a byte back: silence, where a blind OFF may be heard.  Any
+         * answer -- garbled, or another device's -- is not silence. */
+        d->blind_due = true;
     }
     if (++d->fails >= PDMINI_FAILS) {
         /*
@@ -249,11 +251,14 @@ static bool take_reply(pdmini_t *d, uint32_t now)
             /* There, however it got there: nothing is stuck. */
             d->en_tries = 0u;
             d->st.stuck = false;
-            if (d->en_pending) {
-                /* And the argument just written is the one that means
-                 * this, and its complement the other. */
-                d->on_value = d->want_output ? d->en_value
-                                             : (uint8_t)(1u - d->en_value);
+            if (d->en_pending && d->want_output) {
+                /*
+                 * And the argument just written means on.  Learnt only from
+                 * an output that came on, which it does not do by itself;
+                 * one that went off may have been the module's own
+                 * protection, whatever was written.
+                 */
+                d->on_value     = d->en_value;
                 d->on_confirmed = true;
             }
         }
@@ -329,7 +334,14 @@ void pdmini_rx(pdmini_t *d, uint8_t byte, uint32_t now_ms)
         d->rx[d->rx_n++] = byte;
     }
     if ((int32_t)(now_ms + PDMINI_BYTE_MS - d->deadline) > 0) {
-        d->deadline = now_ms + PDMINI_BYTE_MS;
+        /* Longer by a byte's time, never past the whole transaction's:
+         * a reply that drips is not waited for while an OFF is asked. */
+        uint32_t until = now_ms + PDMINI_BYTE_MS;
+        const uint32_t cap = d->t + PDMINI_TXN_MS;
+        if ((int32_t)(until - cap) > 0) {
+            until = cap;
+        }
+        d->deadline = until;
     }
     const pdmini_frame_t f = pdmini_reply_frame(d->cmd, d->rx, d->rx_n);
     if (f == PDMINI_DONE) {
@@ -555,6 +567,18 @@ static bool next_job(pdmini_t *d, uint32_t now)
 }
 
 /*
+ * Whether an OFF waits on the transaction under way: next_job() would
+ * write it to an output read on, or write it -- or read the state for it --
+ * over an ON still being confirmed.
+ */
+static bool off_now(const pdmini_t *d)
+{
+    return d->identified && !d->want_output
+           && ((!d->en_pending && d->state_known && d->st.output)
+               || (d->en_pending && d->en_for));
+}
+
+/*
  * Whether the write waiting for its pins has been overtaken: an OUTPUT_EN
  * towards what is no longer asked, or a set point while an OFF is asked
  * and the output is or may be on -- the OFF goes first.
@@ -610,9 +634,20 @@ void pdmini_step(pdmini_t *d, uint32_t now_ms)
                 d->en_at = now_ms;
             }
             d->phase = PD_WAIT;
+            d->t     = now_ms;
         }
         break;
     case PD_WAIT:
+        if (!d->write && d->cmd != PDMINI_READ_STATE && off_now(d)) {
+            /* An OFF to write overtakes a read: not waited for, and not
+             * counted a failure.  A state read is the OFF's own. */
+            if (d->io.detach != NULL) {
+                d->io.detach(d->io.ctx);
+            }
+            d->phase = PD_GAP;
+            d->t     = now_ms;
+            break;
+        }
         if ((int32_t)(now_ms - d->deadline) >= 0) {
             finish(d, now_ms, d->write);   /* a read that never came fails */
         }
