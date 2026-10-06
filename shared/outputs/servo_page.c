@@ -131,7 +131,11 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
             sweep_stop(&p->sweep);
             p->finished = false;
         } else if (p->finished && same_curve(&cfg, &was)) {
-            p->regs[LINK_SV_SWEEP] = 0u;   /* done, and not asked again */
+            /* Done, and not started again; but still asked for, so the
+             * centre it ended on is kept commanded while the output slews
+             * there (servo_page_step()). */
+            p->regs[LINK_SV_SWEEP] = 0u;
+            p->heard_ms = now_ms;
         } else {
             if (!(was_running && same_curve(&cfg, &was))) {
                 (void)sweep_start(&p->sweep, &cfg, now_ms);
@@ -160,6 +164,19 @@ void servo_page_read(servo_page_t *p, uint8_t off, uint8_t n, uint16_t *out)
 
 bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
 {
+    /*
+     * A sweep that has made its movements and is still being repeated holds
+     * the surfaces at the centre it ended on: stamped each pass, so a slow
+     * SPEED slews them there rather than the channel's timeout dropping them
+     * to rest part way.  Once the repeats stop, the channels rest as any
+     * command does.
+     */
+    if (p != NULL && o != NULL && p->finished && outputs_armed(o)
+        && (uint32_t)(now_ms - p->heard_ms) <= OUT_DEFAULT_TIMEOUT_MS) {
+        (void)outputs_set_role_channels(o, OUT_ROLE_SURFACE,
+                                        (uint8_t)LINK_OUT_CHANNELS,
+                                        (uint16_t)SWEEP_CENTRE, now_ms);
+    }
     if (p == NULL || o == NULL || !p->sweep.running) {
         if (p != NULL) {
             p->regs[LINK_SV_SWEEP] = 0u;

@@ -1657,6 +1657,47 @@ TEST_CASE(hold_without_feedback_matches_the_far_ends_slew)
     CHECK(abs((int)c.value_us - far_us) <= 6);
 }
 
+/*
+ * Without feedback the horn starts from where the far end's output starts:
+ * still where it was held when the sweep only now began there, or where it
+ * froze when the sweep went unrepeated.
+ */
+TEST_CASE(the_drawn_output_starts_where_the_far_ends_output_starts)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(ARM_X + 1, SPEED_Y);                   /* SPEED 10 % */
+    tap(SWEEP_X, BTN_Y);
+    frames(0.3f);                              /* drawn on its way */
+    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
+    tap(SWEEP_X, BTN_Y);                       /* HOLD at once */
+    servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_POSITION);
+    CHECK(c.value_us >= 1499u && c.value_us <= 1501u);
+
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(ARM_X + 1, SPEED_Y);
+    tap(SWEEP_X, BTN_Y);
+    frames(0.2f);
+    tap(SWEEP_X, BTN_Y);                       /* where it was at 0.2 s */
+    const uint16_t at_02 = last_cmd().value_us;
+
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(ARM_X + 1, SPEED_Y);
+    tap(SWEEP_X, BTN_Y);
+    frames(0.5f);
+    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_FROZEN, 300u);
+    tap(SWEEP_X, BTN_Y);
+    c = last_cmd();
+    CHECK(at_02 > 1520u);
+    CHECK(abs((int)c.value_us - (int)at_02) <= 3);
+}
+
 /* The horn is drawn along the far end's curve from when it started there. */
 TEST_CASE(the_horn_follows_the_curve_from_where_the_far_end_started_it)
 {
@@ -1666,7 +1707,7 @@ TEST_CASE(the_horn_follows_the_curve_from_where_the_far_end_started_it)
     tap(SWEEP_X, BTN_Y);
     frames(0.5f);                              /* the peak, as drawn */
     CHECK(servo_screen_commanded() > 1880u);
-    servo_screen_sweep_started(0u);            /* it began just now */
+    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_HERE, 0u);  /* just now */
     scr->tick(0.001f);
     const uint16_t at = servo_screen_commanded();
     CHECK(at > 1490u && at < 1520u);
@@ -1779,6 +1820,7 @@ int main(void)
     RUN(a_profile_changed_while_it_sweeps_goes_with_the_sweep);
     RUN(hold_keeps_the_output_where_it_has_got_to);
     RUN(hold_without_feedback_matches_the_far_ends_slew);
+    RUN(the_drawn_output_starts_where_the_far_ends_output_starts);
     RUN(a_range_changed_while_it_sweeps_goes_with_its_own_amplitude);
     RUN(the_horn_follows_the_curve_from_where_the_far_end_started_it);
     RUN(drags_and_samples_leave_both_buffers_as_a_full_redraw_would);

@@ -3515,6 +3515,8 @@ static atomic_bool s_servo_sweep_able;   /* for the screen's SWEEP */
 static uint16_t    s_servo_curve[4];
 static uint32_t    s_servo_curve_ms;   /* when the far end last took it */
 static atomic_uint s_sweep_start_ms;
+static atomic_uint s_sweep_start_from;   /* servo_sweep_from_t */
+static atomic_uint s_sweep_frozen_ms;    /* when it froze, for FROZEN */
 static atomic_bool s_sweep_start_new;
 
 static bool write_servo(const servo_cmd_t sv)
@@ -3695,11 +3697,23 @@ static bool write_servo(const servo_cmd_t sv)
              * channel command is trusted, and starts again from zero. */
             const uint32_t took = now_ms();
             const uint32_t gap = took - s_servo_curve_ms;
-            if (!s_servo_sweeping
-                || memcmp(curve, s_servo_curve, sizeof(curve)) != 0
-                || gap > OUT_DEFAULT_TIMEOUT_MS) {
+            servo_sweep_from_t from = SERVO_SWEEP_FROM_HERE;
+            bool started = true;
+            if (!s_servo_sweeping) {
+                from = SERVO_SWEEP_FROM_REST;
+            } else if (gap > OUT_DEFAULT_TIMEOUT_MS) {
+                /* It froze when the last write went unrepeated for that
+                 * long; this starts it again from there. */
+                from = SERVO_SWEEP_FROM_FROZEN;
+                atomic_store(&s_sweep_frozen_ms,
+                             s_servo_curve_ms + OUT_DEFAULT_TIMEOUT_MS);
+            } else if (memcmp(curve, s_servo_curve, sizeof(curve)) == 0) {
+                started = false;   /* repeated: it carries on */
+            }
+            if (started) {
                 memcpy(s_servo_curve, curve, sizeof(curve));
                 atomic_store(&s_sweep_start_ms, took);
+                atomic_store(&s_sweep_start_from, (unsigned)from);
                 atomic_store(&s_sweep_start_new, true);
             }
             s_servo_curve_ms = took;
@@ -5488,8 +5502,11 @@ void app_main(void)
                               (uint16_t)(r & 0xFFFFu));
             servo_screen_set_sweep(atomic_load(&s_servo_sweep_able));
             if (atomic_exchange(&s_sweep_start_new, false)) {
+                const uint32_t now = now_ms();
                 servo_screen_sweep_started(
-                    now_ms() - atomic_load(&s_sweep_start_ms));
+                    now - atomic_load(&s_sweep_start_ms),
+                    (servo_sweep_from_t)atomic_load(&s_sweep_start_from),
+                    now - atomic_load(&s_sweep_frozen_ms));
             }
         }
 

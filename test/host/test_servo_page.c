@@ -234,6 +234,29 @@ TEST_CASE(a_sweep_starts_only_from_all_four_registers)
     CHECK(servo_page_step(&pg, &o, T0 + 70u));
 }
 
+/* A finished sweep the panel still repeats keeps its centre commanded, so
+ * a slow SPEED slews the output there instead of a timeout dropping it to
+ * rest part way. */
+TEST_CASE(a_finished_sweep_keeps_its_centre_while_repeated)
+{
+    fresh(true);
+    CHECK(outputs_set_slew(&o, 0, 100u));      /* 100 units a second */
+    const uint16_t one = 1u;
+    CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP_MOVES, 1u, &one, &o, T0), 0u);
+    CHECK_EQ(sweep(SWEEP_SQUARE, 5000u, 400u, 0u, T0), 0u);
+    uint32_t t = T0;
+    for (; t <= T0 + 3000u; ++t) {
+        if ((t - T0) % 100u == 0u) {
+            CHECK_EQ(sweep(SWEEP_SQUARE, 5000u, 400u, 0u, t), 0u);
+        }
+        (void)servo_page_step(&pg, &o, t);
+        outputs_step(&o, t);
+        CHECK(!outputs_overdue(&o, 0, t));
+    }
+    CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
+    CHECK_EQ(outputs_actual(&o, 0), SWEEP_CENTRE);
+}
+
 int main(void)
 {
     RUN(a_sweep_needs_the_bench_armed);
@@ -245,5 +268,6 @@ int main(void)
     RUN(a_sweep_stopped_by_silence_leaves_the_surfaces_where_they_are);
     RUN(a_sweep_stopped_by_the_panel_leaves_the_surfaces_where_they_are);
     RUN(a_sweep_starts_only_from_all_four_registers);
+    RUN(a_finished_sweep_keeps_its_centre_while_repeated);
     return test_summary("servo_page");
 }

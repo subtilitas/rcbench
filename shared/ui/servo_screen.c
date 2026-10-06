@@ -323,6 +323,12 @@ static struct {
     sweep_t     sw;
     uint32_t    clock_ms;
     float       clock_frac_ms;
+    /* Without feedback: where the output was when the sweep was asked for,
+     * and the last second and a half of where it has been drawn, to start
+     * from where the far end's output starts. */
+    float       sweep_from_cmd;
+    struct { uint32_t t; float cmd; } trail[64];
+    uint8_t     trail_head, trail_n;
 
     /* Changes to what a command carries -- the profile, the pulses, trim,
      * travel -- and how many there had been when ARM was asked for. */
@@ -605,6 +611,7 @@ static void start_sweep(void)
     if (!sweep_start(&s.sw, &cfg, s.clock_ms)) {
         return;
     }
+    s.sweep_from_cmd = s.shown_cmd;
     s.sweeping = true;
     post(SERVO_CMD_SWEEP, 0);
     ++s.ctrl_rev;
@@ -618,14 +625,47 @@ static bool same_sweep(const sweep_cfg_t *a, const sweep_cfg_t *b)
 
 bool servo_screen_sweeping(void) { return s.sweeping; }
 
-void servo_screen_sweep_started(uint32_t age_ms)
+/* Where the horn was drawn @p ago_ms ago, from the trail; the oldest kept
+ * for anything older. */
+static float shown_cmd_ago(uint32_t ago_ms)
 {
-    /* The far end's curve began age_ms ago: this one is drawn from then,
-     * rather than from the tap that asked for it a queue and a few
-     * transactions earlier. */
-    if (s.sweeping) {
-        s.sw.start_ms = s.clock_ms - age_ms;
+    const uint32_t at = s.clock_ms - ago_ms;
+    float best = s.shown_cmd;
+    for (unsigned k = 0; k < s.trail_n; ++k) {
+        const unsigned i = (s.trail_head + 64u - 1u - k) % 64u;
+        best = s.trail[i].cmd;
+        if ((int32_t)(s.trail[i].t - at) <= 0) {
+            break;
+        }
     }
+    return best;
+}
+
+void servo_screen_sweep_started(uint32_t age_ms, servo_sweep_from_t from,
+                                uint32_t frozen_ago_ms)
+{
+    /*
+     * The far end's curve began age_ms ago: this one is drawn from then,
+     * rather than from the tap that asked for it a queue and a few
+     * transactions earlier -- and, with nothing measuring the output, from
+     * where that output was when it began: still where it was held, if the
+     * sweep was only now starting, or where it froze when the sweep went
+     * unrepeated.
+     */
+    if (!s.sweeping) {
+        return;
+    }
+    s.sw.start_ms = s.clock_ms - age_ms;
+    if (s.have_feedback) {
+        return;
+    }
+    if (from == SERVO_SWEEP_FROM_REST) {
+        s.shown_cmd = s.sweep_from_cmd;
+    } else if (from == SERVO_SWEEP_FROM_FROZEN) {
+        s.shown_cmd = shown_cmd_ago(frozen_ago_ms);
+    }
+    s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
+    ++s.ctrl_rev;
 }
 
 void servo_screen_set_sweep(bool able)
@@ -2315,6 +2355,17 @@ static void draw_overlay(gfx_canvas_t *c)
     draw_page(c);
 }
 
+/* The trail servo_screen_sweep_started() reads where a frozen output was. */
+static void remember_shown(void)
+{
+    s.trail[s.trail_head].t   = s.clock_ms;
+    s.trail[s.trail_head].cmd = s.shown_cmd;
+    s.trail_head = (uint8_t)((s.trail_head + 1u) % 64u);
+    if (s.trail_n < 64u) {
+        ++s.trail_n;
+    }
+}
+
 static void tick(float dt_s)
 {
     /* The screen's own clock, for the sweep it draws. */
@@ -2395,11 +2446,13 @@ static void tick(float dt_s)
             s.shown_deg = s.commanded_deg;
             ++s.ctrl_rev;
         }
+        remember_shown();
         return;
     }
     s.shown_cmd += (d > 0.0f) ? step : -step;
     s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
     ++s.ctrl_rev;
+    remember_shown();
 }
 
 /* Draw @p fn clipped to @p box. */
