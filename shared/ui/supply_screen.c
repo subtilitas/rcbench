@@ -178,6 +178,9 @@ static struct {
      * is treated as live from the moment it is asked; see confirm_needed(). */
     bool            on_asked;
     bool            confirm_open;
+    /* Whether OUTPUT's press began on a live output: an OFF tap rather
+     * than an ON hold, whatever the output does before it lifts. */
+    bool            press_on;
     float           pend_v, pend_i;
     gfx_rect_t      apply_btn, discard_btn;
     bool            model;
@@ -636,6 +639,8 @@ void supply_screen_put(float v, float i)
 
 bool supply_screen_output_on(void) { return s.on; }
 
+bool supply_screen_output_live(void) { return s.on || s.on_asked; }
+
 void supply_screen_ask_on(void) { post_on(); }
 
 void supply_screen_ask_off(void) { post_off(); }
@@ -791,6 +796,7 @@ static void down(const touch_event_t *evt)
     /* The output and the peaks work whatever covers the left column. */
     if (gfx_rect_contains(s.out_rect, x, y)) {
         take(evt, P_OUTPUT);
+        s.press_on = s.on;
         if (!s.on) {
             ui_hold_begin(&s.hold);
         }
@@ -1036,7 +1042,7 @@ static void event(const touch_event_t *evt)
     case P_OUTPUT:
         if (!up) {
             /* A finger that leaves the switch abandons the hold. */
-            if (!s.on && !gfx_rect_contains(s.out_rect, x, y)
+            if (!s.press_on && !gfx_rect_contains(s.out_rect, x, y)
                 && ui_hold_leave(&s.hold)) {
                 let_go();
                 ++s.out_rev;
@@ -1047,8 +1053,11 @@ static void event(const touch_event_t *evt)
             const bool fired = ui_hold_end(&s.hold);
             ++s.out_rev;
             /* Off is a tap; on is a hold that has already sent its command
-             * by the time the finger lifts. */
-            if (s.on && !fired && gfx_rect_contains(s.out_rect, x, y)) {
+             * by the time the finger lifts.  Which one is the press's: an
+             * earlier ON reported during a second hold does not make its
+             * release an OFF. */
+            if (s.press_on && s.on && !fired
+                && gfx_rect_contains(s.out_rect, x, y)) {
                 post_off();
             }
             let_go();
@@ -1067,7 +1076,14 @@ static void event(const touch_event_t *evt)
 
 static void tick(float dt_s)
 {
-    if (s.pressed == P_OUTPUT && !s.on) {
+    /* A question about a live output goes once there is none: off, and no
+     * ON on its way -- a STOP or a lost touch can drop one that was. */
+    if (s.confirm_open && !s.on && !s.on_asked) {
+        s.confirm_open = false;
+        ++s.set_rev;
+        supply_invalidate();
+    }
+    if (s.pressed == P_OUTPUT && !s.press_on && !s.on) {
         ++s.out_rev;
         if (ui_hold_tick(&s.hold, dt_s)) {
             post_on();
@@ -1640,7 +1656,7 @@ static void leave(void)
     /* A press on OUTPUT OFF when the screen is left -- a second finger on
      * HOME, which the band handles without asking this screen -- is the OFF
      * the operator was making, and it is sent, as cancel() sends one. */
-    if (s.on && s.pressed == P_OUTPUT && !s.hold.fired) {
+    if (s.on && s.pressed == P_OUTPUT && s.press_on) {
         post_off();
     }
     ui_slider_release(&s.v_slider);
@@ -1671,7 +1687,7 @@ static void leave(void)
  */
 static void cancel(void)
 {
-    if (s.on && s.pressed == P_OUTPUT && !s.hold.fired) {
+    if (s.on && s.pressed == P_OUTPUT && s.press_on) {
         post_off();
     }
     s.pending.on = false;

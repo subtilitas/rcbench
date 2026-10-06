@@ -2005,6 +2005,47 @@ TEST_CASE(the_hv_hold_stands_for_the_live_question)
     CHECK(fabsf(supply_screen_set_v() - 8.4f) < 1e-4f);
 }
 
+/* A second hold on OUTPUT ON while the first ON is on its way: the output
+ * reporting on during it does not make its release an OFF. */
+TEST_CASE(an_on_reported_during_a_second_servo_hold_is_not_an_off)
+{
+    fresh();
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 100; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK(supply_cmd(NULL));                    /* the first ON */
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    scr->tick(1.0f / 40.0f);
+    supply_screen_set_output(true);
+    scr->tick(1.0f / 40.0f);
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    supply_cmd_t c;
+    CHECK(!supply_cmd(&c) || !c.off);
+}
+
+/* A question asked while an ON was on its way goes when STOP drops that
+ * ON, though the output never reported on. */
+TEST_CASE(a_servo_question_for_a_dropped_on_goes)
+{
+    fresh();
+    supply_screen_put(5.0f, 1.0f);
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 100; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("5.5");
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);   /* the question */
+    supply_screen_cancel_on();
+    servo_screen_cancel_arm();
+    scr->tick(1.0f / 40.0f);
+    tap(WARN_APPLY_X, WARN_Y);                  /* nothing there now */
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
+}
+
 int main(void)
 {
     RUN(a_touch_on_the_dial_points_the_horn_there);
@@ -2076,5 +2117,7 @@ int main(void)
     RUN(a_set_point_changed_on_supply_is_redrawn_here);
     RUN(a_voltage_raised_past_6_v_takes_the_hv_hold);
     RUN(the_hv_hold_stands_for_the_live_question);
+    RUN(an_on_reported_during_a_second_servo_hold_is_not_an_off);
+    RUN(a_servo_question_for_a_dropped_on_goes);
     return test_summary("servo");
 }

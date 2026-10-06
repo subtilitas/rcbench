@@ -302,6 +302,7 @@ static struct {
     ui_hold_t  out_hold;
     bool       out_down;
     int        out_id;
+    bool       out_press_on;  /**< the press began as OUTPUT OFF       */
     bool       out_on;        /**< the output as last drawn              */
     float      sup_v, sup_i;  /**< the set points as last seen           */
     uint32_t   sup_rev;
@@ -1810,9 +1811,10 @@ static void event(const touch_event_t *evt)
         if (gfx_rect_contains(s.out_btn, px, py)) {
             /* One contact owns the switch, as on ARM. */
             if (!s.out_down) {
-                s.out_down = true;
-                s.out_id   = evt->point.id;
-                if (!supply_screen_output_on()) {
+                s.out_down     = true;
+                s.out_id       = evt->point.id;
+                s.out_press_on = supply_screen_output_on();
+                if (!s.out_press_on) {
                     ui_hold_begin(&s.out_hold);
                 }
                 ++s.sup_rev;
@@ -1869,9 +1871,10 @@ static void event(const touch_event_t *evt)
     if (s.out_down && evt->point.id == s.out_id) {
         const bool on = supply_screen_output_on();
         if (evt->type == TOUCH_EVENT_MOVE) {
-            /* Off the switch abandons the hold; while on, the press is an
-             * OFF, whose release is checked against the switch. */
-            if (!on && !gfx_rect_contains(s.out_btn, px, py)
+            /* Off the switch abandons the hold; a press that began on a
+             * live output is an OFF, whose release is checked against the
+             * switch. */
+            if (!s.out_press_on && !gfx_rect_contains(s.out_btn, px, py)
                 && ui_hold_leave(&s.out_hold)) {
                 s.out_down = false;
                 ++s.sup_rev;
@@ -1883,8 +1886,11 @@ static void event(const touch_event_t *evt)
             s.out_down = false;
             ++s.sup_rev;
             /* Off is a tap; on is a hold that has already asked by the time
-             * the finger lifts. */
-            if (on && !fired && gfx_rect_contains(s.out_btn, px, py)) {
+             * the finger lifts.  Which one is the press's: an earlier ON
+             * reported during a second hold does not make its release an
+             * OFF. */
+            if (s.out_press_on && on && !fired
+                && gfx_rect_contains(s.out_btn, px, py)) {
                 supply_screen_ask_off();
             }
             return;
@@ -2824,17 +2830,18 @@ static void tick(float dt_s)
         } else if (ui_hold_left(&s.out_hold) && s.out_down) {
             s.out_down = false;
         }
-        if (!on && s.ask.open && !s.ask.hv) {
-            /* The question was about a live output and there is none; the
-             * change it held is dropped, unanswered, as on SUPPLY.  The HV
-             * warning is about the servo, and stays. */
-            s.ask.open = false;
-            close_alone();
-            servo_invalidate();
-        }
         ++s.sup_rev;
     }
-    if (s.out_down && !on) {
+    /* The question is about a live output: once there is none -- off, and
+     * no ON on its way, which a STOP or a lost touch can drop -- it goes,
+     * unanswered, with the change it held, as on SUPPLY.  The HV warning
+     * is about the servo, and stays. */
+    if (s.ask.open && !s.ask.hv && !supply_screen_output_live()) {
+        s.ask.open = false;
+        close_alone();
+        servo_invalidate();
+    }
+    if (s.out_down && !s.out_press_on && !on) {
         ++s.sup_rev;
         if (ui_hold_tick(&s.out_hold, dt_s)) {
             supply_screen_ask_on();
@@ -3050,7 +3057,7 @@ static void leave(void)
     s.arm_down = false;
     /* The supply's output stays as it is, as leaving SUPPLY keeps it; a
      * press on OUTPUT OFF as the screen goes is the OFF being made. */
-    if (s.out_on && s.out_down && !s.out_hold.fired) {
+    if (s.out_on && s.out_down && s.out_press_on) {
         supply_screen_ask_off();
     }
     ui_hold_reset(&s.out_hold);
@@ -3101,7 +3108,7 @@ static void cancel(void)
     s.arm_down = false;
     /* OUTPUT OFF is a press too, and its lost release an OFF made; OUTPUT
      * ON's hold is dropped, and SUPPLY drops an ON not yet collected. */
-    if (s.out_on && s.out_down && !s.out_hold.fired) {
+    if (s.out_on && s.out_down && s.out_press_on) {
         supply_screen_ask_off();
     }
     ui_hold_reset(&s.out_hold);

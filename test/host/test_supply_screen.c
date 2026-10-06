@@ -1289,6 +1289,38 @@ TEST_CASE(reset_pd_mini_is_offered_only_for_the_module)
     CHECK(!c.on);
 }
 
+/* A second hold on OUTPUT ON while the first one's ON is on its way: the
+ * output reporting on during it does not make its release an OFF. */
+TEST_CASE(an_on_reported_during_a_second_hold_is_not_an_off)
+{
+    fresh();
+    hold_on();
+    drain();
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(4);
+    supply_screen_set_output(true);
+    tick_for(1);
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
+    supply_cmd_t c;
+    CHECK(!supply_screen_poll_cmd(&c) || !c.off);
+}
+
+/* The question asked while an ON was on its way goes when that ON is
+ * dropped -- a STOP -- though the output never reported on. */
+TEST_CASE(a_question_for_an_on_that_was_dropped_goes)
+{
+    fresh();
+    hold_on();
+    const float was = supply_screen_set_v();
+    tap(CARD_X, CARD_V_Y);
+    keys("7");
+    CHECK_EQ(supply_screen_set_v(), was);       /* waiting for APPLY */
+    supply_screen_cancel_on();
+    tick_for(1);
+    tap(APPLY_X, ASK_Y);                        /* nothing there now */
+    CHECK_EQ(supply_screen_set_v(), was);
+}
+
 int main(void)
 {
     RUN(reset_pd_mini_is_offered_only_for_the_module);
@@ -1336,6 +1368,8 @@ int main(void)
     RUN(a_set_point_moved_offline_repaints_the_cards_in_both_buffers);
     RUN(a_screen_without_a_sample_draws);
     RUN(the_pd_minis_rate_is_shown_after_online);
+    RUN(an_on_reported_during_a_second_hold_is_not_an_off);
+    RUN(a_question_for_an_on_that_was_dropped_goes);
     free(fb);
     free(fb2);
     return test_summary("supply_screen");

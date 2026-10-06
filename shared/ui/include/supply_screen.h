@@ -114,6 +114,10 @@ void supply_screen_put(float v, float i);
 /** The output as the supply last reported it. */
 bool supply_screen_output_on(void);
 
+/** The output on, or an ON asked for and still on its way: what a set
+ *  point change is asked about. */
+bool supply_screen_output_live(void);
+
 /** OUTPUT ON's hold completed elsewhere, as it does here: an ON is posted
  *  unless an OFF already is. */
 void supply_screen_ask_on(void);
