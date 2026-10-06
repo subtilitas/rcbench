@@ -63,6 +63,8 @@ static bool          s_pd_open;      /* the UART claimed for its pins */
 /* Wiring taken and not yet in flash: no ON until it is, so a restart in
  * the run finds the wiring that drives the module and can switch it off. */
 static bool          s_supply_unsaved;
+/* New wiring taken, the UART to attach once it is saved. */
+static bool          s_supply_attach;
 /* What the board and this file hold, before the supply takes its pins. */
 static uint64_t      s_base_reserved;
 static link_dev_t    s_dev;
@@ -281,6 +283,28 @@ static bool supply_rewire(void)
     return true;
 }
 
+/*
+ * The UART released and the pins this page names reserved, without
+ * attaching: true when a PIO block can serve them, tried and let go again.
+ */
+static bool supply_probe(void)
+{
+    s_supply_attach = false;
+    pd_uart_close();
+    s_pd_open = false;
+    outputs_reserve_pins(&s_outputs,
+                         s_base_reserved | supply_page_pins(&s_supply));
+    if (!supply_page_enabled(&s_supply)) {
+        return true;
+    }
+    if (!pd_uart_open(supply_page_tx(&s_supply), supply_page_rx(&s_supply),
+                      supply_page_baud(s_supply.regs[LINK_SP_BAUD]))) {
+        return false;
+    }
+    pd_uart_close();
+    return true;
+}
+
 static void supply_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
@@ -320,24 +344,33 @@ static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
     const bool rewired =
         supply_page_pins(&s_supply) != supply_page_pins(&was)
         || s_supply.regs[LINK_SP_BAUD] != was.regs[LINK_SP_BAUD];
-    if (rewired && !supply_rewire()) {
+    const bool wiring =
+        memcmp(&s_supply.regs[LINK_SP_ENABLE], &was.regs[LINK_SP_ENABLE],
+               LINK_SP_OUTPUT * sizeof(uint16_t)) != 0;
+    if (wiring && s_supply.regs[LINK_SP_OUTPUT] != 0u) {
+        /* An ON in the same frame as new wiring: that wiring is not in
+         * flash yet, and the ON waits for it. */
+        s_supply = was;
+        return LINK_NACK_NOT_ARMED;
+    }
+    if (rewired && !supply_probe()) {
         /* No UART for those pins: the wiring is as it was, and the panel
          * is told rather than shown a supply that is never there. */
         s_supply = was;
         (void)supply_rewire();
         return LINK_NACK_BAD_VALUE;
     }
-    if (memcmp(&s_supply.regs[LINK_SP_ENABLE], &was.regs[LINK_SP_ENABLE],
-               LINK_SP_OUTPUT * sizeof(uint16_t)) != 0) {
+    if (wiring) {
         save_outputs(&s_state);
         s_supply_unsaved = out_store_pending();
-        if (s_supply_unsaved && s_supply.regs[LINK_SP_OUTPUT] != 0u) {
-            /* An ON in the same frame as new wiring waits for the save. */
-            s_supply = was;
+    }
+    if (rewired) {
+        /* Attached once the wiring is in flash, so a restart in between
+         * finds the pins of the module it may have to switch off. */
+        if (s_supply_unsaved) {
+            s_supply_attach = true;
+        } else {
             (void)supply_rewire();
-            save_outputs(&s_state);      /* the wiring kept is the old one */
-            s_supply_unsaved = out_store_pending();
-            return LINK_NACK_NOT_ARMED;
         }
     }
     return 0u;
@@ -1276,6 +1309,10 @@ int main(void)
         switch (step) {
         case OUT_STORE_WROTE:
             s_supply_unsaved = false;
+            if (s_supply_attach) {
+                s_supply_attach = false;
+                (void)supply_rewire();
+            }
             /*
              * Printed because it is the number that decides whether a save
              * costs a frame: this core answers nothing while it writes, the

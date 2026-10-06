@@ -17,6 +17,9 @@ history is in git.
   - Output: an ON needs a live heartbeat and its set points in the same
     frame, and the output goes off when the heartbeat stops -- applied to
     the driver before it steps, so an ON queued in that pass is not sent.
+  - New wiring is attached only once it is in flash; until then the pins
+    are reserved and the UART only tried. A module that has answered and
+    is not read off now counts as maybe on, so its wiring is held.
   - An ON waits for wiring just written to reach flash (NOT_ARMED until
     then), and the wiring is restored at boot whether or not it is
     enabled. An OUTPUTS write whose slot the UART leaves no PIO for is

@@ -173,6 +173,7 @@ typedef struct {
 
     /* What is known. */
     bool     identified;
+    bool     answered;       /* identified once since pdmini_init()      */
     bool     state_known;    /* READ_OUTPUT_STATE answered since online */
     int      slot;           /* the active slot, -1 until read           */
     bool     data_known;     /* set_mv/set_ma read back from it          */
@@ -229,8 +230,8 @@ void pdmini_step(pdmini_t *d, uint32_t now_ms);
 const pdmini_status_t *pdmini_status(const pdmini_t *d);
 
 /** Whether the output is on or may be: it reads on, an ON waits to be sent
- *  or confirmed or went out unsettled, or an OFF is owed to a module that
- *  went quiet with it on.
+ *  or confirmed or went out unsettled, an OFF is owed to a module that went
+ *  quiet with it on, or a module that has answered is not read off now.
  *  Its wiring is not to be taken from under it while this holds. */
 bool pdmini_may_be_on(const pdmini_t *d);
 

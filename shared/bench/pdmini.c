@@ -135,9 +135,11 @@ const pdmini_status_t *pdmini_status(const pdmini_t *d)
 
 bool pdmini_may_be_on(const pdmini_t *d)
 {
+    /* Not knowing is not off, once something has answered on these pins:
+     * its output may have come on by itself since it was last read. */
     return d != NULL
            && (d->st.output || (d->en_pending && d->en_for) || d->off_owed
-               || d->on_sent);
+               || d->on_sent || (d->answered && !d->state_known));
 }
 
 /* ------------------------------------------------------------ transactions */
@@ -260,6 +262,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         if (!holds(&r[2], r[1], PDMINI_WHO)) {
             return false;
         }
+        d->answered    = true;
         d->identified  = true;
         d->st.online   = true;
         d->state_known = false;

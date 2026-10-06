@@ -1236,6 +1236,27 @@ TEST_CASE(state_reads_answered_wrongly_send_nothing_blind)
     CHECK(m.reads[PDMINI_WHO_AM_I] > asked);
 }
 
+/* Not knowing is not off: a module that has answered and is not read off
+ * now may be on; one that never answered on these pins is not. */
+TEST_CASE(an_output_not_read_may_be_on)
+{
+    fresh();
+    m.powered = false;
+    run(1500u, false);
+    CHECK(!pdmini_may_be_on(&d));              /* nothing ever answered */
+    m.powered = true;
+    run(1500u, false);
+    CHECK(pdmini_status(&d)->online);
+    CHECK(!pdmini_may_be_on(&d));              /* read off */
+    m.no_state = true;
+    run(3000u, false);
+    CHECK(pdmini_may_be_on(&d));               /* answered, not read now */
+    m.no_state = false;
+    run(2000u, false);
+    CHECK(!pdmini_may_be_on(&d));
+    CHECK(!pdmini_may_be_on(NULL));
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -1309,5 +1330,6 @@ int main(void)
     RUN(live_set_points_that_will_not_take_switch_the_output_off);
     RUN(state_reads_that_fail_are_not_hidden_by_the_rest);
     RUN(state_reads_answered_wrongly_send_nothing_blind);
+    RUN(an_output_not_read_may_be_on);
     return test_summary("pdmini");
 }
