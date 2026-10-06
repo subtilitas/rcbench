@@ -91,6 +91,45 @@ supply_limits_t supply_screen_limits(void);
  *  screen's LIMITS page -- so read them again. */
 void supply_screen_limits_changed(void);
 
+/*
+ * For another screen that sets the supply: SERVO, beside the servo the
+ * supply feeds.  The set points and the output stay this screen's, one of
+ * each; what SERVO types or switches lands here as if it were done here.
+ */
+
+/** The set points' range: the supply's caps narrowed by the operator's. */
+supply_caps_t supply_screen_caps(void);
+
+/**
+ * Whether a set point typed now waits for a question before it reaches the
+ * supply: the output live or an ON on its way, and SETTINGS, CONFIRM WHILE
+ * ON, KEYPAD on.
+ */
+bool supply_screen_typed_asks(void);
+
+/** Both set points, typed elsewhere and confirmed where they needed it;
+ *  snapped to the caps. */
+void supply_screen_put(float v, float i);
+
+/** The output as the supply last reported it. */
+bool supply_screen_output_on(void);
+
+/** The output on, or an ON asked for and still on its way: what a set
+ *  point change is asked about. */
+bool supply_screen_output_live(void);
+
+/** How many times the output has been reported going off.  A question
+ *  about a live output records it and stands only while it is unchanged:
+ *  an OFF and a new ON between two frames end the run it was about. */
+uint32_t supply_screen_off_count(void);
+
+/** OUTPUT ON's hold completed elsewhere, as it does here: an ON is posted
+ *  unless an OFF already is. */
+void supply_screen_ask_on(void);
+
+/** OUTPUT OFF tapped elsewhere: an OFF is posted, and any ON dropped. */
+void supply_screen_ask_off(void);
+
 /** A hold under way is abandoned and a pending ON dropped: STOP. */
 void supply_screen_cancel_on(void);
 

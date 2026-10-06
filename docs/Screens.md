@@ -207,6 +207,32 @@ not made for them -- and the supply that feeds the servo: its voltage, current
 and power, read and plotted over the last 13 s. Without a supply sample the
 readings are `--`.
 
+**The supply is set and switched here too.** The SET line under the plot
+holds SUPPLY's two set points, the voltage and the current limit, and its
+output switch. They are SUPPLY's, not a copy: a change on either screen is
+the change on both.
+
+- A tap on a set point opens the keypad over the left card. A value outside
+  the caps is brought inside them, as on SUPPLY.
+- While the output is on, a typed set point waits for SUPPLY's question,
+  OUTPUT IS ON, with APPLY and CANCEL, unless SUPPLY's SETTINGS, CONFIRM
+  WHILE ON, KEYPAD is off. The question goes, unanswered, when the output
+  goes off.
+- A voltage raised from 6.0 V or below to above it opens the warning HV
+  SERVOS ONLY: standard servos are rated for 4.8 to 6.0 V, and above that
+  only a servo specified as HV (high voltage) is within its rating; a
+  standard servo above it can be destroyed immediately. The
+  voltage is applied after HOLD TO APPLY is held for 2 s, the gesture of the
+  profile warning; CANCEL drops it. STOP ends the hold. With the output on it replaces SUPPLY's
+  question, and it stays if the output goes off. A voltage already above
+  6.0 V changes without it. A voltage set on SUPPLY does not open it.
+
+  ![The HV warning](img/servo-hv.png)
+
+- OUTPUT ON is a two-second hold, OUTPUT OFF a tap, as on SUPPLY. STOP ends
+  a hold under way. Leaving SERVO leaves the output as it is; a press on
+  OUTPUT OFF as the screen is left is sent as the OFF it was.
+
 **SWEEP drives the servo through a curve** on the coprocessor, where its
 timing does not depend on the link: the TEST page's CURVE (square, sine or
 triangle), SPEED (0.05 to 5 cycles a second) and DWELL (the hold at each

@@ -178,6 +178,10 @@ static struct {
      * is treated as live from the moment it is asked; see confirm_needed(). */
     bool            on_asked;
     bool            confirm_open;
+    uint32_t        off_count;      /* reported ON-to-OFF edges */
+    /* Whether OUTPUT's press began on a live output: an OFF tap rather
+     * than an ON hold, whatever the output does before it lifts. */
+    bool            press_on;
     float           pend_v, pend_i;
     gfx_rect_t      apply_btn, discard_btn;
     bool            model;
@@ -490,6 +494,9 @@ void supply_screen_set_output(bool on)
     }
     if (s.on != on) {
         s.on = on;
+        if (!on) {
+            ++s.off_count;
+        }
         if (on) {
             ui_hold_reached(&s.hold);
         } else if (ui_hold_left(&s.hold) && s.pressed == P_OUTPUT) {
@@ -619,6 +626,31 @@ supply_limits_t supply_screen_limits(void)
     return s.lim;
 }
 
+supply_caps_t supply_screen_caps(void) { return s.eff; }
+
+bool supply_screen_typed_asks(void) { return confirm_needed(FROM_KEYPAD); }
+
+void supply_screen_put(float v, float i)
+{
+    s.cv = supply_snap(v, s.eff.v_min, s.eff.v_max, s.eff.v_step);
+    s.ci = supply_snap(i, s.eff.i_min, s.eff.i_max, s.eff.i_step);
+    /* The sliders show the set points.  This screen's own question is
+     * closed whenever it is left, so none is open while another types. */
+    ui_slider_set(&s.v_slider, s.cv);
+    ui_slider_set(&s.i_slider, s.ci);
+    ++s.set_rev;
+}
+
+bool supply_screen_output_on(void) { return s.on; }
+
+bool supply_screen_output_live(void) { return s.on || s.on_asked; }
+
+uint32_t supply_screen_off_count(void) { return s.off_count; }
+
+void supply_screen_ask_on(void) { post_on(); }
+
+void supply_screen_ask_off(void) { post_off(); }
+
 void supply_screen_limits_changed(void)
 {
     refresh_limits();
@@ -641,6 +673,12 @@ void supply_screen_cancel_on(void)
         changed = true;
     }
     if (s.pressed == P_OUTPUT && !s.on) {
+        let_go();
+        changed = true;
+    }
+    /* And an APPLY being pressed on the question: its release must not
+     * change a set point after the stop. */
+    if (s.pressed == P_APPLY) {
         let_go();
         changed = true;
     }
@@ -770,6 +808,7 @@ static void down(const touch_event_t *evt)
     /* The output and the peaks work whatever covers the left column. */
     if (gfx_rect_contains(s.out_rect, x, y)) {
         take(evt, P_OUTPUT);
+        s.press_on = s.on;
         if (!s.on) {
             ui_hold_begin(&s.hold);
         }
@@ -936,7 +975,10 @@ static void released(int was, int row, int x, int y)
         }
         break;
     case P_APPLY:
-        if (gfx_rect_contains(s.apply_btn, x, y)) {
+        /* Only while the question still stands: a release drained in the
+         * frame that dropped the ON it was about must not apply it. */
+        if (gfx_rect_contains(s.apply_btn, x, y) && s.confirm_open
+            && (s.on || s.on_asked)) {
             confirm_close(true);
         }
         break;
@@ -1015,7 +1057,7 @@ static void event(const touch_event_t *evt)
     case P_OUTPUT:
         if (!up) {
             /* A finger that leaves the switch abandons the hold. */
-            if (!s.on && !gfx_rect_contains(s.out_rect, x, y)
+            if (!s.press_on && !gfx_rect_contains(s.out_rect, x, y)
                 && ui_hold_leave(&s.hold)) {
                 let_go();
                 ++s.out_rev;
@@ -1026,8 +1068,11 @@ static void event(const touch_event_t *evt)
             const bool fired = ui_hold_end(&s.hold);
             ++s.out_rev;
             /* Off is a tap; on is a hold that has already sent its command
-             * by the time the finger lifts. */
-            if (s.on && !fired && gfx_rect_contains(s.out_rect, x, y)) {
+             * by the time the finger lifts.  Which one is the press's: an
+             * earlier ON reported during a second hold does not make its
+             * release an OFF. */
+            if (s.press_on && s.on && !fired
+                && gfx_rect_contains(s.out_rect, x, y)) {
                 post_off();
             }
             let_go();
@@ -1046,7 +1091,17 @@ static void event(const touch_event_t *evt)
 
 static void tick(float dt_s)
 {
-    if (s.pressed == P_OUTPUT && !s.on) {
+    /* A question about a live output goes once there is none: off, and no
+     * ON on its way -- a STOP or a lost touch can drop one that was. */
+    if (s.confirm_open && !s.on && !s.on_asked) {
+        s.confirm_open = false;
+        if (s.pressed == P_APPLY || s.pressed == P_DISCARD) {
+            let_go();                   /* its buttons have gone with it */
+        }
+        ++s.set_rev;
+        supply_invalidate();
+    }
+    if (s.pressed == P_OUTPUT && !s.press_on && !s.on) {
         ++s.out_rev;
         if (ui_hold_tick(&s.hold, dt_s)) {
             post_on();
@@ -1619,7 +1674,7 @@ static void leave(void)
     /* A press on OUTPUT OFF when the screen is left -- a second finger on
      * HOME, which the band handles without asking this screen -- is the OFF
      * the operator was making, and it is sent, as cancel() sends one. */
-    if (s.on && s.pressed == P_OUTPUT && !s.hold.fired) {
+    if (s.on && s.pressed == P_OUTPUT && s.press_on) {
         post_off();
     }
     ui_slider_release(&s.v_slider);
@@ -1650,7 +1705,7 @@ static void leave(void)
  */
 static void cancel(void)
 {
-    if (s.on && s.pressed == P_OUTPUT && !s.hold.fired) {
+    if (s.on && s.pressed == P_OUTPUT && s.press_on) {
         post_off();
     }
     s.pending.on = false;

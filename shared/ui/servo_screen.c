@@ -77,7 +77,8 @@
 
 /*
  * The right card, top to bottom: the readings, the type and frame rate in
- * force, the supply's live power, then the controls.
+ * force, the supply's live power, its set points and output switch, then the
+ * servo's controls.
  */
 #define RC_X      (RCARD_X + 12)
 #define RC_W      (RCARD_W - 24)
@@ -85,8 +86,18 @@
 #define TAG_Y     118
 #define TAG_H     24
 #define PWR_TXT_Y 150
-#define PWR_Y     172
-#define PWR_H     72
+#define PWR_Y     170
+#define PWR_H     48
+/* The supply's set points, each a value the keypad opens on, and OUTPUT ON
+ * and OFF: the same set points and switch as SUPPLY's, not a copy. */
+#define SUP_Y     224
+#define SUP_H     26
+#define SUP_VAL_X (RC_X + 32)
+#define SUP_VAL_W 66
+#define SUP_OUT_X (SUP_VAL_X + 2 * (SUP_VAL_W + 4))
+/* The top of a standard servo's rating.  A set point raised past it is
+ * applied only after the HV warning is held for two seconds. */
+#define STD_SERVO_V_MAX 6.0f
 
 /*
  * The overlay: the settings and the keypad, keyboard, list and warning they
@@ -218,12 +229,13 @@ static const ui_plot_series_t k_power[PS_COUNT] = {
 /* What a press is on, in the overlay and the panels it opens. */
 enum { OP_NONE = 0, OP_TAB, OP_CLOSE, OP_ROW, OP_TRIM_DN, OP_TRIM_UP,
        OP_KEYPAD, OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY,
-       OP_WARN_CANCEL, OP_SETTINGS };
+       OP_WARN_CANCEL, OP_SETTINGS, OP_SUP_V, OP_SUP_I, OP_ASK_APPLY,
+       OP_ASK_CANCEL };
 
 /* What the list chooses, and what the keypad types. */
 enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM };
 enum { KT_NONE = 0, KT_MIN, KT_CENTRE, KT_MAX, KT_TRAVEL, KT_RATE,
-       KT_SETTING };
+       KT_SETTING, KT_SUP_V, KT_SUP_I };
 
 #define CHOICE_MAX 10
 
@@ -279,6 +291,37 @@ static struct {
     bool           have_sup;
     uint32_t       power_rev;
     uint32_t       drawn_power[2];
+
+    /*
+     * The supply's set points and output, SUPPLY's own: OUTPUT ON is the
+     * same two-second hold, OFF the same tap.  What is drawn is compared
+     * with SUPPLY every frame, so a change made there, a cap that moved or
+     * the output going off shows here at once.
+     */
+    gfx_rect_t out_btn;
+    ui_hold_t  out_hold;
+    bool       out_down;
+    int        out_id;
+    bool       out_press_on;  /**< the press began as OUTPUT OFF       */
+    bool       out_on;        /**< the output as last drawn              */
+    float      sup_v, sup_i;  /**< the set points as last seen           */
+    uint32_t   sup_rev;
+    uint32_t   drawn_sup[2];
+    bool       kp_alone;      /**< the keypad opened the overlay itself  */
+    /* A set point waiting for APPLY: typed while the output is live, or a
+     * voltage raised past a standard servo's rating (hv), which takes the
+     * two-second hold the profile warning takes. */
+    struct {
+        bool      open;
+        bool      hv;
+        int       target;    /**< KT_SUP_V or KT_SUP_I: what was typed */
+        uint32_t  off_count; /**< supply_screen_off_count() at asking  */
+        float     v, i;
+        ui_hold_t hold;
+        bool      down;
+        uint32_t  rev;
+    } ask;
+    uint32_t drawn_ask[2];
 
     /* The overlay and what it opens. */
     bool         ov_open;
@@ -860,6 +903,33 @@ void servo_screen_cancel_arm(void)
     if (changed) {
         ++s.arm_rev;
     }
+    /* OUTPUT ON's hold too: the stop cuts the output, and a hold that ran
+     * on would switch it back on.  An ON already posted is SUPPLY's to drop
+     * (supply_screen_cancel_on()). */
+    if (s.out_down || s.out_hold.held_s > 0.0f) {
+        ui_hold_reset(&s.out_hold);
+        s.out_down = false;
+        ++s.sup_rev;
+    }
+    /* And the two warnings' holds: a voltage past a standard servo's rating
+     * or a profile that can destroy one is not applied by a hold the stop
+     * interrupted.  The warnings stay open; a new hold applies them. */
+    /* An APPLY being pressed -- a tap on the question as well as a hold --
+     * is let go of: its release must not apply a set point after the stop. */
+    if (s.ov_have && (s.ov_pressed == OP_ASK_APPLY
+                      || s.ov_pressed == OP_WARN_APPLY)) {
+        s.ov_have    = false;           /* the press is over, as ov_let_go() */
+        s.ov_pressed = OP_NONE;
+        ++s.ctrl_rev;
+    }
+    if (s.ask.down || s.warn.down) {
+        ui_hold_reset(&s.ask.hold);
+        ui_hold_reset(&s.warn.hold);
+        s.ask.down  = false;
+        s.warn.down = false;
+        ++s.ask.rev;
+        ++s.warn.rev;
+    }
     /*
      * And nothing is being held any more.  The armed state need not have
      * moved -- a bench that was not armed is stopped just the same, and the
@@ -1016,7 +1086,9 @@ void servo_invalidate(void)
         s.drawn_ctrl[b]  = UINT32_MAX;
         s.drawn_arm[b]   = UINT32_MAX;
         s.drawn_power[b] = UINT32_MAX;
+        s.drawn_sup[b]   = UINT32_MAX;
         s.drawn_warn[b]  = UINT32_MAX;
+        s.drawn_ask[b]   = UINT32_MAX;
         s.drawn_save[b]  = 0xFFu;
         /* No step the arm can be drawn at, so the next frame draws it. */
         s.drawn_pulse[b] = -1;
@@ -1026,6 +1098,18 @@ void servo_invalidate(void)
 static gfx_rect_t overlay_area(void)
 {
     return (gfx_rect_t){ OV_X, OV_Y, OV_W, OV_H };
+}
+
+static gfx_rect_t sup_row_rect(void)
+{
+    return (gfx_rect_t){ RC_X, SUP_Y, RC_W, SUP_H };
+}
+
+/* The voltage's value (0) or the current limit's (1): tapped, the keypad. */
+static gfx_rect_t sup_val_rect(int k)
+{
+    return (gfx_rect_t){ (int16_t)(SUP_VAL_X + k * (SUP_VAL_W + 4)), SUP_Y,
+                         SUP_VAL_W, SUP_H };
 }
 
 static void reset(void)
@@ -1060,6 +1144,8 @@ static void reset(void)
     /* Full width and last, under the three that only shape what is commanded:
      * this is the one that decides whether anything is driven at all. */
     s.arm_btn     = (gfx_rect_t){ RC_X, 388, RC_W, 32 };
+    s.out_btn     = (gfx_rect_t){ SUP_OUT_X, SUP_Y,
+                                  (int16_t)(RC_X + RC_W - SUP_OUT_X), SUP_H };
     s.set_btn     = (gfx_rect_t){ (int16_t)(RCARD_X + RCARD_W - 12 - SETB_W),
                                   12, SETB_W, 24 };
 
@@ -1160,6 +1246,103 @@ static void close_panels(void)
     s.warn.open = false;
     s.warn.down = false;
     ui_hold_reset(&s.warn.hold);
+    s.ask.open  = false;    /* a set point not applied is dropped */
+    s.ask.down  = false;
+    ui_hold_reset(&s.ask.hold);
+}
+
+/* The overlay goes when the keypad that opened it for a set point is done:
+ * the settings were not open, so there is nothing to go back to. */
+static void close_alone(void)
+{
+    if (s.kp_alone) {
+        s.kp_alone = false;
+        s.ov_open  = false;
+        close_panels();
+        servo_invalidate();
+    }
+}
+
+/* A set point tapped: the keypad, over the left card as the settings' is. */
+static void open_set_point(int target)
+{
+    if (!s.ov_open) {
+        s.ov_open  = true;
+        s.kp_alone = true;
+    }
+    close_panels();
+    const supply_caps_t caps = supply_screen_caps();
+    if (target == KT_SUP_V) {
+        ui_keypad_open(&s.kp, overlay_area(), "VOLTAGE", "V",
+                       supply_screen_set_v(), caps.v_min, caps.v_max, 2);
+    } else {
+        ui_keypad_open(&s.kp, overlay_area(), "CURRENT LIMIT", "A",
+                       supply_screen_set_i(), caps.i_min, caps.i_max, 2);
+    }
+    s.kp_target = target;
+    servo_invalidate();
+}
+
+/* A set point typed: to the supply, or held for the question SUPPLY asks
+ * before a live output changes. */
+static void set_point_typed(int target, float typed)
+{
+    const supply_caps_t caps = supply_screen_caps();
+    float v = supply_screen_set_v();
+    float i = supply_screen_set_i();
+    if (target == KT_SUP_V) {
+        v = supply_snap(typed, caps.v_min, caps.v_max, caps.v_step);
+    } else {
+        i = supply_snap(typed, caps.i_min, caps.i_max, caps.i_step);
+    }
+    if (v == supply_screen_set_v() && i == supply_screen_set_i()) {
+        close_alone();
+        return;
+    }
+    /* Raised past a standard servo's rating, from at or under it: the HV
+     * warning, which stands in for the live output's question too. */
+    const bool hv = v > STD_SERVO_V_MAX + 0.001f
+                    && supply_screen_set_v() <= STD_SERVO_V_MAX + 0.001f;
+    if (hv || supply_screen_typed_asks()) {
+        s.ask.open      = true;
+        s.ask.hv        = hv;
+        s.ask.target    = target;
+        s.ask.off_count = supply_screen_off_count();
+        s.ask.v      = v;
+        s.ask.i      = i;
+        s.ask.down = false;
+        ui_hold_reset(&s.ask.hold);
+        servo_invalidate();
+        return;
+    }
+    supply_screen_put(v, i);
+    close_alone();
+}
+
+/* Whether the question about a live output still stands: the output on
+ * or coming, and not gone off since it was asked -- an OFF and a new ON
+ * between two frames start a run the question was not about. */
+static bool ask_stands(void)
+{
+    return supply_screen_output_live()
+           && supply_screen_off_count() == s.ask.off_count;
+}
+
+/* The question answered with APPLY, or the HV warning's hold completed. */
+static void ask_apply(void)
+{
+    s.ask.open = false;
+    s.ask.down = false;
+    /* Only the set point that was typed: the other may have moved while
+     * the question stood -- a cap that follows the PD mini's input -- and
+     * the value it had then is not one anybody asked for now. */
+    if (s.ask.target == KT_SUP_V) {
+        supply_screen_put(s.ask.v, supply_screen_set_i());
+    } else {
+        supply_screen_put(supply_screen_set_v(), s.ask.i);
+    }
+    close_alone();
+    servo_invalidate();
 }
 
 static void open_choice(int target, setting_id_t id, const char *title)
@@ -1311,6 +1494,15 @@ static void keypad_done(ui_keypad_result_t r, float v)
     }
     const int target = s.kp_target;
     s.kp_target = KT_NONE;
+    if (target == KT_SUP_V || target == KT_SUP_I) {
+        if (r == UI_KEYPAD_OK) {
+            set_point_typed(target, v);
+        } else {
+            close_alone();
+        }
+        ++s.ctrl_rev;
+        return;
+    }
     if (r == UI_KEYPAD_OK) {
         const uint16_t us = (uint16_t)lroundf(v);
         switch (target) {
@@ -1373,6 +1565,19 @@ static void ov_let_go(void)
 static void ov_down(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
+    if (s.ask.open) {
+        if (gfx_rect_contains(warn_apply_rect(), x, y)) {
+            ov_take(evt, OP_ASK_APPLY, -1);
+            if (s.ask.hv) {
+                s.ask.down = true;
+                ui_hold_begin(&s.ask.hold);
+                ++s.ask.rev;
+            }
+        } else if (gfx_rect_contains(warn_cancel_rect(), x, y)) {
+            ov_take(evt, OP_ASK_CANCEL, -1);
+        }
+        return;
+    }
     if (s.warn.open) {
         if (gfx_rect_contains(warn_apply_rect(), x, y)) {
             ov_take(evt, OP_WARN_APPLY, -1);
@@ -1481,6 +1686,25 @@ static void ov_rest(const touch_event_t *evt)
             ov_let_go();
         }
         return;
+    case OP_ASK_APPLY:
+        if (!s.ask.hv) {
+            break;                      /* a tap: the release applies it */
+        }
+        if (!up) {
+            /* A finger that leaves APPLY abandons the hold, as on ARM. */
+            if (!gfx_rect_contains(warn_apply_rect(), x, y)
+                && ui_hold_leave(&s.ask.hold)) {
+                s.ask.down = false;
+                ++s.ask.rev;
+                ov_let_go();
+            }
+            return;
+        }
+        (void)ui_hold_end(&s.ask.hold);
+        s.ask.down = false;
+        ++s.ask.rev;
+        ov_let_go();
+        return;
     case OP_WARN_APPLY:
         if (!up) {
             /* A finger that leaves APPLY abandons the hold, as on ARM. */
@@ -1508,6 +1732,7 @@ static void ov_rest(const touch_event_t *evt)
     case OP_CLOSE:
         if (gfx_rect_contains(close_rect(), x, y)) {
             s.ov_open = false;
+            s.kp_alone = false;
             close_panels();
             servo_invalidate();
         }
@@ -1533,6 +1758,29 @@ static void ov_rest(const touch_event_t *evt)
             s.warn.open = false;
         }
         break;
+    case OP_SUP_V:
+    case OP_SUP_I: {
+        const int k = (was == OP_SUP_V) ? 0 : 1;
+        if (gfx_rect_contains(sup_val_rect(k), x, y)) {
+            open_set_point((k == 0) ? KT_SUP_V : KT_SUP_I);
+        }
+        break;
+    }
+    case OP_ASK_APPLY:
+        /* Only while the question still stands: a release drained in the
+         * frame that took the live output away must not apply it. */
+        if (gfx_rect_contains(warn_apply_rect(), x, y) && s.ask.open
+            && (s.ask.hv || ask_stands())) {
+            ask_apply();
+        }
+        break;
+    case OP_ASK_CANCEL:
+        if (gfx_rect_contains(warn_cancel_rect(), x, y)) {
+            s.ask.open = false;
+            close_alone();
+            servo_invalidate();
+        }
+        break;
     case OP_SETTINGS:
         if (gfx_rect_contains(s.set_btn, x, y)) {
             /* SETTINGS opens the overlay and closes it, taking whatever is
@@ -1540,6 +1788,7 @@ static void ov_rest(const touch_event_t *evt)
              * servo's lead runs out past the left card, where the overlay
              * does not reach, so the change is a whole repaint. */
             s.ov_open = !s.ov_open;
+            s.kp_alone = false;     /* whatever opened it, it is shut now */
             close_panels();
             servo_invalidate();
         }
@@ -1603,6 +1852,27 @@ static void event(const touch_event_t *evt)
             }
             return;
         }
+        if (gfx_rect_contains(s.out_btn, px, py)) {
+            /* One contact owns the switch, as on ARM. */
+            if (!s.out_down) {
+                s.out_down     = true;
+                s.out_id       = evt->point.id;
+                s.out_press_on = supply_screen_output_on();
+                if (!s.out_press_on) {
+                    ui_hold_begin(&s.out_hold);
+                }
+                ++s.sup_rev;
+            }
+            return;
+        }
+        for (int k = 0; k < 2; ++k) {
+            if (gfx_rect_contains(sup_val_rect(k), px, py)) {
+                if (!s.ov_have) {
+                    ov_take(evt, (k == 0) ? OP_SUP_V : OP_SUP_I, -1);
+                }
+                return;
+            }
+        }
         float deg;
         if (!s.ov_open && on_the_dial(px, py, &deg)) {
             /* A finger on the dial takes the horn from a sweep. */
@@ -1639,6 +1909,35 @@ static void event(const touch_event_t *evt)
             s.arm_id   = evt->point.id;
             ui_hold_begin(&s.arm);
             ++s.arm_rev;
+        }
+    }
+
+    if (s.out_down && evt->point.id == s.out_id) {
+        const bool on = supply_screen_output_on();
+        if (evt->type == TOUCH_EVENT_MOVE) {
+            /* Off the switch abandons the hold; a press that began on a
+             * live output is an OFF, whose release is checked against the
+             * switch. */
+            if (!s.out_press_on && !gfx_rect_contains(s.out_btn, px, py)
+                && ui_hold_leave(&s.out_hold)) {
+                s.out_down = false;
+                ++s.sup_rev;
+            }
+            return;
+        }
+        if (evt->type == TOUCH_EVENT_UP) {
+            const bool fired = ui_hold_end(&s.out_hold);
+            s.out_down = false;
+            ++s.sup_rev;
+            /* Off is a tap; on is a hold that has already asked by the time
+             * the finger lifts.  Which one is the press's: an earlier ON
+             * reported during a second hold does not make its release an
+             * OFF. */
+            if (s.out_press_on && on && !fired
+                && gfx_rect_contains(s.out_btn, px, py)) {
+                supply_screen_ask_off();
+            }
+            return;
         }
     }
 
@@ -1989,6 +2288,53 @@ static void draw_power(gfx_canvas_t *c)
     ui_plot_render(&s.power, c, (gfx_rect_t){ RC_X, PWR_Y, RC_W, PWR_H });
 }
 
+/* OUTPUT ON and OFF in SUPPLY's colours: off is the green the hold fades
+ * from, on the danger red it fades to. */
+static gfx_color_t out_fill(void)
+{
+    if (s.out_hold.flash_left > 0) {
+        return ui_hold_flash(ui_theme_color(UI_C_DANGER),
+                             s.out_hold.flash_left);
+    }
+    gfx_color_t fill = s.out_on ? ui_theme_color(UI_C_DANGER)
+                                : ui_theme_color(UI_C_OK);
+    if (!s.out_on && s.out_hold.held_s > 0.0f) {
+        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER),
+                            s.out_hold.held_s);
+    }
+    return fill;
+}
+
+/* SET, the two set points, and the output switch. */
+static void draw_sup_row(gfx_canvas_t *c)
+{
+    const gfx_rect_t r = sup_row_rect();
+    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
+    gfx_text(c, RC_X, SUP_Y + 5, "SET", UI_FONT_LABEL,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
+    char v[12], a[12];
+    snprintf(v, sizeof(v), "%.2f V", (double)supply_screen_set_v());
+    snprintf(a, sizeof(a), "%.2f A", (double)supply_screen_set_i());
+    const struct { const char *txt; gfx_color_t col; int op; } k[2] = {
+        { v, ui_theme_color(UI_C_VOLT), OP_SUP_V },
+        { a, ui_theme_color(UI_C_CURR), OP_SUP_I },
+    };
+    for (int i = 0; i < 2; ++i) {
+        const gfx_rect_t b = sup_val_rect(i);
+        const bool down = s.ov_have && s.ov_pressed == k[i].op;
+        gfx_fill_round_rect(c, b.x, b.y, b.w, b.h, 4,
+                            down ? ui_theme_color(UI_C_PANEL_HI)
+                                 : ui_theme_color(UI_C_PANEL_SUNK));
+        gfx_text_in(c, b, k[i].txt, UI_FONT_LABEL, k[i].col, 1,
+                    GFX_ALIGN_CENTER);
+    }
+    ui_button(c, s.out_btn, s.out_on ? "OUTPUT OFF" : "OUTPUT ON", out_fill(),
+              s.out_down, true);
+    if (s.out_hold.flash_left > 0) {
+        ui_hold_flash_step(&s.out_hold);
+    }
+}
+
 static gfx_rect_t tag_rect(void)
 {
     return (gfx_rect_t){ RC_X, TAG_Y, RC_W, TAG_H };
@@ -2058,6 +2404,7 @@ static void draw_right(gfx_canvas_t *c, bool power)
     if (power) {
         draw_power(c);
     }
+    draw_sup_row(c);
 
     snprintf(buf, sizeof(buf), "%d %%", s.speed_pct);
     row(c, 264, "SPEED", buf);
@@ -2356,6 +2703,96 @@ static void draw_warning(gfx_canvas_t *c)
               s.ov_have && s.ov_pressed == OP_WARN_CANCEL, true);
 }
 
+static void draw_ask_apply(gfx_canvas_t *c)
+{
+    ui_button(c, warn_apply_rect(), "HOLD TO APPLY",
+              ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK),
+                           ui_theme_color(UI_C_DANGER), s.ask.hold.held_s),
+              s.ask.down, true);
+}
+
+/*
+ * A voltage raised past a standard servo's rating: in the danger colour of
+ * the profile warning, saying what it does to a servo not rated for it.
+ */
+static void draw_hv(gfx_canvas_t *c)
+{
+    const gfx_rect_t a = overlay_area();
+    const gfx_color_t red = ui_theme_color(UI_C_DANGER);
+    gfx_draw_rect(c, a.x, a.y, a.w, a.h, red);
+    gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, red);
+    gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, red);
+    gfx_text(c, a.x + 20, a.y + 20, "HV SERVOS ONLY", &gfx_font_8x16, red, 2);
+    char what[48];
+    snprintf(what, sizeof(what), "VOLTAGE %.2f -> %.2f V",
+             (double)supply_screen_set_v(), (double)s.ask.v);
+    gfx_text(c, a.x + 20, a.y + 66, what, &gfx_font_8x16,
+             ui_theme_color(UI_C_VOLT), 1);
+    const char *const lines[] = {
+        "Standard servos are rated for 4.8 to 6.0 V.",
+        "Above 6.0 V, only a servo specified as HV",
+        "(high voltage) operates within its rating.",
+        "A standard servo can be destroyed immediately.",
+        "Check the servo's datasheet before applying.",
+    };
+    for (int i = 0; i < 5; ++i) {
+        gfx_text(c, a.x + 20, a.y + 104 + i * 22, lines[i], &gfx_font_8x16,
+                 (i < 4) ? ui_theme_color(UI_C_TEXT)
+                         : ui_theme_color(UI_C_TEXT_DIM), 1);
+    }
+    if (supply_screen_output_on()) {
+        gfx_text(c, a.x + 20, a.y + 104 + 5 * 22 + 8,
+                 "The output is on: the voltage changes at once.",
+                 &gfx_font_8x16, ui_theme_color(UI_C_WARN), 1);
+    }
+    draw_ask_apply(c);
+    ui_button(c, warn_cancel_rect(), "CANCEL",
+              ui_theme_color(UI_C_PANEL_SUNK),
+              s.ov_have && s.ov_pressed == OP_ASK_CANCEL, true);
+}
+
+/*
+ * SUPPLY's question before a set point changes a live output, with its
+ * words: the change reaches the load at once.
+ */
+static void draw_ask(gfx_canvas_t *c)
+{
+    const gfx_rect_t a = overlay_area();
+    if (s.ask.hv) {
+        draw_hv(c);
+        return;
+    }
+    gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_WARN));
+    gfx_text(c, a.x + 20, a.y + 20, "OUTPUT IS ON", &gfx_font_8x16,
+             ui_theme_color(UI_C_WARN), 2);
+    gfx_text(c, a.x + 20, a.y + 70, "A new set point reaches the load at once.",
+             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
+    int y = a.y + 120;
+    const struct { const char *label; float was, now; const char *unit;
+                   gfx_color_t col; } k[] = {
+        { "VOLTAGE",       supply_screen_set_v(), s.ask.v, "V",
+          ui_theme_color(UI_C_VOLT) },
+        { "CURRENT LIMIT", supply_screen_set_i(), s.ask.i, "A",
+          ui_theme_color(UI_C_CURR) },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        if (k[i].was == k[i].now) {
+            continue;
+        }
+        gfx_text(c, a.x + 20, y + 8, k[i].label, &gfx_font_8x16,
+                 ui_theme_color(UI_C_TEXT_DIM), 1);
+        char line[48];
+        snprintf(line, sizeof(line), "%.2f -> %.2f %s", (double)k[i].was,
+                 (double)k[i].now, k[i].unit);
+        gfx_text(c, a.x + 150, y, line, &gfx_font_8x16, k[i].col, 2);
+        y += 50;
+    }
+    ui_button(c, warn_apply_rect(), "APPLY", ui_theme_color(UI_C_WARN),
+              s.ov_have && s.ov_pressed == OP_ASK_APPLY, true);
+    ui_button(c, warn_cancel_rect(), "CANCEL", ui_theme_color(UI_C_PANEL_SUNK),
+              s.ov_have && s.ov_pressed == OP_ASK_CANCEL, true);
+}
+
 static void draw_overlay(gfx_canvas_t *c)
 {
     const gfx_rect_t a = overlay_area();
@@ -2368,6 +2805,10 @@ static void draw_overlay(gfx_canvas_t *c)
         return;
     }
     gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
+    if (s.ask.open) {
+        draw_ask(c);
+        return;
+    }
     if (s.warn.open) {
         draw_warning(c);
         return;
@@ -2422,6 +2863,72 @@ static void tick(float dt_s)
     }
     if (s.arm.flash_left > 0) {
         ++s.arm_rev;   /* keep the frames coming while it flashes */
+    }
+
+    /* The supply as SUPPLY holds it: its output and its set points. */
+    const bool on = supply_screen_output_on();
+    if (on != s.out_on) {
+        s.out_on = on;
+        if (on) {
+            ui_hold_reached(&s.out_hold);
+        } else if (ui_hold_left(&s.out_hold) && s.out_down) {
+            s.out_down = false;
+        }
+        if (s.ask.open && s.ask.hv) {
+            ++s.ctrl_rev;   /* the warning says whether the output is on */
+        }
+        ++s.sup_rev;
+    }
+    /* The question is about a live output: once there is none -- off, and
+     * no ON on its way, which a STOP or a lost touch can drop -- it goes,
+     * unanswered, with the change it held, as on SUPPLY.  The HV warning
+     * is about the servo, and stays. */
+    /* A cap that came down while the question stands takes the waiting
+     * value down with it, for good, as SUPPLY does with its own: one that
+     * recovers before APPLY does not bring the old value back. */
+    if (s.ask.open) {
+        const supply_caps_t caps = supply_screen_caps();
+        const float v = supply_snap(s.ask.v, caps.v_min, caps.v_max,
+                                    caps.v_step);
+        const float i = supply_snap(s.ask.i, caps.i_min, caps.i_max,
+                                    caps.i_step);
+        if (v != s.ask.v || i != s.ask.i) {
+            s.ask.v = v;
+            s.ask.i = i;
+            ++s.ctrl_rev;               /* the question shows the value */
+        }
+    }
+    if (s.ask.open && !s.ask.hv && !ask_stands()) {
+        s.ask.open = false;
+        if (s.ov_pressed == OP_ASK_APPLY || s.ov_pressed == OP_ASK_CANCEL) {
+            ov_let_go();                /* its buttons have gone with it */
+        }
+        close_alone();
+        servo_invalidate();
+    }
+    if (s.out_down && !s.out_press_on && !on) {
+        ++s.sup_rev;
+        if (ui_hold_tick(&s.out_hold, dt_s)) {
+            supply_screen_ask_on();
+        }
+    }
+    if (s.out_hold.flash_left > 0) {
+        ++s.sup_rev;
+    }
+    if (supply_screen_set_v() != s.sup_v || supply_screen_set_i() != s.sup_i) {
+        s.sup_v = supply_screen_set_v();
+        s.sup_i = supply_screen_set_i();
+        ++s.sup_rev;
+    }
+
+    /* The HV warning's hold: the voltage goes to the supply when it
+     * completes. */
+    if (s.ask.open && s.ask.down) {
+        ++s.ask.rev;
+        if (ui_hold_tick(&s.ask.hold, dt_s)) {
+            ov_let_go();
+            ask_apply();
+        }
     }
 
     /* The warning's hold: the profile goes into force when it completes. */
@@ -2492,7 +2999,8 @@ static void clipped(gfx_canvas_t *c, gfx_rect_t box, void (*fn)(gfx_canvas_t *))
 
 static bool page_shown(void)
 {
-    return s.ov_open && !s.warn.open && !s.kp.open && !s.tk.open && !s.ch.open;
+    return s.ov_open && !s.warn.open && !s.kp.open && !s.tk.open && !s.ch.open
+           && !s.ask.open;
 }
 
 static void render(gfx_canvas_t *c, int buffer_index)
@@ -2519,8 +3027,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
         const bool power = (s.drawn_power[buf] != s.power_rev);
         s.drawn_ctrl[buf]  = ov_rev;
         s.drawn_arm[buf]   = s.arm_rev;
+        s.drawn_sup[buf]   = s.sup_rev;
         s.drawn_power[buf] = s.power_rev;
         s.drawn_warn[buf]  = s.warn.rev;
+        s.drawn_ask[buf]   = s.ask.rev;
         s.drawn_save[buf]  = save_state();
         s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
         if (s.ov_open) {
@@ -2553,9 +3063,18 @@ static void render(gfx_canvas_t *c, int buffer_index)
         s.drawn_power[buf] = s.power_rev;
         clipped(c, power_rect(), draw_power);
     }
+    if (s.drawn_sup[buf] != s.sup_rev) {
+        s.drawn_sup[buf] = s.sup_rev;
+        clipped(c, sup_row_rect(), draw_sup_row);
+    }
     if (s.ov_open && s.warn.open && s.drawn_warn[buf] != s.warn.rev) {
         s.drawn_warn[buf] = s.warn.rev;
         clipped(c, warn_apply_rect(), draw_warn_apply);
+    }
+    if (s.ov_open && s.ask.open && s.ask.hv
+        && s.drawn_ask[buf] != s.ask.rev) {
+        s.drawn_ask[buf] = s.ask.rev;
+        clipped(c, warn_apply_rect(), draw_ask_apply);
     }
     if (page_shown() && s.drawn_save[buf] != save_state()) {
         s.drawn_save[buf] = save_state();
@@ -2601,8 +3120,17 @@ static void leave(void)
     s.armed = false;
     ui_hold_reset(&s.arm);
     s.arm_down = false;
+    /* The supply's output stays as it is, as leaving SUPPLY keeps it; a
+     * press on OUTPUT OFF as the screen goes is the OFF being made. */
+    if (s.out_down && s.out_press_on) {
+        supply_screen_ask_off();
+    }
+    ui_hold_reset(&s.out_hold);
+    s.out_down = false;
+    ++s.sup_rev;
     s.sweeping = false;
     s.ov_open = false;
+    s.kp_alone = false;
     close_panels();
     ui_tabs_cancel(&s.tabs);
     s.ov_have = false;
@@ -2643,6 +3171,14 @@ static void cancel(void)
     ui_slider_release(&s.speed);
     ui_hold_reset(&s.arm);
     s.arm_down = false;
+    /* OUTPUT OFF is a press too, and its lost release an OFF made; OUTPUT
+     * ON's hold is dropped, and SUPPLY drops an ON not yet collected. */
+    if (s.out_down && s.out_press_on) {
+        supply_screen_ask_off();
+    }
+    ui_hold_reset(&s.out_hold);
+    s.out_down = false;
+    ++s.sup_rev;
     /*
      * And the dial.  A drag left latched owns its track id, and the GT911
      * reuses ids: a later contact that began somewhere else would satisfy
@@ -2658,6 +3194,9 @@ static void cancel(void)
     ui_hold_reset(&s.warn.hold);
     s.warn.down = false;
     ++s.warn.rev;
+    ui_hold_reset(&s.ask.hold);
+    s.ask.down = false;
+    ++s.ask.rev;
     s.ov_have = false;
     s.ov_pressed = OP_NONE;
     ++s.arm_rev;
