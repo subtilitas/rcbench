@@ -64,6 +64,8 @@ history is in git.
   - Set points that do not take, or replies naming no slot or another, are
     tried three times, then flagged and left alone for two seconds while
     the readings go on.
+    With the output on, that switches it off, and it stays off until an
+    OFF and a new ON are asked for.
 
 - **SERVO has SETTINGS of its own.** The overlay sets the servo type --
   STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC (1520 us, +/-700 us, up to

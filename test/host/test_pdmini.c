@@ -1154,6 +1154,37 @@ TEST_CASE(an_on_sent_and_unsettled_is_owed_an_off)
     CHECK(!m.output);
 }
 
+/* Live set points the module will not take: the output goes off rather
+ * than stay at the old ones, and stays off while ON is still asked, until
+ * an OFF and a new ON. */
+TEST_CASE(live_set_points_that_will_not_take_switch_the_output_off)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 20000u, 1000u);
+    run(1500u, false);
+    CHECK(m.output);
+    m.ignore_data = true;
+    for (int k = 0; k < 40; ++k) {             /* asked every pass, as the */
+        pdmini_want(&d, true, 5000u, 1000u);   /* coprocessor does         */
+        run(50u, false);
+    }
+    CHECK(!m.output);
+    CHECK(pdmini_status(&d)->set_stuck);
+    m.ignore_data = false;                     /* takes them now, but ON */
+    for (int k = 0; k < 60; ++k) {             /* is still only repeated */
+        pdmini_want(&d, true, 5000u, 1000u);
+        run(50u, false);
+    }
+    CHECK(!m.output);
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(2000u, false);
+    CHECK(m.output);
+    CHECK_EQ(m.on_at_mv, 5000u);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -1224,5 +1255,6 @@ int main(void)
     RUN(an_argument_outlasts_a_module_that_comes_back);
     RUN(an_output_that_came_on_by_itself_is_not_relied_on);
     RUN(an_on_sent_and_unsettled_is_owed_an_off);
+    RUN(live_set_points_that_will_not_take_switch_the_output_off);
     return test_summary("pdmini");
 }

@@ -106,6 +106,10 @@ void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma)
     if (d == NULL) {
         return;
     }
+    if (!output) {
+        d->held_off = false;      /* an OFF asked: an ON may follow */
+    }
+    output = output && !d->held_off;
     if (output != d->want_output) {
         d->en_tries = 0u;
         d->st.stuck = false;
@@ -510,6 +514,13 @@ static bool next_job(pdmini_t *d, uint32_t now)
     bool data_paused = false;
     if (d->data_tries >= 3u) {
         d->st.set_stuck = true;
+        if (d->want_output && (d->st.output || (d->en_pending && d->en_for))) {
+            /* Not left on at set points other than asked: off, and held
+             * off until an OFF and a new ON are asked for. */
+            d->held_off    = true;
+            d->want_output = false;
+            d->en_tries    = 0u;
+        }
         data_paused = (uint32_t)(now - d->data_at) < PDMINI_RETRY_MS;
         if (!data_paused) {
             d->data_tries = 0u;

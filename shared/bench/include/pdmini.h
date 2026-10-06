@@ -179,6 +179,8 @@ typedef struct {
     bool     on_seen;        /* on_value seen to work once               */
     bool     on_confirmed;   /* and twice: relied on                     */
     bool     on_sent;        /* an ON went out, not yet settled by a read */
+    bool     held_off;       /* switched off for set points that would not
+                                take; until an OFF is asked             */
     bool     off_owed;       /* gone while on: an OFF is sent blind      */
     bool     blind_due;      /* a WHO_AM_I went unanswered: OFF blind   */
     uint8_t  en_tries;       /* OUTPUT_EN writes towards the wanted state */
@@ -209,7 +211,9 @@ typedef struct {
 void pdmini_init(pdmini_t *d, const pdmini_io_t *io, uint32_t now_ms);
 
 /** What the output is to be.  Set points are clamped to the module's range;
- *  switching off is the first thing done whatever else is waiting. */
+ *  switching off is the first thing done whatever else is waiting.  An
+ *  output switched off because its set points would not take stays off,
+ *  whatever is asked, until an OFF is asked. */
 void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma);
 
 /** A byte from the module. */
