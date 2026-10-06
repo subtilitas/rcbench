@@ -258,6 +258,36 @@ with the new curve; a changed profile or frame rate goes with it at once. SWEEP 
 speaking protocol 4.2; the coprocessor stops a sweep the panel has not
 repeated for 500 ms and leaves each surface where its output has got to.
 
+**START TEST runs the automatic test** on the TEST page: the servo stepped
+through the supply voltages chosen there, its current measured at rest,
+moving and holding, its travel timed, and the voltage at which it stops
+moving. [Servo procedures](Servo.md#automatic-test) gives the method and the
+files. START TEST needs an armed bench and a supply that answers; the line
+under it says ARM FIRST, or why a run was refused. It is a two-second hold,
+the gesture OUTPUT ON uses, because a run switches the supply on and moves
+the servo. With HV SERVO on and a step above 6.0 V chosen, a tap opens HV
+SERVOS ONLY instead, naming the highest step, and the run starts only after
+its HOLD TO APPLY is held for 2 s. HV SERVO is for the session: every restart
+turns it off.
+
+The settings close as the run starts, and its step and phase show at the top
+of the left card. The run owns the servo and SUPPLY's set points and switch
+until it ends. It ends early, the output switched off and the servo released
+to its centre, on STOP TEST (on the left card or the TEST page), STOP, a
+disarm, the link going, leaving the screen, a finger on the dial, CENTRE,
+SWEEP, RELEASE, a tap on a set point, a change to the servo's type, pulses,
+trim, travel, reverse or SPEED, touch events going missing, and on the
+supply: see [the list](Servo.md#what-ends-a-run). After any run, once the
+output reads off, the set points go back to what they were before it.
+
+![A run](img/servo-run.png)
+
+The result stays on the left card until CLOSE: PASS, FAIL or ABORTED and
+why, the longest travel time and the highest holding current, and the files
+the card took, `BENCHnnn.CSV` and, with REPORT on, `BENCHnnn.TXT`.
+
+![A result](img/servo-result.png)
+
 ### Settings
 
 SETTINGS, at the top of the right card, opens the servo's settings over the
@@ -275,10 +305,12 @@ name opens a keyboard.
 | OUTPUT | TRIM | added to the centre, 5 us a step, up to 200 us either way |
 | OUTPUT | TRAVEL | how far the horn may go each way, 10 to 90 degrees |
 | OUTPUT | REVERSE | the direction the horn's angle maps onto the pulse |
-| TEST | CURVE, SPEED, RANGE | the movement of SWEEP and the automatic test: square, sine or triangle, 0.05 to 5 Hz, 10 to 100 % of the travel |
+| TEST | CURVE, SPEED, RANGE | the movement of SWEEP: square, sine or triangle, 0.05 to 5 Hz, 10 to 100 % of the travel. The automatic test moves in steps between the ends RANGE gives |
 | TEST | LENGTH BY, TEST TIME, MOVEMENTS | how long each supply step runs: a time, or a number of movements |
 | TEST | DWELL, SETTLE | held at each end; waited after a supply step before measuring |
-| TEST | STEP 4.8 / 6.0 / 7.4 / 8.4 V, BROWN-OUT | the supply steps, and the brown-out run from 5.0 V down |
+| TEST | STEP 4.8 / 6.0 / 7.4 / 8.4 V, BROWN-OUT | the supply steps, and the brown-out run from 5.0 V down; 7.4 and 8.4 V run only with HV SERVO on |
+| TEST | HV SERVO | adds the 7.4 and 8.4 V steps, off by default and at every restart; a run with them starts only through HV SERVOS ONLY |
+| TEST | START TEST | the automatic test: a 2 s hold on an armed bench; STOP TEST while it runs |
 | LIMITS | VOLTAGE MAX, CURRENT MAX | the SUPPLY screen's caps, the same settings |
 | LIMITS | STALL AT | above this current the servo counts as stalled |
 | LIMITS | IDLE CURRENT, HOLD CURRENT, TRAVEL TIME | pass/fail limits; 0 is not checked |
@@ -341,8 +373,9 @@ known: the arm is refused with `servo frame rate not known -- arm again`, and
 an arm made while the link was down reaches the coprocessor only once the
 reset has landed.
 
-The OUTPUT settings are kept for the session; the TEST, LIMITS and DUT
-settings are kept in NVS (non-volatile storage) and written as on SUPPLY.
+The OUTPUT settings and HV SERVO are kept for the session; the rest of the
+TEST, LIMITS and DUT settings are kept in NVS (non-volatile storage) and
+written as on SUPPLY.
 
 ![The automatic test's settings](img/servo-test.png)
 ![The limits](img/servo-limits.png)
@@ -352,8 +385,9 @@ Current limitations:
 
 - Until the screen sends a position, the pins run at the rate the SERVO page
   holds, which after a restart or a new binding is 50 Hz.
-- No automatic test runs in this build. The TEST, LIMITS and DUT settings are
-  kept for it, and no report is written.
+- The automatic test has not run on hardware, and on the panel's supply
+  model its currents are the model's load, not the servo's: a run there
+  measures the model. [What is not measured](Servo.md#not-run-on-hardware).
 - The supply on the right card is SUPPLY's: the PD mini when SETUP enables
   it, the panel's model otherwise, whose voltage, current and power are
   simulated, not measured.
@@ -610,6 +644,9 @@ point, a units row and ragged rows; the import view shows what it decided
 before the file is plotted. Runs recorded by the bench are written as
 `BENCH001.CSV` to `BENCH999.CSV` in the card's root directory. A run is one
 arming, or one switch-on of the SUPPLY output while the bench is not armed.
+An automatic servo test takes the next number too: its log is `BENCHnnn.CSV`,
+which the list shows as a run, and its report `BENCHnnn.TXT`, which the list
+does not show.
 
 The list holds 48 entries and a card holds up to 999 runs. When there are more
 than fit, the list keeps the newest runs and its tab reads `48 OF 137 FILES`

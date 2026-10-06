@@ -61,6 +61,13 @@ typedef struct {
     /** The trip that switched the output off last, as supply_trip_kind_t;
      *  kept until the output is switched on again. */
     uint8_t       trip;
+    /** Readings the supply has taken, modulo 65536: a new count is a new
+     *  reading, and the same count read again is the same reading.  The
+     *  PD mini's from its page; the model counts its steps. */
+    uint16_t      samples;
+    /** When the panel had this reading, on its millisecond clock: the page
+     *  read that brought it, or the model's step.  0 is not known. */
+    uint32_t      taken_ms;
 
     /* The run's extremes, from the output's switch-on: how far the voltage
      * sagged, and the most current and power it gave. */
@@ -181,8 +188,8 @@ void supply_sim_init(supply_sim_t *m);
 /** Set points are snapped to the caps; the output's state is kept. */
 void supply_sim_set(supply_sim_t *m, float v, float i);
 void supply_sim_output(supply_sim_t *m, bool on);
-/** Advance @p dt_s and write the readings, mode and set points into @p out;
- *  peaks and totals are the caller's. */
+/** Advance @p dt_s and write the readings, mode and set points into @p out,
+ *  counting one more sample; peaks, totals and taken_ms are the caller's. */
 void supply_sim_step(supply_sim_t *m, float dt_s, supply_state_t *out);
 
 #ifdef __cplusplus

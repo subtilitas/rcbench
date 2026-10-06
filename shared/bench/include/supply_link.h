@@ -156,8 +156,9 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
 /**
  * The supply as the page last said, into @p st: readings, set points read
  * back from the module, the mode -- OFF while the module reads its output
- * off -- and online only for a reading younger than SUPPLY_LINK_STALE_MS
- * from a module the page drives.  Left as they are: output, which is what
+ * off -- the module's reading count and the time of the page read, and
+ * online only for a reading younger than SUPPLY_LINK_STALE_MS from a module
+ * the page drives.  Left as they are: output, which is what
  * the panel asked, and the run's extremes, totals and trip.
  */
 void supply_link_state(const supply_link_t *s, uint32_t now_ms,

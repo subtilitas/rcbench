@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "servo_test.h"
 #include "supply.h"
 #include "ui_screen.h"
 
@@ -176,3 +177,40 @@ void servo_screen_sweep_started(uint32_t age_ms, servo_sweep_from_t from,
  * operator has set.
  */
 void servo_screen_set_commanded(float deg);
+
+/* ------------------------------------------------- the automatic test */
+
+/*
+ * START TEST on the TEST page runs servo_test.h's automatic test from this
+ * screen: a two-second hold, or HV SERVOS ONLY held for two seconds when a
+ * step is above 6.0 V.  It needs an armed bench and a supply that answers,
+ * and it commands the servo and SUPPLY's set points and output itself.
+ * Progress and the result are shown on the left card.
+ */
+
+/**
+ * The panel's millisecond clock, every frame before the tick: the clock the
+ * supply's readings are stamped with (supply_state_t.taken_ms), so a travel
+ * time is measured on one clock.  Without it the screen's own is used.
+ */
+void servo_screen_clock(uint32_t now_ms);
+
+/** Whether the link to the coprocessor is up; a run ends when it goes. */
+void servo_screen_set_link(bool up);
+
+/** Whether a run is under way, for the application and tests. */
+bool servo_screen_testing(void);
+
+/**
+ * The run's next item for the card, without taking it (servo_test_peek()),
+ * and taking it once it is on its way.  The application drains these every
+ * frame, whichever screen is up.
+ */
+servo_test_out_t servo_screen_test_peek(const char **text);
+void servo_screen_test_pop(void);
+
+/**
+ * The number of the files the run's items went to -- BENCHnnn.CSV and,
+ * with REPORT, BENCHnnn.TXT -- or -1 when the card took none.
+ */
+void servo_screen_test_files(int number);

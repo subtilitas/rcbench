@@ -344,6 +344,10 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
     st->set_v  = (float)s->regs[LINK_SP_SET_MV_RB] / 1000.0f;
     st->set_i  = (float)s->regs[LINK_SP_SET_MA_RB] / 1000.0f;
     st->ok     = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    /* Which reading this is, and when the panel had it: the coprocessor
+     * counts the module's readings, and the page read brought this one. */
+    st->samples  = s->regs[LINK_SP_SAMPLES];
+    st->taken_ms = s->read_ms;
 }
 
 uint8_t supply_link_events(supply_link_t *s)

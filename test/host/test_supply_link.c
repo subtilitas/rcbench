@@ -338,6 +338,15 @@ TEST_CASE(the_state_is_what_the_page_says)
     CHECK_NEAR(st.set_v, 9.0f, 0.001f);
     CHECK_NEAR(st.set_i, 0.8f, 0.001f);
 
+    /* Which reading it is, and when the panel had it: the module's count,
+     * and the time of the read that brought it. */
+    drv.st.samples = 70001u;                    /* 4465 mod 65536 */
+    now += 100u;
+    far_step_and_read(true);
+    supply_link_state(&sl, now + 30u, &st);
+    CHECK_EQ(st.samples, (uint16_t)(70001u & 0xFFFFu));
+    CHECK_EQ(st.taken_ms, now);
+
     drv.st.mode = PDMINI_MODE_NORMAL;
     far_step_and_read(true);
     supply_link_state(&sl, now, &st);

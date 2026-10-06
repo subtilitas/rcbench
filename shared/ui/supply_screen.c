@@ -544,6 +544,8 @@ void supply_screen_set_model(bool model)
     }
 }
 
+bool supply_screen_model(void) { return s.model; }
+
 float supply_screen_set_v(void) { return s.cv; }
 float supply_screen_set_i(void) { return s.ci; }
 

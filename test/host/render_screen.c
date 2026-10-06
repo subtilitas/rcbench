@@ -195,6 +195,100 @@ static void tap(int x, int y)
     ui_router_event(&e);
 }
 
+/*
+ * The automatic test on an armed bench, started the way a finger starts it
+ * -- START TEST on the TEST page held for two seconds -- and run against the
+ * servo model and a supply that does what SUPPLY asks: the running view
+ * stops on the first step's movements, the result view runs it out and the
+ * card takes its files as run 12.
+ */
+static void servo_run_view(bool to_the_end)
+{
+    servo_sim_t sv;
+    servo_sim_cfg_t cfg;
+    servo_sim_defaults(&cfg);
+    cfg.stop_lo_us = 1000u;
+    cfg.stop_hi_us = 2000u;
+    servo_sim_init(&sv, &cfg);
+    sv.position_us = 1500.0f;
+    settings_set(SET_SERVO_LEN_BY, 1.0f);
+    settings_set(SET_SERVO_LEN_MOVES, 4.0f);
+    settings_set_text(SET_TEXT_DUT_NAME, "DS3218 #2");
+    servo_screen_set_armed(true);
+    /* Nothing measures the horn on this bench: it is drawn chasing the
+     * command. */
+    servo_screen_feedback(0u, 0.0f, false);
+    uint32_t now = 100000u;
+    uint16_t samples = 1u;
+    bool out = true;          /* the model's run above left it on */
+    uint16_t cmd = 1500u;
+    servo_screen_clock(now);
+    tap(136, UI_BAND_H + 27);                       /* TEST */
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = 369,
+                                   .y = (int16_t)(UI_BAND_H + 323),
+                                   .strength = 40 } };
+    ui_router_event(&e);                            /* START TEST, held */
+    for (int i = 0; i < 115; ++i) {
+        now += 20u;
+        servo_screen_clock(now);
+        ui_router_tick(0.02f);
+    }
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    const int frames = to_the_end ? 4000 : 660;
+    int after = 50;               /* frames once it is over: the OFF lands */
+    for (int i = 0; i < frames; ++i) {
+        now += 20u;
+        servo_screen_clock(now);
+        supply_cmd_t c;
+        while (supply_screen_poll_cmd(&c)) {
+            out = c.off ? false : (c.on ? true : out);
+        }
+        supply_screen_set_output(out);
+        servo_cmd_t sc;
+        while (servo_screen_take(&sc)) {
+            if (sc.kind == SERVO_CMD_POSITION) {
+                cmd = sc.value_us;
+            } else if (sc.kind == SERVO_CMD_RELEASE) {
+                cmd = 1500u;
+            }
+        }
+        const float a = out ? servo_sim_step(&sv, cmd, now) : 0.0f;
+        if (i % 5 == 0) {
+            supply_state_t st;
+            memset(&st, 0, sizeof(st));
+            st.online = true;
+            st.ok     = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+            st.output = out;
+            st.set_v  = supply_screen_set_v();
+            st.set_i  = supply_screen_set_i();
+            st.v      = out ? st.set_v - a * 0.05f : 0.0f;
+            st.i      = a;
+            st.p      = st.v * st.i;
+            st.mode   = out ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
+            st.samples  = ++samples;
+            st.taken_ms = now;
+            supply_screen_set_output(out);
+            supply_screen_push(&st);
+            servo_screen_supply(&st);
+        }
+        ui_router_tick(0.02f);
+        const char *text = NULL;
+        while (servo_screen_test_peek(&text) != SERVO_TEST_OUT_NONE) {
+            servo_screen_test_pop();
+        }
+        if (to_the_end && !servo_screen_testing() && i > 200
+            && --after <= 0) {
+            break;
+        }
+    }
+    if (to_the_end) {
+        servo_screen_test_files(12);
+        ui_router_tick(0.02f);
+    }
+}
+
 static ui_screen_id_t id_of(const char *name)
 {
     static const struct { const char *name; ui_screen_id_t id; } k[] = {
@@ -663,13 +757,18 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "servo-name") == 0) {
             tap(296, UI_BAND_H + 27);
             tap(100, UI_BAND_H + 71);
+        } else if (strcmp(view, "servo-run") == 0
+                   || strcmp(view, "servo-result") == 0) {
+            servo_run_view(strcmp(view, "servo-result") == 0);
         }
     }
 
     ui_bench_status_t st = k_status;
     st.simulated = sim || (id == SCREEN_MOTOR);
     st.armed     = (id == SCREEN_MOTOR
-                    && strcmp(view, "motor-held") != 0);
+                    && strcmp(view, "motor-held") != 0)
+                   || strcmp(view, "servo-run") == 0
+                   || strcmp(view, "servo-result") == 0;
     ui_router_set_status(&st);
     ui_router_goto(id);
 

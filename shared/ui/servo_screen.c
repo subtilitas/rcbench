@@ -11,6 +11,11 @@
  * made for it -- a heli profile, anything above 60 Hz -- is applied only
  * after a warning held for two seconds, and is never kept past a restart.
  *
+ * START TEST, on the TEST page, runs the automatic test (servo_test.h): the
+ * screen hands it the supply's samples and the clock, and does what it asks
+ * -- the servo's position, SUPPLY's set points and output -- through the
+ * same paths a finger uses.  Its progress and result are on the left card.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -20,7 +25,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "log_name.h"
 #include "outputs.h"
+#include "rcbench_version.h"
 #include "servo_sweep.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -171,7 +178,7 @@ static const char *const k_pages[PG_COUNT] = { "OUTPUT", "TEST", "LIMITS",
 
 /* What a settings row edits. */
 enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTRE, R_MAX, R_TRIM, R_TRAVEL,
-       R_REVERSE, R_SETTING, R_TEXT };
+       R_REVERSE, R_SETTING, R_TEXT, R_HV };
 
 typedef struct {
     uint8_t      page;
@@ -202,9 +209,10 @@ static const ov_row_t k_rows[] = {
     { PG_TEST, R_SETTING, SET_SERVO_SETTLE_MS,   "SETTLE",     0, 7, false },
     { PG_TEST, R_SETTING, SET_SERVO_STEP_48,     "STEP 4.8 V", 1, 0, false },
     { PG_TEST, R_SETTING, SET_SERVO_STEP_60,     "STEP 6.0 V", 1, 1, false },
-    { PG_TEST, R_SETTING, SET_SERVO_STEP_74,     "STEP 7.4 V", 1, 2, false },
-    { PG_TEST, R_SETTING, SET_SERVO_STEP_84,     "STEP 8.4 V", 1, 3, false },
-    { PG_TEST, R_SETTING, SET_SERVO_BROWNOUT,    "BROWN-OUT",  1, 4, false },
+    { PG_TEST, R_HV,      SETTING_COUNT,         "HV SERVO",   1, 2, false },
+    { PG_TEST, R_SETTING, SET_SERVO_STEP_74,     "STEP 7.4 V", 1, 3, false },
+    { PG_TEST, R_SETTING, SET_SERVO_STEP_84,     "STEP 8.4 V", 1, 4, false },
+    { PG_TEST, R_SETTING, SET_SERVO_BROWNOUT,    "BROWN-OUT",  1, 5, false },
 
     { PG_LIMITS, R_SETTING, SET_SUPPLY_V_MAX,        "VOLTAGE MAX",  0, 0, false },
     { PG_LIMITS, R_SETTING, SET_SUPPLY_I_MAX,        "CURRENT MAX",  0, 1, false },
@@ -230,16 +238,17 @@ static const ui_plot_series_t k_power[PS_COUNT] = {
 enum { OP_NONE = 0, OP_TAB, OP_CLOSE, OP_ROW, OP_TRIM_DN, OP_TRIM_UP,
        OP_KEYPAD, OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY,
        OP_WARN_CANCEL, OP_SETTINGS, OP_SUP_V, OP_SUP_I, OP_ASK_APPLY,
-       OP_ASK_CANCEL };
+       OP_ASK_CANCEL, OP_TEST_START };
 
 /* What the list chooses, and what the keypad types. */
 enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM };
 enum { KT_NONE = 0, KT_MIN, KT_CENTRE, KT_MAX, KT_TRAVEL, KT_RATE,
        KT_SETTING, KT_SUP_V, KT_SUP_I };
 
-/* What the question or the HV warning applies: a typed set point, or the
- * supply's output switched on. */
-enum { ASK_SET = 0, ASK_ON };
+/* What the question or the HV warning applies: a typed set point, the
+ * supply's output switched on, or the automatic test started with steps
+ * above 6.0 V. */
+enum { ASK_SET = 0, ASK_ON, ASK_TEST };
 
 #define CHOICE_MAX 10
 
@@ -319,7 +328,7 @@ static struct {
     struct {
         bool      open;
         bool      hv;
-        int       purpose;   /**< ASK_SET or ASK_ON                    */
+        int       purpose;   /**< ASK_SET, ASK_ON or ASK_TEST          */
         int       target;    /**< KT_SUP_V or KT_SUP_I: what was typed */
         uint32_t  off_count; /**< supply_screen_off_count() at asking  */
         float     v, i;
@@ -388,10 +397,38 @@ static struct {
      * which arms only once the release it owes has been written. */
     bool     arm_in_flight;
 
+    /*
+     * The automatic test: the run, START TEST's hold, HV SERVO, and what the
+     * left card shows of it.  HV SERVO is for the session only and off at
+     * every restart, as a profile that can destroy a servo is.
+     */
+    servo_test_t test;
+    bool      test_hv;       /**< HV SERVO: 7.4 and 8.4 V run          */
+    ui_hold_t test_hold;
+    bool      test_down;
+    uint32_t  test_rev;
+    uint32_t  drawn_test[2];
+    uint32_t  now_ms;        /**< the panel's clock, servo_screen_clock() */
+    bool      have_now;
+    bool      link_up;
+    int       test_note;     /**< servo_str_t refusing a START, 0 none  */
+    int       test_file;     /**< its files' number; 0 not yet, -1 none */
+    bool      test_box;      /**< the left card shows the run          */
+    bool      test_seen;     /**< the run was running at the last tick */
+    bool      test_restore;  /**< the set points go back once it is off */
+    float     test_v0, test_i0;
+    uint32_t  test_sig;      /**< what the box last showed              */
+
     uint32_t ctrl_rev;
     uint32_t drawn_ctrl[2];
     unsigned drawn_mask;
 } s;
+
+/* The clock the run and the supply's readings share. */
+static uint32_t test_now(void)
+{
+    return s.have_now ? s.now_ms : s.clock_ms;
+}
 
 /* ------------------------------------------------------------- conversions */
 
@@ -771,8 +808,12 @@ void servo_screen_set_sweep(bool able)
  * servo from STANDARD PWM to NARROW 760 would otherwise leave 1500 us on a
  * servo whose maximum is 860 while the screen shows the new range.
  */
+static void test_end_now(servo_test_abort_t why);
+
 static void reissue(void)
 {
+    /* A run times a servo driven as it was when it started. */
+    test_end_now(SERVO_TEST_AB_SETTINGS);
     ++s.profile_rev;
     if (s.pending.kind == SERVO_CMD_ARM) {
         /*
@@ -897,6 +938,13 @@ void servo_screen_cancel_arm(void)
      */
     bool changed = false;
     s.arm_in_flight = false;   /* the stop ends the arm on its way too */
+    /* A run ends, and START TEST's hold with it. */
+    test_end_now(SERVO_TEST_AB_STOP);
+    if (s.test_down || s.test_hold.held_s > 0.0f) {
+        ui_hold_reset(&s.test_hold);
+        s.test_down = false;
+        ++s.test_rev;
+    }
     if (s.pending.kind == SERVO_CMD_ARM) {
         s.pending.kind = SERVO_CMD_NONE;
         changed = true;
@@ -923,7 +971,8 @@ void servo_screen_cancel_arm(void)
     /* An APPLY being pressed -- a tap on the question as well as a hold --
      * is let go of: its release must not apply a set point after the stop. */
     if (s.ov_have && (s.ov_pressed == OP_ASK_APPLY
-                      || s.ov_pressed == OP_WARN_APPLY)) {
+                      || s.ov_pressed == OP_WARN_APPLY
+                      || s.ov_pressed == OP_TEST_START)) {
         s.ov_have    = false;           /* the press is over, as ov_let_go() */
         s.ov_pressed = OP_NONE;
         ++s.ctrl_rev;
@@ -995,6 +1044,27 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)
     }
 }
 
+static servo_test_reading_t test_reading_of(const supply_state_t *st)
+{
+    servo_test_reading_t r;
+    memset(&r, 0, sizeof(r));
+    r.v        = st->v;
+    r.i        = st->i;
+    r.set_v    = st->set_v;
+    r.set_i    = st->set_i;
+    r.mode     = (uint8_t)st->mode;
+    r.output   = st->output;
+    r.online   = st->online;
+    r.ok       = (st->ok & (SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT))
+                 == (SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
+    r.trip     = st->trip;
+    r.samples  = st->samples;
+    /* Stamped where the panel had it; a sample without a stamp at its
+     * arrival. */
+    r.taken_ms = (st->taken_ms != 0u) ? st->taken_ms : test_now();
+    return r;
+}
+
 void servo_screen_supply(const supply_state_t *st)
 {
     if (st == NULL) {
@@ -1002,6 +1072,10 @@ void servo_screen_supply(const supply_state_t *st)
     }
     s.sup = *st;
     s.have_sup = true;
+    /* The run's reading, with the horn's position where it is measured. */
+    const servo_test_reading_t r = test_reading_of(st);
+    servo_test_reading(&s.test, &r,
+                       s.have_feedback ? deg_to_us(s.measured_deg) : 0u);
     /* Only what arrived: a reading that did not is a gap, not a zero. */
     const bool v_ok = st->online && (st->ok & SUPPLY_OK_VOLTAGE) != 0u;
     const bool i_ok = st->online && (st->ok & SUPPLY_OK_CURRENT) != 0u;
@@ -1095,6 +1169,7 @@ void servo_invalidate(void)
         s.drawn_sup[b]   = UINT32_MAX;
         s.drawn_warn[b]  = UINT32_MAX;
         s.drawn_ask[b]   = UINT32_MAX;
+        s.drawn_test[b]  = UINT32_MAX;
         s.drawn_save[b]  = 0xFFu;
         /* No step the arm can be drawn at, so the next frame draws it. */
         s.drawn_pulse[b] = -1;
@@ -1118,9 +1193,13 @@ static gfx_rect_t sup_val_rect(int k)
                          SUP_VAL_W, SUP_H };
 }
 
+static uint32_t test_signature(void);
+
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
+    servo_test_init(&s.test);
+    s.test_sig = test_signature();
     servo_invalidate();
     s.drawn_mask    = 0;
     s.travel_deg    = 90.0f;
@@ -1225,6 +1304,27 @@ static gfx_rect_t warn_cancel_rect(void)
                          (int16_t)(OV_Y + OV_H - 76), 180, 56 };
 }
 
+/* START TEST, under the TEST page's right column. */
+static gfx_rect_t test_start_rect(void)
+{
+    return (gfx_rect_t){ (int16_t)(OV_X + 20 + OV_COL_W),
+                         (int16_t)(OV_ROW0 + 6 * OV_PITCH), (int16_t)OV_COL_W,
+                         OV_ROW_H };
+}
+
+/* The run on the left card, clear of the dial and the case, and its one
+ * button: STOP TEST while it runs, CLOSE after. */
+static gfx_rect_t test_box_rect(void)
+{
+    return (gfx_rect_t){ PAD + 10, PAD + 10, 270, 112 };
+}
+
+static gfx_rect_t test_btn_rect(void)
+{
+    const gfx_rect_t b = test_box_rect();
+    return (gfx_rect_t){ (int16_t)(b.x + 10), (int16_t)(b.y + 72), 130, 32 };
+}
+
 static int decimals_of(setting_id_t id)
 {
     const setting_def_t *d = settings_def(id);
@@ -1326,6 +1426,236 @@ static void set_point_typed(int target, float typed)
     close_alone();
 }
 
+/* --------------------------------------------------------- the automatic test */
+
+/* The steps the TEST page names: 7.4 and 8.4 V only while HV SERVO is on. */
+static uint8_t test_steps(float *v)
+{
+    static const struct { setting_id_t id; float v; bool hv; } k[] = {
+        { SET_SERVO_STEP_48, 4.8f, false },
+        { SET_SERVO_STEP_60, 6.0f, false },
+        { SET_SERVO_STEP_74, 7.4f, true  },
+        { SET_SERVO_STEP_84, 8.4f, true  },
+    };
+    uint8_t n = 0u;
+    for (size_t j = 0; j < sizeof(k) / sizeof(k[0]); ++j) {
+        if (settings_get_bool(k[j].id) && (!k[j].hv || s.test_hv)) {
+            if (v != NULL) {
+                v[n] = k[j].v;
+            }
+            ++n;
+        }
+    }
+    return n;
+}
+
+/* The highest voltage a run would ask for: its top step, or the brown-out's
+ * start. */
+static float test_top_v(void)
+{
+    float v[SERVO_TEST_STEPS_MAX];
+    const uint8_t n = test_steps(v);
+    float top = settings_get_bool(SET_SERVO_BROWNOUT)
+                    ? SERVO_TEST_BROWNOUT_START_V : 0.0f;
+    for (uint8_t k = 0; k < n; ++k) {
+        if (v[k] > top) {
+            top = v[k];
+        }
+    }
+    return top;
+}
+
+/* A run with a step past a standard servo's rating starts only through the
+ * HV warning. */
+static bool test_needs_hv(void)
+{
+    return test_top_v() > STD_SERVO_V_MAX + 0.001f;
+}
+
+/* What the run is told: the TEST and LIMITS pages, the servo's profile, and
+ * its ends -- the sweep's, RANGE of the travel either side of PULSE CENTRE. */
+static void test_cfg(servo_test_cfg_t *c)
+{
+    memset(c, 0, sizeof(*c));
+    c->step_count = test_steps(c->steps_v);
+    c->brownout   = settings_get_bool(SET_SERVO_BROWNOUT);
+    c->i_limit    = supply_screen_set_i();
+    const sweep_cfg_t sw = sweep_cfg_now();
+    uint16_t lo, hi;
+    cmd_range(&lo, &hi);
+    const float span = (float)(hi - lo);
+    const float k = 2.0f * (float)SWEEP_CENTRE;
+    c->centre_us = s.centre_us;
+    c->end_lo_us = (uint16_t)lroundf(
+        (float)lo + span * (float)(SWEEP_CENTRE - sw.amplitude) / k);
+    c->end_hi_us = (uint16_t)lroundf(
+        (float)lo + span * (float)(SWEEP_CENTRE + sw.amplitude) / k);
+    c->settle_ms     = (uint16_t)settings_get_int(SET_SERVO_SETTLE_MS);
+    c->dwell_ms      = (uint16_t)settings_get_int(SET_SERVO_DWELL_MS);
+    c->by_moves      = settings_get_int(SET_SERVO_LEN_BY) != 0;
+    c->moves         = (uint16_t)settings_get_int(SET_SERVO_LEN_MOVES);
+    c->time_s        = (uint16_t)settings_get_int(SET_SERVO_LEN_S);
+    c->idle_max_a    = settings_get(SET_SERVO_IDLE_MAX);
+    c->hold_max_a    = settings_get(SET_SERVO_HOLD_MAX);
+    c->travel_max_ms = (uint16_t)settings_get_int(SET_SERVO_TRAVEL_MAX_MS);
+    c->stall_a       = settings_get(SET_SERVO_STALL_A);
+    c->report        = settings_get_bool(SET_SERVO_REPORT);
+    snprintf(c->dut, sizeof(c->dut), "%s", settings_text(SET_TEXT_DUT_NAME));
+    snprintf(c->type, sizeof(c->type), "%s", type()->name);
+    if (in_force_dangerous()) {
+        snprintf(c->danger, sizeof(c->danger), "%s %u Hz", type()->name,
+                 (unsigned)s.frame_hz);
+    }
+    c->hv         = s.test_hv;
+    c->min_us     = s.min_us;
+    c->max_us     = s.max_us;
+    c->frame_hz   = s.frame_hz;
+    c->trim_us    = s.trim_us;
+    c->reverse    = s.reverse;
+    c->travel_deg = (uint8_t)s.travel_deg;
+    c->range_pct  = (uint8_t)settings_get_int(SET_SERVO_TEST_RANGE);
+    c->model      = supply_screen_model();
+    snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
+}
+
+/* What the run asked for, done the way a finger does it here. */
+static void test_apply(const servo_test_do_t *d)
+{
+    if (d->set) {
+        supply_screen_put(d->set_v, d->set_i);
+    }
+    if (d->on) {
+        supply_screen_ask_on();
+    }
+    if (d->command) {
+        s.commanded_deg = us_to_deg(d->cmd_us);
+        post(SERVO_CMD_POSITION, d->cmd_us);
+        /* A step: the servo's own travel is what is timed, not SPEED's. */
+        s.pending.slew_per_s = 0u;
+        ++s.ctrl_rev;
+    }
+    if (d->off) {
+        supply_screen_ask_off();
+    }
+    if (d->release) {
+        post(SERVO_CMD_RELEASE, 0);
+        s.commanded_deg = 0.0f;
+        ++s.ctrl_rev;
+    }
+}
+
+/* End a run now, and do what that asks -- the output off, the servo let
+ * go -- before whatever ended it acts. */
+static void test_end_now(servo_test_abort_t why)
+{
+    if (!servo_test_running(&s.test)) {
+        return;
+    }
+    servo_test_abort(&s.test, why, test_now());
+    const servo_test_in_t in = { s.armed, supply_screen_caps().v_max };
+    servo_test_do_t d;
+    servo_test_step(&s.test, test_now(), &in, &d);
+    test_apply(&d);
+}
+
+/* Why a START cannot run now, before any hold: SERVO_STR_*, or 0. */
+static int test_blocked(void)
+{
+    if (!s.armed) {
+        return SERVO_STR_START_NOT_ARMED;
+    }
+    if (!servo_test_drained(&s.test)) {
+        return SERVO_STR_START_BUSY;
+    }
+    return 0;
+}
+
+/* START TEST's hold, or the HV warning's, completed: the run starts, and
+ * the settings close so the left card shows it. */
+static void test_begin(void)
+{
+    s.test_note = test_blocked();
+    if (s.test_note != 0) {
+        ++s.ctrl_rev;
+        return;
+    }
+    servo_test_cfg_t c;
+    test_cfg(&c);
+    servo_test_reading_t last;
+    memset(&last, 0, sizeof(last));
+    if (s.have_sup) {
+        last = test_reading_of(&s.sup);
+    }
+    const supply_caps_t caps = supply_screen_caps();
+    const float v0 = supply_screen_set_v();
+    const float i0 = supply_screen_set_i();
+    const servo_test_start_t why = servo_test_start(
+        &s.test, &c, test_now(), &last, caps.v_min, caps.v_max);
+    if (why != SERVO_TEST_START_OK) {
+        s.test_note = (int)SERVO_STR_START_OK + (int)why;
+        ++s.ctrl_rev;
+        return;
+    }
+    stop_sweep();
+    s.test_v0      = v0;
+    s.test_i0      = i0;
+    s.test_restore = false;
+    s.test_file    = 0;
+    s.test_box     = true;
+    s.ov_open      = false;
+    s.kp_alone     = false;
+    close_panels();
+    servo_invalidate();
+    ++s.ctrl_rev;
+}
+
+/* The HV warning, for a run with a step past a standard servo's rating. */
+static void ask_hv_test(void)
+{
+    close_panels();
+    s.ask.open      = true;
+    s.ask.hv        = true;
+    s.ask.purpose   = ASK_TEST;
+    s.ask.target    = KT_NONE;
+    s.ask.off_count = supply_screen_off_count();
+    s.ask.v         = test_top_v();
+    s.ask.i         = supply_screen_set_i();
+    s.ask.down      = false;
+    ui_hold_reset(&s.ask.hold);
+    servo_invalidate();
+}
+
+bool servo_screen_testing(void) { return servo_test_running(&s.test); }
+
+servo_test_out_t servo_screen_test_peek(const char **text)
+{
+    return servo_test_peek(&s.test, text);
+}
+
+void servo_screen_test_pop(void) { servo_test_pop(&s.test); }
+
+void servo_screen_test_files(int number)
+{
+    if (number != s.test_file) {
+        s.test_file = number;
+        ++s.ctrl_rev;
+    }
+}
+
+void servo_screen_clock(uint32_t now_ms)
+{
+    s.now_ms   = now_ms;
+    s.have_now = true;
+}
+
+void servo_screen_set_link(bool up)
+{
+    if (s.link_up && !up) {
+        test_end_now(SERVO_TEST_AB_LINK);
+    }
+    s.link_up = up;
+}
+
 /* Whether the voltage set point in force is past a standard servo's
  * rating, which OUTPUT ON on this screen applies only through the HV
  * warning. */
@@ -1376,7 +1706,9 @@ static void ask_apply(void)
     /* Only the set point that was typed: the other may have moved while
      * the question stood -- a cap that follows the PD mini's input -- and
      * the value it had then is not one anybody asked for now. */
-    if (s.ask.purpose == ASK_ON) {
+    if (s.ask.purpose == ASK_TEST) {
+        test_begin();
+    } else if (s.ask.purpose == ASK_ON) {
         supply_screen_ask_on();
     } else if (s.ask.target == KT_SUP_V) {
         supply_screen_put(s.ask.v, supply_screen_set_i());
@@ -1479,6 +1811,10 @@ static void edit_row(int i)
     case R_REVERSE:
         s.reverse = !s.reverse;
         reissue();
+        break;
+    case R_HV:
+        /* For a run started after it; one under way keeps its steps. */
+        s.test_hv = !s.test_hv;
         break;
     case R_TEXT:
         ui_textkey_open(&s.tk, overlay_area(), "DEVICE UNDER TEST",
@@ -1663,6 +1999,21 @@ static void ov_down(const touch_event_t *evt)
         ov_take(evt, OP_CLOSE, -1);
         return;
     }
+    if (s.tabs.selected == PG_TEST
+        && gfx_rect_contains(test_start_rect(), x, y)) {
+        ov_take(evt, OP_TEST_START, -1);
+        /* A hold, unless a run is under way (a tap stops it), a step is
+         * past 6.0 V (a tap opens the HV warning, whose hold starts it), or
+         * it cannot run now (a tap says why). */
+        s.test_note = servo_test_running(&s.test) ? 0 : test_blocked();
+        if (!servo_test_running(&s.test) && s.test_note == 0
+            && !test_needs_hv()) {
+            s.test_down = true;
+            ui_hold_begin(&s.test_hold);
+        }
+        ++s.test_rev;
+        return;
+    }
     for (int i = 0; i < ROW_COUNT; ++i) {
         if (k_rows[i].page != s.tabs.selected) {
             continue;
@@ -1747,6 +2098,25 @@ static void ov_rest(const touch_event_t *evt)
         ++s.ask.rev;
         ov_let_go();
         return;
+    case OP_TEST_START:
+        if (!s.test_down) {
+            break;                      /* a tap: the release acts */
+        }
+        if (!up) {
+            /* A finger that leaves START TEST abandons the hold. */
+            if (!gfx_rect_contains(test_start_rect(), x, y)
+                && ui_hold_leave(&s.test_hold)) {
+                s.test_down = false;
+                ++s.test_rev;
+                ov_let_go();
+            }
+            return;
+        }
+        (void)ui_hold_end(&s.test_hold);
+        s.test_down = false;
+        ++s.test_rev;
+        ov_let_go();
+        return;
     case OP_WARN_APPLY:
         if (!up) {
             /* A finger that leaves APPLY abandons the hold, as on ARM. */
@@ -1822,6 +2192,17 @@ static void ov_rest(const touch_event_t *evt)
             close_alone();
             servo_invalidate();
         }
+        break;
+    case OP_TEST_START:
+        if (!gfx_rect_contains(test_start_rect(), x, y)) {
+            break;
+        }
+        if (servo_test_running(&s.test)) {
+            test_end_now(SERVO_TEST_AB_OPERATOR);
+        } else if (s.test_note == 0 && test_needs_hv()) {
+            ask_hv_test();
+        }
+        ++s.test_rev;
         break;
     case OP_SETTINGS:
         if (gfx_rect_contains(s.set_btn, x, y)) {
@@ -1919,15 +2300,31 @@ static void event(const touch_event_t *evt)
         }
         for (int k = 0; k < 2; ++k) {
             if (gfx_rect_contains(sup_val_rect(k), px, py)) {
+                /* The run owns the set points while it runs. */
+                test_end_now(SERVO_TEST_AB_OPERATOR);
                 if (!s.ov_have) {
                     ov_take(evt, (k == 0) ? OP_SUP_V : OP_SUP_I, -1);
                 }
                 return;
             }
         }
+        if (s.test_box && !s.ov_open
+            && gfx_rect_contains(test_btn_rect(), px, py)) {
+            /* STOP TEST ends the run on the press, as a stop does; CLOSE
+             * puts the result away. */
+            if (servo_test_running(&s.test)) {
+                test_end_now(SERVO_TEST_AB_OPERATOR);
+            } else {
+                s.test_box = false;
+            }
+            ++s.ctrl_rev;
+            return;
+        }
         float deg;
         if (!s.ov_open && on_the_dial(px, py, &deg)) {
-            /* A finger on the dial takes the horn from a sweep. */
+            /* A finger on the dial takes the horn from a sweep, and from a
+             * run. */
+            test_end_now(SERVO_TEST_AB_OPERATOR);
             stop_sweep();
             s.dragging = true;
             s.drag_id  = evt->point.id;
@@ -1935,17 +2332,20 @@ static void event(const touch_event_t *evt)
             return;
         }
         if (gfx_rect_contains(s.centre_btn, px, py)) {
+            test_end_now(SERVO_TEST_AB_OPERATOR);
             stop_sweep();
             s.commanded_deg = 0.0f;
             post(SERVO_CMD_CENTRE, deg_to_us(0.0f));
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.sweep_btn, px, py)) {
+            test_end_now(SERVO_TEST_AB_OPERATOR);
             if (s.sweeping) {
                 hold_sweep();
             } else {
                 start_sweep();
             }
         } else if (gfx_rect_contains(s.release_btn, px, py)) {
+            test_end_now(SERVO_TEST_AB_OPERATOR);
             stop_sweep();
             post(SERVO_CMD_RELEASE, 0);
             ++s.ctrl_rev;
@@ -2235,6 +2635,80 @@ static void draw_dial(gfx_canvas_t *c)
     }
 }
 
+/* A file's name for the run's number: BENCHnnn.CSV. */
+static void test_file_name(char *b, size_t n)
+{
+    if (s.test_file > 0) {
+        log_run_name(b, n, s.test_file);
+    } else {
+        snprintf(b, n, "%s", (s.test_file < 0) ? "NOT RECORDED" : "WRITING");
+    }
+}
+
+/*
+ * The run on the left card: the step and phase while it runs, with STOP
+ * TEST; PASS, FAIL or ABORTED and why, and the files, after it, with CLOSE.
+ */
+static void draw_test_box(gfx_canvas_t *c)
+{
+    const gfx_rect_t b = test_box_rect();
+    const servo_test_t *t = &s.test;
+    const bool running = servo_test_running(t);
+    gfx_fill_round_rect(c, b.x, b.y, b.w, b.h, 6,
+                        ui_theme_color(UI_C_PANEL_SUNK));
+    gfx_draw_round_rect(c, b.x, b.y, b.w, b.h, 6, ui_theme_color(UI_C_EDGE));
+    char l1[40], l2[40], l3[40];
+    gfx_color_t head = ui_theme_color(UI_C_ACCENT);
+    if (running) {
+        snprintf(l1, sizeof(l1), "AUTOMATIC TEST");
+        const servo_test_step_t *st = &t->steps[t->step];
+        snprintf(l2, sizeof(l2), "%s %u OF %u  %.2f V",
+                 st->brownout ? "BROWN-OUT" : "STEP",
+                 servo_test_step_now(t), servo_test_steps_planned(t),
+                 (double)st->set_v);
+        const bool moving = t->phase == SERVO_TEST_PH_MOVE
+                            || t->phase == SERVO_TEST_PH_HOLD;
+        if (moving && t->counted && !st->brownout && t->cfg.by_moves) {
+            snprintf(l3, sizeof(l3), "%s %u OF %u",
+                     servo_test_phase_name(t->phase),
+                     (unsigned)t->moves_done + 1u, (unsigned)t->cfg.moves);
+        } else if (moving && t->counted) {
+            snprintf(l3, sizeof(l3), "%s %u", servo_test_phase_name(t->phase),
+                     (unsigned)t->moves_done + 1u);
+        } else {
+            snprintf(l3, sizeof(l3), "%s", servo_test_phase_name(t->phase));
+        }
+    } else {
+        const servo_test_verdict_t v = servo_test_verdict(t);
+        head = (v == SERVO_TEST_PASS)   ? ui_theme_color(UI_C_OK)
+               : (v == SERVO_TEST_FAIL) ? ui_theme_color(UI_C_DANGER)
+                                        : ui_theme_color(UI_C_WARN);
+        snprintf(l1, sizeof(l1), "TEST %s", servo_test_verdict_name(v));
+        uint32_t ms = 0u;
+        float hold = 0.0f;
+        if (v == SERVO_TEST_ABORTED) {
+            snprintf(l2, sizeof(l2), "%s", servo_test_abort_name(t->why));
+        } else if (servo_test_max_travel(t, &ms) && servo_test_max_hold(t, &hold)) {
+            snprintf(l2, sizeof(l2), "TRAVEL %lu ms  HOLD %.2f A",
+                     (unsigned long)ms, (double)hold);
+        } else {
+            l2[0] = '\0';
+        }
+        char f[LOG_RUN_NAME_MAX + 4];
+        test_file_name(f, sizeof(f));
+        snprintf(l3, sizeof(l3), "%s%s", f,
+                 (s.test_file > 0 && t->cfg.report) ? " + .TXT" : "");
+    }
+    gfx_text(c, b.x + 10, b.y + 8, l1, &gfx_font_8x16, head, 1);
+    gfx_text(c, b.x + 10, b.y + 28, l2, &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT), 1);
+    gfx_text(c, b.x + 10, b.y + 48, l3, &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
+    ui_button(c, test_btn_rect(), running ? "STOP TEST" : "CLOSE",
+              running ? ui_theme_color(UI_C_DANGER)
+                      : ui_theme_color(UI_C_PANEL_HI), false, true);
+}
+
 static void draw_left(gfx_canvas_t *c)
 {
     /* Everything that moves lives in this rectangle, so this is what gets
@@ -2265,6 +2739,9 @@ static void draw_left(gfx_canvas_t *c)
                           ui_theme_color(UI_C_ACCENT), 30));
     gfx_text(c, PAD + 52 + dw, H - 70, "DEG",
              UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+    if (s.test_box) {
+        draw_test_box(c);
+    }
 }
 
 static void row(gfx_canvas_t *c, int y, const char *label, const char *value)
@@ -2517,7 +2994,9 @@ static bool row_unused(const ov_row_t *r)
     }
     const int by = settings_get_int(SET_SERVO_LEN_BY);
     return (r->id == SET_SERVO_LEN_S && by != 0)
-           || (r->id == SET_SERVO_LEN_MOVES && by == 0);
+           || (r->id == SET_SERVO_LEN_MOVES && by == 0)
+           || ((r->id == SET_SERVO_STEP_74 || r->id == SET_SERVO_STEP_84)
+               && !s.test_hv);
 }
 
 static void row_value(const ov_row_t *r, char *buf, size_t n)
@@ -2533,6 +3012,7 @@ static void row_value(const ov_row_t *r, char *buf, size_t n)
     case R_REVERSE: snprintf(buf, n, "%s", s.reverse ? "ON" : "OFF"); return;
     case R_TEXT:    snprintf(buf, n, "%s", settings_text(SET_TEXT_DUT_NAME));
                     return;
+    case R_HV:      snprintf(buf, n, "%s", s.test_hv ? "ON" : "OFF"); return;
     default:
         break;
     }
@@ -2600,6 +3080,71 @@ static void draw_rate_note(gfx_canvas_t *c, int x, int y)
     gfx_text(c, x, y + 18, l2, &gfx_font_8x16, col, 1);
 }
 
+/* START TEST: green, fading to the danger red across its hold, as ARM;
+ * STOP TEST in red while a run is under way. */
+static void draw_test_start(gfx_canvas_t *c)
+{
+    const bool running = servo_test_running(&s.test);
+    gfx_color_t fill = ui_theme_color(UI_C_OK);
+    if (running) {
+        fill = ui_theme_color(UI_C_DANGER);
+    } else if (s.test_hold.held_s > 0.0f) {
+        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER),
+                            s.test_hold.held_s);
+    }
+    ui_button(c, test_start_rect(), running ? "STOP TEST" : "START TEST", fill,
+              s.ov_have && s.ov_pressed == OP_TEST_START,
+              running || test_blocked() == 0);
+}
+
+/* Under START TEST: what a run would do, and what the last one did or why
+ * one did not start. */
+static void draw_test_lines(gfx_canvas_t *c)
+{
+    const int x = OV_X + 20 + OV_COL_W;
+    const int y = OV_ROW0 + 7 * OV_PITCH + 2;
+    float v[SERVO_TEST_STEPS_MAX];
+    const uint8_t n = test_steps(v);
+    char plan[40] = "";
+    int k = 0;
+    for (uint8_t j = 0; j < n && k >= 0 && (size_t)k < sizeof(plan); ++j) {
+        k += snprintf(plan + k, sizeof(plan) - (size_t)k, "%.1f ", (double)v[j]);
+    }
+    if (k >= 0 && (size_t)k < sizeof(plan)) {
+        snprintf(plan + k, sizeof(plan) - (size_t)k, "%s%s",
+                 (n > 0u) ? "V" : "",
+                 settings_get_bool(SET_SERVO_BROWNOUT)
+                     ? ((n > 0u) ? " BROWN-OUT" : "BROWN-OUT") : "");
+    }
+    if (n == 0u && !settings_get_bool(SET_SERVO_BROWNOUT)) {
+        snprintf(plan, sizeof(plan), "%s", servo_str(SERVO_STR_START_NO_STEPS));
+    }
+    gfx_text(c, x, y, plan, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
+
+    char line[40];
+    gfx_color_t col = ui_theme_color(UI_C_TEXT_FAINT);
+    if (s.test_note != 0) {
+        snprintf(line, sizeof(line), "%s", servo_str((servo_str_t)s.test_note));
+        col = ui_theme_color(UI_C_WARN);
+    } else if (servo_test_running(&s.test)) {
+        snprintf(line, sizeof(line), "RUNNING: STEP %u OF %u",
+                 servo_test_step_now(&s.test),
+                 servo_test_steps_planned(&s.test));
+    } else if (s.test.state == SERVO_TEST_DONE) {
+        char f[LOG_RUN_NAME_MAX + 4];
+        test_file_name(f, sizeof(f));
+        snprintf(line, sizeof(line), "LAST: %s %s",
+                 servo_test_verdict_name(servo_test_verdict(&s.test)), f);
+    } else if (test_blocked() != 0) {
+        snprintf(line, sizeof(line), "%s",
+                 servo_str((servo_str_t)test_blocked()));
+    } else {
+        snprintf(line, sizeof(line), "%s",
+                 test_needs_hv() ? "TAP: HV WARNING" : "HOLD 2 S TO START");
+    }
+    gfx_text(c, x, y + 18, line, &gfx_font_8x16, col, 1);
+}
+
 static void draw_page(gfx_canvas_t *c)
 {
     ui_tabs_render(&s.tabs, c);
@@ -2635,8 +3180,9 @@ static void draw_page(gfx_canvas_t *c)
         }
         /* The type and the rate in force in the danger colour when they
          * are ones that can destroy a servo not made for them. */
-        const bool danger = (r->kind == R_TYPE || r->kind == R_RATE)
-                            && in_force_dangerous();
+        const bool danger = ((r->kind == R_TYPE || r->kind == R_RATE)
+                             && in_force_dangerous())
+                            || (r->kind == R_HV && s.test_hv);
         ui_button(c, vr, v,
                   danger ? ui_theme_color(UI_C_DANGER)
                          : ui_theme_color(UI_C_PANEL_SUNK),
@@ -2654,14 +3200,8 @@ static void draw_page(gfx_canvas_t *c)
         draw_note(c, nx, OV_NOTE_Y, lines, 2);
         draw_rate_note(c, nx, OV_NOTE_Y + 2 * 18);
     } else if (s.tabs.selected == PG_TEST) {
-        const char *const lines[] = {
-            "SWEEP runs CURVE, SPEED,",
-            "RANGE and DWELL until",
-            "HOLD. No automatic test",
-            "runs in this build.",
-        };
-        draw_note(c, OV_X + 20 + OV_COL_W, OV_ROW0 + 5 * OV_PITCH + 6, lines,
-                  4);
+        draw_test_start(c);
+        draw_test_lines(c);
     } else if (s.tabs.selected == PG_LIMITS) {
         const char *const lines[] = {
             "VOLTAGE MAX and CURRENT MAX are the SUPPLY",
@@ -2779,6 +3319,9 @@ static void draw_hv(gfx_canvas_t *c)
     if (s.ask.purpose == ASK_ON) {
         snprintf(what, sizeof(what), "OUTPUT ON AT %.2f V",
                  (double)supply_screen_set_v());
+    } else if (s.ask.purpose == ASK_TEST) {
+        snprintf(what, sizeof(what), "TEST STEPS UP TO %.2f V",
+                 (double)s.ask.v);
     } else {
         snprintf(what, sizeof(what), "VOLTAGE %.2f -> %.2f V",
                  (double)supply_screen_set_v(), (double)s.ask.v);
@@ -2878,6 +3421,44 @@ static void draw_overlay(gfx_canvas_t *c)
     draw_page(c);
 }
 
+/* What the box and the TEST page show of the run, as one number. */
+static uint32_t test_signature(void)
+{
+    const servo_test_t *t = &s.test;
+    return (uint32_t)t->state + 4u * (uint32_t)t->phase
+           + 32u * (uint32_t)t->step + 1024u * (uint32_t)t->moves_done
+           + 0x4000000u * (uint32_t)(s.test_file + 2);
+}
+
+/*
+ * The run, every frame: its timers against the panel's clock and the cap in
+ * force, and what it asks done.  Once it is over and the output reads off,
+ * SUPPLY's set points go back to what they were before it.
+ */
+static void test_tick(void)
+{
+    const servo_test_in_t in = { s.armed, supply_screen_caps().v_max };
+    servo_test_do_t d;
+    servo_test_step(&s.test, test_now(), &in, &d);
+    test_apply(&d);
+    const bool running = servo_test_running(&s.test);
+    if (s.test_seen && !running) {
+        s.test_restore = true;          /* however it ended */
+        ++s.test_rev;
+    }
+    s.test_seen = running;
+    if (s.test_restore && !supply_screen_output_live()) {
+        s.test_restore = false;
+        supply_screen_put(s.test_v0, s.test_i0);
+    }
+    /* The box and the TEST page say the step, the phase and the move. */
+    const uint32_t sig = test_signature();
+    if (sig != s.test_sig) {
+        s.test_sig = sig;
+        ++s.ctrl_rev;
+    }
+}
+
 /* The trail servo_screen_sweep_started() reads where a frozen output was. */
 static void remember_shown(void)
 {
@@ -2928,8 +3509,13 @@ static void tick(float dt_s)
         s.out_on = on;
         if (on) {
             ui_hold_reached(&s.out_hold);
-        } else if (ui_hold_left(&s.out_hold) && s.out_down) {
-            s.out_down = false;
+        } else {
+            /* The flash says the output came on; off, it is over, so both
+             * buffers end on OUTPUT ON's own colour. */
+            s.out_hold.flash_left = 0;
+            if (ui_hold_left(&s.out_hold) && s.out_down) {
+                s.out_down = false;
+            }
         }
         if (s.ask.open && s.ask.hv) {
             ++s.ctrl_rev;   /* the warning says whether the output is on */
@@ -2998,6 +3584,17 @@ static void tick(float dt_s)
             apply_profile(s.warn.type, s.warn.hz);
         }
     }
+
+    /* START TEST's hold: the run starts when it completes. */
+    if (s.test_down) {
+        ++s.test_rev;
+        if (ui_hold_tick(&s.test_hold, dt_s)) {
+            s.test_down = false;
+            ov_let_go();
+            test_begin();
+        }
+    }
+    test_tick();
 
     if (s.driving) {
         s.pulse += dt_s * 3.6f;         /* a little under two seconds a cycle */
@@ -3088,6 +3685,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         s.drawn_power[buf] = s.power_rev;
         s.drawn_warn[buf]  = s.warn.rev;
         s.drawn_ask[buf]   = s.ask.rev;
+        s.drawn_test[buf]  = s.test_rev;
         s.drawn_save[buf]  = save_state();
         s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
         if (s.ov_open) {
@@ -3133,6 +3731,11 @@ static void render(gfx_canvas_t *c, int buffer_index)
         s.drawn_ask[buf] = s.ask.rev;
         clipped(c, warn_apply_rect(), draw_ask_apply);
     }
+    if (page_shown() && s.tabs.selected == PG_TEST
+        && s.drawn_test[buf] != s.test_rev) {
+        s.drawn_test[buf] = s.test_rev;
+        clipped(c, test_start_rect(), draw_test_start);
+    }
     if (page_shown() && s.drawn_save[buf] != save_state()) {
         s.drawn_save[buf] = save_state();
         clipped(c, save_line_rect(), draw_save_line);
@@ -3173,6 +3776,9 @@ static void leave(void)
     /* Disarm rather than release: navigating away from an armed bench must
      * not leave it armed behind a screen that is not visible, and the
      * disarm lets go of the output on its way. */
+    test_end_now(SERVO_TEST_AB_LEFT);
+    ui_hold_reset(&s.test_hold);
+    s.test_down = false;
     post(SERVO_CMD_DISARM, 0);
     s.armed = false;
     ui_hold_reset(&s.arm);
@@ -3225,6 +3831,12 @@ static void cancel(void)
     if (s.sweeping) {
         hold_sweep();
     }
+    /* And a run, for the same reason: the lost event may be STOP TEST.
+     * START TEST's hold goes with the other holds. */
+    test_end_now(SERVO_TEST_AB_TOUCH);
+    ui_hold_reset(&s.test_hold);
+    s.test_down = false;
+    ++s.test_rev;
     ui_slider_release(&s.speed);
     ui_hold_reset(&s.arm);
     s.arm_down = false;

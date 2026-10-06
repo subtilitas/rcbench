@@ -65,6 +65,7 @@ void supply_screen_set_caps(const supply_caps_t *caps);
 
 /** Whether the numbers come from the panel's model rather than a supply. */
 void supply_screen_set_model(bool model);
+bool supply_screen_model(void);
 
 /**
  * The PD mini's UART (universal asynchronous receiver-transmitter) rate in

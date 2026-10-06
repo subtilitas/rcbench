@@ -38,6 +38,10 @@ TEST_CASE(the_model_holds_its_voltage_until_the_load_reaches_the_limit)
     CHECK_EQ(st.mode, SUPPLY_MODE_OFF);
     CHECK_EQ(st.v, 0.0f);
     CHECK(st.online);
+    /* A reading a step, counted. */
+    const uint16_t first = st.samples;
+    supply_sim_step(&m, 0.05f, &st);
+    CHECK_EQ(st.samples, (uint16_t)(first + 1u));
 
     supply_sim_set(&m, 6.0f, 2.0f);
     supply_sim_output(&m, true);

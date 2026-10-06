@@ -6,6 +6,42 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- **The automatic servo test.** START TEST on the SERVO screen's TEST page,
+  a 2 s hold on an armed bench, steps the supply through 4.8 and 6.0 V, and
+  with HV SERVO on (TEST page, off at every restart) through 7.4 and 8.4 V,
+  which start only through HV SERVOS ONLY held for 2 s. Each step waits for
+  the set point to read back and for SETTLE, then measures the idle current,
+  the moving current, the holding current at each end and the travel time
+  end to end, timed from the supply's current: from the command to the first
+  reading back within 0.05 A of the holding level. A brown-out walk follows,
+  from 5.0 V down in 0.2 V steps until no reading of a move lies 0.1 A from
+  the level before it. The run writes `BENCHnnn.CSV`, one row per supply
+  reading, and with REPORT on `BENCHnnn.TXT`: the device, the settings in
+  force, the results per step, the brown-out voltage, the reading rate and
+  its time resolution, and PASS or FAIL against the LIMITS page. STOP, a
+  disarm, link loss, leaving the screen, taking the servo, a supply that
+  trips, goes off, stops answering or sends no reading for 1.5 s, and 1 s
+  above STALL AT end a run with the output off and the report marked
+  ABORTED. Progress and the result show on the left card. The engine is
+  `shared/servo/servo_test.c`, host-tested against the servo and supply
+  models; nothing of it has run on hardware. The supply's state carries the
+  reading count and the time the panel had each reading.
+
+### Fixed
+
+- **OUTPUT ON on SERVO above 6.0 V takes the HV hold.** The HV SERVOS ONLY
+  warning opened only when the SET line raised the voltage across 6.0 V. A
+  set point above 6.0 V made on SUPPLY, or already in force, reached the
+  servo after the ordinary 2 s OUTPUT ON hold with no warning. OUTPUT ON on
+  SERVO with a set point above 6.0 V now opens HV SERVOS ONLY, and the
+  output comes on only after its HOLD TO APPLY is held for 2 s. OUTPUT ON on
+  SUPPLY is unchanged.
+- **OUTPUT ON's flash on SERVO ends with the output.** An output switched
+  off during the flash that marks it coming on left one of the two screen
+  buffers drawing the button in the flash's red until the next change.
+
 ## 0.11.0 - 2026-10-06
 
 SERVO sets and switches the supply itself; raising its voltage past
@@ -39,13 +75,6 @@ alert clears after 30 s or on a tap. The link protocol stays 4.4, so a
 
 ### Fixed
 
-- **OUTPUT ON on SERVO above 6.0 V takes the HV hold.** The HV SERVOS ONLY
-  warning opened only when the SET line raised the voltage across 6.0 V. A
-  set point above 6.0 V made on SUPPLY, or already in force, reached the
-  servo after the ordinary 2 s OUTPUT ON hold with no warning. OUTPUT ON on
-  SERVO with a set point above 6.0 V now opens HV SERVOS ONLY, and the
-  output comes on only after its HOLD TO APPLY is held for 2 s. OUTPUT ON on
-  SUPPLY is unchanged.
 - **The PD mini's rate is no longer an alert.** With "PD mini baud" at AUTO,
   the rate found filled the red alert band at the foot of every screen, over
   the SUPPLY current limit, until another alert replaced it (bench,

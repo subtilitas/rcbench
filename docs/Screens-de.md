@@ -281,6 +281,40 @@ SWEEP gibt es bei scharfem Prüfstand und einem Koprozessor mit Protokoll 4.2;
 der Koprozessor hält eine Kurve an, die das Panel 500 ms nicht wiederholt hat,
 und lässt jede Surface dort stehen, wo ihr Ausgang gerade ist.
 
+**START TEST startet den automatischen Test** auf der TEST-Seite: das Servo
+wird durch die dort gewählten Spannungen geführt, sein Strom in Ruhe, in
+Bewegung und beim Halten gemessen, seine Stellzeit gemessen, und die
+Spannung gesucht, bei der es sich nicht mehr bewegt. [Servoverfahren](Servo-de.md#automatischer-test)
+beschreibt das Verfahren und die Dateien. START TEST braucht einen scharfen
+Prüfstand und ein Netzteil, das antwortet; die Zeile darunter sagt ARM FIRST
+oder, warum ein Lauf abgelehnt wurde. Es ist ein Halten über zwei Sekunden,
+die Geste von OUTPUT ON, weil ein Lauf das Netzteil einschaltet und das Servo
+bewegt. Ist HV SERVO an und eine Stufe über 6,0 V gewählt, öffnet ein Tippen
+stattdessen HV SERVOS ONLY mit der höchsten Stufe, und der Lauf startet erst,
+nachdem HOLD TO APPLY 2 s gehalten wurde. HV SERVO gilt für die Sitzung:
+jeder Neustart schaltet es aus.
+
+Die Einstellungen schließen sich beim Start, und Stufe und Phase stehen oben
+auf der linken Karte. Der Lauf führt das Servo und die Sollwerte und den
+Schalter von SUPPLY, bis er endet. Er endet vorzeitig, mit ausgeschaltetem
+Ausgang und dem Servo zur Mitte freigegeben, bei STOP TEST (auf der linken
+Karte oder der TEST-Seite), STOP, einem Disarm, wenn der Link geht, beim
+Verlassen des Screens, bei einem Finger auf der Skala, CENTRE, SWEEP,
+RELEASE, einem Tippen auf einen Sollwert, einer Änderung an Typ, Impulsen,
+Trim, Weg, Reverse oder SPEED des Servos, bei verlorenen Touch-Ereignissen
+und beim Netzteil: siehe [die Liste](Servo-de.md#was-einen-lauf-beendet).
+Nach jedem Lauf gehen die Sollwerte auf ihre Werte vor dem Lauf zurück,
+sobald der Ausgang aus meldet.
+
+![Ein Lauf](img/servo-run.png)
+
+Das Ergebnis bleibt bis CLOSE auf der linken Karte: PASS, FAIL oder ABORTED
+und der Grund, die längste Stellzeit und der höchste Haltestrom, und die
+Dateien, die die Karte angenommen hat, `BENCHnnn.CSV` und mit REPORT an
+`BENCHnnn.TXT`.
+
+![Ein Ergebnis](img/servo-result.png)
+
 ### Einstellungen
 
 SETTINGS, oben auf der rechten Karte, öffnet die Einstellungen des Servos über
@@ -298,10 +332,12 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | OUTPUT | TRIM | zur Mitte addiert, 5 us je Schritt, bis 200 us in jede Richtung |
 | OUTPUT | TRAVEL | wie weit der Arm in jede Richtung darf, 10 bis 90 Grad |
 | OUTPUT | REVERSE | die Richtung, in der der Winkel auf den Impuls abgebildet wird |
-| TEST | CURVE, SPEED, RANGE | die Bewegung von SWEEP und des automatischen Tests: Rechteck, Sinus oder Dreieck, 0,05 bis 5 Hz, 10 bis 100 % des Wegs |
+| TEST | CURVE, SPEED, RANGE | die Bewegung von SWEEP: Rechteck, Sinus oder Dreieck, 0,05 bis 5 Hz, 10 bis 100 % des Wegs. Der automatische Test springt zwischen den Enden, die RANGE ergibt |
 | TEST | LENGTH BY, TEST TIME, MOVEMENTS | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen |
 | TEST | DWELL, SETTLE | Haltezeit an jedem Ende; Wartezeit nach einer Spannungsstufe vor dem Messen |
-| TEST | STEP 4,8 / 6,0 / 7,4 / 8,4 V, BROWN-OUT | die Spannungsstufen und der Brown-out-Lauf ab 5,0 V abwärts |
+| TEST | STEP 4,8 / 6,0 / 7,4 / 8,4 V, BROWN-OUT | die Spannungsstufen und der Brown-out-Lauf ab 5,0 V abwärts; 7,4 und 8,4 V laufen nur mit HV SERVO an |
+| TEST | HV SERVO | nimmt die Stufen 7,4 und 8,4 V hinzu, vorgegeben aus und nach jedem Neustart aus; ein Lauf mit ihnen startet nur über HV SERVOS ONLY |
+| TEST | START TEST | der automatische Test: 2 s Halten bei scharfem Prüfstand; STOP TEST, solange er läuft |
 | LIMITS | VOLTAGE MAX, CURRENT MAX | die Grenzen des Bildschirms SUPPLY, dieselben Einstellungen |
 | LIMITS | STALL AT | über diesem Strom gilt das Servo als blockiert |
 | LIMITS | IDLE CURRENT, HOLD CURRENT, TRAVEL TIME | Pass/Fail-Grenzen; 0 wird nicht geprüft |
@@ -369,9 +405,9 @@ wird mit `servo frame rate not known -- arm again` abgelehnt, und ein Arm, der
 bei unterbrochenem Link gemacht wurde, erreicht den Koprozessor erst, wenn das
 Zurücksetzen angekommen ist.
 
-Die OUTPUT-Einstellungen gelten für die Sitzung; die Einstellungen unter TEST,
-LIMITS und DUT liegen im NVS (Non-Volatile Storage) und werden wie bei SUPPLY
-geschrieben.
+Die OUTPUT-Einstellungen und HV SERVO gelten für die Sitzung; die übrigen
+Einstellungen unter TEST, LIMITS und DUT liegen im NVS (Non-Volatile Storage)
+und werden wie bei SUPPLY geschrieben.
 
 ![Die Einstellungen des automatischen Tests](img/servo-test.png)
 ![Die Grenzen](img/servo-limits.png)
@@ -381,8 +417,9 @@ Aktuelle Einschränkungen:
 
 - Bis der Screen eine Stellung sendet, laufen die Pins mit der Rate, die die
   SERVO-Page hält; nach einem Neustart oder einer neuen Bindung sind das 50 Hz.
-- In diesem Build läuft kein automatischer Test. Die Einstellungen unter TEST,
-  LIMITS und DUT werden für ihn gehalten, und es wird kein Bericht geschrieben.
+- Der automatische Test ist nicht auf Hardware gelaufen, und am
+  Netzteilmodell des Panels sind seine Ströme die Last des Modells, nicht die
+  des Servos: ein Lauf dort misst das Modell. [Was nicht gemessen ist](Servo-de.md#nicht-auf-hardware-gelaufen).
 - Das Netzteil auf der rechten Karte ist das von SUPPLY: der PD mini, wenn
   SETUP ihn einschaltet, sonst das Modell des Panels, dessen Spannung, Strom
   und Leistung simuliert und nicht gemessen sind.
@@ -663,7 +700,9 @@ Importansicht zeigt, was er entschieden hat, bevor die Datei geplottet wird.
 Vom Prüfstand aufgezeichnete Läufe werden als `BENCH001.CSV` bis
 `BENCH999.CSV` im Wurzelverzeichnis der Karte abgelegt. Ein Lauf ist ein
 Scharfschalten oder, solange der Prüfstand nicht scharf ist, ein Einschalten
-des SUPPLY-Ausgangs.
+des SUPPLY-Ausgangs. Ein automatischer Servotest nimmt ebenfalls die nächste
+Nummer: sein Log ist `BENCHnnn.CSV`, das die Liste als Lauf zeigt, sein
+Bericht `BENCHnnn.TXT`, den die Liste nicht zeigt.
 
 Die Liste fasst 48 Einträge, die Karte bis zu 999 Läufe. Passen nicht alle
 hinein, behält die Liste die neuesten Läufe, und ihr Reiter zeigt

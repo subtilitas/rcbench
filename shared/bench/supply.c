@@ -254,6 +254,7 @@ void supply_sim_step(supply_sim_t *m, float dt_s, supply_state_t *out)
     out->set_i  = m->set_i;
     out->output = m->output;
     out->online = true;
+    ++out->samples;
     out->ok     = (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
     if (!m->output) {
         out->v = 0.0f;
