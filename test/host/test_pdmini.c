@@ -49,6 +49,7 @@ typedef struct {
     uint32_t on_since;        /* when the output last came on            */
     int      id_says;         /* READ_ID answers this, -1 the slot       */
     bool     other_slot;      /* READ_DATA answers for the next slot     */
+    bool     no_input;        /* firmware without READ_INPUT_STATE       */
     const char *who;          /* WHO_AM_I's text, NULL the module's      */
     unsigned ignore_en;       /* OUTPUT_EN writes taken and not applied  */
     uint32_t byte_gap;        /* ms between reply bytes, 0 for 1         */
@@ -112,6 +113,9 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
         return;
     }
     ++m.reads[p[0]];
+    if (m.no_input && p[0] == PDMINI_READ_INPUT) {
+        return;
+    }
     if (m.mute && p[0] != PDMINI_OUTPUT_EN && p[0] != PDMINI_OUTPUT_DATA) {
         return;   /* its transmit line is gone, its receiver is not */
     }
@@ -771,9 +775,10 @@ TEST_CASE(no_blind_off_goes_to_a_module_that_answers)
     CHECK(!m.output);
     CHECK(!m.switched_on_by_off);
     CHECK_EQ(m.en_writes, writes);
-    /* And its argument for on is learnt afresh, not taken from the last. */
+    /* And its argument for on is learnt afresh once the last one's does not
+     * take four times. */
     pdmini_want(&d, true, 5000u, 1000u);
-    run(2500u, false);
+    run(6000u, false);
     CHECK(m.output);
     CHECK_EQ(d.on_value, 0u);
 }
@@ -1019,6 +1024,83 @@ TEST_CASE(an_on_is_dropped_when_its_set_points_change)
     CHECK_EQ(m.en_writes, 1u);
 }
 
+/* A module swapped between two reads for one that reads OUTPUT_EN the other
+ * way round, and on: the learnt argument is put in doubt after four writes
+ * that do not take, and the other one switches it off. */
+TEST_CASE(a_learnt_argument_that_stops_working_is_doubted)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(d.on_confirmed);
+    m.on_arg = 0u;                             /* swapped, and on */
+    m.output = true;
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(3000u, true);
+    CHECK(!m.output);
+}
+
+/* Set points changed while the old ones wait for their pins, the output
+ * on: the old ones are not sent. */
+TEST_CASE(stale_set_points_are_not_sent)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    pdmini_want(&d, true, 20000u, 1000u);
+    for (unsigned k = 0u; k < 3000u
+         && !(d.phase == PD_ATTACH && d.cmd == PDMINI_OUTPUT_DATA); ++k) {
+        run(1u, false);
+    }
+    CHECK(d.phase == PD_ATTACH);
+    pdmini_want(&d, true, 6000u, 1000u);
+    const unsigned data = m.data_writes;
+    run(5u, false);
+    CHECK_EQ(m.data_writes, data);
+    run(1000u, false);
+    CHECK_EQ(m.mv[0], 6000u);
+}
+
+/* Firmware that does not answer READ_INPUT_STATE is asked three times and
+ * then left alone, so its 400 ms windows do not hold up the rest. */
+TEST_CASE(an_unanswered_input_read_is_given_up)
+{
+    fresh();
+    m.no_input = true;
+    run(100u, false);
+    run(5000u, false);
+    const unsigned asked = m.reads[PDMINI_READ_INPUT];
+    CHECK_EQ(asked, PDMINI_INPUT_MISSES);
+    CHECK(pdmini_status(&d)->online);
+    run(3000u, false);
+    CHECK_EQ(m.reads[PDMINI_READ_INPUT], asked);
+}
+
+/* The same module, on, goes quiet, answers again and goes quiet again: the
+ * argument it showed is kept, and an OFF still reaches it blind. */
+TEST_CASE(an_argument_outlasts_a_module_that_comes_back)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(d.on_confirmed);
+    m.mute = true;
+    run(2500u, false);
+    CHECK(!pdmini_status(&d)->online);
+    m.mute = false;
+    run(1500u, false);
+    CHECK(pdmini_status(&d)->online);
+    CHECK(d.on_confirmed);
+    m.mute = true;
+    run(2500u, false);
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(2500u, true);
+    CHECK(!m.output);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -1083,5 +1165,9 @@ int main(void)
     RUN(an_on_asked_over_a_pending_off_teaches_nothing);
     RUN(a_dropped_set_point_leaves_nothing_stuck);
     RUN(an_on_is_dropped_when_its_set_points_change);
+    RUN(a_learnt_argument_that_stops_working_is_doubted);
+    RUN(stale_set_points_are_not_sent);
+    RUN(an_unanswered_input_read_is_given_up);
+    RUN(an_argument_outlasts_a_module_that_comes_back);
     return test_summary("pdmini");
 }

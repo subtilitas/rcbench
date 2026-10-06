@@ -27,7 +27,7 @@ history is in git.
     - a slot number past 4, or set points for another slot than asked,
       fail the transaction.
   - OUTPUT_EN's argument for on is learnt from the module: 1 first, then 0,
-    and learnt again from a module that answers after none did. It is
+    and kept across a module going quiet and answering again. It is
     learnt only from an output seen to come on after a write towards on,
     never from one seen to go off, which the module's overcurrent
     protection does by itself. Once a
@@ -36,8 +36,8 @@ history is in git.
     switch on an output that was off.
   - Ordering: an OFF goes first.
     - An ON not yet sent when an OFF is asked for, or when the set points
-      read back for it change, is dropped, and so is a set point while the
-      output is or may be on. A read under way other
+      read back for it change, is dropped, and so are set points no longer
+      the ones asked, or any while the output is or may be on. A read under way other
       than the state's is left.
     - An OFF that does not take is written again without pause; four
       that do not take raise the stuck flag.
@@ -57,6 +57,9 @@ history is in git.
     made on the module's buttons is put back.
   - The readings take turns by how late each is, so a slow module does
     not starve any of them, past 2^31 ms of uptime too.
+  - Four OUTPUT_EN writes that do not take put the learnt argument in
+    doubt, and both are tried again. READ_INPUT_STATE unanswered 3 times
+    is not asked again until the module is identified again.
   - Set points that do not take, or replies naming no slot or another, are
     tried three times, then flagged and left alone for two seconds while
     the readings go on.

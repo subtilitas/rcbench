@@ -164,6 +164,10 @@ static void finish(pdmini_t *d, uint32_t now, bool ok)
         return;
     }
     ++d->st.errors;
+    if (d->cmd == PDMINI_READ_INPUT && d->rx_n == 0u
+        && d->input_misses < PDMINI_INPUT_MISSES) {
+        ++d->input_misses;        /* firmware before v1.0.2.0 has none */
+    }
     if (d->cmd == PDMINI_WHO_AM_I && d->rx_n == 0u) {
         /* Not a byte back: silence, where a blind OFF may be heard.  Any
          * answer -- garbled, or another device's -- is not silence. */
@@ -219,9 +223,11 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->st.online   = true;
         d->state_known = false;
         d->blind_due   = false;
-        /* Perhaps another module than the last: its argument for on is
-         * shown again by a read-back before it is relied on. */
-        d->on_confirmed = false;
+        /* The argument learnt is kept: the same module back after a fault
+         * still has to be switched off, blind if it goes quiet again.  One
+         * swapped for another that reads it the other way round is caught
+         * by four writes that do not take. */
+        d->input_misses = 0u;
         break;
     case PDMINI_READ_STATE:
         d->st.output   = (r[1] & 1u) != 0u;
@@ -316,6 +322,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
     case PDMINI_READ_INPUT:
         d->st.in_state = r[1];
         d->st.vin_mv   = (uint16_t)(r[2] | (r[3] << 8));
+        d->input_misses = 0u;
         break;
     default:
         break;
@@ -362,6 +369,7 @@ static bool en_ready(pdmini_t *d, uint32_t now)
 {
     if (d->en_tries >= 4u) {
         d->st.stuck = true;
+        d->on_confirmed = false;   /* the argument is in doubt again */
         if ((uint32_t)(now - d->en_at) < PDMINI_RETRY_MS) {
             return false;
         }
@@ -385,8 +393,11 @@ static bool write_en(pdmini_t *d, uint32_t now)
         return false;
     }
     if (!d->want_output && d->en_tries >= 4u) {
-        /* An OFF is not paused: stuck is said, and it goes on. */
+        /* An OFF is not paused: stuck is said, and it goes on -- trying
+         * both arguments again, as the module may have been swapped for
+         * one that reads them the other way round. */
         d->st.stuck = true;
+        d->on_confirmed = false;
         d->en_tries = 0u;
     }
     const uint8_t mean = d->want_output ? d->on_value
@@ -548,6 +559,10 @@ static bool next_job(pdmini_t *d, uint32_t now)
         if (polls[k].cmd == PDMINI_READ_STATE && d->en_pending) {
             continue;   /* the confirming read is the next state read */
         }
+        if (polls[k].cmd == PDMINI_READ_INPUT
+            && d->input_misses >= PDMINI_INPUT_MISSES) {
+            continue;   /* not answered by this module's firmware */
+        }
         const uint32_t since = now - *polls[k].last;
         if (since < polls[k].period) {
             continue;
@@ -581,8 +596,9 @@ static bool off_now(const pdmini_t *d)
 /*
  * Whether the write waiting for its pins has been overtaken: an OUTPUT_EN
  * towards what is no longer asked, an ON whose set points have changed
- * since they were read back for it, or a set point while an OFF is asked
- * and the output is or may be on -- the OFF goes first.
+ * since they were read back for it, set points no longer the ones asked,
+ * or a set point while an OFF is asked and the output is or may be on --
+ * the OFF goes first.
  */
 static bool overtaken(const pdmini_t *d)
 {
@@ -597,8 +613,14 @@ static bool overtaken(const pdmini_t *d)
                    || (d->en_for && (d->st.set_mv != d->want_mv
                                      || d->st.set_ma != d->want_ma)));
     }
-    return d->cmd == PDMINI_OUTPUT_DATA && !d->want_output
-           && (d->st.output || (d->en_pending && d->en_for));
+    if (d->cmd != PDMINI_OUTPUT_DATA) {
+        return false;
+    }
+    const uint16_t mv = (uint16_t)(d->req[2] | (d->req[3] << 8));
+    const uint16_t ma = (uint16_t)(d->req[4] | (d->req[5] << 8));
+    return mv != d->want_mv || ma != d->want_ma
+           || (!d->want_output
+               && (d->st.output || (d->en_pending && d->en_for)));
 }
 
 void pdmini_step(pdmini_t *d, uint32_t now_ms)

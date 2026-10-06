@@ -39,10 +39,13 @@
  * OFF, and one that reads OUTPUT_EN the other way round comes on until it
  * has answered, been read and been switched off.
  *
+ * Four writes of OUTPUT_EN that do not take put the argument in doubt again,
+ * and both are tried, in case the module was swapped between two reads.
+ *
  * Which OUTPUT_EN argument means on is learnt from the module rather than
  * taken from the sheet, which has it backwards: 1 first, the bench's and the
- * vendor's Python's, then 0 -- and learnt again from a module that answers
- * WHO_AM_I after none did.  It is learnt only from an output seen to come
+ * vendor's Python's, then 0.  It is kept across a module going quiet and
+ * answering again.  It is learnt only from an output seen to come
  * on after a write towards on, never from one seen to go off, which the module's
  * overcurrent protection does by itself.  The output is written only when it reads
  * otherwise than asked, so an OFF goes only to an output that is on and the
@@ -112,6 +115,11 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
 #define PDMINI_SLOT_MS     1000u   /**< the active slot read again          */
 #define PDMINI_RETRY_MS    2000u   /**< a write that did not take, again    */
 #define PDMINI_FAILS          3u   /**< failed transactions in a row: gone */
+#define PDMINI_INPUT_MISSES   3u   /**< READ_INPUT_STATE unanswered this many
+                                        times is not asked again until the
+                                        module is identified again: the
+                                        vendor's client has it from firmware
+                                        v1.0.2.0 on                        */
 
 /** CRC8, polynomial 0x31, initial 0xFF, over @p n bytes. */
 uint8_t pdmini_crc8(const uint8_t *p, size_t n);
@@ -176,6 +184,7 @@ typedef struct {
     uint8_t  data_tries;     /* OUTPUT_DATA writes towards the set points */
     uint32_t data_at;
     uint8_t  fails;          /* consecutive                              */
+    uint8_t  input_misses;   /* READ_INPUT_STATE unanswered, consecutive */
     uint8_t  on_step;        /* reads before an ON: 1 data asked, 2 data
                                 seen, 3 slot asked, 4 slot seen          */
 
