@@ -2046,6 +2046,84 @@ TEST_CASE(a_servo_question_for_a_dropped_on_goes)
     CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
 }
 
+/* APPLY pressed on the question, then the output goes off before the finger
+ * lifts: the release applies nothing, whether the tick that drops the
+ * question comes first or not. */
+TEST_CASE(an_apply_held_as_the_output_goes_off_applies_nothing)
+{
+    for (int tick_first = 0; tick_first < 2; ++tick_first) {
+        fresh();
+        supply_screen_put(5.0f, 1.0f);
+        supply_screen_set_output(true);
+        scr->tick(0.025f);
+        tap(SUP_V_X, SUP_ROW_Y);
+        keys("5.5");
+        ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+        supply_screen_set_output(false);
+        if (tick_first) {
+            scr->tick(0.025f);
+        }
+        ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
+        CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
+    }
+}
+
+/* APPLY gives the supply the set point that was typed, and leaves the
+ * other as it is now: a cap that moved it meanwhile is not undone. */
+TEST_CASE(apply_sets_only_the_set_point_that_was_typed)
+{
+    fresh();
+    supply_screen_put(5.0f, 1.0f);
+    supply_screen_set_output(true);
+    scr->tick(0.025f);
+    tap(SUP_I_X, SUP_ROW_Y);
+    keys("1.5");
+    supply_screen_put(4.0f, 1.0f);              /* the voltage moved */
+    scr->tick(0.025f);
+    tap(WARN_APPLY_X, WARN_Y);
+    CHECK(fabsf(supply_screen_set_i() - 1.5f) < 1e-4f);
+    CHECK(fabsf(supply_screen_set_v() - 4.0f) < 1e-4f);
+}
+
+/* A press on OUTPUT OFF in the frame the output was reported on: the
+ * screen's drawn state has not caught up, and a lost release still sends
+ * the OFF. */
+TEST_CASE(an_off_press_before_the_tick_is_still_an_off)
+{
+    fresh();
+    supply_screen_set_output(true);             /* no tick yet */
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    scr->cancel();
+    supply_cmd_t c;
+    CHECK(supply_cmd(&c));
+    CHECK(c.off);
+}
+
+/* The HV warning says whether the output is on, and says it again when
+ * that changes. */
+TEST_CASE(the_hv_warning_redraws_when_the_output_changes)
+{
+    fresh();
+    supply_screen_put(5.0f, 1.0f);
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("7.4");
+    scr->tick(0.025f);
+    scr->render(&cv, 0);
+    gfx_color_t *before = malloc((size_t)W * H * sizeof(gfx_color_t));
+    memcpy(before, fb, (size_t)W * H * sizeof(gfx_color_t));
+    supply_screen_set_output(true);
+    scr->tick(0.025f);
+    scr->render(&cv, 0);
+    int changed = 0;
+    for (int y = 0; y < 300; ++y) {             /* the warning's text */
+        for (int x = 0; x < 490; ++x) {
+            changed += (fb[(size_t)y * W + x] != before[(size_t)y * W + x]);
+        }
+    }
+    CHECK(changed > 0);
+    free(before);
+}
+
 int main(void)
 {
     RUN(a_touch_on_the_dial_points_the_horn_there);
@@ -2119,5 +2197,9 @@ int main(void)
     RUN(the_hv_hold_stands_for_the_live_question);
     RUN(an_on_reported_during_a_second_servo_hold_is_not_an_off);
     RUN(a_servo_question_for_a_dropped_on_goes);
+    RUN(an_apply_held_as_the_output_goes_off_applies_nothing);
+    RUN(apply_sets_only_the_set_point_that_was_typed);
+    RUN(an_off_press_before_the_tick_is_still_an_off);
+    RUN(the_hv_warning_redraws_when_the_output_changes);
     return test_summary("servo");
 }

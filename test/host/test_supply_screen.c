@@ -1321,6 +1321,21 @@ TEST_CASE(a_question_for_an_on_that_was_dropped_goes)
     CHECK_EQ(supply_screen_set_v(), was);
 }
 
+/* APPLY pressed on a question about a coming ON, then STOP drops the ON
+ * before the finger lifts: the release applies nothing. */
+TEST_CASE(an_apply_held_as_its_on_is_dropped_applies_nothing)
+{
+    fresh();
+    hold_on();
+    const float was = supply_screen_set_v();
+    tap(CARD_X, CARD_V_Y);
+    keys("7");
+    ev(APPLY_X, ASK_Y, TOUCH_EVENT_DOWN, 1);
+    supply_screen_cancel_on();
+    ev(APPLY_X, ASK_Y, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(supply_screen_set_v(), was);
+}
+
 int main(void)
 {
     RUN(reset_pd_mini_is_offered_only_for_the_module);
@@ -1370,6 +1385,7 @@ int main(void)
     RUN(the_pd_minis_rate_is_shown_after_online);
     RUN(an_on_reported_during_a_second_hold_is_not_an_off);
     RUN(a_question_for_an_on_that_was_dropped_goes);
+    RUN(an_apply_held_as_its_on_is_dropped_applies_nothing);
     free(fb);
     free(fb2);
     return test_summary("supply_screen");

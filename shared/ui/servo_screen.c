@@ -314,6 +314,7 @@ static struct {
     struct {
         bool      open;
         bool      hv;
+        int       target;    /**< KT_SUP_V or KT_SUP_I: what was typed */
         float     v, i;
         ui_hold_t hold;
         bool      down;
@@ -1283,10 +1284,11 @@ static void set_point_typed(int target, float typed)
     const bool hv = v > STD_SERVO_V_MAX + 0.001f
                     && supply_screen_set_v() <= STD_SERVO_V_MAX + 0.001f;
     if (hv || supply_screen_typed_asks()) {
-        s.ask.open = true;
-        s.ask.hv   = hv;
-        s.ask.v    = v;
-        s.ask.i    = i;
+        s.ask.open   = true;
+        s.ask.hv     = hv;
+        s.ask.target = target;
+        s.ask.v      = v;
+        s.ask.i      = i;
         s.ask.down = false;
         ui_hold_reset(&s.ask.hold);
         servo_invalidate();
@@ -1301,7 +1303,14 @@ static void ask_apply(void)
 {
     s.ask.open = false;
     s.ask.down = false;
-    supply_screen_put(s.ask.v, s.ask.i);
+    /* Only the set point that was typed: the other may have moved while
+     * the question stood -- a cap that follows the PD mini's input -- and
+     * the value it had then is not one anybody asked for now. */
+    if (s.ask.target == KT_SUP_V) {
+        supply_screen_put(s.ask.v, supply_screen_set_i());
+    } else {
+        supply_screen_put(supply_screen_set_v(), s.ask.i);
+    }
     close_alone();
     servo_invalidate();
 }
@@ -1727,7 +1736,10 @@ static void ov_rest(const touch_event_t *evt)
         break;
     }
     case OP_ASK_APPLY:
-        if (gfx_rect_contains(warn_apply_rect(), x, y)) {
+        /* Only while the question still stands: a release drained in the
+         * frame that took the live output away must not apply it. */
+        if (gfx_rect_contains(warn_apply_rect(), x, y) && s.ask.open
+            && (s.ask.hv || supply_screen_output_live())) {
             ask_apply();
         }
         break;
@@ -2830,6 +2842,9 @@ static void tick(float dt_s)
         } else if (ui_hold_left(&s.out_hold) && s.out_down) {
             s.out_down = false;
         }
+        if (s.ask.open && s.ask.hv) {
+            ++s.ctrl_rev;   /* the warning says whether the output is on */
+        }
         ++s.sup_rev;
     }
     /* The question is about a live output: once there is none -- off, and
@@ -2838,6 +2853,9 @@ static void tick(float dt_s)
      * is about the servo, and stays. */
     if (s.ask.open && !s.ask.hv && !supply_screen_output_live()) {
         s.ask.open = false;
+        if (s.ov_pressed == OP_ASK_APPLY || s.ov_pressed == OP_ASK_CANCEL) {
+            ov_let_go();                /* its buttons have gone with it */
+        }
         close_alone();
         servo_invalidate();
     }
@@ -3057,7 +3075,7 @@ static void leave(void)
     s.arm_down = false;
     /* The supply's output stays as it is, as leaving SUPPLY keeps it; a
      * press on OUTPUT OFF as the screen goes is the OFF being made. */
-    if (s.out_on && s.out_down && s.out_press_on) {
+    if (s.out_down && s.out_press_on) {
         supply_screen_ask_off();
     }
     ui_hold_reset(&s.out_hold);
@@ -3108,7 +3126,7 @@ static void cancel(void)
     s.arm_down = false;
     /* OUTPUT OFF is a press too, and its lost release an OFF made; OUTPUT
      * ON's hold is dropped, and SUPPLY drops an ON not yet collected. */
-    if (s.out_on && s.out_down && s.out_press_on) {
+    if (s.out_down && s.out_press_on) {
         supply_screen_ask_off();
     }
     ui_hold_reset(&s.out_hold);

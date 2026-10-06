@@ -963,7 +963,10 @@ static void released(int was, int row, int x, int y)
         }
         break;
     case P_APPLY:
-        if (gfx_rect_contains(s.apply_btn, x, y)) {
+        /* Only while the question still stands: a release drained in the
+         * frame that dropped the ON it was about must not apply it. */
+        if (gfx_rect_contains(s.apply_btn, x, y) && s.confirm_open
+            && (s.on || s.on_asked)) {
             confirm_close(true);
         }
         break;
@@ -1080,6 +1083,9 @@ static void tick(float dt_s)
      * ON on its way -- a STOP or a lost touch can drop one that was. */
     if (s.confirm_open && !s.on && !s.on_asked) {
         s.confirm_open = false;
+        if (s.pressed == P_APPLY || s.pressed == P_DISCARD) {
+            let_go();                   /* its buttons have gone with it */
+        }
         ++s.set_rev;
         supply_invalidate();
     }
