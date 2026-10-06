@@ -29,6 +29,7 @@ history is in git.
   - OUTPUT_EN's argument for on is learnt from the module: 1 first, then 0,
     and kept across a module going quiet and answering again. It is
     learnt only from an output seen to come on after a write towards on,
+    and relied on once two ONs with it have taken,
     never from one seen to go off, which the module's overcurrent
     protection does by itself. Once a
     read-back has shown it, only that argument is written. The output is

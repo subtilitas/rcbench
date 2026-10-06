@@ -55,6 +55,8 @@ typedef struct {
     uint32_t byte_gap;        /* ms between reply bytes, 0 for 1         */
     uint32_t self_off_ms;     /* goes off by itself this long after any
                                  OUTPUT_EN that left it on, 0 never      */
+    uint32_t self_on_ms;      /* comes on by itself this long after an
+                                 OUTPUT_EN, its AUTO OUT or button; 0 never */
     uint32_t last_en_ms;
     uint32_t attach_at, attach_max;
     int      switch_to;       /* the buttons choose this slot, -1 none,  */
@@ -234,6 +236,11 @@ static void run(uint32_t ms, bool want_off_seen_on_check)
             && (uint32_t)(now - m.last_en_ms) == m.self_off_ms) {
             m.output = false;                  /* its overcurrent protection */
         }
+        if (m.self_on_ms != 0u && !m.output && m.en_writes > 0u
+            && (uint32_t)(now - m.last_en_ms) == m.self_on_ms) {
+            m.output = true;
+            m.self_on_ms = 0u;
+        }
         if (m.output) {
             ++m.on_ms;
         }
@@ -244,6 +251,18 @@ static void run(uint32_t ms, bool want_off_seen_on_check)
         }
         pdmini_step(&d, now);
     }
+}
+
+/* ON, OFF and ON again: the argument for on shown twice and relied on,
+ * the output left on. */
+static void learn_on_twice(void)
+{
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(600u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
 }
 
 /* -------------------------------------------------------------- the codec */
@@ -582,8 +601,7 @@ TEST_CASE(an_off_reaches_a_module_that_stopped_answering)
 {
     fresh();
     run(100u, false);
-    pdmini_want(&d, true, 5000u, 1000u);
-    run(1500u, false);
+    learn_on_twice();
     CHECK(m.output);
     m.mute = true;
     run(2500u, false);
@@ -622,6 +640,7 @@ TEST_CASE(an_off_cancels_a_slow_on)
     run(100u, false);
     pdmini_want(&d, true, 5000u, 1000u);
     run(1500u, false);
+    learn_on_twice();
     pdmini_want(&d, false, 5000u, 1000u);
     run(600u, false);
     CHECK(!m.output);
@@ -648,7 +667,8 @@ TEST_CASE(an_off_cancels_a_slow_on)
     CHECK(!m.output);
     /* Seen on as it came on, at 300 ms, and its 300 ms to go off. */
     CHECK(m.on_ms < 400u);
-    CHECK(d.on_confirmed);
+    CHECK(d.on_seen);
+    CHECK_EQ(d.on_value, 1u);
 }
 
 /* A module that reads OUTPUT_EN the way the sheet says, its ON cancelled
@@ -679,8 +699,7 @@ TEST_CASE(a_known_argument_is_not_tried_the_other_way)
 {
     fresh();
     run(100u, false);
-    pdmini_want(&d, true, 5000u, 1000u);
-    run(1500u, false);
+    learn_on_twice();
     CHECK(d.on_confirmed);
     m.settle_ms = 600u;
     pdmini_want(&d, false, 5000u, 1000u);
@@ -732,13 +751,12 @@ TEST_CASE(an_owed_off_outlasts_the_rounds_that_find_nothing)
 {
     fresh();
     run(100u, false);
-    pdmini_want(&d, true, 5000u, 1000u);
-    run(1500u, false);
+    learn_on_twice();
     pdmini_want(&d, false, 5000u, 1000u);
     run(600u, false);
     CHECK(d.on_confirmed);
     pdmini_want(&d, true, 5000u, 1000u);
-    run_to_en_write(3u);
+    run_to_en_write(m.en_writes + 1u);
     m.mute = true;
     run(8000u, false);
     CHECK(!pdmini_status(&d)->online);
@@ -756,8 +774,7 @@ TEST_CASE(no_blind_off_goes_to_a_module_that_answers)
 {
     fresh();
     run(100u, false);
-    pdmini_want(&d, true, 5000u, 1000u);
-    run(1500u, false);
+    learn_on_twice();
     CHECK(d.on_confirmed);
     m.mute = true;
     run(2500u, false);
@@ -789,8 +806,7 @@ TEST_CASE(an_off_is_not_paused_by_writes_that_did_not_take)
 {
     fresh();
     run(100u, false);
-    pdmini_want(&d, true, 5000u, 1000u);
-    run(1500u, false);
+    learn_on_twice();
     CHECK(d.on_confirmed);
     const unsigned writes = m.en_writes;
     m.ignore_en = 4u;
@@ -878,8 +894,7 @@ TEST_CASE(no_blind_off_goes_to_another_device_that_answers)
 {
     fresh();
     run(100u, false);
-    pdmini_want(&d, true, 5000u, 1000u);
-    run(1500u, false);
+    learn_on_twice();
     CHECK(d.on_confirmed);
     m.mute = true;
     run(2500u, false);
@@ -970,8 +985,7 @@ TEST_CASE(an_on_asked_over_a_pending_off_teaches_nothing)
 {
     fresh();
     run(100u, false);
-    pdmini_want(&d, true, 5000u, 1000u);
-    run(1500u, false);
+    learn_on_twice();
     CHECK(d.on_confirmed);
     m.settle_ms = 300u;
     const unsigned writes = m.en_writes;
@@ -1031,8 +1045,7 @@ TEST_CASE(a_learnt_argument_that_stops_working_is_doubted)
 {
     fresh();
     run(100u, false);
-    pdmini_want(&d, true, 5000u, 1000u);
-    run(1500u, false);
+    learn_on_twice();
     CHECK(d.on_confirmed);
     m.on_arg = 0u;                             /* swapped, and on */
     m.output = true;
@@ -1084,8 +1097,7 @@ TEST_CASE(an_argument_outlasts_a_module_that_comes_back)
 {
     fresh();
     run(100u, false);
-    pdmini_want(&d, true, 5000u, 1000u);
-    run(1500u, false);
+    learn_on_twice();
     CHECK(d.on_confirmed);
     m.mute = true;
     run(2500u, false);
@@ -1098,6 +1110,47 @@ TEST_CASE(an_argument_outlasts_a_module_that_comes_back)
     run(2500u, false);
     pdmini_want(&d, false, 5000u, 1000u);
     run(2500u, true);
+    CHECK(!m.output);
+}
+
+/* A module the other way round, whose output comes on by itself just after
+ * the first ON guessed -- its OFF.  Seen once, the guess is not relied on:
+ * the OFF that follows tries the other argument after two. */
+TEST_CASE(an_output_that_came_on_by_itself_is_not_relied_on)
+{
+    fresh();
+    m.on_arg = 0u;
+    m.self_on_ms = 50u;
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1000u, false);
+    CHECK(m.output);
+    CHECK(!d.on_confirmed);
+    pdmini_want(&d, false, 5000u, 1000u);
+    m.on_ms = 0u;
+    run(2000u, true);
+    CHECK(!m.output);
+    CHECK(m.on_ms < 900u);
+}
+
+/* An ON that went out, its OFF lost, and then nothing answers: the ON is
+ * owed an OFF, sent blind. */
+TEST_CASE(an_on_sent_and_unsettled_is_owed_an_off)
+{
+    fresh();
+    run(100u, false);
+    learn_on_twice();
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(600u, false);
+    CHECK(!m.output);
+    m.settle_ms = 100u;
+    pdmini_want(&d, true, 5000u, 1000u);
+    run_to_en_write(m.en_writes + 1u);
+    m.ignore_en = 1u;                          /* the OFF is lost */
+    pdmini_want(&d, false, 5000u, 1000u);
+    run_to_en_write(m.en_writes + 1u);
+    m.mute = true;
+    run(6000u, true);
     CHECK(!m.output);
 }
 
@@ -1169,5 +1222,7 @@ int main(void)
     RUN(stale_set_points_are_not_sent);
     RUN(an_unanswered_input_read_is_given_up);
     RUN(an_argument_outlasts_a_module_that_comes_back);
+    RUN(an_output_that_came_on_by_itself_is_not_relied_on);
+    RUN(an_on_sent_and_unsettled_is_owed_an_off);
     return test_summary("pdmini");
 }

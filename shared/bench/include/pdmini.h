@@ -46,9 +46,11 @@
  * taken from the sheet, which has it backwards: 1 first, the bench's and the
  * vendor's Python's, then 0.  It is kept across a module going quiet and
  * answering again.  It is learnt only from an output seen to come
- * on after a write towards on, never from one seen to go off, which the module's
- * overcurrent protection does by itself.  The output is written only when it reads
- * otherwise than asked, so an OFF goes only to an output that is on and the
+ * on after a write towards on -- relied on once two ONs with it have taken,
+ * as the module's button or AUTO OUT can switch it on in the same moment --
+ * never from one seen to go off, which the module's overcurrent protection
+ * does by itself.  The output is written only when it reads otherwise than
+ * asked, so an OFF goes only to an output that is on and the
  * learning cannot switch on one that was off.
  *
  * The UART is attached to the pins for one transaction and the pins are
@@ -174,7 +176,9 @@ typedef struct {
     uint8_t  on_value;       /* OUTPUT_EN's argument for on; learnt      */
     uint8_t  en_value;       /* the argument last written                */
     bool     en_for;         /* the state it was written towards         */
-    bool     on_confirmed;   /* on_value seen to work by a read-back     */
+    bool     on_seen;        /* on_value seen to work once               */
+    bool     on_confirmed;   /* and twice: relied on                     */
+    bool     on_sent;        /* an ON went out, not yet settled by a read */
     bool     off_owed;       /* gone while on: an OFF is sent blind      */
     bool     blind_due;      /* a WHO_AM_I went unanswered: OFF blind   */
     uint8_t  en_tries;       /* OUTPUT_EN writes towards the wanted state */

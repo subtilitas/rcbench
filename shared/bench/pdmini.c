@@ -182,7 +182,7 @@ static void finish(pdmini_t *d, uint32_t now, bool ok)
          * An OFF owed stays owed until a state read says otherwise.
          */
         d->fails        = 0u;
-        d->off_owed     = d->off_owed || d->st.output
+        d->off_owed     = d->off_owed || d->st.output || d->on_sent
                           || (d->en_pending && d->en_for);
         d->identified   = false;
         d->st.online    = false;
@@ -209,6 +209,24 @@ static bool holds(const uint8_t *p, size_t n, const char *s)
 
 /* A whole reply, its check passed: taken, or false for one that cannot be
  * the module's answer, which fails the transaction. */
+/*
+ * The argument just written was followed by the output coming on.  Taken as
+ * the one that means on, and relied on -- for a blind OFF, and without
+ * trying the other -- only once two ONs with it have both taken: the
+ * module's own button or its AUTO OUT setting can switch the output on in
+ * the same 250 ms as one guess.
+ */
+static void learn_on(pdmini_t *d)
+{
+    if (d->on_seen && d->on_value == d->en_value) {
+        d->on_confirmed = true;
+    } else {
+        d->on_value     = d->en_value;
+        d->on_seen      = true;
+        d->on_confirmed = false;
+    }
+}
+
 static bool take_reply(pdmini_t *d, uint32_t now)
 {
     const uint8_t *r = d->rx;
@@ -234,6 +252,13 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->st.mode     = (uint8_t)((r[1] >> 1) & 3u);
         d->state_known = true;
         d->off_owed    = false;
+        /* An ON sent is settled by a read that shows it on, or off with no
+         * ON on its way and the last write given its time. */
+        if (d->st.output
+            || (!(d->en_pending && d->en_for)
+                && (uint32_t)(now - d->en_at) >= PDMINI_CONFIRM_MS)) {
+            d->on_sent = false;
+        }
         if (d->en_pending && d->en_for && !d->want_output) {
             /*
              * An OFF asked for while an ON, its argument not yet shown to
@@ -245,9 +270,8 @@ static bool take_reply(pdmini_t *d, uint32_t now)
              * state read.
              */
             if (d->st.output) {
-                d->on_value     = d->en_value;
-                d->on_confirmed = true;
-                d->en_pending   = false;
+                learn_on(d);
+                d->en_pending = false;
             } else if ((uint32_t)(now - d->en_at) >= PDMINI_WATCH_MS) {
                 d->en_pending = false;
             }
@@ -260,12 +284,10 @@ static bool take_reply(pdmini_t *d, uint32_t now)
             if (d->en_pending && d->en_for && d->want_output) {
                 /*
                  * And the argument just written means on.  Learnt only from
-                 * an output that came on, which it does not do by itself;
-                 * one that went off may have been the module's own
-                 * protection, whatever was written.
+                 * an output that came on; one that went off may have been
+                 * the module's own protection, whatever was written.
                  */
-                d->on_value     = d->en_value;
-                d->on_confirmed = true;
+                learn_on(d);
             }
         }
         d->en_pending = false;
@@ -370,6 +392,7 @@ static bool en_ready(pdmini_t *d, uint32_t now)
     if (d->en_tries >= 4u) {
         d->st.stuck = true;
         d->on_confirmed = false;   /* the argument is in doubt again */
+        d->on_seen      = false;
         if ((uint32_t)(now - d->en_at) < PDMINI_RETRY_MS) {
             return false;
         }
@@ -398,6 +421,7 @@ static bool write_en(pdmini_t *d, uint32_t now)
          * one that reads them the other way round. */
         d->st.stuck = true;
         d->on_confirmed = false;
+        d->on_seen      = false;
         d->en_tries = 0u;
     }
     const uint8_t mean = d->want_output ? d->on_value
@@ -665,6 +689,9 @@ void pdmini_step(pdmini_t *d, uint32_t now_ms)
                                              : PDMINI_REPLY_MS);
             if (d->cmd == PDMINI_OUTPUT_EN && d->write) {
                 d->en_at = now_ms;
+                if (d->en_pending && d->en_for) {
+                    d->on_sent = true;   /* until a read shows where it went */
+                }
             }
             d->phase = PD_WAIT;
             d->t     = now_ms;
