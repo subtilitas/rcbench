@@ -1336,6 +1336,22 @@ TEST_CASE(an_apply_held_as_its_on_is_dropped_applies_nothing)
     CHECK_EQ(supply_screen_set_v(), was);
 }
 
+/* The same, with the frame's tick between: the question goes, and takes
+ * the press on its APPLY with it. */
+TEST_CASE(a_dropped_question_lets_go_of_its_apply)
+{
+    fresh();
+    hold_on();
+    const float was = supply_screen_set_v();
+    tap(CARD_X, CARD_V_Y);
+    keys("7");
+    ev(APPLY_X, ASK_Y, TOUCH_EVENT_DOWN, 1);
+    supply_screen_cancel_on();
+    tick_for(1);
+    ev(APPLY_X, ASK_Y, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(supply_screen_set_v(), was);
+}
+
 int main(void)
 {
     RUN(reset_pd_mini_is_offered_only_for_the_module);
@@ -1386,6 +1402,7 @@ int main(void)
     RUN(an_on_reported_during_a_second_hold_is_not_an_off);
     RUN(a_question_for_an_on_that_was_dropped_goes);
     RUN(an_apply_held_as_its_on_is_dropped_applies_nothing);
+    RUN(a_dropped_question_lets_go_of_its_apply);
     free(fb);
     free(fb2);
     return test_summary("supply_screen");

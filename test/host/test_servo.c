@@ -2162,6 +2162,61 @@ TEST_CASE(a_cap_lowered_under_the_question_lowers_its_value)
     CHECK(supply_screen_set_v() > 9.0f);
 }
 
+/* The rest of the SET line's gestures, each drawn as it happens: a value
+ * typed as it was, the question drawn, the HV hold slid off and drawn as it
+ * fills, an ON hold under a finger as the output comes and goes, and an
+ * OFF press the screen is left on. */
+TEST_CASE(the_set_lines_gestures_draw_and_end_as_they_should)
+{
+    fresh();
+    supply_screen_put(5.0f, 1.0f);
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("5");                                  /* the value it has */
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
+
+    supply_screen_set_output(true);
+    scr->tick(0.025f);
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("5.5");                                /* the question */
+    scr->render(&cv, 0);
+    CHECK_EQ(fb[(6 + UI_BAND_H * 0) * W + 6], ui_theme_color(UI_C_WARN));
+    tap(WARN_CANCEL_X, WARN_Y);
+
+    tap(SUP_V_X, SUP_ROW_Y);
+    supply_screen_set_output(false);
+    scr->tick(0.025f);
+    keys("7.4");                                /* the HV warning */
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 20; ++i) {
+        scr->tick(1.0f / 40.0f);
+        scr->render(&cv, 0);
+    }
+    ev(WARN_APPLY_X, 100, TOUCH_EVENT_MOVE, 1);  /* slid off: abandoned */
+    ev(WARN_APPLY_X, 100, TOUCH_EVENT_UP, 1);
+    for (int i = 0; i < 100; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
+    tap(WARN_CANCEL_X, WARN_Y);
+
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    scr->tick(1.0f / 40.0f);
+    supply_screen_set_output(true);
+    scr->tick(1.0f / 40.0f);
+    supply_screen_set_output(false);
+    scr->tick(1.0f / 40.0f);
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_cmd(NULL));
+
+    supply_screen_set_output(true);
+    scr->tick(1.0f / 40.0f);
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    scr->leave();
+    supply_cmd_t c;
+    CHECK(supply_cmd(&c));
+    CHECK(c.off);
+}
+
 int main(void)
 {
     RUN(a_touch_on_the_dial_points_the_horn_there);
@@ -2241,5 +2296,6 @@ int main(void)
     RUN(the_hv_warning_redraws_when_the_output_changes);
     RUN(settings_shuts_a_set_points_keypad_cleanly);
     RUN(a_cap_lowered_under_the_question_lowers_its_value);
+    RUN(the_set_lines_gestures_draw_and_end_as_they_should);
     return test_summary("servo");
 }
