@@ -984,6 +984,18 @@ TEST_CASE(a_run_name_and_its_number_are_one_rule)
     /* A name off a computer, in lower case, is the same run. */
     CHECK_EQ(log_run_number("bench042.csv"), 42);
 
+    /* A run's report carries its number under its own suffix, and is not a
+     * run itself. */
+    log_report_name(first, sizeof(first), 7);
+    CHECK_STR_EQ(first, "BENCH007.TXT");
+    CHECK_EQ(log_report_number(first), 7);
+    CHECK_EQ(log_report_number("bench999.txt"), 999);
+    CHECK_EQ(log_report_number("BENCH007.CSV"), -1);
+    CHECK_EQ(log_report_number("BENCH000.TXT"), -1);
+    CHECK_EQ(log_run_number("BENCH007.TXT"), -1);
+    log_report_name(first, sizeof(first), LOG_RUN_LAST + 1);
+    CHECK_STR_EQ(first, "");
+
     /* And what is not a run of this bench's: a short number, a long one, one
      * below where the numbering starts, another suffix, and a name that only
      * begins like one. */

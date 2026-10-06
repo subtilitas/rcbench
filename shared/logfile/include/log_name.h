@@ -59,6 +59,16 @@ void log_run_name(char *out, size_t out_size, int number);
 int log_run_number(const char *name);
 
 /**
+ * A run's report beside its log: "BENCH001.TXT" to "BENCH999.TXT", with
+ * the same rules for the number, the buffer and the case as the run's name.
+ * A number belongs to a run while either file carries it: the logger takes
+ * one above both, so a report whose CSV was deleted is never overwritten by
+ * the next run's.
+ */
+void log_report_name(char *out, size_t out_size, int number);
+int log_report_number(const char *name);
+
+/**
  * Compare two names with case folded: negative when @p a sorts first, as the
  * browse list orders what it draws.  A card written on a computer holds
  * "bench042.csv" and one written here holds "BENCH042.CSV", and the two are
