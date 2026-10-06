@@ -250,7 +250,11 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
   ![Die HV-Warnung](img/servo-hv.png)
 
 - OUTPUT ON ist ein Halten über zwei Sekunden, OUTPUT OFF ein Tippen, wie auf
-  SUPPLY. STOP beendet ein laufendes Halten. Beim Verlassen von SERVO bleibt
+  SUPPLY. STOP beendet ein laufendes Halten. Liegt der Spannungssollwert über
+  6,0 V, gleich wo er eingestellt wurde, öffnet OUTPUT ON stattdessen HV
+  SERVOS ONLY mit der Spannung, und der Ausgang geht erst an, nachdem HOLD TO
+  APPLY 2 s gehalten wurde; das Halten des Schalters selbst und ein Tippen
+  auf APPLY schalten nichts ein. Beim Verlassen von SERVO bleibt
   der Ausgang, wie er ist; ein Druck auf OUTPUT OFF beim Verlassen wird als
   das OFF gesendet, das er war.
 

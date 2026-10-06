@@ -237,6 +237,10 @@ enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM };
 enum { KT_NONE = 0, KT_MIN, KT_CENTRE, KT_MAX, KT_TRAVEL, KT_RATE,
        KT_SETTING, KT_SUP_V, KT_SUP_I };
 
+/* What the question or the HV warning applies: a typed set point, or the
+ * supply's output switched on. */
+enum { ASK_SET = 0, ASK_ON };
+
 #define CHOICE_MAX 10
 
 static struct {
@@ -310,10 +314,12 @@ static struct {
     bool       kp_alone;      /**< the keypad opened the overlay itself  */
     /* A set point waiting for APPLY: typed while the output is live, or a
      * voltage raised past a standard servo's rating (hv), which takes the
-     * two-second hold the profile warning takes. */
+     * two-second hold the profile warning takes.  OUTPUT ON with a set
+     * point past that rating waits on the same hold (ASK_ON). */
     struct {
         bool      open;
         bool      hv;
+        int       purpose;   /**< ASK_SET or ASK_ON                    */
         int       target;    /**< KT_SUP_V or KT_SUP_I: what was typed */
         uint32_t  off_count; /**< supply_screen_off_count() at asking  */
         float     v, i;
@@ -1306,6 +1312,7 @@ static void set_point_typed(int target, float typed)
     if (hv || supply_screen_typed_asks()) {
         s.ask.open      = true;
         s.ask.hv        = hv;
+        s.ask.purpose   = ASK_SET;
         s.ask.target    = target;
         s.ask.off_count = supply_screen_off_count();
         s.ask.v      = v;
@@ -1317,6 +1324,39 @@ static void set_point_typed(int target, float typed)
     }
     supply_screen_put(v, i);
     close_alone();
+}
+
+/* Whether the voltage set point in force is past a standard servo's
+ * rating, which OUTPUT ON on this screen applies only through the HV
+ * warning. */
+static bool hv_set_point(void)
+{
+    return supply_screen_set_v() > STD_SERVO_V_MAX + 0.001f;
+}
+
+/*
+ * OUTPUT ON with a set point past a standard servo's rating: the HV warning
+ * and its two-second hold, in place of the ordinary hold.  A set point made
+ * on SUPPLY, or one already in force before this screen was opened, reaches
+ * the servo only through it.
+ */
+static void ask_hv_on(void)
+{
+    if (!s.ov_open) {
+        s.ov_open  = true;
+        s.kp_alone = true;
+    }
+    close_panels();
+    s.ask.open      = true;
+    s.ask.hv        = true;
+    s.ask.purpose   = ASK_ON;
+    s.ask.target    = KT_NONE;
+    s.ask.off_count = supply_screen_off_count();
+    s.ask.v         = supply_screen_set_v();
+    s.ask.i         = supply_screen_set_i();
+    s.ask.down      = false;
+    ui_hold_reset(&s.ask.hold);
+    servo_invalidate();
 }
 
 /* Whether the question about a live output still stands: the output on
@@ -1336,7 +1376,9 @@ static void ask_apply(void)
     /* Only the set point that was typed: the other may have moved while
      * the question stood -- a cap that follows the PD mini's input -- and
      * the value it had then is not one anybody asked for now. */
-    if (s.ask.target == KT_SUP_V) {
+    if (s.ask.purpose == ASK_ON) {
+        supply_screen_ask_on();
+    } else if (s.ask.target == KT_SUP_V) {
         supply_screen_put(s.ask.v, supply_screen_set_i());
     } else {
         supply_screen_put(supply_screen_set_v(), s.ask.i);
@@ -1853,6 +1895,16 @@ static void event(const touch_event_t *evt)
             return;
         }
         if (gfx_rect_contains(s.out_btn, px, py)) {
+            /* Off, with a set point past a standard servo's rating: the HV
+             * warning, whose hold switches it on.  One press in the
+             * overlay at a time. */
+            if (!s.out_down && !supply_screen_output_on()
+                && hv_set_point()) {
+                if (!s.ov_have) {
+                    ask_hv_on();
+                }
+                return;
+            }
             /* One contact owns the switch, as on ARM. */
             if (!s.out_down) {
                 s.out_down     = true;
@@ -2724,8 +2776,13 @@ static void draw_hv(gfx_canvas_t *c)
     gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, red);
     gfx_text(c, a.x + 20, a.y + 20, "HV SERVOS ONLY", &gfx_font_8x16, red, 2);
     char what[48];
-    snprintf(what, sizeof(what), "VOLTAGE %.2f -> %.2f V",
-             (double)supply_screen_set_v(), (double)s.ask.v);
+    if (s.ask.purpose == ASK_ON) {
+        snprintf(what, sizeof(what), "OUTPUT ON AT %.2f V",
+                 (double)supply_screen_set_v());
+    } else {
+        snprintf(what, sizeof(what), "VOLTAGE %.2f -> %.2f V",
+                 (double)supply_screen_set_v(), (double)s.ask.v);
+    }
     gfx_text(c, a.x + 20, a.y + 66, what, &gfx_font_8x16,
              ui_theme_color(UI_C_VOLT), 1);
     const char *const lines[] = {
@@ -2740,7 +2797,7 @@ static void draw_hv(gfx_canvas_t *c)
                  (i < 4) ? ui_theme_color(UI_C_TEXT)
                          : ui_theme_color(UI_C_TEXT_DIM), 1);
     }
-    if (supply_screen_output_on()) {
+    if (s.ask.purpose == ASK_SET && supply_screen_output_on()) {
         gfx_text(c, a.x + 20, a.y + 104 + 5 * 22 + 8,
                  "The output is on: the voltage changes at once.",
                  &gfx_font_8x16, ui_theme_color(UI_C_WARN), 1);

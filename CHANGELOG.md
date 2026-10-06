@@ -39,6 +39,13 @@ alert clears after 30 s or on a tap. The link protocol stays 4.4, so a
 
 ### Fixed
 
+- **OUTPUT ON on SERVO above 6.0 V takes the HV hold.** The HV SERVOS ONLY
+  warning opened only when the SET line raised the voltage across 6.0 V. A
+  set point above 6.0 V made on SUPPLY, or already in force, reached the
+  servo after the ordinary 2 s OUTPUT ON hold with no warning. OUTPUT ON on
+  SERVO with a set point above 6.0 V now opens HV SERVOS ONLY, and the
+  output comes on only after its HOLD TO APPLY is held for 2 s. OUTPUT ON on
+  SUPPLY is unchanged.
 - **The PD mini's rate is no longer an alert.** With "PD mini baud" at AUTO,
   the rate found filled the red alert band at the foot of every screen, over
   the SUPPLY current limit, until another alert replaced it (bench,

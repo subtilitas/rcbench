@@ -2005,6 +2005,69 @@ TEST_CASE(the_hv_hold_stands_for_the_live_question)
     CHECK(fabsf(supply_screen_set_v() - 8.4f) < 1e-4f);
 }
 
+/* OUTPUT ON with a set point past 6.0 V already in force -- made on SUPPLY,
+ * or before this screen was opened -- goes through the HV warning: the
+ * switch's own hold switches nothing on, a tap on APPLY does nothing, STOP
+ * ends the hold, and only the two-second hold on APPLY sends the ON. */
+TEST_CASE(output_on_past_6_v_takes_the_hv_hold)
+{
+    fresh();
+    supply_screen_put(7.4f, 1.0f);              /* as if set on SUPPLY */
+    scr->tick(0.025f);
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 100; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_cmd(NULL));                   /* the switch's hold: no */
+
+    tap(WARN_APPLY_X, WARN_Y);                  /* a tap is not the hold */
+    CHECK(!supply_cmd(NULL));
+
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 40; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    servo_screen_cancel_arm();                  /* STOP mid-hold */
+    for (int i = 0; i < 80; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_cmd(NULL));
+
+    hold_apply(2.3f);
+    supply_cmd_t c;
+    CHECK(supply_cmd(&c));
+    CHECK(c.on);
+    CHECK(!c.off);
+    CHECK(fabsf(supply_screen_set_v() - 7.4f) < 1e-4f);
+
+    /* CANCEL switches nothing on; the warning drawn says what is asked. */
+    fresh();
+    supply_screen_put(8.4f, 1.0f);
+    scr->tick(0.025f);
+    tap(SUP_OUT_X, SUP_ROW_Y);
+    scr->tick(0.025f);
+    scr->render(&cv, 0);
+    tap(WARN_CANCEL_X, WARN_Y);
+    for (int i = 0; i < 100; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    CHECK(!supply_cmd(NULL));
+
+    /* At 6.0 V it is the ordinary hold. */
+    fresh();
+    supply_screen_put(6.0f, 1.0f);
+    scr->tick(0.025f);
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 100; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK(supply_cmd(&c));
+    CHECK(c.on);
+}
+
 /* A second hold on OUTPUT ON while the first ON is on its way: the output
  * reporting on during it does not make its release an OFF. */
 TEST_CASE(an_on_reported_during_a_second_servo_hold_is_not_an_off)
@@ -2359,6 +2422,7 @@ int main(void)
     RUN(a_set_point_changed_on_supply_is_redrawn_here);
     RUN(a_voltage_raised_past_6_v_takes_the_hv_hold);
     RUN(the_hv_hold_stands_for_the_live_question);
+    RUN(output_on_past_6_v_takes_the_hv_hold);
     RUN(an_on_reported_during_a_second_servo_hold_is_not_an_off);
     RUN(a_servo_question_for_a_dropped_on_goes);
     RUN(an_apply_held_as_the_output_goes_off_applies_nothing);

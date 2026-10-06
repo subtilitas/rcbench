@@ -230,7 +230,10 @@ the change on both.
   ![The HV warning](img/servo-hv.png)
 
 - OUTPUT ON is a two-second hold, OUTPUT OFF a tap, as on SUPPLY. STOP ends
-  a hold under way. Leaving SERVO leaves the output as it is; a press on
+  a hold under way. With a voltage set point above 6.0 V, wherever it was
+  set, OUTPUT ON opens HV SERVOS ONLY instead, naming the voltage, and the
+  output comes on only after HOLD TO APPLY is held for 2 s; the switch's own
+  hold and a tap on APPLY switch nothing on. Leaving SERVO leaves the output as it is; a press on
   OUTPUT OFF as the screen is left is sent as the OFF it was.
 
 **SWEEP drives the servo through a curve** on the coprocessor, where its
