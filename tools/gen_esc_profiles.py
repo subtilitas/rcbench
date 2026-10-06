@@ -94,9 +94,13 @@ def no_constant(name: str) -> float:
 
 
 def no_nul(v: object, where: str) -> None:
-    """No string holds U+0000: in C it would end the string early."""
+    """No string holds U+0000, which in C would end the string early, nor
+    half a surrogate pair, which json.loads() keeps and UTF-8 cannot carry.
+    Keys too: esc_profile_parse() checks every string in the file."""
     if isinstance(v, str):
         want("\0" not in v, where, "a string holds \\u0000")
+        want(not any(0xD800 <= ord(c) <= 0xDFFF for c in v), where,
+             "half a surrogate pair")
     elif isinstance(v, dict):
         for k, x in v.items():
             no_nul(k, where)

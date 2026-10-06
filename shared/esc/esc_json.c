@@ -35,6 +35,14 @@ typedef struct {
     uint32_t next;      /* the token after this value and its descendants */
 } tok_t;
 
+/* Why the text was refused, beyond its not being JSON. */
+typedef enum {
+    LEX_SYNTAX = 0,
+    LEX_DUP,            /* a key an object already had            */
+    LEX_NUL,            /* \u0000, which would end a C string     */
+    LEX_SURROGATE,      /* half a surrogate pair                  */
+} lex_why_t;
+
 typedef struct {
     const char *s;
     uint32_t    len;
@@ -42,7 +50,7 @@ typedef struct {
     tok_t      *tok;    /* NULL: count only */
     uint32_t    n;
     uint32_t    cap;
-    bool        dup;    /* stopped at a key an object already had */
+    lex_why_t   why;    /* what stopped the read, past a syntax error */
 } lex_t;
 
 /* ------------------------------------------------------------ the tokens */
@@ -80,6 +88,35 @@ static void close_tok(lex_t *l, int64_t i, uint32_t end, uint32_t size)
 
 static bool lex_value(lex_t *l, int depth);
 
+static int hexval(char c)
+{
+    if (c >= '0' && c <= '9') { return c - '0'; }
+    if (c >= 'a' && c <= 'f') { return c - 'a' + 10; }
+    if (c >= 'A' && c <= 'F') { return c - 'A' + 10; }
+    return -1;
+}
+
+/* The four hex digits at @p s, or -1. */
+static int32_t hex4(const char *s)
+{
+    int32_t v = 0;
+    for (int k = 0; k < 4; ++k) {
+        const int h = hexval(s[k]);
+        if (h < 0) {
+            return -1;
+        }
+        v = (v << 4) | h;
+    }
+    return v;
+}
+
+/*
+ * A string, with every escape checked here, in the one pass that sees every
+ * string -- including those in fields the panel never reads.  \u0000 is
+ * refused (it would end a C string early), and so is half a surrogate pair:
+ * json.loads() keeps a lone half, which no UTF-8 can carry.  What passes is
+ * what decode_unit() decodes without looking again.
+ */
 static bool lex_string(lex_t *l)
 {
     const uint32_t start = ++l->pos;            /* past the quote */
@@ -97,31 +134,137 @@ static bool lex_string(lex_t *l)
         if (c < 0x20u) {
             return false;                       /* raw control character */
         }
-        if (c == '\\') {
+        if (c != '\\') {
             l->pos++;
-            if (l->pos >= l->len) {
-                return false;
-            }
-            const char e = l->s[l->pos];
-            if (e == 'u') {
-                for (int k = 0; k < 4; ++k) {
-                    l->pos++;
-                    if (l->pos >= l->len) {
-                        return false;
-                    }
-                    const char h = l->s[l->pos];
-                    if (!((h >= '0' && h <= '9') || (h >= 'a' && h <= 'f')
-                          || (h >= 'A' && h <= 'F'))) {
-                        return false;
-                    }
-                }
-            } else if (strchr("\"\\/bfnrt", e) == NULL || e == '\0') {
-                return false;
-            }
+            continue;
         }
-        l->pos++;
+        if (l->pos + 1u >= l->len) {
+            return false;
+        }
+        const char e = l->s[l->pos + 1u];
+        if (e != 'u') {
+            if (strchr("\"\\/bfnrt", e) == NULL || e == '\0') {
+                return false;
+            }
+            l->pos += 2u;
+            continue;
+        }
+        if (l->len - l->pos < 6u) {
+            return false;
+        }
+        const int32_t cp = hex4(l->s + l->pos + 2u);
+        if (cp < 0) {
+            return false;
+        }
+        if (cp == 0) {
+            l->why = LEX_NUL;
+            return false;
+        }
+        if (cp >= 0xDC00 && cp <= 0xDFFF) {
+            l->why = LEX_SURROGATE;             /* a low half first */
+            return false;
+        }
+        if (cp >= 0xD800 && cp <= 0xDBFF) {
+            const int32_t lo = (l->len - l->pos >= 12u
+                                && l->s[l->pos + 6u] == '\\'
+                                && l->s[l->pos + 7u] == 'u')
+                                   ? hex4(l->s + l->pos + 8u) : -1;
+            if (lo < 0xDC00 || lo > 0xDFFF) {
+                l->why = LEX_SURROGATE;         /* a high half alone */
+                return false;
+            }
+            l->pos += 6u;
+        }
+        l->pos += 6u;
     }
     return false;                               /* no closing quote */
+}
+
+/*
+ * The UTF-8 bytes of the character at s[*i], into @p out; *i moves past it.
+ * A raw byte is itself (UTF-8 in the file passes through a byte at a time);
+ * an escape is decoded, a surrogate pair into one four-byte character.  Only
+ * for text lex_string() accepted.
+ */
+static unsigned decode_unit(const char *s, uint32_t *i, uint8_t out[4])
+{
+    const char c = s[*i];
+    if (c != '\\') {
+        out[0] = (uint8_t)c;
+        *i += 1u;
+        return 1u;
+    }
+    const char e = s[*i + 1u];
+    *i += 2u;
+    switch (e) {
+    case 'b': out[0] = '\b'; return 1u;
+    case 'f': out[0] = '\f'; return 1u;
+    case 'n': out[0] = '\n'; return 1u;
+    case 'r': out[0] = '\r'; return 1u;
+    case 't': out[0] = '\t'; return 1u;
+    case 'u': break;
+    default:  out[0] = (uint8_t)e; return 1u;  /* \" \\ \/ */
+    }
+    uint32_t cp = (uint32_t)hex4(s + *i);
+    *i += 4u;
+    if (cp >= 0xD800u && cp <= 0xDBFFu) {
+        const uint32_t lo = (uint32_t)hex4(s + *i + 2u);
+        *i += 6u;
+        cp = 0x10000u + ((cp - 0xD800u) << 10) + (lo - 0xDC00u);
+    }
+    if (cp < 0x80u) {
+        out[0] = (uint8_t)cp;
+        return 1u;
+    }
+    if (cp < 0x800u) {
+        out[0] = (uint8_t)(0xC0u | (cp >> 6));
+        out[1] = (uint8_t)(0x80u | (cp & 0x3Fu));
+        return 2u;
+    }
+    if (cp < 0x10000u) {
+        out[0] = (uint8_t)(0xE0u | (cp >> 12));
+        out[1] = (uint8_t)(0x80u | ((cp >> 6) & 0x3Fu));
+        out[2] = (uint8_t)(0x80u | (cp & 0x3Fu));
+        return 3u;
+    }
+    out[0] = (uint8_t)(0xF0u | (cp >> 18));
+    out[1] = (uint8_t)(0x80u | ((cp >> 12) & 0x3Fu));
+    out[2] = (uint8_t)(0x80u | ((cp >> 6) & 0x3Fu));
+    out[3] = (uint8_t)(0x80u | (cp & 0x3Fu));
+    return 4u;
+}
+
+/* Whether two string tokens' texts decode to the same bytes, so "schema" and
+ * "sch\u0065ma" are one key, as json.loads() has them. */
+static bool same_text(const char *s, const tok_t *a, const tok_t *b)
+{
+    uint32_t i = a->start, j = b->start;
+    while (i < a->end && j < b->end) {
+        uint8_t x[4], y[4];
+        const unsigned n = decode_unit(s, &i, x);
+        const unsigned m = decode_unit(s, &j, y);
+        if (n != m || memcmp(x, y, n) != 0) {
+            return false;
+        }
+    }
+    return i == a->end && j == b->end;
+}
+
+/* Whether a string token's text decodes to the plain @p lit. */
+static bool text_is(const char *s, const tok_t *a, const char *lit)
+{
+    uint32_t i = a->start;
+    size_t k = 0;
+    const size_t n = strlen(lit);
+    while (i < a->end) {
+        uint8_t x[4];
+        const unsigned m = decode_unit(s, &i, x);
+        if (k + m > n || memcmp(x, lit + k, m) != 0) {
+            return false;
+        }
+        k += m;
+    }
+    return k == n;
 }
 
 static bool is_digit(char c)
@@ -204,12 +347,9 @@ static bool lex_word(lex_t *l, const char *w, ttype_t t)
 static bool key_seen(const lex_t *l, uint32_t obj, uint32_t members)
 {
     const tok_t *k = &l->tok[l->n - 1u];
-    const uint32_t klen = k->end - k->start;
     uint32_t i = obj + 1u;
     for (uint32_t m = 0; m < members; ++m) {
-        const tok_t *o = &l->tok[i];
-        if (o->end - o->start == klen
-            && memcmp(l->s + o->start, l->s + k->start, klen) == 0) {
+        if (same_text(l->s, &l->tok[i], k)) {
             return true;
         }
         i = l->tok[i + 1u].next;
@@ -239,7 +379,7 @@ static bool lex_container(lex_t *l, int depth, bool obj)
                 return false;
             }
             if (l->tok != NULL && key_seen(l, (uint32_t)i, size)) {
-                l->dup = true;
+                l->why = LEX_DUP;
                 return false;
             }
             ws(l);
@@ -350,13 +490,10 @@ static int64_t member(const dec_t *d, uint32_t obj, const char *key)
     if (d->t[obj].type != T_OBJ) {
         return -1;
     }
-    const size_t klen = strlen(key);
     uint32_t i = obj + 1u;
     for (uint32_t m = 0; m < d->t[obj].size; ++m) {
-        const tok_t *k = &d->t[i];
         const uint32_t v = i + 1u;
-        if (k->end - k->start == klen
-            && memcmp(d->s + k->start, key, klen) == 0) {
+        if (text_is(d->s, &d->t[i], key)) {
             return (int64_t)v;
         }
         i = d->t[v].next;
@@ -364,70 +501,21 @@ static int64_t member(const dec_t *d, uint32_t obj, const char *key)
     return -1;
 }
 
-static unsigned hexval(char c)
-{
-    if (c >= '0' && c <= '9') { return (unsigned)(c - '0'); }
-    if (c >= 'a' && c <= 'f') { return (unsigned)(c - 'a' + 10); }
-    return (unsigned)(c - 'A' + 10);
-}
-
-/* Unescape a string token into the block.  \u escapes become UTF-8; a
- * surrogate pair is not joined, and either half becomes '?', which no
- * profile of record needs. */
+/* A string token's text, decoded into the block.  Never longer than the
+ * text it came from: no escape decodes to more bytes than it is written in. */
 static const char *copy_str(dec_t *d, uint32_t ti)
 {
     const tok_t *t = &d->t[ti];
     char *out = take(d, (size_t)(t->end - t->start) + 1u, 1u);
     size_t o = 0;
-    for (uint32_t i = t->start; i < t->end; ++i) {
-        char c = d->s[i];
-        if (c == '\\') {
-            const char e = d->s[++i];
-            unsigned cp = 0;
-            switch (e) {
-            case 'b': c = '\b'; break;
-            case 'f': c = '\f'; break;
-            case 'n': c = '\n'; break;
-            case 'r': c = '\r'; break;
-            case 't': c = '\t'; break;
-            case 'u':
-                for (int k = 0; k < 4; ++k) {
-                    cp = (cp << 4) | hexval(d->s[++i]);
-                }
-                if (cp >= 0xD800u && cp <= 0xDFFFu) {
-                    cp = '?';
-                }
-                if (cp == 0u) {
-                    /* A NUL would end the C string early: the name read
-                     * would not be the name written. */
-                    FAIL(d, "a string holds \\u0000");
-                    cp = '?';
-                }
-                /* Never longer than the six bytes of text it came from. */
-                if (cp < 0x80u) {
-                    c = (char)cp;
-                } else if (cp < 0x800u) {
-                    if (out != NULL) {
-                        out[o] = (char)(0xC0u | (cp >> 6));
-                    }
-                    o++;
-                    c = (char)(0x80u | (cp & 0x3Fu));
-                } else {
-                    if (out != NULL) {
-                        out[o]      = (char)(0xE0u | (cp >> 12));
-                        out[o + 1u] = (char)(0x80u | ((cp >> 6) & 0x3Fu));
-                    }
-                    o += 2u;
-                    c = (char)(0x80u | (cp & 0x3Fu));
-                }
-                break;
-            default: c = e; break;              /* \" \\ \/ */
-            }
-        }
+    uint32_t i = t->start;
+    while (i < t->end) {
+        uint8_t u[4];
+        const unsigned n = decode_unit(d->s, &i, u);
         if (out != NULL) {
-            out[o] = c;
+            memcpy(out + o, u, n);
         }
-        o++;
+        o += n;
     }
     if (out != NULL) {
         out[o] = '\0';
@@ -522,9 +610,7 @@ static int get_enum(dec_t *d, uint32_t obj, const char *key,
     if (v >= 0 && d->t[v].type == T_STR) {
         const tok_t *t = &d->t[v];
         for (int i = 0; i < count; ++i) {
-            const size_t n = strlen(names[i]);
-            if (t->end - t->start == n
-                && memcmp(d->s + t->start, names[i], n) == 0) {
+            if (text_is(d->s, t, names[i])) {
                 return i;
             }
         }
@@ -916,10 +1002,13 @@ bool esc_profile_parse(const char *json, size_t len, esc_profile_t *out,
         return false;
     }
 
-    lex_t l = { json, (uint32_t)len, 0u, NULL, 0u, 0u, false };
+    lex_t l = { json, (uint32_t)len, 0u, NULL, 0u, 0u, LEX_SYNTAX };
     if (!lex_all(&l)) {
         if (err != NULL && err_size > 0) {
-            (void)snprintf(err, err_size, "not JSON near byte %u",
+            (void)snprintf(err, err_size, "%s near byte %u",
+                           l.why == LEX_NUL ? "a string holds \\u0000"
+                           : l.why == LEX_SURROGATE ? "half a surrogate pair"
+                                                    : "not JSON",
                            (unsigned)l.pos);
         }
         return false;
@@ -937,8 +1026,11 @@ bool esc_profile_parse(const char *json, size_t len, esc_profile_t *out,
     if (!lex_all(&l)) {
         free(tok);
         if (err != NULL && err_size > 0) {
-            (void)snprintf(err, err_size, l.dup ? "a key twice near byte %u"
-                                                : "not JSON near byte %u",
+            static const char *const k_why[] = {
+                "not JSON", "a key twice", "a string holds \\u0000",
+                "half a surrogate pair",
+            };
+            (void)snprintf(err, err_size, "%s near byte %u", k_why[l.why],
                            (unsigned)l.pos);
         }
         return false;

@@ -226,15 +226,40 @@ TEST_CASE(escapes_become_the_characters_they_name)
     free(j);
 }
 
-TEST_CASE(control_escapes_and_a_lone_surrogate_are_read)
+TEST_CASE(control_escapes_and_a_surrogate_pair_are_read)
 {
-    char *j = subst("\"Test 30\"", "\"a\\b\\f\\n\\r\\t\\ud800z\"");
+    char *j = subst("\"Test 30\"",
+                    "\"a\\b\\f\\n\\r\\t \\ud83d\\ude00 z\"");
     esc_profile_t p;
     void *block = NULL;
     CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
     if (block != NULL) {
-        /* A surrogate half is not a character on its own: '?'. */
-        CHECK_STR_EQ(p.family, "a\b\f\n\r\t?z");
+        /* The pair is one character, U+1F600, in four bytes of UTF-8. */
+        CHECK_STR_EQ(p.family, "a\b\f\n\r\t \xF0\x9F\x98\x80 z");
+    }
+    free(block);
+    free(j);
+}
+
+/* Keys and values are compared as they decode, as json.loads() has them:
+ * an escaped spelling is the same key, the same value. */
+TEST_CASE(escaped_keys_and_values_read_as_their_plain_spelling)
+{
+    char *j = subst("\"brand\": \"Test\"", "\"br\\u0061nd\": \"Test\"");
+    esc_profile_t p;
+    void *block = NULL;
+    CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_STR_EQ(p.brand, "Test");
+    }
+    free(block);
+    free(j);
+
+    j = subst("\"throttle\": \"max\"", "\"throttle\": \"m\\u0061x\"");
+    block = NULL;
+    CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_EQ(p.entry_throttle, ESC_THR_MAX);
     }
     free(block);
     free(j);
@@ -399,7 +424,17 @@ TEST_CASE(input_the_generator_refuses_is_refused_here_too)
         const char *from, *to, *err;
     } k[] = {
         { "\"schema\": 1,", "\"schema\": 1, \"schema\": 1,", "a key twice" },
+        { "\"schema\": 1,", "\"schema\": 1, \"sch\\u0065ma\": 1,",
+          "a key twice" },
         { "\"Test 30\"", "\"Test\\u0000 30\"", "a string holds" },
+        /* In a field the panel never reads: refused all the same. */
+        { "\"schema\": 1,", "\"schema\": 1, \"notes\": [\"a\\u0000b\"],",
+          "a string holds" },
+        { "\"Test 30\"", "\"Test \\ud83d 30\"", "half a surrogate" },
+        { "\"Test 30\"", "\"Test \\ude00 30\"", "half a surrogate" },
+        { "\"Test 30\"", "\"Test \\ud83d\\u0041\"", "half a surrogate" },
+        { "\"schema\": 1,", "\"schema\": 1, \"notes\": \"\\ud800\",",
+          "half a surrogate" },
         { "\"schema\": 1,", "\"schema\": 1, \"n\": 1e,", "not JSON" },
         { "\"schema\": 1,", "\"schema\": 1, \"n\": 1+2,", "not JSON" },
         { "\"schema\": 1,", "\"schema\": 1, \"n\": 01,", "not JSON" },
@@ -504,7 +539,8 @@ int main(void)
     RUN(builtin_ids_are_sorted_and_unique);
     RUN(a_profile_reads_into_every_field);
     RUN(escapes_become_the_characters_they_name);
-    RUN(control_escapes_and_a_lone_surrogate_are_read);
+    RUN(control_escapes_and_a_surrogate_pair_are_read);
+    RUN(escaped_keys_and_values_read_as_their_plain_spelling);
     RUN(a_broken_profile_is_refused_with_its_place_named);
     RUN(every_truncation_is_refused);
     RUN(text_that_is_not_json_is_refused);
