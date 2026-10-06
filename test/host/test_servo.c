@@ -1504,13 +1504,16 @@ TEST_CASE(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave)
     CHECK(!servo_screen_sweeping());
     CHECK_EQ(last_cmd().kind, SERVO_CMD_DISARM);
 
-    /* And a coprocessor that cannot sweep any more. */
+    /* And a coprocessor that cannot sweep any more: what the panel holds is
+     * ended with a release. */
     fresh();
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
     tap(SWEEP_X, BTN_Y);
+    (void)last_cmd();
     servo_screen_set_sweep(false);
     CHECK(!servo_screen_sweeping());
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
 }
 
 /* A setting changed while it runs starts the sweep over with it, as the

@@ -3501,11 +3501,13 @@ static void servo_cfg(const servo_cmd_t *sv, uint16_t *cfg)
  * The sweep on the SERVO page (protocol 4.2).  While one runs the
  * coprocessor commands the surfaces itself every pass, so a centre or a
  * position written under it would last one pass: anything but a sweep stops
- * it first.  Not known after the link comes up, so taken to be running and
- * stopped by the next command.
+ * it first.  Not known after the link comes up: then the next command, a
+ * sweep included, writes a stop first, which also clears a finished sweep
+ * that the same curve would otherwise not start again.
  */
 static bool        s_servo_sweep_page;
 static bool        s_servo_sweeping;
+static bool        s_servo_sweep_unknown;
 static atomic_bool s_servo_sweep_able;   /* for the screen's SWEEP */
 /* The curve the far end last took, and when it started one: a curve that
  * differs from the one running starts over there, and the screen draws the
@@ -3518,14 +3520,16 @@ static atomic_bool s_sweep_start_new;
 static bool write_servo(const servo_cmd_t sv)
 {
     link_msg_t reply;
-    if (sv.kind != SERVO_CMD_SWEEP && s_servo_sweeping) {
+    if (s_servo_sweep_unknown
+        || (sv.kind != SERVO_CMD_SWEEP && s_servo_sweeping)) {
         const uint16_t stop = 0u;
         if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 1u, &stop,
                         &reply)
             || reply.op != LINK_OP_ACK) {
             return false;
         }
-        s_servo_sweeping = false;
+        s_servo_sweeping      = false;
+        s_servo_sweep_unknown = false;
     }
     /*
      * Every command, a release included, goes to the channels the binding
@@ -3671,6 +3675,11 @@ static bool write_servo(const servo_cmd_t sv)
                 if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP_MOVES,
                                 1u, &endless, &reply)
                     || reply.op != LINK_OP_ACK) {
+                    return false;
+                }
+                /* And asked again before the write that starts it moving:
+                 * the pump runs inside that wait as inside the others. */
+                if (servo_countermanded()) {
                     return false;
                 }
             }
@@ -4658,8 +4667,9 @@ static void link_came_up(const link_msg_t *reply)
      */
     s_servo_rate_page = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 1u;
     (void)servo_rate_reset();
-    s_servo_sweep_page = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 2u;
-    s_servo_sweeping   = s_servo_sweep_page;
+    s_servo_sweep_page    = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 2u;
+    s_servo_sweeping      = false;
+    s_servo_sweep_unknown = s_servo_sweep_page;
     atomic_store(&s_servo_sweep_able, s_servo_sweep_page);
 
     /*

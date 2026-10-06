@@ -606,6 +606,12 @@ void servo_screen_set_sweep(bool able)
         return;
     }
     s.sweep_able = able;
+    if (!able && s.sweeping) {
+        /* The panel would go on repeating a sweep the coprocessor no longer
+         * takes: what it holds is ended, and the surfaces rest. */
+        stop_sweep();
+        post(SERVO_CMD_RELEASE, 0);
+    }
     stop_sweep();
     ++s.ctrl_rev;
 }
