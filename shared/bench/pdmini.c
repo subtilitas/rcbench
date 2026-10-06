@@ -286,7 +286,7 @@ static bool holds(const uint8_t *p, size_t n, const char *s)
  */
 static uint16_t target_mv(const pdmini_t *d)
 {
-    const uint32_t vin = d->st.vin_mv;
+    const uint32_t vin = d->input_known ? d->st.vin_mv : 0u;
     if (vin <= PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV) {
         return d->want_mv;      /* not read yet, or no room to cap into */
     }
@@ -320,6 +320,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->st.online   = true;
         d->input_known = false;    /* read again before a set point */
         d->input_seen  = false;    /* perhaps other firmware: asked again */
+        d->st.vin_mv   = 0u;
         d->state_known = false;
         d->blind_due   = false;
         /* The argument learnt is kept: the same module back after a fault
@@ -623,6 +624,15 @@ static bool next_job(pdmini_t *d, uint32_t now)
         read1(d, now, PDMINI_READ_INPUT);
         return true;
     }
+    /* Due, it is read before a set point or an ON as well: set points
+     * changing faster than the readings come round -- a slider dragged --
+     * or an ON after a pause, are judged on a fresh reading. */
+    if (d->want_set && d->input_known
+        && (uint32_t)(now - d->last_input) >= PDMINI_STATE_MS) {
+        d->last_input = now;
+        read1(d, now, PDMINI_READ_INPUT);
+        return true;
+    }
     bool data_paused = false;
     if (d->data_tries >= 3u) {
         d->st.set_stuck = true;
@@ -651,14 +661,6 @@ static bool next_job(pdmini_t *d, uint32_t now)
         }
         const uint16_t mv = target_mv(d);
         if (d->st.set_mv != mv || d->st.set_ma != d->want_ma) {
-            /* Set points changing faster than the readings come round --
-             * a slider dragged -- still have the input read on time. */
-            if (d->input_seen
-                && (uint32_t)(now - d->last_input) >= PDMINI_STATE_MS) {
-                d->last_input = now;
-                read1(d, now, PDMINI_READ_INPUT);
-                return true;
-            }
             const uint8_t req[6] = {
                 PDMINI_OUTPUT_DATA, (uint8_t)d->slot,
                 (uint8_t)(mv & 0xFFu), (uint8_t)(mv >> 8),

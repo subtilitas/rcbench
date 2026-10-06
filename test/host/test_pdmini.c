@@ -1401,6 +1401,23 @@ TEST_CASE(a_dragged_slider_does_not_starve_the_input)
     CHECK_EQ(m.mv[0], 5000u - PDMINI_HEADROOM_MV);
 }
 
+/* An ON after a pause is judged on a fresh input: the source sagged since
+ * the last reading, and the slot already holds the voltage asked. */
+TEST_CASE(an_on_after_a_pause_reads_the_input_first)
+{
+    fresh();
+    m.input_mv = 12000u;
+    m.mv[0] = 8000u;
+    run(100u, false);
+    pdmini_want(&d, false, 8000u, 1000u);
+    run(1500u, false);
+    m.input_mv = 6000u;                       /* sagged, unread */
+    d.last_input = now - PDMINI_STATE_MS;     /* the reading is due */
+    pdmini_want(&d, true, 8000u, 1000u);
+    run(2000u, false);
+    CHECK_EQ(m.on_at_mv, 6000u - PDMINI_HEADROOM_MV);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -1471,6 +1488,7 @@ int main(void)
     RUN(a_set_point_over_the_input_is_kept_under_it);
     RUN(nothing_is_switched_on_before_the_input_is_read);
     RUN(a_dragged_slider_does_not_starve_the_input);
+    RUN(an_on_after_a_pause_reads_the_input_first);
     RUN(an_argument_outlasts_a_module_that_comes_back);
     RUN(an_output_that_came_on_by_itself_is_not_relied_on);
     RUN(an_on_sent_and_unsettled_is_owed_an_off);

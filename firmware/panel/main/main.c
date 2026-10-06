@@ -3090,6 +3090,9 @@ static void supply_real_follow(void)
     wiring_seen = wiring;
     const bool real = pdmini_wiring().en;
     if (real == s_supply_is_real) {
+        if (rewired) {
+            atomic_store(&s_supply_vin_mv, 0u);   /* other pins, perhaps */
+        }
         if (rewired && real && s_supply_on) {
             supply_switch(false);
             control_alert("PD mini wiring changed in SETUP -- output off");
@@ -3101,6 +3104,7 @@ static void supply_real_follow(void)
         control_alert("supply changed in SETUP -- output off");
     }
     s_supply_is_real = real;
+    atomic_store(&s_supply_vin_mv, 0u);   /* another module, perhaps */
     supply_link_command(&s_supply_link, false,
                         (uint16_t)s_supply_set_mv_applied,
                         (uint16_t)s_supply_set_ma_applied);
@@ -4974,6 +4978,7 @@ static void link_came_up(const link_msg_t *reply)
      * that only went quiet may hold an ON this panel has since let go.
      */
     s_supply_page = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 3u;
+    atomic_store(&s_supply_vin_mv, 0u);
     /* 4.4 finds the module's rate itself, and has BAUD_FOUND. */
     s_supply_auto = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 4u;
     supply_link_lost(&s_supply_link);
@@ -5108,6 +5113,7 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
              * switches an ON off as a supply not answering. */
             s_supply_page = false;
             supply_link_lost(&s_supply_link);
+            atomic_store(&s_supply_vin_mv, 0u);
         }
         /*
          * A sample exists only if the bench page was read.  A poll that timed
