@@ -420,8 +420,8 @@ ist neu gestartet). Schaltet das Modul den Ausgang selbst ab -- sein Überstroms
 Knopf --, wird er ebenfalls abgeschaltet und erst mit einem neuen Halten
 wieder eingeschaltet. Das Band sagt außerdem, wenn die Pins abgewiesen werden,
 wenn der Ausgang nicht schalten will und wenn die Sollwerte nicht übernommen
-werden. Eine Änderung der Pins oder der Baudrate wartet, bis der Ausgang aus
-ist; das Ein- oder Ausschalten des PD mini schaltet den Ausgang ab.
+werden. Eine Änderung der Pins oder der Baudrate und das Ein- oder Ausschalten
+des PD mini schalten den Ausgang ab.
 
 OUTPUT ON und OFF, RESET PEAKS und die Messwerte bleiben unter der Tastatur,
 der Frage und SETTINGS bedienbar. Ein Finger zur Zeit: solange einer ein

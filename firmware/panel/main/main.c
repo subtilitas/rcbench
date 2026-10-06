@@ -373,6 +373,10 @@ typedef struct {
     /** And how many times the supply's output had been asked off; see
      *  s_supply_offs. */
     uint32_t         supply_offs;
+    /** And how many edits the PD mini's wiring had had (s_pdmini_edits):
+     *  an ON queued before an edit on SETUP is not applied after it, even
+     *  one undone since. */
+    uint32_t         pdmini_edits;
     /**
      * And what the render side knew of the touch stream when it queued
      * this: how many times it had dropped the screens' gestures for a loss
@@ -642,6 +646,9 @@ static atomic_uint s_supply_ons_taken;
  * the baud setting.  Published as the pole count is; see publish_pdmini().
  */
 static atomic_uint s_pdmini_wiring;
+/* And how many times it has been edited: an edit undone before a queued ON
+ * is applied leaves the word as it was, but not this count. */
+static atomic_uint s_pdmini_edits;
 /*
  * Whether the SUPPLY screen drives the PD mini rather than the panel's
  * model: SETUP INTERFACES enables it.  Stored by the control task, read by
@@ -800,6 +807,9 @@ static void publish_pdmini(void)
         | ((unsigned)((tx < 0) ? 0 : tx + 1) & 0xFFu) << 16
         | ((unsigned)((rx < 0) ? 0 : rx + 1) & 0xFFu) << 8
         | ((unsigned)settings_get_int(SET_PDMINI_BAUD) & 0xFFu);
+    /* The count first: an ON stamped before it is dropped by the time the
+     * new wiring can be seen. */
+    atomic_fetch_add(&s_pdmini_edits, 1u);
     atomic_store(&s_pdmini_wiring, word);
 }
 
@@ -3006,8 +3016,8 @@ static void supply_service(void)
 
 /*
  * What the supply screen asked for.  An ON completes a hold, so it goes the
- * way an arm does: not past a stop, an OFF or a touch loss that came after
- * the screen posted it, and watched after it is taken until the render side
+ * way an arm does: not past a stop, an OFF, a change to the PD mini's
+ * wiring or a touch loss that came after the screen posted it, and watched after it is taken until the render side
  * has seen the output on (supply_watch_service()).  The operator repeats the
  * hold.
  */
@@ -3025,6 +3035,7 @@ static void apply_supply_cmd(const panel_cmd_t *pc)
         control_pump();
         if (pc->stops == arming_stop_count(&s_arm)
             && pc->supply_offs == atomic_load(&s_supply_offs)
+            && pc->pdmini_edits == atomic_load(&s_pdmini_edits)
             && arm_watch_take_ok(pc->loss_gen, atomic_load(&s_loss_gen),
                                  s_lost_notice_seq, pc->consumed_seq)) {
             /* At the set points stored before this ON was queued. */
@@ -3062,8 +3073,21 @@ static void supply_queue_sample(void)
  */
 static void supply_real_follow(void)
 {
+    /*
+     * Any change to the PD mini's wiring, not only enabling it: the page
+     * takes new pins only with the output off, so a change under a live
+     * output would otherwise wait for an OFF nobody asks for.
+     */
+    static unsigned wiring_seen;
+    const unsigned wiring = atomic_load(&s_pdmini_wiring);
+    const bool rewired = wiring != wiring_seen;
+    wiring_seen = wiring;
     const bool real = pdmini_wiring().en;
     if (real == s_supply_is_real) {
+        if (rewired && real && s_supply_on) {
+            supply_switch(false);
+            control_alert("PD mini wiring changed in SETUP -- output off");
+        }
         return;
     }
     if (s_supply_on) {
@@ -4577,6 +4601,10 @@ static void supply_link_service(void)
     if (!s_supply_page) {
         return;
     }
+    /* An edit on SETUP since the step is followed here too, straight before
+     * anything is written: an ON taken in the gap is switched off before it
+     * can reach the page. */
+    supply_real_follow();
     const supply_wiring_t w = pdmini_wiring();
     supply_link_wire(&s_supply_link, &w);
     for (int k = 0; k < 3; ++k) {
@@ -5446,6 +5474,7 @@ static void flush_screen_commands(uint32_t stops_now)
         panel_cmd_t pc = { .kind = PANEL_CMD_SUPPLY, .supply = sc,
                            .stops = stops_now,
                            .supply_offs = atomic_load(&s_supply_offs),
+                           .pdmini_edits = atomic_load(&s_pdmini_edits),
                            .loss_gen = loss_gen,
                            .consumed_seq = consumed };
         send_cmd(&pc);
