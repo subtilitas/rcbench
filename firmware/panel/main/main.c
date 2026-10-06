@@ -209,6 +209,7 @@ static uint32_t now_ms(void)
 
 static busfault_report_t s_busfault;
 static bool              s_bus_ok = true;   /* until the test says otherwise */
+static bool              s_touch_ok = true; /* touch_init() answered    */
 
 /*
  * A link that was up and stopped, said on the panel rather than on a console.
@@ -1565,6 +1566,7 @@ static bool bring_up(void)
         /* A bench with no touch has no STOP button, so this is fatal rather
          * than degraded -- but it is reported first. */
         splash_screen_set(SPLASH_STEP_TOUCH, SPLASH_FAIL, "no answer");
+        s_touch_ok = false;
         ok = false;
     }
     pump();
@@ -5821,6 +5823,11 @@ void app_main(void)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     if (!healthy) {
+        ESP_LOGW(TAG, "bring-up incomplete: the splash names each step");
+    }
+    /* Held for the touch alone: bring_up() fails for other reasons too,
+     * a protocol mismatch among them, which has its own passing alert. */
+    if (!s_touch_ok) {
         ui_router_hold_alert("touch did not answer -- the bench will not arm");
     }
 
