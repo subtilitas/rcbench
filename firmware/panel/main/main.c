@@ -4139,7 +4139,8 @@ static void drain_commands(bool link_up, bench_state_t *bench)
                             || (pc.kind == PANEL_CMD_SERVO
                                 && (pc.servo.kind == SERVO_CMD_ARM
                                     || pc.servo.kind == SERVO_CMD_POSITION
-                                    || pc.servo.kind == SERVO_CMD_CENTRE));
+                                    || pc.servo.kind == SERVO_CMD_CENTRE
+                                    || pc.servo.kind == SERVO_CMD_SWEEP));
         if (drives
             && (pc.stops != arming_stop_count(&s_arm)
                 || pc.lets_go != atomic_load(&s_lets_go))) {

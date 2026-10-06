@@ -188,6 +188,28 @@ TEST_CASE(a_sweep_stopped_by_silence_leaves_the_surfaces_where_they_are)
     CHECK_EQ(outputs_actual(&o, 0), held);
 }
 
+/* A sweep stopped by the panel holds each surface where its output has got
+ * to, as silence does: the command after it is a transaction or two away. */
+TEST_CASE(a_sweep_stopped_by_the_panel_leaves_the_surfaces_where_they_are)
+{
+    fresh(true);
+    CHECK(outputs_set_slew(&o, 0, 200u));
+    CHECK_EQ(sweep(SWEEP_SQUARE, 1000u, 400u, 0u, T0), 0u);
+    uint32_t t = T0;
+    for (; t <= T0 + 300u; ++t) {
+        (void)servo_page_step(&pg, &o, t);
+        outputs_step(&o, t);
+    }
+    CHECK_EQ(sweep(0u, 1000u, 400u, 0u, t), 0u);
+    const uint16_t held = outputs_actual(&o, 0);
+    CHECK(held > 500u && held < 900u);
+    CHECK_EQ(o.channel[0].command, held);
+    for (; t <= T0 + 400u; ++t) {
+        outputs_step(&o, t);
+    }
+    CHECK_EQ(outputs_actual(&o, 0), held);
+}
+
 int main(void)
 {
     RUN(a_sweep_needs_the_bench_armed);
@@ -197,5 +219,6 @@ int main(void)
     RUN(a_sweep_stops_when_nobody_writes_it_and_on_a_disarm);
     RUN(a_finished_sweep_is_not_started_again_by_a_repeat);
     RUN(a_sweep_stopped_by_silence_leaves_the_surfaces_where_they_are);
+    RUN(a_sweep_stopped_by_the_panel_leaves_the_surfaces_where_they_are);
     return test_summary("servo_page");
 }

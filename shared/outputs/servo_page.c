@@ -39,9 +39,23 @@ static bool same_curve(const sweep_cfg_t *a, const sweep_cfg_t *b)
            && a->amplitude == b->amplitude && a->dwell_ms == b->dwell_ms;
 }
 
+/*
+ * Every surface held where its output has got to.  The last command a sweep
+ * left would otherwise be slewed towards for as long again as the channel's
+ * own timeout, past the moment the sweep stopped.  The channel's clock is
+ * left alone, so it rests when it would have.
+ */
+static void freeze_surfaces(outputs_t *o)
+{
+    for (uint8_t ch = 0; ch < (uint8_t)LINK_OUT_CHANNELS; ++ch) {
+        if (o->channel[ch].role == OUT_ROLE_SURFACE) {
+            o->channel[ch].command = outputs_actual(o, ch);
+        }
+    }
+}
+
 uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
-                         const uint16_t *in, const outputs_t *o,
-                         uint32_t now_ms)
+                         const uint16_t *in, outputs_t *o, uint32_t now_ms)
 {
     if (p == NULL || in == NULL || o == NULL) {
         return LINK_NACK_BAD_RANGE;
@@ -96,6 +110,13 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
     memcpy(p->regs, next, sizeof(next));
     if (sweep) {
         if (next[LINK_SV_SWEEP] == 0u) {
+            /* Stopped where the outputs are, as silence stops it: the
+             * command the panel follows this with takes a transaction or
+             * two, and the servo must not go on towards the curve's last
+             * target meanwhile. */
+            if (p->sweep.running) {
+                freeze_surfaces(o);
+            }
             sweep_stop(&p->sweep);
             p->finished = false;
         } else if (p->finished && same_curve(&cfg, &was)) {
@@ -123,21 +144,6 @@ void servo_page_read(servo_page_t *p, uint8_t off, uint8_t n, uint16_t *out)
     }
     for (uint8_t i = 0; i < n; ++i) {
         out[i] = p->regs[off + i];
-    }
-}
-
-/*
- * Every surface held where its output has got to.  The last command a sweep
- * left would otherwise be slewed towards for as long again as the channel's
- * own timeout, past the moment the sweep stopped.  The channel's clock is
- * left alone, so it rests when it would have.
- */
-static void freeze_surfaces(outputs_t *o)
-{
-    for (uint8_t ch = 0; ch < (uint8_t)LINK_OUT_CHANNELS; ++ch) {
-        if (o->channel[ch].role == OUT_ROLE_SURFACE) {
-            o->channel[ch].command = outputs_actual(o, ch);
-        }
     }
 }
 
