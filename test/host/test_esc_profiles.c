@@ -96,6 +96,9 @@ static void same(const esc_profile_t *a, const esc_profile_t *b)
     CHECK_EQ(a->entry_after_power, b->entry_after_power);
     CHECK_EQ(a->entry_hold_ms, b->entry_hold_ms);
     CHECK_EQ(a->select_throttle, b->select_throttle);
+    CHECK_EQ(a->select_within_ms, b->select_within_ms);
+    CHECK_EQ(a->value_select_throttle, b->value_select_throttle);
+    CHECK_EQ(a->value_select_within_ms, b->value_select_within_ms);
     CHECK_EQ(a->skip_throttle, b->skip_throttle);
     CHECK_EQ(a->long_equals_short, b->long_equals_short);
     CHECK_EQ(a->beep_ms, b->beep_ms);
@@ -191,6 +194,9 @@ TEST_CASE(a_profile_reads_into_every_field)
     CHECK_EQ(p.entry_after_power, false);
     CHECK_EQ(p.entry_hold_ms, 7000);
     CHECK_EQ(p.select_throttle, ESC_THR_MIN);
+    CHECK_EQ(p.select_within_ms, 0);            /* absent: not known */
+    CHECK_EQ(p.value_select_throttle, ESC_THR_NONE);  /* one stage */
+    CHECK_EQ(p.value_select_within_ms, 0);
     CHECK_EQ(p.skip_throttle, ESC_THR_NONE);
     CHECK_EQ(p.repeat, -1);                     /* null: not known */
     CHECK_EQ(p.beep_ms, 0);
@@ -211,6 +217,37 @@ TEST_CASE(a_profile_reads_into_every_field)
     CHECK_STR_EQ(p.items[1].applies_when, "heli");
     CHECK_EQ(p.items[1].values[0].number, 0);
     free(block);
+}
+
+/* A two-stage menu: the select move picks the item, a second move stores
+ * the value sounded. */
+TEST_CASE(a_two_stage_menu_reads_its_value_select_move)
+{
+    char *j = subst("\"select\": {\"throttle\": \"min\"}",
+                    "\"select\": {\"throttle\": \"min\", \"within_ms\": 3000},"
+                    " \"value_select\": {\"throttle\": \"max\","
+                    " \"within_ms\": null}");
+    esc_profile_t p;
+    void *block = NULL;
+    CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_EQ(p.select_throttle, ESC_THR_MIN);
+        CHECK_EQ(p.select_within_ms, 3000);
+        CHECK_EQ(p.value_select_throttle, ESC_THR_MAX);
+        CHECK_EQ(p.value_select_within_ms, 0);  /* null: not known */
+    }
+    free(block);
+    free(j);
+
+    /* null is a one-stage menu, as an absent member is. */
+    j = subst("\"select\": {", "\"value_select\": null, \"select\": {");
+    block = NULL;
+    CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_EQ(p.value_select_throttle, ESC_THR_NONE);
+    }
+    free(block);
+    free(j);
 }
 
 TEST_CASE(escapes_become_the_characters_they_name)
@@ -295,6 +332,13 @@ TEST_CASE(a_broken_profile_is_refused_with_its_place_named)
           "scheme.entry.steps: not 1-255" },
         { "\"changes_per_entry\": \"many\"", "\"changes_per_entry\": \"all\"",
           "scheme.changes_per_entry: not a known" },
+        { "\"select\": {\"throttle\": \"min\"}",
+          "\"select\": {\"throttle\": \"min\", \"within_ms\": 60001}",
+          "scheme.select.within_ms: outside" },
+        { "\"select\": {", "\"value_select\": \"max\", \"select\": {",
+          "scheme.value_select: not an object" },
+        { "\"select\": {", "\"value_select\": {}, \"select\": {",
+          "scheme.value_select.throttle: not a known" },
         { "\"cell_type\": \"lipo\"", "\"cell_type\": \"lion\"",
           "models[0].cell_type: not a known" },
         { "\"current_a\": 30", "\"current_a\": 70000",
@@ -471,6 +515,28 @@ TEST_CASE(input_the_generator_refuses_is_refused_here_too)
                     "\"schema\": 1, \"n\": [-0, 0.5, 1e3, 2E-2, 10],");
     CHECK(parses(j, NULL, 0));
     free(j);
+    /* A whole number of any length in a field the panel skips; the
+     * generator lifts Python's 4,300-digit limit to match. */
+    char digits[4400] = "\"schema\": 1, \"n\": ";
+    const size_t at = strlen(digits);
+    memset(digits + at, '1', 4301);
+    strcpy(digits + at + 4301, ",");
+    j = subst("\"schema\": 1,", digits);
+    CHECK(parses(j, NULL, 0));
+    free(j);
+}
+
+/* The first name that repeats an earlier one is the one named, as the
+ * generator names it, however the names sort. */
+TEST_CASE(a_repeated_model_name_is_named_where_it_first_repeats)
+{
+    char *j = subst("\"models\": [",
+                    "\"models\": [{\"name\": \"B\"}, {\"name\": \"A\"},"
+                    " {\"name\": \"B\"}, {\"name\": \"A\"}, ");
+    char err[96] = "";
+    CHECK(!parses(j, err, sizeof(err)));
+    CHECK_STR_EQ(err, "models[2].name: duplicate");
+    free(j);
 }
 
 /* Raw bytes in a string are UTF-8 or the file is refused, as Python's
@@ -603,6 +669,7 @@ int main(void)
     RUN(every_profile_of_record_parses_to_its_generated_table);
     RUN(builtin_ids_are_sorted_and_unique);
     RUN(a_profile_reads_into_every_field);
+    RUN(a_two_stage_menu_reads_its_value_select_move);
     RUN(escapes_become_the_characters_they_name);
     RUN(control_escapes_and_a_surrogate_pair_are_read);
     RUN(escaped_keys_and_values_read_as_their_plain_spelling);
@@ -615,6 +682,7 @@ int main(void)
     RUN(a_string_that_is_not_utf8_is_refused);
     RUN(an_object_past_64_members_is_refused);
     RUN(input_the_generator_refuses_is_refused_here_too);
+    RUN(a_repeated_model_name_is_named_where_it_first_repeats);
     RUN(a_card_profile_takes_a_built_in_profiles_place);
     RUN(a_card_profile_with_a_new_id_follows_the_built_in_ones);
     RUN(the_registry_refuses_past_its_capacity);

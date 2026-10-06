@@ -110,6 +110,8 @@ JSON. Das Panel lädt sie nicht.
 | `scheme.announce.beep_ms`, `gap_ms`, `group_gap_ms` | 0 bis 60000, oder null |
 | `scheme.announce.repeat` | 0 bis 255: 0 wiederholt bis zur Auswahl, null unbekannt |
 | `scheme.select.throttle`, `scheme.skip.throttle` | `min`, `mid`, `max`, `none` |
+| `scheme.select.within_ms` | 0 bis 60000: die Zeit nach dem Ton, in der die Bewegung zählt, oder null, wenn nicht angegeben |
+| `scheme.value_select` | nur bei zweistufigen Menüs: `select` wählt den Punkt, dann speichert `value_select.throttle` (`min`, `mid`, `max`, `none`) den angesagten Wert; `within_ms` wie bei `select`. Fehlt es oder ist es null, speichert die `select`-Bewegung den Wert |
 | `scheme.changes_per_entry` | `one`, `many` |
 
 ### Modelle

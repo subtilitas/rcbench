@@ -1181,7 +1181,14 @@ static void esc_profiles_load(void)
             continue;
         }
         const size_t len = fread(buf, 1, ESC_PROFILE_MAX_BYTES + 1u, f);
+        /* A short read is the end of the file or a card fault; parsing what
+         * a fault left could accept a file that is not what the card holds. */
+        const bool read_failed = (ferror(f) != 0);
         fclose(f);
+        if (read_failed) {
+            ESP_LOGW(TAG, "ESC profiles: %s refused: read error", c.name[i]);
+            continue;
+        }
         esc_profile_t p;
         void *block = NULL;
         char err[96];

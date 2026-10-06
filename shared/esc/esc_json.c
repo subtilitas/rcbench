@@ -514,6 +514,12 @@ static bool lex_all(lex_t *l)
 
 /* ------------------------------------------------------------ decoding */
 
+/* A model name and where it stands in the file. */
+typedef struct {
+    const char *name;
+    uint32_t    at;
+} name_at_t;
+
 typedef struct {
     const char  *s;
     const tok_t *t;
@@ -523,6 +529,8 @@ typedef struct {
     char        *err;
     size_t       err_size;
     bool         failed;
+    name_at_t   *names;     /* the model names, sorted; NULL while sizing */
+    uint32_t     name_count;
 } dec_t;
 
 /* The first reason stands.  A macro rather than a variadic function: the
@@ -733,6 +741,21 @@ static const char *const k_cells[]    = { "lipo", "nimh" };
 
 #define COUNT(a) ((int)(sizeof(a) / sizeof((a)[0])))
 
+static int by_name(const void *a, const void *b)
+{
+    const name_at_t *x = a, *y = b;
+    const int c = strcmp(x->name, y->name);
+    if (c != 0) {
+        return c;
+    }
+    return (x->at > y->at) - (x->at < y->at);
+}
+
+static int name_is(const void *key, const void *elem)
+{
+    return strcmp((const char *)key, ((const name_at_t *)elem)->name);
+}
+
 static void decode_models(dec_t *d, uint32_t root, esc_profile_t *p)
 {
     const int64_t arr = get_obj(d, root, "models", "", T_ARR);
@@ -770,28 +793,47 @@ static void decode_models(dec_t *d, uint32_t root, esc_profile_t *p)
         }
     }
     if (m != NULL && !d->failed) {
-        /* Names are unique within a profile: applies_to refers to them. */
+        /* Names are unique within a profile: applies_to refers to them.
+         * Sorted, a duplicate stands next to its first, and applies_to
+         * finds a name by halving: n log n comparisons, where comparing
+         * every pair would let 1,000 names sharing a long prefix cost half
+         * a million. */
+        d->names = malloc(n * sizeof(*d->names));
+        if (d->names == NULL) {
+            FAIL(d, "out of memory");
+            return;
+        }
         for (uint32_t i = 0; i < n; ++i) {
-            for (uint32_t j = i + 1u; j < n; ++j) {
-                if (strcmp(m[i].name, m[j].name) == 0) {
-                    FAIL(d, "models[%u].name: duplicate", (unsigned)j);
-                    return;
-                }
+            d->names[i] = (name_at_t){ m[i].name, i };
+        }
+        d->name_count = n;
+        qsort(d->names, n, sizeof(*d->names), by_name);
+        /* The second of each equal run is a duplicate; the earliest of
+         * those is the one the generator names. */
+        uint32_t dup = n;
+        bool in_run = false;                    /* names[i - 1] repeats */
+        for (uint32_t i = 1; i < n; ++i) {
+            const bool same = (strcmp(d->names[i - 1u].name,
+                                      d->names[i].name) == 0);
+            if (same && !in_run && d->names[i].at < dup) {
+                dup = d->names[i].at;
             }
+            in_run = same;
+        }
+        if (dup < n) {
+            FAIL(d, "models[%u].name: duplicate", (unsigned)dup);
+            return;
         }
     }
     p->model_count = (uint16_t)n;
     p->models = m;
 }
 
-static bool has_model(const esc_profile_t *p, const char *name)
+static bool has_model(const dec_t *d, const char *name)
 {
-    for (uint16_t i = 0; i < p->model_count; ++i) {
-        if (strcmp(p->models[i].name, name) == 0) {
-            return true;
-        }
-    }
-    return false;
+    return d->names != NULL
+           && bsearch(name, d->names, d->name_count, sizeof(*d->names),
+                      name_is) != NULL;
 }
 
 static void decode_values(dec_t *d, uint32_t arr, const char *iw,
@@ -804,6 +846,7 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
     }
     esc_value_t *v = take(d, n * sizeof(*v), _Alignof(esc_value_t));
     unsigned defaults = 0;
+    uint8_t seen[256u / 8u] = { 0 };            /* value numbers, one bit each */
     uint32_t ti = arr + 1u;
     for (uint32_t j = 0; j < n && !d->failed; ++j, ti = d->t[ti].next) {
         char w[48];
@@ -818,12 +861,12 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
         const bool dflt = get_bool(d, ti, "default", w, true);
         defaults += dflt ? 1u : 0u;
         if (v != NULL && !d->failed) {
-            for (uint32_t k = 0; k < j; ++k) {
-                if (v[k].number == (uint8_t)num) {
-                    FAIL(d, "%s.number: duplicate", w);
-                    return;
-                }
+            const uint8_t bit = (uint8_t)(1u << ((uint8_t)num & 7u));
+            if ((seen[(uint8_t)num >> 3] & bit) != 0u) {
+                FAIL(d, "%s.number: duplicate", w);
+                return;
             }
+            seen[(uint8_t)num >> 3] |= bit;
             v[j] = (esc_value_t){ name, (uint8_t)num, dflt };
         }
     }
@@ -885,7 +928,7 @@ static void decode_items(dec_t *d, uint32_t root, esc_profile_t *p)
                 }
                 const char *s = copy_str(d, ai);
                 if (names != NULL) {
-                    if (!has_model(p, s)) {
+                    if (!has_model(d, s)) {
                         FAIL(d, "%s.applies_to: not a model of this profile",
                              w);
                         return;
@@ -989,6 +1032,19 @@ static void decode(dec_t *d, esc_profile_t *p)
     x = get_enum(d, (uint32_t)sk, "throttle", "scheme.skip", k_throttle,
                  COUNT(k_throttle));
     p->skip_throttle = (esc_throttle_t)(x < 0 ? 0 : x);
+    /* Only a two-stage menu has one: absent or null, the select move
+     * stores the value too. */
+    const int64_t vs = member(d, si, "value_select");
+    p->value_select_throttle = ESC_THR_NONE;
+    if (vs >= 0 && d->t[vs].type != T_NULL) {
+        if (d->t[vs].type != T_OBJ) {
+            FAIL(d, "scheme.value_select: not an object");
+            return;
+        }
+        x = get_enum(d, (uint32_t)vs, "throttle", "scheme.value_select",
+                     k_throttle, COUNT(k_throttle));
+        p->value_select_throttle = (esc_throttle_t)(x < 0 ? 0 : x);
+    }
     x = get_enum(d, si, "changes_per_entry", "scheme", k_changes,
                  COUNT(k_changes));
     p->one_change_per_entry = (x == 0);
@@ -996,6 +1052,16 @@ static void decode(dec_t *d, esc_profile_t *p)
     int64_t v = 0;
     p->entry_hold_ms = get_num(d, (uint32_t)e, "hold_ms", "scheme.entry", 0,
                                600000, true, &v) ? (uint32_t)v : 0u;
+    v = 0;
+    p->select_within_ms = get_num(d, (uint32_t)se, "within_ms",
+                                  "scheme.select", 0, 60000, true, &v)
+                          ? (uint32_t)v : 0u;
+    v = 0;
+    p->value_select_within_ms =
+        (vs >= 0 && d->t[vs].type == T_OBJ
+         && get_num(d, (uint32_t)vs, "within_ms", "scheme.value_select", 0,
+                    60000, true, &v))
+        ? (uint32_t)v : 0u;
     v = 0;
     p->long_equals_short = get_num(d, (uint32_t)an, "long_equals_short",
                                    "scheme.announce", 0, 255, true, &v)
@@ -1114,7 +1180,7 @@ bool esc_profile_parse(const char *json, size_t len, esc_profile_t *out,
     }
 
     esc_profile_t p = { 0 };
-    dec_t d = { json, tok, NULL, 0u, 0u, err, err_size, false };
+    dec_t d = { json, tok, NULL, 0u, 0u, err, err_size, false, NULL, 0u };
     decode(&d, &p);                             /* sizing */
     if (d.failed) {
         free(tok);
@@ -1135,6 +1201,7 @@ bool esc_profile_parse(const char *json, size_t len, esc_profile_t *out,
     d.used = 0u;
     decode(&d, &p);
     free(tok);
+    free(d.names);
     if (d.failed || d.used != sized) {
         free(mem);
         if (!d.failed && err != NULL && err_size > 0) {

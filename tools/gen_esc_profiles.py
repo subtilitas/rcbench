@@ -177,6 +177,11 @@ def check(path: pathlib.Path) -> dict:
     for k, v in (("entry", e), ("announce", a), ("select", sel),
                  ("skip", skip)):
         want(isinstance(v, dict), f"{w}.scheme.{k}", "not an object")
+    # Only a two-stage menu has one: absent or null, the select move stores
+    # the value too.
+    vsel = s.get("value_select")
+    want(vsel is None or isinstance(vsel, dict), f"{w}.scheme.value_select",
+         "not an object")
     steps = e.get("steps")
     want(isinstance(steps, list) and 0 < len(steps) <= 255
          and all(isinstance(x, str) and x for x in steps),
@@ -202,6 +207,11 @@ def check(path: pathlib.Path) -> dict:
         "entry_after": pick(e, "when", f"{w}.scheme.entry", WHEN),
         "hold": num(e, "hold_ms", f"{w}.scheme.entry", 600000) or 0,
         "select_thr": pick(sel, "throttle", f"{w}.scheme.select", THROTTLE),
+        "select_ms": num(sel, "within_ms", f"{w}.scheme.select", 60000) or 0,
+        "vsel_thr": "ESC_THR_NONE" if vsel is None else
+        pick(vsel, "throttle", f"{w}.scheme.value_select", THROTTLE),
+        "vsel_ms": 0 if vsel is None else
+        num(vsel, "within_ms", f"{w}.scheme.value_select", 60000) or 0,
         "skip_thr": pick(skip, "throttle", f"{w}.scheme.skip", THROTTLE),
         "les": les or 0,
         "beep": num(a, "beep_ms", f"{w}.scheme.announce", 60000) or 0,
@@ -347,8 +357,9 @@ def emit(profiles: list[dict]) -> str:
             f"      {p['scheme']}, {p['encoding']}, {p['announce']},"
             f" {p['auto']},\n"
             f"      {c_str(p['note'])},\n"
-            f"      {p['entry_thr']}, {p['entry_after']}, {p['hold']}u,"
-            f" {p['select_thr']}, {p['skip_thr']},\n"
+            f"      {p['entry_thr']}, {p['entry_after']}, {p['hold']}u,\n"
+            f"      {p['select_thr']}, {p['select_ms']}u,"
+            f" {p['vsel_thr']}, {p['vsel_ms']}u, {p['skip_thr']},\n"
             f"      {p['les']}u, {p['beep']}u, {p['gap']}u, {p['ggap']}u,"
             f" {p['repeat']}, {p['one']}, {p['verified']},\n"
             f"      {len(p['steps'])}u, {n}_steps,"
@@ -373,6 +384,7 @@ def self_test() -> list[str]:
         return base.replace(old, new, 1).encode("utf-8")
 
     head = '"schema": 1,'
+    sel = '"select": {'
     refuse = {
         "schema true": at(head, '"schema": true,'),
         "key twice": at(head, head + ' "schema": 1,'),
@@ -397,6 +409,8 @@ def self_test() -> list[str]:
         "too large": at(head, head + ' "pad": "' + "x" * MAX_BYTES + '",'),
         "not UTF-8": base.encode("utf-8").replace(b'"Align"', b'"Al\xffign"',
                                                   1),
+        "value_select a string": at(sel, '"value_select": "max", ' + sel),
+        "within_ms 60001": at('"within_ms": null', '"within_ms": 60001'),
     }
     accept = {
         "plain": base.encode("utf-8"),
@@ -405,6 +419,10 @@ def self_test() -> list[str]:
                         + ","),
         "64 members": at(head, head + ' "x": {' + ", ".join(
             f'"k{i}": 1' for i in range(64)) + "},"),
+        # Past Python's default of 4,300 digits for int(); the card reader
+        # skips any length of number it does not read.
+        "4301 digits": at(head, head + ' "n": ' + "1" * 4301 + ","),
+        "value_select null": at(sel, '"value_select": null, ' + sel),
     }
     bad = []
     with tempfile.TemporaryDirectory() as tmp:
@@ -427,6 +445,11 @@ def main() -> int:
     ap.add_argument("--check", action="store_true",
                     help="fail if the checked-in C file differs from the JSON")
     args = ap.parse_args()
+    # json.loads() reads a whole number with int(), which from Python 3.11
+    # refuses more than 4,300 digits; the card reader takes any length in a
+    # field it skips, and so does this.
+    if hasattr(sys, "set_int_max_str_digits"):
+        sys.set_int_max_str_digits(0)
     profiles, bad = [], []
     for path in sorted(SRC.glob("*.json")):
         try:

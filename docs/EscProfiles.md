@@ -107,6 +107,8 @@ JSON. The panel does not load them.
 | `scheme.announce.beep_ms`, `gap_ms`, `group_gap_ms` | 0 to 60000, or null |
 | `scheme.announce.repeat` | 0 to 255: 0 repeats until a choice is made, null not known |
 | `scheme.select.throttle`, `scheme.skip.throttle` | `min`, `mid`, `max`, `none` |
+| `scheme.select.within_ms` | 0 to 60000: the time after the tone in which the move counts, or null when not stated |
+| `scheme.value_select` | two-stage menus only: `select` picks the item, then `value_select.throttle` (`min`, `mid`, `max`, `none`) stores the value sounded; `within_ms` as for `select`. Absent or null: the `select` move stores the value |
 | `scheme.changes_per_entry` | `one`, `many` |
 
 ### Models

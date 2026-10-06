@@ -128,6 +128,12 @@ typedef struct {
     bool               entry_after_power;  /**< else before power is on  */
     uint32_t           entry_hold_ms;      /**< 0: not known             */
     esc_throttle_t     select_throttle;
+    uint32_t           select_within_ms;   /**< 0: not known             */
+    /** In a two-stage menu, the move that stores the value sounded, after
+     *  select_throttle picked the item; ESC_THR_NONE in a one-stage menu,
+     *  where the select move stores it. */
+    esc_throttle_t     value_select_throttle;
+    uint32_t           value_select_within_ms; /**< 0: not known         */
     esc_throttle_t     skip_throttle;
     uint8_t            long_equals_short;  /**< 0 unless short_long      */
     uint32_t           beep_ms;            /**< 0: not known             */
