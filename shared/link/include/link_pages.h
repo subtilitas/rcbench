@@ -178,6 +178,10 @@ enum {
  *     or 7 (protocol 4.4) to find it: the UART steps to the next rate
  *     after every WHO_AM_I without a valid answer, until a module has
  *     answered once, and BAUD_FOUND says which rate is in use.
+ *
+ *     RESET, written alone as 1 with OUTPUT 0, restarts the module
+ *     (SYSTEM_RESET) once it has answered and its output reads off; it
+ *     reads 0.
  *     Refused with BAD_VALUE: a pin that is reserved, bound to an output or
  *     the other pin, a baud out of range, or any change while the output is
  *     asked on or may be on (FLAGS bit 6).  The pins it takes are no
@@ -220,7 +224,8 @@ enum {
     LINK_SP_SAMPLES   = 14,
     LINK_SP_ERRORS    = 15,
     LINK_SP_BAUD_FOUND = 16,  /**< protocol 4.4: the rate in use, 0..6, 7 none */
-    LINK_SP_COUNT     = 17,
+    LINK_SP_RESET     = 17,   /**< protocol 4.4: write 1 to restart the module */
+    LINK_SP_COUNT     = 18,
 };
 #define LINK_SP_ONLINE  0x01u
 #define LINK_SP_ON      0x02u

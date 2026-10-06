@@ -42,6 +42,7 @@ void supply_link_lost(supply_link_t *s)
     s->read_any  = false;
     s->asked     = false;
     s->found     = SUPPLY_LINK_BAUD_AUTO;
+    s->reset_owed = false;
     /* The caller sees the supply stop answering and switches its own ON
      * off with the operator told; this end only stops asking for it. */
     s->on = false;
@@ -93,6 +94,13 @@ void supply_link_command(supply_link_t *s, bool on, uint16_t mv, uint16_t ma)
             : (ma < PAGE_MIN_MA) ? (uint16_t)PAGE_MIN_MA : ma;
 }
 
+void supply_link_reset(supply_link_t *s)
+{
+    if (s != NULL) {
+        s->reset_owed = true;
+    }
+}
+
 supply_link_write_t supply_link_next(supply_link_t *s, uint8_t *off,
                                      uint8_t *n, uint16_t *regs)
 {
@@ -133,6 +141,16 @@ supply_link_write_t supply_link_next(supply_link_t *s, uint8_t *off,
         *n   = 4u;
         memcpy(regs, &s->out[LINK_SP_ENABLE], 4u * sizeof(uint16_t));
         s->pending = SUPPLY_LINK_W_WIRING;
+        return s->pending;
+    }
+
+    /* A restart, alone, once the page's output is off and the wiring is
+     * the page's: the far end refuses it otherwise. */
+    if (s->reset_owed && !s->page_on && s->wired && s->page.en) {
+        *off = (uint8_t)LINK_SP_RESET;
+        *n   = 1u;
+        regs[0] = 1u;
+        s->pending = SUPPLY_LINK_W_RESET;
         return s->pending;
     }
 
@@ -211,6 +229,9 @@ void supply_link_written(supply_link_t *s, int result)
             s->on = false;
             s->events |= SUPPLY_LINK_EV_ON_REFUSED;
         }
+        break;
+    case SUPPLY_LINK_W_RESET:
+        s->reset_owed = false;         /* taken, or refused: not repeated */
         break;
     case SUPPLY_LINK_W_NONE:
     default:

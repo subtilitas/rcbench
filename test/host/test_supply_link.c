@@ -412,6 +412,33 @@ TEST_CASE(a_found_rate_is_reported_once)
     CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_BAUD_FOUND);
 }
 
+/* A restart asked with the output on: the OFF first, then RESET, alone,
+ * and the far end passes it to its driver. */
+TEST_CASE(a_restart_follows_the_off)
+{
+    fresh();
+    supply_link_wire(&sl, &k_wired);
+    supply_link_command(&sl, true, 5000u, 500u);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+    supply_link_command(&sl, false, 5000u, 500u);
+    supply_link_reset(&sl);
+    uint8_t off = 0u;
+    uint8_t n = 0u;
+    uint16_t regs[LINK_SP_FLAGS];
+    CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_OFF);
+    supply_link_written(&sl, (int)supply_page_write(&pg, off, n, regs, &o,
+                                                    true));
+    CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_RESET);
+    CHECK_EQ(off, LINK_SP_RESET);
+    CHECK_EQ(n, 1u);
+    supply_link_written(&sl, (int)supply_page_write(&pg, off, n, regs, &o,
+                                                    true));
+    far_step_and_read(true);
+    CHECK(drv.reset_owed);
+    CHECK(supply_link_next(&sl, &off, &n, regs) != SUPPLY_LINK_W_RESET);
+}
+
 int main(void)
 {
     RUN(an_off_then_the_wiring_then_the_command);
@@ -425,5 +452,6 @@ int main(void)
     RUN(the_state_is_what_the_page_says);
     RUN(stuck_is_reported_once);
     RUN(a_found_rate_is_reported_once);
+    RUN(a_restart_follows_the_off);
     return test_summary("supply_link");
 }

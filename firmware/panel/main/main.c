@@ -3033,6 +3033,16 @@ static void apply_supply_cmd(const panel_cmd_t *pc)
     if (c->reset) {
         supply_reset_peaks(&s_supply);
     }
+    if (c->module_reset && s_supply_is_real) {
+        supply_switch(false);
+        /* RESET is a 4.4 register: an older coprocessor would refuse it
+         * unseen, so the operator is told instead. */
+        if (s_supply_auto) {
+            supply_link_reset(&s_supply_link);
+        } else {
+            control_alert("coprocessor too old to reset the PD mini");
+        }
+    }
     if (c->off) {
         supply_switch(false);
     } else if (c->on) {

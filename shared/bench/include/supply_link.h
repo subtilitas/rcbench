@@ -78,6 +78,7 @@ typedef enum {
     SUPPLY_LINK_W_OFF,
     SUPPLY_LINK_W_WIRING,
     SUPPLY_LINK_W_COMMAND,
+    SUPPLY_LINK_W_RESET,
 } supply_link_write_t;
 
 typedef struct {
@@ -108,6 +109,7 @@ typedef struct {
 
     uint8_t  events;
     uint8_t  found;          /* the rate AUTO last reported, 7 none    */
+    bool     reset_owed;     /* a module restart asked, not yet written */
 } supply_link_t;
 
 void supply_link_init(supply_link_t *s);
@@ -122,6 +124,10 @@ void supply_link_wire(supply_link_t *s, const supply_wiring_t *w);
 /** What the output is to be; set points clamped to the page's 1000 to
  *  20000 mV and 50 to 3000 mA. */
 void supply_link_command(supply_link_t *s, bool on, uint16_t mv, uint16_t ma);
+
+/** Restart the PD mini (protocol 4.4): written once the page's output is
+ *  off and its wiring written, after any OFF owed. */
+void supply_link_reset(supply_link_t *s);
 
 /**
  * The next write owed, or SUPPLY_LINK_W_NONE.  @p off and @p n say where

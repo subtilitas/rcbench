@@ -85,6 +85,15 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
     if (n == 0u) {
         return 0u;
     }
+    if (off == (uint8_t)LINK_SP_RESET) {
+        /* A restart, alone: 1, with the output asked off. */
+        if (n != 1u || in[0] != 1u || p->regs[LINK_SP_OUTPUT] != 0u
+            || !supply_page_enabled(p)) {
+            return LINK_NACK_BAD_VALUE;
+        }
+        p->reset_owed = true;
+        return 0u;
+    }
     if ((unsigned)off + (unsigned)n > (unsigned)LINK_SP_FLAGS) {
         return LINK_NACK_READ_ONLY;
     }
@@ -240,6 +249,10 @@ void supply_page_step(supply_page_t *p, bool beat_alive, pdmini_t *drv)
     if (drv == NULL || !supply_page_enabled(p)) {
         p->regs[LINK_SP_FLAGS] = 0u;
         return;
+    }
+    if (p->reset_owed) {
+        p->reset_owed = false;
+        pdmini_reset(drv);
     }
     if (p->commanded) {
         pdmini_want(drv, p->regs[LINK_SP_OUTPUT] != 0u,

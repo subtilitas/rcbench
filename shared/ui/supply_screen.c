@@ -125,7 +125,8 @@ static const char *const k_tab_labels[] = { "PLOT", "TABLE" };
 /* What a press is on.  One contact holds the screen at a time. */
 enum { P_NONE = 0, P_OUTPUT, P_RESET, P_V_DOWN, P_V_UP, P_I_DOWN, P_I_UP,
        P_V_SLIDER, P_I_SLIDER, P_TABS, P_CARD_V, P_CARD_I, P_TEXT_V,
-       P_TEXT_I, P_SETTINGS, P_CLOSE, P_ROW, P_KEYPAD, P_APPLY, P_DISCARD };
+       P_TEXT_I, P_SETTINGS, P_CLOSE, P_ROW, P_KEYPAD, P_APPLY, P_DISCARD,
+       P_MODRESET };
 
 /* Where a set point change came from, for the question it may need. */
 enum { FROM_SLIDER = 0, FROM_KEYPAD };
@@ -203,6 +204,7 @@ static struct {
     ui_hold_t       hold;
     gfx_rect_t      out_rect;
     gfx_rect_t      reset_rect;
+    gfx_rect_t      modreset_btn;   /* RESET PD MINI, in SETTINGS */
     gfx_rect_t      set_btn;
     gfx_rect_t      close_btn;
     gfx_rect_t      v_down, v_up, i_down, i_up;
@@ -394,6 +396,8 @@ static void reset(void)
     s.set_btn    = (gfx_rect_t){ SETB_X, SETB_Y, SETB_W, SETB_H };
     s.close_btn  = (gfx_rect_t){ (int16_t)(OV_X + OV_W - 10 - 110),
                                  (int16_t)(OV_Y + 8), 110, 34 };
+    s.modreset_btn = (gfx_rect_t){ (int16_t)(OV_X + 10), (int16_t)(OV_Y + 300),
+                                   (int16_t)OV_COL_W, 36 };
     s.apply_btn   = (gfx_rect_t){ (int16_t)(OV_X + 40), (int16_t)(OV_Y + 290),
                                   210, 60 };
     s.discard_btn = (gfx_rect_t){ (int16_t)(OV_X + OV_W - 40 - 210),
@@ -424,7 +428,8 @@ static void post_off(void)
 
 bool supply_screen_poll_cmd(supply_cmd_t *out)
 {
-    const bool any = s.pending.on || s.pending.off || s.pending.reset;
+    const bool any = s.pending.on || s.pending.off || s.pending.reset
+                     || s.pending.module_reset;
     if (!any) {
         return false;
     }
@@ -800,6 +805,10 @@ static void down(const touch_event_t *evt)
             take(evt, P_CLOSE);
             return;
         }
+        if (!s.model && gfx_rect_contains(s.modreset_btn, x, y)) {
+            take(evt, P_MODRESET);
+            return;
+        }
         for (int i = 0; i < ROW_COUNT; ++i) {
             if (gfx_rect_contains(row_rect(i), x, y)) {
                 take(evt, P_ROW);
@@ -895,6 +904,13 @@ static void released(int was, int row, int x, int y)
         if (gfx_rect_contains(s.close_btn, x, y)) {
             s.settings_open = false;
             supply_invalidate();
+        }
+        break;
+    case P_MODRESET:
+        /* The module restarted: its output goes off first. */
+        if (gfx_rect_contains(s.modreset_btn, x, y)) {
+            s.pending.module_reset = true;
+            s.pending.off          = true;
         }
         break;
     case P_ROW:
@@ -1366,6 +1382,13 @@ static void draw_settings(gfx_canvas_t *c)
              ui_theme_color(UI_C_TEXT), 1);
     ui_button(c, s.close_btn, "CLOSE", ui_theme_color(UI_C_PANEL_SUNK),
               s.pressed == P_CLOSE, true);
+    if (!s.model) {
+        /* A module in ERR -- a set point over its input -- comes back only
+         * with a restart. */
+        ui_button(c, s.modreset_btn, "RESET PD MINI",
+                  ui_theme_color(UI_C_PANEL_SUNK), s.pressed == P_MODRESET,
+                  true);
+    }
 
     const int lx = a.x + 10;
     const int rx = a.x + a.w / 2 + 6;
