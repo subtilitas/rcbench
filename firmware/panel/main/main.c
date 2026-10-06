@@ -4678,10 +4678,14 @@ static void supply_link_service(void)
         supply_link_read(&s_supply_link, read ? reply.regs : NULL, now_ms());
         if (read) {
             atomic_store(&s_supply_vin_mv, reply.regs[LINK_SP_VIN_MV]);
-            /* 0 for a rate still being looked for: no rate in the header. */
+            /* 0 for a rate still being looked for: no rate in the header.
+             * A 4.3 coprocessor reports none, and runs at what it was sent:
+             * the setting, with AUTO already turned into 19200 above. */
             atomic_store(&s_supply_baud,
                          (unsigned)supply_page_baud(
-                             reply.regs[LINK_SP_BAUD_FOUND]));
+                             (uint16_t)(s_supply_auto
+                                            ? reply.regs[LINK_SP_BAUD_FOUND]
+                                            : w.baud)));
         }
     }
     supply_link_alerts();
