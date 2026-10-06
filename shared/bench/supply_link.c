@@ -134,8 +134,10 @@ supply_link_write_t supply_link_next(supply_link_t *s, uint8_t *off,
         return s->pending;
     }
 
-    /* An ON with nothing wired to serve it is refused here, once. */
-    if (s->on && (!s->wired || !s->page.en)) {
+    /* An ON with nothing wired to serve it is refused here, once -- and
+     * one whose wiring was refused, though the page still holds the old:
+     * the settings name other pins, and that may be another supply. */
+    if (s->on && (s->refused || !s->wired || !s->page.en)) {
         if (s->refused || (s->wired && !s->page.en)) {
             s->on = false;
             s->events |= SUPPLY_LINK_EV_ON_REFUSED;

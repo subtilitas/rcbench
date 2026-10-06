@@ -179,6 +179,15 @@ TEST_CASE(refused_wiring_is_not_written_again)
     pump(true);
     CHECK_EQ(reg(LINK_SP_ENABLE), 1u);
     CHECK_EQ(supply_link_events(&sl), 0u);
+
+    /* Good wiring replaced by refused wiring: no ON to the old pins. */
+    supply_link_wire(&sl, &bad);
+    pump(true);
+    CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_WIRING_REFUSED);
+    supply_link_command(&sl, true, 5000u, 500u);
+    pump(true);
+    CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_ON_REFUSED);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
 }
 
 /* Disabled, or both pins on one, is written as disabled; an ON to it is
