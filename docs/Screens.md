@@ -199,7 +199,8 @@ drag, and trim is not applied. The horn follows the same curve, computed on
 the panel and timed from when the coprocessor started its own. While it runs
 the button reads HOLD, and a tap stops the sweep where the output has got to
 -- which SPEED can leave behind the curve -- and holds it there; a finger on the dial, CENTRE, RELEASE,
-a disarm and leaving the screen stop it too. A changed setting starts it over
+a disarm and leaving the screen stop it too, and touch events going missing
+stop it as HOLD would. A changed setting starts it over
 with the new curve; a changed profile or frame rate goes with it at once. SWEEP is offered on an armed bench and a coprocessor
 speaking protocol 4.2; the coprocessor stops a sweep the panel has not
 repeated for 500 ms and leaves each surface where its output has got to.

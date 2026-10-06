@@ -218,7 +218,7 @@ gestartet hat. Während sie läuft, heißt der Knopf HOLD; ein Tippen hält die
 Kurve dort an, wo der Ausgang gerade steht -- SPEED kann ihn hinter der Kurve
 zurücklassen --, und hält ihn dort. Ein Finger auf der
 Skala, CENTRE, RELEASE, ein Disarm und das Verlassen des Screens beenden sie
-ebenfalls. Eine geänderte Einstellung startet sie mit der neuen Kurve neu; ein
+ebenfalls, und verlorene Touch-Ereignisse halten sie an wie HOLD. Eine geänderte Einstellung startet sie mit der neuen Kurve neu; ein
 geändertes Profil oder eine geänderte Frame Rate geht sofort mit.
 SWEEP gibt es bei scharfem Prüfstand und einem Koprozessor mit Protokoll 4.2;
 der Koprozessor hält eine Kurve an, die das Panel 500 ms nicht wiederholt hat,

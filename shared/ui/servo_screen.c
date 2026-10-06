@@ -2556,6 +2556,13 @@ static void cancel(void)
         s.pending.kind  = SERVO_CMD_NONE;
         s.arm_in_flight = false;
     }
+    /* And a sweep: the event that went missing may be the HOLD that was to
+     * stop it, and the panel would go on repeating it.  Held where the
+     * output has got to, as HOLD holds it. */
+    if (s.sweeping) {
+        stop_sweep();
+        command(s.shown_deg);
+    }
     ui_slider_release(&s.speed);
     ui_hold_reset(&s.arm);
     s.arm_down = false;

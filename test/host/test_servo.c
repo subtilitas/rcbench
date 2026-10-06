@@ -1504,6 +1504,18 @@ TEST_CASE(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave)
     CHECK(!servo_screen_sweeping());
     CHECK_EQ(last_cmd().kind, SERVO_CMD_DISARM);
 
+    /* A touch stream that lost events, the HOLD perhaps among them: the
+     * sweep stops and the output is held where it is. */
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);
+    frames(0.2f);
+    (void)last_cmd();
+    scr->cancel();
+    CHECK(!servo_screen_sweeping());
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_POSITION);
+
     /* And a coprocessor that cannot sweep any more: what the panel holds is
      * ended with a release. */
     fresh();
