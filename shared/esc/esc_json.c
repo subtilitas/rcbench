@@ -25,6 +25,12 @@
  * followed, so a hostile file cannot run the stack down. */
 #define MAX_DEPTH 16
 
+/* No profile object has more than 13 members.  The duplicate check compares
+ * each key with those before it, so this bounds it at 64 x 63 / 2
+ * comparisons an object rather than letting a 64 KiB file of short keys ask
+ * for tens of millions. */
+#define MAX_MEMBERS 64u
+
 typedef enum { T_OBJ, T_ARR, T_STR, T_NUM, T_TRUE, T_FALSE, T_NULL } ttype_t;
 
 typedef struct {
@@ -41,6 +47,8 @@ typedef enum {
     LEX_DUP,            /* a key an object already had            */
     LEX_NUL,            /* \u0000, which would end a C string     */
     LEX_SURROGATE,      /* half a surrogate pair                  */
+    LEX_UTF8,           /* bytes that are not UTF-8               */
+    LEX_MEMBERS,        /* an object with more than MAX_MEMBERS   */
 } lex_why_t;
 
 typedef struct {
@@ -111,6 +119,41 @@ static int32_t hex4(const char *s)
 }
 
 /*
+ * The length of the well-formed UTF-8 sequence at @p s, or 0: no stray
+ * continuation byte, no overlong form, no encoded surrogate, nothing past
+ * U+10FFFF.  What Python's UTF-8 decoder takes, so a file the generator
+ * would refuse to read is refused here too.
+ */
+static uint32_t utf8_len(const unsigned char *s, uint32_t avail)
+{
+    const unsigned char c = s[0];
+    uint32_t n;
+    unsigned char lo = 0x80u, hi = 0xBFu;      /* the second byte's range */
+    if (c >= 0xC2u && c <= 0xDFu) {
+        n = 2u;
+    } else if (c >= 0xE0u && c <= 0xEFu) {
+        n = 3u;
+        if (c == 0xE0u) { lo = 0xA0u; }         /* not overlong */
+        if (c == 0xEDu) { hi = 0x9Fu; }         /* not a surrogate */
+    } else if (c >= 0xF0u && c <= 0xF4u) {
+        n = 4u;
+        if (c == 0xF0u) { lo = 0x90u; }         /* not overlong */
+        if (c == 0xF4u) { hi = 0x8Fu; }         /* not past U+10FFFF */
+    } else {
+        return 0u;
+    }
+    if (avail < n || s[1] < lo || s[1] > hi) {
+        return 0u;
+    }
+    for (uint32_t k = 2u; k < n; ++k) {
+        if (s[k] < 0x80u || s[k] > 0xBFu) {
+            return 0u;
+        }
+    }
+    return n;
+}
+
+/*
  * A string, with every escape checked here, in the one pass that sees every
  * string -- including those in fields the panel never reads.  \u0000 is
  * refused (it would end a C string early), and so is half a surrogate pair:
@@ -133,6 +176,16 @@ static bool lex_string(lex_t *l)
         }
         if (c < 0x20u) {
             return false;                       /* raw control character */
+        }
+        if (c >= 0x80u) {
+            const uint32_t n = utf8_len((const unsigned char *)l->s + l->pos,
+                                        l->len - l->pos);
+            if (n == 0u) {
+                l->why = LEX_UTF8;
+                return false;
+            }
+            l->pos += n;
+            continue;
         }
         if (c != '\\') {
             l->pos++;
@@ -374,6 +427,10 @@ static bool lex_container(lex_t *l, int depth, bool obj)
     }
     for (;;) {
         if (obj) {
+            if (size >= MAX_MEMBERS) {
+                l->why = LEX_MEMBERS;
+                return false;
+            }
             ws(l);
             if (l->pos >= l->len || l->s[l->pos] != '"' || !lex_string(l)) {
                 return false;
@@ -979,6 +1036,19 @@ static void decode(dec_t *d, esc_profile_t *p)
     }
 }
 
+static const char *lex_why_text(lex_why_t why)
+{
+    switch (why) {
+    case LEX_DUP:       return "a key twice";
+    case LEX_NUL:       return "a string holds \\u0000";
+    case LEX_SURROGATE: return "half a surrogate pair";
+    case LEX_UTF8:      return "not UTF-8";
+    case LEX_MEMBERS:   return "an object with more than 64 members";
+    case LEX_SYNTAX:
+    default:            return "not JSON";
+    }
+}
+
 bool esc_profile_parse(const char *json, size_t len, esc_profile_t *out,
                        void **block, char *err, size_t err_size)
 {
@@ -1006,10 +1076,7 @@ bool esc_profile_parse(const char *json, size_t len, esc_profile_t *out,
     if (!lex_all(&l)) {
         if (err != NULL && err_size > 0) {
             (void)snprintf(err, err_size, "%s near byte %u",
-                           l.why == LEX_NUL ? "a string holds \\u0000"
-                           : l.why == LEX_SURROGATE ? "half a surrogate pair"
-                                                    : "not JSON",
-                           (unsigned)l.pos);
+                           lex_why_text(l.why), (unsigned)l.pos);
         }
         return false;
     }
@@ -1026,12 +1093,8 @@ bool esc_profile_parse(const char *json, size_t len, esc_profile_t *out,
     if (!lex_all(&l)) {
         free(tok);
         if (err != NULL && err_size > 0) {
-            static const char *const k_why[] = {
-                "not JSON", "a key twice", "a string holds \\u0000",
-                "half a surrogate pair",
-            };
-            (void)snprintf(err, err_size, "%s near byte %u", k_why[l.why],
-                           (unsigned)l.pos);
+            (void)snprintf(err, err_size, "%s near byte %u",
+                           lex_why_text(l.why), (unsigned)l.pos);
         }
         return false;
     }

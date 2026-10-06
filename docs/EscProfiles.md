@@ -51,9 +51,18 @@ profiles; the panel reads the names of the first 64 `.json` files in
 ESC profiles: MYESC.JSON refused: items[2].values: not 1-255 entries
 ```
 
-A file is refused when it is larger than 64 KiB, is not JSON, has a key
-twice in one object, holds `\u0000` in a string, is named other than its id,
-or breaks a rule below. The panel runs without a card; the built-in profiles are then
+A file is refused when it:
+
+- is larger than 64 KiB, is not JSON, or is not UTF-8;
+- nests deeper than 16 levels below the top object, or has an object of
+  more than 64 members;
+- has a key twice in one object, compared as it decodes (`"sch\u0065ma"` is
+  `"schema"`);
+- holds `\u0000` or half a surrogate pair in any string;
+- is named other than its id;
+- breaks a rule below.
+
+The generator applies the same rules to the files in the repository. The panel runs without a card; the built-in profiles are then
 the whole set.
 
 ## The file

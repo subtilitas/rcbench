@@ -54,9 +54,18 @@ Grund genannt, zum Beispiel:
 ESC profiles: MYESC.JSON refused: items[2].values: not 1-255 entries
 ```
 
-Abgelehnt wird eine Datei, die größer als 64 KiB ist, kein JSON ist, in
-einem Objekt einen Schlüssel zweimal hat, in einem String `\u0000` enthält,
-anders heißt als ihre id oder eine Regel unten verletzt. Das Panel läuft ohne Karte; dann sind die
+Abgelehnt wird eine Datei, die:
+
+- größer als 64 KiB ist, kein JSON ist oder kein UTF-8 ist;
+- tiefer als 16 Ebenen unter dem obersten Objekt verschachtelt ist oder ein
+  Objekt mit mehr als 64 Einträgen hat;
+- in einem Objekt einen Schlüssel zweimal hat, verglichen nach dem Dekodieren
+  (`"sch\u0065ma"` ist `"schema"`);
+- in einem String `\u0000` oder ein halbes Surrogat-Paar enthält;
+- anders heißt als ihre id;
+- eine Regel unten verletzt.
+
+Der Generator wendet dieselben Regeln auf die Dateien im Repository an. Das Panel läuft ohne Karte; dann sind die
 eingebauten Profile der ganze Satz.
 
 ## Die Datei

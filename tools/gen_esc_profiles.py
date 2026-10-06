@@ -23,6 +23,7 @@ import json
 import pathlib
 import re
 import sys
+import tempfile
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 SRC = REPO / "shared" / "esc" / "profiles"
@@ -78,9 +79,19 @@ def pick(d: dict, key: str, where: str, table: dict) -> str:
     return table[v]
 
 
+# The card reader's limits, so a file one takes the other takes.
+MAX_BYTES = 65536
+MAX_DEPTH = 16          # nesting below the top-level object
+MAX_MEMBERS = 64        # members of one object
+
+
 def no_twice(pairs: list[tuple[str, object]]) -> dict:
     """An object, refused if a key comes twice: json.loads() would keep the
-    last and esc_profile_parse() refuses the file, so neither may pass it."""
+    last and esc_profile_parse() refuses the file, so neither may pass it.
+    Nor one with more than MAX_MEMBERS, where the duplicate check would
+    cost the panel time quadratic in the count."""
+    if len(pairs) > MAX_MEMBERS:
+        raise Bad(f"an object with more than {MAX_MEMBERS} members")
     out: dict = {}
     for k, v in pairs:
         if k in out:
@@ -91,6 +102,28 @@ def no_twice(pairs: list[tuple[str, object]]) -> dict:
 
 def no_constant(name: str) -> float:
     raise Bad(f"{name} is not a JSON number")
+
+
+def no_deeper(v: object, where: str, depth: int = 0) -> None:
+    """No value nested deeper than the card reader follows."""
+    want(depth <= MAX_DEPTH, where, f"nested deeper than {MAX_DEPTH}")
+    if isinstance(v, dict):
+        for k, x in v.items():
+            no_deeper(x, f"{where}.{k}", depth + 1)
+    elif isinstance(v, list):
+        for i, x in enumerate(v):
+            no_deeper(x, f"{where}[{i}]", depth + 1)
+
+
+def optional(d: dict, key: str, where: str, kind: type, default: object):
+    """A field that may be absent or null, and is of @kind when present:
+    `false` or `0` is not an empty value here, as it is not to the card
+    reader."""
+    v = d.get(key)
+    if v is None:
+        return default
+    want(isinstance(v, kind), f"{where}.{key}", f"not a {kind.__name__}")
+    return v
 
 
 def no_nul(v: object, where: str) -> None:
@@ -113,23 +146,25 @@ def no_nul(v: object, where: str) -> None:
 def check(path: pathlib.Path) -> dict:
     """The profile, reduced to what the firmware carries; raises Bad."""
     w = path.name
+    raw = path.read_bytes()
+    want(len(raw) <= MAX_BYTES, w, f"larger than {MAX_BYTES} bytes")
     try:
-        d = json.loads(path.read_text(encoding="utf-8"),
+        d = json.loads(raw.decode("utf-8"),
                        object_pairs_hook=no_twice,
                        parse_constant=no_constant)
     except Bad as e:
         raise Bad(f"{w}: {e}") from None
     no_nul(d, w)
+    no_deeper(d, w)
     want(isinstance(d, dict), w, "not an object")
-    want(d.get("schema") == 1, f"{w}.schema", "not 1")
+    num(d, "schema", w, 1, null_ok=False, lo=1)
     pid = text(d, "id", w)
     want(re.fullmatch(r"[a-z0-9-]{1,48}", pid) is not None, f"{w}.id",
          "not 1-48 of a-z 0-9 -")
     want(pid == path.stem, f"{w}.id", "differs from the file name")
     want(d.get("verified") in (True, False), f"{w}.verified", "not a boolean")
     auto = pick(d, "automatable", w, AUTO)
-    note = d.get("automatable_note") or ""
-    want(isinstance(note, str), f"{w}.automatable_note", "not a string")
+    note = optional(d, "automatable_note", w, str, "")
     want(auto == "ESC_AUTO_FULL" or note != "", f"{w}.automatable_note",
          "needed when not full")
 
@@ -186,7 +221,8 @@ def check(path: pathlib.Path) -> dict:
         name = text(m, "name", mw)
         want(name not in names, f"{mw}.name", "duplicate")
         names.add(name)
-        ct = m.get("cell_type") or "lipo"
+        ct = m.get("cell_type")
+        ct = "lipo" if ct is None else ct
         want(ct in ("lipo", "nimh"), f"{mw}.cell_type", "not lipo or nimh")
         p["models"].append({
             "name": name,
@@ -210,12 +246,11 @@ def check(path: pathlib.Path) -> dict:
         key = text(it, "key", iw)
         want(re.fullmatch(r"[a-z0-9_]{1,32}", key) is not None, f"{iw}.key",
              "not 1-32 of a-z 0-9 _")
-        applies = it.get("applies_to") or []
-        want(isinstance(applies, list) and len(applies) <= 255
+        applies = optional(it, "applies_to", iw, list, [])
+        want(len(applies) <= 255
              and all(x in names for x in applies), f"{iw}.applies_to",
              "not a list of this profile's model names")
-        when = it.get("applies_when") or ""
-        want(isinstance(when, str), f"{iw}.applies_when", "not a string")
+        when = optional(it, "applies_when", iw, str, "")
         seen.setdefault(number, []).append(bool(applies) or when != "")
         vals = it.get("values")
         want(isinstance(vals, list) and 0 < len(vals) <= 255,
@@ -324,6 +359,61 @@ def emit(profiles: list[dict]) -> str:
     return "".join(o)
 
 
+def self_test() -> list[str]:
+    """The inputs test_esc_profiles.c holds the card reader to, held to the
+    generator: each mutation of a profile of record must be refused, and
+    each control accepted.  Run by --check, so a rule dropped here fails CI
+    as a rule dropped in C does."""
+    base = (SRC / "align-rce-bl15x.json").read_text(encoding="utf-8")
+
+    def at(old: str, new: str) -> bytes:
+        assert old in base, old
+        return base.replace(old, new, 1).encode("utf-8")
+
+    head = '"schema": 1,'
+    refuse = {
+        "schema true": at(head, '"schema": true,'),
+        "key twice": at(head, head + ' "schema": 1,'),
+        "escaped key twice": at(head, head + ' "sch\\u0065ma": 1,'),
+        "NUL": at(head, head + ' "n": "a\\u0000b",'),
+        "lone surrogate": at(head, head + ' "n": "\\ud800",'),
+        "NaN": at(head, head + ' "n": NaN,'),
+        "applies_to false": at('"applies_to": null', '"applies_to": false'),
+        "applies_when 0": at('"applies_to": null',
+                             '"applies_to": null, "applies_when": 0'),
+        "cell_type false": at('"cell_type": "lipo"', '"cell_type": false'),
+        "nested 17": at(head, head + ' "n": ' + "[" * 16 + "1" + "]" * 16
+                        + ","),
+        "65 members": at(head, head + ' "x": {' + ", ".join(
+            f'"k{i}": 1' for i in range(65)) + "},"),
+        "too large": at(head, head + ' "pad": "' + "x" * MAX_BYTES + '",'),
+        "not UTF-8": base.encode("utf-8").replace(b'"Align"', b'"Al\xffign"',
+                                                  1),
+    }
+    accept = {
+        "plain": base.encode("utf-8"),
+        "surrogate pair": at(head, head + ' "n": "\\ud83d\\ude00",'),
+        "nested 16": at(head, head + ' "n": ' + "[" * 15 + "1" + "]" * 15
+                        + ","),
+        "64 members": at(head, head + ' "x": {' + ", ".join(
+            f'"k{i}": 1' for i in range(64)) + "},"),
+    }
+    bad = []
+    with tempfile.TemporaryDirectory() as tmp:
+        path = pathlib.Path(tmp) / "align-rce-bl15x.json"
+        for name, data in [*refuse.items(), *accept.items()]:
+            path.write_bytes(data)
+            try:
+                check(path)
+                took = True
+            except (Bad, ValueError):
+                took = False
+            if took != (name in accept):
+                bad.append(f"self-test: {name} was "
+                           f"{'accepted' if took else 'refused'}")
+    return bad
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
@@ -341,6 +431,10 @@ def main() -> int:
     profiles.sort(key=lambda p: p["id"].encode())   # strcmp order
     text_ = emit(profiles)
     if args.check:
+        failed = self_test()
+        if failed:
+            print("\n".join(failed), file=sys.stderr)
+            return 1
         if not OUT.exists() or OUT.read_text(encoding="utf-8") != text_:
             print(f"{OUT.relative_to(REPO)} is out of date: run "
                   "tools/gen_esc_profiles.py", file=sys.stderr)

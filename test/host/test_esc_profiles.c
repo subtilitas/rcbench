@@ -464,6 +464,62 @@ TEST_CASE(input_the_generator_refuses_is_refused_here_too)
     free(j);
 }
 
+/* Raw bytes in a string are UTF-8 or the file is refused, as Python's
+ * decoder refuses it before the generator sees a key. */
+TEST_CASE(a_string_that_is_not_utf8_is_refused)
+{
+    static const char *const bad[] = {
+        "\"T\xFF\"",                       /* never a UTF-8 byte      */
+        "\"T\x80\"",                       /* a stray continuation    */
+        "\"T\xC0\x80\"",                   /* overlong NUL            */
+        "\"T\xE0\x80\xAF\"",               /* overlong '/'            */
+        "\"T\xED\xA0\x80\"",               /* an encoded surrogate    */
+        "\"T\xF4\x90\x80\x80\"",           /* past U+10FFFF           */
+        "\"T\xE2\x82\"",                   /* cut short               */
+    };
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        char *j = subst("\"Test 30\"", bad[i]);
+        char err[96] = "";
+        if (parses(j, err, sizeof(err))) {
+            T_FAIL("case %u accepted", (unsigned)i);
+        } else if (strncmp(err, "not UTF-8", 9) != 0) {
+            T_FAIL("case %u: got \"%s\"", (unsigned)i, err);
+        }
+        free(j);
+    }
+    /* Two-, three- and four-byte characters as they should be. */
+    char *j = subst("\"Test 30\"",
+                    "\"\xC3\xBC \xE2\x82\xAC \xF0\x9F\x98\x80\"");
+    CHECK(parses(j, NULL, 0));
+    free(j);
+}
+
+/* An object of 64 members is read; of 65, refused before the duplicate
+ * check can cost anything. */
+TEST_CASE(an_object_past_64_members_is_refused)
+{
+    for (int members = 64; members <= 65; ++members) {
+        char obj[2048];
+        size_t n = 0;
+        n += (size_t)snprintf(obj + n, sizeof(obj) - n, "\"schema\": 1, \"x\": {");
+        for (int k = 0; k < members; ++k) {
+            n += (size_t)snprintf(obj + n, sizeof(obj) - n, "%s\"k%d\": %d",
+                                  k ? ", " : "", k, k);
+        }
+        (void)snprintf(obj + n, sizeof(obj) - n, "},");
+        char *j = subst("\"schema\": 1,", obj);
+        char err[96] = "";
+        const bool ok = parses(j, err, sizeof(err));
+        if (members == 64) {
+            CHECK(ok);
+        } else {
+            CHECK(!ok);
+            CHECK(strncmp(err, "an object with more than 64", 27) == 0);
+        }
+        free(j);
+    }
+}
+
 static bool add_card(const char *json)
 {
     esc_profile_t p;
@@ -547,6 +603,8 @@ int main(void)
     RUN(nesting_past_the_limit_is_refused_not_followed);
     RUN(a_file_over_the_limit_is_refused_before_it_is_read);
     RUN(a_card_file_is_named_after_its_id);
+    RUN(a_string_that_is_not_utf8_is_refused);
+    RUN(an_object_past_64_members_is_refused);
     RUN(input_the_generator_refuses_is_refused_here_too);
     RUN(a_card_profile_takes_a_built_in_profiles_place);
     RUN(a_card_profile_with_a_new_id_follows_the_built_in_ones);
