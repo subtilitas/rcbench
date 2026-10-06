@@ -283,9 +283,10 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
     if ((f & LINK_SP_SET_STUCK) != 0u && (was & LINK_SP_SET_STUCK) == 0u) {
         s->events |= SUPPLY_LINK_EV_SET_STUCK;
     }
-    if (s->page.baud == SUPPLY_LINK_BAUD_AUTO
-        && regs[LINK_SP_BAUD_FOUND] < SUPPLY_LINK_BAUD_AUTO
-        && s->found != regs[LINK_SP_BAUD_FOUND]) {
+    if (regs[LINK_SP_BAUD_FOUND] >= SUPPLY_LINK_BAUD_AUTO) {
+        s->found = SUPPLY_LINK_BAUD_AUTO;   /* looking again: say it again */
+    } else if (s->page.baud == SUPPLY_LINK_BAUD_AUTO
+               && s->found != regs[LINK_SP_BAUD_FOUND]) {
         s->found = (uint8_t)regs[LINK_SP_BAUD_FOUND];
         s->events |= SUPPLY_LINK_EV_BAUD_FOUND;
     }

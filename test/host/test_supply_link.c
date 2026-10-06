@@ -399,6 +399,17 @@ TEST_CASE(a_found_rate_is_reported_once)
     CHECK_EQ(sl.regs[LINK_SP_BAUD_FOUND], 1u);
     far_step_and_read(true);
     CHECK_EQ(supply_link_events(&sl), 0u);
+    /* New wiring scans again; the same rate found is said again. */
+    const supply_wiring_t moved = { true, 10, 11, SUPPLY_LINK_BAUD_AUTO };
+    supply_link_wire(&sl, &moved);
+    pdmini_init(&drv, NULL, 0u);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_BAUD_FOUND), SUPPLY_LINK_BAUD_AUTO);
+    (void)supply_link_events(&sl);
+    drv.answered = true;
+    (void)supply_page_rate(&pg, &drv);
+    far_step_and_read(true);
+    CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_BAUD_FOUND);
 }
 
 int main(void)
