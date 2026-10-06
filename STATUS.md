@@ -97,7 +97,7 @@ is taken in a gap ahead of the save that needs it.
 | Board, display, GT911, SD card | built; the panel boots and reports each step on the splash |
 | Shell: band, router, splash, menu, simulation watermark | built |
 | Motor & ESC (electronic speed controller) screen | built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the throttle are written to the coprocessor's control page at every 50 ms poll while the link is up; an arm writes CLEAR on its own, then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK to either leaves the panel disarmed. An arm and a throttle have gone through it on the bring-up bench and run a motor; the paths a session has to provoke -- a NACK, a STOP mid-throttle, a link pulled while armed -- have not |
-| Servo screen | built; writes `CHAN_CFG` and `CHANNELS` over the link, and the frame rate on `SERVO` to a coprocessor speaking protocol 4.1. A SETTINGS overlay sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session, and the automatic test, its limits and the device under test in NVS; a heli type or a rate above 60 Hz is applied only through a warning held for 2 s, and every restart is STANDARD PWM at 50 Hz. The right card plots the supply's voltage, current and power, from `supply_sim_t` until a PD mini driver exists. A frame rate other than 50 Hz has not been tried on hardware, and no automatic test runs |
+| Servo screen | built; writes `CHAN_CFG` and `CHANNELS` over the link, the frame rate on `SERVO` to a coprocessor speaking protocol 4.1, and a sweep (square, sine or triangle, run by the coprocessor) to one speaking 4.2. A SETTINGS overlay sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session, and the automatic test, its limits and the device under test in NVS; a heli type or a rate above 60 Hz is applied only through a warning held for 2 s, and every restart is STANDARD PWM at 50 Hz. The right card plots the supply's voltage, current and power, from `supply_sim_t` until a PD mini driver exists. A frame rate other than 50 Hz and the sweep have not been tried on hardware, and no automatic test runs |
 | Supply screen | built and tested on the host; the control task runs `supply_sim_t` in place of a PD mini driver. Set points shown beside their readings, a keypad, a SETTINGS overlay (caps, start values, current and voltage trips, the confirmation for live changes) kept in NVS, and a question before a set point changes a live output. Every stop, a trip, a lost ON and a supply that stops answering switch the output off; the supply is stepped and logged from `control_pump()`, so it keeps its 50 ms cadence while an exchange waits. A supply run is logged with its own columns |
 | Analyser, programmer, balance, battery screens | built, rendered from models |
 | Link codec, page map, dispatcher, both watchdogs, CAN framing | built and tested on the host |
@@ -172,9 +172,9 @@ rcbench/
 | Module | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
-| `link` · `bench` · `outputs` · `safety` · `can` | ✔ | ✔ | ✔ |
+| `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` | ✔ | | ✔ |
-| `servo` · `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
+| `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -191,7 +191,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
 
-The host suite is 49 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 51 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_bench`, `test_supply`,
 `test_supply_screen`,
 `test_motor`, `test_servo`,
@@ -201,7 +201,7 @@ The host suite is 49 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_link_can`, `test_link_artxfer`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outstore`,
 `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_touch_loss`, `test_servo_limit`,
-`test_servo_sync`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
+`test_servo_sync`, `test_servo_sweep`, `test_servo_page`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_openyge_frame`, `test_openyge_status`,
 `test_openyge_params`, `test_logview` and `test_logwriter`. The harness is
 `test/host/greatest.h`, written for this project. `tools/check_docs.py` holds
@@ -236,7 +236,7 @@ chrome-cached screen to 2,000.
 | `shared/ui/supply_screen.c` | 908 | 896 | 98.7% |
 | `shared/ui/ui_keypad.c` | 162 | 160 | 98.8% |
 | `shared/ui/ui_textkey.c` | 153 | 151 | 98.7% |
-| `shared/ui/servo_screen.c` | 1178 | 1151 | 97.7% |
+| `shared/ui/servo_screen.c` | 1337 | 1306 | 97.7% |
 | `shared/ui/analyser_screen.c` | 223 | 220 | 98.7% |
 | `shared/ui/balance_screen.c` | 307 | 307 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
@@ -257,6 +257,7 @@ chrome-cached screen to 2,000.
 | `shared/safety/touch_loss.c` | 45 | 45 | 100.0% |
 | `shared/servo/servo_limit.c` | 120 | 116 | 96.7% |
 | `shared/servo/servo_sync.c` | 172 | 167 | 97.1% |
+| `shared/servo/servo_sweep.c` | 91 | 87 | 95.6% |
 | `shared/openyge/openyge_frame.c` | 165 | 162 | 98.2% |
 | `shared/openyge/openyge_status.c` | 39 | 39 | 100.0% |
 | `shared/openyge/openyge_params.c` | 66 | 66 | 100.0% |
@@ -279,15 +280,16 @@ chrome-cached screen to 2,000.
 | `shared/artwork/art_store.c` | 104 | 96 | 92.3% |
 | `shared/artwork/art_fetch.c` | 63 | 62 | 98.4% |
 | `shared/bench/bench_state.c` | 103 | 99 | 96.1% |
-| `shared/outputs/outputs.c` | 192 | 183 | 95.3% |
+| `shared/outputs/outputs.c` | 192 | 184 | 95.8% |
 | `shared/outputs/outputs_pages.c` | 190 | 179 | 94.2% |
 | `shared/outputs/out_bind.c` | 461 | 449 | 97.4% |
 | `shared/outputs/out_pwm_map.c` | 15 | 15 | 100.0% |
+| `shared/outputs/servo_page.c` | 125 | 123 | 98.4% |
 | `shared/outputs/out_store_map.c` | 68 | 68 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/supply.c` | 168 | 166 | 98.8% |
 | `shared/bench/log_writer.c` | 126 | 114 | 90.5% |
-| **total** | **12581** | **12151** | **96.6%** |
+| **total** | **12956** | **12517** | **96.6%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

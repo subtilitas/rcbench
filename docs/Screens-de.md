@@ -206,6 +206,29 @@ nicht dafür gebaut ist -- und das Netzteil, das das Servo versorgt: Spannung,
 Strom und Leistung, abgelesen und über die letzten 13 s geplottet. Ohne Sample
 vom Netzteil stehen dort `--`.
 
+**SWEEP fährt das Servo eine Kurve ab**, auf dem Koprozessor, wo das Timing
+nicht vom Link abhängt: CURVE (Rechteck, Sinus oder Dreieck), SPEED (0,05 bis
+5 Zyklen je Sekunde) und DWELL (die Haltezeit an jedem Ende) von der
+TEST-Seite, um PULSE CENTRE herum. RANGE ist ein Anteil des Wegs, den das
+Servo machen darf: von TRAVEL und vom näheren von PULSE MIN und MAX, damit die
+Kurve kein Ende erreicht, das sie nicht erreichen darf. SPEED auf der rechten
+Karte begrenzt sie wie ein Ziehen, Trim gilt nicht. Das Horn folgt derselben
+Kurve, im Panel gerechnet und ab dem Moment, in dem der Koprozessor seine
+gestartet hat. Während sie läuft, heißt der Knopf HOLD; ein Tippen hält die
+Kurve dort an, wo der Ausgang gerade steht -- SPEED kann ihn hinter der Kurve
+zurücklassen --, und hält ihn dort. Das Halten übernimmt der Koprozessor,
+weil nur er genau weiß, wo das ist; ohne Rückmeldung ist das im Panel
+gezeichnete Horn eine Schätzung davon. Ein HOLD wartet nicht hinter
+Sweep-Schreibvorgängen, die schon auf dem Draht sind. Ein HOLD, den der Link
+500 ms nicht wiederholt hat, hat das andere Ende losgelassen; das Panel gibt
+die Surfaces dann zur Mitte frei, und das Horn geht dorthin. Ein Finger auf der
+Skala, CENTRE, RELEASE, ein Disarm und das Verlassen des Screens beenden sie
+ebenfalls, und verlorene Touch-Ereignisse halten sie an wie HOLD. Eine geänderte Einstellung startet sie mit der neuen Kurve neu; ein
+geändertes Profil oder eine geänderte Frame Rate geht sofort mit.
+SWEEP gibt es bei scharfem Prüfstand und einem Koprozessor mit Protokoll 4.2;
+der Koprozessor hält eine Kurve an, die das Panel 500 ms nicht wiederholt hat,
+und lässt jede Surface dort stehen, wo ihr Ausgang gerade ist.
+
 ### Einstellungen
 
 SETTINGS, oben auf der rechten Karte, öffnet die Einstellungen des Servos über
@@ -223,7 +246,7 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | OUTPUT | TRIM | zur Mitte addiert, 5 us je Schritt, bis 200 us in jede Richtung |
 | OUTPUT | TRAVEL | wie weit der Arm in jede Richtung darf, 10 bis 90 Grad |
 | OUTPUT | REVERSE | die Richtung, in der der Winkel auf den Impuls abgebildet wird |
-| TEST | CURVE, SPEED, RANGE | die Bewegung des automatischen Tests: Rechteck, Sinus oder Dreieck, 0,05 bis 5 Hz, 10 bis 100 % des Wegs |
+| TEST | CURVE, SPEED, RANGE | die Bewegung von SWEEP und des automatischen Tests: Rechteck, Sinus oder Dreieck, 0,05 bis 5 Hz, 10 bis 100 % des Wegs |
 | TEST | LENGTH BY, TEST TIME, MOVEMENTS | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen |
 | TEST | DWELL, SETTLE | Haltezeit an jedem Ende; Wartezeit nach einer Spannungsstufe vor dem Messen |
 | TEST | STEP 4,8 / 6,0 / 7,4 / 8,4 V, BROWN-OUT | die Spannungsstufen und der Brown-out-Lauf ab 5,0 V abwärts |

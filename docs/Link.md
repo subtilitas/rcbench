@@ -62,7 +62,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-coprocessor transmits only in answer to a request. Protocol version 4.1. The
+coprocessor transmits only in answer to a request. Protocol version 4.2. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -135,7 +135,7 @@ Clearing a latched failsafe is such a side effect.
 | 0x26 | ARTWORK | read | what a picture of the board is: blocks of payload (0 when the coprocessor carries none), width and height in pixels, format (0 none, 1 RGB565 with the low byte first), payload length in two registers, and a CRC (cyclic redundancy check) over the whole payload seeded zero |
 | 0x27 | ART_DATA | read, write | the picture itself: write register 0 to say which block, then read the page. Register 0 reads back the block being served and registers 1 to 31 carry 62 bytes of it. A block does not advance on being read, so a reply that goes missing is asked for again rather than skipped |
 | 0x28 | PADS | read | the pads that are not pins, one register each: the pad number in 6 bits, what it is in 2 (0 no pad and the list ends, 1 ground, 2 a rail, 3 neither), and the rail in 8 bits of tenths of a volt. Zero volts on a rail means it is not a fixed voltage, which is not the same as a ground's 0 V. 32 slots, in pad order |
-| 0x29 | SERVO | read, write | one register: the frame rate in Hz of every PWM output whose first channel is a surface, 40 to 560, or 0 for each slot's own rate from OUTPUTS. Refused with BAD_VALUE, and nothing changes, when it would leave a PWM slice asked for two rates; while it is not 0, so is a CHAN_CFG or OUTPUTS write that would. Not kept: a coprocessor restart reads 0. Since protocol 4.1 |
+| 0x29 | SERVO | read, write | register 0: the frame rate in Hz of every PWM output whose first channel is a surface, 40 to 560, or 0 for each slot's own rate from OUTPUTS; refused with BAD_VALUE, and nothing changes, when it would leave a PWM slice asked for two rates, and while it is not 0 so is a CHAN_CFG or OUTPUTS write that would (since 4.1). Registers 1 to 4, one frame: a sweep of the surfaces -- curve (0 stopped, 1 square, 2 sine, 3 triangle), speed in thousandths of a cycle a second (50 to 5000), amplitude in command units either side of the centre (0 to 500), hold at each end in ms (0 to 5000); a sweep starts or changes only from all four written together, refused with BAD_VALUE otherwise, and with NOT_ARMED on a disarmed bench; 0 in register 1 alone stops it, and 4 alone holds every surface where its output is, under the same disarm and 500 ms rules. Register 5: the ends a sweep started after it reaches before it stops, 0 for no end. Register 6, read only: the ends the sweep has reached. A sweep stops on a write of 0, on a disarm and when it has not been written for 500 ms, leaving each surface where its output has got to; repeating it keeps its curve going, and a sweep that has made its movements is not started again by a repeat (since 4.2). Nothing is kept: a coprocessor restart reads 0 throughout |
 
 Faults bitmap: bit 0 link silent, bit 1 overcurrent, bit 2 over-temperature,
 bit 3 stall, bit 4 heartbeat stopped, bit 5 protocol version mismatch. Faults

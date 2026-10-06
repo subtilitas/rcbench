@@ -189,6 +189,28 @@ not made for them -- and the supply that feeds the servo: its voltage, current
 and power, read and plotted over the last 13 s. Without a supply sample the
 readings are `--`.
 
+**SWEEP drives the servo through a curve** on the coprocessor, where its
+timing does not depend on the link: the TEST page's CURVE (square, sine or
+triangle), SPEED (0.05 to 5 cycles a second) and DWELL (the hold at each
+end), about PULSE CENTRE. RANGE is a share of the travel the servo may make:
+of TRAVEL, and of the nearer of PULSE MIN and MAX, so the sweep reaches
+neither end it may not. SPEED on the right card limits it as it limits a
+drag, and trim is not applied. The horn follows the same curve, computed on
+the panel and timed from when the coprocessor started its own. While it runs
+the button reads HOLD, and a tap stops the sweep where the output has got to
+-- which SPEED can leave behind the curve -- and holds it there. The
+coprocessor does the holding, because only it knows exactly where that is;
+without feedback the horn drawn on the panel is an estimate of it. A HOLD
+does not wait behind sweep writes already on the wire. A HOLD the link left
+unrepeated for 500 ms has been let go at the far end, so the panel releases
+the surfaces to their centre and the horn goes there. A finger on the dial,
+CENTRE, RELEASE,
+a disarm and leaving the screen stop it too, and touch events going missing
+stop it as HOLD would. A changed setting starts it over
+with the new curve; a changed profile or frame rate goes with it at once. SWEEP is offered on an armed bench and a coprocessor
+speaking protocol 4.2; the coprocessor stops a sweep the panel has not
+repeated for 500 ms and leaves each surface where its output has got to.
+
 ### Settings
 
 SETTINGS, at the top of the right card, opens the servo's settings over the
@@ -206,7 +228,7 @@ name opens a keyboard.
 | OUTPUT | TRIM | added to the centre, 5 us a step, up to 200 us either way |
 | OUTPUT | TRAVEL | how far the horn may go each way, 10 to 90 degrees |
 | OUTPUT | REVERSE | the direction the horn's angle maps onto the pulse |
-| TEST | CURVE, SPEED, RANGE | the automatic test's movement: square, sine or triangle, 0.05 to 5 Hz, 10 to 100 % of the travel |
+| TEST | CURVE, SPEED, RANGE | the movement of SWEEP and the automatic test: square, sine or triangle, 0.05 to 5 Hz, 10 to 100 % of the travel |
 | TEST | LENGTH BY, TEST TIME, MOVEMENTS | how long each supply step runs: a time, or a number of movements |
 | TEST | DWELL, SETTLE | held at each end; waited after a supply step before measuring |
 | TEST | STEP 4.8 / 6.0 / 7.4 / 8.4 V, BROWN-OUT | the supply steps, and the brown-out run from 5.0 V down |

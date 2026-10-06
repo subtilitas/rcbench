@@ -2,7 +2,7 @@
 # desk.  Pure state machines fed measurements, so the host suite runs them
 # against a modelled servo and the coprocessor runs the same code against a
 # real one (not wired in).
-set(SRCS servo_limit.c servo_sync.c servo_sim.c)
+set(SRCS servo_limit.c servo_sync.c servo_sim.c servo_sweep.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)

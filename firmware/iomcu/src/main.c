@@ -35,6 +35,7 @@
 #include "outputs.h"
 #include "outputs_hw.h"
 #include "outputs_pages.h"
+#include "servo_page.h"
 #include "xl2515.h"
 
 /* ------------------------------------------------------------- the pages */
@@ -47,10 +48,11 @@ typedef struct {
     uint16_t channels[LINK_CH_COUNT];   /* what each output is asked for   */
     uint16_t chan_cfg[LINK_CC_COUNT];   /* what each channel is            */
     uint16_t slots[LINK_OS_COUNT];      /* which driver drives what        */
-    uint16_t servo[LINK_SV_COUNT];      /* the surfaces' frame rate, unkept */
 } iomcu_state_t;
 
 static iomcu_state_t s_state;
+/* The SERVO page: the surfaces' frame rate and their sweep.  Not kept. */
+static servo_page_t s_servo;
 static link_dev_t    s_dev;
 
 /*
@@ -191,10 +193,10 @@ static uint8_t channels_write(void *ctx, uint8_t off, uint8_t n,
  * The silicon made to agree with the bank, every slot at the rate it runs
  * at: its own, or the SERVO page's for a PWM surface.
  */
-static void hw_apply(const iomcu_state_t *s)
+static void hw_apply(void)
 {
     uint16_t rate[OUT_MAX_SLOTS];
-    outputs_slot_rates(&s_outputs, s->servo[LINK_SV_FRAME_HZ], rate);
+    outputs_slot_rates(&s_outputs, servo_page_hz(&s_servo), rate);
     outputs_hw_apply(&s_outputs, rate);
 }
 
@@ -220,14 +222,14 @@ static uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
      * page's rate: refused whole, rather than taken with an output left
      * unbound. */
     if (outputs_chan_cfg_rate_check(&s_outputs, next,
-                                    s->servo[LINK_SV_FRAME_HZ]) != 0u) {
+                                    servo_page_hz(&s_servo)) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
     memcpy(s->chan_cfg, next, sizeof(next));
     outputs_chan_cfg_apply(&s_outputs, s->chan_cfg);
     /* A channel that became a surface, or stopped being one, moves to or
      * from the SERVO page's rate. */
-    hw_apply(s);
+    hw_apply();
     save_outputs(s);
     return 0u;
 }
@@ -242,32 +244,27 @@ static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 
 static void servo_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    const iomcu_state_t *s = (const iomcu_state_t *)ctx;
-    for (uint8_t i = 0; i < n; ++i) {
-        out[i] = s->servo[off + i];
-    }
+    (void)ctx;
+    servo_page_read(&s_servo, off, n, out);
 }
 
 /*
  * Not saved: a restart drives every slot at the binding's rate again, so a
- * servo plugged in after it never meets a rate meant for another.
+ * servo plugged in after it never meets a rate meant for another, and runs
+ * no sweep.
  */
 static uint8_t servo_write(void *ctx, uint8_t off, uint8_t n,
                            const uint16_t *in)
 {
-    iomcu_state_t *s = (iomcu_state_t *)ctx;
-    if ((unsigned)off + (unsigned)n > (unsigned)LINK_SV_COUNT) {
-        return LINK_NACK_BAD_RANGE;
-    }
-    if (n == 0u) {
-        return 0u;
-    }
-    const uint8_t nack = outputs_servo_rate_check(&s_outputs, in[0]);
+    (void)ctx;
+    const uint8_t nack = servo_page_write(&s_servo, off, n, in, &s_outputs,
+                                          s_now_ms);
     if (nack != 0u) {
         return nack;
     }
-    s->servo[LINK_SV_FRAME_HZ] = in[0];
-    hw_apply(s);
+    if (off == (uint8_t)LINK_SV_FRAME_HZ) {
+        hw_apply();
+    }
     return 0u;
 }
 
@@ -283,14 +280,14 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
     }
     /* Nor a slot bound beside a surface at another rate. */
     if (outputs_slots_rate_check(&s_outputs, next,
-                                 s->servo[LINK_SV_FRAME_HZ]) != 0u) {
+                                 servo_page_hz(&s_servo)) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
     memcpy(s->slots, next, sizeof(next));
     outputs_slots_apply(&s_outputs, s->slots);
     /* The bank has decided what the slots are; this makes the silicon agree
      * with it before the next pass renders anything. */
-    hw_apply(s);
+    hw_apply();
     save_outputs(s);
     return 0u;
 }
@@ -922,7 +919,7 @@ int main(void)
     outputs_channels_defaults(s_state.channels);
     outputs_chan_cfg_defaults(s_state.chan_cfg);
     outputs_slots_defaults(s_state.slots);
-    s_state.servo[LINK_SV_FRAME_HZ] = 0u;   /* each slot's own rate */
+    servo_page_init(&s_servo);
 
     /*
      * Then what was saved, over the defaults.  This configures the outputs;
@@ -976,7 +973,7 @@ int main(void)
      */
     outputs_channels_from_bank(&s_outputs, s_state.channels);
     outputs_hw_init();
-    hw_apply(&s_state);
+    hw_apply();
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 
     heartbeat_init();
@@ -1069,6 +1066,8 @@ int main(void)
                     s_state.control[LINK_CT_ARM] != 0
                         && !s_dev.failsafe && s_beat.alive,
                     now);
+        /* The sweep's command for this pass, before the step slews to it. */
+        (void)servo_page_step(&s_servo, &s_outputs, now);
         outputs_step(&s_outputs, now);
         /* Straight after the step, so what reaches a pin is what the bank
          * has just decided rather than what it decided a pass ago. */

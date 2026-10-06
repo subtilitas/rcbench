@@ -30,6 +30,18 @@ typedef enum {
      * bound behind a bench it had just disarmed.
      */
     SERVO_CMD_DISARM,
+    /**
+     * Drive the surfaces through the curve in sweep_*, on the coprocessor.
+     * Repeated while it runs, which keeps it running; any other command
+     * stops it.
+     */
+    SERVO_CMD_SWEEP,
+    /**
+     * Stop a sweep and hold every surface where its output is, which only
+     * the coprocessor knows exactly.  Repeated while held; any other
+     * command ends it.
+     */
+    SERVO_CMD_HOLD,
 } servo_cmd_kind_t;
 
 typedef struct {
@@ -63,6 +75,14 @@ typedef struct {
      * first channel is a surface at it; see servo_screen_rate().
      */
     uint16_t         frame_hz;
+    /** SERVO_CMD_SWEEP's curve, as the SERVO page takes it (servo_sweep.h):
+     *  the curve, thousandths of a cycle a second, command units either
+     *  side of the centre and the hold at each end.  Zero otherwise. */
+    uint16_t         sweep_kind, sweep_mhz, sweep_span, sweep_dwell_ms;
+    /** This command ends a sweep the screen was running: a HOLD, a finger
+     *  on the dial, CENTRE.  The panel gives it way at once over sweep
+     *  writes already on the wire or queued. */
+    bool             ends_sweep;
 } servo_cmd_t;
 
 /** Drop the cached chrome, so the next frame repaints it. */
@@ -121,6 +141,33 @@ typedef enum {
  * SERVO_RATE_UNSENT for it.
  */
 void servo_screen_rate(servo_rate_state_t st, uint16_t hz);
+
+/** Whether the coprocessor can sweep: protocol 4.2 or later.  SWEEP is
+ *  offered only then. */
+void servo_screen_set_sweep(bool able);
+
+/** Whether a sweep is running, for the application and tests. */
+bool servo_screen_sweeping(void);
+
+/** The panel let go of what the screen was holding -- a HOLD the far end
+ *  had already ended -- and released the surfaces to their centre. */
+void servo_screen_released(void);
+
+/** Where the coprocessor's output was when it started a sweep. */
+typedef enum {
+    SERVO_SWEEP_FROM_REST,    /**< where it was held before the sweep      */
+    SERVO_SWEEP_FROM_HERE,    /**< carrying on: a changed curve            */
+    SERVO_SWEEP_FROM_FROZEN,  /**< where it froze when the sweep went
+                                   unrepeated, @p frozen_ago_ms ago        */
+} servo_sweep_from_t;
+
+/**
+ * The coprocessor started the sweep @p age_ms ago, its output starting from
+ * @p from: the horn is drawn along its curve from then, and without feedback
+ * from where that output was.
+ */
+void servo_screen_sweep_started(uint32_t age_ms, servo_sweep_from_t from,
+                                uint32_t frozen_ago_ms);
 
 /**
  * Set the commanded angle without a touch event.

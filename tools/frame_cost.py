@@ -79,6 +79,7 @@ SOURCES = [
     "shared/bench/telemetry_sim.c",
     "shared/bench/supply.c",
     "shared/servo/servo_sim.c",
+    "shared/servo/servo_sweep.c",
     "shared/sbus/sbus.c",
     "shared/outputs/outputs.c",
     "shared/outputs/outputs_pages.c",

@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "outputs.h"
+#include "servo_sweep.h"
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_keypad.h"
@@ -239,6 +240,7 @@ static struct {
 
     float    commanded_deg;
     float    shown_deg;    /**< what the horn is drawn at              */
+    float    shown_cmd;    /**< the same, as the far end's command     */
     float    measured_deg;
     float    current_a;
     bool     have_feedback;
@@ -268,7 +270,7 @@ static struct {
     uint32_t   arm_rev;
     uint32_t   drawn_arm[2];
 
-    gfx_rect_t arm_btn, centre_btn, release_btn, set_btn;
+    gfx_rect_t arm_btn, centre_btn, sweep_btn, release_btn, set_btn;
     ui_slider_t speed;
 
     /* The supply's live power, beside the servo it feeds. */
@@ -314,6 +316,21 @@ static struct {
     servo_rate_state_t rate_st;   /* what became of the rate rate_hz    */
     uint16_t           rate_hz;
 
+    /* The sweep: the same curve the coprocessor runs, on this screen's own
+     * clock, to draw the horn by. */
+    bool        sweep_able;      /* the coprocessor speaks 4.2 or later  */
+    bool        sweeping;
+    bool        sweep_ended;     /* the next command ends it             */
+    sweep_t     sw;
+    uint32_t    clock_ms;
+    float       clock_frac_ms;
+    /* Without feedback: where the output was when the sweep was asked for,
+     * and the last second and a half of where it has been drawn, to start
+     * from where the far end's output starts. */
+    float       sweep_from_cmd;
+    struct { uint32_t t; float cmd; } trail[64];
+    uint8_t     trail_head, trail_n;
+
     /* Changes to what a command carries -- the profile, the pulses, trim,
      * travel -- and how many there had been when ARM was asked for. */
     uint32_t profile_rev;
@@ -342,25 +359,35 @@ static float half_travel_us(bool below)
                  : (float)s.max_us - (float)s.centre_us;
 }
 
-static uint16_t deg_to_us(float deg)
+static float deg_to_us_f(float deg)
 {
     const float d = s.reverse ? -deg : deg;
     float us = (float)s.centre_us + (float)s.trim_us
                + d / 90.0f * half_travel_us(d < 0.0f);
     if (us < (float)s.min_us) { us = (float)s.min_us; }
     if (us > (float)s.max_us) { us = (float)s.max_us; }
-    return (uint16_t)(us + 0.5f);
+    return us;
 }
 
-static float us_to_deg(uint16_t us)
+static uint16_t deg_to_us(float deg)
 {
-    const float off = (float)us - (float)s.centre_us - (float)s.trim_us;
+    return (uint16_t)(deg_to_us_f(deg) + 0.5f);
+}
+
+static float us_to_deg_f(float us)
+{
+    const float off = us - (float)s.centre_us - (float)s.trim_us;
     const float half = half_travel_us(off < 0.0f);
     if (half <= 0.0f) {
         return 0.0f;
     }
     const float d = off * 90.0f / half;
     return s.reverse ? -d : d;
+}
+
+static float us_to_deg(uint16_t us)
+{
+    return us_to_deg_f((float)us);
 }
 
 /*
@@ -379,6 +406,23 @@ static void cmd_range(uint16_t *lo, uint16_t *hi)
     const unsigned half  = (below > above) ? below : above;
     *lo = (uint16_t)((unsigned)s.centre_us - half);
     *hi = (uint16_t)((unsigned)s.centre_us + half);
+}
+
+/* A pulse as the far end's command, 0..OUT_SPAN of the range a command
+ * carries, and back: the units it slews in. */
+static float us_to_cmd(float us)
+{
+    uint16_t lo, hi;
+    cmd_range(&lo, &hi);
+    return (hi > lo) ? (us - (float)lo) * (float)OUT_SPAN / (float)(hi - lo)
+                     : (float)OUT_SPAN / 2.0f;
+}
+
+static float cmd_to_us(float cmd)
+{
+    uint16_t lo, hi;
+    cmd_range(&lo, &hi);
+    return (float)lo + (float)(hi - lo) * cmd / (float)OUT_SPAN;
 }
 
 /*
@@ -488,7 +532,185 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
     s.pending.slew_per_s = slew_of(s.speed_pct);
     /* The grip only breathes while something is actually being held, so this
      * has to follow the command rather than the screen being open. */
-    s.driving = (kind == SERVO_CMD_POSITION || kind == SERVO_CMD_CENTRE);
+    s.driving = (kind == SERVO_CMD_POSITION || kind == SERVO_CMD_CENTRE
+                 || kind == SERVO_CMD_SWEEP || kind == SERVO_CMD_HOLD);
+    const bool sw = kind == SERVO_CMD_SWEEP;
+    s.pending.ends_sweep     = s.sweep_ended && !sw;
+    if (!sw) {
+        s.sweep_ended = false;
+    }
+    s.pending.sweep_kind     = sw ? (uint16_t)s.sw.cfg.kind : 0u;
+    s.pending.sweep_mhz      = sw ? s.sw.cfg.mhz : 0u;
+    s.pending.sweep_span     = sw ? s.sw.cfg.amplitude : 0u;
+    s.pending.sweep_dwell_ms = sw ? s.sw.cfg.dwell_ms : 0u;
+}
+
+/* ------------------------------------------------------------------- sweep */
+
+/*
+ * The sweep the TEST page describes, under the profile in force: CURVE,
+ * SPEED and DWELL as they are, and RANGE as a share of the travel the
+ * servo may make -- TRAVEL, and the nearer of PULSE MIN and MAX, so a sweep
+ * about the centre reaches neither end it may not.  In the command units of
+ * the range a command carries (cmd_range()), centred on PULSE CENTRE.  Trim
+ * is not applied: the sweep turns about the centre a release rests at.
+ */
+static sweep_cfg_t sweep_cfg_now(void)
+{
+    sweep_cfg_t c;
+    c.kind = (sweep_kind_t)(settings_get_int(SET_SERVO_CURVE) + 1);
+    float mhz = settings_get(SET_SERVO_TEST_HZ) * 1000.0f;
+    if (mhz < (float)SWEEP_MHZ_MIN) { mhz = (float)SWEEP_MHZ_MIN; }
+    if (mhz > (float)SWEEP_MHZ_MAX) { mhz = (float)SWEEP_MHZ_MAX; }
+    c.mhz = (uint16_t)(mhz + 0.5f);
+    uint16_t lo, hi;
+    cmd_range(&lo, &hi);
+    const float half = (float)(hi - lo) * 0.5f;
+    const float below = (float)s.centre_us - (float)s.min_us;
+    const float above = (float)s.max_us - (float)s.centre_us;
+    const float nearer = (below < above) ? below : above;
+    float amp = 0.0f;
+    if (half > 0.0f) {
+        amp = settings_get(SET_SERVO_TEST_RANGE) / 100.0f
+              * (s.travel_deg / 90.0f) * (nearer / half)
+              * (float)SWEEP_AMPLITUDE_MAX;
+    }
+    if (amp > (float)SWEEP_AMPLITUDE_MAX) { amp = (float)SWEEP_AMPLITUDE_MAX; }
+    c.amplitude = (uint16_t)(amp + 0.5f);
+    int dwell = settings_get_int(SET_SERVO_DWELL_MS);
+    if (dwell > (int)SWEEP_DWELL_MAX_MS) { dwell = (int)SWEEP_DWELL_MAX_MS; }
+    c.dwell_ms = (uint16_t)((dwell > 0) ? dwell : 0);
+    c.moves = 0u;     /* until it is stopped */
+    return c;
+}
+
+/* A command of the sweep, as the angle it puts the horn at. */
+static float sweep_deg(uint16_t cmd)
+{
+    uint16_t lo, hi;
+    cmd_range(&lo, &hi);
+    const float us = (float)lo + (float)(hi - lo) * (float)cmd
+                                 / (float)(2u * SWEEP_CENTRE);
+    return us_to_deg((uint16_t)(us + 0.5f));
+}
+
+static void stop_sweep(void)
+{
+    if (s.sweeping) {
+        s.sweeping    = false;
+        s.sweep_ended = true;
+        ++s.ctrl_rev;
+    }
+}
+
+/*
+ * HOLD: the sweep stops and every surface stays where its output had got
+ * to.  The coprocessor holds it there, because only it knows where that is:
+ * SPEED can leave the output well behind the curve, and without feedback the
+ * horn drawn here is an estimate.  The drawing stops where it was.
+ */
+static void hold_sweep(void)
+{
+    stop_sweep();
+    s.commanded_deg = s.shown_deg;
+    post(SERVO_CMD_HOLD, 0);
+    ++s.ctrl_rev;
+}
+
+/*
+ * Start the sweep, or carry on with a changed one from its beginning, as the
+ * coprocessor does.  Only on an armed bench and a coprocessor that sweeps:
+ * the far end refuses one otherwise.
+ */
+static void start_sweep(void)
+{
+    if (!s.armed || !s.sweep_able) {
+        return;
+    }
+    const sweep_cfg_t cfg = sweep_cfg_now();
+    if (!sweep_start(&s.sw, &cfg, s.clock_ms)) {
+        return;
+    }
+    s.sweep_from_cmd = s.shown_cmd;
+    s.sweeping = true;
+    post(SERVO_CMD_SWEEP, 0);
+    ++s.ctrl_rev;
+}
+
+static bool same_sweep(const sweep_cfg_t *a, const sweep_cfg_t *b)
+{
+    return a->kind == b->kind && a->mhz == b->mhz
+           && a->amplitude == b->amplitude && a->dwell_ms == b->dwell_ms;
+}
+
+bool servo_screen_sweeping(void) { return s.sweeping; }
+
+void servo_screen_released(void)
+{
+    /* Nothing held any more, and the horn goes to the centre the surfaces
+     * were released to. */
+    s.driving       = false;
+    s.commanded_deg = 0.0f;
+    ++s.ctrl_rev;
+}
+
+/* Where the horn was drawn @p ago_ms ago, from the trail; the oldest kept
+ * for anything older. */
+static float shown_cmd_ago(uint32_t ago_ms)
+{
+    const uint32_t when = s.clock_ms - ago_ms;
+    float best = s.shown_cmd;
+    for (unsigned k = 0; k < s.trail_n; ++k) {
+        const unsigned i = (s.trail_head + 64u - 1u - k) % 64u;
+        best = s.trail[i].cmd;
+        if ((int32_t)(s.trail[i].t - when) <= 0) {
+            break;
+        }
+    }
+    return best;
+}
+
+void servo_screen_sweep_started(uint32_t age_ms, servo_sweep_from_t from,
+                                uint32_t frozen_ago_ms)
+{
+    /*
+     * The far end's curve began age_ms ago: this one is drawn from then,
+     * rather than from the tap that asked for it a queue and a few
+     * transactions earlier -- and, with nothing measuring the output, from
+     * where that output was when it began: still where it was held, if the
+     * sweep was only now starting, or where it froze when the sweep went
+     * unrepeated.
+     */
+    if (!s.sweeping) {
+        return;
+    }
+    s.sw.start_ms = s.clock_ms - age_ms;
+    if (s.have_feedback) {
+        return;
+    }
+    if (from == SERVO_SWEEP_FROM_REST) {
+        s.shown_cmd = s.sweep_from_cmd;
+    } else if (from == SERVO_SWEEP_FROM_FROZEN) {
+        s.shown_cmd = shown_cmd_ago(frozen_ago_ms);
+    }
+    s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
+    ++s.ctrl_rev;
+}
+
+void servo_screen_set_sweep(bool able)
+{
+    if (able == s.sweep_able) {
+        return;
+    }
+    s.sweep_able = able;
+    if (!able && s.sweeping) {
+        /* The panel would go on repeating a sweep the coprocessor no longer
+         * takes: what it holds is ended, and the surfaces rest. */
+        stop_sweep();
+        post(SERVO_CMD_RELEASE, 0);
+    }
+    stop_sweep();
+    ++s.ctrl_rev;
 }
 
 /*
@@ -514,6 +736,27 @@ static void reissue(void)
         s.pending.frame_hz   = s.frame_hz;
         s.pending.slew_per_s = slew_of(s.speed_pct);
         s.arm_profile_rev    = s.profile_rev;
+        return;
+    }
+    if (s.sweeping) {
+        /*
+         * Said again under the profile now in force -- its range and its
+         * frame rate, which a changed type or rate moves even where the
+         * curve in command units stays the same.  A curve that did change
+         * is started over by tick(); one that did not carries on, here and
+         * at the far end.
+         */
+        const sweep_cfg_t now = sweep_cfg_now();
+        if (same_sweep(&now, &s.sw.cfg)) {
+            post(SERVO_CMD_SWEEP, 0);
+        } else {
+            /* The curve changed with the range -- MIN, CENTRE, MAX or
+             * TRAVEL move its amplitude -- so it starts over now, rather
+             * than going out once with the old amplitude under the new
+             * range before tick() catches it. */
+            stop_sweep();
+            start_sweep();
+        }
         return;
     }
     if (s.driving) {
@@ -560,6 +803,7 @@ void servo_screen_set_armed(bool armed)
      * now armed.
      */
     s.driving = false;
+    stop_sweep();
     if (armed) {
         ui_hold_reached(&s.arm);
         /*
@@ -627,6 +871,7 @@ void servo_screen_cancel_arm(void)
         s.driving = false;
         ++s.ctrl_rev;
     }
+    stop_sweep();
 }
 
 bool servo_screen_take(servo_cmd_t *out)
@@ -790,6 +1035,7 @@ static void reset(void)
     s.drawn_mask    = 0;
     s.travel_deg    = 90.0f;
     s.speed_pct     = 100;
+    s.shown_cmd     = (float)OUT_SPAN / 2.0f;
     /* STANDARD PWM at 50 Hz: what every restart starts at, whatever the
      * session before it used. */
     s.type      = 0;
@@ -806,10 +1052,12 @@ static void reset(void)
      * tap is how it is used.  The throttle's rule is the throttle's. */
     ui_slider_set_tap_to_set(&s.speed, true);
 
-    s.centre_btn  = (gfx_rect_t){ RC_X, 350, (int16_t)(RC_W / 2 - 5), 32 };
-    s.release_btn = (gfx_rect_t){ (int16_t)(RC_X + RC_W / 2 + 5), 350,
-                                  (int16_t)(RC_W / 2 - 5), 32 };
-    /* Full width and last, under the two that only shape what is commanded:
+    s.centre_btn  = (gfx_rect_t){ RC_X, 350, (int16_t)(RC_W / 3 - 4), 32 };
+    s.sweep_btn   = (gfx_rect_t){ (int16_t)(RC_X + RC_W / 3 + 2), 350,
+                                  (int16_t)(RC_W / 3 - 4), 32 };
+    s.release_btn = (gfx_rect_t){ (int16_t)(RC_X + 2 * (RC_W / 3) + 4), 350,
+                                  (int16_t)(RC_W - 2 * (RC_W / 3) - 4), 32 };
+    /* Full width and last, under the three that only shape what is commanded:
      * this is the one that decides whether anything is driven at all. */
     s.arm_btn     = (gfx_rect_t){ RC_X, 388, RC_W, 32 };
     s.set_btn     = (gfx_rect_t){ (int16_t)(RCARD_X + RCARD_W - 12 - SETB_W),
@@ -1357,16 +1605,26 @@ static void event(const touch_event_t *evt)
         }
         float deg;
         if (!s.ov_open && on_the_dial(px, py, &deg)) {
+            /* A finger on the dial takes the horn from a sweep. */
+            stop_sweep();
             s.dragging = true;
             s.drag_id  = evt->point.id;
             command(deg);
             return;
         }
         if (gfx_rect_contains(s.centre_btn, px, py)) {
+            stop_sweep();
             s.commanded_deg = 0.0f;
             post(SERVO_CMD_CENTRE, deg_to_us(0.0f));
             ++s.ctrl_rev;
+        } else if (gfx_rect_contains(s.sweep_btn, px, py)) {
+            if (s.sweeping) {
+                hold_sweep();
+            } else {
+                start_sweep();
+            }
         } else if (gfx_rect_contains(s.release_btn, px, py)) {
+            stop_sweep();
             post(SERVO_CMD_RELEASE, 0);
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.arm_btn, px, py)) {
@@ -1812,6 +2070,10 @@ static void draw_right(gfx_canvas_t *c, bool power)
 
     ui_button(c, s.centre_btn, "CENTRE", ui_theme_color(UI_C_ACCENT),
               false, true);
+    ui_button(c, s.sweep_btn, s.sweeping ? "HOLD" : "SWEEP",
+              s.sweeping ? ui_theme_color(UI_C_ACCENT)
+                         : ui_theme_color(UI_C_PANEL_HI),
+              false, s.sweeping || (s.armed && s.sweep_able));
     ui_button(c, s.release_btn, "RELEASE", ui_theme_color(UI_C_PANEL_HI),
               false, true);
     draw_arm(c);
@@ -1994,12 +2256,13 @@ static void draw_page(gfx_canvas_t *c)
         draw_rate_note(c, nx, OV_NOTE_Y + 2 * 18);
     } else if (s.tabs.selected == PG_TEST) {
         const char *const lines[] = {
-            "No automatic test runs in",
-            "this build; these settings",
-            "are kept for it.",
+            "SWEEP runs CURVE, SPEED,",
+            "RANGE and DWELL until",
+            "HOLD. No automatic test",
+            "runs in this build.",
         };
         draw_note(c, OV_X + 20 + OV_COL_W, OV_ROW0 + 5 * OV_PITCH + 6, lines,
-                  3);
+                  4);
     } else if (s.tabs.selected == PG_LIMITS) {
         const char *const lines[] = {
             "VOLTAGE MAX and CURRENT MAX are the SUPPLY",
@@ -2117,8 +2380,40 @@ static void draw_overlay(gfx_canvas_t *c)
     draw_page(c);
 }
 
+/* The trail servo_screen_sweep_started() reads where a frozen output was. */
+static void remember_shown(void)
+{
+    s.trail[s.trail_head].t   = s.clock_ms;
+    s.trail[s.trail_head].cmd = s.shown_cmd;
+    s.trail_head = (uint8_t)((s.trail_head + 1u) % 64u);
+    if (s.trail_n < 64u) {
+        ++s.trail_n;
+    }
+}
+
 static void tick(float dt_s)
 {
+    /* The screen's own clock, for the sweep it draws. */
+    if (dt_s > 0.0f) {
+        s.clock_frac_ms += dt_s * 1000.0f;
+        const uint32_t whole = (uint32_t)s.clock_frac_ms;
+        s.clock_ms += whole;
+        s.clock_frac_ms -= (float)whole;
+    }
+    if (s.sweeping) {
+        /* A sweep whose curve a setting or the profile changed starts over,
+         * as the coprocessor's does when it is written. */
+        const sweep_cfg_t now = sweep_cfg_now();
+        if (!same_sweep(&now, &s.sw.cfg)) {
+            stop_sweep();
+            start_sweep();
+        }
+        uint16_t cmd = (uint16_t)SWEEP_CENTRE;
+        if (s.sweeping && sweep_step(&s.sw, s.clock_ms, &cmd)) {
+            s.commanded_deg = clamp_travel(sweep_deg(cmd));
+            ++s.ctrl_rev;
+        }
+    }
     if (s.arm_down && !s.armed) {
         ++s.arm_rev;
         if (ui_hold_tick(&s.arm, dt_s)) {
@@ -2155,21 +2450,34 @@ static void tick(float dt_s)
      * because the measurement has already placed the arm.
      */
     if (s.have_feedback) {
+        s.shown_cmd = us_to_cmd(deg_to_us_f(s.shown_deg));
         return;
     }
-    const float full = 360.0f;   /* degrees per second at 100% */
-    const float step = full * (float)s.speed_pct / 100.0f * dt_s;
-    const float d = s.commanded_deg - s.shown_deg;
+    /*
+     * In the units the far end slews in -- its command across the range a
+     * command carries -- and at its rate, SPEED_FULL_SPAN_S at 100%.  An
+     * angle a second would not be: with CENTRE off the middle a degree is a
+     * different share of the command on either side, and HOLD, which keeps
+     * the servo where the horn is drawn, would keep it somewhere else.
+     */
+    const float step = (float)SPEED_FULL_SPAN_S * (float)s.speed_pct / 100.0f
+                       * dt_s;
+    const float want = us_to_cmd(deg_to_us_f(s.commanded_deg));
+    const float d = want - s.shown_cmd;
 
     if (fabsf(d) <= step) {
+        s.shown_cmd = want;
         if (s.shown_deg != s.commanded_deg) {
             s.shown_deg = s.commanded_deg;
             ++s.ctrl_rev;
         }
+        remember_shown();
         return;
     }
-    s.shown_deg += (d > 0.0f) ? step : -step;
+    s.shown_cmd += (d > 0.0f) ? step : -step;
+    s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
     ++s.ctrl_rev;
+    remember_shown();
 }
 
 /* Draw @p fn clipped to @p box. */
@@ -2293,6 +2601,7 @@ static void leave(void)
     s.armed = false;
     ui_hold_reset(&s.arm);
     s.arm_down = false;
+    s.sweeping = false;
     s.ov_open = false;
     close_panels();
     ui_tabs_cancel(&s.tabs);
@@ -2324,6 +2633,12 @@ static void cancel(void)
     if (s.pending.kind == SERVO_CMD_ARM) {
         s.pending.kind  = SERVO_CMD_NONE;
         s.arm_in_flight = false;
+    }
+    /* And a sweep: the event that went missing may be the HOLD that was to
+     * stop it, and the panel would go on repeating it.  Held where the
+     * output has got to, as HOLD holds it. */
+    if (s.sweeping) {
+        hold_sweep();
     }
     ui_slider_release(&s.speed);
     ui_hold_reset(&s.arm);
