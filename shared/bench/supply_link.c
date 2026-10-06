@@ -281,6 +281,12 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
     if ((f & LINK_SP_SET_STUCK) != 0u && (was & LINK_SP_SET_STUCK) == 0u) {
         s->events |= SUPPLY_LINK_EV_SET_STUCK;
     }
+    if ((f & LINK_SP_TRIPPED) != 0u && (was & LINK_SP_TRIPPED) == 0u) {
+        /* The module switched its output off: the ON is over here too, and
+         * comes back only with a new one. */
+        s->on = false;
+        s->events |= SUPPLY_LINK_EV_TRIPPED;
+    }
 }
 
 void supply_link_state(const supply_link_t *s, uint32_t now_ms,

@@ -416,7 +416,9 @@ spricht, oder solange die Messwerte der Page älter als 1500 ms sind; ein
 Ausgang, der an ist, wird dann abgeschaltet. Ebenfalls abgeschaltet, mit
 einer Zeile im Band, wird der Ausgang, wenn der Koprozessor ein ON abweist
 (kein Heartbeat) oder eines fallen lässt (sein Heartbeat blieb aus, oder er
-ist neu gestartet). Das Band sagt außerdem, wenn die Pins abgewiesen werden,
+ist neu gestartet). Schaltet das Modul den Ausgang selbst ab -- sein Überstromschutz oder sein
+Knopf --, wird er ebenfalls abgeschaltet und erst mit einem neuen Halten
+wieder eingeschaltet. Das Band sagt außerdem, wenn die Pins abgewiesen werden,
 wenn der Ausgang nicht schalten will und wenn die Sollwerte nicht übernommen
 werden. Eine Änderung der Pins oder der Baudrate wartet, bis der Ausgang aus
 ist; das Ein- oder Ausschalten des PD mini schaltet den Ausgang ab.

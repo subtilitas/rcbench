@@ -215,6 +215,7 @@ void supply_page_step(supply_page_t *p, bool beat_alive, pdmini_t *drv)
     if (st->stuck)  { flags |= LINK_SP_STUCK; }
     if (st->set_stuck) { flags |= LINK_SP_SET_STUCK; }
     if (pdmini_may_be_on(drv)) { flags |= LINK_SP_LIVE; }
+    if (st->tripped) { flags |= LINK_SP_TRIPPED; }
     flags |= (uint16_t)((st->mode & 3u) << 2);
     p->regs[LINK_SP_FLAGS]     = flags;
     p->regs[LINK_SP_V_MV]      = st->v_mv;

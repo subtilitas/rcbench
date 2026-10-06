@@ -370,6 +370,14 @@ TEST_CASE(stuck_is_reported_once)
     drv.st.set_stuck = true;
     far_step_and_read(true);
     CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_SET_STUCK);
+    /* And the module switching its output off ends the ON here. */
+    supply_link_command(&sl, true, 5000u, 500u);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+    drv.st.tripped = true;
+    far_step_and_read(true);
+    CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_TRIPPED);
+    CHECK(!sl.on);
     CHECK_EQ(supply_link_next(NULL, NULL, NULL, NULL), SUPPLY_LINK_W_NONE);
     CHECK_EQ(supply_link_events(NULL), 0u);
 }

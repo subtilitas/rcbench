@@ -4545,9 +4545,12 @@ static void supply_pump(void)
 static void supply_link_alerts(void)
 {
     const uint8_t ev = supply_link_events(&s_supply_link);
-    if ((ev & (SUPPLY_LINK_EV_ON_REFUSED | SUPPLY_LINK_EV_ON_LOST)) != 0u) {
+    if ((ev & (SUPPLY_LINK_EV_ON_REFUSED | SUPPLY_LINK_EV_ON_LOST
+               | SUPPLY_LINK_EV_TRIPPED)) != 0u) {
         supply_switch(false);
-        control_alert(((ev & SUPPLY_LINK_EV_ON_LOST) != 0u)
+        control_alert(((ev & SUPPLY_LINK_EV_TRIPPED) != 0u)
+                          ? "PD mini switched its output off -- output off"
+                      : ((ev & SUPPLY_LINK_EV_ON_LOST) != 0u)
                           ? "supply switched off at the coprocessor"
                           : "supply refused ON -- output off");
     }

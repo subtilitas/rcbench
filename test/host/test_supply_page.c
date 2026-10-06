@@ -263,6 +263,10 @@ TEST_CASE(the_step_passes_the_page_to_the_driver_and_back)
     CHECK_EQ(reg(LINK_SP_SAMPLES), (uint16_t)70000u);
     CHECK_EQ(reg(LINK_SP_ERRORS), 2u);
 
+    drv.st.tripped = true;                     /* switched off by the module */
+    supply_page_step(&pg, true, &drv);
+    CHECK((reg(LINK_SP_FLAGS) & LINK_SP_TRIPPED) != 0u);
+    drv.st.tripped = false;
     drv.st.stuck = true;                       /* the output would not switch */
     supply_page_step(&pg, true, &drv);
     CHECK_EQ(reg(LINK_SP_FLAGS) & (LINK_SP_STUCK | LINK_SP_SET_STUCK),

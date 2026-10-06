@@ -161,6 +161,7 @@ typedef struct {
     uint16_t vin_mv;
     bool     stuck;       /**< the output would not reach what was asked */
     bool     set_stuck;   /**< the set points would not take             */
+    bool     tripped;     /**< the module switched it off; held off      */
     uint32_t samples;     /**< readings of the output taken              */
     uint32_t errors;      /**< transactions that failed                  */
 } pdmini_status_t;
@@ -223,7 +224,8 @@ void pdmini_init(pdmini_t *d, const pdmini_io_t *io, uint32_t now_ms);
 /** What the output is to be.  Set points are clamped to the module's range;
  *  switching off is the first thing done whatever else is waiting.  An
  *  output switched off because its set points would not take stays off,
- *  whatever is asked, until an OFF is asked. */
+ *  whatever is asked, until an OFF is asked -- and so does one the module
+ *  switched off by itself while ON was asked (st.tripped). */
 void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma);
 
 /** Attached to a module whose state is not known -- wiring restored after
