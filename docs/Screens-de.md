@@ -225,6 +225,22 @@ nicht dafür gebaut ist -- und das Netzteil, das das Servo versorgt: Spannung,
 Strom und Leistung, abgelesen und über die letzten 13 s geplottet. Ohne Sample
 vom Netzteil stehen dort `--`.
 
+**Das Netzteil wird auch hier eingestellt und geschaltet.** Die Zeile SET
+unter dem Plot trägt die beiden Sollwerte von SUPPLY, Spannung und
+Strombegrenzung, und seinen Ausgangsschalter. Es sind die von SUPPLY, keine
+Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
+
+- Ein Tippen auf einen Sollwert öffnet das Keypad über der linken Karte. Ein
+  Wert außerhalb der Grenzen wird hineingeholt, wie auf SUPPLY.
+- Ist der Ausgang an, wartet ein getippter Sollwert auf die Rückfrage von
+  SUPPLY, OUTPUT IS ON, mit APPLY und CANCEL, außer SUPPLYs SETTINGS, CONFIRM
+  WHILE ON, KEYPAD ist aus. Die Rückfrage verschwindet unbeantwortet, wenn
+  der Ausgang ausgeht.
+- OUTPUT ON ist ein Halten über zwei Sekunden, OUTPUT OFF ein Tippen, wie auf
+  SUPPLY. STOP beendet ein laufendes Halten. Beim Verlassen von SERVO bleibt
+  der Ausgang, wie er ist; ein Druck auf OUTPUT OFF beim Verlassen wird als
+  das OFF gesendet, das er war.
+
 **SWEEP fährt das Servo eine Kurve ab**, auf dem Koprozessor, wo das Timing
 nicht vom Link abhängt: CURVE (Rechteck, Sinus oder Dreieck), SPEED (0,05 bis
 5 Zyklen je Sekunde) und DWELL (die Haltezeit an jedem Ende) von der

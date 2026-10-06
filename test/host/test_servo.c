@@ -1783,6 +1783,182 @@ TEST_CASE(feedback_is_shown_rather_than_travelled_to)
     free(first);
 }
 
+/* ------------------------------------------------- the supply, from SERVO */
+
+/* The SET row on the right card: the voltage, the current limit, and the
+ * output switch, in the body's coordinates. */
+#define SUP_ROW_Y   237
+#define SUP_V_X     579
+#define SUP_I_X     649
+#define SUP_OUT_X   733
+
+static bool supply_cmd(supply_cmd_t *out)
+{
+    supply_cmd_t junk;
+    return supply_screen_poll_cmd(out != NULL ? out : &junk);
+}
+
+/* A set point typed on SERVO is SUPPLY's set point, and the keypad that
+ * opened the overlay for it closes it again: the dial works at once. */
+TEST_CASE(a_set_point_typed_on_servo_is_the_supplys)
+{
+    fresh();
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("7.4");
+    CHECK(fabsf(supply_screen_set_v() - 7.4f) < 1e-4f);
+    tap(SUP_I_X, SUP_ROW_Y);
+    keys("0.5");
+    CHECK(fabsf(supply_screen_set_i() - 0.5f) < 1e-4f);
+    CHECK(!supply_cmd(NULL));               /* a level, not a command */
+
+    int x, y;
+    dial_at(40.0f, ARC_R - 30, &x, &y);
+    ev(x, y, TOUCH_EVENT_DOWN, 1);
+    ev(x, y, TOUCH_EVENT_UP, 1);
+    CHECK(servo_screen_commanded() != 1500);   /* no overlay in the way */
+
+    /* CANCEL leaves the set point as it was. */
+    tap(SUP_V_X, SUP_ROW_Y);
+    key(UI_KEY_CANCEL);
+    CHECK(fabsf(supply_screen_set_v() - 7.4f) < 1e-4f);
+}
+
+/* Typed outside the caps, it is snapped into them, as on SUPPLY. */
+TEST_CASE(a_set_point_typed_on_servo_keeps_to_the_caps)
+{
+    fresh();
+    settings_set(SET_SUPPLY_V_MAX, 8.4f);
+    supply_screen_limits_changed();
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("12");                             /* past the keypad's range */
+    CHECK(supply_screen_set_v() <= 8.4f + 1e-4f);
+}
+
+/* OUTPUT ON is SUPPLY's two-second hold; a short press asks for nothing. */
+TEST_CASE(output_on_from_servo_is_a_two_second_hold)
+{
+    fresh();
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 20; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_cmd(NULL));
+
+    supply_cmd_t c;
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 100; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK(supply_cmd(&c));
+    CHECK(c.on);
+    CHECK(!c.off);
+}
+
+/* On, the same switch is OUTPUT OFF and a tap: and a finger that slides
+ * off it before lifting asks for nothing. */
+TEST_CASE(output_off_from_servo_is_a_tap)
+{
+    fresh();
+    supply_screen_set_output(true);
+    scr->tick(0.025f);
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    ev(SUP_OUT_X, 100, TOUCH_EVENT_MOVE, 1);
+    ev(SUP_OUT_X, 100, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_cmd(NULL));
+
+    supply_cmd_t c;
+    tap(SUP_OUT_X, SUP_ROW_Y);
+    CHECK(supply_cmd(&c));
+    CHECK(c.off);
+    CHECK(!c.on);
+}
+
+/* STOP ends OUTPUT ON's hold here too: the rest of the two seconds switches
+ * nothing on. */
+TEST_CASE(stop_ends_the_output_hold_on_servo)
+{
+    fresh();
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 40; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    servo_screen_cancel_arm();
+    for (int i = 0; i < 80; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_cmd(NULL));
+}
+
+/* With the output live, a typed set point waits for SUPPLY's question:
+ * APPLY gives it to the supply, CANCEL drops it. */
+TEST_CASE(a_set_point_for_a_live_output_waits_for_apply)
+{
+    fresh();
+    supply_screen_set_output(true);
+    scr->tick(0.025f);
+    const float was = supply_screen_set_v();
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("5");
+    CHECK_EQ(supply_screen_set_v(), was);
+    tap(WARN_CANCEL_X, WARN_Y);
+    CHECK_EQ(supply_screen_set_v(), was);
+
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("5");
+    CHECK_EQ(supply_screen_set_v(), was);
+    tap(WARN_APPLY_X, WARN_Y);
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
+
+    /* Asked not to ask: it goes straight through. */
+    settings_set(SET_SUPPLY_CONFIRM_KEYS, 0.0f);
+    tap(SUP_I_X, SUP_ROW_Y);
+    keys("1");
+    CHECK(fabsf(supply_screen_set_i() - 1.0f) < 1e-4f);
+}
+
+/* The question is about a live output: once the output is off it goes,
+ * unanswered, and the change it held with it. */
+TEST_CASE(the_question_goes_with_the_live_output)
+{
+    fresh();
+    supply_screen_set_output(true);
+    scr->tick(0.025f);
+    const float was = supply_screen_set_v();
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("5");
+    supply_screen_set_output(false);
+    scr->tick(0.025f);
+    tap(WARN_APPLY_X, WARN_Y);              /* nothing there to press */
+    CHECK_EQ(supply_screen_set_v(), was);
+}
+
+/* A set point changed on SUPPLY, or a cap that moved it, is drawn here on
+ * the next frame, without a full repaint. */
+TEST_CASE(a_set_point_changed_on_supply_is_redrawn_here)
+{
+    fresh();
+    scr->render(&cv, 0);
+    gfx_color_t *before = malloc((size_t)W * H * sizeof(gfx_color_t));
+    memcpy(before, fb, (size_t)W * H * sizeof(gfx_color_t));
+    supply_screen_put(9.0f, 1.0f);
+    scr->tick(0.025f);
+    scr->render(&cv, 0);
+    int changed = 0;
+    for (int y = 0; y < H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            if (fb[(size_t)y * W + x] != before[(size_t)y * W + x]) {
+                CHECK(y >= SUP_ROW_Y - 13 && y < SUP_ROW_Y + 13);
+                ++changed;
+            }
+        }
+    }
+    CHECK(changed > 0);
+    free(before);
+}
+
 int main(void)
 {
     RUN(a_touch_on_the_dial_points_the_horn_there);
@@ -1844,5 +2020,13 @@ int main(void)
     RUN(the_horn_follows_the_curve_from_where_the_far_end_started_it);
     RUN(drags_and_samples_leave_both_buffers_as_a_full_redraw_would);
     RUN(a_cancelled_gesture_does_not_arm);
+    RUN(a_set_point_typed_on_servo_is_the_supplys);
+    RUN(a_set_point_typed_on_servo_keeps_to_the_caps);
+    RUN(output_on_from_servo_is_a_two_second_hold);
+    RUN(output_off_from_servo_is_a_tap);
+    RUN(stop_ends_the_output_hold_on_servo);
+    RUN(a_set_point_for_a_live_output_waits_for_apply);
+    RUN(the_question_goes_with_the_live_output);
+    RUN(a_set_point_changed_on_supply_is_redrawn_here);
     return test_summary("servo");
 }

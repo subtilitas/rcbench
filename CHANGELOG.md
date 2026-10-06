@@ -8,6 +8,11 @@ history is in git.
 
 ### Added
 
+- **SERVO sets and switches the supply.** A SET line under the supply plot
+  holds SUPPLY's voltage and current limit set points, each opening the
+  keypad on a tap, and OUTPUT ON (two-second hold) and OFF (tap). They are
+  SUPPLY's own set points and switch, with its caps and its question before
+  a live output changes. The supply plot is 48 px high, from 72 px.
 - **ESC programming profiles.** 72 profiles describe how 451 ESC
   (electronic speed controller) models are programmed through their
   throttle-stick menus: the entry gesture, how a number is sounded, and the

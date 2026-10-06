@@ -619,6 +619,27 @@ supply_limits_t supply_screen_limits(void)
     return s.lim;
 }
 
+supply_caps_t supply_screen_caps(void) { return s.eff; }
+
+bool supply_screen_typed_asks(void) { return confirm_needed(FROM_KEYPAD); }
+
+void supply_screen_put(float v, float i)
+{
+    s.cv = supply_snap(v, s.eff.v_min, s.eff.v_max, s.eff.v_step);
+    s.ci = supply_snap(i, s.eff.i_min, s.eff.i_max, s.eff.i_step);
+    /* The sliders show the set points.  This screen's own question is
+     * closed whenever it is left, so none is open while another types. */
+    ui_slider_set(&s.v_slider, s.cv);
+    ui_slider_set(&s.i_slider, s.ci);
+    ++s.set_rev;
+}
+
+bool supply_screen_output_on(void) { return s.on; }
+
+void supply_screen_ask_on(void) { post_on(); }
+
+void supply_screen_ask_off(void) { post_off(); }
+
 void supply_screen_limits_changed(void)
 {
     refresh_limits();
