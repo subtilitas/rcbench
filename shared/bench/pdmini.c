@@ -136,6 +136,13 @@ void pdmini_restored(pdmini_t *d)
     }
 }
 
+void pdmini_reset(pdmini_t *d)
+{
+    if (d != NULL) {
+        d->reset_owed = true;
+    }
+}
+
 void pdmini_want_off(pdmini_t *d)
 {
     if (d == NULL) {
@@ -196,6 +203,18 @@ static void finish(pdmini_t *d, uint32_t now, bool ok)
     }
     d->phase = PD_GAP;
     d->t     = now;
+    if (d->cmd == PDMINI_SYSTEM_RESET) {
+        /* Restarting: nothing it said holds, and it is asked who it is
+         * once it has had PDMINI_IDENTIFY_MS to come back. */
+        d->identified    = false;
+        d->st.online     = false;
+        d->state_known   = false;
+        d->slot          = -1;
+        d->data_known    = false;
+        d->en_pending    = false;
+        d->data_pending  = false;
+        d->last_identify = now;
+    }
     if (ok) {
         d->fails = 0u;
         return;
@@ -598,6 +617,14 @@ static bool next_job(pdmini_t *d, uint32_t now)
     /* An OFF first, before anything else waiting. */
     if (!d->en_pending && d->st.output && !d->want_output
         && write_en(d, now)) {
+        return true;
+    }
+    /* A restart asked for, with the output read off: before anything else
+     * is written to a module that is about to forget it. */
+    if (d->reset_owed && !d->want_output && !d->st.output && !d->en_pending) {
+        d->reset_owed = false;
+        const uint8_t req[1] = { PDMINI_SYSTEM_RESET };
+        start(d, now, req, 1u, true);
         return true;
     }
     /*

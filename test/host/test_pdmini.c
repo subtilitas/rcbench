@@ -58,6 +58,9 @@ typedef struct {
     uint32_t byte_gap;        /* ms between reply bytes, 0 for 1         */
     uint32_t self_off_ms;     /* goes off by itself this long after any
                                  OUTPUT_EN that left it on, 0 never      */
+    unsigned resets;          /* SYSTEM_RESET taken                       */
+    bool     restarting;      /* silent until back_at, after a reset      */
+    uint32_t back_at;
     uint32_t self_on_ms;      /* comes on by itself this long after an
                                  OUTPUT_EN, its AUTO OUT or button; 0 never */
     uint32_t last_en_ms;
@@ -118,6 +121,18 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
         return;
     }
     ++m.reads[p[0]];
+    if (p[0] == PDMINI_SYSTEM_RESET) {
+        ++m.resets;
+        m.output  = false;
+        m.pending = false;
+        m.restarting = true;
+        m.back_at    = now + 600u;
+        return;
+    }
+    if (m.restarting && (int32_t)(now - m.back_at) < 0) {
+        return;
+    }
+    m.restarting = false;
     if (m.no_state && p[0] == PDMINI_READ_STATE) {
         return;
     }
@@ -1426,6 +1441,30 @@ TEST_CASE(an_on_after_a_pause_reads_the_input_first)
     CHECK_EQ(m.on_at_mv, 6000u - PDMINI_HEADROOM_MV);
 }
 
+/* A restart waits for the output to be off, goes alone, and the module is
+ * asked who it is again once it is back. */
+TEST_CASE(a_restart_goes_with_the_output_off_and_is_followed)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(m.output);
+    pdmini_reset(&d);
+    run(500u, false);
+    CHECK_EQ(m.resets, 0u);                    /* ON still asked */
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(800u, false);
+    CHECK(!m.output);
+    CHECK_EQ(m.resets, 1u);
+    const unsigned asked = m.reads[PDMINI_WHO_AM_I];
+    run(2500u, false);
+    CHECK(m.reads[PDMINI_WHO_AM_I] > asked);
+    CHECK(pdmini_status(&d)->online);
+    CHECK_EQ(m.resets, 1u);
+    pdmini_reset(NULL);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -1497,6 +1536,7 @@ int main(void)
     RUN(nothing_is_switched_on_before_the_input_is_read);
     RUN(a_dragged_slider_does_not_starve_the_input);
     RUN(an_on_after_a_pause_reads_the_input_first);
+    RUN(a_restart_goes_with_the_output_off_and_is_followed);
     RUN(an_argument_outlasts_a_module_that_comes_back);
     RUN(an_output_that_came_on_by_itself_is_not_relied_on);
     RUN(an_on_sent_and_unsettled_is_owed_an_off);

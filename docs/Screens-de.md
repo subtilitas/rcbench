@@ -476,6 +476,13 @@ gesetzt, schaltet er eine Last ab, die zu lange zu viel zieht.
 
 Nach einem Neustart ist der Ausgang aus, welche Startwerte auch gelten.
 
+Ist der PD mini das Netzteil, bietet SETTINGS außerdem RESET PD MINI. Das
+schaltet den Ausgang ab und startet das Modul neu (sein Befehl
+SYSTEM_RESET), für ein Modul, das ERR zeigt -- ein Sollwert über seinem
+Eingang bringt es dorthin --, ohne es abzustecken. Etwa 1 s später wird es
+wieder gefragt, wer es ist. Ob ein Neustart jedes ERR löst, ist nicht
+gemessen.
+
 ### Das Log
 
 Ein Lauf ist ein Einschalten des Ausgangs. Der Plot leert sich, wenn der

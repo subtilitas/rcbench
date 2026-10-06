@@ -99,6 +99,7 @@ extern "C" {
 enum {
     PDMINI_OUTPUT_EN    = 0x02,
     PDMINI_OUTPUT_DATA  = 0x04,
+    PDMINI_SYSTEM_RESET = 0x40,
     PDMINI_WHO_AM_I     = 0x81,
     PDMINI_READ_STATE   = 0x82,
     PDMINI_READ_ID      = 0x83,
@@ -197,6 +198,7 @@ typedef struct {
     bool     on_seen;        /* on_value seen to work once               */
     bool     on_confirmed;   /* and twice: relied on                     */
     bool     on_sent;        /* an ON went out, not yet settled by a read */
+    bool     reset_owed;     /* SYSTEM_RESET asked, not yet sent         */
     bool     held_off;       /* switched off for set points that would not
                                 take; until an OFF is asked             */
     bool     off_owed;       /* gone while on: an OFF is sent blind      */
@@ -243,6 +245,11 @@ void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma);
  *  until a state read shows it off, or until PDMINI_ABSENT_TRIES WHO_AM_I
  *  in a row go unanswered by a byte. */
 void pdmini_restored(pdmini_t *d);
+
+/** Restart the module with SYSTEM_RESET: sent once it has answered, its
+ *  output reads off and nothing else waits; it is then asked who it is
+ *  again, PDMINI_IDENTIFY_MS on. */
+void pdmini_reset(pdmini_t *d);
 
 /** The output off, and no set points asked: the module's are left as
  *  they are until pdmini_want() names some. */

@@ -108,7 +108,8 @@ static void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 #define TEXT_I_Y  367
 #define APPLY_X   151
 #define DISCARD_X 407
-#define ASK_Y     365          /* inside both, and on no control without them */
+#define ASK_Y     365
+#define MODRESET_Y 342         /* RESET PD MINI, left column, SETTINGS */          /* inside both, and on no control without them */
 
 #define TICK_S     0.05f
 #define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)
@@ -1204,8 +1205,31 @@ TEST_CASE(a_screen_without_a_sample_draws)
     CHECK(!supply_screen_poll_cmd(NULL));
 }
 
+/* SETTINGS offers RESET PD MINI while the PD mini is the supply, and not
+ * while the panel runs its model; it asks for the restart with the output
+ * off. */
+TEST_CASE(reset_pd_mini_is_offered_only_for_the_module)
+{
+    fresh();
+    supply_screen_set_model(true);
+    tap(SETB_X, SETB_Y);
+    tap(ROW_L_X, MODRESET_Y);
+    supply_cmd_t c;
+    CHECK(!supply_screen_poll_cmd(&c));
+    tap(SETB_X, SETB_Y);                     /* closed again */
+
+    supply_screen_set_model(false);
+    tap(SETB_X, SETB_Y);
+    tap(ROW_L_X, MODRESET_Y);
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.module_reset);
+    CHECK(c.off);
+    CHECK(!c.on);
+}
+
 int main(void)
 {
+    RUN(reset_pd_mini_is_offered_only_for_the_module);
     RUN(the_output_comes_on_with_a_hold_and_only_once);
     RUN(a_short_press_on_output_on_does_nothing);
     RUN(a_finger_that_leaves_the_switch_switches_nothing);

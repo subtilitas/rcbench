@@ -441,6 +441,12 @@ the limit to switch off a load that draws too much for too long.
 
 The output stays off at a restart, whatever the start values.
 
+With the PD mini as the supply, SETTINGS also offers RESET PD MINI. It
+switches the output off and restarts the module (its SYSTEM_RESET command),
+for a module that shows ERR -- a set point over its input puts it there --
+without unplugging it. The module is asked who it is again about 1 s later.
+Whether a restart clears every ERR is not measured.
+
 ### The log
 
 A run is one switch-on of the output. The plot clears when the output comes on

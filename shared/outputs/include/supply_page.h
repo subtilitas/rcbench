@@ -36,6 +36,7 @@ uint32_t supply_page_baud(uint16_t setting);
 typedef struct {
     uint16_t regs[LINK_SP_COUNT];
     bool     commanded;   /**< set points written since init          */
+    bool     reset_owed;  /**< RESET written, not yet passed on       */
     uint8_t  scan;        /**< the rate being tried under AUTO, 0..6   */
     uint16_t scan_seen;   /**< the driver's who_failed when last looked */
 } supply_page_t;

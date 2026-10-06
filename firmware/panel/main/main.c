@@ -3033,6 +3033,10 @@ static void apply_supply_cmd(const panel_cmd_t *pc)
     if (c->reset) {
         supply_reset_peaks(&s_supply);
     }
+    if (c->module_reset && s_supply_is_real) {
+        supply_switch(false);
+        supply_link_reset(&s_supply_link);
+    }
     if (c->off) {
         supply_switch(false);
     } else if (c->on) {

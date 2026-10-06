@@ -48,6 +48,7 @@ typedef struct {
     bool on;           /**< switch the output on                  */
     bool off;          /**< switch it off                         */
     bool reset;        /**< start the extremes again              */
+    bool module_reset; /**< restart the PD mini                   */
 } supply_cmd_t;
 
 /** One sample, for the readouts and, while the output is on, the plot. */

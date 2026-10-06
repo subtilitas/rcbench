@@ -17,6 +17,14 @@ history is in git.
 
 ### Added
 
+- **RESET PD MINI.** SUPPLY's SETTINGS offers it while the PD mini is the
+  supply: the output goes off and the module is sent SYSTEM_RESET, for a
+  module in ERR, without unplugging it. SUPPLY register 17 (protocol 4.4)
+  carries it; the driver sends it once the output reads off and asks the
+  module who it is again about 1 s later.
+
+### Added
+
 - **PD mini baud AUTO.** With "PD mini baud" at AUTO, the default, the
   coprocessor finds the module's UART rate itself: after every WHO_AM_I
   without a valid answer it tries the next of the 7 rates, starting at

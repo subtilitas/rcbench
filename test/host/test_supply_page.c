@@ -248,6 +248,31 @@ TEST_CASE(auto_baud_tries_each_rate_and_holds_the_one_that_answers)
     CHECK_EQ(supply_page_uart_baud(NULL), 0u);
 }
 
+/* RESET is taken alone, as 1, with the output asked off and the supply
+ * wired, and passed to the driver at the next step. */
+TEST_CASE(reset_is_taken_alone_with_the_output_off)
+{
+    fresh();
+    pdmini_t drv;
+    pdmini_init(&drv, NULL, 0u);
+    const uint16_t one = 1u;
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_RESET, 1u, &one, &o, true),
+             LINK_NACK_BAD_VALUE);                     /* not wired */
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
+    const uint16_t two = 2u;
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_RESET, 1u, &two, &o, true),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(command(1u, 5000u, 500u, true), 0u);
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_RESET, 1u, &one, &o, true),
+             LINK_NACK_BAD_VALUE);                     /* output asked on */
+    CHECK_EQ(command(0u, 5000u, 500u, true), 0u);
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_RESET, 1u, &one, &o, true), 0u);
+    CHECK(!drv.reset_owed);
+    supply_page_step(&pg, true, &drv);
+    CHECK(drv.reset_owed);
+    CHECK_EQ(reg(LINK_SP_RESET), 0u);
+}
+
 TEST_CASE(read_only_registers_and_the_page_end_are_refused)
 {
     fresh();
@@ -331,6 +356,7 @@ int main(void)
     RUN(low_set_points_read_back_as_the_module_takes_them);
     RUN(no_set_points_go_out_before_a_command);
     RUN(auto_baud_tries_each_rate_and_holds_the_one_that_answers);
+    RUN(reset_is_taken_alone_with_the_output_off);
     RUN(read_only_registers_and_the_page_end_are_refused);
     RUN(the_step_passes_the_page_to_the_driver_and_back);
     return test_summary("supply_page");
