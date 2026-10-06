@@ -2269,6 +2269,25 @@ TEST_CASE(stop_lets_go_of_an_apply_press)
     CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
 }
 
+/* The output reported off and on again between two frames: the question
+ * was about the run that ended, and APPLY gives the new run nothing. */
+TEST_CASE(a_question_does_not_outlive_its_run)
+{
+    fresh();
+    supply_screen_put(5.0f, 1.0f);
+    supply_screen_set_output(true);
+    scr->tick(0.025f);
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("5.5");
+    supply_screen_set_output(false);           /* no tick between */
+    supply_screen_set_output(true);
+    tap(WARN_APPLY_X, WARN_Y);
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
+    scr->tick(0.025f);                          /* and the question is gone */
+    tap(WARN_APPLY_X, WARN_Y);
+    CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
+}
+
 int main(void)
 {
     RUN(a_touch_on_the_dial_points_the_horn_there);
@@ -2351,5 +2370,6 @@ int main(void)
     RUN(the_set_lines_gestures_draw_and_end_as_they_should);
     RUN(stop_ends_the_warning_holds);
     RUN(stop_lets_go_of_an_apply_press);
+    RUN(a_question_does_not_outlive_its_run);
     return test_summary("servo");
 }

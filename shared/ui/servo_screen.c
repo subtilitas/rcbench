@@ -315,6 +315,7 @@ static struct {
         bool      open;
         bool      hv;
         int       target;    /**< KT_SUP_V or KT_SUP_I: what was typed */
+        uint32_t  off_count; /**< supply_screen_off_count() at asking  */
         float     v, i;
         ui_hold_t hold;
         bool      down;
@@ -1303,9 +1304,10 @@ static void set_point_typed(int target, float typed)
     const bool hv = v > STD_SERVO_V_MAX + 0.001f
                     && supply_screen_set_v() <= STD_SERVO_V_MAX + 0.001f;
     if (hv || supply_screen_typed_asks()) {
-        s.ask.open   = true;
-        s.ask.hv     = hv;
-        s.ask.target = target;
+        s.ask.open      = true;
+        s.ask.hv        = hv;
+        s.ask.target    = target;
+        s.ask.off_count = supply_screen_off_count();
         s.ask.v      = v;
         s.ask.i      = i;
         s.ask.down = false;
@@ -1315,6 +1317,15 @@ static void set_point_typed(int target, float typed)
     }
     supply_screen_put(v, i);
     close_alone();
+}
+
+/* Whether the question about a live output still stands: the output on
+ * or coming, and not gone off since it was asked -- an OFF and a new ON
+ * between two frames start a run the question was not about. */
+static bool ask_stands(void)
+{
+    return supply_screen_output_live()
+           && supply_screen_off_count() == s.ask.off_count;
 }
 
 /* The question answered with APPLY, or the HV warning's hold completed. */
@@ -1759,7 +1770,7 @@ static void ov_rest(const touch_event_t *evt)
         /* Only while the question still stands: a release drained in the
          * frame that took the live output away must not apply it. */
         if (gfx_rect_contains(warn_apply_rect(), x, y) && s.ask.open
-            && (s.ask.hv || supply_screen_output_live())) {
+            && (s.ask.hv || ask_stands())) {
             ask_apply();
         }
         break;
@@ -2887,7 +2898,7 @@ static void tick(float dt_s)
             ++s.ctrl_rev;               /* the question shows the value */
         }
     }
-    if (s.ask.open && !s.ask.hv && !supply_screen_output_live()) {
+    if (s.ask.open && !s.ask.hv && !ask_stands()) {
         s.ask.open = false;
         if (s.ov_pressed == OP_ASK_APPLY || s.ov_pressed == OP_ASK_CANCEL) {
             ov_let_go();                /* its buttons have gone with it */

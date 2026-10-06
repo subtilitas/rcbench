@@ -118,6 +118,11 @@ bool supply_screen_output_on(void);
  *  point change is asked about. */
 bool supply_screen_output_live(void);
 
+/** How many times the output has been reported going off.  A question
+ *  about a live output records it and stands only while it is unchanged:
+ *  an OFF and a new ON between two frames end the run it was about. */
+uint32_t supply_screen_off_count(void);
+
 /** OUTPUT ON's hold completed elsewhere, as it does here: an ON is posted
  *  unless an OFF already is. */
 void supply_screen_ask_on(void);

@@ -178,6 +178,7 @@ static struct {
      * is treated as live from the moment it is asked; see confirm_needed(). */
     bool            on_asked;
     bool            confirm_open;
+    uint32_t        off_count;      /* reported ON-to-OFF edges */
     /* Whether OUTPUT's press began on a live output: an OFF tap rather
      * than an ON hold, whatever the output does before it lifts. */
     bool            press_on;
@@ -493,6 +494,9 @@ void supply_screen_set_output(bool on)
     }
     if (s.on != on) {
         s.on = on;
+        if (!on) {
+            ++s.off_count;
+        }
         if (on) {
             ui_hold_reached(&s.hold);
         } else if (ui_hold_left(&s.hold) && s.pressed == P_OUTPUT) {
@@ -640,6 +644,8 @@ void supply_screen_put(float v, float i)
 bool supply_screen_output_on(void) { return s.on; }
 
 bool supply_screen_output_live(void) { return s.on || s.on_asked; }
+
+uint32_t supply_screen_off_count(void) { return s.off_count; }
 
 void supply_screen_ask_on(void) { post_on(); }
 
