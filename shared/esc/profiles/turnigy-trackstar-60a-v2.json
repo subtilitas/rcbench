@@ -1,0 +1,303 @@
+{
+  "id": "turnigy-trackstar-60a-v2",
+  "brand": "HobbyKing/Turnigy",
+  "family": "Trackstar 60A V2 car ESC, yes/no menu",
+  "models": [
+    {
+      "name": "Trackstar 60A V2",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 60,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Turnigy_Trackstar_optimus.pdf p.2"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Turnigy_Trackstar_optimus.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://www.optimusdigital.ro/index.php?controller=attachment&id_attachment=522"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "The ESC has a power switch; the bench can leave it on and switch the supply. Throttle positions are full throttle (yes), neutral and full brake (no), so the signal needs three positions.",
+  "scheme": {
+    "type": "yes_no",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "One ring, a few seconds later 4 rings (calibration ready), a few seconds later 4 rings (programming mode)",
+      "steps": [
+        "Plug in the battery, hold full throttle",
+        "Switch the ESC on: 1 ring",
+        "Wait a few seconds: 4 rings (calibration)",
+        "Keep holding full throttle, wait a few seconds more: 4 rings = programming mode",
+        "Let the trigger go to neutral"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "Each question is two beep groups: the first group is the setting number, the second is the value number, for example Beep-Pause-Beep for setting 1 value 1. The ESC asks values one at a time."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": 3000,
+      "description": "Answer yes: hold full throttle for about 3000 ms until a confirmation tone sounds, then release to neutral. Answer no: hold full brake for about 3000 ms, then release. A yes stores that value and skips to the next setting; a no moves to the next value. No on all values keeps the stored value."
+    },
+    "skip": {
+      "throttle": "min",
+      "description": "No (full brake, about 3000 ms) moves to the next value of the same setting."
+    },
+    "confirm_signal": "A beeping tone after each answer is accepted; then release to neutral.",
+    "exit": "Disconnect power at any time; settings already answered are kept.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": null,
+    "description": "Hold full throttle at power-on to reach programming mode. The ESC beeps setting number then value number. Answer yes with full throttle or no with full brake, held about 3 s; a confirmation tone follows; release to neutral for the next question."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake / reverse type",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "reverse lockout",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "forward / brake only"
+        },
+        {
+          "number": 3,
+          "name": "forward / brake / reverse"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 2,
+      "name": "Brake amount",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "25 %"
+        },
+        {
+          "number": 2,
+          "name": "50 %",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "75 %"
+        },
+        {
+          "number": 4,
+          "name": "100 %"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 3,
+      "name": "Reverse amount",
+      "key": "reverse_amount",
+      "values": [
+        {
+          "number": 1,
+          "name": "25 %"
+        },
+        {
+          "number": 2,
+          "name": "50 %",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "75 %"
+        },
+        {
+          "number": 4,
+          "name": "100 %"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 4,
+      "name": "Punch control",
+      "key": "punch_control",
+      "values": [
+        {
+          "number": 1,
+          "name": "high"
+        },
+        {
+          "number": 2,
+          "name": "medium"
+        },
+        {
+          "number": 3,
+          "name": "low"
+        },
+        {
+          "number": 4,
+          "name": "lowest"
+        },
+        {
+          "number": 5,
+          "name": "disable",
+          "default": true
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 5,
+      "name": "Drag brake",
+      "key": "drag_brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "disable",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "10 %"
+        },
+        {
+          "number": 3,
+          "name": "20 %"
+        },
+        {
+          "number": 4,
+          "name": "30 %"
+        },
+        {
+          "number": 5,
+          "name": "40 %"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 6,
+      "name": "Throttle dead band",
+      "key": "dead_band",
+      "values": [
+        {
+          "number": 1,
+          "name": "large (0.1500 ms)"
+        },
+        {
+          "number": 2,
+          "name": "normal (0.1000 ms)",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "small (0.0750 ms)"
+        },
+        {
+          "number": 4,
+          "name": "very small (0.0500 ms)"
+        },
+        {
+          "number": 5,
+          "name": "smallest (0.0250 ms)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 7,
+      "name": "Voltage cutoff",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "none"
+        },
+        {
+          "number": 2,
+          "name": "auto LiPo",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "5 V"
+        },
+        {
+          "number": 4,
+          "name": "6 V"
+        },
+        {
+          "number": 5,
+          "name": "9 V"
+        },
+        {
+          "number": 6,
+          "name": "12 V"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    },
+    {
+      "number": 8,
+      "name": "Motor timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "lowest"
+        },
+        {
+          "number": 2,
+          "name": "normal",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "highest"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    }
+  ],
+  "unknowns": [
+    "Wait times between the ring groups ('a few seconds') are not given in ms.",
+    "Beep length and gap are not stated.",
+    "The beep encoding of setting and value numbers above 4 (long beeps?) is not stated; Beep-Pause-Beep is the only example.",
+    "Hold time of about 3 s is approximate.",
+    "Tone after the last setting (8) is not described."
+  ],
+  "notes": [
+    "The manual has 2 PDF pages and prints 5 page numbers; page 2 of the PDF holds the programming steps and the feature table."
+  ],
+  "schema": 1,
+  "verified": false
+}

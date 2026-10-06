@@ -1,0 +1,328 @@
+{
+  "id": "sunrise-pro",
+  "brand": "Sunrise",
+  "family": "Sunrise PRO, grouped-beep menu",
+  "models": [
+    {
+      "name": "Sunrise PRO 10A LBEC",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 10,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO 20A LBEC",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 20,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO 20A SBEC",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 20,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO 25A LBEC",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 25,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO 25A SBEC",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 25,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO 30A LBEC",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 30,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO 30A SBEC",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 30,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO 40A LBEC",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 40,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO 40A SBEC",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 40,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO 40A OPTO",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 40,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO 60A SBEC",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 60,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO 60A OPTO",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 60,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO 75A SBEC",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 75,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO 75A OPTO",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 75,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO 110A SBEC",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 110,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO 110A OPTO",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 110,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO HV 100A OPTO",
+      "cells_min": 3,
+      "cells_max": 10,
+      "v_min_mv": null,
+      "v_max_mv": 42000,
+      "current_a": 100,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    },
+    {
+      "name": "Sunrise PRO HV 180A OPTO",
+      "cells_min": 3,
+      "cells_max": 10,
+      "v_min_mv": null,
+      "v_max_mv": 42000,
+      "current_a": 180,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Sunrise_PRO.pdf p.1"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Sunrise_PRO.pdf",
+      "pages": "2-4",
+      "language": "en",
+      "url": "https://www.f3x.de/media/pdf/dd/93/94/Electronic-Speed-Controller-Users-Manual.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "The brake gesture is unclear in the manual; battery type and timing are clear.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "4 beeps after about 5 s",
+      "steps": [
+        "Transmitter on, throttle at max",
+        "Connect battery",
+        "Wait about 5000 ms: 4 beeps, programming mode entered"
+      ]
+    },
+    "announce": {
+      "what": "value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": 5,
+      "description": "The ESC plays 5 single beeps, then 5 double beeps, 5 triple, 5 quad, 5 penta beeps, and repeats. A group of N beeps (repeated 5 times) is one choice: groups 1-3 are battery types, groups 4-5 are timing."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Move the throttle to min while the group of the wanted choice plays; the mode is saved. Whether the stick may be held for the whole group of 5 is not stated."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Keep the throttle at max."
+    },
+    "confirm_signal": "Not stated; the manual says the mode is saved and the battery may be disconnected.",
+    "exit": "Disconnect the battery after the mode is saved. One parameter per power cycle.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": null,
+    "description": "Throttle max, battery on, wait 5 s for 4 beeps. Groups of 5 single, 5 double, 5 triple, 5 quad and 5 penta beeps loop. Throttle to min during the group of the wanted choice saves it. One parameter per power cycle; other parameters need the program card."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "Li-xx (1 beep group)"
+        },
+        {
+          "number": 2,
+          "name": "NiCd / NiMH (2 beep group)"
+        },
+        {
+          "number": 3,
+          "name": "LiFe (3 beep group)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2-3"
+    },
+    {
+      "number": 2,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 4,
+          "name": "automatic (4 beep group)"
+        },
+        {
+          "number": 5,
+          "name": "high (5 beep group)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2-3"
+    }
+  ],
+  "unknowns": [
+    "Beep duration, gap and loop length in ms are not stated.",
+    "The order and number of tones in the loop are given only by the chart; each tone repeats 4 times in the chart notation.",
+    "Whether the throttle must stay at max between tones is not stated beyond 'if left at max beyond 5 s the sequence starts'.",
+    "Chart tone glyphs are text approximations; pitch information is not available.",
+    "Which group sets the brake is unclear: the text says 'the first quad group' toggles brake off/medium, but quad beeps are also the automatic-timing choice.",
+    "Duration of the 5 s wait is 'about'.",
+    "Confirmation tone after saving is not described.",
+    "Value numbers of items 1 and 2 are the beep counts of the group (1-3 and 4-5)."
+  ],
+  "notes": [
+    "Sunrise_PRO.pdf lists more parameters (acceleration, cutoff voltage and mode, rotation direction) that are set only with the program card.",
+    "Factory defaults: brake on medium, timing automatic, acceleration medium, battery Li-ion/Li-polymer, cutoff medium, cutoff mode slow down, rotation rightward. The brake default conflicts with the stick description 'change from Brake-off into Brake-Medium'.",
+    "Brake is not an item here: the manual toggles it with 'the first quad group', which is also the automatic-timing choice, so no beep count can be given for it."
+  ],
+  "schema": 1,
+  "verified": false
+}

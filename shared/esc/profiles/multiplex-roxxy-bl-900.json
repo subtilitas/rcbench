@@ -1,0 +1,293 @@
+{
+  "id": "multiplex-roxxy-bl-900",
+  "brand": "Multiplex",
+  "family": "ROXXY BL-Control 900 series",
+  "models": [
+    {
+      "name": "Roxxy BL 908",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 8,
+      "bec": null,
+      "firmware_note": "Order 8627; burst 12 A; BEC 5.5 V max 2 A",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_BL-900_series.pdf p.2"
+    },
+    {
+      "name": "Roxxy BL 918",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 18,
+      "bec": null,
+      "firmware_note": "Order 8628; burst 22 A; BEC 5.5 V max 2 A",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_BL-900_series.pdf p.2"
+    },
+    {
+      "name": "Roxxy BL 930",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 30,
+      "bec": null,
+      "firmware_note": "Order 8629; burst 35 A; BEC 5.5 V max 2 A",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_BL-900_series.pdf p.2"
+    },
+    {
+      "name": "Roxxy BL 930-6",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 30,
+      "bec": null,
+      "firmware_note": "Order 8630; burst 35 A; BEC 5.5 V max 2 A",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_BL-900_series.pdf p.2"
+    },
+    {
+      "name": "Roxxy BL 940-6",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "Order 8631; burst 50 A; BEC 5.5 V max 3 A (burst 5 A)",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_BL-900_series.pdf p.2"
+    },
+    {
+      "name": "Roxxy BL 950-6",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 50,
+      "bec": null,
+      "firmware_note": "Order 8632; burst 60 A; BEC 5.5 V max 3 A (burst 5 A)",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_BL-900_series.pdf p.2"
+    },
+    {
+      "name": "Roxxy BL 960-6",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 60,
+      "bec": null,
+      "firmware_note": "Order 8634; burst 70 A; BEC 5.5 V max 3 A (burst 5 A)",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_BL-900_series.pdf p.2"
+    },
+    {
+      "name": "Roxxy BL 9100-6",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 100,
+      "bec": null,
+      "firmware_note": "Order 8635; burst 110 A; BEC 5.5 V max 3 A (burst 5 A)",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_BL-900_series.pdf p.2"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Multiplex_Roxxy_BL-900_series.pdf",
+      "pages": "2-3",
+      "language": "de",
+      "url": "https://technikforum.multiplex-rc.de/uploads/default/original/2X/b/b51f603c9f4a857cecfe67d9758aed4a9362c0f3.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": null,
+  "scheme": {
+    "type": "other",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 13000,
+      "confirm_signal": "Short tone sequence at power-up, a double tone sequence after about 10 s, a triple tone sequence about 3 s later.",
+      "steps": [
+        "Receiver connected, transmitter on, throttle stick forward.",
+        "Connect battery power: short tone sequence.",
+        "After about 10 s: double tone sequence.",
+        "After about 3 s more: triple tone sequence.",
+        "Programming mode: parameter 1 shown as one beep and one LED flash, repeating."
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": 0,
+      "description": "Parameter N is announced as N beeps with N LED flashes, repeating. Inside a parameter the stored value shows as the beep rate: beep every 2 s with the LED on, or beep every 0.5 s with the LED flashing."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": 3000,
+      "description": "To change the value, move the stick from forward to stop and hold it at least 3 s, then move quickly stop, forward, stop."
+    },
+    "skip": {
+      "throttle": "max",
+      "description": "Parameter select: a short move from forward to stop and back to forward steps to the next parameter."
+    },
+    "confirm_signal": "Not described beyond the changed LED and beep pattern. The change is stored by a stop-to-forward move.",
+    "exit": "Interrupt battery power.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": null,
+    "description": "Forward stick at power-up enters a three-stage tone sequence after about 13 s. A short forward-stop-forward move steps through parameters 1 to 5. In a parameter, holding stop for 3 s and then moving quickly stop, forward, stop toggles the value, which the ESC shows as the beep rate. Power loss stores the settings."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "LiPo (LED on, beep every 2 s)"
+        },
+        {
+          "number": 2,
+          "name": "NiCd/NiMH (LED blinks, beep every 0.5 s)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3"
+    },
+    {
+      "number": 2,
+      "name": "Direction of rotation",
+      "key": "direction",
+      "values": [
+        {
+          "number": 1,
+          "name": "normal (LED on, beep every 2 s)"
+        },
+        {
+          "number": 2,
+          "name": "reverse (LED blinks, beep every 0.5 s)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3"
+    },
+    {
+      "number": 3,
+      "name": "Brake (AIR)",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "off (LED on, beep every 2 s)"
+        },
+        {
+          "number": 2,
+          "name": "on (LED blinks, beep every 0.5 s)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3",
+      "applies_when": "model type AIR"
+    },
+    {
+      "number": 3,
+      "name": "Governor (HELI)",
+      "key": "governor",
+      "values": [
+        {
+          "number": 1,
+          "name": "off (LED on, beep every 2 s)"
+        },
+        {
+          "number": 2,
+          "name": "on (LED blinks, beep every 0.5 s)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3",
+      "applies_when": "model type HELI"
+    },
+    {
+      "number": 3,
+      "name": "Reverse (CAR, BOAT)",
+      "key": "reverse",
+      "values": [
+        {
+          "number": 1,
+          "name": "off (LED on, beep every 2 s)"
+        },
+        {
+          "number": 2,
+          "name": "on (LED blinks, beep every 0.5 s)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3",
+      "applies_when": "model type CAR, BOAT"
+    },
+    {
+      "number": 4,
+      "name": "Model type AIR/HELI",
+      "key": "aircraft_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "AIR (LED on, beep every 2 s)"
+        },
+        {
+          "number": 2,
+          "name": "HELI (LED blinks, beep every 0.5 s)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3"
+    },
+    {
+      "number": 5,
+      "name": "Model type BOAT/CAR",
+      "key": "aircraft_type_2",
+      "values": [
+        {
+          "number": 1,
+          "name": "BOAT (LED on, beep every 2 s)"
+        },
+        {
+          "number": 2,
+          "name": "CAR (LED blinks, beep every 0.5 s)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3"
+    }
+  ],
+  "unknowns": [
+    "Defaults of all parameters: not stated.",
+    "Beep duration and the 'quick' stop-forward-stop move time: not stated.",
+    "Which of the two table columns is value 1 and which is value 2: the manual gives only the column order (LED on / beep every 2 s first, LED flashing / beep every 0.5 s second).",
+    "The manual's table for 'Bremse (AIR)' and 'Governor (HELI)' lists AUS then EIN; the row for 'Rückwärts' also AUS then EIN.",
+    "Which model type (AIR, HELI, BOAT, CAR) a model has at delivery: not stated.",
+    "Programming the stick positions forward, stop and reverse (sec. 3.1) needs a 10 s wait, a double tone and a triple tone; durations not stated.",
+    "Parameter 3 meaning depends on the model type set by parameters 4 and 5; the manual says set those first."
+  ],
+  "notes": [
+    "The stick positions forward, stop and reverse are taught first (section 3.1): forward at power-up, a double tone after about 10 s confirms forward, stop gives a short tone, reverse gives a triple tone. Forward-only controllers learn forward and stop only (section 3.2).",
+    "The 900 series table also lists safety features only (SPS, PCO, POR, hec); no further stick items exist.",
+    "announce.repeat 0 means the sequence repeats until a choice is made (manual: \"continuous\")."
+  ],
+  "schema": 1,
+  "verified": false
+}

@@ -1,0 +1,132 @@
+{
+  "schema": 1,
+  "id": "kontronik-heli-line",
+  "brand": "Kontronik",
+  "family": "HELI-Line (brushed)",
+  "verified": false,
+  "models": [
+    {
+      "name": "HELBEC 40-6-10",
+      "cells_min": 6,
+      "cells_max": 10,
+      "cell_type": "nimh",
+      "v_min_mv": 5600,
+      "v_max_mv": 14000,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "NiCd cells; BEC 5 A for 4 servos and a mini gyro; 55 A for 15 s",
+      "spec_source": "Kontronik_Heli-Line.pdf p.2: 6-10 NiCd/NiMH cells, 40 A continuous, 14 V stated"
+    },
+    {
+      "name": "HELOPT 50-8-30",
+      "cells_min": 8,
+      "cells_max": 30,
+      "cell_type": "nimh",
+      "v_min_mv": 8000,
+      "v_max_mv": 40000,
+      "current_a": 50,
+      "bec": "opto",
+      "firmware_note": "70 A for 15 s",
+      "spec_source": "Kontronik_Heli-Line.pdf p.2: 8-30 NiCd/NiMH cells, 50 A continuous, 40 V stated"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Heli-Line.pdf",
+      "pages": "3-6",
+      "language": "de",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/helcopy.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "A jumper must be fitted and removed by hand during every program. The bench cannot do this.",
+  "scheme": {
+    "type": "other",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "Signal after jumper removal; 3-fold signal after about 5 s for the current limit; 6-fold signal about 30 s after reset beeps.",
+      "steps": [
+        "Stick-way teach-in: throttle at motor-off (stick back), jumper on, radio on; apply power, pull the jumper; a signal; move to full; a signal; for throttle compensation move to motor-off, otherwise wait; 2 beeps = without, 3 beeps = with; optional start button press; 2 or 3 beeps; disconnect power.",
+        "Current limit: throttle at full, jumper on, radio on; apply power, pull the jumper; a signal; wait about 5 s for the 3-fold signal; count the beeps (5 A each); move the throttle out of full at the wanted count; the ESC repeats the value; fit the jumper again for current regulation; two beeps; disconnect power.",
+        "Reset: any throttle position; jumper on, radio on; apply power, pull the jumper; the ESC beeps several times; about 30 s after the last signal a 6-fold signal arrives; LED flashes continuously; disconnect power."
+      ]
+    },
+    "announce": {
+      "what": "value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "After the wait signal the ESC sounds one beep per 5 A (current limit); confirmation of throttle compensation is 2 or 3 beeps."
+    },
+    "select": {
+      "throttle": "mid",
+      "within_ms": null,
+      "description": "Move the throttle out of full at the wanted count."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Disconnect power to abandon a program."
+    },
+    "confirm_signal": "2 or 3 beeps after stick-way teach-in; the current value repeated as beeps.",
+    "exit": "Disconnect power.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Reset program: jumper, power, 30 s, 6-fold signal.",
+    "description": "Three jumper-and-signals programs for the helicopter ESC: stick ways with throttle compensation, current limit and reset. Undervoltage cutoff is not available (disabled)."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Stick positions (motor-off, full) with throttle compensation and start button",
+      "key": "throttle_range",
+      "values": [
+        {
+          "number": 1,
+          "name": "taught by the sequence; throttle compensation on: throttle to motor-off after the full signal, confirmed by 3 beeps; off: wait, confirmed by 2 beeps"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "6"
+    },
+    {
+      "number": 3,
+      "name": "Current limit (3-fold signal)",
+      "key": "current_limit",
+      "values": [
+        {
+          "number": 1,
+          "name": "each beep counted = 5 A; throttle leaves full at the wanted count"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "6"
+    },
+    {
+      "number": 6,
+      "name": "Reset to auto-programming mode (6-fold signal)",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "reset: about 30 s after the last signal a 6-fold signal arrives; LED flashes continuously"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5"
+    }
+  ],
+  "unknowns": [
+    "Signal is an LED flash plus a beep with the motor connected; beep duration and gaps are not stated.",
+    "Time allowed between steps is not stated except the 'about 5 s' wait for the 3-fold or 4-fold signal and about 30 s for the reset.",
+    "How the ESC decides between stick-way teach-in and brake-strength entry when both start with the stick back and the jumper pulled at power-up is not stated in the text.",
+    "Item numbers are the signal counts where the manual gives them; item 1 is the stick-way teach-in, which has no count.",
+    "Which stick position starts which program after the jumper is pulled is read from the drawings only."
+  ],
+  "notes": [
+    "The ESC only releases the motor in the motor-off position (stick back); there is no brake position."
+  ]
+}

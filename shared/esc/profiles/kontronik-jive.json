@@ -1,0 +1,207 @@
+{
+  "schema": 1,
+  "id": "kontronik-jive",
+  "brand": "Kontronik",
+  "family": "JIVE",
+  "verified": false,
+  "models": [
+    {
+      "name": "JIVE 80+ LV",
+      "cells_min": 2,
+      "cells_max": 6,
+      "cell_type": "lipo",
+      "v_min_mv": 6000,
+      "v_max_mv": 25000,
+      "current_a": 80,
+      "bec": "switching",
+      "firmware_note": "BEC voltage 5 to 6 V in 0.2 V steps",
+      "spec_source": "Kontronik_Jive.pdf p.3: input voltage 6-25 V, continuous current in type table; cells: https://www.freakware.de/technik/Kontronik/jive_datenblatt.pdf (dealer copy of the Kontronik datasheet, LiPo cell count row)"
+    },
+    {
+      "name": "JIVE 100+ LV",
+      "cells_min": 2,
+      "cells_max": 6,
+      "cell_type": "lipo",
+      "v_min_mv": 6000,
+      "v_max_mv": 25000,
+      "current_a": 100,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Kontronik_Jive.pdf p.3: input voltage 6-25 V, continuous current in type table; cells: https://www.freakware.de/technik/Kontronik/jive_datenblatt.pdf (dealer copy of the Kontronik datasheet, LiPo cell count row)"
+    },
+    {
+      "name": "JIVE 60+ HV",
+      "cells_min": 5,
+      "cells_max": 12,
+      "cell_type": "lipo",
+      "v_min_mv": 16000,
+      "v_max_mv": 50000,
+      "current_a": 60,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Kontronik_Jive.pdf p.3: input voltage 16-50 V, continuous current in type table; cells: https://www.freakware.de/technik/Kontronik/jive_datenblatt.pdf (dealer copy of the Kontronik datasheet, LiPo cell count row)"
+    },
+    {
+      "name": "JIVE 80+ HV",
+      "cells_min": 5,
+      "cells_max": 12,
+      "cell_type": "lipo",
+      "v_min_mv": 16000,
+      "v_max_mv": 50000,
+      "current_a": 80,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Kontronik_Jive.pdf p.3: input voltage 16-50 V, continuous current in type table; cells: https://www.freakware.de/technik/Kontronik/jive_datenblatt.pdf (dealer copy of the Kontronik datasheet, LiPo cell count row)"
+    },
+    {
+      "name": "POWERJIVE 120+ HV",
+      "cells_min": 5,
+      "cells_max": 12,
+      "cell_type": "lipo",
+      "v_min_mv": 16000,
+      "v_max_mv": 50000,
+      "current_a": 120,
+      "bec": "switching",
+      "firmware_note": null,
+      "spec_source": "Kontronik_Jive.pdf p.3: input voltage 16-50 V, continuous current in type table; cells: https://www.freakware.de/technik/Kontronik/jive_datenblatt.pdf (dealer copy of the Kontronik datasheet, LiPo cell count row)"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Jive.pdf",
+      "pages": "5-10, 17-22",
+      "language": "de/en",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/JIVE.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": 2000,
+      "confirm_signal": "Three-tone sequence after the 2 s wait, a second three-tone sequence after the jumper is removed.",
+      "steps": [
+        "Operator: fit the jumper on the 2 marked programming contacts. Connect the motor if tones are to be audible.",
+        "Transmitter on. Throttle to the brake position (modes 6 and 8: motor-off position).",
+        "Apply drive power.",
+        "Wait 2 s or until the ESC sounds its three-tone sequence.",
+        "Operator: pull the jumper off.",
+        "The ESC sounds a second three-tone sequence, then the mode series 1 to 11.",
+        "Move the throttle to full while the wanted series sounds.",
+        "Mode 2: optional separate motor-off position. Mode 6: throttle to maximum brake. Mode 8: the ESC sounds brake-strength tones (10 % per tone); move the throttle to motor-off at the wanted count.",
+        "The ESC repeats the stored mode. Disconnect drive power."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "The ESC sounds mode 1 as one tone, mode 2 as two tones, and so on, one series after another with a pause between series."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Move the throttle to full while the series of the wanted mode sounds."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip."
+    },
+    "confirm_signal": "Mode repeated as tones. Mode 8 first sounds brake-strength tones.",
+    "exit": "Disconnect drive power after the control output.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Program mode 1 (APM).",
+    "description": "Same jumper procedure as the JAZZ. The series runs to 11 tones. Mode 8 adds a second stage in which the ESC counts brake strength in 10 % tones and the throttle is returned to motor-off at the wanted count."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "APM: stick range learned at every power-up; programming it clears all settings"
+        },
+        {
+          "number": 2,
+          "name": "Glider, optional separate motor-off position"
+        },
+        {
+          "number": 3,
+          "name": "Motor plane / boat"
+        },
+        {
+          "number": 4,
+          "name": "Helicopter 1: speed governor"
+        },
+        {
+          "number": 5,
+          "name": "Competition F5B / F5D"
+        },
+        {
+          "number": 6,
+          "name": "Car, one direction, proportional brake (series stops at tone 6; start with throttle at motor-off)"
+        },
+        {
+          "number": 7,
+          "name": "Reverse motor rotation (needs a mode other than 1 programmed first)"
+        },
+        {
+          "number": 8,
+          "name": "Motor plane with adjustable F3A brake (start with throttle at motor-off)"
+        },
+        {
+          "number": 9,
+          "name": "LiPo undervoltage cutoff, 2.7 to 3 V per cell"
+        },
+        {
+          "number": 10,
+          "name": "KSA special application mode (for example turbines); cleared when another mode is programmed"
+        },
+        {
+          "number": 11,
+          "name": "Helicopter 2: fixed-speed governor"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5-10"
+    },
+    {
+      "number": 2,
+      "name": "F3A brake strength (mode 8 only)",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "each tone adds 10 % brake strength; the count at which the throttle returns to motor-off is stored"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "7"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone in ms is not stated.",
+    "Gap between tones inside one mode series in ms is not stated.",
+    "Pause between two mode series in ms is not stated.",
+    "Whether the mode series loops until a mode is selected is not stated.",
+    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
+    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2 s minimum; the end of the wait is the ESC's tone sequence.",
+    "Maximum tone count of the F3A brake-strength stage is not stated (the PROGCARD II adjusts in 2.5 % steps).",
+    "Time between jumper fitting and power-up limit is not stated.",
+    "Factory default mode is not stated in the sections read."
+  ],
+  "notes": [
+    "Mode 8 differs from the JAZZ: it is an F3A-brake motor-plane mode, not car forward/reverse.",
+    "The Jive manual has no separate CAR forward/reverse mode."
+  ]
+}

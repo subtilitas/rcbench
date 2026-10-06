@@ -1,0 +1,175 @@
+{
+  "schema": 1,
+  "id": "kontronik-cyber-line",
+  "brand": "Kontronik",
+  "family": "CYBER-Line (brushed)",
+  "verified": false,
+  "models": [
+    {
+      "name": "CYBEC 40-6-12",
+      "cells_min": 6,
+      "cells_max": 12,
+      "cell_type": "nimh",
+      "v_min_mv": 5600,
+      "v_max_mv": 16000,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "NiCd cells; BEC 1.5 A for 4 servos; 55 A for 15 s",
+      "spec_source": "Kontronik_Cyber-Line.pdf p.2: 6-12 NiCd/NiMH cells, 40 A continuous, 16 V stated"
+    },
+    {
+      "name": "CYBEC 50-6-14 GTO",
+      "cells_min": 6,
+      "cells_max": 14,
+      "cell_type": "nimh",
+      "v_min_mv": 5600,
+      "v_max_mv": 19000,
+      "current_a": 50,
+      "bec": null,
+      "firmware_note": "BEC 3 A: 5 servos up to 8 cells or 3 servos up to 14 cells; 70 A for 15 s",
+      "spec_source": "Kontronik_Cyber-Line.pdf p.2: 6-14 NiCd/NiMH cells, 50 A continuous, 19 V stated"
+    },
+    {
+      "name": "CYOPT 40-6-18",
+      "cells_min": 6,
+      "cells_max": 18,
+      "cell_type": "nimh",
+      "v_min_mv": 5600,
+      "v_max_mv": 24000,
+      "current_a": 40,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "Kontronik_Cyber-Line.pdf p.2: 6-18 NiCd/NiMH cells, 40 A continuous, 24 V stated"
+    },
+    {
+      "name": "CYOPT 50-8-30",
+      "cells_min": 8,
+      "cells_max": 30,
+      "cell_type": "nimh",
+      "v_min_mv": 8000,
+      "v_max_mv": 40000,
+      "current_a": 50,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "Kontronik_Cyber-Line.pdf p.2: 8-30 NiCd/NiMH cells, 50 A continuous, 40 V stated"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Cyber-Line.pdf",
+      "pages": "3-8",
+      "language": "de/en",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/Cyber-Line.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "A jumper must be fitted and removed by hand during every program. The bench cannot do this.",
+  "scheme": {
+    "type": "other",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "Signal after jumper removal; 3-fold or 4-fold signal after about 5 s; 6-fold signal about 30 s after reset beeps.",
+      "steps": [
+        "Receiver battery connected on ESC types without BEC. Transmitter on.",
+        "Stick-way teach-in: throttle to brake or motor-off (stick back), operator fits the jumper and turns on the radio; apply drive power and pull the jumper; one signal; move to full; one signal; for EMK brake move to motor-off (may equal brake); for a start button fit the jumper again; two signals; disconnect power.",
+        "Brake strength: same start; apply power and pull the jumper; a signal; wait about 5 s for the 4-fold signal; count the beeps (10 % each); move the throttle out of the brake position at the wanted count; the ESC repeats the strength; disconnect power.",
+        "Current limit: throttle at full, jumper on, radio on; apply power and pull the jumper; a signal; wait about 5 s for the 3-fold signal; count the beeps (5 A each); move the throttle out of full at the wanted count; the ESC repeats the value; fit the jumper again for current regulation; two signals; disconnect power.",
+        "Reset: any throttle position; fit the jumper and turn on the radio; apply power and fit/keep the jumper while the ESC beeps several times; about 30 s after the last signal a 6-fold signal arrives; the LED flashes continuously; disconnect power."
+      ]
+    },
+    "announce": {
+      "what": "value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "After the wait signal, the ESC sounds one beep per unit (5 A for the current limit, 10 % for the brake strength); the throttle movement at the wanted count stores it, and the ESC repeats the stored value."
+    },
+    "select": {
+      "throttle": "mid",
+      "within_ms": null,
+      "description": "Current limit: move the throttle out of full. Brake strength: move it out of the brake position."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Disconnect power to abandon a program."
+    },
+    "confirm_signal": "The ESC repeats the stored value as beeps; two signals after the jumper is replugged for current regulation or the start button.",
+    "exit": "Disconnect power.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Reset program: jumper on, power on, about 30 s later a 6-fold signal, LED flashes continuously.",
+    "description": "Four separate programs on a jumper-and-signals scheme. The throttle position at power-up and the signal count the ESC reaches select the program. Settings are taught by moving the stick."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Stick positions (brake / motor-off, full) with optional EMK brake and start button",
+      "key": "throttle_range",
+      "values": [
+        {
+          "number": 1,
+          "name": "taught by the sequence; EMK brake on if the throttle goes to motor-off after the full signal"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "7"
+    },
+    {
+      "number": 3,
+      "name": "Current limit (3-fold signal)",
+      "key": "current_limit",
+      "values": [
+        {
+          "number": 1,
+          "name": "each beep counted = 5 A; throttle leaves full at the wanted count"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5"
+    },
+    {
+      "number": 4,
+      "name": "Brake strength (4-fold signal)",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "each beep counted = 10 % brake strength; throttle leaves brake at the wanted count"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "7"
+    },
+    {
+      "number": 6,
+      "name": "Reset to auto-programming mode and undervoltage cutoff on/off (6-fold signal)",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "reset: about 30 s after the last signal a 6-fold signal arrives; the LED flashes continuously"
+        },
+        {
+          "number": 2,
+          "name": "undervoltage cutoff off: pull the jumper during the reset sequence"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5"
+    }
+  ],
+  "unknowns": [
+    "Signal is an LED flash plus a beep with the motor connected; beep duration and gaps are not stated.",
+    "Time allowed between steps is not stated except the 'about 5 s' wait for the 3-fold or 4-fold signal and about 30 s for the reset.",
+    "How the ESC decides between stick-way teach-in and brake-strength entry when both start with the stick back and the jumper pulled at power-up is not stated in the text.",
+    "Item numbers are the signal counts where the manual gives them; item 1 is the stick-way teach-in, which has no count.",
+    "Input and rating of CYOPT types are not stated in the text read."
+  ],
+  "notes": [
+    "The Cyber-Line manual replaces the CPS-only extras (cutoff per cell, reducing instead of cutting) with PC programming; the stick scheme here does not reach them."
+  ]
+}

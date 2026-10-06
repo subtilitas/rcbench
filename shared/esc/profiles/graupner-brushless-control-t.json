@@ -1,0 +1,487 @@
+{
+  "id": "graupner-brushless-control-t",
+  "brand": "Graupner",
+  "family": "Brushless Control +T (HoTT)",
+  "models": [
+    {
+      "name": "Brushless Control +T 18 BEC JR (33718, 33718.SC, 33718.SH)",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": 6000,
+      "v_max_mv": 16800,
+      "current_a": 18,
+      "bec": null,
+      "firmware_note": "Operating voltage 6-16.8 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T 35 (33735, 33735.G2)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 6000,
+      "v_max_mv": 25000,
+      "current_a": 35,
+      "bec": null,
+      "firmware_note": "Operating voltage 6-25 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T 45 (33745, 33745.G2)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 6000,
+      "v_max_mv": 25000,
+      "current_a": 45,
+      "bec": null,
+      "firmware_note": "Operating voltage 6-25 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T 50 (S3046)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 6000,
+      "v_max_mv": 25000,
+      "current_a": 50,
+      "bec": null,
+      "firmware_note": "Operating voltage 6-25 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T 60 (33760)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 6000,
+      "v_max_mv": 25000,
+      "current_a": 60,
+      "bec": null,
+      "firmware_note": "Operating voltage 6-25 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T 70 (33770, 33770.D35)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 6000,
+      "v_max_mv": 25000,
+      "current_a": 70,
+      "bec": null,
+      "firmware_note": "Operating voltage 6-25 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T 100 G6 (S3030)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": 6000,
+      "v_max_mv": 25000,
+      "current_a": 100,
+      "bec": null,
+      "firmware_note": "Operating voltage 6-25 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T 60 Opto (S3031)",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": 16000,
+      "v_max_mv": 50000,
+      "current_a": 60,
+      "bec": "opto",
+      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T 60 HV (S3040)",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": 16000,
+      "v_max_mv": 50000,
+      "current_a": 60,
+      "bec": null,
+      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T 80 Opto (S3042)",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": 16000,
+      "v_max_mv": 50000,
+      "current_a": 80,
+      "bec": "opto",
+      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T 80 HV (S3041)",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": 16000,
+      "v_max_mv": 50000,
+      "current_a": 80,
+      "bec": null,
+      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T 100 Opto (S3037)",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": 16000,
+      "v_max_mv": 50000,
+      "current_a": 100,
+      "bec": "opto",
+      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T 100 HV (S3036)",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": 16000,
+      "v_max_mv": 50000,
+      "current_a": 100,
+      "bec": null,
+      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T 120 Opto (S3032)",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": 16000,
+      "v_max_mv": 50000,
+      "current_a": 120,
+      "bec": "opto",
+      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T 120 HV (S3038)",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": 16000,
+      "v_max_mv": 50000,
+      "current_a": 120,
+      "bec": null,
+      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T HV 160 Opto (S3033)",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": 16000,
+      "v_max_mv": 50000,
+      "current_a": 160,
+      "bec": "opto",
+      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T HV 160 (S3039)",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": 16000,
+      "v_max_mv": 50000,
+      "current_a": 160,
+      "bec": null,
+      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    },
+    {
+      "name": "Brushless Control +T HV 160 COOL (S3064)",
+      "cells_min": 5,
+      "cells_max": 12,
+      "v_min_mv": 16000,
+      "v_max_mv": 50000,
+      "current_a": 160,
+      "bec": null,
+      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "cell_type": "lipo",
+      "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Graupner_BrushlessControlPlusT_EN.pdf",
+      "pages": "14-16",
+      "language": "en",
+      "url": "https://vueloverde.com/img/vv/Graupner_Brushless_Control_ESC_-T_EN_manual.pdf"
+    },
+    {
+      "file": "Graupner_BrushlessControlPlusT_DE.pdf",
+      "pages": "9-10",
+      "language": "de",
+      "url": "https://www.live-hobby.de/out/media/Anleitungen/Anleitung-Rest/Anleitung_Graupner_Brushless_Control+T_DE.pdf"
+    },
+    {
+      "file": "Graupner_BrushlessControl_Series_f3x.pdf",
+      "pages": "14-16",
+      "language": "de",
+      "url": "https://www.f3x.de/media/pdf/2c/05/02/Brushless-Control-Graupner-Anleitung.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "The stick menu shows mode and value by LED flash counts (yellow LED = mode, red LED = value). Beeps only confirm (5 on entry, 2 on a mode change, 3 on store). The bench cannot read the LEDs, so the current mode and value are not observable from supply current.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "max",
+      "when": "after_power_on",
+      "hold_ms": 6000,
+      "confirm_signal": "Five beeps after the stick returns to full throttle and is held at least 6 s.",
+      "steps": [
+        "Calibrate the stick range as described (full throttle, melody at about 10 s, motor off within 4 s, melody) up to step 4 or 5.",
+        "Move the stick to full throttle again and hold it for at least 6 s.",
+        "Five beeps: programming mode."
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "LED flashes, not beeps: the yellow LED flashes the mode number (1-5), the red LED flashes the value number (1-11). Beeps are confirmations only."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Move the stick to stop/reverse and back to full throttle to step to the next mode (2 beeps confirm). With the wanted mode shown, hold stop/reverse for 2 s; then each full-throttle move raises the value by one. Hold full throttle at least 2 s to store (3 beeps)."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Pass a mode by one stop/reverse-then-full move."
+    },
+    "confirm_signal": "Three beeps after a stored value; two beeps after a mode change; five beeps on entry.",
+    "exit": "Disconnect the power supply to store the settings.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": "Mode 6 value 2 (yes) is factory reset; Mode 5 on controllers without sensor connection.",
+    "description": "After calibrating the stick range, hold full throttle for 6 s for five beeps. Stop then full steps the mode (yellow LED count, 2 beeps). Stop for 2 s opens the values. Each stop-to-full move raises the value (red LED count). Full throttle for 2 s stores it (3 beeps). Disconnect power to finish."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "LiPo"
+        },
+        {
+          "number": 2,
+          "name": "NiMH"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "16 (EN) / 10 (DE) / 16 (f3x)",
+      "note": "Number is the red LED flash count."
+    },
+    {
+      "number": 2,
+      "name": "Direction of rotation",
+      "key": "direction",
+      "values": [
+        {
+          "number": 1,
+          "name": "normal"
+        },
+        {
+          "number": 2,
+          "name": "reverse"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "16 / 10 / 16",
+      "note": "Manual example: one red flash is normal."
+    },
+    {
+      "number": 3,
+      "name": "Auto brake (fixed-wing)",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "0%"
+        },
+        {
+          "number": 2,
+          "name": "10%"
+        },
+        {
+          "number": 3,
+          "name": "20%"
+        },
+        {
+          "number": 4,
+          "name": "30%"
+        },
+        {
+          "number": 5,
+          "name": "40%"
+        },
+        {
+          "number": 6,
+          "name": "50%"
+        },
+        {
+          "number": 7,
+          "name": "60%"
+        },
+        {
+          "number": 8,
+          "name": "70%"
+        },
+        {
+          "number": 9,
+          "name": "80%"
+        },
+        {
+          "number": 10,
+          "name": "90%"
+        },
+        {
+          "number": 11,
+          "name": "100%"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "16 / 10 / 16",
+      "applies_when": "model type plane"
+    },
+    {
+      "number": 3,
+      "name": "Governor (helicopter)",
+      "key": "governor",
+      "values": [
+        {
+          "number": 1,
+          "name": "off"
+        },
+        {
+          "number": 2,
+          "name": "on"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "16 / 10 / 16",
+      "applies_when": "model type heli"
+    },
+    {
+      "number": 3,
+      "name": "Reverse function (boat/car)",
+      "key": "reverse",
+      "values": [
+        {
+          "number": 1,
+          "name": "one-way"
+        },
+        {
+          "number": 2,
+          "name": "two-way"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "16 / 10 / 16",
+      "applies_when": "model type boat, car"
+    },
+    {
+      "number": 4,
+      "name": "Motor type",
+      "key": "motor_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "sensorless"
+        },
+        {
+          "number": 2,
+          "name": "sensor"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "16 / 10 / 16",
+      "applies_when": "controllers with sensor connection"
+    },
+    {
+      "number": 5,
+      "name": "Model type",
+      "key": "aircraft_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "plane"
+        },
+        {
+          "number": 2,
+          "name": "heli"
+        },
+        {
+          "number": 3,
+          "name": "boat"
+        },
+        {
+          "number": 4,
+          "name": "car"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "16 / 10 / 16",
+      "note": "Controllers without sensor connection skip the motor-type mode: model type becomes mode 4 and factory reset mode 5."
+    },
+    {
+      "number": 6,
+      "name": "Factory reset",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "no"
+        },
+        {
+          "number": 2,
+          "name": "yes"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "16 / 10 / 16"
+    }
+  ],
+  "unknowns": [
+    "Beep length, gap, and what the stored value is at entry: not stated.",
+    "What happens after the last value (11) or on a value above the maximum: not stated (wrap-around unknown).",
+    "Which models have a sensor connection: not stated; the mode numbers shift for those without.",
+    "Stick-menu defaults: not stated. The telemetry menu lists factory settings (battery LiPo, rotation normal, A-Brake 0%), which may match.",
+    "The manual states that mode 3 depends on the model type; the model type must be set first.",
+    "Calibration timings: melody at about 10 s, motor-off within 4 s (6 s for neutral/brake teach-in)."
+  ],
+  "notes": [
+    "Graupner_BrushlessControlPlusT_EN.pdf names the model type as 'mode 4' in its warning text and as mode 5 in the table; Graupner_BrushlessControlPlusT_DE.pdf and Graupner_BrushlessControl_Series_f3x.pdf say mode 5. The table order (model type is row 5) is used here.",
+    "Graupner_BrushlessControlPlusT_DE.pdf lists 21 models and omits S3046 (50 A) and S3064 (HV 160 COOL); the other two manuals list all models.",
+    "The model-search function (error message 8) is enabled by the trim in Graupner_BrushlessControlPlusT_DE.pdf and by the telemetry setting M.Lost_beep in Graupner_BrushlessControlPlusT_EN.pdf."
+  ],
+  "schema": 1,
+  "verified": false
+}

@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "id": "kontronik-kontrol-x",
+  "brand": "Kontronik",
+  "family": "KONTROL-X / KOLIBRI-X",
+  "verified": false,
+  "models": [
+    {
+      "name": "KONTROL-X 40 LV",
+      "cells_min": 2,
+      "cells_max": 6,
+      "cell_type": "lipo",
+      "v_min_mv": null,
+      "v_max_mv": 25000,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "the manual uses this as an example; other KONTROL-X sizes are not listed",
+      "spec_source": "https://www.rcjapan.net/index.php?main_page=product_info&cPath=257_274_314&products_id=19182 (dealer, quotes 2-6 S LiPo, 6-25 V, 40 A continuous); Kontronik_Kontrol-X_Kolibri-X.pdf p.3 for 40 A"
+    },
+    {
+      "name": "KOLIBRI-X 60 LV",
+      "cells_min": null,
+      "cells_max": null,
+      "cell_type": null,
+      "v_min_mv": null,
+      "v_max_mv": null,
+      "current_a": 60,
+      "bec": null,
+      "firmware_note": "English example; the German text gives 90 LV = 90 A",
+      "spec_source": "Kontronik_Kontrol-X_Kolibri-X.pdf p.3 and p.11: model name = continuous current (90 LV = 90 A); cells and voltage not found in manual, kontronik.com or dealer pages"
+    },
+    {
+      "name": "KOLIBRI-X 90 LV",
+      "cells_min": null,
+      "cells_max": null,
+      "cell_type": null,
+      "v_min_mv": null,
+      "v_max_mv": null,
+      "current_a": 90,
+      "bec": null,
+      "firmware_note": "German example",
+      "spec_source": "Kontronik_Kontrol-X_Kolibri-X.pdf p.3 and p.11: model name = continuous current (90 LV = 90 A); cells and voltage not found in manual, kontronik.com or dealer pages"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Kontrol-X_Kolibri-X.pdf",
+      "pages": "4-5, 12-13",
+      "language": "de/en",
+      "url": "https://kontronik.com/wp-content/uploads/2023/04/Anleitung_KONTROL-X_KOLIBRI-X.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "These ESCs are not throttle-only: the programming steps include pressing the ESC's own button after the 2 s wait. The bench has no actuator for it.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": 2000,
+      "confirm_signal": "Tone sequence after the 2 s wait; sequence after the button press.",
+      "steps": [
+        "Connect the motor if tones are to be audible. Transmitter on. Throttle to motor-off.",
+        "Apply drive power.",
+        "Wait 2 s or until the ESC sounds its tone sequence.",
+        "Operator: press the ESC button (push button under the heat shrink).",
+        "The ESC sounds a tone sequence, then the mode series, mode 1 as one tone, mode 2 as two tones, with a pause between series.",
+        "Move the throttle to full (stick forward) when the wanted mode sounds. Mode 3: then move the throttle to full reverse (stick back).",
+        "The ESC repeats the mode as tones. Wait for it, then disconnect power (an interrupted run locks the ESC; 8 LED flashes)."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "The ESC sounds mode 1 as one tone, mode 2 as two tones, and so on, one series after another with a pause between series."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Move the throttle to full when the wanted mode sounds."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip."
+    },
+    "confirm_signal": "Mode repeated as tones.",
+    "exit": "Disconnect power after the confirmation.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Program mode 1 (reset to delivery state).",
+    "description": "Throttle at motor-off, apply power, wait 2 s, press the ESC button. The ESC counts modes as tones. Full throttle selects the mode; mode 3 additionally needs a full reverse position."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "DJI GPS system: stick range fixed to 1000 to 2000 microseconds; programming it resets to delivery state"
+        },
+        {
+          "number": 2,
+          "name": "Other GPS systems"
+        },
+        {
+          "number": 3,
+          "name": "Forward / reverse operation"
+        },
+        {
+          "number": 4,
+          "name": "Reverse motor rotation"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4-5"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone in ms is not stated.",
+    "Gap between tones inside one mode series in ms is not stated.",
+    "Pause between two mode series in ms is not stated.",
+    "Whether the mode series loops until a mode is selected is not stated.",
+    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
+    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2 s minimum; the end of the wait is the ESC's tone sequence.",
+    "Voltage range, cell count and rated current of the models are not listed in the text read.",
+    "What differentiates mode 1 from mode 2 beyond the fixed stick range is not stated.",
+    "Button location beyond 'under the heat shrink' is not stated."
+  ],
+  "notes": [
+    "INDEX.csv summarises these as throttle only; the procedure text includes a button press (step 5), so the entry needs a person.",
+    "Kontronik_Kontrol-X_Kolibri-X.pdf gives the KOLIBRI-X example as 90 LV = 90 A on the German side and 60 LV = 60 A on the English side."
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "id": "yge-hvt",
+  "brand": "YGE",
+  "family": "HVT (6-mode setup: 90HVT/120HVT Opto, 165HVT, 205HVT, 325HVT, 205HVT BEC)",
+  "models": [
+    {
+      "name": "90HVT Opto",
+      "cells_min": 4,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 90,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "YGE_90-120HVT_Opto_en.pdf p.1 (4-12s; 90 A, 120 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "120HVT Opto",
+      "cells_min": 4,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 120,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "YGE_90-120HVT_Opto_en.pdf p.1 (4-12s; 90 A, 120 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "165HVT",
+      "cells_min": 6,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 165,
+      "bec": null,
+      "firmware_note": "6s minimum in 2019 and German 2020 manuals; 4s in the 2018 165/205/325HVT manual",
+      "spec_source": "YGE_165HVT_en.pdf p.1 (6-14s, 165 A); YGE_165-205-325HVT_en.pdf states 4-14s",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "205HVT",
+      "cells_min": 4,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 205,
+      "bec": null,
+      "firmware_note": "2018 165/205/325HVT manual",
+      "spec_source": "YGE_165-205-325HVT_en.pdf p.1 (4-14s; table 205 A, 325 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "325HVT",
+      "cells_min": 4,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 325,
+      "bec": null,
+      "firmware_note": "2018 165/205/325HVT manual",
+      "spec_source": "YGE_165-205-325HVT_en.pdf p.1 (4-14s; table 205 A, 325 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "205HVT BEC",
+      "cells_min": 6,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 205,
+      "bec": null,
+      "firmware_note": "BEC 5.0-8.4 V, 12 A continuous, 30 A peak; minimum cells 4 (English) or 6 (German)",
+      "spec_source": "YGE_YGE-205HVT-BEC.pdf p.1 (6-14s, 205 A); YGE_205HVT_BEC_en.pdf states 4-14s",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "YGE_90-120HVT_Opto_en.pdf",
+      "pages": "1-3",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2019/08/YGE-90-120HVT-Opto-eng-1.pdf"
+    },
+    {
+      "file": "YGE_YGE-90HVT-120HVT-Opto.pdf",
+      "pages": "1-3",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f9717f26d20bdb08a9_YGE-90HVT-120HVT-Opto.pdf"
+    },
+    {
+      "file": "YGE_120HVT_Opto_en.pdf",
+      "pages": "1-3",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2020/07/YGE-120HVT-Opto-eng.pdf"
+    },
+    {
+      "file": "YGE_YGE-120HVT-Opto.pdf",
+      "pages": "1-3",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f9a85d134a14c645cd_YGE-120HVT-Opto.pdf"
+    },
+    {
+      "file": "YGE_165-205-325HVT_en.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2018/07/YGE-165-205-325HVT-eng.pdf"
+    },
+    {
+      "file": "YGE_165HVT_en.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2019/08/YGE-165HVT-eng-1.pdf"
+    },
+    {
+      "file": "YGE_YGE-165HVT.pdf",
+      "pages": "1-3",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f97c6dd0cbdbaf8196_YGE-165HVT.pdf"
+    },
+    {
+      "file": "YGE_205HVT_BEC_en.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2020/09/YGE-205HVT-BEC-eng.pdf"
+    },
+    {
+      "file": "YGE_YGE-205HVT-BEC.pdf",
+      "pages": "1-3",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6e77195b7285e66d48a4d5_YGE-205HVT-BEC.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "Needs only throttle signal and power. The manuals forbid supply-only operation (battery only); bench behaviour untested.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "Repeating interval beeps; after 20 of them, 2 confirmation tones. Setup is then active.",
+      "steps": [
+        "Remove propeller or rotor blades",
+        "Switch transmitter on, throttle stick at maximum (100%)",
+        "Connect battery to the ESC (motor connected; the motor winding is the sound source)",
+        "Wait for 20 interval beeps, then 2 confirmation beeps",
+        "Move throttle stick to minimum",
+        "Listen to the menu: N beeps = mode N",
+        "At the wanted mode, move throttle stick to maximum; 2 confirmation beeps",
+        "Move throttle stick to minimum; 2 confirmation beeps; ESC arms"
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "With the stick at minimum the ESC sounds the modes in order, mode N as N beeps (1 to 6). The menu starts again at mode 1 when no mode is selected. Beep length, gap and pause between modes are not stated."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Move the stick to maximum while the wanted mode is the one being announced (the manual says 'at the desired mode'). Two confirmation beeps follow. The permitted delay after the last beep of the mode is not stated."
+    },
+    "skip": {
+      "throttle": "min",
+      "description": "Leave the stick at minimum; the ESC continues with the next mode."
+    },
+    "confirm_signal": "2 beeps after the stick goes to maximum (mode selected), 2 beeps after the stick returns to minimum (ESC armed). Cell count follows (long beep = 5 cells, short beep = 1 cell, e.g. long, short = 6 cells), then 4 ascending tones with the stick at minimum (English and German 6-mode manuals agree).",
+    "exit": "Moving the stick back to minimum after selecting a mode arms the ESC and ends programming. The next change needs a power cycle with throttle at maximum.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Selecting a mode loads that mode's complete parameter set, which overwrites earlier ProgCard or PC-tool settings. No separate reset sequence is described.",
+    "description": "Throttle at maximum, then battery on: after 20 interval beeps and 2 confirmation beeps the ESC is in mode setup. Throttle to minimum; the ESC sounds mode 1 to 6 as 1 to 6 beeps. Throttle to maximum at the wanted mode (2 beeps), then to minimum (2 beeps) to arm. One mode per power cycle."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "V-Stabi governor (external governor, rpm signal to flight controller)"
+        },
+        {
+          "number": 2,
+          "name": "Governor"
+        },
+        {
+          "number": 3,
+          "name": "Gov-Store (governor with learned motor parameters)"
+        },
+        {
+          "number": 4,
+          "name": "Glider with folding propeller and brake"
+        },
+        {
+          "number": 5,
+          "name": "Motor plane without brake"
+        },
+        {
+          "number": 6,
+          "name": "Motor plane with F3A (Acro) brake"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    }
+  ],
+  "unknowns": [
+    "Duration of one beep, gap between beeps, and pause between menu modes: not stated; measure from supply current.",
+    "Period of the 20 interval beeps before setup entry: not stated.",
+    "Maximum delay between the last beep of a mode and the stick move to maximum: not stated.",
+    "Whether a minimum stick-at-maximum time at power-on is needed for entry: not stated.",
+    "Number of menu cycles before the ESC leaves setup without a selection: not stated.",
+    "Throttle signal type and pulse range for max and min: not stated for this manual (the 60HV/90HV and 120HV-200HV manuals mention 1.1 to 1.9 ms end points for mode 2).",
+    "Supply-current amplitude of the beeps through the motor winding: not stated; the motor must be connected.",
+    "The manuals state the ESC may only be powered from batteries, not from power supplies. Behaviour on a 1-20 V / 3 A supply (cell-count detection, undervoltage cutoff, inrush limit) is not stated.",
+    "Parameter values set by each mode: not listed; defaults are unknown.",
+    "BEC type (linear or switching) of 205HVT BEC: not stated.",
+    "BEC presence of 165HVT, 205HVT, 325HVT (non-BEC types): not stated."
+  ],
+  "notes": [
+    "Cell range conflict: YGE_165-205-325HVT_en.pdf gives 4s-14s for 165HVT/205HVT/325HVT; YGE_165HVT_en.pdf and YGE_YGE-165HVT.pdf give 6s-14s for the 165HVT.",
+    "Cell range conflict for 205HVT BEC: YGE_205HVT_BEC_en.pdf gives 4s-14s; YGE_YGE-205HVT-BEC.pdf gives 6s-14s.",
+    "The menu is identical to yge-aureus, yge-saphir and yge-hvt-navy (6 modes, same stick steps); the files are kept separate per product line.",
+    "Mode 3 (Gov-Store): run once at high rpm (over 70% throttle in the newer manuals) after programming; learning happens after the first spin-up, no restart needed. The older 165/205/325HVT manual says ideally 100% throttle.",
+    "90HVT/120HVT Opto manuals mention that mode setup is not needed with a VBC and NEO (Mikado Vbar Control)."
+  ],
+  "schema": 1,
+  "verified": false
+}

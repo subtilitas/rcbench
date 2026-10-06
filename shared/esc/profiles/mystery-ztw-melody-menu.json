@@ -1,0 +1,487 @@
+{
+  "id": "mystery-ztw-melody-menu",
+  "brand": "Mystery",
+  "family": "Mystery MY-series (ZTW) melody tone menu",
+  "models": [
+    {
+      "name": "MY8A",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 8,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "MY12A",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 12,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "MY20A",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 20,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "MY30A",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 30,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "MY40A BEC",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 40,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "MY40A SBEC",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 40,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "MY50A BEC",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 50,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "MY50A SBEC",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 50,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "MY50A OPTO",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 50,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "MY60A SBEC",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 60,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "MY70A SBEC",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 70,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "MY85A BEC",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 85,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "MY85A SBEC",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 85,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "MY85A OPTO",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 85,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "MY110A OPTO LV",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 110,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "MY100A OPTO HV",
+      "cells_min": 5,
+      "cells_max": 10,
+      "v_min_mv": null,
+      "v_max_mv": 42000,
+      "current_a": 100,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Mystery_ESC.pdf p.1"
+    },
+    {
+      "name": "Readytosky A-OEM-30A",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 30,
+      "bec": "linear",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Readytosky_30A_ESC.pdf p.1"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Mystery_ESC.pdf",
+      "pages": "2-6",
+      "language": "en",
+      "url": "https://www.uruktech.com/wp-content/uploads/2016/07/Mystery-ESC-Instruction-manual.pdf"
+    },
+    {
+      "file": "Readytosky_30A_ESC.pdf",
+      "pages": "1-4",
+      "language": "en",
+      "url": "https://cdn.shopify.com/s/files/1/1052/4162/files/30AESCmanual.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "The tones differ in rhythm and pitch; the bench counts current pulses only, whether the tones can be told apart by current is untested. OPTO models have no BEC.",
+  "scheme": {
+    "type": "melody_groups",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "Two short beeps after power-up, then (within the first 5 s) the throttle-calibration window",
+      "steps": [
+        "Transmitter on, throttle at max",
+        "Connect battery",
+        "Wait for two short beeps: programming mode entered",
+        "If the throttle goes to min within 5 s, the throttle calibration is changed (avoid this)",
+        "Keep the throttle at max beyond 5 s: the ESC starts the tone sequence"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "melody",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": 4,
+      "description": "Each setting option has its own tone pattern (dots, dashes, wave, V and slash shapes in the chart), repeated four times. One tone identifies function and value. Item numbers 1-10 follow the manual's setting list."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Move throttle to min while the wanted tone plays. The ESC emits two beeps to confirm the new setting is stored."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Keep the throttle at max and wait for the next tone."
+    },
+    "confirm_signal": "Two beeps (**) after the setting is stored.",
+    "exit": "One setting per power cycle: disconnect the battery, wait 5 s, reconnect.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Select the restore tone (long dashes) and move the throttle to min.",
+    "description": "Throttle max, battery on, two short beeps. After 5 s with the throttle still at max the tone loop starts; throttle to min while the wanted tone plays saves it and two beeps confirm. Disconnect, wait 5 s, repeat for another setting."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "brake on/off tone (state set by selection not stated)",
+          "tone": "_* _* _* _*"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2, 4"
+    },
+    {
+      "number": 2,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "NiCad / NiMH",
+          "tone": "~ ~ ~ ~"
+        },
+        {
+          "number": 2,
+          "name": "LiPo (default, auto cell count)",
+          "tone": "~~ ~~ ~~ ~~",
+          "default": true
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2, 4"
+    },
+    {
+      "number": 3,
+      "name": "Low-voltage cutoff threshold",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "low (2.8 V / 50 %)",
+          "tone": "*_ _* x4"
+        },
+        {
+          "number": 2,
+          "name": "medium (3.0 V; 60 % or 65 %)",
+          "tone": "*_ _ _* x4",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "high (3.2 V / 65 %)",
+          "tone": "*_ _ _ _* x4"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2-4"
+    },
+    {
+      "number": 4,
+      "name": "Restore factory defaults",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "restore",
+          "tone": "- - - - (long dashes)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3-4"
+    },
+    {
+      "number": 5,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "automatic (7-30 deg)",
+          "tone": "- - - -",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "low (7-22 deg)",
+          "tone": "-- -- -- --"
+        },
+        {
+          "number": 3,
+          "name": "high (22-30 deg)",
+          "tone": "--- --- --- ---"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3, 4"
+    },
+    {
+      "number": 6,
+      "name": "Soft acceleration start-up",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "very soft (1.5 s ramp)",
+          "tone": "VV VV VV VV"
+        },
+        {
+          "number": 2,
+          "name": "soft acceleration (1 s ramp)",
+          "tone": "V V V V"
+        },
+        {
+          "number": 3,
+          "name": "start acceleration (quick)",
+          "tone": "VVV VVV VVV VVV"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3, 4"
+    },
+    {
+      "number": 7,
+      "name": "Heli governor mode",
+      "key": "governor",
+      "values": [
+        {
+          "number": 1,
+          "name": "rpm off",
+          "tone": "_*_ x4",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "heli first range (5 s delay)",
+          "tone": "_**_ x4"
+        },
+        {
+          "number": 3,
+          "name": "heli second range (15 s delay)",
+          "tone": "_***_ x4"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3, 4"
+    },
+    {
+      "number": 8,
+      "name": "Motor rotation",
+      "key": "direction",
+      "values": [
+        {
+          "number": 1,
+          "name": "positive / reverse tone (state set by selection not stated)",
+          "tone": "W W W W"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3, 4"
+    },
+    {
+      "number": 9,
+      "name": "Switching frequency",
+      "key": "pwm_freq",
+      "values": [
+        {
+          "number": 1,
+          "name": "8 kHz",
+          "tone": "// // // //",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "16 kHz",
+          "tone": "\\\\ \\\\ \\\\ \\\\"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4"
+    },
+    {
+      "number": 10,
+      "name": "Low-voltage cutoff type",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "reduce power",
+          "tone": "_ - _ - _ - _ -",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "hard cutoff",
+          "tone": "- _ - _ - _ - _"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4"
+    }
+  ],
+  "unknowns": [
+    "Beep duration, gap and loop length in ms are not stated.",
+    "The order and number of tones in the loop are given only by the chart; each tone repeats 4 times in the chart notation.",
+    "Whether the throttle must stay at max between tones is not stated beyond 'if left at max beyond 5 s the sequence starts'.",
+    "Chart tone glyphs are text approximations; pitch information is not available.",
+    "Time the tone loop starts: 'beyond 5 s' only; the loop's first tone start time is not stated.",
+    "For brake and motor rotation (one tone each) the manual does not say how to select the opposite of the stored value.",
+    "Default of soft acceleration is stated as 'Medium', a name that does not appear in the three-value list."
+  ],
+  "notes": [
+    "Readytosky_30A_ESC.pdf is the same manual text as Mystery_ESC.pdf with model A-OEM-30A; Mystery_ESC.pdf names ZTW as maker (brand set to Mystery).",
+    "Mystery_ESC.pdf: the tone table gives Medium cutoff as 3.0 V/60 %; the text gives Ni cutoffs 50/65/65 % and the restore list gives 3.0 V/65 %. Same text in Readytosky_30A_ESC.pdf.",
+    "Same tone chart as Hitec Energy Sport (hitec-energy-sport); the Hitec manual has a different entry text.",
+    "INDEX.csv says this scheme matches ZTW Gecko; it does not (Gecko uses short/long counts)."
+  ],
+  "schema": 1,
+  "verified": false
+}

@@ -1,0 +1,282 @@
+{
+  "id": "turnigy-aquastar",
+  "brand": "HobbyKing/Turnigy",
+  "family": "Aquastar boat ESC, throttle count menu",
+  "models": [
+    {
+      "name": "Aquastar 90A",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 90,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Turnigy_Aquastar.pdf p.2"
+    },
+    {
+      "name": "Aquastar 120A",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 120,
+      "bec": "switching",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Turnigy_Aquastar.pdf p.2"
+    },
+    {
+      "name": "Aquastar HV 240A",
+      "cells_min": 3,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 240,
+      "bec": "none",
+      "firmware_note": "the settings table and flowchart are labelled HV 240A",
+      "cell_type": "lipo",
+      "spec_source": "Turnigy_Aquastar.pdf p.2"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Turnigy_Aquastar.pdf",
+      "pages": "2-4, 10-12",
+      "language": "en",
+      "url": "https://cdn-global-hk.hobbyking.com/media/file/a/q/aquastar_manual_1.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "The manual has the user switch the ESC on after the throttle is at max and the transmitter is on, and the HV 240A needs a separate 5-6 V receiver supply. The bench could replace the ESC switch with supply output, but the manual does not say so.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "3 beeps, then 4 beeps, then 7 beeps",
+      "steps": [
+        "Transmitter on, throttle at max, ESC switch off, receiver powered separately",
+        "Switch the ESC on: 3 beeps",
+        "4 beeps follow (the throttle calibration window; do not move the throttle)",
+        "7 beeps: programming mode entered"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "Item N is N beeps in a main loop (items 1 to 10; 2, 7 and 9 are unused). After selecting, option N is N beeps."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Item: move throttle to the lowest position after the item's beeps."
+    },
+    "value_select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Option: move throttle to the highest position after the wanted option's beeps."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Leave the throttle unchanged."
+    },
+    "confirm_signal": "Three beeps after a setting is saved.",
+    "exit": "Item 10 (10 beeps) exits and the ESC is ready ('GO').",
+    "changes_per_entry": "many",
+    "reset_to_defaults": null,
+    "description": "Throttle max, ESC switched on: 3 beeps, 4 beeps, 7 beeps. Items 1-10 loop as N beeps. Throttle to lowest picks an item; its options play as 1st, 2nd, ... beeps; throttle to highest picks one and 3 beeps confirm. Item 10 exits."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Low cutoff voltage",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "Auto LiPo cell detect"
+        },
+        {
+          "number": 2,
+          "name": "12.0 V (4S)"
+        },
+        {
+          "number": 3,
+          "name": "15.0 V (5S)"
+        },
+        {
+          "number": 4,
+          "name": "18.0 V (6S)"
+        },
+        {
+          "number": 5,
+          "name": "21.0 V (7S)"
+        },
+        {
+          "number": 6,
+          "name": "24.0 V (8S)"
+        },
+        {
+          "number": 7,
+          "name": "27.0 V (9S)"
+        },
+        {
+          "number": 8,
+          "name": "30.0 V (10S)"
+        },
+        {
+          "number": 9,
+          "name": "33.0 V (11S)"
+        },
+        {
+          "number": 10,
+          "name": "36.0 V (12S)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3, 10, 12"
+    },
+    {
+      "number": 3,
+      "name": "Brake type",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "brake disabled",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft brake (50 %)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3, 10, 12"
+    },
+    {
+      "number": 4,
+      "name": "Timing advance",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "low (0-15 deg)"
+        },
+        {
+          "number": 2,
+          "name": "middle (5-20 deg)"
+        },
+        {
+          "number": 3,
+          "name": "high (15-30 deg)"
+        },
+        {
+          "number": 4,
+          "name": "auto",
+          "default": true
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3, 10, 12"
+    },
+    {
+      "number": 5,
+      "name": "Cutoff type",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "hard cutoff",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft cutoff"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3, 11, 12"
+    },
+    {
+      "number": 6,
+      "name": "Start type",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "soft start"
+        },
+        {
+          "number": 2,
+          "name": "standard start",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "fast start"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3, 11, 12"
+    },
+    {
+      "number": 8,
+      "name": "PWM switching rate",
+      "key": "pwm_freq",
+      "values": [
+        {
+          "number": 1,
+          "name": "8 kHz",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "12 kHz"
+        },
+        {
+          "number": 3,
+          "name": "16 kHz"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3, 11, 12"
+    },
+    {
+      "number": 10,
+      "name": "Exit",
+      "key": "exit",
+      "values": [
+        {
+          "number": 1,
+          "name": "exit programming and go"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "12"
+    }
+  ],
+  "unknowns": [
+    "Beep length, gap and window durations are not stated.",
+    "Whether the loop restarts after saving (the flowchart appears to return to the main loop) is not explicit.",
+    "Item windows for the lowest/highest throttle moves are not given.",
+    "Menu is documented for the HV 240A; the manual does not say the 90A and 120A use the same menu.",
+    "How the 4 beeps before the 7 beeps differ from the calibration 4 long beeps is not stated."
+  ],
+  "notes": [
+    "Default conflict for item 1: the settings table and flowchart mark Auto; the settings text marks 12.0 V as default and says the HV 240A is preset to 12.0 V. No default flag set on item 1.",
+    "The settings table lists 9.0 V (3S) for LVC; the text and flowchart list 12.0 V as the first fixed value. The flowchart numbering is used.",
+    "Brake: the text lists a hard brake (option 3, 70 %); table and flowchart list only disabled and soft.",
+    "Items 2, 7 and 9 are marked None/reserve in the flowchart."
+  ],
+  "schema": 1,
+  "verified": false
+}

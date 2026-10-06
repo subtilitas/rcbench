@@ -1,0 +1,451 @@
+{
+  "id": "hacker-x-pro",
+  "brand": "Hacker",
+  "family": "X-Pro (2007 to 2016 editions)",
+  "models": [
+    {
+      "name": "X-5-Pro",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 5,
+      "bec": null,
+      "firmware_note": "BEC load 2-3 servos",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_X-Pro_Regler_de.pdf p.4"
+    },
+    {
+      "name": "X-7-Pro",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 7,
+      "bec": null,
+      "firmware_note": "BEC load 2-3 servos",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_X-Pro_Regler_de.pdf p.4"
+    },
+    {
+      "name": "X-12-Pro",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 12,
+      "bec": null,
+      "firmware_note": "BEC load 2-3 servos",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_X-Pro_Regler_de.pdf p.4"
+    },
+    {
+      "name": "X-20-Pro",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 20,
+      "bec": null,
+      "firmware_note": "BEC load 2-4 servos",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_X-Pro_Regler_de.pdf p.4"
+    },
+    {
+      "name": "X-30-Pro",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 30,
+      "bec": null,
+      "firmware_note": "BEC load 2-4 servos",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_X-Pro_Regler_de.pdf p.4"
+    },
+    {
+      "name": "X-40-SB-Pro",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 40,
+      "bec": "switching",
+      "firmware_note": "BEC load 2-6 servos",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_X-Pro_Regler_de.pdf p.4"
+    },
+    {
+      "name": "X-40 OPTO-Pro",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 40,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_X-Pro_Regler_de.pdf p.4"
+    },
+    {
+      "name": "X-55-SB-Pro",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 55,
+      "bec": "switching",
+      "firmware_note": "BEC load 2-6 servos",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_X-Pro_Regler_de.pdf p.4"
+    },
+    {
+      "name": "X-70-SB-Pro",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 70,
+      "bec": "switching",
+      "firmware_note": "BEC load 2-6 servos",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_X-Pro_Regler_de.pdf p.4"
+    },
+    {
+      "name": "X-70-OPTO-Pro",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 70,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_X-Pro_Regler_de.pdf p.4"
+    },
+    {
+      "name": "X-70-OPTO-Pro-3D",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 70,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_X-Pro_Regler_de.pdf p.4"
+    },
+    {
+      "name": "X-75-OPTO-Pro",
+      "cells_min": 5,
+      "cells_max": 10,
+      "v_min_mv": null,
+      "v_max_mv": 42000,
+      "current_a": 75,
+      "bec": "opto",
+      "firmware_note": "protection threshold 12.0 V stated for this type in the leaflet",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_X-Pro_Regler_de.pdf p.4"
+    },
+    {
+      "name": "X-80-OPTO-Pro-3D",
+      "cells_min": 5,
+      "cells_max": 10,
+      "v_min_mv": null,
+      "v_max_mv": 42000,
+      "current_a": 80,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_X-Pro_Regler_de.pdf p.4"
+    },
+    {
+      "name": "X-110-OPTO-Pro",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 110,
+      "bec": "opto",
+      "firmware_note": null,
+      "cell_type": "lipo",
+      "spec_source": "Hacker_X-Pro_Regler_de.pdf p.4"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Hacker_X-Pro.pdf",
+      "pages": "1-4",
+      "language": "en",
+      "url": "http://www.hacker-motor.com/daten/anleitungen/X-Pro-Manuel.pdf"
+    },
+    {
+      "file": "Hacker_X-Pro_rev3_en.pdf",
+      "pages": "1-4",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/http://www.hacker-motor.com/images/X-Pro-rev3-0607Englisch.pdf"
+    },
+    {
+      "file": "Hacker_X-Pro_series_leaflet.pdf",
+      "pages": "2-6",
+      "language": "de",
+      "url": "https://web.archive.org/web/2/http://www.hacker-motor.com/download/anleitung-x-pro-serie/"
+    },
+    {
+      "file": "Hacker_X-Pro_Regler_de.pdf",
+      "pages": "4, 6-9",
+      "language": "de/en",
+      "url": "https://www.hacker-motor.com/daten/anleitungen/regler/Anleitung_X-Pro_Regler.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": null,
+  "scheme": {
+    "type": "melody_groups",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "Two low tones then two high tones ('_ _ - -') about 5 s after power-up.",
+      "steps": [
+        "Throttle signal at full power.",
+        "Connect the drive battery (switch on where fitted); Opto versions need an external supply for the receiver connected first.",
+        "Wait 5 s for the two low plus two high tones.",
+        "Brake: move throttle to stop right after these tones.",
+        "Other items: keep full throttle until the wanted pattern sounds; move throttle to stop while its five repetitions are playing."
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "melody",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": 5,
+      "description": "Each selectable setting has its own tone pattern, shown five times in a row, then the next setting follows in the order of the list (battery type, under-voltage behaviour, acceleration, timing, frequency, rotation reverse, rpm control). One pattern names item and value together: battery type uses N short beeps per group (NiCd one, 2 cells two and so on), timing uses 1 to 3 high tones, acceleration uses V, VV, VVV, 8 kHz is a falling and 16 kHz a rising tone. Symbols as printed: '.' short low beep, '-' short high beep, '_' long tone, '\\' falling, '/' rising, 'V' high-low-high, 'W' doubled V. A pattern ends after its fifth repetition. Whether the list loops is not stated."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Move the throttle to stop while the wanted series of five patterns is sounding."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Keep full throttle to pass every pattern."
+    },
+    "confirm_signal": "None named; the ESC leaves programming mode and the motor runs on throttle movement. Normal start-up then announces the cell count followed by one beep (brake on) or two (brake off).",
+    "exit": "Automatic after the single change; disconnect the battery before another change. If the programming mode starts by mistake, disconnecting the battery prevents a change.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": null,
+    "description": "Full throttle at power-up gives two low plus two high tones after 5 s. Stop right after them toggles the brake. Otherwise full throttle is kept; each setting sounds as a five-times repeated pattern and stop during one stores it. One change per entry. Choosing any battery type by stick turns LiPo autodetect off; it can be switched on again only with the USB interface."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "toggle brake: on becomes off, off becomes on"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2-3 (en), 8 (de 2016)",
+      "note": "Factory state brake off."
+    },
+    {
+      "number": 2,
+      "name": "Battery type / cutoff",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "NiCd"
+        },
+        {
+          "number": 2,
+          "name": "2 LiPo cells, 5.8 V"
+        },
+        {
+          "number": 3,
+          "name": "3 LiPo cells, 8.7 V (2007, 2008) or 8.3 V (2016)"
+        },
+        {
+          "number": 4,
+          "name": "4 LiPo cells, 11.6 V or 11.3 V"
+        },
+        {
+          "number": 5,
+          "name": "5 LiPo cells, 14.5 V or 14.2 V"
+        },
+        {
+          "number": 6,
+          "name": "6 LiPo cells, 17.4 V"
+        },
+        {
+          "number": 7,
+          "name": "7 LiPo cells, 20.3 V, Opto only"
+        },
+        {
+          "number": 8,
+          "name": "8 LiPo cells, 23.2 V, Opto only"
+        },
+        {
+          "number": 9,
+          "name": "9 LiPo cells, 26.1 V, Opto only"
+        },
+        {
+          "number": 10,
+          "name": "10 LiPo cells, 29.0 V, Opto only"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3 (en), 8 (de 2016)",
+      "note": "Value numbers are beep counts per group; NiCd is one beep. Factory state is LiPo autodetect at 3.2 V per cell (pack above 3.8 V per cell needed), which has no pattern."
+    },
+    {
+      "number": 3,
+      "name": "Under-voltage behaviour",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "reduce power ('-_')",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "cut off ('_-')"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3 (en), 8 (de 2016)"
+    },
+    {
+      "number": 4,
+      "name": "Acceleration",
+      "key": "acceleration",
+      "values": [
+        {
+          "number": 1,
+          "name": "low ('V')"
+        },
+        {
+          "number": 2,
+          "name": "medium ('VV')"
+        },
+        {
+          "number": 3,
+          "name": "high ('VVV')"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3 (en), 8 (de 2016)",
+      "note": "Factory acceleration is 'fast'; its position among the three is not stated."
+    },
+    {
+      "number": 5,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "automatic, 7 to 30 degrees",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft, 7 degrees, 2-pole motors"
+        },
+        {
+          "number": 3,
+          "name": "hard, 22 to 30 degrees, multipole motors"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3 (en), 9 (de 2016)"
+    },
+    {
+      "number": 6,
+      "name": "PWM frequency",
+      "key": "pwm_freq",
+      "values": [
+        {
+          "number": 1,
+          "name": "8 kHz",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "16 kHz"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3 (en), 9 (de 2016)"
+    },
+    {
+      "number": 7,
+      "name": "Rotation reverse",
+      "key": "direction",
+      "values": [
+        {
+          "number": 1,
+          "name": "reverse motor rotation ('W' melody)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4 (en), 9 (de 2016)"
+    },
+    {
+      "number": 8,
+      "name": "Active rpm control (heli, governor)",
+      "key": "governor",
+      "values": [
+        {
+          "number": 1,
+          "name": "off ('_._')",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "up to 20 000 electrical rpm ('_.._')"
+        },
+        {
+          "number": 3,
+          "name": "up to 50 000 electrical rpm ('_..._')"
+        },
+        {
+          "number": 4,
+          "name": "above 50 000 electrical rpm ('_...._')"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4 (en), 9 (de 2016)",
+      "note": "Electrical rpm of a 2-pole motor: divide by 2 for 4 poles, by 5 for 10 poles. The leaflet gives 7 for 14 poles."
+    }
+  ],
+  "unknowns": [
+    "Beep and tone lengths, gaps, gap between patterns (ms): not stated.",
+    "Order in which patterns sound: printed list order assumed, not stated.",
+    "Whether the list loops after the last pattern: not stated.",
+    "Length of the brake window after the first tones ('as soon as you hear'): not stated.",
+    "Position of 'fast' acceleration among low, medium, high: not stated.",
+    "Default rotation direction: not stated.",
+    "Number of beeps used for the NiCd entry: German 2016 text says one, the pattern rows show five groups."
+  ],
+  "notes": [
+    "Cutoff voltages: 3 LiPo cells 8.7 V, 4 cells 11.6 V, 5 cells 14.5 V in Hacker_X-Pro.pdf, Hacker_X-Pro_rev3_en.pdf and Hacker_X-Pro_series_leaflet.pdf; 8.3 V, 11.3 V, 14.2 V in Hacker_X-Pro_Regler_de.pdf (2016).",
+    "Hacker_X-Pro_Regler_de.pdf p8 labels the '_' symbol 'long high beep' in the English text and 'langer tiefer Ton' (long low tone) in the German text.",
+    "Hacker_X-Pro_Regler_de.pdf p8 row 5S reads '5 short beeps / 2 short beeps'; read as five.",
+    "Hacker_X-Pro.pdf is the 03/08 print and Hacker_X-Pro_rev3_en.pdf the 06/07 print; their text is identical except the date.",
+    "Models: only Hacker_X-Pro_Regler_de.pdf p4 has a model table. Voltage maximum is 4.2 V per cell times the highest LiPo count.",
+    "The power-off threshold is 5.5 V, 12.0 V for the X-75-Opto (leaflet p6).",
+    "The manual does not permit power supplies, only batteries.",
+    "Opto versions need an external receiver supply connected before the drive battery.",
+    "The USB interface (order no. 87201006) offers more settings: variable LiPo cutoff, brake off/soft/hard, finer timing, three acceleration stages; not a stick method."
+  ],
+  "schema": 1,
+  "verified": false
+}

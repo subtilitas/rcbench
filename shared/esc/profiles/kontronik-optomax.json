@@ -1,0 +1,137 @@
+{
+  "schema": 1,
+  "id": "kontronik-optomax",
+  "brand": "Kontronik",
+  "family": "OPTOMAX Fahrtregler",
+  "verified": false,
+  "models": [
+    {
+      "name": "OPTOMAX",
+      "cells_min": null,
+      "cells_max": null,
+      "cell_type": null,
+      "v_min_mv": null,
+      "v_max_mv": null,
+      "current_a": null,
+      "bec": "opto",
+      "firmware_note": "the manual mentions an OPTOMAX-100 with a typical on-resistance of 1.8 mOhm; other ratings not stated",
+      "spec_source": "Kontronik_Optomax.pdf p.2: names OPTOMAX-100 with 1.8 mOhm typical on-resistance only; no rating stated"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Optomax.pdf",
+      "pages": "2-4",
+      "language": "de",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/OPTOMAX.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "A short-circuit bridge must be fitted on the two gold contacts before power-up; removing it before the storing signal turns undervoltage cutoff off. The bench cannot do this.",
+  "scheme": {
+    "type": "stick_position",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "One signal after about 5 s recognises the brake or motor-off position.",
+      "steps": [
+        "Receiver lead in the motor channel. Transmitter on, receiver battery connected. Throttle and trim to brake if a brake is wanted, else motor-off.",
+        "Operator: fit the short-circuit bridge on the two gold contacts.",
+        "Apply drive power. After about 5 s a signal confirms the brake / motor-off position.",
+        "Move the throttle to full and hold it until the signal, about 5 s after the last one.",
+        "No brake: leave the throttle at full. Brake: move the throttle to motor-off.",
+        "After about 5 s a signal confirms the brake activation.",
+        "Hard brake: move the throttle to full again. Soft brake: keep the throttle where it is.",
+        "After about 5 s a double signal stores all settings. Undervoltage cutoff stays on if the bridge is still fitted at this moment; remove it before the double signal to switch the cutoff off.",
+        "Disconnect drive power and remove the bridge."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "Single signals end intermediate steps; a double signal stores. Signal = LED flash plus beep when the motor and drive battery are connected."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": 5000,
+      "description": "Stick sequence sets the brake level."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Not applicable."
+    },
+    "confirm_signal": "Double signal after about 5 s: settings stored.",
+    "exit": "Disconnect power and remove the bridge.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": null,
+    "description": "Stick-position teach-in with three brake levels (none, soft, hard) and a cutoff on/off decision taken by the bridge state at the storing signal."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Throttle positions",
+      "key": "throttle_range",
+      "values": [
+        {
+          "number": 1,
+          "name": "taught by the sequence"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2-3"
+    },
+    {
+      "number": 2,
+      "name": "Short-circuit brake level",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "none: throttle stays at full after the full-throttle signal"
+        },
+        {
+          "number": 2,
+          "name": "soft: throttle at motor-off, kept there"
+        },
+        {
+          "number": 3,
+          "name": "hard: throttle at motor-off, then back to full"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2-3"
+    },
+    {
+      "number": 3,
+      "name": "Undervoltage cutoff",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "on: bridge still fitted at the double signal"
+        },
+        {
+          "number": 2,
+          "name": "off: bridge removed before the double signal"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3-4"
+    }
+  ],
+  "unknowns": [
+    "Signal is an LED flash with a beep when the motor is connected; beep duration is not stated.",
+    "The ~5 s intervals are approximate; their tolerance is not stated.",
+    "A wrong programming attempt shows no double signal; the ESC then stores nothing.",
+    "Reset to defaults is not described.",
+    "Item numbers are step order chosen here; the ESC does not sound item numbers.",
+    "Input voltage, cell count and current ratings are not stated in the text read."
+  ],
+  "notes": []
+}

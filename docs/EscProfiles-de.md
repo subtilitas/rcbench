@@ -1,0 +1,172 @@
+# ESC-Programmierprofile
+
+[English](EscProfiles.md)
+
+Ein ESC-Profil (Electronic Speed Controller) beschreibt, wie eine Familie
+von ESCs über ihr Gasknüppel-Menü programmiert wird. Es enthält, wie das Menü
+betreten wird, wie der ESC eine Zahl ausgibt und welche Punkte und Werte das
+Menü hat. Es sind die Daten, die die geplante Modusprogrammierung liest: Der
+Bediener wählt einen ESC, das Panel zeigt das Menü mit den Standardwerten
+vorgewählt, und der Prüfstand bewegt das Gas und zählt die Pieptöne im
+Versorgungsstrom.
+
+Die Modusprogrammierung selbst ist nicht gebaut. Vorhanden sind der
+Profilsatz, seine Ablage im Panel und sein Leser für die SD-Karte.
+
+## Was im Satz steht
+
+| | Anzahl |
+| --- | --- |
+| Profile (Familien) | 72 |
+| Modelle | 451 |
+| Marken | 20 |
+| Menüpunkte | 360 |
+
+| Wer ein Profil ausführen kann | Profile | Modelle |
+| --- | --- | --- |
+| Der Prüfstand allein: Gassignal und Versorgung | 44 | 340 |
+| Ein Mensch setzt einen Jumper, drückt einen Taster oder liest eine LED | 26 | 108 |
+| Niemand: das Handbuch nennt kein brauchbares Verfahren | 2 | 3 |
+
+Jedes Profil ist `"verified": false`. Die Profile stammen aus 153
+Handbüchern und sind ohne ESC am Prüfstand entstanden. Kein Handbuch nennt
+eine Pieplänge, eine Pause oder eine Schleifenzeit in Millisekunden, deshalb
+ist jedes Zeitfeld null, bis eine Aufnahme am Prüfstand es misst.
+
+## Wo Profile liegen
+
+| Ablage | Pfad | Gelesen |
+| --- | --- | --- |
+| Eingebaut | `shared/esc/profiles/*.json`, in das Panel-Image übersetzt | immer |
+| SD-Karte | `/ESC/*.json` | einmal, beim Start |
+
+Eine Datei auf der Karte heißt wie ihre id: `/ESC/hobbywing-flyfun-8item.json`
+enthält `"id": "hobbywing-flyfun-8item"`. Groß- und Kleinschreibung dürfen
+abweichen; alles andere wird abgelehnt. Eine Datei mit der id eines
+eingebauten Profils ersetzt dieses Profil. Eine Datei mit neuer id fügt ein
+Profil hinter den eingebauten an. Dateinamen ab 64 Zeichen werden nicht
+gelesen. Die
+Karte hält höchstens 32 Profile; das Panel liest die Namen der ersten 64
+`.json`-Dateien in `/ESC/`. Eine abgelehnte Datei wird auf der Konsole mit
+Grund genannt, zum Beispiel:
+
+```
+ESC profiles: MYESC.JSON refused: items[2].values: not 1-255 entries
+```
+
+Abgelehnt wird eine Datei, die:
+
+- größer als 64 KiB ist, kein JSON ist oder kein UTF-8 ist;
+- tiefer als 16 Ebenen unter dem obersten Objekt verschachtelt ist oder ein
+  Objekt mit mehr als 64 Einträgen hat;
+- in einem Objekt einen Schlüssel zweimal hat, verglichen nach dem Dekodieren
+  (`"sch\u0065ma"` ist `"schema"`);
+- in einem String `\u0000` oder ein halbes Surrogat-Paar enthält;
+- anders heißt als ihre id;
+- eine Regel unten verletzt.
+
+Der Generator wendet dieselben Regeln auf die Dateien im Repository an. Das Panel läuft ohne Karte; dann sind die
+eingebauten Profile der ganze Satz.
+
+## Die Datei
+
+Ein JSON-Objekt je Datei. `id` ist der Dateiname ohne `.json`, 1 bis 48
+Zeichen aus `a-z 0-9 -`.
+
+```json
+{
+  "schema": 1,
+  "id": "hobbywing-flyfun-8item",
+  "brand": "Hobbywing",
+  "family": "FlyFun 6A-100A sensorless, 8-item menu",
+  "verified": false,
+  "automatable": "full",
+  "automatable_note": "",
+  "sources": [{"file": "...pdf", "pages": "3-4", "url": "https://..."}],
+  "models": [...],
+  "scheme": {...},
+  "items": [...],
+  "unknowns": ["Beep duration in ms is not stated."],
+  "notes": []
+}
+```
+
+`sources`, `unknowns`, `notes` und jedes `description`-Feld bleiben im
+JSON. Das Panel lädt sie nicht.
+
+### Felder, die das Panel liest
+
+| Feld | Werte |
+| --- | --- |
+| `automatable` | `full`, `assisted`, `none`; alles außer `full` braucht `automatable_note` |
+| `scheme.type` | `count`, `short_long`, `melody_groups`, `yes_no`, `stick_position`, `other` |
+| `scheme.entry.throttle` | `min`, `mid`, `max`: die Knüppelstellung, die das Menü öffnet |
+| `scheme.entry.when` | `before_power_on`, `after_power_on` |
+| `scheme.entry.hold_ms` | 0 bis 600000, oder null, wenn nicht angegeben |
+| `scheme.entry.steps` | 1 bis 255 Bedienschritte, in Reihenfolge |
+| `scheme.announce.what` | `item`, `value`, `item_then_value` |
+| `scheme.announce.encoding` | `count`, `short_long`, `melody`, `yes_no` |
+| `scheme.announce.long_equals_short` | kurze Pieptöne je langem; Pflicht bei `short_long` |
+| `scheme.announce.beep_ms`, `gap_ms`, `group_gap_ms` | 0 bis 60000, oder null |
+| `scheme.announce.repeat` | 0 bis 255: 0 wiederholt bis zur Auswahl, null unbekannt |
+| `scheme.select.throttle`, `scheme.skip.throttle` | `min`, `mid`, `max`, `none` |
+| `scheme.select.within_ms` | 0 bis 60000: die Zeit nach dem Ton, in der die Bewegung zählt, oder null, wenn nicht angegeben |
+| `scheme.value_select` | nur bei zweistufigen Menüs: `select` wählt den Punkt, dann speichert `value_select.throttle` (`min`, `mid`, `max`, `none`) den angesagten Wert; `within_ms` wie bei `select`. Fehlt es oder ist es null, speichert die `select`-Bewegung den Wert |
+| `scheme.changes_per_entry` | `one`, `many` |
+
+### Modelle
+
+| Feld | Werte |
+| --- | --- |
+| `name` | eindeutig innerhalb des Profils |
+| `cells_min`, `cells_max` | 0 bis 255, oder null |
+| `cell_type` | `lipo`, `nimh`: was `cells_*` zählen |
+| `v_max_mv` | höchste Eingangsspannung in mV, oder null |
+| `current_a` | Dauerstrom in A, 0 bis 65535, oder null |
+
+### Menüpunkte
+
+| Feld | Werte |
+| --- | --- |
+| `number` | 1 bis 255, wie der ESC sie ausgibt |
+| `name` | wie das Handbuch ihn nennt |
+| `key` | 1 bis 32 aus `a-z 0-9 _`; eine Bedeutung über alle Marken: `brake`, `timing`, `cutoff_voltage`, `cutoff_type`, `battery_type`, `cell_count`, `startup`, `governor`, `direction`, `throttle_range`, `pwm_freq`, `aircraft_type`, `mode`, `reset` |
+| `values` | 1 bis 255 aus `{"number": 0-255, "name": "...", "default": true}`; Nummern eindeutig, höchstens ein Standardwert |
+| `applies_to` | Modellnamen dieses Profils, oder null für alle |
+| `applies_when` | eine Bedingung in Worten, z. B. `"model type heli"` |
+
+Zwei Menüpunkte dürfen dieselbe Nummer nur tragen, wenn beide `applies_to`
+oder `applies_when` haben.
+
+## Ein Profil hinzufügen oder korrigieren
+
+An einem Prüfstand: die Datei nach `/ESC/` auf die Karte kopieren und das
+Panel neu starten.
+
+Im Repository: die Datei unter `shared/esc/profiles/` ändern oder anlegen,
+dann die C-Datei neu erzeugen und prüfen:
+
+```sh
+python3 tools/gen_esc_profiles.py
+python3 tools/gen_esc_profiles.py --check
+```
+
+CI (Continuous Integration) führt `--check` aus. Die Host-Suite liest jede
+Datei mit dem Leser des Panels und vergleicht das Ergebnis Feld für Feld mit
+der erzeugten Tabelle, damit Generator und Kartenleser dieselben Dateien
+annehmen.
+
+## Aktuelle Einschränkungen
+
+- Kein Profil ist an einem ESC gelaufen. Menü- und Wertnummern,
+  Standardwerte und Einstiegsgesten sind so, wie die Handbücher sie angeben,
+  und manche Handbücher widersprechen einander; die `notes` jedes Profils
+  nennen die Widersprüche.
+- Die Versorgung des Prüfstands ist das PD mini, höchstens 20 V. ESCs, deren
+  Mindesteingang darüber liegt, etwa YGE Opto und Navy ab 6S, brauchen eine
+  externe Versorgung.
+- Wo ein Menü die Punkte durch Tonhöhe statt durch Anzahl unterscheidet
+  (Hitec, Mystery, Readytosky), trennt der Versorgungsstrom die Punkte
+  möglicherweise nicht. Das ist nicht gemessen.
+- Eine Karte, die bei laufendem Panel geändert wird, wird beim nächsten
+  Start gelesen.

@@ -1,0 +1,177 @@
+{
+  "schema": 1,
+  "id": "kontronik-3sl",
+  "brand": "Kontronik",
+  "family": "3SL",
+  "verified": false,
+  "models": [
+    {
+      "name": "3SL 25-6-18",
+      "cells_min": 6,
+      "cells_max": 18,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 27000,
+      "current_a": 25,
+      "bec": null,
+      "firmware_note": "NiCd cells; 40 A for 15 s",
+      "spec_source": "Kontronik_3SL.pdf p.2: 6-18 NiCd/NiMH cells, 25 A continuous; v_max = 18 cells x 1500 mV"
+    },
+    {
+      "name": "3SL 40-6-18",
+      "cells_min": 6,
+      "cells_max": 18,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 27000,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "70 A for 15 s",
+      "spec_source": "Kontronik_3SL.pdf p.2: 6-18 NiCd/NiMH cells, 40 A continuous; v_max = 18 cells x 1500 mV"
+    },
+    {
+      "name": "3SL 70-6-18",
+      "cells_min": 6,
+      "cells_max": 18,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 27000,
+      "current_a": 70,
+      "bec": null,
+      "firmware_note": "100 A for 15 s",
+      "spec_source": "Kontronik_3SL.pdf p.2: 6-18 NiCd/NiMH cells, 70 A continuous; v_max = 18 cells x 1500 mV"
+    },
+    {
+      "name": "3SL 25-14-32",
+      "cells_min": 14,
+      "cells_max": 32,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 48000,
+      "current_a": 25,
+      "bec": null,
+      "firmware_note": "40 A for 15 s",
+      "spec_source": "Kontronik_3SL.pdf p.2: 14-32 NiCd/NiMH cells, 25 A continuous; v_max = 32 cells x 1500 mV"
+    },
+    {
+      "name": "3SL 40-14-32",
+      "cells_min": 14,
+      "cells_max": 32,
+      "cell_type": "nimh",
+      "v_min_mv": null,
+      "v_max_mv": 48000,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "60 A for 15 s",
+      "spec_source": "Kontronik_3SL.pdf p.2: 14-32 NiCd/NiMH cells, 40 A continuous; v_max = 32 cells x 1500 mV"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_3SL.pdf",
+      "pages": "5-17",
+      "language": "de/en",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/3SL.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps. An optional arming switch can replace the jumper on the two gold contacts.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": 2000,
+      "confirm_signal": "Tone sequence after the 2 s wait.",
+      "steps": [
+        "Operator: fit the jumper on the programming contacts. Connect the motor if tones are to be audible.",
+        "Transmitter and receiver on. Throttle to brake (stick back); mode 3 and 6: motor-off position.",
+        "Apply drive power.",
+        "Wait 2 s or until the ESC sounds its tone sequence.",
+        "Operator: pull the jumper off.",
+        "Mode series sounds; mode 7 is reached at the 7-fold signal.",
+        "Move the throttle to full when the wanted mode sounds. Mode 6: then stick to brake.",
+        "Control output repeats the mode. Disconnect power."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "The ESC sounds mode 1 as one tone, mode 2 as two tones, and so on, one series after another with a pause between series."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Throttle to full during the wanted series."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip."
+    },
+    "confirm_signal": "Mode repeated as tones.",
+    "exit": "Disconnect power.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Program mode 1 (APM).",
+    "description": "Jumper procedure with a 2 s wait. Mode N is N tones."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "APM: reset, stick range learned at every power-up",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "Glider: brake about 0.5 s, cutoff 0.8 V per cell, RPM limit 50,000 at 4 poles, optional separate motor-off position"
+        },
+        {
+          "number": 3,
+          "name": "Motor plane / boat: brake off, cutoff off"
+        },
+        {
+          "number": 4,
+          "name": "Helicopter: speed governor"
+        },
+        {
+          "number": 5,
+          "name": "Competition F5B / F5B 10 cells / F5D"
+        },
+        {
+          "number": 6,
+          "name": "Car: proportional brake"
+        },
+        {
+          "number": 7,
+          "name": "Reverse motor rotation"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5-17"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone in ms is not stated.",
+    "Gap between tones inside one mode series in ms is not stated.",
+    "Pause between two mode series in ms is not stated.",
+    "Whether the mode series loops until a mode is selected is not stated.",
+    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
+    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2 s minimum; the end of the wait is the ESC's tone sequence.",
+    "Page numbers cover both language sides; the layout is two-column and duplicated.",
+    "Voltage in mV is not stated; cells are NiCd.",
+    "BEC presence is not stated in the text read."
+  ],
+  "notes": [
+    "The 3SL manual lists modes 1 to 7; the BEAT successor adds mode 8."
+  ]
+}

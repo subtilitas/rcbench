@@ -1,0 +1,199 @@
+{
+  "id": "ztw-spider-v2",
+  "brand": "ZTW",
+  "family": "Spider V2 OPTO multirotor ESC, 2-item menu",
+  "models": [
+    {
+      "name": "Spider 20A OPTO",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 20,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "ZTW_Spider_V2.pdf p.1 (specification table: cont. current, battery cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Spider 30A OPTO",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 30,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "ZTW_Spider_V2.pdf p.1 (specification table: cont. current, battery cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Spider 30A OPTO Small",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 30,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "ZTW_Spider_V2.pdf p.1 (specification table: cont. current, battery cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Spider 40A OPTO",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 40,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "ZTW_Spider_V2.pdf p.1 (specification table: cont. current, battery cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Spider 50A OPTO",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 50,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "ZTW_Spider_V2.pdf p.1 (specification table: cont. current, battery cells)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "Spider 60A OPTO",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 60,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "ZTW_Spider_V2.pdf p.1 (specification table: cont. current, battery cells)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "ZTW_Spider_V2.pdf",
+      "pages": "1-2",
+      "language": "en+zh",
+      "url": "http://imgmgr.banggood.com/images/upload/2014/09/SPIDER%20%20V2-Series%20Air%20ESC%20Uaser%20Manual.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "OPTO models have no BEC; the manual does not say how the signal side is powered.",
+  "scheme": {
+    "type": "short_long",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 3000,
+      "confirm_signal": "Two beeps (English page); Chinese page: wait 3 s, beep-beep",
+      "steps": [
+        "Radio on, throttle at 100 %",
+        "Connect battery",
+        "Wait: two beeps = programming mode (Chinese page: wait 3 s first; its example waits for four 'beep-beep' groups)"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "short_long",
+      "long_equals_short": 5,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "Two item tones loop: 1 short beep is item 1 (mode), 2 short beeps is item 2 (motor timing). Value tones: 1-4 short beeps, 1 long beep (value 5), 1 long + 1 short (value 6)."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Item: throttle to 0 % when the wanted item tone sounds. The motor then keeps beeping the value tones."
+    },
+    "value_select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Value: throttle to 100 % on the wanted value tone; a special tone confirms the save (Chinese page)."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Wait for the next tone."
+    },
+    "confirm_signal": "Special tone after a value is stored (stated on the Chinese page only).",
+    "exit": "Disconnect the battery to save and quit; or keep listening to continue.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": null,
+    "description": "Throttle at 100 %, battery on, beeps mark programming mode. Two item tones loop (1 or 2 short beeps); throttle to 0 % on one enters it; value tones loop; throttle to 100 % on one stores it. Disconnect to leave."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "mode 1",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "mode 2"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 2,
+      "name": "Motor timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "auto",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "2 deg"
+        },
+        {
+          "number": 3,
+          "name": "8 deg"
+        },
+        {
+          "number": 4,
+          "name": "15 deg"
+        },
+        {
+          "number": 5,
+          "name": "22 deg"
+        },
+        {
+          "number": 6,
+          "name": "30 deg"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    }
+  ],
+  "unknowns": [
+    "Entry wait differs between the English text (two beeps) and the Chinese page (wait 3 s, four beep-beep groups in the example); the entry time in ms is not resolved.",
+    "Beep duration, gap and loop length are not stated.",
+    "Windows for the throttle gestures are not stated.",
+    "Whether item selection returns after a stored value is stated in the Chinese text only (continue waiting returns to the items).",
+    "Mode 1 and Mode 2 are described as being for different KV motors; no further meaning is given."
+  ],
+  "notes": [
+    "Defaults are the grey cells in the English sound table: Mode 1, timing Auto.",
+    "The English page says 1 short beep is the mode menu and two short beeps the motor timing menu; the sound table lists value tones the same way."
+  ],
+  "schema": 1,
+  "verified": false
+}

@@ -1,0 +1,418 @@
+{
+  "id": "multiplex-roxxy-procontrol",
+  "brand": "Multiplex",
+  "family": "ROXXY PROcontrol 45-155 and OPTO HV",
+  "models": [
+    {
+      "name": "ROXXY PROcontrol 45 (1-02103)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 45,
+      "bec": "switching",
+      "firmware_note": "Short-time 65 A; SBEC 5.0 V or 6.0 V, 5.0 A",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_ProControl_2106.pdf p.2"
+    },
+    {
+      "name": "ROXXY PROcontrol 65 (1-02104)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 65,
+      "bec": "switching",
+      "firmware_note": "Short-time 85 A; SBEC 5.0/6.0/7.4/8.4 V, 8.0 A",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_ProControl_2106.pdf p.2"
+    },
+    {
+      "name": "ROXXY PROcontrol 85 (1-02105)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 85,
+      "bec": "switching",
+      "firmware_note": "Short-time 100 A; SBEC 5.0/6.0/7.4/8.4 V, 8.0 A",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_ProControl_2106.pdf p.2"
+    },
+    {
+      "name": "ROXXY PROcontrol 125 (1-02106)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 125,
+      "bec": "switching",
+      "firmware_note": "Short-time 150 A; SBEC 5.0/6.0/7.4/8.4 V, 8.0 A",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_ProControl_2106.pdf p.2"
+    },
+    {
+      "name": "ROXXY PROcontrol 155 (1-02107)",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 155,
+      "bec": "switching",
+      "firmware_note": "Short-time 200 A; SBEC 5.0/6.0/7.4/8.4 V, 8.0 A",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_ProControl_2106.pdf p.2"
+    },
+    {
+      "name": "ROXXY PROcontrol 120 OPTO HV (1-02108)",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 120,
+      "bec": "opto",
+      "firmware_note": "Short-time 150 A; no BEC",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_ProControl_2106.pdf p.2"
+    },
+    {
+      "name": "ROXXY PROcontrol 150 OPTO HV (1-02109)",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 150,
+      "bec": "opto",
+      "firmware_note": "Short-time 180 A; no BEC",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_ProControl_2106.pdf p.2"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Multiplex_Roxxy_ProControl_2106.pdf",
+      "pages": "7-11 (English)",
+      "language": "de/en/fr",
+      "url": "https://www.multiplex-rc.de/userdata/filegallery/original/4456_1-02106-bedienungsanleitung-roxxy-procontrol-regler--de-en-fr.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": null,
+  "scheme": {
+    "type": "short_long",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 2000,
+      "confirm_signal": "Four times two fast beeps about 2 s after power-up at full throttle.",
+      "steps": [
+        "Transmitter on, throttle stick to full throttle.",
+        "Connect the battery.",
+        "After about 2 s: four groups of two fast beeps. Programming mode is active."
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "short_long",
+      "long_equals_short": 5,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": 0,
+      "description": "Items 1 to 4 sound as 1 to 4 short signals; item 5 and above sound as one long signal plus the remaining short signals (item 6 = long plus 1 short, 9 = long plus 4, 10 = two long). Values sound the same way: value N as N fast beeps up to 4, one long tone for 5, long plus short for 6 to 9. A melody marks entry into an item."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "With the item's value announced, full throttle stores it and the ESC moves on to the next item."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Leave the stick at full throttle: the item sequence runs on by itself. Throttle to idle (neutral) while an item sounds enters its value list."
+    },
+    "confirm_signal": "Not described beyond the move to the next item; no separate stored-tone is named.",
+    "exit": "Disconnect the battery.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": "Item 4 (reset): full throttle on the reset item restores the factory settings (brake off, LiPo auto cells, cutoff 3.0 V / 60%, timing auto, SBEC 5.0 V, governor off, rotation clockwise, start strength medium 30%, cutoff mode throttling). The acknowledging tone is not described.",
+    "description": "Full throttle at power-up; after 2 s four double beeps. The items cycle automatically. Throttle to idle during an item gives a melody and then the item's values in turn; full throttle on the right value stores it and the ESC goes to the next item. Disconnecting the battery ends programming."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "brake off",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft brake"
+        },
+        {
+          "number": 3,
+          "name": "mid brake"
+        },
+        {
+          "number": 4,
+          "name": "hard brake"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "9, 11"
+    },
+    {
+      "number": 2,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "NiCd/NiMH"
+        },
+        {
+          "number": 2,
+          "name": "LiPo",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "LiFe"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "9, 11"
+    },
+    {
+      "number": 3,
+      "name": "Undervoltage threshold",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "2.8 V per cell (NiXX 50%)"
+        },
+        {
+          "number": 2,
+          "name": "3.0 V per cell (NiXX 60%)",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "3.2 V per cell (NiXX 65%)"
+        },
+        {
+          "number": 4,
+          "name": "undervoltage protection off"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "9, 11",
+      "note": "For NiCd/NiMH the thresholds are 50%, 60% and 65% of the start voltage; the manual's reset list gives '3.0 V / 60%'."
+    },
+    {
+      "number": 4,
+      "name": "Reset to factory settings",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "reset"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10-11"
+    },
+    {
+      "number": 5,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "automatic",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "2 degrees"
+        },
+        {
+          "number": 3,
+          "name": "8 degrees"
+        },
+        {
+          "number": 4,
+          "name": "15 degrees"
+        },
+        {
+          "number": 5,
+          "name": "22 degrees"
+        },
+        {
+          "number": 6,
+          "name": "30 degrees"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10-11"
+    },
+    {
+      "number": 6,
+      "name": "SBEC voltage",
+      "key": "bec_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "5.0 V",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "6.0 V"
+        },
+        {
+          "number": 3,
+          "name": "7.4 V (5 V on PROcontrol 45)"
+        },
+        {
+          "number": 4,
+          "name": "8.4 V (5 V on PROcontrol 45)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10-11",
+      "note": "PROcontrol 45 offers only 5.0 V and 6.0 V."
+    },
+    {
+      "number": 7,
+      "name": "Governor mode",
+      "key": "governor",
+      "values": [
+        {
+          "number": 1,
+          "name": "speed control off",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft start 1 (8 s delay)"
+        },
+        {
+          "number": 3,
+          "name": "soft start 2 (15 s delay)"
+        },
+        {
+          "number": 4,
+          "name": "governor mode 1 (low kV)"
+        },
+        {
+          "number": 5,
+          "name": "governor mode 2 (high kV)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10-11"
+    },
+    {
+      "number": 8,
+      "name": "Direction of rotation",
+      "key": "direction",
+      "values": [
+        {
+          "number": 1,
+          "name": "normal",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "reversed"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10-11"
+    },
+    {
+      "number": 9,
+      "name": "Start-up behaviour",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "10%"
+        },
+        {
+          "number": 2,
+          "name": "15%"
+        },
+        {
+          "number": 3,
+          "name": "20%"
+        },
+        {
+          "number": 4,
+          "name": "25%"
+        },
+        {
+          "number": 5,
+          "name": "30%",
+          "default": true
+        },
+        {
+          "number": 6,
+          "name": "35%"
+        },
+        {
+          "number": 7,
+          "name": "40%"
+        },
+        {
+          "number": 8,
+          "name": "45%"
+        },
+        {
+          "number": 9,
+          "name": "50%"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10-11",
+      "note": "Percent is start strength. Default is 30% per the reset list."
+    },
+    {
+      "number": 10,
+      "name": "Cutoff mode",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "throttling",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "hard cut-off"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "10-11"
+    }
+  ],
+  "unknowns": [
+    "Beep and tone durations and pauses: not stated.",
+    "The idle position (neutral) window and the time the stick must stay there: not stated.",
+    "Item 4 reset: the manual shows full throttle on the item and a row of beeps in the chart; the stored-tone is not named.",
+    "Whether the item loop repeats after item 10: the chart arrow suggests it does.",
+    "Short tone for items 5 to 10 and values 5 to 9 is read from the chart (long tone plus short tones); the text does not spell out the counts.",
+    "Value numbers 1 to 9 are the order in the chart and follow the tone encoding; item 5 values 5 and 6 (22 and 30 degrees) read as one long and one long plus one short tone."
+  ],
+  "notes": [
+    "Item 7 text calls governor 'Mode 1' low kV and 'Mode 2' high kV; the chart lists them as values 4 and 5 after soft start 1 and 2.",
+    "Items and values above 4 use one long tone as 5: a long tone plus N short tones is 5+N.",
+    "announce.repeat 0 means the sequence repeats until a choice is made (manual: \"continuous\")."
+  ],
+  "schema": 1,
+  "verified": false
+}

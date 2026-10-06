@@ -103,6 +103,11 @@ jobs:
       - name: The checked-in board artwork matches its source
         run: python3 tools/gen_board_art.py --check
 
+      # The ESC programming profiles are JSON; the panel carries them as C
+      # tables generated from that JSON and checked in.
+      - name: The checked-in ESC profile tables match their JSON
+        run: python3 tools/gen_esc_profiles.py --check
+
       # Links, anchors, the sidebar, the translations, the list of test
       # binaries, the module tree and the compile table.
       - name: The docs agree with the tree

@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "id": "kontronik-beat-car",
+  "brand": "Kontronik",
+  "family": "BEAT 70 CAR",
+  "verified": false,
+  "models": [
+    {
+      "name": "BEAT 70 CAR",
+      "cells_min": null,
+      "cells_max": null,
+      "cell_type": null,
+      "v_min_mv": null,
+      "v_max_mv": null,
+      "current_a": null,
+      "bec": null,
+      "firmware_note": "the addendum names only the model, no technical data",
+      "spec_source": "Kontronik_Beat_70_CAR.pdf (addendum without ratings); no kontronik.com or dealer page for BEAT 70 CAR states cells, voltage or current"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Beat_70_CAR.pdf",
+      "pages": "1",
+      "language": "de/en",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/Beat_CAR.pdf"
+    },
+    {
+      "file": "Kontronik_Beat.pdf",
+      "pages": "5-17",
+      "language": "de",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/Beat.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": 2000,
+      "confirm_signal": "As BEAT.",
+      "steps": [
+        "As the BEAT procedure (jumper on, power on, wait 2 s, pull the jumper), programmed like mode 6 of the BEAT: signal count equals the mode number.",
+        "Wait for the series of the wanted mode and move the throttle to full.",
+        "Mode 8 is programmed like mode 7 with 8 signals and can be combined with modes 2 to 6."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "The ESC sounds mode 1 as one tone, mode 2 as two tones, and so on, one series after another with a pause between series."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Throttle to full during the wanted series."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip."
+    },
+    "confirm_signal": "Mode repeated as tones.",
+    "exit": "Disconnect power.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Mode 1 (APM) is unchanged: reset.",
+    "description": "Same procedure as the BEAT. Modes 2 to 6 are car modes that differ in start-up behaviour, faster from 2 to 6. Mode 8 adds forward and reverse."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "APM / reset"
+        },
+        {
+          "number": 2,
+          "name": "Car mode, slowest start-up"
+        },
+        {
+          "number": 3,
+          "name": "Car mode"
+        },
+        {
+          "number": 4,
+          "name": "Car mode"
+        },
+        {
+          "number": 5,
+          "name": "Car mode"
+        },
+        {
+          "number": 6,
+          "name": "Car mode, fastest start-up"
+        },
+        {
+          "number": 7,
+          "name": "Reverse motor rotation"
+        },
+        {
+          "number": 8,
+          "name": "Forward / reverse, combinable with modes 2 to 6"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone in ms is not stated.",
+    "Gap between tones inside one mode series in ms is not stated.",
+    "Pause between two mode series in ms is not stated.",
+    "Whether the mode series loops until a mode is selected is not stated.",
+    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
+    "Stick position at entry (brake, motor-off or middle) is only implied by 'like mode 6 of the BEAT manual'.",
+    "Voltage, current and cell count of the BEAT 70 CAR are not given."
+  ],
+  "notes": [
+    "The addendum replaces the BEAT mode meanings for modes 2 to 6; use this profile instead of kontronik-beat for the CAR version."
+  ]
+}

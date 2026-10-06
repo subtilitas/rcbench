@@ -1,0 +1,189 @@
+{
+  "id": "yge-hv",
+  "brand": "YGE",
+  "family": "HV (5-mode setup: 60HV, 90HV, 120HV, 160HV, 200HV)",
+  "models": [
+    {
+      "name": "60HV",
+      "cells_min": 4,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 60,
+      "bec": "opto",
+      "firmware_note": "SW54 (60HV/90HV manual)",
+      "spec_source": "YGE_60HV-90HV_en.pdf p.1 (4-12s; 60 A, 90 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "90HV",
+      "cells_min": 4,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 50400,
+      "current_a": 90,
+      "bec": "opto",
+      "firmware_note": "SW54 (60HV/90HV manual)",
+      "spec_source": "YGE_60HV-90HV_en.pdf p.1 (4-12s; 60 A, 90 A)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "120HV V5",
+      "cells_min": 4,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 120,
+      "bec": "opto",
+      "firmware_note": "V5",
+      "spec_source": "YGE_120HV-200HV_en.pdf p.1 (4-14s); YGE_Bedienungsanleitung-120HV-200HV-1_(1).pdf table 120 A, 160 A, 200 A",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "160HV V5",
+      "cells_min": 4,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 160,
+      "bec": "opto",
+      "firmware_note": "V5",
+      "spec_source": "YGE_120HV-200HV_en.pdf p.1 (4-14s); YGE_Bedienungsanleitung-120HV-200HV-1_(1).pdf table 120 A, 160 A, 200 A",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "200HV",
+      "cells_min": 4,
+      "cells_max": 14,
+      "v_min_mv": null,
+      "v_max_mv": 58800,
+      "current_a": 200,
+      "bec": "opto",
+      "firmware_note": null,
+      "spec_source": "YGE_120HV-200HV_en.pdf p.1 (4-14s); YGE_Bedienungsanleitung-120HV-200HV-1_(1).pdf table 120 A, 160 A, 200 A",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "YGE_60HV-90HV_en.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2017/05/Manual-60HV-90HV.pdf"
+    },
+    {
+      "file": "YGE_Bedienungsanleitung-60HV-90HV.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f26ecb7a47b547acd0_Bedienungsanleitung-60HV-90HV.pdf"
+    },
+    {
+      "file": "YGE_120HV-200HV_en.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2017/05/Manual-120HV-200HV.pdf"
+    },
+    {
+      "file": "YGE_Bedienungsanleitung-120HV-200HV-1_(1).pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a6f75f2d9d88af337c4b35d_Bedienungsanleitung-120HV-200HV-1%20(1).pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "Needs only throttle signal and power. The manuals forbid supply-only operation (battery only); bench behaviour untested.",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "Repeating interval beeps; after 20 of them, 2 confirmation tones. Setup is then active.",
+      "steps": [
+        "Remove propeller or rotor blades",
+        "Switch transmitter on, throttle stick at maximum (100%)",
+        "Connect battery to the ESC (motor connected; the motor winding is the sound source)",
+        "Wait for 20 interval beeps, then 2 confirmation beeps",
+        "Move throttle stick to minimum",
+        "Listen to the menu: N beeps = mode N",
+        "At the wanted mode, move throttle stick to maximum; 2 confirmation beeps",
+        "Move throttle stick to minimum; 2 confirmation beeps; ESC arms"
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "With the stick at minimum the ESC sounds the modes in order, mode N as N beeps (1 to 5). The menu starts again at mode 1 when no mode is selected. Beep length, gap and pause between modes are not stated."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Move the stick to maximum while the wanted mode is the one being announced (the manual says 'at the desired mode'). Two confirmation beeps follow. The permitted delay after the last beep of the mode is not stated."
+    },
+    "skip": {
+      "throttle": "min",
+      "description": "Leave the stick at minimum; the ESC continues with the next mode."
+    },
+    "confirm_signal": "2 beeps after the stick goes to maximum (mode selected), 2 beeps after the stick returns to minimum (ESC armed). Cell count is then sounded (1 beep per cell for 4s to 6s; 2 high and 2 low tones for 7s or more) followed by 3 ascending tones when the stick is at minimum.",
+    "exit": "Moving the stick back to minimum after selecting a mode arms the ESC and ends programming. The next change needs a power cycle with throttle at maximum.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Selecting a mode loads that mode's complete parameter set, which overwrites earlier ProgCard or PC-tool settings. No separate reset sequence is described.",
+    "description": "Throttle at maximum, then battery on: after 20 interval beeps and 2 confirmation beeps the ESC is in mode setup. Throttle to minimum; the ESC sounds mode 1 to 5 as 1 to 5 beeps. Throttle to maximum at the wanted mode (2 beeps), then to minimum (2 beeps) to arm. One mode per power cycle."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "V-Stabi governor (external governor, rpm signal to flight controller)"
+        },
+        {
+          "number": 2,
+          "name": "Governor",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "Gov-Store (governor with learned motor parameters)"
+        },
+        {
+          "number": 4,
+          "name": "Glider with folding propeller and brake"
+        },
+        {
+          "number": 5,
+          "name": "Motor plane without brake"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2"
+    }
+  ],
+  "unknowns": [
+    "Duration of one beep, gap between beeps, and pause between menu modes: not stated; measure from supply current.",
+    "Period of the 20 interval beeps before setup entry: not stated.",
+    "Maximum delay between the last beep of a mode and the stick move to maximum: not stated.",
+    "Whether a minimum stick-at-maximum time at power-on is needed for entry: not stated.",
+    "Number of menu cycles before the ESC leaves setup without a selection: not stated.",
+    "Throttle signal type and pulse range for max and min: not stated for this manual (the 60HV/90HV and 120HV-200HV manuals mention 1.1 to 1.9 ms end points for mode 2).",
+    "Supply-current amplitude of the beeps through the motor winding: not stated; the motor must be connected.",
+    "The manuals state the ESC may only be powered from batteries, not from power supplies. Behaviour on a 1-20 V / 3 A supply (cell-count detection, undervoltage cutoff, inrush limit) is not stated.",
+    "Parameter values set by each mode: only the mode 2 defaults are listed; defaults of modes 1, 3, 4, 5 are not stated."
+  ],
+  "notes": [
+    "Mode 2 is the factory state (title: governor preprogrammed mode 2). Mode 2 defaults listed in the 120HV-200HV and 60HV-90HV manuals: timing 18 deg, brake off, cutoff slow down / LiPo, cell count automatic, active freewheel on, governor on, P-gain 0.9, I-gain 0.05, startup speed heli middle, PWM 9 kHz, startup power auto 1-32%.",
+    "German V4 edition (120HV K/160HV K) and FAI types use a different, stick-setup-only description: see yge-hv-v4 and yge-fai.",
+    "Cell range differs between lines: 60HV/90HV 4s-12s LiPo, 120HV/160HV/200HV 4s-14s LiPo (en and de agree).",
+    "Mode 3 (Gov-Store): the highest wanted rpm must be run once (e.g. 90%) after programming so the ESC learns the motor; stated in the English manuals."
+  ],
+  "schema": 1,
+  "verified": false
+}

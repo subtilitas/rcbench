@@ -1,0 +1,132 @@
+{
+  "schema": 1,
+  "id": "yge-mode-setup-navy",
+  "brand": "YGE",
+  "family": "Mode setup, 6 modes, marine (Opto 255 Navy)",
+  "verified": false,
+  "models": [
+    {
+      "name": "YGE Opto 255 Navy",
+      "cells_min": 6,
+      "cells_max": 16,
+      "v_min_mv": null,
+      "v_max_mv": 68000,
+      "current_a": 255,
+      "bec": "opto",
+      "firmware_note": "Water cooled; max terminal voltage 68 V, nominal 63 V; 400 A peak",
+      "spec_source": "YGE_Opto255_Navy_en.pdf p.1 (6-16s, max terminal voltage 68 V, 255 A with water cooling)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "YGE_Opto255_Navy_en.pdf",
+      "pages": "1-2",
+      "language": "en",
+      "url": "https://web.archive.org/web/2id_/https://www.yge.de/wp-content/uploads/2021/09/YGE-Opto255-Navy-eng.pdf"
+    },
+    {
+      "file": "YGE_YGE-Opto-255-Navy.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://cdn.prod.website-files.com/6a58a0f83dddc506de2f5a78/6a67bc4c31994e0acb69810a_YGE-Opto-255-Navy.pdf"
+    }
+  ],
+  "automatable": "full",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "20 repeated interval tones, then 2 tones; the 2 tones say the mode menu is entered",
+      "steps": [
+        "Remove rotor blades or propeller; the motor must stay connected because it makes the tones",
+        "Throttle signal at maximum (100 %) before power is applied",
+        "Apply supply power; wait for 20 interval tones, then 2 confirmation tones",
+        "Throttle to minimum; the ESC sounds mode 1, mode 2, ... in turn"
+      ]
+    },
+    "announce": {
+      "what": "value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "The mode number is sounded as that many equal tones (1 to 6). The sequence runs through the modes in order and starts again at mode 1 when no mode is selected. Number of cycles before a restart, tone length and gaps are not stated."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Throttle to maximum while the wanted mode is being sounded (or just after its tones; the manual does not say which); the ESC answers with 2 tones."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "No skip. Leaving the throttle at minimum lets the sequence pass every mode; it then restarts at mode 1."
+    },
+    "confirm_signal": "2 tones after selecting at maximum throttle; 2 tones after the return to minimum throttle (armed)",
+    "exit": "Throttle to minimum after selection: 2 tones, then the cell-count tones and the arming tones; the ESC is then armed. Power cycle also leaves the menu.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": "Selecting a mode sets every parameter of that mode to its default; there is no separate reset.",
+    "description": "Power is applied with the throttle at maximum. After 20 interval tones and 2 confirmation tones the throttle goes to minimum and the ESC counts through the modes, one tone count per mode. Throttle to maximum at the wanted count selects it (2 tones). Throttle back to minimum stores it (2 tones) and arms the ESC."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "V-Stabi governor"
+        },
+        {
+          "number": 2,
+          "name": "Governor"
+        },
+        {
+          "number": 3,
+          "name": "Governor store"
+        },
+        {
+          "number": 4,
+          "name": "Glider with folding propeller and brake"
+        },
+        {
+          "number": 5,
+          "name": "Navy / run without brake"
+        },
+        {
+          "number": 6,
+          "name": "F3A brake"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    }
+  ],
+  "unknowns": [
+    "Duration of one tone, gap between tones in a count and pause between two mode counts: not stated",
+    "Duration of the 20 interval tones before entry: not stated, so the time from power-on to the 2 confirmation tones is unmeasured",
+    "Whether maximum throttle selects during the count or only after the last tone of a count: not stated",
+    "Number of times the mode sequence repeats before it ends or restarts: not stated",
+    "Minimum supply voltage at which the menu is entered: not stated; ESC cell detection needs a voltage matching the cell count and a 1-20 V bench supply covers at most 4 cells at 4.2 V",
+    "Behaviour on a current-limited 3 A bench supply: not stated; the manuals say the ESC is to be powered from batteries only, power supplies are not allowed",
+    "Idle current of the ESC with the motor connected: not stated, needed to separate tones from the idle level when counting beeps from supply current",
+    "Which mode is as-delivered: not stated",
+    "Voltage needed to reach the menu: the ESC is a 6-16 cell (25.2 V or more by cell count) model, above the 20 V bench supply",
+    "How the half-throttle-travel option is set up: both manuals mention it (pistol transmitter) without steps"
+  ],
+  "notes": [
+    "The motor must be connected: the motor windings produce all tones. Without a motor no tones are heard.",
+    "Manuals state that the ESC may only be powered from batteries; power supplies are not allowed. The bench supply is outside the manual's intended use.",
+    "Power applied with the throttle at maximum enters programming; the manuals tell the user to unplug the battery, set the throttle to minimum and reconnect to leave without changes.",
+    "Both manuals say to always choose mode 5 for Navy use.",
+    "Menu differs from yge-mode-setup-6 only in the label of mode 5.",
+    "Start-up sequence: 3 descending tones, cell tones (long = 5 cells, short = 1 cell), 4 ascending tones at stop throttle.",
+    "Futaba transmitters: throttle channel frame rate 14 ms (analog) is required, per both manuals.",
+    "For LMT inrunners the PC tool must set initial torque to normal and automatic timing; this is outside stick programming."
+  ]
+}

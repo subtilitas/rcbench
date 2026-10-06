@@ -1,0 +1,251 @@
+{
+  "id": "hacker-x-pro-2006",
+  "brand": "Hacker",
+  "family": "X-Pro (January 2006 edition)",
+  "models": [
+    {
+      "name": "X-Pro series (BEC and Opto versions)",
+      "cells_min": null,
+      "cells_max": 5,
+      "v_min_mv": null,
+      "v_max_mv": null,
+      "current_a": null,
+      "bec": null,
+      "firmware_note": "Model table not in this manual; cutoff setting offers 2-5 LiPo cells for Opto types (4-5 Opto only); voltage rating and current not stated",
+      "cell_type": "lipo",
+      "spec_source": "Hacker_X-Pro_rev1_de.pdf p.4"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Hacker_X-Pro_rev1_de.pdf",
+      "pages": "2-5",
+      "language": "de",
+      "url": "https://web.archive.org/web/2id_/http://www.hacker-motor.com/controller/update/Help%20Doc/X-Pro-rev1-0106Deutsch.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": null,
+  "scheme": {
+    "type": "melody_groups",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "Two low tones then two high tones ('_ _--') about 5 s after power-up.",
+      "steps": [
+        "Throttle signal at full power.",
+        "Connect the drive battery (switch on where fitted).",
+        "Wait 5 s for the two low plus two high tones.",
+        "Brake: move throttle to stop right after these tones.",
+        "Other items: keep full throttle; move throttle to stop while the wanted pattern is sounding (each shown five times)."
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "melody",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": 5,
+      "description": "Each setting has its own tone pattern, repeated five times in a row; the patterns follow each other in the order of the list (battery type, under-voltage behaviour, acceleration, timing, frequency, rotation reverse, rpm control). A pattern ends after its fifth repetition. Whether the list loops is not stated. Symbols as printed: '.' beep, '-' high tone, '_' low tone, '\\' falling, '/' rising, 'V' high-low-high melody, 'VV' doubled."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Move the throttle to stop while the wanted pattern is sounding."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Keep full throttle."
+    },
+    "confirm_signal": "None named; the ESC leaves programming mode and is ready. The motor starts on throttle movement afterwards.",
+    "exit": "Automatic after the single change. Disconnect the battery before the next change. Powering up with full throttle by mistake: disconnect the battery to avoid a change.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": null,
+    "description": "Full throttle at power-up, two low plus two high tones after 5 s. Stop right after them toggles the brake. Otherwise full throttle is kept while each setting plays as a five-times repeated tone pattern; stop during one pattern stores it. One change per entry."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "toggle brake: on becomes off, off becomes on"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4",
+      "note": "Factory state brake off. Start-up: one beep brake on, two beeps brake off."
+    },
+    {
+      "number": 2,
+      "name": "Battery type / cutoff",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "NiCd (five groups of one beep)"
+        },
+        {
+          "number": 2,
+          "name": "2 LiPo cells, 5.8 V"
+        },
+        {
+          "number": 3,
+          "name": "3 LiPo cells, 8.7 V; factory default on BEC versions"
+        },
+        {
+          "number": 4,
+          "name": "4 LiPo cells, 11.6 V, Opto versions only"
+        },
+        {
+          "number": 5,
+          "name": "5 LiPo cells, 14.5 V, Opto versions only; factory default on Opto versions"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4",
+      "note": "Value numbers are beep counts per group; NiCd is one beep. Default: 3 LiPo (BEC) or 5 LiPo (Opto), so no single default flag."
+    },
+    {
+      "number": 3,
+      "name": "Under-voltage behaviour",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "reduce power ('-_')",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "cut off ('_-')"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4"
+    },
+    {
+      "number": 4,
+      "name": "Acceleration",
+      "key": "acceleration",
+      "values": [
+        {
+          "number": 1,
+          "name": "low ('V')"
+        },
+        {
+          "number": 2,
+          "name": "medium ('VV')"
+        },
+        {
+          "number": 3,
+          "name": "high ('VVV')"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4",
+      "note": "Factory acceleration is 'fast'; its position among low, medium and high is not stated."
+    },
+    {
+      "number": 5,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "automatic, 7 to 30 degrees (one high tone)",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft, 7 degrees, 2-pole motors (two high tones)"
+        },
+        {
+          "number": 3,
+          "name": "hard, 22 to 30 degrees, multipole motors (three high tones)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4"
+    },
+    {
+      "number": 6,
+      "name": "PWM frequency",
+      "key": "pwm_freq",
+      "values": [
+        {
+          "number": 1,
+          "name": "8 kHz (falling tone)",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "16 kHz (rising tone)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4"
+    },
+    {
+      "number": 7,
+      "name": "Rotation reverse",
+      "key": "direction",
+      "values": [
+        {
+          "number": 1,
+          "name": "reverse motor rotation ('W' melody)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4"
+    },
+    {
+      "number": 8,
+      "name": "Active rpm control (heli mode)",
+      "key": "governor",
+      "values": [
+        {
+          "number": 1,
+          "name": "off ('_._')",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "up to 20 000 rpm, 2-pole equivalent ('_.._')"
+        },
+        {
+          "number": 3,
+          "name": "up to 50 000 rpm ('_..._')"
+        },
+        {
+          "number": 4,
+          "name": "above 50 000 rpm ('_...._')"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "4-5",
+      "note": "Speeds refer to a 2-pole motor: divide by 2 for 4 poles, by 5 for 10 poles, by 7 for 14 poles."
+    }
+  ],
+  "unknowns": [
+    "Beep and tone lengths, gaps, gap between patterns (ms): not stated.",
+    "Order in which patterns sound: printed list order assumed.",
+    "Whether the list loops after the last pattern: not stated.",
+    "Length of the brake window after the first tones ('immediately'): not stated.",
+    "Default rotation direction: not stated.",
+    "Models covered: no model list in this edition.",
+    "Cutoff voltage meaning for NiCd: not stated."
+  ],
+  "notes": [
+    "This 2006 edition has no LiPo autodetect, no 6 to 10 cell options and lists battery defaults per BEC/Opto version; later editions are in hacker-x-pro.",
+    "Under-voltage behaviour default is reduce power; acceleration default is fast (p2).",
+    "Power-off threshold 5.5 V or the programmed cutoff, whichever comes first (p5)."
+  ],
+  "schema": 1,
+  "verified": false
+}

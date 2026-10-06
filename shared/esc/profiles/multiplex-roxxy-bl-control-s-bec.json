@@ -1,0 +1,299 @@
+{
+  "id": "multiplex-roxxy-bl-control-s-bec",
+  "brand": "Multiplex",
+  "family": "ROXXY BL-Control S-BEC 715/720/740/755",
+  "models": [
+    {
+      "name": "ROXXY BL-Control 715 S-BEC",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 15,
+      "bec": "switching",
+      "firmware_note": "Order 1-01050; burst 25 A; S-BEC 5.0 V max 2.3 A (burst 3 A)",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_BL-715_S-BEC.pdf p.1 (715, 720); Multiplex_BL-Control_740-755_S-BEC.pdf p.1 (740, 755)"
+    },
+    {
+      "name": "ROXXY BL-Control 720 S-BEC",
+      "cells_min": 2,
+      "cells_max": 4,
+      "v_min_mv": null,
+      "v_max_mv": 16800,
+      "current_a": 20,
+      "bec": "switching",
+      "firmware_note": "Order 31 8974; burst 30 A; S-BEC 5.0 V max 3.0 A (burst 5 A)",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_BL-715_S-BEC.pdf p.1 (715, 720); Multiplex_BL-Control_740-755_S-BEC.pdf p.1 (740, 755)"
+    },
+    {
+      "name": "ROXXY BL-Control 740 S-BEC",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 40,
+      "bec": "switching",
+      "firmware_note": "Order 1-01317; burst 55 A; S-BEC 5.0 V max 4 A (burst 7 A)",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_BL-715_S-BEC.pdf p.1 (715, 720); Multiplex_BL-Control_740-755_S-BEC.pdf p.1 (740, 755)"
+    },
+    {
+      "name": "ROXXY BL-Control 755 S-BEC",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 55,
+      "bec": "switching",
+      "firmware_note": "Order 31 8975 (1-01010); burst 70 A; S-BEC 5.0 V max 4 A (burst 7 A)",
+      "cell_type": "lipo",
+      "spec_source": "Multiplex_Roxxy_BL-715_S-BEC.pdf p.1 (715, 720); Multiplex_BL-Control_740-755_S-BEC.pdf p.1 (740, 755)"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Multiplex_Roxxy_BL-715_S-BEC.pdf",
+      "pages": "4-6 (English)",
+      "language": "de/en/fr",
+      "url": "https://www.multiplex-rc.de/userdata/filegallery/original/4446_1-01050-bedienungsanleitung-roxxy-bl-715-s-bec--de-de-fr.pdf"
+    },
+    {
+      "file": "Multiplex_BL-Control_740-755_S-BEC.pdf",
+      "pages": "4-6 (English)",
+      "language": "de/en/fr",
+      "url": "https://www.multiplex-rc.de/userdata/filegallery/original/4455_1-01317-bedienungsanleitung-bl-control-740-755--s-bec--de-en-fr.pdf"
+    },
+    {
+      "file": "Multiplex_Roxxy_BL-755_S-BEC.pdf",
+      "pages": "4-6 (English)",
+      "language": "de/en/fr",
+      "url": "https://www.multiplex-rc.de/userdata/filegallery/original/4442_1-01010-bedienungsanleitung-roxxy-bl-755-s-bec--de-de-fr.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": null,
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "After the last step the rising tone sequence sounds four times.",
+      "steps": [
+        "Battery disconnected, stick to full throttle, transmitter on.",
+        "Connect a charged flight battery: rising tone sequence, then in LiPo mode cell-count beeps.",
+        "Stick to centre.",
+        "Stick to full throttle.",
+        "Stick to centre: rising tone sequence four times, programming mode."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": 0,
+      "description": "Parameter N sounds as N beeps, repeated until the stick moves. After the parameter 9 beeps the programming ends with stick centre then stick to motor OFF."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Choose the value by moving the stick to full throttle (first option) or to motor OFF (second option); the ESC answers with a confirmation signal."
+    },
+    "skip": {
+      "throttle": "mid",
+      "description": "Return the stick to centre to leave the parameter unchanged or after a change; the ESC goes to the next parameter."
+    },
+    "confirm_signal": "Long tone for parameter 1; 'confirmation signal' for the others (tone not described).",
+    "exit": "Stick centre (rising tone sequence), then stick to motor OFF: rising tone sequence twice, parameters stored.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": null,
+    "description": "Full throttle at power-up, then centre, full, centre enters programming (four rising sequences). Parameters 1 to 9 sound as 1 to 9 repeated beeps. Full throttle or motor OFF selects the option; centre moves on. Centre then motor OFF after parameter 9 stores and exits."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "LiPo with automatic cutoff (stick full throttle), default; motor off at 3.0 V per cell",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "NiXX (stick motor OFF); motor off at 6.0 V"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5-6"
+    },
+    {
+      "number": 2,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "brake on (stick full throttle), default",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "brake off (stick motor OFF)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5-6"
+    },
+    {
+      "number": 3,
+      "name": "Direction of rotation",
+      "key": "direction",
+      "values": [
+        {
+          "number": 1,
+          "name": "reverse (stick full throttle)"
+        },
+        {
+          "number": 2,
+          "name": "standard (stick motor OFF), default",
+          "default": true
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5-6"
+    },
+    {
+      "number": 4,
+      "name": "Motor cutoff type",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "motor cut, hard stop (stick full throttle)"
+        },
+        {
+          "number": 2,
+          "name": "power reduction (stick motor OFF), default",
+          "default": true
+        }
+      ],
+      "applies_to": null,
+      "source_page": "5-6",
+      "note": "Power reduction starts at 3.2 V per cell (LiPo) or 6.0 V (NiXX) and the motor is off at 2.9 V or 5.8 V."
+    },
+    {
+      "number": 5,
+      "name": "Motor start-up",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "soft start (stick full throttle), default",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "standard start (stick motor OFF)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "6",
+      "note": "Start-up time: soft 3.0 s helicopter and 1.3 s fixed-wing; standard 1.0 s helicopter and 0.2 s fixed-wing."
+    },
+    {
+      "number": 6,
+      "name": "Automatic timing",
+      "key": "timing_auto",
+      "values": [
+        {
+          "number": 1,
+          "name": "automatic timing on (stick full throttle), default",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "automatic timing off (stick motor OFF)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "6"
+    },
+    {
+      "number": 7,
+      "name": "Manual timing (only if automatic timing is off)",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "hard timing 22-30 degrees, outrunners (stick full throttle)"
+        },
+        {
+          "number": 2,
+          "name": "soft timing 7 degrees, inrunners (stick motor OFF)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "6"
+    },
+    {
+      "number": 8,
+      "name": "Pulse frequency",
+      "key": "pwm_freq",
+      "values": [
+        {
+          "number": 1,
+          "name": "8 kHz (stick full throttle)"
+        },
+        {
+          "number": 2,
+          "name": "16 kHz (stick motor OFF), default",
+          "default": true
+        }
+      ],
+      "applies_to": null,
+      "source_page": "6"
+    },
+    {
+      "number": 9,
+      "name": "Model type",
+      "key": "aircraft_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "helicopter, governor mode (stick full throttle); brake forced off"
+        },
+        {
+          "number": 2,
+          "name": "fixed-wing (stick motor OFF), default",
+          "default": true
+        }
+      ],
+      "applies_to": null,
+      "source_page": "6"
+    }
+  ],
+  "unknowns": [
+    "Beep duration, gap and the interval between repeats: not stated.",
+    "Time to hold each stick position in the entry sequence: not stated.",
+    "Timing of the 'confirmation signal' tones: not stated.",
+    "Whether stick centre alone after parameter 9 (10.1) with rising tone sequence is required: manual gives 10.1 stick centre, 10.2 stick motor OFF.",
+    "Stick-position pulse widths: not stated (the manual refers to the radio's full-throttle, centre and motor OFF positions).",
+    "Value numbers 1 and 2 are the order the manual lists the options in; the ESC does not sound them.",
+    "Spec table columns for 715, 720 and 755 are read from a merged table; current and BEC numbers per column follow the column order of Multiplex_Roxxy_BL-715_S-BEC.pdf.",
+    "Cell counts for the 755 are taken from the 740/755 manual (2-6S LiPo)."
+  ],
+  "notes": [
+    "Multiplex_Roxxy_BL-715_S-BEC.pdf (715/720/755, 2019) and Multiplex_BL-Control_740-755_S-BEC.pdf (740/755, 2020) carry the same programming steps.",
+    "Multiplex_Roxxy_BL-755_S-BEC.pdf has the same English text as Multiplex_Roxxy_BL-715_S-BEC.pdf (it covers 715/720/755) although the index lists it as 755 only.",
+    "announce.repeat 0 means the sequence repeats until a choice is made (manual: \"continuous\")."
+  ],
+  "schema": 1,
+  "verified": false
+}

@@ -1,0 +1,611 @@
+{
+  "id": "jeti-spin-3p",
+  "brand": "Jeti",
+  "family": "Spin / Master / Advance / JES 3P series",
+  "models": [
+    {
+      "name": "Master 40-3P",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 18000,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "Table lists 6-12 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master 70-3P",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 18000,
+      "current_a": 70,
+      "bec": null,
+      "firmware_note": "Table lists 6-12 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master 40-3P OPTO",
+      "cells_min": 6,
+      "cells_max": 16,
+      "v_min_mv": null,
+      "v_max_mv": 24000,
+      "current_a": 40,
+      "bec": "opto",
+      "firmware_note": "Table lists 6-16 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master 70-3P OPTO",
+      "cells_min": 6,
+      "cells_max": 16,
+      "v_min_mv": null,
+      "v_max_mv": 24000,
+      "current_a": 70,
+      "bec": "opto",
+      "firmware_note": "Table lists 6-16 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master 30-3P",
+      "cells_min": 4,
+      "cells_max": 10,
+      "v_min_mv": null,
+      "v_max_mv": 15000,
+      "current_a": 30,
+      "bec": null,
+      "firmware_note": "Table lists 4-10 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 4 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master 105-3P OPTO",
+      "cells_min": 6,
+      "cells_max": 16,
+      "v_min_mv": null,
+      "v_max_mv": 24000,
+      "current_a": 105,
+      "bec": "opto",
+      "firmware_note": "Table lists 6-16 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master 48-3P OPTO",
+      "cells_min": 8,
+      "cells_max": 32,
+      "v_min_mv": null,
+      "v_max_mv": 48000,
+      "current_a": 48,
+      "bec": "opto",
+      "firmware_note": "Table lists 8-32 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 6 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master 77-3P OPTO",
+      "cells_min": 8,
+      "cells_max": 32,
+      "v_min_mv": null,
+      "v_max_mv": 48000,
+      "current_a": 77,
+      "bec": "opto",
+      "firmware_note": "Table lists 8-32 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 6 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master 99-3P OPTO",
+      "cells_min": 8,
+      "cells_max": 24,
+      "v_min_mv": null,
+      "v_max_mv": 36000,
+      "current_a": 99,
+      "bec": "opto",
+      "firmware_note": "Table lists 8-24 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 6 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Advance 40-3P",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 18000,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "Table lists 6-12 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Advance 70-3P",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 18000,
+      "current_a": 70,
+      "bec": null,
+      "firmware_note": "Table lists 6-12 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Advance 40-3P OPTO",
+      "cells_min": 6,
+      "cells_max": 16,
+      "v_min_mv": null,
+      "v_max_mv": 24000,
+      "current_a": 40,
+      "bec": "opto",
+      "firmware_note": "Table lists 6-16 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Advance 70-3P OPTO",
+      "cells_min": 6,
+      "cells_max": 16,
+      "v_min_mv": null,
+      "v_max_mv": 24000,
+      "current_a": 70,
+      "bec": "opto",
+      "firmware_note": "Table lists 6-16 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Advance 30-3P",
+      "cells_min": 6,
+      "cells_max": 10,
+      "v_min_mv": null,
+      "v_max_mv": 15000,
+      "current_a": 30,
+      "bec": null,
+      "firmware_note": "Table lists 6-10 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "JES 40-3P",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 18000,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "Table lists 6-12 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "JES 70-3P",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 18000,
+      "current_a": 70,
+      "bec": null,
+      "firmware_note": "Table lists 6-12 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "JES 40-3P OPTO",
+      "cells_min": 6,
+      "cells_max": 16,
+      "v_min_mv": null,
+      "v_max_mv": 24000,
+      "current_a": 40,
+      "bec": "opto",
+      "firmware_note": "Table lists 6-16 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "JES 70-3P OPTO",
+      "cells_min": 6,
+      "cells_max": 16,
+      "v_min_mv": null,
+      "v_max_mv": 24000,
+      "current_a": 70,
+      "bec": "opto",
+      "firmware_note": "Table lists 6-16 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "JES 30-3P",
+      "cells_min": 6,
+      "cells_max": 10,
+      "v_min_mv": null,
+      "v_max_mv": 15000,
+      "current_a": 30,
+      "bec": null,
+      "firmware_note": "Table lists 6-10 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master NAVY 40-3P",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 18000,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "Table lists 6-12 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master NAVY 70-3P",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 18000,
+      "current_a": 70,
+      "bec": null,
+      "firmware_note": "Table lists 6-12 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master NAVY 40-3P OPTO",
+      "cells_min": 6,
+      "cells_max": 16,
+      "v_min_mv": null,
+      "v_max_mv": 24000,
+      "current_a": 40,
+      "bec": "opto",
+      "firmware_note": "Table lists 6-16 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master NAVY 70-3P OPTO",
+      "cells_min": 6,
+      "cells_max": 16,
+      "v_min_mv": null,
+      "v_max_mv": 24000,
+      "current_a": 70,
+      "bec": "opto",
+      "firmware_note": "Table lists 6-16 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master HELI 40-3P",
+      "cells_min": 6,
+      "cells_max": 12,
+      "v_min_mv": null,
+      "v_max_mv": 18000,
+      "current_a": 40,
+      "bec": null,
+      "firmware_note": "Table lists 6-12 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master HELI 40-3P OPTO",
+      "cells_min": 6,
+      "cells_max": 16,
+      "v_min_mv": null,
+      "v_max_mv": 24000,
+      "current_a": 40,
+      "bec": "opto",
+      "firmware_note": "Table lists 6-16 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master HELI 48-3P OPTO",
+      "cells_min": 10,
+      "cells_max": 30,
+      "v_min_mv": null,
+      "v_max_mv": 45000,
+      "current_a": 48,
+      "bec": "opto",
+      "firmware_note": "Table lists 10-30 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 6 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master 04-3P",
+      "cells_min": 4,
+      "cells_max": 8,
+      "v_min_mv": null,
+      "v_max_mv": 12000,
+      "current_a": 4,
+      "bec": null,
+      "firmware_note": "Table lists 4-8 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 4 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master 08-3P",
+      "cells_min": 4,
+      "cells_max": 10,
+      "v_min_mv": null,
+      "v_max_mv": 15000,
+      "current_a": 8,
+      "bec": null,
+      "firmware_note": "Table lists 4-10 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 4 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master 18-3P",
+      "cells_min": 4,
+      "cells_max": 10,
+      "v_min_mv": null,
+      "v_max_mv": 15000,
+      "current_a": 18,
+      "bec": null,
+      "firmware_note": "Table lists 4-10 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 4 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "JES 04-3P",
+      "cells_min": 6,
+      "cells_max": 8,
+      "v_min_mv": null,
+      "v_max_mv": 12000,
+      "current_a": 4,
+      "bec": null,
+      "firmware_note": "Table lists 6-8 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "JES 08-3P",
+      "cells_min": 6,
+      "cells_max": 10,
+      "v_min_mv": null,
+      "v_max_mv": 15000,
+      "current_a": 8,
+      "bec": null,
+      "firmware_note": "Table lists 6-10 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "JES 18-3P",
+      "cells_min": 6,
+      "cells_max": 10,
+      "v_min_mv": null,
+      "v_max_mv": 15000,
+      "current_a": 18,
+      "bec": null,
+      "firmware_note": "Table lists 6-10 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 5 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    },
+    {
+      "name": "Master HELI 08-3P",
+      "cells_min": 4,
+      "cells_max": 10,
+      "v_min_mv": null,
+      "v_max_mv": 15000,
+      "current_a": 8,
+      "bec": null,
+      "firmware_note": "Table lists 4-10 cells (NiCd/NiMH count; cutoff 0.7 V per cell); minimum cutoff voltage 4 V",
+      "cell_type": "nimh",
+      "spec_source": "Jeti_Spin_series.pdf p.1-2 (cells, Amperage column), p.3 (0.7 V/cell cutoff); current = number in model name, same as Amperage column"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Jeti_Spin_series.pdf",
+      "pages": "1-4",
+      "language": "en",
+      "url": "http://nic.vajn.icu/PDF/radio-controlled/ESC/JETI-manual.pdf"
+    },
+    {
+      "file": "Jeti_Spin_Pro_EN.pdf",
+      "pages": "1",
+      "language": "en",
+      "url": "https://www.jetimodel.com/uloz/spin_pro_en_tristrany2011-krivky-1610312112.pdf/?1791287137"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": null,
+  "scheme": {
+    "type": "other",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "Four beeps (short short long short) 5 s after power-up at full throttle.",
+      "steps": [
+        "Transmitter on, stick to full throttle.",
+        "Connect the main pack, switch on the receiver switch if one is fitted.",
+        "Wait 5 s: four beeps (. . - .).",
+        "Stick to 'close' (motor off) within the window: sets the brake option and gives 1 or 2 beeps.",
+        "Or wait a further 5 s for the timing sequence."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": 5,
+      "description": "Timing modes sound as five repeats of a group of 1 to 4 beeps (mode N = N beeps per group). Frequency and cutoff modes sound as five repeats of a long tone, a tone plus beep, or two beeps. Rotation sounds as five repeats of tone-beep-tone."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Move the stick to 'close' between the first and fifth repeat of the wanted mode."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Leave the stick at full throttle: the ESC runs on to the next menu after the five repeats."
+    },
+    "confirm_signal": "Timing or frequency set: one beep if the brake is on, two beeps if the brake is off. Brake set: two beeps (brake off).",
+    "exit": "Disconnect the main pack; mode is stored when selected.",
+    "changes_per_entry": "one",
+    "reset_to_defaults": null,
+    "description": "Full throttle at power-up for 5 s gives four beeps. Moving the stick to close then selects the brake option. Without moving, a further 5 s later the five-fold timing groups sound, then frequency groups, then rotation. Moving to close during the wanted group stores it; the pack is disconnected to repeat."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "brake on (1 beep after the stick moves to close)",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "brake off (2 beeps after the stick moves to close)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2",
+      "note": "Controllers other than Heli and Navy ship with the brake on."
+    },
+    {
+      "number": 2,
+      "name": "Timing mode",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "mode 1: 2-5 degrees",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "mode 2: 10 degrees"
+        },
+        {
+          "number": 3,
+          "name": "mode 3: 18 degrees"
+        },
+        {
+          "number": 4,
+          "name": "mode 4: 30 degrees"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "2-3"
+    },
+    {
+      "number": 3,
+      "name": "Switching frequency",
+      "key": "pwm_freq",
+      "values": [
+        {
+          "number": 1,
+          "name": "8 kHz (long tone x5)",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "16 kHz (tone plus beep x5)"
+        },
+        {
+          "number": 3,
+          "name": "32 kHz (two beeps x5)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3",
+      "applies_when": "models other than Master 04-3P, 08-3P, 18-3P and JES 04-3P, 08-3P, 18-3P"
+    },
+    {
+      "number": 3,
+      "name": "Cutoff mode",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "minimum 4 V, NiCd/NiMH (long tone x5)"
+        },
+        {
+          "number": 2,
+          "name": "constant 5.3 V, 2 Li cells (tone plus beep x5)"
+        },
+        {
+          "number": 3,
+          "name": "constant 7.95 V, 3 Li cells (two beeps x5)"
+        }
+      ],
+      "applies_to": [
+        "Master 04-3P",
+        "Master 08-3P",
+        "Master 18-3P",
+        "JES 04-3P",
+        "JES 08-3P",
+        "JES 18-3P"
+      ],
+      "source_page": "3"
+    },
+    {
+      "number": 4,
+      "name": "Rotation",
+      "key": "direction",
+      "values": [
+        {
+          "number": 1,
+          "name": "reverse rotation (tone-beep-tone x5, stick back to off)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "3-4",
+      "note": "Master controllers only; other models swap two motor wires.",
+      "applies_when": "Master series"
+    },
+    {
+      "number": 5,
+      "name": "Heli mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 1,
+          "name": "normal control (1 beep)"
+        },
+        {
+          "number": 2,
+          "name": "constant speed, RPM control (2 beeps)"
+        }
+      ],
+      "applies_to": [
+        "Master HELI 40-3P",
+        "Master HELI 40-3P OPTO",
+        "Master HELI 48-3P OPTO",
+        "Master HELI 08-3P"
+      ],
+      "source_page": "4",
+      "note": "First-setting procedure for Heli controllers: full throttle, wait for the four beeps, stick to motor off."
+    }
+  ],
+  "unknowns": [
+    "Beep and tone durations, gaps and the gap between repeats: not stated.",
+    "Which stick position or action advances from brake to timing: the text only says wait a further 5 s.",
+    "Item numbers 1-5 are the order of the sections, not sounded counts.",
+    "Whether the brake step toggles or sets: the manual says the brake option is chosen by moving to close and repeating after power-off.",
+    "Whether the cell counts in the table are NiCd or LiPo: not stated.",
+    "Rotation stored value and how a reversal is confirmed: not stated.",
+    "Spin Pro (Jeti_Spin_Pro_EN.pdf) is a one-page JetiBox menu chart: the only stick-related entry is 'Setting thru R/C'; no tone procedure is given for Spin Pro.",
+    "Navy controller first-setting result: after the four beeps and stick off, 2 beeps are heard; what option this sets is not stated."
+  ],
+  "notes": [
+    "The Spin Pro chart (Jeti_Spin_Pro_EN.pdf) does not state that the Spin Pro uses this procedure; it is cited as the source of the 'Setting thru R/C' menu entry only.",
+    "Jeti_Spin_series.pdf states the 06-3P cannot change frequency; no 06-3P appears in the model tables (08-3P and 18-3P are listed)."
+  ],
+  "schema": 1,
+  "verified": false
+}

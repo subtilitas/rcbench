@@ -6,6 +6,21 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- **ESC programming profiles.** 72 profiles describe how 451 ESC
+  (electronic speed controller) models are programmed through their
+  throttle-stick menus: the entry gesture, how a number is sounded, and the
+  menu's items, values and defaults. They are JSON files in
+  `shared/esc/profiles/`, compiled into the panel by
+  `tools/gen_esc_profiles.py`; CI runs its `--check`. A file in `/ESC/` on the
+  SD card, named after its id, replaces the built-in profile with that id or
+  adds a new one, read once at start-up; up to 32 card profiles, 64 KiB
+  each. The panel's card now reads long file names (FATFS LFN, up to 63
+  characters listed); before, only 8.3 names. Every profile
+  is unverified and no beep timing is known. Nothing uses them yet: the mode
+  programming that will is not built.
+
 ### Fixed
 
 - **The PD mini's rate is no longer an alert.** With "PD mini baud" at AUTO,

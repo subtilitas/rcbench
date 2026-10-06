@@ -1,0 +1,164 @@
+{
+  "id": "align-rce-bl15x",
+  "brand": "Align",
+  "family": "RCE-BL15X (T-REX 250)",
+  "models": [
+    {
+      "name": "RCE-BL15X",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": 5500,
+      "v_max_mv": 12600,
+      "current_a": 15,
+      "bec": "linear",
+      "firmware_note": "Integrated BEC adjustable 5.0 V (default), 5.5 V, 6.0 V; the BEC type is stated on a third-party page, not by Align",
+      "spec_source": "https://www.hobbyhangar.co.nz/kx880003a-15a-brushless-escgoverner-mode-rce-bl15x (dealer quoting Align: input 5.5-12.6 V, Li-Po 2-3 cells, 15 A continuous); the Align manual scans in Align_RCE-BL15X_kestral.html give no voltage",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Align_RCE-BL15X_kestral.html",
+      "pages": "programming section",
+      "language": "en",
+      "url": "http://www.kestral.no/Knut/RC/RadioEquipment/RCEBL15E/RCEBL15E.htm"
+    }
+  ],
+  "automatable": "none",
+  "automatable_note": "The only source is a third-party web page that shows one worked example. The audible patterns and the option lists are in image files that are not in the archive.",
+  "scheme": {
+    "type": "stick_position",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "Two buzzing groups: group 1 after the battery connects, group 2 after the stick moves to low.",
+      "steps": [
+        "Battery disconnected, radio in normal mode, no throttle hold, stick at 100%.",
+        "Connect the battery: ESC enters programming; buzzing group 1; leave the stick at 100% (high-stick calibration).",
+        "Move the stick to 0%: buzzing group 2 (low-stick calibration).",
+        "Run through the steps: each step answers by low, mid or high position."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "melody",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "Each programming step is announced as a buzzing pattern from the motor (image in the source, not readable). The motor must be connected on all three leads."
+    },
+    "select": {
+      "throttle": "none",
+      "within_ms": null,
+      "description": "The source shows steps answered at 0% (low), 20% stick giving 50% command (mid) and 100% (high)."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Not described."
+    },
+    "confirm_signal": "Buzzing pattern per step (not described in text).",
+    "exit": "With the stick at 0% power cycle the battery, then listen to the status beeps to verify.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": null,
+    "description": "Stick at 100% when the battery connects. The ESC calibrates high stick, then low stick when the stick moves to 0%. Then six steps run; each is answered with the low, mid or high stick position. The page records one worked example, not the option lists."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "disabled (low stick) in the author's example"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "example table"
+    },
+    {
+      "number": 2,
+      "name": "Timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 2,
+          "name": "mid-range timing (mid stick) in the author's example"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "example table"
+    },
+    {
+      "number": 3,
+      "name": "Battery cutoff voltage",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "high cutoff protection (low stick) in the author's example"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "example table"
+    },
+    {
+      "number": 4,
+      "name": "Helicopter mode",
+      "key": "mode",
+      "values": [
+        {
+          "number": 2,
+          "name": "helicopter mode with soft start (mid stick) in the author's example"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "example table"
+    },
+    {
+      "number": 5,
+      "name": "Throttle response speed",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "standard (low stick) in the author's example"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "example table"
+    },
+    {
+      "number": 6,
+      "name": "BEC output voltage",
+      "key": "bec_voltage",
+      "values": [
+        {
+          "number": 3,
+          "name": "6 V (high stick) in the author's example"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "example table"
+    }
+  ],
+  "unknowns": [
+    "All other option values for every step: the Align user manual pages are images not present in the archive.",
+    "Stick-position numbering (low = 1, mid = 2, high = 3) is the schema's convention; the page does not number options.",
+    "Beep or buzz durations: not stated; the audible feedback column is images.",
+    "Mid stick position: the page says mid is stick at about 20% giving a 50% command only under the author's throttle curve (normal mode), not a manual value.",
+    "Hold times between steps: not stated.",
+    "Default value of each item: not stated except BEC 5.0 V.",
+    "Cell count, voltage limits: not stated.",
+    "Whether step 3 in the table (listed twice) is the item after calibration: the table numbers calibration as step 3 and the first item also as 3."
+  ],
+  "notes": [
+    "The table in the source numbers items 3 to 8 and repeats 3 for both the calibration move and the brake step; item numbers here follow the order of the six programming rows.",
+    "Align's own manual could not be fetched (TLS failure) and was replaced by this third-party page according to INDEX.csv."
+  ],
+  "schema": 1,
+  "verified": false
+}

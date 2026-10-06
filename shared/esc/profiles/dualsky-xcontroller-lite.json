@@ -1,0 +1,271 @@
+{
+  "id": "dualsky-xcontroller-lite",
+  "brand": "Dualsky",
+  "family": "XController Lite XC-12/22/45/65, stop/up count menu",
+  "models": [
+    {
+      "name": "XC-12-Lite",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 12,
+      "bec": null,
+      "firmware_note": null,
+      "spec_source": "Dualsky_XController_Lite.pdf p.1 (LiPo cell range, motor current)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "XC-22-Lite",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 22,
+      "bec": null,
+      "firmware_note": null,
+      "spec_source": "Dualsky_XController_Lite.pdf p.1 (LiPo cell range, motor current)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "XC-45-Lite",
+      "cells_min": 2,
+      "cells_max": 3,
+      "v_min_mv": null,
+      "v_max_mv": 12600,
+      "current_a": 45,
+      "bec": null,
+      "firmware_note": null,
+      "spec_source": "Dualsky_XController_Lite.pdf p.1 (LiPo cell range, motor current)",
+      "cell_type": "lipo"
+    },
+    {
+      "name": "XC-65-Lite",
+      "cells_min": 2,
+      "cells_max": 6,
+      "v_min_mv": null,
+      "v_max_mv": 25200,
+      "current_a": 65,
+      "bec": null,
+      "firmware_note": null,
+      "spec_source": "Dualsky_XController_Lite.pdf p.1 (LiPo cell range, motor current)",
+      "cell_type": "lipo"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Dualsky_XController_Lite.pdf",
+      "pages": "1",
+      "language": "en",
+      "url": "https://www.lindinger.at/media/61/29/74/1701761510/9700103_EN_Manual.pdf"
+    }
+  ],
+  "automatable": "full",
+  "automatable_note": "",
+  "scheme": {
+    "type": "count",
+    "entry": {
+      "throttle": "max",
+      "when": "before_power_on",
+      "hold_ms": null,
+      "confirm_signal": "Three-tone melody, cell-count beeps (LiPo only), long beep, three-tone melody, then the beep for parameter 1",
+      "steps": [
+        "Transmitter on, throttle at max",
+        "Connect battery",
+        "Wait for: melody, cell beeps, long beep, melody, then the first parameter beep"
+      ]
+    },
+    "announce": {
+      "what": "item_then_value",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "8 parameters cycle without end. Parameter N is N beeps. After a parameter is selected, its settings are sounded as 1x, 2x or 3x beeps."
+    },
+    "select": {
+      "throttle": "min",
+      "within_ms": null,
+      "description": "Parameter: throttle to stop (min) before the beep sequence of the next parameter starts. No time in ms is stated."
+    },
+    "value_select": {
+      "throttle": "max",
+      "within_ms": null,
+      "description": "Setting: throttle up after the beep of the wanted setting. No window stated."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Leave the throttle unchanged; the next parameter follows."
+    },
+    "confirm_signal": "Confirmation melody after a setting is adopted.",
+    "exit": "Disconnect the battery. After parameter 7 or 8 is selected the ESC leaves programming mode and runs normally.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": "Parameter 7 (7 beeps) resets all data.",
+    "description": "Throttle at max, then battery on. A melody, cell beeps, a long beep and another melody play, then parameter 1 is beeped. Eight parameters cycle; throttle to stop selects the current one; throttle up on a setting beep stores it and a melody confirms. Further parameters follow."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "off",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "on"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 2,
+      "name": "Battery type",
+      "key": "battery_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "LiPo",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "NC / NiMH"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 3,
+      "name": "Cut-off mode",
+      "key": "cutoff_type",
+      "values": [
+        {
+          "number": 1,
+          "name": "slow reduction",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "switch off"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 4,
+      "name": "Cut-off threshold",
+      "key": "cutoff_voltage",
+      "values": [
+        {
+          "number": 1,
+          "name": "low (3.0 V/cell; Ni 0 %)"
+        },
+        {
+          "number": 2,
+          "name": "medium (3.2 V/cell; Ni 50 %)",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "high (3.4 V/cell; Ni 60 %)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 5,
+      "name": "Motor start",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "normal",
+          "default": true
+        },
+        {
+          "number": 2,
+          "name": "soft"
+        },
+        {
+          "number": 3,
+          "name": "super soft (about 6 s)"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 6,
+      "name": "Motor timing",
+      "key": "timing",
+      "values": [
+        {
+          "number": 1,
+          "name": "low"
+        },
+        {
+          "number": 2,
+          "name": "medium",
+          "default": true
+        },
+        {
+          "number": 3,
+          "name": "high"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 7,
+      "name": "Reset all data",
+      "key": "reset",
+      "values": [
+        {
+          "number": 1,
+          "name": "reset"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    },
+    {
+      "number": 8,
+      "name": "Exit",
+      "key": "exit",
+      "values": [
+        {
+          "number": 1,
+          "name": "exit programming"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1"
+    }
+  ],
+  "unknowns": [
+    "Entry wait time between battery connection and the first parameter beep is not stated in ms.",
+    "Beep length and gap are not stated.",
+    "Time window for the stop gesture is not stated; the manual says only 'before the next parameter's beep'.",
+    "Whether the stick must return to max or stay at stop between selecting a parameter and choosing a setting is not stated.",
+    "BEC type (linear or switching) is not stated.",
+    "Cell count limits for XC-65-Lite: LiPo 2-6; NC/NiMH 6-18; other models LiPo 2-3 (XC-12 NC/NiMH 5-10, others 5-9)."
+  ],
+  "notes": [
+    "The connections text of the manual names a Roxxy BL-Control 7xx; the manual is a rebadged text. Menu and parameters are as listed here.",
+    "Item 4 threshold values are 3.0 / 3.2 / 3.4 V per cell; Nixx 0 / 50 / 60 % of initial voltage.",
+    "Dualsky_XController_Lite_programming.pdf describes a different (Hobbywing-style, 5-6-5 melody) scheme and is in dualsky-xcontroller."
+  ],
+  "schema": 1,
+  "verified": false
+}

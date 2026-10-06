@@ -1,0 +1,149 @@
+{
+  "schema": 1,
+  "id": "kontronik-opto-bec",
+  "brand": "Kontronik",
+  "family": "OPTO / BEC Fahrtregler",
+  "verified": false,
+  "models": [
+    {
+      "name": "OPTO",
+      "cells_min": null,
+      "cells_max": null,
+      "cell_type": null,
+      "v_min_mv": null,
+      "v_max_mv": null,
+      "current_a": null,
+      "bec": "opto",
+      "firmware_note": "no receiver supply; opto-coupler; the manual lists no ratings",
+      "spec_source": "Kontronik_Opto.pdf: operating manual without ratings; no source found"
+    },
+    {
+      "name": "BEC",
+      "cells_min": null,
+      "cells_max": null,
+      "cell_type": null,
+      "v_min_mv": null,
+      "v_max_mv": null,
+      "current_a": null,
+      "bec": null,
+      "firmware_note": "receiver supply included; cell and servo limits are in a type table that is not part of the manual text read",
+      "spec_source": "Kontronik_BEC.pdf: operating manual refers to a type table not in the document; no source found"
+    }
+  ],
+  "sources": [
+    {
+      "file": "Kontronik_Opto.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/OPTO.pdf"
+    },
+    {
+      "file": "Kontronik_BEC.pdf",
+      "pages": "1-2",
+      "language": "de",
+      "url": "https://kontronik.com/wp-content/uploads/2023/03/BEC.pdf"
+    }
+  ],
+  "automatable": "assisted",
+  "automatable_note": "A short-circuit bridge must be fitted on the two gold contacts before power-up and removed afterwards. The bench cannot do this.",
+  "scheme": {
+    "type": "stick_position",
+    "entry": {
+      "throttle": "min",
+      "when": "before_power_on",
+      "hold_ms": 5000,
+      "confirm_signal": "One signal (LED flash and beep with motor connected) after about 5 s recognises the brake or motor-off position.",
+      "steps": [
+        "Plug the receiver lead into the motor channel. Transmitter on. Throttle and trim to brake if the short-circuit brake is wanted, else to motor-off.",
+        "Power the receiver (opto types need a receiver battery).",
+        "Operator: fit the short-circuit bridge on the two gold contacts (between the black and blue battery cables). A pushbutton held down while powering works in place of the bridge.",
+        "Apply drive power. After about 5 s the ESC signals that it has detected the brake / motor-off position.",
+        "Move the throttle to full and keep it there until the ESC signals the full position, about 5 s after the last signal.",
+        "Brake wanted: move the throttle to motor-off. Brake not wanted: leave it at full.",
+        "After about 5 more s a double signal confirms storing.",
+        "Start button function (optional): press the start button again within about 5 s; another double signal confirms.",
+        "Disconnect drive power and remove the bridge. After reconnecting, a double signal after about 1 s shows readiness once the throttle is at motor-off or brake."
+      ]
+    },
+    "announce": {
+      "what": "item",
+      "encoding": "count",
+      "long_equals_short": null,
+      "beep_ms": null,
+      "gap_ms": null,
+      "group_gap_ms": null,
+      "repeat": null,
+      "description": "A single signal ends an intermediate step and asks for the next stick position. A double signal ends a whole operation."
+    },
+    "select": {
+      "throttle": "max",
+      "within_ms": 5000,
+      "description": "Move the throttle to full after the first signal and hold until the second signal, about 5 s later."
+    },
+    "skip": {
+      "throttle": "none",
+      "description": "Not applicable: the stick sequence is fixed."
+    },
+    "confirm_signal": "Double signal (two LED flashes with beeps) after about 5 s: settings stored.",
+    "exit": "Disconnect power and remove the bridge.",
+    "changes_per_entry": "many",
+    "reset_to_defaults": null,
+    "description": "Stick-position teach-in with timed waits of about 5 s. The ESC signals each recognised stick position; a double signal confirms storing. The throttle signal alone (motor-off, full, motor-off) can be driven by the bench; only the bridge is manual."
+  },
+  "items": [
+    {
+      "number": 1,
+      "name": "Throttle positions: brake or motor-off, full",
+      "key": "throttle_range",
+      "values": [
+        {
+          "number": 1,
+          "name": "taught by the sequence"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 2,
+      "name": "Short-circuit brake",
+      "key": "brake",
+      "values": [
+        {
+          "number": 1,
+          "name": "on: throttle to motor-off after the full-throttle signal"
+        },
+        {
+          "number": 2,
+          "name": "off: throttle stays at full"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    },
+    {
+      "number": 3,
+      "name": "Start button function",
+      "key": "startup",
+      "values": [
+        {
+          "number": 1,
+          "name": "enabled by pressing the start button after the double signal"
+        }
+      ],
+      "applies_to": null,
+      "source_page": "1-2"
+    }
+  ],
+  "unknowns": [
+    "Signal is an LED flash with a beep when the motor is connected; beep duration is not stated.",
+    "The ~5 s intervals are approximate; their tolerance is not stated.",
+    "A wrong programming attempt shows no double signal; the ESC then stores nothing.",
+    "Reset to defaults is not described.",
+    "Item numbers are step order chosen here; the ESC does not sound item numbers.",
+    "Input voltage and current of the models are not given in these manuals."
+  ],
+  "notes": [
+    "The OPTO and BEC manuals describe the same sequence; the BEC manual lists a type table that the text does not contain."
+  ]
+}

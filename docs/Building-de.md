@@ -27,6 +27,7 @@ rcbench/
     can/                  Bit Timing für beide Controller · MCP2515-Register · Echo-Selbsttest
     sbus/                 S.BUS-Decoder
     openyge/              OpenYGE-Framing, Status und Parameter-Cache
+    esc/                  ESC-Programmierprofile, ihr JSON-Leser und die Registry
   firmware/
     panel/                ESP-IDF-Projekt (ESP32-S3)
     iomcu/                pico-sdk-Projekt (RP2350)
@@ -60,7 +61,7 @@ Includes sind flach: `#include "gfx.h"`.
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
-| `artwork` | ✔ | | ✔ |
+| `artwork` · `esc` | ✔ | | ✔ |
 | `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
 
 ## Toolchains
