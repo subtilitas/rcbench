@@ -6,14 +6,14 @@ history is in git.
 
 ## Unreleased
 
-### Fixed
+## 0.10.1 - 2026-10-06
 
-- **The PD mini is never asked for more than its input.** A set point over
-  the module's input voltage put it into ERR until it was power cycled
-  (bench, 2026-10-06: 5.88 V asked from a 4.88 V input). The driver now
-  writes no more than the reported input less 0.5 V, and the SUPPLY
-  screen's voltage cap follows the input the same way. The 0.5 V margin is
-  not measured.
+The PD mini on the bench. The coprocessor finds the module's UART rate
+itself, the voltage asked never exceeds the module's input less 0.5 V, and
+SUPPLY's SETTINGS restarts a module in ERR. The link protocol is 4.4; with a
+4.3 coprocessor the panel sends 19200 for AUTO, and RESET PD MINI shows
+"coprocessor too old to reset the PD mini". The voltage cap and the reset
+have not been run against a module.
 
 ### Added
 
@@ -23,8 +23,6 @@ history is in git.
   carries it; the driver sends it once the output reads off and asks the
   module who it is again about 1 s later.
 
-### Added
-
 - **PD mini baud AUTO.** With "PD mini baud" at AUTO, the default, the
   coprocessor finds the module's UART rate itself: after every WHO_AM_I
   without a valid answer it tries the next of the 7 rates, starting at
@@ -32,6 +30,15 @@ history is in git.
   says the rate found. Link protocol 4.4: SUPPLY's BAUD takes 7 for AUTO
   and register 16 (BAUD_FOUND) reports the rate in use. A 4.3 coprocessor
   is sent 19200 for AUTO, and its 16-register page is read as it is.
+
+### Fixed
+
+- **The PD mini is never asked for more than its input.** A set point over
+  the module's input voltage put it into ERR until it was power cycled
+  (bench, 2026-10-06: 5.88 V asked from a 4.88 V input). The driver now
+  writes no more than the reported input less 0.5 V, and the SUPPLY
+  screen's voltage cap follows the input the same way. The 0.5 V margin is
+  not measured.
 
 ## 0.10.0 - 2026-10-06
 
