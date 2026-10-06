@@ -3513,6 +3513,8 @@ static void servo_cfg(const servo_cmd_t *sv, uint16_t *cfg)
 static bool        s_servo_sweep_page;
 static bool        s_servo_sweeping;
 static bool        s_servo_holding;      /* LINK_SV_HOLD in force there */
+static uint32_t    s_servo_hold_ms;      /* when the far end last took it */
+static atomic_bool s_servo_hold_lost;    /* for the screen: it let go */
 static bool        s_servo_sweep_unknown;
 static atomic_bool s_servo_sweep_able;   /* for the screen's SWEEP */
 /* The curve the far end last took, and when it started one: a curve that
@@ -3550,6 +3552,21 @@ static bool write_servo(const servo_cmd_t sv)
         if (!s_servo_sweep_page) {
             return true;
         }
+        /*
+         * Unrepeated for as long as a channel command is trusted, the far
+         * end ended the hold and the surfaces rested; a HOLD now would hold
+         * wherever resting had got them.  So the hold is over: the surfaces
+         * are released to their centre, a state both ends know, and the
+         * screen is told.
+         */
+        const uint32_t since = now_ms() - s_servo_hold_ms;
+        if (s_servo_holding && since > OUT_DEFAULT_TIMEOUT_MS) {
+            s_servo_holding      = false;
+            s_servo_held.kind    = SERVO_CMD_NONE;
+            s_servo_release_owed = true;
+            atomic_store(&s_servo_hold_lost, true);
+            return true;
+        }
         const uint16_t hold = LINK_SV_HOLD;
         if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 1u, &hold,
                         &reply)
@@ -3558,6 +3575,7 @@ static bool write_servo(const servo_cmd_t sv)
         }
         s_servo_sweeping = false;
         s_servo_holding  = true;
+        s_servo_hold_ms  = now_ms();
         s_servo_written |= s_servo_channels;
         return true;
     }
@@ -5129,12 +5147,13 @@ static void send_cmd(const panel_cmd_t *in)
         atomic_fetch_add(&s_lets_go, 1u);
         atomic_store(&s_servo_release_request, true);
     } else if (pc->kind == PANEL_CMD_SERVO
-               && pc->servo.kind == SERVO_CMD_HOLD) {
+               && (pc->servo.kind == SERVO_CMD_HOLD || pc->servo.ends_sweep)) {
         /*
-         * HOLD stops a moving servo, so it does not wait either: a sweep
-         * being written gives way to it at once, and one queued before it
-         * is dropped as stale.  It is a drive itself, so it carries the
-         * generation it opens.
+         * HOLD, and a finger on the dial or CENTRE that ends a sweep, stop
+         * a moving servo, so they do not wait either: a sweep being written
+         * gives way at once, and one queued before them is dropped as
+         * stale.  Each is a drive itself, so it carries the generation it
+         * opens.
          */
         cmd.lets_go = atomic_fetch_add(&s_lets_go, 1u) + 1u;
         atomic_store(&s_servo_hold_request, true);
@@ -5546,6 +5565,9 @@ void app_main(void)
             servo_screen_rate((servo_rate_state_t)(r >> 16),
                               (uint16_t)(r & 0xFFFFu));
             servo_screen_set_sweep(atomic_load(&s_servo_sweep_able));
+            if (atomic_exchange(&s_servo_hold_lost, false)) {
+                servo_screen_released();
+            }
             if (atomic_exchange(&s_sweep_start_new, false)) {
                 const uint32_t now = now_ms();
                 servo_screen_sweep_started(

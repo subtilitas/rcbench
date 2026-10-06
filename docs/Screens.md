@@ -201,7 +201,9 @@ the button reads HOLD, and a tap stops the sweep where the output has got to
 -- which SPEED can leave behind the curve -- and holds it there. The
 coprocessor does the holding, because only it knows exactly where that is;
 without feedback the horn drawn on the panel is an estimate of it. A HOLD
-does not wait behind sweep writes already on the wire. A finger on the dial,
+does not wait behind sweep writes already on the wire. A HOLD the link left
+unrepeated for 500 ms has been let go at the far end, so the panel releases
+the surfaces to their centre and the horn goes there. A finger on the dial,
 CENTRE, RELEASE,
 a disarm and leaving the screen stop it too, and touch events going missing
 stop it as HOLD would. A changed setting starts it over

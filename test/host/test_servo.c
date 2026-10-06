@@ -1486,7 +1486,11 @@ TEST_CASE(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave)
         (void)last_cmd();
         tap(k == 0 ? x : by[k].px, k == 0 ? y : by[k].py);
         CHECK(!servo_screen_sweeping());
-        CHECK_EQ(last_cmd().kind, by[k].kind);
+        const servo_cmd_t c = last_cmd();
+        CHECK_EQ(c.kind, by[k].kind);
+        CHECK(c.ends_sweep);                   /* it gives way at once */
+        tap(k == 0 ? x : by[k].px, k == 0 ? y : by[k].py);
+        CHECK(!last_cmd().ends_sweep);         /* only the one that ended it */
     }
 
     fresh();
@@ -1515,6 +1519,21 @@ TEST_CASE(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave)
     scr->cancel();
     CHECK(!servo_screen_sweeping());
     CHECK_EQ(last_cmd().kind, SERVO_CMD_HOLD);
+
+    /* A hold the panel had to let go of: the horn goes to the centre the
+     * surfaces were released to, and nothing is held. */
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);
+    frames(0.5f);
+    tap(SWEEP_X, BTN_Y);                       /* HOLD */
+    CHECK(servo_screen_commanded() > 1800u);
+    servo_screen_released();
+    CHECK_EQ(servo_screen_commanded(), 1500u);
+    (void)last_cmd();
+    choose_type(1);                            /* not driving: a rest */
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
 
     /* And a coprocessor that cannot sweep any more: what the panel holds is
      * ended with a release. */

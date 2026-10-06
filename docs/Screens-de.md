@@ -219,7 +219,9 @@ Kurve dort an, wo der Ausgang gerade steht -- SPEED kann ihn hinter der Kurve
 zurücklassen --, und hält ihn dort. Das Halten übernimmt der Koprozessor,
 weil nur er genau weiß, wo das ist; ohne Rückmeldung ist das im Panel
 gezeichnete Horn eine Schätzung davon. Ein HOLD wartet nicht hinter
-Sweep-Schreibvorgängen, die schon auf dem Draht sind. Ein Finger auf der
+Sweep-Schreibvorgängen, die schon auf dem Draht sind. Ein HOLD, den der Link
+500 ms nicht wiederholt hat, hat das andere Ende losgelassen; das Panel gibt
+die Surfaces dann zur Mitte frei, und das Horn geht dorthin. Ein Finger auf der
 Skala, CENTRE, RELEASE, ein Disarm und das Verlassen des Screens beenden sie
 ebenfalls, und verlorene Touch-Ereignisse halten sie an wie HOLD. Eine geänderte Einstellung startet sie mit der neuen Kurve neu; ein
 geändertes Profil oder eine geänderte Frame Rate geht sofort mit.

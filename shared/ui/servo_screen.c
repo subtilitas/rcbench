@@ -320,6 +320,7 @@ static struct {
      * clock, to draw the horn by. */
     bool        sweep_able;      /* the coprocessor speaks 4.2 or later  */
     bool        sweeping;
+    bool        sweep_ended;     /* the next command ends it             */
     sweep_t     sw;
     uint32_t    clock_ms;
     float       clock_frac_ms;
@@ -534,6 +535,10 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
     s.driving = (kind == SERVO_CMD_POSITION || kind == SERVO_CMD_CENTRE
                  || kind == SERVO_CMD_SWEEP || kind == SERVO_CMD_HOLD);
     const bool sw = kind == SERVO_CMD_SWEEP;
+    s.pending.ends_sweep     = s.sweep_ended && !sw;
+    if (!sw) {
+        s.sweep_ended = false;
+    }
     s.pending.sweep_kind     = sw ? (uint16_t)s.sw.cfg.kind : 0u;
     s.pending.sweep_mhz      = sw ? s.sw.cfg.mhz : 0u;
     s.pending.sweep_span     = sw ? s.sw.cfg.amplitude : 0u;
@@ -592,7 +597,8 @@ static float sweep_deg(uint16_t cmd)
 static void stop_sweep(void)
 {
     if (s.sweeping) {
-        s.sweeping = false;
+        s.sweeping    = false;
+        s.sweep_ended = true;
         ++s.ctrl_rev;
     }
 }
@@ -638,6 +644,15 @@ static bool same_sweep(const sweep_cfg_t *a, const sweep_cfg_t *b)
 }
 
 bool servo_screen_sweeping(void) { return s.sweeping; }
+
+void servo_screen_released(void)
+{
+    /* Nothing held any more, and the horn goes to the centre the surfaces
+     * were released to. */
+    s.driving       = false;
+    s.commanded_deg = 0.0f;
+    ++s.ctrl_rev;
+}
 
 /* Where the horn was drawn @p ago_ms ago, from the trail; the oldest kept
  * for anything older. */

@@ -79,6 +79,10 @@ typedef struct {
      *  the curve, thousandths of a cycle a second, command units either
      *  side of the centre and the hold at each end.  Zero otherwise. */
     uint16_t         sweep_kind, sweep_mhz, sweep_span, sweep_dwell_ms;
+    /** This command ends a sweep the screen was running: a HOLD, a finger
+     *  on the dial, CENTRE.  The panel gives it way at once over sweep
+     *  writes already on the wire or queued. */
+    bool             ends_sweep;
 } servo_cmd_t;
 
 /** Drop the cached chrome, so the next frame repaints it. */
@@ -144,6 +148,10 @@ void servo_screen_set_sweep(bool able);
 
 /** Whether a sweep is running, for the application and tests. */
 bool servo_screen_sweeping(void);
+
+/** The panel let go of what the screen was holding -- a HOLD the far end
+ *  had already ended -- and released the surfaces to their centre. */
+void servo_screen_released(void);
 
 /** Where the coprocessor's output was when it started a sweep. */
 typedef enum {
