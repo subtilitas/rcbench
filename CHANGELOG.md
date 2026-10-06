@@ -6,6 +6,14 @@ history is in git.
 
 ## Unreleased
 
+## 0.11.0 - 2026-10-06
+
+SERVO sets and switches the supply itself, with a warning held for 2 s
+before a voltage above 6.0 V reaches a servo. 72 ESC programming profiles
+are built in and replaceable from the SD card; nothing uses them yet. An
+alert clears after 30 s or on a tap. The link protocol stays 4.4, so a
+0.10.1 coprocessor works with this panel; flash both images all the same.
+
 ### Added
 
 - **SERVO sets and switches the supply.** A SET line under the supply plot
@@ -41,6 +49,11 @@ history is in git.
   now clears after 30 s, or on a tap on the band, marked `x`; that tap
   reaches no screen. "touch did not answer -- the bench will not arm" at
   start stays until restart, as nothing can tap it away.
+- **A protocol mismatch is reported once.** A coprocessor on another
+  protocol major raised "protocol mismatch -- will not arm" at every
+  one-second identity probe, so the alert never expired and a tap cleared it
+  for a second. It is now raised and logged once per mismatch; a probe that
+  matches or goes unanswered makes the next one news.
 
 ## 0.10.1 - 2026-10-06
 
