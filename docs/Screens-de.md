@@ -521,8 +521,9 @@ Koprozessor weist einen Pin ab, der reserviert, an einen Ausgang gebunden
 oder der andere Pin ist. PD mini baud ist die eigene UART-Baudrate-
 Einstellung des Moduls: 9600, 19200 (ab Werk), 38400, 57600, 115200, 230400
 oder 460800 Baud, oder AUTO. AUTO, die Vorgabe, lässt den Koprozessor sie
-finden: er versucht jede der 7 Raten, eine pro Sekunde, und
-das Band sagt, bei welcher Rate das Modul geantwortet hat.
+finden: er versucht jede der 7 Raten, eine pro Sekunde. Die Kopfzeile von
+SUPPLY zeigt die Rate in Gebrauch hinter ONLINE, z. B. `ONLINE 38400`, bei
+AUTO wie bei einer festen Rate.
 
 ## Analyser
 

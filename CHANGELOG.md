@@ -21,6 +21,14 @@ history is in git.
   is unverified and no beep timing is known. Nothing uses them yet: the mode
   programming that will is not built.
 
+### Fixed
+
+- **The PD mini's rate is no longer an alert.** With "PD mini baud" at AUTO,
+  the rate found filled the red alert band at the foot of every screen, over
+  the SUPPLY current limit, until another alert replaced it (bench,
+  2026-10-06). The SUPPLY header shows it after ONLINE instead, e.g.
+  `ONLINE 38400`, for AUTO and a fixed rate alike.
+
 ## 0.10.1 - 2026-10-06
 
 The PD mini on the bench. The coprocessor finds the module's UART rate
