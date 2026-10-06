@@ -383,6 +383,140 @@ TEST_CASE(an_alert_survives_navigation)
     CHECK(ui_router_alert() == NULL);
 }
 
+/* A point on the alert band that, with no alert there, opens a screen from
+ * the overview: the tap the band must keep from the screen beneath.  -1
+ * when the overview has nothing there. */
+static int alert_band_x_over_a_tile(void)
+{
+    for (int x = 10; x < W; x += 20) {
+        to_overview();
+        tap(x, H - 10);
+        if (ui_router_current() != SCREEN_OVERVIEW) {
+            return x;
+        }
+    }
+    return -1;
+}
+
+TEST_CASE(an_alert_clears_after_30_s_and_a_new_one_starts_again)
+{
+    fresh();
+    to_overview();
+    ui_router_set_alert("PD mini output would not switch");
+    ui_router_tick(UI_ALERT_SHOW_S - 0.5f);
+    CHECK(ui_router_alert() != NULL);
+    ui_router_set_alert("PD mini output would not switch");   /* again */
+    ui_router_tick(UI_ALERT_SHOW_S - 0.5f);
+    CHECK(ui_router_alert() != NULL);
+    ui_router_tick(1.0f);
+    CHECK(ui_router_alert() == NULL);
+}
+
+TEST_CASE(a_tap_on_the_alert_clears_it_and_reaches_no_screen)
+{
+    fresh();
+    const int x = alert_band_x_over_a_tile();
+    CHECK(x >= 0);
+    to_overview();
+    ui_router_set_alert("supply not answering -- output off");
+    tap(x, H - 10);
+    CHECK(ui_router_alert() == NULL);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+
+    /* Pressed on the band and lifted off it: a slip, not a tap. */
+    ui_router_set_alert("supply not answering -- output off");
+    touch(x, H - 10, TOUCH_EVENT_DOWN, 1);
+    touch(x, 200, TOUCH_EVENT_MOVE, 1);
+    touch(x, 200, TOUCH_EVENT_UP, 1);
+    CHECK(ui_router_alert() != NULL);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    ui_router_set_alert(NULL);
+}
+
+/* An alert that arrives under a finger has not been read; the lift that
+ * was meant for the one before does not clear it. */
+TEST_CASE(a_lift_clears_only_the_alert_it_was_pressed_on)
+{
+    fresh();
+    to_overview();
+    ui_router_set_alert("coprocessor refused to arm");
+    touch(400, H - 10, TOUCH_EVENT_DOWN, 1);
+    ui_router_set_alert("coprocessor disarmed -- arm again");
+    touch(400, H - 10, TOUCH_EVENT_UP, 1);
+    CHECK_STR_EQ(ui_router_alert(), "coprocessor disarmed -- arm again");
+    ui_router_set_alert(NULL);
+}
+
+/* A press on the band that the alert's expiry overtakes is still the band's:
+ * the screen never saw it begin, so it does not see it end. */
+TEST_CASE(a_press_on_an_alert_that_expires_stays_off_the_screen)
+{
+    fresh();
+    const int x = alert_band_x_over_a_tile();
+    CHECK(x >= 0);
+    to_overview();
+    ui_router_set_alert("card full or unwritable -- run not recorded");
+    touch(x, H - 10, TOUCH_EVENT_DOWN, 1);
+    ui_router_tick(UI_ALERT_SHOW_S);
+    CHECK(ui_router_alert() == NULL);
+    touch(x, H - 10, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+/* Cancelled, the band lets go of its press; a release that arrives anyway
+ * clears nothing. */
+TEST_CASE(cancelling_gestures_lets_go_of_the_alert)
+{
+    fresh();
+    to_overview();
+    ui_router_set_alert("touch lost while arming -- arm again");
+    touch(400, H - 10, TOUCH_EVENT_DOWN, 1);
+    ui_router_cancel_gestures();
+    touch(400, H - 10, TOUCH_EVENT_UP, 1);
+    CHECK(ui_router_alert() != NULL);
+    ui_router_set_alert(NULL);
+}
+
+/* The start-up fault that leaves no touch: neither time nor a tap clears
+ * it, and a tap goes to the screen as if the band were not there. */
+TEST_CASE(a_held_alert_stays_and_lets_taps_through)
+{
+    fresh();
+    const int x = alert_band_x_over_a_tile();
+    CHECK(x >= 0);
+    to_overview();
+    ui_router_hold_alert("touch did not answer -- the bench will not arm");
+    ui_router_tick(10.0f * UI_ALERT_SHOW_S);
+    CHECK(ui_router_alert() != NULL);
+    tap(x, H - 10);
+    CHECK(ui_router_alert() != NULL);
+    CHECK(ui_router_current() != SCREEN_OVERVIEW);
+    ui_router_set_alert(NULL);
+    CHECK(ui_router_alert() == NULL);
+}
+
+/* The screens cache what they drew per framebuffer, and the band was drawn
+ * over that; cleared, it has to be painted over, not left in red. */
+TEST_CASE(a_cleared_alert_leaves_no_red_behind)
+{
+    fresh();
+    to_overview();
+    ui_router_set_alert("PD mini set points would not take");
+    ui_router_render(&cv, 0);
+    ui_router_tick(UI_ALERT_SHOW_S);
+    CHECK(ui_router_alert() == NULL);
+    ui_router_render(&cv, 0);
+    int danger_bottom = 0;
+    for (int y = H - 34; y < H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            if (fb[(size_t)y * W + x] == ui_theme_color(UI_C_DANGER)) {
+                ++danger_bottom;
+            }
+        }
+    }
+    CHECK_EQ(danger_bottom, 0);
+}
+
 /* The band's other states: armed, and a fault badge.  Rendered here rather
  * than only on a faulted bench. */
 TEST_CASE(the_band_shows_what_is_wrong)
@@ -903,6 +1037,13 @@ int main(void)
     RUN(every_stub_renders_something_and_says_something);
     RUN(no_line_of_stub_copy_runs_off_the_screen);
     RUN(an_alert_survives_navigation);
+    RUN(an_alert_clears_after_30_s_and_a_new_one_starts_again);
+    RUN(a_tap_on_the_alert_clears_it_and_reaches_no_screen);
+    RUN(a_lift_clears_only_the_alert_it_was_pressed_on);
+    RUN(a_press_on_an_alert_that_expires_stays_off_the_screen);
+    RUN(cancelling_gestures_lets_go_of_the_alert);
+    RUN(a_held_alert_stays_and_lets_taps_through);
+    RUN(a_cleared_alert_leaves_no_red_behind);
     RUN(the_band_shows_what_is_wrong);
     RUN(the_splash_holds_then_hands_over);
     RUN(a_tap_skips_the_splash_hold);

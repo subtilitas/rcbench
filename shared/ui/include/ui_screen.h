@@ -158,15 +158,27 @@ bool ui_router_take_stop(void);
 /** Longest alert the router will show, including the terminator. */
 #define UI_ALERT_MAX 48
 
+/** How long an alert shows before it clears itself, in seconds. */
+#define UI_ALERT_SHOW_S 30.0f
+
 /**
  * Show @p text in a 34 px band across the bottom of every screen, or NULL to
  * clear it.
  *
  * For faults the screen itself does not show, such as a touch controller that
  * has stopped answering.  At the bottom, it covers controls rather than
- * readings.
+ * readings.  The band clears after UI_ALERT_SHOW_S of ui_router_tick(), or
+ * when a tap lands on it and lifts there; a tap on the band reaches no
+ * screen.  Setting an alert again, even the same text, restarts its time.
  */
 void ui_router_set_alert(const char *text);
+
+/**
+ * As ui_router_set_alert(), but neither time nor a tap clears it: for a
+ * fault that lasts until restart and leaves no touch to tap with, such as a
+ * touch controller that did not answer at start.
+ */
+void ui_router_hold_alert(const char *text);
 const char *ui_router_alert(void);
 
 #ifdef __cplusplus

@@ -29,13 +29,24 @@
 
 #define PANEL_W 800
 #define PANEL_H 480
+#define ALERT_H 34    /* the alert band, across the bottom */
 
 static struct {
     ui_screen_id_t    current;
     ui_bench_status_t status;
     char              alert[UI_ALERT_MAX];
     bool              has_alert;
+    bool              alert_held;     /**< no expiry, no tap clears it      */
+    float             alert_age_s;
+    uint32_t          alert_gen;      /**< counts alerts set                */
     bool              stop_latched;
+
+    /* A press that began on the alert band, by track id, held until its
+     * release even if the alert clears meanwhile: the screen beneath never
+     * saw the press, so it must not see the release either. */
+    bool     alert_press;
+    uint8_t  alert_id;
+    uint32_t alert_press_gen;   /**< the alert the press began on         */
 
     /* Which contact owns a press on the band.  The GT911 reports up to five,
      * and every event carries its track id, so a second finger or a resting
@@ -105,6 +116,7 @@ void ui_router_goto(ui_screen_id_t id)
     }
     /* A press that began on the old screen must not land on the new one. */
     s.band_press = false;
+    s.alert_press = false;
     ui_router_invalidate();
 }
 
@@ -129,8 +141,27 @@ void ui_router_invalidate(void)
     supply_invalidate();
 }
 
+static void clear_alert(void)
+{
+    if (s.has_alert) {
+        /* Screens cache what they drew per framebuffer, and the band was
+         * drawn over it; without a repaint its red would stay. */
+        ui_router_invalidate();
+    }
+    s.has_alert   = false;
+    s.alert_held  = false;
+    s.alert_age_s = 0.0f;
+    s.alert[0]    = '\0';
+}
+
 void ui_router_tick(float dt_s)
 {
+    if (s.has_alert && !s.alert_held && dt_s > 0.0f) {
+        s.alert_age_s += dt_s;
+        if (s.alert_age_s >= UI_ALERT_SHOW_S) {
+            clear_alert();
+        }
+    }
     const ui_screen_t *scr = screen_for(s.current);
     if (scr != NULL && scr->tick != NULL) {
         scr->tick(dt_s);
@@ -184,6 +215,13 @@ static bool has_band(ui_screen_id_t id)
  * without asking would latch a stop on a tap that pressed nothing.
  */
 bool ui_router_stop_live(void) { return has_band(s.current); }
+
+static bool in_alert(const touch_event_t *evt)
+{
+    return evt->point.y >= PANEL_H - ALERT_H && evt->point.y < PANEL_H
+           && evt->point.x >= 0 && evt->point.x < PANEL_W;
+}
+
 static bool has_home(ui_screen_id_t id)
 {
     return id != SCREEN_SPLASH && id != SCREEN_OVERVIEW
@@ -233,6 +271,26 @@ void ui_router_event(const touch_event_t *evt)
         }
     }
 
+    if (s.alert_press && evt->point.id == s.alert_id) {
+        if (evt->type == TOUCH_EVENT_UP) {
+            s.alert_press = false;
+            /* Only the alert that was showing when the press began: one
+             * that arrived meanwhile has not been read. */
+            if (s.has_alert && !s.alert_held && in_alert(evt)
+                && s.alert_gen == s.alert_press_gen) {
+                clear_alert();
+            }
+        }
+        return;
+    }
+    if (evt->type == TOUCH_EVENT_DOWN && s.has_alert && !s.alert_held
+        && has_band(s.current) && in_alert(evt)) {
+        s.alert_press     = true;
+        s.alert_id        = evt->point.id;
+        s.alert_press_gen = s.alert_gen;
+        return;   /* the band covers the screen here, so the screen gets none */
+    }
+
     if (scr != NULL && scr->event != NULL) {
         /* Screens work in their own coordinates; the band's height is
          * removed here. */
@@ -263,7 +321,10 @@ void ui_router_cancel_gestures(void)
      * until it is entered again, so a tab press whose release went missing
      * would meet a recycled id on the next visit.  Cancelling a screen with
      * no gesture in progress asks for nothing, so every screen is told.
+     * The alert band's press goes the same way: its release may never
+     * come.
      */
+    s.alert_press = false;
     for (int id = 0; id < SCREEN_COUNT; ++id) {
         const ui_screen_t *scr = screen_for((ui_screen_id_t)id);
         if (scr != NULL && scr->cancel != NULL) {
@@ -275,12 +336,20 @@ void ui_router_cancel_gestures(void)
 void ui_router_set_alert(const char *text)
 {
     if (text == NULL) {
-        s.has_alert = false;
-        s.alert[0]  = '\0';
+        clear_alert();
         return;
     }
     snprintf(s.alert, sizeof(s.alert), "%s", text);
-    s.has_alert = true;
+    s.has_alert   = true;
+    s.alert_held  = false;
+    s.alert_age_s = 0.0f;
+    ++s.alert_gen;
+}
+
+void ui_router_hold_alert(const char *text)
+{
+    ui_router_set_alert(text);
+    s.alert_held = (text != NULL);
 }
 
 const char *ui_router_alert(void)
@@ -288,13 +357,15 @@ const char *ui_router_alert(void)
     return s.has_alert ? s.alert : NULL;
 }
 
-#define ALERT_H 34
-
-static void draw_alert(gfx_canvas_t *c, const char *text)
+static void draw_alert(gfx_canvas_t *c, const char *text, bool closable)
 {
     const int y = PANEL_H - ALERT_H;
     gfx_fill_rect(c, 0, y, PANEL_W, ALERT_H, ui_theme_color(UI_C_DANGER));
     gfx_text(c, 12, y + 9, text, &gfx_font_8x16, ui_theme_color(UI_C_TEXT), 1);
+    if (closable) {
+        gfx_text(c, PANEL_W - 12 - 8, y + 9, "x", &gfx_font_8x16,
+                 ui_theme_color(UI_C_TEXT), 1);
+    }
 }
 
 void ui_router_render(gfx_canvas_t *c, int buffer_index)
@@ -328,7 +399,7 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
     }
 
     if (s.has_alert) {
-        draw_alert(c, s.alert);
+        draw_alert(c, s.alert, !s.alert_held);
     }
 
     /*

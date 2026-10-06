@@ -5710,7 +5710,7 @@ void app_main(void)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     if (!healthy) {
-        ui_router_set_alert("touch did not answer -- the bench will not arm");
+        ui_router_hold_alert("touch did not answer -- the bench will not arm");
     }
 
     /*

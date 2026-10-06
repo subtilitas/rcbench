@@ -19,6 +19,22 @@ einen Stopp nicht auf.
 
 ARM sitzt unten auf einem Prüfstandsbildschirm; STOP sitzt oben im Band.
 
+## Das Alert-Band
+
+Eine Störung, die der Bildschirm selbst nicht zeigt, erscheint in einem roten
+Band, 34 px hoch, unten über jedem Bildschirm mit Statusband. Solange es
+steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
+
+- Es verschwindet nach 30 s. Ein neuer Alert, auch mit demselben Text,
+  startet die 30 s neu.
+- Ein Tippen auf das Band löscht es früher: auf dem Band drücken und
+  loslassen, rechts mit einem `x` markiert. Der Bildschirm darunter bekommt
+  dieses Tippen nicht.
+- Ein Alert, der kommt, während ein Finger auf dem Band liegt, wird durch
+  dieses Loslassen nicht gelöscht.
+- "touch did not answer -- the bench will not arm" beim Start bleibt bis zum
+  Neustart und hat kein `x`: es gibt keinen Touch, mit dem man tippen könnte.
+
 ## Marken im Menü
 
 ![Das Funktionsmenü](img/overview.png)
