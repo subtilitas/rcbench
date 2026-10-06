@@ -341,6 +341,11 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
     if (nack != 0u) {
         return nack;
     }
+    /* Nor one on a pin the supply holds: the bank would leave it unbound,
+     * and a restart would drive it on the module's pin. */
+    if (supply_page_slots_check(&s_supply, next) != 0u) {
+        return LINK_NACK_BAD_VALUE;
+    }
     /* Nor a slot bound beside a surface at another rate. */
     if (outputs_slots_rate_check(&s_outputs, next,
                                  servo_page_hz(&s_servo)) != 0u) {
@@ -1135,6 +1140,10 @@ int main(void)
         (void)servo_page_step(&s_servo, &s_outputs, now);
         /* The supply: its bytes in, a step of its driver, and the output off
          * whenever the panel's heartbeat is not there to switch it off. */
+        /* The page first, so a heartbeat lost this pass reaches the driver
+         * as an OFF before it steps and can send an ON already queued. */
+        supply_page_step(&s_supply, s_beat.alive && !s_dev.failsafe,
+                         s_pd_open ? &s_pd : NULL);
         if (s_pd_open) {
             uint8_t b;
             while (pd_uart_getc(&b)) {
@@ -1142,8 +1151,6 @@ int main(void)
             }
             pdmini_step(&s_pd, now);
         }
-        supply_page_step(&s_supply, s_beat.alive && !s_dev.failsafe,
-                         s_pd_open ? &s_pd : NULL);
         outputs_step(&s_outputs, now);
         /* Straight after the step, so what reaches a pin is what the bank
          * has just decided rather than what it decided a pass ago. */

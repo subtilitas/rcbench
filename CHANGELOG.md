@@ -14,8 +14,11 @@ history is in git.
     other pin, and while the output is asked on or may be on -- read on,
     an ON not yet confirmed, or an OFF owed to a module that stopped
     answering. The pins are reserved from the outputs while held.
-  - Output: an ON needs a live heartbeat, and the output goes off when the
-    heartbeat stops.
+  - Output: an ON needs a live heartbeat and its set points in the same
+    frame, and the output goes off when the heartbeat stops -- applied to
+    the driver before it steps, so an ON queued in that pass is not sent.
+  - No output slot is bound on a pin the supply holds: the OUTPUTS write is
+    refused rather than stored.
   - The PD mini driver counts failed state reads on their own: three in a
     row take the module for gone however the other readings are answered,
     and an OFF it is owed goes blind.

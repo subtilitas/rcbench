@@ -42,13 +42,21 @@ void supply_page_init(supply_page_t *p);
  * A write, validated whole before any of it is stored.  Refused: off the
  * page (BAD_RANGE); a read-only register (READ_ONLY); a wiring change while
  * the output is asked on or may be on, a pin past the bank, reserved, bound to an output or
- * the other pin, a baud setting past 6, an ON without the supply enabled,
+ * the other pin, a baud setting past 6, an ON without the supply enabled
+ * or without its set points in the same frame,
  * a set point above the module's range (BAD_VALUE); an ON without a live
  * heartbeat (NOT_ARMED).
  */
 uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
                           const uint16_t *in, const outputs_t *o,
                           bool beat_alive);
+
+/** LINK_NACK_BAD_VALUE for an OUTPUTS page (@p slots, LINK_OS_COUNT
+ *  registers) that binds a slot to a pin the supply holds; 0 otherwise.
+ *  Checked before the page is stored, so no binding is kept that the bank
+ *  would leave unbound -- and that a restart, with the supply not yet
+ *  wired, would drive on the module's pin. */
+uint8_t supply_page_slots_check(const supply_page_t *p, const uint16_t *slots);
 
 void supply_page_read(const supply_page_t *p, uint8_t off, uint8_t n,
                       uint16_t *out);

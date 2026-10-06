@@ -124,6 +124,13 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
             return LINK_NACK_BAD_VALUE;
         }
         if (next[LINK_SP_OUTPUT] != 0u) {
+            /* An ON written comes with its set points, in one frame:
+             * never at whatever the page held before. */
+            const bool writes_on = off <= (uint8_t)LINK_SP_OUTPUT;
+            if (writes_on
+                && (unsigned)off + (unsigned)n <= (unsigned)LINK_SP_SET_MA) {
+                return LINK_NACK_BAD_VALUE;
+            }
             if (next[LINK_SP_ENABLE] == 0u) {
                 return LINK_NACK_BAD_VALUE;
             }
@@ -134,6 +141,22 @@ uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
         }
     }
     memcpy(p->regs, next, sizeof(next));
+    return 0u;
+}
+
+uint8_t supply_page_slots_check(const supply_page_t *p, const uint16_t *slots)
+{
+    if (slots == NULL) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    const uint64_t held = supply_page_pins(p);
+    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+        const uint16_t *r = &slots[(size_t)s * LINK_OS_STRIDE];
+        if (r[LINK_OS_DRIVER] != 0u && r[LINK_OS_PIN] <= OUT_MAX_PIN
+            && (held & ((uint64_t)1u << r[LINK_OS_PIN])) != 0u) {
+            return LINK_NACK_BAD_VALUE;
+        }
+    }
     return 0u;
 }
 

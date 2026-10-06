@@ -133,6 +133,47 @@ TEST_CASE(the_wiring_waits_for_an_output_that_may_still_be_on)
     CHECK(!pdmini_may_be_on(NULL));
 }
 
+/* An ON comes with its set points in one frame; set points alone, or an
+ * OFF alone, may come by themselves. */
+TEST_CASE(an_on_needs_its_whole_frame)
+{
+    fresh();
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
+    const uint16_t on = 1u;
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_OUTPUT, 1u, &on, &o, true),
+             LINK_NACK_BAD_VALUE);
+    const uint16_t on_mv[2] = { 1u, 5000u };
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_OUTPUT, 2u, on_mv, &o, true),
+             LINK_NACK_BAD_VALUE);
+    const uint16_t mv = 7000u;
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_SET_MV, 1u, &mv, &o, true), 0u);
+    const uint16_t all[7] = { 1u, 8u, 9u, 1u, 1u, 5000u, 500u };
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_ENABLE, 7u, all, &o, true), 0u);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+    /* Set points alone under a live output, and an OFF alone. */
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_SET_MV, 1u, &mv, &o, true), 0u);
+    const uint16_t off = 0u;
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_OUTPUT, 1u, &off, &o, true), 0u);
+}
+
+/* No output slot is bound on a pin the supply holds. */
+TEST_CASE(no_slot_binds_a_held_pin)
+{
+    fresh();
+    uint16_t slots[LINK_OS_COUNT];
+    memset(slots, 0, sizeof(slots));
+    slots[LINK_OS_DRIVER] = 1u;
+    slots[LINK_OS_PIN]    = 8u;
+    CHECK_EQ(supply_page_slots_check(&pg, slots), 0u);   /* not wired */
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
+    CHECK_EQ(supply_page_slots_check(&pg, slots), LINK_NACK_BAD_VALUE);
+    slots[LINK_OS_PIN] = 10u;
+    CHECK_EQ(supply_page_slots_check(&pg, slots), 0u);
+    slots[LINK_OS_STRIDE + LINK_OS_PIN] = 9u;              /* no driver */
+    CHECK_EQ(supply_page_slots_check(&pg, slots), 0u);
+    CHECK_EQ(supply_page_slots_check(&pg, NULL), LINK_NACK_BAD_VALUE);
+}
+
 TEST_CASE(read_only_registers_and_the_page_end_are_refused)
 {
     fresh();
@@ -207,6 +248,8 @@ int main(void)
     RUN(an_on_needs_the_supply_wired_and_a_heartbeat);
     RUN(the_wiring_does_not_change_under_a_live_output);
     RUN(the_wiring_waits_for_an_output_that_may_still_be_on);
+    RUN(an_on_needs_its_whole_frame);
+    RUN(no_slot_binds_a_held_pin);
     RUN(read_only_registers_and_the_page_end_are_refused);
     RUN(the_step_passes_the_page_to_the_driver_and_back);
     return test_summary("supply_page");
