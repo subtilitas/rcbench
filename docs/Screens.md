@@ -445,7 +445,8 @@ With the PD mini as the supply, SETTINGS also offers RESET PD MINI. It
 switches the output off and restarts the module (its SYSTEM_RESET command),
 for a module that shows ERR -- a set point over its input puts it there --
 without unplugging it. The module is asked who it is again about 1 s later.
-Whether a restart clears every ERR is not measured.
+Whether a restart clears every ERR is not measured. A coprocessor older than
+protocol 4.4 has no reset: the output goes off and the band says so.
 
 ### The log
 
