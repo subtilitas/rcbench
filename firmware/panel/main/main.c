@@ -4889,6 +4889,9 @@ static bool poll_bench(bench_state_t *bench)
  * True only for a DATA identity page from a coprocessor speaking
  * LINK_PROTOCOL_MAJOR; reply then holds that page.
  */
+/* A protocol mismatch has been reported and has not ended since. */
+static bool s_mismatch_told;
+
 static bool probe_identity(link_msg_t *reply)
 {
     bool answered;
@@ -4917,12 +4920,22 @@ static bool probe_identity(link_msg_t *reply)
     if (answered
         && reply->regs[LINK_ID_PROTOCOL_MAJOR] != LINK_PROTOCOL_MAJOR) {
         /* A protocol major that differs from LINK_PROTOCOL_MAJOR refuses
-         * arming; the register is the first one of the identity page. */
-        ESP_LOGE(TAG, "coprocessor speaks protocol %u, we speak %u",
-                 (unsigned)reply->regs[LINK_ID_PROTOCOL_MAJOR],
-                 (unsigned)LINK_PROTOCOL_MAJOR);
-        control_alert("protocol mismatch -- will not arm");
+         * arming; the register is the first one of the identity page.
+         *
+         * Said once per mismatch, not at every poll: the probe repeats each
+         * second while the link is down, and an alert raised again each
+         * time would never expire and could not be tapped away.  A probe
+         * nobody answers, or one that matches, makes the next one news. */
+        if (!s_mismatch_told) {
+            ESP_LOGE(TAG, "coprocessor speaks protocol %u, we speak %u",
+                     (unsigned)reply->regs[LINK_ID_PROTOCOL_MAJOR],
+                     (unsigned)LINK_PROTOCOL_MAJOR);
+            control_alert("protocol mismatch -- will not arm");
+            s_mismatch_told = true;
+        }
         answered = false;
+    } else {
+        s_mismatch_told = false;
     }
     return answered;
 }
