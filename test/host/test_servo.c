@@ -2141,6 +2141,27 @@ TEST_CASE(settings_shuts_a_set_points_keypad_cleanly)
     CHECK_EQ(servo_screen_commanded(), 1500);   /* the overlay is over it */
 }
 
+/* A cap that comes down while the question stands takes the waiting value
+ * with it; the cap recovering before APPLY does not bring it back. */
+TEST_CASE(a_cap_lowered_under_the_question_lowers_its_value)
+{
+    fresh();
+    supply_screen_put(9.0f, 1.0f);              /* past 6 V already */
+    supply_screen_set_output(true);
+    scr->tick(0.025f);
+    tap(SUP_V_X, SUP_ROW_Y);
+    keys("12");
+    settings_set(SET_SUPPLY_V_MAX, 10.0f);
+    supply_screen_limits_changed();
+    scr->tick(0.025f);
+    settings_set(SET_SUPPLY_V_MAX, 21.0f);
+    supply_screen_limits_changed();
+    scr->tick(0.025f);
+    tap(WARN_APPLY_X, WARN_Y);
+    CHECK(supply_screen_set_v() <= 10.0f + 1e-4f);
+    CHECK(supply_screen_set_v() > 9.0f);
+}
+
 int main(void)
 {
     RUN(a_touch_on_the_dial_points_the_horn_there);
@@ -2219,5 +2240,6 @@ int main(void)
     RUN(an_off_press_before_the_tick_is_still_an_off);
     RUN(the_hv_warning_redraws_when_the_output_changes);
     RUN(settings_shuts_a_set_points_keypad_cleanly);
+    RUN(a_cap_lowered_under_the_question_lowers_its_value);
     return test_summary("servo");
 }

@@ -2853,6 +2853,21 @@ static void tick(float dt_s)
      * no ON on its way, which a STOP or a lost touch can drop -- it goes,
      * unanswered, with the change it held, as on SUPPLY.  The HV warning
      * is about the servo, and stays. */
+    /* A cap that came down while the question stands takes the waiting
+     * value down with it, for good, as SUPPLY does with its own: one that
+     * recovers before APPLY does not bring the old value back. */
+    if (s.ask.open) {
+        const supply_caps_t caps = supply_screen_caps();
+        const float v = supply_snap(s.ask.v, caps.v_min, caps.v_max,
+                                    caps.v_step);
+        const float i = supply_snap(s.ask.i, caps.i_min, caps.i_max,
+                                    caps.i_step);
+        if (v != s.ask.v || i != s.ask.i) {
+            s.ask.v = v;
+            s.ask.i = i;
+            ++s.ctrl_rev;               /* the question shows the value */
+        }
+    }
     if (s.ask.open && !s.ask.hv && !supply_screen_output_live()) {
         s.ask.open = false;
         if (s.ov_pressed == OP_ASK_APPLY || s.ov_pressed == OP_ASK_CANCEL) {
