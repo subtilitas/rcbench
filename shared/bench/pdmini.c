@@ -107,7 +107,8 @@ void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma)
         return;
     }
     if (!output) {
-        d->held_off = false;      /* an OFF asked: an ON may follow */
+        d->held_off   = false;      /* an OFF asked: an ON may follow */
+        d->st.tripped = false;
     }
     output = output && !d->held_off;
     if (output != d->want_output) {
@@ -145,6 +146,7 @@ void pdmini_want_off(pdmini_t *d)
         d->st.stuck = false;
     }
     d->held_off    = false;
+    d->st.tripped  = false;
     d->want_output = false;
 }
 
@@ -304,9 +306,23 @@ static bool take_reply(pdmini_t *d, uint32_t now)
          * by four writes that do not take. */
         d->input_misses = 0u;
         break;
-    case PDMINI_READ_STATE:
+    case PDMINI_READ_STATE: {
+        const bool was_on = d->state_known && d->st.output;
         d->st.output   = (r[1] & 1u) != 0u;
         d->st.mode     = (uint8_t)((r[1] >> 1) & 3u);
+        if (was_on && !d->st.output && d->want_output && !d->en_pending
+            && d->en_for) {
+            /*
+             * On, and now off with ON still asked, the last write ours an
+             * ON and nothing on its way: the module switched it off -- its
+             * overcurrent protection, or its button.  Not switched on again: held off,
+             * and said, until an OFF is asked.
+             */
+            d->held_off    = true;
+            d->want_output = false;
+            d->en_tries    = 0u;
+            d->st.tripped  = true;
+        }
         d->state_known = true;
         d->state_fails = 0u;
         d->off_owed    = false;
@@ -350,6 +366,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         }
         d->en_pending = false;
         break;
+    }
     case PDMINI_READ_ID: {
         if (r[1] > 4u) {
             /* No slot: none is known, and nothing is switched on.  A try

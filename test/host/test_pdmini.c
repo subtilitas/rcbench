@@ -1289,6 +1289,32 @@ TEST_CASE(a_restored_module_may_be_on_until_read)
     pdmini_restored(NULL);
 }
 
+/* The module's own protection switches the output off while ON is asked:
+ * it is not switched on again, and stays off until an OFF and a new ON. */
+TEST_CASE(an_output_the_module_switched_off_stays_off)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(m.output);
+    const unsigned writes = m.en_writes;
+    m.output = false;                          /* its overcurrent trip */
+    for (int k = 0; k < 40; ++k) {             /* ON repeated every pass */
+        pdmini_want(&d, true, 5000u, 1000u);
+        run(50u, false);
+    }
+    CHECK(!m.output);
+    CHECK_EQ(m.en_writes, writes);
+    CHECK(pdmini_status(&d)->tripped);
+    pdmini_want(&d, false, 5000u, 1000u);
+    CHECK(!pdmini_status(&d)->tripped);
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(m.output);
+}
+
 /* Readings start on time when the millisecond count is past 2^31. */
 TEST_CASE(readings_are_taken_past_half_the_clock)
 {
@@ -1364,5 +1390,6 @@ int main(void)
     RUN(state_reads_answered_wrongly_send_nothing_blind);
     RUN(an_output_not_read_may_be_on);
     RUN(a_restored_module_may_be_on_until_read);
+    RUN(an_output_the_module_switched_off_stays_off);
     return test_summary("pdmini");
 }

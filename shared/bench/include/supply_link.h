@@ -66,6 +66,7 @@ enum {
     SUPPLY_LINK_EV_ON_LOST        = 0x04,  /**< the page let an ON go     */
     SUPPLY_LINK_EV_STUCK          = 0x08,  /**< would not switch          */
     SUPPLY_LINK_EV_SET_STUCK      = 0x10,  /**< set points would not take */
+    SUPPLY_LINK_EV_TRIPPED        = 0x20,  /**< the module switched it off */
 };
 
 typedef enum {

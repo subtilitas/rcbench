@@ -190,7 +190,8 @@ enum {
  *     current, 2 overcurrent), bit 4 an output that would not switch,
  *     bit 5 set points that would not take, bit 6 an output that is on or
  *     may be -- read on, an ON not yet confirmed, or an OFF owed to a
- *     module that stopped answering;
+ *     module that stopped answering, bit 7 an output the module switched
+ *     off by itself, held off until OUTPUT is written 0;
  *     the output's voltage and current, the set points read back from it,
  *     the input's state and voltage, and the counts of readings taken and
  *     of transactions that failed, modulo 65536.
@@ -223,6 +224,7 @@ enum {
 #define LINK_SP_STUCK   0x10u
 #define LINK_SP_SET_STUCK 0x20u
 #define LINK_SP_LIVE      0x40u
+#define LINK_SP_TRIPPED   0x80u
 
 #define LINK_OS_RANGE_OF(first, count) \
     ((uint16_t)((((unsigned)(first) & 0xFFu) << 8) | ((unsigned)(count) & 0xFFu)))

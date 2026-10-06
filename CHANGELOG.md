@@ -6,6 +6,14 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- **An output the PD mini switches off by itself stays off.** Its
+  overcurrent protection or its button switching the output off while ON
+  is asked no longer gets it switched on again: the driver holds it off
+  and says so (SUPPLY flags bit 7), and the panel switches its own output
+  off with a line in the band. A new 2 s hold switches it on again.
+
 ### Added
 
 - **SUPPLY drives the PD mini** when SETUP INTERFACES enables it, through
