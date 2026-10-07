@@ -77,6 +77,10 @@ sweep starts over from the curve's beginning, and the alert band says so.
   asks for that step; the menu heard in order, or DONE, takes it as done,
   and SILENCE and TIMEOUT run from then. Before, the run listened only after
   DONE, at least 1000 ms after the prompt, and lost the first groups.
+- **The steps judge the model tapped.** A model refused for its voltage
+  opened the steps with the family's lowest voltage, which could say the run
+  will ask for them; the steps, the page, RUN and the warning now judge the
+  model tapped.
 - **Manual steps in German.** A step carries its German in `action_de`
   (1-120 bytes of UTF-8), shown when the interface is German, with the
   English as the fallback. All 24 profiles' steps have it.

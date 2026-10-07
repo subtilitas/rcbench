@@ -70,7 +70,7 @@ Netzteil nimmt die eigene niedrigste Zellenzahl des Modells, wo es eine
 nennt, sonst die niedrigste der Familie. Ein Modell, dessen Profil der
 Prüfstand nicht ausführen kann, nennt den Grund in seiner Zeile und öffnet
 nichts; ebenso eines, dessen Spannung über der Grenze von SUPPLY liegt.
-Eines, dessen Profil Handgriffe hat, öffnet stattdessen diese. Zeilen und
+Eines, dessen Profil Handgriffe hat, öffnet stattdessen diese, mit dem Grund für dieses Modell. Die Handgriffe, die Netzteilzeile der Seite, START und die Warnung beurteilen alle das geöffnete Modell, nicht das niedrigste der Familie. Zeilen und
 Zählungen folgen SPANNUNG und der Grenze, wenn sie sich ändern. Ein Profil
 von der Karte reiht sich bei den Modellen seines Herstellers ein; ein
 Hersteller von der Karte, den der Satz nicht hat, reiht sich alphabetisch

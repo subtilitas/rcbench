@@ -407,6 +407,8 @@ typedef struct {
      * in the registry. */
     bool                 hand_open;
     const esc_profile_t *hand_p;
+    int                  hand_model;    /* the model it was opened for, or
+                                           -1: the family's lowest      */
     uint8_t              hand_seen[SP_MAX / 8];
 
     gfx_rect_t rows[SP_ROWS], list_up, list_dn;
@@ -1405,6 +1407,7 @@ static void sp_pick_profile(const esc_profile_t *p)
                 t->hand_seen[i >> 3] |= bit;
                 t->hand_open = true;
                 t->hand_p = p;
+                t->hand_model = -1;     /* the caller names the model */
             }
             break;
         }
@@ -1951,12 +1954,16 @@ static bool sp_down(const touch_event_t *evt)
                 sp_find_close();
                 sp_pick_profile(p);
                 t->model = model;
+                t->hand_model = model;
                 s.stage = STAGE_DEVICE;
                 ++s.rev;
             } else if (p->manual_count > 0u) {
+                /* The steps, and why this model -- not the family -- does
+                 * not run: the row's own reason. */
                 sp_find_close();
                 t->hand_open = true;
                 t->hand_p = p;
+                t->hand_model = model;
                 ++s.rev;
             }
             return true;
@@ -2049,6 +2056,7 @@ static bool sp_down(const touch_event_t *evt)
     if (t->p->manual_count > 0u && gfx_rect_contains(t->hand_btn, px, py)) {
         t->hand_open = true;                /* MANUAL INTERVENTION REQUIRED */
         t->hand_p = t->p;
+        t->hand_model = t->model;
         ++s.rev;
         return true;
     }
@@ -3240,7 +3248,7 @@ static void sp_draw_hand(gfx_canvas_t *c)
         y += 4;
     }
     char why[48];
-    const char *no = sp_why(p, why, sizeof(why));
+    const char *no = sp_model_why(p, t->hand_model, why, sizeof(why));
     if (no == NULL) {
         snprintf(line, sizeof(line), "%s", TR(SP_HAND_ASKS));
     } else {
@@ -3439,6 +3447,16 @@ const char *programmer_screen_stick_maker_at(int i)
     const stick_t *t = &s.st;
     return (t->level == 0 && i >= 0 && i < t->count) ? t->makers[i].name
                                                      : NULL;
+}
+
+const char *programmer_screen_stick_hand_why(void)
+{
+    const stick_t *t = &s.st;
+    static char why[48];
+    if (!t->hand_open || t->hand_p == NULL) {
+        return NULL;
+    }
+    return sp_model_why(t->hand_p, t->hand_model, why, sizeof(why));
 }
 
 const esc_profile_t *programmer_screen_stick_page(void)

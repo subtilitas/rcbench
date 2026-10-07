@@ -2022,6 +2022,47 @@ TEST_CASE(a_card_profile_joins_its_maker)
     esc_profiles_clear_overrides();
 }
 
+/* A family whose models need different voltages, with the SUPPLY cap
+ * between them: 3SL's 6-cell models (7.2 V) run, its 14-cell ones
+ * (16.8 V) do not.  The row, the pop-up, the page and RUN agree for the
+ * model tapped, not for the family's lowest. */
+TEST_CASE(the_model_tapped_is_the_one_judged)
+{
+    fresh();
+    settings_set(SET_SUPPLY_V_MAX, 12.0f);
+    supply_screen_limits_changed();
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    open_maker("Kontronik");
+    /* The 14-cell model: refused on its row, and the steps say why. */
+    open_model("kontronik-3sl", "3SL 25-14-32");
+    CHECK(programmer_screen_stick_page() == NULL);
+    CHECK(programmer_screen_stick_hand_shown());
+    const char *why = programmer_screen_stick_hand_why();
+    CHECK(why != NULL && strstr(why, "16.8") != NULL);
+    draws();
+    tap(CANCEL_X, HOLD_Y);
+    /* A 6-cell model: opens, its steps say the run asks for them, and RUN
+     * runs it at its own 7.2 V. */
+    open_model("kontronik-3sl", "3SL 25-6-18");
+    const esc_profile_t *p = programmer_screen_stick_page();
+    CHECK(p != NULL && strcmp(p->id, "kontronik-3sl") == 0);
+    CHECK(programmer_screen_stick_hand_shown());
+    CHECK(programmer_screen_stick_hand_why() == NULL);
+    tap(CANCEL_X, HOLD_Y);
+    tap(HAND_X, HAND_Y);                     /* the button: the same model */
+    CHECK(programmer_screen_stick_hand_shown());
+    CHECK(programmer_screen_stick_hand_why() == NULL);
+    tap(CANCEL_X, HOLD_Y);
+    tap(STEP_UP_X, STEP_CY(0));              /* mode 1 */
+    tap(WRITE_X, BTN_CY);
+    draws();                                 /* the warning */
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    CHECK_EQ(programmer_screen_stick()->out.supply_mv, 7200u);
+    scr->leave();
+}
+
 int main(void)
 {
     RUN(the_protocol_list_is_pressable_before_it_is_painted);
@@ -2068,5 +2109,6 @@ int main(void)
     RUN(a_model_row_opens_its_family_at_its_own_voltage);
     RUN(the_search_finds_on_both_levels_and_back_keeps_it);
     RUN(a_card_profile_joins_its_maker);
+    RUN(the_model_tapped_is_the_one_judged);
     return test_summary("programmer");
 }

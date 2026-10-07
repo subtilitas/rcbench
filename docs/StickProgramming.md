@@ -64,7 +64,7 @@ A tap on a model opens its family's profile, named with the model:
 model's own lowest cell count where it states one, else the family's
 lowest. A model whose profile the bench cannot run names the reason on its
 row and opens nothing; so does one whose voltage is over the SUPPLY cap.
-One whose profile has manual steps opens them instead. The rows and the
+One whose profile has manual steps opens them instead, with the reason for that model. The steps, the page's supply line, RUN and the warning all judge the model opened, not the family's lowest. The rows and the
 counts follow VOLTAGE and the cap as they change. A profile from the card
 joins its maker's models; a card maker the set does not have joins the
 makers in its alphabetical place. Every built-in profile names its maker;

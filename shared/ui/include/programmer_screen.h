@@ -87,6 +87,11 @@ const esc_profile_t *programmer_screen_stick_page(void);
  *  profile gives one and German shows, else its English action. */
 const char *programmer_screen_step_text(const esc_manual_t *m);
 
+/** Why the manual steps' pop-up says its profile does not run, for the
+ *  model it was opened for; NULL when it runs or no pop-up is open.  For
+ *  tests. */
+const char *programmer_screen_stick_hand_why(void);
+
 /** Whether the manual steps' pop-up is open; for tests. */
 bool programmer_screen_stick_hand_shown(void);
 
