@@ -49,9 +49,13 @@ The list holds every profile, those the bench can run first. A profile it
 cannot run names the reason on its row and opens nothing; so does one whose
 voltage is over the SUPPLY cap. The order and the count follow VOLTAGE and
 the cap as they change. A profile from the SD (Secure Digital) card carries
-CARD.
+CARD. A profile with [manual steps](#manual-steps) carries a red MANUAL tag
+where its name ends; one of those that does not run opens its manual steps
+instead of nothing.
 
 ![The profiles](img/programmer-stick.png)
+
+![The Kontronik profiles, tagged MANUAL](img/programmer-stick-hand-list.png)
 
 ### Search
 
@@ -105,6 +109,13 @@ cannot, the line beside RUN says why.
 
 ![Two values picked](img/programmer-stick-items.png)
 
+A value the manual programs from another stick position than the
+profile's entry is refused when picked, with `set from another stick
+position` beside RUN. The run powers up at one position only; a Kontronik
+car mode entered from the brake position instead of the middle would store
+the wrong neutral. The values are listed under
+[Manual steps](#manual-steps).
+
 RUN opens a warning over the whole screen, titled NO PROPELLER, MOTOR
 SECURED?. It says what the run does: it powers the ESC from the supply and
 moves its throttle to MAX and back to step through the programming menu. In
@@ -145,6 +156,84 @@ is taken while the bench is disarmed and the supply's output is off.
 
 ![The timing settings](img/programmer-stick-timing.png)
 
+### Manual steps
+
+Some ESCs enter their programming mode only when a person does something at
+the ESC besides the throttle and the power: fits a jumper on two contacts
+before the power-up and pulls it off after the first tones, or presses a
+button on the ESC after them. Every Kontronik ESC in the set is one. The
+profile lists these steps in `manual` ([ESC profiles](EscProfiles.md)),
+each with the moment it is due:
+
+| Due | The run |
+| --- | --- |
+| `before_power` | lists it on the warning: HOLD TO RUN is the word that it is done. From the second power-up of a run on, it stops before each power-up and asks again |
+| `at_power_up` | stops before each power-up with the supply off and asks; DONE switches the supply on, and the run counts down the hold the profile gives |
+| `before_menu` | stops once the entry has had its time, with the ESC powered and the stick at MIN, and asks; DONE starts the menu |
+| `during_menu` | cannot know the moment: the profile does not run, `manual step` |
+| `after_programming` | shows it on the result |
+
+A profile with manual steps shows MANUAL INTERVENTION REQUIRED in red in the
+header of its item list. A tap opens the steps over the whole screen: when
+each is due, what it is, and whether the run asks for it. They open by
+themselves the first time the profile is opened after a start; OK closes
+them.
+
+![A profile with manual steps](img/programmer-stick-hand.png)
+
+![Its manual steps](img/programmer-stick-hand-info.png)
+
+The warning before a run lists the steps due before the power-up, and says
+when the run will stop for more.
+
+![The warning with a step before power-up](img/programmer-stick-hand-warning.png)
+
+A step asked during the run covers the page: the step, where the supply
+and the stick are, and how long the run waits. DONE goes on; it is dark for
+the first 1000 ms (`ESC_STICK_HAND_MIN_MS`), so one tap meant for the step
+before cannot confirm the next, and it is acted on in the next frame, after
+the frame has judged STOP, the arm, the link and the supply. ABORT ends the
+run, and so does STOP in the band. No DONE within 60 s
+(`ESC_STICK_HAND_WAIT_MS`) ends the run with NOT CONFIRMED. While it waits
+the run keeps every rule it keeps elsewhere: a powered wait watches the
+supply and its readings, and every end sets the throttle to MIN, switches
+the supply off and disarms.
+
+![The run waiting for the jumper](img/programmer-stick-hand-prompt.png)
+
+A step at a powered ESC is asked for only with the stick at MIN, the
+motor-off position: a profile whose `at_power_up` or `before_menu` step
+comes with an entry at MID or MAX does not run, `manual step`. The 60 s is
+the operator's time to reach the ESC, not the ESC's: no manual in the set
+states how long an ESC waits for its jumper or button except the HELI JIVE
+and JIVE Pro, 10 s after power-up, and neither runs.
+
+The result of a run lists the profile's `after_programming` steps. After an
+aborted run of a profile with a step before or at the power-up, it says to check
+the ESC: a jumper fitted for the run may still be in place.
+
+24 profiles have manual steps: the 22 Kontronik families, `turnigy-aquastar`
+and `greatplanes-electrifly-c-series`. 10 run:
+
+| Profile | Steps | Values from another position |
+| --- | --- | --- |
+| `kontronik-3sl` | jumper on before the power-up, off after 2 s or the three-tone sequence | mode 6 |
+| `kontronik-beat` | jumper on any 2 of the 3 contacts, off after 2 s or the tones | modes 6, 8 |
+| `kontronik-beat-car` | as BEAT | modes 2 to 6, 8 |
+| `kontronik-beat-fai` | as BEAT | none |
+| `kontronik-jazz` | JAZZ: jumper as BEAT; MINIJAZZ: button after 2 s or the tones | modes 6, 8 |
+| `kontronik-kontrol-x` | button under the shrink tube after 2 s or the tones | mode 3 |
+| `kontronik-pix` | button marked Taster after 2 s or the tones | none |
+| `kontronik-smile` | button pressed and let go after 2 s or the tones | mode 6 |
+| `kontronik-star-line` | jumper on before the power-up, off after 5 s or the tones | mode 6 |
+| `kontronik-sun-plus` | button after the tones | modes 2, 3, 5, 6, 9 |
+
+The other 14 show their steps and name the reason on their row:
+`manual step` for `kontronik-3p`, `kontronik-cyber-line`,
+`kontronik-heli-line`, `kontronik-mini20` and `kontronik-optomax`, whose
+jumper or bridge moves during the menu, and for `turnigy-aquastar`, whose
+switch goes on at full throttle; the menu's own reason for the rest.
+
 ### The stack light
 
 A stack light at the right of the run's card and of the result shows two
@@ -170,8 +259,10 @@ A change of either light repaints both screen buffers.
 | --- | --- | --- | --- |
 | ARMING | MIN | off | when the bench reports armed; after 3000 ms: NOT ARMED |
 | SIGNAL | entry position | off | after 1000 ms, so the ESC sees the signal when it starts |
+| MANUAL STEP | entry position | off | before a power-up with a step due: DONE, then POWER ON; no DONE in 60 s: NOT CONFIRMED |
 | POWER ON | entry position | on | when a sample reports the output on; after 3000 ms: NO POWER |
 | ENTRY | entry position | on | ENTRY after power-on: the profile's `hold_ms` where it states one |
+| MANUAL STEP, POWERED | entry position, MIN | on | after ENTRY with a `before_menu` step due: DONE, then the menu; no DONE in 60 s: NOT CONFIRMED |
 | ITEMS | rest position | on | an item group in order names a wanted item: the select move |
 | VALUES | where the last move left it | on | a value group in order names the wanted value: the value move |
 | STORING | the value move, then the store move | on | after STORE, and after STORE again where the profile has a store move |
@@ -285,11 +376,12 @@ set points.
 
 ## Which profiles run
 
-14 of the 72 profiles are of a kind the engine runs: 13 two-stage and 1
-one-stage. With the PD mini's 20 V and the default caps the list opens 13 of
+24 of the 72 profiles are of a kind the engine runs: 13 two-stage and 11
+one-stage. With the PD mini's 20 V and the default caps the list opens 23 of
 them: hobbywing-skywalker-v2-hv-opto needs 22.8 V. A profile runs when it is
-`"automatable": "full"`, is entered before power-on, counts with `count` or
-`short_long`, and has a select move. A rest position other than the entry
+`"automatable": "full"`, or `"assisted"` with manual steps the run can wait
+for (see [Manual steps](#manual-steps)), is entered before power-on, counts
+with `count` or `short_long`, and has a select move. A rest position other than the entry
 position needs the profile's `hold_ms`: the move at the end of an entry of
 unknown length can land in another stage of it. A two-stage profile also
 announces `item_then_value`, its moves differ from each other and from the
@@ -302,7 +394,8 @@ minimum, where it rested, to store.
 
 | Row says | Why |
 | --- | --- |
-| needs a person at the ESC | `automatable` is `assisted` |
+| needs a person at the ESC | `automatable` is `assisted` and the profile lists no manual step the run could ask for: a person reads an LED or plugs in a JetiBox |
+| manual step | a manual step during the menu, or one at a powered ESC with the entry at MID or MAX |
 | no usable procedure | `automatable` is `none` |
 | entered after power-on | `scheme.entry.when` is `after_power_on` |
 | melody menu, yes/no menu, stick-position menu, menu of its own kind | `scheme.type` |
@@ -341,6 +434,7 @@ A profile corrected on the SD card is listed with its correction.
 | NO BEEPS | no beep for SILENCE | lit |
 | CURRENT STAYS HIGH | one pulse longer than twice LONG MAX | lit |
 | TIMEOUT | no wanted group acted on within TIMEOUT | lit |
+| NOT CONFIRMED | no DONE for a manual step within 60 s | lit |
 | ABORTED | ABORT | dark |
 | SCREEN LEFT | the screen was left | dark |
 
@@ -391,7 +485,10 @@ one), groups loop with 250 ms beeps, 250 ms gaps, 800 ms long beeps and
 those numbers is made up. Where the profile names a store move, a selection
 is kept only once the stick makes it. An item keyed `exit` leaves the menu
 when it is selected, and one keyed `reset` clears what was stored. The
-model's samples arrive every 50 ms.
+model's samples arrive every 50 ms. It does not model a jumper or a
+button: it enters its menu after `hold_ms` whether a manual step is
+confirmed or not, and the run's quiet-first rule starts counting at a group
+boundary after DONE.
 
 The host suite (`test_esc_stick`) runs the engine against the simulation end
 to end: two-stage and one-stage menus, repeated groups, a rest position,
@@ -430,6 +527,24 @@ engine's stores no value other than the one asked for.
   calibrated to other end points may read them differently.
 - One supply only: the PD mini, at most 20 V. ESCs that need more need an
   external supply, which the bench does not switch.
+- Manual steps are the manuals' and untested. Whether a Kontronik ESC waits
+  for its jumper or button without a limit, and what it does when the
+  pull comes late, is not stated except for the HELI JIVE and JIVE Pro
+  (10 s), which do not run.
+- Which values a Kontronik ESC programs from the middle is read from the
+  manuals; for JAZZ modes 6 and 8, KONTROL-X mode 3 and SUN PLUS modes 2, 3,
+  5, 6 and 9 the manual does not place the position, and the values are
+  refused as if it were the middle. The add-on modes (7, 9) are programmed
+  from the back; whether they store the stick range again on an ESC set to
+  a car mode is not stated.
+- `kontronik-pix` mode 2 asks for a move to the brake position after the
+  selection; the run makes none. Whether the ESC stores the mode without it
+  is not known.
+- A switch on the ESC in the power-up sequence -- SeaKing V3 with a switch,
+  Trackstar 60A V2, the BEC switch of the Hacker X and Master series, the
+  Jeti Spin's receiver switch -- is left on and the supply stands in for it.
+  The manuals switch it after the battery is connected; whether the supply's
+  power-up enters the menu as the switch would is not measured.
 - No run with a motor on the ESC in place of the resistor load. Whether a
   motor starts during the menu, and how its windings shape the beeps in
   the current, is not measured.

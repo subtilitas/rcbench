@@ -8,7 +8,7 @@ betreten wird, wie der ESC eine Zahl ausgibt und welche Punkte und Werte das
 Menü hat. Es sind die Daten, die die
 [Stick-Programmierung](StickProgramming-de.md) ausführt: Der Bediener wählt
 einen ESC und die zu ändernden Werte, und der Prüfstand bewegt das Gas und
-zählt die Pieptöne im Versorgungsstrom. 14 der 72 Profile sind von einer
+zählt die Pieptöne im Versorgungsstrom. 24 der 72 Profile sind von einer
 Art, die sie ausführt.
 
 ## Was im Satz steht
@@ -24,6 +24,7 @@ Art, die sie ausführt.
 | --- | --- | --- |
 | Der Prüfstand allein: Gassignal und Versorgung | 44 | 340 |
 | Ein Mensch setzt einen Jumper, drückt einen Taster oder liest eine LED | 26 | 108 |
+| davon mit den Schritten in `manual` | 24 | 88 |
 | Niemand: das Handbuch nennt kein brauchbares Verfahren | 2 | 3 |
 
 Jedes Profil ist `"verified": false`. Die Profile stammen aus 153
@@ -97,6 +98,7 @@ JSON. Das Panel lädt sie nicht.
 | Feld | Werte |
 | --- | --- |
 | `automatable` | `full`, `assisted`, `none`; alles außer `full` braucht `automatable_note` |
+| `manual` | die Handgriffe eines `assisted`-Profils am ESC; siehe [Handgriffe](#handgriffe) |
 | `scheme.type` | `count`, `short_long`, `melody_groups`, `yes_no`, `stick_position`, `other` |
 | `scheme.entry.throttle` | `min`, `mid`, `max`: die Knüppelstellung, die das Menü öffnet |
 | `scheme.entry.when` | `before_power_on`, `after_power_on` |
@@ -132,11 +134,46 @@ JSON. Das Panel lädt sie nicht.
 | `name` | wie das Handbuch ihn nennt |
 | `key` | 1 bis 32 aus `a-z 0-9 _`; eine Bedeutung über alle Marken: `brake`, `timing`, `cutoff_voltage`, `cutoff_type`, `battery_type`, `cell_count`, `startup`, `governor`, `direction`, `throttle_range`, `pwm_freq`, `aircraft_type`, `mode`, `reset` |
 | `values` | 1 bis 255 aus `{"number": 0-255, "name": "...", "default": true}`; Nummern eindeutig, höchstens ein Standardwert |
+| `values[].entry_throttle` | `min`, `mid`, `max`: die Knüppelstellung, aus der das Handbuch diesen Wert programmiert, wo sie nicht die des Einstiegs ist; fehlt sie oder ist null, die des Einstiegs. Die Stick-Programmierung speichert keinen Wert, dessen Stellung von `scheme.entry.throttle` abweicht |
 | `applies_to` | Modellnamen dieses Profils, oder null für alle |
 | `applies_when` | eine Bedingung in Worten, z. B. `"model type heli"` |
 
 Zwei Menüpunkte dürfen dieselbe Nummer nur tragen, wenn beide `applies_to`
 oder `applies_when` haben.
+
+### Handgriffe
+
+`manual` listet, was ein Mensch außer Gas und Versorgung am ESC tut, in der
+Reihenfolge, in der ein Lauf darauf trifft. Fehlt es oder ist null: keine.
+
+```json
+"manual": [
+  {"when": "before_power", "action": "Fit the jumper on any 2 of the 3 programming contacts.",
+   "source": "Kontronik_Beat.pdf p.5"},
+  {"when": "before_menu", "action": "Pull the jumper off after 2 s or the tone sequence."}
+]
+```
+
+| Feld | Werte |
+| --- | --- |
+| `manual` | 1 bis 4 Schritte; nur in einem Profil mit `automatable: "assisted"` |
+| `when` | `before_power`, `at_power_up`, `before_menu`, `during_menu`, `after_programming`; kein Schritt früher als der darüber |
+| `action` | 1 bis 120 Byte UTF-8, englisch: zwei Zeilen des Pop-ups |
+| `hold_ms` | nur `at_power_up`: 0 bis 60000, wie lange der Schritt nach dem Einschalten gehalten wird; fehlt oder null, wo nicht angegeben |
+
+`source` und jedes andere Feld eines Schritts bleiben im JSON. Die Aktion
+ist der eigene Text des Profils und erscheint in jeder Sprache englisch,
+wie die Namen von Punkten und Werten; der Bildschirm übersetzt, wann sie
+fällig ist. Was ein Lauf mit jedem Schritt tut, steht unter
+[Stick-Programmierung](StickProgramming-de.md#handgriffe).
+
+24 Profile haben Schritte: die 22 Kontronik-Familien, `turnigy-aquastar`
+(sein Schalter bei Vollgas) und `greatplanes-electrifly-c-series` (sein
+Ein/Aus-Taster). `graupner-brushless-control-t`, dessen Menü an LEDs
+abgelesen wird, und `hacker-master-senstrol`, das den
+Identifikationschip seines Motors, einen zweiten Kanal und eine JetiBox
+braucht, sind `assisted` ohne Schritte: kein Handgriff, um den ein Mensch zu
+einem Zeitpunkt gebeten werden kann.
 
 ## Ein Profil hinzufügen oder korrigieren
 

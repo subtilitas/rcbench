@@ -34,6 +34,12 @@
  * the detector holds a beep, red on a result that ended because something
  * was not as expected (esc_stick_reason_is_fault()).
  *
+ * A profile whose ESC needs a person at it -- a jumper, a button -- lists
+ * those steps (esc_profile_t's manual).  Its page carries MANUAL
+ * INTERVENTION REQUIRED, which shows them over the screen, as does the
+ * first opening; the warning lists those due before the power-up, and a
+ * run that waits for one covers the page with DONE and ABORT.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -366,8 +372,16 @@ typedef struct {
     bool        sent_arm, sent_supply;
     float       sent_pct;
 
+    /* The manual steps' pop-up and the profile it shows: the page's, or a
+     * row's that does not run.  It opens by itself the first time a
+     * profile with manual steps is opened, one bit a profile by its index
+     * in the registry. */
+    bool                 hand_open;
+    const esc_profile_t *hand_p;
+    uint8_t              hand_seen[SP_MAX / 8];
+
     gfx_rect_t rows[SP_ROWS], list_up, list_dn;
-    gfx_rect_t hold_btn, cancel_btn;
+    gfx_rect_t hold_btn, cancel_btn, hand_btn;
 } stick_t;
 
 /* --------------------------------------------------------------- the state */
@@ -487,6 +501,9 @@ static void reset(void)
                                     260, 56 };
     s.st.cancel_btn = (gfx_rect_t){ (int16_t)(W - PAD - 20 - 180),
                                     (int16_t)(H - PAD - 76), 180, 56 };
+    /* In the item list's header, between CHANGE and the count. */
+    s.st.hand_btn   = (gfx_rect_t){ PAD + 108, (int16_t)(PARM_Y + 4), 300,
+                                    24 };
     adopt_device();
 }
 
@@ -949,6 +966,110 @@ static void sp_text(gfx_canvas_t *c, int x, int y, const char *text,
     gfx_text(c, x, y, buf, UI_FONT_LABEL, ink, 1);
 }
 
+/* The bytes of the next line of @p at that fit @p cells: up to the last
+ * space in it, or the whole width where no space falls after its start. */
+static size_t sp_line_len(const char *at, int cells)
+{
+    if (gfx_text_cells(at) <= cells) {
+        return strlen(at);
+    }
+    const size_t len = gfx_text_prefix(at, cells);
+    size_t cut = len;
+    while (cut > 0u && at[cut] != ' ') {
+        --cut;
+    }
+    return (cut > 0u) ? cut : len;
+}
+
+/*
+ * @p text in lines of at most @p cells, broken after a space where one
+ * falls in the line and inside a word where none does, from (x, y) down by
+ * @p pitch.  At most @p max_lines lines; the last of them ends in ".." when
+ * the text goes on.  Returns the lines drawn.  A manual step is the
+ * profile's own text and can be up to ESC_MANUAL_ACTION_MAX bytes, so it is
+ * wrapped, not cut to one line.
+ */
+static int sp_wrap(gfx_canvas_t *c, int x, int y, int pitch,
+                   const char *text, int cells, int max_lines,
+                   gfx_color_t ink)
+{
+    int lines = 0;
+    const char *at = (text != NULL) ? text : "";
+    while (*at == ' ') {
+        ++at;
+    }
+    while (*at != '\0' && lines < max_lines) {
+        char buf[192];
+        ++lines;
+        if (lines == max_lines) {
+            /* The last line takes the rest, cut with ".." if it is more
+             * than fits. */
+            snprintf(buf, sizeof(buf), "%s", at);
+            sp_cut(buf, sizeof(buf), cells);
+            at += strlen(at);
+        } else {
+            /* The line, no further than the text's end; the copy no
+             * longer than the buffer. */
+            const size_t rest = strlen(at);
+            size_t len = sp_line_len(at, cells);
+            len = (len < rest) ? len : rest;
+            const size_t n = (len < sizeof(buf)) ? len : sizeof(buf) - 1u;
+            memcpy(buf, at, n);
+            buf[n] = '\0';
+            at += len;
+            while (*at == ' ') {
+                ++at;
+            }
+        }
+        gfx_text(c, x, y, buf, UI_FONT_LABEL, ink, 1);
+        y += pitch;
+    }
+    return lines;
+}
+
+/* The lines sp_wrap() would draw, without drawing them. */
+static int sp_wrap_lines(const char *text, int cells, int max_lines)
+{
+    int lines = 0;
+    const char *at = (text != NULL) ? text : "";
+    while (*at == ' ') {
+        ++at;
+    }
+    while (*at != '\0' && lines < max_lines) {
+        at += sp_line_len(at, cells);
+        while (*at == ' ') {
+            ++at;
+        }
+        ++lines;
+    }
+    return lines;
+}
+
+/* When a manual step is due, in the language showing. */
+static const char *sp_when_text(const esc_manual_t *m)
+{
+    static char buf[96];
+    switch (m->when) {
+    case ESC_MANUAL_BEFORE_POWER:
+        return TR(SP_HAND_WHEN_BEFORE_POWER);
+    case ESC_MANUAL_AT_POWER_UP:
+        if (m->hold_ms == 0u) {
+            return TR(SP_HAND_WHEN_AT_POWER);
+        }
+        snprintf(buf, sizeof(buf), TR(SP_HAND_WHEN_AT_POWER_MS),
+                 (unsigned)(m->hold_ms / 1000u),
+                 (unsigned)(m->hold_ms % 1000u / 100u));
+        return buf;
+    case ESC_MANUAL_BEFORE_MENU:
+        return TR(SP_HAND_WHEN_BEFORE_MENU);
+    case ESC_MANUAL_DURING_MENU:
+        return TR(SP_HAND_WHEN_DURING_MENU);
+    case ESC_MANUAL_AFTER_PROGRAMMING:
+        return TR(SP_HAND_WHEN_AFTER);
+    }
+    return "?";
+}
+
 /*
  * The stick engine's refusals are English, held where the engine writes
  * them; the screen shows each in the language showing by matching its
@@ -968,6 +1089,7 @@ static const ui_text_id_t k_why[] = {
     TX_ESC_WHY_LONG, TX_ESC_WHY_LONG_MAX, TX_ESC_WHY_GROUP_GAP,
     TX_ESC_WHY_THRESHOLD, TX_ESC_WHY_ENTRY, TX_ESC_WHY_SELECT_WINDOW,
     TX_ESC_WHY_VALUE_WINDOW, TX_ESC_WHY_NO_RUN, TX_ESC_WHY_ONE_VALUE,
+    TX_ESC_WHY_HAND, TX_ESC_WHY_ENTRY_POS,
 };
 
 const char *programmer_screen_why_text(const char *why)
@@ -1092,6 +1214,24 @@ static void sp_pick_profile(const esc_profile_t *p)
     t->warn = false;
     t->warn_down = false;
     ui_hold_reset(&t->hold);
+    t->hand_open = false;
+    /* A profile with manual steps says so by itself the first time it is
+     * opened; MANUAL INTERVENTION REQUIRED shows it again. */
+    if (p != NULL && p->manual_count > 0u) {
+        const size_t total = esc_profiles_count();
+        for (size_t i = 0; i < total && i < SP_MAX; ++i) {
+            if (esc_profiles_at(i) != p) {
+                continue;
+            }
+            const uint8_t bit = (uint8_t)(1u << (i & 7u));
+            if ((t->hand_seen[i >> 3] & bit) == 0u) {
+                t->hand_seen[i >> 3] |= bit;
+                t->hand_open = true;
+                t->hand_p = p;
+            }
+            break;
+        }
+    }
 }
 
 /* The picks as changes, in item order; how many were picked in all. */
@@ -1311,6 +1451,8 @@ static uint32_t sp_signature(void)
         (uint32_t)e->ma, (uint32_t)esc_det_floor_ma(&e->det), e->iv_ms,
         esc_stick_done_count(e), e->entries, e->active, tenths,
         s.st.green ? 1u : 0u,
+        esc_stick_hand_ready(e) ? 1u : 0u,
+        (esc_stick_hand_left_ms(e) + 999u) / 1000u, e->hand,
     };
     uint32_t h = 2166136261u;
     for (size_t i = 0; i < sizeof(parts) / sizeof(parts[0]); ++i) {
@@ -1372,6 +1514,7 @@ static void sp_leave(void)
     /* A warning not held is a run not started.  The search keeps what was
      * typed. */
     t->warn = false;
+    t->hand_open = false;
     sp_end_hold();
     sp_find_close();
     if (t->timing) {
@@ -1529,6 +1672,15 @@ static bool sp_down(const touch_event_t *evt)
     stick_t *t = &s.st;
     const int px = evt->point.x, py = evt->point.y;
 
+    /* The manual steps' pop-up covers the screen; OK closes it. */
+    if (t->hand_open) {
+        if (gfx_rect_contains(t->cancel_btn, px, py)) {
+            t->hand_open = false;
+            ++s.rev;
+        }
+        return true;
+    }
+
     /* The warning covers the screen, BACK included. */
     if (t->warn) {
         if (gfx_rect_contains(t->hold_btn, px, py)) {
@@ -1588,12 +1740,18 @@ static bool sp_down(const touch_event_t *evt)
             const esc_profile_t *p = esc_profiles_at(
                 (size_t)t->order[t->scroll + i]);
             /* A profile the engine cannot run says why on its row and goes
-             * no further.  One picked while the keyboard is open closes it,
-             * the search kept. */
+             * no further, unless it has manual steps: those it shows.  One
+             * picked while the keyboard is open closes it, the search
+             * kept. */
             if (sp_runs(p)) {
                 sp_find_close();
                 sp_pick_profile(p);
                 s.stage = STAGE_DEVICE;
+                ++s.rev;
+            } else if (p->manual_count > 0u) {
+                sp_find_close();
+                t->hand_open = true;
+                t->hand_p = p;
                 ++s.rev;
             }
             return true;
@@ -1604,6 +1762,18 @@ static bool sp_down(const touch_event_t *evt)
     /* The device page.  A run under way takes ABORT and nothing else; STOP
      * is in the band, and leaving the screen aborts. */
     if (esc_stick_running(&t->run)) {
+        /* A manual step asked covers the page: DONE or ABORT.  DONE is
+         * acted on in the next tick, after the bench has been judged. */
+        if (esc_stick_hand(&t->run) != NULL) {
+            if (gfx_rect_contains(t->hold_btn, px, py)) {
+                if (esc_stick_confirm(&t->run)) {
+                    ++s.rev;
+                }
+            } else if (gfx_rect_contains(t->cancel_btn, px, py)) {
+                sp_end_run(ESC_STICK_R_USER);
+            }
+            return true;
+        }
         if (gfx_rect_contains(s.write_btn, px, py)) {
             esc_stick_abort(&t->run, ESC_STICK_R_USER);
             sp_follow();
@@ -1668,6 +1838,12 @@ static bool sp_down(const touch_event_t *evt)
     if (gfx_rect_contains(s.back, px, py)) {
         s.stage = STAGE_PROTOCOL;
         sp_build_list(true);
+        ++s.rev;
+        return true;
+    }
+    if (t->p->manual_count > 0u && gfx_rect_contains(t->hand_btn, px, py)) {
+        t->hand_open = true;                /* MANUAL INTERVENTION REQUIRED */
+        t->hand_p = t->p;
         ++s.rev;
         return true;
     }
@@ -1748,6 +1924,22 @@ static void sp_draw_find(gfx_canvas_t *c)
     }
 }
 
+/* The red MANUAL tag, its right edge at @p right; its width, px. */
+static int sp_draw_tag(gfx_canvas_t *c, int right, int y)
+{
+    const char *tag = TR(SP_HAND_TAG);
+    const int w = gfx_text_cells(tag) * 8 + 12;
+    const gfx_color_t red = ui_theme_color(UI_C_DANGER);
+    gfx_fill_round_rect(c, right - w, y, w, 20, 4, red);
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(right - w), (int16_t)y,
+                                 (int16_t)w, 20 },
+                tag, UI_FONT_LABEL,
+                ui_is_light(red) ? ui_theme_color(UI_C_TEXT_ON_LIGHT)
+                                 : ui_theme_color(UI_C_TEXT), 1,
+                GFX_ALIGN_CENTER);
+    return w;
+}
+
 static void sp_draw_list(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
@@ -1790,7 +1982,11 @@ static void sp_draw_list(gfx_canvas_t *c)
             /* Narrow: the maker, the name cut, and a mark for whether it
              * runs -- filled in the accent, or an empty ring. */
             sp_text(c, r.x + 8, r.y + 8, p->brand, 11, ink);
-            sp_text(c, r.x + 104, r.y + 8, p->family, (r.w - 104 - 28) / 8,
+            const int dtag = (p->manual_count > 0u)
+                                 ? sp_draw_tag(c, r.x + r.w - 28, r.y + 6) + 8
+                                 : 0;
+            sp_text(c, r.x + 104, r.y + 8, p->family,
+                    (r.w - 104 - 28 - dtag) / 8,
                     runs ? ui_theme_color(UI_C_TEXT_DIM)
                          : ui_theme_color(UI_C_TEXT_FAINT));
             const int mx = r.x + r.w - 14, my = r.y + r.h / 2;
@@ -1803,7 +1999,13 @@ static void sp_draw_list(gfx_canvas_t *c)
             continue;
         }
         sp_text(c, r.x + 12, r.y + 8, p->brand, 13, ink);
-        sp_text(c, r.x + 124, r.y + 8, p->family, (r.w - 124 - 236) / 8,
+        /* A profile with manual steps carries a red tag where its name
+         * ends, so it is told apart before it is opened. */
+        const int tag = (p->manual_count > 0u)
+                            ? sp_draw_tag(c, r.x + r.w - 236, r.y + 6) + 8
+                            : 0;
+        sp_text(c, r.x + 124, r.y + 8, p->family,
+                (r.w - 124 - 236 - tag) / 8,
                 runs ? ui_theme_color(UI_C_TEXT_DIM)
                      : ui_theme_color(UI_C_TEXT_FAINT));
         char right[80];
@@ -1948,6 +2150,12 @@ static const char *sp_reason_help(esc_stick_reason_t r)
     case ESC_STICK_R_NO_BEEPS:    return TR(SP_WHY_NO_BEEPS);
     case ESC_STICK_R_HIGH:        return TR(SP_WHY_HIGH);
     case ESC_STICK_R_TIMEOUT:     return TR(SP_WHY_TIMEOUT);
+    case ESC_STICK_R_HAND: {
+        static char buf[128];
+        snprintf(buf, sizeof(buf), TR(SP_WHY_HAND),
+                 (unsigned)(ESC_STICK_HAND_WAIT_MS / 1000u));
+        return buf;
+    }
     case ESC_STICK_R_SUPPLY_ON:   return TR(SP_WHY_SUPPLY_ON);
     case ESC_STICK_R_TOUCH:       return TR(SP_WHY_TOUCH);
     case ESC_STICK_R_USER:        return TR(SP_WHY_USER);
@@ -1970,6 +2178,8 @@ static const char *sp_phase_text(esc_stick_phase_t ph)
     case ESC_STICK_VALUES:  return TR(SP_PH_VALUES);
     case ESC_STICK_STORE:   return TR(SP_PH_STORE);
     case ESC_STICK_CYCLE:   return TR(SP_PH_CYCLE);
+    case ESC_STICK_HAND_OFF: return TR(SP_PH_HAND_OFF);
+    case ESC_STICK_HAND_ON: return TR(SP_PH_HAND_ON);
     case ESC_STICK_OFF:     return TR(SP_PH_OFF);
     case ESC_STICK_DONE:    return TR(SP_PH_DONE);
     case ESC_STICK_ABORTED: return TR(SP_PH_ABORTED);
@@ -1996,6 +2206,7 @@ static const char *sp_reason_text(esc_stick_reason_t r)
     case ESC_STICK_R_NO_BEEPS:    return TR(SP_R_NO_BEEPS);
     case ESC_STICK_R_HIGH:        return TR(SP_R_HIGH);
     case ESC_STICK_R_TIMEOUT:     return TR(SP_R_TIMEOUT);
+    case ESC_STICK_R_HAND:        return TR(SP_R_HAND);
     case ESC_STICK_R_USER:        return TR(SP_R_USER);
     case ESC_STICK_R_LEFT:        return TR(SP_R_LEFT);
     }
@@ -2009,6 +2220,19 @@ static void sp_change_text(const esc_stick_change_t *ch, char *out, size_t n)
     const esc_value_t *v = &it->values[ch->value];
     snprintf(out, n, "%u %s -> %u %s", (unsigned)it->number, it->name,
              (unsigned)v->number, v->name);
+}
+
+/* The longest hold of the profile's at_power_up steps, ms; 0 for none. */
+static uint32_t sp_hold_ms(const esc_profile_t *p)
+{
+    uint32_t hold = 0u;
+    for (unsigned i = 0; p->manual != NULL && i < p->manual_count; ++i) {
+        if (p->manual[i].when == ESC_MANUAL_AT_POWER_UP
+            && p->manual[i].hold_ms > hold) {
+            hold = p->manual[i].hold_ms;
+        }
+    }
+    return hold;
 }
 
 static void sp_draw_progress(gfx_canvas_t *c)
@@ -2075,9 +2299,23 @@ static void sp_draw_progress(gfx_canvas_t *c)
     case ESC_STICK_ENTRY: {
         const uint32_t in = e->now_ms - e->on_ms;
         const uint32_t left = (in < e->t.entry_ms) ? e->t.entry_ms - in : 0u;
-        snprintf(line, sizeof(line), TR(SP_DO_ENTRY),
-                 sp_pos(e->out.throttle_pct),
-                 (unsigned)(left / 1000u), (unsigned)(left % 1000u / 100u));
+        /* A button held while the supply came on: how long still, then
+         * that it can go. */
+        const uint32_t hold = sp_hold_ms(e->p);
+        if (hold > in) {
+            snprintf(line, sizeof(line), TR(SP_DO_HOLD),
+                     (unsigned)((hold - in) / 1000u),
+                     (unsigned)((hold - in) % 1000u / 100u));
+        } else if (hold > 0u) {
+            snprintf(line, sizeof(line), TR(SP_DO_LET_GO),
+                     (unsigned)(left / 1000u),
+                     (unsigned)(left % 1000u / 100u));
+        } else {
+            snprintf(line, sizeof(line), TR(SP_DO_ENTRY),
+                     sp_pos(e->out.throttle_pct),
+                     (unsigned)(left / 1000u),
+                     (unsigned)(left % 1000u / 100u));
+        }
         break;
     }
     case ESC_STICK_ITEMS:
@@ -2203,6 +2441,30 @@ static void sp_draw_result(gfx_canvas_t *c)
                  (unsigned)(e->n - shown), made);
         gfx_text(c, PAD + 12, y0 + 5 * pitch, line, UI_FONT_LABEL, dim, 1);
     }
+    /* Below the changes, two lines: what the profile has a person do once
+     * the run is over, and after an abort that what was fitted before
+     * the power-up may still be there. */
+    const esc_profile_t *p = e->p;
+    int y = y0 + 6 * pitch;
+    int room = 2;
+    for (unsigned i = 0; p->manual != NULL && i < p->manual_count; ++i) {
+        const esc_manual_t *m = &p->manual[i];
+        if (m->when != ESC_MANUAL_AFTER_PROGRAMMING || room <= 0) {
+            continue;
+        }
+        char what[256];
+        snprintf(what, sizeof(what), "%s: %s", sp_when_text(m), m->action);
+        const int n = sp_wrap(c, PAD + 12, y, pitch, what, 93, room,
+                              ui_theme_color(UI_C_WARN));
+        y += n * pitch;
+        room -= n;
+    }
+    if (!done && room > 0
+        && (esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER) > 0u
+            || esc_profile_manual_count(p, ESC_MANUAL_AT_POWER_UP) > 0u)) {
+        sp_text(c, PAD + 12, y, TR(SP_HAND_UNDO), 93,
+                ui_theme_color(UI_C_WARN));
+    }
     sp_draw_tower(c, sp_red(), false);
     if (done) {
         gfx_text(c, PAD + 12, HELP_Y,
@@ -2288,6 +2550,10 @@ static void sp_draw_items(gfx_canvas_t *c)
     const int items = (int)p->item_count;
     gfx_text(c, PAD + 12, PARM_Y + 12, TR(SP_CHANGE), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
+    if (p->manual_count > 0u) {
+        ui_button(c, t->hand_btn, TR(SP_HAND_BTN),
+                  ui_theme_color(UI_C_DANGER), false, true);
+    }
     const int max_scroll = (items > ROWS_MAX) ? items - ROWS_MAX : 0;
     char count[40];
     snprintf(count, sizeof(count), TR(PG_RANGE_OF), t->iscroll + 1,
@@ -2470,9 +2736,10 @@ static void sp_draw_device(gfx_canvas_t *c)
  * whole screen, saying what the run does to the ESC and what may happen to
  * a motor on it.
  */
-static void sp_draw_warning(gfx_canvas_t *c)
+/* A panel over the whole screen, edged and titled in the danger colour:
+ * the warning's, the manual steps' and the prompt's.  Its area. */
+static gfx_rect_t sp_panel(gfx_canvas_t *c, const char *title)
 {
-    const stick_t *t = &s.st;
     const gfx_rect_t a = { PAD, PAD, (int16_t)(W - 2 * PAD),
                            (int16_t)(H - 2 * PAD) };
     const gfx_color_t red = ui_theme_color(UI_C_DANGER);
@@ -2482,10 +2749,56 @@ static void sp_draw_warning(gfx_canvas_t *c)
     gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, red);
     gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, red);
     gfx_text_in(c, (gfx_rect_t){ a.x, (int16_t)(a.y + 12), a.w, 28 },
-                TR(SP_WARN_TITLE), UI_FONT_HEAD,
+                title, UI_FONT_HEAD,
                 ui_is_light(red) ? ui_theme_color(UI_C_TEXT_ON_LIGHT)
                                  : ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_CENTER);
+    return a;
+}
+
+/*
+ * The before-power-up steps of the profile, under the warning's lines: the
+ * hold that starts the run is the operator's word that they are done.
+ * Then, where the run asks for more on its way, a line that it will.
+ */
+static void sp_draw_warning_hand(gfx_canvas_t *c, const esc_profile_t *p,
+                                 gfx_rect_t a, int y)
+{
+    const int last = s.st.hold_btn.y - 20;     /* the last line's top */
+    const unsigned later =
+        esc_profile_manual_count(p, ESC_MANUAL_AT_POWER_UP)
+        + esc_profile_manual_count(p, ESC_MANUAL_BEFORE_MENU);
+    if (esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER) > 0u) {
+        const int keep = (later > 0u) ? 22 : 0;    /* room for that line */
+        gfx_text(c, a.x + 20, y, TR(SP_WARN_HAND), UI_FONT_LABEL,
+                 ui_theme_color(UI_C_WARN), 1);
+        y += 22;
+        for (unsigned i = 0; i < p->manual_count; ++i) {
+            const esc_manual_t *m = &p->manual[i];
+            if (m->when != ESC_MANUAL_BEFORE_POWER) {
+                continue;
+            }
+            const int need = sp_wrap_lines(m->action, 90, 2);
+            if (y + (need - 1) * 22 > last - keep) {
+                sp_text(c, a.x + 20, y, TR(SP_WARN_HAND_MORE), 92,
+                        ui_theme_color(UI_C_WARN));
+                return;
+            }
+            y += 22 * sp_wrap(c, a.x + 44, y, 22, m->action, 90, 2,
+                              ui_theme_color(UI_C_TEXT));
+        }
+    }
+    if (later > 0u && y <= last) {
+        gfx_text(c, a.x + 20, y, TR(SP_WARN_HAND_LATER), UI_FONT_LABEL,
+                 ui_theme_color(UI_C_TEXT_DIM), 1);
+    }
+}
+
+static void sp_draw_warning(gfx_canvas_t *c)
+{
+    const stick_t *t = &s.st;
+    const gfx_color_t red = ui_theme_color(UI_C_DANGER);
+    const gfx_rect_t a = sp_panel(c, TR(SP_WARN_TITLE));
     static const ui_text_id_t k_lines[] = {
         TX_SP_WARN_1, TX_SP_WARN_2, TX_SP_WARN_3, TX_SP_WARN_4,
         TX_SP_WARN_5,
@@ -2497,9 +2810,11 @@ static void sp_draw_warning(gfx_canvas_t *c)
                  ui_theme_color(UI_C_TEXT), 1);
     }
     char line[128];
+    /* A profile with manual steps gives up the blank line above its name
+     * to the steps below. */
+    const int top = a.y + 68 + ((t->p->manual_count > 0u) ? n : n + 1) * 22;
     snprintf(line, sizeof(line), "%s %s", t->p->brand, t->p->family);
-    sp_text(c, a.x + 20, a.y + 68 + (n + 1) * 22, line, 90,
-            ui_theme_color(UI_C_ACCENT));
+    sp_text(c, a.x + 20, top, line, 90, ui_theme_color(UI_C_ACCENT));
     uint32_t mv, ma;
     sp_supply(&mv, &ma);
     size_t picked = 0;
@@ -2510,11 +2825,11 @@ static void sp_draw_warning(gfx_canvas_t *c)
              (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 10u),
              (unsigned)(ma / 1000u), (unsigned)(ma % 1000u / 10u),
              (unsigned)picked);
-    gfx_text(c, a.x + 20, a.y + 68 + (n + 2) * 22, line, UI_FONT_LABEL,
+    gfx_text(c, a.x + 20, top + 22, line, UI_FONT_LABEL,
              ui_theme_color(UI_C_VOLT), 1);
-    gfx_text(c, a.x + 20, a.y + 68 + (n + 3) * 22,
-             TR(SP_WARN_UNVERIFIED),
+    gfx_text(c, a.x + 20, top + 44, TR(SP_WARN_UNVERIFIED),
              UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+    sp_draw_warning_hand(c, t->p, a, top + 66);
     ui_button(c, t->hold_btn, TR(SP_HOLD_TO_RUN),
               ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK), red,
                            t->hold.held_s),
@@ -2523,8 +2838,107 @@ static void sp_draw_warning(gfx_canvas_t *c)
               false, true);
 }
 
+/*
+ * The manual steps of one profile: when each is due and what it is, and
+ * whether a run asks for them.  Opened by MANUAL INTERVENTION REQUIRED,
+ * by the first opening of the profile, or by a tap on a row the bench does
+ * not run.
+ */
+static void sp_draw_hand(gfx_canvas_t *c)
+{
+    const stick_t *t = &s.st;
+    const esc_profile_t *p = t->hand_p;
+    const gfx_rect_t a = sp_panel(c, TR(SP_HAND_BTN));
+    char line[256];
+    snprintf(line, sizeof(line), "%s %s", p->brand, p->family);
+    sp_text(c, a.x + 20, a.y + 64, line, 92, ui_theme_color(UI_C_ACCENT));
+    /* ESC_MANUAL_MAX steps of a label and two lines each fit above the
+     * buttons at a pitch of 19. */
+    int y = a.y + 90;
+    for (unsigned i = 0; i < p->manual_count; ++i) {
+        const esc_manual_t *m = &p->manual[i];
+        snprintf(line, sizeof(line), "%u  %s", i + 1u, sp_when_text(m));
+        gfx_text(c, a.x + 20, y, line, UI_FONT_LABEL,
+                 ui_theme_color(UI_C_WARN), 1);
+        y += 19;
+        y += 19 * sp_wrap(c, a.x + 44, y, 19, m->action, 90, 2,
+                          ui_theme_color(UI_C_TEXT));
+        y += 4;
+    }
+    char why[48];
+    const char *no = sp_why(p, why, sizeof(why));
+    if (no == NULL) {
+        snprintf(line, sizeof(line), "%s", TR(SP_HAND_ASKS));
+    } else {
+        snprintf(line, sizeof(line), TR(SP_HAND_NOT_RUN), no);
+    }
+    sp_wrap(c, a.x + 20, t->cancel_btn.y + 8, 20, line,
+            (t->cancel_btn.x - a.x - 36) / 8, 2,
+            ui_theme_color(UI_C_TEXT_DIM));
+    ui_button(c, t->cancel_btn, "OK", ui_theme_color(UI_C_PANEL_HI), false,
+              true);
+}
+
+/*
+ * A run waiting for a manual step: what to do, where the supply and the
+ * stick are, and how long it waits.  DONE goes on, ABORT ends the run;
+ * STOP in the band ends it too.  DONE is dark for ESC_STICK_HAND_MIN_MS
+ * after the step is asked.
+ */
+static void sp_draw_prompt(gfx_canvas_t *c)
+{
+    const stick_t *t = &s.st;
+    const esc_stick_t *e = &t->run;
+    const esc_manual_t *m = esc_stick_hand(e);
+    const gfx_rect_t a = sp_panel(c, TR(SP_PROMPT_TITLE));
+    char line[256];
+    snprintf(line, sizeof(line), "%s %s", e->p->brand, e->p->family);
+    sp_text(c, a.x + 20, a.y + 64, line, 92, ui_theme_color(UI_C_ACCENT));
+    gfx_text(c, a.x + 20, a.y + 92, sp_when_text(m), UI_FONT_LABEL,
+             ui_theme_color(UI_C_WARN), 1);
+    int y = a.y + 118;
+    y += 22 * sp_wrap(c, a.x + 20, y, 22, m->action, 92, 3,
+                      ui_theme_color(UI_C_TEXT));
+    y += 12;
+    const char *pos = sp_pos(e->out.throttle_pct);
+    if (e->phase == ESC_STICK_HAND_ON) {
+        snprintf(line, sizeof(line), TR(SP_PROMPT_ON), pos);
+    } else if (m->when == ESC_MANUAL_AT_POWER_UP) {
+        snprintf(line, sizeof(line), "%s", TR(SP_PROMPT_AT_POWER));
+    } else {
+        snprintf(line, sizeof(line), TR(SP_PROMPT_OFF), pos);
+    }
+    sp_text(c, a.x + 20, y, line, 92, ui_theme_color(UI_C_TEXT_DIM));
+    y += 22;
+    if (m->when == ESC_MANUAL_AT_POWER_UP && m->hold_ms != 0u) {
+        snprintf(line, sizeof(line), TR(SP_PROMPT_HOLD),
+                 (unsigned)(m->hold_ms / 1000u),
+                 (unsigned)(m->hold_ms % 1000u / 100u));
+        sp_text(c, a.x + 20, y, line, 92, ui_theme_color(UI_C_TEXT_DIM));
+        y += 22;
+    }
+    snprintf(line, sizeof(line), TR(SP_PROMPT_LEFT),
+             (unsigned)((esc_stick_hand_left_ms(e) + 999u) / 1000u));
+    sp_text(c, a.x + 20, y, line, 92, ui_theme_color(UI_C_TEXT_FAINT));
+    const bool ready = esc_stick_hand_ready(e);
+    ui_button(c, t->hold_btn, TR(SP_HAND_DONE),
+              ready ? ui_theme_color(UI_C_OK)
+                    : ui_theme_color(UI_C_PANEL_SUNK), false, ready);
+    ui_button(c, t->cancel_btn, TR(SP_ABORT), ui_theme_color(UI_C_DANGER),
+              false, true);
+}
+
 static void sp_render(gfx_canvas_t *c)
 {
+    if (s.st.hand_open && s.st.hand_p != NULL) {
+        sp_draw_hand(c);
+        return;
+    }
+    if (s.stage == STAGE_DEVICE && s.st.p != NULL
+        && esc_stick_hand(&s.st.run) != NULL) {
+        sp_draw_prompt(c);
+        return;
+    }
     if (s.st.warn && s.st.p != NULL) {
         sp_draw_warning(c);
         return;
@@ -2618,6 +3032,11 @@ const esc_profile_t *programmer_screen_stick_page(void)
 {
     return (s.klass == CLASS_STICK && s.stage == STAGE_DEVICE) ? s.st.p
                                                                : NULL;
+}
+
+bool programmer_screen_stick_hand_shown(void)
+{
+    return s.st.hand_open && s.st.hand_p != NULL;
 }
 
 void programmer_screen_stick_lights(bool *red, bool *green)

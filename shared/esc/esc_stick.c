@@ -100,6 +100,35 @@ static bool values_repeat(const esc_profile_t *p)
     return false;
 }
 
+/*
+ * Whether every manual step can be waited for.  A step during the menu has
+ * no moment the run can know.  A hand at a powered ESC -- held while the
+ * supply comes on, or after the entry -- is asked for with the stick where
+ * the entry put it, so only for an entry at MIN, the motor-off position: a
+ * person is not asked to reach for a powered ESC whose stick is at MID or
+ * MAX.
+ */
+static bool hand_fits(const esc_profile_t *p)
+{
+    for (unsigned i = 0; p->manual != NULL && i < p->manual_count; ++i) {
+        switch (p->manual[i].when) {
+        case ESC_MANUAL_BEFORE_POWER:
+        case ESC_MANUAL_AFTER_PROGRAMMING:
+            break;
+        case ESC_MANUAL_AT_POWER_UP:
+        case ESC_MANUAL_BEFORE_MENU:
+            if (p->entry_throttle != ESC_THR_MIN) {
+                return false;
+            }
+            break;
+        case ESC_MANUAL_DURING_MENU:
+        default:
+            return false;
+        }
+    }
+    return true;
+}
+
 static esc_stick_kind_t refuse(const char **why, const char *text)
 {
     if (why != NULL) {
@@ -116,14 +145,19 @@ esc_stick_kind_t esc_stick_kind(const esc_profile_t *p, const char **why)
     if (p == NULL) {
         return refuse(why, "no profile");
     }
-    if (p->automatable == ESC_AUTO_ASSISTED) {
+    if (p->automatable == ESC_AUTO_ASSISTED
+        && (p->manual_count == 0u || p->manual == NULL)) {
         return refuse(why, "needs a person at the ESC");
     }
-    if (p->automatable != ESC_AUTO_FULL) {
+    if (p->automatable != ESC_AUTO_FULL
+        && p->automatable != ESC_AUTO_ASSISTED) {
         return refuse(why, "no usable procedure");
     }
     if (p->entry_after_power) {
         return refuse(why, "entered after power-on");
+    }
+    if (!hand_fits(p)) {
+        return refuse(why, "manual step");
     }
     switch (p->scheme) {
     case ESC_SCHEME_COUNT:
@@ -269,6 +303,13 @@ bool esc_stick_check(const esc_profile_t *p, const esc_stick_change_t *ch,
         /* N beeps say N: a value numbered 0 is never sounded. */
         if (it->values[ch[i].value].number == 0u) {
             return no(why, "value 0 is not sounded");
+        }
+        /* The run enters at the profile's position; a value the manual
+         * programs from another -- a car mode from the middle, where the
+         * position taught is the neutral -- is not stored from this one. */
+        const esc_throttle_t from = it->values[ch[i].value].entry_throttle;
+        if (from != ESC_THR_NONE && from != p->entry_throttle) {
+            return no(why, "set from another stick position");
         }
         for (size_t k = 0; k < i; ++k) {
             if (p->items[ch[k].item].number == it->number) {
@@ -526,6 +567,7 @@ const char *esc_stick_reason_text(esc_stick_reason_t r)
     case ESC_STICK_R_NO_BEEPS:    return "NO BEEPS";
     case ESC_STICK_R_HIGH:        return "CURRENT STAYS HIGH";
     case ESC_STICK_R_TIMEOUT:     return "TIMEOUT";
+    case ESC_STICK_R_HAND:        return "NOT CONFIRMED";
     case ESC_STICK_R_USER:        return "ABORTED";
     case ESC_STICK_R_LEFT:        return "SCREEN LEFT";
     }
@@ -562,6 +604,7 @@ bool esc_stick_reason_is_fault(esc_stick_reason_t r)
     case ESC_STICK_R_NO_BEEPS:
     case ESC_STICK_R_HIGH:
     case ESC_STICK_R_TIMEOUT:
+    case ESC_STICK_R_HAND:          /* no DONE: not chosen either    */
     case ESC_STICK_R_TOUCH:         /* events lost, not chosen       */
         return true;
     }
@@ -580,6 +623,8 @@ const char *esc_stick_phase_text(esc_stick_phase_t ph)
     case ESC_STICK_VALUES:  return "VALUES";
     case ESC_STICK_STORE:   return "STORING";
     case ESC_STICK_CYCLE:   return "POWER CYCLE";
+    case ESC_STICK_HAND_OFF: return "MANUAL STEP";
+    case ESC_STICK_HAND_ON: return "MANUAL STEP, POWERED";
     case ESC_STICK_OFF:     return "POWER OFF";
     case ESC_STICK_DONE:    return "DONE";
     case ESC_STICK_ABORTED: return "ABORTED";
@@ -690,7 +735,8 @@ void esc_stick_abort(esc_stick_t *e, esc_stick_reason_t why)
 
 static bool powered_phase(esc_stick_phase_t ph)
 {
-    return ph == ESC_STICK_ENTRY || ph == ESC_STICK_ITEMS
+    return ph == ESC_STICK_ENTRY || ph == ESC_STICK_HAND_ON
+           || ph == ESC_STICK_ITEMS
            || ph == ESC_STICK_VALUES || ph == ESC_STICK_STORE;
 }
 
@@ -752,6 +798,108 @@ static void begin_menu(esc_stick_t *e)
     }
     bounds(e, false, -1);
     listen(e, ESC_STICK_VALUES);
+}
+
+/*
+ * The first manual step from @p from that is due at this point of the run,
+ * or -1.  Before a power-up: each at_power_up step, and the before_power
+ * steps from the second power-up on -- the warning the run started from
+ * asked for the first power-up's.  Once the ESC is powered and entered:
+ * each before_menu step.
+ */
+static int hand_due(const esc_stick_t *e, unsigned from, bool powered)
+{
+    const esc_profile_t *p = e->p;
+    for (unsigned i = from; p->manual != NULL && i < p->manual_count; ++i) {
+        const esc_manual_when_t w = p->manual[i].when;
+        const bool due = powered
+            ? w == ESC_MANUAL_BEFORE_MENU
+            : (w == ESC_MANUAL_AT_POWER_UP
+               || (w == ESC_MANUAL_BEFORE_POWER && e->entries > 0u));
+        if (due) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
+
+static void ask(esc_stick_t *e, int i, esc_stick_phase_t ph)
+{
+    e->hand = (uint8_t)i;
+    e->hand_done = false;
+    enter(e, ph);
+}
+
+static void power_on(esc_stick_t *e)
+{
+    e->out.supply_on = true;
+    e->have_sample = false;   /* the next one says whether it is on */
+    enter(e, ESC_STICK_POWER);
+}
+
+/* The supply comes on once every step due before it is done. */
+static void before_power(esc_stick_t *e, unsigned from)
+{
+    const int i = hand_due(e, from, false);
+    if (i < 0) {
+        power_on(e);
+    } else {
+        ask(e, i, ESC_STICK_HAND_OFF);
+    }
+}
+
+/* The menu begins once every step due before it is done. */
+static void before_menu(esc_stick_t *e, unsigned from)
+{
+    const int i = hand_due(e, from, true);
+    if (i < 0) {
+        begin_menu(e);
+    } else {
+        ask(e, i, ESC_STICK_HAND_ON);
+    }
+}
+
+static bool hand_phase(esc_stick_phase_t ph)
+{
+    return ph == ESC_STICK_HAND_OFF || ph == ESC_STICK_HAND_ON;
+}
+
+const esc_manual_t *esc_stick_hand(const esc_stick_t *e)
+{
+    if (!esc_stick_running(e) || !hand_phase(e->phase)
+        || e->p->manual == NULL || e->hand >= e->p->manual_count) {
+        return NULL;
+    }
+    return &e->p->manual[e->hand];
+}
+
+bool esc_stick_hand_ready(const esc_stick_t *e)
+{
+    return esc_stick_hand(e) != NULL && !e->hand_done
+           && since(e->now_ms, e->phase_ms) >= ESC_STICK_HAND_MIN_MS;
+}
+
+uint32_t esc_stick_hand_left_ms(const esc_stick_t *e)
+{
+    if (esc_stick_hand(e) == NULL) {
+        return 0u;
+    }
+    const uint32_t in = since(e->now_ms, e->phase_ms);
+    return (in < ESC_STICK_HAND_WAIT_MS) ? ESC_STICK_HAND_WAIT_MS - in : 0u;
+}
+
+/*
+ * DONE is taken here and acted on in the next step, after that step has
+ * judged the stops, the arm, the link and the supply: a tap never powers
+ * an ESC the bench has stopped or disarmed under it.
+ */
+bool esc_stick_confirm(esc_stick_t *e)
+{
+    if (!esc_stick_hand_ready(e)) {
+        return false;
+    }
+    e->hand_done = true;
+    return true;
 }
 
 static uint8_t wanted_value(const esc_stick_t *e)
@@ -1036,9 +1184,19 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
     switch (e->phase) {
     case ESC_STICK_SIGNAL:
         if (in_phase >= ESC_STICK_SIGNAL_MS) {
-            e->out.supply_on = true;
-            e->have_sample = false;   /* the next one says whether it is on */
-            enter(e, ESC_STICK_POWER);
+            before_power(e, 0u);
+        }
+        break;
+    case ESC_STICK_HAND_OFF:
+    case ESC_STICK_HAND_ON:
+        if (e->hand_done) {
+            if (e->phase == ESC_STICK_HAND_OFF) {
+                before_power(e, (unsigned)e->hand + 1u);
+            } else {
+                before_menu(e, (unsigned)e->hand + 1u);
+            }
+        } else if (in_phase >= ESC_STICK_HAND_WAIT_MS) {
+            finish(e, ESC_STICK_ABORTED, ESC_STICK_R_HAND);
         }
         break;
     case ESC_STICK_POWER:
@@ -1058,7 +1216,7 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         break;
     case ESC_STICK_ENTRY:
         if (since(e->now_ms, e->on_ms) >= e->t.entry_ms) {
-            begin_menu(e);
+            before_menu(e, 0u);
         }
         break;
     case ESC_STICK_ITEMS:
@@ -1116,9 +1274,7 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
             break;
         }
         if (in_phase >= e->t.off_ms && in_phase >= ESC_STICK_SIGNAL_MS) {
-            e->out.supply_on = true;
-            e->have_sample = false;
-            enter(e, ESC_STICK_POWER);
+            before_power(e, 0u);
         }
         break;
     default:

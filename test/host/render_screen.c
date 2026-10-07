@@ -686,7 +686,51 @@ int main(int argc, char **argv)
         ui_router_goto(SCREEN_PROGRAMMER);
         programmer_screen_bench(0u, false, 0u, 0u, false);
         tap(660, UI_BAND_H + 180);              /* the ESC STICK tile */
-        if (strcmp(view, "programmer-stick-find") == 0
+        if (strcmp(view, "programmer-stick-hand-list") == 0) {
+            /* The Kontronik profiles, those with manual steps tagged. */
+            tap(260, UI_BAND_H + 27);
+            stick_type("KONTR\n");
+        } else if (strncmp(view, "programmer-stick-hand", 21) == 0) {
+            /*
+             * kontronik-jazz, page two, row five: a jumper fitted before
+             * the power-up and pulled after the entry.  Its manual steps
+             * show by themselves on the first opening; OK closes them.
+             */
+            tap(761, UI_BAND_H + 27);
+            tap(400, UI_BAND_H + 52 + 4 * 36 + 16);
+            if (strcmp(view, "programmer-stick-hand-info") != 0) {
+                tap(684, UI_BAND_H + 378);      /* OK */
+                for (int i = 0; i < 3; ++i) {
+                    tap(765, UI_BAND_H + 132 + 10);  /* mode 3 */
+                }
+            }
+            const bool prompt = strcmp(view, "programmer-stick-hand-prompt")
+                                == 0;
+            if (prompt || strcmp(view, "programmer-stick-hand-warning") == 0) {
+                tap(698, UI_BAND_H + 407);      /* RUN: the warning */
+            }
+            if (prompt) {
+                touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                                    .point = { .id = 2, .x = 156,
+                                               .y = UI_BAND_H + 378,
+                                               .strength = 40 } };
+                ui_router_event(&e);
+                for (int i = 0; i < 9; ++i) {
+                    ui_router_tick(0.25f);
+                }
+                e.type = TOUCH_EVENT_UP;
+                ui_router_event(&e);
+                static stick_rig_t hrig;
+                memset(&hrig, 0, sizeof(hrig));
+                esc_sim_init(&hrig.sim, programmer_screen_stick()->p, NULL);
+                const esc_stick_t *run = programmer_screen_stick();
+                /* Asked, and a second on: DONE is live. */
+                for (int ms = 0; ms < 60000 && esc_stick_running(run)
+                                 && !esc_stick_hand_ready(run); ++ms) {
+                    stick_step(&hrig);
+                }
+            }
+        } else if (strcmp(view, "programmer-stick-find") == 0
             || strcmp(view, "programmer-stick-found") == 0) {
             /* The search field, then typing: still typing for -find, OK
              * ("\n" is no key, so it lands on OK) for -found. */

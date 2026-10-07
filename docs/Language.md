@@ -123,6 +123,8 @@ One German word per English concept, on every screen and in the report.
 | beep | Piepton |
 | item, value (of an ESC menu) | Punkt, Wert |
 | entry (into an ESC menu), power-up | Einstieg, Einschalten |
+| manual step (at the ESC), MANUAL INTERVENTION REQUIRED, the MANUAL tag | Handgriff, MANUELLER EINGRIFF NÖTIG, HAND |
+| DONE (a manual step confirmed) | ERLEDIGT |
 | threshold | Schwelle |
 | defaults | Vorgaben |
 | channel | Kanal |
@@ -186,7 +188,7 @@ its English.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 59 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 64 views in English and
 in German, and fails when a German string
 
 - is wider than the box `gfx_text_in()` was given,

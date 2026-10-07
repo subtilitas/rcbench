@@ -7,7 +7,7 @@ family of ESCs through its throttle-stick menu. It covers how the menu is
 entered, how the ESC sounds a number, and which items and values the menu
 holds. It is the data [stick programming](StickProgramming.md) runs: the
 operator picks an ESC and the values to change, and the bench drives the
-throttle and counts the beeps in the supply current. 14 of the 72 profiles
+throttle and counts the beeps in the supply current. 24 of the 72 profiles
 are of a kind it runs.
 
 ## What is in the set
@@ -23,6 +23,7 @@ are of a kind it runs.
 | --- | --- | --- |
 | The bench alone: throttle signal and power | 44 | 340 |
 | A person sets a jumper, presses a button or reads an LED | 26 | 108 |
+| of those, with the steps listed in `manual` | 24 | 88 |
 | Nobody: the manual gives no usable procedure | 2 | 3 |
 
 Every profile is `"verified": false`. The profiles come from 153 manuals and
@@ -94,6 +95,7 @@ JSON. The panel does not load them.
 | Field | Values |
 | --- | --- |
 | `automatable` | `full`, `assisted`, `none`; anything but `full` needs `automatable_note` |
+| `manual` | an `assisted` profile's steps a person does at the ESC; see [Manual steps](#manual-steps) |
 | `scheme.type` | `count`, `short_long`, `melody_groups`, `yes_no`, `stick_position`, `other` |
 | `scheme.entry.throttle` | `min`, `mid`, `max`: the stick position that opens the menu |
 | `scheme.entry.when` | `before_power_on`, `after_power_on` |
@@ -129,11 +131,44 @@ JSON. The panel does not load them.
 | `name` | as the manual names it |
 | `key` | 1 to 32 of `a-z 0-9 _`; one meaning across brands: `brake`, `timing`, `cutoff_voltage`, `cutoff_type`, `battery_type`, `cell_count`, `startup`, `governor`, `direction`, `throttle_range`, `pwm_freq`, `aircraft_type`, `mode`, `reset` |
 | `values` | 1 to 255 of `{"number": 0-255, "name": "...", "default": true}`; numbers unique, at most one default |
+| `values[].entry_throttle` | `min`, `mid`, `max`: the stick position the manual programs this value from, where it is not the entry's; absent or null, the entry's. Stick programming refuses to store a value whose position differs from `scheme.entry.throttle` |
 | `applies_to` | model names of this profile, or null for all |
 | `applies_when` | a condition in words, e.g. `"model type heli"` |
 
 Two items may share a number only when both carry `applies_to` or
 `applies_when`.
+
+### Manual steps
+
+`manual` lists what a person does at the ESC besides the throttle and the
+power, in the order a run meets it. Absent or null: none.
+
+```json
+"manual": [
+  {"when": "before_power", "action": "Fit the jumper on any 2 of the 3 programming contacts.",
+   "source": "Kontronik_Beat.pdf p.5"},
+  {"when": "before_menu", "action": "Pull the jumper off after 2 s or the tone sequence."}
+]
+```
+
+| Field | Values |
+| --- | --- |
+| `manual` | 1 to 4 steps; only on an `automatable: "assisted"` profile |
+| `when` | `before_power`, `at_power_up`, `before_menu`, `during_menu`, `after_programming`; each step no earlier than the one above it |
+| `action` | 1 to 120 bytes of UTF-8, in English: two lines of the screen's pop-up |
+| `hold_ms` | `at_power_up` only: 0 to 60000, how long the step is held after the supply comes on; absent or null when not stated |
+
+`source` and any other member of a step stay in the JSON. The action is the
+profile's own text and is shown in English in every language, as item and
+value names are; the screen translates when it is due. What a run does with
+each step is in [Stick programming](StickProgramming.md#manual-steps).
+
+24 profiles hold steps: the 22 Kontronik families, `turnigy-aquastar` (its
+switch at full throttle) and `greatplanes-electrifly-c-series` (its on/off
+button). `graupner-brushless-control-t`, whose menu is read from LEDs, and
+`hacker-master-senstrol`, which needs its motor's identification chip, a
+second channel and a JetiBox, are `assisted` with none: no step a person can
+be asked for at a moment.
 
 ## Adding or correcting a profile
 

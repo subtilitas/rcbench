@@ -803,13 +803,16 @@ TEST_CASE(every_phase_of_a_run_draws)
                          | (1u << ESC_STICK_STORE) | (1u << ESC_STICK_DONE);
     CHECK_EQ(seen & two, two);
 
-    /* sunrise-pro, the tenth that runs: page two, row one.  The list
-     * refuses hobbywing-skywalker-v2-hv-opto at 22.8 V before it. */
+    /* sunrise-pro, the 20th that runs: page three, row two, after the ten
+     * Kontronik profiles.  The list refuses hobbywing-skywalker-v2-hv-opto
+     * at 22.8 V before it. */
     fresh();
     programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
     tap(LIST_DN_X, LIST_CY);
-    tap(ROW_CX, SP_ROW_CY(0));
+    tap(LIST_DN_X, LIST_CY);
+    tap(ROW_CX, SP_ROW_CY(1));
+    CHECK_STR_EQ(programmer_screen_stick_page()->id, "sunrise-pro");
     tap(STEP_UP_X, STEP_CY(0));
     tap(STEP_UP_X, STEP_CY(0));
     tap(STEP_UP_X, STEP_CY(0));              /* battery: LiFe */
@@ -1440,6 +1443,193 @@ TEST_CASE(a_result_of_many_changes_counts_the_rest)
     CHECK(lit() > 20000);
 }
 
+/* ------------------------------------------------------ manual steps */
+
+/* MANUAL INTERVENTION REQUIRED, in the item list's header. */
+#define HAND_X 264
+#define HAND_Y 115
+
+/* The stick class, page two, row five: kontronik-jazz, the fifth of the
+ * Kontronik profiles that run. */
+static void descend_to_jazz(void)
+{
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    tap(LIST_DN_X, LIST_CY);
+    tap(ROW_CX, SP_ROW_CY(4));
+}
+
+static void draws(void)
+{
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    scr->render(&cv, 0);
+    CHECK(lit() > 20000);
+}
+
+/* The steps show by themselves the first time the profile opens, under
+ * its red button every time, and cover the page while they show. */
+TEST_CASE(manual_steps_show_once_by_themselves_and_on_their_button)
+{
+    fresh();
+    descend_to_jazz();
+    const esc_profile_t *p = programmer_screen_stick_page();
+    CHECK(p != NULL);
+    if (p == NULL) {
+        return;
+    }
+    CHECK_STR_EQ(p->id, "kontronik-jazz");
+    CHECK(programmer_screen_stick_hand_shown());
+    draws();
+    tap(WRITE_X, BTN_CY);                    /* RUN's place: covered */
+    tap(BACK_X, BACK_Y);
+    CHECK(programmer_screen_stick_hand_shown());
+    CHECK(programmer_screen_stick_page() == p);
+    tap(CANCEL_X, HOLD_Y);                   /* OK */
+    CHECK(!programmer_screen_stick_hand_shown());
+    draws();
+
+    /* Opened again, it stays closed; the button opens it. */
+    tap(BACK_X, BACK_Y);
+    tap(ROW_CX, SP_ROW_CY(4));
+    CHECK(programmer_screen_stick_page() == p);
+    CHECK(!programmer_screen_stick_hand_shown());
+    tap(HAND_X, HAND_Y);
+    CHECK(programmer_screen_stick_hand_shown());
+    tap(CANCEL_X, HOLD_Y);
+    CHECK(!programmer_screen_stick_hand_shown());
+
+    /* A profile without steps has no button and no pop-up. */
+    tap(BACK_X, BACK_Y);
+    tap(723, LIST_CY);                       /* ^: page one */
+    tap(ROW_CX, SP_ROW_CY(2));               /* hobbywing-flyfun-8item */
+    CHECK_STR_EQ(programmer_screen_stick_page()->id,
+                 "hobbywing-flyfun-8item");
+    CHECK(!programmer_screen_stick_hand_shown());
+    tap(HAND_X, HAND_Y);
+    CHECK(!programmer_screen_stick_hand_shown());
+
+    /* Leaving the screen closes it. */
+    tap(BACK_X, BACK_Y);
+    tap(LIST_DN_X, LIST_CY);
+    tap(ROW_CX, SP_ROW_CY(4));
+    tap(HAND_X, HAND_Y);
+    CHECK(programmer_screen_stick_hand_shown());
+    scr->leave();
+    CHECK(!programmer_screen_stick_hand_shown());
+}
+
+/* A row the bench does not run opens nothing, unless it has manual steps:
+ * then they show, over the list, with why it does not run. */
+TEST_CASE(a_row_that_does_not_run_shows_its_manual_steps)
+{
+    fresh();
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    tap(FIND_X, FIND_Y);
+    find_type("KOSMIK\n");
+    CHECK_EQ(listed(), 1);
+    tap(ROW_CX, SP_ROW_CY(0));
+    CHECK(programmer_screen_stick_page() == NULL);
+    CHECK(programmer_screen_stick_hand_shown());
+    draws();
+    tap(CANCEL_X, HOLD_Y);
+    CHECK(!programmer_screen_stick_hand_shown());
+    CHECK(programmer_screen_stick_page() == NULL);
+
+    /* With the keyboard open, the tap closes it first. */
+    tap(FIND_X, FIND_Y);
+    CHECK(programmer_screen_stick_typing());
+    tap(100, SP_ROW_CY(0));
+    CHECK(!programmer_screen_stick_typing());
+    CHECK(programmer_screen_stick_hand_shown());
+    tap(CANCEL_X, HOLD_Y);
+
+    /* graupner-brushless-control-t: a person reads its LEDs; no steps. */
+    tap(FIND_CLR_X, FIND_Y);
+    tap(FIND_X, FIND_Y);
+    find_type("GRAUPNER\n");
+    tap(ROW_CX, SP_ROW_CY(0));
+    CHECK(!programmer_screen_stick_hand_shown());
+    CHECK(programmer_screen_stick_page() == NULL);
+}
+
+/* A whole JAZZ run: the warning holds the jumper step, the run stops after
+ * the entry with a prompt, DONE counts only after a second, and the mode
+ * is stored. */
+TEST_CASE(a_run_asks_for_its_manual_step_and_goes_on_with_done)
+{
+    fresh();
+    descend_to_jazz();
+    tap(CANCEL_X, HOLD_Y);                   /* the steps, read */
+    for (int i = 0; i < 3; ++i) {
+        tap(STEP_UP_X, STEP_CY(0));          /* KEEP, 1, 2, 3 */
+    }
+    tap(WRITE_X, BTN_CY);
+    draws();                                 /* the warning, with its step */
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    static rig_t r;
+    rig_start(&r);
+    const esc_stick_t *run = programmer_screen_stick();
+    for (uint32_t i = 0; i < 60000u && run->phase != ESC_STICK_HAND_ON;
+         ++i) {
+        rig_step(&r);
+    }
+    CHECK_EQ(run->phase, ESC_STICK_HAND_ON);
+    CHECK(r.on);
+    CHECK(r.armed);
+    CHECK(r.pct == 0.0f);
+    draws();                                 /* the prompt */
+    tap(HOLD_X, HOLD_Y);                     /* DONE, too soon */
+    for (int i = 0; i < 5; ++i) {
+        rig_step(&r);
+    }
+    CHECK_EQ(run->phase, ESC_STICK_HAND_ON);
+    tap(WRITE_X, BTN_CY);                    /* ABORT's place: covered */
+    CHECK(esc_stick_running(run));
+    for (uint32_t i = 0; i < ESC_STICK_HAND_MIN_MS; ++i) {
+        rig_step(&r);
+    }
+    draws();
+    tap(HOLD_X, HOLD_Y);                     /* DONE */
+    rig_step(&r);
+    CHECK_EQ(run->phase, ESC_STICK_VALUES);
+    rig_run(&r, 300000u);
+    CHECK_EQ(run->phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+    CHECK(!r.armed);
+    CHECK(!r.on);
+    draws();
+}
+
+/* ABORT on the prompt ends the run as ABORT does: disarmed, supply off. */
+TEST_CASE(abort_on_the_prompt_ends_the_run)
+{
+    fresh();
+    descend_to_jazz();
+    tap(CANCEL_X, HOLD_Y);
+    for (int i = 0; i < 3; ++i) {
+        tap(STEP_UP_X, STEP_CY(0));
+    }
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    static rig_t r;
+    rig_start(&r);
+    const esc_stick_t *run = programmer_screen_stick();
+    for (uint32_t i = 0; i < 60000u && run->phase != ESC_STICK_HAND_ON;
+         ++i) {
+        rig_step(&r);
+    }
+    CHECK_EQ(run->phase, ESC_STICK_HAND_ON);
+    tap(CANCEL_X, HOLD_Y);                   /* ABORT */
+    rig_run(&r, 1000u);
+    CHECK_EQ(run->phase, ESC_STICK_ABORTED);
+    CHECK_EQ(run->reason, ESC_STICK_R_USER);
+    CHECK(!r.armed);
+    CHECK(!r.on);
+    draws();                                 /* the result */
+}
+
 int main(void)
 {
     RUN(the_protocol_list_is_pressable_before_it_is_painted);
@@ -1476,5 +1666,9 @@ int main(void)
     RUN(a_lost_touch_drops_a_search_key_under_way);
     RUN(the_green_light_follows_the_beeps);
     RUN(the_header_fits_at_the_registrys_most);
+    RUN(manual_steps_show_once_by_themselves_and_on_their_button);
+    RUN(a_row_that_does_not_run_shows_its_manual_steps);
+    RUN(a_run_asks_for_its_manual_step_and_goes_on_with_done);
+    RUN(abort_on_the_prompt_ends_the_run);
     return test_summary("programmer");
 }

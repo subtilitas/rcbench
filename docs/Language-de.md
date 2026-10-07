@@ -126,6 +126,8 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | beep | Piepton |
 | item, value (eines ESC-Menüs) | Punkt, Wert |
 | entry (in ein ESC-Menü), power-up | Einstieg, Einschalten |
+| manual step (am ESC), MANUAL INTERVENTION REQUIRED, das Schild MANUAL | Handgriff, MANUELLER EINGRIFF NÖTIG, HAND |
+| DONE (ein Handgriff bestätigt) | ERLEDIGT |
 | threshold | Schwelle |
 | defaults | Vorgaben |
 | channel | Kanal |
@@ -193,7 +195,7 @@ dieselben Argumente in derselben Reihenfolge wie sein Englisch.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 59 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 64 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein deutscher Text
 
 - breiter ist als die Box, die `gfx_text_in()` bekam,

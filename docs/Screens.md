@@ -755,6 +755,18 @@ for 2 s:
 
 ![The warning](img/programmer-stick-warning.png)
 
+A profile whose ESC needs a person at it -- a jumper fitted and pulled, a
+button pressed -- carries a red MANUAL tag in the list and MANUAL
+INTERVENTION REQUIRED in red on its page. The button shows the steps and
+when each is due; so does the first opening of the profile. The warning
+lists the steps due before the power-up, and the run stops for each later
+step with DONE and ABORT, waiting at most 60 s
+([Manual steps](StickProgramming.md#manual-steps)):
+
+![A profile with manual steps](img/programmer-stick-hand.png)
+
+![The run waiting for the jumper](img/programmer-stick-hand-prompt.png)
+
 While it runs, the page shows the phase, the beeps of the group under way
 and the last group. ABORT, STOP and leaving the screen end it with the
 throttle at MIN, the supply off and the bench disarmed. The stack light's

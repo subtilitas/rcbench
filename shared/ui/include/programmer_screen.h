@@ -74,6 +74,9 @@ int programmer_screen_stick_listed(int *top);
 /** The profile whose page is open, or NULL on the list; for tests. */
 const esc_profile_t *programmer_screen_stick_page(void);
 
+/** Whether the manual steps' pop-up is open; for tests. */
+bool programmer_screen_stick_hand_shown(void);
+
 /** What the stack light shows; for tests. */
 void programmer_screen_stick_lights(bool *red, bool *green);
 

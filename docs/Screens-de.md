@@ -823,6 +823,18 @@ beginnt, wenn HALTEN ZUM STARTEN 2 s gehalten ist:
 
 ![Die Warnung](img/de/programmer-stick-warning.png)
 
+Ein Profil, dessen ESC einen Menschen am ESC braucht -- einen Jumper stecken
+und abziehen, einen Taster drücken --, trägt in der Liste ein rotes Schild
+HAND und auf seiner Seite rot MANUELLER EINGRIFF NÖTIG. Der Knopf zeigt die
+Schritte und wann jeder fällig ist; ebenso das erste Öffnen des Profils. Die
+Warnung nennt die Schritte vor dem Einschalten, und der Lauf hält für jeden
+späteren Schritt mit ERLEDIGT und ABBRECHEN an und wartet höchstens 60 s
+([Handgriffe](StickProgramming-de.md#handgriffe)):
+
+![Ein Profil mit Handgriffen](img/de/programmer-stick-hand.png)
+
+![Der Lauf wartet auf den Jumper](img/de/programmer-stick-hand-prompt.png)
+
 Während er läuft, zeigt die Seite die Phase, die Pieptöne der laufenden
 Gruppe und die letzte Gruppe. ABBRECHEN, STOP und das Verlassen des Bildschirms
 beenden ihn mit dem Gas auf MIN, dem Netzteil aus und dem Prüfstand

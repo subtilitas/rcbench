@@ -53,6 +53,13 @@ extern "C" {
 /** This many late readings in a row end the run: the supply reads too
  *  slowly for the beeps the timing describes. */
 #define ESC_STICK_LATE_RUN 3u
+/** A manual step not confirmed within this long ends the run, ms.  No
+ *  manual states how long an ESC waits for its jumper or button; this is
+ *  the operator's time to reach the ESC, not the ESC's. */
+#define ESC_STICK_HAND_WAIT_MS 60000u
+/** DONE counts only this long after its step is asked, ms, so one tap
+ *  meant for the step before cannot confirm the next. */
+#define ESC_STICK_HAND_MIN_MS 1000u
 /** The output counts as off only once the supply itself reports it off and
  *  the current has stayed at or under ESC_STICK_OFF_MA for
  *  ESC_STICK_OFF_SETTLE_MS, in readings taken after the run asked it off:
@@ -105,6 +112,12 @@ typedef enum {
 /**
  * Which menu the engine runs for @p p, or ESC_STICK_KIND_NONE with the
  * reason in @p why (a static string; may be NULL).
+ *
+ * An assisted profile runs only through its manual steps (esc_profile_t's
+ * manual), and only when each can be waited for: no step during the menu,
+ * whose moment the run cannot know, and a hand at a powered ESC -- an
+ * at_power_up or before_menu step -- only with the stick at MIN for the
+ * entry.  Otherwise the reason is "manual step".
  */
 esc_stick_kind_t esc_stick_kind(const esc_profile_t *p, const char **why);
 
@@ -232,6 +245,10 @@ typedef enum {
     ESC_STICK_VALUES,     /**< counting value groups                    */
     ESC_STICK_STORE,      /**< held at the selection while it is stored */
     ESC_STICK_CYCLE,      /**< supply off before the next entry         */
+    ESC_STICK_HAND_OFF,   /**< supply off, waiting for a manual step's
+                               DONE before the power-up                 */
+    ESC_STICK_HAND_ON,    /**< powered, waiting for a manual step's DONE
+                               before the menu                          */
     ESC_STICK_OFF,        /**< supply off, the stick where it stored    */
     ESC_STICK_DONE,
     ESC_STICK_ABORTED,
@@ -255,6 +272,7 @@ typedef enum {
     ESC_STICK_R_NO_BEEPS,     /**< no beep for silence_ms                */
     ESC_STICK_R_HIGH,         /**< the current stayed above the threshold */
     ESC_STICK_R_TIMEOUT,      /**< the wanted group not heard            */
+    ESC_STICK_R_HAND,         /**< a manual step not confirmed in time   */
     ESC_STICK_R_TOUCH,        /**< touch lost before the arm was taken   */
     ESC_STICK_R_USER,         /**< ABORT pressed                         */
     ESC_STICK_R_LEFT,         /**< the screen was left                   */
@@ -379,6 +397,10 @@ typedef struct {
     bool                 last_trusted;  /**< and so did that one: the
                                              last group could be acted on */
     uint8_t              entries;       /**< power-ups this run          */
+    uint8_t              hand;          /**< the manual step asked, an
+                                             index into p->manual        */
+    bool                 hand_done;     /**< DONE taken, for the next
+                                             step to act on               */
     uint32_t             pulses;        /**< pulses begun this run: the
                                              detector's rises            */
 } esc_stick_t;
@@ -409,6 +431,42 @@ bool esc_stick_running(const esc_stick_t *e);
 /** What the bench is to do now. */
 const esc_stick_out_t *esc_stick_out(const esc_stick_t *e);
 
+/**
+ * The manual step the run waits for, or NULL when it waits for none.
+ *
+ * A run stops for a step a person does at the ESC where the profile says
+ * it is due, and goes on only on esc_stick_confirm():
+ *
+ *   - before the supply comes on (ESC_STICK_HAND_OFF): each at_power_up
+ *     step, and from the second power-up on each before_power step too --
+ *     the first power-up's are on the warning a run starts from.  The
+ *     supply is off and the stick at the entry position; DONE switches the
+ *     supply on.
+ *   - once the entry has had its time (ESC_STICK_HAND_ON): each
+ *     before_menu step, with the ESC powered and the stick at the entry
+ *     position, which is MIN on every profile that has one
+ *     (esc_stick_kind()).  DONE starts the menu.
+ *
+ * STOP, ABORT, a disarm and every supply rule end a waiting run as any
+ * other: throttle to MIN, supply off, disarmed.  No DONE within
+ * ESC_STICK_HAND_WAIT_MS ends it with ESC_STICK_R_HAND.
+ */
+const esc_manual_t *esc_stick_hand(const esc_stick_t *e);
+
+/** Whether DONE would count now: ESC_STICK_HAND_MIN_MS after the step was
+ *  asked. */
+bool esc_stick_hand_ready(const esc_stick_t *e);
+
+/** The time left to confirm the step asked, ms; 0 when none is. */
+uint32_t esc_stick_hand_left_ms(const esc_stick_t *e);
+
+/**
+ * DONE: the step asked is done.  The run asks the next step due at the
+ * same point, or goes on.  Ignored, returning false, when no step is asked
+ * or the step was asked less than ESC_STICK_HAND_MIN_MS ago.
+ */
+bool esc_stick_confirm(esc_stick_t *e);
+
 /** How many selections have been made. */
 unsigned esc_stick_done_count(const esc_stick_t *e);
 
@@ -426,8 +484,8 @@ unsigned esc_stick_beeps(const esc_stick_t *e);
  * and for at least ESC_STICK_BEEP_LIGHT_MS from the first look that sees a
  * pulse begun, so a pulse that rises and falls between two looks still
  * shows.  Every pulse lights it, trusted group or not.  Off while the
- * supply is not on for the menu (outside ENTRY, ITEMS, VALUES and STORE)
- * and while no run is under way.
+ * supply is not on for the menu (outside ENTRY, HAND_ON, ITEMS, VALUES and
+ * STORE) and while no run is under way.
  */
 typedef struct {
     uint32_t pulses;    /**< the run's count at the last look */

@@ -27,6 +27,29 @@ sweep starts over from the curve's beginning, and the alert band says so.
   move alike, as ramps at SPEED's rate. It follows the settings, before
   SWEEP is pressed and while a sweep runs. With the TEST page's defaults
   (sine, 0.5 Hz, RANGE 80 %) and TRAVEL +/-90 deg it clears at SPEED 63 %.
+- **Manual steps in ESC profiles.** A profile lists in `manual` what a
+  person does at the ESC besides the throttle and the power -- a jumper
+  fitted before the power-up and pulled after the entry tones, a button
+  pressed -- and when: `before_power`, `at_power_up`, `before_menu`,
+  `during_menu`, `after_programming`. 24 profiles carry them: the 22
+  Kontronik families, `turnigy-aquastar` and
+  `greatplanes-electrifly-c-series`. The generator and the card reader take
+  the same files, at most 4 steps of at most 120 bytes each.
+- **MANUAL INTERVENTION REQUIRED.** A profile with manual steps shows a red
+  button in the header of its item list, and a red MANUAL tag on its row in
+  the list. The button opens the steps over the whole screen; they open by
+  themselves the first time the profile is opened after a start. A row
+  that does not run but has steps opens them too.
+- **The run asks for each step.** The warning lists the steps due before
+  the power-up. A run stops before a power-up for an `at_power_up` step and
+  for `before_power` steps from the second power-up on, and after the entry
+  for a `before_menu` step, powered with the stick at MIN; DONE goes on,
+  ABORT and STOP end it, and no DONE within 60 s ends it with NOT
+  CONFIRMED, red light lit. The result lists the `after_programming` steps.
+- **A value's own entry position.** `values[].entry_throttle` names the
+  stick position the manual programs a value from where it is not the
+  entry's. Stick programming refuses such a value: the Kontronik car modes,
+  programmed from the middle, are not stored from the brake position.
 
 ### Changed
 
@@ -57,6 +80,20 @@ sweep starts over from the curve's beginning, and the alert band says so.
   up, the word the link chip beside it already showed. BENCH is the panel
   driving the coprocessor's outputs, SIM the panel running on its own
   models while no coprocessor answers. Both stay English in German.
+
+### Fixed
+
+- **Kontronik profiles run.** Every Kontronik ESC needs a jumper or a
+  button to enter its programming mode, and stick programming refused all
+  22 as `needs a person at the ESC`. 10 now run with their manual steps
+  asked at their moment: `kontronik-3sl`, `-beat`, `-beat-car`,
+  `-beat-fai`, `-jazz`, `-kontrol-x`, `-pix`, `-smile`, `-star-line` and
+  `-sun-plus`; 24 of the 72 profiles run. The others name `manual step`
+  where a jumper moves during the menu, or their menu's reason.
+- **Kontronik profile data.** MINIJAZZ enters with a button, not a jumper;
+  the 3SL and Star-Line jumper sits on the two gold contacts; the JIVE Pro
+  jumper cable is pulled within 10 s; the OPTO and BEC procedure is on
+  pages 3-4 of their manuals.
 
 ## 0.12.0 - 2026-10-07
 
