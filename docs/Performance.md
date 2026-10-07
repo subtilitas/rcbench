@@ -158,3 +158,43 @@ region that was repainted.
 The ESP32-S3 log line `DRAW … WAIT …`, printed every 300 frames, is the
 on-hardware check: DRAW is the paint time, WAIT is how long the flip blocked. A
 healthy frame is mostly WAIT.
+
+## Stacks
+
+Every panel task runs on a fixed stack, and a call chain that runs past the
+end of one restarts the panel. `tools/stack_check.py` reads each task's
+deepest call chain out of the panel ELF (Executable and Linkable Format)
+file: the frame of every function is the `entry a1, N` it opens with, and the
+depth is the largest sum of frames along any chain from the task's entry
+point. CI runs it after both panel builds and fails when a task's depth
+exceeds its stack less 1024 bytes.
+
+| Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
+| --- | --- | ---: | ---: | ---: |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 3,856 | 3,312 |
+| `control` | `control_task` | 6,144 | 4,272 | 848 |
+| `runlog` | `log_task` | 4,096 | 2,896 | 176 |
+| `artkeep` | `art_keep_task` | 4,096 | 944 | 2,128 |
+
+Measured on ESP-IDF v5.4 at -O2. Of the margin, 528 bytes are spent outside
+the frames: 320 for the FPU (floating-point unit) and vector-unit state saved
+at the top of every stack, 192 for the frame an interrupt pushes, and 16 below
+the deepest frame. The other
+496 bytes cover what the tool cannot see, and each depth above is a lower
+bound for that reason:
+
+- calls through a function pointer, except the router's calls into a screen,
+  which the tool reads out of every screen's table: 165 such calls are
+  reachable from `main_task`, most of them in ESP-IDF's storage and display
+  drivers;
+- calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
+  the ELF;
+- recursion, which the tool counts once.
+
+`-v` lists all of them, and each task's deepest chain.
+
+The UI keeps its frames small where it is cheap. A page's drawer is a
+separate function, so only the page on screen holds its buffers: on
+PROGRAMMER, `render()`'s frame is 32 bytes and the largest page's 464. A
+line copied for display is copied without `snprintf()`, which reaches
+newlib's float conversion: 1,952 bytes deep in the call graph.

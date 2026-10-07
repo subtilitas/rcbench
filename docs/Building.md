@@ -131,6 +131,7 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 | `tools/gen_font.py` | regenerates the three embedded fonts from DejaVu Sans Mono, the two text faces with the German letters; `--check` fails if the committed tables differ |
 | `tools/render_ui.py` | renders every screen to PNG (Portable Network Graphics) with the code the panel runs, in English into `docs/img/` and in German into `docs/img/de/`; `--check` compares with the committed images; `--fit` fails when a German string overflows where it is drawn ([Language](Language.md)) |
 | `tools/frame_cost.py` | measures cache-line fills per frame under cachegrind; `--check-doc` holds the table in [Performance](Performance.md) |
+| `tools/stack_check.py` | reads every panel task's deepest call chain out of the built ELF (Executable and Linkable Format) file and fails when one exceeds its stack less 1024 bytes; takes the build directory, default `firmware/panel/build`; `-v` prints each deepest chain and every call it cannot follow ([Performance](Performance.md#stacks)) |
 | `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | static analysis and lint configuration; every finding is an error |
 
 `gen_font.py` looks for the font in `RCBENCH_FONT_DIR`, then
@@ -141,7 +142,7 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 
 | Workflow | Trigger | Jobs |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload; font, docs, wiki-link, frame-cost, screenshot and research-script checks; clang-tidy, cppcheck and ruff; panel build on ESP-IDF v5.4 and v5.5; coprocessor build on pico-sdk 2.3.0; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload; font, docs, wiki-link, frame-cost, screenshot and research-script checks; clang-tidy, cppcheck and ruff; panel build on ESP-IDF v5.4 and v5.5, each with the task stack check; coprocessor build on pico-sdk 2.3.0; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/` | mirrors `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
 

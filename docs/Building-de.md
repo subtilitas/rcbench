@@ -133,6 +133,7 @@ bis 32 GPIO (General-Purpose Input/Output).
 | `tools/gen_font.py` | erzeugt die drei eingebetteten Fonts aus DejaVu Sans Mono neu, die beiden Text-Fonts mit den deutschen Buchstaben; `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
 | `tools/render_ui.py` | rendert jeden Bildschirm mit dem Code, den das Panel ausführt, als PNG (Portable Network Graphics), auf Englisch nach `docs/img/` und auf Deutsch nach `docs/img/de/`; `--check` vergleicht mit den eingecheckten Bildern; `--fit` schlägt fehl, wenn ein deutscher Text dort überläuft, wo er gezeichnet wird ([Sprache](Language-de.md)) |
 | `tools/frame_cost.py` | misst Cache-Line-Fills je Frame unter cachegrind; `--check-doc` hält die Tabelle in [Performance](Performance-de.md) |
+| `tools/stack_check.py` | liest die tiefste Aufrufkette jeder Panel-Task aus der gebauten ELF-Datei (Executable and Linkable Format) und schlägt fehl, wenn eine ihren Stack abzüglich 1024 Bytes überschreitet; nimmt das Build-Verzeichnis, Standard `firmware/panel/build`; `-v` gibt jede tiefste Kette und jeden Aufruf aus, dem es nicht folgen kann ([Performance](Performance-de.md#stacks)) |
 | `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | Konfiguration für statische Analyse und Lint; jeder Befund ist ein Fehler |
 
 `gen_font.py` sucht den Font in `RCBENCH_FONT_DIR`, dann in
@@ -144,7 +145,7 @@ Pillow.
 
 | Workflow | Auslöser | Jobs |
 | --- | --- | --- |
-| `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload; Font-, Docs-, Wiki-Link-, Frame-Cost-, Screenshot- und Research-Skript-Prüfungen; clang-tidy, cppcheck und ruff; Panel-Build mit ESP-IDF v5.4 und v5.5; Koprozessor-Build mit pico-sdk 2.3.0; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
+| `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload; Font-, Docs-, Wiki-Link-, Frame-Cost-, Screenshot- und Research-Skript-Prüfungen; clang-tidy, cppcheck und ruff; Panel-Build mit ESP-IDF v5.4 und v5.5, jeweils mit der Prüfung der Task-Stacks; Koprozessor-Build mit pico-sdk 2.3.0; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
 | `docs.yml` | Push auf `main`, der `docs/` berührt | spiegelt `docs/` ins GitHub-Wiki |
 | `release.yml` | Tag `v*` | baut beide Images, packt sie mit Prüfsummen, erstellt ein Release |
 

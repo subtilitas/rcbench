@@ -6,6 +6,24 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- **PROGRAMMER no longer restarts the panel.** The UI runs on ESP-IDF's main
+  task, whose stack is 8192 bytes (ESP-IDF's default is 3584). The deepest
+  call chain on it is 3856 bytes; with PROGRAMMER's pages in one 1760-byte
+  frame it reached 5120. Each PROGRAMMER page is drawn by its own function,
+  so `render()`'s frame is 32 bytes and the largest page's 464. The stack
+  costs 4608 bytes more internal RAM (random-access memory).
+
+### Added
+
+- **`tools/stack_check.py`.** Reads every panel task's deepest call chain out
+  of the ELF (Executable and Linkable Format) file and fails when one
+  exceeds its stack less 1024 bytes; CI runs it after both panel builds.
+  Calls it cannot follow (through a pointer, into ROM (read-only memory),
+  recursion) are counted and named, and make the depth a lower bound
+  ([Performance](docs/Performance.md#stacks)).
+
 ## 0.13.0 - 2026-10-07
 
 ESC STICK asks for an ESC's manual steps: a jumper, a button or a stick
