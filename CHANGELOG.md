@@ -6,6 +6,17 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- The coprocessor refuses GP23, GP24, GP25 and GP29 for an output slot and for
+  the PD mini's pins. The RP2350-CAN module uses them (GP23 is the MODE pin of
+  its power converter, GP24 senses VBUS, GP25 drives LED1, GP29 senses VSYS)
+  and does not bring them out.
+- The coprocessor refuses GP30 to GP63 on the module whatever board file the
+  SDK is built for. The default image targets an RP2350B board file with 48
+  GPIOs and did not refuse GP30 to GP47. One reserved set, from the pin
+  catalogue, serves the OUTPUTS and SUPPLY pages.
+
 ## 0.13.0 - 2026-10-07
 
 ESC STICK asks for an ESC's manual steps: a jumper, a button or a stick

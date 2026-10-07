@@ -88,15 +88,4 @@
      | (1ull << IOMCU_CAN_PIN_CS)               \
      | (1ull << IOMCU_CAN_PIN_INT))
 
-/*
- * And the pin numbers this part does not have.  NUM_BANK0_GPIOS is 30 on the
- * RP2350A the bring-up module carries and 48 on the RP2350B the final board
- * needs, so the same firmware refuses a different set on each.  Without this
- * a pin above the top would be bound, drive nothing, and read back from the
- * page as though it were working.
- */
-#define IOMCU_ABSENT_PINS                                       \
-    ((NUM_BANK0_GPIOS >= 64) ? 0ull                             \
-                             : ~((1ull << NUM_BANK0_GPIOS) - 1ull))
-
 #endif /* RCBENCH_IOMCU_PINS_H */

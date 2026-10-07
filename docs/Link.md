@@ -173,7 +173,8 @@ The guard at zero covers a count never sent and not one that is out of date:
 every count the setting allows is inside the range the page takes.
 
 The coprocessor refuses a pin it must not drive -- the safety line, the CAN
-controller's pins, and any number above the last GPIO the part has -- and a
+controller's pins, GP23, GP24, GP25 and GP29 (used by the module, not brought
+out) and any number above GP29 -- on the OUTPUTS and SUPPLY pages alike, and a
 slot it refuses is left unbound while the page still reads back what was asked
 for. [DShot and the output drivers](DShot.md) has the rest.
 

@@ -15,8 +15,11 @@
 /*
  * The header, in GPIO order.
  *
- * GP23 to GP25 are missing because the Pico form factor does not bring them
- * out, and the pad numbers are the ones printed on the board so an operator
+ * GP23 to GP25 and GP29 are missing because the Pico form factor does not
+ * bring them out: on the module GP23 is the MODE pin of the MP28164 power
+ * converter, GP24 senses VBUS, GP25 drives LED1 and GP29 senses VSYS.
+ * outbind_reserved_mask() reserves every pin the catalogue leaves out, so
+ * those four and every number from GP30 up are refused.  The pad numbers are the ones printed on the board so an operator
  * counting pads and an operator reading GPIOs arrive at the same pin.
  *
  * The reserved six are the coprocessor's: GP3 carries the safety heartbeat
@@ -528,10 +531,18 @@ uint64_t outbind_reserved_mask(uint16_t board)
          * nothing is the one that drives the heartbeat line. */
         return ~(uint64_t)0u;
     }
-    uint64_t m = 0u;
+    /*
+     * Start from every pin and give back the ones the catalogue lists as
+     * free.  What is left is the reserved pins, the pins the board uses
+     * without bringing them out (GP23, GP24, GP25 and GP29 on the RP2350-CAN)
+     * and every number the part does not have.  The mask does not depend on
+     * the SDK's board file, so a build for an RP2350B refuses GP30 and up on
+     * the module too.
+     */
+    uint64_t m = ~(uint64_t)0u;
     for (uint8_t i = 0; i < b->count; ++i) {
-        if (b->pins[i].reserved) {
-            m |= (uint64_t)1u << b->pins[i].gpio;
+        if (!b->pins[i].reserved) {
+            m &= ~((uint64_t)1u << b->pins[i].gpio);
         }
     }
     return m;

@@ -58,10 +58,13 @@ than a build.
 
 The coprocessor refuses a pin it must not drive: GP3 (the safety heartbeat),
 GP8 to GP12 (the CAN (Controller Area Network) controller's SPI (Serial
-Peripheral Interface) and interrupt), and any number above the last GPIO
-(general-purpose input/output) the part has — 29 on the RP2350A the bring-up
-module carries, 47 on the RP2350B the final board needs. A refused slot is left
-unbound. The page still reads back what was asked for, and no register on it
+Peripheral Interface) and interrupt), the four pins the bring-up module uses
+and does not bring out — GP23 (the MODE pin of the module's power converter),
+GP24 (VBUS sense), GP25 (LED1) and GP29 (VSYS sense) — and any number above
+the last GPIO (general-purpose input/output) the module has: GP30 and up, 29
+being the top of the RP2350A. The set is the module's own and does not follow
+the SDK board file the image is built for. The PD mini's pins on the SUPPLY
+page are held to the same set. A refused slot is left unbound. The page still reads back what was asked for, and no register on it
 says whether a slot is bound, so an unbound slot reads back exactly like a
 driving one. What reaches the operator is a lead that does not move.
 

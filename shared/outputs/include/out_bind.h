@@ -246,13 +246,17 @@ uint8_t outbind_pin_count(uint16_t board);
 uint8_t outbind_index_of(uint16_t board, uint8_t gpio);
 
 /**
- * Every reserved pin of a board, one bit per GPIO.
+ * Every pin of a board that no output and no PD mini pin may take, one bit
+ * per GPIO (0 to 63).
  *
- * The coprocessor hands its own board's mask to outputs_reserve_pins() and
- * the panel greys the same pins, so the two ends cannot disagree about which
- * pins exist to be given away.  The coprocessor adds the pins its part does
- * not have.  An unknown board reserves everything: a build that cannot say
- * which pins are safe must not hand any of them out.
+ * That is the catalogue's reserved pins, plus every pin the catalogue does
+ * not list: the pins the board uses without bringing them out and the
+ * numbers the part does not have.  The coprocessor hands this mask to
+ * outputs_reserve_pins(), which the OUTPUTS and SUPPLY pages both consult,
+ * and the panel greys the catalogue's reserved pins, so the two ends cannot
+ * disagree about which pins exist to be given away.  An unknown board
+ * reserves everything: a build that cannot say which pins are safe must not
+ * hand any of them out.
  */
 uint64_t outbind_reserved_mask(uint16_t board);
 

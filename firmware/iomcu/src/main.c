@@ -1146,9 +1146,10 @@ int main(void)
     /*
      * The pins this build will not hand out, whatever the host asks for: the
      * safety line, the CAN (Controller Area Network) controller's four SPI
-     * (Serial Peripheral Interface) pins and its interrupt, and every number
-     * above the last GPIO (general-purpose input/output) this part has.  The
-     * pin arrives from the panel over the OUTPUTS page, so it is whatever an
+     * (Serial Peripheral Interface) pins and its interrupt, the pins the
+     * module uses and does not break out (GP23, GP24, GP25, GP29), and every
+     * number above the last GPIO (general-purpose input/output) the module
+     * has, whatever board the SDK is built for.  The pin arrives from the panel over the OUTPUTS page, so it is whatever an
      * operator typed, and an output bound to the heartbeat input is an
      * interlock that stops working with nothing to show for it.
      *
@@ -1157,7 +1158,7 @@ int main(void)
      * line.
      */
     s_base_reserved = outbind_reserved_mask(IOMCU_BOARD_ID)
-                      | IOMCU_RESERVED_PINS | IOMCU_ABSENT_PINS;
+                      | IOMCU_RESERVED_PINS;
     outputs_reserve_pins(&s_outputs, s_base_reserved);
     supply_page_init(&s_supply);
     (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
