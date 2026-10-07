@@ -13,6 +13,7 @@
 #include "greatest.h"
 
 #include "servo_screen.h"
+#include "servo_sim.h"
 #include "servo_sweep.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -2005,6 +2006,69 @@ TEST_CASE(the_hv_hold_stands_for_the_live_question)
     CHECK(fabsf(supply_screen_set_v() - 8.4f) < 1e-4f);
 }
 
+/* OUTPUT ON with a set point past 6.0 V already in force -- made on SUPPLY,
+ * or before this screen was opened -- goes through the HV warning: the
+ * switch's own hold switches nothing on, a tap on APPLY does nothing, STOP
+ * ends the hold, and only the two-second hold on APPLY sends the ON. */
+TEST_CASE(output_on_past_6_v_takes_the_hv_hold)
+{
+    fresh();
+    supply_screen_put(7.4f, 1.0f);              /* as if set on SUPPLY */
+    scr->tick(0.025f);
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 100; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_cmd(NULL));                   /* the switch's hold: no */
+
+    tap(WARN_APPLY_X, WARN_Y);                  /* a tap is not the hold */
+    CHECK(!supply_cmd(NULL));
+
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 40; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    servo_screen_cancel_arm();                  /* STOP mid-hold */
+    for (int i = 0; i < 80; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_cmd(NULL));
+
+    hold_apply(2.3f);
+    supply_cmd_t c;
+    CHECK(supply_cmd(&c));
+    CHECK(c.on);
+    CHECK(!c.off);
+    CHECK(fabsf(supply_screen_set_v() - 7.4f) < 1e-4f);
+
+    /* CANCEL switches nothing on; the warning drawn says what is asked. */
+    fresh();
+    supply_screen_put(8.4f, 1.0f);
+    scr->tick(0.025f);
+    tap(SUP_OUT_X, SUP_ROW_Y);
+    scr->tick(0.025f);
+    scr->render(&cv, 0);
+    tap(WARN_CANCEL_X, WARN_Y);
+    for (int i = 0; i < 100; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    CHECK(!supply_cmd(NULL));
+
+    /* At 6.0 V it is the ordinary hold. */
+    fresh();
+    supply_screen_put(6.0f, 1.0f);
+    scr->tick(0.025f);
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 100; ++i) {
+        scr->tick(1.0f / 40.0f);
+    }
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK(supply_cmd(&c));
+    CHECK(c.on);
+}
+
 /* A second hold on OUTPUT ON while the first ON is on its way: the output
  * reporting on during it does not make its release an OFF. */
 TEST_CASE(an_on_reported_during_a_second_servo_hold_is_not_an_off)
@@ -2288,6 +2352,935 @@ TEST_CASE(a_question_does_not_outlive_its_run)
     CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
 }
 
+/* ------------------------------------------------ the automatic test */
+
+/*
+ * START TEST, mirrored from servo_screen.c: under the TEST page's right
+ * column, row 6; the box on the left card and its button; HV SERVO at the
+ * right column's row 2.
+ */
+#define START_X  369
+#define START_Y  323
+#define BOXBTN_X 91
+#define BOXBTN_Y 104
+#define HV_ROW_Y ROW_Y(2)
+
+/* A bench for the screen's run: the servo model on the output, SUPPLY's
+ * switch and set points as the panel would carry them, and a reading every
+ * 100 ms stamped on the panel's clock. */
+static struct {
+    servo_sim_t sv;
+    bool     out;
+    bool     online;
+    uint16_t samples;
+    uint32_t now, next;
+    uint16_t cmd;
+    bool     released;
+    bool     stepped;          /* a position went out with no slew   */
+    float    set_v_max;        /* the highest set point while it ran */
+    unsigned opens, csv, txt, ends;
+    char     report[4096];
+    size_t   report_len;
+} b;
+
+static void bench_fresh(void)
+{
+    fresh();
+    memset(&b, 0, sizeof(b));
+    servo_sim_cfg_t sc;
+    servo_sim_defaults(&sc);
+    sc.stop_lo_us = 1000u;
+    sc.stop_hi_us = 2000u;
+    servo_sim_init(&b.sv, &sc);
+    b.sv.position_us = 1500.0f;
+    b.online = true;
+    b.now  = 5000u;
+    b.next = b.now;
+    b.cmd  = 1500u;
+    servo_screen_clock(b.now);
+    servo_screen_set_armed(true);
+    /* One reading before the run, as the panel always has one. */
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    st.set_v = supply_screen_set_v();
+    st.samples = ++b.samples;
+    st.taken_ms = b.now;
+    servo_screen_supply(&st);
+    scr->tick(0.02f);
+}
+
+static void bench_drain(void)
+{
+    const char *text = NULL;
+    for (;;) {
+        const servo_test_out_t o = servo_screen_test_peek(&text);
+        if (o == SERVO_TEST_OUT_NONE) {
+            return;
+        }
+        if (o == SERVO_TEST_OUT_OPEN) {
+            ++b.opens;
+        } else if (o == SERVO_TEST_OUT_CSV) {
+            ++b.csv;
+        } else if (o == SERVO_TEST_OUT_TXT) {
+            ++b.txt;
+            const size_t n = strlen(text);
+            if (b.report_len + n + 2u < sizeof(b.report)) {
+                memcpy(b.report + b.report_len, text, n);
+                b.report_len += n;
+                b.report[b.report_len++] = '\n';
+                b.report[b.report_len] = '\0';
+            }
+        } else {
+            ++b.ends;
+        }
+        servo_screen_test_pop();
+    }
+}
+
+static void bench_frames(uint32_t ms)
+{
+    for (uint32_t k = 0; k < ms; k += 20u) {
+        b.now += 20u;
+        servo_screen_clock(b.now);
+        supply_cmd_t c;
+        while (supply_screen_poll_cmd(&c)) {
+            if (c.off) {
+                b.out = false;
+            } else if (c.on) {
+                b.out = true;
+            }
+        }
+        supply_screen_set_output(b.out);
+        servo_cmd_t sc;
+        while (servo_screen_take(&sc)) {
+            if (sc.kind == SERVO_CMD_POSITION) {
+                b.cmd = sc.value_us;
+                b.stepped = b.stepped || sc.slew_per_s == 0u;
+            } else if (sc.kind == SERVO_CMD_RELEASE
+                       || sc.kind == SERVO_CMD_DISARM) {
+                b.cmd = 1500u;
+                b.released = true;
+            }
+        }
+        if (servo_screen_testing() && supply_screen_set_v() > b.set_v_max) {
+            b.set_v_max = supply_screen_set_v();
+        }
+        const float amps = b.out ? servo_sim_step(&b.sv, b.cmd, b.now) : 0.0f;
+        if ((int32_t)(b.now - b.next) >= 0) {
+            b.next += 100u;
+            supply_state_t st;
+            memset(&st, 0, sizeof(st));
+            st.online = b.online;
+            st.ok     = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+            st.output = b.out;
+            st.set_v  = supply_screen_set_v();
+            st.set_i  = supply_screen_set_i();
+            st.v      = b.out ? st.set_v : 0.0f;
+            st.i      = amps;
+            st.p      = st.v * st.i;
+            st.mode   = b.out ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
+            st.samples  = ++b.samples;
+            st.taken_ms = b.now;
+            servo_screen_supply(&st);
+        }
+        /* After the OFF was taken and the samples, as the panel runs it. */
+        servo_screen_service();
+        scr->tick(0.02f);
+        bench_drain();
+    }
+}
+
+/* Frames drawn as the panel draws them, so the flashes a hold or an
+ * output switched on starts -- spent one a drawn frame -- are over. */
+static void settle_drawn(void)
+{
+    two_buffers();
+    for (int i = 0; i < 2 * UI_HOLD_FLASH_FRAMES; ++i) {
+        scr->render((i & 1) ? &cv1 : &cv, i & 1);
+        scr->tick(0.02f);
+    }
+}
+
+/* As both_whole(), inside @p r only: away from the grip, whose breathing is
+ * repainted at the step it has reached rather than every frame. */
+static bool both_whole_in(int x0, int y0, int w, int h)
+{
+    scr->render(&cv, 0);
+    scr->render(&cv1, 1);
+    servo_invalidate();
+    scr->render(&cref, 0);
+    for (int y = y0; y < y0 + h; ++y) {
+        for (int x = x0; x < x0 + w; ++x) {
+            const size_t i = (size_t)y * W + (size_t)x;
+            if (fb[i] != fb1[i] || fb[i] != ref[i]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+/* Hold START TEST for @p secs on the TEST page, which is opened first. */
+static void hold_start(float secs)
+{
+    open_settings();
+    tap(TAB_X(1), TAB_Y);
+    ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < (int)(secs * 50.0f + 0.5f); ++i) {
+        b.now += 20u;
+        servo_screen_clock(b.now);
+        scr->tick(0.02f);
+    }
+    ev(START_X, START_Y, TOUCH_EVENT_UP, 1);
+}
+
+/* Short runs: two movements a step. */
+static void short_runs(void)
+{
+    settings_set(SET_SERVO_LEN_BY, 1.0f);
+    settings_set(SET_SERVO_LEN_MOVES, 2.0f);
+}
+
+/* START TEST runs only from a two-second hold on an armed bench: the run
+ * closes the settings, asks the first set point and the output on, and
+ * steps the servo to its centre with no slew. */
+TEST_CASE(start_test_is_a_two_second_hold_on_an_armed_bench)
+{
+    fresh();
+    memset(&b, 0, sizeof(b));
+    hold_start(2.3f);
+    CHECK(!servo_screen_testing());               /* not armed */
+    scr->render(&cv, 0);
+
+    bench_fresh();
+    open_settings();
+    tap(TAB_X(1), TAB_Y);
+    tap(START_X, START_Y);                        /* a tap is not the hold */
+    CHECK(!servo_screen_testing());
+    close_settings();
+    hold_start(1.0f);
+    CHECK(!servo_screen_testing());
+    close_settings();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    supply_cmd_t c;
+    CHECK(supply_cmd(&c));
+    CHECK(c.on);
+    CHECK(fabsf(supply_screen_set_v() - 4.8f) < 1e-4f);
+    const servo_cmd_t sc = last_cmd();
+    CHECK_EQ(sc.kind, SERVO_CMD_POSITION);
+    CHECK_EQ(sc.value_us, 1500u);
+    CHECK_EQ(sc.slew_per_s, 0u);
+    /* The settings closed: the run shows on the left card. */
+    scr->render(&cv, 0);
+    CHECK(fb[6 * W + 6] != ui_theme_color(UI_C_ACCENT));
+}
+
+/* A run through the screen: it passes, its files are handed over and
+ * ended, the output goes off and the set points come back to what they
+ * were. */
+TEST_CASE(a_run_through_the_screen_ends_and_restores_the_set_points)
+{
+    bench_fresh();
+    short_runs();
+    supply_screen_put(5.5f, 1.5f);
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    for (int i = 0; i < 120 && servo_screen_testing(); ++i) {
+        bench_frames(500u);
+    }
+    CHECK(!servo_screen_testing());
+    bench_frames(1000u);
+    CHECK(b.stepped);
+    CHECK(b.released);
+    CHECK(!b.out);
+    CHECK_EQ(b.opens, 1u);
+    CHECK_EQ(b.ends, 1u);
+    CHECK(b.csv > 50u);
+    CHECK(strstr(b.report, "Result:         PASS") != NULL);
+    CHECK(strstr(b.report, "Supply:         PD mini") != NULL);
+    CHECK(b.set_v_max <= 6.0f + 1e-4f);
+    CHECK(fabsf(supply_screen_set_v() - 5.5f) < 1e-4f);
+    CHECK(fabsf(supply_screen_set_i() - 1.5f) < 1e-4f);
+    /* The result on the left card, and the files once the card says. */
+    servo_screen_test_files(12, true);
+    settle_drawn();
+    two_buffers();
+    CHECK(both_whole());
+    servo_screen_test_files(-1, false);
+    CHECK(both_whole());
+    /* CLOSE puts it away. */
+    tap(BOXBTN_X, BOXBTN_Y);
+    CHECK(both_whole());
+}
+
+/* HV SERVO adds 7.4 and 8.4 V, and a run that has them starts only through
+ * HV SERVOS ONLY held for two seconds: START TEST is then a tap that opens
+ * it, and a tap on APPLY does nothing. */
+TEST_CASE(a_run_above_6_v_starts_through_the_hv_hold)
+{
+    bench_fresh();
+    short_runs();
+    open_settings();
+    tap(TAB_X(1), TAB_Y);
+    tap(ROW_R_X, HV_ROW_Y);                       /* HV SERVO on */
+    ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 120; ++i) {
+        scr->tick(0.02f);
+    }
+    ev(START_X, START_Y, TOUCH_EVENT_UP, 1);      /* the warning, not a run */
+    CHECK(!servo_screen_testing());
+    scr->render(&cv, 0);
+    CHECK_EQ(fb[6 * W + 6], ui_theme_color(UI_C_DANGER));
+    tap(WARN_APPLY_X, WARN_Y);
+    CHECK(!servo_screen_testing());
+    hold_apply(2.3f);
+    CHECK(servo_screen_testing());
+    for (int i = 0; i < 200 && servo_screen_testing(); ++i) {
+        bench_frames(500u);
+    }
+    CHECK(b.set_v_max > 8.3f);
+    CHECK(strstr(b.report, "HV servo:       ON") != NULL);
+    CHECK(strstr(b.report, " 8.40 V") != NULL);
+}
+
+/* Every way out of a run ends it: the output asked off, the servo let go,
+ * and the report says ABORTED. */
+TEST_CASE(every_way_out_of_a_run_switches_off_and_lets_go)
+{
+    for (int way = 0; way < 11; ++way) {
+        bench_fresh();
+        servo_screen_set_link(true);
+        hold_start(2.3f);
+        CHECK(servo_screen_testing());
+        bench_frames(3000u);
+        CHECK(b.out);
+        b.released = false;
+        switch (way) {
+        case 0: servo_screen_cancel_arm(); break;              /* STOP */
+        case 1: servo_screen_set_armed(false); break;
+        case 2: servo_screen_set_link(false); break;
+        case 3: scr->leave(); break;
+        case 4: scr->cancel(); break;                          /* touch */
+        case 5: {                                              /* the dial */
+            int x, y;
+            dial_at(30.0f, ARC_R - 20, &x, &y);
+            tap(x, y);
+            break;
+        }
+        case 6: tap(BOXBTN_X, BOXBTN_Y); break;                /* STOP TEST */
+        case 7:                                     /* the page's STOP TEST */
+            open_settings();
+            tap(TAB_X(1), TAB_Y);
+            tap(START_X, START_Y);
+            break;
+        case 8:                                     /* the profile changed */
+            open_settings();
+            tap(TAB_X(0), TAB_Y);
+            tap(ROW_R_X, ROW_Y(4));                 /* REVERSE */
+            break;
+        case 9: b.online = false; break;            /* the supply is gone */
+        default:                                    /* OUTPUT OFF */
+            tap(SUP_OUT_X, SUP_ROW_Y);
+            break;
+        }
+        bench_frames(2000u);
+        CHECK(!servo_screen_testing());
+        CHECK(!b.out);
+        /* Let go, or -- a finger on the dial -- where the finger put it. */
+        CHECK(b.released || (way == 5 && b.cmd != 1100u && b.cmd != 1900u));
+        CHECK_EQ(b.ends, 1u);
+        CHECK(strstr(b.report, "Result:         ABORTED") != NULL);
+    }
+}
+
+/* START TEST's hold repaints only its button, a finger that leaves it or a
+ * STOP mid-hold starts nothing, and a run's faces draw as a full redraw
+ * would. */
+TEST_CASE(the_runs_faces_draw_as_a_full_redraw_would)
+{
+    bench_fresh();
+    short_runs();
+    settle_drawn();
+    two_buffers();
+    open_settings();
+    tap(TAB_X(1), TAB_Y);
+    CHECK(both_whole());
+    ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 40; ++i) {
+        scr->tick(0.02f);
+    }
+    CHECK(both_whole());
+    ev(START_X, 10, TOUCH_EVENT_MOVE, 1);             /* off the button */
+    for (int i = 0; i < 100; ++i) {
+        scr->tick(0.02f);
+    }
+    ev(START_X, 10, TOUCH_EVENT_UP, 1);
+    CHECK(!servo_screen_testing());
+    CHECK(both_whole());
+    close_settings();
+
+    /* Running, phase by phase. */
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    for (int i = 0; i < 12; ++i) {
+        bench_frames(700u);
+        settle_drawn();
+        CHECK(both_whole_in(16, 16, 270, 112));           /* the box */
+        CHECK(both_whole_in(496, 0, W - 496, H));          /* the right card */
+    }
+    open_settings();
+    tap(TAB_X(1), TAB_Y);
+    CHECK(both_whole());                              /* RUNNING, STOP TEST */
+
+    /* A STOP mid-hold starts nothing. */
+    bench_fresh();
+    open_settings();
+    tap(TAB_X(1), TAB_Y);
+    ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 50; ++i) {
+        scr->tick(0.02f);
+    }
+    servo_screen_cancel_arm();
+    for (int i = 0; i < 100; ++i) {
+        scr->tick(0.02f);
+    }
+    ev(START_X, START_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!servo_screen_testing());
+}
+
+/* A run that cannot start says why on the TEST page; one whose report is
+ * still on its way to the card waits for it. */
+TEST_CASE(a_refused_start_says_why)
+{
+    bench_fresh();
+    settings_set(SET_SERVO_STEP_48, 0.0f);
+    settings_set(SET_SERVO_STEP_60, 0.0f);
+    settings_set(SET_SERVO_BROWNOUT, 0.0f);
+    hold_start(2.3f);
+    CHECK(!servo_screen_testing());
+    settle_drawn();
+    two_buffers();
+    CHECK(both_whole());
+
+    bench_fresh();
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.samples = 99u;                 /* the supply not answering */
+    servo_screen_supply(&st);
+    hold_start(2.3f);
+    CHECK(!servo_screen_testing());
+
+    /* A run whose report has not been taken: the next waits. */
+    bench_fresh();
+    short_runs();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    servo_screen_cancel_arm();
+    scr->tick(0.02f);
+    hold_start(2.3f);
+    CHECK(!servo_screen_testing());
+    bench_drain();
+    close_settings();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+}
+
+/* ------------------------------------------- the review's cases, as tests */
+
+/* As bench_frames(), with ONs from the screen let through only while
+ * @p accept_on, and the highest set point an ON was asked at kept. */
+static void bench_frames_on(uint32_t ms, bool accept_on, float *on_v_max)
+{
+    for (uint32_t k = 0; k < ms; k += 20u) {
+        b.now += 20u;
+        servo_screen_clock(b.now);
+        supply_cmd_t c;
+        while (supply_screen_poll_cmd(&c)) {
+            if (c.off) {
+                b.out = false;
+            } else if (c.on) {
+                if (supply_screen_set_v() > *on_v_max) {
+                    *on_v_max = supply_screen_set_v();
+                }
+                if (accept_on) {
+                    b.out = true;
+                }
+            }
+        }
+        supply_screen_set_output(b.out);
+        servo_cmd_t sc;
+        while (servo_screen_take(&sc)) { }
+        if ((int32_t)(b.now - b.next) >= 0) {
+            b.next += 100u;
+            supply_state_t st;
+            memset(&st, 0, sizeof(st));
+            st.online = true;
+            st.ok     = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+            st.output = b.out;
+            st.set_v  = supply_screen_set_v();
+            st.set_i  = supply_screen_set_i();
+            st.v      = b.out ? st.set_v : 0.0f;
+            st.mode   = b.out ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
+            st.samples  = ++b.samples;
+            st.taken_ms = b.now;
+            servo_screen_supply(&st);
+        }
+        servo_screen_service();
+        scr->tick(0.02f);
+        bench_drain();
+    }
+}
+
+/*
+ * 8.4 V set on SUPPLY with the output off; a run without HV steps starts
+ * and asks 4.8 V and its ON, which does not land.  OUTPUT ON held on SERVO
+ * at 4.8 V while the run ends (no ON in 3 s): the set points do not go back
+ * under the hold, and no ON is ever asked above 6.0 V.
+ */
+TEST_CASE(a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v)
+{
+    bench_fresh();
+    short_runs();
+    supply_screen_put(8.4f, 1.0f);
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    CHECK(fabsf(supply_screen_set_v() - 4.8f) < 1e-4f);
+    float on_v = 0.0f;
+    bench_frames_on(1500u, false, &on_v);          /* the ON does not land */
+    on_v = 0.0f;
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    bench_frames_on(2800u, true, &on_v);
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!servo_screen_testing());
+    CHECK(on_v <= 6.0f + 1e-4f);
+    CHECK(!(b.out && supply_screen_set_v() > 6.0f + 1e-4f));
+    bench_frames_on(2000u, true, &on_v);
+    CHECK(on_v <= 6.0f + 1e-4f);
+    /* The output came on at 4.8 V under the hold: the set points stay as
+     * they are while it is on. */
+    CHECK(fabsf(supply_screen_set_v() - 4.8f) < 1e-4f);
+}
+
+/* A set point raised past 6.0 V during OUTPUT ON's ordinary hold -- on
+ * SUPPLY, or a run's end putting it back -- switches nothing on when the
+ * hold completes: HV SERVOS ONLY opens instead. */
+TEST_CASE(output_ons_hold_looks_at_the_set_point_again_as_it_completes)
+{
+    bench_fresh();
+    supply_screen_put(5.0f, 1.0f);
+    scr->tick(0.02f);
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 40; ++i) {
+        scr->tick(0.025f);
+    }
+    supply_screen_put(8.4f, 1.0f);
+    for (int i = 0; i < 80; ++i) {
+        scr->tick(0.025f);
+    }
+    ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_cmd(NULL));
+    scr->render(&cv, 0);
+    CHECK_EQ(fb[6 * W + 6], ui_theme_color(UI_C_DANGER));   /* the warning */
+    hold_apply(2.3f);
+    supply_cmd_t c;
+    CHECK(supply_cmd(&c));
+    CHECK(c.on);
+}
+
+/* A run ended by leaving SERVO puts the set points back from the per-frame
+ * service, with SERVO not ticked; one set on SUPPLY after the run ended is
+ * left as the operator set it. */
+TEST_CASE(the_set_points_go_back_whichever_screen_is_up)
+{
+    for (int changed = 0; changed < 2; ++changed) {
+        bench_fresh();
+        short_runs();
+        supply_screen_put(5.5f, 1.5f);
+        hold_start(2.3f);
+        bench_frames(3000u);
+        CHECK(b.out);
+        scr->leave();
+        CHECK(!servo_screen_testing());
+        if (changed) {
+            supply_screen_put(5.2f, 1.0f);              /* on SUPPLY */
+        }
+        float on_v = 0.0f;
+        for (uint32_t k = 0; k < 2000u; k += 20u) {    /* SERVO not ticked */
+            b.now += 20u;
+            servo_screen_clock(b.now);
+            supply_cmd_t c;
+            while (supply_screen_poll_cmd(&c)) {
+                b.out = c.off ? false : (c.on ? true : b.out);
+            }
+            supply_screen_set_output(b.out);
+            if ((int32_t)(b.now - b.next) >= 0) {
+                b.next += 100u;
+                supply_state_t st;
+                memset(&st, 0, sizeof(st));
+                st.online = true;
+                st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+                st.output = b.out;
+                st.set_v = supply_screen_set_v();
+                st.samples = ++b.samples;
+                st.taken_ms = b.now;
+                servo_screen_supply(&st);
+            }
+            servo_screen_service();
+            bench_drain();
+        }
+        CHECK(!b.out);
+        if (changed) {
+            CHECK(fabsf(supply_screen_set_v() - 5.2f) < 1e-4f);
+            CHECK(fabsf(supply_screen_set_i() - 1.0f) < 1e-4f);
+        } else {
+            CHECK(fabsf(supply_screen_set_v() - 5.5f) < 1e-4f);
+            CHECK(fabsf(supply_screen_set_i() - 1.5f) < 1e-4f);
+        }
+        /* Back on SERVO, nothing is put back over it later. */
+        supply_screen_put(5.1f, 1.0f);
+        bench_frames_on(1000u, true, &on_v);
+        CHECK(fabsf(supply_screen_set_v() - 5.1f) < 1e-4f);
+    }
+}
+
+/* The restore waits for a sample taken after the OFF went: one taken
+ * before it, showing the output off while an ON is on its way, is not
+ * enough. */
+TEST_CASE(the_set_points_wait_for_a_sample_after_the_off)
+{
+    bench_fresh();
+    short_runs();
+    supply_screen_put(8.4f, 1.0f);
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    servo_screen_cancel_arm();                  /* STOP: OFF posted */
+    CHECK(!servo_screen_testing());
+    supply_cmd_t c;
+    while (supply_screen_poll_cmd(&c)) { }       /* the OFF taken */
+    servo_screen_service();
+    /* A sample stamped before the next frame, showing off. */
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    st.set_v = supply_screen_set_v();
+    st.samples = ++b.samples;
+    st.taken_ms = b.now;
+    servo_screen_supply(&st);
+    servo_screen_service();
+    servo_screen_service();
+    CHECK(fabsf(supply_screen_set_v() - 4.8f) < 1e-4f);   /* not yet */
+    /* The next frame and a sample of its own: back. */
+    b.now += 20u;
+    servo_screen_clock(b.now);
+    servo_screen_service();
+    st.samples = ++b.samples;
+    st.taken_ms = b.now;
+    servo_screen_supply(&st);
+    servo_screen_service();
+    CHECK(fabsf(supply_screen_set_v() - 8.4f) < 1e-4f);
+}
+
+/* START TEST twice without a fresh screen: the second hold starts a second
+ * run, and the button is drawn as a full redraw would between them. */
+TEST_CASE(start_test_starts_a_second_run)
+{
+    bench_fresh();
+    short_runs();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    for (int i = 0; i < 120 && servo_screen_testing(); ++i) {
+        bench_frames(500u);
+    }
+    CHECK(!servo_screen_testing());
+    bench_frames(1000u);
+    settle_drawn();
+    two_buffers();
+    open_settings();
+    tap(TAB_X(1), TAB_Y);
+    CHECK(both_whole());
+    CHECK_EQ(fb[(START_Y + UI_BAND_H * 0) * W + START_X - 60],
+             fb1[(START_Y + UI_BAND_H * 0) * W + START_X - 60]);
+    close_settings();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    for (int i = 0; i < 120 && servo_screen_testing(); ++i) {
+        bench_frames(500u);
+    }
+    CHECK_EQ(b.ends, 2u);
+}
+
+/* The page redraws START TEST and its line when the last report has been
+ * taken: no stale LAST REPORT STILL WRITING, no button left disabled. */
+TEST_CASE(the_start_line_follows_the_report_being_taken)
+{
+    bench_fresh();
+    short_runs();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    servo_screen_test_files(12, true);
+    open_settings();
+    tap(TAB_X(1), TAB_Y);
+    two_buffers();
+    /* Frames that keep the report back from the card. */
+    for (int i = 0; i < 120 && servo_screen_testing(); ++i) {
+        for (uint32_t k = 0; k < 500u; k += 20u) {
+            b.now += 20u;
+            servo_screen_clock(b.now);
+            supply_cmd_t c;
+            while (supply_screen_poll_cmd(&c)) {
+                b.out = c.off ? false : (c.on ? true : b.out);
+            }
+            supply_screen_set_output(b.out);
+            servo_cmd_t sc;
+            while (servo_screen_take(&sc)) {
+                if (sc.kind == SERVO_CMD_POSITION) {
+                    b.cmd = sc.value_us;
+                }
+            }
+            const float amps = b.out ? servo_sim_step(&b.sv, b.cmd, b.now)
+                                     : 0.0f;
+            if ((int32_t)(b.now - b.next) >= 0) {
+                b.next += 100u;
+                supply_state_t st;
+                memset(&st, 0, sizeof(st));
+                st.online = true;
+                st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+                st.output = b.out;
+                st.set_v = supply_screen_set_v();
+                st.v = b.out ? st.set_v : 0.0f;
+                st.i = amps;
+                st.samples = ++b.samples;
+                st.taken_ms = b.now;
+                servo_screen_supply(&st);
+            }
+            scr->tick(0.02f);
+        }
+        scr->render(&cv, 0);
+        scr->render(&cv1, 1);
+    }
+    CHECK(!servo_screen_testing());
+    CHECK(both_whole());                         /* the report waits */
+    bench_drain();                               /* taken */
+    for (int i = 0; i < 4; ++i) {
+        scr->tick(0.02f);
+        scr->render((i & 1) ? &cv1 : &cv, i & 1);
+    }
+    CHECK(both_whole());
+}
+
+/* ARM FIRST goes once the bench is armed, and a page drawn then is the one
+ * a full redraw draws. */
+TEST_CASE(arm_first_goes_once_the_bench_is_armed)
+{
+    fresh();
+    memset(&b, 0, sizeof(b));
+    open_settings();
+    tap(TAB_X(1), TAB_Y);
+    tap(START_X, START_Y);                       /* ARM FIRST */
+    two_buffers();
+    gfx_color_t *was = malloc(FB_BYTES);
+    memcpy(was, fb, FB_BYTES);
+    servo_screen_set_armed(true);
+    settle_drawn();                              /* ARM's flash is over */
+    CHECK(both_whole());
+    CHECK(memcmp(fb, was, FB_BYTES) != 0);
+    free(was);
+}
+
+/* A run whose steps the caps do not reach is refused before any warning:
+ * with VOLTAGE MAX 8.0 V and HV SERVO on, START TEST opens no HV warning
+ * naming 8.0 V, and no run starts. */
+TEST_CASE(a_run_outside_the_caps_is_refused_before_the_warning)
+{
+    bench_fresh();
+    short_runs();
+    settings_set(SET_SUPPLY_V_MAX, 8.0f);
+    supply_screen_limits_changed();
+    open_settings();
+    tap(TAB_X(1), TAB_Y);
+    tap(ROW_R_X, HV_ROW_Y);                      /* HV SERVO on */
+    tap(START_X, START_Y);
+    scr->tick(0.02f);
+    scr->render(&cv, 0);
+    CHECK(fb[6 * W + 6] != ui_theme_color(UI_C_DANGER));
+    close_settings();
+    hold_start(2.3f);
+    CHECK(!servo_screen_testing());
+
+    /* The warning open at 21 V, and the cap brought under its top step
+     * while it stands: the hold starts nothing. */
+    bench_fresh();
+    short_runs();
+    open_settings();
+    tap(TAB_X(1), TAB_Y);
+    tap(ROW_R_X, HV_ROW_Y);
+    tap(START_X, START_Y);
+    scr->tick(0.02f);
+    scr->render(&cv, 0);
+    CHECK_EQ(fb[6 * W + 6], ui_theme_color(UI_C_DANGER));
+    gfx_color_t *named = malloc(FB_BYTES);
+    memcpy(named, fb, FB_BYTES);
+    settings_set(SET_SUPPLY_V_MAX, 8.0f);
+    supply_screen_limits_changed();
+    scr->tick(0.02f);
+    servo_invalidate();
+    scr->render(&cv, 0);
+    /* Still the run's 8.40 V, not a value snapped under the cap. */
+    for (int y = 60; y < 100; ++y) {
+        CHECK_EQ(memcmp(&fb[(size_t)y * W], &named[(size_t)y * W],
+                        490 * sizeof(gfx_color_t)), 0);
+    }
+    free(named);
+    hold_apply(2.3f);
+    CHECK(!servo_screen_testing());
+}
+
+/* The left card names the report only when the card took it whole. */
+TEST_CASE(the_result_names_the_report_only_when_it_was_written)
+{
+    bench_fresh();
+    short_runs();
+    hold_start(2.3f);
+    servo_screen_cancel_arm();
+    scr->tick(0.02f);
+    servo_screen_test_files(12, false);
+    settle_drawn();
+    two_buffers();
+    CHECK(both_whole());
+    gfx_color_t *without = malloc(FB_BYTES);
+    memcpy(without, fb, FB_BYTES);
+    servo_screen_test_files(12, true);
+    CHECK(both_whole());
+    CHECK(memcmp(fb, without, FB_BYTES) != 0);
+    free(without);
+}
+
+/* The overlay's pixels, the left card, against @p want's. */
+static bool overlay_same(const gfx_color_t *want)
+{
+    for (int y = 6; y < 426; ++y) {
+        if (memcmp(&fb[(size_t)y * W + 6], &want[(size_t)y * W + 6],
+                   488 * sizeof(gfx_color_t)) != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/* A refusal goes with the change that answers it: NO STEP CHOSEN, then
+ * STEP 4.8 V turned on; SUPPLY NOT ANSWERING, then the supply answering.
+ * The page is then the one drawn with nothing refused. */
+TEST_CASE(a_refusal_goes_with_the_edit_that_answers_it)
+{
+    gfx_color_t *want = malloc(FB_BYTES);
+    for (int k = 0; k < 2; ++k) {
+        /* The page with nothing refused. */
+        bench_fresh();
+        settings_set(SET_SERVO_STEP_60, 0.0f);
+        settings_set(SET_SERVO_BROWNOUT, 0.0f);
+        open_settings();
+        tap(TAB_X(1), TAB_Y);
+        scr->tick(0.02f);
+        servo_invalidate();
+        scr->render(&cv, 0);
+        memcpy(want, fb, FB_BYTES);
+
+        /* Refused, then answered. */
+        bench_fresh();
+        settings_set(SET_SERVO_STEP_60, 0.0f);
+        settings_set(SET_SERVO_BROWNOUT, 0.0f);
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+        st.set_v = supply_screen_set_v();
+        if (k == 0) {
+            settings_set(SET_SERVO_STEP_48, 0.0f);
+        } else {
+            st.samples = ++b.samples;            /* not answering */
+            servo_screen_supply(&st);
+        }
+        hold_start(2.3f);
+        CHECK(!servo_screen_testing());
+        if (k == 0) {
+            settings_set(SET_SERVO_STEP_48, 1.0f);
+        } else {
+            st.online = true;
+            st.samples = ++b.samples;
+            servo_screen_supply(&st);
+        }
+        for (int i = 0; i < 10; ++i) {
+            scr->tick(0.02f);
+        }
+        servo_invalidate();
+        scr->render(&cv, 0);
+        CHECK(overlay_same(want));
+    }
+    free(want);
+}
+
+/* OUTPUT ON held on SUPPLY holds the restore back as a hold on SERVO does:
+ * the ON lands at the set point shown at the press. */
+TEST_CASE(a_hold_on_supplys_output_on_holds_the_restore_back)
+{
+    bench_fresh();
+    short_runs();
+    supply_screen_put(5.5f, 1.5f);
+    hold_start(2.3f);
+    bench_frames(3000u);
+    scr->leave();                                /* ends the run */
+    CHECK(!servo_screen_testing());
+    const float v_end = supply_screen_set_v();
+    /* The OFF goes; then, on SUPPLY, OUTPUT ON pressed (its right rail,
+     * 676, 318) before a sample shows the output off. */
+    supply_cmd_t c;
+    while (supply_screen_poll_cmd(&c)) {
+        b.out = c.off ? false : (c.on ? true : b.out);
+    }
+    supply_screen_set_output(b.out);
+    const ui_screen_t *sup = supply_screen();
+    const touch_event_t down = { .type = TOUCH_EVENT_DOWN,
+                                 .point = { .id = 1, .x = 676, .y = 318,
+                                            .strength = 40 } };
+    sup->event(&down);
+    CHECK(supply_screen_output_held());
+    float on_v = 0.0f;
+    for (uint32_t k = 0; k < 600u; k += 20u) {   /* samples, all off */
+        b.now += 20u;
+        servo_screen_clock(b.now);
+        while (supply_screen_poll_cmd(&c)) {
+            b.out = c.off ? false : (c.on ? true : b.out);
+        }
+        supply_screen_set_output(b.out);
+        if ((int32_t)(b.now - b.next) >= 0) {
+            b.next += 100u;
+            supply_state_t st;
+            memset(&st, 0, sizeof(st));
+            st.online = true;
+            st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+            st.output = b.out;
+            st.set_v = supply_screen_set_v();
+            st.samples = ++b.samples;
+            st.taken_ms = b.now;
+            servo_screen_supply(&st);
+        }
+        servo_screen_service();
+        bench_drain();
+    }
+    CHECK(fabsf(supply_screen_set_v() - v_end) < 1e-4f);    /* held back */
+    const touch_event_t up = { .type = TOUCH_EVENT_UP,
+                               .point = { .id = 1, .x = 676, .y = 318,
+                                          .strength = 40 } };
+    sup->event(&up);                             /* let go early: no ON */
+    CHECK(!supply_screen_output_held());
+    bench_frames_on(600u, true, &on_v);
+    CHECK(fabsf(supply_screen_set_v() - 5.5f) < 1e-4f);
+    CHECK_EQ(on_v, 0.0f);
+}
+
 int main(void)
 {
     RUN(a_touch_on_the_dial_points_the_horn_there);
@@ -2359,6 +3352,7 @@ int main(void)
     RUN(a_set_point_changed_on_supply_is_redrawn_here);
     RUN(a_voltage_raised_past_6_v_takes_the_hv_hold);
     RUN(the_hv_hold_stands_for_the_live_question);
+    RUN(output_on_past_6_v_takes_the_hv_hold);
     RUN(an_on_reported_during_a_second_servo_hold_is_not_an_off);
     RUN(a_servo_question_for_a_dropped_on_goes);
     RUN(an_apply_held_as_the_output_goes_off_applies_nothing);
@@ -2371,5 +3365,22 @@ int main(void)
     RUN(stop_ends_the_warning_holds);
     RUN(stop_lets_go_of_an_apply_press);
     RUN(a_question_does_not_outlive_its_run);
+    RUN(start_test_is_a_two_second_hold_on_an_armed_bench);
+    RUN(a_run_through_the_screen_ends_and_restores_the_set_points);
+    RUN(a_run_above_6_v_starts_through_the_hv_hold);
+    RUN(every_way_out_of_a_run_switches_off_and_lets_go);
+    RUN(the_runs_faces_draw_as_a_full_redraw_would);
+    RUN(a_refused_start_says_why);
+    RUN(a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v);
+    RUN(output_ons_hold_looks_at_the_set_point_again_as_it_completes);
+    RUN(the_set_points_go_back_whichever_screen_is_up);
+    RUN(the_set_points_wait_for_a_sample_after_the_off);
+    RUN(start_test_starts_a_second_run);
+    RUN(the_start_line_follows_the_report_being_taken);
+    RUN(arm_first_goes_once_the_bench_is_armed);
+    RUN(a_run_outside_the_caps_is_refused_before_the_warning);
+    RUN(the_result_names_the_report_only_when_it_was_written);
+    RUN(a_refusal_goes_with_the_edit_that_answers_it);
+    RUN(a_hold_on_supplys_output_on_holds_the_restore_back);
     return test_summary("servo");
 }

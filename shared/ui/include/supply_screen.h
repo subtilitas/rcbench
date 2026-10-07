@@ -65,6 +65,7 @@ void supply_screen_set_caps(const supply_caps_t *caps);
 
 /** Whether the numbers come from the panel's model rather than a supply. */
 void supply_screen_set_model(bool model);
+bool supply_screen_model(void);
 
 /**
  * The PD mini's UART (universal asynchronous receiver-transmitter) rate in
@@ -129,6 +130,13 @@ void supply_screen_ask_on(void);
 
 /** OUTPUT OFF tapped elsewhere: an OFF is posted, and any ON dropped. */
 void supply_screen_ask_off(void);
+
+/** Whether OUTPUT ON is being held on this screen: a press on the switch
+ *  that began with the output off. */
+bool supply_screen_output_held(void);
+
+/** Whether an OFF is posted and not yet taken by supply_screen_poll_cmd(). */
+bool supply_screen_off_pending(void);
 
 /** A hold under way is abandoned and a pending ON dropped: STOP. */
 void supply_screen_cancel_on(void);

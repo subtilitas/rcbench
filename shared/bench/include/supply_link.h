@@ -106,6 +106,12 @@ typedef struct {
     bool     asked;          /* a read was asked for since it was known */
     uint32_t read_ms;
     uint32_t asked_ms;       /* when the last read was asked for        */
+    /* The module's readings: SAMPLES as last read, and the page read that
+     * first showed it.  A page read whose SAMPLES did not move brings no
+     * new reading -- a display read on the coprocessor that was slow or
+     * failed -- however fresh the page itself is. */
+    uint16_t samples_seen;
+    uint32_t sample_ms;
 
     uint8_t  events;
     uint8_t  found;          /* the rate AUTO last reported, 7 none    */
@@ -156,8 +162,10 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
 /**
  * The supply as the page last said, into @p st: readings, set points read
  * back from the module, the mode -- OFF while the module reads its output
- * off -- and online only for a reading younger than SUPPLY_LINK_STALE_MS
- * from a module the page drives.  Left as they are: output, which is what
+ * off -- the module's reading count (SAMPLES, the coprocessor's count of
+ * output readings the module answered) and the time of the page read that
+ * first showed that count, and online only for a page read younger than
+ * SUPPLY_LINK_STALE_MS from a module the page drives.  Left as they are: output, which is what
  * the panel asked, and the run's extremes, totals and trip.
  */
 void supply_link_state(const supply_link_t *s, uint32_t now_ms,

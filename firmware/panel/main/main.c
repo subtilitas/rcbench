@@ -1266,6 +1266,23 @@ static FILE *s_card_file;
 static atomic_uint s_log_open_run;
 
 /*
+ * The servo test's CSV while the logger writes it, as a run number, or 0:
+ * held back from the viewer for the reason s_log_open_run is.  A bench run
+ * and a test run are open at once, so it is a second marker.
+ */
+static atomic_uint s_test_open_run;
+
+/* Whether @p name is a file the logger is still writing. */
+static bool card_busy(const char *name)
+{
+    const int n = log_run_number(name);
+    const unsigned open_run  = atomic_load(&s_log_open_run);
+    const unsigned open_test = atomic_load(&s_test_open_run);
+    return n > 0 && ((open_run != 0u && n == (int)open_run)
+                     || (open_test != 0u && n == (int)open_test));
+}
+
+/*
  * One directory entry on its way into the viewer's list.
  *
  * The card takes LOG_RUN_LAST runs and the list holds LOG_VIEWER_MAX_FILES of
@@ -1297,8 +1314,7 @@ static void card_take(const storage_entry_t *entry, void *ctx)
     /* And not the run the logger still has open; see s_log_open_run.  Not
      * counted either: a card whose only file is that run has nothing this
      * viewer can show, which is what an empty list says. */
-    const unsigned open_run = atomic_load(&s_log_open_run);
-    if (open_run != 0u && log_run_number(entry->name) == (int)open_run) {
+    if (card_busy(entry->name)) {
         return;
     }
     ++pick->files;
@@ -1398,8 +1414,7 @@ static bool card_open(const char *name, log_source_t *src, void *ctx)
      * it out: a name can reach here from a list taken before the run started
      * -- the screen holds its list until the next RESCAN.
      */
-    const unsigned open_run = atomic_load(&s_log_open_run);
-    if (open_run != 0u && log_run_number(name) == (int)open_run) {
+    if (card_busy(name)) {
         ESP_LOGW(TAG, "%s is still being written", name);
         return false;
     }
@@ -1450,8 +1465,7 @@ static bool card_remove(const char *name, void *ctx)
         || strcmp(name, ".") == 0 || strcmp(name, "..") == 0) {
         return false;
     }
-    const unsigned open_run = atomic_load(&s_log_open_run);
-    if (open_run != 0u && log_run_number(name) == (int)open_run) {
+    if (card_busy(name)) {
         ESP_LOGW(TAG, "%s is still being written", name);
         return false;
     }
@@ -1468,6 +1482,17 @@ static bool card_remove(const char *name, void *ctx)
         return false;
     }
     ESP_LOGI(TAG, "deleted %s", path);
+    /* A servo test's report goes with its run: left behind, it would be
+     * the only file carrying the number. */
+    const int run = log_run_number(name);
+    if (run > 0) {
+        char txt[LOG_RUN_NAME_MAX];
+        log_report_name(txt, sizeof(txt), run);
+        storage_path(CARD_DIR, txt, path, sizeof(path));
+        if (remove(path) == 0) {
+            ESP_LOGI(TAG, "deleted %s", path);
+        }
+    }
     return true;
 }
 
@@ -1856,16 +1881,49 @@ static void log_highest(const storage_entry_t *entry, void *ctx)
 {
     int *highest = (int *)ctx;
     /*
+     * A servo test's report counts as its run does: a number carried only
+     * by a BENCHnnn.TXT whose CSV was deleted is still taken, so the next
+     * run neither truncates that report nor writes its CSV beside it.
+     *
      * Directories count.  The viewer skips them because it cannot open one,
      * but this is about which numbers are taken, and a directory called
      * BENCH003.CSV takes that number as surely as a file does: fopen refuses
      * it in both modes, so a run numbered into it would be a run that cannot
      * be created.  Numbering above it costs a number and nothing else.
      */
-    const int n = log_run_number(entry->name);
+    int n = log_run_number(entry->name);
+    const int r = log_report_number(entry->name);
+    if (r > n) {
+        n = r;
+    }
     if (n > *highest) {
         *highest = n;
     }
+}
+
+/* What the numbering walk looks at: runs and the reports beside them. */
+#define NUMBERED_SUFFIXES ".csv .txt"
+
+/* Whether @p number is free: neither BENCHnnn.CSV nor BENCHnnn.TXT is on
+ * the card.  @p path is left holding the CSV's path. */
+static bool log_number_free(int number, char *path, size_t n)
+{
+    char name[LOG_RUN_NAME_MAX];
+    log_report_name(name, sizeof(name), number);
+    storage_path(CARD_DIR, name, path, n);
+    FILE *probe = fopen(path, "r");
+    if (probe != NULL) {
+        fclose(probe);
+        return false;
+    }
+    log_run_name(name, sizeof(name), number);
+    storage_path(CARD_DIR, name, path, n);
+    probe = fopen(path, "r");
+    if (probe != NULL) {
+        fclose(probe);
+        return false;
+    }
+    return true;
 }
 static log_writer_t s_log;
 static uint32_t     s_log_last_row_ms;
@@ -1896,6 +1954,25 @@ static bool file_flush(void *ctx)
 {
     FILE *f = (FILE *)ctx;
     return fflush(f) == 0 && fsync(fileno(f)) == 0;
+}
+
+/*
+ * Put s_log_next above every number the card carries, once a boot; see
+ * log_open().  False when the card would not list.
+ */
+static bool log_numbering(void)
+{
+    if (s_log_numbered) {
+        return true;
+    }
+    int highest = LOG_RUN_FIRST - 1;
+    if (storage_walk(CARD_DIR, NUMBERED_SUFFIXES, log_highest, &highest,
+                     NULL) < 0) {
+        return false;
+    }
+    s_log_next = (highest >= LOG_RUN_FIRST) ? highest + 1 : LOG_RUN_FIRST;
+    s_log_numbered = true;
+    return true;
 }
 
 /*
@@ -1941,24 +2018,18 @@ static void log_open(uint32_t run)
      * also cheaper than the probes it replaces -- a card holding 400 runs
      * cost 400 opens before the first free number.
      */
-    if (!s_log_numbered) {
-        int highest = LOG_RUN_FIRST - 1;
-        if (storage_walk(CARD_DIR, CARD_SUFFIXES, log_highest, &highest,
-                         NULL) < 0) {
-            /*
-             * The card would not list.  Falling through would number this run
-             * from 1 and take the first gap, which is the numbering this scan
-             * exists to prevent: the run would be recorded and then rank as
-             * the oldest on the card, and a full list would hide it.  A run
-             * the operator is told is not recorded is better than one that
-             * records itself out of sight.
-             */
-            ESP_LOGW(TAG, "the card would not list; this run is not recorded");
-            control_alert("card unreadable -- run not recorded");
-            return;
-        }
-        s_log_next = (highest >= LOG_RUN_FIRST) ? highest + 1 : LOG_RUN_FIRST;
-        s_log_numbered = true;
+    if (!log_numbering()) {
+        /*
+         * The card would not list.  Falling through would number this run
+         * from 1 and take the first gap, which is the numbering this scan
+         * exists to prevent: the run would be recorded and then rank as the
+         * oldest on the card, and a full list would hide it.  A run the
+         * operator is told is not recorded is better than one that records
+         * itself out of sight.
+         */
+        ESP_LOGW(TAG, "the card would not list; this run is not recorded");
+        control_alert("card unreadable -- run not recorded");
+        return;
     }
     /*
      * A volume that refuses one free number refuses them all, and each try is
@@ -1967,13 +2038,8 @@ static void log_open(uint32_t run)
      */
     unsigned refused = 0u;
     for (int i = s_log_next; i <= LOG_RUN_LAST && s_log_file == NULL; ++i) {
-        char name[LOG_RUN_NAME_MAX];
         char path[64];
-        log_run_name(name, sizeof(name), i);
-        storage_path(CARD_DIR, name, path, sizeof(path));
-        FILE *probe = fopen(path, "r");
-        if (probe != NULL) {
-            fclose(probe);
+        if (!log_number_free(i, path, sizeof(path))) {
             continue;
         }
         /*
@@ -2068,6 +2134,159 @@ static void log_close(void)
      * for ever would hide the rows that did reach the card.
      */
     atomic_store(&s_log_open_run, 0u);
+}
+
+/*
+ * The automatic servo test's files: its CSV as BENCHnnn.CSV under the next
+ * run number, and its report as BENCHnnn.TXT under the same number.  The
+ * render loop hands the lines over through s_test_q (servo_screen_test_peek())
+ * and this task writes them; the run's own log, if the bench is armed, goes
+ * on beside it in a file of its own.  One test file is open at a time: the
+ * CSV is closed before the report is opened.
+ */
+typedef struct {
+    uint8_t kind;                        /* servo_test_out_t */
+    char    text[SERVO_TEST_LINE_MAX];
+} test_line_t;
+
+#define TEST_Q_LEN 24
+static QueueHandle_t s_test_q;           /**< render loop -> logger */
+/* OPENs the render loop queued, and those this task has answered with a
+ * number in s_test_file (-1: not recorded). */
+static atomic_uint s_test_opens_sent;
+static atomic_uint s_test_opens_done;
+static atomic_int  s_test_file;
+/* Whether the last run's report reached the card whole; set at its END. */
+static atomic_bool s_test_report;
+
+/* The logger task's own. */
+static FILE    *s_test_fp;
+static int      s_test_num;
+static bool     s_test_txt;      /* s_test_fp is the report               */
+static unsigned s_test_lines;    /* since the last commit                 */
+static bool     s_test_failed;
+static bool     s_test_txt_bad;  /* a write or the close of the report failed */
+
+/* BENCHnnn.CSV, or with @p txt BENCHnnn.TXT, as a path on the card. */
+static void test_path(int number, bool txt, char *path, size_t n)
+{
+    char name[LOG_RUN_NAME_MAX];
+    if (txt) {
+        log_report_name(name, sizeof(name), number);
+    } else {
+        log_run_name(name, sizeof(name), number);
+    }
+    storage_path(CARD_DIR, name, path, n);
+}
+
+static void test_close(void)
+{
+    if (s_test_fp == NULL) {
+        return;
+    }
+    bool bad = fflush(s_test_fp) != 0 || fsync(fileno(s_test_fp)) != 0;
+    bad = (fclose(s_test_fp) != 0) || bad;
+    /* This file's failure, not the run's: a CSV that failed does not make
+     * a report written whole a bad one. */
+    if (bad) {
+        s_test_failed  = true;
+        s_test_txt_bad = s_test_txt_bad || s_test_txt;
+    }
+    s_test_fp = NULL;
+    if (!s_test_txt) {
+        atomic_store(&s_test_open_run, 0u);
+    }
+}
+
+/* A run's OPEN: the next run number, as log_open() takes one. */
+static void test_open(void)
+{
+    test_close();
+    s_test_num    = -1;
+    s_test_txt    = false;
+    s_test_lines  = 0u;
+    s_test_failed = false;
+    s_test_txt_bad = false;
+    atomic_store(&s_test_report, false);
+    if (storage_mounted() && log_numbering()) {
+        unsigned refused = 0u;
+        for (int i = s_log_next; i <= LOG_RUN_LAST && s_test_fp == NULL; ++i) {
+            char path[64];
+            if (!log_number_free(i, path, sizeof(path))) {
+                continue;
+            }
+            atomic_store(&s_test_open_run, (unsigned)i);
+            s_test_fp = fopen(path, "w");
+            if (s_test_fp != NULL) {
+                s_log_next = i + 1;
+                s_test_num = i;
+                ESP_LOGI(TAG, "servo test to %s", path);
+            } else {
+                atomic_store(&s_test_open_run, 0u);
+                if (++refused >= LOG_OPEN_TRIES) {
+                    break;
+                }
+            }
+        }
+        if (s_test_fp == NULL) {
+            s_log_numbered = false;   /* asked again next time; see log_open */
+        }
+    }
+    if (s_test_fp == NULL) {
+        control_alert("no card or card full -- servo test not recorded");
+    }
+    atomic_store(&s_test_file, s_test_num);
+    atomic_fetch_add(&s_test_opens_done, 1u);
+}
+
+static void test_write(const test_line_t *l)
+{
+    if (l->kind == SERVO_TEST_OUT_OPEN) {
+        test_open();
+        return;
+    }
+    if (l->kind == SERVO_TEST_OUT_END) {
+        test_close();
+        /* The report is on the card when it was opened and nothing about
+         * it failed: what the SERVO screen names, and only then. */
+        atomic_store(&s_test_report,
+                     s_test_num > 0 && s_test_txt && !s_test_txt_bad);
+        if (s_test_num > 0 && s_test_failed) {
+            control_alert("the card failed -- the servo test files are short");
+        }
+        s_test_num = -1;
+        return;
+    }
+    if (s_test_num <= 0) {
+        return;                         /* not recorded */
+    }
+    if (l->kind == SERVO_TEST_OUT_TXT && !s_test_txt) {
+        /* The report follows the CSV: one file open at a time. */
+        test_close();
+        char path[64];
+        test_path(s_test_num, true, path, sizeof(path));
+        s_test_txt = true;
+        s_test_fp = fopen(path, "w");
+        if (s_test_fp == NULL) {
+            s_test_failed  = true;
+            s_test_txt_bad = true;
+        }
+    }
+    if (s_test_fp == NULL) {
+        return;
+    }
+    if (fputs(l->text, s_test_fp) < 0 || fputc('\n', s_test_fp) == EOF) {
+        s_test_failed  = true;
+        s_test_txt_bad = s_test_txt_bad || s_test_txt;
+    }
+    /* Committed as the run log is, every LOG_WRITER_FLUSH_ROWS lines. */
+    if (++s_test_lines >= LOG_WRITER_FLUSH_ROWS) {
+        s_test_lines = 0u;
+        if (fflush(s_test_fp) != 0 || fsync(fileno(s_test_fp)) != 0) {
+            s_test_failed  = true;
+            s_test_txt_bad = s_test_txt_bad || s_test_txt;
+        }
+    }
 }
 
 /* One line appended to the fault log, opened and closed around it so that
@@ -2170,6 +2389,11 @@ static void log_task(void *arg)
         char note[LOG_NOTE_MAX];
         while (xQueueReceive(s_note_q, note, 0) == pdTRUE) {
             log_note(note);
+        }
+        /* The servo test's lines, as many as wait. */
+        test_line_t tl;
+        while (xQueueReceive(s_test_q, &tl, 0) == pdTRUE) {
+            test_write(&tl);
         }
     }
 }
@@ -3255,6 +3479,7 @@ static void supply_step(float step_s)
         s_supply.output = s_supply_on;
     } else {
         supply_sim_step(&s_supply_sim, step_s, &s_supply);
+        s_supply.taken_ms = now_ms();   /* a reading every step */
     }
     /*
      * A supply that stops answering takes its output with it, switched off
@@ -5617,6 +5842,43 @@ static void publish_supply_levels(void)
 }
 
 /*
+ * The servo test's lines, from the screen to the logger, as many as the
+ * queue takes; the rest wait in the screen's outbox for the next frame.
+ * Every frame, whichever screen is up, so a run ended by leaving SERVO still
+ * writes its report.  And the files' number back to the screen, once the
+ * logger has answered every OPEN sent.
+ */
+static void test_lines_service(void)
+{
+    bool open_waits = false;     /* a new run's OPEN not yet queued */
+    for (;;) {
+        const char *text = NULL;
+        const servo_test_out_t k = servo_screen_test_peek(&text);
+        if (k == SERVO_TEST_OUT_NONE) {
+            break;
+        }
+        test_line_t l;
+        l.kind = (uint8_t)k;
+        snprintf(l.text, sizeof(l.text), "%s", text);
+        if (xQueueSend(s_test_q, &l, 0) != pdTRUE) {
+            open_waits = (k == SERVO_TEST_OUT_OPEN);
+            break;
+        }
+        if (k == SERVO_TEST_OUT_OPEN) {
+            atomic_fetch_add(&s_test_opens_sent, 1u);
+        }
+        servo_screen_test_pop();
+    }
+    /* Not the last run's number for a run whose OPEN still waits. */
+    const unsigned sent = atomic_load(&s_test_opens_sent);
+    if (sent != 0u && !open_waits
+        && atomic_load(&s_test_opens_done) == sent) {
+        servo_screen_test_files(atomic_load(&s_test_file),
+                                atomic_load(&s_test_report));
+    }
+}
+
+/*
  * Stamped with what this loop knows of the touch stream as it queues the
  * command: the gestures it has dropped (s_loss_gen, which only this loop
  * writes) and the number of the last event it took.  The control task
@@ -5825,13 +6087,14 @@ void app_main(void)
     s_supply_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(supply_state_t));
     s_log_q     = xQueueCreate(LOG_Q_LEN, sizeof(log_row_t));
     s_note_q    = xQueueCreate(LOG_NOTE_Q_LEN, LOG_NOTE_MAX);
+    s_test_q    = xQueueCreate(TEST_Q_LEN, sizeof(test_line_t));
     s_snap_lock = xSemaphoreCreateMutex();
     /* Zero is a temperature; the snapshot starts unread, so the strip shows
      * "--" until the control task has published one. */
     s_snap.mcu_temp_c = NAN;
     ESP_ERROR_CHECK((s_touch_q != NULL && s_cmd_q != NULL
                      && s_sample_q != NULL && s_supply_q != NULL
-                     && s_log_q != NULL
+                     && s_log_q != NULL && s_test_q != NULL
                      && s_note_q != NULL && s_snap_lock != NULL)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
@@ -5870,6 +6133,9 @@ void app_main(void)
         const uint32_t us = (uint32_t)esp_timer_get_time();
         const float dt_s = (float)(us - last_us) / 1e6f;
         last_us = us;
+        /* The clock the supply's readings are stamped with, for the servo
+         * test's timing, before this frame's samples. */
+        servo_screen_clock(now_ms());
 
         /*
          * What the bench is, before this frame's touch is dispatched.
@@ -6082,9 +6348,13 @@ void app_main(void)
             (outputs_result_t)atomic_load(&s_outputs_result));
 
         flush_screen_commands(stops_now);
+        test_lines_service();
         /* An ON the supply screen sent and the control task dropped -- stale,
          * or lost to a full queue -- stops counting as live there. */
         supply_screen_set_on_coming(supply_live_or_coming());
+        /* A servo test's end and the set points it put back, whichever
+         * screen is up: after this frame's OFF went and its samples. */
+        servo_screen_service();
         /*
          * Whether a STOP is on screen to press.  The control task hit-tests
          * the band's rectangle and cannot see which screen is up.
@@ -6124,6 +6394,8 @@ void app_main(void)
         if (have_alert) {
             ui_router_set_alert(alert);
         }
+        /* A servo test ends when the link goes. */
+        servo_screen_set_link(link_up);
         /* The armed state this frame acted on, read before the touch was
          * dispatched; the band shows what the screens were told. */
         const bool armed = armed_now;

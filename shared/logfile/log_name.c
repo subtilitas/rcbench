@@ -52,7 +52,12 @@ int log_name_case_cmp(const char *a, const char *b)
     }
 }
 
-void log_run_name(char *out, size_t out_size, int number)
+#define REPORT_SUFFIX ".TXT"
+_Static_assert(sizeof(REPORT_SUFFIX) == sizeof(RUN_SUFFIX),
+               "a report's name is as long as its run's");
+
+static void numbered_name(char *out, size_t out_size, int number,
+                          const char *suffix)
 {
     if (out == NULL || out_size == 0u) {
         return;
@@ -64,10 +69,20 @@ void log_run_name(char *out, size_t out_size, int number)
     if (number < LOG_RUN_FIRST || number > LOG_RUN_LAST) {
         return;
     }
-    snprintf(out, out_size, RUN_PREFIX "%03d" RUN_SUFFIX, number);
+    snprintf(out, out_size, RUN_PREFIX "%03d%s", number, suffix);
 }
 
-int log_run_number(const char *name)
+void log_run_name(char *out, size_t out_size, int number)
+{
+    numbered_name(out, out_size, number, RUN_SUFFIX);
+}
+
+void log_report_name(char *out, size_t out_size, int number)
+{
+    numbered_name(out, out_size, number, REPORT_SUFFIX);
+}
+
+static int numbered(const char *name, const char *suffix)
 {
     /*
      * A run's name has one shape and one length.  The length is taken first,
@@ -91,10 +106,20 @@ int log_run_number(const char *name)
     if (v < LOG_RUN_FIRST || v > LOG_RUN_LAST) {
         return -1;
     }
-    if (log_name_case_cmp(p + RUN_DIGITS, RUN_SUFFIX) != 0) {
+    if (log_name_case_cmp(p + RUN_DIGITS, suffix) != 0) {
         return -1;
     }
     return v;
+}
+
+int log_run_number(const char *name)
+{
+    return numbered(name, RUN_SUFFIX);
+}
+
+int log_report_number(const char *name)
+{
+    return numbered(name, REPORT_SUFFIX);
 }
 
 int log_name_rank(const char *a, const char *b)

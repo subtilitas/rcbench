@@ -544,6 +544,8 @@ void supply_screen_set_model(bool model)
     }
 }
 
+bool supply_screen_model(void) { return s.model; }
+
 float supply_screen_set_v(void) { return s.cv; }
 float supply_screen_set_i(void) { return s.ci; }
 
@@ -650,6 +652,13 @@ uint32_t supply_screen_off_count(void) { return s.off_count; }
 void supply_screen_ask_on(void) { post_on(); }
 
 void supply_screen_ask_off(void) { post_off(); }
+
+bool supply_screen_off_pending(void) { return s.pending.off; }
+
+bool supply_screen_output_held(void)
+{
+    return s.pressed == P_OUTPUT && !s.press_on;
+}
 
 void supply_screen_limits_changed(void)
 {

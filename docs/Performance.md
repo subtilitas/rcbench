@@ -35,7 +35,7 @@ throttle        10,508     1314 KiB     34.5      19.5
 chrome          32,953     4119 KiB    108.2       7.8
 overview           909      114 KiB      3.0      39.0
 servo           15,390     1924 KiB     50.5      19.5
-servo-grip        2,921      365 KiB      9.6      39.0
+servo-grip        3,035      379 KiB     10.0      39.0
 supply           8,502     1063 KiB     27.9      19.5
 supply-chrome       31,405     3926 KiB    103.1       7.8
 analyser           855      107 KiB      2.8      39.0
