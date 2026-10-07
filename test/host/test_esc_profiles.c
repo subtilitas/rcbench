@@ -1295,6 +1295,54 @@ TEST_CASE(sky_v2_finds_the_three_skywalker_v2_profiles)
     CHECK_EQ(n, 3u);
 }
 
+/* A card profile that would take its maker past ESC_MAKER_MODELS_MAX
+ * models is refused at load, with why; one that reaches it exactly is
+ * taken, in place of the profile it replaces as well. */
+TEST_CASE(a_maker_holds_at_most_its_models)
+{
+    static esc_model_t many[ESC_MAKER_MODELS_MAX];
+    static char names[ESC_MAKER_MODELS_MAX][8];
+    for (unsigned i = 0; i < ESC_MAKER_MODELS_MAX; ++i) {
+        (void)snprintf(names[i], sizeof(names[i]), "M%03u", i);
+        many[i] = (esc_model_t){ names[i], 2u, 3u, false, 12600u, 10u };
+    }
+    unsigned have = 0;
+    for (size_t i = 0; i < esc_profiles_builtin_count; ++i) {
+        if (esc_brand_same(esc_profiles_builtin[i].brand, "Kontronik")) {
+            have += esc_profiles_builtin[i].model_count;
+        }
+    }
+    CHECK(have > 0u && have < ESC_MAKER_MODELS_MAX);
+    esc_profiles_clear_overrides();
+    esc_profile_t p = *esc_profiles_find("kontronik-jazz");
+    p.id = "card-many";
+    p.brand = "KONTRONIK";                   /* the same maker, folded */
+    p.models = many;
+    p.model_count = (uint16_t)(ESC_MAKER_MODELS_MAX - have + 1u);
+    const char *why = NULL;
+    CHECK(!esc_profiles_override_why(&p, NULL, &why));
+    CHECK_STR_EQ(why, "its maker would list more than 512 models");
+    CHECK_EQ(esc_profiles_override_count(), 0u);
+    p.model_count = (uint16_t)(ESC_MAKER_MODELS_MAX - have);
+    CHECK(esc_profiles_override_why(&p, NULL, &why));
+    /* Replacing kontronik-jazz: its own models leave the count. */
+    esc_profiles_clear_overrides();
+    p.id = "kontronik-jazz";
+    const unsigned jazz = esc_profiles_find("kontronik-jazz")->model_count;
+    p.model_count = (uint16_t)(ESC_MAKER_MODELS_MAX - have + jazz);
+    CHECK(esc_profiles_override(&p, NULL));
+    p.model_count++;
+    CHECK(!esc_profiles_override_why(&p, NULL, &why));
+    esc_profiles_clear_overrides();
+    /* The other refusals say theirs. */
+    CHECK(!esc_profiles_override_why(NULL, NULL, &why));
+    CHECK_STR_EQ(why, "no profile");
+    CHECK(esc_brand_same("Kontronik", "KONTRONIK"));
+    CHECK(!esc_brand_same("Kontronik", "Kontronic"));
+    CHECK(!esc_brand_same(NULL, "x"));
+    CHECK(esc_brand_same(NULL, NULL));
+}
+
 int main(void)
 {
     RUN(every_profile_of_record_parses_to_its_generated_table);
@@ -1306,6 +1354,7 @@ int main(void)
     RUN(a_profile_reads_its_manual_steps);
     RUN(a_value_reads_the_stick_position_it_is_set_from);
     RUN(a_value_reads_its_own_entry_time);
+    RUN(a_maker_holds_at_most_its_models);
     RUN(a_value_reads_its_moves_after_the_selection);
     RUN(a_manual_step_the_generator_refuses_is_refused_here_too);
     RUN(escapes_become_the_characters_they_name);

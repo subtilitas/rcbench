@@ -43,7 +43,9 @@ Eine Datei auf der Karte heißt wie ihre id: `/ESC/hobbywing-flyfun-8item.json`
 enthält `"id": "hobbywing-flyfun-8item"`. Groß- und Kleinschreibung dürfen
 abweichen; alles andere wird abgelehnt. Eine Datei mit der id eines
 eingebauten Profils ersetzt dieses Profil. Eine Datei mit neuer id fügt ein
-Profil hinter den eingebauten an. Dateinamen ab 64 Zeichen werden nicht
+Profil hinter den eingebauten an. Eine Datei, die ihren Hersteller über
+512 Modelle (`ESC_MAKER_MODELS_MAX`) brächte, gezählt über seine eingebauten
+Profile und die von der Karte, wird abgelehnt. Dateinamen ab 64 Zeichen werden nicht
 gelesen. Die
 Karte hält höchstens 32 Profile; das Panel liest die Namen der ersten 64
 `.json`-Dateien in `/ESC/`. Eine abgelehnte Datei wird auf der Konsole mit

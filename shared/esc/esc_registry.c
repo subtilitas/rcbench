@@ -48,11 +48,64 @@ static slot_t *over_find(const char *id)
     return NULL;
 }
 
+bool esc_brand_same(const char *a, const char *b)
+{
+    if (a == NULL || b == NULL) {
+        return a == b;
+    }
+    for (;; ++a, ++b) {
+        int x = (unsigned char)*a;
+        int y = (unsigned char)*b;
+        x -= (x >= 'a' && x <= 'z') ? 32 : 0;
+        y -= (y >= 'a' && y <= 'z') ? 32 : 0;
+        if (x != y) {
+            return false;
+        }
+        if (x == 0) {
+            return true;
+        }
+    }
+}
+
+/* The models @p p's maker would list with @p p in place of the profile of
+ * its id. */
+static size_t maker_models_with(const esc_profile_t *p)
+{
+    size_t n = p->model_count;
+    const size_t total = esc_profiles_count();
+    for (size_t i = 0; i < total; ++i) {
+        const esc_profile_t *q = esc_profiles_at(i);
+        if (q != NULL && strcmp(q->id, p->id) != 0
+            && esc_brand_same(q->brand, p->brand)) {
+            n += q->model_count;
+        }
+    }
+    return n;
+}
+
+static bool refuse(void *block, const char **why, const char *text)
+{
+    free(block);
+    if (why != NULL) {
+        *why = text;
+    }
+    return false;
+}
+
 bool esc_profiles_override(const esc_profile_t *p, void *block)
 {
+    return esc_profiles_override_why(p, block, NULL);
+}
+
+bool esc_profiles_override_why(const esc_profile_t *p, void *block,
+                               const char **why)
+{
     if (p == NULL || p->id == NULL) {
-        free(block);
-        return false;
+        return refuse(block, why, "no profile");
+    }
+    if (maker_models_with(p) > ESC_MAKER_MODELS_MAX) {
+        return refuse(block, why, "its maker would list more than 512 "
+                      "models");
     }
     slot_t *s = over_find(p->id);
     if (s != NULL) {
@@ -61,8 +114,7 @@ bool esc_profiles_override(const esc_profile_t *p, void *block)
     } else if (s_over_n < ESC_PROFILE_MAX_OVERRIDES) {
         s = &s_over[s_over_n++];
     } else {
-        free(block);
-        return false;
+        return refuse(block, why, "more than 32 on the card");
     }
     s->p = *p;
     s->block = block;

@@ -51,6 +51,7 @@ MANUAL = {"before_power": "ESC_MANUAL_BEFORE_POWER",
           "after_programming": "ESC_MANUAL_AFTER_PROGRAMMING"}
 MANUAL_MAX = 4          # steps in one profile: ESC_MANUAL_MAX
 AFTER_MAX = 4           # moves after a value's selection: ESC_AFTER_MAX
+MAKER_MODELS_MAX = 512  # one maker's models: ESC_MAKER_MODELS_MAX
 ACTION_MAX = 120        # bytes of one step's text: ESC_MANUAL_ACTION_MAX
 
 
@@ -709,6 +710,17 @@ def main() -> int:
     if bad:
         print("\n".join(bad), file=sys.stderr)
         return 1
+    # A maker's models across its profiles: what the list holds for one
+    # maker, as the registry holds a card profile to it.
+    makers: dict[str, int] = {}
+    for p in profiles:
+        key = "".join(c.upper() if "a" <= c <= "z" else c for c in p["brand"])
+        makers[key] = makers.get(key, 0) + len(p["models"])
+    for key, n in sorted(makers.items()):
+        if n > MAKER_MODELS_MAX:
+            print(f"maker {key}: {n} models, more than {MAKER_MODELS_MAX}",
+                  file=sys.stderr)
+            return 1
     profiles.sort(key=lambda p: p["id"].encode())   # strcmp order
     text_ = emit(profiles)
     if args.check:

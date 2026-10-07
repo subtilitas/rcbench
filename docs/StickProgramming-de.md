@@ -83,7 +83,8 @@ Zählungen folgen SPANNUNG und der Grenze, wenn sie sich ändern. Ein Profil
 von der Karte reiht sich bei den Modellen seines Herstellers ein; ein
 Hersteller von der Karte, den der Satz nicht hat, reiht sich alphabetisch
 bei den Herstellern ein. Jedes eingebaute Profil nennt seinen Hersteller;
-der Kartenleser lehnt eine Datei ohne ihn ab. Ein Hersteller führt
+der Kartenleser lehnt eine Datei ohne ihn ab. Er lehnt auch eine Datei ab,
+die ihren Hersteller über 512 Modelle brächte, also führt ein Hersteller
 höchstens 512 Modelle.
 
 Die Zeile unter den Zeilen sagt, dass kein Profil geprüft ist, und die

@@ -306,8 +306,9 @@ static const proto_t k_protos[] = {
  * left beside the docked keyboard. */
 #define SP_FOOT_Y   (SP_ROW_Y0 + SP_ROWS * SP_ROW_H + 6)
 #define SP_COUNT_W  360
-/* The most models one maker's list holds. */
-#define SP_MODELS   512
+/* The most models one maker's list holds: as many as the registry lets a
+ * maker have, so the count and the rows always agree. */
+#define SP_MODELS   ((int)ESC_MAKER_MODELS_MAX)
 
 /* The stack light at the right of the run's card: a cap, the red and the
  * green lens, each with a collar under it, and the base, px. */
@@ -1332,8 +1333,8 @@ static int sp_by_model(const void *a, const void *b)
 /*
  * The second level: the open maker's models the search finds, one row a
  * model, by current, voltage and name; each row is its family's profile.
- * At most SP_MODELS: a card that adds more lists the first SP_MODELS in
- * the registry's order.
+ * The registry holds a maker to ESC_MAKER_MODELS_MAX, SP_MODELS, so every
+ * one of them has a row.
  */
 static void sp_build_models(stick_t *t)
 {

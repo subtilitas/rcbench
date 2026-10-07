@@ -42,7 +42,9 @@ A card file is named after its id: `/ESC/hobbywing-flyfun-8item.json` holds
 `"id": "hobbywing-flyfun-8item"`. Upper and lower case may differ; anything
 else is refused. A card file with the id of a built-in profile replaces that
 profile. A card file with a new id adds a profile after the built-in ones.
-File names of 64 characters or more are not read. The card holds at most 32
+File names of 64 characters or more are not read. A card file that would
+take its maker past 512 models (`ESC_MAKER_MODELS_MAX`), counted across
+the maker's profiles built in and from the card, is refused. The card holds at most 32
 profiles; the panel reads the names of the first 64 `.json` files in
 `/ESC/`. A refused file is named on the console with its reason, for example:
 

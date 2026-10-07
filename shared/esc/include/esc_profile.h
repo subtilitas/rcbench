@@ -46,6 +46,11 @@ extern "C" {
 /** How many profiles the card may add or replace. */
 #define ESC_PROFILE_MAX_OVERRIDES 32u
 
+/** The most models one maker may list across its profiles, built in and
+ *  from the card: what the ESC STICK list holds for one maker.  A card
+ *  profile that would take its maker past it is refused at load. */
+#define ESC_MAKER_MODELS_MAX 512u
+
 /** How the menu as a whole is driven. */
 typedef enum {
     ESC_SCHEME_COUNT = 0,       /**< N beeps say item or value N            */
@@ -249,6 +254,20 @@ bool esc_profile_file_is(const char *file_name, const char *id);
  * @return false when the registry is full; @p block is freed then too
  */
 bool esc_profiles_override(const esc_profile_t *p, void *block);
+
+/**
+ * esc_profiles_override(), with why it refused in @p why (a static string;
+ * may be NULL): "no profile", "more than 32 on the card", or "its maker
+ * would list more than 512 models" -- the maker's models across every
+ * profile, built in and from the card, with this one in place of any it
+ * replaces, makers compared with the letters A to Z folded.
+ */
+bool esc_profiles_override_why(const esc_profile_t *p, void *block,
+                               const char **why);
+
+/** Whether @p a and @p b name one maker: the letters A to Z folded, every
+ *  other byte itself, as the list groups them. */
+bool esc_brand_same(const char *a, const char *b);
 
 /** Drop every card profile; the built-in ones remain. */
 void esc_profiles_clear_overrides(void);

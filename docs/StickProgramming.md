@@ -75,7 +75,8 @@ One whose profile has manual steps opens them instead, with the reason for that 
 counts follow VOLTAGE and the cap as they change. A profile from the card
 joins its maker's models; a card maker the set does not have joins the
 makers in its alphabetical place. Every built-in profile names its maker;
-the card reader refuses a file without one. A maker lists at most 512
+the card reader refuses a file without one. The card reader also refuses a
+file that would take its maker past 512 models, so a maker lists at most 512
 models.
 
 The line under the rows says no profile is verified, and the count at its

@@ -2043,6 +2043,46 @@ TEST_CASE(a_card_profile_joins_its_maker)
     esc_profiles_clear_overrides();
 }
 
+/* A maker at ESC_MAKER_MODELS_MAX models, most from the card: every one
+ * has its row, and the rows are the count. */
+TEST_CASE(a_maker_at_its_most_models_lists_every_one)
+{
+    static esc_model_t many[ESC_MAKER_MODELS_MAX];
+    static char names[ESC_MAKER_MODELS_MAX][8];
+    for (unsigned i = 0; i < ESC_MAKER_MODELS_MAX; ++i) {
+        (void)snprintf(names[i], sizeof(names[i]), "M%03u", i);
+        many[i] = (esc_model_t){ names[i], 2u, 3u, false, 12600u,
+                                 (uint16_t)(i + 1u) };
+    }
+    fresh();
+    esc_profiles_clear_overrides();
+    unsigned have = 0;
+    for (size_t i = 0; i < esc_profiles_count(); ++i) {
+        if (esc_brand_same(esc_profiles_at(i)->brand, "Kontronik")) {
+            have += esc_profiles_at(i)->model_count;
+        }
+    }
+    esc_profile_t p = *esc_profiles_find("kontronik-jazz");
+    p.id = "card-many";
+    p.models = many;
+    p.model_count = (uint16_t)(ESC_MAKER_MODELS_MAX - have);
+    CHECK(esc_profiles_override(&p, NULL));
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    open_maker("Kontronik");
+    CHECK_EQ(listed(), (int)ESC_MAKER_MODELS_MAX);
+    int m = -1;
+    CHECK(programmer_screen_stick_row((int)ESC_MAKER_MODELS_MAX - 1, &m)
+          != NULL);
+    CHECK(programmer_screen_stick_row((int)ESC_MAKER_MODELS_MAX, &m) == NULL);
+    draws();
+    for (int i = 0; i < 60; ++i) {
+        tap(LIST_DN_X, LIST_CY);             /* to the last page */
+    }
+    draws();
+    esc_profiles_clear_overrides();
+}
+
 /* A family whose models need different voltages, with the SUPPLY cap
  * between them: 3SL's 6-cell models (7.2 V) run, its 14-cell ones
  * (16.8 V) do not.  The row, the pop-up, the page and RUN agree for the
@@ -2356,6 +2396,7 @@ int main(void)
     RUN(the_search_finds_on_both_levels_and_back_keeps_it);
     RUN(a_card_profile_joins_its_maker);
     RUN(the_model_tapped_is_the_one_judged);
+    RUN(a_maker_at_its_most_models_lists_every_one);
     RUN(every_step_after_programming_is_shown);
     RUN(no_step_at_the_esc_while_the_supply_reads_live);
     return test_summary("programmer");
