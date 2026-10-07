@@ -961,6 +961,11 @@ static void before_power(esc_stick_t *e, unsigned from)
         finish(e, ESC_STICK_ABORTED, ESC_STICK_R_SUPPLY_ON);
         return;
     }
+    /* Off, by a reading new enough to say so now. */
+    if (since(e->now_ms, e->read_ms) > ESC_STICK_STALE_MS) {
+        finish(e, ESC_STICK_ABORTED, ESC_STICK_R_STALE);
+        return;
+    }
     const int i = hand_due(e, from, false);
     if (i < 0) {
         power_on(e);
@@ -1254,6 +1259,16 @@ static bool off_phase(esc_stick_phase_t ph)
            || ph == ESC_STICK_OFF;
 }
 
+/* Whether the stick has gone to the entry position, or a step at the ESC
+ * is asked, with the supply off: the moves made only on the supply read
+ * off, and so the ones a live reading has to end at once. */
+static bool entry_made(const esc_stick_t *e)
+{
+    return (e->phase == ESC_STICK_SIGNAL && e->sig_moved)
+           || (e->phase == ESC_STICK_CYCLE && e->cycle_moved)
+           || e->phase == ESC_STICK_HAND_OFF;
+}
+
 static void off_reading(esc_stick_t *e, const esc_stick_sample_t *s)
 {
     const bool after = s->seq != e->off_seq
@@ -1292,9 +1307,10 @@ void esc_stick_sample(esc_stick_t *e, const esc_stick_sample_t *s)
     e->current_ok = s->current_ok;
     if (off_phase(e->phase) && !e->out.supply_on && fresh) {
         off_reading(e, s);
-        /* A person is at the ESC on the word that it is unpowered: a
-         * reading that says otherwise ends the run at once. */
-        if (e->phase == ESC_STICK_HAND_OFF && !e->off_seen) {
+        /* The stick is at the entry position, or a person is at the ESC,
+         * on the word that it is unpowered: a reading that says otherwise
+         * ends the run at once -- throttle to MIN, supply off. */
+        if (entry_made(e) && !e->off_seen) {
             finish(e, ESC_STICK_ABORTED, ESC_STICK_R_SUPPLY_ON);
             return;
         }
@@ -1396,9 +1412,11 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
     }
     if (e->phase == ESC_STICK_ARMING) {
         if (b->armed) {
+            /* Armed, the stick still at MIN: it goes to the entry position
+             * only once the supply reads off (SIGNAL). */
             e->armed_seen = true;
             e->entry = next_entry(e);
-            e->out.throttle_pct = esc_stick_pct(e->entry);
+            e->sig_moved = false;
             enter(e, ESC_STICK_SIGNAL);
         } else if (in_phase >= ESC_STICK_ARM_WAIT_MS) {
             finish(e, ESC_STICK_ABORTED, ESC_STICK_R_NOT_ARMED);
@@ -1424,25 +1442,34 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         }
     }
 
+    /* The stick at the entry position, or a person at the ESC, with the
+     * supply off: no reading for ESC_STICK_STALE_MS says it still is. */
+    if (entry_made(e) && since(e->now_ms, e->read_ms) > ESC_STICK_STALE_MS) {
+        finish(e, ESC_STICK_ABORTED, ESC_STICK_R_STALE);
+        return;
+    }
+
     switch (e->phase) {
     case ESC_STICK_SIGNAL:
-        /* The signal's time, and the supply read off from readings taken
-         * since the run began; not off within ESC_STICK_POWER_WAIT_MS:
-         * SUPPLY STAYS ON, and nothing is asked of a person. */
-        if (in_phase >= ESC_STICK_SIGNAL_MS && e->off_seen) {
+        /* The stick stays at MIN until the supply reads off in readings
+         * taken since the run began; not off within ESC_STICK_POWER_WAIT_MS:
+         * SUPPLY STAYS ON, and nothing is moved or asked of a person.  Off:
+         * the stick to the entry position, and the signal's time again
+         * from there, as a power cycle does. */
+        if (!e->sig_moved) {
+            if (e->off_seen) {
+                e->sig_moved = true;
+                e->out.throttle_pct = esc_stick_pct(e->entry);
+                enter(e, ESC_STICK_SIGNAL);
+            } else if (in_phase >= ESC_STICK_POWER_WAIT_MS) {
+                finish(e, ESC_STICK_ABORTED, ESC_STICK_R_SUPPLY_ON);
+            }
+        } else if (in_phase >= ESC_STICK_SIGNAL_MS) {
             before_power(e, 0u);
-        } else if (in_phase >= ESC_STICK_POWER_WAIT_MS) {
-            finish(e, ESC_STICK_ABORTED, ESC_STICK_R_SUPPLY_ON);
         }
         break;
     case ESC_STICK_HAND_OFF:
     case ESC_STICK_HAND_ON:
-        if (e->phase == ESC_STICK_HAND_OFF
-            && since(e->now_ms, e->read_ms) > ESC_STICK_STALE_MS) {
-            /* No reading says the ESC is still unpowered. */
-            finish(e, ESC_STICK_ABORTED, ESC_STICK_R_STALE);
-            break;
-        }
         if (e->hand_done) {
             if (e->phase == ESC_STICK_HAND_OFF) {
                 before_power(e, (unsigned)e->hand + 1u);

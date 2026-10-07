@@ -489,6 +489,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SP_ABOVE_CAP]           = "%u.%02u V über der SUPPLY-Obergrenze von %u.%02u V",
     [TX_SP_BELOW_MIN]           = "SPANNUNG unter den %u.%02u V des Netzteils",
     [TX_SP_I_ABOVE_CAP]         = "STROMBEGRENZUNG über SUPPLY-Obergrenze von %u.%02u A",
+    [TX_SP_SUPPLY_NOT_OFF]      = "kein frischer Messwert meldet das Netzteil aus",
     [TX_SP_OUTPUT_LIVE]         = "zuerst den Ausgang des Netzteils ausschalten",
     [TX_SP_REFUSED]             = "abgelehnt",
     [TX_SP_LIST_COUNT]          = "%d-%d von %d, %d ausführbar",

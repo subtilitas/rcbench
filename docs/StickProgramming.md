@@ -39,7 +39,12 @@ What it does not know:
 5. Switch the supply's output off. A run that finds it on or on its way is
    refused, and so is one whose supply reads live: its own state on, or
    more than 20 mA (`ESC_STICK_OFF_MA`) through the output, in its newest
-   reading. The line beside RUN says to switch it off first.
+   reading. The line beside RUN says to switch it off first. RUN also
+   needs the supply known off: a reading no older than 1000 ms
+   (`ESC_STICK_STALE_MS`) in which the supply itself reports its output
+   off with the current at or under 20 mA for 200 ms. No reading, an older
+   one, or a supply that does not answer refuses RUN with `no fresh
+   reading says the supply is off`.
 
 ## On the screen
 
@@ -354,8 +359,8 @@ A change of either light repaints both screen buffers.
 
 | Phase | Throttle | Supply | Ends |
 | --- | --- | --- | --- |
-| ARMING | MIN | off | when the bench reports armed; after 3000 ms: NOT ARMED |
-| SIGNAL | the power-up position | off | after 1000 ms, so the ESC sees the signal when it starts, and once the supply reads off in readings taken since the run asked it off: its own state off, the current at or under 20 mA for 200 ms; not within 3000 ms: SUPPLY STAYS ON |
+| ARMING | MIN | off, asked off | when the bench reports armed; after 3000 ms: NOT ARMED |
+| SIGNAL | MIN, then the power-up position | off | the stick stays at MIN until the supply reads off in readings taken since the run asked it off (its own state off, the current at or under 20 mA for 200 ms), then goes to the power-up position and is held there 1000 ms, so the ESC sees the signal when it starts; not off within 3000 ms: SUPPLY STAYS ON. Once the stick has moved, a reading with the output on or the current up ends the run at once with SUPPLY STAYS ON, and no reading for 1000 ms with NO READINGS |
 | MANUAL STEP | entry position | off, read off | before a power-up with a step due, asked only once the supply reads off: DONE, then POWER ON; no DONE in 60 s: NOT CONFIRMED; a reading with the output on or the current up: SUPPLY STAYS ON at once; no reading for 1000 ms: NO READINGS |
 | POWER ON | entry position | on | when a sample reports the output on; after 3000 ms: NO POWER |
 | ENTRY | entry position | on | ENTRY after power-on: the value's `entry_hold_ms`, else the profile's `hold_ms` where it states one, and no less than the longest `hold_ms` of an `at_power_up` step |
@@ -363,7 +368,7 @@ A change of either light repaints both screen buffers.
 | ITEMS | rest position | on | an item group in order names a wanted item: the select move |
 | VALUES | where the last move left it | on | a value group in order names the wanted value: the value move |
 | STORING | the value move, then the store move, then the value's own moves (`after_select`) | on | after STORE, and after STORE again for each move: the profile's store move, then each of the value's |
-| POWER CYCLE | where it stored, then entry position | off | the supply reports the output off and the current down for 200 ms, then OFF TIME (at least 1000 ms) at the entry position, then POWER ON again; not off within 3000 ms: SUPPLY STAYS ON |
+| POWER CYCLE | where it stored, then entry position | off | the supply reports the output off and the current down for 200 ms, then OFF TIME (at least 1000 ms) at the entry position, then POWER ON again; not off within 3000 ms: SUPPLY STAYS ON. Once the stick has moved, a reading with the output on or the current up ends the run at once with SUPPLY STAYS ON, and no reading for 1000 ms with NO READINGS; the next power-up, or a step before it, needs a reading no older than 1000 ms |
 | POWER OFF | where it stored | off | the supply reports the output off and the current down for 200 ms; not within 3000 ms: SUPPLY STAYS ON |
 | DONE | MIN | off | disarmed |
 | ABORTED | MIN | off | disarmed, all in one step |

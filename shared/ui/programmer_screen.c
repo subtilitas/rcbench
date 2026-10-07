@@ -1478,6 +1478,8 @@ static void sp_supply(uint32_t *mv, uint32_t *ma)
  * not offered.  Refused, never adjusted: a voltage over the SUPPLY cap is
  * the operator's to change.
  */
+static bool sp_supply_reads_off(void);
+
 static bool sp_plan(esc_stick_change_t *ch, size_t *n,
                     esc_stick_timing_t *t, uint32_t *mv, uint32_t *ma)
 {
@@ -1522,6 +1524,13 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
     /* Asked on, or read live: the output on, or current through it. */
     if (supply_screen_output_live() || st->sup_live) {
         snprintf(st->note, sizeof(st->note), "%s", TR(SP_OUTPUT_LIVE));
+        return false;
+    }
+    /* No reading, an old one, or a supply that does not answer is not a
+     * supply known off: a run moves the stick and may ask for a hand at
+     * the ESC on that word. */
+    if (!sp_supply_reads_off()) {
+        snprintf(st->note, sizeof(st->note), "%s", TR(SP_SUPPLY_NOT_OFF));
         return false;
     }
     const char *why = NULL;

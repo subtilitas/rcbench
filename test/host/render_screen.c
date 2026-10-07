@@ -743,6 +743,7 @@ int main(int argc, char **argv)
         ui_router_goto(SCREEN_PROGRAMMER);
         programmer_screen_bench(0u, false, 0u, 0u, false);
         tap(660, UI_BAND_H + 180);              /* the ESC STICK tile */
+        stick_supply_off();                     /* a panel's readings, off */
         if (strcmp(view, "programmer-stick-hand-after") == 0) {
             /*
              * A card profile with four long steps after programming, run to

@@ -380,6 +380,9 @@ typedef struct {
                                              selection (esc_stick_store_
                                              move())                      */
     bool                 cycle_moved;   /**< the stick is at the entry   */
+    bool                 sig_moved;     /**< the first power-up's: the
+                                             stick at the entry, the supply
+                                             read off                     */
     bool                 armed_seen;
 
     esc_stick_out_t      out;

@@ -42,7 +42,12 @@ Was sie nicht weiß:
    Weg findet, wird abgelehnt, ebenso einer, dessen Netzteil spannungsführend
    meldet: sein eigener Zustand an, oder mehr als 20 mA (`ESC_STICK_OFF_MA`)
    durch den Ausgang, im neuesten Messwert. Die Zeile neben START sagt, es
-   zuerst auszuschalten.
+   zuerst auszuschalten. START braucht außerdem ein Netzteil, das bekannt
+   aus ist: einen Messwert, nicht älter als 1000 ms (`ESC_STICK_STALE_MS`),
+   in dem das Netzteil selbst seinen Ausgang aus meldet, mit dem Strom
+   200 ms lang bei höchstens 20 mA. Kein Messwert, ein älterer oder ein
+   Netzteil, das nicht antwortet, lehnt START ab mit `kein frischer
+   Messwert meldet das Netzteil aus`.
 
 ## Auf dem Bildschirm
 
@@ -391,8 +396,8 @@ gezeichnet.
 
 | Phase | Gas | Netzteil | Endet |
 | --- | --- | --- | --- |
-| ARMING | MIN | aus | wenn der Prüfstand scharf meldet; nach 3000 ms: NICHT ARMED |
-| SIGNAL | Einschaltstellung | aus | nach 1000 ms, damit der ESC das Signal beim Start sieht, und sobald das Netzteil in Messwerten seit der Ausschaltanforderung des Laufs aus meldet: sein eigener Zustand aus, der Strom 200 ms lang bei höchstens 20 mA; nicht innerhalb von 3000 ms: NETZTEIL BLEIBT EIN |
+| ARMING | MIN | aus, angefordert aus | wenn der Prüfstand scharf meldet; nach 3000 ms: NICHT ARMED |
+| SIGNAL | MIN, dann Einschaltstellung | aus | der Knüppel bleibt auf MIN, bis das Netzteil in Messwerten seit der Ausschaltanforderung des Laufs aus meldet (sein eigener Zustand aus, der Strom 200 ms lang bei höchstens 20 mA), geht dann in die Einschaltstellung und bleibt dort 1000 ms, damit der ESC das Signal beim Start sieht; nicht innerhalb von 3000 ms aus: NETZTEIL BLEIBT EIN. Hat sich der Knüppel bewegt, beendet ein Messwert mit Ausgang an oder Strom oben den Lauf sofort mit NETZTEIL BLEIBT EIN, 1000 ms ohne Messwert mit KEINE MESSWERTE |
 | HANDGRIFF | Einstiegsstellung | aus, gemeldet aus | vor einem Einschalten mit fälligem Schritt, erst gefragt, wenn das Netzteil aus meldet: ERLEDIGT, dann EINSCHALTEN; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT; ein Messwert mit Ausgang an oder Strom oben: sofort NETZTEIL BLEIBT EIN; 1000 ms kein Messwert: KEINE MESSWERTE |
 | EINSCHALTEN | Einstiegsstellung | an | wenn ein Messwert den Ausgang an meldet; nach 3000 ms: AUSGANG NICHT GEMELDET |
 | EINSTIEG | Einstiegsstellung | an | EINSTIEG nach dem Einschalten: das `entry_hold_ms` des Werts, sonst das `hold_ms` des Profils, wo es eines nennt, und nicht kürzer als das längste `hold_ms` eines Schritts `at_power_up` |
@@ -400,7 +405,7 @@ gezeichnet.
 | PUNKTE | Ruhestellung | an | eine Punktgruppe in Reihenfolge nennt einen gewünschten Punkt: die Auswahlbewegung |
 | WERTE | wo die letzte Bewegung es ließ | an | eine Wertgruppe in Reihenfolge nennt den gewünschten Wert: die Wertbewegung |
 | SPEICHERN | die Wertbewegung, dann die Speicherbewegung, dann die eigenen Bewegungen des Werts (`after_select`) | an | nach SPEICHERN, und nach SPEICHERN noch einmal für jede Bewegung: die Speicherbewegung des Profils, dann jede des Werts |
-| AUS UND EIN | wo es speicherte, dann Einstiegsstellung | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten, dann AUSSCHALTZEIT (mindestens 1000 ms) in der Einstiegsstellung, dann wieder EINSCHALTEN; nicht innerhalb von 3000 ms aus: NETZTEIL BLEIBT EIN |
+| AUS UND EIN | wo es speicherte, dann Einstiegsstellung | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten, dann AUSSCHALTZEIT (mindestens 1000 ms) in der Einstiegsstellung, dann wieder EINSCHALTEN; nicht innerhalb von 3000 ms aus: NETZTEIL BLEIBT EIN. Hat sich der Knüppel bewegt, beendet ein Messwert mit Ausgang an oder Strom oben den Lauf sofort mit NETZTEIL BLEIBT EIN, 1000 ms ohne Messwert mit KEINE MESSWERTE; das nächste Einschalten oder ein Schritt davor braucht einen Messwert, nicht älter als 1000 ms |
 | AUSSCHALTEN | wo es speicherte | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten; nicht innerhalb von 3000 ms: NETZTEIL BLEIBT EIN |
 | FERTIG | MIN | aus | entschärft |
 | ABGEBROCHEN | MIN | aus | entschärft, alles in einem Schritt |

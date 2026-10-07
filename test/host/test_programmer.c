@@ -375,6 +375,24 @@ static void hold_for(float seconds)
     press(TOUCH_EVENT_UP, HOLD_X, HOLD_Y);
 }
 
+/* The supply reading off for 300 ms: its own state off, the current at
+ * 0, as the warning needs before it asks for a step at the ESC. */
+static void supply_reads_off(void)
+{
+    for (uint32_t t = 0; t <= 300u; t += 100u) {
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.samples = (uint16_t)(t / 100u + 1u);
+        st.taken_ms = t;
+        st.mode = SUPPLY_MODE_OFF;
+        st.online = true;
+        st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+        programmer_screen_supply(&st);
+    }
+    programmer_screen_bench(300u, false, 0u, 0u, false);
+    scr->tick(0.02f);
+}
+
 /* @p a and @p b alike with case folded, as the list groups makers. */
 static bool same_name(const char *a, const char *b)
 {
@@ -430,6 +448,7 @@ static void open_model(const char *id, const char *model)
         if (p != NULL && strcmp(p->id, id) == 0
             && (model == NULL || strcmp(p->models[m].name, model) == 0)) {
             tap_listed(i);
+            supply_reads_off();          /* a panel's readings, off */
             return;
         }
     }
@@ -448,24 +467,6 @@ static void open_profile(const char *id)
     }
     open_maker(p->brand);
     open_model(id, NULL);
-}
-
-/* The supply reading off for 300 ms: its own state off, the current at
- * 0, as the warning needs before it asks for a step at the ESC. */
-static void supply_reads_off(void)
-{
-    for (uint32_t t = 0; t <= 300u; t += 100u) {
-        supply_state_t st;
-        memset(&st, 0, sizeof(st));
-        st.samples = (uint16_t)(t / 100u + 1u);
-        st.taken_ms = t;
-        st.mode = SUPPLY_MODE_OFF;
-        st.online = true;
-        st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-        programmer_screen_supply(&st);
-    }
-    programmer_screen_bench(300u, false, 0u, 0u, false);
-    scr->tick(0.02f);
 }
 
 /* The stick class, then hobbywing-flyfun-8item. */
@@ -2190,18 +2191,22 @@ TEST_CASE(no_step_at_the_esc_while_the_supply_reads_live)
         draws();                             /* the note says why */
     }
 
-    /* kontronik-jazz: the jumper is fitted on the warning.  No reading yet:
-     * the step is not shown and the hold does nothing. */
+    /* kontronik-jazz: the jumper is fitted on the warning.  No fresh
+     * reading: RUN is refused, the warning never shows its step. */
     fresh();
     descend_to_jazz();
     tap(CANCEL_X, HOLD_Y);
     tap(STEP_UP_X, STEP_CY(0));
+    programmer_screen_bench(300u + ESC_STICK_STALE_MS + 1u, false, 0u, 0u,
+                            false);
+    scr->tick(0.02f);
     tap(WRITE_X, BTN_CY);
-    draws();                                 /* waiting for the supply */
+    draws();                                 /* the note says why */
     hold_for(2.25f);
     CHECK_EQ(programmer_screen_stick_runs(), 0u);
-    /* Reading off: the step shows and the hold runs it. */
+    /* Reading off: RUN, the step shows and the hold runs it. */
     supply_reads_off();
+    tap(WRITE_X, BTN_CY);
     draws();
     hold_for(2.25f);
     CHECK_EQ(programmer_screen_stick_runs(), 1u);
@@ -2271,6 +2276,25 @@ TEST_CASE(no_step_at_the_esc_while_the_supply_reads_live)
     CHECK(programmer_screen_stick_supply_reads_off());
     draws();
     esc_profiles_clear_overrides();
+
+    /* A supply that does not answer is not known off: RUN refused, and no
+     * stick moves on a module that may be on. */
+    fresh();
+    descend_to_hobbywing();
+    pick_cutoff();
+    supply_state_t gone;
+    memset(&gone, 0, sizeof(gone));
+    gone.samples = 9u;
+    gone.taken_ms = 300u;
+    gone.online = false;
+    gone.mode = SUPPLY_MODE_OFF;
+    programmer_screen_supply(&gone);
+    scr->tick(0.02f);
+    CHECK(!programmer_screen_stick_supply_reads_off());
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    draws();
 
     /* A reading too old to say the supply is off now. */
     fresh();

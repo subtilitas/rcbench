@@ -486,6 +486,7 @@ UI_TEXT(SP_NO_CELLS,               56, "no cell count in the profile: set VOLTAG
 UI_TEXT(SP_ABOVE_CAP,              56, "%u.%02u V is above the SUPPLY cap of %u.%02u V")
 UI_TEXT(SP_BELOW_MIN,              56, "VOLTAGE is below the supply's %u.%02u V")
 UI_TEXT(SP_I_ABOVE_CAP,            56, "CURRENT LIMIT is above the SUPPLY cap of %u.%02u A")
+UI_TEXT(SP_SUPPLY_NOT_OFF,          56, "no fresh reading says the supply is off")
 UI_TEXT(SP_OUTPUT_LIVE,            56, "switch the supply's output off first")
 UI_TEXT(SP_REFUSED,                56, "refused")
 UI_TEXT(SP_LIST_COUNT,              0, "%d-%d of %d, %d run")

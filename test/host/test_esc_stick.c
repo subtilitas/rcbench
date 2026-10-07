@@ -1163,8 +1163,17 @@ TEST_CASE(the_signal_is_in_place_before_the_power)
     CHECK(o->arm && !o->supply_on && o->throttle_pct == ESC_STICK_PCT_MIN);
     tick();
     CHECK_EQ(r.e.phase, ESC_STICK_SIGNAL);
+    /* Armed, at MIN until the supply reads off; then the entry position,
+     * held ESC_STICK_SIGNAL_MS before the power. */
+    CHECK(o->throttle_pct == ESC_STICK_PCT_MIN && !o->supply_on);
+    for (int i = 0; i < 5000 && !r.e.sig_moved; ++i) {
+        tick();
+    }
+    CHECK(r.e.off_seen);
     CHECK(o->throttle_pct == ESC_STICK_PCT_MAX && !o->supply_on);
+    const uint32_t moved = r.now;
     run_until_phase(ESC_STICK_POWER, 5000u);
+    CHECK(r.now - moved >= ESC_STICK_SIGNAL_MS);
     CHECK(o->supply_on);
     CHECK_EQ(o->supply_mv, 7600u);
     CHECK_EQ(o->supply_ma, 1000u);
@@ -1804,6 +1813,9 @@ TEST_CASE(a_car_mode_is_powered_up_from_the_middle)
     CHECK_EQ(esc_stick_change_entry(r.p, &c[0]), ESC_THR_MID);
     CHECK(start(c, 1));
     run_until_phase(ESC_STICK_SIGNAL, 10000u);
+    for (int i = 0; i < 5000 && !r.e.sig_moved; ++i) {
+        tick();
+    }
     CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MID);
     CHECK(!esc_stick_out(&r.e)->supply_on);
     run_until_asked(60000u);
@@ -2250,6 +2262,103 @@ TEST_CASE(a_supply_that_comes_on_during_the_step_ends_the_run)
     CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
 }
 
+/* Run for @p ms; the time the module is powered while the stick, armed
+ * and not asked on, is away from MIN. */
+static uint32_t powered_away_from_min(uint32_t ms)
+{
+    uint32_t n = 0u;
+    for (uint32_t i = 0; i < ms && esc_stick_running(&r.e); ++i) {
+        tick();
+        if (r.supply_on && !esc_stick_out(&r.e)->supply_on && r.armed
+            && esc_stick_out(&r.e)->throttle_pct > ESC_STICK_PCT_MIN) {
+            ++n;
+        }
+    }
+    return n;
+}
+
+/* A module live from the start: a MID entry (the car mode) and a MAX one
+ * keep the stick at MIN until the run ends with SUPPLY STAYS ON. */
+TEST_CASE(the_stick_stays_at_min_until_the_supply_reads_off)
+{
+    static const char *const ids[] = { "kontronik-beat", "sunrise-pro" };
+    for (size_t k = 0; k < 2; ++k) {
+        rig(ids[k]);
+        esc_stick_change_t c[1] = { (k == 0) ? change(1, 6) : change(1, 3) };
+        CHECK(esc_stick_change_entry(r.p, &c[0]) != ESC_THR_MIN);
+        r.supply_on = true;
+        r.supply_stuck = true;
+        CHECK(start(c, 1));
+        CHECK_EQ(powered_away_from_min(10000u), 0u);
+        CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+        ended_safe();
+    }
+}
+
+/* The module coming on by itself after the stick went to the entry: the
+ * run ends on the next reading, in SIGNAL and in a power cycle alike. */
+TEST_CASE(a_live_reading_after_the_entry_move_ends_the_run_at_once)
+{
+    rig("sunrise-pro");
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    for (int i = 0; i < 10000 && !r.e.sig_moved; ++i) {
+        tick();
+    }
+    CHECK_EQ(r.e.phase, ESC_STICK_SIGNAL);
+    CHECK(r.e.sig_moved);
+    r.supply_on = true;
+    r.supply_stuck = true;
+    CHECK(powered_away_from_min(10000u) <= r.read_iv + 2u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+    ended_safe();
+
+    rig("sunrise-pro");
+    esc_stick_change_t two[2] = { change(1, 3), change(2, 4) };
+    CHECK(start(two, 2));
+    run_until_phase(ESC_STICK_CYCLE, 240000u);
+    for (int i = 0; i < 20000 && esc_stick_running(&r.e)
+                    && !r.e.cycle_moved; ++i) {
+        tick();
+    }
+    CHECK(r.e.cycle_moved);
+    run_for(100u);
+    r.supply_on = true;
+    r.supply_stuck = true;
+    CHECK(powered_away_from_min(10000u) <= r.read_iv + 2u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+    ended_safe();
+}
+
+/* Readings that stop after the supply read off: no step is asked, and
+ * nothing powered, on a reading older than ESC_STICK_STALE_MS. */
+TEST_CASE(no_step_is_asked_on_an_old_reading)
+{
+    static const esc_manual_t fit[] = {
+        { ESC_MANUAL_BEFORE_POWER, "Fit the jumper.", 0u, NULL, false },
+    };
+    rig_hand("sunrise-pro", fit, 1);
+    esc_stick_change_t two[2] = { change(1, 3), change(2, 4) };
+    CHECK(start(two, 2));
+    run_until_phase(ESC_STICK_CYCLE, 240000u);
+    for (int i = 0; i < 20000 && esc_stick_running(&r.e) && !r.e.off_seen;
+         ++i) {
+        tick();
+    }
+    CHECK(r.e.off_seen);
+    r.readings_stop = true;
+    bool asked = false, powered = false;
+    for (int i = 0; i < 20000 && esc_stick_running(&r.e); ++i) {
+        tick();
+        asked = asked || esc_stick_hand(&r.e) != NULL;
+        powered = powered || esc_stick_out(&r.e)->supply_on;
+    }
+    CHECK(!asked);
+    CHECK(!powered);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_STALE);
+    ended_safe();
+}
+
 int main(void)
 {
     RUN(beeps_make_a_group_that_silence_ends);
@@ -2313,6 +2422,9 @@ int main(void)
     RUN(shared_entry_times_compare_what_the_run_waits);
     RUN(a_run_started_with_the_output_on_asks_nothing);
     RUN(a_supply_that_comes_on_during_the_step_ends_the_run);
+    RUN(the_stick_stays_at_min_until_the_supply_reads_off);
+    RUN(a_live_reading_after_the_entry_move_ends_the_run_at_once);
+    RUN(no_step_is_asked_on_an_old_reading);
     RUN(a_value_makes_its_moves_after_the_selection);
     RUN(a_car_mode_selects_at_full_and_stores_at_the_brake);
     return test_summary("esc_stick");
