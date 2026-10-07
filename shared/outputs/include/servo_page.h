@@ -20,7 +20,12 @@
  * A hold (LINK_SV_HOLD) freezes the surfaces where their outputs are, and a
  * sweep running when it began keeps its phase; a resume (LINK_SV_RESUME,
  * protocol 4.6) carries that sweep on from there.  Whatever ends the hold
- * -- 0, a disarm, silence -- forgets the phase.
+ * -- 0, a disarm, silence -- forgets the phase.  A hold of a sweep that has
+ * made its movements keeps the centre it ended on.
+ *
+ * Every write is judged against the page as a servo_page_step() at the same
+ * moment leaves it, so a write served ahead of the pass finds a sweep that
+ * has run out already ended.
  *
  * While it runs it commands every channel the bank marks a surface, each
  * pass, and the CHANNELS page is not what drives them.

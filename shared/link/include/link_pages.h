@@ -153,7 +153,10 @@ enum {
  *     slew and all -- for as long as it is written, on the same 500 ms and
  *     disarm rules.  A sweep that was running when the hold began keeps its
  *     phase: how far into the curve it was, so its point, its dwell and its
- *     movements reached.
+ *     movements reached.  One that had made its movements is held at the
+ *     centre it ended on.  A write is judged against the page as a pass at
+ *     the same moment leaves it: a sweep past its last movement, unwritten
+ *     for 500 ms or disarmed has ended, even before the pass that ends it.
  *
  *     SWEEP = 5 (LINK_SV_RESUME, since 4.6), one register, carries that
  *     sweep on from the kept phase.  The surfaces are commanded along the

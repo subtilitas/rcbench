@@ -55,30 +55,13 @@ static void freeze_surfaces(outputs_t *o)
 }
 
 /*
- * Whether the sweep is running as of @p now_ms.  The coprocessor serves a
- * pass's writes before its servo_page_step(), so a write can arrive after
- * the sweep went unwritten for OUT_DEFAULT_TIMEOUT_MS and before the pass
- * that stops it.  Judged here as that pass judges it, the sweep has
- * stopped: a hold keeps no phase of it, and a repeat does not carry it on.
- */
-static bool sweep_live(const servo_page_t *p, uint32_t now_ms)
-{
-    return p->sweep.running
-           && (uint32_t)(now_ms - p->heard_ms) <= OUT_DEFAULT_TIMEOUT_MS;
-}
-
-/*
  * Whether a RESUME can carry on the sweep held now: a phase kept by a hold
- * still in force -- repeated within the time a channel command is trusted,
- * which servo_page_step() may not have judged yet -- and a page that still
- * describes that sweep.  A curve changed while held is a new sweep, which
- * starts only whole.
+ * still in force and a page that still describes that sweep.  A curve
+ * changed while held is a new sweep, which starts only whole.
  */
-static bool resumable(const servo_page_t *p, const uint16_t *next,
-                      uint32_t now_ms)
+static bool resumable(const servo_page_t *p, const uint16_t *next)
 {
-    if (!p->holding || !p->sweep.paused
-        || (uint32_t)(now_ms - p->heard_ms) > OUT_DEFAULT_TIMEOUT_MS) {
+    if (!p->holding || !p->sweep.paused) {
         return false;
     }
     const sweep_cfg_t *k = &p->sweep.cfg;
@@ -103,6 +86,17 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
     if ((unsigned)off + (unsigned)n > (unsigned)LINK_SV_SWEEP_DONE) {
         return LINK_NACK_READ_ONLY;
     }
+    /*
+     * The page as a pass at this moment leaves it.  The coprocessor serves
+     * a pass's writes before its servo_page_step(), so a write can land
+     * after a sweep has run out -- unwritten for OUT_DEFAULT_TIMEOUT_MS,
+     * disarmed, or past its last movement -- and before the pass that ends
+     * it.  Judged as that pass leaves it, the sweep has ended: its last
+     * pass has commanded the surfaces to the centre, a hold keeps no phase
+     * of it, a resume is refused and a repeat does not carry it on.  A pass
+     * repeated at the same time changes nothing.
+     */
+    (void)servo_page_step(p, o, now_ms);
     /*
      * The page as it would be, judged whole before any of it is kept.  The
      * sweep register reads 0 once a sweep has stopped, so a write that
@@ -132,7 +126,7 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
     if ((hold || resume) && !outputs_armed(o)) {
         return LINK_NACK_NOT_ARMED;
     }
-    if (resume && !resumable(p, next, now_ms)) {
+    if (resume && !resumable(p, next)) {
         return LINK_NACK_BAD_VALUE;
     }
     if (sweep && next[LINK_SV_SWEEP] != 0u && !hold && !resume) {
@@ -158,7 +152,7 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
         }
     }
 
-    const bool was_running = sweep_live(p, now_ms);
+    const bool was_running = p->sweep.running;
     const sweep_cfg_t was  = p->sweep.cfg;
     memcpy(p->regs, next, sizeof(next));
     if (resume) {
@@ -180,15 +174,20 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
          * output had got to, which only this end knows -- the panel's
          * drawing is an estimate without feedback.  Each write keeps it.
          * A running sweep keeps its phase for a RESUME; anything else held
-         * keeps none.
+         * keeps none.  A sweep that has made its movements is held at the
+         * centre its last pass commanded, the place it ends on whichever
+         * of the hold and that pass came first.
          */
         if (!p->holding) {
-            if (sweep_live(p, now_ms)) {
+            if (p->sweep.running) {
                 sweep_pause(&p->sweep, now_ms);
+                freeze_surfaces(o);
+            } else if (p->finished) {
+                sweep_stop(&p->sweep);
             } else {
                 sweep_stop(&p->sweep);
+                freeze_surfaces(o);
             }
-            freeze_surfaces(o);
         }
         p->holding  = true;
         p->finished = false;

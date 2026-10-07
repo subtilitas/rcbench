@@ -495,6 +495,61 @@ TEST_CASE(a_write_after_the_timeout_and_before_the_step_finds_it_stopped)
 }
 
 /*
+ * A sweep with a movement count that has made its last movement has ended,
+ * even when the HOLD is served before the pass that ends it: the surfaces
+ * go to the centre the sweep ends on and are held there, no phase is kept,
+ * and RESUME is refused -- the same as when the pass comes first.  A 1 Hz
+ * sine with one movement ends 250 ms in.
+ */
+TEST_CASE(a_hold_after_the_last_movement_finds_the_sweep_ended)
+{
+    for (int step_first = 0; step_first < 2; ++step_first) {
+        fresh(true);
+        const uint16_t one = 1u;
+        CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP_MOVES, 1u, &one, &o, T0),
+                 0u);
+        CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+        CHECK(servo_page_step(&pg, &o, T0 + 200u));
+        outputs_step(&o, T0 + 200u);
+        CHECK(o.channel[0].command > 850u);
+        if (step_first) {
+            CHECK(!servo_page_step(&pg, &o, T0 + 251u));
+        }
+        CHECK_EQ(say(LINK_SV_HOLD, T0 + 251u), 0u);
+        (void)servo_page_step(&pg, &o, T0 + 251u);
+        outputs_step(&o, T0 + 251u);
+        CHECK_EQ(reg(LINK_SV_SWEEP_DONE), 1u);
+        CHECK_EQ(reg(LINK_SV_SWEEP), LINK_SV_HOLD);
+        CHECK_EQ(o.channel[0].command, SWEEP_CENTRE);
+        CHECK_EQ(outputs_actual(&o, 0), SWEEP_CENTRE);
+        CHECK_EQ(say(LINK_SV_RESUME, T0 + 300u), LINK_NACK_BAD_VALUE);
+        held(T0 + 300u, T0 + 900u);                /* held at the centre */
+        CHECK_EQ(outputs_actual(&o, 0), SWEEP_CENTRE);
+    }
+
+    /* Just before the last movement it is still running, and a hold keeps
+     * its phase. */
+    fresh(true);
+    const uint16_t one = 1u;
+    CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP_MOVES, 1u, &one, &o, T0), 0u);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    CHECK_EQ(say(LINK_SV_HOLD, T0 + 249u), 0u);
+    CHECK_EQ(say(LINK_SV_RESUME, T0 + 300u), 0u);
+}
+
+/* A frame rate written while held leaves the kept phase alone. */
+TEST_CASE(a_frame_rate_written_while_held_keeps_the_phase)
+{
+    fresh(true);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    held(T0 + 100u, T0 + 200u);
+    const uint16_t hz = 333u;
+    CHECK_EQ(servo_page_write(&pg, LINK_SV_FRAME_HZ, 1u, &hz, &o, T0 + 250u),
+             0u);
+    CHECK_EQ(say(LINK_SV_RESUME, T0 + 260u), 0u);
+}
+
+/*
  * The host's choice: RESUME for a resume of a hold in force on 4.6; the
  * curve over, and saying so, on an older coprocessor or after a refusal;
  * the curve as usual for anything else, a resumed sweep's repeats included.
@@ -548,6 +603,8 @@ int main(void)
     RUN(resume_slews_from_where_the_surfaces_were_held);
     RUN(resume_is_refused_with_no_sweep_held);
     RUN(a_write_after_the_timeout_and_before_the_step_finds_it_stopped);
+    RUN(a_hold_after_the_last_movement_finds_the_sweep_ended);
+    RUN(a_frame_rate_written_while_held_keeps_the_phase);
     RUN(the_host_resumes_on_4_6_and_starts_over_otherwise);
     RUN(the_curve_over_a_hold_starts_from_its_beginning);
     return test_summary("servo_page");
