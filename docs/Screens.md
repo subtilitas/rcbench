@@ -259,11 +259,18 @@ HOLD, SWEEP register 4), because only it knows exactly where that is;
 without feedback the horn drawn on the panel is an estimate of it. The panel
 repeats the hold every 100 ms (`SERVO_HOLD_MS`), so a pause outlasts the
 coprocessor's 500 ms rule. A pause does not wait behind sweep writes already
-on the wire. A tap on PAUSED resumes the sweep from the curve's
-beginning -- the centre for a sine or a triangle, the first end for a
-square -- and the output slews there from where it was paused, at SPEED's
-rate, at once at 100 %. The coprocessor keeps no phase across a hold, so a
-resume cannot continue the curve where it paused.
+on the wire. A tap on PAUSED carries the sweep on from the point of the
+curve it was paused at: its place in a dwell and the ends it has reached go
+on from there too, and the horn is drawn on from that phase. The coprocessor
+keeps the phase while it holds and resumes the curve (`LINK_SV_RESUME`,
+protocol 4.6); the output slews from where it was held to the curve at
+SPEED's rate, at once at 100 %, and is normally already there. A curve
+changed on the TEST page while paused starts as a new sweep instead. A
+coprocessor older than 4.6, or one that refuses the resume because its hold
+has ended, starts the curve over from its beginning -- the centre for a
+sine or a triangle, the first end for a square -- and the alert band says
+so: `coprocessor older than 4.6 -- the sweep starts over` or `coprocessor
+refused the resume -- the sweep starts over`.
 
 ![A paused sweep](img/servo-paused.png)
 

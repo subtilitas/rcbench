@@ -50,6 +50,7 @@
 #include "log_select.h"
 #include "log_writer.h"
 #include "motor_screen.h"
+#include "servo_page.h"
 #include "servo_screen.h"
 #include "pdmini.h"
 #include "supply_link.h"
@@ -4060,6 +4061,7 @@ static uint32_t    s_servo_hold_ms;      /* when the far end last took it */
 static atomic_bool s_servo_hold_lost;    /* for the screen: it let go */
 static bool        s_servo_sweep_unknown;
 static atomic_bool s_servo_sweep_able;   /* for the screen's SWEEP */
+static uint16_t    s_servo_minor;        /* its protocol minor: 6 resumes */
 /* The curve the far end last took, and when it started one: a curve that
  * differs from the one running starts over there, and the screen draws the
  * horn from that moment rather than from its tap. */
@@ -4261,6 +4263,38 @@ static bool write_servo(const servo_cmd_t sv)
                     return false;
                 }
             }
+            const uint16_t curve[4] = { sv.sweep_kind, sv.sweep_mhz,
+                                        sv.sweep_span, sv.sweep_dwell_ms };
+            /*
+             * A resume of the sweep held there carries it on from its phase
+             * (4.6).  An older coprocessor, or one that refuses -- the hold
+             * ended there, or the curve changed -- gets the curve whole and
+             * starts it over, and the operator is told once it has.
+             */
+            servo_resume_t plan = servo_page_resume_plan(
+                sv.resume, s_servo_holding, s_servo_minor, false);
+            if (plan == SERVO_RESUME_WRITE) {
+                const uint16_t resume = LINK_SV_RESUME;
+                if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 1u,
+                                &resume, &reply)) {
+                    return false;
+                }
+                if (reply.op == LINK_OP_ACK) {
+                    const uint32_t took = now_ms();
+                    memcpy(s_servo_curve, curve, sizeof(curve));
+                    s_servo_curve_ms = took;
+                    s_servo_sweeping = true;
+                    s_servo_holding  = false;
+                    atomic_store(&s_sweep_start_ms, took);
+                    atomic_store(&s_sweep_start_from,
+                                 (unsigned)SERVO_SWEEP_RESUMED);
+                    atomic_store(&s_sweep_start_new, true);
+                    s_servo_written |= mask;
+                    return true;
+                }
+                plan = servo_page_resume_plan(sv.resume, s_servo_holding,
+                                              s_servo_minor, true);
+            }
             if (!s_servo_sweeping) {
                 const uint16_t endless = 0u;
                 if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP_MOVES,
@@ -4274,12 +4308,15 @@ static bool write_servo(const servo_cmd_t sv)
                     return false;
                 }
             }
-            const uint16_t curve[4] = { sv.sweep_kind, sv.sweep_mhz,
-                                        sv.sweep_span, sv.sweep_dwell_ms };
             if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 4u, curve,
                             &reply)
                 || reply.op != LINK_OP_ACK) {
                 return false;
+            }
+            if (plan == SERVO_RESUME_TOO_OLD) {
+                control_alert(TR(ALERT_SWEEP_RESUME_OLD));
+            } else if (plan == SERVO_RESUME_REFUSED) {
+                control_alert(TR(ALERT_SWEEP_RESUME_REFUSED));
             }
             /* A start there: no sweep running, a changed curve, or one the
              * far end stopped because nothing repeated it for as long as a
@@ -5416,6 +5453,8 @@ static void link_came_up(const link_msg_t *reply)
     s_servo_rate_page = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 1u;
     (void)servo_rate_reset();
     s_servo_sweep_page    = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 2u;
+    /* 4.6 carries a held sweep on from its phase (LINK_SV_RESUME). */
+    s_servo_minor         = reply->regs[LINK_ID_PROTOCOL_MINOR];
     s_servo_sweeping      = false;
     s_servo_holding       = false;
     s_servo_sweep_unknown = s_servo_sweep_page;

@@ -32,7 +32,7 @@ capture stay on the coprocessor, and only results travel.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the coprocessor transmits only when asked. Worst-case
 payload 52 kB/s against 12 to 30 kB/s of expected traffic. Protocol version
-4.5. [Reference](docs/Link.md).
+4.6. [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO6 (J8) from the core that does
 not draw. The task runs every 5 ms; the line edges every 20 ms
@@ -98,7 +98,7 @@ is taken in a gap ahead of the save that needs it.
 | Board, display, GT911, SD card | built; the panel boots and reports each step on the splash |
 | Shell: band, router, splash, menu, simulation watermark | built |
 | Motor & ESC (electronic speed controller) screen | built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the throttle are written to the coprocessor's control page at every 50 ms poll while the link is up; an arm writes CLEAR on its own, then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK to either leaves the panel disarmed. An arm and a throttle have gone through it on the bring-up bench and run a motor; the paths a session has to provoke -- a NACK, a STOP mid-throttle, a link pulled while armed -- have not |
-| Servo screen | built; writes `CHAN_CFG` and `CHANNELS` over the link, the frame rate on `SERVO` to a coprocessor speaking protocol 4.1, and a sweep (square, sine or triangle, run by the coprocessor) to one speaking 4.2, which PAUSE holds (the button then reads PAUSED) and a tap on PAUSED starts again from the curve's beginning; SPEED's row reads SPEED LIMITS THE SWEEP while SPEED is slower than the curve's fastest change. A SETTINGS overlay sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session, and the automatic test, its limits and the device under test in NVS; a heli type or a rate above 60 Hz is applied only through a warning held for 2 s, and every restart is STANDARD PWM at 50 Hz. The right card plots the supply's voltage, current and power: the PD mini's when SETUP enables it, `supply_sim_t`'s otherwise. START TEST on the TEST page runs the automatic test (`shared/servo/servo_test.c`): the supply stepped through 4.8 and 6.0 V, and 7.4 and 8.4 V with HV SERVO on (session only, through the HV warning's 2 s hold), idle, moving and holding current and the travel time from the supply's current at each, a brown-out walk from 5.0 V down in 0.2 V steps, and `BENCHnnn.CSV` and `BENCHnnn.TXT` written by the `runlog` task. STOP, a disarm, link loss, the supply and the operator end a run with the output off and a report marked ABORTED. A frame rate other than 50 Hz, the sweep and the automatic test have not been tried on hardware |
+| Servo screen | built; writes `CHAN_CFG` and `CHANNELS` over the link, the frame rate on `SERVO` to a coprocessor speaking protocol 4.1, and a sweep (square, sine or triangle, run by the coprocessor) to one speaking 4.2, which PAUSE holds (the button then reads PAUSED) and a tap on PAUSED carries on from the phase it was held at on a coprocessor speaking 4.6 (`LINK_SV_RESUME`), and starts over from the curve's beginning, with an alert, on an older one or one that refuses; SPEED's row reads SPEED LIMITS THE SWEEP while SPEED is slower than the curve's fastest change. A SETTINGS overlay sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session, and the automatic test, its limits and the device under test in NVS; a heli type or a rate above 60 Hz is applied only through a warning held for 2 s, and every restart is STANDARD PWM at 50 Hz. The right card plots the supply's voltage, current and power: the PD mini's when SETUP enables it, `supply_sim_t`'s otherwise. START TEST on the TEST page runs the automatic test (`shared/servo/servo_test.c`): the supply stepped through 4.8 and 6.0 V, and 7.4 and 8.4 V with HV SERVO on (session only, through the HV warning's 2 s hold), idle, moving and holding current and the travel time from the supply's current at each, a brown-out walk from 5.0 V down in 0.2 V steps, and `BENCHnnn.CSV` and `BENCHnnn.TXT` written by the `runlog` task. STOP, a disarm, link loss, the supply and the operator end a run with the output off and a report marked ABORTED. A frame rate other than 50 Hz, the sweep and the automatic test have not been tried on hardware |
 | Supply screen | built and tested on the host; the control task drives the PD mini through the SUPPLY page (`shared/bench/supply_link.c`) when SETUP INTERFACES enables it, and runs `supply_sim_t` otherwise. Set points shown beside their readings, a keypad, a SETTINGS overlay (caps, start values, current and voltage trips, the confirmation for live changes) kept in NVS, and a question before a set point changes a live output. Every stop, a trip, a lost ON and a supply that stops answering switch the output off; the supply is stepped and logged from `control_pump()`, so it keeps its 50 ms cadence while an exchange waits. A supply run is logged with its own columns |
 | PD mini driver | the codec and driver (`shared/bench/pdmini.c`) are built and tested on the host against a modelled module; the coprocessor runs it on a PIO UART on the pins the SUPPLY page (protocol 4.3) names, and the panel writes and reads that page; never run against a module. The wiring is kept in the coprocessor's flash with the output bindings (record version 4; version 3 records still load) and driven at boot with the output off; the command is not kept. A wiring change while a module has answered waits for a state read sent after it and is taken only if that read shows the output off (protocol 4.5). A live output whose input reads under the set point plus 0.5 V on 2 input reads in a row is switched off and the panel names the input and the set point; the rule is chosen, not measured. The PIO receive FIFO holds 8 bytes, 4.2 ms of reply at 19200 baud; the main loop's pass time is not measured |
 | Analyser, programmer, balance, battery screens | built, rendered from models |
@@ -245,7 +245,7 @@ chrome-cached screen to 2,000.
 | `shared/ui/supply_screen.c` | 972 | 960 | 98.8% |
 | `shared/ui/ui_keypad.c` | 163 | 161 | 98.8% |
 | `shared/ui/ui_textkey.c` | 170 | 169 | 99.4% |
-| `shared/ui/servo_screen.c` | 2185 | 2134 | 97.7% |
+| `shared/ui/servo_screen.c` | 2206 | 2155 | 97.7% |
 | `shared/ui/analyser_screen.c` | 224 | 221 | 98.7% |
 | `shared/ui/balance_screen.c` | 311 | 311 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
@@ -266,7 +266,7 @@ chrome-cached screen to 2,000.
 | `shared/safety/touch_loss.c` | 45 | 45 | 100.0% |
 | `shared/servo/servo_limit.c` | 120 | 116 | 96.7% |
 | `shared/servo/servo_sync.c` | 172 | 167 | 97.1% |
-| `shared/servo/servo_sweep.c` | 103 | 99 | 96.1% |
+| `shared/servo/servo_sweep.c` | 118 | 114 | 96.6% |
 | `shared/servo/servo_test.c` | 499 | 483 | 96.8% |
 | `shared/servo/servo_report.c` | 323 | 322 | 99.7% |
 | `shared/openyge/openyge_frame.c` | 165 | 162 | 98.2% |
@@ -299,7 +299,7 @@ chrome-cached screen to 2,000.
 | `shared/outputs/outputs_pages.c` | 190 | 179 | 94.2% |
 | `shared/outputs/out_bind.c` | 461 | 449 | 97.4% |
 | `shared/outputs/out_pwm_map.c` | 15 | 15 | 100.0% |
-| `shared/outputs/servo_page.c` | 125 | 123 | 98.4% |
+| `shared/outputs/servo_page.c` | 153 | 151 | 98.7% |
 | `shared/outputs/supply_page.c` | 245 | 242 | 98.8% |
 | `shared/outputs/out_store_map.c` | 68 | 68 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
@@ -307,7 +307,7 @@ chrome-cached screen to 2,000.
 | `shared/bench/pdmini.c` | 553 | 544 | 98.4% |
 | `shared/bench/supply_link.c` | 255 | 245 | 96.1% |
 | `shared/bench/log_writer.c` | 126 | 114 | 90.5% |
-| **total** | **19101** | **18389** | **96.3%** |
+| **total** | **19165** | **18453** | **96.3%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

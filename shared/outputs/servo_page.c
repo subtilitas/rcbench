@@ -54,6 +54,27 @@ static void freeze_surfaces(outputs_t *o)
     }
 }
 
+/*
+ * Whether a RESUME can carry on the sweep held now: a phase kept by a hold
+ * still in force -- repeated within the time a channel command is trusted,
+ * which servo_page_step() may not have judged yet -- and a page that still
+ * describes that sweep.  A curve changed while held is a new sweep, which
+ * starts only whole.
+ */
+static bool resumable(const servo_page_t *p, const uint16_t *next,
+                      uint32_t now_ms)
+{
+    if (!p->holding || !p->sweep.paused
+        || (uint32_t)(now_ms - p->heard_ms) > OUT_DEFAULT_TIMEOUT_MS) {
+        return false;
+    }
+    const sweep_cfg_t *k = &p->sweep.cfg;
+    return next[LINK_SV_SWEEP_MHZ] == k->mhz
+           && next[LINK_SV_SWEEP_SPAN] == k->amplitude
+           && next[LINK_SV_SWEEP_DWELL_MS] == k->dwell_ms
+           && next[LINK_SV_SWEEP_MOVES] == k->moves;
+}
+
 uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
                          const uint16_t *in, outputs_t *o, uint32_t now_ms)
 {
@@ -94,10 +115,14 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
     }
     const sweep_cfg_t cfg = cfg_of(next);
     const bool hold = sweep && next[LINK_SV_SWEEP] == LINK_SV_HOLD;
-    if (hold && !outputs_armed(o)) {
+    const bool resume = sweep && next[LINK_SV_SWEEP] == LINK_SV_RESUME;
+    if ((hold || resume) && !outputs_armed(o)) {
         return LINK_NACK_NOT_ARMED;
     }
-    if (sweep && next[LINK_SV_SWEEP] != 0u && !hold) {
+    if (resume && !resumable(p, next, now_ms)) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    if (sweep && next[LINK_SV_SWEEP] != 0u && !hold && !resume) {
         /*
          * A sweep starts, or changes, only from its four registers written
          * together: a curve rebuilt from a register or two and what the page
@@ -123,14 +148,33 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
     const bool was_running = p->sweep.running;
     const sweep_cfg_t was  = p->sweep.cfg;
     memcpy(p->regs, next, sizeof(next));
+    if (resume) {
+        /*
+         * On from the kept phase.  The surfaces are commanded along the
+         * curve from the next pass and slew there from where they were
+         * held; the curve's clock runs from now, not from their arrival.
+         */
+        (void)sweep_resume(&p->sweep, now_ms);
+        p->regs[LINK_SV_SWEEP] = (uint16_t)p->sweep.cfg.kind;
+        p->holding  = false;
+        p->finished = false;
+        p->heard_ms = now_ms;
+        return 0u;
+    }
     if (hold) {
         /*
          * Held where the outputs are: a sweep stopped exactly where its
          * output had got to, which only this end knows -- the panel's
          * drawing is an estimate without feedback.  Each write keeps it.
+         * A running sweep keeps its phase for a RESUME; anything else held
+         * keeps none.
          */
         if (!p->holding) {
-            sweep_stop(&p->sweep);
+            if (p->sweep.running) {
+                sweep_pause(&p->sweep, now_ms);
+            } else {
+                sweep_stop(&p->sweep);
+            }
             freeze_surfaces(o);
         }
         p->holding  = true;
@@ -194,7 +238,9 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
     if (p != NULL && o != NULL && p->holding) {
         if (!outputs_armed(o)
             || (uint32_t)(now_ms - p->heard_ms) > OUT_DEFAULT_TIMEOUT_MS) {
+            /* And the phase it kept: nothing is left to resume. */
             p->holding = false;
+            sweep_stop(&p->sweep);
             p->regs[LINK_SV_SWEEP] = 0u;
         } else {
             for (uint8_t ch = 0; ch < (uint8_t)LINK_OUT_CHANNELS; ++ch) {
@@ -255,4 +301,16 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
 uint16_t servo_page_hz(const servo_page_t *p)
 {
     return (p != NULL) ? p->regs[LINK_SV_FRAME_HZ] : 0u;
+}
+
+servo_resume_t servo_page_resume_plan(bool asked, bool held,
+                                      uint16_t proto_minor, bool refused)
+{
+    if (!asked || !held) {
+        return SERVO_RESUME_CURVE;
+    }
+    if (proto_minor < 6u) {
+        return SERVO_RESUME_TOO_OLD;
+    }
+    return refused ? SERVO_RESUME_REFUSED : SERVO_RESUME_WRITE;
 }

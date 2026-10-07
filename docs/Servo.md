@@ -391,10 +391,10 @@ shown.
 
 PAUSE, the sweep button while a sweep runs, holds the output where it has
 got to, and the button reads PAUSED, filled in the warning colour. A tap on
-PAUSED resumes
-the sweep from the curve's beginning: the coprocessor keeps no phase across
-the hold. A paused sweep is the moment to raise SPEED: the pause stays, and
-the resume runs at the new rate.
+PAUSED carries the sweep on from the phase it was paused at, on a
+coprocessor speaking protocol 4.6; an older one starts the curve over. A
+paused sweep is the moment to raise SPEED: the pause stays, and the resume
+runs at the new rate.
 
 ## Prerequisites
 

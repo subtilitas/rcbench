@@ -363,8 +363,9 @@ Ruderhorn, daher wird das nicht angezeigt.
 
 PAUSE, der Sweep-Knopf während ein Sweep läuft, hält den Ausgang dort, wo
 er gerade steht, und der Knopf heißt PAUSIERT, gefüllt in der Warnfarbe.
-Ein Tippen auf PAUSIERT setzt den Sweep am Anfang der Kurve fort: der Koprozessor behält über
-das Halten keine Phase. Ein angehaltener Sweep ist der Moment, TEMPO zu
+Ein Tippen auf PAUSIERT setzt den Sweep ab der Phase fort, an der er
+angehalten wurde, bei einem Koprozessor mit Protokoll 4.6; ein älterer
+startet die Kurve von vorn. Ein angehaltener Sweep ist der Moment, TEMPO zu
 erhöhen: die Pause bleibt, und das Fortsetzen läuft mit der neuen Rate.
 
 ## Voraussetzungen

@@ -23,6 +23,7 @@ bool sweep_start(sweep_t *w, const sweep_cfg_t *cfg, uint32_t now_ms)
     if (w == NULL) {
         return false;
     }
+    w->paused = false;
     if (!sweep_cfg_valid(cfg)) {
         w->running = false;
         return false;
@@ -37,7 +38,35 @@ void sweep_stop(sweep_t *w)
 {
     if (w != NULL) {
         w->running = false;
+        w->paused  = false;
     }
+}
+
+/*
+ * The phase is the time into the sweep, kept as milliseconds: everything
+ * the curve is -- its point, the dwell it is in, the ends it has reached --
+ * follows from that time, so starting the clock that far back again is the
+ * whole of a resume.
+ */
+void sweep_pause(sweep_t *w, uint32_t now_ms)
+{
+    if (w == NULL || !w->running) {
+        return;
+    }
+    w->paused_ms = now_ms - w->start_ms;
+    w->running   = false;
+    w->paused    = true;
+}
+
+bool sweep_resume(sweep_t *w, uint32_t now_ms)
+{
+    if (w == NULL || !w->paused) {
+        return false;
+    }
+    w->start_ms = now_ms - w->paused_ms;
+    w->running  = true;
+    w->paused   = false;
+    return true;
 }
 
 /*

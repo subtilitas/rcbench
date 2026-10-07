@@ -84,6 +84,10 @@ typedef struct {
      *  on the dial, CENTRE.  The panel gives it way at once over sweep
      *  writes already on the wire or queued. */
     bool             ends_sweep;
+    /** SERVO_CMD_SWEEP carrying on the sweep PAUSE held, from where it was
+     *  held: the panel asks the coprocessor to resume it (protocol 4.6),
+     *  and an older one, or one that refuses, starts the curve over. */
+    bool             resume;
 } servo_cmd_t;
 
 /** Drop the cached chrome, so the next frame repaints it. */
@@ -164,12 +168,15 @@ typedef enum {
     SERVO_SWEEP_FROM_HERE,    /**< carrying on: a changed curve            */
     SERVO_SWEEP_FROM_FROZEN,  /**< where it froze when the sweep went
                                    unrepeated, @p frozen_ago_ms ago        */
+    SERVO_SWEEP_RESUMED,      /**< where it was held: the paused sweep
+                                   carried on from its phase               */
 } servo_sweep_from_t;
 
 /**
  * The coprocessor started the sweep @p age_ms ago, its output starting from
  * @p from: the horn is drawn along its curve from then, and without feedback
- * from where that output was.
+ * from where that output was.  SERVO_SWEEP_RESUMED is a paused sweep
+ * carried on @p age_ms ago from the phase it was paused at.
  */
 void servo_screen_sweep_started(uint32_t age_ms, servo_sweep_from_t from,
                                 uint32_t frozen_ago_ms);

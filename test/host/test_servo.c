@@ -1735,6 +1735,7 @@ TEST_CASE(pause_holds_the_sweep_and_a_second_tap_resumes_it)
         CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
         CHECK(c.slew_per_s > 0);
         CHECK_EQ(c.sweep_kind, SWEEP_SINE);
+        CHECK(c.resume);
         CHECK(!c.ends_sweep);
         CHECK(servo_screen_sweeping());
         CHECK(!servo_screen_paused());
@@ -1743,6 +1744,68 @@ TEST_CASE(pause_holds_the_sweep_and_a_second_tap_resumes_it)
         CHECK_EQ(sweep_btn_pixels(ui_theme_color(UI_C_WARN)), 0);
     }
     ui_theme_set(UI_THEME_DARK);
+}
+
+/*
+ * The horn goes on from the phase it was paused at, however long the pause:
+ * the 0.5 Hz sine paused a quarter of a second in is at its peak a quarter
+ * of a second after PAUSED.  A coprocessor that started the curve over
+ * instead (older than 4.6, or refusing) is followed: drawn from the curve's
+ * beginning.  One that resumed later than the tap is followed too.
+ */
+TEST_CASE(paused_carries_the_sweep_on_from_its_phase)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);                       /* SWEEP */
+    CHECK(!last_cmd().resume);
+    frames(0.25f);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSE */
+    frames(2.0f);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED: on */
+    CHECK(last_cmd().resume);
+    frames(0.25f);
+    CHECK(servo_screen_commanded() > 1880u);   /* the peak, 0.5 s in */
+
+    /* Started over at the far end: drawn from the beginning. */
+    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
+    frames(0.25f);
+    CHECK(servo_screen_commanded() > 1760u && servo_screen_commanded() < 1800u);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSE */
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_HOLD);
+
+    /* Resumed 1450 ms before the panel heard: about 1960 ms into the
+     * cycle, in the 200 ms dwell at the low end, 1100 us. */
+    tap(SWEEP_X, BTN_Y);
+    servo_screen_sweep_started(1450u, SERVO_SWEEP_RESUMED, 0u);
+    frames(0.25f);
+    CHECK(servo_screen_commanded() >= 1100u && servo_screen_commanded() < 1120u);
+
+    /* A repeat before the panel took it is still a resume. */
+    tap(SWEEP_X, BTN_Y);                       /* PAUSE */
+    (void)last_cmd();
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED */
+    choose_type(0);                            /* says the sweep again */
+    CHECK(last_cmd().resume);
+}
+
+/* A curve changed on the TEST page while paused is a new sweep, from its
+ * beginning, not a resume. */
+TEST_CASE(a_curve_changed_while_paused_starts_over)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);
+    frames(0.25f);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSE */
+    settings_set(SET_SERVO_TEST_HZ, 1.0f);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED */
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
+    CHECK(!c.resume);
+    CHECK_EQ(c.sweep_mhz, 1000u);
 }
 
 /* Pause, then each thing that ends a pause, and the command it sends. */
@@ -3578,6 +3641,8 @@ int main(void)
     RUN(hold_keeps_the_output_where_it_has_got_to);
     RUN(speed_says_when_it_limits_the_sweep);
     RUN(pause_holds_the_sweep_and_a_second_tap_resumes_it);
+    RUN(paused_carries_the_sweep_on_from_its_phase);
+    RUN(a_curve_changed_while_paused_starts_over);
     RUN(a_pause_ends_where_a_hold_ended);
     RUN(hold_without_feedback_matches_the_far_ends_slew);
     RUN(the_drawn_output_starts_where_the_far_ends_output_starts);

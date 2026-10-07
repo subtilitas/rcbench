@@ -626,8 +626,13 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
         && kind != SERVO_CMD_ARM) {
         return;
     }
+    /* A resume not yet taken stays one when the sweep is said again. */
+    const bool resume = kind == SERVO_CMD_SWEEP
+                        && s.pending.kind == SERVO_CMD_SWEEP
+                        && s.pending.resume;
     s.pending.kind     = kind;
     s.pending.value_us = us;
+    s.pending.resume   = resume;
     if (kind == SERVO_CMD_ARM) {
         s.arm_profile_rev = s.profile_rev;
         s.arm_in_flight   = true;
@@ -730,11 +735,12 @@ static void stop_sweep(void)
  * to, by the link's HOLD.  The coprocessor holds it there, because only it
  * knows where that is: SPEED can leave the output well behind the curve, and
  * without feedback the horn drawn here is an estimate.  The drawing stops
- * where it was.  A second tap starts the curve again from its beginning:
- * the coprocessor keeps no phase across a hold.
+ * where it was.  The phase is kept, here and at the far end, for
+ * resume_sweep().
  */
 static void hold_sweep(void)
 {
+    sweep_pause(&s.sw, s.clock_ms);
     stop_sweep();
     s.commanded_deg = s.shown_deg;
     post(SERVO_CMD_HOLD, 0);
@@ -781,6 +787,28 @@ static bool same_sweep(const sweep_cfg_t *a, const sweep_cfg_t *b)
            && a->amplitude == b->amplitude && a->dwell_ms == b->dwell_ms;
 }
 
+/*
+ * A tap on PAUSED: the paused sweep carried on from where it was paused,
+ * drawn from there at once.  The command asks the panel for a resume; a
+ * coprocessor older than 4.6, or one that refuses, starts the curve over
+ * instead, and servo_screen_sweep_started() redraws it from its beginning.
+ * A curve changed on the TEST page since the pause is a new sweep.
+ */
+static void resume_sweep(void)
+{
+    const sweep_cfg_t now = sweep_cfg_now();
+    if (!s.armed || !s.sweep_able || !same_sweep(&now, &s.sw.cfg)
+        || !sweep_resume(&s.sw, s.clock_ms)) {
+        start_sweep();
+        return;
+    }
+    s.sweep_from_cmd = s.shown_cmd;
+    s.sweeping = true;
+    post(SERVO_CMD_SWEEP, 0);
+    s.pending.resume = s.pending.kind == SERVO_CMD_SWEEP;
+    ++s.ctrl_rev;
+}
+
 bool servo_screen_sweeping(void) { return s.sweeping; }
 
 bool servo_screen_paused(void) { return s.paused; }
@@ -823,6 +851,12 @@ void servo_screen_sweep_started(uint32_t age_ms, servo_sweep_from_t from,
      * unrepeated.
      */
     if (!s.sweeping) {
+        return;
+    }
+    if (from == SERVO_SWEEP_RESUMED) {
+        /* On from the phase it was paused at, and from where the output
+         * was held, which is where the horn has stayed. */
+        s.sw.start_ms = s.clock_ms - age_ms - s.sw.paused_ms;
         return;
     }
     s.sw.start_ms = s.clock_ms - age_ms;
@@ -2521,10 +2555,12 @@ static void event(const touch_event_t *evt)
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.sweep_btn, px, py)) {
             test_end_now(SERVO_TEST_AB_OPERATOR);
-            /* PAUSE pauses a running sweep; a tap on a paused one, or on
-             * SWEEP, starts the curve. */
+            /* PAUSE pauses a running sweep, PAUSED carries it on, and
+             * SWEEP starts the curve. */
             if (s.sweeping) {
                 hold_sweep();
+            } else if (s.paused) {
+                resume_sweep();
             } else {
                 start_sweep();
             }

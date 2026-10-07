@@ -6,8 +6,18 @@ history is in git.
 
 ## Unreleased
 
+The link protocol is 4.6: the coprocessor keeps a held sweep's phase and
+resumes it (SWEEP register 5, RESUME). Flash both images. A 0.12.0
+coprocessor (4.5) still links and sweeps with this panel, but a paused
+sweep starts over from the curve's beginning, and the alert band says so.
+
 ### Added
 
+- **RESUME on the SERVO link page (protocol 4.6).** A hold (SWEEP 4) keeps
+  the phase of a sweep that was running; SWEEP 5 written alone carries it
+  on from there. Refused with BAD_VALUE when no phase is kept or registers
+  2 to 5 changed since the hold, NOT_ARMED on a disarmed bench. A write of
+  0, a disarm, 500 ms unwritten or a restart forget the phase.
 - **SERVO says when SPEED limits a sweep.** SPEED's row on the right card
   reads SPEED LIMITS THE SWEEP (TEMPO BEGRENZT DEN SWEEP in German), in the
   warning colour, while SPEED is slower than the fastest change the TEST
@@ -23,9 +33,9 @@ history is in git.
   PAUSE (in English and German) where it read HOLD. A tap holds the output
   where it has got to, as HOLD did, and the button reads PAUSED (German:
   PAUSIERT), filled in the warning colour instead of the accent. A tap on
-  PAUSED resumes the sweep
-  from the curve's beginning; the coprocessor keeps no phase across the
-  hold. A changed SPEED keeps the pause, and the resume runs at it. CENTRE,
+  PAUSED carries the sweep on from the point of the curve it was paused at,
+  its dwell and its count of ends included. A changed SPEED keeps the
+  pause, and the resume runs at it. CENTRE,
   RELEASE, a finger on the dial, STOP, a disarm, leaving the screen and a
   hold unrepeated for 500 ms end a pause, and the button reads SWEEP.
 - **SERVO's CENTRE button reads ZENTRIEREN in German.** CENTRE stays

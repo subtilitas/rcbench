@@ -62,6 +62,8 @@ typedef struct {
     sweep_cfg_t cfg;
     uint32_t    start_ms;
     bool        running;
+    bool        paused;      /**< stopped by sweep_pause(), phase kept    */
+    uint32_t    paused_ms;   /**< how far into the sweep it was paused    */
 } sweep_t;
 
 /** Whether @p cfg is one a sweep can run: a curve, a speed and an amplitude
@@ -72,7 +74,23 @@ bool sweep_cfg_valid(const sweep_cfg_t *cfg);
  *  sweep_cfg_valid() refuses. */
 bool sweep_start(sweep_t *w, const sweep_cfg_t *cfg, uint32_t now_ms);
 
+/** Stop, and forget any paused phase. */
 void sweep_stop(sweep_t *w);
+
+/**
+ * Stop a running sweep at @p now_ms and keep how far into it it was, so
+ * sweep_resume() carries on from there: the same point of the curve, the
+ * same dwell, the movements reached so far.  Nothing for a sweep that is not
+ * running, finished included.
+ */
+void sweep_pause(sweep_t *w, uint32_t now_ms);
+
+/**
+ * Carry a paused sweep on at @p now_ms from where it was paused.  False,
+ * and nothing changes, when nothing is paused: never paused, stopped or
+ * started since.
+ */
+bool sweep_resume(sweep_t *w, uint32_t now_ms);
 
 /**
  * The command at @p now_ms into @p command.  True while the sweep runs;

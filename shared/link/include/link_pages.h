@@ -54,7 +54,7 @@ typedef enum {
  * older host can ignore.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 5u
+#define LINK_PROTOCOL_MINOR 6u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -151,7 +151,19 @@ enum {
  *     SWEEP = 4 (LINK_SV_HOLD), one register, holds every surface where
  *     its output is -- a sweep stopped part way, exactly where it got to,
  *     slew and all -- for as long as it is written, on the same 500 ms and
- *     disarm rules.
+ *     disarm rules.  A sweep that was running when the hold began keeps its
+ *     phase: how far into the curve it was, so its point, its dwell and its
+ *     movements reached.
+ *
+ *     SWEEP = 5 (LINK_SV_RESUME, since 4.6), one register, carries that
+ *     sweep on from the kept phase.  The surfaces are commanded along the
+ *     curve again at once and slew there from where they were held, at
+ *     their own rate.  Refused with BAD_VALUE when no phase is kept -- no
+ *     sweep was running when the hold began, or the hold has ended by a
+ *     write of 0, a disarm, 500 ms unwritten or a restart -- and when
+ *     SWEEP_MHZ, SPAN, DWELL_MS or MOVES no longer read what the paused
+ *     sweep runs; NOT_ARMED on a disarmed bench.  A 4.5 coprocessor refuses
+ *     5 with BAD_VALUE, as any curve not written whole.
  *
  *     Not kept: a coprocessor restart drives every slot at its own rate
  *     again, which is the binding's 50 Hz for a servo, and runs no sweep. */
@@ -167,6 +179,8 @@ enum {
 };
 /** SWEEP's value for holding the surfaces where their outputs are. */
 #define LINK_SV_HOLD 4u
+/** SWEEP's value for carrying a held sweep on from its phase (4.6). */
+#define LINK_SV_RESUME 5u
 
 /* --- the SUPPLY page (protocol 4.3): a WeAct PD Power Mini V1 Buck on a
  *     PIO UART the coprocessor runs on two of its pins (shared/bench/

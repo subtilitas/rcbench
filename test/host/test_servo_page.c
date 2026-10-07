@@ -5,7 +5,9 @@
  * its curve while the panel repeats it and starts over when the curve
  * changes; it stops when the panel goes quiet, on a disarm and after its
  * movements, and a finished sweep is not started again by a repeat; it
- * drives the surfaces and nothing else.
+ * drives the surfaces and nothing else.  A hold keeps a running sweep's
+ * phase, RESUME carries it on from there, and RESUME is refused with no
+ * phase kept or a curve changed since.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -305,6 +307,196 @@ TEST_CASE(hold_keeps_the_surfaces_where_their_outputs_are)
     CHECK(outputs_overdue(&o, 0, t));
 }
 
+/* The sweep register alone: 0, HOLD or RESUME. */
+static uint8_t say(uint16_t v, uint32_t now)
+{
+    return servo_page_write(&pg, LINK_SV_SWEEP, 1u, &v, &o, now);
+}
+
+/* Hold from @p from to @p to, repeated every 100 ms as the panel does. */
+static void held(uint32_t from, uint32_t to)
+{
+    for (uint32_t t = from; t <= to; t += 100u) {
+        CHECK_EQ(say(LINK_SV_HOLD, t), 0u);
+        (void)servo_page_step(&pg, &o, t);
+    }
+}
+
+/*
+ * RESUME carries a held sweep on from the point it was held at, however
+ * long the hold: a 1 Hz sine held 100 ms in is at 735 again on the first
+ * pass after it, and at its peak 150 ms later.
+ */
+TEST_CASE(resume_carries_a_held_sweep_on_in_phase)
+{
+    fresh(true);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 100u));
+    const uint16_t at_hold = o.channel[0].command;
+    CHECK(at_hold > 730u && at_hold < 740u);       /* 500 + 400 sin 36 deg */
+    held(T0 + 100u, T0 + 2100u);
+    CHECK_EQ(reg(LINK_SV_SWEEP), LINK_SV_HOLD);
+    CHECK_EQ(say(LINK_SV_RESUME, T0 + 2150u), 0u);
+    CHECK_EQ(reg(LINK_SV_SWEEP), SWEEP_SINE);
+    CHECK(servo_page_step(&pg, &o, T0 + 2150u));
+    CHECK_EQ(o.channel[0].command, at_hold);
+    CHECK(servo_page_step(&pg, &o, T0 + 2300u));
+    CHECK_EQ(o.channel[0].command, 900u);
+    /* And the panel's repeats of the same curve carry it on. */
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0 + 2350u), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 2550u));
+    CHECK_EQ(o.channel[0].command, 500u);           /* 500 ms into it */
+}
+
+/* The ends reached go on from the count at the hold, and a movement count
+ * ends the resumed sweep where it would have ended unheld. */
+TEST_CASE(resume_keeps_the_movements_reached)
+{
+    fresh(true);
+    const uint16_t three = 3u;
+    CHECK_EQ(servo_page_write(&pg, LINK_SV_SWEEP_MOVES, 1u, &three, &o, T0),
+             0u);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0 + 400u), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 600u));
+    CHECK_EQ(reg(LINK_SV_SWEEP_DONE), 1u);
+    held(T0 + 600u, T0 + 1600u);
+    CHECK_EQ(say(LINK_SV_RESUME, T0 + 1650u), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 1650u + 200u));   /* 800 ms in */
+    CHECK_EQ(reg(LINK_SV_SWEEP_DONE), 2u);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0 + 1650u + 400u), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 1650u + 600u));   /* 1200 ms in */
+    CHECK(!servo_page_step(&pg, &o, T0 + 1650u + 700u));  /* the third end */
+    CHECK_EQ(reg(LINK_SV_SWEEP_DONE), 3u);
+    CHECK_EQ(o.channel[0].command, SWEEP_CENTRE);
+}
+
+/*
+ * The surfaces are commanded along the curve at once and slew there from
+ * where they were held, at their own rate.
+ */
+TEST_CASE(resume_slews_from_where_the_surfaces_were_held)
+{
+    fresh(true);
+    CHECK(outputs_set_slew(&o, 0, 200u));
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    uint32_t t = T0;
+    for (; t <= T0 + 200u; ++t) {
+        (void)servo_page_step(&pg, &o, t);
+        outputs_step(&o, t);
+    }
+    CHECK_EQ(say(LINK_SV_HOLD, t), 0u);
+    const uint16_t frozen = outputs_actual(&o, 0);
+    CHECK(frozen > 500u && frozen < 560u);         /* 200 a second, behind */
+    CHECK_EQ(say(LINK_SV_RESUME, t + 100u), 0u);
+    (void)servo_page_step(&pg, &o, t + 100u);
+    outputs_step(&o, t + 100u);
+    CHECK(o.channel[0].command > 870u);            /* the curve, 200 ms in */
+    const uint16_t moved = outputs_actual(&o, 0);
+    CHECK(moved > frozen && moved <= frozen + 21u);   /* 100 ms at 200/s */
+}
+
+/*
+ * RESUME needs a held sweep: refused while one runs, after a hold of no
+ * sweep, after 0, a disarm or 500 ms unwritten, and once the curve, its
+ * dwell or its movement count has changed since the hold.
+ */
+TEST_CASE(resume_is_refused_with_no_sweep_held)
+{
+    fresh(true);
+    CHECK_EQ(say(LINK_SV_RESUME, T0), LINK_NACK_BAD_VALUE);    /* nothing */
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    CHECK_EQ(say(LINK_SV_RESUME, T0 + 10u), LINK_NACK_BAD_VALUE); /* runs */
+    CHECK_EQ(reg(LINK_SV_SWEEP), SWEEP_SINE);
+    CHECK_EQ(say(0u, T0 + 20u), 0u);
+    held(T0 + 30u, T0 + 130u);                     /* a hold of nothing */
+    CHECK_EQ(say(LINK_SV_RESUME, T0 + 140u), LINK_NACK_BAD_VALUE);
+
+    /* Stopped by 0 while held. */
+    fresh(true);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    held(T0 + 100u, T0 + 200u);
+    CHECK_EQ(say(0u, T0 + 250u), 0u);
+    CHECK_EQ(say(LINK_SV_RESUME, T0 + 260u), LINK_NACK_BAD_VALUE);
+
+    /* A disarm: not armed, then nothing kept once armed again. */
+    fresh(true);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    held(T0 + 100u, T0 + 200u);
+    outputs_arm(&o, false, T0 + 210u);
+    CHECK_EQ(say(LINK_SV_RESUME, T0 + 220u), LINK_NACK_NOT_ARMED);
+    (void)servo_page_step(&pg, &o, T0 + 230u);
+    outputs_arm(&o, true, T0 + 240u);
+    CHECK_EQ(say(LINK_SV_RESUME, T0 + 250u), LINK_NACK_BAD_VALUE);
+
+    /* 500 ms unwritten, before and after a pass has judged it. */
+    for (int judged = 0; judged < 2; ++judged) {
+        fresh(true);
+        CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+        held(T0 + 100u, T0 + 100u);
+        const uint32_t late = T0 + 100u + OUT_DEFAULT_TIMEOUT_MS + 1u;
+        if (judged) {
+            (void)servo_page_step(&pg, &o, late);
+            CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
+        }
+        CHECK_EQ(say(LINK_SV_RESUME, late), LINK_NACK_BAD_VALUE);
+    }
+
+    /* The rate, the dwell or the movement count changed while held. */
+    for (unsigned r = LINK_SV_SWEEP_MHZ; r <= LINK_SV_SWEEP_MOVES; ++r) {
+        fresh(true);
+        CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+        held(T0 + 100u, T0 + 100u);
+        const uint16_t v = (r == LINK_SV_SWEEP_MHZ) ? 2000u : 7u;
+        CHECK_EQ(servo_page_write(&pg, (uint8_t)r, 1u, &v, &o, T0 + 150u), 0u);
+        CHECK_EQ(say(LINK_SV_RESUME, T0 + 160u), LINK_NACK_BAD_VALUE);
+        CHECK_EQ(reg(LINK_SV_SWEEP), LINK_SV_HOLD);   /* still held */
+    }
+
+    /* And with the curve as it was, written whole beside RESUME, it goes. */
+    fresh(true);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    held(T0 + 100u, T0 + 100u);
+    CHECK_EQ(sweep(LINK_SV_RESUME, 1000u, 400u, 0u, T0 + 150u), 0u);
+    CHECK_EQ(reg(LINK_SV_SWEEP), SWEEP_SINE);
+}
+
+/*
+ * The host's choice: RESUME for a resume of a hold in force on 4.6; the
+ * curve over, and saying so, on an older coprocessor or after a refusal;
+ * the curve as usual for anything else, a resumed sweep's repeats included.
+ */
+TEST_CASE(the_host_resumes_on_4_6_and_starts_over_otherwise)
+{
+    CHECK_EQ(servo_page_resume_plan(true, true, 6u, false),
+             SERVO_RESUME_WRITE);
+    CHECK_EQ(servo_page_resume_plan(true, true, 7u, false),
+             SERVO_RESUME_WRITE);
+    CHECK_EQ(servo_page_resume_plan(true, true, 5u, false),
+             SERVO_RESUME_TOO_OLD);
+    CHECK_EQ(servo_page_resume_plan(true, true, 6u, true),
+             SERVO_RESUME_REFUSED);
+    CHECK_EQ(servo_page_resume_plan(true, false, 6u, false),
+             SERVO_RESUME_CURVE);           /* resumed: now a repeat */
+    CHECK_EQ(servo_page_resume_plan(false, true, 6u, false),
+             SERVO_RESUME_CURVE);           /* a new sweep over a hold */
+    CHECK_EQ(servo_page_resume_plan(false, false, 5u, false),
+             SERVO_RESUME_CURVE);
+}
+
+/* A 4.5 coprocessor's answer to RESUME, as the page refused 5 before it
+ * meant anything: BAD_VALUE, so the host's fallback is the same either way. */
+TEST_CASE(the_curve_over_a_hold_starts_from_its_beginning)
+{
+    fresh(true);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    held(T0 + 100u, T0 + 300u);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0 + 350u), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 350u));
+    CHECK_EQ(o.channel[0].command, 500u);          /* from the centre */
+    CHECK_EQ(say(LINK_SV_RESUME, T0 + 400u), LINK_NACK_BAD_VALUE);
+}
+
 int main(void)
 {
     RUN(a_sweep_needs_the_bench_armed);
@@ -318,5 +510,11 @@ int main(void)
     RUN(a_sweep_starts_only_from_all_four_registers);
     RUN(a_finished_sweep_keeps_its_centre_while_repeated);
     RUN(hold_keeps_the_surfaces_where_their_outputs_are);
+    RUN(resume_carries_a_held_sweep_on_in_phase);
+    RUN(resume_keeps_the_movements_reached);
+    RUN(resume_slews_from_where_the_surfaces_were_held);
+    RUN(resume_is_refused_with_no_sweep_held);
+    RUN(the_host_resumes_on_4_6_and_starts_over_otherwise);
+    RUN(the_curve_over_a_hold_starts_from_its_beginning);
     return test_summary("servo_page");
 }

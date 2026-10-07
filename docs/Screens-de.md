@@ -284,11 +284,19 @@ wo das ist; ohne Rückmeldung ist das im Panel gezeichnete Horn eine Schätzung
 davon. Das Panel wiederholt das Halten alle 100 ms (`SERVO_HOLD_MS`), daher
 überdauert eine Pause die 500-ms-Regel des Koprozessors. Eine Pause wartet
 nicht hinter Sweep-Schreibvorgängen, die schon auf dem Draht sind. Ein
-Tippen auf PAUSIERT setzt den Sweep am Anfang der Kurve fort -- in der
-Mitte bei Sinus und Dreieck, am ersten Ende beim Rechteck --, und der
-Ausgang fährt von der Stelle der Pause dorthin, mit der Rate von TEMPO, bei
-100 % sofort. Der Koprozessor behält über ein Halten keine Phase, daher kann
-das Fortsetzen die Kurve nicht dort weiterführen, wo sie angehalten wurde.
+Tippen auf PAUSIERT setzt den Sweep an dem Punkt der Kurve fort, an dem er
+angehalten wurde: die Stelle in einem Verweilen und die erreichten Enden
+laufen von dort weiter, und das Horn wird ab dieser Phase gezeichnet. Der
+Koprozessor behält die Phase, solange er hält, und setzt die Kurve fort
+(`LINK_SV_RESUME`, Protokoll 4.6); der Ausgang fährt mit der Rate von TEMPO
+von der gehaltenen Stelle zur Kurve, bei 100 % sofort, und ist meist schon
+dort. Eine während der Pause auf der TEST-Seite geänderte Kurve startet
+stattdessen als neuer Sweep. Ein Koprozessor älter als 4.6, oder einer, der
+das Fortsetzen abweist, weil sein Halten geendet hat, startet die Kurve von
+ihrem Anfang -- in der Mitte bei Sinus und Dreieck, am ersten Ende beim
+Rechteck --, und das Alert-Band sagt es: `Koprozessor älter als 4.6 -- der
+Sweep beginnt von vorn` oder `Koprozessor lehnte das Fortsetzen ab -- der
+Sweep beginnt von vorn`.
 
 ![Ein angehaltener Sweep](img/de/servo-paused.png)
 
