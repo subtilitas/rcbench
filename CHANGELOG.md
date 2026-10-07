@@ -17,6 +17,33 @@ history is in git.
   GPIOs and did not refuse GP30 to GP47. One reserved set, from the pin
   catalogue, serves the OUTPUTS and SUPPLY pages.
 
+## 0.13.1 - 2026-10-07
+
+PROGRAMMER no longer restarts the panel: the panel's main task, which runs
+the interface, has 8192 bytes of stack instead of 3584, and PROGRAMMER's
+drawing takes 3184 bytes of it at most. `tools/stack_check.py` holds every
+panel task's deepest call chain to its stack in CI. The link protocol stays
+4.6, so a 0.13.0 coprocessor works with this panel; the fix is in the panel
+image alone.
+
+### Fixed
+
+- **PROGRAMMER no longer restarts the panel.** The UI runs on ESP-IDF's main
+  task, whose stack is 8192 bytes (ESP-IDF's default is 3584). The deepest
+  call chain on it is 3856 bytes; with PROGRAMMER's pages in one 1760-byte
+  frame it reached 5120. Each PROGRAMMER page is drawn by its own function,
+  so `render()`'s frame is 32 bytes and the largest page's 464. The stack
+  costs 4608 bytes more internal RAM (random-access memory).
+
+### Added
+
+- **`tools/stack_check.py`.** Reads every panel task's deepest call chain out
+  of the ELF (Executable and Linkable Format) file and fails when one
+  exceeds its stack less 1024 bytes; CI runs it after both panel builds.
+  Calls it cannot follow (through a pointer, into ROM (read-only memory),
+  recursion) are counted and named, and make the depth a lower bound
+  ([Performance](docs/Performance.md#stacks)).
+
 ## 0.13.0 - 2026-10-07
 
 ESC STICK asks for an ESC's manual steps: a jumper, a button or a stick

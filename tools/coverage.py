@@ -122,6 +122,9 @@ TRACKED = [
     "shared/bench/pdmini.c",
     "shared/bench/supply_link.c",
     "shared/bench/log_writer.c",
+    "shared/sense/sense_bus.c",
+    "shared/sense/ina228.c",
+    "shared/sense/ina3221.c",
 ]
 
 # Sources that are compiled into the suite but deliberately not measured.
