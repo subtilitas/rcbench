@@ -602,6 +602,34 @@ def check_screenshot_count(problems: list[str]) -> None:
             problems.append(f"STATUS.md: says {m.group(0)}; docs/img/de "
                             f"holds {de}")
 
+    # And the views the fit check draws, in the language page: render_ui's
+    # SCREENS table, one view per entry.
+    views = render_ui_views()
+    pages = (("Language.md", r"draws all (\d+) views"),
+             ("Language-de.md", r"zeichnet alle (\d+) Ansichten"))
+    for name, pattern in pages:
+        doc = read(DOCS / name)
+        found = re.search(pattern, doc)
+        if not found:
+            problems.append(f"{name}: no count of the views the fit check "
+                            "draws")
+        elif int(found.group(1)) != views:
+            problems.append(f"{name}: says {found.group(0)}; "
+                            f"tools/render_ui.py draws {views}")
+
+
+def render_ui_views() -> int:
+    """How many views tools/render_ui.py renders: its SCREENS table."""
+    import ast
+    tree = ast.parse(read(REPO / "tools" / "render_ui.py"))
+    for node in tree.body:
+        if (isinstance(node, ast.Assign) and len(node.targets) == 1
+                and isinstance(node.targets[0], ast.Name)
+                and node.targets[0].id == "SCREENS"
+                and isinstance(node.value, ast.Dict)):
+            return len(node.value.keys)
+    return -1
+
 
 VERSION_H = REPO / "shared" / "link" / "include" / "rcbench_version.h"
 

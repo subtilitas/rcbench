@@ -17,7 +17,8 @@ sweep starts over from the curve's beginning, and the alert band says so.
   the phase of a sweep that was running; SWEEP 5 written alone carries it
   on from there. Refused with BAD_VALUE when no phase is kept or registers
   2 to 5 changed since the hold, NOT_ARMED on a disarmed bench. A write of
-  0, a disarm, 500 ms unwritten or a restart forget the phase.
+  0, a curve written over the hold, a disarm, 500 ms unwritten or a
+  restart forget the phase.
 - **SERVO says when SPEED limits a sweep.** SPEED's row on the right card
   reads SPEED LIMITS THE SWEEP (TEMPO BEGRENZT DEN SWEEP in German), in the
   warning colour, while SPEED is slower than the fastest change the TEST
@@ -35,9 +36,21 @@ sweep starts over from the curve's beginning, and the alert band says so.
   PAUSIERT), filled in the warning colour instead of the accent. A tap on
   PAUSED carries the sweep on from the point of the curve it was paused at,
   its dwell and its count of ends included. A changed SPEED keeps the
-  pause, and the resume runs at it. CENTRE,
-  RELEASE, a finger on the dial, STOP, a disarm, leaving the screen and a
-  hold unrepeated for 500 ms end a pause, and the button reads SWEEP.
+  pause, and the resume runs at it. CENTRE, RELEASE, a finger on the dial,
+  STOP, a disarm, leaving the screen, a hold unrepeated for 500 ms, and a
+  changed type, frame rate, pulse, trim, travel or reverse end a pause,
+  and the button reads SWEEP. Touch events going missing pause a running
+  sweep.
+- **SERVO draws a sweep as the coprocessor runs it.** A started, resumed
+  or restarted sweep is drawn only from the coprocessor's acknowledgement
+  of it; until then the horn stays where the output is, and during a
+  restart the old curve is drawn on. A PAUSE draws the curve on until the
+  HOLD is acknowledged, for at most 500 ms. Two taps on the sweep button in
+  one frame, before the first one's command has left, cancel out: nothing
+  is sent.
+- **At SPEED 100 % the horn is drawn at the command at once** when nothing
+  measures the servo; it was drawn moving at 360 deg/s. The coprocessor
+  takes the command at once at 100 %, and the drawing now does the same.
 - **SERVO's CENTRE button reads ZENTRIEREN in German.** CENTRE stays
   English as a pulse name (PULS CENTRE).
 - **The status band's mode reads BENCH or SIM.** It read LINK with the link

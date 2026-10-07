@@ -58,7 +58,9 @@ manual beside the bench.
 - The safety and drive controls: ARM, DISARM, ARMED, DISARMED, STOP, SWEEP,
   PAUSE, TRIM, REVERSE. CENTRE stays English as a pulse name (PULS CENTRE);
   the SERVO button that moves the servo there reads ZENTRIEREN. HOLD stays
-  English as the servo test's phase name.
+  English as the servo test's phase name. PAUSED, the sweep button of a
+  paused sweep, is a state rather than the control and reads PAUSIERT;
+  PAUSE, the control, stays English.
 - The screen titles: MOTOR & ESC, SERVO, SUPPLY, ANALYSER, LOGS, SETUP,
   SETTINGS, BATTERY, BALANCE, PROGRAMMER, OUTPUTS, PICK A PIN, LOG VIEWER,
   CAN BUS FAULT, LINK LOST. A note that names a screen names it by its
@@ -112,6 +114,7 @@ One German word per English concept, on every screen and in the report.
 | travel, travel time | Weg, Stellzeit |
 | stall | blockieren |
 | movement, dwell, settle | Bewegung, Verweilen, Einschwingen |
+| paused (the sweep button) | PAUSIERT |
 | speed (of the servo test), range | Tempo, Bereich |
 | device under test | Prüfling |
 | pass, fail, aborted (a verdict) | bestanden, nicht bestanden, abgebrochen |
@@ -183,7 +186,7 @@ its English.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 57 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 59 views in English and
 in German, and fails when a German string
 
 - is wider than the box `gfx_text_in()` was given,

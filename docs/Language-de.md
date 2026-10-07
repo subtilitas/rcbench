@@ -61,7 +61,9 @@ passen.
 - Die Sicherheits- und Antriebsbedienung: ARM, DISARM, ARMED, DISARMED,
   STOP, SWEEP, PAUSE, TRIM, REVERSE. CENTRE bleibt als Pulsname Englisch
   (PULS CENTRE); die Taste auf SERVO, die das Servo dorthin fährt, heißt
-  ZENTRIEREN. HOLD bleibt als Phasenname des Servotests Englisch.
+  ZENTRIEREN. HOLD bleibt als Phasenname des Servotests Englisch. PAUSED,
+  der Sweep-Knopf eines angehaltenen Sweeps, ist ein Zustand und nicht die
+  Bedienung und heißt PAUSIERT; PAUSE, die Bedienung, bleibt Englisch.
 - Die Seitentitel: MOTOR & ESC, SERVO, SUPPLY, ANALYSER, LOGS, SETUP,
   SETTINGS, BATTERY, BALANCE, PROGRAMMER, OUTPUTS, PICK A PIN, LOG VIEWER,
   CAN BUS FAULT, LINK LOST. Ein Hinweis, der eine Seite nennt, nennt sie
@@ -115,6 +117,7 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | travel, travel time | Weg, Stellzeit |
 | stall | blockieren |
 | movement, dwell, settle | Bewegung, Verweilen, Einschwingen |
+| paused (the sweep button) | PAUSIERT |
 | speed (des Servotests), range | Tempo, Bereich |
 | device under test | Prüfling |
 | pass, fail, aborted (ein Urteil) | bestanden, nicht bestanden, abgebrochen |
@@ -190,7 +193,7 @@ dieselben Argumente in derselben Reihenfolge wie sein Englisch.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 57 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 59 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein deutscher Text
 
 - breiter ist als die Box, die `gfx_text_in()` bekam,
