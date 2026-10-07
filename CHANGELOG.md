@@ -6,6 +6,31 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- **SENSE and SERVO_SENSE link pages (protocol 4.7).** SENSE (0x2B) sets
+  up an I2C (Inter-Integrated Circuit) bus on two coprocessor pins for a TI
+  INA228 in the ESC's power path and a TI INA3221 on the servo rail:
+  enable, SDA, SCL and 100 or 400 kHz; the INA228's address, shunt (50 to
+  20000 µΩ) and range (1.0 to 655.3 A); the INA3221's address, shunt (5 mΩ
+  to 1 Ω, default 0.1 Ω for 1.638 A full scale) and channels. The INA228's
+  shunt and range are held to the driver's `ina228_calibrate()`: SHUNT_CAL
+  4096, ADCRANGE from the range, refused past 163.84 mV or 2000 A full
+  scale. Registers 7 and 11 are reserved and take only 0. SDA and SCL must
+  be one I2C block's
+  pair (GP16 and GP17 by default), and are refused on a reserved pin, an
+  output's pin or a SUPPLY pin; any change is refused while the bank is
+  armed. The set-up is kept in the coprocessor's flash. SERVO_SENSE (0x2C)
+  carries each INA3221 channel's 50 ms window, with a clipped bit where a
+  reading hit the top of the range, and a move capture armed by the panel.
+  BENCH gains bit 5 (the INA228's voltage, current and power) and bit 6
+  (the INA228's charge and energy totals). The coprocessor serves both
+  pages and holds the pins; it reads neither part yet, and the panel
+  writes neither page. A 4.6 peer still links and arms.
+- **Output store record version 5.** The record keeps the sensor set-up
+  beside the bindings and the supply's wiring. Version 3 and 4 records
+  still load, with the parts they lack off.
+
 ### Fixed
 
 - The coprocessor refuses GP23, GP24, GP25 and GP29 for an output slot and for

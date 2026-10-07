@@ -32,6 +32,11 @@ pico_sdk_init()
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/link"  link)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/bench" bench)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/outputs" outputs)
+# The current monitors' drivers.  The SENSE page validates an INA228 set-up
+# with ina228_calibrate(), so the page and the driver hold one rule.  The
+# rest of the drivers is not called yet and is linked anyway: ina228.c and
+# sense_bus.c come in as whole objects, 3,040 bytes of image.
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/sense"  sense)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/dshot"  dshot)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/ppm"    ppm)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/safety" safety)

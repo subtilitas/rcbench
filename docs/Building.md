@@ -66,7 +66,7 @@ flat: `#include "gfx.h"`.
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` | ✔ | | ✔ |
 | `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
-| `sense` | | | ✔ |
+| `sense` | ✔ | ✔ | ✔ |
 
 ## Toolchains
 

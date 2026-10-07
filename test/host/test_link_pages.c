@@ -13,12 +13,14 @@
 
 #include "greatest.h"
 
+#include "link_bringup.h"
 #include "link_control.h"
 #include "link_dev.h"
 #include "link_pages.h"
 #include "outputs.h"
 #include "outputs_pages.h"
 #include "rcbench_version.h"
+#include "sense_page.h"
 
 /* A stand-in for the coprocessor's own state. */
 typedef struct {
@@ -424,6 +426,212 @@ TEST_CASE(the_version_string_says_what_the_numbers_say)
     CHECK(RCBENCH_VERSION_PATCH >= 0 && RCBENCH_VERSION_PATCH <= 0xFFFF);
 }
 
+/*
+ * Protocol 4.7 adds two pages and two BENCH flags and moves nothing: every
+ * page number an earlier minor had is where it was, and the new ones fit a
+ * page.  A renumbering here would be a major.
+ */
+TEST_CASE(the_sense_pages_extend_the_map_without_moving_it)
+{
+    CHECK_EQ(LINK_PROTOCOL_MAJOR, 4u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 7u);
+    CHECK_EQ(LINK_PAGE_BENCH, 0x20);
+    CHECK_EQ(LINK_PAGE_SERVO, 0x29);
+    CHECK_EQ(LINK_PAGE_SUPPLY, 0x2A);
+    CHECK_EQ(LINK_PAGE_SENSE, 0x2B);
+    CHECK_EQ(LINK_PAGE_SERVO_SENSE, 0x2C);
+    CHECK(LINK_SN_COUNT <= LINK_MAX_REGS);
+    CHECK(LINK_SS_COUNT <= LINK_MAX_REGS);
+    CHECK_EQ(LINK_BN_COUNT, 13);
+
+    /* The set-up is three frames of four, each a whole part, so a frame
+     * that lands lands whole (docs/Link.md, Frames). */
+    CHECK_EQ(LINK_SN_ENABLE, 0);
+    CHECK_EQ(LINK_SN_I228_ADDR, 4);
+    CHECK_EQ(LINK_SN_I3221_ADDR, 8);
+    CHECK_EQ(LINK_SN_CONFIG_COUNT, 12u);
+    CHECK_EQ(LINK_SN_FLAGS, (int)LINK_SN_CONFIG_COUNT);
+    CHECK_EQ(LINK_SS_CAP_STATE - LINK_SS_CAP_ARM, (int)LINK_SS_CAP_FRAME);
+    CHECK_EQ(LINK_SS_CAP_FRAME, 4u);
+}
+
+/* Two flags join BENCH at the bits that were free, and none of the old
+ * ones changes: a 4.6 panel reads the same voltage, current and validity
+ * from a 4.7 coprocessor and ignores what it does not know. */
+TEST_CASE(the_bench_flags_add_bits_5_and_6_and_move_none)
+{
+    CHECK_EQ(LINK_BN_VOLTAGE_OK, 0x01u);
+    CHECK_EQ(LINK_BN_CURRENT_OK, 0x02u);
+    CHECK_EQ(LINK_BN_RPM_OK, 0x04u);
+    CHECK_EQ(LINK_BN_TEMP_OK, 0x08u);
+    CHECK_EQ(LINK_BN_TEMP_MOT_OK, 0x10u);
+    CHECK_EQ(LINK_BN_SENSED, 0x20u);
+    CHECK_EQ(LINK_BN_TOTALS_OK, 0x40u);
+    CHECK_EQ(LINK_BN_SIMULATED, 0x80u);
+    CHECK_EQ(LINK_BN_CHARGE_MAH, 6);
+    CHECK_EQ(LINK_BN_ENERGY_DWH, 7);
+}
+
+/* The coprocessor's SENSE handler is the page's rules and nothing more. */
+static sense_page_t s_sense;
+static outputs_t    s_out;
+
+static void sense_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    sense_page_read(&s_sense, off, n, out);
+}
+
+static uint8_t sense_write(void *ctx, uint8_t off, uint8_t n,
+                           const uint16_t *in)
+{
+    (void)ctx;
+    return sense_page_write(&s_sense, off, n, in, &s_out, 0u);
+}
+
+static void servo_sense_read(void *ctx, uint8_t off, uint8_t n,
+                             uint16_t *out)
+{
+    (void)ctx;
+    sense_servo_read(&s_sense, off, n, out);
+}
+
+static uint8_t servo_sense_write(void *ctx, uint8_t off, uint8_t n,
+                                 const uint16_t *in)
+{
+    (void)ctx;
+    return sense_servo_write(&s_sense, off, n, in, &s_out);
+}
+
+static const link_page_t k_pages_47[] = {
+    { LINK_PAGE_IDENTITY, LINK_ID_COUNT, identity_read, NULL },
+    { LINK_PAGE_CONTROL,  LINK_CT_COUNT, control_read,  control_write },
+    { LINK_PAGE_SENSE,    LINK_SN_COUNT, sense_read,    sense_write },
+    { LINK_PAGE_SERVO_SENSE, LINK_SS_COUNT, servo_sense_read,
+      servo_sense_write },
+};
+
+static void fresh_47(void)
+{
+    fresh();
+    outputs_init(&s_out, 0u);
+    sense_page_init(&s_sense);
+    link_dev_init(&dev, k_pages_47, 4, &g, 0);
+}
+
+static bool write_page(uint8_t page, uint8_t off, uint8_t count,
+                       const uint16_t *regs, link_msg_t *reply)
+{
+    link_msg_t w = { 0 };
+    w.op = LINK_OP_WRITE; w.page = page;
+    w.offset = off; w.count = count;
+    memcpy(w.regs, regs, (size_t)count * sizeof(uint16_t));
+    return ask(&w, reply);
+}
+
+TEST_CASE(the_sense_pages_are_served_and_refuse_whole)
+{
+    fresh_47();
+    link_msg_t r;
+    CHECK(ask_read(LINK_PAGE_SENSE, 0, LINK_SN_COUNT, &r));
+    CHECK_EQ(r.op, LINK_OP_DATA);
+    CHECK_EQ(r.count, LINK_SN_COUNT);
+    CHECK_EQ(r.regs[LINK_SN_SDA_PIN], 16u);
+    CHECK_EQ(r.regs[LINK_SN_FLAGS], 0u);
+    CHECK(ask_read(LINK_PAGE_SERVO_SENSE, 0, LINK_SS_COUNT, &r));
+    CHECK_EQ(r.op, LINK_OP_DATA);
+
+    /* The bus enabled on GP16/GP17 in one frame. */
+    const uint16_t on[4] = { LINK_SN_EN_I228, 16u, 17u, 400u };
+    CHECK(write_page(LINK_PAGE_SENSE, LINK_SN_ENABLE, 4, on, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    CHECK_EQ(s_sense.sense[LINK_SN_ENABLE], LINK_SN_EN_I228);
+
+    /* A frame refused in its last register keeps none of it. */
+    const uint16_t bad[4] = { 0x44u, 300u, 1000u, 1u };
+    CHECK(write_page(LINK_PAGE_SENSE, LINK_SN_I228_ADDR, 4, bad, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_VALUE);
+    CHECK_EQ(s_sense.sense[LINK_SN_I228_ADDR], 0x45u);
+    CHECK_EQ(s_sense.sense[LINK_SN_I228_SHUNT_UOHM], 200u);
+
+    /* Read-only registers answer READ_ONLY through the dispatcher too. */
+    const uint16_t one = 1u;
+    CHECK(write_page(LINK_PAGE_SENSE, LINK_SN_FLAGS, 1, &one, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_READ_ONLY);
+
+    /* And a capture on a bank that is not armed, NOT_ARMED -- after the
+     * INA3221 is enabled and a surface is on a PWM slot. */
+    const uint16_t both[4] = { LINK_SN_EN_I228 | LINK_SN_EN_I3221, 16u, 17u,
+                               400u };
+    CHECK(write_page(LINK_PAGE_SENSE, LINK_SN_ENABLE, 4, both, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    const out_slot_t pwm = { .driver = OUT_DRIVER_PWM, .first_channel = 0,
+                             .channels = 1, .pin = 4, .rate_hz = 50 };
+    CHECK(outputs_configure(&s_out, 0, &pwm));
+    CHECK(outputs_set_role(&s_out, 0, OUT_ROLE_SURFACE));
+    const uint16_t cap[4] = { LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u };
+    CHECK(write_page(LINK_PAGE_SERVO_SENSE, LINK_SS_CAP_ARM, 4, cap, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_NOT_ARMED);
+    outputs_arm(&s_out, true, 0u);
+    CHECK(write_page(LINK_PAGE_SERVO_SENSE, LINK_SS_CAP_ARM, 4, cap, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    CHECK_EQ(s_sense.servo[LINK_SS_CAP_STATE], (uint16_t)LINK_CAP_ARMED);
+}
+
+/*
+ * A 4.7 panel and a 4.6 coprocessor.  The link comes up and the bench arms
+ * on the major alone; the 4.6 coprocessor has no SENSE page and says so
+ * with BAD_PAGE, which is why the panel sends nothing there below minor 7.
+ */
+TEST_CASE(a_4_6_coprocessor_links_and_arms_without_the_sense_pages)
+{
+    fresh();
+    g.identity[LINK_ID_PROTOCOL_MINOR] = 6u;
+    link_msg_t r;
+    CHECK(ask_read(LINK_PAGE_IDENTITY, 0, LINK_ID_COUNT, &r));
+    link_bringup_t b;
+    memset(&b, 0, sizeof(b));
+    b.polls = 100u;
+    b.replies = 100u;
+    b.have_identity = true;
+    b.proto_major = r.regs[LINK_ID_PROTOCOL_MAJOR];
+    b.proto_minor = r.regs[LINK_ID_PROTOCOL_MINOR];
+    CHECK_EQ(link_bringup_diagnose(&b), LINK_DIAG_OK);
+    CHECK(b.proto_minor < 7u);
+
+    const uint16_t frame[LINK_CT_ARM_FRAME] = { 1, 0, 14 };
+    CHECK(write_control(LINK_CT_ARM, LINK_CT_ARM_FRAME, frame, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    CHECK_EQ(g.control[LINK_CT_ARM], 1u);
+
+    CHECK(ask_read(LINK_PAGE_SENSE, 0, 1, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_PAGE);
+    CHECK(ask_read(LINK_PAGE_SERVO_SENSE, 0, 1, &r));
+    CHECK_EQ(r.op, LINK_OP_NACK);
+    CHECK_EQ(r.regs[0], LINK_NACK_BAD_PAGE);
+}
+
+/*
+ * A 4.6 panel and a 4.7 coprocessor.  The panel never writes SENSE; the
+ * coprocessor's identity and CONTROL answer as before, and the bench arms.
+ */
+TEST_CASE(a_4_6_panel_links_and_arms_on_a_4_7_coprocessor)
+{
+    fresh_47();
+    link_msg_t r;
+    CHECK(ask_read(LINK_PAGE_IDENTITY, 0, LINK_ID_COUNT, &r));
+    CHECK_EQ(r.regs[LINK_ID_PROTOCOL_MAJOR], 4u);
+    CHECK_EQ(r.regs[LINK_ID_PROTOCOL_MINOR], 7u);
+    const uint16_t frame[LINK_CT_ARM_FRAME] = { 1, 2500, 14 };
+    CHECK(write_control(LINK_CT_ARM, LINK_CT_ARM_FRAME, frame, &r));
+    CHECK_EQ(r.op, LINK_OP_ACK);
+    CHECK_EQ(g.control[LINK_CT_ARM], 1u);
+}
+
 int main(void)
 {
     RUN(a_read_returns_the_registers);
@@ -443,5 +651,10 @@ int main(void)
     RUN(the_coprocessor_refuses_to_be_spoken_to_in_its_own_voice);
     RUN(every_request_is_answered);
     RUN(the_version_string_says_what_the_numbers_say);
+    RUN(the_sense_pages_extend_the_map_without_moving_it);
+    RUN(the_bench_flags_add_bits_5_and_6_and_move_none);
+    RUN(the_sense_pages_are_served_and_refuse_whole);
+    RUN(a_4_6_coprocessor_links_and_arms_without_the_sense_pages);
+    RUN(a_4_6_panel_links_and_arms_on_a_4_7_coprocessor);
     return test_summary("link_pages");
 }

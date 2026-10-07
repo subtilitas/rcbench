@@ -2,9 +2,9 @@
 # the ESC (electronic speed controller) power path and the INA3221 on the
 # servo rail.  Register codecs and drivers in pure C, talking through a
 # read and a write callback, so the host suite runs them against a fake
-# that answers as each part does.  Neither image links them: the panel's
-# ESP-IDF build compiles every directory under shared/, and the
-# coprocessor does not add this one.
+# that answers as each part does.  Both images compile them, through
+# shared/outputs, whose SENSE page validates an INA228 set-up with
+# ina228_calibrate(); nothing else of them is called yet.
 set(SRCS sense_bus.c ina228.c ina3221.c)
 
 if(ESP_PLATFORM)

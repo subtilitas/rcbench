@@ -56,10 +56,10 @@ _Static_assert(STORE_SLOTS <= 255u,
                "the store has more slots than a slot index holds");
 
 #define STORE_MAGIC    0x7263626FuL    /* "rcbo" */
-#define STORE_VERSION  4u
-/* The record before the PD mini's wiring was kept: still read, so the
- * output bindings an earlier build saved survive the update. */
-#define STORE_VERSION_V3 3u
+/* Written at OUT_STORE_VERSION; versions 3 and 4 are still read, so the
+ * output bindings and the supply's wiring an earlier build saved survive
+ * the update (out_store_rec.h). */
+#define STORE_VERSION  OUT_STORE_VERSION
 
 /*
  * One flash page holds a record, so a save is one program.  The checksum is
@@ -112,28 +112,19 @@ typedef struct {
 _Static_assert(sizeof(record_t) <= FLASH_PAGE_SIZE,
                "the record has outgrown one flash page");
 
-/* The same record as version 3 wrote it, for its size: the checksum and the
- * zero count cover it to its own end. */
-typedef struct {
-    uint32_t magic;
-    uint32_t zeros;
-    uint32_t zeros_inv;
-    uint16_t crc;
-    uint16_t version;
-    uint32_t seq;
-    uint16_t slots[LINK_OS_COUNT];
-    uint16_t chan_cfg[LINK_CC_COUNT];
-} record_v3_t;
-
-_Static_assert(offsetof(record_v3_t, slots) == offsetof(record_t, cfg),
-               "version 3's configuration starts where this one's does");
+/* Every version's header is this one's, and its configuration starts at
+ * cfg and runs out_store_cfg_size() bytes: the checksum and the zero count
+ * cover a record to its own end, so its size is that.  cfg is the last
+ * field and ends the struct with no padding after it. */
+_Static_assert(offsetof(record_t, cfg) + sizeof(out_store_t)
+               == sizeof(record_t),
+               "the configuration ends the record");
 
 /* How many bytes a record of @p version spans, or 0 for one not read. */
 static size_t record_size(uint16_t version)
 {
-    return (version == STORE_VERSION)    ? sizeof(record_t)
-           : (version == STORE_VERSION_V3) ? sizeof(record_v3_t)
-                                           : 0u;
+    const size_t cfg = out_store_cfg_size(version);
+    return (cfg == 0u) ? 0u : offsetof(record_t, cfg) + cfg;
 }
 
 static bool        s_pending;
@@ -290,15 +281,9 @@ bool out_store_load(out_store_t *out)
         return false;
     }
     const record_t *r = record_at((uint8_t)newest);
-    if (r->version == STORE_VERSION) {
-        *out = r->cfg;
-    } else {
-        /* Version 3: the bindings, and the supply as a page starts --
-         * disabled, at the module's 19200 baud as shipped. */
-        memset(out, 0, sizeof(*out));
-        memcpy(out->slots, r->cfg.slots, sizeof(out->slots));
-        memcpy(out->chan_cfg, r->cfg.chan_cfg, sizeof(out->chan_cfg));
-        out->supply[LINK_SP_BAUD] = 1u;
+    /* Valid, so its version is one out_store_cfg_size() knows. */
+    if (!out_store_cfg_read(r->version, &r->cfg, out)) {
+        return false;
     }
     s_saved = *out;
     s_have_saved = true;

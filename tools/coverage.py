@@ -117,6 +117,8 @@ TRACKED = [
     "shared/outputs/servo_page.c",
     "shared/outputs/supply_page.c",
     "shared/outputs/out_store_map.c",
+    "shared/outputs/out_store_rec.c",
+    "shared/outputs/sense_page.c",
     "shared/bench/telemetry_sim.c",
     "shared/bench/supply.c",
     "shared/bench/pdmini.c",
