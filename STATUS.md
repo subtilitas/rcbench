@@ -112,7 +112,7 @@ is taken in a gap ahead of the save that needs it.
 | Motor pole count over the link | the panel sends `Motor poles` on the CONTROL page when the coprocessor answers, at every edit, and in the frame that arms, so a run starts on the count that was sent or does not start; with none sent the coprocessor reports no speed rather than one derived from a guess |
 | Outputs screen | built and tested on the host: a protocol list and a pin grid behind the Setup screen's OUTPUTS key, writing `CHAN_CFG` and `OUTPUTS` on every change and reading the binding back from the coprocessor. Reserved pins are shown and refused. Run on hardware: the bindings behind the servo and motor runs were made here, and the nine saves that produced `FAULT 01` were an operator ticking pins on it |
 | Output binding in the coprocessor's flash | built, not run on hardware: the last two sectors of the first 4 MB as 32 record slots, restored at boot, saved once the bank is idle and the bus quiet. A save is one page program; a sector erase falls to one per sixteen saves and is taken ahead of the save that needs it, or at boot. The placement rules are host-tested in `test_outstore`; `firmware/iomcu/src/out_store.c` and `firmware/iomcu/src/main.c` compile and have not run on a board. What has run on hardware is the single-sector store this one replaces: eight of its saves printed an erase-and-program window of 19,174 to 19,186 us. The offset is deliberately the 4 MB module's rather than the 16 MB board file's. The record is version 5: the bindings, the supply's wiring and the current monitors' set-up. Version 3 and 4 records load, with what they lack off; that decode is `shared/outputs/out_store_rec.c`, host-tested in `test_outstore`. A record of any other version reads as unwritten, so the first boot on such a store starts from the defaults -- no driver and no pin in any slot -- and the binding is gone until an operator sets it again on the OUTPUTS screen |
-| Current monitors (INA228, INA3221) | drivers built and host-tested against a modelled bus in `test_ina228` and `test_ina3221` (`shared/sense/`). Link pages built and host-tested in `test_sense_page`: SENSE and SERVO_SENSE (protocol 4.7), the bus's pins, clock, addresses, shunts and channels validated (the INA228's shunt and maximum by the driver's `ina228_calibrate()`), kept in the coprocessor's flash, and the pins held from the outputs. Nothing reads the parts: the coprocessor has no I2C bus code and reads no driver, FLAGS reads no bus open and every reading 0, and the panel has no setting or screen for them and writes neither page |
+| Current monitors (INA228, INA3221) | drivers built and host-tested against a modelled bus in `test_ina228` and `test_ina3221` (`shared/sense/`). Link pages built and host-tested in `test_sense_page`: SENSE and SERVO_SENSE (protocol 4.7), the bus's pins, clock, addresses, shunts and channels validated (the INA228's shunt and maximum by the driver's `ina228_calibrate()`), kept in the coprocessor's flash, and the pins held from the outputs. The sampling schedule (`shared/sense/sense_sched.c`) built and host-tested in `test_sense_sched` against the modelled bus: per 1 ms tick on a 400 kHz bus INA3221 CH1 at 1000 Hz, CH2 and CH3 at 50 Hz or 1000 Hz while a pair runs, the INA228's current and voltage at 500 Hz each and the rest at 50 Hz; 50 ms windows with a clipped reading kept out of them; the run's INA228 peaks and its ENERGY and CHARGE cleared at the arm, no longer the run's after one failed INA228 read; a move capture on CH1, in 1 ms steps, timed from a PWM edge the caller gives, judged by the servo test's own rules (`shared/servo/servo_move.c`, `test_servo_move`) with a 4-sample filter. Nothing reads the parts: the coprocessor has no I2C bus code and runs no schedule, FLAGS reads no bus open and every reading 0, and the panel has no setting or screen for them and writes neither page |
 | Other receiver buses | not started |
 | Servo limit search, servo synchronisation | built and tested against a modelled servo |
 | OpenYGE codec | built and tested; not wired in. The implementation is pursued in a separate repository |
@@ -151,6 +151,7 @@ rcbench/
                           · where a saved binding goes in flash
     safety/               heartbeat generator and monitor · arming policy
     servo/                limit and synchronisation searches · servo model
+                          · move rules
     can/                  bit timing · MCP2515 registers · echo self-test
     sbus/                 S.BUS decoder
     dshot/                frames · GCR · eRPM and extended telemetry
@@ -159,6 +160,7 @@ rcbench/
     esc/                  ESC programming profiles · JSON reader · registry
                           · stick programmer · simulated ESC
     sense/                INA228 and INA3221 drivers · I2C bus health
+                          · sampling schedule and move capture
 
   firmware/panel/         ESP-IDF
     main/                 main.c · selftest.c
@@ -201,7 +203,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
 
-The host suite is 61 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 63 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_servo`,
@@ -211,9 +213,9 @@ The host suite is 61 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_link_can`, `test_link_artxfer`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outstore`,
 `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_touch_loss`, `test_servo_limit`,
-`test_servo_sync`, `test_servo_sweep`, `test_servo_test`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
+`test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_logview` and `test_logwriter`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_sense_sched`, `test_logview` and `test_logwriter`. The harness is
 `test/host/greatest.h`, written for this project. `tools/check_docs.py` holds
 this list to `test/host/CMakeLists.txt`.
 
@@ -272,7 +274,8 @@ deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 | `shared/servo/servo_limit.c` | 120 | 116 | 96.7% |
 | `shared/servo/servo_sync.c` | 172 | 167 | 97.1% |
 | `shared/servo/servo_sweep.c` | 118 | 114 | 96.6% |
-| `shared/servo/servo_test.c` | 534 | 517 | 96.8% |
+| `shared/servo/servo_move.c` | 141 | 141 | 100.0% |
+| `shared/servo/servo_test.c` | 507 | 491 | 96.8% |
 | `shared/servo/servo_report.c` | 392 | 391 | 99.7% |
 | `shared/openyge/openyge_frame.c` | 165 | 162 | 98.2% |
 | `shared/openyge/openyge_status.c` | 39 | 39 | 100.0% |
@@ -308,7 +311,7 @@ deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 | `shared/outputs/supply_page.c` | 245 | 242 | 98.8% |
 | `shared/outputs/out_store_map.c` | 68 | 68 | 100.0% |
 | `shared/outputs/out_store_rec.c` | 15 | 15 | 100.0% |
-| `shared/outputs/sense_page.c` | 191 | 191 | 100.0% |
+| `shared/outputs/sense_page.c` | 192 | 192 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/supply.c` | 169 | 167 | 98.8% |
 | `shared/bench/pdmini.c` | 553 | 544 | 98.4% |
@@ -317,7 +320,8 @@ deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 | `shared/sense/sense_bus.c` | 108 | 108 | 100.0% |
 | `shared/sense/ina228.c` | 188 | 188 | 100.0% |
 | `shared/sense/ina3221.c` | 115 | 115 | 100.0% |
-| **total** | **21606** | **20852** | **96.5%** |
+| `shared/sense/sense_sched.c` | 295 | 295 | 100.0% |
+| **total** | **22016** | **21263** | **96.6%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

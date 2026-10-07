@@ -31,7 +31,8 @@
  *           movement that does not arrive in SERVO_TEST_TRAVEL_TIMEOUT_MS,
  *           plus the meter's lag (servo_test_travel_window_ms()), is late;
  *           one that shows no movement in that time is unseen: not timed
- *           and not late;
+ *           and not late.  The rules are servo_move.h's, fed one reading
+ *           at a time;
  *   HOLD    the longer of DWELL and SERVO_TEST_HOLD_MIN_MS at that end:
  *           the holding current there, and the holding level the next move
  *           to that end falls back to.
@@ -79,6 +80,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "servo_move.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -106,12 +109,13 @@ extern "C" {
 /** The smallest threshold.  A step's threshold is the larger of this and
  *  SERVO_TEST_NOISE_K times its idle noise.  A reading more than the
  *  threshold from the level before a command is the servo moving, and
- *  more than it above an end's holding level is the move not yet there. */
-#define SERVO_TEST_MOVE_MIN_A        0.020f
-#define SERVO_TEST_NOISE_K           3.0f
+ *  more than it above an end's holding level is the move not yet there.
+ *  The move rules are servo_move.h's; these are its constants. */
+#define SERVO_TEST_MOVE_MIN_A        SERVO_MOVE_MIN_A
+#define SERVO_TEST_NOISE_K           SERVO_MOVE_NOISE_K
 /** Back within this of the holding level, and not above it by the
  *  threshold, is the move arrived. */
-#define SERVO_TEST_BAND_A            0.05f
+#define SERVO_TEST_BAND_A            SERVO_MOVE_BAND_A
 
 #define SERVO_TEST_IDLE_MS           1000u
 /** The shortest hold measured at an end, whatever DWELL says: at 10
@@ -119,7 +123,7 @@ extern "C" {
 #define SERVO_TEST_HOLD_MIN_MS       600u
 /** A move not arrived this long after its command is late; a meter's lag
  *  is added, since its readings show an arrival that much later. */
-#define SERVO_TEST_TRAVEL_TIMEOUT_MS 3000u
+#define SERVO_TEST_TRAVEL_TIMEOUT_MS SERVO_MOVE_TIMEOUT_MS
 /** A set point counts as taken once read back within this. */
 #define SERVO_TEST_SET_TOL_V         0.05f
 #define SERVO_TEST_SET_TIMEOUT_MS    3000u
@@ -354,20 +358,11 @@ typedef struct {
     uint8_t  end;           /**< 0 low, 1 high: where the move goes      */
     uint32_t cmd_ms;
     bool     counted;       /**< the move counts                          */
-    bool     rose;          /**< movement seen: away from rise_a          */
-    bool     left;          /**< since then above ref_a: not there yet    */
-    bool     near_prev;     /**< the last reading, after movement, was
-                                 within the band of ref_a                */
-    float    prev_i;
-    uint32_t prev_at;
-    float    ref_a;         /**< the level the move falls back to         */
-    float    rise_a;        /**< the level before the command             */
+    servo_move_t move;      /**< the move under way, judged by servo_move */
     float    hold_ref[2];
     bool     hold_known[2];
     uint32_t hold_from_ms;
     servo_test_mean_t hold_now;
-    servo_test_mean_t move_now;
-    float    move_peak_now;
     uint32_t moves_from_ms;
     uint16_t moves_done;
     uint8_t  placed;        /**< uncounted moves to the ends, this step   */

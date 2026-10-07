@@ -37,14 +37,8 @@ void servo_test_meter_pdmini(servo_test_meter_t *m)
  * smallest and SERVO_TEST_NOISE_K times their standard deviation. */
 static void set_threshold(servo_test_step_t *s)
 {
-    float var = 0.0f;
-    if (s->idle.n > 0u) {
-        const float mean = mean_of(&s->idle);
-        var = s->idle_sq / (float)s->idle.n - mean * mean;
-    }
-    s->noise_a = (var > 0.0f) ? sqrtf(var) : 0.0f;
-    const float k = SERVO_TEST_NOISE_K * s->noise_a;
-    s->move_a = (k > SERVO_TEST_MOVE_MIN_A) ? k : SERVO_TEST_MOVE_MIN_A;
+    s->noise_a = servo_move_noise_a(s->idle.n, s->idle.sum, s->idle_sq);
+    s->move_a  = servo_move_threshold_a(s->noise_a);
 }
 
 void servo_test_init(servo_test_t *t)
@@ -61,17 +55,11 @@ bool servo_test_running(const servo_test_t *t)
     return t != NULL && t->state == SERVO_TEST_RUNNING;
 }
 
-/*
- * The meter's lag is added to the window rather than the window's last
- * part left unjudged: a servo that arrives at 2900 ms shows it on the PD
- * mini at about 3200 ms, and waiting for that reading times the move.  A
- * move that never arrives is still late, only 300 ms later; a window left
- * unjudged would need the same wait to tell the two apart.
- */
+/* The meter's lag is added to the window: see servo_move_window_ms(). */
 uint32_t servo_test_travel_window_ms(const servo_test_t *t)
 {
-    return SERVO_TEST_TRAVEL_TIMEOUT_MS
-           + ((t != NULL) ? (uint32_t)t->cfg.meter.lag_ms : 0u);
+    return servo_move_window_ms((t != NULL) ? (uint32_t)t->cfg.meter.lag_ms
+                                            : 0u);
 }
 
 /* ------------------------------------------------------------ the outbox */
@@ -233,13 +221,19 @@ static void begin_move(servo_test_t *t, uint8_t end, bool counted,
     }
     t->end     = end;
     t->counted = counted;
-    t->rose    = false;
-    t->left    = false;
-    t->near_prev = false;
-    t->ref_a   = to;
-    t->rise_a  = start;
-    memset(&t->move_now, 0, sizeof(t->move_now));
-    t->move_peak_now = 0.0f;
+    /* The supply's readings one by one: the settled rule over two in a
+     * row, and no filter. */
+    const servo_move_cfg_t mc = {
+        .cmd_t    = now_ms,
+        .window_t = servo_test_travel_window_ms(t),
+        .rise_a   = start,
+        .ref_a    = to,
+        .move_a   = s->move_a,
+        .band_a   = SERVO_TEST_BAND_A,
+        .settle_n = 2u,
+        .filter_n = 1u,
+    };
+    servo_move_begin(&t->move, &mc);
     command(t, end ? t->cfg.end_hi_us : t->cfg.end_lo_us, now_ms);
     t->phase = SERVO_TEST_PH_MOVE;
 }
@@ -255,12 +249,13 @@ static void begin_hold(servo_test_t *t, uint32_t from_ms)
 static void end_move(servo_test_t *t, bool arrived, uint32_t at_ms)
 {
     servo_test_step_t *s = cur(t);
-    if (t->rose) {
+    const bool rose = servo_move_moved(&t->move);
+    if (rose) {
         s->moved = true;
     }
     if (t->counted) {
         ++s->moves;
-        if (!t->rose) {
+        if (!rose) {
             /* Unseen: whether it moved, the current cannot say. */
             ++s->no_rise;
         }
@@ -272,12 +267,12 @@ static void end_move(servo_test_t *t, bool arrived, uint32_t at_ms)
                 s->travel_max_ms = ms;
             }
             t->travel_now_ms = (ms > 0u) ? ms : 1u;
-            s->move.sum += t->move_now.sum;
-            s->move.n   += t->move_now.n;
-            if (t->move_peak_now > s->move_peak_a) {
-                s->move_peak_a = t->move_peak_now;
+            s->move.sum += t->move.sum;
+            s->move.n   += t->move.n;
+            if (t->move.peak > s->move_peak_a) {
+                s->move_peak_a = t->move.peak;
             }
-        } else if (t->rose) {
+        } else if (rose) {
             ++s->timeouts;
         }
         ++t->moves_done;
@@ -520,63 +515,11 @@ static void measure(servo_test_t *t, const servo_test_reading_t *r)
         }
         break;
     case SERVO_TEST_PH_MOVE:
-        /* A reading taken before the command is not the move. */
-        if ((int32_t)(at - t->cmd_ms) < 0) {
-            break;
-        }
-        /*
-         * Movement is a reading away from the level before the command:
-         * above it, or below it when the servo leaves an end it was
-         * pushing on.  A servo moving draws more than it holds with, so
-         * the move is under way once a reading, after movement, lies above
-         * the destination's holding level, and has arrived when one falls
-         * back to it.  In that order: the ends' holding levels can differ
-         * by more than the band, and a reading still at the start end's
-         * level, or one passing the destination's level on its way up, is
-         * not the move arriving.
-         *
-         * A destination held harder than the servo moves -- an end pushing
-         * on a stop -- is never passed on the way up, or only by the first
-         * reading of the acceleration, after which the moving current lies
-         * below the level again.  There the move has arrived when, after
-         * movement, two readings in a row lie within the band of that
-         * level and of each other: settled, at the first of the two.  A
-         * current climbing through the level steps more than the band
-         * between two readings unless it climbs slower than
-         * SERVO_TEST_BAND_A a reading, and a moving current within the band
-         * of the level cannot be told from the servo there.
-         *
-         * The threshold is the step's, from its idle noise.  A reading
-         * above the level by the threshold is the move under way, whatever
-         * the band says, so a band wider than the threshold times no move
-         * early: the first reading back under the threshold is the arrival.
-         */
-        const float move_a = s->move_a;
-        const float band_a = SERVO_TEST_BAND_A;
-        if (fabsf(i - t->rise_a) > move_a) {
-            t->rose = true;
-        }
-        const bool near = fabsf(i - t->ref_a) <= band_a;
-        if (t->rose && i > t->ref_a + move_a) {
-            t->left = true;
-        } else if (t->left && near) {
-            end_move(t, true, at);
-            break;
-        } else if (t->left && i < t->ref_a - band_a) {
-            /* Back below the level without settling at it: the servo moves
-             * at less than it holds there, and the settled rule decides. */
-            t->left = false;
-        } else if (!t->left && t->rose && near && t->near_prev
-                   && fabsf(i - t->prev_i) <= band_a) {
-            end_move(t, true, t->prev_at);
-            break;
-        }
-        t->near_prev = t->rose && near;
-        t->prev_i    = i;
-        t->prev_at   = at;
-        mean_add(&t->move_now, i);
-        if (i > t->move_peak_now) {
-            t->move_peak_now = i;
+        /* Movement and arrival by servo_move's rules; a reading taken
+         * before the command is not the move. */
+        servo_move_sample(&t->move, at, i, SERVO_MOVE_CLIP_NONE);
+        if (servo_move_arrived(&t->move)) {
+            end_move(t, true, t->move.end_t);
         }
         break;
     case SERVO_TEST_PH_HOLD:
@@ -690,7 +633,8 @@ void servo_test_step(servo_test_t *t, uint32_t now_ms,
             }
             break;
         case SERVO_TEST_PH_MOVE:
-            if (now_ms - t->cmd_ms >= servo_test_travel_window_ms(t)) {
+            servo_move_tick(&t->move, now_ms);
+            if (servo_move_over(&t->move)) {
                 end_move(t, false, now_ms);
             }
             break;
