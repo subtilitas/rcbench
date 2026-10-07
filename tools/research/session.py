@@ -948,8 +948,8 @@ def record_selftest():
     """The operating hazards of record and its trees, on throwaway
     repositories with a bare origin: changed() on a rename in the working
     tree; two records with one sequence number; a record after another
-    clone pushed one on the same head; a commit that fails, with a leftover
-    temporary directory beside the tree; a stopped T6 with files outside
+    clone pushed one on the same head; a commit that fails; a record that
+    dies while it writes the returns; a stopped T6 with files outside
     the outputs and in the index; a refused T6 with a staged deletion, a
     staged rename and a file added with intent to add, and with a commit
     an agent made; a stash that cannot be made; the tree prepare refuses
@@ -1074,8 +1074,8 @@ def record_selftest():
             expect("both carry sequence 1" in str(err),
                    f"two records with one sequence number: {err}")
 
-        # A commit that fails leaves the records directory clean, removes
-        # the selection.json it created.
+        # A commit that fails leaves the records directory clean and
+        # removes the selection.json it created.
         want_c = prepared(base_c, "FU-Z", "FU", p24, {"P0": {}})
         out_c = output(base_c, want_c, fu_summary, p0)
         hooks = at("hooks")
