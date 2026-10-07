@@ -255,10 +255,27 @@ jobs:
           }
           trap cleanup EXIT
 
+          # The build guide PDFs are rendered outside this repository and
+          # attached by hand after a manual check.  The READMEs link
+          # releases/latest/download/rcbench-build-guide-{en,de}.pdf, so the
+          # latest release's copy is carried over: once this release is
+          # public it is the latest, and the links must not lose their
+          # target before the checked copy replaces it (--clobber).  The
+          # download runs before the create, while the latest is still the
+          # previous release.  No guide there is not an error.
+          assets=(dist/*.zip dist/SHA256SUMS)
+          mkdir -p guide
+          gh release download --repo "$REPO" \
+            --pattern 'rcbench-build-guide-*.pdf' --dir guide \
+            || echo "no build guide on the latest release"
+          for f in guide/*.pdf; do
+            [ -e "$f" ] && assets+=("$f")
+          done
+
           # --verify-tag, because a tag gh has to invent is created from the
           # default branch: without it a dispatch for a tag nobody pushed
           # would attach these images to whatever main happened to be.
-          gh release create "$TAG" dist/*.zip dist/SHA256SUMS \
+          gh release create "$TAG" "${assets[@]}" \
             --repo "$REPO" \
             --title "$TAG" \
             --verify-tag \
