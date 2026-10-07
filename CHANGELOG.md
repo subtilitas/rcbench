@@ -46,10 +46,14 @@ sweep starts over from the curve's beginning, and the alert band says so.
   for a `before_menu` step, powered with the stick at MIN; DONE goes on,
   ABORT and STOP end it, and no DONE within 60 s ends it with NOT
   CONFIRMED, red light lit. The result lists the `after_programming` steps.
-- **A value's own entry position.** `values[].entry_throttle` names the
-  stick position the manual programs a value from where it is not the
-  entry's. Stick programming refuses such a value: the Kontronik car modes,
-  programmed from the middle, are not stored from the brake position.
+- **A value's own power-up position.** `values[].entry_throttle` names
+  the stick position the manual programs a value from where it is not the
+  entry's. A run powers the ESC up there for that value, with the stick
+  moved only while the supply reads off: the Kontronik car modes start
+  from the middle, the neutral they teach. A one-stage menu uses each
+  value's position at its own power-up; a two-stage menu whose changes need
+  different positions is refused. The warning and the run show POWER-UP AT
+  when the position is not MIN.
 
 ### Changed
 

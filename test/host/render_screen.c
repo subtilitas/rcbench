@@ -700,8 +700,9 @@ int main(int argc, char **argv)
             tap(400, UI_BAND_H + 52 + 4 * 36 + 16);
             if (strcmp(view, "programmer-stick-hand-info") != 0) {
                 tap(684, UI_BAND_H + 378);      /* OK */
-                for (int i = 0; i < 3; ++i) {
-                    tap(765, UI_BAND_H + 132 + 10);  /* mode 3 */
+                /* Mode 6, a car mode: powered up at MID. */
+                for (int i = 0; i < 6; ++i) {
+                    tap(765, UI_BAND_H + 132 + 10);
                 }
             }
             const bool prompt = strcmp(view, "programmer-stick-hand-prompt")

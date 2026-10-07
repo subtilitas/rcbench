@@ -78,10 +78,49 @@ static esc_throttle_t classify(float pct)
     return ESC_THR_NONE;
 }
 
-static esc_throttle_t listen_pos(const esc_profile_t *p)
+/* Where the stick rests while the menu sounds: the profile's listen
+ * position, else where this power-up entered. */
+static esc_throttle_t listen_pos(const esc_sim_t *s)
 {
-    return (p->listen_throttle != ESC_THR_NONE) ? p->listen_throttle
-                                                : p->entry_throttle;
+    return (s->p->listen_throttle != ESC_THR_NONE) ? s->p->listen_throttle
+                                                   : s->entry;
+}
+
+/* Whether a power-up at @p pos enters the menu: the profile's entry, or
+ * the position any value is programmed from. */
+static bool enters_from(const esc_profile_t *p, esc_throttle_t pos)
+{
+    if (pos == p->entry_throttle) {
+        return true;
+    }
+    for (unsigned i = 0; i < p->item_count; ++i) {
+        for (unsigned k = 0; k < p->items[i].value_count; ++k) {
+            if (pos != ESC_THR_NONE
+                && p->items[i].values[k].entry_throttle == pos) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/* The position the value numbered @p value of item @p item is programmed
+ * from. */
+static esc_throttle_t value_entry(const esc_profile_t *p, uint8_t item,
+                                  uint8_t value)
+{
+    for (unsigned i = 0; i < p->item_count; ++i) {
+        if (p->items[i].number != item) {
+            continue;
+        }
+        for (unsigned k = 0; k < p->items[i].value_count; ++k) {
+            const esc_value_t *v = &p->items[i].values[k];
+            if (v->number == value && v->entry_throttle != ESC_THR_NONE) {
+                return v->entry_throttle;
+            }
+        }
+    }
+    return p->entry_throttle;
 }
 
 static bool two_stage(const esc_profile_t *p)
@@ -274,7 +313,7 @@ static void segment_over(esc_sim_t *s, uint32_t at)
             start_group(s, at, 2u, false, false);   /* "entered" */
             return;
         }
-        if (listen_pos(s->p) != s->p->entry_throttle) {
+        if (listen_pos(s) != s->entry) {
             s->mode = ESC_SIM_WAIT_LISTEN;
             s->seg = SEG_NONE;
             return;
@@ -313,7 +352,14 @@ static void store(esc_sim_t *s, uint32_t now, uint8_t item, uint8_t value)
         return;
     }
     s->stored[item] = value;
+    s->stored_from[item] = s->entry;
     s->stores++;
+    /* A value stored from another position than its own teaches that
+     * position: a car mode entered at the brake stores the brake as its
+     * neutral. */
+    if (value_entry(s->p, item, value) != s->entry) {
+        s->misplaced++;
+    }
     s->ended = 0u;
     if (s->p->one_change_per_entry) {
         s->mode = ESC_SIM_DONE;
@@ -329,13 +375,13 @@ static void moved(esc_sim_t *s, uint32_t now)
     const esc_profile_t *p = s->p;
     switch (s->mode) {
     case ESC_SIM_ENTRY:
-        if (s->pos != p->entry_throttle) {
+        if (s->pos != s->entry) {
             s->mode = ESC_SIM_IDLE;     /* left the entry: runs normally */
             s->seg = SEG_NONE;
         }
         return;
     case ESC_SIM_WAIT_LISTEN:
-        if (s->pos == listen_pos(p)) {
+        if (s->pos == listen_pos(s)) {
             s->mode = two_stage(p) ? ESC_SIM_ITEMS : ESC_SIM_VALUES;
             build_loop(s);
             s->seg = SEG_PAUSE;
@@ -436,7 +482,8 @@ int32_t esc_sim_step(esc_sim_t *s, uint32_t now_ms, bool powered,
             s->c.entry_ms = (s->p->entry_hold_ms != 0u) ? s->p->entry_hold_ms
                                                        : 3000u;
         }
-        if (pos == s->p->entry_throttle) {
+        s->entry = pos;
+        if (enters_from(s->p, pos)) {
             s->mode = ESC_SIM_ENTRY;
             s->seg = SEG_WAIT;
             const uint32_t quarter = s->c.entry_ms / 4u;

@@ -134,7 +134,7 @@ JSON. Das Panel lädt sie nicht.
 | `name` | wie das Handbuch ihn nennt |
 | `key` | 1 bis 32 aus `a-z 0-9 _`; eine Bedeutung über alle Marken: `brake`, `timing`, `cutoff_voltage`, `cutoff_type`, `battery_type`, `cell_count`, `startup`, `governor`, `direction`, `throttle_range`, `pwm_freq`, `aircraft_type`, `mode`, `reset` |
 | `values` | 1 bis 255 aus `{"number": 0-255, "name": "...", "default": true}`; Nummern eindeutig, höchstens ein Standardwert |
-| `values[].entry_throttle` | `min`, `mid`, `max`: die Knüppelstellung, aus der das Handbuch diesen Wert programmiert, wo sie nicht die des Einstiegs ist; fehlt sie oder ist null, die des Einstiegs. Die Stick-Programmierung speichert keinen Wert, dessen Stellung von `scheme.entry.throttle` abweicht |
+| `values[].entry_throttle` | `min`, `mid`, `max`: die Knüppelstellung, aus der das Handbuch diesen Wert programmiert, wo sie nicht die des Einstiegs ist; fehlt sie oder ist null, die des Einstiegs. Die Stick-Programmierung schaltet den ESC für diesen Wert dort ein |
 | `applies_to` | Modellnamen dieses Profils, oder null für alle |
 | `applies_when` | eine Bedingung in Worten, z. B. `"model type heli"` |
 

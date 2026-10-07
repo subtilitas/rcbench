@@ -156,6 +156,15 @@ typedef struct {
 } esc_stick_change_t;
 
 /**
+ * The stick position change @p c is powered up from: its value's
+ * entry_throttle where the manual names one, else the profile's entry.  A
+ * run moves the stick there with the supply off and seen off, holds it
+ * ESC_STICK_SIGNAL_MS, and only then switches the supply on.
+ */
+esc_throttle_t esc_stick_change_entry(const esc_profile_t *p,
+                                      const esc_stick_change_t *c);
+
+/**
  * Whether a run of @p n changes under @p t can start on @p p; the reason in
  * @p why when not.  Refused, never adjusted: a timing that cannot fit the
  * profile's select window is a setting to change, not one to guess.
@@ -397,6 +406,7 @@ typedef struct {
     bool                 last_trusted;  /**< and so did that one: the
                                              last group could be acted on */
     uint8_t              entries;       /**< power-ups this run          */
+    esc_throttle_t       entry;         /**< this power-up's position    */
     uint8_t              hand;          /**< the manual step asked, an
                                              index into p->manual        */
     bool                 hand_done;     /**< DONE taken, for the next

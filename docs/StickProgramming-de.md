@@ -119,12 +119,35 @@ neben START, warum.
 
 ![Zwei Werte gewählt](img/de/programmer-stick-items.png)
 
-Ein Wert, den das Handbuch aus einer anderen Knüppelstellung als dem
-Einstieg des Profils programmiert, wird bei der Wahl abgelehnt; neben START
-steht `aus anderer Stickstellung gesetzt`. Der Lauf schaltet nur in einer
-Stellung ein; ein Kontronik-Car-Modus, aus der Bremsstellung statt aus der
-Mitte betreten, würde die falsche Neutralstellung speichern. Die Werte
-stehen unter [Handgriffe](#handgriffe).
+### Die Einschaltstellung
+
+Ein Lauf schaltet den ESC mit dem Knüppel dort ein, von wo das Handbuch den
+Wert programmiert: beim `entry_throttle` des Werts, wo das Profil eines
+nennt, sonst beim Einstieg des Profils. Ein Kontronik-Car-Modus wird mit
+dem Knüppel in der Motor-Aus-Stellung in der Mitte programmiert, der
+Neutralstellung, die der Modus lernt; der Lauf schaltet ihn bei MID ein.
+Der Knüppel bewegt sich nur bei ausgeschaltetem Netzteil: vor dem ersten
+Einschalten, und zwischen zwei Einschaltungen erst, wenn das Netzteil
+selbst seinen Ausgang aus meldet und der Strom unten ist
+(`ESC_STICK_OFF_MA`, `ESC_STICK_OFF_SETTLE_MS`). Er bleibt dort 1000 ms
+(`ESC_STICK_SIGNAL_MS`), bevor das Netzteil einschaltet, wie bei jedem
+Einstieg.
+
+- Ein einstufiges Menü nimmt eine Änderung je Einschalten, und jedes
+  Einschalten nimmt die Stellung des Werts, den es speichern wird.
+- Ein zweistufiges Menü, oder eines mit mehreren Änderungen je Einschalten,
+  macht seine Änderungen in der Reihenfolge, in der der ESC sie ausgibt;
+  alle Änderungen eines Laufs teilen sich deshalb ein Einschalten. Ein Lauf,
+  dessen Änderungen verschiedene Stellungen brauchen, wird abgelehnt, mit
+  `Änderungen brauchen verschiedene Einschaltstellungen`, nicht umsortiert.
+  Kein Profil im Satz hat eine solche Mischung.
+- Wo das Profil keine Ruhestellung nennt, ruht der Knüppel in der
+  Einschaltstellung, und die Auswahlbewegung muss sich von ihr
+  unterscheiden.
+
+Die Warnung und die Karte des Laufs zeigen EINSCHALTEN BEI und die
+Stellung, wenn sie nicht MIN ist; die Warnung jede Stellung, die die
+Einschaltungen des Laufs nehmen.
 
 START öffnet eine Warnung über den ganzen Bildschirm mit dem Titel KEIN
 PROPELLER, MOTOR GESICHERT?. Sie sagt, was der Lauf tut: er versorgt den
@@ -217,10 +240,12 @@ und entschärft.
 
 ![Der Lauf wartet auf den Jumper](img/de/programmer-stick-hand-prompt.png)
 
-Um einen Schritt an einem versorgten ESC wird nur mit dem Knüppel auf MIN
-gebeten, der Motor-Aus-Stellung: ein Profil, dessen Schritt `at_power_up`
-oder `before_menu` mit einem Einstieg auf MID oder MAX kommt, läuft nicht,
-`Handgriff`. Die 60 s sind die Zeit des Bedieners, den ESC zu erreichen,
+Um einen Schritt an einem versorgten ESC wird nur mit dem Knüppel in der
+Motor-Aus-Stellung gebeten: MIN, oder MID, wo das `entry_throttle` eines
+Werts sie nennt, die Motor-Aus-Stellung des Handbuchs in der Mitte. Ein
+Profil, dessen Schritt `at_power_up` oder `before_menu` mit einem Einstieg
+auf MID oder MAX kommt, läuft nicht, `Handgriff`, und ein Wert, den es bei
+MAX einschalten würde, wird ebenso abgelehnt. Die 60 s sind die Zeit des Bedieners, den ESC zu erreichen,
 nicht die des ESCs: kein Handbuch im Satz nennt, wie lange ein ESC auf
 seinen Jumper oder Taster wartet, außer HELI JIVE und JIVE Pro, 10 s nach
 dem Einschalten, und keiner von beiden läuft.
@@ -233,7 +258,7 @@ gesteckter Jumper kann noch stecken.
 24 Profile haben Handgriffe: die 22 Kontronik-Familien, `turnigy-aquastar`
 und `greatplanes-electrifly-c-series`. 10 laufen:
 
-| Profil | Schritte | Werte aus anderer Stellung |
+| Profil | Schritte | Werte, bei MID eingeschaltet |
 | --- | --- | --- |
 | `kontronik-3sl` | Jumper vor dem Einschalten auf, nach 2 s oder dem Dreiklang ab | Modus 6 |
 | `kontronik-beat` | Jumper auf 2 beliebige der 3 Kontakte, ab nach 2 s oder den Tönen | Modi 6, 8 |
@@ -281,7 +306,7 @@ gezeichnet.
 | Phase | Gas | Netzteil | Endet |
 | --- | --- | --- | --- |
 | ARMING | MIN | aus | wenn der Prüfstand scharf meldet; nach 3000 ms: NICHT ARMED |
-| SIGNAL | Einstiegsstellung | aus | nach 1000 ms, damit der ESC das Signal beim Start sieht |
+| SIGNAL | Einschaltstellung | aus | nach 1000 ms, damit der ESC das Signal beim Start sieht |
 | HANDGRIFF | Einstiegsstellung | aus | vor einem Einschalten mit fälligem Schritt: ERLEDIGT, dann EINSCHALTEN; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT |
 | EINSCHALTEN | Einstiegsstellung | an | wenn ein Messwert den Ausgang an meldet; nach 3000 ms: AUSGANG NICHT GEMELDET |
 | EINSTIEG | Einstiegsstellung | an | EINSTIEG nach dem Einschalten: das `hold_ms` des Profils, wo es eines nennt, und nicht kürzer als das längste `hold_ms` eines Schritts `at_power_up` |
@@ -582,7 +607,7 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
 - Welche Werte ein Kontronik-ESC aus der Mitte programmiert, ist den
   Handbüchern entnommen; für JAZZ-Modi 6 und 8, KONTROL-X-Modus 3 und
   SUN-PLUS-Modi 2, 3, 5, 6 und 9 nennt das Handbuch die Stellung nicht, und
-  die Werte werden abgelehnt, als wäre es die Mitte. Die Zusatzmodi (7, 9)
+  die Werte werden bei MID eingeschaltet, als wäre es die Mitte. Die Zusatzmodi (7, 9)
   werden von hinten programmiert; ob sie an einem ESC im Car-Modus den
   Knüppelweg neu speichern, steht nicht fest.
 - `kontronik-pix` Modus 2 verlangt nach der Auswahl eine Bewegung in die

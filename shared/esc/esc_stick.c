@@ -265,6 +265,66 @@ const char *esc_stick_not_offered(const esc_item_t *it)
     return NULL;
 }
 
+esc_throttle_t esc_stick_change_entry(const esc_profile_t *p,
+                                      const esc_stick_change_t *c)
+{
+    if (p == NULL || c == NULL || c->item >= p->item_count
+        || c->value >= p->items[c->item].value_count) {
+        return (p != NULL) ? p->entry_throttle : ESC_THR_MIN;
+    }
+    const esc_throttle_t v = p->items[c->item].values[c->value].entry_throttle;
+    return (v != ESC_THR_NONE) ? v : p->entry_throttle;
+}
+
+/* Whether the profile asks for a hand at a powered ESC. */
+static bool hand_powered(const esc_profile_t *p)
+{
+    return esc_profile_manual_count(p, ESC_MANUAL_AT_POWER_UP) > 0u
+           || esc_profile_manual_count(p, ESC_MANUAL_BEFORE_MENU) > 0u;
+}
+
+/*
+ * Why change @p i cannot be powered up from its own entry position, or
+ * NULL.  The run powers each change up from the position its value is
+ * programmed from (esc_stick_change_entry()): a Kontronik car mode from
+ * the middle, the neutral the mode teaches.  The profile-wide rules of
+ * esc_stick_kind() hold for that position as they hold for the profile's:
+ *
+ *   - A power-up takes one position.  A two-stage menu, or one that takes
+ *     several changes a power-up, makes its changes in the order the ESC
+ *     sounds them, not the order asked, so every change of the run shares
+ *     the first one's position; a mix is refused, not reordered.  A
+ *     one-stage menu takes one change a power-up and powers each up from
+ *     its own.
+ *   - The rest is that position where the profile names none, and the
+ *     select move has to differ from it.
+ *   - A move to a named rest needs the entry's time.
+ *   - A hand at a powered ESC with the stick at MAX is not asked for.  MID
+ *     is, where the value names it: the manual's motor-off in the middle.
+ */
+static const char *entry_refused(const esc_profile_t *p,
+                                 const esc_stick_change_t *ch, size_t i)
+{
+    const esc_throttle_t from = esc_stick_change_entry(p, &ch[i]);
+    const bool shared = p->value_select_throttle != ESC_THR_NONE
+                        || !p->one_change_per_entry;
+    if (shared && from != esc_stick_change_entry(p, &ch[0])) {
+        return "changes need different power-up positions";
+    }
+    const esc_throttle_t rest = (p->listen_throttle != ESC_THR_NONE)
+                                    ? p->listen_throttle : from;
+    if (rest != from && p->entry_hold_ms == 0u) {
+        return "rest move, no entry time";
+    }
+    if (p->select_throttle == rest) {
+        return "select move is the rest";
+    }
+    if (from == ESC_THR_MAX && from != p->entry_throttle && hand_powered(p)) {
+        return "manual step";
+    }
+    return NULL;
+}
+
 static bool no(const char **why, const char *text)
 {
     if (why != NULL) {
@@ -304,12 +364,9 @@ bool esc_stick_check(const esc_profile_t *p, const esc_stick_change_t *ch,
         if (it->values[ch[i].value].number == 0u) {
             return no(why, "value 0 is not sounded");
         }
-        /* The run enters at the profile's position; a value the manual
-         * programs from another -- a car mode from the middle, where the
-         * position taught is the neutral -- is not stored from this one. */
-        const esc_throttle_t from = it->values[ch[i].value].entry_throttle;
-        if (from != ESC_THR_NONE && from != p->entry_throttle) {
-            return no(why, "set from another stick position");
+        const char *bad = entry_refused(p, ch, i);
+        if (bad != NULL) {
+            return no(why, bad);
         }
         for (size_t k = 0; k < i; ++k) {
             if (p->items[ch[k].item].number == it->number) {
@@ -781,9 +838,30 @@ static void listen(esc_stick_t *e, esc_stick_phase_t ph)
 }
 
 /* The menu begins: the stick to its rest, and the first loop. */
+/* The position the next power-up enters from: the first change still to
+ * make, which in a one-stage menu is the one this power-up makes, and in
+ * any other is every change's (entry_refused()). */
+static esc_throttle_t next_entry(const esc_stick_t *e)
+{
+    for (uint8_t i = 0; i < e->n; ++i) {
+        if (!e->done[i]) {
+            return esc_stick_change_entry(e->p, &e->ch[i]);
+        }
+    }
+    return e->p->entry_throttle;
+}
+
+/* Where the stick rests while the menu sounds: the profile's listen move,
+ * else where this power-up entered. */
+static esc_throttle_t rest_of(const esc_stick_t *e)
+{
+    return (e->p->listen_throttle != ESC_THR_NONE) ? e->p->listen_throttle
+                                                    : e->entry;
+}
+
 static void begin_menu(esc_stick_t *e)
 {
-    e->out.throttle_pct = esc_stick_pct(esc_stick_listen(e->p));
+    e->out.throttle_pct = esc_stick_pct(rest_of(e));
     if (e->kind == ESC_STICK_KIND_TWO_STAGE) {
         bounds(e, true, -1);
         listen(e, ESC_STICK_ITEMS);
@@ -1176,7 +1254,8 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
     if (e->phase == ESC_STICK_ARMING) {
         if (b->armed) {
             e->armed_seen = true;
-            e->out.throttle_pct = esc_stick_pct(e->p->entry_throttle);
+            e->entry = next_entry(e);
+            e->out.throttle_pct = esc_stick_pct(e->entry);
             enter(e, ESC_STICK_SIGNAL);
         } else if (in_phase >= ESC_STICK_ARM_WAIT_MS) {
             finish(e, ESC_STICK_ABORTED, ESC_STICK_R_NOT_ARMED);
@@ -1290,7 +1369,8 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
          * TIME -- no less than the signal time -- with it there. */
         if (!e->cycle_moved) {
             e->cycle_moved = true;
-            e->out.throttle_pct = esc_stick_pct(e->p->entry_throttle);
+            e->entry = next_entry(e);
+            e->out.throttle_pct = esc_stick_pct(e->entry);
             enter(e, ESC_STICK_CYCLE);
             break;
         }

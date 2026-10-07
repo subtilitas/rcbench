@@ -109,12 +109,30 @@ cannot, the line beside RUN says why.
 
 ![Two values picked](img/programmer-stick-items.png)
 
-A value the manual programs from another stick position than the
-profile's entry is refused when picked, with `set from another stick
-position` beside RUN. The run powers up at one position only; a Kontronik
-car mode entered from the brake position instead of the middle would store
-the wrong neutral. The values are listed under
-[Manual steps](#manual-steps).
+### The power-up position
+
+A run powers the ESC up with the stick where the manual programs the value
+from: the value's `entry_throttle` where the profile names one, else the
+profile's entry. A Kontronik car mode is programmed with the stick at
+motor-off in the middle, the neutral the mode teaches; the run powers it up
+at MID. The stick moves only while the supply is off: before the first
+power-up, and between two power-ups only once the supply itself reports its
+output off with the current down (`ESC_STICK_OFF_MA`,
+`ESC_STICK_OFF_SETTLE_MS`). It is held there 1000 ms
+(`ESC_STICK_SIGNAL_MS`) before the supply comes on, as at every entry.
+
+- A one-stage menu takes one change a power-up, and each power-up uses the
+  position of the value it is about to store.
+- A two-stage menu, or one that takes several changes a power-up, makes its
+  changes in the order the ESC sounds them, so all changes of a run share
+  one power-up. A run whose changes need different positions is refused
+  with `changes need different power-up positions`, not reordered. No
+  profile of record has such a mix.
+- Where the profile names no rest position the stick rests at the power-up
+  position, and the select move has to differ from it.
+
+The warning and the run's card show POWER-UP AT and the position when it
+is not MIN; on the warning, every position the run's power-ups take.
 
 RUN opens a warning over the whole screen, titled NO PROPELLER, MOTOR
 SECURED?. It says what the run does: it powers the ESC from the supply and
@@ -201,9 +219,12 @@ the supply off and disarms.
 
 ![The run waiting for the jumper](img/programmer-stick-hand-prompt.png)
 
-A step at a powered ESC is asked for only with the stick at MIN, the
-motor-off position: a profile whose `at_power_up` or `before_menu` step
-comes with an entry at MID or MAX does not run, `manual step`. The 60 s is
+A step at a powered ESC is asked for only with the stick at the
+motor-off position: MIN, or MID where a value's `entry_throttle` names it,
+the manual's motor-off in the middle. A profile whose `at_power_up` or
+`before_menu` step comes with an entry at MID or MAX does not run,
+`manual step`, and a value it would power up at MAX is refused the same
+way. The 60 s is
 the operator's time to reach the ESC, not the ESC's: no manual in the set
 states how long an ESC waits for its jumper or button except the HELI JIVE
 and JIVE Pro, 10 s after power-up, and neither runs.
@@ -215,7 +236,7 @@ the ESC: a jumper fitted for the run may still be in place.
 24 profiles have manual steps: the 22 Kontronik families, `turnigy-aquastar`
 and `greatplanes-electrifly-c-series`. 10 run:
 
-| Profile | Steps | Values from another position |
+| Profile | Steps | Values powered up at MID |
 | --- | --- | --- |
 | `kontronik-3sl` | jumper on before the power-up, off after 2 s or the three-tone sequence | mode 6 |
 | `kontronik-beat` | jumper on any 2 of the 3 contacts, off after 2 s or the tones | modes 6, 8 |
@@ -258,7 +279,7 @@ A change of either light repaints both screen buffers.
 | Phase | Throttle | Supply | Ends |
 | --- | --- | --- | --- |
 | ARMING | MIN | off | when the bench reports armed; after 3000 ms: NOT ARMED |
-| SIGNAL | entry position | off | after 1000 ms, so the ESC sees the signal when it starts |
+| SIGNAL | the power-up position | off | after 1000 ms, so the ESC sees the signal when it starts |
 | MANUAL STEP | entry position | off | before a power-up with a step due: DONE, then POWER ON; no DONE in 60 s: NOT CONFIRMED |
 | POWER ON | entry position | on | when a sample reports the output on; after 3000 ms: NO POWER |
 | ENTRY | entry position | on | ENTRY after power-on: the profile's `hold_ms` where it states one, and no less than the longest `hold_ms` of an `at_power_up` step |
@@ -534,7 +555,7 @@ engine's stores no value other than the one asked for.
 - Which values a Kontronik ESC programs from the middle is read from the
   manuals; for JAZZ modes 6 and 8, KONTROL-X mode 3 and SUN PLUS modes 2, 3,
   5, 6 and 9 the manual does not place the position, and the values are
-  refused as if it were the middle. The add-on modes (7, 9) are programmed
+  powered up at MID as if it were the middle. The add-on modes (7, 9) are programmed
   from the back; whether they store the stick range again on an ESC set to
   a car mode is not stated.
 - `kontronik-pix` mode 2 asks for a move to the brake position after the

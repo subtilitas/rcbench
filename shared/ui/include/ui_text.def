@@ -638,6 +638,7 @@ UI_TEXT(SP_PROMPT_HOLD,            90, "Keep it held for %u.%u s after the suppl
 UI_TEXT(SP_PROMPT_ON,               0, "The ESC is powered, the throttle at %s. Do this now, then tap DONE.")
 UI_TEXT(SP_PROMPT_LEFT,             0, "No DONE within %u s ends the run: throttle to MIN, supply off, disarmed.")
 UI_TEXT(SP_HAND_DONE,               0, "DONE")
+UI_TEXT(SP_POWER_UP_AT,             0, "POWER-UP AT %s")
 
 /* ----------------------- the stick engine's refusals, by their English */
 UI_TEXT(ESC_WHY_NO_PROFILE,        27, "no profile")
@@ -680,7 +681,7 @@ UI_TEXT(ESC_WHY_VALUE_WINDOW,      56, "GROUP GAP misses the value window")
 UI_TEXT(ESC_WHY_NO_RUN,            56, "no run")
 UI_TEXT(ESC_WHY_ONE_VALUE,         56, "one value: nothing to choose")
 UI_TEXT(ESC_WHY_HAND,              27, "manual step")
-UI_TEXT(ESC_WHY_ENTRY_POS,         56, "set from another stick position")
+UI_TEXT(ESC_WHY_ENTRY_POS,         56, "changes need different power-up positions")
 
 /* --------------------------------------------------------------- SERVO */
 UI_TEXT(SV_PG_OUTPUT,               0, "OUTPUT")

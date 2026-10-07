@@ -4,12 +4,15 @@
  * every beep.
  *
  * It follows a profile the way the stick programmer reads one: power on at
- * the entry position enters the menu, the groups loop, a move to the select
+ * the entry position, or at a position a value is programmed from (its
+ * entry_throttle), enters the menu; the groups loop, a move to the select
  * position after a group selects it, and in a two-stage menu a move to the
  * value_select position after a value group stores the value.  Where the
  * profile names a store move, the selection waits for it and is lost if
  * the power goes first.  An item keyed exit leaves the menu when it is
- * selected, and one keyed reset clears what was stored.  What it stores is
+ * selected, and one keyed reset clears what was stored.  A value stored
+ * from a power-up at another position than its own is counted as
+ * misplaced: the ESC would teach that position.  What it stores is
  * kept across power cycles, as an ESC keeps it.
  *
  * The timing is made up, as the stick programmer's defaults are: no ESC has
@@ -74,6 +77,7 @@ typedef struct {
     bool                 powered;
     uint32_t             on_ms;
     esc_throttle_t       pos;
+    esc_throttle_t       entry;        /* where this power-up entered    */
 
     /* What is being sounded. */
     uint8_t              loop[ESC_SIM_LOOP_MAX];
@@ -96,7 +100,10 @@ typedef struct {
 
     /* What it keeps, by item number. */
     uint8_t              stored[256];
+    esc_throttle_t       stored_from[256]; /* the power-up's position  */
     uint32_t             stores;
+    uint32_t             misplaced;    /* stored from a position not the
+                                          value's own                    */
     uint32_t             lcg;
 } esc_sim_t;
 

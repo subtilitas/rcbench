@@ -641,6 +641,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SP_PROMPT_ON]           = "Der ESC ist versorgt, Throttle auf %s. Jetzt ausführen, dann ERLEDIGT tippen.",
     [TX_SP_PROMPT_LEFT]         = "Ohne ERLEDIGT in %u s endet der Lauf: Throttle auf MIN, Netzteil aus, DISARMED.",
     [TX_SP_HAND_DONE]           = "ERLEDIGT",
+    [TX_SP_POWER_UP_AT]         = "EINSCHALTEN BEI %s",
 
     /* ------------------- the stick engine's refusals, by their English */
     [TX_ESC_WHY_NO_PROFILE]     = "kein Profil",
@@ -683,7 +684,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_ESC_WHY_NO_RUN]         = "kein Lauf",
     [TX_ESC_WHY_ONE_VALUE]      = "ein Wert: nichts zu wählen",
     [TX_ESC_WHY_HAND]           = "Handgriff",
-    [TX_ESC_WHY_ENTRY_POS]      = "aus anderer Stickstellung gesetzt",
+    [TX_ESC_WHY_ENTRY_POS]      = "Änderungen brauchen verschiedene Einschaltstellungen",
 
     /* ----------------------------------------------------------- SERVO */
     [TX_SV_PG_OUTPUT]           = "AUSGANG",

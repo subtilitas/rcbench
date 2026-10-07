@@ -2222,6 +2222,36 @@ static void sp_change_text(const esc_stick_change_t *ch, char *out, size_t n)
              (unsigned)v->number, v->name);
 }
 
+/*
+ * "POWER-UP AT MID" for the positions the power-ups of @p n changes take,
+ * in the order first met: "MAX, MID" where a one-stage run takes both.
+ * False, and nothing written, when every one is MIN.
+ */
+static bool sp_power_up_text(const esc_profile_t *p,
+                             const esc_stick_change_t *ch, size_t n,
+                             char *out, size_t size)
+{
+    bool seen[ESC_THR_NONE + 1] = { false };
+    char list[24] = "";
+    bool other = false;
+    for (size_t i = 0; i < n; ++i) {
+        const esc_throttle_t at = esc_stick_change_entry(p, &ch[i]);
+        if (seen[at]) {
+            continue;
+        }
+        seen[at] = true;
+        other = other || at != ESC_THR_MIN;
+        const size_t len = strlen(list);
+        snprintf(list + len, sizeof(list) - len, "%s%s",
+                 (len > 0u) ? ", " : "", sp_pos(esc_stick_pct(at)));
+    }
+    if (!other) {
+        return false;
+    }
+    snprintf(out, size, TR(SP_POWER_UP_AT), list);
+    return true;
+}
+
 /* The longest hold of the profile's at_power_up steps, ms; 0 for none. */
 static uint32_t sp_hold_ms(const esc_profile_t *p)
 {
@@ -2245,6 +2275,13 @@ static void sp_draw_progress(gfx_canvas_t *c)
 
     gfx_text(c, PAD + 12, PARM_Y + 12, TR(SP_RUN), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
+    if (e->entry != ESC_THR_MIN) {
+        snprintf(line, sizeof(line), TR(SP_POWER_UP_AT),
+                 sp_pos(esc_stick_pct(e->entry)));
+        gfx_text(c, PAD + 12 + gfx_text_cells(TR(SP_RUN)) * 8 + 24,
+                 PARM_Y + 12, line, UI_FONT_LABEL,
+                 ui_theme_color(UI_C_WARN), 1);
+    }
     gfx_text(c, PAD + 12, PARM_Y + 34, sp_phase_text(e->phase),
              UI_FONT_HEAD, txt, 1);
     /* The count beside the stack light. */
@@ -2828,6 +2865,15 @@ static void sp_draw_warning(gfx_canvas_t *c)
              (unsigned)picked);
     gfx_text(c, a.x + 20, top + 22, line, UI_FONT_LABEL,
              ui_theme_color(UI_C_VOLT), 1);
+    /* Where the stick is when the supply comes on, beside the supply,
+     * when it is not MIN: every position the run's power-ups take. */
+    char at[40];
+    if (sp_power_up_text(t->p, ch, picked < ESC_STICK_MAX_CHANGES
+                                       ? picked : ESC_STICK_MAX_CHANGES,
+                         at, sizeof(at))) {
+        gfx_text(c, a.x + 20 + gfx_text_cells(line) * 8 + 24, top + 22, at,
+                 UI_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
+    }
     gfx_text(c, a.x + 20, top + 44, TR(SP_WARN_UNVERIFIED),
              UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
     sp_draw_warning_hand(c, t->p, a, top + 66);
