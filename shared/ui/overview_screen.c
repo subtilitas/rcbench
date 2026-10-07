@@ -193,10 +193,15 @@ static void render(gfx_canvas_t *c, int buffer_index)
                             && ((t->needs == 0)
                                 || ((have & t->needs) == t->needs));
         if (!t->live || !fitted) {
-            const gfx_rect_t badge = { (int16_t)(r.x + r.w / 2 - 44),
-                                       (int16_t)(r.y + r.h - 30), 88, 20 };
-            ui_pill(c, badge, t->live ? TR(OV_MODELLED) : TR(OV_SOON), 0,
-                    ui_theme_color(UI_C_PANEL_SUNK));
+            /* 88 px, or as wide as a longer word: the label starts 24 px
+             * in and runs to the end, as MODELLED does in 88. */
+            const char *word = t->live ? TR(OV_MODELLED) : TR(OV_SOON);
+            int bw = 24 + gfx_text_width(&gfx_font_8x16, word, 1);
+            bw = (bw < 88) ? 88 : bw;
+            const gfx_rect_t badge = { (int16_t)(r.x + (r.w - bw) / 2),
+                                       (int16_t)(r.y + r.h - 30),
+                                       (int16_t)bw, 20 };
+            ui_pill(c, badge, word, 0, ui_theme_color(UI_C_PANEL_SUNK));
         }
     }
 }

@@ -449,8 +449,13 @@ static void draw_categories(gfx_canvas_t *c)
             gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0, UI_EDGE);
         }
 
-        gfx_text(c, r.x + 14, r.y + 10, ui_setting_category((setting_cat_t)i),
-                 UI_FONT_HEAD, active ? UI_TEXT_ON_LIGHT : UI_TEXT, 1);
+        /* In the heading face where it fits the button, as the values in
+         * the rows do; a longer name in the label face. */
+        const char *name = ui_setting_category((setting_cat_t)i);
+        const bool big = gfx_text_width(UI_FONT_HEAD, name, 1) <= r.w - 28;
+        gfx_text(c, r.x + 14, r.y + (big ? 10 : 16), name,
+                 big ? UI_FONT_HEAD : UI_FONT_LABEL,
+                 active ? UI_TEXT_ON_LIGHT : UI_TEXT, 1);
 
         char buf[40];
         snprintf(buf, sizeof(buf), TR(SET_COUNT),
