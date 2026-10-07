@@ -2037,6 +2037,48 @@ TEST_CASE(a_car_mode_selects_at_full_and_stores_at_the_brake)
     esc_stick_change_t d[1] = { { 0u, 1u } };
     CHECK(!esc_stick_check(&two, d, 1, &r.t, &why));
     CHECK_STR_EQ(why, "moves after the value, two stages");
+
+    /* A move to where the stick already is -- the select position, or
+     * the move before -- is no move, and refused. */
+    rig("kontronik-pix");
+    static esc_profile_t pix;
+    static esc_item_t pix_item;
+    static esc_value_t pix_values[5];
+    pix = *r.p;
+    pix_item = r.p->items[0];
+    memcpy(pix_values, r.p->items[0].values, sizeof(pix_values));
+    pix_item.values = pix_values;
+    pix.items = &pix_item;
+    esc_stick_change_t p2[1] = { { 0u, 1u } };   /* mode 2 */
+    CHECK(esc_stick_check(&pix, p2, 1, &r.t, &why));
+    pix_values[1].after[0] = ESC_THR_MAX;        /* the select position */
+    CHECK(!esc_stick_check(&pix, p2, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "a move after the value makes no move");
+    pix_values[1].after[0] = ESC_THR_MIN;
+    pix_values[1].after[1] = ESC_THR_MIN;        /* the same twice */
+    pix_values[1].after_count = 2u;
+    CHECK(!esc_stick_check(&pix, p2, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "a move after the value makes no move");
+    pix_values[1].after[1] = ESC_THR_MID;
+    CHECK(esc_stick_check(&pix, p2, 1, &r.t, &why));
+    /* Every value of record moves. */
+    for (size_t i = 0; i < esc_profiles_count(); ++i) {
+        const esc_profile_t *q = esc_profiles_at(i);
+        for (unsigned it = 0; it < q->item_count; ++it) {
+            for (unsigned v = 0; v < q->items[it].value_count; ++v) {
+                const esc_value_t *x = &q->items[it].values[v];
+                esc_throttle_t at = (q->store_throttle != ESC_THR_NONE)
+                                        ? q->store_throttle
+                                        : q->select_throttle;
+                for (unsigned k = 0; k < x->after_count; ++k) {
+                    if (x->after[k] == at) {
+                        T_FAIL("%s value %u: no move", q->id, x->number);
+                    }
+                    at = x->after[k];
+                }
+            }
+        }
+    }
 }
 
 /* sunrise-pro with value 5 of item 2 programmed from the middle. */

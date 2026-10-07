@@ -332,9 +332,20 @@ static const char *entry_refused(const esc_profile_t *p,
     }
     /* After the value move a two-stage menu goes back to its items, and
      * which change comes last is the ESC's order: no moves after it. */
-    if (p->value_select_throttle != ESC_THR_NONE
-        && p->items[ch[i].item].values[ch[i].value].after_count > 0u) {
+    const esc_value_t *val = &p->items[ch[i].item].values[ch[i].value];
+    if (p->value_select_throttle != ESC_THR_NONE && val->after_count > 0u) {
         return "moves after the value, two stages";
+    }
+    /* Each of the value's moves a move, from where the store or the select
+     * move left the stick: one that stays put would count as made.  The
+     * parsers refuse such a file; this holds a profile built otherwise. */
+    esc_throttle_t at = (p->store_throttle != ESC_THR_NONE)
+                            ? p->store_throttle : p->select_throttle;
+    for (unsigned k = 0; k < val->after_count && k < ESC_AFTER_MAX; ++k) {
+        if (val->after[k] == at) {
+            return "a move after the value makes no move";
+        }
+        at = val->after[k];
     }
     if (wait <= ESC_STICK_SETTLE_MS) {
         return "ENTRY above 500 ms";

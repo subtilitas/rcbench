@@ -135,7 +135,7 @@ JSON. The panel does not load them.
 | `values` | 1 to 255 of `{"number": 0-255, "name": "...", "default": true}`; numbers unique, at most one default |
 | `values[].entry_throttle` | `min`, `mid`, `max`: the stick position the manual programs this value from, where it is not the entry's; absent or null, the entry's. Stick programming powers the ESC up there for that value |
 | `values[].entry_hold_ms` | 0 to 600000: power-on to the menu when this value is programmed, where the manual gives a wait other than `scheme.entry.hold_ms`; absent or null, the entry's. Kontronik SUN PLUS modes 4 to 6 wait 5000 ms |
-| `values[].after_select` | 1 to 4 of `min`, `mid`, `max`: the moves the manual asks for after this value's select move, in order, each once the ESC has answered the one before; absent or null, none. The Kontronik car modes and PIX mode 2 go to `min`, the brake. Stick programming makes each STORE after the one before, after the profile's `scheme.store` move; a two-stage profile takes none |
+| `values[].after_select` | 1 to 4 of `min`, `mid`, `max`: the moves the manual asks for after this value's select move, in order, each once the ESC has answered the one before; absent or null, none. The Kontronik car modes and PIX mode 2 go to `min`, the brake. Each is a move: the first not where the stick is when they begin -- the profile's `scheme.store` move, else the select (or `value_select`) move -- and none the same as the one before; a file with one that stays put is refused. Stick programming makes each STORE after the one before, after the profile's `scheme.store` move; a two-stage profile takes none |
 | `applies_to` | model names of this profile, or null for all |
 | `applies_when` | a condition in words, e.g. `"model type heli"` |
 

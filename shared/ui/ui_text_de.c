@@ -698,6 +698,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_ESC_WHY_HAND]           = "Handgriff",
     [TX_ESC_WHY_ENTRY_POS]      = "Änderungen brauchen verschiedene Einschaltstellungen",
     [TX_ESC_WHY_ENTRY_TIME]     = "Änderungen brauchen verschiedene Einstiegszeiten",
+    [TX_ESC_WHY_AFTER_NONE]     = "eine Bewegung nach dem Wert bewegt nichts",
     [TX_ESC_WHY_AFTER_TWO]      = "Bewegungen nach dem Wert, zweistufig",
 
     /* ----------------------------------------------------------- SERVO */

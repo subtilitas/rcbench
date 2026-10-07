@@ -852,8 +852,25 @@ static bool has_model(const dec_t *d, const char *name)
                       name_is) != NULL;
 }
 
+/*
+ * Where the stick is when a value's own moves (after_select) begin: the
+ * profile's store move, else the move that stores the value; ESC_THR_NONE
+ * for a profile with no select move.
+ */
+static esc_throttle_t moves_from(const esc_profile_t *p)
+{
+    if (p->select_throttle == ESC_THR_NONE) {
+        return ESC_THR_NONE;
+    }
+    if (p->store_throttle != ESC_THR_NONE) {
+        return p->store_throttle;
+    }
+    return (p->value_select_throttle != ESC_THR_NONE)
+               ? p->value_select_throttle : p->select_throttle;
+}
+
 static void decode_values(dec_t *d, uint32_t arr, const char *iw,
-                          esc_item_t *it)
+                          esc_item_t *it, esc_throttle_t before)
 {
     const uint32_t n = d->t[arr].size;
     if (n == 0 || n > 255u) {
@@ -914,6 +931,13 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
                 if (x < 0) {
                     FAIL(d, "%s.after_select[%u]: not a known value", w,
                          (unsigned)k);
+                    return;
+                }
+                /* A move: not where the stick already is. */
+                const esc_throttle_t from = (k == 0u) ? before : after[k - 1u];
+                if ((esc_throttle_t)x == from) {
+                    FAIL(d, "%s.after_select[%u]: no move from the position "
+                         "before", w, (unsigned)k);
                     return;
                 }
                 after[k] = (esc_throttle_t)x;
@@ -1007,7 +1031,7 @@ static void decode_items(dec_t *d, uint32_t root, esc_profile_t *p)
         }
         const int64_t va = get_obj(d, ti, "values", w, T_ARR);
         if (va >= 0) {
-            decode_values(d, (uint32_t)va, w, &x);
+            decode_values(d, (uint32_t)va, w, &x, moves_from(p));
         }
         if (it != NULL) {
             it[i] = x;

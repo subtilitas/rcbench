@@ -695,6 +695,7 @@ UI_TEXT(ESC_WHY_ONE_VALUE,         56, "one value: nothing to choose")
 UI_TEXT(ESC_WHY_HAND,              27, "manual step")
 UI_TEXT(ESC_WHY_ENTRY_POS,         56, "changes need different power-up positions")
 UI_TEXT(ESC_WHY_ENTRY_TIME,        56, "changes need different entry times")
+UI_TEXT(ESC_WHY_AFTER_NONE,        56, "a move after the value makes no move")
 UI_TEXT(ESC_WHY_AFTER_TWO,         56, "moves after the value, two stages")
 
 /* --------------------------------------------------------------- SERVO */

@@ -1152,7 +1152,7 @@ static const ui_text_id_t k_why[] = {
     TX_ESC_WHY_THRESHOLD, TX_ESC_WHY_ENTRY, TX_ESC_WHY_SELECT_WINDOW,
     TX_ESC_WHY_VALUE_WINDOW, TX_ESC_WHY_NO_RUN, TX_ESC_WHY_ONE_VALUE,
     TX_ESC_WHY_HAND, TX_ESC_WHY_ENTRY_POS, TX_ESC_WHY_ENTRY_TIME,
-    TX_ESC_WHY_AFTER_TWO,
+    TX_ESC_WHY_AFTER_TWO, TX_ESC_WHY_AFTER_NONE,
 };
 
 const char *programmer_screen_why_text(const char *why)

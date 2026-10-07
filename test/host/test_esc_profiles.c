@@ -331,9 +331,9 @@ TEST_CASE(a_value_reads_its_moves_after_the_selection)
         uint8_t n;
         esc_throttle_t first, last;
     } k[] = {
-        { "[\"min\"]", NULL, 1u, ESC_THR_MIN, ESC_THR_MIN },
-        { "[\"min\", \"mid\", \"max\", \"m\\u0069n\"]", NULL, 4u,
-          ESC_THR_MIN, ESC_THR_MIN },
+        { "[\"max\"]", NULL, 1u, ESC_THR_MAX, ESC_THR_MAX },
+        { "[\"mid\", \"max\", \"m\\u0069n\", \"max\"]", NULL, 4u,
+          ESC_THR_MID, ESC_THR_MAX },
         { "[\"max\", \"mid\"]", NULL, 2u, ESC_THR_MAX, ESC_THR_MID },
         { "null", NULL, 0u, ESC_THR_MIN, ESC_THR_MIN },
         { "\"min\"", "items[0].values[1].after_select: not 1-4", 0u,
@@ -345,11 +345,16 @@ TEST_CASE(a_value_reads_its_moves_after_the_selection)
           ESC_THR_MIN },
         { "[\"none\"]", "items[0].values[1].after_select[0]: not a known",
           0u, ESC_THR_MIN, ESC_THR_MIN },
-        { "[\"min\", \"MIN\"]",
+        { "[\"max\", \"MIN\"]",
           "items[0].values[1].after_select[1]: not a known", 0u,
           ESC_THR_MIN, ESC_THR_MIN },
         { "[null]", "items[0].values[1].after_select[0]: not a known", 0u,
           ESC_THR_MIN, ESC_THR_MIN },
+        { "[\"min\"]", "items[0].values[1].after_select[0]: no move",
+          0u, ESC_THR_MIN, ESC_THR_MIN },
+        { "[\"max\", \"max\"]",
+          "items[0].values[1].after_select[1]: no move", 0u, ESC_THR_MIN,
+          ESC_THR_MIN },
         { "[{\"throttle\": \"min\"}]",
           "items[0].values[1].after_select[0]: not a known", 0u,
           ESC_THR_MIN, ESC_THR_MIN },
@@ -384,6 +389,27 @@ TEST_CASE(a_value_reads_its_moves_after_the_selection)
         free(block);
         free(j);
     }
+    /* With a store move, the first of the value's moves starts there. */
+    char *j = subst("\"select\": {", "\"store\": {\"throttle\": \"max\"}, "
+                    "\"select\": {");
+    char *j2 = NULL;
+    if (j != NULL) {
+        const char *at = strstr(j, from);
+        if (at != NULL) {
+            j2 = malloc(strlen(j) + 64u);
+            const size_t head = (size_t)(at - j);
+            memcpy(j2, j, head);
+            strcpy(j2 + head, "{\"number\": 2, \"name\": \"on\", "
+                              "\"after_select\": [\"max\"]}");
+            strcat(j2, at + strlen(from));
+        }
+    }
+    char err[96] = "";
+    CHECK(j2 != NULL && !parses(j2, err, sizeof(err)));
+    CHECK_STR_EQ(err, "items[0].values[1].after_select[0]: no move from the "
+                      "position before");
+    free(j2);
+    free(j);
 }
 
 /* Every rule the generator holds a manual step to, held here as its

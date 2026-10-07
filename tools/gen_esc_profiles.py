@@ -156,19 +156,26 @@ def no_nul(v: object, where: str) -> None:
             no_nul(x, f"{where}[{i}]")
 
 
-def after_select(v: dict, w: str) -> list[str]:
+def after_select(v: dict, w: str, before: str) -> list[str]:
     """The moves a value asks for after its select move: absent or null,
-    none; else 1 to AFTER_MAX of min, mid, max."""
+    none; else 1 to AFTER_MAX of min, mid, max, each a move: not where the
+    stick already is -- @before, the store move or else the move that
+    stores the value, for the first; the one before it for the rest."""
     a = v.get("after_select")
     if a is None:
         return []
     want(isinstance(a, list) and 0 < len(a) <= AFTER_MAX,
          f"{w}.after_select", f"not 1-{AFTER_MAX} moves")
     moves = {k: x for k, x in THROTTLE.items() if k != "none"}
+    out = []
     for i, m in enumerate(a):
         want(isinstance(m, str) and m in moves, f"{w}.after_select[{i}]",
              f"not one of {', '.join(moves)}")
-    return [moves[m] for m in a]
+        want(moves[m] != before, f"{w}.after_select[{i}]",
+             "no move from the position before")
+        before = moves[m]
+        out.append(moves[m])
+    return out
 
 
 def check_manual(d: dict, w: str, auto: str) -> list[dict]:
@@ -343,6 +350,11 @@ def check(path: pathlib.Path) -> dict:
     want(auto == "ESC_AUTO_NONE" or len(items) > 0, f"{w}.items",
          "empty for a profile the bench may run")
     seen: dict[int, list[bool]] = {}
+    # Where the stick is when a value's own moves begin: the store move,
+    # else the move that stores the value.
+    before = next(x for x in (p["store_thr"], p["vsel_thr"], p["select_thr"])
+                  if x != "ESC_THR_NONE") \
+        if p["select_thr"] != "ESC_THR_NONE" else "ESC_THR_NONE"
     for i, it in enumerate(items):
         iw = f"{w}.items[{i}]"
         want(isinstance(it, dict), iw, "not an object")
@@ -381,7 +393,7 @@ def check(path: pathlib.Path) -> dict:
                         # Power-on to the menu for this value, where the
                         # manual gives one other than the entry's.
                         "eh": num(v, "entry_hold_ms", vw, 600000) or 0,
-                        "after": after_select(v, vw)})
+                        "after": after_select(v, vw, before)})
         want(defaults <= 1, f"{iw}.values", "more than one default")
         p["items"].append({"name": text(it, "name", iw), "key": key,
                            "n": number, "values": out, "applies": applies,
@@ -504,6 +516,17 @@ def self_test() -> list[str]:
     def man(steps: str, kind: str = "assisted") -> bytes:
         return at(auto, f'"automatable": "{kind}", "manual": {steps},')
 
+    def sel_max(data: bytes, store: str = "") -> bytes:
+        """@data with the select move at max, and a store move."""
+        text = data.decode("utf-8").replace(
+            '"select": {\n      "throttle": "none"',
+            '"select": {\n      "throttle": "max"', 1)
+        if store:
+            text = text.replace('"select": {',
+                                f'"store": {{"throttle": "{store}"}}, '
+                                '"select": {', 1)
+        return text.encode("utf-8")
+
     jumper = '{"when": "before_power", "action": "Fit the jumper."}'
     pull = '{"when": "before_menu", "action": "Pull the jumper."}'
     refuse = {
@@ -568,6 +591,12 @@ def self_test() -> list[str]:
         "after null inside": at(val, '"after_select": [null], ' + val),
         "after an object": at(val, '"after_select": [{"throttle": "min"}], '
                               + val),
+        "after the select position": sel_max(at(
+            val, '"after_select": ["max"], ' + val)),
+        "after the same twice": sel_max(at(
+            val, '"after_select": ["min", "min"], ' + val)),
+        "after the store position": sel_max(at(
+            val, '"after_select": ["min"], ' + val), store="min"),
         "manual on a full profile": man(f"[{jumper}]", "full"),
         "manual on a profile nobody runs": man(f"[{jumper}]", "none"),
         "manual empty": man("[]"),
@@ -643,6 +672,10 @@ def self_test() -> list[str]:
         "after min": at(val, '"after_select": ["min"], ' + val),
         "after 4 moves": at(val, '"after_select": ["min", "mid", "max", '
                             '"m\\u0069n"], ' + val),
+        "after from the select": sel_max(at(
+            val, '"after_select": ["min", "max"], ' + val)),
+        "after from the store": sel_max(at(
+            val, '"after_select": ["max"], ' + val), store="min"),
         "manual null": at(auto, auto + ' "manual": null,'),
         "manual two steps": man(f"[{jumper}, {pull}]"),
         "manual four steps of one kind": man("[" + ", ".join([pull] * 4)
