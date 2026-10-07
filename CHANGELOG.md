@@ -44,9 +44,14 @@ sweep starts over from the curve's beginning, and the alert band says so.
 - **The run asks for each step.** The warning lists the steps due before
   the power-up. A run stops before a power-up for an `at_power_up` step and
   for `before_power` steps from the second power-up on, and after the entry
-  for a `before_menu` step, powered with the stick at MIN; DONE goes on,
-  ABORT and STOP end it, and no DONE within 60 s ends it with NOT
-  CONFIRMED, red light lit. The result lists the `after_programming` steps.
+  for a `before_menu` step, powered with the stick at the value's power-up
+  position; DONE goes on, ABORT and STOP end it, and no DONE within 60 s
+  ends it with NOT CONFIRMED, red light lit. Steps before the power-up that
+  do not fit the warning whole are counted there, and HOLD TO RUN counts
+  only once ALL STEPS has shown them. The result lists the
+  `after_programming` steps in two lines, or counts them where they need
+  more; when a run ends they open by themselves over the result, and
+  MANUAL INTERVENTION REQUIRED in the result's header opens them again.
 - **A value's own power-up position.** `values[].entry_throttle` names
   the stick position the manual programs a value from where it is not the
   entry's. A run powers the ESC up there for that value, with the stick
@@ -71,36 +76,29 @@ sweep starts over from the curve's beginning, and the alert band says so.
   name, with its family and its run state; a model opens its family's
   profile, named with the model, and the supply takes the model's own cell
   count. The search filters both levels and is kept between them; card
-  profiles join their maker. The count moves to the line under the rows.
-- **The menu-starting step is listened through.** Pulling the jumper or
-  pressing the button starts the Kontronik mode series at once, while the
-  operator's hand is at the ESC. The run counts beeps from the moment it
-  asks for that step; the menu heard in order, or DONE, takes it as done,
-  and SILENCE and TIMEOUT run from then. Before, the run listened only after
-  DONE, at least 1000 ms after the prompt, and lost the first groups.
-- **The steps judge the model tapped.** A model refused for its voltage
-  opened the steps with the family's lowest voltage, which could say the run
-  will ask for them; the steps, the page, RUN and the warning now judge the
-  model tapped.
-- **A step says whether it starts the menu.** `manual[].starts_menu`
-  marks the step whose action starts the series; the run listens from the
-  prompt only for that step, and every other waits for DONE. One a profile,
-  only on before_menu, none after it, in the generator and the card reader
-  alike. 16 Kontronik profiles mark their pull or press.
-- **Every step after programming shows.** The result showed at most two
-  lines of `after_programming` steps; more are now counted there, the steps
-  open by themselves over the result when the run ends, and MANUAL
-  INTERVENTION REQUIRED in the result's header opens them again.
-- **No step at an ESC that may be powered.** A run started with the
-  output still live, or a module that came on by itself, could ask the
-  operator to fit a jumper or hold a button at a powered ESC. RUN is now
-  refused while the supply reads live; the warning shows its before-power
-  steps and counts HOLD TO RUN only while the supply reads off; the run
-  asks the supply off at its start and asks for no step at an unpowered
-  ESC, and powers nothing, until it reads off (else SUPPLY STAYS ON); a
-  reading with the output on or the current up during such a step ends the
-  run at once, and readings that stop end it with NO READINGS. The result
-  says not to touch the ESC while the supply does not read off.
+  profiles join their maker, at most 512 models a maker. The count is on
+  the line under the rows. The steps, the page, RUN and the warning judge
+  the model tapped, at its own voltage.
+- **The menu-starting step is listened through.**
+  `manual[].starts_menu` marks the step whose action starts the series:
+  pulling the jumper or pressing the button starts the Kontronik mode
+  series at once, while the operator's hand is at the ESC. The run counts
+  beeps from the moment it asks for that step; the menu heard in order, or
+  DONE, takes it as done, and SILENCE and TIMEOUT run from then. Every
+  other step waits for DONE. One a profile, only on `before_menu`, none
+  after it, in the generator and the card reader alike. 16 Kontronik
+  profiles mark their pull or press.
+- **No step at an ESC that may be powered.** RUN is refused while the
+  supply does not read off: a reading no older than 1000 ms with the
+  supply's own state off and the current at or under 20 mA for 200 ms.
+  The warning shows its before-power steps and counts HOLD TO RUN only
+  while the supply reads off. The run asks the supply off at its start,
+  keeps the stick at MIN, and moves it, asks for a step at an unpowered
+  ESC or powers anything only once its own readings say off (else SUPPLY
+  STAYS ON); a reading with the output on or the current up after that
+  ends the run at once, and readings that stop end it with NO READINGS.
+  The result says not to touch the ESC while the supply does not read
+  off.
 - **The supply stays on until the ESC has confirmed.** A
   `before_power_off` step holds the run after the store's last move, the
   ESC powered and the stick where the store left it, until DONE; the
