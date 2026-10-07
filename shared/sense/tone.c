@@ -72,19 +72,32 @@ bool tone_init(tone_t *d, const tone_cfg_t *c)
     d->start_low = div_up(2u * (uint64_t)c->tick_hz * c->hold_ns,
                           1000000000u);
     /*
-     * Settings under which no signal can make a tone, refused rather than
-     * run deaf.  Two bursts need a low between them that is a low (at
-     * least glitch), that can start a burst (at least start_low), that is
-     * shorter than a tone period (at most per_max) and that does not end
-     * the run (under gap).  gap is at least per_max by the gap_us check
-     * above, so the per_max conditions are the stronger; the gap ones say
-     * the same of the silence.  A window needs window_min_periods periods
-     * to end in it, each at least half per_min long, the shortest that
-     * counts.
+     * The shortest time between two burst starts that makes a period the
+     * detector counts: at least half per_min, the shortest period in
+     * range; and the low before the second start at least glitch, or it is
+     * no low, and at least start_low, or it starts no burst.  The on-time
+     * before that low adds nothing: a rise and a fall on one tick are
+     * taken.
      */
-    if (d->gap <= d->glitch || d->gap <= d->start_low
-        || d->per_max <= d->glitch || d->per_max <= d->start_low
-        || (uint64_t)(c->window_min_periods - 1u) * (d->per_min / 2u)
+    uint64_t spacing = d->per_min / 2u;
+    if (d->glitch > spacing) {
+        spacing = d->glitch;
+    }
+    if (d->start_low > spacing) {
+        spacing = d->start_low;
+    }
+    d->spacing = spacing;
+    /*
+     * Settings under which no signal can make a tone, refused rather than
+     * run deaf.  Two bursts need that spacing to be under the longest
+     * period in range (per_max) and under the silence that ends the run
+     * (gap; at least per_max by the gap_us check above, so the weaker of
+     * the two).  A window needs window_min_periods periods to end in its
+     * win_ticks, each burst start at least the spacing after the one
+     * before: (window_min_periods - 1) spacings under win_ticks.
+     */
+    if (d->gap <= spacing || d->per_max <= spacing
+        || (uint64_t)(c->window_min_periods - 1u) * spacing
                >= d->win_ticks) {
         memset(d, 0, sizeof *d);
         return false;

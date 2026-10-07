@@ -535,7 +535,35 @@ TEST_CASE(settings_under_which_no_signal_makes_a_tone_are_refused)
     CHECK(tone_init(&det, &c));
     c.window_min_periods = 15u;
     CHECK(!tone_init(&det, &c));
+    /* The spacing is the most of half the shortest period, the glitch and
+     * twice the hold-off.  1 MHz, a 1 ms window, 10 to 20 kHz, a 49.5 us
+     * hold-off: burst starts at least 99 ticks apart, so 11 fit in 1000
+     * ticks.  20 refused; 11 taken, 12 refused. */
+    cfg_1mhz(&c);
+    c.window_us = 1000u;
+    c.hold_ns = 49500u;
+    c.window_min_periods = 20u;
+    CHECK(!tone_init(&det, &c));
+    c.window_min_periods = 12u;
+    CHECK(!tone_init(&det, &c));
+    c.window_min_periods = 11u;
+    CHECK(tone_init(&det, &c));
+    CHECK_EQ(det.spacing, 99);
+    /* The glitch as the spacing: 10 to 200 kHz, a 10 us glitch, 10 ticks;
+     * 100 periods fit 1000 ticks, 101 do not. */
+    cfg_1mhz(&c);
+    c.window_us = 1000u;
+    c.f_max_hz = 200000u;
+    c.carrier_min_hz = 300000u;
+    c.glitch_ns = 10000u;
+    c.window_min_periods = 101u;
+    CHECK(!tone_init(&det, &c));
+    c.window_min_periods = 100u;
+    CHECK(tone_init(&det, &c));
+    CHECK_EQ(det.spacing, 10);
     /* A refused set-up runs nothing. */
+    c.window_min_periods = 101u;
+    CHECK(!tone_init(&det, &c));
     tone_edge(&det, 100u, true);
     CHECK_EQ(tone_stats(&det)->edges, 0);
 }
@@ -1209,6 +1237,37 @@ TEST_CASE(a_pitch_exactly_split_pct_away_does_not_split)
     }
 }
 
+TEST_CASE(a_window_holds_exactly_as_many_periods_as_the_spacing_allows)
+{
+    /* The set-up taken at the boundary above: 1 MHz, a 1000-tick window,
+     * starts at least 99 ticks apart, 11 periods a window.  Burst starts
+     * exactly 99 ticks apart, each a rise and a fall on one tick: 11
+     * periods end in window 1, which holds the tone. */
+    tone_cfg_t c;
+    cfg_1mhz(&c);
+    c.window_us = 1000u;
+    c.hold_ns = 49500u;
+    c.window_min_periods = 11u;
+    edges_t e = { 0 };
+    for (unsigned k = 0; k < 12u; ++k) {
+        edge_tick(&e, 901u + 99u * k, true);
+        edge_tick(&e, 901u + 99u * k, false);
+    }
+    start(&c);
+    play_ticks(&e, 2000u);
+    bool seen = false;
+    for (size_t i = 0; i < n_wins; ++i) {
+        if (wins[i].index == 1u) {
+            seen = true;
+            CHECK_EQ(wins[i].periods, 11);
+            CHECK(wins[i].present);
+            CHECK(rel_err(wins[i].freq_hz, 1e6 / 99.0) < LOCKED_BEEP);
+        }
+    }
+    CHECK(seen);
+    edges_free(&e);
+}
+
 TEST_CASE(an_odd_split_pct_halves_exactly)
 {
     /* split_pct 1 on a 1 MHz clock, a beep's mean 1000 ticks, then a
@@ -1642,6 +1701,7 @@ int main(void)
     RUN(a_low_of_exactly_twice_the_hold_off_can_start_a_burst);
     RUN(tones_at_exactly_the_lowest_and_highest_frequency_are_in_range);
     RUN(a_pitch_exactly_split_pct_away_does_not_split);
+    RUN(a_window_holds_exactly_as_many_periods_as_the_spacing_allows);
     RUN(an_odd_split_pct_halves_exactly);
     RUN(a_beep_of_exactly_min_periods_is_a_beep);
     RUN(a_period_ending_on_a_window_boundary_belongs_to_the_next);

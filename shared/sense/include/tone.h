@@ -206,6 +206,10 @@ typedef struct {
     tone_cfg_t c;
     uint64_t win_ticks, per_min, per_max, car_max, glitch, gap;
     uint64_t start_low;      /**< twice the hold-off, ticks               */
+    /** The shortest time between two burst starts that makes a counted
+     *  period, ticks: the most of half the shortest period in range, the
+     *  glitch and start_low. */
+    uint64_t spacing;
 
     bool     seen;           /**< any time given yet                      */
     uint64_t now;            /**< the latest time given                   */
@@ -257,8 +261,8 @@ void tone_cfg_defaults(tone_cfg_t *c, uint32_t tick_hz);
  *  tone, in whole ticks: the period of f_min_hz, or the gap, at most the
  *  glitch or at most twice the hold-off (no low could part two bursts
  *  without being a glitch, being too short to start one, or ending the
- *  run); window_min_periods - 1 periods of half the period of f_max_hz,
- *  the shortest that counts, filling a window. */
+ *  run); window_min_periods - 1 of the shortest burst-start spacings
+ *  (tone_t's spacing) filling a window. */
 bool tone_init(tone_t *d, const tone_cfg_t *c);
 
 /** One edge at tick @p t, @p level after it. */
