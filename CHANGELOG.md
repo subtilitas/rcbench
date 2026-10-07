@@ -6,6 +6,13 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- **The status band's mode reads BENCH or SIM.** It read LINK with the link
+  up, the word the link chip beside it already showed. BENCH is the panel
+  driving the coprocessor's outputs, SIM the panel running on its own
+  models while no coprocessor answers. Both stay English in German.
+
 ## 0.12.0 - 2026-10-07
 
 SERVO runs an automatic servo test: supply steps, currents, travel time, a

@@ -19,6 +19,13 @@ extern "C" {
 gfx_rect_t ui_band_stop_rect(void);
 
 /**
+ * The mode the band names: BENCH while the link is up and the panel drives
+ * the coprocessor's outputs, SIM while it runs on its own models.  Mode
+ * names, so English in every language.
+ */
+const char *ui_band_mode(bool link_up);
+
+/**
  * Draw the band.  @p title is the current screen's title, or NULL on the
  * splash, which has no home tag and no bench status.
  */

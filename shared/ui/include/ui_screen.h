@@ -106,7 +106,7 @@ typedef struct {
     bool     armed;
     uint16_t faults;        /**< a link_fault_t bitmap; 0 is quiet          */
     uint32_t run_seconds;
-    const char *mode;       /**< output mode text, or NULL                  */
+    const char *mode;       /**< ui_band_mode(): BENCH or SIM, or NULL      */
     /**
      * The numbers are modelled, not measured.
      *

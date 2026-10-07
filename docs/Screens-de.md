@@ -9,8 +9,10 @@ einzelnen Bildschirme bedient werden.
 
 Das obere Band ist auf allen Bildschirmen gleich. Von rechts: STOP, die
 Laufzeituhr (im scharfen Zustand oder nach einem Lauf), ARMED oder SAFE, ein
-FEHLER-Code, sobald einer gemeldet wird, der Ausgangsmodus (LINK oder SIM) und
-LINK oder KEIN LINK.
+FEHLER-Code, sobald einer gemeldet wird, der Modus und LINK oder KEIN LINK.
+Der Modus ist BENCH, solange der Link steht und das Panel die Ausgänge des
+Koprozessors ansteuert, und SIM, solange kein Koprozessor antwortet und das
+Panel mit seinen eigenen Modellen rechnet.
 
 STOP funktioniert auf jedem Bildschirm. Es entschärft und rastet ein: der
 Prüfstand bleibt entschärft, bis er erneut scharf geschaltet wird. Ein

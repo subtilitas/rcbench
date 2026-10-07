@@ -32,6 +32,11 @@ gfx_rect_t ui_band_stop_rect(void)
     return r;
 }
 
+const char *ui_band_mode(bool link_up)
+{
+    return link_up ? "BENCH" : "SIM";
+}
+
 /* Chips are laid out right to left from STOP, each placed at the right edge
  * the previous one returns, so no chip needs another's width in advance and a
  * long mode string cannot push the clock under the ARMED badge. */

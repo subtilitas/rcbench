@@ -42,6 +42,7 @@
 #include "esc_sim.h"
 #include "supply.h"
 #include "supply_screen.h"
+#include "ui_band.h"
 #include "ui_keypad.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
@@ -234,7 +235,7 @@ static const ui_bench_status_t k_status = {
     .armed       = false,
     .faults      = 0,
     .run_seconds = 257,
-    .mode        = "DSHOT600",
+    .mode        = NULL,    /* ui_band_mode() of the link, per view */
     .simulated   = false,
     /* Not read in this harness; the strip prints "--". */
     .mcu_temp_c = NAN,
@@ -1028,6 +1029,10 @@ int main(int argc, char **argv)
 
     ui_bench_status_t st = k_status;
     st.simulated = sim || (id == SCREEN_MOTOR);
+    /* Modelled numbers are the panel's own, which it runs only while no
+     * coprocessor answers: the band says NO LINK and SIM, as on the bench. */
+    st.link_up   = !st.simulated;
+    st.mode      = ui_band_mode(st.link_up);
     st.armed     = (id == SCREEN_MOTOR
                     && strcmp(view, "motor-held") != 0)
                    || strcmp(view, "servo-run") == 0

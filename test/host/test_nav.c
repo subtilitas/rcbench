@@ -18,6 +18,7 @@
 #include "stub_screen.h"
 #include "ui_band.h"
 #include "ui_screen.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_watermark.h"
 #include "ui_widgets.h"
@@ -612,6 +613,21 @@ TEST_CASE(the_band_shows_what_is_wrong)
     CHECK_EQ(ui_router_status()->faults, 0x11);
 }
 
+/* The mode chip says what drives the outputs, and the link chip beside it
+ * says whether the link is up: the mode never repeats the link's word.
+ * Mode names, so the same in German. */
+TEST_CASE(the_band_names_the_bench_or_the_model_not_the_link)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        CHECK_STR_EQ(ui_band_mode(true), "BENCH");
+        CHECK_STR_EQ(ui_band_mode(false), "SIM");
+        CHECK(strstr(ui_band_mode(true), "LINK") == NULL);
+        CHECK(strstr(ui_band_mode(false), "LINK") == NULL);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* The splash holds until every step has answered, then hands over.  A tap
  * skips the hold, but only once there is something to have read. */
 TEST_CASE(the_splash_holds_then_hands_over)
@@ -1111,6 +1127,7 @@ int main(void)
     RUN(a_held_alert_stays_and_lets_taps_through);
     RUN(a_cleared_alert_leaves_no_red_behind);
     RUN(the_band_shows_what_is_wrong);
+    RUN(the_band_names_the_bench_or_the_model_not_the_link);
     RUN(the_splash_holds_then_hands_over);
     RUN(a_tap_skips_the_splash_hold);
     RUN(a_failed_step_is_drawn_in_its_own_colour);

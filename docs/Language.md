@@ -65,7 +65,7 @@ manual beside the bench.
   (pulse-position modulation), OneShot, S.BUS, CAN (Controller Area
   Network), BLHeli_S, AM32, ESCape32, VESC, KISS, PD mini, AUTO, CV
   (constant voltage), CC (constant current), STANDARD PWM, HELI CYCLIC,
-  ESC STICK, BUS OFF.
+  ESC STICK, BUS OFF, and the status band's BENCH and SIM.
 - Two state words short enough for their place: SAFE on the status band and
   SILENT on the ANALYSER's verdict.
 - The field's own terms: Frame Rate, Throttle, Failsafe, Brown-out, Timing,

@@ -6513,7 +6513,7 @@ void app_main(void)
             .armed       = armed,
             .faults      = faults,
             .run_seconds = run_seconds,
-            .mode        = link_up ? "LINK" : "SIM",
+            .mode        = ui_band_mode(link_up),
             .simulated   = bench_state_simulated(&bench),
             .capabilities = s_capabilities,
             .link_errors = link_errors,

@@ -68,7 +68,7 @@ passen.
   (Pulse-Position Modulation), OneShot, S.BUS, CAN (Controller Area
   Network), BLHeli_S, AM32, ESCape32, VESC, KISS, PD mini, AUTO, CV
   (Constant Voltage), CC (Constant Current), STANDARD PWM, HELI CYCLIC,
-  ESC STICK, BUS OFF.
+  ESC STICK, BUS OFF, und BENCH und SIM im Statusband.
 - Zwei Zustandswörter, kurz genug für ihren Platz: SAFE im Statusband und
   SILENT im Urteil des ANALYSER.
 - Die Begriffe des Fachs: Frame Rate, Throttle, Failsafe, Brown-out, Timing,

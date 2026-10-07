@@ -9,7 +9,9 @@ operated.
 
 The top band is shared by every screen. From the right: STOP, the run clock
 (while armed or after a run), ARMED or SAFE, a FAULT code when one is reported,
-the output mode (LINK or SIM), and LINK or NO LINK.
+the mode, and LINK or NO LINK. The mode is BENCH while the link is up and the
+panel drives the coprocessor's outputs, and SIM while no coprocessor answers
+and the panel runs on its own models.
 
 STOP works on every screen. It disarms and latches: the bench stays disarmed
 until it is armed again. Navigating away, an alert expiring or the link
