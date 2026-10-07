@@ -141,7 +141,7 @@ history is in git.
 
 ### Fixed
 
-- **SERVO's commanded pulse reads SOLLWERT in German.** It read SOLL, the
+- **SERVO's commanded pulse reads PULSBREITE in German.** It read SOLL, the
   same word as the supply's SET line beneath it.
 - **A sagging input switches a live PD mini off.** While the output is on,
   the coprocessor switches it off when the module's input reads under the
