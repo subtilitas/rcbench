@@ -4152,6 +4152,20 @@ static bool write_servo(const servo_cmd_t sv)
          */
         if ((s_hold_unanswered && s_servo_sweeping && !s_servo_holding)
             || (uint32_t)(took - sent) > OUT_DEFAULT_TIMEOUT_MS) {
+            /*
+             * The HOLD just acknowledged is live there, and while it is the
+             * far end stamps every surface with that HOLD's arrival: a
+             * position written under it would go to rest 500 ms after the
+             * arrival, at once and unslewed.  So it is ended first with a
+             * stop; one that does not land is written before the next
+             * command instead.
+             */
+            const uint16_t stop = 0u;
+            if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 1u,
+                            &stop, &reply)
+                || reply.op != LINK_OP_ACK) {
+                s_servo_sweep_unknown = true;
+            }
             s_hold_unanswered    = false;
             s_servo_sweeping     = false;
             s_servo_holding      = false;
@@ -4159,7 +4173,9 @@ static bool write_servo(const servo_cmd_t sv)
             s_servo_held.kind    = SERVO_CMD_NONE;
             s_servo_release_owed = true;
             atomic_store(&s_servo_hold_lost, true);
-            return true;
+            /* Not taken as held: a caller that voids an owed release on
+             * success would cancel the one just owed. */
+            return false;
         }
         /* The hold that paused a running sweep: the far end keeps the
          * curve's phase as of now, and the screen draws the pause from it

@@ -648,6 +648,46 @@ TEST_CASE(a_stop_forgets_the_kept_phase_at_the_panel)
 }
 
 /*
+ * A hold the panel lets go of while it is live at the far end -- a late or
+ * retried HOLD acknowledged -- must be ended with a stop before a position
+ * is written.  Under a live hold the far end stamps the surface with the
+ * HOLD's arrival, so a position written then goes to rest 500 ms after it,
+ * at once and unslewed; after a stop the position is clocked by its own
+ * writes and stays.
+ */
+TEST_CASE(a_position_after_a_let_go_hold_needs_the_stop_first)
+{
+    for (int stopped = 0; stopped < 2; ++stopped) {
+        fresh(true);
+        CHECK(outputs_set_slew(&o, 0, 200u));
+        CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+        uint32_t t = T0;
+        for (; t < T0 + 100u; ++t) {
+            (void)servo_page_step(&pg, &o, t);
+            outputs_step(&o, t);
+        }
+        const uint32_t arrival = t;
+        CHECK_EQ(say(LINK_SV_HOLD, arrival), 0u);   /* acked late */
+        if (stopped) {
+            CHECK_EQ(say(0u, arrival + 1u), 0u);
+        }
+        /* A dial drag: positions every 100 ms from 50 ms on. */
+        bool rested = false;
+        for (t = arrival + 1u; t <= arrival + 700u; ++t) {
+            if ((t - arrival) % 100u == 50u) {
+                CHECK(outputs_set(&o, 0, 475u, t));
+            }
+            (void)servo_page_step(&pg, &o, t);
+            outputs_step(&o, t);
+            if (outputs_overdue(&o, 0, t)) {
+                rested = true;                 /* dropped to rest */
+            }
+        }
+        CHECK_EQ(rested, !stopped);            /* the stop is what keeps it */
+    }
+}
+
+/*
  * The host's choice: RESUME for a resume of a hold in force on 4.6; the
  * curve over, and saying so, on an older coprocessor or after a refusal;
  * the curve as usual for anything else, a resumed sweep's repeats included.
@@ -713,6 +753,7 @@ int main(void)
     RUN(a_frame_rate_written_while_held_keeps_the_phase);
     RUN(the_host_times_the_far_ends_phase_across_holds);
     RUN(a_stop_forgets_the_kept_phase_at_the_panel);
+    RUN(a_position_after_a_let_go_hold_needs_the_stop_first);
     RUN(the_host_resumes_on_4_6_and_starts_over_otherwise);
     RUN(the_curve_over_a_hold_starts_from_its_beginning);
     return test_summary("servo_page");
