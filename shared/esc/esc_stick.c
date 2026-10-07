@@ -147,13 +147,13 @@ esc_stick_kind_t esc_stick_kind(const esc_profile_t *p, const char **why)
     if (p->select_throttle == ESC_THR_NONE) {
         return refuse(why, "no select move");
     }
-    const esc_throttle_t listen = esc_stick_listen(p);
+    const esc_throttle_t rest = esc_stick_listen(p);
     /*
      * A move to the rest position at the end of the entry, at a time the
      * profile does not give, can land in another stage of the entry -- in
      * YGE's, a stick teach -- so it is not guessed.
      */
-    if (listen != p->entry_throttle && p->entry_hold_ms == 0u) {
+    if (rest != p->entry_throttle && p->entry_hold_ms == 0u) {
         return refuse(why, "rest move, no entry time");
     }
     if (p->value_select_throttle != ESC_THR_NONE) {
@@ -163,7 +163,7 @@ esc_stick_kind_t esc_stick_kind(const esc_profile_t *p, const char **why)
         if (p->announce != ESC_ANNOUNCE_ITEM_THEN_VALUE) {
             return refuse(why, "two moves, no value tones");
         }
-        if (p->select_throttle == listen) {
+        if (p->select_throttle == rest) {
             return refuse(why, "select move is the rest");
         }
         if (p->value_select_throttle == p->select_throttle) {
@@ -183,7 +183,7 @@ esc_stick_kind_t esc_stick_kind(const esc_profile_t *p, const char **why)
     if (values_repeat(p)) {
         return refuse(why, "values repeat across items");
     }
-    if (p->select_throttle == listen) {
+    if (p->select_throttle == rest) {
         return refuse(why, "select move is the rest");
     }
     if (p->store_throttle == p->select_throttle) {
