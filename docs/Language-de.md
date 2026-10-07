@@ -87,6 +87,7 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | supply | Netzteil |
 | output | Ausgang |
 | set point | Sollwert |
+| commanded pulse (SERVO, COMMANDED) | PULSBREITE, wie PULS MIN, PULS CENTRE und PULS MAX; die Zeile SET des Netzteils heißt SOLL |
 | input (of a supply), wiring | Eingang, Verdrahtung |
 | current limit | Strombegrenzung |
 | cap | Obergrenze |
