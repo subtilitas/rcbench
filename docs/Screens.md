@@ -266,7 +266,8 @@ through the supply voltages chosen there, its current measured at rest,
 moving and holding, its travel timed, and the voltage at which it stops
 moving. [Servo procedures](Servo.md#automatic-test) gives the method and the
 files. START TEST needs an armed bench and a supply that answers; the line
-under it says ARM FIRST, NO STEP CHOSEN, SUPPLY NOT ANSWERING, A STEP IS
+under it says ARM FIRST, NO STEP CHOSEN, SUPPLY NOT ANSWERING, RANGE TOO
+SMALL (the ends RANGE and TRAVEL give land on PULSE CENTRE), A STEP IS
 OUTSIDE THE CAPS (a chosen step above the voltage cap in force, checked
 before any warning opens) or LAST REPORT STILL WRITING, and follows the
 bench and the settings as they change.

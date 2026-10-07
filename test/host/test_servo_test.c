@@ -905,6 +905,24 @@ TEST_CASE(skipped_readings_are_reported)
     CHECK(strstr(g.report, want) != NULL);
 }
 
+/* A count that starts again, as after a coprocessor restart, is one
+ * reading, not tens of thousands skipped. */
+TEST_CASE(a_count_starting_again_is_not_readings_skipped)
+{
+    rig_fresh();
+    g.samples = 5000u;
+    servo_test_cfg_t c;
+    cfg_defaults(&c);
+    c.step_count = 1u;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_ms(3000u);
+    const uint32_t before = g.t.module_samples;
+    g.samples = 2u;
+    run_out(60000u);
+    CHECK_EQ(g.t.skipped, 0u);
+    CHECK(g.t.module_samples - before < 1000u);
+}
+
 /* An abort mid-step marks that step cut short. */
 TEST_CASE(a_step_cut_short_is_said_so)
 {
@@ -1096,6 +1114,7 @@ int main(void)
     RUN(a_moving_current_equal_to_the_holding_current_is_the_limit);
     RUN(a_frozen_current_is_no_reading);
     RUN(skipped_readings_are_reported);
+    RUN(a_count_starting_again_is_not_readings_skipped);
     RUN(a_step_cut_short_is_said_so);
     RUN(a_start_is_refused_for_what_cannot_run);
     RUN(an_output_already_on_is_used_as_it_is);

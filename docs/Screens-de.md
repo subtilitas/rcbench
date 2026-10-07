@@ -290,7 +290,8 @@ Bewegung und beim Halten gemessen, seine Stellzeit gemessen, und die
 Spannung gesucht, bei der es sich nicht mehr bewegt. [Servoverfahren](Servo-de.md#automatischer-test)
 beschreibt das Verfahren und die Dateien. START TEST braucht einen scharfen
 Prüfstand und ein Netzteil, das antwortet; die Zeile darunter sagt ARM FIRST,
-NO STEP CHOSEN, SUPPLY NOT ANSWERING, A STEP IS OUTSIDE THE CAPS (eine
+NO STEP CHOSEN, SUPPLY NOT ANSWERING, RANGE TOO SMALL (die Enden aus RANGE
+und TRAVEL fallen auf PULSE CENTRE), A STEP IS OUTSIDE THE CAPS (eine
 gewählte Stufe über der geltenden Spannungsgrenze, geprüft, bevor eine
 Warnung aufgeht) oder LAST REPORT STILL WRITING und folgt dem Prüfstand und
 den Einstellungen, wenn sie sich ändern. Es ist ein Halten über zwei Sekunden,
