@@ -85,6 +85,7 @@ erzeugt, auf Englisch und Deutsch. Die Dateien bearbeiten, nicht das Wiki.
 | Seite | Inhalt |
 | --- | --- |
 | [Worum es geht](https://github.com/subtilitas/rcbench/wiki/Manifest-de) | Anforderungen und ihr Stand |
+| Bauanleitung, PDF: [Deutsch](https://github.com/subtilitas/rcbench/releases/download/v0.13.0/rcbench-build-guide-de-v0.13.0.pdf) · [English](https://github.com/subtilitas/rcbench/releases/download/v0.13.0/rcbench-build-guide-en-v0.13.0.pdf) | die Teile des Beta-Prüfstands (Display, RP2350-CAN, PD mini, INA228) mit Shop-Links, Verkabelung und Flashen; 4 Seiten, für 0.13.0 |
 | [Bauen](https://github.com/subtilitas/rcbench/wiki/Building-de) | Toolchains, Befehle, CI |
 | [Den Link in Betrieb nehmen](https://github.com/subtilitas/rcbench/wiki/Bringup-de) | die beiden Platinen verkabeln und den Bus prüfen |
 | [Bildschirme](https://github.com/subtilitas/rcbench/wiki/Screens-de) | den Prüfstand bedienen |
