@@ -5,12 +5,10 @@
 An ESC (electronic speed controller) profile describes how to program one
 family of ESCs through its throttle-stick menu. It covers how the menu is
 entered, how the ESC sounds a number, and which items and values the menu
-holds. It is the data the planned mode programming reads: the operator picks
-an ESC, the panel shows the menu with the defaults selected, and the bench
-drives the throttle and counts the beeps in the supply current.
-
-The mode programming itself is not built. What exists is the profile set,
-its storage on the panel and its reader for the SD card.
+holds. It is the data [stick programming](StickProgramming.md) runs: the
+operator picks an ESC and the values to change, and the bench drives the
+throttle and counts the beeps in the supply current. 14 of the 72 profiles
+are of a kind it runs.
 
 ## What is in the set
 
@@ -107,6 +105,8 @@ JSON. The panel does not load them.
 | `scheme.announce.beep_ms`, `gap_ms`, `group_gap_ms` | 0 to 60000, or null |
 | `scheme.announce.repeat` | 0 to 255: 0 repeats until a choice is made, null not known |
 | `scheme.select.throttle`, `scheme.skip.throttle` | `min`, `mid`, `max`, `none` |
+| `scheme.listen` | where the stick rests while the menu sounds: `{"throttle": "min"}`, `mid` or `max`. Absent or null: where the entry left it. Set in the 9 YGE profiles, whose menu sounds with the stick at minimum after a maximum entry; stick programming runs such a profile only when `hold_ms` gives the entry's length |
+| `scheme.store` | the move that stores a selection once the ESC has answered it: `{"throttle": "min"}`, `mid` or `max`. Absent or null: the selection stores. Set in the 8 YGE mode setups, where the stick back to minimum stores the mode |
 | `scheme.select.within_ms` | 0 to 60000: the time after the tone in which the move counts, or null when not stated |
 | `scheme.value_select` | two-stage menus only: `select` picks the item, then `value_select.throttle` (`min`, `mid`, `max`, `none`) stores the value sounded; `within_ms` as for `select`. Absent or null: the `select` move stores the value |
 | `scheme.changes_per_entry` | `one`, `many` |
@@ -156,6 +156,9 @@ field by field, so the generator and the card reader accept the same files.
 - No profile has run against an ESC. Item and value numbers, defaults and
   entry gestures are as the manuals state them, and some manuals disagree
   with each other; each profile's `notes` names the conflicts.
+- The beep fields (`beep_ms`, `gap_ms`, `group_gap_ms`) are null in every
+  profile and stick programming does not read them: its timing comes from
+  its settings.
 - The bench supply is the PD mini, at most 20 V. ESCs whose minimum input is
   above that, such as 6S-and-up YGE Opto and Navy models, need an external
   supply.

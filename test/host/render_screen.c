@@ -34,6 +34,8 @@
 #include "stub_screen.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
+#include "programmer_screen.h"
+#include "esc_sim.h"
 #include "supply.h"
 #include "supply_screen.h"
 #include "ui_keypad.h"
@@ -289,6 +291,59 @@ static void servo_run_view(bool to_the_end)
     }
 }
 
+/*
+ * A stick run on a modelled bench, as the panel drives one with no
+ * coprocessor: the bench arms when asked, the supply switches when asked and
+ * is read every 50 ms, and the simulated ESC draws the current.  One
+ * millisecond a step.
+ */
+typedef struct {
+    esc_sim_t sim;
+    bool      armed, on;
+    float     pct;
+    uint32_t  now, next, seq, stops;
+} stick_rig_t;
+
+static void stick_step(stick_rig_t *r)
+{
+    motor_cmd_t mc;
+    while (programmer_screen_poll_cmd(&mc)) {
+        if (mc.kind == MOTOR_CMD_ARM) {
+            r->armed = true;
+        } else if (mc.kind == MOTOR_CMD_DISARM) {
+            r->armed = false;
+            r->pct = 0.0f;
+        } else if (mc.kind == MOTOR_CMD_THROTTLE) {
+            r->pct = mc.value;
+        }
+    }
+    supply_cmd_t sc;
+    if (supply_screen_poll_cmd(&sc)) {
+        r->on = sc.off ? false : (sc.on ? true : r->on);
+        supply_screen_set_output(r->on);
+        supply_screen_set_on_coming(false);
+    }
+    programmer_screen_bench(r->now, r->armed, r->stops, false);
+    const int32_t ma = esc_sim_step(&r->sim, r->now, r->on,
+                                    r->armed ? r->pct : -1.0f);
+    if (r->now >= r->next) {
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.samples = (uint16_t)++r->seq;
+        st.taken_ms = r->now;
+        st.i = r->on ? (float)ma / 1000.0f : 0.0f;
+        st.v = r->on ? 7.6f : 0.0f;
+        st.output = r->on;
+        st.mode = r->on ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
+        st.online = true;
+        st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+        programmer_screen_supply(&st);
+        r->next = r->now + 50u;
+    }
+    ui_router_tick(0.001f);
+    r->now++;
+}
+
 static ui_screen_id_t id_of(const char *name)
 {
     static const struct { const char *name; ui_screen_id_t id; } k[] = {
@@ -446,7 +501,76 @@ int main(int argc, char **argv)
         }
     }
 
-    if (id == SCREEN_PROGRAMMER && strcmp(view, "programmer") != 0) {
+    if (id == SCREEN_PROGRAMMER && strncmp(view, "programmer-stick", 16) == 0) {
+        /*
+         * The ESC STICK class, walked by pressing.  Geometry from
+         * programmer_screen.c: the third tile, the third profile that runs
+         * (hobbywing-flyfun-8item, by id), and the item rows' + steppers.
+         */
+        const supply_caps_t caps = SUPPLY_CAPS_PPS_DEFAULT;
+        supply_screen_set_caps(&caps);
+        supply_screen_settings_loaded();
+        ui_router_goto(SCREEN_PROGRAMMER);
+        programmer_screen_bench(0u, false, 0u, false);
+        tap(660, UI_BAND_H + 180);              /* the ESC STICK tile */
+        if (strcmp(view, "programmer-stick") != 0) {
+            tap(400, UI_BAND_H + 52 + 2 * 36 + 16);
+            if (strcmp(view, "programmer-stick-timing") == 0) {
+                tap(698, UI_BAND_H + 70);       /* TIMING */
+            } else {
+                /* Cutoff mode to hard, startup mode to soft. */
+                for (int i = 0; i < 2; ++i) {
+                    tap(765, UI_BAND_H + 132 + 2 * 30 + 10);
+                    tap(765, UI_BAND_H + 132 + 4 * 30 + 10);
+                }
+            }
+            if (strcmp(view, "programmer-stick-warning") == 0
+                || strcmp(view, "programmer-stick-run") == 0
+                || strcmp(view, "programmer-stick-done") == 0
+                || strcmp(view, "programmer-stick-aborted") == 0) {
+                tap(698, UI_BAND_H + 407);      /* RUN: the warning */
+            }
+            if (strcmp(view, "programmer-stick-run") == 0
+                || strcmp(view, "programmer-stick-done") == 0
+                || strcmp(view, "programmer-stick-aborted") == 0) {
+                /* HOLD TO RUN, held its two seconds. */
+                touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                                    .point = { .id = 2, .x = 156,
+                                               .y = UI_BAND_H + 378,
+                                               .strength = 40 } };
+                ui_router_event(&e);
+                for (int i = 0; i < 9; ++i) {
+                    ui_router_tick(0.25f);
+                }
+                e.type = TOUCH_EVENT_UP;
+                ui_router_event(&e);
+                static stick_rig_t rig;
+                memset(&rig, 0, sizeof(rig));
+                esc_sim_init(&rig.sim, programmer_screen_stick()->p, NULL);
+                const esc_stick_t *run = programmer_screen_stick();
+                for (int ms = 0; ms < 400000 && esc_stick_running(run);
+                     ++ms) {
+                    stick_step(&rig);
+                    if (strcmp(view, "programmer-stick-run") == 0
+                        && run->phase == ESC_STICK_ITEMS && run->groups >= 4u
+                        && esc_stick_beeps(run) >= 2u) {
+                        break;
+                    }
+                    if (strcmp(view, "programmer-stick-aborted") == 0
+                        && run->phase == ESC_STICK_ITEMS
+                        && run->groups >= 2u && rig.stops == 0u) {
+                        rig.stops = 1u;         /* STOP */
+                    }
+                }
+                for (int i = 0; i < 10; ++i) {
+                    stick_step(&rig);           /* the last commands out */
+                }
+            }
+        }
+    }
+
+    if (id == SCREEN_PROGRAMMER && strcmp(view, "programmer") != 0
+        && strncmp(view, "programmer-stick", 16) != 0) {
         /*
          * Walked down the hierarchy by pressing, not posed by setting flags,
          * so each screenshot takes the path a finger takes.  The first tap

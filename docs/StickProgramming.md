@@ -1,0 +1,343 @@
+# Stick programming
+
+[Deutsch](StickProgramming-de.md)
+
+Stick programming sets an ESC (electronic speed controller) through its
+throttle-stick menu. The bench powers the ESC from the PD mini supply, with
+the motor replaced by a resistor load. It moves the throttle to the
+positions the [ESC profile](EscProfiles.md) names, and counts the menu's
+beeps as pulses in the supply current. On the screen it is the ESC STICK
+class of the PROGRAMMER screen.
+
+What it does not know:
+
+- No ESC has been recorded. Every time below is a default standing in for a
+  measurement, kept as a setting so a recording can replace it without a
+  build.
+- No profile is verified. Item numbers, value numbers and entry gestures are
+  the manuals'.
+- The ESC's own tones after a selection are not decoded. DONE means every
+  selection move was made on a counted group in the menu's order, not that
+  the ESC stored it.
+
+## Before a run
+
+1. Disconnect the motor from the ESC.
+2. Fit a resistor load across the ESC's motor leads. Its value is not
+   specified: no ESC has been run into one. It has to keep the current under
+   the run's current limit at the run's voltage.
+3. Connect the ESC's signal lead to a pin bound with the throttle role on
+   the OUTPUTS screen. A run commands every channel bound as a throttle, as
+   the MOTOR screen does.
+4. Connect the ESC's power leads to the supply output.
+5. Switch the supply's output off. A run that finds it on or on its way is
+   refused.
+
+## On the screen
+
+PROGRAMMER, then ESC STICK:
+
+![Device class](img/programmer.png)
+
+The list holds every profile, those the bench can run first. A profile it
+cannot run names the reason on its row and opens nothing; so does one whose
+voltage is over the SUPPLY cap. The order and the count follow VOLTAGE and
+the cap as they change. A profile from the SD card carries CARD.
+
+![The profiles](img/programmer-stick.png)
+
+A profile's page lists its menu items. Each starts at KEEP, which leaves the
+item as it is; the steppers move through the item's values and stop at
+either end. Items keyed `reset` or `exit` are actions, not settings: the ESC
+acts on the select move and sounds no values, so their rows show ACTION, NOT
+SET and offer nothing. An item with a single value -- the only setting there
+is, or a rule written as a value, such as `hobbywing-flyfun-hv-9item`'s
+cell count, "N beeps = N cells" -- has nothing to choose; its row shows
+NOTHING TO CHOOSE. The line under the list names the selected item's values and the
+default. RUN is offered once a value is picked and the run can start; when it
+cannot, the line beside RUN says why.
+
+![Two values picked](img/programmer-stick-items.png)
+
+RUN opens a warning over the whole screen. HOLD TO RUN starts the run after
+2 s of holding, as ARM does. A finger that leaves the button, a lost touch
+event or a STOP during the hold abandons it; CANCEL closes the warning. The
+ARM the hold asks for leaves the screen with the next frame's commands; a
+STOP or a lost touch event before then takes it back and ends the run, so it
+cannot clear a stop that came after it.
+
+![The warning](img/programmer-stick-warning.png)
+
+During the run the page shows the phase, the beeps in the group under way,
+the last group and whether it was in order, and the current against its
+floor. ABORT ends the run, and so does STOP in the band or leaving the
+screen. BACK and TIMING are not offered.
+
+![A run counting item groups](img/programmer-stick-run.png)
+
+The result stays until OK: which selections were made, and for an aborted
+run the reason. Past five changes the last line counts the rest.
+
+![Done](img/programmer-stick-done.png)
+
+![Stopped](img/programmer-stick-aborted.png)
+
+TIMING opens the settings below. CLOSE asks for them to be saved; the save
+is taken while the bench is disarmed and the supply's output is off.
+
+![The timing settings](img/programmer-stick-timing.png)
+
+## What a run does
+
+| Phase | Throttle | Supply | Ends |
+| --- | --- | --- | --- |
+| ARMING | MIN | off | when the bench reports armed; after 3000 ms: NOT ARMED |
+| SIGNAL | entry position | off | after 1000 ms, so the ESC sees the signal when it starts |
+| POWER ON | entry position | on | when a sample reports the output on; after 3000 ms: NO POWER |
+| ENTRY | entry position | on | ENTRY after power-on: the profile's `hold_ms` where it states one |
+| ITEMS | rest position | on | an item group in order names a wanted item: the select move |
+| VALUES | where the last move left it | on | a value group in order names the wanted value: the value move |
+| STORING | the value move, then the store move | on | after STORE, and after STORE again where the profile has a store move |
+| POWER CYCLE | where it stored, then entry position | off | the supply reports the output off and the current down for 200 ms, then OFF TIME (at least 1000 ms) at the entry position, then POWER ON again; not off within 3000 ms: SUPPLY STAYS ON |
+| POWER OFF | where it stored | off | the supply reports the output off and the current down for 200 ms; not within 3000 ms: SUPPLY STAYS ON |
+| DONE | MIN | off | disarmed |
+| ABORTED | MIN | off | disarmed, all in one step |
+
+MIN, MID and MAX are 0, 50 and 100 % of the throttle output's travel. The
+rest position is the profile's `scheme.listen`, or the entry position where
+it has none. A two-stage menu (`value_select` set) selects the item with
+`select` and stores the value with `value_select`, then counts items again;
+a one-stage menu counts values and stores with `select`, followed by the
+profile's `scheme.store` move where it names one. A profile with
+`"changes_per_entry": "one"` takes one change per power-up, so a run of
+several changes switches the supply off for OFF TIME between them.
+
+A run that ends as planned, or cycles the power, switches the supply off
+first and leaves the stick where it stored. It moves the stick only once
+the supply itself reports the output off, in readings taken after the run
+asked it off, with the current at or under 20 mA for 200 ms
+(`ESC_STICK_OFF_MA`, `ESC_STICK_OFF_SETTLE_MS`). The panel's own OFF is a
+request: the PD mini switches off a link exchange and a module transaction
+later, and until then the ESC is powered and in its menu.
+
+Two parts of this rule are not measured:
+- The PD mini's current reading with its output off. The rule assumes it
+  reads under 20 mA. A module that reads more ends every planned run
+  ABORTED with SUPPLY STAYS ON, and a run of one change per power-up never
+  makes its second change.
+- How long the ESC runs on from its input capacitors once the PD mini's
+  switch has opened. The current shows that the switch is open, not that
+  the ESC has stopped. The 200 ms hold covers a small capacitance, for
+  example 2000 µF falling 4 V at 30 mA in about 270 ms; it does not cover
+  a large one.
+
+Every move goes out as the MOTOR screen's commands do: ARM through the arming
+policy, THROTTLE onto the throttle channels, and the supply through SUPPLY's
+own ON and OFF. Nothing bypasses STOP or the arming rules.
+
+## How the beeps are counted
+
+- **Floor.** During ENTRY, from 500 ms after power-on, the floor is the
+  lowest current read. A beep cannot raise it. While the menu is counted, the
+  floor follows quiet readings by 1/16 of the difference each.
+- **Beep.** A reading above the floor plus THRESHOLD starts a pulse; one
+  below the floor plus THRESHOLD less HYSTERESIS ends it.
+- **Lengths in readings.** A pulse that holds fewer readings than BEEP MIN
+  must hold at the longest interval seen, or a gap between two pulses that
+  holds fewer than GAP MIN must, spoils its group. A pulse whose first and
+  last readings are further apart than LONG MAX spoils its group. A pulse
+  measured at LONG or longer is a long beep; in a profile without long beeps
+  it spoils its group, and so does a long beep after a short one.
+- **Group.** Silence of GROUP GAP after the last pulse ends a group. Its
+  count is the short beeps, plus `long_equals_short` for each long one.
+- **Quiet first.** When a phase starts listening, no group is counted until
+  GROUP GAP of quiet has been heard, so the first group is a whole one and
+  not the tail of a group already sounding.
+- **Order.** A group is in order when it is one more than the group before
+  it, or the loop's lowest number after its highest. Where the profile
+  repeats each group (`repeat` above 0), the same count again is in order
+  only after a group that was itself in order, and no more often than
+  `repeat` times. A group is acted on only when it is in order and the group
+  before it was too: three groups in a row agree. A count made wrong by a
+  missed beep is lower than the truth, so it is in order only if the groups
+  before it were wrong as well. One missed beep therefore passes its group
+  and the next loop is used; a wrong selection needs a missed beep in each
+  of three groups in a row, or, in a menu that repeats its groups, a whole
+  group lost and a beep missed in the next.
+- **Late readings.** A reading more than the shorter of BEEP MIN and GAP MIN
+  after the one before is late, and so is one whose count says a reading
+  was skipped: it spoils the group it falls in and breaks the order. 3 late readings in a row end the run with READ RATE.
+
+## The settings
+
+TIMING on a profile's page. Kept in the settings with the others. No value
+here is measured.
+
+| Setting | Default | Range | What it is |
+| --- | --- | --- | --- |
+| Voltage | 0 V | 0 to 20 V | the supply's voltage; 0 takes it from the profile |
+| Current limit | 1.00 A | 0.10 to 3.00 A | the supply's limit during the run |
+| Beep min | 200 ms | 20 to 2000 ms | shortest beep the ESC sounds |
+| Gap min | 200 ms | 20 to 2000 ms | shortest silence between two beeps |
+| Long | 500 ms | 50 to 5000 ms | a beep this long or longer is a long one |
+| Long max | 1500 ms | 100 to 10000 ms | a pulse longer than this is no beep |
+| Group gap | 700 ms | 50 to 10000 ms | silence that ends a group |
+| Entry | 5000 ms | 1000 to 60000 ms | power-on to the menu, where the profile gives no `hold_ms` |
+| Store | 2000 ms | 0 to 10000 ms | held at the last selection before power-off |
+| Off time | 3000 ms | 500 to 20000 ms | supply off between two entries |
+| Silence | 10000 ms | 1000 to 60000 ms | no beep for this long ends the run |
+| Timeout | 180000 ms | 5000 to 600000 ms | the wanted group not acted on in this long ends the run |
+| Threshold | 100 mA | 10 to 2000 mA | above the floor: a beep |
+| Hysteresis | 40 mA | 0 to 1000 mA | below the threshold less this: silence |
+
+A run is refused, not adjusted, when the settings contradict themselves:
+LONG at or under BEEP MIN, LONG MAX at or under LONG, GROUP GAP at or under
+GAP MIN, THRESHOLD at or under HYSTERESIS, ENTRY at or under 500 ms, or
+GROUP GAP plus the shorter of BEEP MIN and GAP MIN at or over the profile's
+`within_ms` for its select or value move.
+
+## The supply
+
+VOLTAGE 0 takes the lowest `cells_min` among the profile's models, at
+3.8 V a LiPo (lithium polymer) cell or 1.2 V a NiMH (nickel-metal hydride)
+cell: above that model's cut-off and under every model's maximum. A profile
+whose models state no cell count needs VOLTAGE set. A voltage above the
+SUPPLY screen's cap or below the supply's minimum, and a current limit above
+the SUPPLY cap, are refused. The run's set points become the SUPPLY screen's
+set points.
+
+## Which profiles run
+
+14 of the 72 profiles are of a kind the engine runs: 13 two-stage and 1
+one-stage. With the PD mini's 20 V and the default caps the list opens 13 of
+them: hobbywing-skywalker-v2-hv-opto needs 22.8 V. A profile runs when it is
+`"automatable": "full"`, is entered before power-on, counts with `count` or
+`short_long`, and has a select move. A rest position other than the entry
+position needs the profile's `hold_ms`: the move at the end of an entry of
+unknown length can land in another stage of it. A two-stage profile also
+announces `item_then_value`, its moves differ from each other and from the
+rest position, and it has no store move. A one-stage profile announces
+`value`, or `item` with one item; takes one change per power-up; has no
+value number in two items; its select move differs from the rest position,
+and its store move, where it has one, from the select move. The store move
+may be the rest position: in the YGE mode setups the stick goes back to
+minimum, where it rested, to store.
+
+| Row says | Why |
+| --- | --- |
+| needs a person at the ESC | `automatable` is `assisted` |
+| no usable procedure | `automatable` is `none` |
+| entered after power-on | `scheme.entry.when` is `after_power_on` |
+| melody menu, yes/no menu, stick-position menu, menu of its own kind | `scheme.type` |
+| tones told apart by pitch | `scheme.announce.encoding` is `melody` or `yes_no` |
+| item and value, one move | `item_then_value` with no `value_select`: which group the move answers is not stated |
+| two moves, no value tones | `value_select` without `item_then_value` |
+| many changes, one stage | one-stage with `"changes_per_entry": "many"` |
+| items counted, one stage | one-stage, `item` announced, several items |
+| values repeat across items | one-stage, a value number in two items |
+| select move is the rest | the select move is the rest position: no move to make |
+| value move = select move | two-stage, `value_select` equals `select` |
+| rest move, no entry time | `scheme.listen` differs from the entry position and `hold_ms` is null: the YGE profiles |
+| store move, two stages | two-stage with a `scheme.store` |
+| store move = select move | one-stage, `scheme.store` equals `select` |
+| needs 22.8 V, cap 21.0 V | the voltage (VOLTAGE, or the profile's cell count) is over the SUPPLY cap |
+
+A profile corrected on the SD card is listed with its correction.
+
+## How a run ends
+
+| Result | Cause |
+| --- | --- |
+| DONE | every selection made |
+| STOP | STOP, from any source, counted while the run was under way |
+| DISARMED | the bench disarmed |
+| LINK LOST | the coprocessor answered at some time during the run and stopped answering |
+| SUPPLY OFF | the output went off: a trip, or an ON the supply let go |
+| SUPPLY NOT ANSWERING | the supply stopped answering |
+| NO READINGS | the reading count unmoved for 1000 ms |
+| READ RATE | 3 late readings in a row |
+| NOT ARMED | not armed within 3000 ms |
+| NO POWER | the output not reported on within 3000 ms |
+| SUPPLY STAYS ON | the supply not reporting its output off, with the current down, within 3000 ms of the run asking it off |
+| TOUCH LOST | touch events lost while the run's ARM was not yet taken, or the bench not yet armed |
+| NO BEEPS | no beep for SILENCE |
+| CURRENT STAYS HIGH | one pulse longer than twice LONG MAX |
+| TIMEOUT | no wanted group acted on within TIMEOUT |
+| ABORTED | ABORT |
+| SCREEN LEFT | the screen was left |
+
+Every end sets the throttle to MIN, switches the supply off and disarms; an
+abort does all three in one step. A stop latches as any stop does: the next
+run arms again from its own warning.
+
+## The read rate
+
+A reading is new when the supply's reading count moves: for the PD mini,
+SAMPLES on the SUPPLY page, the coprocessor's count of output readings the
+module answered. Its time is the page read that first showed the count. The
+PD mini reads its output every 100 ms (`PDMINI_DISPLAY_MS`), and the panel
+reads the page every 100 ms (`SUPPLY_LINK_READ_MS`) on its 50 ms poll, so
+new readings arrive 100 to 150 ms apart and the count can move by 2 between
+two page reads. A count that moves by more than 1 is a reading the panel
+never saw, and is late. A count that stops is readings that stop: NO
+READINGS after 1000 ms, however fresh the page itself is. A beep or gap
+shorter than about 200 ms can fall between two module readings and not be
+seen; the order rule then passes the group rather than selecting the number
+below. BEEP MIN and GAP MIN default to 200 ms for this reason. Whether the
+module's current is an instant reading or an average over its interval is
+not known.
+
+Counting beeps from the time the current stays raised would cover beeps
+shorter than a reading, but needs the beep's period, which is not measured.
+It is not done.
+
+## Simulation
+
+With the PD mini off in SETUP INTERFACES, the SUPPLY screen runs the panel's
+model of a supply. During a stick run the model's current is a simulated ESC
+(`shared/esc/esc_sim.c`) following the profile: power-on at the entry
+position enters the menu after the profile's `hold_ms` (3000 ms without
+one), groups loop with 250 ms beeps, 250 ms gaps, 800 ms long beeps and
+1500 ms between groups, at 150 mA idle and 600 mA more per beep. Every one of
+those numbers is made up. Where the profile names a store move, a selection
+is kept only once the stick makes it. An item keyed `exit` leaves the menu
+when it is selected, and one keyed `reset` clears what was stored. The
+model's samples arrive every 50 ms.
+
+The host suite (`test_esc_stick`) runs the engine against the simulation end
+to end: two-stage and one-stage menus, repeated groups, a rest position,
+power cycles between changes, readings 100 to 190 ms apart, noise of 30 mA,
+a beep lost from a group, a menu one item longer than the profile, an ESC
+that never beeps, and each way a run can end. A sweep of a lost beep in
+each of the first ten groups against ESC entries 2000 ms either side of the
+engine's stores no value other than the one asked for.
+
+## Current limitations
+
+- No run against an ESC. The defaults and the order rule are untested on
+  real beeps.
+- An ESC that ignores a selection keeps sounding its items, which the run
+  then counts as values: it can report DONE with nothing stored.
+- A menu longer or shorter than its profile never has its lowest number
+  acted on, because the loop's highest is not the one heard before it; the
+  run ends with TIMEOUT.
+- A selection needs three groups in a row in order, so it costs at least one
+  pass of the loop: up to about two loops when the wanted number is the
+  loop's lowest. A two-stage menu whose value loop starts at the stored
+  value, as the YGE manual describes for its RC-Setup, costs more.
+- The order rule assumes the ESC's menu is the profile's. Items that exist
+  on some models only shift the numbering on the others: in
+  `hobbywing-flyfun-v5` item 6 (BEC voltage) is on the 60, 80 and 120 A
+  models, and in `ztw-gecko` item 6 on the SBEC models. On a model without
+  the item, the items after it may sound one number lower than the profile
+  says. Selecting one of them can then pick the item after it, one number
+  higher in the profile; the order
+  rule does not notice, because the menu is in order, only shorter. A
+  profile per model set is the fix and is not made.
+- `sunrise-pro`: the manual toggles the brake with "the first quad group",
+  which is also the automatic-timing value; storing timing 4 may toggle the
+  brake too. Not measured.
+- The throttle positions are 0, 50 and 100 % of the output's travel. An ESC
+  calibrated to other end points may read them differently.
+- One supply only: the PD mini, at most 20 V. ESCs that need more need an
+  external supply, which the bench does not switch.

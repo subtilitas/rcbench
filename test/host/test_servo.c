@@ -2973,12 +2973,28 @@ TEST_CASE(the_set_points_wait_for_a_sample_after_the_off)
     servo_screen_service();
     servo_screen_service();
     CHECK(fabsf(supply_screen_set_v() - 4.8f) < 1e-4f);   /* not yet */
-    /* The next frame and a sample of its own: back. */
+    /* The next frame and a sample of its own, but the module still reads
+     * its output on: the panel asked it off and the PD mini has not yet
+     * answered.  Not yet either. */
     b.now += 20u;
     servo_screen_clock(b.now);
     servo_screen_service();
     st.samples = ++b.samples;
     st.taken_ms = b.now;
+    st.mode = SUPPLY_MODE_CV;
+    servo_screen_supply(&st);
+    servo_screen_service();
+    CHECK(fabsf(supply_screen_set_v() - 4.8f) < 1e-4f);
+    /* Nor from a supply that has stopped answering. */
+    st.samples = ++b.samples;
+    st.mode = SUPPLY_MODE_OFF;
+    st.online = false;
+    servo_screen_supply(&st);
+    servo_screen_service();
+    CHECK(fabsf(supply_screen_set_v() - 4.8f) < 1e-4f);
+    /* The module's own off: back. */
+    st.samples = ++b.samples;
+    st.online = true;
     servo_screen_supply(&st);
     servo_screen_service();
     CHECK(fabsf(supply_screen_set_v() - 8.4f) < 1e-4f);

@@ -312,7 +312,10 @@ Trim, Weg, Reverse oder SPEED des Servos, bei verlorenen Touch-Ereignissen
 und beim Netzteil: siehe [die Liste](Servo-de.md#was-einen-lauf-beendet).
 Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
 Lauf zurück, gleich welcher Screen oben ist. Das wartet, bis das OFF des
-Laufs gesendet ist, ein danach genommener Messwert den Ausgang aus zeigt,
+Laufs gesendet ist, ein danach genommener Messwert zeigt, dass das
+Netzteil selbst den Ausgang aus meldet -- nicht die Anforderung des Panels,
+der das PD mini einen Link-Austausch und eine Modultransaktion später
+folgt --,
 kein ON unterwegs ist und OUTPUT ON weder auf SERVO noch auf SUPPLY
 gehalten wird. Sollwerte, die nach
 dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
@@ -645,7 +648,10 @@ Zustände.
 
 ## Programmierer
 
-Die Reihenfolge: Geräteklasse, Protokoll, verbinden.
+Die Reihenfolge: Geräteklasse, Protokoll, verbinden. ESC STICK, die dritte
+Klasse, listet ESC-Profile statt Protokollen und programmiert einen ESC über
+sein Gasknüppel-Menü; sie hat eine eigene Seite,
+[Stick-Programmierung](StickProgramming-de.md).
 
 ![Geräteklasse](img/programmer.png)
 
@@ -683,6 +689,41 @@ Seite.
 
 Eine Ebene zurück trennt die Verbindung. Zurück geht eine Ebene auf einmal;
 das Home-Tag im Band verlässt den Bildschirm.
+
+### ESC STICK
+
+Die Liste enthält jedes ESC-Profil, die ausführbaren zuerst; eine Zeile, die
+nicht laufen kann, nennt den Grund:
+
+![Die Profile](img/programmer-stick.png)
+
+Die Punkte eines Profils stehen anfangs auf KEEP. Die Stepper wählen einen
+Wert; RUN zählt die gewählten Werte:
+
+![Zwei Werte gewählt](img/programmer-stick-items.png)
+
+RUN öffnet eine Warnung über den ganzen Bildschirm. Der Lauf beginnt, wenn
+HOLD TO RUN 2 s gehalten ist:
+
+![Die Warnung](img/programmer-stick-warning.png)
+
+Während er läuft, zeigt die Seite die Phase, die Pieptöne der laufenden
+Gruppe und die letzte Gruppe. ABORT, STOP und das Verlassen des Bildschirms
+beenden ihn mit dem Gas auf MIN, dem Netzteil aus und dem Prüfstand
+entschärft:
+
+![Ein Lauf](img/programmer-stick-run.png)
+
+Das Ergebnis bleibt bis OK:
+
+![Fertig](img/programmer-stick-done.png)
+
+![Gestoppt](img/programmer-stick-aborted.png)
+
+TIMING enthält die Zeiten der Pieptöne und die Netzteil-Einstellungen. Keine
+davon ist gemessen:
+
+![Timing](img/programmer-stick-timing.png)
 
 ## Akku
 

@@ -180,6 +180,14 @@
       "throttle": "none",
       "description": "No skip. Leaving the throttle at minimum lets the sequence pass every mode; it then restarts at mode 1."
     },
+    "listen": {
+      "throttle": "min",
+      "description": "After the entry tones the stick goes to minimum, and the ESC sounds the menu while it rests there (entry steps)."
+    },
+    "store": {
+      "throttle": "min",
+      "description": "After the selection is answered (2 confirmation tones) the stick goes back to minimum, which stores the mode and arms the ESC (entry steps)."
+    },
     "confirm_signal": "2 tones after selecting at maximum throttle; 2 tones after the return to minimum throttle (armed)",
     "exit": "Throttle to minimum after selection: 2 tones, then the cell-count tones and the arming tones; the ESC is then armed. Power cycle also leaves the menu.",
     "changes_per_entry": "one",

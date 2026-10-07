@@ -100,6 +100,8 @@ static void same(const esc_profile_t *a, const esc_profile_t *b)
     CHECK_EQ(a->value_select_throttle, b->value_select_throttle);
     CHECK_EQ(a->value_select_within_ms, b->value_select_within_ms);
     CHECK_EQ(a->skip_throttle, b->skip_throttle);
+    CHECK_EQ(a->listen_throttle, b->listen_throttle);
+    CHECK_EQ(a->store_throttle, b->store_throttle);
     CHECK_EQ(a->long_equals_short, b->long_equals_short);
     CHECK_EQ(a->beep_ms, b->beep_ms);
     CHECK_EQ(a->gap_ms, b->gap_ms);
@@ -245,6 +247,72 @@ TEST_CASE(a_two_stage_menu_reads_its_value_select_move)
     CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
     if (block != NULL) {
         CHECK_EQ(p.value_select_throttle, ESC_THR_NONE);
+    }
+    free(block);
+    free(j);
+}
+
+/* The stick's resting place while the menu sounds: absent and null are
+ * where the entry left it; "none" is no place and is refused, as the
+ * generator refuses it. */
+TEST_CASE(a_menu_reads_where_the_stick_rests)
+{
+    esc_profile_t p;
+    void *block = NULL;
+    CHECK(esc_profile_parse(k_min, strlen(k_min), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_EQ(p.listen_throttle, ESC_THR_NONE);
+    }
+    free(block);
+
+    char *j = subst("\"select\": {",
+                    "\"listen\": {\"throttle\": \"min\"}, \"select\": {");
+    block = NULL;
+    CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_EQ(p.listen_throttle, ESC_THR_MIN);
+    }
+    free(block);
+    free(j);
+
+    j = subst("\"select\": {", "\"listen\": null, \"select\": {");
+    block = NULL;
+    CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_EQ(p.listen_throttle, ESC_THR_NONE);
+    }
+    free(block);
+    free(j);
+
+    /* An escaped spelling is the plain one, and members beside it are
+     * not read; the generator takes both. */
+    j = subst("\"select\": {", "\"listen\": {\"throttle\": \"m\\u0069d\", "
+              "\"x\": [1, 2]}, \"select\": {");
+    block = NULL;
+    CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_EQ(p.listen_throttle, ESC_THR_MID);
+    }
+    free(block);
+    free(j);
+}
+
+/* The move that stores a selection, as the listen move is read. */
+TEST_CASE(a_menu_reads_the_move_that_stores)
+{
+    esc_profile_t p;
+    void *block = NULL;
+    CHECK(esc_profile_parse(k_min, strlen(k_min), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_EQ(p.store_throttle, ESC_THR_NONE);
+    }
+    free(block);
+    char *j = subst("\"select\": {",
+                    "\"store\": {\"throttle\": \"min\"}, \"select\": {");
+    block = NULL;
+    CHECK(esc_profile_parse(j, strlen(j), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_EQ(p.store_throttle, ESC_THR_MIN);
     }
     free(block);
     free(j);
@@ -494,6 +562,30 @@ TEST_CASE(input_the_generator_refuses_is_refused_here_too)
         { "\"schema\": 1,", "\"schema\": 1, \"n\": 1.,", "not JSON" },
         { "\"schema\": 1,", "\"schema\": 1, \"n\": .5,", "not JSON" },
         { "\"schema\": 1,", "\"schema\": 1, \"n\": NaN,", "not JSON" },
+        { "\"select\": {", "\"listen\": \"min\", \"select\": {",
+          "scheme.listen: not an object" },
+        { "\"select\": {", "\"listen\": {\"throttle\": \"none\"}, "
+          "\"select\": {", "scheme.listen.throttle: not a known value" },
+        { "\"select\": {", "\"listen\": {}, \"select\": {",
+          "scheme.listen.throttle: not a known value" },
+        { "\"select\": {", "\"listen\": {\"throttle\": null}, "
+          "\"select\": {", "scheme.listen.throttle: not a known value" },
+        { "\"select\": {", "\"listen\": {\"throttle\": []}, "
+          "\"select\": {", "scheme.listen.throttle: not a known value" },
+        { "\"select\": {", "\"listen\": {\"throttle\": {}}, "
+          "\"select\": {", "scheme.listen.throttle: not a known value" },
+        { "\"select\": {", "\"listen\": {\"throttle\": 0}, "
+          "\"select\": {", "scheme.listen.throttle: not a known value" },
+        { "\"select\": {", "\"listen\": {\"throttle\": \"MIN\"}, "
+          "\"select\": {", "scheme.listen.throttle: not a known value" },
+        { "\"select\": {", "\"listen\": {\"throttle\": \"min\", "
+          "\"throttle\": \"max\"}, \"select\": {", "a key twice" },
+        { "\"select\": {", "\"store\": \"min\", \"select\": {",
+          "scheme.store: not an object" },
+        { "\"select\": {", "\"store\": {\"throttle\": \"none\"}, "
+          "\"select\": {", "scheme.store.throttle: not a known value" },
+        { "\"select\": {", "\"store\": {\"throttle\": []}, "
+          "\"select\": {", "scheme.store.throttle: not a known value" },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         char *j = subst(k[i].from, k[i].to);
@@ -670,6 +762,8 @@ int main(void)
     RUN(builtin_ids_are_sorted_and_unique);
     RUN(a_profile_reads_into_every_field);
     RUN(a_two_stage_menu_reads_its_value_select_move);
+    RUN(a_menu_reads_where_the_stick_rests);
+    RUN(a_menu_reads_the_move_that_stores);
     RUN(escapes_become_the_characters_they_name);
     RUN(control_escapes_and_a_surrogate_pair_are_read);
     RUN(escaped_keys_and_values_read_as_their_plain_spelling);

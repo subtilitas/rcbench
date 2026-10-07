@@ -225,6 +225,54 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_SERVO_STALL_A] = {
         "srv_stall_a", "Stall threshold", "Above this the servo counts as stalled", "A",
         SET_CAT_SERVO, SET_TYPE_FLOAT, 0.1f, 5.0f, 0.05f, 2.0f, NULL, 0 },
+    /*
+     * Stick programming's.  The supply it powers the ESC (electronic speed
+     * controller) from, and how it hears the beeps.  No ESC has been
+     * recorded, so every time below is a default standing in for a
+     * measurement; esc_stick_timing_defaults() holds the same numbers.
+     */
+    [SET_STICK_V] = {
+        "stk_v", "Voltage", "0 takes it from the profile's cell count", "V",
+        SET_CAT_STICK, SET_TYPE_FLOAT, 0.0f, 20.0f, 0.1f, 0.0f, NULL, 0 },
+    [SET_STICK_I] = {
+        "stk_i", "Current limit", "The supply's limit for the run", "A",
+        SET_CAT_STICK, SET_TYPE_FLOAT, 0.1f, 3.0f, 0.05f, 1.0f, NULL, 0 },
+    [SET_STICK_BEEP_MIN] = {
+        "stk_beep_min", "Beep min", "Shortest beep the ESC sounds", "ms",
+        SET_CAT_STICK, SET_TYPE_INT, 20, 2000, 10, 200, NULL, 0 },
+    [SET_STICK_GAP_MIN] = {
+        "stk_gap_min", "Gap min", "Shortest silence between two beeps", "ms",
+        SET_CAT_STICK, SET_TYPE_INT, 20, 2000, 10, 200, NULL, 0 },
+    [SET_STICK_LONG] = {
+        "stk_long", "Long", "A beep this long or longer is a long one", "ms",
+        SET_CAT_STICK, SET_TYPE_INT, 50, 5000, 10, 500, NULL, 0 },
+    [SET_STICK_LONG_MAX] = {
+        "stk_long_max", "Long max", "A pulse longer than this is no beep", "ms",
+        SET_CAT_STICK, SET_TYPE_INT, 100, 10000, 50, 1500, NULL, 0 },
+    [SET_STICK_GROUP_GAP] = {
+        "stk_group_gap", "Group gap", "Silence that ends a group of beeps", "ms",
+        SET_CAT_STICK, SET_TYPE_INT, 50, 10000, 50, 700, NULL, 0 },
+    [SET_STICK_ENTRY] = {
+        "stk_entry", "Entry", "Power-on to the menu, where the profile gives no time", "ms",
+        SET_CAT_STICK, SET_TYPE_INT, 1000, 60000, 500, 5000, NULL, 0 },
+    [SET_STICK_STORE] = {
+        "stk_store", "Store", "Held at the last selection before power-off", "ms",
+        SET_CAT_STICK, SET_TYPE_INT, 0, 10000, 250, 2000, NULL, 0 },
+    [SET_STICK_OFF] = {
+        "stk_off", "Off time", "Supply off between two entries", "ms",
+        SET_CAT_STICK, SET_TYPE_INT, 500, 20000, 500, 3000, NULL, 0 },
+    [SET_STICK_SILENCE] = {
+        "stk_silence", "Silence", "No beep for this long ends the run", "ms",
+        SET_CAT_STICK, SET_TYPE_INT, 1000, 60000, 1000, 10000, NULL, 0 },
+    [SET_STICK_TIMEOUT] = {
+        "stk_timeout", "Timeout", "The wanted beeps not heard in this long", "ms",
+        SET_CAT_STICK, SET_TYPE_INT, 5000, 600000, 5000, 180000, NULL, 0 },
+    [SET_STICK_THRESHOLD] = {
+        "stk_thresh", "Threshold", "Above the idle current: a beep", "mA",
+        SET_CAT_STICK, SET_TYPE_INT, 10, 2000, 10, 100, NULL, 0 },
+    [SET_STICK_HYST] = {
+        "stk_hyst", "Hysteresis", "Below the threshold less this: silence", "mA",
+        SET_CAT_STICK, SET_TYPE_INT, 0, 1000, 10, 40, NULL, 0 },
     [SET_SERVO_REPORT] = {
         "srv_report", "Report", "A text report beside each test's log", "",
         SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
@@ -232,6 +280,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
 
 static const char *const k_cat_names[SET_CAT_COUNT] = {
     "ESC / BENCH", "APPLICATION", "INTERFACES", "SUPPLY", "SERVO TEST",
+    "ESC STICK",
 };
 
 /* The string settings' keys and defaults; NVS keys, 15 characters or fewer. */

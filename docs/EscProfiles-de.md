@@ -5,13 +5,11 @@
 Ein ESC-Profil (Electronic Speed Controller) beschreibt, wie eine Familie
 von ESCs über ihr Gasknüppel-Menü programmiert wird. Es enthält, wie das Menü
 betreten wird, wie der ESC eine Zahl ausgibt und welche Punkte und Werte das
-Menü hat. Es sind die Daten, die die geplante Modusprogrammierung liest: Der
-Bediener wählt einen ESC, das Panel zeigt das Menü mit den Standardwerten
-vorgewählt, und der Prüfstand bewegt das Gas und zählt die Pieptöne im
-Versorgungsstrom.
-
-Die Modusprogrammierung selbst ist nicht gebaut. Vorhanden sind der
-Profilsatz, seine Ablage im Panel und sein Leser für die SD-Karte.
+Menü hat. Es sind die Daten, die die
+[Stick-Programmierung](StickProgramming-de.md) ausführt: Der Bediener wählt
+einen ESC und die zu ändernden Werte, und der Prüfstand bewegt das Gas und
+zählt die Pieptöne im Versorgungsstrom. 14 der 72 Profile sind von einer
+Art, die sie ausführt.
 
 ## Was im Satz steht
 
@@ -110,6 +108,8 @@ JSON. Das Panel lädt sie nicht.
 | `scheme.announce.beep_ms`, `gap_ms`, `group_gap_ms` | 0 bis 60000, oder null |
 | `scheme.announce.repeat` | 0 bis 255: 0 wiederholt bis zur Auswahl, null unbekannt |
 | `scheme.select.throttle`, `scheme.skip.throttle` | `min`, `mid`, `max`, `none` |
+| `scheme.listen` | wo der Knüppel ruht, während das Menü läuft: `{"throttle": "min"}`, `mid` oder `max`. Fehlt es oder ist es null: wo der Einstieg ihn ließ. Gesetzt in den 9 YGE-Profilen, deren Menü nach einem Einstieg bei Maximum mit dem Knüppel auf Minimum läuft; die Stick-Programmierung führt ein solches Profil nur aus, wenn `hold_ms` die Länge des Einstiegs nennt |
+| `scheme.store` | die Bewegung, die eine Auswahl speichert, nachdem der ESC sie beantwortet hat: `{"throttle": "min"}`, `mid` oder `max`. Fehlt es oder ist es null: die Auswahl speichert. Gesetzt in den 8 YGE-Mode-Setups, wo der Knüppel zurück auf Minimum den Modus speichert |
 | `scheme.select.within_ms` | 0 bis 60000: die Zeit nach dem Ton, in der die Bewegung zählt, oder null, wenn nicht angegeben |
 | `scheme.value_select` | nur bei zweistufigen Menüs: `select` wählt den Punkt, dann speichert `value_select.throttle` (`min`, `mid`, `max`, `none`) den angesagten Wert; `within_ms` wie bei `select`. Fehlt es oder ist es null, speichert die `select`-Bewegung den Wert |
 | `scheme.changes_per_entry` | `one`, `many` |
@@ -162,6 +162,9 @@ annehmen.
   Standardwerte und Einstiegsgesten sind so, wie die Handbücher sie angeben,
   und manche Handbücher widersprechen einander; die `notes` jedes Profils
   nennen die Widersprüche.
+- Die Pieptonfelder (`beep_ms`, `gap_ms`, `group_gap_ms`) sind in jedem
+  Profil null, und die Stick-Programmierung liest sie nicht: ihre Zeiten
+  kommen aus ihren Einstellungen.
 - Die Versorgung des Prüfstands ist das PD mini, höchstens 20 V. ESCs, deren
   Mindesteingang darüber liegt, etwa YGE Opto und Navy ab 6S, brauchen eine
   externe Versorgung.

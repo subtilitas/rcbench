@@ -117,7 +117,7 @@
   "automatable": "full",
   "automatable_note": null,
   "scheme": {
-    "type": "count",
+    "type": "other",
     "entry": {
       "throttle": "max",
       "when": "before_power_on",
@@ -186,7 +186,8 @@
   ],
   "notes": [
     "The two manuals give the same brake procedure; GreatPlanes_Electrifly_SS-60_SS-80.pdf adds that the brake state is stored until changed.",
-    "Low-voltage cutoff differs: battery voltage x 0.67 in GreatPlanes_Electrifly_SilverSeries.pdf, battery voltage x 0.74 in GreatPlanes_Electrifly_SS-60_SS-80.pdf."
+    "Low-voltage cutoff differs: battery voltage x 0.67 in GreatPlanes_Electrifly_SilverSeries.pdf, battery voltage x 0.74 in GreatPlanes_Electrifly_SS-60_SS-80.pdf.",
+    "scheme.type is other: the stick procedure (off, full, off) toggles the stored brake state and the ESC sounds no looping menu of values, so no beep count selects a value."
   ],
   "schema": 1,
   "verified": false

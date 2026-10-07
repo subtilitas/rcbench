@@ -36,6 +36,7 @@
 #include "selftest.h"
 #include "display.h"
 #include "esc_profile.h"
+#include "esc_sim.h"
 #include "gfx.h"
 #include "arming.h"
 #include "art_flash_esp.h"
@@ -57,6 +58,7 @@
 #include "outputs_screen.h"
 #include "overview_screen.h"
 #include "picker_screen.h"
+#include "programmer_screen.h"
 #include "rcbench_version.h"
 #include "settings.h"
 #include "settings_screen.h"
@@ -3197,6 +3199,21 @@ static bool read_bench(link_host_t *host, bench_state_t *out)
  */
 static supply_sim_t   s_supply_sim;
 static supply_link_t  s_supply_link;
+/*
+ * The ESC a stick run programs, when the supply is the panel's model.
+ *
+ * The PROGRAMMER screen publishes the profile of a run under way, and how
+ * many runs it has started, from the render loop; the control task makes
+ * the model's current the simulated ESC's, so the run counts beeps from the
+ * same samples the PD mini would give it.  The ESC sees the throttle the
+ * control page carries -- the raw command, as a pin bound on the
+ * coprocessor does -- and no signal while the bank is disarmed.
+ */
+static atomic_uintptr_t s_escsim_profile;
+static atomic_uint      s_escsim_runs;
+static esc_sim_t        s_escsim;          /* control task only */
+static unsigned         s_escsim_runs_seen;
+static bool             s_escsim_live;
 /* The coprocessor that answered speaks protocol 4.3: it has the page. */
 static bool           s_supply_page;
 /* And speaks 4.4: AUTO baud and the BAUD_FOUND register. */
@@ -3464,6 +3481,31 @@ static void supply_real_follow(void)
     atomic_store(&s_supply_real, real);
 }
 
+/* The model's load is the simulated ESC while a stick run wants one. */
+static void escsim_load(void)
+{
+    const esc_profile_t *p =
+        (const esc_profile_t *)atomic_load(&s_escsim_profile);
+    if (p == NULL) {
+        s_escsim_live = false;
+        return;
+    }
+    const unsigned runs = atomic_load(&s_escsim_runs);
+    if (!s_escsim_live || runs != s_escsim_runs_seen || s_escsim.p != p) {
+        esc_sim_init(&s_escsim, p, NULL);
+        s_escsim_runs_seen = runs;
+        s_escsim_live = true;
+    }
+    const float pct = outputs_armed(&s_out)
+                          ? (float)s_throttle_hundredths / 100.0f : -1.0f;
+    const int32_t ma = esc_sim_step(&s_escsim, now_ms(), s_supply_on, pct);
+    if (s_supply.output) {
+        s_supply.i = (float)ma / 1000.0f;
+        s_supply.p = s_supply.v * s_supply.i;
+        s_supply.mode = SUPPLY_MODE_CV;
+    }
+}
+
 /*
  * One step of the supply at the sample cadence: its readings, the run's
  * extremes and totals, and a sample for the screen.
@@ -3478,8 +3520,10 @@ static void supply_step(float step_s)
         supply_link_state(&s_supply_link, now_ms(), &s_supply);
         s_supply.output = s_supply_on;
     } else {
+        /* Every step of the model is a reading, taken now. */
         supply_sim_step(&s_supply_sim, step_s, &s_supply);
         s_supply.taken_ms = now_ms();   /* a reading every step */
+        escsim_load();
     }
     /*
      * A supply that stops answering takes its output with it, switched off
@@ -5897,6 +5941,16 @@ static void flush_screen_commands(uint32_t stops_now)
                            .consumed_seq = consumed };
         send_cmd(&pc);
     }
+    /* A stick run on PROGRAMMER moves the throttle and arms as the MOTOR
+     * screen does, through the same commands and the same policy. */
+    while (programmer_screen_poll_cmd(&mc)) {
+        panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
+                           .stops = stops_now,
+                           .lets_go = atomic_load(&s_lets_go),
+                           .loss_gen = loss_gen,
+                           .consumed_seq = consumed };
+        send_cmd(&pc);
+    }
     servo_cmd_t sv;
     if (servo_screen_take(&sv)) {
         panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
@@ -6151,7 +6205,9 @@ void app_main(void)
         uint32_t supply_gen_now;
         uint32_t stops_now;
         uint32_t arm_gen_now;
+        bool     link_now;
         snap_lock();
+        link_now       = s_snap.link_up;
         armed_now      = s_snap.armed;
         supply_now     = s_snap.supply.output;
         supply_gen_now = s_snap.supply_gen;
@@ -6179,6 +6235,9 @@ void app_main(void)
             supply_screen_cancel_on();
         }
         last_stops = stops_now;
+        /* And a stick run on PROGRAMMER, which ends on a stop, a disarm or
+         * a link that went, and steps on the frame's time. */
+        programmer_screen_bench(now_ms(), armed_now, stops_now, link_now);
 
         /* The slider follows the bench: a disarm returns the command to
          * zero, so the control the operator picks up next is at zero too. */
@@ -6297,8 +6356,15 @@ void app_main(void)
             /* And the SERVO screen's live power plot: the supply feeds the
              * servo under test. */
             servo_screen_supply(&sup);
+            /* And a stick run, which counts beeps in every reading. */
+            programmer_screen_supply(&sup);
             supply_seen = sup.output;
         }
+        /* The simulated ESC follows the run, while the model is the
+         * supply; see escsim_load(). */
+        atomic_store(&s_escsim_runs, (unsigned)programmer_screen_stick_runs());
+        atomic_store(&s_escsim_profile,
+                     (uintptr_t)programmer_screen_stick_profile());
 
         if (drain_touch(stops_now)) {
             frame_lost = true;

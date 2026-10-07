@@ -42,7 +42,49 @@ history is in git.
   it is not taken for one; readings skipped between two page reads are
   counted in the report.
 
+- **Stick programming.** PROGRAMMER has a third class, ESC STICK, that
+  programs an ESC through its throttle-stick menu: pick a profile and the
+  values to change, hold the red warning MOTOR REMOVED, LOAD FITTED? for
+  2 s, and the bench arms, holds the throttle at the entry position, switches
+  the supply on and counts the menu's beeps in the supply current, moving
+  the throttle on the group that names the wanted item or value. 14 of the
+  72 profiles are of a kind it runs: 13 two-stage, 1 one-stage. Beeps are
+  counted with a threshold and hysteresis over the idle floor, from a quiet
+  line, with pulse and gap lengths judged in readings. A group is acted on
+  only when it and the group before it are both in the menu's order, so one
+  missed beep passes a group rather than selecting the number below. Reset
+  and exit items are actions and are not offered. A run that ends as
+  planned switches the supply off and moves the stick only once the supply
+  itself reports the output off, with the current down. STOP, a
+  disarm, a lost link, the supply going off or silent, ABORT and leaving
+  the screen end a run with the throttle at minimum, the supply off and the
+  bench disarmed; a STOP or a lost touch event also takes back an ARM the
+  run queued and the panel had not yet sent. The beep timings are 14
+  settings on a TIMING page, every one a default: no ESC has been recorded.
+  With the PD mini off, the panel's modelled supply draws a simulated ESC's
+  current. Never run against an ESC.
+  [Stick programming](docs/StickProgramming.md).
+- **Where the stick rests, and the move that stores.** An ESC profile may
+  name `scheme.listen`, the stick position while the menu sounds, and
+  `scheme.store`, the move that stores a selection; the generator and the
+  card reader take the same rules. The nine YGE profiles carry
+  `scheme.listen` and the eight YGE mode setups `scheme.store`.
+
+### Changed
+
+- **The Silver Series profile is not a counted menu.**
+  `greatplanes-electrifly-silver-series` is `scheme.type` `other`: its stick
+  procedure toggles the brake and sounds no menu of values, so stick
+  programming does not run it.
+
 ### Fixed
+
+- **The servo test's set points wait for the supply's own OFF.** After a
+  run, SUPPLY's set points went back once a reading after the run's OFF
+  showed the panel's own request off; the PD mini follows that request a
+  link exchange and a module transaction later, so a set point could reach
+  an output still on. They now wait for a reading in which the supply
+  reports its output off.
 
 - **OUTPUT ON on SERVO above 6.0 V takes the HV hold.** The HV SERVOS ONLY
   warning opened only when the SET line raised the voltage across 6.0 V. A

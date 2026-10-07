@@ -287,7 +287,9 @@ SWEEP, RELEASE, a tap on a set point, a change to the servo's type, pulses,
 trim, travel, reverse or SPEED, touch events going missing, and on the
 supply: see [the list](Servo.md#what-ends-a-run). Once a run is over, whichever screen is up, SUPPLY's set points go back to
 what they were before it. That waits until the run's OFF has been sent, a
-reading taken after that shows the output off, no ON is on its way and
+reading taken after that in which the supply itself reports the output off
+-- not the panel's request, which the PD mini follows a link exchange and a
+module transaction later -- no ON is on its way and
 OUTPUT ON is not being held on SERVO or SUPPLY. Set points changed after
 the run ended are
 left as they are.
@@ -596,7 +598,10 @@ channels. [Receiver buses](Receivers.md) describes the states.
 
 ## Programmer
 
-The sequence is: device class, protocol, connect.
+The sequence is: device class, protocol, connect. ESC STICK, the third
+class, lists ESC profiles instead of protocols and programs an ESC through
+its throttle-stick menu; it has a page of its own,
+[Stick programming](StickProgramming.md).
 
 ![Device class](img/programmer.png)
 
@@ -631,6 +636,40 @@ Steppers stop at the ends of a list; they do not wrap.
 
 Going back one level drops the connection. Back climbs one level at a time; the
 band's home tag leaves the screen.
+
+### ESC STICK
+
+The list holds every ESC profile, those the bench can run first; a row that
+cannot run names the reason:
+
+![The profiles](img/programmer-stick.png)
+
+A profile's items start at KEEP. The steppers pick a value; RUN counts the
+values picked:
+
+![Two values picked](img/programmer-stick-items.png)
+
+RUN opens a warning over the whole screen. The run starts after HOLD TO RUN
+is held for 2 s:
+
+![The warning](img/programmer-stick-warning.png)
+
+While it runs, the page shows the phase, the beeps of the group under way
+and the last group. ABORT, STOP and leaving the screen end it with the
+throttle at MIN, the supply off and the bench disarmed:
+
+![A run](img/programmer-stick-run.png)
+
+The result stays until OK:
+
+![Done](img/programmer-stick-done.png)
+
+![Stopped](img/programmer-stick-aborted.png)
+
+TIMING holds the beep timings and the supply settings. None of them is
+measured:
+
+![Timing](img/programmer-stick-timing.png)
 
 ## Battery
 
