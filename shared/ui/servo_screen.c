@@ -450,11 +450,14 @@ static struct {
     servo_map_t posted_map;
     /*
      * Sweep commands are numbered; the newest start or resume is kept with
-     * the curve and SPEED it was sent with, and only its acknowledgement
-     * ends the wait for it (servo_screen_sweep_started()).
+     * the curve it was sent with, and the wait for it is ended by its own
+     * acknowledgement or a later repeat's (servo_screen_sweep_started()).
+     * The SPEED each of the last 8 sweep commands was sent with, by
+     * number, for the one acknowledged.
      */
     uint16_t    start_seq;
     start_rec_t start_rec;
+    struct { uint16_t seq; int16_t speed_pct; } sent_speed[8];
     /*
      * The sweep button's last tap and the screen as it was before it, while
      * its command has not left: a second tap in the same pass undoes both,
@@ -763,6 +766,8 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
     if (kind == SERVO_CMD_SWEEP) {
         ++s.start_seq;
         s.pending.start_seq = s.start_seq;
+        s.sent_speed[s.start_seq % 8u].seq       = s.start_seq;
+        s.sent_speed[s.start_seq % 8u].speed_pct = (int16_t)s.speed_pct;
         if (carry) {
             s.start_rec.seq       = s.start_seq;
             s.start_rec.cfg       = s.sw.cfg;
@@ -1147,19 +1152,28 @@ void servo_screen_sweep_started(uint16_t start_seq, uint32_t age_ms,
         return;
     }
     /*
-     * Waiting for a start or a resume, only its own acknowledgement ends the
-     * wait, and with the curve and SPEED it was sent with: an earlier one's,
-     * or a repeat's, describes a command this screen has since replaced.
+     * Waiting for a start or a resume, the wait ends with the
+     * acknowledgement of that command or of any sweep command posted after
+     * it: a write of the start can fail and a later repeat start the sweep
+     * at the far end instead.  A repeat never changes the curve -- a changed
+     * curve is a new start (restart_sweep()) -- so the start's curve stands,
+     * at the SPEED of the command acknowledged.  An earlier start's
+     * acknowledgement describes a curve since replaced and is not taken.
      * A sweep already drawn takes any start the far end makes -- one that
      * froze unrepeated, or a link that came back -- at the SPEED in force.
      */
     int speed = s.speed_pct;
     if (s.awaiting) {
-        if (!s.start_rec.live || start_seq != s.start_rec.seq) {
+        const uint16_t after  = (uint16_t)(start_seq - s.start_rec.seq);
+        const uint16_t posted = (uint16_t)(s.start_seq - s.start_rec.seq);
+        if (!s.start_rec.live || after > posted) {
             return;
         }
         s.sw.cfg = s.start_rec.cfg;
         speed    = s.start_rec.speed_pct;
+        if (s.sent_speed[start_seq % 8u].seq == start_seq) {
+            speed = s.sent_speed[start_seq % 8u].speed_pct;
+        }
     }
     s.start_rec.live = false;
     const uint32_t moving = (from == SERVO_SWEEP_RESUMED && since_ms < age_ms)

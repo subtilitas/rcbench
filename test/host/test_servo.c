@@ -2219,10 +2219,10 @@ TEST_CASE(leaving_forgets_the_sweep_model)
 /*
  * While a start waits for its acknowledgement, a SPEED change and a curve
  * change replace what the screen would draw, not what was sent.  A SPEED
- * change is a repeat: the start's own acknowledgement, 300 ms late, is
- * worked through at the start's SPEED, 12 %, not the new 100 %.  A curve
- * change is a new start: the first start's acknowledgement does not end the
- * wait, the new one's does, with its own curve.
+ * change is a repeat of the same curve: the start's own acknowledgement,
+ * 307 ms late, is worked through at the start's SPEED, 12 %, not the new
+ * 100 %.  A curve change is a new start: the first start's acknowledgement
+ * does not end the wait, the new one's does, with its own curve.
  */
 TEST_CASE(a_start_acknowledgement_applies_to_its_own_command)
 {
@@ -2238,8 +2238,7 @@ TEST_CASE(a_start_acknowledgement_applies_to_its_own_command)
     CHECK_EQ(repeat.kind, SERVO_CMD_SWEEP);
     CHECK(repeat.start_seq != start.start_seq);
     frames(0.3f);
-    servo_screen_sweep_started(repeat.start_seq, 0u, SERVO_SWEEP_FROM_REST, 0u);
-    CHECK_EQ(servo_screen_drawn(), 1500u);     /* not the start's */
+    CHECK_EQ(servo_screen_drawn(), 1500u);     /* not before it is known */
     servo_screen_sweep_started(start.start_seq, 307u, SERVO_SWEEP_FROM_REST,
                                0u);
     const uint16_t at = servo_screen_drawn();
@@ -2262,6 +2261,60 @@ TEST_CASE(a_start_acknowledgement_applies_to_its_own_command)
                                0u);
     frames(0.125f);                            /* 1 Hz, 128 ms in */
     CHECK(servo_screen_commanded() > 1760u);
+}
+
+/*
+ * The start's write failed and a repeat -- SPEED moved -- started the sweep
+ * at the far end instead: only the repeat is acknowledged.  The wait ends
+ * with it, at the repeat's SPEED, 100 %: 307 ms into the 0.5 Hz sine,
+ * near 1829 us.  The same for a resume whose RESUME failed: the repeat
+ * that followed it started the curve from rest.  An acknowledgement of a
+ * command older than the start, or newer than any posted, is not taken.
+ */
+TEST_CASE(a_later_repeat_acknowledged_ends_the_wait)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(ARM_X + 1, SPEED_Y);                   /* SPEED's slowest */
+    tap(SWEEP_X, BTN_Y);
+    const servo_cmd_t start = last_cmd();
+    tap(ARM_X + ARM_W - 1, SPEED_Y);           /* SPEED 100 % */
+    const servo_cmd_t repeat = last_cmd();
+    CHECK_EQ(repeat.kind, SERVO_CMD_SWEEP);
+    frames(0.3f);
+    servo_screen_sweep_started((uint16_t)(start.start_seq - 1u), 0u,
+                               SERVO_SWEEP_FROM_REST, 0u);
+    servo_screen_sweep_started((uint16_t)(repeat.start_seq + 1u), 0u,
+                               SERVO_SWEEP_FROM_REST, 0u);
+    CHECK_EQ(servo_screen_drawn(), 1500u);     /* neither is this wait's */
+    servo_screen_sweep_started(repeat.start_seq, 307u, SERVO_SWEEP_FROM_REST,
+                               0u);
+    CHECK(servo_screen_drawn() > 1800u && servo_screen_drawn() < 1860u);
+
+    /* A resume, SPEED moved after it was taken, and only the repeat
+     * acknowledged: a start from rest, out of the wait. */
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    sweep_go();
+    frames(0.25f);
+    const servo_cmd_t hold = pause_go();
+    ack_hold(&hold);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED */
+    const servo_cmd_t resume = last_cmd();
+    CHECK(resume.resume);
+    tap(ARM_X + 1, SPEED_Y);                   /* SPEED moved */
+    const servo_cmd_t again = last_cmd();
+    CHECK_EQ(again.kind, SERVO_CMD_SWEEP);
+    CHECK(!again.resume);
+    const uint16_t held = servo_screen_drawn();
+    frames(0.2f);
+    CHECK_EQ(servo_screen_drawn(), held);
+    servo_screen_sweep_started(again.start_seq, 0u, SERVO_SWEEP_FROM_REST,
+                               0u);
+    frames(0.25f);
+    CHECK(servo_screen_commanded() > 1760u && servo_screen_commanded() < 1800u);
 }
 
 /*
@@ -4283,6 +4336,7 @@ int main(void)
     RUN(a_change_during_a_pause_drain_holds_the_drawn_angle);
     RUN(leaving_forgets_the_sweep_model);
     RUN(a_start_acknowledgement_applies_to_its_own_command);
+    RUN(a_later_repeat_acknowledged_ends_the_wait);
     RUN(a_restart_drains_the_old_curve_in_its_old_mapping);
     RUN(an_unacknowledged_pause_is_drawn_on_for_500_ms_at_most);
     RUN(two_sweep_taps_in_one_pass_send_nothing);
