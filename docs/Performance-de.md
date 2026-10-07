@@ -170,3 +170,49 @@ Die Logzeile `DRAW … WAIT …` des ESP32-S3, alle 300 Frames ausgegeben, ist
 die Prüfung auf der Hardware: DRAW ist die Zeichenzeit, WAIT die Zeit, die
 der Buffer-Wechsel blockiert hat. Ein gesunder Frame besteht überwiegend aus
 WAIT.
+
+## Stacks
+
+Jede Task des Panels läuft auf einem festen Stack, und eine Aufrufkette, die
+über sein Ende hinausläuft, startet das Panel neu. `tools/stack_check.py`
+liest die tiefste Aufrufkette jeder Task aus der ELF-Datei (Executable and
+Linkable Format) des Panels: der Frame jeder Funktion ist das
+`entry a1, N`, mit dem sie beginnt, und die Tiefe ist die größte Summe der
+Frames entlang einer Kette vom Einstiegspunkt der Task. Ein Sprung aus einer
+Funktion heraus, die Form eines Tail Calls, zählt als Aufruf. Die Tasks sind
+jedes `xTaskCreatePinnedToCore()` und `xTaskCreate()` in `firmware/panel`
+und die Main-Task. CI (Continuous Integration) führt es nach beiden
+Panel-Builds aus und schlägt fehl, wenn die Tiefe einer Task ihren Stack
+abzüglich 1024 Bytes überschreitet.
+
+| Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
+| --- | --- | ---: | ---: | ---: |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 3 856 | 3 312 |
+| `control` | `control_task` | 6 144 | 4 272 | 848 |
+| `runlog` | `log_task` | 4 096 | 2 896 | 176 |
+| `artkeep` | `art_keep_task` | 4 096 | 944 | 2 128 |
+| `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 744 | 1 328 |
+
+Gemessen mit ESP-IDF v5.4 bei -O2. Von der Marge gehen 528 Bytes außerhalb
+der Frames auf: 320 für den gesicherten Zustand von FPU (Floating-Point Unit)
+und Vektoreinheit am oberen Ende jedes Stacks, 192 für den Frame, den ein
+Interrupt ablegt, und 16 unter dem tiefsten Frame. Die übrigen 496 Bytes
+decken ab, was das Werkzeug nicht sieht, und jede Tiefe oben ist deshalb eine
+Untergrenze:
+
+- Aufrufe über einen Funktionszeiger, außer den Aufrufen des Routers in einen
+  Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest: 165
+  solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
+  Speicher- und Display-Treibern von ESP-IDF;
+- Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in
+  der ELF-Datei stehen;
+- Rekursion, die das Werkzeug einmal zählt.
+
+`-v` listet sie alle auf, und die tiefste Kette jeder Task.
+
+Die UI hält ihre Frames klein, wo das wenig kostet. Der Zeichner einer Seite
+ist eine eigene Funktion, sodass nur die angezeigte Seite ihre Puffer hält:
+auf PROGRAMMER ist der Frame von `render()` 32 Bytes groß und der der größten
+Seite 464. Eine Zeile, die zur Anzeige kopiert wird, wird ohne `snprintf()`
+kopiert, das die Gleitkommawandlung von newlib erreicht: 1 952 Bytes tief im
+Aufrufgraphen.
