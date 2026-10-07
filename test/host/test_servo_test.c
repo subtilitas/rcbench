@@ -728,6 +728,136 @@ TEST_CASE(every_abort_switches_off_lets_go_and_reports)
     CHECK(strstr(g.report, " 6.00  not run") != NULL);
 }
 
+/*
+ * A servo with its own current profile: after 40 ms of latency it moves for
+ * 1200 ms at @p mv amperes, the first 100 ms of the motion at @p spike when
+ * that is above zero, and settles at the end's holding level -- @p lo at the
+ * low end, 0.05 A at the centre and the high end.  Readings every 100 ms,
+ * @p off ms after the run starts.  Six counted moves.
+ */
+typedef struct {
+    float    lo, mv, spike;
+    uint16_t cmd, prev;
+    uint32_t cmd_at;
+} profile_t;
+
+static float profile_level(const profile_t *p, uint16_t us)
+{
+    return (us < 1300u) ? p->lo : 0.05f;
+}
+
+static float profile_current(const profile_t *p, uint32_t now)
+{
+    const uint32_t dt = now - p->cmd_at;
+    if (p->cmd == p->prev || dt < 40u) {
+        return profile_level(p, p->prev);
+    }
+    if (dt >= 40u + 1200u) {
+        return profile_level(p, p->cmd);
+    }
+    if (p->spike > 0.0f && dt - 40u < 100u) {
+        return p->spike;
+    }
+    return p->mv;
+}
+
+static void run_profile(servo_test_t *t, float lo, float mv, float spike,
+                        uint32_t off)
+{
+    profile_t p = { lo, mv, spike, CENTRE, CENTRE, 0u };
+    servo_test_cfg_t c;
+    cfg_defaults(&c);
+    c.step_count = 1u;
+    c.settle_ms  = 0u;
+    c.moves      = 6u;
+    c.report     = false;
+    servo_test_init(t);
+    uint32_t now = 1000u, next = now + off;
+    uint16_t samples = 1u;
+    servo_test_reading_t r;
+    memset(&r, 0, sizeof(r));
+    r.v = 4.8f;
+    r.set_v = 4.8f;
+    r.output = true;
+    r.online = true;
+    r.ok = true;
+    r.mode = 1u;
+    r.taken_ms = now;
+    (void)servo_test_start(t, &c, now, &r, 1.0f, 20.0f);
+    for (int k = 0; k < 20000 && servo_test_running(t); ++k) {
+        now += 10u;
+        if (now >= next) {
+            next += 100u;
+            r.samples = ++samples;
+            r.taken_ms = now;
+            r.i = profile_current(&p, now);
+            servo_test_reading(t, &r, 0u);
+        }
+        const servo_test_in_t in = { true, 20.0f };
+        servo_test_do_t d;
+        servo_test_step(t, now, &in, &d);
+        if (d.command) {
+            p.prev = p.cmd;
+            p.cmd = d.cmd_us;
+            p.cmd_at = now;
+        }
+        while (servo_test_peek(t, NULL) != SERVO_TEST_OUT_NONE) {
+            servo_test_pop(t);
+        }
+    }
+}
+
+/* Every move timed at the servo's 1240 ms, late by no more than a reading:
+ * none early. */
+static void check_on_time(const servo_test_t *t)
+{
+    const servo_test_step_t *s = &t->steps[0];
+    CHECK_EQ(t->why, SERVO_TEST_AB_NONE);
+    CHECK_EQ(s->travels, 6u);
+    CHECK_EQ(s->timeouts, 0u);
+    CHECK(s->travel_sum_ms / s->travels >= 1240u);
+    CHECK(s->travel_max_ms <= 1240u + 100u);
+    CHECK_NEAR(s->hold[0].sum / (float)s->hold[0].n, 0.40f, 0.001f);
+    CHECK_NEAR(s->hold[1].sum / (float)s->hold[1].n, 0.05f, 0.001f);
+}
+
+/* An end held at 0.40 A, harder than the 0.25 A the servo moves at: never
+ * passed on the way, so the settled readings there are the arrival. */
+TEST_CASE(an_end_held_harder_than_the_servo_moves_is_reached_settled)
+{
+    servo_test_t t;
+    run_profile(&t, 0.40f, 0.25f, 0.0f, 0u);
+    check_on_time(&t);
+}
+
+/* The same end, with the first 100 ms of every move at 0.9 A: that reading
+ * lies above the end's level, and the moving current after it below. A
+ * reading below the level is not the arrival, whatever the phase of the
+ * readings against the motion. */
+TEST_CASE(an_acceleration_spike_above_the_level_is_not_the_arrival)
+{
+    for (uint32_t off = 0u; off < 100u; off += 25u) {
+        servo_test_t t;
+        run_profile(&t, 0.40f, 0.25f, 0.9f, off);
+        check_on_time(&t);
+        CHECK_EQ(servo_test_verdict(&t), SERVO_TEST_PASS);
+    }
+}
+
+/* The limit, as documented: a servo that moves at the very current it holds
+ * the low end with cannot be told from one already there.  Moves to the high
+ * end are timed; moves to the low end end at their first settled readings,
+ * a reading or two after the command. */
+TEST_CASE(a_moving_current_equal_to_the_holding_current_is_the_limit)
+{
+    servo_test_t t;
+    run_profile(&t, 0.40f, 0.40f, 0.0f, 0u);
+    const servo_test_step_t *s = &t.steps[0];
+    CHECK_EQ(s->travels, 6u);
+    CHECK(s->travel_max_ms >= 1240u);                 /* to the high end */
+    CHECK(s->travel_sum_ms / s->travels < 1240u);     /* to the low end */
+}
+
 /* A supply whose reading count stops while its page goes on answering --
  * display reads on the coprocessor that are slow or fail -- shows the same
  * current over and over.  None of it is a new reading: no row is logged,
@@ -961,6 +1091,9 @@ int main(void)
     RUN(a_servo_pushing_on_a_stop_ends_the_run);
     RUN(a_servo_that_does_not_move_fails);
     RUN(every_abort_switches_off_lets_go_and_reports);
+    RUN(an_end_held_harder_than_the_servo_moves_is_reached_settled);
+    RUN(an_acceleration_spike_above_the_level_is_not_the_arrival);
+    RUN(a_moving_current_equal_to_the_holding_current_is_the_limit);
     RUN(a_frozen_current_is_no_reading);
     RUN(skipped_readings_are_reported);
     RUN(a_step_cut_short_is_said_so);

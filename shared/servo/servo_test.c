@@ -494,12 +494,15 @@ static void measure(servo_test_t *t, const servo_test_reading_t *r)
          * not the move arriving.
          *
          * A destination held harder than the servo moves -- an end pushing
-         * on a stop -- is never passed on the way up.  There the move has
-         * arrived when, after movement, two readings in a row lie within
-         * the band of that level and of each other: settled, at the first
-         * of the two.  A current climbing through the level steps more
-         * than the band between two readings unless it climbs slower than
-         * SERVO_TEST_BAND_A a reading.
+         * on a stop -- is never passed on the way up, or only by the first
+         * reading of the acceleration, after which the moving current lies
+         * below the level again.  There the move has arrived when, after
+         * movement, two readings in a row lie within the band of that
+         * level and of each other: settled, at the first of the two.  A
+         * current climbing through the level steps more than the band
+         * between two readings unless it climbs slower than
+         * SERVO_TEST_BAND_A a reading, and a moving current within the band
+         * of the level cannot be told from the servo there.
          */
         if (fabsf(i - t->rise_a) > SERVO_TEST_MOVE_A) {
             t->rose = true;
@@ -507,9 +510,13 @@ static void measure(servo_test_t *t, const servo_test_reading_t *r)
         const bool near = fabsf(i - t->ref_a) <= SERVO_TEST_BAND_A;
         if (t->rose && i > t->ref_a + SERVO_TEST_MOVE_A) {
             t->left = true;
-        } else if (t->left && i <= t->ref_a + SERVO_TEST_BAND_A) {
+        } else if (t->left && near) {
             end_move(t, true, at);
             break;
+        } else if (t->left && i < t->ref_a - SERVO_TEST_BAND_A) {
+            /* Back below the level without settling at it: the servo moves
+             * at less than it holds there, and the settled rule decides. */
+            t->left = false;
         } else if (!t->left && t->rose && near && t->near_prev
                    && fabsf(i - t->prev_i) <= SERVO_TEST_BAND_A) {
             end_move(t, true, t->prev_at);
