@@ -6,20 +6,30 @@
  * Written from the datasheet, TI SLYS021A (January 2021, revised May 2022).
  * Tables and sections below are that document's.
  *
- * Calibration (§8.1.2).  CURRENT_LSB is at least the maximum current over
- * 2^19 (Equation 3), and SHUNT_CAL = 13107.2 × 10^6 × CURRENT_LSB × R,
- * times 4 at ADCRANGE 1 (Equation 2).  With the maximum in mA and R in µΩ
- * that is max × R / 40000, times 4.  ADCRANGE is 1 (±40.96 mV) when the
- * maximum across the shunt fits it, 0 (±163.84 mV) when only that fits,
- * and a maximum beyond 163.84 mV, or above 1000 A, is refused (Table 8-1).
- * SHUNT_CAL is rounded up, so CURRENT_LSB is never below the minimum and
- * the CURRENT register reaches the maximum.  Within the ADC
- * (analog-to-digital converter) range SHUNT_CAL is at most 4096: it always
- * fits its 15-bit field (Table 7-7), and the CURRENT register reaches its
- * end at or before the shunt ADC does (derived from Equations 2 and 4:
- * CURRENT is VSHUNT × 4096 / SHUNT_CAL).  Readings are converted with the
- * CURRENT_LSB that the SHUNT_CAL written gives, so the rounding does not
- * scale them.
+ * Calibration (§8.1.2).  The maximum current chooses the shunt range:
+ * ADCRANGE 1 (±40.96 mV, 78.125 nV a step) when the maximum across the
+ * shunt fits it, else ADCRANGE 0 (±163.84 mV, 312.5 nV a step); a maximum
+ * past 163.84 mV is refused (Table 8-1).
+ *
+ * CURRENT_LSB is the ADC (analog-to-digital converter) step over the
+ * shunt, not Equation 3 taken at the maximum (maximum / 2^19).  Equation 2,
+ * SHUNT_CAL = 13107.2 × 10^6 × CURRENT_LSB × R, times 4 at ADCRANGE 1,
+ * then gives 13107.2 × 10^6 × 312.5 nV = 4096 at either range for every
+ * shunt, and with Equation 4 CURRENT = VSHUNT × 4096 / SHUNT_CAL = VSHUNT.
+ * Why:
+ *
+ * - The ADC's 20 bits bound the resolution.  A finer CURRENT_LSB from a
+ *   maximum below the range's top adds no information.
+ * - With Equation 3's LSB and such a maximum, CURRENT reaches the end of
+ *   its 20 bits before the ADC does, and the datasheet does not say
+ *   whether CURRENT then holds or wraps.  Here CURRENT and VSHUNT reach
+ *   their ends together, at the ADC's.
+ *
+ * Equation 3's condition, CURRENT_LSB at least maximum / 2^19, still holds:
+ * the range is chosen so that the maximum fits it.  4096 fits SHUNT_CAL's
+ * 15-bit field (Table 7-7) whatever the shunt, so no shunt is refused for
+ * it.  A shunt whose full scale at the chosen range passes
+ * INA228_FS_MA_LIMIT is refused.
  *
  * The MATEK I2C-INA-BM (200 µΩ, address 0x45) at its 204.8 A: ADCRANGE 1,
  * SHUNT_CAL 4096, CURRENT_LSB 390.625 µA, power 1.25 mW, energy 20 mJ and
@@ -30,9 +40,10 @@
  * INA238 (238xh) included, is not used and nothing is written to it.
  *
  * Clipping.  A CURRENT or VSHUNT reading at an end of its 20-bit range
- * (2^19 - 1 or -2^19) is a clip, never a value.  The datasheet does not say
- * whether CURRENT holds at its end or wraps when the current passes
- * 2^19 × CURRENT_LSB; DIAG_ALRT.MATHOF (Table 7-16) reports an arithmetic
+ * (2^19 - 1 or -2^19) is a clip, never a value.  With the calibration
+ * above the two reach their ends together, at the ADC's full scale.  What
+ * the ADC reports past its full scale is not stated; it is taken to stay
+ * at the end code.  DIAG_ALRT.MATHOF (Table 7-16) reports an arithmetic
  * overflow and is the caller's to read.
  *
  * Set-up written at each probe: CONFIG with ADCRANGE, SHUNT_CAL,
@@ -77,9 +88,13 @@ enum {
 #define INA228_DIE_ID         0x228u   /**< DEVICE_ID bits 15-4, Table 7-24 */
 #define INA228_ADDR_MIN        0x40u   /**< A1, A0 at GND, GND: Table 7-2 */
 #define INA228_ADDR_MAX        0x4Fu   /**< A1, A0 at SCL, SCL */
-/** The largest maximum current taken, mA: every reading then fits an
- *  int32 of µA, rounding of SHUNT_CAL included. */
-#define INA228_MAX_MA_LIMIT 1000000u
+/** The largest full scale taken, mA: every reading then fits an int32 of
+ *  µA.  2000 A is 81.92 µΩ at ADCRANGE 0 and 20.48 µΩ at ADCRANGE 1. */
+#define INA228_FS_MA_LIMIT 2000000u
+/** SHUNT_CAL with CURRENT_LSB at the ADC step over the shunt: 13107.2 ×
+ *  10^6 × 312.5 nV (Equation 2; the shunt cancels, and the factor 4 at
+ *  ADCRANGE 1 meets a step 4 times smaller). */
+#define INA228_SHUNT_CAL_ADC 4096u
 
 /** CONFIG bits, Table 7-5. */
 #define INA228_CONFIG_RST      0x8000u
@@ -153,16 +168,14 @@ typedef enum {
     INA228_SETUP_NO_SHUNT,     /**< a shunt of 0 µΩ                       */
     INA228_SETUP_NO_MAX,       /**< a maximum current of 0 mA             */
     INA228_SETUP_OVER_RANGE,   /**< the maximum drops more than 163.84 mV
-                                    across the shunt, or passes
-                                    INA228_MAX_MA_LIMIT                   */
-    INA228_SETUP_UNDER_LSB,    /**< SHUNT_CAL would come to less than 1:
-                                    the CURRENT register would read 0      */
+                                    across the shunt, or the range's full
+                                    scale passes INA228_FS_MA_LIMIT        */
 } ina228_setup_err_t;
 
 typedef struct {
     uint32_t shunt_uohm;   /**< shunt resistance, µΩ                       */
     uint32_t max_ma;       /**< the maximum current asked for, mA          */
-    uint16_t shunt_cal;    /**< SHUNT_CAL as written, 1 to 4096            */
+    uint16_t shunt_cal;    /**< SHUNT_CAL as written: 4096                 */
     uint8_t  adcrange;     /**< CONFIG.ADCRANGE, 0 or 1                    */
 } ina228_cal_t;
 

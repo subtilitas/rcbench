@@ -5,7 +5,8 @@
  * Under test: register decoding, most significant byte first, 20-bit and
  * 40-bit with their signs; SHUNT_CAL and ADCRANGE from the shunt and the
  * maximum current, with the MATEK module's figures from the datasheet
- * equations; the ADC_CONFIG fields and the time a set-up takes; a part
+ * equations and CURRENT_LSB at the ADC step over the shunt; the
+ * ADC_CONFIG fields and the time a set-up takes; a part
  * identified before anything is written to it, its set-up read back; a
  * reading at the end of the range reported as a clip and never a value;
  * the accumulators and their clearing; three failures in a row taking the
@@ -128,46 +129,106 @@ TEST_CASE(the_matek_module_calibrates_as_the_datasheet_equations_say)
 TEST_CASE(adcrange_follows_the_maximum_across_the_shunt)
 {
     ina228_cal_t cal;
-    /* One mA past 40.96 mV over 200 µΩ: the wide range. */
+    /* One mA past 40.96 mV over 200 µΩ: the wide range, 1.5625 mA a step. */
     CHECK_EQ(ina228_calibrate(200u, 204801u, &cal), INA228_SETUP_OK);
     CHECK_EQ(cal.adcrange, 0);
-    CHECK_EQ(cal.shunt_cal, 1025);                     /* 1024.005, up */
+    CHECK_EQ(cal.shunt_cal, 4096);
     CHECK_EQ(ina228_vshunt_nv(&cal, 2).value, 625);    /* 312.5 nV */
+    CHECK_EQ(ina228_current_ua(&cal, 2).value, 3125);
     /* 819.2 A over 200 µΩ is 163.84 mV, the top of the wide range. */
     CHECK_EQ(ina228_calibrate(200u, 819200u, &cal), INA228_SETUP_OK);
     CHECK_EQ(cal.adcrange, 0);
-    CHECK_EQ(cal.shunt_cal, 4096);
     CHECK_EQ(ina228_calibrate(200u, 819201u, &cal), INA228_SETUP_OVER_RANGE);
-    /* 1000 A is the most taken, whatever the shunt: 1 µΩ reads to
-     * 163840 A. */
-    CHECK_EQ(ina228_calibrate(1u, 1000000u, &cal), INA228_SETUP_OK);
-    CHECK_EQ(cal.shunt_cal, 100);
-    CHECK_EQ(ina228_current_ua(&cal, 524286).value, 999996185);
-    CHECK_EQ(ina228_calibrate(1u, 1000001u, &cal), INA228_SETUP_OVER_RANGE);
+    /* Any maximum inside the narrow range takes it. */
+    CHECK_EQ(ina228_calibrate(200u, 1u, &cal), INA228_SETUP_OK);
+    CHECK_EQ(cal.adcrange, 1);
+    CHECK_EQ(cal.shunt_cal, 4096);
 
     CHECK_EQ(ina228_calibrate(0u, 1000u, &cal), INA228_SETUP_NO_SHUNT);
     CHECK_EQ(ina228_calibrate(200u, 0u, &cal), INA228_SETUP_NO_MAX);
-    /* 40 mA over 200 µΩ: 8 µV, SHUNT_CAL 0.8 -- the CURRENT register would
-     * read 0 (§7.3.2). */
-    CHECK_EQ(ina228_calibrate(200u, 49u, &cal), INA228_SETUP_UNDER_LSB);
-    CHECK_EQ(ina228_calibrate(200u, 50u, &cal), INA228_SETUP_OK);
-    CHECK_EQ(cal.shunt_cal, 1);
 }
 
-TEST_CASE(shunt_cal_rounds_up_so_the_register_reaches_the_maximum)
+TEST_CASE(a_full_scale_past_2000_amps_is_refused)
 {
     ina228_cal_t cal;
-    /* 333 µΩ, 101 A: 33.6 mV, narrow; 101000 × 333 × 4 / 40000 = 3363.3. */
-    CHECK_EQ(ina228_calibrate(333u, 101000u, &cal), INA228_SETUP_OK);
+    /* Narrow range: 40.96 mV over 20 µΩ is 2048 A; over 21 µΩ 1950.5 A. */
+    CHECK_EQ(ina228_calibrate(20u, 1000000u, &cal), INA228_SETUP_OVER_RANGE);
+    CHECK_EQ(ina228_calibrate(21u, 1000000u, &cal), INA228_SETUP_OK);
     CHECK_EQ(cal.adcrange, 1);
-    CHECK_EQ(cal.shunt_cal, 3364);
-    /* CURRENT_LSB × 2^19 at or above the maximum (Equation 3). */
-    CHECK((uint64_t)cal.shunt_cal * 40000u >= 101000ull * 333u * 4u);
-    /* And the readings use the LSB that SHUNT_CAL gives: 2^19 - 2 steps
-     * come to more than 101 A, less than 101.05 A. */
-    const sense_value_t v = ina228_current_ua(&cal, 524286);
-    CHECK_EQ(v.clip, SENSE_CLIP_NONE);
-    CHECK(v.value > 101000000 && v.value < 101050000);
+    CHECK_EQ(ina228_current_ua(&cal, 524286).value, 1950468750);
+    /* Wide range: 163.84 mV over 81 µΩ is 2022.7 A; over 82 µΩ 1998.0 A. */
+    CHECK_EQ(ina228_calibrate(81u, 600000u, &cal), INA228_SETUP_OVER_RANGE);
+    CHECK_EQ(ina228_calibrate(82u, 600000u, &cal), INA228_SETUP_OK);
+    CHECK_EQ(cal.adcrange, 0);
+}
+
+TEST_CASE(shunt_cal_is_4096_at_either_range_for_every_shunt)
+{
+    /* 100 µΩ (a guess at the XT90 board's), the MATEK's 200 µΩ, 500 µΩ.
+     * CURRENT_LSB is the ADC step over the shunt; Equation 2 then gives
+     * 4096, and 1000 steps are 1000 × step / R. */
+    static const struct {
+        uint32_t uohm;
+        int32_t  narrow_ua, wide_ua;    /* 1000 steps */
+    } k_shunts[] = {
+        { 100u, 781250, 3125000 },
+        { 200u, 390625, 1562500 },
+        { 500u, 156250,  625000 },
+    };
+    for (size_t i = 0; i < sizeof k_shunts / sizeof k_shunts[0]; ++i) {
+        const uint32_t r = k_shunts[i].uohm;
+        const uint32_t narrow_top = 40960000u / r;   /* mA */
+        for (int wide = 0; wide <= 1; ++wide) {
+            ina228_cal_t cal;
+            CHECK_EQ(ina228_calibrate(r, narrow_top + (uint32_t)wide, &cal),
+                     INA228_SETUP_OK);
+            CHECK_EQ(cal.adcrange, wide ? 0 : 1);
+            const double step = wide ? 312.5e-9 : 78.125e-9;
+            const double k    = wide ? 1.0 : 4.0;
+            const double eq2  = 13107.2e6 * (step / (r * 1e-6)) * (r * 1e-6) * k;
+            CHECK_NEAR(eq2, 4096.0, 1e-6);
+            CHECK_EQ(cal.shunt_cal, 4096);
+            CHECK(cal.shunt_cal <= 0x7FFFu);         /* 15 bits, Table 7-7 */
+            CHECK_EQ(ina228_current_ua(&cal, 1000).value,
+                     wide ? k_shunts[i].wide_ua : k_shunts[i].narrow_ua);
+            CHECK_EQ(ina228_current_ua(&cal, 524287).clip, SENSE_CLIP_HIGH);
+        }
+    }
+}
+
+TEST_CASE(below_the_ranges_top_current_clips_only_at_the_adc_end)
+{
+    /* The MATEK asked for 150 A: the narrow range, whose ADC reads to
+     * 204.8 A.  Equation 3 at 150 A would end the CURRENT register at
+     * 150 A; here CURRENT follows VSHUNT to the ADC's end. */
+    fake_bus_init(&fb, &bus);
+    part = fake_add(&fb, FAKE_INA228, MATEK_ADDR, 200e-6);
+    CHECK_EQ(ina228_init(&d, &bus, MATEK_ADDR, MATEK_UOHM, 150000u,
+                         INA228_ADC_BENCH), INA228_SETUP_OK);
+    CHECK(ina228_step(&d, 0));
+    CHECK_EQ(part->reg[INA228_SHUNT_CAL], 4096);
+    CHECK_EQ(part->reg[INA228_CONFIG], INA228_CONFIG_ADCRANGE);
+
+    sense_value_t ua = { 0, SENSE_CLIP_NONE };
+    part->amps[0] = 180.0;
+    CHECK(fake_value228(part, INA228_CURRENT) == fake_value228(part, INA228_VSHUNT));
+    CHECK_EQ(ina228_read_current(&d, &ua), SENSE_OK);
+    CHECK_EQ(ua.clip, SENSE_CLIP_NONE);
+    CHECK_EQ(ua.value, 180000000);
+    part->amps[0] = -180.0;
+    CHECK_EQ(ina228_read_current(&d, &ua), SENSE_OK);
+    CHECK_EQ(ua.value, -180000000);
+
+    part->amps[0] = 204.8;
+    CHECK_EQ(ina228_read_current(&d, &ua), SENSE_OK);
+    CHECK_EQ(ua.clip, SENSE_CLIP_HIGH);
+    CHECK_EQ(ua.value, 0);
+    part->amps[0] = 300.0;
+    CHECK_EQ(ina228_read_current(&d, &ua), SENSE_OK);
+    CHECK_EQ(ua.clip, SENSE_CLIP_HIGH);
+    part->amps[0] = -250.0;
+    CHECK_EQ(ina228_read_current(&d, &ua), SENSE_OK);
+    CHECK_EQ(ua.clip, SENSE_CLIP_LOW);
 }
 
 /* ---------------------------------------------------------- set-up */
@@ -584,7 +645,9 @@ int main(void)
     RUN(a_product_too_wide_for_63_bits_is_divided_first);
     RUN(the_matek_module_calibrates_as_the_datasheet_equations_say);
     RUN(adcrange_follows_the_maximum_across_the_shunt);
-    RUN(shunt_cal_rounds_up_so_the_register_reaches_the_maximum);
+    RUN(a_full_scale_past_2000_amps_is_refused);
+    RUN(shunt_cal_is_4096_at_either_range_for_every_shunt);
+    RUN(below_the_ranges_top_current_clips_only_at_the_adc_end);
     RUN(adc_config_packs_its_fields_and_times_a_cycle);
     RUN(the_address_must_be_one_the_pins_can_give);
     RUN(a_probe_writes_the_setup_and_reads_it_back);

@@ -16,9 +16,8 @@
 #define FS_NARROW_NV  40960000u    /* ±40.96 mV, ADCRANGE 1  */
 #define FS_WIDE_NV   163840000u    /* ±163.84 mV, ADCRANGE 0 */
 
-/* SHUNT_CAL = 13107.2e6 × (max / 2^19) × R = 25000 × max[A] × R[Ω]
- * = max[mA] × R[µΩ] / 40000 (Equations 2 and 3). */
-#define CAL_DIVISOR  40000u
+_Static_assert(INA228_SHUNT_CAL_ADC <= 0x7FFFu,
+               "SHUNT_CAL is a 15-bit field (Table 7-7)");
 
 uint16_t ina228_adc_config(uint8_t mode, uint8_t vbusct, uint8_t vshct,
                            uint8_t vtct, uint8_t avg)
@@ -77,28 +76,26 @@ ina228_setup_err_t ina228_calibrate(uint32_t shunt_uohm, uint32_t max_ma,
     if (max_ma == 0u) {
         return INA228_SETUP_NO_MAX;
     }
-    if (max_ma > INA228_MAX_MA_LIMIT) {
-        return INA228_SETUP_OVER_RANGE;
-    }
     const uint64_t nv = (uint64_t)max_ma * shunt_uohm;
     uint8_t range;
+    uint64_t fs_nv;
     if (nv <= FS_NARROW_NV) {
         range = 1u;
+        fs_nv = FS_NARROW_NV;
     } else if (nv <= FS_WIDE_NV) {
         range = 0u;
+        fs_nv = FS_WIDE_NV;
     } else {
         return INA228_SETUP_OVER_RANGE;
     }
-    const uint64_t num = nv * (range != 0u ? 4u : 1u);
-    if (num < CAL_DIVISOR) {
-        return INA228_SETUP_UNDER_LSB;
+    /* Full scale in mA is nV over µΩ. */
+    if (fs_nv > (uint64_t)INA228_FS_MA_LIMIT * shunt_uohm) {
+        return INA228_SETUP_OVER_RANGE;
     }
-    /* Rounded up: CURRENT_LSB at or above max / 2^19 (Equation 3).  At most
-     * 163840000 / 40000 = 4096 by the range test above. */
     out->shunt_uohm = shunt_uohm;
     out->max_ma     = max_ma;
     out->adcrange   = range;
-    out->shunt_cal  = (uint16_t)((num + CAL_DIVISOR - 1u) / CAL_DIVISOR);
+    out->shunt_cal  = INA228_SHUNT_CAL_ADC;
     return INA228_SETUP_OK;
 }
 
