@@ -15,8 +15,9 @@ for beeps and faults; 14 profiles run, and every beep timing is a default,
 as no ESC has been recorded. The interface and the servo report are in
 English or German. The PD mini cuts a sagging input, holds a wiring change
 for a fresh state read, and a STOP closes the OUTPUT IS ON question. None of
-it has run on hardware. The link protocol is 4.5: flash the panel and the
-coprocessor together, as a 0.11.0 coprocessor does not arm with this panel.
+it has run on hardware. The link protocol is 4.5. A 0.11.0 coprocessor
+(4.4) still links and arms with this panel, but without the sag cut-off and
+the held wiring change, which run on the coprocessor: flash both images.
 
 ### Added
 
