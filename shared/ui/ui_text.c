@@ -2,15 +2,16 @@
  * The string tables and the lookup.  See include/ui_text.h.
  *
  * A lookup is two loads and a test: the language's entry, else the
- * English.  The language is a pointer read once per string, so the control
- * task's alerts read it from the other core without a lock: a change lands
- * between two lookups and never inside one.
+ * English.  The language is an atomic int, read once per string, so the
+ * control task's alerts read it from the other core without a lock: a change
+ * lands between two lookups and never inside one.
  *
  * SPDX-License-Identifier: MIT
  */
 
 #include "ui_text.h"
 
+#include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -28,25 +29,33 @@ static const unsigned char k_cells[TX_COUNT] = {
 #undef UI_TEXT
 };
 
+/* The IDs' names are for the host's checks; the panel image carries none. */
+#ifndef ESP_PLATFORM
 static const char *const k_names[TX_COUNT] = {
 #define UI_TEXT(id, cells, en) [TX_##id] = #id,
 #include "ui_text.def"
 #undef UI_TEXT
 };
+#endif
 
 static const ui_language_t *const k_langs[UI_LANG_COUNT] = {
     [UI_LANG_EN] = NULL,
     [UI_LANG_DE] = &ui_lang_de,
 };
 
-static ui_lang_t s_lang = UI_LANG_EN;
+/* Written by the render task, read by it and by the control task. */
+static atomic_int s_lang = UI_LANG_EN;
 
 void ui_text_set_language(ui_lang_t lang)
 {
-    s_lang = ((unsigned)lang < (unsigned)UI_LANG_COUNT) ? lang : UI_LANG_EN;
+    atomic_store(&s_lang, ((unsigned)lang < (unsigned)UI_LANG_COUNT)
+                              ? (int)lang : (int)UI_LANG_EN);
 }
 
-ui_lang_t ui_text_language(void) { return s_lang; }
+ui_lang_t ui_text_language(void)
+{
+    return (ui_lang_t)atomic_load(&s_lang);
+}
 
 const ui_language_t *ui_text_table(ui_lang_t lang)
 {
@@ -74,7 +83,7 @@ const char *ui_tr(ui_text_id_t id)
 #ifdef GFX_TEXT_TRACE
     ui_text_trace(id);
 #endif
-    return ui_tr_in(s_lang, id);
+    return ui_tr_in(ui_text_language(), id);
 }
 
 const char *ui_tr_pad(const ui_text_id_t *set, int count, int i, char *buf,
@@ -115,7 +124,12 @@ int ui_text_cells(ui_text_id_t id)
 
 const char *ui_text_name(ui_text_id_t id)
 {
+#ifndef ESP_PLATFORM
     return ((unsigned)id < (unsigned)TX_COUNT) ? k_names[id] : "";
+#else
+    (void)id;
+    return "";
+#endif
 }
 
 /* ---------------------------------------------------- the settings schema */
@@ -126,7 +140,7 @@ const char *ui_setting_label(setting_id_t id)
     if (d == NULL) {
         return "";
     }
-    const ui_language_t *l = ui_text_table(s_lang);
+    const ui_language_t *l = ui_text_table(ui_text_language());
     const char *t = (l != NULL) ? entry(l->setting_label, (int)id) : NULL;
     return (t != NULL) ? t : d->label;
 }
@@ -137,7 +151,7 @@ const char *ui_setting_help(setting_id_t id)
     if (d == NULL) {
         return "";
     }
-    const ui_language_t *l = ui_text_table(s_lang);
+    const ui_language_t *l = ui_text_table(ui_text_language());
     const char *t = (l != NULL) ? entry(l->setting_help, (int)id) : NULL;
     return (t != NULL) ? t : d->help;
 }
@@ -147,7 +161,7 @@ const char *ui_setting_category(setting_cat_t cat)
     if ((unsigned)cat >= (unsigned)SET_CAT_COUNT) {
         return "";
     }
-    const ui_language_t *l = ui_text_table(s_lang);
+    const ui_language_t *l = ui_text_table(ui_text_language());
     const char *t = (l != NULL) ? entry(l->category, (int)cat) : NULL;
     return (t != NULL) ? t : settings_category_name(cat);
 }
@@ -158,7 +172,7 @@ const char *ui_setting_option(setting_id_t id, int k)
     if (d == NULL || d->options == NULL || k < 0 || k >= d->option_count) {
         return "?";
     }
-    const ui_language_t *l = ui_text_table(s_lang);
+    const ui_language_t *l = ui_text_table(ui_text_language());
     const char *const *opts = (l != NULL && l->setting_options != NULL)
                                   ? l->setting_options[id] : NULL;
     return (opts != NULL && opts[k] != NULL) ? opts[k] : d->options[k];
@@ -181,7 +195,7 @@ const char *ui_setting_value(setting_id_t id, char *buf, size_t n)
     }
     if (d->type == SET_TYPE_ENUM) {
         const int i = settings_get_int(id);
-        const ui_language_t *l = ui_text_table(s_lang);
+        const ui_language_t *l = ui_text_table(ui_text_language());
         const char *const *opts = (l != NULL && l->setting_options != NULL)
                                       ? l->setting_options[id] : NULL;
         if (opts != NULL && i >= 0 && i < d->option_count
@@ -197,7 +211,7 @@ const char *ui_setting_value(setting_id_t id, char *buf, size_t n)
 
 const char *const *ui_servo_table(void)
 {
-    const ui_language_t *l = ui_text_table(s_lang);
+    const ui_language_t *l = ui_text_table(ui_text_language());
     return (l != NULL) ? l->servo : NULL;
 }
 

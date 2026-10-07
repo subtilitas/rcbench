@@ -162,11 +162,21 @@ TEST_CASE(every_string_fits_its_declared_field)
     }
 }
 
-/* Buffers are bytes and a German letter is two of them: an alert has to fit
- * the router's and the snapshot's UI_ALERT_MAX, terminator included, and a
- * splash detail the splash's 32. */
+/*
+ * Buffers are bytes and a German letter is two of them: an alert has to fit
+ * the router's and the snapshot's UI_ALERT_MAX, terminator included, and
+ * everything main.c hands the splash as a detail its 32.
+ */
 TEST_CASE(alerts_and_details_fit_their_buffers)
 {
+    static const ui_text_id_t k_details[] = {
+        TX_SPLASH_NO_PANEL, TX_SPLASH_NO_ANSWER, TX_SPLASH_NO_CARD,
+        TX_SPLASH_NVS_MISSING, TX_SPLASH_NOT_OPENED, TX_SPLASH_REFUSED,
+        TX_SPLASH_WRONG_REPLY, TX_SPLASH_NO_LINK,
+        /* The self-test's verdict, through busfault_verdict_text(). */
+        TX_CAN_OK, TX_CAN_SILENT, TX_CAN_CORRUPT, TX_CAN_LOSSY,
+        TX_CAN_DROPPED, TX_CAN_RUNNING,
+    };
     for (int l = 0; l < UI_LANG_COUNT; ++l) {
         for (int i = 0; i < TX_COUNT; ++i) {
             const char *name = ui_text_name((ui_text_id_t)i);
@@ -174,8 +184,12 @@ TEST_CASE(alerts_and_details_fit_their_buffers)
             if (strncmp(name, "ALERT_", 6) == 0 && n >= UI_ALERT_MAX) {
                 T_FAIL("%s is %zu bytes", name, n);
             }
-            if (strncmp(name, "SPLASH_N", 8) == 0 && n >= 32u) {
-                T_FAIL("%s is %zu bytes", name, n);
+        }
+        for (size_t k = 0; k < sizeof(k_details) / sizeof(k_details[0]);
+             ++k) {
+            const size_t n = strlen(ui_tr_in((ui_lang_t)l, k_details[k]));
+            if (n >= 32u) {
+                T_FAIL("%s is %zu bytes", ui_text_name(k_details[k]), n);
             }
         }
     }
@@ -183,7 +197,8 @@ TEST_CASE(alerts_and_details_fit_their_buffers)
 
 /*
  * SETUP draws a label in 18 cells of the heading face and its help in 36
- * cells, a category name in 12 of the heading face and an option in 13;
+ * cells, a category name in 22 of the label face (the heading face's 12
+ * where it fits) and an option in 13;
  * ESC STICK's TIMING page a label in 47 and its help in 96; the SERVO
  * screen an option in a button of 12.  Translations only: English help
  * longer than 36 cells is cut on SETUP, and that is the layout's to fix.
@@ -220,7 +235,7 @@ TEST_CASE(translated_settings_fit_where_they_are_drawn)
             }
         }
         for (int c = 0; c < SET_CAT_SETUP_COUNT; ++c) {
-            CHECK(gfx_text_cells(ui_setting_category((setting_cat_t)c)) <= 12);
+            CHECK(gfx_text_cells(ui_setting_category((setting_cat_t)c)) <= 22);
         }
     }
     ui_text_set_language(UI_LANG_EN);
@@ -229,7 +244,7 @@ TEST_CASE(translated_settings_fit_where_they_are_drawn)
 TEST_CASE(a_missing_entry_shows_the_english)
 {
     ui_text_set_language(UI_LANG_DE);
-    CHECK_STR_EQ(TR(BAND_SAFE), "SICHER");
+    CHECK_STR_EQ(TR(CANCEL), "ABBRECHEN");
     /* No German options for the INA228's addresses: the English ones. */
     settings_init();
     char buf[24];

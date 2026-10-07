@@ -234,6 +234,12 @@ jobs:
             $(git ls-files 'shared/**/include' | sed 's|^|-I|' | sort -u) \
             $(git ls-files 'shared/**/*.c' | grep -v 'gfx_font')
 
+      # A translated format reaches snprintf() through a table lookup, which
+      # -Wformat cannot see; this compiles shared/ again with the English
+      # literals in place and fails on any format warning.
+      - name: Every translated format matches its call
+        run: python3 tools/check_formats.py
+
       # The six tools in tools/ are held to the same standard as the C: each
       # of them can fail a build, so a bug in one is a bug in the gate.
       - name: ruff

@@ -90,7 +90,8 @@ int ui_text_has(ui_lang_t lang, ui_text_id_t id);
  */
 int ui_text_cells(ui_text_id_t id);
 
-/** The ID's name without the TX_ prefix, for the fit check's messages. */
+/** The ID's name without the TX_ prefix, for the host's checks; "" on the
+ *  panel, which carries no names. */
 const char *ui_text_name(ui_text_id_t id);
 
 /** The table of @p lang; NULL for English. */

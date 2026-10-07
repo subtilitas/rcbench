@@ -131,7 +131,8 @@ rcbench/
   docs/                   the wiki source, English and German
   tools/                  render_ui · coverage · check_docs · frame_cost
                           gen_font · gen_board_art · wiki_links
-                          check_sanitizers · research/ (component research scripts)
+                          check_sanitizers · check_formats
+                          research/ (component research scripts)
   hardware/               board design record: README, STATUS, docs/
   testbench/              the measurement bench: README, WIRING, host scripts,
                           decoders. Nothing on it has been run
@@ -193,7 +194,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload; the font, frame-cost, screenshot, German fit, docs, wiki-link and research-script checks; clang-tidy, cppcheck and ruff; the ESP-IDF (Espressif Internet-of-Things Development Framework) matrix (v5.4, v5.5) building the panel; the pico-sdk build of the coprocessor; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload; the font, frame-cost, screenshot, German fit, translated-format, docs, wiki-link and research-script checks; clang-tidy, cppcheck and ruff; the ESP-IDF (Espressif Internet-of-Things Development Framework) matrix (v5.4, v5.5) building the panel; the pico-sdk build of the coprocessor; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
 

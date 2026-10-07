@@ -230,6 +230,11 @@ static void drop_data(void)
 
 /* ------------------------------------------------------------- loading --- */
 
+/* A format, so the compiler checks every call against its arguments --
+ * tools/check_formats.py sees the translated ones the same way. */
+static void set_message(const char *fmt, ...)
+    __attribute__((format(printf, 1, 2)));
+
 static void set_message(const char *fmt, ...)
 {
     va_list ap;
