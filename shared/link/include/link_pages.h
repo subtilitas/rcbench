@@ -282,12 +282,9 @@ enum {
  *     rail.
  *
  *     ENABLE to KHZ are the bus, one frame: ENABLE bit 0 the INA228, bit 1
- *     the INA3221; the GPIO for SDA and the one for SCL; the clock, 100 or
- *     400 kHz.  The clock sets the read rates (sense_sched.h): at 400 kHz
- *     INA3221 CH1 1000 Hz and the INA228's current and voltage 500 Hz
- *     each; at 100 kHz a quarter of those, 250 Hz and 125 Hz each, and no
- *     synchronised pair at its fast rate; everything else 50 Hz at
- *     either.  The RP2350 has its I2C function at pin mod 4 -- 0 I2C0 SDA,
+ *     the INA3221; the GPIO for SDA and the one for SCL; the clock, 400 kHz
+ *     and nothing else (LINK_SN_KHZ_BUS): the schedule's 1 ms tick does not
+ *     fit a slower bus.  The RP2350 has its I2C function at pin mod 4 -- 0 I2C0 SDA,
  *     1 I2C0 SCL, 2 I2C1 SDA, 3 I2C1 SCL -- so SDA is a GPIO whose number
  *     mod 4 is 0 or 2 and SCL is the one after it: one I2C block's pair.
  *
@@ -371,8 +368,8 @@ enum {
 #define LINK_SN_EN_I3221  0x02u
 
 /* The ranges a write is held to. */
-#define LINK_SN_KHZ_STANDARD     100u
-#define LINK_SN_KHZ_FAST         400u
+/** The bus clock, the one KHZ takes: 400 kHz, the parts' fast mode. */
+#define LINK_SN_KHZ_BUS          400u
 #define LINK_SN_I228_ADDR_MIN    0x40u
 #define LINK_SN_I228_ADDR_MAX    0x4Fu
 #define LINK_SN_I228_UOHM_MIN      50u
@@ -442,12 +439,12 @@ typedef enum {
  *     CAP_STATE onwards are read only: the state (link_cap_state_t);
  *     captures finished, modulo 65536; the time from the PWM frame that
  *     carries the new pulse to the movement and to the arrival, in 0.1 ms,
- *     6553.5 ms at most, resolved to CH1's sample interval -- 1 ms at
- *     400 kHz, 4 ms at 100 kHz; the highest and the mean filtered current
- *     of the move in mA, signed, over CAP_SAMPLES samples.  A capture ends
- *     arrived, at a stop, late (movement and no arrival within 3000 ms plus
- *     the meter's lag), unseen (no movement in that time) or lost (the
- *     INA3221 stopped answering).
+ *     6553.5 ms at most, resolved to CH1's 1 ms sample interval; the
+ *     highest and the mean filtered current of the move in mA, signed,
+ *     over CAP_SAMPLES samples.  A capture ends arrived, at a stop, late
+ *     (movement and no arrival within 3000 ms plus the meter's lag),
+ *     unseen (no movement in that time) or lost (the INA3221 stopped
+ *     answering).
  *
  *     Not kept: a coprocessor restart reads 0 throughout. */
 enum {

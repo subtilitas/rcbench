@@ -39,7 +39,7 @@ extern "C" {
  */
 #define SENSE_DEFAULT_SDA        16u
 #define SENSE_DEFAULT_SCL        17u
-#define SENSE_DEFAULT_KHZ        LINK_SN_KHZ_FAST
+#define SENSE_DEFAULT_KHZ        LINK_SN_KHZ_BUS
 #define SENSE_DEFAULT_I228_ADDR  0x45u
 #define SENSE_DEFAULT_I228_UOHM  200u
 #define SENSE_DEFAULT_I228_DA    2048u

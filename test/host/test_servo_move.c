@@ -132,6 +132,19 @@ TEST_CASE(an_acceleration_burst_hands_the_move_to_the_settled_rule)
     CHECK_EQ(m.end_t, 1200u);
 }
 
+/* The peak is the highest valued sample, from the first one on: a move
+ * whose samples all lie below 0 A reports the highest of them, not 0. */
+TEST_CASE(the_peak_of_samples_below_zero_is_the_highest_of_them)
+{
+    servo_move_t m;
+    pd_move(&m, 0.10f, 0.10f, 0.020f);
+    CHECK_EQ(m.peak, 0.0f);
+    const float a[] = { -0.30f, -0.20f, -0.25f };
+    CHECK_EQ(feed(&m, 1000u, a, 3u), SERVO_MOVE_MOVING);
+    CHECK_EQ(m.n, 3u);
+    CHECK_NEAR(m.peak, -0.20f, 1e-6f);
+}
+
 /* Movement below the level before the command: a servo leaving an end it
  * pushed on. */
 TEST_CASE(leaving_an_end_pushed_on_is_movement_downwards)
@@ -453,6 +466,7 @@ int main(void)
     RUN(a_reading_back_at_the_level_after_passing_it_is_the_arrival);
     RUN(an_end_held_harder_is_reached_at_two_settled_readings);
     RUN(an_acceleration_burst_hands_the_move_to_the_settled_rule);
+    RUN(the_peak_of_samples_below_zero_is_the_highest_of_them);
     RUN(leaving_an_end_pushed_on_is_movement_downwards);
     RUN(the_window_ends_a_move_late_or_unseen);
     RUN(a_clock_before_the_command_decides_nothing);

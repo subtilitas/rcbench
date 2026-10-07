@@ -130,8 +130,7 @@ static bool one_block(uint16_t sda, uint16_t scl)
 static bool values_ok(const uint16_t *c)
 {
     if (c[LINK_SN_ENABLE] > (LINK_SN_EN_I228 | LINK_SN_EN_I3221)
-        || (c[LINK_SN_KHZ] != LINK_SN_KHZ_STANDARD
-            && c[LINK_SN_KHZ] != LINK_SN_KHZ_FAST)
+        || c[LINK_SN_KHZ] != LINK_SN_KHZ_BUS
         || c[LINK_SN_RESERVED_7] != 0u || c[LINK_SN_RESERVED_11] != 0u) {
         return false;
     }

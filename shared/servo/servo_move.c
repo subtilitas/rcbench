@@ -222,11 +222,13 @@ servo_move_state_t servo_move_sample(servo_move_t *m, uint32_t at, float a,
     m->run_lo = lo;
     m->run_hi = hi;
     if (c == SERVO_MOVE_CLIP_NONE) {
-        m->sum += i;
-        ++m->n;
-        if (i > m->peak) {
+        /* The peak from the first valued sample, so a move whose samples
+         * all lie below 0 A reports the highest of them. */
+        if (m->n == 0u || i > m->peak) {
             m->peak = i;
         }
+        m->sum += i;
+        ++m->n;
     } else {
         m->clipped = true;
     }

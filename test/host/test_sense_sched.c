@@ -3,17 +3,17 @@
  * INA228 and INA3221 of fake_ina.h and a clock the suite moves 1 ms a
  * tick.
  *
- * Under test: the read rates, counted at the parts -- at 400 kHz CH1
- * 1000 Hz, the INA228's current and voltage 500 Hz each, the rest 50 Hz,
- * CH2 and CH3 at 1000 Hz while the pair runs; at 100 kHz a quarter of the
- * fast ones, one read a tick and no fast pair; another clock refused; the
- * 50 ms windows, their numbers and their figures, a clipped sample kept
- * out of them, across the 32-bit millisecond wrap; the run's peaks, power
+ * Under test: the read rates, counted at the parts -- CH1 1000 Hz, the
+ * INA228's current and voltage 500 Hz each, the rest 50 Hz, CH2 and CH3
+ * at 1000 Hz while the pair runs; the 50 ms windows, their numbers and
+ * their figures, a clipped sample kept out of them, across the 32-bit
+ * millisecond wrap, and a sample read after a probe that crosses a window
+ * boundary kept in the window after it; the run's peaks, power
  * only from the voltage read just before, and the INA228's totals since
  * the arm, ended by one failed read; a part missing, lost and back; a
  * stuck bus recovered; the move capture on CH1 against the servo model,
  * arrived, settled, late, unseen, clipped and lost, its filter seeded with
- * the samples taken while armed, at both clocks and across the 0.1 ms
+ * the samples taken while armed, and across the 0.1 ms
  * count's wrap; its states the link's.
  *
  * SPDX-License-Identifier: MIT
@@ -52,9 +52,37 @@ static void recover(void *ctx)
     ++g_recoveries;
 }
 
-/* Both parts on the bus at @p khz, as @p channels says for the INA3221;
- * the clock at 10 s.  Whether the schedule took the bus clock. */
-static bool rig_at(uint16_t khz, uint8_t channels, bool with_recover)
+/* Bus time on the suite's clock: each transaction takes g_xfer_us, 0 for
+ * none; from g_switch_us on, CH1 draws g_switch_a. */
+static uint64_t g_xfer_us;
+static uint64_t g_switch_us;
+static double   g_switch_a;
+
+static void spend(void)
+{
+    g_us += g_xfer_us;
+    if (g_switch_us != 0u && g_us >= g_switch_us) {
+        i3221->amps[0] = g_switch_a;
+    }
+}
+
+static sense_err_t timed_read(void *ctx, uint8_t addr, uint8_t reg,
+                              uint8_t *buf, size_t n)
+{
+    spend();
+    return fake_read(ctx, addr, reg, buf, n);
+}
+
+static sense_err_t timed_write(void *ctx, uint8_t addr, uint8_t reg,
+                               const uint8_t *buf, size_t n)
+{
+    spend();
+    return fake_write(ctx, addr, reg, buf, n);
+}
+
+/* Both parts on the bus, as @p channels says for the INA3221; the clock
+ * at 10 s. */
+static void rig(uint8_t channels, bool with_recover)
 {
     sense_bus_t scratch;
     fake_bus_init(&fb, &scratch);
@@ -64,10 +92,9 @@ static bool rig_at(uint16_t khz, uint8_t channels, bool with_recover)
     i3221->volts[0] = 6.0;
     i3221->volts[1] = 5.9;
     i3221->volts[2] = 5.8;
-    const sense_sched_io_t io = { scratch.io, now_us,
+    const sense_sched_io_t io = { { timed_read, timed_write, &fb }, now_us,
                                   with_recover ? recover : NULL, NULL };
     const sense_sched_cfg_t cfg = {
-        .khz = khz,
         .ina228_en = true, .ina228_addr = I228_ADDR,
         .ina228_shunt_uohm = I228_UOHM, .ina228_max_ma = I228_MA,
         .ina3221_en = true, .ina3221_addr = I3221_ADDR,
@@ -75,13 +102,9 @@ static bool rig_at(uint16_t khz, uint8_t channels, bool with_recover)
     };
     g_us = 10000000u;
     g_recoveries = 0u;
-    return sense_sched_init(&s, &io, &cfg);
-}
-
-/* At 400 kHz. */
-static void rig(uint8_t channels, bool with_recover)
-{
-    CHECK(rig_at(SENSE_KHZ_FAST, channels, with_recover));
+    g_xfer_us = 0u;
+    g_switch_us = 0u;
+    sense_sched_init(&s, &io, &cfg);
 }
 
 static void tick(void)
@@ -139,14 +162,14 @@ TEST_CASE(each_register_is_read_at_its_rate)
         CHECK_EQ(i3221->reads[INA3221_SHUNT1 + 2u * ch], ch == 0u ? 1000u : 50u);
         CHECK_EQ(i3221->reads[INA3221_BUS1 + 2u * ch], 50u);
     }
-    CHECK(sense_sched_fast_pair(&s, true));
+    sense_sched_fast_pair(&s, true);
     zero_counts();
     ticks(1000u);
     for (unsigned ch = 0; ch < 3u; ++ch) {
         CHECK_EQ(i3221->reads[INA3221_SHUNT1 + 2u * ch], 1000u);
     }
     CHECK_EQ(i228->reads[INA228_CURRENT], 500u);
-    CHECK(sense_sched_fast_pair(&s, false));
+    sense_sched_fast_pair(&s, false);
     zero_counts();
     ticks(1000u);
     CHECK_EQ(i3221->reads[INA3221_SHUNT1 + 2u], 50u);
@@ -424,7 +447,7 @@ TEST_CASE(a_part_not_enabled_is_never_addressed)
     sense_sched_cfg_t cfg = s.cfg;
     cfg.ina228_en = false;
     cfg.ina3221_addr = 0x44u;               /* outside 0x40 to 0x43 */
-    CHECK(sense_sched_init(&s, &io, &cfg));
+    sense_sched_init(&s, &io, &cfg);
     CHECK_EQ(s.i3221_setup, INA3221_SETUP_BAD_ADDR);
     CHECK_EQ(s.i228_setup, INA228_SETUP_OK);
     ticks(1000u);
@@ -628,55 +651,6 @@ TEST_CASE(a_capture_is_lost_with_its_part)
     CHECK_EQ(s.cap.state, SENSE_CAP_IDLE);
 }
 
-/* --------------------------------------------------- the bus clock */
-
-/* At 100 kHz a read takes 480 to 750 µs, so a tick makes one: CH1 at
- * 250 Hz, the INA228's current and voltage at 125 Hz each, the rest at
- * 50 Hz as at 400 kHz.  The pair's fast rate does not fit and is refused;
- * the tick that clears the totals makes only the clear's two writes.  A
- * clock other than 100 or 400 kHz is refused and nothing is sent. */
-TEST_CASE(the_bus_clock_sets_the_rates)
-{
-    CHECK(rig_at(SENSE_KHZ_STANDARD, 7u, true));
-    tick();
-    CHECK_EQ(ina3221_state(&s.i3221), SENSE_PART_ONLINE);
-    CHECK_EQ(ina228_state(&s.i228), SENSE_PART_ONLINE);
-    zero_counts();
-    unsigned most = 0u;
-    for (unsigned k = 0; k < 1000u; ++k) {
-        const unsigned before = fb.transactions;
-        tick();
-        if (fb.transactions - before > most) {
-            most = fb.transactions - before;
-        }
-    }
-    CHECK_EQ(most, 1u);
-    CHECK_EQ(i3221->reads[INA3221_SHUNT1], 250u);
-    CHECK_EQ(i228->reads[INA228_CURRENT], 125u);
-    CHECK_EQ(i228->reads[INA228_VBUS], 125u);
-    CHECK_EQ(i3221->reads[INA3221_SHUNT1 + 2u], 50u);
-    CHECK_EQ(i3221->reads[INA3221_BUS1 + 4u], 50u);
-    CHECK_EQ(i228->reads[INA228_ENERGY], 50u);
-    CHECK_EQ(i228->reads[INA228_DIAG_ALRT], 50u);
-    CHECK_EQ(i3221->reads[INA3221_MASK_ENABLE], 50u);
-    CHECK(!sense_sched_fast_pair(&s, true));
-    CHECK(!s.fast_pair);
-    CHECK(sense_sched_fast_pair(&s, false));
-
-    sense_sched_arm(&s);
-    const unsigned before = fb.transactions;
-    tick();
-    CHECK_EQ(fb.transactions - before, 2u);
-    CHECK(s.run.totals_ok);
-
-    /* 1000 kHz and 0: refused, never addressed. */
-    CHECK(!rig_at(1000u, 1u, true));
-    ticks(2000u);
-    CHECK_EQ(fb.transactions, 0u);
-    CHECK(!rig_at(0u, 1u, true));
-    CHECK(!sense_sched_fast_pair(&s, true));
-}
-
 /* --------------------------------------------- totals and power, strictly */
 
 /* One failed INA228 read after the clear, the part still online: the
@@ -767,6 +741,42 @@ TEST_CASE(windows_and_captures_run_on_across_the_wraps)
     CHECK(s.cap.arrive_t <= 5040u);
 }
 
+/* A probe of a part back from offline can cross a window boundary: the
+ * INA228's 10 transactions take about 1.1 ms.  The window is rolled again
+ * after it, so the CH1 sample read past the boundary is the next
+ * window's. */
+TEST_CASE(a_sample_after_a_probe_across_a_boundary_is_the_next_windows)
+{
+    rig(1u, true);
+    i3221->amps[0] = 0.5;
+    ticks(5u);
+    i228->present = false;
+    ticks(5u);
+    CHECK_EQ(ina228_state(&s.i228), SENSE_PART_OFFLINE);
+    i228->present = true;
+    /* The next boundary, and the probe due 1 ms before it. */
+    const uint64_t b_ms = s.t0_ms + SENSE_WINDOW_MS * (s.win + 1u);
+    s.i228.part.probe_at = (uint32_t)(b_ms - 1u);
+    while (g_us / 1000u < b_ms - 1u) {
+        tick();
+    }
+    const uint16_t n = (uint16_t)s.win;
+    g_xfer_us   = 110u;                 /* a 16-bit read at 400 kHz */
+    g_switch_us = b_ms * 1000u;
+    g_switch_a  = 1.0;
+    tick();
+    g_xfer_us = 0u;
+    CHECK_EQ(ina228_state(&s.i228), SENSE_PART_ONLINE);
+    sense_window_t w;
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, n);
+    CHECK_EQ(w.i_max_ua, 500000);
+    ticks(50u);
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, (uint16_t)(n + 1u));
+    CHECK_EQ(w.i_max_ua, 1000000);
+}
+
 /* ---------------------------------------------------- the seeded filter */
 
 /* The CH1 samples taken while armed fill the filter at the edge: a single
@@ -799,43 +809,6 @@ TEST_CASE(a_one_sample_transient_at_the_edge_starts_no_move)
     CHECK_EQ(s.cap.state, SENSE_CAP_MOVING);
 }
 
-/* At 100 kHz CH1 is read every 4 ms: a modelled move is timed in those
- * steps, within the filter's 3 samples and one more of the model's 667 ms,
- * and a capture with no movement ends after 3000 ms plus 17 ms of lag. */
-TEST_CASE(a_capture_at_100_khz_times_in_4_ms_steps)
-{
-    CHECK(rig_at(SENSE_KHZ_STANDARD, 1u, true));
-    servo_sim_cfg_t sc;
-    servo_sim_defaults(&sc);
-    sc.stop_lo_us = 1000u;
-    sc.stop_hi_us = 2000u;
-    servo_sim_init(&g_servo, &sc);
-    g_servo.position_us = 1100.0f;
-    g_cmd = 1100u;
-    servo_ticks(40u);
-    CHECK(sense_sched_cap_arm(&s, &k_levels));
-    servo_ticks(20u);
-    sense_sched_cap_edge(&s, g_us);
-    g_cmd = 1900u;
-    for (unsigned k = 0; k < 1000u && s.cap.state <= SENSE_CAP_MOVING; ++k) {
-        servo_tick();
-    }
-    CHECK_EQ(s.cap.state, SENSE_CAP_ARRIVED);
-    CHECK_EQ(s.cap.arrive_t % 40u, 0u);
-    CHECK(s.cap.arrive_t >= 6670u);
-    CHECK(s.cap.arrive_t <= 6670u + 160u);
-
-    i3221->amps[0] = 0.12;
-    g_cmd = 1900u;
-    ticks(20u);
-    CHECK(sense_sched_cap_arm(&s, &k_levels));
-    sense_sched_cap_edge(&s, g_us);
-    ticks(3014u);
-    CHECK_EQ(s.cap.state, SENSE_CAP_WAITING);
-    ticks(4u);
-    CHECK_EQ(s.cap.state, SENSE_CAP_UNSEEN);
-}
-
 /* The capture's states are SERVO_SENSE's CAP_STATE values. */
 TEST_CASE(the_capture_states_are_the_links)
 {
@@ -865,12 +838,11 @@ int main(void)
     RUN(a_capture_at_a_stop_settles);
     RUN(a_capture_ends_late_or_unseen);
     RUN(a_capture_is_lost_with_its_part);
-    RUN(the_bus_clock_sets_the_rates);
     RUN(one_failed_ina228_read_ends_the_runs_totals);
     RUN(a_failed_voltage_read_leaves_the_next_current_without_power);
     RUN(windows_and_captures_run_on_across_the_wraps);
+    RUN(a_sample_after_a_probe_across_a_boundary_is_the_next_windows);
     RUN(a_one_sample_transient_at_the_edge_starts_no_move);
-    RUN(a_capture_at_100_khz_times_in_4_ms_steps);
     RUN(the_capture_states_are_the_links);
     return test_summary("sense_sched");
 }

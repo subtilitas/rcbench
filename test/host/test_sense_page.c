@@ -196,9 +196,9 @@ TEST_CASE(the_bus_is_refused_on_pins_that_are_not_one_blocks_pair)
     CHECK_EQ(bus(0u, 16u, 17u, 400u, 0u), 0u);
     /* I2C0's pairs at mod 4 = 0 and I2C1's at mod 4 = 2 both serve. */
     CHECK_EQ(bus(1u, 16u, 17u, 400u, 0u), 0u);
-    CHECK_EQ(bus(2u, 18u, 19u, 100u, 0u), 0u);
+    CHECK_EQ(bus(2u, 18u, 19u, 400u, 0u), 0u);
     CHECK_EQ(sense_page_pins(&pg), BIT(18) | BIT(19));
-    CHECK_EQ(sense_page_hz(&pg), 100000u);
+    CHECK_EQ(sense_page_hz(&pg), 400000u);
 }
 
 TEST_CASE(the_bus_is_refused_on_pins_something_else_holds)
@@ -222,7 +222,7 @@ TEST_CASE(the_bus_is_refused_on_pins_something_else_holds)
     /* Its own pins, reserved from the outputs once held, are still its own
      * to write again; another page's are not. */
     outputs_reserve_pins(&o, BIT(3) | sense_page_pins(&pg));
-    CHECK_EQ(bus(3u, 16u, 17u, 100u, 0u), 0u);
+    CHECK_EQ(bus(3u, 16u, 17u, 400u, 0u), 0u);
     CHECK_EQ(bus(3u, 20u, 21u, 400u, 0u), 0u);
     outputs_reserve_pins(&o, BIT(3) | BIT(16) | BIT(17));
     CHECK_EQ(bus(3u, 16u, 17u, 400u, 0u), LINK_NACK_BAD_VALUE);
@@ -232,7 +232,10 @@ TEST_CASE(every_value_is_held_to_its_range)
 {
     fresh();
     CHECK_EQ(bus(4u, 16u, 17u, 400u, 0u), LINK_NACK_BAD_VALUE);
+    /* 400 kHz and no other clock: the 1 ms schedule needs it. */
+    CHECK_EQ(bus(0u, 16u, 17u, 100u, 0u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(bus(0u, 16u, 17u, 200u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(bus(0u, 16u, 17u, 1000u, 0u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(bus(0u, 16u, 17u, 0u, 0u), LINK_NACK_BAD_VALUE);
 
     CHECK_EQ(i228(0x3Fu, 200u, 2048u, 0u), LINK_NACK_BAD_VALUE);
@@ -289,7 +292,7 @@ TEST_CASE(the_set_up_does_not_change_while_the_bank_is_armed)
     outputs_arm(&o, true, 0u);
     CHECK(outputs_driving(&o));
     CHECK_EQ(bus(0u, 16u, 17u, 400u, 0u), LINK_NACK_BAD_VALUE);
-    CHECK_EQ(bus(1u, 16u, 17u, 100u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(bus(1u, 20u, 21u, 400u, 0u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(i228(0x44u, 200u, 2048u, 0u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(bus(1u, 16u, 17u, 400u, 0u), 0u);
     CHECK_EQ(i228(0x45u, 200u, 2048u, 0u), 0u);
