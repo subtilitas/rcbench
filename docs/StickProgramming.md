@@ -118,8 +118,18 @@ the supply itself reports the output off, in readings taken after the run
 asked it off, with the current at or under 20 mA for 200 ms
 (`ESC_STICK_OFF_MA`, `ESC_STICK_OFF_SETTLE_MS`). The panel's own OFF is a
 request: the PD mini switches off a link exchange and a module transaction
-later, and until then the ESC is powered and in its menu. The ESC never sees a stick move while it is
-powered that the run did not mean as a selection.
+later, and until then the ESC is powered and in its menu.
+
+Two parts of this rule are not measured:
+- The PD mini's current reading with its output off. The rule assumes it
+  reads under 20 mA. A module that reads more ends every planned run
+  ABORTED with SUPPLY STAYS ON, and a run of one change per power-up never
+  makes its second change.
+- How long the ESC runs on from its input capacitors once the PD mini's
+  switch has opened. The current shows that the switch is open, not that
+  the ESC has stopped. The 200 ms hold covers a small capacitance, for
+  example 2000 µF falling 4 V at 30 mA in about 270 ms; it does not cover
+  a large one.
 
 Every move goes out as the MOTOR screen's commands do: ARM through the arming
 policy, THROTTLE onto the throttle channels, and the supply through SUPPLY's

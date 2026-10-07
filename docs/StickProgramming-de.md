@@ -127,9 +127,18 @@ in Messwerten, die nach der Anforderung genommen sind, mit dem Strom
 200 ms lang bei höchstens 20 mA (`ESC_STICK_OFF_MA`,
 `ESC_STICK_OFF_SETTLE_MS`). Das OFF des Panels ist eine Anforderung: das
 PD mini schaltet einen Link-Austausch und eine Modultransaktion später ab,
-und bis dahin ist der ESC versorgt und in seinem Menü. Der ESC
-sieht unter Spannung keine Knüppelbewegung, die der Lauf nicht als Auswahl
-meinte.
+und bis dahin ist der ESC versorgt und in seinem Menü.
+
+Zwei Teile dieser Regel sind nicht gemessen:
+- Der Strom, den das PD mini bei ausgeschaltetem Ausgang meldet. Die Regel
+  nimmt unter 20 mA an. Ein Modul, das mehr meldet, beendet jeden geplanten
+  Lauf mit ABORTED und SUPPLY STAYS ON, und ein Lauf mit einer Änderung je
+  Einschalten kommt nie zur zweiten Änderung.
+- Wie lange der ESC aus seinen Eingangskondensatoren weiterläuft, nachdem
+  der Schalter des PD mini geöffnet hat. Der Strom zeigt, dass der Schalter
+  offen ist, nicht, dass der ESC aus ist. Die 200 ms decken eine kleine
+  Kapazität ab, etwa 2000 µF, die bei 30 mA in rund 270 ms um 4 V fallen;
+  eine große decken sie nicht ab.
 
 Jede Bewegung geht hinaus wie die Befehle des Bildschirms MOTOR: ARM über
 die Arming-Policy, THROTTLE auf die Throttle-Kanäle, und das Netzteil über

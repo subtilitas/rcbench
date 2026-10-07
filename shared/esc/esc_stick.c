@@ -23,8 +23,10 @@
  * A run ends safely in one step when it is aborted: throttle to its rest,
  * supply off, disarmed.  A run that ends as planned, or cycles the power
  * between two changes, switches the supply off first and moves the stick
- * only once a sample says the output is off, so the ESC never sees a stick
- * move the menu would take as a selection.
+ * only once the supply itself reports the output off with the current under
+ * ESC_STICK_OFF_MA for ESC_STICK_OFF_SETTLE_MS.  Neither the module's
+ * off-state current nor the ESC's run-on from its input capacitors is
+ * measured; docs/StickProgramming.md states both.
  *
  * SPDX-License-Identifier: MIT
  */
