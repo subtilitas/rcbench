@@ -6,6 +6,22 @@ history is in git.
 
 ## Unreleased
 
+## 0.13.0 - 2026-10-07
+
+ESC STICK asks for an ESC's manual steps: a jumper, a button or a stick
+move named in the profile, shown before power-up, at power-up, in the menu
+or before the supply goes off, with a red MANUAL INTERVENTION REQUIRED
+button that opens them. The ESC list goes by maker, then model. VOLTAGE and
+CURRENT LIMIT are held to the selected model's stated ratings; a model with
+no voltage rating runs with a warning. A page offers only the items on the
+selected model. A run cut short while the ESC stores a change marks it
+UNSURE. SERVO's sweep button pauses and resumes the curve where it stopped,
+and SPEED's row says when it limits a sweep. The status band reads BENCH or
+SIM. None of it has run on hardware, and no ESC has been programmed by it.
+The link protocol is 4.6. A 0.12.0 coprocessor (4.5) still links and arms
+with this panel, but has no RESUME, so a paused sweep starts its curve over:
+flash both images.
+
 The link protocol is 4.6: the coprocessor keeps a held sweep's phase and
 resumes it (SWEEP register 5, RESUME). Flash both images. A 0.12.0
 coprocessor (4.5) still links and sweeps with this panel, but a paused
