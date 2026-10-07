@@ -82,6 +82,7 @@ The [wiki](https://github.com/subtilitas/rcbench/wiki) is generated from
 | Page | Content |
 | --- | --- |
 | [What this is for](https://github.com/subtilitas/rcbench/wiki/Manifest) | requirements and their state |
+| Build guide, PDF: [English](https://github.com/subtilitas/rcbench/releases/latest/download/rcbench-build-guide-en.pdf) · [Deutsch](https://github.com/subtilitas/rcbench/releases/latest/download/rcbench-build-guide-de.pdf) | the parts of the beta bench (panel, RP2350-CAN, PD mini, INA228) with shop links, wiring and flashing; 4 pages, attached to every release |
 | [Building](https://github.com/subtilitas/rcbench/wiki/Building) | toolchains, commands, CI |
 | [Bringing up the link](https://github.com/subtilitas/rcbench/wiki/Bringup) | wiring the two boards and verifying the bus |
 | [Screens](https://github.com/subtilitas/rcbench/wiki/Screens) | operating the bench |

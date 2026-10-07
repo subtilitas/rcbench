@@ -41,6 +41,17 @@ history is in git.
   the longest travel time and not checked: `upper bound, not checked against
   the limit`. The run is told what reads the current (`servo_test_meter_t`),
   so a faster current sensor can have it checked.
+## 0.13.1 - 2026-10-07
+
+PROGRAMMER no longer restarts the panel: the panel's main task, which runs
+the interface, has 8192 bytes of stack instead of 3584, and PROGRAMMER's
+drawing takes 3184 bytes of it at most. `tools/stack_check.py` holds every
+panel task's deepest call chain to its stack in CI. The link protocol stays
+4.6, so a 0.13.0 coprocessor works with this panel; the fix is in the panel
+image alone.
+
+### Fixed
+
 - **PROGRAMMER no longer restarts the panel.** The UI runs on ESP-IDF's main
   task, whose stack is 8192 bytes (ESP-IDF's default is 3584). The deepest
   call chain on it is 3856 bytes; with PROGRAMMER's pages in one 1760-byte

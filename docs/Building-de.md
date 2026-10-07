@@ -28,6 +28,7 @@ rcbench/
     sbus/                 S.BUS-Decoder
     openyge/              OpenYGE-Framing, Status und Parameter-Cache
     esc/                  ESC-Programmierprofile, ihr JSON-Leser und die Registry
+    sense/                Treiber für die Strommonitore INA228 und INA3221
   firmware/
     panel/                ESP-IDF-Projekt (ESP32-S3)
     iomcu/                pico-sdk-Projekt (RP2350)
@@ -63,6 +64,7 @@ Includes sind flach: `#include "gfx.h"`.
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` | ✔ | | ✔ |
 | `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
+| `sense` | | | ✔ |
 
 ## Toolchains
 
@@ -147,7 +149,7 @@ Pillow.
 | --- | --- | --- |
 | `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload; Font-, Docs-, Wiki-Link-, Frame-Cost-, Screenshot- und Research-Skript-Prüfungen; clang-tidy, cppcheck und ruff; Panel-Build mit ESP-IDF v5.4 und v5.5, jeweils mit der Prüfung der Task-Stacks; Koprozessor-Build mit pico-sdk 2.3.0; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
 | `docs.yml` | Push auf `main`, der `docs/` berührt | spiegelt `docs/` ins GitHub-Wiki |
-| `release.yml` | Tag `v*` | baut beide Images, packt sie mit Prüfsummen, erstellt ein Release |
+| `release.yml` | Tag `v*` | baut beide Images, packt sie mit Prüfsummen, erstellt ein Release und übernimmt die PDFs der Bauanleitung vom letzten Release |
 
 Jede Prüfung läuft lokal;
 [CONTRIBUTING.md](https://github.com/subtilitas/rcbench/blob/main/CONTRIBUTING.md)
