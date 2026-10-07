@@ -240,10 +240,10 @@ sagt, und nur dann. Den Finger zu heben stoppt den Ausgang nicht: der
 Bildschirm hält die gegebene Stellung und wiederholt sie alle **100 ms**
 (`SERVO_HOLD_MS`) gegen die **500 ms** des Koprozessors
 (`OUT_DEFAULT_TIMEOUT_MS`), ein Servo bleibt also stehen, wo es hingestellt
-wurde. **RELEASE** führt die Ruderflächen auf die Mitte zurück; es löscht den
+wurde. **FREIGEBEN** führt die Ruderflächen auf die Mitte zurück; es löscht den
 Slot nicht, und der Pin pulst weiter. Beendet werden die Flanken durch
 Unscharfschalten, STOP oder das Verlassen des Bildschirms, was entschärft. Am
-Oszilloskop prüfen, dass RELEASE den Impuls in die Mitte des Kanalwegs führt
+Oszilloskop prüfen, dass FREIGEBEN den Impuls in die Mitte des Kanalwegs führt
 und dass ein Unscharfschalten ihn beendet.
 
 Ein Kanal, den niemand auffrischt, geht nach 500 ms weiterhin in seine

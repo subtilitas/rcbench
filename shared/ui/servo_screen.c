@@ -36,6 +36,7 @@
 #include "ui_slider.h"
 #include "ui_tabs.h"
 #include "ui_textkey.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -173,8 +174,9 @@ static const servo_type_t k_types[] = {
 
 /* The overlay's pages. */
 enum { PG_OUTPUT = 0, PG_TEST, PG_LIMITS, PG_DUT, PG_COUNT };
-static const char *const k_pages[PG_COUNT] = { "OUTPUT", "TEST", "LIMITS",
-                                               "DUT" };
+static const ui_text_id_t k_pages[PG_COUNT] = {
+    TX_SV_PG_OUTPUT, TX_SV_PG_TEST, TX_SV_PG_LIMITS, TX_SV_PG_DUT,
+};
 
 /* What a settings row edits. */
 enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTRE, R_MAX, R_TRIM, R_TRAVEL,
@@ -184,45 +186,45 @@ typedef struct {
     uint8_t      page;
     uint8_t      kind;
     setting_id_t id;          /* R_SETTING                              */
-    const char  *label;
+    ui_text_id_t label;
     uint8_t      col, row;
     bool         wide;        /* the value takes both columns' width    */
 } ov_row_t;
 
 static const ov_row_t k_rows[] = {
-    { PG_OUTPUT, R_TYPE,    SETTING_COUNT, "TYPE",          0, 0, true  },
-    { PG_OUTPUT, R_RATE,    SETTING_COUNT, "FRAME RATE",    0, 1, true  },
-    { PG_OUTPUT, R_MIN,     SETTING_COUNT, "PULSE MIN",     0, 2, false },
-    { PG_OUTPUT, R_CENTRE,  SETTING_COUNT, "PULSE CENTRE",  1, 2, false },
-    { PG_OUTPUT, R_MAX,     SETTING_COUNT, "PULSE MAX",     0, 3, false },
-    { PG_OUTPUT, R_TRIM,    SETTING_COUNT, "TRIM",          1, 3, false },
-    { PG_OUTPUT, R_TRAVEL,  SETTING_COUNT, "TRAVEL",        0, 4, false },
-    { PG_OUTPUT, R_REVERSE, SETTING_COUNT, "REVERSE",       1, 4, false },
+    { PG_OUTPUT, R_TYPE,    SETTING_COUNT, TX_SV_ROW_TYPE,  0, 0, true  },
+    { PG_OUTPUT, R_RATE,    SETTING_COUNT, TX_SV_ROW_RATE,  0, 1, true  },
+    { PG_OUTPUT, R_MIN,     SETTING_COUNT, TX_SV_ROW_MIN,  0, 2, false },
+    { PG_OUTPUT, R_CENTRE,  SETTING_COUNT, TX_SV_ROW_CENTRE,  1, 2, false },
+    { PG_OUTPUT, R_MAX,     SETTING_COUNT, TX_SV_ROW_MAX,  0, 3, false },
+    { PG_OUTPUT, R_TRIM,    SETTING_COUNT, TX_SV_ROW_TRIM,  1, 3, false },
+    { PG_OUTPUT, R_TRAVEL,  SETTING_COUNT, TX_SV_ROW_TRAVEL,  0, 4, false },
+    { PG_OUTPUT, R_REVERSE, SETTING_COUNT, TX_SV_ROW_REVERSE,  1, 4, false },
 
-    { PG_TEST, R_SETTING, SET_SERVO_CURVE,       "CURVE",      0, 0, false },
-    { PG_TEST, R_SETTING, SET_SERVO_TEST_HZ,     "SPEED",      0, 1, false },
-    { PG_TEST, R_SETTING, SET_SERVO_TEST_RANGE,  "RANGE",      0, 2, false },
-    { PG_TEST, R_SETTING, SET_SERVO_LEN_BY,      "LENGTH BY",  0, 3, false },
-    { PG_TEST, R_SETTING, SET_SERVO_LEN_S,       "TEST TIME",  0, 4, false },
-    { PG_TEST, R_SETTING, SET_SERVO_LEN_MOVES,   "MOVEMENTS",  0, 5, false },
-    { PG_TEST, R_SETTING, SET_SERVO_DWELL_MS,    "DWELL",      0, 6, false },
-    { PG_TEST, R_SETTING, SET_SERVO_SETTLE_MS,   "SETTLE",     0, 7, false },
-    { PG_TEST, R_SETTING, SET_SERVO_STEP_48,     "STEP 4.8 V", 1, 0, false },
-    { PG_TEST, R_SETTING, SET_SERVO_STEP_60,     "STEP 6.0 V", 1, 1, false },
-    { PG_TEST, R_HV,      SETTING_COUNT,         "HV SERVO",   1, 2, false },
-    { PG_TEST, R_SETTING, SET_SERVO_STEP_74,     "STEP 7.4 V", 1, 3, false },
-    { PG_TEST, R_SETTING, SET_SERVO_STEP_84,     "STEP 8.4 V", 1, 4, false },
-    { PG_TEST, R_SETTING, SET_SERVO_BROWNOUT,    "BROWN-OUT",  1, 5, false },
+    { PG_TEST, R_SETTING, SET_SERVO_CURVE,       TX_SV_ROW_CURVE,  0, 0, false },
+    { PG_TEST, R_SETTING, SET_SERVO_TEST_HZ,     TX_SV_ROW_SPEED,  0, 1, false },
+    { PG_TEST, R_SETTING, SET_SERVO_TEST_RANGE,  TX_SV_ROW_RANGE,  0, 2, false },
+    { PG_TEST, R_SETTING, SET_SERVO_LEN_BY,      TX_SV_ROW_LEN_BY,  0, 3, false },
+    { PG_TEST, R_SETTING, SET_SERVO_LEN_S,       TX_SV_ROW_LEN_S,  0, 4, false },
+    { PG_TEST, R_SETTING, SET_SERVO_LEN_MOVES,   TX_SV_ROW_MOVES,  0, 5, false },
+    { PG_TEST, R_SETTING, SET_SERVO_DWELL_MS,    TX_SV_ROW_DWELL,  0, 6, false },
+    { PG_TEST, R_SETTING, SET_SERVO_SETTLE_MS,   TX_SV_ROW_SETTLE,  0, 7, false },
+    { PG_TEST, R_SETTING, SET_SERVO_STEP_48,     TX_SV_ROW_STEP_48,  1, 0, false },
+    { PG_TEST, R_SETTING, SET_SERVO_STEP_60,     TX_SV_ROW_STEP_60,  1, 1, false },
+    { PG_TEST, R_HV,      SETTING_COUNT,         TX_SV_ROW_HV,  1, 2, false },
+    { PG_TEST, R_SETTING, SET_SERVO_STEP_74,     TX_SV_ROW_STEP_74,  1, 3, false },
+    { PG_TEST, R_SETTING, SET_SERVO_STEP_84,     TX_SV_ROW_STEP_84,  1, 4, false },
+    { PG_TEST, R_SETTING, SET_SERVO_BROWNOUT,    TX_SV_ROW_BROWNOUT,  1, 5, false },
 
-    { PG_LIMITS, R_SETTING, SET_SUPPLY_V_MAX,        "VOLTAGE MAX",  0, 0, false },
-    { PG_LIMITS, R_SETTING, SET_SUPPLY_I_MAX,        "CURRENT MAX",  0, 1, false },
-    { PG_LIMITS, R_SETTING, SET_SERVO_STALL_A,       "STALL AT",     0, 2, false },
-    { PG_LIMITS, R_SETTING, SET_SERVO_IDLE_MAX,      "IDLE CURRENT", 1, 0, false },
-    { PG_LIMITS, R_SETTING, SET_SERVO_HOLD_MAX,      "HOLD CURRENT", 1, 1, false },
-    { PG_LIMITS, R_SETTING, SET_SERVO_TRAVEL_MAX_MS, "TRAVEL TIME",  1, 2, false },
+    { PG_LIMITS, R_SETTING, SET_SUPPLY_V_MAX,        TX_SV_ROW_V_MAX,  0, 0, false },
+    { PG_LIMITS, R_SETTING, SET_SUPPLY_I_MAX,        TX_SV_ROW_I_MAX,  0, 1, false },
+    { PG_LIMITS, R_SETTING, SET_SERVO_STALL_A,       TX_SV_ROW_STALL,  0, 2, false },
+    { PG_LIMITS, R_SETTING, SET_SERVO_IDLE_MAX,      TX_SV_ROW_IDLE,  1, 0, false },
+    { PG_LIMITS, R_SETTING, SET_SERVO_HOLD_MAX,      TX_SV_ROW_HOLD,  1, 1, false },
+    { PG_LIMITS, R_SETTING, SET_SERVO_TRAVEL_MAX_MS, TX_SV_ROW_TRAVEL_TIME,  1, 2, false },
 
-    { PG_DUT, R_TEXT,    SETTING_COUNT,    "NAME",   0, 0, true  },
-    { PG_DUT, R_SETTING, SET_SERVO_REPORT, "REPORT", 0, 1, false },
+    { PG_DUT, R_TEXT,    SETTING_COUNT,    TX_SV_ROW_NAME,  0, 0, true  },
+    { PG_DUT, R_SETTING, SET_SERVO_REPORT, TX_SV_ROW_REPORT,  0, 1, false },
 };
 #define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
 
@@ -353,8 +355,8 @@ static struct {
         bool  open;
         int   target;
         setting_id_t id;
-        char  title[24];
-        char  labels[CHOICE_MAX][20];
+        char  title[48];
+        char  labels[CHOICE_MAX][32];
         int   values[CHOICE_MAX];
         int   count;
         int   pressed;
@@ -1263,7 +1265,7 @@ static void reset(void)
                                   12, SETB_W, 24 };
 
     ui_plot_init(&s.power, k_power, PS_COUNT, (float)RC_W / SAMPLE_HZ);
-    ui_tabs_init(&s.tabs, k_pages, PG_COUNT,
+    ui_tabs_init_text(&s.tabs, k_pages, PG_COUNT,
                  (gfx_rect_t){ (int16_t)(OV_X + 10), OV_TAB_Y, OV_TAB_W,
                                OV_TAB_H });
     s.kp.pressed = -1;
@@ -1407,10 +1409,10 @@ static void open_set_point(int target)
     close_panels();
     const supply_caps_t caps = supply_screen_caps();
     if (target == KT_SUP_V) {
-        ui_keypad_open(&s.kp, overlay_area(), "VOLTAGE", "V",
+        ui_keypad_open(&s.kp, overlay_area(), TR(SUP_VOLTAGE), "V",
                        supply_screen_set_v(), caps.v_min, caps.v_max, 2);
     } else {
-        ui_keypad_open(&s.kp, overlay_area(), "CURRENT LIMIT", "A",
+        ui_keypad_open(&s.kp, overlay_area(), TR(SUP_CURRENT_LIMIT), "A",
                        supply_screen_set_i(), caps.i_min, caps.i_max, 2);
     }
     s.kp_target = target;
@@ -1549,6 +1551,9 @@ static void test_cfg(servo_test_cfg_t *c)
     c->range_pct  = (uint8_t)settings_get_int(SET_SERVO_TEST_RANGE);
     c->model      = supply_screen_model();
     snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
+    /* The report in the language showing at the start; the CSV in English
+     * whatever it is. */
+    c->text = ui_servo_table();
 }
 
 /* What the run asked for, done the way a finger does it here. */
@@ -1881,13 +1886,13 @@ static void edit_row(int i)
     const ov_row_t *r = &k_rows[i];
     switch (r->kind) {
     case R_TYPE:
-        open_choice(CH_TYPE, SETTING_COUNT, "SERVO TYPE");
+        open_choice(CH_TYPE, SETTING_COUNT, TR(SV_SERVO_TYPE));
         for (int t = 0; t < TYPE_COUNT; ++t) {
             choice_add(k_types[t].name, t);
         }
         break;
     case R_RATE: {
-        open_choice(CH_RATE, SETTING_COUNT, "FRAME RATE");
+        open_choice(CH_RATE, SETTING_COUNT, TR(SV_ROW_RATE));
         const uint16_t top = max_rate_for(s.type, cmd_top());
         for (int k = 0; k < type()->rate_count; ++k) {
             if (type()->rates[k] <= top) {
@@ -1896,7 +1901,7 @@ static void edit_row(int i)
                 choice_add(lbl, type()->rates[k]);
             }
         }
-        choice_add("CUSTOM", -1);
+        choice_add(TR(SV_CUSTOM), -1);
         break;
     }
     /*
@@ -1912,7 +1917,7 @@ static void edit_row(int i)
         const unsigned top = max_pulse_for_rate();
         const unsigned lo = (2u * c > top + OUT_FLOOR_US) ? 2u * c - top
                                                           : OUT_FLOOR_US;
-        open_keypad(KT_MIN, "PULSE MIN", "us", (float)s.min_us, (float)lo,
+        open_keypad(KT_MIN, TR(SV_ROW_MIN), "us", (float)s.min_us, (float)lo,
                     (float)(c - 50u), 0);
         break;
     }
@@ -1921,7 +1926,7 @@ static void edit_row(int i)
         unsigned hi = (max_pulse_for_rate() + s.min_us) / 2u;
         if (lo < s.min_us + 50u) { lo = s.min_us + 50u; }
         if (hi > s.max_us - 50u) { hi = s.max_us - 50u; }
-        open_keypad(KT_CENTRE, "PULSE CENTRE", "us", (float)s.centre_us,
+        open_keypad(KT_CENTRE, TR(SV_ROW_CENTRE), "us", (float)s.centre_us,
                     (float)lo, (float)hi, 0);
         break;
     }
@@ -1929,13 +1934,14 @@ static void edit_row(int i)
         const unsigned c = s.centre_us;
         unsigned top = max_pulse_for_rate();
         if (top > 2u * c - OUT_FLOOR_US) { top = 2u * c - OUT_FLOOR_US; }
-        open_keypad(KT_MAX, "PULSE MAX", "us", (float)s.max_us,
+        open_keypad(KT_MAX, TR(SV_ROW_MAX), "us", (float)s.max_us,
                     (float)(c + 50u),
                     (float)((top > c + 50u) ? top : c + 50u), 0);
         break;
     }
     case R_TRAVEL:
-        open_keypad(KT_TRAVEL, "TRAVEL", "deg", s.travel_deg, 10.0f, 90.0f, 0);
+        open_keypad(KT_TRAVEL, TR(SV_ROW_TRAVEL), "deg", s.travel_deg, 10.0f,
+                    90.0f, 0);
         break;
     case R_REVERSE:
         s.reverse = !s.reverse;
@@ -1946,7 +1952,7 @@ static void edit_row(int i)
         s.test_hv = !s.test_hv;
         break;
     case R_TEXT:
-        ui_textkey_open(&s.tk, overlay_area(), "DEVICE UNDER TEST",
+        ui_textkey_open(&s.tk, overlay_area(), TR(SV_DUT_TITLE),
                         settings_text(SET_TEXT_DUT_NAME), UI_TEXTKEY_MAX);
         break;
     case R_SETTING: {
@@ -1955,12 +1961,13 @@ static void edit_row(int i)
             settings_set(r->id, settings_get_bool(r->id) ? 0.0f : 1.0f);
             settings_request_save();
         } else if (d->type == SET_TYPE_ENUM) {
-            open_choice(CH_ENUM, r->id, r->label);
+            open_choice(CH_ENUM, r->id, ui_tr(r->label));
             for (int k = 0; k < d->option_count; ++k) {
-                choice_add(d->options[k], k);
+                choice_add(ui_setting_option(r->id, k), k);
             }
         } else {
-            open_keypad(KT_SETTING, r->label, d->unit, settings_get(r->id),
+            open_keypad(KT_SETTING, ui_tr(r->label), d->unit,
+                        settings_get(r->id),
                         d->min, d->max, decimals_of(r->id));
             s.kp_setting = r->id;
         }
@@ -1982,7 +1989,8 @@ static void choose(int k)
         ask_profile(v, k_types[v].default_hz);
     } else if (target == CH_RATE) {
         if (v < 0) {
-            open_keypad(KT_RATE, "FRAME RATE", "Hz", (float)s.frame_hz, 50.0f,
+            open_keypad(KT_RATE, TR(SV_ROW_RATE), "Hz", (float)s.frame_hz,
+                        50.0f,
                         (float)max_rate_for(s.type, cmd_top()), 0);
         } else {
             ask_profile(s.type, (uint16_t)v);
@@ -2770,7 +2778,8 @@ static void test_file_name(char *b, size_t n)
     if (s.test_file > 0) {
         log_run_name(b, n, s.test_file);
     } else {
-        snprintf(b, n, "%s", (s.test_file < 0) ? "NOT RECORDED" : "WRITING");
+        snprintf(b, n, "%s", (s.test_file < 0) ? TR(SV_NOT_RECORDED)
+                                                : TR(SV_WRITING));
     }
 }
 
@@ -2786,39 +2795,44 @@ static void draw_test_box(gfx_canvas_t *c)
     gfx_fill_round_rect(c, b.x, b.y, b.w, b.h, 6,
                         ui_theme_color(UI_C_PANEL_SUNK));
     gfx_draw_round_rect(c, b.x, b.y, b.w, b.h, 6, ui_theme_color(UI_C_EDGE));
-    char l1[40], l2[40], l3[40];
+    char l1[64], l2[64], l3[64];
     gfx_color_t head = ui_theme_color(UI_C_ACCENT);
     if (running) {
-        snprintf(l1, sizeof(l1), "AUTOMATIC TEST");
+        snprintf(l1, sizeof(l1), "%s", TR(SV_AUTO_TEST));
         const servo_test_step_t *st = &t->steps[t->step];
-        snprintf(l2, sizeof(l2), "%s %u OF %u  %.2f V",
-                 st->brownout ? "BROWN-OUT" : "STEP",
+        snprintf(l2, sizeof(l2), TR(SV_STEP_OF),
+                 ui_servo_str(st->brownout ? SERVO_STR_TEST_BROWNOUT
+                                           : SERVO_STR_TEST_STEP),
                  servo_test_step_now(t), servo_test_steps_planned(t),
                  (double)st->set_v);
         const bool moving = t->phase == SERVO_TEST_PH_MOVE
                             || t->phase == SERVO_TEST_PH_HOLD;
         if (moving && t->counted && !st->brownout && t->cfg.by_moves) {
-            snprintf(l3, sizeof(l3), "%s %u OF %u",
-                     servo_test_phase_name(t->phase),
+            snprintf(l3, sizeof(l3), TR(SV_PHASE_OF),
+                     ui_servo_str(servo_test_phase_str(t->phase)),
                      (unsigned)t->moves_done + 1u, (unsigned)t->cfg.moves);
         } else if (moving && t->counted) {
-            snprintf(l3, sizeof(l3), "%s %u", servo_test_phase_name(t->phase),
+            snprintf(l3, sizeof(l3), "%s %u",
+                     ui_servo_str(servo_test_phase_str(t->phase)),
                      (unsigned)t->moves_done + 1u);
         } else {
-            snprintf(l3, sizeof(l3), "%s", servo_test_phase_name(t->phase));
+            snprintf(l3, sizeof(l3), "%s",
+                     ui_servo_str(servo_test_phase_str(t->phase)));
         }
     } else {
         const servo_test_verdict_t v = servo_test_verdict(t);
         head = (v == SERVO_TEST_PASS)   ? ui_theme_color(UI_C_OK)
                : (v == SERVO_TEST_FAIL) ? ui_theme_color(UI_C_DANGER)
                                         : ui_theme_color(UI_C_WARN);
-        snprintf(l1, sizeof(l1), "TEST %s", servo_test_verdict_name(v));
+        snprintf(l1, sizeof(l1), TR(SV_TEST_VERDICT),
+                 ui_servo_str(servo_test_verdict_str(v)));
         uint32_t ms = 0u;
         float hold = 0.0f;
         if (v == SERVO_TEST_ABORTED) {
-            snprintf(l2, sizeof(l2), "%s", servo_test_abort_name(t->why));
+            snprintf(l2, sizeof(l2), "%s",
+                     ui_servo_str(servo_test_abort_str(t->why)));
         } else if (servo_test_max_travel(t, &ms) && servo_test_max_hold(t, &hold)) {
-            snprintf(l2, sizeof(l2), "TRAVEL %lu ms  HOLD %.2f A",
+            snprintf(l2, sizeof(l2), TR(SV_TRAVEL_HOLD),
                      (unsigned long)ms, (double)hold);
         } else {
             l2[0] = '\0';
@@ -2833,7 +2847,7 @@ static void draw_test_box(gfx_canvas_t *c)
              ui_theme_color(UI_C_TEXT), 1);
     gfx_text(c, b.x + 10, b.y + 48, l3, &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT_DIM), 1);
-    ui_button(c, test_btn_rect(), running ? "STOP TEST" : "CLOSE",
+    ui_button(c, test_btn_rect(), running ? TR(SV_STOP_TEST) : TR(SUP_CLOSE),
               running ? ui_theme_color(UI_C_DANGER)
                       : ui_theme_color(UI_C_PANEL_HI), false, true);
 }
@@ -2919,7 +2933,7 @@ static void draw_power(gfx_canvas_t *c)
 {
     const gfx_rect_t r = power_rect();
     gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
-    gfx_text(c, RC_X, PWR_TXT_Y, "SUPPLY", UI_FONT_LABEL,
+    gfx_text(c, RC_X, PWR_TXT_Y, TR(SV_SUPPLY), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     const bool v_ok = s.have_sup && s.sup.online
                       && (s.sup.ok & SUPPLY_OK_VOLTAGE) != 0u;
@@ -2968,7 +2982,7 @@ static void draw_sup_row(gfx_canvas_t *c)
 {
     const gfx_rect_t r = sup_row_rect();
     gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
-    gfx_text(c, RC_X, SUP_Y + 5, "SET", UI_FONT_LABEL,
+    gfx_text(c, RC_X, SUP_Y + 5, TR(SV_SET), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     char v[12], a[12];
     snprintf(v, sizeof(v), "%.2f V", (double)supply_screen_set_v());
@@ -2986,7 +3000,8 @@ static void draw_sup_row(gfx_canvas_t *c)
         gfx_text_in(c, b, k[i].txt, UI_FONT_LABEL, k[i].col, 1,
                     GFX_ALIGN_CENTER);
     }
-    ui_button(c, s.out_btn, s.out_on ? "OUTPUT OFF" : "OUTPUT ON", out_fill(),
+    ui_button(c, s.out_btn, s.out_on ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON),
+              out_fill(),
               s.out_down, true);
     if (s.out_hold.flash_left > 0) {
         ui_hold_flash_step(&s.out_hold);
@@ -3040,22 +3055,22 @@ static void draw_right(gfx_canvas_t *c, bool power)
 
     gfx_text(c, RC_X, 18, "SERVO", UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
-    ui_button(c, s.set_btn, "SETTINGS",
+    ui_button(c, s.set_btn, TR(SUP_SETTINGS),
               s.ov_open ? ui_theme_color(UI_C_ACCENT)
                         : ui_theme_color(UI_C_PANEL_SUNK),
               s.ov_have && s.ov_pressed == OP_SETTINGS, true);
 
     char buf[24];
     snprintf(buf, sizeof(buf), "%u us", (unsigned)deg_to_us(s.commanded_deg));
-    row(c, 44, "COMMANDED", buf);
+    row(c, 44, TR(SV_COMMANDED), buf);
     if (s.have_feedback) {
         snprintf(buf, sizeof(buf), "%+.1f deg", (double)s.measured_deg);
-        row(c, 68, "MEASURED", buf);
+        row(c, 68, TR(SV_MEASURED), buf);
         snprintf(buf, sizeof(buf), "%.2f A", (double)s.current_a);
-        row(c, 92, "CURRENT", buf);
+        row(c, 92, TR(SV_CURRENT), buf);
     } else {
-        row(c, 68, "MEASURED", "---");
-        row(c, 92, "CURRENT", "---");
+        row(c, 68, TR(SV_MEASURED), "---");
+        row(c, 92, TR(SV_CURRENT), "---");
     }
 
     draw_tag(c);
@@ -3065,13 +3080,13 @@ static void draw_right(gfx_canvas_t *c, bool power)
     draw_sup_row(c);
 
     snprintf(buf, sizeof(buf), "%d %%", s.speed_pct);
-    row(c, 264, "SPEED", buf);
+    row(c, 264, TR(SV_SPEED), buf);
     s.speed.color = ui_theme_color(UI_C_ACCENT);
     ui_slider_render(&s.speed, c);
 
     snprintf(buf, sizeof(buf), "%u - %u us", (unsigned)s.min_us,
              (unsigned)s.max_us);
-    row(c, 322, "RANGE", buf);
+    row(c, 322, TR(SV_RANGE), buf);
 
     ui_button(c, s.centre_btn, "CENTRE", ui_theme_color(UI_C_ACCENT),
               false, true);
@@ -3079,7 +3094,7 @@ static void draw_right(gfx_canvas_t *c, bool power)
               s.sweeping ? ui_theme_color(UI_C_ACCENT)
                          : ui_theme_color(UI_C_PANEL_HI),
               false, s.sweeping || (s.armed && s.sweep_able));
-    ui_button(c, s.release_btn, "RELEASE", ui_theme_color(UI_C_PANEL_HI),
+    ui_button(c, s.release_btn, TR(SV_RELEASE), ui_theme_color(UI_C_PANEL_HI),
               false, true);
     draw_arm(c);
 }
@@ -3105,12 +3120,14 @@ static gfx_rect_t save_line_rect(void)
 
 static void draw_save_line(gfx_canvas_t *c)
 {
-    static const char *const k_save[] = { "SAVED", "SAVE WAITING", "NOT SAVED",
-                                          "SETUP CHANGES NOT SAVED" };
+    static const ui_text_id_t k_save[] = {
+        TX_SUP_SAVED, TX_SUP_SAVE_WAITING, TX_SUP_NOT_SAVED,
+        TX_SUP_SETUP_NOT_SAVED,
+    };
     const gfx_rect_t r = save_line_rect();
     gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
     const uint8_t st = save_state();
-    gfx_text(c, r.x, r.y + 1, k_save[st], &gfx_font_8x16,
+    gfx_text(c, r.x, r.y + 1, ui_tr(k_save[st]), &gfx_font_8x16,
              (st == 2u) ? ui_theme_color(UI_C_WARN)
                         : ui_theme_color(UI_C_TEXT_DIM), 1);
 }
@@ -3138,10 +3155,10 @@ static void row_value(const ov_row_t *r, char *buf, size_t n)
     case R_MAX:     snprintf(buf, n, "%u us", (unsigned)s.max_us); return;
     case R_TRIM:    snprintf(buf, n, "%+d", (int)s.trim_us); return;
     case R_TRAVEL:  snprintf(buf, n, "+/-%d", (int)s.travel_deg); return;
-    case R_REVERSE: snprintf(buf, n, "%s", s.reverse ? "ON" : "OFF"); return;
+    case R_REVERSE: snprintf(buf, n, "%s", ui_on_off(s.reverse)); return;
     case R_TEXT:    snprintf(buf, n, "%s", settings_text(SET_TEXT_DUT_NAME));
                     return;
-    case R_HV:      snprintf(buf, n, "%s", s.test_hv ? "ON" : "OFF"); return;
+    case R_HV:      snprintf(buf, n, "%s", ui_on_off(s.test_hv)); return;
     default:
         break;
     }
@@ -3151,13 +3168,12 @@ static void row_value(const ov_row_t *r, char *buf, size_t n)
                         || r->id == SET_SERVO_HOLD_MAX
                         || r->id == SET_SERVO_TRAVEL_MAX_MS);
     if (d->type == SET_TYPE_BOOL) {
-        snprintf(buf, n, "%s", (v != 0.0f) ? "ON" : "OFF");
+        snprintf(buf, n, "%s", ui_on_off(v != 0.0f));
     } else if (d->type == SET_TYPE_ENUM) {
-        const int k = settings_get_int(r->id);
-        snprintf(buf, n, "%s", (k >= 0 && k < d->option_count)
-                                   ? d->options[k] : "?");
+        snprintf(buf, n, "%s",
+                 ui_setting_option(r->id, settings_get_int(r->id)));
     } else if (limit && !(v > 0.0f)) {
-        snprintf(buf, n, "OFF");
+        snprintf(buf, n, "%s", TR(OFF));
     } else {
         snprintf(buf, n, "%.*f %s", decimals_of(r->id), (double)v, d->unit);
     }
@@ -3179,27 +3195,26 @@ static void draw_rate_note(gfx_canvas_t *c, int x, int y)
                                    || s.rate_st == SERVO_RATE_UNSUPPORTED)
                                       ? s.rate_st
                                       : SERVO_RATE_UNSENT;
-    char l1[64], l2[64];
+    char l1[96], l2[96];
     bool warn = true;
     switch (st) {
     case SERVO_RATE_IN_FORCE:
-        snprintf(l1, sizeof(l1), "In force: every PWM surface runs at %u Hz.",
-                 (unsigned)s.frame_hz);
-        snprintf(l2, sizeof(l2), "A PPM output keeps its own frame.");
+        snprintf(l1, sizeof(l1), TR(SV_IN_FORCE_1), (unsigned)s.frame_hz);
+        snprintf(l2, sizeof(l2), "%s", TR(SV_IN_FORCE_2));
         warn = false;
         break;
     case SERVO_RATE_REFUSED:
-        snprintf(l1, sizeof(l1), "REFUSED: a surface shares a PWM slice with");
-        snprintf(l2, sizeof(l2), "an output at another rate. The pins kept theirs.");
+        snprintf(l1, sizeof(l1), "%s", TR(SV_REFUSED_1));
+        snprintf(l2, sizeof(l2), "%s", TR(SV_REFUSED_2));
         break;
     case SERVO_RATE_UNSUPPORTED:
-        snprintf(l1, sizeof(l1), "This coprocessor takes no frame rate: every");
-        snprintf(l2, sizeof(l2), "PWM output runs at its binding's, 50 Hz.");
+        snprintf(l1, sizeof(l1), "%s", TR(SV_UNSUPPORTED_1));
+        snprintf(l2, sizeof(l2), "%s", TR(SV_UNSUPPORTED_2));
         break;
     case SERVO_RATE_UNSENT:
     default:
-        snprintf(l1, sizeof(l1), "The rate goes to the coprocessor with the");
-        snprintf(l2, sizeof(l2), "next position.");
+        snprintf(l1, sizeof(l1), "%s", TR(SV_UNSENT_1));
+        snprintf(l2, sizeof(l2), "%s", TR(SV_UNSENT_2));
         warn = false;
         break;
     }
@@ -3221,7 +3236,8 @@ static void draw_test_start(gfx_canvas_t *c)
         fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER),
                             s.test_hold.held_s);
     }
-    ui_button(c, test_start_rect(), running ? "STOP TEST" : "START TEST", fill,
+    ui_button(c, test_start_rect(),
+              running ? TR(SV_STOP_TEST) : TR(SV_START_TEST), fill,
               s.ov_have && s.ov_pressed == OP_TEST_START,
               running || test_blocked() == 0);
 }
@@ -3246,33 +3262,35 @@ static void draw_test_lines(gfx_canvas_t *c)
                      ? ((n > 0u) ? " BROWN-OUT" : "BROWN-OUT") : "");
     }
     if (n == 0u && !settings_get_bool(SET_SERVO_BROWNOUT)) {
-        snprintf(plan, sizeof(plan), "%s", servo_str(SERVO_STR_START_NO_STEPS));
+        snprintf(plan, sizeof(plan), "%s",
+                 ui_servo_str(SERVO_STR_START_NO_STEPS));
     }
     gfx_text(c, x, y, plan, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
 
-    char line[40];
+    char line[64];
     gfx_color_t col = ui_theme_color(UI_C_TEXT_FAINT);
     const int blocked = servo_test_running(&s.test) ? 0 : test_blocked();
     if (blocked != 0 || s.test_note != 0) {
         snprintf(line, sizeof(line), "%s",
-                 servo_str((servo_str_t)((blocked != 0) ? blocked
-                                                        : s.test_note)));
+                 ui_servo_str((servo_str_t)((blocked != 0) ? blocked
+                                                           : s.test_note)));
         col = ui_theme_color(UI_C_WARN);
     } else if (servo_test_running(&s.test)) {
-        snprintf(line, sizeof(line), "RUNNING: STEP %u OF %u",
+        snprintf(line, sizeof(line), TR(SV_RUNNING),
                  servo_test_step_now(&s.test),
                  servo_test_steps_planned(&s.test));
     } else if (s.test.state == SERVO_TEST_DONE) {
         char f[LOG_RUN_NAME_MAX + 4];
         test_file_name(f, sizeof(f));
-        snprintf(line, sizeof(line), "LAST: %s %s",
-                 servo_test_verdict_name(servo_test_verdict(&s.test)), f);
+        snprintf(line, sizeof(line), TR(SV_LAST),
+                 ui_servo_str(servo_test_verdict_str(servo_test_verdict(
+                     &s.test))), f);
     } else if (test_blocked() != 0) {
         snprintf(line, sizeof(line), "%s",
-                 servo_str((servo_str_t)test_blocked()));
+                 ui_servo_str((servo_str_t)test_blocked()));
     } else {
         snprintf(line, sizeof(line), "%s",
-                 test_needs_hv() ? "TAP: HV WARNING" : "HOLD 2 S TO START");
+                 test_needs_hv() ? TR(SV_TAP_HV) : TR(SV_HOLD_START));
     }
     gfx_text(c, x, y + 18, line, &gfx_font_8x16, col, 1);
 }
@@ -3280,7 +3298,7 @@ static void draw_test_lines(gfx_canvas_t *c)
 static void draw_page(gfx_canvas_t *c)
 {
     ui_tabs_render(&s.tabs, c);
-    ui_button(c, close_rect(), "CLOSE", ui_theme_color(UI_C_PANEL_SUNK),
+    ui_button(c, close_rect(), TR(SUP_CLOSE), ui_theme_color(UI_C_PANEL_SUNK),
               s.ov_have && s.ov_pressed == OP_CLOSE, true);
     for (int i = 0; i < ROW_COUNT; ++i) {
         const ov_row_t *r = &k_rows[i];
@@ -3290,7 +3308,7 @@ static void draw_page(gfx_canvas_t *c)
         const gfx_rect_t rr = row_rect(i);
         const gfx_rect_t vr = value_rect(i);
         const bool faint = row_unused(r);
-        gfx_text(c, rr.x, rr.y + 9, r->label, &gfx_font_8x16,
+        gfx_text(c, rr.x, rr.y + 9, ui_tr(r->label), &gfx_font_8x16,
                  faint ? ui_theme_color(UI_C_TEXT_FAINT)
                        : ui_theme_color(UI_C_TEXT_DIM), 1);
         char v[32];
@@ -3323,11 +3341,11 @@ static void draw_page(gfx_canvas_t *c)
 
     const int nx = OV_X + 10;
     if (s.tabs.selected == PG_OUTPUT) {
-        char l1[64], l2[64];
-        snprintf(l1, sizeof(l1), "Fastest with these pulses: %u Hz (%s pause).",
+        char l1[96], l2[96];
+        snprintf(l1, sizeof(l1), TR(SV_FASTEST),
                  (unsigned)max_rate_for(s.type, cmd_top()),
                  type()->heli ? "0.5 ms" : "1 ms");
-        snprintf(l2, sizeof(l2), "Type and rate are STANDARD PWM 50 Hz at start.");
+        snprintf(l2, sizeof(l2), "%s", TR(SV_AT_START));
         const char *const lines[] = { l1, l2 };
         draw_note(c, nx, OV_NOTE_Y, lines, 2);
         draw_rate_note(c, nx, OV_NOTE_Y + 2 * 18);
@@ -3336,15 +3354,13 @@ static void draw_page(gfx_canvas_t *c)
         draw_test_lines(c);
     } else if (s.tabs.selected == PG_LIMITS) {
         const char *const lines[] = {
-            "VOLTAGE MAX and CURRENT MAX are the SUPPLY",
-            "screen's caps.  A pass/fail limit of 0 is",
-            "not checked.  Above STALL AT the servo counts",
-            "as stalled.",
+            TR(SV_LIMITS_1), TR(SV_LIMITS_2), TR(SV_LIMITS_3),
+            TR(SV_LIMITS_4),
         };
         draw_note(c, nx, OV_ROW0 + 3 * OV_PITCH + 6, lines, 4);
     } else {
         const char *const lines[] = {
-            "The name heads each test report.",
+            TR(SV_DUT_NOTE),
         };
         draw_note(c, nx, OV_ROW0 + 2 * OV_PITCH + 6, lines, 1);
     }
@@ -3370,7 +3386,7 @@ static void draw_choice(gfx_canvas_t *c)
                   s.ov_have && s.ov_pressed == OP_CHOICE && s.ov_row == k,
                   true);
     }
-    ui_button(c, choice_cancel_rect(), "CANCEL",
+    ui_button(c, choice_cancel_rect(), TR(CANCEL),
               ui_theme_color(UI_C_PANEL_SUNK),
               s.ov_have && s.ov_pressed == OP_CHOICE_CANCEL, true);
 }
@@ -3383,7 +3399,7 @@ static gfx_color_t warn_fill(void)
 
 static void draw_warn_apply(gfx_canvas_t *c)
 {
-    ui_button(c, warn_apply_rect(), "HOLD TO APPLY", warn_fill(),
+    ui_button(c, warn_apply_rect(), TR(SV_HOLD_TO_APPLY), warn_fill(),
               s.warn.down, true);
 }
 
@@ -3399,22 +3415,19 @@ static void draw_warning(gfx_canvas_t *c)
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, red);
     gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, red);
     gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, red);
-    gfx_text(c, a.x + 20, a.y + 20, "CAN DESTROY THE SERVO", &gfx_font_8x16,
+    gfx_text(c, a.x + 20, a.y + 20, TR(SV_DESTROY), &gfx_font_8x16,
              red, 2);
     const servo_type_t *t = &k_types[s.warn.type];
-    char what[64];
-    snprintf(what, sizeof(what), "%s at %u Hz, %u-%u us",
+    char what[80];
+    snprintf(what, sizeof(what), TR(SV_DESTROY_WHAT),
              t->name, (unsigned)s.warn.hz,
              (unsigned)((s.warn.type == s.type) ? s.min_us : t->min_us),
              (unsigned)((s.warn.type == s.type) ? s.max_us : t->max_us));
     gfx_text(c, a.x + 20, a.y + 66, what, &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT), 1);
     const char *const lines[] = {
-        "Only for a servo made for it: check its datasheet.",
-        "A servo that is not overheats or jams within",
-        "seconds, and is destroyed.",
-        "An analogue servo takes no more than 60 Hz.",
-        "Every restart goes back to STANDARD PWM 50 Hz.",
+        TR(SV_DESTROY_1), TR(SV_DESTROY_2), TR(SV_DESTROY_3),
+        TR(SV_DESTROY_4), TR(SV_DESTROY_5),
     };
     for (int i = 0; i < 5; ++i) {
         gfx_text(c, a.x + 20, a.y + 104 + i * 22, lines[i], &gfx_font_8x16,
@@ -3422,14 +3435,14 @@ static void draw_warning(gfx_canvas_t *c)
                          : ui_theme_color(UI_C_TEXT_DIM), 1);
     }
     draw_warn_apply(c);
-    ui_button(c, warn_cancel_rect(), "CANCEL",
+    ui_button(c, warn_cancel_rect(), TR(CANCEL),
               ui_theme_color(UI_C_PANEL_SUNK),
               s.ov_have && s.ov_pressed == OP_WARN_CANCEL, true);
 }
 
 static void draw_ask_apply(gfx_canvas_t *c)
 {
-    ui_button(c, warn_apply_rect(), "HOLD TO APPLY",
+    ui_button(c, warn_apply_rect(), TR(SV_HOLD_TO_APPLY),
               ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK),
                            ui_theme_color(UI_C_DANGER), s.ask.hold.held_s),
               s.ask.down, true);
@@ -3446,26 +3459,22 @@ static void draw_hv(gfx_canvas_t *c)
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, red);
     gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, red);
     gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, red);
-    gfx_text(c, a.x + 20, a.y + 20, "HV SERVOS ONLY", &gfx_font_8x16, red, 2);
-    char what[48];
+    gfx_text(c, a.x + 20, a.y + 20, TR(SV_HV_ONLY), &gfx_font_8x16, red, 2);
+    char what[64];
     if (s.ask.purpose == ASK_ON) {
-        snprintf(what, sizeof(what), "OUTPUT ON AT %.2f V",
+        snprintf(what, sizeof(what), TR(SV_HV_ON_AT),
                  (double)supply_screen_set_v());
     } else if (s.ask.purpose == ASK_TEST) {
-        snprintf(what, sizeof(what), "TEST STEPS UP TO %.2f V",
+        snprintf(what, sizeof(what), TR(SV_HV_STEPS),
                  (double)s.ask.v);
     } else {
-        snprintf(what, sizeof(what), "VOLTAGE %.2f -> %.2f V",
+        snprintf(what, sizeof(what), TR(SV_HV_VOLTAGE),
                  (double)supply_screen_set_v(), (double)s.ask.v);
     }
     gfx_text(c, a.x + 20, a.y + 66, what, &gfx_font_8x16,
              ui_theme_color(UI_C_VOLT), 1);
     const char *const lines[] = {
-        "Standard servos are rated for 4.8 to 6.0 V.",
-        "Above 6.0 V, only a servo specified as HV",
-        "(high voltage) operates within its rating.",
-        "A standard servo can be destroyed immediately.",
-        "Check the servo's datasheet before applying.",
+        TR(SV_HV_1), TR(SV_HV_2), TR(SV_HV_3), TR(SV_HV_4), TR(SV_HV_5),
     };
     for (int i = 0; i < 5; ++i) {
         gfx_text(c, a.x + 20, a.y + 104 + i * 22, lines[i], &gfx_font_8x16,
@@ -3474,11 +3483,11 @@ static void draw_hv(gfx_canvas_t *c)
     }
     if (s.ask.purpose == ASK_SET && supply_screen_output_on()) {
         gfx_text(c, a.x + 20, a.y + 104 + 5 * 22 + 8,
-                 "The output is on: the voltage changes at once.",
+                 TR(SV_HV_LIVE),
                  &gfx_font_8x16, ui_theme_color(UI_C_WARN), 1);
     }
     draw_ask_apply(c);
-    ui_button(c, warn_cancel_rect(), "CANCEL",
+    ui_button(c, warn_cancel_rect(), TR(CANCEL),
               ui_theme_color(UI_C_PANEL_SUNK),
               s.ov_have && s.ov_pressed == OP_ASK_CANCEL, true);
 }
@@ -3495,16 +3504,16 @@ static void draw_ask(gfx_canvas_t *c)
         return;
     }
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_WARN));
-    gfx_text(c, a.x + 20, a.y + 20, "OUTPUT IS ON", &gfx_font_8x16,
+    gfx_text(c, a.x + 20, a.y + 20, TR(SUP_OUTPUT_IS_ON), &gfx_font_8x16,
              ui_theme_color(UI_C_WARN), 2);
-    gfx_text(c, a.x + 20, a.y + 70, "A new set point reaches the load at once.",
+    gfx_text(c, a.x + 20, a.y + 70, TR(SUP_ASK_WHY),
              &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
     int y = a.y + 120;
     const struct { const char *label; float was, now; const char *unit;
                    gfx_color_t col; } k[] = {
-        { "VOLTAGE",       supply_screen_set_v(), s.ask.v, "V",
+        { TR(SUP_VOLTAGE), supply_screen_set_v(), s.ask.v, "V",
           ui_theme_color(UI_C_VOLT) },
-        { "CURRENT LIMIT", supply_screen_set_i(), s.ask.i, "A",
+        { TR(SUP_CURRENT_LIMIT), supply_screen_set_i(), s.ask.i, "A",
           ui_theme_color(UI_C_CURR) },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
@@ -3519,9 +3528,9 @@ static void draw_ask(gfx_canvas_t *c)
         gfx_text(c, a.x + 150, y, line, &gfx_font_8x16, k[i].col, 2);
         y += 50;
     }
-    ui_button(c, warn_apply_rect(), "APPLY", ui_theme_color(UI_C_WARN),
+    ui_button(c, warn_apply_rect(), TR(SUP_APPLY), ui_theme_color(UI_C_WARN),
               s.ov_have && s.ov_pressed == OP_ASK_APPLY, true);
-    ui_button(c, warn_cancel_rect(), "CANCEL", ui_theme_color(UI_C_PANEL_SUNK),
+    ui_button(c, warn_cancel_rect(), TR(CANCEL), ui_theme_color(UI_C_PANEL_SUNK),
               s.ov_have && s.ov_pressed == OP_ASK_CANCEL, true);
 }
 

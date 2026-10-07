@@ -46,7 +46,7 @@ typedef enum {
 typedef struct {
     bool       open;
     gfx_rect_t area;
-    char       title[24];
+    char       title[48];
     char       unit[6];
     float      value;      /**< shown faint while nothing is typed     */
     float      min, max;

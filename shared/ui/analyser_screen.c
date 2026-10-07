@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "ui_tabs.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -63,7 +64,8 @@
 #define BAR_GAP   8
 #define VAL_W     40
 
-static const char *const k_tab_labels[] = { "CHANNELS", "RAW" };
+static const ui_text_id_t k_tab_labels[] = { TX_AN_TAB_CHANNELS,
+                                              TX_AN_TAB_RAW };
 
 static struct {
     ui_tabs_t tabs;
@@ -107,7 +109,7 @@ static void reset(void)
     s.drawn[0] = UINT32_MAX;
     s.drawn[1] = UINT32_MAX;
     s.silent   = true;
-    ui_tabs_init(&s.tabs, k_tab_labels, ANALYSER_PANE_COUNT,
+    ui_tabs_init_text(&s.tabs, k_tab_labels, ANALYSER_PANE_COUNT,
                  (gfx_rect_t){ PAD + 3, TAB_Y, 260, TAB_H });
 }
 
@@ -308,11 +310,11 @@ static void draw_channels(gfx_canvas_t *c)
 static void draw_raw(gfx_canvas_t *c)
 {
     const int x = PAD + 14;
-    gfx_text(c, x, BODY_Y + 14, "LAST FRAME", UI_FONT_LABEL,
+    gfx_text(c, x, BODY_Y + 14, TR(AN_LAST_FRAME), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 
     if (!s.have) {
-        gfx_text(c, x, BODY_Y + 44, "nothing decoded yet", UI_FONT_LABEL,
+        gfx_text(c, x, BODY_Y + 44, TR(AN_NOTHING_YET), UI_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
         return;
     }
@@ -331,7 +333,7 @@ static void draw_raw(gfx_canvas_t *c)
 
     const int y = BODY_Y + 44 + 4 * 30 + 14;
     char line[80];
-    snprintf(line, sizeof(line), "%u bytes, framed on a %u us gap",
+    snprintf(line, sizeof(line), TR(AN_BYTES),
              s.raw_len, (unsigned)SBUS_GAP_US);
     gfx_text(c, x, y, line, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
@@ -350,13 +352,13 @@ static void draw_state(gfx_canvas_t *c)
     const char *word;
     gfx_color_t tone;
     if (s.silent || !s.have) {
-        word = "SILENT";     tone = ui_theme_color(UI_C_TEXT_FAINT);
+        word = TR(AN_SILENT); tone = ui_theme_color(UI_C_TEXT_FAINT);
     } else if (s.frame.failsafe) {
         word = "FAILSAFE";   tone = ui_theme_color(UI_C_DANGER);
     } else if (s.frame.frame_lost) {
         word = "FRAME LOST"; tone = ui_theme_color(UI_C_WARN);
     } else {
-        word = "LIVE";       tone = ui_theme_color(UI_C_OK);
+        word = TR(AN_LIVE);  tone = ui_theme_color(UI_C_OK);
     }
 
     gfx_fill_round_rect(c, x, BODY_Y + 8, w, 56, UI_R_CARD,
@@ -370,10 +372,10 @@ static void draw_state(gfx_canvas_t *c)
      * One line per state.  A receiver in failsafe is still sending sixteen
      * well-formed numbers, and the line says they are its failsafe values.
      */
-    const char *why = s.silent           ? "nothing on the wire"
-                    : s.frame.failsafe   ? "numbers are invented"
-                    : s.frame.frame_lost ? "frame arrived broken"
-                                         : "transmitter heard";
+    const char *why = s.silent           ? TR(AN_WHY_SILENT)
+                    : s.frame.failsafe   ? TR(AN_WHY_FAILSAFE)
+                    : s.frame.frame_lost ? TR(AN_WHY_LOST)
+                                         : TR(AN_WHY_LIVE);
     gfx_text_in(c, (gfx_rect_t){ (int16_t)x, (int16_t)(BODY_Y + 72),
                                  (int16_t)w, 16 },
                 why, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1,

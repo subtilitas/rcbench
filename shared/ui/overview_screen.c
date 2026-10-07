@@ -8,6 +8,7 @@
 
 #include "ui_icons.h"
 #include "link_pages.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -27,8 +28,8 @@
 
 typedef struct {
     ui_screen_id_t id;
-    const char    *name;
-    const char    *line;
+    const char    *name;    /**< the screen's title: English always     */
+    ui_text_id_t   line;
     ui_icon_fn     icon;
     bool           live;    /**< the screen exists                        */
     uint16_t       needs;   /**< the hardware it needs, as link_cap_t     */
@@ -44,23 +45,23 @@ typedef struct {
  * than "IR", which reads as infrared.
  */
 static const tile_t k_tiles[] = {
-    { SCREEN_MOTOR,      "MOTOR & ESC", "drive, V/A, rpm",    ui_icon_motor,   true,
+    { SCREEN_MOTOR,      "MOTOR & ESC", TX_OV_MOTOR,         ui_icon_motor,   true,
       LINK_CAP_ESC_DRIVE | LINK_CAP_PACK_SENSE, false },
-    { SCREEN_SERVO,      "SERVO",       "travel, current",    ui_icon_servo,   true,
+    { SCREEN_SERVO,      "SERVO",       TX_OV_SERVO,         ui_icon_servo,   true,
       LINK_CAP_SERVO_PWM, false },
-    { SCREEN_SUPPLY,     "SUPPLY",      "set and log V/A",    ui_icon_supply,  true,
+    { SCREEN_SUPPLY,     "SUPPLY",      TX_OV_SUPPLY,        ui_icon_supply,  true,
       0, true },   /* modelled unless SETUP enables the PD mini */
-    { SCREEN_ANALYSER,   "ANALYSER",    "buses and frames",   ui_icon_chart,   true,
+    { SCREEN_ANALYSER,   "ANALYSER",    TX_OV_ANALYSER,      ui_icon_chart,   true,
       LINK_CAP_RECEIVER, false },
-    { SCREEN_LOGS,       "LOGS",        "record and read",    ui_icon_record,  true,
+    { SCREEN_LOGS,       "LOGS",        TX_OV_LOGS,          ui_icon_record,  true,
       0, false },   /* the card is on the panel; nothing needed from the coprocessor */
-    { SCREEN_SETUP,      "SETUP",       "pack and output",    ui_icon_sliders, true,
+    { SCREEN_SETUP,      "SETUP",       TX_OV_SETUP,         ui_icon_sliders, true,
       0, false },
-    { SCREEN_BATTERY,    "BATTERY",     "cells, iR, mAh",     ui_icon_battery, true,
+    { SCREEN_BATTERY,    "BATTERY",     TX_OV_BATTERY,       ui_icon_battery, true,
       LINK_CAP_CELLS, false },
-    { SCREEN_BALANCE,    "BALANCE",     "vibration, phase",   ui_icon_balance, true,
+    { SCREEN_BALANCE,    "BALANCE",     TX_OV_BALANCE,       ui_icon_balance, true,
       LINK_CAP_VIBRATION, false },
-    { SCREEN_PROGRAMMER, "PROGRAMMER",  "ESC and servo",      ui_icon_chip,    true,
+    { SCREEN_PROGRAMMER, "PROGRAMMER",  TX_OV_PROGRAMMER,    ui_icon_chip,    true,
       LINK_CAP_PROGRAM, false },
 };
 
@@ -177,7 +178,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         gfx_text_in(c, name, t->name, &gfx_font_8x16,
                     ui_theme_color(UI_C_TEXT), 1, GFX_ALIGN_CENTER);
         const gfx_rect_t line = { r.x, (int16_t)(r.y + 128), r.w, 20 };
-        gfx_text_in(c, line, t->line, &gfx_font_8x16,
+        gfx_text_in(c, line, ui_tr(t->line), &gfx_font_8x16,
                     ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_CENTER);
 
         /*
@@ -192,10 +193,15 @@ static void render(gfx_canvas_t *c, int buffer_index)
                             && ((t->needs == 0)
                                 || ((have & t->needs) == t->needs));
         if (!t->live || !fitted) {
-            const gfx_rect_t badge = { (int16_t)(r.x + r.w / 2 - 44),
-                                       (int16_t)(r.y + r.h - 30), 88, 20 };
-            ui_pill(c, badge, t->live ? "MODELLED" : "SOON", 0,
-                    ui_theme_color(UI_C_PANEL_SUNK));
+            /* 88 px, or as wide as a longer word: the label starts 24 px
+             * in and runs to the end, as MODELLED does in 88. */
+            const char *word = t->live ? TR(OV_MODELLED) : TR(OV_SOON);
+            int bw = 24 + gfx_text_width(&gfx_font_8x16, word, 1);
+            bw = (bw < 88) ? 88 : bw;
+            const gfx_rect_t badge = { (int16_t)(r.x + (r.w - bw) / 2),
+                                       (int16_t)(r.y + r.h - 30),
+                                       (int16_t)bw, 20 };
+            ui_pill(c, badge, word, 0, ui_theme_color(UI_C_PANEL_SUNK));
         }
     }
 }

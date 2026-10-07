@@ -50,7 +50,7 @@ typedef enum {
 typedef struct {
     bool       open;
     gfx_rect_t area;
-    char       title[24];
+    char       title[48];
     char       text[UI_TEXTKEY_MAX + 1];
     int        len;
     int        max_len;

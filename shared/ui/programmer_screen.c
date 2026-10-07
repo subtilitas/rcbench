@@ -40,6 +40,7 @@
 #include "esc_profile.h"
 #include "settings.h"
 #include "supply_screen.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -77,11 +78,14 @@ typedef enum {
     PARAM_NUMBER,     /* a bounded number, with a unit */
 } param_kind_t;
 
+/* The names and the choices are the firmware's own and stay English in
+ * every language, as its configurators show them; the group and the help
+ * line are translated. */
 typedef struct {
-    const char  *group;        /* NULL continues the one above */
+    ui_text_id_t group;        /* TX_COUNT continues the one above */
     const char  *name;
     param_kind_t kind;
-    const char  *help;         /* what it does, in one line */
+    ui_text_id_t help;         /* what it does, in one line */
 
     const char *const *choices;/* ENUM */
     int          count;
@@ -94,25 +98,25 @@ typedef struct {
 } param_def_t;
 
 typedef struct {
-    const char *name;
-    const char *transport;
-    const char *device;
+    const char  *name;
+    ui_text_id_t transport;
+    ui_text_id_t device;
     const param_def_t *params;
     int         count;
     int         klass;
 } proto_t;
 
 typedef struct {
-    const char *name;
-    const char *blurb;
+    const char  *name;         /* the class's name: English always */
+    ui_text_id_t blurb;
 } class_t;
 
 enum { CLASS_ESC = 0, CLASS_SERVO, CLASS_STICK, CLASS_COUNT };
 
 static const class_t k_classes[CLASS_COUNT] = {
-    { "ESC",   "bootloader, CLI and packets" },
-    { "SERVO", "servos, published protocols" },
-    { "ESC STICK", "throttle menus, by beeps" },
+    { "ESC",       TX_PG_BLURB_ESC },
+    { "SERVO",     TX_PG_BLURB_SERVO },
+    { "ESC STICK", TX_PG_BLURB_STICK },
 };
 
 typedef enum { STAGE_CLASS = 0, STAGE_PROTOCOL, STAGE_DEVICE } stage_t;
@@ -133,133 +137,134 @@ static const char *const k_mtype[]  = { "BLDC", "FOC" };
 static const char *const k_res[]    = { "STANDARD", "HIGH" };
 
 static const param_def_t k_blheli[] = {
-  { "MOTOR", "Motor direction", PARAM_ENUM,
-    "Which way it turns, and whether reverse is allowed at all",
+  { TX_PG_GROUP_MOTOR, "Motor direction", PARAM_ENUM,
+    TX_PG_HELP_DIRECTION,
     k_dir, 3, 0,0,0,0, NULL, 0 },
-  { NULL, "Timing", PARAM_ENUM,
-    "How far ahead of the rotor the drive commutates: more suits high kV",
+  { TX_COUNT, "Timing", PARAM_ENUM,
+    TX_PG_HELP_TIMING_STEPS,
     k_timing, 5, 0,0,0,0, NULL, 2 },
-  { NULL, "PWM frequency", PARAM_ENUM,
-    "Higher is quieter and warmer; lower is efficient and audible",
+  { TX_COUNT, "PWM frequency", PARAM_ENUM,
+    TX_PG_HELP_PWM,
     k_pwm, 3, 0,0,0,0, NULL, 0 },
-  { "STARTUP", "Startup power", PARAM_NUMBER,
-    "How hard it pushes to get moving before it can sense the rotor",
+  { TX_PG_GROUP_STARTUP, "Startup power", PARAM_NUMBER,
+    TX_PG_HELP_STARTUP,
     NULL, 0, 25, 150, 25, 0, "%", 100 },
-  { NULL, "Demag compensation", PARAM_ENUM,
-    "Backs off when the field collapses late: cures stalls under load",
+  { TX_COUNT, "Demag compensation", PARAM_ENUM,
+    TX_PG_HELP_DEMAG,
     k_demag, 3, 0,0,0,0, NULL, 1 },
-  { "PROTECTION", "Brake on stop", PARAM_BOOL,
-    "Holds the motor still at zero throttle instead of letting it freewheel",
+  { TX_PG_GROUP_PROTECTION, "Brake on stop", PARAM_BOOL,
+    TX_PG_HELP_BRAKE,
     NULL, 0, 0,0,0,0, NULL, 0 },
-  { NULL, "Low voltage cut", PARAM_NUMBER,
-    "Per cell, where it starts pulling power back to save the pack",
+  { TX_COUNT, "Low voltage cut", PARAM_NUMBER,
+    TX_PG_HELP_LVC,
     NULL, 0, 28, 38, 1, 1, "V", 35 },
-  { "SOUND", "Beep volume", PARAM_NUMBER,
-    "How loud the startup tones and the lost-signal beep are",
+  { TX_PG_GROUP_SOUND, "Beep volume", PARAM_NUMBER,
+    TX_PG_HELP_BEEP,
     NULL, 0, 0, 100, 25, 0, "%", 50 },
 };
 
 static const param_def_t k_am32[] = {
-  { "MOTOR", "Motor direction", PARAM_ENUM,
-    "Which way it turns, and whether reverse is allowed at all",
+  { TX_PG_GROUP_MOTOR, "Motor direction", PARAM_ENUM,
+    TX_PG_HELP_DIRECTION,
     k_dir, 3, 0,0,0,0, NULL, 0 },
-  { NULL, "Timing advance", PARAM_NUMBER,
-    "Degrees ahead of the rotor: more rpm and more heat, less is cooler",
+  { TX_COUNT, "Timing advance", PARAM_NUMBER,
+    TX_PG_HELP_TIMING_DEG,
     NULL, 0, 0, 30, 1, 0, "deg", 22 },
-  { NULL, "PWM frequency", PARAM_ENUM,
-    "Higher is quieter and warmer; lower is efficient and audible",
+  { TX_COUNT, "PWM frequency", PARAM_ENUM,
+    TX_PG_HELP_PWM,
     k_pwm, 3, 0,0,0,0, NULL, 1 },
-  { "STARTUP", "Sinusoidal startup", PARAM_BOOL,
-    "Drives a smooth wave until it has enough speed to sense the rotor",
+  { TX_PG_GROUP_STARTUP, "Sinusoidal startup", PARAM_BOOL,
+    TX_PG_HELP_SINE,
     NULL, 0, 0,0,0,0, NULL, 1 },
-  { NULL, "Startup power", PARAM_NUMBER,
-    "How hard it pushes to get moving before it can sense the rotor",
+  { TX_COUNT, "Startup power", PARAM_NUMBER,
+    TX_PG_HELP_STARTUP,
     NULL, 0, 25, 150, 25, 0, "%", 75 },
-  { "PROTECTION", "Complementary PWM", PARAM_BOOL,
-    "Drives both halves of the bridge: cooler, but needs healthy timing",
+  { TX_PG_GROUP_PROTECTION, "Complementary PWM", PARAM_BOOL,
+    TX_PG_HELP_COMPLEMENTARY,
     NULL, 0, 0,0,0,0, NULL, 1 },
-  { NULL, "Low voltage cut", PARAM_NUMBER,
-    "Per cell, where it starts pulling power back to save the pack",
+  { TX_COUNT, "Low voltage cut", PARAM_NUMBER,
+    TX_PG_HELP_LVC,
     NULL, 0, 28, 38, 1, 1, "V", 33 },
 };
 
 static const param_def_t k_escape32[] = {
-  { "MOTOR", "Motor direction", PARAM_ENUM,
-    "Which way it turns, and whether reverse is allowed at all",
+  { TX_PG_GROUP_MOTOR, "Motor direction", PARAM_ENUM,
+    TX_PG_HELP_DIRECTION,
     k_dir, 3, 0,0,0,0, NULL, 0 },
-  { NULL, "Timing", PARAM_NUMBER,
-    "Degrees ahead of the rotor: more rpm and more heat, less is cooler",
+  { TX_COUNT, "Timing", PARAM_NUMBER,
+    TX_PG_HELP_TIMING_DEG,
     NULL, 0, 0, 30, 1, 0, "deg", 18 },
-  { NULL, "PWM frequency", PARAM_ENUM,
-    "Higher is quieter and warmer; lower is efficient and audible",
+  { TX_COUNT, "PWM frequency", PARAM_ENUM,
+    TX_PG_HELP_PWM,
     k_pwm, 3, 0,0,0,0, NULL, 2 },
-  { "STARTUP", "Sine startup", PARAM_BOOL,
-    "Drives a smooth wave until it has enough speed to sense the rotor",
+  { TX_PG_GROUP_STARTUP, "Sine startup", PARAM_BOOL,
+    TX_PG_HELP_SINE,
     NULL, 0, 0,0,0,0, NULL, 1 },
-  { "PROTECTION", "Brake on stop", PARAM_BOOL,
-    "Holds the motor still at zero throttle instead of letting it freewheel",
+  { TX_PG_GROUP_PROTECTION, "Brake on stop", PARAM_BOOL,
+    TX_PG_HELP_BRAKE,
     NULL, 0, 0,0,0,0, NULL, 1 },
-  { NULL, "Telemetry", PARAM_BOOL,
-    "Sends volts, amps and rpm back down the signal wire",
+  { TX_COUNT, "Telemetry", PARAM_BOOL,
+    TX_PG_HELP_TELEMETRY,
     NULL, 0, 0,0,0,0, NULL, 1 },
 };
 
 static const param_def_t k_vesc[] = {
-  { "MOTOR", "Motor type", PARAM_ENUM,
-    "Six-step commutation, or field-oriented control",
+  { TX_PG_GROUP_MOTOR, "Motor type", PARAM_ENUM,
+    TX_PG_HELP_MOTOR_TYPE,
     k_mtype, 2, 0,0,0,0, NULL, 1 },
-  { NULL, "Current limit", PARAM_NUMBER,
-    "The most it will draw through the motor, whatever is asked of it",
+  { TX_COUNT, "Current limit", PARAM_NUMBER,
+    TX_PG_HELP_CURRENT,
     NULL, 0, 10, 100, 10, 0, "A", 40 },
-  { "PROTECTION", "Regen braking", PARAM_BOOL,
-    "Puts braking energy back into the pack rather than into the motor",
+  { TX_PG_GROUP_PROTECTION, "Regen braking", PARAM_BOOL,
+    TX_PG_HELP_REGEN,
     NULL, 0, 0,0,0,0, NULL, 1 },
-  { NULL, "Low voltage cut", PARAM_NUMBER,
-    "Per cell, where it starts pulling power back to save the pack",
+  { TX_COUNT, "Low voltage cut", PARAM_NUMBER,
+    TX_PG_HELP_LVC,
     NULL, 0, 28, 38, 1, 1, "V", 34 },
-  { "REPORTING", "Telemetry", PARAM_BOOL,
-    "Sends volts, amps and rpm back down the signal wire",
+  { TX_PG_GROUP_REPORTING, "Telemetry", PARAM_BOOL,
+    TX_PG_HELP_TELEMETRY,
     NULL, 0, 0,0,0,0, NULL, 1 },
 };
 
 static const param_def_t k_hitec[] = {
-  { "TRAVEL", "Centre", PARAM_NUMBER,
-    "Where neutral sits, in microseconds either side of 1500",
+  { TX_PG_GROUP_TRAVEL, "Centre", PARAM_NUMBER,
+    TX_PG_HELP_CENTRE,
     NULL, 0, -50, 50, 5, 0, "us", 0 },
-  { NULL, "Endpoint travel", PARAM_NUMBER,
-    "How far it is allowed to go each way from centre",
+  { TX_COUNT, "Endpoint travel", PARAM_NUMBER,
+    TX_PG_HELP_ENDPOINT,
     NULL, 0, 50, 150, 10, 0, "%", 100 },
-  { NULL, "Direction", PARAM_ENUM,
-    "Which way the horn moves for a rising pulse",
+  { TX_COUNT, "Direction", PARAM_ENUM,
+    TX_PG_HELP_HORN,
     k_dir, 2, 0,0,0,0, NULL, 0 },
-  { "RESPONSE", "Speed", PARAM_NUMBER,
-    "Slews the horn deliberately, for scale models and gentle linkages",
+  { TX_PG_GROUP_RESPONSE, "Speed", PARAM_NUMBER,
+    TX_PG_HELP_SPEED,
     NULL, 0, 20, 100, 10, 0, "%", 100 },
-  { NULL, "Dead band", PARAM_NUMBER,
-    "How far off target it tolerates before correcting: wider runs cooler",
+  { TX_COUNT, "Dead band", PARAM_NUMBER,
+    TX_PG_HELP_DEADBAND,
     NULL, 0, 1, 10, 1, 0, "us", 2 },
-  { NULL, "Resolution", PARAM_ENUM,
-    "How finely it resolves the commanded position",
+  { TX_COUNT, "Resolution", PARAM_ENUM,
+    TX_PG_HELP_RESOLUTION,
     k_res, 2, 0,0,0,0, NULL, 0 },
-  { "PROTECTION", "Overload protect", PARAM_BOOL,
-    "Backs off when it has been stalled long enough to cook itself",
+  { TX_PG_GROUP_PROTECTION, "Overload protect", PARAM_BOOL,
+    TX_PG_HELP_OVERLOAD,
     NULL, 0, 0,0,0,0, NULL, 1 },
-  { NULL, "Fail-safe", PARAM_BOOL,
-    "Goes to a set position when the pulse stops, rather than going limp",
+  { TX_COUNT, "Fail-safe", PARAM_BOOL,
+    TX_PG_HELP_FAILSAFE,
     NULL, 0, 0,0,0,0, NULL, 1 },
 };
 
 static const proto_t k_protos[] = {
-    { "BLHeli_S", "one-wire bootloader, 19200 baud",
-      "BLHeli_S 16.7  on  EFM8BB21", k_blheli,   8, CLASS_ESC },
-    { "AM32",     "one-wire bootloader, 19200 baud",
-      "AM32 2.15  on  STM32G071",    k_am32,     7, CLASS_ESC },
-    { "ESCape32", "text CLI over the signal line",
-      "ESCape32 v9  on  AT32F421",   k_escape32, 6, CLASS_ESC },
-    { "VESC",     "framed packets, 115200 baud",
-      "VESC 6.05  on  STM32F405",    k_vesc,     5, CLASS_ESC },
-    { "Hitec",    "D-series servo protocol",
-      "Hitec D956TW",                k_hitec,    8, CLASS_SERVO },
+    { "BLHeli_S", TX_PG_TRANSPORT_ONEWIRE, TX_PG_DEVICE_BLHELI,
+      k_blheli,   8, CLASS_ESC },
+    { "AM32",     TX_PG_TRANSPORT_ONEWIRE, TX_PG_DEVICE_AM32,
+      k_am32,     7, CLASS_ESC },
+    { "ESCape32", TX_PG_TRANSPORT_CLI,     TX_PG_DEVICE_ESCAPE32,
+      k_escape32, 6, CLASS_ESC },
+    { "VESC",     TX_PG_TRANSPORT_PACKETS, TX_PG_DEVICE_VESC,
+      k_vesc,     5, CLASS_ESC },
+    /* A model name and nothing to translate: the device line is the name. */
+    { "Hitec",    TX_PG_TRANSPORT_HITEC,   TX_COUNT,
+      k_hitec,    8, CLASS_SERVO },
 };
 #define PROTO_COUNT ((int)(sizeof(k_protos) / sizeof(k_protos[0])))
 
@@ -356,6 +361,12 @@ static struct {
 } s;
 
 static const proto_t *proto(void) { return &k_protos[s.proto]; }
+
+/* The device line the protocol answers with: Hitec's is its model name. */
+static const char *device_text(const proto_t *p)
+{
+    return (p->device != TX_COUNT) ? ui_tr(p->device) : "Hitec D956TW";
+}
 
 static void adopt_device(void)
 {
@@ -620,7 +631,7 @@ static void fmt_value(const param_def_t *d, int v, char *out, size_t n)
 {
     switch (d->kind) {
     case PARAM_BOOL:
-        snprintf(out, n, "%s", v ? "ON" : "OFF");
+        snprintf(out, n, "%s", ui_on_off(v));
         return;
     case PARAM_ENUM:
         snprintf(out, n, "%s", d->choices[v]);
@@ -638,14 +649,15 @@ static void fmt_value(const param_def_t *d, int v, char *out, size_t n)
 
 static void draw_crumb(gfx_canvas_t *c, const char *trail)
 {
-    ui_button(c, s.back, "BACK", ui_theme_color(UI_C_PANEL_HI), false, true);
+    ui_button(c, s.back, TR(LOG_BACK), ui_theme_color(UI_C_PANEL_HI), false,
+              true);
     gfx_text(c, s.back.x + s.back.w + 16, CRUMB_Y + 8, trail, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
 static void draw_classes(gfx_canvas_t *c)
 {
-    gfx_text(c, PAD + 12, 24, "WHAT ARE YOU PROGRAMMING?", UI_FONT_LABEL,
+    gfx_text(c, PAD + 12, 24, TR(PG_WHAT), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
     for (int i = 0; i < CLASS_COUNT; ++i) {
         const gfx_rect_t r = s.tile[i];
@@ -656,19 +668,19 @@ static void draw_classes(gfx_canvas_t *c)
         gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 12),
                                      (int16_t)(r.y + 104),
                                      (int16_t)(r.w - 24), 16 },
-                    k_classes[i].blurb, UI_FONT_LABEL,
+                    ui_tr(k_classes[i].blurb), UI_FONT_LABEL,
                     ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_CENTER);
         int n = 0;
         for (int p = 0; p < PROTO_COUNT; ++p) {
             if (k_protos[p].klass == i) { ++n; }
         }
-        char have[40];
+        char have[48];
         if (i == CLASS_STICK) {
-            snprintf(have, sizeof(have), "%d of %d profiles run",
+            snprintf(have, sizeof(have), TR(PG_PROFILES_RUN),
                      sp_runnable_count(), (int)esc_profiles_count());
         } else {
-            snprintf(have, sizeof(have), "%d protocol%s", n,
-                     (n == 1) ? "" : "s");
+            snprintf(have, sizeof(have),
+                     (n == 1) ? TR(PG_PROTOCOL) : TR(PG_PROTOCOLS), n);
         }
         gfx_text_in(c, (gfx_rect_t){ r.x, (int16_t)(r.y + 138), r.w, 16 },
                     have, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1,
@@ -689,7 +701,7 @@ static void draw_protocol_list(gfx_canvas_t *c)
                  ui_theme_color(UI_C_TEXT), 1);
         /* The transport, on every row: the protocols are different
          * conversations, not variants of one, so there is no autodetect. */
-        gfx_text(c, r.x + 20, r.y + 38, k_protos[i].transport,
+        gfx_text(c, r.x + 20, r.y + 38, ui_tr(k_protos[i].transport),
                  UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
         gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 60),
                                      (int16_t)(r.y + 20), 40, 20 },
@@ -704,14 +716,15 @@ static void draw_device(gfx_canvas_t *c)
     const gfx_color_t tone = s.connected ? ui_theme_color(UI_C_OK)
                                          : ui_theme_color(UI_C_TEXT_FAINT);
     gfx_fill_circle_aa(c, x + 7, DEV_Y + 20, 6, tone);
-    gfx_text(c, x + 22, DEV_Y + 4, s.connected ? proto()->device
-                                               : "nothing has answered",
+    gfx_text(c, x + 22, DEV_Y + 4, s.connected ? device_text(proto())
+                                               : TR(PG_NOTHING_ANSWERED),
              UI_FONT_LABEL,
              s.connected ? ui_theme_color(UI_C_TEXT)
                          : ui_theme_color(UI_C_TEXT_DIM), 1);
-    gfx_text(c, x + 22, DEV_Y + 24, proto()->transport, UI_FONT_LABEL,
+    gfx_text(c, x + 22, DEV_Y + 24, ui_tr(proto()->transport), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    ui_button(c, s.connect_btn, s.connected ? "DISCONNECT" : "CONNECT",
+    ui_button(c, s.connect_btn, s.connected ? TR(PG_DISCONNECT)
+                                            : TR(PG_CONNECT),
               s.connected ? ui_theme_color(UI_C_PANEL_HI)
                           : ui_theme_color(UI_C_ACCENT),
               false, true);
@@ -755,13 +768,13 @@ static void widget_number(gfx_canvas_t *c, int y, const param_def_t *d,
 
 static void draw_params(gfx_canvas_t *c)
 {
-    gfx_text(c, PAD + 12, PARM_Y + 12, "PARAMETERS", UI_FONT_LABEL,
+    gfx_text(c, PAD + 12, PARM_Y + 12, TR(PG_PARAMETERS), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
 
     if (!s.connected) {
         gfx_text_in(c, (gfx_rect_t){ PAD, (int16_t)(PARM_Y + PARM_H / 2 - 8),
                                      (int16_t)(W - 2 * PAD), 16 },
-                    "no device, so nothing to show", UI_FONT_LABEL,
+                    TR(PG_NO_DEVICE), UI_FONT_LABEL,
                     ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_CENTER);
         return;
     }
@@ -769,7 +782,7 @@ static void draw_params(gfx_canvas_t *c)
     const int max_scroll = (proto()->count > ROWS_MAX)
                                ? proto()->count - ROWS_MAX : 0;
     char count[40];
-    snprintf(count, sizeof(count), "%d-%d of %d",
+    snprintf(count, sizeof(count), TR(PG_RANGE_OF),
              s.scroll + 1, s.scroll + rows_shown(), proto()->count);
     gfx_text_in(c, (gfx_rect_t){ 420, (int16_t)(PARM_Y + 12), 260, 16 },
                 count, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1,
@@ -791,8 +804,8 @@ static void draw_params(gfx_canvas_t *c)
                                 ui_theme_color(UI_C_PANEL_SUNK));
         }
         /* The group, on the row that starts one. */
-        if (d->group != NULL) {
-            gfx_text(c, PAD + 12, y, d->group, UI_FONT_LABEL,
+        if (d->group != TX_COUNT) {
+            gfx_text(c, PAD + 12, y, ui_tr(d->group), UI_FONT_LABEL,
                      ui_theme_color(UI_C_TEXT_FAINT), 1);
         }
         /*
@@ -835,17 +848,17 @@ static void draw_params(gfx_canvas_t *c)
     const param_def_t *p = &proto()->params[s.picked];
     gfx_text(c, PAD + 12, HELP_Y, p->name, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
-    gfx_text(c, PAD + 12, HELP_Y + 18, p->help, UI_FONT_LABEL,
+    gfx_text(c, PAD + 12, HELP_Y + 18, ui_tr(p->help), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
 
     const int n = programmer_screen_dirty();
     char wr[32];
     if (n > 0) {
-        snprintf(wr, sizeof(wr), "WRITE %d", n);
+        snprintf(wr, sizeof(wr), TR(PG_WRITE_N), n);
     } else {
-        snprintf(wr, sizeof(wr), "WRITE");
+        snprintf(wr, sizeof(wr), "%s", TR(PG_WRITE));
     }
-    ui_button(c, s.read_btn, "READ", ui_theme_color(UI_C_PANEL_HI),
+    ui_button(c, s.read_btn, TR(PG_READ), ui_theme_color(UI_C_PANEL_HI),
               false, true);
     ui_button(c, s.write_btn, wr,
               (n > 0) ? ui_theme_color(UI_C_WARN)
@@ -856,6 +869,24 @@ static void draw_params(gfx_canvas_t *c)
 /* ============================================== the stick class ======== */
 
 /*
+ * @p buf cut to @p max_chars cells, with ".." in place of what did not fit.
+ * Cut between characters, never inside one: a cell is a code point and a
+ * German letter is two bytes.
+ */
+static void sp_cut(char *buf, size_t n, int max_chars)
+{
+    if (max_chars < 3 || gfx_text_cells(buf) <= max_chars) {
+        return;
+    }
+    const size_t at = gfx_text_prefix(buf, max_chars - 2);
+    if (at + 3u <= n) {
+        buf[at] = '.';
+        buf[at + 1u] = '.';
+        buf[at + 2u] = '\0';
+    }
+}
+
+/*
  * A text cut to @p max_chars, with ".." in place of what did not fit: the
  * profiles' names are the manuals' and run long.
  */
@@ -864,13 +895,47 @@ static void sp_text(gfx_canvas_t *c, int x, int y, const char *text,
 {
     char buf[192];
     snprintf(buf, sizeof(buf), "%s", (text != NULL) ? text : "");
-    if (max_chars >= 3 && max_chars < (int)sizeof(buf)
-        && (int)strlen(buf) > max_chars) {
-        buf[max_chars - 2] = '.';
-        buf[max_chars - 1] = '.';
-        buf[max_chars] = '\0';
-    }
+    sp_cut(buf, sizeof(buf), max_chars);
     gfx_text(c, x, y, buf, UI_FONT_LABEL, ink, 1);
+}
+
+/*
+ * The stick engine's refusals are English, held where the engine writes
+ * them; the screen shows each in the language showing by matching its
+ * English.  One the table does not know shows as the engine wrote it.
+ */
+static const ui_text_id_t k_why[] = {
+    TX_ESC_WHY_NO_PROFILE, TX_ESC_WHY_PERSON, TX_ESC_WHY_NO_PROCEDURE,
+    TX_ESC_WHY_AFTER_POWER, TX_ESC_WHY_MELODY, TX_ESC_WHY_YES_NO,
+    TX_ESC_WHY_POSITION, TX_ESC_WHY_OWN_KIND, TX_ESC_WHY_PITCH,
+    TX_ESC_WHY_NO_ITEMS, TX_ESC_WHY_NO_SELECT, TX_ESC_WHY_REST_ENTRY,
+    TX_ESC_WHY_STORE_TWO, TX_ESC_WHY_TWO_MOVES, TX_ESC_WHY_SELECT_REST,
+    TX_ESC_WHY_VALUE_SELECT, TX_ESC_WHY_ONE_MOVE, TX_ESC_WHY_MANY_ONE,
+    TX_ESC_WHY_COUNTED_ONE, TX_ESC_WHY_REPEAT, TX_ESC_WHY_STORE_SELECT,
+    TX_ESC_WHY_NO_TIMING, TX_ESC_WHY_NOTHING, TX_ESC_WHY_TOO_MANY,
+    TX_ESC_WHY_NO_ITEM, TX_ESC_WHY_ACTIONS, TX_ESC_WHY_NO_VALUE,
+    TX_ESC_WHY_ZERO, TX_ESC_WHY_ONE_PER_ITEM, TX_ESC_WHY_BEEP_GAP,
+    TX_ESC_WHY_LONG, TX_ESC_WHY_LONG_MAX, TX_ESC_WHY_GROUP_GAP,
+    TX_ESC_WHY_THRESHOLD, TX_ESC_WHY_ENTRY, TX_ESC_WHY_SELECT_WINDOW,
+    TX_ESC_WHY_VALUE_WINDOW, TX_ESC_WHY_NO_RUN, TX_ESC_WHY_ONE_VALUE,
+};
+
+const char *programmer_screen_why_text(const char *why)
+{
+    if (why == NULL) {
+        return TR(SP_REFUSED);
+    }
+    for (size_t i = 0; i < sizeof(k_why) / sizeof(k_why[0]); ++i) {
+        if (strcmp(why, ui_tr_in(UI_LANG_EN, k_why[i])) == 0) {
+            return ui_tr(k_why[i]);
+        }
+    }
+    return why;
+}
+
+static const char *sp_why_text(const char *why)
+{
+    return programmer_screen_why_text(why);
 }
 
 /*
@@ -882,7 +947,7 @@ static const char *sp_why(const esc_profile_t *p, char *buf, size_t n)
 {
     const char *why = NULL;
     if (esc_stick_kind(p, &why) == ESC_STICK_KIND_NONE) {
-        return why;
+        return sp_why_text(why);
     }
     const float v = settings_get(SET_STICK_V);
     const uint32_t mv = (v > 0.0f) ? (uint32_t)lroundf(v * 1000.0f)
@@ -890,7 +955,7 @@ static const char *sp_why(const esc_profile_t *p, char *buf, size_t n)
     const unsigned cap = (unsigned)lroundf(supply_screen_caps().v_max
                                            * 1000.0f);
     if (mv > cap) {
-        snprintf(buf, n, "needs %u.%u V, cap %u.%u V",
+        snprintf(buf, n, TR(SP_NEEDS_V),
                  (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u),
                  cap / 1000u, cap % 1000u / 100u);
         return buf;
@@ -1044,13 +1109,12 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
         return false;
     }
     if (picked > ESC_STICK_MAX_CHANGES) {
-        snprintf(st->note, sizeof(st->note), "at most %u changes in one run",
+        snprintf(st->note, sizeof(st->note), TR(SP_AT_MOST),
                  (unsigned)ESC_STICK_MAX_CHANGES);
         return false;
     }
     if (*mv == 0u) {
-        snprintf(st->note, sizeof(st->note),
-                 "no cell count in the profile: set VOLTAGE on TIMING");
+        snprintf(st->note, sizeof(st->note), "%s", TR(SP_NO_CELLS));
         return false;
     }
     const supply_caps_t caps = supply_screen_caps();
@@ -1058,33 +1122,28 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
     const unsigned vmin = (unsigned)lroundf(caps.v_min * 1000.0f);
     const unsigned imax = (unsigned)lroundf(caps.i_max * 1000.0f);
     if (*mv > vmax) {
-        snprintf(st->note, sizeof(st->note),
-                 "%u.%02u V is above the SUPPLY cap of %u.%02u V",
+        snprintf(st->note, sizeof(st->note), TR(SP_ABOVE_CAP),
                  (unsigned)(*mv / 1000u), (unsigned)(*mv % 1000u / 10u),
                  vmax / 1000u, vmax % 1000u / 10u);
         return false;
     }
     if (*mv < vmin) {
-        snprintf(st->note, sizeof(st->note),
-                 "VOLTAGE is below the supply's %u.%02u V",
+        snprintf(st->note, sizeof(st->note), TR(SP_BELOW_MIN),
                  vmin / 1000u, vmin % 1000u / 10u);
         return false;
     }
     if (*ma > imax) {
-        snprintf(st->note, sizeof(st->note),
-                 "CURRENT LIMIT is above the SUPPLY cap of %u.%02u A",
+        snprintf(st->note, sizeof(st->note), TR(SP_I_ABOVE_CAP),
                  imax / 1000u, imax % 1000u / 10u);
         return false;
     }
     if (supply_screen_output_live()) {
-        snprintf(st->note, sizeof(st->note),
-                 "switch the supply's output off first");
+        snprintf(st->note, sizeof(st->note), "%s", TR(SP_OUTPUT_LIVE));
         return false;
     }
     const char *why = NULL;
     if (!esc_stick_check(st->p, ch, *n, t, &why)) {
-        snprintf(st->note, sizeof(st->note), "%s",
-                 (why != NULL) ? why : "refused");
+        snprintf(st->note, sizeof(st->note), "%s", sp_why_text(why));
         return false;
     }
     return true;
@@ -1158,8 +1217,7 @@ static void sp_start(void)
                                   t->link_up };
     const char *why = NULL;
     if (!esc_stick_start(&t->run, t->p, ch, n, &tm, mv, ma, &b, &why)) {
-        snprintf(t->note, sizeof(t->note), "%s",
-                 (why != NULL) ? why : "refused");
+        snprintf(t->note, sizeof(t->note), "%s", sp_why_text(why));
         return;
     }
     t->runs++;
@@ -1524,10 +1582,10 @@ static void sp_draw_list(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
     draw_crumb(c, "ESC STICK");
-    char count[48];
+    char count[64];
     const int last = (t->scroll + SP_ROWS < t->count) ? t->scroll + SP_ROWS
                                                       : t->count;
-    snprintf(count, sizeof(count), "%d-%d of %d, %d run",
+    snprintf(count, sizeof(count), TR(SP_LIST_COUNT),
              (t->count > 0) ? t->scroll + 1 : 0, last, t->count,
              t->runnable);
     gfx_text_in(c, (gfx_rect_t){ 360, (int16_t)(CRUMB_Y + 7), 320, 16 },
@@ -1554,14 +1612,17 @@ static void sp_draw_list(gfx_canvas_t *c)
         sp_text(c, r.x + 124, r.y + 8, p->family, (r.w - 124 - 236) / 8,
                 runs ? ui_theme_color(UI_C_TEXT_DIM)
                      : ui_theme_color(UI_C_TEXT_FAINT));
-        char right[48];
+        char right[80];
         if (runs) {
-            snprintf(right, sizeof(right), "%s%u ITEM%s  %s",
-                     esc_profiles_is_override(p) ? "CARD  " : "",
-                     (unsigned)p->item_count,
-                     (p->item_count == 1u) ? "" : "S",
-                     (kind == ESC_STICK_KIND_TWO_STAGE) ? "TWO-STAGE"
-                                                        : "ONE-STAGE");
+            char items[24];
+            snprintf(items, sizeof(items),
+                     (p->item_count == 1u) ? TR(SP_ITEM) : TR(SP_ITEMS),
+                     (unsigned)p->item_count);
+            snprintf(right, sizeof(right), "%s%s%s  %s",
+                     esc_profiles_is_override(p) ? TR(SP_CARD) : "",
+                     esc_profiles_is_override(p) ? "  " : "", items,
+                     (kind == ESC_STICK_KIND_TWO_STAGE) ? TR(SP_TWO_STAGE)
+                                                        : TR(SP_ONE_STAGE));
         } else {
             snprintf(right, sizeof(right), "%s", why);
         }
@@ -1573,7 +1634,7 @@ static void sp_draw_list(gfx_canvas_t *c)
                     GFX_ALIGN_RIGHT);
     }
     gfx_text(c, PAD + 12, SP_ROW_Y0 + SP_ROWS * SP_ROW_H + 6,
-             "No profile is verified: no ESC has been recorded.",
+             TR(SP_UNVERIFIED_ALL),
              UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
 }
 
@@ -1587,41 +1648,69 @@ static const char *sp_pos(float pct)
 static const char *sp_reason_help(esc_stick_reason_t r)
 {
     switch (r) {
-    case ESC_STICK_R_STOP:
-        return "STOP was pressed, or the bench stopped itself.";
-    case ESC_STICK_R_DISARMED:
-        return "The bench disarmed during the run.";
-    case ESC_STICK_R_LINK:
-        return "The coprocessor stopped answering.";
-    case ESC_STICK_R_SUPPLY_OFF:
-        return "The supply's output went off: a trip, or a lost ON.";
-    case ESC_STICK_R_SUPPLY_LOST:
-        return "The supply stopped answering.";
-    case ESC_STICK_R_STALE:
-        return "No new supply reading for 1000 ms.";
-    case ESC_STICK_R_RATE:
-        return "3 readings in a row came later than BEEP MIN or GAP MIN.";
-    case ESC_STICK_R_NOT_ARMED:
-        return "The bench did not arm within 3000 ms.";
-    case ESC_STICK_R_NO_POWER:
-        return "The supply did not report its output on within 3000 ms.";
-    case ESC_STICK_R_NO_BEEPS:
-        return "No beep for SILENCE: check the load and THRESHOLD.";
-    case ESC_STICK_R_HIGH:
-        return "The current stayed over THRESHOLD: a motor, or a low THRESHOLD.";
-    case ESC_STICK_R_TIMEOUT:
-        return "The wanted beeps were not heard in order within TIMEOUT.";
-    case ESC_STICK_R_SUPPLY_ON:
-        return "The supply did not report its output off within 3000 ms.";
-    case ESC_STICK_R_TOUCH:
-        return "Touch events were lost before the arm was taken.";
-    case ESC_STICK_R_USER:
-        return "ABORT was pressed.";
-    case ESC_STICK_R_LEFT:
-        return "The screen was left during the run.";
-    default:
-        return "";
+    case ESC_STICK_R_STOP:        return TR(SP_WHY_STOP);
+    case ESC_STICK_R_DISARMED:    return TR(SP_WHY_DISARMED);
+    case ESC_STICK_R_LINK:        return TR(SP_WHY_LINK);
+    case ESC_STICK_R_SUPPLY_OFF:  return TR(SP_WHY_SUPPLY_OFF);
+    case ESC_STICK_R_SUPPLY_LOST: return TR(SP_WHY_SUPPLY_LOST);
+    case ESC_STICK_R_STALE:       return TR(SP_WHY_STALE);
+    case ESC_STICK_R_RATE:        return TR(SP_WHY_RATE);
+    case ESC_STICK_R_NOT_ARMED:   return TR(SP_WHY_NOT_ARMED);
+    case ESC_STICK_R_NO_POWER:    return TR(SP_WHY_NO_POWER);
+    case ESC_STICK_R_NO_BEEPS:    return TR(SP_WHY_NO_BEEPS);
+    case ESC_STICK_R_HIGH:        return TR(SP_WHY_HIGH);
+    case ESC_STICK_R_TIMEOUT:     return TR(SP_WHY_TIMEOUT);
+    case ESC_STICK_R_SUPPLY_ON:   return TR(SP_WHY_SUPPLY_ON);
+    case ESC_STICK_R_TOUCH:       return TR(SP_WHY_TOUCH);
+    case ESC_STICK_R_USER:        return TR(SP_WHY_USER);
+    case ESC_STICK_R_LEFT:        return TR(SP_WHY_LEFT);
+    default:                      return "";
     }
+}
+
+/* The run's phase and its end in the language showing; the engine's
+ * esc_stick_phase_text() and esc_stick_reason_text() are the English. */
+static const char *sp_phase_text(esc_stick_phase_t ph)
+{
+    switch (ph) {
+    case ESC_STICK_IDLE:    return TR(SP_PH_READY);
+    case ESC_STICK_ARMING:  return TR(SP_PH_ARMING);
+    case ESC_STICK_SIGNAL:  return TR(SP_PH_SIGNAL);
+    case ESC_STICK_POWER:   return TR(SP_PH_POWER);
+    case ESC_STICK_ENTRY:   return TR(SP_PH_ENTRY);
+    case ESC_STICK_ITEMS:   return TR(SP_PH_ITEMS);
+    case ESC_STICK_VALUES:  return TR(SP_PH_VALUES);
+    case ESC_STICK_STORE:   return TR(SP_PH_STORE);
+    case ESC_STICK_CYCLE:   return TR(SP_PH_CYCLE);
+    case ESC_STICK_OFF:     return TR(SP_PH_OFF);
+    case ESC_STICK_DONE:    return TR(SP_PH_DONE);
+    case ESC_STICK_ABORTED: return TR(SP_PH_ABORTED);
+    }
+    return "?";
+}
+
+static const char *sp_reason_text(esc_stick_reason_t r)
+{
+    switch (r) {
+    case ESC_STICK_R_NONE:        return "";
+    case ESC_STICK_R_STOP:        return TR(SP_R_STOP);
+    case ESC_STICK_R_DISARMED:    return TR(SP_R_DISARMED);
+    case ESC_STICK_R_LINK:        return TR(SP_R_LINK);
+    case ESC_STICK_R_SUPPLY_OFF:  return TR(SP_R_SUPPLY_OFF);
+    case ESC_STICK_R_SUPPLY_LOST: return TR(SP_R_SUPPLY_LOST);
+    case ESC_STICK_R_STALE:       return TR(SP_R_STALE);
+    case ESC_STICK_R_RATE:        return TR(SP_R_RATE);
+    case ESC_STICK_R_NOT_ARMED:   return TR(SP_R_NOT_ARMED);
+    case ESC_STICK_R_NO_POWER:    return TR(SP_R_NO_POWER);
+    case ESC_STICK_R_SUPPLY_ON:   return TR(SP_R_SUPPLY_ON);
+    case ESC_STICK_R_TOUCH:       return TR(SP_R_TOUCH);
+    case ESC_STICK_R_NO_BEEPS:    return TR(SP_R_NO_BEEPS);
+    case ESC_STICK_R_HIGH:        return TR(SP_R_HIGH);
+    case ESC_STICK_R_TIMEOUT:     return TR(SP_R_TIMEOUT);
+    case ESC_STICK_R_USER:        return TR(SP_R_USER);
+    case ESC_STICK_R_LEFT:        return TR(SP_R_LEFT);
+    }
+    return "?";
 }
 
 /* "3 Cutoff mode -> 2 hard cutoff" for a change. */
@@ -1641,9 +1730,9 @@ static void sp_draw_progress(gfx_canvas_t *c)
     const gfx_color_t txt = ui_theme_color(UI_C_TEXT);
     char line[128];
 
-    gfx_text(c, PAD + 12, PARM_Y + 12, "RUN", UI_FONT_LABEL,
+    gfx_text(c, PAD + 12, PARM_Y + 12, TR(SP_RUN), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
-    gfx_text(c, PAD + 12, PARM_Y + 34, esc_stick_phase_text(e->phase),
+    gfx_text(c, PAD + 12, PARM_Y + 34, sp_phase_text(e->phase),
              UI_FONT_HEAD, txt, 1);
     snprintf(line, sizeof(line), "%u", esc_stick_beeps(e));
     gfx_text_in(c, (gfx_rect_t){ (int16_t)(W - PAD - 232),
@@ -1652,7 +1741,7 @@ static void sp_draw_progress(gfx_canvas_t *c)
                 GFX_ALIGN_RIGHT);
     gfx_text_in(c, (gfx_rect_t){ (int16_t)(W - PAD - 232),
                                  (int16_t)(PARM_Y + 50), 210, 16 },
-                "BEEPS IN THIS GROUP", UI_FONT_LABEL,
+                TR(SP_BEEPS_GROUP), UI_FONT_LABEL,
                 ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_RIGHT);
 
     const int y0 = PARM_Y + 80;
@@ -1671,19 +1760,17 @@ static void sp_draw_progress(gfx_canvas_t *c)
     char what[96];
     sp_change_text(&e->ch[shown], what, sizeof(what));
     const unsigned done = esc_stick_done_count(e);
-    snprintf(line, sizeof(line), "SELECTION %u OF %u   %s",
+    snprintf(line, sizeof(line), TR(SP_SELECTION),
              (done < e->n) ? done + 1u : (unsigned)e->n, (unsigned)e->n,
              what);
     sp_text(c, PAD + 12, y0, line, 94, txt);
 
     switch (e->phase) {
     case ESC_STICK_ARMING:
-        snprintf(line, sizeof(line), "Arming the bench, throttle at MIN, "
-                 "supply off.");
+        snprintf(line, sizeof(line), "%s", TR(SP_DO_ARMING));
         break;
     case ESC_STICK_SIGNAL:
-        snprintf(line, sizeof(line), "Throttle at %s for the entry; the "
-                 "supply comes on in %u ms.",
+        snprintf(line, sizeof(line), TR(SP_DO_SIGNAL),
                  sp_pos(e->out.throttle_pct),
                  (unsigned)((e->now_ms - e->phase_ms < ESC_STICK_SIGNAL_MS)
                                 ? ESC_STICK_SIGNAL_MS
@@ -1691,15 +1778,15 @@ static void sp_draw_progress(gfx_canvas_t *c)
                                 : 0u));
         break;
     case ESC_STICK_POWER:
-        snprintf(line, sizeof(line), "Supply switching on at %u.%02u V.",
+        snprintf(line, sizeof(line), TR(SP_DO_POWER),
                  (unsigned)(e->out.supply_mv / 1000u),
                  (unsigned)(e->out.supply_mv % 1000u / 10u));
         break;
     case ESC_STICK_ENTRY: {
         const uint32_t in = e->now_ms - e->on_ms;
         const uint32_t left = (in < e->t.entry_ms) ? e->t.entry_ms - in : 0u;
-        snprintf(line, sizeof(line), "Powered at %s; the menu is expected "
-                 "in %u.%u s.", sp_pos(e->out.throttle_pct),
+        snprintf(line, sizeof(line), TR(SP_DO_ENTRY),
+                 sp_pos(e->out.throttle_pct),
                  (unsigned)(left / 1000u), (unsigned)(left % 1000u / 100u));
         break;
     }
@@ -1707,8 +1794,7 @@ static void sp_draw_progress(gfx_canvas_t *c)
         line[0] = '\0';
         for (uint8_t i = 0; i < e->n; ++i) {
             if (!e->done[i]) {
-                snprintf(line, sizeof(line), "Counting item groups; item %u "
-                         "is taken with the stick to %s.",
+                snprintf(line, sizeof(line), TR(SP_DO_ITEMS),
                          (unsigned)e->p->items[e->ch[i].item].number,
                          sp_pos(esc_stick_pct(e->p->select_throttle)));
                 break;
@@ -1717,8 +1803,7 @@ static void sp_draw_progress(gfx_canvas_t *c)
         break;
     case ESC_STICK_VALUES: {
         const esc_stick_change_t *ch = &e->ch[e->active];
-        snprintf(line, sizeof(line), "Counting value groups; value %u is "
-                 "stored with the stick to %s.",
+        snprintf(line, sizeof(line), TR(SP_DO_VALUES),
                  (unsigned)e->p->items[ch->item].values[ch->value].number,
                  sp_pos(esc_stick_pct(
                      (e->kind == ESC_STICK_KIND_TWO_STAGE)
@@ -1728,21 +1813,20 @@ static void sp_draw_progress(gfx_canvas_t *c)
     }
     case ESC_STICK_STORE:
         if (e->store_moved) {
-            snprintf(line, sizeof(line), "Stick to %s, which stores the "
-                     "selection; held %u ms.", sp_pos(e->out.throttle_pct),
+            snprintf(line, sizeof(line), TR(SP_DO_STORE_MOVE),
+                     sp_pos(e->out.throttle_pct),
                      (unsigned)e->t.store_ms);
         } else {
-            snprintf(line, sizeof(line), "Held at the selection for %u ms "
-                     "while the ESC answers it.", (unsigned)e->t.store_ms);
+            snprintf(line, sizeof(line), TR(SP_DO_STORE_HOLD),
+                     (unsigned)e->t.store_ms);
         }
         break;
     case ESC_STICK_CYCLE:
-        snprintf(line, sizeof(line), "Supply off for %u ms before the next "
-                 "power-up.", (unsigned)e->t.off_ms);
+        snprintf(line, sizeof(line), TR(SP_DO_CYCLE), (unsigned)e->t.off_ms);
         break;
     case ESC_STICK_OFF:
-        snprintf(line, sizeof(line), "Supply switching off; the stick stays "
-                 "at %s until it is.", sp_pos(e->out.throttle_pct));
+        snprintf(line, sizeof(line), TR(SP_DO_OFF),
+                 sp_pos(e->out.throttle_pct));
         break;
     default:
         line[0] = '\0';
@@ -1751,29 +1835,28 @@ static void sp_draw_progress(gfx_canvas_t *c)
     sp_text(c, PAD + 12, y0 + pitch, line, 94, dim);
 
     if (e->groups == 0u) {
-        snprintf(line, sizeof(line), "LAST GROUP  none yet");
+        snprintf(line, sizeof(line), "%s", TR(SP_LAST_NONE));
     } else {
-        snprintf(line, sizeof(line), "LAST GROUP  %u  %s",
+        snprintf(line, sizeof(line), TR(SP_LAST),
                  (unsigned)e->last_count,
-                 !e->last_valid ? "NOT A CLEAN GROUP"
-                 : e->last_trusted ? "IN ORDER, TWO IN A ROW"
-                 : e->last_in_order ? "IN ORDER" : "NOT IN ORDER");
+                 !e->last_valid ? TR(SP_NOT_CLEAN)
+                 : e->last_trusted ? TR(SP_TWO_IN_ROW)
+                 : e->last_in_order ? TR(SP_IN_ORDER) : TR(SP_NOT_IN_ORDER));
     }
     gfx_text(c, PAD + 12, y0 + 2 * pitch, line, UI_FONT_LABEL, txt, 1);
-    snprintf(line, sizeof(line), "GROUPS %u   POWER-UPS %u   THROTTLE %s"
-             "   SUPPLY %s", (unsigned)e->groups, (unsigned)e->entries,
-             sp_pos(e->out.throttle_pct), e->out.supply_on ? "ON" : "OFF");
+    snprintf(line, sizeof(line), TR(SP_STATS), (unsigned)e->groups,
+             (unsigned)e->entries, sp_pos(e->out.throttle_pct),
+             ui_on_off(e->out.supply_on));
     gfx_text(c, PAD + 12, y0 + 3 * pitch, line, UI_FONT_LABEL, dim, 1);
-    snprintf(line, sizeof(line), "CURRENT %d mA   FLOOR %d mA   "
-             "READINGS %u ms APART", (int)e->ma,
+    snprintf(line, sizeof(line), TR(SP_CURRENT), (int)e->ma,
              (int)esc_det_floor_ma(&e->det), (unsigned)e->iv_ms);
     gfx_text(c, PAD + 12, y0 + 4 * pitch, line, UI_FONT_LABEL, dim, 1);
 
     gfx_text(c, PAD + 12, HELP_Y + 9,
-             "STOP or ABORT ends the run: throttle to MIN, supply off, "
-             "disarmed.", UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
-    ui_button(c, s.write_btn, "ABORT", ui_theme_color(UI_C_DANGER), false,
-              true);
+             TR(SP_ENDS_RUN), UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT),
+             1);
+    ui_button(c, s.write_btn, TR(SP_ABORT), ui_theme_color(UI_C_DANGER),
+              false, true);
 }
 
 static void sp_draw_result(gfx_canvas_t *c)
@@ -1782,19 +1865,19 @@ static void sp_draw_result(gfx_canvas_t *c)
     const bool done = e->phase == ESC_STICK_DONE;
     const gfx_color_t dim = ui_theme_color(UI_C_TEXT_DIM);
     char line[128];
-    gfx_text(c, PAD + 12, PARM_Y + 12, "RESULT", UI_FONT_LABEL,
+    gfx_text(c, PAD + 12, PARM_Y + 12, TR(SP_RESULT), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
-    snprintf(line, sizeof(line), "%s", done ? "DONE" : "ABORTED");
+    snprintf(line, sizeof(line), "%s", TR(SP_PH_DONE));
     if (!done) {
-        snprintf(line, sizeof(line), "ABORTED: %s",
-                 esc_stick_reason_text(e->reason));
+        snprintf(line, sizeof(line), TR(SP_ABORTED_WHY),
+                 sp_reason_text(e->reason));
     }
     gfx_text(c, PAD + 12, PARM_Y + 34, line, UI_FONT_HEAD,
              done ? ui_theme_color(UI_C_OK) : ui_theme_color(UI_C_DANGER),
              1);
     const int y0 = PARM_Y + 80;
     const int pitch = 22;
-    snprintf(line, sizeof(line), "%u of %u selections made.",
+    snprintf(line, sizeof(line), TR(SP_MADE_N),
              esc_stick_done_count(e), (unsigned)e->n);
     gfx_text(c, PAD + 12, y0, line, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT), 1);
@@ -1803,8 +1886,8 @@ static void sp_draw_result(gfx_canvas_t *c)
     for (unsigned i = 0; i < shown; ++i) {
         char what[96];
         sp_change_text(&e->ch[i], what, sizeof(what));
-        snprintf(line, sizeof(line), "%s  %s", e->done[i] ? "MADE" : "NOT MADE",
-                 what);
+        snprintf(line, sizeof(line), "%s  %s",
+                 e->done[i] ? TR(SP_MADE) : TR(SP_NOT_MADE), what);
         sp_text(c, PAD + 12, y0 + (int)(i + 1u) * pitch, line, 94,
                 e->done[i] ? ui_theme_color(UI_C_TEXT) : dim);
     }
@@ -1813,22 +1896,21 @@ static void sp_draw_result(gfx_canvas_t *c)
         for (unsigned i = shown; i < e->n; ++i) {
             made += e->done[i] ? 1u : 0u;
         }
-        snprintf(line, sizeof(line), "AND %u MORE, %u OF THEM MADE",
+        snprintf(line, sizeof(line), TR(SP_MORE),
                  (unsigned)(e->n - shown), made);
         gfx_text(c, PAD + 12, y0 + 5 * pitch, line, UI_FONT_LABEL, dim, 1);
     }
     if (done) {
         gfx_text(c, PAD + 12, HELP_Y,
-                 "The ESC's own tones after a selection are not checked:",
+                 TR(SP_TONES_1),
                  UI_FONT_LABEL, dim, 1);
         gfx_text(c, PAD + 12, HELP_Y + 18,
-                 "listen for them, or read the ESC back with its program "
-                 "card.", UI_FONT_LABEL, dim, 1);
+                 TR(SP_TONES_2), UI_FONT_LABEL, dim, 1);
     } else {
         gfx_text(c, PAD + 12, HELP_Y, sp_reason_help(e->reason),
                  UI_FONT_LABEL, dim, 1);
         gfx_text(c, PAD + 12, HELP_Y + 18,
-                 "Throttle at MIN, supply off, bench disarmed.",
+                 TR(SP_SAFE_NOW),
                  UI_FONT_LABEL, dim, 1);
     }
     ui_button(c, s.write_btn, "OK", ui_theme_color(UI_C_PANEL_HI), false,
@@ -1838,11 +1920,11 @@ static void sp_draw_result(gfx_canvas_t *c)
 static void sp_setting_text(setting_id_t id, char *out, size_t n)
 {
     if (id == SET_STICK_V && !(settings_get(id) > 0.0f)) {
-        snprintf(out, n, "FROM PROFILE");
+        snprintf(out, n, "%s", TR(SP_FROM_PROFILE));
         return;
     }
     char v[24];
-    settings_value_text(id, v, sizeof(v));
+    ui_setting_value(id, v, sizeof(v));
     snprintf(out, n, "%s %s", v, settings_def(id)->unit);
 }
 
@@ -1852,11 +1934,10 @@ static void sp_draw_timing(gfx_canvas_t *c)
     ui_card(c, (gfx_rect_t){ PAD, DEV_Y, (int16_t)(W - 2 * PAD),
                              (int16_t)(PARM_Y + PARM_H - DEV_Y) },
             ui_theme_color(UI_C_PANEL));
-    gfx_text(c, PAD + 12, DEV_Y + 12, "TIMING AND DETECTION", UI_FONT_LABEL,
+    gfx_text(c, PAD + 12, DEV_Y + 12, TR(SP_TIMING_TITLE), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
     gfx_text(c, PAD + 12, DEV_Y + 34,
-             "No ESC has been recorded: every value is a default, not a "
-             "measurement.", UI_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
+             TR(SP_TIMING_NOTE), UI_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
     const int max_scroll = SP_SETTINGS - ROWS_MAX;
     ui_button(c, s.page_up, "^", ui_theme_color(UI_C_PANEL_HI), false,
               t->tscroll > 0);
@@ -1872,7 +1953,7 @@ static void sp_draw_timing(gfx_canvas_t *c)
                                 ROW_H - 2, 4,
                                 ui_theme_color(UI_C_PANEL_SUNK));
         }
-        gfx_text(c, PAD + 12, y, d->label, UI_FONT_LABEL,
+        gfx_text(c, PAD + 12, y, ui_setting_label(id), UI_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT), 1);
         char v[40];
         sp_setting_text(id, v, sizeof(v));
@@ -1885,15 +1966,15 @@ static void sp_draw_timing(gfx_canvas_t *c)
         ui_button(c, s.up[i], "+", ui_theme_color(UI_C_PANEL_HI), false,
                   now < d->max);
     }
-    const setting_def_t *d = settings_def(k_sp_settings[t->tpicked]);
-    gfx_text(c, PAD + 12, HELP_Y, d->label, UI_FONT_LABEL,
+    const setting_id_t picked = k_sp_settings[t->tpicked];
+    gfx_text(c, PAD + 12, HELP_Y, ui_setting_label(picked), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
-    gfx_text(c, PAD + 12, HELP_Y + 18, d->help, UI_FONT_LABEL,
-             ui_theme_color(UI_C_TEXT_FAINT), 1);
-    ui_button(c, s.read_btn, "DEFAULTS", ui_theme_color(UI_C_PANEL_HI),
+    gfx_text(c, PAD + 12, HELP_Y + 18, ui_setting_help(picked),
+             UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
+    ui_button(c, s.read_btn, TR(SP_DEFAULTS), ui_theme_color(UI_C_PANEL_HI),
               false, true);
-    ui_button(c, s.write_btn, "CLOSE", ui_theme_color(UI_C_PANEL_HI), false,
-              true);
+    ui_button(c, s.write_btn, TR(SUP_CLOSE), ui_theme_color(UI_C_PANEL_HI),
+              false, true);
 }
 
 static void sp_draw_items(gfx_canvas_t *c)
@@ -1901,11 +1982,11 @@ static void sp_draw_items(gfx_canvas_t *c)
     const stick_t *t = &s.st;
     const esc_profile_t *p = t->p;
     const int items = (int)p->item_count;
-    gfx_text(c, PAD + 12, PARM_Y + 12, "CHANGE", UI_FONT_LABEL,
+    gfx_text(c, PAD + 12, PARM_Y + 12, TR(SP_CHANGE), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
     const int max_scroll = (items > ROWS_MAX) ? items - ROWS_MAX : 0;
     char count[40];
-    snprintf(count, sizeof(count), "%d-%d of %d", t->iscroll + 1,
+    snprintf(count, sizeof(count), TR(PG_RANGE_OF), t->iscroll + 1,
              t->iscroll + sp_rows_shown(items, t->iscroll), items);
     gfx_text_in(c, (gfx_rect_t){ 420, (int16_t)(PARM_Y + 12), 260, 16 },
                 count, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1,
@@ -1939,20 +2020,16 @@ static void sp_draw_items(gfx_canvas_t *c)
         char v[64];
         if (action) {
             snprintf(v, sizeof(v), "%s", esc_stick_is_action(it)
-                                             ? "ACTION, NOT SET"
-                                             : "NOTHING TO CHOOSE");
+                                             ? TR(SP_ACTION)
+                                             : TR(SP_NOTHING_TO_CHOOSE));
         } else if (pick < 0) {
-            snprintf(v, sizeof(v), "KEEP");
+            snprintf(v, sizeof(v), "%s", TR(SP_KEEP));
         } else {
             snprintf(v, sizeof(v), "%u %s",
                      (unsigned)it->values[pick].number,
                      it->values[pick].name);
         }
-        if ((int)strlen(v) > CTRL_W / 8) {
-            v[CTRL_W / 8 - 2] = '.';
-            v[CTRL_W / 8 - 1] = '.';
-            v[CTRL_W / 8] = '\0';
-        }
+        sp_cut(v, sizeof(v), CTRL_W / 8);
         widget_enum(c, y, v, (pick >= 0) ? ui_theme_color(UI_C_WARN)
                                          : ui_theme_color(UI_C_TEXT_FAINT));
         ui_button(c, s.down[i], "-", ui_theme_color(UI_C_PANEL_HI), false,
@@ -1965,10 +2042,10 @@ static void sp_draw_items(gfx_canvas_t *c)
     const esc_item_t *it = &p->items[t->picked];
     char line[160];
     if (it->applies_when[0] != '\0') {
-        snprintf(line, sizeof(line), "%u %s, only when %s",
+        snprintf(line, sizeof(line), TR(SP_ONLY_WHEN),
                  (unsigned)it->number, it->name, it->applies_when);
     } else if (it->applies_count > 0u) {
-        snprintf(line, sizeof(line), "%u %s, only on %u of the models",
+        snprintf(line, sizeof(line), TR(SP_ONLY_ON),
                  (unsigned)it->number, it->name,
                  (unsigned)it->applies_count);
     } else {
@@ -1979,11 +2056,13 @@ static void sp_draw_items(gfx_canvas_t *c)
     size_t at = 0;
     line[0] = '\0';
     for (unsigned k = 0; k < it->value_count && at + 1u < sizeof(line); ++k) {
-        const int w = snprintf(line + at, sizeof(line) - at, "%s%u %s%s",
+        const int w = snprintf(line + at, sizeof(line) - at, "%s%u %s%s%s",
                                (k > 0u) ? "   " : "",
                                (unsigned)it->values[k].number,
                                it->values[k].name,
-                               it->values[k].is_default ? " (default)" : "");
+                               it->values[k].is_default ? " " : "",
+                               it->values[k].is_default
+                                   ? TR(SP_DEFAULT_MARK) : "");
         if (w < 0) {
             break;
         }
@@ -2001,16 +2080,26 @@ static void sp_draw_items(gfx_canvas_t *c)
                 ui_theme_color(UI_C_WARN));
     } else {
         sp_text(c, PAD + 12, BTN_Y + 9,
-                (picked == 0u) ? "Pick a value to change; KEEP leaves it."
-                               : "The profile is unverified.",
+                (picked == 0u) ? TR(SP_PICK_VALUE) : TR(SP_UNVERIFIED),
                 56, ui_theme_color(UI_C_TEXT_FAINT));
     }
-    char run[24];
-    snprintf(run, sizeof(run), (picked > 0u) ? "RUN %u" : "RUN",
-             (unsigned)picked);
+    char run[32];
+    if (picked > 0u) {
+        snprintf(run, sizeof(run), TR(SP_RUN_N), (unsigned)picked);
+    } else {
+        snprintf(run, sizeof(run), "%s", TR(SP_RUN_BTN));
+    }
     ui_button(c, s.write_btn, run,
               can ? ui_theme_color(UI_C_DANGER)
                   : ui_theme_color(UI_C_PANEL_HI), false, can);
+}
+
+/* " (" ... ")" around a word, as the line after a number carries it. */
+static const char *sp_mark(ui_text_id_t id)
+{
+    static char buf[40];
+    snprintf(buf, sizeof(buf), " %s", ui_tr(id));
+    return buf;
 }
 
 static void sp_draw_device(gfx_canvas_t *c)
@@ -2020,7 +2109,7 @@ static void sp_draw_device(gfx_canvas_t *c)
     char line[128];
     snprintf(line, sizeof(line), "ESC STICK  >  %s %s", p->brand,
              p->family);
-    ui_button(c, s.back, "BACK", ui_theme_color(UI_C_PANEL_HI), false,
+    ui_button(c, s.back, TR(LOG_BACK), ui_theme_color(UI_C_PANEL_HI), false,
               !esc_stick_running(&t->run));
     sp_text(c, s.back.x + s.back.w + 16, CRUMB_Y + 8, line, 72,
             ui_theme_color(UI_C_TEXT_DIM));
@@ -2035,12 +2124,12 @@ static void sp_draw_device(gfx_canvas_t *c)
 
     const esc_stick_kind_t kind = esc_stick_kind(p, NULL);
     snprintf(line, sizeof(line), "%s   %s   %s",
-             (kind == ESC_STICK_KIND_TWO_STAGE) ? "TWO-STAGE MENU"
-                                                : "ONE-STAGE MENU",
-             (p->encoding == ESC_ENC_SHORT_LONG) ? "SHORT AND LONG BEEPS"
-                                                 : "COUNTED BEEPS",
-             p->one_change_per_entry ? "ONE CHANGE A POWER-UP"
-                                     : "MANY CHANGES A POWER-UP");
+             (kind == ESC_STICK_KIND_TWO_STAGE) ? TR(SP_TWO_STAGE_MENU)
+                                                : TR(SP_ONE_STAGE_MENU),
+             (p->encoding == ESC_ENC_SHORT_LONG) ? TR(SP_SHORT_LONG)
+                                                 : TR(SP_COUNTED),
+             p->one_change_per_entry ? TR(SP_ONE_CHANGE)
+                                     : TR(SP_MANY_CHANGES));
     gfx_text(c, PAD + 12, DEV_Y + 4, line, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT), 1);
     uint32_t mv, ma;
@@ -2052,12 +2141,12 @@ static void sp_draw_device(gfx_canvas_t *c)
         ma = t->run.out.supply_ma;
         tm.entry_ms = t->run.t.entry_ms;
     }
-    snprintf(line, sizeof(line), "SUPPLY %u.%02u V  %u.%02u A   ENTRY "
-             "%u.%u s%s", (unsigned)(mv / 1000u),
+    snprintf(line, sizeof(line), TR(SP_SUPPLY_ENTRY), (unsigned)(mv / 1000u),
              (unsigned)(mv % 1000u / 10u), (unsigned)(ma / 1000u),
              (unsigned)(ma % 1000u / 10u), (unsigned)(tm.entry_ms / 1000u),
              (unsigned)(tm.entry_ms % 1000u / 100u),
-             (p->entry_hold_ms != 0u) ? " (profile)" : " (setting)");
+             (p->entry_hold_ms != 0u) ? sp_mark(TX_SP_FROM_PROFILE_MARK)
+                                      : sp_mark(TX_SP_FROM_SETTING_MARK));
     gfx_text(c, PAD + 12, DEV_Y + 22, line, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
     ui_button(c, s.connect_btn, "TIMING", ui_theme_color(UI_C_PANEL_HI),
@@ -2088,18 +2177,16 @@ static void sp_draw_warning(gfx_canvas_t *c)
     gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, red);
     gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, red);
     gfx_text_in(c, (gfx_rect_t){ a.x, (int16_t)(a.y + 12), a.w, 28 },
-                "MOTOR REMOVED, LOAD FITTED?", UI_FONT_HEAD,
+                TR(SP_WARN_TITLE), UI_FONT_HEAD,
                 ui_is_light(red) ? ui_theme_color(UI_C_TEXT_ON_LIGHT)
                                  : ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_CENTER);
-    static const char *const k_lines[] = {
-        "The run powers this ESC from the supply and moves its throttle",
-        "to MAX and back. A motor still connected starts at full throttle.",
-        "Disconnect the motor and fit a resistor load in its place: the",
-        "beeps are counted as current through it.",
+    static const ui_text_id_t k_lines[] = {
+        TX_SP_WARN_1, TX_SP_WARN_2, TX_SP_WARN_3, TX_SP_WARN_4,
     };
     for (int i = 0; i < 4; ++i) {
-        gfx_text(c, a.x + 20, a.y + 68 + i * 22, k_lines[i], UI_FONT_LABEL,
+        gfx_text(c, a.x + 20, a.y + 68 + i * 22, ui_tr(k_lines[i]),
+                 UI_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT), 1);
     }
     char line[128];
@@ -2111,20 +2198,21 @@ static void sp_draw_warning(gfx_canvas_t *c)
     size_t picked = 0;
     esc_stick_change_t ch[ESC_STICK_MAX_CHANGES];
     (void)sp_changes(ch, &picked);
-    snprintf(line, sizeof(line), "SUPPLY %u.%02u V  %u.%02u A   %u CHANGE%s",
+    snprintf(line, sizeof(line),
+             (picked == 1u) ? TR(SP_WARN_SUPPLY) : TR(SP_WARN_SUPPLY_N),
              (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 10u),
              (unsigned)(ma / 1000u), (unsigned)(ma % 1000u / 10u),
-             (unsigned)picked, (picked == 1u) ? "" : "S");
+             (unsigned)picked);
     gfx_text(c, a.x + 20, a.y + 68 + 6 * 22, line, UI_FONT_LABEL,
              ui_theme_color(UI_C_VOLT), 1);
     gfx_text(c, a.x + 20, a.y + 68 + 7 * 22,
-             "The profile is unverified and every beep time is a default.",
+             TR(SP_WARN_UNVERIFIED),
              UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
-    ui_button(c, t->hold_btn, "HOLD TO RUN",
+    ui_button(c, t->hold_btn, TR(SP_HOLD_TO_RUN),
               ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK), red,
                            t->hold.held_s),
               t->warn_down, true);
-    ui_button(c, t->cancel_btn, "CANCEL", ui_theme_color(UI_C_PANEL_SUNK),
+    ui_button(c, t->cancel_btn, TR(CANCEL), ui_theme_color(UI_C_PANEL_SUNK),
               false, true);
 }
 

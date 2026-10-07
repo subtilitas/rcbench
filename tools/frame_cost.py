@@ -54,6 +54,8 @@ SOURCES = [
     "shared/ui/ui_tabs.c",
     "shared/ui/ui_watermark.c",
     "shared/ui/ui_router.c",
+    "shared/ui/ui_text.c",
+    "shared/ui/ui_text_de.c",
     "shared/ui/splash_screen.c",
     "shared/ui/overview_screen.c",
     "shared/ui/stub_screen.c",

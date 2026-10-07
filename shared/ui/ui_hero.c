@@ -7,6 +7,7 @@
 #include <math.h>
 #include <stdio.h>
 
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -67,7 +68,7 @@ void ui_hero_render(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def,
         ui_fmt(pk, sizeof(pk), peak, def->decimals);
         char line[32];
         const char *tag = (def->extreme_label != NULL)
-                              ? def->extreme_label : "pk";
+                              ? def->extreme_label : TR(HERO_PEAK);
         snprintf(line, sizeof(line), "%s %s", tag, pk);
         gfx_text(c, r.x + 12, r.y + 68, line, UI_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);

@@ -6,6 +6,7 @@
 
 #include <string.h>
 
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -27,11 +28,41 @@ void ui_tabs_init(ui_tabs_t *t, const char *const *labels, int count,
     }
     const int gap = 4;
     const int w = (row.w - (count - 1) * gap) / count;
+    for (int i = 0; i < UI_TABS_MAX; ++i) {
+        t->text[i] = -1;
+    }
     for (int i = 0; i < count; ++i) {
         t->label[i] = labels[i];
         t->rect[i]  = (gfx_rect_t){ (int16_t)(row.x + i * (w + gap)),
                                     row.y, (int16_t)w, row.h };
     }
+}
+
+void ui_tabs_init_text(ui_tabs_t *t, const ui_text_id_t *ids, int count,
+                       gfx_rect_t row)
+{
+    if (t == NULL || ids == NULL) {
+        return;
+    }
+    if (count > UI_TABS_MAX) {
+        count = UI_TABS_MAX;
+    }
+    const char *labels[UI_TABS_MAX] = { 0 };
+    for (int i = 0; i < count; ++i) {
+        labels[i] = ui_tr_in(UI_LANG_EN, ids[i]);
+    }
+    ui_tabs_init(t, labels, count, row);
+    for (int i = 0; i < count; ++i) {
+        t->text[i] = (int16_t)ids[i];
+    }
+}
+
+const char *ui_tabs_label(const ui_tabs_t *t, int i)
+{
+    if (t == NULL || i < 0 || i >= t->count) {
+        return "";
+    }
+    return (t->text[i] >= 0) ? ui_tr((ui_text_id_t)t->text[i]) : t->label[i];
 }
 
 bool ui_tabs_event(ui_tabs_t *t, const touch_event_t *evt)
@@ -98,7 +129,7 @@ void ui_tabs_render(const ui_tabs_t *t, gfx_canvas_t *c)
             gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CHIP,
                                 ui_theme_color(UI_C_PANEL));
         }
-        gfx_text_in(c, r, t->label[i], UI_FONT_LABEL,
+        gfx_text_in(c, r, ui_tabs_label(t, i), UI_FONT_LABEL,
                     on ? ui_theme_color(UI_C_ACCENT)
                        : ui_theme_color(UI_C_TEXT_DIM),
                     1, GFX_ALIGN_CENTER);

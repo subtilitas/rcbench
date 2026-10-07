@@ -184,6 +184,12 @@ typedef struct {
     uint8_t  travel_deg, range_pct;
     bool     model;         /**< the supply is the panel's model        */
     char     firmware[16];
+    /**
+     * The report's language: a table of SERVO_STR_COUNT entries, each NULL
+     * for the English, or NULL for English throughout.  The CSV is English
+     * whatever this says, so tools parse every run alike.
+     */
+    const char *const *text;
 } servo_test_cfg_t;
 
 /* ------------------------------------------------------ what it reports */
@@ -421,7 +427,9 @@ bool servo_test_drained(const servo_test_t *t);
 
 /**
  * Every word the run puts in its files and on the SERVO screen, in one
- * table, so another language is another table.
+ * table, so another language is another table.  The SERVO_STR_R_ entries
+ * are the report's: some are printf formats, and a translation converts the
+ * same arguments in the same order.
  */
 typedef enum {
     SERVO_STR_PHASE_NONE = 0,
@@ -459,11 +467,85 @@ typedef enum {
     /* The SERVO screen's, before a run is asked of the engine. */
     SERVO_STR_START_NOT_ARMED,
     SERVO_STR_START_BUSY,
+    /* The TXT report, in the order it is written. */
+    SERVO_STR_R_TITLE,
+    SERVO_STR_R_RESULT,
+    SERVO_STR_R_RESULT_WHY,
+    SERVO_STR_R_DEVICE,
+    SERVO_STR_R_FIRMWARE,
+    SERVO_STR_R_LOG,
+    SERVO_STR_R_SUPPLY,
+    SERVO_STR_R_SUPPLY_MODEL,
+    SERVO_STR_R_READINGS,
+    SERVO_STR_R_READINGS_FEW,
+    SERVO_STR_R_SKIPPED,
+    SERVO_STR_R_RESOLUTION,
+    SERVO_STR_R_RESOLUTION_UNKNOWN,
+    SERVO_STR_R_DURATION,
+    SERVO_STR_R_ROWS,
+    SERVO_STR_R_SETTINGS,
+    SERVO_STR_R_TYPE,
+    SERVO_STR_R_RATE,
+    SERVO_STR_R_DANGER,
+    SERVO_STR_R_DANGER_NONE,
+    SERVO_STR_R_HV,
+    SERVO_STR_R_HV_OFF,
+    SERVO_STR_R_HV_ON_RUN,
+    SERVO_STR_R_HV_ON_NONE,
+    SERVO_STR_R_ENDS,
+    SERVO_STR_R_STEPS,
+    SERVO_STR_R_STEPS_NONE,
+    SERVO_STR_R_BROWNOUT,
+    SERVO_STR_R_BROWNOUT_NOT_RUN,
+    SERVO_STR_R_I_LIMIT,
+    SERVO_STR_R_TIMING,
+    SERVO_STR_R_LEN_MOVES,
+    SERVO_STR_R_LEN_TIME,
+    SERVO_STR_R_LIMITS,
+    SERVO_STR_R_ON,
+    SERVO_STR_R_OFF,
+    SERVO_STR_R_PER_STEP,
+    SERVO_STR_R_COLUMNS,
+    SERVO_STR_R_STEP_NOT_RUN,
+    SERVO_STR_R_CUT_SHORT,
+    SERVO_STR_R_NO_STEP,
+    SERVO_STR_R_LATE,
+    SERVO_STR_R_BO_HEAD,
+    SERVO_STR_R_BO_NOT_RUN,
+    SERVO_STR_R_BO_NOT_REACHED,
+    SERVO_STR_R_BO_STOPPED,
+    SERVO_STR_R_BO_ALL,
+    SERVO_STR_R_BO_NONE,
+    SERVO_STR_R_BO_RULE,
+    SERVO_STR_R_LIM_HEAD,
+    SERVO_STR_R_LIM_IDLE,
+    SERVO_STR_R_LIM_HOLD,
+    SERVO_STR_R_LIM_TRAVEL,
+    SERVO_STR_R_LIM_TRAVEL_OFF,
+    SERVO_STR_R_LIM_STALL,
+    SERVO_STR_R_LIM_LATE,
+    SERVO_STR_R_NOT_CHECKED,
+    SERVO_STR_R_NOT_MEASURED,
+    SERVO_STR_R_UNM_HEAD,
+    SERVO_STR_R_UNM_POSITION,
+    SERVO_STR_R_UNM_PEAKS,
+    SERVO_STR_R_UNM_PATH,
     SERVO_STR_COUNT
 } servo_str_t;
 
 /** The English text of @p id; "" for one out of range. */
 const char *servo_str(servo_str_t id);
+
+/** @p id from @p table, or the English where @p table is NULL or holds
+ *  none; "" for one out of range. */
+const char *servo_str_in(const char *const *table, servo_str_t id);
+
+/** The entries the names below come from, for a caller with its own
+ *  table. */
+servo_str_t servo_test_phase_str(servo_test_phase_t ph);
+servo_str_t servo_test_abort_str(servo_test_abort_t why);
+servo_str_t servo_test_verdict_str(servo_test_verdict_t v);
+servo_str_t servo_test_start_str(servo_test_start_t why);
 
 const char *servo_test_phase_name(servo_test_phase_t ph);
 const char *servo_test_abort_name(servo_test_abort_t why);
@@ -473,7 +555,8 @@ const char *servo_test_start_name(servo_test_start_t why);
 /** The CSV's header row. */
 const char *servo_test_csv_header(void);
 
-/** Line @p idx of the report into @p buf; false past the last. */
+/** Line @p idx of the report into @p buf, in the language of
+ *  @p t->cfg.text; false past the last. */
 bool servo_report_line(const servo_test_t *t, unsigned idx, char *buf,
                        size_t n);
 

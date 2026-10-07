@@ -9,7 +9,7 @@ steht unter [Der Link](Link-de.md).
 ## Echo-Selbsttest
 
 Der Selbsttest beantwortet eine Frage: kommen Frames unversehrt über den Bus?
-Er benutzt kein Page-Protokoll. Das Panel sendet einen Probe-Frame, der
+Er benutzt kein Page-Protokoll. Das Panel sendet einen Testframe, der
 Koprozessor schickt ihn zurück, und das Panel vergleicht Byte für Byte.
 Besteht der Test und der Link funktioniert nicht, liegt der Fehler oberhalb
 der Leitung.
@@ -27,15 +27,15 @@ alle 3 s wiederholt:
     rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00
 
 `requests served` zählt die Link-Page-Anfragen, die das Panel geschickt und
-dieses Ende beantwortet hat; `self-test echoes` zählt Probe-Frames und steht
+dieses Ende beantwortet hat; `self-test echoes` zählt Testframes und steht
 auf 0, solange der CAN-Selbsttest des Panels nicht läuft. Zusammen sagen die
 beiden, welches Ende aufgehört hat:
 
 | Requests | Panel zeigt | Lesart |
 | --- | --- | --- |
 | steigend | `LINK` | funktioniert |
-| unverändert | `NO LINK` | es kommt nichts an — das Panel sendet nicht mehr, oder die Verkabelung ist offen |
-| steigend | `NO LINK` | die Anfragen kommen an, die Antworten nicht zurück |
+| unverändert | `KEIN LINK` | es kommt nichts an — das Panel sendet nicht mehr, oder die Verkabelung ist offen |
+| steigend | `KEIN LINK` | die Anfragen kommen an, die Antworten nicht zurück |
 
 `CAN did not answer on SPI` heißt, dass der Controller nach dem Reset nicht
 den Configuration Mode gemeldet hat. Der Fehler liegt an SPI (Serial
@@ -48,7 +48,7 @@ Der Test läuft bei jedem Start. Er dauert 1200 ms, innerhalb des Splash und
 vor dem Identity-Poll: ein kaputter Bus wird so als kaputter Bus diagnostiziert
 und nicht als eine Identity, die nie geantwortet hat.
 
-Ein anderes Urteil als `every probe came back intact` bringt das Panel auf den
+Ein anderes Urteil als `alle Testframes intakt zurück` bringt das Panel auf den
 [Bus-Fehler-Bildschirm](#der-bus-fehler-bildschirm) statt ins Menü. Es muss
 nichts aktiviert werden, und es wird keine Konsole gebraucht.
 
@@ -75,11 +75,11 @@ sie mit der Zahl, die es empfangen hat.
 
 | Befund | Bedeutung | Prüfen |
 | --- | --- | --- |
-| `no probe came back` | nichts kommt durch | CANH/CANL vertauscht; Gegenseite versorgt; gleiche Bitrate an beiden Enden; Abschlusswiderstände an beiden Enden |
-| `probes come back altered` | Frames kommen durch und kommen falsch an | Sample Point oder Bit Timing; ein fehlender Abschluss reflektiert |
-| `probes cross, and not all of them` | grenzwertiger Bus | Timing, ein Abschluss, oder ein für die Rate zu langer Bus |
-| `probes go missing without a bus error` | Frames kamen unversehrt an und wurden nicht rechtzeitig gelesen | ein Empfangspuffer ist übergelaufen; kein Verdrahtungsfehler. Mit dem Overflow-Zähler des Koprozessors vergleichen |
-| `every probe came back intact` | die Leitung ist in Ordnung | ein verbleibender Fehler liegt oberhalb der Leitung |
+| `kein Testframe kam zurück` (Konsole: `no probe came back`) | nichts kommt durch | CANH/CANL vertauscht; Gegenseite versorgt; gleiche Bitrate an beiden Enden; Abschlusswiderstände an beiden Enden |
+| `Testframes verändert zurück` (Konsole: `probes come back altered`) | Frames kommen durch und kommen falsch an | Sample Point oder Bit Timing; ein fehlender Abschluss reflektiert |
+| `Testframes gehen verloren` (Konsole: `probes cross, and not all of them`) | grenzwertiger Bus | Timing, ein Abschluss, oder ein für die Rate zu langer Bus |
+| `Testframes weg ohne Busfehler` (Konsole: `probes go missing without a bus error`) | Frames kamen unversehrt an und wurden nicht rechtzeitig gelesen | ein Empfangspuffer ist übergelaufen; kein Verdrahtungsfehler. Mit dem Overflow-Zähler des Koprozessors vergleichen |
+| `alle Testframes intakt zurück` (Konsole: `every probe came back intact`) | die Leitung ist in Ordnung | ein verbleibender Fehler liegt oberhalb der Leitung |
 
 Tritt beides auf, wird Verfälschung vor Verlust gemeldet, weil ein
 grenzwertiger Bus beides erzeugt und die Verfälschung die Ursache benennt.
@@ -96,20 +96,20 @@ einmal, bevor der Durchlauf vorbei ist.
 
 ### Der Bus-Fehler-Bildschirm
 
-Ein anderes Urteil als `every probe came back intact` wird auf dem Panel vor
+Ein anderes Urteil als `alle Testframes intakt zurück` wird auf dem Panel vor
 dem Menü gezeigt, denn der Fehler ist von jedem anderen Bildschirm aus
 unsichtbar: ein Bus, der keine Frames trägt, sieht genauso aus wie ein
 Koprozessor, der nicht bestückt ist, und beides sieht aus wie ein Prüfstand,
 der einfach keine Zahlen zeigt.
 
-![Frames kommen verändert an](img/busfault.png)
+![Frames kommen verändert an](img/de/busfault.png)
 
 Das Urteil ist die Überschrift, die Liste darunter ist das, was zu prüfen ist,
 in der Reihenfolge, die am wenigsten kostet, und die rechte Spalte ist das,
-was beide Enden gezählt haben. `returned` ist grün, sobald überhaupt etwas
+was beide Enden gezählt haben. `zurück` ist grün, sobald überhaupt etwas
 zurückkam; `BUS OFF` heißt, dass dieses Panel aufgehört hat zu senden.
 
-![Es kam nichts zurück](img/busfault-silent.png)
+![Es kam nichts zurück](img/de/busfault-silent.png)
 
 Verlassen wird der Bildschirm mit einem zwei Sekunden langen Halten der Taste
 am unteren Rand — dieselbe Geste und dieselbe Überblendung wie bei ARM. Ein

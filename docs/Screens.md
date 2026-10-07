@@ -759,6 +759,10 @@ Settings are behind the SETUP tile, in both themes:
 
 ![Setup in the light theme](img/setup-light.png)
 
+APPLICATION's Language switches the whole interface between English and
+German on the next frame, with no restart. What follows it, what stays
+English and why: [Interface language](Language.md).
+
 ### Keeping the values
 
 A changed value takes effect at once and is not written to flash until SAVE is
@@ -825,8 +829,8 @@ the wire carried frames a moment ago.
 | Heading | Meaning |
 | --- | --- |
 | `this panel is off the bus` | too many frames went unacknowledged; it stopped transmitting |
-| `this panel is rejoining the bus` | it is counting the quiet time a rejoin needs, about 3 s |
-| `this panel's controller has stopped` | idle and not restarted — a fault in the firmware |
+| `this panel is rejoining` | it is counting the quiet time a rejoin needs, about 3 s |
+| `the controller has stopped` | idle and not restarted — a fault in the firmware |
 | `the link stopped answering` | the controller is on the bus and nothing answers |
 | `the controller cannot be read` | the driver is not running; nothing can be sent |
 

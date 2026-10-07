@@ -675,6 +675,107 @@ TEST_CASE(text_draws_and_scales)
     CHECK_EQ(gfx_char(&s_c, 0, 0, 'A', NULL, GFX_RED, 1), 0);
 }
 
+/* Text is UTF-8: a German letter is two bytes and one cell. */
+TEST_CASE(utf8_decodes_one_code_point_a_cell)
+{
+    const char *s = "G\xc3\xb6\xc3\x9f" "e";    /* Größe, less one letter */
+    CHECK_EQ(gfx_utf8_next(&s), 'G');
+    CHECK_EQ(gfx_utf8_next(&s), 0xF6);
+    CHECK_EQ(gfx_utf8_next(&s), 0xDF);
+    CHECK_EQ(gfx_utf8_next(&s), 'e');
+    CHECK_EQ(gfx_utf8_next(&s), 0);
+    CHECK_EQ(gfx_utf8_next(&s), 0);              /* stays at the end */
+
+    const char *three = "\xe2\x82\xac";          /* a euro sign, U+20AC */
+    CHECK_EQ(gfx_utf8_next(&three), 0x20AC);
+    const char *four = "\xf0\x9f\x98\x80";       /* U+1F600 */
+    CHECK_EQ(gfx_utf8_next(&four), 0x1F600);
+
+    CHECK_EQ(gfx_text_cells("Gr\xc3\xb6\xc3\x9f" "e"), 5);
+    CHECK_EQ(gfx_text_cells(NULL), 0);
+    CHECK_EQ(gfx_text_width(&gfx_font_8x16, "\xc3\x84", 1), 8);
+    CHECK_EQ(gfx_text_width(&gfx_font_16x28, "\xc3\x84\xc3\x96", 2), 64);
+}
+
+/* A malformed byte is one '?' cell and never a read past the end. */
+TEST_CASE(utf8_malformed_is_one_cell_each)
+{
+    const char *cut = "\xc3";                    /* a lead byte, then the end */
+    CHECK_EQ(gfx_utf8_next(&cut), '?');
+    CHECK_EQ(gfx_utf8_next(&cut), 0);
+
+    const char *stray = "\x80" "A";              /* a continuation alone */
+    CHECK_EQ(gfx_utf8_next(&stray), '?');
+    CHECK_EQ(gfx_utf8_next(&stray), 'A');
+
+    const char *broken = "\xc3" "A";             /* lead byte, then ASCII */
+    CHECK_EQ(gfx_utf8_next(&broken), '?');
+    CHECK_EQ(gfx_utf8_next(&broken), 'A');
+
+    const char *overlong = "\xc0\xaf";           /* '/' in two bytes */
+    CHECK_EQ(gfx_utf8_next(&overlong), '?');
+    CHECK_EQ(gfx_utf8_next(&overlong), '?');
+    const char *overlong3 = "\xe0\x80\xaf";
+    CHECK_EQ(gfx_utf8_next(&overlong3), '?');
+    const char *overlong4 = "\xf0\x80\x80\xaf";
+    CHECK_EQ(gfx_utf8_next(&overlong4), '?');
+    const char *surrogate = "\xed\xa0\x80";      /* U+D800 */
+    CHECK_EQ(gfx_utf8_next(&surrogate), '?');
+    const char *too_high = "\xf5\x80\x80\x80";
+    CHECK_EQ(gfx_utf8_next(&too_high), '?');
+
+    CHECK_EQ(gfx_text_cells("\xc3" "A\xff"), 3);
+}
+
+/* A cut between characters, never inside one. */
+TEST_CASE(utf8_prefix_cuts_between_characters)
+{
+    const char *s = "\xc3\xa4" "b\xc3\xbc";      /* äbü */
+    CHECK_EQ(gfx_text_prefix(s, 0), 0);
+    CHECK_EQ(gfx_text_prefix(s, 1), 2);
+    CHECK_EQ(gfx_text_prefix(s, 2), 3);
+    CHECK_EQ(gfx_text_prefix(s, 3), 5);
+    CHECK_EQ(gfx_text_prefix(s, 9), 5);          /* no further than the end */
+    CHECK_EQ(gfx_text_prefix(NULL, 3), 0);
+}
+
+/* The German letters have glyphs of their own in both text faces; the
+ * numeric face has none and draws its missing-glyph box. */
+TEST_CASE(german_letters_have_glyphs)
+{
+    static const char *const k_letters[] = {
+        "\xc3\x84", "\xc3\x96", "\xc3\x9c", "\xc3\x9f",
+        "\xc3\xa4", "\xc3\xb6", "\xc3\xbc",
+    };
+    const gfx_font_t *const k_faces[] = { &gfx_font_8x16, &gfx_font_16x28 };
+    for (size_t f = 0; f < 2; ++f) {
+        fresh();
+        gfx_text(&s_c, 0, 0, "?", k_faces[f], GFX_RED, 1);
+        const int fallback = count_of(GFX_RED);
+        for (size_t i = 0; i < sizeof(k_letters) / sizeof(k_letters[0]); ++i) {
+            fresh();
+            CHECK_EQ(gfx_text(&s_c, 0, 0, k_letters[i], k_faces[f], GFX_RED,
+                              1), k_faces[f]->width);
+            const int ink = count_of(GFX_RED);
+            if (ink == 0 || ink == fallback) {
+                T_FAIL("face %zu letter %zu draws %d pixels, '?' draws %d",
+                       f, i, ink, fallback);
+            }
+        }
+    }
+    /* A byte of a sequence handed to gfx_char() alone is not a letter. */
+    fresh();
+    gfx_char(&s_c, 0, 0, (char)0xC4, &gfx_font_8x16, GFX_RED, 1);
+    const int half = count_of(GFX_RED);
+    fresh();
+    gfx_char(&s_c, 0, 0, '?', &gfx_font_8x16, GFX_RED, 1);
+    CHECK_EQ(half, count_of(GFX_RED));
+    /* A code point no face holds is a '?' in a text face. */
+    fresh();
+    gfx_text(&s_c, 0, 0, "\xe2\x82\xac", &gfx_font_8x16, GFX_RED, 1);
+    CHECK_EQ(half, count_of(GFX_RED));
+}
+
 TEST_CASE(text_bg_paints_the_cell)
 {
     fresh();
@@ -899,6 +1000,10 @@ int main(void)
     RUN(blit_1bpp_expands_a_mask);
     RUN(font_metrics);
     RUN(text_draws_and_scales);
+    RUN(utf8_decodes_one_code_point_a_cell);
+    RUN(utf8_malformed_is_one_cell_each);
+    RUN(utf8_prefix_cuts_between_characters);
+    RUN(german_letters_have_glyphs);
     RUN(text_bg_paints_the_cell);
     RUN(text_in_aligns_and_clips);
     RUN(null_canvas_is_survivable);

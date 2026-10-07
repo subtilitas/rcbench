@@ -58,3 +58,10 @@ uint32_t programmer_screen_stick_runs(void);
 
 /** The stick run, under way or ended, for tests. */
 const esc_stick_t *programmer_screen_stick(void);
+
+/**
+ * A refusal of the stick engine (esc_stick_kind(), esc_stick_check(),
+ * esc_stick_start()) in the language showing, found by its English; one the
+ * screen does not know comes back as given, and NULL as "refused".
+ */
+const char *programmer_screen_why_text(const char *why);

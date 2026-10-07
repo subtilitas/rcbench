@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -155,7 +156,7 @@ static void draw_cells(gfx_canvas_t *c)
     if (!s.b.valid || s.b.cells <= 0) {
         gfx_text_in(c, (gfx_rect_t){ PAD, (int16_t)(MEAN_Y + 40),
                                      LCARD_W, 16 },
-                    "no monitor on the balance lead", UI_FONT_LABEL,
+                    TR(BAT_NO_MONITOR), UI_FONT_LABEL,
                     ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_CENTER);
         return;
     }
@@ -230,16 +231,16 @@ static void draw_verdict(gfx_canvas_t *c)
     const char *word, *why;
     gfx_color_t tone;
     if (!s.b.valid) {
-        word = "NO PACK"; why = "nothing on the lead";
+        word = TR(BAT_NO_PACK); why = TR(BAT_NO_PACK_WHY);
         tone = ui_theme_color(UI_C_TEXT_FAINT);
     } else if (spread >= SPREAD_BAD_MV) {
-        word = "REPLACE"; why = "one cell is adrift";
+        word = TR(BAT_REPLACE); why = TR(BAT_REPLACE_WHY);
         tone = ui_theme_color(UI_C_DANGER);
     } else if (spread >= SPREAD_WATCH_MV) {
-        word = "WATCH";   why = "the spread is opening";
+        word = TR(BAT_WATCH);   why = TR(BAT_WATCH_WHY);
         tone = ui_theme_color(UI_C_WARN);
     } else {
-        word = "HEALTHY"; why = "cells agree under load";
+        word = TR(BAT_HEALTHY); why = TR(BAT_HEALTHY_WHY);
         tone = ui_theme_color(UI_C_OK);
     }
 
@@ -265,9 +266,11 @@ static void draw_right(gfx_canvas_t *c)
     const gfx_color_t ink = ui_theme_color(UI_C_TEXT);
     if (!s.b.valid) {
         for (int i = 0; i < 6; ++i) {
-            static const char *const k[6] = { "CELLS", "PACK", "MEAN",
-                                              "SPREAD", "PACK iR", "USED" };
-            row(c, 168 + i * 30, k[i], "---",
+            static const ui_text_id_t k[6] = {
+                TX_BAT_CELLS, TX_BAT_PACK, TX_BAT_MEAN, TX_BAT_SPREAD,
+                TX_BAT_PACK_IR, TX_BAT_USED,
+            };
+            row(c, 168 + i * 30, ui_tr(k[i]), "---",
                 ui_theme_color(UI_C_TEXT_FAINT));
         }
         return;
@@ -282,28 +285,28 @@ static void draw_right(gfx_canvas_t *c)
     const float spread = battery_screen_spread_mv();
 
     snprintf(buf, sizeof(buf), "%dS", s.b.cells & 0xFF);
-    row(c, 168, "CELLS", buf, ink);
+    row(c, 168, TR(BAT_CELLS), buf, ink);
     snprintf(buf, sizeof(buf), "%.2f V", (double)pack);
-    row(c, 198, "PACK", buf, ink);
+    row(c, 198, TR(BAT_PACK), buf, ink);
     snprintf(buf, sizeof(buf), "%.3f V", (double)mean);
-    row(c, 228, "MEAN", buf, ink);
+    row(c, 228, TR(BAT_MEAN), buf, ink);
     snprintf(buf, sizeof(buf), "%d mV", (int)(spread + 0.5f));
-    row(c, 258, "SPREAD", buf,
+    row(c, 258, TR(BAT_SPREAD), buf,
         (spread >= SPREAD_BAD_MV)   ? ui_theme_color(UI_C_DANGER)
       : (spread >= SPREAD_WATCH_MV) ? ui_theme_color(UI_C_WARN)
                                     : ui_theme_color(UI_C_OK));
     snprintf(buf, sizeof(buf), "%.1f mOhm", (double)ir);
-    row(c, 288, "PACK iR", buf, ink);
-    snprintf(buf, sizeof(buf), "%d of %d mAh",
+    row(c, 288, TR(BAT_PACK_IR), buf, ink);
+    snprintf(buf, sizeof(buf), TR(BAT_USED_OF),
              (int)s.b.drawn_mah, (int)s.b.capacity_mah);
-    row(c, 318, "USED", buf, ink);
+    row(c, 318, TR(BAT_USED), buf, ink);
 
     gfx_hline(c, x, 350, w, ui_theme_color(UI_C_EDGE));
-    gfx_text(c, x, 362, "Spread is measured under", UI_FONT_LABEL,
+    gfx_text(c, x, 362, TR(BAT_NOTE_1), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text(c, x, 380, "load. At rest a tired cell", UI_FONT_LABEL,
+    gfx_text(c, x, 380, TR(BAT_NOTE_2), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text(c, x, 398, "looks like every other one.", UI_FONT_LABEL,
+    gfx_text(c, x, 398, TR(BAT_NOTE_3), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
 }
 
@@ -327,7 +330,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
     ui_card(c, (gfx_rect_t){ RCARD_X, PAD, RCARD_W,
                              (int16_t)(H - 2 * PAD) },
             ui_theme_color(UI_C_PANEL));
-    gfx_text(c, PLOT_X, 20, "CELL DIVERGENCE", UI_FONT_LABEL,
+    gfx_text(c, PLOT_X, 20, TR(BAT_DIVERGENCE), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
     draw_cells(c);
     draw_right(c);

@@ -3,8 +3,11 @@
  * names, and the TXT report, line by line.
  *
  * Every string the run writes or the SERVO screen shows about it is in
- * k_str or in the report's line formats below, and nowhere else, so a
- * translation replaces this file's tables and nothing more.
+ * k_str, and nowhere else, so a translation is another table of the same
+ * entries (the panel's German is in shared/ui/ui_text_de.c).  The report is
+ * written in the language of the table the run was started with, and the
+ * CSV always in English, because tools read it by its words.  A report is
+ * UTF-8, as the table's strings are.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -49,47 +52,166 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_START_BAD_ENDS]   = "RANGE TOO SMALL",
     [SERVO_STR_START_NOT_ARMED]  = "ARM FIRST",
     [SERVO_STR_START_BUSY]       = "LAST REPORT STILL WRITING",
+
+    /* The report.  The labels pad to column 17, so the values line up. */
+    [SERVO_STR_R_TITLE]          = "RCBENCH SERVO TEST REPORT",
+    [SERVO_STR_R_RESULT]         = "Result:         %s",
+    [SERVO_STR_R_RESULT_WHY]     = "Result:         %s - %s",
+    [SERVO_STR_R_DEVICE]         = "Device:         %s",
+    [SERVO_STR_R_FIRMWARE]       = "Firmware:       rcbench %s",
+    [SERVO_STR_R_LOG]            = "Log:            the .CSV with this "
+                                   "file's number, one row per supply "
+                                   "reading",
+    [SERVO_STR_R_SUPPLY]         = "Supply:         %s",
+    [SERVO_STR_R_SUPPLY_MODEL]   = "the panel's model: every reading is "
+                                   "simulated",
+    [SERVO_STR_R_READINGS]       = "Readings:       %.1f /s taken by the "
+                                   "supply, %.1f /s reached the test",
+    [SERVO_STR_R_READINGS_FEW]   = "Readings:       fewer than two",
+    [SERVO_STR_R_SKIPPED]        = "Skipped:        %lu readings the supply "
+                                   "took never reached the test",
+    [SERVO_STR_R_RESOLUTION]     = "Resolution:     one reading every %lu "
+                                   "ms: a travel time is late by up to that",
+    [SERVO_STR_R_RESOLUTION_UNKNOWN] = "Resolution:     not known",
+    [SERVO_STR_R_DURATION]       = "Duration:       %lu.%01lu s",
+    [SERVO_STR_R_ROWS]           = "Log rows:       %lu written, %lu lost to "
+                                   "a full queue",
+    [SERVO_STR_R_SETTINGS]       = "SETTINGS IN FORCE",
+    [SERVO_STR_R_TYPE]           = "Type:           %s, centre %u us, %u-%u "
+                                   "us, trim %+d us, reverse %s",
+    [SERVO_STR_R_RATE]           = "Frame rate:     %u Hz",
+    [SERVO_STR_R_DANGER]         = "Can destroy:    %s",
+    [SERVO_STR_R_DANGER_NONE]    = "none in force",
+    [SERVO_STR_R_HV]             = "HV servo:       %s",
+    [SERVO_STR_R_HV_OFF]         = "OFF, no step above 6.0 V",
+    [SERVO_STR_R_HV_ON_RUN]      = "ON, steps above 6.0 V run",
+    [SERVO_STR_R_HV_ON_NONE]     = "ON, no step above 6.0 V chosen",
+    [SERVO_STR_R_ENDS]           = "Ends:           %u us and %u us (RANGE "
+                                   "%u %% of TRAVEL +/-%u deg)",
+    [SERVO_STR_R_STEPS]          = "Steps:         ",
+    [SERVO_STR_R_STEPS_NONE]     = " none",
+    [SERVO_STR_R_BROWNOUT]       = "Brown-out:      from %.2f V down in "
+                                   "%.2f V steps to %.2f V",
+    [SERVO_STR_R_BROWNOUT_NOT_RUN] = "Brown-out:      not run",
+    [SERVO_STR_R_I_LIMIT]        = "Current limit:  %.2f A",
+    [SERVO_STR_R_TIMING]         = "Timing:         settle %u ms, idle %u "
+                                   "ms, dwell %u ms (hold measured %u ms)",
+    [SERVO_STR_R_LEN_MOVES]      = "Length:         %u movements a step",
+    [SERVO_STR_R_LEN_TIME]       = "Length:         %u s a step",
+    [SERVO_STR_R_LIMITS]         = "Limits:         idle %s, holding %s, "
+                                   "travel %s, stall %.2f A",
+    [SERVO_STR_R_ON]             = "ON",
+    [SERVO_STR_R_OFF]            = "OFF",
+    [SERVO_STR_R_PER_STEP]       = "RESULTS PER STEP (currents in A, times "
+                                   "in ms)",
+    /* Over the columns of the step lines' format in step_lines(). */
+    [SERVO_STR_R_COLUMNS]        = "Set V  Meas V  Idle   Moving Peak   "
+                                   "Hold lo Hold hi Travel Longest Moves "
+                                   "Late",
+    [SERVO_STR_R_STEP_NOT_RUN]   = "%5.2f  not run",
+    [SERVO_STR_R_CUT_SHORT]      = " (cut short)",
+    [SERVO_STR_R_NO_STEP]        = "No step ran.",
+    [SERVO_STR_R_LATE]           = "Late: moves not back at the holding "
+                                   "level within %u ms.",
+    [SERVO_STR_R_BO_HEAD]        = "BROWN-OUT",
+    [SERVO_STR_R_BO_NOT_RUN]     = "Not run.",
+    [SERVO_STR_R_BO_NOT_REACHED] = "Not reached.",
+    [SERVO_STR_R_BO_STOPPED]     = "Moved at %.2f V; no movement at %.2f V.",
+    [SERVO_STR_R_BO_ALL]         = "Moved at every step down to %.2f V; "
+                                   "lower not tested.",
+    [SERVO_STR_R_BO_NONE]        = "No movement at %.2f V, the first step.",
+    [SERVO_STR_R_BO_RULE]        = "No movement: no reading of a move %.2f "
+                                   "A away from the level before it.",
+    [SERVO_STR_R_LIM_HEAD]       = "AGAINST THE LIMITS PAGE",
+    [SERVO_STR_R_LIM_IDLE]       = "Idle current     highest %.3f A, limit "
+                                   "%s: %s",
+    [SERVO_STR_R_LIM_HOLD]       = "Holding current  highest %.3f A, limit "
+                                   "%s: %s",
+    [SERVO_STR_R_LIM_TRAVEL]     = "Travel time      longest %lu ms, limit "
+                                   "%u ms: %s",
+    [SERVO_STR_R_LIM_TRAVEL_OFF] = "Travel time      longest %lu ms, limit "
+                                   "OFF: %s",
+    [SERVO_STR_R_LIM_STALL]      = "Stall threshold  highest %.3f A, STALL "
+                                   "AT %.2f A: %s",
+    [SERVO_STR_R_LIM_LATE]       = "Moves arrived    %u late: %s",
+    [SERVO_STR_R_NOT_CHECKED]    = "not checked",
+    [SERVO_STR_R_NOT_MEASURED]   = "not measured",
+    [SERVO_STR_R_UNM_HEAD]       = "NOT MEASURED",
+    [SERVO_STR_R_UNM_POSITION]   = "Position: nothing measures the horn; "
+                                   "every result is the supply's current.",
+    [SERVO_STR_R_UNM_PEAKS]      = "Current peaks between two readings: the "
+                                   "supply reports one value a reading.",
+    [SERVO_STR_R_UNM_PATH]       = "The command's way from the panel to the "
+                                   "pin, inside every travel time.",
 };
+
+const char *servo_str_in(const char *const *table, servo_str_t id)
+{
+    if ((unsigned)id >= (unsigned)SERVO_STR_COUNT) {
+        return "";
+    }
+    if (table != NULL && table[id] != NULL) {
+        return table[id];
+    }
+    return (k_str[id] != NULL) ? k_str[id] : "";
+}
 
 const char *servo_str(servo_str_t id)
 {
-    if ((unsigned)id >= (unsigned)SERVO_STR_COUNT || k_str[id] == NULL) {
-        return "";
+    return servo_str_in(NULL, id);
+}
+
+servo_str_t servo_test_phase_str(servo_test_phase_t ph)
+{
+    if ((unsigned)ph > (unsigned)SERVO_TEST_PH_HOLD) {
+        return SERVO_STR_PHASE_NONE;
     }
-    return k_str[id];
+    return (servo_str_t)(SERVO_STR_PHASE_NONE + (int)ph);
+}
+
+servo_str_t servo_test_abort_str(servo_test_abort_t why)
+{
+    if ((unsigned)why >= (unsigned)SERVO_TEST_AB_COUNT) {
+        return SERVO_STR_AB_NONE;
+    }
+    return (servo_str_t)(SERVO_STR_AB_NONE + (int)why);
+}
+
+servo_str_t servo_test_verdict_str(servo_test_verdict_t v)
+{
+    switch (v) {
+    case SERVO_TEST_PASS: return SERVO_STR_PASS;
+    case SERVO_TEST_FAIL: return SERVO_STR_FAIL;
+    default:              return SERVO_STR_ABORTED;
+    }
+}
+
+servo_str_t servo_test_start_str(servo_test_start_t why)
+{
+    if ((unsigned)why > (unsigned)SERVO_TEST_START_BAD_ENDS) {
+        return SERVO_STR_START_OK;
+    }
+    return (servo_str_t)(SERVO_STR_START_OK + (int)why);
 }
 
 const char *servo_test_phase_name(servo_test_phase_t ph)
 {
-    if ((unsigned)ph > (unsigned)SERVO_TEST_PH_HOLD) {
-        return "";
-    }
-    return servo_str((servo_str_t)(SERVO_STR_PHASE_NONE + (int)ph));
+    return servo_str(servo_test_phase_str(ph));
 }
 
 const char *servo_test_abort_name(servo_test_abort_t why)
 {
-    if ((unsigned)why >= (unsigned)SERVO_TEST_AB_COUNT) {
-        return "";
-    }
-    return servo_str((servo_str_t)(SERVO_STR_AB_NONE + (int)why));
+    return servo_str(servo_test_abort_str(why));
 }
 
 const char *servo_test_verdict_name(servo_test_verdict_t v)
 {
-    switch (v) {
-    case SERVO_TEST_PASS: return servo_str(SERVO_STR_PASS);
-    case SERVO_TEST_FAIL: return servo_str(SERVO_STR_FAIL);
-    default:              return servo_str(SERVO_STR_ABORTED);
-    }
+    return servo_str(servo_test_verdict_str(v));
 }
 
 const char *servo_test_start_name(servo_test_start_t why)
 {
-    if ((unsigned)why > (unsigned)SERVO_TEST_START_BAD_ENDS) {
-        return "";
-    }
-    return servo_str((servo_str_t)(SERVO_STR_START_OK + (int)why));
+    return servo_str(servo_test_start_str(why));
 }
 
 const char *servo_test_csv_header(void)
@@ -110,7 +232,11 @@ typedef struct {
     unsigned at;
     char    *buf;
     size_t   n;
+    const char *const *text;    /* the run's language; NULL is English */
 } cursor_t;
+
+/* A word or a line format of the report, in the run's language. */
+#define S(id) servo_str_in(c->text, SERVO_STR_##id)
 
 static bool here(cursor_t *c)
 {
@@ -118,24 +244,25 @@ static bool here(cursor_t *c)
 }
 
 /* A limit's value, or OFF for 0. */
-static void limit_a(char *b, size_t n, float a)
+static void limit_a(const cursor_t *c, char *b, size_t n, float a)
 {
     if (a > 0.0f) {
         snprintf(b, n, "%.2f A", (double)a);
     } else {
-        snprintf(b, n, "OFF");
+        snprintf(b, n, "%s", S(R_OFF));
     }
 }
 
-static const char *verdict_word(bool checked, bool measured, bool over)
+static const char *verdict_word(const cursor_t *c, bool checked,
+                                bool measured, bool over)
 {
     if (!checked) {
-        return "not checked";
+        return S(R_NOT_CHECKED);
     }
     if (!measured) {
-        return "not measured";
+        return S(R_NOT_MEASURED);
     }
-    return over ? servo_str(SERVO_STR_FAIL) : servo_str(SERVO_STR_PASS);
+    return over ? S(FAIL) : S(PASS);
 }
 
 /* A mean in amperes, or "--" for none. */
@@ -155,35 +282,34 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
     const size_t n = c->n;
     const servo_test_verdict_t v = servo_test_verdict(t);
     if (here(c)) {
-        snprintf(b, n, "RCBENCH SERVO TEST REPORT");
+        snprintf(b, n, "%s", S(R_TITLE));
         return true;
     }
     if (here(c)) {
+        const char *verdict = servo_str_in(c->text,
+                                           servo_test_verdict_str(v));
         if (v == SERVO_TEST_ABORTED) {
-            snprintf(b, n, "Result:         %s - %s",
-                     servo_test_verdict_name(v), servo_test_abort_name(t->why));
+            snprintf(b, n, S(R_RESULT_WHY), verdict,
+                     servo_str_in(c->text, servo_test_abort_str(t->why)));
         } else {
-            snprintf(b, n, "Result:         %s", servo_test_verdict_name(v));
+            snprintf(b, n, S(R_RESULT), verdict);
         }
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "Device:         %s", g->dut);
+        snprintf(b, n, S(R_DEVICE), g->dut);
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "Firmware:       rcbench %s", g->firmware);
+        snprintf(b, n, S(R_FIRMWARE), g->firmware);
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "Log:            the .CSV with this file's number, one "
-                       "row per supply reading");
+        snprintf(b, n, "%s", S(R_LOG));
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "Supply:         %s",
-                 g->model ? "the panel's model: every reading is simulated"
-                          : "PD mini");
+        snprintf(b, n, S(R_SUPPLY), g->model ? S(R_SUPPLY_MODEL) : "PD mini");
         return true;
     }
     float per_s = 0.0f, module_s = 0.0f;
@@ -191,38 +317,33 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
     const bool rated = servo_test_rates(t, &per_s, &module_s, &every);
     if (here(c)) {
         if (rated) {
-            snprintf(b, n, "Readings:       %.1f /s taken by the supply, "
-                           "%.1f /s reached the test", (double)module_s,
-                     (double)per_s);
+            snprintf(b, n, S(R_READINGS), (double)module_s, (double)per_s);
         } else {
-            snprintf(b, n, "Readings:       fewer than two");
+            snprintf(b, n, "%s", S(R_READINGS_FEW));
         }
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "Skipped:        %lu readings the supply took never "
-                       "reached the test", (unsigned long)t->skipped);
+        snprintf(b, n, S(R_SKIPPED), (unsigned long)t->skipped);
         return true;
     }
     if (here(c)) {
         if (rated) {
-            snprintf(b, n, "Resolution:     one reading every %lu ms: a travel "
-                           "time is late by up to that",
-                     (unsigned long)every);
+            snprintf(b, n, S(R_RESOLUTION), (unsigned long)every);
         } else {
-            snprintf(b, n, "Resolution:     not known");
+            snprintf(b, n, "%s", S(R_RESOLUTION_UNKNOWN));
         }
         return true;
     }
     if (here(c)) {
         const uint32_t ms = t->end_ms - t->start_ms;
-        snprintf(b, n, "Duration:       %lu.%01lu s", (unsigned long)(ms / 1000u),
+        snprintf(b, n, S(R_DURATION), (unsigned long)(ms / 1000u),
                  (unsigned long)((ms % 1000u) / 100u));
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "Log rows:       %lu written, %lu lost to a full queue",
-                 (unsigned long)t->rows, (unsigned long)t->rows_lost);
+        snprintf(b, n, S(R_ROWS), (unsigned long)t->rows,
+                 (unsigned long)t->rows_lost);
         return true;
     }
     return false;
@@ -238,23 +359,22 @@ static bool settings_lines(const servo_test_t *t, cursor_t *c)
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "SETTINGS IN FORCE");
+        snprintf(b, n, "%s", S(R_SETTINGS));
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "Type:           %s, centre %u us, %u-%u us, trim %+d us,"
-                       " reverse %s", g->type, (unsigned)g->centre_us,
+        snprintf(b, n, S(R_TYPE), g->type, (unsigned)g->centre_us,
                  (unsigned)g->min_us, (unsigned)g->max_us, (int)g->trim_us,
-                 g->reverse ? "ON" : "OFF");
+                 g->reverse ? S(R_ON) : S(R_OFF));
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "Frame rate:     %u Hz", (unsigned)g->frame_hz);
+        snprintf(b, n, S(R_RATE), (unsigned)g->frame_hz);
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "Can destroy:    %s", (g->danger[0] != '\0')
-                                                  ? g->danger : "none in force");
+        snprintf(b, n, S(R_DANGER), (g->danger[0] != '\0')
+                                        ? g->danger : S(R_DANGER_NONE));
         return true;
     }
     if (here(c)) {
@@ -264,72 +384,66 @@ static bool settings_lines(const servo_test_t *t, cursor_t *c)
         for (unsigned s = 0; s < g->step_count; ++s) {
             above = above || g->steps_v[s] > SERVO_TEST_HV_ABOVE_V + 0.001f;
         }
-        snprintf(b, n, "HV servo:       %s",
-                 !g->hv  ? "OFF, no step above 6.0 V"
-                 : above ? "ON, steps above 6.0 V run"
-                         : "ON, no step above 6.0 V chosen");
+        snprintf(b, n, S(R_HV), !g->hv  ? S(R_HV_OFF)
+                                : above ? S(R_HV_ON_RUN)
+                                        : S(R_HV_ON_NONE));
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "Ends:           %u us and %u us (RANGE %u %% of TRAVEL "
-                       "+/-%u deg)", (unsigned)g->end_lo_us,
+        snprintf(b, n, S(R_ENDS), (unsigned)g->end_lo_us,
                  (unsigned)g->end_hi_us, (unsigned)g->range_pct,
                  (unsigned)g->travel_deg);
         return true;
     }
     if (here(c)) {
-        int k = snprintf(b, n, "Steps:         ");
+        int k = snprintf(b, n, "%s", S(R_STEPS));
         for (unsigned s = 0; s < g->step_count && k > 0 && (size_t)k < n; ++s) {
             k += snprintf(b + k, n - (size_t)k, " %.2f V", (double)g->steps_v[s]);
         }
         if (g->step_count == 0u && k > 0 && (size_t)k < n) {
-            snprintf(b + k, n - (size_t)k, " none");
+            snprintf(b + k, n - (size_t)k, "%s", S(R_STEPS_NONE));
         }
         return true;
     }
     if (here(c)) {
         if (g->brownout) {
-            snprintf(b, n, "Brown-out:      from %.2f V down in %.2f V steps to "
-                           "%.2f V", (double)t->bo_start_v,
+            snprintf(b, n, S(R_BROWNOUT), (double)t->bo_start_v,
                      (double)SERVO_TEST_BROWNOUT_STEP_V, (double)t->floor_v);
         } else {
-            snprintf(b, n, "Brown-out:      not run");
+            snprintf(b, n, "%s", S(R_BROWNOUT_NOT_RUN));
         }
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "Current limit:  %.2f A", (double)g->i_limit);
+        snprintf(b, n, S(R_I_LIMIT), (double)g->i_limit);
         return true;
     }
     if (here(c)) {
         const unsigned hold = (g->dwell_ms > SERVO_TEST_HOLD_MIN_MS)
                                   ? g->dwell_ms : SERVO_TEST_HOLD_MIN_MS;
-        snprintf(b, n, "Timing:         settle %u ms, idle %u ms, dwell %u ms "
-                       "(hold measured %u ms)", (unsigned)g->settle_ms,
+        snprintf(b, n, S(R_TIMING), (unsigned)g->settle_ms,
                  (unsigned)SERVO_TEST_IDLE_MS, (unsigned)g->dwell_ms, hold);
         return true;
     }
     if (here(c)) {
         if (g->by_moves) {
-            snprintf(b, n, "Length:         %u movements a step",
-                     (unsigned)g->moves);
+            snprintf(b, n, S(R_LEN_MOVES), (unsigned)g->moves);
         } else {
-            snprintf(b, n, "Length:         %u s a step", (unsigned)g->time_s);
+            snprintf(b, n, S(R_LEN_TIME), (unsigned)g->time_s);
         }
         return true;
     }
     if (here(c)) {
-        char idle[12], hold[12];
-        limit_a(idle, sizeof(idle), g->idle_max_a);
-        limit_a(hold, sizeof(hold), g->hold_max_a);
-        char travel[12];
+        char idle[24], hold[24];
+        limit_a(c, idle, sizeof(idle), g->idle_max_a);
+        limit_a(c, hold, sizeof(hold), g->hold_max_a);
+        char travel[24];
         if (g->travel_max_ms > 0u) {
             snprintf(travel, sizeof(travel), "%u ms", (unsigned)g->travel_max_ms);
         } else {
-            snprintf(travel, sizeof(travel), "OFF");
+            snprintf(travel, sizeof(travel), "%s", S(R_OFF));
         }
-        snprintf(b, n, "Limits:         idle %s, holding %s, travel %s, "
-                       "stall %.2f A", idle, hold, travel, (double)g->stall_a);
+        snprintf(b, n, S(R_LIMITS), idle, hold, travel, (double)g->stall_a);
         return true;
     }
     return false;
@@ -344,12 +458,11 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "RESULTS PER STEP (currents in A, times in ms)");
+        snprintf(b, n, "%s", S(R_PER_STEP));
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "Set V  Meas V  Idle   Moving Peak   Hold lo Hold hi "
-                       "Travel Longest Moves Late");
+        snprintf(b, n, "%s", S(R_COLUMNS));
         return true;
     }
     bool any = false;
@@ -363,7 +476,7 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
             continue;
         }
         if (!s->begun) {
-            snprintf(b, n, "%5.2f  not run", (double)s->set_v);
+            snprintf(b, n, S(R_STEP_NOT_RUN), (double)s->set_v);
             return true;
         }
         char vm[16], idle[16], move[16], lo[16], hi[16];
@@ -395,16 +508,15 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
         snprintf(b, n, "%5.2f  %6s  %-6s %-6s %-6s %-7s %-7s %-6s %-7s %5u %4u%s",
                  (double)s->set_v, vm, idle, move, peak, lo, hi, mean_ms,
                  max_ms, (unsigned)s->moves, (unsigned)s->timeouts,
-                 s->done ? "" : " (cut short)");
+                 s->done ? "" : S(R_CUT_SHORT));
         return true;
     }
     if (!any && here(c)) {
-        snprintf(b, n, "No step ran.");
+        snprintf(b, n, "%s", S(R_NO_STEP));
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "Late: moves not back at the holding level within %u ms.",
-                 (unsigned)SERVO_TEST_TRAVEL_TIMEOUT_MS);
+        snprintf(b, n, S(R_LATE), (unsigned)SERVO_TEST_TRAVEL_TIMEOUT_MS);
         return true;
     }
     return false;
@@ -419,7 +531,7 @@ static bool brownout_lines(const servo_test_t *t, cursor_t *c)
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "BROWN-OUT");
+        snprintf(b, n, "%s", S(R_BO_HEAD));
         return true;
     }
     if (here(c)) {
@@ -439,24 +551,20 @@ static bool brownout_lines(const servo_test_t *t, cursor_t *c)
             }
         }
         if (!t->cfg.brownout) {
-            snprintf(b, n, "Not run.");
+            snprintf(b, n, "%s", S(R_BO_NOT_RUN));
         } else if (!ran) {
-            snprintf(b, n, "Not reached.");
+            snprintf(b, n, "%s", S(R_BO_NOT_REACHED));
         } else if (any && stopped) {
-            snprintf(b, n, "Moved at %.2f V; no movement at %.2f V.",
-                     (double)moved, (double)last);
+            snprintf(b, n, S(R_BO_STOPPED), (double)moved, (double)last);
         } else if (any) {
-            snprintf(b, n, "Moved at every step down to %.2f V; lower not "
-                           "tested.", (double)moved);
+            snprintf(b, n, S(R_BO_ALL), (double)moved);
         } else {
-            snprintf(b, n, "No movement at %.2f V, the first step.",
-                     (double)first);
+            snprintf(b, n, S(R_BO_NONE), (double)first);
         }
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "No movement: no reading of a move %.2f A away from "
-                       "the level before it.", (double)SERVO_TEST_MOVE_A);
+        snprintf(b, n, S(R_BO_RULE), (double)SERVO_TEST_MOVE_A);
         return true;
     }
     return false;
@@ -472,46 +580,42 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "AGAINST THE LIMITS PAGE");
+        snprintf(b, n, "%s", S(R_LIM_HEAD));
         return true;
     }
     float a = 0.0f;
     if (here(c)) {
         const bool m = servo_test_max_idle(t, &a);
-        char lim[12];
-        limit_a(lim, sizeof(lim), g->idle_max_a);
-        snprintf(b, n, "Idle current     highest %.3f A, limit %s: %s",
-                 (double)a, lim,
-                 verdict_word(g->idle_max_a > 0.0f, m, a > g->idle_max_a));
+        char lim[24];
+        limit_a(c, lim, sizeof(lim), g->idle_max_a);
+        snprintf(b, n, S(R_LIM_IDLE), (double)a, lim,
+                 verdict_word(c, g->idle_max_a > 0.0f, m, a > g->idle_max_a));
         return true;
     }
     if (here(c)) {
         const bool m = servo_test_max_hold(t, &a);
-        char lim[12];
-        limit_a(lim, sizeof(lim), g->hold_max_a);
-        snprintf(b, n, "Holding current  highest %.3f A, limit %s: %s",
-                 (double)a, lim,
-                 verdict_word(g->hold_max_a > 0.0f, m, a > g->hold_max_a));
+        char lim[24];
+        limit_a(c, lim, sizeof(lim), g->hold_max_a);
+        snprintf(b, n, S(R_LIM_HOLD), (double)a, lim,
+                 verdict_word(c, g->hold_max_a > 0.0f, m, a > g->hold_max_a));
         return true;
     }
     if (here(c)) {
         uint32_t ms = 0u;
         const bool m = servo_test_max_travel(t, &ms);
         if (g->travel_max_ms > 0u) {
-            snprintf(b, n, "Travel time      longest %lu ms, limit %u ms: %s",
-                     (unsigned long)ms, (unsigned)g->travel_max_ms,
-                     verdict_word(true, m, ms > g->travel_max_ms));
+            snprintf(b, n, S(R_LIM_TRAVEL), (unsigned long)ms,
+                     (unsigned)g->travel_max_ms,
+                     verdict_word(c, true, m, ms > g->travel_max_ms));
         } else {
-            snprintf(b, n, "Travel time      longest %lu ms, limit OFF: %s",
-                     (unsigned long)ms, verdict_word(false, m, false));
+            snprintf(b, n, S(R_LIM_TRAVEL_OFF), (unsigned long)ms,
+                     verdict_word(c, false, m, false));
         }
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, "Stall threshold  highest %.3f A, STALL AT %.2f A: %s",
-                 (double)t->stall_peak_a, (double)g->stall_a,
-                 t->stalled ? servo_str(SERVO_STR_FAIL)
-                            : servo_str(SERVO_STR_PASS));
+        snprintf(b, n, S(R_LIM_STALL), (double)t->stall_peak_a,
+                 (double)g->stall_a, t->stalled ? S(FAIL) : S(PASS));
         return true;
     }
     if (here(c)) {
@@ -521,9 +625,7 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
                 late += t->steps[k].timeouts;
             }
         }
-        snprintf(b, n, "Moves arrived    %u late: %s", late,
-                 (late > 0u) ? servo_str(SERVO_STR_FAIL)
-                             : servo_str(SERVO_STR_PASS));
+        snprintf(b, n, S(R_LIM_LATE), late, (late > 0u) ? S(FAIL) : S(PASS));
         return true;
     }
     return false;
@@ -531,19 +633,16 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
 
 static bool unmeasured_lines(cursor_t *c)
 {
-    static const char *const k_lines[] = {
-        "",
-        "NOT MEASURED",
-        "Position: nothing measures the horn; every result is the supply's "
-        "current.",
-        "Current peaks between two readings: the supply reports one value a "
-        "reading.",
-        "The command's way from the panel to the pin, inside every travel "
-        "time.",
+    const servo_str_t k_lines[] = {
+        SERVO_STR_COUNT,            /* the blank line before the heading */
+        SERVO_STR_R_UNM_HEAD,
+        SERVO_STR_R_UNM_POSITION,
+        SERVO_STR_R_UNM_PEAKS,
+        SERVO_STR_R_UNM_PATH,
     };
     for (size_t k = 0; k < sizeof(k_lines) / sizeof(k_lines[0]); ++k) {
         if (here(c)) {
-            snprintf(c->buf, c->n, "%s", k_lines[k]);
+            snprintf(c->buf, c->n, "%s", servo_str_in(c->text, k_lines[k]));
             return true;
         }
     }
@@ -556,7 +655,7 @@ bool servo_report_line(const servo_test_t *t, unsigned idx, char *buf,
     if (t == NULL || buf == NULL || n == 0u) {
         return false;
     }
-    cursor_t c = { idx, 0u, buf, n };
+    cursor_t c = { idx, 0u, buf, n, t->cfg.text };
     return header_lines(t, &c) || settings_lines(t, &c) || step_lines(t, &c)
            || brownout_lines(t, &c) || limit_lines(t, &c)
            || unmeasured_lines(&c);

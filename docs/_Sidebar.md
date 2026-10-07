@@ -23,6 +23,7 @@ Reference
 - [The OpenYGE protocol](OpenYGE.md)
 - [ESC programming profiles](EscProfiles.md)
 - [Performance](Performance.md)
+- [Interface language](Language.md)
 
 _Deutsch_
 
@@ -47,3 +48,4 @@ Referenz
 - [Das OpenYGE-Protokoll](OpenYGE-de.md)
 - [ESC-Programmierprofile](EscProfiles-de.md)
 - [Performance](Performance-de.md)
+- [Sprache der Oberfläche](Language-de.md)

@@ -857,4 +857,6 @@ const gfx_font_t gfx_font_num_24x30 = {
     .bpp           = 8,
     .first         = 0x20,
     .last          = 0x3a,
+    .extra_count   = 0,
+    .extra         = NULL,
 };

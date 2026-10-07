@@ -10,7 +10,9 @@ Covered: docs/ (the wiki source), README.md and README-de.md, STATUS.md, and
 the pages under hardware/.  The wiki pages are additionally held to the
 sidebar and to having a German counterpart.  The `Who compiles what` table in
 STATUS.md and docs/Building.md is derived from the three build files, and the
-screenshot count in STATUS.md from docs/img.
+screenshot count in STATUS.md from docs/img.  A German page that quotes an
+interface string in backticks quotes the German the screen shows, not its
+English.
 
     python3 tools/check_docs.py
 
@@ -149,10 +151,12 @@ def check_links(problems: list[str]) -> None:
             elif resolved.suffix.lower() == ".png":
                 referenced.add(resolved)
 
-    for image in sorted(IMG.glob("*.png")):
+    # docs/img/de holds the same screens in German, for the German pages.
+    for image in sorted(IMG.rglob("*.png")):
         if image.resolve() not in referenced:
             problems.append(
-                f"docs/img/{image.name} is committed but no page shows it")
+                f"docs/img/{image.relative_to(IMG)} is committed but no page "
+                "shows it")
 
 
 def check_translations(problems: list[str]) -> None:
@@ -285,6 +289,192 @@ def check_option_lists(problems: list[str]) -> None:
                     f"{', '.join(missing)}")
 
 
+UI_DIR = REPO / "shared" / "ui"
+UI_TEXT_DEF = UI_DIR / "include" / "ui_text.def"
+UI_TEXT_DE = UI_DIR / "ui_text_de.c"
+SETTINGS_C = REPO / "shared" / "settings" / "settings.c"
+SETTINGS_H = REPO / "shared" / "settings" / "include" / "settings.h"
+SERVO_REPORT_C = REPO / "shared" / "servo" / "servo_report.c"
+
+# Quotes on a German page that stay English although the screen translates
+# the same word: values of the servo test's CSV, which is English in every
+# language, and values of an ESC profile's fields.
+ENGLISH_QUOTES = {
+    ("Servo-de.md", "STEP"),
+    ("Servo-de.md", "SET"),
+    ("Servo-de.md", "SETTLE"),
+    ("Servo-de.md", "IDLE"),
+    ("Servo-de.md", "MOVE"),
+    ("Servo-de.md", "OFF"),
+    ("EscProfiles-de.md", "none"),
+    ("StickProgramming-de.md", "none"),
+}
+
+# A C string literal, and a run of adjacent ones the compiler joins.
+C_STR = r'"(?:[^"\\]|\\.)*"'
+C_STRS = rf"((?:{C_STR}\s*)+)"
+
+# One printf conversion, and what each kind prints: a number, a character,
+# or any text.
+CONVERSION = re.compile(
+    r"%[-+ #0]*(?:\d+|\*)?(?:\.(?:\d+|\*))?(?:hh|h|ll|l|z)?([diouxXfeEgGcs])")
+PRINTS = {"c": ".", "s": ".+?"}
+NUMBER = r"[-+]?[0-9A-Fa-f][0-9A-Fa-f.,]*"
+
+# A format is matched against a quote only when its words say something:
+# "%u ms" would match any number of milliseconds a page mentions.
+MIN_FORMAT_LETTERS = 4
+
+
+def c_strings(source: str) -> str:
+    """The text of adjacent C string literals, joined, escapes resolved
+    for the quote and the backslash."""
+    parts = re.findall(C_STR, source)
+    return "".join(p[1:-1].replace('\\"', '"').replace("\\\\", "\\")
+                   for p in parts)
+
+
+def keyed(source: str, prefix: str) -> dict[str, str]:
+    """`[PREFIX_ID] = "text"` entries of a designated initialiser."""
+    return {k: c_strings(v) for k, v in re.findall(
+        rf"\[({prefix}\w+)\]\s*=\s*{C_STRS}", source)}
+
+
+def table(source: str, name: str) -> str:
+    """The body of the C array @p name."""
+    start = source.index(name)
+    return source[start:source.index("\n};", start)]
+
+
+def initialiser(source: str, name: str) -> str:
+    """The braces of the array @p name, written on one line or several."""
+    m = re.search(rf"\b{name}\[\w*\]\s*=\s*\{{([^}}]*)\}}", source)
+    return m.group(1) if m else ""
+
+
+def string_pairs() -> list[tuple[str, str]]:
+    """(English, German) for every interface string, setting label, help
+    line, option, category and servo test word the German table holds."""
+    de = read(UI_TEXT_DE)
+    pairs: list[tuple[str, str]] = []
+
+    english = {k: c_strings(v) for k, v in re.findall(
+        rf"UI_TEXT\((\w+),\s*\d+,\s*{C_STRS}\)", read(UI_TEXT_DEF))}
+    german = keyed(table(de, "k_text["), "TX_")
+    pairs += [(english[k[3:]], v) for k, v in german.items()
+              if k[3:] in english]
+
+    settings = read(SETTINGS_C)
+    defs = {k: (label, help_) for k, label, help_ in re.findall(
+        rf'\[(SET_\w+)\]\s*=\s*\{{\s*"[^"]*",\s*({C_STR}),\s*({C_STR})',
+        settings)}
+    for name, col in (("k_label[", 0), ("k_help[", 1)):
+        for k, v in keyed(table(de, name), "SET_").items():
+            if k in defs:
+                pairs.append((c_strings(defs[k][col]), v))
+
+    english_opts = {k: v for k, v in re.findall(
+        r"\[(SET_\w+)\][^\[]*?ENUM_OPTS\((\w+)\)", settings)}
+    german_opts = dict(re.findall(r"\[(SET_\w+)\]\s*=\s*(k_\w+),",
+                                  table(de, "k_options[")))
+    for k, de_name in german_opts.items():
+        if k not in english_opts:
+            continue
+        en_list = re.findall(C_STR, initialiser(settings, english_opts[k]))
+        de_list = re.findall(C_STR, initialiser(de, de_name))
+        pairs += [(c_strings(e), c_strings(d))
+                  for e, d in zip(en_list, de_list, strict=True)]
+
+    header = read(SETTINGS_H)
+    enum = header[header.index("SET_CAT_ESC = 0"):
+                  header.index("SET_CAT_COUNT")]
+    cats = re.findall(r"^\s*(SET_CAT_\w+)", enum, re.M)
+    en_cats = [c_strings(s) for s in
+               re.findall(C_STR, table(settings, "k_cat_names["))]
+    de_cats = keyed(table(de, "k_category["), "SET_CAT_")
+    pairs += [(e, de_cats[c])
+              for c, e in zip(cats, en_cats, strict=True) if c in de_cats]
+
+    en_servo = keyed(read(SERVO_REPORT_C), "SERVO_STR_")
+    de_servo = keyed(table(de, "k_servo["), "SERVO_STR_")
+    pairs += [(en_servo[k], v) for k, v in de_servo.items() if k in en_servo]
+
+    # A quote's spaces are collapsed (quoted_spans), so both sides are too:
+    # a column padded with two spaces is quoted with one.
+    flat = [(" ".join(e.split()), " ".join(d.split())) for e, d in pairs]
+    return [(e, d) for e, d in flat if len(e) >= 2 and e != d]
+
+
+def format_pattern(fmt: str) -> re.Pattern[str] | None:
+    """A format as a pattern a quote of its output matches, or None for a
+    literal or a format with too few words of its own."""
+    pieces = CONVERSION.split(fmt.replace("%%", "\0"))
+    if len(pieces) == 1:
+        return None
+    literal = "".join(pieces[0::2])
+    if sum(ch.isalpha() for ch in literal) < MIN_FORMAT_LETTERS:
+        return None
+    body = ""
+    for n, piece in enumerate(pieces):
+        if n % 2:
+            body += PRINTS.get(piece, NUMBER)
+        else:
+            body += re.escape(piece).replace("\0", "%")
+    return re.compile(body)
+
+
+def quoted_spans(page: pathlib.Path):
+    """(line, quote) for every backtick quote outside a code block, a quote
+    wrapped over two lines joined with one space, and whether it follows
+    "Konsole: "."""
+    text = re.sub(r"```.*?```", lambda m: "\n" * m.group().count("\n"),
+                  read(page), flags=re.S)
+    for m in re.finditer(r"`([^`]+)`", text):
+        if "\n\n" in m.group(1):
+            continue
+        line = text.count("\n", 0, m.start()) + 1
+        quote = " ".join(m.group(1).split())
+        console = text[:m.start()].endswith("Konsole: ")
+        yield line, quote, console
+
+
+def check_quoted_labels(problems: list[str]) -> None:
+    """A German page quotes the German of a translated interface string.
+
+    Covers the interface strings, the settings' labels, help, options and
+    categories, and the servo test's words; a format matches any quote of
+    its output.  Only backtick quotes are held to it: prose also names
+    protocol pages, supply commands and board markings that share a word
+    with a label.  A quote right after "Konsole: " is the console's, which
+    stays English.
+    """
+    literal: dict[str, str] = {}
+    formats: list[tuple[re.Pattern[str], re.Pattern[str] | None, str]] = []
+    for english, german in string_pairs():
+        pattern = format_pattern(english)
+        if pattern is not None:
+            formats.append((pattern, format_pattern(german), german))
+        elif CONVERSION.search(english) is None:
+            literal.setdefault(english, german)
+    for page in pages() + [REPO / "README-de.md"]:
+        if not page.name.endswith(DE_SUFFIX):
+            continue
+        for no, quote, console in quoted_spans(page):
+            if console or (page.name, quote) in ENGLISH_QUOTES:
+                continue
+            shown = literal.get(quote)
+            if shown is None:
+                for pattern, german, text in formats:
+                    if pattern.fullmatch(quote) and not (
+                            german is not None and german.fullmatch(quote)):
+                        shown = text
+                        break
+            if shown is not None:
+                problems.append(
+                    f"{page.name}:{no}: quotes `{quote}`, which the screen "
+                    f"shows as `{shown}`")
+
+
 def check_shared_modules(problems: list[str]) -> None:
     """Building.md's tree lists every module under shared/.
 
@@ -386,14 +576,15 @@ def check_compile_table(problems: list[str]) -> None:
 
 
 def check_screenshot_count(problems: list[str]) -> None:
-    """STATUS.md's count of committed screenshots is the number in docs/img."""
+    """STATUS.md's count of committed screenshots is the number in docs/img,
+    the German ones in docs/img/de included."""
     text = read(REPO / "STATUS.md")
     m = re.search(r"(\w+) committed screenshots", text)
     if not m:
         problems.append("STATUS.md: no '<N> committed screenshots' sentence")
         return
     said = as_number(m.group(1))
-    real = len(list(IMG.glob("*.png")))
+    real = len(list(IMG.rglob("*.png")))
     if said != real:
         problems.append(f"STATUS.md: says {m.group(1)} committed screenshots; "
                         f"docs/img holds {real}")
@@ -474,6 +665,7 @@ def main() -> int:
     check_translations(problems)
     check_suites(problems)
     check_option_lists(problems)
+    check_quoted_labels(problems)
     check_shared_modules(problems)
     check_compile_table(problems)
     check_screenshot_count(problems)

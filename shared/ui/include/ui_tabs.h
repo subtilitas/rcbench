@@ -12,6 +12,7 @@
 
 #include "gfx.h"
 #include "touch_types.h"
+#include "ui_text.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,6 +22,7 @@ extern "C" {
 
 typedef struct {
     const char *label[UI_TABS_MAX];
+    int16_t     text[UI_TABS_MAX];  /**< a ui_text_id_t, or -1 for label */
     gfx_rect_t  rect[UI_TABS_MAX];
     int         count;
     int         selected;
@@ -28,8 +30,15 @@ typedef struct {
     uint8_t     press_id;
 } ui_tabs_t;
 
+/** Tabs whose labels are drawn as given, in every language. */
 void ui_tabs_init(ui_tabs_t *t, const char *const *labels, int count,
                   gfx_rect_t row);
+/** Tabs whose labels are looked up at every draw, so they follow the
+ *  language. */
+void ui_tabs_init_text(ui_tabs_t *t, const ui_text_id_t *ids, int count,
+                       gfx_rect_t row);
+/** Tab @p i's label as it is drawn now. */
+const char *ui_tabs_label(const ui_tabs_t *t, int i);
 /** Returns true when the selection changed. */
 bool ui_tabs_event(ui_tabs_t *t, const touch_event_t *evt);
 /**

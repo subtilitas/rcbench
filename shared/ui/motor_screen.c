@@ -17,6 +17,7 @@
 #include "settings.h"
 #include "ui_slider.h"
 #include "ui_tabs.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -117,7 +118,13 @@ static const ui_plot_series_t k_series[S_COUNT] = {
 
 /* Voltage's interesting extreme is the minimum -- what the pack does under
  * load is how far down it goes -- and every other channel's is the maximum. */
-static const char *const k_extreme[S_COUNT] = { "min", "pk", "pk", "pk" };
+static const ui_text_id_t k_extreme[S_COUNT] = { TX_HERO_MIN, TX_HERO_PEAK,
+                                                 TX_HERO_PEAK, TX_HERO_PEAK };
+
+/* The channels' names, looked up where the colours are bound: both follow a
+ * setting. */
+static const ui_text_id_t k_names[S_COUNT] = { TX_MO_VOLT, TX_MO_CURR,
+                                               TX_MO_PWR, TX_MO_RPM };
 
 /*
  * The panel polls at 20 Hz, one sample per plot column, so the time base is
@@ -125,7 +132,8 @@ static const char *const k_extreme[S_COUNT] = { "min", "pk", "pk", "pk" };
  */
 #define SAMPLE_HZ 20.0f
 
-static const char *const k_tab_labels[] = { "PLOT", "TABLE" };
+static const ui_text_id_t k_tab_labels[] = { TX_MO_TAB_PLOT,
+                                              TX_MO_TAB_TABLE };
 
 static struct {
     ui_plot_t     plot;
@@ -197,6 +205,9 @@ static void bind_colours(void)
     s.plot.series[S_POWER].color = ui_theme_color(UI_C_POWER);
     s.plot.series[S_RPM].color   = ui_theme_color(UI_C_RPM);
     s.slider.color = ui_theme_color(UI_C_ACCENT);
+    for (int i = 0; i < S_COUNT; ++i) {
+        s.plot.series[i].name = ui_tr(k_names[i]);
+    }
 }
 
 static void reset(void)
@@ -221,7 +232,7 @@ static void reset(void)
     /* A screen that has just reset has no run behind it and no bench in
      * front of it, so the trace does not advance until one arms. */
     ui_plot_set_running(&s.plot, false);
-    ui_tabs_init(&s.tabs, k_tab_labels, MOTOR_PANE_COUNT,
+    ui_tabs_init_text(&s.tabs, k_tab_labels, MOTOR_PANE_COUNT,
                  (gfx_rect_t){ LEFT_X, TAB_Y, TAB_W, TAB_H });
 
     const gfx_rect_t track = { TRACK_X, CTRL_Y, TRACK_W, TRACK_H };
@@ -568,7 +579,7 @@ static void draw_header(gfx_canvas_t *c)
     /* The band already carries the output mode, so this strip does not
      * repeat it: what it adds is the poll rate and the link's error count. */
     char line[64];
-    snprintf(line, sizeof(line), "%d Hz   ERR %lu", (int)SAMPLE_HZ,
+    snprintf(line, sizeof(line), TR(MO_RATE_ERR), (int)SAMPLE_HZ,
              (unsigned long)st->link_errors);
     gfx_text(c, x0, HDR_Y + 1, line, &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT_DIM), 1);
@@ -672,18 +683,20 @@ static void draw_derived(gfx_canvas_t *c)
 
 static void draw_table(gfx_canvas_t *c)
 {
-    static const char *const rows[S_COUNT] = { "VOLTAGE", "CURRENT",
-                                               "POWER", "RPM" };
+    static const ui_text_id_t rows[S_COUNT] = {
+        TX_MO_ROW_VOLTAGE, TX_MO_ROW_CURRENT, TX_MO_ROW_POWER, TX_MO_ROW_RPM,
+    };
     const float now[S_COUNT] = { s.bench.voltage, s.bench.current,
                                  s.bench.power, s.bench.rpm };
     const float pk[S_COUNT]  = { s.bench.voltage_min, s.bench.current_max,
                                  s.bench.power_max, s.bench.rpm_max };
     /* Voltage's interesting extreme is the minimum, not the maximum: what a
      * pack does under load is how far down it goes. */
-    static const char *const pk_label[S_COUNT] = { "min", "max", "max", "max" };
-    (void)k_extreme;
+    static const ui_text_id_t pk_label[S_COUNT] = {
+        TX_HERO_MIN, TX_MO_TABLE_MAX, TX_MO_TABLE_MAX, TX_MO_TABLE_MAX,
+    };
 
-    gfx_text(c, PLOT_X, LEG_Y + 4, "CHANNEL        NOW            PEAK",
+    gfx_text(c, PLOT_X, LEG_Y + 4, TR(MO_TABLE_HEAD),
              &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
     ui_rule(c, PLOT_X, LEG_Y + 24, PLOT_W, ui_theme_color(UI_C_EDGE));
 
@@ -692,14 +705,14 @@ static void draw_table(gfx_canvas_t *c)
         char v[24], p[24];
         ui_fmt(v, sizeof(v), now[i], k_series[i].decimals);
         ui_fmt(p, sizeof(p), pk[i], k_series[i].decimals);
-        gfx_text(c, PLOT_X, y, rows[i], &gfx_font_8x16,
+        gfx_text(c, PLOT_X, y, ui_tr(rows[i]), &gfx_font_8x16,
                  s.plot.series[i].color, 1);
         gfx_text(c, PLOT_X + 128, y, v, &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT), 1);
         gfx_text(c, PLOT_X + 248, y, k_series[i].unit, &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
         char line[40];
-        snprintf(line, sizeof(line), "%s %s", pk_label[i], p);
+        snprintf(line, sizeof(line), "%s %s", ui_tr(pk_label[i]), p);
         gfx_text(c, PLOT_X + 348, y, line, &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
@@ -725,7 +738,8 @@ static void draw_rail_card(gfx_canvas_t *c, gfx_rect_t r,
         char pk[24], line[32];
         ui_fmt(pk, sizeof(pk), peak, def->decimals);
         snprintf(line, sizeof(line), "%s %s",
-                 (def->extreme_label != NULL) ? def->extreme_label : "PK", pk);
+                 (def->extreme_label != NULL) ? def->extreme_label
+                                              : TR(HERO_PEAK), pk);
         gfx_text(c, r.x + 8, r.y + 26, line, &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
@@ -762,9 +776,10 @@ static void draw_heroes(gfx_canvas_t *c)
                                (int16_t)(UP_Y + i * (HERO_H + HERO_GAP)),
                                RIGHT_W, HERO_H };
         gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_BG));
-        const ui_hero_def_t def = { k_series[i].name, k_series[i].unit,
+        const ui_hero_def_t def = { ui_tr(k_names[i]), k_series[i].unit,
                                     s.plot.series[i].color,
-                                    k_series[i].decimals, k_extreme[i] };
+                                    k_series[i].decimals,
+                                    ui_tr(k_extreme[i]) };
         /* Power has no flag of its own: it is voltage times current, and it
          * is worth no more than the weaker of the two. */
         static const uint16_t k_ok[S_COUNT] = {
@@ -808,14 +823,19 @@ static void draw_totals(gfx_canvas_t *c)
  *
  * The tag names what the panel is showing, so the TABLE pane reads
  * LIVE TELEMETRY whatever the plot is doing: that pane repaints on every
- * sample and is live on a disarmed bench.  All three strings are 14
- * characters, so ui_panel_header() lays out the same tab for each and one
- * repaints over another in place.
+ * sample and is live on a disarmed bench.  Each is drawn padded to the
+ * longest of the three in the language showing, so ui_panel_header() lays
+ * out the same tab for each and one repaints over another in place.
  */
-enum { TAG_LIVE = 0, TAG_HELD, TAG_IDLE };
-static const char *const k_tag[] = {
-    "LIVE TELEMETRY", "TELEMETRY HELD", "TELEMETRY IDLE"
+enum { TAG_LIVE = 0, TAG_HELD, TAG_IDLE, TAG_COUNT };
+static const ui_text_id_t k_tag[TAG_COUNT] = {
+    TX_MO_TAG_LIVE, TX_MO_TAG_HELD, TX_MO_TAG_IDLE,
 };
+
+static const char *tag_text(uint8_t tag, char *buf, size_t n)
+{
+    return ui_tr_pad(k_tag, TAG_COUNT, tag, buf, n);
+}
 
 static uint8_t telemetry_tag(void)
 {
@@ -835,14 +855,16 @@ static void render(gfx_canvas_t *c, int buffer_index)
      * moves.  tools/frame_cost.py measures the two cases as the `chrome` and
      * `frame-idle` modes. */
     const uint8_t tag = telemetry_tag();
+    char tag_buf[48];
     if ((s.drawn_mask & bit) == 0) {
         gfx_clear(c, ui_theme_color(UI_C_BG));
         ui_panel(c, (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H },
-                 k_tag[tag], ui_theme_color(UI_C_ACCENT));
+                 tag_text(tag, tag_buf, sizeof(tag_buf)),
+                 ui_theme_color(UI_C_ACCENT));
         ui_panel(c, (gfx_rect_t){ LEFT_X, LO_Y, LEFT_W, LO_H },
                  "THROTTLE", ui_theme_color(UI_C_ACCENT));
         ui_panel(c, (gfx_rect_t){ RIGHT_X, LO_Y, RIGHT_W, LO_H },
-                 "CONTROL", ui_theme_color(UI_C_ACCENT));
+                 TR(MO_CONTROL), ui_theme_color(UI_C_ACCENT));
         s.drawn_mask |= bit;
         s.drawn_title[buf] = tag;
     }
@@ -853,7 +875,8 @@ static void render(gfx_canvas_t *c, int buffer_index)
     if (s.drawn_title[buf] != tag) {
         s.drawn_title[buf] = tag;
         ui_panel_header(c, (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H },
-                        k_tag[tag], ui_theme_color(UI_C_ACCENT));
+                        tag_text(tag, tag_buf, sizeof(tag_buf)),
+                        ui_theme_color(UI_C_ACCENT));
     }
 
     if (s.drawn_ctrl[buf] != s.ctrl_rev
@@ -896,7 +919,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
              * no idea what a run is, so the sentence belongs here. */
             if (!s.plot.running && s.plot.filled == 0) {
                 gfx_text_in(c, (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H },
-                            "no run recorded", &gfx_font_8x16,
+                            TR(MO_NO_RUN), &gfx_font_8x16,
                             ui_theme_color(UI_C_TEXT_FAINT), 1,
                             GFX_ALIGN_CENTER);
             }
@@ -999,10 +1022,11 @@ static void render(gfx_canvas_t *c, int buffer_index)
         return;
     }
     gfx_text(c, LEFT_X + INNER, HINT_Y,
-             "DRAG THE BAR, OR STEP IT BY ONE POINT AT EITHER END",
+             TR(MO_HINT),
              &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT), 1);
     draw_totals(c);
-    ui_button(c, s.reset_rect, "RESET PEAKS", ui_theme_color(UI_C_PANEL_SUNK),
+    ui_button(c, s.reset_rect, TR(MO_RESET_PEAKS),
+              ui_theme_color(UI_C_PANEL_SUNK),
               s.pressed == 2, true);
 }
 

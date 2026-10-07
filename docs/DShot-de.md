@@ -238,7 +238,7 @@ gegen eine Antwort mit 4,75 und 5,25 Abtastungen je Bit.
 Ein ESC meldet elektrische Perioden und weiß nicht, woran er angeschraubt ist;
 mechanische rpm (Revolutions per Minute) brauchen also die Magnetzahl des
 Motors. Das ist die eine Zahl, die die Leitung nicht trägt. Das Panel sendet sie
-aus der Einstellung `Motor poles`, sobald ein Coprozessor zu antworten beginnt,
+aus der Einstellung `Motorpole`, sobald ein Coprozessor zu antworten beginnt,
 erneut bei jeder Änderung der Einstellung und erneut vor dem Schreibvorgang,
 der scharfschaltet, sofern eine Änderung noch offen ist, auf der
 [CONTROL-Page](Link-de.md#page-map). Ein

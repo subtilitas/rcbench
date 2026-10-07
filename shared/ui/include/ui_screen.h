@@ -156,7 +156,7 @@ bool ui_router_take_stop(void);
 /* ------------------------------------------------------------------ alert */
 
 /** Longest alert the router will show, including the terminator. */
-#define UI_ALERT_MAX 48
+#define UI_ALERT_MAX 128
 
 /** How long an alert shows before it clears itself, in seconds. */
 #define UI_ALERT_SHOW_S 30.0f

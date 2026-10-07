@@ -90,7 +90,8 @@ is taken in a gap ahead of the save that needs it.
 
 | Subsystem | State |
 | --- | --- |
-| Rasteriser, fonts, touch mapping, theme, widgets, icons, router | built and tested |
+| Rasteriser, fonts, touch mapping, theme, widgets, icons, router | built and tested; text is UTF-8, one cell a code point, and the two text faces carry Ä Ö Ü ß ä ö ü |
+| Interface language | built and tested on the host: English and German, chosen by SETUP's Language and applied on the next frame without a restart. Every translated string is an ID in `shared/ui/include/ui_text.def`, German is `shared/ui/ui_text_de.c`, and a missing entry shows the English. The servo test's TXT report is in the language its run started in; its CSV stays English. `render_ui.py --fit` draws every view in both languages and fails on a German string that overflows; `test_text` holds the rest. [Reference](docs/Language.md) |
 | Settings model and screen | built and tested on the host. The panel loads and saves the values in NVS (non-volatile storage) through `firmware/panel/components/settings_nvs/`, confirmed on hardware: a save writes and the next boot reports what it loaded |
 | CSV (comma-separated values) and number parsing, log viewer | built and tested against the fixture corpus |
 | Logger | built: a run is written while armed, or while the supply's output is on with the bench disarmed, in the format the viewer reads; an automatic servo test's CSV and report go beside it under the next run number. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full |
@@ -130,7 +131,8 @@ rcbench/
   docs/                   the wiki source, English and German
   tools/                  render_ui · coverage · check_docs · frame_cost
                           gen_font · gen_board_art · wiki_links
-                          check_sanitizers · research/ (component research scripts)
+                          check_sanitizers · check_formats
+                          research/ (component research scripts)
   hardware/               board design record: README, STATUS, docs/
   testbench/              the measurement bench: README, WIRING, host scripts,
                           decoders. Nothing on it has been run
@@ -192,11 +194,11 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload; the font, frame-cost, screenshot, docs, wiki-link and research-script checks; clang-tidy, cppcheck and ruff; the ESP-IDF (Espressif Internet-of-Things Development Framework) matrix (v5.4, v5.5) building the panel; the pico-sdk build of the coprocessor; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload; the font, frame-cost, screenshot, German fit, translated-format, docs, wiki-link and research-script checks; clang-tidy, cppcheck and ruff; the ESP-IDF (Espressif Internet-of-Things Development Framework) matrix (v5.4, v5.5) building the panel; the pico-sdk build of the coprocessor; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/` | publishes `docs/` to the GitHub wiki |
 | `release.yml` | tag `v*` | builds both images, packages them with checksums, creates a release |
 
-The host suite is 57 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 58 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_servo`,
@@ -207,54 +209,56 @@ The host suite is 57 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_touch_loss`, `test_servo_limit`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_test`, `test_servo_page`, `test_supply_page`, `test_supply_link`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
-`test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_openyge_frame`, `test_openyge_status`,
+`test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
 `test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_logview` and `test_logwriter`. The harness is
 `test/host/greatest.h`, written for this project. `tools/check_docs.py` holds
 this list to `test/host/CMakeLists.txt`.
 
 Coverage floors: 94% overall, 85% for every file except `stub_screen.c`, which
 is exempt by name. `tools/coverage.py --check` fails on drift of the table
-below. `render_ui.py --check` holds 54 committed screenshots to the current
-render; `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
+below. `render_ui.py --check` holds 108 committed screenshots to the current
+render, 54 in English and the same 54 in German, and `render_ui.py --fit`
+fails on a German string that overflows where it is drawn; `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000.
 
 <!-- coverage:start -->
 | File | Lines | Covered | Coverage |
 | --- | ---: | ---: | ---: |
-| `shared/gfx/gfx.c` | 643 | 621 | 96.6% |
+| `shared/gfx/gfx.c` | 702 | 680 | 96.9% |
 | `shared/gfx/gfx_seg.c` | 96 | 91 | 94.8% |
 | `shared/touch/touch_map.c` | 100 | 100 | 100.0% |
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
 | `shared/ui/ui_widgets.c` | 200 | 192 | 96.0% |
 | `shared/ui/ui_icons.c` | 122 | 122 | 100.0% |
-| `shared/ui/ui_band.c` | 34 | 32 | 94.1% |
+| `shared/ui/ui_band.c` | 35 | 33 | 94.3% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
-| `shared/ui/ui_plot.c` | 193 | 183 | 94.8% |
+| `shared/ui/ui_plot.c` | 194 | 184 | 94.8% |
 | `shared/ui/ui_hero.c` | 29 | 28 | 96.5% |
 | `shared/ui/ui_slider.c` | 160 | 151 | 94.4% |
-| `shared/ui/ui_tabs.c` | 61 | 55 | 90.2% |
+| `shared/ui/ui_tabs.c` | 78 | 69 | 88.5% |
+| `shared/ui/ui_text.c` | 91 | 90 | 98.9% |
 | `shared/ui/ui_router.c` | 210 | 205 | 97.6% |
 | `shared/ui/splash_screen.c` | 60 | 57 | 95.0% |
-| `shared/ui/overview_screen.c` | 82 | 78 | 95.1% |
-| `shared/ui/stub_screen.c` | 45 | 8 | 17.8% |
-| `shared/ui/motor_screen.c` | 442 | 433 | 98.0% |
-| `shared/ui/supply_screen.c` | 961 | 949 | 98.8% |
-| `shared/ui/ui_keypad.c` | 162 | 160 | 98.8% |
-| `shared/ui/ui_textkey.c` | 153 | 151 | 98.7% |
-| `shared/ui/servo_screen.c` | 2149 | 2099 | 97.7% |
-| `shared/ui/analyser_screen.c` | 223 | 220 | 98.7% |
-| `shared/ui/balance_screen.c` | 307 | 307 | 100.0% |
+| `shared/ui/overview_screen.c` | 85 | 81 | 95.3% |
+| `shared/ui/stub_screen.c` | 52 | 14 | 26.9% |
+| `shared/ui/motor_screen.c` | 449 | 439 | 97.8% |
+| `shared/ui/supply_screen.c` | 968 | 956 | 98.8% |
+| `shared/ui/ui_keypad.c` | 163 | 161 | 98.8% |
+| `shared/ui/ui_textkey.c` | 155 | 153 | 98.7% |
+| `shared/ui/servo_screen.c` | 2161 | 2110 | 97.6% |
+| `shared/ui/analyser_screen.c` | 224 | 221 | 98.7% |
+| `shared/ui/balance_screen.c` | 311 | 311 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
-| `shared/ui/programmer_screen.c` | 1247 | 1156 | 92.7% |
-| `shared/ui/log_viewer_screen.c` | 771 | 713 | 92.5% |
+| `shared/ui/programmer_screen.c` | 1294 | 1200 | 92.7% |
+| `shared/ui/log_viewer_screen.c` | 796 | 724 | 91.0% |
 | `shared/ui/log_select.c` | 26 | 26 | 100.0% |
-| `shared/ui/settings_screen.c` | 298 | 289 | 97.0% |
-| `shared/ui/outputs_screen.c` | 236 | 235 | 99.6% |
-| `shared/ui/picker_screen.c` | 318 | 312 | 98.1% |
-| `shared/ui/busfault_screen.c` | 297 | 294 | 99.0% |
+| `shared/ui/settings_screen.c` | 304 | 295 | 97.0% |
+| `shared/ui/outputs_screen.c` | 239 | 237 | 99.2% |
+| `shared/ui/picker_screen.c` | 321 | 315 | 98.1% |
+| `shared/ui/busfault_screen.c` | 299 | 296 | 99.0% |
 | `shared/settings/settings.c` | 185 | 179 | 96.8% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
-| `shared/logfile/log_csv.c` | 612 | 583 | 95.3% |
+| `shared/logfile/log_csv.c` | 612 | 581 | 94.9% |
 | `shared/logfile/log_fields.c` | 46 | 45 | 97.8% |
 | `shared/logfile/log_name.c` | 62 | 62 | 100.0% |
 | `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
@@ -264,13 +268,13 @@ chrome-cached screen to 2,000.
 | `shared/servo/servo_sync.c` | 172 | 167 | 97.1% |
 | `shared/servo/servo_sweep.c` | 91 | 87 | 95.6% |
 | `shared/servo/servo_test.c` | 499 | 483 | 96.8% |
-| `shared/servo/servo_report.c` | 320 | 319 | 99.7% |
+| `shared/servo/servo_report.c` | 323 | 322 | 99.7% |
 | `shared/openyge/openyge_frame.c` | 165 | 162 | 98.2% |
 | `shared/openyge/openyge_status.c` | 39 | 39 | 100.0% |
 | `shared/openyge/openyge_params.c` | 66 | 66 | 100.0% |
 | `shared/esc/esc_json.c` | 741 | 689 | 93.0% |
 | `shared/esc/esc_registry.c` | 71 | 70 | 98.6% |
-| `shared/esc/esc_stick.c` | 667 | 635 | 95.2% |
+| `shared/esc/esc_stick.c` | 667 | 636 | 95.3% |
 | `shared/esc/esc_sim.c` | 306 | 283 | 92.5% |
 | `shared/servo/servo_sim.c` | 122 | 122 | 100.0% |
 | `shared/sbus/sbus.c` | 54 | 53 | 98.2% |
@@ -279,7 +283,7 @@ chrome-cached screen to 2,000.
 | `shared/dshot/dshot_edt.c` | 33 | 33 | 100.0% |
 | `shared/ppm/ppm.c` | 42 | 42 | 100.0% |
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
-| `shared/can/can_selftest.c` | 145 | 140 | 96.5% |
+| `shared/can/can_selftest.c` | 145 | 134 | 92.4% |
 | `shared/can/mcp2515.c` | 20 | 20 | 100.0% |
 | `shared/link/link_bringup.c` | 61 | 61 | 100.0% |
 | `shared/link/link_can.c` | 94 | 92 | 97.9% |
@@ -303,7 +307,7 @@ chrome-cached screen to 2,000.
 | `shared/bench/pdmini.c` | 513 | 504 | 98.2% |
 | `shared/bench/supply_link.c` | 222 | 212 | 95.5% |
 | `shared/bench/log_writer.c` | 126 | 114 | 90.5% |
-| **total** | **18325** | **17647** | **96.3%** |
+| **total** | **18627** | **17917** | **96.2%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -336,7 +340,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The control task has no test of its own | touch, STOP, arming, the outputs, the link and the heartbeat run in a task on the core that does not draw. It has run on hardware -- an arm, a throttle and a servo command have all gone through it -- but nothing exercises it deliberately: `main.c` is not in the host suite. The `runlog` task beside it, which owns every write to the card, is in the same position. A multi-agent review found six defects in it, including a heartbeat that stopped for up to 1000 ms on an unanswered poll and a splash tap that latched STOP; those are fixed, and the rules it drives are now in `shared/safety/arming.c` under `test_arming` | a session with both boards: arm, drag the throttle while the screen is busy, press STOP, unplug the link, and confirm the heartbeat's period on a scope at J8. ESP-IDF warns that a second core touching PSRAM shares bandwidth with the bounce-buffer refill and can starve it into the screen shift already seen on this board; the control task touches no framebuffer, which is the reason to expect it is clear, not evidence that it is |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The refill interrupt is masked for the length of the write, so the bounce buffer starves and the driver restarts the DMA at the next VBlank | nothing, unless the disturbance proves unacceptable. `CONFIG_SPI_FLASH_AUTO_SUSPEND` would remove it (the module's flash is 0x46 4018, an XMC die ESP-IDF grants `SPI_FLASH_CHIP_CAP_SUSPEND`), but ESP-IDF warns against it for a workload with an interrupt every 512 us |
 | Stick programming has met no ESC | the engine, the PROGRAMMER tab and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150 ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200 ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
-| Interface language | about 430 user-visible strings are literals in ten screens, 168 of them the programmer's parameter names and help | an X-macro string table with one ID per string, a table per language, and a fallback to English; deferred until the screens stop changing |
+| The German interface has not been read on a panel | the tables, the fonts and the fit check are built and tested on the host, and the 54 German screenshots are rendered by the panel's code; no German-speaking operator has read the screens on a board. An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. Two English help lines on SETUP (Capacity's and Rated kV's) are longer than the 36 cells their row shows and are cut there | a beta tester's pass over every screen in German on a panel, and shorter English help for the two rows |
 
 ## Constraints
 

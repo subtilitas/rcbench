@@ -98,41 +98,41 @@ lange es von Ende zu Ende braucht, bei den Versorgungsspannungen, für die es
 ausgelegt ist; und die Spannung, unter der es sich nicht mehr bewegt
 (Brown-out). Nichts am Prüfstand misst das Horn, also wird jedes Ergebnis am
 Strom des Netzteils abgelesen, das das Servo versorgt: am PD mini (WeAct PD
-Power Mini V1), wenn SETUP INTERFACES ihn freigibt, sonst am Netzteilmodell
+Power Mini V1), wenn SETUP ANSCHLÜSSE ihn freigibt, sonst am Netzteilmodell
 des Panels. Ein Lauf am Modell sagt das in seinem Bericht, und seine Zahlen
 sind simuliert.
 
-START TEST auf der TEST-Seite des SERVO-Screens startet ihn;
+TEST STARTEN auf der TEST-Seite von SERVO startet ihn;
 [Bildschirme](Screens-de.md#servo) beschreibt die Bedienung. Die Engine ist
 `shared/servo/servo_test.c`; die Konstanten unten stehen in `servo_test.h`.
 
 ### Verfahren
 
-Die Spannungsstufen sind STEP 4.8 V und STEP 6.0 V der TEST-Seite, und mit HV
-SERVO an STEP 7.4 V und STEP 8.4 V. HV SERVO ist nach jedem Neustart aus. Ein
-Lauf mit einer Stufe über 6,0 V startet nur über die Warnung HV SERVOS ONLY,
-2 s gehalten. Die Strombegrenzung im Lauf ist die der Zeile SET.
+Die Spannungsstufen sind STUFE 4.8 V und STUFE 6.0 V der TEST-Seite, und mit HV
+SERVO an STUFE 7.4 V und STUFE 8.4 V. HV SERVO ist nach jedem Neustart aus. Ein
+Lauf mit einer Stufe über 6,0 V startet nur über die Warnung NUR HV-SERVOS,
+2 s gehalten. Die Strombegrenzung im Lauf ist die der Zeile SOLL.
 
 Jede Stufe durchläuft diese Phasen:
 
 | Phase | Das Servo | Endet |
 | --- | --- | --- |
-| SET | auf PULSE CENTRE; die Spannung wird verlangt; die erste Stufe schaltet den Ausgang ein | wenn das Netzteil den Sollwert auf 0,05 V genau zurückliest, spätestens nach 3000 ms |
-| SETTLE | auf PULSE CENTRE | nach SETTLE der TEST-Seite |
-| IDLE | auf PULSE CENTRE: der Ruhestrom ist der Mittelwert der Messwerte | nach 1000 ms |
-| MOVE | ein Sprung auf ein Ende, ohne Rampe: SPEED gilt nicht | bei der Ankunft oder nach 3000 ms (verspätet) |
-| HOLD | an diesem Ende: der Haltestrom ist der Mittelwert der Messwerte | nach DWELL, mindestens 600 ms |
+| SETZEN | auf PULS CENTRE; die Spannung wird verlangt; die erste Stufe schaltet den Ausgang ein | wenn das Netzteil den Sollwert auf 0,05 V genau zurückliest, spätestens nach 3000 ms |
+| EINSCHWINGEN | auf PULS CENTRE | nach EINSCHWINGEN der TEST-Seite |
+| RUHE | auf PULS CENTRE: der Ruhestrom ist der Mittelwert der Messwerte | nach 1000 ms |
+| BEWEGEN | ein Sprung auf ein Ende, ohne Rampe: TEMPO gilt nicht | bei der Ankunft oder nach 3000 ms (verspätet) |
+| HOLD | an diesem Ende: der Haltestrom ist der Mittelwert der Messwerte | nach VERWEILEN, mindestens 600 ms |
 
-Die beiden Enden sind die von SWEEP: RANGE des Wegs zu beiden Seiten von
-PULSE CENTRE, ohne Trim. Mit den Vorgaben (RANGE 80 %, TRAVEL +/-90 Grad,
-PULSE MIN 1000 us, MAX 2000 us) sind das 1100 und 1900 us. CURVE und SPEED
+Die beiden Enden sind die von SWEEP: BEREICH des Wegs zu beiden Seiten von
+PULS CENTRE, ohne Trim. Mit den Vorgaben (BEREICH 80 %, WEG +/-90 Grad,
+PULS MIN 1000 us, MAX 2000 us) sind das 1100 und 1900 us. KURVE und TEMPO
 gelten nur für SWEEP.
 
 Auch ein Lauf, der zu Ende geht, schaltet den Ausgang aus und gibt das Servo
 zur Mitte frei. Die ersten beiden Bewegungen einer Stufe, von der Mitte zum
 unteren Ende und weiter zum oberen, werden nicht gezählt: sie messen den Haltestrom an jedem
-Ende. Danach gehen die gezählten Bewegungen von Ende zu Ende, MOVEMENTS viele
-oder für TEST TIME, wie LENGTH BY sagt, höchstens 1000 je Stufe.
+Ende. Danach gehen die gezählten Bewegungen von Ende zu Ende, BEWEGUNGEN viele
+oder für TESTZEIT, wie LÄNGE NACH sagt, höchstens 1000 je Stufe.
 
 - **Bewegung:** ein Messwert, der mehr als 0,10 A (`SERVO_TEST_MOVE_A`) vom
   Wert vor dem Befehl entfernt ist: darüber, oder darunter, wenn das Servo
@@ -165,11 +165,11 @@ oder für TEST TIME, wie LENGTH BY sagt, höchstens 1000 je Stufe.
 die niedriger ist, in Schritten von 0,20 V (`SERVO_TEST_BROWNOUT_STEP_V`)
 abwärts bis 3,00 V (`SERVO_TEST_BROWNOUT_FLOOR_V`) oder bis zum kleinsten
 Sollwert des Netzteils, wenn der höher liegt. Die geltende Grenze ist die
-niedrigste aus VOLTAGE MAX, dem Höchstwert des Netzteils und beim PD mini
+niedrigste aus SPANNUNG MAX, dem Höchstwert des Netzteils und beim PD mini
 seiner Eingangsspannung abzüglich 0,5 V Reserve. Eine Untergrenze neben dem
 0,20-V-Raster ist die letzte Stufe: am Modell, dessen kleinster Sollwert
-3,3 V ist, geht der Lauf 5,0, 4,8 ... 3,4, 3,3 V. Jede Spannung durchläuft SET, SETTLE
-und IDLE, dann zwei Bewegungen (`SERVO_TEST_BROWNOUT_MOVES`), von der Mitte
+3,3 V ist, geht der Lauf 5,0, 4,8 ... 3,4, 3,3 V. Jede Spannung durchläuft SETZEN, EINSCHWINGEN
+und RUHE, dann zwei Bewegungen (`SERVO_TEST_BROWNOUT_MOVES`), von der Mitte
 zum oberen Ende und weiter zum unteren, jede 600 ms gehalten. Eine Spannung
 zeigt **keine Bewegung**, wenn kein Messwert der beiden Bewegungen mehr als
 0,10 A vom Wert vor ihrem Befehl entfernt liegt. Der Lauf abwärts endet bei
@@ -186,7 +186,7 @@ bei der sich das Servo noch bewegt hat.
 | `SERVO_TEST_SET_TOL_V` | 0,05 V | ein zurückgelesener Sollwert |
 | `SERVO_TEST_SET_TIMEOUT_MS` | 3000 ms | für den Sollwert und für das Einschalten |
 | `SERVO_TEST_STALE_MS` | 1500 ms | kein neuer Messwert beendet den Lauf |
-| `SERVO_TEST_STALL_ABORT_MS` | 1000 ms | so lange über STALL AT beendet den Lauf |
+| `SERVO_TEST_STALL_ABORT_MS` | 1000 ms | so lange über BLOCKIERT AB beendet den Lauf |
 | `SERVO_TEST_BROWNOUT_START_V` | 5,00 V | wo der Brown-out-Lauf beginnt |
 | `SERVO_TEST_BROWNOUT_STEP_V` | 0,20 V | jeder Schritt abwärts |
 | `SERVO_TEST_BROWNOUT_FLOOR_V` | 3,00 V | die niedrigste verlangte Spannung |
@@ -222,33 +222,33 @@ nicht bekannt.
 ### Was einen Lauf beendet
 
 Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und
-schreibt trotzdem den Bericht, als ABORTED mit dem Grund markiert. Der
+schreibt trotzdem den Bericht, als ABGEBROCHEN mit dem Grund markiert. Der
 Prüfstand bleibt scharf, außer das Ende war ein Disarm, STOP oder das
-Verlassen des Screens, die entschärfen. Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
-Lauf zurück, gleich welcher Screen oben ist. Das wartet, bis das OFF des
+Verlassen der Seite, die entschärfen. Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
+Lauf zurück, gleich welche Seite oben ist. Das wartet, bis das OFF des
 Laufs gesendet ist, ein danach genommener Messwert zeigt, dass das Netzteil selbst den Ausgang
 aus meldet,
-kein ON unterwegs ist und OUTPUT ON weder auf SERVO noch auf SUPPLY
+kein ON unterwegs ist und AUSGANG EIN weder auf SERVO noch auf SUPPLY
 gehalten wird. Sollwerte, die nach
 dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 
 | Grund im Bericht | Ursache |
 | --- | --- |
 | `STOP` | STOP in der Leiste |
-| `bench disarmed` | DISARM oder alles andere, was den Prüfstand entschärft hat |
-| `link lost` | der Link zum Koprozessor ging während des Laufs verloren |
-| `SERVO screen left` | ein anderer Screen wurde geöffnet |
-| `stopped by the operator` | STOP TEST, ein Finger auf der Skala, CENTRE, SWEEP, RELEASE, ein Tippen auf einen Sollwert |
-| `servo settings changed` | Typ, Frame Rate, Impulse, Trim, Weg, Reverse oder SPEED geändert |
-| `touch events lost` | zwischen zwei Frames gingen Ereignisse verloren |
-| `supply not answering` | ein Messwert als nicht antwortend markiert |
-| `supply tripped` | der Ausgang ging durch eine Abschaltschwelle aus |
-| `supply output went off` | der Ausgang ging anders aus, OUTPUT OFF eingeschlossen |
-| `no new supply reading for 1.5 s` | `SERVO_TEST_STALE_MS` |
-| `supply output did not come on` | 3000 ms nach dem ON nicht an |
-| `set point not read back in 3 s` | das Netzteil hat die Spannung einer Stufe nicht übernommen |
-| `step above the voltage cap` | eine Stufe über der geltenden Grenze: VOLTAGE MAX oder der Eingang des PD mini abzüglich seiner Reserve |
-| `above STALL AT for 1 s` | `SERVO_TEST_STALL_ABORT_MS` |
+| `Prüfstand DISARMED` | DISARM oder alles andere, was den Prüfstand entschärft hat |
+| `Link verloren` | der Link zum Koprozessor ging während des Laufs verloren |
+| `Seite SERVO verlassen` | eine andere Seite wurde geöffnet |
+| `vom Bediener gestoppt` | TEST BEENDEN, ein Finger auf der Skala, CENTRE, SWEEP, FREIGEBEN, ein Tippen auf einen Sollwert |
+| `Servo-Optionen geändert` | Typ, Frame Rate, Impulse, Trim, Weg, Reverse oder TEMPO geändert |
+| `Touch-Ereignisse verloren` | zwischen zwei Frames gingen Ereignisse verloren |
+| `Netzteil antwortet nicht` | ein Messwert als nicht antwortend markiert |
+| `Netzteil abgeschaltet` | der Ausgang ging durch eine Abschaltschwelle aus |
+| `Netzteilausgang ging aus` | der Ausgang ging anders aus, AUSGANG AUS eingeschlossen |
+| `seit 1.5 s kein Messwert` | `SERVO_TEST_STALE_MS` |
+| `Netzteilausgang ging nicht an` | 3000 ms nach dem ON nicht an |
+| `Sollwert 3 s nicht bestätigt` | das Netzteil hat die Spannung einer Stufe nicht übernommen |
+| `Stufe über Spannungsobergrenze` | eine Stufe über der geltenden Grenze: SPANNUNG MAX oder der Eingang des PD mini abzüglich seiner Reserve |
+| `1 s über BLOCKIERT AB` | `SERVO_TEST_STALL_ABORT_MS` |
 
 Eine Stufe wird nie über der Grenze verlangt: ein Lauf, dessen Stufen
 außerhalb des Bereichs des Netzteils liegen, wird bei START abgelehnt, und
@@ -256,29 +256,29 @@ eine Grenze, die während des Laufs sinkt, beendet ihn vor der Stufe darüber.
 
 ### Urteil
 
-PASS, außer eines davon trifft zu, über die Spannungsstufen (der
+BESTANDEN, außer eines davon trifft zu, über die Spannungsstufen (der
 Brown-out-Lauf wird berichtet, nicht beurteilt):
 
-- der höchste Ruhestrom liegt über IDLE CURRENT;
-- der höchste Haltestrom liegt über HOLD CURRENT;
-- die längste Stellzeit liegt über TRAVEL TIME;
-- ein Messwert nach SETTLE liegt über STALL AT;
+- der höchste Ruhestrom liegt über RUHESTROM;
+- der höchste Haltestrom liegt über HALTESTROM;
+- die längste Stellzeit liegt über STELLZEIT;
+- ein Messwert nach EINSCHWINGEN liegt über BLOCKIERT AB;
 - eine gezählte Bewegung war verspätet, was bei einem Servo, das sich nicht
   bewegt, immer zutrifft.
 
-Ein Wert 0 auf der LIMITS-Seite wird nicht geprüft; STALL AT immer.
+Ein Wert 0 auf der GRENZEN-Seite wird nicht geprüft; BLOCKIERT AB immer.
 
 ### Dateien
 
 Ein Lauf nimmt die nächste Laufnummer auf der Karte, wie ein scharfer
 Prüfstand, und die eigene Task der SD-Karte schreibt seine Dateien:
-`BENCHnnn.CSV`, eine Zeile je Messwert des Netzteils, und mit REPORT an
-(DUT-Seite) `BENCHnnn.TXT`. Das eigene Lauflog eines scharfen Prüfstands
+`BENCHnnn.CSV`, eine Zeile je Messwert des Netzteils, und mit BERICHT an
+(PRÜFLING-Seite) `BENCHnnn.TXT`. Das eigene Lauflog eines scharfen Prüfstands
 läuft daneben in einer eigenen Datei weiter. Eine Nummer, die nur ein
 `BENCHnnn.TXT` trägt, dessen CSV am Computer gelöscht wurde, ist trotzdem
-vergeben, damit kein Bericht überschrieben wird, und DELETE in der
+vergeben, damit kein Bericht überschrieben wird, und LÖSCHEN in der
 Log-Ansicht löscht mit einem Lauf seinen Bericht. Ein Lauf, den die Karte nicht
-annimmt, sagt das in der Leiste und im Ergebnis, `NOT RECORDED`. Zeilen, für
+annimmt, sagt das in der Leiste und im Ergebnis, `OHNE DATEI`. Zeilen, für
 die die Warteschlange zur Karte keinen Platz hatte, zählt der Bericht.
 
 Die CSV, mit Semikolon getrennt und Dezimalpunkt, wie jedes Log des
@@ -300,20 +300,22 @@ Prüfstands:
 | `mode` | | `CV`, `CC` oder `OFF` |
 | `travel (ms)` | ms | in der Zeile einer Ankunft: die Stellzeit dieser Bewegung |
 
-Der Bericht ist englisch, in jeder Sprache der Oberfläche; jedes seiner
-Wörter steht in einer Tabelle in `shared/servo/servo_report.c`. Ein Bericht
-aus einem Lauf gegen die Servo- und Netzteilmodelle der Host-Suite steht auf
-der [englischen Seite](Servo.md#files). Das modellierte Servo legt 800 us in
+Der Bericht steht in der Sprache, die beim Start seines Laufs gilt; seine
+deutschen Wörter liegen in `shared/ui/ui_text_de.c`, die englischen in
+`shared/servo/servo_report.c` ([Sprache der Oberfläche](Language-de.md)).
+Die CSV ist in jeder Sprache englisch. Ein englischer Bericht aus einem Lauf
+gegen die Servo- und Netzteilmodelle der Host-Suite steht auf der
+[englischen Seite](Servo.md#files). Das modellierte Servo legt 800 us in
 667 ms zurück; die 700 ms im Bericht sind das, um die 100 ms zwischen zwei
-Messwerten zu spät. Ein abgebrochener Lauf zeigt `Result: ABORTED - <Grund>`,
-eine abgeschnittene Stufe ist mit `(cut short)` markiert, eine nie erreichte
-mit `not run`. `Can destroy` nennt das rote Schild, wenn ein Heli-Typ oder eine
-Frame Rate über 60 Hz gilt.
+Messwerten zu spät. Ein abgebrochener Lauf zeigt `Ergebnis: ABGEBROCHEN -
+<Grund>`, eine abgeschnittene Stufe ist mit `(verkürzt)` markiert, eine nie
+erreichte mit `nicht gelaufen`. `Kann zerstören` nennt das rote Schild, wenn
+ein Heli-Typ oder eine Frame Rate über 60 Hz gilt.
 
 ### Nicht auf Hardware gelaufen
 
 Kein Lauf hat ein Servo oder einen PD mini betrieben. Die Host-Suite prüft die
-Engine gegen `servo_sim` und `supply_sim`, den SERVO-Screen, der sie führt,
+Engine gegen `servo_sim` und `supply_sim`, die Seite SERVO, die sie führt,
 und die CSV, vom Parser der Log-Ansicht zurückgelesen. Nicht gemessen: die
 wirkliche Rate der Messwerte über den Koprozessor, die Mittelung des PD mini,
 die Verzögerung des Befehls bis zum Pin, und ob der Strom eines echten Servos
@@ -325,7 +327,7 @@ Die Strommessung an den Servoausgängen: ein Sensor je Ausgang für die
 Endlagensuche, einer über das Paar für den Abgleich. Keiner ist bestückt, und
 beide Verfahren sind der Grund, warum sie gebraucht werden — jede Zahl hier
 ist ein Strom. Der automatische Test braucht keinen davon: er liest den PD
-mini, verdrahtet und in SETUP INTERFACES freigegeben, oder läuft am
+mini, verdrahtet und in SETUP ANSCHLÜSSE freigegeben, oder läuft am
 Netzteilmodell des Panels.
 
 Die Pulse selbst gibt es: der PWM-Treiber (Pulsweitenmodulation) des

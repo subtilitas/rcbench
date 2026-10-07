@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ui_text.h"
 #include "ui_widgets.h"
 
 #define SCREEN_W 800
@@ -229,6 +230,11 @@ static void drop_data(void)
 
 /* ------------------------------------------------------------- loading --- */
 
+/* A format, so the compiler checks every call against its arguments --
+ * tools/check_formats.py sees the translated ones the same way. */
+static void set_message(const char *fmt, ...)
+    __attribute__((format(printf, 1, 2)));
+
 static void set_message(const char *fmt, ...)
 {
     va_list ap;
@@ -239,6 +245,35 @@ static void set_message(const char *fmt, ...)
     vsnprintf(s.message, sizeof(s.message), fmt, ap);
     va_end(ap);
     s.message_ok = false;
+}
+
+/* The reader's verdict in the language showing; log_err_str() is the
+ * English the console logs. */
+static const char *err_text(log_err_t err)
+{
+    switch (err) {
+    case LOG_OK:                   return TR(LOG_ERR_OK);
+    case LOG_ERR_READ:             return TR(LOG_ERR_READ);
+    case LOG_ERR_NO_HEADER:        return TR(LOG_ERR_NO_HEADER);
+    case LOG_ERR_NO_ROWS:          return TR(LOG_ERR_NO_ROWS);
+    case LOG_ERR_NO_NUMERIC:       return TR(LOG_ERR_NO_NUMERIC);
+    case LOG_ERR_TOO_MANY_COLUMNS: return TR(LOG_ERR_COLUMNS);
+    case LOG_ERR_MEMORY:           return TR(LOG_ERR_MEMORY);
+    case LOG_ERR_ARG:              return TR(LOG_ERR_ARG);
+    default:                       return TR(LOG_ERR_UNKNOWN);
+    }
+}
+
+/* A delimiter's name, as log_csv_delimiter_label() gives it in English. */
+static const char *delim_text(char delimiter)
+{
+    switch (delimiter) {
+    case ';':  return TR(LOG_SEMICOLON);
+    case ',':  return TR(LOG_COMMA);
+    case '\t': return TR(LOG_TAB);
+    case '|':  return TR(LOG_PIPE);
+    default:   return "?";
+    }
 }
 
 static void run_analysis(void)
@@ -266,13 +301,13 @@ static void run_analysis(void)
     drop_data();
 
     if (s.io.open == NULL) {
-        set_message("no file source");
+        set_message("%s", TR(LOG_NO_SOURCE));
         return;
     }
 
     log_source_t src;
     if (!s.io.open(s.name, &src, s.io.ctx)) {
-        set_message("cannot open %s", s.name);
+        set_message(TR(LOG_CANNOT_OPEN), s.name);
         return;
     }
 
@@ -289,7 +324,7 @@ static void run_analysis(void)
     }
 
     if (err != LOG_OK) {
-        set_message("%s", log_err_str(err));
+        set_message("%s", err_text(err));
         return;
     }
 
@@ -452,7 +487,7 @@ static void load_data(void)
 
     log_source_t src;
     if (!s.io.open(s.name, &src, s.io.ctx)) {
-        set_message("cannot open %s", s.name);
+        set_message(TR(LOG_CANNOT_OPEN), s.name);
         return;
     }
     log_err_t err = log_csv_build(&src, &s.an, s.picked, s.n_picked, &s.data);
@@ -461,7 +496,7 @@ static void load_data(void)
     }
 
     if (err != LOG_OK) {
-        set_message("%s", log_err_str(err));
+        set_message("%s", err_text(err));
         return;
     }
 
@@ -481,7 +516,7 @@ static void open_selected(void)
         /* Subdirectories are listed (storage_list applies the suffix filter
          * to files only).  There is no directory navigation, so opening one
          * reports a message rather than running the analysis on it. */
-        set_message("%s is a folder", s.files[s.sel].name);
+        set_message(TR(LOG_IS_FOLDER), s.files[s.sel].name);
         return;
     }
     snprintf(s.name, sizeof(s.name), "%s", s.files[s.sel].name);
@@ -515,7 +550,7 @@ static bool can_delete(void)
 static void render_question(gfx_canvas_t *c)
 {
     const gfx_rect_t box = DQ_BOX;
-    ui_panel(c, box, "DELETE FROM CARD", UI_DANGER);
+    ui_panel(c, box, TR(LOG_DELETE_TITLE), UI_DANGER);
 
     char size[16];
     char line[LOG_VIEWER_NAME_MAX + 24];
@@ -523,21 +558,21 @@ static void render_question(gfx_canvas_t *c)
     snprintf(line, sizeof(line), "%s   %s", s.doomed, size);
     gfx_text_in(c, gfx_rect_make(box.x + 24, box.y + 44, box.w - 48, 20), line,
                 UI_FONT_LABEL, UI_TEXT, 1, GFX_ALIGN_LEFT);
-    gfx_text(c, box.x + 24, box.y + 76, "The file is removed from the card.",
+    gfx_text(c, box.x + 24, box.y + 76, TR(LOG_DELETE_WHAT),
              UI_FONT_LABEL, UI_TEXT_DIM, 1);
-    gfx_text(c, box.x + 24, box.y + 98, "This cannot be undone.",
+    gfx_text(c, box.x + 24, box.y + 98, TR(LOG_DELETE_FINAL),
              UI_FONT_LABEL, UI_TEXT_DIM, 1);
 
-    ui_button(c, DQ_CANCEL, "CANCEL", UI_PANEL_HI, s.press_btn == 0, true);
-    ui_button(c, DQ_DELETE, "DELETE", UI_DANGER, s.press_btn == 1, true);
+    ui_button(c, DQ_CANCEL, TR(CANCEL), UI_PANEL_HI, s.press_btn == 0, true);
+    ui_button(c, DQ_DELETE, TR(LOG_DELETE), UI_DANGER, s.press_btn == 1, true);
 }
 
 static void render_browse(gfx_canvas_t *c)
 {
     const char *vol = (s.io.volume != NULL) ? s.io.volume(s.io.ctx) : NULL;
     char head[64];
-    snprintf(head, sizeof(head), "%s", (vol != NULL && vol[0] != '\0') ? vol
-                                                                      : "SD CARD");
+    snprintf(head, sizeof(head), "%s", (vol != NULL && vol[0] != '\0')
+                                           ? vol : TR(LOG_SD_CARD));
     gfx_text(c, 300, 12, head, UI_FONT_LABEL, UI_TEXT_DIM, 1);
 
     /*
@@ -552,12 +587,11 @@ static void render_browse(gfx_canvas_t *c)
 
     if (s.listed != 1 || s.n_files == 0) {
         gfx_rect_t box = gfx_rect_make(120, 160, 560, 160);
-        ui_panel(c, box, "NO LOGS", UI_WARN);
-        const char *why = (s.listed == -1) ? "No card. Insert one and tap RESCAN."
-                                           : "No .csv files in the root.";
+        ui_panel(c, box, TR(LOG_NO_LOGS), UI_WARN);
+        const char *why = (s.listed == -1) ? TR(LOG_NO_CARD) : TR(LOG_NO_CSV);
         gfx_text(c, box.x + 24, box.y + 52, why, UI_FONT_LABEL, UI_TEXT, 1);
         gfx_text(c, box.x + 24, box.y + 76,
-                 "Runs are written here as BENCH001.CSV and upwards.",
+                 TR(LOG_RUNS_HERE),
                  UI_FONT_LABEL, UI_TEXT_FAINT, 1);
     } else {
         /*
@@ -568,12 +602,12 @@ static void render_browse(gfx_canvas_t *c)
          * The buffer takes both counts written out in full, so a volume that
          * reports a nonsense one still leaves a terminated title.
          */
-        char title[40];
+        char title[48];
         if (s.n_card > s.n_files) {
-            snprintf(title, sizeof(title), "%d OF %d FILES", s.n_files,
+            snprintf(title, sizeof(title), TR(LOG_N_OF_FILES), s.n_files,
                      s.n_card);
         } else {
-            snprintf(title, sizeof(title), "FILES");
+            snprintf(title, sizeof(title), "%s", TR(LOG_FILES));
         }
         ui_panel(c, BR_LIST, title, UI_ACCENT);
         int y = BR_LIST.y + 30;
@@ -596,18 +630,22 @@ static void render_browse(gfx_canvas_t *c)
             char size[16];
             fmt_size(size, sizeof(size), s.files[i].size);
             gfx_rect_t sz = gfx_rect_make(row.x + row.w - 132, row.y, 120, row.h);
-            gfx_text_in(c, sz, s.files[i].is_dir ? "DIR" : size, UI_FONT_LABEL,
+            gfx_text_in(c, sz, s.files[i].is_dir ? TR(LOG_DIR) : size,
+                        UI_FONT_LABEL,
                         UI_TEXT_FAINT, 1, GFX_ALIGN_RIGHT);
             y += BR_ROW_H;
         }
     }
 
-    ui_button(c, BR_RESCAN, "RESCAN", UI_PANEL_HI, s.press_btn == 0, true);
+    ui_button(c, BR_RESCAN, TR(LOG_RESCAN), UI_PANEL_HI, s.press_btn == 0,
+              true);
     int msg_end = BR_OPEN.x;
     if (s.n_files > 0) {
-        ui_button(c, BR_OPEN, "OPEN", UI_ACCENT, s.press_btn == 1, s.sel >= 0);
+        ui_button(c, BR_OPEN, TR(LOG_OPEN), UI_ACCENT, s.press_btn == 1,
+                  s.sel >= 0);
         if (s.io.remove != NULL) {
-            ui_button(c, BR_DELETE, "DELETE", UI_DANGER, s.press_btn == 2,
+            ui_button(c, BR_DELETE, TR(LOG_DELETE), UI_DANGER,
+                      s.press_btn == 2,
                       can_delete());
             msg_end = BR_DELETE.x;
         }
@@ -639,15 +677,15 @@ static void render_import(gfx_canvas_t *c)
 
     if (!s.have_analysis) {
         gfx_rect_t box = gfx_rect_make(120, 160, 560, 150);
-        ui_panel(c, box, "CANNOT READ", UI_DANGER);
+        ui_panel(c, box, TR(LOG_CANNOT_READ), UI_DANGER);
         gfx_text(c, box.x + 24, box.y + 52,
-                 s.message[0] ? s.message : "unreadable", UI_FONT_LABEL,
+                 s.message[0] ? s.message : TR(LOG_UNREADABLE), UI_FONT_LABEL,
                  UI_TEXT, 1);
         gfx_text(c, box.x + 24, box.y + 76,
-                 "Try another delimiter below, or a different file.",
+                 TR(LOG_TRY_ANOTHER),
                  UI_FONT_LABEL, UI_TEXT_FAINT, 1);
     } else {
-        ui_panel(c, IM_LEFT, "DETECTED", UI_ACCENT);
+        ui_panel(c, IM_LEFT, TR(LOG_DETECTED), UI_ACCENT);
 
         char line[64];
         int y = IM_LEFT.y + 38;
@@ -664,29 +702,32 @@ static void render_import(gfx_canvas_t *c)
          * snprintf writes rows[n].value, it does not read it; the array is
          * filled here and every field set before it is drawn. */
         snprintf(rows[n].value, sizeof(rows[n].value), "%s",
-                 log_csv_delimiter_label(s.an.delimiter));
-        rows[n].key = "SEPARATOR";
+                 delim_text(s.an.delimiter));
+        rows[n].key = TR(LOG_KEY_SEPARATOR);
         rows[n].color = UI_TEXT;
         n++;
 
-        snprintf(rows[n].value, sizeof(rows[n].value), "%s%s",
-                 (s.an.convention == LOG_CONV_DE) ? "GERMAN" : "ENGLISH",
-                 s.an.convention_forced ? " (SET)"
-                                        : (s.an.convention_confident ? "" : " (?)"));
-        rows[n].key = "NUMBERS";
+        const char *flag = s.an.convention_forced ? TR(LOG_SET)
+                           : (s.an.convention_confident ? "" : "(?)");
+        snprintf(rows[n].value, sizeof(rows[n].value), "%s%s%s",
+                 (s.an.convention == LOG_CONV_DE) ? TR(LOG_GERMAN)
+                                                  : TR(LOG_ENGLISH),
+                 (flag[0] != '\0') ? " " : "", flag);
+        rows[n].key = TR(LOG_KEY_NUMBERS);
         rows[n].color = (s.an.convention_forced || s.an.convention_confident)
                             ? UI_TEXT
                             : UI_WARN;
         n++;
 
-        snprintf(rows[n].value, sizeof(rows[n].value), "%d%s", s.an.row_count,
-                 s.an.truncated ? " (CAPPED)" : "");
-        rows[n].key = "ROWS";
+        snprintf(rows[n].value, sizeof(rows[n].value), "%d%s%s",
+                 s.an.row_count, s.an.truncated ? " " : "",
+                 s.an.truncated ? TR(LOG_CAPPED) : "");
+        rows[n].key = TR(LOG_KEY_ROWS);
         rows[n].color = s.an.truncated ? UI_WARN : UI_TEXT;
         n++;
 
         snprintf(rows[n].value, sizeof(rows[n].value), "%d", s.an.n_columns);
-        rows[n].key = "COLUMNS";
+        rows[n].key = TR(LOG_KEY_COLUMNS);
         rows[n].color = UI_TEXT;
         n++;
 
@@ -694,15 +735,17 @@ static void render_import(gfx_canvas_t *c)
             snprintf(rows[n].value, sizeof(rows[n].value), "%s %s",
                      s.an.columns[s.an.time_index].name, s.an.time_unit);
         } else {
-            snprintf(rows[n].value, sizeof(rows[n].value), "ROW INDEX");
+            snprintf(rows[n].value, sizeof(rows[n].value), "%s",
+                     TR(LOG_ROW_INDEX));
         }
-        rows[n].key = "TIME AXIS";
+        rows[n].key = TR(LOG_KEY_TIME);
         rows[n].color = (s.an.time_index >= 0) ? UI_TEXT : UI_WARN;
         n++;
 
-        snprintf(rows[n].value, sizeof(rows[n].value), "%d%s", s.an.ragged_rows,
-                 (s.an.long_rows > 0) ? " +LONG" : "");
-        rows[n].key = "RAGGED";
+        snprintf(rows[n].value, sizeof(rows[n].value), "%d%s%s",
+                 s.an.ragged_rows, (s.an.long_rows > 0) ? " " : "",
+                 (s.an.long_rows > 0) ? TR(LOG_PLUS_LONG) : "");
+        rows[n].key = TR(LOG_KEY_RAGGED);
         rows[n].color = (s.an.ragged_rows > 0 || s.an.long_rows > 0) ? UI_DANGER
                                                                      : UI_TEXT;
         n++;
@@ -721,39 +764,39 @@ static void render_import(gfx_canvas_t *c)
         y += 14;
 
         /* The evidence behind the detection. */
-        snprintf(line, sizeof(line), "EVIDENCE  de %d  en %d  amb %d",
+        snprintf(line, sizeof(line), TR(LOG_EVIDENCE),
                  s.an.votes.de, s.an.votes.en, s.an.votes.ambiguous);
         gfx_text(c, IM_LEFT.x + 16, y, line, UI_FONT_LABEL, UI_TEXT_FAINT, 1);
         y += 20;
 
         if (s.an.convention_conflict) {
-            gfx_text(c, IM_LEFT.x + 16, y, "BOTH PROVEN - FILE IS MIXED",
+            gfx_text(c, IM_LEFT.x + 16, y, TR(LOG_MIXED),
                      UI_FONT_LABEL, UI_DANGER, 1);
         } else if (s.an.long_rows > 0) {
             /* Those rows lost every cell after the overflow, and a lost cell
              * looks exactly like a blank one further down. */
-            snprintf(line, sizeof(line), "%d ROW(S) TOO LONG - CELLS LOST",
+            snprintf(line, sizeof(line), TR(LOG_TOO_LONG),
                      s.an.long_rows);
             gfx_text(c, IM_LEFT.x + 16, y, line, UI_FONT_LABEL, UI_DANGER, 1);
         } else if (s.an.ragged_rows > 0) {
-            gfx_text(c, IM_LEFT.x + 16, y, "ROWS DIFFER - WRONG SEPARATOR?",
+            gfx_text(c, IM_LEFT.x + 16, y, TR(LOG_ROWS_DIFFER),
                      UI_FONT_LABEL, UI_DANGER, 1);
         } else if (!s.an.convention_confident) {
-            gfx_text(c, IM_LEFT.x + 16, y, "NOTHING SETTLED IT - CHECK BELOW",
+            gfx_text(c, IM_LEFT.x + 16, y, TR(LOG_UNSETTLED),
                      UI_FONT_LABEL, UI_WARN, 1);
         }
 
         /* The override controls for the two detections above. */
         int hy = IM_LEFT.y + IM_LEFT.h - 60;
         ui_rule(c, IM_LEFT.x + 16, hy - 10, IM_LEFT.w - 32, UI_EDGE);
-        gfx_text(c, IM_LEFT.x + 16, hy, "VALUES LOOK WRONG?  CHANGE NUM",
+        gfx_text(c, IM_LEFT.x + 16, hy, TR(LOG_HINT_NUM),
                  UI_FONT_LABEL, UI_TEXT_FAINT, 1);
-        gfx_text(c, IM_LEFT.x + 16, hy + 18, "COLUMNS LOOK WRONG?  CHANGE SEP",
+        gfx_text(c, IM_LEFT.x + 16, hy + 18, TR(LOG_HINT_SEP),
                  UI_FONT_LABEL, UI_TEXT_FAINT, 1);
 
         /* --- columns -------------------------------------------------- */
-        char title[32];
-        snprintf(title, sizeof(title), "PLOT  %d/%d", s.n_picked,
+        char title[40];
+        snprintf(title, sizeof(title), TR(LOG_PLOT_N), s.n_picked,
                  LOG_MAX_SERIES);
         ui_panel(c, IM_RIGHT, title, UI_ACCENT);
 
@@ -793,9 +836,9 @@ static void render_import(gfx_canvas_t *c)
 
             char right[40];
             if (is_time) {
-                snprintf(right, sizeof(right), "TIME");
+                snprintf(right, sizeof(right), "%s", TR(LOG_TIME));
             } else if (!col->numeric) {
-                snprintf(right, sizeof(right), "TEXT");
+                snprintf(right, sizeof(right), "%s", TR(LOG_TEXT));
             } else {
                 char lo[12];
                 char hi[12];
@@ -812,22 +855,22 @@ static void render_import(gfx_canvas_t *c)
     }
 
     /* --- controls ------------------------------------------------------ */
-    char btn[24];
-    snprintf(btn, sizeof(btn), "SEP %s",
+    char btn[40];
+    snprintf(btn, sizeof(btn), TR(LOG_BTN_SEP),
              (s.delim_index < 0) ? "AUTO"
-                                 : log_csv_delimiter_label(
-                                       log_csv_delimiters[s.delim_index]));
+                                 : delim_text(log_csv_delimiters[s.delim_index]));
     ui_button(c, gfx_rect_make(16, IM_BTN_Y, 190, IM_BTN_H), btn, UI_PANEL_HI,
               s.press_btn == 0, true);
 
-    snprintf(btn, sizeof(btn), "NUM %s", conv_label(s.conv));
+    snprintf(btn, sizeof(btn), TR(LOG_BTN_NUM), conv_label(s.conv));
     ui_button(c, gfx_rect_make(214, IM_BTN_Y, 190, IM_BTN_H), btn, UI_PANEL_HI,
               s.press_btn == 1, true);
 
-    ui_button(c, gfx_rect_make(412, IM_BTN_Y, 180, IM_BTN_H), "BACK",
+    ui_button(c, gfx_rect_make(412, IM_BTN_Y, 180, IM_BTN_H), TR(LOG_BACK),
               UI_PANEL_HI, s.press_btn == 2, true);
 
-    ui_button(c, gfx_rect_make(600, IM_BTN_Y, 184, IM_BTN_H), "PLOT", UI_ACCENT,
+    ui_button(c, gfx_rect_make(600, IM_BTN_Y, 184, IM_BTN_H), TR(LOG_PLOT),
+              UI_ACCENT,
               s.press_btn == 3, s.have_analysis && s.n_picked > 0);
 }
 
@@ -877,14 +920,14 @@ static void render_plot(gfx_canvas_t *c)
 
     if (!s.have_data) {
         gfx_rect_t box = gfx_rect_make(120, 170, 560, 140);
-        ui_panel(c, box, "NOTHING LOADED", UI_WARN);
+        ui_panel(c, box, TR(LOG_NOTHING_LOADED), UI_WARN);
         gfx_text(c, box.x + 24, box.y + 52,
-                 s.message[0] ? s.message : "Pick a file first.",
+                 s.message[0] ? s.message : TR(LOG_PICK_FIRST),
                  UI_FONT_LABEL, UI_TEXT, 1);
         return;
     }
 
-    snprintf(line, sizeof(line), "%s   %d ROWS   %.2f s   %.0f Hz", s.name,
+    snprintf(line, sizeof(line), TR(LOG_SUMMARY), s.name,
              s.data.count, s.data.duration_s, s.data.rate_hz);
     gfx_text(c, 260, 12, line, UI_FONT_LABEL, UI_TEXT_DIM, 1);
 
@@ -962,7 +1005,8 @@ static void render_plot(gfx_canvas_t *c)
     }
 
     /* --- footer --------------------------------------------------------- */
-    ui_button(c, gfx_rect_make(16, FOOT_Y, 170, FOOT_H), "FIELDS", UI_PANEL_HI,
+    ui_button(c, gfx_rect_make(16, FOOT_Y, 170, FOOT_H), TR(LOG_FIELDS),
+              UI_PANEL_HI,
               s.press_btn == 0, true);
     ui_button(c, gfx_rect_make(196, FOOT_Y, 80, FOOT_H), "<", UI_PANEL_HI,
               s.press_btn == 1, true);
@@ -970,18 +1014,18 @@ static void render_plot(gfx_canvas_t *c)
               s.press_btn == 2, true);
 
     if (s.data.time_name[0] != '\0') {
-        snprintf(line, sizeof(line), "t = %.3f s   sample %d/%d",
+        snprintf(line, sizeof(line), TR(LOG_AT_TIME),
                  (double)s.data.time[ci], ci + 1, s.data.count);
     } else {
         /* No time column, so the x axis is the row number.  Say that rather
          * than printing a seconds value that is really an index. */
-        snprintf(line, sizeof(line), "row %d of %d   (no time column)", ci + 1,
+        snprintf(line, sizeof(line), TR(LOG_AT_ROW), ci + 1,
                  s.data.count);
     }
     gfx_text(c, 384, FOOT_Y + 13, line, UI_FONT_LABEL, UI_TEXT_DIM, 1);
 
     if (s.data.unparsed_cells > 0) {
-        snprintf(line, sizeof(line), "%d CELLS UNREADABLE",
+        snprintf(line, sizeof(line), TR(LOG_UNREADABLE_CELLS),
                  s.data.unparsed_cells);
         gfx_text(c, 384, FOOT_Y + 27, line, UI_FONT_LABEL, UI_WARN, 1);
     }
@@ -1035,7 +1079,7 @@ static void delete_doomed(void)
     if (s.io.remove == NULL || !s.io.remove(name, s.io.ctx)) {
         /* The list stays as it was, selection included: the file is still
          * there as far as anybody knows, and RESCAN says otherwise if not. */
-        set_message("cannot delete %s", name);
+        set_message(TR(LOG_CANNOT_DELETE), name);
         return;
     }
     /* What the import and plot views hold was read from that file. */
@@ -1051,7 +1095,7 @@ static void delete_doomed(void)
     log_viewer_refresh();
     s.scroll = scroll;
     clamp_scroll(&s.scroll, s.n_files, BR_ROWS);
-    set_message("%s deleted", name);
+    set_message(TR(LOG_DELETED), name);
     s.message_ok = true;
 }
 

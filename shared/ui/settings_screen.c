@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "settings.h"
+#include "ui_text.h"
 #include "ui_widgets.h"
 
 #define SCREEN_W 800
@@ -114,6 +115,9 @@ void settings_screen_invalidate(void)
 
 void settings_apply_ui(void)
 {
+    /* The language with the theme: a change repaints every screen in it
+     * on the next frame, through the invalidation below. */
+    ui_text_set_language((ui_lang_t)settings_get_int(SET_LANGUAGE));
     ui_theme_set((ui_theme_id_t)settings_get_int(SET_THEME));
     ui_theme_set_brightness(settings_get_int(SET_BRIGHTNESS));
     ui_theme_set_contrast(settings_get_int(SET_CONTRAST));
@@ -226,7 +230,7 @@ static void step_row(int index, int steps)
     }
     settings_adjust(id, steps);
     if (d->cat == SET_CAT_APP) {
-        settings_apply_ui();      /* theme, brightness and contrast are live */
+        settings_apply_ui();      /* language, theme, brightness, contrast */
     }
     settings_screen_invalidate();
 }
@@ -445,11 +449,16 @@ static void draw_categories(gfx_canvas_t *c)
             gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0, UI_EDGE);
         }
 
-        gfx_text(c, r.x + 14, r.y + 10, settings_category_name((setting_cat_t)i),
-                 UI_FONT_HEAD, active ? UI_TEXT_ON_LIGHT : UI_TEXT, 1);
+        /* In the heading face where it fits the button, as the values in
+         * the rows do; a longer name in the label face. */
+        const char *name = ui_setting_category((setting_cat_t)i);
+        const bool big = gfx_text_width(UI_FONT_HEAD, name, 1) <= r.w - 28;
+        gfx_text(c, r.x + 14, r.y + (big ? 10 : 16), name,
+                 big ? UI_FONT_HEAD : UI_FONT_LABEL,
+                 active ? UI_TEXT_ON_LIGHT : UI_TEXT, 1);
 
-        char buf[24];
-        snprintf(buf, sizeof(buf), "%d SETTINGS",
+        char buf[40];
+        snprintf(buf, sizeof(buf), TR(SET_COUNT),
                  settings_in_category((setting_cat_t)i, NULL, 0));
         gfx_text(c, r.x + 14, r.y + 40, buf, UI_FONT_LABEL,
                  active ? UI_TEXT_ON_LIGHT : UI_TEXT_FAINT, 1);
@@ -465,11 +474,11 @@ static void draw_categories(gfx_canvas_t *c)
              UI_TEXT_ON_LIGHT, 1);
 
     /* One caption for both: they are two views of the same binding. */
-    gfx_text(c, CAT_X, PICKER_Y + DOOR_H + 6, "PINS: A LIST OR THE BOARD",
+    gfx_text(c, CAT_X, PICKER_Y + DOOR_H + 6, TR(SET_PINS_CAPTION),
              UI_FONT_LABEL, UI_TEXT_FAINT, 1);
 
     gfx_rect_t rr = reset_rect();
-    ui_button(c, rr, "RESET CATEGORY", UI_WARN, s.hit_kind == HIT_RESET, true);
+    ui_button(c, rr, TR(SET_RESET), UI_WARN, s.hit_kind == HIT_RESET, true);
 
     /*
      * Four states, and the label is the whole of the feedback: nothing to
@@ -489,9 +498,9 @@ static void draw_categories(gfx_canvas_t *c)
     s.drawn_dirty  = dirty;
     s.drawn_asked  = asked;
     s.drawn_failed = failed;
-    const char *label = !dirty ? "SAVED"
-                        : asked ? "WHEN IDLE"
-                        : failed ? "NOT SAVED" : "SAVE";
+    const char *label = !dirty ? TR(SET_SAVED)
+                        : asked ? TR(SET_WHEN_IDLE)
+                        : failed ? TR(SET_NOT_SAVED) : TR(SET_SAVE);
     gfx_rect_t sv = save_rect();
     ui_button(c, sv, label,
               dirty ? (asked ? UI_WARN : failed ? UI_DANGER : UI_ACCENT)
@@ -518,9 +527,11 @@ static void draw_row(gfx_canvas_t *c, int index)
      * run under them. */
     gfx_rect_t saved = gfx_clip_get(c);
     gfx_clip_intersect(c, gfx_rect_make(r.x, r.y, MINUS_X - 10 - r.x, r.h));
-    gfx_text(c, r.x + 16, r.y + 3, d->label, UI_FONT_HEAD, UI_TEXT, 1);
-    if (d->help && d->help[0]) {
-        gfx_text(c, r.x + 16, r.y + 33, d->help, UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+    gfx_text(c, r.x + 16, r.y + 3, ui_setting_label(id), UI_FONT_HEAD,
+             UI_TEXT, 1);
+    const char *help = ui_setting_help(id);
+    if (help[0] != '\0') {
+        gfx_text(c, r.x + 16, r.y + 33, help, UI_FONT_LABEL, UI_TEXT_FAINT, 1);
     }
     c->clip = saved;
 
@@ -529,7 +540,7 @@ static void draw_row(gfx_canvas_t *c, int index)
      * "BLHELI SERIAL" at 16 px a character does not fit in the gap and a
      * clipped setting name is worse than a small one. */
     char buf[32];
-    settings_value_text(id, buf, sizeof(buf));
+    ui_setting_value(id, buf, sizeof(buf));
     int ux = VALUE_R;
     if (d->unit && d->unit[0]) {
         int uw = gfx_text_width(UI_FONT_LABEL, d->unit, 1);

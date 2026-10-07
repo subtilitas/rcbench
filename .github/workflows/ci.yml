@@ -180,6 +180,11 @@ jobs:
       - name: The committed screenshots match the current render
         run: python3 tools/render_ui.py --check
 
+      # A German string longer than its field is cut or runs into its
+      # neighbour; this draws every view in both languages and measures.
+      - name: Every German string fits where it is drawn
+        run: python3 tools/render_ui.py --fit
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -228,6 +233,12 @@ jobs:
             --check-level=exhaustive \
             $(git ls-files 'shared/**/include' | sed 's|^|-I|' | sort -u) \
             $(git ls-files 'shared/**/*.c' | grep -v 'gfx_font')
+
+      # A translated format reaches snprintf() through a table lookup, which
+      # -Wformat cannot see; this compiles shared/ again with the English
+      # literals in place and fails on any format warning.
+      - name: Every translated format matches its call
+        run: python3 tools/check_formats.py
 
       # The six tools in tools/ are held to the same standard as the C: each
       # of them can fail a build, so a bug in one is a bug in the gate.

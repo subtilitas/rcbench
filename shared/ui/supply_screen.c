@@ -22,6 +22,7 @@
 #include "ui_plot.h"
 #include "ui_slider.h"
 #include "ui_tabs.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -120,7 +121,8 @@ static const ui_plot_series_t k_series[S_COUNT] = {
     { "ISET", "A", 0, 2, 1.0f,  1 + S_CURR },
 };
 
-static const char *const k_tab_labels[] = { "PLOT", "TABLE" };
+static const ui_text_id_t k_tab_labels[] = { TX_MO_TAB_PLOT,
+                                              TX_MO_TAB_TABLE };
 
 /* What a press is on.  One contact holds the screen at a time. */
 enum { P_NONE = 0, P_OUTPUT, P_RESET, P_V_DOWN, P_V_UP, P_I_DOWN, P_I_UP,
@@ -140,22 +142,22 @@ enum { KP_NONE = 0, KP_SET_V, KP_SET_I, KP_SETTING };
  */
 typedef struct {
     setting_id_t id;
-    const char  *label;
+    ui_text_id_t label;
     int          col;
     int          y;          /* from the overlay's top */
     int          decimals;
 } limit_row_t;
 
 static const limit_row_t k_rows[] = {
-    { SET_SUPPLY_V_MAX,   "VOLTAGE MAX",   0, 78,  2 },
-    { SET_SUPPLY_I_MAX,   "CURRENT MAX",   0, 120, 2 },
-    { SET_SUPPLY_V_START, "START VOLTAGE", 0, 196, 2 },
-    { SET_SUPPLY_I_START, "START CURRENT", 0, 238, 2 },
-    { SET_SUPPLY_TRIP_I,  "CURRENT TRIP",  1, 78,  2 },
-    { SET_SUPPLY_TRIP_V,  "VOLTAGE TRIP",  1, 120, 2 },
-    { SET_SUPPLY_TRIP_MS, "TRIP TIME",     1, 162, 0 },
-    { SET_SUPPLY_CONFIRM_SLIDE, "SLIDER AND STEPS", 1, 300, 0 },
-    { SET_SUPPLY_CONFIRM_KEYS,  "KEYPAD",           1, 344, 0 },
+    { SET_SUPPLY_V_MAX,   TX_SUP_ROW_V_MAX,   0, 78,  2 },
+    { SET_SUPPLY_I_MAX,   TX_SUP_ROW_I_MAX,   0, 120, 2 },
+    { SET_SUPPLY_V_START, TX_SUP_ROW_V_START, 0, 196, 2 },
+    { SET_SUPPLY_I_START, TX_SUP_ROW_I_START, 0, 238, 2 },
+    { SET_SUPPLY_TRIP_I,  TX_SUP_ROW_TRIP_I,  1, 78,  2 },
+    { SET_SUPPLY_TRIP_V,  TX_SUP_ROW_TRIP_V,  1, 120, 2 },
+    { SET_SUPPLY_TRIP_MS, TX_SUP_ROW_TRIP_MS, 1, 162, 0 },
+    { SET_SUPPLY_CONFIRM_SLIDE, TX_SUP_ROW_CONFIRM_SLIDE, 1, 300, 0 },
+    { SET_SUPPLY_CONFIRM_KEYS,  TX_SUP_ROW_CONFIRM_KEYS,  1, 344, 0 },
 };
 #define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
 
@@ -251,6 +253,10 @@ static void bind_colours(void)
     s.plot.series[S_POWER].color = ui_theme_color(UI_C_POWER);
     s.plot.series[S_VSET].color  = ui_theme_color(UI_C_VOLT);
     s.plot.series[S_ISET].color  = ui_theme_color(UI_C_CURR);
+    /* The names follow the language as the colours follow the theme. */
+    s.plot.series[S_VOLT].name  = TR(MO_VOLT);
+    s.plot.series[S_CURR].name  = TR(MO_CURR);
+    s.plot.series[S_POWER].name = TR(MO_PWR);
     s.v_slider.color = ui_theme_color(UI_C_VOLT);
     s.i_slider.color = ui_theme_color(UI_C_CURR);
 }
@@ -383,7 +389,7 @@ static void reset(void)
     s.eff = supply_caps_limited(&s.caps, &s.lim);
     ui_plot_init(&s.plot, k_series, S_COUNT, (float)PLOT_W / SAMPLE_HZ);
     ui_plot_set_running(&s.plot, false);
-    ui_tabs_init(&s.tabs, k_tab_labels, SUPPLY_PANE_COUNT,
+    ui_tabs_init_text(&s.tabs, k_tab_labels, SUPPLY_PANE_COUNT,
                  (gfx_rect_t){ LEFT_X, TAB_Y, TAB_W, TAB_H });
     /* Where the panel's model starts, so a screen and its model agree before
      * anything has been set. */
@@ -706,10 +712,11 @@ void supply_screen_cancel_on(void)
 static void open_keypad(int target, setting_id_t id)
 {
     if (target == KP_SET_V) {
-        ui_keypad_open(&s.kp, overlay_area(), "VOLTAGE", "V", s.cv,
+        ui_keypad_open(&s.kp, overlay_area(), TR(SUP_VOLTAGE), "V", s.cv,
                        s.eff.v_min, s.eff.v_max, 2);
     } else if (target == KP_SET_I) {
-        ui_keypad_open(&s.kp, overlay_area(), "CURRENT LIMIT", "A", s.ci,
+        ui_keypad_open(&s.kp, overlay_area(), TR(SUP_CURRENT_LIMIT), "A",
+                       s.ci,
                        s.eff.i_min, s.eff.i_max, 2);
     } else {
         const setting_def_t *d = settings_def(id);
@@ -730,11 +737,11 @@ static void open_keypad(int target, setting_id_t id)
             lo = s.eff.i_min;
             hi = s.eff.i_max;
         }
-        const char *label = d->label;
+        const char *label = ui_setting_label(id);
         int decimals = 2;
         for (int i = 0; i < ROW_COUNT; ++i) {
             if (k_rows[i].id == id) {
-                label    = k_rows[i].label;
+                label    = ui_tr(k_rows[i].label);
                 decimals = k_rows[i].decimals;
             }
         }
@@ -1148,7 +1155,8 @@ static void out_flash_advance(void)
 
 static void draw_out_button(gfx_canvas_t *c)
 {
-    ui_button(c, s.out_rect, s.on ? "OUTPUT OFF" : "OUTPUT ON", out_fill(),
+    ui_button(c, s.out_rect, s.on ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON),
+              out_fill(),
               s.pressed == P_OUTPUT, true);
     out_flash_advance();
 }
@@ -1159,13 +1167,13 @@ static const char *mode_text(void)
         return "--";
     }
     if (!s.sup.output && s.sup.trip != SUPPLY_TRIP_NONE) {
-        return "TRIP";
+        return TR(SUP_MODE_TRIP);
     }
     switch (s.sup.mode) {
     case SUPPLY_MODE_CV: return "CV";
     case SUPPLY_MODE_CC: return "CC";
     case SUPPLY_MODE_OFF:
-    default:             return "OFF";
+    default:             return TR(SUP_MODE_OFF);
     }
 }
 
@@ -1175,15 +1183,15 @@ static const char *mode_line(void)
         return "";
     }
     if (!s.sup.output && s.sup.trip == SUPPLY_TRIP_CURRENT) {
-        return "current over trip";
+        return TR(SUP_LINE_TRIP_I);
     }
     if (!s.sup.output && s.sup.trip == SUPPLY_TRIP_VOLTAGE) {
-        return "voltage over trip";
+        return TR(SUP_LINE_TRIP_V);
     }
     if (s.sup.mode == SUPPLY_MODE_CC) {
-        return "at the limit";
+        return TR(SUP_LINE_CC);
     }
-    return (s.sup.mode == SUPPLY_MODE_CV) ? "at the voltage" : "";
+    return (s.sup.mode == SUPPLY_MODE_CV) ? TR(SUP_LINE_CV) : "";
 }
 
 /* The strip above both columns: where the numbers come from, the range the
@@ -1193,14 +1201,14 @@ static void draw_header(gfx_canvas_t *c)
     const int x0 = LEFT_X + TAB_W + 10;
     const int x1 = SETB_X - 8;
     gfx_fill_rect(c, x0, 0, W - x0, UP_Y - 1, ui_theme_color(UI_C_BG));
-    char line[64];
+    char line[80];
     char rate[16] = "";
     if (!s.model && s.sup.online && s.baud != 0u) {
         snprintf(rate, sizeof(rate), " %lu", (unsigned long)s.baud);
     }
     snprintf(line, sizeof(line), "%s   %s%s",
-             s.model ? "SUPPLY MODEL" : "PD MINI",
-             s.sup.online ? "ONLINE" : "NOT ANSWERING", rate);
+             s.model ? TR(SUP_MODEL) : "PD MINI",
+             s.sup.online ? TR(SUP_ONLINE) : TR(SUP_NOT_ANSWERING), rate);
     gfx_text(c, x0, HDR_Y + 1, line, &gfx_font_8x16,
              s.sup.online ? ui_theme_color(UI_C_TEXT_DIM)
                           : ui_theme_color(UI_C_WARN), 1);
@@ -1212,7 +1220,7 @@ static void draw_header(gfx_canvas_t *c)
                                  16 },
                 range, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1,
                 GFX_ALIGN_RIGHT);
-    ui_button(c, s.set_btn, "SETTINGS",
+    ui_button(c, s.set_btn, TR(SUP_SETTINGS),
               s.settings_open ? ui_theme_color(UI_C_ACCENT)
                               : ui_theme_color(UI_C_PANEL_SUNK),
               s.pressed == P_SETTINGS, true);
@@ -1281,15 +1289,17 @@ static void draw_cards(gfx_canvas_t *c)
     char vset[16], iset[16];
     snprintf(vset, sizeof(vset), "(%.2f)", (double)shown_set_v());
     snprintf(iset, sizeof(iset), "(%.2f)", (double)shown_set_i());
-    draw_card(c, card_rect(0), "VOLT", vset, "V", ui_theme_color(UI_C_VOLT), 2,
-              v_ok ? s.sup.v : NAN, "min",
+    draw_card(c, card_rect(0), TR(MO_VOLT), vset, "V",
+              ui_theme_color(UI_C_VOLT), 2, v_ok ? s.sup.v : NAN, TR(HERO_MIN),
               (v_ok && run && s.sup.sag_seeded) ? s.sup.v_min : NAN,
               s.pressed == P_CARD_V);
-    draw_card(c, card_rect(1), "CURR", iset, "A", ui_theme_color(UI_C_CURR), 2,
-              i_ok ? s.sup.i : NAN, "pk", (i_ok && run) ? s.sup.i_max : NAN,
+    draw_card(c, card_rect(1), TR(MO_CURR), iset, "A",
+              ui_theme_color(UI_C_CURR), 2, i_ok ? s.sup.i : NAN,
+              TR(HERO_PEAK), (i_ok && run) ? s.sup.i_max : NAN,
               s.pressed == P_CARD_I);
-    draw_card(c, card_rect(2), "PWR", NULL, "W", ui_theme_color(UI_C_POWER), 1,
-              (v_ok && i_ok) ? s.sup.p : NAN, "pk",
+    draw_card(c, card_rect(2), TR(MO_PWR), NULL, "W",
+              ui_theme_color(UI_C_POWER), 1, (v_ok && i_ok) ? s.sup.p : NAN,
+              TR(HERO_PEAK),
               (v_ok && i_ok && run) ? s.sup.p_max : NAN, false);
 
     /* The mode, in letters: which of the two set points the supply is
@@ -1307,7 +1317,7 @@ static void draw_cards(gfx_canvas_t *c)
                                : ui_theme_color(UI_C_ACCENT);
     gfx_hline(c, r.x + UI_R_CARD, r.y + 1, r.w - 2 * UI_R_CARD, mc);
     gfx_fill_round_rect(c, r.x + 8, r.y + 7, 3, 10, 1, mc);
-    gfx_text(c, r.x + 16, r.y + 6, "MODE", &gfx_font_8x16,
+    gfx_text(c, r.x + 16, r.y + 6, TR(SUP_MODE), &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT), 1);
     gfx_text(c, r.x + 8, r.y + 26, mode_line(), &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
@@ -1318,13 +1328,14 @@ static void draw_cards(gfx_canvas_t *c)
 
 static void draw_table(gfx_canvas_t *c)
 {
-    gfx_text(c, PLOT_X, LEG_Y + 4, "CHANNEL        SET            NOW",
+    gfx_text(c, PLOT_X, LEG_Y + 4, TR(SUP_TABLE_HEAD),
              &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
     ui_rule(c, PLOT_X, LEG_Y + 24, PLOT_W, ui_theme_color(UI_C_EDGE));
     const bool v_ok = s.sup.online && (s.sup.ok & SUPPLY_OK_VOLTAGE) != 0u;
     const bool i_ok = s.sup.online && (s.sup.ok & SUPPLY_OK_CURRENT) != 0u;
-    static const char *const rows[S_READINGS] = { "VOLTAGE", "CURRENT",
-                                                  "POWER" };
+    static const ui_text_id_t rows[S_READINGS] = {
+        TX_MO_ROW_VOLTAGE, TX_MO_ROW_CURRENT, TX_MO_ROW_POWER,
+    };
     const float set[S_READINGS] = { shown_set_v(), shown_set_i(), NAN };
     const float now[S_READINGS] = { v_ok ? s.sup.v : NAN, i_ok ? s.sup.i : NAN,
                                     (v_ok && i_ok) ? s.sup.p : NAN };
@@ -1341,7 +1352,7 @@ static void draw_table(gfx_canvas_t *c)
         } else {
             snprintf(b, sizeof(b), "--");
         }
-        gfx_text(c, PLOT_X, y, rows[i], &gfx_font_8x16,
+        gfx_text(c, PLOT_X, y, ui_tr(rows[i]), &gfx_font_8x16,
                  s.plot.series[i].color, 1);
         gfx_text(c, PLOT_X + 128, y, a, &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT), 1);
@@ -1377,7 +1388,8 @@ static void draw_totals(gfx_canvas_t *c)
 /* The two set points: label and value, then the step buttons and the track. */
 static void draw_setters(gfx_canvas_t *c)
 {
-    static const char *const label[2] = { "VOLTAGE", "CURRENT LIMIT" };
+    static const ui_text_id_t label[2] = { TX_SUP_VOLTAGE,
+                                           TX_SUP_CURRENT_LIMIT };
     const float value[2] = { s.v_slider.value, s.i_slider.value };
     const char *unit[2] = { "V", "A" };
     const gfx_color_t col[2] = { ui_theme_color(UI_C_VOLT),
@@ -1386,7 +1398,7 @@ static void draw_setters(gfx_canvas_t *c)
         const int y = SET_Y0 + row * SET_ROW_H;
         gfx_fill_rect(c, LEFT_X + INNER, y - 2, LEFT_W - 2 * INNER,
                       SET_TEXT_H + 2, ui_theme_color(UI_C_PANEL));
-        gfx_text(c, LEFT_X + INNER, y + 2, label[row], &gfx_font_8x16,
+        gfx_text(c, LEFT_X + INNER, y + 2, ui_tr(label[row]), &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
         char v[24];
         snprintf(v, sizeof(v), "%.2f %s", (double)value[row], unit[row]);
@@ -1442,9 +1454,9 @@ static void row_value_text(int i, char *buf, size_t n)
     const bool trip = (k_rows[i].id == SET_SUPPLY_TRIP_I
                        || k_rows[i].id == SET_SUPPLY_TRIP_V);
     if (d->type == SET_TYPE_BOOL) {
-        snprintf(buf, n, "%s", (v != 0.0f) ? "ON" : "OFF");
+        snprintf(buf, n, "%s", ui_on_off(v != 0.0f));
     } else if (trip && !(v > 0.0f)) {
-        snprintf(buf, n, "OFF");
+        snprintf(buf, n, "%s", TR(OFF));
     } else {
         snprintf(buf, n, "%.*f %s", k_rows[i].decimals, (double)v, d->unit);
     }
@@ -1455,50 +1467,51 @@ static void draw_settings(gfx_canvas_t *c)
     const gfx_rect_t a = overlay_area();
     gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_ACCENT));
-    gfx_text(c, a.x + 10, a.y + 17, "SUPPLY SETTINGS", &gfx_font_8x16,
+    gfx_text(c, a.x + 10, a.y + 17, TR(SUP_OV_TITLE), &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT), 1);
-    ui_button(c, s.close_btn, "CLOSE", ui_theme_color(UI_C_PANEL_SUNK),
+    ui_button(c, s.close_btn, TR(SUP_CLOSE), ui_theme_color(UI_C_PANEL_SUNK),
               s.pressed == P_CLOSE, true);
     if (!s.model) {
         /* A module in ERR -- a set point over its input -- comes back only
          * with a restart. */
-        ui_button(c, s.modreset_btn, "RESET PD MINI",
+        ui_button(c, s.modreset_btn, TR(SUP_RESET_PDMINI),
                   ui_theme_color(UI_C_PANEL_SUNK), s.pressed == P_MODRESET,
                   true);
     }
 
     const int lx = a.x + 10;
     const int rx = a.x + a.w / 2 + 6;
-    gfx_text(c, lx, a.y + 56, "CAPS", &gfx_font_8x16,
+    gfx_text(c, lx, a.y + 56, TR(SUP_CAPS), &gfx_font_8x16,
              ui_theme_color(UI_C_ACCENT), 1);
-    gfx_text(c, lx, a.y + 174, "AFTER A RESTART", &gfx_font_8x16,
+    gfx_text(c, lx, a.y + 174, TR(SUP_AFTER_RESTART), &gfx_font_8x16,
              ui_theme_color(UI_C_ACCENT), 1);
-    gfx_text(c, rx, a.y + 56, "TRIPS", &gfx_font_8x16,
+    gfx_text(c, rx, a.y + 56, TR(SUP_TRIPS), &gfx_font_8x16,
              ui_theme_color(UI_C_ACCENT), 1);
-    gfx_text(c, rx, a.y + 278, "CONFIRM WHILE ON", &gfx_font_8x16,
+    gfx_text(c, rx, a.y + 278, TR(SUP_CONFIRM_ON), &gfx_font_8x16,
              ui_theme_color(UI_C_ACCENT), 1);
     for (int i = 0; i < ROW_COUNT; ++i) {
         const gfx_rect_t r = row_rect(i);
-        gfx_text(c, r.x, r.y + 10, k_rows[i].label, &gfx_font_8x16,
+        gfx_text(c, r.x, r.y + 10, ui_tr(k_rows[i].label), &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
-        char v[24];
+        char v[32];
         row_value_text(i, v, sizeof(v));
         ui_button(c, row_value_rect(i), v, ui_theme_color(UI_C_PANEL_SUNK),
                   s.pressed == P_ROW && s.press_row == i, true);
     }
-    static const char *const help[] = {
-        "A trip switches the output",
-        "off once a reading has been",
-        "over it for the trip time.",
+    static const ui_text_id_t help[] = {
+        TX_SUP_HELP_1, TX_SUP_HELP_2, TX_SUP_HELP_3,
     };
     for (size_t i = 0; i < sizeof(help) / sizeof(help[0]); ++i) {
-        gfx_text(c, rx, a.y + 214 + (int)i * 18, help[i], &gfx_font_8x16,
+        gfx_text(c, rx, a.y + 214 + (int)i * 18, ui_tr(help[i]),
+                 &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
     const uint8_t st = save_state();
-    static const char *const k_save[] = { "SAVED", "SAVE WAITING", "NOT SAVED",
-                                          "SETUP CHANGES NOT SAVED" };
-    gfx_text(c, lx, a.y + a.h - 26, k_save[st], &gfx_font_8x16,
+    static const ui_text_id_t k_save[] = {
+        TX_SUP_SAVED, TX_SUP_SAVE_WAITING, TX_SUP_NOT_SAVED,
+        TX_SUP_SETUP_NOT_SAVED,
+    };
+    gfx_text(c, lx, a.y + a.h - 26, ui_tr(k_save[st]), &gfx_font_8x16,
              (st == 2u) ? ui_theme_color(UI_C_WARN)
                         : ui_theme_color(UI_C_TEXT_DIM), 1);
 }
@@ -1512,15 +1525,16 @@ static void draw_confirm(gfx_canvas_t *c)
     const gfx_rect_t a = overlay_area();
     gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_WARN));
-    gfx_text(c, a.x + 20, a.y + 20, "OUTPUT IS ON", &gfx_font_8x16,
+    gfx_text(c, a.x + 20, a.y + 20, TR(SUP_OUTPUT_IS_ON), &gfx_font_8x16,
              ui_theme_color(UI_C_WARN), 2);
-    gfx_text(c, a.x + 20, a.y + 70, "A new set point reaches the load at once.",
+    gfx_text(c, a.x + 20, a.y + 70, TR(SUP_ASK_WHY),
              &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
     int y = a.y + 120;
     const struct { const char *label; float was, now; const char *unit;
                    gfx_color_t col; } k[] = {
-        { "VOLTAGE",       s.cv, s.pend_v, "V", ui_theme_color(UI_C_VOLT) },
-        { "CURRENT LIMIT", s.ci, s.pend_i, "A", ui_theme_color(UI_C_CURR) },
+        { TR(SUP_VOLTAGE), s.cv, s.pend_v, "V", ui_theme_color(UI_C_VOLT) },
+        { TR(SUP_CURRENT_LIMIT), s.ci, s.pend_i, "A",
+          ui_theme_color(UI_C_CURR) },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         if (k[i].was == k[i].now) {
@@ -1534,17 +1548,19 @@ static void draw_confirm(gfx_canvas_t *c)
         gfx_text(c, a.x + 150, y, line, &gfx_font_8x16, k[i].col, 2);
         y += 50;
     }
-    ui_button(c, s.apply_btn, "APPLY", ui_theme_color(UI_C_WARN),
+    ui_button(c, s.apply_btn, TR(SUP_APPLY), ui_theme_color(UI_C_WARN),
               s.pressed == P_APPLY, true);
-    ui_button(c, s.discard_btn, "CANCEL", ui_theme_color(UI_C_PANEL_SUNK),
+    ui_button(c, s.discard_btn, TR(CANCEL), ui_theme_color(UI_C_PANEL_SUNK),
               s.pressed == P_DISCARD, true);
     gfx_text(c, a.x + 20, a.y + a.h - 26,
-             "SETTINGS, CONFIRM WHILE ON, turns this off.", &gfx_font_8x16,
+             TR(SUP_ASK_OFF), &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
 }
 
-enum { TAG_LIVE = 0, TAG_HELD, TAG_IDLE };
-static const char *const k_tag[] = { "LIVE OUTPUT", "OUTPUT HELD", "OUTPUT IDLE" };
+enum { TAG_LIVE = 0, TAG_HELD, TAG_IDLE, TAG_COUNT };
+static const ui_text_id_t k_tag[TAG_COUNT] = {
+    TX_SUP_TAG_LIVE, TX_SUP_TAG_HELD, TX_SUP_TAG_IDLE,
+};
 
 /* The heading says what the output is doing, on either pane: a held run is
  * the plot's to show, so TABLE says IDLE where PLOT says HELD. */
@@ -1566,23 +1582,28 @@ static void render(gfx_canvas_t *c, int buffer_index)
     /* The keypad, the question or the settings over the left column. */
     const bool covered = s.kp.open || s.confirm_open || s.settings_open;
     const uint8_t tag = output_tag();
+    char tag_buf[48];
     if ((s.drawn_mask & bit) == 0) {
         gfx_clear(c, ui_theme_color(UI_C_BG));
         if (!covered) {
-            ui_panel(c, (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H }, k_tag[tag],
+            ui_panel(c, (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H },
+                     ui_tr_pad(k_tag, TAG_COUNT, tag, tag_buf,
+                               sizeof(tag_buf)),
                      ui_theme_color(UI_C_ACCENT));
             ui_panel(c, (gfx_rect_t){ LEFT_X, LO_Y, LEFT_W, LO_H },
-                     "SET POINTS", ui_theme_color(UI_C_ACCENT));
+                     TR(SUP_SET_POINTS), ui_theme_color(UI_C_ACCENT));
         }
-        ui_panel(c, (gfx_rect_t){ RIGHT_X, LO_Y, RIGHT_W, LO_H }, "CONTROL",
-                 ui_theme_color(UI_C_ACCENT));
+        ui_panel(c, (gfx_rect_t){ RIGHT_X, LO_Y, RIGHT_W, LO_H },
+                 TR(MO_CONTROL), ui_theme_color(UI_C_ACCENT));
         s.drawn_mask |= bit;
         s.drawn_title[buf] = tag;
     }
     if (!covered && s.drawn_title[buf] != tag) {
         s.drawn_title[buf] = tag;
         ui_panel_header(c, (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H },
-                        k_tag[tag], ui_theme_color(UI_C_ACCENT));
+                        ui_tr_pad(k_tag, TAG_COUNT, tag, tag_buf,
+                                  sizeof(tag_buf)),
+                        ui_theme_color(UI_C_ACCENT));
     }
     const bool data_moved = (s.drawn_push[buf] != s.plot.pushes);
     const bool ctrl_moved = (s.drawn_ctrl[buf] != s.ctrl_rev);
@@ -1622,7 +1643,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
                            (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H });
             if (!s.plot.running && s.plot.filled == 0) {
                 gfx_text_in(c, (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H },
-                            "output not switched on yet", &gfx_font_8x16,
+                            TR(SUP_NOT_ON_YET), &gfx_font_8x16,
                             ui_theme_color(UI_C_TEXT_FAINT), 1,
                             GFX_ALIGN_CENTER);
             }
@@ -1663,7 +1684,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         if (!covered) {
             draw_steps(c);
         }
-        ui_button(c, s.reset_rect, "RESET PEAKS",
+        ui_button(c, s.reset_rect, TR(MO_RESET_PEAKS),
                   ui_theme_color(UI_C_PANEL_SUNK), s.pressed == P_RESET, true);
     }
     if (ctrl_moved || out_moved) {

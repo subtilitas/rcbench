@@ -235,20 +235,35 @@ void gfx_blit_1bpp(gfx_canvas_t *c, int x, int y, const uint8_t *bits,
 
 /* --------------------------------------------------------------------- text */
 
+/*
+ * Text is UTF-8 (Unicode Transformation Format, 8-bit).  Every string a
+ * primitive below takes is decoded to code points, and one code point is one
+ * cell: the width of a string is its code point count times the cell width,
+ * not its byte count.  A font holds the contiguous block first..last and,
+ * after it, `extra_count` further glyphs for the code points listed in
+ * `extra` (the German letters A, O and U with diaeresis, upper and lower
+ * case, and the sharp s).  A code point the font does not hold draws as '?',
+ * and a byte that does not start a well-formed sequence is one '?' cell.
+ */
 typedef struct {
-    const uint8_t *glyphs;  /**< (last-first+1) * height * bytes_per_row bytes */
+    const uint8_t *glyphs;  /**< (last-first+1+extra_count) * height
+                             *   * bytes_per_row bytes                      */
     uint8_t width;          /**< cell width in pixels                          */
     uint8_t height;         /**< cell height in pixels                         */
     uint8_t bytes_per_row;  /**< 1bpp: (width+7)/8, top bit left. 8bpp: width */
     uint8_t bpp;            /**< 1 for a bit mask, 8 for coverage 0..255       */
     uint8_t first;          /**< first encoded code point                      */
     uint8_t last;           /**< last encoded code point                       */
+    uint8_t extra_count;    /**< glyphs after the block, 0 for none            */
+    const uint16_t *extra;  /**< their code points, ascending                  */
 } gfx_font_t;
 
 /** 8x16 monospaced, code points 0x20..0x7E (printable ASCII, the American
- *  Standard Code for Information Interchange).  Labels, units, dense text. */
+ *  Standard Code for Information Interchange) and the German letters.
+ *  Labels, units, dense text. */
 extern const gfx_font_t gfx_font_8x16;
-/** 16x28 monospaced, ASCII 0x20..0x7E.  Headings and medium readouts. */
+/** 16x28 monospaced, ASCII 0x20..0x7E and the German letters.  Headings and
+ *  medium readouts. */
 extern const gfx_font_t gfx_font_16x28;
 /** 24x30 digits and punctuation, 0x20..0x3A.  Hero numerals. */
 extern const gfx_font_t gfx_font_num_24x30;
@@ -275,12 +290,31 @@ int gfx_seg_text(gfx_canvas_t *c, int x, int y, const char *s,
 /** Width @p s would occupy, without drawing it. */
 int gfx_seg_width(const char *s, const gfx_seg_style_t *st);
 
+/**
+ * The next code point of the UTF-8 string at *@p s, advancing *@p s past it.
+ * Returns 0 at the terminator without advancing.  A malformed or truncated
+ * sequence returns '?' and advances one byte, so a string cut mid-character
+ * costs one cell rather than the rest of the string.
+ */
+uint32_t gfx_utf8_next(const char **s);
+
+/** Cells @p s occupies in a monospaced face: its code point count. */
+int gfx_text_cells(const char *s);
+
+/**
+ * The byte length of the first @p cells cells of @p s: where to cut it so
+ * the cut falls between two characters, never inside one.
+ */
+size_t gfx_text_prefix(const char *s, int cells);
+
 /** Pixel width of @p s at integer @p scale (scale < 1 is treated as 1). */
 int gfx_text_width(const gfx_font_t *font, const char *s, int scale);
 /** Pixel height of one line at integer @p scale. */
 int gfx_text_height(const gfx_font_t *font, int scale);
 
-/** Draw one glyph, transparent background.  Returns the advance in pixels. */
+/** Draw one glyph, transparent background.  Returns the advance in pixels.
+ *  @p ch is a single byte, so it reaches ASCII only; a string reaches the
+ *  rest of the font through gfx_text(). */
 int gfx_char(gfx_canvas_t *c, int x, int y, char ch, const gfx_font_t *font,
              gfx_color_t fg, int scale);
 /** Draw a string, transparent background.  Returns the advance in pixels. */
@@ -337,6 +371,24 @@ typedef enum {
 void gfx_text_in(gfx_canvas_t *c, gfx_rect_t box, const char *s,
                  const gfx_font_t *font, gfx_color_t fg, int scale,
                  gfx_align_t align);
+
+#ifdef GFX_TEXT_TRACE
+/*
+ * The fit check's view of a frame, compiled in only when GFX_TEXT_TRACE is
+ * defined: the panel and the host suite build without it.  The harness
+ * that defines GFX_TEXT_TRACE defines these two.  Coordinates are the
+ * canvas's own; the harness maps a sub-canvas back to the panel from its
+ * pixel pointer.
+ *
+ * gfx_trace_text() is called for every string drawn: its box, and the box
+ * gfx_text_in() was given (NULL from the other primitives).
+ * gfx_trace_box() is called for every filled rounded or chamfered
+ * rectangle: the shapes a label sits inside.
+ */
+void gfx_trace_text(const gfx_canvas_t *c, int x, int y, int w, int h,
+                    const char *s, const gfx_rect_t *box);
+void gfx_trace_box(const gfx_canvas_t *c, int x, int y, int w, int h);
+#endif
 
 #ifdef __cplusplus
 }
