@@ -317,10 +317,15 @@ static void supply_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     supply_page_read(&s_supply, off, n, out);
 }
 
-static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
-                            const uint16_t *in)
+/*
+ * A write to the SUPPLY page, from the link or (@p checked) the wiring
+ * change a state read has just shown the module off for
+ * (supply_page_wire_ready()), with the UART, the reservation and the save
+ * that follow it.
+ */
+static uint8_t supply_take(uint8_t off, uint8_t n, const uint16_t *in,
+                           bool checked)
 {
-    (void)ctx;
     /* What the driver says now, not what the last pass published: replies
      * taken since may have shown the module come on by itself. */
     if (s_pd_open) {
@@ -330,20 +335,18 @@ static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
         while (pd_uart_getc(&b)) {
             pdmini_rx(&s_pd, b, s_now_ms);
         }
-        if (pdmini_may_be_on(&s_pd)) {
-            s_supply.regs[LINK_SP_FLAGS] |= LINK_SP_LIVE;
-        } else {
-            s_supply.regs[LINK_SP_FLAGS] &= (uint16_t)~LINK_SP_LIVE;
-        }
     }
+    supply_page_follow(&s_supply, s_pd_open ? &s_pd : NULL);
     const supply_page_t was = s_supply;
     if (s_supply_unsaved && (unsigned)off <= (unsigned)LINK_SP_OUTPUT
         && (unsigned)off + (unsigned)n > (unsigned)LINK_SP_OUTPUT
         && in[LINK_SP_OUTPUT - off] != 0u) {
         return LINK_NACK_NOT_ARMED;
     }
-    const uint8_t nack = supply_page_write(&s_supply, off, n, in, &s_outputs,
-                                           s_beat.alive && !s_dev.failsafe);
+    const uint8_t nack =
+        checked ? supply_page_wire_write(&s_supply, &s_outputs)
+                : supply_page_write(&s_supply, off, n, in, &s_outputs,
+                                    s_beat.alive && !s_dev.failsafe);
     if (nack != 0u) {
         return nack;
     }
@@ -374,6 +377,9 @@ static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
         } else {
             (void)supply_rewire();
         }
+        if (checked) {
+            supply_page_wire_refuse(&s_supply);   /* said in FLAGS bit 9 */
+        }
         return LINK_NACK_BAD_VALUE;
     }
     if (wiring) {
@@ -391,6 +397,13 @@ static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
         }
     }
     return 0u;
+}
+
+static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
+                            const uint16_t *in)
+{
+    (void)ctx;
+    return supply_take(off, n, in, false);
 }
 
 static void servo_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -1279,6 +1292,13 @@ int main(void)
          * as an OFF before it steps and can send an ON already queued. */
         supply_page_step(&s_supply, s_beat.alive && !s_dev.failsafe,
                          s_pd_open ? &s_pd : NULL);
+        /* A wiring change whose state read has just shown the module off:
+         * taken now, before the driver's next transaction, so the module
+         * has no time to come on between that read and the rewire. */
+        uint16_t wire_next[4];
+        if (supply_page_wire_ready(&s_supply, wire_next)) {
+            (void)supply_take(LINK_SP_ENABLE, 4u, wire_next, true);
+        }
         if (s_pd_open) {
             uint8_t b;
             while (pd_uart_getc(&b)) {

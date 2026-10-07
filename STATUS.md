@@ -32,7 +32,7 @@ capture stay on the coprocessor, and only results travel.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the coprocessor transmits only when asked. Worst-case
 payload 52 kB/s against 12 to 30 kB/s of expected traffic. Protocol version
-4.4. [Reference](docs/Link.md).
+4.5. [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO6 (J8) from the core that does
 not draw. The task runs every 5 ms; the line edges every 20 ms
@@ -100,7 +100,7 @@ is taken in a gap ahead of the save that needs it.
 | Motor & ESC (electronic speed controller) screen | built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the throttle are written to the coprocessor's control page at every 50 ms poll while the link is up; an arm writes CLEAR on its own, then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK to either leaves the panel disarmed. An arm and a throttle have gone through it on the bring-up bench and run a motor; the paths a session has to provoke -- a NACK, a STOP mid-throttle, a link pulled while armed -- have not |
 | Servo screen | built; writes `CHAN_CFG` and `CHANNELS` over the link, the frame rate on `SERVO` to a coprocessor speaking protocol 4.1, and a sweep (square, sine or triangle, run by the coprocessor) to one speaking 4.2. A SETTINGS overlay sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session, and the automatic test, its limits and the device under test in NVS; a heli type or a rate above 60 Hz is applied only through a warning held for 2 s, and every restart is STANDARD PWM at 50 Hz. The right card plots the supply's voltage, current and power: the PD mini's when SETUP enables it, `supply_sim_t`'s otherwise. START TEST on the TEST page runs the automatic test (`shared/servo/servo_test.c`): the supply stepped through 4.8 and 6.0 V, and 7.4 and 8.4 V with HV SERVO on (session only, through the HV warning's 2 s hold), idle, moving and holding current and the travel time from the supply's current at each, a brown-out walk from 5.0 V down in 0.2 V steps, and `BENCHnnn.CSV` and `BENCHnnn.TXT` written by the `runlog` task. STOP, a disarm, link loss, the supply and the operator end a run with the output off and a report marked ABORTED. A frame rate other than 50 Hz, the sweep and the automatic test have not been tried on hardware |
 | Supply screen | built and tested on the host; the control task drives the PD mini through the SUPPLY page (`shared/bench/supply_link.c`) when SETUP INTERFACES enables it, and runs `supply_sim_t` otherwise. Set points shown beside their readings, a keypad, a SETTINGS overlay (caps, start values, current and voltage trips, the confirmation for live changes) kept in NVS, and a question before a set point changes a live output. Every stop, a trip, a lost ON and a supply that stops answering switch the output off; the supply is stepped and logged from `control_pump()`, so it keeps its 50 ms cadence while an exchange waits. A supply run is logged with its own columns |
-| PD mini driver | the codec and driver (`shared/bench/pdmini.c`) are built and tested on the host against a modelled module; the coprocessor runs it on a PIO UART on the pins the SUPPLY page (protocol 4.3) names, and the panel writes and reads that page; never run against a module. The wiring is kept in the coprocessor's flash with the output bindings (record version 4; version 3 records still load) and driven at boot with the output off; the command is not kept. The PIO receive FIFO holds 8 bytes, 4.2 ms of reply at 19200 baud; the main loop's pass time is not measured |
+| PD mini driver | the codec and driver (`shared/bench/pdmini.c`) are built and tested on the host against a modelled module; the coprocessor runs it on a PIO UART on the pins the SUPPLY page (protocol 4.3) names, and the panel writes and reads that page; never run against a module. The wiring is kept in the coprocessor's flash with the output bindings (record version 4; version 3 records still load) and driven at boot with the output off; the command is not kept. A wiring change while a module has answered waits for a state read sent after it and is taken only if that read shows the output off (protocol 4.5). A live output whose input reads under the set point plus 0.5 V on 2 input reads in a row is switched off and the panel names the input and the set point; the rule is chosen, not measured. The PIO receive FIFO holds 8 bytes, 4.2 ms of reply at 19200 baud; the main loop's pass time is not measured |
 | Analyser, programmer, balance, battery screens | built, rendered from models |
 | Link codec, page map, dispatcher, both watchdogs, CAN framing | built and tested on the host |
 | CAN drivers (TWAI on the panel, XL2515 on the coprocessor) and the echo self-test | built; run on hardware at 1 Mbit/s with zero errors at either end |
@@ -242,10 +242,10 @@ chrome-cached screen to 2,000.
 | `shared/ui/overview_screen.c` | 85 | 81 | 95.3% |
 | `shared/ui/stub_screen.c` | 52 | 14 | 26.9% |
 | `shared/ui/motor_screen.c` | 449 | 439 | 97.8% |
-| `shared/ui/supply_screen.c` | 968 | 956 | 98.8% |
+| `shared/ui/supply_screen.c` | 972 | 960 | 98.8% |
 | `shared/ui/ui_keypad.c` | 163 | 161 | 98.8% |
 | `shared/ui/ui_textkey.c` | 170 | 169 | 99.4% |
-| `shared/ui/servo_screen.c` | 2161 | 2110 | 97.6% |
+| `shared/ui/servo_screen.c` | 2166 | 2115 | 97.7% |
 | `shared/ui/analyser_screen.c` | 224 | 221 | 98.7% |
 | `shared/ui/balance_screen.c` | 311 | 311 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
@@ -300,14 +300,14 @@ chrome-cached screen to 2,000.
 | `shared/outputs/out_bind.c` | 461 | 449 | 97.4% |
 | `shared/outputs/out_pwm_map.c` | 15 | 15 | 100.0% |
 | `shared/outputs/servo_page.c` | 125 | 123 | 98.4% |
-| `shared/outputs/supply_page.c` | 163 | 160 | 98.2% |
+| `shared/outputs/supply_page.c` | 245 | 242 | 98.8% |
 | `shared/outputs/out_store_map.c` | 68 | 68 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/supply.c` | 169 | 167 | 98.8% |
-| `shared/bench/pdmini.c` | 513 | 504 | 98.2% |
-| `shared/bench/supply_link.c` | 222 | 212 | 95.5% |
+| `shared/bench/pdmini.c` | 553 | 544 | 98.4% |
+| `shared/bench/supply_link.c` | 255 | 245 | 96.1% |
 | `shared/bench/log_writer.c` | 126 | 114 | 90.5% |
-| **total** | **18904** | **18192** | **96.2%** |
+| **total** | **19068** | **18356** | **96.3%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -331,7 +331,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | Measurement front end | round 1 of [the component research](hardware/docs/Research.md) ran from 2026-09-28 to 2026-09-30 and selected 49 parts. The motor monitor is the INA228 and the servo supply three TPS55285, which the owner keeps although round 1 refutes one at 4.0 A continuous from the pack floor (owner, 2026-09-30). The 20 output ports take a channel each of 7 INA3221. Round 2 selects the parts round 1 left open and is planned in the research page. No schematic exists. [The IO board specification](hardware/docs/IOBoard.md) is a draft | [hardware record](hardware/STATUS.md) |
 | Monostable | not on any board | hardware |
 | The automatic servo test has never run | the engine, the SERVO screen's START TEST and the report are tested on the host against `servo_sim` and `supply_sim`; the panel image builds with the card writing wired in. Nothing of it has driven a servo or a PD mini. Its travel time rests on the supply's readings reaching the panel at 100 ms intervals (the coprocessor's read of the module and the panel's read of the page), and on a real servo's current falling back to within 0.05 A of its holding level; neither is measured. The command's delay from the panel to the pin is inside every travel time and is not measured. On the panel's supply model the current is the model's load, not the servo's, so a run there reports what the model draws | a bench run: a servo on the PD mini, one run of each step, the CSV against a current probe, and STOP, a pulled link and OUTPUT OFF each mid-run |
-| The PD mini has never run | the driver, the coprocessor's SUPPLY page and PIO UART, and the panel's half of the page are tested on the host against a modelled module; none of it has driven a module. The protocol is the vendor's sheet and the bench station's notes (#223); its timings are the vendor's Python driver's, not measured | a bench run against the module: identify, set points read back, ON and OFF, a heartbeat stop, a pulled cable |
+| The PD mini has never run | the driver, the coprocessor's SUPPLY page and PIO UART, and the panel's half of the page are tested on the host against a modelled module; none of it has driven a module. The protocol is the vendor's sheet and the bench station's notes (#223); its timings are the vendor's Python driver's, not measured. Not measured either: whether a live module goes to ERR when its input sags under the set point, which the switch-off on 2 low input reads assumes; and whether its button or AUTO OUT switch it on while the UART is attached, which the state read before a wiring change assumes | a bench run against the module: identify, set points read back, ON and OFF, a heartbeat stop, a pulled cable, the input lowered under a live set point in 0.5 V steps |
 | The release publishes without waiting for CI | `release.yml` and `ci.yml` both trigger on a `v*` tag and run in parallel. `release.yml`'s publish job needs only its own two build jobs, so the host suite, the sanitizer run, the coverage floors, clang-tidy, cppcheck, ruff, `check_docs.py`, the frame-cost ceilings and the screenshot check cannot stop `gh release create`. Both files build the two images with the same steps, so the artefacts are the ones CI would have built; what is unguarded is everything CI checks that is not a build. A tag added a `version` job that refuses a tag not matching `rcbench_version.h`, which is the narrow case that was worth making structural | a `workflow_run` trigger on a successful CI run for tag refs, or the host suite folded into `release.yml` as a job the builds need. Until then: confirm CI is green on the commit before pushing the tag |
 | OpenYGE wire facts | seven items want a capture: rpm scale, CRC (cyclic redundancy check) seed, frame length, legacy header, turnaround, parameter indices, `status2` | an ESC and a logic analyser; [list](docs/OpenYGE.md#8-what-to-measure-before-trusting-this-page) |
 | The bench in a browser | serving the interface to a browser on another machine is open; a browser on the panel is not planned. There is no network stack in the tree: no Wi-Fi bring-up, no sockets, no HTTP (Hypertext Transfer Protocol), and Wi-Fi costs internal RAM and CPU time on a board whose frame budget is spent. The safety line is a heartbeat, and a remote client cannot hold one: a browser that stops answering is indistinguishable from one whose user is idle | a read-only client (numbers, plots and logs out; arming, throttle and STOP stay at the panel), and before any code, a written answer to how a remote session proves it is still present |

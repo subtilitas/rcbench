@@ -494,6 +494,17 @@ refused, when the output would not switch, and when the set points would not
 take. A pin or baud change, and enabling or disabling the PD mini, switch the
 output off.
 
+**A sagging input switches the PD mini off.** While the output is on, the
+coprocessor reads the module's input every 500 ms. When the input reads
+under the set point plus 0.5 V on 2 input reads in a row, it switches the
+output off at once, and the band names the input and the set point, for
+example `PD mini input 6.18 V under set 6.00 V + 0.5 V -- output off`. The
+output stays off until a new hold. One low reading switches nothing, and a
+read that fails neither counts nor clears. While the output is on, its set
+point is not lowered to follow a falling input. The rule is chosen without
+a bench measurement: whether a live module goes to ERR when its input sags
+is not measured, so the rule may cut a run that would have survived.
+
 OUTPUT ON and OFF, RESET PEAKS and the readings stay live under the keypad,
 the question and SETTINGS. One finger at a time: while one holds a control, a
 second finger does nothing anywhere on the screen.
@@ -574,7 +585,14 @@ is powered.
 The PD mini's wiring -- PD mini, PD mini TX, PD mini RX and PD mini baud -- is
 on SETUP under INTERFACES. TX and RX are coprocessor GPIO numbers: TX goes to
 the module's DM, RX comes from its DP. The coprocessor refuses a pin that is
-reserved, bound to an output or the other pin. PD mini baud is the module's
+reserved, bound to an output or the other pin. Once the module has
+answered, a change waits for a state read of the module sent after it, at
+most about 1.2 s, and is taken only if that read shows the output off: the
+module can switch itself on between two of the 500 ms reads, by its button
+or its AUTO OUT setting, and new pins would leave it no OFF path. A read
+that shows the output on, or fails, refuses the change, and the band says
+`PD mini wiring refused -- its output may be on`. A refused change is not
+written again until the wiring changes in SETUP. PD mini baud is the module's
 own UART Baudrate setting: 9600, 19200 (as shipped), 38400, 57600,
 115200, 230400 or 460800 baud, or AUTO. AUTO, the default, lets the
 coprocessor find it: it tries each of the 7 rates, one a second. The

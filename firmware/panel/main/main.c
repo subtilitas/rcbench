@@ -827,9 +827,8 @@ static void publish_pdmini(void)
     atomic_store(&s_pdmini_wiring, word);
 }
 
-static supply_wiring_t pdmini_wiring(void)
+static supply_wiring_t wiring_of(unsigned word)
 {
-    const unsigned word = atomic_load(&s_pdmini_wiring);
     const supply_wiring_t w = {
         .en   = (word & (1u << 24)) != 0u,
         .tx   = (int8_t)((int)((word >> 16) & 0xFFu) - 1),
@@ -837,6 +836,11 @@ static supply_wiring_t pdmini_wiring(void)
         .baud = (uint8_t)(word & 0xFFu),
     };
     return w;
+}
+
+static supply_wiring_t pdmini_wiring(void)
+{
+    return wiring_of(atomic_load(&s_pdmini_wiring));
 }
 
 static void settings_changed(setting_id_t id)
@@ -3449,20 +3453,24 @@ static void supply_queue_sample(void)
  * Which supply the screen drives: the PD mini whenever SETUP INTERFACES
  * enables it -- not answering while no coprocessor that speaks the SUPPLY
  * page does -- and the model otherwise.  A change switches the output off.
- * No exchange here: called from the step, inside the pump.
+ * No exchange here: called from the step, inside the pump.  Returns the
+ * wiring word it followed, so a write chosen after it is chosen for that
+ * word and not for one stored since.
  */
-static void supply_real_follow(void)
+static unsigned supply_real_follow(void)
 {
     /*
      * Any change to the PD mini's wiring, not only enabling it: the page
      * takes new pins only with the output off, so a change under a live
      * output would otherwise wait for an OFF nobody asks for.
      */
-    static unsigned wiring_seen;
+    static supply_link_follow_t seen;
+    /* The count before the word: an edit that has counted and not yet
+     * stored its word is followed as a change, so it cannot pass as none. */
+    const unsigned edits = atomic_load(&s_pdmini_edits);
     const unsigned wiring = atomic_load(&s_pdmini_wiring);
-    const bool rewired = wiring != wiring_seen;
-    wiring_seen = wiring;
-    const bool real = pdmini_wiring().en;
+    const bool rewired = supply_link_wiring_moved(&seen, edits, wiring);
+    const bool real = (wiring & (1u << 24)) != 0u;
     if (real == s_supply_is_real) {
         if (rewired) {
             atomic_store(&s_supply_vin_mv, 0u);   /* other pins, perhaps */
@@ -3472,7 +3480,7 @@ static void supply_real_follow(void)
             supply_switch(false);
             control_alert(TR(ALERT_PDMINI_WIRING));
         }
-        return;
+        return wiring;
     }
     if (s_supply_on) {
         supply_switch(false);
@@ -3485,6 +3493,7 @@ static void supply_real_follow(void)
                         (uint16_t)s_supply_set_mv_applied,
                         (uint16_t)s_supply_set_ma_applied);
     atomic_store(&s_supply_real, real);
+    return wiring;
 }
 
 /* The model's load is the simulated ESC while a stick run wants one. */
@@ -3521,7 +3530,7 @@ static void supply_step(float step_s)
     /* A stop counted outside the pump -- the far end's refusal, or STOP
      * from the queue -- is answered before this reading is taken. */
     supply_follow_stops();
-    supply_real_follow();
+    (void)supply_real_follow();
     if (s_supply_is_real) {
         supply_link_state(&s_supply_link, now_ms(), &s_supply);
         s_supply.output = s_supply_on;
@@ -4982,7 +4991,7 @@ static void supply_pump(void)
  */
 static void supply_link_alerts(void)
 {
-    const uint8_t ev = supply_link_events(&s_supply_link);
+    const uint16_t ev = supply_link_events(&s_supply_link);
     if ((ev & (SUPPLY_LINK_EV_ON_REFUSED | SUPPLY_LINK_EV_ON_LOST
                | SUPPLY_LINK_EV_TRIPPED)) != 0u) {
         supply_switch(false);
@@ -4992,8 +5001,24 @@ static void supply_link_alerts(void)
                           ? TR(ALERT_SUPPLY_OFF_REMOTE)
                           : TR(ALERT_SUPPLY_REFUSED_ON));
     }
+    if ((ev & SUPPLY_LINK_EV_SAGGED) != 0u) {
+        /* Switched off at the coprocessor for an input under the set point
+         * and the headroom: the input and the set point it was read with. */
+        supply_switch(false);
+        uint16_t vin = 0u;
+        uint16_t set = 0u;
+        supply_link_sag(&s_supply_link, &vin, &set);
+        char line[ALERT_MAX];
+        snprintf(line, sizeof(line), TR(ALERT_PDMINI_SAG),
+                 vin / 1000u, (vin % 1000u) / 10u,
+                 set / 1000u, (set % 1000u) / 10u);
+        control_alert(line);
+    }
     if ((ev & SUPPLY_LINK_EV_WIRING_REFUSED) != 0u) {
         control_alert(TR(ALERT_PDMINI_PINS));
+    }
+    if ((ev & SUPPLY_LINK_EV_WIRING_LIVE) != 0u) {
+        control_alert(TR(ALERT_PDMINI_WIRING_LIVE));
     }
     if ((ev & SUPPLY_LINK_EV_STUCK) != 0u) {
         control_alert(TR(ALERT_PDMINI_SWITCH));
@@ -5018,16 +5043,23 @@ static void supply_link_service(void)
     if (!s_supply_page) {
         return;
     }
-    /* An edit on SETUP since the step is followed here too, straight before
-     * anything is written: an ON taken in the gap is switched off before it
-     * can reach the page. */
-    supply_real_follow();
-    supply_wiring_t w = pdmini_wiring();
-    if (w.baud >= SUPPLY_LINK_BAUD_AUTO && !s_supply_auto) {
-        w.baud = 1u;   /* a 4.3 coprocessor has no AUTO: the as-shipped 19200 */
-    }
-    supply_link_wire(&s_supply_link, &w);
+    supply_wiring_t w = { 0 };
     for (int k = 0; k < 3; ++k) {
+        /*
+         * An edit on SETUP is followed straight before each write, and the
+         * write chosen after it, with no exchange between: an ON taken
+         * before the edit is switched off before it can reach the page with
+         * the old wiring.  The exchanges of the writes before this one run
+         * the pump and take milliseconds; the render core publishes edits
+         * throughout.  An edit landing between this and the frame leaving
+         * comes after the ON as the page sees it, and the next pass writes
+         * the OFF, as for an edit made while the output is on.
+         */
+        w = wiring_of(supply_real_follow());
+        if (w.baud >= SUPPLY_LINK_BAUD_AUTO && !s_supply_auto) {
+            w.baud = 1u;   /* a 4.3 coprocessor has no AUTO: the as-shipped 19200 */
+        }
+        supply_link_wire(&s_supply_link, &w);
         uint8_t off = 0u;
         uint8_t n = 0u;
         uint16_t regs[LINK_SP_FLAGS];

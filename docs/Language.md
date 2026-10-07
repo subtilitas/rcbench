@@ -84,6 +84,7 @@ One German word per English concept, on every screen and in the report.
 | supply | Netzteil |
 | output | Ausgang |
 | set point | Sollwert |
+| input (of a supply), wiring | Eingang, Verdrahtung |
 | current limit | Strombegrenzung |
 | cap | Obergrenze |
 | trip (the supply's own cut-off), current trip, voltage trip | Abschaltung (ABSCH. on the MODE card), Überstrom, Überspannung |

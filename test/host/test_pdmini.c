@@ -5,7 +5,10 @@
  * framing; a driver that identifies the module before saying anything to
  * it, keeps the pins at rest between transactions, confirms every write by
  * reading it back, learns which OUTPUT_EN argument means on, never switches
- * on an output an OFF was asked for, and notices a module that goes quiet.
+ * on an output an OFF was asked for, and notices a module that goes quiet;
+ * a state read asked for and what it shows; the SUPPLY page taking a
+ * wiring change only on such a read showing the output off; a live output
+ * switched off when its input sags under the set point on two reads.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -13,7 +16,11 @@
 
 #include "greatest.h"
 
+#include "link_msg.h"
+#include "link_pages.h"
+#include "outputs.h"
 #include "pdmini.h"
+#include "supply_page.h"
 
 /* ------------------------------------------------------------- the module */
 
@@ -1494,6 +1501,284 @@ TEST_CASE(a_byte_from_the_handover_is_not_the_reply)
     CHECK_EQ(pdmini_status(&d)->errors, 0u);
 }
 
+/* ------------------------------------------------- a state read asked for */
+
+/* Asked, a state read is sent after the asking and says off; the module on
+ * says not off; a read that fails says not off; a module not identified is
+ * not read and says not off. */
+TEST_CASE(a_state_read_asked_for_says_whether_the_output_is_off)
+{
+    fresh();
+    run(1500u, false);
+    CHECK_EQ(pdmini_checked(&d), PDMINI_CHECK_NONE);
+    pdmini_check_off(&d);
+    CHECK_EQ(pdmini_checked(&d), PDMINI_CHECK_ASKED);
+    const unsigned reads = m.reads[PDMINI_READ_STATE];
+    run(1300u, false);
+    CHECK_EQ(pdmini_checked(&d), PDMINI_CHECK_OFF);
+    CHECK(m.reads[PDMINI_READ_STATE] > reads);
+
+    /* On by its own button since the last read. */
+    m.output = true;
+    pdmini_check_off(&d);
+    run(1300u, false);
+    CHECK_EQ(pdmini_checked(&d), PDMINI_CHECK_NOT_OFF);
+    run(1500u, false);
+    CHECK(!m.output);                          /* and switched off: OFF asked */
+    pdmini_check_off(&d);
+    run(1300u, false);
+    CHECK_EQ(pdmini_checked(&d), PDMINI_CHECK_OFF);
+
+    /* The read unanswered. */
+    m.no_state = true;
+    pdmini_check_off(&d);
+    run(1300u, false);
+    CHECK_EQ(pdmini_checked(&d), PDMINI_CHECK_NOT_OFF);
+
+    /* Nothing identified: no read to show it off. */
+    fresh();
+    m.powered = false;
+    run(1500u, false);
+    pdmini_check_off(&d);
+    run(1300u, false);
+    CHECK_EQ(pdmini_checked(&d), PDMINI_CHECK_NOT_OFF);
+    pdmini_check_off(NULL);
+    CHECK_EQ(pdmini_checked(NULL), PDMINI_CHECK_NONE);
+}
+
+/* An answer already on its way when the read is asked for is not its
+ * answer: only a read sent after the asking settles it. */
+TEST_CASE(a_read_under_way_does_not_answer_a_later_asking)
+{
+    fresh();
+    run(1500u, false);
+    /* Run to a state read sent and not yet answered. */
+    const unsigned reads = m.reads[PDMINI_READ_STATE];
+    while (m.reads[PDMINI_READ_STATE] == reads) {
+        run(1u, false);
+    }
+    pdmini_check_off(&d);
+    m.output = true;                           /* comes on after that read */
+    run(30u, false);                           /* its answer, off, taken */
+    CHECK(pdmini_checked(&d) != PDMINI_CHECK_OFF);
+    run(1300u, false);
+    CHECK_EQ(pdmini_checked(&d), PDMINI_CHECK_NOT_OFF);
+}
+
+/* The SUPPLY page and this driver on the modelled module: a pass of the
+ * coprocessor's loop, one millisecond at a time. */
+static outputs_t     po;
+static supply_page_t pg;
+
+static void page_fresh(void)
+{
+    fresh();
+    outputs_init(&po, 0u);
+    supply_page_init(&pg);
+    const uint16_t w[4] = { 1u, 8u, 9u, 1u };
+    supply_page_follow(&pg, &d);
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_ENABLE, 4u, w, &po, true), 0u);
+    const uint16_t off[3] = { 0u, 5000u, 1000u };
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_OUTPUT, 3u, off, &po, true), 0u);
+}
+
+static void page_run(uint32_t ms)
+{
+    for (uint32_t k = 0; k < ms; ++k) {
+        supply_page_step(&pg, true, &d);
+        uint16_t w[4];
+        if (supply_page_wire_ready(&pg, w)) {
+            supply_page_follow(&pg, &d);
+            (void)supply_page_wire_write(&pg, &po);
+        }
+        run(1u, false);
+    }
+}
+
+static uint8_t page_wire(uint16_t tx, uint16_t rx)
+{
+    const uint16_t w[4] = { 1u, tx, rx, 1u };
+    supply_page_follow(&pg, &d);
+    return supply_page_write(&pg, LINK_SP_ENABLE, 4u, w, &po, true);
+}
+
+static uint16_t page_reg(unsigned i)
+{
+    uint16_t v = 0xFFFFu;
+    supply_page_read(&pg, (uint8_t)i, 1u, &v);
+    return v;
+}
+
+/* A module answered and read off: a wiring change waits for a state read
+ * sent after it, and is taken when that read shows the output off. */
+TEST_CASE(a_wiring_change_is_taken_on_a_fresh_read_showing_off)
+{
+    page_fresh();
+    page_run(1500u);
+    CHECK(d.answered);
+    CHECK(!pdmini_may_be_on(&d));
+    const unsigned reads = m.reads[PDMINI_READ_STATE];
+    CHECK_EQ(page_wire(10u, 11u), 0u);
+    CHECK_EQ(page_reg(LINK_SP_TX_PIN), 8u);              /* not yet */
+    page_run(1u);
+    CHECK((page_reg(LINK_SP_FLAGS) & LINK_SP_WIRE_WAIT) != 0u);
+    page_run(1300u);
+    CHECK(m.reads[PDMINI_READ_STATE] > reads);
+    CHECK_EQ(page_reg(LINK_SP_TX_PIN), 10u);
+    CHECK_EQ(page_reg(LINK_SP_RX_PIN), 11u);
+    CHECK_EQ(page_reg(LINK_SP_FLAGS)
+                 & (LINK_SP_WIRE_WAIT | LINK_SP_WIRE_REFUSED), 0u);
+}
+
+/* The module switches itself on between two state reads -- its button, its
+ * AUTO OUT -- and a wiring change comes in that window: the read sent after
+ * it shows the output on, the change is refused, and the old wiring keeps
+ * the module's OFF path, which switches it off. */
+TEST_CASE(a_module_on_by_itself_between_reads_keeps_its_wiring)
+{
+    page_fresh();
+    page_run(1500u);
+    m.output = true;                           /* on at the module */
+    CHECK(!pdmini_may_be_on(&d));              /* not read since */
+    CHECK_EQ(page_wire(10u, 11u), 0u);
+    page_run(1300u);
+    CHECK_EQ(page_reg(LINK_SP_TX_PIN), 8u);
+    CHECK((page_reg(LINK_SP_FLAGS) & LINK_SP_WIRE_REFUSED) != 0u);
+    CHECK_EQ(page_reg(LINK_SP_FLAGS) & LINK_SP_WIRE_WAIT, 0u);
+    page_run(1500u);
+    CHECK(!m.output);                          /* switched off on its pins */
+    /* Written again, with the module off: taken. */
+    CHECK_EQ(page_wire(10u, 11u), 0u);
+    CHECK_EQ(page_reg(LINK_SP_FLAGS) & LINK_SP_WIRE_REFUSED, 0u);
+    page_run(1300u);
+    CHECK_EQ(page_reg(LINK_SP_TX_PIN), 10u);
+}
+
+/* The state read sent for a wiring change fails: refused, as for an output
+ * read on. */
+TEST_CASE(a_failed_read_refuses_the_wiring_change)
+{
+    page_fresh();
+    page_run(1500u);
+    m.no_state = true;
+    CHECK_EQ(page_wire(10u, 11u), 0u);
+    page_run(1300u);
+    CHECK_EQ(page_reg(LINK_SP_TX_PIN), 8u);
+    CHECK((page_reg(LINK_SP_FLAGS) & LINK_SP_WIRE_REFUSED) != 0u);
+}
+
+/* --------------------------------------------------------- a sagging input */
+
+/* @p k more input readings taken, and their answers in. */
+static void input_reads(unsigned k)
+{
+    const unsigned target = m.reads[PDMINI_READ_INPUT] + k;
+    while (m.reads[PDMINI_READ_INPUT] < target) {
+        run(1u, false);
+    }
+    run(20u, false);
+}
+
+/* On at 6.00 V from a 12 V input, then the input as given. */
+static void on_at_6v(void)
+{
+    fresh();
+    m.input_mv = 12000u;
+    pdmini_want(&d, true, 6000u, 1000u);
+    run(3000u, false);
+    CHECK(m.output);
+    CHECK_EQ(m.mv[0], 6000u);
+}
+
+/* One reading under the set point and the headroom: still on, and the set
+ * point is not lowered under the live output. */
+TEST_CASE(one_sagging_input_reading_leaves_the_output_on)
+{
+    on_at_6v();
+    m.input_mv = 6200u;                        /* under 6.00 + 0.50 V */
+    input_reads(1u);
+    run(200u, false);
+    CHECK(m.output);
+    CHECK_EQ(m.mv[0], 6000u);                  /* not lowered to 5.70 V */
+    m.input_mv = 12000u;
+    input_reads(1u);
+    run(1000u, false);
+    CHECK(m.output);
+    CHECK(!pdmini_status(&d)->sagged);
+    CHECK_EQ(m.mv[0], 6000u);
+    /* Recovered between: a later low reading is a first one again. */
+    m.input_mv = 6200u;
+    input_reads(1u);
+    CHECK(m.output);
+    CHECK_EQ(m.mv[0], 6000u);
+}
+
+/* Two in a row: off, held off with ON still asked, and said; an OFF asked
+ * clears it, and a new ON on a good input comes on. */
+TEST_CASE(two_sagging_input_readings_switch_the_output_off)
+{
+    on_at_6v();
+    m.input_mv = 6200u;
+    input_reads(2u);
+    run(600u, false);
+    CHECK(!m.output);
+    CHECK(pdmini_status(&d)->sagged);
+    CHECK(!pdmini_status(&d)->tripped);
+    for (int k = 0; k < 20; ++k) {             /* ON asked every pass */
+        pdmini_want(&d, true, 6000u, 1000u);
+        run(50u, false);
+    }
+    CHECK(!m.output);
+    pdmini_want(&d, false, 6000u, 1000u);
+    CHECK(!pdmini_status(&d)->sagged);
+    m.input_mv = 12000u;
+    run(1000u, false);
+    pdmini_want(&d, true, 6000u, 1000u);
+    run(2000u, false);
+    CHECK(m.output);
+}
+
+/* A read that fails between two low readings is no reading: it neither
+ * counts nor clears, so the second low one switches the output off. */
+TEST_CASE(a_failed_input_read_neither_counts_nor_clears_a_sag)
+{
+    on_at_6v();
+    m.input_mv = 6200u;
+    input_reads(1u);
+    m.no_input = true;
+    input_reads(1u);
+    run(450u, false);                          /* unanswered */
+    CHECK(m.output);
+    m.no_input = false;
+    input_reads(1u);
+    run(600u, false);
+    CHECK(!m.output);
+    CHECK(pdmini_status(&d)->sagged);
+}
+
+/* An input that cannot be read is not taken for a sag: the output stays on
+ * however low the input is in fact. */
+TEST_CASE(an_unknown_input_switches_nothing_off)
+{
+    on_at_6v();
+    m.no_input = true;
+    m.input_mv = 5000u;
+    run(5000u, false);
+    CHECK(m.output);
+    CHECK(!pdmini_status(&d)->sagged);
+}
+
+/* The output off, or an OFF asked: low readings switch nothing. */
+TEST_CASE(a_sag_under_an_output_not_live_is_not_counted)
+{
+    fresh();
+    m.input_mv = 6200u;
+    pdmini_want(&d, false, 6000u, 1000u);
+    run(3000u, false);
+    CHECK(!pdmini_status(&d)->sagged);
+    CHECK_EQ(d.sag_reads, 0u);
+}
+
 int main(void)
 {
     RUN(the_crc_matches_every_value_the_sheet_prints);
@@ -1550,5 +1835,15 @@ int main(void)
     RUN(an_output_not_read_may_be_on);
     RUN(a_restored_module_may_be_on_until_read);
     RUN(an_output_the_module_switched_off_stays_off);
+    RUN(a_state_read_asked_for_says_whether_the_output_is_off);
+    RUN(a_read_under_way_does_not_answer_a_later_asking);
+    RUN(a_wiring_change_is_taken_on_a_fresh_read_showing_off);
+    RUN(a_module_on_by_itself_between_reads_keeps_its_wiring);
+    RUN(a_failed_read_refuses_the_wiring_change);
+    RUN(one_sagging_input_reading_leaves_the_output_on);
+    RUN(two_sagging_input_readings_switch_the_output_off);
+    RUN(a_failed_input_read_neither_counts_nor_clears_a_sag);
+    RUN(an_unknown_input_switches_nothing_off);
+    RUN(a_sag_under_an_output_not_live_is_not_counted);
     return test_summary("pdmini");
 }

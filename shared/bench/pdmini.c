@@ -109,6 +109,7 @@ void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma)
     if (!output) {
         d->held_off   = false;      /* an OFF asked: an ON may follow */
         d->st.tripped = false;
+        d->st.sagged  = false;
     }
     output = output && !d->held_off;
     if (output != d->want_output) {
@@ -154,7 +155,20 @@ void pdmini_want_off(pdmini_t *d)
     }
     d->held_off    = false;
     d->st.tripped  = false;
+    d->st.sagged   = false;
     d->want_output = false;
+}
+
+void pdmini_check_off(pdmini_t *d)
+{
+    if (d != NULL) {
+        d->check = (uint8_t)PDMINI_CHECK_ASKED;
+    }
+}
+
+pdmini_check_t pdmini_checked(const pdmini_t *d)
+{
+    return (d != NULL) ? (pdmini_check_t)d->check : PDMINI_CHECK_NONE;
 }
 
 const pdmini_status_t *pdmini_status(const pdmini_t *d)
@@ -184,6 +198,10 @@ static void start(pdmini_t *d, uint32_t now, const uint8_t *req, size_t n,
     d->cmd    = req[0];
     d->write  = write;
     d->rx_n   = 0u;
+    if (req[0] == PDMINI_READ_STATE
+        && d->check == (uint8_t)PDMINI_CHECK_ASKED) {
+        d->check = (uint8_t)PDMINI_CHECK_SENT;   /* asked before it went */
+    }
     if (d->io.attach != NULL) {
         d->io.attach(d->io.ctx);
     }
@@ -203,6 +221,13 @@ static void finish(pdmini_t *d, uint32_t now, bool ok)
     }
     d->phase = PD_GAP;
     d->t     = now;
+    if (d->cmd == PDMINI_READ_STATE
+        && d->check == (uint8_t)PDMINI_CHECK_SENT) {
+        /* Off only as read now, with nothing on its way that may be on;
+         * a read that failed is not off. */
+        d->check = (uint8_t)((ok && !pdmini_may_be_on(d))
+                                 ? PDMINI_CHECK_OFF : PDMINI_CHECK_NOT_OFF);
+    }
     if (d->cmd == PDMINI_SYSTEM_RESET) {
         /* Restarting: nothing it said holds, and it is asked who it is
          * once it has had PDMINI_IDENTIFY_MS to come back. */
@@ -302,6 +327,10 @@ static bool holds(const uint8_t *p, size_t n, const char *s)
  * than PDMINI_HEADROOM_MV under the input it reports.  A buck cannot put
  * out more than it is fed, and a module asked to shows ERR and needs a
  * power cycle.  As asked while the input is not known.
+ *
+ * A live output's set point, up to the one asked, is not lowered to follow
+ * its input down: the voltage under test would change unasked mid-run, and
+ * a sag that lasts switches the output off instead (sag_check()).
  */
 static uint16_t target_mv(const pdmini_t *d)
 {
@@ -310,8 +339,40 @@ static uint16_t target_mv(const pdmini_t *d)
         return d->want_mv;      /* not read yet, or no room to cap into */
     }
     /* On the 10 mV grid the screen offers, rounded down. */
-    const uint32_t cap = (vin - PDMINI_HEADROOM_MV) / 10u * 10u;
+    uint32_t cap = (vin - PDMINI_HEADROOM_MV) / 10u * 10u;
+    if (d->st.output && d->want_output && d->st.set_mv > cap
+        && d->st.set_mv <= d->want_mv) {
+        cap = d->st.set_mv;
+    }
     return (d->want_mv > cap) ? (uint16_t)cap : d->want_mv;
+}
+
+/*
+ * An input reading, against a live output's set point: under it and the
+ * headroom on PDMINI_SAG_READS readings in a row, the output is switched
+ * off and held off until an OFF is asked.  Only an output read on with ON
+ * asked and a set point read back; a reading at or over the line, or an
+ * output not live, starts the count again.  A failed read is no reading
+ * and leaves the count as it is.
+ */
+static void sag_check(pdmini_t *d)
+{
+    const bool live = d->st.output && d->want_output && d->state_known
+                      && d->st.set_mv != 0u;
+    if (!live || (uint32_t)d->st.vin_mv
+                     >= (uint32_t)d->st.set_mv + PDMINI_HEADROOM_MV) {
+        d->sag_reads = 0u;
+        return;
+    }
+    if (++d->sag_reads < PDMINI_SAG_READS) {
+        return;
+    }
+    d->sag_reads   = 0u;
+    d->held_off    = true;
+    d->want_output = false;
+    d->en_tries    = 0u;
+    d->st.stuck    = false;
+    d->st.sagged   = true;
 }
 
 static void learn_on(pdmini_t *d)
@@ -343,6 +404,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->st.vin_mv   = 0u;
         d->state_known = false;
         d->blind_due   = false;
+        d->sag_reads   = 0u;      /* perhaps another module, another input */
         /* The argument learnt is kept: the same module back after a fault
          * still has to be switched off, blind if it goes quiet again.  One
          * swapped for another that reads it the other way round is caught
@@ -465,6 +527,7 @@ static bool take_reply(pdmini_t *d, uint32_t now)
         d->input_misses = 0u;
         d->input_known = true;
         d->input_seen  = true;
+        sag_check(d);
         break;
     default:
         break;
@@ -572,6 +635,11 @@ static bool next_job(pdmini_t *d, uint32_t now)
      * may be another one, and is read before anything is written to it.
      */
     if (!d->identified) {
+        /* Not identified: no state read is made, and a check asked has no
+         * read to show the output off. */
+        if (d->check == (uint8_t)PDMINI_CHECK_ASKED) {
+            d->check = (uint8_t)PDMINI_CHECK_NOT_OFF;
+        }
         const bool blind = d->blind_due;
         d->blind_due = false;
         if (blind && d->off_owed && !d->want_output && d->on_confirmed) {
@@ -618,6 +686,14 @@ static bool next_job(pdmini_t *d, uint32_t now)
     /* An OFF first, before anything else waiting. */
     if (!d->en_pending && d->st.output && !d->want_output
         && write_en(d, now)) {
+        return true;
+    }
+    /* A state read asked for (pdmini_check_off()), after the OFF: with no
+     * write being confirmed, whose confirming read is a state read too and
+     * waits out PDMINI_CONFIRM_MS. */
+    if (d->check == (uint8_t)PDMINI_CHECK_ASKED && !d->en_pending) {
+        d->last_state = now;
+        read1(d, now, PDMINI_READ_STATE);
         return true;
     }
     /* A restart asked for, with the output read off: before anything else

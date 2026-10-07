@@ -4,7 +4,9 @@
  * Under test: wiring refused on pins the board or an output holds, on one
  * pin for both, and while the output is on; an ON only with the supply
  * enabled and a live heartbeat; the output off when the heartbeat stops;
- * the pins reserved while held; what the driver last said read back.
+ * the pins reserved while held; what the driver last said read back; a
+ * wiring change from a module that has answered held for a state read,
+ * taken on off and refused otherwise.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -345,6 +347,153 @@ TEST_CASE(the_step_passes_the_page_to_the_driver_and_back)
     CHECK(!drv.want_output);
 }
 
+/* A driver whose module has answered, told what its state read shows. */
+static pdmini_t answered_driver(void)
+{
+    pdmini_t drv;
+    pdmini_init(&drv, NULL, 0u);
+    drv.answered    = true;
+    drv.identified  = true;
+    drv.state_known = true;
+    return drv;
+}
+
+/* Held for its read: acknowledged, the wiring in force read back, bit 8
+ * set at once; the read asked at the next step; taken on off. */
+TEST_CASE(a_wiring_change_waits_for_a_read_of_an_answered_module)
+{
+    fresh();
+    pdmini_t drv = answered_driver();
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);         /* nothing answered yet */
+    CHECK_EQ(reg(LINK_SP_TX_PIN), 8u);
+    supply_page_step(&pg, true, &drv);
+    CHECK(pg.answered);
+    CHECK_EQ(wire(1u, 10u, 11u, 1u), 0u);
+    CHECK_EQ(reg(LINK_SP_TX_PIN), 8u);
+    CHECK((reg(LINK_SP_FLAGS) & LINK_SP_WIRE_WAIT) != 0u);
+    uint16_t w[4];
+    CHECK(!supply_page_wire_ready(&pg, w));
+    CHECK_EQ(supply_page_wire_write(&pg, &o), LINK_NACK_BAD_VALUE);
+    supply_page_step(&pg, true, &drv);
+    CHECK_EQ(pdmini_checked(&drv), PDMINI_CHECK_ASKED);
+    /* An ON while it waits is refused, and so is the wiring with a
+     * command in one frame. */
+    CHECK_EQ(command(1u, 5000u, 500u, true), LINK_NACK_BAD_VALUE);
+    const uint16_t both[7] = { 1u, 12u, 13u, 1u, 0u, 5000u, 500u };
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_ENABLE, 7u, both, &o, true),
+             LINK_NACK_BAD_VALUE);
+    drv.check = (uint8_t)PDMINI_CHECK_OFF;
+    supply_page_step(&pg, true, &drv);
+    CHECK(supply_page_wire_ready(&pg, w));
+    CHECK_EQ(w[1], 10u);
+    CHECK((reg(LINK_SP_FLAGS) & LINK_SP_WIRE_WAIT) != 0u);
+    supply_page_follow(&pg, &drv);
+    CHECK_EQ(supply_page_wire_write(&pg, &o), 0u);
+    CHECK_EQ(reg(LINK_SP_TX_PIN), 10u);
+    CHECK_EQ(reg(LINK_SP_FLAGS) & (LINK_SP_WIRE_WAIT | LINK_SP_WIRE_REFUSED),
+             0u);
+    CHECK(!supply_page_wire_ready(NULL, w));
+    CHECK(!supply_page_wire_ready(&pg, NULL));
+}
+
+/* Refused on a read that does not show it off, bit 9 until the next wiring
+ * write; another change replaces the one waiting and is read for again;
+ * the wiring in force written drops it. */
+TEST_CASE(a_wiring_change_not_read_off_is_refused)
+{
+    fresh();
+    pdmini_t drv = answered_driver();
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
+    supply_page_step(&pg, true, &drv);
+    CHECK_EQ(wire(1u, 10u, 11u, 1u), 0u);
+    supply_page_step(&pg, true, &drv);
+    drv.check = (uint8_t)PDMINI_CHECK_NOT_OFF;
+    supply_page_step(&pg, true, &drv);
+    CHECK_EQ(reg(LINK_SP_TX_PIN), 8u);
+    CHECK_EQ(reg(LINK_SP_FLAGS) & (LINK_SP_WIRE_WAIT | LINK_SP_WIRE_REFUSED),
+             LINK_SP_WIRE_REFUSED);
+    supply_page_step(&pg, true, &drv);
+    CHECK((reg(LINK_SP_FLAGS) & LINK_SP_WIRE_REFUSED) != 0u);   /* kept */
+
+    CHECK_EQ(wire(1u, 10u, 11u, 1u), 0u);       /* again: read again */
+    CHECK_EQ(reg(LINK_SP_FLAGS) & LINK_SP_WIRE_REFUSED, 0u);
+    supply_page_step(&pg, true, &drv);
+    CHECK_EQ(pdmini_checked(&drv), PDMINI_CHECK_ASKED);
+    CHECK_EQ(wire(1u, 12u, 13u, 1u), 0u);       /* replaced */
+    supply_page_step(&pg, true, &drv);
+    drv.check = (uint8_t)PDMINI_CHECK_OFF;
+    supply_page_step(&pg, true, &drv);
+    uint16_t w[4];
+    CHECK(supply_page_wire_ready(&pg, w));
+    CHECK_EQ(w[1], 12u);
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);         /* the wiring in force */
+    CHECK(!supply_page_wire_ready(&pg, w));
+    CHECK_EQ(reg(LINK_SP_FLAGS) & LINK_SP_WIRE_WAIT, 0u);
+}
+
+/* The ready wiring is judged again as it is written: pins an output took
+ * since, or an output that may be on, refuse it.  A driver started afresh
+ * is asked again; no driver at all, and it is ready. */
+TEST_CASE(a_ready_wiring_is_judged_again_when_written)
+{
+    fresh();
+    pdmini_t drv = answered_driver();
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
+    supply_page_step(&pg, true, &drv);
+    CHECK_EQ(wire(1u, 10u, 11u, 1u), 0u);
+    supply_page_step(&pg, true, &drv);
+    drv.check = (uint8_t)PDMINI_CHECK_OFF;
+    supply_page_step(&pg, true, &drv);
+    drv.st.output = true;                       /* on again since */
+    supply_page_follow(&pg, &drv);
+    CHECK_EQ(supply_page_wire_write(&pg, &o), LINK_NACK_BAD_VALUE);
+    CHECK((reg(LINK_SP_FLAGS) & LINK_SP_WIRE_REFUSED) != 0u);
+    CHECK_EQ(reg(LINK_SP_TX_PIN), 8u);
+
+    drv.st.output = false;
+    supply_page_follow(&pg, &drv);
+    CHECK_EQ(wire(1u, 10u, 11u, 1u), 0u);
+    supply_page_step(&pg, true, &drv);
+    pdmini_init(&drv, NULL, 0u);                /* rewired: forgotten */
+    drv.answered    = true;
+    drv.state_known = true;
+    supply_page_step(&pg, true, &drv);
+    CHECK_EQ(pdmini_checked(&drv), PDMINI_CHECK_ASKED);
+    const out_slot_t pwm = { .driver = OUT_DRIVER_PWM, .first_channel = 1,
+                             .channels = 1, .pin = 10, .rate_hz = 50 };
+    CHECK(outputs_configure(&o, 1, &pwm));      /* pin 10 taken */
+    drv.check = (uint8_t)PDMINI_CHECK_OFF;
+    supply_page_step(&pg, true, &drv);
+    supply_page_follow(&pg, &drv);
+    CHECK_EQ(supply_page_wire_write(&pg, &o), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_SP_TX_PIN), 8u);
+
+    CHECK_EQ(wire(1u, 12u, 13u, 1u), 0u);
+    supply_page_step(&pg, true, NULL);          /* no driver: ready */
+    uint16_t w[4];
+    CHECK(supply_page_wire_ready(&pg, w));
+    supply_page_wire_refuse(&pg);               /* no UART for them */
+    CHECK((reg(LINK_SP_FLAGS) & LINK_SP_WIRE_REFUSED) != 0u);
+    supply_page_wire_refuse(NULL);
+    supply_page_follow(NULL, &drv);
+}
+
+/* The driver's sag cut is on the page as bit 10. */
+TEST_CASE(a_sag_cut_is_on_the_page)
+{
+    fresh();
+    pdmini_t drv;
+    pdmini_init(&drv, NULL, 0u);
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
+    CHECK_EQ(command(1u, 6000u, 1000u, true), 0u);
+    drv.st.sagged = true;
+    supply_page_step(&pg, true, &drv);
+    CHECK((reg(LINK_SP_FLAGS) & LINK_SP_SAGGED) != 0u);
+    drv.st.sagged = false;
+    supply_page_step(&pg, true, &drv);
+    CHECK_EQ(reg(LINK_SP_FLAGS) & LINK_SP_SAGGED, 0u);
+}
+
 int main(void)
 {
     RUN(wiring_is_refused_on_pins_that_are_not_free);
@@ -359,5 +508,9 @@ int main(void)
     RUN(reset_is_taken_alone_with_the_output_off);
     RUN(read_only_registers_and_the_page_end_are_refused);
     RUN(the_step_passes_the_page_to_the_driver_and_back);
+    RUN(a_wiring_change_waits_for_a_read_of_an_answered_module);
+    RUN(a_wiring_change_not_read_off_is_refused);
+    RUN(a_ready_wiring_is_judged_again_when_written);
+    RUN(a_sag_cut_is_on_the_page);
     return test_summary("supply_page");
 }

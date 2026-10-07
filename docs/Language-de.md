@@ -87,6 +87,7 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | supply | Netzteil |
 | output | Ausgang |
 | set point | Sollwert |
+| input (of a supply), wiring | Eingang, Verdrahtung |
 | current limit | Strombegrenzung |
 | cap | Obergrenze |
 | trip (die eigene Abschaltung des Netzteils), current trip, voltage trip | Abschaltung (ABSCH. auf der Karte MODUS), Überstrom, Überspannung |

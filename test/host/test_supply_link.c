@@ -6,7 +6,10 @@
  * written again until it changes; an ON refused, or let go at the far end,
  * reported once and not asked for again; a coprocessor that started again
  * between two reads written again from the start; the readings, stale ones
- * and a module the page does not drive taken as not answering.
+ * and a module the page does not drive taken as not answering; a wiring
+ * change the far end holds for a state read waited for, and its refusal
+ * said; an output the far end switched off for a sagging input; an edit
+ * followed between two writes keeping an ON off the old pins.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -45,6 +48,13 @@ static void fresh(void)
 static void far_step_and_read(bool beat)
 {
     supply_page_step(&pg, beat, supply_page_enabled(&pg) ? &drv : NULL);
+    /* A wiring change its state read cleared, taken as the coprocessor
+     * takes it. */
+    uint16_t w[4];
+    if (supply_page_wire_ready(&pg, w)) {
+        supply_page_follow(&pg, supply_page_enabled(&pg) ? &drv : NULL);
+        (void)supply_page_wire_write(&pg, &o);
+    }
     uint16_t regs[LINK_SP_COUNT];
     supply_page_read(&pg, 0u, LINK_SP_COUNT, regs);
     supply_link_read(&sl, regs, now);
@@ -64,6 +74,8 @@ static void pump(bool beat)
             }
         }
         ++writes;
+        /* What the driver says now, as the coprocessor takes it first. */
+        supply_page_follow(&pg, supply_page_enabled(&pg) ? &drv : NULL);
         const uint8_t nack = supply_page_write(&pg, off, n, regs, &o, beat);
         supply_link_written(&sl, nack == 0u ? SUPPLY_LINK_ACK : (int)nack);
         far_step_and_read(beat);
@@ -98,7 +110,11 @@ TEST_CASE(an_off_then_the_wiring_then_the_command)
     CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_WIRING);
     CHECK_EQ(off, LINK_SP_ENABLE);
     CHECK_EQ(n, 4u);
+    CHECK_EQ(supply_page_write(&pg, off, n, regs, &o, true), 0u);
     supply_link_written(&sl, SUPPLY_LINK_ACK);
+    /* Acknowledged, and the page's once a read shows it held. */
+    CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_NONE);
+    far_step_and_read(true);
     CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_COMMAND);
     CHECK_EQ(off, LINK_SP_OUTPUT);
     CHECK_EQ(n, 3u);
@@ -469,6 +485,142 @@ TEST_CASE(a_restart_follows_the_off)
     CHECK(supply_link_next(&sl, &off, &n, regs) != SUPPLY_LINK_W_RESET);
 }
 
+/* The far end holds a wiring change for a state read: nothing more is
+ * written while it waits -- an ON asked meanwhile neither -- and the
+ * wiring is the page's once a read shows it held. */
+TEST_CASE(a_wiring_change_held_for_a_read_is_waited_for)
+{
+    fresh();
+    supply_link_wire(&sl, &k_wired);
+    pump(true);
+    CHECK(supply_link_settled(&sl));
+    drv.answered    = true;                     /* a module has answered */
+    drv.state_known = true;                     /* and was read off */
+    const supply_wiring_t moved = { true, 10, 11, 1u };
+    supply_link_wire(&sl, &moved);
+    pump(true);
+    CHECK((reg(LINK_SP_FLAGS) & LINK_SP_WIRE_WAIT) != 0u);
+    CHECK_EQ(reg(LINK_SP_TX_PIN), 8u);
+    CHECK_EQ(drv.check, (uint8_t)PDMINI_CHECK_ASKED);
+    CHECK(!sl.wired);
+    const unsigned before = writes;
+    supply_link_command(&sl, true, 5000u, 500u);
+    pump(true);
+    pump(true);
+    CHECK_EQ(writes, before);                   /* not written again */
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);          /* nor an ON */
+    drv.check = (uint8_t)PDMINI_CHECK_OFF;      /* the read shows it off */
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_TX_PIN), 10u);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);          /* and the ON follows */
+    CHECK_EQ(supply_link_events(&sl), 0u);
+}
+
+/* The read shows the output on, or fails: the change is refused, said once
+ * as a refusal for an output that may be on, and not written again until
+ * the settings change; an ON meanwhile is refused here. */
+TEST_CASE(a_wiring_change_refused_on_its_read_is_said)
+{
+    fresh();
+    supply_link_wire(&sl, &k_wired);
+    pump(true);
+    drv.answered    = true;
+    drv.state_known = true;
+    const supply_wiring_t moved = { true, 10, 11, 1u };
+    supply_link_wire(&sl, &moved);
+    pump(true);
+    drv.check = (uint8_t)PDMINI_CHECK_NOT_OFF;
+    pump(true);
+    CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_WIRING_LIVE);
+    CHECK(sl.refused);
+    CHECK_EQ(reg(LINK_SP_TX_PIN), 8u);
+    CHECK((reg(LINK_SP_FLAGS) & LINK_SP_WIRE_REFUSED) != 0u);
+    const unsigned before = writes;
+    pump(true);
+    CHECK_EQ(writes, before);
+    supply_link_command(&sl, true, 5000u, 500u);
+    pump(true);
+    CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_ON_REFUSED);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+    /* The settings change: written again, and the refusal clears. */
+    const supply_wiring_t again = { true, 12, 13, 1u };
+    supply_link_wire(&sl, &again);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_FLAGS) & LINK_SP_WIRE_REFUSED, 0u);
+    CHECK((reg(LINK_SP_FLAGS) & LINK_SP_WIRE_WAIT) != 0u);
+}
+
+/* The far end switched the output off for a sagging input: the ON is over
+ * here, said once with the input and set point of that read, and the OFF
+ * written. */
+TEST_CASE(an_output_switched_off_for_a_sag_is_said_with_its_numbers)
+{
+    fresh();
+    supply_link_wire(&sl, &k_wired);
+    supply_link_command(&sl, true, 6000u, 1000u);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+    drv.st.online = true;
+    drv.st.sagged = true;
+    drv.st.vin_mv = 6180u;
+    drv.st.set_mv = 6000u;
+    far_step_and_read(true);
+    CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_SAGGED);
+    CHECK(!sl.on);
+    uint16_t vin = 0u;
+    uint16_t set = 0u;
+    supply_link_sag(&sl, &vin, &set);
+    CHECK_EQ(vin, 6180u);
+    CHECK_EQ(set, 6000u);
+    drv.st.vin_mv = 12000u;                     /* a later reading */
+    far_step_and_read(true);
+    CHECK_EQ(supply_link_events(&sl), 0u);      /* said once */
+    supply_link_sag(&sl, &vin, &set);
+    CHECK_EQ(vin, 6180u);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+    supply_link_sag(NULL, &vin, &set);
+    supply_link_sag(&sl, NULL, &set);
+}
+
+/* An edit published between two writes, followed straight before the
+ * second: the ON taken before it does not reach the page with the old
+ * pins.  Not followed, it would. */
+TEST_CASE(an_edit_followed_before_a_write_keeps_an_on_off_the_old_pins)
+{
+    fresh();
+    supply_link_wire(&sl, &k_wired);
+    pump(true);
+    supply_link_command(&sl, true, 5000u, 500u);
+    uint8_t off = 0u;
+    uint8_t n = 0u;
+    uint16_t regs[LINK_SP_FLAGS];
+    CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_COMMAND);
+    CHECK_EQ(regs[0], 1u);                      /* the ON, unfollowed */
+    /* What the follow does on an edit: the ON off, the new pins asked. */
+    const supply_wiring_t moved = { true, 10, 11, 1u };
+    supply_link_command(&sl, false, 5000u, 500u);
+    supply_link_wire(&sl, &moved);
+    const supply_link_write_t w = supply_link_next(&sl, &off, &n, regs);
+    CHECK(w != SUPPLY_LINK_W_COMMAND || regs[0] == 0u);
+    CHECK_EQ(w, SUPPLY_LINK_W_WIRING);
+    CHECK_EQ(regs[1], 10u);
+}
+
+/* The edit count and the word, each a move; neither, none. */
+TEST_CASE(a_wiring_moves_on_its_count_or_its_word)
+{
+    supply_link_follow_t f = { 0 };
+    CHECK(supply_link_wiring_moved(&f, 1u, 0x1000000u));   /* first look */
+    CHECK(!supply_link_wiring_moved(&f, 1u, 0x1000000u));
+    CHECK(supply_link_wiring_moved(&f, 2u, 0x1000000u));   /* counted, word
+                                                              not yet stored,
+                                                              or undone */
+    CHECK(supply_link_wiring_moved(&f, 2u, 0x1090A01u));   /* the word */
+    CHECK(!supply_link_wiring_moved(&f, 2u, 0x1090A01u));
+    CHECK(!supply_link_wiring_moved(NULL, 3u, 0u));
+}
+
 int main(void)
 {
     RUN(an_off_then_the_wiring_then_the_command);
@@ -483,5 +635,10 @@ int main(void)
     RUN(stuck_is_reported_once);
     RUN(a_found_rate_is_reported_once);
     RUN(a_restart_follows_the_off);
+    RUN(a_wiring_change_held_for_a_read_is_waited_for);
+    RUN(a_wiring_change_refused_on_its_read_is_said);
+    RUN(an_output_switched_off_for_a_sag_is_said_with_its_numbers);
+    RUN(an_edit_followed_before_a_write_keeps_an_on_off_the_old_pins);
+    RUN(a_wiring_moves_on_its_count_or_its_word);
     return test_summary("supply_link");
 }

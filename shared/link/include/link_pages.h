@@ -54,7 +54,7 @@ typedef enum {
  * older host can ignore.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 4u
+#define LINK_PROTOCOL_MINOR 5u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -187,6 +187,14 @@ enum {
  *     asked on or may be on (FLAGS bit 6).  The pins it takes are no
  *     output's while it holds them.
  *
+ *     Protocol 4.5: a change while a module has answered is acknowledged
+ *     and waits, ENABLE to BAUD reading the wiring in force and FLAGS bit 8
+ *     set, for a state read of the module sent after it -- at most about
+ *     1.2 s.  That read showing the output off takes it; on, or failed,
+ *     refuses it: bit 8 clears and bit 9 sets until the next wiring write.
+ *     Such a change comes alone, without OUTPUT to SET_MA, and an ON is
+ *     refused with BAD_VALUE while one waits.
+ *
  *     OUTPUT to SET_MA are what it is to do, one frame: 1 for the output
  *     on, the set points in mV and mA, clamped to the module's 1 to 20 V
  *     and 0.05 to 3 A.  An ON is refused with NOT_ARMED without a live
@@ -198,7 +206,11 @@ enum {
  *     bit 5 set points that would not take, bit 6 an output that is on or
  *     may be -- read on, an ON not yet confirmed, or an OFF owed to a
  *     module that stopped answering, bit 7 an output the module switched
- *     off by itself, held off until OUTPUT is written 0;
+ *     off by itself, held off until OUTPUT is written 0, bit 8 a wiring
+ *     change waiting for its state read and bit 9 one refused by it
+ *     (4.5), bit 10 an output switched off because its input read under
+ *     the set point and 500 mV on 2 input reads in a row, held off until
+ *     OUTPUT is written 0 (4.5);
  *     the output's voltage and current, the set points read back from it,
  *     the input's state and voltage, and the counts of readings taken and
  *     of transactions that failed, modulo 65536.
@@ -234,6 +246,9 @@ enum {
 #define LINK_SP_SET_STUCK 0x20u
 #define LINK_SP_LIVE      0x40u
 #define LINK_SP_TRIPPED   0x80u
+#define LINK_SP_WIRE_WAIT    0x100u  /**< protocol 4.5 */
+#define LINK_SP_WIRE_REFUSED 0x200u  /**< protocol 4.5 */
+#define LINK_SP_SAGGED       0x400u  /**< protocol 4.5 */
 
 #define LINK_OS_RANGE_OF(first, count) \
     ((uint16_t)((((unsigned)(first) & 0xFFu) << 8) | ((unsigned)(count) & 0xFFu)))

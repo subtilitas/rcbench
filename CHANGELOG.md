@@ -141,6 +141,31 @@ history is in git.
 
 ### Fixed
 
+- **A sagging input switches a live PD mini off.** While the output is on,
+  the coprocessor switches it off when the module's input reads under the
+  set point plus 0.5 V (`PDMINI_HEADROOM_MV`) on 2 input reads in a row
+  (`PDMINI_SAG_READS`, one read every 500 ms), holds it off until an OFF,
+  and sets SUPPLY flag bit 10; the panel switches its ON off and names the
+  input and the set point in the band. One low reading switches nothing,
+  and a failed read neither counts nor clears. A live output's set point is
+  no longer lowered to follow a falling input. The rule is chosen without a
+  bench measurement and may cut a run that would have survived.
+- **A PD mini wiring change waits for a fresh state read.** A change to
+  ENABLE, TX, RX or BAUD in the up to 500 ms after a state read that showed
+  the output off was taken at once, and closed the UART of a module that
+  might have switched itself on since, leaving it no OFF path. Once a module
+  has answered, the coprocessor now holds the change (SUPPLY flag bit 8)
+  until a state read sent after it, at most about 1.2 s, and takes it only
+  if that read shows the output off; on, or a failed read, refuses it (bit
+  9), and the band says `PD mini wiring refused -- its output may be on`.
+  An ON is refused while a change is held. Protocol 4.5.
+- **A wiring edit on SETUP is followed before each SUPPLY write.** The
+  control task followed the PD mini's wiring once per service pass, and an
+  edit published by the render core during an earlier write's exchange let
+  an ON taken before it reach the page with the old wiring. The edit count
+  and the wiring word are followed straight before every write, with no
+  exchange between; an edit that has counted and not yet stored its word
+  counts as a change.
 - **STOP closes the OUTPUT IS ON question.** A STOP and a complete APPLY
   tap in the same render frame (about 50 ms) applied the typed set point on
   SERVO and on SUPPLY: the stop was seen before the tap, and the question
