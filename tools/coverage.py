@@ -127,6 +127,7 @@ TRACKED = [
     "shared/sense/sense_bus.c",
     "shared/sense/ina228.c",
     "shared/sense/ina3221.c",
+    "shared/sense/tone.c",
 ]
 
 # Sources that are compiled into the suite but deliberately not measured.
