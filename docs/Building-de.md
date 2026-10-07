@@ -28,6 +28,7 @@ rcbench/
     sbus/                 S.BUS-Decoder
     openyge/              OpenYGE-Framing, Status und Parameter-Cache
     esc/                  ESC-Programmierprofile, ihr JSON-Leser und die Registry
+    sense/                Treiber für die Strommonitore INA228 und INA3221
   firmware/
     panel/                ESP-IDF-Projekt (ESP32-S3)
     iomcu/                pico-sdk-Projekt (RP2350)
@@ -63,6 +64,7 @@ Includes sind flach: `#include "gfx.h"`.
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` | ✔ | | ✔ |
 | `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
+| `sense` | | | ✔ |
 
 ## Toolchains
 

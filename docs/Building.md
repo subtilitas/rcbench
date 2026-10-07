@@ -31,6 +31,7 @@ rcbench/
     ppm/                  PPM frame layout
     openyge/              OpenYGE framing, status and parameter cache
     esc/                  ESC programming profiles, their JSON reader and registry
+    sense/                INA228 and INA3221 current monitor drivers
   firmware/
     panel/                ESP-IDF project (ESP32-S3)
     iomcu/                pico-sdk project (RP2350)
@@ -65,6 +66,7 @@ flat: `#include "gfx.h"`.
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` | ✔ | | ✔ |
 | `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
+| `sense` | | | ✔ |
 
 ## Toolchains
 
