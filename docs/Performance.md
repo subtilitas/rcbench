@@ -166,8 +166,10 @@ end of one restarts the panel. `tools/stack_check.py` reads each task's
 deepest call chain out of the panel ELF (Executable and Linkable Format)
 file: the frame of every function is the `entry a1, N` it opens with, and the
 depth is the largest sum of frames along any chain from the task's entry
-point. CI runs it after both panel builds and fails when a task's depth
-exceeds its stack less 1024 bytes.
+point. A jump out of a function, the form a tail call takes, counts as a
+call. The tasks are every `xTaskCreatePinnedToCore()` and `xTaskCreate()`
+in `firmware/panel`, and the main task. CI runs it after both panel builds
+and fails when a task's depth exceeds its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
@@ -175,6 +177,7 @@ exceeds its stack less 1024 bytes.
 | `control` | `control_task` | 6,144 | 4,272 | 848 |
 | `runlog` | `log_task` | 4,096 | 2,896 | 176 |
 | `artkeep` | `art_keep_task` | 4,096 | 944 | 2,128 |
+| `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,744 | 1,328 |
 
 Measured on ESP-IDF v5.4 at -O2. Of the margin, 528 bytes are spent outside
 the frames: 320 for the FPU (floating-point unit) and vector-unit state saved

@@ -178,9 +178,12 @@ Jede Task des Panels läuft auf einem festen Stack, und eine Aufrufkette, die
 liest die tiefste Aufrufkette jeder Task aus der ELF-Datei (Executable and
 Linkable Format) des Panels: der Frame jeder Funktion ist das
 `entry a1, N`, mit dem sie beginnt, und die Tiefe ist die größte Summe der
-Frames entlang einer Kette vom Einstiegspunkt der Task. CI (Continuous
-Integration) führt es nach beiden Panel-Builds aus und schlägt fehl, wenn die
-Tiefe einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
+Frames entlang einer Kette vom Einstiegspunkt der Task. Ein Sprung aus einer
+Funktion heraus, die Form eines Tail Calls, zählt als Aufruf. Die Tasks sind
+jedes `xTaskCreatePinnedToCore()` und `xTaskCreate()` in `firmware/panel`
+und die Main-Task. CI (Continuous Integration) führt es nach beiden
+Panel-Builds aus und schlägt fehl, wenn die Tiefe einer Task ihren Stack
+abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
@@ -188,6 +191,7 @@ Tiefe einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `control` | `control_task` | 6 144 | 4 272 | 848 |
 | `runlog` | `log_task` | 4 096 | 2 896 | 176 |
 | `artkeep` | `art_keep_task` | 4 096 | 944 | 2 128 |
+| `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 744 | 1 328 |
 
 Gemessen mit ESP-IDF v5.4 bei -O2. Von der Marge gehen 528 Bytes außerhalb
 der Frames auf: 320 für den gesicherten Zustand von FPU (Floating-Point Unit)

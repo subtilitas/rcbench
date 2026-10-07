@@ -25,6 +25,9 @@ still does not land on is counted.
 Calls the tool follows:
 
 - direct calls: call0, call4, call8 and call12;
+- tail calls: a j, a branch, or a jx through an l32r-loaded address, out of
+  the function, each counted as a call (see analyse() for why that is the
+  safe sum);
 - an address loaded with l32r and called with callx in the same basic
   block, with the register untouched in between: the far call the compiler
   emits from flash into IRAM (instruction RAM) and into ROM;
@@ -39,7 +42,9 @@ What it cannot follow it counts and names, and never drops quietly:
 - any other call through a function pointer;
 - a call into the ESP32-S3's ROM (read-only memory), which is not in the
   ELF, so its frame is unknown;
-- a call to an address where no function starts;
+- a call or tail jump to an address where no function starts;
+- a function that opens with no entry: hand-written or call0 code, whose
+  frame is not read;
 - recursion: a function already on the chain is not entered again, so a
   depth through a cycle counts the cycle once.
 
@@ -55,11 +60,13 @@ frame an interrupt pushes before it moves to the interrupt stack
 other 496 bytes are for what the graph does not follow.
 
 The stacks: the main task's is CONFIG_ESP_MAIN_TASK_STACK_SIZE from the
-build's config/sdkconfig.h; every other task's is the size
-firmware/panel/main/main.c passes to xTaskCreatePinnedToCore().  The check
-fails when a task's depth exceeds its stack less the margin, when a screen
-table cannot be read, or when a router function in SCREEN_CALLS makes no
-indirect call.
+build's config/sdkconfig.h; every other task's is the size its
+xTaskCreatePinnedToCore() or xTaskCreate() call passes, found in every C
+file under firmware/panel.  The check fails when a task's depth exceeds its
+stack less the margin, when a task creation's entry or stack size is not a
+name and a number, when another xTaskCreate*() variant appears, when a
+screen table cannot be read, or when a router function in SCREEN_CALLS
+makes no indirect call.
 
     tools/stack_check.py [BUILD]        check; BUILD defaults to
                                         firmware/panel/build
@@ -74,7 +81,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-MAIN_C = ROOT / "firmware" / "panel" / "main" / "main.c"
+PANEL_DIR = ROOT / "firmware" / "panel"
+# The FreeRTOS calls that create a task with a stack from the heap; the
+# entry, the name and the stack size are their first three arguments.
+TASK_CREATE = ("xTaskCreatePinnedToCore", "xTaskCreate")
 SCREEN_H = ROOT / "shared" / "ui" / "include" / "ui_screen.h"
 UI_DIR = ROOT / "shared" / "ui"
 ELF_NAME = "rcbench-panel.elf"
@@ -175,7 +185,7 @@ def decode(pc: int, w: int, n: int) -> tuple:
     (kind, target or register), kind one of
     "entry" (frame), "call" (target, window), "callx" (register, window),
     "l32r" (register, literal address), "branch" (target), "jump" (target),
-    "end" (nothing falls through), or None."""
+    "jx" (register), "end" (nothing falls through), or None."""
     op0 = w & 0xF
     if n == 2:
         if op0 == 0xC and (w >> 6) & 3 >= 2:          # beqz.n, bnez.n
@@ -193,8 +203,10 @@ def decode(pc: int, w: int, n: int) -> tuple:
             m, nn = t >> 2, t & 3
             if m == 3:
                 return ("callx", (s, 4 * nn))
+            if m == 2 and nn == 2:
+                return ("jx", s)
             if m == 2:
-                return ("end", None)                   # ret, retw, jx
+                return ("end", None)                   # ret, retw
         if r == 3:
             return ("end", None)                       # rfe, rfi and kin
         return (None, None)
@@ -244,7 +256,7 @@ def sweep(code: bytes, base: int, targets: set) -> tuple:
         if kind in ("branch", "jump"):
             found.add(arg)
         pc += n
-        if kind in ("jump", "end"):
+        if kind in ("jump", "jx", "end"):
             known = targets | found
             near = [a for a in known if pc <= a <= pc + 3]
             if near:
@@ -271,17 +283,18 @@ def lands(code: bytes, base: int, pc: int, stop: int) -> bool:
 
 class Func:
     __slots__ = ("addr", "name", "frame", "calls", "callx", "rom", "stray",
-                 "lost")
+                 "lost", "tails")
 
     def __init__(self, addr: int, name: str) -> None:
         self.addr = addr
         self.name = name
-        self.frame = 0
-        self.calls = set()      # addresses called
+        self.frame = 0          # 0: the function opens with no entry
+        self.calls = set()      # addresses called or tail-jumped to
         self.callx = 0          # calls through a register not followed
         self.rom = set()        # ROM functions called, by name
         self.stray = 0          # calls to an address no function starts at
         self.lost = 0           # branch targets the decode does not land on
+        self.tails = 0          # jumps out of the function, taken as calls
 
 
 def analyse(elf: Elf, addr: int, size: int, name: str) -> Func:
@@ -289,25 +302,53 @@ def analyse(elf: Elf, addr: int, size: int, name: str) -> Func:
     code = elf.read(addr, size)
     if code is None:
         return f
+    def inside(a: int) -> bool:
+        return addr <= a < addr + size
+
     # A second pass knows the targets of backward branches; more settle a
     # restart that moved a target.
     targets = set()
     for _ in range(6):
         starts, found = sweep(code, addr, targets)
-        found = {a for a in found if addr <= a < addr + size}
+        found = {a for a in found if inside(a)}
         if found == targets:
             break
         targets = found
     at = {pc for pc, _, _ in starts}
     f.lost = len(found - at)
     targets = found
+    windowed = bool(starts) and decode(*starts[0])[0] == "entry"
     regs = {}        # register -> address an l32r loaded, this block only
     for pc, w, n in starts:
         if pc in targets:
             regs = {}
         kind, arg = decode(pc, w, n)
+        if kind in ("jump", "branch") and not inside(arg):
+            # A tail call: a jump, or a branch, out of the function.  Its
+            # target's depth is added to this function's frame, as for a
+            # call.  Under the call0 ABI the jumping function has already
+            # released its frame, so the sum is an upper bound.  Under the
+            # windowed ABI no tail jump is valid -- the target's entry would
+            # rotate the window by the caller's CALLINC a second time -- and
+            # GCC 14 for the ESP32-S3 emits none: a call in tail position
+            # compiles to call8 and retw.n.  One found here is hand-written
+            # and counted the same way.  A target where no function starts
+            # is reported, as a call to one is.
+            f.calls.add(arg)
+            f.tails += 1
         if kind == "entry" and pc == addr:
             f.frame = arg
+        elif kind == "jx":
+            # Through a loaded address and out of the function: a tail call.
+            # Unresolved in a windowed function: a jump table, which stays
+            # inside it.  Unresolved in a call0 function: perhaps a tail
+            # call, not followed.
+            if arg in regs and not inside(regs[arg]):
+                f.calls.add(regs[arg])
+                f.tails += 1
+            elif arg not in regs and not windowed:
+                f.callx += 1
+            regs = {}
         elif kind == "call":
             f.calls.add(arg[0])
             regs = {k: v for k, v in regs.items() if arg[1] == 0
@@ -401,13 +442,73 @@ def screen_tables(elf: Elf) -> tuple:
 
 # ----------------------------------------------------------------- tasks --
 
-def task_stacks() -> list:
-    """(entry function, task name, stack bytes) from main.c."""
-    text = MAIN_C.read_text(encoding="utf-8")
-    pat = (r"xTaskCreatePinnedToCore\(\s*(\w+)\s*,\s*\"([^\"]+)\"\s*,"
-           r"\s*(\d+)\s*,")
-    return [(m.group(1), m.group(2), int(m.group(3)))
-            for m in re.finditer(pat, text)]
+def call_args(text: str, start: int) -> list | None:
+    """The top-level arguments of the call whose '(' is at @p start."""
+    depth, args, cur = 0, [], start + 1
+    for i in range(start, len(text)):
+        ch = text[i]
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0:
+                args.append(text[cur:i].strip())
+                return args
+        elif ch == "," and depth == 1:
+            args.append(text[cur:i].strip())
+            cur = i + 1
+    return None
+
+
+def task_stacks() -> tuple:
+    """(entry function, task name, stack bytes, where) for every task the
+    panel's own code creates, and the errors: a creation whose entry, name
+    or stack size is not a plain identifier, string or number (or a macro
+    defined as one in the same file) fails the check rather than being
+    skipped."""
+    tasks, errors = [], []
+    for src in sorted(PANEL_DIR.rglob("*.c")):
+        if "build" in src.relative_to(PANEL_DIR).parts:
+            continue
+        raw = src.read_text(encoding="utf-8")
+        # Comments out, line breaks kept, so line numbers hold.
+        text = re.sub(r"/\*.*?\*/|//[^\n]*",
+                      lambda m: re.sub(r"[^\n]", " ", m.group(0)), raw,
+                      flags=re.S)
+        macros = dict(re.findall(r"^\s*#\s*define\s+(\w+)\s+\(?\s*(\d+)u?"
+                                 r"\s*\)?\s*$", text, re.M))
+        for m in re.finditer(r"\b(xTaskCreate\w*)\s*\(", text):
+            line = text.count("\n", 0, m.start()) + 1
+            where = f"{src.relative_to(ROOT)}:{line}"
+            if m.group(1) not in TASK_CREATE:
+                errors.append(f"{where}: {m.group(1)}() is not one this "
+                              f"tool reads; add it to TASK_CREATE")
+                continue
+            args = call_args(text, m.end() - 1)
+            if args is None or len(args) < 3:
+                errors.append(f"{where}: {m.group(1)}() not parsed")
+                continue
+            entry, name, size = args[0], args[1], args[2]
+            size = macros.get(size, size)
+            if not re.fullmatch(r"\w+", entry):
+                errors.append(f"{where}: task entry {entry!r} is not a "
+                              f"function name")
+                continue
+            nm = re.fullmatch(r"\"([^\"]*)\"", name)
+            sm = re.fullmatch(r"(\d+)u?", size)
+            if sm is None:
+                errors.append(f"{where}: stack size {args[2]!r} of "
+                              f"{entry} is not a number")
+                continue
+            tasks.append((entry, nm.group(1) if nm else entry,
+                          int(sm.group(1)), where))
+    # One task created in two branches is one row; differing sizes are two.
+    seen, rows = set(), []
+    for entry, name, size, where in tasks:
+        if (entry, name, size) not in seen:
+            seen.add((entry, name, size))
+            rows.append((entry, name, size, where))
+    return rows, errors
 
 
 def main_stack(build: Path) -> int:
@@ -526,8 +627,9 @@ def main() -> int:
 
     tasks = [(MAIN_TASK, "main", main_stack(build),
               "CONFIG_ESP_MAIN_TASK_STACK_SIZE")]
-    tasks += [(fn, name, size, "main.c")
-              for fn, name, size in task_stacks()]
+    found_tasks, task_errors = task_stacks()
+    fails += task_errors
+    tasks += found_tasks
 
     g = Graph(funcs, names)
     print(f"stack_check: {path}")
@@ -556,6 +658,8 @@ def main() -> int:
         stray = sum(funcs[a].stray for a in seen)
         lost = sorted((funcs[a].name, funcs[a].lost) for a in seen
                       if funcs[a].lost)
+        tails = sum(funcs[a].tails for a in seen)
+        no_entry = sorted(funcs[a].name for a in seen if funcs[a].frame == 0)
         limit = stack - MARGIN
         over = depth > limit
         if over:
@@ -568,7 +672,11 @@ def main() -> int:
         if called_rom:
             unknown.append(f"{len(called_rom)} ROM functions")
         if stray:
-            unknown.append(f"{stray} calls to no function's start")
+            unknown.append(f"{stray} calls or tail jumps to no function's "
+                           f"start")
+        if no_entry:
+            unknown.append(f"{len(no_entry)} functions with no entry, frame "
+                           f"unknown")
         if lost:
             unknown.append(f"{sum(n for _, n in lost)} branch targets not "
                            f"decoded in {len(lost)} functions")
@@ -584,12 +692,14 @@ def main() -> int:
               f"{limit - depth:>6}  {result}")
         if unknown:
             print(f"{'':<8} not followed: " + "; ".join(unknown))
+        if tails:
+            print(f"{'':<8} followed as calls: {tails} tail jumps")
         detail.append((name, depth, chain, indirect, called_rom, stray,
-                       lost, cycles))
+                       lost, cycles, no_entry))
 
     if args.verbose:
         for (name, depth, chain, indirect, called_rom, stray, lost,
-             cycles) in detail:
+             cycles, no_entry) in detail:
             print(f"\n== {name}: {depth} bytes; frame, depth from here, "
                   f"function")
             for own, total, addr in chain:
@@ -602,8 +712,11 @@ def main() -> int:
                 print("   ROM functions, frame unknown:")
                 print("     " + ", ".join(called_rom))
             if stray:
-                print(f"   {stray} calls to an address no function starts "
-                      f"at")
+                print(f"   {stray} calls or tail jumps to an address no "
+                      f"function starts at")
+            if no_entry:
+                print("   functions with no entry, frame unknown:")
+                print("     " + ", ".join(no_entry))
             if lost:
                 print("   branch targets the decode does not land on:")
                 for fn, n in lost:
