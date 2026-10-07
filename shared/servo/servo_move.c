@@ -57,10 +57,8 @@ static bool under_way(const servo_move_t *m)
     return m->state == SERVO_MOVE_WAITING || m->state == SERVO_MOVE_MOVING;
 }
 
-/* The filtered sample, from the newest filter_n samples: false when the
- * window holds clips at both ends and so no bound. */
-static bool filtered(servo_move_t *m, float a, servo_move_clip_t clip,
-                     float *out, servo_move_clip_t *out_clip)
+/* A sample into the filter's window of the newest filter_n. */
+static void filter_push(servo_move_t *m, float a, servo_move_clip_t clip)
 {
     const uint8_t len = m->cfg.filter_n;
     m->fbuf[m->f_head]  = a;
@@ -69,6 +67,21 @@ static bool filtered(servo_move_t *m, float a, servo_move_clip_t clip,
     if (m->f_n < len) {
         ++m->f_n;
     }
+}
+
+void servo_move_prime(servo_move_t *m, float a, servo_move_clip_t clip)
+{
+    if (under_way(m) && m->cfg.filter_n > 1u) {
+        filter_push(m, a, clip);
+    }
+}
+
+/* The filtered sample, from the newest filter_n samples: false when the
+ * window holds clips at both ends and so no bound. */
+static bool filtered(servo_move_t *m, float a, servo_move_clip_t clip,
+                     float *out, servo_move_clip_t *out_clip)
+{
+    filter_push(m, a, clip);
     float sum = 0.0f;
     bool hi = false;
     bool lo = false;

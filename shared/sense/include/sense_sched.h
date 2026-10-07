@@ -9,62 +9,77 @@
  * microsecond timer.  Nothing here trips or disarms anything: the monitors
  * measure only.
  *
- * Each call of sense_sched_tick(), every 1 ms:
+ * Each call of sense_sched_tick(), every 1 ms: a bus recovery when
+ * sense_bus says one is due (the io's recover callback: 9 clocks on SCL, a
+ * STOP, the block re-initialised); each part's probe when due (at the
+ * start, and SENSE_RETRY_MS after it was found absent, wrong or offline);
+ * the INA228's accumulators cleared when sense_sched_arm() owes it; then
+ * the reads the bus clock allows:
  *
- *   1. a bus recovery when sense_bus says one is due (the io's recover
- *      callback: 9 clocks on SCL, a STOP, the block re-initialised);
- *   2. each part's probe when due (sense_bus.h: at the start, and
- *      SENSE_RETRY_MS after it was found absent, wrong or offline);
- *   3. the INA228's accumulators cleared when sense_sched_arm() owes it;
- *   4. INA3221 CH1 current: 1000 Hz;
- *   5. INA3221 CH2 and CH3 current while sense_sched_fast_pair() is on:
- *      1000 Hz;
- *   6. INA228 CURRENT on even ticks, VBUS on odd ones: 500 Hz each;
- *   7. one slot of a SENSE_ROTATION-tick rotation, each 50 Hz: CH2 and CH3
- *      current (when not read in step 5), CH1 to CH3 bus voltage, INA228
- *      DIETEMP, DIAG_ALRT, ENERGY and CHARGE, INA3221 Mask/Enable;
- *   8. the move capture's clock.
+ *   Read                                    400 kHz        100 kHz
+ *   INA3221 CH1 current                     1000 Hz        250 Hz
+ *   INA228 CURRENT, VBUS, alternating       500 Hz each    125 Hz each
+ *   INA3221 CH2, CH3 current, pair on       1000 Hz each   refused
+ *   CH2, CH3 current (pair off), CH1 to CH3
+ *   bus voltage, INA228 DIETEMP, DIAG_ALRT,
+ *   ENERGY, CHARGE, INA3221 Mask/Enable     50 Hz each     50 Hz each
+ *
+ * At 400 kHz every tick reads CH1, the pair when on and one INA228
+ * register, and every second tick one item of the 50 Hz rotation: at most
+ * 690 µs of bus time a tick.  At 100 kHz a tick makes one read, in turn
+ * CH1, the INA228, the rotation and the rotation again: a 16-bit read is
+ * 480 µs there, a 24-bit 570 µs and the 40-bit ENERGY and CHARGE 750 µs, so
+ * two do not fit a tick.  The synchronised pair at 250 Hz would need 1400
+ * reads a second, past the 1000 one a tick allows, so
+ * sense_sched_fast_pair() refuses it at 100 kHz.  Bus time over a second,
+ * arithmetic only: 32.9 % at 400 kHz, 55.7 % with the pair, 53.0 % at
+ * 100 kHz.  Not counted: the controller's own time between transactions,
+ * not measured.  A probe is 10 transactions on the INA228, 1.1 ms at
+ * 400 kHz and 4.3 ms at 100 kHz, 4 on the INA3221: the ticks it covers run
+ * late.  At 100 kHz the tick that clears the totals makes no read.
  *
  * A channel the INA3221's set-up does not enable, and a part that is
  * disabled, not online or on a stuck bus, is not read: its windows stay
- * empty.  A stuck bus takes both parts offline within 3 ticks.  After a
- * recovery the bus counts as stuck until a transaction goes through, and
- * with both parts offline the next one is a probe: the flag can outlast a
- * freed bus by up to SENSE_RETRY_MS.  Bus time at 400 kHz, without the controller's own time between
- * transactions: 29.9 % of each tick in normal running, 52.7 % with the
- * pair at 1000 Hz (DESIGN §3.5).
+ * empty.  A stuck bus takes both parts offline within 3 reads of each.
+ * After a recovery the bus counts as stuck until a transaction goes
+ * through, and with both parts offline the next one is a probe: the flag
+ * can outlast a freed bus by up to SENSE_RETRY_MS.
  *
  * Windows.  Fixed SENSE_WINDOW_MS windows on the coprocessor clock,
- * counted from the first tick, each with its number.  For each source --
- * INA3221 CH1 to CH3 and the INA228 -- the mean, lowest and highest
- * current and the mean and lowest bus voltage.  A clipped current sample
- * carries no value: it adds nothing to the figures and sets the window's
- * clip flag for its end of the range.  Reading a window ends nothing: the
- * last complete window stays readable until the next one closes.  A tick
- * late by more than a window leaves the windows it missed out, so their
- * numbers are skipped.
+ * counted in 64 bits from the first tick, each with its number.  For each
+ * source -- INA3221 CH1 to CH3 and the INA228 -- the mean, lowest and
+ * highest current and the mean and lowest bus voltage.  A clipped current
+ * sample carries no value: it adds nothing to the figures and sets the
+ * window's clip flag for its end of the range.  Reading a window ends
+ * nothing: the last complete window stays readable until the next one
+ * closes.  A tick late by more than a window leaves the windows it missed
+ * out, so their numbers are skipped.
  *
  * The run.  sense_sched_arm() is the edge into driving: the run's lowest
  * INA228 voltage and highest current and power start again, and the
  * INA228's ENERGY and CHARGE are cleared (CONFIG.RSTACC) on the next tick.
- * Power is each current sample times the voltage read 1 ms before it: a
- * step in both within that 1 ms pairs the new current with the old
- * voltage.
- * The totals are this run's while totals_ok holds: the clear went through
- * on that tick and the part has answered on every tick since.  A part not
- * online on that tick leaves the run without totals.  The totals start at
- * the clear, up to one tick after the arm, later when the clear's write
- * fails and is repeated.
+ * Power is a current sample times the voltage read in the INA228 slot just
+ * before it, and none when that read failed: 1 ms earlier at 400 kHz, 4 ms
+ * at 100 kHz.  A step in both within that time pairs the new current with
+ * the old voltage.  The totals are this run's while totals_ok holds: the
+ * clear went through, and no INA228 transaction has failed since.  The
+ * first one that does ends them for the run, as does a part not online at
+ * the clear.  The totals start at the clear, up to one tick after the arm,
+ * later when the clear's write fails and is repeated.
  *
  * The move capture.  sense_sched_cap_arm() gives the move's levels;
  * sense_sched_cap_edge() gives the time of the PWM (pulse-width
  * modulation) frame that carries the new pulse, which the caller reads off
  * the slice's counter.  CH1 samples are then judged by servo_move.h's
- * rules at 1 kHz, times in 0.1 ms from that edge: the moving mean of
- * SENSE_CAP_FILTER_N samples, settled over SENSE_CAP_SETTLE_N samples, and
- * a window of SERVO_MOVE_TIMEOUT_MS plus SENSE_CAP_LAG_MS.  A clipped CH1
- * sample is at or past the full scale less a step: 1.6376 A on the 0.1 Ω
- * shunt.  The INA3221 leaving online ends a capture as lost.
+ * rules, times in 0.1 ms from that edge and resolved to CH1's sample
+ * interval, 1 ms at 400 kHz and 4 ms at 100 kHz: the moving mean of
+ * SENSE_CAP_FILTER_N samples, seeded at the edge with the last of them
+ * taken while armed, settled over SENSE_CAP_SETTLE_N samples, and a window
+ * of SERVO_MOVE_TIMEOUT_MS plus the capture's lag.  A one-sample excursion
+ * starts a move only when a quarter of it passes the threshold.  A clipped
+ * CH1 sample is at or past the full scale less a step: 1.6376 A on the
+ * 0.1 Ω shunt.  The INA3221 leaving online ends a capture as lost.  The
+ * capture states take link_cap_state_t's numbers.
  *
  * Not known: the INA3221's noise at 140 µs conversions, and so whether 4
  * samples of filter and 10 of settling suit it; the controller's time
@@ -88,16 +103,24 @@ extern "C" {
 #endif
 
 #define SENSE_WINDOW_MS      50u   /**< one window                        */
-#define SENSE_ROTATION       20u   /**< ticks in the rotation: 50 Hz      */
-/** The capture's filter: a moving mean of 4 samples, 4 ms at 1 kHz, which
- *  lags a step by 1.5 ms.  Chosen, not measured: the noise is not known. */
+/** Items in the 50 Hz rotation; one is read every 2 ms. */
+#define SENSE_ROTATION       10u
+/** The bus clocks taken, kHz. */
+#define SENSE_KHZ_STANDARD  100u
+#define SENSE_KHZ_FAST      400u
+/** The capture's filter: a moving mean of 4 samples.  A step shows half
+ *  after 1.5 samples and whole after 3: a fall from a moving current far
+ *  above the band arrives 3 samples late, 3 ms at 400 kHz and 12 ms at
+ *  100 kHz.  Chosen, not measured: the noise is not known. */
 #define SENSE_CAP_FILTER_N    4u
 /** Samples in a row at an end held harder than the servo moves: 10 ms at
- *  1 kHz. */
+ *  400 kHz, 40 ms at 100 kHz. */
 #define SENSE_CAP_SETTLE_N   10u
-/** The capture's lag, added to the window: the filter's 1.5 ms, up to 1 ms
- *  from a conversion to its read, and the 140 µs conversion, rounded up. */
-#define SENSE_CAP_LAG_MS      3u
+/** The capture's lag, added to the window: the filter's 3 samples, up to a
+ *  sample interval from a conversion to its read, and the 140 µs
+ *  conversion, rounded up.  5 ms at 400 kHz, 17 ms at 100 kHz. */
+#define SENSE_CAP_LAG_MS_FAST      5u
+#define SENSE_CAP_LAG_MS_STANDARD 17u
 /** The capture's time unit: 0.1 ms. */
 #define SENSE_CAP_T_PER_MS   10u
 
@@ -121,6 +144,7 @@ typedef struct {
 
 /** What is fitted and how; a part not enabled is never addressed. */
 typedef struct {
+    uint16_t khz;                  /**< the bus clock: 100 or 400        */
     bool     ina228_en;
     uint8_t  ina228_addr;
     uint32_t ina228_shunt_uohm;
@@ -165,7 +189,8 @@ typedef struct {
     int64_t  charge_uc;   /**< CHARGE as last read                        */
 } sense_run_t;
 
-/** The move capture's state, in the order a capture passes through. */
+/** The move capture's state, in the order a capture passes through; the
+ *  numbers are link_cap_state_t's. */
 typedef enum {
     SENSE_CAP_IDLE = 0,
     SENSE_CAP_ARMED,      /**< levels given, waiting for the edge         */
@@ -186,11 +211,20 @@ typedef struct {
     int32_t band_ua;      /**< the arrival band                           */
 } sense_cap_arm_t;
 
+/** A CH1 sample held while armed, for the filter. */
+typedef struct {
+    float  a;
+    int8_t clip;          /**< servo_move_clip_t                          */
+} sense_cap_pre_t;
+
 typedef struct {
     sense_cap_state_t state;
     uint16_t seq;         /**< captures ended, modulo 65536               */
     sense_cap_arm_t arm;
     uint32_t edge_t;      /**< the edge, 0.1 ms                           */
+    /* The last SENSE_CAP_FILTER_N CH1 samples while armed. */
+    sense_cap_pre_t pre[SENSE_CAP_FILTER_N];
+    uint8_t  pre_n, pre_head;
     /* Once over: */
     uint32_t move_t;      /**< edge to movement, 0.1 ms, when ARRIVED,
                                SETTLED or LATE; 0 otherwise               */
@@ -211,16 +245,18 @@ typedef struct {
     ina3221_t           i3221;
     ina228_setup_err_t  i228_setup;   /**< INA228_SETUP_OK when disabled  */
     ina3221_setup_err_t i3221_setup;
+    uint8_t  every_ms;       /**< CH1's sample interval: 1 or 4 ms        */
     int32_t  ch_clip_ua;     /**< a clipped INA3221 sample is at least this */
     uint32_t ticks;
+    uint32_t rot;            /**< rotation items read                     */
     bool     started;
-    uint32_t t0_ms;          /**< the first tick                          */
-    uint32_t win;            /**< the window being filled, from t0_ms     */
+    uint64_t t0_ms;          /**< the first tick                          */
+    uint64_t win;            /**< the window being filled, from t0_ms     */
     sense_acc_t    acc[SENSE_SRC_COUNT];
     sense_window_t last[SENSE_SRC_COUNT];
     bool     have_last;
     bool     fast_pair;
-    bool     have_vbus;      /**< vbus_uv holds the INA228's last voltage */
+    bool     have_vbus;      /**< vbus_uv is the last INA228 slot's voltage */
     int32_t  vbus_uv;
     bool     have_temp, have_diag, have_flags;
     int32_t  temp_mdegc;     /**< INA228 DIETEMP as last read             */
@@ -232,15 +268,18 @@ typedef struct {
 
 /** A schedule over @p io for the parts @p cfg enables.  A part whose
  *  set-up the driver refuses is left unset, never addressed, and its
- *  error kept in i228_setup or i3221_setup. */
-void sense_sched_init(sense_sched_t *s, const sense_sched_io_t *io,
+ *  error kept in i228_setup or i3221_setup.  A clock other than 100 or
+ *  400 kHz is refused: false, and neither part is ever addressed. */
+bool sense_sched_init(sense_sched_t *s, const sense_sched_io_t *io,
                       const sense_sched_cfg_t *cfg);
 
 /** One tick: every 1 ms. */
 void sense_sched_tick(sense_sched_t *s);
 
-/** CH2 and CH3 at 1000 Hz while a two-servo synchronisation runs. */
-void sense_sched_fast_pair(sense_sched_t *s, bool on);
+/** CH2 and CH3 at 1000 Hz while a two-servo synchronisation runs.  Off is
+ *  always taken; on is refused at 100 kHz: false, and the pair stays at
+ *  50 Hz. */
+bool sense_sched_fast_pair(sense_sched_t *s, bool on);
 
 /** The edge into driving: the run's peaks start again and the INA228's
  *  totals are cleared on the next tick. */
@@ -255,7 +294,8 @@ bool sense_sched_window(const sense_sched_t *s, sense_src_t src,
 bool sense_sched_cap_arm(sense_sched_t *s, const sense_cap_arm_t *levels);
 
 /** The PWM frame carrying the new pulse starts at @p edge_us, on the clock
- *  now_us() reads; it may lie ahead.  Nothing unless a capture is armed. */
+ *  now_us() reads; it may lie ahead.  The samples taken while armed seed
+ *  the filter.  Nothing unless a capture is armed. */
 void sense_sched_cap_edge(sense_sched_t *s, uint64_t edge_us);
 
 /** Stop a capture; its count stays. */

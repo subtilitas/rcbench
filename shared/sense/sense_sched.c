@@ -8,10 +8,9 @@
 
 #include <string.h>
 
-/* What a rotation slot reads. */
+/* What a rotation item reads. */
 typedef enum {
-    ROT_NONE = 0,
-    ROT_CH2_I,
+    ROT_CH2_I = 0,
     ROT_CH3_I,
     ROT_CH1_V,
     ROT_CH2_V,
@@ -23,11 +22,10 @@ typedef enum {
     ROT_FLAGS,
 } rot_t;
 
-/* The two parts take turns, and half the slots are free. */
+/* The two parts take turns. */
 static const uint8_t k_rotation[SENSE_ROTATION] = {
-    ROT_CH2_I, ROT_TEMP,   ROT_CH3_I,  ROT_DIAG,
-    ROT_CH1_V, ROT_ENERGY, ROT_CH2_V,  ROT_CHARGE,
-    ROT_CH3_V, ROT_FLAGS,
+    ROT_CH2_I, ROT_TEMP,   ROT_CH3_I, ROT_DIAG,   ROT_CH1_V,
+    ROT_ENERGY, ROT_CH2_V, ROT_CHARGE, ROT_CH3_V, ROT_FLAGS,
 };
 
 static void acc_clear(sense_acc_t *a)
@@ -64,7 +62,7 @@ static void acc_voltage(sense_acc_t *a, int32_t uv)
     ++a->n_v;
 }
 
-static void acc_close(const sense_acc_t *a, uint32_t number, sense_window_t *w)
+static void acc_close(const sense_acc_t *a, uint64_t number, sense_window_t *w)
 {
     memset(w, 0, sizeof(*w));
     w->number  = (uint16_t)number;
@@ -83,14 +81,21 @@ static void acc_close(const sense_acc_t *a, uint32_t number, sense_window_t *w)
     }
 }
 
-void sense_sched_init(sense_sched_t *s, const sense_sched_io_t *io,
+bool sense_sched_init(sense_sched_t *s, const sense_sched_io_t *io,
                       const sense_sched_cfg_t *cfg)
 {
     memset(s, 0, sizeof(*s));
     s->io  = *io;
     s->cfg = *cfg;
     sense_bus_init(&s->bus, &io->i2c);
-    /* A part left zeroed is SENSE_PART_UNSET: never probed, never read. */
+    if (cfg->khz == SENSE_KHZ_FAST) {
+        s->every_ms = 1u;
+    } else if (cfg->khz == SENSE_KHZ_STANDARD) {
+        s->every_ms = 4u;
+    } else {
+        /* Both parts left zeroed, SENSE_PART_UNSET: never addressed. */
+        return false;
+    }
     if (cfg->ina228_en) {
         s->i228_setup = ina228_init(&s->i228, &s->bus, cfg->ina228_addr,
                                     cfg->ina228_shunt_uohm,
@@ -107,11 +112,16 @@ void sense_sched_init(sense_sched_t *s, const sense_sched_io_t *io,
                                                4094).value;
         }
     }
+    return true;
 }
 
-void sense_sched_fast_pair(sense_sched_t *s, bool on)
+bool sense_sched_fast_pair(sense_sched_t *s, bool on)
 {
+    if (on && s->every_ms != 1u) {
+        return false;
+    }
     s->fast_pair = on;
+    return true;
 }
 
 void sense_sched_arm(sense_sched_t *s)
@@ -174,9 +184,11 @@ void sense_sched_cap_edge(sense_sched_t *s, uint64_t edge_us)
         return;
     }
     c->edge_t = (uint32_t)(edge_us / 100u);
+    const uint32_t lag_ms = (s->every_ms == 1u) ? SENSE_CAP_LAG_MS_FAST
+                                                : SENSE_CAP_LAG_MS_STANDARD;
     const servo_move_cfg_t mc = {
         .cmd_t    = c->edge_t,
-        .window_t = servo_move_window_ms(SENSE_CAP_LAG_MS) * SENSE_CAP_T_PER_MS,
+        .window_t = servo_move_window_ms(lag_ms) * SENSE_CAP_T_PER_MS,
         .rise_a   = ua_to_a(c->arm.rise_ua),
         .ref_a    = ua_to_a(c->arm.hold_ua),
         .move_a   = ua_to_a(c->arm.move_ua),
@@ -185,6 +197,14 @@ void sense_sched_cap_edge(sense_sched_t *s, uint64_t edge_us)
         .filter_n = (uint8_t)SENSE_CAP_FILTER_N,
     };
     servo_move_begin(&c->mv, &mc);
+    /* The samples taken while armed, oldest first: the filter starts
+     * full, and one sample alone does not start a move. */
+    const unsigned first = (c->pre_head + SENSE_CAP_FILTER_N - c->pre_n)
+                           % SENSE_CAP_FILTER_N;
+    for (unsigned k = 0; k < c->pre_n; ++k) {
+        const sense_cap_pre_t *p = &c->pre[(first + k) % SENSE_CAP_FILTER_N];
+        servo_move_prime(&c->mv, p->a, (servo_move_clip_t)p->clip);
+    }
     c->state = SENSE_CAP_WAITING;
 }
 
@@ -221,12 +241,10 @@ static void cap_step(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
         cap_end(c, SENSE_CAP_LOST);
         return;
     }
-    if (c->state == SENSE_CAP_ARMED) {
-        return;
-    }
+    servo_move_clip_t clip = SERVO_MOVE_CLIP_NONE;
+    float a = 0.0f;
     if (v != NULL) {
-        servo_move_clip_t clip = SERVO_MOVE_CLIP_NONE;
-        float a = ua_to_a(v->value);
+        a = ua_to_a(v->value);
         if (v->clip == SENSE_CLIP_HIGH) {
             clip = SERVO_MOVE_CLIP_HIGH;
             a    = ua_to_a(s->ch_clip_ua);
@@ -234,6 +252,19 @@ static void cap_step(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
             clip = SERVO_MOVE_CLIP_LOW;
             a    = -ua_to_a(s->ch_clip_ua);
         }
+    }
+    if (c->state == SENSE_CAP_ARMED) {
+        if (v != NULL) {
+            c->pre[c->pre_head].a    = a;
+            c->pre[c->pre_head].clip = (int8_t)clip;
+            c->pre_head = (uint8_t)((c->pre_head + 1u) % SENSE_CAP_FILTER_N);
+            if (c->pre_n < SENSE_CAP_FILTER_N) {
+                ++c->pre_n;
+            }
+        }
+        return;
+    }
+    if (v != NULL) {
         servo_move_sample(&c->mv, at_t, a, clip);
     }
     switch (servo_move_tick(&c->mv, at_t)) {
@@ -247,6 +278,17 @@ static void cap_step(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
 }
 
 /* -------------------------------------------------------------- reads */
+
+/* An INA228 transaction's result: the first failure after the clear ends
+ * the run's totals. */
+static bool i228_ok(sense_sched_t *s, sense_err_t e)
+{
+    if (e != SENSE_OK) {
+        s->run.totals_ok = false;
+        return false;
+    }
+    return true;
+}
 
 /* INA3221 channel @p ch's current into its window; true with a sample. */
 static bool read_ch_current(sense_sched_t *s, uint8_t ch, sense_value_t *v)
@@ -270,7 +312,7 @@ static void read_ch_bus(sense_sched_t *s, uint8_t ch)
 static void read_i228_current(sense_sched_t *s)
 {
     sense_value_t v = { 0, SENSE_CLIP_NONE };
-    if (ina228_read_current(&s->i228, &v) != SENSE_OK) {
+    if (!i228_ok(s, ina228_read_current(&s->i228, &v))) {
         return;
     }
     acc_current(&s->acc[SENSE_SRC_INA228], v);
@@ -295,7 +337,9 @@ static void read_i228_current(sense_sched_t *s)
 static void read_i228_vbus(sense_sched_t *s)
 {
     int32_t uv = 0;
-    if (ina228_read_vbus(&s->i228, &uv) != SENSE_OK) {
+    /* A failed read leaves no voltage for the current after it. */
+    s->have_vbus = false;
+    if (!i228_ok(s, ina228_read_vbus(&s->i228, &uv))) {
         return;
     }
     acc_voltage(&s->acc[SENSE_SRC_INA228], uv);
@@ -308,52 +352,64 @@ static void read_i228_vbus(sense_sched_t *s)
     }
 }
 
-static void read_slot(sense_sched_t *s, rot_t slot)
+/* The INA228's slot @p n: CURRENT on even ones, VBUS on odd ones. */
+static void read_i228(sense_sched_t *s, uint32_t n)
 {
-    switch (slot) {
+    if ((n & 1u) == 0u) {
+        read_i228_current(s);
+    } else {
+        read_i228_vbus(s);
+    }
+}
+
+/* The next rotation item. */
+static void read_rotation(sense_sched_t *s)
+{
+    const rot_t item = (rot_t)k_rotation[s->rot % SENSE_ROTATION];
+    ++s->rot;
+    switch (item) {
     case ROT_CH2_I:
     case ROT_CH3_I:
         if (!s->fast_pair) {
             sense_value_t v = { 0, SENSE_CLIP_NONE };
-            (void)read_ch_current(s, (slot == ROT_CH2_I) ? 2u : 3u, &v);
+            (void)read_ch_current(s, (item == ROT_CH2_I) ? 2u : 3u, &v);
         }
         break;
     case ROT_CH1_V: read_ch_bus(s, 1u); break;
     case ROT_CH2_V: read_ch_bus(s, 2u); break;
     case ROT_CH3_V: read_ch_bus(s, 3u); break;
     case ROT_TEMP:
-        s->have_temp = ina228_read_dietemp(&s->i228, &s->temp_mdegc) == SENSE_OK
+        s->have_temp = i228_ok(s, ina228_read_dietemp(&s->i228, &s->temp_mdegc))
                        || s->have_temp;
         break;
     case ROT_DIAG:
-        s->have_diag = ina228_read_diag(&s->i228, &s->diag) == SENSE_OK
+        s->have_diag = i228_ok(s, ina228_read_diag(&s->i228, &s->diag))
                        || s->have_diag;
         break;
     case ROT_ENERGY:
-        (void)ina228_read_energy(&s->i228, &s->run.energy_mj);
+        (void)i228_ok(s, ina228_read_energy(&s->i228, &s->run.energy_mj));
         break;
     case ROT_CHARGE:
-        (void)ina228_read_charge(&s->i228, &s->run.charge_uc);
-        break;
-    case ROT_FLAGS:
-        s->have_flags = ina3221_read_flags(&s->i3221, &s->flags) == SENSE_OK
-                        || s->have_flags;
+        (void)i228_ok(s, ina228_read_charge(&s->i228, &s->run.charge_uc));
         break;
     default:
+        s->have_flags = ina3221_read_flags(&s->i3221, &s->flags) == SENSE_OK
+                        || s->have_flags;
         break;
     }
 }
 
 /* The windows: the one being filled closes when the clock passes its
- * end, and the next one starts empty. */
-static void roll_windows(sense_sched_t *s, uint32_t now_ms)
+ * end, and the next one starts empty.  In 64 bits, so the numbering runs
+ * on past the 32-bit millisecond count's wrap at 49.7 days. */
+static void roll_windows(sense_sched_t *s, uint64_t now_ms)
 {
     if (!s->started) {
         s->started = true;
         s->t0_ms   = now_ms;
         s->win     = 0u;
     }
-    const uint32_t win = (now_ms - s->t0_ms) / SENSE_WINDOW_MS;
+    const uint64_t win = (now_ms - s->t0_ms) / SENSE_WINDOW_MS;
     if (win == s->win) {
         return;
     }
@@ -365,59 +421,71 @@ static void roll_windows(sense_sched_t *s, uint32_t now_ms)
     s->win       = win;
 }
 
-/* The totals: cleared once the arm owes it, and this run's while the
- * INA228 answers on every tick since. */
-static void totals(sense_sched_t *s)
+/* The totals: cleared once the arm owes it.  Whether the clear's writes
+ * were sent. */
+static bool totals(sense_sched_t *s)
 {
     sense_run_t *r = &s->run;
-    const bool online = ina228_state(&s->i228) == SENSE_PART_ONLINE;
-    if (r->clear_owed) {
-        if (!online) {
-            r->clear_owed = false;
-        } else if (ina228_clear_totals(&s->i228) == SENSE_OK) {
-            r->clear_owed = false;
-            r->totals_ok  = true;
-            r->energy_mj  = 0u;
-            r->charge_uc  = 0;
-        }
+    if (!r->clear_owed) {
+        return false;
     }
     if (ina228_state(&s->i228) != SENSE_PART_ONLINE) {
-        r->totals_ok = false;
+        r->clear_owed = false;          /* no totals for this run */
+        return false;
     }
+    if (ina228_clear_totals(&s->i228) == SENSE_OK) {
+        r->clear_owed = false;
+        r->totals_ok  = true;
+        r->energy_mj  = 0u;
+        r->charge_uc  = 0;
+    }
+    return true;
 }
 
 void sense_sched_tick(sense_sched_t *s)
 {
     const uint64_t us = s->io.now_us(s->io.ctx);
-    const uint32_t now_ms = (uint32_t)(us / 1000u);
+    const uint64_t now_ms = us / 1000u;
+    /* The bus and the parts count retries in 32 bits, modulo. */
+    const uint32_t now_ms32 = (uint32_t)now_ms;
     roll_windows(s, now_ms);
 
-    if (sense_bus_recovery_due(&s->bus, now_ms)) {
+    if (sense_bus_recovery_due(&s->bus, now_ms32)) {
         if (s->io.recover != NULL) {
             s->io.recover(s->io.ctx);
         }
-        sense_bus_recovered(&s->bus, now_ms);
+        sense_bus_recovered(&s->bus, now_ms32);
     }
-    (void)ina3221_step(&s->i3221, now_ms);
-    (void)ina228_step(&s->i228, now_ms);
-    totals(s);
+    (void)ina3221_step(&s->i3221, now_ms32);
+    (void)ina228_step(&s->i228, now_ms32);
+    const bool cleared = totals(s);
 
-    /* CH1, stamped when its read is done. */
+    const uint32_t tick = s->ticks++;
     sense_value_t ch1 = { 0, SENSE_CLIP_NONE };
-    const bool have_ch1 = read_ch_current(s, 1u, &ch1);
+    bool have_ch1 = false;
+    if (s->every_ms == 1u) {
+        /* 400 kHz: CH1, the pair, the INA228, and every second tick the
+         * rotation. */
+        have_ch1 = read_ch_current(s, 1u, &ch1);
+        if (s->fast_pair) {
+            sense_value_t v = { 0, SENSE_CLIP_NONE };
+            (void)read_ch_current(s, 2u, &v);
+            (void)read_ch_current(s, 3u, &v);
+        }
+        read_i228(s, tick);
+        if ((tick & 1u) == 0u) {
+            read_rotation(s);
+        }
+    } else if (!cleared) {
+        /* 100 kHz: one read a tick, in turn CH1, the INA228, the rotation
+         * twice; none beside the clear's writes. */
+        switch (tick % 4u) {
+        case 0u: have_ch1 = read_ch_current(s, 1u, &ch1); break;
+        case 1u: read_i228(s, tick / 4u);                break;
+        default: read_rotation(s);                       break;
+        }
+    }
+    /* A sample is stamped when its read is done. */
     const uint32_t at_t = (uint32_t)(s->io.now_us(s->io.ctx) / 100u);
-    if (s->fast_pair) {
-        sense_value_t v = { 0, SENSE_CLIP_NONE };
-        (void)read_ch_current(s, 2u, &v);
-        (void)read_ch_current(s, 3u, &v);
-    }
-    if ((s->ticks & 1u) == 0u) {
-        read_i228_current(s);
-    } else {
-        read_i228_vbus(s);
-    }
-    read_slot(s, (rot_t)k_rotation[s->ticks % SENSE_ROTATION]);
-    ++s->ticks;
-
     cap_step(s, have_ch1 ? &ch1 : NULL, at_t);
 }

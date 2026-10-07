@@ -8,8 +8,8 @@
  * board, an output or the supply holds, and while the bank is armed; every
  * value held to its range, the reserved registers to 0, the two parts to
  * two addresses; a refused write storing nothing; the pins reserved while
- * held; and a capture armed only whole, on an armed bank, on a channel the
- * INA3221 reads and for a surface on a PWM slot, and ended by a disarm.
+ * held; and a capture armed only whole, on an armed bank, on CH1 while the
+ * INA3221 reads it and for a surface on a PWM slot, and ended by a disarm.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -411,7 +411,7 @@ TEST_CASE(a_capture_arms_whole_on_an_armed_bank)
 
     /* Not part of a frame: an arm is all four, and a threshold alone is
      * an arm's. */
-    const uint16_t two[2] = { LINK_SS_ARM_OF(3u, 0u), 900u };
+    const uint16_t two[2] = { LINK_SS_ARM_OF(1u, 0u), 900u };
     CHECK_EQ(sense_servo_write(&pg, LINK_SS_CAP_ARM, 2u, two, &o),
              LINK_NACK_BAD_VALUE);
     const uint16_t band = 20u;
@@ -425,7 +425,7 @@ TEST_CASE(a_capture_arms_whole_on_an_armed_bank)
     pg.servo[LINK_SS_CAP_SAMPLES] = 40u;
     pg.servo[LINK_SS_CH_FLAGS]    = (uint16_t)(LINK_SS_CAP_CLIPPED
                                                | LINK_SS_CH_VALID(1u));
-    CHECK_EQ(arm(LINK_SS_ARM_OF(3u, 0u), 0u, 1u, 1u), 0u);
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 0u, 1u, 1u), 0u);
     CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_ARMED);
     CHECK_EQ(sreg(LINK_SS_CAP_MOVE_T), 0u);
     CHECK_EQ(sreg(LINK_SS_CAP_SAMPLES), 0u);
@@ -454,6 +454,11 @@ TEST_CASE(a_capture_is_refused_what_it_cannot_time)
     /* A channel the INA3221 does not read. */
     CHECK_EQ(arm(LINK_SS_ARM_OF(2u, 0u), 900u, 100u, 50u),
              LINK_NACK_BAD_VALUE);
+    /* CH3, which it reads: a capture is CH1's only, the others read at
+     * 50 Hz. */
+    CHECK_EQ(arm(LINK_SS_ARM_OF(3u, 0u), 900u, 100u, 50u),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_IDLE);
     /* An output channel with no PWM slot, and one that is a throttle. */
     CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 1u), 900u, 100u, 50u),
              LINK_NACK_BAD_VALUE);
@@ -503,7 +508,7 @@ TEST_CASE(a_bank_that_stops_driving_ends_an_unfinished_capture)
     };
     for (size_t i = 0; i < sizeof(running) / sizeof(running[0]); ++i) {
         ready_to_capture();
-        CHECK_EQ(arm(LINK_SS_ARM_OF(3u, 0u), 900u, 100u, 50u), 0u);
+        CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u), 0u);
         pg.servo[LINK_SS_CAP_STATE] = (uint16_t)running[i];
         sense_page_step(&pg, true);
         CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)running[i]);
@@ -512,11 +517,12 @@ TEST_CASE(a_bank_that_stops_driving_ends_an_unfinished_capture)
         CHECK_EQ(sreg(LINK_SS_CAP_ARM), 0u);
     }
     static const link_cap_state_t done[] = {
-        LINK_CAP_ARRIVED, LINK_CAP_AT_STOP, LINK_CAP_LATE,
+        LINK_CAP_ARRIVED, LINK_CAP_AT_STOP, LINK_CAP_LATE, LINK_CAP_UNSEEN,
+        LINK_CAP_LOST,
     };
     for (size_t i = 0; i < sizeof(done) / sizeof(done[0]); ++i) {
         ready_to_capture();
-        CHECK_EQ(arm(LINK_SS_ARM_OF(3u, 0u), 900u, 100u, 50u), 0u);
+        CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u), 0u);
         pg.servo[LINK_SS_CAP_STATE]    = (uint16_t)done[i];
         pg.servo[LINK_SS_CAP_ARRIVE_T] = 2345u;
         sense_page_step(&pg, false);

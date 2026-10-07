@@ -322,6 +322,37 @@ TEST_CASE(the_filter_averages_four_samples)
     CHECK(!m.clipped);
 }
 
+/* Samples held from before the move began fill the filter as if fed then:
+ * a step of 0.10 A at the command is a quarter of that against three
+ * primed samples, under a 0.030 A threshold.  Unfiltered, or once over,
+ * priming does nothing. */
+TEST_CASE(primed_samples_fill_the_filter)
+{
+    servo_move_t m;
+    servo_move_cfg_t c = {
+        .cmd_t = 100u, .window_t = 30030u, .rise_a = 0.12f, .ref_a = 0.12f,
+        .move_a = 0.030f, .band_a = 0.05f, .settle_n = 10u, .filter_n = 4u,
+    };
+    servo_move_begin(&m, &c);
+    for (unsigned k = 0; k < 3u; ++k) {
+        servo_move_prime(&m, 0.12f, SERVO_MOVE_CLIP_NONE);
+    }
+    CHECK_EQ(m.f_n, 3u);
+    CHECK_EQ(servo_move_sample(&m, 100u, 0.22f, SERVO_MOVE_CLIP_NONE),
+             SERVO_MOVE_WAITING);
+    CHECK_NEAR(m.sum, 0.145f, 1e-5f);
+
+    c.filter_n = 1u;
+    servo_move_begin(&m, &c);
+    servo_move_prime(&m, 0.12f, SERVO_MOVE_CLIP_NONE);
+    CHECK_EQ(m.f_n, 0u);
+    CHECK_EQ(servo_move_sample(&m, 100u, 0.22f, SERVO_MOVE_CLIP_NONE),
+             SERVO_MOVE_MOVING);
+    CHECK_EQ(servo_move_tick(&m, 100u + 30030u), SERVO_MOVE_LATE);
+    servo_move_prime(&m, 0.12f, SERVO_MOVE_CLIP_NONE);
+    CHECK_EQ(m.f_n, 0u);
+}
+
 /* ------------------------------------------------- against the servo model */
 
 /* The modelled servo's move from 1100 to 1900 us takes 800 us at 1.2 us/ms:
@@ -430,6 +461,7 @@ int main(void)
     RUN(a_long_run_above_the_level_is_counted_to_its_limit);
     RUN(a_clipped_sample_decides_only_what_its_bound_decides);
     RUN(the_filter_averages_four_samples);
+    RUN(primed_samples_fill_the_filter);
     RUN(a_modelled_move_is_timed_within_the_filter_at_1_khz);
     RUN(a_modelled_stop_is_reached_settled_at_1_khz);
     return test_summary("servo_move");

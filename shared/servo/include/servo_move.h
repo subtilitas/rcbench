@@ -37,9 +37,10 @@
  *
  * Filter.  With filter_n above 1 each sample is judged as the mean of the
  * last filter_n samples, those before the command included; the filtered
- * sample carries the newest sample's time and lags a step by
- * (filter_n - 1) / 2 samples.  With filter_n 1 a sample is judged as it
- * is.
+ * sample carries the newest sample's time; a step shows half after
+ * (filter_n - 1) / 2 samples and whole after filter_n - 1.  With filter_n
+ * 1 a sample is judged as it is.  Samples held from before the move began
+ * go in with servo_move_prime().
  *
  * Clipping.  A sample at the end of the meter's range carries no value: it
  * is at or past @p a, by how much is not known.  It decides only what that
@@ -147,6 +148,12 @@ uint32_t servo_move_window_ms(uint32_t lag_ms);
  *  cfg->ref_a.  settle_n below 2 is taken as 2; filter_n is held to 1 to
  *  SERVO_MOVE_FILTER_MAX. */
 void servo_move_begin(servo_move_t *m, const servo_move_cfg_t *cfg);
+
+/** A sample taken before the move began, into the filter only, as the
+ *  newest so far: a caller that held samples before it knew the command's
+ *  time hands them over oldest first.  Decides nothing; nothing with
+ *  filter_n 1 or once the move is over. */
+void servo_move_prime(servo_move_t *m, float a, servo_move_clip_t clip);
 
 /**
  * A sample taken at @p at: @p a amps, or for a clip the end of the range

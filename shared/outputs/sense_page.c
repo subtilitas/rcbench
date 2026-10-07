@@ -244,6 +244,11 @@ static uint8_t arm_check(const sense_page_t *p, const uint16_t *f,
         || f[3] == 0u || f[3] > MA_MAX) {
         return LINK_NACK_BAD_VALUE;
     }
+    /* CH1 only: the schedule samples CH1 fast enough to time a move, and
+     * CH2 and CH3 at 50 Hz. */
+    if (ch != LINK_SS_CAP_CH) {
+        return LINK_NACK_BAD_VALUE;
+    }
     const uint16_t *c = p->sense;
     if ((c[LINK_SN_ENABLE] & LINK_SN_EN_I3221) == 0u
         || (c[LINK_SN_I3221_CHANNELS] & (1u << (ch - 1u))) == 0u
