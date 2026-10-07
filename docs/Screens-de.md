@@ -334,7 +334,9 @@ bekannt, und die Pause endet, statt einen Winkel zu behalten, den eine
 spätere Profiländerung an das Servo schicken würde. Fällt der Link weg,
 endet ein Sweep oder eine Pause ebenfalls, und das Horn wird in Ruhe
 gezeichnet, wie der Koprozessor die Surfaces 500 ms nach dem letzten
-Schreiben in Ruhe setzt; das nächste Tippen startet einen Sweep. Ein Finger auf der Skala, ZENTRIEREN, FREIGEBEN, STOP, ein
+Schreiben in Ruhe setzt; kein vorher verlangter Sweep und kein Halten
+wird gesendet, wenn der Link zurückkommt, und das nächste Tippen startet
+einen Sweep. Ein Finger auf der Skala, ZENTRIEREN, FREIGEBEN, STOP, ein
 Disarm und das Verlassen der Seite beenden einen Sweep, ob er läuft oder
 angehalten ist, und der Knopf heißt wieder SWEEP. Ein geänderter Typ, eine
 geänderte Frame Rate, Pulsbreite, Trim, WEG oder REVERSE beenden auch eine

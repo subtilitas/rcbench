@@ -1267,7 +1267,11 @@ void servo_screen_sweep_held(uint16_t pause_seq, uint32_t kept_ms)
          * resume's acknowledgement replays from it rather than from the
          * tap's estimate.
          */
-        if (!s.have_feedback) {
+        if (s.have_feedback) {
+            /* The reading, kept for the resume's replay in case feedback
+             * goes before the resume is acknowledged. */
+            s.resume_from_cmd = us_to_cmd(deg_to_us_f(s.shown_deg));
+        } else {
             const uint32_t late = kept_ms - s.pause_tap_ms;
             const uint32_t ms = ((int32_t)late <= 0) ? 0u
                                 : (late > 5000u) ? 5000u : late;
@@ -2320,6 +2324,11 @@ void servo_screen_set_link(bool up)
          * stays PAUSED over an output that has gone, and the next tap starts
          * a sweep rather than resuming one.
          */
+        /* And one not yet taken is not sent once the link is back. */
+        if (!servo_cmd_survives_link_loss(&s.pending)) {
+            s.pending.kind = SERVO_CMD_NONE;
+            s.toggle_live  = false;
+        }
         if (s.sweeping || s.paused || s.awaiting || s.dr.on) {
             stop_sweep();
             s.paused        = false;
@@ -2349,13 +2358,21 @@ void servo_screen_set_surfaces(bool any)
 
 void servo_screen_sweep_refused(void)
 {
-    /* Nothing bound to sweep: no start comes, and nothing moves. */
+    /* Nothing bound to sweep: no start comes, nothing moves, and nothing
+     * is driven for a change of profile to say again. */
     if (s.sweeping || s.paused) {
         stop_sweep();
-        s.paused = false;
+        s.paused  = false;
+        s.driving = false;
         s.commanded_deg = clamp_travel(s.shown_deg);
         ++s.ctrl_rev;
     }
+}
+
+bool servo_cmd_survives_link_loss(const servo_cmd_t *c)
+{
+    return c != NULL && c->kind != SERVO_CMD_SWEEP
+           && c->kind != SERVO_CMD_HOLD;
 }
 
 /* Whether the voltage set point in force is past a standard servo's

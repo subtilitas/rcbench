@@ -169,6 +169,14 @@ void servo_screen_set_surfaces(bool any);
  *  stops waiting for its start and ends the sweep. */
 void servo_screen_sweep_refused(void);
 
+/**
+ * Whether a command kept to be said again may still be said after the link
+ * has gone and come back.  A sweep or a hold may not: both end with the
+ * link, on the screen and at the far end, and said again they would start
+ * motion nobody asked for.  A position is what the screen still shows.
+ */
+bool servo_cmd_survives_link_loss(const servo_cmd_t *c);
+
 /** Whether a sweep is running, for the application and tests. */
 bool servo_screen_sweeping(void);
 

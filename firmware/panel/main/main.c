@@ -4237,6 +4237,9 @@ static bool write_servo(const servo_cmd_t sv)
          * the screen is told instead, or it would wait for one. */
         if (sv.kind == SERVO_CMD_SWEEP) {
             atomic_store(&s_sweep_refused, true);
+            /* And not kept to be said again: a binding with a surface,
+             * after a reconnect, would sweep it with no tap. */
+            s_servo_held.kind = SERVO_CMD_NONE;
         }
         return true;
     }
@@ -4791,6 +4794,14 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
         s_servo_held.kind = SERVO_CMD_NONE;
         s_servo_release_owed = true;
         servo_service(link_up);
+        return;
+    }
+    /*
+     * A sweep or a hold reaching here with the link down was ended with the
+     * link on the screen: kept, it would be said when the link comes back
+     * and start motion nobody asked for.
+     */
+    if (!link_up && !servo_cmd_survives_link_loss(&sv)) {
         return;
     }
     s_servo_held = sv;
@@ -5739,6 +5750,12 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
         } else if (*link_up) {
             /* The edge: it was up until this poll. */
             atomic_store(&s_link_lost_ms, now_ms());
+            /* A sweep or a hold ends with the link, here as on the screen
+             * and at the far end: kept, it would be said again when the
+             * link comes back and start motion nobody asked for. */
+            if (!servo_cmd_survives_link_loss(&s_servo_held)) {
+                s_servo_held.kind = SERVO_CMD_NONE;
+            }
             /* The PD mini goes with it: its readings stop, and the step
              * switches an ON off as a supply not answering. */
             s_supply_page = false;

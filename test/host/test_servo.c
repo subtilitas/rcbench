@@ -2271,6 +2271,89 @@ TEST_CASE(sweep_needs_a_surface_bound)
 }
 
 /*
+ * A sweep, the link down, the link back: nothing is sent until a new tap,
+ * the sweep's own command not taken before the link went included, and
+ * the control task drops a kept sweep or hold at the same edge
+ * (servo_cmd_survives_link_loss()).
+ */
+TEST_CASE(a_sweep_does_not_come_back_with_the_link)
+{
+    fresh();
+    servo_screen_set_link(true);
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    sweep_go();
+    frames(0.3f);
+    servo_screen_set_link(false);
+    servo_screen_set_link(true);
+    frames(1.0f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    CHECK(!servo_screen_sweeping());
+
+    tap(SWEEP_X, BTN_Y);                       /* a new tap ... */
+    servo_screen_set_link(false);              /* ... the link goes first */
+    servo_screen_set_link(true);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    tap(SWEEP_X, BTN_Y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_SWEEP);
+
+    const servo_cmd_t kinds[] = {
+        { .kind = SERVO_CMD_SWEEP }, { .kind = SERVO_CMD_HOLD },
+        { .kind = SERVO_CMD_POSITION }, { .kind = SERVO_CMD_CENTRE },
+        { .kind = SERVO_CMD_RELEASE },
+    };
+    CHECK(!servo_cmd_survives_link_loss(&kinds[0]));
+    CHECK(!servo_cmd_survives_link_loss(&kinds[1]));
+    CHECK(servo_cmd_survives_link_loss(&kinds[2]));
+    CHECK(servo_cmd_survives_link_loss(&kinds[3]));
+    CHECK(servo_cmd_survives_link_loss(&kinds[4]));
+    CHECK(!servo_cmd_survives_link_loss(NULL));
+}
+
+/* A refused sweep drives nothing: a change of profile after it says no
+ * position. */
+TEST_CASE(a_refused_sweep_leaves_nothing_driven)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_SWEEP);
+    servo_screen_sweep_refused();
+    open_settings();
+    tap(TRIM_UP_X, ROW_Y(3));
+    CHECK(last_cmd().kind != SERVO_CMD_POSITION);
+    close_settings();
+}
+
+/*
+ * With feedback, a HOLD acknowledged after an early PAUSED keeps the
+ * reading for the resume: feedback gone before the resume's
+ * acknowledgement, the resume goes on from 1700 us, not the tap's 1600.
+ */
+TEST_CASE(an_early_resume_keeps_the_reading_at_the_hold)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    servo_screen_feedback(1500u, 0.2f, true);
+    sweep_go();
+    frames(0.2f);
+    servo_screen_feedback(1600u, 0.2f, true);
+    frames(0.05f);
+    const uint32_t tap_phase = servo_screen_curve_ms();
+    const servo_cmd_t hold = pause_go();
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED, early */
+    CHECK(last_cmd().resume);
+    servo_screen_feedback(1700u, 0.2f, true);
+    frames(0.05f);
+    servo_screen_sweep_held(hold.pause_seq, tap_phase + 100u);
+    servo_screen_feedback(0u, 0.0f, false);    /* gone */
+    ack_resume(tap_phase + 100u, 0u);
+    CHECK(abs((int)servo_screen_drawn() - 1700) <= 2);
+}
+
+/*
  * A HOLD the panel had to let go of -- answered only at a retry, or after
  * longer than a hold lives -- while the curve was drawn on: the pause ends,
  * and a profile change after it says no position from the drawing, only
@@ -4451,6 +4534,9 @@ int main(void)
     RUN(an_early_resume_keeps_the_output_the_far_end_held);
     RUN(the_link_going_ends_a_pause_at_rest);
     RUN(sweep_needs_a_surface_bound);
+    RUN(a_sweep_does_not_come_back_with_the_link);
+    RUN(a_refused_sweep_leaves_nothing_driven);
+    RUN(an_early_resume_keeps_the_reading_at_the_hold);
     RUN(a_released_pause_says_no_drawn_angle);
     RUN(leaving_forgets_the_sweep_model);
     RUN(a_start_acknowledgement_applies_to_its_own_command);

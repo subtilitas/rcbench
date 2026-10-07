@@ -305,8 +305,9 @@ coprocessor may have let it go and held again elsewhere, so where it holds
 is not known on the panel, and the pause ends rather than keep an angle a
 later change of profile would send to the servo. The link going ends a
 sweep or a pause too, and the horn is drawn at rest, as the coprocessor
-rests the surfaces 500 ms after the last write it heard; the next tap
-starts a sweep.
+rests the surfaces 500 ms after the last write it heard; no sweep or hold
+asked for before is sent when the link comes back, and the next tap starts
+a sweep.
 A finger on the dial, CENTRE, RELEASE, STOP, a disarm and leaving the screen
 end a sweep, running or paused, and the button reads SWEEP again. A changed
 type, frame rate, pulse, trim, travel or reverse ends a pause too, and the
