@@ -261,7 +261,7 @@ A change of either light repaints both screen buffers.
 | SIGNAL | entry position | off | after 1000 ms, so the ESC sees the signal when it starts |
 | MANUAL STEP | entry position | off | before a power-up with a step due: DONE, then POWER ON; no DONE in 60 s: NOT CONFIRMED |
 | POWER ON | entry position | on | when a sample reports the output on; after 3000 ms: NO POWER |
-| ENTRY | entry position | on | ENTRY after power-on: the profile's `hold_ms` where it states one |
+| ENTRY | entry position | on | ENTRY after power-on: the profile's `hold_ms` where it states one, and no less than the longest `hold_ms` of an `at_power_up` step |
 | MANUAL STEP, POWERED | entry position, MIN | on | after ENTRY with a `before_menu` step due: DONE, then the menu; no DONE in 60 s: NOT CONFIRMED |
 | ITEMS | rest position | on | an item group in order names a wanted item: the select move |
 | VALUES | where the last move left it | on | a value group in order names the wanted value: the value move |

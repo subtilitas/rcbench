@@ -453,6 +453,10 @@ const esc_stick_out_t *esc_stick_out(const esc_stick_t *e);
  */
 const esc_manual_t *esc_stick_hand(const esc_stick_t *e);
 
+/** Power-on to the menu in this run, ms: the timing's entry, and no less
+ *  than the longest hold of the profile's at_power_up steps. */
+uint32_t esc_stick_entry_ms(const esc_stick_t *e);
+
 /** Whether DONE would count now: ESC_STICK_HAND_MIN_MS after the step was
  *  asked. */
 bool esc_stick_hand_ready(const esc_stick_t *e);

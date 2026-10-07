@@ -873,6 +873,27 @@ const esc_manual_t *esc_stick_hand(const esc_stick_t *e)
     return &e->p->manual[e->hand];
 }
 
+/*
+ * The entry's time, and no less than the longest hold an at_power_up step
+ * asks for: the menu, and a before_menu step, come only once the button
+ * held while the supply came on may be let go.
+ */
+uint32_t esc_stick_entry_ms(const esc_stick_t *e)
+{
+    if (e == NULL || e->p == NULL) {
+        return 0u;
+    }
+    uint32_t ms = e->t.entry_ms;
+    for (unsigned i = 0; e->p->manual != NULL && i < e->p->manual_count;
+         ++i) {
+        const esc_manual_t *m = &e->p->manual[i];
+        if (m->when == ESC_MANUAL_AT_POWER_UP && m->hold_ms > ms) {
+            ms = m->hold_ms;
+        }
+    }
+    return ms;
+}
+
 bool esc_stick_hand_ready(const esc_stick_t *e)
 {
     return esc_stick_hand(e) != NULL && !e->hand_done
@@ -1215,7 +1236,7 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         }
         break;
     case ESC_STICK_ENTRY:
-        if (since(e->now_ms, e->on_ms) >= e->t.entry_ms) {
+        if (since(e->now_ms, e->on_ms) >= esc_stick_entry_ms(e)) {
             before_menu(e, 0u);
         }
         break;

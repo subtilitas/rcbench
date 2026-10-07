@@ -284,7 +284,7 @@ gezeichnet.
 | SIGNAL | Einstiegsstellung | aus | nach 1000 ms, damit der ESC das Signal beim Start sieht |
 | HANDGRIFF | Einstiegsstellung | aus | vor einem Einschalten mit fälligem Schritt: ERLEDIGT, dann EINSCHALTEN; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT |
 | EINSCHALTEN | Einstiegsstellung | an | wenn ein Messwert den Ausgang an meldet; nach 3000 ms: AUSGANG NICHT GEMELDET |
-| EINSTIEG | Einstiegsstellung | an | EINSTIEG nach dem Einschalten: das `hold_ms` des Profils, wo es eines nennt |
+| EINSTIEG | Einstiegsstellung | an | EINSTIEG nach dem Einschalten: das `hold_ms` des Profils, wo es eines nennt, und nicht kürzer als das längste `hold_ms` eines Schritts `at_power_up` |
 | HANDGRIFF, VERSORGT | Einstiegsstellung, MIN | an | nach EINSTIEG mit einem fälligen Schritt `before_menu`: ERLEDIGT, dann das Menü; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT |
 | PUNKTE | Ruhestellung | an | eine Punktgruppe in Reihenfolge nennt einen gewünschten Punkt: die Auswahlbewegung |
 | WERTE | wo die letzte Bewegung es ließ | an | eine Wertgruppe in Reihenfolge nennt den gewünschten Wert: die Wertbewegung |

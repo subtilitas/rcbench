@@ -1550,6 +1550,39 @@ TEST_CASE(a_step_at_power_up_is_asked_with_the_supply_off)
     ended_safe();
 }
 
+/* A button held 3 s while the supply comes on, and an entry of 2 s: the
+ * pull asked after the entry waits for the hold to end, not the entry. */
+TEST_CASE(the_entry_lasts_at_least_the_hold_at_power_up)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u },
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u },
+    };
+    rig_hand("kontronik-jazz", k, 2);
+    CHECK_EQ(r.t.entry_ms, 2000u);
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    CHECK_EQ(esc_stick_entry_ms(&r.e), 3000u);
+    run_until_phase(ESC_STICK_HAND_OFF, 60000u);
+    run_for(ESC_STICK_HAND_MIN_MS);
+    CHECK(esc_stick_confirm(&r.e));
+    run_until_phase(ESC_STICK_ENTRY, 10000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_ENTRY);
+    const uint32_t on = r.e.on_ms;
+    run_until_phase(ESC_STICK_HAND_ON, 10000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);
+    CHECK(r.e.phase_ms - on >= 3000u);
+    CHECK(r.e.phase_ms - on < 3010u);
+    /* Without the hold, the entry's own 2 s. */
+    static const esc_manual_t pull[] = {
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u },
+    };
+    rig_hand("kontronik-jazz", pull, 1);
+    CHECK(start(c, 1));
+    CHECK_EQ(esc_stick_entry_ms(&r.e), 2000u);
+    CHECK_EQ(esc_stick_entry_ms(NULL), 0u);
+}
+
 /* One change per power-up and a jumper fitted before each: the warning
  * covers the first power-up, and the run asks before every later one, with
  * the supply off and seen off. */
@@ -1685,6 +1718,7 @@ int main(void)
     RUN(a_step_never_confirmed_ends_the_run);
     RUN(stop_abort_and_the_supply_end_a_run_waiting_for_a_step);
     RUN(a_step_at_power_up_is_asked_with_the_supply_off);
+    RUN(the_entry_lasts_at_least_the_hold_at_power_up);
     RUN(a_step_before_power_is_asked_before_every_later_power_up);
     RUN(a_step_the_run_cannot_wait_for_is_refused);
     RUN(a_value_set_from_another_stick_position_is_refused);

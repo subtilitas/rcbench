@@ -2298,7 +2298,8 @@ static void sp_draw_progress(gfx_canvas_t *c)
         break;
     case ESC_STICK_ENTRY: {
         const uint32_t in = e->now_ms - e->on_ms;
-        const uint32_t left = (in < e->t.entry_ms) ? e->t.entry_ms - in : 0u;
+        const uint32_t wait = esc_stick_entry_ms(e);
+        const uint32_t left = (in < wait) ? wait - in : 0u;
         /* A button held while the supply came on: how long still, then
          * that it can go. */
         const uint32_t hold = sp_hold_ms(e->p);
@@ -2709,7 +2710,7 @@ static void sp_draw_device(gfx_canvas_t *c)
     if (esc_stick_running(&t->run) || t->shown) {
         mv = t->run.out.supply_mv;
         ma = t->run.out.supply_ma;
-        tm.entry_ms = t->run.t.entry_ms;
+        tm.entry_ms = esc_stick_entry_ms(&t->run);
     }
     snprintf(line, sizeof(line), TR(SP_SUPPLY_ENTRY), (unsigned)(mv / 1000u),
              (unsigned)(mv % 1000u / 10u), (unsigned)(ma / 1000u),
