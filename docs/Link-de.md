@@ -186,8 +186,9 @@ für eine veraltete: jede Zahl, die die Einstellung zulässt, liegt im Bereich,
 den die Page annimmt.
 
 Der Coprozessor verweigert einen Pin, den er nicht treiben darf — die
-Safety-Leitung, die Pins des CAN-Controllers und jede Nummer über dem letzten
-GPIO des Bauteils. Ein verweigerter Slot bleibt ungebunden, während die Page
+Safety-Leitung, die Pins des CAN-Controllers, GP23, GP24, GP25 und GP29 (vom
+Modul belegt, nicht herausgeführt) und jede Nummer über GP29 — auf der
+OUTPUTS- und der SUPPLY-Page gleichermaßen. Ein verweigerter Slot bleibt ungebunden, während die Page
 weiterhin zurückliest, was gefordert wurde. [DShot und die
 Output-Treiber](DShot-de.md) hat den Rest.
 

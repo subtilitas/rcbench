@@ -16,6 +16,7 @@
 
 #include "link_msg.h"
 #include "link_pages.h"
+#include "out_bind.h"
 #include "outputs.h"
 #include "pdmini.h"
 #include "supply_page.h"
@@ -77,6 +78,35 @@ TEST_CASE(wiring_is_refused_on_pins_that_are_not_free)
     CHECK_EQ(wire(1u, 8u, 9u, 4u), 0u);
     CHECK_EQ(supply_page_baud(reg(LINK_SP_BAUD)), 115200u);
     CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
+}
+
+TEST_CASE(wiring_is_refused_on_the_pins_the_module_keeps_or_lacks)
+{
+    /* The mask the coprocessor boots with, not a hand-made one. */
+    outputs_init(&o, 0u);
+    outputs_reserve_pins(&o, outbind_reserved_mask(
+                                 (uint16_t)OUTBIND_BOARD_PICO_HEADER));
+    supply_page_init(&pg);
+
+    /* GP23 (power converter MODE), GP24 (VBUS sense), GP25 (LED1), GP29
+     * (VSYS sense), and everything the RP2350A lacks. */
+    static const uint16_t refused[] = { 23, 24, 25, 29, 30, 31, 32, 40, 47,
+                                        48, 63 };
+    for (unsigned i = 0; i < sizeof(refused) / sizeof(refused[0]); ++i) {
+        CHECK_EQ(wire(1u, refused[i], 4u, 1u), LINK_NACK_BAD_VALUE);
+        CHECK_EQ(wire(1u, 4u, refused[i], 1u), LINK_NACK_BAD_VALUE);
+        CHECK(!supply_page_enabled(&pg));
+        CHECK_EQ(supply_page_pins(&pg), 0u);
+    }
+    /* The safety line and the CAN pins stay refused too. */
+    CHECK_EQ(wire(1u, 3u, 4u, 1u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(wire(1u, 4u, 12u, 1u), LINK_NACK_BAD_VALUE);
+
+    /* Free header pins still take it, the ADC pins among them. */
+    CHECK_EQ(wire(1u, 4u, 5u, 1u), 0u);
+    CHECK_EQ(wire(1u, 26u, 28u, 1u), 0u);
+    CHECK_EQ(supply_page_pins(&pg),
+             ((uint64_t)1u << 26) | ((uint64_t)1u << 28));
 }
 
 TEST_CASE(an_on_needs_the_supply_wired_and_a_heartbeat)
@@ -497,6 +527,7 @@ TEST_CASE(a_sag_cut_is_on_the_page)
 int main(void)
 {
     RUN(wiring_is_refused_on_pins_that_are_not_free);
+    RUN(wiring_is_refused_on_the_pins_the_module_keeps_or_lacks);
     RUN(an_on_needs_the_supply_wired_and_a_heartbeat);
     RUN(the_wiring_does_not_change_under_a_live_output);
     RUN(the_wiring_waits_for_an_output_that_may_still_be_on);

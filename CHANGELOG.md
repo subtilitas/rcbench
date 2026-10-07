@@ -8,6 +8,15 @@ history is in git.
 
 ### Fixed
 
+- The coprocessor refuses GP23, GP24, GP25 and GP29 for an output slot and for
+  the PD mini's pins. The RP2350-CAN module uses them (GP23 is the MODE pin of
+  its power converter, GP24 senses VBUS, GP25 drives LED1, GP29 senses VSYS)
+  and does not bring them out.
+- The coprocessor refuses GP30 to GP63 on the module whatever board file the
+  SDK is built for. The default image targets an RP2350B board file with 48
+  GPIOs and did not refuse GP30 to GP47. One reserved set, from the pin
+  catalogue, serves the OUTPUTS and SUPPLY pages.
+
 - **The automatic servo test sees small servos move.** Movement is a
   reading more than max(0.020 A, 3 x the idle noise) from the level before
   the command, per step and in the brown-out walk, where it was 0.10 A. The

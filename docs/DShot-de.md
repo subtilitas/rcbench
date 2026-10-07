@@ -64,10 +64,14 @@ Einstellung und kein Build.
 
 Der Coprozessor verweigert einen Pin, den er nicht treiben darf: GP3 (die
 Safety-Heartbeat-Leitung), GP8 bis GP12 (SPI (Serial Peripheral Interface) und
-Interrupt des CAN-Controllers (Controller Area Network)) und jede Nummer über
-dem letzten GPIO (General-Purpose Input/Output), den das Bauteil hat — 29 beim
-RP2350A des Bring-up-Moduls, 47 beim RP2350B, den die endgültige Platine
-braucht. Ein verweigerter Slot bleibt ungebunden. Die Page liest weiterhin
+Interrupt des CAN-Controllers (Controller Area Network)), die vier Pins, die das
+Bring-up-Modul belegt und nicht herausführt — GP23 (der MODE-Pin des
+Wandlers auf dem Modul), GP24 (VBUS-Messung), GP25 (LED1) und GP29
+(VSYS-Messung) — und jede Nummer über dem letzten GPIO (General-Purpose
+Input/Output), den das Modul hat: GP30 und aufwärts, 29 ist der höchste Pin des
+RP2350A. Die Menge gehört zum Modul und folgt nicht der SDK-Board-Datei, für die
+das Image gebaut wird. Die PD-mini-Pins der SUPPLY-Page werden an dieselbe Menge
+gebunden. Ein verweigerter Slot bleibt ungebunden. Die Page liest weiterhin
 zurück, was gefordert wurde, und kein Register auf ihr sagt, ob ein Slot
 gebunden ist: ein ungebundener Slot liest sich genau wie ein treibender. Beim
 Bediener kommt eine Leitung an, die sich nicht bewegt.

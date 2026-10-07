@@ -67,14 +67,22 @@ TEST_CASE(the_catalogue_is_the_header_and_nothing_else)
     }
 }
 
-TEST_CASE(the_reserved_set_is_the_safety_line_and_the_can_bus)
+TEST_CASE(the_reserved_set_holds_every_pin_the_header_does_not_offer)
 {
     const uint64_t m = outbind_reserved_mask(BOARD);
-    const uint64_t want = (1ull << 3) | (1ull << 8) | (1ull << 9)
-                        | (1ull << 10) | (1ull << 11) | (1ull << 12);
+    /* The catalogue's reserved six. */
+    uint64_t want = (1ull << 3) | (1ull << 8) | (1ull << 9)
+                  | (1ull << 10) | (1ull << 11) | (1ull << 12);
+    /* The pins the module uses and does not bring out: the power
+     * converter's MODE pin, the VBUS sense, LED1 and the VSYS sense. */
+    want |= (1ull << 23) | (1ull << 24) | (1ull << 25) | (1ull << 29);
+    /* Every number the RP2350A does not have, up to the page's last. */
+    for (unsigned g = 30u; g <= OUT_MAX_PIN; ++g) {
+        want |= 1ull << g;
+    }
     /* Pinned exactly: the coprocessor hands this to outputs_reserve_pins(),
      * so a pin that quietly leaves this set becomes an output on the
-     * heartbeat line or the CAN bus. */
+     * heartbeat line, the CAN bus or the power converter. */
     CHECK_EQ(m, want);
 
     const outbind_pin_t *p = outbind_pins(BOARD);
@@ -83,6 +91,37 @@ TEST_CASE(the_reserved_set_is_the_safety_line_and_the_can_bus)
         CHECK_EQ(in, p[i].reserved);
         /* A reserved pin says what has it, so the screen can too. */
         CHECK(!p[i].reserved || p[i].held_by != NULL);
+    }
+}
+
+TEST_CASE(an_output_is_refused_on_each_pin_the_module_keeps_or_lacks)
+{
+    outputs_t o;
+    outputs_init(&o, 0u);
+    outputs_reserve_pins(&o, outbind_reserved_mask(BOARD));
+
+    for (unsigned g = 0u; g <= OUT_MAX_PIN; ++g) {
+        const uint8_t i = idx((uint8_t)g);
+        const bool free = i < outbind_pin_count(BOARD)
+                          && !outbind_pins(BOARD)[i].reserved;
+        CHECK_EQ(outputs_pin_available(&o, (uint8_t)g), free);
+
+        /* The bank's own door, not only the predicate. */
+        const out_slot_t cfg = { .driver = OUT_DRIVER_PWM, .first_channel = 0,
+                                 .channels = 1, .pin = (uint8_t)g,
+                                 .rate_hz = 50 };
+        CHECK_EQ(outputs_configure(&o, 0, &cfg), free);
+        const out_slot_t none = { 0 };
+        CHECK(outputs_configure(&o, 0, &none));
+    }
+    /* The ones the finding names, and some that stay free. */
+    static const uint8_t refused[] = { 23, 24, 25, 29, 30, 31, 47, 48, 63 };
+    for (unsigned k = 0; k < sizeof(refused); ++k) {
+        CHECK(!outputs_pin_available(&o, refused[k]));
+    }
+    static const uint8_t bound[] = { 0, 1, 2, 4, 7, 13, 22, 26, 27, 28 };
+    for (unsigned k = 0; k < sizeof(bound); ++k) {
+        CHECK(outputs_pin_available(&o, bound[k]));
     }
 }
 
@@ -1849,7 +1888,8 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 int main(void)
 {
     RUN(the_catalogue_is_the_header_and_nothing_else);
-    RUN(the_reserved_set_is_the_safety_line_and_the_can_bus);
+    RUN(the_reserved_set_holds_every_pin_the_header_does_not_offer);
+    RUN(an_output_is_refused_on_each_pin_the_module_keeps_or_lacks);
     RUN(the_pad_numbers_match_the_ones_printed_on_the_board);
     RUN(a_reserved_pin_cannot_be_chosen);
     RUN(nothing_can_be_chosen_while_the_protocol_is_off);

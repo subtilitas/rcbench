@@ -207,9 +207,11 @@ Rahmenperiode oder Antwortverzögerung in diesem Baum.
 Ein **Servo** nehmen, nicht den ESC. Ein Servo ist der gutmütige Fall und der,
 den das Oszilloskop am leichtesten liest.
 
-**Freie Pins für einen Output:** GP0, GP1, GP2, GP4, GP5, GP6, GP7, GP13,
-GP14, GP15 und aufwärts.
-**Reserviert und verweigert:** GP3 (Heartbeat), GP8–GP12 (CAN).
+**Freie Pins für einen Output:** GP0, GP1, GP2, GP4, GP5, GP6, GP7, GP13 bis
+GP22 und GP26 bis GP28.
+**Reserviert und verweigert:** GP3 (Heartbeat), GP8–GP12 (CAN), GP23, GP24, GP25
+und GP29 (vom Modul belegt, nicht auf der Stiftleiste) und GP30 aufwärts (nicht
+im Bauteil).
 **Als zweiter PWM-Pin verweigert:** ein Pin, dessen PWM-Compare-Register schon
 von einem gebundenen Pin belegt ist. Auf dem RP2350 ist die Slice unterhalb
 von GP32 `(Pin / 2) modulo 8` und der Kanal das niedrigste Bit des Pins, also
