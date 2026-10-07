@@ -124,6 +124,18 @@
   ],
   "automatable": "assisted",
   "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps.",
+  "manual": [
+    {
+      "when": "before_power",
+      "action": "Fit the jumper on any 2 of the 3 programming contacts.",
+      "source": "Kontronik_Beat.pdf p.5 (DE), p.27 (EN)"
+    },
+    {
+      "when": "before_menu",
+      "action": "Pull the jumper off after 2 s or the tone sequence.",
+      "source": "Kontronik_Beat.pdf p.5 (DE), p.27 (EN)"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -196,7 +208,8 @@
         },
         {
           "number": 6,
-          "name": "Car 1: one direction, proportional brake"
+          "name": "Car 1: one direction, proportional brake",
+          "entry_throttle": "mid"
         },
         {
           "number": 7,
@@ -204,7 +217,8 @@
         },
         {
           "number": 8,
-          "name": "Car 2: forward and reverse"
+          "name": "Car 2: forward and reverse",
+          "entry_throttle": "mid"
         }
       ],
       "applies_to": null,
@@ -225,6 +239,7 @@
   ],
   "notes": [
     "The Beat manual lists FAI models (FAI 7/10, FAI 24, FAI 27) with this procedure; their addendum Kontronik_Beat_FAI.pdf replaces the menu, see kontronik-beat-fai.",
-    "The ESC may only be fed from NiCd or NiMH packs per the manual's safety text."
+    "The ESC may only be fed from NiCd or NiMH packs per the manual's safety text.",
+    "Modes 6 and 8 are programmed with the stick at motor-off in the middle (Kontronik_Beat.pdf p.15, p.17 DE; p.37, p.39 EN). They carry entry_throttle mid, so stick programming does not store them from the brake position."
   ]
 }

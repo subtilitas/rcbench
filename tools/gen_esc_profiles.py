@@ -43,6 +43,14 @@ AUTO = {"full": "ESC_AUTO_FULL", "assisted": "ESC_AUTO_ASSISTED",
 THROTTLE = {"min": "ESC_THR_MIN", "mid": "ESC_THR_MID", "max": "ESC_THR_MAX",
             "none": "ESC_THR_NONE"}
 WHEN = {"before_power_on": "false", "after_power_on": "true"}
+# When an operator's step at the ESC is due, in the order of a run.
+MANUAL = {"before_power": "ESC_MANUAL_BEFORE_POWER",
+          "at_power_up": "ESC_MANUAL_AT_POWER_UP",
+          "before_menu": "ESC_MANUAL_BEFORE_MENU",
+          "during_menu": "ESC_MANUAL_DURING_MENU",
+          "after_programming": "ESC_MANUAL_AFTER_PROGRAMMING"}
+MANUAL_MAX = 4          # steps in one profile: ESC_MANUAL_MAX
+ACTION_MAX = 120        # bytes of one step's text: ESC_MANUAL_ACTION_MAX
 
 
 class Bad(Exception):
@@ -146,6 +154,35 @@ def no_nul(v: object, where: str) -> None:
             no_nul(x, f"{where}[{i}]")
 
 
+def check_manual(d: dict, w: str, auto: str) -> list[dict]:
+    """The operator's steps at the ESC: absent or null, none.  Only an
+    assisted profile has them, at most MANUAL_MAX, in the order a run
+    meets them."""
+    man = d.get("manual")
+    if man is None:
+        return []
+    want(isinstance(man, list) and 0 < len(man) <= MANUAL_MAX,
+         f"{w}.manual", f"not 1-{MANUAL_MAX} steps")
+    want(auto == "ESC_AUTO_ASSISTED", f"{w}.manual",
+         "only on an assisted profile")
+    out, last = [], 0
+    for i, m in enumerate(man):
+        mw = f"{w}.manual[{i}]"
+        want(isinstance(m, dict), mw, "not an object")
+        when = pick(m, "when", mw, MANUAL)
+        at = list(MANUAL.values()).index(when)
+        want(at >= last, f"{mw}.when", "before the step above it")
+        last = at
+        action = text(m, "action", mw)
+        want(len(action.encode("utf-8")) <= ACTION_MAX, f"{mw}.action",
+             f"longer than {ACTION_MAX} bytes")
+        hold = num(m, "hold_ms", mw, 60000)
+        want(hold is None or when == "ESC_MANUAL_AT_POWER_UP",
+             f"{mw}.hold_ms", "only for at_power_up")
+        out.append({"when": when, "action": action, "hold": hold or 0})
+    return out
+
+
 def check(path: pathlib.Path) -> dict:
     """The profile, reduced to what the firmware carries; raises Bad."""
     w = path.name
@@ -172,6 +209,7 @@ def check(path: pathlib.Path) -> dict:
     note = optional(d, "automatable_note", w, str, "")
     want(auto == "ESC_AUTO_FULL" or note != "", f"{w}.automatable_note",
          "needed when not full")
+    manual = check_manual(d, w, auto)
 
     s = d.get("scheme")
     want(isinstance(s, dict), f"{w}.scheme", "not an object")
@@ -239,7 +277,7 @@ def check(path: pathlib.Path) -> dict:
         "repeat": -1 if rep is None else rep,
         "one": "true" if cpe == "one" else "false",
         "verified": "true" if d["verified"] else "false",
-        "steps": steps, "models": [], "items": [],
+        "steps": steps, "models": [], "items": [], "manual": manual,
     }
 
     models = d.get("models")
@@ -297,8 +335,14 @@ def check(path: pathlib.Path) -> dict:
             dflt = v.get("default", False)
             want(isinstance(dflt, bool), f"{vw}.default", "not a boolean")
             defaults += dflt
+            # The stick position this value is programmed from, where the
+            # manual gives one other than the profile's entry: absent or
+            # null, the entry's.
+            et = "ESC_THR_NONE" if v.get("entry_throttle") is None else \
+                pick(v, "entry_throttle", vw,
+                     {k: x for k, x in THROTTLE.items() if k != "none"})
             out.append({"name": text(v, "name", vw), "n": vn,
-                        "d": "true" if dflt else "false"})
+                        "d": "true" if dflt else "false", "et": et})
         want(defaults <= 1, f"{iw}.values", "more than one default")
         p["items"].append({"name": text(it, "name", iw), "key": key,
                            "n": number, "values": out, "applies": applies,
@@ -351,12 +395,18 @@ def emit(profiles: list[dict]) -> str:
             o.append(f"static const esc_value_t {n}_v{k}[] = {{\n")
             for v in it["values"]:
                 o.append(f"    {{ {c_str(v['name'])}, {v['n']}u, "
-                         f"{v['d']} }},\n")
+                         f"{v['d']}, {v['et']} }},\n")
             o.append("};\n")
             if it["applies"]:
                 o.append(f"static const char *const {n}_a{k}[] = {{\n")
                 o += [f"    {c_str(x)},\n" for x in it["applies"]]
                 o.append("};\n")
+        if p["manual"]:
+            o.append(f"static const esc_manual_t {n}_manual[] = {{\n")
+            for m in p["manual"]:
+                o.append(f"    {{ {m['when']}, {c_str(m['action'])}, "
+                         f"{m['hold']}u }},\n")
+            o.append("};\n")
         if p["items"]:
             o.append(f"static const esc_item_t {n}_items[] = {{\n")
             for k, it in enumerate(p["items"]):
@@ -370,6 +420,7 @@ def emit(profiles: list[dict]) -> str:
     for p in profiles:
         n = ident(p["id"])
         items = f"{n}_items" if p["items"] else "NULL"
+        manual = f"{n}_manual" if p["manual"] else "NULL"
         o.append(
             f"    {{ {c_str(p['id'])}, {c_str(p['brand'])},\n"
             f"      {c_str(p['family'])},\n"
@@ -384,7 +435,8 @@ def emit(profiles: list[dict]) -> str:
             f" {p['repeat']}, {p['one']}, {p['verified']},\n"
             f"      {len(p['steps'])}u, {n}_steps,"
             f" {len(p['models'])}u, {n}_models,"
-            f" {len(p['items'])}u, {items} }},\n")
+            f" {len(p['items'])}u, {items},\n"
+            f"      {len(p['manual'])}u, {manual} }},\n")
     o.append("};\n\n")
     o.append("const size_t esc_profiles_builtin_count =\n"
              "    sizeof(esc_profiles_builtin)\n"
@@ -405,6 +457,14 @@ def self_test() -> list[str]:
 
     head = '"schema": 1,'
     sel = '"select": {'
+    auto = '"automatable": "none",'
+    val = '"name": "disabled'
+
+    def man(steps: str, kind: str = "assisted") -> bytes:
+        return at(auto, f'"automatable": "{kind}", "manual": {steps},')
+
+    jumper = '{"when": "before_power", "action": "Fit the jumper."}'
+    pull = '{"when": "before_menu", "action": "Pull the jumper."}'
     refuse = {
         "schema true": at(head, '"schema": true,'),
         "key twice": at(head, head + ' "schema": 1,'),
@@ -449,6 +509,34 @@ def self_test() -> list[str]:
         "store none": at(sel, '"store": {"throttle": "none"}, ' + sel),
         "store throttle a list": at(sel, '"store": {"throttle": []}, '
                                     + sel),
+        "value entry none": at(val, '"entry_throttle": "none", ' + val),
+        "value entry MID": at(val, '"entry_throttle": "MID", ' + val),
+        "value entry an object": at(val, '"entry_throttle": {"throttle": '
+                                    '"mid"}, ' + val),
+        "value entry false": at(val, '"entry_throttle": false, ' + val),
+        "manual on a full profile": man(f"[{jumper}]", "full"),
+        "manual on a profile nobody runs": man(f"[{jumper}]", "none"),
+        "manual empty": man("[]"),
+        "manual an object": man(jumper),
+        "manual 5 steps": man("[" + ", ".join([jumper] * 5) + "]"),
+        "manual step a string": man('["Fit the jumper."]'),
+        "manual when unknown": man('[{"when": "later", "action": "x"}]'),
+        "manual when missing": man('[{"action": "x"}]'),
+        "manual out of order": man(f"[{pull}, {jumper}]"),
+        "manual action empty": man('[{"when": "before_menu", '
+                                   '"action": ""}]'),
+        "manual action missing": man('[{"when": "before_menu"}]'),
+        "manual action 121 bytes": man('[{"when": "before_menu", '
+                                       '"action": "' + "x" * 121 + '"}]'),
+        "manual action 61 umlauts": man('[{"when": "before_menu", '
+                                        '"action": "' + "ü" * 61
+                                        + '"}]'),
+        "manual hold before the menu": man(
+            '[{"when": "before_menu", "action": "x", "hold_ms": 0}]'),
+        "manual hold 60001": man(
+            '[{"when": "at_power_up", "action": "x", "hold_ms": 60001}]'),
+        "manual hold a string": man(
+            '[{"when": "at_power_up", "action": "x", "hold_ms": "2"}]'),
     }
     accept = {
         "plain": base.encode("utf-8"),
@@ -469,6 +557,24 @@ def self_test() -> list[str]:
                                '"x": [1, 2]}, ' + sel),
         "store null": at(sel, '"store": null, ' + sel),
         "store min": at(sel, '"store": {"throttle": "min"}, ' + sel),
+        "value entry null": at(val, '"entry_throttle": null, ' + val),
+        "value entry mid": at(val, '"entry_throttle": "mid", ' + val),
+        "manual null": at(auto, auto + ' "manual": null,'),
+        "manual two steps": man(f"[{jumper}, {pull}]"),
+        "manual four steps of one kind": man("[" + ", ".join([pull] * 4)
+                                             + "]"),
+        "manual action 120 bytes": man('[{"when": "before_menu", '
+                                       '"action": "' + "x" * 120 + '"}]'),
+        "manual action 60 umlauts": man('[{"when": "before_menu", '
+                                        '"action": "' + "ü" * 60
+                                        + '"}]'),
+        "manual hold at power-up": man(
+            '[{"when": "at_power_up", "action": "x", "hold_ms": 60000}]'),
+        "manual hold null": man(
+            '[{"when": "after_programming", "action": "x", '
+            '"hold_ms": null}]'),
+        "manual with more": man('[{"when": "during_menu", "action": "x", '
+                                '"source": "p. 5"}]'),
     }
     bad = []
     with tempfile.TemporaryDirectory() as tmp:

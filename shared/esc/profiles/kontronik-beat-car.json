@@ -34,6 +34,18 @@
   ],
   "automatable": "assisted",
   "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps.",
+  "manual": [
+    {
+      "when": "before_power",
+      "action": "Fit the jumper on any 2 of the 3 programming contacts.",
+      "source": "Kontronik_Beat.pdf p.15 (DE), p.37 (EN)"
+    },
+    {
+      "when": "before_menu",
+      "action": "Pull the jumper off after 2 s or the tone sequence.",
+      "source": "Kontronik_Beat.pdf p.15 (DE), p.37 (EN)"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -84,23 +96,28 @@
         },
         {
           "number": 2,
-          "name": "Car mode, slowest start-up"
+          "name": "Car mode, slowest start-up",
+          "entry_throttle": "mid"
         },
         {
           "number": 3,
-          "name": "Car mode"
+          "name": "Car mode",
+          "entry_throttle": "mid"
         },
         {
           "number": 4,
-          "name": "Car mode"
+          "name": "Car mode",
+          "entry_throttle": "mid"
         },
         {
           "number": 5,
-          "name": "Car mode"
+          "name": "Car mode",
+          "entry_throttle": "mid"
         },
         {
           "number": 6,
-          "name": "Car mode, fastest start-up"
+          "name": "Car mode, fastest start-up",
+          "entry_throttle": "mid"
         },
         {
           "number": 7,
@@ -108,7 +125,8 @@
         },
         {
           "number": 8,
-          "name": "Forward / reverse, combinable with modes 2 to 6"
+          "name": "Forward / reverse, combinable with modes 2 to 6",
+          "entry_throttle": "mid"
         }
       ],
       "applies_to": null,
@@ -122,10 +140,10 @@
     "Whether the mode series loops until a mode is selected is not stated.",
     "Time window in ms for moving the throttle to full after the wanted series is not stated.",
     "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
-    "Stick position at entry (brake, motor-off or middle) is only implied by 'like mode 6 of the BEAT manual'.",
     "Voltage, current and cell count of the BEAT 70 CAR are not given."
   ],
   "notes": [
-    "The addendum replaces the BEAT mode meanings for modes 2 to 6; use this profile instead of kontronik-beat for the CAR version."
+    "The addendum replaces the BEAT mode meanings for modes 2 to 6; use this profile instead of kontronik-beat for the CAR version.",
+    "Modes 2 to 6 are programmed like BEAT mode 6, with the stick at motor-off in the middle (Kontronik_Beat_70_CAR.pdf p.1; Kontronik_Beat.pdf p.15). Mode 8 is 'like mode 7' on the CAR sheet and starts in the middle in the BEAT manual (p.17); it is marked mid as well. Modes 1 and 7 start with the stick back."
   ]
 }

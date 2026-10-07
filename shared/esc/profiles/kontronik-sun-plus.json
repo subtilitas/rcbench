@@ -52,6 +52,13 @@
   ],
   "automatable": "assisted",
   "automatable_note": "The ESC button must be pressed after the entry wait. The bench has no actuator for it.",
+  "manual": [
+    {
+      "when": "before_menu",
+      "action": "Press the button after the tone sequence: 2 s for modes 1 to 3, 5 s for modes 4 to 6.",
+      "source": "Kontronik_Sun_Plus.pdf p.3-6 (DE), p.11-13 (EN)"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -108,11 +115,13 @@
         },
         {
           "number": 2,
-          "name": "Glider: brake and undervoltage cutoff on, optional separate motor-off position"
+          "name": "Glider: brake and undervoltage cutoff on, optional separate motor-off position",
+          "entry_throttle": "mid"
         },
         {
           "number": 3,
-          "name": "Motor plane / boat: brake off, undervoltage reduction instead of cutoff"
+          "name": "Motor plane / boat: brake off, undervoltage reduction instead of cutoff",
+          "entry_throttle": "mid"
         },
         {
           "number": 4,
@@ -120,15 +129,18 @@
         },
         {
           "number": 5,
-          "name": "Competition: maximum brake response, undervoltage and overtemperature cutoff off"
+          "name": "Competition: maximum brake response, undervoltage and overtemperature cutoff off",
+          "entry_throttle": "mid"
         },
         {
           "number": 6,
-          "name": "Car: proportional brake, undervoltage cutoff off"
+          "name": "Car: proportional brake, undervoltage cutoff off",
+          "entry_throttle": "mid"
         },
         {
           "number": 9,
-          "name": "LiPo undervoltage detection (2.7 to 3 V per cell instead of 0.7 to 0.8 V)"
+          "name": "LiPo undervoltage detection (2.7 to 3 V per cell instead of 0.7 to 0.8 V)",
+          "entry_throttle": "mid"
         }
       ],
       "applies_to": null,
@@ -148,6 +160,7 @@
   ],
   "notes": [
     "INDEX.csv lists 'ProgCard'; the manual names the ProgCARD (order no. 9305) for individual parameters.",
-    "The motor drive is brushed ('Kollektormotoren'), 3-wire inputs only."
+    "The motor drive is brushed ('Kollektormotoren'), 3-wire inputs only.",
+    "Modes 2, 3, 5, 6 and 9 start at 'Neutralstellung', which the manual does not place (Kontronik_Sun_Plus.pdf p.4-7); mode 6 has a separate brake step after it. They carry entry_throttle mid, so stick programming does not store them from the brake position. Mode 4's English text gives 'neutral position (back position)'."
   ]
 }

@@ -58,6 +58,18 @@
   ],
   "automatable": "assisted",
   "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps.",
+  "manual": [
+    {
+      "when": "before_power",
+      "action": "Fit the jumper on any 2 of the 3 programming contacts.",
+      "source": "Kontronik_Beat.pdf p.13 (DE), p.35 (EN)"
+    },
+    {
+      "when": "before_menu",
+      "action": "Pull the jumper off after 2 s or the tone sequence.",
+      "source": "Kontronik_Beat.pdf p.13 (DE), p.35 (EN)"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {

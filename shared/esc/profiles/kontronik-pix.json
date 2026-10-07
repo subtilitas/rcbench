@@ -58,6 +58,13 @@
   ],
   "automatable": "assisted",
   "automatable_note": "The button on the ESC must be pressed after the 2 s wait. The bench has no actuator for it.",
+  "manual": [
+    {
+      "when": "before_menu",
+      "action": "Press the button marked Taster on the label after 2 s or the tone sequence.",
+      "source": "Kontronik_Pix1000_3000.pdf p.4 (DE), p.10 (EN); Kontronik_Pix4000.pdf p.4"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -146,6 +153,7 @@
   ],
   "notes": [
     "Kontronik_Pix1000_3000.pdf and Kontronik_Pix4000.pdf print the same technical data and procedures; the PIX 4000 manual adds ProgCARD notes.",
-    "Modes 7 and 9 do not change other stored settings; the PIX manuals do not state a prerequisite for them."
+    "Modes 7 and 9 do not change other stored settings; the PIX manuals do not state a prerequisite for them.",
+    "Mode 2 asks for a move to the brake position after full throttle, then an optional motor-off position (Kontronik_Pix1000_3000.pdf p.5 DE, p.11 EN); stick programming makes neither move."
   ]
 }

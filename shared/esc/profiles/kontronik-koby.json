@@ -64,6 +64,13 @@
   ],
   "automatable": "assisted",
   "automatable_note": "The ESC's own button must be pressed once after the 2 s entry wait. The bench has no actuator for it.",
+  "manual": [
+    {
+      "when": "before_menu",
+      "action": "Press the button under the shrink tube after 2 s or the tone sequence.",
+      "source": "Kontronik_Koby.pdf p.2, p.5"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {

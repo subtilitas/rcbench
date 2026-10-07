@@ -50,6 +50,18 @@
   ],
   "automatable": "assisted",
   "automatable_note": "Brake and battery setup start with a press of the ESC on/off button (battery setup: hold 4-5 s, red LED out). The button is not a throttle or power action.",
+  "manual": [
+    {
+      "when": "at_power_up",
+      "action": "Press the ESC's on/off button: once for brake setup; held 4-5 s, until the red LED goes out, for battery setup.",
+      "source": "GreatPlanes_Electrifly_C-25_C-35_C-55.pdf p.2"
+    },
+    {
+      "when": "during_menu",
+      "action": "Battery setup: press the button to step the type, read it on the blue LED; hold it 2-3 s to store.",
+      "source": "GreatPlanes_Electrifly_C-25_C-35_C-55.pdf p.2"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {

@@ -52,6 +52,13 @@
   ],
   "automatable": "assisted",
   "automatable_note": "These ESCs are not throttle-only: the programming steps include pressing the ESC's own button after the 2 s wait. The bench has no actuator for it.",
+  "manual": [
+    {
+      "when": "before_menu",
+      "action": "Press the button under the shrink tube after 2 s or the tone sequence.",
+      "source": "Kontronik_Kontrol-X_Kolibri-X.pdf p.2, p.4 (DE), p.12 (EN)"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -110,7 +117,8 @@
         },
         {
           "number": 3,
-          "name": "Forward / reverse operation"
+          "name": "Forward / reverse operation",
+          "entry_throttle": "mid"
         },
         {
           "number": 4,
@@ -135,6 +143,7 @@
   ],
   "notes": [
     "INDEX.csv summarises these as throttle only; the procedure text includes a button press (step 5), so the entry needs a person.",
-    "Kontronik_Kontrol-X_Kolibri-X.pdf gives the KOLIBRI-X example as 90 LV = 90 A on the German side and 60 LV = 60 A on the English side."
+    "Kontronik_Kontrol-X_Kolibri-X.pdf gives the KOLIBRI-X example as 90 LV = 90 A on the German side and 60 LV = 60 A on the English side.",
+    "Mode 3 (forward and reverse) puts full reverse at the back (Kontronik_Kontrol-X_Kolibri-X.pdf p.4, p.12), so its motor-off start is taken as the middle: entry_throttle mid. The manual does not say 'middle'. Modes 1, 2 and 4 say 'motor off' only and are taken as the back."
   ]
 }

@@ -57,7 +57,19 @@
     }
   ],
   "automatable": "assisted",
-  "automatable_note": "A jumper must be fitted on the two gold pins before power-up and pulled off in the middle of each phase; power must also be disconnected and reconnected. The bench cannot place the jumper.",
+  "automatable_note": "A jumper is fitted on the two gold pins before power-up and stays on through phase 1; power is disconnected and reconnected between phases, and in phase 2 the jumper is pulled during the sequence to switch the cutoff off. The bench cannot place the jumper.",
+  "manual": [
+    {
+      "when": "before_power",
+      "action": "Fit the jumper on the two gold pins; it stays on through phase 1.",
+      "source": "Kontronik_3P_en.pdf p.3"
+    },
+    {
+      "when": "during_menu",
+      "action": "Between phases: power off, pull the jumper, power on. Phase 2: pull it before the last flashes to switch cutoff off.",
+      "source": "Kontronik_3P_en.pdf p.3, p.5"
+    }
+  ],
   "scheme": {
     "type": "stick_position",
     "entry": {
@@ -183,6 +195,7 @@
   ],
   "notes": [
     "Brake speed at the minimum position: Kontronik_3P_en.pdf says about 2 s, Kontronik_3P_de.pdf says about 3 s.",
-    "The motor cables and sensor cables in the manual are for Aveox motors (sensored)."
+    "The motor cables and sensor cables in the manual are for Aveox motors (sensored).",
+    "Phase 1 keeps the jumper on until the power is off; only phase 2 and the arming switch handle it during the sequence (Kontronik_3P_en.pdf p.3, p.5)."
   ]
 }

@@ -144,7 +144,217 @@ static void same(const esc_profile_t *a, const esc_profile_t *b)
             CHECK_STR_EQ(x->values[k].name, y->values[k].name);
             CHECK_EQ(x->values[k].number, y->values[k].number);
             CHECK_EQ(x->values[k].is_default, y->values[k].is_default);
+            CHECK_EQ(x->values[k].entry_throttle,
+                     y->values[k].entry_throttle);
         }
+    }
+    CHECK_EQ(a->manual_count, b->manual_count);
+    CHECK_EQ(a->manual == NULL, a->manual_count == 0u);
+    for (unsigned i = 0; i < a->manual_count && i < b->manual_count; ++i) {
+        CHECK_EQ(a->manual[i].when, b->manual[i].when);
+        CHECK_STR_EQ(a->manual[i].action, b->manual[i].action);
+        CHECK_EQ(a->manual[i].hold_ms, b->manual[i].hold_ms);
+    }
+}
+
+/* k_min as an assisted profile with the manual steps @p steps. */
+static char *with_manual(const char *steps)
+{
+    char to[1024];
+    (void)snprintf(to, sizeof(to),
+                   "\"automatable\": \"assisted\", \"automatable_note\": "
+                   "\"a jumper\", \"manual\": %s", steps);
+    return subst("\"automatable\": \"full\", \"automatable_note\": \"\"", to);
+}
+
+/* The steps a person does at the ESC, read in order with their times. */
+TEST_CASE(a_profile_reads_its_manual_steps)
+{
+    esc_profile_t p;
+    void *block = NULL;
+    CHECK(esc_profile_parse(k_min, strlen(k_min), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_EQ(p.manual_count, 0u);
+        CHECK(p.manual == NULL);
+        CHECK_EQ(esc_profile_manual_count(&p, ESC_MANUAL_BEFORE_POWER), 0u);
+    }
+    free(block);
+    char *j = with_manual(
+        "[{\"when\": \"before_power\", \"action\": \"Fit the jumper.\"},"
+        " {\"when\": \"at_power_up\", \"action\": \"Hold SET.\","
+        "  \"hold_ms\": 3000, \"source\": \"p. 5\"},"
+        " {\"when\": \"before_menu\", \"action\": \"Pull the jumper.\"},"
+        " {\"when\": \"after_programming\", \"action\": \"T\\u00fcr zu.\","
+        "  \"hold_ms\": null}]");
+    block = NULL;
+    char err[96] = "";
+    CHECK(esc_profile_parse(j, strlen(j), &p, &block, err, sizeof(err)));
+    if (block != NULL) {
+        CHECK_EQ(p.manual_count, 4u);
+        CHECK_EQ(p.manual[0].when, ESC_MANUAL_BEFORE_POWER);
+        CHECK_STR_EQ(p.manual[0].action, "Fit the jumper.");
+        CHECK_EQ(p.manual[0].hold_ms, 0u);
+        CHECK_EQ(p.manual[1].when, ESC_MANUAL_AT_POWER_UP);
+        CHECK_EQ(p.manual[1].hold_ms, 3000u);
+        CHECK_EQ(p.manual[2].when, ESC_MANUAL_BEFORE_MENU);
+        CHECK_EQ(p.manual[3].when, ESC_MANUAL_AFTER_PROGRAMMING);
+        CHECK_STR_EQ(p.manual[3].action, "T\xC3\xBCr zu.");
+        CHECK_EQ(esc_profile_manual_count(&p, ESC_MANUAL_BEFORE_MENU), 1u);
+        CHECK_EQ(esc_profile_manual_count(&p, ESC_MANUAL_DURING_MENU), 0u);
+    }
+    free(block);
+    free(j);
+    CHECK_EQ(esc_profile_manual_count(NULL, ESC_MANUAL_BEFORE_POWER), 0u);
+
+    /* Null is none, on any profile. */
+    j = subst("\"automatable\": \"full\",",
+              "\"automatable\": \"full\", \"manual\": null,");
+    CHECK(parses(j, NULL, 0));
+    free(j);
+}
+
+/* A value programmed from another stick position than the entry's, as
+ * Kontronik's car modes are from the middle; the generator's self-test
+ * holds it to the same spellings. */
+TEST_CASE(a_value_reads_the_stick_position_it_is_set_from)
+{
+    static const char from[] = "{\"number\": 2, \"name\": \"on\"}";
+    static const struct {
+        const char *to, *err;
+        esc_throttle_t et;
+    } k[] = {
+        { "{\"number\": 2, \"name\": \"on\", \"entry_throttle\": \"mid\"}",
+          NULL, ESC_THR_MID },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_throttle\": null}",
+          NULL, ESC_THR_NONE },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_throttle\": \"none\"}",
+          "items[0].values[1].entry_throttle: not a known value",
+          ESC_THR_NONE },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_throttle\": \"MID\"}",
+          "items[0].values[1].entry_throttle: not a known value",
+          ESC_THR_NONE },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_throttle\": false}",
+          "items[0].values[1].entry_throttle: not a known value",
+          ESC_THR_NONE },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        char *j = subst(from, k[i].to);
+        esc_profile_t p;
+        void *block = NULL;
+        char err[96] = "";
+        const bool ok = esc_profile_parse(j, strlen(j), &p, &block, err,
+                                          sizeof(err));
+        if (k[i].err == NULL) {
+            CHECK(ok);
+            if (ok) {
+                CHECK_EQ(p.items[0].values[1].entry_throttle, k[i].et);
+                CHECK_EQ(p.items[0].values[0].entry_throttle, ESC_THR_NONE);
+            }
+        } else {
+            CHECK(!ok);
+            CHECK_STR_EQ(err, k[i].err);
+        }
+        free(block);
+        free(j);
+    }
+}
+
+/* Every rule the generator holds a manual step to, held here as its
+ * self-test holds it there; the last two are the limits, accepted. */
+TEST_CASE(a_manual_step_the_generator_refuses_is_refused_here_too)
+{
+    char x121[160], u61[160], x120[160], u60[160];
+    memset(x121, 'x', 121);
+    x121[121] = '\0';
+    memcpy(x120, x121, 121);
+    x120[120] = '\0';
+    u61[0] = '\0';
+    for (int i = 0; i < 61; ++i) {
+        strcat(u61, "\xC3\xBC");
+    }
+    memcpy(u60, u61, 121);
+    u60[120] = '\0';
+    char long121[256], umlaut61[256], long120[256], umlaut60[256];
+    (void)snprintf(long121, sizeof(long121),
+                   "[{\"when\": \"before_menu\", \"action\": \"%s\"}]", x121);
+    (void)snprintf(umlaut61, sizeof(umlaut61),
+                   "[{\"when\": \"before_menu\", \"action\": \"%s\"}]", u61);
+    (void)snprintf(long120, sizeof(long120),
+                   "[{\"when\": \"before_menu\", \"action\": \"%s\"}]", x120);
+    (void)snprintf(umlaut60, sizeof(umlaut60),
+                   "[{\"when\": \"before_menu\", \"action\": \"%s\"}]", u60);
+    static const char jumper[] =
+        "{\"when\": \"before_power\", \"action\": \"Fit the jumper.\"}";
+    static const char pull[] =
+        "{\"when\": \"before_menu\", \"action\": \"Pull the jumper.\"}";
+    char five[512], order[256], four[512], two[256];
+    (void)snprintf(five, sizeof(five), "[%s, %s, %s, %s, %s]", jumper, jumper,
+                   jumper, jumper, jumper);
+    (void)snprintf(order, sizeof(order), "[%s, %s]", pull, jumper);
+    (void)snprintf(four, sizeof(four), "[%s, %s, %s, %s]", pull, pull, pull,
+                   pull);
+    (void)snprintf(two, sizeof(two), "[%s, %s]", jumper, pull);
+    const struct {
+        const char *steps, *err;
+    } k[] = {
+        { "[]", "manual: not 1-4 steps" },
+        { jumper, "manual: not 1-4 steps" },
+        { five, "manual: not 1-4 steps" },
+        { "[\"Fit the jumper.\"]", "manual[0]: not an object" },
+        { "[{\"when\": \"later\", \"action\": \"x\"}]",
+          "manual[0].when: not a known value" },
+        { "[{\"action\": \"x\"}]", "manual[0].when: not a known value" },
+        { order, "manual[1].when: before the step above it" },
+        { "[{\"when\": \"before_menu\", \"action\": \"\"}]",
+          "manual[0].action: empty" },
+        { "[{\"when\": \"before_menu\"}]", "manual[0].action: not a string" },
+        { long121, "manual[0].action: longer than 120 bytes" },
+        { umlaut61, "manual[0].action: longer than 120 bytes" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\", \"hold_ms\": 0}]",
+          "manual[0].hold_ms: only for at_power_up" },
+        { "[{\"when\": \"at_power_up\", \"action\": \"x\","
+          " \"hold_ms\": 60001}]", "manual[0].hold_ms: outside" },
+        { "[{\"when\": \"at_power_up\", \"action\": \"x\","
+          " \"hold_ms\": \"2\"}]", "manual[0].hold_ms: not a whole" },
+        { long120, NULL },
+        { umlaut60, NULL },
+        { four, NULL },
+        { two, NULL },
+        { "[{\"when\": \"at_power_up\", \"action\": \"x\","
+          " \"hold_ms\": 60000}]", NULL },
+        { "[{\"when\": \"during_menu\", \"action\": \"x\","
+          " \"source\": \"p. 5\"}]", NULL },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        char *j = with_manual(k[i].steps);
+        char err[96] = "";
+        const bool ok = parses(j, err, sizeof(err));
+        if (k[i].err == NULL) {
+            if (!ok) {
+                T_FAIL("case %u refused: %s", (unsigned)i, err);
+            }
+        } else if (ok) {
+            T_FAIL("case %u accepted: %s", (unsigned)i, k[i].steps);
+        } else if (strncmp(err, k[i].err, strlen(k[i].err)) != 0) {
+            T_FAIL("case %u: got \"%s\", want \"%s...\"", (unsigned)i, err,
+                   k[i].err);
+        }
+        free(j);
+    }
+    /* Only an assisted profile has steps: one the bench runs alone has
+     * none to do, and one nobody runs has no procedure to do them in. */
+    static const char *const k_auto[] = { "full", "none" };
+    for (size_t i = 0; i < 2; ++i) {
+        char to[256];
+        (void)snprintf(to, sizeof(to),
+                       "\"automatable\": \"%s\", \"automatable_note\": \"x\","
+                       " \"manual\": [%s]", k_auto[i], jumper);
+        char *j = subst("\"automatable\": \"full\", \"automatable_note\": \"\"",
+                        to);
+        char err[96] = "";
+        CHECK(!parses(j, err, sizeof(err)));
+        CHECK_STR_EQ(err, "manual: only on an assisted profile");
+        free(j);
     }
 }
 
@@ -924,6 +1134,9 @@ int main(void)
     RUN(a_two_stage_menu_reads_its_value_select_move);
     RUN(a_menu_reads_where_the_stick_rests);
     RUN(a_menu_reads_the_move_that_stores);
+    RUN(a_profile_reads_its_manual_steps);
+    RUN(a_value_reads_the_stick_position_it_is_set_from);
+    RUN(a_manual_step_the_generator_refuses_is_refused_here_too);
     RUN(escapes_become_the_characters_they_name);
     RUN(control_escapes_and_a_surrogate_pair_are_read);
     RUN(escaped_keys_and_values_read_as_their_plain_spelling);

@@ -75,7 +75,19 @@
     }
   ],
   "automatable": "assisted",
-  "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps.",
+  "automatable_note": "A jumper is fitted on the two gold contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person does both; the run asks for each step.",
+  "manual": [
+    {
+      "when": "before_power",
+      "action": "Fit the jumper on the two gold contacts.",
+      "source": "Kontronik_Star-Line.pdf p.3, p.5"
+    },
+    {
+      "when": "before_menu",
+      "action": "Pull the jumper off after 5 s or the tone sequence.",
+      "source": "Kontronik_Star-Line.pdf p.5"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -148,7 +160,8 @@
         },
         {
           "number": 6,
-          "name": "Car: proportional brake"
+          "name": "Car: proportional brake",
+          "entry_throttle": "mid"
         }
       ],
       "applies_to": null,
@@ -167,6 +180,7 @@
     "Mode 7 to 9 do not exist in this manual."
   ],
   "notes": [
-    "The BEC type for StarBEC 40-6-12 is not stated; the bec field there reflects no manual statement."
+    "The BEC type for StarBEC 40-6-12 is not stated; the bec field there reflects no manual statement.",
+    "Mode 6 is programmed with the stick at motor-off in the middle (Kontronik_Star-Line.pdf p.6): entry_throttle mid."
   ]
 }

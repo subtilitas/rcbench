@@ -99,6 +99,9 @@ typedef struct {
     const char *name;
     uint8_t     number;         /**< as the ESC sounds it                   */
     bool        is_default;
+    /** The stick position the manual programs this value from, where it
+     *  differs by value; ESC_THR_NONE: the profile's entry position. */
+    esc_throttle_t entry_throttle;
 } esc_value_t;
 
 typedef struct {
@@ -114,6 +117,33 @@ typedef struct {
      *  items may share a number when their conditions differ. */
     const char        *applies_when;
 } esc_item_t;
+
+/** When an operator's step at the ESC is due, in the order of a run. */
+typedef enum {
+    ESC_MANUAL_BEFORE_POWER = 0,  /**< before the supply comes on          */
+    ESC_MANUAL_AT_POWER_UP,       /**< begun before, held while it comes on */
+    ESC_MANUAL_BEFORE_MENU,       /**< powered, after the entry, before the
+                                       menu sounds                          */
+    ESC_MANUAL_DURING_MENU,       /**< while the menu sounds                */
+    ESC_MANUAL_AFTER_PROGRAMMING, /**< once the run is over                 */
+} esc_manual_when_t;
+
+/** The longest manual step's text, in bytes: two lines of a pop-up. */
+#define ESC_MANUAL_ACTION_MAX 120u
+/** The most manual steps one profile holds. */
+#define ESC_MANUAL_MAX 4u
+
+/**
+ * A step a person does at the ESC besides the throttle and the power: fit
+ * or pull a jumper, press a button.  The action is the profile's English,
+ * as the item and value names are.
+ */
+typedef struct {
+    esc_manual_when_t when;
+    const char       *action;
+    uint32_t          hold_ms;  /**< at_power_up: held this long after the
+                                     supply comes on; 0: not stated       */
+} esc_manual_t;
 
 typedef struct {
     const char        *id;      /**< the file name without .json            */
@@ -155,6 +185,10 @@ typedef struct {
     const esc_model_t *models;
     uint8_t            item_count;
     const esc_item_t  *items;
+    /** The operator's steps at the ESC, in the order they are due; 0
+     *  entries on every profile that is not assisted. */
+    uint8_t            manual_count;
+    const esc_manual_t *manual;
 } esc_profile_t;
 
 /* ------------------------------------------------------------ built in */
@@ -234,6 +268,10 @@ bool esc_text_matches(const char *text, const char *pattern);
  * as "JAZZ / MINIJAZZ" names its sizes only in its models ("JAZZ 55 LV").
  */
 bool esc_profile_matches(const esc_profile_t *p, const char *pattern);
+
+/** How many of the profile's manual steps are due at @p when. */
+unsigned esc_profile_manual_count(const esc_profile_t *p,
+                                  esc_manual_when_t when);
 
 #ifdef __cplusplus
 }

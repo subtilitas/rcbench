@@ -25,7 +25,7 @@
  * followed, so a hostile file cannot run the stack down. */
 #define MAX_DEPTH 16
 
-/* No profile object has more than 13 members.  The duplicate check compares
+/* No profile object has more than 14 members.  The duplicate check compares
  * each key with those before it, so this bounds it at 64 x 63 / 2
  * comparisons an object rather than letting a 64 KiB file of short keys ask
  * for tens of millions. */
@@ -602,6 +602,20 @@ static const char *copy_str(dec_t *d, uint32_t ti)
     return out;
 }
 
+/* A string token's length once decoded, in bytes: UTF-8, as the generator
+ * measures it.  The sizing pass has no copy to measure. */
+static size_t decoded_len(const dec_t *d, uint32_t ti)
+{
+    const tok_t *t = &d->t[ti];
+    size_t o = 0;
+    uint32_t i = t->start;
+    while (i < t->end) {
+        uint8_t u[4];
+        o += decode_unit(d->s, &i, u);
+    }
+    return o;
+}
+
 static const char *get_str(dec_t *d, uint32_t obj, const char *key,
                            const char *where, bool empty_ok, bool null_ok)
 {
@@ -737,6 +751,8 @@ static const char *const k_throttle[] = { "min", "mid", "max", "none" };
 static const char *const k_when[]     = { "before_power_on",
     "after_power_on" };
 static const char *const k_changes[]  = { "one", "many" };
+static const char *const k_manual[]   = { "before_power", "at_power_up",
+    "before_menu", "during_menu", "after_programming" };
 static const char *const k_cells[]    = { "lipo", "nimh" };
 
 #define COUNT(a) ((int)(sizeof(a) / sizeof((a)[0])))
@@ -860,6 +876,16 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
         const char *name = get_str(d, ti, "name", w, false, false);
         const bool dflt = get_bool(d, ti, "default", w, true);
         defaults += dflt ? 1u : 0u;
+        /* The stick position the value is programmed from, where the
+         * manual gives one other than the entry's: absent or null, the
+         * entry's.  "none" is no position, so it is refused. */
+        esc_throttle_t et = ESC_THR_NONE;
+        const int64_t ev = member(d, ti, "entry_throttle");
+        if (ev >= 0 && d->t[ev].type != T_NULL) {
+            const int x = get_enum(d, ti, "entry_throttle", w, k_throttle,
+                                   COUNT(k_throttle) - 1);
+            et = (esc_throttle_t)(x < 0 ? 0 : x);
+        }
         if (v != NULL && !d->failed) {
             const uint8_t bit = (uint8_t)(1u << ((uint8_t)num & 7u));
             if ((seen[(uint8_t)num >> 3] & bit) != 0u) {
@@ -867,7 +893,7 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
                 return;
             }
             seen[(uint8_t)num >> 3] |= bit;
-            v[j] = (esc_value_t){ name, (uint8_t)num, dflt };
+            v[j] = (esc_value_t){ name, (uint8_t)num, dflt, et };
         }
     }
     if (defaults > 1u) {
@@ -971,6 +997,73 @@ static void decode_items(dec_t *d, uint32_t root, esc_profile_t *p)
     p->items = it;
 }
 
+/*
+ * The operator's steps at the ESC: absent or null, none.  Only an assisted
+ * profile has them, 1 to ESC_MANUAL_MAX, in the order a run meets them.
+ */
+static void decode_manual(dec_t *d, uint32_t root, esc_profile_t *p)
+{
+    const int64_t arr = member(d, root, "manual");
+    if (arr < 0 || d->t[arr].type == T_NULL) {
+        return;
+    }
+    const uint32_t n = (d->t[arr].type == T_ARR) ? d->t[arr].size : 0u;
+    if (n == 0u || n > ESC_MANUAL_MAX) {
+        FAIL(d, "manual: not 1-%u steps", (unsigned)ESC_MANUAL_MAX);
+        return;
+    }
+    if (p->automatable != ESC_AUTO_ASSISTED) {
+        FAIL(d, "manual: only on an assisted profile");
+        return;
+    }
+    esc_manual_t *m = take(d, n * sizeof(*m), _Alignof(esc_manual_t));
+    int last = 0;
+    uint32_t ti = (uint32_t)arr + 1u;
+    for (uint32_t i = 0; i < n && !d->failed; ++i, ti = d->t[ti].next) {
+        char w[24];
+        (void)snprintf(w, sizeof(w), "manual[%u]", (unsigned)i);
+        if (d->t[ti].type != T_OBJ) {
+            FAIL(d, "%s: not an object", w);
+            return;
+        }
+        const int when = get_enum(d, ti, "when", w, k_manual,
+                                  COUNT(k_manual));
+        if (d->failed) {
+            return;
+        }
+        if (when < last) {
+            FAIL(d, "%s.when: before the step above it", w);
+            return;
+        }
+        last = when;
+        const char *action = get_str(d, ti, "action", w, false, false);
+        if (d->failed) {
+            return;
+        }
+        const int64_t a = member(d, ti, "action");
+        if (decoded_len(d, (uint32_t)a) > ESC_MANUAL_ACTION_MAX) {
+            FAIL(d, "%s.action: longer than %u bytes", w,
+                 (unsigned)ESC_MANUAL_ACTION_MAX);
+            return;
+        }
+        int64_t hold = 0;
+        const bool held = get_num(d, ti, "hold_ms", w, 0, 60000, true, &hold);
+        if (d->failed) {
+            return;
+        }
+        if (held && when != (int)ESC_MANUAL_AT_POWER_UP) {
+            FAIL(d, "%s.hold_ms: only for at_power_up", w);
+            return;
+        }
+        if (m != NULL) {
+            m[i] = (esc_manual_t){ (esc_manual_when_t)when, action,
+                                   (uint32_t)hold };
+        }
+    }
+    p->manual_count = (uint8_t)n;
+    p->manual = m;
+}
+
 static void decode(dec_t *d, esc_profile_t *p)
 {
     const uint32_t root = 0;
@@ -998,6 +1091,12 @@ static void decode(dec_t *d, esc_profile_t *p)
     if (!d->failed && p->automatable != ESC_AUTO_FULL
         && p->automatable_note != NULL && p->automatable_note[0] == '\0') {
         FAIL(d, "automatable_note: needed when not full");
+    }
+    if (!d->failed) {
+        decode_manual(d, root, p);
+    }
+    if (d->failed) {
+        return;
     }
 
     const int64_t s = get_obj(d, root, "scheme", "", T_OBJ);

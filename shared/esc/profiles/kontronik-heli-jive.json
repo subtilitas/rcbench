@@ -34,6 +34,23 @@
   ],
   "automatable": "assisted",
   "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps. Autorotation additionally needs a third throttle position set on the transmitter.",
+  "manual": [
+    {
+      "when": "before_power",
+      "action": "Fit the jumper on 2 of the 3 programming contacts (the German manual: the 2 marked ones).",
+      "source": "Kontronik_Heli-Jive.pdf p.6 (DE), p.15 (EN)"
+    },
+    {
+      "when": "before_menu",
+      "action": "Pull the jumper off after 2 s or the tone sequence, within 10 s of power-up.",
+      "source": "Kontronik_Heli-Jive.pdf p.6, p.9 (DE), p.15 (EN)"
+    },
+    {
+      "when": "after_programming",
+      "action": "The jumper may be fitted again; it can stay on the ESC in use.",
+      "source": "Kontronik_Heli-Jive.pdf p.6"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -162,6 +179,7 @@
     "Kontronik_Heli-Jive.pdf (German) lists modes 1 to 9. Kontronik_Heli-Jive_es.pdf adds mode 10 (LRPM).",
     "Soft start range: German text 8 to 25 s, Spanish text 8 to 12 s.",
     "Both manuals state 'mode 8: eight tones' as the end of the series in the procedure, while the tables list modes 9 and 10.",
-    "The AR step is not an own mode; it is added to modes 2 to 6."
+    "The AR step is not an own mode; it is added to modes 2 to 6.",
+    "The jumper is pulled within 10 s of connecting the drive battery (Kontronik_Heli-Jive.pdf p.6, p.9 DE; p.15, p.18 EN)."
   ]
 }

@@ -166,6 +166,13 @@
   ],
   "automatable": "assisted",
   "automatable_note": "The ESC's own button (marked PRESS on the ESC (on shrink-tube versions on the back near the sensor slot)) must be pressed after the power-up tones. The bench has no actuator for it.",
+  "manual": [
+    {
+      "when": "before_menu",
+      "action": "Press the button marked PRESS after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).",
+      "source": "Kontronik_KOSMIK_HV_HV-I_2025.pdf p.8 (DE), p.20 (EN)"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {

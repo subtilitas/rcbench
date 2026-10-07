@@ -40,6 +40,23 @@
   ],
   "automatable": "assisted",
   "automatable_note": "A jumper must be fitted and removed by hand during every program. The bench cannot do this.",
+  "manual": [
+    {
+      "when": "before_power",
+      "action": "Fit the jumper on the programming contacts.",
+      "source": "Kontronik_Heli-Line.pdf p.5-6"
+    },
+    {
+      "when": "before_menu",
+      "action": "Pull the jumper off as soon as the drive battery is connected.",
+      "source": "Kontronik_Heli-Line.pdf p.6"
+    },
+    {
+      "when": "during_menu",
+      "action": "Current regulation and reset: fit the jumper again when the program asks; a start button is pressed and let go.",
+      "source": "Kontronik_Heli-Line.pdf p.5-6"
+    }
+  ],
   "scheme": {
     "type": "other",
     "entry": {

@@ -33,19 +33,31 @@
   "sources": [
     {
       "file": "Kontronik_Opto.pdf",
-      "pages": "1-2",
+      "pages": "3-4",
       "language": "de",
       "url": "https://kontronik.com/wp-content/uploads/2023/03/OPTO.pdf"
     },
     {
       "file": "Kontronik_BEC.pdf",
-      "pages": "1-2",
+      "pages": "3-4",
       "language": "de",
       "url": "https://kontronik.com/wp-content/uploads/2023/03/BEC.pdf"
     }
   ],
   "automatable": "assisted",
   "automatable_note": "A short-circuit bridge must be fitted on the two gold contacts before power-up and removed afterwards. The bench cannot do this.",
+  "manual": [
+    {
+      "when": "before_power",
+      "action": "Fit the short-circuit bridge on the two gold contacts, or hold a start button there while powering up.",
+      "source": "Kontronik_Opto.pdf p.3-4; Kontronik_BEC.pdf p.3-4"
+    },
+    {
+      "when": "after_programming",
+      "action": "Remove the bridge.",
+      "source": "Kontronik_Opto.pdf p.3"
+    }
+  ],
   "scheme": {
     "type": "stick_position",
     "entry": {

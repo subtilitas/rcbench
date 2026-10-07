@@ -52,6 +52,13 @@
   ],
   "automatable": "assisted",
   "automatable_note": "These ESCs use a button, not a jumper. The INDEX.csv summary names a jumper; the procedure text says 'press and release the button'. The button must be pressed by hand after the entry wait.",
+  "manual": [
+    {
+      "when": "before_menu",
+      "action": "Press and release the button after 2 s or the tone sequence.",
+      "source": "Kontronik_Smile.pdf p.4 (DE), p.17 (EN)"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -123,7 +130,8 @@
         },
         {
           "number": 6,
-          "name": "Car: proportional brake"
+          "name": "Car: proportional brake",
+          "entry_throttle": "mid"
         },
         {
           "number": 7,
@@ -151,6 +159,7 @@
   ],
   "notes": [
     "INDEX.csv summarises the entry with a jumper; the manual describes a button. The summary is wrong for this file.",
-    "Mode 8 does not exist: the manual prints 'Modus 8 - nicht vorhanden'."
+    "Mode 8 does not exist: the manual prints 'Modus 8 - nicht vorhanden'.",
+    "Mode 6 is programmed with the stick at motor-off in the middle (Kontronik_Smile.pdf p.9 DE, p.22 EN): entry_throttle mid."
   ]
 }

@@ -233,3 +233,14 @@ bool esc_profile_matches(const esc_profile_t *p, const char *pattern)
     }
     return false;
 }
+
+unsigned esc_profile_manual_count(const esc_profile_t *p,
+                                  esc_manual_when_t when)
+{
+    unsigned n = 0u;
+    for (unsigned i = 0; p != NULL && p->manual != NULL
+                         && i < p->manual_count; ++i) {
+        n += (p->manual[i].when == when) ? 1u : 0u;
+    }
+    return n;
+}
