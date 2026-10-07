@@ -2003,6 +2003,52 @@ TEST_CASE(a_value_waits_its_own_entry_time)
     CHECK_EQ(esc_stick_change_entry_ms(NULL, NULL, NULL), 0u);
 }
 
+/*
+ * What the PD mini's 20 V leaves out, as the docs count it: of the profiles
+ * the engine runs, one family whose lowest cell count needs more
+ * (hobbywing-skywalker-v2-hv-opto, 22.8 V), and six model rows, each at
+ * 22.8 V: its two models and four of families that open.
+ */
+TEST_CASE(twenty_volts_leave_out_one_family_and_six_models)
+{
+    static const char *const k_rows[] = {
+        "FLYFUN 130A HV OPTO V5", "FLYFUN 160A HV OPTO V5",
+        "Skywalker 130A HV OPTO V2", "Skywalker 160A HV OPTO V2",
+        "Gecko 120A OPTO HV", "Gecko 150A OPTO HV",
+    };
+    unsigned families = 0u, rows = 0u, runs = 0u;
+    for (size_t i = 0; i < esc_profiles_count(); ++i) {
+        const esc_profile_t *p = esc_profiles_at(i);
+        if (esc_stick_kind(p, NULL) == ESC_STICK_KIND_NONE) {
+            continue;
+        }
+        ++runs;
+        if (esc_stick_model_mv(p, -1) > 20000u) {
+            ++families;
+            CHECK_STR_EQ(p->id, "hobbywing-skywalker-v2-hv-opto");
+            CHECK_EQ(esc_stick_model_mv(p, -1), 22800u);
+        }
+        for (int m = 0; m < (int)p->model_count; ++m) {
+            if (esc_stick_model_mv(p, m) <= 20000u) {
+                continue;
+            }
+            ++rows;
+            CHECK_EQ(esc_stick_model_mv(p, m), 22800u);
+            bool known = false;
+            for (size_t k = 0; k < sizeof(k_rows) / sizeof(k_rows[0]); ++k) {
+                known = known || strcmp(p->models[m].name, k_rows[k]) == 0;
+            }
+            if (!known) {
+                T_FAIL("%s: %s needs %u mV", p->id, p->models[m].name,
+                       (unsigned)esc_stick_model_mv(p, m));
+            }
+        }
+    }
+    CHECK_EQ(runs, 24u);
+    CHECK_EQ(families, 1u);
+    CHECK_EQ(rows, 6u);
+}
+
 /* SUN PLUS: the manual's neutral position is the back (mode 4, "neutral
  * position (back position)", p.12 EN; mode 5's two-position switch, p.13
  * EN), so every mode powers up at MIN but mode 6, the car mode, whose
@@ -2619,6 +2665,7 @@ int main(void)
     RUN(a_power_up_position_that_cannot_work_is_refused);
     RUN(a_value_waits_its_own_entry_time);
     RUN(sun_plus_powers_up_at_the_back_but_its_car_mode);
+    RUN(twenty_volts_leave_out_one_family_and_six_models);
     RUN(an_entry_time_that_cannot_work_is_refused);
     RUN(shared_entry_times_compare_what_the_run_waits);
     RUN(a_run_started_with_the_output_on_asks_nothing);

@@ -167,7 +167,7 @@ power, in the order a run meets it. Absent or null: none.
 `source` and any other member of a step stay in the JSON. The action is the
 profile's own text: in German where the profile gives `action_de` and the
 interface is German, else in English. Every step of record has its German.
-The screen translates when it is due. What a run does with
+The screen shows `when` in the interface language. What a run does with
 each step is in [Stick programming](StickProgramming.md#manual-steps).
 
 24 profiles hold steps: the 22 Kontronik families, `turnigy-aquastar` (its

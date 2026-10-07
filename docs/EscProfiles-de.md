@@ -170,7 +170,8 @@ Reihenfolge, in der ein Lauf darauf trifft. Fehlt es oder ist null: keine.
 `source` und jedes andere Feld eines Schritts bleiben im JSON. Die Aktion
 ist der eigene Text des Profils: deutsch, wo das Profil `action_de` nennt
 und die Oberfläche deutsch ist, sonst englisch. Jeder Schritt im Satz hat
-sein Deutsch. Der Bildschirm übersetzt, wann sie fällig ist. Was ein Lauf mit jedem Schritt tut, steht unter
+sein Deutsch. Der Bildschirm zeigt `when` in der Sprache der Oberfläche.
+Was ein Lauf mit jedem Schritt tut, steht unter
 [Stick-Programmierung](StickProgramming-de.md#handgriffe).
 
 24 Profile haben Schritte: die 22 Kontronik-Familien, `turnigy-aquastar`

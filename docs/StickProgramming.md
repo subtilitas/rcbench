@@ -519,7 +519,9 @@ set points.
 
 24 of the 72 profiles are of a kind the engine runs: 13 two-stage and 11
 one-stage. With the PD mini's 20 V and the default caps the list opens 23 of
-them: hobbywing-skywalker-v2-hv-opto needs 22.8 V. A profile runs when it is
+them: hobbywing-skywalker-v2-hv-opto needs 22.8 V. 4 model rows of families
+that open are refused at 20 V too, each needing 22.8 V: FLYFUN 130A and
+160A HV OPTO V5, and Gecko 120A and 150A OPTO HV. A profile runs when it is
 `"automatable": "full"`, or `"assisted"` with manual steps the run can wait
 for (see [Manual steps](#manual-steps)), is entered before power-on, counts
 with `count` or `short_long`, and has a select move. A rest position other than the entry

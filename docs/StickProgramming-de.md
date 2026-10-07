@@ -573,7 +573,10 @@ des Bildschirms SUPPLY.
 24 der 72 Profile sind von einer Art, die der Ablauf ausführt: 13
 zweistufige und 11 einstufige. Mit den 20 V des PD mini und den
 vorgegebenen Grenzen öffnet die Liste 23 davon:
-hobbywing-skywalker-v2-hv-opto braucht 22,8 V. Ein Profil läuft, wenn es
+hobbywing-skywalker-v2-hv-opto braucht 22,8 V. Auch 4 Modellzeilen von
+Familien, die sich öffnen, werden bei 20 V abgelehnt, jede mit 22,8 V:
+FLYFUN 130A und 160A HV OPTO V5 sowie Gecko 120A und 150A OPTO HV. Ein
+Profil läuft, wenn es
 `"automatable": "full"` ist, oder `"assisted"` mit Handgriffen, auf die der
 Lauf warten kann (siehe [Handgriffe](#handgriffe)), vor dem Einschalten
 betreten wird, mit `count`
