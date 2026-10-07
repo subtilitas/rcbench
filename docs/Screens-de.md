@@ -235,7 +235,9 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
 - Ist der Ausgang an, wartet ein getippter Sollwert auf die Rückfrage von
   SUPPLY, AUSGANG IST EIN, mit ÜBERNEHMEN und ABBRECHEN, außer SUPPLYs OPTIONEN, RÜCKFRAGE
   IM BETRIEB, TASTENFELD ist aus. Die Rückfrage verschwindet unbeantwortet, wenn
-  der Ausgang ausgeht.
+  der Ausgang ausgeht oder STOP gedrückt wird. Ein ÜBERNEHMEN im selben Frame
+  wie STOP übernimmt nichts, auch wenn das Netzteil den Ausgang erst eine
+  Messung später als aus meldet.
 - Eine Spannung, die von 6,0 V oder darunter auf mehr als 6,0 V erhöht wird,
   öffnet die Warnung NUR HV-SERVOS: Standardservos sind für 4,8 bis 6,0 V
   ausgelegt, darüber arbeitet nur ein als HV (high voltage) spezifiziertes
@@ -498,7 +500,8 @@ Schrittknöpfen oder von der Tastatur eine Frage, die die Änderung nennt.
 ÜBERNEHMEN gibt sie dem Netzteil; ABBRECHEN verwirft sie, und der Schieber geht
 zurück. Ein Ziehen fragt einmal, beim Loslassen, und bis dahin hält das
 Netzteil den alten Sollwert. Bei ausgeschaltetem Ausgang wird nichts gefragt.
-OPTIONEN schaltet die Frage für den Schieber und für die Tastatur getrennt
+STOP schließt die Frage unbeantwortet: ein ÜBERNEHMEN im selben Frame (etwa
+50 ms) wie STOP übernimmt nichts. OPTIONEN schaltet die Frage für den Schieber und für die Tastatur getrennt
 ab.
 
 ![Die Frage](img/de/supply-confirm.png)

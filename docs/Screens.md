@@ -217,7 +217,8 @@ the change on both.
 - While the output is on, a typed set point waits for SUPPLY's question,
   OUTPUT IS ON, with APPLY and CANCEL, unless SUPPLY's SETTINGS, CONFIRM
   WHILE ON, KEYPAD is off. The question goes, unanswered, when the output
-  goes off.
+  goes off or on STOP. An APPLY tapped in the same frame as STOP applies
+  nothing, though the supply reports the output off a sample later.
 - A voltage raised from 6.0 V or below to above it opens the warning HV
   SERVOS ONLY: standard servos are rated for 4.8 to 6.0 V, and above that
   only a servo specified as HV (high voltage) is within its rating; a
@@ -463,7 +464,8 @@ point from the slider or its step buttons, or from the keypad, opens a
 question that names the change. APPLY gives it to the supply; CANCEL drops it
 and the slider goes back. A drag asks once, on the release, and the supply
 holds the old set point until then. With the output off nothing is asked.
-SETTINGS switches the question off for the slider and for the keypad
+STOP closes the question unanswered: an APPLY tapped in the same frame
+(about 50 ms) as STOP applies nothing. SETTINGS switches the question off for the slider and for the keypad
 separately.
 
 ![The question](img/supply-confirm.png)

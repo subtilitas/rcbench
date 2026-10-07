@@ -141,6 +141,13 @@ history is in git.
 
 ### Fixed
 
+- **STOP closes the OUTPUT IS ON question.** A STOP and a complete APPLY
+  tap in the same render frame (about 50 ms) applied the typed set point on
+  SERVO and on SUPPLY: the stop was seen before the tap, and the question
+  still stood until the supply reported its output off a sample later. Each
+  screen counts its stops, and a question stands only under the count it
+  was asked with, so the tap applies nothing and the question closes in the
+  same frame.
 - **The servo test's set points wait for the supply's own OFF.** After a
   run, SUPPLY's set points went back once a reading after the run's OFF
   showed the panel's own request off; the PD mini follows that request a
