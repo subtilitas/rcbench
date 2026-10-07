@@ -50,11 +50,13 @@
     {
       "when": "before_power",
       "action": "Fit the short-circuit bridge on the two gold contacts, or hold a start button there while powering up.",
+      "action_de": "Kurzschlussbrücke auf die beiden Goldkontakte stecken, oder dort einen Starttaster beim Einschalten halten.",
       "source": "Kontronik_Opto.pdf p.3-4; Kontronik_BEC.pdf p.3-4"
     },
     {
       "when": "after_programming",
       "action": "Remove the bridge.",
+      "action_de": "Brücke abziehen.",
       "source": "Kontronik_Opto.pdf p.3"
     }
   ],

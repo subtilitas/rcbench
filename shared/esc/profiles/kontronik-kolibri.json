@@ -80,6 +80,7 @@
     {
       "when": "before_menu",
       "action": "Press the button on the ESC after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).",
+      "action_de": "Taster am ESC nach den Zellentönen drücken (Schrumpfschlauch-Versionen: hinten, nahe dem Sensoranschluss).",
       "source": "Kontronik_KOLIBRI_de.pdf p.7 (DE), p.18 (EN)"
     }
   ],

@@ -1045,6 +1045,25 @@ static int sp_wrap_lines(const char *text, int cells, int max_lines)
     return lines;
 }
 
+/* A manual step in the language showing: the profile's German where it
+ * gives one and German shows, else its English. */
+const char *programmer_screen_step_text(const esc_manual_t *m)
+{
+    if (m == NULL) {
+        return "";
+    }
+    if (ui_text_language() == UI_LANG_DE && m->action_de != NULL
+        && m->action_de[0] != '\0') {
+        return m->action_de;
+    }
+    return (m->action != NULL) ? m->action : "";
+}
+
+static const char *sp_action(const esc_manual_t *m)
+{
+    return programmer_screen_step_text(m);
+}
+
 /* When a manual step is due, in the language showing. */
 static const char *sp_when_text(const esc_manual_t *m)
 {
@@ -2492,7 +2511,7 @@ static void sp_draw_result(gfx_canvas_t *c)
             continue;
         }
         char what[256];
-        snprintf(what, sizeof(what), "%s: %s", sp_when_text(m), m->action);
+        snprintf(what, sizeof(what), "%s: %s", sp_when_text(m), sp_action(m));
         const int n = sp_wrap(c, PAD + 12, y, pitch, what, 93, room,
                               ui_theme_color(UI_C_WARN));
         y += n * pitch;
@@ -2817,13 +2836,13 @@ static void sp_draw_warning_hand(gfx_canvas_t *c, const esc_profile_t *p,
             if (m->when != ESC_MANUAL_BEFORE_POWER) {
                 continue;
             }
-            const int need = sp_wrap_lines(m->action, 90, 2);
+            const int need = sp_wrap_lines(sp_action(m), 90, 2);
             if (y + (need - 1) * 22 > last - keep) {
                 sp_text(c, a.x + 20, y, TR(SP_WARN_HAND_MORE), 92,
                         ui_theme_color(UI_C_WARN));
                 return;
             }
-            y += 22 * sp_wrap(c, a.x + 44, y, 22, m->action, 90, 2,
+            y += 22 * sp_wrap(c, a.x + 44, y, 22, sp_action(m), 90, 2,
                               ui_theme_color(UI_C_TEXT));
         }
     }
@@ -2909,7 +2928,7 @@ static void sp_draw_hand(gfx_canvas_t *c)
         gfx_text(c, a.x + 20, y, line, UI_FONT_LABEL,
                  ui_theme_color(UI_C_WARN), 1);
         y += 19;
-        y += 19 * sp_wrap(c, a.x + 44, y, 19, m->action, 90, 2,
+        y += 19 * sp_wrap(c, a.x + 44, y, 19, sp_action(m), 90, 2,
                           ui_theme_color(UI_C_TEXT));
         y += 4;
     }
@@ -2945,7 +2964,7 @@ static void sp_draw_prompt(gfx_canvas_t *c)
     gfx_text(c, a.x + 20, a.y + 92, sp_when_text(m), UI_FONT_LABEL,
              ui_theme_color(UI_C_WARN), 1);
     int y = a.y + 118;
-    y += 22 * sp_wrap(c, a.x + 20, y, 22, m->action, 92, 3,
+    y += 22 * sp_wrap(c, a.x + 20, y, 22, sp_action(m), 92, 3,
                       ui_theme_color(UI_C_TEXT));
     y += 12;
     const char *pos = sp_pos(e->out.throttle_pct);

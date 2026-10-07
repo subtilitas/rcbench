@@ -195,7 +195,12 @@ def check_manual(d: dict, w: str, auto: str) -> list[dict]:
         hold = num(m, "hold_ms", mw, 60000)
         want(hold is None or when == "ESC_MANUAL_AT_POWER_UP",
              f"{mw}.hold_ms", "only for at_power_up")
-        out.append({"when": when, "action": action, "hold": hold or 0})
+        # The German beside it: absent or null, none; else as the action.
+        de = "" if m.get("action_de") is None else text(m, "action_de", mw)
+        want(len(de.encode("utf-8")) <= ACTION_MAX, f"{mw}.action_de",
+             f"longer than {ACTION_MAX} bytes")
+        out.append({"when": when, "action": action, "hold": hold or 0,
+                    "de": de})
     return out
 
 
@@ -427,7 +432,7 @@ def emit(profiles: list[dict]) -> str:
             o.append(f"static const esc_manual_t {n}_manual[] = {{\n")
             for m in p["manual"]:
                 o.append(f"    {{ {m['when']}, {c_str(m['action'])}, "
-                         f"{m['hold']}u }},\n")
+                         f"{m['hold']}u, {c_str(m['de'])} }},\n")
             o.append("};\n")
         if p["items"]:
             o.append(f"static const esc_item_t {n}_items[] = {{\n")
@@ -572,6 +577,15 @@ def self_test() -> list[str]:
             '[{"when": "at_power_up", "action": "x", "hold_ms": 60001}]'),
         "manual hold a string": man(
             '[{"when": "at_power_up", "action": "x", "hold_ms": "2"}]'),
+        "manual de empty": man('[{"when": "before_menu", "action": "x", '
+                               '"action_de": ""}]'),
+        "manual de a number": man('[{"when": "before_menu", "action": "x", '
+                                  '"action_de": 1}]'),
+        "manual de 61 umlauts": man('[{"when": "before_menu", "action": "x", '
+                                    '"action_de": "' + "\u00fc" * 61
+                                    + '"}]'),
+        "manual de 121 bytes": man('[{"when": "before_menu", "action": "x", '
+                                   '"action_de": "' + "x" * 121 + '"}]'),
     }
     accept = {
         "plain": base.encode("utf-8"),
@@ -616,6 +630,13 @@ def self_test() -> list[str]:
             '"hold_ms": null}]'),
         "manual with more": man('[{"when": "during_menu", "action": "x", '
                                 '"source": "p. 5"}]'),
+        "manual de null": man('[{"when": "before_menu", "action": "x", '
+                              '"action_de": null}]'),
+        "manual de 60 umlauts": man('[{"when": "before_menu", "action": "x", '
+                                    '"action_de": "' + "\u00fc" * 60
+                                    + '"}]'),
+        "manual de escaped": man('[{"when": "before_menu", "action": "x", '
+                                 '"action_de": "Br\\u00fccke ab"}]'),
     }
     bad = []
     with tempfile.TemporaryDirectory() as tmp:

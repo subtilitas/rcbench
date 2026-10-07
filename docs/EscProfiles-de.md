@@ -161,12 +161,13 @@ Reihenfolge, in der ein Lauf darauf trifft. Fehlt es oder ist null: keine.
 | `manual` | 1 bis 4 Schritte; nur in einem Profil mit `automatable: "assisted"` |
 | `when` | `before_power`, `at_power_up`, `before_menu`, `during_menu`, `after_programming`; kein Schritt früher als der darüber |
 | `action` | 1 bis 120 Byte UTF-8, englisch: zwei Zeilen des Pop-ups |
+| `action_de` | derselbe Schritt auf Deutsch, 1 bis 120 Byte UTF-8, Umlaute eingeschlossen; fehlt es oder ist null, erscheint auch auf Deutsch das Englische |
 | `hold_ms` | nur `at_power_up`: 0 bis 60000, wie lange der Schritt nach dem Einschalten gehalten wird; fehlt oder null, wo nicht angegeben |
 
 `source` und jedes andere Feld eines Schritts bleiben im JSON. Die Aktion
-ist der eigene Text des Profils und erscheint in jeder Sprache englisch,
-wie die Namen von Punkten und Werten; der Bildschirm übersetzt, wann sie
-fällig ist. Was ein Lauf mit jedem Schritt tut, steht unter
+ist der eigene Text des Profils: deutsch, wo das Profil `action_de` nennt
+und die Oberfläche deutsch ist, sonst englisch. Jeder Schritt im Satz hat
+sein Deutsch. Der Bildschirm übersetzt, wann sie fällig ist. Was ein Lauf mit jedem Schritt tut, steht unter
 [Stick-Programmierung](StickProgramming-de.md#handgriffe).
 
 24 Profile haben Schritte: die 22 Kontronik-Familien, `turnigy-aquastar`

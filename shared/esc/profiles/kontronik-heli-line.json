@@ -44,16 +44,19 @@
     {
       "when": "before_power",
       "action": "Fit the jumper on the programming contacts.",
+      "action_de": "Jumper auf die Programmierkontakte stecken.",
       "source": "Kontronik_Heli-Line.pdf p.5-6"
     },
     {
       "when": "before_menu",
       "action": "Pull the jumper off as soon as the drive battery is connected.",
+      "action_de": "Jumper abziehen, sobald der Antriebsakku angesteckt ist.",
       "source": "Kontronik_Heli-Line.pdf p.6"
     },
     {
       "when": "during_menu",
       "action": "Current regulation and reset: fit the jumper again when the program asks; a start button is pressed and let go.",
+      "action_de": "Stromregelung und Reset: Jumper wieder stecken, wenn das Programm es verlangt; Starttaster drücken und loslassen.",
       "source": "Kontronik_Heli-Line.pdf p.5-6"
     }
   ],

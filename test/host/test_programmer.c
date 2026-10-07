@@ -1602,6 +1602,48 @@ TEST_CASE(a_run_asks_for_its_manual_step_and_goes_on_with_done)
     draws();
 }
 
+/* A step shows in German where the profile gives it and German shows,
+ * and in English otherwise; every step of record has its German. */
+TEST_CASE(a_manual_step_shows_in_the_language_showing)
+{
+    const esc_profile_t *p = esc_profiles_find("kontronik-jazz");
+    CHECK(p != NULL && p->manual_count == 2u);
+    if (p == NULL || p->manual_count < 2u) {
+        return;
+    }
+    ui_text_set_language(UI_LANG_EN);
+    CHECK_STR_EQ(programmer_screen_step_text(&p->manual[1]),
+                 p->manual[1].action);
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(programmer_screen_step_text(&p->manual[1]),
+                 "Nach 2 s oder der Tonfolge: JAZZ: Jumper abziehen. "
+                 "MINIJAZZ: Taster dr\xC3\xBC" "cken.");
+    /* No German in the step: the English. */
+    esc_manual_t m = p->manual[0];
+    m.action_de = "";
+    CHECK_STR_EQ(programmer_screen_step_text(&m), m.action);
+    m.action_de = NULL;
+    CHECK_STR_EQ(programmer_screen_step_text(&m), m.action);
+    CHECK_STR_EQ(programmer_screen_step_text(NULL), "");
+    for (size_t i = 0; i < esc_profiles_count(); ++i) {
+        const esc_profile_t *q = esc_profiles_at(i);
+        for (unsigned k = 0; k < q->manual_count; ++k) {
+            if (q->manual[k].action_de == NULL
+                || q->manual[k].action_de[0] == '\0') {
+                T_FAIL("%s step %u has no German", q->id, k + 1u);
+            }
+        }
+    }
+    /* Drawn in German: the pop-up of a profile opened for the first
+     * time. */
+    fresh();
+    ui_text_set_language(UI_LANG_DE);
+    descend_to_jazz();
+    CHECK(programmer_screen_stick_hand_shown());
+    draws();
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* ABORT on the prompt ends the run as ABORT does: disarmed, supply off. */
 TEST_CASE(abort_on_the_prompt_ends_the_run)
 {
@@ -1670,5 +1712,6 @@ int main(void)
     RUN(a_row_that_does_not_run_shows_its_manual_steps);
     RUN(a_run_asks_for_its_manual_step_and_goes_on_with_done);
     RUN(abort_on_the_prompt_ends_the_run);
+    RUN(a_manual_step_shows_in_the_language_showing);
     return test_summary("programmer");
 }

@@ -68,16 +68,19 @@
     {
       "when": "before_power",
       "action": "Fit the jumper on the programming contacts.",
+      "action_de": "Jumper auf die Programmierkontakte stecken.",
       "source": "Kontronik_Cyber-Line.pdf p.5-8"
     },
     {
       "when": "before_menu",
       "action": "Pull the jumper off as soon as the drive battery is connected.",
+      "action_de": "Jumper abziehen, sobald der Antriebsakku angesteckt ist.",
       "source": "Kontronik_Cyber-Line.pdf p.6-7"
     },
     {
       "when": "during_menu",
       "action": "Current limit and reset: fit the jumper again while the ESC beeps, as the program asks.",
+      "action_de": "Strombegrenzung und Reset: Jumper wieder stecken, während der ESC piept, wie das Programm es verlangt.",
       "source": "Kontronik_Cyber-Line.pdf p.5, p.8"
     }
   ],

@@ -74,6 +74,10 @@ int programmer_screen_stick_listed(int *top);
 /** The profile whose page is open, or NULL on the list; for tests. */
 const esc_profile_t *programmer_screen_stick_page(void);
 
+/** A manual step's text in the language showing: its action_de where the
+ *  profile gives one and German shows, else its English action. */
+const char *programmer_screen_step_text(const esc_manual_t *m);
+
 /** Whether the manual steps' pop-up is open; for tests. */
 bool programmer_screen_stick_hand_shown(void);
 

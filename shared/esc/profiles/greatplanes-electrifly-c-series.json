@@ -54,11 +54,13 @@
     {
       "when": "at_power_up",
       "action": "Press the ESC's on/off button: once for brake setup; held 4-5 s, until the red LED goes out, for battery setup.",
+      "action_de": "Ein/Aus-Taster des ESC: einmal für Bremse; 4-5 s halten, bis die rote LED ausgeht, für Akkutyp.",
       "source": "GreatPlanes_Electrifly_C-25_C-35_C-55.pdf p.2"
     },
     {
       "when": "during_menu",
       "action": "Battery setup: press the button to step the type, read it on the blue LED; hold it 2-3 s to store.",
+      "action_de": "Akkutyp: Taster drücken zum Weiterschalten, an der blauen LED ablesen; 2-3 s halten zum Speichern.",
       "source": "GreatPlanes_Electrifly_C-25_C-35_C-55.pdf p.2"
     }
   ],

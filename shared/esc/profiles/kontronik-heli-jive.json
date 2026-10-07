@@ -38,16 +38,19 @@
     {
       "when": "before_power",
       "action": "Fit the jumper on 2 of the 3 programming contacts (the German manual: the 2 marked ones).",
+      "action_de": "Jumper auf 2 der 3 Programmierkontakte stecken (deutsches Handbuch: die 2 markierten).",
       "source": "Kontronik_Heli-Jive.pdf p.6 (DE), p.15 (EN)"
     },
     {
       "when": "before_menu",
       "action": "Pull the jumper off after 2 s or the tone sequence, within 10 s of power-up.",
+      "action_de": "Jumper nach 2 s oder der Tonfolge abziehen, innerhalb 10 s nach dem Einschalten.",
       "source": "Kontronik_Heli-Jive.pdf p.6, p.9 (DE), p.15 (EN)"
     },
     {
       "when": "after_programming",
       "action": "The jumper may be fitted again; it can stay on the ESC in use.",
+      "action_de": "Jumper darf wieder gesteckt werden und im Betrieb am ESC bleiben.",
       "source": "Kontronik_Heli-Jive.pdf p.6"
     }
   ],

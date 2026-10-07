@@ -80,11 +80,13 @@
     {
       "when": "before_power",
       "action": "Fit the jumper on the two gold contacts.",
+      "action_de": "Jumper auf die beiden Goldkontakte stecken.",
       "source": "Kontronik_Star-Line.pdf p.3, p.5"
     },
     {
       "when": "before_menu",
       "action": "Pull the jumper off after 5 s or the tone sequence.",
+      "action_de": "Jumper nach 5 s oder der Tonfolge abziehen.",
       "source": "Kontronik_Star-Line.pdf p.5"
     }
   ],

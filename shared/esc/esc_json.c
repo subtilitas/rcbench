@@ -1091,9 +1091,22 @@ static void decode_manual(dec_t *d, uint32_t root, esc_profile_t *p)
             FAIL(d, "%s.hold_ms: only for at_power_up", w);
             return;
         }
+        /* The German beside it: absent or null, none; else as the
+         * action, 1 to ESC_MANUAL_ACTION_MAX bytes. */
+        const char *de = get_str(d, ti, "action_de", w, false, true);
+        if (d->failed) {
+            return;
+        }
+        const int64_t dv = member(d, ti, "action_de");
+        if (dv >= 0 && d->t[dv].type == T_STR
+            && decoded_len(d, (uint32_t)dv) > ESC_MANUAL_ACTION_MAX) {
+            FAIL(d, "%s.action_de: longer than %u bytes", w,
+                 (unsigned)ESC_MANUAL_ACTION_MAX);
+            return;
+        }
         if (m != NULL) {
             m[i] = (esc_manual_t){ (esc_manual_when_t)when, action,
-                                   (uint32_t)hold };
+                                   (uint32_t)hold, de };
         }
     }
     p->manual_count = (uint8_t)n;

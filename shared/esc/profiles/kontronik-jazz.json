@@ -86,11 +86,13 @@
     {
       "when": "before_power",
       "action": "JAZZ: fit the jumper on any 2 of the 3 programming contacts. MINIJAZZ has a button instead.",
+      "action_de": "JAZZ: Jumper auf 2 beliebige der 3 Programmierkontakte stecken. MINIJAZZ hat stattdessen einen Taster.",
       "source": "Kontronik_Jazz.pdf p.6 (DE), p.15 (EN); Kontronik_MiniJazz.pdf p.6"
     },
     {
       "when": "before_menu",
       "action": "After 2 s or the tone sequence: JAZZ: pull the jumper off. MINIJAZZ: press the button.",
+      "action_de": "Nach 2 s oder der Tonfolge: JAZZ: Jumper abziehen. MINIJAZZ: Taster drücken.",
       "source": "Kontronik_Jazz.pdf p.6; Kontronik_MiniJazz.pdf p.6 (DE), p.15 (EN)"
     }
   ],

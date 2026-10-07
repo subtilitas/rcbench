@@ -80,11 +80,13 @@
     {
       "when": "before_power",
       "action": "Fit the jumper on the two gold contacts.",
+      "action_de": "Jumper auf die beiden Goldkontakte stecken.",
       "source": "Kontronik_3SL.pdf p.2, p.5"
     },
     {
       "when": "before_menu",
       "action": "Pull the jumper off after 2 s or the three-tone sequence.",
+      "action_de": "Jumper nach 2 s oder dem Dreiklang abziehen.",
       "source": "Kontronik_3SL.pdf p.5"
     }
   ],

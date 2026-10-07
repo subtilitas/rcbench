@@ -56,6 +56,7 @@
     {
       "when": "before_menu",
       "action": "Press the button after the tone sequence: 2 s for modes 1 to 3, 5 s for modes 4 to 6.",
+      "action_de": "Taster nach der Tonfolge drücken: 2 s bei Modi 1 bis 3, 5 s bei Modi 4 bis 6.",
       "source": "Kontronik_Sun_Plus.pdf p.3-6 (DE), p.11-13 (EN)"
     }
   ],

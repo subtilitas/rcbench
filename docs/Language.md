@@ -15,7 +15,7 @@ kept in NVS (non-volatile storage) like every setting, once SAVE takes it.
 | --- | --- |
 | labels, setting names and their help, alerts in the band, warning panels, refusal notes, the splash's details | the terms listed under [Terms that stay English](#terms-that-stay-english) |
 | the servo test's TXT (plain text) report, in the language showing when the run starts | the servo test's CSV (comma-separated values) file: its header and the words in its rows (`test`, `phase`, `mode`), so tools read every run alike |
-| the stick programmer's notes and refusals | the ESC (electronic speed controller) profiles' names, items and values, which are the manuals' |
+| the stick programmer's notes and refusals, and an ESC profile's manual steps where the profile gives them in German (`action_de`) | the ESC (electronic speed controller) profiles' names, items and values, which are the manuals' |
 | | the programmer's parameter names and their values, which are the firmware's own, as its configurators show them |
 | | the console log |
 

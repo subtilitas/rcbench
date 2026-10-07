@@ -80,11 +80,13 @@
     {
       "when": "before_power",
       "action": "Fit the jumper on the 2 marked programming contacts (English manual: any 2 of the 3).",
+      "action_de": "Jumper auf die 2 markierten Programmierkontakte stecken (englisches Handbuch: 2 beliebige der 3).",
       "source": "Kontronik_Jive.pdf p.6 (DE), p.18 (EN)"
     },
     {
       "when": "before_menu",
       "action": "Pull the jumper off after 2 s or the tone sequence.",
+      "action_de": "Jumper nach 2 s oder der Tonfolge abziehen.",
       "source": "Kontronik_Jive.pdf p.6 (DE), p.18 (EN)"
     }
   ],

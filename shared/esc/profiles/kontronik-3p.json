@@ -62,11 +62,13 @@
     {
       "when": "before_power",
       "action": "Fit the jumper on the two gold pins; it stays on through phase 1.",
+      "action_de": "Jumper auf die beiden Goldkontakte stecken; er bleibt während Phase 1 stecken.",
       "source": "Kontronik_3P_en.pdf p.3"
     },
     {
       "when": "during_menu",
       "action": "Between phases: power off, pull the jumper, power on. Phase 2: pull it before the last flashes to switch cutoff off.",
+      "action_de": "Zwischen den Phasen: aus, Jumper ab, ein. Phase 2: vor den letzten Blinkzeichen abziehen, Abschaltung aus.",
       "source": "Kontronik_3P_en.pdf p.3, p.5"
     }
   ],

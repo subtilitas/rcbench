@@ -54,6 +54,7 @@
     {
       "when": "at_power_up",
       "action": "Switch the ESC's own switch on, with the throttle at MAX and the drive battery connected.",
+      "action_de": "Den Schalter des ESC einschalten, mit Throttle auf MAX und angestecktem Antriebsakku.",
       "source": "Turnigy_Aquastar.pdf p.3, p.12"
     }
   ],

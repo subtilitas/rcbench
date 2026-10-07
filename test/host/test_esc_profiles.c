@@ -161,6 +161,7 @@ static void same(const esc_profile_t *a, const esc_profile_t *b)
         CHECK_EQ(a->manual[i].when, b->manual[i].when);
         CHECK_STR_EQ(a->manual[i].action, b->manual[i].action);
         CHECK_EQ(a->manual[i].hold_ms, b->manual[i].hold_ms);
+        CHECK_STR_EQ(a->manual[i].action_de, b->manual[i].action_de);
     }
 }
 
@@ -192,7 +193,7 @@ TEST_CASE(a_profile_reads_its_manual_steps)
         "  \"hold_ms\": 3000, \"source\": \"p. 5\"},"
         " {\"when\": \"before_menu\", \"action\": \"Pull the jumper.\"},"
         " {\"when\": \"after_programming\", \"action\": \"T\\u00fcr zu.\","
-        "  \"hold_ms\": null}]");
+        "  \"hold_ms\": null, \"action_de\": \"Br\\u00fccke ab.\"}]");
     block = NULL;
     char err[96] = "";
     CHECK(esc_profile_parse(j, strlen(j), &p, &block, err, sizeof(err)));
@@ -206,6 +207,8 @@ TEST_CASE(a_profile_reads_its_manual_steps)
         CHECK_EQ(p.manual[2].when, ESC_MANUAL_BEFORE_MENU);
         CHECK_EQ(p.manual[3].when, ESC_MANUAL_AFTER_PROGRAMMING);
         CHECK_STR_EQ(p.manual[3].action, "T\xC3\xBCr zu.");
+        CHECK_STR_EQ(p.manual[3].action_de, "Br\xC3\xBC" "cke ab.");
+        CHECK_STR_EQ(p.manual[0].action_de, "");
         CHECK_EQ(esc_profile_manual_count(&p, ESC_MANUAL_BEFORE_MENU), 1u);
         CHECK_EQ(esc_profile_manual_count(&p, ESC_MANUAL_DURING_MENU), 0u);
     }
@@ -398,6 +401,13 @@ TEST_CASE(a_manual_step_the_generator_refuses_is_refused_here_too)
     memcpy(u60, u61, 121);
     u60[120] = '\0';
     char long121[256], umlaut61[256], long120[256], umlaut60[256];
+    char de61[256], de60[256];
+    (void)snprintf(de61, sizeof(de61),
+                   "[{\"when\": \"before_menu\", \"action\": \"x\", "
+                   "\"action_de\": \"%s\"}]", u61);
+    (void)snprintf(de60, sizeof(de60),
+                   "[{\"when\": \"before_menu\", \"action\": \"x\", "
+                   "\"action_de\": \"%s\"}]", u60);
     (void)snprintf(long121, sizeof(long121),
                    "[{\"when\": \"before_menu\", \"action\": \"%s\"}]", x121);
     (void)snprintf(umlaut61, sizeof(umlaut61),
@@ -439,6 +449,14 @@ TEST_CASE(a_manual_step_the_generator_refuses_is_refused_here_too)
           " \"hold_ms\": 60001}]", "manual[0].hold_ms: outside" },
         { "[{\"when\": \"at_power_up\", \"action\": \"x\","
           " \"hold_ms\": \"2\"}]", "manual[0].hold_ms: not a whole" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"action_de\": \"\"}]", "manual[0].action_de: empty" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"action_de\": 1}]", "manual[0].action_de: not a string" },
+        { de61, "manual[0].action_de: longer than 120 bytes" },
+        { de60, NULL },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"action_de\": null}]", NULL },
         { long120, NULL },
         { umlaut60, NULL },
         { four, NULL },

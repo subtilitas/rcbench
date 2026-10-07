@@ -44,11 +44,13 @@
     {
       "when": "before_power",
       "action": "Plug the jumper cable onto the ESC.",
+      "action_de": "Jumperkabel auf den ESC stecken.",
       "source": "Kontronik_Jive_Pro.pdf p.5, p.7"
     },
     {
       "when": "before_menu",
       "action": "Pull the jumper cable off after the cell-count tones, within 10 s of power-up.",
+      "action_de": "Jumperkabel nach den Zellentönen abziehen, innerhalb 10 s nach dem Einschalten.",
       "source": "Kontronik_Jive_Pro.pdf p.7, p.11 (DE), p.22 (EN)"
     }
   ],

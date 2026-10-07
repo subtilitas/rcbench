@@ -64,6 +64,9 @@ sweep starts over from the curve's beginning, and the alert band says so.
   Kontronik car modes go to the brake after full throttle. A run makes each
   STORE after the one before, then switches the supply off; the simulated
   ESC stores nothing without them. A two-stage profile takes none.
+- **Manual steps in German.** A step carries its German in `action_de`
+  (1-120 bytes of UTF-8), shown when the interface is German, with the
+  English as the fallback. All 24 profiles' steps have it.
 
 ### Changed
 

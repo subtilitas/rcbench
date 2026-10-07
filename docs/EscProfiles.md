@@ -158,11 +158,13 @@ power, in the order a run meets it. Absent or null: none.
 | `manual` | 1 to 4 steps; only on an `automatable: "assisted"` profile |
 | `when` | `before_power`, `at_power_up`, `before_menu`, `during_menu`, `after_programming`; each step no earlier than the one above it |
 | `action` | 1 to 120 bytes of UTF-8, in English: two lines of the screen's pop-up |
+| `action_de` | the same step in German, 1 to 120 bytes of UTF-8, umlauts included; absent or null when none, and the English shows in German too |
 | `hold_ms` | `at_power_up` only: 0 to 60000, how long the step is held after the supply comes on; absent or null when not stated |
 
 `source` and any other member of a step stay in the JSON. The action is the
-profile's own text and is shown in English in every language, as item and
-value names are; the screen translates when it is due. What a run does with
+profile's own text: in German where the profile gives `action_de` and the
+interface is German, else in English. Every step of record has its German.
+The screen translates when it is due. What a run does with
 each step is in [Stick programming](StickProgramming.md#manual-steps).
 
 24 profiles hold steps: the 22 Kontronik families, `turnigy-aquastar` (its

@@ -147,13 +147,16 @@ typedef enum {
 /**
  * A step a person does at the ESC besides the throttle and the power: fit
  * or pull a jumper, press a button.  The action is the profile's English,
- * as the item and value names are.
+ * as the item and value names are, with its German beside it.
  */
 typedef struct {
     esc_manual_when_t when;
     const char       *action;
     uint32_t          hold_ms;  /**< at_power_up: held this long after the
                                      supply comes on; 0: not stated       */
+    /** The same step in German, shown when the interface is; "" or NULL
+     *  where the profile gives none, and the English is shown. */
+    const char       *action_de;
 } esc_manual_t;
 
 typedef struct {

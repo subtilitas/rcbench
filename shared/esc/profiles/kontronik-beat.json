@@ -128,11 +128,13 @@
     {
       "when": "before_power",
       "action": "Fit the jumper on any 2 of the 3 programming contacts.",
+      "action_de": "Jumper auf 2 beliebige der 3 Programmierkontakte stecken.",
       "source": "Kontronik_Beat.pdf p.5 (DE), p.27 (EN)"
     },
     {
       "when": "before_menu",
       "action": "Pull the jumper off after 2 s or the tone sequence.",
+      "action_de": "Jumper nach 2 s oder der Tonfolge abziehen.",
       "source": "Kontronik_Beat.pdf p.5 (DE), p.27 (EN)"
     }
   ],
