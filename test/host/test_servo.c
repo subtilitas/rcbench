@@ -1747,6 +1747,23 @@ TEST_CASE(pause_holds_the_sweep_and_a_second_tap_resumes_it)
 }
 
 /*
+ * The panel's acknowledgement of @p hold, now: the phase the far end keeps
+ * is the curve's now, the screen's own timing of the curve standing in for
+ * the panel's, which the tests start in step with it.
+ */
+static void ack_hold(const servo_cmd_t *hold)
+{
+    servo_screen_sweep_held(hold->pause_seq, servo_screen_curve_ms());
+}
+
+/* The panel's acknowledgement of a RESUME, @p ago_ms ago, of a far end that
+ * kept @p kept_ms of its curve: the age of its phase 0. */
+static void ack_resume(uint32_t kept_ms, uint32_t ago_ms)
+{
+    servo_screen_sweep_started(kept_ms + ago_ms, SERVO_SWEEP_RESUMED, 0u);
+}
+
+/*
  * The horn goes on from the phase it was paused at, however long the pause:
  * the 0.5 Hz sine paused a quarter of a second in is at its peak a quarter
  * of a second after PAUSED.  A coprocessor that started the curve over
@@ -1778,7 +1795,7 @@ TEST_CASE(paused_carries_the_sweep_on_from_its_phase)
     /* Resumed 1450 ms before the panel heard: about 1960 ms into the
      * cycle, in the 200 ms dwell at the low end, 1100 us. */
     tap(SWEEP_X, BTN_Y);
-    servo_screen_sweep_started(1450u, SERVO_SWEEP_RESUMED, 0u);
+    ack_resume(servo_screen_curve_ms(), 1450u);
     frames(0.25f);
     CHECK(servo_screen_commanded() >= 1100u && servo_screen_commanded() < 1120u);
 
@@ -1816,13 +1833,16 @@ TEST_CASE(the_pause_is_drawn_from_when_the_hold_was_acknowledged)
     servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
     frames(0.1f);
     tap(SWEEP_X, BTN_Y);                       /* PAUSE */
+    const servo_cmd_t hold = last_cmd();
+    CHECK_EQ(hold.kind, SERVO_CMD_HOLD);
     const uint16_t at_tap = servo_screen_drawn();
     CHECK(at_tap > 1590u && at_tap < 1650u);
     frames(0.3f);                              /* the HOLD on its way */
     CHECK_EQ(servo_screen_drawn(), at_tap);
     scr->render(&cv, 0);
     scr->render(&cv1, 1);
-    servo_screen_sweep_held(0u);               /* acknowledged now */
+    const uint32_t kept = servo_screen_curve_ms();
+    ack_hold(&hold);                           /* acknowledged now */
     CHECK(both_whole());
     const uint16_t at_ack = servo_screen_drawn();
     CHECK(at_ack > 1860u && at_ack < 1900u);
@@ -1830,30 +1850,28 @@ TEST_CASE(the_pause_is_drawn_from_when_the_hold_was_acknowledged)
     frames(1.0f);
     CHECK_EQ(servo_screen_drawn(), at_ack);
     tap(SWEEP_X, BTN_Y);                       /* PAUSED: on */
-    servo_screen_sweep_started(0u, SERVO_SWEEP_RESUMED, 0u);
+    ack_resume(kept, 0u);
     frames(0.05f);
     CHECK(servo_screen_commanded() > 1880u);
     CHECK(servo_screen_drawn() >= at_ack);     /* on from there */
 
-    /* Held with nothing paused here changes nothing, and a time from before
-     * the curve began is not this sweep's: paused about 450 ms in, near the
-     * peak, it resumes there and reaches the dwell at the peak. */
-    servo_screen_sweep_held(0u);
+    /* An acknowledgement with nothing paused here changes nothing, nor
+     * does an earlier pause's during a later one: paused about 450 ms in,
+     * near the peak, it resumes there and reaches the dwell at the peak. */
+    servo_screen_sweep_held(hold.pause_seq, 0u);
     CHECK(servo_screen_sweeping());
     tap(SWEEP_X, BTN_Y);                       /* PAUSE */
-    servo_screen_sweep_held(100000u);
+    const servo_cmd_t again = last_cmd();
+    CHECK(again.pause_seq != hold.pause_seq);
+    const uint16_t paused_at = servo_screen_drawn();
+    servo_screen_sweep_held(hold.pause_seq, 100000u);
+    CHECK_EQ(servo_screen_drawn(), paused_at);
     frames(0.5f);
     tap(SWEEP_X, BTN_Y);                       /* PAUSED: on */
-    servo_screen_sweep_started(0u, SERVO_SWEEP_RESUMED, 0u);
     frames(0.05f);
     CHECK(servo_screen_commanded() > 1880u);
 }
 
-/*
- * At SPEED's slowest the drawn output lags the curve, and moves on by no
- * more than SPEED allows over the 307 ms (12 frames) the HOLD took: at most
- * 240 units a second, 74 us on a 1000 to 2000 us range.
- */
 /* A sweep at SPEED's slowest, paused 300 ms in and acknowledged 307 ms
  * later, SPEED raised to 100 % in between when @p raise; the drawn output
  * at the tap into @p at_tap, and returned as it is at the acknowledgement. */
@@ -1867,7 +1885,7 @@ static uint16_t slow_pause_acknowledged(bool raise, uint16_t *at_tap)
     servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
     frames(0.3f);
     tap(SWEEP_X, BTN_Y);                       /* PAUSE */
-    (void)last_cmd();
+    const servo_cmd_t hold = last_cmd();
     *at_tap = servo_screen_drawn();
     frames(0.1f);
     if (raise) {
@@ -1876,7 +1894,7 @@ static uint16_t slow_pause_acknowledged(bool raise, uint16_t *at_tap)
         CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
     }
     frames(0.2f);
-    servo_screen_sweep_held(0u);
+    ack_hold(&hold);
     return servo_screen_drawn();
 }
 
@@ -1898,11 +1916,12 @@ TEST_CASE(a_pause_with_feedback_holds_the_angle_the_servo_reports)
     servo_screen_feedback(1600u, 0.2f, true);
     frames(0.05f);
     tap(SWEEP_X, BTN_Y);                       /* PAUSE */
-    CHECK_EQ(last_cmd().kind, SERVO_CMD_HOLD);
+    const servo_cmd_t hold = last_cmd();
+    CHECK_EQ(hold.kind, SERVO_CMD_HOLD);
     CHECK_EQ(servo_screen_commanded(), 1600u);
     servo_screen_feedback(1700u, 0.2f, true);  /* moved on after the tap */
     frames(0.1f);
-    servo_screen_sweep_held(0u);
+    ack_hold(&hold);
     CHECK_EQ(servo_screen_commanded(), 1700u);
     CHECK_EQ(servo_screen_drawn(), 1700u);
     servo_screen_feedback(1720u, 0.2f, true);  /* and settled */
@@ -1935,11 +1954,12 @@ TEST_CASE(a_pause_replays_from_the_tap_when_feedback_goes)
     servo_screen_feedback(1600u, 0.2f, true);
     /* tapped before a frame has passed: the reading is the start */
     tap(SWEEP_X, BTN_Y);                       /* PAUSE */
+    const servo_cmd_t hold = last_cmd();
     servo_screen_feedback(1700u, 0.2f, true);
     frames(0.05f);
     servo_screen_feedback(0u, 0.0f, false);    /* gone */
     frames(0.25f);
-    servo_screen_sweep_held(0u);
+    ack_hold(&hold);
     const uint16_t at_ack = servo_screen_drawn();
     CHECK(at_ack > 1600u && at_ack <= 1674u);
     CHECK_EQ(servo_screen_commanded(), at_ack);
@@ -1947,6 +1967,11 @@ TEST_CASE(a_pause_replays_from_the_tap_when_feedback_goes)
     CHECK_EQ(servo_screen_drawn(), at_ack);
 }
 
+/*
+ * At SPEED's slowest the drawn output lags the curve, and moves on by no
+ * more than SPEED allows over the 307 ms (12 frames) the HOLD took: at most
+ * 240 units a second, 74 us on a 1000 to 2000 us range.
+ */
 TEST_CASE(the_acknowledged_pause_moves_the_output_at_speed)
 {
     uint16_t at_tap = 0u;
@@ -1963,6 +1988,76 @@ TEST_CASE(the_acknowledged_pause_moves_the_output_at_speed)
     uint16_t raised_tap = 0u;
     CHECK_EQ(slow_pause_acknowledged(true, &raised_tap), at_ack);
     CHECK_EQ(raised_tap, at_tap);
+}
+
+/*
+ * PAUSED tapped before the HOLD's acknowledgement reaches the screen: the
+ * screen resumes from the tap's phase, 100 ms in, but the far end kept the
+ * phase at its acknowledgement, 410 ms in.  The acknowledgement then finds
+ * no pause and changes nothing; the resume's acknowledgement, which the
+ * panel times from the far end's kept phase, rebases the curve: 410 ms on
+ * it is 820 ms in, 1872 us, where a rebase on the tap's phase plus the
+ * kept one would put it 922 ms in, near 1806 us, and one on the tap's alone
+ * 512 ms in, at the peak.  The same with both acknowledgements in one
+ * frame, the HOLD's first.
+ */
+TEST_CASE(an_early_resume_is_rebased_on_the_phase_the_far_end_kept)
+{
+    for (int same_frame = 0; same_frame < 2; ++same_frame) {
+        fresh();
+        servo_screen_set_armed(true);
+        servo_screen_set_sweep(true);
+        tap(SWEEP_X, BTN_Y);                   /* SWEEP */
+        servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
+        frames(0.1f);
+        tap(SWEEP_X, BTN_Y);                   /* PAUSE */
+        const servo_cmd_t hold = last_cmd();
+        frames(0.3f);
+        const uint32_t kept = servo_screen_curve_ms();  /* the far end's */
+        if (!same_frame) {
+            tap(SWEEP_X, BTN_Y);               /* PAUSED, before the ack */
+            CHECK(last_cmd().resume);
+            ack_hold(&hold);                   /* too late: no pause */
+            CHECK(servo_screen_sweeping());
+        } else {
+            tap(SWEEP_X, BTN_Y);
+            CHECK(last_cmd().resume);
+            servo_screen_sweep_held(hold.pause_seq, kept);
+        }
+        ack_resume(kept, 0u);
+        frames(0.4f);                          /* 820 ms in: 1872 us */
+        CHECK(servo_screen_commanded() > 1850u && servo_screen_commanded() < 1890u);
+    }
+}
+
+/*
+ * A disarm, STOP or leaving between PAUSE and its acknowledgement ends the
+ * pause; the acknowledgement that follows changes nothing.
+ */
+TEST_CASE(an_acknowledgement_after_the_pause_ended_changes_nothing)
+{
+    for (int how = 0; how < 3; ++how) {
+        fresh();
+        servo_screen_set_armed(true);
+        servo_screen_set_sweep(true);
+        tap(SWEEP_X, BTN_Y);
+        servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
+        frames(0.2f);
+        tap(SWEEP_X, BTN_Y);                   /* PAUSE */
+        const servo_cmd_t hold = last_cmd();
+        if (how == 0) {
+            servo_screen_set_armed(false);
+        } else if (how == 1) {
+            servo_screen_cancel_arm();         /* STOP */
+        } else {
+            scr->leave();
+        }
+        CHECK(!servo_screen_paused());
+        const uint16_t was = servo_screen_commanded();
+        ack_hold(&hold);
+        CHECK(!servo_screen_paused());
+        CHECK_EQ(servo_screen_commanded(), was);
+    }
 }
 
 /* A curve changed on the TEST page while paused is a new sweep, from its
@@ -3821,6 +3916,8 @@ int main(void)
     RUN(a_pause_with_feedback_holds_the_angle_the_servo_reports);
     RUN(a_pause_replays_from_the_tap_when_feedback_goes);
     RUN(the_acknowledged_pause_moves_the_output_at_speed);
+    RUN(an_early_resume_is_rebased_on_the_phase_the_far_end_kept);
+    RUN(an_acknowledgement_after_the_pause_ended_changes_nothing);
     RUN(a_curve_changed_while_paused_starts_over);
     RUN(a_pause_ends_where_a_hold_ended);
     RUN(hold_without_feedback_matches_the_far_ends_slew);

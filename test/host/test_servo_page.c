@@ -537,6 +537,29 @@ TEST_CASE(a_hold_after_the_last_movement_finds_the_sweep_ended)
     CHECK_EQ(say(LINK_SV_RESUME, T0 + 300u), 0u);
 }
 
+/*
+ * A RESUME taken whose acknowledgement the host lost: its retry is refused,
+ * and the curve written next carries the resumed sweep on, so a host that
+ * starts over writes a stop first; the curve after the stop starts from the
+ * centre.
+ */
+TEST_CASE(after_a_lost_resume_acknowledgement_a_stop_makes_a_start)
+{
+    fresh(true);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    held(T0 + 100u, T0 + 200u);
+    CHECK_EQ(say(LINK_SV_RESUME, T0 + 250u), 0u);          /* lost reply */
+    CHECK_EQ(say(LINK_SV_RESUME, T0 + 350u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0 + 360u), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 360u));
+    CHECK(o.channel[0].command != 500u);                  /* carried on */
+
+    CHECK_EQ(say(0u, T0 + 370u), 0u);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0 + 380u), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 380u));
+    CHECK_EQ(o.channel[0].command, 500u);                 /* from the start */
+}
+
 /* A frame rate written while held leaves the kept phase alone. */
 TEST_CASE(a_frame_rate_written_while_held_keeps_the_phase)
 {
@@ -550,25 +573,75 @@ TEST_CASE(a_frame_rate_written_while_held_keeps_the_phase)
 }
 
 /*
+ * The host's timing of the far end's phase, from acknowledgements: started
+ * at 1000, held at 1400 keeps 400; resumed at 3000 its phase 0 is 2600, and
+ * the page, fed the same writes at the same moments, is where that says.
+ * Held again at 3100 keeps 500; resumed at 5000, phase 0 is 4500.  A resume
+ * with nothing kept changes nothing, and a start forgets a kept phase.
+ */
+TEST_CASE(the_host_times_the_far_ends_phase_across_holds)
+{
+    servo_phase_t ph;
+    memset(&ph, 0, sizeof(ph));
+    uint32_t start = 0u;
+    servo_phase_started(&ph, 1000u);
+    CHECK_EQ(servo_phase_held(&ph, 1400u), 400u);
+    CHECK(servo_phase_resumed(&ph, 3000u, &start));
+    CHECK_EQ(start, 2600u);
+    CHECK(!servo_phase_resumed(&ph, 3050u, &start));   /* once */
+    CHECK_EQ(start, 2600u);
+    CHECK_EQ(servo_phase_held(&ph, 3100u), 500u);
+    CHECK(servo_phase_resumed(&ph, 5000u, &start));
+    CHECK_EQ(start, 4500u);
+    (void)servo_phase_held(&ph, 5100u);
+    servo_phase_started(&ph, 5200u);
+    CHECK(!servo_phase_resumed(&ph, 5300u, &start));
+    CHECK(!servo_phase_resumed(NULL, 0u, &start));
+    CHECK_EQ(servo_phase_held(NULL, 0u), 0u);
+    servo_phase_started(NULL, 0u);
+
+    /* The page agrees: a 1 Hz sine started at 1000, held at 1400 and
+     * resumed at 3000 is where a sweep started at 2600 would be. */
+    fresh(true);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, 1000u), 0u);
+    held(1400u, 2900u);
+    CHECK_EQ(say(LINK_SV_RESUME, 3000u), 0u);
+    CHECK(servo_page_step(&pg, &o, 3125u));            /* 525 ms in */
+    sweep_t ref;
+    const sweep_cfg_t cfg = { SWEEP_SINE, 1000u, 400u, 0u, 0u };
+    CHECK(sweep_start(&ref, &cfg, 2600u));
+    uint16_t c = 0u;
+    CHECK(sweep_step(&ref, 3125u, &c));
+    CHECK_EQ(o.channel[0].command, c);
+}
+
+/*
  * The host's choice: RESUME for a resume of a hold in force on 4.6; the
  * curve over, and saying so, on an older coprocessor or after a refusal;
  * the curve as usual for anything else, a resumed sweep's repeats included.
  */
 TEST_CASE(the_host_resumes_on_4_6_and_starts_over_otherwise)
 {
-    CHECK_EQ(servo_page_resume_plan(true, true, 6u, false),
+    CHECK_EQ(servo_page_resume_plan(true, true, true, 6u, false),
              SERVO_RESUME_WRITE);
-    CHECK_EQ(servo_page_resume_plan(true, true, 7u, false),
+    CHECK_EQ(servo_page_resume_plan(true, true, true, 7u, false),
              SERVO_RESUME_WRITE);
-    CHECK_EQ(servo_page_resume_plan(true, true, 5u, false),
+    CHECK_EQ(servo_page_resume_plan(true, true, true, 5u, false),
              SERVO_RESUME_TOO_OLD);
-    CHECK_EQ(servo_page_resume_plan(true, true, 6u, true),
+    CHECK_EQ(servo_page_resume_plan(true, true, true, 6u, true),
              SERVO_RESUME_REFUSED);
-    CHECK_EQ(servo_page_resume_plan(true, false, 6u, false),
+    CHECK_EQ(servo_page_resume_plan(true, false, true, 6u, false),
              SERVO_RESUME_CURVE);           /* resumed: now a repeat */
-    CHECK_EQ(servo_page_resume_plan(false, true, 6u, false),
+    CHECK_EQ(servo_page_resume_plan(false, true, true, 6u, false),
              SERVO_RESUME_CURVE);           /* a new sweep over a hold */
-    CHECK_EQ(servo_page_resume_plan(false, false, 5u, false),
+    CHECK_EQ(servo_page_resume_plan(false, false, true, 5u, false),
+             SERVO_RESUME_CURVE);
+    /* A HOLD acknowledged only at a retry: its phase is not known here. */
+    CHECK_EQ(servo_page_resume_plan(true, true, false, 6u, false),
+             SERVO_RESUME_UNTIMED);
+    CHECK_EQ(servo_page_resume_plan(true, true, false, 5u, false),
+             SERVO_RESUME_TOO_OLD);
+    CHECK_EQ(servo_page_resume_plan(false, true, false, 6u, false),
              SERVO_RESUME_CURVE);
 }
 
@@ -604,7 +677,9 @@ int main(void)
     RUN(resume_is_refused_with_no_sweep_held);
     RUN(a_write_after_the_timeout_and_before_the_step_finds_it_stopped);
     RUN(a_hold_after_the_last_movement_finds_the_sweep_ended);
+    RUN(after_a_lost_resume_acknowledgement_a_stop_makes_a_start);
     RUN(a_frame_rate_written_while_held_keeps_the_phase);
+    RUN(the_host_times_the_far_ends_phase_across_holds);
     RUN(the_host_resumes_on_4_6_and_starts_over_otherwise);
     RUN(the_curve_over_a_hold_starts_from_its_beginning);
     return test_summary("servo_page");

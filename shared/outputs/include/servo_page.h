@@ -95,17 +95,51 @@ typedef enum {
                                   coprocessor older than 4.6 has no resume */
     SERVO_RESUME_REFUSED,    /**< the curve whole, from its beginning: the
                                   resume was refused                      */
+    SERVO_RESUME_UNTIMED,    /**< the curve whole, from its beginning: the
+                                  hold's phase is not known here          */
 } servo_resume_t;
 
 /**
  * The host's choice for a sweep command: @p asked a resume of the sweep
- * held, @p held a hold in force at the far end, @p proto_minor its protocol
- * minor, and @p refused the RESUME just written was refused.  A resume is
+ * held, @p held a hold in force at the far end, @p timed the phase it kept
+ * known here (servo_phase_t: a HOLD acknowledged at its first attempt; a
+ * retried one may have reached the far end at an attempt whose reply was
+ * lost), @p proto_minor its protocol minor, and @p refused the RESUME just
+ * written was refused.  A resume is
  * written only for a hold in force, so a repeat of the resumed sweep is the
- * curve; the two fallbacks start the curve over and are for saying so.
+ * curve; the two fallbacks start the curve over -- a stop, then the curve
+ * whole, since a RESUME whose acknowledgement was lost leaves the far end
+ * running and a repeat of its curve would carry it on -- and are for
+ * saying so.
  */
-servo_resume_t servo_page_resume_plan(bool asked, bool held,
+servo_resume_t servo_page_resume_plan(bool asked, bool held, bool timed,
                                       uint16_t proto_minor, bool refused);
+
+/**
+ * The far end's sweep phase as the host times it, from the acknowledgements
+ * of the writes that start, hold and resume it: when the curve's phase 0
+ * is on the host's clock, and the phase a hold kept.  The far end times
+ * each from when the write reached it; the reply's delay is in every
+ * acknowledgement alike, so it cancels in the differences.
+ */
+typedef struct {
+    uint32_t start_ms;   /**< phase 0 of the curve, on the host's clock   */
+    uint32_t kept_ms;    /**< how far into the curve a hold kept it       */
+    bool     kept;       /**< a hold of a running sweep, not yet resumed  */
+} servo_phase_t;
+
+/** A sweep started, from its beginning, when acknowledged at @p ack_ms. */
+void servo_phase_started(servo_phase_t *ph, uint32_t ack_ms);
+
+/** A running sweep held at @p ack_ms: its phase is kept; returned. */
+uint32_t servo_phase_held(servo_phase_t *ph, uint32_t ack_ms);
+
+/**
+ * A held sweep resumed at @p ack_ms: its phase 0 moves on by the hold, into
+ * @p start_ms.  False, and nothing changes, with no phase kept.
+ */
+bool servo_phase_resumed(servo_phase_t *ph, uint32_t ack_ms,
+                         uint32_t *start_ms);
 
 #ifdef __cplusplus
 }

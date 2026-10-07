@@ -293,10 +293,10 @@ weiter. Ohne Rückmeldung rückt das gezeichnete Horn beim Eintreffen der
 Quittung dorthin vor, wo der Ausgang bis dahin war: die Kurve bis zu dieser
 Phase, verlangsamt wie in der Zeichnung mit dem TEMPO, das beim Tippen
 galt. Ein dazwischen geändertes TEMPO erreicht den Koprozessor erst mit dem
-Fortsetzen. Ein Tippen auf PAUSIERT,
-bevor diese Quittung den Bildschirm
-erreicht, behält in der Zeichnung die Phase des Tippens; die Zeit zwischen
-beiden ist nicht gemessen. Der
+Fortsetzen. Ein Tippen auf PAUSIERT, bevor diese Quittung den Bildschirm
+erreicht, zeichnet ab der Phase des Tippens weiter, bis das Fortsetzen
+quittiert ist; dann setzt das Panel die Zeichnung auf die Phase, die der
+Koprozessor behalten hat, so wie es die beiden Quittungen gemessen hat. Der
 Koprozessor behält die Phase, solange er hält, und setzt die Kurve fort
 (`LINK_SV_RESUME`, Protokoll 4.6); der Ausgang fährt mit der Rate von TEMPO
 von der gehaltenen Stelle zur Kurve, bei 100 % sofort, und ist meist schon
@@ -306,7 +306,11 @@ das Fortsetzen abweist, weil sein Halten geendet hat, startet die Kurve von
 ihrem Anfang -- in der Mitte bei Sinus und Dreieck, am ersten Ende beim
 Rechteck --, und das Alert-Band sagt es: `Koprozessor älter als 4.6 -- der
 Sweep beginnt von vorn` oder `Koprozessor lehnte das Fortsetzen ab -- der
-Sweep beginnt von vorn`.
+Sweep beginnt von vorn`. Ebenso eine Pause, deren HOLD erst bei einer
+Wiederholung beantwortet wurde, denn ein früherer Versuch kann den
+Koprozessor erreicht haben, und die Phase, die er behalten hat, ist im
+Panel dann nicht bekannt: `Pause auf dem Link wiederholt -- der Sweep
+beginnt von vorn`.
 
 ![Ein angehaltener Sweep](img/de/servo-paused.png)
 

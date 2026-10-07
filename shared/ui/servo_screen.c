@@ -391,6 +391,8 @@ static struct {
     /* And where the output was drawn at the tap, which the replay of the
      * acknowledgement interval starts from. */
     float       pause_from_cmd;
+    /* Which pause stands, so an acknowledgement is applied to its own. */
+    uint16_t    pause_seq;
     bool        sweep_ended;     /* the next command ends it             */
     sweep_t     sw;
     uint32_t    clock_ms;
@@ -755,7 +757,11 @@ static void hold_sweep(void)
                                         : s.shown_cmd;
     stop_sweep();
     s.commanded_deg = clamp_travel(s.shown_deg);
+    ++s.pause_seq;
     post(SERVO_CMD_HOLD, 0);
+    if (s.pending.kind == SERVO_CMD_HOLD) {
+        s.pending.pause_seq = s.pause_seq;
+    }
     ++s.ctrl_rev;
 }
 
@@ -825,6 +831,8 @@ bool servo_screen_sweeping(void) { return s.sweeping; }
 
 bool servo_screen_paused(void) { return s.paused; }
 
+uint32_t servo_screen_curve_ms(void) { return s.clock_ms - s.sw.start_ms; }
+
 void servo_screen_released(void)
 {
     /* Nothing held any more, and the horn goes to the centre the surfaces
@@ -877,9 +885,11 @@ void servo_screen_sweep_started(uint32_t age_ms, servo_sweep_from_t from,
         return;
     }
     if (from == SERVO_SWEEP_RESUMED) {
-        /* On from the phase it was paused at, and from where the output
-         * was held, which is where the horn has stayed. */
-        s.sw.start_ms = s.clock_ms - age_ms - s.sw.paused_ms;
+        /* On from the phase the far end kept, as the panel timed it, and
+         * from where the output was held, which is where the horn has
+         * stayed.  Not from this screen's paused phase, which an early
+         * resume leaves at the tap's. */
+        s.sw.start_ms = s.clock_ms - age_ms;
         return;
     }
     s.sw.start_ms = s.clock_ms - age_ms;
@@ -923,14 +933,13 @@ static float drawn_after(const sweep_t *w, uint32_t phase_ms, uint32_t ms,
     return shown;
 }
 
-void servo_screen_sweep_held(uint32_t age_ms)
+void servo_screen_sweep_held(uint16_t pause_seq, uint32_t kept_ms)
 {
     /*
      * The far end ran its curve on until the HOLD reached it, a queue and an
      * exchange after the tap; at 5 Hz that is a visible share of a cycle.
-     * Timed from the acknowledgement, as a start is, so the two errors are
-     * the same and cancel in the phase.  A time before the tap is not this
-     * pause's.
+     * The panel times the phase it kept from the acknowledgements, as it
+     * times a start, so the two errors are the same and cancel.
      *
      * Without feedback the horn is the drawing's estimate of the output, so
      * it moves on to where the output had got by then: the curve from the
@@ -940,20 +949,18 @@ void servo_screen_sweep_held(uint32_t age_ms)
      * acknowledged; without one, the tap's estimate stands.  At most 5 s is
      * worked through, 1250 steps.
      */
-    if (!s.paused || !s.sw.paused) {
+    if (!s.paused || !s.sw.paused || pause_seq != s.pause_seq) {
         return;
     }
-    const uint32_t held_at = s.clock_ms - age_ms;
-    const uint32_t into = held_at - s.sw.start_ms;
-    const uint32_t extra = into - s.sw.paused_ms;
-    if ((int32_t)into < 0 || (int32_t)extra < 0) {
-        return;
-    }
+    /* Behind the tap's phase by this screen's own timing error: nothing to
+     * replay, and the kept phase stands. */
+    const uint32_t extra = kept_ms - s.sw.paused_ms;
     if (s.have_feedback) {
         /* The servo is where it reports, and is held there. */
         s.shown_cmd = us_to_cmd(deg_to_us_f(s.shown_deg));
     } else {
-        const uint32_t ms = (extra > 5000u) ? 5000u : extra;
+        const uint32_t ms = ((int32_t)extra <= 0) ? 0u
+                            : (extra > 5000u) ? 5000u : extra;
         s.shown_cmd = drawn_after(&s.sw, s.sw.paused_ms, ms,
                                   s.pause_from_cmd);
         s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
@@ -961,7 +968,7 @@ void servo_screen_sweep_held(uint32_t age_ms)
     /* Either way the held angle is the one a changed profile says again
      * (reissue()), as hold_sweep() left it at the tap. */
     s.commanded_deg = clamp_travel(s.shown_deg);
-    s.sw.paused_ms = into;
+    s.sw.paused_ms = kept_ms;
     ++s.ctrl_rev;
 }
 

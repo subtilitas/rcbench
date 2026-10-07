@@ -315,7 +315,7 @@ uint16_t servo_page_hz(const servo_page_t *p)
     return (p != NULL) ? p->regs[LINK_SV_FRAME_HZ] : 0u;
 }
 
-servo_resume_t servo_page_resume_plan(bool asked, bool held,
+servo_resume_t servo_page_resume_plan(bool asked, bool held, bool timed,
                                       uint16_t proto_minor, bool refused)
 {
     if (!asked || !held) {
@@ -324,5 +324,40 @@ servo_resume_t servo_page_resume_plan(bool asked, bool held,
     if (proto_minor < 6u) {
         return SERVO_RESUME_TOO_OLD;
     }
+    if (!timed) {
+        return SERVO_RESUME_UNTIMED;
+    }
     return refused ? SERVO_RESUME_REFUSED : SERVO_RESUME_WRITE;
+}
+
+void servo_phase_started(servo_phase_t *ph, uint32_t ack_ms)
+{
+    if (ph != NULL) {
+        ph->start_ms = ack_ms;
+        ph->kept     = false;
+    }
+}
+
+uint32_t servo_phase_held(servo_phase_t *ph, uint32_t ack_ms)
+{
+    if (ph == NULL) {
+        return 0u;
+    }
+    ph->kept_ms = ack_ms - ph->start_ms;
+    ph->kept    = true;
+    return ph->kept_ms;
+}
+
+bool servo_phase_resumed(servo_phase_t *ph, uint32_t ack_ms,
+                         uint32_t *start_ms)
+{
+    if (ph == NULL || !ph->kept) {
+        return false;
+    }
+    ph->start_ms = ack_ms - ph->kept_ms;
+    ph->kept     = false;
+    if (start_ms != NULL) {
+        *start_ms = ph->start_ms;
+    }
+    return true;
 }

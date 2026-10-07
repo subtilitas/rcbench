@@ -777,6 +777,7 @@ UI_TEXT(ALERT_SERVO_RATE,          94, "servo frame rate not known -- arm again"
 UI_TEXT(ALERT_ARM_REFUSED,         94, "coprocessor refused to arm")
 UI_TEXT(ALERT_SWEEP_RESUME_OLD,    94, "coprocessor older than 4.6 -- the sweep starts over")
 UI_TEXT(ALERT_SWEEP_RESUME_REFUSED, 94, "coprocessor refused the resume -- the sweep starts over")
+UI_TEXT(ALERT_SWEEP_RESUME_UNTIMED, 94, "the pause was retried on the link -- the sweep starts over")
 UI_TEXT(ALERT_CARD_SLOW,           94, "the card did not keep up -- run not recorded")
 UI_TEXT(ALERT_CARD_GAPS,           94, "the card fell behind -- the log has gaps")
 UI_TEXT(ALERT_TOUCH_SWITCH_ON,     94, "touch lost while switching on -- output off")

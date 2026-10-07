@@ -88,6 +88,9 @@ typedef struct {
      *  held: the panel asks the coprocessor to resume it (protocol 4.6),
      *  and an older one, or one that refuses, starts the curve over. */
     bool             resume;
+    /** SERVO_CMD_HOLD: which pause it is, given back with its
+     *  acknowledgement in servo_screen_sweep_held(). */
+    uint16_t         pause_seq;
 } servo_cmd_t;
 
 /** Drop the cached chrome, so the next frame repaints it. */
@@ -173,26 +176,34 @@ typedef enum {
     SERVO_SWEEP_FROM_FROZEN,  /**< where it froze when the sweep went
                                    unrepeated, @p frozen_ago_ms ago        */
     SERVO_SWEEP_RESUMED,      /**< where it was held: the paused sweep
-                                   carried on from its phase               */
+                                   carried on from its phase; @p age_ms is
+                                   the age of the curve's phase 0, moved on
+                                   by the hold (servo_phase_resumed())     */
 } servo_sweep_from_t;
 
 /**
  * The coprocessor started the sweep @p age_ms ago, its output starting from
  * @p from: the horn is drawn along its curve from then, and without feedback
- * from where that output was.  SERVO_SWEEP_RESUMED is a paused sweep
- * carried on @p age_ms ago from the phase it was paused at.
+ * from where that output was.  For SERVO_SWEEP_RESUMED, @p age_ms is the
+ * age of the resumed curve's phase 0: the panel's timing of the far end,
+ * whatever this screen took the pause's phase to be.
  */
 void servo_screen_sweep_started(uint32_t age_ms, servo_sweep_from_t from,
                                 uint32_t frozen_ago_ms);
 
 /**
- * The coprocessor took the HOLD that paused a running sweep @p age_ms ago.
- * Its curve ran on until then, so the phase it keeps is the curve's at that
- * moment, not at the tap: the paused phase drawn here is set to it, the
- * same way servo_screen_sweep_started() times a start.  Nothing while no
- * sweep is paused.
+ * The coprocessor took the HOLD of pause @p pause_seq (servo_cmd_t) and kept
+ * its curve @p kept_ms in (servo_phase_held()).  The curve ran on until
+ * then, so the paused phase drawn here is set to it, not to the tap's.
+ * Nothing unless that pause still stands: one resumed before this arrives
+ * is rebased by its SERVO_SWEEP_RESUMED, and another pause's is not this
+ * one's.
  */
-void servo_screen_sweep_held(uint32_t age_ms);
+void servo_screen_sweep_held(uint16_t pause_seq, uint32_t kept_ms);
+
+/** How far the sweep's curve clock is from its phase 0, paused or not.
+ *  For tests, which stand in for the panel's timing. */
+uint32_t servo_screen_curve_ms(void);
 
 /**
  * Set the commanded angle without a touch event.

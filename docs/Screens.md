@@ -267,9 +267,10 @@ curve runs on there for the exchange in between. Without feedback the
 drawn horn moves on when the acknowledgement arrives, to where the output
 had got by then: the curve to that phase, slewed as the drawing slews at
 the SPEED in force at the tap. A SPEED changed in between reaches the
-coprocessor only with the resume. A tap on PAUSED before
-that acknowledgement reaches the screen keeps the tap's phase in the
-drawing; the time between the two is not measured. The coprocessor
+coprocessor only with the resume. A tap on PAUSED before that
+acknowledgement reaches the screen draws on from the tap's phase until the
+resume is acknowledged; the panel then rebases the drawing on the phase the
+coprocessor kept, as it timed the two acknowledgements. The coprocessor
 keeps the phase while it holds and resumes the curve (`LINK_SV_RESUME`,
 protocol 4.6); the output slews from where it was held to the curve at
 SPEED's rate, at once at 100 %, and is normally already there. A curve
@@ -278,7 +279,10 @@ coprocessor older than 4.6, or one that refuses the resume because its hold
 has ended, starts the curve over from its beginning -- the centre for a
 sine or a triangle, the first end for a square -- and the alert band says
 so: `coprocessor older than 4.6 -- the sweep starts over` or `coprocessor
-refused the resume -- the sweep starts over`.
+refused the resume -- the sweep starts over`. So does a pause whose HOLD
+was answered only at a retry, since an earlier attempt can have reached the
+coprocessor and the phase it kept is then not known on the panel: `the
+pause was retried on the link -- the sweep starts over`.
 
 ![A paused sweep](img/servo-paused.png)
 
