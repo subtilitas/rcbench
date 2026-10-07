@@ -111,7 +111,7 @@ sobald sich die Suche ändert.
   "Hobbywing Skywalker V2 15A-100A, 11-item menu", oder in seinem
   Hersteller und seinem eigenen Namen, "Kontronik JAZZ 55 LV".
 - Ein Hersteller erscheint, wenn die Suche eines seiner Modelle findet;
-  seine Zeile zählt sie dann: `1 VON 82 GEFUNDEN, 1 LAUFEN`. Kein
+  seine Zeile zählt sie dann: `1 VON 82 GEFUNDEN, 1 AUSFÜHRBAR`. Kein
   Hersteller öffnet sich von selbst, auch nicht als einziger gefundener.
 - Groß- und Kleinschreibung spielen keine Rolle: `KONTR*Jazz` findet
   Kontronik und darin die Modelle von JAZZ und MINIJAZZ.
@@ -121,8 +121,8 @@ sobald sich die Suche ändert.
   Kontronik und darin nur JAZZ 55 LV.
 - Eine leere Suche zeigt jeden Hersteller und jedes Modell. Die Suche
   fasst bis zu 16 Zeichen und gilt auf beiden Ebenen.
-- Die Zählung sagt, was gefunden wurde: `1-1/1 Hersteller gefunden, 1
-  laufen`. Ohne Treffer sagt die Liste `Kein Profil passt zur Suche.`
+- Die Zählung sagt, was gefunden wurde: `1-1/1 Hersteller, 1 ausführbar`.
+  Ohne Treffer sagt die Liste `Kein Profil passt zur Suche.`
 
 OK schließt die Tastatur und behält die Suche, ABBRECHEN geht zur Suche
 zurück, mit der die Tastatur geöffnet wurde, und CLR, dann OK leert sie.
