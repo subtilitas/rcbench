@@ -305,7 +305,9 @@ dieser Phase, verlangsamt wie in der Zeichnung. Ein dazwischen geändertes TEMPO
 Fortsetzen. Ein Tippen auf PAUSIERT lässt das Horn stehen, bis das
 Fortsetzen quittiert ist; dann misst das Panel die Zeichnung ab der Phase,
 die der Koprozessor behalten hat, so wie es die beiden Quittungen gemessen
-hat, auch wenn das Tippen vor der Quittung des HOLD kam. Der
+hat, auch wenn das Tippen vor der Quittung des HOLD kam; diese Quittung
+setzt das Horn dann noch dorthin, wo der Koprozessor den Ausgang gehalten
+hat, und das Fortsetzen geht von dort weiter. Der
 Koprozessor behält die Phase, solange er hält, und setzt die Kurve fort
 (`LINK_SV_RESUME`, Protokoll 4.6); der Ausgang fährt mit der Rate von TEMPO
 von der gehaltenen Stelle zur Kurve, bei 100 % sofort, und ist meist schon
@@ -315,17 +317,26 @@ das Fortsetzen abweist, weil sein Halten geendet hat, startet die Kurve von
 ihrem Anfang -- in der Mitte bei Sinus und Dreieck, am ersten Ende beim
 Rechteck --, und das Alert-Band sagt es: `Koprozessor älter als 4.6 -- der
 Sweep beginnt von vorn` oder `Koprozessor lehnte das Fortsetzen ab -- der
-Sweep beginnt von vorn`. Ebenso eine Pause, deren HOLD erst bei einer
-Wiederholung beantwortet wurde, denn ein früherer Versuch kann den
-Koprozessor erreicht haben, und die Phase, die er behalten hat, ist im
-Panel dann nicht bekannt: `Pause auf dem Link wiederholt -- der Sweep
-beginnt von vorn`.
+Sweep beginnt von vorn`. Ebenso ein Tippen auf PAUSIERT, während der HOLD
+unbeantwortet ist, denn der Koprozessor kann dann halten oder noch laufen:
+`Pause unbeantwortet -- der Sweep beginnt von vorn`. Ein Tippen auf
+PAUSIERT vor einem HOLD, den das Panel dann loslässt (siehe unten),
+startet nichts: die Pause endet mit diesem HOLD.
 
 ![Ein angehaltener Sweep](img/de/servo-paused.png)
 
 Ein Halten, das der Link 500 ms nicht wiederholt hat, hat das andere Ende
 losgelassen; das Panel gibt die Surfaces dann zur Mitte frei, und das Horn
-geht dorthin. Ein Finger auf der Skala, ZENTRIEREN, FREIGEBEN, STOP, ein
+geht dorthin. Ebenso ein HOLD, der erst bei einer Wiederholung oder nach
+mehr als 500 ms beantwortet wurde: der Koprozessor kann ihn losgelassen und
+anderswo erneut gehalten haben, wo er hält, ist im Panel also nicht
+bekannt, und die Pause endet, statt einen Winkel zu behalten, den eine
+spätere Profiländerung an das Servo schicken würde. Fällt der Link weg,
+endet ein Sweep oder eine Pause ebenfalls, und das Horn wird in Ruhe
+gezeichnet, wie der Koprozessor die Surfaces 500 ms nach dem letzten
+Schreiben in Ruhe setzt; kein vorher verlangter Sweep und kein Halten
+wird gesendet, wenn der Link zurückkommt, und das nächste Tippen startet
+einen Sweep. Ein Finger auf der Skala, ZENTRIEREN, FREIGEBEN, STOP, ein
 Disarm und das Verlassen der Seite beenden einen Sweep, ob er läuft oder
 angehalten ist, und der Knopf heißt wieder SWEEP. Ein geänderter Typ, eine
 geänderte Frame Rate, Pulsbreite, Trim, WEG oder REVERSE beenden auch eine
@@ -343,7 +354,8 @@ zugeordnet, den sie beantwortet: ein TEMPO oder eine Kurve, die geändert
 wird, während ein Start wartet, wird nicht von der Quittung des früheren
 Befehls gezeichnet. Ein geändertes
 Profil oder eine geänderte Frame Rate geht sofort mit.
-SWEEP gibt es bei scharfem Prüfstand und einem Koprozessor mit Protokoll 4.2;
+SWEEP gibt es bei scharfem Prüfstand, mit einer gebundenen Surface und
+stehendem Link und einem Koprozessor mit Protokoll 4.2, sonst ist der Knopf ausgegraut;
 der Koprozessor hält eine Kurve an, die das Panel 500 ms nicht wiederholt hat,
 und lässt jede Surface dort stehen, wo ihr Ausgang gerade ist.
 
