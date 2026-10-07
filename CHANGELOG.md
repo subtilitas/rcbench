@@ -6,6 +6,35 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- **The automatic servo test sees small servos move.** Movement is a
+  reading more than max(0.020 A, 3 x the idle noise) from the level before
+  the command, per step and in the brown-out walk, where it was 0.10 A. The
+  idle noise is the standard deviation of the IDLE readings. On the PD mini
+  an MG90S moves at 0.04 to 0.077 A over a 0.001 A hold: 0.13.0 saw no
+  move, counted all 34 late at 3000 ms and read FAIL; a replay of that run
+  times all 82 counted moves at 771 to 989 ms and reads PASS. The report's
+  step table gives each step's threshold (`Thresh`). Arrival stays the
+  first reading back within 0.05 A of the holding level: replays with the
+  band at the threshold time the same moves.
+- **A move the current cannot show is not a failure.** A counted move with
+  no reading past the threshold in 3000 ms is unseen: not timed, not late,
+  counted in an `Unseen` column. A step with no move seen reads NOT
+  MEASURABLE (NICHT MESSBAR), and a run with unseen moves and no limit
+  exceeded reads NOT MEASURABLE, with how many of its counted moves showed
+  no movement. A 1102HB, holding 0.015 to 0.029 A and peaking at 0.039 to
+  0.044 A, read FAIL with 34 late moves; its replay reads NOT MEASURABLE,
+  27 of 50 unseen, none late. A brown-out walk with no movement at 5.00 V
+  reads not measurable.
+- **Travel times on the PD mini are an upper bound.** Its readings come
+  every 102 to 106 ms, show a change of current about 0.3 s after the
+  command (median 0.31 s) and often repeat. The report says so on `Lag`,
+  `Repeats` and `Travel times` lines, and TRAVEL TIME is reported against
+  the longest travel time and not checked: `upper bound, not checked against
+  the limit`. The run is told what reads the current (`servo_test_meter_t`),
+  so a faster current sensor can have it checked.
+
 ## 0.13.0 - 2026-10-07
 
 ESC STICK asks for an ESC's manual steps: a jumper, a button or a stick

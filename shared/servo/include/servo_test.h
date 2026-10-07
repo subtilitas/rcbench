@@ -14,18 +14,23 @@
  *           back (SERVO_TEST_SET_TOL_V), at most SERVO_TEST_SET_TIMEOUT_MS;
  *           the first step also waits for the output to read on;
  *   SETTLE  the TEST page's SETTLE, with the servo at its centre;
- *   IDLE    SERVO_TEST_IDLE_MS at the centre: the idle current;
+ *   IDLE    SERVO_TEST_IDLE_MS at the centre: the idle current, and its
+ *           noise, the standard deviation of those readings.  The step's
+ *           threshold is the larger of SERVO_TEST_MOVE_MIN_A and
+ *           SERVO_TEST_NOISE_K times that noise;
  *   MOVE    a step command to the far end.  A move shows movement when a
- *           reading lies more than SERVO_TEST_MOVE_A from the level before
- *           the command.  It has arrived at the first reading back
- *           within SERVO_TEST_BAND_A of that end's holding level, after a
- *           reading of the movement more than SERVO_TEST_MOVE_A above that
- *           level; the travel time runs from the command to that reading.
- *           A destination held harder than the servo moves, an end pushing
+ *           reading lies more than the threshold from the level before
+ *           the command.  It has arrived at the first reading back within
+ *           SERVO_TEST_BAND_A of that end's holding level, after a reading
+ *           of the movement more than the threshold above that level; the
+ *           travel time runs from the command to that reading.  A
+ *           destination held harder than the servo moves, an end pushing
  *           on a stop, is never passed: there the move has arrived at the
  *           first of two readings in a row within SERVO_TEST_BAND_A of the
- *           level and of each other, after movement.  A move that does not
- *           arrive in SERVO_TEST_TRAVEL_TIMEOUT_MS is late;
+ *           level and of each other, after movement.  A move with
+ *           movement that does not arrive in SERVO_TEST_TRAVEL_TIMEOUT_MS
+ *           is late; one that shows no movement in that time is unseen:
+ *           not timed and not late;
  *   HOLD    the longer of DWELL and SERVO_TEST_HOLD_MIN_MS at that end:
  *           the holding current there, and the holding level the next move
  *           to that end falls back to.
@@ -40,9 +45,14 @@
  * if lower) down in SERVO_TEST_BROWNOUT_STEP_V steps, each one SET, SETTLE
  * and IDLE as above and then SERVO_TEST_BROWNOUT_MOVES moves, centre to the
  * high end and back to the low end.  A voltage shows no movement when no
- * reading of any of those moves lies more than SERVO_TEST_MOVE_A from the
- * level before its command; the walk stops there, or at the floor, which
- * is the last step when it lies off the step's grid.
+ * reading of any of those moves lies more than that voltage's threshold
+ * from the level before its command; the walk stops there, or at the
+ * floor, which is the last step when it lies off the step's grid.
+ *
+ * What reads the current is described to the run (servo_test_meter_t), so
+ * a meter whose readings lag and repeat, as the PD mini's do, gives travel
+ * times that are an upper bound: TRAVEL TIME is reported against them and
+ * not checked.
  *
  * The run is aborted -- the output asked off, the servo let go -- by STOP,
  * a disarm, link loss, leaving the screen, the operator taking the servo or
@@ -92,11 +102,14 @@ extern "C" {
  *  low end. */
 #define SERVO_TEST_BROWNOUT_MOVES    2u
 
-/** A reading this far from the level before a command is the servo
- *  moving, and this far above an end's holding level is the move not yet
- *  there. */
-#define SERVO_TEST_MOVE_A            0.10f
-/** Back within this of the holding level is the move arrived. */
+/** The smallest threshold.  A step's threshold is the larger of this and
+ *  SERVO_TEST_NOISE_K times its idle noise.  A reading more than the
+ *  threshold from the level before a command is the servo moving, and
+ *  more than it above an end's holding level is the move not yet there. */
+#define SERVO_TEST_MOVE_MIN_A        0.020f
+#define SERVO_TEST_NOISE_K           3.0f
+/** Back within this of the holding level, and not above it by the
+ *  threshold, is the move arrived. */
 #define SERVO_TEST_BAND_A            0.05f
 
 #define SERVO_TEST_IDLE_MS           1000u
@@ -150,6 +163,25 @@ typedef struct {
 
 /* ------------------------------------------------------ what it is told */
 
+/** What reads the servo's current, for what its travel times are worth. */
+typedef struct {
+    char     name[16];      /**< for the report: "PD mini"              */
+    uint16_t lag_ms;        /**< from a change of current to the first
+                                 reading that shows it, typical; 0 for
+                                 none stated                            */
+    bool     repeats;       /**< a reading can repeat the last value for
+                                 several readings                       */
+    bool     upper_bound;   /**< travel times are an upper bound: TRAVEL
+                                 TIME is reported, not checked          */
+} servo_test_meter_t;
+
+/** The PD mini's own meter: read every 102 to 106 ms, a change of current
+ *  shows about 300 ms later (median 0.31 s over two runs, 2026-10-07), and
+ *  its value often repeats over several readings. */
+#define SERVO_TEST_PDMINI_LAG_MS     300u
+
+void servo_test_meter_pdmini(servo_test_meter_t *m);
+
 typedef struct {
     /* What runs. */
     float    steps_v[SERVO_TEST_STEPS_MAX];
@@ -183,6 +215,7 @@ typedef struct {
     bool     reverse;
     uint8_t  travel_deg, range_pct;
     bool     model;         /**< the supply is the panel's model        */
+    servo_test_meter_t meter;
     char     firmware[16];
     /**
      * The report's language: a table of SERVO_STR_COUNT entries, each NULL
@@ -233,6 +266,9 @@ typedef enum {
     SERVO_TEST_PASS = 0,
     SERVO_TEST_FAIL,
     SERVO_TEST_ABORTED,
+    /** Nothing failed, and a counted move showed no movement: the current
+     *  cannot tell that servo moving from one standing still. */
+    SERVO_TEST_NOT_MEASURABLE,
 } servo_test_verdict_t;
 
 /** Why a run would not start. */
@@ -259,6 +295,9 @@ typedef struct {
     bool     done;          /**< ran to its end                         */
     servo_test_mean_t v;    /**< the voltage after SETTLE               */
     servo_test_mean_t idle;
+    float    idle_sq;       /**< the idle readings' squares, summed     */
+    float    noise_a;       /**< the idle readings' standard deviation  */
+    float    move_a;        /**< the threshold, once IDLE is over        */
     servo_test_mean_t move; /**< the readings while travelling          */
     servo_test_mean_t hold[2];   /**< at the low end, at the high end   */
     float    move_peak_a;   /**< the highest reading while travelling   */
@@ -267,8 +306,10 @@ typedef struct {
     uint32_t travel_sum_ms;
     uint16_t travels;       /**< moves that arrived                     */
     uint16_t moves;         /**< moves counted                          */
-    uint16_t no_rise;       /**< counted moves with no movement seen    */
-    uint16_t timeouts;      /**< counted moves that did not arrive      */
+    uint16_t no_rise;       /**< counted moves with no movement seen:
+                                 unseen, neither timed nor late          */
+    uint16_t timeouts;      /**< counted moves with movement that did not
+                                 arrive: late                            */
     bool     moved;         /**< movement seen in any move              */
 } servo_test_step_t;
 
@@ -441,6 +482,7 @@ typedef enum {
     SERVO_STR_PASS,
     SERVO_STR_FAIL,
     SERVO_STR_ABORTED,
+    SERVO_STR_NOT_MEASURABLE,
     SERVO_STR_TEST_STEP,
     SERVO_STR_TEST_BROWNOUT,
     SERVO_STR_AB_NONE,
@@ -471,6 +513,7 @@ typedef enum {
     SERVO_STR_R_TITLE,
     SERVO_STR_R_RESULT,
     SERVO_STR_R_RESULT_WHY,
+    SERVO_STR_R_RESULT_UNSEEN,
     SERVO_STR_R_DEVICE,
     SERVO_STR_R_FIRMWARE,
     SERVO_STR_R_LOG,
@@ -481,6 +524,9 @@ typedef enum {
     SERVO_STR_R_SKIPPED,
     SERVO_STR_R_RESOLUTION,
     SERVO_STR_R_RESOLUTION_UNKNOWN,
+    SERVO_STR_R_LAG,
+    SERVO_STR_R_REPEATS,
+    SERVO_STR_R_UPPER_BOUND,
     SERVO_STR_R_DURATION,
     SERVO_STR_R_ROWS,
     SERVO_STR_R_SETTINGS,
@@ -510,6 +556,9 @@ typedef enum {
     SERVO_STR_R_CUT_SHORT,
     SERVO_STR_R_NO_STEP,
     SERVO_STR_R_LATE,
+    SERVO_STR_R_UNSEEN,
+    SERVO_STR_R_THRESHOLD,
+    SERVO_STR_R_ARRIVAL,
     SERVO_STR_R_BO_HEAD,
     SERVO_STR_R_BO_NOT_RUN,
     SERVO_STR_R_BO_NOT_REACHED,
@@ -522,8 +571,10 @@ typedef enum {
     SERVO_STR_R_LIM_HOLD,
     SERVO_STR_R_LIM_TRAVEL,
     SERVO_STR_R_LIM_TRAVEL_OFF,
+    SERVO_STR_R_LIM_TRAVEL_BOUND,
     SERVO_STR_R_LIM_STALL,
     SERVO_STR_R_LIM_LATE,
+    SERVO_STR_R_LIM_UNSEEN,
     SERVO_STR_R_NOT_CHECKED,
     SERVO_STR_R_NOT_MEASURED,
     SERVO_STR_R_UNM_HEAD,

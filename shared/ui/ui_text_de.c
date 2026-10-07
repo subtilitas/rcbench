@@ -1064,6 +1064,7 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_PASS]             = "BESTANDEN",
     [SERVO_STR_FAIL]             = "NICHT BESTANDEN",
     [SERVO_STR_ABORTED]          = "ABGEBROCHEN",
+    [SERVO_STR_NOT_MEASURABLE]   = "NICHT MESSBAR",
     [SERVO_STR_TEST_STEP]        = "STUFE",
     [SERVO_STR_TEST_BROWNOUT]    = "BROWN-OUT",
     [SERVO_STR_AB_STOP]          = "STOP",
@@ -1091,6 +1092,9 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_R_TITLE]          = "RCBENCH SERVOTEST-BERICHT",
     [SERVO_STR_R_RESULT]         = "Ergebnis:        %s",
     [SERVO_STR_R_RESULT_WHY]     = "Ergebnis:        %s - %s",
+    [SERVO_STR_R_RESULT_UNSEEN]  = "Ergebnis:        %s - bei %u von %u "
+                                   "gezählten Bewegungen keine Bewegung im "
+                                   "Strom erkannt",
     [SERVO_STR_R_DEVICE]         = "Prüfling:        %s",
     [SERVO_STR_R_FIRMWARE]       = "Firmware:        rcbench %s",
     [SERVO_STR_R_LOG]            = "Log:             die .CSV mit der Nummer "
@@ -1107,6 +1111,14 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
                                    "ms: eine Stellzeit ist um bis zu so viel "
                                    "zu lang",
     [SERVO_STR_R_RESOLUTION_UNKNOWN] = "Auflösung:       unbekannt",
+    [SERVO_STR_R_LAG]            = "Verzögerung:     etwa %u ms von einer "
+                                   "Stromänderung bis zum Messwert, der sie "
+                                   "zeigt",
+    [SERVO_STR_R_REPEATS]        = "Wiederholung:    ein Messwert kann den "
+                                   "letzten Wert mehrere Messwerte lang "
+                                   "wiederholen",
+    [SERVO_STR_R_UPPER_BOUND]    = "Stellzeiten:     eine Obergrenze, nicht "
+                                   "gegen die Grenze geprüft",
     [SERVO_STR_R_DURATION]       = "Dauer:           %lu.%01lu s",
     [SERVO_STR_R_ROWS]           = "Logzeilen:       %lu geschrieben, %lu an "
                                    "eine volle Warteschlange verloren",
@@ -1139,26 +1151,35 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_R_OFF]            = "AUS",
     [SERVO_STR_R_PER_STEP]       = "ERGEBNISSE JE STUFE (Ströme in A, "
                                    "Zeiten in ms)",
-    /* Over the columns of the step lines: 0, 7, 15, 22, 29, 36, 44, 52, 59,
-     * 67 and 73, as the English. */
-    [SERVO_STR_R_COLUMNS]        = "Soll V Ist V   Ruhe   Beweg. Spitze Halt mn Halt mx Stell. Längste Anz.  Spät",
+    /* Over the columns of the step lines: 0, 7, 15, 22, 29, 36, 43, 51, 59,
+     * 66, 74, 80 and 85, as the English. */
+    [SERVO_STR_R_COLUMNS]        = "Soll V Ist V   Ruhe   Schw.  Beweg. Spitze Halt mn Halt mx Stell. Längste Anz.  Spät Unerk.",
     [SERVO_STR_R_STEP_NOT_RUN]   = "%5.2f  nicht gelaufen",
     [SERVO_STR_R_CUT_SHORT]      = " (verkürzt)",
     [SERVO_STR_R_NO_STEP]        = "Keine Stufe lief.",
-    [SERVO_STR_R_LATE]           = "Spät: Bewegungen, die nicht binnen %u ms "
-                                   "auf das Halteniveau zurückkamen.",
+    [SERVO_STR_R_LATE]           = "Spät: erkannte Bewegungen, die nicht "
+                                   "binnen %u ms ankamen.",
+    [SERVO_STR_R_UNSEEN]         = "Unerk.: Bewegungen ohne erkannte "
+                                   "Bewegung; nicht gemessen, nicht als spät "
+                                   "gezählt.",
+    [SERVO_STR_R_THRESHOLD]      = "Schw.: Bewegung ist ein Messwert "
+                                   "max(%.3f A, %.0f x Ruherauschen) vom "
+                                   "Niveau vor dem Befehl entfernt.",
+    [SERVO_STR_R_ARRIVAL]        = "Ankunft: nach einem Messwert eine "
+                                   "Schw. über dem Halteniveau der erste "
+                                   "wieder innerhalb %.2f A davon.",
     [SERVO_STR_R_BO_HEAD]        = "BROWN-OUT",
     [SERVO_STR_R_BO_NOT_RUN]     = "Nicht gelaufen.",
     [SERVO_STR_R_BO_NOT_REACHED] = "Nicht erreicht.",
-    [SERVO_STR_R_BO_STOPPED]     = "Bewegung bei %.2f V; keine Bewegung bei "
-                                   "%.2f V.",
+    [SERVO_STR_R_BO_STOPPED]     = "Bewegung bei %.2f V; keine Bewegung "
+                                   "erkannt bei %.2f V.",
     [SERVO_STR_R_BO_ALL]         = "Bewegung bei jeder Stufe bis %.2f V; "
                                    "tiefer nicht getestet.",
-    [SERVO_STR_R_BO_NONE]        = "Keine Bewegung bei %.2f V, der ersten "
-                                   "Stufe.",
+    [SERVO_STR_R_BO_NONE]        = "Keine Bewegung erkannt bei %.2f V, der "
+                                   "ersten Stufe: nicht messbar.",
     [SERVO_STR_R_BO_RULE]        = "Keine Bewegung: kein Messwert einer "
-                                   "Bewegung %.2f A vom Niveau davor "
-                                   "entfernt.",
+                                   "Bewegung mehr als Schw., %.3f A bei "
+                                   "%.2f V, vom Niveau davor entfernt.",
     [SERVO_STR_R_LIM_HEAD]       = "VERGLEICH MIT GRENZEN",
     [SERVO_STR_R_LIM_IDLE]       = "Ruhestrom        Höchstwert %.3f A, "
                                    "Grenze %s: %s",
@@ -1168,9 +1189,13 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
                                    "%u ms: %s",
     [SERVO_STR_R_LIM_TRAVEL_OFF] = "Stellzeit        längste %lu ms, Grenze "
                                    "AUS: %s",
+    [SERVO_STR_R_LIM_TRAVEL_BOUND] = "Stellzeit        längste %lu ms, "
+                                     "Grenze %u ms: Obergrenze, nicht gegen "
+                                     "die Grenze geprüft",
     [SERVO_STR_R_LIM_STALL]      = "Blockierschwelle Höchstwert %.3f A, "
                                    "BLOCKIERT AB %.2f A: %s",
     [SERVO_STR_R_LIM_LATE]       = "Verspätet        %u Bewegungen: %s",
+    [SERVO_STR_R_LIM_UNSEEN]     = "Unerkannt        %u Bewegungen: %s",
     [SERVO_STR_R_NOT_CHECKED]    = "nicht geprüft",
     [SERVO_STR_R_NOT_MEASURED]   = "nicht gemessen",
     [SERVO_STR_R_UNM_HEAD]       = "NICHT GEMESSEN",

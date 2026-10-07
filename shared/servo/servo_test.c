@@ -21,6 +21,32 @@ static float mean_of(const servo_test_mean_t *m)
     return (m->n > 0u) ? m->sum / (float)m->n : 0.0f;
 }
 
+void servo_test_meter_pdmini(servo_test_meter_t *m)
+{
+    if (m == NULL) {
+        return;
+    }
+    memset(m, 0, sizeof(*m));
+    snprintf(m->name, sizeof(m->name), "PD mini");
+    m->lag_ms      = SERVO_TEST_PDMINI_LAG_MS;
+    m->repeats     = true;
+    m->upper_bound = true;
+}
+
+/* The step's threshold, once its idle readings are in: the larger of the
+ * smallest and SERVO_TEST_NOISE_K times their standard deviation. */
+static void set_threshold(servo_test_step_t *s)
+{
+    float var = 0.0f;
+    if (s->idle.n > 0u) {
+        const float mean = mean_of(&s->idle);
+        var = s->idle_sq / (float)s->idle.n - mean * mean;
+    }
+    s->noise_a = (var > 0.0f) ? sqrtf(var) : 0.0f;
+    const float k = SERVO_TEST_NOISE_K * s->noise_a;
+    s->move_a = (k > SERVO_TEST_MOVE_MIN_A) ? k : SERVO_TEST_MOVE_MIN_A;
+}
+
 void servo_test_init(servo_test_t *t)
 {
     if (t == NULL) {
@@ -222,6 +248,7 @@ static void end_move(servo_test_t *t, bool arrived, uint32_t at_ms)
     if (t->counted) {
         ++s->moves;
         if (!t->rose) {
+            /* Unseen: whether it moved, the current cannot say. */
             ++s->no_rise;
         }
         if (arrived) {
@@ -237,7 +264,7 @@ static void end_move(servo_test_t *t, bool arrived, uint32_t at_ms)
             if (t->move_peak_now > s->move_peak_a) {
                 s->move_peak_a = t->move_peak_now;
             }
-        } else {
+        } else if (t->rose) {
             ++s->timeouts;
         }
         ++t->moves_done;
@@ -371,6 +398,7 @@ servo_test_start_t servo_test_start(servo_test_t *t,
     t->cfg.type[sizeof(t->cfg.type) - 1u]         = '\0';
     t->cfg.danger[sizeof(t->cfg.danger) - 1u]     = '\0';
     t->cfg.firmware[sizeof(t->cfg.firmware) - 1u] = '\0';
+    t->cfg.meter.name[sizeof(t->cfg.meter.name) - 1u] = '\0';
     t->state    = SERVO_TEST_RUNNING;
     t->ended    = false;
     t->start_ms = now_ms;
@@ -475,6 +503,7 @@ static void measure(servo_test_t *t, const servo_test_reading_t *r)
     case SERVO_TEST_PH_IDLE:
         if ((int32_t)(at - t->phase_ms) >= 0) {
             mean_add(&s->idle, i);
+            s->idle_sq += i * i;
         }
         break;
     case SERVO_TEST_PH_MOVE:
@@ -503,22 +532,29 @@ static void measure(servo_test_t *t, const servo_test_reading_t *r)
          * between two readings unless it climbs slower than
          * SERVO_TEST_BAND_A a reading, and a moving current within the band
          * of the level cannot be told from the servo there.
+         *
+         * The threshold is the step's, from its idle noise.  A reading
+         * above the level by the threshold is the move under way, whatever
+         * the band says, so a band wider than the threshold times no move
+         * early: the first reading back under the threshold is the arrival.
          */
-        if (fabsf(i - t->rise_a) > SERVO_TEST_MOVE_A) {
+        const float move_a = s->move_a;
+        const float band_a = SERVO_TEST_BAND_A;
+        if (fabsf(i - t->rise_a) > move_a) {
             t->rose = true;
         }
-        const bool near = fabsf(i - t->ref_a) <= SERVO_TEST_BAND_A;
-        if (t->rose && i > t->ref_a + SERVO_TEST_MOVE_A) {
+        const bool near = fabsf(i - t->ref_a) <= band_a;
+        if (t->rose && i > t->ref_a + move_a) {
             t->left = true;
         } else if (t->left && near) {
             end_move(t, true, at);
             break;
-        } else if (t->left && i < t->ref_a - SERVO_TEST_BAND_A) {
+        } else if (t->left && i < t->ref_a - band_a) {
             /* Back below the level without settling at it: the servo moves
              * at less than it holds there, and the settled rule decides. */
             t->left = false;
         } else if (!t->left && t->rose && near && t->near_prev
-                   && fabsf(i - t->prev_i) <= SERVO_TEST_BAND_A) {
+                   && fabsf(i - t->prev_i) <= band_a) {
             end_move(t, true, t->prev_at);
             break;
         }
@@ -627,7 +663,10 @@ void servo_test_step(servo_test_t *t, uint32_t now_ms,
             if (in_phase >= SERVO_TEST_IDLE_MS) {
                 if (cur(t)->idle.n == 0u) {
                     finish(t, SERVO_TEST_AB_STALE, now_ms);
-                } else if (cur(t)->brownout) {
+                    break;
+                }
+                set_threshold(cur(t));
+                if (cur(t)->brownout) {
                     /* From the centre to the high end, then back. */
                     begin_move(t, 1u, true, now_ms);
                 } else {
@@ -675,22 +714,29 @@ servo_test_verdict_t servo_test_verdict(const servo_test_t *t)
         && a > t->cfg.hold_max_a) {
         fail = true;
     }
-    if (t->cfg.travel_max_ms > 0u && servo_test_max_travel(t, &ms)
-        && ms > t->cfg.travel_max_ms) {
+    /* A meter whose travel times are an upper bound cannot fail one. */
+    if (t->cfg.travel_max_ms > 0u && !t->cfg.meter.upper_bound
+        && servo_test_max_travel(t, &ms) && ms > t->cfg.travel_max_ms) {
         fail = true;
     }
+    bool unseen = false;
     for (unsigned k = 0; k < t->step_count; ++k) {
         const servo_test_step_t *s = &t->steps[k];
         if (s->brownout) {
             continue;
         }
-        /* A move that never came back to its holding level, or a step whose
-         * moves showed no movement at all. */
-        if (s->timeouts > 0u || (s->moves > 0u && s->travels == 0u)) {
+        /* A move that started and never came back to its holding level. */
+        if (s->timeouts > 0u) {
             fail = true;
         }
+        if (s->no_rise > 0u) {
+            unseen = true;
+        }
     }
-    return fail ? SERVO_TEST_FAIL : SERVO_TEST_PASS;
+    if (fail) {
+        return SERVO_TEST_FAIL;
+    }
+    return unseen ? SERVO_TEST_NOT_MEASURABLE : SERVO_TEST_PASS;
 }
 
 unsigned servo_test_steps_planned(const servo_test_t *t)

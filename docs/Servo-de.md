@@ -119,8 +119,8 @@ Jede Stufe durchläuft diese Phasen:
 | --- | --- | --- |
 | SETZEN | auf PULS CENTRE; die Spannung wird verlangt; die erste Stufe schaltet den Ausgang ein | wenn das Netzteil den Sollwert auf 0,05 V genau zurückliest, spätestens nach 3000 ms |
 | EINSCHWINGEN | auf PULS CENTRE | nach EINSCHWINGEN der TEST-Seite |
-| RUHE | auf PULS CENTRE: der Ruhestrom ist der Mittelwert der Messwerte | nach 1000 ms |
-| BEWEGEN | ein Sprung auf ein Ende, ohne Rampe: TEMPO gilt nicht | bei der Ankunft oder nach 3000 ms (verspätet) |
+| RUHE | auf PULS CENTRE: der Ruhestrom ist der Mittelwert der Messwerte, das Ruherauschen ihre Standardabweichung | nach 1000 ms |
+| BEWEGEN | ein Sprung auf ein Ende, ohne Rampe: TEMPO gilt nicht | bei der Ankunft oder nach 3000 ms: verspätet mit erkannter Bewegung, unerkannt ohne |
 | HOLD | an diesem Ende: der Haltestrom ist der Mittelwert der Messwerte | nach VERWEILEN, mindestens 600 ms |
 
 Die beiden Enden sind die von SWEEP: BEREICH des Wegs zu beiden Seiten von
@@ -134,12 +134,20 @@ unteren Ende und weiter zum oberen, werden nicht gezählt: sie messen den Haltes
 Ende. Danach gehen die gezählten Bewegungen von Ende zu Ende, BEWEGUNGEN viele
 oder für TESTZEIT, wie LÄNGE NACH sagt, höchstens 1000 je Stufe.
 
-- **Bewegung:** ein Messwert, der mehr als 0,10 A (`SERVO_TEST_MOVE_A`) vom
-  Wert vor dem Befehl entfernt ist: darüber, oder darunter, wenn das Servo
-  ein Ende verlässt, an dem es gegen einen Anschlag gedrückt hat.
-- **Ankunft:** nach Bewegung ein Messwert mehr als 0,10 A über dem
+- **Schwelle:** je Stufe der größere Wert aus 0,020 A
+  (`SERVO_TEST_MOVE_MIN_A`) und dem 3-fachen (`SERVO_TEST_NOISE_K`)
+  Ruherauschen, der Standardabweichung der Messwerte in RUHE. Der Bericht
+  nennt sie in der Spalte `Schw.`. Ein Servo, dessen Messwerte in Ruhe um
+  0,010 A streuen, hat eine Schwelle von 0,030 A.
+- **Bewegung:** ein Messwert, der mehr als die Schwelle vom Wert vor dem
+  Befehl entfernt ist: darüber, oder darunter, wenn das Servo ein Ende
+  verlässt, an dem es gegen einen Anschlag gedrückt hat.
+- **Ankunft:** nach Bewegung ein Messwert mehr als die Schwelle über dem
   Haltestrom des Zielendes, dann der erste Messwert, der wieder auf 0,05 A
-  (`SERVO_TEST_BAND_A`) daran liegt, auf jeder Seite. Ein Messwert, der
+  (`SERVO_TEST_BAND_A`) daran liegt, auf jeder Seite. Ein Messwert, der die
+  Schwelle über dem Wert liegt, ist nie eine Ankunft; das Band von 0,05 A
+  beendet also keine Bewegung zu früh, wo die Schwelle kleiner ist. Ein
+  Messwert, der
   stattdessen mehr als 0,05 A unter den Wert fällt, wie nach einem
   Stromstoß beim Beschleunigen, übergibt die Bewegung der Regel unten. Die
   Halteströme der beiden Enden können
@@ -155,10 +163,31 @@ oder für TESTZEIT, wie LÄNGE NACH sagt, höchstens 1000 je Stufe.
 - **Nicht unterscheidbar:** ein Servo, dessen Strom in Bewegung auf 0,05 A
   am Haltestrom des Ziels liegt, ist von einem, das schon dort steht, nicht
   zu unterscheiden; eine Bewegung zu diesem Ende endet bei ihren ersten zwei
-  Messwerten.
+  Messwerten nach Bewegung.
+- **Unerkannt:** eine gezählte Bewegung ohne Messwert jenseits der Schwelle
+  binnen 3000 ms. Der Strom unterscheidet sie nicht von einem stillstehenden
+  Servo: sie wird weder gemessen noch als verspätet gezählt, und der Bericht
+  zählt sie in der Spalte `Unerk.`. Eine Stufe, bei der keine Bewegung
+  erkannt wurde, lautet `NICHT MESSBAR`.
 - **Stellzeit:** vom Befehl bis zum Messwert der Ankunft.
 - **Strom in Bewegung:** der Mittelwert der Messwerte zwischen Befehl und
   Ankunft; der Spitzenwert ist der höchste davon.
+
+Warum das Band bei 0,05 A bleibt, während die Schwelle mitgeht: die
+Wiedergaben der beiden Läufe am Prüfstand unten messen mit dem Band bei
+0,05 A und mit dem Band gleich der Schwelle dieselben Bewegungen auf die
+Millisekunde gleich, weil ein Messwert, der die Schwelle über dem Wert
+liegt, nie eine Ankunft ist. Mitgehen musste die Schwelle. 0.13.0 nahm
+0,10 A als Bewegung, und der MG90S bewegt sich mit 0,04 bis 0,077 A über
+0,001 A Haltestrom: keine Bewegung wurde erkannt, jede lief nach 3000 ms aus
+und zählte als verspätet, und der Lauf lautete NICHT BESTANDEN.
+
+**Einschränkung: die Bewegung zur Mitte kann in RUHE reichen.** Mit
+EINSCHWINGEN 500 ms tragen die Messwerte in RUHE noch das Ende der Bewegung
+der Stufe zur Mitte: beim 1102HB bei 5,00 V 0,025 A, fallend auf 0,003 A,
+aus der Verzögerung des PD mini von 0,3 s und der Bewegung selbst. Das hebt
+den Ruhemittelwert und das Rauschen und damit die Schwelle: dort 0,026 A
+statt 0,020 A. Ein längeres EINSCHWINGEN vermeidet das.
 
 **Brown-out.** Nach den Stufen, mit BROWN-OUT an: ab 5,00 V
 (`SERVO_TEST_BROWNOUT_START_V`) oder der geltenden Spannungsgrenze, wenn
@@ -172,14 +201,20 @@ seiner Eingangsspannung abzüglich 0,5 V Reserve. Eine Untergrenze neben dem
 und RUHE, dann zwei Bewegungen (`SERVO_TEST_BROWNOUT_MOVES`), von der Mitte
 zum oberen Ende und weiter zum unteren, jede 600 ms gehalten. Eine Spannung
 zeigt **keine Bewegung**, wenn kein Messwert der beiden Bewegungen mehr als
-0,10 A vom Wert vor ihrem Befehl entfernt liegt. Der Lauf abwärts endet bei
-der ersten Spannung ohne Bewegung; der Bericht nennt sie und die niedrigste,
-bei der sich das Servo noch bewegt hat.
+die Schwelle dieser Spannung, aus ihren eigenen Messwerten in RUHE, vom Wert
+vor ihrem Befehl entfernt liegt. Der Lauf abwärts endet bei der ersten
+Spannung ohne Bewegung; der Bericht nennt sie, die niedrigste, bei der sich
+das Servo noch bewegt hat, und die Schwelle der zuletzt gelaufenen
+Spannung. Keine Bewegung schon bei der ersten Spannung, 5,00 V, lautet
+`nicht messbar`: ein Servo, an dem nie Bewegung erkannt wurde, kann sich
+unter der Schwelle bewegen.
 
 | Konstante | Wert | Bedeutung |
 | --- | ---: | --- |
-| `SERVO_TEST_MOVE_A` | 0,10 A | Bewegung; über dem Wert des Ziels, noch nicht angekommen |
+| `SERVO_TEST_MOVE_MIN_A` | 0,020 A | die kleinste Schwelle: Bewegung; über dem Wert des Ziels, noch nicht angekommen |
+| `SERVO_TEST_NOISE_K` | 3 | die Schwelle in Ruherauschen, wo das größer ist |
 | `SERVO_TEST_BAND_A` | 0,05 A | am Haltestrom angekommen |
+| `SERVO_TEST_PDMINI_LAG_MS` | 300 ms | die Verzögerung des PD mini, wie der Bericht sie nennt |
 | `SERVO_TEST_IDLE_MS` | 1000 ms | die Ruhestrommessung |
 | `SERVO_TEST_HOLD_MIN_MS` | 600 ms | das kürzeste gemessene Halten |
 | `SERVO_TEST_TRAVEL_TIMEOUT_MS` | 3000 ms | eine Bewegung, die nicht angekommen ist, ist verspätet |
@@ -219,6 +254,22 @@ Network) und den nächsten PWM-Frame (Pulsweitenmodulation). Diese
 Verzögerung ist nicht gemessen. Wie der PD mini einen Messwert mittelt, ist
 nicht bekannt.
 
+**Die Messwerte des PD mini sind verzögert und wiederholen sich.** Zwei
+Läufe am Prüfstand mit dem PD mini auf 0.13.0, ein MG90S und ein 1102HB,
+lasen ihn alle 102 bis 106 ms. Vom Befehl bis zum ersten Messwert 0,02 A
+über dem Wert davor vergehen im Median 0,31 s, und ein Strom wiederholt sich
+oft über mehrere Messwerte. Jede am PD mini abgelesene Stellzeit ist darum
+eine Obergrenze: beim MG90S 771 bis 989 ms für ein Servo mit etwa 0,1 s je
+60 Grad. Der Bericht sagt das in seinen Zeilen `Verzögerung`,
+`Wiederholung` und `Stellzeiten`, und STELLZEIT kann einen Lauf am PD mini
+nicht scheitern lassen: ihre Zeile nennt die längste Stellzeit und lautet
+`Obergrenze, nicht gegen die Grenze geprüft`. Was den Strom misst, wird dem
+Lauf beschrieben (`servo_test_meter_t`: ein Name, die Verzögerung, ob sich
+Messwerte wiederholen, ob Stellzeiten eine Obergrenze sind); ein schnellerer
+Stromsensor setzt seine eigenen Werte und lässt STELLZEIT prüfen. Ein Lauf
+am Netzteilmodell des Panels nennt keine eigene Verzögerung und prüft
+STELLZEIT wie der PD mini: gar nicht.
+
 ### Was einen Lauf beendet
 
 Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und
@@ -256,15 +307,24 @@ eine Grenze, die während des Laufs sinkt, beendet ihn vor der Stufe darüber.
 
 ### Urteil
 
-BESTANDEN, außer eines davon trifft zu, über die Spannungsstufen (der
-Brown-out-Lauf wird berichtet, nicht beurteilt):
+Über die Spannungsstufen (der Brown-out-Lauf wird berichtet, nicht
+beurteilt) NICHT BESTANDEN, wenn eines davon zutrifft:
 
 - der höchste Ruhestrom liegt über RUHESTROM;
 - der höchste Haltestrom liegt über HALTESTROM;
-- die längste Stellzeit liegt über STELLZEIT;
+- die längste Stellzeit liegt über STELLZEIT, wo der Strommesser
+  Stellzeiten misst (nicht der PD mini);
 - ein Messwert nach EINSCHWINGEN liegt über BLOCKIERT AB;
-- eine gezählte Bewegung war verspätet, was bei einem Servo, das sich nicht
-  bewegt, immer zutrifft.
+- eine gezählte Bewegung war verspätet: Bewegung erkannt, keine Ankunft
+  binnen 3000 ms.
+
+Sonst NICHT MESSBAR, wenn eine gezählte Bewegung unerkannt blieb, und
+BESTANDEN, wenn keine. NICHT MESSBAR sagt, dass der Strom nicht jede
+Bewegung zeigen konnte: ein Servo, das sich unter der Schwelle bewegt, und
+eines, das stillsteht, lesen sich gleich. Die Zeile `Ergebnis` nennt, bei
+wie vielen der gezählten Bewegungen keine Bewegung erkannt wurde, und
+`Unerkannt` deren Zahl. Ein Servo, das sich nicht bewegt, lautet NICHT
+MESSBAR, nicht NICHT BESTANDEN.
 
 Ein Wert 0 auf der GRENZEN-Seite wird nicht geprüft; BLOCKIERT AB immer.
 
@@ -303,23 +363,42 @@ Prüfstands:
 Der Bericht steht in der Sprache, die beim Start seines Laufs gilt; seine
 deutschen Wörter liegen in `shared/ui/ui_text_de.c`, die englischen in
 `shared/servo/servo_report.c` ([Sprache der Oberfläche](Language-de.md)).
-Die CSV ist in jeder Sprache englisch. Ein englischer Bericht aus einem Lauf
-gegen die Servo- und Netzteilmodelle der Host-Suite steht auf der
-[englischen Seite](Servo.md#files). Das modellierte Servo legt 800 us in
-667 ms zurück; die 700 ms im Bericht sind das, um die 100 ms zwischen zwei
-Messwerten zu spät. Ein abgebrochener Lauf zeigt `Ergebnis: ABGEBROCHEN -
+Die CSV ist in jeder Sprache englisch. Ein englischer Bericht aus der
+Wiedergabe eines Laufs eines MG90S am Prüfstand mit dem PD mini steht auf
+der [englischen Seite](Servo.md#files); auf Deutsch lauten seine Stufen:
+
+```
+Ergebnis:        BESTANDEN
+...
+Soll V Ist V   Ruhe   Schw.  Beweg. Spitze Halt mn Halt mx Stell. Längste Anz.  Spät Unerk.
+ 4.80    4.80  0.004  0.020  0.037  0.065  0.001   0.001   861    989        41    0      0
+ 6.00    6.00  0.001  0.020  0.040  0.077  0.001   0.001   892    978        41    0      0
+```
+
+Dieselbe Wiedergabe eines 1102HB, das 0,015 bis 0,029 A hält und in
+Bewegung bis 0,039 bis 0,044 A zieht, lautet `NICHT MESSBAR - bei 27 von 50
+gezählten Bewegungen keine Bewegung im Strom erkannt`: seine Bewegungen zum
+oberen Ende verlassen die 0,028 A des unteren Endes und überschreiten sie
+nie um 0,020 A. Auf 0.13.0 lautete dasselbe Servo NICHT BESTANDEN, alle 34
+gezählten Bewegungen verspätet. Ein abgebrochener Lauf zeigt `Ergebnis: ABGEBROCHEN -
 <Grund>`, eine abgeschnittene Stufe ist mit `(verkürzt)` markiert, eine nie
 erreichte mit `nicht gelaufen`. `Kann zerstören` nennt das rote Schild, wenn
 ein Heli-Typ oder eine Frame Rate über 60 Hz gilt.
 
 ### Nicht auf Hardware gelaufen
 
-Kein Servotest ist gegen ein Servo oder einen PD mini gelaufen. Die Host-Suite prüft die
-Engine gegen `servo_sim` und `supply_sim`, die Seite SERVO, die sie führt,
-und die CSV, vom Parser der Log-Ansicht zurückgelesen. Nicht gemessen: die
-wirkliche Rate der Messwerte über den Koprozessor, die Mittelung des PD mini,
-die Verzögerung des Befehls bis zum Pin, und ob der Strom eines echten Servos
-auf 0,05 A genau auf seinen Haltestrom zurückfällt.
+Drei Läufe von 0.13.0 am Prüfstand mit dem PD mini, von einem Tester,
+sind die einzigen auf Hardware: ein MG90S-Mikroservo, ein Digitalservo 1102HB
+und ein Digitalservo MS24. Das MS24, in Bewegung 0,16 bis 0,18 A, bestand. MG90S
+und 1102HB lauteten NICHT BESTANDEN, jede Bewegung verspätet, weil 0.13.0
+0,10 A als Bewegung nahm; beide Servos bewegten sich. Die Host-Suite gibt
+die CSVs von MG90S und 1102HB (`test/host/fixtures/`, gekürzt) gegen die
+Engine wieder, dazu einen MS24-ähnlichen Fall, die Ströme des MG90S mal 3.
+Die Schwelle und das Urteil NICHT MESSBAR sind nicht auf Hardware gelaufen.
+Darüber hinaus prüft die Host-Suite die Engine gegen `servo_sim` und
+`supply_sim`, die Seite SERVO, die sie führt, und die CSV, vom Parser der
+Log-Ansicht zurückgelesen. Nicht gemessen: die Mittelung des PD mini und die
+Verzögerung des Befehls bis zum Pin.
 
 ## Sweep und TEMPO
 

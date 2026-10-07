@@ -27,6 +27,7 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_PASS]             = "PASS",
     [SERVO_STR_FAIL]             = "FAIL",
     [SERVO_STR_ABORTED]          = "ABORTED",
+    [SERVO_STR_NOT_MEASURABLE]   = "NOT MEASURABLE",
     [SERVO_STR_TEST_STEP]        = "STEP",
     [SERVO_STR_TEST_BROWNOUT]    = "BROWN-OUT",
     [SERVO_STR_AB_NONE]          = "",
@@ -57,6 +58,8 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_R_TITLE]          = "RCBENCH SERVO TEST REPORT",
     [SERVO_STR_R_RESULT]         = "Result:         %s",
     [SERVO_STR_R_RESULT_WHY]     = "Result:         %s - %s",
+    [SERVO_STR_R_RESULT_UNSEEN]  = "Result:         %s - %u of %u counted "
+                                   "moves showed no movement in the current",
     [SERVO_STR_R_DEVICE]         = "Device:         %s",
     [SERVO_STR_R_FIRMWARE]       = "Firmware:       rcbench %s",
     [SERVO_STR_R_LOG]            = "Log:            the .CSV with this "
@@ -73,6 +76,12 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_R_RESOLUTION]     = "Resolution:     one reading every %lu "
                                    "ms: a travel time is late by up to that",
     [SERVO_STR_R_RESOLUTION_UNKNOWN] = "Resolution:     not known",
+    [SERVO_STR_R_LAG]            = "Lag:            about %u ms from a change "
+                                   "of current to the reading that shows it",
+    [SERVO_STR_R_REPEATS]        = "Repeats:        a reading can repeat the "
+                                   "last value for several readings",
+    [SERVO_STR_R_UPPER_BOUND]    = "Travel times:   an upper bound, not "
+                                   "checked against the limit",
     [SERVO_STR_R_DURATION]       = "Duration:       %lu.%01lu s",
     [SERVO_STR_R_ROWS]           = "Log rows:       %lu written, %lu lost to "
                                    "a full queue",
@@ -105,23 +114,34 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_R_PER_STEP]       = "RESULTS PER STEP (currents in A, times "
                                    "in ms)",
     /* Over the columns of the step lines' format in step_lines(). */
-    [SERVO_STR_R_COLUMNS]        = "Set V  Meas V  Idle   Moving Peak   "
-                                   "Hold lo Hold hi Travel Longest Moves "
-                                   "Late",
+    [SERVO_STR_R_COLUMNS]        = "Set V  Meas V  Idle   Thresh Moving "
+                                   "Peak   Hold lo Hold hi Travel Longest "
+                                   "Moves Late Unseen",
     [SERVO_STR_R_STEP_NOT_RUN]   = "%5.2f  not run",
     [SERVO_STR_R_CUT_SHORT]      = " (cut short)",
     [SERVO_STR_R_NO_STEP]        = "No step ran.",
-    [SERVO_STR_R_LATE]           = "Late: moves not back at the holding "
-                                   "level within %u ms.",
+    [SERVO_STR_R_LATE]           = "Late: moves seen moving that did not "
+                                   "arrive within %u ms.",
+    [SERVO_STR_R_UNSEEN]         = "Unseen: moves with no movement seen; not "
+                                   "timed, not counted late.",
+    [SERVO_STR_R_THRESHOLD]      = "Thresh: movement is a reading max(%.3f A, "
+                                   "%.0f x idle noise) from the level before "
+                                   "the command.",
+    [SERVO_STR_R_ARRIVAL]        = "Arrival: after a reading Thresh above "
+                                   "the end's holding level, the first back "
+                                   "within %.2f A of it.",
     [SERVO_STR_R_BO_HEAD]        = "BROWN-OUT",
     [SERVO_STR_R_BO_NOT_RUN]     = "Not run.",
     [SERVO_STR_R_BO_NOT_REACHED] = "Not reached.",
-    [SERVO_STR_R_BO_STOPPED]     = "Moved at %.2f V; no movement at %.2f V.",
+    [SERVO_STR_R_BO_STOPPED]     = "Moved at %.2f V; no movement seen at "
+                                   "%.2f V.",
     [SERVO_STR_R_BO_ALL]         = "Moved at every step down to %.2f V; "
                                    "lower not tested.",
-    [SERVO_STR_R_BO_NONE]        = "No movement at %.2f V, the first step.",
-    [SERVO_STR_R_BO_RULE]        = "No movement: no reading of a move %.2f "
-                                   "A away from the level before it.",
+    [SERVO_STR_R_BO_NONE]        = "No movement seen at %.2f V, the first "
+                                   "step: not measurable.",
+    [SERVO_STR_R_BO_RULE]        = "No movement: no reading of a move more "
+                                   "than Thresh, %.3f A at %.2f V, from the "
+                                   "level before it.",
     [SERVO_STR_R_LIM_HEAD]       = "AGAINST THE LIMITS PAGE",
     [SERVO_STR_R_LIM_IDLE]       = "Idle current     highest %.3f A, limit "
                                    "%s: %s",
@@ -131,9 +151,13 @@ static const char *const k_str[SERVO_STR_COUNT] = {
                                    "%u ms: %s",
     [SERVO_STR_R_LIM_TRAVEL_OFF] = "Travel time      longest %lu ms, limit "
                                    "OFF: %s",
+    [SERVO_STR_R_LIM_TRAVEL_BOUND] = "Travel time      longest %lu ms, limit "
+                                     "%u ms: upper bound, not checked "
+                                     "against the limit",
     [SERVO_STR_R_LIM_STALL]      = "Stall threshold  highest %.3f A, STALL "
                                    "AT %.2f A: %s",
     [SERVO_STR_R_LIM_LATE]       = "Moves arrived    %u late: %s",
+    [SERVO_STR_R_LIM_UNSEEN]     = "Moves seen       %u unseen: %s",
     [SERVO_STR_R_NOT_CHECKED]    = "not checked",
     [SERVO_STR_R_NOT_MEASURED]   = "not measured",
     [SERVO_STR_R_UNM_HEAD]       = "NOT MEASURED",
@@ -182,6 +206,7 @@ servo_str_t servo_test_verdict_str(servo_test_verdict_t v)
     switch (v) {
     case SERVO_TEST_PASS: return SERVO_STR_PASS;
     case SERVO_TEST_FAIL: return SERVO_STR_FAIL;
+    case SERVO_TEST_NOT_MEASURABLE: return SERVO_STR_NOT_MEASURABLE;
     default:              return SERVO_STR_ABORTED;
     }
 }
@@ -288,9 +313,18 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
     if (here(c)) {
         const char *verdict = servo_str_in(c->text,
                                            servo_test_verdict_str(v));
+        unsigned unseen = 0u, counted = 0u;
+        for (unsigned k = 0; k < t->step_count; ++k) {
+            if (!t->steps[k].brownout) {
+                unseen  += t->steps[k].no_rise;
+                counted += t->steps[k].moves;
+            }
+        }
         if (v == SERVO_TEST_ABORTED) {
             snprintf(b, n, S(R_RESULT_WHY), verdict,
                      servo_str_in(c->text, servo_test_abort_str(t->why)));
+        } else if (v == SERVO_TEST_NOT_MEASURABLE) {
+            snprintf(b, n, S(R_RESULT_UNSEEN), verdict, unseen, counted);
         } else {
             snprintf(b, n, S(R_RESULT), verdict);
         }
@@ -309,7 +343,9 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, S(R_SUPPLY), g->model ? S(R_SUPPLY_MODEL) : "PD mini");
+        snprintf(b, n, S(R_SUPPLY), g->model ? S(R_SUPPLY_MODEL)
+                                    : (g->meter.name[0] != '\0')
+                                          ? g->meter.name : "--");
         return true;
     }
     float per_s = 0.0f, module_s = 0.0f;
@@ -333,6 +369,19 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
         } else {
             snprintf(b, n, "%s", S(R_RESOLUTION_UNKNOWN));
         }
+        return true;
+    }
+    /* What the meter's readings are worth, where it says. */
+    if (g->meter.lag_ms > 0u && here(c)) {
+        snprintf(b, n, S(R_LAG), (unsigned)g->meter.lag_ms);
+        return true;
+    }
+    if (g->meter.repeats && here(c)) {
+        snprintf(b, n, "%s", S(R_REPEATS));
+        return true;
+    }
+    if (g->meter.upper_bound && here(c)) {
+        snprintf(b, n, "%s", S(R_UPPER_BOUND));
         return true;
     }
     if (here(c)) {
@@ -479,13 +528,18 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
             snprintf(b, n, S(R_STEP_NOT_RUN), (double)s->set_v);
             return true;
         }
-        char vm[16], idle[16], move[16], lo[16], hi[16];
+        char vm[16], idle[16], thr[16], move[16], lo[16], hi[16];
         if (s->v.n > 0u) {
             snprintf(vm, sizeof(vm), "%.2f", (double)(s->v.sum / (float)s->v.n));
         } else {
             snprintf(vm, sizeof(vm), "--");
         }
         amps(idle, sizeof(idle), &s->idle);
+        if (s->move_a > 0.0f) {
+            snprintf(thr, sizeof(thr), "%.3f", (double)s->move_a);
+        } else {
+            snprintf(thr, sizeof(thr), "--");
+        }
         amps(move, sizeof(move), &s->move);
         amps(lo, sizeof(lo), &s->hold[0]);
         amps(hi, sizeof(hi), &s->hold[1]);
@@ -505,10 +559,15 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
             snprintf(mean_ms, sizeof(mean_ms), "--");
             snprintf(max_ms, sizeof(max_ms), "--");
         }
-        snprintf(b, n, "%5.2f  %6s  %-6s %-6s %-6s %-7s %-7s %-6s %-7s %5u %4u%s",
-                 (double)s->set_v, vm, idle, move, peak, lo, hi, mean_ms,
+        /* A step none of whose moves showed movement is not measurable. */
+        const bool none = s->moves > 0u && s->no_rise == s->moves;
+        snprintf(b, n,
+                 "%5.2f  %6s  %-6s %-6s %-6s %-6s %-7s %-7s %-6s %-7s %5u %4u "
+                 "%6u%s%s%s",
+                 (double)s->set_v, vm, idle, thr, move, peak, lo, hi, mean_ms,
                  max_ms, (unsigned)s->moves, (unsigned)s->timeouts,
-                 s->done ? "" : S(R_CUT_SHORT));
+                 (unsigned)s->no_rise, s->done ? "" : S(R_CUT_SHORT),
+                 none ? " " : "", none ? S(NOT_MEASURABLE) : "");
         return true;
     }
     if (!any && here(c)) {
@@ -516,10 +575,45 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
         return true;
     }
     if (here(c)) {
+        snprintf(b, n, S(R_THRESHOLD), (double)SERVO_TEST_MOVE_MIN_A,
+                 (double)SERVO_TEST_NOISE_K);
+        return true;
+    }
+    if (here(c)) {
+        snprintf(b, n, S(R_ARRIVAL), (double)SERVO_TEST_BAND_A);
+        return true;
+    }
+    if (here(c)) {
         snprintf(b, n, S(R_LATE), (unsigned)SERVO_TEST_TRAVEL_TIMEOUT_MS);
         return true;
     }
+    if (here(c)) {
+        snprintf(b, n, "%s", S(R_UNSEEN));
+        return true;
+    }
     return false;
+}
+
+/* The first and the last brown-out voltage that ran to its end; NULL for
+ * none. */
+static void brownout_ran(const servo_test_t *t, const servo_test_step_t **first,
+                         const servo_test_step_t **last)
+{
+    const servo_test_step_t *f = NULL, *l = NULL;
+    for (unsigned k = 0; k < t->step_count; ++k) {
+        if (t->steps[k].brownout && t->steps[k].done) {
+            if (f == NULL) {
+                f = &t->steps[k];
+            }
+            l = &t->steps[k];
+        }
+    }
+    if (first != NULL) {
+        *first = f;
+    }
+    if (last != NULL) {
+        *last = l;
+    }
 }
 
 static bool brownout_lines(const servo_test_t *t, cursor_t *c)
@@ -538,33 +632,27 @@ static bool brownout_lines(const servo_test_t *t, cursor_t *c)
         float moved = 0.0f;
         bool stopped = false;
         const bool any = servo_test_brownout(t, &moved, &stopped);
-        float first = 0.0f;
-        bool ran = false;
-        float last = 0.0f;
-        for (unsigned k = 0; k < t->step_count; ++k) {
-            if (t->steps[k].brownout && t->steps[k].done) {
-                if (!ran) {
-                    first = t->steps[k].set_v;
-                }
-                last = t->steps[k].set_v;
-                ran = true;
-            }
-        }
+        const servo_test_step_t *first = NULL, *last = NULL;
+        brownout_ran(t, &first, &last);
         if (!t->cfg.brownout) {
             snprintf(b, n, "%s", S(R_BO_NOT_RUN));
-        } else if (!ran) {
+        } else if (first == NULL || last == NULL) {
             snprintf(b, n, "%s", S(R_BO_NOT_REACHED));
         } else if (any && stopped) {
-            snprintf(b, n, S(R_BO_STOPPED), (double)moved, (double)last);
+            snprintf(b, n, S(R_BO_STOPPED), (double)moved, (double)last->set_v);
         } else if (any) {
             snprintf(b, n, S(R_BO_ALL), (double)moved);
         } else {
-            snprintf(b, n, S(R_BO_NONE), (double)first);
+            snprintf(b, n, S(R_BO_NONE), (double)first->set_v);
         }
         return true;
     }
-    if (here(c)) {
-        snprintf(b, n, S(R_BO_RULE), (double)SERVO_TEST_MOVE_A);
+    /* The threshold where the walk ended: the last voltage it ran. */
+    const servo_test_step_t *last = NULL;
+    brownout_ran(t, NULL, &last);
+    if (last != NULL && here(c)) {
+        snprintf(b, n, S(R_BO_RULE), (double)last->move_a,
+                 (double)last->set_v);
         return true;
     }
     return false;
@@ -603,7 +691,10 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
     if (here(c)) {
         uint32_t ms = 0u;
         const bool m = servo_test_max_travel(t, &ms);
-        if (g->travel_max_ms > 0u) {
+        if (g->travel_max_ms > 0u && g->meter.upper_bound) {
+            snprintf(b, n, S(R_LIM_TRAVEL_BOUND), (unsigned long)ms,
+                     (unsigned)g->travel_max_ms);
+        } else if (g->travel_max_ms > 0u) {
             snprintf(b, n, S(R_LIM_TRAVEL), (unsigned long)ms,
                      (unsigned)g->travel_max_ms,
                      verdict_word(c, true, m, ms > g->travel_max_ms));
@@ -626,6 +717,17 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
             }
         }
         snprintf(b, n, S(R_LIM_LATE), late, (late > 0u) ? S(FAIL) : S(PASS));
+        return true;
+    }
+    if (here(c)) {
+        unsigned unseen = 0u;
+        for (unsigned k = 0; k < t->step_count; ++k) {
+            if (!t->steps[k].brownout) {
+                unseen += t->steps[k].no_rise;
+            }
+        }
+        snprintf(b, n, S(R_LIM_UNSEEN), unseen,
+                 (unseen > 0u) ? S(NOT_MEASURABLE) : S(PASS));
         return true;
     }
     return false;
