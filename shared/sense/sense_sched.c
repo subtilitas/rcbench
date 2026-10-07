@@ -250,13 +250,12 @@ static void cap_step(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
         }
         return;
     }
-    /* The deadline first: a sample at or past it is the move late or
-     * unseen, never its arrival. */
-    (void)servo_move_tick(&c->mv, at_t);
+    /* A sample at or past the deadline is the move late or unseen, never
+     * its arrival (servo_move_sample()); without one, the clock ends it. */
     if (v != NULL) {
         servo_move_sample(&c->mv, at_t, a, clip);
     }
-    switch (c->mv.state) {
+    switch (servo_move_tick(&c->mv, at_t)) {
     case SERVO_MOVE_MOVING:  c->state = SENSE_CAP_MOVING;        break;
     case SERVO_MOVE_ARRIVED: cap_end(c, SENSE_CAP_ARRIVED);      break;
     case SERVO_MOVE_SETTLED: cap_end(c, SENSE_CAP_SETTLED);      break;

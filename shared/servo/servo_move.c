@@ -57,6 +57,21 @@ static bool under_way(const servo_move_t *m)
     return m->state == SERVO_MOVE_WAITING || m->state == SERVO_MOVE_MOVING;
 }
 
+/* A move under way whose window has run out at @p now is over: late with
+ * movement, unseen without, ended at @p now.  A @p now before the command
+ * decides nothing.  Whether it ran out. */
+static bool expired(servo_move_t *m, uint32_t now)
+{
+    const uint32_t since = now - m->cfg.cmd_t;
+    if ((int32_t)since < 0 || since < m->cfg.window_t) {
+        return false;
+    }
+    m->state = (m->state == SERVO_MOVE_MOVING) ? SERVO_MOVE_LATE
+                                               : SERVO_MOVE_UNSEEN;
+    m->end_t = now;
+    return true;
+}
+
 /* A sample into the filter's window of the newest filter_n. */
 static void filter_push(servo_move_t *m, float a, servo_move_clip_t clip)
 {
@@ -130,8 +145,9 @@ servo_move_state_t servo_move_sample(servo_move_t *m, uint32_t at, float a,
     if (m->cfg.filter_n > 1u) {
         valued = filtered(m, a, clip, &i, &c);
     }
-    /* A sample taken before the command is not the move. */
-    if ((int32_t)(at - m->cfg.cmd_t) < 0) {
+    /* A sample taken before the command is not the move; one at or past
+     * the window's end is the move late or unseen, never its arrival. */
+    if ((int32_t)(at - m->cfg.cmd_t) < 0 || expired(m, at)) {
         return m->state;
     }
     if (!valued) {
@@ -238,12 +254,7 @@ servo_move_state_t servo_move_sample(servo_move_t *m, uint32_t at, float a,
 servo_move_state_t servo_move_tick(servo_move_t *m, uint32_t now)
 {
     if (under_way(m)) {
-        const uint32_t since = now - m->cfg.cmd_t;
-        if ((int32_t)since >= 0 && since >= m->cfg.window_t) {
-            m->state = (m->state == SERVO_MOVE_MOVING) ? SERVO_MOVE_LATE
-                                                       : SERVO_MOVE_UNSEEN;
-            m->end_t = now;
-        }
+        (void)expired(m, now);
     }
     return m->state;
 }

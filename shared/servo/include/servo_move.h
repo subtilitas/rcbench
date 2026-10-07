@@ -27,7 +27,9 @@
  *   Window     a move not arrived window_t after its command is over: late
  *              with movement seen, unseen without.  servo_move_window_ms()
  *              adds the meter's lag to SERVO_MOVE_TIMEOUT_MS, since its
- *              samples show an arrival that much later.
+ *              samples show an arrival that much later.  A sample at or
+ *              past the window's end ends the move there and is never
+ *              its arrival.
  *
  * The same rules run at two rates.  The panel's servo test feeds the PD
  * mini's readings, about 10 a second, with time in ms, settle_n 2 and no
@@ -158,8 +160,10 @@ void servo_move_prime(servo_move_t *m, float a, servo_move_clip_t clip);
 /**
  * A sample taken at @p at: @p a amps, or for a clip the end of the range
  * it is at or past.  A sample taken before the command only fills the
- * filter.  Returns the state after it; ARRIVED and SETTLED leave end_t at
- * the arrival.  Nothing once the move is over.
+ * filter; one at or past window_t after the command ends the move late
+ * or unseen, as servo_move_tick() would, and is not judged.  Returns the
+ * state after it; ARRIVED and SETTLED leave end_t at the arrival.  Nothing
+ * once the move is over.
  */
 servo_move_state_t servo_move_sample(servo_move_t *m, uint32_t at, float a,
                                      servo_move_clip_t clip);
