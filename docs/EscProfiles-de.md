@@ -126,6 +126,7 @@ JSON. Das Panel lädt sie nicht.
 | `cells_min`, `cells_max` | 0 bis 255, oder null |
 | `cell_type` | `lipo`, `nimh`: was `cells_*` zählen |
 | `v_max_mv` | höchste Eingangsspannung in mV, oder null |
+| `v_min_mv` | niedrigste Eingangsspannung in mV, oder null; nicht über `v_max_mv` |
 | `current_a` | Dauerstrom in A, 0 bis 65535, oder null |
 
 ### Menüpunkte

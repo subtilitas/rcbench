@@ -141,6 +141,46 @@ uint32_t esc_stick_profile_mv(const esc_profile_t *p);
  *  family's (esc_stick_profile_mv()). */
 uint32_t esc_stick_model_mv(const esc_profile_t *p, int model);
 
+/** The highest supply voltage model @p model of @p p is rated for, mV: its
+ *  v_max_mv.  For -1, the lowest of every model's, the one every model
+ *  takes.  0 where the data does not state it -- for -1, where a model
+ *  does not, or there is none. */
+uint32_t esc_stick_model_v_max(const esc_profile_t *p, int model);
+
+/** The continuous current model @p model of @p p is rated for, mA: its
+ *  current_a.  For -1, the lowest stated among its models.  0 where none
+ *  is stated. */
+uint32_t esc_stick_model_ma_max(const esc_profile_t *p, int model);
+
+/** The lowest input model @p model of @p p takes, mV: its v_min_mv.  For
+ *  -1, the highest stated among its models.  0 where none is stated. */
+uint32_t esc_stick_model_v_min(const esc_profile_t *p, int model);
+
+/** What a supply's set points break of the ESC's ratings. */
+typedef enum {
+    ESC_STICK_RATING_OK = 0,
+    ESC_STICK_RATING_V_OVER,     /**< @p mv over the rated voltage        */
+    ESC_STICK_RATING_V_UNKNOWN,  /**< the rated voltage not stated, and
+                                      the voltage set by hand or not the
+                                      model's own cell count's            */
+    ESC_STICK_RATING_V_UNDER,    /**< @p mv under the lowest input stated */
+    ESC_STICK_RATING_I_OVER,     /**< @p ma over the rated current        */
+} esc_stick_rating_t;
+
+/**
+ * Whether @p mv and @p ma suit model @p model of @p p (-1: every model of
+ * the family).  A voltage over the rated one (esc_stick_model_v_max()) is
+ * refused, set by hand (@p by_hand) or taken from the cell count.  Where
+ * the rated voltage is not stated, only a voltage the data vouches for is
+ * taken: the model's own lowest cell count (esc_stick_model_mv()), or for
+ * -1 the family's.  One set by hand, or a family's cell count standing in
+ * for a model that states none, is refused.  A current over the rated
+ * one, where stated, is refused, and so is a voltage under the lowest
+ * input the model states (v_min_mv; for -1 the highest of its models').
+ */
+esc_stick_rating_t esc_stick_rating(const esc_profile_t *p, int model,
+                                    uint32_t mv, uint32_t ma, bool by_hand);
+
 /** Whether @p it is an action rather than a setting: keyed reset or exit.
  *  Selecting one makes the ESC act on the select move; it sounds no values,
  *  and the engine does not offer it. */

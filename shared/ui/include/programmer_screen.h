@@ -80,6 +80,14 @@ int programmer_screen_stick_model(void);
 const char *programmer_screen_stick_maker_at(int i);
 const esc_profile_t *programmer_screen_stick_row(int i, int *model);
 
+/** Why row @p i of a maker's models does not run, in the language
+ *  showing, or NULL when it runs or there is no such row; for tests. */
+const char *programmer_screen_stick_row_why(int i);
+
+/** The note the page shows under RUN: why a run cannot start, "" for
+ *  none; for tests. */
+const char *programmer_screen_stick_note(void);
+
 /** The profile whose page is open, or NULL on the list; for tests. */
 const esc_profile_t *programmer_screen_stick_page(void);
 

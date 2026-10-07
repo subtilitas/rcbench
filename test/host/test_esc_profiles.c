@@ -49,7 +49,8 @@ static const char k_min[] =
     "   \"select\": {\"throttle\": \"min\"}, \"skip\": {\"throttle\": \"none\"},\n"
     "   \"changes_per_entry\": \"many\"},\n"
     " \"models\": [{\"name\": \"Test 30A\", \"cells_min\": 2, \"cells_max\": 4,\n"
-    "              \"cell_type\": \"lipo\", \"v_max_mv\": 16800, \"current_a\": 30},\n"
+    "              \"cell_type\": \"lipo\", \"v_max_mv\": 16800, \"current_a\": 30,\n"
+    "              \"v_min_mv\": 6000},\n"
     "             {\"name\": \"Test 40A\", \"cells_min\": null, \"cells_max\": 12,\n"
     "              \"cell_type\": \"nimh\", \"v_max_mv\": null, \"current_a\": 40}],\n"
     " \"items\": [{\"number\": 1, \"name\": \"Brake\", \"key\": \"brake\",\n"
@@ -126,6 +127,7 @@ static void same(const esc_profile_t *a, const esc_profile_t *b)
         CHECK_EQ(x->nimh, y->nimh);
         CHECK_EQ(x->v_max_mv, y->v_max_mv);
         CHECK_EQ(x->current_a, y->current_a);
+        CHECK_EQ(x->v_min_mv, y->v_min_mv);
     }
     CHECK_EQ(a->item_count, b->item_count);
     for (unsigned i = 0; i < a->item_count && i < b->item_count; ++i) {
@@ -647,6 +649,8 @@ TEST_CASE(a_profile_reads_into_every_field)
     CHECK_STR_EQ(p.steps[1], "Power on");
     CHECK_EQ(p.model_count, 2);
     CHECK_EQ(p.models[0].v_max_mv, 16800);
+    CHECK_EQ(p.models[0].v_min_mv, 6000u);
+    CHECK_EQ(p.models[1].v_min_mv, 0u);
     CHECK_EQ(p.models[1].cells_min, 0);         /* null: not known */
     CHECK_EQ(p.models[1].nimh, true);
     CHECK_EQ(p.item_count, 2);
@@ -851,6 +855,12 @@ TEST_CASE(a_broken_profile_is_refused_with_its_place_named)
           "models[0].cell_type: not a known" },
         { "\"current_a\": 30", "\"current_a\": 70000",
           "models[0].current_a: outside" },
+        { "\"v_min_mv\": 6000", "\"v_min_mv\": 16801",
+          "models[0].v_min_mv: above v_max_mv" },
+        { "\"v_min_mv\": 6000", "\"v_min_mv\": \"6000\"",
+          "models[0].v_min_mv: not" },
+        { "\"v_min_mv\": 6000", "\"v_min_mv\": 1000001",
+          "models[0].v_min_mv: outside" },
         { "\"Test 40A\", \"cells_min\"", "\"Test 30A\", \"cells_min\"",
           "models[1].name: duplicate" },
         { "\"key\": \"brake\"", "\"key\": \"Brake\"", "items[0].key: not" },

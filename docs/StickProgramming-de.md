@@ -89,7 +89,7 @@ höchstens 512 Modelle.
 
 Die Zeile unter den Zeilen sagt, dass kein Profil geprüft ist, und die
 Zählung rechts davon zählt die Ebene: `1-9/20 Hersteller, 6 ausführbar` --
-die Hersteller mit einem laufenden Modell -- oder `1-9 von 82, 40
+die Hersteller mit einem laufenden Modell -- oder `1-9 von 82, 37
 ausführbar` für die Modelle eines Herstellers.
 
 ![Die Hersteller](img/de/programmer-stick.png)
@@ -577,15 +577,38 @@ unter dem Minimum des Netzteils, und eine Strombegrenzung über der Grenze
 von SUPPLY, werden abgelehnt. Die Sollwerte des Laufs werden die Sollwerte
 des Bildschirms SUPPLY.
 
+Auch die eigenen Grenzen des Modells halten die Sollwerte, in seiner
+Zeile, auf seiner Seite und bei RUN, der letzten Prüfung, bevor der Lauf
+scharf schaltet:
+
+| Sollwert | Abgelehnt, wenn | Die Zeile sagt | RUN sagt |
+| --- | --- | --- | --- |
+| SPANNUNG, oder die der Zellenzahl | über dem `v_max_mv` des Modells | `20.0 V, ESC bis 8.4 V` | `SPANNUNG 20.0 V liegt über den 8.4 V des ESC` |
+| SPANNUNG, oder die der Zellenzahl | unter dem `v_min_mv` des Modells, wo genannt | `11.9 V, ESC ab 12.0 V` | `SPANNUNG 11.9 V liegt unter den 12.0 V des ESC` |
+| SPANNUNG von Hand | das Modell nennt kein `v_max_mv`: die Daten bürgen für keine Spannung | `ESC-Grenze unbekannt` | `SPANNUNG 7.4 V: Grenze des ESC nicht angegeben` |
+| SPANNUNG 0 | das Modell nennt weder `v_max_mv` noch eine Zellenzahl: die Zellenzahl der Familie stünde für seine eigene | `ESC-Grenze unbekannt` | `Das Modell nennt weder Zellenzahl noch Spannungsgrenze` |
+| STROMBEGRENZUNG | über dem `current_a` des Modells, wo genannt | `2.0 A, ESC bis 1 A` | `STROMBEGRENZUNG 2.0 A liegt über den 1 A des ESC` |
+
+SPANNUNG 0 an einem Modell, das seine Zellenzahl, aber kein `v_max_mv`
+nennt, läuft mit dieser Zellenzahl: der eigenen Angabe der Daten. Auf der
+Seite der Familie ohne gewähltes Modell ist die Grenze das niedrigste
+`v_max_mv` ihrer Modelle, unbekannt, wenn eines keines nennt, und die
+niedrigste Eingangsspannung das höchste `v_min_mv`. STROMBEGRENZUNG geht
+höchstens bis 3.0 A; jedes Modell im Satz, das einen Strom nennt, ist für
+4 A oder mehr ausgelegt, also trifft diese Regel nur ein Kartenprofil.
+
 ## Welche Profile laufen
 
 24 der 72 Profile sind von einer Art, die der Ablauf ausführt: 13
 zweistufige und 11 einstufige. Mit den 20 V des PD mini und den
-vorgegebenen Grenzen öffnet die Liste 23 davon:
-hobbywing-skywalker-v2-hv-opto braucht 22,8 V. Auch 4 Modellzeilen von
-Familien, die sich öffnen, werden bei 20 V abgelehnt, jede mit 22,8 V:
-FLYFUN 130A und 160A HV OPTO V5 sowie Gecko 120A und 150A OPTO HV. Ein
-Profil läuft, wenn es
+vorgegebenen Grenzen öffnet die Liste 21 davon:
+hobbywing-skywalker-v2-hv-opto braucht 22,8 V, und dualsky-xcontroller und
+kontronik-beat-car nennen für ihr eines Modell weder Zellenzahl noch
+Spannungsgrenze (siehe [Das Netzteil](#das-netzteil)). Auch 4 Modellzeilen
+von Familien, die sich öffnen, werden bei 20 V abgelehnt, jede mit 22,8 V:
+FLYFUN 130A und 160A HV OPTO V5 sowie Gecko 120A und 150A OPTO HV.
+KOLIBRI-X 60 LV und 90 LV von kontronik-kontrol-x nennen ebenfalls keines
+von beiden und werden abgelehnt. Ein Profil läuft, wenn es
 `"automatable": "full"` ist, oder `"assisted"` mit Handgriffen, auf die der
 Lauf warten kann (siehe [Handgriffe](#handgriffe)), vor dem Einschalten
 betreten wird, mit `count`

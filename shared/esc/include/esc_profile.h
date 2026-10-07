@@ -98,6 +98,7 @@ typedef struct {
     bool        nimh;           /**< cells count NiMH, not LiPo             */
     uint32_t    v_max_mv;       /**< 0: not known                           */
     uint16_t    current_a;      /**< continuous; 0: not known               */
+    uint32_t    v_min_mv;       /**< lowest input; 0: not known             */
 } esc_model_t;
 
 /** The most stick moves a value asks for after its selection. */

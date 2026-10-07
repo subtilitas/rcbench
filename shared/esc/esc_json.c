@@ -792,12 +792,17 @@ static void decode_models(dec_t *d, uint32_t root, esc_profile_t *p)
             FAIL(d, "%s: not an object", w);
             return;
         }
-        int64_t cmin = 0, cmax = 0, v = 0, a = 0;
+        int64_t cmin = 0, cmax = 0, v = 0, a = 0, vmin = 0;
         const char *name = get_str(d, ti, "name", w, false, false);
         (void)get_num(d, ti, "cells_min", w, 0, 255, true, &cmin);
         (void)get_num(d, ti, "cells_max", w, 0, 255, true, &cmax);
         (void)get_num(d, ti, "v_max_mv", w, 0, 1000000, true, &v);
         (void)get_num(d, ti, "current_a", w, 0, 65535, true, &a);
+        (void)get_num(d, ti, "v_min_mv", w, 0, 1000000, true, &vmin);
+        if (!d->failed && vmin != 0 && v != 0 && vmin > v) {
+            FAIL(d, "%s.v_min_mv: above v_max_mv", w);
+            return;
+        }
         int ct = 0;
         const int64_t cv = member(d, ti, "cell_type");
         if (cv >= 0 && d->t[cv].type != T_NULL) {
@@ -805,7 +810,8 @@ static void decode_models(dec_t *d, uint32_t root, esc_profile_t *p)
         }
         if (m != NULL && !d->failed) {
             m[i] = (esc_model_t){ name, (uint8_t)cmin, (uint8_t)cmax,
-                                  ct == 1, (uint32_t)v, (uint16_t)a };
+                                  ct == 1, (uint32_t)v, (uint16_t)a,
+                                  (uint32_t)vmin };
         }
     }
     if (m != NULL && !d->failed) {

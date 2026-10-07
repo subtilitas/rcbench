@@ -16,7 +16,7 @@ static const char *const p_align_rce_bl15x_steps[] = {
     "Run through the steps: each step answers by low, mid or high position.",
 };
 static const esc_model_t p_align_rce_bl15x_models[] = {
-    { "RCE-BL15X", 2u, 3u, false, 12600u, 15u },
+    { "RCE-BL15X", 2u, 3u, false, 12600u, 15u, 5500u },
 };
 static const esc_value_t p_align_rce_bl15x_v0[] = {
     { "disabled (low stick) in the author's example", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -60,26 +60,26 @@ static const char *const p_castle_phoenix_edge_steps[] = {
     "Throttle to mid: four short tones. Programming mode is active.",
 };
 static const esc_model_t p_castle_phoenix_edge_models[] = {
-    { "Phoenix Edge 50", 2u, 8u, false, 33600u, 50u },
-    { "Phoenix Edge 75", 2u, 8u, false, 33600u, 75u },
-    { "Phoenix Edge 100", 2u, 8u, false, 33600u, 100u },
-    { "Phoenix Edge 130", 2u, 8u, false, 33600u, 130u },
-    { "Phoenix Edge 200", 2u, 8u, false, 33600u, 200u },
-    { "Phoenix Edge Lite 50", 2u, 8u, false, 34000u, 50u },
-    { "Phoenix Edge Lite 75", 2u, 8u, false, 33600u, 75u },
-    { "Phoenix Edge Lite 100", 2u, 8u, false, 33600u, 100u },
-    { "Phoenix Edge Lite 130", 2u, 8u, false, 33600u, 130u },
-    { "Phoenix Edge Lite 200", 2u, 8u, false, 33600u, 200u },
-    { "Phoenix Edge HV 40", 3u, 12u, false, 50400u, 40u },
-    { "Phoenix Edge HV 60", 3u, 12u, false, 50400u, 60u },
-    { "Phoenix Edge HV 80", 3u, 12u, false, 50400u, 80u },
-    { "Phoenix Edge HV 120", 3u, 12u, false, 50400u, 120u },
-    { "Phoenix Edge HV 160", 3u, 12u, false, 50400u, 160u },
-    { "Phoenix Edge Lite HV 40", 3u, 12u, false, 50400u, 40u },
-    { "Phoenix Edge Lite HV 60", 3u, 12u, false, 50400u, 60u },
-    { "Phoenix Edge Lite HV 80", 3u, 12u, false, 50400u, 80u },
-    { "Phoenix Edge Lite HV 120", 3u, 12u, false, 50400u, 120u },
-    { "Phoenix Edge Lite HV 160", 3u, 12u, false, 50400u, 160u },
+    { "Phoenix Edge 50", 2u, 8u, false, 33600u, 50u, 0u },
+    { "Phoenix Edge 75", 2u, 8u, false, 33600u, 75u, 0u },
+    { "Phoenix Edge 100", 2u, 8u, false, 33600u, 100u, 0u },
+    { "Phoenix Edge 130", 2u, 8u, false, 33600u, 130u, 0u },
+    { "Phoenix Edge 200", 2u, 8u, false, 33600u, 200u, 0u },
+    { "Phoenix Edge Lite 50", 2u, 8u, false, 34000u, 50u, 0u },
+    { "Phoenix Edge Lite 75", 2u, 8u, false, 33600u, 75u, 0u },
+    { "Phoenix Edge Lite 100", 2u, 8u, false, 33600u, 100u, 0u },
+    { "Phoenix Edge Lite 130", 2u, 8u, false, 33600u, 130u, 0u },
+    { "Phoenix Edge Lite 200", 2u, 8u, false, 33600u, 200u, 0u },
+    { "Phoenix Edge HV 40", 3u, 12u, false, 50400u, 40u, 0u },
+    { "Phoenix Edge HV 60", 3u, 12u, false, 50400u, 60u, 0u },
+    { "Phoenix Edge HV 80", 3u, 12u, false, 50400u, 80u, 0u },
+    { "Phoenix Edge HV 120", 3u, 12u, false, 50400u, 120u, 0u },
+    { "Phoenix Edge HV 160", 3u, 12u, false, 50400u, 160u, 0u },
+    { "Phoenix Edge Lite HV 40", 3u, 12u, false, 50400u, 40u, 0u },
+    { "Phoenix Edge Lite HV 60", 3u, 12u, false, 50400u, 60u, 0u },
+    { "Phoenix Edge Lite HV 80", 3u, 12u, false, 50400u, 80u, 0u },
+    { "Phoenix Edge Lite HV 120", 3u, 12u, false, 50400u, 120u, 0u },
+    { "Phoenix Edge Lite HV 160", 3u, 12u, false, 50400u, 160u, 0u },
 };
 static const esc_value_t p_castle_phoenix_edge_v0[] = {
     { "3.0 V per cell", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -126,7 +126,7 @@ static const char *const p_dualsky_xcontroller_steps[] = {
     "Wait about 5000 ms more: melody 5-6-5, programming mode entered",
 };
 static const esc_model_t p_dualsky_xcontroller_models[] = {
-    { "XController (model not named in the programming sheet)", 0u, 0u, false, 0u, 0u },
+    { "XController (model not named in the programming sheet)", 0u, 0u, false, 0u, 0u, 0u },
 };
 static const esc_value_t p_dualsky_xcontroller_v0[] = {
     { "off", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -187,10 +187,10 @@ static const char *const p_dualsky_xcontroller_lite_steps[] = {
     "Wait for: melody, cell beeps, long beep, melody, then the first parameter beep",
 };
 static const esc_model_t p_dualsky_xcontroller_lite_models[] = {
-    { "XC-12-Lite", 2u, 3u, false, 12600u, 12u },
-    { "XC-22-Lite", 2u, 3u, false, 12600u, 22u },
-    { "XC-45-Lite", 2u, 3u, false, 12600u, 45u },
-    { "XC-65-Lite", 2u, 6u, false, 25200u, 65u },
+    { "XC-12-Lite", 2u, 3u, false, 12600u, 12u, 0u },
+    { "XC-22-Lite", 2u, 3u, false, 12600u, 22u, 0u },
+    { "XC-45-Lite", 2u, 3u, false, 12600u, 45u, 0u },
+    { "XC-65-Lite", 2u, 6u, false, 25200u, 65u, 0u },
 };
 static const esc_value_t p_dualsky_xcontroller_lite_v0[] = {
     { "off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -251,7 +251,7 @@ static const char *const p_eflite_10a_pro_steps[] = {
     "Throttle to centre (1.4-1.6 ms): 1 beep = menu 1.",
 };
 static const esc_model_t p_eflite_10a_pro_models[] = {
-    { "10-Amp Pro Brushless ESC (EFLA1010)", 2u, 3u, false, 12600u, 10u },
+    { "10-Amp Pro Brushless ESC (EFLA1010)", 2u, 3u, false, 12600u, 10u, 0u },
 };
 static const esc_value_t p_eflite_10a_pro_v0[] = {
     { "3S Li-Po cutoff (9 V), stick full throttle", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -288,10 +288,10 @@ static const char *const p_eflite_pro_sbec_7menu_steps[] = {
     "Throttle to centre for 5 s: 1 beep = menu 1.",
 };
 static const esc_model_t p_eflite_pro_sbec_7menu_models[] = {
-    { "30-Amp Pro Switch-Mode BEC ESC", 3u, 4u, false, 16800u, 30u },
-    { "40-Amp Pro Switch-Mode BEC ESC (V1)", 3u, 6u, false, 25200u, 40u },
-    { "40-Amp Pro Switch-Mode BEC ESC V2 (EFLA1040B)", 3u, 6u, false, 25200u, 40u },
-    { "40-Amp Lite Pro Switch-Mode BEC ESC V2 (EFLA1040LB)", 3u, 6u, false, 25200u, 40u },
+    { "30-Amp Pro Switch-Mode BEC ESC", 3u, 4u, false, 16800u, 30u, 0u },
+    { "40-Amp Pro Switch-Mode BEC ESC (V1)", 3u, 6u, false, 25200u, 40u, 0u },
+    { "40-Amp Pro Switch-Mode BEC ESC V2 (EFLA1040B)", 3u, 6u, false, 25200u, 40u, 0u },
+    { "40-Amp Lite Pro Switch-Mode BEC ESC V2 (EFLA1040LB)", 3u, 6u, false, 25200u, 40u, 0u },
 };
 static const esc_value_t p_eflite_pro_sbec_7menu_v0[] = {
     { "3-cell cutoff (3 beeps)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -354,24 +354,24 @@ static const char *const p_graupner_brushless_control_t_steps[] = {
     "Five beeps: programming mode.",
 };
 static const esc_model_t p_graupner_brushless_control_t_models[] = {
-    { "Brushless Control +T 18 BEC JR (33718, 33718.SC, 33718.SH)", 2u, 4u, false, 16800u, 18u },
-    { "Brushless Control +T 35 (33735, 33735.G2)", 2u, 6u, false, 25000u, 35u },
-    { "Brushless Control +T 45 (33745, 33745.G2)", 2u, 6u, false, 25000u, 45u },
-    { "Brushless Control +T 50 (S3046)", 2u, 6u, false, 25000u, 50u },
-    { "Brushless Control +T 60 (33760)", 2u, 6u, false, 25000u, 60u },
-    { "Brushless Control +T 70 (33770, 33770.D35)", 2u, 6u, false, 25000u, 70u },
-    { "Brushless Control +T 100 G6 (S3030)", 2u, 6u, false, 25000u, 100u },
-    { "Brushless Control +T 60 Opto (S3031)", 5u, 12u, false, 50000u, 60u },
-    { "Brushless Control +T 60 HV (S3040)", 5u, 12u, false, 50000u, 60u },
-    { "Brushless Control +T 80 Opto (S3042)", 5u, 12u, false, 50000u, 80u },
-    { "Brushless Control +T 80 HV (S3041)", 5u, 12u, false, 50000u, 80u },
-    { "Brushless Control +T 100 Opto (S3037)", 5u, 12u, false, 50000u, 100u },
-    { "Brushless Control +T 100 HV (S3036)", 5u, 12u, false, 50000u, 100u },
-    { "Brushless Control +T 120 Opto (S3032)", 5u, 12u, false, 50000u, 120u },
-    { "Brushless Control +T 120 HV (S3038)", 5u, 12u, false, 50000u, 120u },
-    { "Brushless Control +T HV 160 Opto (S3033)", 5u, 12u, false, 50000u, 160u },
-    { "Brushless Control +T HV 160 (S3039)", 5u, 12u, false, 50000u, 160u },
-    { "Brushless Control +T HV 160 COOL (S3064)", 5u, 12u, false, 50000u, 160u },
+    { "Brushless Control +T 18 BEC JR (33718, 33718.SC, 33718.SH)", 2u, 4u, false, 16800u, 18u, 6000u },
+    { "Brushless Control +T 35 (33735, 33735.G2)", 2u, 6u, false, 25000u, 35u, 6000u },
+    { "Brushless Control +T 45 (33745, 33745.G2)", 2u, 6u, false, 25000u, 45u, 6000u },
+    { "Brushless Control +T 50 (S3046)", 2u, 6u, false, 25000u, 50u, 6000u },
+    { "Brushless Control +T 60 (33760)", 2u, 6u, false, 25000u, 60u, 6000u },
+    { "Brushless Control +T 70 (33770, 33770.D35)", 2u, 6u, false, 25000u, 70u, 6000u },
+    { "Brushless Control +T 100 G6 (S3030)", 2u, 6u, false, 25000u, 100u, 6000u },
+    { "Brushless Control +T 60 Opto (S3031)", 5u, 12u, false, 50000u, 60u, 16000u },
+    { "Brushless Control +T 60 HV (S3040)", 5u, 12u, false, 50000u, 60u, 16000u },
+    { "Brushless Control +T 80 Opto (S3042)", 5u, 12u, false, 50000u, 80u, 16000u },
+    { "Brushless Control +T 80 HV (S3041)", 5u, 12u, false, 50000u, 80u, 16000u },
+    { "Brushless Control +T 100 Opto (S3037)", 5u, 12u, false, 50000u, 100u, 16000u },
+    { "Brushless Control +T 100 HV (S3036)", 5u, 12u, false, 50000u, 100u, 16000u },
+    { "Brushless Control +T 120 Opto (S3032)", 5u, 12u, false, 50000u, 120u, 16000u },
+    { "Brushless Control +T 120 HV (S3038)", 5u, 12u, false, 50000u, 120u, 16000u },
+    { "Brushless Control +T HV 160 Opto (S3033)", 5u, 12u, false, 50000u, 160u, 16000u },
+    { "Brushless Control +T HV 160 (S3039)", 5u, 12u, false, 50000u, 160u, 16000u },
+    { "Brushless Control +T HV 160 COOL (S3064)", 5u, 12u, false, 50000u, 160u, 16000u },
 };
 static const esc_value_t p_graupner_brushless_control_t_v0[] = {
     { "LiPo", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -443,9 +443,9 @@ static const char *const p_greatplanes_electrifly_c_series_steps[] = {
     "Move stick to the brake position while the wanted count sounds.",
 };
 static const esc_model_t p_greatplanes_electrifly_c_series_models[] = {
-    { "C-25", 2u, 3u, false, 12600u, 25u },
-    { "C-35", 2u, 4u, false, 16800u, 35u },
-    { "C-55", 2u, 4u, false, 16800u, 50u },
+    { "C-25", 2u, 3u, false, 12600u, 25u, 0u },
+    { "C-35", 2u, 4u, false, 16800u, 35u, 0u },
+    { "C-55", 2u, 4u, false, 16800u, 50u, 0u },
 };
 static const esc_value_t p_greatplanes_electrifly_c_series_v0[] = {
     { "brake on (5 beeps), factory default", 5u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -477,14 +477,14 @@ static const char *const p_greatplanes_electrifly_silver_series_steps[] = {
     "Throttle to off: four beeps (armed).",
 };
 static const esc_model_t p_greatplanes_electrifly_silver_series_models[] = {
-    { "SS-8", 2u, 4u, false, 20000u, 8u },
-    { "SS-12", 2u, 4u, false, 20000u, 12u },
-    { "SS-25", 2u, 4u, false, 20000u, 25u },
-    { "SS-35", 2u, 4u, false, 20000u, 35u },
-    { "SS-45", 2u, 4u, false, 20000u, 45u },
-    { "SS-45D", 4u, 4u, false, 20000u, 45u },
-    { "SS-60", 4u, 12u, false, 50000u, 60u },
-    { "SS-80", 4u, 12u, false, 50000u, 80u },
+    { "SS-8", 2u, 4u, false, 20000u, 8u, 0u },
+    { "SS-12", 2u, 4u, false, 20000u, 12u, 0u },
+    { "SS-25", 2u, 4u, false, 20000u, 25u, 0u },
+    { "SS-35", 2u, 4u, false, 20000u, 35u, 0u },
+    { "SS-45", 2u, 4u, false, 20000u, 45u, 0u },
+    { "SS-45D", 4u, 4u, false, 20000u, 45u, 0u },
+    { "SS-60", 4u, 12u, false, 50000u, 60u, 12400u },
+    { "SS-80", 4u, 12u, false, 50000u, 80u, 12400u },
 };
 static const esc_value_t p_greatplanes_electrifly_silver_series_v0[] = {
     { "brake off (1 beep per move), factory default", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -503,10 +503,10 @@ static const char *const p_hacker_master_basic_steps[] = {
     "Wait about 5 s more; the groups start.",
 };
 static const esc_model_t p_hacker_master_basic_models[] = {
-    { "Master Basic 44", 2u, 6u, false, 26000u, 44u },
-    { "Master Basic 55", 2u, 8u, false, 34000u, 55u },
-    { "Master Basic 70", 2u, 6u, false, 26000u, 70u },
-    { "Master Basic 90 Opto", 4u, 12u, false, 50000u, 90u },
+    { "Master Basic 44", 2u, 6u, false, 26000u, 44u, 6000u },
+    { "Master Basic 55", 2u, 8u, false, 34000u, 55u, 6000u },
+    { "Master Basic 70", 2u, 6u, false, 26000u, 70u, 6000u },
+    { "Master Basic 90 Opto", 4u, 12u, false, 50000u, 90u, 12000u },
 };
 static const esc_value_t p_hacker_master_basic_v0[] = {
     { "brake on/off toggle (factory state: brake off)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -529,36 +529,36 @@ static const char *const p_hacker_master_gen3_steps[] = {
     "PWM frequency, cutoff voltage or direction (items 3, 4): keep full throttle through all timing groups, then the long/short patterns follow; move to stop during the wanted pattern.",
 };
 static const esc_model_t p_hacker_master_gen3_models[] = {
-    { "Master 4-B-Flight", 2u, 3u, false, 13000u, 4u },
-    { "Master 8-SB-Flight", 2u, 4u, false, 17000u, 8u },
-    { "Master 18-SB-Flight", 2u, 4u, false, 17000u, 18u },
-    { "Master 30-SB-Flight", 2u, 4u, false, 17000u, 30u },
-    { "Master 40-SB-Flight", 2u, 6u, false, 25000u, 40u },
-    { "Master 70-SB-Flight", 2u, 6u, false, 25000u, 70u },
-    { "Master 40-O-Flight", 2u, 6u, false, 25000u, 40u },
-    { "Master 70-O-Flight", 2u, 6u, false, 25000u, 70u },
-    { "Master 48-O-Flight", 3u, 10u, false, 42000u, 48u },
-    { "Master 77-O-Flight", 3u, 10u, false, 42000u, 77u },
-    { "Master 135-O-F5B", 3u, 10u, false, 42000u, 100u },
-    { "Master 195-O-F5B", 3u, 6u, false, 26000u, 200u },
-    { "Master 90-O-F5D", 2u, 5u, false, 24000u, 80u },
-    { "Master 140-O-F5D", 2u, 5u, false, 24000u, 140u },
-    { "Master 125-O-F5F", 2u, 5u, false, 24000u, 90u },
-    { "Master 90-O-Acro Competition", 5u, 12u, false, 50000u, 90u },
-    { "Master 40-SB-Navy", 2u, 6u, false, 25000u, 40u },
-    { "Master 70-SB-Navy", 2u, 6u, false, 25000u, 70u },
-    { "Master 70-O-Navy", 2u, 6u, false, 25000u, 70u },
-    { "Master 77-O-Navy", 3u, 10u, false, 42000u, 75u },
-    { "Master 99-O-Navy", 3u, 10u, false, 42000u, 90u },
-    { "Master 8-SB-Heli", 2u, 4u, false, 17000u, 8u },
-    { "Master 18-SB-Heli", 2u, 4u, false, 17000u, 18u },
-    { "Master 40-SB-Heli", 2u, 6u, false, 25000u, 30u },
-    { "Master 40-O-Heli", 2u, 6u, false, 25000u, 30u },
-    { "Master 48-O-Heli", 4u, 10u, false, 42000u, 30u },
-    { "Master 77-O-Heli", 4u, 10u, false, 42000u, 40u },
-    { "Master B-Car Mini", 2u, 3u, false, 12000u, 10u },
-    { "Master B-Car Sport", 2u, 3u, false, 12000u, 60u },
-    { "Master B-Car Comp", 2u, 3u, false, 12000u, 90u },
+    { "Master 4-B-Flight", 2u, 3u, false, 13000u, 4u, 4000u },
+    { "Master 8-SB-Flight", 2u, 4u, false, 17000u, 8u, 5000u },
+    { "Master 18-SB-Flight", 2u, 4u, false, 17000u, 18u, 5000u },
+    { "Master 30-SB-Flight", 2u, 4u, false, 17000u, 30u, 5000u },
+    { "Master 40-SB-Flight", 2u, 6u, false, 25000u, 40u, 5000u },
+    { "Master 70-SB-Flight", 2u, 6u, false, 25000u, 70u, 5000u },
+    { "Master 40-O-Flight", 2u, 6u, false, 25000u, 40u, 5000u },
+    { "Master 70-O-Flight", 2u, 6u, false, 25000u, 70u, 5000u },
+    { "Master 48-O-Flight", 3u, 10u, false, 42000u, 48u, 7000u },
+    { "Master 77-O-Flight", 3u, 10u, false, 42000u, 77u, 7000u },
+    { "Master 135-O-F5B", 3u, 10u, false, 42000u, 100u, 7000u },
+    { "Master 195-O-F5B", 3u, 6u, false, 26000u, 200u, 7000u },
+    { "Master 90-O-F5D", 2u, 5u, false, 24000u, 80u, 5000u },
+    { "Master 140-O-F5D", 2u, 5u, false, 24000u, 140u, 5000u },
+    { "Master 125-O-F5F", 2u, 5u, false, 24000u, 90u, 5000u },
+    { "Master 90-O-Acro Competition", 5u, 12u, false, 50000u, 90u, 14000u },
+    { "Master 40-SB-Navy", 2u, 6u, false, 25000u, 40u, 5000u },
+    { "Master 70-SB-Navy", 2u, 6u, false, 25000u, 70u, 5000u },
+    { "Master 70-O-Navy", 2u, 6u, false, 25000u, 70u, 5000u },
+    { "Master 77-O-Navy", 3u, 10u, false, 42000u, 75u, 7000u },
+    { "Master 99-O-Navy", 3u, 10u, false, 42000u, 90u, 7000u },
+    { "Master 8-SB-Heli", 2u, 4u, false, 17000u, 8u, 5000u },
+    { "Master 18-SB-Heli", 2u, 4u, false, 17000u, 18u, 5000u },
+    { "Master 40-SB-Heli", 2u, 6u, false, 25000u, 30u, 5000u },
+    { "Master 40-O-Heli", 2u, 6u, false, 25000u, 30u, 5000u },
+    { "Master 48-O-Heli", 4u, 10u, false, 42000u, 30u, 12000u },
+    { "Master 77-O-Heli", 4u, 10u, false, 42000u, 40u, 12000u },
+    { "Master B-Car Mini", 2u, 3u, false, 12000u, 10u, 4000u },
+    { "Master B-Car Sport", 2u, 3u, false, 12000u, 60u, 4500u },
+    { "Master B-Car Comp", 2u, 3u, false, 12000u, 90u, 4500u },
 };
 static const esc_value_t p_hacker_master_gen3_v0[] = {
     { "mode A: one beep at power-up (Flight: brake on; Heli: Steller mode; Car: forward-brake)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -678,8 +678,8 @@ static const char *const p_hacker_master_senstrol_steps[] = {
     "Modes 4 and 5: one long beep, teaching done. Modes 1 to 3: one beep, then switch to position 2 (mode 1) or ON (modes 2, 3): one beep; switch to OFF: one long beep.",
 };
 static const esc_model_t p_hacker_master_senstrol_models[] = {
-    { "Master Senstrol 120", 6u, 12u, false, 50400u, 120u },
-    { "Master Senstrol 180", 6u, 12u, false, 50400u, 180u },
+    { "Master Senstrol 120", 6u, 12u, false, 50400u, 120u, 18000u },
+    { "Master Senstrol 180", 6u, 12u, false, 50400u, 180u, 18000u },
 };
 static const esc_value_t p_hacker_master_senstrol_v0[] = {
     { "teach full, minimum and switch positions", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -697,26 +697,26 @@ static const char *const p_hacker_masterspin_steps[] = {
     "Wait about 5 s more; the groups start.",
 };
 static const esc_model_t p_hacker_masterspin_models[] = {
-    { "MasterSpin 11", 2u, 4u, false, 17000u, 11u },
-    { "MasterSpin 22", 2u, 4u, false, 17000u, 22u },
-    { "MasterSpin 33", 2u, 5u, false, 21000u, 33u },
-    { "MasterSpin 44", 2u, 6u, false, 26000u, 44u },
-    { "MasterSpin 55", 2u, 8u, false, 34000u, 55u },
-    { "MasterSpin 66", 2u, 6u, false, 26000u, 70u },
-    { "MasterSpin 70 Opto", 2u, 6u, false, 26000u, 70u },
-    { "MasterSpin 48 Opto", 4u, 10u, false, 42000u, 48u },
-    { "MasterSpin 75 Opto", 4u, 10u, false, 42000u, 75u },
-    { "MasterSpin F5B Opto", 3u, 6u, false, 26000u, 200u },
-    { "MasterSpin F5D Opto", 2u, 5u, false, 24000u, 140u },
-    { "MasterSpin F5F Opto", 2u, 5u, false, 24000u, 125u },
-    { "MasterSpin 77 Opto", 4u, 12u, false, 50000u, 75u },
-    { "MasterSpin 99 Opto", 4u, 12u, false, 50000u, 90u },
-    { "MasterSpin 170 Opto", 6u, 14u, false, 59000u, 170u },
-    { "MasterSpin 220 Opto", 6u, 14u, false, 59000u, 220u },
-    { "MasterSpin 200 Opto", 6u, 14u, false, 59000u, 200u },
-    { "MasterSpin 300 Opto", 6u, 14u, false, 59000u, 300u },
-    { "MasterSpin 70 Navy", 2u, 5u, false, 21000u, 70u },
-    { "MasterSpin 99 Navy", 4u, 10u, false, 42000u, 90u },
+    { "MasterSpin 11", 2u, 4u, false, 17000u, 11u, 5000u },
+    { "MasterSpin 22", 2u, 4u, false, 17000u, 22u, 5000u },
+    { "MasterSpin 33", 2u, 5u, false, 21000u, 33u, 5000u },
+    { "MasterSpin 44", 2u, 6u, false, 26000u, 44u, 6000u },
+    { "MasterSpin 55", 2u, 8u, false, 34000u, 55u, 6000u },
+    { "MasterSpin 66", 2u, 6u, false, 26000u, 70u, 6000u },
+    { "MasterSpin 70 Opto", 2u, 6u, false, 26000u, 70u, 6000u },
+    { "MasterSpin 48 Opto", 4u, 10u, false, 42000u, 48u, 12000u },
+    { "MasterSpin 75 Opto", 4u, 10u, false, 42000u, 75u, 12000u },
+    { "MasterSpin F5B Opto", 3u, 6u, false, 26000u, 200u, 7000u },
+    { "MasterSpin F5D Opto", 2u, 5u, false, 24000u, 140u, 5000u },
+    { "MasterSpin F5F Opto", 2u, 5u, false, 24000u, 125u, 5000u },
+    { "MasterSpin 77 Opto", 4u, 12u, false, 50000u, 75u, 12000u },
+    { "MasterSpin 99 Opto", 4u, 12u, false, 50000u, 90u, 12000u },
+    { "MasterSpin 170 Opto", 6u, 14u, false, 59000u, 170u, 18000u },
+    { "MasterSpin 220 Opto", 6u, 14u, false, 59000u, 220u, 18000u },
+    { "MasterSpin 200 Opto", 6u, 14u, false, 59000u, 200u, 18000u },
+    { "MasterSpin 300 Opto", 6u, 14u, false, 59000u, 300u, 18000u },
+    { "MasterSpin 70 Navy", 2u, 5u, false, 21000u, 70u, 6000u },
+    { "MasterSpin 99 Navy", 4u, 10u, false, 42000u, 90u, 12000u },
 };
 static const esc_value_t p_hacker_masterspin_v0[] = {
     { "Acro inrunner: no brake, timing 0 degrees, LiPo autodetect, slow down at 3.0 V per cell", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -740,20 +740,20 @@ static const char *const p_hacker_x_pro_steps[] = {
     "Other items: keep full throttle until the wanted pattern sounds; move throttle to stop while its five repetitions are playing.",
 };
 static const esc_model_t p_hacker_x_pro_models[] = {
-    { "X-5-Pro", 2u, 3u, false, 12600u, 5u },
-    { "X-7-Pro", 2u, 3u, false, 12600u, 7u },
-    { "X-12-Pro", 2u, 3u, false, 12600u, 12u },
-    { "X-20-Pro", 2u, 3u, false, 12600u, 20u },
-    { "X-30-Pro", 2u, 3u, false, 12600u, 30u },
-    { "X-40-SB-Pro", 2u, 6u, false, 25200u, 40u },
-    { "X-40 OPTO-Pro", 2u, 6u, false, 25200u, 40u },
-    { "X-55-SB-Pro", 2u, 6u, false, 25200u, 55u },
-    { "X-70-SB-Pro", 2u, 6u, false, 25200u, 70u },
-    { "X-70-OPTO-Pro", 2u, 6u, false, 25200u, 70u },
-    { "X-70-OPTO-Pro-3D", 2u, 6u, false, 25200u, 70u },
-    { "X-75-OPTO-Pro", 5u, 10u, false, 42000u, 75u },
-    { "X-80-OPTO-Pro-3D", 5u, 10u, false, 42000u, 80u },
-    { "X-110-OPTO-Pro", 2u, 6u, false, 25200u, 110u },
+    { "X-5-Pro", 2u, 3u, false, 12600u, 5u, 0u },
+    { "X-7-Pro", 2u, 3u, false, 12600u, 7u, 0u },
+    { "X-12-Pro", 2u, 3u, false, 12600u, 12u, 0u },
+    { "X-20-Pro", 2u, 3u, false, 12600u, 20u, 0u },
+    { "X-30-Pro", 2u, 3u, false, 12600u, 30u, 0u },
+    { "X-40-SB-Pro", 2u, 6u, false, 25200u, 40u, 0u },
+    { "X-40 OPTO-Pro", 2u, 6u, false, 25200u, 40u, 0u },
+    { "X-55-SB-Pro", 2u, 6u, false, 25200u, 55u, 0u },
+    { "X-70-SB-Pro", 2u, 6u, false, 25200u, 70u, 0u },
+    { "X-70-OPTO-Pro", 2u, 6u, false, 25200u, 70u, 0u },
+    { "X-70-OPTO-Pro-3D", 2u, 6u, false, 25200u, 70u, 0u },
+    { "X-75-OPTO-Pro", 5u, 10u, false, 42000u, 75u, 0u },
+    { "X-80-OPTO-Pro-3D", 5u, 10u, false, 42000u, 80u, 0u },
+    { "X-110-OPTO-Pro", 2u, 6u, false, 25200u, 110u, 0u },
 };
 static const esc_value_t p_hacker_x_pro_v0[] = {
     { "toggle brake: on becomes off, off becomes on", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -825,7 +825,7 @@ static const char *const p_hacker_x_pro_2006_steps[] = {
     "Other items: keep full throttle; move throttle to stop while the wanted pattern is sounding (each shown five times).",
 };
 static const esc_model_t p_hacker_x_pro_2006_models[] = {
-    { "X-Pro series (BEC and Opto versions)", 0u, 5u, false, 0u, 0u },
+    { "X-Pro series (BEC and Opto versions)", 0u, 5u, false, 0u, 0u, 0u },
 };
 static const esc_value_t p_hacker_x_pro_2006_v0[] = {
     { "toggle brake: on becomes off, off becomes on", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -892,13 +892,13 @@ static const char *const p_hacker_x_series_steps[] = {
     "Other items: keep full throttle; each setting plays a tone pattern five times; move throttle to stop while the wanted pattern is sounding.",
 };
 static const esc_model_t p_hacker_x_series_models[] = {
-    { "X-5", 2u, 3u, false, 12600u, 5u },
-    { "X-7", 2u, 3u, false, 12600u, 7u },
-    { "X-12", 2u, 3u, false, 12600u, 12u },
-    { "X-20", 2u, 3u, false, 12600u, 20u },
-    { "X-30", 2u, 3u, false, 12600u, 30u },
-    { "X-40", 2u, 3u, false, 12600u, 40u },
-    { "X-40 Opto", 2u, 5u, false, 21000u, 40u },
+    { "X-5", 2u, 3u, false, 12600u, 5u, 0u },
+    { "X-7", 2u, 3u, false, 12600u, 7u, 0u },
+    { "X-12", 2u, 3u, false, 12600u, 12u, 0u },
+    { "X-20", 2u, 3u, false, 12600u, 20u, 0u },
+    { "X-30", 2u, 3u, false, 12600u, 30u, 0u },
+    { "X-40", 2u, 3u, false, 12600u, 40u, 0u },
+    { "X-40 Opto", 2u, 5u, false, 21000u, 40u, 0u },
 };
 static const esc_value_t p_hacker_x_series_v0[] = {
     { "toggle brake: on becomes off, off becomes on", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -955,11 +955,11 @@ static const char *const p_hitec_energy_sport_steps[] = {
     "Distinct tones then play in a loop",
 };
 static const esc_model_t p_hitec_energy_sport_models[] = {
-    { "Energy Sport 20 amp", 2u, 4u, false, 16800u, 20u },
-    { "Energy Sport 40 amp", 2u, 4u, false, 16800u, 40u },
-    { "Energy Sport 50 amp", 2u, 6u, false, 25200u, 50u },
-    { "Energy Sport 60 amp", 2u, 6u, false, 25200u, 60u },
-    { "Energy Sport 80 amp", 2u, 6u, false, 25200u, 80u },
+    { "Energy Sport 20 amp", 2u, 4u, false, 16800u, 20u, 0u },
+    { "Energy Sport 40 amp", 2u, 4u, false, 16800u, 40u, 0u },
+    { "Energy Sport 50 amp", 2u, 6u, false, 25200u, 50u, 0u },
+    { "Energy Sport 60 amp", 2u, 6u, false, 25200u, 60u, 0u },
+    { "Energy Sport 80 amp", 2u, 6u, false, 25200u, 80u, 0u },
 };
 static const esc_value_t p_hitec_energy_sport_v0[] = {
     { "brake on (selected from the default off)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1033,20 +1033,20 @@ static const char *const p_hobbywing_flyfun_8item_steps[] = {
     "Wait about 5000 ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_flyfun_8item_models[] = {
-    { "FlyFun-6A", 2u, 2u, false, 8400u, 6u },
-    { "FlyFun-10A", 2u, 4u, false, 16800u, 10u },
-    { "FlyFun-12A", 2u, 4u, false, 16800u, 12u },
-    { "FlyFun-18A", 2u, 4u, false, 16800u, 18u },
-    { "FlyFun-25A", 2u, 4u, false, 16800u, 25u },
-    { "FlyFun-30A", 2u, 4u, false, 16800u, 30u },
-    { "FlyFun-40A", 2u, 6u, false, 25200u, 40u },
-    { "FlyFun-40A-OPTO", 2u, 6u, false, 25200u, 40u },
-    { "FlyFun-60A", 2u, 6u, false, 25200u, 60u },
-    { "FlyFun-60A-OPTO", 2u, 6u, false, 25200u, 60u },
-    { "FlyFun-80A", 2u, 6u, false, 25200u, 80u },
-    { "FlyFun-80A-OPTO", 2u, 6u, false, 25200u, 80u },
-    { "FlyFun-100A", 2u, 6u, false, 25200u, 100u },
-    { "FlyFun-100A-OPTO", 2u, 6u, false, 25200u, 100u },
+    { "FlyFun-6A", 2u, 2u, false, 8400u, 6u, 0u },
+    { "FlyFun-10A", 2u, 4u, false, 16800u, 10u, 0u },
+    { "FlyFun-12A", 2u, 4u, false, 16800u, 12u, 0u },
+    { "FlyFun-18A", 2u, 4u, false, 16800u, 18u, 0u },
+    { "FlyFun-25A", 2u, 4u, false, 16800u, 25u, 0u },
+    { "FlyFun-30A", 2u, 4u, false, 16800u, 30u, 0u },
+    { "FlyFun-40A", 2u, 6u, false, 25200u, 40u, 0u },
+    { "FlyFun-40A-OPTO", 2u, 6u, false, 25200u, 40u, 0u },
+    { "FlyFun-60A", 2u, 6u, false, 25200u, 60u, 0u },
+    { "FlyFun-60A-OPTO", 2u, 6u, false, 25200u, 60u, 0u },
+    { "FlyFun-80A", 2u, 6u, false, 25200u, 80u, 0u },
+    { "FlyFun-80A-OPTO", 2u, 6u, false, 25200u, 80u, 0u },
+    { "FlyFun-100A", 2u, 6u, false, 25200u, 100u, 0u },
+    { "FlyFun-100A-OPTO", 2u, 6u, false, 25200u, 100u, 0u },
 };
 static const esc_value_t p_hobbywing_flyfun_8item_v0[] = {
     { "off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1108,8 +1108,8 @@ static const char *const p_hobbywing_flyfun_hv_9item_steps[] = {
     "Wait about 5000 ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_flyfun_hv_9item_models[] = {
-    { "FLYFUN-80-HV", 5u, 10u, false, 42000u, 80u },
-    { "FLYFUN-100-HV", 5u, 12u, false, 50400u, 100u },
+    { "FLYFUN-80-HV", 5u, 10u, false, 42000u, 80u, 0u },
+    { "FLYFUN-100-HV", 5u, 12u, false, 50400u, 100u, 0u },
 };
 static const esc_value_t p_hobbywing_flyfun_hv_9item_v0[] = {
     { "off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1176,13 +1176,13 @@ static const char *const p_hobbywing_flyfun_v5_steps[] = {
     "Wait about 5000 ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_flyfun_v5_models[] = {
-    { "FLYFUN 60A V5", 3u, 6u, false, 25200u, 60u },
-    { "FLYFUN 80A V5", 3u, 6u, false, 25200u, 80u },
-    { "FLYFUN 80A OPTO V5", 3u, 6u, false, 25200u, 80u },
-    { "FLYFUN 120A V5", 3u, 6u, false, 25200u, 120u },
-    { "FLYFUN 120A OPTO V5", 3u, 6u, false, 25200u, 120u },
-    { "FLYFUN 130A HV OPTO V5", 6u, 14u, false, 58800u, 130u },
-    { "FLYFUN 160A HV OPTO V5", 6u, 14u, false, 58800u, 160u },
+    { "FLYFUN 60A V5", 3u, 6u, false, 25200u, 60u, 0u },
+    { "FLYFUN 80A V5", 3u, 6u, false, 25200u, 80u, 0u },
+    { "FLYFUN 80A OPTO V5", 3u, 6u, false, 25200u, 80u, 0u },
+    { "FLYFUN 120A V5", 3u, 6u, false, 25200u, 120u, 0u },
+    { "FLYFUN 120A OPTO V5", 3u, 6u, false, 25200u, 120u, 0u },
+    { "FLYFUN 130A HV OPTO V5", 6u, 14u, false, 58800u, 130u, 0u },
+    { "FLYFUN 160A HV OPTO V5", 6u, 14u, false, 58800u, 160u, 0u },
 };
 static const esc_value_t p_hobbywing_flyfun_v5_v0[] = {
     { "disabled", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1295,8 +1295,8 @@ static const char *const p_hobbywing_platinum_v3_steps[] = {
     "Wait about 5000 ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_platinum_v3_models[] = {
-    { "Platinum-100A-V3", 2u, 6u, false, 25200u, 100u },
-    { "Platinum-50A-V3", 2u, 6u, false, 25200u, 50u },
+    { "Platinum-100A-V3", 2u, 6u, false, 25200u, 100u, 5200u },
+    { "Platinum-50A-V3", 2u, 6u, false, 25200u, 50u, 5200u },
 };
 static const esc_value_t p_hobbywing_platinum_v3_v0[] = {
     { "off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1407,20 +1407,20 @@ static const char *const p_hobbywing_seaking_boat_steps[] = {
     "Wait about 5000 ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_seaking_boat_models[] = {
-    { "SEAKING-25A (V1)", 2u, 3u, false, 12600u, 25u },
-    { "SEAKING-35A (V1)", 2u, 3u, false, 12600u, 35u },
-    { "SEAKING-60A (V1)", 2u, 6u, false, 25200u, 60u },
-    { "SEAKING-90A (V1)", 2u, 6u, false, 25200u, 90u },
-    { "SEAKING-120A (V1)", 2u, 6u, false, 25200u, 120u },
-    { "SEAKING-180A (V1)", 2u, 6u, false, 25200u, 180u },
-    { "SEAKING-80A-HV (V1)", 5u, 12u, false, 50400u, 80u },
-    { "SEAKING-130A-HV (V1)", 5u, 12u, false, 50400u, 130u },
-    { "SEAKING-30A-V3", 2u, 3u, false, 12600u, 30u },
-    { "SEAKING-60A-V3", 2u, 3u, false, 12600u, 60u },
-    { "SEAKING-60A-V3.1", 2u, 3u, false, 12600u, 60u },
-    { "SEAKING-120A-V3", 2u, 6u, false, 25200u, 120u },
-    { "SEAKING-180A-V3", 2u, 6u, false, 25200u, 180u },
-    { "SEAKING-130A-HV-V3", 5u, 12u, false, 50400u, 130u },
+    { "SEAKING-25A (V1)", 2u, 3u, false, 12600u, 25u, 0u },
+    { "SEAKING-35A (V1)", 2u, 3u, false, 12600u, 35u, 0u },
+    { "SEAKING-60A (V1)", 2u, 6u, false, 25200u, 60u, 0u },
+    { "SEAKING-90A (V1)", 2u, 6u, false, 25200u, 90u, 0u },
+    { "SEAKING-120A (V1)", 2u, 6u, false, 25200u, 120u, 0u },
+    { "SEAKING-180A (V1)", 2u, 6u, false, 25200u, 180u, 0u },
+    { "SEAKING-80A-HV (V1)", 5u, 12u, false, 50400u, 80u, 0u },
+    { "SEAKING-130A-HV (V1)", 5u, 12u, false, 50400u, 130u, 0u },
+    { "SEAKING-30A-V3", 2u, 3u, false, 12600u, 30u, 0u },
+    { "SEAKING-60A-V3", 2u, 3u, false, 12600u, 60u, 0u },
+    { "SEAKING-60A-V3.1", 2u, 3u, false, 12600u, 60u, 0u },
+    { "SEAKING-120A-V3", 2u, 6u, false, 25200u, 120u, 0u },
+    { "SEAKING-180A-V3", 2u, 6u, false, 25200u, 180u, 0u },
+    { "SEAKING-130A-HV-V3", 5u, 12u, false, 50400u, 130u, 0u },
 };
 static const esc_value_t p_hobbywing_seaking_boat_v0[] = {
     { "forward only", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1470,7 +1470,7 @@ static const char *const p_hobbywing_skywalker_120a_v2_steps[] = {
     "Wait about 5000 ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_skywalker_120a_v2_models[] = {
-    { "Skywalker 120A V2", 3u, 8u, false, 33600u, 120u },
+    { "Skywalker 120A V2", 3u, 8u, false, 33600u, 120u, 0u },
 };
 static const esc_value_t p_hobbywing_skywalker_120a_v2_v0[] = {
     { "disabled", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1569,8 +1569,8 @@ static const char *const p_hobbywing_skywalker_v2_hv_opto_steps[] = {
     "Wait about 5000 ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_skywalker_v2_hv_opto_models[] = {
-    { "Skywalker 130A HV OPTO V2", 6u, 14u, false, 58800u, 130u },
-    { "Skywalker 160A HV OPTO V2", 6u, 14u, false, 58800u, 160u },
+    { "Skywalker 130A HV OPTO V2", 6u, 14u, false, 58800u, 130u, 0u },
+    { "Skywalker 160A HV OPTO V2", 6u, 14u, false, 58800u, 160u, 0u },
 };
 static const esc_value_t p_hobbywing_skywalker_v2_hv_opto_v0[] = {
     { "disabled", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1662,17 +1662,17 @@ static const char *const p_hobbywing_skywalker_v2_mini_steps[] = {
     "Wait about 5000 ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_skywalker_v2_mini_models[] = {
-    { "Skywalker 15A V2", 2u, 3u, false, 12600u, 15u },
-    { "Skywalker 20A V2", 2u, 3u, false, 12600u, 20u },
-    { "Skywalker 30A V2", 3u, 4u, false, 16800u, 30u },
-    { "Skywalker 20A V2 Mini", 2u, 4u, false, 16800u, 20u },
-    { "Skywalker 30A V2 Mini", 2u, 4u, false, 16800u, 30u },
-    { "Skywalker 40A V2", 3u, 4u, false, 16800u, 40u },
-    { "Skywalker 50A V2", 3u, 4u, false, 16800u, 50u },
-    { "Skywalker 50A-6S V2", 3u, 6u, false, 25200u, 50u },
-    { "Skywalker 60A V2", 3u, 6u, false, 25200u, 60u },
-    { "Skywalker 80A V2", 3u, 6u, false, 25200u, 80u },
-    { "Skywalker 100A V2", 3u, 6u, false, 25200u, 100u },
+    { "Skywalker 15A V2", 2u, 3u, false, 12600u, 15u, 0u },
+    { "Skywalker 20A V2", 2u, 3u, false, 12600u, 20u, 0u },
+    { "Skywalker 30A V2", 3u, 4u, false, 16800u, 30u, 0u },
+    { "Skywalker 20A V2 Mini", 2u, 4u, false, 16800u, 20u, 0u },
+    { "Skywalker 30A V2 Mini", 2u, 4u, false, 16800u, 30u, 0u },
+    { "Skywalker 40A V2", 3u, 4u, false, 16800u, 40u, 0u },
+    { "Skywalker 50A V2", 3u, 4u, false, 16800u, 50u, 0u },
+    { "Skywalker 50A-6S V2", 3u, 6u, false, 25200u, 50u, 0u },
+    { "Skywalker 60A V2", 3u, 6u, false, 25200u, 60u, 0u },
+    { "Skywalker 80A V2", 3u, 6u, false, 25200u, 80u, 0u },
+    { "Skywalker 100A V2", 3u, 6u, false, 25200u, 100u, 0u },
 };
 static const esc_value_t p_hobbywing_skywalker_v2_mini_v0[] = {
     { "disabled", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1762,39 +1762,39 @@ static const char *const p_jeti_spin_3p_steps[] = {
     "Or wait a further 5 s for the timing sequence.",
 };
 static const esc_model_t p_jeti_spin_3p_models[] = {
-    { "Master 40-3P", 6u, 12u, true, 18000u, 40u },
-    { "Master 70-3P", 6u, 12u, true, 18000u, 70u },
-    { "Master 40-3P OPTO", 6u, 16u, true, 24000u, 40u },
-    { "Master 70-3P OPTO", 6u, 16u, true, 24000u, 70u },
-    { "Master 30-3P", 4u, 10u, true, 15000u, 30u },
-    { "Master 105-3P OPTO", 6u, 16u, true, 24000u, 105u },
-    { "Master 48-3P OPTO", 8u, 32u, true, 48000u, 48u },
-    { "Master 77-3P OPTO", 8u, 32u, true, 48000u, 77u },
-    { "Master 99-3P OPTO", 8u, 24u, true, 36000u, 99u },
-    { "Advance 40-3P", 6u, 12u, true, 18000u, 40u },
-    { "Advance 70-3P", 6u, 12u, true, 18000u, 70u },
-    { "Advance 40-3P OPTO", 6u, 16u, true, 24000u, 40u },
-    { "Advance 70-3P OPTO", 6u, 16u, true, 24000u, 70u },
-    { "Advance 30-3P", 6u, 10u, true, 15000u, 30u },
-    { "JES 40-3P", 6u, 12u, true, 18000u, 40u },
-    { "JES 70-3P", 6u, 12u, true, 18000u, 70u },
-    { "JES 40-3P OPTO", 6u, 16u, true, 24000u, 40u },
-    { "JES 70-3P OPTO", 6u, 16u, true, 24000u, 70u },
-    { "JES 30-3P", 6u, 10u, true, 15000u, 30u },
-    { "Master NAVY 40-3P", 6u, 12u, true, 18000u, 40u },
-    { "Master NAVY 70-3P", 6u, 12u, true, 18000u, 70u },
-    { "Master NAVY 40-3P OPTO", 6u, 16u, true, 24000u, 40u },
-    { "Master NAVY 70-3P OPTO", 6u, 16u, true, 24000u, 70u },
-    { "Master HELI 40-3P", 6u, 12u, true, 18000u, 40u },
-    { "Master HELI 40-3P OPTO", 6u, 16u, true, 24000u, 40u },
-    { "Master HELI 48-3P OPTO", 10u, 30u, true, 45000u, 48u },
-    { "Master 04-3P", 4u, 8u, true, 12000u, 4u },
-    { "Master 08-3P", 4u, 10u, true, 15000u, 8u },
-    { "Master 18-3P", 4u, 10u, true, 15000u, 18u },
-    { "JES 04-3P", 6u, 8u, true, 12000u, 4u },
-    { "JES 08-3P", 6u, 10u, true, 15000u, 8u },
-    { "JES 18-3P", 6u, 10u, true, 15000u, 18u },
-    { "Master HELI 08-3P", 4u, 10u, true, 15000u, 8u },
+    { "Master 40-3P", 6u, 12u, true, 18000u, 40u, 0u },
+    { "Master 70-3P", 6u, 12u, true, 18000u, 70u, 0u },
+    { "Master 40-3P OPTO", 6u, 16u, true, 24000u, 40u, 0u },
+    { "Master 70-3P OPTO", 6u, 16u, true, 24000u, 70u, 0u },
+    { "Master 30-3P", 4u, 10u, true, 15000u, 30u, 0u },
+    { "Master 105-3P OPTO", 6u, 16u, true, 24000u, 105u, 0u },
+    { "Master 48-3P OPTO", 8u, 32u, true, 48000u, 48u, 0u },
+    { "Master 77-3P OPTO", 8u, 32u, true, 48000u, 77u, 0u },
+    { "Master 99-3P OPTO", 8u, 24u, true, 36000u, 99u, 0u },
+    { "Advance 40-3P", 6u, 12u, true, 18000u, 40u, 0u },
+    { "Advance 70-3P", 6u, 12u, true, 18000u, 70u, 0u },
+    { "Advance 40-3P OPTO", 6u, 16u, true, 24000u, 40u, 0u },
+    { "Advance 70-3P OPTO", 6u, 16u, true, 24000u, 70u, 0u },
+    { "Advance 30-3P", 6u, 10u, true, 15000u, 30u, 0u },
+    { "JES 40-3P", 6u, 12u, true, 18000u, 40u, 0u },
+    { "JES 70-3P", 6u, 12u, true, 18000u, 70u, 0u },
+    { "JES 40-3P OPTO", 6u, 16u, true, 24000u, 40u, 0u },
+    { "JES 70-3P OPTO", 6u, 16u, true, 24000u, 70u, 0u },
+    { "JES 30-3P", 6u, 10u, true, 15000u, 30u, 0u },
+    { "Master NAVY 40-3P", 6u, 12u, true, 18000u, 40u, 0u },
+    { "Master NAVY 70-3P", 6u, 12u, true, 18000u, 70u, 0u },
+    { "Master NAVY 40-3P OPTO", 6u, 16u, true, 24000u, 40u, 0u },
+    { "Master NAVY 70-3P OPTO", 6u, 16u, true, 24000u, 70u, 0u },
+    { "Master HELI 40-3P", 6u, 12u, true, 18000u, 40u, 0u },
+    { "Master HELI 40-3P OPTO", 6u, 16u, true, 24000u, 40u, 0u },
+    { "Master HELI 48-3P OPTO", 10u, 30u, true, 45000u, 48u, 0u },
+    { "Master 04-3P", 4u, 8u, true, 12000u, 4u, 0u },
+    { "Master 08-3P", 4u, 10u, true, 15000u, 8u, 0u },
+    { "Master 18-3P", 4u, 10u, true, 15000u, 18u, 0u },
+    { "JES 04-3P", 6u, 8u, true, 12000u, 4u, 0u },
+    { "JES 08-3P", 6u, 10u, true, 15000u, 8u, 0u },
+    { "JES 18-3P", 6u, 10u, true, 15000u, 18u, 0u },
+    { "Master HELI 08-3P", 4u, 10u, true, 15000u, 8u, 0u },
 };
 static const esc_value_t p_jeti_spin_3p_v0[] = {
     { "brake on (1 beep after the stick moves to close)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1864,9 +1864,9 @@ static const char *const p_kontronik_3p_steps[] = {
     "Arming switch (optional): pull the jumper and plug it again within about 5 s after phase 2; two flashes confirm.",
 };
 static const esc_model_t p_kontronik_3p_models[] = {
-    { "3P-B 30-6-12", 6u, 12u, true, 18000u, 30u },
-    { "3P-O 30-6-18", 6u, 18u, true, 27000u, 30u },
-    { "3P-O 35-14-32", 14u, 32u, true, 48000u, 35u },
+    { "3P-B 30-6-12", 6u, 12u, true, 18000u, 30u, 0u },
+    { "3P-O 30-6-18", 6u, 18u, true, 27000u, 30u, 0u },
+    { "3P-O 35-14-32", 14u, 32u, true, 48000u, 35u, 0u },
 };
 static const esc_value_t p_kontronik_3p_v0[] = {
     { "brake speed position at max speed: about 0.1 s to 100 % brake", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1912,11 +1912,11 @@ static const char *const p_kontronik_3sl_steps[] = {
     "Control output repeats the mode. Disconnect power.",
 };
 static const esc_model_t p_kontronik_3sl_models[] = {
-    { "3SL 25-6-18", 6u, 18u, true, 27000u, 25u },
-    { "3SL 40-6-18", 6u, 18u, true, 27000u, 40u },
-    { "3SL 70-6-18", 6u, 18u, true, 27000u, 70u },
-    { "3SL 25-14-32", 14u, 32u, true, 48000u, 25u },
-    { "3SL 40-14-32", 14u, 32u, true, 48000u, 40u },
+    { "3SL 25-6-18", 6u, 18u, true, 27000u, 25u, 0u },
+    { "3SL 40-6-18", 6u, 18u, true, 27000u, 40u, 0u },
+    { "3SL 70-6-18", 6u, 18u, true, 27000u, 70u, 0u },
+    { "3SL 25-14-32", 14u, 32u, true, 48000u, 25u, 0u },
+    { "3SL 40-14-32", 14u, 32u, true, 48000u, 40u, 0u },
 };
 static const esc_value_t p_kontronik_3sl_v0[] = {
     { "APM: reset, stick range learned at every power-up", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1949,15 +1949,15 @@ static const char *const p_kontronik_beat_steps[] = {
     "Control output: the ESC repeats the mode. Disconnect power.",
 };
 static const esc_model_t p_kontronik_beat_models[] = {
-    { "BEAT 40-6-12", 6u, 12u, true, 18000u, 40u },
-    { "BEAT 70-6-12", 6u, 12u, true, 18000u, 70u },
-    { "BEAT 40-6-18", 6u, 18u, true, 27000u, 40u },
-    { "BEAT 55-6-18", 6u, 18u, true, 27000u, 55u },
-    { "BEAT 80-6-18", 6u, 18u, true, 27000u, 80u },
-    { "BEAT 40-8-24", 8u, 24u, true, 36000u, 40u },
-    { "BEAT 60-8-24", 8u, 24u, true, 36000u, 60u },
-    { "BEAT 30-8-30", 8u, 30u, true, 45000u, 30u },
-    { "BEAT 50-8-30", 8u, 30u, true, 45000u, 50u },
+    { "BEAT 40-6-12", 6u, 12u, true, 18000u, 40u, 0u },
+    { "BEAT 70-6-12", 6u, 12u, true, 18000u, 70u, 0u },
+    { "BEAT 40-6-18", 6u, 18u, true, 27000u, 40u, 0u },
+    { "BEAT 55-6-18", 6u, 18u, true, 27000u, 55u, 0u },
+    { "BEAT 80-6-18", 6u, 18u, true, 27000u, 80u, 0u },
+    { "BEAT 40-8-24", 8u, 24u, true, 36000u, 40u, 0u },
+    { "BEAT 60-8-24", 8u, 24u, true, 36000u, 60u, 0u },
+    { "BEAT 30-8-30", 8u, 30u, true, 45000u, 30u, 0u },
+    { "BEAT 50-8-30", 8u, 30u, true, 45000u, 50u, 0u },
 };
 static const esc_value_t p_kontronik_beat_v0[] = {
     { "APM: reset, stick range learned at every power-up", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1986,7 +1986,7 @@ static const char *const p_kontronik_beat_car_steps[] = {
     "Mode 8 is programmed like mode 7 with 8 signals and can be combined with modes 2 to 6.",
 };
 static const esc_model_t p_kontronik_beat_car_models[] = {
-    { "BEAT 70 CAR", 0u, 0u, false, 0u, 0u },
+    { "BEAT 70 CAR", 0u, 0u, false, 0u, 0u, 0u },
 };
 static const esc_value_t p_kontronik_beat_car_v0[] = {
     { "APM / reset", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2014,9 +2014,9 @@ static const char *const p_kontronik_beat_fai_steps[] = {
     "Wait for the series of the wanted mode and move the throttle (motor switch) to full.",
 };
 static const esc_model_t p_kontronik_beat_fai_models[] = {
-    { "BEAT FAI 7/10", 6u, 18u, true, 27000u, 150u },
-    { "BEAT FAI 24", 8u, 24u, true, 36000u, 150u },
-    { "BEAT FAI 27", 8u, 30u, true, 45000u, 100u },
+    { "BEAT FAI 7/10", 6u, 18u, true, 27000u, 150u, 0u },
+    { "BEAT FAI 24", 8u, 24u, true, 36000u, 150u, 0u },
+    { "BEAT FAI 27", 8u, 30u, true, 45000u, 100u, 0u },
 };
 static const esc_value_t p_kontronik_beat_fai_v0[] = {
     { "APM / reset", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2046,10 +2046,10 @@ static const char *const p_kontronik_cyber_line_steps[] = {
     "Reset: any throttle position; fit the jumper and turn on the radio; apply power and fit/keep the jumper while the ESC beeps several times; about 30 s after the last signal a 6-fold signal arrives; the LED flashes continuously; disconnect power.",
 };
 static const esc_model_t p_kontronik_cyber_line_models[] = {
-    { "CYBEC 40-6-12", 6u, 12u, true, 16000u, 40u },
-    { "CYBEC 50-6-14 GTO", 6u, 14u, true, 19000u, 50u },
-    { "CYOPT 40-6-18", 6u, 18u, true, 24000u, 40u },
-    { "CYOPT 50-8-30", 8u, 30u, true, 40000u, 50u },
+    { "CYBEC 40-6-12", 6u, 12u, true, 16000u, 40u, 5600u },
+    { "CYBEC 50-6-14 GTO", 6u, 14u, true, 19000u, 50u, 5600u },
+    { "CYOPT 40-6-18", 6u, 18u, true, 24000u, 40u, 5600u },
+    { "CYOPT 50-8-30", 8u, 30u, true, 40000u, 50u, 8000u },
 };
 static const esc_value_t p_kontronik_cyber_line_v0[] = {
     { "taught by the sequence; EMK brake on if the throttle goes to motor-off after the full signal", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2093,7 +2093,7 @@ static const char *const p_kontronik_heli_jive_steps[] = {
     "The ESC repeats the mode and adds a warning tone if AR is on, then a bell tone. Disconnect power. The jumper may be fitted again and stay on the ESC in flight.",
 };
 static const esc_model_t p_kontronik_heli_jive_models[] = {
-    { "HELI JIVE 120+ HV", 5u, 12u, false, 50000u, 120u },
+    { "HELI JIVE 120+ HV", 5u, 12u, false, 50000u, 120u, 16000u },
 };
 static const esc_value_t p_kontronik_heli_jive_v0[] = {
     { "APM: reset only", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2130,8 +2130,8 @@ static const char *const p_kontronik_heli_line_steps[] = {
     "Reset: any throttle position; jumper on, radio on; apply power, pull the jumper; the ESC beeps several times; about 30 s after the last signal a 6-fold signal arrives; LED flashes continuously; disconnect power.",
 };
 static const esc_model_t p_kontronik_heli_line_models[] = {
-    { "HELBEC 40-6-10", 6u, 10u, true, 14000u, 40u },
-    { "HELOPT 50-8-30", 8u, 30u, true, 40000u, 50u },
+    { "HELBEC 40-6-10", 6u, 10u, true, 14000u, 40u, 5600u },
+    { "HELOPT 50-8-30", 8u, 30u, true, 40000u, 50u, 8000u },
 };
 static const esc_value_t p_kontronik_heli_line_v0[] = {
     { "taught by the sequence; throttle compensation on: throttle to motor-off after the full signal, confirmed by 3 beeps; off: wait, confirmed by 2 beeps", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2169,11 +2169,11 @@ static const char *const p_kontronik_jazz_steps[] = {
     "The ESC repeats the stored mode as a check. Then disconnect drive power.",
 };
 static const esc_model_t p_kontronik_jazz_models[] = {
-    { "JAZZ 40 LV", 0u, 0u, false, 25000u, 40u },
-    { "JAZZ 55 LV", 2u, 6u, false, 25000u, 55u },
-    { "JAZZ 80 LV", 2u, 6u, false, 25000u, 80u },
-    { "MINIJAZZ 15 LV", 2u, 3u, false, 13000u, 15u },
-    { "MINIJAZZ 20 LV", 2u, 3u, false, 13000u, 20u },
+    { "JAZZ 40 LV", 0u, 0u, false, 25000u, 40u, 6000u },
+    { "JAZZ 55 LV", 2u, 6u, false, 25000u, 55u, 6000u },
+    { "JAZZ 80 LV", 2u, 6u, false, 25000u, 80u, 6000u },
+    { "MINIJAZZ 15 LV", 2u, 3u, false, 13000u, 15u, 5500u },
+    { "MINIJAZZ 20 LV", 2u, 3u, false, 13000u, 20u, 5500u },
 };
 static const esc_value_t p_kontronik_jazz_v0[] = {
     { "APM: stick range is learned at every power-up; programming it clears all settings", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2209,11 +2209,11 @@ static const char *const p_kontronik_jive_steps[] = {
     "The ESC repeats the stored mode. Disconnect drive power.",
 };
 static const esc_model_t p_kontronik_jive_models[] = {
-    { "JIVE 80+ LV", 2u, 6u, false, 25000u, 80u },
-    { "JIVE 100+ LV", 2u, 6u, false, 25000u, 100u },
-    { "JIVE 60+ HV", 5u, 12u, false, 50000u, 60u },
-    { "JIVE 80+ HV", 5u, 12u, false, 50000u, 80u },
-    { "POWERJIVE 120+ HV", 5u, 12u, false, 50000u, 120u },
+    { "JIVE 80+ LV", 2u, 6u, false, 25000u, 80u, 6000u },
+    { "JIVE 100+ LV", 2u, 6u, false, 25000u, 100u, 6000u },
+    { "JIVE 60+ HV", 5u, 12u, false, 50000u, 60u, 16000u },
+    { "JIVE 80+ HV", 5u, 12u, false, 50000u, 80u, 16000u },
+    { "POWERJIVE 120+ HV", 5u, 12u, false, 50000u, 120u, 16000u },
 };
 static const esc_value_t p_kontronik_jive_v0[] = {
     { "APM: stick range learned at every power-up; programming it clears all settings", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2255,8 +2255,8 @@ static const char *const p_kontronik_jive_pro_steps[] = {
     "Wait for the confirmation before disconnecting power; otherwise the ESC treats programming as incomplete and locks (9 LED flashes).",
 };
 static const esc_model_t p_kontronik_jive_pro_models[] = {
-    { "JIVE Pro 80+ HV", 5u, 12u, false, 50000u, 80u },
-    { "JIVE Pro 120+ HV", 5u, 12u, false, 50000u, 120u },
+    { "JIVE Pro 80+ HV", 5u, 12u, false, 50000u, 80u, 0u },
+    { "JIVE Pro 120+ HV", 5u, 12u, false, 50000u, 120u, 0u },
 };
 static const esc_value_t p_kontronik_jive_pro_v0[] = {
     { "APM: reset, clears all settings", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2308,10 +2308,10 @@ static const char *const p_kontronik_koby_steps[] = {
     "The ESC repeats the mode. Wait for it, then disconnect power (an interrupted run locks the ESC; 9 LED flashes).",
 };
 static const esc_model_t p_kontronik_koby_models[] = {
-    { "KOBY 40 LV", 2u, 6u, false, 25000u, 40u },
-    { "KOBY 55 LV", 2u, 6u, false, 25000u, 55u },
-    { "KOBY 70 LV", 2u, 6u, false, 25000u, 70u },
-    { "KOBY 90 LV", 2u, 6u, false, 25000u, 90u },
+    { "KOBY 40 LV", 2u, 6u, false, 25000u, 40u, 6000u },
+    { "KOBY 55 LV", 2u, 6u, false, 25000u, 55u, 6000u },
+    { "KOBY 70 LV", 2u, 6u, false, 25000u, 70u, 6000u },
+    { "KOBY 90 LV", 2u, 6u, false, 25000u, 90u, 6000u },
 };
 static const esc_value_t p_kontronik_koby_v0[] = {
     { "APM: reset, stick range learned at every power-up", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2361,11 +2361,11 @@ static const char *const p_kontronik_kolibri_steps[] = {
     "Wait for the confirmation (up to about 2 s for mode 4) before disconnecting power; otherwise the ESC locks (9 LED flashes).",
 };
 static const esc_model_t p_kontronik_kolibri_models[] = {
-    { "KOLIBRI 60 LV-I", 2u, 6u, false, 25000u, 60u },
-    { "KOLIBRI 90 LV-I", 2u, 6u, false, 25000u, 90u },
-    { "KOLIBRI 140 LV-I", 2u, 6u, false, 25000u, 140u },
-    { "KOLIBRI 90 HV-I", 6u, 12u, false, 50000u, 90u },
-    { "KOLIBRI 140 HV-I", 6u, 12u, false, 50000u, 140u },
+    { "KOLIBRI 60 LV-I", 2u, 6u, false, 25000u, 60u, 0u },
+    { "KOLIBRI 90 LV-I", 2u, 6u, false, 25000u, 90u, 0u },
+    { "KOLIBRI 140 LV-I", 2u, 6u, false, 25000u, 140u, 0u },
+    { "KOLIBRI 90 HV-I", 6u, 12u, false, 50000u, 90u, 0u },
+    { "KOLIBRI 140 HV-I", 6u, 12u, false, 50000u, 140u, 0u },
 };
 static const esc_value_t p_kontronik_kolibri_v0[] = {
     { "APM: reset, clears all settings", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2435,9 +2435,9 @@ static const char *const p_kontronik_kontrol_x_steps[] = {
     "The ESC repeats the mode as tones. Wait for it, then disconnect power (an interrupted run locks the ESC; 8 LED flashes).",
 };
 static const esc_model_t p_kontronik_kontrol_x_models[] = {
-    { "KONTROL-X 40 LV", 2u, 6u, false, 25000u, 40u },
-    { "KOLIBRI-X 60 LV", 0u, 0u, false, 0u, 60u },
-    { "KOLIBRI-X 90 LV", 0u, 0u, false, 0u, 90u },
+    { "KONTROL-X 40 LV", 2u, 6u, false, 25000u, 40u, 0u },
+    { "KOLIBRI-X 60 LV", 0u, 0u, false, 0u, 60u, 0u },
+    { "KOLIBRI-X 90 LV", 0u, 0u, false, 0u, 90u, 0u },
 };
 static const esc_value_t p_kontronik_kontrol_x_v0[] = {
     { "DJI GPS system: stick range fixed to 1000 to 2000 microseconds; programming it resets to delivery state", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2466,18 +2466,18 @@ static const char *const p_kontronik_kosmik_steps[] = {
     "Wait for the confirmation (up to about 2 s for mode 4) before disconnecting power; otherwise the ESC locks (10 red LED flashes).",
 };
 static const esc_model_t p_kontronik_kosmik_models[] = {
-    { "KOSMIK 160 HV", 5u, 14u, false, 59000u, 160u },
-    { "COOL KOSMIK 160 HV", 5u, 14u, false, 59000u, 160u },
-    { "KOSMIK 200 HV", 5u, 14u, false, 59000u, 200u },
-    { "COOL KOSMIK 200 HV", 5u, 14u, false, 59000u, 200u },
-    { "KOSMIK 170 HV-I+", 5u, 14u, false, 59000u, 170u },
-    { "KOSMIK 210 HV-I", 5u, 14u, false, 59000u, 210u },
-    { "KOSMIK 210 HV-I+", 5u, 14u, false, 59000u, 210u },
-    { "COOL KOSMIK 170 HV-I+", 5u, 14u, false, 59000u, 170u },
-    { "COOL KOSMIK 210 HV-I+", 5u, 14u, false, 59000u, 210u },
-    { "COOL KOSMIK 250 HV-I+", 5u, 14u, false, 59000u, 250u },
-    { "WaterCOOL KOSMIK 300 HV-I+", 5u, 14u, false, 59000u, 300u },
-    { "DuoCOOL KOSMIK 300 HV-I+", 5u, 14u, false, 59000u, 300u },
+    { "KOSMIK 160 HV", 5u, 14u, false, 59000u, 160u, 0u },
+    { "COOL KOSMIK 160 HV", 5u, 14u, false, 59000u, 160u, 0u },
+    { "KOSMIK 200 HV", 5u, 14u, false, 59000u, 200u, 0u },
+    { "COOL KOSMIK 200 HV", 5u, 14u, false, 59000u, 200u, 0u },
+    { "KOSMIK 170 HV-I+", 5u, 14u, false, 59000u, 170u, 0u },
+    { "KOSMIK 210 HV-I", 5u, 14u, false, 59000u, 210u, 0u },
+    { "KOSMIK 210 HV-I+", 5u, 14u, false, 59000u, 210u, 0u },
+    { "COOL KOSMIK 170 HV-I+", 5u, 14u, false, 59000u, 170u, 0u },
+    { "COOL KOSMIK 210 HV-I+", 5u, 14u, false, 59000u, 210u, 0u },
+    { "COOL KOSMIK 250 HV-I+", 5u, 14u, false, 59000u, 250u, 0u },
+    { "WaterCOOL KOSMIK 300 HV-I+", 5u, 14u, false, 59000u, 300u, 0u },
+    { "DuoCOOL KOSMIK 300 HV-I+", 5u, 14u, false, 59000u, 300u, 0u },
 };
 static const esc_value_t p_kontronik_kosmik_v0[] = {
     { "APM: reset, unlocks the delivery state", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2540,7 +2540,7 @@ static const char *const p_kontronik_mini20_steps[] = {
     "Reconnect drive power without the jumper.",
 };
 static const esc_model_t p_kontronik_mini20_models[] = {
-    { "MINI 20", 6u, 10u, true, 14000u, 20u },
+    { "MINI 20", 6u, 10u, true, 14000u, 20u, 6000u },
 };
 static const esc_value_t p_kontronik_mini20_v0[] = {
     { "neutral equals full: no brake; brake stop equals off", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2574,8 +2574,8 @@ static const char *const p_kontronik_opto_bec_steps[] = {
     "Disconnect drive power and remove the bridge. After reconnecting, a double signal after about 1 s shows readiness once the throttle is at motor-off or brake.",
 };
 static const esc_model_t p_kontronik_opto_bec_models[] = {
-    { "OPTO", 0u, 0u, false, 0u, 0u },
-    { "BEC", 0u, 0u, false, 0u, 0u },
+    { "OPTO", 0u, 0u, false, 0u, 0u, 0u },
+    { "BEC", 0u, 0u, false, 0u, 0u, 0u },
 };
 static const esc_value_t p_kontronik_opto_bec_v0[] = {
     { "taught by the sequence", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2613,7 +2613,7 @@ static const char *const p_kontronik_optomax_steps[] = {
     "Disconnect drive power and remove the bridge.",
 };
 static const esc_model_t p_kontronik_optomax_models[] = {
-    { "OPTOMAX", 0u, 0u, false, 0u, 0u },
+    { "OPTOMAX", 0u, 0u, false, 0u, 0u, 0u },
 };
 static const esc_value_t p_kontronik_optomax_v0[] = {
     { "taught by the sequence", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2653,9 +2653,9 @@ static const char *const p_kontronik_pix_steps[] = {
     "Control output: the mode is repeated as tones. Disconnect power.",
 };
 static const esc_model_t p_kontronik_pix_models[] = {
-    { "PIX 1000", 6u, 12u, true, 17000u, 40u },
-    { "PIX 3000", 6u, 12u, true, 17000u, 40u },
-    { "PIX 4000", 6u, 12u, true, 17000u, 40u },
+    { "PIX 1000", 6u, 12u, true, 17000u, 40u, 0u },
+    { "PIX 3000", 6u, 12u, true, 17000u, 40u, 0u },
+    { "PIX 4000", 6u, 12u, true, 17000u, 40u, 0u },
 };
 static const esc_value_t p_kontronik_pix_v0[] = {
     { "APM: reset, stick range learned at every power-up", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2684,9 +2684,9 @@ static const char *const p_kontronik_smile_steps[] = {
     "The ESC repeats the mode as control output. Disconnect power.",
 };
 static const esc_model_t p_kontronik_smile_models[] = {
-    { "Smile 30-6-12", 6u, 12u, true, 17000u, 30u },
-    { "Smile 45-6-12", 6u, 12u, true, 17000u, 45u },
-    { "Smile 45-6-18", 6u, 18u, true, 24000u, 45u },
+    { "Smile 30-6-12", 6u, 12u, true, 17000u, 30u, 6200u },
+    { "Smile 45-6-12", 6u, 12u, true, 17000u, 45u, 6200u },
+    { "Smile 45-6-18", 6u, 18u, true, 24000u, 45u, 6200u },
 };
 static const esc_value_t p_kontronik_smile_v0[] = {
     { "APM: reset, stick range learned at every power-up", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2719,11 +2719,11 @@ static const char *const p_kontronik_star_line_steps[] = {
     "Control output repeats the mode. Disconnect power.",
 };
 static const esc_model_t p_kontronik_star_line_models[] = {
-    { "StarBEC 40-6-12", 6u, 12u, true, 18000u, 40u },
-    { "StarBEC 50-6-14", 6u, 14u, true, 21000u, 50u },
-    { "StarOPT 40-6-18", 6u, 18u, true, 27000u, 40u },
-    { "StarOPT 40-10-30", 10u, 30u, true, 45000u, 40u },
-    { "StarOPT 70-6-18", 6u, 18u, true, 27000u, 70u },
+    { "StarBEC 40-6-12", 6u, 12u, true, 18000u, 40u, 0u },
+    { "StarBEC 50-6-14", 6u, 14u, true, 21000u, 50u, 0u },
+    { "StarOPT 40-6-18", 6u, 18u, true, 27000u, 40u, 0u },
+    { "StarOPT 40-10-30", 10u, 30u, true, 45000u, 40u, 0u },
+    { "StarOPT 70-6-18", 6u, 18u, true, 27000u, 70u, 0u },
 };
 static const esc_value_t p_kontronik_star_line_v0[] = {
     { "APM: reset, stick range learned at every power-up", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2755,9 +2755,9 @@ static const char *const p_kontronik_sun_plus_steps[] = {
     "Control output: the mode is repeated as tones. Disconnect power.",
 };
 static const esc_model_t p_kontronik_sun_plus_models[] = {
-    { "SUN 1002", 6u, 12u, true, 16000u, 18u },
-    { "SUN 3002", 6u, 12u, true, 16000u, 30u },
-    { "SUN 4002", 6u, 12u, true, 16000u, 40u },
+    { "SUN 1002", 6u, 12u, true, 16000u, 18u, 0u },
+    { "SUN 3002", 6u, 12u, true, 16000u, 30u, 0u },
+    { "SUN 4002", 6u, 12u, true, 16000u, 40u, 0u },
 };
 static const esc_value_t p_kontronik_sun_plus_v0[] = {
     { "APM: reset, EMK brake and undervoltage cutoff on, stick range learned at every power-up", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2785,7 +2785,7 @@ static const char *const p_multiplex_roxxy_bl_725_4d_steps[] = {
     "Stick to minimum: ascending tone sequence, throttle calibrated, controller ready in standard mode.",
 };
 static const esc_model_t p_multiplex_roxxy_bl_725_4d_models[] = {
-    { "ROXXY BL-Control 725 S-BEC 4D", 2u, 4u, false, 16800u, 25u },
+    { "ROXXY BL-Control 725 S-BEC 4D", 2u, 4u, false, 16800u, 25u, 0u },
 };
 static const esc_value_t p_multiplex_roxxy_bl_725_4d_v0[] = {
     { "forward only, stick at motor OFF at power-up", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2810,14 +2810,14 @@ static const char *const p_multiplex_roxxy_bl_900_steps[] = {
     "Programming mode: parameter 1 shown as one beep and one LED flash, repeating.",
 };
 static const esc_model_t p_multiplex_roxxy_bl_900_models[] = {
-    { "Roxxy BL 908", 2u, 4u, false, 16800u, 8u },
-    { "Roxxy BL 918", 2u, 4u, false, 16800u, 18u },
-    { "Roxxy BL 930", 2u, 4u, false, 16800u, 30u },
-    { "Roxxy BL 930-6", 2u, 6u, false, 25200u, 30u },
-    { "Roxxy BL 940-6", 2u, 6u, false, 25200u, 40u },
-    { "Roxxy BL 950-6", 2u, 6u, false, 25200u, 50u },
-    { "Roxxy BL 960-6", 2u, 6u, false, 25200u, 60u },
-    { "Roxxy BL 9100-6", 2u, 6u, false, 25200u, 100u },
+    { "Roxxy BL 908", 2u, 4u, false, 16800u, 8u, 0u },
+    { "Roxxy BL 918", 2u, 4u, false, 16800u, 18u, 0u },
+    { "Roxxy BL 930", 2u, 4u, false, 16800u, 30u, 0u },
+    { "Roxxy BL 930-6", 2u, 6u, false, 25200u, 30u, 0u },
+    { "Roxxy BL 940-6", 2u, 6u, false, 25200u, 40u, 0u },
+    { "Roxxy BL 950-6", 2u, 6u, false, 25200u, 50u, 0u },
+    { "Roxxy BL 960-6", 2u, 6u, false, 25200u, 60u, 0u },
+    { "Roxxy BL 9100-6", 2u, 6u, false, 25200u, 100u, 0u },
 };
 static const esc_value_t p_multiplex_roxxy_bl_900_v0[] = {
     { "LiPo (LED on, beep every 2 s)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2873,10 +2873,10 @@ static const char *const p_multiplex_roxxy_bl_control_s_bec_steps[] = {
     "Stick to centre: rising tone sequence four times, programming mode.",
 };
 static const esc_model_t p_multiplex_roxxy_bl_control_s_bec_models[] = {
-    { "ROXXY BL-Control 715 S-BEC", 2u, 4u, false, 16800u, 15u },
-    { "ROXXY BL-Control 720 S-BEC", 2u, 4u, false, 16800u, 20u },
-    { "ROXXY BL-Control 740 S-BEC", 2u, 6u, false, 25200u, 40u },
-    { "ROXXY BL-Control 755 S-BEC", 2u, 6u, false, 25200u, 55u },
+    { "ROXXY BL-Control 715 S-BEC", 2u, 4u, false, 16800u, 15u, 0u },
+    { "ROXXY BL-Control 720 S-BEC", 2u, 4u, false, 16800u, 20u, 0u },
+    { "ROXXY BL-Control 740 S-BEC", 2u, 6u, false, 25200u, 40u, 0u },
+    { "ROXXY BL-Control 755 S-BEC", 2u, 6u, false, 25200u, 55u, 0u },
 };
 static const esc_value_t p_multiplex_roxxy_bl_control_s_bec_v0[] = {
     { "LiPo with automatic cutoff (stick full throttle), default; motor off at 3.0 V per cell", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2942,13 +2942,13 @@ static const char *const p_multiplex_roxxy_procontrol_steps[] = {
     "After about 2 s: four groups of two fast beeps. Programming mode is active.",
 };
 static const esc_model_t p_multiplex_roxxy_procontrol_models[] = {
-    { "ROXXY PROcontrol 45 (1-02103)", 2u, 6u, false, 25200u, 45u },
-    { "ROXXY PROcontrol 65 (1-02104)", 2u, 6u, false, 25200u, 65u },
-    { "ROXXY PROcontrol 85 (1-02105)", 2u, 6u, false, 25200u, 85u },
-    { "ROXXY PROcontrol 125 (1-02106)", 2u, 6u, false, 25200u, 125u },
-    { "ROXXY PROcontrol 155 (1-02107)", 2u, 6u, false, 25200u, 155u },
-    { "ROXXY PROcontrol 120 OPTO HV (1-02108)", 6u, 12u, false, 50400u, 120u },
-    { "ROXXY PROcontrol 150 OPTO HV (1-02109)", 6u, 12u, false, 50400u, 150u },
+    { "ROXXY PROcontrol 45 (1-02103)", 2u, 6u, false, 25200u, 45u, 0u },
+    { "ROXXY PROcontrol 65 (1-02104)", 2u, 6u, false, 25200u, 65u, 0u },
+    { "ROXXY PROcontrol 85 (1-02105)", 2u, 6u, false, 25200u, 85u, 0u },
+    { "ROXXY PROcontrol 125 (1-02106)", 2u, 6u, false, 25200u, 125u, 0u },
+    { "ROXXY PROcontrol 155 (1-02107)", 2u, 6u, false, 25200u, 155u, 0u },
+    { "ROXXY PROcontrol 120 OPTO HV (1-02108)", 6u, 12u, false, 50400u, 120u, 0u },
+    { "ROXXY PROcontrol 150 OPTO HV (1-02109)", 6u, 12u, false, 50400u, 150u, 0u },
 };
 static const esc_value_t p_multiplex_roxxy_procontrol_v0[] = {
     { "brake off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3042,23 +3042,23 @@ static const char *const p_mystery_ztw_melody_menu_steps[] = {
     "Keep the throttle at max beyond 5 s: the ESC starts the tone sequence",
 };
 static const esc_model_t p_mystery_ztw_melody_menu_models[] = {
-    { "MY8A", 2u, 4u, false, 16800u, 8u },
-    { "MY12A", 2u, 4u, false, 16800u, 12u },
-    { "MY20A", 2u, 4u, false, 16800u, 20u },
-    { "MY30A", 2u, 4u, false, 16800u, 30u },
-    { "MY40A BEC", 2u, 4u, false, 16800u, 40u },
-    { "MY40A SBEC", 2u, 6u, false, 25200u, 40u },
-    { "MY50A BEC", 2u, 4u, false, 16800u, 50u },
-    { "MY50A SBEC", 2u, 6u, false, 25200u, 50u },
-    { "MY50A OPTO", 2u, 6u, false, 25200u, 50u },
-    { "MY60A SBEC", 2u, 6u, false, 25200u, 60u },
-    { "MY70A SBEC", 2u, 6u, false, 25200u, 70u },
-    { "MY85A BEC", 2u, 4u, false, 16800u, 85u },
-    { "MY85A SBEC", 2u, 6u, false, 25200u, 85u },
-    { "MY85A OPTO", 2u, 6u, false, 25200u, 85u },
-    { "MY110A OPTO LV", 2u, 6u, false, 25200u, 110u },
-    { "MY100A OPTO HV", 5u, 10u, false, 42000u, 100u },
-    { "Readytosky A-OEM-30A", 2u, 3u, false, 12600u, 30u },
+    { "MY8A", 2u, 4u, false, 16800u, 8u, 0u },
+    { "MY12A", 2u, 4u, false, 16800u, 12u, 0u },
+    { "MY20A", 2u, 4u, false, 16800u, 20u, 0u },
+    { "MY30A", 2u, 4u, false, 16800u, 30u, 0u },
+    { "MY40A BEC", 2u, 4u, false, 16800u, 40u, 0u },
+    { "MY40A SBEC", 2u, 6u, false, 25200u, 40u, 0u },
+    { "MY50A BEC", 2u, 4u, false, 16800u, 50u, 0u },
+    { "MY50A SBEC", 2u, 6u, false, 25200u, 50u, 0u },
+    { "MY50A OPTO", 2u, 6u, false, 25200u, 50u, 0u },
+    { "MY60A SBEC", 2u, 6u, false, 25200u, 60u, 0u },
+    { "MY70A SBEC", 2u, 6u, false, 25200u, 70u, 0u },
+    { "MY85A BEC", 2u, 4u, false, 16800u, 85u, 0u },
+    { "MY85A SBEC", 2u, 6u, false, 25200u, 85u, 0u },
+    { "MY85A OPTO", 2u, 6u, false, 25200u, 85u, 0u },
+    { "MY110A OPTO LV", 2u, 6u, false, 25200u, 110u, 0u },
+    { "MY100A OPTO HV", 5u, 10u, false, 42000u, 100u, 0u },
+    { "Readytosky A-OEM-30A", 2u, 3u, false, 12600u, 30u, 0u },
 };
 static const esc_value_t p_mystery_ztw_melody_menu_v0[] = {
     { "brake on/off tone (state set by selection not stated)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3132,7 +3132,7 @@ static const char *const p_robbe_roxxy_bl_smart_control_steps[] = {
     "Parameters then sound in a loop.",
 };
 static const esc_model_t p_robbe_roxxy_bl_smart_control_models[] = {
-    { "ROXXY BL-Smart Control 940-6 SV (8573)", 2u, 6u, false, 25200u, 40u },
+    { "ROXXY BL-Smart Control 940-6 SV (8573)", 2u, 6u, false, 25200u, 40u, 0u },
 };
 static const esc_value_t p_robbe_roxxy_bl_smart_control_v0[] = {
     { "off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3196,7 +3196,7 @@ static const char *const p_spektrum_avian_130_pro_steps[] = {
     "Two short tones, then the tones of parameter 1.",
 };
 static const esc_model_t p_spektrum_avian_130_pro_models[] = {
-    { "Avian 130 Pro Smart ESC (SPMXAE2130)", 3u, 6u, false, 25200u, 130u },
+    { "Avian 130 Pro Smart ESC (SPMXAE2130)", 3u, 6u, false, 25200u, 130u, 0u },
 };
 static const esc_value_t p_spektrum_avian_130_pro_v0[] = {
     { "fixed-wing", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3326,8 +3326,8 @@ static const char *const p_spektrum_avian_hv_steps[] = {
     "Leave the stick at full for more than 5 s: tones signal programming mode.",
 };
 static const esc_model_t p_spektrum_avian_hv_models[] = {
-    { "Avian 160A HV (SPMXAE1160HV)", 6u, 14u, false, 58800u, 160u },
-    { "Avian 200A HV (SPMXAE1200HV)", 6u, 14u, false, 58800u, 200u },
+    { "Avian 160A HV (SPMXAE1160HV)", 6u, 14u, false, 58800u, 160u, 0u },
+    { "Avian 200A HV (SPMXAE1200HV)", 6u, 14u, false, 58800u, 200u, 0u },
 };
 static const esc_value_t p_spektrum_avian_hv_v0[] = {
     { "airplane", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3456,12 +3456,12 @@ static const char *const p_spektrum_avian_smart_steps[] = {
     "Two short tones, then the tones of parameter 1.",
 };
 static const esc_model_t p_spektrum_avian_smart_models[] = {
-    { "Avian 15A (SPMXAE1015)", 2u, 4u, false, 16800u, 15u },
-    { "Avian 30A (SPMXAE1030)", 3u, 6u, false, 25200u, 30u },
-    { "Avian 45A (SPMXAE1045)", 3u, 6u, false, 25200u, 45u },
-    { "Avian 60A (SPMXAE1060)", 3u, 6u, false, 25200u, 60u },
-    { "Avian 80A (SPMXAE1080)", 3u, 8u, false, 33600u, 80u },
-    { "Avian 100A (SPMXAE1100)", 3u, 6u, false, 25200u, 100u },
+    { "Avian 15A (SPMXAE1015)", 2u, 4u, false, 16800u, 15u, 0u },
+    { "Avian 30A (SPMXAE1030)", 3u, 6u, false, 25200u, 30u, 0u },
+    { "Avian 45A (SPMXAE1045)", 3u, 6u, false, 25200u, 45u, 0u },
+    { "Avian 60A (SPMXAE1060)", 3u, 6u, false, 25200u, 60u, 0u },
+    { "Avian 80A (SPMXAE1080)", 3u, 8u, false, 33600u, 80u, 0u },
+    { "Avian 100A (SPMXAE1100)", 3u, 6u, false, 25200u, 100u, 0u },
 };
 static const esc_value_t p_spektrum_avian_smart_v0[] = {
     { "airplane", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3589,24 +3589,24 @@ static const char *const p_sunrise_pro_steps[] = {
     "Wait about 5000 ms: 4 beeps, programming mode entered",
 };
 static const esc_model_t p_sunrise_pro_models[] = {
-    { "Sunrise PRO 10A LBEC", 2u, 3u, false, 12600u, 10u },
-    { "Sunrise PRO 20A LBEC", 2u, 3u, false, 12600u, 20u },
-    { "Sunrise PRO 20A SBEC", 2u, 4u, false, 16800u, 20u },
-    { "Sunrise PRO 25A LBEC", 2u, 3u, false, 12600u, 25u },
-    { "Sunrise PRO 25A SBEC", 2u, 4u, false, 16800u, 25u },
-    { "Sunrise PRO 30A LBEC", 2u, 3u, false, 12600u, 30u },
-    { "Sunrise PRO 30A SBEC", 2u, 4u, false, 16800u, 30u },
-    { "Sunrise PRO 40A LBEC", 2u, 3u, false, 12600u, 40u },
-    { "Sunrise PRO 40A SBEC", 2u, 6u, false, 25200u, 40u },
-    { "Sunrise PRO 40A OPTO", 2u, 6u, false, 25200u, 40u },
-    { "Sunrise PRO 60A SBEC", 2u, 6u, false, 25200u, 60u },
-    { "Sunrise PRO 60A OPTO", 2u, 6u, false, 25200u, 60u },
-    { "Sunrise PRO 75A SBEC", 2u, 6u, false, 25200u, 75u },
-    { "Sunrise PRO 75A OPTO", 2u, 6u, false, 25200u, 75u },
-    { "Sunrise PRO 110A SBEC", 2u, 6u, false, 25200u, 110u },
-    { "Sunrise PRO 110A OPTO", 2u, 6u, false, 25200u, 110u },
-    { "Sunrise PRO HV 100A OPTO", 3u, 10u, false, 42000u, 100u },
-    { "Sunrise PRO HV 180A OPTO", 3u, 10u, false, 42000u, 180u },
+    { "Sunrise PRO 10A LBEC", 2u, 3u, false, 12600u, 10u, 0u },
+    { "Sunrise PRO 20A LBEC", 2u, 3u, false, 12600u, 20u, 0u },
+    { "Sunrise PRO 20A SBEC", 2u, 4u, false, 16800u, 20u, 0u },
+    { "Sunrise PRO 25A LBEC", 2u, 3u, false, 12600u, 25u, 0u },
+    { "Sunrise PRO 25A SBEC", 2u, 4u, false, 16800u, 25u, 0u },
+    { "Sunrise PRO 30A LBEC", 2u, 3u, false, 12600u, 30u, 0u },
+    { "Sunrise PRO 30A SBEC", 2u, 4u, false, 16800u, 30u, 0u },
+    { "Sunrise PRO 40A LBEC", 2u, 3u, false, 12600u, 40u, 0u },
+    { "Sunrise PRO 40A SBEC", 2u, 6u, false, 25200u, 40u, 0u },
+    { "Sunrise PRO 40A OPTO", 2u, 6u, false, 25200u, 40u, 0u },
+    { "Sunrise PRO 60A SBEC", 2u, 6u, false, 25200u, 60u, 0u },
+    { "Sunrise PRO 60A OPTO", 2u, 6u, false, 25200u, 60u, 0u },
+    { "Sunrise PRO 75A SBEC", 2u, 6u, false, 25200u, 75u, 0u },
+    { "Sunrise PRO 75A OPTO", 2u, 6u, false, 25200u, 75u, 0u },
+    { "Sunrise PRO 110A SBEC", 2u, 6u, false, 25200u, 110u, 0u },
+    { "Sunrise PRO 110A OPTO", 2u, 6u, false, 25200u, 110u, 0u },
+    { "Sunrise PRO HV 100A OPTO", 3u, 10u, false, 42000u, 100u, 0u },
+    { "Sunrise PRO HV 180A OPTO", 3u, 10u, false, 42000u, 180u, 0u },
 };
 static const esc_value_t p_sunrise_pro_v0[] = {
     { "Li-xx (1 beep group)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3632,8 +3632,8 @@ static const char *const p_surpass_kxss_steps[] = {
     "Wait about 5000 ms more: rising tone, programming mode entered",
 };
 static const esc_model_t p_surpass_kxss_models[] = {
-    { "KXSS2401", 2u, 4u, false, 16800u, 10u },
-    { "KXSS2402", 2u, 4u, false, 16800u, 18u },
+    { "KXSS2401", 2u, 4u, false, 16800u, 10u, 0u },
+    { "KXSS2402", 2u, 4u, false, 16800u, 18u, 0u },
 };
 static const esc_value_t p_surpass_kxss_v0[] = {
     { "off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3695,9 +3695,9 @@ static const char *const p_turnigy_aquastar_steps[] = {
     "7 beeps: programming mode entered",
 };
 static const esc_model_t p_turnigy_aquastar_models[] = {
-    { "Aquastar 90A", 2u, 6u, false, 25200u, 90u },
-    { "Aquastar 120A", 2u, 6u, false, 25200u, 120u },
-    { "Aquastar HV 240A", 3u, 12u, false, 50400u, 240u },
+    { "Aquastar 90A", 2u, 6u, false, 25200u, 90u, 0u },
+    { "Aquastar 120A", 2u, 6u, false, 25200u, 120u, 0u },
+    { "Aquastar HV 240A", 3u, 12u, false, 50400u, 240u, 0u },
 };
 static const esc_value_t p_turnigy_aquastar_v0[] = {
     { "Auto LiPo cell detect", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3767,7 +3767,7 @@ static const char *const p_turnigy_trackstar_60a_v2_steps[] = {
     "Let the trigger go to neutral",
 };
 static const esc_model_t p_turnigy_trackstar_60a_v2_models[] = {
-    { "Trackstar 60A V2", 2u, 3u, false, 12600u, 60u },
+    { "Trackstar 60A V2", 2u, 3u, false, 12600u, 60u, 0u },
 };
 static const esc_value_t p_turnigy_trackstar_60a_v2_v0[] = {
     { "reverse lockout", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3851,11 +3851,11 @@ static const char *const p_yge_aureus_steps[] = {
     "Move throttle stick to minimum; 2 confirmation beeps; ESC arms",
 };
 static const esc_model_t p_yge_aureus_models[] = {
-    { "Aureus 105", 6u, 12u, false, 50400u, 105u },
-    { "Aureus 135 V1", 6u, 12u, false, 50400u, 135u },
-    { "Aureus 135 V2", 6u, 12u, false, 50400u, 135u },
-    { "Aureus 185", 6u, 12u, false, 50400u, 185u },
-    { "Aureus 265", 6u, 14u, false, 58800u, 265u },
+    { "Aureus 105", 6u, 12u, false, 50400u, 105u, 0u },
+    { "Aureus 135 V1", 6u, 12u, false, 50400u, 135u, 0u },
+    { "Aureus 135 V2", 6u, 12u, false, 50400u, 135u, 0u },
+    { "Aureus 185", 6u, 12u, false, 50400u, 185u, 0u },
+    { "Aureus 265", 6u, 14u, false, 58800u, 265u, 0u },
 };
 static const esc_value_t p_yge_aureus_v0[] = {
     { "V-Stabi governor (external governor, rpm signal to flight controller)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3882,11 +3882,11 @@ static const char *const p_yge_hv_steps[] = {
     "Move throttle stick to minimum; 2 confirmation beeps; ESC arms",
 };
 static const esc_model_t p_yge_hv_models[] = {
-    { "60HV", 4u, 12u, false, 50400u, 60u },
-    { "90HV", 4u, 12u, false, 50400u, 90u },
-    { "120HV V5", 4u, 14u, false, 58800u, 120u },
-    { "160HV V5", 4u, 14u, false, 58800u, 160u },
-    { "200HV", 4u, 14u, false, 58800u, 200u },
+    { "60HV", 4u, 12u, false, 50400u, 60u, 0u },
+    { "90HV", 4u, 12u, false, 50400u, 90u, 0u },
+    { "120HV V5", 4u, 14u, false, 58800u, 120u, 0u },
+    { "160HV V5", 4u, 14u, false, 58800u, 160u, 0u },
+    { "200HV", 4u, 14u, false, 58800u, 200u, 0u },
 };
 static const esc_value_t p_yge_hv_v0[] = {
     { "V-Stabi governor (external governor, rpm signal to flight controller)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3912,12 +3912,12 @@ static const char *const p_yge_hvt_steps[] = {
     "Move throttle stick to minimum; 2 confirmation beeps; ESC arms",
 };
 static const esc_model_t p_yge_hvt_models[] = {
-    { "90HVT Opto", 4u, 12u, false, 50400u, 90u },
-    { "120HVT Opto", 4u, 12u, false, 50400u, 120u },
-    { "165HVT", 6u, 14u, false, 58800u, 165u },
-    { "205HVT", 4u, 14u, false, 58800u, 205u },
-    { "325HVT", 4u, 14u, false, 58800u, 325u },
-    { "205HVT BEC", 6u, 14u, false, 58800u, 205u },
+    { "90HVT Opto", 4u, 12u, false, 50400u, 90u, 0u },
+    { "120HVT Opto", 4u, 12u, false, 50400u, 120u, 0u },
+    { "165HVT", 6u, 14u, false, 58800u, 165u, 0u },
+    { "205HVT", 4u, 14u, false, 58800u, 205u, 0u },
+    { "325HVT", 4u, 14u, false, 58800u, 325u, 0u },
+    { "205HVT BEC", 6u, 14u, false, 58800u, 205u, 0u },
 };
 static const esc_value_t p_yge_hvt_v0[] = {
     { "V-Stabi governor (external governor, rpm signal to flight controller)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3944,7 +3944,7 @@ static const char *const p_yge_hvt_navy_steps[] = {
     "Move throttle stick to minimum; 2 confirmation beeps; ESC arms",
 };
 static const esc_model_t p_yge_hvt_navy_models[] = {
-    { "205/260HVT Navy", 6u, 14u, false, 58800u, 205u },
+    { "205/260HVT Navy", 6u, 14u, false, 58800u, 205u, 0u },
 };
 static const esc_value_t p_yge_hvt_navy_v0[] = {
     { "V-Stabi governor (external governor, rpm signal to flight controller)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3967,13 +3967,13 @@ static const char *const p_yge_mode_setup_5_steps[] = {
     "Throttle to minimum; the ESC sounds mode 1, mode 2, ... in turn",
 };
 static const esc_model_t p_yge_mode_setup_5_models[] = {
-    { "YGE 18", 2u, 4u, false, 16800u, 18u },
-    { "YGE 30", 2u, 4u, false, 16800u, 30u },
-    { "YGE 40 V5", 2u, 6u, false, 25200u, 40u },
-    { "YGE 60 V5", 2u, 6u, false, 25200u, 60u },
-    { "YGE 90 LV V3", 3u, 6u, false, 25200u, 90u },
-    { "YGE 120 LV V3", 3u, 6u, false, 25200u, 120u },
-    { "YGE 120 LV K V3", 3u, 6u, false, 25200u, 120u },
+    { "YGE 18", 2u, 4u, false, 16800u, 18u, 0u },
+    { "YGE 30", 2u, 4u, false, 16800u, 30u, 0u },
+    { "YGE 40 V5", 2u, 6u, false, 25200u, 40u, 0u },
+    { "YGE 60 V5", 2u, 6u, false, 25200u, 60u, 0u },
+    { "YGE 90 LV V3", 3u, 6u, false, 25200u, 90u, 0u },
+    { "YGE 120 LV V3", 3u, 6u, false, 25200u, 120u, 0u },
+    { "YGE 120 LV K V3", 3u, 6u, false, 25200u, 120u, 0u },
 };
 static const esc_value_t p_yge_mode_setup_5_v0[] = {
     { "V-Stabi governor (external governor)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3995,13 +3995,13 @@ static const char *const p_yge_mode_setup_6_steps[] = {
     "Throttle to minimum; the ESC sounds mode 1, mode 2, ... in turn",
 };
 static const esc_model_t p_yge_mode_setup_6_models[] = {
-    { "YGE 35LVT", 2u, 6u, false, 25200u, 35u },
-    { "YGE 65LVT", 2u, 6u, false, 25200u, 65u },
-    { "YGE 95LVT", 2u, 6u, false, 25200u, 95u },
-    { "YGE 135LVT", 2u, 6u, false, 25200u, 135u },
-    { "YGE 135 Slim", 2u, 6u, false, 25200u, 135u },
-    { "YGE Opto 135", 4u, 12u, false, 50400u, 135u },
-    { "YGE Opto 255", 6u, 16u, false, 68000u, 255u },
+    { "YGE 35LVT", 2u, 6u, false, 25200u, 35u, 0u },
+    { "YGE 65LVT", 2u, 6u, false, 25200u, 65u, 0u },
+    { "YGE 95LVT", 2u, 6u, false, 25200u, 95u, 0u },
+    { "YGE 135LVT", 2u, 6u, false, 25200u, 135u, 0u },
+    { "YGE 135 Slim", 2u, 6u, false, 25200u, 135u, 0u },
+    { "YGE Opto 135", 4u, 12u, false, 50400u, 135u, 0u },
+    { "YGE Opto 255", 6u, 16u, false, 68000u, 255u, 0u },
 };
 static const esc_value_t p_yge_mode_setup_6_v0[] = {
     { "V-Stabi governor (external governor)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -4024,7 +4024,7 @@ static const char *const p_yge_mode_setup_navy_steps[] = {
     "Throttle to minimum; the ESC sounds mode 1, mode 2, ... in turn",
 };
 static const esc_model_t p_yge_mode_setup_navy_models[] = {
-    { "YGE Opto 255 Navy", 6u, 16u, false, 68000u, 255u },
+    { "YGE Opto 255 Navy", 6u, 16u, false, 68000u, 255u, 0u },
 };
 static const esc_value_t p_yge_mode_setup_navy_v0[] = {
     { "V-Stabi governor", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -4047,26 +4047,26 @@ static const char *const p_yge_rc_setup_steps[] = {
     "Throttle to minimum; the menu items are sounded as 1, 2, 3, 4, 5 tones in turn",
 };
 static const esc_model_t p_yge_rc_setup_models[] = {
-    { "YGE 7 S", 1u, 2u, false, 8400u, 7u },
-    { "YGE 8 S", 2u, 3u, false, 12600u, 8u },
-    { "YGE 12 S", 2u, 3u, false, 12600u, 12u },
-    { "YGE 40 (V4)", 2u, 6u, false, 25200u, 40u },
-    { "YGE 60 (V4)", 2u, 6u, false, 25200u, 60u },
-    { "YGE 100 (V4)", 2u, 6u, false, 25200u, 100u },
-    { "YGE 120 (V4)", 2u, 6u, false, 25200u, 120u },
-    { "YGE 75 Navy (V4)", 2u, 6u, false, 25200u, 75u },
-    { "YGE 120 Navy (V4)", 2u, 6u, false, 25200u, 120u },
-    { "YGE 155 BEC (V3)", 2u, 8u, false, 33600u, 155u },
-    { "YGE 155 Opto (V3)", 2u, 8u, false, 33600u, 155u },
-    { "YGE 155 Navy Opto (V3)", 2u, 8u, false, 34000u, 155u },
-    { "120HV", 4u, 14u, false, 58800u, 120u },
-    { "120HV K", 4u, 14u, false, 58800u, 120u },
-    { "160HV", 4u, 14u, false, 58800u, 160u },
-    { "160HV K", 4u, 14u, false, 58800u, 160u },
-    { "150HV FAI", 4u, 12u, false, 50400u, 0u },
-    { "160 FAI V3", 3u, 6u, false, 25200u, 160u },
-    { "200HV FAI", 4u, 10u, false, 42000u, 0u },
-    { "300 FAI", 3u, 6u, false, 25200u, 0u },
+    { "YGE 7 S", 1u, 2u, false, 8400u, 7u, 0u },
+    { "YGE 8 S", 2u, 3u, false, 12600u, 8u, 0u },
+    { "YGE 12 S", 2u, 3u, false, 12600u, 12u, 0u },
+    { "YGE 40 (V4)", 2u, 6u, false, 25200u, 40u, 0u },
+    { "YGE 60 (V4)", 2u, 6u, false, 25200u, 60u, 0u },
+    { "YGE 100 (V4)", 2u, 6u, false, 25200u, 100u, 0u },
+    { "YGE 120 (V4)", 2u, 6u, false, 25200u, 120u, 0u },
+    { "YGE 75 Navy (V4)", 2u, 6u, false, 25200u, 75u, 0u },
+    { "YGE 120 Navy (V4)", 2u, 6u, false, 25200u, 120u, 0u },
+    { "YGE 155 BEC (V3)", 2u, 8u, false, 33600u, 155u, 0u },
+    { "YGE 155 Opto (V3)", 2u, 8u, false, 33600u, 155u, 0u },
+    { "YGE 155 Navy Opto (V3)", 2u, 8u, false, 34000u, 155u, 6000u },
+    { "120HV", 4u, 14u, false, 58800u, 120u, 0u },
+    { "120HV K", 4u, 14u, false, 58800u, 120u, 0u },
+    { "160HV", 4u, 14u, false, 58800u, 160u, 0u },
+    { "160HV K", 4u, 14u, false, 58800u, 160u, 0u },
+    { "150HV FAI", 4u, 12u, false, 50400u, 0u, 0u },
+    { "160 FAI V3", 3u, 6u, false, 25200u, 160u, 0u },
+    { "200HV FAI", 4u, 10u, false, 42000u, 0u, 0u },
+    { "300 FAI", 3u, 6u, false, 25200u, 0u, 0u },
 };
 static const esc_value_t p_yge_rc_setup_v0[] = {
     { "no brake", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -4137,10 +4137,10 @@ static const char *const p_yge_saphir_steps[] = {
     "Move throttle stick to minimum; 2 confirmation beeps; ESC arms",
 };
 static const esc_model_t p_yge_saphir_models[] = {
-    { "Saphir 125 V1", 4u, 8u, false, 33600u, 125u },
-    { "Saphir 155 V1", 4u, 8u, false, 33600u, 155u },
-    { "Saphir 125 V2", 4u, 8u, false, 33600u, 125u },
-    { "Saphir 155 V2", 4u, 8u, false, 33600u, 155u },
+    { "Saphir 125 V1", 4u, 8u, false, 33600u, 125u, 0u },
+    { "Saphir 155 V1", 4u, 8u, false, 33600u, 155u, 0u },
+    { "Saphir 125 V2", 4u, 8u, false, 33600u, 125u, 0u },
+    { "Saphir 155 V2", 4u, 8u, false, 33600u, 155u, 0u },
 };
 static const esc_value_t p_yge_saphir_v0[] = {
     { "V-Stabi governor (external governor, rpm signal to flight controller)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -4162,13 +4162,13 @@ static const char *const p_ztw_gecko_steps[] = {
     "Wait about 2000 ms: two short beeps, programming mode entered",
 };
 static const esc_model_t p_ztw_gecko_models[] = {
-    { "Gecko 45A SBEC 5A", 2u, 6u, false, 25200u, 45u },
-    { "Gecko 65A SBEC 8A", 2u, 6u, false, 25200u, 65u },
-    { "Gecko 85A SBEC 8A", 2u, 6u, false, 25200u, 85u },
-    { "Gecko 125A SBEC 8A", 2u, 6u, false, 25200u, 125u },
-    { "Gecko 155A SBEC 8A", 2u, 6u, false, 25200u, 155u },
-    { "Gecko 120A OPTO HV", 6u, 12u, false, 50400u, 120u },
-    { "Gecko 150A OPTO HV", 6u, 12u, false, 50400u, 150u },
+    { "Gecko 45A SBEC 5A", 2u, 6u, false, 25200u, 45u, 0u },
+    { "Gecko 65A SBEC 8A", 2u, 6u, false, 25200u, 65u, 0u },
+    { "Gecko 85A SBEC 8A", 2u, 6u, false, 25200u, 85u, 0u },
+    { "Gecko 125A SBEC 8A", 2u, 6u, false, 25200u, 125u, 0u },
+    { "Gecko 155A SBEC 8A", 2u, 6u, false, 25200u, 155u, 0u },
+    { "Gecko 120A OPTO HV", 6u, 12u, false, 50400u, 120u, 0u },
+    { "Gecko 150A OPTO HV", 6u, 12u, false, 50400u, 150u, 0u },
 };
 static const esc_value_t p_ztw_gecko_v0[] = {
     { "brake off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -4266,12 +4266,12 @@ static const char *const p_ztw_spider_v2_steps[] = {
     "Wait: two beeps = programming mode (Chinese page: wait 3 s first; its example waits for four 'beep-beep' groups)",
 };
 static const esc_model_t p_ztw_spider_v2_models[] = {
-    { "Spider 20A OPTO", 2u, 6u, false, 25200u, 20u },
-    { "Spider 30A OPTO", 2u, 6u, false, 25200u, 30u },
-    { "Spider 30A OPTO Small", 2u, 6u, false, 25200u, 30u },
-    { "Spider 40A OPTO", 2u, 6u, false, 25200u, 40u },
-    { "Spider 50A OPTO", 2u, 6u, false, 25200u, 50u },
-    { "Spider 60A OPTO", 2u, 6u, false, 25200u, 60u },
+    { "Spider 20A OPTO", 2u, 6u, false, 25200u, 20u, 0u },
+    { "Spider 30A OPTO", 2u, 6u, false, 25200u, 30u, 0u },
+    { "Spider 30A OPTO Small", 2u, 6u, false, 25200u, 30u, 0u },
+    { "Spider 40A OPTO", 2u, 6u, false, 25200u, 40u, 0u },
+    { "Spider 50A OPTO", 2u, 6u, false, 25200u, 50u, 0u },
+    { "Spider 60A OPTO", 2u, 6u, false, 25200u, 60u, 0u },
 };
 static const esc_value_t p_ztw_spider_v2_v0[] = {
     { "mode 1", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },

@@ -81,7 +81,7 @@ models.
 
 The line under the rows says no profile is verified, and the count at its
 right counts the level: `1-9 of 20 makers, 6 run` -- the makers with a
-model that runs -- or `1-9 of 82, 40 run` for a maker's models.
+model that runs -- or `1-9 of 82, 37 run` for a maker's models.
 
 ![The makers](img/programmer-stick.png)
 
@@ -523,13 +523,34 @@ SUPPLY screen's cap or below the supply's minimum, and a current limit above
 the SUPPLY cap, are refused. The run's set points become the SUPPLY screen's
 set points.
 
+The model's own ratings hold the set points too, on its row, on its page
+and on RUN, the last check before the run arms:
+
+| Set point | Refused when | Row says | RUN says |
+| --- | --- | --- | --- |
+| VOLTAGE, or the cell count's | over the model's `v_max_mv` | `20.0 V, ESC rated 8.4 V` | `VOLTAGE 20.0 V is over the ESC's 8.4 V` |
+| VOLTAGE, or the cell count's | under the model's `v_min_mv`, where stated | `11.9 V, ESC from 12.0 V` | `VOLTAGE 11.9 V is under the ESC's lowest 12.0 V` |
+| VOLTAGE set by hand | the model states no `v_max_mv`: the data vouches for no voltage | `ESC rating unknown` | `VOLTAGE 7.4 V: the ESC's voltage rating is not stated` |
+| VOLTAGE 0 | the model states neither `v_max_mv` nor a cell count: the family's cell count would stand in for its own | `ESC rating unknown` | `This model states no cell count and no voltage rating` |
+| CURRENT LIMIT | over the model's `current_a`, where stated | `2.0 A, ESC rated 1 A` | `CURRENT LIMIT 2.0 A is over the ESC's 1 A` |
+
+VOLTAGE 0 on a model that states its cell count but no `v_max_mv` runs at
+that cell count: the data's own figure. On the family's page with no model
+picked, the rating is the lowest `v_max_mv` of its models, unknown when one
+of them states none, and the lowest input the highest `v_min_mv`. CURRENT
+LIMIT goes to 3.0 A at most; every model of record that states a current is
+rated 4 A or more, so only a card profile can meet that rule.
+
 ## Which profiles run
 
 24 of the 72 profiles are of a kind the engine runs: 13 two-stage and 11
-one-stage. With the PD mini's 20 V and the default caps the list opens 23 of
-them: hobbywing-skywalker-v2-hv-opto needs 22.8 V. 4 model rows of families
+one-stage. With the PD mini's 20 V and the default caps the list opens 21 of
+them: hobbywing-skywalker-v2-hv-opto needs 22.8 V, and dualsky-xcontroller
+and kontronik-beat-car state neither a cell count nor a voltage rating for
+their one model (see [The supply](#the-supply)). 4 model rows of families
 that open are refused at 20 V too, each needing 22.8 V: FLYFUN 130A and
-160A HV OPTO V5, and Gecko 120A and 150A OPTO HV. A profile runs when it is
+160A HV OPTO V5, and Gecko 120A and 150A OPTO HV. KOLIBRI-X 60 LV and 90 LV
+of kontronik-kontrol-x state neither either, and are refused. A profile runs when it is
 `"automatable": "full"`, or `"assisted"` with manual steps the run can wait
 for (see [Manual steps](#manual-steps)), is entered before power-on, counts
 with `count` or `short_long`, and has a select move. A rest position other than the entry

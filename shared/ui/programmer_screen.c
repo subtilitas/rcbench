@@ -1176,10 +1176,61 @@ static const char *sp_why_text(const char *why)
 }
 
 /*
+ * What the supply's set points break of model @p model's ratings
+ * (esc_stick_rating()), into @p buf, or NULL: the short form for a row,
+ * the long one for the page's note.
+ */
+static const char *sp_rating_why(const esc_profile_t *p, int model,
+                                 uint32_t mv, uint32_t ma, bool by_hand,
+                                 bool longer, char *buf, size_t n)
+{
+    const uint32_t v_max = esc_stick_model_v_max(p, model);
+    const uint32_t ma_max = esc_stick_model_ma_max(p, model);
+    switch (esc_stick_rating(p, model, mv, ma, by_hand)) {
+    case ESC_STICK_RATING_V_OVER:
+        snprintf(buf, n,
+                 longer ? (by_hand ? TR(SP_V_OVER_ESC_NOTE)
+                                   : TR(SP_V_CELLS_OVER_ESC_NOTE))
+                        : TR(SP_V_OVER_ESC),
+                 (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u),
+                 (unsigned)(v_max / 1000u),
+                 (unsigned)(v_max % 1000u / 100u));
+        return buf;
+    case ESC_STICK_RATING_V_UNKNOWN:
+        if (longer && by_hand) {
+            snprintf(buf, n, TR(SP_V_UNRATED_NOTE),
+                     (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u));
+        } else if (longer) {
+            snprintf(buf, n, "%s", TR(SP_V_UNRATED_CELLS_NOTE));
+        } else {
+            snprintf(buf, n, "%s", TR(SP_V_UNRATED));
+        }
+        return buf;
+    case ESC_STICK_RATING_V_UNDER: {
+        const uint32_t v_min = esc_stick_model_v_min(p, model);
+        snprintf(buf, n, longer ? TR(SP_V_UNDER_ESC_NOTE) : TR(SP_V_UNDER_ESC),
+                 (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u),
+                 (unsigned)(v_min / 1000u),
+                 (unsigned)(v_min % 1000u / 100u));
+        return buf;
+    }
+    case ESC_STICK_RATING_I_OVER:
+        snprintf(buf, n, longer ? TR(SP_I_OVER_ESC_NOTE) : TR(SP_I_OVER_ESC),
+                 (unsigned)(ma / 1000u), (unsigned)(ma % 1000u / 100u),
+                 (unsigned)(ma_max / 1000u));
+        return buf;
+    case ESC_STICK_RATING_OK:
+    default:
+        return NULL;
+    }
+}
+
+/*
  * Why model @p model of a profile cannot run, into @p buf, or NULL when it
- * can: the engine's reason, or a voltage the supply cannot give --
- * VOLTAGE where it is set, else the model's cell count, or with no model
- * (-1) or none stated the family's lowest.
+ * can: the engine's reason, a voltage or current over the ESC's rating,
+ * or a voltage the supply cannot give -- VOLTAGE where it is set, else
+ * the model's cell count, or with no model (-1) or none stated the
+ * family's lowest.
  */
 static const char *sp_model_why(const esc_profile_t *p, int model, char *buf,
                                 size_t n)
@@ -1191,6 +1242,11 @@ static const char *sp_model_why(const esc_profile_t *p, int model, char *buf,
     const float v = settings_get(SET_STICK_V);
     const uint32_t mv = (v > 0.0f) ? (uint32_t)lroundf(v * 1000.0f)
                                    : esc_stick_model_mv(p, model);
+    const uint32_t ma = (uint32_t)lroundf(settings_get(SET_STICK_I)
+                                          * 1000.0f);
+    if (sp_rating_why(p, model, mv, ma, v > 0.0f, false, buf, n) != NULL) {
+        return buf;
+    }
     const unsigned cap = (unsigned)lroundf(supply_screen_caps().v_max
                                            * 1000.0f);
     if (mv > cap) {
@@ -1503,6 +1559,13 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
     if (picked > ESC_STICK_MAX_CHANGES) {
         snprintf(st->note, sizeof(st->note), TR(SP_AT_MOST),
                  (unsigned)ESC_STICK_MAX_CHANGES);
+        return false;
+    }
+    /* The ESC's own ratings, for the model picked: a set point the data
+     * cannot vouch for is refused, never sent. */
+    if (sp_rating_why(st->p, st->model, *mv, *ma,
+                      settings_get(SET_STICK_V) > 0.0f, true, st->note,
+                      sizeof(st->note)) != NULL) {
         return false;
     }
     if (*mv == 0u) {
@@ -3695,6 +3758,19 @@ const esc_profile_t *programmer_screen_stick_row(int i, int *model)
         *model = t->rows_m[i].model;
     }
     return esc_profiles_at(t->rows_m[i].prof);
+}
+
+const char *programmer_screen_stick_row_why(int i)
+{
+    static char why[64];
+    int model = -1;
+    const esc_profile_t *p = programmer_screen_stick_row(i, &model);
+    return (p != NULL) ? sp_model_why(p, model, why, sizeof(why)) : NULL;
+}
+
+const char *programmer_screen_stick_note(void)
+{
+    return s.st.note;
 }
 
 const char *programmer_screen_stick_maker_at(int i)

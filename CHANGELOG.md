@@ -113,6 +113,14 @@ sweep starts over from the curve's beginning, and the alert band says so.
 - **Manual steps in German.** A step carries its German in `action_de`
   (1-120 bytes of UTF-8), shown when the interface is German, with the
   English as the fallback. All 24 profiles' steps have it.
+- **The ESC's ratings hold the stick run's set points.** VOLTAGE, or the
+  cell count's voltage, is refused over the model's `v_max_mv` and under
+  its `v_min_mv`; VOLTAGE set by hand is refused for a model that states
+  no voltage rating, and VOLTAGE 0 for one that states neither a rating
+  nor a cell count; CURRENT LIMIT is refused over the model's `current_a`.
+  The row, the page and RUN say which, with both figures. Profiles carry
+  `models[].v_min_mv` from the JSON, in the generator and the card reader
+  alike. At 20 V the list opens 21 profiles.
 
 ### Changed
 

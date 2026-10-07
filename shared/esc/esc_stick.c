@@ -258,6 +258,89 @@ uint32_t esc_stick_model_mv(const esc_profile_t *p, int model)
     return (uint32_t)m->cells_min * (m->nimh ? 1200u : 3800u);
 }
 
+uint32_t esc_stick_model_v_max(const esc_profile_t *p, int model)
+{
+    if (p == NULL || p->model_count == 0u || p->models == NULL) {
+        return 0u;
+    }
+    if (model >= 0) {
+        return ((unsigned)model < p->model_count) ? p->models[model].v_max_mv
+                                                  : 0u;
+    }
+    uint32_t low = 0u;
+    for (unsigned i = 0; i < p->model_count; ++i) {
+        const uint32_t v = p->models[i].v_max_mv;
+        if (v == 0u) {
+            return 0u;          /* one model the data cannot vouch for */
+        }
+        low = (low == 0u || v < low) ? v : low;
+    }
+    return low;
+}
+
+uint32_t esc_stick_model_ma_max(const esc_profile_t *p, int model)
+{
+    if (p == NULL || p->model_count == 0u || p->models == NULL) {
+        return 0u;
+    }
+    if (model >= 0) {
+        return ((unsigned)model < p->model_count)
+                   ? (uint32_t)p->models[model].current_a * 1000u : 0u;
+    }
+    uint32_t low = 0u;
+    for (unsigned i = 0; i < p->model_count; ++i) {
+        const uint32_t a = (uint32_t)p->models[i].current_a * 1000u;
+        if (a != 0u && (low == 0u || a < low)) {
+            low = a;
+        }
+    }
+    return low;
+}
+
+uint32_t esc_stick_model_v_min(const esc_profile_t *p, int model)
+{
+    if (p == NULL || p->model_count == 0u || p->models == NULL) {
+        return 0u;
+    }
+    if (model >= 0) {
+        return ((unsigned)model < p->model_count) ? p->models[model].v_min_mv
+                                                  : 0u;
+    }
+    uint32_t high = 0u;
+    for (unsigned i = 0; i < p->model_count; ++i) {
+        const uint32_t v = p->models[i].v_min_mv;
+        high = (v > high) ? v : high;
+    }
+    return high;
+}
+
+esc_stick_rating_t esc_stick_rating(const esc_profile_t *p, int model,
+                                    uint32_t mv, uint32_t ma, bool by_hand)
+{
+    const uint32_t v_max = esc_stick_model_v_max(p, model);
+    if (v_max != 0u && mv > v_max) {
+        return ESC_STICK_RATING_V_OVER;
+    }
+    /* The cell count the data states for this model, or the family's for
+     * -1: not one borrowed from another model. */
+    const bool own = !by_hand && mv != 0u && p != NULL
+                     && (model < 0
+                         || ((unsigned)model < p->model_count
+                             && p->models[model].cells_min != 0u));
+    if (v_max == 0u && !own) {
+        return ESC_STICK_RATING_V_UNKNOWN;
+    }
+    const uint32_t v_min = esc_stick_model_v_min(p, model);
+    if (v_min != 0u && mv < v_min) {
+        return ESC_STICK_RATING_V_UNDER;
+    }
+    const uint32_t ma_max = esc_stick_model_ma_max(p, model);
+    if (ma_max != 0u && ma > ma_max) {
+        return ESC_STICK_RATING_I_OVER;
+    }
+    return ESC_STICK_RATING_OK;
+}
+
 bool esc_stick_is_action(const esc_item_t *it)
 {
     return it != NULL && it->key != NULL

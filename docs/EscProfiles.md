@@ -123,6 +123,7 @@ JSON. The panel does not load them.
 | `cells_min`, `cells_max` | 0 to 255, or null |
 | `cell_type` | `lipo`, `nimh`: what `cells_*` count |
 | `v_max_mv` | maximum input in mV, or null |
+| `v_min_mv` | minimum input in mV, or null; not above `v_max_mv` |
 | `current_a` | continuous current in A, 0 to 65535, or null |
 
 ### Items

@@ -998,27 +998,35 @@ TEST_CASE(every_end_draws_its_reason)
     }
 }
 
-/* What RUN says when it cannot start: no cell count to take a voltage
- * from, a voltage over the cap, and a supply switched on in the middle of
+/* What RUN says when it cannot start: a model the data vouches no voltage
+ * for, a voltage over the cap, and a supply switched on in the middle of
  * the warning. */
 TEST_CASE(a_run_that_cannot_start_says_why)
 {
-    fresh();
-    open_profile("dualsky-xcontroller");     /* no cell count */
-    tap(STEP_UP_X, STEP_CY(0));
-    scr->tick(0.02f);
-    tap(WRITE_X, BTN_CY);
-    hold_for(3.0f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
-    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
-    scr->render(&cv, 0);
-    CHECK(lit() > 20000);
-    settings_set(SET_STICK_V, 7.4f);         /* and with one it runs */
-    scr->tick(0.02f);
-    tap(WRITE_X, BTN_CY);
-    hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
-    scr->leave();
+    /* No cell count and no voltage rating: nothing in the data vouches
+     * for a voltage, automatic or set by hand, and the model's row says
+     * so instead of opening. */
+    static const float k_v[] = { 0.0f, 7.4f };
+    for (size_t k = 0; k < 2; ++k) {
+        fresh();
+        settings_set(SET_STICK_V, k_v[k]);
+        open_profile("dualsky-xcontroller");
+        CHECK(programmer_screen_stick_page() == NULL);
+        int row = -1;
+        for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
+            const esc_profile_t *q = programmer_screen_stick_row(i, NULL);
+            row = (q != NULL && strcmp(q->id, "dualsky-xcontroller") == 0)
+                      ? i : row;
+        }
+        const char *why = programmer_screen_stick_row_why(row);
+        CHECK(why != NULL && strcmp(why, "ESC rating unknown") == 0);
+        CHECK_EQ(programmer_screen_stick_runs(), 0u);
+        memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+        scr->render(&cv, 0);
+        CHECK(lit() > 20000);
+        scr->leave();
+    }
+    settings_set(SET_STICK_V, 0.0f);
 
     /* VOLTAGE over the cap, set where a profile ran: refused on RUN. */
     fresh();
@@ -1236,15 +1244,128 @@ TEST_CASE(a_profile_over_the_supply_cap_is_refused_in_the_list)
     hold_for(2.25f);
     CHECK_EQ(programmer_screen_stick_runs(), 0u);
     CHECK(programmer_screen_stick_page() == NULL);
-    /* DualSky's XController states none, and opens. */
+    /* DualSky's XController states no cell count and no rating: no
+     * voltage is vouched for, and it does not open. */
     tap(BACK_X, BACK_Y);
     open_maker("Dualsky");
     open_model("dualsky-xcontroller", NULL);
-    CHECK(programmer_screen_stick_page() != NULL);
-    tap(TIMING_X, TIMING_Y);
+    CHECK(programmer_screen_stick_page() == NULL);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
+}
+
+/* The model's own rating, not only the SUPPLY cap: FlyFun-6A is rated
+ * 8.4 V and 6 A.  VOLTAGE 20 V is refused on its row and on RUN, 7.6 V
+ * runs; the automatic voltage stays under the rating. */
+TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
+{
+    fresh();
+    settings_set(SET_STICK_V, 20.0f);
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    open_maker("Hobbywing");
+    int six = -1;
+    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
+        int m = -1;
+        const esc_profile_t *p = programmer_screen_stick_row(i, &m);
+        if (p != NULL && strcmp(p->id, "hobbywing-flyfun-8item") == 0
+            && strcmp(p->models[m].name, "FlyFun-6A") == 0) {
+            six = i;
+        }
+    }
+    CHECK(six >= 0);
+    CHECK_STR_EQ(programmer_screen_stick_row_why(six),
+                 "20.0 V, ESC rated 8.4 V");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(programmer_screen_stick_row_why(six),
+                 "20.0 V, ESC bis 8.4 V");
+    ui_text_set_language(UI_LANG_EN);
+    open_model("hobbywing-flyfun-8item", "FlyFun-6A");
+    CHECK(programmer_screen_stick_page() == NULL);   /* refused */
+
+    /* Set while the page is open: RUN says why, and nothing starts. */
+    settings_set(SET_STICK_V, 7.6f);
+    scr->tick(0.02f);
+    CHECK(programmer_screen_stick_row_why(six) == NULL);
+    open_model("hobbywing-flyfun-8item", "FlyFun-6A");
+    CHECK(programmer_screen_stick_page() != NULL);
+    pick_cutoff();
+    settings_set(SET_STICK_V, 20.0f);
+    scr->tick(0.02f);
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_STR_EQ(programmer_screen_stick_note(),
+                 "VOLTAGE 20.0 V is over the ESC's 8.4 V");
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    scr->render(&cv, 0);
+    CHECK(lit() > 20000);
+    settings_set(SET_STICK_V, 7.6f);
+    scr->tick(0.02f);
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    scr->leave();
+
+    /* The automatic voltage: the model's 2 cells, 7.6 V, under 8.4 V. */
+    fresh();
+    settings_set(SET_STICK_V, 0.0f);
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    open_maker("Hobbywing");
+    open_model("hobbywing-flyfun-8item", "FlyFun-6A");
+    CHECK(programmer_screen_stick_page() != NULL);
+    pick_cutoff();
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    CHECK_EQ(programmer_screen_stick()->out.supply_mv, 7600u);
+    scr->leave();
+
+    /* CURRENT LIMIT over a rating a card profile states: a FlyFun-6A
+     * card rated 1 A refuses 2 A, on its row and on RUN. */
+    fresh();
+    esc_profiles_clear_overrides();
+    static esc_model_t k_one;
+    static esc_profile_t card;
+    card = *esc_profiles_find("hobbywing-flyfun-8item");
+    for (unsigned m = 0; m < card.model_count; ++m) {
+        if (strcmp(card.models[m].name, "FlyFun-6A") == 0) {
+            k_one = card.models[m];
+        }
+    }
+    k_one.current_a = 1u;
+    card.id = "card-one-amp";
+    card.models = &k_one;
+    card.model_count = 1;
+    CHECK(esc_profiles_override(&card, NULL));
+    settings_set(SET_STICK_I, 2.0f);
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    open_maker("Hobbywing");
+    int row = -1;
+    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
+        const esc_profile_t *q = programmer_screen_stick_row(i, NULL);
+        row = (q != NULL && strcmp(q->id, "card-one-amp") == 0) ? i : row;
+    }
+    const char *why = programmer_screen_stick_row_why(row);
+    CHECK(why != NULL && strcmp(why, "2.0 A, ESC rated 1 A") == 0);
+    settings_set(SET_STICK_I, 1.0f);
+    scr->tick(0.02f);
+    CHECK(programmer_screen_stick_row_why(row) == NULL);
+    open_model("card-one-amp", NULL);
+    pick_cutoff();
+    settings_set(SET_STICK_I, 2.0f);
+    scr->tick(0.02f);
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_STR_EQ(programmer_screen_stick_note(),
+                 "CURRENT LIMIT 2.0 A is over the ESC's 1 A");
+    settings_set(SET_STICK_I, 1.0f);
+    scr->leave();
+    esc_profiles_clear_overrides();
 }
 
 /* ------------------------------------------------------------ the search */
@@ -2634,6 +2755,7 @@ int main(void)
     RUN(the_model_tapped_is_the_one_judged);
     RUN(the_page_shows_the_entry_the_run_waits);
     RUN(the_hold_needs_every_pre_power_step_read);
+    RUN(a_voltage_over_the_escs_rating_is_refused);
     RUN(a_maker_at_its_most_models_lists_every_one);
     RUN(every_step_after_programming_is_shown);
     RUN(no_step_at_the_esc_while_the_supply_reads_live);

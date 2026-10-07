@@ -352,7 +352,11 @@ def check(path: pathlib.Path) -> dict:
             "nimh": "true" if ct == "nimh" else "false",
             "v": num(m, "v_max_mv", mw, 1000000) or 0,
             "a": num(m, "current_a", mw, 65535) or 0,
+            "vmin": num(m, "v_min_mv", mw, 1000000) or 0,
         })
+        mm = p["models"][-1]
+        want(not (mm["vmin"] and mm["v"]) or mm["vmin"] <= mm["v"],
+             f"{mw}.v_min_mv", "above v_max_mv")
 
     items = d.get("items")
     want(isinstance(items, list) and len(items) <= 255, f"{w}.items",
@@ -450,7 +454,7 @@ def emit(profiles: list[dict]) -> str:
         o.append(f"static const esc_model_t {n}_models[] = {{\n")
         for m in p["models"]:
             o.append(f"    {{ {c_str(m['name'])}, {m['cmin']}u, {m['cmax']}u, "
-                     f"{m['nimh']}, {m['v']}u, {m['a']}u }},\n")
+                     f"{m['nimh']}, {m['v']}u, {m['a']}u, {m['vmin']}u }},\n")
         o.append("};\n")
         for k, it in enumerate(p["items"]):
             o.append(f"static const esc_value_t {n}_v{k}[] = {{\n")
@@ -551,6 +555,9 @@ def self_test() -> list[str]:
         "applies_when 0": at('"applies_to": null',
                              '"applies_to": null, "applies_when": 0'),
         "cell_type false": at('"cell_type": "lipo"', '"cell_type": false'),
+        "v_min above v_max": at('"v_min_mv": 5500', '"v_min_mv": 12700'),
+        "v_min a string": at('"v_min_mv": 5500', '"v_min_mv": "5500"'),
+        "v_min over 1000000": at('"v_min_mv": 5500', '"v_min_mv": 1000001'),
         "nested 17": at(head, head + ' "n": ' + "[" * 16 + "1" + "]" * 16
                         + ","),
         "verified 0": at('"verified": false', '"verified": 0'),
@@ -724,6 +731,8 @@ def self_test() -> list[str]:
                              '{"when": "before_menu", "action": "y", '
                              '"starts_menu": true}, '
                              '{"when": "after_programming", "action": "z"}]'),
+        "v_min at v_max": at('"v_min_mv": 5500', '"v_min_mv": 12600'),
+        "v_min null": at('"v_min_mv": 5500', '"v_min_mv": null'),
         "manual before off locks": man(
             '[{"when": "before_power_off", "action": "x", "locks": true}]'),
         "manual before off locks not": man(

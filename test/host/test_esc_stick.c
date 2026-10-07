@@ -2141,6 +2141,120 @@ TEST_CASE(twenty_volts_leave_out_one_family_and_six_models)
     CHECK_EQ(rows, 6u);
 }
 
+/*
+ * The ESC's ratings hold the supply's set points: a voltage over the
+ * model's v_max_mv is refused, set by hand or from the cell count; where
+ * the rating is not stated only the model's own cell count is taken; a
+ * current over the rated one is refused.
+ */
+TEST_CASE(the_set_points_stay_within_the_escs_ratings)
+{
+    const esc_profile_t *p = esc_profiles_find("hobbywing-flyfun-8item");
+    CHECK(p != NULL);
+    if (p == NULL) {
+        return;
+    }
+    int six = -1;
+    for (int m = 0; m < (int)p->model_count; ++m) {
+        six = (strcmp(p->models[m].name, "FlyFun-6A") == 0) ? m : six;
+    }
+    CHECK(six >= 0);
+    if (six < 0) {
+        return;
+    }
+    CHECK_EQ(esc_stick_model_v_max(p, six), 8400u);
+    CHECK_EQ(esc_stick_rating(p, six, 20000u, 1000u, true),
+             ESC_STICK_RATING_V_OVER);
+    CHECK_EQ(esc_stick_rating(p, six, 8500u, 1000u, true),
+             ESC_STICK_RATING_V_OVER);
+    CHECK_EQ(esc_stick_rating(p, six, 8400u, 1000u, true),
+             ESC_STICK_RATING_OK);
+    CHECK_EQ(esc_stick_rating(p, six, 7600u, 1000u, true),
+             ESC_STICK_RATING_OK);
+    CHECK_EQ(esc_stick_rating(p, six, esc_stick_model_mv(p, six), 1000u,
+                              false), ESC_STICK_RATING_OK);
+    /* The current: FlyFun-6A is rated 6 A. */
+    CHECK_EQ(esc_stick_model_ma_max(p, six), 6000u);
+    CHECK_EQ(esc_stick_rating(p, six, 7600u, 6100u, true),
+             ESC_STICK_RATING_I_OVER);
+    CHECK_EQ(esc_stick_rating(p, six, 7600u, 6000u, true),
+             ESC_STICK_RATING_OK);
+    /* The family: the lowest rating of its models. */
+    CHECK_EQ(esc_stick_model_v_max(p, -1), 8400u);
+    CHECK_EQ(esc_stick_rating(p, -1, 12000u, 1000u, true),
+             ESC_STICK_RATING_V_OVER);
+
+    /* No rating stated: VOLTAGE by hand is refused; the model's own cell
+     * count is taken; another model's cell count standing in is not. */
+    static esc_model_t k_m[2];
+    static esc_profile_t q;
+    q = *p;
+    k_m[0] = p->models[six];
+    k_m[0].v_max_mv = 0u;                  /* cells stated, no rating */
+    k_m[1] = p->models[six];
+    k_m[1].v_max_mv = 0u;
+    k_m[1].cells_min = 0u;                 /* neither */
+    k_m[1].cells_max = 0u;
+    q.models = k_m;
+    q.model_count = 2;
+    CHECK_EQ(esc_stick_model_v_max(&q, 0), 0u);
+    CHECK_EQ(esc_stick_rating(&q, 0, 7600u, 1000u, true),
+             ESC_STICK_RATING_V_UNKNOWN);
+    CHECK_EQ(esc_stick_rating(&q, 0, esc_stick_model_mv(&q, 0), 1000u, false),
+             ESC_STICK_RATING_OK);
+    CHECK_EQ(esc_stick_rating(&q, 1, esc_stick_model_mv(&q, 1), 1000u, false),
+             ESC_STICK_RATING_V_UNKNOWN);
+    CHECK_EQ(esc_stick_rating(&q, 1, 0u, 1000u, false),
+             ESC_STICK_RATING_V_UNKNOWN);
+    CHECK_EQ(esc_stick_model_v_max(&q, -1), 0u);
+    CHECK_EQ(esc_stick_model_v_max(NULL, -1), 0u);
+    CHECK_EQ(esc_stick_model_ma_max(NULL, 0), 0u);
+    CHECK_EQ(esc_stick_model_v_max(p, (int)p->model_count), 0u);
+    CHECK_EQ(esc_stick_model_ma_max(p, (int)p->model_count), 0u);
+
+    /* The lowest input: Hacker Master Basic 90 Opto takes 12 V and up. */
+    const esc_profile_t *hb = esc_profiles_find("hacker-master-basic");
+    CHECK(hb != NULL);
+    for (int m = 0; hb != NULL && m < (int)hb->model_count; ++m) {
+        if (strcmp(hb->models[m].name, "Master Basic 90 Opto") != 0) {
+            continue;
+        }
+        CHECK_EQ(esc_stick_model_v_min(hb, m), 12000u);
+        CHECK_EQ(esc_stick_rating(hb, m, 11900u, 1000u, true),
+                 ESC_STICK_RATING_V_UNDER);
+        CHECK_EQ(esc_stick_rating(hb, m, 12000u, 1000u, true),
+                 ESC_STICK_RATING_OK);
+    }
+    CHECK_EQ(esc_stick_model_v_min(hb, -1), 12000u);
+    CHECK_EQ(esc_stick_model_v_min(NULL, 0), 0u);
+    CHECK_EQ(esc_stick_model_v_min(p, (int)p->model_count), 0u);
+
+    /* The automatic voltage of every model of record stays within its
+     * rating, at or over its lowest input, and the CURRENT LIMIT's most
+     * (3 A) under every stated current. */
+    for (size_t i = 0; i < esc_profiles_count(); ++i) {
+        const esc_profile_t *x = esc_profiles_at(i);
+        for (int m = 0; m < (int)x->model_count; ++m) {
+            const uint32_t mv = esc_stick_model_mv(x, m);
+            const uint32_t vm = esc_stick_model_v_max(x, m);
+            if (vm != 0u && mv > vm) {
+                T_FAIL("%s %s: %u mV over %u mV", x->id, x->models[m].name,
+                       (unsigned)mv, (unsigned)vm);
+            }
+            const uint32_t vl = esc_stick_model_v_min(x, m);
+            if (x->models[m].cells_min != 0u && mv < vl) {
+                T_FAIL("%s %s: %u mV under %u mV", x->id, x->models[m].name,
+                       (unsigned)mv, (unsigned)vl);
+            }
+            const uint32_t am = esc_stick_model_ma_max(x, m);
+            if (am != 0u && am < 3000u) {
+                T_FAIL("%s %s: rated %u mA", x->id, x->models[m].name,
+                       (unsigned)am);
+            }
+        }
+    }
+}
+
 /* SUN PLUS: the manual's neutral position is the back (mode 4, "neutral
  * position (back position)", p.12 EN; mode 5's two-position switch, p.13
  * EN), so every mode powers up at MIN but mode 6, the car mode, whose
@@ -2781,6 +2895,7 @@ int main(void)
     RUN(a_power_up_position_that_cannot_work_is_refused);
     RUN(a_value_waits_its_own_entry_time);
     RUN(sun_plus_powers_up_at_the_back_but_its_car_mode);
+    RUN(the_set_points_stay_within_the_escs_ratings);
     RUN(twenty_volts_leave_out_one_family_and_six_models);
     RUN(an_entry_time_that_cannot_work_is_refused);
     RUN(shared_entry_times_compare_what_the_run_waits);
