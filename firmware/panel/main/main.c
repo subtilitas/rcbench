@@ -4071,6 +4071,9 @@ static atomic_uint s_sweep_start_ms;
 static atomic_uint s_sweep_start_from;   /* servo_sweep_from_t */
 static atomic_uint s_sweep_frozen_ms;    /* when it froze, for FROZEN */
 static atomic_bool s_sweep_start_new;
+/* When the far end took the HOLD that paused a running sweep. */
+static atomic_uint s_sweep_held_ms;
+static atomic_bool s_sweep_held_new;
 
 static bool write_servo(const servo_cmd_t sv)
 {
@@ -4117,6 +4120,13 @@ static bool write_servo(const servo_cmd_t sv)
                         &reply)
             || reply.op != LINK_OP_ACK) {
             return false;
+        }
+        /* The hold that paused a running sweep: the far end keeps the
+         * curve's phase as of now, and the screen draws the pause from it
+         * rather than from the tap. */
+        if (s_servo_sweeping && !s_servo_holding) {
+            atomic_store(&s_sweep_held_ms, now_ms());
+            atomic_store(&s_sweep_held_new, true);
         }
         s_servo_sweeping = false;
         s_servo_holding  = true;
@@ -6378,6 +6388,11 @@ void app_main(void)
             servo_screen_set_sweep(atomic_load(&s_servo_sweep_able));
             if (atomic_exchange(&s_servo_hold_lost, false)) {
                 servo_screen_released();
+            }
+            /* The pause's phase before a resume that rebases on it. */
+            if (atomic_exchange(&s_sweep_held_new, false)) {
+                servo_screen_sweep_held(now_ms()
+                                        - atomic_load(&s_sweep_held_ms));
             }
             if (atomic_exchange(&s_sweep_start_new, false)) {
                 const uint32_t now = now_ms();

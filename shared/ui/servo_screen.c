@@ -872,6 +872,25 @@ void servo_screen_sweep_started(uint32_t age_ms, servo_sweep_from_t from,
     ++s.ctrl_rev;
 }
 
+void servo_screen_sweep_held(uint32_t age_ms)
+{
+    /*
+     * The far end ran its curve on until the HOLD reached it, a queue and an
+     * exchange after the tap; at 5 Hz that is a visible share of a cycle.
+     * Timed from the acknowledgement, as a start is, so the two errors are
+     * the same and cancel in the phase.  A time before the curve's start is
+     * not this sweep's.
+     */
+    if (!s.paused || !s.sw.paused) {
+        return;
+    }
+    const uint32_t held_at = s.clock_ms - age_ms;
+    const uint32_t into = held_at - s.sw.start_ms;
+    if ((int32_t)into >= 0) {
+        s.sw.paused_ms = into;
+    }
+}
+
 void servo_screen_set_sweep(bool able)
 {
     if (able == s.sweep_able) {

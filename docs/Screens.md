@@ -261,7 +261,11 @@ repeats the hold every 100 ms (`SERVO_HOLD_MS`), so a pause outlasts the
 coprocessor's 500 ms rule. A pause does not wait behind sweep writes already
 on the wire. A tap on PAUSED carries the sweep on from the point of the
 curve it was paused at: its place in a dwell and the ends it has reached go
-on from there too, and the horn is drawn on from that phase. The coprocessor
+on from there too, and the horn is drawn on from that phase. The phase is
+the curve's when the coprocessor acknowledged the HOLD, not at the tap: the
+curve runs on there for the exchange in between. A tap on PAUSED before
+that acknowledgement reaches the screen keeps the tap's phase in the
+drawing; the time between the two is not measured. The coprocessor
 keeps the phase while it holds and resumes the curve (`LINK_SV_RESUME`,
 protocol 4.6); the output slews from where it was held to the curve at
 SPEED's rate, at once at 100 %, and is normally already there. A curve

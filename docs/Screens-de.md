@@ -286,7 +286,12 @@ davon. Das Panel wiederholt das Halten alle 100 ms (`SERVO_HOLD_MS`), daher
 nicht hinter Sweep-Schreibvorgängen, die schon auf dem Draht sind. Ein
 Tippen auf PAUSIERT setzt den Sweep an dem Punkt der Kurve fort, an dem er
 angehalten wurde: die Stelle in einem Verweilen und die erreichten Enden
-laufen von dort weiter, und das Horn wird ab dieser Phase gezeichnet. Der
+laufen von dort weiter, und das Horn wird ab dieser Phase gezeichnet. Die
+Phase ist die der Kurve, als der Koprozessor das HOLD quittiert hat, nicht
+die beim Tippen: dort läuft die Kurve während des Austauschs dazwischen
+weiter. Ein Tippen auf PAUSIERT, bevor diese Quittung den Bildschirm
+erreicht, behält in der Zeichnung die Phase des Tippens; die Zeit zwischen
+beiden ist nicht gemessen. Der
 Koprozessor behält die Phase, solange er hält, und setzt die Kurve fort
 (`LINK_SV_RESUME`, Protokoll 4.6); der Ausgang fährt mit der Rate von TEMPO
 von der gehaltenen Stelle zur Kurve, bei 100 % sofort, und ist meist schon

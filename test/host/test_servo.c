@@ -1790,6 +1790,44 @@ TEST_CASE(paused_carries_the_sweep_on_from_its_phase)
     CHECK(last_cmd().resume);
 }
 
+/*
+ * The far end runs its curve on until the HOLD reaches it.  With 300 ms
+ * between the tap and the acknowledgement, the phase it keeps is 400 ms
+ * in, not the tap's 100 ms, and the resumed horn is drawn from there: 50 ms
+ * later 450 ms into the 0.5 Hz sine, near its peak, where the tap's phase
+ * would draw it 150 ms in, below 1700 us.
+ */
+TEST_CASE(the_pause_is_drawn_from_when_the_hold_was_acknowledged)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);                       /* SWEEP */
+    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
+    frames(0.1f);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSE */
+    frames(0.3f);                              /* the HOLD on its way */
+    servo_screen_sweep_held(0u);               /* acknowledged now */
+    frames(1.0f);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED: on */
+    servo_screen_sweep_started(0u, SERVO_SWEEP_RESUMED, 0u);
+    frames(0.05f);
+    CHECK(servo_screen_commanded() > 1880u);
+
+    /* Held with nothing paused here changes nothing, and a time from before
+     * the curve began is not this sweep's: paused about 450 ms in, near the
+     * peak, it resumes there and reaches the dwell at the peak. */
+    servo_screen_sweep_held(0u);
+    CHECK(servo_screen_sweeping());
+    tap(SWEEP_X, BTN_Y);                       /* PAUSE */
+    servo_screen_sweep_held(100000u);
+    frames(0.5f);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED: on */
+    servo_screen_sweep_started(0u, SERVO_SWEEP_RESUMED, 0u);
+    frames(0.05f);
+    CHECK(servo_screen_commanded() > 1880u);
+}
+
 /* A curve changed on the TEST page while paused is a new sweep, from its
  * beginning, not a resume. */
 TEST_CASE(a_curve_changed_while_paused_starts_over)
@@ -3642,6 +3680,7 @@ int main(void)
     RUN(speed_says_when_it_limits_the_sweep);
     RUN(pause_holds_the_sweep_and_a_second_tap_resumes_it);
     RUN(paused_carries_the_sweep_on_from_its_phase);
+    RUN(the_pause_is_drawn_from_when_the_hold_was_acknowledged);
     RUN(a_curve_changed_while_paused_starts_over);
     RUN(a_pause_ends_where_a_hold_ended);
     RUN(hold_without_feedback_matches_the_far_ends_slew);

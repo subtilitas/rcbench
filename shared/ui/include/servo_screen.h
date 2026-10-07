@@ -182,6 +182,15 @@ void servo_screen_sweep_started(uint32_t age_ms, servo_sweep_from_t from,
                                 uint32_t frozen_ago_ms);
 
 /**
+ * The coprocessor took the HOLD that paused a running sweep @p age_ms ago.
+ * Its curve ran on until then, so the phase it keeps is the curve's at that
+ * moment, not at the tap: the paused phase drawn here is set to it, the
+ * same way servo_screen_sweep_started() times a start.  Nothing while no
+ * sweep is paused.
+ */
+void servo_screen_sweep_held(uint32_t age_ms);
+
+/**
  * Set the commanded angle without a touch event.
  *
  * Restores the position at start-up, so a boot does not centre a surface the
