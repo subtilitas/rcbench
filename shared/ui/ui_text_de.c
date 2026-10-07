@@ -298,11 +298,11 @@ static const char *const k_text[TX_COUNT] = {
     [TX_MO_ROW_RPM]             = "RPM",
     [TX_MO_TABLE_MAX]           = "max",
     [TX_MO_TAG_LIVE]            = "TELEMETRIE LIVE",
-    [TX_MO_TAG_HELD]            = "TELEMETRIE, LETZTER LAUF",
+    [TX_MO_TAG_HELD]            = "LETZTER LAUF",
     [TX_MO_TAG_IDLE]            = "TELEMETRIE RUHT",
     [TX_MO_CONTROL]             = "STEUERUNG",
     [TX_MO_NO_RUN]              = "kein Lauf aufgezeichnet",
-    [TX_MO_HINT]                = "BALKEN ZIEHEN, ODER AN DEN ENDEN SCHRITTE VON EINEM PUNKT",
+    [TX_MO_HINT]                = "BALKEN ZIEHEN ODER AN DEN ENDEN UM EINEN PUNKT ÄNDERN",
     [TX_MO_RESET_PEAKS]         = "SPITZEN ZURÜCKSETZEN",
 
     /* ---------------------------------------------------------- SUPPLY */
@@ -693,7 +693,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_STEP_OF]             = "%s %u VON %u  %.2f V",
     [TX_SV_PHASE_OF]            = "%s %u VON %u",
     [TX_SV_TEST_VERDICT]        = "TEST %s",
-    [TX_SV_TRAVEL_HOLD]         = "STELLZEIT %lu ms  HALT %.2f A",
+    [TX_SV_TRAVEL_HOLD]         = "STELLZEIT %lu ms  HALTEN %.2f A",
     [TX_SV_STOP_TEST]           = "TEST BEENDEN",
     [TX_SV_START_TEST]          = "TEST STARTEN",
     [TX_SV_COMMANDED]           = "SOLL",

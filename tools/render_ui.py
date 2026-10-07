@@ -16,7 +16,8 @@ Every screen is rendered in English into docs/img/ and in German into
 docs/img/de/.  --fit builds the renderer with GFX_TEXT_TRACE, draws every
 view in both languages and fails when a German string is wider than its box,
 is cut at the edge of the area it is drawn in, runs past the shape it is
-printed on, or overlaps another string.
+printed on, overlaps another string, or is painted over by a fill drawn after
+it.
 """
 
 from __future__ import annotations
@@ -216,6 +217,10 @@ SLACK_Y = 2
 # something a label sits inside.
 MIN_SHAPE = 8
 
+# Views that open a drop-down over the screen: the list covers the labels
+# beside it by design, so a fill drawn over a string is not a finding there.
+OVERLAY_VIEWS = {"outputs-protocol"}
+
 
 class Rect:
     def __init__(self, x, y, w, h):
@@ -265,9 +270,51 @@ def read_trace(path: pathlib.Path):
     return items, used
 
 
-def fit_problems(items):
+def ink(t, s):
+    """The part of a string's box its characters cover: the box less the
+    cells of its leading and trailing spaces, which a padded label carries."""
+    n = len(s)
+    if n == 0 or not s.strip():
+        return None
+    cell = t.w / n
+    lead = n - len(s.lstrip(" "))
+    trail = n - len(s.rstrip(" "))
+    x0 = t.x + round(cell * lead)
+    x1 = t.r - round(cell * trail)
+    return Rect(x0, t.y, x1 - x0, t.h)
+
+
+def painted_over(items, i, vis, s):
+    """The first fill drawn after string i that covers part of its ink, as
+    a Rect, unless the same string is drawn again in the same place after
+    that fill."""
+    t = items[i][1]
+    k = ink(t, s)
+    if k is None:
+        return None
+    k = k.inter(vis)
+    if k is None or k.h <= 2 * SLACK_Y:
+        return None
+    core = Rect(k.x, k.y + SLACK_Y, k.w, k.h - 2 * SLACK_Y)
+    for j in range(i + 1, len(items)):
+        b = items[j]
+        if b[0] != "B":
+            continue
+        hit = core.inter(b[1])
+        if hit is None or b[2].inter(hit) is None:
+            continue
+        redrawn = any(items[m][0] == "T" and items[m][4] == s
+                      and items[m][1].x == t.x and items[m][1].y == t.y
+                      for m in range(j + 1, len(items)))
+        if not redrawn:
+            return b[2].inter(hit)
+    return None
+
+
+def fit_problems(items, overlay=False):
     """What overflows, as (string, problem) pairs.  Width only: a language
-    changes how long a string is, not how tall."""
+    changes how long a string is, not how tall.  With @p overlay, a string
+    a later fill covers is not a finding."""
     problems = []
     drawn = []          # (index, visible rect, string)
     for i, it in enumerate(items):
@@ -296,6 +343,10 @@ def fit_problems(items):
         vis = t.inter(clip)
         if vis is None:
             continue
+        over = None if overlay else painted_over(items, i, vis, s)
+        if over is not None:
+            problems.append((s, "is painted over from x=%d to %d by a fill "
+                             "drawn after it" % (over.x, over.r)))
         core = Rect(vis.x, vis.y + SLACK_Y, vis.w, max(vis.h - 2 * SLACK_Y, 0))
         for k, other, os_ in drawn:
             hit = core.inter(other)
@@ -339,7 +390,7 @@ def fit(views, langs) -> int:
                 render_one(exe, tmp, name, screen, theme, lang, trace)
                 items, used = read_trace(trace)
                 seen[lang] |= used
-                for s, why in fit_problems(items):
+                for s, why in fit_problems(items, name in OVERLAY_VIEWS):
                     if lang == "en":
                         english.setdefault(name, set()).add((s, why))
                     shared = (s, why) in english.get(name, set())
