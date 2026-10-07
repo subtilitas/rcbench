@@ -352,35 +352,45 @@ static bool in_window(const esc_sim_t *s, uint32_t now, uint32_t profile_ms)
     return (uint32_t)(now - s->ended_ms) <= w;
 }
 
-/* The moves that store @p value of @p item once it is selected: the
- * profile's store move, then the value's own after_select.  How many. */
-static unsigned store_moves(const esc_profile_t *p, uint8_t item,
-                            uint8_t value, esc_throttle_t *out)
+unsigned esc_sim_store_moves(const esc_profile_t *p, uint8_t item,
+                             uint8_t value, esc_throttle_t *out, size_t cap)
 {
     unsigned n = 0u;
-    if (p->store_throttle != ESC_THR_NONE) {
+    if (p == NULL || out == NULL) {
+        return 0u;
+    }
+    if (p->store_throttle != ESC_THR_NONE && n < cap) {
         out[n++] = p->store_throttle;
     }
+    /* The first item and value of these numbers: conditional items may
+     * share both on different models, and the ESC has one of them.  Its
+     * moves, no more than @p cap holds. */
     for (unsigned i = 0; i < p->item_count; ++i) {
         if (p->items[i].number != item) {
             continue;
         }
         for (unsigned k = 0; k < p->items[i].value_count; ++k) {
             const esc_value_t *v = &p->items[i].values[k];
-            for (unsigned m = 0; v->number == value && m < v->after_count
-                                 && m < ESC_AFTER_MAX; ++m) {
+            if (v->number != value) {
+                continue;
+            }
+            for (unsigned m = 0; m < v->after_count && m < ESC_AFTER_MAX
+                                 && n < cap; ++m) {
                 out[n++] = v->after[m];
             }
+            return n;
         }
     }
     return n;
 }
 
+
 static void store(esc_sim_t *s, uint32_t now, uint8_t item, uint8_t value)
 {
     esc_throttle_t moves[ESC_AFTER_MAX + 1u];
     if (s->mode != ESC_SIM_PENDING
-        && store_moves(s->p, item, value, moves) > 0u) {
+        && esc_sim_store_moves(s->p, item, value, moves,
+                       sizeof(moves) / sizeof(moves[0])) > 0u) {
         /* Answered, and stored only by the moves that follow, in order;
          * the power going first loses it. */
         s->pend_item = item;
@@ -430,7 +440,9 @@ static void moved(esc_sim_t *s, uint32_t now)
         return;
     case ESC_SIM_PENDING: {
         esc_throttle_t moves[ESC_AFTER_MAX + 1u];
-        const unsigned n = store_moves(p, s->pend_item, s->pend_value, moves);
+        const unsigned n = esc_sim_store_moves(p, s->pend_item, s->pend_value,
+                                           moves,
+                                       sizeof(moves) / sizeof(moves[0]));
         if (s->pend_step < n && s->pos == moves[s->pend_step]) {
             s->pend_step++;
             if (s->pend_step == n) {

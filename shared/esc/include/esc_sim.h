@@ -27,6 +27,7 @@
 #define RCBENCH_ESC_SIM_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "esc_profile.h"
@@ -131,6 +132,16 @@ int32_t esc_sim_step(esc_sim_t *s, uint32_t now_ms, bool powered,
  *  pressed -- at @p now_ms.  With wait_hand, a menu waiting for it starts;
  *  one done before the entry ends lets the menu start when it does. */
 void esc_sim_hand(esc_sim_t *s, uint32_t now_ms);
+
+/**
+ * The moves that store value @p value of the item numbered @p item once it
+ * is selected, into @p out: the profile's store move, then the value's own
+ * after_select, of the first item and value of those numbers -- items
+ * that apply to different models may share both.  At most @p cap are
+ * written; returns how many.
+ */
+unsigned esc_sim_store_moves(const esc_profile_t *p, uint8_t item,
+                             uint8_t value, esc_throttle_t *out, size_t cap);
 
 /** The value stored for the item numbered @p item, 0 when none was. */
 uint8_t esc_sim_stored(const esc_sim_t *s, uint8_t item);

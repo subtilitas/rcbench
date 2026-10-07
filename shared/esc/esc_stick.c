@@ -1302,13 +1302,13 @@ bool esc_stick_cut_short(const esc_stick_t *e)
     return e != NULL && e->phase == ESC_STICK_ABORTED && e->end_open;
 }
 
-bool esc_stick_lock_risk(const esc_stick_t *e)
+bool esc_stick_end_locks(const esc_stick_t *e)
 {
-    if (!esc_stick_cut_short(e) || e->p == NULL || e->p->manual == NULL) {
+    if (e == NULL || e->p == NULL || e->p->manual == NULL) {
         return false;
     }
-    /* Cut during the store or a step before the power-off: the lock is
-     * the profile's, whichever of its steps marks it. */
+    /* The lock is the profile's, whichever of its steps before the
+     * power-off marks it: until every one is confirmed, a cut can lock. */
     for (unsigned i = 0; i < e->p->manual_count; ++i) {
         if (e->p->manual[i].when == ESC_MANUAL_BEFORE_POWER_OFF
             && e->p->manual[i].locks) {
@@ -1316,6 +1316,11 @@ bool esc_stick_lock_risk(const esc_stick_t *e)
         }
     }
     return false;
+}
+
+bool esc_stick_lock_risk(const esc_stick_t *e)
+{
+    return esc_stick_cut_short(e) && esc_stick_end_locks(e);
 }
 
 /* The action that starts the menu is done: by DONE, or by the menu heard
@@ -1341,9 +1346,11 @@ static void selected(esc_stick_t *e)
         e->store_step = 0u;
         /* From the selection on the ESC is storing and then confirming:
          * an end now switches the supply off under it, as one while the
-         * step before the power-off is asked does. */
+         * step before the power-off is asked does.  A value stored by
+         * moves after the selection is not stored until they are made. */
         e->end_open = esc_profile_manual_count(
-                          e->p, ESC_MANUAL_BEFORE_POWER_OFF) > 0u;
+                          e->p, ESC_MANUAL_BEFORE_POWER_OFF) > 0u
+                      || esc_stick_store_move(e, 0u) != ESC_THR_NONE;
         enter(e, ESC_STICK_STORE);
         return;
     }

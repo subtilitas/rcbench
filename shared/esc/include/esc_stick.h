@@ -564,14 +564,19 @@ uint32_t esc_stick_change_entry_ms(const esc_profile_t *p,
 uint32_t esc_stick_entry_ms(const esc_stick_t *e);
 
 /** Whether the run ended between a selection and the DONE of the profile's
- *  before_power_off steps -- while the ESC stored or confirmed: the supply
- *  went off before the operator said the ESC had confirmed, and the value
- *  may not be stored.  False while the run is under way, and for a profile
- *  without such a step. */
+ *  before_power_off steps, or before the last of the moves that store the
+ *  value (esc_stick_store_move()) -- while the ESC stored or confirmed:
+ *  the value may not be stored.  False while the run is under way, and
+ *  for a value stored by its selection on a profile without such a step. */
 bool esc_stick_cut_short(const esc_stick_t *e);
 
-/** esc_stick_cut_short(), and a before_power_off step of the profile marks
- *  locks: the ESC may have locked itself. */
+/** Whether a before_power_off step of the run's profile marks locks: a
+ *  cut before every such step is confirmed may lock the ESC, whichever
+ *  step is asked. */
+bool esc_stick_end_locks(const esc_stick_t *e);
+
+/** esc_stick_cut_short() and esc_stick_end_locks(): the ESC may have
+ *  locked itself. */
 bool esc_stick_lock_risk(const esc_stick_t *e);
 
 /** Whether DONE would count now: ESC_STICK_HAND_MIN_MS after the step was

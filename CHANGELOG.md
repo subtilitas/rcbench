@@ -107,7 +107,8 @@ sweep starts over from the curve's beginning, and the alert band says so.
   carries one: the ESC repeats the stored mode as tones before the manual
   disconnects it. No DONE within 60 s ends the run with NOT CONFIRMED; that
   end, and any other from the selection of the value on, says on the
-  result that the mode may not be stored. `manual[].locks` marks the step where the ESC
+  result that the mode may not be stored and marks the change UNSURE; so
+  does an end before the last move that stores a value. `manual[].locks` marks the step where the ESC
   locks itself instead (8 to 10 LED flashes): the KOBY, JIVE Pro, KOLIBRI,
   KONTROL-X / KOLIBRI-X and KOSMIK profiles, where the result says the ESC
   may be locked.

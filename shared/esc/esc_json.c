@@ -926,7 +926,8 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
                 return;
             }
             uint32_t mi = (uint32_t)av + 1u;
-            for (uint32_t k = 0; k < after_n; ++k, mi = d->t[mi].next) {
+            for (uint32_t k = 0; k < after_n && k < ESC_AFTER_MAX;
+                 ++k, mi = d->t[mi].next) {
                 int x = -1;
                 for (int m = 0; d->t[mi].type == T_STR
                                 && m < COUNT(k_throttle) - 1; ++m) {
@@ -958,8 +959,11 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
             seen[(uint8_t)num >> 3] |= bit;
             v[j] = (esc_value_t){ name, (uint8_t)num, dflt, et,
                                   (uint32_t)hold, (uint8_t)after_n,
-                                  { after[0], after[1], after[2],
-                                    after[3] } };
+                                  { ESC_THR_MIN } };
+            /* The moves, as many as the value holds: the same size. */
+            _Static_assert(sizeof(v[j].after) == sizeof(after),
+                           "after_select copied whole");
+            memcpy(v[j].after, after, sizeof(after));
         }
     }
     if (defaults > 1u) {

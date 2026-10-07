@@ -298,14 +298,19 @@ the ESC is powered and not to touch it. No DONE within 60 s ends the run
 with NOT CONFIRMED. That end, and every other from the selection of the
 value on -- while the ESC stores (STORING) or while the step is asked --
 switches the supply off under the store or the confirmation, and the
-result says the mode may not be stored.
+result says the mode may not be stored and marks the change UNSURE, not
+MADE. The same holds for any profile whose value is stored by moves after
+its selection (`scheme.store`, `after_select`), with or without such a
+step, until the last of those moves is made.
 
 A KOBY, JIVE Pro, KOLIBRI, KONTROL-X / KOLIBRI-X or KOSMIK that loses its
 supply before that confirmation has ended takes the programming as broken
 off and locks itself: 8 LED flashes on a KONTROL-X
 (Kontronik_Kontrol-X_Kolibri-X.pdf p.4, p.11), 9 on a KOBY, JIVE Pro or
 KOLIBRI, 10 on a KOSMIK. Their step marks it (`"locks": true`), and there
-the prompt and the result say the ESC may be locked and to check it. Of
+the prompt and the result say the ESC may be locked and to check it -- for
+every step before the power-off of such a profile, until all are
+confirmed, not only for the step that marks it. Of
 the five, KONTROL-X runs; the others show the step on their list of
 steps. The other Kontronik manuals name no lock for a power-off during the
 repeat.
@@ -366,7 +371,8 @@ jumper fitted again during about 30 s of signals.
 The result of a run lists the profile's `after_programming` steps in two
 lines under the changes; steps that need more say how many there are
 instead. When a run of a profile with such steps ends, its steps open by
-themselves over the result, every one of them, and MANUAL INTERVENTION
+themselves, every one of them, also when a tap in the same frame has
+already closed the result, and MANUAL INTERVENTION
 REQUIRED in the result's header opens them again.
 
 ![Four steps after programming, over the result (an example profile)](img/programmer-stick-hand-after.png)

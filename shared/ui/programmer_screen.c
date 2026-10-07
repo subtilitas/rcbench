@@ -1916,7 +1916,11 @@ static void sp_tick(float dt_s)
         }
     }
     const bool running = esc_stick_running(&t->run);
-    if (t->was_running && !running && t->shown && t->run.p != NULL
+    /* Not gated on the result still showing: a tap queued in the frame
+     * the run ended -- on ABORT, which the result's OK replaces -- closes
+     * the result before this tick sees the end, and the steps are still
+     * due. */
+    if (t->was_running && !running && t->run.p != NULL
         && esc_profile_manual_count(t->run.p,
                                     ESC_MANUAL_AFTER_PROGRAMMING) > 0u) {
         /* The run is over: what is to be done now, every step of it. */
@@ -3097,7 +3101,9 @@ static void sp_draw_result(gfx_canvas_t *c)
         char what[96];
         sp_change_text(&e->ch[i], what, sizeof(what));
         snprintf(line, sizeof(line), "%s  %s",
-                 e->done[i] ? TR(SP_MADE) : TR(SP_NOT_MADE), what);
+                 (e->done[i] && i == e->active && esc_stick_cut_short(e))
+                     ? TR(SP_MADE_CUT)
+                 : e->done[i] ? TR(SP_MADE) : TR(SP_NOT_MADE), what);
         sp_text(c, PAD + 12, y0 + (int)(i + 1u) * pitch, line,
                 SP_LINE_CELLS,
                 e->done[i] ? ui_theme_color(UI_C_TEXT) : dim);
@@ -3651,6 +3657,19 @@ static void sp_draw_hand(gfx_canvas_t *c)
  * STOP in the band ends it too.  DONE is dark for ESC_STICK_HAND_MIN_MS
  * after the step is asked.
  */
+/* What no DONE does, as the prompt says it (sp_draw_prompt(), which
+ * spells the choice out for the format check): before the supply goes
+ * off, that the mode may not be stored, or that the ESC may lock while any
+ * of the profile's steps before the power-off is still to confirm. */
+static const char *sp_left_text(const esc_stick_t *e)
+{
+    if (e->phase != ESC_STICK_HAND_END) {
+        return TR(SP_PROMPT_LEFT);
+    }
+    return esc_stick_end_locks(e) ? TR(SP_PROMPT_LEFT_END)
+                                  : TR(SP_PROMPT_LEFT_CUT);
+}
+
 static void sp_draw_prompt(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
@@ -3696,7 +3715,7 @@ static void sp_draw_prompt(gfx_canvas_t *c)
      * confirmation: said here, as the result says it after. */
     snprintf(line, sizeof(line),
              (e->phase != ESC_STICK_HAND_END) ? TR(SP_PROMPT_LEFT)
-             : m->locks                       ? TR(SP_PROMPT_LEFT_END)
+             : esc_stick_end_locks(e)         ? TR(SP_PROMPT_LEFT_END)
                                               : TR(SP_PROMPT_LEFT_CUT),
              (unsigned)((esc_stick_hand_left_ms(e) + 999u) / 1000u));
     sp_text(c, a.x + 20, y, line, 92, ui_theme_color(UI_C_TEXT_FAINT));
@@ -3874,6 +3893,11 @@ const char *programmer_screen_stick_row_warn(int i)
     const esc_profile_t *p = programmer_screen_stick_row(i, &model);
     return (p != NULL && programmer_screen_stick_row_why(i) == NULL)
                ? sp_model_warn(p, model, warn, sizeof(warn)) : NULL;
+}
+
+const char *programmer_screen_stick_left_text(void)
+{
+    return sp_left_text(&s.st.run);
 }
 
 const char *programmer_screen_stick_note(void)

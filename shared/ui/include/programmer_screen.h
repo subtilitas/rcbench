@@ -92,6 +92,10 @@ int programmer_screen_stick_item_at(int i);
  *  unknown; NULL for none.  For tests. */
 const char *programmer_screen_stick_row_warn(int i);
 
+/** The prompt's line on what no DONE does, as the prompt would draw it
+ *  now; for tests. */
+const char *programmer_screen_stick_left_text(void);
+
 /** The note the page shows under RUN: why a run cannot start, "" for
  *  none; for tests. */
 const char *programmer_screen_stick_note(void);

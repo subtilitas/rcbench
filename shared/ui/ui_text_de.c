@@ -599,6 +599,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SP_MADE_N]              = "%u von %u Auswahlen ausgeführt.",
     [TX_SP_MADE]                = "AUSGEFÜHRT",
     [TX_SP_NOT_MADE]            = "NICHT AUSGEFÜHRT",
+    [TX_SP_MADE_CUT]            = "UNSICHER",
     [TX_SP_MORE]                = "UND %u WEITERE, %u DAVON AUSGEFÜHRT",
     [TX_SP_TONES_1]             = "Die eigenen Töne des ESC nach einer Auswahl werden nicht geprüft:",
     [TX_SP_TONES_2]             = "darauf hören, oder den ESC mit seiner Programmierkarte auslesen.",

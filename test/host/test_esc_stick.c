@@ -1934,6 +1934,84 @@ TEST_CASE(an_end_while_the_esc_stores_says_it_was_cut_short)
     CHECK(!esc_stick_cut_short(&r.e));
 }
 
+/*
+ * A value stored by moves after its selection is not stored until they
+ * are made, with or without a step before the power-off: PIX mode 2 goes
+ * to the brake after full throttle.  A STOP before that move says the
+ * mode may not be stored; mode 3, stored by its selection, says nothing.
+ */
+TEST_CASE(a_store_cut_before_its_moves_says_so)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_BEFORE_MENU, "Press the button.", 0u, NULL, true,
+          false },
+    };
+    static const uint8_t k_mode[] = { 2u, 3u };
+    for (size_t i = 0; i < 2; ++i) {
+        rig_hand("kontronik-pix", k, 1);      /* no before_power_off */
+        CHECK_EQ(esc_profile_manual_count(r.p, ESC_MANUAL_BEFORE_POWER_OFF),
+                 0u);
+        esc_stick_change_t c[1] = { change(1, k_mode[i]) };
+        CHECK(start(c, 1));
+        for (uint32_t t = 0; t < 240000u && esc_stick_running(&r.e)
+                             && r.e.phase != ESC_STICK_STORE; ++t) {
+            if (r.e.hand_menu) {
+                act(false);
+            }
+            tick();
+        }
+        if (r.e.phase != ESC_STICK_STORE) {
+            T_FAIL("mode %u ended %s", k_mode[i],
+                   esc_stick_reason_text(r.e.reason));
+        }
+        CHECK_EQ(esc_stick_done_count(&r.e), 1u);
+        r.stops++;
+        r.pressed++;
+        tick();
+        ended_safe();
+        CHECK_EQ(esc_stick_cut_short(&r.e), i == 0);
+        CHECK(!esc_stick_lock_risk(&r.e));
+    }
+    /* Run through, the moves made: not cut short. */
+    rig_hand("kontronik-pix", k, 1);
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    run_until_asked(60000u);
+    act(false);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK(!esc_stick_cut_short(&r.e));
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 2);
+}
+
+/*
+ * Two steps before the power-off, only the second marking the lock: the
+ * lock is the profile's until both are confirmed, so the first step's
+ * prompt and an end during it say the ESC may be locked.
+ */
+TEST_CASE(a_later_locking_step_counts_from_the_first)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true, false },
+        { ESC_MANUAL_BEFORE_POWER_OFF, "Listen for the tones.", 0u, NULL,
+          false, false },
+        { ESC_MANUAL_BEFORE_POWER_OFF, "Watch the LED flash.", 0u, NULL,
+          false, true },
+    };
+    rig_hand("kontronik-jazz", k, 3);
+    CHECK(esc_stick_end_locks(&r.e) == false);   /* not started */
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK_EQ(r.e.hand, 1u);                      /* the one without locks */
+    CHECK(esc_stick_end_locks(&r.e));
+    esc_stick_abort(&r.e, ESC_STICK_R_USER);
+    CHECK(esc_stick_cut_short(&r.e));
+    CHECK(esc_stick_lock_risk(&r.e));
+    CHECK(!esc_stick_end_locks(NULL));
+}
+
 /* While a step is waited for, every end a run has still ends it: ABORT,
  * STOP, the bench's own stop, a disarm, the supply and the link. */
 TEST_CASE(stop_abort_and_the_supply_end_a_run_waiting_for_a_step)
@@ -2367,6 +2445,47 @@ TEST_CASE(the_set_points_stay_within_the_escs_ratings)
             }
         }
     }
+}
+
+/*
+ * Items that apply to different models may share their number and a
+ * value number, each value with its own moves after the selection.  The
+ * simulated ESC takes the first match's moves only, and never writes more
+ * than the space it is given: the store move and 4 moves each would be 9
+ * into the sim's 5 (an overflow ASan reports without the cap).
+ */
+TEST_CASE(shared_numbers_do_not_overflow_the_store_moves)
+{
+    static esc_value_t v1[1], v2[1];
+    static esc_item_t it[2];
+    static esc_profile_t p;
+    p = *esc_profiles_find("kontronik-pix");
+    v1[0] = (esc_value_t){ "a", 2u, false, ESC_THR_NONE, 0u, 4u,
+                           { ESC_THR_MIN, ESC_THR_MAX, ESC_THR_MIN,
+                             ESC_THR_MAX } };
+    v2[0] = (esc_value_t){ "b", 2u, false, ESC_THR_NONE, 0u, 4u,
+                           { ESC_THR_MID, ESC_THR_MIN, ESC_THR_MID,
+                             ESC_THR_MIN } };
+    it[0] = p.items[0];
+    it[0].number = 1u;
+    it[0].values = v1;
+    it[0].value_count = 1u;
+    it[1] = it[0];
+    it[1].values = v2;
+    p.items = it;
+    p.item_count = 2u;
+    p.store_throttle = ESC_THR_MID;
+    esc_throttle_t out[ESC_AFTER_MAX + 1u];
+    CHECK_EQ(esc_sim_store_moves(&p, 1u, 2u, out,
+                                 sizeof(out) / sizeof(out[0])), 5u);
+    CHECK_EQ(out[0], ESC_THR_MID);              /* the store move */
+    CHECK_EQ(out[1], ESC_THR_MIN);              /* the first match's */
+    CHECK_EQ(out[4], ESC_THR_MAX);
+    esc_throttle_t two[2];
+    CHECK_EQ(esc_sim_store_moves(&p, 1u, 2u, two, 2u), 2u);
+    CHECK_EQ(esc_sim_store_moves(&p, 1u, 9u, out, 5u), 1u);   /* no value */
+    CHECK_EQ(esc_sim_store_moves(NULL, 1u, 2u, out, 5u), 0u);
+    CHECK_EQ(esc_sim_store_moves(&p, 1u, 2u, NULL, 5u), 0u);
 }
 
 /* SUN PLUS: the manual's neutral position is the back (mode 4, "neutral
@@ -3001,6 +3120,8 @@ int main(void)
     RUN(the_supply_stays_on_while_the_esc_repeats_the_mode);
     RUN(a_hold_on_every_value_times_the_rest_move);
     RUN(an_end_while_the_esc_stores_says_it_was_cut_short);
+    RUN(a_store_cut_before_its_moves_says_so);
+    RUN(a_later_locking_step_counts_from_the_first);
     RUN(stop_abort_and_the_supply_end_a_run_waiting_for_a_step);
     RUN(a_step_at_power_up_is_asked_with_the_supply_off);
     RUN(the_entry_lasts_at_least_the_hold_at_power_up);
@@ -3011,6 +3132,7 @@ int main(void)
     RUN(a_power_up_position_that_cannot_work_is_refused);
     RUN(a_value_waits_its_own_entry_time);
     RUN(sun_plus_powers_up_at_the_back_but_its_car_mode);
+    RUN(shared_numbers_do_not_overflow_the_store_moves);
     RUN(the_set_points_stay_within_the_escs_ratings);
     RUN(twenty_volts_leave_out_one_family_and_six_models);
     RUN(an_entry_time_that_cannot_work_is_refused);

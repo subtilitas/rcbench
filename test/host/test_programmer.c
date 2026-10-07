@@ -2031,6 +2031,9 @@ TEST_CASE(the_supply_stays_on_until_done_after_the_store)
     CHECK(r.armed);
     CHECK(r.pct == ESC_STICK_PCT_MAX);
     CHECK(programmer_screen_stick_hand_shown() == false);
+    CHECK_STR_EQ(programmer_screen_stick_left_text(),
+                 "No DONE within %u s ends the run: supply off, and the ESC "
+                 "may lock itself.");
     draws();                                 /* the prompt */
     for (uint32_t i = 0; i < ESC_STICK_HAND_MIN_MS; ++i) {
         rig_step(&r);
@@ -2084,6 +2087,9 @@ TEST_CASE(the_supply_stays_on_until_done_after_the_store)
     }
     CHECK_EQ(run->phase, ESC_STICK_HAND_END);
     CHECK(esc_stick_hand(run) != NULL && !esc_stick_hand(run)->locks);
+    CHECK_STR_EQ(programmer_screen_stick_left_text(),
+                 "No DONE within %u s ends the run: supply off, and the mode "
+                 "may not be stored.");
     draws();                                 /* the prompt */
     rig_run(&r, ESC_STICK_HAND_WAIT_MS + 1000u);
     CHECK_EQ(run->reason, ESC_STICK_R_HAND);
@@ -2636,6 +2642,41 @@ TEST_CASE(every_step_after_programming_is_shown)
     tap(CANCEL_X, HOLD_Y);
     tap(WRITE_X, BTN_CY);                    /* OK on the result */
     CHECK(!programmer_screen_stick_hand_shown());
+    esc_profiles_clear_overrides();
+
+    /* The run ends on a supply sample, and a tap queued in the same
+     * frame lands on ABORT's place -- the result's OK -- before the tick:
+     * the steps still open by themselves. */
+    fresh();
+    CHECK(esc_profiles_override(&card, NULL));
+    open_profile("card-after");
+    tap(CANCEL_X, HOLD_Y);
+    tap(STEP_UP_X, STEP_CY(1));
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    rig_start(&r);
+    const esc_stick_t *run = programmer_screen_stick();
+    for (uint32_t i = 0; i < 300000u && run->phase != ESC_STICK_VALUES
+                         && esc_stick_running(run); ++i) {
+        rig_step(&r);
+    }
+    CHECK_EQ(run->phase, ESC_STICK_VALUES);
+    CHECK(!programmer_screen_stick_hand_shown());
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.samples = (uint16_t)++r.seq;
+    st.taken_ms = r.now;
+    st.output = true;
+    st.mode = SUPPLY_MODE_OFF;               /* the module went off */
+    st.online = true;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    programmer_screen_supply(&st);
+    CHECK(!esc_stick_running(run));
+    tap(WRITE_X, BTN_CY);                    /* meant for ABORT: OK now */
+    scr->tick(0.001f);
+    CHECK(programmer_screen_stick_hand_shown());
+    tap(CANCEL_X, HOLD_Y);
     esc_profiles_clear_overrides();
 
     /* A profile without such steps: no pop-up when the run ends. */

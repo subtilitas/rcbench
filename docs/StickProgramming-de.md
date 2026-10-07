@@ -330,7 +330,10 @@ BESTÄTIGT. Dieses Ende, und jedes andere ab der Auswahl des Werts --
 während der ESC speichert (SPEICHERN) oder während der Schritt gefragt
 ist --, schaltet das Netzteil während des Speicherns oder der Bestätigung
 aus, und das Ergebnis sagt, dass der Modus womöglich nicht gespeichert
-ist.
+ist, und markiert die Änderung UNSICHER statt AUSGEFÜHRT. Dasselbe gilt
+für jedes Profil, dessen Wert durch Bewegungen nach der Auswahl
+gespeichert wird (`scheme.store`, `after_select`), mit oder ohne einen
+solchen Schritt, bis die letzte dieser Bewegungen gemacht ist.
 
 Ein KOBY, JIVE Pro, KOLIBRI, KONTROL-X / KOLIBRI-X oder KOSMIK, der vor
 dem Ende dieser Bestätigung seine Versorgung verliert, wertet die
@@ -338,7 +341,9 @@ Programmierung als abgebrochen und sperrt sich: 8-fach Blinken an einem
 KONTROL-X (Kontronik_Kontrol-X_Kolibri-X.pdf S. 4, S. 11), 9-fach an KOBY,
 JIVE Pro oder KOLIBRI, 10-fach an KOSMIK. Ihr Schritt kennzeichnet das
 (`"locks": true`), und dort sagen Abfrage und Ergebnis, dass der ESC
-gesperrt sein kann und geprüft werden muss. Von den fünf läuft
+gesperrt sein kann und geprüft werden muss -- bei jedem Schritt vor dem
+Ausschalten eines solchen Profils, bis alle bestätigt sind, nicht nur
+bei dem, der es kennzeichnet. Von den fünf läuft
 KONTROL-X; die anderen zeigen den Schritt in ihrer Liste der Handgriffe.
 Die übrigen Kontronik-Handbücher nennen keine Sperre für ein Ausschalten
 während der Wiederholung.
@@ -405,7 +410,8 @@ wieder gesteckt während ca. 30 s Signalen.
 Das Ergebnis eines Laufs nennt die Schritte `after_programming` des
 Profils in zwei Zeilen unter den Änderungen; brauchen sie mehr, sagt es
 stattdessen, wie viele es sind. Endet ein Lauf eines Profils mit solchen
-Schritten, öffnen sich seine Schritte von selbst über dem Ergebnis, alle,
+Schritten, öffnen sich seine Schritte von selbst, alle, auch wenn ein
+Tippen im selben Frame das Ergebnis schon geschlossen hat,
 und MANUELLER EINGRIFF NÖTIG im Kopf des Ergebnisses öffnet sie wieder.
 
 ![Vier Handgriffe nach dem Programmieren, über dem Ergebnis (ein Beispielprofil)](img/de/programmer-stick-hand-after.png)
