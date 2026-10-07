@@ -388,14 +388,27 @@ static void servo_sweep_view(bool pause)
     servo_screen_clock(now);
     tap(521, UI_BAND_H + 307);                      /* SPEED 12 % */
     tap(651, UI_BAND_H + 366);                      /* SWEEP */
+    servo_cmd_t taken;
+    while (servo_screen_take(&taken)) { }
+    /* The far end's start, acknowledged as the panel would. */
+    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
+    uint16_t hold_seq = 0u;
     for (int i = 0; i < 40 + (pause ? 20 : 0); ++i) {
         if (pause && i == 40) {
             tap(651, UI_BAND_H + 366);              /* PAUSE */
         }
+        if (pause && i == 41) {
+            /* The HOLD acknowledged a frame later, as the panel would. */
+            servo_screen_sweep_held(hold_seq, servo_screen_curve_ms());
+        }
         now += 20u;
         servo_screen_clock(now);
         servo_cmd_t sc;
-        while (servo_screen_take(&sc)) { }
+        while (servo_screen_take(&sc)) {
+            if (sc.kind == SERVO_CMD_HOLD) {
+                hold_seq = sc.pause_seq;
+            }
+        }
         ui_router_tick(0.02f);
     }
 }

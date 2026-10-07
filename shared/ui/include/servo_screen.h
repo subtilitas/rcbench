@@ -182,14 +182,18 @@ typedef enum {
 } servo_sweep_from_t;
 
 /**
- * The coprocessor started the sweep @p age_ms ago, its output starting from
- * @p from: the horn is drawn along its curve from then, and without feedback
- * from where that output was.  For SERVO_SWEEP_RESUMED, @p age_ms is the
- * age of the resumed curve's phase 0: the panel's timing of the far end,
- * whatever this screen took the pause's phase to be.
+ * The coprocessor started the sweep with its curve's phase 0 @p age_ms ago,
+ * its output starting from @p from.  Until this, a sweep asked for is not
+ * drawn: the far end is not known to move.  From it the horn is drawn along
+ * the curve, and without feedback worked on from where that output was
+ * when the far end began to move.  @p since_ms is, for
+ * SERVO_SWEEP_FROM_FROZEN, how long ago the far end froze, and for
+ * SERVO_SWEEP_RESUMED how long ago the resume was acknowledged; for a
+ * resume @p age_ms is the panel's timing of the far end's phase 0, moved on
+ * by the hold, whatever this screen took the pause's phase to be.
  */
 void servo_screen_sweep_started(uint32_t age_ms, servo_sweep_from_t from,
-                                uint32_t frozen_ago_ms);
+                                uint32_t since_ms);
 
 /**
  * The coprocessor took the HOLD of pause @p pause_seq (servo_cmd_t) and kept

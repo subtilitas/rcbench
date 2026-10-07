@@ -193,7 +193,9 @@ SPEED is the rate the bench may move the output, in degrees a second of the
 horn's travel, not a speed for the drawing alone. At 100% the command goes
 straight through and the servo moves at its own rate; below that the bench
 ramps the command in front of it, so 30% takes three times as long to cross
-as 90%. It applies to a held output as soon as it is changed.
+as 90%. It applies to a held output as soon as it is changed. Without
+feedback the horn is drawn moving at the same rate, and at 100% at the
+command at once.
 
 **ARM before anything moves.** While the bench is not armed the coprocessor
 writes a pulse of length zero to every PWM pin, so the horn on screen follows
@@ -249,7 +251,14 @@ end), about PULSE CENTRE. RANGE is a share of the travel the servo may make:
 of TRAVEL, and of the nearer of PULSE MIN and MAX, so the sweep reaches
 neither end it may not. SPEED on the right card limits it as it limits a
 drag, and trim is not applied. The horn follows the same curve, computed on
-the panel and timed from when the coprocessor started its own.
+the panel and timed from when the coprocessor started its own. The panel
+draws only what the coprocessor is known to do: a sweep asked for, or
+resumed, is drawn once its start is acknowledged, and until then the horn
+stays where the output is. Without feedback it is then worked on from where
+the output was when the coprocessor began, along the curve at SPEED. Two
+taps on the sweep button that reach the screen in one frame, before the
+first one's command has left, cancel out: nothing is sent and the sweep
+goes on as it was.
 
 **PAUSE pauses it.** While a sweep runs the button reads PAUSE in the accent
 colour. A tap stops the sweep where the output has got to -- which SPEED can
@@ -263,14 +272,15 @@ on the wire. A tap on PAUSED carries the sweep on from the point of the
 curve it was paused at: its place in a dwell and the ends it has reached go
 on from there too, and the horn is drawn on from that phase. The phase is
 the curve's when the coprocessor acknowledged the HOLD, not at the tap: the
-curve runs on there for the exchange in between. Without feedback the
-drawn horn moves on when the acknowledgement arrives, to where the output
-had got by then: the curve to that phase, slewed as the drawing slews at
-the SPEED in force at the tap. A SPEED changed in between reaches the
-coprocessor only with the resume. A tap on PAUSED before that
-acknowledgement reaches the screen draws on from the tap's phase until the
-resume is acknowledged; the panel then rebases the drawing on the phase the
-coprocessor kept, as it timed the two acknowledgements. The coprocessor
+curve runs on there for the exchange in between, and so the drawing runs
+on too, at the SPEED in force at the tap, for at most 500 ms -- the longest
+the coprocessor runs a sweep it has not heard. Without feedback the drawn
+horn is then put where the output had got at the acknowledgement: the curve
+to that phase, slewed as the drawing slews. A SPEED changed in between reaches the
+coprocessor only with the resume. A tap on PAUSED leaves the horn where it
+is until the resume is acknowledged; the panel then times the drawing from
+the phase the coprocessor kept, as it timed the two acknowledgements, also
+when the tap came before the HOLD's acknowledgement. The coprocessor
 keeps the phase while it holds and resumes the curve (`LINK_SV_RESUME`,
 protocol 4.6); the output slews from where it was held to the curve at
 SPEED's rate, at once at 100 %, and is normally already there. A curve
@@ -297,7 +307,9 @@ after the tap; without feedback it is the drawn estimate at the
 acknowledgement. A changed SPEED keeps the
 pause; the resume runs at the new SPEED. Touch events going missing pause a
 running sweep as PAUSE would. A changed setting starts a running sweep over
-with the new curve; a changed profile or frame rate goes with it at once. SWEEP is offered on an armed bench and a coprocessor
+with the new curve, drawn from when the coprocessor acknowledges it; until
+then the old curve is drawn on, as the coprocessor runs it. A changed
+profile or frame rate goes with it at once. SWEEP is offered on an armed bench and a coprocessor
 speaking protocol 4.2; the coprocessor stops a sweep the panel has not
 repeated for 500 ms and leaves each surface where its output has got to.
 

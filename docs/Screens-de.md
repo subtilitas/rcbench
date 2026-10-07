@@ -210,7 +210,8 @@ darf, und nicht nur eine Geschwindigkeit für die Zeichnung. Bei 100 % geht
 der Befehl unverändert durch und das Servo läuft mit seiner eigenen
 Geschwindigkeit; darunter rampt der Prüfstand den Befehl davor, 30 % braucht
 also dreimal so lange wie 90 %. Die Änderung wirkt sofort auf einen
-gehaltenen Ausgang.
+gehaltenen Ausgang. Ohne Rückmeldung wird das Horn mit derselben Rate
+bewegt gezeichnet, bei 100 % sofort am Befehl.
 
 **Vor jeder Bewegung ARM.** Solange der Prüfstand nicht scharf ist, schreibt
 der Koprozessor auf jeden PWM-Pin einen Impuls der Länge null: der Arm auf dem
@@ -273,7 +274,14 @@ Servo machen darf: von WEG und vom näheren von PULS MIN und MAX, damit die
 Kurve kein Ende erreicht, das sie nicht erreichen darf. TEMPO auf der rechten
 Karte begrenzt sie wie ein Ziehen, Trim gilt nicht. Das Horn folgt derselben
 Kurve, im Panel gerechnet und ab dem Moment, in dem der Koprozessor seine
-gestartet hat.
+gestartet hat. Das Panel zeichnet nur, was der Koprozessor bekanntermaßen
+tut: ein verlangter oder fortgesetzter Sweep wird gezeichnet, sobald sein
+Start quittiert ist, und bis dahin bleibt das Horn, wo der Ausgang ist.
+Ohne Rückmeldung wird es dann ab der Stelle weitergerechnet, an der der
+Ausgang war, als der Koprozessor begann, entlang der Kurve mit TEMPO. Zwei
+Tipper auf den Sweep-Knopf, die den Bildschirm im selben Frame erreichen,
+bevor der Befehl des ersten hinaus ist, heben sich auf: nichts wird
+gesendet, und der Sweep läuft weiter wie zuvor.
 
 **PAUSE hält sie an.** Während ein Sweep läuft, heißt der Knopf PAUSE, in der
 Akzentfarbe. Ein Tippen hält die Kurve dort an, wo der Ausgang gerade steht
@@ -289,14 +297,15 @@ angehalten wurde: die Stelle in einem Verweilen und die erreichten Enden
 laufen von dort weiter, und das Horn wird ab dieser Phase gezeichnet. Die
 Phase ist die der Kurve, als der Koprozessor das HOLD quittiert hat, nicht
 die beim Tippen: dort läuft die Kurve während des Austauschs dazwischen
-weiter. Ohne Rückmeldung rückt das gezeichnete Horn beim Eintreffen der
-Quittung dorthin vor, wo der Ausgang bis dahin war: die Kurve bis zu dieser
-Phase, verlangsamt wie in der Zeichnung mit dem TEMPO, das beim Tippen
-galt. Ein dazwischen geändertes TEMPO erreicht den Koprozessor erst mit dem
-Fortsetzen. Ein Tippen auf PAUSIERT, bevor diese Quittung den Bildschirm
-erreicht, zeichnet ab der Phase des Tippens weiter, bis das Fortsetzen
-quittiert ist; dann setzt das Panel die Zeichnung auf die Phase, die der
-Koprozessor behalten hat, so wie es die beiden Quittungen gemessen hat. Der
+weiter, und so läuft auch die Zeichnung weiter, mit dem TEMPO, das beim
+Tippen galt, höchstens 500 ms lang -- so lange führt der Koprozessor einen
+Sweep, von dem er nichts mehr hört. Ohne Rückmeldung wird das Horn dann
+dorthin gesetzt, wo der Ausgang bei der Quittung war: die Kurve bis zu
+dieser Phase, verlangsamt wie in der Zeichnung. Ein dazwischen geändertes TEMPO erreicht den Koprozessor erst mit dem
+Fortsetzen. Ein Tippen auf PAUSIERT lässt das Horn stehen, bis das
+Fortsetzen quittiert ist; dann misst das Panel die Zeichnung ab der Phase,
+die der Koprozessor behalten hat, so wie es die beiden Quittungen gemessen
+hat, auch wenn das Tippen vor der Quittung des HOLD kam. Der
 Koprozessor behält die Phase, solange er hält, und setzt die Kurve fort
 (`LINK_SV_RESUME`, Protokoll 4.6); der Ausgang fährt mit der Rate von TEMPO
 von der gehaltenen Stelle zur Kurve, bei 100 % sofort, und ist meist schon
@@ -327,7 +336,9 @@ gezeichnete Schätzung bei der Quittung. Ein
 geändertes TEMPO lässt die Pause stehen; das Fortsetzen läuft mit dem neuen
 TEMPO. Verlorene Touch-Ereignisse halten einen laufenden Sweep an wie PAUSE.
 Eine geänderte Einstellung startet einen laufenden Sweep mit der neuen Kurve
-neu; ein geändertes Profil oder eine geänderte Frame Rate geht sofort mit.
+neu, gezeichnet ab der Quittung des Koprozessors; bis dahin wird die alte
+Kurve weitergezeichnet, wie der Koprozessor sie fährt. Ein geändertes
+Profil oder eine geänderte Frame Rate geht sofort mit.
 SWEEP gibt es bei scharfem Prüfstand und einem Koprozessor mit Protokoll 4.2;
 der Koprozessor hält eine Kurve an, die das Panel 500 ms nicht wiederholt hat,
 und lässt jede Surface dort stehen, wo ihr Ausgang gerade ist.

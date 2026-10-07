@@ -4320,6 +4320,8 @@ static bool write_servo(const servo_cmd_t sv)
                     uint32_t start = took;
                     (void)servo_phase_resumed(&s_far_phase, took, &start);
                     s_hold_unanswered = false;
+                    /* And when it began to move again, for the drawing. */
+                    atomic_store(&s_sweep_frozen_ms, took);
                     atomic_store(&s_sweep_start_ms, start);
                     atomic_store(&s_sweep_start_from,
                                  (unsigned)SERVO_SWEEP_RESUMED);
