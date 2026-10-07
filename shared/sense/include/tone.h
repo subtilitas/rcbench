@@ -12,7 +12,7 @@
  *
  * The signal's three time scales, and how each is found:
  *
- * - Carrier.  A rise that follows the rise before it by less than the
+ * - Carrier.  A rise that follows the rise before it by at most the
  *   period of carrier_min_hz is a carrier-rate rise.  The carrier period
  *   is the shortest rise interval inside a burst, not counting the
  *   interval from the burst's first rise, which a burst gated from a
@@ -25,6 +25,12 @@
  *   seen, the drive is not chopped and every pulse is a burst.  A duty
  *   that changes inside a beep moves lows and highs and leaves the
  *   period.  A low shorter than glitch_ns is no low: the pulse goes on.
+ *   With a capture hold-off, a rise starts a burst only after a low of at
+ *   least twice the hold-off: a carrier low within the edges' jitter of
+ *   the hold-off is reported at some periods and not at others, and one
+ *   reported after a stretch of swallowed ones follows its rise by
+ *   several carrier periods, too far apart to read as carrier.  The
+ *   tone's own low between bursts has to be that long.
  *
  * - Tone.  The interval from one burst's first rise to the next is one
  *   tone period.  A period between half the period of f_max_hz and the
@@ -49,10 +55,29 @@
  *   last edge, the mean of its in-range periods as its frequency, and its
  *   burst count.  A period more than TONE_OUTLIER_PCT from the beep's
  *   mean is a burst but not part of the mean: a burst missed doubles one
- *   period.  A run with
- *   fewer than min_periods in-range periods, or whose mean lies outside
- *   the tone range, is not a beep: a click at power-up, a stuck line, a
- *   drive faster than f_max_hz.
+ *   period.  A run with fewer than min_periods in-range periods, or whose
+ *   mean lies outside the tone range, is not a beep: a click at power-up,
+ *   a stuck line, a drive faster than f_max_hz.
+ *
+ * Bounds, each in whole ticks:
+ *
+ * - Inclusive.  A rise interval of exactly the period of carrier_min_hz is
+ *   carrier-rate.  A low of exactly 1.25 carrier periods starts a burst.
+ *   A low of exactly glitch_ns is a low, and one of exactly twice the
+ *   hold-off can start a burst.  A silence of exactly gap_us ends a beep.
+ *   A tone of exactly f_min_hz or f_max_hz is in range, and a period of
+ *   exactly half the period of f_max_hz.  A beep of exactly min_periods
+ *   periods, and a window of exactly window_min_periods, hold a tone.  An
+ *   edge at the same tick as the last is taken.
+ * - Exclusive.  A pitch change is more than split_pct, so a block exactly
+ *   split_pct away does not split; a period is an outlier when more than
+ *   TONE_OUTLIER_PCT from the mean.  A window is [n, n + 1) window_us: a
+ *   period that ends on the boundary belongs to the next window.
+ * - Rounding.  The period of f_max_hz rounds down, the periods of f_min_hz
+ *   and carrier_min_hz round up, so a period exactly at a bound, which the
+ *   tick clock sees as the tick below or the tick above, is inside it.
+ *   glitch_ns and gap_us round up: a low or a silence counts once it has
+ *   lasted that long.
  *
  * What the edges cannot tell:
  *
@@ -105,11 +130,14 @@ typedef struct {
     uint32_t window_us;      /**< a window's length, 1000 to 100000 us    */
     uint32_t f_min_hz;       /**< lowest tone, at least 50 Hz             */
     uint32_t f_max_hz;       /**< highest tone                            */
-    /** Rise intervals shorter than this carrier's period are chopping
-     *  inside a burst.  Above f_max_hz. */
+    /** Rise intervals up to this carrier's period are chopping inside a
+     *  burst.  Above f_max_hz. */
     uint32_t carrier_min_hz;
     /** A low shorter than this, ns, is no low; 1 to 10000. */
     uint32_t glitch_ns;
+    /** The capture's hold-off (tone_holdoff_t), ns, 0 to 100000; 0 none.
+     *  A rise starts a burst only after a low of at least twice it. */
+    uint32_t hold_ns;
     /** No edge for this long ends a beep, us; at least the period of
      *  f_min_hz, so a tone's own off time never does. */
     uint32_t gap_us;
@@ -177,6 +205,7 @@ typedef struct {
 typedef struct {
     tone_cfg_t c;
     uint64_t win_ticks, per_min, per_max, car_max, glitch, gap;
+    uint64_t start_low;      /**< twice the hold-off, ticks               */
 
     bool     seen;           /**< any time given yet                      */
     uint64_t now;            /**< the latest time given                   */
@@ -214,13 +243,15 @@ typedef struct {
 } tone_t;
 
 /** Defaults for a clock of @p tick_hz: 8000 us windows, 400 to 6500 Hz,
- *  carrier from 7 kHz, 500 ns glitch, 3000 us gap, 8 % split, 3 periods a
- *  beep, 2 a window. */
+ *  carrier from 7 kHz, 500 ns glitch, 8000 ns hold-off, 3000 us gap, 8 %
+ *  split, 3 periods a beep, 2 a window. */
 void tone_cfg_defaults(tone_cfg_t *c, uint32_t tick_hz);
 
 /** Start from nothing.  False, leaving @p d unusable, when @p c contradicts
  *  itself or names a range the tick clock cannot resolve: f_min_hz >=
- *  f_max_hz, carrier_min_hz <= f_max_hz, glitch_ns outside 1 to 10000 or
+ *  f_max_hz, carrier_min_hz <= f_max_hz, f_max_hz or carrier_min_hz above
+ *  tick_hz (a period under one tick), hold_ns above 100000, glitch_ns
+ *  outside 1 to 10000 or
  *  under one tick, gap_us under the period of f_min_hz,
  *  a window outside 1000 to 100000 us, f_min_hz under 50 Hz, a minimum of
  *  0. */
@@ -235,7 +266,8 @@ void tone_feed(tone_t *d, const tone_edge_t *e, size_t n);
 /** No edge up to tick @p now: a silence ends a beep, a window closes. */
 void tone_advance(tone_t *d, uint64_t now);
 
-/** End the beep under way at its last edge, as a silence would: the
+/** End the beep under way at its last edge, as a silence would, and
+ *  forget the line's level, so the first rise after it starts a run: the
  *  caller's edges have a hole (a buffer overrun) or the recording ends. */
 void tone_flush(tone_t *d);
 
@@ -252,6 +284,54 @@ const tone_stats_t *tone_stats(const tone_t *d);
 
 /** @p ticks of the detector's clock in microseconds, rounded down. */
 uint64_t tone_ticks_us(const tone_t *d, uint64_t ticks);
+
+/* ------------------------------------------------------------ hold-off */
+
+/*
+ * The capture's hold-off: the rule the PIO program applies before an edge
+ * reaches the detector, written here so it is tested on the host and the
+ * PIO is held to it.
+ *
+ * A fall is reported only once the line has stayed low for at least the
+ * hold-off; a low that ends sooner is not reported at all, and the pulse
+ * around it goes on.  A reported fall carries the time the line fell, not
+ * the time the low qualified.  A rise is reported at once.
+ *
+ * Why: a carrier's lows inside a burst are (1 - duty) / carrier long.  At
+ * the default 8 us, every low of a carrier above 125 kHz, and every low
+ * at 50 % duty above 62.5 kHz, is shorter, so such a burst reaches the
+ * detector as one pulse: two edges per burst instead of two per carrier
+ * period, 288,000 edges/s at 144 kHz.  Lows between bursts, at least a
+ * quarter of the longest tone period in range, are far longer.
+ *
+ * A fall is reported up to the hold-off late, so the detector is advanced
+ * only to tone_holdoff_horizon(), before which every edge is out: the
+ * PIO's own drain knows nothing of a fall still being held, and so uses
+ * the same now less the hold-off.
+ */
+typedef struct {
+    uint64_t hold;           /**< ticks; 0 passes every edge              */
+    bool     line;           /**< the line's level after the last edge    */
+    bool     pending;        /**< a fall is being held                    */
+    uint64_t fall;           /**< when it fell                            */
+} tone_holdoff_t;
+
+/** @p hold_ns of a clock of @p tick_hz, rounded up to whole ticks; the
+ *  line starts low. */
+void tone_holdoff_init(tone_holdoff_t *h, uint32_t tick_hz, uint32_t hold_ns);
+
+/** One edge at @p t; the edges reported, 0 to 2, into @p out in time
+ *  order: a held fall whose low lasted the hold-off, then the rise. */
+size_t tone_holdoff_edge(tone_holdoff_t *h, uint64_t t, bool level,
+                         tone_edge_t out[2]);
+
+/** No edge up to @p now: a held fall whose low has lasted the hold-off by
+ *  then, into @p out; 0 or 1. */
+size_t tone_holdoff_advance(tone_holdoff_t *h, uint64_t now,
+                            tone_edge_t out[1]);
+
+/** @p now less the hold-off, at least 0: every edge before it is out. */
+uint64_t tone_holdoff_horizon(const tone_holdoff_t *h, uint64_t now);
 
 #ifdef __cplusplus
 }

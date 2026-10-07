@@ -14,15 +14,20 @@
  * tone or running free; edge jitter; a phase from 1 V to 25.2 V, driven or
  * floating; a clamp slow enough to swallow the carrier; beep trains;
  * two pitches alternating with and without a silence between; silence, a
- * line stuck high or low, a continuous carrier, a single click, a glitch.
+ * line stuck high or low, a continuous carrier, a single click, a glitch;
+ * every bound at its exact value and one tick past it; the capture's
+ * hold-off, an eGaN ESC's 144 kHz carrier with it and without it, and the
+ * 8 to 48 kHz carriers through it.
  *
  * Accuracy held here, with up to 1 us of jitter on every edge:
- *   carrier locked to the tone, or none: a beep's frequency within 0.01 %,
- *     a window's within 0.1 %;
- *   carrier running free, at least 4 times the tone: a beep's within
- *     0.1 %, a window's within 2 %.  A burst gated from a free carrier
- *     starts up to one carrier period late, so an 8 ms window is known to
- *     a carrier period in 8 ms.
+ *   carrier locked to the tone, or none, or 144 kHz through the 8 us
+ *     hold-off (locked or free): a beep's frequency within 0.01 %, a
+ *     window's within 0.1 %;
+ *   carrier of 8 to 48 kHz running free, at least 4 times the tone: a
+ *     beep's within 0.1 %, a window's within 2 %, with or without the
+ *     hold-off.  A burst gated from a free carrier starts up to one
+ *     carrier period late, so an 8 ms window is known to a carrier period
+ *     in 8 ms.
  * A beep's start is its first rise and its end its last edge, exactly; its
  * burst count is exact.
  *
@@ -209,6 +214,7 @@ static void front_run(const drive_t *d, const front_t *f, edges_t *out)
     }
 }
 
+#define TAU_22K  (22e3 * 50e-12)    /* 1.1 us  */
 #define TAU_TYP  (33e3 * 50e-12)    /* 1.65 us */
 #define TAU_SLOW (33e3 * 300e-12)   /* 9.9 us  */
 
@@ -336,6 +342,28 @@ static unsigned windows_present(void)
 /* One beep of @p sp from 10 ms for @p dur through @p f, checked: one beep,
  * its edges, its bursts, its frequency within @p beep_tol and the windows
  * inside it within @p win_tol.  Returns the beep's error. */
+/* The capture's hold-off one_beep() applies, ns; 0 none. */
+static uint32_t hold_ns;
+
+/* @p in through a hold-off of @p ns into @p out, the last held fall let
+ * out at the end. */
+static void holdoff_apply(const edges_t *in, edges_t *out, uint32_t ns)
+{
+    tone_holdoff_t h;
+    tone_holdoff_init(&h, TICK_HZ, ns);
+    tone_edge_t o[2];
+    for (size_t i = 0; i < in->n; ++i) {
+        const size_t k = tone_holdoff_edge(&h, in->e[i].t, in->e[i].level, o);
+        for (size_t j = 0; j < k; ++j) {
+            edge_add(out, (double)o[j].t / TICK_HZ, o[j].level);
+        }
+    }
+    const uint64_t end = in->n != 0u ? in->e[in->n - 1u].t + h.hold : 0u;
+    if (tone_holdoff_advance(&h, end, o) == 1u) {
+        edge_add(out, (double)o[0].t / TICK_HZ, o[0].level);
+    }
+}
+
 static double one_beep(const tone_spec_t *sp, const front_t *f, double dur,
                        double beep_tol, double win_tol)
 {
@@ -343,7 +371,16 @@ static double one_beep(const tone_spec_t *sp, const front_t *f, double dur,
     edges_t e = { 0 };
     beep_add(&d, sp, 0.010, dur);
     front_run(&d, f, &e);
-    start(NULL);
+    if (hold_ns != 0u) {
+        edges_t h = { 0 };
+        holdoff_apply(&e, &h, hold_ns);
+        edges_free(&e);
+        e = h;
+    }
+    tone_cfg_t c;
+    tone_cfg_defaults(&c, TICK_HZ);
+    c.hold_ns = hold_ns;
+    start(&c);
     play(&e, 0.010 + dur + 0.020);
     double err = 1.0;
     if (n_beeps != 1u) {
@@ -413,6 +450,13 @@ TEST_CASE(a_configuration_that_contradicts_itself_is_refused)
     REFUSED(gap_us, 2499u);
     REFUSED(min_periods, 0u);
     REFUSED(window_min_periods, 0u);
+    /* A period under one tick: the tone's, or the carrier's. */
+    REFUSED(carrier_min_hz, TICK_HZ + 1u);
+    tone_cfg_defaults(&c, TICK_HZ);
+    c.f_max_hz = TICK_HZ + 1u;
+    c.carrier_min_hz = TICK_HZ + 2u;
+    CHECK(!tone_init(&det, &c));
+    REFUSED(hold_ns, 100001u);
 #undef REFUSED
     CHECK(!tone_init(NULL, &c));
     CHECK(!tone_init(&det, NULL));
@@ -420,6 +464,13 @@ TEST_CASE(a_configuration_that_contradicts_itself_is_refused)
     tone_edge(&det, 100u, true);
     tone_advance(&det, 1000u);
     CHECK_EQ(tone_stats(&det)->edges, 0);
+    /* One tick each is a period, and is taken. */
+    tone_cfg_defaults(&c, TICK_HZ);
+    c.f_max_hz = TICK_HZ - 1u;
+    c.carrier_min_hz = TICK_HZ;
+    CHECK(tone_init(&det, &c));
+    CHECK_EQ(det.per_min, 1);
+    CHECK_EQ(det.car_max, 1);
 }
 
 /* -------------------------------------------------------------- tones */
@@ -864,6 +915,501 @@ TEST_CASE(an_edge_to_the_level_the_line_holds_changes_nothing)
     CHECK_EQ(tone_stats(&det)->edges, 41);
 }
 
+/* -------------------------------------------------------------- bounds */
+
+#define MS (TICK_HZ / 1000u)
+
+static void edge_tick(edges_t *s, uint64_t t, bool level)
+{
+    if (s->n == s->cap) {
+        s->cap = s->cap != 0u ? s->cap * 2u : 1024u;
+        s->e = realloc(s->e, s->cap * sizeof *s->e);
+    }
+    s->e[s->n].t = t;
+    s->e[s->n].level = level;
+    s->n++;
+}
+
+/* @p n pulses of @p high ticks, one every @p period from @p start; the
+ * tick of the last fall. */
+static uint64_t pulses(edges_t *s, uint64_t start, uint64_t period,
+                       uint64_t high, unsigned n)
+{
+    for (unsigned k = 0; k < n; ++k) {
+        edge_tick(s, start + k * period, true);
+        edge_tick(s, start + k * period + high, false);
+    }
+    return start + (n - 1u) * period + high;
+}
+
+/* Every edge of @p e, then time to @p end ticks. */
+static void play_ticks(const edges_t *e, uint64_t end)
+{
+    for (size_t i = 0; i < e->n; ++i) {
+        tone_edge(&det, e->e[i].t, e->e[i].level);
+        take();
+    }
+    tone_advance(&det, end);
+    take();
+}
+
+TEST_CASE(a_silence_of_exactly_the_gap_ends_a_beep)
+{
+    /* Two 1 kHz trains, the second rising 3000 us after the first's last
+     * fall: two beeps.  One tick sooner: one. */
+    const uint64_t gap = 3u * MS;
+    for (unsigned sooner = 0; sooner < 2u; ++sooner) {
+        edges_t e = { 0 };
+        const uint64_t end = pulses(&e, 10u * MS, MS, MS / 2u, 50u);
+        pulses(&e, end + gap - sooner, MS, MS / 2u, 50u);
+        start(NULL);
+        play_ticks(&e, 300u * MS);
+        if (sooner == 0u) {
+            CHECK_EQ(n_beeps, 2);
+            CHECK_EQ(beeps[0].bursts, 50);
+            CHECK_EQ(beeps[0].end, end);
+            CHECK_EQ(beeps[1].bursts, 50);
+            CHECK_EQ(beeps[1].start, end + gap);
+        } else {
+            CHECK_EQ(n_beeps, 1);
+            CHECK_EQ(beeps[0].bursts, 100);
+        }
+        edges_free(&e);
+    }
+    /* Time alone: busy one tick before the gap, done at it. */
+    edges_t e = { 0 };
+    const uint64_t end = pulses(&e, 10u * MS, MS, MS / 2u, 10u);
+    start(NULL);
+    tone_feed(&det, e.e, e.n);
+    tone_advance(&det, end + gap - 1u);
+    CHECK(tone_busy(&det));
+    tone_advance(&det, end + gap);
+    CHECK(!tone_busy(&det));
+    edges_free(&e);
+}
+
+TEST_CASE(a_carrier_at_exactly_the_lowest_carrier_rate_is_chopping)
+{
+    /* 7 kHz, carrier_min_hz itself, around a 1 kHz tone: a chopped
+     * 1 kHz, not a 7 kHz tone. */
+    const tone_spec_t sp = { 1000.0, 0.5, 7000.0, 0.5, false, 0.0 };
+    const front_t f = { 12.0, 0.0 };
+    one_beep(&sp, &f, 0.100, LOCKED_BEEP, LOCKED_WIN);
+    CHECK(n_beeps == 1u && rel_err(beeps[0].carrier_hz, 7000.0) < 0.001);
+    /* In ticks: rises exactly car_max apart inside each burst, the bursts
+     * 1 ms apart. */
+    edges_t e = { 0 };
+    start(NULL);
+    const uint64_t cm = det.car_max;
+    CHECK_EQ(cm, 5358);
+    for (unsigned b = 0; b < 30u; ++b) {
+        pulses(&e, 10u * MS + b * MS, cm, cm / 2u, 4u);
+    }
+    play_ticks(&e, 100u * MS);
+    CHECK_EQ(n_beeps, 1);
+    CHECK_EQ(beeps[0].bursts, 30);
+    CHECK(rel_err(beeps[0].freq_hz, 1000.0) < LOCKED_BEEP);
+    CHECK(rel_err(beeps[0].carrier_hz, (double)TICK_HZ / (double)cm)
+          < LOCKED_BEEP);
+    edges_free(&e);
+}
+
+TEST_CASE(a_low_of_exactly_one_and_a_quarter_carrier_periods_starts_a_burst)
+{
+    /* Bursts of 3 pulses 4000 ticks apart, 2000 high; between bursts a
+     * low of 5000 ticks, 1.25 carrier periods: bursts of their own at
+     * 15000 ticks, 2500 Hz.  One tick shorter: one long burst, no tone. */
+    for (unsigned shorter = 0; shorter < 2u; ++shorter) {
+        edges_t e = { 0 };
+        uint64_t t = 10u * MS;
+        for (unsigned b = 0; b < 20u; ++b) {
+            t = pulses(&e, t, 4000u, 2000u, 3u) + 5000u - shorter;
+        }
+        start(NULL);
+        play_ticks(&e, t + 10u * MS);
+        if (shorter == 0u) {
+            CHECK_EQ(n_beeps, 1);
+            CHECK_EQ(beeps[0].bursts, 20);
+            CHECK(rel_err(beeps[0].freq_hz, 2500.0) < LOCKED_BEEP);
+            CHECK(rel_err(beeps[0].carrier_hz, 9375.0) < LOCKED_BEEP);
+        } else {
+            CHECK_EQ(n_beeps, 0);
+            CHECK_EQ(windows_present(), 0);
+        }
+        edges_free(&e);
+    }
+}
+
+TEST_CASE(a_low_of_exactly_the_glitch_time_is_a_low)
+{
+    /* 400 ns is 15 ticks.  A dip of 15 ticks in each pulse is a low; one
+     * of 14 is a glitch, and the pulse goes on.  No hold-off, so a low
+     * that short could start a burst. */
+    tone_cfg_t c;
+    tone_cfg_defaults(&c, TICK_HZ);
+    c.glitch_ns = 400u;
+    c.hold_ns = 0u;
+    for (unsigned dip = 14u; dip <= 15u; ++dip) {
+        edges_t e = { 0 };
+        for (unsigned k = 0; k < 20u; ++k) {
+            const uint64_t r = 10u * MS + k * MS;
+            edge_tick(&e, r, true);
+            edge_tick(&e, r + 9000u, false);
+            edge_tick(&e, r + 9000u + dip, true);
+            edge_tick(&e, r + MS / 2u, false);
+        }
+        start(&c);
+        CHECK_EQ(det.glitch, 15);
+        play_ticks(&e, 100u * MS);
+        CHECK_EQ(tone_stats(&det)->glitches, dip == 14u ? 20 : 0);
+        if (dip == 14u) {
+            CHECK_EQ(n_beeps, 1);
+            CHECK_EQ(beeps[0].bursts, 20);
+        } else {
+            /* A burst at every dip as well: no 1 kHz beep of 20. */
+            CHECK(n_beeps == 0u || beeps[0].bursts != 20u);
+        }
+        edges_free(&e);
+    }
+}
+
+TEST_CASE(a_low_of_exactly_twice_the_hold_off_can_start_a_burst)
+{
+    /* 8000 ns of hold-off is 300 ticks.  Pulses 1 ms apart, each with a
+     * low of 600 ticks in its middle: the rise after it starts a burst.
+     * 599: one burst a millisecond. */
+    for (unsigned low = 599u; low <= 600u; ++low) {
+        edges_t e = { 0 };
+        for (unsigned k = 0; k < 20u; ++k) {
+            const uint64_t r = 10u * MS + k * MS;
+            edge_tick(&e, r, true);
+            edge_tick(&e, r + 9000u, false);
+            edge_tick(&e, r + 9000u + low, true);
+            edge_tick(&e, r + MS / 2u, false);
+        }
+        start(NULL);
+        CHECK_EQ(det.start_low, 600);
+        play_ticks(&e, 100u * MS);
+        CHECK_EQ(tone_stats(&det)->edges, 80);
+        if (low == 599u) {
+            CHECK_EQ(n_beeps, 1);
+            CHECK_EQ(beeps[0].bursts, 20);
+            CHECK(rel_err(beeps[0].freq_hz, 1000.0) < LOCKED_BEEP);
+        } else {
+            CHECK(n_beeps == 0u || beeps[0].bursts != 20u);
+        }
+        edges_free(&e);
+    }
+}
+
+TEST_CASE(tones_at_exactly_the_lowest_and_highest_frequency_are_in_range)
+{
+    const front_t f = { 12.0, 0.0 };
+    const tone_spec_t lo = { 400.0, 0.5, 0.0, 0.0, false, 0.0 };
+    one_beep(&lo, &f, 0.100, LOCKED_BEEP, LOCKED_WIN);
+    const tone_spec_t hi = { 6500.0, 0.5, 0.0, 0.0, false, 0.0 };
+    one_beep(&hi, &f, 0.100, LOCKED_BEEP, LOCKED_WIN);
+    /* Just outside: no beep, no window with a tone. */
+    static const double out[] = { 399.0, 6510.0 };
+    for (size_t i = 0; i < 2u; ++i) {
+        drive_t d = { 0 };
+        edges_t e = { 0 };
+        const tone_spec_t sp = { out[i], 0.5, 0.0, 0.0, false, 0.0 };
+        beep_add(&d, &sp, 0.010, 0.100);
+        front_run(&d, &f, &e);
+        start(NULL);
+        play(&e, 0.150);
+        CHECK_EQ(n_beeps, 0);
+        CHECK_EQ(windows_present(), 0);
+        drive_free(&d);
+        edges_free(&e);
+    }
+}
+
+TEST_CASE(a_pitch_exactly_split_pct_away_does_not_split)
+{
+    /* 20 periods of 37500 ticks, then 20 of 40500: 8 % exactly, one
+     * beep.  40501: two. */
+    for (unsigned more = 0; more < 2u; ++more) {
+        edges_t e = { 0 };
+        const uint64_t p2 = 40500u + more;
+        const uint64_t t = pulses(&e, 10u * MS, MS, 10000u, 21u) - 10000u;
+        pulses(&e, t + p2, p2, 10000u, 20u);
+        start(NULL);
+        play_ticks(&e, 200u * MS);
+        CHECK_EQ(n_beeps, 1u + more);
+        edges_free(&e);
+    }
+}
+
+TEST_CASE(a_beep_of_exactly_min_periods_is_a_beep)
+{
+    /* 4 bursts, 3 periods: a beep.  3 bursts: none. */
+    for (unsigned n = 3u; n <= 4u; ++n) {
+        edges_t e = { 0 };
+        pulses(&e, 10u * MS, MS, MS / 2u, n);
+        start(NULL);
+        play_ticks(&e, 50u * MS);
+        CHECK_EQ(n_beeps, n - 3u);
+        CHECK_EQ(tone_stats(&det)->rejected, 4u - n);
+        edges_free(&e);
+    }
+}
+
+TEST_CASE(a_period_ending_on_a_window_boundary_belongs_to_the_next)
+{
+    /* Windows of 300000 ticks.  Rises at 225000, 262500 and 300000: the
+     * period ending at 262500 is window 0's, the one ending at 300000
+     * window 1's.  Two edges on one tick are both taken. */
+    edges_t e = { 0 };
+    pulses(&e, 225000u, 37500u, 18750u, 3u);
+    start(NULL);
+    play_ticks(&e, 600000u);
+    CHECK_EQ(n_wins, 2);
+    CHECK_EQ(wins[0].index, 0);
+    CHECK_EQ(wins[0].periods, 1);
+    CHECK_EQ(wins[1].index, 1);
+    CHECK_EQ(wins[1].periods, 1);
+    tone_edge(&det, 700000u, true);
+    tone_edge(&det, 700000u, false);
+    CHECK_EQ(tone_stats(&det)->edges, 8);
+    CHECK_EQ(tone_stats(&det)->out_of_order, 0);
+    edges_free(&e);
+}
+
+TEST_CASE(after_a_hole_the_first_rise_starts_a_beep)
+{
+    /* A beep whose last fall falls into a hole: the line is left high.
+     * After the flush, a 4-burst beep is 4 bursts from its first rise. */
+    edges_t a = { 0 };
+    const uint64_t end = pulses(&a, 10u * MS, MS, MS / 2u, 10u);
+    edge_tick(&a, end + MS / 2u, true);
+    edges_t b = { 0 };
+    pulses(&b, 40u * MS, MS, MS / 2u, 4u);
+    start(NULL);
+    tone_feed(&det, a.e, a.n);
+    tone_flush(&det);
+    take();
+    CHECK_EQ(n_beeps, 1);
+    CHECK_EQ(beeps[0].bursts, 11);
+    play_ticks(&b, 100u * MS);
+    CHECK_EQ(n_beeps, 2);
+    CHECK_EQ(beeps[1].bursts, 4);
+    CHECK_EQ(beeps[1].periods, 3);
+    CHECK_EQ(beeps[1].start, 40u * MS);
+    edges_free(&a);
+    edges_free(&b);
+}
+
+/* ------------------------------------------------------------ hold-off */
+
+TEST_CASE(the_hold_off_reports_a_fall_at_the_time_the_line_fell)
+{
+    tone_holdoff_t h;
+    tone_edge_t o[2];
+    tone_holdoff_init(&h, TICK_HZ, 8000u);
+    CHECK_EQ(h.hold, 300);
+    CHECK_EQ(tone_holdoff_edge(&h, 1000u, true, o), 1);
+    CHECK_EQ(o[0].t, 1000);
+    CHECK(o[0].level);
+    /* A low of 299 ticks: nothing, the pulse goes on. */
+    CHECK_EQ(tone_holdoff_edge(&h, 2000u, false, o), 0);
+    CHECK_EQ(tone_holdoff_edge(&h, 2299u, true, o), 0);
+    /* 300, exactly the hold-off: the fall at 3000, then the rise. */
+    CHECK_EQ(tone_holdoff_edge(&h, 3000u, false, o), 0);
+    CHECK_EQ(tone_holdoff_edge(&h, 3300u, true, o), 2);
+    CHECK_EQ(o[0].t, 3000);
+    CHECK(!o[0].level);
+    CHECK_EQ(o[1].t, 3300);
+    CHECK(o[1].level);
+    /* A rise on a high line changes nothing. */
+    CHECK_EQ(tone_holdoff_edge(&h, 3400u, true, o), 0);
+    /* Time alone lets a held fall out once it has lasted the hold-off. */
+    CHECK_EQ(tone_holdoff_edge(&h, 4000u, false, o), 0);
+    CHECK_EQ(tone_holdoff_edge(&h, 4100u, false, o), 0);
+    CHECK_EQ(tone_holdoff_advance(&h, 4299u, o), 0);
+    CHECK_EQ(tone_holdoff_horizon(&h, 4299u), 3999);
+    CHECK_EQ(tone_holdoff_advance(&h, 4300u, o), 1);
+    CHECK_EQ(o[0].t, 4000);
+    CHECK(!o[0].level);
+    CHECK_EQ(tone_holdoff_advance(&h, 5000u, o), 0);
+    CHECK_EQ(tone_holdoff_horizon(&h, 100u), 0);
+    /* Without a held fall, an advance to before it lets nothing out. */
+    CHECK_EQ(tone_holdoff_edge(&h, 6000u, true, o), 1);
+    CHECK_EQ(tone_holdoff_edge(&h, 7000u, false, o), 0);
+    CHECK_EQ(tone_holdoff_advance(&h, 6500u, o), 0);
+    /* No hold-off passes every edge as it comes. */
+    tone_holdoff_init(&h, TICK_HZ, 0u);
+    CHECK_EQ(tone_holdoff_edge(&h, 10u, true, o), 1);
+    CHECK_EQ(tone_holdoff_edge(&h, 11u, false, o), 1);
+    CHECK_EQ(o[0].t, 11);
+    CHECK(!o[0].level);
+    tone_holdoff_init(NULL, TICK_HZ, 0u);
+    CHECK_EQ(tone_holdoff_edge(NULL, 1u, true, o), 0);
+    CHECK_EQ(tone_holdoff_edge(&h, 12u, true, NULL), 0);
+    CHECK_EQ(tone_holdoff_advance(NULL, 1u, o), 0);
+    CHECK_EQ(tone_holdoff_horizon(NULL, 7u), 7);
+}
+
+/* The tones the 144 kHz cases run, Hz. */
+static const double grid_hz[] = { 500, 1000, 2000, 3000, 4000, 5000, 6000,
+                                  6500 };
+#define GRID_N (sizeof grid_hz / sizeof grid_hz[0])
+
+TEST_CASE(a_144_khz_carrier_through_the_hold_off_is_one_pulse_a_burst)
+{
+    /* An eGaN ESC's 144 kHz: every low is at most 6.9 us, under the
+     * 8 us hold-off, so each burst reaches the detector as one pulse,
+     * read as accurately as an unchopped tone. */
+    static const double duty[] = { 0.1, 0.5, 0.9 };
+    const front_t f = { 12.0, TAU_22K };
+    hold_ns = 8000u;
+    rng_seed(3u);
+    for (size_t i = 0; i < GRID_N; ++i) {
+        for (size_t k = 0; k < 3u; ++k) {
+            for (int fr = 0; fr < 2; ++fr) {
+                /* At 6500 Hz exactly, a free carrier's burst starts move
+                 * the mean past the top of the range. */
+                if (fr != 0 && grid_hz[i] > 6000.0) {
+                    continue;
+                }
+                const tone_spec_t sp = { grid_hz[i], 0.5, 144000.0, duty[k],
+                                         fr != 0, 0.2e-6 };
+                one_beep(&sp, &f, 0.100, LOCKED_BEEP, LOCKED_WIN);
+                if (n_beeps == 1u) {
+                    CHECK_NEAR(beeps[0].carrier_hz, 0.0, 0.0);
+                    CHECK_EQ(tone_stats(&det)->edges, 2u * beeps[0].bursts);
+                }
+            }
+        }
+    }
+    hold_ns = 0u;
+}
+
+TEST_CASE(the_hold_off_streams_without_an_edge_out_of_order)
+{
+    /* Edges through the hold-off as they come, the detector advanced
+     * each millisecond to the hold-off's horizon. */
+    drive_t d = { 0 };
+    edges_t e = { 0 };
+    const tone_spec_t sp = { 2000.0, 0.5, 144000.0, 0.5, false, 0.0 };
+    beep_add(&d, &sp, 0.010, 0.100);
+    beep_add(&d, &sp, 0.150, 0.100);
+    const front_t f = { 12.0, TAU_22K };
+    front_run(&d, &f, &e);
+    tone_holdoff_t h;
+    tone_holdoff_init(&h, TICK_HZ, 8000u);
+    start(NULL);
+    tone_edge_t o[2];
+    size_t i = 0;
+    for (uint64_t now = 0; now < 300u * MS; now += MS) {
+        for (; i < e.n && e.e[i].t <= now; ++i) {
+            const size_t k = tone_holdoff_edge(&h, e.e[i].t, e.e[i].level, o);
+            tone_feed(&det, o, k);
+        }
+        tone_feed(&det, o, tone_holdoff_advance(&h, now, o));
+        tone_advance(&det, tone_holdoff_horizon(&h, now));
+        take();
+    }
+    CHECK_EQ(tone_stats(&det)->out_of_order, 0);
+    CHECK_EQ(n_beeps, 2);
+    for (size_t b = 0; b < n_beeps; ++b) {
+        CHECK_EQ(beeps[b].bursts, 200);
+        CHECK(rel_err(beeps[b].freq_hz, 2000.0) < LOCKED_BEEP);
+    }
+    drive_free(&d);
+    edges_free(&e);
+}
+
+TEST_CASE(a_144_khz_carrier_without_the_hold_off_is_read_at_every_edge)
+{
+    /* No hold-off.  A node of 1.1 us passes every carrier pulse: the
+     * detector reads the carrier and the tone, at 288,000 edges a second
+     * inside a burst.  The carrier is the shortest rise interval, so
+     * 0.2 us of jitter on each edge reads it up to 0.4 us short: 6 % high.
+     * At 30 % duty a node of 3.3 us takes 4.7 us to fall from the clamp,
+     * against a 4.9 us low, and loses some lows and not others; the
+     * bursts still group.  At 50 % duty one of 6.6 us at 25.2 V loses
+     * every low: one pulse a burst.  The tone is read as accurately as
+     * an unchopped one in all three. */
+    static const double tau[] = { TAU_22K, 3.3e-6, 6.6e-6 };
+    static const double volts[] = { 12.0, 12.0, 25.2 };
+    static const double duty[] = { 0.5, 0.3, 0.5 };
+    rng_seed(5u);
+    for (size_t n = 0; n < 3u; ++n) {
+        const front_t f = { volts[n], tau[n] };
+        for (size_t i = 0; i < GRID_N; ++i) {
+            const tone_spec_t sp = { grid_hz[i], 0.5, 144000.0, duty[n],
+                                     false, 0.2e-6 };
+            one_beep(&sp, &f, 0.100, LOCKED_BEEP, LOCKED_WIN);
+            if (n_beeps != 1u) {
+                continue;
+            }
+            /* Carrier pulses in a burst of half a tone period. */
+            const uint32_t per_burst =
+                (uint32_t)(144000.0 / 2.0 / grid_hz[i]);
+            const uint32_t edges = tone_stats(&det)->edges;
+            if (n == 0u) {
+                CHECK(beeps[0].carrier_hz >= 144000.0f
+                      && beeps[0].carrier_hz < 144000.0f * 1.07f);
+                CHECK(edges >= 2u * per_burst * beeps[0].bursts);
+            } else if (n == 1u) {
+                CHECK(edges > 2u * beeps[0].bursts);
+                CHECK(edges < 2u * per_burst * beeps[0].bursts);
+            } else {
+                CHECK_EQ(edges, 2u * beeps[0].bursts);
+            }
+        }
+    }
+}
+
+TEST_CASE(a_short_carrier_pulse_the_node_cannot_raise_is_no_tone)
+{
+    /* 10 % of 144 kHz is a 0.69 us pulse.  At 5 V through 1.65 us the
+     * node never reaches the input's 2.0 V: no edge, no tone, with or
+     * without the hold-off. */
+    drive_t d = { 0 };
+    edges_t e = { 0 };
+    const tone_spec_t sp = { 2000.0, 0.5, 144000.0, 0.1, false, 0.0 };
+    beep_add(&d, &sp, 0.010, 0.100);
+    const front_t f = { 5.0, TAU_TYP };
+    front_run(&d, &f, &e);
+    CHECK_EQ(e.n, 0);
+    drive_free(&d);
+    edges_free(&e);
+}
+
+TEST_CASE(carriers_of_8_to_48_khz_read_the_same_through_the_hold_off)
+{
+    /* With an 8 us hold-off, a carrier's lows of 2.1 to 112 us are
+     * swallowed or reported; at 12 kHz and 90 % duty they are 8.3 us,
+     * at the hold-off, and with 1 us of jitter some are and some are
+     * not.  The bounds held are those without the hold-off. */
+    static const double hz[] = { 500, 1000, 2000, 4000, 6000 };
+    static const double fc[] = { 8000, 12000, 16000, 24000, 32000, 48000 };
+    static const double duty[] = { 0.1, 0.5, 0.9 };
+    const front_t f = { 12.0, TAU_22K };
+    hold_ns = 8000u;
+    rng_seed(11u);
+    for (size_t i = 0; i < sizeof hz / sizeof hz[0]; ++i) {
+        for (size_t j = 0; j < sizeof fc / sizeof fc[0]; ++j) {
+            for (size_t k = 0; k < 3u; ++k) {
+                if (fc[j] < 4.0 * hz[i]) {
+                    continue;
+                }
+                const double jit = fc[j] < 24000.0 ? 1e-6 : 0.2e-6;
+                const tone_spec_t lk = { hz[i], 0.5, fc[j], duty[k], false,
+                                         jit };
+                one_beep(&lk, &f, 0.100, LOCKED_BEEP, LOCKED_WIN);
+                const tone_spec_t fr = { hz[i], 0.5, fc[j], duty[k], true,
+                                         jit };
+                one_beep(&fr, &f, 0.100, FREE_BEEP, FREE_WIN);
+            }
+        }
+    }
+    hold_ns = 0u;
+}
+
 /* -------------------------------------------------------------- the API */
 
 TEST_CASE(an_edge_earlier_than_the_last_time_is_ignored)
@@ -988,6 +1534,22 @@ int main(void)
     RUN(a_glitch_on_an_edge_is_one_rise);
     RUN(a_beep_whose_first_periods_are_wrong_keeps_its_start);
     RUN(an_edge_to_the_level_the_line_holds_changes_nothing);
+    RUN(a_silence_of_exactly_the_gap_ends_a_beep);
+    RUN(a_carrier_at_exactly_the_lowest_carrier_rate_is_chopping);
+    RUN(a_low_of_exactly_one_and_a_quarter_carrier_periods_starts_a_burst);
+    RUN(a_low_of_exactly_the_glitch_time_is_a_low);
+    RUN(a_low_of_exactly_twice_the_hold_off_can_start_a_burst);
+    RUN(tones_at_exactly_the_lowest_and_highest_frequency_are_in_range);
+    RUN(a_pitch_exactly_split_pct_away_does_not_split);
+    RUN(a_beep_of_exactly_min_periods_is_a_beep);
+    RUN(a_period_ending_on_a_window_boundary_belongs_to_the_next);
+    RUN(after_a_hole_the_first_rise_starts_a_beep);
+    RUN(the_hold_off_reports_a_fall_at_the_time_the_line_fell);
+    RUN(a_144_khz_carrier_through_the_hold_off_is_one_pulse_a_burst);
+    RUN(the_hold_off_streams_without_an_edge_out_of_order);
+    RUN(a_144_khz_carrier_without_the_hold_off_is_read_at_every_edge);
+    RUN(a_short_carrier_pulse_the_node_cannot_raise_is_no_tone);
+    RUN(carriers_of_8_to_48_khz_read_the_same_through_the_hold_off);
     RUN(an_edge_earlier_than_the_last_time_is_ignored);
     RUN(a_full_queue_counts_the_beeps_it_loses);
     RUN(flush_ends_the_beep_under_way_at_its_last_edge);

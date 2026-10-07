@@ -21,6 +21,7 @@ void tone_cfg_defaults(tone_cfg_t *c, uint32_t tick_hz)
     c->f_max_hz           = 6500u;
     c->carrier_min_hz     = 7000u;
     c->glitch_ns          = 500u;
+    c->hold_ns            = 8000u;
     c->gap_us             = 3000u;
     c->split_pct          = 8u;
     c->min_periods        = 3u;
@@ -33,6 +34,12 @@ static uint64_t us_ticks(uint32_t tick_hz, uint32_t us)
     return (uint64_t)tick_hz * us / 1000000u;
 }
 
+/* @p a / @p b rounded up. */
+static uint64_t div_up(uint64_t a, uint64_t b)
+{
+    return (a + b - 1u) / b;
+}
+
 bool tone_init(tone_t *d, const tone_cfg_t *c)
 {
     if (d == NULL || c == NULL) {
@@ -41,7 +48,9 @@ bool tone_init(tone_t *d, const tone_cfg_t *c)
     memset(d, 0, sizeof *d);
     if (c->f_min_hz < 50u || c->f_min_hz >= c->f_max_hz
         || c->carrier_min_hz <= c->f_max_hz
+        || c->f_max_hz > c->tick_hz || c->carrier_min_hz > c->tick_hz
         || c->glitch_ns == 0u || c->glitch_ns > 10000u
+        || c->hold_ns > 100000u
         || (uint64_t)c->tick_hz * c->glitch_ns < 1000000000u
         || c->window_us < 1000u || c->window_us > 100000u
         || (uint64_t)c->gap_us * c->f_min_hz < 1000000u
@@ -50,11 +59,18 @@ bool tone_init(tone_t *d, const tone_cfg_t *c)
     }
     d->c         = *c;
     d->win_ticks = us_ticks(c->tick_hz, c->window_us);
+    /* Each bound in whole ticks, rounded so that a period exactly at it,
+     * which the tick clock sees as the tick below or the tick above, is
+     * inside: the shortest tone period down, the longest up, the carrier's
+     * up.  The glitch and the gap round up: a low or a silence counts as
+     * that long only once it has lasted that long. */
     d->per_min   = c->tick_hz / c->f_max_hz;
-    d->per_max   = c->tick_hz / c->f_min_hz;
-    d->car_max   = c->tick_hz / c->carrier_min_hz;
-    d->glitch    = (uint64_t)c->tick_hz * c->glitch_ns / 1000000000u;
-    d->gap       = us_ticks(c->tick_hz, c->gap_us);
+    d->per_max   = div_up(c->tick_hz, c->f_min_hz);
+    d->car_max   = div_up(c->tick_hz, c->carrier_min_hz);
+    d->glitch    = div_up((uint64_t)c->tick_hz * c->glitch_ns, 1000000000u);
+    d->gap       = div_up((uint64_t)c->tick_hz * c->gap_us, 1000000u);
+    d->start_low = div_up(2u * (uint64_t)c->tick_hz * c->hold_ns,
+                          1000000000u);
     return true;
 }
 
@@ -367,7 +383,7 @@ static bool time_to(tone_t *d, uint64_t t)
     }
     d->now = t;
     windows_to(d, t);
-    if (d->in_run && t - d->last_edge > d->gap) {
+    if (d->in_run && t - d->last_edge >= d->gap) {
         run_end(d);
     }
     return true;
@@ -383,7 +399,7 @@ static void rise(tone_t *d, uint64_t t, uint64_t e_before)
             return;
         }
         const uint64_t r = t - d->last_rise;
-        if (r < d->car_max) {
+        if (r <= d->car_max) {
             const uint64_t high = d->last_fall - d->last_rise;
             if (d->car_low == 0u || low < d->car_low) {
                 d->car_low = low;
@@ -394,11 +410,14 @@ static void rise(tone_t *d, uint64_t t, uint64_t e_before)
         }
         const uint64_t cp = carrier(d);
         if (cp != 0u) {
-            starts = low >= cp + cp / 4u;
+            starts = low * 4u >= cp * 5u;
+        }
+        if (low < d->start_low) {
+            starts = false;
         }
         /* A rise interval inside a burst, not its first: the first may
          * start at a pulse the burst's own start cut short. */
-        if (!starts && !d->rise_started && r < d->car_max
+        if (!starts && !d->rise_started && r <= d->car_max
             && (d->car_rise == 0u || r < d->car_rise)) {
             d->car_rise = r;
         }
@@ -453,6 +472,11 @@ void tone_flush(tone_t *d)
         return;
     }
     run_end(d);
+    /* The edges in the hole are gone, the line's level with them: the
+     * first rise after it starts a run, whatever the last edge before it
+     * was. */
+    d->high = false;
+    d->have_edge = false;
 }
 
 /* ---------------------------------------------------------------- results */
@@ -494,4 +518,70 @@ uint64_t tone_ticks_us(const tone_t *d, uint64_t ticks)
     }
     const uint64_t hz = d->c.tick_hz;
     return ticks / hz * 1000000u + ticks % hz * 1000000u / hz;
+}
+
+/* ---------------------------------------------------------------- hold-off */
+
+void tone_holdoff_init(tone_holdoff_t *h, uint32_t tick_hz, uint32_t hold_ns)
+{
+    if (h == NULL) {
+        return;
+    }
+    memset(h, 0, sizeof *h);
+    h->hold = div_up((uint64_t)tick_hz * hold_ns, 1000000000u);
+}
+
+size_t tone_holdoff_edge(tone_holdoff_t *h, uint64_t t, bool level,
+                         tone_edge_t out[2])
+{
+    if (h == NULL || out == NULL || level == h->line) {
+        return 0u;
+    }
+    h->line = level;
+    if (!level) {
+        if (h->hold == 0u) {
+            out[0].t = t;
+            out[0].level = false;
+            return 1u;
+        }
+        h->pending = true;
+        h->fall = t;
+        return 0u;
+    }
+    size_t n = 0;
+    if (h->pending) {
+        h->pending = false;
+        /* A low shorter than the hold-off was never reported: the pulse
+         * goes on, and so does the line, as far as anyone was told. */
+        if (t - h->fall < h->hold) {
+            return 0u;
+        }
+        out[n].t = h->fall;
+        out[n].level = false;
+        n++;
+    }
+    out[n].t = t;
+    out[n].level = true;
+    return n + 1u;
+}
+
+size_t tone_holdoff_advance(tone_holdoff_t *h, uint64_t now,
+                            tone_edge_t out[1])
+{
+    if (h == NULL || out == NULL || !h->pending || now < h->fall
+        || now - h->fall < h->hold) {
+        return 0u;
+    }
+    h->pending = false;
+    out[0].t = h->fall;
+    out[0].level = false;
+    return 1u;
+}
+
+uint64_t tone_holdoff_horizon(const tone_holdoff_t *h, uint64_t now)
+{
+    if (h == NULL) {
+        return now;
+    }
+    return now > h->hold ? now - h->hold : 0u;
 }
