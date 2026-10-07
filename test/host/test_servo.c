@@ -2310,6 +2310,88 @@ TEST_CASE(a_sweep_does_not_come_back_with_the_link)
     CHECK(!servo_cmd_survives_link_loss(NULL));
 }
 
+/* With the link down SWEEP is greyed and starts nothing: the panel would
+ * drop the command, and the screen would wait for a start that never
+ * comes.  Back up, it works. */
+TEST_CASE(sweep_needs_the_link)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    servo_screen_set_link(false);
+    scr->render(&cv, 0);
+    CHECK_EQ(sweep_btn_pixels(ui_theme_color(UI_C_ACCENT)), 0);
+    tap(SWEEP_X, BTN_Y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    CHECK(!servo_screen_sweeping());
+    servo_screen_set_link(true);
+    tap(SWEEP_X, BTN_Y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_SWEEP);
+    CHECK(servo_screen_sweeping());
+}
+
+/*
+ * PAUSED tapped while the HOLD is still on its way, and that HOLD then let
+ * go of (acknowledged late): the resume carries the pause it resumes, which
+ * is how the panel drops it as stale, and the screen ends the sweep it had
+ * asked to resume, so nothing waits for a start that will not come.
+ */
+TEST_CASE(a_resume_of_a_let_go_pause_is_dropped)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    sweep_go();
+    frames(0.2f);
+    const servo_cmd_t hold = pause_go();
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED, HOLD in flight */
+    const servo_cmd_t resume = last_cmd();
+    CHECK(resume.resume);
+    CHECK(servo_cmd_resumes_pause(&resume, hold.pause_seq));
+    CHECK(!servo_cmd_resumes_pause(&resume, (uint16_t)(hold.pause_seq + 1u)));
+    CHECK(!servo_cmd_resumes_pause(&hold, hold.pause_seq));
+    CHECK(!servo_cmd_resumes_pause(NULL, 0u));
+    CHECK(servo_screen_sweeping());            /* waiting for the resume */
+    servo_screen_released();                   /* the late HOLD let go */
+    CHECK(!servo_screen_sweeping());
+    CHECK(!servo_screen_paused());
+    frames(0.5f);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    tap(SWEEP_X, BTN_Y);                       /* a new tap starts afresh */
+    const servo_cmd_t again = last_cmd();
+    CHECK_EQ(again.kind, SERVO_CMD_SWEEP);
+    CHECK(!again.resume);
+}
+
+/*
+ * A resume acknowledged while feedback is valid uses its origin up: the
+ * repeat of the acknowledgement after feedback has gone works on from the
+ * reading, 1700 us, not from the 1600 saved at the tap.
+ */
+TEST_CASE(a_resume_origin_is_used_once)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    servo_screen_feedback(1500u, 0.2f, true);
+    sweep_go();
+    frames(0.2f);
+    servo_screen_feedback(1600u, 0.2f, true);
+    frames(0.05f);
+    const servo_cmd_t hold = pause_go();
+    const uint32_t kept = servo_screen_curve_ms();
+    ack_hold(&hold);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED: origin 1600 */
+    CHECK(last_cmd().resume);
+    servo_screen_feedback(1700u, 0.2f, true);
+    frames(0.05f);
+    ack_resume(kept, 0u);                      /* with feedback */
+    frames(0.1f);
+    servo_screen_feedback(0u, 0.0f, false);    /* gone */
+    ack_resume(kept, 0u);                      /* said again */
+    CHECK(abs((int)servo_screen_drawn() - 1700) <= 2);
+}
+
 /* A refused sweep drives nothing: a change of profile after it says no
  * position. */
 TEST_CASE(a_refused_sweep_leaves_nothing_driven)
@@ -4535,6 +4617,9 @@ int main(void)
     RUN(the_link_going_ends_a_pause_at_rest);
     RUN(sweep_needs_a_surface_bound);
     RUN(a_sweep_does_not_come_back_with_the_link);
+    RUN(sweep_needs_the_link);
+    RUN(a_resume_of_a_let_go_pause_is_dropped);
+    RUN(a_resume_origin_is_used_once);
     RUN(a_refused_sweep_leaves_nothing_driven);
     RUN(an_early_resume_keeps_the_reading_at_the_hold);
     RUN(a_released_pause_says_no_drawn_angle);

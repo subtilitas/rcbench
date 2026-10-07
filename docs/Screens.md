@@ -291,10 +291,11 @@ coprocessor older than 4.6, or one that refuses the resume because its hold
 has ended, starts the curve over from its beginning -- the centre for a
 sine or a triangle, the first end for a square -- and the alert band says
 so: `coprocessor older than 4.6 -- the sweep starts over` or `coprocessor
-refused the resume -- the sweep starts over`. So does a pause whose HOLD
-was answered only at a retry, since an earlier attempt can have reached the
-coprocessor and the phase it kept is then not known on the panel: `the
-pause was retried on the link -- the sweep starts over`.
+refused the resume -- the sweep starts over`. So does PAUSED tapped while
+the HOLD has gone unanswered, since the coprocessor may then be holding or
+still running: `the pause went unanswered -- the sweep starts over`. A
+PAUSED tapped before a HOLD that the panel then lets go of (below) starts
+nothing: the pause ends with that HOLD.
 
 ![A paused sweep](img/servo-paused.png)
 
@@ -323,7 +324,8 @@ pulses and TRAVEL it was sent with. Each acknowledgement is matched to the
 command it answers: a SPEED or curve changed while a start waits does not
 let the earlier command's acknowledgement draw the newer one. A changed
 profile or frame rate goes with it at once. SWEEP is offered on an armed
-bench, with a surface bound, and a coprocessor speaking protocol 4.2;
+bench, with a surface bound and the link up, and a coprocessor speaking
+protocol 4.2;
 greyed otherwise; the coprocessor stops a sweep the panel has not
 repeated for 500 ms and leaves each surface where its output has got to.
 

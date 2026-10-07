@@ -949,7 +949,7 @@ static void record_start(void)
  */
 static void start_sweep(void)
 {
-    if (!s.armed || !s.sweep_able || !s.surfaces) {
+    if (!s.armed || !s.sweep_able || !s.surfaces || !s.link_up) {
         return;
     }
     const sweep_cfg_t cfg = sweep_cfg_now();
@@ -1034,6 +1034,9 @@ static void resume_sweep(void)
     post(SERVO_CMD_SWEEP, 0);
     record_start();
     s.pending.resume = s.pending.kind == SERVO_CMD_SWEEP;
+    if (s.pending.resume) {
+        s.pending.pause_seq = s.pause_seq;
+    }
     ++s.ctrl_rev;
 }
 
@@ -1096,7 +1099,9 @@ uint32_t servo_screen_curve_ms(void) { return s.clock_ms - s.sw.start_ms; }
 void servo_screen_released(void)
 {
     /* Nothing held any more, and the horn goes to the centre the surfaces
-     * were released to.  A pause is over with the hold. */
+     * were released to.  A pause is over with the hold, and a resume of it
+     * asked for meanwhile is dropped by the panel: the sweep ends here. */
+    stop_sweep();
     s.driving       = false;
     s.paused        = false;
     s.dr.on      = false;
@@ -1197,6 +1202,9 @@ void servo_screen_sweep_started(uint16_t start_seq, uint32_t age_ms,
     s.awaiting    = false;
     s.dr.on    = false;
     ++s.ctrl_rev;
+    /* A resume's origin is for this acknowledgement only. */
+    const bool from_resume = from == SERVO_SWEEP_RESUMED && s.resume_from_set;
+    s.resume_from_set = false;
     if (s.have_feedback) {
         return;
     }
@@ -1204,9 +1212,8 @@ void servo_screen_sweep_started(uint16_t start_seq, uint32_t age_ms,
      * acknowledgement can have said since the tap. */
     const float from_cmd = (from == SERVO_SWEEP_FROM_FROZEN)
                            ? shown_cmd_ago(since_ms)
-                           : (from == SERVO_SWEEP_RESUMED && s.resume_from_set)
-                           ? s.resume_from_cmd : shown_cmd_ago(moving);
-    s.resume_from_set = false;
+                           : from_resume ? s.resume_from_cmd
+                                         : shown_cmd_ago(moving);
     const uint32_t ms = (moving > 5000u) ? 5000u : moving;
     s.shown_cmd = drawn_after(&s.sw, age_ms - moving, ms, from_cmd, speed);
     s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
@@ -1763,6 +1770,7 @@ static void reset(void)
     s.travel_deg    = 90.0f;
     s.speed_pct     = 100;
     s.surfaces      = true;
+    s.link_up       = true;     /* until the panel says otherwise */
     s.shown_cmd     = (float)OUT_SPAN / 2.0f;
     /* STANDARD PWM at 50 Hz: what every restart starts at, whatever the
      * session before it used. */
@@ -2367,6 +2375,12 @@ void servo_screen_sweep_refused(void)
         s.commanded_deg = clamp_travel(s.shown_deg);
         ++s.ctrl_rev;
     }
+}
+
+bool servo_cmd_resumes_pause(const servo_cmd_t *c, uint16_t pause_seq)
+{
+    return c != NULL && c->kind == SERVO_CMD_SWEEP && c->resume
+           && c->pause_seq == pause_seq;
 }
 
 bool servo_cmd_survives_link_loss(const servo_cmd_t *c)
@@ -3699,7 +3713,8 @@ static void draw_right(gfx_canvas_t *c, bool power)
     ui_button(c, s.sweep_btn,
               s.paused ? TR(SV_PAUSED) : s.sweeping ? TR(SV_PAUSE) : "SWEEP", sweep_fill,
               false, s.sweeping || s.paused
-                     || (s.armed && s.sweep_able && s.surfaces));
+                     || (s.armed && s.sweep_able && s.surfaces
+                         && s.link_up));
     ui_button(c, s.release_btn, TR(SV_RELEASE), ui_theme_color(UI_C_PANEL_HI),
               false, true);
     draw_arm(c);
@@ -4414,6 +4429,7 @@ static void tick(float dt_s)
      */
     if (s.have_feedback) {
         s.shown_cmd = us_to_cmd(deg_to_us_f(s.shown_deg));
+        remember_shown();
         return;
     }
     /*

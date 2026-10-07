@@ -89,7 +89,8 @@ typedef struct {
      *  and an older one, or one that refuses, starts the curve over. */
     bool             resume;
     /** SERVO_CMD_HOLD: which pause it is, given back with its
-     *  acknowledgement in servo_screen_sweep_held(). */
+     *  acknowledgement in servo_screen_sweep_held(); a resume
+     *  (SERVO_CMD_SWEEP with resume) carries the pause it resumes. */
     uint16_t         pause_seq;
     /** SERVO_CMD_SWEEP: which sweep command it is, given back with the
      *  acknowledgement of a start in servo_screen_sweep_started(). */
@@ -176,6 +177,10 @@ void servo_screen_sweep_refused(void);
  * motion nobody asked for.  A position is what the screen still shows.
  */
 bool servo_cmd_survives_link_loss(const servo_cmd_t *c);
+
+/** Whether @p c resumes the pause numbered @p pause_seq: a stale resume,
+ *  when that pause has been let go of at the panel. */
+bool servo_cmd_resumes_pause(const servo_cmd_t *c, uint16_t pause_seq);
 
 /** Whether a sweep is running, for the application and tests. */
 bool servo_screen_sweeping(void);

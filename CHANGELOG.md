@@ -47,7 +47,7 @@ sweep starts over from the curve's beginning, and the alert band says so.
   acknowledged after PAUSED was tapped still moves the horn to the output
   the coprocessor held, and the resume goes on from there. Touch events
   going missing pause a running sweep. SWEEP is offered only with a surface
-  bound, greyed otherwise.
+  bound and the link up, greyed otherwise.
 - **SERVO draws a sweep as the coprocessor runs it.** A started, resumed
   or restarted sweep is drawn only from the coprocessor's acknowledgement
   of it; until then the horn stays where the output is, and during a

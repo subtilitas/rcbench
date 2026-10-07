@@ -317,11 +317,11 @@ das Fortsetzen abweist, weil sein Halten geendet hat, startet die Kurve von
 ihrem Anfang -- in der Mitte bei Sinus und Dreieck, am ersten Ende beim
 Rechteck --, und das Alert-Band sagt es: `Koprozessor älter als 4.6 -- der
 Sweep beginnt von vorn` oder `Koprozessor lehnte das Fortsetzen ab -- der
-Sweep beginnt von vorn`. Ebenso eine Pause, deren HOLD erst bei einer
-Wiederholung beantwortet wurde, denn ein früherer Versuch kann den
-Koprozessor erreicht haben, und die Phase, die er behalten hat, ist im
-Panel dann nicht bekannt: `Pause auf dem Link wiederholt -- der Sweep
-beginnt von vorn`.
+Sweep beginnt von vorn`. Ebenso ein Tippen auf PAUSIERT, während der HOLD
+unbeantwortet ist, denn der Koprozessor kann dann halten oder noch laufen:
+`Pause unbeantwortet -- der Sweep beginnt von vorn`. Ein Tippen auf
+PAUSIERT vor einem HOLD, den das Panel dann loslässt (siehe unten),
+startet nichts: die Pause endet mit diesem HOLD.
 
 ![Ein angehaltener Sweep](img/de/servo-paused.png)
 
@@ -355,7 +355,7 @@ wird, während ein Start wartet, wird nicht von der Quittung des früheren
 Befehls gezeichnet. Ein geändertes
 Profil oder eine geänderte Frame Rate geht sofort mit.
 SWEEP gibt es bei scharfem Prüfstand, mit einer gebundenen Surface und
-einem Koprozessor mit Protokoll 4.2, sonst ist der Knopf ausgegraut;
+stehendem Link und einem Koprozessor mit Protokoll 4.2, sonst ist der Knopf ausgegraut;
 der Koprozessor hält eine Kurve an, die das Panel 500 ms nicht wiederholt hat,
 und lässt jede Surface dort stehen, wo ihr Ausgang gerade ist.
 

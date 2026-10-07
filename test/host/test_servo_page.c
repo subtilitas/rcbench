@@ -632,17 +632,14 @@ TEST_CASE(a_stop_forgets_the_kept_phase_at_the_panel)
     CHECK(!servo_phase_resumable(&ph));
     /* A HOLD of no sweep holds nothing resumable either. */
     CHECK_EQ(servo_page_resume_plan(true, servo_phase_resumable(&ph),
-                                    !ph.untimed, 6u, false),
+                                    true, 6u, false),
              SERVO_RESUME_CURVE);
-    /* An untimed hold is resumable, and starts over with its alert. */
-    servo_phase_untimed(&ph);
-    CHECK(servo_phase_resumable(&ph));
-    CHECK_EQ(servo_page_resume_plan(true, servo_phase_resumable(&ph),
-                                    !ph.untimed, 6u, false),
+    /* A HOLD that went unanswered may or may not hold there: a resume
+     * asked meanwhile starts over, with its alert. */
+    CHECK_EQ(servo_page_resume_plan(true, true, false, 6u, false),
              SERVO_RESUME_UNTIMED);
     servo_phase_started(&ph, 2000u);
     CHECK(!servo_phase_resumable(&ph));
-    servo_phase_untimed(NULL);
     servo_phase_stopped(NULL);
     CHECK(!servo_phase_resumable(NULL));
 }
