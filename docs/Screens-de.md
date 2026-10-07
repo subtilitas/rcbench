@@ -794,22 +794,30 @@ das Home-Tag im Band verlässt den Bildschirm.
 
 ### ESC STICK
 
-Die Liste enthält jedes ESC-Profil, die ausführbaren zuerst; eine Zeile, die
-nicht laufen kann, nennt den Grund:
+Die Liste zeigt zuerst die Hersteller, alphabetisch, jeden mit der Zahl
+seiner Modelle, die laufen:
 
-![Die Profile](img/de/programmer-stick.png)
+![Die Hersteller](img/de/programmer-stick.png)
 
-SUCHE filtert die Liste. Ihre Tastatur dockt rechts an, die Zeilen werden
-daneben schmaler, und jede Taste filtert sofort. Ein Profil wird gefunden,
-wenn der Text in Hersteller und Name steht, als ein Text gelesen, oder in
-Hersteller und einem Modellnamen. Groß- und Kleinschreibung spielen keine
-Rolle, und `*` steht für eine beliebige Folge von Zeichen:
+Ein Hersteller öffnet seine Modelle, eine Zeile je Modell, nach Strom, dann
+Spannung, dann Name, jedes mit seiner Familie und was das Profil ist oder
+warum es nicht läuft. Ein Modell öffnet das Profil seiner Familie:
+
+![Die Modelle von Kontronik](img/de/programmer-stick-hand-list.png)
+
+SUCHE filtert die gezeigte Ebene. Ihre Tastatur dockt rechts an, die
+Zeilen werden daneben schmaler, und jede Taste filtert sofort. Ein Modell
+wird gefunden, wenn der Text in Hersteller und Familie steht, als ein Text
+gelesen, oder in Hersteller und seinem eigenen Namen; ein Hersteller
+erscheint, wenn eines seiner Modelle gefunden ist. Groß- und
+Kleinschreibung spielen keine Rolle, und `*` steht für eine beliebige Folge
+von Zeichen:
 
 ![Eine Suche wird getippt](img/de/programmer-stick-find.png)
 
-OK behält die Suche, X leert sie:
+OK behält die Suche auf beiden Ebenen, X leert sie:
 
-![Eine Suche angewendet](img/de/programmer-stick-found.png)
+![Eine Suche angewendet, die Modelle von Hobbywing](img/de/programmer-stick-found.png)
 
 Die Punkte eines Profils stehen anfangs auf BEHALTEN. Die Stepper wählen einen
 Wert; START zählt die gewählten Werte:

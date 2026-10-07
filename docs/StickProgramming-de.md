@@ -47,53 +47,84 @@ PROGRAMMER, dann ESC STICK:
 
 ![Geräteklasse](img/de/programmer.png)
 
-Die Liste enthält jedes Profil, die ausführbaren zuerst. Ein Profil, das der
+Die Liste hat zwei Ebenen.
+
+- **Hersteller.** Eine Zeile je Hersteller, alphabetisch ohne Rücksicht
+  auf Groß- und Kleinschreibung: sein Name, wie viele seiner Modelle laufen
+  von allen, die er führt (`10 VON 82 AUSFÜHRBAR`), und das rote Schild
+  HAND, wo ein Modell [Handgriffe](#handgriffe) hat. Ein Hersteller, von
+  dem kein Modell läuft, ist dunkel gezeichnet. Ein Tippen öffnet seine
+  Modelle.
+- **Modelle.** Eine Zeile je Modell dieses Herstellers, nach Strom, dann
+  nach höchster Eingangsspannung, dann nach Name; ein Modell ohne Angabe
+  von Strom oder Spannung kommt in diesem Schlüssel zuletzt. Eine Zeile
+  zeigt das Modell, seinen Strom und seine Spannung, seine Familie, das
+  Schild HAND und was das Profil seiner Familie ist (Punkte, ein- oder
+  zweistufig, KARTE für ein Profil von der SD-Karte (Secure Digital)) oder
+  warum es nicht läuft. Der Pfad lautet `ESC STICK > Kontronik`. ZURÜCK
+  führt zu den Herstellern auf der Seite, die es verließ.
+
+Ein Tippen auf ein Modell öffnet das Profil seiner Familie, mit dem Modell
+benannt: `ESC STICK > Kontronik > JAZZ 55 LV (JAZZ / MINIJAZZ)`. Das
+Netzteil nimmt die eigene niedrigste Zellenzahl des Modells, wo es eine
+nennt, sonst die niedrigste der Familie. Ein Modell, dessen Profil der
 Prüfstand nicht ausführen kann, nennt den Grund in seiner Zeile und öffnet
 nichts; ebenso eines, dessen Spannung über der Grenze von SUPPLY liegt.
-Reihenfolge und Anzahl folgen SPANNUNG und der Grenze, wenn sie sich
-ändern. Ein
-Profil von der SD-Karte (Secure Digital) trägt KARTE. Ein Profil mit
-[Handgriffen](#handgriffe) trägt am Ende seines Namens ein rotes Schild
-HAND; eines davon, das nicht läuft, öffnet statt nichts seine Handgriffe.
+Eines, dessen Profil Handgriffe hat, öffnet stattdessen diese. Zeilen und
+Zählungen folgen SPANNUNG und der Grenze, wenn sie sich ändern. Ein Profil
+von der Karte reiht sich bei den Modellen seines Herstellers ein; ein
+Hersteller von der Karte, den der Satz nicht hat, reiht sich alphabetisch
+bei den Herstellern ein. Jedes eingebaute Profil nennt seinen Hersteller;
+der Kartenleser lehnt eine Datei ohne ihn ab. Ein Hersteller führt
+höchstens 512 Modelle.
 
-![Die Profile](img/de/programmer-stick.png)
+Die Zeile unter den Zeilen sagt, dass kein Profil geprüft ist, und die
+Zählung rechts davon zählt die Ebene: `1-9/20 Hersteller, 6 ausführbar` --
+die Hersteller mit einem laufenden Modell -- oder `1-9 von 82, 40
+ausführbar` für die Modelle eines Herstellers.
 
-![Die Kontronik-Profile mit dem Schild HAND](img/de/programmer-stick-hand-list.png)
+![Die Hersteller](img/de/programmer-stick.png)
+
+![Die Modelle von Kontronik mit dem Schild HAND](img/de/programmer-stick-hand-list.png)
 
 ### Suche
 
-SUCHE neben ESC STICK filtert die Liste. Ein Tippen darauf dockt die
-Texttastatur rechts an, und die Zeilen werden links davon schmaler: der
-Hersteller, der gekürzte Name und ein Zeichen, ob das Profil ausführbar ist
-(ein gefüllter Punkt) oder nicht (ein Ring). Jede Taste filtert die Liste
-sofort, und die Liste springt auf ihre erste Zeile, sobald sich die Suche
-ändert.
+SUCHE in der Pfadzeile filtert die gezeigte Ebene. Ein Tippen darauf dockt
+die Texttastatur rechts an, und die Zeilen werden links daneben schmaler:
+der Hersteller oder das Modell, die gefundenen Modelle des Herstellers oder
+der Strom eines Modells, und ein Zeichen, ob es läuft (ein gefüllter Punkt)
+oder nicht (ein Ring); die Zählung steht unter den schmalen Zeilen. Jede
+Taste filtert sofort, und die Ebene geht zu ihrer ersten Zeile zurück,
+sobald sich die Suche ändert.
 
-- Ein Profil wird gefunden, wenn der Suchtext irgendwo in Hersteller und
-  Name steht, als ein Text gelesen ("Hobbywing Skywalker V2 15A-100A,
-  11-item menu"), oder in Hersteller und einem seiner Modelle ("Kontronik
-  JAZZ 55 LV").
+- Ein Modell wird gefunden, wenn der Suchtext irgendwo in seinem
+  Hersteller und dem Namen seiner Familie steht, als ein Text gelesen,
+  "Hobbywing Skywalker V2 15A-100A, 11-item menu", oder in seinem
+  Hersteller und seinem eigenen Namen, "Kontronik JAZZ 55 LV".
+- Ein Hersteller erscheint, wenn die Suche eines seiner Modelle findet;
+  seine Zeile zählt sie dann: `1 VON 82 GEFUNDEN, 1 LAUFEN`. Kein
+  Hersteller öffnet sich von selbst, auch nicht als einziger gefundener.
 - Groß- und Kleinschreibung spielen keine Rolle: `KONTR*Jazz` findet
-  "Kontronik JAZZ / MINIJAZZ".
-- `*` steht für eine beliebige Folge von Zeichen, auch für keine. Die Taste
-  `*` sitzt dort, wo die Namenstastatur `_` hat. `sky*v2` findet die drei
-  Profile Skywalker V2; `kontr*jazz*55` findet das Jazz-Profil über sein
-  Modell JAZZ 55 LV.
-- Eine leere Suche zeigt jedes Profil. Die Suche fasst bis zu 16 Zeichen.
-- Die Kopfzeile zählt, was die Suche gefunden hat:
-  `1-3/3 gefunden, 2 ausführbar`. Findet sie nichts, sagt die Liste
-  `Kein Profil passt zur Suche.`
+  Kontronik und darin die Modelle von JAZZ und MINIJAZZ.
+- `*` steht für eine beliebige Folge von Zeichen, auch keine. Die Taste
+  `*` sitzt dort, wo die Namenstastatur `_` hat. `sky*v2` findet Hobbywing
+  und darin die 14 Skywalker-V2-Modelle; `*kontr*jazz*55*` findet
+  Kontronik und darin nur JAZZ 55 LV.
+- Eine leere Suche zeigt jeden Hersteller und jedes Modell. Die Suche
+  fasst bis zu 16 Zeichen und gilt auf beiden Ebenen.
+- Die Zählung sagt, was gefunden wurde: `1-1/1 Hersteller gefunden, 1
+  laufen`. Ohne Treffer sagt die Liste `Kein Profil passt zur Suche.`
 
-OK schließt die Tastatur und behält die Suche, ABBRECHEN kehrt zu der Suche
+OK schließt die Tastatur und behält die Suche, ABBRECHEN geht zur Suche
 zurück, mit der die Tastatur geöffnet wurde, und CLR, dann OK leert sie.
-Eine Zeile, die bei offener Tastatur angetippt wird, öffnet ihr Profil, die
-Suche bleibt. Bei geschlossener Tastatur leert X im Feld die Suche. Die
-Suche bleibt über die Seite eines Profils und zurück und beim Verlassen des
-Bildschirms erhalten und ist nach einem Neustart leer.
+Eine Zeile, die bei offener Tastatur getippt wird, öffnet sich, die Suche
+bleibt. Bei geschlossener Tastatur leert X im Feld die Suche. Die Suche
+bleibt über beide Ebenen, die Seite eines Profils und zurück und beim
+Verlassen des Bildschirms erhalten und ist nach einem Neustart leer.
 
-![Eine Suche wird getippt](img/de/programmer-stick-find.png)
+![Eine Suche auf den Herstellern wird getippt](img/de/programmer-stick-find.png)
 
-![Eine Suche angewendet](img/de/programmer-stick-found.png)
+![Eine Suche angewendet, die Modelle von Hobbywing](img/de/programmer-stick-found.png)
 
 Die Groß- und Kleinschreibung wird nur für die Buchstaben A bis Z
 ausgeglichen. Ä, Ö und Ü in einem Profil von der Karte passen nur auf
@@ -426,7 +457,9 @@ oder GRUPPENPAUSE plus das Kürzere von PIEPTON MIN und PAUSE MIN mindestens das
 
 ## Das Netzteil
 
-SPANNUNG 0 nimmt das niedrigste `cells_min` unter den Modellen des Profils,
+SPANNUNG 0 nimmt das `cells_min` des aus der Liste geöffneten Modells, wo
+es eines nennt, sonst das niedrigste `cells_min` unter den Modellen des
+Profils,
 mit 3,8 V je LiPo-Zelle (Lithium-Polymer) oder 1,2 V je NiMH-Zelle
 (Nickel-Metallhydrid): über der Abschaltung dieses Modells und unter dem
 Maximum jedes Modells. Ein Profil, dessen Modelle keine Zellenzahl nennen,

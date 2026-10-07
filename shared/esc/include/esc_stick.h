@@ -136,6 +136,11 @@ float esc_stick_pct(esc_throttle_t pos);
  */
 uint32_t esc_stick_profile_mv(const esc_profile_t *p);
 
+/** The supply voltage for model @p model of @p p, mV: its own lowest cell
+ *  count at the rates above, where it states one; else, and for -1, the
+ *  family's (esc_stick_profile_mv()). */
+uint32_t esc_stick_model_mv(const esc_profile_t *p, int model);
+
 /** Whether @p it is an action rather than a setting: keyed reset or exit.
  *  Selecting one makes the ESC act on the select move; it sounds no values,
  *  and the engine does not offer it. */

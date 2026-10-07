@@ -71,6 +71,15 @@ bool programmer_screen_stick_typing(void);
  *  of the top row shown; for tests. */
 int programmer_screen_stick_listed(int *top);
 
+/** The list's level: 0 the makers, 1 one maker's models; the maker open
+ *  ("" on level 0); the page's model index (-1 for none); and the rows of
+ *  each level, NULL past the end.  For tests. */
+int programmer_screen_stick_level(void);
+const char *programmer_screen_stick_maker(void);
+int programmer_screen_stick_model(void);
+const char *programmer_screen_stick_maker_at(int i);
+const esc_profile_t *programmer_screen_stick_row(int i, int *model);
+
 /** The profile whose page is open, or NULL on the list; for tests. */
 const esc_profile_t *programmer_screen_stick_page(void);
 

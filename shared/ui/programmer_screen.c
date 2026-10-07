@@ -28,7 +28,9 @@
  * every move it makes goes out as the MOTOR screen's commands do, through
  * the arming policy and the output bank.
  *
- * The profile list has a search field.  Its keyboard docks on the right
+ * The profile list has two levels: the makers, alphabetical, and one
+ * maker's models, by current, voltage and name, each opening its family's
+ * profile.  A search field filters both.  Its keyboard docks on the right
  * while it is open and the rows narrow to its left, so the list filters
  * with every key and stays in view.  A run shows a stack light: green while
  * the detector holds a beep, red on a result that ended because something
@@ -47,6 +49,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "esc_profile.h"
@@ -294,12 +297,17 @@ static const proto_t k_protos[] = {
 /* The search field in the crumb row, and the keyboard docked to the right
  * of SP_DOCK_X below it while the field is typed in. */
 #define SP_FIND_MAX 16
-#define SP_FIND_X   214
+#define SP_FIND_X   (W - PAD - 12 - 76 - 8 - SP_FIND_W)
 #define SP_FIND_W   172
 #define SP_DOCK_X   352
-/* The count right of the field, up to the ^ button: 38 cells. */
-#define SP_COUNT_X  (SP_FIND_X + SP_FIND_W + 8)
-#define SP_COUNT_W  (W - PAD - 12 - 76 - 8 - SP_COUNT_X)
+/* The trail left of the field, from the crumb's text: 48 cells. */
+#define SP_TRAIL_CELLS ((SP_FIND_X - 8 - (PAD + 12 + 96 + 16)) / 8)
+/* The footer under the rows: the count at its right, 45 cells, or at its
+ * left beside the docked keyboard. */
+#define SP_FOOT_Y   (SP_ROW_Y0 + SP_ROWS * SP_ROW_H + 6)
+#define SP_COUNT_W  360
+/* The most models one maker's list holds. */
+#define SP_MODELS   512
 
 /* The stack light at the right of the run's card: a cap, the red and the
  * green lens, each with a collar under it, and the base, px. */
@@ -322,10 +330,31 @@ static const setting_id_t k_sp_settings[] = {
 };
 #define SP_SETTINGS ((int)(sizeof(k_sp_settings) / sizeof(k_sp_settings[0])))
 
+/* A maker on the list's first level: how many models it has, how many the
+ * search finds, how many of those run, and whether any has manual steps. */
 typedef struct {
-    /* The list: the profiles that can run, then those that cannot. */
-    int  order[SP_MAX];
-    int  count, runnable, scroll;
+    const char *name;
+    uint16_t    models, found, runs;
+    bool        manual;
+} sp_maker_t;
+
+/* A model on the second level: its profile's index in the registry and its
+ * own index in the profile. */
+typedef struct {
+    uint16_t prof, model;
+} sp_row_t;
+
+typedef struct {
+    /* The list in two levels.  Level 0 the makers, alphabetical; level 1
+     * the models of one maker, by current, voltage and name.  count,
+     * runnable and scroll are the level's showing; bscroll is the makers'
+     * kept while a maker is open. */
+    int        level;
+    sp_maker_t makers[SP_MAX];
+    sp_row_t   rows_m[SP_MODELS];
+    const char *maker;      /* the maker open on level 1 */
+    int        count, runnable, scroll, bscroll;
+    int        model;       /* the page's model, -1 for none */
 
     /* The profile picked, and what is to change: per item, -1 to keep it,
      * else the index of the value to store. */
@@ -1131,11 +1160,13 @@ static const char *sp_why_text(const char *why)
 }
 
 /*
- * Why a profile cannot run, into @p buf, or NULL when it can: the engine's
- * reason, or a voltage the supply cannot give -- VOLTAGE where it is set,
- * else the profile's cell count.
+ * Why model @p model of a profile cannot run, into @p buf, or NULL when it
+ * can: the engine's reason, or a voltage the supply cannot give --
+ * VOLTAGE where it is set, else the model's cell count, or with no model
+ * (-1) or none stated the family's lowest.
  */
-static const char *sp_why(const esc_profile_t *p, char *buf, size_t n)
+static const char *sp_model_why(const esc_profile_t *p, int model, char *buf,
+                                size_t n)
 {
     const char *why = NULL;
     if (esc_stick_kind(p, &why) == ESC_STICK_KIND_NONE) {
@@ -1143,7 +1174,7 @@ static const char *sp_why(const esc_profile_t *p, char *buf, size_t n)
     }
     const float v = settings_get(SET_STICK_V);
     const uint32_t mv = (v > 0.0f) ? (uint32_t)lroundf(v * 1000.0f)
-                                   : esc_stick_profile_mv(p);
+                                   : esc_stick_model_mv(p, model);
     const unsigned cap = (unsigned)lroundf(supply_screen_caps().v_max
                                            * 1000.0f);
     if (mv > cap) {
@@ -1153,6 +1184,11 @@ static const char *sp_why(const esc_profile_t *p, char *buf, size_t n)
         return buf;
     }
     return NULL;
+}
+
+static const char *sp_why(const esc_profile_t *p, char *buf, size_t n)
+{
+    return sp_model_why(p, -1, buf, n);
 }
 
 static bool sp_runs(const esc_profile_t *p)
@@ -1181,33 +1217,153 @@ static uint32_t sp_list_key(void)
     return (v << 16) ^ cap;
 }
 
+/* @p a against @p b with the letters A to Z folded, as the search folds
+ * them: the makers' order and their grouping. */
+static int sp_casecmp(const char *a, const char *b)
+{
+    for (;; ++a, ++b) {
+        int x = (unsigned char)*a;
+        int y = (unsigned char)*b;
+        x -= (x >= 'a' && x <= 'z') ? 32 : 0;
+        y -= (y >= 'a' && y <= 'z') ? 32 : 0;
+        if (x != y || x == 0) {
+            return x - y;
+        }
+    }
+}
+
+static bool sp_model_runs(const esc_profile_t *p, int model)
+{
+    char buf[40];
+    return sp_model_why(p, model, buf, sizeof(buf)) == NULL;
+}
+
 /*
- * What can run first, then what cannot, each in the registry's order, of
- * the profiles the search finds (esc_profile_matches(); all of them while
- * it is empty).  Built again whenever the list comes back on screen, the
- * search changes, or VOLTAGE or the SUPPLY cap moves under it, so the order
- * and the count follow the reasons the rows draw.
+ * The first level: every maker, alphabetical with case folded, that the
+ * search finds a model of (esc_model_matches(); every one while it is
+ * empty), with its models, those found and those of them that run.  A
+ * card profile joins its maker as a built-in one does.
+ */
+static void sp_build_makers(stick_t *t)
+{
+    int n = 0;
+    const size_t total = esc_profiles_count();
+    for (size_t i = 0; i < total; ++i) {
+        const esc_profile_t *p = esc_profiles_at(i);
+        int at = 0;
+        while (at < n && sp_casecmp(t->makers[at].name, p->brand) < 0) {
+            ++at;
+        }
+        if (at == n || sp_casecmp(t->makers[at].name, p->brand) != 0) {
+            if (n >= SP_MAX) {
+                continue;
+            }
+            memmove(&t->makers[at + 1], &t->makers[at],
+                    (size_t)(n - at) * sizeof(t->makers[0]));
+            t->makers[at] = (sp_maker_t){ p->brand, 0u, 0u, 0u, false };
+            ++n;
+        }
+        sp_maker_t *mk = &t->makers[at];
+        for (unsigned m = 0; m < p->model_count; ++m) {
+            mk->models++;
+            if (!esc_model_matches(p, m, t->find)) {
+                continue;
+            }
+            mk->found++;
+            if (sp_model_runs(p, (int)m)) {
+                mk->runs++;
+            }
+            mk->manual = mk->manual || p->manual_count > 0u;
+        }
+    }
+    int k = 0;
+    t->runnable = 0;
+    for (int i = 0; i < n; ++i) {
+        if (t->makers[i].found > 0u) {
+            t->runnable += (t->makers[i].runs > 0u) ? 1 : 0;
+            t->makers[k++] = t->makers[i];
+        }
+    }
+    t->count = k;
+}
+
+/* One key of the models' order: smaller first, 0 -- not stated -- last. */
+static int sp_key_cmp(uint32_t a, uint32_t b)
+{
+    if (a == b) {
+        return 0;
+    }
+    if (a == 0u || b == 0u) {
+        return (a == 0u) ? 1 : -1;
+    }
+    return (a < b) ? -1 : 1;
+}
+
+/* Current, then voltage, then name with case folded; a key a model does
+ * not state sorts it last on that key.  Ties keep the registry's order. */
+static int sp_by_model(const void *a, const void *b)
+{
+    const sp_row_t *x = a, *y = b;
+    const esc_model_t *mx = &esc_profiles_at(x->prof)->models[x->model];
+    const esc_model_t *my = &esc_profiles_at(y->prof)->models[y->model];
+    int c = sp_key_cmp(mx->current_a, my->current_a);
+    if (c == 0) {
+        c = sp_key_cmp(mx->v_max_mv, my->v_max_mv);
+    }
+    if (c == 0) {
+        c = sp_casecmp(mx->name, my->name);
+    }
+    if (c == 0) {
+        c = (x->prof != y->prof) ? ((x->prof < y->prof) ? -1 : 1)
+                                 : ((x->model < y->model) ? -1 : 1);
+    }
+    return c;
+}
+
+/*
+ * The second level: the open maker's models the search finds, one row a
+ * model, by current, voltage and name; each row is its family's profile.
+ * At most SP_MODELS: a card that adds more lists the first SP_MODELS in
+ * the registry's order.
+ */
+static void sp_build_models(stick_t *t)
+{
+    int n = 0;
+    const size_t total = esc_profiles_count();
+    for (size_t i = 0; i < total && t->maker != NULL; ++i) {
+        const esc_profile_t *p = esc_profiles_at(i);
+        if (sp_casecmp(p->brand, t->maker) != 0) {
+            continue;
+        }
+        for (unsigned m = 0; m < p->model_count && n < SP_MODELS; ++m) {
+            if (esc_model_matches(p, m, t->find)) {
+                t->rows_m[n++] = (sp_row_t){ (uint16_t)i, (uint16_t)m };
+            }
+        }
+    }
+    qsort(t->rows_m, (size_t)n, sizeof(t->rows_m[0]), sp_by_model);
+    t->runnable = 0;
+    for (int i = 0; i < n; ++i) {
+        t->runnable += sp_model_runs(esc_profiles_at(t->rows_m[i].prof),
+                                     t->rows_m[i].model) ? 1 : 0;
+    }
+    t->count = n;
+}
+
+/*
+ * The level showing, built again whenever the list comes back on screen,
+ * the search changes, or VOLTAGE or the SUPPLY cap moves under it, so the
+ * counts follow the reasons the rows draw.
  */
 static void sp_build_list(bool keep_scroll)
 {
     stick_t *t = &s.st;
     const int scroll = keep_scroll ? t->scroll : 0;
-    t->count = 0;
-    t->runnable = 0;
     t->built_key = sp_list_key();
-    const size_t total = esc_profiles_count();
-    for (int pass = 0; pass < 2; ++pass) {
-        for (size_t i = 0; i < total && t->count < SP_MAX; ++i) {
-            const esc_profile_t *p = esc_profiles_at(i);
-            if (!esc_profile_matches(p, t->find)) {
-                continue;
-            }
-            const bool runs = sp_runs(p);
-            if (runs == (pass == 0)) {
-                t->order[t->count++] = (int)i;
-                t->runnable += runs ? 1 : 0;
-            }
-        }
+    if (t->level == 1) {
+        sp_build_models(t);
+    } else {
+        sp_build_makers(t);
     }
     t->scroll = (scroll < t->count) ? scroll : 0;
 }
@@ -1235,6 +1391,7 @@ static void sp_pick_profile(const esc_profile_t *p)
     t->warn_down = false;
     ui_hold_reset(&t->hold);
     t->hand_open = false;
+    t->model = -1;
     /* A profile with manual steps says so by itself the first time it is
      * opened; MANUAL INTERVENTION REQUIRED shows it again. */
     if (p != NULL && p->manual_count > 0u) {
@@ -1301,7 +1458,7 @@ static void sp_supply(uint32_t *mv, uint32_t *ma)
 {
     const float v = settings_get(SET_STICK_V);
     *mv = (v > 0.0f) ? (uint32_t)lroundf(v * 1000.0f)
-                     : esc_stick_profile_mv(s.st.p);
+                     : esc_stick_model_mv(s.st.p, s.st.model);
     *ma = (uint32_t)lroundf(settings_get(SET_STICK_I) * 1000.0f);
 }
 
@@ -1679,6 +1836,9 @@ static void sp_find_event(const touch_event_t *evt)
     if (strcmp(typed, t->find) != 0) {
         snprintf(t->find, sizeof(t->find), "%.*s", SP_FIND_MAX, typed);
         sp_build_list(false);           /* a new search starts at the top */
+        if (t->level == 0) {
+            t->bscroll = 0;
+        }
         ++s.rev;
     }
     if (t->tk.revision != t->tk_rev) {
@@ -1722,8 +1882,17 @@ static bool sp_down(const touch_event_t *evt)
             return true;
         }
         if (gfx_rect_contains(s.back, px, py)) {
+            /* BACK climbs a level: a maker's models to the makers, with
+             * the makers' scroll and the search kept; the makers to the
+             * classes. */
             sp_find_close();
-            s.stage = STAGE_CLASS;
+            if (t->level == 1) {
+                t->level = 0;
+                t->scroll = t->bscroll;
+                sp_build_list(true);
+            } else {
+                s.stage = STAGE_CLASS;
+            }
             ++s.rev;
             return true;
         }
@@ -1757,15 +1926,30 @@ static bool sp_down(const touch_event_t *evt)
             if (!gfx_rect_contains(sp_row(i), px, py)) {
                 continue;
             }
-            const esc_profile_t *p = esc_profiles_at(
-                (size_t)t->order[t->scroll + i]);
-            /* A profile the engine cannot run says why on its row and goes
-             * no further, unless it has manual steps: those it shows.  One
+            const int at = t->scroll + i;
+            /* A maker opens its models, the search kept; the makers'
+             * scroll is kept for BACK.  No maker opens by itself: one the
+             * search narrows to is shown, and a tap opens it. */
+            if (t->level == 0) {
+                sp_find_close();
+                t->maker = t->makers[at].name;
+                t->bscroll = t->scroll;
+                t->level = 1;
+                sp_build_list(false);
+                ++s.rev;
+                return true;
+            }
+            /* A model opens its family's profile.  One whose profile the
+             * engine cannot run says why on its row and goes no further,
+             * unless the profile has manual steps: those it shows.  One
              * picked while the keyboard is open closes it, the search
              * kept. */
-            if (sp_runs(p)) {
+            const esc_profile_t *p = esc_profiles_at(t->rows_m[at].prof);
+            const int model = t->rows_m[at].model;
+            if (sp_model_runs(p, model)) {
                 sp_find_close();
                 sp_pick_profile(p);
+                t->model = model;
                 s.stage = STAGE_DEVICE;
                 ++s.rev;
             } else if (p->manual_count > 0u) {
@@ -1960,23 +2144,169 @@ static int sp_draw_tag(gfx_canvas_t *c, int right, int y)
     return w;
 }
 
+/* "55 A" and "25 V" or "25.2 V" for a model's current and voltage; "-"
+ * where it states none. */
+static void sp_amps(char *out, size_t n, const esc_model_t *m)
+{
+    if (m->current_a == 0u) {
+        snprintf(out, n, "-");
+    } else {
+        snprintf(out, n, "%u A", (unsigned)m->current_a);
+    }
+}
+
+static void sp_volts(char *out, size_t n, const esc_model_t *m)
+{
+    if (m->v_max_mv == 0u) {
+        snprintf(out, n, "-");
+    } else if (m->v_max_mv % 1000u == 0u) {
+        snprintf(out, n, "%u V", (unsigned)(m->v_max_mv / 1000u));
+    } else {
+        snprintf(out, n, "%u.%u V", (unsigned)(m->v_max_mv / 1000u),
+                 (unsigned)(m->v_max_mv % 1000u / 100u));
+    }
+}
+
+/* The run mark of a narrowed row: filled in the accent, or a ring. */
+static void sp_mark_runs(gfx_canvas_t *c, gfx_rect_t r, bool runs)
+{
+    const int mx = r.x + r.w - 14, my = r.y + r.h / 2;
+    if (runs) {
+        gfx_fill_circle(c, mx, my, 5, ui_theme_color(UI_C_ACCENT));
+    } else {
+        gfx_draw_circle(c, mx, my, 5, ui_theme_color(UI_C_TEXT_FAINT));
+    }
+}
+
+/* A maker's row: its name, the MANUAL tag where a model it lists has
+ * manual steps, and its models: those that run of all, or while a search
+ * is typed those found of all and those of them that run. */
+static void sp_draw_maker(gfx_canvas_t *c, gfx_rect_t r, const sp_maker_t *m,
+                          bool dock, bool searching)
+{
+    const bool runs = m->runs > 0u;
+    ui_card(c, r, runs ? ui_theme_color(UI_C_PANEL)
+                       : ui_theme_color(UI_C_PANEL_SUNK));
+    const gfx_color_t ink = runs ? ui_theme_color(UI_C_TEXT)
+                                 : ui_theme_color(UI_C_TEXT_FAINT);
+    char right[64];
+    if (dock) {
+        snprintf(right, sizeof(right), "%u", (unsigned)m->found);
+        const int tag = m->manual ? sp_draw_tag(c, r.x + r.w - 28, r.y + 6)
+                                        + 8 : 0;
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 28 - tag - 48),
+                                     (int16_t)(r.y + 8), 40, 16 },
+                    right, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1,
+                    GFX_ALIGN_RIGHT);
+        sp_text(c, r.x + 8, r.y + 8, m->name,
+                (r.w - 8 - 28 - tag - 56) / 8, ink);
+        sp_mark_runs(c, r, runs);
+        return;
+    }
+    sp_text(c, r.x + 12, r.y + 8, m->name, 30, ink);
+    if (m->manual) {
+        (void)sp_draw_tag(c, r.x + r.w - 312 - 8, r.y + 6);
+    }
+    if (searching) {
+        snprintf(right, sizeof(right), TR(SP_MAKER_FOUND),
+                 (unsigned)m->found, (unsigned)m->models, (unsigned)m->runs);
+    } else {
+        snprintf(right, sizeof(right), TR(SP_MAKER_MODELS),
+                 (unsigned)m->runs, (unsigned)m->models);
+    }
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 312),
+                                 (int16_t)(r.y + 8), 300, 16 },
+                right, UI_FONT_LABEL,
+                runs ? ui_theme_color(UI_C_ACCENT)
+                     : ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_RIGHT);
+}
+
+/* A model's row: its name, current and voltage, its family, the MANUAL
+ * tag, and what its family's profile is or why it does not run. */
+static void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r, const sp_row_t *row,
+                          bool dock)
+{
+    const esc_profile_t *p = esc_profiles_at(row->prof);
+    const esc_model_t *m = &p->models[row->model];
+    char cap[40];
+    const char *why = sp_model_why(p, row->model, cap, sizeof(cap));
+    const bool runs = why == NULL;
+    ui_card(c, r, runs ? ui_theme_color(UI_C_PANEL)
+                       : ui_theme_color(UI_C_PANEL_SUNK));
+    const gfx_color_t ink = runs ? ui_theme_color(UI_C_TEXT)
+                                 : ui_theme_color(UI_C_TEXT_FAINT);
+    const gfx_color_t dim = runs ? ui_theme_color(UI_C_TEXT_DIM)
+                                 : ui_theme_color(UI_C_TEXT_FAINT);
+    char amps[16], volts[16];
+    sp_amps(amps, sizeof(amps), m);
+    sp_volts(volts, sizeof(volts), m);
+    if (dock) {
+        const int tag = (p->manual_count > 0u)
+                            ? sp_draw_tag(c, r.x + r.w - 28, r.y + 6) + 8
+                            : 0;
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 28 - tag - 56),
+                                     (int16_t)(r.y + 8), 48, 16 },
+                    amps, UI_FONT_LABEL, dim, 1, GFX_ALIGN_RIGHT);
+        sp_text(c, r.x + 8, r.y + 8, m->name,
+                (r.w - 8 - 28 - tag - 64) / 8, ink);
+        sp_mark_runs(c, r, runs);
+        return;
+    }
+    sp_text(c, r.x + 12, r.y + 8, m->name, 26, ink);
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 228), (int16_t)(r.y + 8),
+                                 56, 16 },
+                amps, UI_FONT_LABEL, dim, 1, GFX_ALIGN_RIGHT);
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 288), (int16_t)(r.y + 8),
+                                 64, 16 },
+                volts, UI_FONT_LABEL, dim, 1, GFX_ALIGN_RIGHT);
+    const int tag = (p->manual_count > 0u)
+                        ? sp_draw_tag(c, r.x + r.w - 236, r.y + 6) + 8
+                        : 0;
+    sp_text(c, r.x + 368, r.y + 8, p->family, (r.w - 368 - 236 - tag) / 8,
+            ui_theme_color(UI_C_TEXT_FAINT));
+    char right[80];
+    if (runs) {
+        char items[24];
+        const esc_stick_kind_t kind = esc_stick_kind(p, NULL);
+        snprintf(items, sizeof(items),
+                 (p->item_count == 1u) ? TR(SP_ITEM) : TR(SP_ITEMS),
+                 (unsigned)p->item_count);
+        snprintf(right, sizeof(right), "%s%s%s  %s",
+                 esc_profiles_is_override(p) ? TR(SP_CARD) : "",
+                 esc_profiles_is_override(p) ? "  " : "", items,
+                 (kind == ESC_STICK_KIND_TWO_STAGE) ? TR(SP_TWO_STAGE)
+                                                    : TR(SP_ONE_STAGE));
+    } else {
+        snprintf(right, sizeof(right), "%s", why);
+    }
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 232),
+                                 (int16_t)(r.y + 8), 220, 16 },
+                right, UI_FONT_LABEL,
+                runs ? ui_theme_color(UI_C_ACCENT)
+                     : ui_theme_color(UI_C_TEXT_FAINT), 1,
+                GFX_ALIGN_RIGHT);
+}
+
+/*
+ * The list: the crumb and the search field above, a level's rows, and the
+ * footer: the count at the right under the rows, or beside the docked
+ * keyboard at the left; the line that no profile is verified while the
+ * keyboard is closed.
+ */
 static void sp_draw_list(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
     const bool dock = t->tk.open;
-    draw_crumb(c, "ESC STICK");
+    const bool searching = t->find[0] != '\0';
+    char trail[96];
+    if (t->level == 1 && t->maker != NULL) {
+        snprintf(trail, sizeof(trail), "ESC STICK  >  %s", t->maker);
+    } else {
+        snprintf(trail, sizeof(trail), "ESC STICK");
+    }
+    sp_cut(trail, sizeof(trail), SP_TRAIL_CELLS);
+    draw_crumb(c, trail);
     sp_draw_find(c);
-    char count[64];
-    const int last = (t->scroll + SP_ROWS < t->count) ? t->scroll + SP_ROWS
-                                                      : t->count;
-    snprintf(count, sizeof(count),
-             (t->find[0] != '\0') ? TR(SP_LIST_FOUND) : TR(SP_LIST_COUNT),
-             (t->count > 0) ? t->scroll + 1 : 0, last, t->count,
-             t->runnable);
-    gfx_text_in(c, (gfx_rect_t){ SP_COUNT_X, (int16_t)(CRUMB_Y + 7),
-                                 SP_COUNT_W, 16 },
-                count, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1,
-                GFX_ALIGN_RIGHT);
     ui_button(c, t->list_up, "^", ui_theme_color(UI_C_PANEL_HI), false,
               t->scroll > 0);
     ui_button(c, t->list_dn, "v", ui_theme_color(UI_C_PANEL_HI), false,
@@ -1987,75 +2317,46 @@ static void sp_draw_list(gfx_canvas_t *c)
                  ui_theme_color(UI_C_TEXT_DIM), 1);
     }
     for (int i = 0; i < SP_ROWS && t->scroll + i < t->count; ++i) {
-        const gfx_rect_t r = sp_row(i);
-        const esc_profile_t *p = esc_profiles_at(
-            (size_t)t->order[t->scroll + i]);
-        char cap[40];
-        const char *why = sp_why(p, cap, sizeof(cap));
-        const esc_stick_kind_t kind = esc_stick_kind(p, NULL);
-        const bool runs = why == NULL;
-        ui_card(c, r, runs ? ui_theme_color(UI_C_PANEL)
-                           : ui_theme_color(UI_C_PANEL_SUNK));
-        const gfx_color_t ink = runs ? ui_theme_color(UI_C_TEXT)
-                                     : ui_theme_color(UI_C_TEXT_FAINT);
-        if (dock) {
-            /* Narrow: the maker, the name cut, and a mark for whether it
-             * runs -- filled in the accent, or an empty ring. */
-            sp_text(c, r.x + 8, r.y + 8, p->brand, 11, ink);
-            const int dtag = (p->manual_count > 0u)
-                                 ? sp_draw_tag(c, r.x + r.w - 28, r.y + 6) + 8
-                                 : 0;
-            sp_text(c, r.x + 104, r.y + 8, p->family,
-                    (r.w - 104 - 28 - dtag) / 8,
-                    runs ? ui_theme_color(UI_C_TEXT_DIM)
-                         : ui_theme_color(UI_C_TEXT_FAINT));
-            const int mx = r.x + r.w - 14, my = r.y + r.h / 2;
-            if (runs) {
-                gfx_fill_circle(c, mx, my, 5, ui_theme_color(UI_C_ACCENT));
-            } else {
-                gfx_draw_circle(c, mx, my, 5,
-                                ui_theme_color(UI_C_TEXT_FAINT));
-            }
-            continue;
-        }
-        sp_text(c, r.x + 12, r.y + 8, p->brand, 13, ink);
-        /* A profile with manual steps carries a red tag where its name
-         * ends, so it is told apart before it is opened. */
-        const int tag = (p->manual_count > 0u)
-                            ? sp_draw_tag(c, r.x + r.w - 236, r.y + 6) + 8
-                            : 0;
-        sp_text(c, r.x + 124, r.y + 8, p->family,
-                (r.w - 124 - 236 - tag) / 8,
-                runs ? ui_theme_color(UI_C_TEXT_DIM)
-                     : ui_theme_color(UI_C_TEXT_FAINT));
-        char right[80];
-        if (runs) {
-            char items[24];
-            snprintf(items, sizeof(items),
-                     (p->item_count == 1u) ? TR(SP_ITEM) : TR(SP_ITEMS),
-                     (unsigned)p->item_count);
-            snprintf(right, sizeof(right), "%s%s%s  %s",
-                     esc_profiles_is_override(p) ? TR(SP_CARD) : "",
-                     esc_profiles_is_override(p) ? "  " : "", items,
-                     (kind == ESC_STICK_KIND_TWO_STAGE) ? TR(SP_TWO_STAGE)
-                                                        : TR(SP_ONE_STAGE));
+        if (t->level == 1) {
+            sp_draw_model(c, sp_row(i), &t->rows_m[t->scroll + i], dock);
         } else {
-            snprintf(right, sizeof(right), "%s", why);
+            sp_draw_maker(c, sp_row(i), &t->makers[t->scroll + i], dock,
+                          searching);
         }
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 232),
-                                     (int16_t)(r.y + 8), 220, 16 },
-                    right, UI_FONT_LABEL,
-                    runs ? ui_theme_color(UI_C_ACCENT)
-                         : ui_theme_color(UI_C_TEXT_FAINT), 1,
-                    GFX_ALIGN_RIGHT);
+    }
+
+    char count[64];
+    const int last = (t->scroll + SP_ROWS < t->count) ? t->scroll + SP_ROWS
+                                                      : t->count;
+    const int first = (t->count > 0) ? t->scroll + 1 : 0;
+    if (t->level == 1 && searching) {
+        snprintf(count, sizeof(count), TR(SP_LIST_FOUND), first, last,
+                 t->count, t->runnable);
+    } else if (t->level == 1) {
+        snprintf(count, sizeof(count), TR(SP_LIST_COUNT), first, last,
+                 t->count, t->runnable);
+    } else if (searching) {
+        snprintf(count, sizeof(count), TR(SP_MAKERS_FOUND), first, last,
+                 t->count, t->runnable);
+    } else {
+        snprintf(count, sizeof(count), TR(SP_MAKERS_COUNT), first, last,
+                 t->count, t->runnable);
     }
     if (dock) {
+        gfx_text_in(c, (gfx_rect_t){ PAD + 12, SP_FOOT_Y,
+                                     (int16_t)(SP_DOCK_X - 8 - PAD - 12),
+                                     16 },
+                    count, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1,
+                    GFX_ALIGN_LEFT);
         ui_textkey_render(&t->tk, c);
         return;
     }
-    gfx_text(c, PAD + 12, SP_ROW_Y0 + SP_ROWS * SP_ROW_H + 6,
-             TR(SP_UNVERIFIED_ALL),
-             UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
+    gfx_text(c, PAD + 12, SP_FOOT_Y, TR(SP_UNVERIFIED_ALL), UI_FONT_LABEL,
+             ui_theme_color(UI_C_TEXT_FAINT), 1);
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(W - PAD - 12 - SP_COUNT_W),
+                                 SP_FOOT_Y, SP_COUNT_W, 16 },
+                count, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1,
+                GFX_ALIGN_RIGHT);
 }
 
 /*
@@ -2735,8 +3036,13 @@ static void sp_draw_device(gfx_canvas_t *c)
     const stick_t *t = &s.st;
     const esc_profile_t *p = t->p;
     char line[128];
-    snprintf(line, sizeof(line), "ESC STICK  >  %s %s", p->brand,
-             p->family);
+    if (t->model >= 0 && (unsigned)t->model < p->model_count) {
+        snprintf(line, sizeof(line), "ESC STICK  >  %s  >  %s  (%s)",
+                 p->brand, p->models[t->model].name, p->family);
+    } else {
+        snprintf(line, sizeof(line), "ESC STICK  >  %s %s", p->brand,
+                 p->family);
+    }
     ui_button(c, s.back, TR(LOG_BACK), ui_theme_color(UI_C_PANEL_HI), false,
               !esc_stick_running(&t->run));
     sp_text(c, s.back.x + s.back.w + 16, CRUMB_Y + 8, line, 72,
@@ -3093,6 +3399,38 @@ int programmer_screen_stick_listed(int *top)
         *top = s.st.scroll;
     }
     return s.st.count;
+}
+
+int programmer_screen_stick_level(void) { return s.st.level; }
+
+const char *programmer_screen_stick_maker(void)
+{
+    return (s.st.level == 1 && s.st.maker != NULL) ? s.st.maker : "";
+}
+
+int programmer_screen_stick_model(void)
+{
+    return (s.klass == CLASS_STICK && s.stage == STAGE_DEVICE) ? s.st.model
+                                                               : -1;
+}
+
+const esc_profile_t *programmer_screen_stick_row(int i, int *model)
+{
+    const stick_t *t = &s.st;
+    if (t->level != 1 || i < 0 || i >= t->count) {
+        return NULL;
+    }
+    if (model != NULL) {
+        *model = t->rows_m[i].model;
+    }
+    return esc_profiles_at(t->rows_m[i].prof);
+}
+
+const char *programmer_screen_stick_maker_at(int i)
+{
+    const stick_t *t = &s.st;
+    return (t->level == 0 && i >= 0 && i < t->count) ? t->makers[i].name
+                                                     : NULL;
 }
 
 const esc_profile_t *programmer_screen_stick_page(void)

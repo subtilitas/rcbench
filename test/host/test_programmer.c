@@ -375,12 +375,85 @@ static void hold_for(float seconds)
     press(TOUCH_EVENT_UP, HOLD_X, HOLD_Y);
 }
 
-/* The stick class, then hobbywing-flyfun-8item: the third that runs. */
-static void descend_to_hobbywing(void)
+/* @p a and @p b alike with case folded, as the list groups makers. */
+static bool same_name(const char *a, const char *b)
+{
+    for (;; ++a, ++b) {
+        int x = (unsigned char)*a, y = (unsigned char)*b;
+        x -= (x >= 'a' && x <= 'z') ? 32 : 0;
+        y -= (y >= 'a' && y <= 'z') ? 32 : 0;
+        if (x != y) {
+            return false;
+        }
+        if (x == 0) {
+            return true;
+        }
+    }
+}
+
+/* Tap row @p at of the level showing, paging to it first. */
+static void tap_listed(int at)
+{
+    int top = 0;
+    (void)programmer_screen_stick_listed(&top);
+    for (int g = 0; g < 64 && at < top; ++g) {
+        tap(723, LIST_CY);
+        (void)programmer_screen_stick_listed(&top);
+    }
+    for (int g = 0; g < 64 && at >= top + 9; ++g) {
+        tap(LIST_DN_X, LIST_CY);
+        (void)programmer_screen_stick_listed(&top);
+    }
+    tap(ROW_CX, SP_ROW_CY(at - top));
+}
+
+/* On the makers: open the one named @p name. */
+static void open_maker(const char *name)
+{
+    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
+        const char *m = programmer_screen_stick_maker_at(i);
+        if (m != NULL && same_name(m, name)) {
+            tap_listed(i);
+            return;
+        }
+    }
+    T_FAIL("no maker %s listed", name);
+}
+
+/* On a maker's models: open the first of profile @p id, or the one named
+ * @p model. */
+static void open_model(const char *id, const char *model)
+{
+    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
+        int m = -1;
+        const esc_profile_t *p = programmer_screen_stick_row(i, &m);
+        if (p != NULL && strcmp(p->id, id) == 0
+            && (model == NULL || strcmp(p->models[m].name, model) == 0)) {
+            tap_listed(i);
+            return;
+        }
+    }
+    T_FAIL("no model of %s listed", id);
+}
+
+/* The stick class, the profile's maker, and the profile's first model. */
+static void open_profile(const char *id)
 {
     programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
-    tap(ROW_CX, SP_ROW_CY(2));
+    const esc_profile_t *p = esc_profiles_find(id);
+    if (p == NULL) {
+        T_FAIL("no profile %s", id);
+        return;
+    }
+    open_maker(p->brand);
+    open_model(id, NULL);
+}
+
+/* The stick class, then hobbywing-flyfun-8item. */
+static void descend_to_hobbywing(void)
+{
+    open_profile("hobbywing-flyfun-8item");
 }
 
 /* Cutoff mode (item 3) to hard cutoff, its second value. */
@@ -503,9 +576,9 @@ TEST_CASE(a_profile_the_engine_cannot_run_goes_no_further)
     fresh();
     programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
-    tap(LIST_DN_X, LIST_CY);
-    tap(LIST_DN_X, LIST_CY);                 /* rows 18 to 26 */
-    tap(ROW_CX, SP_ROW_CY(5));               /* the 24th: cannot run */
+    open_maker("Castle Creations");          /* a yes/no menu: cannot run */
+    tap(ROW_CX, SP_ROW_CY(0));
+    CHECK(programmer_screen_stick_page() == NULL);
     tap(WRITE_X, BTN_CY);                    /* where RUN would be */
     hold_for(3.0f);
     CHECK_EQ(programmer_screen_stick_runs(), 0u);
@@ -803,15 +876,9 @@ TEST_CASE(every_phase_of_a_run_draws)
                          | (1u << ESC_STICK_STORE) | (1u << ESC_STICK_DONE);
     CHECK_EQ(seen & two, two);
 
-    /* sunrise-pro, the 20th that runs: page three, row two, after the ten
-     * Kontronik profiles.  The list refuses hobbywing-skywalker-v2-hv-opto
-     * at 22.8 V before it. */
+    /* sunrise-pro: two changes, one a power-up. */
     fresh();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
-    tap(LIST_DN_X, LIST_CY);
-    tap(LIST_DN_X, LIST_CY);
-    tap(ROW_CX, SP_ROW_CY(1));
+    open_profile("sunrise-pro");
     CHECK_STR_EQ(programmer_screen_stick_page()->id, "sunrise-pro");
     tap(STEP_UP_X, STEP_CY(0));
     tap(STEP_UP_X, STEP_CY(0));
@@ -907,9 +974,7 @@ TEST_CASE(every_end_draws_its_reason)
 TEST_CASE(a_run_that_cannot_start_says_why)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
-    tap(ROW_CX, SP_ROW_CY(0));               /* dualsky: no cell count */
+    open_profile("dualsky-xcontroller");     /* no cell count */
     tap(STEP_UP_X, STEP_CY(0));
     scr->tick(0.02f);
     tap(WRITE_X, BTN_CY);
@@ -1073,21 +1138,20 @@ TEST_CASE(the_list_follows_voltage_and_the_cap)
     fresh();
     programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
+    open_maker("Hobbywing");
     settings_set(SET_SUPPLY_V_MAX, 7.0f);
     supply_screen_limits_changed();
     scr->tick(0.02f);
-    /* Only DualSky, with no cell count, still runs; the third row is now
-     * a refused one and opens nothing. */
-    tap(ROW_CX, SP_ROW_CY(2));
-    tap(STEP_UP_X, STEP_CY(2));
-    tap(WRITE_X, BTN_CY);
-    hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
-    /* The cap back up: hobbywing-flyfun-8item is the third row again. */
+    /* Every hobbywing-flyfun-8item model needs 7.6 V or more now: its row
+     * is a refused one and opens nothing. */
+    open_model("hobbywing-flyfun-8item", NULL);
+    CHECK(programmer_screen_stick_page() == NULL);
+    /* The cap back up: it opens again. */
     settings_set(SET_SUPPLY_V_MAX, 21.0f);
     supply_screen_limits_changed();
     scr->tick(0.02f);
-    tap(ROW_CX, SP_ROW_CY(2));
+    open_model("hobbywing-flyfun-8item", NULL);
+    CHECK(programmer_screen_stick_page() != NULL);
     pick_cutoff();
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
@@ -1131,21 +1195,22 @@ TEST_CASE(a_profile_over_the_supply_cap_is_refused_in_the_list)
     supply_screen_limits_changed();
     programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
+    open_maker("Hobbywing");
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
-    /* Every profile with a cell count needs 7.6 V or more: only DualSky's,
-     * which states none, is left to open, and the third row opens nothing. */
-    tap(ROW_CX, SP_ROW_CY(2));
-    tap(STEP_UP_X, STEP_CY(2));
+    /* Every model with a cell count needs 7.6 V or more: none opens. */
+    open_model("hobbywing-flyfun-8item", NULL);
     tap(STEP_UP_X, STEP_CY(2));
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
     CHECK_EQ(programmer_screen_stick_runs(), 0u);
-    /* The first row does open. */
+    CHECK(programmer_screen_stick_page() == NULL);
+    /* DualSky's XController states none, and opens. */
     tap(BACK_X, BACK_Y);
-    tap(TILE_CX(2), TILE_CY);
-    tap(ROW_CX, SP_ROW_CY(0));
+    open_maker("Dualsky");
+    open_model("dualsky-xcontroller", NULL);
+    CHECK(programmer_screen_stick_page() != NULL);
     tap(TIMING_X, TIMING_Y);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
@@ -1156,8 +1221,8 @@ TEST_CASE(a_profile_over_the_supply_cap_is_refused_in_the_list)
 
 /* Mirrored from programmer_screen.c: the field, its X, and the keyboard
  * docked right of SP_DOCK_X below the crumb row. */
-#define FIND_X     260
-#define FIND_CLR_X 370
+#define FIND_X     600
+#define FIND_CLR_X 682
 #define FIND_Y     27
 static const gfx_rect_t k_dock = { 352, 50, 442, 376 };
 
@@ -1198,7 +1263,8 @@ TEST_CASE(the_search_filters_the_list_with_every_key)
     fresh();
     programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
-    CHECK_EQ(listed(), (int)esc_profiles_count());
+    CHECK_EQ(programmer_screen_stick_level(), 0);
+    CHECK_EQ(listed(), 20);                  /* the makers */
     CHECK_STR_EQ(programmer_screen_stick_search(), "");
     tap(LIST_DN_X, LIST_CY);                 /* a page down first */
     int top = 0;
@@ -1212,37 +1278,63 @@ TEST_CASE(the_search_filters_the_list_with_every_key)
     (void)programmer_screen_stick_listed(&top);
     CHECK_EQ(top, 0);                        /* back to the top */
     const int after_s = listed();
-    CHECK(after_s > 3 && after_s < (int)esc_profiles_count());
+    CHECK(after_s > 3 && after_s < 20);
     find_type("KY*V2");
     CHECK_STR_EQ(programmer_screen_stick_search(), "SKY*V2");
-    CHECK_EQ(listed(), 3);
+    CHECK_EQ(listed(), 1);                   /* Hobbywing alone */
     find_key('<');                           /* DEL: "SKY*V" */
-    CHECK(listed() >= 3);
+    CHECK(listed() >= 1);
     find_key('2');
-    CHECK_EQ(listed(), 3);
+    CHECK_EQ(listed(), 1);
     /* Drawn with the keyboard over the right of the list. */
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
 
-    /* A row tapped while typing opens its profile; the search stays. */
+    /* The maker tapped while typing opens its models the search finds; no
+     * maker opens by itself. */
+    CHECK_EQ(programmer_screen_stick_level(), 0);
     tap(100, SP_ROW_CY(0));
     CHECK(!programmer_screen_stick_typing());
+    CHECK_EQ(programmer_screen_stick_level(), 1);
+    CHECK_STR_EQ(programmer_screen_stick_maker(), "Hobbywing");
+    CHECK_EQ(listed(), 14);
+    for (int i = 0; i < listed(); ++i) {
+        int m = -1;
+        const esc_profile_t *p = programmer_screen_stick_row(i, &m);
+        CHECK(p != NULL && esc_model_matches(p, (unsigned)m, "SKY*V2"));
+    }
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    scr->render(&cv, 1);
+    CHECK(lit() > 20000);
+    /* Typing on the models filters them as well. */
+    tap(FIND_X, FIND_Y);
+    find_type("*MINI");
+    CHECK(listed() > 0 && listed() < 14);
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    scr->render(&cv, 0);
+    CHECK(lit() > 20000);
+    find_key('~');                           /* CANCEL: SKY*V2 */
+    CHECK_EQ(listed(), 14);
+
+    /* A model opens its family's page; BACK returns with the search. */
+    tap(ROW_CX, SP_ROW_CY(0));
     const esc_profile_t *p = programmer_screen_stick_page();
     CHECK(p != NULL);
     CHECK(esc_profile_matches(p, "SKY*V2"));
     tap(BACK_X, BACK_Y);
     CHECK(programmer_screen_stick_page() == NULL);
+    CHECK_EQ(programmer_screen_stick_level(), 1);
     CHECK_STR_EQ(programmer_screen_stick_search(), "SKY*V2");
-    CHECK_EQ(listed(), 3);
-    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
-    scr->render(&cv, 1);
-    CHECK(lit() > 20000);
+    CHECK_EQ(listed(), 14);
+    tap(BACK_X, BACK_Y);
+    CHECK_EQ(programmer_screen_stick_level(), 0);
+    CHECK_EQ(listed(), 1);
 
     /* X clears it. */
     tap(FIND_CLR_X, FIND_Y);
     CHECK_STR_EQ(programmer_screen_stick_search(), "");
-    CHECK_EQ(listed(), (int)esc_profiles_count());
+    CHECK_EQ(listed(), 20);
     CHECK(!programmer_screen_stick_typing());
 }
 
@@ -1257,7 +1349,7 @@ TEST_CASE(ok_keeps_the_search_cancel_restores_it_and_empty_clears_it)
     find_type("FLYFUN\n");
     CHECK(!programmer_screen_stick_typing());
     CHECK_STR_EQ(programmer_screen_stick_search(), "FLYFUN");
-    CHECK_EQ(listed(), 3);
+    CHECK_EQ(listed(), 1);
 
     tap(FIND_X, FIND_Y);
     find_type("#ZZZ");
@@ -1268,12 +1360,12 @@ TEST_CASE(ok_keeps_the_search_cancel_restores_it_and_empty_clears_it)
     find_key('~');                           /* CANCEL */
     CHECK(!programmer_screen_stick_typing());
     CHECK_STR_EQ(programmer_screen_stick_search(), "FLYFUN");
-    CHECK_EQ(listed(), 3);
+    CHECK_EQ(listed(), 1);
 
     tap(FIND_X, FIND_Y);
     find_type("#\n");                        /* CLR, OK: empty */
     CHECK_STR_EQ(programmer_screen_stick_search(), "");
-    CHECK_EQ(listed(), (int)esc_profiles_count());
+    CHECK_EQ(listed(), 20);
 
     /* The search holds its most, sixteen. */
     tap(FIND_X, FIND_Y);
@@ -1323,61 +1415,70 @@ TEST_CASE(a_lost_touch_drops_a_search_key_under_way)
     CHECK_STR_EQ(programmer_screen_stick_search(), "");
 }
 
-/* The header's box, mirrored from programmer_screen.c: SP_COUNT_W, 304 px
- * of 8 px cells. */
-#define COUNT_CELLS 38
+/* The footer's count, mirrored from programmer_screen.c: SP_COUNT_W, 360
+ * px, and beside the docked keyboard from PAD + 12 to SP_DOCK_X - 8, 326
+ * px, of 8 px cells. */
+#define COUNT_CELLS      45
+#define COUNT_DOCK_CELLS 40
 
 /*
  * The registry at its most -- every built-in profile and
- * ESC_PROFILE_MAX_OVERRIDES card ones -- found whole by "*", on its last
- * page: the widest header either language can draw, with every profile
- * counted as one that runs, still fits its box.
+ * ESC_PROFILE_MAX_OVERRIDES card ones, each card one a maker of its own --
+ * found whole by "*", on the last page of each level: the widest count
+ * either language can draw, with every row counted as one that runs, still
+ * fits beside the docked keyboard.
  */
 TEST_CASE(the_header_fits_at_the_registrys_most)
 {
     fresh();
     esc_profiles_clear_overrides();
     static char ids[ESC_PROFILE_MAX_OVERRIDES][16];
+    static char brands[ESC_PROFILE_MAX_OVERRIDES][16];
     for (unsigned i = 0; i < ESC_PROFILE_MAX_OVERRIDES; ++i) {
         esc_profile_t p = esc_profiles_builtin[i % esc_profiles_builtin_count];
         snprintf(ids[i], sizeof(ids[i]), "card-%u", i);
+        snprintf(brands[i], sizeof(brands[i]), "Card %02u", i);
         p.id = ids[i];
+        p.brand = brands[i];
         CHECK(esc_profiles_override(&p, NULL));
     }
-    const int total = (int)esc_profiles_count();
-    CHECK_EQ(total, (int)(esc_profiles_builtin_count
-                          + ESC_PROFILE_MAX_OVERRIDES));
     programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
     tap(FIND_X, FIND_Y);
-    find_type("*\n");
-    CHECK_EQ(listed(), total);
+    find_type("*");
+    const int makers = listed();
+    CHECK_EQ(makers, 20 + (int)ESC_PROFILE_MAX_OVERRIDES);
     for (int i = 0; i < 20; ++i) {
         tap(LIST_DN_X, LIST_CY);
     }
     int top = 0;
     (void)programmer_screen_stick_listed(&top);
-    CHECK(top + 9 >= total && top < total);
+    CHECK(top + 9 >= makers && top < makers);
     for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
-        char line[96];
-        snprintf(line, sizeof(line),
-                 ui_tr_in((ui_lang_t)l, TX_SP_LIST_FOUND), top + 1, total,
-                 total, total);
-        if (gfx_text_cells(line) > COUNT_CELLS) {
-            T_FAIL("language %d: \"%s\" is %d cells, the box %d", l, line,
-                   gfx_text_cells(line), COUNT_CELLS);
+        static const ui_text_id_t k[] = {
+            TX_SP_MAKERS_FOUND, TX_SP_MAKERS_COUNT, TX_SP_LIST_FOUND,
+            TX_SP_LIST_COUNT,
+        };
+        for (size_t f = 0; f < sizeof(k) / sizeof(k[0]); ++f) {
+            /* Makers at their most, models at a maker's list's most. */
+            const int n = (f < 2u) ? makers : 512;
+            char line[96];
+            snprintf(line, sizeof(line), ui_tr_in((ui_lang_t)l, k[f]),
+                     n - 8, n, n, n);
+            if (gfx_text_cells(line) > COUNT_DOCK_CELLS) {
+                T_FAIL("language %d: \"%s\" is %d cells, the box %d", l,
+                       line, gfx_text_cells(line), COUNT_DOCK_CELLS);
+            }
         }
-        snprintf(line, sizeof(line),
-                 ui_tr_in((ui_lang_t)l, TX_SP_LIST_COUNT), top + 1, total,
-                 total, total);
-        CHECK(gfx_text_cells(line) <= COUNT_CELLS);
         ui_text_set_language((ui_lang_t)l);
         memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
         programmer_invalidate();
         scr->render(&cv, l & 1);
         CHECK(lit() > 20000);
     }
+    CHECK(COUNT_DOCK_CELLS <= COUNT_CELLS);
     ui_text_set_language(UI_LANG_EN);
+    find_key('~');
     esc_profiles_clear_overrides();
 }
 
@@ -1426,10 +1527,8 @@ TEST_CASE(the_green_light_follows_the_beeps)
 TEST_CASE(a_result_of_many_changes_counts_the_rest)
 {
     fresh();
-    /* hobbywing-flyfun-v5, the fifth that runs: twelve items. */
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
-    tap(ROW_CX, SP_ROW_CY(4));
+    /* hobbywing-flyfun-v5: twelve items. */
+    open_profile("hobbywing-flyfun-v5");
     for (int i = 0; i < 7; ++i) {
         tap(STEP_UP_X, STEP_CY(i));
     }
@@ -1453,10 +1552,7 @@ TEST_CASE(a_result_of_many_changes_counts_the_rest)
  * Kontronik profiles that run. */
 static void descend_to_jazz(void)
 {
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
-    tap(LIST_DN_X, LIST_CY);
-    tap(ROW_CX, SP_ROW_CY(4));
+    open_profile("kontronik-jazz");
 }
 
 static void draws(void)
@@ -1490,7 +1586,7 @@ TEST_CASE(manual_steps_show_once_by_themselves_and_on_their_button)
 
     /* Opened again, it stays closed; the button opens it. */
     tap(BACK_X, BACK_Y);
-    tap(ROW_CX, SP_ROW_CY(4));
+    open_model("kontronik-jazz", NULL);
     CHECK(programmer_screen_stick_page() == p);
     CHECK(!programmer_screen_stick_hand_shown());
     tap(HAND_X, HAND_Y);
@@ -1500,8 +1596,9 @@ TEST_CASE(manual_steps_show_once_by_themselves_and_on_their_button)
 
     /* A profile without steps has no button and no pop-up. */
     tap(BACK_X, BACK_Y);
-    tap(723, LIST_CY);                       /* ^: page one */
-    tap(ROW_CX, SP_ROW_CY(2));               /* hobbywing-flyfun-8item */
+    tap(BACK_X, BACK_Y);                     /* the makers */
+    open_maker("Hobbywing");
+    open_model("hobbywing-flyfun-8item", NULL);
     CHECK_STR_EQ(programmer_screen_stick_page()->id,
                  "hobbywing-flyfun-8item");
     CHECK(!programmer_screen_stick_hand_shown());
@@ -1510,8 +1607,9 @@ TEST_CASE(manual_steps_show_once_by_themselves_and_on_their_button)
 
     /* Leaving the screen closes it. */
     tap(BACK_X, BACK_Y);
-    tap(LIST_DN_X, LIST_CY);
-    tap(ROW_CX, SP_ROW_CY(4));
+    tap(BACK_X, BACK_Y);
+    open_maker("Kontronik");
+    open_model("kontronik-jazz", NULL);
     tap(HAND_X, HAND_Y);
     CHECK(programmer_screen_stick_hand_shown());
     scr->leave();
@@ -1527,7 +1625,9 @@ TEST_CASE(a_row_that_does_not_run_shows_its_manual_steps)
     tap(TILE_CX(2), TILE_CY);
     tap(FIND_X, FIND_Y);
     find_type("KOSMIK\n");
-    CHECK_EQ(listed(), 1);
+    CHECK_EQ(listed(), 1);                   /* one maker */
+    tap(ROW_CX, SP_ROW_CY(0));
+    CHECK_EQ(listed(), 12);                  /* its KOSMIK models */
     tap(ROW_CX, SP_ROW_CY(0));
     CHECK(programmer_screen_stick_page() == NULL);
     CHECK(programmer_screen_stick_hand_shown());
@@ -1546,8 +1646,8 @@ TEST_CASE(a_row_that_does_not_run_shows_its_manual_steps)
 
     /* graupner-brushless-control-t: a person reads its LEDs; no steps. */
     tap(FIND_CLR_X, FIND_Y);
-    tap(FIND_X, FIND_Y);
-    find_type("GRAUPNER\n");
+    tap(BACK_X, BACK_Y);                     /* the makers */
+    open_maker("Graupner");
     tap(ROW_CX, SP_ROW_CY(0));
     CHECK(!programmer_screen_stick_hand_shown());
     CHECK(programmer_screen_stick_page() == NULL);
@@ -1672,6 +1772,253 @@ TEST_CASE(abort_on_the_prompt_ends_the_run)
     draws();                                 /* the result */
 }
 
+/* ------------------------------------------------- makers and models */
+
+/* The first level: every maker once, alphabetical with case folded, its
+ * models counted, those that run among them. */
+TEST_CASE(makers_are_alphabetical_and_count_their_models)
+{
+    fresh();
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    CHECK_EQ(programmer_screen_stick_level(), 0);
+    CHECK_EQ(listed(), 20);
+    for (int i = 1; i < listed(); ++i) {
+        const char *a = programmer_screen_stick_maker_at(i - 1);
+        const char *b = programmer_screen_stick_maker_at(i);
+        char x[48], y[48];
+        snprintf(x, sizeof(x), "%s", a);
+        snprintf(y, sizeof(y), "%s", b);
+        for (char *c = x; *c != '\0'; ++c) {
+            *c = (*c >= 'a' && *c <= 'z') ? (char)(*c - 32) : *c;
+        }
+        for (char *c = y; *c != '\0'; ++c) {
+            *c = (*c >= 'a' && *c <= 'z') ? (char)(*c - 32) : *c;
+        }
+        if (strcmp(x, y) >= 0) {
+            T_FAIL("%s listed before %s", a, b);
+        }
+    }
+    CHECK_STR_EQ(programmer_screen_stick_maker_at(0), "Align");
+    CHECK(programmer_screen_stick_maker_at(20) == NULL);
+    /* Kontronik's models: every model of its 22 families. */
+    open_maker("Kontronik");
+    CHECK_EQ(programmer_screen_stick_level(), 1);
+    unsigned models = 0;
+    for (size_t i = 0; i < esc_profiles_count(); ++i) {
+        const esc_profile_t *p = esc_profiles_at(i);
+        models += same_name(p->brand, "Kontronik") ? p->model_count : 0u;
+    }
+    CHECK_EQ(listed(), (int)models);
+    CHECK(programmer_screen_stick_maker_at(0) == NULL);
+    CHECK(programmer_screen_stick_row(listed(), NULL) == NULL);
+    draws();
+    /* The second level's BACK keeps the first's page. */
+    tap(BACK_X, BACK_Y);
+    tap(LIST_DN_X, LIST_CY);
+    open_maker("Robbe");
+    tap(BACK_X, BACK_Y);
+    int top = 0;
+    (void)programmer_screen_stick_listed(&top);
+    CHECK_EQ(top, 9);
+    CHECK_STR_EQ(programmer_screen_stick_maker(), "");
+}
+
+/* One key of the order: smaller first, 0 -- not stated -- last. */
+static int key_order(uint32_t a, uint32_t b)
+{
+    if (a == b) {
+        return 0;
+    }
+    if (a == 0u || b == 0u) {
+        return (a == 0u) ? 1 : -1;
+    }
+    return (a < b) ? -1 : 1;
+}
+
+/* The second level: one row a model, by current, then voltage, then name,
+ * a value a model does not state last on its key. */
+TEST_CASE(models_go_by_current_then_voltage_then_name)
+{
+    static const char *const k[] = { "Kontronik", "YGE", "Hobbywing",
+                                     "Dualsky" };
+    for (size_t b = 0; b < sizeof(k) / sizeof(k[0]); ++b) {
+        fresh();
+        programmer_screen_bench(0u, false, 0u, 0u, false);
+        tap(TILE_CX(2), TILE_CY);
+        open_maker(k[b]);
+        bool missing = false;
+        for (int i = 1; i < listed(); ++i) {
+            int ma = -1, mb = -1;
+            const esc_profile_t *pa = programmer_screen_stick_row(i - 1, &ma);
+            const esc_profile_t *pb = programmer_screen_stick_row(i, &mb);
+            const esc_model_t *x = &pa->models[ma], *y = &pb->models[mb];
+            missing = missing || x->current_a == 0u || x->v_max_mv == 0u
+                      || y->current_a == 0u || y->v_max_mv == 0u;
+            int c = key_order(x->current_a, y->current_a);
+            if (c == 0) {
+                c = key_order(x->v_max_mv, y->v_max_mv);
+            }
+            if (c == 0) {
+                char nx[64], ny[64];
+                snprintf(nx, sizeof(nx), "%s", x->name);
+                snprintf(ny, sizeof(ny), "%s", y->name);
+                for (char *s1 = nx; *s1 != '\0'; ++s1) {
+                    *s1 = (*s1 >= 'a' && *s1 <= 'z') ? (char)(*s1 - 32) : *s1;
+                }
+                for (char *s1 = ny; *s1 != '\0'; ++s1) {
+                    *s1 = (*s1 >= 'a' && *s1 <= 'z') ? (char)(*s1 - 32) : *s1;
+                }
+                c = (strcmp(nx, ny) > 0) ? 1 : 0;
+            }
+            if (c > 0) {
+                T_FAIL("%s: %s before %s", k[b], x->name, y->name);
+            }
+        }
+        /* Kontronik, YGE and Dualsky each list models stating no current or
+         * no voltage: they are last on that key. */
+        if (b != 2u) {
+            CHECK(missing);
+        }
+    }
+    /* Kontronik's first: the smallest current it lists. */
+    int m = -1;
+    fresh();
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    open_maker("Kontronik");
+    const esc_profile_t *p = programmer_screen_stick_row(0, &m);
+    uint16_t least = 0xFFFFu;
+    for (size_t i = 0; i < esc_profiles_count(); ++i) {
+        const esc_profile_t *q = esc_profiles_at(i);
+        for (unsigned j = 0; same_name(q->brand, "Kontronik")
+                             && j < q->model_count; ++j) {
+            if (q->models[j].current_a != 0u
+                && q->models[j].current_a < least) {
+                least = q->models[j].current_a;
+            }
+        }
+    }
+    CHECK(p != NULL && p->models[m].current_a == least);
+}
+
+/* A model row opens its family's page, named with the model; the supply
+ * takes the model's own cell count where it states one. */
+TEST_CASE(a_model_row_opens_its_family_at_its_own_voltage)
+{
+    fresh();
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    open_maker("Kontronik");
+    open_model("kontronik-jazz", "JAZZ 55 LV");
+    const esc_profile_t *p = programmer_screen_stick_page();
+    CHECK(p != NULL && strcmp(p->id, "kontronik-jazz") == 0);
+    const int m = programmer_screen_stick_model();
+    CHECK(m >= 0 && strcmp(p->models[m].name, "JAZZ 55 LV") == 0);
+    tap(CANCEL_X, HOLD_Y);                   /* the steps, read */
+    draws();
+
+    /* hobbywing-flyfun-hv-9item: a model with more cells than the family's
+     * fewest runs at its own voltage. */
+    fresh();
+    const esc_profile_t *q = esc_profiles_find("hobbywing-flyfun-hv-9item");
+    CHECK(q != NULL);
+    if (q == NULL) {
+        return;
+    }
+    int most = 0;
+    for (unsigned i = 1; i < q->model_count; ++i) {
+        if (q->models[i].cells_min > q->models[most].cells_min) {
+            most = (int)i;
+        }
+    }
+    CHECK(esc_stick_model_mv(q, most) >= esc_stick_profile_mv(q));
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    open_maker("Hobbywing");
+    open_model(q->id, q->models[most].name);
+    if (programmer_screen_stick_page() == q) {
+        tap(STEP_UP_X, STEP_CY(0));
+        tap(WRITE_X, BTN_CY);
+        hold_for(2.25f);
+        CHECK_EQ(programmer_screen_stick_runs(), 1u);
+        CHECK_EQ(programmer_screen_stick()->out.supply_mv,
+                 esc_stick_model_mv(q, most));
+        scr->leave();
+    } else {
+        /* Over the cap at its own voltage: refused on its row. */
+        CHECK(esc_stick_model_mv(q, most) > 21000u);
+    }
+    CHECK_EQ(esc_stick_model_mv(q, -1), esc_stick_profile_mv(q));
+}
+
+/* The owner's example: *KONTR*JAZZ*55* finds Kontronik on the first level
+ * and JAZZ 55 LV on the second; BACK keeps the search on both. */
+TEST_CASE(the_search_finds_on_both_levels_and_back_keeps_it)
+{
+    fresh();
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    tap(FIND_X, FIND_Y);
+    find_type("*KONTR*JAZZ*55*");
+    CHECK_EQ(listed(), 1);
+    CHECK_STR_EQ(programmer_screen_stick_maker_at(0), "Kontronik");
+    draws();                                 /* docked, the makers */
+    find_key('\n');
+    tap(ROW_CX, SP_ROW_CY(0));
+    CHECK_EQ(programmer_screen_stick_level(), 1);
+    CHECK_EQ(listed(), 1);
+    int m = -1;
+    const esc_profile_t *p = programmer_screen_stick_row(0, &m);
+    CHECK(p != NULL && strcmp(p->models[m].name, "JAZZ 55 LV") == 0);
+    tap(FIND_X, FIND_Y);
+    draws();                                 /* docked, the models */
+    find_key('~');
+    tap(ROW_CX, SP_ROW_CY(0));
+    CHECK(programmer_screen_stick_page() == p);
+    tap(CANCEL_X, HOLD_Y);
+    tap(BACK_X, BACK_Y);
+    CHECK_EQ(listed(), 1);
+    tap(BACK_X, BACK_Y);
+    CHECK_EQ(programmer_screen_stick_level(), 0);
+    CHECK_STR_EQ(programmer_screen_stick_search(), "*KONTR*JAZZ*55*");
+    CHECK_EQ(listed(), 1);
+}
+
+/* A card profile joins its maker's models; one of a maker the set does
+ * not have adds the maker in its alphabetical place. */
+TEST_CASE(a_card_profile_joins_its_maker)
+{
+    fresh();
+    esc_profiles_clear_overrides();
+    esc_profile_t card = *esc_profiles_find("kontronik-jazz");
+    card.id = "card-jazz";
+    CHECK(esc_profiles_override(&card, NULL));
+    esc_profile_t other = *esc_profiles_find("sunrise-pro");
+    other.id = "card-other";
+    other.brand = "Bench Test";
+    CHECK(esc_profiles_override(&other, NULL));
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    CHECK_EQ(listed(), 21);
+    CHECK_STR_EQ(programmer_screen_stick_maker_at(1), "Bench Test");
+    open_maker("Kontronik");
+    unsigned models = 0;
+    bool found = false;
+    for (size_t i = 0; i < esc_profiles_builtin_count; ++i) {
+        const esc_profile_t *p = &esc_profiles_builtin[i];
+        models += same_name(p->brand, "Kontronik") ? p->model_count : 0u;
+    }
+    CHECK_EQ(listed(), (int)(models + card.model_count));
+    for (int i = 0; i < listed(); ++i) {
+        const esc_profile_t *p = programmer_screen_stick_row(i, NULL);
+        found = found || (p != NULL && strcmp(p->id, "card-jazz") == 0);
+    }
+    CHECK(found);
+    draws();
+    esc_profiles_clear_overrides();
+}
+
 int main(void)
 {
     RUN(the_protocol_list_is_pressable_before_it_is_painted);
@@ -1713,5 +2060,10 @@ int main(void)
     RUN(a_run_asks_for_its_manual_step_and_goes_on_with_done);
     RUN(abort_on_the_prompt_ends_the_run);
     RUN(a_manual_step_shows_in_the_language_showing);
+    RUN(makers_are_alphabetical_and_count_their_models);
+    RUN(models_go_by_current_then_voltage_then_name);
+    RUN(a_model_row_opens_its_family_at_its_own_voltage);
+    RUN(the_search_finds_on_both_levels_and_back_keeps_it);
+    RUN(a_card_profile_joins_its_maker);
     return test_summary("programmer");
 }

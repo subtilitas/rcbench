@@ -727,21 +727,28 @@ band's home tag leaves the screen.
 
 ### ESC STICK
 
-The list holds every ESC profile, those the bench can run first; a row that
-cannot run names the reason:
+The list shows the makers first, alphabetical, each with how many of its
+models run:
 
-![The profiles](img/programmer-stick.png)
+![The makers](img/programmer-stick.png)
 
-SEARCH filters the list. Its keyboard docks on the right, the rows narrow
-beside it, and every key filters at once. A profile is found when the text
-appears in its maker and name read as one text, or in its maker and a model
-name. Case does not matter, and `*` stands for any run of characters:
+A maker opens its models, one row a model, by current, then voltage, then
+name, each with its family and what the profile is or why it does not run.
+A model opens its family's profile:
+
+![Kontronik's models](img/programmer-stick-hand-list.png)
+
+SEARCH filters the level showing. Its keyboard docks on the right, the rows
+narrow beside it, and every key filters at once. A model is found when the
+text appears in its maker and family read as one text, or in its maker and
+its own name; a maker shows when any of its models is found. Case does not
+matter, and `*` stands for any run of characters:
 
 ![Typing a search](img/programmer-stick-find.png)
 
-OK keeps the search, X clears it:
+OK keeps the search on both levels, X clears it:
 
-![A search applied](img/programmer-stick-found.png)
+![A search applied, Hobbywing's models](img/programmer-stick-found.png)
 
 A profile's items start at KEEP. The steppers pick a value; RUN counts the
 values picked:

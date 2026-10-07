@@ -64,6 +64,13 @@ sweep starts over from the curve's beginning, and the alert band says so.
   Kontronik car modes go to the brake after full throttle. A run makes each
   STORE after the one before, then switches the supply off; the simulated
   ESC stores nothing without them. A two-stage profile takes none.
+- **Makers, then models.** ESC STICK lists the makers, alphabetical, each
+  with how many of its models run and a MANUAL tag where one has manual
+  steps. A maker opens its models, one row a model by current, voltage and
+  name, with its family and its run state; a model opens its family's
+  profile, named with the model, and the supply takes the model's own cell
+  count. The search filters both levels and is kept between them; card
+  profiles join their maker. The count moves to the line under the rows.
 - **Manual steps in German.** A step carries its German in `action_de`
   (1-120 bytes of UTF-8), shown when the interface is German, with the
   English as the fallback. All 24 profiles' steps have it.

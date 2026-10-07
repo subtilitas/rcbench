@@ -234,6 +234,18 @@ bool esc_profile_matches(const esc_profile_t *p, const char *pattern)
     return false;
 }
 
+bool esc_model_matches(const esc_profile_t *p, unsigned model,
+                       const char *pattern)
+{
+    if (p == NULL || model >= p->model_count) {
+        return false;
+    }
+    const char *brand = (p->brand != NULL) ? p->brand : "";
+    const char *name = p->models[model].name;
+    return match_joined(brand, (p->family != NULL) ? p->family : "", pattern)
+           || (name != NULL && match_joined(brand, name, pattern));
+}
+
 unsigned esc_profile_manual_count(const esc_profile_t *p,
                                   esc_manual_when_t when)
 {

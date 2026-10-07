@@ -283,6 +283,14 @@ bool esc_text_matches(const char *text, const char *pattern);
  */
 bool esc_profile_matches(const esc_profile_t *p, const char *pattern);
 
+/**
+ * Whether @p pattern finds model @p model of @p p: in the maker and the
+ * family read as one text, which every model of the family shares, or in
+ * the maker and the model's own name, as esc_profile_matches() reads them.
+ */
+bool esc_model_matches(const esc_profile_t *p, unsigned model,
+                       const char *pattern);
+
 /** How many of the profile's manual steps are due at @p when. */
 unsigned esc_profile_manual_count(const esc_profile_t *p,
                                   esc_manual_when_t when);

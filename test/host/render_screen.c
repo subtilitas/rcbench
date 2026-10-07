@@ -491,6 +491,45 @@ static void stick_type(const char *text)
     }
 }
 
+/* The ESC STICK list's row @p at, paged to first: the rows of
+ * programmer_screen.c (SP_ROW_Y0 52, 36 px apart, 9 to a page) and its ^ and
+ * v at 723 and 761 on the crumb row. */
+static void stick_tap_row(int at)
+{
+    int top = 0;
+    (void)programmer_screen_stick_listed(&top);
+    for (int g = 0; g < 64 && at < top; ++g) {
+        tap(723, UI_BAND_H + 27);
+        (void)programmer_screen_stick_listed(&top);
+    }
+    for (int g = 0; g < 64 && at >= top + 9; ++g) {
+        tap(761, UI_BAND_H + 27);
+        (void)programmer_screen_stick_listed(&top);
+    }
+    tap(400, UI_BAND_H + 52 + (at - top) * 36 + 16);
+}
+
+/* On the makers, the one named @p name; on its models, the first of
+ * profile @p id (NULL: stay on the models). */
+static void stick_open(const char *name, const char *id)
+{
+    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
+        const char *m = programmer_screen_stick_maker_at(i);
+        if (m != NULL && strcmp(m, name) == 0) {
+            stick_tap_row(i);
+            break;
+        }
+    }
+    for (int i = 0; id != NULL && i < programmer_screen_stick_listed(NULL);
+         ++i) {
+        const esc_profile_t *p = programmer_screen_stick_row(i, NULL);
+        if (p != NULL && strcmp(p->id, id) == 0) {
+            stick_tap_row(i);
+            return;
+        }
+    }
+}
+
 static ui_screen_id_t id_of(const char *name)
 {
     static const struct { const char *name; ui_screen_id_t id; } k[] = {
@@ -677,7 +716,7 @@ int main(int argc, char **argv)
     if (id == SCREEN_PROGRAMMER && strncmp(view, "programmer-stick", 16) == 0) {
         /*
          * The ESC STICK class, walked by pressing.  Geometry from
-         * programmer_screen.c: the third tile, the third profile that runs
+         * programmer_screen.c: the third tile, the makers and their models
          * (hobbywing-flyfun-8item, by id), and the item rows' + steppers.
          */
         const supply_caps_t caps = SUPPLY_CAPS_PPS_DEFAULT;
@@ -687,17 +726,15 @@ int main(int argc, char **argv)
         programmer_screen_bench(0u, false, 0u, 0u, false);
         tap(660, UI_BAND_H + 180);              /* the ESC STICK tile */
         if (strcmp(view, "programmer-stick-hand-list") == 0) {
-            /* The Kontronik profiles, those with manual steps tagged. */
-            tap(260, UI_BAND_H + 27);
-            stick_type("KONTR\n");
+            /* Kontronik's models, those with manual steps tagged. */
+            stick_open("Kontronik", NULL);
         } else if (strncmp(view, "programmer-stick-hand", 21) == 0) {
             /*
-             * kontronik-jazz, page two, row five: a jumper fitted before
-             * the power-up and pulled after the entry.  Its manual steps
-             * show by themselves on the first opening; OK closes them.
+             * kontronik-jazz: a jumper fitted before the power-up and
+             * pulled after the entry.  Its manual steps show by themselves
+             * on the first opening; OK closes them.
              */
-            tap(761, UI_BAND_H + 27);
-            tap(400, UI_BAND_H + 52 + 4 * 36 + 16);
+            stick_open("Kontronik", "kontronik-jazz");
             if (strcmp(view, "programmer-stick-hand-info") != 0) {
                 tap(684, UI_BAND_H + 378);      /* OK */
                 /* Mode 6, a car mode: powered up at MID. */
@@ -735,11 +772,14 @@ int main(int argc, char **argv)
             || strcmp(view, "programmer-stick-found") == 0) {
             /* The search field, then typing: still typing for -find, OK
              * ("\n" is no key, so it lands on OK) for -found. */
-            tap(260, UI_BAND_H + 27);
+            tap(600, UI_BAND_H + 27);
             stick_type(strcmp(view, "programmer-stick-find") == 0
                            ? "SKY*V2" : "FLYFUN\n");
+            if (strcmp(view, "programmer-stick-found") == 0) {
+                stick_open("Hobbywing", NULL);  /* its FLYFUN models */
+            }
         } else if (strcmp(view, "programmer-stick") != 0) {
-            tap(400, UI_BAND_H + 52 + 2 * 36 + 16);
+            stick_open("Hobbywing", "hobbywing-flyfun-8item");
             if (strcmp(view, "programmer-stick-timing") == 0) {
                 tap(698, UI_BAND_H + 70);       /* TIMING */
             } else {

@@ -245,6 +245,16 @@ uint32_t esc_stick_profile_mv(const esc_profile_t *p)
     return best;
 }
 
+uint32_t esc_stick_model_mv(const esc_profile_t *p, int model)
+{
+    if (p == NULL || model < 0 || (unsigned)model >= p->model_count
+        || p->models[model].cells_min == 0u) {
+        return esc_stick_profile_mv(p);
+    }
+    const esc_model_t *m = &p->models[model];
+    return (uint32_t)m->cells_min * (m->nimh ? 1200u : 3800u);
+}
+
 bool esc_stick_is_action(const esc_item_t *it)
 {
     return it != NULL && it->key != NULL

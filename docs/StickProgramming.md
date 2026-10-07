@@ -45,49 +45,76 @@ PROGRAMMER, then ESC STICK:
 
 ![Device class](img/programmer.png)
 
-The list holds every profile, those the bench can run first. A profile it
-cannot run names the reason on its row and opens nothing; so does one whose
-voltage is over the SUPPLY cap. The order and the count follow VOLTAGE and
-the cap as they change. A profile from the SD (Secure Digital) card carries
-CARD. A profile with [manual steps](#manual-steps) carries a red MANUAL tag
-where its name ends; one of those that does not run opens its manual steps
-instead of nothing.
+The list has two levels.
 
-![The profiles](img/programmer-stick.png)
+- **Makers.** One row a maker, alphabetical with case folded: its name, how
+  many of its models run of all it lists (`10 OF 82 RUN`), and the red
+  MANUAL tag where a model it lists has [manual steps](#manual-steps). A
+  maker none of whose models runs is drawn dark. A tap opens its models.
+- **Models.** One row a model of that maker, by current, then the maximum
+  input voltage, then the name; a model that states no current or no
+  voltage comes last on that key. A row shows the model, its current and
+  voltage, its family, the MANUAL tag, and what its family's profile is
+  (items, one or two stages, CARD for a profile from the SD (Secure Digital)
+  card) or why it does not run. The crumb reads `ESC STICK > Kontronik`.
+  BACK returns to the makers on the page it left.
 
-![The Kontronik profiles, tagged MANUAL](img/programmer-stick-hand-list.png)
+A tap on a model opens its family's profile, named with the model:
+`ESC STICK > Kontronik > JAZZ 55 LV (JAZZ / MINIJAZZ)`. The supply takes the
+model's own lowest cell count where it states one, else the family's
+lowest. A model whose profile the bench cannot run names the reason on its
+row and opens nothing; so does one whose voltage is over the SUPPLY cap.
+One whose profile has manual steps opens them instead. The rows and the
+counts follow VOLTAGE and the cap as they change. A profile from the card
+joins its maker's models; a card maker the set does not have joins the
+makers in its alphabetical place. Every built-in profile names its maker;
+the card reader refuses a file without one. A maker lists at most 512
+models.
+
+The line under the rows says no profile is verified, and the count at its
+right counts the level: `1-9 of 20 makers, 6 run` -- the makers with a
+model that runs -- or `1-9 of 82, 40 run` for a maker's models.
+
+![The makers](img/programmer-stick.png)
+
+![Kontronik's models, tagged MANUAL](img/programmer-stick-hand-list.png)
 
 ### Search
 
-SEARCH beside ESC STICK filters the list. Tapping it docks the text
-keyboard on the right of the screen, and the rows narrow to its left: the
-maker, the name cut to fit, and a mark for whether the profile runs (a
-filled dot) or not (a ring). Every key filters the list at once, and the
-list returns to its first row whenever the search changes.
+SEARCH on the crumb row filters the level showing. Tapping it docks the
+text keyboard on the right of the screen, and the rows narrow to its left:
+the maker or the model, the makers' models found or a model's current, and
+a mark for whether it runs (a filled dot) or not (a ring); the count moves
+under the narrowed rows. Every key filters the list at once, and the level
+returns to its first row whenever the search changes.
 
-- A profile is found when the search text appears anywhere in its maker
-  and name read as one text, "Hobbywing Skywalker V2 15A-100A, 11-item
-  menu", or in its maker and one of its models, "Kontronik JAZZ 55 LV".
-- Case does not matter: `KONTR*Jazz` finds "Kontronik JAZZ / MINIJAZZ".
+- A model is found when the search text appears anywhere in its maker and
+  its family's name read as one text, "Hobbywing Skywalker V2 15A-100A,
+  11-item menu", or in its maker and its own name, "Kontronik JAZZ 55 LV".
+- A maker shows when the search finds any of its models; its row then
+  counts them: `1 OF 82 FOUND, 1 RUN`. No maker opens by itself, even
+  when it is the only one found.
+- Case does not matter: `KONTR*Jazz` finds Kontronik, and in it the JAZZ
+  and MINIJAZZ models.
 - `*` stands for any run of characters, none included. The keyboard's `*`
-  key sits where the name keyboard has `_`. `sky*v2` finds the three
-  Skywalker V2 profiles; `kontr*jazz*55` finds the Jazz profile by its
-  model JAZZ 55 LV.
-- An empty search shows every profile. The search holds up to 16
-  characters.
-- The header counts what the search found: `1-3 of 3 found, 2 run`. With
+  key sits where the name keyboard has `_`. `sky*v2` finds Hobbywing and in
+  it the 14 Skywalker V2 models; `*kontr*jazz*55*` finds Kontronik and in
+  it JAZZ 55 LV alone.
+- An empty search shows every maker and every model. The search holds up
+  to 16 characters, and is the same on both levels.
+- The count says what was found: `1-1 of 1 makers found, 1 run`. With
   nothing found the list says `No profile matches the search.`
 
 OK closes the keyboard with the search kept, CANCEL goes back to the search
 the keyboard opened on, and CLR then OK clears it. A row tapped while the
-keyboard is open opens that profile, the search kept. With the keyboard
-closed, X in the field clears the search. The search stays through a
+keyboard is open opens it, the search kept. With the keyboard closed, X in
+the field clears the search. The search stays through both levels, a
 profile's page and back and when the screen is left, and is empty after a
 restart.
 
-![Typing a search](img/programmer-stick-find.png)
+![Typing a search on the makers](img/programmer-stick-find.png)
 
-![A search applied](img/programmer-stick-found.png)
+![A search applied, Hobbywing's models](img/programmer-stick-found.png)
 
 Case folding covers the letters A to Z only. Ä, Ö and Ü in a profile from
 the card match only the same letter in the same case, and the keyboard has
@@ -389,7 +416,8 @@ GROUP GAP plus the shorter of BEEP MIN and GAP MIN at or over the profile's
 
 ## The supply
 
-VOLTAGE 0 takes the lowest `cells_min` among the profile's models, at
+VOLTAGE 0 takes the `cells_min` of the model opened from the list where it
+states one, else the lowest `cells_min` among the profile's models, at
 3.8 V a LiPo (lithium polymer) cell or 1.2 V a NiMH (nickel-metal hydride)
 cell: above that model's cut-off and under every model's maximum. A profile
 whose models state no cell count needs VOLTAGE set. A voltage above the
