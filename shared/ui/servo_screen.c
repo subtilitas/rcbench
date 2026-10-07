@@ -1090,9 +1090,13 @@ void servo_screen_supply(const supply_state_t *st)
     }
     s.sup = *st;
     s.have_sup = true;
-    /* A restore waits for a sample taken after the run's OFF went that
-     * shows the output off. */
+    /* A restore waits for a sample taken after the run's OFF went in which
+     * the supply itself reports the output off.  The panel's own flag is
+     * its request: the PD mini switches off a link exchange and a module
+     * transaction behind it, and a set point put back before then reaches
+     * an output that is still on. */
     if (s.test_restore && s.restore_stage == RS_SAMPLE && !st->output
+        && st->online && st->mode == SUPPLY_MODE_OFF
         && (int32_t)(test_reading_of(st).taken_ms - s.restore_ms) >= 0) {
         s.restore_stage = RS_OFF_SEEN;
     }

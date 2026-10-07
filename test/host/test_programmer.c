@@ -407,6 +407,10 @@ typedef struct {
     int       arms, disarms;
     /* What can go wrong with the bench. */
     bool      no_arm, no_power, silent, offline, link_lost, report_off;
+    bool      module_on;      /* what the supply itself reads         */
+    uint32_t  off_at, off_lag; /* it goes off this much after the OFF */
+    uint32_t  moved_while_on;
+    float     last_pct;
     uint32_t  every;          /* ms between readings; 0 is 50 */
     int32_t   extra_ma;
 } rig_t;
@@ -428,21 +432,38 @@ static void rig_step(rig_t *r)
     }
     supply_cmd_t sc;
     if (supply_screen_poll_cmd(&sc)) {
+        if (sc.off && r->on) {
+            r->off_at = r->now;
+        }
         r->on = sc.off ? false : (sc.on ? !r->no_power : r->on);
+        if (r->on) {
+            r->module_on = true;
+        }
         supply_screen_set_output(r->on);
         supply_screen_set_on_coming(false);
     }
+    /* The panel's flag follows its request; the module follows it off_lag
+     * later, as the PD mini does. */
+    if (!r->on && r->module_on && r->now - r->off_at >= r->off_lag) {
+        r->module_on = false;
+    }
+    const float eff = r->armed ? r->pct : -1.0f;
+    if (eff != r->last_pct && r->module_on && !r->on) {
+        r->moved_while_on++;
+    }
+    r->last_pct = eff;
     programmer_screen_bench(r->now, r->armed, r->stops, !r->link_lost);
-    const int32_t ma = esc_sim_step(&r->sim, r->now, r->on,
+    const int32_t ma = esc_sim_step(&r->sim, r->now, r->module_on,
                                     r->armed ? r->pct : -1.0f);
     if (r->now >= r->next && !r->silent) {
         supply_state_t st;
         memset(&st, 0, sizeof(st));
         st.samples = (uint16_t)++r->seq;
         st.taken_ms = r->now;
-        st.i = r->on ? (float)(ma + r->extra_ma) / 1000.0f : 0.0f;
-        st.output = r->on && !r->report_off;
-        st.mode = st.output ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
+        st.i = r->module_on ? (float)(ma + r->extra_ma) / 1000.0f : 0.0f;
+        st.output = r->on;                              /* asked */
+        st.mode = (r->module_on && !r->report_off) ? SUPPLY_MODE_CV
+                                                   : SUPPLY_MODE_OFF;
         st.online = !r->offline;
         st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
         programmer_screen_supply(&st);
@@ -455,6 +476,7 @@ static void rig_step(rig_t *r)
 static void rig_start(rig_t *r)
 {
     memset(r, 0, sizeof(*r));
+    r->last_pct = -1.0f;
     esc_sim_init(&r->sim, programmer_screen_stick()->p, NULL);
 }
 
@@ -999,6 +1021,65 @@ TEST_CASE(a_stop_or_a_lost_touch_takes_a_queued_arm_away)
     scr->leave();
 }
 
+/* The reviewers' proof through the screen: the SUPPLY flag goes off with
+ * the request, the module 300 ms later.  The run waits for the module. */
+TEST_CASE(the_screen_passes_the_supplys_own_state)
+{
+    fresh();
+    descend_to_hobbywing();
+    pick_cutoff();
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    static rig_t r;
+    rig_start(&r);
+    r.off_lag = 300u;
+    rig_run(&r, 300000u);
+    CHECK_EQ(programmer_screen_stick()->phase, ESC_STICK_DONE);
+    CHECK_EQ(r.moved_while_on, 0u);
+    CHECK(!r.module_on);
+    CHECK_EQ(esc_sim_stored(&r.sim, 3), 2);
+}
+
+/* The list follows VOLTAGE and the SUPPLY cap: its order and its count are
+ * built again when either moves, not only when the class is opened. */
+TEST_CASE(the_list_follows_voltage_and_the_cap)
+{
+    fresh();
+    programmer_screen_bench(0u, false, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    settings_set(SET_SUPPLY_V_MAX, 7.0f);
+    supply_screen_limits_changed();
+    scr->tick(0.02f);
+    /* Only DualSky, with no cell count, still runs; the third row is now
+     * a refused one and opens nothing. */
+    tap(ROW_CX, SP_ROW_CY(2));
+    tap(STEP_UP_X, STEP_CY(2));
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    /* The cap back up: hobbywing-flyfun-8item is the third row again. */
+    settings_set(SET_SUPPLY_V_MAX, 21.0f);
+    supply_screen_limits_changed();
+    scr->tick(0.02f);
+    tap(ROW_CX, SP_ROW_CY(2));
+    pick_cutoff();
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    CHECK_STR_EQ(programmer_screen_stick()->p->id, "hobbywing-flyfun-8item");
+    scr->leave();
+    /* And on the way back from a profile, and on entering the screen. */
+    scr->enter();
+    tap(BACK_X, BACK_Y);
+    settings_set(SET_STICK_V, 20.0f);
+    settings_set(SET_SUPPLY_V_MAX, 12.0f);
+    supply_screen_limits_changed();
+    tap(BACK_X, BACK_Y);
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    scr->render(&cv, 0);
+    CHECK(lit() > 20000);
+}
+
 /* Reset and exit are actions: their rows offer no value. */
 TEST_CASE(reset_and_exit_rows_offer_no_value)
 {
@@ -1093,6 +1174,8 @@ int main(void)
     RUN(pages_step_back_and_leaving_closes_timing);
     RUN(a_stop_or_a_lost_touch_takes_a_queued_arm_away);
     RUN(reset_and_exit_rows_offer_no_value);
+    RUN(the_screen_passes_the_supplys_own_state);
+    RUN(the_list_follows_voltage_and_the_cap);
     RUN(a_profile_over_the_supply_cap_is_refused_in_the_list);
     RUN(a_result_of_many_changes_counts_the_rest);
     return test_summary("programmer");

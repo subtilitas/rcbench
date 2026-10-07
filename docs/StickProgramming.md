@@ -41,7 +41,8 @@ PROGRAMMER, then ESC STICK:
 
 The list holds every profile, those the bench can run first. A profile it
 cannot run names the reason on its row and opens nothing; so does one whose
-voltage is over the SUPPLY cap. A profile from the SD card carries CARD.
+voltage is over the SUPPLY cap. The order and the count follow VOLTAGE and
+the cap as they change. A profile from the SD card carries CARD.
 
 ![The profiles](img/programmer-stick.png)
 
@@ -49,7 +50,10 @@ A profile's page lists its menu items. Each starts at KEEP, which leaves the
 item as it is; the steppers move through the item's values and stop at
 either end. Items keyed `reset` or `exit` are actions, not settings: the ESC
 acts on the select move and sounds no values, so their rows show ACTION, NOT
-SET and offer nothing. The line under the list names the selected item's values and the
+SET and offer nothing. An item with a single value -- the only setting there
+is, or a rule written as a value, such as `hobbywing-flyfun-hv-9item`'s
+cell count, "N beeps = N cells" -- has nothing to choose; its row shows
+NOTHING TO CHOOSE. The line under the list names the selected item's values and the
 default. RUN is offered once a value is picked and the run can start; when it
 cannot, the line beside RUN says why.
 
@@ -94,8 +98,8 @@ is taken while the bench is disarmed and the supply's output is off.
 | ITEMS | rest position | on | an item group in order names a wanted item: the select move |
 | VALUES | where the last move left it | on | a value group in order names the wanted value: the value move |
 | STORING | the value move, then the store move | on | after STORE, and after STORE again where the profile has a store move |
-| POWER CYCLE | where it stored, then entry position | off | a sample reports the output off, then OFF TIME (at least 1000 ms) at the entry position, then POWER ON again; output not off within 3000 ms: SUPPLY STAYS ON |
-| POWER OFF | where it stored | off | a sample reports the output off; not within 3000 ms: SUPPLY STAYS ON |
+| POWER CYCLE | where it stored, then entry position | off | the supply reports the output off and the current down for 200 ms, then OFF TIME (at least 1000 ms) at the entry position, then POWER ON again; not off within 3000 ms: SUPPLY STAYS ON |
+| POWER OFF | where it stored | off | the supply reports the output off and the current down for 200 ms; not within 3000 ms: SUPPLY STAYS ON |
 | DONE | MIN | off | disarmed |
 | ABORTED | MIN | off | disarmed, all in one step |
 
@@ -109,8 +113,12 @@ profile's `scheme.store` move where it names one. A profile with
 several changes switches the supply off for OFF TIME between them.
 
 A run that ends as planned, or cycles the power, switches the supply off
-first and leaves the stick where it stored; it moves the stick only once a
-sample says the output is off. The ESC never sees a stick move while it is
+first and leaves the stick where it stored. It moves the stick only once
+the supply itself reports the output off, in readings taken after the run
+asked it off, with the current at or under 20 mA for 200 ms
+(`ESC_STICK_OFF_MA`, `ESC_STICK_OFF_SETTLE_MS`). The panel's own OFF is a
+request: the PD mini switches off a link exchange and a module transaction
+later, and until then the ESC is powered and in its menu. The ESC never sees a stick move while it is
 powered that the run did not mean as a selection.
 
 Every move goes out as the MOTOR screen's commands do: ARM through the arming
@@ -200,8 +208,10 @@ unknown length can land in another stage of it. A two-stage profile also
 announces `item_then_value`, its moves differ from each other and from the
 rest position, and it has no store move. A one-stage profile announces
 `value`, or `item` with one item; takes one change per power-up; has no
-value number in two items; and its select and store moves differ from the
-rest position and from each other.
+value number in two items; its select move differs from the rest position,
+and its store move, where it has one, from the select move. The store move
+may be the rest position: in the YGE mode setups the stick goes back to
+minimum, where it rested, to store.
 
 | Row says | Why |
 | --- | --- |
@@ -238,7 +248,7 @@ A profile corrected on the SD card is listed with its correction.
 | READ RATE | 3 late readings in a row |
 | NOT ARMED | not armed within 3000 ms |
 | NO POWER | the output not reported on within 3000 ms |
-| SUPPLY STAYS ON | the output not reported off within 3000 ms of the run switching it off |
+| SUPPLY STAYS ON | the supply not reporting its output off, with the current down, within 3000 ms of the run asking it off |
 | TOUCH LOST | touch events lost while the run's ARM was not yet taken, or the bench not yet armed |
 | NO BEEPS | no beep for SILENCE |
 | CURRENT STAYS HIGH | one pulse longer than twice LONG MAX |
@@ -305,6 +315,14 @@ engine's stores no value other than the one asked for.
   pass of the loop: up to about two loops when the wanted number is the
   loop's lowest. A two-stage menu whose value loop starts at the stored
   value, as the YGE manual describes for its RC-Setup, costs more.
+- The order rule assumes the ESC's menu is the profile's. Items that exist
+  on some models only shift the numbering on the others: in
+  `hobbywing-flyfun-v5` item 6 (BEC voltage) is on the 60, 80 and 120 A
+  models, and in `ztw-gecko` item 6 on the SBEC models. On a model without
+  the item, the items after it may sound one number lower than the profile
+  says. Selecting one of them can then pick the item below it; the order
+  rule does not notice, because the menu is in order, only shorter. A
+  profile per model set is the fix and is not made.
 - `sunrise-pro`: the manual toggles the brake with "the first quad group",
   which is also the automatic-timing value; storing timing 4 may toggle the
   brake too. Not measured.

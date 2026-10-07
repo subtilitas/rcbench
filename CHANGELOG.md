@@ -54,7 +54,8 @@ history is in git.
   only when it and the group before it are both in the menu's order, so one
   missed beep passes a group rather than selecting the number below. Reset
   and exit items are actions and are not offered. A run that ends as
-  planned switches the supply off before it moves the stick. STOP, a
+  planned switches the supply off and moves the stick only once the supply
+  itself reports the output off, with the current down. STOP, a
   disarm, a lost link, the supply going off or silent, ABORT and leaving
   the screen end a run with the throttle at minimum, the supply off and the
   bench disarmed; a STOP or a lost touch event also takes back an ARM the
@@ -77,6 +78,13 @@ history is in git.
   programming does not run it.
 
 ### Fixed
+
+- **The servo test's set points wait for the supply's own OFF.** After a
+  run, SUPPLY's set points went back once a reading after the run's OFF
+  showed the panel's own request off; the PD mini follows that request a
+  link exchange and a module transaction later, so a set point could reach
+  an output still on. They now wait for a reading in which the supply
+  reports its output off.
 
 - **OUTPUT ON on SERVO above 6.0 V takes the HV hold.** The HV SERVOS ONLY
   warning opened only when the SET line raised the voltage across 6.0 V. A

@@ -308,6 +308,7 @@ typedef struct {
     bool        shown;
     uint32_t    runs;
     uint32_t    sig;        /* what the progress showed last */
+    uint32_t    built_key;  /* sp_list_key() when the list was built */
 
     /* The bench, as the application last said. */
     uint32_t now_ms, stops;
@@ -502,7 +503,7 @@ static void step(int row, int by)
 /* The stick class's half of the events, further down with its drawing. */
 static bool sp_down(const touch_event_t *evt);
 static void sp_track(const touch_event_t *evt);
-static void sp_build_list(void);
+static void sp_build_list(bool keep_scroll);
 static int  sp_runnable_count(void);
 static void sp_render(gfx_canvas_t *c);
 
@@ -538,7 +539,7 @@ static void event(const touch_event_t *evt)
                 s.klass = i;
                 s.stage = STAGE_PROTOCOL;
                 if (i == CLASS_STICK) {
-                    sp_build_list();
+                    sp_build_list(false);
                 }
                 ++s.rev;
                 return;
@@ -913,13 +914,29 @@ static int sp_runnable_count(void)
     return n;
 }
 
-/* What can run first, then what cannot, each in the registry's order. */
-static void sp_build_list(void)
+/* The two things outside the profile that decide whether it runs: VOLTAGE
+ * and the SUPPLY cap, mV. */
+static uint32_t sp_list_key(void)
+{
+    const uint32_t v = (uint32_t)lroundf(settings_get(SET_STICK_V) * 1000.0f);
+    const uint32_t cap = (uint32_t)lroundf(supply_screen_caps().v_max
+                                           * 1000.0f);
+    return (v << 16) ^ cap;
+}
+
+/*
+ * What can run first, then what cannot, each in the registry's order.
+ * Built again whenever the list comes back on screen and whenever VOLTAGE or
+ * the SUPPLY cap moves under it, so the order and the count follow the
+ * reasons the rows draw.
+ */
+static void sp_build_list(bool keep_scroll)
 {
     stick_t *t = &s.st;
+    const int scroll = keep_scroll ? t->scroll : 0;
     t->count = 0;
     t->runnable = 0;
-    t->scroll = 0;
+    t->built_key = sp_list_key();
     const size_t total = esc_profiles_count();
     for (int pass = 0; pass < 2; ++pass) {
         for (size_t i = 0; i < total && t->count < SP_MAX; ++i) {
@@ -929,6 +946,15 @@ static void sp_build_list(void)
                 t->runnable += runs ? 1 : 0;
             }
         }
+    }
+    t->scroll = (scroll < t->count) ? scroll : 0;
+}
+
+static void sp_enter(void)
+{
+    if (s.klass == CLASS_STICK && s.stage != STAGE_CLASS) {
+        sp_build_list(true);
+        ++s.rev;
     }
 }
 
@@ -1180,6 +1206,11 @@ static uint32_t sp_signature(void)
 static void sp_tick(float dt_s)
 {
     stick_t *t = &s.st;
+    if (s.klass == CLASS_STICK && s.stage == STAGE_PROTOCOL
+        && sp_list_key() != t->built_key) {
+        sp_build_list(true);
+        ++s.rev;
+    }
     if (t->warn && t->warn_down) {
         ++s.rev;            /* the hold's fill */
         if (ui_hold_tick(&t->hold, dt_s)) {
@@ -1383,6 +1414,7 @@ static bool sp_down(const touch_event_t *evt)
             t->shown = false;               /* OK: back to the menu */
             if (back) {
                 s.stage = STAGE_PROTOCOL;
+                sp_build_list(true);
             }
             ++s.rev;
         }
@@ -1432,6 +1464,7 @@ static bool sp_down(const touch_event_t *evt)
 
     if (gfx_rect_contains(s.back, px, py)) {
         s.stage = STAGE_PROTOCOL;
+        sp_build_list(true);
         ++s.rev;
         return true;
     }
@@ -1467,7 +1500,7 @@ static bool sp_down(const touch_event_t *evt)
         const int idx = t->iscroll + i;
         const int by = gfx_rect_contains(s.down[i], px, py)  ? -1
                      : gfx_rect_contains(s.up[i], px, py)    ?  1 : 0;
-        if (by != 0 && !esc_stick_is_action(&t->p->items[idx])) {
+        if (by != 0 && esc_stick_not_offered(&t->p->items[idx]) == NULL) {
             /* KEEP, then each value in the profile's order; clamped, not
              * wrapped, as every stepper here is.  Reset and exit are
              * actions, not settings, and are not offered. */
@@ -1902,10 +1935,12 @@ static void sp_draw_items(gfx_canvas_t *c)
         }
         sp_text(c, PAD + 48, y, it->name, (CTRL_X - PAD - 56) / 8,
                 ui_theme_color(UI_C_TEXT));
-        const bool action = esc_stick_is_action(it);
+        const bool action = esc_stick_not_offered(it) != NULL;
         char v[64];
         if (action) {
-            snprintf(v, sizeof(v), "ACTION, NOT SET");
+            snprintf(v, sizeof(v), "%s", esc_stick_is_action(it)
+                                             ? "ACTION, NOT SET"
+                                             : "NOTHING TO CHOOSE");
         } else if (pick < 0) {
             snprintf(v, sizeof(v), "KEEP");
         } else {
@@ -2137,10 +2172,12 @@ void programmer_screen_supply(const supply_state_t *st)
         .at_ms = st->taken_ms,
         .ma = (int32_t)lroundf(st->i * 1000.0f),
         .current_ok = (st->ok & SUPPLY_OK_CURRENT) != 0u,
-        /* On as the supply reports it, not as it was asked: the PD mini's
-         * output comes on a link exchange and a module read after the ON,
-         * and readings from before it would set the floor at 0 A. */
-        .output = st->output && st->mode != SUPPLY_MODE_OFF,
+        /* What the panel asked, and apart from it what the supply reports:
+         * the PD mini's output follows a link exchange and a module
+         * transaction behind the request, on and off alike.  On counts
+         * only when both say so, off only when the supply says so. */
+        .output = st->output,
+        .reported_on = st->online && st->mode != SUPPLY_MODE_OFF,
         .online = st->online,
     };
     esc_stick_sample(&t->run, &x);
@@ -2211,7 +2248,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
 static const ui_screen_t k_screen = {
     .title  = "PROGRAMMER",
     .reset  = reset,
-    .enter  = NULL,
+    .enter  = sp_enter,
     .leave  = sp_leave,
     .tick   = sp_tick,
     .event  = event,

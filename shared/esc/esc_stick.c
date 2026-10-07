@@ -215,6 +215,20 @@ bool esc_stick_is_action(const esc_item_t *it)
            && (strcmp(it->key, "reset") == 0 || strcmp(it->key, "exit") == 0);
 }
 
+const char *esc_stick_not_offered(const esc_item_t *it)
+{
+    if (it == NULL) {
+        return "no such item";
+    }
+    if (esc_stick_is_action(it)) {
+        return "reset and exit are actions, not settings";
+    }
+    if (it->value_count < 2u) {
+        return "one value: nothing to choose";
+    }
+    return NULL;
+}
+
 static bool no(const char **why, const char *text)
 {
     if (why != NULL) {
@@ -243,8 +257,9 @@ bool esc_stick_check(const esc_profile_t *p, const esc_stick_change_t *ch,
             return no(why, "no such item");
         }
         const esc_item_t *it = &p->items[ch[i].item];
-        if (esc_stick_is_action(it)) {
-            return no(why, "reset and exit are actions, not settings");
+        const char *not_offered = esc_stick_not_offered(it);
+        if (not_offered != NULL) {
+            return no(why, not_offered);
         }
         if (ch[i].value >= it->value_count) {
             return no(why, "no such value");
@@ -771,6 +786,37 @@ bool esc_stick_start(esc_stick_t *e, const esc_profile_t *p,
     return true;
 }
 
+/*
+ * One reading while the run waits for the output to go off.  Only a
+ * reading taken after the run asked it off counts -- a new count, stamped
+ * after the request -- and only one in which the supply itself reports the
+ * output off with the current at or under ESC_STICK_OFF_MA; such readings
+ * have to run on for ESC_STICK_OFF_SETTLE_MS.  The panel's own flag says
+ * only that it asked: the module switches off a link exchange and a module
+ * transaction later, and until then the ESC is powered and in its menu.
+ */
+static void off_reading(esc_stick_t *e, const esc_stick_sample_t *s)
+{
+    const bool after = s->seq != e->off_seq
+                       && (int32_t)(s->at_ms - e->off_asked_ms) > 0;
+    if (!after) {
+        return;
+    }
+    const bool off = !s->reported_on && s->current_ok
+                     && s->ma <= ESC_STICK_OFF_MA;
+    if (!off) {
+        e->off_since_known = false;
+        return;
+    }
+    if (!e->off_since_known) {
+        e->off_since_known = true;
+        e->off_since_ms = s->at_ms;
+    }
+    if (since(s->at_ms, e->off_since_ms) >= ESC_STICK_OFF_SETTLE_MS) {
+        e->off_seen = true;
+    }
+}
+
 void esc_stick_sample(esc_stick_t *e, const esc_stick_sample_t *s)
 {
     if (!esc_stick_running(e) || s == NULL) {
@@ -779,11 +825,12 @@ void esc_stick_sample(esc_stick_t *e, const esc_stick_sample_t *s)
     const bool fresh = !e->have_sample || s->seq != e->seq;
     e->have_sample = true;
     e->output = s->output;
+    e->reported_on = s->reported_on;
     e->online = s->online;
     e->current_ok = s->current_ok;
     if ((e->phase == ESC_STICK_CYCLE || e->phase == ESC_STICK_OFF)
-        && !e->out.supply_on && !s->output) {
-        e->off_seen = true;
+        && !e->out.supply_on && fresh) {
+        off_reading(e, s);
     }
     /* A supply gone is said at once, before its missing readings can be
      * taken for a slow one. */
@@ -791,7 +838,7 @@ void esc_stick_sample(esc_stick_t *e, const esc_stick_sample_t *s)
         finish(e, ESC_STICK_ABORTED, ESC_STICK_R_SUPPLY_LOST);
         return;
     }
-    if (powered_phase(e->phase) && !s->output) {
+    if (powered_phase(e->phase) && (!s->output || !s->reported_on)) {
         finish(e, ESC_STICK_ABORTED, ESC_STICK_R_SUPPLY_OFF);
         return;
     }
@@ -893,7 +940,7 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
             finish(e, ESC_STICK_ABORTED, ESC_STICK_R_SUPPLY_LOST);
             return;
         }
-        if (!e->output) {
+        if (!e->output || !e->reported_on) {
             finish(e, ESC_STICK_ABORTED, ESC_STICK_R_SUPPLY_OFF);
             return;
         }
@@ -912,7 +959,8 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         }
         break;
     case ESC_STICK_POWER:
-        if (e->have_sample && e->output && e->online && e->current_ok) {
+        if (e->have_sample && e->output && e->reported_on && e->online
+            && e->current_ok) {
             e->on_ms = e->now_ms;
             e->read_ms = e->now_ms;   /* the stale clock starts here */
             e->have_reading = false;
@@ -953,6 +1001,9 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         /* Off first, the stick where it is; see the top of this file. */
         e->out.supply_on = false;
         e->off_seen = false;
+        e->off_asked_ms = e->now_ms;
+        e->off_seq = e->seq;
+        e->off_since_known = false;
         e->cycle_moved = false;
         enter(e, all_done(e) ? ESC_STICK_OFF : ESC_STICK_CYCLE);
         break;

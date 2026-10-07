@@ -38,6 +38,11 @@ typedef struct {
     bool     supply_on;
     bool     supply_dead;     /* the output never comes on            */
     bool     supply_stuck;    /* the output never goes off            */
+    bool     asked;           /* what the engine last asked           */
+    uint32_t off_at;          /* when it asked the output off         */
+    uint32_t off_lag_ms;      /* the module goes off this much later  */
+    uint32_t moved_while_on;  /* stick moves with the module powered
+                                 after the run asked it off           */
     bool     online;
 
     uint32_t read_iv;         /* a reading every this many ms         */
@@ -46,7 +51,7 @@ typedef struct {
     uint32_t seq;
     uint32_t lcg;
     bool     readings_stop;
-    int32_t  extra_ma;        /* added to every reading               */
+    int32_t  extra_ma;        /* added to every reading, on or off    */
     uint32_t late_once_at;    /* one reading this late, at this time  */
     uint32_t late_once_by;
     uint32_t skew_ms;         /* readings stamped this far ahead      */
@@ -130,16 +135,33 @@ static void tick(void)
     if (!r.arm_refused) {
         r.armed = o->arm;
     }
-    r.supply_on = (o->supply_on || (r.supply_stuck && r.supply_on))
-                  && !r.supply_dead;
+    /* The request, and apart from it the module, which follows an OFF
+     * off_lag_ms behind, as the PD mini follows a link exchange and its
+     * own transaction. */
+    if (r.asked && !o->supply_on) {
+        r.off_at = r.now;
+    }
+    r.asked = o->supply_on;
+    if (r.asked) {
+        r.supply_on = !r.supply_dead;
+    } else if (r.supply_on && !r.supply_stuck
+               && r.now - r.off_at >= r.off_lag_ms) {
+        r.supply_on = false;
+    }
+    static float last_pct = -2.0f;
     const float pct = r.armed ? o->throttle_pct : -1.0f;
+    if (pct != last_pct && r.supply_on && !r.asked) {
+        r.moved_while_on++;
+    }
+    last_pct = pct;
     const int32_t ma = esc_sim_step(&r.sim, r.now, r.supply_on, pct);
     if (!r.readings_stop && (int32_t)(r.now - r.next_read) >= 0) {
         r.seq += 1u + r.skip;
         esc_stick_sample_t s = {
             .seq = r.seq, .at_ms = r.now + r.skew_ms,
-            .ma = r.supply_on ? ma + r.extra_ma : 0,
-            .current_ok = true, .output = r.supply_on, .online = r.online,
+            .ma = (r.supply_on ? ma : 0) + r.extra_ma,
+            .current_ok = true, .output = r.asked,
+            .reported_on = r.supply_on, .online = r.online,
         };
         esc_stick_sample(&r.e, &s);
         r.lcg = r.lcg * 1103515245u + 12345u;
@@ -636,6 +658,86 @@ TEST_CASE(the_supply_goes_off_before_the_stick_moves)
     ended_safe();
 }
 
+/*
+ * The panel's OFF is a request: the module goes off a link exchange and a
+ * module transaction later.  A power cycle and a planned end wait for the
+ * supply's own report, in readings taken after the request, with the
+ * current down; the stick never moves while the module is still on.  The
+ * reviewers' proof: sunrise-pro with two changes and the module 300 ms
+ * behind moved the stick at full power.
+ */
+TEST_CASE(the_stick_waits_for_the_supplys_own_off)
+{
+    rig("sunrise-pro");
+    r.off_lag_ms = 300u;
+    esc_stick_change_t two[2] = { change(1, 3), change(2, 4) };
+    CHECK(start(two, 2));
+    run_for(400000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(r.e.entries, 2);
+    CHECK_EQ(r.moved_while_on, 0u);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+    CHECK_EQ(esc_sim_stored(&r.sim, 2), 4);
+
+    /* A planned end does not report DONE, nor disarm, before the module
+     * reads off. */
+    rig("hobbywing-flyfun-8item");
+    r.off_lag_ms = 1500u;
+    esc_stick_change_t h[1] = { change(3, 2) };
+    CHECK(start(h, 1));
+    run_until_phase(ESC_STICK_OFF, 240000u);
+    for (int i = 0; i < 1400; ++i) {
+        tick();
+    }
+    CHECK_EQ(r.e.phase, ESC_STICK_OFF);
+    CHECK(esc_stick_out(&r.e)->arm);
+    CHECK(r.supply_on);
+    run_for(5000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(r.moved_while_on, 0u);
+
+    /* Reported off with the current still up is not off. */
+    rig("hobbywing-flyfun-8item");
+    CHECK(start(h, 1));
+    run_until_phase(ESC_STICK_OFF, 240000u);
+    r.extra_ma = 200;                /* the module reads off at once */
+    tick();
+    const uint32_t seq = r.seq;
+    for (int i = 0; i < 5000 && esc_stick_running(&r.e); ++i) {
+        tick();
+    }
+    CHECK(r.seq != seq);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+    ended_safe();
+
+    /* A module that never goes off ends the run, and the stick stays. */
+    rig("sunrise-pro");
+    r.supply_stuck = true;
+    CHECK(start(two, 2));
+    run_for(400000u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+    CHECK_EQ(r.e.entries, 1);
+}
+
+/* An item with one value -- a rule written as a value, "N beeps = N
+ * cells" -- is nothing to choose, and is not offered. */
+TEST_CASE(an_item_with_one_value_is_not_offered)
+{
+    rig("hobbywing-flyfun-hv-9item");
+    const int i = item_index(r.p, 7);
+    CHECK(i >= 0);
+    CHECK_STR_EQ(esc_stick_not_offered(&r.p->items[i]),
+                 "one value: nothing to choose");
+    CHECK_STR_EQ(esc_stick_not_offered(&r.p->items[i + 1]),
+                 "reset and exit are actions, not settings");
+    CHECK(esc_stick_not_offered(&r.p->items[0]) == NULL);
+    CHECK_STR_EQ(esc_stick_not_offered(NULL), "no such item");
+    esc_stick_change_t c[1] = { change(7, 1) };
+    const char *why = NULL;
+    CHECK(!esc_stick_check(r.p, c, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "one value: nothing to choose");
+}
+
 /* Reset and exit are actions: the ESC acts on the select move and sounds
  * no values, so they are not offered as changes. */
 TEST_CASE(reset_and_exit_are_not_changes)
@@ -955,6 +1057,7 @@ TEST_CASE(readings_the_panel_never_saw_are_late)
     for (int i = 0; i < 2000 && esc_stick_running(&r.e); ++i) {
         esc_stick_sample_t x = { .seq = frozen, .at_ms = taken, .ma = 150,
                                  .current_ok = true, .output = true,
+                                 .reported_on = true,
                                  .online = true };
         esc_stick_sample(&r.e, &x);
         const esc_stick_bench_t b = bench();
@@ -1100,6 +1203,8 @@ int main(void)
     RUN(the_stick_rests_and_stores_where_the_profile_says);
     RUN(the_supply_goes_off_before_the_stick_moves);
     RUN(reset_and_exit_are_not_changes);
+    RUN(the_stick_waits_for_the_supplys_own_off);
+    RUN(an_item_with_one_value_is_not_offered);
     RUN(the_simulation_acts_on_reset_and_exit);
     RUN(a_partial_first_group_and_a_lost_beep_store_nothing_wrong);
     RUN(a_sweep_of_lost_beeps_and_entry_times_stores_nothing_wrong);

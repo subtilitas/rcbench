@@ -287,7 +287,9 @@ SWEEP, RELEASE, a tap on a set point, a change to the servo's type, pulses,
 trim, travel, reverse or SPEED, touch events going missing, and on the
 supply: see [the list](Servo.md#what-ends-a-run). Once a run is over, whichever screen is up, SUPPLY's set points go back to
 what they were before it. That waits until the run's OFF has been sent, a
-reading taken after that shows the output off, no ON is on its way and
+reading taken after that in which the supply itself reports the output off
+-- not the panel's request, which the PD mini follows a link exchange and a
+module transaction later -- no ON is on its way and
 OUTPUT ON is not being held on SERVO or SUPPLY. Set points changed after
 the run ended are
 left as they are.

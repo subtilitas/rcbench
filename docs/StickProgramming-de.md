@@ -41,7 +41,9 @@ PROGRAMMER, dann ESC STICK:
 
 Die Liste enthält jedes Profil, die ausführbaren zuerst. Ein Profil, das der
 Prüfstand nicht ausführen kann, nennt den Grund in seiner Zeile und öffnet
-nichts; ebenso eines, dessen Spannung über der Grenze von SUPPLY liegt. Ein
+nichts; ebenso eines, dessen Spannung über der Grenze von SUPPLY liegt.
+Reihenfolge und Anzahl folgen VOLTAGE und der Grenze, wenn sie sich
+ändern. Ein
 Profil von der SD-Karte trägt CARD.
 
 ![Die Profile](img/programmer-stick.png)
@@ -51,7 +53,10 @@ KEEP und bleibt dann, wie er ist; die Stepper gehen durch die Werte des
 Punkts und halten an beiden Enden an. Punkte mit dem Schlüssel `reset` oder
 `exit` sind Aktionen, keine Einstellungen: der ESC handelt auf die
 Auswahlbewegung und gibt keine Werte aus, deshalb zeigen ihre Zeilen ACTION,
-NOT SET und bieten nichts an. Die Zeile unter der Liste nennt die
+NOT SET und bieten nichts an. Ein Punkt mit einem einzigen Wert -- die
+einzige Einstellung, die es gibt, oder eine Regel, die als Wert geschrieben
+ist, wie die Zellenzahl von `hobbywing-flyfun-hv-9item`, "N Pieptöne = N
+Zellen" -- bietet nichts zur Wahl; seine Zeile zeigt NOTHING TO CHOOSE. Die Zeile unter der Liste nennt die
 Werte des gewählten Punkts und den Standardwert. RUN erscheint, sobald ein
 Wert gewählt ist und der Lauf starten kann; kann er es nicht, sagt die Zeile
 neben RUN, warum.
@@ -100,8 +105,8 @@ Netzteils aus ist.
 | ITEMS | Ruhestellung | an | eine Punktgruppe in Reihenfolge nennt einen gewünschten Punkt: die Auswahlbewegung |
 | VALUES | wo die letzte Bewegung es ließ | an | eine Wertgruppe in Reihenfolge nennt den gewünschten Wert: die Wertbewegung |
 | STORING | die Wertbewegung, dann die Speicherbewegung | an | nach STORE, und nach STORE noch einmal, wo das Profil eine Speicherbewegung hat |
-| POWER CYCLE | wo es speicherte, dann Einstiegsstellung | aus | ein Messwert meldet den Ausgang aus, dann OFF TIME (mindestens 1000 ms) in der Einstiegsstellung, dann wieder POWER ON; Ausgang nicht innerhalb von 3000 ms aus: SUPPLY STAYS ON |
-| POWER OFF | wo es speicherte | aus | ein Messwert meldet den Ausgang aus; nicht innerhalb von 3000 ms: SUPPLY STAYS ON |
+| POWER CYCLE | wo es speicherte, dann Einstiegsstellung | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten, dann OFF TIME (mindestens 1000 ms) in der Einstiegsstellung, dann wieder POWER ON; nicht innerhalb von 3000 ms aus: SUPPLY STAYS ON |
+| POWER OFF | wo es speicherte | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten; nicht innerhalb von 3000 ms: SUPPLY STAYS ON |
 | DONE | MIN | aus | entschärft |
 | ABORTED | MIN | aus | entschärft, alles in einem Schritt |
 
@@ -117,7 +122,12 @@ für OFF TIME aus.
 
 Ein Lauf, der wie geplant endet oder die Versorgung aus- und einschaltet,
 schaltet zuerst das Netzteil aus und lässt den Knüppel, wo er gespeichert
-hat; er bewegt ihn erst, wenn ein Messwert den Ausgang aus meldet. Der ESC
+hat. Er bewegt ihn erst, wenn das Netzteil selbst den Ausgang aus meldet,
+in Messwerten, die nach der Anforderung genommen sind, mit dem Strom
+200 ms lang bei höchstens 20 mA (`ESC_STICK_OFF_MA`,
+`ESC_STICK_OFF_SETTLE_MS`). Das OFF des Panels ist eine Anforderung: das
+PD mini schaltet einen Link-Austausch und eine Modultransaktion später ab,
+und bis dahin ist der ESC versorgt und in seinem Menü. Der ESC
 sieht unter Spannung keine Knüppelbewegung, die der Lauf nicht als Auswahl
 meinte.
 
@@ -219,8 +229,11 @@ landen. Ein zweistufiges Profil sagt zudem `item_then_value` an, seine
 Bewegungen unterscheiden sich voneinander und von der Ruhestellung, und es
 hat keine Speicherbewegung. Ein einstufiges Profil sagt `value` an, oder
 `item` mit einem Punkt; nimmt eine Änderung je Einschalten; hat keine
-Wertnummer in zwei Punkten; und seine Auswahl- und Speicherbewegung
-unterscheiden sich von der Ruhestellung und voneinander.
+Wertnummer in zwei Punkten; seine Auswahlbewegung unterscheidet sich von der
+Ruhestellung, und seine Speicherbewegung, wo es eine hat, von der
+Auswahlbewegung. Die Speicherbewegung darf die Ruhestellung sein: in den
+YGE-Mode-Setups geht der Knüppel zum Speichern zurück auf Minimum, wo er
+ruhte.
 
 | Die Zeile sagt | Warum |
 | --- | --- |
@@ -258,7 +271,7 @@ Liste.
 | READ RATE | 3 späte Messwerte hintereinander |
 | NOT ARMED | nicht scharf innerhalb von 3000 ms |
 | NO POWER | der Ausgang nicht innerhalb von 3000 ms als an gemeldet |
-| SUPPLY STAYS ON | der Ausgang nicht innerhalb von 3000 ms als aus gemeldet, nachdem der Lauf ihn ausschaltete |
+| SUPPLY STAYS ON | das Netzteil meldet den Ausgang nicht innerhalb von 3000 ms nach der Anforderung des Laufs aus, mit dem Strom unten |
 | TOUCH LOST | Touch-Ereignisse verloren, solange das ARM des Laufs noch nicht genommen oder der Prüfstand noch nicht scharf war |
 | NO BEEPS | SILENCE lang kein Piepton |
 | CURRENT STAYS HIGH | ein Puls länger als zweimal LONG MAX |
@@ -332,6 +345,15 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   Schleifen, wenn die gewünschte Nummer die niedrigste ist. Ein
   zweistufiges Menü, dessen Wertschleife beim gespeicherten Wert beginnt,
   wie das YGE-Handbuch es für sein RC-Setup beschreibt, kostet mehr.
+- Die Reihenfolgeregel nimmt an, dass das Menü des ESCs das des Profils
+  ist. Punkte, die es nur an manchen Modellen gibt, verschieben an den
+  anderen die Nummern: in `hobbywing-flyfun-v5` gibt es Punkt 6
+  (BEC-Spannung) an den Modellen mit 60, 80 und 120 A, in `ztw-gecko`
+  Punkt 6 an den SBEC-Modellen. An einem Modell ohne den Punkt geben die
+  Punkte danach womöglich eine Nummer weniger aus, als das Profil sagt.
+  Einen davon zu wählen kann dann den Punkt darunter wählen; die
+  Reihenfolgeregel merkt das nicht, weil das Menü in Reihenfolge ist, nur
+  kürzer. Ein Profil je Modellsatz wäre die Abhilfe und ist nicht angelegt.
 - `sunrise-pro`: das Handbuch schaltet die Bremse mit "the first quad group"
   um, die auch der Wert für automatisches Timing ist; Timing 4 zu speichern
   schaltet womöglich auch die Bremse um. Nicht gemessen.

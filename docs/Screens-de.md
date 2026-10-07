@@ -312,7 +312,10 @@ Trim, Weg, Reverse oder SPEED des Servos, bei verlorenen Touch-Ereignissen
 und beim Netzteil: siehe [die Liste](Servo-de.md#was-einen-lauf-beendet).
 Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
 Lauf zurück, gleich welcher Screen oben ist. Das wartet, bis das OFF des
-Laufs gesendet ist, ein danach genommener Messwert den Ausgang aus zeigt,
+Laufs gesendet ist, ein danach genommener Messwert zeigt, dass das
+Netzteil selbst den Ausgang aus meldet -- nicht die Anforderung des Panels,
+der das PD mini einen Link-Austausch und eine Modultransaktion später
+folgt --,
 kein ON unterwegs ist und OUTPUT ON weder auf SERVO noch auf SUPPLY
 gehalten wird. Sollwerte, die nach
 dem Ende des Laufs geändert wurden, bleiben, wie sie sind.

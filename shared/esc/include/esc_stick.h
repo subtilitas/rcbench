@@ -52,6 +52,12 @@ extern "C" {
 /** This many late readings in a row end the run: the supply reads too
  *  slowly for the beeps the timing describes. */
 #define ESC_STICK_LATE_RUN 3u
+/** The output counts as off only once the supply itself reports it off and
+ *  the current has stayed at or under ESC_STICK_OFF_MA for
+ *  ESC_STICK_OFF_SETTLE_MS, in readings taken after the run asked it off:
+ *  the panel's own OFF is a request, and the module answers it later. */
+#define ESC_STICK_OFF_MA        20
+#define ESC_STICK_OFF_SETTLE_MS 200u
 
 /** Throttle positions as the output's percentage of travel. */
 #define ESC_STICK_PCT_MIN 0.0f
@@ -120,6 +126,14 @@ uint32_t esc_stick_profile_mv(const esc_profile_t *p);
  *  Selecting one makes the ESC act on the select move; it sounds no values,
  *  and the engine does not offer it. */
 bool esc_stick_is_action(const esc_item_t *it);
+
+/**
+ * Why @p it is not offered as a change, or NULL when it is: an action, or
+ * an item with a single value, which is either the only setting there is
+ * or a rule written as a value ("N beeps = N cells") -- nothing to choose
+ * either way, and nothing the menu would sound in order.
+ */
+const char *esc_stick_not_offered(const esc_item_t *it);
 
 /** One selection: the profile's item and value, as indices. */
 typedef struct {
@@ -267,8 +281,9 @@ typedef struct {
     uint32_t at_ms;          /**< when the reading was taken               */
     int32_t  ma;
     bool     current_ok;     /**< the current was read                     */
-    bool     output;         /**< the output is on and delivering, as the
-                                  supply reports it                        */
+    bool     output;         /**< the panel has the output on: its request */
+    bool     reported_on;    /**< the supply itself reports it on: what
+                                  the module read, not what was asked      */
     bool     online;         /**< the supply answers                       */
 } esc_stick_sample_t;
 
@@ -298,7 +313,13 @@ typedef struct {
     uint32_t             stops0;
     bool                 link0;
     bool                 link_seen;     /**< the link was up at some time */
-    bool                 off_seen;      /**< a sample said the output off */
+    bool                 off_seen;      /**< the output is off: reported,
+                                             and settled                 */
+    bool                 reported_on;   /**< the newest sample's          */
+    uint32_t             off_asked_ms;  /**< when the run asked it off   */
+    uint32_t             off_seq;       /**< the reading count then      */
+    uint32_t             off_since_ms;  /**< reported off from here      */
+    bool                 off_since_known;
     bool                 store_moved;   /**< the store move is made      */
     bool                 cycle_moved;   /**< the stick is at the entry   */
     bool                 armed_seen;
