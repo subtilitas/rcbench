@@ -1,8 +1,9 @@
 /*
  * The SENSE and SERVO_SENSE link pages at the coprocessor.
  *
- * Under test: the set-up as a page starts; SHUNT_CAL and ADCRANGE from the
- * INA228's shunt and range, and the INA3221's full scale from its shunt;
+ * Under test: the set-up as a page starts; the INA228's ADCRANGE from its
+ * shunt and maximum, at one SHUNT_CAL, and the INA3221's full scale from
+ * its shunt;
  * the bus refused on pins that are not one I2C block's pair, on pins the
  * board, an output or the supply holds, and while the bank is armed; every
  * value held to its range, the reserved registers to 0, the two parts to
@@ -120,30 +121,36 @@ TEST_CASE(a_page_starts_with_both_parts_off_at_the_modules_defaults)
     sense_page_defaults(NULL);
 }
 
-/* MATEK I2C-INA-BM: 200 uOhm ranged for 204.8 A is SHUNT_CAL 4096 at
- * ADCRANGE 1, the numbers the INA228's equations give. */
-TEST_CASE(shunt_cal_and_adcrange_follow_from_the_shunt_and_the_range)
+/* CURRENT_LSB is the ADC's step over the shunt, so SHUNT_CAL is 4096 at
+ * either range and the maximum only chooses the range.  MATEK
+ * I2C-INA-BM: 200 uOhm at 204.8 A is 40.96 mV, the top of ADCRANGE 1. */
+TEST_CASE(the_maximum_chooses_adcrange_and_shunt_cal_stays_4096)
 {
     uint8_t range = 9u;
     CHECK_EQ(sense_i228_cal(200u, 2048u, &range), 4096u);
     CHECK_EQ(range, 1u);
-    /* Past 40.96 mV at that current: the wider range, about a quarter the cal. */
-    CHECK_EQ(sense_i228_cal(200u, 2049u, &range), 1025u);
+    /* Past 40.96 mV at the maximum: the wider range, the same cal. */
+    CHECK_EQ(sense_i228_cal(200u, 2049u, &range), 4096u);
     CHECK_EQ(range, 0u);
-    CHECK_EQ(sense_i228_cal(200u, 6553u, &range), 3277u);
+    CHECK_EQ(sense_i228_cal(200u, 6553u, &range), 4096u);
     CHECK_EQ(range, 0u);
     /* 163.84 mV exactly is still inside; a step past it is not. */
-    CHECK_EQ(sense_i228_cal(1000u, 1638u, &range), 4095u);
     CHECK_EQ(sense_i228_cal(16384u, 100u, &range), 4096u);
     CHECK_EQ(range, 0u);
     range = 9u;
     CHECK_EQ(sense_i228_cal(16385u, 100u, &range), 0u);
     CHECK_EQ(range, 9u);
     CHECK_EQ(sense_i228_cal(20000u, 6553u, NULL), 0u);
-    /* The smallest set-up the page takes still has a calibration. */
-    CHECK_EQ(sense_i228_cal(50u, 10u, &range), 5u);
+    /* The smallest set-up the page takes, and every shunt: the same cal. */
+    CHECK_EQ(sense_i228_cal(50u, 10u, &range), SENSE_I228_SHUNT_CAL);
     CHECK_EQ(range, 1u);
+    CHECK_EQ(sense_i228_cal(20000u, 20u, &range), SENSE_I228_SHUNT_CAL);
+    CHECK_EQ(range, 1u);
+    CHECK_EQ(sense_i228_cal(20000u, 21u, &range), SENSE_I228_SHUNT_CAL);
+    CHECK_EQ(range, 0u);
+    /* Nothing across nothing has no range. */
     CHECK_EQ(sense_i228_cal(0u, 2048u, NULL), 0u);
+    CHECK_EQ(sense_i228_cal(200u, 0u, NULL), 0u);
 }
 
 /* DAOKAI's R100: 163.8 mV across 0.1 Ohm is 1.638 A, and the 5 mOhm floor
@@ -221,6 +228,7 @@ TEST_CASE(every_value_is_held_to_its_range)
     CHECK_EQ(i228(0x40u, 50u, 10u, 0u), 0u);
     CHECK_EQ(i228(0x4Fu, 250u, 6553u, 0u), 0u);
     CHECK_EQ(i228(0x44u, 20000u, 81u, 0u), 0u);
+    CHECK_EQ(i228(0x44u, 20000u, 82u, 0u), LINK_NACK_BAD_VALUE);
 
     CHECK_EQ(i3221(0x44u, 1000u, 1u, 0u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(i3221(0x3Fu, 1000u, 1u, 0u), LINK_NACK_BAD_VALUE);
@@ -514,7 +522,7 @@ TEST_CASE(the_channel_flags_and_the_arm_word_pack_as_documented)
 int main(void)
 {
     RUN(a_page_starts_with_both_parts_off_at_the_modules_defaults);
-    RUN(shunt_cal_and_adcrange_follow_from_the_shunt_and_the_range);
+    RUN(the_maximum_chooses_adcrange_and_shunt_cal_stays_4096);
     RUN(the_ina3221_full_scale_follows_from_its_shunt);
     RUN(the_bus_is_refused_on_pins_that_are_not_one_blocks_pair);
     RUN(the_bus_is_refused_on_pins_something_else_holds);

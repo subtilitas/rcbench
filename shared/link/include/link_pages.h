@@ -290,10 +290,12 @@ enum {
  *     I228_ADDR to register 7 are the INA228, one frame: its address, 0x40
  *     to 0x4F; its shunt in micro-ohms, 50 to 20000; the current its range
  *     is set for, in 0.1 A, 1.0 to 655.3 A, which is as far as BENCH's
- *     current register reaches.  CURRENT_LSB is that current / 2^19, and
- *     SHUNT_CAL and ADCRANGE follow from it and the shunt
- *     (sense_i228_cal()); the shunt's voltage at that current has to be
- *     inside the part's 163.84 mV.
+ *     current register reaches.  That current chooses ADCRANGE only: 1
+ *     while the shunt's voltage at it is at most 40.96 mV, 0 up to
+ *     163.84 mV, and past that the write is refused.  CURRENT_LSB is the
+ *     shunt ADC's step divided by the shunt at that range, so CURRENT and
+ *     VSHUNT clip together, and SHUNT_CAL is 4096 at either range
+ *     (sense_i228_cal()).
  *
  *     I3221_ADDR to register 11 are the INA3221, one frame: its address,
  *     0x40 to 0x43; its shunt in 0.1 milliohm, 50 to 10000 (5 mOhm to

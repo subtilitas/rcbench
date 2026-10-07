@@ -51,26 +51,17 @@ void sense_page_init(sense_page_t *p)
 uint16_t sense_i228_cal(uint16_t shunt_uohm, uint16_t max_da,
                         uint8_t *adcrange)
 {
-    /* The shunt's voltage at that current: A/10 * uOhm = uV * 10. */
+    /* The shunt's voltage at the maximum: A/10 * uOhm = uV * 10. */
     const uint32_t product = (uint32_t)max_da * (uint32_t)shunt_uohm;
-    uint32_t cal;
-    uint8_t range;
-    if (product <= I228_RANGE1_UV * 10u) {
-        range = 1u;
-        cal = (product + 50u) / 100u;      /* x4 for the finer range */
-    } else if (product <= I228_RANGE0_UV * 10u) {
-        range = 0u;
-        cal = (product + 200u) / 400u;
-    } else {
+    if (product == 0u || product > I228_RANGE0_UV * 10u) {
         return 0u;
     }
-    if (cal == 0u || cal > 0x7FFFu) {
-        return 0u;
-    }
+    /* The range is all the maximum chooses: CURRENT_LSB is the ADC's step
+     * over the shunt at either one, so SHUNT_CAL does not move. */
     if (adcrange != NULL) {
-        *adcrange = range;
+        *adcrange = (product <= I228_RANGE1_UV * 10u) ? 1u : 0u;
     }
-    return (uint16_t)cal;
+    return (uint16_t)SENSE_I228_SHUNT_CAL;
 }
 
 uint32_t sense_i3221_full_scale_ma(uint16_t shunt_dmohm)
