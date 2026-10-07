@@ -84,6 +84,7 @@ One German word per English concept, on every screen and in the report.
 | supply | Netzteil |
 | output | Ausgang |
 | set point | Sollwert |
+| commanded pulse (SERVO, COMMANDED) | SOLLWERT; the supply's SET line is SOLL |
 | input (of a supply), wiring | Eingang, Verdrahtung |
 | current limit | Strombegrenzung |
 | cap | Obergrenze |
