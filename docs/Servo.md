@@ -287,7 +287,7 @@ suite:
 RCBENCH SERVO TEST REPORT
 Result:         PASS
 Device:         DS3218 #2
-Firmware:       rcbench 0.13.0
+Firmware:       rcbench 0.13.1
 Log:            the .CSV with this file's number, one row per supply reading
 Supply:         PD mini
 Readings:       10.0 /s taken by the supply, 10.0 /s reached the test
