@@ -262,15 +262,29 @@ jobs:
           # public it is the latest, and the links must not lose their
           # target before the checked copy replaces it (--clobber).  The
           # download runs before the create, while the latest is still the
-          # previous release.  No guide there is not an error.
+          # previous release.  Two cases are not errors: no release yet, and
+          # a latest release without the guide.  Anything else -- the API
+          # failing, a listed guide that does not download -- fails the
+          # release, since publishing without the guide breaks those links.
           assets=(dist/*.zip dist/SHA256SUMS)
           mkdir -p guide
-          gh release download --repo "$REPO" \
-            --pattern 'rcbench-build-guide-*.pdf' --dir guide \
-            || echo "no build guide on the latest release"
-          for f in guide/*.pdf; do
-            [ -e "$f" ] && assets+=("$f")
-          done
+          if names=$(gh release view --repo "$REPO" --json assets \
+                       -q '.assets[].name' 2>guide.err); then
+            if printf '%s\n' "$names" | grep -q '^rcbench-build-guide-.*\.pdf$'; then
+              gh release download --repo "$REPO" \
+                --pattern 'rcbench-build-guide-*.pdf' --dir guide
+              for f in guide/*.pdf; do
+                assets+=("$f")
+              done
+            else
+              echo "no build guide on the latest release"
+            fi
+          elif grep -q 'release not found' guide.err; then
+            echo "no release yet, so no build guide to carry over"
+          else
+            cat guide.err >&2
+            exit 1
+          fi
 
           # --verify-tag, because a tag gh has to invent is created from the
           # default branch: without it a dispatch for a tag nobody pushed
