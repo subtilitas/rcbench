@@ -3935,6 +3935,13 @@ static void write_output_binding(const outbind_t *bind)
  * lowest pin is the motor.
  */
 static uint8_t s_servo_channels;
+/* For the screen's SWEEP: a binding read, with a surface in it. */
+static atomic_bool s_servo_surfaces;
+/* A sweep command with no surface to sweep: the screen stops waiting. */
+static atomic_bool s_sweep_refused;
+/* The pause the panel last let go of: commands asked during it and queued
+ * behind the HOLD that ended it are not sent (servo_cmd_stale()). */
+static servo_pause_end_t s_pause_ended;
 
 /*
  * Whether that mask is an answer at all.
@@ -4059,6 +4066,7 @@ static bool        s_servo_sweeping;
 static bool        s_servo_holding;      /* LINK_SV_HOLD in force there */
 static uint32_t    s_servo_hold_ms;      /* when the far end last took it */
 static atomic_bool s_servo_hold_lost;    /* for the screen: it let go */
+static atomic_uint s_servo_hold_lost_seq; /* of this pause */
 static bool        s_servo_sweep_unknown;
 static atomic_bool s_servo_sweep_able;   /* for the screen's SWEEP */
 static uint16_t    s_servo_minor;        /* its protocol minor: 6 resumes */
@@ -4081,6 +4089,16 @@ static bool          s_hold_unanswered;
 static atomic_uint s_sweep_held_seq;
 static atomic_uint s_sweep_held_kept;
 static atomic_bool s_sweep_held_new;
+
+/* The held sweep's resume has been taken: its repeats say the curve, and
+ * publish no further resumed start. */
+static void servo_resume_taken(uint16_t start_seq)
+{
+    if (s_servo_held.kind == SERVO_CMD_SWEEP
+        && s_servo_held.start_seq == start_seq) {
+        s_servo_held.resume = false;
+    }
+}
 
 static bool write_servo(const servo_cmd_t sv)
 {
@@ -4117,13 +4135,18 @@ static bool write_servo(const servo_cmd_t sv)
          */
         const uint32_t since = now_ms() - s_servo_hold_ms;
         if (s_servo_holding && since > OUT_DEFAULT_TIMEOUT_MS) {
+            s_pause_ended.on        = true;
+            s_pause_ended.pause_seq = servo_cmd_pause_root(&sv);
             s_servo_holding      = false;
             s_servo_held.kind    = SERVO_CMD_NONE;
             s_servo_release_owed = true;
+            atomic_store(&s_servo_hold_lost_seq,
+                         (unsigned)servo_cmd_pause_root(&sv));
             atomic_store(&s_servo_hold_lost, true);
             return true;
         }
         const uint16_t hold = LINK_SV_HOLD;
+        const uint32_t sent = now_ms();
         if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 1u, &hold,
                         &reply)) {
             s_hold_unanswered = s_hold_unanswered
@@ -4133,20 +4156,57 @@ static bool write_servo(const servo_cmd_t sv)
         if (reply.op != LINK_OP_ACK) {
             return false;
         }
+        const uint32_t took = now_ms();
+        /*
+         * A pause whose HOLD was answered only at a retry may have frozen at
+         * an earlier attempt, been let go 500 ms later and frozen again
+         * where resting had got it; an exchange that outlasted a HOLD's life
+         * may have been let go meanwhile too.  Where the output is held is
+         * then not known here, and an angle drawn from the tap would be
+         * said again to the servo by the next change of profile.  So the
+         * hold is over: the surfaces are released to their centre, a state
+         * both ends know, and the screen is told, as for a HOLD left
+         * unrepeated.
+         */
+        if ((s_hold_unanswered && s_servo_sweeping && !s_servo_holding)
+            || (uint32_t)(took - sent) > OUT_DEFAULT_TIMEOUT_MS) {
+            /*
+             * The HOLD just acknowledged is live there, and while it is the
+             * far end stamps every surface with that HOLD's arrival: a
+             * position written under it would go to rest 500 ms after the
+             * arrival, at once and unslewed.  So it is ended first with a
+             * stop; one that does not land is written before the next
+             * command instead.
+             */
+            const uint16_t stop = 0u;
+            if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 1u,
+                            &stop, &reply)
+                || reply.op != LINK_OP_ACK) {
+                s_servo_sweep_unknown = true;
+            }
+            s_pause_ended.on        = true;
+            s_pause_ended.pause_seq = servo_cmd_pause_root(&sv);
+            s_hold_unanswered    = false;
+            s_servo_sweeping     = false;
+            s_servo_holding      = false;
+            servo_phase_stopped(&s_far_phase);
+            s_servo_held.kind    = SERVO_CMD_NONE;
+            s_servo_release_owed = true;
+            atomic_store(&s_servo_hold_lost_seq,
+                         (unsigned)servo_cmd_pause_root(&sv));
+            atomic_store(&s_servo_hold_lost, true);
+            /* Not taken as held: a caller that voids an owed release on
+             * success would cancel the one just owed. */
+            return false;
+        }
         /* The hold that paused a running sweep: the far end keeps the
          * curve's phase as of now, and the screen draws the pause from it
          * rather than from the tap. */
         if (s_servo_sweeping && !s_servo_holding) {
-            if (s_hold_unanswered) {
-                /* An earlier attempt may have taken: not timed. */
-                servo_phase_untimed(&s_far_phase);
-            } else {
-                const uint32_t kept = servo_phase_held(&s_far_phase,
-                                                       now_ms());
-                atomic_store(&s_sweep_held_seq, (unsigned)sv.pause_seq);
-                atomic_store(&s_sweep_held_kept, kept);
-                atomic_store(&s_sweep_held_new, true);
-            }
+            const uint32_t kept = servo_phase_held(&s_far_phase, took);
+            atomic_store(&s_sweep_held_seq, (unsigned)sv.pause_seq);
+            atomic_store(&s_sweep_held_kept, kept);
+            atomic_store(&s_sweep_held_new, true);
         }
         if (!s_servo_sweeping && !s_servo_holding) {
             /* A hold of no sweep: nothing to resume. */
@@ -4155,7 +4215,8 @@ static bool write_servo(const servo_cmd_t sv)
         s_hold_unanswered = false;
         s_servo_sweeping = false;
         s_servo_holding  = true;
-        s_servo_hold_ms  = now_ms();
+        /* From the send: the far end heard it no earlier than that. */
+        s_servo_hold_ms  = sent;
         s_servo_written |= s_servo_channels;
         return true;
     }
@@ -4194,6 +4255,14 @@ static bool write_servo(const servo_cmd_t sv)
      * one is -- a bench with only a motor on it would stop arming.
      */
     if (mask == 0u) {
+        /* A sweep of nothing never starts, so no start is published for it:
+         * the screen is told instead, or it would wait for one. */
+        if (sv.kind == SERVO_CMD_SWEEP) {
+            atomic_store(&s_sweep_refused, true);
+            /* And not kept to be said again: a binding with a surface,
+             * after a reconnect, would sweep it with no tap. */
+            s_servo_held.kind = SERVO_CMD_NONE;
+        }
         return true;
     }
     uint8_t first = 0u, count = 0u;
@@ -4309,19 +4378,21 @@ static bool write_servo(const servo_cmd_t sv)
             /*
              * A HOLD that went unanswered and was never acknowledged may or
              * may not have reached the far end, so it is either running or
-             * holding: the resume starts the curve over from a stop, as an
-             * untimed one does.
+             * holding: the resume starts the curve over from a stop, and the
+             * operator is told.
              */
             const bool held_sweep = (s_servo_holding
                                      && servo_phase_resumable(&s_far_phase))
                                     || s_hold_unanswered;
-            const bool timed = !s_far_phase.untimed && !s_hold_unanswered;
+            const bool timed = !s_hold_unanswered;
             servo_resume_t plan = servo_page_resume_plan(
                 sv.resume, held_sweep, timed, s_servo_minor, false);
             if (plan == SERVO_RESUME_WRITE) {
                 const uint16_t resume = LINK_SV_RESUME;
                 if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 1u,
                                 &resume, &reply)) {
+                    /* It may have taken: the next command stops first. */
+                    s_servo_sweep_unknown = true;
                     return false;
                 }
                 if (reply.op == LINK_OP_ACK) {
@@ -4342,6 +4413,7 @@ static bool write_servo(const servo_cmd_t sv)
                     atomic_store(&s_sweep_start_from,
                                  (unsigned)SERVO_SWEEP_RESUMED);
                     atomic_store(&s_sweep_start_new, true);
+                    servo_resume_taken(sv.start_seq);
                     s_servo_written |= mask;
                     return true;
                 }
@@ -4382,8 +4454,12 @@ static bool write_servo(const servo_cmd_t sv)
                 }
             }
             if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 4u, curve,
-                            &reply)
-                || reply.op != LINK_OP_ACK) {
+                            &reply)) {
+                /* It may have taken: the next command stops first. */
+                s_servo_sweep_unknown = true;
+                return false;
+            }
+            if (reply.op != LINK_OP_ACK) {
                 return false;
             }
             if (plan == SERVO_RESUME_TOO_OLD) {
@@ -4425,10 +4501,14 @@ static bool write_servo(const servo_cmd_t sv)
                              (unsigned)SERVO_SWEEP_RESUMED);
                 atomic_store(&s_sweep_start_new, true);
                 s_hold_unanswered = false;
+                servo_resume_taken(sv.start_seq);
             }
             if (started) {
                 servo_phase_started(&s_far_phase, took);
                 s_hold_unanswered = false;
+                /* A resume that fell back to this start is used up: its
+                 * repeats are the curve, not resumes. */
+                servo_resume_taken(sv.start_seq);
                 memcpy(s_servo_curve, curve, sizeof(curve));
                 atomic_store(&s_sweep_start_ms, took);
                 atomic_store(&s_sweep_start_seq, (unsigned)sv.start_seq);
@@ -4749,8 +4829,48 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
         servo_service(link_up);
         return;
     }
+    /*
+     * A sweep or a hold reaching here with the link down was ended with the
+     * link on the screen: kept, it would be said when the link comes back
+     * and start motion nobody asked for.
+     */
+    if (!link_up && !servo_cmd_survives_link_loss(&sv)) {
+        /*
+         * It superseded the drive held before it on the screen, which ends
+         * it with the link and draws the surfaces at rest: that one is not
+         * said again either, and a position written out there is owed its
+         * release, as servo_let_go() owes it.
+         */
+        if (s_servo_held.kind != SERVO_CMD_NONE || s_servo_written != 0u) {
+            s_servo_release_owed = true;
+        }
+        s_servo_held.kind = SERVO_CMD_NONE;
+        return;
+    }
+    /*
+     * A command asked during a pause the panel has let go of -- queued
+     * behind the HOLD whose late acknowledgement ended it: a resume, or a
+     * position said again under a changed profile -- is stale.  The screen
+     * shows the surfaces released to rest; sent, the resume would start
+     * motion it does not show and the position would void the release and
+     * hold an angle drawn from the abandoned pause.
+     */
+    if (servo_cmd_stale(&s_pause_ended, &sv)) {
+        return;
+    }
     s_servo_held = sv;
     s_servo_next_ms = now_ms() + SERVO_HOLD_MS;
+    /*
+     * And a sweep goes only once an owed release is paid: the surfaces at
+     * their centre, a start both ends know, not wherever a stop froze them.
+     * One not yet paid keeps the sweep held, and the refresh pays it first.
+     */
+    if (sv.kind == SERVO_CMD_SWEEP && s_servo_release_owed) {
+        servo_service(link_up);
+        if (s_servo_release_owed) {
+            return;
+        }
+    }
     if (link_up && write_servo_and_rate(sv)) {
         /*
          * The surfaces are holding this position now, so an older release
@@ -5468,6 +5588,7 @@ static void read_outputs_binding(void)
         s_servo_channels = outputs_role_channels(orr.regs, ccr.regs,
                                                  OUT_ROLE_SURFACE);
         s_servo_known    = true;
+        atomic_store(&s_servo_surfaces, s_servo_channels != 0u);
         if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
             s_outputs_read = got;
             s_outputs_read_fresh = true;
@@ -5491,6 +5612,7 @@ static void read_outputs_binding(void)
          */
         s_servo_channels = 0u;
         s_servo_known    = false;
+        atomic_store(&s_servo_surfaces, false);
         if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
             s_outputs_read = none;
             s_outputs_read_fresh = true;
@@ -5693,6 +5815,12 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
         } else if (*link_up) {
             /* The edge: it was up until this poll. */
             atomic_store(&s_link_lost_ms, now_ms());
+            /* A sweep or a hold ends with the link, here as on the screen
+             * and at the far end: kept, it would be said again when the
+             * link comes back and start motion nobody asked for. */
+            if (!servo_cmd_survives_link_loss(&s_servo_held)) {
+                s_servo_held.kind = SERVO_CMD_NONE;
+            }
             /* The PD mini goes with it: its readings stop, and the step
              * switches an ON off as a supply not answering. */
             s_supply_page = false;
@@ -6471,8 +6599,13 @@ void app_main(void)
             servo_screen_rate((servo_rate_state_t)(r >> 16),
                               (uint16_t)(r & 0xFFFFu));
             servo_screen_set_sweep(atomic_load(&s_servo_sweep_able));
+            servo_screen_set_surfaces(atomic_load(&s_servo_surfaces));
+            if (atomic_exchange(&s_sweep_refused, false)) {
+                servo_screen_sweep_refused();
+            }
             if (atomic_exchange(&s_servo_hold_lost, false)) {
-                servo_screen_released();
+                servo_screen_released(
+                    (uint16_t)atomic_load(&s_servo_hold_lost_seq));
             }
             /* The pause's phase before a resume that rebases on it. */
             if (atomic_exchange(&s_sweep_held_new, false)) {

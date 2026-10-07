@@ -409,6 +409,30 @@ static struct {
     /* The sweep: the same curve the coprocessor runs, on this screen's own
      * clock, to draw the horn by. */
     bool        sweep_able;      /* the coprocessor speaks 4.2 or later  */
+    /*
+     * The pause whose HOLD what the screen expects of the far end rests on,
+     * or 0.  Set by a PAUSE of a sweep the far end is known to run.  Kept
+     * by everything that carries that pause on: its resume and the resume
+     * said again, a position said again under a changed profile, and a
+     * further PAUSE before the resume is acknowledged -- that HOLD holds
+     * what the first pause left.  Ended by the acknowledgement of a start
+     * or a resume (the far end then moves on its own), and by anything
+     * that sets a new origin: stop_sweep() -- a drag, CENTRE, RELEASE, a
+     * curve restarted, a disarm, leaving, the link going -- and
+     * start_sweep() -- SWEEP, or a PAUSED that starts a changed curve.
+     * Every command carries it (from_pause); the panel drops those of a
+     * pause it lets go of, and the screen takes that let-go exactly while
+     * it is still set to that pause (servo_screen_released()).
+     */
+    uint16_t    lineage;
+    bool        surfaces;        /* a surface is bound to sweep          */
+    /* The tap's phase of the pause in force, and for a resume asked before
+     * that pause's HOLD was acknowledged, where its replay starts: the
+     * output the far end held, once that acknowledgement says it. */
+    uint32_t    pause_tap_ms;
+    bool        resume_from_set;
+    uint16_t    resume_pause_seq;
+    float       resume_from_cmd;
     bool        sweeping;
     bool        paused;          /* a sweep held by PAUSE: HOLD posted   */
     /* SPEED as the sweep ran when PAUSE was tapped: the far end slews at it
@@ -472,6 +496,11 @@ static struct {
         float       commanded_deg;
         sweep_drain_t dr;
         start_rec_t start_rec;
+        uint16_t    pause_seq, resume_pause_seq, lineage;
+        uint32_t    pause_tap_ms;
+        float       pause_from_cmd, resume_from_cmd;
+        int         pause_speed_pct;
+        bool        resume_from_set;
     }           undo;
     bool        toggle_live;
     servo_cmd_kind_t toggle_kind;
@@ -759,9 +788,10 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
     if (kind != SERVO_CMD_HOLD) {
         s.dr.on = false;
     }
-    s.pending.kind     = kind;
-    s.pending.value_us = us;
-    s.pending.resume   = resume;
+    s.pending.kind       = kind;
+    s.pending.value_us   = us;
+    s.pending.resume     = resume;
+    s.pending.from_pause = s.lineage;
     ++s.post_count;
     if (kind == SERVO_CMD_SWEEP) {
         ++s.start_seq;
@@ -861,6 +891,8 @@ static float sweep_deg(uint16_t cmd)
  * that follows; the button reads SWEEP from now. */
 static void stop_sweep(void)
 {
+    s.lineage         = 0u;
+    s.resume_from_set = false;
     s.awaiting       = false;
     s.dr.on          = false;
     s.start_rec.live = false;
@@ -885,6 +917,9 @@ static void stop_sweep(void)
  */
 static void hold_sweep(void)
 {
+    /* A PAUSE before the resume of an earlier pause is acknowledged holds
+     * what that pause left, and stays on it. */
+    const uint16_t root = s.lineage;
     const bool moving = !s.awaiting;
     if (!moving) {
         /* Not yet moving at the far end as far as is known here: paused
@@ -897,6 +932,7 @@ static void hold_sweep(void)
         s.dr.sw = s.sw;
         sweep_pause(&s.sw, s.clock_ms);
     }
+    s.pause_tap_ms = s.sw.paused_ms;
     s.pause_speed_pct = s.speed_pct;
     s.dr.speed_pct    = s.speed_pct;
     s.dr.map          = map_now();
@@ -912,10 +948,15 @@ static void hold_sweep(void)
     s.dr.from_ms = s.clock_ms;
     s.commanded_deg = clamp_travel(s.shown_deg);
     ++s.pause_seq;
+    if (s.pause_seq == 0u) {
+        s.pause_seq = 1u;       /* 0 is no pause */
+    }
+    s.lineage = root;
     post(SERVO_CMD_HOLD, 0);
     if (s.pending.kind == SERVO_CMD_HOLD) {
         s.pending.pause_seq = s.pause_seq;
     }
+    s.lineage = (root != 0u) ? root : s.pause_seq;
     ++s.ctrl_rev;
 }
 
@@ -939,7 +980,7 @@ static void record_start(void)
  */
 static void start_sweep(void)
 {
-    if (!s.armed || !s.sweep_able) {
+    if (!s.armed || !s.sweep_able || !s.surfaces || !s.link_up) {
         return;
     }
     const sweep_cfg_t cfg = sweep_cfg_now();
@@ -949,7 +990,9 @@ static void start_sweep(void)
     s.sweeping       = true;
     s.awaiting       = true;
     s.await_phase_ms = 0u;
+    s.lineage        = 0u;      /* a new origin */
     post(SERVO_CMD_SWEEP, 0);
+    s.pending.resume = false;   /* a start, whatever it replaced */
     record_start();
     ++s.ctrl_rev;
 }
@@ -1018,6 +1061,9 @@ static void resume_sweep(void)
      * the resume's acknowledgement times it from the far end's phase. */
     s.dr.on       = false;
     s.commanded_deg  = clamp_travel(s.shown_deg);
+    s.resume_from_set  = true;
+    s.resume_from_cmd  = s.shown_cmd;
+    s.resume_pause_seq = s.pause_seq;
     post(SERVO_CMD_SWEEP, 0);
     record_start();
     s.pending.resume = s.pending.kind == SERVO_CMD_SWEEP;
@@ -1046,6 +1092,14 @@ static void toggle_sweep(void)
         s.sweep_ended    = s.undo.sweep_ended;
         s.driving        = s.undo.driving;
         s.commanded_deg  = s.undo.commanded_deg;
+        s.pause_seq        = s.undo.pause_seq;
+        s.pause_tap_ms     = s.undo.pause_tap_ms;
+        s.pause_from_cmd   = s.undo.pause_from_cmd;
+        s.pause_speed_pct  = s.undo.pause_speed_pct;
+        s.resume_from_set  = s.undo.resume_from_set;
+        s.resume_from_cmd  = s.undo.resume_from_cmd;
+        s.resume_pause_seq = s.undo.resume_pause_seq;
+        s.lineage          = s.undo.lineage;
         s.toggle_live    = false;
         ++s.ctrl_rev;
         return;
@@ -1061,6 +1115,14 @@ static void toggle_sweep(void)
     s.undo.sweep_ended    = s.sweep_ended;
     s.undo.driving        = s.driving;
     s.undo.commanded_deg  = s.commanded_deg;
+    s.undo.pause_seq        = s.pause_seq;
+    s.undo.pause_tap_ms     = s.pause_tap_ms;
+    s.undo.pause_from_cmd   = s.pause_from_cmd;
+    s.undo.pause_speed_pct  = s.pause_speed_pct;
+    s.undo.resume_from_set  = s.resume_from_set;
+    s.undo.resume_from_cmd  = s.resume_from_cmd;
+    s.undo.resume_pause_seq = s.resume_pause_seq;
+    s.undo.lineage          = s.lineage;
     const uint32_t before = s.post_count;
     if (s.sweeping) {
         hold_sweep();
@@ -1080,10 +1142,21 @@ bool servo_screen_paused(void) { return s.paused; }
 
 uint32_t servo_screen_curve_ms(void) { return s.clock_ms - s.sw.start_ms; }
 
-void servo_screen_released(void)
+void servo_screen_released(uint16_t pause_seq)
 {
-    /* Nothing held any more, and the horn goes to the centre the surfaces
-     * were released to.  A pause is over with the hold. */
+    /*
+     * Nothing held any more, and the horn goes to the centre the surfaces
+     * were released to -- while the screen is still on that pause.  The
+     * panel dropped everything it asked since (its lineage), so the
+     * surfaces are at rest.  Left since, by a drag, CENTRE, a new pause or
+     * a new start, the screen's newer command was sent and is what the
+     * surfaces do, so this changes nothing.
+     */
+    s.toggle_live = false;      /* no undo across a notification */
+    if (pause_seq == 0u || pause_seq != s.lineage) {
+        return;
+    }
+    stop_sweep();
     s.driving       = false;
     s.paused        = false;
     s.dr.on      = false;
@@ -1138,6 +1211,7 @@ static float drawn_after(const sweep_t *w, uint32_t phase_ms, uint32_t ms,
 void servo_screen_sweep_started(uint16_t start_seq, uint32_t age_ms,
                                 servo_sweep_from_t from, uint32_t since_ms)
 {
+    s.toggle_live = false;      /* no undo across a notification */
     /*
      * The far end's curve has phase 0 age_ms ago: this one is timed from
      * then, rather than from the tap that asked for it a queue and a few
@@ -1182,13 +1256,21 @@ void servo_screen_sweep_started(uint16_t start_seq, uint32_t age_ms,
     s.sw.running  = true;
     s.sw.paused   = false;
     s.awaiting    = false;
+    s.lineage     = 0u;         /* the far end moves on its own now */
     s.dr.on    = false;
     ++s.ctrl_rev;
+    /* A resume's origin is for this acknowledgement only. */
+    const bool from_resume = from == SERVO_SWEEP_RESUMED && s.resume_from_set;
+    s.resume_from_set = false;
     if (s.have_feedback) {
         return;
     }
+    /* A resume from where the far end held the output, which a late HOLD
+     * acknowledgement can have said since the tap. */
     const float from_cmd = (from == SERVO_SWEEP_FROM_FROZEN)
-                           ? shown_cmd_ago(since_ms) : shown_cmd_ago(moving);
+                           ? shown_cmd_ago(since_ms)
+                           : from_resume ? s.resume_from_cmd
+                                         : shown_cmd_ago(moving);
     const uint32_t ms = (moving > 5000u) ? 5000u : moving;
     s.shown_cmd = drawn_after(&s.sw, age_ms - moving, ms, from_cmd, speed);
     s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
@@ -1223,6 +1305,7 @@ static float drawn_after(const sweep_t *w, uint32_t phase_ms, uint32_t ms,
 
 void servo_screen_sweep_held(uint16_t pause_seq, uint32_t kept_ms)
 {
+    s.toggle_live = false;      /* no undo across a notification */
     /*
      * The far end ran its curve on until the HOLD reached it, a queue and an
      * exchange after the tap; at 5 Hz that is a visible share of a cycle.
@@ -1237,7 +1320,37 @@ void servo_screen_sweep_held(uint16_t pause_seq, uint32_t kept_ms)
      * acknowledged; without one, the tap's estimate stands.  At most 5 s is
      * worked through, 1250 steps.
      */
-    if (!s.paused || !s.sw.paused || pause_seq != s.pause_seq) {
+    if (pause_seq != s.pause_seq) {
+        return;
+    }
+    if (!s.paused && s.awaiting && s.resume_from_set
+        && s.resume_pause_seq == pause_seq) {
+        /*
+         * PAUSED was tapped before this arrived: the far end ran on from
+         * the tap and froze here, and stays frozen until the RESUME reaches
+         * it.  Without feedback the output is drawn there now, and the
+         * resume's acknowledgement replays from it rather than from the
+         * tap's estimate.
+         */
+        if (s.have_feedback) {
+            /* The reading, kept for the resume's replay in case feedback
+             * goes before the resume is acknowledged. */
+            s.resume_from_cmd = us_to_cmd(deg_to_us_f(s.shown_deg));
+        } else {
+            const uint32_t late = kept_ms - s.pause_tap_ms;
+            const uint32_t ms = ((int32_t)late <= 0) ? 0u
+                                : (late > 5000u) ? 5000u : late;
+            s.resume_from_cmd = drawn_after(&s.sw, s.pause_tap_ms, ms,
+                                            s.pause_from_cmd,
+                                            s.pause_speed_pct);
+            s.shown_cmd = s.resume_from_cmd;
+            s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
+            s.commanded_deg = clamp_travel(s.shown_deg);
+            ++s.ctrl_rev;
+        }
+        return;
+    }
+    if (!s.paused || !s.sw.paused) {
         return;
     }
     /* Behind the tap's phase by this screen's own timing error: nothing to
@@ -1714,6 +1827,8 @@ static void reset(void)
     s.drawn_mask    = 0;
     s.travel_deg    = 90.0f;
     s.speed_pct     = 100;
+    s.surfaces      = true;
+    s.link_up       = true;     /* until the panel says otherwise */
     s.shown_cmd     = (float)OUT_SPAN / 2.0f;
     /* STANDARD PWM at 50 Hz: what every restart starts at, whatever the
      * session before it used. */
@@ -2268,8 +2383,90 @@ void servo_screen_set_link(bool up)
 {
     if (s.link_up && !up) {
         test_end_now(SERVO_TEST_AB_LINK);
+        /*
+         * A sweep or a pause: the far end stops a sweep and lets a hold go
+         * 500 ms after the last write it heard, and the surfaces rest.  The
+         * screen ends them as well and draws the output at rest, so nothing
+         * stays PAUSED over an output that has gone, and the next tap starts
+         * a sweep rather than resuming one.
+         */
+        /* And one not yet taken is not sent once the link is back. */
+        if (!servo_cmd_survives_link_loss(&s.pending)) {
+            s.pending.kind = SERVO_CMD_NONE;
+            s.toggle_live  = false;
+        }
+        if (s.sweeping || s.paused || s.awaiting || s.dr.on) {
+            stop_sweep();
+            s.paused        = false;
+            s.driving       = false;
+            s.toggle_live   = false;
+            s.sw.running    = false;
+            s.sw.paused     = false;
+            if (!s.have_feedback) {
+                s.shown_cmd = (float)OUT_SPAN / 2.0f;
+                s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
+            }
+            s.commanded_deg = clamp_travel(s.shown_deg);
+            ++s.ctrl_rev;
+        }
     }
     s.link_up = up;
+}
+
+void servo_screen_set_surfaces(bool any)
+{
+    if (any == s.surfaces) {
+        return;
+    }
+    s.surfaces = any;
+    ++s.ctrl_rev;                       /* SWEEP greys or comes back */
+}
+
+void servo_screen_sweep_refused(void)
+{
+    s.toggle_live = false;      /* no undo across a notification */
+    /* Nothing bound to sweep: no start comes, nothing moves, and nothing
+     * is driven for a change of profile to say again. */
+    if (s.sweeping || s.paused) {
+        stop_sweep();
+        s.paused  = false;
+        s.driving = false;
+        s.commanded_deg = clamp_travel(s.shown_deg);
+        ++s.ctrl_rev;
+    }
+}
+
+uint16_t servo_cmd_pause_root(const servo_cmd_t *c)
+{
+    if (c == NULL) {
+        return 0u;
+    }
+    return (c->from_pause != 0u) ? c->from_pause : c->pause_seq;
+}
+
+bool servo_cmd_stale(servo_pause_end_t *e, const servo_cmd_t *c)
+{
+    if (e == NULL || c == NULL || !e->on) {
+        return false;
+    }
+    const bool drive = c->kind == SERVO_CMD_POSITION
+                       || c->kind == SERVO_CMD_CENTRE
+                       || c->kind == SERVO_CMD_SWEEP
+                       || c->kind == SERVO_CMD_HOLD;
+    if (!drive) {
+        return false;
+    }
+    if (c->from_pause != 0u && c->from_pause == e->pause_seq) {
+        return true;
+    }
+    e->on = false;              /* from after it: nothing of it is queued */
+    return false;
+}
+
+bool servo_cmd_survives_link_loss(const servo_cmd_t *c)
+{
+    return c != NULL && c->kind != SERVO_CMD_SWEEP
+           && c->kind != SERVO_CMD_HOLD;
 }
 
 /* Whether the voltage set point in force is past a standard servo's
@@ -3595,7 +3792,9 @@ static void draw_right(gfx_canvas_t *c, bool power)
                                               : ui_theme_color(UI_C_PANEL_HI);
     ui_button(c, s.sweep_btn,
               s.paused ? TR(SV_PAUSED) : s.sweeping ? TR(SV_PAUSE) : "SWEEP", sweep_fill,
-              false, s.sweeping || s.paused || (s.armed && s.sweep_able));
+              false, s.sweeping || s.paused
+                     || (s.armed && s.sweep_able && s.surfaces
+                         && s.link_up));
     ui_button(c, s.release_btn, TR(SV_RELEASE), ui_theme_color(UI_C_PANEL_HI),
               false, true);
     draw_arm(c);
@@ -4310,6 +4509,7 @@ static void tick(float dt_s)
      */
     if (s.have_feedback) {
         s.shown_cmd = us_to_cmd(deg_to_us_f(s.shown_deg));
+        remember_shown();
         return;
     }
     /*

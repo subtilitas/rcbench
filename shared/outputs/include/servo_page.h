@@ -96,16 +96,16 @@ typedef enum {
     SERVO_RESUME_REFUSED,    /**< the curve whole, from its beginning: the
                                   resume was refused                      */
     SERVO_RESUME_UNTIMED,    /**< the curve whole, from its beginning: the
-                                  hold's phase is not known here          */
+                                  HOLD went unanswered, so whether the far
+                                  end holds is not known here             */
 } servo_resume_t;
 
 /**
  * The host's choice for a sweep command: @p asked a resume of the sweep
- * held, @p held a hold in force at the far end, @p timed the phase it kept
- * known here (servo_phase_t: a HOLD acknowledged at its first attempt; a
- * retried one may have reached the far end at an attempt whose reply was
- * lost), @p proto_minor its protocol minor, and @p refused the RESUME just
- * written was refused.  A resume is
+ * held, @p held a hold at the far end, @p timed its phase known here (false
+ * for a HOLD that went unanswered and was not yet acknowledged, which may or
+ * may not have reached the far end), @p proto_minor its protocol minor, and
+ * @p refused the RESUME just written was refused.  A resume is
  * written only for a hold in force, so a repeat of the resumed sweep is the
  * curve; the two fallbacks start the curve over -- a stop, then the curve
  * whole, since a RESUME whose acknowledgement was lost leaves the far end
@@ -126,7 +126,6 @@ typedef struct {
     uint32_t start_ms;   /**< phase 0 of the curve, on the host's clock   */
     uint32_t kept_ms;    /**< how far into the curve a hold kept it       */
     bool     kept;       /**< a hold of a running sweep, not yet resumed  */
-    bool     untimed;    /**< such a hold, its phase not known here       */
 } servo_phase_t;
 
 /** A sweep started, from its beginning, when acknowledged at @p ack_ms. */
@@ -135,14 +134,10 @@ void servo_phase_started(servo_phase_t *ph, uint32_t ack_ms);
 /** A running sweep held at @p ack_ms: its phase is kept; returned. */
 uint32_t servo_phase_held(servo_phase_t *ph, uint32_t ack_ms);
 
-/** A running sweep held, but acknowledged only at a retry of the HOLD: an
- *  earlier attempt may have taken, so its phase is not known here. */
-void servo_phase_untimed(servo_phase_t *ph);
-
 /** The sweep stopped, or the far end restarted: nothing is held to resume. */
 void servo_phase_stopped(servo_phase_t *ph);
 
-/** Whether a hold of a running sweep stands to be resumed, timed or not. */
+/** Whether a hold of a running sweep stands to be resumed. */
 bool servo_phase_resumable(const servo_phase_t *ph);
 
 /**

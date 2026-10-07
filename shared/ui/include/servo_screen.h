@@ -89,8 +89,13 @@ typedef struct {
      *  and an older one, or one that refuses, starts the curve over. */
     bool             resume;
     /** SERVO_CMD_HOLD: which pause it is, given back with its
-     *  acknowledgement in servo_screen_sweep_held(). */
+     *  acknowledgement in servo_screen_sweep_held().  Never 0. */
     uint16_t         pause_seq;
+    /** The pause this command derives from -- a resume of it, a repeat of
+     *  that resume, a position said again under a changed profile -- or 0:
+     *  what the panel drops once it has let that pause go
+     *  (servo_cmd_stale()). */
+    uint16_t         from_pause;
     /** SERVO_CMD_SWEEP: which sweep command it is, given back with the
      *  acknowledgement of a start in servo_screen_sweep_started(). */
     uint16_t         start_seq;
@@ -161,6 +166,47 @@ void servo_screen_rate(servo_rate_state_t st, uint16_t hz);
  *  offered only then. */
 void servo_screen_set_sweep(bool able);
 
+/** Whether a surface is bound, as the panel last read the binding: SWEEP
+ *  is offered only then, since a sweep of nothing never starts. */
+void servo_screen_set_surfaces(bool any);
+
+/** A sweep command found no surface to sweep and was not sent: the screen
+ *  stops waiting for its start and ends the sweep. */
+void servo_screen_sweep_refused(void);
+
+/**
+ * Whether a command kept to be said again may still be said after the link
+ * has gone and come back.  A sweep or a hold may not: both end with the
+ * link, on the screen and at the far end, and said again they would start
+ * motion nobody asked for.  A position is what the screen still shows.
+ */
+bool servo_cmd_survives_link_loss(const servo_cmd_t *c);
+
+/**
+ * The pause a HOLD @p c ends when the panel lets it go: the pause its chain
+ * rests on (from_pause) when it was posted before an earlier pause's resume
+ * was acknowledged, and otherwise its own.  What the panel records for
+ * servo_cmd_stale() and hands to servo_screen_released().
+ */
+uint16_t servo_cmd_pause_root(const servo_cmd_t *c);
+
+/** A pause the panel has let go of, for servo_cmd_stale(). */
+typedef struct {
+    bool     on;
+    uint16_t pause_seq;
+} servo_pause_end_t;
+
+/**
+ * Whether the drive command @p c (a position, a centre, a sweep or a hold)
+ * was asked during the pause @p e records as let go of, so is stale and is
+ * not to be sent: the screen has ended that pause, and the command would
+ * hold or move the servo somewhere it no longer shows.  The screen asks
+ * nothing more of a pause it has left, and commands keep their order, so
+ * the first drive command from after the pause retires @p e; a pause
+ * number reused after 65535 more is then not mistaken for it.
+ */
+bool servo_cmd_stale(servo_pause_end_t *e, const servo_cmd_t *c);
+
 /** Whether a sweep is running, for the application and tests. */
 bool servo_screen_sweeping(void);
 
@@ -168,9 +214,14 @@ bool servo_screen_sweeping(void);
  *  else commanded since.  For tests. */
 bool servo_screen_paused(void);
 
-/** The panel let go of what the screen was holding -- a HOLD the far end
- *  had already ended -- and released the surfaces to their centre. */
-void servo_screen_released(void);
+/**
+ * The panel let go of pause @p pause_seq -- a HOLD the far end had already
+ * ended, or one answered late -- released the surfaces to their centre and
+ * dropped the commands asked during that pause.  Taken only while the
+ * screen's commands still derive from that pause; one that has moved on
+ * since was sent, and the surfaces follow it.
+ */
+void servo_screen_released(uint16_t pause_seq);
 
 /** Where the coprocessor's output was when it started a sweep. */
 typedef enum {
