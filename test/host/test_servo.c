@@ -151,11 +151,24 @@ static void dial_at(float deg, int r, int *x, int *y)
     *y = SHAFT_Y - (int)((float)r * sinf(deg * k) + 0.5f);
 }
 
+/* The sweep command last taken, as the panel would give it back with the
+ * acknowledgement of its write. */
+static uint16_t g_sweep_seq;
+
 static servo_cmd_t last_cmd(void)
 {
     servo_cmd_t c = { .kind = SERVO_CMD_NONE };
     servo_screen_take(&c);
+    if (c.kind == SERVO_CMD_SWEEP) {
+        g_sweep_seq = c.start_seq;
+    }
     return c;
+}
+
+/* The acknowledgement of the sweep command last taken. */
+static void acked(uint32_t age_ms, servo_sweep_from_t from, uint32_t since_ms)
+{
+    servo_screen_sweep_started(g_sweep_seq, age_ms, from, since_ms);
 }
 
 /* -------------------------------------------------------------------- */
@@ -1424,7 +1437,7 @@ static void sweep_go(void)
 {
     tap(SWEEP_X, BTN_Y);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_SWEEP);
-    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
+    acked(0u, SERVO_SWEEP_FROM_REST, 0u);
 }
 
 /* PAUSE as the panel takes it: the HOLD, for its acknowledgement. */
@@ -1450,7 +1463,7 @@ static void ack_hold(const servo_cmd_t *hold)
  * kept @p kept_ms of its curve: the age of its phase 0, and of the resume. */
 static void ack_resume(uint32_t kept_ms, uint32_t ago_ms)
 {
-    servo_screen_sweep_started(kept_ms + ago_ms, SERVO_SWEEP_RESUMED, ago_ms);
+    acked(kept_ms + ago_ms, SERVO_SWEEP_RESUMED, ago_ms);
 }
 
 /* SWEEP asks the coprocessor for the TEST page's curve, and only on an armed
@@ -1794,7 +1807,7 @@ TEST_CASE(paused_carries_the_sweep_on_from_its_phase)
     servo_screen_set_sweep(true);
     tap(SWEEP_X, BTN_Y);                       /* SWEEP */
     CHECK(!last_cmd().resume);
-    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
+    acked(0u, SERVO_SWEEP_FROM_REST, 0u);
     frames(0.25f);
     const servo_cmd_t hold = pause_go();
     const uint32_t kept = servo_screen_curve_ms();
@@ -1810,7 +1823,7 @@ TEST_CASE(paused_carries_the_sweep_on_from_its_phase)
     CHECK(servo_screen_commanded() > 1880u);   /* the peak, 0.5 s in */
 
     /* Started over at the far end: drawn from the beginning. */
-    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
+    acked(0u, SERVO_SWEEP_FROM_REST, 0u);
     frames(0.25f);
     CHECK(servo_screen_commanded() > 1760u && servo_screen_commanded() < 1800u);
     (void)pause_go();
@@ -2121,9 +2134,116 @@ TEST_CASE(a_changed_curve_is_drawn_from_its_acknowledged_start)
     CHECK_EQ(c.sweep_mhz, 1000u);
     frames(0.2f);
     CHECK(servo_screen_commanded() > 1880u);   /* still the old curve */
-    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_HERE, 0u);
+    acked(0u, SERVO_SWEEP_FROM_HERE, 0u);
     scr->tick(0.001f);
     CHECK(servo_screen_commanded() < 1520u);   /* the new one, at 0 */
+}
+
+/*
+ * Leaving while a PAUSE is drawn on, and opening SERVO again: no curve,
+ * drain or acknowledgement of the old sweep is drawn, and a new sweep
+ * starts from its own beginning.
+ */
+TEST_CASE(leaving_forgets_the_sweep_model)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    sweep_go();
+    const uint16_t old_seq = g_sweep_seq;
+    frames(0.2f);
+    const servo_cmd_t hold = pause_go();       /* drawn on, not acked */
+    scr->leave();
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_DISARM);
+    servo_invalidate();                        /* opened again */
+    const uint16_t at = servo_screen_drawn();
+    frames(0.3f);
+    CHECK_EQ(servo_screen_drawn(), at);        /* nothing stale drawn */
+    CHECK(!servo_screen_sweeping());
+    CHECK(!servo_screen_paused());
+    ack_hold(&hold);                           /* late: changes nothing */
+    servo_screen_sweep_started(old_seq, 0u, SERVO_SWEEP_FROM_REST, 0u);
+    CHECK_EQ(servo_screen_drawn(), at);
+
+    servo_screen_set_armed(true);
+    sweep_go();
+    frames(0.25f);
+    CHECK(servo_screen_commanded() > 1760u && servo_screen_commanded() < 1800u);
+}
+
+/*
+ * While a start waits for its acknowledgement, a SPEED change and a curve
+ * change replace what the screen would draw, not what was sent.  A SPEED
+ * change is a repeat: the start's own acknowledgement, 300 ms late, is
+ * worked through at the start's SPEED, 12 %, not the new 100 %.  A curve
+ * change is a new start: the first start's acknowledgement does not end the
+ * wait, the new one's does, with its own curve.
+ */
+TEST_CASE(a_start_acknowledgement_applies_to_its_own_command)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(ARM_X + 1, SPEED_Y);                   /* SPEED's slowest */
+    tap(SWEEP_X, BTN_Y);
+    const servo_cmd_t start = last_cmd();
+    CHECK_EQ(start.kind, SERVO_CMD_SWEEP);
+    tap(ARM_X + ARM_W - 1, SPEED_Y);           /* SPEED 100 % */
+    const servo_cmd_t repeat = last_cmd();
+    CHECK_EQ(repeat.kind, SERVO_CMD_SWEEP);
+    CHECK(repeat.start_seq != start.start_seq);
+    frames(0.3f);
+    servo_screen_sweep_started(repeat.start_seq, 0u, SERVO_SWEEP_FROM_REST, 0u);
+    CHECK_EQ(servo_screen_drawn(), 1500u);     /* not the start's */
+    servo_screen_sweep_started(start.start_seq, 307u, SERVO_SWEEP_FROM_REST,
+                               0u);
+    const uint16_t at = servo_screen_drawn();
+    CHECK(at > 1500u && at <= 1575u);          /* 307 ms at 240 a second */
+
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(SWEEP_X, BTN_Y);
+    const servo_cmd_t first = last_cmd();
+    settings_set(SET_SERVO_TEST_HZ, 1.0f);
+    frames(0.025f);                            /* tick() restarts it */
+    const servo_cmd_t second = last_cmd();
+    CHECK_EQ(second.kind, SERVO_CMD_SWEEP);
+    CHECK_EQ(second.sweep_mhz, 1000u);
+    servo_screen_sweep_started(first.start_seq, 0u, SERVO_SWEEP_FROM_REST, 0u);
+    frames(0.2f);
+    CHECK_EQ(servo_screen_commanded(), 1500u); /* still waiting */
+    servo_screen_sweep_started(second.start_seq, 0u, SERVO_SWEEP_FROM_REST,
+                               0u);
+    frames(0.125f);                            /* 1 Hz, 128 ms in */
+    CHECK(servo_screen_commanded() > 1760u);
+}
+
+/*
+ * TRAVEL 90 to 45 deg while a sweep runs: the far end runs the old curve
+ * under the old mapping until the restart is acknowledged, so the drawing
+ * goes on to the old curve's peak, 1900 us, not clamped at 45 deg (1750 us).
+ * After the acknowledgement the new curve keeps within 45 deg.
+ */
+TEST_CASE(a_restart_drains_the_old_curve_in_its_old_mapping)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    sweep_go();
+    frames(0.4f);
+    open_settings();
+    tap(ROW_L_X, ROW_Y(4));                    /* TRAVEL */
+    keys("45");
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
+    CHECK_EQ(c.sweep_span, 200u);
+    frames(0.15f);                             /* the dwell at the peak */
+    CHECK(servo_screen_drawn() > 1880u);
+    acked(0u, SERVO_SWEEP_FROM_HERE, 0u);
+    frames(0.6f);
+    CHECK(servo_screen_drawn() <= 1750u);
+    CHECK(servo_screen_commanded() <= 1750u);
 }
 
 /*
@@ -2363,7 +2483,7 @@ TEST_CASE(hold_without_feedback_matches_the_far_ends_slew)
     tap(SWEEP_X, BTN_Y);
     servo_cmd_t c = last_cmd();
     CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
-    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
+    acked(0u, SERVO_SWEEP_FROM_REST, 0u);
 
     outputs_t far;
     outputs_init(&far, 0u);
@@ -2409,7 +2529,7 @@ TEST_CASE(the_drawn_output_starts_where_the_far_ends_output_starts)
     frames(0.3f);                              /* not acknowledged */
     CHECK_EQ(servo_screen_drawn(), 1500u);
     CHECK_EQ(servo_screen_commanded(), 1500u);
-    servo_screen_sweep_started(307u, SERVO_SWEEP_FROM_REST, 0u);
+    acked(307u, SERVO_SWEEP_FROM_REST, 0u);
     const uint16_t late = servo_screen_drawn();
 
     fresh();
@@ -2430,7 +2550,7 @@ TEST_CASE(the_drawn_output_starts_where_the_far_ends_output_starts)
     frames(0.2f);
     const uint16_t at_02 = servo_screen_drawn();
     frames(0.3f);
-    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_FROZEN, 307u);
+    acked(0u, SERVO_SWEEP_FROM_FROZEN, 307u);
     CHECK(at_02 > 1520u);
     CHECK(abs((int)servo_screen_drawn() - (int)at_02) <= 3);
 }
@@ -2444,7 +2564,7 @@ TEST_CASE(the_horn_follows_the_curve_from_where_the_far_end_started_it)
     sweep_go();
     frames(0.5f);                              /* the peak, as drawn */
     CHECK(servo_screen_commanded() > 1880u);
-    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_HERE, 0u);  /* just now */
+    acked(0u, SERVO_SWEEP_FROM_HERE, 0u);  /* just now */
     scr->tick(0.001f);
     const uint16_t at = servo_screen_commanded();
     CHECK(at > 1490u && at < 1520u);
@@ -4115,6 +4235,9 @@ int main(void)
     RUN(the_acknowledged_pause_moves_the_output_at_speed);
     RUN(an_early_resume_is_rebased_on_the_phase_the_far_end_kept);
     RUN(a_changed_curve_is_drawn_from_its_acknowledged_start);
+    RUN(leaving_forgets_the_sweep_model);
+    RUN(a_start_acknowledgement_applies_to_its_own_command);
+    RUN(a_restart_drains_the_old_curve_in_its_old_mapping);
     RUN(an_unacknowledged_pause_is_drawn_on_for_500_ms_at_most);
     RUN(two_sweep_taps_in_one_pass_send_nothing);
     RUN(speed_100_is_immediate_in_the_drawing_and_the_replay);

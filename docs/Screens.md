@@ -308,7 +308,10 @@ acknowledgement. A changed SPEED keeps the
 pause; the resume runs at the new SPEED. Touch events going missing pause a
 running sweep as PAUSE would. A changed setting starts a running sweep over
 with the new curve, drawn from when the coprocessor acknowledges it; until
-then the old curve is drawn on, as the coprocessor runs it. A changed
+then the old curve is drawn on, as the coprocessor runs it, under the
+pulses and TRAVEL it was sent with. Each acknowledgement is matched to the
+command it answers: a SPEED or curve changed while a start waits does not
+let the earlier command's acknowledgement draw the newer one. A changed
 profile or frame rate goes with it at once. SWEEP is offered on an armed bench and a coprocessor
 speaking protocol 4.2; the coprocessor stops a sweep the panel has not
 repeated for 500 ms and leaves each surface where its output has got to.

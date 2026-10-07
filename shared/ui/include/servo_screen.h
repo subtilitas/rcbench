@@ -91,6 +91,9 @@ typedef struct {
     /** SERVO_CMD_HOLD: which pause it is, given back with its
      *  acknowledgement in servo_screen_sweep_held(). */
     uint16_t         pause_seq;
+    /** SERVO_CMD_SWEEP: which sweep command it is, given back with the
+     *  acknowledgement of a start in servo_screen_sweep_started(). */
+    uint16_t         start_seq;
 } servo_cmd_t;
 
 /** Drop the cached chrome, so the next frame repaints it. */
@@ -191,9 +194,11 @@ typedef enum {
  * SERVO_SWEEP_RESUMED how long ago the resume was acknowledged; for a
  * resume @p age_ms is the panel's timing of the far end's phase 0, moved on
  * by the hold, whatever this screen took the pause's phase to be.
+ * @p start_seq is the sweep command whose write it acknowledges
+ * (servo_cmd_t): a start or resume waited for is ended only by its own.
  */
-void servo_screen_sweep_started(uint32_t age_ms, servo_sweep_from_t from,
-                                uint32_t since_ms);
+void servo_screen_sweep_started(uint16_t start_seq, uint32_t age_ms,
+                                servo_sweep_from_t from, uint32_t since_ms);
 
 /**
  * The coprocessor took the HOLD of pause @p pause_seq (servo_cmd_t) and kept

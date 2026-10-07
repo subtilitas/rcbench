@@ -4071,6 +4071,7 @@ static atomic_uint s_sweep_start_ms;
 static atomic_uint s_sweep_start_from;   /* servo_sweep_from_t */
 static atomic_uint s_sweep_frozen_ms;    /* when it froze, for FROZEN */
 static atomic_bool s_sweep_start_new;
+static atomic_uint s_sweep_start_seq;    /* the command it acknowledges */
 /* The far end's phase as acknowledgements time it, and the HOLD that
  * paused a running sweep: which pause, and the phase it kept. */
 static servo_phase_t s_far_phase;
@@ -4323,6 +4324,7 @@ static bool write_servo(const servo_cmd_t sv)
                     /* And when it began to move again, for the drawing. */
                     atomic_store(&s_sweep_frozen_ms, took);
                     atomic_store(&s_sweep_start_ms, start);
+                    atomic_store(&s_sweep_start_seq, (unsigned)sv.start_seq);
                     atomic_store(&s_sweep_start_from,
                                  (unsigned)SERVO_SWEEP_RESUMED);
                     atomic_store(&s_sweep_start_new, true);
@@ -4397,6 +4399,7 @@ static bool write_servo(const servo_cmd_t sv)
                 s_hold_unanswered = false;
                 memcpy(s_servo_curve, curve, sizeof(curve));
                 atomic_store(&s_sweep_start_ms, took);
+                atomic_store(&s_sweep_start_seq, (unsigned)sv.start_seq);
                 atomic_store(&s_sweep_start_from, (unsigned)from);
                 atomic_store(&s_sweep_start_new, true);
             }
@@ -6447,6 +6450,7 @@ void app_main(void)
             if (atomic_exchange(&s_sweep_start_new, false)) {
                 const uint32_t now = now_ms();
                 servo_screen_sweep_started(
+                    (uint16_t)atomic_load(&s_sweep_start_seq),
                     now - atomic_load(&s_sweep_start_ms),
                     (servo_sweep_from_t)atomic_load(&s_sweep_start_from),
                     now - atomic_load(&s_sweep_frozen_ms));

@@ -389,9 +389,12 @@ static void servo_sweep_view(bool pause)
     tap(521, UI_BAND_H + 307);                      /* SPEED 12 % */
     tap(651, UI_BAND_H + 366);                      /* SWEEP */
     servo_cmd_t taken;
-    while (servo_screen_take(&taken)) { }
+    uint16_t start_seq = 0u;
+    while (servo_screen_take(&taken)) {
+        start_seq = taken.start_seq;
+    }
     /* The far end's start, acknowledged as the panel would. */
-    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
+    servo_screen_sweep_started(start_seq, 0u, SERVO_SWEEP_FROM_REST, 0u);
     uint16_t hold_seq = 0u;
     for (int i = 0; i < 40 + (pause ? 20 : 0); ++i) {
         if (pause && i == 40) {

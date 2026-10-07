@@ -337,7 +337,11 @@ geändertes TEMPO lässt die Pause stehen; das Fortsetzen läuft mit dem neuen
 TEMPO. Verlorene Touch-Ereignisse halten einen laufenden Sweep an wie PAUSE.
 Eine geänderte Einstellung startet einen laufenden Sweep mit der neuen Kurve
 neu, gezeichnet ab der Quittung des Koprozessors; bis dahin wird die alte
-Kurve weitergezeichnet, wie der Koprozessor sie fährt. Ein geändertes
+Kurve weitergezeichnet, wie der Koprozessor sie fährt, mit den Pulsen und
+dem WEG, mit denen sie gesendet wurde. Jede Quittung wird dem Befehl
+zugeordnet, den sie beantwortet: ein TEMPO oder eine Kurve, die geändert
+wird, während ein Start wartet, wird nicht von der Quittung des früheren
+Befehls gezeichnet. Ein geändertes
 Profil oder eine geänderte Frame Rate geht sofort mit.
 SWEEP gibt es bei scharfem Prüfstand und einem Koprozessor mit Protokoll 4.2;
 der Koprozessor hält eine Kurve an, die das Panel 500 ms nicht wiederholt hat,
