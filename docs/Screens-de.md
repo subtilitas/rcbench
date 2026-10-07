@@ -53,9 +53,9 @@ arbeitet aus dem Modell. SUPPLY trägt SIMULIERT, solange der PD mini in SETUP
 unter ANSCHLÜSSE abgeschaltet ist, unabhängig davon, was der Koprozessor
 meldet: Das Panel rechnet dann sein eigenes Modell eines Netzteils.
 
-Das Menü im hellen Theme:
+Das Menü im hellen Design:
 
-![Das Menü im hellen Theme](img/de/overview-light.png)
+![Das Menü im hellen Design](img/de/overview-light.png)
 
 ## Splash
 
@@ -819,9 +819,9 @@ Liste und läse sich wie ein fertiger.
 
 ![Setup](img/de/setup.png)
 
-Die Einstellungen liegen hinter der SETUP-Kachel, in beiden Themes:
+Die Einstellungen liegen hinter der SETUP-Kachel, in beiden Designs:
 
-![Setup im hellen Theme](img/de/setup-light.png)
+![Setup im hellen Design](img/de/setup-light.png)
 
 Sprache unter ANWENDUNG schaltet die ganze Oberfläche ab dem nächsten Bild
 zwischen Englisch und Deutsch um, ohne Neustart. Was ihr folgt, was Englisch
