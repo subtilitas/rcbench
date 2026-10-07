@@ -191,8 +191,13 @@ Englisch und auf Deutsch und schlägt fehl, wenn ein deutscher Text
 
 - breiter ist als die Box, die `gfx_text_in()` bekam,
 - am Rand des Bereichs abgeschnitten wird, in dem er steht,
-- über die gefüllte Form hinausläuft, auf der er steht, oder
-- einen anderen Text des Bildes überlappt.
+- über die gefüllte Form hinausläuft, auf der er steht,
+- einen anderen Text des Bildes überlappt, oder
+- von einer später gezeichneten Fläche übermalt und nicht neu
+  gezeichnet wird. Nur die Zeichen zählen: eine Fläche über den Leerzeichen,
+  mit denen eine Beschriftung aufgefüllt ist, ist kein Befund. OUTPUTS mit
+  offener Protokollliste (`outputs-protocol`) ist ausgenommen, weil die
+  Liste die Pins daneben absichtlich verdeckt.
 
 Englische Befunde erscheinen als Hinweise: Englisch ist das Layout, für das
 die Seiten gezeichnet sind. Ein deutscher Befund, den das Englische Wort für
@@ -204,7 +209,7 @@ den keine Ansicht zeichnet.
 python3 tools/check_formats.py
 ```
 
-übersetzt `shared/` mit jedem Aufruf von `TR()` und jedem Wort des Berichts
+kompiliert `shared/` mit jedem Aufruf von `TR()` und jedem Wort des Berichts
 durch sein englisches Literal ersetzt, unter `-Wformat=2
 -Wformat-nonliteral -Wformat-signedness`, und schlägt bei jeder Warnung
 fehl: jedes englische Format passt zu den Argumenten seines Aufrufs. Die
@@ -218,7 +223,10 @@ und Beschriftungen des Berichts stehen bündig.
 
 `tools/check_docs.py` schlägt fehl, wenn eine deutsche Wiki-Seite in
 Backticks das Englische eines Textes zitiert, den der Bildschirm deutsch
-zeigt. Fließtext ohne Backticks wird nicht geprüft: Er nennt auch
+zeigt: einen Text der Oberfläche, die Ausgabe eines Formats, mit Zahlen oder Text
+an der Stelle seiner Umwandlungen, Name, Hilfetext, Option oder Kategorie einer Einstellung oder
+ein Wort des Servotests, auch ein Zitat, das über zwei Zeilen umbricht.
+Fließtext ohne Backticks wird nicht geprüft: Er nennt auch
 Protokoll-Pages, Befehle an das Netzteil und Beschriftungen der Platine, die
 ein Wort mit einer Beschriftung der Oberfläche teilen.
 

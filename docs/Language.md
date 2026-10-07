@@ -184,8 +184,13 @@ in German, and fails when a German string
 
 - is wider than the box `gfx_text_in()` was given,
 - is cut at the edge of the area it is drawn in,
-- runs past the filled shape it is printed on, or
-- overlaps another string the frame shows.
+- runs past the filled shape it is printed on,
+- overlaps another string the frame shows, or
+- is painted over by a fill drawn after it and not drawn again.
+  Only the characters count: a fill over the trailing spaces of a padded
+  label is not a finding. OUTPUTS with its protocol list open
+  (`outputs-protocol`) is exempt, because the list covers the pins beside
+  it by design.
 
 English findings are listed as notes: English is the layout the screens were
 drawn for. A German finding English shares word for word is the layout's,
@@ -209,9 +214,11 @@ settings fit SETUP and the TIMING page, and the report's columns and labels
 line up.
 
 `tools/check_docs.py` fails when a German wiki page quotes in backticks the
-English of a string the screen shows in German. Prose without backticks is
-not checked: it also names protocol pages, supply commands and board
-markings that share a word with a label.
+English of a string the screen shows in German: an interface string, a
+format's output, with numbers or text where its conversions are, a setting's label, help,
+option or category, or a servo test word, a quote wrapped over two lines
+included. Prose without backticks is not checked: it also names protocol
+pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 

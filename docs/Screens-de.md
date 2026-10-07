@@ -9,7 +9,7 @@ einzelnen Bildschirme bedient werden.
 
 Das obere Band ist auf allen Bildschirmen gleich. Von rechts: STOP, die
 Laufzeituhr (im scharfen Zustand oder nach einem Lauf), ARMED oder SAFE, ein
-FAULT-Code, sobald einer gemeldet wird, der Ausgangsmodus (LINK oder SIM) und
+FEHLER-Code, sobald einer gemeldet wird, der Ausgangsmodus (LINK oder SIM) und
 LINK oder KEIN LINK.
 
 STOP funktioniert auf jedem Bildschirm. Es entschärft und rastet ein: der
@@ -33,8 +33,8 @@ steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
   Loslassen des ersten Fingers löscht.
 - Ein Alert, der kommt, während ein Finger auf dem Band liegt, wird durch
   dieses Loslassen nicht gelöscht.
-- "touch did not answer -- the bench will not arm" beim Start bleibt bis zum
-  Neustart und hat kein `x`: es gibt keinen Touch, mit dem man tippen könnte.
+- "Touch antwortete nicht -- der Prüfstand nimmt kein ARM an" beim Start
+  bleibt bis zum Neustart und hat kein `x`: es gibt keinen Touch, mit dem man tippen könnte.
   Ein späterer Alert erscheint darüber; ist er gelöscht, steht wieder dieser.
 
 ## Marken im Menü
@@ -167,7 +167,7 @@ deshalb EFF und nicht Wirkungsgrad:
   ist; der Bildschirm zeigt das, statt es zu verbergen, gedeckelt bei 199 %.
 
 Die Nenn-kV kommt vom angeschlossenen ESC, sobald einer sie meldet. Noch
-meldet sie keiner, also ist es in der Praxis die Einstellung `Rated kV`, deren
+meldet sie keiner, also ist es in der Praxis die Einstellung `Nenn-kV`, deren
 Standardwert null ist: eine geratene kV ergibt einen plausibel aussehenden,
 aber falschen Prozentwert, und ohne Wert bleibt das Feld leer und es wird kein
 Prozentwert gezeigt. Die gemessene rpm/V wird in jedem Fall gezeigt, weil sie
@@ -240,8 +240,8 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
   öffnet die Warnung NUR HV-SERVOS: Standardservos sind für 4,8 bis 6,0 V
   ausgelegt, darüber arbeitet nur ein als HV (high voltage) spezifiziertes
   Servo innerhalb seiner Spezifikation; ein Standardservo kann darüber sofort
-  zerstört werden. Die Spannung gilt erst, nachdem HOLD
-  TO ÜBERNEHMEN 2 s gehalten wurde, dieselbe Geste wie bei der Profilwarnung;
+  zerstört werden. Die Spannung gilt erst, nachdem HALTEN
+  ZUM ÜBERNEHMEN 2 s gehalten wurde, dieselbe Geste wie bei der Profilwarnung;
   ABBRECHEN verwirft sie. STOP beendet das Halten. Bei eingeschaltetem Ausgang ersetzt sie die Rückfrage
   von SUPPLY und bleibt stehen, wenn der Ausgang ausgeht. Eine Spannung, die
   schon über 6,0 V liegt, ändert sich ohne sie. Eine auf SUPPLY eingestellte
@@ -251,8 +251,8 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
 
 - AUSGANG EIN ist ein Halten über zwei Sekunden, AUSGANG AUS ein Tippen, wie auf
   SUPPLY. STOP beendet ein laufendes Halten. Liegt der Spannungssollwert über
-  6,0 V, gleich wo er eingestellt wurde, öffnet AUSGANG EIN stattdessen HV
-  SERVOS ONLY mit der Spannung, und der Ausgang geht erst an, nachdem HOLD TO
+  6,0 V, gleich wo er eingestellt wurde, öffnet AUSGANG EIN stattdessen NUR
+  HV-SERVOS mit der Spannung, und der Ausgang geht erst an, nachdem HALTEN ZUM
   ÜBERNEHMEN 2 s gehalten wurde; das Halten des Schalters selbst und ein Tippen
   auf ÜBERNEHMEN schalten nichts ein. Ein Sollwert, der während des gewöhnlichen
   Haltens über 6,0 V steigt -- auf SUPPLY, oder nach einem Lauf
@@ -277,7 +277,7 @@ gezeichnete Horn eine Schätzung davon. Ein HOLD wartet nicht hinter
 Sweep-Schreibvorgängen, die schon auf dem Draht sind. Ein HOLD, den der Link
 500 ms nicht wiederholt hat, hat das andere Ende losgelassen; das Panel gibt
 die Surfaces dann zur Mitte frei, und das Horn geht dorthin. Ein Finger auf der
-Skala, CENTRE, FREIGEBEN, ein Disarm und das Verlassen des Screens beenden sie
+Skala, CENTRE, FREIGEBEN, ein Disarm und das Verlassen der Seite beenden sie
 ebenfalls, und verlorene Touch-Ereignisse halten sie an wie HOLD. Eine geänderte Einstellung startet sie mit der neuen Kurve neu; ein
 geändertes Profil oder eine geänderte Frame Rate geht sofort mit.
 SWEEP gibt es bei scharfem Prüfstand und einem Koprozessor mit Protokoll 4.2;
@@ -306,12 +306,12 @@ auf der linken Karte. Der Lauf führt das Servo und die Sollwerte und den
 Schalter von SUPPLY, bis er endet. Er endet vorzeitig, mit ausgeschaltetem
 Ausgang und dem Servo zur Mitte freigegeben, bei TEST BEENDEN (auf der linken
 Karte oder der TEST-Seite), STOP, einem Disarm, wenn der Link geht, beim
-Verlassen des Screens, bei einem Finger auf der Skala, CENTRE, SWEEP,
+Verlassen der Seite, bei einem Finger auf der Skala, CENTRE, SWEEP,
 FREIGEBEN, einem Tippen auf einen Sollwert, einer Änderung an Typ, Impulsen,
 Trim, Weg, Reverse oder TEMPO des Servos, bei verlorenen Touch-Ereignissen
 und beim Netzteil: siehe [die Liste](Servo-de.md#was-einen-lauf-beendet).
 Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
-Lauf zurück, gleich welcher Screen oben ist. Das wartet, bis das OFF des
+Lauf zurück, gleich welche Seite oben ist. Das wartet, bis das OFF des
 Laufs gesendet ist, ein danach genommener Messwert zeigt, dass das
 Netzteil selbst den Ausgang aus meldet -- nicht die Anforderung des Panels,
 der das PD mini einen Link-Austausch und eine Modultransaktion später
@@ -349,7 +349,7 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | TEST | KURVE, TEMPO, BEREICH | die Bewegung von SWEEP: Rechteck, Sinus oder Dreieck, 0,05 bis 5 Hz, 10 bis 100 % des Wegs. Der automatische Test springt zwischen den Enden, die BEREICH ergibt |
 | TEST | LÄNGE NACH, TESTZEIT, BEWEGUNGEN | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen |
 | TEST | VERWEILEN, EINSCHWINGEN | Haltezeit an jedem Ende; Wartezeit nach einer Spannungsstufe vor dem Messen |
-| TEST | STEP 4,8 / 6,0 / 7,4 / 8,4 V, BROWN-OUT | die Spannungsstufen und der Brown-out-Lauf ab 5,0 V abwärts; 7,4 und 8,4 V laufen nur mit HV SERVO an |
+| TEST | STUFE 4.8 / 6.0 / 7.4 / 8.4 V, BROWN-OUT | die Spannungsstufen und der Brown-out-Lauf ab 5,0 V abwärts; 7,4 und 8,4 V laufen nur mit HV SERVO an |
 | TEST | HV SERVO | nimmt die Stufen 7,4 und 8,4 V hinzu, vorgegeben aus und nach jedem Neustart aus; ein Lauf mit ihnen startet nur über NUR HV-SERVOS |
 | TEST | TEST STARTEN | der automatische Test: 2 s Halten bei scharfem Prüfstand; TEST BEENDEN, solange er läuft |
 | GRENZEN | SPANNUNG MAX, STROM MAX | die Grenzen des Bildschirms SUPPLY, dieselben Einstellungen |
@@ -410,11 +410,11 @@ Die AUSGANG-Seite sagt, was aus ihr wurde:
 | This coprocessor takes no frame rate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50 Hz seiner Bindung |
 
 Ein Neustart des Koprozessors und jede auf OUTPUTS geschriebene Bindung setzen
-jeden Slot auf seine eigene Rate zurück, 50 Hz für ein Servo; der Screen sendet
-seine Rate mit der nächsten Stellung erneut, gegen die dann geltende Bindung.
+jeden Slot auf seine eigene Rate zurück, 50 Hz für ein Servo; die Seite sendet
+ihre Rate mit der nächsten Stellung erneut, gegen die dann geltende Bindung.
 Eine Bindung wird nicht geschrieben, solange das Zurücksetzen auf die eigene
-Rate jedes Slots unbeantwortet bleibt, und der Prüfstand wird von keinem
-Screen aus scharf, solange die Rate der Surfaces nicht bekannt ist: Der Arm
+Rate jedes Slots unbeantwortet bleibt, und der Prüfstand wird von keiner
+Seite aus scharf, solange die Rate der Surfaces nicht bekannt ist: Der Arm
 wird mit `Frame Rate des Servos unbekannt -- erneut ARM` abgelehnt, und ein Arm, der
 bei unterbrochenem Link gemacht wurde, erreicht den Koprozessor erst, wenn das
 Zurücksetzen angekommen ist.
@@ -429,7 +429,7 @@ und werden wie bei SUPPLY geschrieben.
 
 Aktuelle Einschränkungen:
 
-- Bis der Screen eine Stellung sendet, laufen die Pins mit der Rate, die die
+- Bis die Seite eine Stellung sendet, laufen die Pins mit der Rate, die die
   SERVO-Page hält; nach einem Neustart oder einer neuen Bindung sind das 50 Hz.
 - Der automatische Test ist nicht auf Hardware gelaufen, und am
   Netzteilmodell des Panels sind seine Ströme die Last des Modells, nicht die
@@ -508,7 +508,7 @@ wie ARM. AUSGANG AUS ist ein Tippen. STOP schaltet den Ausgang auf jedem
 Bildschirm ab. Ebenso jeder andere Stopp, den der Prüfstand zählt -- ein
 Touch, der nicht mehr antwortet, ein ON, dessen Touch-Ereignisse verloren
 gingen, bevor der Bildschirm es zeigte, und ein Koprozessor, der nicht scharf
-bleiben will -- sowie ein Netzteil, das nicht mehr antwortet, und ein Trip.
+bleiben will -- sowie ein Netzteil, das nicht mehr antwortet, und eine Abschaltung.
 Der Ausgang bleibt aus, bis er wieder eingeschaltet wird. Das Verlassen des
 Bildschirms lässt den Ausgang an, damit ein Servo oder ein ESC am Netzteil auf
 dem Bildschirm versorgt bleibt, der es testet; der Bildschirm für den
@@ -544,7 +544,7 @@ Schalter kippt beim Tippen. Jede Änderung wird im nächsten Frame geschrieben,
 in dem der Prüfstand unscharf ist, der Ausgang des Netzteils aus ist und nicht
 das Foto der Platine geladen wird, und mit ihr jede ungespeicherte Änderung
 aus SETUP: ein Flash-Schreibvorgang hält beide Kerne an, AUSGANG AUS und die
-Trips eingeschlossen. Die unterste Zeile sagt GESPEICHERT, SPEICHERN WARTET, NICHT GESPEICHERT
+Abschaltungen eingeschlossen. Die unterste Zeile sagt GESPEICHERT, SPEICHERN WARTET, NICHT GESPEICHERT
 (der Schreibvorgang wurde abgelehnt) oder SETUP NICHT GESPEICHERT: eine
 Änderung in SETUP, die ohne SPEICHERN verlassen wurde und die nichts schreibt, bis
 SPEICHERN dort oder eine Änderung hier danach fragt.
@@ -559,21 +559,21 @@ SPEICHERN dort oder eine Änderung hier danach fragt.
 | STARTSTROM | bis STROM MAX | 2,00 A | die Strombegrenzung nach einem Neustart |
 | ÜBERSTROM | 0 bis 5 A | AUS | Ausgang aus, wenn der Strom ABSCHALTZEIT lang darüber lag |
 | ÜBERSPANNUNG | 0 bis 21 V | AUS | Ausgang aus, wenn die Spannung ABSCHALTZEIT lang darüber lag |
-| ABSCHALTZEIT | 0 bis 5000 ms | 100 ms | wie lange ein Messwert über einem Trip liegt, bevor er auslöst |
+| ABSCHALTZEIT | 0 bis 5000 ms | 100 ms | wie lange ein Messwert über einer Abschaltschwelle liegt, bevor sie auslöst |
 | SLIDER, SCHRITTE | EIN, AUS | EIN | fragen, bevor der Schieber einen eingeschalteten Ausgang ändert |
 | TASTENFELD | EIN, AUS | EIN | fragen, bevor die Tastatur einen eingeschalteten Ausgang ändert |
 
 Eine Grenze, die unter einen Sollwert gesenkt wird, holt den Sollwert sofort
 auf sie herunter, und einen Startwert mit ihm. Ein getippter Wert kommt in der
 sicheren Richtung auf den Schritt der Einstellung: eine Grenze rundet ab, 12,01 V
-erlauben also 12,00 V, und ein Trip über 0 ist mindestens ein Schritt, nie AUS.
-Ein Trip von 0 ist aus. Die Zeit über einem Trip zählt ab dem ersten Messwert
-darüber. Ein
-Messwert unter seinem Trip beginnt die Zählung neu; ein Messwert, der nicht
-ankam, lässt sie stehen. Ein Trip schaltet den Ausgang ab, MODUS zeigt ABSCH.,
-bis der Ausgang wieder eingeschaltet wird, und das Band sagt, welcher Trip
-ausgelöst hat. Das Netzteil hält seine Strombegrenzung in CC, daher löst ein
-Strom-Trip auf oder über STROMBEGRENZUNG nicht aus; unter der Begrenzung
+erlauben also 12,00 V, und eine Abschaltschwelle über 0 ist mindestens ein Schritt, nie
+AUS. Eine Abschaltschwelle von 0 ist aus. Die Zeit über einer
+Abschaltschwelle zählt ab dem ersten Messwert darüber. Ein Messwert unter
+seiner Abschaltschwelle beginnt die Zählung neu; ein Messwert, der nicht
+ankam, lässt sie stehen. Eine Abschaltung schaltet den Ausgang ab, MODUS zeigt
+ABSCH., bis der Ausgang wieder eingeschaltet wird, und das Band sagt, welche
+Schwelle ausgelöst hat. Das Netzteil hält seine Strombegrenzung in CC, daher löst ein
+ÜBERSTROM auf oder über STROMBEGRENZUNG nicht aus; unter der Begrenzung
 gesetzt, schaltet er eine Last ab, die zu lange zu viel zieht.
 
 Nach einem Neustart ist der Ausgang aus, welche Startwerte auch gelten.
@@ -617,10 +617,10 @@ und 2,00 A, bringt der Stoß es in CC. Seine Messwerte sind nicht gemessen,
 und am Prüfstand wird nichts versorgt.
 
 Die Verdrahtung des PD mini -- PD mini, PD mini TX, PD mini RX und PD mini
-baud -- steht in SETUP unter ANSCHLÜSSE. TX und RX sind GPIO-Nummern des
+Baud -- steht in SETUP unter ANSCHLÜSSE. TX und RX sind GPIO-Nummern des
 Koprozessors: TX geht zum DM des Moduls, RX kommt von seinem DP. Der
 Koprozessor weist einen Pin ab, der reserviert, an einen Ausgang gebunden
-oder der andere Pin ist. PD mini baud ist die eigene UART-Baudrate-
+oder der andere Pin ist. PD mini Baud ist die eigene UART-Baudrate-
 Einstellung des Moduls: 9600, 19200 (ab Werk), 38400, 57600, 115200, 230400
 oder 460800 Baud, oder AUTO. AUTO, die Vorgabe, lässt den Koprozessor sie
 finden: er versucht jede der 7 Raten, eine pro Sekunde. Die Kopfzeile von
@@ -966,9 +966,9 @@ MOTOR PWM binden, ein Ruder als SERVO PWM. Der Gasregler auf MOTOR & ESC
 treibt jeden als Motor gebundenen Kanal — MOTOR PWM und die DShot-Einträge —
 und lässt die Servokanäle in Ruhe.
 
-Ein MOTOR-PWM-Kanal sendet 0 % Gas als Idle pulse und 100 % als Full pulse:
+Ein MOTOR-PWM-Kanal sendet 0 % Gas als Leerlaufpuls und 100 % als Vollpuls:
 1000 us und 2000 us ab Werk, einstellbar unter SETUP, ESC / PRÜFSTAND, in Schritten
-von 10 us (Idle pulse 800 bis 1600 us, Full pulse 1400 bis 2400 us). Die
+von 10 us (Leerlaufpuls 800 bis 1600 us, Vollpuls 1400 bis 2400 us). Die
 beiden Einstellungen gehen an die als Motor gebundenen Kanäle und an keine
 anderen: ein SERVO-PWM-Kanal behält 1000 bis 2000 us oder den Bereich, den der
 SERVO-Bildschirm für das dort gewählte Servo sendet. Eine Änderung erreicht
@@ -977,19 +977,19 @@ scharf ist; eine Änderung im scharfen Zustand wartet auf das Entschärfen.
 Ein Coprozessor, der sich verbindet, bekommt die beiden Einstellungen, bevor
 der Prüfstand ihn treibt: bei einem schon scharfen Prüfstand bleibt er
 entschärft, bis er sie hat. Ein
-Idle pulse, der nicht unter dem Full pulse liegt, wird nicht gesendet, und das
+Leerlaufpuls, der nicht unter dem Vollpuls liegt, wird nicht gesendet, und das
 Band zeigt `Leerlaufpuls muss unter dem Vollpuls liegen -- nicht gesendet`.
 
 Ein ESC, dessen Gasweg an einem Sender kalibriert wurde, nimmt den kürzesten
-Puls dieses Senders als null. Ein Idle pulse darüber liest der ESC als Gas,
+Puls dieses Senders als null. Einen Leerlaufpuls darüber liest der ESC als Gas,
 das nicht ganz unten ist, und er schaltet nicht scharf; viele ESCs piepen dann
-schnell. Den Idle pulse auf oder unter den kürzesten Puls des Senders stellen
-und den Full pulse auf oder über seinen längsten: bei einem Sender mit 985 bis
+schnell. Den Leerlaufpuls auf oder unter den kürzesten Puls des Senders stellen
+und den Vollpuls auf oder über seinen längsten: bei einem Sender mit 985 bis
 2012 us also 980 us und 2020 us.
 
 Wenn das Protokoll keinen Pin mehr nehmen kann, steht der Grund in Bernstein
-darunter: `NEEDS 8 CHANNELS, 4 FREE`, `ALL 8 SLOTS IN USE` oder `SERVO PWM
-TAKES 8 PINS`. Eine komplett graue Platine ohne Begründung daneben liest sich
+darunter: `BRAUCHT 8 KANÄLE, 4 FREI`, `ALLE 8 SLOTS BELEGT` oder
+`SERVO PWM BELEGT 8 PINS`. Eine komplett graue Platine ohne Begründung daneben liest sich
 wie ein Defekt, und PPM färbt die ganze Platine grau, sobald irgendetwas
 anderes gebunden ist.
 
@@ -1125,7 +1125,7 @@ und programmiert hat, mit 19.178 us gemessen, gegen einen CAN-Frame von etwa
 130 us und zwei Frames Puffer im Controller. Löschen und Page Program sind
 nicht getrennt voneinander gemessen. Ein in diesem Fenster verlorener Request
 kostet das Panel 1000 ms Wartezeit, was über dem 200-ms-Failsafe des
-Koprozessors liegt; ein einziger verlorener Frame endet also als `FAULT 01`
+Koprozessors liegt; ein einziger verlorener Frame endet also als `FEHLER 01`
 (`LINK_FAULT_LINK_SILENT`) an einem Kabel, an dem nichts fehlt.
 
 Der Sektor wird deshalb nicht je Speichervorgang gelöscht. Zwei Sektoren

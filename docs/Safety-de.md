@@ -112,7 +112,7 @@ Panel als Leitung ohne Flanken gelesen wird.
 - Ein Frame, der Touch-Events verloren hat, bricht die laufende Geste ab.
   Eine volle Touch-Queue verwirft ihren ältesten Eintrag, um den neuesten
   aufzunehmen, und keine Wahl dort ist für sich sicher: Ein Release, das nie
-  ankommt, lässt einen Screen einen Druck halten, ein Druck, der nie ankommt,
+  ankommt, lässt eine Seite einen Druck halten, ein Druck, der nie ankommt,
   macht das Release danach elternlos, und die Bewegung, mit der ein Finger
   eine Taste verlässt, ist das, was das Halten aufgibt. Der Render-Task
   leert die Queue vom anderen Kern, das Prüfen eines Eintrags entscheidet
@@ -122,10 +122,10 @@ Panel als Leitung ohne Flanken gelesen wird.
   Nummern: am ersten Event danach, bevor es behandelt wird, oder am Ende
   eines Leerens gegen die Nummer, die der Erzeuger vor dem Leeren
   veröffentlicht hat. Kein Zähler, der auf einem Kern steigt, muss rechtzeitig
-  auf dem anderen gelesen werden. Der Render-Task sagt dann jedem Screen, dass
-  sein Bild vom Glas veraltet ist, nicht nur dem obersten, weil ein Event,
-  das den Verlust überlebt hat, vom Screen mit dem Druck weg navigiert haben
-  kann; jeder Screen verwirft jede laufende Geste. Das kommandiert nichts,
+  auf dem anderen gelesen werden. Der Render-Task sagt dann jeder Seite, dass
+  ihr Bild vom Glas veraltet ist, nicht nur der obersten, weil ein Event,
+  das den Verlust überlebt hat, von der Seite mit dem Druck weg navigiert haben
+  kann; jede Seite verwirft jede laufende Geste. Das kommandiert nichts,
   genau wie ein frühes Loslassen, mit der einen Ausnahme weiter unten. Beide
   Queues sind nummeriert -- die Event-Queue des Treibers verwirft ihren
   ältesten Eintrag aus demselben Grund, und eine Lücke, die der Control-Task
@@ -136,7 +136,7 @@ Panel als Leitung ohne Flanken gelesen wird.
   Frame-Log führt die in jeder Queue fehlenden Events als
   `TOUCHLOST <Panel>/<Treiber>`. Der Control-Task verwirft aus demselben
   Grund seinen eigenen Vermerk eines STOP-Drucks bei einem Verlust im
-  Treiber: Er besitzt diesen Druck unabhängig von den Screens.
+  Treiber: Er besitzt diesen Druck unabhängig von den Seiten.
 - Jedes Bedienelement, das zwischen Druck und Release Zustand hält, bricht
   ab. MOTOR & ESC, SERVO und CAN BUS FAULT haben eine Geste, die auf einem
   Timer fertig wird, ein verlorenes Release schaltet dort also von selbst
@@ -150,7 +150,7 @@ Panel als Leitung ohne Flanken gelesen wird.
   offen und nimmt den nächsten frischen Druck an. HOME und STOP sind die eigene
   Geste des Routers, und er bricht sie selbst ab.
 - Bricht der Touch-Strom ab, während STOP gehalten wird, wird gestoppt. Der
-  Control-Task besitzt diesen Druck unabhängig von den Screens, und das
+  Control-Task besitzt diesen Druck unabhängig von den Seiten, und das
   Release, das den Prüfstand gestoppt hätte, kann genau das verlorene Event
   sein -- oder es kommt an und passt zu keinem der beiden Besitzer, weil die
   Render-Seite den Druck des Bands beim selben Verlust abbricht. Sonst würde
@@ -165,8 +165,8 @@ Panel als Leitung ohne Flanken gelesen wird.
   das der Bediener gemacht und der Prüfstand nie gesehen hat. Das
   Scharfschalten hat sein Kommando schon abgesetzt, wenn der Finger abhebt,
   ein halb abgebrochenes Scharfschalten kommandiert also nichts, und das ist
-  richtig so. Ein Abbruch verwirft außerdem ein Scharfschalten, das der
-  Screen bereits abgesetzt hat und die Anwendung noch nicht abgeholt hat --
+  richtig so. Ein Abbruch verwirft außerdem ein Scharfschalten, das die
+  Seite bereits abgesetzt hat und die Anwendung noch nicht abgeholt hat --
   ein Kommando wird im Frame nach dem absetzenden weitergereicht, und der
   Frame, der einen Verlust bemerkt, bricht vor diesem Weiterreichen ab. Ein
   Scharfschalten, das schon beim Control-Task liegt, trägt, wie oft der
@@ -183,9 +183,9 @@ Panel als Leitung ohne Flanken gelesen wird.
   fällt sofort ab, und der Coprozessor geht innerhalb von 150 ms in den
   sicheren Zustand, wie lang der Rückstau hinter dem Scharfschalten auch
   ist. Ein Frame, der
-  vor dem Veröffentlichen begann, bricht Screens ab, die den Prüfstand noch
+  vor dem Veröffentlichen begann, bricht Seiten ab, die den Prüfstand noch
   für entschärft halten, und die setzen kein Entschärfen ab; also muss der
-  Control-Task es tun. Nach der Bestätigung sehen die Screens einen Verlust
+  Control-Task es tun. Nach der Bestätigung sehen die Seiten einen Verlust
   gegen einen scharfen Prüfstand. Über einen Verlust hinweg schaltet also
   nichts scharf. Ein abgesetztes Entschärfen bleibt.
 - Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
@@ -232,7 +232,7 @@ Panel als Leitung ohne Flanken gelesen wird.
   bereits auf die Ruhelage gestellt und er rampt von dort, höchstens
   `slew_per_s * 500 / 1000` weit, bevor der Timeout ihn zurückholt. In beiden
   Fällen treibt er, und beendet wird das durch ein Entschärfen.
-- Die Einstellung `Ramp limit`, 5 bis 300 %/s, gilt für die Gas-Bank des
+- Die Einstellung `Rampengrenze`, 5 bis 300 %/s, gilt für die Gas-Bank des
   Panels. Diese Bank ist der modellierte Prüfstand: ihr geslewter Wert wird
   vom Telemetrie-Simulator gelesen und sonst von nichts, und nur solange der
   Link unten ist. Einem antwortenden Koprozessor wird stattdessen das rohe

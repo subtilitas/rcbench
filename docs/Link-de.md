@@ -74,10 +74,9 @@ umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
 
 Ein Koprozessor, der eine andere Protokoll-Major meldet als das Panel, gilt
-als abwesend: der Link bleibt unten, der Splash-Screen markiert den
+als abwesend: der Link bleibt unten, der Splash markiert den
 Koprozessor-Schritt als fehlgeschlagen neben der gemeldeten Version, das
-Panel protokolliert beide Majors und meldet `protocol mismatch -- will not
-arm`, und kein Write erreicht den Koprozessor. Seine Ausgänge bleiben aus,
+Panel protokolliert beide Majors und meldet `Protokoll passt nicht -- kein ARM`, und kein Write erreicht den Koprozessor. Seine Ausgänge bleiben aus,
 und das Panel läuft wie ohne angeschlossenen Koprozessor. Panel und
 Koprozessor auf verschiedenen Seiten eines Major-Sprungs werden deshalb
 zusammen geflasht.
@@ -174,7 +173,7 @@ MOTOR_POLES ist die Magnetzahl des geprüften Motors, gerade und zwischen 2 und
 elektrische Perioden und weiß nicht, woran er angeschraubt ist; das ist also die
 eine Zahl, die die Leitung tragen muss, damit der Coprozessor eine mechanische
 Drehzahl melden kann. Bei null meldet er keine Drehzahl statt einer aus einer
-Schätzung abgeleiteten. Das Panel sendet sie aus der Einstellung `Motor poles`,
+Schätzung abgeleiteten. Das Panel sendet sie aus der Einstellung `Motorpole`,
 sobald ein Coprozessor zu antworten beginnt, erneut bei jeder Änderung der
 Einstellung und im Frame, der scharfschaltet, ob eine Änderung offen ist oder
 nicht. Ein Schreibvorgang,

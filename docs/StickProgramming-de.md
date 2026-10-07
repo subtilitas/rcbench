@@ -274,7 +274,7 @@ Liste.
 | STOP | STOP, aus jeder Quelle, während des Laufs gezählt |
 | DISARMED | der Prüfstand wurde entschärft |
 | LINK VERLOREN | der Koprozessor antwortete irgendwann während des Laufs und hörte auf |
-| NETZTEIL AUS | der Ausgang ging aus: eine Auslösung, oder ein ON, das das Netzteil fallen ließ |
+| NETZTEIL AUS | der Ausgang ging aus: eine Abschaltung, oder ein ON, das das Netzteil fallen ließ |
 | NETZTEIL ANTWORTET NICHT | das Netzteil antwortet nicht mehr |
 | KEINE MESSWERTE | der Messwertzähler 1000 ms unverändert |
 | MESSRATE | 3 späte Messwerte hintereinander |

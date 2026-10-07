@@ -102,7 +102,7 @@ Power Mini V1), wenn SETUP ANSCHLÜSSE ihn freigibt, sonst am Netzteilmodell
 des Panels. Ein Lauf am Modell sagt das in seinem Bericht, und seine Zahlen
 sind simuliert.
 
-TEST STARTEN auf der TEST-Seite des SERVO-Screens startet ihn;
+TEST STARTEN auf der TEST-Seite von SERVO startet ihn;
 [Bildschirme](Screens-de.md#servo) beschreibt die Bedienung. Die Engine ist
 `shared/servo/servo_test.c`; die Konstanten unten stehen in `servo_test.h`.
 
@@ -224,8 +224,8 @@ nicht bekannt.
 Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und
 schreibt trotzdem den Bericht, als ABGEBROCHEN mit dem Grund markiert. Der
 Prüfstand bleibt scharf, außer das Ende war ein Disarm, STOP oder das
-Verlassen des Screens, die entschärfen. Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
-Lauf zurück, gleich welcher Screen oben ist. Das wartet, bis das OFF des
+Verlassen der Seite, die entschärfen. Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
+Lauf zurück, gleich welche Seite oben ist. Das wartet, bis das OFF des
 Laufs gesendet ist, ein danach genommener Messwert zeigt, dass das Netzteil selbst den Ausgang
 aus meldet,
 kein ON unterwegs ist und AUSGANG EIN weder auf SERVO noch auf SUPPLY
@@ -237,7 +237,7 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | `STOP` | STOP in der Leiste |
 | `Prüfstand DISARMED` | DISARM oder alles andere, was den Prüfstand entschärft hat |
 | `Link verloren` | der Link zum Koprozessor ging während des Laufs verloren |
-| `Seite SERVO verlassen` | ein anderer Screen wurde geöffnet |
+| `Seite SERVO verlassen` | eine andere Seite wurde geöffnet |
 | `vom Bediener gestoppt` | TEST BEENDEN, ein Finger auf der Skala, CENTRE, SWEEP, FREIGEBEN, ein Tippen auf einen Sollwert |
 | `Servo-Optionen geändert` | Typ, Frame Rate, Impulse, Trim, Weg, Reverse oder TEMPO geändert |
 | `Touch-Ereignisse verloren` | zwischen zwei Frames gingen Ereignisse verloren |
@@ -315,7 +315,7 @@ ein Heli-Typ oder eine Frame Rate über 60 Hz gilt.
 ### Nicht auf Hardware gelaufen
 
 Kein Lauf hat ein Servo oder einen PD mini betrieben. Die Host-Suite prüft die
-Engine gegen `servo_sim` und `supply_sim`, den SERVO-Screen, der sie führt,
+Engine gegen `servo_sim` und `supply_sim`, die Seite SERVO, die sie führt,
 und die CSV, vom Parser der Log-Ansicht zurückgelesen. Nicht gemessen: die
 wirkliche Rate der Messwerte über den Koprozessor, die Mittelung des PD mini,
 die Verzögerung des Befehls bis zum Pin, und ob der Strom eines echten Servos
