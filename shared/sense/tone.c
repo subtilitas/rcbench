@@ -54,7 +54,8 @@ bool tone_init(tone_t *d, const tone_cfg_t *c)
         || (uint64_t)c->tick_hz * c->glitch_ns < 1000000000u
         || c->window_us < 1000u || c->window_us > 100000u
         || (uint64_t)c->gap_us * c->f_min_hz < 1000000u
-        || c->min_periods == 0u || c->window_min_periods == 0u) {
+        || c->min_periods == 0u || c->window_min_periods == 0u
+        || c->split_pct > 100u) {
         return false;
     }
     d->c         = *c;
@@ -89,14 +90,17 @@ bool tone_init(tone_t *d, const tone_cfg_t *c)
     d->spacing = spacing;
     /*
      * Settings under which no signal can make a tone, refused rather than
-     * run deaf.  Two bursts need that spacing to be under the longest
+     * run deaf.  The tone and carrier ranges, as whole ticks, must not
+     * meet: a rise interval of per_min, the fastest tone unchopped, would
+     * read as carrier-rate at car_max or under.  Two bursts need that spacing to be under the longest
      * period in range (per_max) and under the silence that ends the run
      * (gap; at least per_max by the gap_us check above, so the weaker of
      * the two).  A window needs window_min_periods periods to end in its
      * win_ticks, each burst start at least the spacing after the one
      * before: (window_min_periods - 1) spacings under win_ticks.
      */
-    if (d->gap <= spacing || d->per_max <= spacing
+    if (d->per_min <= d->car_max
+        || d->gap <= spacing || d->per_max <= spacing
         || (uint64_t)(c->window_min_periods - 1u) * spacing
                >= d->win_ticks) {
         memset(d, 0, sizeof *d);
@@ -117,24 +121,46 @@ static float hz_of(const tone_t *d, uint32_t n, uint64_t ticks)
     return (float)d->c.tick_hz * (float)n / (float)ticks;
 }
 
-/* |a - b| * 100 * @p den > pct * ref: @p a lies more than pct / den
- * percent from @p b, without a division, so an odd pct halves exactly. */
-static bool off_by_more_frac(uint64_t a, uint64_t b, uint64_t ref,
-                             uint32_t pct, uint32_t den)
+/*
+ * Means are kept as a sum of ticks over a count and compared as fractions,
+ * never divided down to whole ticks: at a few ticks a period, a mean cut
+ * to a whole tick is off by tens of percent.  Sizes: a sum is at most a
+ * beep's length in ticks, a count at most its periods, split_pct at most
+ * 100; the products below stay under 2^63 for beeps of hours at 37.5 MHz.
+ */
+typedef struct {
+    uint64_t s;              /**< ticks                                   */
+    uint64_t n;              /**< periods; 0 for no mean                  */
+} ratio_t;
+
+static ratio_t ratio(uint64_t s, uint64_t n)
 {
-    const uint64_t diff = a > b ? a - b : b - a;
-    return diff * 100u * den > (uint64_t)pct * ref;
+    ratio_t r = { s, n };
+    return r;
 }
 
-/* |a - b| * 100 > pct * ref. */
-static bool off_by_more(uint64_t a, uint64_t b, uint64_t ref, uint32_t pct)
+/* x - y, scaled by both counts: x.s * y.n - y.s * x.n, as its size and
+ * whether x is the larger. */
+static uint64_t ratio_diff(ratio_t x, ratio_t y, bool *x_more)
 {
-    return off_by_more_frac(a, b, ref, pct, 1u);
+    const uint64_t a = x.s * y.n;
+    const uint64_t b = y.s * x.n;
+    *x_more = a > b;
+    return a > b ? a - b : b - a;
 }
 
-static uint64_t beep_mean(const tone_t *d)
+/* @p x lies more than pct / den percent from @p y, relative to @p y:
+ * |x - y| * 100 * den > pct * y, with both sides times x.n * y.n. */
+static bool off_by_more(ratio_t x, ratio_t y, uint32_t pct, uint32_t den)
 {
-    return d->b_n != 0u ? d->b_sum / d->b_n : 0u;
+    bool more = false;
+    const uint64_t diff = ratio_diff(x, y, &more);
+    return diff * 100u * den > (uint64_t)pct * y.s * x.n;
+}
+
+static ratio_t beep_mean(const tone_t *d)
+{
+    return ratio(d->b_sum, d->b_n);
 }
 
 /* The carrier period, ticks; 0 with no carrier seen.  The shortest rise
@@ -151,10 +177,10 @@ static uint64_t carrier(const tone_t *d)
     return d->car_low != 0u ? d->car_low + d->car_high : 0u;
 }
 
-/* A mean period inside the tone range. */
-static bool in_band(const tone_t *d, uint64_t mean)
+/* A mean period inside the tone range: per_min <= s / n <= per_max. */
+static bool in_band(const tone_t *d, ratio_t m)
 {
-    return mean >= d->per_min && mean <= d->per_max;
+    return m.n != 0u && m.s >= d->per_min * m.n && m.s <= d->per_max * m.n;
 }
 
 /* ---------------------------------------------------------------- windows */
@@ -166,7 +192,7 @@ static void window_finish(tone_t *d)
     w->periods = d->w_n;
     w->bursts  = d->w_bursts;
     w->present = d->w_n >= d->c.window_min_periods
-                 && in_band(d, d->w_sum / (d->w_n != 0u ? d->w_n : 1u));
+                 && in_band(d, ratio(d->w_sum, d->w_n));
     w->freq_hz = w->present ? hz_of(d, d->w_n, d->w_sum) : 0.0f;
     d->have_window = true;
     d->w_n = 0;
@@ -232,13 +258,14 @@ static void beep_open(tone_t *d, uint64_t start, uint8_t flags)
 /* The oldest @p n periods waiting join the beep under way: each is a
  * burst, and an in-range one near the beep's mean (or, before the beep
  * has one, near @p ref) is part of the mean. */
-static void commit(tone_t *d, uint32_t n, uint64_t ref)
+static void commit(tone_t *d, uint32_t n, ratio_t ref)
 {
     for (uint32_t i = 0; i < n; ++i) {
         const tone_pend_t *e = &d->pend[i];
         d->b_bursts++;
-        const uint64_t m = d->b_n != 0u ? beep_mean(d) : ref;
-        if (e->good && !off_by_more(e->p, m, m, TONE_OUTLIER_PCT)) {
+        const ratio_t m = d->b_n != 0u ? beep_mean(d) : ref;
+        if (e->good && m.n != 0u
+            && !off_by_more(ratio(e->p, 1u), m, TONE_OUTLIER_PCT, 1u)) {
             d->b_sum += e->p;
             d->b_n++;
         }
@@ -248,11 +275,11 @@ static void commit(tone_t *d, uint32_t n, uint64_t ref)
 }
 
 /* The block's pitch: the mean of its in-range periods within
- * TONE_OUTLIER_PCT of their median, and how many those are.  The median
+ * TONE_OUTLIER_PCT of their median, as a sum over a count.  The median
  * keeps one stray period -- a burst missed, a stuck line's rise -- out of
  * the mean; the mean of neighbours keeps a burst start that moves, as one
  * gated from a carrier running free does, from moving the pitch. */
-static uint64_t block_pitch(const tone_t *d, uint32_t *n)
+static ratio_t block_pitch(const tone_t *d)
 {
     uint64_t v[TONE_BLOCK];
     uint32_t k = 0;
@@ -265,49 +292,59 @@ static uint64_t block_pitch(const tone_t *d, uint32_t *n)
             v[j] = d->pend[i].p;
         }
     }
-    *n = 0;
     if (k == 0u) {
-        return 0u;
+        return ratio(0u, 0u);
     }
-    const uint64_t med = (v[(k - 1u) / 2u] + v[k / 2u]) / 2u;
-    uint64_t sum = 0;
+    /* The median as twice itself over 2, kept exact. */
+    const ratio_t med = ratio(v[(k - 1u) / 2u] + v[k / 2u], 2u);
+    ratio_t r = ratio(0u, 0u);
     for (uint32_t i = 0; i < k; ++i) {
-        if (!off_by_more(v[i], med, med, TONE_OUTLIER_PCT)) {
-            sum += v[i];
-            (*n)++;
+        if (!off_by_more(ratio(v[i], 1u), med, TONE_OUTLIER_PCT, 1u)) {
+            r.s += v[i];
+            r.n++;
         }
     }
     /* Two periods far apart have no majority: their median stands. */
-    return *n != 0u ? sum / *n : med;
+    return r.n != 0u ? r : med;
 }
 
 /* The block's periods that lie more than half of @p pct from @p m on the
  * side of @p bm. */
-static uint32_t on_side(const tone_t *d, uint64_t bm, uint64_t m,
-                        uint32_t pct)
+static uint32_t on_side(const tone_t *d, ratio_t bm, ratio_t m, uint32_t pct)
 {
+    bool block_more = false;
+    (void)ratio_diff(bm, m, &block_more);
     uint32_t n = 0;
     for (uint32_t i = 0; i < d->n_pend; ++i) {
         const tone_pend_t *e = &d->pend[i];
-        if (e->good && (e->p > m) == (bm > m)
-            && off_by_more_frac(e->p, m, m, pct, 2u)) {
+        bool more = false;
+        (void)ratio_diff(ratio(e->p, 1u), m, &more);
+        if (e->good && more == block_more
+            && off_by_more(ratio(e->p, 1u), m, pct, 2u)) {
             n++;
         }
     }
     return n;
 }
 
-/* The block's pitch @p bm (from @p n periods) lies more than @p pct from
- * the beep's mean @p m, and all but one of its periods lie more than half
- * that on the same side.  One stray period moves the block's pitch and is
- * alone on its side.  A carrier running free of the tone moves burst
- * starts, and with them single periods, by up to one carrier period; the
- * block's pitch, a mean of neighbours, by up to a quarter of that. */
-static bool moved(const tone_t *d, uint64_t bm, uint32_t n, uint64_t m,
-                  uint32_t pct)
+/* The block's pitch @p bm lies more than @p pct from the beep's mean @p m,
+ * and all but one of the block's periods lie more than half that on the
+ * same side.  One stray period moves the block's pitch and is alone on
+ * its side.  A carrier running free of the tone moves burst starts, and
+ * with them single periods, by up to one carrier period; the block's
+ * pitch, a mean of neighbours, by up to a quarter of that.  A block whose
+ * pitch rests on two periods far apart, their median, has not moved. */
+static bool moved(const tone_t *d, ratio_t bm, ratio_t m, uint32_t pct)
 {
-    return n + 1u >= TONE_BLOCK && off_by_more(bm, m, m, pct)
+    return bm.n + 1u >= TONE_BLOCK && off_by_more(bm, m, pct, 1u)
            && on_side(d, bm, m, pct) + 1u >= TONE_BLOCK;
+}
+
+/* |p - x|, scaled by x.n. */
+static uint64_t dist(uint64_t p, ratio_t x)
+{
+    bool more = false;
+    return ratio_diff(ratio(p, 1u), x, &more);
 }
 
 /* A full block: the oldest period joins the beep, or the pitch has moved.
@@ -319,24 +356,24 @@ static bool moved(const tone_t *d, uint64_t bm, uint32_t n, uint64_t m,
  * and every period after them would be an outlier to them. */
 static void block_check(tone_t *d)
 {
-    uint32_t n = 0;
-    const uint64_t bm = block_pitch(d, &n);
-    const uint64_t m = beep_mean(d);
+    const ratio_t bm = block_pitch(d);
+    const ratio_t m = beep_mean(d);
     const bool young = d->b_n < TONE_BLOCK;
     if (d->b_n == 0u
-        || (young && !moved(d, bm, n, m, TONE_OUTLIER_PCT))
+        || (young && !moved(d, bm, m, TONE_OUTLIER_PCT))
         || (!young && (d->c.split_pct == 0u
-                       || !moved(d, bm, n, m, d->c.split_pct)))) {
+                       || !moved(d, bm, m, d->c.split_pct)))) {
         commit(d, 1u, bm);
         return;
     }
-    /* The first period nearer the new pitch than the old.  One at or past
-     * the block's pitch is, so the search ends inside the block. */
+    /* The first period nearer the new pitch than the old:
+     * |p - bm| < |p - m|, both sides times bm.n * m.n.  One at or past the
+     * block's pitch is, so the search ends inside the block. */
     uint32_t at = 0;
     for (;; ++at) {
         const tone_pend_t *e = &d->pend[at];
-        const uint64_t to_new = e->p > bm ? e->p - bm : bm - e->p;
-        const uint64_t to_old = e->p > m ? e->p - m : m - e->p;
+        const uint64_t to_new = dist(e->p, bm) * m.n;
+        const uint64_t to_old = dist(e->p, m) * bm.n;
         if ((e->good && to_new < to_old) || at + 1u == d->n_pend) {
             break;
         }
@@ -383,9 +420,7 @@ static void run_end(tone_t *d)
     if (!d->in_run) {
         return;
     }
-    uint32_t n = 0;
-    const uint64_t ref = block_pitch(d, &n);
-    commit(d, d->n_pend, ref);
+    commit(d, d->n_pend, block_pitch(d));
     emit(d, d->last_edge);
     d->in_run = false;
     d->car_low = 0;
@@ -581,6 +616,7 @@ size_t tone_holdoff_edge(tone_holdoff_t *h, uint64_t t, bool level,
         if (h->hold == 0u) {
             out[0].t = t;
             out[0].level = false;
+            h->out_t = t;
             return 1u;
         }
         h->pending = true;
@@ -601,6 +637,7 @@ size_t tone_holdoff_edge(tone_holdoff_t *h, uint64_t t, bool level,
     }
     out[n].t = t;
     out[n].level = true;
+    h->out_t = t;
     return n + 1u;
 }
 
@@ -614,6 +651,7 @@ size_t tone_holdoff_advance(tone_holdoff_t *h, uint64_t now,
     h->pending = false;
     out[0].t = h->fall;
     out[0].level = false;
+    h->out_t = h->fall;
     return 1u;
 }
 
@@ -622,5 +660,9 @@ uint64_t tone_holdoff_horizon(const tone_holdoff_t *h, uint64_t now)
     if (h == NULL) {
         return now;
     }
-    return now > h->hold ? now - h->hold : 0u;
+    const uint64_t t = now > h->hold ? now - h->hold : 0u;
+    /* Never before an edge already handed out: the detector's time only
+     * moves forward.  A fall still held is later than every edge handed
+     * out, so this holds back nothing it is owed. */
+    return t > h->out_t ? t : h->out_t;
 }

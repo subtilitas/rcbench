@@ -142,7 +142,7 @@ typedef struct {
      *  f_min_hz, so a tone's own off time never does. */
     uint32_t gap_us;
     /** TONE_BLOCK periods this far from the beep's mean, in percent, start
-     *  a new beep; 0 splits only on silence. */
+     *  a new beep; 0 splits only on silence; at most 100. */
     uint32_t split_pct;
     uint32_t min_periods;    /**< in-range periods a beep needs, >= 1     */
     uint32_t window_min_periods; /**< in-range periods a window needs to
@@ -257,11 +257,13 @@ void tone_cfg_defaults(tone_cfg_t *c, uint32_t tick_hz);
  *  tick_hz (a period under one tick), hold_ns above 100000, glitch_ns
  *  outside 1 to 10000 or under one tick, gap_us under the period of
  *  f_min_hz, a window outside 1000 to 100000 us, f_min_hz under 50 Hz, a
- *  minimum of 0.  Also refused, as settings under which no signal makes a
+ *  minimum of 0, split_pct above 100.  Also refused, as settings under which no signal makes a
  *  tone, in whole ticks: the period of f_min_hz, or the gap, at most the
  *  glitch or at most twice the hold-off (no low could part two bursts
  *  without being a glitch, being too short to start one, or ending the
- *  run); window_min_periods - 1 of the shortest burst-start spacings
+ *  run); the period of f_max_hz rounded down at most the period of
+ *  carrier_min_hz rounded up, where the tone and carrier ranges meet in
+ *  whole ticks; window_min_periods - 1 of the shortest burst-start spacings
  *  (tone_t's spacing) filling a window. */
 bool tone_init(tone_t *d, const tone_cfg_t *c);
 
@@ -313,15 +315,18 @@ uint64_t tone_ticks_us(const tone_t *d, uint64_t ticks);
  * quarter of the longest tone period in range, are far longer.
  *
  * A fall is reported up to the hold-off late, so the detector is advanced
- * only to tone_holdoff_horizon(), before which every edge is out: the
- * PIO's own drain knows nothing of a fall still being held, and so uses
- * the same now less the hold-off.
+ * only to tone_holdoff_horizon(), before which every edge is out: now
+ * less the hold-off, or the latest edge handed out if that is later.  The
+ * sequence for each pass: every edge up to now through
+ * tone_holdoff_edge(), then tone_holdoff_advance(now), each output to
+ * tone_edge(), then tone_advance() to the horizon.
  */
 typedef struct {
     uint64_t hold;           /**< ticks; 0 passes every edge              */
     bool     line;           /**< the line's level after the last edge    */
     bool     pending;        /**< a fall is being held                    */
     uint64_t fall;           /**< when it fell                            */
+    uint64_t out_t;          /**< the latest edge handed out              */
 } tone_holdoff_t;
 
 /** @p hold_ns of a clock of @p tick_hz, rounded up to whole ticks; the
@@ -338,7 +343,10 @@ size_t tone_holdoff_edge(tone_holdoff_t *h, uint64_t t, bool level,
 size_t tone_holdoff_advance(tone_holdoff_t *h, uint64_t now,
                             tone_edge_t out[1]);
 
-/** @p now less the hold-off, at least 0: every edge before it is out. */
+/** @p now less the hold-off, at least 0, and never before the latest edge
+ *  handed out: every edge before it is out, and it never runs backward,
+ *  so advancing the detector to it after feeding the edges out keeps the
+ *  detector's time in order. */
 uint64_t tone_holdoff_horizon(const tone_holdoff_t *h, uint64_t now);
 
 #ifdef __cplusplus
