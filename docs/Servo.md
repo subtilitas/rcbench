@@ -110,8 +110,8 @@ Each step runs these phases:
 | --- | --- | --- |
 | SET | at PULSE CENTRE; the voltage asked; the first step switches the output on | the supply reads the set point back within 0.05 V, at most 3000 ms |
 | SETTLE | at PULSE CENTRE | after the TEST page's SETTLE |
-| IDLE | at PULSE CENTRE: the idle current is the mean of the readings | after 1000 ms |
-| MOVE | a step command to one end, with no slew: SPEED does not apply | at the arrival, or after 3000 ms (late) |
+| IDLE | at PULSE CENTRE: the idle current is the mean of the readings, the idle noise their standard deviation | after 1000 ms |
+| MOVE | a step command to one end, with no slew: SPEED does not apply | at the arrival, or after 3000 ms plus the meter's lag (3300 ms on the PD mini): late with movement seen, unseen without |
 | HOLD | at that end: the holding current is the mean of the readings | after DWELL, at least 600 ms |
 
 The two ends are SWEEP's: RANGE of the travel either side of PULSE CENTRE,
@@ -125,17 +125,24 @@ high end, are not counted: they measure each end's holding level. The counted mo
 end to end, MOVEMENTS of them or for TEST TIME, as LENGTH BY says, at most
 1000 a step.
 
-- **Movement:** a reading more than 0.10 A (`SERVO_TEST_MOVE_A`) away from
-  the level before the command: above it, or below it when the servo leaves
-  an end it was pushing on.
-- **Arrival:** after movement, a reading more than 0.10 A above the
+- **Threshold:** per step, the larger of 0.020 A (`SERVO_TEST_MOVE_MIN_A`)
+  and 3 (`SERVO_TEST_NOISE_K`) times the idle noise, the standard deviation
+  of the IDLE readings. The report gives it in the `Thresh` column. A
+  servo whose readings at rest spread by 0.010 A has a threshold of
+  0.030 A.
+- **Movement:** a reading more than the threshold away from the level
+  before the command: above it, or below it when the servo leaves an end
+  it was pushing on.
+- **Arrival:** after movement, a reading more than the threshold above the
   destination end's holding level, then the first reading back within
-  0.05 A (`SERVO_TEST_BAND_A`) of it, on either side. A reading that falls
-  more than 0.05 A below the level instead, as after a burst of current
-  while the servo accelerates, hands the move to the rule below. The two
-  ends' holding levels can
-  differ by more than 0.05 A, so a reading still at the start end's level,
-  or a rising current passing the destination's level, is not an arrival.
+  0.05 A (`SERVO_TEST_BAND_A`) of it, on either side. A reading above the
+  level by the threshold is never an arrival, so the 0.05 A band times no
+  move early where the threshold is smaller. A reading that falls more
+  than 0.05 A below the level instead, as after a burst of current while
+  the servo accelerates, hands the move to the rule below. The two ends'
+  holding levels can differ by more than 0.05 A, so a reading still at the
+  start end's level, or a rising current passing the destination's level,
+  is not an arrival.
 - **Arrival at an end held harder than the servo moves**, an end pushing on
   a stop: that level is never passed, so the move has arrived at the first
   of two readings in a row, after movement, within 0.05 A of the level and
@@ -143,10 +150,35 @@ end to end, MOVEMENTS of them or for TEST TIME, as LENGTH BY says, at most
   less than 0.05 A a reading can be taken for an arrival there.
 - **Not told apart:** a servo whose moving current lies within 0.05 A of the
   destination's holding current cannot be told from one already there; a
-  move to that end is timed at its first two readings.
+  move to that end is timed at its first two readings after movement.
+- **Window:** a move has 3000 ms (`SERVO_TEST_TRAVEL_TIMEOUT_MS`) plus
+  the meter's lag to arrive: 3300 ms on the PD mini, whose readings show an
+  arrival about 300 ms after it happens. The lag is added rather than the
+  window's last 300 ms left unjudged: a servo arriving at 2900 ms shows it
+  at about 3200 ms and is timed, and a move that never arrives is still
+  late, 300 ms later.
+- **Unseen:** a counted move with no reading past the threshold within
+  the window. The current cannot tell it from a servo standing still: it is
+  neither timed nor late, and the report counts it in the `Unseen` column.
+  A step none of whose moves showed movement reads `NOT MEASURABLE`.
 - **Travel time:** from the command to the arrival's reading.
 - **Moving current:** the mean of the readings between the command and the
   arrival; the peak is the highest of them.
+
+Why the band stays 0.05 A while the threshold scales: replays of the two
+bench runs below with the band at 0.05 A and with the band equal to the
+threshold time the same moves to the same millisecond, because a reading
+above the level by the threshold is never an arrival. The threshold is what
+had to scale. 0.13.0 took movement to be 0.10 A, and the MG90S moves at 0.04
+to 0.077 A over a 0.001 A hold: no move was seen, each ran out at 3000 ms and
+was counted late, and the run read FAIL.
+
+**Limitation: the move to the centre can reach IDLE.** With SETTLE at
+500 ms the IDLE readings can still carry the end of the step's move to the
+centre: 0.025 A falling to 0.003 A on the 1102HB at 5.00 V, from the PD
+mini's 0.3 s lag and the move itself. That raises the idle mean and the
+noise, and the threshold with it: 0.026 A there instead of 0.020 A. A
+longer SETTLE avoids it.
 
 **Brown-out.** After the steps, with BROWN-OUT on: from 5.00 V
 (`SERVO_TEST_BROWNOUT_START_V`), or the voltage cap in force if lower, down
@@ -158,17 +190,23 @@ for the PD mini its input voltage less 0.5 V of headroom. A floor off the
 3.3 V, the walk goes 5.0, 4.8 ... 3.4, 3.3 V. Each voltage runs
 SET, SETTLE and IDLE, then two moves (`SERVO_TEST_BROWNOUT_MOVES`), centre to
 the high end and on to the low end, each held 600 ms. A voltage shows **no
-movement** when no reading of either move lies more than 0.10 A from the level
-before its command. The walk stops at the first voltage with no movement; the
-report gives that voltage and the lowest one the servo moved at.
+movement** when no reading of either move lies more than that voltage's
+threshold, from its own IDLE readings, from the level before its command.
+The walk stops at the first voltage with no movement; the report gives that
+voltage, the lowest one the servo moved at, and the threshold at the last
+voltage run. No movement at the first voltage, 5.00 V, reads `not
+measurable`: a servo that never showed movement may move under the
+threshold.
 
 | Constant | Value | What it is |
 | --- | ---: | --- |
-| `SERVO_TEST_MOVE_A` | 0.10 A | movement; above the destination's level, not there yet |
+| `SERVO_TEST_MOVE_MIN_A` | 0.020 A | the smallest threshold: movement; above the destination's level, not there yet |
+| `SERVO_TEST_NOISE_K` | 3 | the threshold in idle noises, where that is larger |
 | `SERVO_TEST_BAND_A` | 0.05 A | arrived at the holding level |
+| `SERVO_TEST_PDMINI_LAG_MS` | 300 ms | the PD mini's lag, as the report states it |
 | `SERVO_TEST_IDLE_MS` | 1000 ms | the idle measurement |
 | `SERVO_TEST_HOLD_MIN_MS` | 600 ms | the shortest hold measured |
-| `SERVO_TEST_TRAVEL_TIMEOUT_MS` | 3000 ms | a move that has not arrived is late |
+| `SERVO_TEST_TRAVEL_TIMEOUT_MS` | 3000 ms | a move that has not arrived is late, after this plus the meter's lag |
 | `SERVO_TEST_SET_TOL_V` | 0.05 V | a set point read back |
 | `SERVO_TEST_SET_TIMEOUT_MS` | 3000 ms | for the set point, and for the output to come on |
 | `SERVO_TEST_STALE_MS` | 1500 ms | no new reading ends the run |
@@ -201,6 +239,21 @@ late by up to one interval. It also holds the command's way from the panel
 to the pin: render loop, control task, CAN (Controller Area Network) link and
 the next PWM (pulse-width modulation) frame. That delay is not measured. How
 the PD mini averages a reading is not known.
+
+**The PD mini's readings lag and repeat.** Two runs on the bench with the PD
+mini on 0.13.0, an MG90S and a 1102HB, read it every 102 to 106 ms. The
+median time from a command to the first reading 0.02 A above the level
+before it is 0.31 s, and a current often repeats over several readings.
+Every travel time read off the PD mini is therefore an upper bound: on the
+MG90S 771 to 989 ms for a servo rated about 0.1 s per 60 deg. The report
+says so on its `Lag`, `Repeats` and `Travel times` lines, and TRAVEL TIME
+cannot fail a run on the PD mini: its line gives the longest travel time and
+reads `upper bound, not checked against the limit`. What reads the current
+is described to the run (`servo_test_meter_t`: a name, the lag, whether
+readings repeat, whether travel times are an upper bound), so a faster
+current sensor sets its own and has TRAVEL TIME checked. A run on the
+panel's model states no lag of its own and checks TRAVEL TIME as the PD mini
+would: not at all.
 
 ### What ends a run
 
@@ -238,14 +291,29 @@ ends it before the step above it.
 
 ### Verdict
 
-PASS unless one of these holds, over the voltage steps (the brown-out walk is
-reported, not judged):
+Over the voltage steps (the brown-out walk is reported, not judged), FAIL
+when one of these holds:
 
 - the highest idle current is above IDLE CURRENT;
 - the highest holding current is above HOLD CURRENT;
-- the longest travel time is above TRAVEL TIME;
+- the longest travel time is above TRAVEL TIME, where the current's meter
+  times travel (not the PD mini);
 - a reading after SETTLE is above STALL AT;
-- a counted move was late, which a servo that did not move always is.
+- a counted move was late: movement seen, no arrival within the window,
+  3000 ms plus the meter's lag.
+
+Otherwise NOT MEASURABLE when a counted move was unseen, or when the
+brown-out walk saw no movement at its first voltage, and PASS when neither
+holds. A run of the brown-out walk alone that sees nothing reads NOT
+MEASURABLE, not PASS. Its `Result` line then reads `no movement seen at
+5.00 V, the brown-out walk's first voltage`, and `Brown-out start` under
+the limits gives the same voltage with NOT MEASURABLE. NOT MEASURABLE says the current could not show every move: a servo
+moving under the threshold and one standing still read alike. The report's
+`Result` line gives how many of the counted moves showed no movement, and
+`Moves seen` how many were unseen. A servo that does not move reads NOT
+MEASURABLE, not FAIL. With no move arrived there is no longest travel time,
+and the `Travel time` line reads `longest --` and `not measured, no move
+arrived`, on any meter.
 
 A LIMITS value of 0 is not checked; STALL AT always is.
 
@@ -280,21 +348,25 @@ writes:
 | `mode` | | `CV`, `CC` or `OFF` |
 | `travel (ms)` | ms | on an arrival's row: that move's travel time |
 
-The report, from a run against the servo and supply models in the host
-suite:
+The report from the host suite's replay of an MG90S micro servo's run on
+the bench with the PD mini (`test/host/fixtures/servo-mg90s.csv`), with
+TRAVEL TIME set to 800 ms:
 
 ```
 RCBENCH SERVO TEST REPORT
 Result:         PASS
-Device:         DS3218 #2
+Device:         MG90S
 Firmware:       rcbench 0.13.1
 Log:            the .CSV with this file's number, one row per supply reading
 Supply:         PD mini
-Readings:       10.0 /s taken by the supply, 10.0 /s reached the test
+Readings:       9.1 /s taken by the supply, 9.1 /s reached the test
 Skipped:        0 readings the supply took never reached the test
-Resolution:     one reading every 100 ms: a travel time is late by up to that
-Duration:       46.5 s
-Log rows:       466 written, 0 lost to a full queue
+Resolution:     one reading every 109 ms: a travel time is late by up to that
+Lag:            about 300 ms from a change of current to the reading that shows it
+Repeats:        a reading can repeat the last value for several readings
+Travel times:   an upper bound, not checked against the limit
+Duration:       184.0 s
+Log rows:       1684 written, 0 lost to a full queue
 
 SETTINGS IN FORCE
 Type:           STANDARD PWM, centre 1500 us, 1000-2000 us, trim +0 us, reverse OFF
@@ -303,28 +375,33 @@ Can destroy:    none in force
 HV servo:       OFF, no step above 6.0 V
 Ends:           1100 us and 1900 us (RANGE 80 % of TRAVEL +/-90 deg)
 Steps:          4.80 V 6.00 V
-Brown-out:      from 5.00 V down in 0.20 V steps to 3.30 V
-Current limit:  3.00 A
+Brown-out:      from 5.00 V down in 0.20 V steps to 3.00 V
+Current limit:  2.00 A
 Timing:         settle 500 ms, idle 1000 ms, dwell 200 ms (hold measured 600 ms)
-Length:         4 movements a step
-Limits:         idle 0.30 A, holding 0.50 A, travel 800 ms, stall 2.00 A
+Length:         60 s a step
+Limits:         idle OFF, holding OFF, travel 800 ms, stall 2.00 A
 
 RESULTS PER STEP (currents in A, times in ms)
-Set V  Meas V  Idle   Moving Peak   Hold lo Hold hi Travel Longest Moves Late
- 4.80    4.78  0.123  0.949  0.958  0.119   0.121   700    700         4    0
- 6.00    5.98  0.122  0.954  0.960  0.122   0.120   700    700         4    0
-Late: moves not back at the holding level within 3000 ms.
+Set V  Meas V  Idle   Thresh Moving Peak   Hold lo Hold hi Travel Longest Moves Late Unseen
+ 4.80    4.80  0.004  0.020  0.037  0.065  0.001   0.001   861    989        41    0      0
+ 6.00    6.00  0.001  0.020  0.040  0.077  0.001   0.001   892    978        41    0      0
+Thresh: movement is a reading max(0.020 A, 3 x idle noise) from the level before the command.
+Arrival: after a reading Thresh above the end's holding level, the first back within 0.05 A of it.
+Late: moves seen moving that did not arrive within 3300 ms.
+Unseen: moves with no movement seen; not timed, not counted late.
 
 BROWN-OUT
-Moved at 4.20 V; no movement at 4.00 V.
-No movement: no reading of a move 0.10 A away from the level before it.
+Moved at every step down to 3.00 V; lower not tested.
+No movement: no reading of a move more than Thresh, 0.023 A at 3.00 V, from the level before it.
 
 AGAINST THE LIMITS PAGE
-Idle current     highest 0.123 A, limit 0.30 A: PASS
-Holding current  highest 0.122 A, limit 0.50 A: PASS
-Travel time      longest 700 ms, limit 800 ms: PASS
-Stall threshold  highest 0.960 A, STALL AT 2.00 A: PASS
+Idle current     highest 0.004 A, limit OFF: not checked
+Holding current  highest 0.001 A, limit OFF: not checked
+Travel time      longest 989 ms, limit 800 ms: upper bound, not checked against the limit
+Stall threshold  highest 0.077 A, STALL AT 2.00 A: PASS
 Moves arrived    0 late: PASS
+Moves seen       0 unseen: PASS
+Brown-out start  movement seen at 5.00 V: PASS
 
 NOT MEASURED
 Position: nothing measures the horn; every result is the supply's current.
@@ -332,8 +409,26 @@ Current peaks between two readings: the supply reports one value a reading.
 The command's way from the panel to the pin, inside every travel time.
 ```
 
-The modelled servo travels 800 us in 667 ms; the report's 700 ms is that,
-late by the 100 ms between readings. An aborted run reads `Result:
+Every move is seen at the 0.020 A threshold and arrives; the brown-out
+walk replays the 5.00 V response at every voltage, so it says nothing about
+this servo below 5.00 V. The same replay of a 1102HB digital servo, which
+holds 0.015 to 0.029 A and peaks at 0.039 to 0.044 A, reads:
+
+```
+Result:         NOT MEASURABLE - 25 of 46 counted moves showed no movement in the current
+...
+Set V  Meas V  Idle   Thresh Moving Peak   Hold lo Hold hi Travel Longest Moves Late Unseen
+ 4.80    4.80  0.015  0.020  0.025  0.037  0.028   0.015   687    772        22    0     13
+ 6.00    5.99  0.003  0.020  0.027  0.042  0.029   0.017   636    688        24    0     12
+...
+No movement seen at 5.00 V, the first step: not measurable.
+```
+
+Its moves to the high end leave the low end's 0.028 A and never pass it by
+0.020 A: all of them are unseen. Its moves to the low end are seen and
+arrive. On 0.13.0 the same servo read FAIL with all 34 counted moves late.
+
+An aborted run reads `Result:
 ABORTED - <reason>`, and a step it cut short is marked `(cut short)`; one it
 never reached reads `not run`. `Can destroy` names the red tag when a heli
 type or a frame rate above 60 Hz is in force. Every word of the report is in
@@ -344,12 +439,17 @@ English in every language.
 
 ### Not run on hardware
 
-No servo test has run against a servo or a PD mini. What the host suite holds it to is
-the engine against `servo_sim` and `supply_sim`, the SERVO screen driving it,
-and the CSV read back by the log viewer's parser. Not measured: the readings'
-real rate through the coprocessor, the PD mini's averaging, the command's
-delay to the pin, and whether a real servo's current falls back to its
-holding level within 0.05 A.
+Three runs of 0.13.0 on the bench with the PD mini, from a tester, are the
+only hardware runs: an MG90S micro servo, a 1102HB digital and an MS24
+digital. The MS24, moving at 0.16 to 0.18 A, passed. The MG90S and the
+1102HB read FAIL, every move late, because 0.13.0 took movement to be
+0.10 A; both servos moved. The host suite replays the MG90S's and the
+1102HB's CSVs (`test/host/fixtures/`, trimmed) against the engine, and an
+MS24-like case, the MG90S's currents times 3. The threshold and the
+NOT MEASURABLE verdict have not run on hardware. Beyond that the host suite
+holds the engine to `servo_sim` and `supply_sim`, the SERVO screen driving
+it, and the CSV read back by the log viewer's parser. Not measured: the PD
+mini's averaging, and the command's delay to the pin.
 
 ## Sweep and SPEED
 
