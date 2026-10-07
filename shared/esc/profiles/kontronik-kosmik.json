@@ -166,6 +166,22 @@
   ],
   "automatable": "assisted",
   "automatable_note": "The ESC's own button (marked PRESS on the ESC (on shrink-tube versions on the back near the sensor slot)) must be pressed after the power-up tones. The bench has no actuator for it.",
+  "manual": [
+    {
+      "when": "before_menu",
+      "action": "Press the button marked PRESS after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).",
+      "action_de": "Taster mit der Aufschrift PRESS nach den Zellentönen drücken (Schrumpfschlauch: hinten, nahe dem Sensoranschluss).",
+      "starts_menu": true,
+      "source": "Kontronik_KOSMIK_HV_HV-I_2025.pdf p.8 (DE), p.20 (EN)"
+    },
+    {
+      "when": "before_power_off",
+      "action": "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.",
+      "action_de": "Nicht berühren: warten, bis der ESC seine Modusbestätigung beendet hat (Töne, LED), dann ERLEDIGT tippen.",
+      "locks": true,
+      "source": "Kontronik_KOSMIK_HV_HV-I_2025.pdf p.8-11 (DE), p.20-23 (EN)"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -384,6 +400,7 @@
     "Kontronik_KOSMIK_Mode10_guide.pdf (software V4.5 supplement) gives mode 10 as 5 to 8 V in 0.2 V steps. Kontronik_KOSMIK_HV_HV-I_2025.pdf repeats this and adds an HV-I+ maximum of 12.2 V.",
     "The mode 10 guide numbers the section 7.6 and the 2025 manual numbers it 7.7.",
     "The 2025 manual states modes 1 to 6 can only be set by stick programming, not by the programming unit.",
-    "The mode 10 guide English heading says 'BEC Current' while the text describes the BEC voltage."
+    "The mode 10 guide English heading says 'BEC Current' while the text describes the BEC voltage.",
+    "The manual asks for the power to stay on until the ESC has confirmed the mode: a supply off before that is taken as programming broken off and locks the ESC, shown as 10 LED flashes (Kontronik_KOSMIK_HV_HV-I_2025.pdf p.8-11 (DE), p.20-23 (EN)). The step before_power_off holds the run powered until the operator taps DONE."
   ]
 }

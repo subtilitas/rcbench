@@ -48,11 +48,64 @@ static slot_t *over_find(const char *id)
     return NULL;
 }
 
+bool esc_brand_same(const char *a, const char *b)
+{
+    if (a == NULL || b == NULL) {
+        return a == b;
+    }
+    for (;; ++a, ++b) {
+        int x = (unsigned char)*a;
+        int y = (unsigned char)*b;
+        x -= (x >= 'a' && x <= 'z') ? 32 : 0;
+        y -= (y >= 'a' && y <= 'z') ? 32 : 0;
+        if (x != y) {
+            return false;
+        }
+        if (x == 0) {
+            return true;
+        }
+    }
+}
+
+/* The models @p p's maker would list with @p p in place of the profile of
+ * its id. */
+static size_t maker_models_with(const esc_profile_t *p)
+{
+    size_t n = p->model_count;
+    const size_t total = esc_profiles_count();
+    for (size_t i = 0; i < total; ++i) {
+        const esc_profile_t *q = esc_profiles_at(i);
+        if (q != NULL && strcmp(q->id, p->id) != 0
+            && esc_brand_same(q->brand, p->brand)) {
+            n += q->model_count;
+        }
+    }
+    return n;
+}
+
+static bool refuse(void *block, const char **why, const char *text)
+{
+    free(block);
+    if (why != NULL) {
+        *why = text;
+    }
+    return false;
+}
+
 bool esc_profiles_override(const esc_profile_t *p, void *block)
 {
+    return esc_profiles_override_why(p, block, NULL);
+}
+
+bool esc_profiles_override_why(const esc_profile_t *p, void *block,
+                               const char **why)
+{
     if (p == NULL || p->id == NULL) {
-        free(block);
-        return false;
+        return refuse(block, why, "no profile");
+    }
+    if (maker_models_with(p) > ESC_MAKER_MODELS_MAX) {
+        return refuse(block, why, "its maker would list more than 512 "
+                      "models");
     }
     slot_t *s = over_find(p->id);
     if (s != NULL) {
@@ -61,8 +114,7 @@ bool esc_profiles_override(const esc_profile_t *p, void *block)
     } else if (s_over_n < ESC_PROFILE_MAX_OVERRIDES) {
         s = &s_over[s_over_n++];
     } else {
-        free(block);
-        return false;
+        return refuse(block, why, "more than 32 on the card");
     }
     s->p = *p;
     s->block = block;
@@ -232,4 +284,49 @@ bool esc_profile_matches(const esc_profile_t *p, const char *pattern)
         }
     }
     return false;
+}
+
+bool esc_item_applies(const esc_profile_t *p, unsigned item, int model)
+{
+    if (p == NULL || item >= p->item_count) {
+        return false;
+    }
+    const esc_item_t *it = &p->items[item];
+    if (it->applies_count == 0u || it->applies_to == NULL) {
+        return true;
+    }
+    if (model < 0 || (unsigned)model >= p->model_count) {
+        return false;
+    }
+    const char *name = p->models[model].name;
+    for (unsigned i = 0; i < it->applies_count; ++i) {
+        if (name != NULL && it->applies_to[i] != NULL
+            && strcmp(it->applies_to[i], name) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool esc_model_matches(const esc_profile_t *p, unsigned model,
+                       const char *pattern)
+{
+    if (p == NULL || model >= p->model_count) {
+        return false;
+    }
+    const char *brand = (p->brand != NULL) ? p->brand : "";
+    const char *name = p->models[model].name;
+    return match_joined(brand, (p->family != NULL) ? p->family : "", pattern)
+           || (name != NULL && match_joined(brand, name, pattern));
+}
+
+unsigned esc_profile_manual_count(const esc_profile_t *p,
+                                  esc_manual_when_t when)
+{
+    unsigned n = 0u;
+    for (unsigned i = 0; p != NULL && p->manual != NULL
+                         && i < p->manual_count; ++i) {
+        n += (p->manual[i].when == when) ? 1u : 0u;
+    }
+    return n;
 }

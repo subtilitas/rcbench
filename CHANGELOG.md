@@ -27,6 +27,106 @@ sweep starts over from the curve's beginning, and the alert band says so.
   move alike, as ramps at SPEED's rate. It follows the settings, before
   SWEEP is pressed and while a sweep runs. With the TEST page's defaults
   (sine, 0.5 Hz, RANGE 80 %) and TRAVEL +/-90 deg it clears at SPEED 63 %.
+- **Manual steps in ESC profiles.** A profile lists in `manual` what a
+  person does at the ESC besides the throttle and the power -- a jumper
+  fitted before the power-up and pulled after the entry tones, a button
+  pressed -- and when: `before_power`, `at_power_up`, `before_menu`,
+  `during_menu`, `before_power_off`, `after_programming`. 24 profiles
+  carry them: the 22
+  Kontronik families, `turnigy-aquastar` and
+  `greatplanes-electrifly-c-series`. The generator and the card reader take
+  the same files, at most 4 steps of at most 120 bytes each.
+- **MANUAL INTERVENTION REQUIRED.** A profile with manual steps shows a red
+  button in the header of its item list, and a red MANUAL tag on its row in
+  the list. The button opens the steps over the whole screen; they open by
+  themselves the first time the profile is opened after a start. A row
+  that does not run but has steps opens them too.
+- **The run asks for each step.** The warning lists the steps due before
+  the power-up. A run stops before a power-up for an `at_power_up` step and
+  for `before_power` steps from the second power-up on, and after the entry
+  for a `before_menu` step, powered with the stick at the value's power-up
+  position; DONE goes on, ABORT and STOP end it, and no DONE within 60 s
+  ends it with NOT CONFIRMED, red light lit. Steps before the power-up that
+  do not fit the warning whole are counted there, and HOLD TO RUN counts
+  only once ALL STEPS has shown them. The result lists the
+  `after_programming` steps in two lines, or counts them where they need
+  more; when a run ends they open by themselves over the result, and
+  MANUAL INTERVENTION REQUIRED in the result's header opens them again.
+- **A value's own power-up position.** `values[].entry_throttle` names
+  the stick position the manual programs a value from where it is not the
+  entry's. A run powers the ESC up there for that value, with the stick
+  moved only while the supply reads off: the Kontronik car modes start
+  from the middle, the neutral they teach. A one-stage menu uses each
+  value's position at its own power-up; a two-stage menu whose changes need
+  different positions is refused. The warning and the run show POWER-UP AT
+  when the position is not MIN.
+- **A value's own entry time.** `values[].entry_hold_ms` gives the wait
+  from power-on to the menu where the manual names one for that value:
+  Kontronik SUN PLUS modes 4 to 6 wait 5 s, the others 2 s, and the button
+  is asked for at that time. The entry also lasts at least the longest
+  `at_power_up` hold.
+- **Moves after a selection.** `values[].after_select` lists the stick
+  moves a value asks for after its select move: PIX mode 2 and the
+  Kontronik car modes go to the brake after full throttle. A run makes each
+  STORE after the one before, then switches the supply off; the simulated
+  ESC stores nothing without them. A two-stage profile takes none.
+- **Makers, then models.** ESC STICK lists the makers, alphabetical, each
+  with how many of its models run and a MANUAL tag where one has manual
+  steps. A maker opens its models, one row a model by current, voltage and
+  name, with its family and its run state; a model opens its family's
+  profile, named with the model, and the supply takes the model's own cell
+  count. The search filters both levels and is kept between them; card
+  profiles join their maker, at most 512 models a maker. The count is on
+  the line under the rows. The steps, the page, RUN and the warning judge
+  the model tapped, at its own voltage.
+- **The menu-starting step is listened through.**
+  `manual[].starts_menu` marks the step whose action starts the series:
+  pulling the jumper or pressing the button starts the Kontronik mode
+  series at once, while the operator's hand is at the ESC. The run counts
+  beeps from the moment it asks for that step; the menu heard in order, or
+  DONE, takes it as done, and SILENCE and TIMEOUT run from then. Every
+  other step waits for DONE. One a profile, only on `before_menu`, none
+  after it, and only where the menu rests at the power-up position, in the
+  generator and the card reader alike. 16 Kontronik profiles mark their
+  pull or press.
+- **No step at an ESC that may be powered.** RUN is refused while the
+  supply does not read off: a reading no older than 1000 ms with the
+  supply's own state off and the current at or under 20 mA for 200 ms.
+  The warning shows its before-power steps and counts HOLD TO RUN only
+  while the supply reads off. The run asks the supply off at its start,
+  keeps the stick at MIN, and moves it, asks for a step at an unpowered
+  ESC or powers anything only once its own readings say off (else SUPPLY
+  STAYS ON); a reading with the output on or the current up after that
+  ends the run at once, and readings that stop end it with NO READINGS.
+  The result says not to touch the ESC while the supply does not read
+  off.
+- **The supply stays on until the ESC has confirmed.** A
+  `before_power_off` step holds the run after the store's last move, the
+  ESC powered and the stick where the store left it, until DONE; the
+  prompt says not to touch the ESC. Every Kontronik profile that runs
+  carries one: the ESC repeats the stored mode as tones before the manual
+  disconnects it. No DONE within 60 s ends the run with NOT CONFIRMED; that
+  end, and any other from the selection of the value on, says on the
+  result that the mode may not be stored and marks the change UNSURE; so
+  does an end before the last move that stores a value. `manual[].locks` marks the step where the ESC
+  locks itself instead (8 to 10 LED flashes): the KOBY, JIVE Pro, KOLIBRI,
+  KONTROL-X / KOLIBRI-X and KOSMIK profiles, where the result says the ESC
+  may be locked.
+- **Manual steps in German.** A step carries its German in `action_de`
+  (1-120 bytes of UTF-8), shown when the interface is German, with the
+  English as the fallback. All 24 profiles' steps have it.
+- **The ESC's ratings hold the stick run's set points.** VOLTAGE, or the
+  cell count's voltage, is refused over the model's `v_max_mv` and under
+  its `v_min_mv`, and CURRENT LIMIT over its `current_a`; the row, the
+  page and RUN say which, with both figures. A model that states no
+  `v_max_mv` runs with a warning on its row and beside RUN: at VOLTAGE set
+  by hand, or at the family's lowest cell count where it states none of
+  its own. Profiles carry `models[].v_min_mv` from the JSON, in the
+  generator and the card reader alike.
+- **A page offers only the model's items.** An item with `applies_to` is
+  listed only on the models it names, and RUN refuses a change to an item
+  not on the model: Jeti's Cutoff mode and Switching frequency share item
+  3 on different models.
 
 ### Changed
 
@@ -64,6 +164,20 @@ sweep starts over from the curve's beginning, and the alert band says so.
   up, the word the link chip beside it already showed. BENCH is the panel
   driving the coprocessor's outputs, SIM the panel running on its own
   models while no coprocessor answers. Both stay English in German.
+
+### Fixed
+
+- **Kontronik profiles run.** Every Kontronik ESC needs a jumper or a
+  button to enter its programming mode, and stick programming refused all
+  22 as `needs a person at the ESC`. 10 now run with their manual steps
+  asked at their moment: `kontronik-3sl`, `-beat`, `-beat-car`,
+  `-beat-fai`, `-jazz`, `-kontrol-x`, `-pix`, `-smile`, `-star-line` and
+  `-sun-plus`; 24 of the 72 profiles run. The others name `manual step`
+  where a jumper moves during the menu, or their menu's reason.
+- **Kontronik profile data.** MINIJAZZ enters with a button, not a jumper;
+  the 3SL and Star-Line jumper sits on the two gold contacts; the JIVE Pro
+  jumper cable is pulled within 10 s; the OPTO and BEC procedure is on
+  pages 3-4 of their manuals.
 
 ## 0.12.0 - 2026-10-07
 

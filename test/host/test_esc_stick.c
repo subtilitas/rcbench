@@ -57,6 +57,10 @@ typedef struct {
     uint32_t late_once_by;
     uint32_t skew_ms;         /* readings stamped this far ahead      */
     uint32_t skip;            /* readings the supply took unseen      */
+    float    on_pct[8];       /* the stick at each power-up           */
+    unsigned on_n;
+    bool     no_watch;        /* nobody taps DONE once the ESC has
+                                 confirmed (before_power_off)         */
 } rig_t;
 
 static rig_t r;
@@ -105,6 +109,7 @@ static void rig(const char *id)
     }
     esc_sim_cfg_t c;
     esc_sim_defaults(&c);
+    c.wait_hand = true;         /* the menu starts at the pull */
     esc_sim_init(&r.sim, r.p, &c);
     r.now = 1000u;
     r.link = true;
@@ -142,6 +147,7 @@ static void tick(void)
     if (r.asked && !o->supply_on) {
         r.off_at = r.now;
     }
+    const bool was_on = r.supply_on;
     r.asked = o->supply_on;
     if (r.asked) {
         r.supply_on = !r.supply_dead;
@@ -151,6 +157,9 @@ static void tick(void)
     }
     static float last_pct = -2.0f;
     const float pct = r.armed ? o->throttle_pct : -1.0f;
+    if (r.supply_on && !was_on && r.on_n < 8u) {
+        r.on_pct[r.on_n++] = pct;
+    }
     if (pct != last_pct && r.supply_on && !r.asked) {
         r.moved_while_on++;
     }
@@ -174,6 +183,12 @@ static void tick(void)
             r.late_once_at = 0u;
         }
     }
+    /* The operator watching the ESC confirm taps DONE as soon as it
+     * counts: the run goes on as before the step existed. */
+    if (!r.no_watch && r.e.phase == ESC_STICK_HAND_END
+        && esc_stick_hand_ready(&r.e)) {
+        (void)esc_stick_confirm(&r.e);
+    }
     const esc_stick_bench_t b = bench();
     esc_stick_step(&r.e, &b);
     r.now++;
@@ -192,6 +207,29 @@ static void run_until_phase(esc_stick_phase_t ph, uint32_t ms)
     for (uint32_t i = 0; i < ms && esc_stick_running(&r.e)
                          && r.e.phase != ph; ++i) {
         tick();
+    }
+}
+
+/* Until the run asks for the step that starts the menu. */
+static void run_until_asked(uint32_t ms)
+{
+    for (uint32_t i = 0; i < ms && esc_stick_running(&r.e); ++i) {
+        const esc_manual_t *m = esc_stick_hand(&r.e);
+        if (m != NULL && m->when == ESC_MANUAL_BEFORE_MENU && r.e.hand_menu) {
+            return;
+        }
+        tick();
+    }
+}
+
+/* The person does it now -- the jumper pulled, the button pressed -- and,
+ * with @p done, taps DONE once it counts. */
+static void act(bool done)
+{
+    esc_sim_hand(&r.sim, r.now);
+    if (done) {
+        run_for(ESC_STICK_HAND_MIN_MS);
+        (void)esc_stick_confirm(&r.e);
     }
 }
 
@@ -382,15 +420,26 @@ TEST_CASE(the_profiles_the_engine_runs_are_the_counted_menus)
     }
     /* docs/StickProgramming.md gives these counts. */
     CHECK_EQ(two, 13);
-    CHECK_EQ(one, 1);
+    CHECK_EQ(one, 11);
 
     const char *why = NULL;
     CHECK_EQ(esc_stick_kind(esc_profiles_find("castle-phoenix-edge"), &why),
              ESC_STICK_KIND_NONE);
     CHECK_STR_EQ(why, "yes/no menu");
-    CHECK_EQ(esc_stick_kind(esc_profiles_find("kontronik-jive"), &why),
-             ESC_STICK_KIND_NONE);
+    CHECK_EQ(esc_stick_kind(esc_profiles_find("graupner-brushless-control-t"),
+                            &why), ESC_STICK_KIND_NONE);
     CHECK_STR_EQ(why, "needs a person at the ESC");
+    /* A jumper pulled during the menu has no moment the run can know. */
+    CHECK_EQ(esc_stick_kind(esc_profiles_find("kontronik-mini20"), &why),
+             ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "manual step");
+    /* A switch thrown at power-up with the stick at MAX: no hand at a
+     * powered ESC whose stick is not at MIN. */
+    CHECK_EQ(esc_stick_kind(esc_profiles_find("turnigy-aquastar"), &why),
+             ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "manual step");
+    CHECK_EQ(esc_stick_kind(esc_profiles_find("kontronik-jazz"), &why),
+             ESC_STICK_KIND_ONE_STAGE);
     CHECK_EQ(esc_stick_kind(esc_profiles_find("robbe-roxxy-bl-smart-control"),
                             &why), ESC_STICK_KIND_NONE);
     CHECK_STR_EQ(why, "item and value, one move");
@@ -1122,8 +1171,17 @@ TEST_CASE(the_signal_is_in_place_before_the_power)
     CHECK(o->arm && !o->supply_on && o->throttle_pct == ESC_STICK_PCT_MIN);
     tick();
     CHECK_EQ(r.e.phase, ESC_STICK_SIGNAL);
+    /* Armed, at MIN until the supply reads off; then the entry position,
+     * held ESC_STICK_SIGNAL_MS before the power. */
+    CHECK(o->throttle_pct == ESC_STICK_PCT_MIN && !o->supply_on);
+    for (int i = 0; i < 5000 && !r.e.sig_moved; ++i) {
+        tick();
+    }
+    CHECK(r.e.off_seen);
     CHECK(o->throttle_pct == ESC_STICK_PCT_MAX && !o->supply_on);
+    const uint32_t moved = r.now;
     run_until_phase(ESC_STICK_POWER, 5000u);
+    CHECK(r.now - moved >= ESC_STICK_SIGNAL_MS);
     CHECK(o->supply_on);
     CHECK_EQ(o->supply_mv, 7600u);
     CHECK_EQ(o->supply_ma, 1000u);
@@ -1184,6 +1242,7 @@ TEST_CASE(the_red_light_is_for_ends_nobody_chose)
         { ESC_STICK_R_NO_BEEPS,    true },
         { ESC_STICK_R_HIGH,        true },
         { ESC_STICK_R_TIMEOUT,     true },
+        { ESC_STICK_R_HAND,        true },
         { ESC_STICK_R_TOUCH,       true },
     };
     /* The table covers the list. */
@@ -1375,6 +1434,1645 @@ TEST_CASE(the_simulation_enters_only_from_the_entry_position)
     CHECK_EQ(esc_sim_stored(NULL, 1), 0);
 }
 
+/* ------------------------------------------------------ manual steps */
+
+/* A copy of a profile of record with manual steps of the test's own. */
+static esc_profile_t g_hand;
+static esc_manual_t  g_hand_steps[ESC_MANUAL_MAX];
+
+static void rig_hand(const char *id, const esc_manual_t *m, uint8_t n)
+{
+    rig(id);
+    g_hand = *r.p;
+    memcpy(g_hand_steps, m, n * sizeof(*m));
+    g_hand.automatable = ESC_AUTO_ASSISTED;
+    g_hand.manual = g_hand_steps;
+    g_hand.manual_count = n;
+    r.p = &g_hand;
+    esc_sim_cfg_t c;
+    esc_sim_defaults(&c);
+    c.wait_hand = true;
+    esc_sim_init(&r.sim, r.p, &c);
+}
+
+/* Kontronik JAZZ: the jumper is on before the warning is held, the run
+ * powers up and waits the 2 s entry, then asks for the pull and listens
+ * from that moment, powered and at MIN.  The ESC is silent until the pull;
+ * SILENCE does not end the run meanwhile.  No DONE: the menu heard in
+ * order takes the step as done, and the mode is stored. */
+TEST_CASE(a_jumper_pulled_after_the_entry_is_waited_for)
+{
+    rig("kontronik-jazz");
+    CHECK_EQ(esc_stick_kind(r.p, NULL), ESC_STICK_KIND_ONE_STAGE);
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    CHECK(esc_stick_hand(&r.e) == NULL);
+    run_until_asked(60000u);
+    const esc_manual_t *m = esc_stick_hand(&r.e);
+    CHECK(m != NULL);
+    if (m != NULL) {
+        CHECK_EQ(m->when, ESC_MANUAL_BEFORE_MENU);
+    }
+    CHECK_EQ(r.e.phase, ESC_STICK_VALUES);        /* listening already */
+    CHECK(r.e.hand_menu);
+    CHECK(esc_stick_out(&r.e)->supply_on);
+    CHECK(esc_stick_out(&r.e)->arm);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MIN);
+    CHECK_EQ(r.e.entries, 1);
+    /* A tap within the first second is not the operator's answer. */
+    CHECK(!esc_stick_hand_ready(&r.e));
+    CHECK(!esc_stick_confirm(&r.e));
+    CHECK_EQ(esc_stick_hand_left_ms(&r.e), ESC_STICK_HAND_WAIT_MS);
+    run_for(r.t.silence_ms + 1000u);
+    CHECK(esc_stick_running(&r.e));
+    CHECK(r.e.hand_menu);
+    CHECK_EQ(r.e.groups, 0u);
+    act(false);
+    for (uint32_t i = 0; i < 20000u && r.e.hand_menu; ++i) {
+        tick();
+    }
+    CHECK(!r.e.hand_menu);
+    CHECK(r.e.hand_done);
+    CHECK(esc_stick_hand(&r.e) == NULL);
+    CHECK(!esc_stick_confirm(&r.e));
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+    ended_safe();
+}
+
+/* The pull starts the series at once, and DONE comes when the operator is
+ * back at the screen, here 4 s later.  Counting from the pull, mode 3 is
+ * acted on in the first loop -- groups 1, 2, 3 in order -- not a whole
+ * loop later, as it would be counting from DONE.  A partial first group is
+ * never acted on: the quiet-first and order rules hold from the prompt. */
+TEST_CASE(a_pull_starts_the_menu_and_no_group_is_lost)
+{
+    rig("kontronik-jazz");
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    run_until_asked(60000u);
+    run_for(300u);
+    act(false);
+    const uint32_t pulled = r.now;
+    run_for(4000u);
+    (void)esc_stick_confirm(&r.e);            /* back at the screen */
+    run_until_phase(ESC_STICK_STORE, 60000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_STORE);
+    /* The answer (1.25 s), the pause, then 1, 2 and 3 at about 1.75 s
+     * each: under 9 s.  One loop of nine modes more is over 15 s. */
+    if (r.now - pulled > 9000u) {
+        T_FAIL("mode 3 acted on %u ms after the pull",
+               (unsigned)(r.now - pulled));
+    }
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+
+    /* The ESC already sounding when the run asks: no group counted until
+     * GROUP GAP of quiet, and the order rule needs three in a row. */
+    rig("kontronik-jazz");
+    c[0] = change(1, 2);
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_ENTRY, 60000u);
+    act(false);                               /* pulled early */
+    run_until_asked(60000u);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 2);
+}
+
+/* Two before_menu steps: the first waits in HAND_ON for DONE, the second,
+ * marked starts_menu, is listened through. */
+TEST_CASE(an_earlier_step_still_waits_for_done)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_BEFORE_MENU, "Check the LED.", 0u },
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true },
+    };
+    rig_hand("kontronik-jazz", k, 2);
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_HAND_ON, 60000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);
+    CHECK(!r.e.hand_menu);
+    CHECK_EQ(r.e.hand, 0u);
+    run_for(5000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);      /* waits for DONE */
+    CHECK(esc_stick_confirm(&r.e));
+    tick();
+    CHECK(r.e.hand_menu);
+    CHECK_EQ(r.e.hand, 1u);
+    CHECK_EQ(r.e.phase, ESC_STICK_VALUES);
+    act(false);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+
+    /* A menu that rests elsewhere: listening would need a move under the
+     * operator's hand at a powered ESC, and waiting for DONE would drop
+     * the groups the pull starts.  Not run: the profile's listen move away
+     * from the entry, or a value powered up away from the listen move. */
+    const char *why = NULL;
+    rig_hand("kontronik-jazz", &k[1], 1);
+    g_hand.listen_throttle = ESC_THR_MID;
+    CHECK_EQ(esc_stick_kind(&g_hand, &why), ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "menu start, rest elsewhere");
+    CHECK(!start(c, 1));
+    g_hand.listen_throttle = ESC_THR_MIN;     /* the entry's */
+    CHECK(esc_stick_kind(&g_hand, &why) != ESC_STICK_KIND_NONE);
+    CHECK(start(c, 1));
+    esc_stick_abort(&r.e, ESC_STICK_R_USER);
+    esc_stick_change_t car[1] = { change(1, 6) };   /* powered at MID */
+    CHECK(!esc_stick_check(&g_hand, car, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "menu start, rest elsewhere");
+
+    /* A last step the profile does not mark as starting the menu waits for
+     * DONE as any other: a card profile's own step, not the series. */
+    rig_hand("kontronik-jazz", &k[0], 1);
+    CHECK(!g_hand.manual[0].starts_menu);
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_HAND_ON, 60000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);
+    CHECK(!r.e.hand_menu);
+    act(false);
+    run_for(5000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);      /* still waits */
+    CHECK_EQ(r.e.groups, 0u);
+    CHECK(esc_stick_confirm(&r.e));
+    tick();
+    CHECK_EQ(r.e.phase, ESC_STICK_VALUES);
+    CHECK(!r.e.hand_menu);
+    CHECK(esc_stick_hand(&r.e) == NULL);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+}
+
+/* No DONE: the run ends after ESC_STICK_HAND_WAIT_MS, everything off, with
+ * the red light lit. */
+TEST_CASE(a_step_never_confirmed_ends_the_run)
+{
+    rig("kontronik-jazz");
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    run_until_asked(60000u);
+    run_for(ESC_STICK_HAND_WAIT_MS - 2u);
+    CHECK(r.e.hand_menu);                   /* the ESC waits, silent */
+    CHECK(esc_stick_hand_left_ms(&r.e) <= 2u);
+    run_for(10u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_HAND);
+    CHECK(esc_stick_reason_is_fault(r.e.reason));
+    CHECK_STR_EQ(esc_stick_reason_text(r.e.reason), "NOT CONFIRMED");
+    ended_safe();
+    CHECK(esc_stick_hand(&r.e) == NULL);
+    CHECK_EQ(esc_stick_hand_left_ms(&r.e), 0u);
+    CHECK(!esc_stick_confirm(&r.e));
+}
+
+/* Until the run asks for the step before the supply goes off. */
+static void run_until_end_step(uint32_t ms)
+{
+    r.no_watch = true;
+    for (uint32_t i = 0; i < ms && esc_stick_running(&r.e)
+                         && r.e.phase != ESC_STICK_HAND_END; ++i) {
+        if (r.e.hand_menu) {
+            act(false);                 /* the button pressed */
+        }
+        tick();
+    }
+}
+
+/*
+ * Kontronik KONTROL-X: the supply off before the ESC has confirmed its
+ * mode locks the ESC (Kontronik_Kontrol-X_Kolibri-X.pdf p.4, 8 flashes).
+ * After the store the run holds the ESC powered, the stick where the store
+ * left it, until DONE; then the supply goes off and the run ends as any
+ * other.  No DONE in ESC_STICK_HAND_WAIT_MS: the run ends safe and says
+ * the ESC may be locked; so does any other end while the step is asked.
+ */
+TEST_CASE(the_supply_stays_on_until_the_esc_has_confirmed)
+{
+    rig("kontronik-kontrol-x");
+    CHECK_EQ(esc_profile_manual_count(r.p, ESC_MANUAL_BEFORE_POWER_OFF), 1u);
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK_EQ(esc_stick_done_count(&r.e), 1u);
+    const esc_manual_t *m = esc_stick_hand(&r.e);
+    CHECK(m != NULL);
+    if (m != NULL) {
+        CHECK_EQ(m->when, ESC_MANUAL_BEFORE_POWER_OFF);
+    }
+    CHECK(!r.e.hand_menu);
+    CHECK(r.e.end_open);
+    CHECK(esc_stick_out(&r.e)->supply_on);
+    CHECK(esc_stick_out(&r.e)->arm);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MAX);
+    CHECK_STR_EQ(esc_stick_phase_text(r.e.phase), "WAITING FOR THE ESC");
+    run_for(30000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);     /* powered, waiting */
+    CHECK(esc_stick_out(&r.e)->supply_on);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MAX);
+    CHECK(esc_stick_confirm(&r.e));
+    tick();
+    CHECK_EQ(r.e.phase, ESC_STICK_OFF);
+    CHECK(!esc_stick_out(&r.e)->supply_on);
+    CHECK(!r.e.end_open);
+    run_for(20000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK(!esc_stick_lock_risk(&r.e));
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 2);
+
+    /* Mode 3 goes to full reverse after full forward: the step is asked
+     * with the stick where the last move left it. */
+    rig("kontronik-kontrol-x");
+    c[0] = change(1, 3);
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MIN);
+    run_for(ESC_STICK_HAND_MIN_MS);
+    CHECK(esc_stick_confirm(&r.e));
+    run_for(20000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+
+    /* No DONE: NOT CONFIRMED, everything off, and the ESC may be locked. */
+    rig("kontronik-kontrol-x");
+    c[0] = change(1, 2);
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK(!esc_stick_lock_risk(&r.e));           /* not while it runs */
+    run_for(ESC_STICK_HAND_WAIT_MS - 2u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    run_for(10u);
+    CHECK_EQ(r.e.phase, ESC_STICK_ABORTED);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_HAND);
+    ended_safe();
+    CHECK(esc_stick_lock_risk(&r.e));
+
+    /* STOP while the step is asked: the same. */
+    rig("kontronik-kontrol-x");
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    r.stops++;
+    r.pressed++;
+    tick();
+    CHECK_EQ(r.e.reason, ESC_STICK_R_STOP);
+    ended_safe();
+    CHECK(esc_stick_lock_risk(&r.e));
+
+    /* An end before the step, or after its DONE, is no such end. */
+    rig("kontronik-kontrol-x");
+    CHECK(start(c, 1));
+    run_until_asked(60000u);
+    esc_stick_abort(&r.e, ESC_STICK_R_USER);
+    CHECK(!esc_stick_lock_risk(&r.e));
+
+    /* A profile with two such steps asks for both, in order. */
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true },
+        { ESC_MANUAL_BEFORE_POWER_OFF, "Watch the LED.", 0u, NULL, false },
+        { ESC_MANUAL_BEFORE_POWER_OFF, "Listen for the tones.", 0u, NULL,
+          false },
+    };
+    rig_hand("kontronik-jazz", k, 3);
+    esc_stick_change_t j[1] = { change(1, 3) };
+    CHECK(start(j, 1));
+    run_until_end_step(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK_EQ(r.e.hand, 1u);
+    run_for(ESC_STICK_HAND_MIN_MS);
+    CHECK(esc_stick_confirm(&r.e));
+    tick();
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK_EQ(r.e.hand, 2u);
+    CHECK(esc_stick_out(&r.e)->supply_on);
+    CHECK(!esc_stick_confirm(&r.e));            /* too soon after the last */
+    run_for(ESC_STICK_HAND_MIN_MS);
+    CHECK(esc_stick_confirm(&r.e));
+    run_for(20000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+}
+
+/*
+ * Kontronik 3SL repeats the stored mode as tones before the manual
+ * disconnects it (Kontrollausgabe, Kontronik_3SL.pdf p.5-17): mode 7 as
+ * seven, longer than STORE.  The run holds the ESC powered after the store
+ * until DONE, whatever the mode; an end before DONE says the mode may not
+ * be stored, and not that the ESC locks, which the 3SL manual does not
+ * say.  Every runnable Kontronik profile carries such a step, and only
+ * the five whose manuals name the lock mark it.
+ */
+TEST_CASE(the_supply_stays_on_while_the_esc_repeats_the_mode)
+{
+    rig("kontronik-3sl");
+    esc_stick_change_t c[1] = { change(1, 7) };
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK_EQ(esc_stick_done_count(&r.e), 1u);
+    const esc_manual_t *m = esc_stick_hand(&r.e);
+    CHECK(m != NULL && !m->locks);
+    CHECK(esc_stick_out(&r.e)->supply_on);
+    run_for(r.t.store_ms * 4u);                /* well past STORE */
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK(esc_stick_out(&r.e)->supply_on);
+    CHECK(esc_stick_confirm(&r.e));
+    run_for(20000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK(!esc_stick_cut_short(&r.e));
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 7);
+
+    /* No DONE: cut short, not locked. */
+    rig("kontronik-3sl");
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    run_for(ESC_STICK_HAND_WAIT_MS + 10u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_HAND);
+    ended_safe();
+    CHECK(esc_stick_cut_short(&r.e));
+    CHECK(!esc_stick_lock_risk(&r.e));
+
+    /* KONTROL-X's step marks the lock: both. */
+    rig("kontronik-kontrol-x");
+    c[0] = change(1, 2);
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    esc_stick_abort(&r.e, ESC_STICK_R_USER);
+    CHECK(esc_stick_cut_short(&r.e));
+    CHECK(esc_stick_lock_risk(&r.e));
+    CHECK(!esc_stick_cut_short(NULL));
+    CHECK(!esc_stick_lock_risk(NULL));
+
+    /* Every Kontronik profile that runs repeats its mode before the
+     * power-off; the lock is the five's. */
+    static const char *const k_locks[] = {
+        "kontronik-koby", "kontronik-kontrol-x", "kontronik-jive-pro",
+        "kontronik-kolibri", "kontronik-kosmik",
+    };
+    unsigned runs = 0u;
+    for (size_t i = 0; i < esc_profiles_count(); ++i) {
+        const esc_profile_t *p = esc_profiles_at(i);
+        if (strncmp(p->id, "kontronik-", 10) != 0) {
+            continue;
+        }
+        bool want_lock = false;
+        for (size_t k = 0; k < sizeof(k_locks) / sizeof(k_locks[0]); ++k) {
+            want_lock = want_lock || strcmp(p->id, k_locks[k]) == 0;
+        }
+        const bool runnable = esc_stick_kind(p, NULL) != ESC_STICK_KIND_NONE;
+        runs += runnable ? 1u : 0u;
+        unsigned offs = 0u, locks = 0u;
+        for (unsigned k = 0; k < p->manual_count; ++k) {
+            offs += (p->manual[k].when == ESC_MANUAL_BEFORE_POWER_OFF);
+            locks += p->manual[k].locks ? 1u : 0u;
+        }
+        if ((runnable || want_lock) && offs != 1u) {
+            T_FAIL("%s: %u steps before the power-off", p->id, offs);
+        }
+        if (locks != (want_lock ? 1u : 0u)) {
+            T_FAIL("%s: %u steps mark the lock", p->id, locks);
+        }
+    }
+    CHECK_EQ(runs, 10u);
+}
+
+/*
+ * A profile with no entry time of its own but one on every value: the
+ * profile-wide rest rule leaves it to the per-change one, which sees each
+ * value's time.  YGE mode setup 6 rests away from its entry and states
+ * no hold; with a hold on every value it runs, and a value without one is
+ * refused by itself.
+ */
+TEST_CASE(a_hold_on_every_value_times_the_rest_move)
+{
+    const char *why = NULL;
+    const esc_profile_t *y = esc_profiles_find("yge-mode-setup-6");
+    CHECK(y != NULL);
+    if (y == NULL) {
+        return;
+    }
+    CHECK_EQ(esc_stick_kind(y, &why), ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "rest move, no entry time");
+    static esc_profile_t q;
+    static esc_item_t items[8];
+    static esc_value_t values[8][16];
+    q = *y;
+    CHECK(y->item_count <= 8u);
+    for (unsigned i = 0; i < y->item_count && i < 8u; ++i) {
+        items[i] = y->items[i];
+        CHECK(items[i].value_count <= 16u);
+        for (unsigned v = 0; v < items[i].value_count && v < 16u; ++v) {
+            values[i][v] = y->items[i].values[v];
+            values[i][v].entry_hold_ms = 3000u;
+        }
+        items[i].values = values[i];
+    }
+    q.items = items;
+    CHECK(esc_stick_kind(&q, &why) != ESC_STICK_KIND_NONE);
+    esc_stick_timing_t t;
+    esc_stick_timing_defaults(&t);
+    esc_stick_change_t c[1] = { { 0u, 0u } };
+    CHECK(esc_stick_check(&q, c, 1, &t, &why));
+    CHECK_EQ(esc_stick_change_entry_ms(&q, &c[0], &t), 3000u);
+    values[0][0].entry_hold_ms = 0u;            /* this one states none */
+    CHECK(esc_stick_kind(&q, &why) != ESC_STICK_KIND_NONE);
+    CHECK(!esc_stick_check(&q, c, 1, &t, &why));
+    CHECK_STR_EQ(why, "rest move, no entry time");
+    if (items[0].value_count > 1u) {
+        c[0].value = 1u;
+        CHECK(esc_stick_check(&q, c, 1, &t, &why));
+    }
+}
+
+/*
+ * The confirmation is pending from the selection on, not only once the
+ * step before the power-off is asked: an end while the ESC stores
+ * (ESC_STICK_STORE) switches the supply off under it as well.  The result
+ * says so, and that a KONTROL-X may be locked; a profile without such a
+ * step says neither.
+ */
+TEST_CASE(an_end_while_the_esc_stores_says_it_was_cut_short)
+{
+    static const char *const k_ids[] = {
+        "kontronik-kontrol-x", "kontronik-3sl", "hobbywing-flyfun-8item",
+    };
+    for (size_t k = 0; k < 3; ++k) {
+        rig(k_ids[k]);
+        esc_stick_change_t c[1] = {
+            change(1, 2)
+        };
+        CHECK(start(c, 1));
+        for (uint32_t i = 0; i < 240000u && esc_stick_running(&r.e)
+                             && r.e.phase != ESC_STICK_STORE; ++i) {
+            if (r.e.hand_menu) {
+                act(false);
+            }
+            tick();
+        }
+        CHECK_EQ(r.e.phase, ESC_STICK_STORE);
+        CHECK(!esc_stick_cut_short(&r.e));      /* not while it runs */
+        r.stops++;
+        r.pressed++;
+        tick();
+        CHECK_EQ(r.e.reason, ESC_STICK_R_STOP);
+        ended_safe();
+        CHECK_EQ(esc_stick_cut_short(&r.e), k < 2);
+        CHECK_EQ(esc_stick_lock_risk(&r.e), k == 0);
+    }
+    /* Before the selection: nothing is stored yet. */
+    rig("kontronik-kontrol-x");
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    run_until_asked(60000u);
+    esc_stick_abort(&r.e, ESC_STICK_R_USER);
+    CHECK(!esc_stick_cut_short(&r.e));
+}
+
+/*
+ * A value stored by moves after its selection is not stored until they
+ * are made, with or without a step before the power-off: PIX mode 2 goes
+ * to the brake after full throttle.  A STOP before that move says the
+ * mode may not be stored; mode 3, stored by its selection, says nothing.
+ */
+TEST_CASE(a_store_cut_before_its_moves_says_so)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_BEFORE_MENU, "Press the button.", 0u, NULL, true,
+          false },
+    };
+    static const uint8_t k_mode[] = { 2u, 3u };
+    for (size_t i = 0; i < 2; ++i) {
+        rig_hand("kontronik-pix", k, 1);      /* no before_power_off */
+        CHECK_EQ(esc_profile_manual_count(r.p, ESC_MANUAL_BEFORE_POWER_OFF),
+                 0u);
+        esc_stick_change_t c[1] = { change(1, k_mode[i]) };
+        CHECK(start(c, 1));
+        for (uint32_t t = 0; t < 240000u && esc_stick_running(&r.e)
+                             && r.e.phase != ESC_STICK_STORE; ++t) {
+            if (r.e.hand_menu) {
+                act(false);
+            }
+            tick();
+        }
+        if (r.e.phase != ESC_STICK_STORE) {
+            T_FAIL("mode %u ended %s", k_mode[i],
+                   esc_stick_reason_text(r.e.reason));
+        }
+        CHECK_EQ(esc_stick_done_count(&r.e), 1u);
+        r.stops++;
+        r.pressed++;
+        tick();
+        ended_safe();
+        CHECK_EQ(esc_stick_cut_short(&r.e), i == 0);
+        CHECK(!esc_stick_lock_risk(&r.e));
+        /* Selected, not stored for certain: not counted as made. */
+        CHECK_EQ(esc_stick_unsure(&r.e, 0u), i == 0);
+        CHECK_EQ(esc_stick_made_count(&r.e), (i == 0) ? 0u : 1u);
+        CHECK_EQ(esc_stick_done_count(&r.e), 1u);
+        CHECK(!esc_stick_unsure(&r.e, 1u));
+        CHECK(!esc_stick_unsure(NULL, 0u));
+        CHECK_EQ(esc_stick_made_count(NULL), 0u);
+    }
+    /* Run through, the moves made: not cut short. */
+    rig_hand("kontronik-pix", k, 1);
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    run_until_asked(60000u);
+    act(false);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK(!esc_stick_cut_short(&r.e));
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 2);
+}
+
+/*
+ * Two steps before the power-off, only the second marking the lock: the
+ * lock is the profile's until both are confirmed, so the first step's
+ * prompt and an end during it say the ESC may be locked.
+ */
+TEST_CASE(a_later_locking_step_counts_from_the_first)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true, false },
+        { ESC_MANUAL_BEFORE_POWER_OFF, "Listen for the tones.", 0u, NULL,
+          false, false },
+        { ESC_MANUAL_BEFORE_POWER_OFF, "Watch the LED flash.", 0u, NULL,
+          false, true },
+    };
+    rig_hand("kontronik-jazz", k, 3);
+    CHECK(esc_stick_end_locks(&r.e) == false);   /* not started */
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK_EQ(r.e.hand, 1u);                      /* the one without locks */
+    CHECK(esc_stick_end_locks(&r.e));
+    esc_stick_abort(&r.e, ESC_STICK_R_USER);
+    CHECK(esc_stick_cut_short(&r.e));
+    CHECK(esc_stick_lock_risk(&r.e));
+    CHECK(!esc_stick_end_locks(NULL));
+}
+
+/* While a step is waited for, every end a run has still ends it: ABORT,
+ * STOP, the bench's own stop, a disarm, the supply and the link. */
+TEST_CASE(stop_abort_and_the_supply_end_a_run_waiting_for_a_step)
+{
+    static const esc_stick_reason_t want[] = {
+        ESC_STICK_R_USER, ESC_STICK_R_STOP, ESC_STICK_R_BENCH_STOP,
+        ESC_STICK_R_DISARMED, ESC_STICK_R_LINK, ESC_STICK_R_SUPPLY_OFF,
+        ESC_STICK_R_SUPPLY_LOST, ESC_STICK_R_STALE,
+    };
+    for (size_t k = 0; k < sizeof(want) / sizeof(want[0]); ++k) {
+        rig("kontronik-jazz");
+        esc_stick_change_t c[1] = { change(1, 3) };
+        CHECK(start(c, 1));
+        run_until_asked(60000u);
+        run_for(ESC_STICK_HAND_MIN_MS);
+        CHECK(r.e.hand_menu);
+        /* A DONE taken in the same frame as the end: the end wins, and
+         * the menu never starts. */
+        CHECK(esc_stick_confirm(&r.e));
+        switch (want[k]) {
+        case ESC_STICK_R_USER:  esc_stick_abort(&r.e, ESC_STICK_R_USER); break;
+        case ESC_STICK_R_STOP:  r.stops++; r.pressed++;                  break;
+        case ESC_STICK_R_BENCH_STOP: r.stops++;                          break;
+        case ESC_STICK_R_DISARMED: r.arm_refused = true; r.armed = false; break;
+        case ESC_STICK_R_LINK:  r.link = false;                          break;
+        case ESC_STICK_R_SUPPLY_OFF: r.supply_dead = true;               break;
+        case ESC_STICK_R_SUPPLY_LOST: r.online = false;                  break;
+        case ESC_STICK_R_STALE: r.readings_stop = true;                  break;
+        default: break;
+        }
+        run_for(5000u);
+        if (r.e.reason != want[k]) {
+            T_FAIL("case %u ended %s", (unsigned)k,
+                   esc_stick_reason_text(r.e.reason));
+        }
+        CHECK_EQ(r.e.groups, 0u);
+        ended_safe();
+    }
+}
+
+/* A button held while the supply comes on: the run stops before the power
+ * with the supply off and the stick at the entry, and DONE switches it on.
+ * A stop before the DONE is acted on leaves the supply off. */
+TEST_CASE(a_step_at_power_up_is_asked_with_the_supply_off)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u },
+    };
+    rig_hand("kontronik-jazz", k, 1);
+    CHECK_EQ(esc_stick_kind(r.p, NULL), ESC_STICK_KIND_ONE_STAGE);
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_HAND_OFF, 60000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_OFF);
+    CHECK(!esc_stick_out(&r.e)->supply_on);
+    CHECK(!r.supply_on);
+    CHECK(esc_stick_out(&r.e)->arm);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MIN);
+    CHECK_EQ(r.e.entries, 0);
+    run_for(ESC_STICK_HAND_MIN_MS);
+    CHECK(esc_stick_confirm(&r.e));
+    tick();
+    CHECK_EQ(r.e.phase, ESC_STICK_POWER);
+    CHECK(esc_stick_out(&r.e)->supply_on);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+
+    /* DONE, and a STOP before the next step: the supply never comes on. */
+    rig_hand("kontronik-jazz", k, 1);
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_HAND_OFF, 60000u);
+    run_for(ESC_STICK_HAND_MIN_MS);
+    CHECK(esc_stick_confirm(&r.e));
+    r.stops++;
+    r.pressed++;
+    tick();
+    CHECK_EQ(r.e.reason, ESC_STICK_R_STOP);
+    CHECK(!esc_stick_out(&r.e)->supply_on);
+    ended_safe();
+}
+
+/* A button held 3 s while the supply comes on, and an entry of 2 s: the
+ * pull asked after the entry waits for the hold to end, not the entry. */
+TEST_CASE(the_entry_lasts_at_least_the_hold_at_power_up)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u },
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true },
+    };
+    rig_hand("kontronik-jazz", k, 2);
+    CHECK_EQ(r.t.entry_ms, 2000u);
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    CHECK_EQ(esc_stick_entry_ms(&r.e), 3000u);
+    run_until_phase(ESC_STICK_HAND_OFF, 60000u);
+    run_for(ESC_STICK_HAND_MIN_MS);
+    CHECK(esc_stick_confirm(&r.e));
+    run_until_phase(ESC_STICK_ENTRY, 10000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_ENTRY);
+    const uint32_t on = r.e.on_ms;
+    run_until_asked(10000u);
+    CHECK(r.e.hand_menu);
+    CHECK(r.e.hand_ms - on >= 3000u);
+    CHECK(r.e.hand_ms - on < 3010u);
+    /* Without the hold, the entry's own 2 s. */
+    static const esc_manual_t pull[] = {
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true },
+    };
+    rig_hand("kontronik-jazz", pull, 1);
+    CHECK(start(c, 1));
+    CHECK_EQ(esc_stick_entry_ms(&r.e), 2000u);
+    CHECK_EQ(esc_stick_entry_ms(NULL), 0u);
+}
+
+/* One change per power-up and a jumper fitted before each: the warning
+ * covers the first power-up, and the run asks before every later one, with
+ * the supply off and seen off. */
+TEST_CASE(a_step_before_power_is_asked_before_every_later_power_up)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_BEFORE_POWER, "Fit the jumper.", 0u },
+        { ESC_MANUAL_AFTER_PROGRAMMING, "Pull the jumper.", 0u },
+    };
+    rig_hand("sunrise-pro", k, 2);
+    CHECK_EQ(esc_stick_kind(r.p, NULL), ESC_STICK_KIND_ONE_STAGE);
+    esc_stick_change_t c[2] = { change(1, 3), change(2, 4) };
+    CHECK(start(c, 2));
+    run_until_phase(ESC_STICK_ENTRY, 60000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_ENTRY);         /* first: not asked */
+    run_until_phase(ESC_STICK_HAND_OFF, 240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_OFF);
+    CHECK_EQ(r.e.entries, 1);
+    CHECK(!esc_stick_out(&r.e)->supply_on);
+    CHECK(!r.supply_on);
+    const esc_manual_t *m = esc_stick_hand(&r.e);
+    CHECK(m != NULL);
+    if (m != NULL) {
+        CHECK_STR_EQ(m->action, "Fit the jumper.");
+    }
+    /* The supply has been off at least OFF TIME by now. */
+    run_for(ESC_STICK_HAND_MIN_MS);
+    CHECK(esc_stick_confirm(&r.e));
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(r.e.entries, 2);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+    CHECK_EQ(esc_sim_stored(&r.sim, 2), 4);
+}
+
+/* What the run cannot wait for is refused before it starts. */
+TEST_CASE(a_step_the_run_cannot_wait_for_is_refused)
+{
+    const char *why = NULL;
+    static const esc_manual_t during[] = {
+        { ESC_MANUAL_DURING_MENU, "Pull the jumper.", 0u },
+    };
+    rig_hand("kontronik-jazz", during, 1);
+    CHECK_EQ(esc_stick_kind(r.p, &why), ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "manual step");
+    /* A hand at a powered ESC with the stick at MAX: sunrise-pro enters
+     * at full throttle. */
+    static const esc_manual_t menu[] = {
+        { ESC_MANUAL_BEFORE_MENU, "Press the button.", 0u },
+    };
+    rig_hand("sunrise-pro", menu, 1);
+    CHECK_EQ(esc_stick_kind(r.p, &why), ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "manual step");
+    static const esc_manual_t at_power[] = {
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 0u },
+    };
+    rig_hand("sunrise-pro", at_power, 1);
+    CHECK_EQ(esc_stick_kind(r.p, &why), ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "manual step");
+    /* Before the power and after the run nobody reaches a powered ESC. */
+    static const esc_manual_t outside[] = {
+        { ESC_MANUAL_BEFORE_POWER, "Fit the jumper.", 0u },
+        { ESC_MANUAL_AFTER_PROGRAMMING, "Pull the jumper.", 0u },
+    };
+    rig_hand("sunrise-pro", outside, 2);
+    CHECK_EQ(esc_stick_kind(r.p, &why), ESC_STICK_KIND_ONE_STAGE);
+    /* Assisted with no steps: a person at the ESC the run cannot ask. */
+    rig_hand("kontronik-jazz", outside, 0);
+    CHECK_EQ(esc_stick_kind(r.p, &why), ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "needs a person at the ESC");
+}
+
+/* A car mode the manual programs from the middle is not stored from the
+ * profile's brake position. */
+/* A Kontronik car mode is programmed with the stick at motor-off in the
+ * middle: the run powers it up there, and the simulated ESC, which counts
+ * a value stored from another position as misplaced, stores it from MID. */
+TEST_CASE(a_car_mode_is_powered_up_from_the_middle)
+{
+    rig("kontronik-beat");
+    esc_stick_change_t c[1] = { change(1, 6) };
+    CHECK_EQ(esc_stick_change_entry(r.p, &c[0]), ESC_THR_MID);
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_SIGNAL, 10000u);
+    for (int i = 0; i < 5000 && !r.e.sig_moved; ++i) {
+        tick();
+    }
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MID);
+    CHECK(!esc_stick_out(&r.e)->supply_on);
+    run_until_asked(60000u);
+    /* The jumper is pulled with the stick at MID, the manual's motor-off. */
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MID);
+    act(true);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(r.on_n, 1u);
+    CHECK(r.on_pct[0] == ESC_STICK_PCT_MID);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 6);
+    CHECK_EQ(r.sim.stored_from[1], ESC_THR_MID);
+    CHECK_EQ(r.sim.misplaced, 0u);
+
+    /* A mode programmed from the back still powers up at MIN. */
+    rig("kontronik-beat");
+    c[0] = change(1, 3);
+    CHECK_EQ(esc_stick_change_entry(r.p, &c[0]), ESC_THR_MIN);
+    CHECK(start(c, 1));
+    run_until_asked(60000u);
+    act(true);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK(r.on_pct[0] == ESC_STICK_PCT_MIN);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+    CHECK_EQ(r.sim.misplaced, 0u);
+    CHECK_EQ(esc_stick_change_entry(NULL, &c[0]), ESC_THR_MIN);
+}
+
+/* SUN PLUS waits 5 s for modes 4 to 6 and 2 s for the rest: the button
+ * is asked for when the mode's own wait is over, not the scheme's. */
+TEST_CASE(a_value_waits_its_own_entry_time)
+{
+    static const struct { uint8_t mode; uint32_t ms; } k[] = {
+        { 4, 5000u }, { 2, 2000u }, { 6, 5000u },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        rig("kontronik-sun-plus");
+        esc_stick_change_t c[1] = { change(1, k[i].mode) };
+        CHECK_EQ(esc_stick_change_entry_ms(r.p, &c[0], &r.t), k[i].ms);
+        CHECK(start(c, 1));
+        run_until_phase(ESC_STICK_ENTRY, 10000u);
+        CHECK_EQ(esc_stick_entry_ms(&r.e), k[i].ms);
+        const uint32_t on = r.e.on_ms;
+        run_until_asked(20000u);
+        CHECK(r.e.hand_menu);
+        if (r.e.hand_ms - on < k[i].ms || r.e.hand_ms - on > k[i].ms + 5u) {
+            T_FAIL("mode %u asked after %u ms, want %u", k[i].mode,
+                   (unsigned)(r.e.hand_ms - on), (unsigned)k[i].ms);
+        }
+        act(true);
+        run_for(240000u);
+        CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+        CHECK_EQ(esc_sim_stored(&r.sim, 1), k[i].mode);
+    }
+    CHECK_EQ(esc_stick_change_entry_ms(NULL, NULL, &r.t), r.t.entry_ms);
+    CHECK_EQ(esc_stick_change_entry_ms(NULL, NULL, NULL), 0u);
+}
+
+/*
+ * What the PD mini's 20 V leaves out, as the docs count it: of the profiles
+ * the engine runs, one family whose lowest cell count needs more
+ * (hobbywing-skywalker-v2-hv-opto, 22.8 V), and six model rows, each at
+ * 22.8 V: its two models and four of families that open.
+ */
+TEST_CASE(twenty_volts_leave_out_one_family_and_six_models)
+{
+    static const char *const k_rows[] = {
+        "FLYFUN 130A HV OPTO V5", "FLYFUN 160A HV OPTO V5",
+        "Skywalker 130A HV OPTO V2", "Skywalker 160A HV OPTO V2",
+        "Gecko 120A OPTO HV", "Gecko 150A OPTO HV",
+    };
+    unsigned families = 0u, rows = 0u, runs = 0u;
+    for (size_t i = 0; i < esc_profiles_count(); ++i) {
+        const esc_profile_t *p = esc_profiles_at(i);
+        if (esc_stick_kind(p, NULL) == ESC_STICK_KIND_NONE) {
+            continue;
+        }
+        ++runs;
+        if (esc_stick_model_mv(p, -1) > 20000u) {
+            ++families;
+            CHECK_STR_EQ(p->id, "hobbywing-skywalker-v2-hv-opto");
+            CHECK_EQ(esc_stick_model_mv(p, -1), 22800u);
+        }
+        for (int m = 0; m < (int)p->model_count; ++m) {
+            if (esc_stick_model_mv(p, m) <= 20000u) {
+                continue;
+            }
+            ++rows;
+            CHECK_EQ(esc_stick_model_mv(p, m), 22800u);
+            bool known = false;
+            for (size_t k = 0; k < sizeof(k_rows) / sizeof(k_rows[0]); ++k) {
+                known = known || strcmp(p->models[m].name, k_rows[k]) == 0;
+            }
+            if (!known) {
+                T_FAIL("%s: %s needs %u mV", p->id, p->models[m].name,
+                       (unsigned)esc_stick_model_mv(p, m));
+            }
+        }
+    }
+    CHECK_EQ(runs, 24u);
+    CHECK_EQ(families, 1u);
+    CHECK_EQ(rows, 6u);
+}
+
+/*
+ * The ESC's ratings hold the supply's set points: a voltage over the
+ * model's v_max_mv is refused, set by hand or from the cell count; where
+ * the rating is not stated only the model's own cell count is taken; a
+ * current over the rated one is refused.
+ */
+TEST_CASE(the_set_points_stay_within_the_escs_ratings)
+{
+    const esc_profile_t *p = esc_profiles_find("hobbywing-flyfun-8item");
+    CHECK(p != NULL);
+    if (p == NULL) {
+        return;
+    }
+    int six = -1;
+    for (int m = 0; m < (int)p->model_count; ++m) {
+        six = (strcmp(p->models[m].name, "FlyFun-6A") == 0) ? m : six;
+    }
+    CHECK(six >= 0);
+    if (six < 0) {
+        return;
+    }
+    CHECK_EQ(esc_stick_model_v_max(p, six), 8400u);
+    CHECK_EQ(esc_stick_rating(p, six, 20000u, 1000u, true),
+             ESC_STICK_RATING_V_OVER);
+    CHECK_EQ(esc_stick_rating(p, six, 8500u, 1000u, true),
+             ESC_STICK_RATING_V_OVER);
+    CHECK_EQ(esc_stick_rating(p, six, 8400u, 1000u, true),
+             ESC_STICK_RATING_OK);
+    CHECK_EQ(esc_stick_rating(p, six, 7600u, 1000u, true),
+             ESC_STICK_RATING_OK);
+    CHECK_EQ(esc_stick_rating(p, six, esc_stick_model_mv(p, six), 1000u,
+                              false), ESC_STICK_RATING_OK);
+    /* The current: FlyFun-6A is rated 6 A. */
+    CHECK_EQ(esc_stick_model_ma_max(p, six), 6000u);
+    CHECK_EQ(esc_stick_rating(p, six, 7600u, 6100u, true),
+             ESC_STICK_RATING_I_OVER);
+    CHECK_EQ(esc_stick_rating(p, six, 7600u, 6000u, true),
+             ESC_STICK_RATING_OK);
+    /* The family: the lowest rating of its models. */
+    CHECK_EQ(esc_stick_model_v_max(p, -1), 8400u);
+    CHECK_EQ(esc_stick_rating(p, -1, 12000u, 1000u, true),
+             ESC_STICK_RATING_V_OVER);
+
+    /* No rating stated: nothing is refused for it.  VOLTAGE by hand, and
+     * another model's cell count standing in, are said to be unvouched;
+     * the model's own cell count is not. */
+    static esc_model_t k_m[2];
+    static esc_profile_t q;
+    q = *p;
+    k_m[0] = p->models[six];
+    k_m[0].v_max_mv = 0u;                  /* cells stated, no rating */
+    k_m[1] = p->models[six];
+    k_m[1].v_max_mv = 0u;
+    k_m[1].cells_min = 0u;                 /* neither */
+    k_m[1].cells_max = 0u;
+    q.models = k_m;
+    q.model_count = 2;
+    CHECK_EQ(esc_stick_model_v_max(&q, 0), 0u);
+    CHECK_EQ(esc_stick_rating(&q, 0, 20000u, 1000u, true),
+             ESC_STICK_RATING_OK);
+    CHECK(esc_stick_rating_unknown(&q, 0, 7600u, true));
+    CHECK(!esc_stick_rating_unknown(&q, 0, esc_stick_model_mv(&q, 0), false));
+    CHECK_EQ(esc_stick_rating(&q, 1, esc_stick_model_mv(&q, 1), 1000u, false),
+             ESC_STICK_RATING_OK);
+    CHECK(esc_stick_rating_unknown(&q, 1, esc_stick_model_mv(&q, 1), false));
+    CHECK(esc_stick_rating_unknown(&q, 1, 0u, false));
+    CHECK(!esc_stick_rating_unknown(&q, -1, 7600u, false));
+    CHECK(esc_stick_rating_unknown(&q, -1, 7600u, true));
+    CHECK(!esc_stick_rating_unknown(p, six, 20000u, true));   /* stated */
+    /* A stated current or lowest input still refuses with no voltage
+     * rating. */
+    k_m[0].current_a = 1u;
+    CHECK_EQ(esc_stick_rating(&q, 0, 7600u, 2000u, true),
+             ESC_STICK_RATING_I_OVER);
+    k_m[0].current_a = 6u;
+    k_m[0].v_min_mv = 8000u;
+    CHECK_EQ(esc_stick_rating(&q, 0, 7600u, 1000u, true),
+             ESC_STICK_RATING_V_UNDER);
+    k_m[0].v_min_mv = 0u;
+    CHECK_EQ(esc_stick_model_v_max(&q, -1), 0u);
+    CHECK_EQ(esc_stick_model_v_max(NULL, -1), 0u);
+    CHECK_EQ(esc_stick_model_ma_max(NULL, 0), 0u);
+    CHECK_EQ(esc_stick_model_v_max(p, (int)p->model_count), 0u);
+    CHECK_EQ(esc_stick_model_ma_max(p, (int)p->model_count), 0u);
+
+    /* The lowest input: Hacker Master Basic 90 Opto takes 12 V and up. */
+    const esc_profile_t *hb = esc_profiles_find("hacker-master-basic");
+    CHECK(hb != NULL);
+    for (int m = 0; hb != NULL && m < (int)hb->model_count; ++m) {
+        if (strcmp(hb->models[m].name, "Master Basic 90 Opto") != 0) {
+            continue;
+        }
+        CHECK_EQ(esc_stick_model_v_min(hb, m), 12000u);
+        CHECK_EQ(esc_stick_rating(hb, m, 11900u, 1000u, true),
+                 ESC_STICK_RATING_V_UNDER);
+        CHECK_EQ(esc_stick_rating(hb, m, 12000u, 1000u, true),
+                 ESC_STICK_RATING_OK);
+    }
+    CHECK_EQ(esc_stick_model_v_min(hb, -1), 12000u);
+    CHECK_EQ(esc_stick_model_v_min(NULL, 0), 0u);
+    CHECK_EQ(esc_stick_model_v_min(p, (int)p->model_count), 0u);
+
+    /* The automatic voltage of every model of record stays within its
+     * rating, at or over its lowest input, and the CURRENT LIMIT's most
+     * (3 A) under every stated current. */
+    for (size_t i = 0; i < esc_profiles_count(); ++i) {
+        const esc_profile_t *x = esc_profiles_at(i);
+        for (int m = 0; m < (int)x->model_count; ++m) {
+            const uint32_t mv = esc_stick_model_mv(x, m);
+            const uint32_t vm = esc_stick_model_v_max(x, m);
+            if (vm != 0u && mv > vm) {
+                T_FAIL("%s %s: %u mV over %u mV", x->id, x->models[m].name,
+                       (unsigned)mv, (unsigned)vm);
+            }
+            const uint32_t vl = esc_stick_model_v_min(x, m);
+            if (x->models[m].cells_min != 0u && mv < vl) {
+                T_FAIL("%s %s: %u mV under %u mV", x->id, x->models[m].name,
+                       (unsigned)mv, (unsigned)vl);
+            }
+            const uint32_t am = esc_stick_model_ma_max(x, m);
+            if (am != 0u && am < 3000u) {
+                T_FAIL("%s %s: rated %u mA", x->id, x->models[m].name,
+                       (unsigned)am);
+            }
+        }
+    }
+}
+
+/*
+ * Items that apply to different models may share their number and a
+ * value number, each value with its own moves after the selection.  The
+ * simulated ESC takes the first match's moves only, and never writes more
+ * than the space it is given: the store move and 4 moves each would be 9
+ * into the sim's 5 (an overflow ASan reports without the cap).
+ */
+TEST_CASE(shared_numbers_do_not_overflow_the_store_moves)
+{
+    static esc_value_t v1[1], v2[1];
+    static esc_item_t it[2];
+    static esc_profile_t p;
+    p = *esc_profiles_find("kontronik-pix");
+    v1[0] = (esc_value_t){ "a", 2u, false, ESC_THR_NONE, 0u, 4u,
+                           { ESC_THR_MIN, ESC_THR_MAX, ESC_THR_MIN,
+                             ESC_THR_MAX } };
+    v2[0] = (esc_value_t){ "b", 2u, false, ESC_THR_NONE, 0u, 4u,
+                           { ESC_THR_MID, ESC_THR_MIN, ESC_THR_MID,
+                             ESC_THR_MIN } };
+    it[0] = p.items[0];
+    it[0].number = 1u;
+    it[0].values = v1;
+    it[0].value_count = 1u;
+    it[1] = it[0];
+    it[1].values = v2;
+    p.items = it;
+    p.item_count = 2u;
+    p.store_throttle = ESC_THR_MID;
+    esc_throttle_t out[ESC_AFTER_MAX + 1u];
+    CHECK_EQ(esc_sim_store_moves(&p, 1u, 2u, out,
+                                 sizeof(out) / sizeof(out[0])), 5u);
+    CHECK_EQ(out[0], ESC_THR_MID);              /* the store move */
+    CHECK_EQ(out[1], ESC_THR_MIN);              /* the first match's */
+    CHECK_EQ(out[4], ESC_THR_MAX);
+    esc_throttle_t two[2];
+    CHECK_EQ(esc_sim_store_moves(&p, 1u, 2u, two, 2u), 2u);
+    CHECK_EQ(esc_sim_store_moves(&p, 1u, 9u, out, 5u), 1u);   /* no value */
+    CHECK_EQ(esc_sim_store_moves(NULL, 1u, 2u, out, 5u), 0u);
+    CHECK_EQ(esc_sim_store_moves(&p, 1u, 2u, NULL, 5u), 0u);
+}
+
+/* SUN PLUS: the manual's neutral position is the back (mode 4, "neutral
+ * position (back position)", p.12 EN; mode 5's two-position switch, p.13
+ * EN), so every mode powers up at MIN but mode 6, the car mode, whose
+ * brake lies below its neutral: MID. */
+TEST_CASE(sun_plus_powers_up_at_the_back_but_its_car_mode)
+{
+    rig("kontronik-sun-plus");
+    for (uint8_t m = 1; m <= 9; ++m) {
+        const esc_stick_change_t c = change(1, m);
+        if (c.value == 255) {
+            continue;           /* modes 7 and 8 are not in the list */
+        }
+        const esc_throttle_t want = (m == 6) ? ESC_THR_MID : ESC_THR_MIN;
+        if (esc_stick_change_entry(r.p, &c) != want) {
+            T_FAIL("mode %u powers up at %d", m,
+                   (int)esc_stick_change_entry(r.p, &c));
+        }
+    }
+    esc_stick_change_t c[1] = { change(1, 5) };
+    CHECK(start(c, 1));
+    run_until_asked(20000u);
+    CHECK(r.e.hand_menu);
+    CHECK(r.on_n >= 1u && r.on_pct[0] == ESC_STICK_PCT_MIN);
+    act(true);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 5);
+}
+
+/* A two-stage power-up takes one entry time for every change; a value
+ * whose time is under the settle time cannot have a floor. */
+TEST_CASE(an_entry_time_that_cannot_work_is_refused)
+{
+    const char *why = NULL;
+    rig("hobbywing-flyfun-8item");
+    static esc_profile_t two;
+    static esc_item_t two_items[2];
+    static esc_value_t two_values[2];
+    two = *r.p;
+    memcpy(two_items, r.p->items, sizeof(two_items));
+    memcpy(two_values, r.p->items[1].values, sizeof(two_values));
+    two_values[1].entry_hold_ms = 9000u;
+    two_items[1].values = two_values;
+    two.items = two_items;
+    two.item_count = 2;
+    esc_stick_change_t c[2] = { { 0u, 1u }, { 1u, 1u } };
+    CHECK(!esc_stick_check(&two, c, 2, &r.t, &why));
+    CHECK_STR_EQ(why, "changes need different entry times");
+    CHECK(esc_stick_check(&two, &c[1], 1, &r.t, &why));
+    two_values[1].entry_hold_ms = 400u;
+    CHECK(!esc_stick_check(&two, &c[1], 1, &r.t, &why));
+    CHECK_STR_EQ(why, "ENTRY above 500 ms");
+}
+
+/* Values asking 2 s and 3 s, with a button held 5 s at power-up: the run
+ * waits 5 s for either, so they share a power-up.  The check compares what
+ * the run waits, not what the values ask. */
+TEST_CASE(shared_entry_times_compare_what_the_run_waits)
+{
+    const char *why = NULL;
+    rig("hobbywing-flyfun-8item");
+    static esc_profile_t two;
+    static esc_item_t two_items[2];
+    static esc_value_t v0[2], v1[2];
+    static const esc_manual_t hold[] = {
+        { ESC_MANUAL_AT_POWER_UP, "Hold SET.", 5000u },
+    };
+    two = *r.p;
+    memcpy(two_items, r.p->items, sizeof(two_items));
+    memcpy(v0, r.p->items[0].values, sizeof(v0));
+    memcpy(v1, r.p->items[1].values, sizeof(v1));
+    v0[1].entry_hold_ms = 2000u;
+    v1[1].entry_hold_ms = 3000u;
+    two_items[0].values = v0;
+    two_items[1].values = v1;
+    two.items = two_items;
+    two.item_count = 2;
+    /* A hand at a powered ESC is asked for at MIN. */
+    two.entry_throttle = ESC_THR_MIN;
+    two.select_throttle = ESC_THR_MAX;
+    two.value_select_throttle = ESC_THR_MID;
+    two.listen_throttle = ESC_THR_NONE;
+    two.automatable = ESC_AUTO_ASSISTED;
+    two.manual = hold;
+    two.manual_count = 1;
+    CHECK_EQ(esc_stick_kind(&two, NULL), ESC_STICK_KIND_TWO_STAGE);
+    esc_stick_change_t c[2] = { { 0u, 1u }, { 1u, 1u } };
+    CHECK_EQ(esc_stick_change_entry_ms(&two, &c[0], &r.t), 5000u);
+    CHECK_EQ(esc_stick_change_entry_ms(&two, &c[1], &r.t), 5000u);
+    CHECK(esc_stick_check(&two, c, 2, &r.t, &why));
+    /* A hold shorter than one of them: 3 s against 2.5 s, refused. */
+    static const esc_manual_t short_hold[] = {
+        { ESC_MANUAL_AT_POWER_UP, "Hold SET.", 2500u },
+    };
+    two.manual = short_hold;
+    CHECK(!esc_stick_check(&two, c, 2, &r.t, &why));
+    CHECK_STR_EQ(why, "changes need different entry times");
+}
+
+/* PIX mode 2: full throttle selects, then the stick goes to the brake
+ * and the ESC answers before the mode is stored.  The simulated ESC keeps
+ * nothing without that move, so a run that skipped it would fail here. */
+TEST_CASE(a_value_makes_its_moves_after_the_selection)
+{
+    rig("kontronik-pix");
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    run_until_asked(60000u);
+    act(true);
+    run_until_phase(ESC_STICK_STORE, 240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_STORE);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MAX);
+    CHECK_EQ(esc_stick_store_move(&r.e, 0u), ESC_THR_MIN);
+    CHECK_EQ(esc_stick_store_move(&r.e, 1u), ESC_THR_NONE);
+    CHECK_EQ(r.sim.stores, 0u);                /* selected, not stored */
+    run_for(r.t.store_ms + 5u);
+    CHECK_EQ(r.e.store_step, 1u);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MIN);
+    CHECK(esc_stick_out(&r.e)->supply_on);    /* the ESC answers first */
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 2);
+    CHECK_EQ(r.sim.stores, 1u);
+
+    /* A mode with no move after it powers off from full throttle. */
+    rig("kontronik-pix");
+    c[0] = change(1, 3);
+    CHECK(start(c, 1));
+    run_until_asked(60000u);
+    act(true);
+    run_until_phase(ESC_STICK_STORE, 240000u);
+    CHECK_EQ(esc_stick_store_move(&r.e, 0u), ESC_THR_NONE);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+    CHECK_EQ(esc_stick_store_move(NULL, 0u), ESC_THR_NONE);
+
+    /* The same run with the move left out of the engine's profile: the ESC
+     * still waits for it, and nothing is stored. */
+    rig("kontronik-pix");
+    static esc_profile_t bare;
+    static esc_item_t bare_item;
+    static esc_value_t bare_values[5];
+    bare = *r.p;
+    bare_item = r.p->items[0];
+    memcpy(bare_values, r.p->items[0].values, sizeof(bare_values));
+    bare_values[1].after_count = 0u;
+    bare_item.values = bare_values;
+    bare.items = &bare_item;
+    r.p = &bare;
+    c[0] = change(1, 2);
+    CHECK(start(c, 1));
+    run_until_asked(60000u);
+    act(true);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(r.sim.stores, 0u);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 0);
+}
+
+/* A car mode from the middle: power-up at MID, full throttle selects, the
+ * brake stores. */
+TEST_CASE(a_car_mode_selects_at_full_and_stores_at_the_brake)
+{
+    rig("kontronik-jazz");
+    esc_stick_change_t c[1] = { change(1, 6) };
+    CHECK(start(c, 1));
+    run_until_asked(60000u);
+    act(true);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK(r.on_pct[0] == ESC_STICK_PCT_MID);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 6);
+    CHECK_EQ(r.sim.misplaced, 0u);
+    /* Two stages: no moves after a value. */
+    rig("hobbywing-flyfun-8item");
+    static esc_profile_t two;
+    static esc_item_t two_items[1];
+    static esc_value_t two_values[2];
+    two = *r.p;
+    two_items[0] = r.p->items[0];
+    memcpy(two_values, r.p->items[0].values, sizeof(two_values));
+    two_values[1].after_count = 1u;
+    two_values[1].after[0] = ESC_THR_MID;
+    two_items[0].values = two_values;
+    two.items = two_items;
+    two.item_count = 1;
+    const char *why = NULL;
+    esc_stick_change_t d[1] = { { 0u, 1u } };
+    CHECK(!esc_stick_check(&two, d, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "moves after the value, two stages");
+
+    /* A move to where the stick already is -- the select position, or
+     * the move before -- is no move, and refused. */
+    rig("kontronik-pix");
+    static esc_profile_t pix;
+    static esc_item_t pix_item;
+    static esc_value_t pix_values[5];
+    pix = *r.p;
+    pix_item = r.p->items[0];
+    memcpy(pix_values, r.p->items[0].values, sizeof(pix_values));
+    pix_item.values = pix_values;
+    pix.items = &pix_item;
+    esc_stick_change_t p2[1] = { { 0u, 1u } };   /* mode 2 */
+    CHECK(esc_stick_check(&pix, p2, 1, &r.t, &why));
+    pix_values[1].after[0] = ESC_THR_MAX;        /* the select position */
+    CHECK(!esc_stick_check(&pix, p2, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "a move after the value makes no move");
+    pix_values[1].after[0] = ESC_THR_MIN;
+    pix_values[1].after[1] = ESC_THR_MIN;        /* the same twice */
+    pix_values[1].after_count = 2u;
+    CHECK(!esc_stick_check(&pix, p2, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "a move after the value makes no move");
+    pix_values[1].after[1] = ESC_THR_MID;
+    CHECK(esc_stick_check(&pix, p2, 1, &r.t, &why));
+    /* Every value of record moves. */
+    for (size_t i = 0; i < esc_profiles_count(); ++i) {
+        const esc_profile_t *q = esc_profiles_at(i);
+        for (unsigned it = 0; it < q->item_count; ++it) {
+            for (unsigned v = 0; v < q->items[it].value_count; ++v) {
+                const esc_value_t *x = &q->items[it].values[v];
+                esc_throttle_t at = (q->store_throttle != ESC_THR_NONE)
+                                        ? q->store_throttle
+                                        : q->select_throttle;
+                for (unsigned k = 0; k < x->after_count; ++k) {
+                    if (x->after[k] == at) {
+                        T_FAIL("%s value %u: no move", q->id, x->number);
+                    }
+                    at = x->after[k];
+                }
+            }
+        }
+    }
+}
+
+/* sunrise-pro with value 5 of item 2 programmed from the middle. */
+static esc_profile_t g_mid;
+static esc_item_t    g_mid_items[2];
+static esc_value_t   g_mid_values[2];
+
+static void rig_mid(void)
+{
+    rig("sunrise-pro");
+    g_mid = *r.p;
+    memcpy(g_mid_items, r.p->items, sizeof(g_mid_items));
+    memcpy(g_mid_values, r.p->items[1].values, sizeof(g_mid_values));
+    g_mid_values[1].entry_throttle = ESC_THR_MID;
+    g_mid_items[1].values = g_mid_values;
+    g_mid.items = g_mid_items;
+    r.p = &g_mid;
+    esc_sim_cfg_t cfg;
+    esc_sim_defaults(&cfg);
+    esc_sim_init(&r.sim, r.p, &cfg);
+}
+
+/* One change a power-up, each from its own position: the first at the
+ * profile's MAX, the second at MID.  The stick moves only once the supply
+ * reads off, however late the module follows the OFF. */
+TEST_CASE(each_power_up_enters_from_the_position_of_its_change)
+{
+    rig_mid();
+    r.off_lag_ms = 400u;
+    esc_stick_change_t c[2] = { change(1, 3), change(2, 5) };
+    CHECK(start(c, 2));
+    run_for(480000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(r.e.entries, 2);
+    CHECK_EQ(r.on_n, 2u);
+    CHECK(r.on_pct[0] == ESC_STICK_PCT_MAX);
+    CHECK(r.on_pct[1] == ESC_STICK_PCT_MID);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+    CHECK_EQ(esc_sim_stored(&r.sim, 2), 5);
+    CHECK_EQ(r.sim.stored_from[2], ESC_THR_MID);
+    CHECK_EQ(r.sim.misplaced, 0u);
+    CHECK_EQ(r.moved_while_on, 0u);
+
+    /* The other order: MID first, then MAX. */
+    rig_mid();
+    r.off_lag_ms = 400u;
+    esc_stick_change_t d[2] = { change(2, 5), change(1, 2) };
+    CHECK(start(d, 2));
+    run_for(480000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK(r.on_pct[0] == ESC_STICK_PCT_MID);
+    CHECK(r.on_pct[1] == ESC_STICK_PCT_MAX);
+    CHECK_EQ(r.sim.misplaced, 0u);
+    CHECK_EQ(r.moved_while_on, 0u);
+
+    /* A supply that never reads off: the stick never leaves the store
+     * position for the next entry, and the run ends SUPPLY STAYS ON. */
+    rig_mid();
+    r.supply_stuck = true;
+    CHECK(start(c, 2));
+    run_for(480000u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+    CHECK_EQ(r.on_n, 1u);
+    CHECK_EQ(r.moved_while_on, 0u);
+}
+
+/* What one power-up cannot take is refused, not reordered or guessed. */
+TEST_CASE(a_power_up_position_that_cannot_work_is_refused)
+{
+    const char *why = NULL;
+    /* Two stages: the ESC picks the order, so the changes share one. */
+    rig("hobbywing-flyfun-8item");
+    static esc_profile_t two;
+    static esc_item_t two_items[2];
+    static esc_value_t two_values[2];
+    two = *r.p;
+    memcpy(two_items, r.p->items, sizeof(two_items));
+    memcpy(two_values, r.p->items[1].values, sizeof(two_values));
+    two_values[1].entry_throttle = ESC_THR_MID;
+    two_items[1].values = two_values;
+    two.items = two_items;
+    two.item_count = 2;
+    esc_stick_change_t c[2] = { { 0u, 1u }, { 1u, 1u } };
+    CHECK(!esc_stick_check(&two, c, 2, &r.t, &why));
+    CHECK_STR_EQ(why, "changes need different power-up positions");
+    c[0] = (esc_stick_change_t){ 1u, 1u };
+    CHECK(esc_stick_check(&two, c, 1, &r.t, &why));
+    /* The rest there is the select move: hobbywing selects at MIN. */
+    two_values[1].entry_throttle = ESC_THR_MIN;
+    CHECK(!esc_stick_check(&two, c, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "select move is the rest");
+
+    /* A hand at a powered ESC with the stick at MAX. */
+    rig("kontronik-jazz");
+    static esc_profile_t jazz;
+    static esc_item_t jazz_item;
+    static esc_value_t jazz_values[9];
+    jazz = *r.p;
+    jazz_item = r.p->items[0];
+    memcpy(jazz_values, r.p->items[0].values,
+           r.p->items[0].value_count * sizeof(jazz_values[0]));
+    jazz_values[2].entry_throttle = ESC_THR_MAX;
+    jazz_item.values = jazz_values;
+    jazz.items = &jazz_item;
+    esc_stick_change_t m[1] = { { 0u, 2u } };
+    CHECK(!esc_stick_check(&jazz, m, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "select move is the rest");
+    jazz.select_throttle = ESC_THR_MID;
+    CHECK(!esc_stick_check(&jazz, m, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "manual step");
+    /* A named rest away from a value's position needs the entry time. */
+    jazz.listen_throttle = ESC_THR_MIN;
+    jazz.entry_hold_ms = 0u;
+    jazz_values[2].entry_throttle = ESC_THR_MID;
+    jazz.select_throttle = ESC_THR_MAX;
+    CHECK(!esc_stick_check(&jazz, m, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "rest move, no entry time");
+    /* An at_power_up step's hold is a time the profile states: the run
+     * waits it (esc_stick_change_entry_ms()), so the move to the rest is
+     * timed and the change runs.  Entry MIN, the value at MID, the rest at
+     * MIN, the hold the only time given. */
+    static const esc_manual_t k_held[] = {
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u, NULL, false },
+    };
+    jazz.manual = k_held;
+    jazz.manual_count = 1;
+    CHECK_EQ(jazz.entry_throttle, ESC_THR_MIN);
+    CHECK_EQ(esc_stick_change_entry(&jazz, &m[0]), ESC_THR_MID);
+    CHECK_EQ(esc_stick_change_entry_ms(&jazz, &m[0], &r.t), 3000u);
+    CHECK(esc_stick_check(&jazz, m, 1, &r.t, &why));
+    /* The same hold, the value at the entry's MIN and the rest at MID:
+     * the profile-wide rule takes the hold too. */
+    jazz.listen_throttle = ESC_THR_MID;
+    jazz_values[2].entry_throttle = ESC_THR_NONE;
+    CHECK(esc_stick_kind(&jazz, &why) != ESC_STICK_KIND_NONE);
+    jazz.manual = NULL;
+    jazz.manual_count = 0;
+    jazz.automatable = ESC_AUTO_FULL;
+    CHECK_EQ(esc_stick_kind(&jazz, &why), ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "rest move, no entry time");
+}
+
+/* A button to hold while the supply comes on: the step at an unpowered
+ * ESC. */
+static const esc_manual_t k_hold_button[] = {
+    { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 0u },
+};
+
+/* A run started with the module's output still on: nothing is powered or
+ * asked of a person until the supply reads off; a module that stays on
+ * ends the run with SUPPLY STAYS ON, the step never shown. */
+TEST_CASE(a_run_started_with_the_output_on_asks_nothing)
+{
+    rig_hand("kontronik-jazz", k_hold_button, 1);
+    r.supply_on = true;                 /* live before the run */
+    r.supply_stuck = true;
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    bool asked = false, powered = false;
+    for (int i = 0; i < 10000 && esc_stick_running(&r.e); ++i) {
+        tick();
+        asked = asked || esc_stick_hand(&r.e) != NULL;
+        powered = powered || esc_stick_out(&r.e)->supply_on;
+    }
+    CHECK(!asked);
+    CHECK(!powered);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+    CHECK(esc_stick_reason_is_fault(r.e.reason));
+    ended_safe();
+
+    /* The same module going off 600 ms into the run: the step is asked
+     * only once it has read off for ESC_STICK_OFF_SETTLE_MS. */
+    rig_hand("kontronik-jazz", k_hold_button, 1);
+    r.supply_on = true;
+    r.off_at = r.now;
+    r.off_lag_ms = 600u;
+    CHECK(start(c, 1));
+    uint32_t off_at = 0u;
+    for (int i = 0; i < 10000 && esc_stick_running(&r.e)
+                    && esc_stick_hand(&r.e) == NULL; ++i) {
+        tick();
+        if (!r.supply_on && off_at == 0u) {
+            off_at = r.now;
+        }
+    }
+    CHECK(esc_stick_hand(&r.e) != NULL);
+    CHECK(off_at != 0u);
+    CHECK(r.now - off_at >= ESC_STICK_OFF_SETTLE_MS);
+    CHECK(!r.supply_on);
+}
+
+/* While a step at an unpowered ESC is asked, a reading that shows the
+ * output on, or the current up, ends the run at once; readings that stop
+ * end it too. */
+TEST_CASE(a_supply_that_comes_on_during_the_step_ends_the_run)
+{
+    esc_stick_change_t c[1] = { change(1, 3) };
+    for (int k = 0; k < 3; ++k) {
+        rig_hand("kontronik-jazz", k_hold_button, 1);
+        CHECK(start(c, 1));
+        run_until_phase(ESC_STICK_HAND_OFF, 60000u);
+        CHECK_EQ(r.e.phase, ESC_STICK_HAND_OFF);
+        CHECK(esc_stick_hand(&r.e) != NULL);
+        if (k == 0) {
+            r.supply_on = true;         /* the module, by itself */
+            r.supply_stuck = true;
+        } else if (k == 1) {
+            r.extra_ma = 200;           /* current through the ESC */
+        } else {
+            r.readings_stop = true;
+        }
+        const uint32_t at = r.now;
+        run_for(5000u);
+        if (k < 2) {
+            CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+            CHECK(r.e.phase_ms - at <= r.read_iv + 2u);   /* the next one */
+        } else {
+            CHECK_EQ(r.e.reason, ESC_STICK_R_STALE);
+        }
+        CHECK(esc_stick_hand(&r.e) == NULL);
+        ended_safe();
+    }
+
+    /* Before a later power-up: a module on again after the run saw it off
+     * ends the run before the jumper is asked for. */
+    static const esc_manual_t fit[] = {
+        { ESC_MANUAL_BEFORE_POWER, "Fit the jumper.", 0u },
+    };
+    rig_hand("sunrise-pro", fit, 1);
+    esc_stick_change_t two[2] = { change(1, 3), change(2, 4) };
+    CHECK(start(two, 2));
+    run_until_phase(ESC_STICK_CYCLE, 240000u);
+    for (int i = 0; i < 20000 && esc_stick_running(&r.e)
+                    && !r.e.cycle_moved; ++i) {
+        tick();
+    }
+    CHECK(r.e.cycle_moved);
+    r.supply_on = true;
+    r.supply_stuck = true;
+    bool asked = false;
+    for (int i = 0; i < 20000 && esc_stick_running(&r.e); ++i) {
+        tick();
+        asked = asked || esc_stick_hand(&r.e) != NULL;
+    }
+    CHECK(!asked);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+}
+
+/* Run for @p ms; the time the module is powered while the stick, armed
+ * and not asked on, is away from MIN. */
+static uint32_t powered_away_from_min(uint32_t ms)
+{
+    uint32_t n = 0u;
+    for (uint32_t i = 0; i < ms && esc_stick_running(&r.e); ++i) {
+        tick();
+        if (r.supply_on && !esc_stick_out(&r.e)->supply_on && r.armed
+            && esc_stick_out(&r.e)->throttle_pct > ESC_STICK_PCT_MIN) {
+            ++n;
+        }
+    }
+    return n;
+}
+
+/* A module live from the start: a MID entry (the car mode) and a MAX one
+ * keep the stick at MIN until the run ends with SUPPLY STAYS ON. */
+TEST_CASE(the_stick_stays_at_min_until_the_supply_reads_off)
+{
+    static const char *const ids[] = { "kontronik-beat", "sunrise-pro" };
+    for (size_t k = 0; k < 2; ++k) {
+        rig(ids[k]);
+        esc_stick_change_t c[1] = { (k == 0) ? change(1, 6) : change(1, 3) };
+        CHECK(esc_stick_change_entry(r.p, &c[0]) != ESC_THR_MIN);
+        r.supply_on = true;
+        r.supply_stuck = true;
+        CHECK(start(c, 1));
+        CHECK_EQ(powered_away_from_min(10000u), 0u);
+        CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+        ended_safe();
+    }
+}
+
+/* The module coming on by itself after the stick went to the entry: the
+ * run ends on the next reading, in SIGNAL and in a power cycle alike. */
+TEST_CASE(a_live_reading_after_the_entry_move_ends_the_run_at_once)
+{
+    rig("sunrise-pro");
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    for (int i = 0; i < 10000 && !r.e.sig_moved; ++i) {
+        tick();
+    }
+    CHECK_EQ(r.e.phase, ESC_STICK_SIGNAL);
+    CHECK(r.e.sig_moved);
+    r.supply_on = true;
+    r.supply_stuck = true;
+    CHECK(powered_away_from_min(10000u) <= r.read_iv + 2u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+    ended_safe();
+
+    rig("sunrise-pro");
+    esc_stick_change_t two[2] = { change(1, 3), change(2, 4) };
+    CHECK(start(two, 2));
+    run_until_phase(ESC_STICK_CYCLE, 240000u);
+    for (int i = 0; i < 20000 && esc_stick_running(&r.e)
+                    && !r.e.cycle_moved; ++i) {
+        tick();
+    }
+    CHECK(r.e.cycle_moved);
+    run_for(100u);
+    r.supply_on = true;
+    r.supply_stuck = true;
+    CHECK(powered_away_from_min(10000u) <= r.read_iv + 2u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_SUPPLY_ON);
+    ended_safe();
+}
+
+/* Readings that stop after the supply read off: no step is asked, and
+ * nothing powered, on a reading older than ESC_STICK_STALE_MS. */
+TEST_CASE(no_step_is_asked_on_an_old_reading)
+{
+    static const esc_manual_t fit[] = {
+        { ESC_MANUAL_BEFORE_POWER, "Fit the jumper.", 0u, NULL, false },
+    };
+    rig_hand("sunrise-pro", fit, 1);
+    esc_stick_change_t two[2] = { change(1, 3), change(2, 4) };
+    CHECK(start(two, 2));
+    run_until_phase(ESC_STICK_CYCLE, 240000u);
+    for (int i = 0; i < 20000 && esc_stick_running(&r.e) && !r.e.off_seen;
+         ++i) {
+        tick();
+    }
+    CHECK(r.e.off_seen);
+    r.readings_stop = true;
+    bool asked = false, powered = false;
+    for (int i = 0; i < 20000 && esc_stick_running(&r.e); ++i) {
+        tick();
+        asked = asked || esc_stick_hand(&r.e) != NULL;
+        powered = powered || esc_stick_out(&r.e)->supply_on;
+    }
+    CHECK(!asked);
+    CHECK(!powered);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_STALE);
+    ended_safe();
+}
+
 int main(void)
 {
     RUN(beeps_make_a_group_that_silence_ends);
@@ -1421,5 +3119,37 @@ int main(void)
     RUN(the_run_counts_every_pulse_the_detector_begins);
     RUN(the_green_light_shows_every_pulse_for_its_minimum);
     RUN(the_simulation_enters_only_from_the_entry_position);
+    RUN(a_jumper_pulled_after_the_entry_is_waited_for);
+    RUN(a_pull_starts_the_menu_and_no_group_is_lost);
+    RUN(an_earlier_step_still_waits_for_done);
+    RUN(a_step_never_confirmed_ends_the_run);
+    RUN(the_supply_stays_on_until_the_esc_has_confirmed);
+    RUN(the_supply_stays_on_while_the_esc_repeats_the_mode);
+    RUN(a_hold_on_every_value_times_the_rest_move);
+    RUN(an_end_while_the_esc_stores_says_it_was_cut_short);
+    RUN(a_store_cut_before_its_moves_says_so);
+    RUN(a_later_locking_step_counts_from_the_first);
+    RUN(stop_abort_and_the_supply_end_a_run_waiting_for_a_step);
+    RUN(a_step_at_power_up_is_asked_with_the_supply_off);
+    RUN(the_entry_lasts_at_least_the_hold_at_power_up);
+    RUN(a_step_before_power_is_asked_before_every_later_power_up);
+    RUN(a_step_the_run_cannot_wait_for_is_refused);
+    RUN(a_car_mode_is_powered_up_from_the_middle);
+    RUN(each_power_up_enters_from_the_position_of_its_change);
+    RUN(a_power_up_position_that_cannot_work_is_refused);
+    RUN(a_value_waits_its_own_entry_time);
+    RUN(sun_plus_powers_up_at_the_back_but_its_car_mode);
+    RUN(shared_numbers_do_not_overflow_the_store_moves);
+    RUN(the_set_points_stay_within_the_escs_ratings);
+    RUN(twenty_volts_leave_out_one_family_and_six_models);
+    RUN(an_entry_time_that_cannot_work_is_refused);
+    RUN(shared_entry_times_compare_what_the_run_waits);
+    RUN(a_run_started_with_the_output_on_asks_nothing);
+    RUN(a_supply_that_comes_on_during_the_step_ends_the_run);
+    RUN(the_stick_stays_at_min_until_the_supply_reads_off);
+    RUN(a_live_reading_after_the_entry_move_ends_the_run_at_once);
+    RUN(no_step_is_asked_on_an_old_reading);
+    RUN(a_value_makes_its_moves_after_the_selection);
+    RUN(a_car_mode_selects_at_full_and_stores_at_the_brake);
     return test_summary("esc_stick");
 }

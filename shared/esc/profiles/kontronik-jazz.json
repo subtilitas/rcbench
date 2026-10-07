@@ -81,7 +81,28 @@
     }
   ],
   "automatable": "assisted",
-  "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps.",
+  "automatable_note": "JAZZ: a jumper is fitted on any 2 of the 3 programming contacts before power is applied and pulled off after the ESC's first tone sequence. MINIJAZZ: a button is pressed at that moment instead. The bench has no actuator for either, so a person does it; the run asks for each step.",
+  "manual": [
+    {
+      "when": "before_power",
+      "action": "JAZZ: fit the jumper on any 2 of the 3 programming contacts. MINIJAZZ has a button instead.",
+      "action_de": "JAZZ: Jumper auf 2 beliebige der 3 Programmierkontakte stecken. MINIJAZZ hat stattdessen einen Taster.",
+      "source": "Kontronik_Jazz.pdf p.6 (DE), p.15 (EN); Kontronik_MiniJazz.pdf p.6"
+    },
+    {
+      "when": "before_menu",
+      "action": "After 2 s or the tone sequence: JAZZ: pull the jumper off. MINIJAZZ: press the button.",
+      "action_de": "Nach 2 s oder der Tonfolge: JAZZ: Jumper abziehen. MINIJAZZ: Taster drücken.",
+      "starts_menu": true,
+      "source": "Kontronik_Jazz.pdf p.6; Kontronik_MiniJazz.pdf p.6 (DE), p.15 (EN)"
+    },
+    {
+      "when": "before_power_off",
+      "action": "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.",
+      "action_de": "Nicht berühren: warten, bis der ESC den Modus fertig wiederholt hat (Töne), dann ERLEDIGT tippen.",
+      "source": "Kontronik_Jazz.pdf p.6 (DE), p.15-16 (EN); Kontronik_MiniJazz.pdf p.6, p.15-16"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -155,7 +176,11 @@
         },
         {
           "number": 6,
-          "name": "Car, one direction, proportional brake"
+          "name": "Car, one direction, proportional brake",
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 7,
@@ -163,7 +188,11 @@
         },
         {
           "number": 8,
-          "name": "Car, forward and reverse"
+          "name": "Car, forward and reverse",
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 9,
@@ -190,6 +219,10 @@
   "notes": [
     "Kontronik_Jazz.pdf lists the JAZZ 55 LV limited current as 65 A on the German side and 70 A on the English side.",
     "Kontronik_MiniJazz.pdf follows the JAZZ procedure and mode list; its type table lists 15 LV and 20 LV only.",
-    "INDEX.csv names 'Jazz 40-6-18'; the manual uses 'JAZZ 40 LV'."
+    "INDEX.csv names 'Jazz 40-6-18'; the manual uses 'JAZZ 40 LV'.",
+    "MINIJAZZ is entered with a button ('Taster drücken', Kontronik_MiniJazz.pdf p.6 DE; 'Push Taster' p.15 EN), not a jumper; the manual's 'Jumper' is a glossary entry only.",
+    "Modes 6 and 8 start at 'Motor-Aus-Stellung' with a separate maximum-brake step after it (Kontronik_Jazz.pdf p.6, p.16), so the motor-off position is not at the back and is taken as the middle. They carry entry_throttle mid; the manual does not say 'middle'.",
+    "Modes 6 and 8 move the stick to maximum brake (back) after the full-throttle selection (Kontronik_Jazz.pdf p.6, p.16): after_select min, made STORE after the selection; the manual gives no time.",
+    "After the store the ESC repeats the stored mode as tones (control output, 'Kontrollausgabe'), and the manual disconnects power after it (Kontronik_Jazz.pdf p.6 (DE), p.15-16 (EN); Kontronik_MiniJazz.pdf p.6, p.15-16). The step before_power_off holds the run powered until the operator taps DONE. The manual names no lock for a power-off before the end of it."
   ]
 }

@@ -43,6 +43,17 @@ AUTO = {"full": "ESC_AUTO_FULL", "assisted": "ESC_AUTO_ASSISTED",
 THROTTLE = {"min": "ESC_THR_MIN", "mid": "ESC_THR_MID", "max": "ESC_THR_MAX",
             "none": "ESC_THR_NONE"}
 WHEN = {"before_power_on": "false", "after_power_on": "true"}
+# When an operator's step at the ESC is due, in the order of a run.
+MANUAL = {"before_power": "ESC_MANUAL_BEFORE_POWER",
+          "at_power_up": "ESC_MANUAL_AT_POWER_UP",
+          "before_menu": "ESC_MANUAL_BEFORE_MENU",
+          "during_menu": "ESC_MANUAL_DURING_MENU",
+          "before_power_off": "ESC_MANUAL_BEFORE_POWER_OFF",
+          "after_programming": "ESC_MANUAL_AFTER_PROGRAMMING"}
+MANUAL_MAX = 4          # steps in one profile: ESC_MANUAL_MAX
+AFTER_MAX = 4           # moves after a value's selection: ESC_AFTER_MAX
+MAKER_MODELS_MAX = 512  # one maker's models: ESC_MAKER_MODELS_MAX
+ACTION_MAX = 120        # bytes of one step's text: ESC_MANUAL_ACTION_MAX
 
 
 class Bad(Exception):
@@ -146,6 +157,84 @@ def no_nul(v: object, where: str) -> None:
             no_nul(x, f"{where}[{i}]")
 
 
+def after_select(v: dict, w: str, before: str) -> list[str]:
+    """The moves a value asks for after its select move: absent or null,
+    none; else 1 to AFTER_MAX of min, mid, max, each a move: not where the
+    stick already is -- @before, the store move or else the move that
+    stores the value, for the first; the one before it for the rest."""
+    a = v.get("after_select")
+    if a is None:
+        return []
+    want(isinstance(a, list) and 0 < len(a) <= AFTER_MAX,
+         f"{w}.after_select", f"not 1-{AFTER_MAX} moves")
+    moves = {k: x for k, x in THROTTLE.items() if k != "none"}
+    out = []
+    for i, m in enumerate(a):
+        want(isinstance(m, str) and m in moves, f"{w}.after_select[{i}]",
+             f"not one of {', '.join(moves)}")
+        want(moves[m] != before, f"{w}.after_select[{i}]",
+             "no move from the position before")
+        before = moves[m]
+        out.append(moves[m])
+    return out
+
+
+def check_manual(d: dict, w: str, auto: str) -> list[dict]:
+    """The operator's steps at the ESC: absent or null, none.  Only an
+    assisted profile has them, at most MANUAL_MAX, in the order a run
+    meets them."""
+    man = d.get("manual")
+    if man is None:
+        return []
+    want(isinstance(man, list) and 0 < len(man) <= MANUAL_MAX,
+         f"{w}.manual", f"not 1-{MANUAL_MAX} steps")
+    want(auto == "ESC_AUTO_ASSISTED", f"{w}.manual",
+         "only on an assisted profile")
+    out, last, starts = [], 0, None
+    for i, m in enumerate(man):
+        mw = f"{w}.manual[{i}]"
+        want(isinstance(m, dict), mw, "not an object")
+        when = pick(m, "when", mw, MANUAL)
+        at = list(MANUAL.values()).index(when)
+        want(at >= last, f"{mw}.when", "before the step above it")
+        last = at
+        action = text(m, "action", mw)
+        want(len(action.encode("utf-8")) <= ACTION_MAX, f"{mw}.action",
+             f"longer than {ACTION_MAX} bytes")
+        hold = num(m, "hold_ms", mw, 60000)
+        want(hold is None or when == "ESC_MANUAL_AT_POWER_UP",
+             f"{mw}.hold_ms", "only for at_power_up")
+        # The German beside it: absent or null, none; else as the action.
+        de = "" if m.get("action_de") is None else text(m, "action_de", mw)
+        want(len(de.encode("utf-8")) <= ACTION_MAX, f"{mw}.action_de",
+             f"longer than {ACTION_MAX} bytes")
+        # Whether the step starts the menu: absent or null, false.
+        sm = m.get("starts_menu")
+        want(sm is None or isinstance(sm, bool), f"{mw}.starts_menu",
+             "not a boolean")
+        sm = bool(sm)
+        want(not sm or when == "ESC_MANUAL_BEFORE_MENU",
+             f"{mw}.starts_menu", "only for before_menu")
+        want(not sm or starts is None, f"{mw}.starts_menu",
+             "a second step that starts the menu")
+        want(starts is None or when != "ESC_MANUAL_BEFORE_MENU",
+             f"{mw}.when", "before_menu after the step that starts the menu")
+        if sm:
+            starts = i
+        # Whether the ESC locks when the supply goes off before the step is
+        # done: absent or null, false.  Only a before_power_off step.
+        lk = m.get("locks")
+        want(lk is None or isinstance(lk, bool), f"{mw}.locks",
+             "not a boolean")
+        lk = bool(lk)
+        want(not lk or when == "ESC_MANUAL_BEFORE_POWER_OFF", f"{mw}.locks",
+             "only for before_power_off")
+        out.append({"when": when, "action": action, "hold": hold or 0,
+                    "de": de, "sm": "true" if sm else "false",
+                    "lk": "true" if lk else "false"})
+    return out
+
+
 def check(path: pathlib.Path) -> dict:
     """The profile, reduced to what the firmware carries; raises Bad."""
     w = path.name
@@ -172,6 +261,7 @@ def check(path: pathlib.Path) -> dict:
     note = optional(d, "automatable_note", w, str, "")
     want(auto == "ESC_AUTO_FULL" or note != "", f"{w}.automatable_note",
          "needed when not full")
+    manual = check_manual(d, w, auto)
 
     s = d.get("scheme")
     want(isinstance(s, dict), f"{w}.scheme", "not an object")
@@ -239,7 +329,7 @@ def check(path: pathlib.Path) -> dict:
         "repeat": -1 if rep is None else rep,
         "one": "true" if cpe == "one" else "false",
         "verified": "true" if d["verified"] else "false",
-        "steps": steps, "models": [], "items": [],
+        "steps": steps, "models": [], "items": [], "manual": manual,
     }
 
     models = d.get("models")
@@ -262,7 +352,11 @@ def check(path: pathlib.Path) -> dict:
             "nimh": "true" if ct == "nimh" else "false",
             "v": num(m, "v_max_mv", mw, 1000000) or 0,
             "a": num(m, "current_a", mw, 65535) or 0,
+            "vmin": num(m, "v_min_mv", mw, 1000000) or 0,
         })
+        mm = p["models"][-1]
+        want(not (mm["vmin"] and mm["v"]) or mm["vmin"] <= mm["v"],
+             f"{mw}.v_min_mv", "above v_max_mv")
 
     items = d.get("items")
     want(isinstance(items, list) and len(items) <= 255, f"{w}.items",
@@ -270,6 +364,11 @@ def check(path: pathlib.Path) -> dict:
     want(auto == "ESC_AUTO_NONE" or len(items) > 0, f"{w}.items",
          "empty for a profile the bench may run")
     seen: dict[int, list[bool]] = {}
+    # Where the stick is when a value's own moves begin: the store move,
+    # else the move that stores the value.
+    before = next(x for x in (p["store_thr"], p["vsel_thr"], p["select_thr"])
+                  if x != "ESC_THR_NONE") \
+        if p["select_thr"] != "ESC_THR_NONE" else "ESC_THR_NONE"
     for i, it in enumerate(items):
         iw = f"{w}.items[{i}]"
         want(isinstance(it, dict), iw, "not an object")
@@ -297,8 +396,18 @@ def check(path: pathlib.Path) -> dict:
             dflt = v.get("default", False)
             want(isinstance(dflt, bool), f"{vw}.default", "not a boolean")
             defaults += dflt
+            # The stick position this value is programmed from, where the
+            # manual gives one other than the profile's entry: absent or
+            # null, the entry's.
+            et = "ESC_THR_NONE" if v.get("entry_throttle") is None else \
+                pick(v, "entry_throttle", vw,
+                     {k: x for k, x in THROTTLE.items() if k != "none"})
             out.append({"name": text(v, "name", vw), "n": vn,
-                        "d": "true" if dflt else "false"})
+                        "d": "true" if dflt else "false", "et": et,
+                        # Power-on to the menu for this value, where the
+                        # manual gives one other than the entry's.
+                        "eh": num(v, "entry_hold_ms", vw, 600000) or 0,
+                        "after": after_select(v, vw, before)})
         want(defaults <= 1, f"{iw}.values", "more than one default")
         p["items"].append({"name": text(it, "name", iw), "key": key,
                            "n": number, "values": out, "applies": applies,
@@ -306,6 +415,19 @@ def check(path: pathlib.Path) -> dict:
     for number, conditional in seen.items():
         want(len(conditional) == 1 or all(conditional), f"{w}.items",
              f"number {number} twice without applies_to or applies_when")
+    # The step that starts the menu is asked with the stick where the
+    # power-up left it, and the run counts from then: the menu has to rest
+    # there, for every value's power-up position.
+    lis = p["listen_thr"]
+    if lis != "ESC_THR_NONE":
+        for i, m in enumerate(p["manual"]):
+            if m["sm"] != "true":
+                continue
+            at = {p["entry_thr"]} | {v["et"] for it in p["items"]
+                                     for v in it["values"]
+                                     if v["et"] != "ESC_THR_NONE"}
+            want(at == {lis}, f"{w}.manual[{i}].starts_menu",
+                 "the menu rests elsewhere (scheme.listen)")
     return p
 
 
@@ -345,18 +467,27 @@ def emit(profiles: list[dict]) -> str:
         o.append(f"static const esc_model_t {n}_models[] = {{\n")
         for m in p["models"]:
             o.append(f"    {{ {c_str(m['name'])}, {m['cmin']}u, {m['cmax']}u, "
-                     f"{m['nimh']}, {m['v']}u, {m['a']}u }},\n")
+                     f"{m['nimh']}, {m['v']}u, {m['a']}u, {m['vmin']}u }},\n")
         o.append("};\n")
         for k, it in enumerate(p["items"]):
             o.append(f"static const esc_value_t {n}_v{k}[] = {{\n")
             for v in it["values"]:
                 o.append(f"    {{ {c_str(v['name'])}, {v['n']}u, "
-                         f"{v['d']} }},\n")
+                         f"{v['d']}, {v['et']}, {v['eh']}u, "
+                         f"{len(v['after'])}u, "
+                         f"{{ {', '.join(v['after']) or '0'} }} }},\n")
             o.append("};\n")
             if it["applies"]:
                 o.append(f"static const char *const {n}_a{k}[] = {{\n")
                 o += [f"    {c_str(x)},\n" for x in it["applies"]]
                 o.append("};\n")
+        if p["manual"]:
+            o.append(f"static const esc_manual_t {n}_manual[] = {{\n")
+            for m in p["manual"]:
+                o.append(f"    {{ {m['when']}, {c_str(m['action'])}, "
+                         f"{m['hold']}u, {c_str(m['de'])}, {m['sm']}, "
+                         f"{m['lk']} }},\n")
+            o.append("};\n")
         if p["items"]:
             o.append(f"static const esc_item_t {n}_items[] = {{\n")
             for k, it in enumerate(p["items"]):
@@ -370,6 +501,7 @@ def emit(profiles: list[dict]) -> str:
     for p in profiles:
         n = ident(p["id"])
         items = f"{n}_items" if p["items"] else "NULL"
+        manual = f"{n}_manual" if p["manual"] else "NULL"
         o.append(
             f"    {{ {c_str(p['id'])}, {c_str(p['brand'])},\n"
             f"      {c_str(p['family'])},\n"
@@ -384,7 +516,8 @@ def emit(profiles: list[dict]) -> str:
             f" {p['repeat']}, {p['one']}, {p['verified']},\n"
             f"      {len(p['steps'])}u, {n}_steps,"
             f" {len(p['models'])}u, {n}_models,"
-            f" {len(p['items'])}u, {items} }},\n")
+            f" {len(p['items'])}u, {items},\n"
+            f"      {len(p['manual'])}u, {manual} }},\n")
     o.append("};\n\n")
     o.append("const size_t esc_profiles_builtin_count =\n"
              "    sizeof(esc_profiles_builtin)\n"
@@ -405,6 +538,32 @@ def self_test() -> list[str]:
 
     head = '"schema": 1,'
     sel = '"select": {'
+    auto = '"automatable": "none",'
+    val = '"name": "disabled'
+
+    def man(steps: str, kind: str = "assisted") -> bytes:
+        return at(auto, f'"automatable": "{kind}", "manual": {steps},')
+
+    def sel_listen(data: bytes, where: str) -> bytes:
+        """@data with a listen move to @where."""
+        text = data.decode("utf-8").replace(
+            '"select": {', f'"listen": {{"throttle": "{where}"}}, '
+            '"select": {', 1)
+        return text.encode("utf-8")
+
+    def sel_max(data: bytes, store: str = "") -> bytes:
+        """@data with the select move at max, and a store move."""
+        text = data.decode("utf-8").replace(
+            '"select": {\n      "throttle": "none"',
+            '"select": {\n      "throttle": "max"', 1)
+        if store:
+            text = text.replace('"select": {',
+                                f'"store": {{"throttle": "{store}"}}, '
+                                '"select": {', 1)
+        return text.encode("utf-8")
+
+    jumper = '{"when": "before_power", "action": "Fit the jumper."}'
+    pull = '{"when": "before_menu", "action": "Pull the jumper."}'
     refuse = {
         "schema true": at(head, '"schema": true,'),
         "key twice": at(head, head + ' "schema": 1,'),
@@ -416,6 +575,9 @@ def self_test() -> list[str]:
         "applies_when 0": at('"applies_to": null',
                              '"applies_to": null, "applies_when": 0'),
         "cell_type false": at('"cell_type": "lipo"', '"cell_type": false'),
+        "v_min above v_max": at('"v_min_mv": 5500', '"v_min_mv": 12700'),
+        "v_min a string": at('"v_min_mv": 5500', '"v_min_mv": "5500"'),
+        "v_min over 1000000": at('"v_min_mv": 5500', '"v_min_mv": 1000001'),
         "nested 17": at(head, head + ' "n": ' + "[" * 16 + "1" + "]" * 16
                         + ","),
         "verified 0": at('"verified": false', '"verified": 0'),
@@ -449,6 +611,97 @@ def self_test() -> list[str]:
         "store none": at(sel, '"store": {"throttle": "none"}, ' + sel),
         "store throttle a list": at(sel, '"store": {"throttle": []}, '
                                     + sel),
+        "value entry none": at(val, '"entry_throttle": "none", ' + val),
+        "value entry MID": at(val, '"entry_throttle": "MID", ' + val),
+        "value entry an object": at(val, '"entry_throttle": {"throttle": '
+                                    '"mid"}, ' + val),
+        "value entry false": at(val, '"entry_throttle": false, ' + val),
+        "value hold 600001": at(val, '"entry_hold_ms": 600001, ' + val),
+        "value hold -1": at(val, '"entry_hold_ms": -1, ' + val),
+        "value hold 2.5": at(val, '"entry_hold_ms": 2.5, ' + val),
+        "value hold a string": at(val, '"entry_hold_ms": "5000", ' + val),
+        "after a string": at(val, '"after_select": "min", ' + val),
+        "after empty": at(val, '"after_select": [], ' + val),
+        "after 5 moves": at(val, '"after_select": ["min", "max", "min", '
+                            '"max", "min"], ' + val),
+        "after none": at(val, '"after_select": ["none"], ' + val),
+        "after MIN": at(val, '"after_select": ["MIN"], ' + val),
+        "after null inside": at(val, '"after_select": [null], ' + val),
+        "after an object": at(val, '"after_select": [{"throttle": "min"}], '
+                              + val),
+        "after the select position": sel_max(at(
+            val, '"after_select": ["max"], ' + val)),
+        "after the same twice": sel_max(at(
+            val, '"after_select": ["min", "min"], ' + val)),
+        "after the store position": sel_max(at(
+            val, '"after_select": ["min"], ' + val), store="min"),
+        "manual on a full profile": man(f"[{jumper}]", "full"),
+        "manual on a profile nobody runs": man(f"[{jumper}]", "none"),
+        "manual empty": man("[]"),
+        "manual an object": man(jumper),
+        "manual 5 steps": man("[" + ", ".join([jumper] * 5) + "]"),
+        "manual step a string": man('["Fit the jumper."]'),
+        "manual when unknown": man('[{"when": "later", "action": "x"}]'),
+        "manual when missing": man('[{"action": "x"}]'),
+        "manual out of order": man(f"[{pull}, {jumper}]"),
+        "manual action empty": man('[{"when": "before_menu", '
+                                   '"action": ""}]'),
+        "manual action missing": man('[{"when": "before_menu"}]'),
+        "manual action 121 bytes": man('[{"when": "before_menu", '
+                                       '"action": "' + "x" * 121 + '"}]'),
+        "manual action 61 umlauts": man('[{"when": "before_menu", '
+                                        '"action": "' + "ü" * 61
+                                        + '"}]'),
+        "manual hold before the menu": man(
+            '[{"when": "before_menu", "action": "x", "hold_ms": 0}]'),
+        "manual hold 60001": man(
+            '[{"when": "at_power_up", "action": "x", "hold_ms": 60001}]'),
+        "manual hold a string": man(
+            '[{"when": "at_power_up", "action": "x", "hold_ms": "2"}]'),
+        "manual de empty": man('[{"when": "before_menu", "action": "x", '
+                               '"action_de": ""}]'),
+        "manual de a number": man('[{"when": "before_menu", "action": "x", '
+                                  '"action_de": 1}]'),
+        "manual de 61 umlauts": man('[{"when": "before_menu", "action": "x", '
+                                    '"action_de": "' + "\u00fc" * 61
+                                    + '"}]'),
+        "manual starts 1": man('[{"when": "before_menu", "action": "x", '
+                               '"starts_menu": 1}]'),
+        "manual starts a string": man('[{"when": "before_menu", '
+                                      '"action": "x", "starts_menu": "y"}]'),
+        "manual starts before power": man(
+            '[{"when": "before_power", "action": "x", "starts_menu": true}]'),
+        "manual starts after": man(
+            '[{"when": "after_programming", "action": "x", '
+            '"starts_menu": true}]'),
+        "manual starts twice": man(
+            '[{"when": "before_menu", "action": "x", "starts_menu": true}, '
+            '{"when": "before_menu", "action": "y", "starts_menu": true}]'),
+        "manual before_menu after the start": man(
+            '[{"when": "before_menu", "action": "x", "starts_menu": true}, '
+            '{"when": "before_menu", "action": "y"}]'),
+        "manual de 121 bytes": man('[{"when": "before_menu", "action": "x", '
+                                   '"action_de": "' + "x" * 121 + '"}]'),
+        "manual before off, then the menu": man(
+            '[{"when": "before_power_off", "action": "x"}, '
+            '{"when": "before_menu", "action": "y"}]'),
+        "manual before off after programming": man(
+            '[{"when": "after_programming", "action": "x"}, '
+            '{"when": "before_power_off", "action": "y"}]'),
+        "manual before off held": man(
+            '[{"when": "before_power_off", "action": "x", "hold_ms": 0}]'),
+        "manual starts, listen elsewhere": sel_listen(man(
+            '[{"when": "before_menu", "action": "x", "starts_menu": true}]'),
+            "min"),
+        "manual locks before the menu": man(
+            '[{"when": "before_menu", "action": "x", "locks": true}]'),
+        "manual locks a string": man(
+            '[{"when": "before_power_off", "action": "x", "locks": "y"}]'),
+        "manual locks 1": man(
+            '[{"when": "before_power_off", "action": "x", "locks": 1}]'),
+        "manual before off starts": man(
+            '[{"when": "before_power_off", "action": "x", '
+            '"starts_menu": true}]'),
     }
     accept = {
         "plain": base.encode("utf-8"),
@@ -469,6 +722,64 @@ def self_test() -> list[str]:
                                '"x": [1, 2]}, ' + sel),
         "store null": at(sel, '"store": null, ' + sel),
         "store min": at(sel, '"store": {"throttle": "min"}, ' + sel),
+        "value entry null": at(val, '"entry_throttle": null, ' + val),
+        "value entry mid": at(val, '"entry_throttle": "mid", ' + val),
+        "value hold null": at(val, '"entry_hold_ms": null, ' + val),
+        "value hold 600000": at(val, '"entry_hold_ms": 600000, ' + val),
+        "after null": at(val, '"after_select": null, ' + val),
+        "after min": at(val, '"after_select": ["min"], ' + val),
+        "after 4 moves": at(val, '"after_select": ["min", "mid", "max", '
+                            '"m\\u0069n"], ' + val),
+        "after from the select": sel_max(at(
+            val, '"after_select": ["min", "max"], ' + val)),
+        "after from the store": sel_max(at(
+            val, '"after_select": ["max"], ' + val), store="min"),
+        "manual null": at(auto, auto + ' "manual": null,'),
+        "manual two steps": man(f"[{jumper}, {pull}]"),
+        "manual four steps of one kind": man("[" + ", ".join([pull] * 4)
+                                             + "]"),
+        "manual action 120 bytes": man('[{"when": "before_menu", '
+                                       '"action": "' + "x" * 120 + '"}]'),
+        "manual action 60 umlauts": man('[{"when": "before_menu", '
+                                        '"action": "' + "ü" * 60
+                                        + '"}]'),
+        "manual hold at power-up": man(
+            '[{"when": "at_power_up", "action": "x", "hold_ms": 60000}]'),
+        "manual hold null": man(
+            '[{"when": "after_programming", "action": "x", '
+            '"hold_ms": null}]'),
+        "manual with more": man('[{"when": "during_menu", "action": "x", '
+                                '"source": "p. 5"}]'),
+        "manual starts": man('[{"when": "before_menu", "action": "x"}, '
+                             '{"when": "before_menu", "action": "y", '
+                             '"starts_menu": true}, '
+                             '{"when": "after_programming", "action": "z"}]'),
+        "v_min at v_max": at('"v_min_mv": 5500', '"v_min_mv": 12600'),
+        "v_min null": at('"v_min_mv": 5500', '"v_min_mv": null'),
+        "manual starts, listen at the entry": sel_listen(man(
+            '[{"when": "before_menu", "action": "x", "starts_menu": true}]'),
+            "max"),
+        "manual before off locks": man(
+            '[{"when": "before_power_off", "action": "x", "locks": true}]'),
+        "manual before off locks not": man(
+            '[{"when": "before_power_off", "action": "x", "locks": false}, '
+            '{"when": "before_power_off", "action": "y", "locks": null}]'),
+        "manual before off": man(
+            '[{"when": "before_menu", "action": "x", "starts_menu": true}, '
+            '{"when": "before_power_off", "action": "y"}, '
+            '{"when": "before_power_off", "action": "z"}, '
+            '{"when": "after_programming", "action": "w"}]'),
+        "manual starts false": man('[{"when": "before_menu", "action": "x", '
+                                   '"starts_menu": false}]'),
+        "manual starts null": man('[{"when": "before_menu", "action": "x", '
+                                  '"starts_menu": null}]'),
+        "manual de null": man('[{"when": "before_menu", "action": "x", '
+                              '"action_de": null}]'),
+        "manual de 60 umlauts": man('[{"when": "before_menu", "action": "x", '
+                                    '"action_de": "' + "\u00fc" * 60
+                                    + '"}]'),
+        "manual de escaped": man('[{"when": "before_menu", "action": "x", '
+                                 '"action_de": "Br\\u00fccke ab"}]'),
     }
     bad = []
     with tempfile.TemporaryDirectory() as tmp:
@@ -505,6 +816,17 @@ def main() -> int:
     if bad:
         print("\n".join(bad), file=sys.stderr)
         return 1
+    # A maker's models across its profiles: what the list holds for one
+    # maker, as the registry holds a card profile to it.
+    makers: dict[str, int] = {}
+    for p in profiles:
+        key = "".join(c.upper() if "a" <= c <= "z" else c for c in p["brand"])
+        makers[key] = makers.get(key, 0) + len(p["models"])
+    for key, n in sorted(makers.items()):
+        if n > MAKER_MODELS_MAX:
+            print(f"maker {key}: {n} models, more than {MAKER_MODELS_MAX}",
+                  file=sys.stderr)
+            return 1
     profiles.sort(key=lambda p: p["id"].encode())   # strcmp order
     text_ = emit(profiles)
     if args.check:

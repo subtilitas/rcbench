@@ -8,7 +8,7 @@ betreten wird, wie der ESC eine Zahl ausgibt und welche Punkte und Werte das
 Menü hat. Es sind die Daten, die die
 [Stick-Programmierung](StickProgramming-de.md) ausführt: Der Bediener wählt
 einen ESC und die zu ändernden Werte, und der Prüfstand bewegt das Gas und
-zählt die Pieptöne im Versorgungsstrom. 14 der 72 Profile sind von einer
+zählt die Pieptöne im Versorgungsstrom. 24 der 72 Profile sind von einer
 Art, die sie ausführt.
 
 ## Was im Satz steht
@@ -24,6 +24,7 @@ Art, die sie ausführt.
 | --- | --- | --- |
 | Der Prüfstand allein: Gassignal und Versorgung | 44 | 340 |
 | Ein Mensch setzt einen Jumper, drückt einen Taster oder liest eine LED | 26 | 108 |
+| davon mit den Schritten in `manual` | 24 | 88 |
 | Niemand: das Handbuch nennt kein brauchbares Verfahren | 2 | 3 |
 
 Jedes Profil ist `"verified": false`. Die Profile stammen aus 153
@@ -42,7 +43,9 @@ Eine Datei auf der Karte heißt wie ihre id: `/ESC/hobbywing-flyfun-8item.json`
 enthält `"id": "hobbywing-flyfun-8item"`. Groß- und Kleinschreibung dürfen
 abweichen; alles andere wird abgelehnt. Eine Datei mit der id eines
 eingebauten Profils ersetzt dieses Profil. Eine Datei mit neuer id fügt ein
-Profil hinter den eingebauten an. Dateinamen ab 64 Zeichen werden nicht
+Profil hinter den eingebauten an. Eine Datei, die ihren Hersteller über
+512 Modelle (`ESC_MAKER_MODELS_MAX`) brächte, gezählt über seine eingebauten
+Profile und die von der Karte, wird abgelehnt. Dateinamen ab 64 Zeichen werden nicht
 gelesen. Die
 Karte hält höchstens 32 Profile; das Panel liest die Namen der ersten 64
 `.json`-Dateien in `/ESC/`. Eine abgelehnte Datei wird auf der Konsole mit
@@ -97,6 +100,7 @@ JSON. Das Panel lädt sie nicht.
 | Feld | Werte |
 | --- | --- |
 | `automatable` | `full`, `assisted`, `none`; alles außer `full` braucht `automatable_note` |
+| `manual` | die Handgriffe eines `assisted`-Profils am ESC; siehe [Handgriffe](#handgriffe) |
 | `scheme.type` | `count`, `short_long`, `melody_groups`, `yes_no`, `stick_position`, `other` |
 | `scheme.entry.throttle` | `min`, `mid`, `max`: die Knüppelstellung, die das Menü öffnet |
 | `scheme.entry.when` | `before_power_on`, `after_power_on` |
@@ -122,6 +126,7 @@ JSON. Das Panel lädt sie nicht.
 | `cells_min`, `cells_max` | 0 bis 255, oder null |
 | `cell_type` | `lipo`, `nimh`: was `cells_*` zählen |
 | `v_max_mv` | höchste Eingangsspannung in mV, oder null |
+| `v_min_mv` | niedrigste Eingangsspannung in mV, oder null; nicht über `v_max_mv` |
 | `current_a` | Dauerstrom in A, 0 bis 65535, oder null |
 
 ### Menüpunkte
@@ -132,11 +137,52 @@ JSON. Das Panel lädt sie nicht.
 | `name` | wie das Handbuch ihn nennt |
 | `key` | 1 bis 32 aus `a-z 0-9 _`; eine Bedeutung über alle Marken: `brake`, `timing`, `cutoff_voltage`, `cutoff_type`, `battery_type`, `cell_count`, `startup`, `governor`, `direction`, `throttle_range`, `pwm_freq`, `aircraft_type`, `mode`, `reset` |
 | `values` | 1 bis 255 aus `{"number": 0-255, "name": "...", "default": true}`; Nummern eindeutig, höchstens ein Standardwert |
-| `applies_to` | Modellnamen dieses Profils, oder null für alle |
+| `values[].entry_throttle` | `min`, `mid`, `max`: die Knüppelstellung, aus der das Handbuch diesen Wert programmiert, wo sie nicht die des Einstiegs ist; fehlt sie oder ist null, die des Einstiegs. Die Stick-Programmierung schaltet den ESC für diesen Wert dort ein |
+| `values[].entry_hold_ms` | 0 bis 600000: Einschalten bis Menü, wenn dieser Wert programmiert wird, wo das Handbuch eine andere Wartezeit als `scheme.entry.hold_ms` nennt; fehlt es oder ist null, die des Einstiegs. Kontronik SUN PLUS Modi 4 bis 6 warten 5000 ms |
+| `values[].after_select` | 1 bis 4 aus `min`, `mid`, `max`: die Bewegungen, die das Handbuch nach der Auswahlbewegung dieses Werts verlangt, der Reihe nach, jede, wenn der ESC die vorige beantwortet hat; fehlt es oder ist null, keine. Die Kontronik-Car-Modi und PIX Modus 2 gehen auf `min`, die Bremse. Jede ist eine Bewegung: die erste nicht dorthin, wo der Knüppel steht, wenn sie beginnen -- die Bewegung `scheme.store` des Profils, sonst die Auswahlbewegung (oder `value_select`) --, und keine gleich der davor; eine Datei mit einer, die stehen bleibt, wird abgelehnt. Die Stick-Programmierung macht jede SPEICHERN nach der vorigen, nach der Bewegung `scheme.store` des Profils; ein zweistufiges Profil nimmt keine |
+| `applies_to` | Modellnamen dieses Profils, oder null für alle. Die Stick-Programmierung bietet den Punkt nur an diesen Modellen an |
 | `applies_when` | eine Bedingung in Worten, z. B. `"model type heli"` |
 
 Zwei Menüpunkte dürfen dieselbe Nummer nur tragen, wenn beide `applies_to`
 oder `applies_when` haben.
+
+### Handgriffe
+
+`manual` listet, was ein Mensch außer Gas und Versorgung am ESC tut, in der
+Reihenfolge, in der ein Lauf darauf trifft. Fehlt es oder ist null: keine.
+
+```json
+"manual": [
+  {"when": "before_power", "action": "Fit the jumper on any 2 of the 3 programming contacts.",
+   "source": "Kontronik_Beat.pdf p.5"},
+  {"when": "before_menu", "action": "Pull the jumper off after 2 s or the tone sequence."}
+]
+```
+
+| Feld | Werte |
+| --- | --- |
+| `manual` | 1 bis 4 Schritte; nur in einem Profil mit `automatable: "assisted"` |
+| `when` | `before_power`, `at_power_up`, `before_menu`, `during_menu`, `before_power_off`, `after_programming`; kein Schritt früher als der darüber |
+| `action` | 1 bis 120 Byte UTF-8, englisch: zwei Zeilen des Pop-ups |
+| `action_de` | derselbe Schritt auf Deutsch, 1 bis 120 Byte UTF-8, Umlaute eingeschlossen; fehlt es oder ist null, erscheint auch auf Deutsch das Englische |
+| `starts_menu` | `true`, wo die Handlung selbst die Folge des Menüs startet, wie ein abgezogener Jumper oder ein gedrückter Taster bei Kontronik; fehlt es, null oder `false` sonst. Nur an einem Schritt `before_menu`, höchstens einer je Profil, und kein Schritt `before_menu` danach. Wo `scheme.listen` gesetzt ist, gleicht es der Einstiegsstellung und jedem `entry_throttle` der Werte: das Menü ruht, wo nach dem Schritt gefragt wird. Die Stick-Programmierung hört ab dem Moment zu, in dem sie nach diesem Schritt fragt ([Stick-Programmierung](StickProgramming-de.md#handgriffe)) |
+| `locks` | `true` an einem Schritt `before_power_off`, wo das Handbuch sagt, dass der ESC sich sperrt, wenn seine Versorgung vor dem Schritt ausgeht, wie bei Kontronik KOBY, JIVE Pro, KOLIBRI, KONTROL-X und KOSMIK; fehlt es, null oder `false` sonst, und nur an dieser Art. Die Stick-Programmierung sagt dann, dass der ESC gesperrt sein kann, nicht nur, dass der Wert womöglich nicht gespeichert ist |
+| `hold_ms` | nur `at_power_up`: 0 bis 60000, wie lange der Schritt nach dem Einschalten gehalten wird; fehlt oder null, wo nicht angegeben |
+
+`source` und jedes andere Feld eines Schritts bleiben im JSON. Die Aktion
+ist der eigene Text des Profils: deutsch, wo das Profil `action_de` nennt
+und die Oberfläche deutsch ist, sonst englisch. Jeder Schritt im Satz hat
+sein Deutsch. Der Bildschirm zeigt `when` in der Sprache der Oberfläche.
+Was ein Lauf mit jedem Schritt tut, steht unter
+[Stick-Programmierung](StickProgramming-de.md#handgriffe).
+
+24 Profile haben Schritte: die 22 Kontronik-Familien, `turnigy-aquastar`
+(sein Schalter bei Vollgas) und `greatplanes-electrifly-c-series` (sein
+Ein/Aus-Taster). `graupner-brushless-control-t`, dessen Menü an LEDs
+abgelesen wird, und `hacker-master-senstrol`, das den
+Identifikationschip seines Motors, einen zweiten Kanal und eine JetiBox
+braucht, sind `assisted` ohne Schritte: kein Handgriff, um den ein Mensch zu
+einem Zeitpunkt gebeten werden kann.
 
 ## Ein Profil hinzufügen oder korrigieren
 

@@ -71,8 +71,63 @@ bool programmer_screen_stick_typing(void);
  *  of the top row shown; for tests. */
 int programmer_screen_stick_listed(int *top);
 
+/** The list's level: 0 the makers, 1 one maker's models; the maker open
+ *  ("" on level 0); the page's model index (-1 for none); and the rows of
+ *  each level, NULL past the end.  For tests. */
+int programmer_screen_stick_level(void);
+const char *programmer_screen_stick_maker(void);
+int programmer_screen_stick_model(void);
+const char *programmer_screen_stick_maker_at(int i);
+const esc_profile_t *programmer_screen_stick_row(int i, int *model);
+
+/** Why row @p i of a maker's models does not run, in the language
+ *  showing, or NULL when it runs or there is no such row; for tests. */
+const char *programmer_screen_stick_row_why(int i);
+
+/** The item row @p i of the page shows, as an index into the profile's
+ *  items; -1 past the last.  For tests. */
+int programmer_screen_stick_item_at(int i);
+
+/** The warning row @p i shows while it runs: the ESC's voltage rating
+ *  unknown; NULL for none.  For tests. */
+const char *programmer_screen_stick_row_warn(int i);
+
+/** The result's count of the selections made, and its line for the
+ *  changes past the fourth ("" when all show), as drawn now; for tests. */
+const char *programmer_screen_stick_result_head(void);
+const char *programmer_screen_stick_result_more(void);
+
+/** The prompt's line on what no DONE does, as the prompt would draw it
+ *  now; for tests. */
+const char *programmer_screen_stick_left_text(void);
+
+/** The note the page shows under RUN: why a run cannot start, "" for
+ *  none; for tests. */
+const char *programmer_screen_stick_note(void);
+
 /** The profile whose page is open, or NULL on the list; for tests. */
 const esc_profile_t *programmer_screen_stick_page(void);
+
+/** A manual step's text in the language showing: its action_de where the
+ *  profile gives one and German shows, else its English action. */
+const char *programmer_screen_step_text(const esc_manual_t *m);
+
+/** Why the manual steps' pop-up says its profile does not run, for the
+ *  model it was opened for; NULL when it runs or no pop-up is open.  For
+ *  tests. */
+const char *programmer_screen_stick_hand_why(void);
+
+/** The entry time the profile's page shows, ms; for tests. */
+uint32_t programmer_screen_stick_entry_shown(void);
+
+/** Whether the supply reads off now, by the rule a run holds it to: its
+ *  own state off, the current at or under ESC_STICK_OFF_MA for
+ *  ESC_STICK_OFF_SETTLE_MS, in a reading no older than ESC_STICK_STALE_MS.
+ *  For tests. */
+bool programmer_screen_stick_supply_reads_off(void);
+
+/** Whether the manual steps' pop-up is open; for tests. */
+bool programmer_screen_stick_hand_shown(void);
 
 /** What the stack light shows; for tests. */
 void programmer_screen_stick_lights(bool *red, bool *green);

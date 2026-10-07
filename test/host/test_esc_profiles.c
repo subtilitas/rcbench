@@ -49,7 +49,8 @@ static const char k_min[] =
     "   \"select\": {\"throttle\": \"min\"}, \"skip\": {\"throttle\": \"none\"},\n"
     "   \"changes_per_entry\": \"many\"},\n"
     " \"models\": [{\"name\": \"Test 30A\", \"cells_min\": 2, \"cells_max\": 4,\n"
-    "              \"cell_type\": \"lipo\", \"v_max_mv\": 16800, \"current_a\": 30},\n"
+    "              \"cell_type\": \"lipo\", \"v_max_mv\": 16800, \"current_a\": 30,\n"
+    "              \"v_min_mv\": 6000},\n"
     "             {\"name\": \"Test 40A\", \"cells_min\": null, \"cells_max\": 12,\n"
     "              \"cell_type\": \"nimh\", \"v_max_mv\": null, \"current_a\": 40}],\n"
     " \"items\": [{\"number\": 1, \"name\": \"Brake\", \"key\": \"brake\",\n"
@@ -126,6 +127,7 @@ static void same(const esc_profile_t *a, const esc_profile_t *b)
         CHECK_EQ(x->nimh, y->nimh);
         CHECK_EQ(x->v_max_mv, y->v_max_mv);
         CHECK_EQ(x->current_a, y->current_a);
+        CHECK_EQ(x->v_min_mv, y->v_min_mv);
     }
     CHECK_EQ(a->item_count, b->item_count);
     for (unsigned i = 0; i < a->item_count && i < b->item_count; ++i) {
@@ -144,8 +146,551 @@ static void same(const esc_profile_t *a, const esc_profile_t *b)
             CHECK_STR_EQ(x->values[k].name, y->values[k].name);
             CHECK_EQ(x->values[k].number, y->values[k].number);
             CHECK_EQ(x->values[k].is_default, y->values[k].is_default);
+            CHECK_EQ(x->values[k].entry_throttle,
+                     y->values[k].entry_throttle);
+            CHECK_EQ(x->values[k].entry_hold_ms,
+                     y->values[k].entry_hold_ms);
+            CHECK_EQ(x->values[k].after_count, y->values[k].after_count);
+            for (unsigned m = 0; m < x->values[k].after_count
+                                 && m < ESC_AFTER_MAX; ++m) {
+                CHECK_EQ(x->values[k].after[m], y->values[k].after[m]);
+            }
         }
     }
+    CHECK_EQ(a->manual_count, b->manual_count);
+    CHECK_EQ(a->manual == NULL, a->manual_count == 0u);
+    for (unsigned i = 0; i < a->manual_count && i < b->manual_count; ++i) {
+        CHECK_EQ(a->manual[i].when, b->manual[i].when);
+        CHECK_STR_EQ(a->manual[i].action, b->manual[i].action);
+        CHECK_EQ(a->manual[i].hold_ms, b->manual[i].hold_ms);
+        CHECK_STR_EQ(a->manual[i].action_de, b->manual[i].action_de);
+        CHECK_EQ(a->manual[i].starts_menu, b->manual[i].starts_menu);
+    }
+}
+
+/* k_min as an assisted profile with the manual steps @p steps. */
+static char *with_manual(const char *steps)
+{
+    char to[1024];
+    (void)snprintf(to, sizeof(to),
+                   "\"automatable\": \"assisted\", \"automatable_note\": "
+                   "\"a jumper\", \"manual\": %s", steps);
+    return subst("\"automatable\": \"full\", \"automatable_note\": \"\"", to);
+}
+
+/* The steps a person does at the ESC, read in order with their times. */
+TEST_CASE(a_profile_reads_its_manual_steps)
+{
+    esc_profile_t p;
+    void *block = NULL;
+    CHECK(esc_profile_parse(k_min, strlen(k_min), &p, &block, NULL, 0));
+    if (block != NULL) {
+        CHECK_EQ(p.manual_count, 0u);
+        CHECK(p.manual == NULL);
+        CHECK_EQ(esc_profile_manual_count(&p, ESC_MANUAL_BEFORE_POWER), 0u);
+    }
+    free(block);
+    char *j = with_manual(
+        "[{\"when\": \"before_power\", \"action\": \"Fit the jumper.\"},"
+        " {\"when\": \"at_power_up\", \"action\": \"Hold SET.\","
+        "  \"hold_ms\": 3000, \"source\": \"p. 5\"},"
+        " {\"when\": \"before_menu\", \"action\": \"Pull the jumper.\"},"
+        " {\"when\": \"after_programming\", \"action\": \"T\\u00fcr zu.\","
+        "  \"hold_ms\": null, \"action_de\": \"Br\\u00fccke ab.\"}]");
+    block = NULL;
+    char err[96] = "";
+    CHECK(esc_profile_parse(j, strlen(j), &p, &block, err, sizeof(err)));
+    if (block != NULL) {
+        CHECK_EQ(p.manual_count, 4u);
+        CHECK_EQ(p.manual[0].when, ESC_MANUAL_BEFORE_POWER);
+        CHECK_STR_EQ(p.manual[0].action, "Fit the jumper.");
+        CHECK_EQ(p.manual[0].hold_ms, 0u);
+        CHECK_EQ(p.manual[1].when, ESC_MANUAL_AT_POWER_UP);
+        CHECK_EQ(p.manual[1].hold_ms, 3000u);
+        CHECK_EQ(p.manual[2].when, ESC_MANUAL_BEFORE_MENU);
+        CHECK_EQ(p.manual[3].when, ESC_MANUAL_AFTER_PROGRAMMING);
+        CHECK_STR_EQ(p.manual[3].action, "T\xC3\xBCr zu.");
+        CHECK_STR_EQ(p.manual[3].action_de, "Br\xC3\xBC" "cke ab.");
+        CHECK_STR_EQ(p.manual[0].action_de, "");
+        CHECK_EQ(esc_profile_manual_count(&p, ESC_MANUAL_BEFORE_MENU), 1u);
+        CHECK_EQ(esc_profile_manual_count(&p, ESC_MANUAL_DURING_MENU), 0u);
+    }
+    free(block);
+    free(j);
+    CHECK_EQ(esc_profile_manual_count(NULL, ESC_MANUAL_BEFORE_POWER), 0u);
+
+    /* Null is none, on any profile. */
+    j = subst("\"automatable\": \"full\",",
+              "\"automatable\": \"full\", \"manual\": null,");
+    CHECK(parses(j, NULL, 0));
+    free(j);
+}
+
+/* A value programmed from another stick position than the entry's, as
+ * Kontronik's car modes are from the middle; the generator's self-test
+ * holds it to the same spellings. */
+TEST_CASE(a_value_reads_the_stick_position_it_is_set_from)
+{
+    static const char from[] = "{\"number\": 2, \"name\": \"on\"}";
+    static const struct {
+        const char *to, *err;
+        esc_throttle_t et;
+    } k[] = {
+        { "{\"number\": 2, \"name\": \"on\", \"entry_throttle\": \"mid\"}",
+          NULL, ESC_THR_MID },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_throttle\": null}",
+          NULL, ESC_THR_NONE },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_throttle\": \"none\"}",
+          "items[0].values[1].entry_throttle: not a known value",
+          ESC_THR_NONE },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_throttle\": \"MID\"}",
+          "items[0].values[1].entry_throttle: not a known value",
+          ESC_THR_NONE },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_throttle\": false}",
+          "items[0].values[1].entry_throttle: not a known value",
+          ESC_THR_NONE },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        char *j = subst(from, k[i].to);
+        esc_profile_t p;
+        void *block = NULL;
+        char err[96] = "";
+        const bool ok = esc_profile_parse(j, strlen(j), &p, &block, err,
+                                          sizeof(err));
+        if (k[i].err == NULL) {
+            CHECK(ok);
+            if (ok) {
+                CHECK_EQ(p.items[0].values[1].entry_throttle, k[i].et);
+                CHECK_EQ(p.items[0].values[0].entry_throttle, ESC_THR_NONE);
+            }
+        } else {
+            CHECK(!ok);
+            CHECK_STR_EQ(err, k[i].err);
+        }
+        free(block);
+        free(j);
+    }
+}
+
+/* A value's own entry time, as Kontronik SUN PLUS waits 5 s for modes 4
+ * to 6 and 2 s for the rest; the generator holds it to the same range. */
+TEST_CASE(a_value_reads_its_own_entry_time)
+{
+    static const char from[] = "{\"number\": 2, \"name\": \"on\"}";
+    static const struct {
+        const char *to, *err;
+        uint32_t ms;
+    } k[] = {
+        { "{\"number\": 2, \"name\": \"on\", \"entry_hold_ms\": 5000}",
+          NULL, 5000u },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_hold_ms\": null}",
+          NULL, 0u },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_hold_ms\": 600000}",
+          NULL, 600000u },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_hold_ms\": 600001}",
+          "items[0].values[1].entry_hold_ms: outside", 0u },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_hold_ms\": -1}",
+          "items[0].values[1].entry_hold_ms: outside", 0u },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_hold_ms\": 2.5}",
+          "items[0].values[1].entry_hold_ms: not a whole", 0u },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_hold_ms\": \"5000\"}",
+          "items[0].values[1].entry_hold_ms: not a whole", 0u },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        char *j = subst(from, k[i].to);
+        esc_profile_t p;
+        void *block = NULL;
+        char err[96] = "";
+        const bool ok = esc_profile_parse(j, strlen(j), &p, &block, err,
+                                          sizeof(err));
+        if (k[i].err == NULL) {
+            CHECK(ok);
+            if (ok) {
+                CHECK_EQ(p.items[0].values[1].entry_hold_ms, k[i].ms);
+                CHECK_EQ(p.items[0].values[0].entry_hold_ms, 0u);
+            }
+        } else {
+            CHECK(!ok);
+            if (strncmp(err, k[i].err, strlen(k[i].err)) != 0) {
+                T_FAIL("case %u: got \"%s\", want \"%s...\"", (unsigned)i,
+                       err, k[i].err);
+            }
+        }
+        free(block);
+        free(j);
+    }
+}
+
+/* The moves a value asks for after its selection, read in order; the
+ * generator's self-test holds it to the same spellings. */
+TEST_CASE(a_value_reads_its_moves_after_the_selection)
+{
+    static const char from[] = "{\"number\": 2, \"name\": \"on\"}";
+    static const char pre[] = "{\"number\": 2, \"name\": \"on\", "
+                              "\"after_select\": ";
+    static const struct {
+        const char *moves, *err;
+        uint8_t n;
+        esc_throttle_t first, last;
+    } k[] = {
+        { "[\"max\"]", NULL, 1u, ESC_THR_MAX, ESC_THR_MAX },
+        { "[\"mid\", \"max\", \"m\\u0069n\", \"max\"]", NULL, 4u,
+          ESC_THR_MID, ESC_THR_MAX },
+        { "[\"max\", \"mid\"]", NULL, 2u, ESC_THR_MAX, ESC_THR_MID },
+        { "null", NULL, 0u, ESC_THR_MIN, ESC_THR_MIN },
+        { "\"min\"", "items[0].values[1].after_select: not 1-4", 0u,
+          ESC_THR_MIN, ESC_THR_MIN },
+        { "[]", "items[0].values[1].after_select: not 1-4", 0u, ESC_THR_MIN,
+          ESC_THR_MIN },
+        { "[\"min\", \"max\", \"min\", \"max\", \"min\"]",
+          "items[0].values[1].after_select: not 1-4", 0u, ESC_THR_MIN,
+          ESC_THR_MIN },
+        { "[\"none\"]", "items[0].values[1].after_select[0]: not a known",
+          0u, ESC_THR_MIN, ESC_THR_MIN },
+        { "[\"max\", \"MIN\"]",
+          "items[0].values[1].after_select[1]: not a known", 0u,
+          ESC_THR_MIN, ESC_THR_MIN },
+        { "[null]", "items[0].values[1].after_select[0]: not a known", 0u,
+          ESC_THR_MIN, ESC_THR_MIN },
+        { "[\"min\"]", "items[0].values[1].after_select[0]: no move",
+          0u, ESC_THR_MIN, ESC_THR_MIN },
+        { "[\"max\", \"max\"]",
+          "items[0].values[1].after_select[1]: no move", 0u, ESC_THR_MIN,
+          ESC_THR_MIN },
+        { "[{\"throttle\": \"min\"}]",
+          "items[0].values[1].after_select[0]: not a known", 0u,
+          ESC_THR_MIN, ESC_THR_MIN },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        char to[160];
+        (void)snprintf(to, sizeof(to), "%s%s}", pre, k[i].moves);
+        char *j = subst(from, to);
+        esc_profile_t p;
+        void *block = NULL;
+        char err[96] = "";
+        const bool ok = esc_profile_parse(j, strlen(j), &p, &block, err,
+                                          sizeof(err));
+        if (k[i].err == NULL) {
+            CHECK(ok);
+            if (ok) {
+                const esc_value_t *v = &p.items[0].values[1];
+                CHECK_EQ(v->after_count, k[i].n);
+                if (k[i].n > 0u) {
+                    CHECK_EQ(v->after[0], k[i].first);
+                    CHECK_EQ(v->after[k[i].n - 1u], k[i].last);
+                }
+                CHECK_EQ(p.items[0].values[0].after_count, 0u);
+            }
+        } else {
+            CHECK(!ok);
+            if (strncmp(err, k[i].err, strlen(k[i].err)) != 0) {
+                T_FAIL("case %u: got \"%s\", want \"%s...\"", (unsigned)i,
+                       err, k[i].err);
+            }
+        }
+        free(block);
+        free(j);
+    }
+    /* With a store move, the first of the value's moves starts there. */
+    char *j = subst("\"select\": {", "\"store\": {\"throttle\": \"max\"}, "
+                    "\"select\": {");
+    char *j2 = NULL;
+    if (j != NULL) {
+        const char *at = strstr(j, from);
+        if (at != NULL) {
+            j2 = malloc(strlen(j) + 64u);
+            const size_t head = (size_t)(at - j);
+            memcpy(j2, j, head);
+            strcpy(j2 + head, "{\"number\": 2, \"name\": \"on\", "
+                              "\"after_select\": [\"max\"]}");
+            strcat(j2, at + strlen(from));
+        }
+    }
+    char err[96] = "";
+    CHECK(j2 != NULL && !parses(j2, err, sizeof(err)));
+    CHECK_STR_EQ(err, "items[0].values[1].after_select[0]: no move from the "
+                      "position before");
+    free(j2);
+    free(j);
+}
+
+/* Every rule the generator holds a manual step to, held here as its
+ * self-test holds it there; the last two are the limits, accepted. */
+TEST_CASE(a_manual_step_the_generator_refuses_is_refused_here_too)
+{
+    char x121[160], u61[160], x120[160], u60[160];
+    memset(x121, 'x', 121);
+    x121[121] = '\0';
+    memcpy(x120, x121, 121);
+    x120[120] = '\0';
+    u61[0] = '\0';
+    for (int i = 0; i < 61; ++i) {
+        strcat(u61, "\xC3\xBC");
+    }
+    memcpy(u60, u61, 121);
+    u60[120] = '\0';
+    char long121[256], umlaut61[256], long120[256], umlaut60[256];
+    char de61[256], de60[256];
+    (void)snprintf(de61, sizeof(de61),
+                   "[{\"when\": \"before_menu\", \"action\": \"x\", "
+                   "\"action_de\": \"%s\"}]", u61);
+    (void)snprintf(de60, sizeof(de60),
+                   "[{\"when\": \"before_menu\", \"action\": \"x\", "
+                   "\"action_de\": \"%s\"}]", u60);
+    (void)snprintf(long121, sizeof(long121),
+                   "[{\"when\": \"before_menu\", \"action\": \"%s\"}]", x121);
+    (void)snprintf(umlaut61, sizeof(umlaut61),
+                   "[{\"when\": \"before_menu\", \"action\": \"%s\"}]", u61);
+    (void)snprintf(long120, sizeof(long120),
+                   "[{\"when\": \"before_menu\", \"action\": \"%s\"}]", x120);
+    (void)snprintf(umlaut60, sizeof(umlaut60),
+                   "[{\"when\": \"before_menu\", \"action\": \"%s\"}]", u60);
+    static const char jumper[] =
+        "{\"when\": \"before_power\", \"action\": \"Fit the jumper.\"}";
+    static const char pull[] =
+        "{\"when\": \"before_menu\", \"action\": \"Pull the jumper.\"}";
+    char five[512], order[256], four[512], two[256];
+    (void)snprintf(five, sizeof(five), "[%s, %s, %s, %s, %s]", jumper, jumper,
+                   jumper, jumper, jumper);
+    (void)snprintf(order, sizeof(order), "[%s, %s]", pull, jumper);
+    (void)snprintf(four, sizeof(four), "[%s, %s, %s, %s]", pull, pull, pull,
+                   pull);
+    (void)snprintf(two, sizeof(two), "[%s, %s]", jumper, pull);
+    const struct {
+        const char *steps, *err;
+    } k[] = {
+        { "[]", "manual: not 1-4 steps" },
+        { jumper, "manual: not 1-4 steps" },
+        { five, "manual: not 1-4 steps" },
+        { "[\"Fit the jumper.\"]", "manual[0]: not an object" },
+        { "[{\"when\": \"later\", \"action\": \"x\"}]",
+          "manual[0].when: not a known value" },
+        { "[{\"action\": \"x\"}]", "manual[0].when: not a known value" },
+        { order, "manual[1].when: before the step above it" },
+        { "[{\"when\": \"before_menu\", \"action\": \"\"}]",
+          "manual[0].action: empty" },
+        { "[{\"when\": \"before_menu\"}]", "manual[0].action: not a string" },
+        { long121, "manual[0].action: longer than 120 bytes" },
+        { umlaut61, "manual[0].action: longer than 120 bytes" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\", \"hold_ms\": 0}]",
+          "manual[0].hold_ms: only for at_power_up" },
+        { "[{\"when\": \"at_power_up\", \"action\": \"x\","
+          " \"hold_ms\": 60001}]", "manual[0].hold_ms: outside" },
+        { "[{\"when\": \"at_power_up\", \"action\": \"x\","
+          " \"hold_ms\": \"2\"}]", "manual[0].hold_ms: not a whole" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"action_de\": \"\"}]", "manual[0].action_de: empty" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"action_de\": 1}]", "manual[0].action_de: not a string" },
+        { de61, "manual[0].action_de: longer than 120 bytes" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"starts_menu\": 1}]", "manual[0].starts_menu: not a boolean" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"starts_menu\": \"y\"}]",
+          "manual[0].starts_menu: not a boolean" },
+        { "[{\"when\": \"before_power\", \"action\": \"x\","
+          " \"starts_menu\": true}]",
+          "manual[0].starts_menu: only for before_menu" },
+        { "[{\"when\": \"after_programming\", \"action\": \"x\","
+          " \"starts_menu\": true}]",
+          "manual[0].starts_menu: only for before_menu" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"starts_menu\": true}, {\"when\": \"before_menu\","
+          " \"action\": \"y\", \"starts_menu\": true}]",
+          "manual[1].starts_menu: a second step" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"starts_menu\": true}, {\"when\": \"before_menu\","
+          " \"action\": \"y\"}]",
+          "manual[1].when: before_menu after the step" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\"},"
+          " {\"when\": \"before_menu\", \"action\": \"y\","
+          " \"starts_menu\": true}, {\"when\": \"after_programming\","
+          " \"action\": \"z\"}]", NULL },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"starts_menu\": false}]", NULL },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"starts_menu\": null}]", NULL },
+        { de60, NULL },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"action_de\": null}]", NULL },
+        { long120, NULL },
+        { umlaut60, NULL },
+        { four, NULL },
+        { two, NULL },
+        { "[{\"when\": \"at_power_up\", \"action\": \"x\","
+          " \"hold_ms\": 60000}]", NULL },
+        { "[{\"when\": \"during_menu\", \"action\": \"x\","
+          " \"source\": \"p. 5\"}]", NULL },
+        /* The step before the supply goes off: after the menu, before
+         * what follows the run, and neither held nor the menu's start. */
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"starts_menu\": true}, {\"when\": \"before_power_off\","
+          " \"action\": \"y\"}, {\"when\": \"before_power_off\","
+          " \"action\": \"z\"}, {\"when\": \"after_programming\","
+          " \"action\": \"w\"}]", NULL },
+        { "[{\"when\": \"before_power_off\", \"action\": \"x\"},"
+          " {\"when\": \"before_menu\", \"action\": \"y\"}]",
+          "manual[1].when: before the step above it" },
+        { "[{\"when\": \"after_programming\", \"action\": \"x\"},"
+          " {\"when\": \"before_power_off\", \"action\": \"y\"}]",
+          "manual[1].when: before the step above it" },
+        { "[{\"when\": \"before_power_off\", \"action\": \"x\","
+          " \"hold_ms\": 0}]", "manual[0].hold_ms: only for at_power_up" },
+        { "[{\"when\": \"before_power_off\", \"action\": \"x\","
+          " \"starts_menu\": true}]",
+          "manual[0].starts_menu: only for before_menu" },
+        /* Whether the ESC locks: a boolean, only before the supply goes
+         * off. */
+        { "[{\"when\": \"before_power_off\", \"action\": \"x\","
+          " \"locks\": true}]", NULL },
+        { "[{\"when\": \"before_power_off\", \"action\": \"x\","
+          " \"locks\": false}, {\"when\": \"before_power_off\","
+          " \"action\": \"y\", \"locks\": null}]", NULL },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"locks\": true}]", "manual[0].locks: only for before_power_off" },
+        { "[{\"when\": \"before_power_off\", \"action\": \"x\","
+          " \"locks\": \"y\"}]", "manual[0].locks: not a boolean" },
+        { "[{\"when\": \"before_power_off\", \"action\": \"x\","
+          " \"locks\": 1}]", "manual[0].locks: not a boolean" },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        char *j = with_manual(k[i].steps);
+        char err[96] = "";
+        const bool ok = parses(j, err, sizeof(err));
+        if (k[i].err == NULL) {
+            if (!ok) {
+                T_FAIL("case %u refused: %s", (unsigned)i, err);
+            }
+        } else if (ok) {
+            T_FAIL("case %u accepted: %s", (unsigned)i, k[i].steps);
+        } else if (strncmp(err, k[i].err, strlen(k[i].err)) != 0) {
+            T_FAIL("case %u: got \"%s\", want \"%s...\"", (unsigned)i, err,
+                   k[i].err);
+        }
+        free(j);
+    }
+    /* Only an assisted profile has steps: one the bench runs alone has
+     * none to do, and one nobody runs has no procedure to do them in. */
+    static const char *const k_auto[] = { "full", "none" };
+    for (size_t i = 0; i < 2; ++i) {
+        char to[256];
+        (void)snprintf(to, sizeof(to),
+                       "\"automatable\": \"%s\", \"automatable_note\": \"x\","
+                       " \"manual\": [%s]", k_auto[i], jumper);
+        char *j = subst("\"automatable\": \"full\", \"automatable_note\": \"\"",
+                        to);
+        char err[96] = "";
+        CHECK(!parses(j, err, sizeof(err)));
+        CHECK_STR_EQ(err, "manual: only on an assisted profile");
+        free(j);
+    }
+}
+
+/* @p src with its first @p from replaced by @p to, freed by the caller;
+ * NULL where @p src holds no @p from. */
+static char *swap_in(const char *src, const char *from, const char *to)
+{
+    const char *at = (src != NULL) ? strstr(src, from) : NULL;
+    if (at == NULL) {
+        return NULL;
+    }
+    const size_t head = (size_t)(at - src);
+    char *out = malloc(strlen(src) + strlen(to) + 1u);
+    memcpy(out, src, head);
+    strcpy(out + head, to);
+    strcat(out, at + strlen(from));
+    return out;
+}
+
+/* The step that starts the menu is asked with the stick where the
+ * power-up left it: a menu that rests elsewhere -- the profile's listen
+ * move, or a value powered up away from it -- is refused, as the
+ * generator refuses it. */
+TEST_CASE(a_menu_start_needs_the_menu_to_rest_at_the_power_up)
+{
+    char *j = with_manual("[{\"when\": \"before_menu\", \"action\": "
+                          "\"x\", \"starts_menu\": true}]");
+    static const struct {
+        const char *listen;
+        const char *value;      /* value 2's own power-up position */
+        const char *err;
+    } k[] = {
+        { "min", NULL, "manual[0].starts_menu: the menu rests elsewhere" },
+        { "max", NULL, NULL },
+        { "max", "mid", "manual[0].starts_menu: the menu rests elsewhere" },
+        { "max", "max", NULL },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        char to[96];
+        (void)snprintf(to, sizeof(to),
+                       "\"listen\": {\"throttle\": \"%s\"}, \"select\": {",
+                       k[i].listen);
+        char *a = swap_in(j, "\"select\": {", to);
+        char *b = a;
+        if (k[i].value != NULL) {
+            char v[96];
+            (void)snprintf(v, sizeof(v),
+                           "{\"number\": 2, \"name\": \"on\", "
+                           "\"entry_throttle\": \"%s\"}", k[i].value);
+            b = swap_in(a, "{\"number\": 2, \"name\": \"on\"}", v);
+            free(a);
+        }
+        char err[96] = "";
+        const bool ok = b != NULL && parses(b, err, sizeof(err));
+        if (k[i].err == NULL) {
+            if (!ok) {
+                T_FAIL("case %u refused: %s", (unsigned)i, err);
+            }
+        } else if (ok || strncmp(err, k[i].err, strlen(k[i].err)) != 0) {
+            T_FAIL("case %u: got \"%s\", want \"%s\"", (unsigned)i, err,
+                   k[i].err);
+        }
+        free(b);
+    }
+    free(j);
+}
+
+/* An item with applies_to is on the models it names only; with no model
+ * picked, only the items on every model count.  Jeti's Master HELI 40-3P
+ * has no Cutoff mode -- six small 3P models do -- which shares number 3
+ * with the Switching frequency it does have. */
+TEST_CASE(an_item_is_on_the_models_it_names)
+{
+    const esc_profile_t *p = esc_profiles_find("jeti-spin-3p");
+    CHECK(p != NULL);
+    if (p == NULL) {
+        return;
+    }
+    int heli = -1, small = -1, cutoff = -1, freq = -1;
+    for (int m = 0; m < (int)p->model_count; ++m) {
+        heli = (strcmp(p->models[m].name, "Master HELI 40-3P") == 0) ? m
+                                                                      : heli;
+    }
+    for (unsigned i = 0; i < p->item_count; ++i) {
+        if (strcmp(p->items[i].name, "Cutoff mode") == 0) {
+            cutoff = (int)i;
+            for (int m = 0; m < (int)p->model_count; ++m) {
+                if (strcmp(p->models[m].name, p->items[i].applies_to[0]) == 0) {
+                    small = m;
+                }
+            }
+        }
+        if (strcmp(p->items[i].name, "Switching frequency") == 0) {
+            freq = (int)i;
+        }
+    }
+    CHECK(heli >= 0 && small >= 0 && cutoff >= 0 && freq >= 0);
+    if (heli < 0 || small < 0 || cutoff < 0 || freq < 0) {
+        return;
+    }
+    CHECK_EQ(p->items[cutoff].number, p->items[freq].number);
+    CHECK(!esc_item_applies(p, (unsigned)cutoff, heli));
+    CHECK(esc_item_applies(p, (unsigned)cutoff, small));
+    CHECK(esc_item_applies(p, 0u, heli));
+    CHECK(!esc_item_applies(p, (unsigned)cutoff, -1));    /* the family */
+    CHECK(!esc_item_applies(p, (unsigned)cutoff, (int)p->model_count));
+    CHECK(!esc_item_applies(p, p->item_count, heli));
+    CHECK(!esc_item_applies(NULL, 0u, 0));
 }
 
 TEST_CASE(every_profile_of_record_parses_to_its_generated_table)
@@ -211,6 +756,8 @@ TEST_CASE(a_profile_reads_into_every_field)
     CHECK_STR_EQ(p.steps[1], "Power on");
     CHECK_EQ(p.model_count, 2);
     CHECK_EQ(p.models[0].v_max_mv, 16800);
+    CHECK_EQ(p.models[0].v_min_mv, 6000u);
+    CHECK_EQ(p.models[1].v_min_mv, 0u);
     CHECK_EQ(p.models[1].cells_min, 0);         /* null: not known */
     CHECK_EQ(p.models[1].nimh, true);
     CHECK_EQ(p.item_count, 2);
@@ -415,6 +962,12 @@ TEST_CASE(a_broken_profile_is_refused_with_its_place_named)
           "models[0].cell_type: not a known" },
         { "\"current_a\": 30", "\"current_a\": 70000",
           "models[0].current_a: outside" },
+        { "\"v_min_mv\": 6000", "\"v_min_mv\": 16801",
+          "models[0].v_min_mv: above v_max_mv" },
+        { "\"v_min_mv\": 6000", "\"v_min_mv\": \"6000\"",
+          "models[0].v_min_mv: not" },
+        { "\"v_min_mv\": 6000", "\"v_min_mv\": 1000001",
+          "models[0].v_min_mv: outside" },
         { "\"Test 40A\", \"cells_min\"", "\"Test 30A\", \"cells_min\"",
           "models[1].name: duplicate" },
         { "\"key\": \"brake\"", "\"key\": \"Brake\"", "items[0].key: not" },
@@ -916,6 +1469,54 @@ TEST_CASE(sky_v2_finds_the_three_skywalker_v2_profiles)
     CHECK_EQ(n, 3u);
 }
 
+/* A card profile that would take its maker past ESC_MAKER_MODELS_MAX
+ * models is refused at load, with why; one that reaches it exactly is
+ * taken, in place of the profile it replaces as well. */
+TEST_CASE(a_maker_holds_at_most_its_models)
+{
+    static esc_model_t many[ESC_MAKER_MODELS_MAX];
+    static char names[ESC_MAKER_MODELS_MAX][8];
+    for (unsigned i = 0; i < ESC_MAKER_MODELS_MAX; ++i) {
+        (void)snprintf(names[i], sizeof(names[i]), "M%03u", i);
+        many[i] = (esc_model_t){ names[i], 2u, 3u, false, 12600u, 10u };
+    }
+    unsigned have = 0;
+    for (size_t i = 0; i < esc_profiles_builtin_count; ++i) {
+        if (esc_brand_same(esc_profiles_builtin[i].brand, "Kontronik")) {
+            have += esc_profiles_builtin[i].model_count;
+        }
+    }
+    CHECK(have > 0u && have < ESC_MAKER_MODELS_MAX);
+    esc_profiles_clear_overrides();
+    esc_profile_t p = *esc_profiles_find("kontronik-jazz");
+    p.id = "card-many";
+    p.brand = "KONTRONIK";                   /* the same maker, folded */
+    p.models = many;
+    p.model_count = (uint16_t)(ESC_MAKER_MODELS_MAX - have + 1u);
+    const char *why = NULL;
+    CHECK(!esc_profiles_override_why(&p, NULL, &why));
+    CHECK_STR_EQ(why, "its maker would list more than 512 models");
+    CHECK_EQ(esc_profiles_override_count(), 0u);
+    p.model_count = (uint16_t)(ESC_MAKER_MODELS_MAX - have);
+    CHECK(esc_profiles_override_why(&p, NULL, &why));
+    /* Replacing kontronik-jazz: its own models leave the count. */
+    esc_profiles_clear_overrides();
+    p.id = "kontronik-jazz";
+    const unsigned jazz = esc_profiles_find("kontronik-jazz")->model_count;
+    p.model_count = (uint16_t)(ESC_MAKER_MODELS_MAX - have + jazz);
+    CHECK(esc_profiles_override(&p, NULL));
+    p.model_count++;
+    CHECK(!esc_profiles_override_why(&p, NULL, &why));
+    esc_profiles_clear_overrides();
+    /* The other refusals say theirs. */
+    CHECK(!esc_profiles_override_why(NULL, NULL, &why));
+    CHECK_STR_EQ(why, "no profile");
+    CHECK(esc_brand_same("Kontronik", "KONTRONIK"));
+    CHECK(!esc_brand_same("Kontronik", "Kontronic"));
+    CHECK(!esc_brand_same(NULL, "x"));
+    CHECK(esc_brand_same(NULL, NULL));
+}
+
 int main(void)
 {
     RUN(every_profile_of_record_parses_to_its_generated_table);
@@ -924,6 +1525,12 @@ int main(void)
     RUN(a_two_stage_menu_reads_its_value_select_move);
     RUN(a_menu_reads_where_the_stick_rests);
     RUN(a_menu_reads_the_move_that_stores);
+    RUN(a_profile_reads_its_manual_steps);
+    RUN(a_value_reads_the_stick_position_it_is_set_from);
+    RUN(a_value_reads_its_own_entry_time);
+    RUN(a_maker_holds_at_most_its_models);
+    RUN(a_value_reads_its_moves_after_the_selection);
+    RUN(a_manual_step_the_generator_refuses_is_refused_here_too);
     RUN(escapes_become_the_characters_they_name);
     RUN(control_escapes_and_a_surrogate_pair_are_read);
     RUN(escaped_keys_and_values_read_as_their_plain_spelling);
@@ -947,5 +1554,7 @@ int main(void)
     RUN(the_longest_pattern_and_a_long_text_are_matched_whole);
     RUN(a_profile_is_found_by_maker_and_name_read_as_one);
     RUN(sky_v2_finds_the_three_skywalker_v2_profiles);
+    RUN(a_menu_start_needs_the_menu_to_rest_at_the_power_up);
+    RUN(an_item_is_on_the_models_it_names);
     return test_summary("esc_profiles");
 }

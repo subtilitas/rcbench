@@ -28,6 +28,20 @@
   ],
   "automatable": "assisted",
   "automatable_note": "A jumper must be fitted on the gold contacts before power-up and pulled in the middle of phase 2; power is disconnected and reconnected. The bench cannot place the jumper.",
+  "manual": [
+    {
+      "when": "before_power",
+      "action": "Fit the jumper on the two gold contacts; it stays on through phase 1.",
+      "action_de": "Jumper auf die beiden Goldkontakte stecken; er bleibt während Phase 1 stecken.",
+      "source": "Kontronik_Mini20.pdf p.3"
+    },
+    {
+      "when": "during_menu",
+      "action": "Between phases: power off, pull the jumper, power on. Phase 2: pull it between the flashes to switch cutoff off.",
+      "action_de": "Zwischen den Phasen: aus, Jumper ab, ein. Phase 2: zwischen den Blinkzeichen abziehen, Abschaltung aus.",
+      "source": "Kontronik_Mini20.pdf p.3"
+    }
+  ],
   "scheme": {
     "type": "stick_position",
     "entry": {

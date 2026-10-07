@@ -52,6 +52,21 @@
   ],
   "automatable": "assisted",
   "automatable_note": "These ESCs use a button, not a jumper. The INDEX.csv summary names a jumper; the procedure text says 'press and release the button'. The button must be pressed by hand after the entry wait.",
+  "manual": [
+    {
+      "when": "before_menu",
+      "action": "Press and release the button after 2 s or the tone sequence.",
+      "action_de": "Taster nach 2 s oder der Tonfolge drücken und loslassen.",
+      "starts_menu": true,
+      "source": "Kontronik_Smile.pdf p.4 (DE), p.17 (EN)"
+    },
+    {
+      "when": "before_power_off",
+      "action": "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.",
+      "action_de": "Nicht berühren: warten, bis der ESC den Modus fertig wiederholt hat (Töne), dann ERLEDIGT tippen.",
+      "source": "Kontronik_Smile.pdf p.4-9 (DE), p.17-22 (EN)"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -123,7 +138,11 @@
         },
         {
           "number": 6,
-          "name": "Car: proportional brake"
+          "name": "Car: proportional brake",
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 7,
@@ -151,6 +170,9 @@
   ],
   "notes": [
     "INDEX.csv summarises the entry with a jumper; the manual describes a button. The summary is wrong for this file.",
-    "Mode 8 does not exist: the manual prints 'Modus 8 - nicht vorhanden'."
+    "Mode 8 does not exist: the manual prints 'Modus 8 - nicht vorhanden'.",
+    "Mode 6 is programmed with the stick at motor-off in the middle (Kontronik_Smile.pdf p.9 DE, p.22 EN): entry_throttle mid.",
+    "Mode 6 moves the stick to the brake position (back) after the full-throttle selection (Kontronik_Smile.pdf p.9 DE, p.22 EN): after_select min, made STORE after the selection; the manual gives no time.",
+    "After the store the ESC repeats the stored mode as tones (control output, 'Kontrollausgabe'), and the manual disconnects power after it (Kontronik_Smile.pdf p.4-9 (DE), p.17-22 (EN)). The step before_power_off holds the run powered until the operator taps DONE. The manual names no lock for a power-off before the end of it."
   ]
 }

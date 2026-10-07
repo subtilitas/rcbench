@@ -500,8 +500,8 @@ input/output) UART on two of its pins, through the SUPPLY link page
 (protocol 4.3). The panel writes the page and reads it every 100 ms. With
 the PD mini enabled on SETUP under INTERFACES, the header says PD MINI. With
 it disabled, the panel runs a model of a supply in its place: the header
-says SUPPLY MODEL and the menu tile is marked MODELLED. The PD mini has not
-been run against a module.
+says SUPPLY MODEL and the menu tile is marked MODELLED. The PD mini ran
+against a module on 0.10.0 and 0.10.1; nothing added after 0.10.1 has.
 
 The layout is the one MOTOR & ESC uses. The plot shows voltage, current and
 power over the last 27 s. The rail shows the readings, the run's lowest
@@ -740,21 +740,28 @@ band's home tag leaves the screen.
 
 ### ESC STICK
 
-The list holds every ESC profile, those the bench can run first; a row that
-cannot run names the reason:
+The list shows the makers first, alphabetical, each with how many of its
+models run:
 
-![The profiles](img/programmer-stick.png)
+![The makers](img/programmer-stick.png)
 
-SEARCH filters the list. Its keyboard docks on the right, the rows narrow
-beside it, and every key filters at once. A profile is found when the text
-appears in its maker and name read as one text, or in its maker and a model
-name. Case does not matter, and `*` stands for any run of characters:
+A maker opens its models, one row a model, by current, then voltage, then
+name, each with its family and what the profile is or why it does not run.
+A model opens its family's profile:
+
+![Kontronik's models](img/programmer-stick-hand-list.png)
+
+SEARCH filters the level showing. Its keyboard docks on the right, the rows
+narrow beside it, and every key filters at once. A model is found when the
+text appears in its maker and family read as one text, or in its maker and
+its own name; a maker shows when any of its models is found. Case does not
+matter, and `*` stands for any run of characters:
 
 ![Typing a search](img/programmer-stick-find.png)
 
-OK keeps the search, X clears it:
+OK keeps the search on both levels, X clears it:
 
-![A search applied](img/programmer-stick-found.png)
+![A search applied, Hobbywing's models](img/programmer-stick-found.png)
 
 A profile's items start at KEEP. The steppers pick a value; RUN counts the
 values picked:
@@ -767,6 +774,24 @@ resistor load takes its place. The run starts after HOLD TO RUN is held
 for 2 s:
 
 ![The warning](img/programmer-stick-warning.png)
+
+A profile whose ESC needs a person at it -- a jumper fitted and pulled, a
+button pressed -- carries a red MANUAL tag in the list and MANUAL
+INTERVENTION REQUIRED in red on its page. The button shows the steps and
+when each is due; so does the first opening of the profile. The warning
+lists the steps due before the power-up, and the run stops for each later
+step with DONE and ABORT, waiting at most 60 s
+([Manual steps](StickProgramming.md#manual-steps)):
+
+![A profile with manual steps](img/programmer-stick-hand.png)
+
+![The run waiting for the jumper](img/programmer-stick-hand-prompt.png)
+
+A Kontronik ESC that locks itself when its supply goes off before it has
+confirmed the stored mode holds the run powered after the store, the stick
+where it stored, until DONE:
+
+![The run waiting for the ESC's confirmation](img/programmer-stick-hand-end.png)
 
 While it runs, the page shows the phase, the beeps of the group under way
 and the last group. ABORT, STOP and leaving the screen end it with the

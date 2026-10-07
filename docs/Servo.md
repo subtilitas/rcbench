@@ -344,7 +344,7 @@ English in every language.
 
 ### Not run on hardware
 
-No run has driven a servo or a PD mini. What the host suite holds it to is
+No servo test has run against a servo or a PD mini. What the host suite holds it to is
 the engine against `servo_sim` and `supply_sim`, the SERVO screen driving it,
 and the CSV read back by the log viewer's parser. Not measured: the readings'
 real rate through the coprocessor, the PD mini's averaging, the command's

@@ -100,6 +100,63 @@ static bool values_repeat(const esc_profile_t *p)
     return false;
 }
 
+/*
+ * Whether every manual step can be waited for.  A step during the menu has
+ * no moment the run can know.  A hand at a powered ESC -- held while the
+ * supply comes on, or after the entry -- is asked for with the stick where
+ * the entry put it, so only for an entry at MIN, the motor-off position: a
+ * person is not asked to reach for a powered ESC whose stick is at MID or
+ * MAX.  A step before the supply goes off asks for no hand at all -- the
+ * operator watches the ESC -- so any stick position holds it.
+ */
+static bool hand_fits(const esc_profile_t *p)
+{
+    for (unsigned i = 0; p->manual != NULL && i < p->manual_count; ++i) {
+        switch (p->manual[i].when) {
+        case ESC_MANUAL_BEFORE_POWER:
+        case ESC_MANUAL_BEFORE_POWER_OFF:
+        case ESC_MANUAL_AFTER_PROGRAMMING:
+            break;
+        case ESC_MANUAL_AT_POWER_UP:
+        case ESC_MANUAL_BEFORE_MENU:
+            if (p->entry_throttle != ESC_THR_MIN) {
+                return false;
+            }
+            break;
+        case ESC_MANUAL_DURING_MENU:
+        default:
+            return false;
+        }
+    }
+    return true;
+}
+
+/* Whether a value states its own entry time: the profile-wide rest rule
+ * leaves such a profile to the per-change one (entry_refused()), which
+ * sees the value's time. */
+static bool value_holds(const esc_profile_t *p)
+{
+    for (unsigned i = 0; i < p->item_count; ++i) {
+        for (unsigned k = 0; k < p->items[i].value_count; ++k) {
+            if (p->items[i].values[k].entry_hold_ms != 0u) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/* The step that starts the menu, or NULL. */
+static const esc_manual_t *menu_start(const esc_profile_t *p)
+{
+    for (unsigned i = 0; p->manual != NULL && i < p->manual_count; ++i) {
+        if (p->manual[i].starts_menu) {
+            return &p->manual[i];
+        }
+    }
+    return NULL;
+}
+
 static esc_stick_kind_t refuse(const char **why, const char *text)
 {
     if (why != NULL) {
@@ -116,14 +173,28 @@ esc_stick_kind_t esc_stick_kind(const esc_profile_t *p, const char **why)
     if (p == NULL) {
         return refuse(why, "no profile");
     }
-    if (p->automatable == ESC_AUTO_ASSISTED) {
+    if (p->automatable == ESC_AUTO_ASSISTED
+        && (p->manual_count == 0u || p->manual == NULL)) {
         return refuse(why, "needs a person at the ESC");
     }
-    if (p->automatable != ESC_AUTO_FULL) {
+    if (p->automatable != ESC_AUTO_FULL
+        && p->automatable != ESC_AUTO_ASSISTED) {
         return refuse(why, "no usable procedure");
     }
     if (p->entry_after_power) {
         return refuse(why, "entered after power-on");
+    }
+    if (!hand_fits(p)) {
+        return refuse(why, "manual step");
+    }
+    /* The run listens from the moment it asks for the action that starts
+     * the menu, with the stick where the power-up left it: a menu that
+     * rests elsewhere would need a move under the operator's hand at a
+     * powered ESC, so such a profile is not run.  The parsers refuse the
+     * file; this holds a profile built otherwise. */
+    if (menu_start(p) != NULL && p->listen_throttle != ESC_THR_NONE
+        && p->listen_throttle != p->entry_throttle) {
+        return refuse(why, "menu start, rest elsewhere");
     }
     switch (p->scheme) {
     case ESC_SCHEME_COUNT:
@@ -153,7 +224,9 @@ esc_stick_kind_t esc_stick_kind(const esc_profile_t *p, const char **why)
      * profile does not give, can land in another stage of the entry -- in
      * YGE's, a stick teach -- so it is not guessed.
      */
-    if (rest != p->entry_throttle && p->entry_hold_ms == 0u) {
+    if (rest != p->entry_throttle && p->entry_hold_ms == 0u
+        && esc_stick_change_entry_ms(p, NULL, NULL) == 0u
+        && !value_holds(p)) {
         return refuse(why, "rest move, no entry time");
     }
     if (p->value_select_throttle != ESC_THR_NONE) {
@@ -211,6 +284,106 @@ uint32_t esc_stick_profile_mv(const esc_profile_t *p)
     return best;
 }
 
+uint32_t esc_stick_model_mv(const esc_profile_t *p, int model)
+{
+    if (p == NULL || model < 0 || (unsigned)model >= p->model_count
+        || p->models[model].cells_min == 0u) {
+        return esc_stick_profile_mv(p);
+    }
+    const esc_model_t *m = &p->models[model];
+    return (uint32_t)m->cells_min * (m->nimh ? 1200u : 3800u);
+}
+
+uint32_t esc_stick_model_v_max(const esc_profile_t *p, int model)
+{
+    if (p == NULL || p->model_count == 0u || p->models == NULL) {
+        return 0u;
+    }
+    if (model >= 0) {
+        return ((unsigned)model < p->model_count) ? p->models[model].v_max_mv
+                                                  : 0u;
+    }
+    uint32_t low = 0u;
+    for (unsigned i = 0; i < p->model_count; ++i) {
+        const uint32_t v = p->models[i].v_max_mv;
+        if (v == 0u) {
+            return 0u;          /* one model the data cannot vouch for */
+        }
+        low = (low == 0u || v < low) ? v : low;
+    }
+    return low;
+}
+
+uint32_t esc_stick_model_ma_max(const esc_profile_t *p, int model)
+{
+    if (p == NULL || p->model_count == 0u || p->models == NULL) {
+        return 0u;
+    }
+    if (model >= 0) {
+        return ((unsigned)model < p->model_count)
+                   ? (uint32_t)p->models[model].current_a * 1000u : 0u;
+    }
+    uint32_t low = 0u;
+    for (unsigned i = 0; i < p->model_count; ++i) {
+        const uint32_t a = (uint32_t)p->models[i].current_a * 1000u;
+        if (a != 0u && (low == 0u || a < low)) {
+            low = a;
+        }
+    }
+    return low;
+}
+
+uint32_t esc_stick_model_v_min(const esc_profile_t *p, int model)
+{
+    if (p == NULL || p->model_count == 0u || p->models == NULL) {
+        return 0u;
+    }
+    if (model >= 0) {
+        return ((unsigned)model < p->model_count) ? p->models[model].v_min_mv
+                                                  : 0u;
+    }
+    uint32_t high = 0u;
+    for (unsigned i = 0; i < p->model_count; ++i) {
+        const uint32_t v = p->models[i].v_min_mv;
+        high = (v > high) ? v : high;
+    }
+    return high;
+}
+
+esc_stick_rating_t esc_stick_rating(const esc_profile_t *p, int model,
+                                    uint32_t mv, uint32_t ma, bool by_hand)
+{
+    (void)by_hand;
+    const uint32_t v_max = esc_stick_model_v_max(p, model);
+    if (v_max != 0u && mv > v_max) {
+        return ESC_STICK_RATING_V_OVER;
+    }
+    const uint32_t v_min = esc_stick_model_v_min(p, model);
+    if (v_min != 0u && mv < v_min) {
+        return ESC_STICK_RATING_V_UNDER;
+    }
+    const uint32_t ma_max = esc_stick_model_ma_max(p, model);
+    if (ma_max != 0u && ma > ma_max) {
+        return ESC_STICK_RATING_I_OVER;
+    }
+    return ESC_STICK_RATING_OK;
+}
+
+bool esc_stick_rating_unknown(const esc_profile_t *p, int model, uint32_t mv,
+                              bool by_hand)
+{
+    if (esc_stick_model_v_max(p, model) != 0u) {
+        return false;
+    }
+    /* The cell count the data states for this model, or the family's for
+     * -1: not one borrowed from another model. */
+    const bool own = !by_hand && mv != 0u && p != NULL
+                     && (model < 0
+                         || ((unsigned)model < p->model_count
+                             && p->models[model].cells_min != 0u));
+    return !own;
+}
+
 bool esc_stick_is_action(const esc_item_t *it)
 {
     return it != NULL && it->key != NULL
@@ -227,6 +400,104 @@ const char *esc_stick_not_offered(const esc_item_t *it)
     }
     if (it->value_count < 2u) {
         return "one value: nothing to choose";
+    }
+    return NULL;
+}
+
+esc_throttle_t esc_stick_change_entry(const esc_profile_t *p,
+                                      const esc_stick_change_t *c)
+{
+    if (p == NULL || c == NULL || c->item >= p->item_count
+        || c->value >= p->items[c->item].value_count) {
+        return (p != NULL) ? p->entry_throttle : ESC_THR_MIN;
+    }
+    const esc_throttle_t v = p->items[c->item].values[c->value].entry_throttle;
+    return (v != ESC_THR_NONE) ? v : p->entry_throttle;
+}
+
+/* Whether the profile asks for a hand at a powered ESC. */
+static bool hand_powered(const esc_profile_t *p)
+{
+    return esc_profile_manual_count(p, ESC_MANUAL_AT_POWER_UP) > 0u
+           || esc_profile_manual_count(p, ESC_MANUAL_BEFORE_MENU) > 0u;
+}
+
+/*
+ * Why change @p i cannot be powered up from its own entry position, or
+ * NULL.  The run powers each change up from the position its value is
+ * programmed from (esc_stick_change_entry()): a Kontronik car mode from
+ * the middle, the neutral the mode teaches.  The profile-wide rules of
+ * esc_stick_kind() hold for that position as they hold for the profile's:
+ *
+ *   - A power-up takes one position.  A two-stage menu, or one that takes
+ *     several changes a power-up, makes its changes in the order the ESC
+ *     sounds them, not the order asked, so every change of the run shares
+ *     the first one's position; a mix is refused, not reordered.  A
+ *     one-stage menu takes one change a power-up and powers each up from
+ *     its own.
+ *   - The rest is that position where the profile names none, and the
+ *     select move has to differ from it.
+ *   - A power-up's entry time is what the run waits
+ *     (esc_stick_change_entry_ms()): its value's entry_hold_ms where the
+ *     manual gives one, else the timing's entry, and no less than the
+ *     longest at_power_up hold; the changes a power-up shares share one.
+ *     A move to a named rest needs a time the profile, the value or an
+ *     at_power_up step's hold states.
+ *   - A hand at a powered ESC with the stick at MAX is not asked for.  MID
+ *     is, where the value names it: the manual's motor-off in the middle.
+ */
+static const char *entry_refused(const esc_profile_t *p,
+                                 const esc_stick_change_t *ch, size_t i,
+                                 const esc_stick_timing_t *t)
+{
+    const esc_throttle_t from = esc_stick_change_entry(p, &ch[i]);
+    const uint32_t wait = esc_stick_change_entry_ms(p, &ch[i], t);
+    const bool shared = p->value_select_throttle != ESC_THR_NONE
+                        || !p->one_change_per_entry;
+    if (shared && from != esc_stick_change_entry(p, &ch[0])) {
+        return "changes need different power-up positions";
+    }
+    if (shared && wait != esc_stick_change_entry_ms(p, &ch[0], t)) {
+        return "changes need different entry times";
+    }
+    /* After the value move a two-stage menu goes back to its items, and
+     * which change comes last is the ESC's order: no moves after it. */
+    const esc_value_t *val = &p->items[ch[i].item].values[ch[i].value];
+    if (p->value_select_throttle != ESC_THR_NONE && val->after_count > 0u) {
+        return "moves after the value, two stages";
+    }
+    /* Each of the value's moves a move, from where the store or the select
+     * move left the stick: one that stays put would count as made.  The
+     * parsers refuse such a file; this holds a profile built otherwise. */
+    esc_throttle_t at = (p->store_throttle != ESC_THR_NONE)
+                            ? p->store_throttle : p->select_throttle;
+    for (unsigned k = 0; k < val->after_count && k < ESC_AFTER_MAX; ++k) {
+        if (val->after[k] == at) {
+            return "a move after the value makes no move";
+        }
+        at = val->after[k];
+    }
+    if (wait <= ESC_STICK_SETTLE_MS) {
+        return "ENTRY above 500 ms";
+    }
+    const esc_throttle_t rest = (p->listen_throttle != ESC_THR_NONE)
+                                    ? p->listen_throttle : from;
+    /* A time the profile states: its entry's, or the one the run waits
+     * for this change without the timing's default -- the value's own,
+     * and an at_power_up step's hold. */
+    const bool timed = p->entry_hold_ms != 0u
+                       || esc_stick_change_entry_ms(p, &ch[i], NULL) != 0u;
+    if (rest != from && !timed) {
+        return "rest move, no entry time";
+    }
+    if (p->select_throttle == rest) {
+        return "select move is the rest";
+    }
+    if (from == ESC_THR_MAX && from != p->entry_throttle && hand_powered(p)) {
+        return "manual step";
+    }
+    if (menu_start(p) != NULL && rest != from) {
+        return "menu start, rest elsewhere";
     }
     return NULL;
 }
@@ -269,6 +540,10 @@ bool esc_stick_check(const esc_profile_t *p, const esc_stick_change_t *ch,
         /* N beeps say N: a value numbered 0 is never sounded. */
         if (it->values[ch[i].value].number == 0u) {
             return no(why, "value 0 is not sounded");
+        }
+        const char *bad = entry_refused(p, ch, i, t);
+        if (bad != NULL) {
+            return no(why, bad);
         }
         for (size_t k = 0; k < i; ++k) {
             if (p->items[ch[k].item].number == it->number) {
@@ -526,6 +801,7 @@ const char *esc_stick_reason_text(esc_stick_reason_t r)
     case ESC_STICK_R_NO_BEEPS:    return "NO BEEPS";
     case ESC_STICK_R_HIGH:        return "CURRENT STAYS HIGH";
     case ESC_STICK_R_TIMEOUT:     return "TIMEOUT";
+    case ESC_STICK_R_HAND:        return "NOT CONFIRMED";
     case ESC_STICK_R_USER:        return "ABORTED";
     case ESC_STICK_R_LEFT:        return "SCREEN LEFT";
     }
@@ -562,6 +838,7 @@ bool esc_stick_reason_is_fault(esc_stick_reason_t r)
     case ESC_STICK_R_NO_BEEPS:
     case ESC_STICK_R_HIGH:
     case ESC_STICK_R_TIMEOUT:
+    case ESC_STICK_R_HAND:          /* no DONE: not chosen either    */
     case ESC_STICK_R_TOUCH:         /* events lost, not chosen       */
         return true;
     }
@@ -580,6 +857,9 @@ const char *esc_stick_phase_text(esc_stick_phase_t ph)
     case ESC_STICK_VALUES:  return "VALUES";
     case ESC_STICK_STORE:   return "STORING";
     case ESC_STICK_CYCLE:   return "POWER CYCLE";
+    case ESC_STICK_HAND_OFF: return "MANUAL STEP";
+    case ESC_STICK_HAND_ON: return "MANUAL STEP, POWERED";
+    case ESC_STICK_HAND_END: return "WAITING FOR THE ESC";
     case ESC_STICK_OFF:     return "POWER OFF";
     case ESC_STICK_DONE:    return "DONE";
     case ESC_STICK_ABORTED: return "ABORTED";
@@ -603,6 +883,21 @@ unsigned esc_stick_done_count(const esc_stick_t *e)
     unsigned n = 0u;
     for (unsigned i = 0; e != NULL && i < e->n; ++i) {
         n += e->done[i] ? 1u : 0u;
+    }
+    return n;
+}
+
+bool esc_stick_unsure(const esc_stick_t *e, unsigned i)
+{
+    return e != NULL && i < e->n && e->done[i] && i == e->active
+           && esc_stick_cut_short(e);
+}
+
+unsigned esc_stick_made_count(const esc_stick_t *e)
+{
+    unsigned n = 0u;
+    for (unsigned i = 0; e != NULL && i < e->n; ++i) {
+        n += (e->done[i] && !esc_stick_unsure(e, i)) ? 1u : 0u;
     }
     return n;
 }
@@ -690,7 +985,8 @@ void esc_stick_abort(esc_stick_t *e, esc_stick_reason_t why)
 
 static bool powered_phase(esc_stick_phase_t ph)
 {
-    return ph == ESC_STICK_ENTRY || ph == ESC_STICK_ITEMS
+    return ph == ESC_STICK_ENTRY || ph == ESC_STICK_HAND_ON
+           || ph == ESC_STICK_HAND_END || ph == ESC_STICK_ITEMS
            || ph == ESC_STICK_VALUES || ph == ESC_STICK_STORE;
 }
 
@@ -735,9 +1031,30 @@ static void listen(esc_stick_t *e, esc_stick_phase_t ph)
 }
 
 /* The menu begins: the stick to its rest, and the first loop. */
+/* The position the next power-up enters from: the first change still to
+ * make, which in a one-stage menu is the one this power-up makes, and in
+ * any other is every change's (entry_refused()). */
+static esc_throttle_t next_entry(const esc_stick_t *e)
+{
+    for (uint8_t i = 0; i < e->n; ++i) {
+        if (!e->done[i]) {
+            return esc_stick_change_entry(e->p, &e->ch[i]);
+        }
+    }
+    return e->p->entry_throttle;
+}
+
+/* Where the stick rests while the menu sounds: the profile's listen move,
+ * else where this power-up entered. */
+static esc_throttle_t rest_of(const esc_stick_t *e)
+{
+    return (e->p->listen_throttle != ESC_THR_NONE) ? e->p->listen_throttle
+                                                    : e->entry;
+}
+
 static void begin_menu(esc_stick_t *e)
 {
-    e->out.throttle_pct = esc_stick_pct(esc_stick_listen(e->p));
+    e->out.throttle_pct = esc_stick_pct(rest_of(e));
     if (e->kind == ESC_STICK_KIND_TWO_STAGE) {
         bounds(e, true, -1);
         listen(e, ESC_STICK_ITEMS);
@@ -754,6 +1071,283 @@ static void begin_menu(esc_stick_t *e)
     listen(e, ESC_STICK_VALUES);
 }
 
+/*
+ * The first manual step from @p from that is due at this point of the run,
+ * or -1.  Before a power-up: each at_power_up step, and the before_power
+ * steps from the second power-up on -- the warning the run started from
+ * asked for the first power-up's.  Once the ESC is powered and entered:
+ * each before_menu step.
+ */
+static int hand_due(const esc_stick_t *e, unsigned from, bool powered)
+{
+    const esc_profile_t *p = e->p;
+    for (unsigned i = from; p->manual != NULL && i < p->manual_count; ++i) {
+        const esc_manual_when_t w = p->manual[i].when;
+        const bool due = powered
+            ? w == ESC_MANUAL_BEFORE_MENU
+            : (w == ESC_MANUAL_AT_POWER_UP
+               || (w == ESC_MANUAL_BEFORE_POWER && e->entries > 0u));
+        if (due) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
+
+static void ask(esc_stick_t *e, int i, esc_stick_phase_t ph)
+{
+    e->hand = (uint8_t)i;
+    e->hand_done = false;
+    e->hand_menu = false;
+    e->hand_ms = e->now_ms;
+    enter(e, ph);
+}
+
+static void power_on(esc_stick_t *e)
+{
+    e->out.supply_on = true;
+    e->have_sample = false;   /* the next one says whether it is on */
+    enter(e, ESC_STICK_POWER);
+}
+
+/*
+ * The supply comes on once every step due before it is done.  A step at an
+ * unpowered ESC is asked for, and the supply switched on, only while the
+ * supply itself reads off (off_seen): a run started with the output still
+ * live, or a module that came on by itself, ends here with SUPPLY STAYS ON
+ * rather than send a hand to a powered ESC.
+ */
+static void before_power(esc_stick_t *e, unsigned from)
+{
+    if (!e->off_seen) {
+        finish(e, ESC_STICK_ABORTED, ESC_STICK_R_SUPPLY_ON);
+        return;
+    }
+    /* Off, by a reading new enough to say so now. */
+    if (since(e->now_ms, e->read_ms) > ESC_STICK_STALE_MS) {
+        finish(e, ESC_STICK_ABORTED, ESC_STICK_R_STALE);
+        return;
+    }
+    const int i = hand_due(e, from, false);
+    if (i < 0) {
+        power_on(e);
+    } else {
+        ask(e, i, ESC_STICK_HAND_OFF);
+    }
+}
+
+/*
+ * The menu begins once every step due before it is done.  A step the
+ * profile marks starts_menu is the action that starts the menu -- the
+ * jumper pulled, the button pressed: the ESC answers with its tones and
+ * sounds the series at once -- so the run listens from the moment it asks
+ * for it, with the stick where the power-up left it, and DONE is only a
+ * way to say so early.  Every other step waits for DONE.  The first group the order rule finds in order with the one
+ * before it is the menu running, and takes the step as done.  Where the
+ * menu rests elsewhere the stick would move under the operator's hand, so
+ * the run waits for DONE before listening, as for every earlier step.
+ */
+static void before_menu(esc_stick_t *e, unsigned from)
+{
+    const int i = hand_due(e, from, true);
+    if (i < 0) {
+        begin_menu(e);
+        return;
+    }
+    if (e->p->manual[i].starts_menu && rest_of(e) == e->entry) {
+        begin_menu(e);
+        e->hand = (uint8_t)i;
+        e->hand_done = false;
+        e->hand_menu = true;
+        e->hand_ms = e->now_ms;
+        return;
+    }
+    ask(e, i, ESC_STICK_HAND_ON);
+}
+
+static bool hand_phase(esc_stick_phase_t ph)
+{
+    return ph == ESC_STICK_HAND_OFF || ph == ESC_STICK_HAND_ON
+           || ph == ESC_STICK_HAND_END;
+}
+
+const esc_manual_t *esc_stick_hand(const esc_stick_t *e)
+{
+    if (!esc_stick_running(e) || !(hand_phase(e->phase) || e->hand_menu)
+        || e->p->manual == NULL || e->hand >= e->p->manual_count) {
+        return NULL;
+    }
+    return &e->p->manual[e->hand];
+}
+
+/*
+ * The entry's time, and no less than the longest hold an at_power_up step
+ * asks for: the menu, and a before_menu step, come only once the button
+ * held while the supply came on may be let go.
+ */
+uint32_t esc_stick_change_entry_ms(const esc_profile_t *p,
+                                   const esc_stick_change_t *c,
+                                   const esc_stick_timing_t *t)
+{
+    uint32_t ms = (t != NULL) ? t->entry_ms : 0u;
+    if (p == NULL) {
+        return ms;
+    }
+    if (c != NULL && c->item < p->item_count
+        && c->value < p->items[c->item].value_count
+        && p->items[c->item].values[c->value].entry_hold_ms != 0u) {
+        ms = p->items[c->item].values[c->value].entry_hold_ms;
+    }
+    for (unsigned i = 0; p->manual != NULL && i < p->manual_count; ++i) {
+        const esc_manual_t *m = &p->manual[i];
+        if (m->when == ESC_MANUAL_AT_POWER_UP && m->hold_ms > ms) {
+            ms = m->hold_ms;
+        }
+    }
+    return ms;
+}
+
+uint32_t esc_stick_entry_ms(const esc_stick_t *e)
+{
+    if (e == NULL || e->p == NULL) {
+        return 0u;
+    }
+    /* The first change still to make is this power-up's (next_entry()). */
+    for (uint8_t i = 0; i < e->n; ++i) {
+        if (!e->done[i]) {
+            return esc_stick_change_entry_ms(e->p, &e->ch[i], &e->t);
+        }
+    }
+    return esc_stick_change_entry_ms(e->p, NULL, &e->t);
+}
+
+bool esc_stick_hand_ready(const esc_stick_t *e)
+{
+    return esc_stick_hand(e) != NULL && !e->hand_done
+           && since(e->now_ms, e->hand_ms) >= ESC_STICK_HAND_MIN_MS;
+}
+
+uint32_t esc_stick_hand_left_ms(const esc_stick_t *e)
+{
+    if (esc_stick_hand(e) == NULL) {
+        return 0u;
+    }
+    const uint32_t in = since(e->now_ms, e->hand_ms);
+    return (in < ESC_STICK_HAND_WAIT_MS) ? ESC_STICK_HAND_WAIT_MS - in : 0u;
+}
+
+/*
+ * DONE is taken here and acted on in the next step, after that step has
+ * judged the stops, the arm, the link and the supply: a tap never powers
+ * an ESC the bench has stopped or disarmed under it.
+ */
+bool esc_stick_confirm(esc_stick_t *e)
+{
+    if (!esc_stick_hand_ready(e)) {
+        return false;
+    }
+    e->hand_done = true;
+    return true;
+}
+
+/*
+ * The moves after a selection, in order: the profile's store move, then
+ * the moves the stored value asks for (after_select), each made once STORE
+ * has passed since the one before -- the time the ESC takes to answer.  A
+ * one-stage run stores one value a power-up, the active change's.
+ */
+esc_throttle_t esc_stick_store_move(const esc_stick_t *e, unsigned k)
+{
+    if (e == NULL || e->p == NULL) {
+        return ESC_THR_NONE;
+    }
+    if (e->p->store_throttle != ESC_THR_NONE) {
+        if (k == 0u) {
+            return e->p->store_throttle;
+        }
+        --k;
+    }
+    if (e->kind != ESC_STICK_KIND_ONE_STAGE || e->active >= e->n) {
+        return ESC_THR_NONE;
+    }
+    const esc_stick_change_t *c = &e->ch[e->active];
+    const esc_value_t *v = &e->p->items[c->item].values[c->value];
+    return (k < v->after_count && k < ESC_AFTER_MAX) ? v->after[k]
+                                                      : ESC_THR_NONE;
+}
+
+/*
+ * The supply off, the stick where it is; see the top of this file.  A
+ * pulse under way is dropped with the group: no reading reaches the
+ * detector until the next power-up starts it afresh.
+ */
+static void supply_off(esc_stick_t *e)
+{
+    e->out.supply_on = false;
+    esc_det_drop_group(&e->det);
+    e->off_seen = false;
+    e->off_asked_ms = e->now_ms;
+    e->off_seq = e->seq;
+    e->off_since_known = false;
+    e->cycle_moved = false;
+    enter(e, all_done(e) ? ESC_STICK_OFF : ESC_STICK_CYCLE);
+}
+
+/*
+ * The supply goes off once every before_power_off step from @p from is
+ * done: each is asked with the ESC powered and the stick where the store
+ * left it, and DONE goes on to the next or switches the supply off.
+ */
+static void before_off(esc_stick_t *e, unsigned from)
+{
+    const esc_profile_t *p = e->p;
+    for (unsigned i = from; p->manual != NULL && i < p->manual_count; ++i) {
+        if (p->manual[i].when == ESC_MANUAL_BEFORE_POWER_OFF) {
+            ask(e, (int)i, ESC_STICK_HAND_END);
+            e->end_open = true;
+            return;
+        }
+    }
+    e->end_open = false;
+    supply_off(e);
+}
+
+bool esc_stick_cut_short(const esc_stick_t *e)
+{
+    return e != NULL && e->phase == ESC_STICK_ABORTED && e->end_open;
+}
+
+bool esc_stick_end_locks(const esc_stick_t *e)
+{
+    if (e == NULL || e->p == NULL || e->p->manual == NULL) {
+        return false;
+    }
+    /* The lock is the profile's, whichever of its steps before the
+     * power-off marks it: until every one is confirmed, a cut can lock. */
+    for (unsigned i = 0; i < e->p->manual_count; ++i) {
+        if (e->p->manual[i].when == ESC_MANUAL_BEFORE_POWER_OFF
+            && e->p->manual[i].locks) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool esc_stick_lock_risk(const esc_stick_t *e)
+{
+    return esc_stick_cut_short(e) && esc_stick_end_locks(e);
+}
+
+/* The action that starts the menu is done: by DONE, or by the menu heard
+ * in order.  SILENCE and TIMEOUT count from now. */
+static void hand_menu_done(esc_stick_t *e)
+{
+    e->hand_menu = false;
+    e->hand_done = true;
+    e->heard_ms = e->now_ms;
+    e->phase_ms = e->now_ms;
+}
+
 static uint8_t wanted_value(const esc_stick_t *e)
 {
     const esc_stick_change_t *c = &e->ch[e->active];
@@ -764,7 +1358,14 @@ static void selected(esc_stick_t *e)
 {
     e->done[e->active] = true;
     if (all_done(e) || e->p->one_change_per_entry) {
-        e->store_moved = false;
+        e->store_step = 0u;
+        /* From the selection on the ESC is storing and then confirming:
+         * an end now switches the supply off under it, as one while the
+         * step before the power-off is asked does.  A value stored by
+         * moves after the selection is not stored until they are made. */
+        e->end_open = esc_profile_manual_count(
+                          e->p, ESC_MANUAL_BEFORE_POWER_OFF) > 0u
+                      || esc_stick_store_move(e, 0u) != ESC_THR_NONE;
         enter(e, ESC_STICK_STORE);
         return;
     }
@@ -803,6 +1404,9 @@ static void on_group(esc_stick_t *e, uint8_t count, bool valid)
     e->prev = count;
     e->prev_trusted = in_order;
     e->last_in_order = in_order;
+    if (in_order && e->hand_menu) {
+        hand_menu_done(e);          /* the menu runs: the action is done */
+    }
     e->last_trusted = act;
     if (!act) {
         return;
@@ -855,10 +1459,16 @@ bool esc_stick_start(esc_stick_t *e, const esc_profile_t *p,
     esc_det_init(&e->det, t,
                  (p->encoding == ESC_ENC_SHORT_LONG) ? p->long_equals_short
                                                      : 0u);
-    /* An arm starts from the throttle's rest, with the supply off. */
+    /* An arm starts from the throttle's rest, with the supply off -- asked
+     * off, and to be read off before anything is powered or asked of a
+     * person (before_power()). */
     e->out.arm = true;
     e->out.throttle_pct = ESC_STICK_PCT_MIN;
     e->out.supply_on = false;
+    e->off_seen = false;
+    e->off_asked_ms = b->now_ms;
+    e->off_since_known = false;
+    e->entry_wait = esc_stick_entry_ms(e);
     enter(e, ESC_STICK_ARMING);
     return true;
 }
@@ -872,6 +1482,26 @@ bool esc_stick_start(esc_stick_t *e, const esc_profile_t *p,
  * only that it asked: the module switches off a link exchange and a module
  * transaction later, and until then the ESC is powered and in its menu.
  */
+/* The phases in which the supply is to be off and its readings are
+ * judged for it: before the first power-up, while a step at an unpowered
+ * ESC is asked, and after the run asked the output off. */
+static bool off_phase(esc_stick_phase_t ph)
+{
+    return ph == ESC_STICK_ARMING || ph == ESC_STICK_SIGNAL
+           || ph == ESC_STICK_HAND_OFF || ph == ESC_STICK_CYCLE
+           || ph == ESC_STICK_OFF;
+}
+
+/* Whether the stick has gone to the entry position, or a step at the ESC
+ * is asked, with the supply off: the moves made only on the supply read
+ * off, and so the ones a live reading has to end at once. */
+static bool entry_made(const esc_stick_t *e)
+{
+    return (e->phase == ESC_STICK_SIGNAL && e->sig_moved)
+           || (e->phase == ESC_STICK_CYCLE && e->cycle_moved)
+           || e->phase == ESC_STICK_HAND_OFF;
+}
+
 static void off_reading(esc_stick_t *e, const esc_stick_sample_t *s)
 {
     const bool after = s->seq != e->off_seq
@@ -882,7 +1512,10 @@ static void off_reading(esc_stick_t *e, const esc_stick_sample_t *s)
     const bool off = !s->reported_on && s->current_ok
                      && s->ma <= ESC_STICK_OFF_MA;
     if (!off) {
+        /* On again, or the current up: whatever was seen before is not
+         * the state now. */
         e->off_since_known = false;
+        e->off_seen = false;
         return;
     }
     if (!e->off_since_known) {
@@ -905,9 +1538,15 @@ void esc_stick_sample(esc_stick_t *e, const esc_stick_sample_t *s)
     e->reported_on = s->reported_on;
     e->online = s->online;
     e->current_ok = s->current_ok;
-    if ((e->phase == ESC_STICK_CYCLE || e->phase == ESC_STICK_OFF)
-        && !e->out.supply_on && fresh) {
+    if (off_phase(e->phase) && !e->out.supply_on && fresh) {
         off_reading(e, s);
+        /* The stick is at the entry position, or a person is at the ESC,
+         * on the word that it is unpowered: a reading that says otherwise
+         * ends the run at once -- throttle to MIN, supply off. */
+        if (entry_made(e) && !e->off_seen) {
+            finish(e, ESC_STICK_ABORTED, ESC_STICK_R_SUPPLY_ON);
+            return;
+        }
     }
     /* A supply gone is said at once, before its missing readings can be
      * taken for a slow one. */
@@ -1006,8 +1645,11 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
     }
     if (e->phase == ESC_STICK_ARMING) {
         if (b->armed) {
+            /* Armed, the stick still at MIN: it goes to the entry position
+             * only once the supply reads off (SIGNAL). */
             e->armed_seen = true;
-            e->out.throttle_pct = esc_stick_pct(e->p->entry_throttle);
+            e->entry = next_entry(e);
+            e->sig_moved = false;
             enter(e, ESC_STICK_SIGNAL);
         } else if (in_phase >= ESC_STICK_ARM_WAIT_MS) {
             finish(e, ESC_STICK_ABORTED, ESC_STICK_R_NOT_ARMED);
@@ -1033,12 +1675,45 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         }
     }
 
+    /* The stick at the entry position, or a person at the ESC, with the
+     * supply off: no reading for ESC_STICK_STALE_MS says it still is. */
+    if (entry_made(e) && since(e->now_ms, e->read_ms) > ESC_STICK_STALE_MS) {
+        finish(e, ESC_STICK_ABORTED, ESC_STICK_R_STALE);
+        return;
+    }
+
     switch (e->phase) {
     case ESC_STICK_SIGNAL:
-        if (in_phase >= ESC_STICK_SIGNAL_MS) {
-            e->out.supply_on = true;
-            e->have_sample = false;   /* the next one says whether it is on */
-            enter(e, ESC_STICK_POWER);
+        /* The stick stays at MIN until the supply reads off in readings
+         * taken since the run began; not off within ESC_STICK_POWER_WAIT_MS:
+         * SUPPLY STAYS ON, and nothing is moved or asked of a person.  Off:
+         * the stick to the entry position, and the signal's time again
+         * from there, as a power cycle does. */
+        if (!e->sig_moved) {
+            if (e->off_seen) {
+                e->sig_moved = true;
+                e->out.throttle_pct = esc_stick_pct(e->entry);
+                enter(e, ESC_STICK_SIGNAL);
+            } else if (in_phase >= ESC_STICK_POWER_WAIT_MS) {
+                finish(e, ESC_STICK_ABORTED, ESC_STICK_R_SUPPLY_ON);
+            }
+        } else if (in_phase >= ESC_STICK_SIGNAL_MS) {
+            before_power(e, 0u);
+        }
+        break;
+    case ESC_STICK_HAND_OFF:
+    case ESC_STICK_HAND_ON:
+    case ESC_STICK_HAND_END:
+        if (e->hand_done) {
+            if (e->phase == ESC_STICK_HAND_OFF) {
+                before_power(e, (unsigned)e->hand + 1u);
+            } else if (e->phase == ESC_STICK_HAND_ON) {
+                before_menu(e, (unsigned)e->hand + 1u);
+            } else {
+                before_off(e, (unsigned)e->hand + 1u);
+            }
+        } else if (in_phase >= ESC_STICK_HAND_WAIT_MS) {
+            finish(e, ESC_STICK_ABORTED, ESC_STICK_R_HAND);
         }
         break;
     case ESC_STICK_POWER:
@@ -1049,6 +1724,9 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
             e->have_reading = false;
             e->late_run = 0u;
             e->entries++;
+            /* This power-up's wait, kept for it and for the result after
+             * the change it makes is done. */
+            e->entry_wait = esc_stick_entry_ms(e);
             esc_det_init(&e->det, &e->t, e->det.long_equals_short);
             esc_det_floor_only(&e->det);
             enter(e, ESC_STICK_ENTRY);
@@ -1057,12 +1735,23 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         }
         break;
     case ESC_STICK_ENTRY:
-        if (since(e->now_ms, e->on_ms) >= e->t.entry_ms) {
-            begin_menu(e);
+        if (since(e->now_ms, e->on_ms) >= e->entry_wait) {
+            before_menu(e, 0u);
         }
         break;
     case ESC_STICK_ITEMS:
     case ESC_STICK_VALUES:
+        if (e->hand_menu) {
+            /* Listening while the action is asked for: the ESC is silent
+             * until it is done, so SILENCE and TIMEOUT run from then. */
+            if (e->hand_done) {
+                hand_menu_done(e);
+            } else if (since(e->now_ms, e->hand_ms)
+                       >= ESC_STICK_HAND_WAIT_MS) {
+                finish(e, ESC_STICK_ABORTED, ESC_STICK_R_HAND);
+            }
+            break;
+        }
         if (since(e->now_ms, e->heard_ms) >= e->t.silence_ms) {
             finish(e, ESC_STICK_ABORTED, ESC_STICK_R_NO_BEEPS);
         } else if (in_phase >= e->t.timeout_ms) {
@@ -1073,25 +1762,18 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         if (in_phase < e->t.store_ms) {
             break;
         }
-        if (e->p->store_throttle != ESC_THR_NONE && !e->store_moved) {
-            /* The ESC has answered the selection: the move that stores
-             * it, held as long again. */
-            e->store_moved = true;
-            e->out.throttle_pct = esc_stick_pct(e->p->store_throttle);
+        if (esc_stick_store_move(e, e->store_step) != ESC_THR_NONE) {
+            /* The ESC has answered the selection, or the move before: the
+             * next move, held as long again. */
+            e->out.throttle_pct =
+                esc_stick_pct(esc_stick_store_move(e, e->store_step));
+            e->store_step++;
             enter(e, ESC_STICK_STORE);
             break;
         }
-        /* Off first, the stick where it is; see the top of this file.  A
-         * pulse under way is dropped with the group: no reading reaches the
-         * detector until the next power-up starts it afresh. */
-        e->out.supply_on = false;
-        esc_det_drop_group(&e->det);
-        e->off_seen = false;
-        e->off_asked_ms = e->now_ms;
-        e->off_seq = e->seq;
-        e->off_since_known = false;
-        e->cycle_moved = false;
-        enter(e, all_done(e) ? ESC_STICK_OFF : ESC_STICK_CYCLE);
+        /* Off first, once the ESC has confirmed where the profile asks to
+         * watch it do so. */
+        before_off(e, 0u);
         break;
     case ESC_STICK_OFF:
         if (e->off_seen) {
@@ -1111,14 +1793,13 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
          * TIME -- no less than the signal time -- with it there. */
         if (!e->cycle_moved) {
             e->cycle_moved = true;
-            e->out.throttle_pct = esc_stick_pct(e->p->entry_throttle);
+            e->entry = next_entry(e);
+            e->out.throttle_pct = esc_stick_pct(e->entry);
             enter(e, ESC_STICK_CYCLE);
             break;
         }
         if (in_phase >= e->t.off_ms && in_phase >= ESC_STICK_SIGNAL_MS) {
-            e->out.supply_on = true;
-            e->have_sample = false;
-            enter(e, ESC_STICK_POWER);
+            before_power(e, 0u);
         }
         break;
     default:

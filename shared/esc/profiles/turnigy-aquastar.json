@@ -50,6 +50,14 @@
   ],
   "automatable": "assisted",
   "automatable_note": "The manual has the user switch the ESC on after the throttle is at max and the transmitter is on, and the HV 240A needs a separate 5-6 V receiver supply. The bench could replace the ESC switch with supply output, but the manual does not say so.",
+  "manual": [
+    {
+      "when": "at_power_up",
+      "action": "Switch the ESC's own switch on, with the throttle at MAX and the drive battery connected.",
+      "action_de": "Den Schalter des ESC einschalten, mit Throttle auf MAX und angestecktem Antriebsakku.",
+      "source": "Turnigy_Aquastar.pdf p.3, p.12"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {

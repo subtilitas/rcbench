@@ -25,7 +25,7 @@
  * followed, so a hostile file cannot run the stack down. */
 #define MAX_DEPTH 16
 
-/* No profile object has more than 13 members.  The duplicate check compares
+/* No profile object has more than 14 members.  The duplicate check compares
  * each key with those before it, so this bounds it at 64 x 63 / 2
  * comparisons an object rather than letting a 64 KiB file of short keys ask
  * for tens of millions. */
@@ -602,6 +602,20 @@ static const char *copy_str(dec_t *d, uint32_t ti)
     return out;
 }
 
+/* A string token's length once decoded, in bytes: UTF-8, as the generator
+ * measures it.  The sizing pass has no copy to measure. */
+static size_t decoded_len(const dec_t *d, uint32_t ti)
+{
+    const tok_t *t = &d->t[ti];
+    size_t o = 0;
+    uint32_t i = t->start;
+    while (i < t->end) {
+        uint8_t u[4];
+        o += decode_unit(d->s, &i, u);
+    }
+    return o;
+}
+
 static const char *get_str(dec_t *d, uint32_t obj, const char *key,
                            const char *where, bool empty_ok, bool null_ok)
 {
@@ -737,6 +751,8 @@ static const char *const k_throttle[] = { "min", "mid", "max", "none" };
 static const char *const k_when[]     = { "before_power_on",
     "after_power_on" };
 static const char *const k_changes[]  = { "one", "many" };
+static const char *const k_manual[]   = { "before_power", "at_power_up",
+    "before_menu", "during_menu", "before_power_off", "after_programming" };
 static const char *const k_cells[]    = { "lipo", "nimh" };
 
 #define COUNT(a) ((int)(sizeof(a) / sizeof((a)[0])))
@@ -776,12 +792,17 @@ static void decode_models(dec_t *d, uint32_t root, esc_profile_t *p)
             FAIL(d, "%s: not an object", w);
             return;
         }
-        int64_t cmin = 0, cmax = 0, v = 0, a = 0;
+        int64_t cmin = 0, cmax = 0, v = 0, a = 0, vmin = 0;
         const char *name = get_str(d, ti, "name", w, false, false);
         (void)get_num(d, ti, "cells_min", w, 0, 255, true, &cmin);
         (void)get_num(d, ti, "cells_max", w, 0, 255, true, &cmax);
         (void)get_num(d, ti, "v_max_mv", w, 0, 1000000, true, &v);
         (void)get_num(d, ti, "current_a", w, 0, 65535, true, &a);
+        (void)get_num(d, ti, "v_min_mv", w, 0, 1000000, true, &vmin);
+        if (!d->failed && vmin != 0 && v != 0 && vmin > v) {
+            FAIL(d, "%s.v_min_mv: above v_max_mv", w);
+            return;
+        }
         int ct = 0;
         const int64_t cv = member(d, ti, "cell_type");
         if (cv >= 0 && d->t[cv].type != T_NULL) {
@@ -789,7 +810,8 @@ static void decode_models(dec_t *d, uint32_t root, esc_profile_t *p)
         }
         if (m != NULL && !d->failed) {
             m[i] = (esc_model_t){ name, (uint8_t)cmin, (uint8_t)cmax,
-                                  ct == 1, (uint32_t)v, (uint16_t)a };
+                                  ct == 1, (uint32_t)v, (uint16_t)a,
+                                  (uint32_t)vmin };
         }
     }
     if (m != NULL && !d->failed) {
@@ -836,8 +858,25 @@ static bool has_model(const dec_t *d, const char *name)
                       name_is) != NULL;
 }
 
+/*
+ * Where the stick is when a value's own moves (after_select) begin: the
+ * profile's store move, else the move that stores the value; ESC_THR_NONE
+ * for a profile with no select move.
+ */
+static esc_throttle_t moves_from(const esc_profile_t *p)
+{
+    if (p->select_throttle == ESC_THR_NONE) {
+        return ESC_THR_NONE;
+    }
+    if (p->store_throttle != ESC_THR_NONE) {
+        return p->store_throttle;
+    }
+    return (p->value_select_throttle != ESC_THR_NONE)
+               ? p->value_select_throttle : p->select_throttle;
+}
+
 static void decode_values(dec_t *d, uint32_t arr, const char *iw,
-                          esc_item_t *it)
+                          esc_item_t *it, esc_throttle_t before)
 {
     const uint32_t n = d->t[arr].size;
     if (n == 0 || n > 255u) {
@@ -860,6 +899,57 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
         const char *name = get_str(d, ti, "name", w, false, false);
         const bool dflt = get_bool(d, ti, "default", w, true);
         defaults += dflt ? 1u : 0u;
+        /* The stick position the value is programmed from, where the
+         * manual gives one other than the entry's: absent or null, the
+         * entry's.  "none" is no position, so it is refused. */
+        esc_throttle_t et = ESC_THR_NONE;
+        const int64_t ev = member(d, ti, "entry_throttle");
+        if (ev >= 0 && d->t[ev].type != T_NULL) {
+            const int x = get_enum(d, ti, "entry_throttle", w, k_throttle,
+                                   COUNT(k_throttle) - 1);
+            et = (esc_throttle_t)(x < 0 ? 0 : x);
+        }
+        /* Power-on to the menu for this value, where the manual gives one
+         * other than the entry's: absent or null, the entry's. */
+        int64_t hold = 0;
+        (void)get_num(d, ti, "entry_hold_ms", w, 0, 600000, true, &hold);
+        /* The moves after the select move: absent or null, none; else 1 to
+         * ESC_AFTER_MAX of min, mid, max. */
+        esc_throttle_t after[ESC_AFTER_MAX] = { ESC_THR_MIN };
+        uint32_t after_n = 0u;
+        const int64_t av = member(d, ti, "after_select");
+        if (av >= 0 && d->t[av].type != T_NULL) {
+            after_n = (d->t[av].type == T_ARR) ? d->t[av].size : 0u;
+            if (after_n == 0u || after_n > ESC_AFTER_MAX) {
+                FAIL(d, "%s.after_select: not 1-%u moves", w,
+                     (unsigned)ESC_AFTER_MAX);
+                return;
+            }
+            uint32_t mi = (uint32_t)av + 1u;
+            for (uint32_t k = 0; k < after_n && k < ESC_AFTER_MAX;
+                 ++k, mi = d->t[mi].next) {
+                int x = -1;
+                for (int m = 0; d->t[mi].type == T_STR
+                                && m < COUNT(k_throttle) - 1; ++m) {
+                    if (text_is(d->s, &d->t[mi], k_throttle[m])) {
+                        x = m;
+                    }
+                }
+                if (x < 0) {
+                    FAIL(d, "%s.after_select[%u]: not a known value", w,
+                         (unsigned)k);
+                    return;
+                }
+                /* A move: not where the stick already is. */
+                const esc_throttle_t from = (k == 0u) ? before : after[k - 1u];
+                if ((esc_throttle_t)x == from) {
+                    FAIL(d, "%s.after_select[%u]: no move from the position "
+                         "before", w, (unsigned)k);
+                    return;
+                }
+                after[k] = (esc_throttle_t)x;
+            }
+        }
         if (v != NULL && !d->failed) {
             const uint8_t bit = (uint8_t)(1u << ((uint8_t)num & 7u));
             if ((seen[(uint8_t)num >> 3] & bit) != 0u) {
@@ -867,7 +957,13 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
                 return;
             }
             seen[(uint8_t)num >> 3] |= bit;
-            v[j] = (esc_value_t){ name, (uint8_t)num, dflt };
+            v[j] = (esc_value_t){ name, (uint8_t)num, dflt, et,
+                                  (uint32_t)hold, (uint8_t)after_n,
+                                  { ESC_THR_MIN } };
+            /* The moves, as many as the value holds: the same size. */
+            _Static_assert(sizeof(v[j].after) == sizeof(after),
+                           "after_select copied whole");
+            memcpy(v[j].after, after, sizeof(after));
         }
     }
     if (defaults > 1u) {
@@ -945,7 +1041,7 @@ static void decode_items(dec_t *d, uint32_t root, esc_profile_t *p)
         }
         const int64_t va = get_obj(d, ti, "values", w, T_ARR);
         if (va >= 0) {
-            decode_values(d, (uint32_t)va, w, &x);
+            decode_values(d, (uint32_t)va, w, &x, moves_from(p));
         }
         if (it != NULL) {
             it[i] = x;
@@ -969,6 +1065,127 @@ static void decode_items(dec_t *d, uint32_t root, esc_profile_t *p)
     }
     p->item_count = (uint8_t)n;
     p->items = it;
+}
+
+/*
+ * The operator's steps at the ESC: absent or null, none.  Only an assisted
+ * profile has them, 1 to ESC_MANUAL_MAX, in the order a run meets them.
+ */
+static void decode_manual(dec_t *d, uint32_t root, esc_profile_t *p)
+{
+    const int64_t arr = member(d, root, "manual");
+    if (arr < 0 || d->t[arr].type == T_NULL) {
+        return;
+    }
+    const uint32_t n = (d->t[arr].type == T_ARR) ? d->t[arr].size : 0u;
+    if (n == 0u || n > ESC_MANUAL_MAX) {
+        FAIL(d, "manual: not 1-%u steps", (unsigned)ESC_MANUAL_MAX);
+        return;
+    }
+    if (p->automatable != ESC_AUTO_ASSISTED) {
+        FAIL(d, "manual: only on an assisted profile");
+        return;
+    }
+    esc_manual_t *m = take(d, n * sizeof(*m), _Alignof(esc_manual_t));
+    int last = 0;
+    bool started = false;
+    uint32_t ti = (uint32_t)arr + 1u;
+    for (uint32_t i = 0; i < n && !d->failed; ++i, ti = d->t[ti].next) {
+        char w[24];
+        (void)snprintf(w, sizeof(w), "manual[%u]", (unsigned)i);
+        if (d->t[ti].type != T_OBJ) {
+            FAIL(d, "%s: not an object", w);
+            return;
+        }
+        const int when = get_enum(d, ti, "when", w, k_manual,
+                                  COUNT(k_manual));
+        if (d->failed) {
+            return;
+        }
+        if (when < last) {
+            FAIL(d, "%s.when: before the step above it", w);
+            return;
+        }
+        last = when;
+        const char *action = get_str(d, ti, "action", w, false, false);
+        if (d->failed) {
+            return;
+        }
+        const int64_t a = member(d, ti, "action");
+        if (decoded_len(d, (uint32_t)a) > ESC_MANUAL_ACTION_MAX) {
+            FAIL(d, "%s.action: longer than %u bytes", w,
+                 (unsigned)ESC_MANUAL_ACTION_MAX);
+            return;
+        }
+        int64_t hold = 0;
+        const bool held = get_num(d, ti, "hold_ms", w, 0, 60000, true, &hold);
+        if (d->failed) {
+            return;
+        }
+        if (held && when != (int)ESC_MANUAL_AT_POWER_UP) {
+            FAIL(d, "%s.hold_ms: only for at_power_up", w);
+            return;
+        }
+        /* The German beside it: absent or null, none; else as the
+         * action, 1 to ESC_MANUAL_ACTION_MAX bytes. */
+        const char *de = get_str(d, ti, "action_de", w, false, true);
+        if (d->failed) {
+            return;
+        }
+        const int64_t dv = member(d, ti, "action_de");
+        if (dv >= 0 && d->t[dv].type == T_STR
+            && decoded_len(d, (uint32_t)dv) > ESC_MANUAL_ACTION_MAX) {
+            FAIL(d, "%s.action_de: longer than %u bytes", w,
+                 (unsigned)ESC_MANUAL_ACTION_MAX);
+            return;
+        }
+        /* Whether the step starts the menu: absent or null, false.  Only
+         * a before_menu step, the last of them, once. */
+        const int64_t sv = member(d, ti, "starts_menu");
+        bool starts = false;
+        if (sv >= 0 && d->t[sv].type != T_NULL) {
+            if (d->t[sv].type != T_TRUE && d->t[sv].type != T_FALSE) {
+                FAIL(d, "%s.starts_menu: not a boolean", w);
+                return;
+            }
+            starts = d->t[sv].type == T_TRUE;
+        }
+        if (starts && when != (int)ESC_MANUAL_BEFORE_MENU) {
+            FAIL(d, "%s.starts_menu: only for before_menu", w);
+            return;
+        }
+        if (starts && started) {
+            FAIL(d, "%s.starts_menu: a second step that starts the menu", w);
+            return;
+        }
+        if (started && when == (int)ESC_MANUAL_BEFORE_MENU) {
+            FAIL(d, "%s.when: before_menu after the step that starts the "
+                 "menu", w);
+            return;
+        }
+        started = started || starts;
+        /* Whether the ESC locks when the supply goes off before the step
+         * is done: absent or null, false.  Only a before_power_off step. */
+        const int64_t lv = member(d, ti, "locks");
+        bool locks = false;
+        if (lv >= 0 && d->t[lv].type != T_NULL) {
+            if (d->t[lv].type != T_TRUE && d->t[lv].type != T_FALSE) {
+                FAIL(d, "%s.locks: not a boolean", w);
+                return;
+            }
+            locks = d->t[lv].type == T_TRUE;
+        }
+        if (locks && when != (int)ESC_MANUAL_BEFORE_POWER_OFF) {
+            FAIL(d, "%s.locks: only for before_power_off", w);
+            return;
+        }
+        if (m != NULL) {
+            m[i] = (esc_manual_t){ (esc_manual_when_t)when, action,
+                                   (uint32_t)hold, de, starts, locks };
+        }
+    }
+    p->manual_count = (uint8_t)n;
+    p->manual = m;
 }
 
 static void decode(dec_t *d, esc_profile_t *p)
@@ -998,6 +1215,12 @@ static void decode(dec_t *d, esc_profile_t *p)
     if (!d->failed && p->automatable != ESC_AUTO_FULL
         && p->automatable_note != NULL && p->automatable_note[0] == '\0') {
         FAIL(d, "automatable_note: needed when not full");
+    }
+    if (!d->failed) {
+        decode_manual(d, root, p);
+    }
+    if (d->failed) {
+        return;
     }
 
     const int64_t s = get_obj(d, root, "scheme", "", T_OBJ);
@@ -1139,6 +1362,30 @@ static void decode(dec_t *d, esc_profile_t *p)
     decode_models(d, root, p);
     if (!d->failed) {
         decode_items(d, root, p);
+    }
+    /* The step that starts the menu is asked with the stick where the
+     * power-up left it, and the run counts from then: the menu has to
+     * rest there, for every value's power-up position. */
+    for (unsigned i = 0; !d->failed && p->manual != NULL
+                         && p->listen_throttle != ESC_THR_NONE
+                         && i < p->manual_count; ++i) {
+        if (!p->manual[i].starts_menu) {
+            continue;
+        }
+        bool elsewhere = p->listen_throttle != p->entry_throttle;
+        for (unsigned k = 0; !elsewhere && p->items != NULL
+                             && k < p->item_count; ++k) {
+            const esc_item_t *it = &p->items[k];
+            for (unsigned vi = 0; vi < it->value_count; ++vi) {
+                const esc_throttle_t et = it->values[vi].entry_throttle;
+                elsewhere = elsewhere
+                            || (et != ESC_THR_NONE && et != p->listen_throttle);
+            }
+        }
+        if (elsewhere) {
+            FAIL(d, "manual[%u].starts_menu: the menu rests elsewhere "
+                 "(scheme.listen)", i);
+        }
     }
 }
 

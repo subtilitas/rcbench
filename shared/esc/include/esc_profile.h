@@ -46,6 +46,11 @@ extern "C" {
 /** How many profiles the card may add or replace. */
 #define ESC_PROFILE_MAX_OVERRIDES 32u
 
+/** The most models one maker may list across its profiles, built in and
+ *  from the card: what the ESC STICK list holds for one maker.  A card
+ *  profile that would take its maker past it is refused at load. */
+#define ESC_MAKER_MODELS_MAX 512u
+
 /** How the menu as a whole is driven. */
 typedef enum {
     ESC_SCHEME_COUNT = 0,       /**< N beeps say item or value N            */
@@ -93,12 +98,27 @@ typedef struct {
     bool        nimh;           /**< cells count NiMH, not LiPo             */
     uint32_t    v_max_mv;       /**< 0: not known                           */
     uint16_t    current_a;      /**< continuous; 0: not known               */
+    uint32_t    v_min_mv;       /**< lowest input; 0: not known             */
 } esc_model_t;
+
+/** The most stick moves a value asks for after its selection. */
+#define ESC_AFTER_MAX 4u
 
 typedef struct {
     const char *name;
     uint8_t     number;         /**< as the ESC sounds it                   */
     bool        is_default;
+    /** The stick position the manual programs this value from, where it
+     *  differs by value; ESC_THR_NONE: the profile's entry position. */
+    esc_throttle_t entry_throttle;
+    /** Power-on to the menu when this value is programmed, where the
+     *  manual gives one other than the entry's; 0: the entry's. */
+    uint32_t       entry_hold_ms;
+    /** The moves this value asks for after its select move, in order, each
+     *  once the ESC has answered the one before (Kontronik's car modes: to
+     *  the brake after full throttle); 0 entries: none. */
+    uint8_t        after_count;
+    esc_throttle_t after[ESC_AFTER_MAX];
 } esc_value_t;
 
 typedef struct {
@@ -114,6 +134,47 @@ typedef struct {
      *  items may share a number when their conditions differ. */
     const char        *applies_when;
 } esc_item_t;
+
+/** When an operator's step at the ESC is due, in the order of a run. */
+typedef enum {
+    ESC_MANUAL_BEFORE_POWER = 0,  /**< before the supply comes on          */
+    ESC_MANUAL_AT_POWER_UP,       /**< begun before, held while it comes on */
+    ESC_MANUAL_BEFORE_MENU,       /**< powered, after the entry, before the
+                                       menu sounds                          */
+    ESC_MANUAL_DURING_MENU,       /**< while the menu sounds                */
+    ESC_MANUAL_BEFORE_POWER_OFF,  /**< powered, after the value is stored,
+                                       before the supply goes off: hands
+                                       off, the operator watches the ESC  */
+    ESC_MANUAL_AFTER_PROGRAMMING, /**< once the run is over                 */
+} esc_manual_when_t;
+
+/** The longest manual step's text, in bytes: two lines of a pop-up. */
+#define ESC_MANUAL_ACTION_MAX 120u
+/** The most manual steps one profile holds. */
+#define ESC_MANUAL_MAX 4u
+
+/**
+ * A step a person does at the ESC besides the throttle and the power: fit
+ * or pull a jumper, press a button.  The action is the profile's English,
+ * as the item and value names are, with its German beside it.
+ */
+typedef struct {
+    esc_manual_when_t when;
+    const char       *action;
+    uint32_t          hold_ms;  /**< at_power_up: held this long after the
+                                     supply comes on; 0: not stated       */
+    /** The same step in German, shown when the interface is; "" or NULL
+     *  where the profile gives none, and the English is shown. */
+    const char       *action_de;
+    /** The step starts the menu: the ESC answers it and sounds its series
+     *  at once (a Kontronik jumper pulled, its button pressed).  Only a
+     *  before_menu step, the last of them, at most one a profile. */
+    bool              starts_menu;
+    /** The ESC locks itself when its supply goes off before the step is
+     *  done (a Kontronik KOBY, JIVE Pro, KOLIBRI, KONTROL-X or KOSMIK).
+     *  Only a before_power_off step. */
+    bool              locks;
+} esc_manual_t;
 
 typedef struct {
     const char        *id;      /**< the file name without .json            */
@@ -155,6 +216,10 @@ typedef struct {
     const esc_model_t *models;
     uint8_t            item_count;
     const esc_item_t  *items;
+    /** The operator's steps at the ESC, in the order they are due; 0
+     *  entries on every profile that is not assisted. */
+    uint8_t            manual_count;
+    const esc_manual_t *manual;
 } esc_profile_t;
 
 /* ------------------------------------------------------------ built in */
@@ -198,6 +263,20 @@ bool esc_profile_file_is(const char *file_name, const char *id);
  */
 bool esc_profiles_override(const esc_profile_t *p, void *block);
 
+/**
+ * esc_profiles_override(), with why it refused in @p why (a static string;
+ * may be NULL): "no profile", "more than 32 on the card", or "its maker
+ * would list more than 512 models" -- the maker's models across every
+ * profile, built in and from the card, with this one in place of any it
+ * replaces, makers compared with the letters A to Z folded.
+ */
+bool esc_profiles_override_why(const esc_profile_t *p, void *block,
+                               const char **why);
+
+/** Whether @p a and @p b name one maker: the letters A to Z folded, every
+ *  other byte itself, as the list groups them. */
+bool esc_brand_same(const char *a, const char *b);
+
 /** Drop every card profile; the built-in ones remain. */
 void esc_profiles_clear_overrides(void);
 
@@ -234,6 +313,26 @@ bool esc_text_matches(const char *text, const char *pattern);
  * as "JAZZ / MINIJAZZ" names its sizes only in its models ("JAZZ 55 LV").
  */
 bool esc_profile_matches(const esc_profile_t *p, const char *pattern);
+
+/**
+ * Whether @p pattern finds model @p model of @p p: in the maker and the
+ * family read as one text, which every model of the family shares, or in
+ * the maker and the model's own name, as esc_profile_matches() reads them.
+ */
+bool esc_model_matches(const esc_profile_t *p, unsigned model,
+                       const char *pattern);
+
+/**
+ * Whether item @p item of @p p is on model @p model: an item without
+ * applies_to is on every model; one with it only on the models it names.
+ * For -1 -- the family, no model picked -- only an item on every model,
+ * as the one item the ESC is sure to have.
+ */
+bool esc_item_applies(const esc_profile_t *p, unsigned item, int model);
+
+/** How many of the profile's manual steps are due at @p when. */
+unsigned esc_profile_manual_count(const esc_profile_t *p,
+                                  esc_manual_when_t when);
 
 #ifdef __cplusplus
 }

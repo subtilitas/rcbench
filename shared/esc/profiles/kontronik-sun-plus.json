@@ -52,6 +52,21 @@
   ],
   "automatable": "assisted",
   "automatable_note": "The ESC button must be pressed after the entry wait. The bench has no actuator for it.",
+  "manual": [
+    {
+      "when": "before_menu",
+      "action": "Press the button after the tone sequence: 2 s for modes 1 to 3, 5 s for modes 4 to 6.",
+      "action_de": "Taster nach der Tonfolge drücken: 2 s bei Modi 1 bis 3, 5 s bei Modi 4 bis 6.",
+      "starts_menu": true,
+      "source": "Kontronik_Sun_Plus.pdf p.3-6 (DE), p.11-13 (EN)"
+    },
+    {
+      "when": "before_power_off",
+      "action": "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.",
+      "action_de": "Nicht berühren: warten, bis der ESC den Modus fertig wiederholt hat (Töne), dann ERLEDIGT tippen.",
+      "source": "Kontronik_Sun_Plus.pdf p.3-7 (DE), p.13 (EN)"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -116,15 +131,22 @@
         },
         {
           "number": 4,
-          "name": "Helicopter: throttle compensation for falling battery voltage, linear throttle curve"
+          "name": "Helicopter: throttle compensation for falling battery voltage, linear throttle curve",
+          "entry_hold_ms": 5000
         },
         {
           "number": 5,
-          "name": "Competition: maximum brake response, undervoltage and overtemperature cutoff off"
+          "name": "Competition: maximum brake response, undervoltage and overtemperature cutoff off",
+          "entry_hold_ms": 5000
         },
         {
           "number": 6,
-          "name": "Car: proportional brake, undervoltage cutoff off"
+          "name": "Car: proportional brake, undervoltage cutoff off",
+          "entry_throttle": "mid",
+          "entry_hold_ms": 5000,
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 9,
@@ -148,6 +170,10 @@
   ],
   "notes": [
     "INDEX.csv lists 'ProgCard'; the manual names the ProgCARD (order no. 9305) for individual parameters.",
-    "The motor drive is brushed ('Kollektormotoren'), 3-wire inputs only."
+    "The motor drive is brushed ('Kollektormotoren'), 3-wire inputs only.",
+    "Modes 2 to 6 and 9 start at 'Neutralstellung' (Kontronik_Sun_Plus.pdf p.4-7). The English text places it for mode 4 as 'neutral position (back position)' (p.12 EN), and mode 5 sets a two-position motor switch, which has no middle, to it (p.13 EN): neutral is read as the back, and modes 2, 3, 5 and 9 power up at MIN. Mode 6, the car mode, moves to the EMF-brake position after full throttle (p.13 EN), a brake below neutral, so it carries entry_throttle mid; the manual does not place its neutral.",
+    "Modes 4, 5 and 6 wait 5 s for the ascending tones before the button (Kontronik_Sun_Plus.pdf p.5-6 DE, p.12-13 EN), modes 1, 2, 3 and 9 wait 2 s: entry_hold_ms 5000 on modes 4 to 6, the scheme's 2000 ms for the rest.",
+    "Mode 6 moves the stick to the brake position after the full-throttle selection (Kontronik_Sun_Plus.pdf p.6-7 DE, p.13 EN): after_select min, made STORE after the selection; the manual gives no time.",
+    "After the store the ESC repeats the stored mode as tones (control output, 'Kontrollausgabe'), and the manual disconnects power after it (Kontronik_Sun_Plus.pdf p.3-7 (DE), p.13 (EN)). The step before_power_off holds the run powered until the operator taps DONE. The manual names no lock for a power-off before the end of it."
   ]
 }

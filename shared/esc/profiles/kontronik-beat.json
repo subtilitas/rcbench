@@ -124,6 +124,27 @@
   ],
   "automatable": "assisted",
   "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps.",
+  "manual": [
+    {
+      "when": "before_power",
+      "action": "Fit the jumper on any 2 of the 3 programming contacts.",
+      "action_de": "Jumper auf 2 beliebige der 3 Programmierkontakte stecken.",
+      "source": "Kontronik_Beat.pdf p.5 (DE), p.27 (EN)"
+    },
+    {
+      "when": "before_menu",
+      "action": "Pull the jumper off after 2 s or the tone sequence.",
+      "action_de": "Jumper nach 2 s oder der Tonfolge abziehen.",
+      "starts_menu": true,
+      "source": "Kontronik_Beat.pdf p.5 (DE), p.27 (EN)"
+    },
+    {
+      "when": "before_power_off",
+      "action": "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.",
+      "action_de": "Nicht berühren: warten, bis der ESC den Modus fertig wiederholt hat (Töne), dann ERLEDIGT tippen.",
+      "source": "Kontronik_Beat.pdf p.5-15 (DE)"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -196,7 +217,11 @@
         },
         {
           "number": 6,
-          "name": "Car 1: one direction, proportional brake"
+          "name": "Car 1: one direction, proportional brake",
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 7,
@@ -204,7 +229,11 @@
         },
         {
           "number": 8,
-          "name": "Car 2: forward and reverse"
+          "name": "Car 2: forward and reverse",
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         }
       ],
       "applies_to": null,
@@ -225,6 +254,9 @@
   ],
   "notes": [
     "The Beat manual lists FAI models (FAI 7/10, FAI 24, FAI 27) with this procedure; their addendum Kontronik_Beat_FAI.pdf replaces the menu, see kontronik-beat-fai.",
-    "The ESC may only be fed from NiCd or NiMH packs per the manual's safety text."
+    "The ESC may only be fed from NiCd or NiMH packs per the manual's safety text.",
+    "Modes 6 and 8 are programmed with the stick at motor-off in the middle (Kontronik_Beat.pdf p.15, p.17 DE; p.37, p.39 EN). They carry entry_throttle mid, so stick programming does not store them from the brake position.",
+    "Mode 6 moves the stick to the brake position and mode 8 to full reverse, both back, after the full-throttle selection (Kontronik_Beat.pdf p.15, p.17 DE; p.37, p.39 EN): after_select min, made STORE after the selection; the manual gives no time.",
+    "After the store the ESC repeats the stored mode as tones (control output, 'Kontrollausgabe'), and the manual disconnects power after it (Kontronik_Beat.pdf p.5-15 (DE)). The step before_power_off holds the run powered until the operator taps DONE. The manual names no lock for a power-off before the end of it."
   ]
 }

@@ -76,6 +76,22 @@
   ],
   "automatable": "assisted",
   "automatable_note": "The ESC's own button (marked on the ESC) must be pressed after the power-up tones. The bench has no actuator for it.",
+  "manual": [
+    {
+      "when": "before_menu",
+      "action": "Press the button on the ESC after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).",
+      "action_de": "Taster am ESC nach den Zellentönen drücken (Schrumpfschlauch-Versionen: hinten, nahe dem Sensoranschluss).",
+      "starts_menu": true,
+      "source": "Kontronik_KOLIBRI_de.pdf p.7 (DE), p.18 (EN)"
+    },
+    {
+      "when": "before_power_off",
+      "action": "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.",
+      "action_de": "Nicht berühren: warten, bis der ESC seine Modusbestätigung beendet hat (Töne, LED), dann ERLEDIGT tippen.",
+      "locks": true,
+      "source": "Kontronik_KOLIBRI_de.pdf p.7, p.9, p.10 (DE)"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -316,6 +332,7 @@
   ],
   "notes": [
     "Telemetry table differs from the KOSMIK: tone 3 is Futaba here and 'not used' on the KOSMIK, and tone 8 (FrSky) exists here only.",
-    "INDEX.csv says 'ProgCard II / app'; the German manual mentions the programming unit ProgUNIT 9311 and a Bluetooth module."
+    "INDEX.csv says 'ProgCard II / app'; the German manual mentions the programming unit ProgUNIT 9311 and a Bluetooth module.",
+    "The manual asks for the power to stay on until the ESC has confirmed the mode: a supply off before that is taken as programming broken off and locks the ESC, shown as 9 LED flashes (Kontronik_KOLIBRI_de.pdf p.7, p.9, p.10 (DE)). The step before_power_off holds the run powered until the operator taps DONE."
   ]
 }

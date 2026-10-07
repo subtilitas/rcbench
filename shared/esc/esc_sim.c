@@ -78,10 +78,49 @@ static esc_throttle_t classify(float pct)
     return ESC_THR_NONE;
 }
 
-static esc_throttle_t listen_pos(const esc_profile_t *p)
+/* Where the stick rests while the menu sounds: the profile's listen
+ * position, else where this power-up entered. */
+static esc_throttle_t listen_pos(const esc_sim_t *s)
 {
-    return (p->listen_throttle != ESC_THR_NONE) ? p->listen_throttle
-                                                : p->entry_throttle;
+    return (s->p->listen_throttle != ESC_THR_NONE) ? s->p->listen_throttle
+                                                   : s->entry;
+}
+
+/* Whether a power-up at @p pos enters the menu: the profile's entry, or
+ * the position any value is programmed from. */
+static bool enters_from(const esc_profile_t *p, esc_throttle_t pos)
+{
+    if (pos == p->entry_throttle) {
+        return true;
+    }
+    for (unsigned i = 0; i < p->item_count; ++i) {
+        for (unsigned k = 0; k < p->items[i].value_count; ++k) {
+            if (pos != ESC_THR_NONE
+                && p->items[i].values[k].entry_throttle == pos) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/* The position the value numbered @p value of item @p item is programmed
+ * from. */
+static esc_throttle_t value_entry(const esc_profile_t *p, uint8_t item,
+                                  uint8_t value)
+{
+    for (unsigned i = 0; i < p->item_count; ++i) {
+        if (p->items[i].number != item) {
+            continue;
+        }
+        for (unsigned k = 0; k < p->items[i].value_count; ++k) {
+            const esc_value_t *v = &p->items[i].values[k];
+            if (v->number == value && v->entry_throttle != ESC_THR_NONE) {
+                return v->entry_throttle;
+            }
+        }
+    }
+    return p->entry_throttle;
 }
 
 static bool two_stage(const esc_profile_t *p)
@@ -248,6 +287,11 @@ static void segment_over(esc_sim_t *s, uint32_t at)
             s->seg = SEG_WAIT;
             const uint32_t menu = s->on_ms + s->c.entry_ms;
             s->seg_end = ((int32_t)(menu - at) > 0) ? menu : at;
+            if (s->answering) {
+                /* The answer to the action, then a pause, then the menu. */
+                s->answering = false;
+                s->seg_end = at + s->c.pause_ms;
+            }
             return;
         }
         s->seg = SEG_PAUSE;
@@ -274,7 +318,14 @@ static void segment_over(esc_sim_t *s, uint32_t at)
             start_group(s, at, 2u, false, false);   /* "entered" */
             return;
         }
-        if (listen_pos(s->p) != s->p->entry_throttle) {
+        if (s->c.wait_hand && !s->hand_done
+            && esc_profile_manual_count(s->p, ESC_MANUAL_BEFORE_MENU) > 0u) {
+            /* The jumper still on, the button not pressed: the ESC waits,
+             * silent, for esc_sim_hand(). */
+            s->seg = SEG_NONE;
+            return;
+        }
+        if (listen_pos(s) != s->entry) {
             s->mode = ESC_SIM_WAIT_LISTEN;
             s->seg = SEG_NONE;
             return;
@@ -301,19 +352,64 @@ static bool in_window(const esc_sim_t *s, uint32_t now, uint32_t profile_ms)
     return (uint32_t)(now - s->ended_ms) <= w;
 }
 
+unsigned esc_sim_store_moves(const esc_profile_t *p, uint8_t item,
+                             uint8_t value, esc_throttle_t *out, size_t cap)
+{
+    unsigned n = 0u;
+    if (p == NULL || out == NULL) {
+        return 0u;
+    }
+    if (p->store_throttle != ESC_THR_NONE && n < cap) {
+        out[n++] = p->store_throttle;
+    }
+    /* The first item and value of these numbers: conditional items may
+     * share both on different models, and the ESC has one of them.  Its
+     * moves, no more than @p cap holds. */
+    for (unsigned i = 0; i < p->item_count; ++i) {
+        if (p->items[i].number != item) {
+            continue;
+        }
+        for (unsigned k = 0; k < p->items[i].value_count; ++k) {
+            const esc_value_t *v = &p->items[i].values[k];
+            if (v->number != value) {
+                continue;
+            }
+            for (unsigned m = 0; m < v->after_count && m < ESC_AFTER_MAX
+                                 && n < cap; ++m) {
+                out[n++] = v->after[m];
+            }
+            return n;
+        }
+    }
+    return n;
+}
+
+
 static void store(esc_sim_t *s, uint32_t now, uint8_t item, uint8_t value)
 {
-    if (s->p->store_throttle != ESC_THR_NONE && s->mode != ESC_SIM_PENDING) {
-        /* Answered, and stored only by the move that follows. */
+    esc_throttle_t moves[ESC_AFTER_MAX + 1u];
+    if (s->mode != ESC_SIM_PENDING
+        && esc_sim_store_moves(s->p, item, value, moves,
+                       sizeof(moves) / sizeof(moves[0])) > 0u) {
+        /* Answered, and stored only by the moves that follow, in order;
+         * the power going first loses it. */
         s->pend_item = item;
         s->pend_value = value;
+        s->pend_step = 0u;
         s->ended = 0u;
         s->mode = ESC_SIM_PENDING;
         start_group(s, now, 2u, false, false);
         return;
     }
     s->stored[item] = value;
+    s->stored_from[item] = s->entry;
     s->stores++;
+    /* A value stored from another position than its own teaches that
+     * position: a car mode entered at the brake stores the brake as its
+     * neutral. */
+    if (value_entry(s->p, item, value) != s->entry) {
+        s->misplaced++;
+    }
     s->ended = 0u;
     if (s->p->one_change_per_entry) {
         s->mode = ESC_SIM_DONE;
@@ -329,24 +425,34 @@ static void moved(esc_sim_t *s, uint32_t now)
     const esc_profile_t *p = s->p;
     switch (s->mode) {
     case ESC_SIM_ENTRY:
-        if (s->pos != p->entry_throttle) {
+        if (s->pos != s->entry) {
             s->mode = ESC_SIM_IDLE;     /* left the entry: runs normally */
             s->seg = SEG_NONE;
         }
         return;
     case ESC_SIM_WAIT_LISTEN:
-        if (s->pos == listen_pos(p)) {
+        if (s->pos == listen_pos(s)) {
             s->mode = two_stage(p) ? ESC_SIM_ITEMS : ESC_SIM_VALUES;
             build_loop(s);
             s->seg = SEG_PAUSE;
             s->seg_end = now + s->c.pause_ms;
         }
         return;
-    case ESC_SIM_PENDING:
-        if (s->pos == p->store_throttle) {
-            store(s, now, s->pend_item, s->pend_value);
+    case ESC_SIM_PENDING: {
+        esc_throttle_t moves[ESC_AFTER_MAX + 1u];
+        const unsigned n = esc_sim_store_moves(p, s->pend_item, s->pend_value,
+                                           moves,
+                                       sizeof(moves) / sizeof(moves[0]));
+        if (s->pend_step < n && s->pos == moves[s->pend_step]) {
+            s->pend_step++;
+            if (s->pend_step == n) {
+                store(s, now, s->pend_item, s->pend_value);
+            } else {
+                start_group(s, now, 2u, false, false);  /* answered */
+            }
         }
         return;
+    }
     case ESC_SIM_ITEMS:
         if (s->pos == p->select_throttle
             && in_window(s, now, p->select_within_ms)) {
@@ -431,12 +537,14 @@ int32_t esc_sim_step(esc_sim_t *s, uint32_t now_ms, bool powered,
         s->pos = pos;
         s->ended = 0u;
         s->tones_done = false;
+        s->hand_done = false;
         s->menu_groups = 0u;
         if (s->c.entry_ms == 0u) {
             s->c.entry_ms = (s->p->entry_hold_ms != 0u) ? s->p->entry_hold_ms
                                                        : 3000u;
         }
-        if (pos == s->p->entry_throttle) {
+        s->entry = pos;
+        if (enters_from(s->p, pos)) {
             s->mode = ESC_SIM_ENTRY;
             s->seg = SEG_WAIT;
             const uint32_t quarter = s->c.entry_ms / 4u;
@@ -469,4 +577,17 @@ int32_t esc_sim_step(esc_sim_t *s, uint32_t now_ms, bool powered,
         ma += (int32_t)((s->lcg >> 16) % span) - (int32_t)s->c.noise_ma;
     }
     return (ma > 0) ? ma : 0;
+}
+
+void esc_sim_hand(esc_sim_t *s, uint32_t now_ms)
+{
+    if (s == NULL || !s->powered || s->hand_done) {
+        return;
+    }
+    s->hand_done = true;
+    if (s->mode == ESC_SIM_ENTRY && s->tones_done && s->seg == SEG_NONE) {
+        /* Waiting: the three-tone answer at once, then the menu. */
+        s->answering = true;
+        start_group(s, now_ms, 3u, false, false);
+    }
 }

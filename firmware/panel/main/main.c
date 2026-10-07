@@ -1215,9 +1215,9 @@ static void esc_profiles_load(void)
             continue;
         }
         const bool replaces = (esc_profiles_find(p.id) != NULL);
-        if (!esc_profiles_override(&p, block)) {
-            ESP_LOGW(TAG, "ESC profiles: %s refused: more than %u on the card",
-                     c.name[i], (unsigned)ESC_PROFILE_MAX_OVERRIDES);
+        const char *why = NULL;
+        if (!esc_profiles_override_why(&p, block, &why)) {
+            ESP_LOGW(TAG, "ESC profiles: %s refused: %s", c.name[i], why);
             continue;
         }
         ++added;

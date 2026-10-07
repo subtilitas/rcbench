@@ -75,7 +75,28 @@
     }
   ],
   "automatable": "assisted",
-  "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps. An optional arming switch can replace the jumper on the two gold contacts.",
+  "automatable_note": "A jumper is fitted on the two gold contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person does both; the run asks for each step. An optional arming switch can replace the jumper on the two gold contacts.",
+  "manual": [
+    {
+      "when": "before_power",
+      "action": "Fit the jumper on the two gold contacts.",
+      "action_de": "Jumper auf die beiden Goldkontakte stecken.",
+      "source": "Kontronik_3SL.pdf p.2, p.5"
+    },
+    {
+      "when": "before_menu",
+      "action": "Pull the jumper off after 2 s or the three-tone sequence.",
+      "action_de": "Jumper nach 2 s oder dem Dreiklang abziehen.",
+      "starts_menu": true,
+      "source": "Kontronik_3SL.pdf p.5"
+    },
+    {
+      "when": "before_power_off",
+      "action": "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.",
+      "action_de": "Nicht berühren: warten, bis der ESC den Modus fertig wiederholt hat (Töne), dann ERLEDIGT tippen.",
+      "source": "Kontronik_3SL.pdf p.5-17 (DE/EN)"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -148,7 +169,11 @@
         },
         {
           "number": 6,
-          "name": "Car: proportional brake"
+          "name": "Car: proportional brake",
+          "entry_throttle": "mid",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 7,
@@ -172,6 +197,9 @@
     "BEC presence is not stated in the text read."
   ],
   "notes": [
-    "The 3SL manual lists modes 1 to 7; the BEAT successor adds mode 8."
+    "The 3SL manual lists modes 1 to 7; the BEAT successor adds mode 8.",
+    "Mode 6 is programmed with the stick at motor-off in the middle (Kontronik_3SL.pdf p.16 DE, p.6 EN). It carries entry_throttle mid, so stick programming does not store it from the brake position.",
+    "Mode 6 moves the stick to the brake position (back) after the full-throttle selection (Kontronik_3SL.pdf p.16 DE, p.6 EN): after_select min, made STORE after the selection; the manual gives no time.",
+    "After the store the ESC repeats the stored mode as tones (control output, 'Kontrollausgabe'), and the manual disconnects power after it (Kontronik_3SL.pdf p.5-17 (DE/EN)). The step before_power_off holds the run powered until the operator taps DONE. The manual names no lock for a power-off before the end of it."
   ]
 }

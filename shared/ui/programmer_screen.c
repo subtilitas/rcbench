@@ -28,11 +28,19 @@
  * every move it makes goes out as the MOTOR screen's commands do, through
  * the arming policy and the output bank.
  *
- * The profile list has a search field.  Its keyboard docks on the right
+ * The profile list has two levels: the makers, alphabetical, and one
+ * maker's models, by current, voltage and name, each opening its family's
+ * profile.  A search field filters both.  Its keyboard docks on the right
  * while it is open and the rows narrow to its left, so the list filters
  * with every key and stays in view.  A run shows a stack light: green while
  * the detector holds a beep, red on a result that ended because something
  * was not as expected (esc_stick_reason_is_fault()).
+ *
+ * A profile whose ESC needs a person at it -- a jumper, a button -- lists
+ * those steps (esc_profile_t's manual).  Its page carries MANUAL
+ * INTERVENTION REQUIRED, which shows them over the screen, as does the
+ * first opening; the warning lists those due before the power-up, and a
+ * run that waits for one covers the page with DONE and ABORT.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -41,6 +49,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "esc_profile.h"
@@ -288,12 +297,18 @@ static const proto_t k_protos[] = {
 /* The search field in the crumb row, and the keyboard docked to the right
  * of SP_DOCK_X below it while the field is typed in. */
 #define SP_FIND_MAX 16
-#define SP_FIND_X   214
+#define SP_FIND_X   (W - PAD - 12 - 76 - 8 - SP_FIND_W)
 #define SP_FIND_W   172
 #define SP_DOCK_X   352
-/* The count right of the field, up to the ^ button: 38 cells. */
-#define SP_COUNT_X  (SP_FIND_X + SP_FIND_W + 8)
-#define SP_COUNT_W  (W - PAD - 12 - 76 - 8 - SP_COUNT_X)
+/* The trail left of the field, from the crumb's text: 48 cells. */
+#define SP_TRAIL_CELLS ((SP_FIND_X - 8 - (PAD + 12 + 96 + 16)) / 8)
+/* The footer under the rows: the count at its right, 45 cells, or at its
+ * left beside the docked keyboard. */
+#define SP_FOOT_Y   (SP_ROW_Y0 + SP_ROWS * SP_ROW_H + 6)
+#define SP_COUNT_W  360
+/* The most models one maker's list holds: as many as the registry lets a
+ * maker have, so the count and the rows always agree. */
+#define SP_MODELS   ((int)ESC_MAKER_MODELS_MAX)
 
 /* The stack light at the right of the run's card: a cap, the red and the
  * green lens, each with a collar under it, and the base, px. */
@@ -316,10 +331,31 @@ static const setting_id_t k_sp_settings[] = {
 };
 #define SP_SETTINGS ((int)(sizeof(k_sp_settings) / sizeof(k_sp_settings[0])))
 
+/* A maker on the list's first level: how many models it has, how many the
+ * search finds, how many of those run, and whether any has manual steps. */
 typedef struct {
-    /* The list: the profiles that can run, then those that cannot. */
-    int  order[SP_MAX];
-    int  count, runnable, scroll;
+    const char *name;
+    uint16_t    models, found, runs;
+    bool        manual;
+} sp_maker_t;
+
+/* A model on the second level: its profile's index in the registry and its
+ * own index in the profile. */
+typedef struct {
+    uint16_t prof, model;
+} sp_row_t;
+
+typedef struct {
+    /* The list in two levels.  Level 0 the makers, alphabetical; level 1
+     * the models of one maker, by current, voltage and name.  count,
+     * runnable and scroll are the level's showing; bscroll is the makers'
+     * kept while a maker is open. */
+    int        level;
+    sp_maker_t makers[SP_MAX];
+    sp_row_t   rows_m[SP_MODELS];
+    const char *maker;      /* the maker open on level 1 */
+    int        count, runnable, scroll, bscroll;
+    int        model;       /* the page's model, -1 for none */
 
     /* The profile picked, and what is to change: per item, -1 to keep it,
      * else the index of the value to store. */
@@ -366,8 +402,26 @@ typedef struct {
     bool        sent_arm, sent_supply;
     float       sent_pct;
 
+    /* The manual steps' pop-up and the profile it shows: the page's, or a
+     * row's that does not run.  It opens by itself the first time a
+     * profile with manual steps is opened, one bit a profile by its index
+     * in the registry. */
+    bool                 hand_open;
+    const esc_profile_t *hand_p;
+    int                  hand_model;    /* the model it was opened for, or
+                                           -1: the family's lowest      */
+    bool                 was_running;   /* the run, as the last tick saw */
+    bool                 warn_read;     /* ALL STEPS read over the warning */
+
+    /* The supply as its newest reading had it, run or no run: whether its
+     * output is live, and since when it has read off. */
+    bool                 sup_have, sup_live, sup_off_known, sup_gate;
+    bool                 sup_off_drawn; /* what a result last showed     */
+    uint32_t             sup_at, sup_off_since;
+    uint8_t              hand_seen[SP_MAX / 8];
+
     gfx_rect_t rows[SP_ROWS], list_up, list_dn;
-    gfx_rect_t hold_btn, cancel_btn;
+    gfx_rect_t hold_btn, cancel_btn, hand_btn, steps_btn;
 } stick_t;
 
 /* --------------------------------------------------------------- the state */
@@ -487,6 +541,12 @@ static void reset(void)
                                     260, 56 };
     s.st.cancel_btn = (gfx_rect_t){ (int16_t)(W - PAD - 20 - 180),
                                     (int16_t)(H - PAD - 76), 180, 56 };
+    /* Between HOLD TO RUN and CANCEL, on the warning. */
+    s.st.steps_btn  = (gfx_rect_t){ PAD + 20 + 260 + 24,
+                                    (int16_t)(H - PAD - 76), 266, 56 };
+    /* In the item list's header, between CHANGE and the count. */
+    s.st.hand_btn   = (gfx_rect_t){ PAD + 108, (int16_t)(PARM_Y + 4), 300,
+                                    24 };
     adopt_device();
 }
 
@@ -949,6 +1009,131 @@ static void sp_text(gfx_canvas_t *c, int x, int y, const char *text,
     gfx_text(c, x, y, buf, UI_FONT_LABEL, ink, 1);
 }
 
+/* The bytes of the next line of @p at that fit @p cells: up to the last
+ * space in it, or the whole width where no space falls after its start. */
+static size_t sp_line_len(const char *at, int cells)
+{
+    if (gfx_text_cells(at) <= cells) {
+        return strlen(at);
+    }
+    const size_t len = gfx_text_prefix(at, cells);
+    size_t cut = len;
+    while (cut > 0u && at[cut] != ' ') {
+        --cut;
+    }
+    return (cut > 0u) ? cut : len;
+}
+
+/*
+ * @p text in lines of at most @p cells, broken after a space where one
+ * falls in the line and inside a word where none does, from (x, y) down by
+ * @p pitch.  At most @p max_lines lines; the last of them ends in ".." when
+ * the text goes on.  Returns the lines drawn.  A manual step is the
+ * profile's own text and can be up to ESC_MANUAL_ACTION_MAX bytes, so it is
+ * wrapped, not cut to one line.
+ */
+static int sp_wrap(gfx_canvas_t *c, int x, int y, int pitch,
+                   const char *text, int cells, int max_lines,
+                   gfx_color_t ink)
+{
+    int lines = 0;
+    const char *at = (text != NULL) ? text : "";
+    while (*at == ' ') {
+        ++at;
+    }
+    while (*at != '\0' && lines < max_lines) {
+        char buf[192];
+        ++lines;
+        if (lines == max_lines) {
+            /* The last line takes the rest, cut with ".." if it is more
+             * than fits. */
+            snprintf(buf, sizeof(buf), "%s", at);
+            sp_cut(buf, sizeof(buf), cells);
+            at += strlen(at);
+        } else {
+            /* The line, no further than the text's end; the copy no
+             * longer than the buffer. */
+            const size_t rest = strlen(at);
+            size_t len = sp_line_len(at, cells);
+            len = (len < rest) ? len : rest;
+            const size_t n = (len < sizeof(buf)) ? len : sizeof(buf) - 1u;
+            memcpy(buf, at, n);
+            buf[n] = '\0';
+            at += len;
+            while (*at == ' ') {
+                ++at;
+            }
+        }
+        gfx_text(c, x, y, buf, UI_FONT_LABEL, ink, 1);
+        y += pitch;
+    }
+    return lines;
+}
+
+/* The lines sp_wrap() would draw, without drawing them. */
+static int sp_wrap_lines(const char *text, int cells, int max_lines)
+{
+    int lines = 0;
+    const char *at = (text != NULL) ? text : "";
+    while (*at == ' ') {
+        ++at;
+    }
+    while (*at != '\0' && lines < max_lines) {
+        at += sp_line_len(at, cells);
+        while (*at == ' ') {
+            ++at;
+        }
+        ++lines;
+    }
+    return lines;
+}
+
+/* A manual step in the language showing: the profile's German where it
+ * gives one and German shows, else its English. */
+const char *programmer_screen_step_text(const esc_manual_t *m)
+{
+    if (m == NULL) {
+        return "";
+    }
+    if (ui_text_language() == UI_LANG_DE && m->action_de != NULL
+        && m->action_de[0] != '\0') {
+        return m->action_de;
+    }
+    return (m->action != NULL) ? m->action : "";
+}
+
+static const char *sp_action(const esc_manual_t *m)
+{
+    return programmer_screen_step_text(m);
+}
+
+/* When a manual step is due, in the language showing. */
+static const char *sp_when_text(const esc_manual_t *m)
+{
+    static char buf[96];
+    switch (m->when) {
+    case ESC_MANUAL_BEFORE_POWER:
+        return TR(SP_HAND_WHEN_BEFORE_POWER);
+    case ESC_MANUAL_AT_POWER_UP:
+        if (m->hold_ms == 0u) {
+            return TR(SP_HAND_WHEN_AT_POWER);
+        }
+        snprintf(buf, sizeof(buf), TR(SP_HAND_WHEN_AT_POWER_MS),
+                 (unsigned)(m->hold_ms / 1000u),
+                 (unsigned)(m->hold_ms % 1000u / 100u));
+        return buf;
+    case ESC_MANUAL_BEFORE_MENU:
+        return TR(SP_HAND_WHEN_BEFORE_MENU);
+    case ESC_MANUAL_DURING_MENU:
+        return TR(SP_HAND_WHEN_DURING_MENU);
+    case ESC_MANUAL_BEFORE_POWER_OFF:
+        return TR(SP_HAND_WHEN_BEFORE_OFF);
+    case ESC_MANUAL_AFTER_PROGRAMMING:
+        return TR(SP_HAND_WHEN_AFTER);
+    }
+    return "?";
+}
+
 /*
  * The stick engine's refusals are English, held where the engine writes
  * them; the screen shows each in the language showing by matching its
@@ -968,6 +1153,8 @@ static const ui_text_id_t k_why[] = {
     TX_ESC_WHY_LONG, TX_ESC_WHY_LONG_MAX, TX_ESC_WHY_GROUP_GAP,
     TX_ESC_WHY_THRESHOLD, TX_ESC_WHY_ENTRY, TX_ESC_WHY_SELECT_WINDOW,
     TX_ESC_WHY_VALUE_WINDOW, TX_ESC_WHY_NO_RUN, TX_ESC_WHY_ONE_VALUE,
+    TX_ESC_WHY_HAND, TX_ESC_WHY_ENTRY_POS, TX_ESC_WHY_ENTRY_TIME,
+    TX_ESC_WHY_AFTER_TWO, TX_ESC_WHY_AFTER_NONE, TX_ESC_WHY_MENU_REST,
 };
 
 const char *programmer_screen_why_text(const char *why)
@@ -989,11 +1176,88 @@ static const char *sp_why_text(const char *why)
 }
 
 /*
- * Why a profile cannot run, into @p buf, or NULL when it can: the engine's
- * reason, or a voltage the supply cannot give -- VOLTAGE where it is set,
- * else the profile's cell count.
+ * What the supply's set points break of model @p model's ratings
+ * (esc_stick_rating()), into @p buf, or NULL: the short form for a row,
+ * the long one for the page's note.
  */
-static const char *sp_why(const esc_profile_t *p, char *buf, size_t n)
+static const char *sp_rating_why(const esc_profile_t *p, int model,
+                                 uint32_t mv, uint32_t ma, bool by_hand,
+                                 bool longer, char *buf, size_t n)
+{
+    const uint32_t v_max = esc_stick_model_v_max(p, model);
+    const uint32_t ma_max = esc_stick_model_ma_max(p, model);
+    switch (esc_stick_rating(p, model, mv, ma, by_hand)) {
+    case ESC_STICK_RATING_V_OVER:
+        snprintf(buf, n,
+                 longer ? (by_hand ? TR(SP_V_OVER_ESC_NOTE)
+                                   : TR(SP_V_CELLS_OVER_ESC_NOTE))
+                        : TR(SP_V_OVER_ESC),
+                 (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u),
+                 (unsigned)(v_max / 1000u),
+                 (unsigned)(v_max % 1000u / 100u));
+        return buf;
+    case ESC_STICK_RATING_V_UNDER: {
+        const uint32_t v_min = esc_stick_model_v_min(p, model);
+        snprintf(buf, n, longer ? TR(SP_V_UNDER_ESC_NOTE) : TR(SP_V_UNDER_ESC),
+                 (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u),
+                 (unsigned)(v_min / 1000u),
+                 (unsigned)(v_min % 1000u / 100u));
+        return buf;
+    }
+    case ESC_STICK_RATING_I_OVER:
+        snprintf(buf, n, longer ? TR(SP_I_OVER_ESC_NOTE) : TR(SP_I_OVER_ESC),
+                 (unsigned)(ma / 1000u), (unsigned)(ma % 1000u / 100u),
+                 (unsigned)(ma_max / 1000u));
+        return buf;
+    case ESC_STICK_RATING_OK:
+    default:
+        return NULL;
+    }
+}
+
+/*
+ * The warning for a voltage the data cannot vouch for
+ * (esc_stick_rating_unknown()), into @p buf, or NULL: the short form for a
+ * row, the long one for the page's note.  The run goes ahead.
+ */
+static const char *sp_rating_warn(const esc_profile_t *p, int model,
+                                  uint32_t mv, bool by_hand, bool longer,
+                                  char *buf, size_t n)
+{
+    if (!esc_stick_rating_unknown(p, model, mv, by_hand)) {
+        return NULL;
+    }
+    if (!longer) {
+        snprintf(buf, n, "%s", TR(SP_V_UNRATED));
+    } else if (by_hand) {
+        snprintf(buf, n, TR(SP_V_UNRATED_NOTE),
+                 (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u));
+    } else {
+        snprintf(buf, n, TR(SP_V_UNRATED_CELLS_NOTE),
+                 (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u));
+    }
+    return buf;
+}
+
+/* The same for the model on a row, or the page's, with the settings now. */
+static const char *sp_model_warn(const esc_profile_t *p, int model, char *buf,
+                                 size_t n)
+{
+    const float v = settings_get(SET_STICK_V);
+    const uint32_t mv = (v > 0.0f) ? (uint32_t)lroundf(v * 1000.0f)
+                                   : esc_stick_model_mv(p, model);
+    return sp_rating_warn(p, model, mv, v > 0.0f, false, buf, n);
+}
+
+/*
+ * Why model @p model of a profile cannot run, into @p buf, or NULL when it
+ * can: the engine's reason, a voltage or current over the ESC's rating,
+ * or a voltage the supply cannot give -- VOLTAGE where it is set, else
+ * the model's cell count, or with no model (-1) or none stated the
+ * family's lowest.
+ */
+static const char *sp_model_why(const esc_profile_t *p, int model, char *buf,
+                                size_t n)
 {
     const char *why = NULL;
     if (esc_stick_kind(p, &why) == ESC_STICK_KIND_NONE) {
@@ -1001,7 +1265,12 @@ static const char *sp_why(const esc_profile_t *p, char *buf, size_t n)
     }
     const float v = settings_get(SET_STICK_V);
     const uint32_t mv = (v > 0.0f) ? (uint32_t)lroundf(v * 1000.0f)
-                                   : esc_stick_profile_mv(p);
+                                   : esc_stick_model_mv(p, model);
+    const uint32_t ma = (uint32_t)lroundf(settings_get(SET_STICK_I)
+                                          * 1000.0f);
+    if (sp_rating_why(p, model, mv, ma, v > 0.0f, false, buf, n) != NULL) {
+        return buf;
+    }
     const unsigned cap = (unsigned)lroundf(supply_screen_caps().v_max
                                            * 1000.0f);
     if (mv > cap) {
@@ -1011,6 +1280,11 @@ static const char *sp_why(const esc_profile_t *p, char *buf, size_t n)
         return buf;
     }
     return NULL;
+}
+
+static const char *sp_why(const esc_profile_t *p, char *buf, size_t n)
+{
+    return sp_model_why(p, -1, buf, n);
 }
 
 static bool sp_runs(const esc_profile_t *p)
@@ -1039,33 +1313,153 @@ static uint32_t sp_list_key(void)
     return (v << 16) ^ cap;
 }
 
+/* @p a against @p b with the letters A to Z folded, as the search folds
+ * them: the makers' order and their grouping. */
+static int sp_casecmp(const char *a, const char *b)
+{
+    for (;; ++a, ++b) {
+        int x = (unsigned char)*a;
+        int y = (unsigned char)*b;
+        x -= (x >= 'a' && x <= 'z') ? 32 : 0;
+        y -= (y >= 'a' && y <= 'z') ? 32 : 0;
+        if (x != y || x == 0) {
+            return x - y;
+        }
+    }
+}
+
+static bool sp_model_runs(const esc_profile_t *p, int model)
+{
+    char buf[40];
+    return sp_model_why(p, model, buf, sizeof(buf)) == NULL;
+}
+
 /*
- * What can run first, then what cannot, each in the registry's order, of
- * the profiles the search finds (esc_profile_matches(); all of them while
- * it is empty).  Built again whenever the list comes back on screen, the
- * search changes, or VOLTAGE or the SUPPLY cap moves under it, so the order
- * and the count follow the reasons the rows draw.
+ * The first level: every maker, alphabetical with case folded, that the
+ * search finds a model of (esc_model_matches(); every one while it is
+ * empty), with its models, those found and those of them that run.  A
+ * card profile joins its maker as a built-in one does.
+ */
+static void sp_build_makers(stick_t *t)
+{
+    int n = 0;
+    const size_t total = esc_profiles_count();
+    for (size_t i = 0; i < total; ++i) {
+        const esc_profile_t *p = esc_profiles_at(i);
+        int at = 0;
+        while (at < n && sp_casecmp(t->makers[at].name, p->brand) < 0) {
+            ++at;
+        }
+        if (at == n || sp_casecmp(t->makers[at].name, p->brand) != 0) {
+            if (n >= SP_MAX) {
+                continue;
+            }
+            memmove(&t->makers[at + 1], &t->makers[at],
+                    (size_t)(n - at) * sizeof(t->makers[0]));
+            t->makers[at] = (sp_maker_t){ p->brand, 0u, 0u, 0u, false };
+            ++n;
+        }
+        sp_maker_t *mk = &t->makers[at];
+        for (unsigned m = 0; m < p->model_count; ++m) {
+            mk->models++;
+            if (!esc_model_matches(p, m, t->find)) {
+                continue;
+            }
+            mk->found++;
+            if (sp_model_runs(p, (int)m)) {
+                mk->runs++;
+            }
+            mk->manual = mk->manual || p->manual_count > 0u;
+        }
+    }
+    int k = 0;
+    t->runnable = 0;
+    for (int i = 0; i < n; ++i) {
+        if (t->makers[i].found > 0u) {
+            t->runnable += (t->makers[i].runs > 0u) ? 1 : 0;
+            t->makers[k++] = t->makers[i];
+        }
+    }
+    t->count = k;
+}
+
+/* One key of the models' order: smaller first, 0 -- not stated -- last. */
+static int sp_key_cmp(uint32_t a, uint32_t b)
+{
+    if (a == b) {
+        return 0;
+    }
+    if (a == 0u || b == 0u) {
+        return (a == 0u) ? 1 : -1;
+    }
+    return (a < b) ? -1 : 1;
+}
+
+/* Current, then voltage, then name with case folded; a key a model does
+ * not state sorts it last on that key.  Ties keep the registry's order. */
+static int sp_by_model(const void *a, const void *b)
+{
+    const sp_row_t *x = a, *y = b;
+    const esc_model_t *mx = &esc_profiles_at(x->prof)->models[x->model];
+    const esc_model_t *my = &esc_profiles_at(y->prof)->models[y->model];
+    int c = sp_key_cmp(mx->current_a, my->current_a);
+    if (c == 0) {
+        c = sp_key_cmp(mx->v_max_mv, my->v_max_mv);
+    }
+    if (c == 0) {
+        c = sp_casecmp(mx->name, my->name);
+    }
+    if (c == 0) {
+        c = (x->prof != y->prof) ? ((x->prof < y->prof) ? -1 : 1)
+                                 : ((x->model < y->model) ? -1 : 1);
+    }
+    return c;
+}
+
+/*
+ * The second level: the open maker's models the search finds, one row a
+ * model, by current, voltage and name; each row is its family's profile.
+ * The registry holds a maker to ESC_MAKER_MODELS_MAX, SP_MODELS, so every
+ * one of them has a row.
+ */
+static void sp_build_models(stick_t *t)
+{
+    int n = 0;
+    const size_t total = esc_profiles_count();
+    for (size_t i = 0; i < total && t->maker != NULL; ++i) {
+        const esc_profile_t *p = esc_profiles_at(i);
+        if (sp_casecmp(p->brand, t->maker) != 0) {
+            continue;
+        }
+        for (unsigned m = 0; m < p->model_count && n < SP_MODELS; ++m) {
+            if (esc_model_matches(p, m, t->find)) {
+                t->rows_m[n++] = (sp_row_t){ (uint16_t)i, (uint16_t)m };
+            }
+        }
+    }
+    qsort(t->rows_m, (size_t)n, sizeof(t->rows_m[0]), sp_by_model);
+    t->runnable = 0;
+    for (int i = 0; i < n; ++i) {
+        t->runnable += sp_model_runs(esc_profiles_at(t->rows_m[i].prof),
+                                     t->rows_m[i].model) ? 1 : 0;
+    }
+    t->count = n;
+}
+
+/*
+ * The level showing, built again whenever the list comes back on screen,
+ * the search changes, or VOLTAGE or the SUPPLY cap moves under it, so the
+ * counts follow the reasons the rows draw.
  */
 static void sp_build_list(bool keep_scroll)
 {
     stick_t *t = &s.st;
     const int scroll = keep_scroll ? t->scroll : 0;
-    t->count = 0;
-    t->runnable = 0;
     t->built_key = sp_list_key();
-    const size_t total = esc_profiles_count();
-    for (int pass = 0; pass < 2; ++pass) {
-        for (size_t i = 0; i < total && t->count < SP_MAX; ++i) {
-            const esc_profile_t *p = esc_profiles_at(i);
-            if (!esc_profile_matches(p, t->find)) {
-                continue;
-            }
-            const bool runs = sp_runs(p);
-            if (runs == (pass == 0)) {
-                t->order[t->count++] = (int)i;
-                t->runnable += runs ? 1 : 0;
-            }
-        }
+    if (t->level == 1) {
+        sp_build_models(t);
+    } else {
+        sp_build_makers(t);
     }
     t->scroll = (scroll < t->count) ? scroll : 0;
 }
@@ -1077,6 +1471,8 @@ static void sp_enter(void)
         ++s.rev;
     }
 }
+
+static void sp_pick_shown(void);
 
 static void sp_pick_profile(const esc_profile_t *p)
 {
@@ -1092,6 +1488,56 @@ static void sp_pick_profile(const esc_profile_t *p)
     t->warn = false;
     t->warn_down = false;
     ui_hold_reset(&t->hold);
+    t->hand_open = false;
+    t->model = -1;
+    sp_pick_shown();
+    /* A profile with manual steps says so by itself the first time it is
+     * opened; MANUAL INTERVENTION REQUIRED shows it again. */
+    if (p != NULL && p->manual_count > 0u) {
+        const size_t total = esc_profiles_count();
+        for (size_t i = 0; i < total && i < SP_MAX; ++i) {
+            if (esc_profiles_at(i) != p) {
+                continue;
+            }
+            const uint8_t bit = (uint8_t)(1u << (i & 7u));
+            if ((t->hand_seen[i >> 3] & bit) == 0u) {
+                t->hand_seen[i >> 3] |= bit;
+                t->hand_open = true;
+                t->hand_p = p;
+                t->hand_model = -1;     /* the caller names the model */
+            }
+            break;
+        }
+    }
+}
+
+/*
+ * The items the page offers, as indices into the profile's, in its order:
+ * those on the model picked (esc_item_applies()); with no model, those on
+ * every model.  Returns how many.
+ */
+static int sp_items(uint8_t *idx)
+{
+    const stick_t *t = &s.st;
+    int n = 0;
+    for (unsigned i = 0; t->p != NULL && i < t->p->item_count; ++i) {
+        if (esc_item_applies(t->p, i, t->model)) {
+            idx[n++] = (uint8_t)i;
+        }
+    }
+    return n;
+}
+
+/* The picked item kept among those shown: the first shown otherwise. */
+static void sp_pick_shown(void)
+{
+    stick_t *t = &s.st;
+    if (t->p == NULL
+        || esc_item_applies(t->p, (unsigned)t->picked, t->model)) {
+        return;
+    }
+    uint8_t idx[256];
+    t->picked = (sp_items(idx) > 0) ? idx[0] : 0;
 }
 
 /* The picks as changes, in item order; how many were picked in all. */
@@ -1141,7 +1587,7 @@ static void sp_supply(uint32_t *mv, uint32_t *ma)
 {
     const float v = settings_get(SET_STICK_V);
     *mv = (v > 0.0f) ? (uint32_t)lroundf(v * 1000.0f)
-                     : esc_stick_profile_mv(s.st.p);
+                     : esc_stick_model_mv(s.st.p, s.st.model);
     *ma = (uint32_t)lroundf(settings_get(SET_STICK_I) * 1000.0f);
 }
 
@@ -1151,6 +1597,9 @@ static void sp_supply(uint32_t *mv, uint32_t *ma)
  * not offered.  Refused, never adjusted: a voltage over the SUPPLY cap is
  * the operator's to change.
  */
+static bool sp_supply_reads_off(void);
+static bool sp_warn_steps_fit(const esc_profile_t *p);
+
 static bool sp_plan(esc_stick_change_t *ch, size_t *n,
                     esc_stick_timing_t *t, uint32_t *mv, uint32_t *ma)
 {
@@ -1168,9 +1617,27 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
                  (unsigned)ESC_STICK_MAX_CHANGES);
         return false;
     }
+    /* The ESC's own ratings, for the model picked: a set point the data
+     * cannot vouch for is refused, never sent. */
+    if (sp_rating_why(st->p, st->model, *mv, *ma,
+                      settings_get(SET_STICK_V) > 0.0f, true, st->note,
+                      sizeof(st->note)) != NULL) {
+        return false;
+    }
     if (*mv == 0u) {
         snprintf(st->note, sizeof(st->note), "%s", TR(SP_NO_CELLS));
         return false;
+    }
+    /* Every change on the model picked: an item another model has may
+     * share its number and values with one this model has, and the run
+     * would change that one instead. */
+    for (size_t i = 0; i < *n; ++i) {
+        if (!esc_item_applies(st->p, ch[i].item, st->model)) {
+            const esc_item_t *it = &st->p->items[ch[i].item];
+            snprintf(st->note, sizeof(st->note), TR(SP_ITEM_NOT_HERE),
+                     (unsigned)it->number, it->name);
+            return false;
+        }
     }
     const supply_caps_t caps = supply_screen_caps();
     const unsigned vmax = (unsigned)lroundf(caps.v_max * 1000.0f);
@@ -1192,8 +1659,16 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
                  imax / 1000u, imax % 1000u / 10u);
         return false;
     }
-    if (supply_screen_output_live()) {
+    /* Asked on, or read live: the output on, or current through it. */
+    if (supply_screen_output_live() || st->sup_live) {
         snprintf(st->note, sizeof(st->note), "%s", TR(SP_OUTPUT_LIVE));
+        return false;
+    }
+    /* No reading, an old one, or a supply that does not answer is not a
+     * supply known off: a run moves the stick and may ask for a hand at
+     * the ESC on that word. */
+    if (!sp_supply_reads_off()) {
+        snprintf(st->note, sizeof(st->note), "%s", TR(SP_SUPPLY_NOT_OFF));
         return false;
     }
     const char *why = NULL;
@@ -1201,7 +1676,89 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
         snprintf(st->note, sizeof(st->note), "%s", sp_why_text(why));
         return false;
     }
+    /* It runs; a voltage the data cannot vouch for is said, not refused. */
+    (void)sp_rating_warn(st->p, st->model, *mv,
+                         settings_get(SET_STICK_V) > 0.0f, true, st->note,
+                         sizeof(st->note));
     return true;
+}
+
+/*
+ * Whether the supply reads off now: a reading no older than
+ * ESC_STICK_STALE_MS in which the supply itself reports its output off
+ * with the current at or under ESC_STICK_OFF_MA, and has for
+ * ESC_STICK_OFF_SETTLE_MS -- the rule a run holds the supply to.  The
+ * warning shows a step at an unpowered ESC only then.
+ */
+static bool sp_supply_reads_off(void)
+{
+    const stick_t *t = &s.st;
+    if (!t->sup_have || !t->sup_off_known || supply_screen_output_live()) {
+        return false;
+    }
+    const int32_t age = (int32_t)(t->now_ms - t->sup_at);
+    const uint32_t held = t->sup_at - t->sup_off_since;
+    return age <= (int32_t)ESC_STICK_STALE_MS
+           && held >= ESC_STICK_OFF_SETTLE_MS;
+}
+
+/* Whether the warning asks a step at an unpowered ESC of the operator and
+ * may not, as the supply does not read off. */
+static bool sp_warn_gated(void)
+{
+    const stick_t *t = &s.st;
+    return t->p != NULL
+           && esc_profile_manual_count(t->p, ESC_MANUAL_BEFORE_POWER) > 0u
+           && !sp_supply_reads_off();
+}
+
+/*
+ * Whether the warning shows every before-power step whole: under its
+ * lines (sp_draw_warning(): five, the profile, the supply and the
+ * unverified line from PAD + 68 at 22 px, then the steps' label), each
+ * step wrapped to two lines, and room kept for the line about later steps,
+ * above HOLD TO RUN.
+ */
+static unsigned sp_later_steps(const esc_profile_t *p);
+
+static bool sp_warn_steps_fit(const esc_profile_t *p)
+{
+    if (p == NULL || esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER)
+                         == 0u) {
+        return true;
+    }
+    const int last = s.st.hold_btn.y - 20;
+    const unsigned later = sp_later_steps(p);
+    const int keep = (later > 0u) ? 22 : 0;
+    int y = PAD + 68 + 5 * 22 + 66 + 22;
+    for (unsigned i = 0; i < p->manual_count; ++i) {
+        const esc_manual_t *m = &p->manual[i];
+        if (m->when == ESC_MANUAL_BEFORE_POWER) {
+            const int need = sp_wrap_lines(sp_action(m), 90, 2);
+            if (y + (need - 1) * 22 > last - keep) {
+                return false;
+            }
+            y += 22 * need;
+        }
+    }
+    return true;
+}
+
+/* The steps the run stops for on its way, after the warning's: at the
+ * power-up, before the menu, and before the supply goes off. */
+static unsigned sp_later_steps(const esc_profile_t *p)
+{
+    return esc_profile_manual_count(p, ESC_MANUAL_AT_POWER_UP)
+           + esc_profile_manual_count(p, ESC_MANUAL_BEFORE_MENU)
+           + esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER_OFF);
+}
+
+/* Whether HOLD TO RUN may not count: the supply does not read off, or the
+ * before-power steps do not fit and ALL STEPS has not been read. */
+static bool sp_hold_blocked(void)
+{
+    const stick_t *t = &s.st;
+    return sp_warn_gated() || (!sp_warn_steps_fit(t->p) && !t->warn_read);
 }
 
 static bool sp_can_run(void)
@@ -1265,7 +1822,7 @@ static void sp_start(void)
     size_t n;
     esc_stick_timing_t tm;
     uint32_t mv, ma;
-    if (!sp_plan(ch, &n, &tm, &mv, &ma)) {
+    if (!sp_plan(ch, &n, &tm, &mv, &ma) || sp_hold_blocked()) {
         return;     /* the note says why */
     }
     const esc_stick_bench_t b = { t->now_ms, t->armed, t->stops,
@@ -1280,7 +1837,9 @@ static void sp_start(void)
     esc_stick_light_reset(&t->light, &t->run);
     t->green = false;
     t->sent_arm = false;
-    t->sent_supply = false;
+    /* Sent as on, so the run's off goes out: the supply is asked off at
+     * the start, whatever it was left as. */
+    t->sent_supply = true;
     t->sent_pct = ESC_STICK_PCT_MIN;
     t->sig = 0u;
     /* The set points before anything else, so an ON never meets old ones. */
@@ -1311,6 +1870,9 @@ static uint32_t sp_signature(void)
         (uint32_t)e->ma, (uint32_t)esc_det_floor_ma(&e->det), e->iv_ms,
         esc_stick_done_count(e), e->entries, e->active, tenths,
         s.st.green ? 1u : 0u,
+        esc_stick_hand_ready(e) ? 1u : 0u,
+        (esc_stick_hand_left_ms(e) + 999u) / 1000u, e->hand,
+        e->hand_menu ? 1u : 0u,
     };
     uint32_t h = 2166136261u;
     for (size_t i = 0; i < sizeof(parts) / sizeof(parts[0]); ++i) {
@@ -1327,13 +1889,48 @@ static void sp_tick(float dt_s)
         sp_build_list(true);
         ++s.rev;
     }
+    if (t->shown && t->p != NULL && t->p->manual_count > 0u) {
+        const bool off = sp_supply_reads_off();
+        if (off != t->sup_off_drawn) {
+            t->sup_off_drawn = off;
+            ++s.rev;
+        }
+    }
+    if (t->warn) {
+        /* The steps at an unpowered ESC show, and HOLD TO RUN counts, only
+         * while the supply reads off; a hold under way ends when it stops
+         * reading so. */
+        const bool gated = sp_hold_blocked();
+        if (gated != t->sup_gate) {
+            t->sup_gate = gated;
+            ++s.rev;
+        }
+        if (gated) {
+            sp_end_hold();
+        }
+    }
     if (t->warn && t->warn_down) {
         ++s.rev;            /* the hold's fill */
         if (ui_hold_tick(&t->hold, dt_s)) {
             sp_start();
         }
     }
-    if (esc_stick_running(&t->run)) {
+    const bool running = esc_stick_running(&t->run);
+    /* Not gated on the result still showing: a tap queued in the frame
+     * the run ended -- on ABORT, which the result's OK replaces -- closes
+     * the result before this tick sees the end, and the steps are still
+     * due. */
+    if (t->was_running && !running && t->run.p != NULL
+        && esc_profile_manual_count(t->run.p,
+                                    ESC_MANUAL_AFTER_PROGRAMMING) > 0u) {
+        /* The run is over: what is to be done now, every step of it. */
+        t->hand_open = true;
+        t->hand_p = t->run.p;
+        t->hand_model = t->model;
+        ++s.rev;
+    }
+    t->was_running = running;
+    if (running) {
         const esc_stick_bench_t b = { t->now_ms, t->armed, t->stops,
                                       t->link_up, t->pressed };
         esc_stick_step(&t->run, &b);
@@ -1372,6 +1969,7 @@ static void sp_leave(void)
     /* A warning not held is a run not started.  The search keeps what was
      * typed. */
     t->warn = false;
+    t->hand_open = false;
     sp_end_hold();
     sp_find_close();
     if (t->timing) {
@@ -1516,6 +2114,9 @@ static void sp_find_event(const touch_event_t *evt)
     if (strcmp(typed, t->find) != 0) {
         snprintf(t->find, sizeof(t->find), "%.*s", SP_FIND_MAX, typed);
         sp_build_list(false);           /* a new search starts at the top */
+        if (t->level == 0) {
+            t->bscroll = 0;
+        }
         ++s.rev;
     }
     if (t->tk.revision != t->tk_rev) {
@@ -1529,9 +2130,28 @@ static bool sp_down(const touch_event_t *evt)
     stick_t *t = &s.st;
     const int px = evt->point.x, py = evt->point.y;
 
+    /* The manual steps' pop-up covers the screen; OK closes it. */
+    if (t->hand_open) {
+        if (gfx_rect_contains(t->cancel_btn, px, py)) {
+            t->hand_open = false;
+            /* Read over the warning: the hold may count. */
+            t->warn_read = t->warn_read || t->warn;
+            ++s.rev;
+        }
+        return true;
+    }
+
     /* The warning covers the screen, BACK included. */
     if (t->warn) {
-        if (gfx_rect_contains(t->hold_btn, px, py)) {
+        if (!sp_warn_steps_fit(t->p) && gfx_rect_contains(t->steps_btn, px, py)) {
+            t->hand_open = true;            /* ALL STEPS, over the warning */
+            t->hand_p = t->p;
+            t->hand_model = t->model;
+            sp_end_hold();
+            ++s.rev;
+            return true;
+        }
+        if (gfx_rect_contains(t->hold_btn, px, py) && !sp_hold_blocked()) {
             t->warn_down = true;
             t->warn_id = evt->point.id;
             ui_hold_begin(&t->hold);
@@ -1550,8 +2170,17 @@ static bool sp_down(const touch_event_t *evt)
             return true;
         }
         if (gfx_rect_contains(s.back, px, py)) {
+            /* BACK climbs a level: a maker's models to the makers, with
+             * the makers' scroll and the search kept; the makers to the
+             * classes. */
             sp_find_close();
-            s.stage = STAGE_CLASS;
+            if (t->level == 1) {
+                t->level = 0;
+                t->scroll = t->bscroll;
+                sp_build_list(true);
+            } else {
+                s.stage = STAGE_CLASS;
+            }
             ++s.rev;
             return true;
         }
@@ -1585,15 +2214,41 @@ static bool sp_down(const touch_event_t *evt)
             if (!gfx_rect_contains(sp_row(i), px, py)) {
                 continue;
             }
-            const esc_profile_t *p = esc_profiles_at(
-                (size_t)t->order[t->scroll + i]);
-            /* A profile the engine cannot run says why on its row and goes
-             * no further.  One picked while the keyboard is open closes it,
-             * the search kept. */
-            if (sp_runs(p)) {
+            const int at = t->scroll + i;
+            /* A maker opens its models, the search kept; the makers'
+             * scroll is kept for BACK.  No maker opens by itself: one the
+             * search narrows to is shown, and a tap opens it. */
+            if (t->level == 0) {
+                sp_find_close();
+                t->maker = t->makers[at].name;
+                t->bscroll = t->scroll;
+                t->level = 1;
+                sp_build_list(false);
+                ++s.rev;
+                return true;
+            }
+            /* A model opens its family's profile.  One whose profile the
+             * engine cannot run says why on its row and goes no further,
+             * unless the profile has manual steps: those it shows.  One
+             * picked while the keyboard is open closes it, the search
+             * kept. */
+            const esc_profile_t *p = esc_profiles_at(t->rows_m[at].prof);
+            const int model = t->rows_m[at].model;
+            if (sp_model_runs(p, model)) {
                 sp_find_close();
                 sp_pick_profile(p);
+                t->model = model;
+                t->hand_model = model;
+                sp_pick_shown();
                 s.stage = STAGE_DEVICE;
+                ++s.rev;
+            } else if (p->manual_count > 0u) {
+                /* The steps, and why this model -- not the family -- does
+                 * not run: the row's own reason. */
+                sp_find_close();
+                t->hand_open = true;
+                t->hand_p = p;
+                t->hand_model = model;
                 ++s.rev;
             }
             return true;
@@ -1604,6 +2259,18 @@ static bool sp_down(const touch_event_t *evt)
     /* The device page.  A run under way takes ABORT and nothing else; STOP
      * is in the band, and leaving the screen aborts. */
     if (esc_stick_running(&t->run)) {
+        /* A manual step asked covers the page: DONE or ABORT.  DONE is
+         * acted on in the next tick, after the bench has been judged. */
+        if (esc_stick_hand(&t->run) != NULL) {
+            if (gfx_rect_contains(t->hold_btn, px, py)) {
+                if (esc_stick_confirm(&t->run)) {
+                    ++s.rev;
+                }
+            } else if (gfx_rect_contains(t->cancel_btn, px, py)) {
+                sp_end_run(ESC_STICK_R_USER);
+            }
+            return true;
+        }
         if (gfx_rect_contains(s.write_btn, px, py)) {
             esc_stick_abort(&t->run, ESC_STICK_R_USER);
             sp_follow();
@@ -1612,6 +2279,13 @@ static bool sp_down(const touch_event_t *evt)
         return true;
     }
     if (t->shown) {
+        if (t->p->manual_count > 0u && gfx_rect_contains(t->hand_btn, px, py)) {
+            t->hand_open = true;            /* every step, after included */
+            t->hand_p = t->p;
+            t->hand_model = t->model;
+            ++s.rev;
+            return true;
+        }
         const bool back = gfx_rect_contains(s.back, px, py);
         if (back || gfx_rect_contains(s.write_btn, px, py)) {
             t->shown = false;               /* OK: back to the menu */
@@ -1671,6 +2345,13 @@ static bool sp_down(const touch_event_t *evt)
         ++s.rev;
         return true;
     }
+    if (t->p->manual_count > 0u && gfx_rect_contains(t->hand_btn, px, py)) {
+        t->hand_open = true;                /* MANUAL INTERVENTION REQUIRED */
+        t->hand_p = t->p;
+        t->hand_model = t->model;
+        ++s.rev;
+        return true;
+    }
     if (gfx_rect_contains(s.connect_btn, px, py)) {
         t->timing = true;                   /* TIMING */
         t->tscroll = 0;
@@ -1681,13 +2362,15 @@ static bool sp_down(const touch_event_t *evt)
     if (gfx_rect_contains(s.write_btn, px, py)) {
         if (sp_can_run()) {
             t->warn = true;                 /* RUN asks first */
+            t->warn_read = false;
             t->warn_down = false;
             ui_hold_reset(&t->hold);
         }
         ++s.rev;
         return true;
     }
-    const int items = (int)t->p->item_count;
+    uint8_t shown[256];
+    const int items = sp_items(shown);
     const int max_scroll = (items > ROWS_MAX) ? items - ROWS_MAX : 0;
     if (gfx_rect_contains(s.page_up, px, py) && t->iscroll > 0) {
         --t->iscroll;
@@ -1700,7 +2383,11 @@ static bool sp_down(const touch_event_t *evt)
         return true;
     }
     for (int i = 0; i < sp_rows_shown(items, t->iscroll); ++i) {
-        const int idx = t->iscroll + i;
+        const int at = t->iscroll + i;
+        if (at < 0 || at >= items) {
+            break;
+        }
+        const int idx = shown[at];
         const int by = gfx_rect_contains(s.down[i], px, py)  ? -1
                      : gfx_rect_contains(s.up[i], px, py)    ?  1 : 0;
         if (by != 0 && esc_stick_not_offered(&t->p->items[idx]) == NULL) {
@@ -1748,23 +2435,192 @@ static void sp_draw_find(gfx_canvas_t *c)
     }
 }
 
+/* The red MANUAL tag, its right edge at @p right; its width, px. */
+static int sp_draw_tag(gfx_canvas_t *c, int right, int y)
+{
+    const char *tag = TR(SP_HAND_TAG);
+    const int w = gfx_text_cells(tag) * 8 + 12;
+    const gfx_color_t red = ui_theme_color(UI_C_DANGER);
+    gfx_fill_round_rect(c, right - w, y, w, 20, 4, red);
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(right - w), (int16_t)y,
+                                 (int16_t)w, 20 },
+                tag, UI_FONT_LABEL,
+                ui_is_light(red) ? ui_theme_color(UI_C_TEXT_ON_LIGHT)
+                                 : ui_theme_color(UI_C_TEXT), 1,
+                GFX_ALIGN_CENTER);
+    return w;
+}
+
+/* "55 A" and "25 V" or "25.2 V" for a model's current and voltage; "-"
+ * where it states none. */
+static void sp_amps(char *out, size_t n, const esc_model_t *m)
+{
+    if (m->current_a == 0u) {
+        snprintf(out, n, "-");
+    } else {
+        snprintf(out, n, "%u A", (unsigned)m->current_a);
+    }
+}
+
+static void sp_volts(char *out, size_t n, const esc_model_t *m)
+{
+    if (m->v_max_mv == 0u) {
+        snprintf(out, n, "-");
+    } else if (m->v_max_mv % 1000u == 0u) {
+        snprintf(out, n, "%u V", (unsigned)(m->v_max_mv / 1000u));
+    } else {
+        snprintf(out, n, "%u.%u V", (unsigned)(m->v_max_mv / 1000u),
+                 (unsigned)(m->v_max_mv % 1000u / 100u));
+    }
+}
+
+/* The run mark of a narrowed row: filled in the accent, or a ring. */
+static void sp_mark_runs(gfx_canvas_t *c, gfx_rect_t r, bool runs)
+{
+    const int mx = r.x + r.w - 14, my = r.y + r.h / 2;
+    if (runs) {
+        gfx_fill_circle(c, mx, my, 5, ui_theme_color(UI_C_ACCENT));
+    } else {
+        gfx_draw_circle(c, mx, my, 5, ui_theme_color(UI_C_TEXT_FAINT));
+    }
+}
+
+/* A maker's row: its name, the MANUAL tag where a model it lists has
+ * manual steps, and its models: those that run of all, or while a search
+ * is typed those found of all and those of them that run. */
+static void sp_draw_maker(gfx_canvas_t *c, gfx_rect_t r, const sp_maker_t *m,
+                          bool dock, bool searching)
+{
+    const bool runs = m->runs > 0u;
+    ui_card(c, r, runs ? ui_theme_color(UI_C_PANEL)
+                       : ui_theme_color(UI_C_PANEL_SUNK));
+    const gfx_color_t ink = runs ? ui_theme_color(UI_C_TEXT)
+                                 : ui_theme_color(UI_C_TEXT_FAINT);
+    char right[64];
+    if (dock) {
+        snprintf(right, sizeof(right), "%u", (unsigned)m->found);
+        const int tag = m->manual ? sp_draw_tag(c, r.x + r.w - 28, r.y + 6)
+                                        + 8 : 0;
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 28 - tag - 48),
+                                     (int16_t)(r.y + 8), 40, 16 },
+                    right, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1,
+                    GFX_ALIGN_RIGHT);
+        sp_text(c, r.x + 8, r.y + 8, m->name,
+                (r.w - 8 - 28 - tag - 56) / 8, ink);
+        sp_mark_runs(c, r, runs);
+        return;
+    }
+    sp_text(c, r.x + 12, r.y + 8, m->name, 30, ink);
+    if (m->manual) {
+        (void)sp_draw_tag(c, r.x + r.w - 312 - 8, r.y + 6);
+    }
+    if (searching) {
+        snprintf(right, sizeof(right), TR(SP_MAKER_FOUND),
+                 (unsigned)m->found, (unsigned)m->models, (unsigned)m->runs);
+    } else {
+        snprintf(right, sizeof(right), TR(SP_MAKER_MODELS),
+                 (unsigned)m->runs, (unsigned)m->models);
+    }
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 312),
+                                 (int16_t)(r.y + 8), 300, 16 },
+                right, UI_FONT_LABEL,
+                runs ? ui_theme_color(UI_C_ACCENT)
+                     : ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_RIGHT);
+}
+
+/* A model's row: its name, current and voltage, its family, the MANUAL
+ * tag, and what its family's profile is or why it does not run. */
+static void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r, const sp_row_t *row,
+                          bool dock)
+{
+    const esc_profile_t *p = esc_profiles_at(row->prof);
+    const esc_model_t *m = &p->models[row->model];
+    char cap[40];
+    const char *why = sp_model_why(p, row->model, cap, sizeof(cap));
+    const bool runs = why == NULL;
+    ui_card(c, r, runs ? ui_theme_color(UI_C_PANEL)
+                       : ui_theme_color(UI_C_PANEL_SUNK));
+    const gfx_color_t ink = runs ? ui_theme_color(UI_C_TEXT)
+                                 : ui_theme_color(UI_C_TEXT_FAINT);
+    const gfx_color_t dim = runs ? ui_theme_color(UI_C_TEXT_DIM)
+                                 : ui_theme_color(UI_C_TEXT_FAINT);
+    char amps[16], volts[16];
+    sp_amps(amps, sizeof(amps), m);
+    sp_volts(volts, sizeof(volts), m);
+    if (dock) {
+        const int tag = (p->manual_count > 0u)
+                            ? sp_draw_tag(c, r.x + r.w - 28, r.y + 6) + 8
+                            : 0;
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 28 - tag - 56),
+                                     (int16_t)(r.y + 8), 48, 16 },
+                    amps, UI_FONT_LABEL, dim, 1, GFX_ALIGN_RIGHT);
+        sp_text(c, r.x + 8, r.y + 8, m->name,
+                (r.w - 8 - 28 - tag - 64) / 8, ink);
+        sp_mark_runs(c, r, runs);
+        return;
+    }
+    sp_text(c, r.x + 12, r.y + 8, m->name, 26, ink);
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 228), (int16_t)(r.y + 8),
+                                 56, 16 },
+                amps, UI_FONT_LABEL, dim, 1, GFX_ALIGN_RIGHT);
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 288), (int16_t)(r.y + 8),
+                                 64, 16 },
+                volts, UI_FONT_LABEL, dim, 1, GFX_ALIGN_RIGHT);
+    const int tag = (p->manual_count > 0u)
+                        ? sp_draw_tag(c, r.x + r.w - 236, r.y + 6) + 8
+                        : 0;
+    sp_text(c, r.x + 368, r.y + 8, p->family, (r.w - 368 - 236 - tag) / 8,
+            ui_theme_color(UI_C_TEXT_FAINT));
+    char right[80];
+    char warn[40];
+    const bool unrated = runs
+                         && sp_model_warn(p, row->model, warn, sizeof(warn))
+                                != NULL;
+    if (unrated) {
+        snprintf(right, sizeof(right), "%s", warn);
+    } else if (runs) {
+        char items[24];
+        const esc_stick_kind_t kind = esc_stick_kind(p, NULL);
+        snprintf(items, sizeof(items),
+                 (p->item_count == 1u) ? TR(SP_ITEM) : TR(SP_ITEMS),
+                 (unsigned)p->item_count);
+        snprintf(right, sizeof(right), "%s%s%s  %s",
+                 esc_profiles_is_override(p) ? TR(SP_CARD) : "",
+                 esc_profiles_is_override(p) ? "  " : "", items,
+                 (kind == ESC_STICK_KIND_TWO_STAGE) ? TR(SP_TWO_STAGE)
+                                                    : TR(SP_ONE_STAGE));
+    } else {
+        snprintf(right, sizeof(right), "%s", why);
+    }
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 232),
+                                 (int16_t)(r.y + 8), 220, 16 },
+                right, UI_FONT_LABEL,
+                unrated ? ui_theme_color(UI_C_WARN)
+                : runs  ? ui_theme_color(UI_C_ACCENT)
+                        : ui_theme_color(UI_C_TEXT_FAINT), 1,
+                GFX_ALIGN_RIGHT);
+}
+
+/*
+ * The list: the crumb and the search field above, a level's rows, and the
+ * footer: the count at the right under the rows, or beside the docked
+ * keyboard at the left; the line that no profile is verified while the
+ * keyboard is closed.
+ */
 static void sp_draw_list(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
     const bool dock = t->tk.open;
-    draw_crumb(c, "ESC STICK");
+    const bool searching = t->find[0] != '\0';
+    char trail[96];
+    if (t->level == 1 && t->maker != NULL) {
+        snprintf(trail, sizeof(trail), "ESC STICK  >  %s", t->maker);
+    } else {
+        snprintf(trail, sizeof(trail), "ESC STICK");
+    }
+    sp_cut(trail, sizeof(trail), SP_TRAIL_CELLS);
+    draw_crumb(c, trail);
     sp_draw_find(c);
-    char count[64];
-    const int last = (t->scroll + SP_ROWS < t->count) ? t->scroll + SP_ROWS
-                                                      : t->count;
-    snprintf(count, sizeof(count),
-             (t->find[0] != '\0') ? TR(SP_LIST_FOUND) : TR(SP_LIST_COUNT),
-             (t->count > 0) ? t->scroll + 1 : 0, last, t->count,
-             t->runnable);
-    gfx_text_in(c, (gfx_rect_t){ SP_COUNT_X, (int16_t)(CRUMB_Y + 7),
-                                 SP_COUNT_W, 16 },
-                count, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1,
-                GFX_ALIGN_RIGHT);
     ui_button(c, t->list_up, "^", ui_theme_color(UI_C_PANEL_HI), false,
               t->scroll > 0);
     ui_button(c, t->list_dn, "v", ui_theme_color(UI_C_PANEL_HI), false,
@@ -1775,65 +2631,46 @@ static void sp_draw_list(gfx_canvas_t *c)
                  ui_theme_color(UI_C_TEXT_DIM), 1);
     }
     for (int i = 0; i < SP_ROWS && t->scroll + i < t->count; ++i) {
-        const gfx_rect_t r = sp_row(i);
-        const esc_profile_t *p = esc_profiles_at(
-            (size_t)t->order[t->scroll + i]);
-        char cap[40];
-        const char *why = sp_why(p, cap, sizeof(cap));
-        const esc_stick_kind_t kind = esc_stick_kind(p, NULL);
-        const bool runs = why == NULL;
-        ui_card(c, r, runs ? ui_theme_color(UI_C_PANEL)
-                           : ui_theme_color(UI_C_PANEL_SUNK));
-        const gfx_color_t ink = runs ? ui_theme_color(UI_C_TEXT)
-                                     : ui_theme_color(UI_C_TEXT_FAINT);
-        if (dock) {
-            /* Narrow: the maker, the name cut, and a mark for whether it
-             * runs -- filled in the accent, or an empty ring. */
-            sp_text(c, r.x + 8, r.y + 8, p->brand, 11, ink);
-            sp_text(c, r.x + 104, r.y + 8, p->family, (r.w - 104 - 28) / 8,
-                    runs ? ui_theme_color(UI_C_TEXT_DIM)
-                         : ui_theme_color(UI_C_TEXT_FAINT));
-            const int mx = r.x + r.w - 14, my = r.y + r.h / 2;
-            if (runs) {
-                gfx_fill_circle(c, mx, my, 5, ui_theme_color(UI_C_ACCENT));
-            } else {
-                gfx_draw_circle(c, mx, my, 5,
-                                ui_theme_color(UI_C_TEXT_FAINT));
-            }
-            continue;
-        }
-        sp_text(c, r.x + 12, r.y + 8, p->brand, 13, ink);
-        sp_text(c, r.x + 124, r.y + 8, p->family, (r.w - 124 - 236) / 8,
-                runs ? ui_theme_color(UI_C_TEXT_DIM)
-                     : ui_theme_color(UI_C_TEXT_FAINT));
-        char right[80];
-        if (runs) {
-            char items[24];
-            snprintf(items, sizeof(items),
-                     (p->item_count == 1u) ? TR(SP_ITEM) : TR(SP_ITEMS),
-                     (unsigned)p->item_count);
-            snprintf(right, sizeof(right), "%s%s%s  %s",
-                     esc_profiles_is_override(p) ? TR(SP_CARD) : "",
-                     esc_profiles_is_override(p) ? "  " : "", items,
-                     (kind == ESC_STICK_KIND_TWO_STAGE) ? TR(SP_TWO_STAGE)
-                                                        : TR(SP_ONE_STAGE));
+        if (t->level == 1) {
+            sp_draw_model(c, sp_row(i), &t->rows_m[t->scroll + i], dock);
         } else {
-            snprintf(right, sizeof(right), "%s", why);
+            sp_draw_maker(c, sp_row(i), &t->makers[t->scroll + i], dock,
+                          searching);
         }
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 232),
-                                     (int16_t)(r.y + 8), 220, 16 },
-                    right, UI_FONT_LABEL,
-                    runs ? ui_theme_color(UI_C_ACCENT)
-                         : ui_theme_color(UI_C_TEXT_FAINT), 1,
-                    GFX_ALIGN_RIGHT);
+    }
+
+    char count[64];
+    const int last = (t->scroll + SP_ROWS < t->count) ? t->scroll + SP_ROWS
+                                                      : t->count;
+    const int first = (t->count > 0) ? t->scroll + 1 : 0;
+    if (t->level == 1 && searching) {
+        snprintf(count, sizeof(count), TR(SP_LIST_FOUND), first, last,
+                 t->count, t->runnable);
+    } else if (t->level == 1) {
+        snprintf(count, sizeof(count), TR(SP_LIST_COUNT), first, last,
+                 t->count, t->runnable);
+    } else if (searching) {
+        snprintf(count, sizeof(count), TR(SP_MAKERS_FOUND), first, last,
+                 t->count, t->runnable);
+    } else {
+        snprintf(count, sizeof(count), TR(SP_MAKERS_COUNT), first, last,
+                 t->count, t->runnable);
     }
     if (dock) {
+        gfx_text_in(c, (gfx_rect_t){ PAD + 12, SP_FOOT_Y,
+                                     (int16_t)(SP_DOCK_X - 8 - PAD - 12),
+                                     16 },
+                    count, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1,
+                    GFX_ALIGN_LEFT);
         ui_textkey_render(&t->tk, c);
         return;
     }
-    gfx_text(c, PAD + 12, SP_ROW_Y0 + SP_ROWS * SP_ROW_H + 6,
-             TR(SP_UNVERIFIED_ALL),
-             UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
+    gfx_text(c, PAD + 12, SP_FOOT_Y, TR(SP_UNVERIFIED_ALL), UI_FONT_LABEL,
+             ui_theme_color(UI_C_TEXT_FAINT), 1);
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(W - PAD - 12 - SP_COUNT_W),
+                                 SP_FOOT_Y, SP_COUNT_W, 16 },
+                count, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1,
+                GFX_ALIGN_RIGHT);
 }
 
 /*
@@ -1948,6 +2785,12 @@ static const char *sp_reason_help(esc_stick_reason_t r)
     case ESC_STICK_R_NO_BEEPS:    return TR(SP_WHY_NO_BEEPS);
     case ESC_STICK_R_HIGH:        return TR(SP_WHY_HIGH);
     case ESC_STICK_R_TIMEOUT:     return TR(SP_WHY_TIMEOUT);
+    case ESC_STICK_R_HAND: {
+        static char buf[128];
+        snprintf(buf, sizeof(buf), TR(SP_WHY_HAND),
+                 (unsigned)(ESC_STICK_HAND_WAIT_MS / 1000u));
+        return buf;
+    }
     case ESC_STICK_R_SUPPLY_ON:   return TR(SP_WHY_SUPPLY_ON);
     case ESC_STICK_R_TOUCH:       return TR(SP_WHY_TOUCH);
     case ESC_STICK_R_USER:        return TR(SP_WHY_USER);
@@ -1970,6 +2813,9 @@ static const char *sp_phase_text(esc_stick_phase_t ph)
     case ESC_STICK_VALUES:  return TR(SP_PH_VALUES);
     case ESC_STICK_STORE:   return TR(SP_PH_STORE);
     case ESC_STICK_CYCLE:   return TR(SP_PH_CYCLE);
+    case ESC_STICK_HAND_OFF: return TR(SP_PH_HAND_OFF);
+    case ESC_STICK_HAND_ON: return TR(SP_PH_HAND_ON);
+    case ESC_STICK_HAND_END: return TR(SP_PH_HAND_END);
     case ESC_STICK_OFF:     return TR(SP_PH_OFF);
     case ESC_STICK_DONE:    return TR(SP_PH_DONE);
     case ESC_STICK_ABORTED: return TR(SP_PH_ABORTED);
@@ -1996,6 +2842,7 @@ static const char *sp_reason_text(esc_stick_reason_t r)
     case ESC_STICK_R_NO_BEEPS:    return TR(SP_R_NO_BEEPS);
     case ESC_STICK_R_HIGH:        return TR(SP_R_HIGH);
     case ESC_STICK_R_TIMEOUT:     return TR(SP_R_TIMEOUT);
+    case ESC_STICK_R_HAND:        return TR(SP_R_HAND);
     case ESC_STICK_R_USER:        return TR(SP_R_USER);
     case ESC_STICK_R_LEFT:        return TR(SP_R_LEFT);
     }
@@ -2011,6 +2858,49 @@ static void sp_change_text(const esc_stick_change_t *ch, char *out, size_t n)
              (unsigned)v->number, v->name);
 }
 
+/*
+ * "POWER-UP AT MID" for the positions the power-ups of @p n changes take,
+ * in the order first met: "MAX, MID" where a one-stage run takes both.
+ * False, and nothing written, when every one is MIN.
+ */
+static bool sp_power_up_text(const esc_profile_t *p,
+                             const esc_stick_change_t *ch, size_t n,
+                             char *out, size_t size)
+{
+    bool seen[ESC_THR_NONE + 1] = { false };
+    char list[24] = "";
+    bool other = false;
+    for (size_t i = 0; i < n; ++i) {
+        const esc_throttle_t at = esc_stick_change_entry(p, &ch[i]);
+        if (seen[at]) {
+            continue;
+        }
+        seen[at] = true;
+        other = other || at != ESC_THR_MIN;
+        const size_t len = strlen(list);
+        snprintf(list + len, sizeof(list) - len, "%s%s",
+                 (len > 0u) ? ", " : "", sp_pos(esc_stick_pct(at)));
+    }
+    if (!other) {
+        return false;
+    }
+    snprintf(out, size, TR(SP_POWER_UP_AT), list);
+    return true;
+}
+
+/* The longest hold of the profile's at_power_up steps, ms; 0 for none. */
+static uint32_t sp_hold_ms(const esc_profile_t *p)
+{
+    uint32_t hold = 0u;
+    for (unsigned i = 0; p->manual != NULL && i < p->manual_count; ++i) {
+        if (p->manual[i].when == ESC_MANUAL_AT_POWER_UP
+            && p->manual[i].hold_ms > hold) {
+            hold = p->manual[i].hold_ms;
+        }
+    }
+    return hold;
+}
+
 static void sp_draw_progress(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
@@ -2021,6 +2911,13 @@ static void sp_draw_progress(gfx_canvas_t *c)
 
     gfx_text(c, PAD + 12, PARM_Y + 12, TR(SP_RUN), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
+    if (e->entry != ESC_THR_MIN) {
+        snprintf(line, sizeof(line), TR(SP_POWER_UP_AT),
+                 sp_pos(esc_stick_pct(e->entry)));
+        gfx_text(c, PAD + 12 + gfx_text_cells(TR(SP_RUN)) * 8 + 24,
+                 PARM_Y + 12, line, UI_FONT_LABEL,
+                 ui_theme_color(UI_C_WARN), 1);
+    }
     gfx_text(c, PAD + 12, PARM_Y + 34, sp_phase_text(e->phase),
              UI_FONT_HEAD, txt, 1);
     /* The count beside the stack light. */
@@ -2074,10 +2971,25 @@ static void sp_draw_progress(gfx_canvas_t *c)
         break;
     case ESC_STICK_ENTRY: {
         const uint32_t in = e->now_ms - e->on_ms;
-        const uint32_t left = (in < e->t.entry_ms) ? e->t.entry_ms - in : 0u;
-        snprintf(line, sizeof(line), TR(SP_DO_ENTRY),
-                 sp_pos(e->out.throttle_pct),
-                 (unsigned)(left / 1000u), (unsigned)(left % 1000u / 100u));
+        const uint32_t wait = e->entry_wait;
+        const uint32_t left = (in < wait) ? wait - in : 0u;
+        /* A button held while the supply came on: how long still, then
+         * that it can go. */
+        const uint32_t hold = sp_hold_ms(e->p);
+        if (hold > in) {
+            snprintf(line, sizeof(line), TR(SP_DO_HOLD),
+                     (unsigned)((hold - in) / 1000u),
+                     (unsigned)((hold - in) % 1000u / 100u));
+        } else if (hold > 0u) {
+            snprintf(line, sizeof(line), TR(SP_DO_LET_GO),
+                     (unsigned)(left / 1000u),
+                     (unsigned)(left % 1000u / 100u));
+        } else {
+            snprintf(line, sizeof(line), TR(SP_DO_ENTRY),
+                     sp_pos(e->out.throttle_pct),
+                     (unsigned)(left / 1000u),
+                     (unsigned)(left % 1000u / 100u));
+        }
         break;
     }
     case ESC_STICK_ITEMS:
@@ -2102,7 +3014,7 @@ static void sp_draw_progress(gfx_canvas_t *c)
         break;
     }
     case ESC_STICK_STORE:
-        if (e->store_moved) {
+        if (e->store_step > 0u) {
             snprintf(line, sizeof(line), TR(SP_DO_STORE_MOVE),
                      sp_pos(e->out.throttle_pct),
                      (unsigned)e->t.store_ms);
@@ -2161,6 +3073,32 @@ static bool sp_red(void)
            && esc_stick_reason_is_fault(e->reason);
 }
 
+/* The result's count of the selections made, for certain: one cut short
+ * while the ESC stored or confirmed it is not counted. */
+static void sp_result_head(const esc_stick_t *e, char *buf, size_t n)
+{
+    snprintf(buf, n, TR(SP_MADE_N), esc_stick_made_count(e),
+             (unsigned)e->n);
+}
+
+/* The changes past the first @p shown, as the result's last line says
+ * them: how many, how many made, and the one unsure among them. */
+static void sp_result_more(const esc_stick_t *e, unsigned shown, char *buf,
+                           size_t n)
+{
+    unsigned made = 0u, unsure = 0u;
+    for (unsigned i = shown; i < e->n; ++i) {
+        unsure += esc_stick_unsure(e, i) ? 1u : 0u;
+        made += (e->done[i] && !esc_stick_unsure(e, i)) ? 1u : 0u;
+    }
+    if (unsure > 0u) {
+        snprintf(buf, n, TR(SP_MORE_UNSURE), (unsigned)(e->n - shown), made,
+                 unsure);
+    } else {
+        snprintf(buf, n, TR(SP_MORE), (unsigned)(e->n - shown), made);
+    }
+}
+
 static void sp_draw_result(gfx_canvas_t *c)
 {
     const esc_stick_t *e = &s.st.run;
@@ -2179,8 +3117,7 @@ static void sp_draw_result(gfx_canvas_t *c)
              1);
     const int y0 = PARM_Y + 80;
     const int pitch = 22;
-    snprintf(line, sizeof(line), TR(SP_MADE_N),
-             esc_stick_done_count(e), (unsigned)e->n);
+    sp_result_head(e, line, sizeof(line));
     gfx_text(c, PAD + 12, y0, line, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT), 1);
     /* Five lines fit; past five, the fifth says how many more. */
@@ -2189,19 +3126,67 @@ static void sp_draw_result(gfx_canvas_t *c)
         char what[96];
         sp_change_text(&e->ch[i], what, sizeof(what));
         snprintf(line, sizeof(line), "%s  %s",
-                 e->done[i] ? TR(SP_MADE) : TR(SP_NOT_MADE), what);
+                 esc_stick_unsure(e, i) ? TR(SP_MADE_CUT)
+                 : e->done[i] ? TR(SP_MADE) : TR(SP_NOT_MADE), what);
         sp_text(c, PAD + 12, y0 + (int)(i + 1u) * pitch, line,
                 SP_LINE_CELLS,
                 e->done[i] ? ui_theme_color(UI_C_TEXT) : dim);
     }
     if (shown < e->n) {
-        unsigned made = 0u;
-        for (unsigned i = shown; i < e->n; ++i) {
-            made += e->done[i] ? 1u : 0u;
-        }
-        snprintf(line, sizeof(line), TR(SP_MORE),
-                 (unsigned)(e->n - shown), made);
+        sp_result_more(e, shown, line, sizeof(line));
         gfx_text(c, PAD + 12, y0 + 5 * pitch, line, UI_FONT_LABEL, dim, 1);
+    }
+    /* Below the changes, two lines: what the profile has a person do once
+     * the run is over, and after an abort that what was fitted before
+     * the power-up may still be there.  Steps that need more than the two
+     * lines are counted there instead, and MANUAL INTERVENTION REQUIRED
+     * above -- open by itself when the run ended -- lists every one. */
+    const esc_profile_t *p = e->p;
+    if (p->manual_count > 0u) {
+        ui_button(c, s.st.hand_btn, TR(SP_HAND_BTN),
+                  ui_theme_color(UI_C_DANGER), false, true);
+    }
+    int y = y0 + 6 * pitch;
+    int room = 2;
+    int need = 0;
+    if (p->manual_count > 0u && !sp_supply_reads_off()) {
+        /* An abort asks the supply off; until it reads off, no hand at the
+         * ESC for anything that follows. */
+        sp_text(c, PAD + 12, y, TR(SP_HAND_OVER_LIVE), 93,
+                ui_theme_color(UI_C_DANGER));
+        y += pitch;
+        room--;
+    }
+    char what[ESC_MANUAL_MAX][256];
+    unsigned after = 0u;
+    for (unsigned i = 0; p->manual != NULL && i < p->manual_count; ++i) {
+        const esc_manual_t *m = &p->manual[i];
+        if (m->when == ESC_MANUAL_AFTER_PROGRAMMING && after < ESC_MANUAL_MAX) {
+            snprintf(what[after], sizeof(what[after]), "%s: %s",
+                     sp_when_text(m), sp_action(m));
+            need += sp_wrap_lines(what[after], 93, 2);
+            ++after;
+        }
+    }
+    if (need > room && room > 0) {
+        char line2[128];
+        snprintf(line2, sizeof(line2), TR(SP_HAND_AFTER_N), after);
+        sp_text(c, PAD + 12, y, line2, 93, ui_theme_color(UI_C_WARN));
+        y += pitch;
+        room--;
+    } else {
+        for (unsigned i = 0; i < after; ++i) {
+            const int n = sp_wrap(c, PAD + 12, y, pitch, what[i], 93, 2,
+                                  ui_theme_color(UI_C_WARN));
+            y += n * pitch;
+            room -= n;
+        }
+    }
+    if (!done && room > 0
+        && (esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER) > 0u
+            || esc_profile_manual_count(p, ESC_MANUAL_AT_POWER_UP) > 0u)) {
+        sp_text(c, PAD + 12, y, TR(SP_HAND_UNDO), 93,
+                ui_theme_color(UI_C_WARN));
     }
     sp_draw_tower(c, sp_red(), false);
     if (done) {
@@ -2213,9 +3198,18 @@ static void sp_draw_result(gfx_canvas_t *c)
     } else {
         gfx_text(c, PAD + 12, HELP_Y, sp_reason_help(e->reason),
                  UI_FONT_LABEL, dim, 1);
-        gfx_text(c, PAD + 12, HELP_Y + 18,
-                 TR(SP_SAFE_NOW),
-                 UI_FONT_LABEL, dim, 1);
+        /* The supply went off while the ESC was to confirm: the value may
+         * not be stored, and a Kontronik ESC whose step marks it takes
+         * that for programming broken off and locks itself. */
+        if (esc_stick_cut_short(e)) {
+            gfx_text(c, PAD + 12, HELP_Y + 18,
+                     esc_stick_lock_risk(e) ? TR(SP_HAND_LOCK)
+                                            : TR(SP_HAND_CUT),
+                     UI_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
+        } else {
+            gfx_text(c, PAD + 12, HELP_Y + 18, TR(SP_SAFE_NOW),
+                     UI_FONT_LABEL, dim, 1);
+        }
     }
     ui_button(c, s.write_btn, "OK", ui_theme_color(UI_C_PANEL_HI), false,
               true);
@@ -2285,9 +3279,14 @@ static void sp_draw_items(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
     const esc_profile_t *p = t->p;
-    const int items = (int)p->item_count;
+    uint8_t shown[256];
+    const int items = sp_items(shown);
     gfx_text(c, PAD + 12, PARM_Y + 12, TR(SP_CHANGE), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
+    if (p->manual_count > 0u) {
+        ui_button(c, t->hand_btn, TR(SP_HAND_BTN),
+                  ui_theme_color(UI_C_DANGER), false, true);
+    }
     const int max_scroll = (items > ROWS_MAX) ? items - ROWS_MAX : 0;
     char count[40];
     snprintf(count, sizeof(count), TR(PG_RANGE_OF), t->iscroll + 1,
@@ -2301,7 +3300,11 @@ static void sp_draw_items(gfx_canvas_t *c)
               t->iscroll < max_scroll);
 
     for (int i = 0; i < sp_rows_shown(items, t->iscroll); ++i) {
-        const int idx = t->iscroll + i;
+        const int at = t->iscroll + i;
+        if (at < 0 || at >= items) {
+            break;
+        }
+        const int idx = shown[at];
         const esc_item_t *it = &p->items[idx];
         const int pick = t->pick[idx];
         const int y = ROW_Y0 + i * ROW_H;
@@ -2343,6 +3346,9 @@ static void sp_draw_items(gfx_canvas_t *c)
     }
 
     /* The picked item: its values, and where it applies. */
+    if (items == 0) {
+        return;
+    }
     const esc_item_t *it = &p->items[t->picked];
     char line[160];
     if (it->applies_when[0] != '\0') {
@@ -2406,13 +3412,37 @@ static const char *sp_mark(ui_text_id_t id)
     return buf;
 }
 
+/*
+ * The entry time the page shows: during a run and on its result, the wait
+ * of the run's power-up, kept after its change is made; else what the
+ * first change picked would wait, or with none picked the entry's.
+ */
+static uint32_t sp_entry_shown(void)
+{
+    const stick_t *t = &s.st;
+    if (esc_stick_running(&t->run) || t->shown) {
+        return t->run.entry_wait;
+    }
+    esc_stick_timing_t tm;
+    sp_timing(&tm);
+    size_t picked = 0;
+    esc_stick_change_t ch[ESC_STICK_MAX_CHANGES];
+    const size_t n = sp_changes(ch, &picked);
+    return esc_stick_change_entry_ms(t->p, (n > 0u) ? &ch[0] : NULL, &tm);
+}
+
 static void sp_draw_device(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
     const esc_profile_t *p = t->p;
     char line[128];
-    snprintf(line, sizeof(line), "ESC STICK  >  %s %s", p->brand,
-             p->family);
+    if (t->model >= 0 && (unsigned)t->model < p->model_count) {
+        snprintf(line, sizeof(line), "ESC STICK  >  %s  >  %s  (%s)",
+                 p->brand, p->models[t->model].name, p->family);
+    } else {
+        snprintf(line, sizeof(line), "ESC STICK  >  %s %s", p->brand,
+                 p->family);
+    }
     ui_button(c, s.back, TR(LOG_BACK), ui_theme_color(UI_C_PANEL_HI), false,
               !esc_stick_running(&t->run));
     sp_text(c, s.back.x + s.back.w + 16, CRUMB_Y + 8, line, 72,
@@ -2443,8 +3473,8 @@ static void sp_draw_device(gfx_canvas_t *c)
     if (esc_stick_running(&t->run) || t->shown) {
         mv = t->run.out.supply_mv;
         ma = t->run.out.supply_ma;
-        tm.entry_ms = t->run.t.entry_ms;
     }
+    tm.entry_ms = sp_entry_shown();
     snprintf(line, sizeof(line), TR(SP_SUPPLY_ENTRY), (unsigned)(mv / 1000u),
              (unsigned)(mv % 1000u / 10u), (unsigned)(ma / 1000u),
              (unsigned)(ma % 1000u / 10u), (unsigned)(tm.entry_ms / 1000u),
@@ -2470,9 +3500,10 @@ static void sp_draw_device(gfx_canvas_t *c)
  * whole screen, saying what the run does to the ESC and what may happen to
  * a motor on it.
  */
-static void sp_draw_warning(gfx_canvas_t *c)
+/* A panel over the whole screen, edged and titled in the danger colour:
+ * the warning's, the manual steps' and the prompt's.  Its area. */
+static gfx_rect_t sp_panel(gfx_canvas_t *c, const char *title)
 {
-    const stick_t *t = &s.st;
     const gfx_rect_t a = { PAD, PAD, (int16_t)(W - 2 * PAD),
                            (int16_t)(H - 2 * PAD) };
     const gfx_color_t red = ui_theme_color(UI_C_DANGER);
@@ -2482,10 +3513,63 @@ static void sp_draw_warning(gfx_canvas_t *c)
     gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, red);
     gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, red);
     gfx_text_in(c, (gfx_rect_t){ a.x, (int16_t)(a.y + 12), a.w, 28 },
-                TR(SP_WARN_TITLE), UI_FONT_HEAD,
+                title, UI_FONT_HEAD,
                 ui_is_light(red) ? ui_theme_color(UI_C_TEXT_ON_LIGHT)
                                  : ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_CENTER);
+    return a;
+}
+
+/*
+ * The before-power-up steps of the profile, under the warning's lines: the
+ * hold that starts the run is the operator's word that they are done.
+ * Then, where the run asks for more on its way, a line that it will.
+ */
+static void sp_draw_warning_hand(gfx_canvas_t *c, const esc_profile_t *p,
+                                 gfx_rect_t a, int y)
+{
+    const int last = s.st.hold_btn.y - 20;     /* the last line's top */
+    const unsigned later = sp_later_steps(p);
+    if (esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER) > 0u
+        && sp_warn_gated()) {
+        /* No hand at the ESC until the supply reads off. */
+        (void)sp_wrap(c, a.x + 20, y, 22, TR(SP_WARN_HAND_WAIT), 92, 2,
+                      ui_theme_color(UI_C_DANGER));
+        return;
+    }
+    if (esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER) > 0u) {
+        gfx_text(c, a.x + 20, y, TR(SP_WARN_HAND), UI_FONT_LABEL,
+                 ui_theme_color(UI_C_WARN), 1);
+        y += 22;
+        if (!sp_warn_steps_fit(p)) {
+            /* Not every step fits: none is shown cut, and ALL STEPS shows
+             * them, as HOLD TO RUN needs. */
+            char line[128];
+            snprintf(line, sizeof(line), TR(SP_WARN_HAND_READ),
+                     esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER));
+            sp_text(c, a.x + 44, y, line, 90, ui_theme_color(UI_C_TEXT));
+            y += 22;
+        } else {
+            for (unsigned i = 0; i < p->manual_count; ++i) {
+                const esc_manual_t *m = &p->manual[i];
+                if (m->when == ESC_MANUAL_BEFORE_POWER) {
+                    y += 22 * sp_wrap(c, a.x + 44, y, 22, sp_action(m), 90,
+                                      2, ui_theme_color(UI_C_TEXT));
+                }
+            }
+        }
+    }
+    if (later > 0u && y <= last) {
+        gfx_text(c, a.x + 20, y, TR(SP_WARN_HAND_LATER), UI_FONT_LABEL,
+                 ui_theme_color(UI_C_TEXT_DIM), 1);
+    }
+}
+
+static void sp_draw_warning(gfx_canvas_t *c)
+{
+    const stick_t *t = &s.st;
+    const gfx_color_t red = ui_theme_color(UI_C_DANGER);
+    const gfx_rect_t a = sp_panel(c, TR(SP_WARN_TITLE));
     static const ui_text_id_t k_lines[] = {
         TX_SP_WARN_1, TX_SP_WARN_2, TX_SP_WARN_3, TX_SP_WARN_4,
         TX_SP_WARN_5,
@@ -2497,9 +3581,11 @@ static void sp_draw_warning(gfx_canvas_t *c)
                  ui_theme_color(UI_C_TEXT), 1);
     }
     char line[128];
+    /* A profile with manual steps gives up the blank line above its name
+     * to the steps below. */
+    const int top = a.y + 68 + ((t->p->manual_count > 0u) ? n : n + 1) * 22;
     snprintf(line, sizeof(line), "%s %s", t->p->brand, t->p->family);
-    sp_text(c, a.x + 20, a.y + 68 + (n + 1) * 22, line, 90,
-            ui_theme_color(UI_C_ACCENT));
+    sp_text(c, a.x + 20, top, line, 90, ui_theme_color(UI_C_ACCENT));
     uint32_t mv, ma;
     sp_supply(&mv, &ma);
     size_t picked = 0;
@@ -2510,21 +3596,167 @@ static void sp_draw_warning(gfx_canvas_t *c)
              (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 10u),
              (unsigned)(ma / 1000u), (unsigned)(ma % 1000u / 10u),
              (unsigned)picked);
-    gfx_text(c, a.x + 20, a.y + 68 + (n + 2) * 22, line, UI_FONT_LABEL,
+    gfx_text(c, a.x + 20, top + 22, line, UI_FONT_LABEL,
              ui_theme_color(UI_C_VOLT), 1);
-    gfx_text(c, a.x + 20, a.y + 68 + (n + 3) * 22,
-             TR(SP_WARN_UNVERIFIED),
+    /* Where the stick is when the supply comes on, beside the supply,
+     * when it is not MIN: every position the run's power-ups take. */
+    char at[40];
+    if (sp_power_up_text(t->p, ch, picked < ESC_STICK_MAX_CHANGES
+                                       ? picked : ESC_STICK_MAX_CHANGES,
+                         at, sizeof(at))) {
+        gfx_text(c, a.x + 20 + gfx_text_cells(line) * 8 + 24, top + 22, at,
+                 UI_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
+    }
+    gfx_text(c, a.x + 20, top + 44, TR(SP_WARN_UNVERIFIED),
              UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+    sp_draw_warning_hand(c, t->p, a, top + 66);
     ui_button(c, t->hold_btn, TR(SP_HOLD_TO_RUN),
               ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK), red,
                            t->hold.held_s),
-              t->warn_down, true);
+              t->warn_down, !sp_hold_blocked());
+    if (!sp_warn_steps_fit(t->p)) {
+        ui_button(c, t->steps_btn, TR(SP_STEPS_BTN),
+                  t->warn_read ? ui_theme_color(UI_C_PANEL_HI) : red, false,
+                  true);
+    }
     ui_button(c, t->cancel_btn, TR(CANCEL), ui_theme_color(UI_C_PANEL_SUNK),
+              false, true);
+}
+
+/*
+ * The manual steps of one profile: when each is due and what it is, and
+ * whether a run asks for them.  Opened by MANUAL INTERVENTION REQUIRED,
+ * by the first opening of the profile, or by a tap on a row the bench does
+ * not run.
+ */
+static void sp_draw_hand(gfx_canvas_t *c)
+{
+    const stick_t *t = &s.st;
+    const esc_profile_t *p = t->hand_p;
+    const gfx_rect_t a = sp_panel(c, TR(SP_HAND_BTN));
+    char line[256];
+    snprintf(line, sizeof(line), "%s %s", p->brand, p->family);
+    sp_text(c, a.x + 20, a.y + 64, line, 92, ui_theme_color(UI_C_ACCENT));
+    /* ESC_MANUAL_MAX steps of a label and two lines each fit above the
+     * buttons at a pitch of 19. */
+    int y = a.y + 90;
+    for (unsigned i = 0; i < p->manual_count; ++i) {
+        const esc_manual_t *m = &p->manual[i];
+        snprintf(line, sizeof(line), "%u  %s", i + 1u, sp_when_text(m));
+        gfx_text(c, a.x + 20, y, line, UI_FONT_LABEL,
+                 ui_theme_color(UI_C_WARN), 1);
+        y += 19;
+        y += 19 * sp_wrap(c, a.x + 44, y, 19, sp_action(m), 90, 2,
+                          ui_theme_color(UI_C_TEXT));
+        y += 4;
+    }
+    char why[48];
+    const char *no = sp_model_why(p, t->hand_model, why, sizeof(why));
+    if (t->shown && t->p == p && !sp_supply_reads_off()) {
+        snprintf(line, sizeof(line), "%s", TR(SP_HAND_OVER_LIVE));
+    } else if (t->shown && t->p == p) {
+        snprintf(line, sizeof(line), "%s", TR(SP_HAND_OVER));
+    } else if (no == NULL) {
+        snprintf(line, sizeof(line), "%s", TR(SP_HAND_ASKS));
+    } else {
+        snprintf(line, sizeof(line), TR(SP_HAND_NOT_RUN), no);
+    }
+    sp_wrap(c, a.x + 20, t->cancel_btn.y + 8, 20, line,
+            (t->cancel_btn.x - a.x - 36) / 8, 2,
+            (t->shown && t->p == p && !sp_supply_reads_off())
+                ? ui_theme_color(UI_C_DANGER)
+                : ui_theme_color(UI_C_TEXT_DIM));
+    ui_button(c, t->cancel_btn, "OK", ui_theme_color(UI_C_PANEL_HI), false,
+              true);
+}
+
+/*
+ * A run waiting for a manual step: what to do, where the supply and the
+ * stick are, and how long it waits.  DONE goes on, ABORT ends the run;
+ * STOP in the band ends it too.  DONE is dark for ESC_STICK_HAND_MIN_MS
+ * after the step is asked.
+ */
+/* What no DONE does, as the prompt says it (sp_draw_prompt(), which
+ * spells the choice out for the format check): before the supply goes
+ * off, that the mode may not be stored, or that the ESC may lock while any
+ * of the profile's steps before the power-off is still to confirm. */
+static const char *sp_left_text(const esc_stick_t *e)
+{
+    if (e->phase != ESC_STICK_HAND_END) {
+        return TR(SP_PROMPT_LEFT);
+    }
+    return esc_stick_end_locks(e) ? TR(SP_PROMPT_LEFT_END)
+                                  : TR(SP_PROMPT_LEFT_CUT);
+}
+
+static void sp_draw_prompt(gfx_canvas_t *c)
+{
+    const stick_t *t = &s.st;
+    const esc_stick_t *e = &t->run;
+    const esc_manual_t *m = esc_stick_hand(e);
+    const gfx_rect_t a = sp_panel(c, TR(SP_PROMPT_TITLE));
+    char line[256];
+    snprintf(line, sizeof(line), "%s %s", e->p->brand, e->p->family);
+    sp_text(c, a.x + 20, a.y + 64, line, 92, ui_theme_color(UI_C_ACCENT));
+    gfx_text(c, a.x + 20, a.y + 92, sp_when_text(m), UI_FONT_LABEL,
+             ui_theme_color(UI_C_WARN), 1);
+    int y = a.y + 118;
+    y += 22 * sp_wrap(c, a.x + 20, y, 22, sp_action(m), 92, 3,
+                      ui_theme_color(UI_C_TEXT));
+    y += 12;
+    const char *pos = sp_pos(e->out.throttle_pct);
+    if (e->hand_menu) {
+        snprintf(line, sizeof(line), TR(SP_PROMPT_LISTEN), pos);
+    } else if (e->phase == ESC_STICK_HAND_ON) {
+        snprintf(line, sizeof(line), TR(SP_PROMPT_ON), pos);
+    } else if (e->phase == ESC_STICK_HAND_END) {
+        snprintf(line, sizeof(line), TR(SP_PROMPT_END), pos);
+    } else if (m->when == ESC_MANUAL_AT_POWER_UP) {
+        snprintf(line, sizeof(line), "%s", TR(SP_PROMPT_AT_POWER));
+    } else {
+        snprintf(line, sizeof(line), TR(SP_PROMPT_OFF), pos);
+    }
+    sp_text(c, a.x + 20, y, line, 92, ui_theme_color(UI_C_TEXT_DIM));
+    y += 22;
+    if (m->when == ESC_MANUAL_AT_POWER_UP && m->hold_ms != 0u) {
+        snprintf(line, sizeof(line), TR(SP_PROMPT_HOLD),
+                 (unsigned)(m->hold_ms / 1000u),
+                 (unsigned)(m->hold_ms % 1000u / 100u));
+        sp_text(c, a.x + 20, y, line, 92, ui_theme_color(UI_C_TEXT_DIM));
+        y += 22;
+    }
+    if (e->hand_menu) {
+        sp_text(c, a.x + 20, y, TR(SP_PROMPT_HEARD), 92,
+                ui_theme_color(UI_C_TEXT_DIM));
+        y += 22;
+    }
+    /* Before the supply goes off, an end switches it off under the ESC's
+     * confirmation: said here, as the result says it after. */
+    snprintf(line, sizeof(line),
+             (e->phase != ESC_STICK_HAND_END) ? TR(SP_PROMPT_LEFT)
+             : esc_stick_end_locks(e)         ? TR(SP_PROMPT_LEFT_END)
+                                              : TR(SP_PROMPT_LEFT_CUT),
+             (unsigned)((esc_stick_hand_left_ms(e) + 999u) / 1000u));
+    sp_text(c, a.x + 20, y, line, 92, ui_theme_color(UI_C_TEXT_FAINT));
+    const bool ready = esc_stick_hand_ready(e);
+    ui_button(c, t->hold_btn, TR(SP_HAND_DONE),
+              ready ? ui_theme_color(UI_C_OK)
+                    : ui_theme_color(UI_C_PANEL_SUNK), false, ready);
+    ui_button(c, t->cancel_btn, TR(SP_ABORT), ui_theme_color(UI_C_DANGER),
               false, true);
 }
 
 static void sp_render(gfx_canvas_t *c)
 {
+    if (s.st.hand_open && s.st.hand_p != NULL) {
+        sp_draw_hand(c);
+        return;
+    }
+    if (s.stage == STAGE_DEVICE && s.st.p != NULL
+        && esc_stick_hand(&s.st.run) != NULL) {
+        sp_draw_prompt(c);
+        return;
+    }
     if (s.st.warn && s.st.p != NULL) {
         sp_draw_warning(c);
         return;
@@ -2561,7 +3793,26 @@ void programmer_screen_bench(uint32_t now_ms, bool armed, uint32_t stops,
 void programmer_screen_supply(const supply_state_t *st)
 {
     stick_t *t = &s.st;
-    if (st == NULL || !esc_stick_running(&t->run)) {
+    if (st == NULL) {
+        return;
+    }
+    /* Every reading, run or no run: whether the supply is live, and since
+     * when it has read off -- its own state, the current at or under
+     * ESC_STICK_OFF_MA. */
+    const bool reads_off = st->online && !st->output
+                           && st->mode == SUPPLY_MODE_OFF
+                           && (st->ok & SUPPLY_OK_CURRENT) != 0u
+                           && lroundf(st->i * 1000.0f) <= ESC_STICK_OFF_MA;
+    t->sup_have = true;
+    t->sup_at = st->taken_ms;
+    t->sup_live = !reads_off && st->online;
+    if (!reads_off) {
+        t->sup_off_known = false;
+    } else if (!t->sup_off_known) {
+        t->sup_off_known = true;
+        t->sup_off_since = st->taken_ms;
+    }
+    if (!esc_stick_running(&t->run)) {
         return;
     }
     const esc_stick_sample_t x = {
@@ -2614,10 +3865,119 @@ int programmer_screen_stick_listed(int *top)
     return s.st.count;
 }
 
+int programmer_screen_stick_level(void) { return s.st.level; }
+
+const char *programmer_screen_stick_maker(void)
+{
+    return (s.st.level == 1 && s.st.maker != NULL) ? s.st.maker : "";
+}
+
+int programmer_screen_stick_model(void)
+{
+    return (s.klass == CLASS_STICK && s.stage == STAGE_DEVICE) ? s.st.model
+                                                               : -1;
+}
+
+const esc_profile_t *programmer_screen_stick_row(int i, int *model)
+{
+    const stick_t *t = &s.st;
+    if (t->level != 1 || i < 0 || i >= t->count) {
+        return NULL;
+    }
+    if (model != NULL) {
+        *model = t->rows_m[i].model;
+    }
+    return esc_profiles_at(t->rows_m[i].prof);
+}
+
+const char *programmer_screen_stick_row_why(int i)
+{
+    static char why[64];
+    int model = -1;
+    const esc_profile_t *p = programmer_screen_stick_row(i, &model);
+    return (p != NULL) ? sp_model_why(p, model, why, sizeof(why)) : NULL;
+}
+
+int programmer_screen_stick_item_at(int i)
+{
+    uint8_t shown[256];
+    const int n = sp_items(shown);
+    return (i >= 0 && i < n) ? shown[i] : -1;
+}
+
+const char *programmer_screen_stick_row_warn(int i)
+{
+    static char warn[64];
+    int model = -1;
+    const esc_profile_t *p = programmer_screen_stick_row(i, &model);
+    return (p != NULL && programmer_screen_stick_row_why(i) == NULL)
+               ? sp_model_warn(p, model, warn, sizeof(warn)) : NULL;
+}
+
+const char *programmer_screen_stick_result_head(void)
+{
+    static char line[128];
+    sp_result_head(&s.st.run, line, sizeof(line));
+    return line;
+}
+
+const char *programmer_screen_stick_result_more(void)
+{
+    static char line[128];
+    const unsigned shown = (s.st.run.n > 5u) ? 4u : s.st.run.n;
+    line[0] = '\0';
+    if (shown < s.st.run.n) {
+        sp_result_more(&s.st.run, shown, line, sizeof(line));
+    }
+    return line;
+}
+
+const char *programmer_screen_stick_left_text(void)
+{
+    return sp_left_text(&s.st.run);
+}
+
+const char *programmer_screen_stick_note(void)
+{
+    return s.st.note;
+}
+
+const char *programmer_screen_stick_maker_at(int i)
+{
+    const stick_t *t = &s.st;
+    return (t->level == 0 && i >= 0 && i < t->count) ? t->makers[i].name
+                                                     : NULL;
+}
+
+uint32_t programmer_screen_stick_entry_shown(void)
+{
+    return (s.st.p != NULL) ? sp_entry_shown() : 0u;
+}
+
+bool programmer_screen_stick_supply_reads_off(void)
+{
+    return sp_supply_reads_off();
+}
+
+const char *programmer_screen_stick_hand_why(void)
+{
+    const stick_t *t = &s.st;
+    static char why[48];
+    if (!t->hand_open || t->hand_p == NULL) {
+        return NULL;
+    }
+    return sp_model_why(t->hand_p, t->hand_model, why, sizeof(why));
+}
+
 const esc_profile_t *programmer_screen_stick_page(void)
 {
     return (s.klass == CLASS_STICK && s.stage == STAGE_DEVICE) ? s.st.p
                                                                : NULL;
+}
+
+bool programmer_screen_stick_hand_shown(void)
+{
+    return s.st.hand_open && s.st.hand_p != NULL;
 }
 
 void programmer_screen_stick_lights(bool *red, bool *green)

@@ -542,7 +542,8 @@ Input/Output) auf zwei seiner Pins, über die SUPPLY-Link-Page (Protokoll
 in SETUP unter ANSCHLÜSSE eingeschaltet, sagt die Kopfzeile PD MINI. Ist er
 abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
 Netzteils: die Kopfzeile sagt NETZTEIL SIMULIERT, und die Kachel im Menü trägt
-SIMULIERT. Gegen ein Modul ist der PD mini noch nicht gelaufen.
+SIMULIERT. Gegen ein Modul lief der PD mini mit 0.10.0 und 0.10.1; nichts,
+was nach 0.10.1 hinzukam.
 
 Das Layout ist das von MOTOR & ESC. Der Plot zeigt Spannung, Strom und
 Leistung der letzten 27 s. Die Leiste rechts zeigt die Messwerte, die
@@ -806,22 +807,30 @@ das Home-Tag im Band verlässt den Bildschirm.
 
 ### ESC STICK
 
-Die Liste enthält jedes ESC-Profil, die ausführbaren zuerst; eine Zeile, die
-nicht laufen kann, nennt den Grund:
+Die Liste zeigt zuerst die Hersteller, alphabetisch, jeden mit der Zahl
+seiner Modelle, die laufen:
 
-![Die Profile](img/de/programmer-stick.png)
+![Die Hersteller](img/de/programmer-stick.png)
 
-SUCHE filtert die Liste. Ihre Tastatur dockt rechts an, die Zeilen werden
-daneben schmaler, und jede Taste filtert sofort. Ein Profil wird gefunden,
-wenn der Text in Hersteller und Name steht, als ein Text gelesen, oder in
-Hersteller und einem Modellnamen. Groß- und Kleinschreibung spielen keine
-Rolle, und `*` steht für eine beliebige Folge von Zeichen:
+Ein Hersteller öffnet seine Modelle, eine Zeile je Modell, nach Strom, dann
+Spannung, dann Name, jedes mit seiner Familie und was das Profil ist oder
+warum es nicht läuft. Ein Modell öffnet das Profil seiner Familie:
+
+![Die Modelle von Kontronik](img/de/programmer-stick-hand-list.png)
+
+SUCHE filtert die gezeigte Ebene. Ihre Tastatur dockt rechts an, die
+Zeilen werden daneben schmaler, und jede Taste filtert sofort. Ein Modell
+wird gefunden, wenn der Text in Hersteller und Familie steht, als ein Text
+gelesen, oder in Hersteller und seinem eigenen Namen; ein Hersteller
+erscheint, wenn eines seiner Modelle gefunden ist. Groß- und
+Kleinschreibung spielen keine Rolle, und `*` steht für eine beliebige Folge
+von Zeichen:
 
 ![Eine Suche wird getippt](img/de/programmer-stick-find.png)
 
-OK behält die Suche, X leert sie:
+OK behält die Suche auf beiden Ebenen, X leert sie:
 
-![Eine Suche angewendet](img/de/programmer-stick-found.png)
+![Eine Suche angewendet, die Modelle von Hobbywing](img/de/programmer-stick-found.png)
 
 Die Punkte eines Profils stehen anfangs auf BEHALTEN. Die Stepper wählen einen
 Wert; START zählt die gewählten Werte:
@@ -834,6 +843,24 @@ Propeller tragen, oder ein Lastwiderstand tritt an seine Stelle. Der Lauf
 beginnt, wenn HALTEN ZUM STARTEN 2 s gehalten ist:
 
 ![Die Warnung](img/de/programmer-stick-warning.png)
+
+Ein Profil, dessen ESC einen Menschen am ESC braucht -- einen Jumper stecken
+und abziehen, einen Taster drücken --, trägt in der Liste ein rotes Schild
+HAND und auf seiner Seite rot MANUELLER EINGRIFF NÖTIG. Der Knopf zeigt die
+Schritte und wann jeder fällig ist; ebenso das erste Öffnen des Profils. Die
+Warnung nennt die Schritte vor dem Einschalten, und der Lauf hält für jeden
+späteren Schritt mit ERLEDIGT und ABBRECHEN an und wartet höchstens 60 s
+([Handgriffe](StickProgramming-de.md#handgriffe)):
+
+![Ein Profil mit Handgriffen](img/de/programmer-stick-hand.png)
+
+![Der Lauf wartet auf den Jumper](img/de/programmer-stick-hand-prompt.png)
+
+Ein Kontronik-ESC, der sich sperrt, wenn sein Netzteil ausschaltet, bevor
+er den gespeicherten Modus bestätigt hat, hält den Lauf nach dem Speichern
+versorgt, den Knüppel, wo er speicherte, bis ERLEDIGT:
+
+![Der Lauf wartet auf die Bestätigung des ESCs](img/de/programmer-stick-hand-end.png)
 
 Während er läuft, zeigt die Seite die Phase, die Pieptöne der laufenden
 Gruppe und die letzte Gruppe. ABBRECHEN, STOP und das Verlassen des Bildschirms

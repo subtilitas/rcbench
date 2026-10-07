@@ -58,6 +58,21 @@
   ],
   "automatable": "assisted",
   "automatable_note": "The button on the ESC must be pressed after the 2 s wait. The bench has no actuator for it.",
+  "manual": [
+    {
+      "when": "before_menu",
+      "action": "Press the button marked Taster on the label after 2 s or the tone sequence.",
+      "action_de": "Taster mit der Aufschrift Taster nach 2 s oder der Tonfolge drücken.",
+      "starts_menu": true,
+      "source": "Kontronik_Pix1000_3000.pdf p.4 (DE), p.10 (EN); Kontronik_Pix4000.pdf p.4"
+    },
+    {
+      "when": "before_power_off",
+      "action": "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.",
+      "action_de": "Nicht berühren: warten, bis der ESC den Modus fertig wiederholt hat (Töne), dann ERLEDIGT tippen.",
+      "source": "Kontronik_Pix1000_3000.pdf p.4-5; Kontronik_Pix4000.pdf p.4-5"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -114,7 +129,10 @@
         },
         {
           "number": 2,
-          "name": "Glider: EMK brake and undervoltage cutoff on, optional separate motor-off position"
+          "name": "Glider: EMK brake and undervoltage cutoff on, optional separate motor-off position",
+          "after_select": [
+            "min"
+          ]
         },
         {
           "number": 3,
@@ -146,6 +164,8 @@
   ],
   "notes": [
     "Kontronik_Pix1000_3000.pdf and Kontronik_Pix4000.pdf print the same technical data and procedures; the PIX 4000 manual adds ProgCARD notes.",
-    "Modes 7 and 9 do not change other stored settings; the PIX manuals do not state a prerequisite for them."
+    "Modes 7 and 9 do not change other stored settings; the PIX manuals do not state a prerequisite for them.",
+    "Mode 2 moves the stick to the brake position (back) after the full-throttle selection, and the ESC answers with a descending tone sequence (Kontronik_Pix1000_3000.pdf p.5 steps 9-10 DE, p.11 EN): after_select min. The optional separate motor-off position (steps 11-12) is not made. The manual gives no time for the move; stick programming makes it STORE after the selection.",
+    "After the store the ESC repeats the stored mode as tones (control output, 'Kontrollausgabe'), and the manual disconnects power after it (Kontronik_Pix1000_3000.pdf p.4-5; Kontronik_Pix4000.pdf p.4-5). The step before_power_off holds the run powered until the operator taps DONE. The manual names no lock for a power-off before the end of it."
   ]
 }

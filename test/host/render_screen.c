@@ -427,6 +427,7 @@ typedef struct {
     bool      armed, on;
     float     pct;
     uint32_t  now, next, seq, stops, pressed;
+    bool      no_watch;     /* nobody taps DONE before the power-off */
 } stick_rig_t;
 
 static void stick_step(stick_rig_t *r)
@@ -466,6 +467,12 @@ static void stick_step(stick_rig_t *r)
         r->next = r->now + 50u;
     }
     ui_router_tick(0.001f);
+    /* The operator watching the ESC confirm taps DONE once it counts. */
+    const esc_stick_t *run = programmer_screen_stick();
+    if (!r->no_watch && run->phase == ESC_STICK_HAND_END
+        && esc_stick_hand_ready(run)) {
+        tap(156, UI_BAND_H + 378);
+    }
     r->now++;
 }
 
@@ -488,6 +495,63 @@ static void stick_type(const char *text)
                       : (at != NULL) ? (int)(at - k_keys) : UI_TK_OK;
         const gfx_rect_t r = ui_textkey_key_rect(&k, key);
         tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+    }
+}
+
+/* The supply reading off for 300 ms, as the warning needs before it asks
+ * for a step at the ESC. */
+static void stick_supply_off(void)
+{
+    for (uint32_t t = 0; t <= 300u; t += 100u) {
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.samples = (uint16_t)(t / 100u + 1u);
+        st.taken_ms = t;
+        st.mode = SUPPLY_MODE_OFF;
+        st.online = true;
+        st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+        programmer_screen_supply(&st);
+    }
+    programmer_screen_bench(300u, false, 0u, 0u, false);
+    ui_router_tick(0.02f);
+}
+
+/* The ESC STICK list's row @p at, paged to first: the rows of
+ * programmer_screen.c (SP_ROW_Y0 52, 36 px apart, 9 to a page) and its ^ and
+ * v at 723 and 761 on the crumb row. */
+static void stick_tap_row(int at)
+{
+    int top = 0;
+    (void)programmer_screen_stick_listed(&top);
+    for (int g = 0; g < 64 && at < top; ++g) {
+        tap(723, UI_BAND_H + 27);
+        (void)programmer_screen_stick_listed(&top);
+    }
+    for (int g = 0; g < 64 && at >= top + 9; ++g) {
+        tap(761, UI_BAND_H + 27);
+        (void)programmer_screen_stick_listed(&top);
+    }
+    tap(400, UI_BAND_H + 52 + (at - top) * 36 + 16);
+}
+
+/* On the makers, the one named @p name; on its models, the first of
+ * profile @p id (NULL: stay on the models). */
+static void stick_open(const char *name, const char *id)
+{
+    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
+        const char *m = programmer_screen_stick_maker_at(i);
+        if (m != NULL && strcmp(m, name) == 0) {
+            stick_tap_row(i);
+            break;
+        }
+    }
+    for (int i = 0; id != NULL && i < programmer_screen_stick_listed(NULL);
+         ++i) {
+        const esc_profile_t *p = programmer_screen_stick_row(i, NULL);
+        if (p != NULL && strcmp(p->id, id) == 0) {
+            stick_tap_row(i);
+            return;
+        }
     }
 }
 
@@ -677,7 +741,7 @@ int main(int argc, char **argv)
     if (id == SCREEN_PROGRAMMER && strncmp(view, "programmer-stick", 16) == 0) {
         /*
          * The ESC STICK class, walked by pressing.  Geometry from
-         * programmer_screen.c: the third tile, the third profile that runs
+         * programmer_screen.c: the third tile, the makers and their models
          * (hobbywing-flyfun-8item, by id), and the item rows' + steppers.
          */
         const supply_caps_t caps = SUPPLY_CAPS_PPS_DEFAULT;
@@ -686,15 +750,241 @@ int main(int argc, char **argv)
         ui_router_goto(SCREEN_PROGRAMMER);
         programmer_screen_bench(0u, false, 0u, 0u, false);
         tap(660, UI_BAND_H + 180);              /* the ESC STICK tile */
-        if (strcmp(view, "programmer-stick-find") == 0
+        stick_supply_off();                     /* a panel's readings, off */
+        if (strcmp(view, "programmer-stick-hand-steps") == 0) {
+            /*
+             * An example card profile, maker "Example", with four long steps
+             * before the power-up: the warning shows none cut and asks for
+             * ALL STEPS before HOLD TO RUN counts.
+             */
+            static const esc_manual_t k_before[] = {
+                { ESC_MANUAL_BEFORE_POWER,
+                  "Fit the programming jumper on the two gold contacts "
+                  "beside the motor leads, with the receiver lead plugged "
+                  "in first.", 0u,
+                  "Den Programmier-Jumper auf die beiden Goldkontakte neben "
+                  "den Motorkabeln stecken, das Empfängerkabel zuerst.",
+                  false, false },
+                { ESC_MANUAL_BEFORE_POWER,
+                  "Set the transmitter's throttle trim to its middle and its "
+                  "throttle curve to linear before the ESC is powered.", 0u,
+                  "Die Throttle-Trimmung des Senders auf Mitte und die "
+                  "Gaskurve linear stellen, bevor der ESC Strom bekommt.",
+                  false, false },
+                { ESC_MANUAL_BEFORE_POWER,
+                  "Connect the motor and fix it to the bench so that it "
+                  "cannot turn its leads off the contacts by itself.", 0u,
+                  "Den Motor anschließen und am Prüfstand befestigen, damit "
+                  "er seine Kabel nicht selbst von den Kontakten dreht.",
+                  false, false },
+                { ESC_MANUAL_BEFORE_POWER,
+                  "Take any propeller or pinion off the motor shaft and keep "
+                  "hands and tools clear of the motor for the run.", 0u,
+                  "Propeller oder Ritzel von der Motorwelle nehmen und Hände "
+                  "und Werkzeug während des Laufs vom Motor fernhalten.",
+                  false, false },
+            };
+            static esc_profile_t ex;
+            ex = *esc_profiles_find("sunrise-pro");
+            ex.id = "example-steps";
+            ex.brand = "Example";
+            ex.family = "Example ESC, not a real product";
+            ex.automatable = ESC_AUTO_ASSISTED;
+            ex.automatable_note = "An example.";
+            ex.manual = k_before;
+            ex.manual_count = 4;
+            esc_profiles_clear_overrides();
+            (void)esc_profiles_override(&ex, NULL);
+            programmer_invalidate();
+            tap(66, UI_BAND_H + 27);            /* BACK, and the tile again: */
+            tap(660, UI_BAND_H + 180);          /* the list with the card */
+            stick_open("Example", "example-steps");
+            tap(684, UI_BAND_H + 378);          /* OK: the first opening */
+            tap(765, UI_BAND_H + 132 + 30 + 10);    /* timing: automatic */
+            stick_supply_off();
+            tap(698, UI_BAND_H + 407);          /* RUN: the warning */
+        } else if (strcmp(view, "programmer-stick-hand-after") == 0) {
+            /*
+             * An example card profile, maker "Example", with four long steps
+             * after programming, run to its end: the steps open by
+             * themselves over the result.
+             */
+            static const esc_manual_t k_after[] = {
+                { ESC_MANUAL_AFTER_PROGRAMMING,
+                  "Remove the programming jumper from the two gold contacts "
+                  "before the model is flown, or the ESC enters its menu "
+                  "again.", 0u,
+                  "Den Programmier-Jumper vor dem Flug von den beiden "
+                  "Goldkontakten abziehen, sonst geht der ESC wieder ins "
+                  "Menü.", false, false },
+                { ESC_MANUAL_AFTER_PROGRAMMING,
+                  "Refit the heat shrink over the programming contacts and "
+                  "the button so that no conductive dirt reaches them in "
+                  "use.", 0u,
+                  "Den Schrumpfschlauch wieder über Kontakte und Taster "
+                  "ziehen, damit im Betrieb kein leitender Schmutz hinkommt.",
+                  false, false },
+                { ESC_MANUAL_AFTER_PROGRAMMING,
+                  "Disconnect the bench supply, then reconnect the flight "
+                  "battery and check the stored mode on the start-up "
+                  "tones.", 0u,
+                  "Netzteil abziehen, dann den Flugakku anstecken und den "
+                  "gespeicherten Modus an den Starttönen prüfen.", false, false },
+                { ESC_MANUAL_AFTER_PROGRAMMING,
+                  "Run the motor without a propeller at low throttle once "
+                  "and check the direction and the brake before the first "
+                  "flight.", 0u,
+                  "Den Motor einmal ohne Propeller mit wenig Gas laufen "
+                  "lassen und vor dem Erstflug Drehrichtung und Bremse "
+                  "prüfen.", false, false },
+            };
+            static esc_profile_t card;
+            card = *esc_profiles_find("sunrise-pro");
+            card.id = "example-after";
+            card.brand = "Example";
+            card.family = "Example ESC, not a real product";
+            card.automatable = ESC_AUTO_ASSISTED;
+            card.automatable_note = "Steps after programming.";
+            card.manual = k_after;
+            card.manual_count = 4;
+            esc_profiles_clear_overrides();
+            (void)esc_profiles_override(&card, NULL);
+            programmer_invalidate();
+            tap(66, UI_BAND_H + 27);            /* BACK, and the tile again: */
+            tap(660, UI_BAND_H + 180);          /* the list with the card */
+            stick_open("Example", "example-after");
+            tap(684, UI_BAND_H + 378);          /* OK: the first opening */
+            tap(765, UI_BAND_H + 132 + 30 + 10);    /* timing: automatic */
+            tap(698, UI_BAND_H + 407);          /* RUN: the warning */
+            touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                                .point = { .id = 2, .x = 156,
+                                           .y = UI_BAND_H + 378,
+                                           .strength = 40 } };
+            ui_router_event(&e);
+            for (int i = 0; i < 9; ++i) {
+                ui_router_tick(0.25f);
+            }
+            e.type = TOUCH_EVENT_UP;
+            ui_router_event(&e);
+            static stick_rig_t arig;
+            memset(&arig, 0, sizeof(arig));
+            esc_sim_init(&arig.sim, programmer_screen_stick()->p, NULL);
+            const esc_stick_t *run = programmer_screen_stick();
+            for (int ms = 0; ms < 400000 && esc_stick_running(run); ++ms) {
+                stick_step(&arig);
+            }
+            for (int i = 0; i < 10; ++i) {
+                stick_step(&arig);
+            }
+        } else if (strcmp(view, "programmer-stick-hand-end") == 0
+                   || strcmp(view, "programmer-stick-hand-locked") == 0) {
+            /*
+             * kontronik-kontrol-x mode 2, run to the step before the supply
+             * goes off: the button pressed when asked, the mode stored, the
+             * ESC powered with the stick at MAX.  -end: the prompt, DONE
+             * live.  -locked: no DONE, the result.
+             */
+            stick_open("Kontronik", "kontronik-kontrol-x");
+            tap(684, UI_BAND_H + 378);          /* OK: the first opening */
+            tap(765, UI_BAND_H + 132 + 10);     /* mode 1 */
+            tap(765, UI_BAND_H + 132 + 10);     /* mode 2 */
+            stick_supply_off();
+            tap(698, UI_BAND_H + 407);          /* RUN: the warning */
+            touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                                .point = { .id = 2, .x = 156,
+                                           .y = UI_BAND_H + 378,
+                                           .strength = 40 } };
+            ui_router_event(&e);
+            for (int i = 0; i < 9; ++i) {
+                ui_router_tick(0.25f);
+            }
+            e.type = TOUCH_EVENT_UP;
+            ui_router_event(&e);
+            static stick_rig_t erig;
+            memset(&erig, 0, sizeof(erig));
+            erig.no_watch = true;
+            esc_sim_cfg_t ec;
+            esc_sim_defaults(&ec);
+            ec.wait_hand = true;                /* silent until the press */
+            esc_sim_init(&erig.sim, programmer_screen_stick()->p, &ec);
+            const esc_stick_t *run = programmer_screen_stick();
+            bool pressed = false;
+            for (int ms = 0; ms < 400000 && esc_stick_running(run)
+                             && run->phase != ESC_STICK_HAND_END; ++ms) {
+                if (run->hand_menu && !pressed) {
+                    esc_sim_hand(&erig.sim, erig.now);
+                    pressed = true;
+                }
+                stick_step(&erig);
+            }
+            const int wait = (strcmp(view, "programmer-stick-hand-end") == 0)
+                                 ? (int)ESC_STICK_HAND_MIN_MS
+                                 : (int)ESC_STICK_HAND_WAIT_MS + 1000;
+            for (int ms = 0; ms < wait; ++ms) {
+                stick_step(&erig);
+            }
+            for (int i = 0; i < 10; ++i) {
+                stick_step(&erig);
+            }
+        } else if (strcmp(view, "programmer-stick-hand-list") == 0) {
+            /* Kontronik's models, those with manual steps tagged. */
+            stick_open("Kontronik", NULL);
+        } else if (strncmp(view, "programmer-stick-hand", 21) == 0) {
+            /*
+             * kontronik-jazz: a jumper fitted before the power-up and
+             * pulled after the entry.  Its manual steps show by themselves
+             * on the first opening; OK closes them.
+             */
+            stick_open("Kontronik", "kontronik-jazz");
+            if (strcmp(view, "programmer-stick-hand-info") != 0) {
+                tap(684, UI_BAND_H + 378);      /* OK */
+                /* Mode 6, a car mode: powered up at MID. */
+                for (int i = 0; i < 6; ++i) {
+                    tap(765, UI_BAND_H + 132 + 10);
+                }
+            }
+            const bool prompt = strcmp(view, "programmer-stick-hand-prompt")
+                                == 0;
+            if (prompt || strcmp(view, "programmer-stick-hand-warning") == 0) {
+                stick_supply_off();             /* the jumper on, unpowered */
+                tap(698, UI_BAND_H + 407);      /* RUN: the warning */
+            }
+            if (prompt) {
+                touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                                    .point = { .id = 2, .x = 156,
+                                               .y = UI_BAND_H + 378,
+                                               .strength = 40 } };
+                ui_router_event(&e);
+                for (int i = 0; i < 9; ++i) {
+                    ui_router_tick(0.25f);
+                }
+                e.type = TOUCH_EVENT_UP;
+                ui_router_event(&e);
+                static stick_rig_t hrig;
+                memset(&hrig, 0, sizeof(hrig));
+                esc_sim_cfg_t hc;
+                esc_sim_defaults(&hc);
+                hc.wait_hand = true;            /* silent until the pull */
+                esc_sim_init(&hrig.sim, programmer_screen_stick()->p, &hc);
+                const esc_stick_t *run = programmer_screen_stick();
+                /* Asked, and a second on: DONE is live. */
+                for (int ms = 0; ms < 60000 && esc_stick_running(run)
+                                 && !esc_stick_hand_ready(run); ++ms) {
+                    stick_step(&hrig);
+                }
+            }
+        } else if (strcmp(view, "programmer-stick-find") == 0
             || strcmp(view, "programmer-stick-found") == 0) {
             /* The search field, then typing: still typing for -find, OK
              * ("\n" is no key, so it lands on OK) for -found. */
-            tap(260, UI_BAND_H + 27);
+            tap(600, UI_BAND_H + 27);
             stick_type(strcmp(view, "programmer-stick-find") == 0
                            ? "SKY*V2" : "FLYFUN\n");
+            if (strcmp(view, "programmer-stick-found") == 0) {
+                stick_open("Hobbywing", NULL);  /* its FLYFUN models */
+            }
         } else if (strcmp(view, "programmer-stick") != 0) {
-            tap(400, UI_BAND_H + 52 + 2 * 36 + 16);
+            stick_open("Hobbywing", "hobbywing-flyfun-8item");
             if (strcmp(view, "programmer-stick-timing") == 0) {
                 tap(698, UI_BAND_H + 70);       /* TIMING */
             } else {

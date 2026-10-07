@@ -40,6 +40,28 @@
   ],
   "automatable": "assisted",
   "automatable_note": "A jumper cable must be plugged into the ESC socket before power-up and pulled after the first tone sequence. The bench cannot do this.",
+  "manual": [
+    {
+      "when": "before_power",
+      "action": "Plug the jumper cable onto the ESC.",
+      "action_de": "Jumperkabel auf den ESC stecken.",
+      "source": "Kontronik_Jive_Pro.pdf p.5, p.7"
+    },
+    {
+      "when": "before_menu",
+      "action": "Pull the jumper cable off after the cell-count tones, within 10 s of power-up.",
+      "action_de": "Jumperkabel nach den Zellentönen abziehen, innerhalb 10 s nach dem Einschalten.",
+      "starts_menu": true,
+      "source": "Kontronik_Jive_Pro.pdf p.7, p.11 (DE), p.22 (EN)"
+    },
+    {
+      "when": "before_power_off",
+      "action": "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.",
+      "action_de": "Nicht berühren: warten, bis der ESC seine Modusbestätigung beendet hat (Töne, LED), dann ERLEDIGT tippen.",
+      "locks": true,
+      "source": "Kontronik_Jive_Pro.pdf p.7, p.9 (DE)"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -199,13 +221,14 @@
     "Whether the mode series loops until a mode is selected is not stated.",
     "Time window in ms for moving the throttle to full after the wanted series is not stated.",
     "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
-    "Entry has no timed wait; the time allowed between power-up and pulling the jumper cable is not stated.",
     "Input voltage range and rated current of the 80+ HV and 120+ HV are not given in the manual (only the update step mentions a 20 to 50 V battery).",
     "Tone count of the BEC stage is derived from the 0.2 V per tone rule; the manual does not list a table.",
     "Item number 2 is an index chosen here."
   ],
   "notes": [
     "Modes 1 to 6 can only be set by mode programming, not with the programming unit, per the manual.",
-    "Mode 4 on this ESC always includes autorotation; the manual states it cannot be programmed with or without AR."
+    "Mode 4 on this ESC always includes autorotation; the manual states it cannot be programmed with or without AR.",
+    "The jumper cable is pulled within 10 s of initialisation (Kontronik_Jive_Pro.pdf p.11 DE, p.22 EN).",
+    "The manual asks for the power to stay on until the ESC has confirmed the mode: a supply off before that is taken as programming broken off and locks the ESC, shown as 9 LED flashes (Kontronik_Jive_Pro.pdf p.7, p.9 (DE)). The step before_power_off holds the run powered until the operator taps DONE."
   ]
 }

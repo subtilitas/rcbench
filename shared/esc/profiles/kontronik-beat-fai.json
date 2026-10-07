@@ -58,6 +58,27 @@
   ],
   "automatable": "assisted",
   "automatable_note": "A jumper must be fitted on two of the three programming contacts before power is applied and pulled off after the ESC's first tone sequence. The bench has no actuator for the jumper, so a person performs both steps.",
+  "manual": [
+    {
+      "when": "before_power",
+      "action": "Fit the jumper on any 2 of the 3 programming contacts.",
+      "action_de": "Jumper auf 2 beliebige der 3 Programmierkontakte stecken.",
+      "source": "Kontronik_Beat.pdf p.13 (DE), p.35 (EN)"
+    },
+    {
+      "when": "before_menu",
+      "action": "Pull the jumper off after 2 s or the tone sequence.",
+      "action_de": "Jumper nach 2 s oder der Tonfolge abziehen.",
+      "starts_menu": true,
+      "source": "Kontronik_Beat.pdf p.13 (DE), p.35 (EN)"
+    },
+    {
+      "when": "before_power_off",
+      "action": "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.",
+      "action_de": "Nicht berühren: warten, bis der ESC den Modus fertig wiederholt hat (Töne), dann ERLEDIGT tippen.",
+      "source": "Kontronik_Beat.pdf p.13 (DE), the procedure the FAI sheet refers to"
+    }
+  ],
   "scheme": {
     "type": "count",
     "entry": {
@@ -144,6 +165,7 @@
     "Which FAI mode suits which model is not stated (the manual says to test)."
   ],
   "notes": [
-    "The addendum replaces the BEAT mode meanings for modes 2 to 6."
+    "The addendum replaces the BEAT mode meanings for modes 2 to 6.",
+    "After the store the ESC repeats the stored mode as tones (control output, 'Kontrollausgabe'), and the manual disconnects power after it (Kontronik_Beat.pdf p.13 (DE), the procedure the FAI sheet refers to). The step before_power_off holds the run powered until the operator taps DONE. The manual names no lock for a power-off before the end of it."
   ]
 }

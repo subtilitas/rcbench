@@ -15,7 +15,7 @@ kept in NVS (non-volatile storage) like every setting, once SAVE takes it.
 | --- | --- |
 | labels, setting names and their help, alerts in the band, warning panels, refusal notes, the splash's details | the terms listed under [Terms that stay English](#terms-that-stay-english) |
 | the servo test's TXT (plain text) report, in the language showing when the run starts | the servo test's CSV (comma-separated values) file: its header and the words in its rows (`test`, `phase`, `mode`), so tools read every run alike |
-| the stick programmer's notes and refusals | the ESC (electronic speed controller) profiles' names, items and values, which are the manuals' |
+| the stick programmer's notes and refusals, and an ESC profile's manual steps where the profile gives them in German (`action_de`) | the ESC (electronic speed controller) profiles' names, items and values, which are the manuals' |
 | | the programmer's parameter names and their values, which are the firmware's own, as its configurators show them |
 | | the console log |
 
@@ -123,6 +123,8 @@ One German word per English concept, on every screen and in the report.
 | beep | Piepton |
 | item, value (of an ESC menu) | Punkt, Wert |
 | entry (into an ESC menu), power-up | Einstieg, Einschalten |
+| manual step (at the ESC), MANUAL INTERVENTION REQUIRED, the MANUAL tag | Handgriff, MANUELLER EINGRIFF NÖTIG, HAND |
+| DONE (a manual step confirmed) | ERLEDIGT |
 | threshold | Schwelle |
 | defaults | Vorgaben |
 | channel | Kanal |
@@ -186,7 +188,7 @@ its English.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 59 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 68 views in English and
 in German, and fails when a German string
 
 - is wider than the box `gfx_text_in()` was given,

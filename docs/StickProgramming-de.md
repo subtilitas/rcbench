@@ -39,7 +39,15 @@ Was sie nicht weiß:
    Throttle gebundenen Kanal, wie der Bildschirm MOTOR.
 4. Die Versorgungsleitungen des ESCs an den Ausgang des Netzteils legen.
 5. Den Ausgang des Netzteils ausschalten. Ein Lauf, der ihn an oder auf dem
-   Weg findet, wird abgelehnt.
+   Weg findet, wird abgelehnt, ebenso einer, dessen Netzteil spannungsführend
+   meldet: sein eigener Zustand an, oder mehr als 20 mA (`ESC_STICK_OFF_MA`)
+   durch den Ausgang, im neuesten Messwert. Die Zeile neben START sagt, es
+   zuerst auszuschalten. START braucht außerdem ein Netzteil, das bekannt
+   aus ist: einen Messwert, nicht älter als 1000 ms (`ESC_STICK_STALE_MS`),
+   in dem das Netzteil selbst seinen Ausgang aus meldet, mit dem Strom
+   200 ms lang bei höchstens 20 mA. Kein Messwert, ein älterer oder ein
+   Netzteil, das nicht antwortet, lehnt START ab mit `kein frischer
+   Messwert meldet das Netzteil aus`.
 
 ## Auf dem Bildschirm
 
@@ -47,49 +55,85 @@ PROGRAMMER, dann ESC STICK:
 
 ![Geräteklasse](img/de/programmer.png)
 
-Die Liste enthält jedes Profil, die ausführbaren zuerst. Ein Profil, das der
+Die Liste hat zwei Ebenen.
+
+- **Hersteller.** Eine Zeile je Hersteller, alphabetisch ohne Rücksicht
+  auf Groß- und Kleinschreibung: sein Name, wie viele seiner Modelle laufen
+  von allen, die er führt (`10 VON 82 AUSFÜHRBAR`), und das rote Schild
+  HAND, wo ein Modell [Handgriffe](#handgriffe) hat. Ein Hersteller, von
+  dem kein Modell läuft, ist dunkel gezeichnet. Ein Tippen öffnet seine
+  Modelle.
+- **Modelle.** Eine Zeile je Modell dieses Herstellers, nach Strom, dann
+  nach höchster Eingangsspannung, dann nach Name; ein Modell ohne Angabe
+  von Strom oder Spannung kommt in diesem Schlüssel zuletzt. Eine Zeile
+  zeigt das Modell, seinen Strom und seine Spannung, seine Familie, das
+  Schild HAND und was das Profil seiner Familie ist (Punkte, ein- oder
+  zweistufig, KARTE für ein Profil von der SD-Karte (Secure Digital)) oder
+  warum es nicht läuft. Der Pfad lautet `ESC STICK > Kontronik`. ZURÜCK
+  führt zu den Herstellern auf der Seite, die es verließ.
+
+Ein Tippen auf ein Modell öffnet das Profil seiner Familie, mit dem Modell
+benannt: `ESC STICK > Kontronik > JAZZ 55 LV (JAZZ / MINIJAZZ)`. Das
+Netzteil nimmt die eigene niedrigste Zellenzahl des Modells, wo es eine
+nennt, sonst die niedrigste der Familie. Ein Modell, dessen Profil der
 Prüfstand nicht ausführen kann, nennt den Grund in seiner Zeile und öffnet
 nichts; ebenso eines, dessen Spannung über der Grenze von SUPPLY liegt.
-Reihenfolge und Anzahl folgen SPANNUNG und der Grenze, wenn sie sich
-ändern. Ein
-Profil von der SD-Karte (Secure Digital) trägt KARTE.
+Eines, dessen Profil Handgriffe hat, öffnet stattdessen diese, mit dem Grund für dieses Modell. Die Handgriffe, die Netzteilzeile der Seite, START und die Warnung beurteilen alle das geöffnete Modell, nicht das niedrigste der Familie. Zeilen und
+Zählungen folgen SPANNUNG und der Grenze, wenn sie sich ändern. Ein Profil
+von der Karte reiht sich bei den Modellen seines Herstellers ein; ein
+Hersteller von der Karte, den der Satz nicht hat, reiht sich alphabetisch
+bei den Herstellern ein. Jedes eingebaute Profil nennt seinen Hersteller;
+der Kartenleser lehnt eine Datei ohne ihn ab. Er lehnt auch eine Datei ab,
+die ihren Hersteller über 512 Modelle brächte, also führt ein Hersteller
+höchstens 512 Modelle.
 
-![Die Profile](img/de/programmer-stick.png)
+Die Zeile unter den Zeilen sagt, dass kein Profil geprüft ist, und die
+Zählung rechts davon zählt die Ebene: `1-9/20 Hersteller, 6 ausführbar` --
+die Hersteller mit einem laufenden Modell -- oder `1-9 von 82, 40
+ausführbar` für die Modelle eines Herstellers.
+
+![Die Hersteller](img/de/programmer-stick.png)
+
+![Die Modelle von Kontronik mit dem Schild HAND](img/de/programmer-stick-hand-list.png)
 
 ### Suche
 
-SUCHE neben ESC STICK filtert die Liste. Ein Tippen darauf dockt die
-Texttastatur rechts an, und die Zeilen werden links davon schmaler: der
-Hersteller, der gekürzte Name und ein Zeichen, ob das Profil ausführbar ist
-(ein gefüllter Punkt) oder nicht (ein Ring). Jede Taste filtert die Liste
-sofort, und die Liste springt auf ihre erste Zeile, sobald sich die Suche
-ändert.
+SUCHE in der Pfadzeile filtert die gezeigte Ebene. Ein Tippen darauf dockt
+die Texttastatur rechts an, und die Zeilen werden links daneben schmaler:
+der Hersteller oder das Modell, die gefundenen Modelle des Herstellers oder
+der Strom eines Modells, und ein Zeichen, ob es läuft (ein gefüllter Punkt)
+oder nicht (ein Ring); die Zählung steht unter den schmalen Zeilen. Jede
+Taste filtert sofort, und die Ebene geht zu ihrer ersten Zeile zurück,
+sobald sich die Suche ändert.
 
-- Ein Profil wird gefunden, wenn der Suchtext irgendwo in Hersteller und
-  Name steht, als ein Text gelesen ("Hobbywing Skywalker V2 15A-100A,
-  11-item menu"), oder in Hersteller und einem seiner Modelle ("Kontronik
-  JAZZ 55 LV").
+- Ein Modell wird gefunden, wenn der Suchtext irgendwo in seinem
+  Hersteller und dem Namen seiner Familie steht, als ein Text gelesen,
+  "Hobbywing Skywalker V2 15A-100A, 11-item menu", oder in seinem
+  Hersteller und seinem eigenen Namen, "Kontronik JAZZ 55 LV".
+- Ein Hersteller erscheint, wenn die Suche eines seiner Modelle findet;
+  seine Zeile zählt sie dann: `1 VON 82 GEFUNDEN, 1 AUSFÜHRBAR`. Kein
+  Hersteller öffnet sich von selbst, auch nicht als einziger gefundener.
 - Groß- und Kleinschreibung spielen keine Rolle: `KONTR*Jazz` findet
-  "Kontronik JAZZ / MINIJAZZ".
-- `*` steht für eine beliebige Folge von Zeichen, auch für keine. Die Taste
-  `*` sitzt dort, wo die Namenstastatur `_` hat. `sky*v2` findet die drei
-  Profile Skywalker V2; `kontr*jazz*55` findet das Jazz-Profil über sein
-  Modell JAZZ 55 LV.
-- Eine leere Suche zeigt jedes Profil. Die Suche fasst bis zu 16 Zeichen.
-- Die Kopfzeile zählt, was die Suche gefunden hat:
-  `1-3/3 gefunden, 2 ausführbar`. Findet sie nichts, sagt die Liste
-  `Kein Profil passt zur Suche.`
+  Kontronik und darin die Modelle von JAZZ und MINIJAZZ.
+- `*` steht für eine beliebige Folge von Zeichen, auch keine. Die Taste
+  `*` sitzt dort, wo die Namenstastatur `_` hat. `sky*v2` findet Hobbywing
+  und darin die 14 Skywalker-V2-Modelle; `*kontr*jazz*55*` findet
+  Kontronik und darin nur JAZZ 55 LV.
+- Eine leere Suche zeigt jeden Hersteller und jedes Modell. Die Suche
+  fasst bis zu 16 Zeichen und gilt auf beiden Ebenen.
+- Die Zählung sagt, was gefunden wurde: `1-1/1 Hersteller, 1 ausführbar`.
+  Ohne Treffer sagt die Liste `Kein Profil passt zur Suche.`
 
-OK schließt die Tastatur und behält die Suche, ABBRECHEN kehrt zu der Suche
+OK schließt die Tastatur und behält die Suche, ABBRECHEN geht zur Suche
 zurück, mit der die Tastatur geöffnet wurde, und CLR, dann OK leert sie.
-Eine Zeile, die bei offener Tastatur angetippt wird, öffnet ihr Profil, die
-Suche bleibt. Bei geschlossener Tastatur leert X im Feld die Suche. Die
-Suche bleibt über die Seite eines Profils und zurück und beim Verlassen des
-Bildschirms erhalten und ist nach einem Neustart leer.
+Eine Zeile, die bei offener Tastatur getippt wird, öffnet sich, die Suche
+bleibt. Bei geschlossener Tastatur leert X im Feld die Suche. Die Suche
+bleibt über beide Ebenen, die Seite eines Profils und zurück und beim
+Verlassen des Bildschirms erhalten und ist nach einem Neustart leer.
 
-![Eine Suche wird getippt](img/de/programmer-stick-find.png)
+![Eine Suche auf den Herstellern wird getippt](img/de/programmer-stick-find.png)
 
-![Eine Suche angewendet](img/de/programmer-stick-found.png)
+![Eine Suche angewendet, die Modelle von Hobbywing](img/de/programmer-stick-found.png)
 
 Die Groß- und Kleinschreibung wird nur für die Buchstaben A bis Z
 ausgeglichen. Ä, Ö und Ü in einem Profil von der Karte passen nur auf
@@ -113,7 +157,52 @@ Werte des gewählten Punkts und den Standardwert. START erscheint, sobald ein
 Wert gewählt ist und der Lauf starten kann; kann er es nicht, sagt die Zeile
 neben START, warum.
 
+Die Seite listet nur die Punkte des Modells, für das sie geöffnet wurde:
+ein Punkt mit `applies_to` steht bei den Modellen, die er nennt, und bei
+den anderen nicht. Zwei Punkte können sich an verschiedenen Modellen
+Nummer und Werte teilen -- Jetis Cutoff mode an sechs kleinen 3P-Modellen
+und Switching frequency an den übrigen, beide Punkt 3 --, und der ESC gibt
+nur den aus, den er hat; eine Änderung am anderen würde diesen speichern.
+START lehnt als letzte Prüfung eine Änderung an einem Punkt ab, den das
+Modell nicht hat (`3 Cutoff mode gibt es an diesem Modell nicht`). Eine
+Seite ohne gewähltes Modell, die nur ein Kartenprofil ohne Modelle öffnet,
+listet die Punkte, die jedes Modell hat.
+
 ![Zwei Werte gewählt](img/de/programmer-stick-items.png)
+
+### Die Einschaltstellung
+
+Ein Lauf schaltet den ESC mit dem Knüppel dort ein, von wo das Handbuch den
+Wert programmiert: beim `entry_throttle` des Werts, wo das Profil eines
+nennt, sonst beim Einstieg des Profils. Ein Kontronik-Car-Modus wird mit
+dem Knüppel in der Motor-Aus-Stellung in der Mitte programmiert, der
+Neutralstellung, die der Modus lernt; der Lauf schaltet ihn bei MID ein.
+Der Knüppel bewegt sich nur bei ausgeschaltetem Netzteil: vor dem ersten
+Einschalten, und zwischen zwei Einschaltungen erst, wenn das Netzteil
+selbst seinen Ausgang aus meldet und der Strom unten ist
+(`ESC_STICK_OFF_MA`, `ESC_STICK_OFF_SETTLE_MS`). Er bleibt dort 1000 ms
+(`ESC_STICK_SIGNAL_MS`), bevor das Netzteil einschaltet, wie bei jedem
+Einstieg.
+
+- Ein einstufiges Menü nimmt eine Änderung je Einschalten, und jedes
+  Einschalten nimmt die Stellung des Werts, den es speichern wird.
+- Ein zweistufiges Menü, oder eines mit mehreren Änderungen je Einschalten,
+  macht seine Änderungen in der Reihenfolge, in der der ESC sie ausgibt;
+  alle Änderungen eines Laufs teilen sich deshalb ein Einschalten. Ein Lauf,
+  dessen Änderungen verschiedene Stellungen brauchen, wird abgelehnt, mit
+  `Änderungen brauchen verschiedene Einschaltstellungen`, und einer, dessen
+  Änderungen verschiedene Einstiegszeiten brauchen -- was der Lauf wartet:
+  das `entry_hold_ms` des Werts oder das des Einstiegs, und nicht kürzer
+  als das längste Halten `at_power_up` --, mit
+  `Änderungen brauchen verschiedene Einstiegszeiten`; keiner wird
+  umsortiert. Kein Profil im Satz hat eine solche Mischung.
+- Wo das Profil keine Ruhestellung nennt, ruht der Knüppel in der
+  Einschaltstellung, und die Auswahlbewegung muss sich von ihr
+  unterscheiden.
+
+Die Warnung und die Karte des Laufs zeigen EINSCHALTEN BEI und die
+Stellung, wenn sie nicht MIN ist; die Warnung jede Stellung, die die
+Einschaltungen des Laufs nehmen.
 
 START öffnet eine Warnung über den ganzen Bildschirm mit dem Titel KEIN
 PROPELLER, MOTOR GESICHERT?. Sie sagt, was der Lauf tut: er versorgt den
@@ -160,6 +249,204 @@ Netzteils aus ist.
 
 ![Die Zeiteinstellungen](img/de/programmer-stick-timing.png)
 
+### Handgriffe
+
+Manche ESCs gehen nur in ihren Programmiermodus, wenn ein Mensch außer Gas
+und Versorgung etwas am ESC tut: vor dem Einschalten einen Jumper auf zwei
+Kontakte stecken und ihn nach den ersten Tönen abziehen, oder danach einen
+Taster am ESC drücken. Jeder Kontronik-ESC im Satz gehört dazu. Das Profil
+listet diese Schritte in `manual` ([ESC-Profile](EscProfiles-de.md)), jeden
+mit dem Zeitpunkt, an dem er fällig ist:
+
+| Fällig | Der Lauf |
+| --- | --- |
+| `before_power` | nennt ihn auf der Warnung: HALTEN ZUM STARTEN sagt, dass er erledigt ist. Ab dem zweiten Einschalten eines Laufs hält er vor jedem Einschalten an und fragt erneut |
+| `at_power_up` | hält vor jedem Einschalten mit ausgeschaltetem Netzteil an und fragt; ERLEDIGT schaltet das Netzteil ein, und der Lauf zählt das Halten herunter, das das Profil nennt |
+| `before_menu` | fragt, sobald der Einstieg seine Zeit hatte, mit versorgtem ESC und dem Knüppel in der Einschaltstellung. Ein Schritt mit `starts_menu` ist die Handlung, die das Menü startet, und der Lauf zählt die Pieptöne ab dem Moment, in dem er fragt (siehe unten); jeder andere wartet auf ERLEDIGT |
+| `during_menu` | kann den Zeitpunkt nicht kennen: das Profil läuft nicht, `Handgriff` |
+| `before_power_off` | hält nach der letzten Bewegung des Speicherns an, mit versorgtem ESC und dem Knüppel, wo das Speichern ihn ließ, und schaltet das Netzteil erst auf ERLEDIGT aus. Niemand berührt den ESC: der Bediener beobachtet, wie er den Wert bestätigt (Töne, LED) |
+| `after_programming` | zeigt ihn auf dem Ergebnis |
+
+Ein Profil mit Handgriffen zeigt im Kopf seiner Punktliste rot MANUELLER
+EINGRIFF NÖTIG. Ein Tippen öffnet die Schritte über dem ganzen Bildschirm:
+wann jeder fällig ist, was er ist und ob der Lauf danach fragt. Beim ersten
+Öffnen des Profils nach einem Start erscheinen sie von selbst; OK schließt
+sie.
+
+![Ein Profil mit Handgriffen](img/de/programmer-stick-hand.png)
+
+![Seine Handgriffe](img/de/programmer-stick-hand-info.png)
+
+Die Warnung vor einem Lauf nennt die Schritte vor dem Einschalten und sagt,
+wann der Lauf für weitere anhält. Sie nennt sie, und HALTEN ZUM STARTEN
+zählt, nur solange das Netzteil aus meldet: ein Messwert, nicht älter als
+1000 ms (`ESC_STICK_STALE_MS`), in dem das Netzteil selbst seinen Ausgang
+aus meldet, mit dem Strom 200 ms lang bei höchstens 20 mA. Bis dahin sagt
+sie, das Netzteil auszuschalten, und ein laufendes Halten endet, sobald das
+Netzteil nicht mehr aus meldet. Der Lauf fordert dann selbst das
+Ausschalten an, schaltet nichts ein und fragt nach keinem Schritt an einem
+stromlosen ESC, bis seine eigenen Messwerte dasselbe sagen; das Ergebnis
+und die Schritte nach einem Lauf sagen, den ESC nicht zu berühren, solange
+das Netzteil nicht aus meldet.
+
+![Die Warnung mit einem Schritt vor dem Einschalten](img/de/programmer-stick-hand-warning.png)
+
+Schritte, die nicht alle ganz auf die Warnung passen -- jeder auf zwei
+Zeilen umbrochen, über HALTEN ZUM STARTEN --, erscheinen nicht
+abgeschnitten: die Warnung zählt sie und bietet ALLE HANDGRIFFE neben
+HALTEN ZUM STARTEN an. HALTEN ZUM STARTEN zählt erst, wenn ALLE HANDGRIFFE
+über dieser Warnung geöffnet und mit OK geschlossen wurde; das Halten
+bestätigt so jeden Schritt, und eine neue Warnung fragt wieder danach.
+
+![Vier Schritte vor dem Einschalten, unter ALLE HANDGRIFFE zu lesen (ein Beispielprofil)](img/de/programmer-stick-hand-steps.png)
+
+Ein Schritt, nach dem der Lauf fragt, deckt die Seite ab: der Schritt, wo
+Netzteil und Knüppel stehen und wie lange der Lauf wartet. ERLEDIGT geht
+weiter; es ist die ersten 1000 ms dunkel (`ESC_STICK_HAND_MIN_MS`), damit
+ein Tippen für den Schritt davor nicht den nächsten bestätigt, und es wirkt
+im nächsten Frame, nachdem dieser STOP, das Scharfschalten, den Link und
+das Netzteil beurteilt hat. ABBRECHEN beendet den Lauf, ebenso STOP im Band.
+Kein ERLEDIGT innerhalb von 60 s (`ESC_STICK_HAND_WAIT_MS`) beendet den
+Lauf mit NICHT BESTÄTIGT. Während er wartet, hält der Lauf jede Regel, die er
+sonst hält: ein versorgtes Warten beobachtet das Netzteil und seine
+Messwerte, und jedes Ende setzt Throttle auf MIN, schaltet das Netzteil aus
+und entschärft.
+
+![Der Lauf wartet auf den Jumper](img/de/programmer-stick-hand-prompt.png)
+
+**Bevor das Netzteil ausschaltet.** Ein Kontronik-ESC bestätigt einen
+gespeicherten Modus, indem er ihn als Töne wiederholt (die Kontrollausgabe
+der Handbücher), Modus 7 als sieben, und die Handbücher stecken den Akku
+erst danach ab. SPEICHERN (vorgegeben 2000 ms) kann vor einer langen
+Wiederholung enden. Jedes Kontronik-Profil, das läuft, und die fünf
+unten tragen einen Schritt `before_power_off`: nach der letzten Bewegung
+des Speicherns hält der Lauf den ESC versorgt, den Knüppel, wo das
+Speichern ihn ließ, und bittet den Bediener, den ESC zu beobachten und
+ERLEDIGT zu tippen, sobald die Bestätigung zu Ende ist; ERLEDIGT schaltet
+das Netzteil aus, und der Lauf endet oder schaltet aus und ein wie jeder
+andere. Die Abfrage sagt, dass der ESC versorgt ist und nicht berührt
+werden darf. Kein ERLEDIGT innerhalb von 60 s beendet den Lauf mit NICHT
+BESTÄTIGT. Dieses Ende, und jedes andere ab der Auswahl des Werts --
+während der ESC speichert (SPEICHERN) oder während der Schritt gefragt
+ist --, schaltet das Netzteil während des Speicherns oder der Bestätigung
+aus, und das Ergebnis sagt, dass der Modus womöglich nicht gespeichert
+ist, und markiert die Änderung UNSICHER statt AUSGEFÜHRT: die Zählung der
+ausgeführten Auswahlen lässt sie aus, und liegt sie hinter der vierten
+Änderung, zählt die letzte Zeile sie (`UND 2 WEITERE, 1 DAVON
+AUSGEFÜHRT, 1 UNSICHER`). Dasselbe gilt
+für jedes Profil, dessen Wert durch Bewegungen nach der Auswahl
+gespeichert wird (`scheme.store`, `after_select`), mit oder ohne einen
+solchen Schritt, bis die letzte dieser Bewegungen gemacht ist.
+
+Ein KOBY, JIVE Pro, KOLIBRI, KONTROL-X / KOLIBRI-X oder KOSMIK, der vor
+dem Ende dieser Bestätigung seine Versorgung verliert, wertet die
+Programmierung als abgebrochen und sperrt sich: 8-fach Blinken an einem
+KONTROL-X (Kontronik_Kontrol-X_Kolibri-X.pdf S. 4, S. 11), 9-fach an KOBY,
+JIVE Pro oder KOLIBRI, 10-fach an KOSMIK. Ihr Schritt kennzeichnet das
+(`"locks": true`), und dort sagen Abfrage und Ergebnis, dass der ESC
+gesperrt sein kann und geprüft werden muss -- bei jedem Schritt vor dem
+Ausschalten eines solchen Profils, bis alle bestätigt sind, nicht nur
+bei dem, der es kennzeichnet. Von den fünf läuft
+KONTROL-X; die anderen zeigen den Schritt in ihrer Liste der Handgriffe.
+Die übrigen Kontronik-Handbücher nennen keine Sperre für ein Ausschalten
+während der Wiederholung.
+
+![Der Lauf wartet auf die Bestätigung des ESCs](img/de/programmer-stick-hand-end.png)
+
+![Kein ERLEDIGT: der ESC kann gesperrt sein](img/de/programmer-stick-hand-locked.png)
+
+**Die Handlung, die das Menü startet.** Ein Profil kennzeichnet den
+Schritt, dessen Handlung die Modusfolge startet, mit `"starts_menu": true`;
+ein Schritt ohne das wartet auf ERLEDIGT, wo er auch steht. 16
+Kontronik-Profile kennzeichnen ihren letzten Schritt `before_menu`: der ESC
+beantwortet den
+abgezogenen Jumper oder den gedrückten Taster mit einem Dreiklang und gibt
+danach Modus 1, 2, 3 ... aus (zum Beispiel Kontronik_Jazz.pdf S. 6,
+"Jumper abziehen", gefolgt von der Tonfolge und der Folge;
+Kontronik_Pix1000_3000.pdf S. 4 Schritte 5 und 6, "Taster drücken",
+gefolgt von den absteigenden Tönen und der Folge; KOSMIK S. 8 Schritt 6).
+CYBER-Line und HELI-Line, deren Jumper beim Anstecken des Akkus abgezogen
+wird und die etwa 5 s auf ein Signal warten, kennzeichnen ihn nicht. Die
+Hand des Bedieners ist dann am ESC, nicht am Bildschirm. Deshalb zählt
+der Lauf die Pieptöne ab dem Moment, in dem er nach diesem Schritt fragt,
+mit dem Knüppel dort, wo das Einschalten ihn ließ:
+
+- Der Schritt gilt als erledigt mit der ersten Gruppe, die die
+  Reihenfolgeregel in Folge mit der davor findet -- das Menü läuft --,
+  oder mit ERLEDIGT, was zuerst kommt. Der Dreiklang des ESC ist eine
+  Gruppe von 3 und nicht in Folge mit Modus 1, er zählt also nicht.
+- Die Regeln der ruhigen Leitung und der Reihenfolge gelten ab der Frage:
+  keine Gruppe zählt vor GROUP GAP Ruhe, und auf einen Wert wird erst mit
+  der dritten Gruppe in Folge reagiert. Auf eine angeschnittene erste
+  Gruppe wird nie reagiert.
+- SILENCE und ZEITLIMIT laufen ab dem Moment, in dem der Schritt erledigt
+  ist; bis dahin schweigt der ESC planmäßig. Kein erledigter Schritt
+  innerhalb von 60 s beendet den Lauf mit NICHT BESTÄTIGT.
+- Der Knüppel bewegt sich nicht, solange nach dem Schritt gefragt wird. Ein
+  Profil, dessen Menü in einer anderen Stellung als der Einschaltstellung
+  ruht -- `scheme.listen` abseits des Einstiegs, oder ein Wert, der
+  abseits von `scheme.listen` eingeschaltet wird --, bräuchte eine Bewegung
+  unter der Hand des Bedieners an einem versorgten ESC, und erst auf
+  ERLEDIGT zu warten, verlöre die Gruppen, die die Handlung startet.
+  Generator und Kartenleser lehnen eine solche Datei ab
+  (`manual[0].starts_menu: the menu rests elsewhere (scheme.listen)`), und
+  der Ablauf lehnt ein anders gebautes Profil als `Menüstart, Ruhe
+  anderswo` ab.
+
+Um einen Schritt an einem versorgten ESC wird nur mit dem Knüppel in der
+Motor-Aus-Stellung gebeten: MIN, oder MID, wo das `entry_throttle` eines
+Werts sie nennt, die Motor-Aus-Stellung des Handbuchs in der Mitte. Ein
+Profil, dessen Schritt `at_power_up` oder `before_menu` mit einem Einstieg
+auf MID oder MAX kommt, läuft nicht, `Handgriff`, und ein Wert, den es bei
+MAX einschalten würde, wird ebenso abgelehnt. Die 60 s sind die Zeit des
+Bedieners, den ESC zu erreichen, nicht die des ESCs. Wie lange ein ESC auf
+seinen Einstiegs-Jumper oder -Taster wartet, nennen nur die Handbücher von
+HELI JIVE und JIVE Pro: 10 s nach dem Einschalten, und keines der beiden
+Profile läuft. Spätere Schritte eines Ablaufs haben eigene Fenster, und
+auch von diesen Profilen läuft keines: OPTO, BEC und OPTOMAX nehmen den
+Starttaster innerhalb von ca. 5 s nach dem Doppel-Signal
+(Kontronik_Opto.pdf S. 3, Kontronik_BEC.pdf, Kontronik_Optomax.pdf), 3P
+den Jumper abgezogen und wieder gesteckt innerhalb von ca. 5 s nach dem
+Ende der zweiten Phase (Kontronik_3P_de.pdf), und CYBER-Line den Jumper
+wieder gesteckt während ca. 30 s Signalen.
+
+Das Ergebnis eines Laufs nennt die Schritte `after_programming` des
+Profils in zwei Zeilen unter den Änderungen; brauchen sie mehr, sagt es
+stattdessen, wie viele es sind. Endet ein Lauf eines Profils mit solchen
+Schritten, öffnen sich seine Schritte von selbst, alle, auch wenn ein
+Tippen im selben Frame das Ergebnis schon geschlossen hat,
+und MANUELLER EINGRIFF NÖTIG im Kopf des Ergebnisses öffnet sie wieder.
+
+![Vier Handgriffe nach dem Programmieren, über dem Ergebnis (ein Beispielprofil)](img/de/programmer-stick-hand-after.png)
+
+Nach einem abgebrochenen Lauf eines Profils mit einem Schritt vor
+oder beim Einschalten sagt es, den ESC zu prüfen: ein für den Lauf
+gesteckter Jumper kann noch stecken.
+
+24 Profile haben Handgriffe: die 22 Kontronik-Familien, `turnigy-aquastar`
+und `greatplanes-electrifly-c-series`. 10 laufen, jedes auch mit seinem
+Schritt, bevor das Netzteil ausschaltet:
+
+| Profil | Schritte | Werte, bei MID eingeschaltet |
+| --- | --- | --- |
+| `kontronik-3sl` | Jumper vor dem Einschalten auf, nach 2 s oder dem Dreiklang ab | Modus 6 |
+| `kontronik-beat` | Jumper auf 2 beliebige der 3 Kontakte, ab nach 2 s oder den Tönen | Modi 6, 8 |
+| `kontronik-beat-car` | wie BEAT | Modi 2 bis 6, 8 |
+| `kontronik-beat-fai` | wie BEAT | keine |
+| `kontronik-jazz` | JAZZ: Jumper wie BEAT; MINIJAZZ: Taster nach 2 s oder den Tönen | Modi 6, 8 |
+| `kontronik-kontrol-x` | Taster unter dem Schrumpfschlauch nach 2 s oder den Tönen; der Schritt vor dem Ausschalten kennzeichnet die Sperre | Modus 3 |
+| `kontronik-pix` | Taster mit der Aufschrift Taster nach 2 s oder den Tönen | keine |
+| `kontronik-smile` | Taster drücken und loslassen nach 2 s oder den Tönen | Modus 6 |
+| `kontronik-star-line` | Jumper vor dem Einschalten auf, nach 5 s oder den Tönen ab | Modus 6 |
+| `kontronik-sun-plus` | Taster nach den Tönen: 2 s, 5 s bei Modi 4 bis 6 | Modus 6 |
+
+Die anderen 14 zeigen ihre Schritte und nennen den Grund in ihrer Zeile:
+`Handgriff` bei `kontronik-3p`, `kontronik-cyber-line`,
+`kontronik-heli-line`, `kontronik-mini20` und `kontronik-optomax`, deren
+Jumper oder Brücke während des Menüs bewegt wird, und bei
+`turnigy-aquastar`, dessen Schalter bei Vollgas eingeschaltet wird; bei den
+übrigen der Grund ihres Menüs.
+
 ### Die Signalsäule
 
 Eine Signalsäule rechts auf der Karte des Laufs und des Ergebnisses zeigt
@@ -187,14 +474,17 @@ gezeichnet.
 
 | Phase | Gas | Netzteil | Endet |
 | --- | --- | --- | --- |
-| ARMING | MIN | aus | wenn der Prüfstand scharf meldet; nach 3000 ms: NICHT ARMED |
-| SIGNAL | Einstiegsstellung | aus | nach 1000 ms, damit der ESC das Signal beim Start sieht |
+| ARMING | MIN | aus, angefordert aus | wenn der Prüfstand scharf meldet; nach 3000 ms: NICHT ARMED |
+| SIGNAL | MIN, dann Einschaltstellung | aus | der Knüppel bleibt auf MIN, bis das Netzteil in Messwerten seit der Ausschaltanforderung des Laufs aus meldet (sein eigener Zustand aus, der Strom 200 ms lang bei höchstens 20 mA), geht dann in die Einschaltstellung und bleibt dort 1000 ms, damit der ESC das Signal beim Start sieht; nicht innerhalb von 3000 ms aus: NETZTEIL BLEIBT EIN. Hat sich der Knüppel bewegt, beendet ein Messwert mit Ausgang an oder Strom oben den Lauf sofort mit NETZTEIL BLEIBT EIN, 1000 ms ohne Messwert mit KEINE MESSWERTE |
+| HANDGRIFF | Einschaltstellung | aus, gemeldet aus | vor einem Einschalten mit fälligem Schritt, erst gefragt, wenn das Netzteil aus meldet: ERLEDIGT, dann EINSCHALTEN; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT; ein Messwert mit Ausgang an oder Strom oben: sofort NETZTEIL BLEIBT EIN; 1000 ms kein Messwert: KEINE MESSWERTE |
 | EINSCHALTEN | Einstiegsstellung | an | wenn ein Messwert den Ausgang an meldet; nach 3000 ms: AUSGANG NICHT GEMELDET |
-| EINSTIEG | Einstiegsstellung | an | EINSTIEG nach dem Einschalten: das `hold_ms` des Profils, wo es eines nennt |
+| EINSTIEG | Einstiegsstellung | an | EINSTIEG nach dem Einschalten: das `entry_hold_ms` des Werts, sonst das `hold_ms` des Profils, wo es eines nennt, und nicht kürzer als das längste `hold_ms` eines Schritts `at_power_up` |
+| HANDGRIFF, VERSORGT | Einschaltstellung | an | nach EINSTIEG mit einem fälligen Schritt `before_menu`, der nicht der Start des Menüs ist: ERLEDIGT, dann der nächste Schritt oder das Menü; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT. Nach dem letzten Schritt wird aus PUNKTE oder WERTE gefragt, schon zählend |
+| WARTEN AUF DEN ESC | wo es speicherte | an | nach SPEICHERN mit einem fälligen Schritt `before_power_off`: ERLEDIGT, dann der nächste solche Schritt oder das Netzteil aus (AUS UND EIN oder AUSSCHALTEN); kein ERLEDIGT in 60 s: NICHT BESTÄTIGT, und das Ergebnis sagt, dass der ESC gesperrt sein kann |
 | PUNKTE | Ruhestellung | an | eine Punktgruppe in Reihenfolge nennt einen gewünschten Punkt: die Auswahlbewegung |
 | WERTE | wo die letzte Bewegung es ließ | an | eine Wertgruppe in Reihenfolge nennt den gewünschten Wert: die Wertbewegung |
-| SPEICHERN | die Wertbewegung, dann die Speicherbewegung | an | nach SPEICHERN, und nach SPEICHERN noch einmal, wo das Profil eine Speicherbewegung hat |
-| AUS UND EIN | wo es speicherte, dann Einstiegsstellung | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten, dann AUSSCHALTZEIT (mindestens 1000 ms) in der Einstiegsstellung, dann wieder EINSCHALTEN; nicht innerhalb von 3000 ms aus: NETZTEIL BLEIBT EIN |
+| SPEICHERN | die Wertbewegung, dann die Speicherbewegung, dann die eigenen Bewegungen des Werts (`after_select`) | an | nach SPEICHERN, und nach SPEICHERN noch einmal für jede Bewegung: die Speicherbewegung des Profils, dann jede des Werts |
+| AUS UND EIN | wo es speicherte, dann Einstiegsstellung | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten, dann AUSSCHALTZEIT (mindestens 1000 ms) in der Einstiegsstellung, dann wieder EINSCHALTEN; nicht innerhalb von 3000 ms aus: NETZTEIL BLEIBT EIN. Hat sich der Knüppel bewegt, beendet ein Messwert mit Ausgang an oder Strom oben den Lauf sofort mit NETZTEIL BLEIBT EIN, 1000 ms ohne Messwert mit KEINE MESSWERTE; das nächste Einschalten oder ein Schritt davor braucht einen Messwert, nicht älter als 1000 ms |
 | AUSSCHALTEN | wo es speicherte | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten; nicht innerhalb von 3000 ms: NETZTEIL BLEIBT EIN |
 | FERTIG | MIN | aus | entschärft |
 | ABGEBROCHEN | MIN | aus | entschärft, alles in einem Schritt |
@@ -304,7 +594,9 @@ oder GRUPPENPAUSE plus das Kürzere von PIEPTON MIN und PAUSE MIN mindestens das
 
 ## Das Netzteil
 
-SPANNUNG 0 nimmt das niedrigste `cells_min` unter den Modellen des Profils,
+SPANNUNG 0 nimmt das `cells_min` des aus der Liste geöffneten Modells, wo
+es eines nennt, sonst das niedrigste `cells_min` unter den Modellen des
+Profils,
 mit 3,8 V je LiPo-Zelle (Lithium-Polymer) oder 1,2 V je NiMH-Zelle
 (Nickel-Metallhydrid): über der Abschaltung dieses Modells und unter dem
 Maximum jedes Modells. Ein Profil, dessen Modelle keine Zellenzahl nennen,
@@ -313,13 +605,52 @@ unter dem Minimum des Netzteils, und eine Strombegrenzung über der Grenze
 von SUPPLY, werden abgelehnt. Die Sollwerte des Laufs werden die Sollwerte
 des Bildschirms SUPPLY.
 
+Auch die eigenen Grenzen des Modells halten die Sollwerte, in seiner
+Zeile, auf seiner Seite und bei RUN, der letzten Prüfung, bevor der Lauf
+scharf schaltet:
+
+| Sollwert | Abgelehnt, wenn | Die Zeile sagt | RUN sagt |
+| --- | --- | --- | --- |
+| SPANNUNG, oder die der Zellenzahl | über dem `v_max_mv` des Modells | `20.0 V, ESC bis 8.4 V` | `SPANNUNG 20.0 V liegt über den 8.4 V des ESC` |
+| SPANNUNG, oder die der Zellenzahl | unter dem `v_min_mv` des Modells, wo genannt | `11.9 V, ESC ab 12.0 V` | `SPANNUNG 11.9 V liegt unter den 12.0 V des ESC` |
+| STROMBEGRENZUNG | über dem `current_a` des Modells, wo genannt | `2.0 A, ESC bis 1 A` | `STROMBEGRENZUNG 2.0 A liegt über den 1 A des ESC` |
+
+Ein Modell, das kein `v_max_mv` nennt, läuft, mit einer Warnung an Stelle
+der Zusammenfassung seiner Zeile und als Hinweis neben START, in der
+Warnfarbe:
+
+| Sollwert | Die Zeile sagt | Der Hinweis sagt |
+| --- | --- | --- |
+| SPANNUNG von Hand | `ESC-Grenze unbekannt` | `SPANNUNG 7.4 V: ESC-Grenze unbekannt, prüfen` |
+| SPANNUNG 0, das Modell nennt keine Zellenzahl: die niedrigste der Familie steht dafür | `ESC-Grenze unbekannt` | `7.6 V nach Zellenzahl der Familie: Grenze unbekannt` |
+
+SPANNUNG 0 an einem Modell, das seine Zellenzahl, aber kein `v_max_mv`
+nennt, läuft mit dieser Zellenzahl ohne Warnung: der eigenen Angabe der
+Daten. Ein genanntes `v_min_mv` oder `current_a` gilt, ob `v_max_mv`
+genannt ist oder nicht. Auf der
+Seite der Familie ohne gewähltes Modell ist die Grenze das niedrigste
+`v_max_mv` ihrer Modelle, unbekannt, wenn eines keines nennt, und die
+niedrigste Eingangsspannung das höchste `v_min_mv`. STROMBEGRENZUNG geht
+höchstens bis 3.0 A; jedes Modell im Satz, das einen Strom nennt, ist für
+4 A oder mehr ausgelegt, also trifft diese Regel nur ein Kartenprofil.
+
 ## Welche Profile laufen
 
-14 der 72 Profile sind von einer Art, die der Ablauf ausführt: 13
-zweistufige und 1 einstufiges. Mit den 20 V des PD mini und den
-vorgegebenen Grenzen öffnet die Liste 13 davon:
-hobbywing-skywalker-v2-hv-opto braucht 22,8 V. Ein Profil läuft, wenn es
-`"automatable": "full"` ist, vor dem Einschalten betreten wird, mit `count`
+24 der 72 Profile sind von einer Art, die der Ablauf ausführt: 13
+zweistufige und 11 einstufige. Mit den 20 V des PD mini und den
+vorgegebenen Grenzen öffnet die Liste 23 davon:
+hobbywing-skywalker-v2-hv-opto braucht 22,8 V. Auch 4 Modellzeilen von
+Familien, die sich öffnen, werden bei 20 V abgelehnt, jede mit 22,8 V:
+FLYFUN 130A und 160A HV OPTO V5 sowie Gecko 120A und 150A OPTO HV. 4
+Zeilen öffnen mit der Warnung zur Grenze (siehe [Das
+Netzteil](#das-netzteil)): das eine Modell von dualsky-xcontroller und von
+kontronik-beat-car, die weder Zellenzahl noch Spannungsgrenze nennen und
+deshalb SPANNUNG brauchen, und KOLIBRI-X 60 LV und 90 LV von
+kontronik-kontrol-x, die mit der niedrigsten Zellenzahl der Familie
+laufen. Ein Profil läuft, wenn es
+`"automatable": "full"` ist, oder `"assisted"` mit Handgriffen, auf die der
+Lauf warten kann (siehe [Handgriffe](#handgriffe)), vor dem Einschalten
+betreten wird, mit `count`
 oder `short_long` zählt und eine Auswahlbewegung hat. Eine Ruhestellung
 außer der Einstiegsstellung braucht das `hold_ms` des Profils: die Bewegung
 am Ende eines Einstiegs unbekannter Länge kann in einer anderen Stufe davon
@@ -335,7 +666,8 @@ ruhte.
 
 | Die Zeile sagt | Warum |
 | --- | --- |
-| braucht eine Person am ESC | `automatable` ist `assisted` |
+| braucht eine Person am ESC | `automatable` ist `assisted`, und das Profil nennt keinen Handgriff, nach dem der Lauf fragen könnte: ein Mensch liest eine LED oder steckt eine JetiBox an |
+| Handgriff | ein Handgriff während des Menüs, oder einer an einem versorgten ESC mit dem Einstieg auf MID oder MAX |
 | kein nutzbares Verfahren | `automatable` ist `none` |
 | Einstieg nach Einschalten | `scheme.entry.when` ist `after_power_on` |
 | Melodie-Menü, Ja/Nein-Menü, Stickpositions-Menü, Menü eigener Art | `scheme.type` |
@@ -347,9 +679,10 @@ ruhte.
 | Werte wiederholen sich | einstufig, eine Wertnummer in zwei Punkten |
 | Auswahl = Ruhestellung | die Auswahlbewegung ist die Ruhestellung: keine Bewegung zu machen |
 | Wertbewegung = Auswahl | zweistufig, `value_select` gleich `select` |
-| Ruhe ohne Einstiegszeit | `scheme.listen` weicht von der Einstiegsstellung ab und `hold_ms` ist null: die YGE-Profile |
+| Ruhe ohne Einstiegszeit | `scheme.listen` weicht von der Einschaltstellung ab und keine Zeit ist genannt: `hold_ms` ist null, der Wert hat kein `entry_hold_ms` und kein Schritt `at_power_up` hat ein `hold_ms`: die YGE-Profile. Ein Profil, dessen Werte ein eigenes `entry_hold_ms` nennen, wird je Änderung beurteilt: eine ohne Zeit wird abgelehnt, die anderen laufen |
 | Speichern, zweistufig | zweistufig mit `scheme.store` |
 | Speichern = Auswahl | einstufig, `scheme.store` gleich `select` |
+| Menüstart, Ruhe anderswo | ein Schritt mit `starts_menu`, und das Menü ruht abseits der Einschaltstellung: `scheme.listen` abseits des Einstiegs, oder ein Wert, der abseits davon eingeschaltet wird |
 | 22.8 V, Obergrenze 21.0 V | die Spannung (SPANNUNG, oder die Zellenzahl des Profils) liegt über der Grenze von SUPPLY |
 
 Ein auf der SD-Karte korrigiertes Profil steht mit seiner Korrektur in der
@@ -370,11 +703,12 @@ Liste.
 | MESSRATE | 3 späte Messwerte hintereinander | an |
 | NICHT ARMED | nicht scharf innerhalb von 3000 ms | an |
 | AUSGANG NICHT GEMELDET | der Ausgang nicht innerhalb von 3000 ms als an gemeldet | an |
-| NETZTEIL BLEIBT EIN | das Netzteil meldet den Ausgang nicht innerhalb von 3000 ms nach der Anforderung des Laufs aus, mit dem Strom unten | an |
+| NETZTEIL BLEIBT EIN | das Netzteil meldet den Ausgang nicht innerhalb von 3000 ms nach der Anforderung des Laufs aus, mit dem Strom unten -- beim Start, vor einem Einschalten oder am Ende --, oder ein Messwert mit Ausgang an oder Strom oben, während nach einem Schritt an einem stromlosen ESC gefragt wird | an |
 | TOUCH VERLOREN | Touch-Ereignisse verloren, solange das ARM des Laufs noch nicht genommen oder der Prüfstand noch nicht scharf war | an |
 | KEINE PIEPTÖNE | STILLE lang kein Piepton | an |
 | STROM BLEIBT HOCH | ein Puls länger als zweimal LANG MAX | an |
 | ZEITLIMIT | innerhalb von ZEITLIMIT auf keine gewünschte Gruppe reagiert | an |
+| NICHT BESTÄTIGT | kein ERLEDIGT für einen Handgriff innerhalb von 60 s | an |
 | ABGEBROCHEN | ABBRECHEN | aus |
 | SEITE VERLASSEN | der Bildschirm wurde verlassen | aus |
 
@@ -430,7 +764,11 @@ folgt: Einschalten in der Einstiegsstellung betritt das Menü nach dem
 ausgedacht. Wo das Profil eine Speicherbewegung nennt, wird eine Auswahl
 erst behalten, wenn der Knüppel sie macht. Ein Punkt mit dem Schlüssel
 `exit` verlässt das Menü, wenn er gewählt wird, und einer mit `reset` löscht,
-was gespeichert war. Die Messwerte des Modells kommen alle 50 ms.
+was gespeichert war. Die Messwerte des Modells kommen alle 50 ms. Das Modell
+des Panels bildet keinen Jumper und keinen Taster nach: es betritt sein
+Menü nach `hold_ms`. Das der Host-Suite tut es (`wait_hand`): das Menü
+wartet auf die Handlung, beantwortet sie mit drei Pieptönen und beginnt die
+Folge 1500 ms später.
 
 Die Host-Suite (`test_esc_stick`) lässt den Ablauf von Ende zu Ende gegen
 die Simulation laufen: zwei- und einstufige Menüs, wiederholte Gruppen, eine
@@ -473,6 +811,49 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   auf andere Endpunkte kalibriert ist, liest sie womöglich anders.
 - Nur ein Netzteil: das PD mini, höchstens 20 V. ESCs, die mehr brauchen,
   brauchen eine externe Versorgung, die der Prüfstand nicht schaltet.
+- Die Handgriffe sind die der Handbücher und unerprobt. Ob ein Kontronik-ESC
+  ohne Grenze auf seinen Einstiegs-Jumper oder -Taster wartet und was er
+  tut, wenn das Abziehen spät kommt, steht nicht fest, außer bei HELI JIVE
+  und JIVE Pro (10 s), die nicht laufen. Die späteren Fenster von OPTO,
+  BEC, OPTOMAX, 3P (ca. 5 s) und CYBER-Line (ca. 30 s) gehören zu
+  Profilen, die nicht laufen.
+- Ein KOBY, JIVE Pro, KOLIBRI, KONTROL-X / KOLIBRI-X oder KOSMIK, dessen
+  Netzteil vor dem Ende seiner Modusbestätigung ausschaltet, sperrt sich
+  (8- bis 10-fach Blinken, je nach Familie). Der Lauf schaltet das Netzteil
+  vor ERLEDIGT aus bei NICHT BESTÄTIGT (kein ERLEDIGT innerhalb von 60 s),
+  STOP, ABBRECHEN, einem Entschärfen, einem verlorenen Link und jeder
+  Netzteilregel, und sagt dann, dass der ESC gesperrt sein kann. Der
+  Prüfstand sieht weder die Bestätigung noch die Sperre; ERLEDIGT ist das
+  Wort des Bedieners, dass die Bestätigung zu Ende ist.
+- Welche Werte ein Kontronik-ESC aus der Mitte programmiert, ist den
+  Handbüchern entnommen. Für JAZZ-Modi 6 und 8, KONTROL-X-Modus 3 und
+  SUN-PLUS-Modus 6 nennt das Handbuch die Stellung nicht, und die Werte
+  werden bei MID eingeschaltet, als wäre es die Mitte. SUN-PLUS-Modi 2, 3,
+  5 und 9 beginnen in der Neutralstellung des Handbuchs, die sein
+  englischer Text für Modus 4 hinten verortet ("neutral position (back
+  position)", Kontronik_Sun_Plus.pdf S. 12) und die Modus 5 an einem
+  Zwei-Stellungs-Schalter einstellt (S. 13); sie werden nach dieser Lesart
+  bei MIN eingeschaltet. Die Zusatzmodi (7, 9)
+  werden von hinten programmiert; ob sie an einem ESC im Car-Modus den
+  Knüppelweg neu speichern, steht nicht fest.
+- Bei einer Modusliste mit Lücke wird auf die Nummern nach der Lücke und
+  auf die niedrigste nie reagiert, weil die Reihenfolgeregel eine
+  übersprungene Nummer als verpasste Gruppe liest: PIX-Modi 7, 9 und 1 (die
+  Liste ist 1, 2, 3, 7, 9), Smile-Modi 9 und 1, SUN-PLUS-Modi 9 und 1. Der
+  Lauf endet mit ZEITLIMIT. Ob diese ESCs die nicht genutzten Zahlen
+  ausgeben, steht nicht fest.
+- Die Bewegungen eines Werts nach seiner Auswahl (`after_select`: PIX
+  Modus 2, die Kontronik-Car-Modi, KONTROL-X Modus 3) folgen jeweils
+  SPEICHERN nach der vorigen. Die Handbücher takten sie mit den
+  Antworttönen des ESC, die der Lauf nicht dekodiert; SPEICHERN (vorgegeben
+  2000 ms) steht für sie, nicht gemessen. Die wahlfreie eigene
+  Motor-Aus-Stellung der Segelflugmodi wird nicht angefahren.
+- Ein Schalter am ESC in der Einschaltfolge -- SeaKing V3 mit Schalter,
+  Trackstar 60A V2, der BEC-Schalter der Hacker-X- und Master-Reihe, der
+  Empfängerschalter des Jeti Spin -- bleibt eingeschaltet, und das Netzteil
+  steht für ihn. Die Handbücher schalten ihn nach dem Anstecken des Akkus;
+  ob das Einschalten des Netzteils das Menü betritt wie der Schalter, ist
+  nicht gemessen.
 - Kein Lauf mit einem Motor am ESC anstelle des Lastwiderstands. Ob ein
   Motor während des Menüs anläuft und wie seine Wicklungen die Pieptöne im
   Strom formen, ist nicht gemessen.
