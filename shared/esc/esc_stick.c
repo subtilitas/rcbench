@@ -189,7 +189,8 @@ esc_stick_kind_t esc_stick_kind(const esc_profile_t *p, const char **why)
      * profile does not give, can land in another stage of the entry -- in
      * YGE's, a stick teach -- so it is not guessed.
      */
-    if (rest != p->entry_throttle && p->entry_hold_ms == 0u) {
+    if (rest != p->entry_throttle && p->entry_hold_ms == 0u
+        && esc_stick_change_entry_ms(p, NULL, NULL) == 0u) {
         return refuse(why, "rest move, no entry time");
     }
     if (p->value_select_throttle != ESC_THR_NONE) {
@@ -313,8 +314,9 @@ static bool hand_powered(const esc_profile_t *p)
  *   - A power-up's entry time is what the run waits
  *     (esc_stick_change_entry_ms()): its value's entry_hold_ms where the
  *     manual gives one, else the timing's entry, and no less than the
- *     longest at_power_up hold; the changes a power-up shares share one.  A move to a named rest needs a time the profile
- *     or the value states.
+ *     longest at_power_up hold; the changes a power-up shares share one.
+ *     A move to a named rest needs a time the profile, the value or an
+ *     at_power_up step's hold states.
  *   - A hand at a powered ESC with the stick at MAX is not asked for.  MID
  *     is, where the value names it: the manual's motor-off in the middle.
  */
@@ -354,9 +356,11 @@ static const char *entry_refused(const esc_profile_t *p,
     }
     const esc_throttle_t rest = (p->listen_throttle != ESC_THR_NONE)
                                     ? p->listen_throttle : from;
+    /* A time the profile states: its entry's, or the one the run waits
+     * for this change without the timing's default -- the value's own,
+     * and an at_power_up step's hold. */
     const bool timed = p->entry_hold_ms != 0u
-                       || p->items[ch[i].item].values[ch[i].value]
-                              .entry_hold_ms != 0u;
+                       || esc_stick_change_entry_ms(p, &ch[i], NULL) != 0u;
     if (rest != from && !timed) {
         return "rest move, no entry time";
     }

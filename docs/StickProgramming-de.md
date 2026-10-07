@@ -608,7 +608,7 @@ ruhte.
 | Werte wiederholen sich | einstufig, eine Wertnummer in zwei Punkten |
 | Auswahl = Ruhestellung | die Auswahlbewegung ist die Ruhestellung: keine Bewegung zu machen |
 | Wertbewegung = Auswahl | zweistufig, `value_select` gleich `select` |
-| Ruhe ohne Einstiegszeit | `scheme.listen` weicht von der Einstiegsstellung ab und `hold_ms` ist null: die YGE-Profile |
+| Ruhe ohne Einstiegszeit | `scheme.listen` weicht von der Einschaltstellung ab und keine Zeit ist genannt: `hold_ms` ist null, der Wert hat kein `entry_hold_ms` und kein Schritt `at_power_up` hat ein `hold_ms`: die YGE-Profile |
 | Speichern, zweistufig | zweistufig mit `scheme.store` |
 | Speichern = Auswahl | einstufig, `scheme.store` gleich `select` |
 | 22.8 V, Obergrenze 21.0 V | die Spannung (SPANNUNG, oder die Zellenzahl des Profils) liegt über der Grenze von SUPPLY |

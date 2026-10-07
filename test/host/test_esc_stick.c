@@ -2399,6 +2399,29 @@ TEST_CASE(a_power_up_position_that_cannot_work_is_refused)
     jazz.select_throttle = ESC_THR_MAX;
     CHECK(!esc_stick_check(&jazz, m, 1, &r.t, &why));
     CHECK_STR_EQ(why, "rest move, no entry time");
+    /* An at_power_up step's hold is a time the profile states: the run
+     * waits it (esc_stick_change_entry_ms()), so the move to the rest is
+     * timed and the change runs.  Entry MIN, the value at MID, the rest at
+     * MIN, the hold the only time given. */
+    static const esc_manual_t k_held[] = {
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u, NULL, false },
+    };
+    jazz.manual = k_held;
+    jazz.manual_count = 1;
+    CHECK_EQ(jazz.entry_throttle, ESC_THR_MIN);
+    CHECK_EQ(esc_stick_change_entry(&jazz, &m[0]), ESC_THR_MID);
+    CHECK_EQ(esc_stick_change_entry_ms(&jazz, &m[0], &r.t), 3000u);
+    CHECK(esc_stick_check(&jazz, m, 1, &r.t, &why));
+    /* The same hold, the value at the entry's MIN and the rest at MID:
+     * the profile-wide rule takes the hold too. */
+    jazz.listen_throttle = ESC_THR_MID;
+    jazz_values[2].entry_throttle = ESC_THR_NONE;
+    CHECK(esc_stick_kind(&jazz, &why) != ESC_STICK_KIND_NONE);
+    jazz.manual = NULL;
+    jazz.manual_count = 0;
+    jazz.automatable = ESC_AUTO_FULL;
+    CHECK_EQ(esc_stick_kind(&jazz, &why), ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "rest move, no entry time");
 }
 
 /* A button to hold while the supply comes on: the step at an unpowered

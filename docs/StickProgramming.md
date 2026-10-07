@@ -550,7 +550,7 @@ minimum, where it rested, to store.
 | values repeat across items | one-stage, a value number in two items |
 | select move is the rest | the select move is the rest position: no move to make |
 | value move = select move | two-stage, `value_select` equals `select` |
-| rest move, no entry time | `scheme.listen` differs from the entry position and `hold_ms` is null: the YGE profiles |
+| rest move, no entry time | `scheme.listen` differs from the power-up position and no time is stated: `hold_ms` is null, the value has no `entry_hold_ms` and no `at_power_up` step has a `hold_ms`: the YGE profiles |
 | store move, two stages | two-stage with a `scheme.store` |
 | store move = select move | one-stage, `scheme.store` equals `select` |
 | needs 22.8 V, cap 21.0 V | the voltage (VOLTAGE, or the profile's cell count) is over the SUPPLY cap |
