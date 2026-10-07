@@ -19,14 +19,20 @@ history is in git.
   first reading back within 0.05 A of the holding level: replays with the
   band at the threshold time the same moves.
 - **A move the current cannot show is not a failure.** A counted move with
-  no reading past the threshold in 3000 ms is unseen: not timed, not late,
-  counted in an `Unseen` column. A step with no move seen reads NOT
+  no reading past the threshold in its window is unseen: not timed, not
+  late, counted in an `Unseen` column. A step with no move seen reads NOT
   MEASURABLE (NICHT MESSBAR), and a run with unseen moves and no limit
   exceeded reads NOT MEASURABLE, with how many of its counted moves showed
   no movement. A 1102HB, holding 0.015 to 0.029 A and peaking at 0.039 to
   0.044 A, read FAIL with 34 late moves; its replay reads NOT MEASURABLE,
-  27 of 50 unseen, none late. A brown-out walk with no movement at 5.00 V
-  reads not measurable.
+  25 of 46 unseen, none late. A brown-out walk with no movement at 5.00 V
+  reads not measurable, and makes the run NOT MEASURABLE: a run of the walk
+  alone that sees nothing no longer reads PASS. With no move arrived the
+  `Travel time` line reads `longest --` and `not measured`, not `0 ms`.
+- **A move's window adds the meter's lag.** A move is late when it has not
+  arrived 3000 ms plus the meter's lag after its command: 3300 ms on the PD
+  mini, whose readings show an arrival about 300 ms late. A servo arriving
+  at 2900 ms is timed, not late; one that never arrives is still late.
 - **Travel times on the PD mini are an upper bound.** Its readings come
   every 102 to 106 ms, show a change of current about 0.3 s after the
   command (median 0.31 s) and often repeat. The report says so on `Lag`,

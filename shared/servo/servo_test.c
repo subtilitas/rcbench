@@ -61,6 +61,19 @@ bool servo_test_running(const servo_test_t *t)
     return t != NULL && t->state == SERVO_TEST_RUNNING;
 }
 
+/*
+ * The meter's lag is added to the window rather than the window's last
+ * part left unjudged: a servo that arrives at 2900 ms shows it on the PD
+ * mini at about 3200 ms, and waiting for that reading times the move.  A
+ * move that never arrives is still late, only 300 ms later; a window left
+ * unjudged would need the same wait to tell the two apart.
+ */
+uint32_t servo_test_travel_window_ms(const servo_test_t *t)
+{
+    return SERVO_TEST_TRAVEL_TIMEOUT_MS
+           + ((t != NULL) ? (uint32_t)t->cfg.meter.lag_ms : 0u);
+}
+
 /* ------------------------------------------------------------ the outbox */
 
 static void put_line(servo_test_t *t, servo_test_out_t kind, const char *text)
@@ -677,7 +690,7 @@ void servo_test_step(servo_test_t *t, uint32_t now_ms,
             }
             break;
         case SERVO_TEST_PH_MOVE:
-            if (now_ms - t->cmd_ms >= SERVO_TEST_TRAVEL_TIMEOUT_MS) {
+            if (now_ms - t->cmd_ms >= servo_test_travel_window_ms(t)) {
                 end_move(t, false, now_ms);
             }
             break;
@@ -720,9 +733,16 @@ servo_test_verdict_t servo_test_verdict(const servo_test_t *t)
         fail = true;
     }
     bool unseen = false;
+    bool walked = false;
     for (unsigned k = 0; k < t->step_count; ++k) {
         const servo_test_step_t *s = &t->steps[k];
         if (s->brownout) {
+            /* A walk that saw no movement at its first voltage measured
+             * nothing: the servo may move there under the threshold. */
+            if (s->done && !walked) {
+                walked = true;
+                unseen = unseen || !s->moved;
+            }
             continue;
         }
         /* A move that started and never came back to its holding level. */

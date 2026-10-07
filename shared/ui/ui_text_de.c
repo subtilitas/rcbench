@@ -1192,6 +1192,8 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_R_LIM_TRAVEL_BOUND] = "Stellzeit        längste %lu ms, "
                                      "Grenze %u ms: Obergrenze, nicht gegen "
                                      "die Grenze geprüft",
+    [SERVO_STR_R_LIM_TRAVEL_NONE] = "Stellzeit        längste --, Grenze %s: "
+                                    "nicht gemessen, keine Bewegung kam an",
     [SERVO_STR_R_LIM_STALL]      = "Blockierschwelle Höchstwert %.3f A, "
                                    "BLOCKIERT AB %.2f A: %s",
     [SERVO_STR_R_LIM_LATE]       = "Verspätet        %u Bewegungen: %s",

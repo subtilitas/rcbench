@@ -397,6 +397,7 @@ TEST_CASE(the_report_labels_line_up)
     static const servo_str_t k_limits[] = {
         SERVO_STR_R_LIM_IDLE, SERVO_STR_R_LIM_HOLD, SERVO_STR_R_LIM_TRAVEL,
         SERVO_STR_R_LIM_TRAVEL_OFF, SERVO_STR_R_LIM_TRAVEL_BOUND,
+        SERVO_STR_R_LIM_TRAVEL_NONE,
         SERVO_STR_R_LIM_STALL,
         SERVO_STR_R_LIM_LATE, SERVO_STR_R_LIM_UNSEEN,
     };

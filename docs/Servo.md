@@ -111,7 +111,7 @@ Each step runs these phases:
 | SET | at PULSE CENTRE; the voltage asked; the first step switches the output on | the supply reads the set point back within 0.05 V, at most 3000 ms |
 | SETTLE | at PULSE CENTRE | after the TEST page's SETTLE |
 | IDLE | at PULSE CENTRE: the idle current is the mean of the readings, the idle noise their standard deviation | after 1000 ms |
-| MOVE | a step command to one end, with no slew: SPEED does not apply | at the arrival, or after 3000 ms: late with movement seen, unseen without |
+| MOVE | a step command to one end, with no slew: SPEED does not apply | at the arrival, or after 3000 ms plus the meter's lag (3300 ms on the PD mini): late with movement seen, unseen without |
 | HOLD | at that end: the holding current is the mean of the readings | after DWELL, at least 600 ms |
 
 The two ends are SWEEP's: RANGE of the travel either side of PULSE CENTRE,
@@ -151,8 +151,14 @@ end to end, MOVEMENTS of them or for TEST TIME, as LENGTH BY says, at most
 - **Not told apart:** a servo whose moving current lies within 0.05 A of the
   destination's holding current cannot be told from one already there; a
   move to that end is timed at its first two readings after movement.
+- **Window:** a move has 3000 ms (`SERVO_TEST_TRAVEL_TIMEOUT_MS`) plus
+  the meter's lag to arrive: 3300 ms on the PD mini, whose readings show an
+  arrival about 300 ms after it happens. The lag is added rather than the
+  window's last 300 ms left unjudged: a servo arriving at 2900 ms shows it
+  at about 3200 ms and is timed, and a move that never arrives is still
+  late, 300 ms later.
 - **Unseen:** a counted move with no reading past the threshold within
-  3000 ms. The current cannot tell it from a servo standing still: it is
+  the window. The current cannot tell it from a servo standing still: it is
   neither timed nor late, and the report counts it in the `Unseen` column.
   A step none of whose moves showed movement reads `NOT MEASURABLE`.
 - **Travel time:** from the command to the arrival's reading.
@@ -200,7 +206,7 @@ threshold.
 | `SERVO_TEST_PDMINI_LAG_MS` | 300 ms | the PD mini's lag, as the report states it |
 | `SERVO_TEST_IDLE_MS` | 1000 ms | the idle measurement |
 | `SERVO_TEST_HOLD_MIN_MS` | 600 ms | the shortest hold measured |
-| `SERVO_TEST_TRAVEL_TIMEOUT_MS` | 3000 ms | a move that has not arrived is late |
+| `SERVO_TEST_TRAVEL_TIMEOUT_MS` | 3000 ms | a move that has not arrived is late, after this plus the meter's lag |
 | `SERVO_TEST_SET_TOL_V` | 0.05 V | a set point read back |
 | `SERVO_TEST_SET_TIMEOUT_MS` | 3000 ms | for the set point, and for the output to come on |
 | `SERVO_TEST_STALE_MS` | 1500 ms | no new reading ends the run |
@@ -293,14 +299,19 @@ when one of these holds:
 - the longest travel time is above TRAVEL TIME, where the current's meter
   times travel (not the PD mini);
 - a reading after SETTLE is above STALL AT;
-- a counted move was late: movement seen, no arrival within 3000 ms.
+- a counted move was late: movement seen, no arrival within the window,
+  3000 ms plus the meter's lag.
 
-Otherwise NOT MEASURABLE when a counted move was unseen, and PASS when none
-was. NOT MEASURABLE says the current could not show every move: a servo
+Otherwise NOT MEASURABLE when a counted move was unseen, or when the
+brown-out walk saw no movement at its first voltage, and PASS when neither
+holds. A run of the brown-out walk alone that sees nothing reads NOT
+MEASURABLE, not PASS. NOT MEASURABLE says the current could not show every move: a servo
 moving under the threshold and one standing still read alike. The report's
 `Result` line gives how many of the counted moves showed no movement, and
 `Moves seen` how many were unseen. A servo that does not move reads NOT
-MEASURABLE, not FAIL.
+MEASURABLE, not FAIL. With no move arrived there is no longest travel time,
+and the `Travel time` line reads `longest --` and `not measured, no move
+arrived`, on any meter.
 
 A LIMITS value of 0 is not checked; STALL AT always is.
 
@@ -374,7 +385,7 @@ Set V  Meas V  Idle   Thresh Moving Peak   Hold lo Hold hi Travel Longest Moves 
  6.00    6.00  0.001  0.020  0.040  0.077  0.001   0.001   892    978        41    0      0
 Thresh: movement is a reading max(0.020 A, 3 x idle noise) from the level before the command.
 Arrival: after a reading Thresh above the end's holding level, the first back within 0.05 A of it.
-Late: moves seen moving that did not arrive within 3000 ms.
+Late: moves seen moving that did not arrive within 3300 ms.
 Unseen: moves with no movement seen; not timed, not counted late.
 
 BROWN-OUT
@@ -401,11 +412,11 @@ this servo below 5.00 V. The same replay of a 1102HB digital servo, which
 holds 0.015 to 0.029 A and peaks at 0.039 to 0.044 A, reads:
 
 ```
-Result:         NOT MEASURABLE - 27 of 50 counted moves showed no movement in the current
+Result:         NOT MEASURABLE - 25 of 46 counted moves showed no movement in the current
 ...
 Set V  Meas V  Idle   Thresh Moving Peak   Hold lo Hold hi Travel Longest Moves Late Unseen
- 4.80    4.80  0.015  0.020  0.025  0.037  0.028   0.015   695    772        24    0     14
- 6.00    5.99  0.003  0.020  0.027  0.042  0.029   0.017   627    688        26    0     13
+ 4.80    4.80  0.015  0.020  0.025  0.037  0.028   0.015   687    772        22    0     13
+ 6.00    5.99  0.003  0.020  0.027  0.042  0.029   0.017   636    688        24    0     12
 ...
 No movement seen at 5.00 V, the first step: not measurable.
 ```

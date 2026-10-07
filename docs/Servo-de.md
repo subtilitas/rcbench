@@ -120,7 +120,7 @@ Jede Stufe durchläuft diese Phasen:
 | SETZEN | auf PULS CENTRE; die Spannung wird verlangt; die erste Stufe schaltet den Ausgang ein | wenn das Netzteil den Sollwert auf 0,05 V genau zurückliest, spätestens nach 3000 ms |
 | EINSCHWINGEN | auf PULS CENTRE | nach EINSCHWINGEN der TEST-Seite |
 | RUHE | auf PULS CENTRE: der Ruhestrom ist der Mittelwert der Messwerte, das Ruherauschen ihre Standardabweichung | nach 1000 ms |
-| BEWEGEN | ein Sprung auf ein Ende, ohne Rampe: TEMPO gilt nicht | bei der Ankunft oder nach 3000 ms: verspätet mit erkannter Bewegung, unerkannt ohne |
+| BEWEGEN | ein Sprung auf ein Ende, ohne Rampe: TEMPO gilt nicht | bei der Ankunft oder nach 3000 ms plus der Verzögerung des Strommessers (3300 ms am PD mini): verspätet mit erkannter Bewegung, unerkannt ohne |
 | HOLD | an diesem Ende: der Haltestrom ist der Mittelwert der Messwerte | nach VERWEILEN, mindestens 600 ms |
 
 Die beiden Enden sind die von SWEEP: BEREICH des Wegs zu beiden Seiten von
@@ -164,8 +164,15 @@ oder für TESTZEIT, wie LÄNGE NACH sagt, höchstens 1000 je Stufe.
   am Haltestrom des Ziels liegt, ist von einem, das schon dort steht, nicht
   zu unterscheiden; eine Bewegung zu diesem Ende endet bei ihren ersten zwei
   Messwerten nach Bewegung.
+- **Fenster:** eine Bewegung hat 3000 ms (`SERVO_TEST_TRAVEL_TIMEOUT_MS`)
+  plus die Verzögerung des Strommessers, um anzukommen: 3300 ms am PD mini,
+  dessen Messwerte eine Ankunft etwa 300 ms später zeigen. Die Verzögerung
+  wird addiert, statt die letzten 300 ms des Fensters unbeurteilt zu
+  lassen: ein Servo, das bei 2900 ms ankommt, zeigt das bei etwa 3200 ms
+  und wird gemessen, und eine Bewegung, die nie ankommt, ist trotzdem
+  verspätet, 300 ms später.
 - **Unerkannt:** eine gezählte Bewegung ohne Messwert jenseits der Schwelle
-  binnen 3000 ms. Der Strom unterscheidet sie nicht von einem stillstehenden
+  binnen des Fensters. Der Strom unterscheidet sie nicht von einem stillstehenden
   Servo: sie wird weder gemessen noch als verspätet gezählt, und der Bericht
   zählt sie in der Spalte `Unerk.`. Eine Stufe, bei der keine Bewegung
   erkannt wurde, lautet `NICHT MESSBAR`.
@@ -217,7 +224,7 @@ unter der Schwelle bewegen.
 | `SERVO_TEST_PDMINI_LAG_MS` | 300 ms | die Verzögerung des PD mini, wie der Bericht sie nennt |
 | `SERVO_TEST_IDLE_MS` | 1000 ms | die Ruhestrommessung |
 | `SERVO_TEST_HOLD_MIN_MS` | 600 ms | das kürzeste gemessene Halten |
-| `SERVO_TEST_TRAVEL_TIMEOUT_MS` | 3000 ms | eine Bewegung, die nicht angekommen ist, ist verspätet |
+| `SERVO_TEST_TRAVEL_TIMEOUT_MS` | 3000 ms | eine Bewegung, die nicht angekommen ist, ist verspätet, nach diesem Wert plus der Verzögerung des Strommessers |
 | `SERVO_TEST_SET_TOL_V` | 0,05 V | ein zurückgelesener Sollwert |
 | `SERVO_TEST_SET_TIMEOUT_MS` | 3000 ms | für den Sollwert und für das Einschalten |
 | `SERVO_TEST_STALE_MS` | 1500 ms | kein neuer Messwert beendet den Lauf |
@@ -316,15 +323,19 @@ beurteilt) NICHT BESTANDEN, wenn eines davon zutrifft:
   Stellzeiten misst (nicht der PD mini);
 - ein Messwert nach EINSCHWINGEN liegt über BLOCKIERT AB;
 - eine gezählte Bewegung war verspätet: Bewegung erkannt, keine Ankunft
-  binnen 3000 ms.
+  binnen des Fensters, 3000 ms plus der Verzögerung des Strommessers.
 
-Sonst NICHT MESSBAR, wenn eine gezählte Bewegung unerkannt blieb, und
-BESTANDEN, wenn keine. NICHT MESSBAR sagt, dass der Strom nicht jede
+Sonst NICHT MESSBAR, wenn eine gezählte Bewegung unerkannt blieb oder der
+Brown-out-Lauf bei seiner ersten Spannung keine Bewegung erkannte, und
+BESTANDEN, wenn keines davon zutrifft. Ein Lauf nur aus dem Brown-out, der
+nichts erkennt, lautet NICHT MESSBAR, nicht BESTANDEN. NICHT MESSBAR sagt, dass der Strom nicht jede
 Bewegung zeigen konnte: ein Servo, das sich unter der Schwelle bewegt, und
 eines, das stillsteht, lesen sich gleich. Die Zeile `Ergebnis` nennt, bei
 wie vielen der gezählten Bewegungen keine Bewegung erkannt wurde, und
 `Unerkannt` deren Zahl. Ein Servo, das sich nicht bewegt, lautet NICHT
-MESSBAR, nicht NICHT BESTANDEN.
+MESSBAR, nicht NICHT BESTANDEN. Kam keine Bewegung an, gibt es keine
+längste Stellzeit, und die Zeile `Stellzeit` lautet `längste --` und
+`nicht gemessen, keine Bewegung kam an`, an jedem Strommesser.
 
 Ein Wert 0 auf der GRENZEN-Seite wird nicht geprüft; BLOCKIERT AB immer.
 
@@ -376,7 +387,7 @@ Soll V Ist V   Ruhe   Schw.  Beweg. Spitze Halt mn Halt mx Stell. Längste Anz. 
 ```
 
 Dieselbe Wiedergabe eines 1102HB, das 0,015 bis 0,029 A hält und in
-Bewegung bis 0,039 bis 0,044 A zieht, lautet `NICHT MESSBAR - bei 27 von 50
+Bewegung bis 0,039 bis 0,044 A zieht, lautet `NICHT MESSBAR - bei 25 von 46
 gezählten Bewegungen keine Bewegung im Strom erkannt`: seine Bewegungen zum
 oberen Ende verlassen die 0,028 A des unteren Endes und überschreiten sie
 nie um 0,020 A. Auf 0.13.0 lautete dasselbe Servo NICHT BESTANDEN, alle 34

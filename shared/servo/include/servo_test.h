@@ -28,9 +28,10 @@
  *           on a stop, is never passed: there the move has arrived at the
  *           first of two readings in a row within SERVO_TEST_BAND_A of the
  *           level and of each other, after movement.  A move with
- *           movement that does not arrive in SERVO_TEST_TRAVEL_TIMEOUT_MS
- *           is late; one that shows no movement in that time is unseen:
- *           not timed and not late;
+ *           movement that does not arrive in SERVO_TEST_TRAVEL_TIMEOUT_MS,
+ *           plus the meter's lag (servo_test_travel_window_ms()), is late;
+ *           one that shows no movement in that time is unseen: not timed
+ *           and not late;
  *   HOLD    the longer of DWELL and SERVO_TEST_HOLD_MIN_MS at that end:
  *           the holding current there, and the holding level the next move
  *           to that end falls back to.
@@ -116,6 +117,8 @@ extern "C" {
 /** The shortest hold measured at an end, whatever DWELL says: at 10
  *  readings a second, six readings. */
 #define SERVO_TEST_HOLD_MIN_MS       600u
+/** A move not arrived this long after its command is late; a meter's lag
+ *  is added, since its readings show an arrival that much later. */
 #define SERVO_TEST_TRAVEL_TIMEOUT_MS 3000u
 /** A set point counts as taken once read back within this. */
 #define SERVO_TEST_SET_TOL_V         0.05f
@@ -429,6 +432,11 @@ void servo_test_abort(servo_test_t *t, servo_test_abort_t why,
 
 bool servo_test_running(const servo_test_t *t);
 
+/** How long a move of @p t may take before it is late, or unseen:
+ *  SERVO_TEST_TRAVEL_TIMEOUT_MS plus the meter's lag, 3300 ms on the PD
+ *  mini. */
+uint32_t servo_test_travel_window_ms(const servo_test_t *t);
+
 servo_test_verdict_t servo_test_verdict(const servo_test_t *t);
 
 /** Steps planned, the brown-out counted as one, and the one running,
@@ -572,6 +580,7 @@ typedef enum {
     SERVO_STR_R_LIM_TRAVEL,
     SERVO_STR_R_LIM_TRAVEL_OFF,
     SERVO_STR_R_LIM_TRAVEL_BOUND,
+    SERVO_STR_R_LIM_TRAVEL_NONE,
     SERVO_STR_R_LIM_STALL,
     SERVO_STR_R_LIM_LATE,
     SERVO_STR_R_LIM_UNSEEN,

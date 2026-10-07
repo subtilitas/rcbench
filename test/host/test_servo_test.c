@@ -523,6 +523,25 @@ TEST_CASE(the_brownout_walk_ends_at_the_floor)
     CHECK(stopped);
     CHECK(strstr(g.report, "No movement seen at 5.00 V, the first step: "
                            "not measurable.") != NULL);
+    /* The walk is the whole run, and it measured nothing. */
+    CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_NOT_MEASURABLE);
+    CHECK(strstr(g.report, "Result:         NOT MEASURABLE - 0 of 0 counted "
+                           "moves") != NULL);
+
+    /* A step that moves and passes, and a walk that sees nothing at its
+     * first voltage: the walk measured nothing, so the run is not PASS. */
+    rig_fresh();
+    g.brownout_v = 9.0f;
+    cfg_defaults(&c);
+    c.steps_v[0] = 9.6f;
+    c.step_count = 1u;
+    c.brownout = true;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    CHECK_EQ(g.t.steps[0].no_rise, 0u);
+    CHECK_EQ(g.t.steps[0].timeouts, 0u);
+    CHECK(!g.t.steps[1].moved);
+    CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_NOT_MEASURABLE);
 }
 
 /* A cap under 5.0 V starts the walk at the cap. */
@@ -665,6 +684,27 @@ TEST_CASE(a_servo_that_does_not_move_is_not_measurable)
     CHECK(strstr(g.report, "Moves arrived    0 late: PASS") != NULL);
     CHECK(strstr(g.report, "Moves seen       2 unseen: NOT MEASURABLE")
           != NULL);
+    /* No move arrived: there is no longest travel time to state. */
+    CHECK(strstr(g.report, "Travel time      longest --, limit OFF: not "
+                           "measured, no move arrived\n") != NULL);
+    CHECK(strstr(g.report, "longest 0 ms") == NULL);
+
+    /* Nor on the PD mini with a limit set: not an upper bound of 0 ms. */
+    rig_fresh();
+    g.brownout_v = 99.0f;
+    cfg_defaults(&c);
+    c.step_count = 1u;
+    c.moves = 2u;
+    c.travel_max_ms = 500u;
+    servo_test_meter_pdmini(&c.meter);
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(60000u);
+    CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_NOT_MEASURABLE);
+    CHECK(strstr(g.report, "Travel time      longest --, limit 500 ms: not "
+                           "measured, no move arrived\n") != NULL);
+    CHECK(strstr(g.report, "upper bound, not checked against the limit\n")
+          != NULL);                         /* the header line, not this */
+    CHECK(strstr(g.report, "longest 0 ms") == NULL);
 
     /* A limit exceeded still fails it. */
     rig_fresh();
@@ -901,6 +941,113 @@ TEST_CASE(a_moving_current_equal_to_the_holding_current_is_the_limit)
     CHECK_EQ(s->travels, 6u);
     CHECK(s->travel_max_ms >= 1240u);                 /* to the high end */
     CHECK(s->travel_sum_ms / s->travels < 1240u);     /* to the low end */
+}
+
+/*
+ * A slow servo read through a lagging meter: it holds 0.05 A, moves at
+ * 0.30 A for @p travel_ms after 40 ms of latency, and the meter shows each
+ * current @p lag_ms late, read every 100 ms.  Four counted moves.  A
+ * @p travel_ms of 0 is a servo that moves normally to place both ends, then
+ * sticks at 0.30 A from its first counted move on, the third.
+ */
+static void run_lagged(servo_test_t *t, uint32_t travel_ms, uint32_t lag_ms,
+                       const servo_test_meter_t *meter)
+{
+    servo_test_cfg_t c;
+    cfg_defaults(&c);
+    c.step_count = 1u;
+    c.settle_ms  = 0u;
+    c.moves      = 4u;
+    c.report     = false;
+    c.meter      = *meter;
+    servo_test_init(t);
+    uint32_t now = 1000u, next = now, cmd_at = 0u, first_at = 0u;
+    uint16_t cmd = CENTRE, prev = CENTRE, samples = 1u;
+    unsigned moves = 0u;
+    servo_test_reading_t r;
+    memset(&r, 0, sizeof(r));
+    r.v = 4.8f;
+    r.set_v = 4.8f;
+    r.output = true;
+    r.online = true;
+    r.ok = true;
+    r.mode = 1u;
+    r.taken_ms = now;
+    (void)servo_test_start(t, &c, now, &r, 1.0f, 20.0f);
+    for (int k = 0; k < 20000 && servo_test_running(t); ++k) {
+        now += 10u;
+        if (now >= next) {
+            next += 100u;
+            /* What the servo drew lag_ms ago. */
+            const uint32_t seen = now - lag_ms;
+            const uint32_t dt = seen - cmd_at;
+            float i = 0.05f;
+            const uint32_t travel = (travel_ms == 0u) ? 1200u : travel_ms;
+            if (first_at != 0u && (int32_t)(seen - first_at) >= 40) {
+                i = 0.30f;                              /* stuck */
+            } else if (cmd != prev && (int32_t)dt >= 40
+                       && dt < 40u + travel) {
+                i = 0.30f;
+            }
+            r.samples = ++samples;
+            r.taken_ms = now;
+            r.i = i;
+            servo_test_reading(t, &r, 0u);
+        }
+        const servo_test_in_t in = { true, 20.0f };
+        servo_test_do_t d;
+        servo_test_step(t, now, &in, &d);
+        if (d.command) {
+            prev = cmd;
+            cmd = d.cmd_us;
+            cmd_at = now;
+            if (cmd != CENTRE && ++moves == 3u && travel_ms == 0u) {
+                first_at = now;
+            }
+        }
+        while (servo_test_peek(t, NULL) != SERVO_TEST_OUT_NONE) {
+            servo_test_pop(t);
+        }
+    }
+}
+
+/* A servo that arrives at 2840 ms shows it on a meter 300 ms behind at
+ * about 3140 ms, after the 3000 ms window: the meter's lag widens the
+ * window to 3300 ms, so the move is timed and not late.  Without the lag
+ * stated the same readings are late.  A servo that never arrives is late
+ * on the lagging meter too, and fails the run. */
+TEST_CASE(a_meters_lag_widens_the_window_and_a_stuck_move_is_late)
+{
+    static servo_test_t t;
+    servo_test_meter_t pd;
+    servo_test_meter_pdmini(&pd);
+    servo_test_init(&t);
+    CHECK_EQ(servo_test_travel_window_ms(&t), 3000u);
+    CHECK_EQ(servo_test_travel_window_ms(NULL), 3000u);
+
+    run_lagged(&t, 2800u, 300u, &pd);
+    CHECK_EQ(servo_test_travel_window_ms(&t), 3300u);
+    CHECK_EQ(t.why, SERVO_TEST_AB_NONE);
+    CHECK_EQ(t.steps[0].timeouts, 0u);
+    CHECK_EQ(t.steps[0].travels, 4u);
+    CHECK(t.steps[0].travel_max_ms > SERVO_TEST_TRAVEL_TIMEOUT_MS);
+    CHECK(t.steps[0].travel_max_ms <= 3300u);
+    CHECK_EQ(servo_test_verdict(&t), SERVO_TEST_PASS);
+
+    servo_test_meter_t none;
+    memset(&none, 0, sizeof(none));
+    run_lagged(&t, 2800u, 300u, &none);
+    CHECK(t.steps[0].timeouts > 0u);
+    CHECK_EQ(servo_test_verdict(&t), SERVO_TEST_FAIL);
+
+    /* Stuck at 0.30 A from its first counted move on: that move rises and
+     * never comes back, late at 3300 ms, and fails the run.  The end it
+     * then holds measures 0.30 A, so moves after it show no change. */
+    run_lagged(&t, 0u, 300u, &pd);
+    CHECK_EQ(t.why, SERVO_TEST_AB_NONE);
+    CHECK(t.steps[0].timeouts > 0u);
+    CHECK_EQ(t.steps[0].travels, 0u);
+    CHECK_EQ(servo_test_verdict(&t), SERVO_TEST_FAIL);
 }
 
 /* A supply whose reading count stops while its page goes on answering --
@@ -1559,6 +1706,7 @@ int main(void)
     RUN(an_end_held_harder_than_the_servo_moves_is_reached_settled);
     RUN(an_acceleration_spike_above_the_level_is_not_the_arrival);
     RUN(a_moving_current_equal_to_the_holding_current_is_the_limit);
+    RUN(a_meters_lag_widens_the_window_and_a_stuck_move_is_late);
     RUN(a_frozen_current_is_no_reading);
     RUN(skipped_readings_are_reported);
     RUN(a_count_starting_again_is_not_readings_skipped);

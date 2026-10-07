@@ -154,6 +154,8 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_R_LIM_TRAVEL_BOUND] = "Travel time      longest %lu ms, limit "
                                      "%u ms: upper bound, not checked "
                                      "against the limit",
+    [SERVO_STR_R_LIM_TRAVEL_NONE] = "Travel time      longest --, limit %s: "
+                                    "not measured, no move arrived",
     [SERVO_STR_R_LIM_STALL]      = "Stall threshold  highest %.3f A, STALL "
                                    "AT %.2f A: %s",
     [SERVO_STR_R_LIM_LATE]       = "Moves arrived    %u late: %s",
@@ -584,7 +586,7 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
         return true;
     }
     if (here(c)) {
-        snprintf(b, n, S(R_LATE), (unsigned)SERVO_TEST_TRAVEL_TIMEOUT_MS);
+        snprintf(b, n, S(R_LATE), (unsigned)servo_test_travel_window_ms(t));
         return true;
     }
     if (here(c)) {
@@ -691,16 +693,26 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
     if (here(c)) {
         uint32_t ms = 0u;
         const bool m = servo_test_max_travel(t, &ms);
-        if (g->travel_max_ms > 0u && g->meter.upper_bound) {
+        if (!m) {
+            /* No move arrived: there is no longest travel time, not even
+             * an upper bound. */
+            char lim[24];
+            if (g->travel_max_ms > 0u) {
+                snprintf(lim, sizeof(lim), "%u ms", (unsigned)g->travel_max_ms);
+            } else {
+                snprintf(lim, sizeof(lim), "%s", S(R_OFF));
+            }
+            snprintf(b, n, S(R_LIM_TRAVEL_NONE), lim);
+        } else if (g->travel_max_ms > 0u && g->meter.upper_bound) {
             snprintf(b, n, S(R_LIM_TRAVEL_BOUND), (unsigned long)ms,
                      (unsigned)g->travel_max_ms);
         } else if (g->travel_max_ms > 0u) {
             snprintf(b, n, S(R_LIM_TRAVEL), (unsigned long)ms,
                      (unsigned)g->travel_max_ms,
-                     verdict_word(c, true, m, ms > g->travel_max_ms));
+                     verdict_word(c, true, true, ms > g->travel_max_ms));
         } else {
             snprintf(b, n, S(R_LIM_TRAVEL_OFF), (unsigned long)ms,
-                     verdict_word(c, false, m, false));
+                     verdict_word(c, false, true, false));
         }
         return true;
     }
