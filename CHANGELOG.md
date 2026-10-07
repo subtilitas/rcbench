@@ -6,6 +6,18 @@ history is in git.
 
 ## Unreleased
 
+## 0.12.0 - 2026-10-07
+
+SERVO runs an automatic servo test: supply steps, currents, travel time, a
+brown-out walk and a CSV and TXT report. PROGRAMMER programs an ESC through
+its throttle-stick menu, with a search over 72 profiles and a stack light
+for beeps and faults; 14 profiles run, and every beep timing is a default,
+as no ESC has been recorded. The interface and the servo report are in
+English or German. The PD mini cuts a sagging input, holds a wiring change
+for a fresh state read, and a STOP closes the OUTPUT IS ON question. None of
+it has run on hardware. The link protocol is 4.5: flash the panel and the
+coprocessor together, as a 0.11.0 coprocessor does not arm with this panel.
+
 ### Added
 
 - **The automatic servo test.** START TEST on the SERVO screen's TEST page,
