@@ -1854,7 +1854,10 @@ TEST_CASE(the_pause_is_drawn_from_when_the_hold_was_acknowledged)
  * more than SPEED allows over the 307 ms (12 frames) the HOLD took: at most
  * 240 units a second, 74 us on a 1000 to 2000 us range.
  */
-TEST_CASE(the_acknowledged_pause_moves_the_output_at_speed)
+/* A sweep at SPEED's slowest, paused 300 ms in and acknowledged 307 ms
+ * later, SPEED raised to 100 % in between when @p raise; the drawn output
+ * at the tap into @p at_tap, and returned as it is at the acknowledgement. */
+static uint16_t slow_pause_acknowledged(bool raise, uint16_t *at_tap)
 {
     fresh();
     servo_screen_set_armed(true);
@@ -1864,13 +1867,35 @@ TEST_CASE(the_acknowledged_pause_moves_the_output_at_speed)
     servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
     frames(0.3f);
     tap(SWEEP_X, BTN_Y);                       /* PAUSE */
-    const uint16_t at_tap = servo_screen_drawn();
-    frames(0.3f);
+    (void)last_cmd();
+    *at_tap = servo_screen_drawn();
+    frames(0.1f);
+    if (raise) {
+        tap(ARM_X + ARM_W - 1, SPEED_Y);       /* 100 %: nothing sent */
+        CHECK(servo_screen_paused());
+        CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    }
+    frames(0.2f);
     servo_screen_sweep_held(0u);
-    const uint16_t at_ack = servo_screen_drawn();
+    return servo_screen_drawn();
+}
+
+TEST_CASE(the_acknowledged_pause_moves_the_output_at_speed)
+{
+    uint16_t at_tap = 0u;
+    const uint16_t at_ack = slow_pause_acknowledged(false, &at_tap);
     CHECK(at_ack > at_tap);
     CHECK(at_ack <= at_tap + 74u);
     CHECK(at_ack < 1800u);                     /* behind the curve's 1880 */
+
+    /*
+     * SPEED raised after the tap sends nothing while paused, so the far end
+     * slews at the old rate until the HOLD reaches it: the output is worked
+     * on at the SPEED of the tap, to the same place.
+     */
+    uint16_t raised_tap = 0u;
+    CHECK_EQ(slow_pause_acknowledged(true, &raised_tap), at_ack);
+    CHECK_EQ(raised_tap, at_tap);
 }
 
 /* A curve changed on the TEST page while paused is a new sweep, from its

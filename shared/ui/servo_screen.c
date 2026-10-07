@@ -384,6 +384,10 @@ static struct {
     bool        sweep_able;      /* the coprocessor speaks 4.2 or later  */
     bool        sweeping;
     bool        paused;          /* a sweep held by PAUSE: HOLD posted   */
+    /* SPEED as the sweep ran when PAUSE was tapped: the far end slews at it
+     * until the HOLD reaches it, whatever the slider says meanwhile, since
+     * a paused slider sends nothing. */
+    int         pause_speed_pct;
     bool        sweep_ended;     /* the next command ends it             */
     sweep_t     sw;
     uint32_t    clock_ms;
@@ -741,6 +745,7 @@ static void stop_sweep(void)
 static void hold_sweep(void)
 {
     sweep_pause(&s.sw, s.clock_ms);
+    s.pause_speed_pct = s.speed_pct;
     stop_sweep();
     s.commanded_deg = s.shown_deg;
     post(SERVO_CMD_HOLD, 0);
@@ -885,9 +890,10 @@ void servo_screen_sweep_started(uint32_t age_ms, servo_sweep_from_t from,
 
 /*
  * The drawn output after @p ms more of the sweep @p w from @p phase_ms in,
- * starting at @p from: each step the curve's command, chased at SPEED as
- * tick() chases it.  Steps of 4 ms, under a frame, so a turn of the curve
- * is followed as the drawing follows it.
+ * starting at @p from: each step the curve's command, chased as tick()
+ * chases it at the SPEED in force when PAUSE was tapped -- the far end's
+ * slew until the HOLD reached it.  Steps of 4 ms, under a frame, so a turn
+ * of the curve is followed as the drawing follows it.
  */
 static float drawn_after(const sweep_t *w, uint32_t phase_ms, uint32_t ms,
                          float from)
@@ -896,7 +902,7 @@ static float drawn_after(const sweep_t *w, uint32_t phase_ms, uint32_t ms,
     run.running  = true;
     run.paused   = false;
     run.start_ms = 0u;
-    const float per_ms = (float)SPEED_FULL_SPAN_S * (float)s.speed_pct
+    const float per_ms = (float)SPEED_FULL_SPAN_S * (float)s.pause_speed_pct
                          / 100.0f / 1000.0f;
     float shown = from;
     for (uint32_t done = 0u; done < ms;) {

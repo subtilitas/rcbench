@@ -265,8 +265,9 @@ on from there too, and the horn is drawn on from that phase. The phase is
 the curve's when the coprocessor acknowledged the HOLD, not at the tap: the
 curve runs on there for the exchange in between. Without feedback the
 drawn horn moves on when the acknowledgement arrives, to where the output
-had got by then: the curve to that phase, slewed at SPEED as the drawing
-slews. A tap on PAUSED before
+had got by then: the curve to that phase, slewed as the drawing slews at
+the SPEED in force at the tap. A SPEED changed in between reaches the
+coprocessor only with the resume. A tap on PAUSED before
 that acknowledgement reaches the screen keeps the tap's phase in the
 drawing; the time between the two is not measured. The coprocessor
 keeps the phase while it holds and resumes the curve (`LINK_SV_RESUME`,
