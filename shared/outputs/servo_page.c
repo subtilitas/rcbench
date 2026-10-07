@@ -335,7 +335,29 @@ void servo_phase_started(servo_phase_t *ph, uint32_t ack_ms)
     if (ph != NULL) {
         ph->start_ms = ack_ms;
         ph->kept     = false;
+        ph->untimed  = false;
     }
+}
+
+void servo_phase_untimed(servo_phase_t *ph)
+{
+    if (ph != NULL) {
+        ph->kept    = false;
+        ph->untimed = true;
+    }
+}
+
+void servo_phase_stopped(servo_phase_t *ph)
+{
+    if (ph != NULL) {
+        ph->kept    = false;
+        ph->untimed = false;
+    }
+}
+
+bool servo_phase_resumable(const servo_phase_t *ph)
+{
+    return ph != NULL && (ph->kept || ph->untimed);
 }
 
 uint32_t servo_phase_held(servo_phase_t *ph, uint32_t ack_ms)
@@ -345,6 +367,7 @@ uint32_t servo_phase_held(servo_phase_t *ph, uint32_t ack_ms)
     }
     ph->kept_ms = ack_ms - ph->start_ms;
     ph->kept    = true;
+    ph->untimed = false;
     return ph->kept_ms;
 }
 
@@ -356,6 +379,7 @@ bool servo_phase_resumed(servo_phase_t *ph, uint32_t ack_ms,
     }
     ph->start_ms = ack_ms - ph->kept_ms;
     ph->kept     = false;
+    ph->untimed  = false;
     if (start_ms != NULL) {
         *start_ms = ph->start_ms;
     }

@@ -4097,6 +4097,7 @@ static bool write_servo(const servo_cmd_t sv)
         s_servo_sweeping      = false;
         s_servo_holding       = false;
         s_servo_sweep_unknown = false;
+        servo_phase_stopped(&s_far_phase);
     }
     if (sv.kind == SERVO_CMD_HOLD) {
         /*
@@ -4138,7 +4139,7 @@ static bool write_servo(const servo_cmd_t sv)
         if (s_servo_sweeping && !s_servo_holding) {
             if (s_hold_unanswered) {
                 /* An earlier attempt may have taken: not timed. */
-                s_far_phase.kept = false;
+                servo_phase_untimed(&s_far_phase);
             } else {
                 const uint32_t kept = servo_phase_held(&s_far_phase,
                                                        now_ms());
@@ -4146,6 +4147,10 @@ static bool write_servo(const servo_cmd_t sv)
                 atomic_store(&s_sweep_held_kept, kept);
                 atomic_store(&s_sweep_held_new, true);
             }
+        }
+        if (!s_servo_sweeping && !s_servo_holding) {
+            /* A hold of no sweep: nothing to resume. */
+            servo_phase_stopped(&s_far_phase);
         }
         s_hold_unanswered = false;
         s_servo_sweeping = false;
@@ -4301,9 +4306,18 @@ static bool write_servo(const servo_cmd_t sv)
              * ended there, or the curve changed -- gets the curve whole and
              * starts it over, and the operator is told once it has.
              */
+            /*
+             * A HOLD that went unanswered and was never acknowledged may or
+             * may not have reached the far end, so it is either running or
+             * holding: the resume starts the curve over from a stop, as an
+             * untimed one does.
+             */
+            const bool held_sweep = (s_servo_holding
+                                     && servo_phase_resumable(&s_far_phase))
+                                    || s_hold_unanswered;
+            const bool timed = !s_far_phase.untimed && !s_hold_unanswered;
             servo_resume_t plan = servo_page_resume_plan(
-                sv.resume, s_servo_holding, s_far_phase.kept, s_servo_minor,
-                false);
+                sv.resume, held_sweep, timed, s_servo_minor, false);
             if (plan == SERVO_RESUME_WRITE) {
                 const uint16_t resume = LINK_SV_RESUME;
                 if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 1u,
@@ -4331,9 +4345,8 @@ static bool write_servo(const servo_cmd_t sv)
                     s_servo_written |= mask;
                     return true;
                 }
-                plan = servo_page_resume_plan(sv.resume, s_servo_holding,
-                                              s_far_phase.kept, s_servo_minor,
-                                              true);
+                plan = servo_page_resume_plan(sv.resume, held_sweep, timed,
+                                              s_servo_minor, true);
             }
             if (plan == SERVO_RESUME_TOO_OLD || plan == SERVO_RESUME_REFUSED
                 || plan == SERVO_RESUME_UNTIMED) {
@@ -4350,6 +4363,10 @@ static bool write_servo(const servo_cmd_t sv)
                     || reply.op != LINK_OP_ACK) {
                     return false;
                 }
+                /* Stopped there: what follows is a start, from rest. */
+                s_servo_sweeping = false;
+                s_servo_holding  = false;
+                servo_phase_stopped(&s_far_phase);
             }
             if (!s_servo_sweeping) {
                 const uint16_t endless = 0u;
@@ -4393,6 +4410,21 @@ static bool write_servo(const servo_cmd_t sv)
                              s_servo_curve_ms + OUT_DEFAULT_TIMEOUT_MS);
             } else if (memcmp(curve, s_servo_curve, sizeof(curve)) == 0) {
                 started = false;   /* repeated: it carries on */
+            }
+            if (!started && sv.resume) {
+                /*
+                 * A resume whose HOLD never left: the far end ran on, and
+                 * this write only repeats its curve.  The screen waits for a
+                 * start to draw from, so it gets one, at the curve's own
+                 * phase 0, from where the output is.
+                 */
+                atomic_store(&s_sweep_start_ms, s_far_phase.start_ms);
+                atomic_store(&s_sweep_start_seq, (unsigned)sv.start_seq);
+                atomic_store(&s_sweep_frozen_ms, took);
+                atomic_store(&s_sweep_start_from,
+                             (unsigned)SERVO_SWEEP_RESUMED);
+                atomic_store(&s_sweep_start_new, true);
+                s_hold_unanswered = false;
             }
             if (started) {
                 servo_phase_started(&s_far_phase, took);
@@ -5519,6 +5551,7 @@ static void link_came_up(const link_msg_t *reply)
     s_servo_sweeping      = false;
     s_servo_holding       = false;
     s_hold_unanswered     = false;
+    servo_phase_stopped(&s_far_phase);
     s_servo_sweep_unknown = s_servo_sweep_page;
     atomic_store(&s_servo_sweep_able, s_servo_sweep_page);
 

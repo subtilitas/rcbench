@@ -616,6 +616,38 @@ TEST_CASE(the_host_times_the_far_ends_phase_across_holds)
 }
 
 /*
+ * The HOLD's sequence at the panel: a pause kept, then a stop written for
+ * CENTRE, then a HOLD of no sweep -- a SWEEP tap whose start a touch loss
+ * replaced -- leave nothing to resume, so a PAUSED tap writes the curve
+ * whole with no alert, not a RESUME the far end would refuse.
+ */
+TEST_CASE(a_stop_forgets_the_kept_phase_at_the_panel)
+{
+    servo_phase_t ph;
+    memset(&ph, 0, sizeof(ph));
+    servo_phase_started(&ph, 1000u);
+    (void)servo_phase_held(&ph, 1400u);
+    CHECK(servo_phase_resumable(&ph));
+    servo_phase_stopped(&ph);                  /* CENTRE: the stop */
+    CHECK(!servo_phase_resumable(&ph));
+    /* A HOLD of no sweep holds nothing resumable either. */
+    CHECK_EQ(servo_page_resume_plan(true, servo_phase_resumable(&ph),
+                                    !ph.untimed, 6u, false),
+             SERVO_RESUME_CURVE);
+    /* An untimed hold is resumable, and starts over with its alert. */
+    servo_phase_untimed(&ph);
+    CHECK(servo_phase_resumable(&ph));
+    CHECK_EQ(servo_page_resume_plan(true, servo_phase_resumable(&ph),
+                                    !ph.untimed, 6u, false),
+             SERVO_RESUME_UNTIMED);
+    servo_phase_started(&ph, 2000u);
+    CHECK(!servo_phase_resumable(&ph));
+    servo_phase_untimed(NULL);
+    servo_phase_stopped(NULL);
+    CHECK(!servo_phase_resumable(NULL));
+}
+
+/*
  * The host's choice: RESUME for a resume of a hold in force on 4.6; the
  * curve over, and saying so, on an older coprocessor or after a refusal;
  * the curve as usual for anything else, a resumed sweep's repeats included.
@@ -680,6 +712,7 @@ int main(void)
     RUN(after_a_lost_resume_acknowledgement_a_stop_makes_a_start);
     RUN(a_frame_rate_written_while_held_keeps_the_phase);
     RUN(the_host_times_the_far_ends_phase_across_holds);
+    RUN(a_stop_forgets_the_kept_phase_at_the_panel);
     RUN(the_host_resumes_on_4_6_and_starts_over_otherwise);
     RUN(the_curve_over_a_hold_starts_from_its_beginning);
     return test_summary("servo_page");

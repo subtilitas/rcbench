@@ -163,7 +163,8 @@ enum {
  *     curve again at once and slew there from where they were held, at
  *     their own rate.  Refused with BAD_VALUE when no phase is kept -- no
  *     sweep was running when the hold began, or the hold has ended by a
- *     write of 0, a disarm, 500 ms unwritten or a restart -- and when
+ *     write of 0, a curve written over it, a disarm, 500 ms unwritten or
+ *     a restart -- and when
  *     SWEEP_MHZ, SPAN, DWELL_MS or MOVES no longer read what the paused
  *     sweep runs; NOT_ARMED on a disarmed bench.  A 4.5 coprocessor refuses
  *     5 with BAD_VALUE, as any curve not written whole.

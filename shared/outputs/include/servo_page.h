@@ -20,7 +20,7 @@
  * A hold (LINK_SV_HOLD) freezes the surfaces where their outputs are, and a
  * sweep running when it began keeps its phase; a resume (LINK_SV_RESUME,
  * protocol 4.6) carries that sweep on from there.  Whatever ends the hold
- * -- 0, a disarm, silence -- forgets the phase.  A hold of a sweep that has
+ * -- 0, a curve written over it, a disarm, silence -- forgets the phase.  A hold of a sweep that has
  * made its movements keeps the centre it ended on.
  *
  * Every write is judged against the page as a servo_page_step() at the same
@@ -126,6 +126,7 @@ typedef struct {
     uint32_t start_ms;   /**< phase 0 of the curve, on the host's clock   */
     uint32_t kept_ms;    /**< how far into the curve a hold kept it       */
     bool     kept;       /**< a hold of a running sweep, not yet resumed  */
+    bool     untimed;    /**< such a hold, its phase not known here       */
 } servo_phase_t;
 
 /** A sweep started, from its beginning, when acknowledged at @p ack_ms. */
@@ -133,6 +134,16 @@ void servo_phase_started(servo_phase_t *ph, uint32_t ack_ms);
 
 /** A running sweep held at @p ack_ms: its phase is kept; returned. */
 uint32_t servo_phase_held(servo_phase_t *ph, uint32_t ack_ms);
+
+/** A running sweep held, but acknowledged only at a retry of the HOLD: an
+ *  earlier attempt may have taken, so its phase is not known here. */
+void servo_phase_untimed(servo_phase_t *ph);
+
+/** The sweep stopped, or the far end restarted: nothing is held to resume. */
+void servo_phase_stopped(servo_phase_t *ph);
+
+/** Whether a hold of a running sweep stands to be resumed, timed or not. */
+bool servo_phase_resumable(const servo_phase_t *ph);
 
 /**
  * A held sweep resumed at @p ack_ms: its phase 0 moves on by the hold, into

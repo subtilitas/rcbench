@@ -699,14 +699,14 @@ static bool in_force_dangerous(void)
  * SPEED as the bench's slew, in channel-span units a second.
  *
  * The horn's full travel is 180 degrees and a channel's span covers it, so
- * the 360 degrees a second the drawing uses at 100% is two spans a second:
- * SPEED_FULL_SPAN_S.  Below 100% the bench ramps the command at that
- * fraction of it, and a servo asked for 30% takes three times as long to
- * cross as one asked for 90%.
+ * SPEED_FULL_SPAN_S, two spans a second, is 360 degrees a second.  Below
+ * 100% the bench ramps the command at that fraction of it, and a servo
+ * asked for 30% takes three times as long to cross as one asked for 90%.
  *
- * 100% is immediate rather than two spans a second.  It is the value the
- * screen starts at, so anybody who never touches the slider gets what they
- * got before -- the servo at its own rate, with nothing in front of it.
+ * 100% is immediate rather than two spans a second, at the far end and in
+ * the drawing (slew_per_ms()).  It is the value the screen starts at, so
+ * anybody who never touches the slider gets the servo at its own rate,
+ * with nothing in front of it.
  */
 #define SPEED_FULL_SPAN_S (2u * OUT_SPAN)
 
@@ -751,6 +751,11 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
                        && s.pending.kind == SERVO_CMD_SWEEP
                        && s.start_rec.live
                        && s.pending.start_seq == s.start_rec.seq;
+    /* Any command but the HOLD replaces the curve at the far end: what is
+     * drawn stops being drawn on. */
+    if (kind != SERVO_CMD_HOLD) {
+        s.dr.on = false;
+    }
     s.pending.kind     = kind;
     s.pending.value_us = us;
     s.pending.resume   = resume;
@@ -900,9 +905,7 @@ static void hold_sweep(void)
      * end runs it; held where it is if it was not yet moving. */
     s.dr.on      = moving;
     s.dr.from_ms = s.clock_ms;
-    if (!moving) {
-        s.commanded_deg = clamp_travel(s.shown_deg);
-    }
+    s.commanded_deg = clamp_travel(s.shown_deg);
     ++s.pause_seq;
     post(SERVO_CMD_HOLD, 0);
     if (s.pending.kind == SERVO_CMD_HOLD) {
@@ -1310,6 +1313,11 @@ static void reissue(void)
         return;
     }
     if (s.driving) {
+        /* Paused with the curve still drawn on: held where it is drawn. */
+        if (s.dr.on) {
+            s.dr.on = false;
+            s.commanded_deg = clamp_travel(s.shown_deg);
+        }
         post(SERVO_CMD_POSITION, deg_to_us(s.commanded_deg));
     } else if (s.armed || s.arm_in_flight) {
         /*
@@ -1505,7 +1513,7 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)
          * the angle a changed profile says again (reissue()) is the one it
          * reports, not the one it had at the tap.
          */
-        if (s.paused && !s.dr.on) {
+        if (s.paused) {
             const uint16_t was = deg_to_us(s.commanded_deg);
             s.commanded_deg = clamp_travel(deg);
             if (deg_to_us(s.commanded_deg) != was) {
@@ -3565,9 +3573,9 @@ static void draw_right(gfx_canvas_t *c, bool power)
 
     ui_button(c, s.centre_btn, TR(SV_CENTRE_BTN), ui_theme_color(UI_C_ACCENT),
               false, true);
-    /* PAUSE while a sweep runs, in the accent; PAUSE still while it is
-     * paused, filled in the warning colour, so the two read apart by fill
-     * as well as by the motion. */
+    /* PAUSE while a sweep runs, in the accent; PAUSED (PAUSIERT) while it
+     * is paused, filled in the warning colour, so the two read apart by
+     * fill as well as by the word. */
     const gfx_color_t sweep_fill = s.sweeping ? ui_theme_color(UI_C_ACCENT)
                                    : s.paused ? ui_theme_color(UI_C_WARN)
                                               : ui_theme_color(UI_C_PANEL_HI);
@@ -4133,10 +4141,15 @@ static void tick(float dt_s)
             s.dr.on = false;
             s.commanded_deg = clamp_travel(s.shown_deg);
         } else {
-            /* In the mapping it was sent under, and slewed in its units at
-             * its SPEED, as the far end renders it. */
+            /*
+             * In the mapping it was sent under, and slewed in its units at
+             * its SPEED, as the far end renders it.  The curve's target
+             * stays here: the held angle (commanded_deg) is what is drawn,
+             * the reading or the estimate, which a change of profile while
+             * paused says again (reissue()) -- never a point the curve was
+             * still heading for.
+             */
             const servo_map_t *m = &s.dr.map;
-            s.commanded_deg = map_us_to_deg(m, map_cmd_to_us(m, (float)cmd));
             if (!s.have_feedback) {
                 const float per_ms = slew_per_ms(s.dr.speed_pct);
                 s.dr.out = chase_cmd(s.dr.out, (float)cmd,
@@ -4146,6 +4159,7 @@ static void tick(float dt_s)
                 s.shown_deg = map_us_to_deg(m, us);
                 s.shown_cmd = us_to_cmd(us);
             }
+            s.commanded_deg = clamp_travel(s.shown_deg);
         }
         ++s.ctrl_rev;
     }

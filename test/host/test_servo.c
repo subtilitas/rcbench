@@ -2140,6 +2140,51 @@ TEST_CASE(a_changed_curve_is_drawn_from_its_acknowledged_start)
 }
 
 /*
+ * A trim changed while a PAUSE is drawn on -- its HOLD not yet acknowledged
+ * -- says the angle the horn is at, plus the trim, never a point the curve
+ * was still heading for, and the curve is no longer drawn on: a second
+ * change says the same angle again.  Without feedback the angle is the
+ * drawn estimate, with it the reading.
+ */
+TEST_CASE(a_change_during_a_pause_drain_holds_the_drawn_angle)
+{
+    for (int fb = 0; fb < 2; ++fb) {
+        fresh();
+        servo_screen_set_armed(true);
+        servo_screen_set_sweep(true);
+        tap(ARM_X + 1, SPEED_Y);               /* SPEED's slowest */
+        if (fb) {
+            servo_screen_feedback(1500u, 0.2f, true);
+        }
+        sweep_go();
+        frames(0.3f);
+        if (fb) {
+            servo_screen_feedback(1600u, 0.2f, true);
+        }
+        (void)pause_go();
+        frames(0.15f);                         /* drawn on, not acked */
+        if (fb) {
+            servo_screen_feedback(1620u, 0.2f, true);
+        }
+        const uint16_t at = servo_screen_drawn();
+        if (fb) {
+            CHECK_EQ(at, 1620u);
+        }
+        open_settings();
+        tap(TRIM_UP_X, ROW_Y(3));
+        servo_cmd_t c = last_cmd();
+        CHECK_EQ(c.kind, SERVO_CMD_POSITION);
+        CHECK_EQ(c.value_us, at + 5u);
+        frames(0.3f);
+        tap(TRIM_UP_X, ROW_Y(3));
+        c = last_cmd();
+        CHECK_EQ(c.kind, SERVO_CMD_POSITION);
+        CHECK_EQ(c.value_us, at + 10u);
+        close_settings();
+    }
+}
+
+/*
  * Leaving while a PAUSE is drawn on, and opening SERVO again: no curve,
  * drain or acknowledgement of the old sweep is drawn, and a new sweep
  * starts from its own beginning.
@@ -4235,6 +4280,7 @@ int main(void)
     RUN(the_acknowledged_pause_moves_the_output_at_speed);
     RUN(an_early_resume_is_rebased_on_the_phase_the_far_end_kept);
     RUN(a_changed_curve_is_drawn_from_its_acknowledged_start);
+    RUN(a_change_during_a_pause_drain_holds_the_drawn_angle);
     RUN(leaving_forgets_the_sweep_model);
     RUN(a_start_acknowledgement_applies_to_its_own_command);
     RUN(a_restart_drains_the_old_curve_in_its_old_mapping);
