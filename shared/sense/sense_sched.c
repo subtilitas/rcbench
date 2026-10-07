@@ -250,10 +250,13 @@ static void cap_step(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
         }
         return;
     }
+    /* The deadline first: a sample at or past it is the move late or
+     * unseen, never its arrival. */
+    (void)servo_move_tick(&c->mv, at_t);
     if (v != NULL) {
         servo_move_sample(&c->mv, at_t, a, clip);
     }
-    switch (servo_move_tick(&c->mv, at_t)) {
+    switch (c->mv.state) {
     case SERVO_MOVE_MOVING:  c->state = SENSE_CAP_MOVING;        break;
     case SERVO_MOVE_ARRIVED: cap_end(c, SENSE_CAP_ARRIVED);      break;
     case SERVO_MOVE_SETTLED: cap_end(c, SENSE_CAP_SETTLED);      break;
@@ -276,21 +279,39 @@ static bool i228_ok(sense_sched_t *s, sense_err_t e)
     return true;
 }
 
-/* INA3221 channel @p ch's current into its window; true with a sample. */
-static bool read_ch_current(sense_sched_t *s, uint8_t ch, sense_value_t *v)
+static void roll_windows(sense_sched_t *s, uint64_t now_ms);
+
+/* A read is done: its time, µs, with the windows rolled to it, so what it
+ * read goes into the window it was read in. */
+static uint64_t stamp(sense_sched_t *s)
 {
-    if (!ch_enabled(s, ch)
-        || ina3221_read_current(&s->i3221, ch, v) != SENSE_OK) {
-        return false;
+    const uint64_t us = s->io.now_us(s->io.ctx);
+    roll_windows(s, us / 1000u);
+    return us;
+}
+
+/* INA3221 channel @p ch's current into its window; true with a sample.
+ * @p at_us, when given, is when the read was done, sample or not. */
+static bool read_ch_current(sense_sched_t *s, uint8_t ch, sense_value_t *v,
+                            uint64_t *at_us)
+{
+    const bool ok = ch_enabled(s, ch)
+                    && ina3221_read_current(&s->i3221, ch, v) == SENSE_OK;
+    const uint64_t us = stamp(s);
+    if (at_us != NULL) {
+        *at_us = us;
     }
-    acc_current(&s->acc[SENSE_SRC_CH1 + ch - 1u], *v);
-    return true;
+    if (ok) {
+        acc_current(&s->acc[SENSE_SRC_CH1 + ch - 1u], *v);
+    }
+    return ok;
 }
 
 static void read_ch_bus(sense_sched_t *s, uint8_t ch)
 {
     int32_t mv = 0;
     if (ch_enabled(s, ch) && ina3221_read_bus(&s->i3221, ch, &mv) == SENSE_OK) {
+        (void)stamp(s);
         acc_voltage(&s->acc[SENSE_SRC_CH1 + ch - 1u], mv * 1000);
     }
 }
@@ -301,6 +322,7 @@ static void read_i228_current(sense_sched_t *s)
     if (!i228_ok(s, ina228_read_current(&s->i228, &v))) {
         return;
     }
+    (void)stamp(s);
     acc_current(&s->acc[SENSE_SRC_INA228], v);
     sense_run_t *r = &s->run;
     if (v.clip != SENSE_CLIP_NONE) {
@@ -328,6 +350,7 @@ static void read_i228_vbus(sense_sched_t *s)
     if (!i228_ok(s, ina228_read_vbus(&s->i228, &uv))) {
         return;
     }
+    (void)stamp(s);
     acc_voltage(&s->acc[SENSE_SRC_INA228], uv);
     s->vbus_uv   = uv;
     s->have_vbus = true;
@@ -358,7 +381,7 @@ static void read_rotation(sense_sched_t *s)
     case ROT_CH3_I:
         if (!s->fast_pair) {
             sense_value_t v = { 0, SENSE_CLIP_NONE };
-            (void)read_ch_current(s, (item == ROT_CH2_I) ? 2u : 3u, &v);
+            (void)read_ch_current(s, (item == ROT_CH2_I) ? 2u : 3u, &v, NULL);
         }
         break;
     case ROT_CH1_V: read_ch_bus(s, 1u); break;
@@ -443,25 +466,24 @@ void sense_sched_tick(sense_sched_t *s)
     (void)ina3221_step(&s->i3221, now_ms32);
     (void)ina228_step(&s->i228, now_ms32);
     totals(s);
-    /* A recovery, a probe or the clear can take the clock past a window's
-     * end: the samples read from here on belong to the window they are
-     * read in. */
-    roll_windows(s, s->io.now_us(s->io.ctx) / 1000u);
 
-    /* CH1, the pair, the INA228, and every second tick the rotation. */
+    /* CH1, the pair, the INA228, and every second tick the rotation.  Each
+     * read is stamped when it is done and goes into the window of that
+     * time: a recovery, a probe, the clear or the reads before it can
+     * take the clock past a window's end. */
     const uint32_t tick = s->ticks++;
     sense_value_t ch1 = { 0, SENSE_CLIP_NONE };
-    const bool have_ch1 = read_ch_current(s, 1u, &ch1);
+    uint64_t ch1_us = 0u;
+    const bool have_ch1 = read_ch_current(s, 1u, &ch1, &ch1_us);
     if (s->fast_pair) {
         sense_value_t v = { 0, SENSE_CLIP_NONE };
-        (void)read_ch_current(s, 2u, &v);
-        (void)read_ch_current(s, 3u, &v);
+        (void)read_ch_current(s, 2u, &v, NULL);
+        (void)read_ch_current(s, 3u, &v, NULL);
     }
     read_i228(s, tick);
     if ((tick & 1u) == 0u) {
         read_rotation(s);
     }
-    /* A sample is stamped when its read is done. */
-    const uint32_t at_t = (uint32_t)(s->io.now_us(s->io.ctx) / 100u);
-    cap_step(s, have_ch1 ? &ch1 : NULL, at_t);
+    /* The capture on CH1's own time, whatever came after it. */
+    cap_step(s, have_ch1 ? &ch1 : NULL, (uint32_t)(ch1_us / 100u));
 }

@@ -41,9 +41,11 @@
  * can outlast a freed bus by up to SENSE_RETRY_MS.
  *
  * Windows.  Fixed SENSE_WINDOW_MS windows on the coprocessor clock,
- * counted in 64 bits from the first tick, each with its number.  For each
- * source -- INA3221 CH1 to CH3 and the INA228 -- the mean, lowest and
- * highest current and the mean and lowest bus voltage.  A clipped current
+ * counted in 64 bits from the first tick, each with its number.  A read is
+ * stamped when it is done and counts in the window that time falls in,
+ * whatever ran before it in the tick.  For each source -- INA3221 CH1 to
+ * CH3 and the INA228 -- the mean, lowest and highest current and the mean
+ * and lowest bus voltage.  A clipped current
  * sample carries no value: it adds nothing to the figures and sets the
  * window's clip flag for its end of the range.  Reading a window ends
  * nothing: the last complete window stays readable until the next one
@@ -69,7 +71,9 @@
  * interval: the moving mean of
  * SENSE_CAP_FILTER_N samples, seeded at the edge with the last of them
  * taken while armed, settled over SENSE_CAP_SETTLE_N samples, and a window
- * of SERVO_MOVE_TIMEOUT_MS plus the capture's lag.  A one-sample excursion
+ * of SERVO_MOVE_TIMEOUT_MS plus the capture's lag, the deadline checked
+ * before a sample is judged: a sample at or past it is never the arrival.
+ * CH1 samples are stamped when CH1's read is done.  A one-sample excursion
  * starts a move only when a quarter of it passes the threshold.  A clipped
  * CH1 sample is at or past the full scale less a step: 1.6376 A on the
  * 0.1 Ω shunt.  The INA3221 leaving online ends a capture as lost.  The

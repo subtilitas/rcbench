@@ -52,31 +52,35 @@ static void recover(void *ctx)
     ++g_recoveries;
 }
 
-/* Bus time on the suite's clock: each transaction takes g_xfer_us, 0 for
- * none; from g_switch_us on, CH1 draws g_switch_a. */
+/* Bus time on the suite's clock: each transaction takes g_xfer_us, and
+ * one to the INA228 g_xfer_228_us more, 0 for none; from g_switch_us on,
+ * CH1 draws g_switch_a and the INA228 g_switch_228_a. */
 static uint64_t g_xfer_us;
+static uint64_t g_xfer_228_us;
 static uint64_t g_switch_us;
 static double   g_switch_a;
+static double   g_switch_228_a;
 
-static void spend(void)
+static void spend(uint8_t addr)
 {
-    g_us += g_xfer_us;
+    g_us += g_xfer_us + ((addr == I228_ADDR) ? g_xfer_228_us : 0u);
     if (g_switch_us != 0u && g_us >= g_switch_us) {
         i3221->amps[0] = g_switch_a;
+        i228->amps[0]  = g_switch_228_a;
     }
 }
 
 static sense_err_t timed_read(void *ctx, uint8_t addr, uint8_t reg,
                               uint8_t *buf, size_t n)
 {
-    spend();
+    spend(addr);
     return fake_read(ctx, addr, reg, buf, n);
 }
 
 static sense_err_t timed_write(void *ctx, uint8_t addr, uint8_t reg,
                                const uint8_t *buf, size_t n)
 {
-    spend();
+    spend(addr);
     return fake_write(ctx, addr, reg, buf, n);
 }
 
@@ -103,14 +107,18 @@ static void rig(uint8_t channels, bool with_recover)
     g_us = 10000000u;
     g_recoveries = 0u;
     g_xfer_us = 0u;
+    g_xfer_228_us = 0u;
     g_switch_us = 0u;
     sense_sched_init(&s, &io, &cfg);
 }
 
+/* One tick, and the next 1 ms after this one began, however long its
+ * transactions took. */
 static void tick(void)
 {
+    const uint64_t at = g_us;
     sense_sched_tick(&s);
-    g_us += 1000u;
+    g_us = at + 1000u;
 }
 
 static void ticks(unsigned n)
@@ -771,10 +779,116 @@ TEST_CASE(a_sample_after_a_probe_across_a_boundary_is_the_next_windows)
     CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
     CHECK_EQ(w.number, n);
     CHECK_EQ(w.i_max_ua, 500000);
-    ticks(50u);
+    ticks(51u);                         /* past the next window's end */
     CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
     CHECK_EQ(w.number, (uint16_t)(n + 1u));
     CHECK_EQ(w.i_max_ua, 1000000);
+}
+
+/* A tick's reads take up to 690 µs and can straddle a window's end: CH1,
+ * read before it, counts in the window that ends; the INA228, read after
+ * it, in the next. */
+TEST_CASE(a_read_batch_across_a_boundary_splits_between_the_windows)
+{
+    rig(1u, true);
+    i3221->amps[0] = 0.5;
+    i228->amps[0]  = 10.0;
+    ticks(10u);
+    const uint64_t b_ms = s.t0_ms + SENSE_WINDOW_MS * (s.win + 1u);
+    while (g_us / 1000u < b_ms - 3u) {
+        tick();
+    }
+    if ((s.ticks & 1u) != 0u) {
+        tick();                         /* to a tick that reads CURRENT */
+    }
+    const uint16_t n = (uint16_t)s.win;
+    g_us = b_ms * 1000u - 500u;         /* CH1 done at -200 µs, the INA228
+                                           at +100 µs */
+    g_xfer_us = 300u;
+    i3221->amps[0] = 0.7;
+    i228->amps[0]  = 20.0;
+    tick();
+    g_xfer_us = 0u;
+    i3221->amps[0] = 0.5;
+    i228->amps[0]  = 10.0;
+    sense_window_t w;
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.number, n);
+    CHECK_EQ(w.i_max_ua, 700000);
+    CHECK(sense_sched_window(&s, SENSE_SRC_INA228, &w));
+    CHECK_NEAR((double)w.i_max_ua, 10.0e6, 400.0);
+    ticks(51u);                         /* past the next window's end */
+    CHECK(sense_sched_window(&s, SENSE_SRC_INA228, &w));
+    CHECK_EQ(w.number, (uint16_t)(n + 1u));
+    CHECK_NEAR((double)w.i_max_ua, 20.0e6, 400.0);
+    CHECK(sense_sched_window(&s, SENSE_SRC_CH1, &w));
+    CHECK_EQ(w.i_max_ua, 500000);
+}
+
+/* A move from 0.12 A at 0.9 A that drops back @p drop_ms after the edge:
+ * the filter shows the drop whole 3 samples later.  The capture's state,
+ * and its arrival in 0.1 ms. */
+static sense_cap_state_t arrival_after(unsigned drop_ms, uint32_t *arrive_t)
+{
+    rig(1u, true);
+    i3221->amps[0] = 0.12;
+    ticks(5u);
+    CHECK(sense_sched_cap_arm(&s, &k_levels));
+    ticks(5u);
+    sense_sched_cap_edge(&s, g_us);
+    i3221->amps[0] = 0.9;
+    ticks(drop_ms);
+    i3221->amps[0] = 0.12;
+    ticks(10u);
+    *arrive_t = s.cap.arrive_t;
+    return s.cap.state;
+}
+
+/* The window is 3005 ms: an arrival 1 ms before it is timed, one exactly
+ * at it or 1 ms past it is late -- the deadline is checked before the
+ * sample is judged. */
+TEST_CASE(an_arrival_at_the_deadline_is_late)
+{
+    uint32_t t = 0u;
+    CHECK_EQ(arrival_after(3001u, &t), SENSE_CAP_ARRIVED);
+    CHECK_EQ(t, 30040u);
+    CHECK_EQ(arrival_after(3002u, &t), SENSE_CAP_LATE);
+    CHECK_EQ(t, 0u);
+    CHECK_EQ(arrival_after(3003u, &t), SENSE_CAP_LATE);
+}
+
+/* The modelled move with the INA228's reads taking @p xfer_us each after
+ * CH1's: its times. */
+static void timed_move(uint64_t xfer_us, uint32_t *move_t, uint32_t *arrive_t)
+{
+    servo_rig(0.95f);
+    g_xfer_228_us = xfer_us;
+    servo_ticks(10u);
+    CHECK(sense_sched_cap_arm(&s, &k_levels));
+    servo_ticks(5u);
+    sense_sched_cap_edge(&s, g_us + 500u);
+    g_cmd = 1900u;
+    for (unsigned k = 0; k < 1000u && s.cap.state <= SENSE_CAP_MOVING; ++k) {
+        servo_tick();
+    }
+    CHECK_EQ(s.cap.state, SENSE_CAP_ARRIVED);
+    *move_t   = s.cap.move_t;
+    *arrive_t = s.cap.arrive_t;
+}
+
+/* CH1 is stamped when its own read is done: INA228 reads after it that
+ * take 400 µs each move no capture time. */
+TEST_CASE(slow_reads_after_ch1_do_not_move_the_capture)
+{
+    uint32_t m0 = 0u;
+    uint32_t a0 = 0u;
+    uint32_t m1 = 0u;
+    uint32_t a1 = 0u;
+    timed_move(0u, &m0, &a0);
+    timed_move(400u, &m1, &a1);
+    CHECK_EQ(m1, m0);
+    CHECK_EQ(a1, a0);
+    CHECK(a0 >= 6670u);
 }
 
 /* ---------------------------------------------------- the seeded filter */
@@ -842,6 +956,9 @@ int main(void)
     RUN(a_failed_voltage_read_leaves_the_next_current_without_power);
     RUN(windows_and_captures_run_on_across_the_wraps);
     RUN(a_sample_after_a_probe_across_a_boundary_is_the_next_windows);
+    RUN(a_read_batch_across_a_boundary_splits_between_the_windows);
+    RUN(an_arrival_at_the_deadline_is_late);
+    RUN(slow_reads_after_ch1_do_not_move_the_capture);
     RUN(a_one_sample_transient_at_the_edge_starts_no_move);
     RUN(the_capture_states_are_the_links);
     return test_summary("sense_sched");
