@@ -54,6 +54,11 @@ sweep starts over from the curve's beginning, and the alert band says so.
   value's position at its own power-up; a two-stage menu whose changes need
   different positions is refused. The warning and the run show POWER-UP AT
   when the position is not MIN.
+- **A value's own entry time.** `values[].entry_hold_ms` gives the wait
+  from power-on to the menu where the manual names one for that value:
+  Kontronik SUN PLUS modes 4 to 6 wait 5 s, the others 2 s, and the button
+  is asked for at that time. The entry also lasts at least the longest
+  `at_power_up` hold.
 
 ### Changed
 

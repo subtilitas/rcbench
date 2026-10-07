@@ -886,6 +886,10 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
                                    COUNT(k_throttle) - 1);
             et = (esc_throttle_t)(x < 0 ? 0 : x);
         }
+        /* Power-on to the menu for this value, where the manual gives one
+         * other than the entry's: absent or null, the entry's. */
+        int64_t hold = 0;
+        (void)get_num(d, ti, "entry_hold_ms", w, 0, 600000, true, &hold);
         if (v != NULL && !d->failed) {
             const uint8_t bit = (uint8_t)(1u << ((uint8_t)num & 7u));
             if ((seen[(uint8_t)num >> 3] & bit) != 0u) {
@@ -893,7 +897,8 @@ static void decode_values(dec_t *d, uint32_t arr, const char *iw,
                 return;
             }
             seen[(uint8_t)num >> 3] |= bit;
-            v[j] = (esc_value_t){ name, (uint8_t)num, dflt, et };
+            v[j] = (esc_value_t){ name, (uint8_t)num, dflt, et,
+                                  (uint32_t)hold };
         }
     }
     if (defaults > 1u) {

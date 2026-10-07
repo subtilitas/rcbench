@@ -342,7 +342,10 @@ def check(path: pathlib.Path) -> dict:
                 pick(v, "entry_throttle", vw,
                      {k: x for k, x in THROTTLE.items() if k != "none"})
             out.append({"name": text(v, "name", vw), "n": vn,
-                        "d": "true" if dflt else "false", "et": et})
+                        "d": "true" if dflt else "false", "et": et,
+                        # Power-on to the menu for this value, where the
+                        # manual gives one other than the entry's.
+                        "eh": num(v, "entry_hold_ms", vw, 600000) or 0})
         want(defaults <= 1, f"{iw}.values", "more than one default")
         p["items"].append({"name": text(it, "name", iw), "key": key,
                            "n": number, "values": out, "applies": applies,
@@ -395,7 +398,7 @@ def emit(profiles: list[dict]) -> str:
             o.append(f"static const esc_value_t {n}_v{k}[] = {{\n")
             for v in it["values"]:
                 o.append(f"    {{ {c_str(v['name'])}, {v['n']}u, "
-                         f"{v['d']}, {v['et']} }},\n")
+                         f"{v['d']}, {v['et']}, {v['eh']}u }},\n")
             o.append("};\n")
             if it["applies"]:
                 o.append(f"static const char *const {n}_a{k}[] = {{\n")
@@ -514,6 +517,10 @@ def self_test() -> list[str]:
         "value entry an object": at(val, '"entry_throttle": {"throttle": '
                                     '"mid"}, ' + val),
         "value entry false": at(val, '"entry_throttle": false, ' + val),
+        "value hold 600001": at(val, '"entry_hold_ms": 600001, ' + val),
+        "value hold -1": at(val, '"entry_hold_ms": -1, ' + val),
+        "value hold 2.5": at(val, '"entry_hold_ms": 2.5, ' + val),
+        "value hold a string": at(val, '"entry_hold_ms": "5000", ' + val),
         "manual on a full profile": man(f"[{jumper}]", "full"),
         "manual on a profile nobody runs": man(f"[{jumper}]", "none"),
         "manual empty": man("[]"),
@@ -559,6 +566,8 @@ def self_test() -> list[str]:
         "store min": at(sel, '"store": {"throttle": "min"}, ' + sel),
         "value entry null": at(val, '"entry_throttle": null, ' + val),
         "value entry mid": at(val, '"entry_throttle": "mid", ' + val),
+        "value hold null": at(val, '"entry_hold_ms": null, ' + val),
+        "value hold 600000": at(val, '"entry_hold_ms": 600000, ' + val),
         "manual null": at(auto, auto + ' "manual": null,'),
         "manual two steps": man(f"[{jumper}, {pull}]"),
         "manual four steps of one kind": man("[" + ", ".join([pull] * 4)

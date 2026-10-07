@@ -1704,6 +1704,62 @@ TEST_CASE(a_car_mode_is_powered_up_from_the_middle)
     CHECK_EQ(esc_stick_change_entry(NULL, &c[0]), ESC_THR_MIN);
 }
 
+/* SUN PLUS waits 5 s for modes 4 to 6 and 2 s for the rest: the button
+ * is asked for when the mode's own wait is over, not the scheme's. */
+TEST_CASE(a_value_waits_its_own_entry_time)
+{
+    static const struct { uint8_t mode; uint32_t ms; } k[] = {
+        { 4, 5000u }, { 2, 2000u }, { 6, 5000u },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        rig("kontronik-sun-plus");
+        esc_stick_change_t c[1] = { change(1, k[i].mode) };
+        CHECK_EQ(esc_stick_change_entry_ms(r.p, &c[0], &r.t), k[i].ms);
+        CHECK(start(c, 1));
+        run_until_phase(ESC_STICK_ENTRY, 10000u);
+        CHECK_EQ(esc_stick_entry_ms(&r.e), k[i].ms);
+        const uint32_t on = r.e.on_ms;
+        run_until_phase(ESC_STICK_HAND_ON, 20000u);
+        CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);
+        if (r.e.phase_ms - on < k[i].ms || r.e.phase_ms - on > k[i].ms + 5u) {
+            T_FAIL("mode %u asked after %u ms, want %u", k[i].mode,
+                   (unsigned)(r.e.phase_ms - on), (unsigned)k[i].ms);
+        }
+        run_for(ESC_STICK_HAND_MIN_MS);
+        CHECK(esc_stick_confirm(&r.e));
+        run_for(240000u);
+        CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+        CHECK_EQ(esc_sim_stored(&r.sim, 1), k[i].mode);
+    }
+    CHECK_EQ(esc_stick_change_entry_ms(NULL, NULL, &r.t), r.t.entry_ms);
+    CHECK_EQ(esc_stick_change_entry_ms(NULL, NULL, NULL), 0u);
+}
+
+/* A two-stage power-up takes one entry time for every change; a value
+ * whose time is under the settle time cannot have a floor. */
+TEST_CASE(an_entry_time_that_cannot_work_is_refused)
+{
+    const char *why = NULL;
+    rig("hobbywing-flyfun-8item");
+    static esc_profile_t two;
+    static esc_item_t two_items[2];
+    static esc_value_t two_values[2];
+    two = *r.p;
+    memcpy(two_items, r.p->items, sizeof(two_items));
+    memcpy(two_values, r.p->items[1].values, sizeof(two_values));
+    two_values[1].entry_hold_ms = 9000u;
+    two_items[1].values = two_values;
+    two.items = two_items;
+    two.item_count = 2;
+    esc_stick_change_t c[2] = { { 0u, 1u }, { 1u, 1u } };
+    CHECK(!esc_stick_check(&two, c, 2, &r.t, &why));
+    CHECK_STR_EQ(why, "changes need different entry times");
+    CHECK(esc_stick_check(&two, &c[1], 1, &r.t, &why));
+    two_values[1].entry_hold_ms = 400u;
+    CHECK(!esc_stick_check(&two, &c[1], 1, &r.t, &why));
+    CHECK_STR_EQ(why, "ENTRY above 500 ms");
+}
+
 /* sunrise-pro with value 5 of item 2 programmed from the middle. */
 static esc_profile_t g_mid;
 static esc_item_t    g_mid_items[2];
@@ -1877,5 +1933,7 @@ int main(void)
     RUN(a_car_mode_is_powered_up_from_the_middle);
     RUN(each_power_up_enters_from_the_position_of_its_change);
     RUN(a_power_up_position_that_cannot_work_is_refused);
+    RUN(a_value_waits_its_own_entry_time);
+    RUN(an_entry_time_that_cannot_work_is_refused);
     return test_summary("esc_stick");
 }

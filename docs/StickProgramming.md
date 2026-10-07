@@ -126,8 +126,10 @@ output off with the current down (`ESC_STICK_OFF_MA`,
 - A two-stage menu, or one that takes several changes a power-up, makes its
   changes in the order the ESC sounds them, so all changes of a run share
   one power-up. A run whose changes need different positions is refused
-  with `changes need different power-up positions`, not reordered. No
-  profile of record has such a mix.
+  with `changes need different power-up positions`, and one whose changes
+  need different entry times (`entry_hold_ms`) with `changes need
+  different entry times`; neither is reordered. No profile of record has
+  such a mix.
 - Where the profile names no rest position the stick rests at the power-up
   position, and the select move has to differ from it.
 
@@ -247,7 +249,7 @@ and `greatplanes-electrifly-c-series`. 10 run:
 | `kontronik-pix` | button marked Taster after 2 s or the tones | none |
 | `kontronik-smile` | button pressed and let go after 2 s or the tones | mode 6 |
 | `kontronik-star-line` | jumper on before the power-up, off after 5 s or the tones | mode 6 |
-| `kontronik-sun-plus` | button after the tones | modes 2, 3, 5, 6, 9 |
+| `kontronik-sun-plus` | button after the tones: 2 s, 5 s for modes 4 to 6 | modes 2, 3, 5, 6, 9 |
 
 The other 14 show their steps and name the reason on their row:
 `manual step` for `kontronik-3p`, `kontronik-cyber-line`,
@@ -282,7 +284,7 @@ A change of either light repaints both screen buffers.
 | SIGNAL | the power-up position | off | after 1000 ms, so the ESC sees the signal when it starts |
 | MANUAL STEP | entry position | off | before a power-up with a step due: DONE, then POWER ON; no DONE in 60 s: NOT CONFIRMED |
 | POWER ON | entry position | on | when a sample reports the output on; after 3000 ms: NO POWER |
-| ENTRY | entry position | on | ENTRY after power-on: the profile's `hold_ms` where it states one, and no less than the longest `hold_ms` of an `at_power_up` step |
+| ENTRY | entry position | on | ENTRY after power-on: the value's `entry_hold_ms`, else the profile's `hold_ms` where it states one, and no less than the longest `hold_ms` of an `at_power_up` step |
 | MANUAL STEP, POWERED | entry position, MIN | on | after ENTRY with a `before_menu` step due: DONE, then the menu; no DONE in 60 s: NOT CONFIRMED |
 | ITEMS | rest position | on | an item group in order names a wanted item: the select move |
 | VALUES | where the last move left it | on | a value group in order names the wanted value: the value move |
@@ -558,6 +560,11 @@ engine's stores no value other than the one asked for.
   powered up at MID as if it were the middle. The add-on modes (7, 9) are programmed
   from the back; whether they store the stick range again on an ESC set to
   a car mode is not stated.
+- A mode list with a gap never has the numbers after the gap, nor the
+  lowest, acted on, as the order rule reads a skipped number as a missed
+  group: PIX modes 7, 9 and 1 (it lists 1, 2, 3, 7, 9), Smile modes 9 and
+  1, SUN PLUS modes 9 and 1. The run ends with TIMEOUT. Whether these ESCs
+  sound the counts they do not use is not stated.
 - `kontronik-pix` mode 2 asks for a move to the brake position after the
   selection; the run makes none. Whether the ESC stores the mode without it
   is not known.

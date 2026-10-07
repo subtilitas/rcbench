@@ -682,6 +682,7 @@ UI_TEXT(ESC_WHY_NO_RUN,            56, "no run")
 UI_TEXT(ESC_WHY_ONE_VALUE,         56, "one value: nothing to choose")
 UI_TEXT(ESC_WHY_HAND,              27, "manual step")
 UI_TEXT(ESC_WHY_ENTRY_POS,         56, "changes need different power-up positions")
+UI_TEXT(ESC_WHY_ENTRY_TIME,        56, "changes need different entry times")
 
 /* --------------------------------------------------------------- SERVO */
 UI_TEXT(SV_PG_OUTPUT,               0, "OUTPUT")

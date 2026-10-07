@@ -298,22 +298,36 @@ static bool hand_powered(const esc_profile_t *p)
  *     its own.
  *   - The rest is that position where the profile names none, and the
  *     select move has to differ from it.
- *   - A move to a named rest needs the entry's time.
+ *   - A power-up's entry time is its value's entry_hold_ms where the
+ *     manual gives one, else the timing's entry; the changes a power-up
+ *     shares share one.  A move to a named rest needs a time the profile
+ *     or the value states.
  *   - A hand at a powered ESC with the stick at MAX is not asked for.  MID
  *     is, where the value names it: the manual's motor-off in the middle.
  */
 static const char *entry_refused(const esc_profile_t *p,
-                                 const esc_stick_change_t *ch, size_t i)
+                                 const esc_stick_change_t *ch, size_t i,
+                                 const esc_stick_timing_t *t)
 {
     const esc_throttle_t from = esc_stick_change_entry(p, &ch[i]);
+    const uint32_t wait = esc_stick_change_entry_ms(p, &ch[i], t);
     const bool shared = p->value_select_throttle != ESC_THR_NONE
                         || !p->one_change_per_entry;
     if (shared && from != esc_stick_change_entry(p, &ch[0])) {
         return "changes need different power-up positions";
     }
+    if (shared && wait != esc_stick_change_entry_ms(p, &ch[0], t)) {
+        return "changes need different entry times";
+    }
+    if (wait <= ESC_STICK_SETTLE_MS) {
+        return "ENTRY above 500 ms";
+    }
     const esc_throttle_t rest = (p->listen_throttle != ESC_THR_NONE)
                                     ? p->listen_throttle : from;
-    if (rest != from && p->entry_hold_ms == 0u) {
+    const bool timed = p->entry_hold_ms != 0u
+                       || p->items[ch[i].item].values[ch[i].value]
+                              .entry_hold_ms != 0u;
+    if (rest != from && !timed) {
         return "rest move, no entry time";
     }
     if (p->select_throttle == rest) {
@@ -364,7 +378,7 @@ bool esc_stick_check(const esc_profile_t *p, const esc_stick_change_t *ch,
         if (it->values[ch[i].value].number == 0u) {
             return no(why, "value 0 is not sounded");
         }
-        const char *bad = entry_refused(p, ch, i);
+        const char *bad = entry_refused(p, ch, i, t);
         if (bad != NULL) {
             return no(why, bad);
         }
@@ -956,12 +970,32 @@ const esc_manual_t *esc_stick_hand(const esc_stick_t *e)
  * asks for: the menu, and a before_menu step, come only once the button
  * held while the supply came on may be let go.
  */
+uint32_t esc_stick_change_entry_ms(const esc_profile_t *p,
+                                   const esc_stick_change_t *c,
+                                   const esc_stick_timing_t *t)
+{
+    const uint32_t entry = (t != NULL) ? t->entry_ms : 0u;
+    if (p == NULL || c == NULL || c->item >= p->item_count
+        || c->value >= p->items[c->item].value_count) {
+        return entry;
+    }
+    const uint32_t v = p->items[c->item].values[c->value].entry_hold_ms;
+    return (v != 0u) ? v : entry;
+}
+
 uint32_t esc_stick_entry_ms(const esc_stick_t *e)
 {
     if (e == NULL || e->p == NULL) {
         return 0u;
     }
+    /* The first change still to make is this power-up's (next_entry()). */
     uint32_t ms = e->t.entry_ms;
+    for (uint8_t i = 0; i < e->n; ++i) {
+        if (!e->done[i]) {
+            ms = esc_stick_change_entry_ms(e->p, &e->ch[i], &e->t);
+            break;
+        }
+    }
     for (unsigned i = 0; e->p->manual != NULL && i < e->p->manual_count;
          ++i) {
         const esc_manual_t *m = &e->p->manual[i];

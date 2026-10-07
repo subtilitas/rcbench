@@ -463,8 +463,16 @@ const esc_stick_out_t *esc_stick_out(const esc_stick_t *e);
  */
 const esc_manual_t *esc_stick_hand(const esc_stick_t *e);
 
-/** Power-on to the menu in this run, ms: the timing's entry, and no less
- *  than the longest hold of the profile's at_power_up steps. */
+/** Power-on to the menu for change @p c, ms: its value's entry_hold_ms
+ *  where the manual gives one (Kontronik SUN PLUS modes 4 to 6, 5 s), else
+ *  @p t's entry. */
+uint32_t esc_stick_change_entry_ms(const esc_profile_t *p,
+                                   const esc_stick_change_t *c,
+                                   const esc_stick_timing_t *t);
+
+/** Power-on to the menu at this power-up, ms: the entry time of the change
+ *  it makes, and no less than the longest hold of the profile's
+ *  at_power_up steps. */
 uint32_t esc_stick_entry_ms(const esc_stick_t *e);
 
 /** Whether DONE would count now: ESC_STICK_HAND_MIN_MS after the step was

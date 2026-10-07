@@ -125,17 +125,20 @@
         },
         {
           "number": 4,
-          "name": "Helicopter: throttle compensation for falling battery voltage, linear throttle curve"
+          "name": "Helicopter: throttle compensation for falling battery voltage, linear throttle curve",
+          "entry_hold_ms": 5000
         },
         {
           "number": 5,
           "name": "Competition: maximum brake response, undervoltage and overtemperature cutoff off",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "entry_hold_ms": 5000
         },
         {
           "number": 6,
           "name": "Car: proportional brake, undervoltage cutoff off",
-          "entry_throttle": "mid"
+          "entry_throttle": "mid",
+          "entry_hold_ms": 5000
         },
         {
           "number": 9,
@@ -161,6 +164,7 @@
   "notes": [
     "INDEX.csv lists 'ProgCard'; the manual names the ProgCARD (order no. 9305) for individual parameters.",
     "The motor drive is brushed ('Kollektormotoren'), 3-wire inputs only.",
-    "Modes 2, 3, 5, 6 and 9 start at 'Neutralstellung', which the manual does not place (Kontronik_Sun_Plus.pdf p.4-7); mode 6 has a separate brake step after it. They carry entry_throttle mid, so stick programming does not store them from the brake position. Mode 4's English text gives 'neutral position (back position)'."
+    "Modes 2, 3, 5, 6 and 9 start at 'Neutralstellung', which the manual does not place (Kontronik_Sun_Plus.pdf p.4-7); mode 6 has a separate brake step after it. They carry entry_throttle mid, so stick programming does not store them from the brake position. Mode 4's English text gives 'neutral position (back position)'.",
+    "Modes 4, 5 and 6 wait 5 s for the ascending tones before the button (Kontronik_Sun_Plus.pdf p.5-6 DE, p.12-13 EN), modes 1, 2, 3 and 9 wait 2 s: entry_hold_ms 5000 on modes 4 to 6, the scheme's 2000 ms for the rest."
   ]
 }

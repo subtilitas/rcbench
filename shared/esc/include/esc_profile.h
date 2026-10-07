@@ -102,6 +102,9 @@ typedef struct {
     /** The stick position the manual programs this value from, where it
      *  differs by value; ESC_THR_NONE: the profile's entry position. */
     esc_throttle_t entry_throttle;
+    /** Power-on to the menu when this value is programmed, where the
+     *  manual gives one other than the entry's; 0: the entry's. */
+    uint32_t       entry_hold_ms;
 } esc_value_t;
 
 typedef struct {

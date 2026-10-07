@@ -146,6 +146,8 @@ static void same(const esc_profile_t *a, const esc_profile_t *b)
             CHECK_EQ(x->values[k].is_default, y->values[k].is_default);
             CHECK_EQ(x->values[k].entry_throttle,
                      y->values[k].entry_throttle);
+            CHECK_EQ(x->values[k].entry_hold_ms,
+                     y->values[k].entry_hold_ms);
         }
     }
     CHECK_EQ(a->manual_count, b->manual_count);
@@ -253,6 +255,55 @@ TEST_CASE(a_value_reads_the_stick_position_it_is_set_from)
         } else {
             CHECK(!ok);
             CHECK_STR_EQ(err, k[i].err);
+        }
+        free(block);
+        free(j);
+    }
+}
+
+/* A value's own entry time, as Kontronik SUN PLUS waits 5 s for modes 4
+ * to 6 and 2 s for the rest; the generator holds it to the same range. */
+TEST_CASE(a_value_reads_its_own_entry_time)
+{
+    static const char from[] = "{\"number\": 2, \"name\": \"on\"}";
+    static const struct {
+        const char *to, *err;
+        uint32_t ms;
+    } k[] = {
+        { "{\"number\": 2, \"name\": \"on\", \"entry_hold_ms\": 5000}",
+          NULL, 5000u },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_hold_ms\": null}",
+          NULL, 0u },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_hold_ms\": 600000}",
+          NULL, 600000u },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_hold_ms\": 600001}",
+          "items[0].values[1].entry_hold_ms: outside", 0u },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_hold_ms\": -1}",
+          "items[0].values[1].entry_hold_ms: outside", 0u },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_hold_ms\": 2.5}",
+          "items[0].values[1].entry_hold_ms: not a whole", 0u },
+        { "{\"number\": 2, \"name\": \"on\", \"entry_hold_ms\": \"5000\"}",
+          "items[0].values[1].entry_hold_ms: not a whole", 0u },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        char *j = subst(from, k[i].to);
+        esc_profile_t p;
+        void *block = NULL;
+        char err[96] = "";
+        const bool ok = esc_profile_parse(j, strlen(j), &p, &block, err,
+                                          sizeof(err));
+        if (k[i].err == NULL) {
+            CHECK(ok);
+            if (ok) {
+                CHECK_EQ(p.items[0].values[1].entry_hold_ms, k[i].ms);
+                CHECK_EQ(p.items[0].values[0].entry_hold_ms, 0u);
+            }
+        } else {
+            CHECK(!ok);
+            if (strncmp(err, k[i].err, strlen(k[i].err)) != 0) {
+                T_FAIL("case %u: got \"%s\", want \"%s...\"", (unsigned)i,
+                       err, k[i].err);
+            }
         }
         free(block);
         free(j);
@@ -1136,6 +1187,7 @@ int main(void)
     RUN(a_menu_reads_the_move_that_stores);
     RUN(a_profile_reads_its_manual_steps);
     RUN(a_value_reads_the_stick_position_it_is_set_from);
+    RUN(a_value_reads_its_own_entry_time);
     RUN(a_manual_step_the_generator_refuses_is_refused_here_too);
     RUN(escapes_become_the_characters_they_name);
     RUN(control_escapes_and_a_surrogate_pair_are_read);

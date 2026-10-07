@@ -139,8 +139,10 @@ Einstieg.
   macht seine Änderungen in der Reihenfolge, in der der ESC sie ausgibt;
   alle Änderungen eines Laufs teilen sich deshalb ein Einschalten. Ein Lauf,
   dessen Änderungen verschiedene Stellungen brauchen, wird abgelehnt, mit
-  `Änderungen brauchen verschiedene Einschaltstellungen`, nicht umsortiert.
-  Kein Profil im Satz hat eine solche Mischung.
+  `Änderungen brauchen verschiedene Einschaltstellungen`, und einer, dessen
+  Änderungen verschiedene Einstiegszeiten (`entry_hold_ms`) brauchen, mit
+  `Änderungen brauchen verschiedene Einstiegszeiten`; keiner wird
+  umsortiert. Kein Profil im Satz hat eine solche Mischung.
 - Wo das Profil keine Ruhestellung nennt, ruht der Knüppel in der
   Einschaltstellung, und die Auswahlbewegung muss sich von ihr
   unterscheiden.
@@ -269,7 +271,7 @@ und `greatplanes-electrifly-c-series`. 10 laufen:
 | `kontronik-pix` | Taster mit der Aufschrift Taster nach 2 s oder den Tönen | keine |
 | `kontronik-smile` | Taster drücken und loslassen nach 2 s oder den Tönen | Modus 6 |
 | `kontronik-star-line` | Jumper vor dem Einschalten auf, nach 5 s oder den Tönen ab | Modus 6 |
-| `kontronik-sun-plus` | Taster nach den Tönen | Modi 2, 3, 5, 6, 9 |
+| `kontronik-sun-plus` | Taster nach den Tönen: 2 s, 5 s bei Modi 4 bis 6 | Modi 2, 3, 5, 6, 9 |
 
 Die anderen 14 zeigen ihre Schritte und nennen den Grund in ihrer Zeile:
 `Handgriff` bei `kontronik-3p`, `kontronik-cyber-line`,
@@ -309,7 +311,7 @@ gezeichnet.
 | SIGNAL | Einschaltstellung | aus | nach 1000 ms, damit der ESC das Signal beim Start sieht |
 | HANDGRIFF | Einstiegsstellung | aus | vor einem Einschalten mit fälligem Schritt: ERLEDIGT, dann EINSCHALTEN; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT |
 | EINSCHALTEN | Einstiegsstellung | an | wenn ein Messwert den Ausgang an meldet; nach 3000 ms: AUSGANG NICHT GEMELDET |
-| EINSTIEG | Einstiegsstellung | an | EINSTIEG nach dem Einschalten: das `hold_ms` des Profils, wo es eines nennt, und nicht kürzer als das längste `hold_ms` eines Schritts `at_power_up` |
+| EINSTIEG | Einstiegsstellung | an | EINSTIEG nach dem Einschalten: das `entry_hold_ms` des Werts, sonst das `hold_ms` des Profils, wo es eines nennt, und nicht kürzer als das längste `hold_ms` eines Schritts `at_power_up` |
 | HANDGRIFF, VERSORGT | Einstiegsstellung, MIN | an | nach EINSTIEG mit einem fälligen Schritt `before_menu`: ERLEDIGT, dann das Menü; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT |
 | PUNKTE | Ruhestellung | an | eine Punktgruppe in Reihenfolge nennt einen gewünschten Punkt: die Auswahlbewegung |
 | WERTE | wo die letzte Bewegung es ließ | an | eine Wertgruppe in Reihenfolge nennt den gewünschten Wert: die Wertbewegung |
@@ -610,6 +612,12 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   die Werte werden bei MID eingeschaltet, als wäre es die Mitte. Die Zusatzmodi (7, 9)
   werden von hinten programmiert; ob sie an einem ESC im Car-Modus den
   Knüppelweg neu speichern, steht nicht fest.
+- Bei einer Modusliste mit Lücke wird auf die Nummern nach der Lücke und
+  auf die niedrigste nie reagiert, weil die Reihenfolgeregel eine
+  übersprungene Nummer als verpasste Gruppe liest: PIX-Modi 7, 9 und 1 (die
+  Liste ist 1, 2, 3, 7, 9), Smile-Modi 9 und 1, SUN-PLUS-Modi 9 und 1. Der
+  Lauf endet mit ZEITLIMIT. Ob diese ESCs die nicht genutzten Zahlen
+  ausgeben, steht nicht fest.
 - `kontronik-pix` Modus 2 verlangt nach der Auswahl eine Bewegung in die
   Bremsstellung; der Lauf macht keine. Ob der ESC den Modus ohne sie
   speichert, ist nicht bekannt.

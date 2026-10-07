@@ -685,6 +685,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_ESC_WHY_ONE_VALUE]      = "ein Wert: nichts zu wählen",
     [TX_ESC_WHY_HAND]           = "Handgriff",
     [TX_ESC_WHY_ENTRY_POS]      = "Änderungen brauchen verschiedene Einschaltstellungen",
+    [TX_ESC_WHY_ENTRY_TIME]     = "Änderungen brauchen verschiedene Einstiegszeiten",
 
     /* ----------------------------------------------------------- SERVO */
     [TX_SV_PG_OUTPUT]           = "AUSGANG",
