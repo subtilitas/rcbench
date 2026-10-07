@@ -2436,6 +2436,14 @@ void servo_screen_sweep_refused(void)
     }
 }
 
+uint16_t servo_cmd_pause_root(const servo_cmd_t *c)
+{
+    if (c == NULL) {
+        return 0u;
+    }
+    return (c->from_pause != 0u) ? c->from_pause : c->pause_seq;
+}
+
 bool servo_cmd_stale(servo_pause_end_t *e, const servo_cmd_t *c)
 {
     if (e == NULL || c == NULL || !e->on) {

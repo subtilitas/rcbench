@@ -4136,11 +4136,12 @@ static bool write_servo(const servo_cmd_t sv)
         const uint32_t since = now_ms() - s_servo_hold_ms;
         if (s_servo_holding && since > OUT_DEFAULT_TIMEOUT_MS) {
             s_pause_ended.on        = true;
-            s_pause_ended.pause_seq = sv.pause_seq;
+            s_pause_ended.pause_seq = servo_cmd_pause_root(&sv);
             s_servo_holding      = false;
             s_servo_held.kind    = SERVO_CMD_NONE;
             s_servo_release_owed = true;
-            atomic_store(&s_servo_hold_lost_seq, (unsigned)sv.pause_seq);
+            atomic_store(&s_servo_hold_lost_seq,
+                         (unsigned)servo_cmd_pause_root(&sv));
             atomic_store(&s_servo_hold_lost, true);
             return true;
         }
@@ -4184,14 +4185,15 @@ static bool write_servo(const servo_cmd_t sv)
                 s_servo_sweep_unknown = true;
             }
             s_pause_ended.on        = true;
-            s_pause_ended.pause_seq = sv.pause_seq;
+            s_pause_ended.pause_seq = servo_cmd_pause_root(&sv);
             s_hold_unanswered    = false;
             s_servo_sweeping     = false;
             s_servo_holding      = false;
             servo_phase_stopped(&s_far_phase);
             s_servo_held.kind    = SERVO_CMD_NONE;
             s_servo_release_owed = true;
-            atomic_store(&s_servo_hold_lost_seq, (unsigned)sv.pause_seq);
+            atomic_store(&s_servo_hold_lost_seq,
+                         (unsigned)servo_cmd_pause_root(&sv));
             atomic_store(&s_servo_hold_lost, true);
             /* Not taken as held: a caller that voids an owed release on
              * success would cancel the one just owed. */
@@ -4833,6 +4835,16 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
      * and start motion nobody asked for.
      */
     if (!link_up && !servo_cmd_survives_link_loss(&sv)) {
+        /*
+         * It superseded the drive held before it on the screen, which ends
+         * it with the link and draws the surfaces at rest: that one is not
+         * said again either, and a position written out there is owed its
+         * release, as servo_let_go() owes it.
+         */
+        if (s_servo_held.kind != SERVO_CMD_NONE || s_servo_written != 0u) {
+            s_servo_release_owed = true;
+        }
+        s_servo_held.kind = SERVO_CMD_NONE;
         return;
     }
     /*

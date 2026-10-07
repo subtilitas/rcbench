@@ -182,6 +182,14 @@ void servo_screen_sweep_refused(void);
  */
 bool servo_cmd_survives_link_loss(const servo_cmd_t *c);
 
+/**
+ * The pause a HOLD @p c ends when the panel lets it go: the pause its chain
+ * rests on (from_pause) when it was posted before an earlier pause's resume
+ * was acknowledged, and otherwise its own.  What the panel records for
+ * servo_cmd_stale() and hands to servo_screen_released().
+ */
+uint16_t servo_cmd_pause_root(const servo_cmd_t *c);
+
 /** A pause the panel has let go of, for servo_cmd_stale(). */
 typedef struct {
     bool     on;

@@ -2540,6 +2540,36 @@ TEST_CASE(a_later_pause_goes_with_the_let_go)
 }
 
 /*
+ * A chained HOLD -- PAUSE before the resume of pause N is acknowledged --
+ * answered late: the panel lets go of the chain's root, N, so it drops the
+ * commands tagged N and the screen, still on N, takes the let-go.  A HOLD
+ * of a sweep running on its own ends its own pause.
+ */
+TEST_CASE(a_late_chained_hold_ends_its_root)
+{
+    servo_cmd_t hold;
+    paused_on_n(&hold);
+    CHECK_EQ(servo_cmd_pause_root(&hold), hold.pause_seq);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED */
+    const servo_cmd_t r1 = last_cmd();
+    const servo_cmd_t h2 = pause_go();         /* PAUSE, chained */
+    CHECK(h2.pause_seq != hold.pause_seq);
+    const uint16_t root = servo_cmd_pause_root(&h2);
+    CHECK_EQ(root, hold.pause_seq);
+    servo_pause_end_t ended = { true, root };
+    CHECK(servo_cmd_stale(&ended, &r1));
+    open_settings();
+    tap(TRIM_UP_X, ROW_Y(3));                  /* a position from the chain */
+    const servo_cmd_t pos = last_cmd();
+    close_settings();
+    CHECK(servo_cmd_stale(&ended, &pos));
+    servo_screen_released(root);
+    CHECK(!servo_screen_paused());
+    CHECK(!servo_screen_sweeping());
+    CHECK_EQ(servo_cmd_pause_root(NULL), 0u);
+}
+
+/*
  * A PAUSED that starts a changed curve -- the TEST page changed while
  * paused -- is a new origin, not a resume: it carries no pause, survives a
  * let-go of the old one, and the screen keeps waiting for its start.
@@ -4891,6 +4921,7 @@ int main(void)
     RUN(a_drag_after_pause_outlives_the_let_go);
     RUN(a_resume_and_its_repeat_go_with_the_let_go);
     RUN(a_later_pause_goes_with_the_let_go);
+    RUN(a_late_chained_hold_ends_its_root);
     RUN(a_changed_curve_from_paused_is_a_new_start);
     RUN(no_undo_across_a_let_go);
     RUN(an_undone_pair_keeps_the_resume_waiting);
