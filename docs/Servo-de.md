@@ -328,7 +328,10 @@ beurteilt) NICHT BESTANDEN, wenn eines davon zutrifft:
 Sonst NICHT MESSBAR, wenn eine gezählte Bewegung unerkannt blieb oder der
 Brown-out-Lauf bei seiner ersten Spannung keine Bewegung erkannte, und
 BESTANDEN, wenn keines davon zutrifft. Ein Lauf nur aus dem Brown-out, der
-nichts erkennt, lautet NICHT MESSBAR, nicht BESTANDEN. NICHT MESSBAR sagt, dass der Strom nicht jede
+nichts erkennt, lautet NICHT MESSBAR, nicht BESTANDEN. Seine Zeile
+`Ergebnis` lautet dann `keine Bewegung erkannt bei 5.00 V, der ersten
+Spannung des Brown-out`, und `Brown-out-Start` unter den Grenzen nennt
+dieselbe Spannung mit NICHT MESSBAR. NICHT MESSBAR sagt, dass der Strom nicht jede
 Bewegung zeigen konnte: ein Servo, das sich unter der Schwelle bewegt, und
 eines, das stillsteht, lesen sich gleich. Die Zeile `Ergebnis` nennt, bei
 wie vielen der gezählten Bewegungen keine Bewegung erkannt wurde, und

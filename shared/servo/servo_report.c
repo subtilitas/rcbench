@@ -60,6 +60,9 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_R_RESULT_WHY]     = "Result:         %s - %s",
     [SERVO_STR_R_RESULT_UNSEEN]  = "Result:         %s - %u of %u counted "
                                    "moves showed no movement in the current",
+    [SERVO_STR_R_RESULT_BO_UNSEEN] = "Result:         %s - no movement seen "
+                                     "at %.2f V, the brown-out walk's first "
+                                     "voltage",
     [SERVO_STR_R_DEVICE]         = "Device:         %s",
     [SERVO_STR_R_FIRMWARE]       = "Firmware:       rcbench %s",
     [SERVO_STR_R_LOG]            = "Log:            the .CSV with this "
@@ -160,6 +163,10 @@ static const char *const k_str[SERVO_STR_COUNT] = {
                                    "AT %.2f A: %s",
     [SERVO_STR_R_LIM_LATE]       = "Moves arrived    %u late: %s",
     [SERVO_STR_R_LIM_UNSEEN]     = "Moves seen       %u unseen: %s",
+    [SERVO_STR_R_LIM_BO_SEEN]    = "Brown-out start  movement seen at %.2f "
+                                   "V: %s",
+    [SERVO_STR_R_LIM_BO_UNSEEN]  = "Brown-out start  no movement seen at "
+                                   "%.2f V: %s",
     [SERVO_STR_R_NOT_CHECKED]    = "not checked",
     [SERVO_STR_R_NOT_MEASURED]   = "not measured",
     [SERVO_STR_R_UNM_HEAD]       = "NOT MEASURED",
@@ -302,6 +309,28 @@ static void amps(char *b, size_t n, const servo_test_mean_t *m)
     }
 }
 
+/* The first and the last brown-out voltage that ran to its end; NULL for
+ * none. */
+static void brownout_ran(const servo_test_t *t, const servo_test_step_t **first,
+                         const servo_test_step_t **last)
+{
+    const servo_test_step_t *f = NULL, *l = NULL;
+    for (unsigned k = 0; k < t->step_count; ++k) {
+        if (t->steps[k].brownout && t->steps[k].done) {
+            if (f == NULL) {
+                f = &t->steps[k];
+            }
+            l = &t->steps[k];
+        }
+    }
+    if (first != NULL) {
+        *first = f;
+    }
+    if (last != NULL) {
+        *last = l;
+    }
+}
+
 static bool header_lines(const servo_test_t *t, cursor_t *c)
 {
     const servo_test_cfg_t *g = &t->cfg;
@@ -325,8 +354,14 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
         if (v == SERVO_TEST_ABORTED) {
             snprintf(b, n, S(R_RESULT_WHY), verdict,
                      servo_str_in(c->text, servo_test_abort_str(t->why)));
-        } else if (v == SERVO_TEST_NOT_MEASURABLE) {
+        } else if (v == SERVO_TEST_NOT_MEASURABLE && unseen > 0u) {
             snprintf(b, n, S(R_RESULT_UNSEEN), verdict, unseen, counted);
+        } else if (v == SERVO_TEST_NOT_MEASURABLE) {
+            /* Every counted move seen: the walk's first voltage saw none. */
+            const servo_test_step_t *first = NULL;
+            brownout_ran(t, &first, NULL);
+            snprintf(b, n, S(R_RESULT_BO_UNSEEN), verdict,
+                     (first != NULL) ? (double)first->set_v : 0.0);
         } else {
             snprintf(b, n, S(R_RESULT), verdict);
         }
@@ -596,28 +631,6 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
     return false;
 }
 
-/* The first and the last brown-out voltage that ran to its end; NULL for
- * none. */
-static void brownout_ran(const servo_test_t *t, const servo_test_step_t **first,
-                         const servo_test_step_t **last)
-{
-    const servo_test_step_t *f = NULL, *l = NULL;
-    for (unsigned k = 0; k < t->step_count; ++k) {
-        if (t->steps[k].brownout && t->steps[k].done) {
-            if (f == NULL) {
-                f = &t->steps[k];
-            }
-            l = &t->steps[k];
-        }
-    }
-    if (first != NULL) {
-        *first = f;
-    }
-    if (last != NULL) {
-        *last = l;
-    }
-}
-
 static bool brownout_lines(const servo_test_t *t, cursor_t *c)
 {
     char *b = c->buf;
@@ -740,6 +753,19 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
         }
         snprintf(b, n, S(R_LIM_UNSEEN), unseen,
                  (unseen > 0u) ? S(NOT_MEASURABLE) : S(PASS));
+        return true;
+    }
+    /* The walk's first voltage, where it ran: no movement there measured
+     * nothing, and the run says so. */
+    const servo_test_step_t *first = NULL;
+    brownout_ran(t, &first, NULL);
+    if (first != NULL && here(c)) {
+        if (first->moved) {
+            snprintf(b, n, S(R_LIM_BO_SEEN), (double)first->set_v, S(PASS));
+        } else {
+            snprintf(b, n, S(R_LIM_BO_UNSEEN), (double)first->set_v,
+                     S(NOT_MEASURABLE));
+        }
         return true;
     }
     return false;

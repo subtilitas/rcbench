@@ -27,7 +27,8 @@ history is in git.
   0.044 A, read FAIL with 34 late moves; its replay reads NOT MEASURABLE,
   25 of 46 unseen, none late. A brown-out walk with no movement at 5.00 V
   reads not measurable, and makes the run NOT MEASURABLE: a run of the walk
-  alone that sees nothing no longer reads PASS. With no move arrived the
+  alone that sees nothing no longer reads PASS. The result line then names
+  that voltage, and a `Brown-out start` line under the limits gives it. With no move arrived the
   `Travel time` line reads `longest --` and `not measured`, not `0 ms`.
 - **A move's window adds the meter's lag.** A move is late when it has not
   arrived 3000 ms plus the meter's lag after its command: 3300 ms on the PD

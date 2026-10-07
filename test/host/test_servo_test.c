@@ -510,6 +510,8 @@ TEST_CASE(the_brownout_walk_ends_at_the_floor)
     CHECK(strstr(g.report, "down to 3.30 V") != NULL);
     CHECK(strstr(g.report, "lower not tested") != NULL);
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_PASS);
+    CHECK(strstr(g.report, "Brown-out start  movement seen at 5.00 V: PASS\n")
+          != NULL);
 
     /* Not moving at the first: said so. */
     rig_fresh();
@@ -523,10 +525,15 @@ TEST_CASE(the_brownout_walk_ends_at_the_floor)
     CHECK(stopped);
     CHECK(strstr(g.report, "No movement seen at 5.00 V, the first step: "
                            "not measurable.") != NULL);
-    /* The walk is the whole run, and it measured nothing. */
+    /* The walk is the whole run, and it measured nothing: the result and
+     * the limits say where, not "0 of 0 moves". */
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_NOT_MEASURABLE);
-    CHECK(strstr(g.report, "Result:         NOT MEASURABLE - 0 of 0 counted "
-                           "moves") != NULL);
+    CHECK(strstr(g.report, "Result:         NOT MEASURABLE - no movement "
+                           "seen at 5.00 V, the brown-out walk's first "
+                           "voltage\n") != NULL);
+    CHECK(strstr(g.report, "0 of 0") == NULL);
+    CHECK(strstr(g.report, "Brown-out start  no movement seen at 5.00 V: "
+                           "NOT MEASURABLE\n") != NULL);
 
     /* A step that moves and passes, and a walk that sees nothing at its
      * first voltage: the walk measured nothing, so the run is not PASS. */
@@ -542,6 +549,12 @@ TEST_CASE(the_brownout_walk_ends_at_the_floor)
     CHECK_EQ(g.t.steps[0].timeouts, 0u);
     CHECK(!g.t.steps[1].moved);
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_NOT_MEASURABLE);
+    CHECK(strstr(g.report, "Result:         NOT MEASURABLE - no movement "
+                           "seen at 5.00 V, the brown-out walk's first "
+                           "voltage\n") != NULL);
+    CHECK(strstr(g.report, "Moves seen       0 unseen: PASS\n") != NULL);
+    CHECK(strstr(g.report, "Brown-out start  no movement seen at 5.00 V: "
+                           "NOT MEASURABLE\n") != NULL);
 }
 
 /* A cap under 5.0 V starts the walk at the cap. */

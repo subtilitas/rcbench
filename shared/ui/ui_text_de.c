@@ -1095,6 +1095,9 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_R_RESULT_UNSEEN]  = "Ergebnis:        %s - bei %u von %u "
                                    "gezählten Bewegungen keine Bewegung im "
                                    "Strom erkannt",
+    [SERVO_STR_R_RESULT_BO_UNSEEN] = "Ergebnis:        %s - keine Bewegung "
+                                     "erkannt bei %.2f V, der ersten "
+                                     "Spannung des Brown-out",
     [SERVO_STR_R_DEVICE]         = "Prüfling:        %s",
     [SERVO_STR_R_FIRMWARE]       = "Firmware:        rcbench %s",
     [SERVO_STR_R_LOG]            = "Log:             die .CSV mit der Nummer "
@@ -1198,6 +1201,10 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
                                    "BLOCKIERT AB %.2f A: %s",
     [SERVO_STR_R_LIM_LATE]       = "Verspätet        %u Bewegungen: %s",
     [SERVO_STR_R_LIM_UNSEEN]     = "Unerkannt        %u Bewegungen: %s",
+    [SERVO_STR_R_LIM_BO_SEEN]    = "Brown-out-Start  Bewegung erkannt bei "
+                                   "%.2f V: %s",
+    [SERVO_STR_R_LIM_BO_UNSEEN]  = "Brown-out-Start  keine Bewegung erkannt "
+                                   "bei %.2f V: %s",
     [SERVO_STR_R_NOT_CHECKED]    = "nicht geprüft",
     [SERVO_STR_R_NOT_MEASURED]   = "nicht gemessen",
     [SERVO_STR_R_UNM_HEAD]       = "NICHT GEMESSEN",

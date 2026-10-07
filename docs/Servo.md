@@ -305,7 +305,9 @@ when one of these holds:
 Otherwise NOT MEASURABLE when a counted move was unseen, or when the
 brown-out walk saw no movement at its first voltage, and PASS when neither
 holds. A run of the brown-out walk alone that sees nothing reads NOT
-MEASURABLE, not PASS. NOT MEASURABLE says the current could not show every move: a servo
+MEASURABLE, not PASS. Its `Result` line then reads `no movement seen at
+5.00 V, the brown-out walk's first voltage`, and `Brown-out start` under
+the limits gives the same voltage with NOT MEASURABLE. NOT MEASURABLE says the current could not show every move: a servo
 moving under the threshold and one standing still read alike. The report's
 `Result` line gives how many of the counted moves showed no movement, and
 `Moves seen` how many were unseen. A servo that does not move reads NOT
@@ -399,6 +401,7 @@ Travel time      longest 989 ms, limit 800 ms: upper bound, not checked against 
 Stall threshold  highest 0.077 A, STALL AT 2.00 A: PASS
 Moves arrived    0 late: PASS
 Moves seen       0 unseen: PASS
+Brown-out start  movement seen at 5.00 V: PASS
 
 NOT MEASURED
 Position: nothing measures the horn; every result is the supply's current.

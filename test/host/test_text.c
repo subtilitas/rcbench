@@ -382,6 +382,7 @@ TEST_CASE(the_report_labels_line_up)
 {
     static const servo_str_t k_labelled[] = {
         SERVO_STR_R_RESULT, SERVO_STR_R_RESULT_WHY, SERVO_STR_R_RESULT_UNSEEN,
+        SERVO_STR_R_RESULT_BO_UNSEEN,
         SERVO_STR_R_DEVICE,
         SERVO_STR_R_FIRMWARE, SERVO_STR_R_LOG, SERVO_STR_R_SUPPLY,
         SERVO_STR_R_READINGS, SERVO_STR_R_READINGS_FEW, SERVO_STR_R_SKIPPED,
@@ -400,6 +401,7 @@ TEST_CASE(the_report_labels_line_up)
         SERVO_STR_R_LIM_TRAVEL_NONE,
         SERVO_STR_R_LIM_STALL,
         SERVO_STR_R_LIM_LATE, SERVO_STR_R_LIM_UNSEEN,
+        SERVO_STR_R_LIM_BO_SEEN, SERVO_STR_R_LIM_BO_UNSEEN,
     };
     for (int l = 0; l < UI_LANG_COUNT; ++l) {
         const ui_language_t *t = ui_text_table((ui_lang_t)l);
