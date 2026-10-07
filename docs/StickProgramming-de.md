@@ -330,7 +330,10 @@ BESTÄTIGT. Dieses Ende, und jedes andere ab der Auswahl des Werts --
 während der ESC speichert (SPEICHERN) oder während der Schritt gefragt
 ist --, schaltet das Netzteil während des Speicherns oder der Bestätigung
 aus, und das Ergebnis sagt, dass der Modus womöglich nicht gespeichert
-ist, und markiert die Änderung UNSICHER statt AUSGEFÜHRT. Dasselbe gilt
+ist, und markiert die Änderung UNSICHER statt AUSGEFÜHRT: die Zählung der
+ausgeführten Auswahlen lässt sie aus, und liegt sie hinter der vierten
+Änderung, zählt die letzte Zeile sie (`UND 2 WEITERE, 1 DAVON
+AUSGEFÜHRT, 1 UNSICHER`). Dasselbe gilt
 für jedes Profil, dessen Wert durch Bewegungen nach der Auswahl
 gespeichert wird (`scheme.store`, `after_select`), mit oder ohne einen
 solchen Schritt, bis die letzte dieser Bewegungen gemacht ist.

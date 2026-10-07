@@ -3073,6 +3073,32 @@ static bool sp_red(void)
            && esc_stick_reason_is_fault(e->reason);
 }
 
+/* The result's count of the selections made, for certain: one cut short
+ * while the ESC stored or confirmed it is not counted. */
+static void sp_result_head(const esc_stick_t *e, char *buf, size_t n)
+{
+    snprintf(buf, n, TR(SP_MADE_N), esc_stick_made_count(e),
+             (unsigned)e->n);
+}
+
+/* The changes past the first @p shown, as the result's last line says
+ * them: how many, how many made, and the one unsure among them. */
+static void sp_result_more(const esc_stick_t *e, unsigned shown, char *buf,
+                           size_t n)
+{
+    unsigned made = 0u, unsure = 0u;
+    for (unsigned i = shown; i < e->n; ++i) {
+        unsure += esc_stick_unsure(e, i) ? 1u : 0u;
+        made += (e->done[i] && !esc_stick_unsure(e, i)) ? 1u : 0u;
+    }
+    if (unsure > 0u) {
+        snprintf(buf, n, TR(SP_MORE_UNSURE), (unsigned)(e->n - shown), made,
+                 unsure);
+    } else {
+        snprintf(buf, n, TR(SP_MORE), (unsigned)(e->n - shown), made);
+    }
+}
+
 static void sp_draw_result(gfx_canvas_t *c)
 {
     const esc_stick_t *e = &s.st.run;
@@ -3091,8 +3117,7 @@ static void sp_draw_result(gfx_canvas_t *c)
              1);
     const int y0 = PARM_Y + 80;
     const int pitch = 22;
-    snprintf(line, sizeof(line), TR(SP_MADE_N),
-             esc_stick_done_count(e), (unsigned)e->n);
+    sp_result_head(e, line, sizeof(line));
     gfx_text(c, PAD + 12, y0, line, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT), 1);
     /* Five lines fit; past five, the fifth says how many more. */
@@ -3101,20 +3126,14 @@ static void sp_draw_result(gfx_canvas_t *c)
         char what[96];
         sp_change_text(&e->ch[i], what, sizeof(what));
         snprintf(line, sizeof(line), "%s  %s",
-                 (e->done[i] && i == e->active && esc_stick_cut_short(e))
-                     ? TR(SP_MADE_CUT)
+                 esc_stick_unsure(e, i) ? TR(SP_MADE_CUT)
                  : e->done[i] ? TR(SP_MADE) : TR(SP_NOT_MADE), what);
         sp_text(c, PAD + 12, y0 + (int)(i + 1u) * pitch, line,
                 SP_LINE_CELLS,
                 e->done[i] ? ui_theme_color(UI_C_TEXT) : dim);
     }
     if (shown < e->n) {
-        unsigned made = 0u;
-        for (unsigned i = shown; i < e->n; ++i) {
-            made += e->done[i] ? 1u : 0u;
-        }
-        snprintf(line, sizeof(line), TR(SP_MORE),
-                 (unsigned)(e->n - shown), made);
+        sp_result_more(e, shown, line, sizeof(line));
         gfx_text(c, PAD + 12, y0 + 5 * pitch, line, UI_FONT_LABEL, dim, 1);
     }
     /* Below the changes, two lines: what the profile has a person do once
@@ -3893,6 +3912,24 @@ const char *programmer_screen_stick_row_warn(int i)
     const esc_profile_t *p = programmer_screen_stick_row(i, &model);
     return (p != NULL && programmer_screen_stick_row_why(i) == NULL)
                ? sp_model_warn(p, model, warn, sizeof(warn)) : NULL;
+}
+
+const char *programmer_screen_stick_result_head(void)
+{
+    static char line[128];
+    sp_result_head(&s.st.run, line, sizeof(line));
+    return line;
+}
+
+const char *programmer_screen_stick_result_more(void)
+{
+    static char line[128];
+    const unsigned shown = (s.st.run.n > 5u) ? 4u : s.st.run.n;
+    line[0] = '\0';
+    if (shown < s.st.run.n) {
+        sp_result_more(&s.st.run, shown, line, sizeof(line));
+    }
+    return line;
 }
 
 const char *programmer_screen_stick_left_text(void)

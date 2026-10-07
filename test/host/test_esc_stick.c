@@ -1971,6 +1971,13 @@ TEST_CASE(a_store_cut_before_its_moves_says_so)
         ended_safe();
         CHECK_EQ(esc_stick_cut_short(&r.e), i == 0);
         CHECK(!esc_stick_lock_risk(&r.e));
+        /* Selected, not stored for certain: not counted as made. */
+        CHECK_EQ(esc_stick_unsure(&r.e, 0u), i == 0);
+        CHECK_EQ(esc_stick_made_count(&r.e), (i == 0) ? 0u : 1u);
+        CHECK_EQ(esc_stick_done_count(&r.e), 1u);
+        CHECK(!esc_stick_unsure(&r.e, 1u));
+        CHECK(!esc_stick_unsure(NULL, 0u));
+        CHECK_EQ(esc_stick_made_count(NULL), 0u);
     }
     /* Run through, the moves made: not cut short. */
     rig_hand("kontronik-pix", k, 1);

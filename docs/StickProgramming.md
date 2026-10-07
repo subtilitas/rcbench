@@ -299,7 +299,9 @@ with NOT CONFIRMED. That end, and every other from the selection of the
 value on -- while the ESC stores (STORING) or while the step is asked --
 switches the supply off under the store or the confirmation, and the
 result says the mode may not be stored and marks the change UNSURE, not
-MADE. The same holds for any profile whose value is stored by moves after
+MADE: the count of selections made leaves it out, and where it is past
+the fourth change the last line counts it (`AND 2 MORE, 1 OF THEM MADE,
+1 UNSURE`). The same holds for any profile whose value is stored by moves after
 its selection (`scheme.store`, `after_select`), with or without such a
 step, until the last of those moves is made.
 

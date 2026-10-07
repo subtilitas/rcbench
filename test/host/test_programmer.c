@@ -2101,6 +2101,88 @@ TEST_CASE(the_supply_stays_on_until_done_after_the_store)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/*
+ * A selection cut short while the ESC confirms it is not counted as made:
+ * six changes on a two-stage card profile with a step before the
+ * power-off, aborted while that step is asked: 5 of 6 made.  One being
+ * confirmed past the four rows shown is named unsure on the summary line.
+ * A 1-of-1 run cut the same way says 0 of 1.
+ */
+TEST_CASE(an_unsure_selection_is_not_counted_as_made)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_BEFORE_POWER_OFF, "Wait for the confirmation tones.",
+          0u, NULL, false, false },
+    };
+    fresh();
+    esc_profiles_clear_overrides();
+    esc_profile_t card = *esc_profiles_find("hobbywing-flyfun-8item");
+    card.id = "card-confirm";
+    card.automatable = ESC_AUTO_ASSISTED;
+    card.automatable_note = "Confirmation before power-off.";
+    card.manual = k;
+    card.manual_count = 1;
+    CHECK(esc_profiles_override(&card, NULL));
+    for (int pass = 0; pass < 2; ++pass) {
+        fresh();
+        open_profile("card-confirm");
+        tap(CANCEL_X, HOLD_Y);               /* the first opening */
+        const int picks = (pass == 0) ? 6 : 1;
+        for (int i = 0; i < picks; ++i) {
+            tap(STEP_UP_X, STEP_CY(i));
+        }
+        tap(WRITE_X, BTN_CY);
+        hold_for(2.25f);
+        static rig_t r;
+        rig_start(&r);
+        r.no_watch = true;
+        const esc_stick_t *run = programmer_screen_stick();
+        CHECK_EQ(run->n, (uint8_t)picks);
+        for (uint32_t i = 0; i < 900000u && esc_stick_running(run)
+                             && run->phase != ESC_STICK_HAND_END; ++i) {
+            rig_step(&r);
+        }
+        CHECK_EQ(run->phase, ESC_STICK_HAND_END);
+        CHECK_EQ(esc_stick_done_count(run), (unsigned)picks);
+        tap(CANCEL_X, HOLD_Y);               /* ABORT on the prompt */
+        rig_run(&r, 1000u);
+        CHECK(esc_stick_cut_short(run));
+        CHECK_EQ(esc_stick_made_count(run), (unsigned)picks - 1u);
+        if (pass == 0) {
+            CHECK_STR_EQ(programmer_screen_stick_result_head(),
+                         "5 of 6 selections made.");
+            /* The ESC's loop decides which selection comes last; here the
+             * one being confirmed is shown on a row, and the line for the
+             * two past the fourth counts both made. */
+            CHECK(run->active < 4u && esc_stick_unsure(run, run->active));
+            CHECK_STR_EQ(programmer_screen_stick_result_more(),
+                         "AND 2 MORE, 2 OF THEM MADE");
+            /* The same end with the one being confirmed past the fourth
+             * row: the line names it unsure (the run's state moved to
+             * that change, as a loop that sounds it last leaves it). */
+            esc_stick_t *moved = (esc_stick_t *)(uintptr_t)run;
+            moved->active = 5u;
+            CHECK(esc_stick_unsure(run, 5u));
+            CHECK_STR_EQ(programmer_screen_stick_result_head(),
+                         "5 of 6 selections made.");
+            CHECK_STR_EQ(programmer_screen_stick_result_more(),
+                         "AND 2 MORE, 1 OF THEM MADE, 1 UNSURE");
+            ui_text_set_language(UI_LANG_DE);
+            CHECK_STR_EQ(programmer_screen_stick_result_more(),
+                         "UND 2 WEITERE, 1 DAVON AUSGEFÜHRT, 1 UNSICHER");
+            draws();
+            ui_text_set_language(UI_LANG_EN);
+        } else {
+            CHECK_STR_EQ(programmer_screen_stick_result_head(),
+                         "0 of 1 selections made.");
+            CHECK_STR_EQ(programmer_screen_stick_result_more(), "");
+        }
+        draws();
+        scr->leave();
+    }
+    esc_profiles_clear_overrides();
+}
+
 /* ABORT on the prompt ends the run as ABORT does: disarmed, supply off. */
 TEST_CASE(abort_on_the_prompt_ends_the_run)
 {
@@ -2890,6 +2972,7 @@ int main(void)
     RUN(the_page_shows_the_entry_the_run_waits);
     RUN(the_hold_needs_every_pre_power_step_read);
     RUN(a_voltage_over_the_escs_rating_is_refused);
+    RUN(an_unsure_selection_is_not_counted_as_made);
     RUN(the_page_offers_only_the_models_items);
     RUN(a_maker_at_its_most_models_lists_every_one);
     RUN(every_step_after_programming_is_shown);

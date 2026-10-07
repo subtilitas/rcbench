@@ -605,6 +605,15 @@ esc_throttle_t esc_stick_store_move(const esc_stick_t *e, unsigned k);
 /** How many selections have been made. */
 unsigned esc_stick_done_count(const esc_stick_t *e);
 
+/** Whether change @p i was selected, but the run was cut short before
+ *  the ESC stored or confirmed it (esc_stick_cut_short()): the selection
+ *  being stored when the run ended. */
+bool esc_stick_unsure(const esc_stick_t *e, unsigned i);
+
+/** The selections made for certain: esc_stick_done_count() less the one
+ *  esc_stick_unsure() names. */
+unsigned esc_stick_made_count(const esc_stick_t *e);
+
 /** The beeps of the group under way. */
 unsigned esc_stick_beeps(const esc_stick_t *e);
 

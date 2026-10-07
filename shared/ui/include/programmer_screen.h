@@ -92,6 +92,11 @@ int programmer_screen_stick_item_at(int i);
  *  unknown; NULL for none.  For tests. */
 const char *programmer_screen_stick_row_warn(int i);
 
+/** The result's count of the selections made, and its line for the
+ *  changes past the fourth ("" when all show), as drawn now; for tests. */
+const char *programmer_screen_stick_result_head(void);
+const char *programmer_screen_stick_result_more(void);
+
 /** The prompt's line on what no DONE does, as the prompt would draw it
  *  now; for tests. */
 const char *programmer_screen_stick_left_text(void);

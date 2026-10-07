@@ -887,6 +887,21 @@ unsigned esc_stick_done_count(const esc_stick_t *e)
     return n;
 }
 
+bool esc_stick_unsure(const esc_stick_t *e, unsigned i)
+{
+    return e != NULL && i < e->n && e->done[i] && i == e->active
+           && esc_stick_cut_short(e);
+}
+
+unsigned esc_stick_made_count(const esc_stick_t *e)
+{
+    unsigned n = 0u;
+    for (unsigned i = 0; e != NULL && i < e->n; ++i) {
+        n += (e->done[i] && !esc_stick_unsure(e, i)) ? 1u : 0u;
+    }
+    return n;
+}
+
 unsigned esc_stick_beeps(const esc_stick_t *e)
 {
     if (e == NULL || !e->det.group_open) {
