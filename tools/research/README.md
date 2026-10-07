@@ -83,7 +83,12 @@ round 1's records, which lack it, are read as round 1. The round's own
 `selection.json` holds the part each function keeps over every round once a
 run of the round is recorded; until then a run reads the previous round's.
 `check` runs the round rules on a throwaway git repository, and fails when
-the plan has no section "Round 2".
+the plan has no section "Round 2". It also runs `record` on throwaway
+clones of a bare origin: two clones on one head, before any run and before
+T6, a commit hook that fails, a record that dies while writing, a record
+while another holds the base, a run directory made during a record, a stopped
+and a refused T6, a commit made during T6, a stash git cannot make, the tree
+`prepare` refuses before T6, and a base directory under a symbolic link.
 
 A follow-up file's `round` is the pass of follow-up tasks within the research
 round, 1 or 2: the plan's "Follow-up tasks run in at most 2 rounds". It is not
@@ -128,6 +133,10 @@ git -C $B/results push origin research/round1-results
 python3 tools/research/session.py raised --base $B
 git -C $B/plan push origin research/round1
 ```
+
+Each command resolves `--base` through symbolic links: git records a
+worktree by its real path, and the paths in the arguments are real paths, so
+a base directory under a link finds the trees an earlier `prepare` made.
 
 A round 2 run needs `research/round2` and `research/round2-results` on the
 remote, both cut from the same `main` commit, and takes `--round 2` on each
@@ -257,7 +266,8 @@ It refuses these without exception:
   specification line whose hardware is selected and whose link is firmware
   work (Scope: "hardware selected, link open"), is not a gap.
 - T6 while any of the rows Q4, Q8 and Q9 is missing or has no decision, and
-  while the output paths have changes.
+  while the results tree has a change anywhere, in the index or the working
+  tree, a file outside the output paths included.
 
 `--stock-exception PART=REASON`, for T6 only and repeatable, records a part
 whose stock gate failure the owner accepts. T6's stock check then counts as
@@ -555,6 +565,14 @@ quantity that shows a reading supersedes failing live readings, and passing
 live readings a failing held quantity. A return whose `category` names another
 category counts as not returned. Only the kept part's rule-5 alternate gates
 its selection, and the alternate of a part on the board must be on the board.
+An alternate that shares a part number or an LCSC number with the part it
+stands in for, by its name or its record's `lcsc` field, an ordering option
+after `#` aside (`part1#TR` for `part1`), is that part under a distributor's
+or packing number and no second source: the function's part, or the Q
+alternative, is marked `second_source_missing`. Another maker's packing
+suffix, as Texas Instruments' reel letter, or a distributor's number whose
+record gives no LCSC number or another one, is not read as the same product:
+a current limitation.
 The kept part counts for a Q4 or Q8 option class in which the datasheet
 verifier confirmed it: `kept_option` when it is the first-ranked part after
 the drops, the option the re-rank gives it in the ranking, or its option when
@@ -618,7 +636,22 @@ decisions or accepted open items differ from the prepared arguments, that
 lacks the result fields or the summary its task writes, or that did not stop
 and lacks the returns its task cannot finish without (P0, or P7 and its
 critic), an output already recorded in any round, a plan or a refusal, a return that does
-not match its schema, and a results tree whose head moved since `prepare`. A
+not match its schema, and a results tree whose head moved since `prepare`.
+It fetches the round's results branch from origin (`--no-fetch` compares with
+the last fetch) and refuses the run when origin's head is past the head the
+run was prepared on: another clone recorded a run on that head first, and
+this run did not see it. Two records that still carry one sequence number,
+pushed in a race past that check, make every gate of `prepare` and `record`
+refuse until the record pushed second is reverted; that run is then prepared
+and run again. One `record` runs at a time in a base directory: it holds a
+lock on `BASE/.record.lock` from its first check to its commit, and a second
+is refused while the first holds it. `record` writes the returns in a
+directory `BASE/.record-RUN-*.tmp` of its own and moves them into the records
+directory just before its commit, so a record that dies while writing leaves
+nothing there for the next `record` or `prepare` to refuse; the next `record`
+removes such a directory. It claims the run's directory by creating it: a
+directory that exists by then refuses the record, and `record` never removes
+a run directory it did not create. A
 task P0 stopped is recorded as `TASK-stopped-N` and does not count as
 recorded. After any run that is not stopped it rewrites the round's
 `selection.json` where it changes, the part each function keeps over every
@@ -667,9 +700,24 @@ being an item accepted open; the same for each part the owner keeps, and the
 line that states it as the owner's, with each check no run confirmed as not
 known; and a verdict with its reason that `tools/jlc_stock.py`
 does what each sentence of its Outputs row states. A stopped T6 leaves the
-output paths as they were. A T6 that `record` refuses, for any reason, an
-unreadable output included, does too, and keeps what P7 changed in a stash
-named `refused T6 RUN_ID` in the results tree. `raised` reads the committed
+results tree as `prepare` left it: the working tree and the index return to
+HEAD and new files are removed, also outside the output paths. A T6 that
+`record` refuses, for any reason, an unreadable output included, does too,
+and keeps what P7 changed in a stash named `refused T6 RUN_ID` in the results
+tree. Every change is staged before the stash, so a staged deletion or rename
+and a file added with intent to add are kept whole. Commits on top of the
+head T6 was prepared on, such as one an agent made, are undone into that
+stash when they change no record and origin does not hold them; otherwise
+they are kept and the refusal says so. With the tree set aside, a results
+branch that origin has moved past only by the merges `prepare` made before T6
+returns to origin's head, and the refusal names the merges dropped: two
+clones that prepared T6 on one head each made such a merge, and after the
+first records and pushes, the second's would make its next `prepare` refuse
+a branch diverged from origin. A branch that holds any other commit origin
+lacks, or a record, is left as it is. When git cannot make the stash, as
+with an `index.lock` left in the tree, the refusal says that setting the
+changes aside failed and lists the files left, and names the stash only when
+git made one with part of them. `raised` reads the committed
 run record only and refuses a plan tree with uncommitted changes. It writes
 each question and function on one line: every run of whitespace, a line break
 among them, becomes one space. A question that only feeds a decision ends in

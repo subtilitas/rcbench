@@ -9,6 +9,7 @@ around each run:
     session.py prepare TASK --base DIR --digikey-env FILE --model M --effort E
                        [--round N] [--followup FILE] [--db FILE] [--no-fetch]
     session.py record TASK OUTPUT --base DIR [--round N] [--name N]
+                      [--no-fetch]
     session.py raised --base DIR [--round N] [--run T1|FU-N]
     session.py script RUN --base DIR [--round N] [--out DIR]
 
@@ -20,8 +21,9 @@ tasks; a later round runs follow-up tasks and a T6 of its own.
 
 `check` holds the files in tools/research/ to the plan: the agent counts of
 the layout, the categories and the rows that carry "P1 asks", the schemas,
-the host table, the round rules on a throwaway repository, and the dry run
-of round1.js when node is installed. It exits 1 on any disagreement.
+the host table, the round rules and record's handling of the results tree
+on throwaway repositories, and the dry run of round1.js when node is
+installed. It exits 1 on any disagreement.
 
 `prepare` fetches origin, checks the run's turn and its answered questions,
 makes the read-only checkout of the round's plan branch at the commit the
@@ -45,9 +47,11 @@ the directory --out names.
 """
 
 import argparse
+import contextlib
 import datetime
 import fcntl
 import hashlib
+import io
 import json
 import os
 import pathlib
@@ -86,10 +90,6 @@ RUNS_DIRS = (RUNS_DIR,)
 # The run name of a fixed input the owner keeps where no run verified it.
 # A run name is T1 to T6 or FU and a suffix, so it cannot clash.
 OWNER = "owner"
-# The files T6 may write: the Outputs table of the plan.
-T6_DIRS = ("hardware/docs/",)
-T6_FILES = ("hardware/STATUS.md", "hardware/README.md", "tools/jlc_stock.py")
-
 
 # The outputs T6 writes, from the Outputs table of the plan.
 T6_REQUIRED = ["hardware/docs/IOBoard.md", "hardware/docs/Parts.md",
@@ -122,14 +122,11 @@ def posix(path):
     return path.replace(os.sep, "/")
 
 
-def t6_output(path):
-    return path in T6_FILES or path.startswith(T6_DIRS)
-
-
 def changed(tree):
     """Paths git reports as changed or new, from NUL-separated output so
     no status column or file name is trimmed. A rename or copy gives both
-    its destination and its source."""
+    its destination and its source, in the index (`R `) or in the working
+    tree (` R`, a file added with intent to add)."""
     raw = git("-C", tree, "status", "--porcelain", "-z",
               "--untracked-files=all", check=False).stdout
     out, parts = [], raw.split("\0")
@@ -138,7 +135,7 @@ def changed(tree):
         entry = parts[i]
         if len(entry) > 3:
             out.append(entry[3:])
-            if entry[0] in "RC" and i + 1 < len(parts):
+            if set(entry[:2]) & set("RC") and i + 1 < len(parts):
                 i += 1  # a rename or copy carries its source next
                 out.append(parts[i])
         i += 1
@@ -486,6 +483,7 @@ def cmd_check(_args):
                          f"prompts of round {n} name")
     fails += round_selftest()
     fails += owner_selftest()
+    fails += record_selftest()
 
     schemas = resolved_schemas()
     js = read(os.path.join(HERE, "round1.js"))
@@ -946,22 +944,332 @@ def owner_selftest():
     return fails
 
 
+def record_selftest():
+    """The operating hazards of record and its trees, on throwaway
+    repositories with a bare origin: changed() on a rename in the working
+    tree; two records with one sequence number; a record after another
+    clone pushed one on the same head; a commit that fails; a record that
+    dies while it writes the returns; two clones that each prepared T6
+    with a merge of their own; a record while another holds the base; a
+    run directory made during a record; a stopped T6 with files outside
+    the outputs and in the index; a refused T6 with a staged deletion, a
+    staged rename and a file added with intent to add, and with a commit
+    an agent made; a stash that cannot be made; the tree prepare refuses
+    before T6; and worktree() under a symbolic link. Returns the failures;
+    reads no network."""
+    fails = []
+    tmp = os.path.realpath(tempfile.mkdtemp(prefix="rcbench-record-"))
+    r1 = posix(runs_dir(1))
+    env = ("-c", "user.name=check", "-c", "user.email=check@localhost",
+           "-c", "commit.gpgsign=false")
+
+    def expect(ok, what):
+        if not ok:
+            fails.append(f"record self-test: {what}")
+
+    def at(*parts):
+        return os.path.join(tmp, *parts)
+
+    def write(path, text):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            f.write(text)
+
+    def clone(name):
+        """BASE/results, a clone of origin on the results branch."""
+        base = at(name)
+        os.makedirs(base)
+        results = os.path.join(base, "results")
+        git("clone", "-q", "-b", RESULTS, at("origin"), results, cwd=tmp)
+        for k, v in (("user.name", "check"), ("user.email", "check@localhost"),
+                     ("commit.gpgsign", "false")):
+            git("-C", results, "config", k, v)
+        return base, results
+
+    def prepared(base, run, task, followup=None, schemas=None):
+        results = os.path.join(base, "results")
+        want = {"task": task, "run": run, "run_id": f"id-{run}",
+                "results_head": git("-C", results, "rev-parse", "HEAD"),
+                "commit": "c", "date": "2026-10-07", "followup": followup,
+                "decisions": {}, "accept_open": None, "research_round": 1,
+                "schemas": schemas or {}}
+        write(os.path.join(base, f"args-{run}.json"), json.dumps(want))
+        return want
+
+    def output(base, want, summary, returns=()):
+        result = {k: want[k] for k in ("task", "run", "run_id", "commit",
+                                       "date", "followup", "decisions",
+                                       "accept_open")}
+        result.update(summary=summary, returns=list(returns), followUps=[],
+                      missing=[], started=len(returns), planned=1)
+        path = os.path.join(base, f"out-{want['run']}.json")
+        write(path, json.dumps({"result": result}))
+        return path
+
+    def record_as(base, task, out, name="1", fetch=False):
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                cmd_record(argparse.Namespace(task=task, output=out,
+                                              base=base, name=name,
+                                              no_fetch=not fetch))
+        except SystemExit as err:
+            return str(err)
+        except (OSError, ValueError, KeyError, TypeError) as err:
+            return f"record failed: {err!r}"
+        return ""
+
+    p24 = {"phases": "P2-P4", "round": 1, "categories": ["R1"], "items": []}
+    fu_summary = {"selection": {}, "figures_open": {}, "q_missing": [],
+                  "chain_failed": []}
+    p0 = [{"label": "P0", "role": "P0", "attempt": 0, "data": {}}]
+    stopped = {"stopped": True, "reasons": ["P0 stopped the task"]}
+    try:
+        use_round(1)
+        seed = at("seed")
+        git("init", "-q", seed, cwd=tmp)
+        for f in ("hardware/docs/IOBoard.md", "hardware/docs/Research.md",
+                  "hardware/STATUS.md", "tools/jlc_stock.py", "README.md"):
+            write(os.path.join(seed, f), f"{f}\n")
+        git("-C", seed, "add", "-A")
+        git("-C", seed, *env, "commit", "-q", "-m", "seed")
+        git("-C", seed, "branch", "-q", RESULTS)
+        # The plan branch, one commit past the results branch, which
+        # prepare merges before T6.
+        git("-C", seed, "checkout", "-q", "-b", BRANCH)
+        write(os.path.join(seed, "hardware/docs/Research.md"), "answers\n")
+        git("-C", seed, *env, "commit", "-q", "-am", "answers")
+        git("init", "-q", "--bare", at("origin"), cwd=tmp)
+        git("-C", seed, "push", "-q", at("origin"), RESULTS, BRANCH)
+
+        # A rename in the working tree carries its source as one in the
+        # index does.
+        _, res = clone("rename")
+        os.rename(os.path.join(res, "README.md"),
+                  os.path.join(res, "hardware", "README2.md"))
+        git("-C", res, "add", "-N", "hardware/README2.md")
+        expect(sorted(changed(res)) == ["README.md", "hardware/README2.md"],
+               f"a rename in the working tree reads as {changed(res)}")
+
+        # Two clones record on one head: the second is refused once the
+        # first is on origin, and a pair that got past it is refused by
+        # every gate.
+        base_a, res_a = clone("a")
+        base_b, res_b = clone("b")
+        # Cloned before any selection.json is pushed.
+        base_c, res_c = clone("c")
+        want_a = prepared(base_a, "FU-X", "FU", p24, {"P0": {}})
+        want_b = prepared(base_b, "FU-Y", "FU", p24, {"P0": {}})
+        got = record_as(base_a, "FU", output(base_a, want_a, fu_summary, p0),
+                        "X", fetch=True)
+        expect(got == "", f"the first of two clones records: {got}")
+        git("-C", res_a, "push", "-q", "origin", RESULTS)
+        got = record_as(base_b, "FU", output(base_b, want_b, fu_summary, p0),
+                        "Y", fetch=True)
+        expect("another clone recorded a run" in got,
+               f"the second clone records on a head origin left: {got!r}")
+        twin = at("twin")
+        git("init", "-q", twin, cwd=tmp)
+        for run in ("FU-X", "FU-Y"):
+            write(os.path.join(twin, r1, run, "task.json"),
+                  json.dumps({"task": "FU", "sequence": 1}))
+        git("-C", twin, "add", "-A")
+        git("-C", twin, *env, "commit", "-q", "-m", "twins")
+        try:
+            runs(twin)
+            expect(False, "two records with one sequence number are read")
+        except SystemExit as err:
+            expect("both carry sequence 1" in str(err),
+                   f"two records with one sequence number: {err}")
+
+        # A commit that fails leaves the records directory clean and
+        # removes the selection.json it created.
+        want_c = prepared(base_c, "FU-Z", "FU", p24, {"P0": {}})
+        out_c = output(base_c, want_c, fu_summary, p0)
+        hooks = at("hooks")
+        write(os.path.join(hooks, "pre-commit"), "#!/bin/sh\nexit 1\n")
+        os.chmod(os.path.join(hooks, "pre-commit"), 0o755)
+        git("-C", res_c, "config", "core.hooksPath", hooks)
+        got = record_as(base_c, "FU", out_c, "Z")
+        expect(" commit " in got and changed(res_c) == [],
+               f"a failed commit leaves {changed(res_c)}: {got!r}")
+        git("-C", res_c, "config", "--unset", "core.hooksPath")
+        # A record that dies while it writes the returns (here on a label
+        # no file can be named) blocks no later record.
+        bad = [p0[0], {**p0[0], "label": "P0/missing"}]
+        got = record_as(base_c, "FU", output(base_c, want_c, fu_summary, bad),
+                        "Z")
+        expect(got.startswith("record failed"),
+               f"a return that cannot be written: {got!r}")
+        got = record_as(base_c, "FU", output(base_c, want_c, fu_summary, p0),
+                        "Z")
+        expect(got == "" and recorded(res_c, "FU-Z")
+               and changed(res_c) == [],
+               f"a record after a failed one and one that died: {got}")
+
+        # A stopped T6 returns the whole tree and its index to HEAD.
+        base_s, res_s = clone("s")
+        want_s = prepared(base_s, "T6", "T6")
+        write(os.path.join(res_s, "hardware/docs/IOBoard.md"), "P7\n")
+        write(os.path.join(res_s, "notes/stray.md"), "P7\n")
+        write(os.path.join(res_s, "staged.md"), "P7\n")
+        git("-C", res_s, "add", "staged.md")
+        os.remove(os.path.join(res_s, "README.md"))
+        got = record_as(base_s, "T6", output(base_s, want_s, stopped),
+                        fetch=True)
+        expect(got == "" and recorded(res_s, "T6-stopped-1")
+               and changed(res_s) == [],
+               f"a stopped T6 leaves {changed(res_s)}: {got!r}")
+
+        # A refused T6 sets aside every change, a staged deletion, a staged
+        # rename and a file added with intent to add among them.
+        base_r, res_r = clone("r")
+        want_r = prepared(base_r, "T6", "T6")
+        out_r = output(base_r, {**want_r, "run_id": "other"}, stopped)
+        git("-C", res_r, "rm", "-q", "hardware/STATUS.md")
+        git("-C", res_r, "mv", "tools/jlc_stock.py", "tools/stock.py")
+        write(os.path.join(res_r, "hardware/docs/New.md"), "P7\n")
+        git("-C", res_r, "add", "-N", "hardware/docs/New.md")
+        write(os.path.join(res_r, "hardware/docs/IOBoard.md"), "P7\n")
+        got = record_as(base_r, "T6", out_r)
+        expect("in the stash 'refused T6 id-T6'" in got
+               and changed(res_r) == [] and "refused T6 id-T6" in git(
+                   "-C", res_r, "stash", "list"),
+               f"a refused T6 leaves {changed(res_r)}: {got!r}")
+        # A stash git cannot make is reported as failed, not named.
+        git("-C", res_r, "stash", "pop", "-q")
+        write(os.path.join(res_r, ".git", "index.lock"), "")
+        got = record_as(base_r, "T6", out_r)
+        expect("setting the changes aside failed" in got
+               and "the changes are in the stash" not in got
+               and changed(res_r),
+               f"a stash that fails reads as {got!r}")
+        os.remove(os.path.join(res_r, ".git", "index.lock"))
+
+        # Two clones prepare T6 on one head, each with its own merge before
+        # T6. The second to record is refused, keeps P7's pages in the
+        # stash, and drops its merge, so the next prepare finds the branch
+        # at origin's head.
+        base_m, res_m = clone("m")
+        base_n, res_n = clone("n")
+        for res, ref in ((res_m, "aaa"), (res_n, "bbb")):
+            git("-C", res, "merge", "-q", "--no-ff", "-m",
+                f"Merge {BRANCH} at {ref} before T6", f"origin/{BRANCH}")
+        want_m = prepared(base_m, "T6", "T6")
+        want_n = prepared(base_n, "T6", "T6")
+        got = record_as(base_m, "T6", output(base_m, want_m, stopped),
+                        fetch=True)
+        expect(got == "", f"the first of two clones records T6: {got}")
+        git("-C", res_m, "push", "-q", "origin", RESULTS)
+        write(os.path.join(res_n, "hardware/docs/IOBoard.md"), "P7\n")
+        got = record_as(base_n, "T6", output(base_n, want_n, stopped),
+                        fetch=True)
+        expect("another clone recorded" in got and "is dropped" in got
+               and git("-C", res_n, "rev-parse", "HEAD")
+               == git("-C", res_n, "rev-parse", f"origin/{RESULTS}")
+               and changed(res_n) == []
+               and "refused T6 id-T6" in git("-C", res_n, "stash", "list"),
+               f"the second clone's T6 leaves its merge: {got!r}")
+
+        # One record at a time in a base directory.
+        want_w = prepared(base_c, "FU-W", "FU", p24, {"P0": {}})
+        out_w = output(base_c, want_w, fu_summary, p0)
+        held = lock_file(base_c, "record")
+        try:
+            got = record_as(base_c, "FU", out_w, "W")
+        finally:
+            os.close(held)
+        expect(got.startswith("another record is running"),
+               f"a record while another holds the base: {got!r}")
+        # A run directory made after record's check is not moved into and
+        # not removed.
+        original = selection_to_write
+        run_dir = os.path.join(res_c, r1, "FU-W")
+
+        def racing(*a):
+            write(os.path.join(run_dir, "other.json"), "{}")
+            return original(*a)
+        globals()["selection_to_write"] = racing
+        try:
+            got = record_as(base_c, "FU", out_w, "W")
+        finally:
+            globals()["selection_to_write"] = original
+        left = os.listdir(run_dir) if os.path.isdir(run_dir) else None
+        expect(got.endswith("exists; a run is recorded once")
+               and left == ["other.json"]
+               and not [n for n in os.listdir(base_c)
+                        if n.startswith(".record-")],
+               f"a run directory made during record: {got!r}, {left}")
+        shutil.rmtree(run_dir, ignore_errors=True)
+
+        # A commit an agent made during T6 is undone into the stash.
+        base_g, res_g = clone("g")
+        want_g = prepared(base_g, "T6", "T6")
+        write(os.path.join(res_g, "hardware/docs/IOBoard.md"), "agent\n")
+        git("-C", res_g, "commit", "-q", "-am", "agent")
+        write(os.path.join(res_g, "hardware/STATUS.md"), "P7\n")
+        got = record_as(base_g, "T6", output(base_g, want_g, stopped))
+        expect("are undone" in got and "in the stash" in got
+               and git("-C", res_g, "rev-parse", "HEAD")
+               == want_g["results_head"] and changed(res_g) == [],
+               f"an agent's commit during T6: {got!r}")
+        git("-C", res_g, "stash", "pop", "-q")
+        expect(sorted(changed(res_g)) == ["hardware/STATUS.md",
+                                          "hardware/docs/IOBoard.md"],
+               f"the stash of an agent's commit holds {changed(res_g)}")
+
+        # prepare refuses T6 on a tree with any change, not only in the
+        # output paths.
+        _, res_t = clone("t")
+        write(os.path.join(res_t, "notes", "elsewhere.md"), "x\n")
+        try:
+            clean_before_t6(res_t)
+            expect(False, "T6 is prepared on a tree with an untracked file "
+                   "outside the outputs")
+        except SystemExit as err:
+            expect("notes/elsewhere.md" in str(err), f"before T6: {err}")
+
+        # A base directory under a symbolic link finds the trees it made.
+        os.makedirs(at("real"))
+        os.symlink(at("real"), at("link"))
+        head = git("-C", seed, "rev-parse", "HEAD")
+        first = worktree(at("link", "base"), "plan", head, repo=seed)
+        again = worktree(at("link", "base"), "plan", head, repo=seed)
+        expect(first == again == at("real", "base", "plan"),
+               f"a base under a symbolic link: {first}, then {again}")
+    except SystemExit as err:
+        fails.append(f"record self-test: {err}")
+    finally:
+        use_round(1)
+        shutil.rmtree(tmp, ignore_errors=True)
+    return fails
+
+
 # ---------------------------------------------------------------- prepare
 
-def worktree(base, name, ref, detach=True):
-    path = os.path.join(base, name)
-    listed = git("worktree", "list", "--porcelain")
-    registered = f"worktree {path}" in listed.splitlines()
+def base_dir(args):
+    """The base directory, resolved: the paths prepare writes and the
+    worktrees git records are real paths, also under a symbolic link."""
+    return os.path.realpath(os.path.expanduser(args.base))
+
+
+def worktree(base, name, ref, detach=True, repo=ROOT):
+    """The worktree of `repo` at BASE/NAME, added when missing. git records
+    a worktree by its real path, so both sides compare resolved: a base
+    directory under a symbolic link finds the trees it made before."""
+    path = os.path.join(os.path.realpath(base), name)
+    listed = git("worktree", "list", "--porcelain", cwd=repo)
+    registered = any(line.startswith("worktree ") and os.path.realpath(
+        line[len("worktree "):]) == path for line in listed.splitlines())
     if os.path.isdir(path) and not registered:
         raise SystemExit(f"{path} exists and is not a git worktree; "
                          "remove it (chmod -R u+w first)")
     if not registered:
         opts = ["--detach"] if detach else []
-        git("worktree", "add", *opts, path, ref)
+        git("worktree", "add", *opts, path, ref, cwd=repo)
     # A reused tree must still be where this run needs it.
     if detach:
         head, want = git("-C", path, "rev-parse", "HEAD"), git(
-            "rev-parse", ref + "^{commit}")
+            "rev-parse", ref + "^{commit}", cwd=repo)
         if head != want:
             raise SystemExit(f"{path} is at {head}, not {want}")
     elif git("-C", path, "branch", "--show-current") != ref:
@@ -996,21 +1304,34 @@ def runs(results, stopped=False, pending=None):
     were recorded, stopped ones left out unless asked for: (name,
     task.json), each task.json carrying its round in `research_round`.
     They are read from HEAD, so an uncommitted edit counts for nothing;
-    `pending` adds the run being recorded."""
-    out = []
+    `pending` adds the run being recorded.
+
+    Two records with one sequence number were made on one results head in
+    two clones: neither run saw the other's, and no order of the two is the
+    order they ran in. Every gate refuses such a tree."""
+    out, seen = [], {}
     for k, d in enumerate(RUNS_DIRS, 1):
         listed = git("-C", results, "ls-tree", "--name-only", "HEAD",
                      d + "/", check=False).stdout.split()
         for path in listed:
             name = os.path.basename(path)
-            if "-stopped-" in name and not stopped:
-                continue
             shown = git("-C", results, "show", f"HEAD:{path}/task.json",
                         check=False)
-            if shown.returncode == 0:
-                task = json.loads(shown.stdout)
-                task.setdefault("research_round", k)
-                out.append((name, task))
+            if shown.returncode:
+                continue
+            task = json.loads(shown.stdout)
+            task.setdefault("research_round", k)
+            seq = task.get("sequence")
+            if seq is not None and seq in seen:
+                raise SystemExit(
+                    f"{seen[seq]} and {path} both carry sequence {seq}: two "
+                    "clones recorded on one results head, and neither run "
+                    "saw the other. Revert the record pushed second and "
+                    "run that task again")
+            seen[seq] = path
+            if "-stopped-" in name and not stopped:
+                continue
+            out.append((name, task))
     if pending:
         out.append(pending)
     return sorted(out, key=lambda r: r[1].get("sequence", 0))
@@ -1865,15 +2186,21 @@ def pending_runs(base, results, run):
 PREPARE_LOCK = []
 
 
-def lock_base(base):
-    fd = os.open(os.path.join(base, ".prepare.lock"),
+def lock_file(base, command):
+    """An exclusive lock on BASE/.COMMAND.lock, refused while another
+    process holds it; the open descriptor, which holds it until closed."""
+    fd = os.open(os.path.join(base, f".{command}.lock"),
                  os.O_RDWR | os.O_CREAT, 0o644)
     try:
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         os.close(fd)
-        raise SystemExit(f"another prepare is running in {base}") from None
-    PREPARE_LOCK.append(fd)
+        raise SystemExit(f"another {command} is running in {base}") from None
+    return fd
+
+
+def lock_base(base):
+    PREPARE_LOCK.append(lock_file(base, "prepare"))
 
 
 def turn(results, task, run, followup, cats):
@@ -1962,6 +2289,16 @@ def turn(results, task, run, followup, cats):
                              "not recorded")
 
 
+def clean_before_t6(results):
+    """record T6 refuses any change P7 did not declare, and a stopped T6
+    returns the whole tree to HEAD, so T6 starts on a clean tree: in the
+    output paths and everywhere else, the index included."""
+    dirty = changed(results)
+    if dirty:
+        raise SystemExit("the results tree has changes; commit or remove "
+                         "them before T6: " + ", ".join(dirty))
+
+
 def selection_file(results):
     """The selection.json a run reads, repository-relative: that of the
     latest round with a recorded run."""
@@ -2031,7 +2368,7 @@ def database_gate(db, manifest, info):
 
 def cmd_prepare(args):
     not_on_research_branch()
-    base = os.path.abspath(os.path.expanduser(args.base))
+    base = base_dir(args)
     cats = load("categories.json")
     info = load("jlcparts.json")
     db = os.path.abspath(os.path.expanduser(args.db or info["path"]))
@@ -2148,10 +2485,7 @@ def cmd_prepare(args):
         questions_gate(results, rows, list(cats["categories"]))
         open_t6, t6 = t6_inputs(results, text)
         open_sel += open_t6
-        dirty = [d for d in changed(results) if t6_output(d)]
-        if dirty:
-            raise SystemExit("the output paths have changes; commit or "
-                             "remove them before T6: " + ", ".join(dirty))
+        clean_before_t6(results)
         # Each of Q4, Q8 and Q9 has its row and the owner's decision.
         found = decisions(text)
         missing = [q for q in ("Q4", "Q8", "Q9") if not found.get(q)]
@@ -2334,15 +2668,93 @@ def result_shape(result, want):
                          + ", ".join(lacking))
 
 
-def set_aside(results, paths, result):
-    """A refused T6 leaves the output paths clean for the next attempt;
-    what P7 changed is kept in a stash, not lost."""
-    if not paths:
+def drop_stale_merge(results):
+    """After a refused T6, with the tree clean: a results branch that origin
+    has moved past only by the merges prepare made before T6 returns to
+    origin's head. Two clones that prepared T6 on one head each made such a
+    merge; once the first records and pushes, the second's merge diverges
+    from origin, and the next prepare, which makes a new one, would refuse
+    the branch. A branch that holds any other commit origin lacks, or a
+    record, is left as it is. Returns the sentence the refusal adds."""
+    there = git("-C", results, "rev-parse", "-q", "--verify",
+                f"origin/{RESULTS}", check=False).stdout.strip()
+    if not there or git("-C", results, "merge-base", "--is-ancestor", there,
+                        "HEAD", check=False).returncode == 0:
         return ""
-    name = f"refused T6 {result.get('run_id', '')}"
-    git("-C", results, "stash", "push", "-q", "--include-untracked", "-m",
-        name, "--", *paths, check=False)
-    return f"; the changes are in the stash '{name}' of {results}"
+    own = git("-C", results, "rev-list", "--first-parent", "HEAD",
+              f"^{there}", check=False)
+    fork = git("-C", results, "merge-base", there, "HEAD",
+               check=False).stdout.strip()
+    if own.returncode or not own.stdout.split() or not fork or git(
+            "-C", results, "diff", "--quiet", fork, "HEAD", "--",
+            *RUNS_DIRS, check=False).returncode:
+        return ""
+    for c in own.stdout.split():
+        parents = git("-C", results, "rev-list", "--parents", "-n", "1", c,
+                      check=False).stdout.split()[1:]
+        subject = git("-C", results, "log", "-1", "--format=%s", c,
+                      check=False).stdout
+        if len(parents) != 2 or not subject.startswith(f"Merge {BRANCH} at "):
+            return ""
+    if git("-C", results, "reset", "-q", "--hard", there,
+           check=False).returncode:
+        return ""
+    merges = ", ".join(c[:12] for c in own.stdout.split())
+    return (f"; the merge before T6 {merges} is dropped and {RESULTS} is at "
+            f"origin's {there[:12]}, where the next prepare merges again")
+
+
+def set_aside(results, prepared):
+    """A refused T6 leaves the results tree as prepare left it for the next
+    attempt; what P7 changed is kept in the stash `refused T6 RUN_ID`, not
+    lost. Commits on top of the prepared head that change no record and
+    that origin does not hold, such as an agent's, are undone into the
+    stash as well. Every change is staged before the stash, so a staged
+    deletion or rename, or a file added with intent to add, goes whole.
+    Returns the sentence the refusal ends with: where the changes are, or
+    that setting them aside failed and what is left."""
+    name = f"refused T6 {prepared.get('run_id', '')}"
+    out = ""
+    start = prepared.get("results_head") or ""
+    head = git("-C", results, "rev-parse", "HEAD", check=False).stdout.strip()
+    if start and head and head != start:
+        moved = git("-C", results, "rev-list", head, f"^{start}",
+                    check=False)
+        unpushed = git("-C", results, "rev-list", head, f"^{start}",
+                       f"^origin/{RESULTS}", check=False)
+        if git("-C", results, "merge-base", "--is-ancestor", start, head,
+               check=False).returncode == 0 and moved.returncode == 0 \
+                and unpushed.returncode == 0 \
+                and moved.stdout.split() == unpushed.stdout.split() \
+                and git("-C", results, "diff", "--quiet", start, head, "--",
+                        *RUNS_DIRS, check=False).returncode == 0 \
+                and git("-C", results, "reset", "-q", "--soft", start,
+                        check=False).returncode == 0:
+            undone = ", ".join(c[:12] for c in moved.stdout.split())
+            out += f"; the commits {undone} on top of {start[:12]} are undone"
+        else:
+            out += (f"; the results tree moved from {start[:12]} to "
+                    f"{head[:12]} and its commits are kept")
+    if not changed(results):
+        return out + drop_stale_merge(results)
+    before = git("-C", results, "rev-parse", "-q", "--verify", "refs/stash",
+                 check=False).stdout.strip()
+    staged = git("-C", results, "add", "-A", check=False)
+    stashed = git("-C", results, "stash", "push", "-q", "--include-untracked",
+                  "-m", name, check=False) if staged.returncode == 0 else None
+    left = changed(results)
+    if stashed is not None and stashed.returncode == 0 and not left:
+        return (out + f"; the changes are in the stash '{name}' of {results}"
+                + drop_stale_merge(results))
+    after = git("-C", results, "rev-parse", "-q", "--verify", "refs/stash",
+                check=False).stdout.strip()
+    why = (stashed if stashed is not None else staged).stderr.strip()
+    return (out + "; setting the changes aside failed"
+            + (f" ({why})" if why else "")
+            + (f", the stash '{name}' holds part of them" if after != before
+               else "")
+            + (f", and these stay in {results}: " + ", ".join(left)
+               if left else ""))
 
 
 def cited_returns(returns):
@@ -2400,6 +2812,20 @@ def misplaced_figures(results, returns):
 
 
 def cmd_record(args):
+    """record, one at a time in a base directory: it holds BASE/.record.lock
+    from its first check to its commit, and through setting P7's changes
+    aside after a refused T6."""
+    base = base_dir(args)
+    if not os.path.isdir(base):
+        raise SystemExit(f"{base} is not a directory; prepare a run first")
+    fd = lock_file(base, "record")
+    try:
+        return record_or_set_aside(args)
+    finally:
+        os.close(fd)
+
+
+def record_or_set_aside(args):
     """record, with every refusal after T6 setting P7's changes aside."""
     try:
         return record(args)
@@ -2408,25 +2834,26 @@ def cmd_record(args):
         # A malformed output fails like a refusal.
         refused = failed if isinstance(failed, SystemExit) else SystemExit(
             f"the output cannot be recorded: {failed!r}")
-        results = os.path.join(os.path.abspath(os.path.expanduser(
-            args.base)), "results")
+        results = os.path.join(base_dir(args), "results")
         if args.task != "T6" or not os.path.isdir(results) or git(
                 "-C", results, "branch", "--show-current",
                 check=False).stdout.strip() != RESULTS:
             raise
-        # The stash is named for the prepared run when the output is
-        # unreadable.
+        # The stash is named for the prepared run, also when the output is
+        # unreadable, and the prepared head bounds the commits undone.
         try:
-            run_id = json.loads(read(os.path.join(os.path.dirname(results),
-                                                  "args-T6.json")))["run_id"]
-        except (OSError, ValueError, KeyError, TypeError):
-            run_id = ""
-        left = set_aside(results, changed(results), {"run_id": run_id})
+            prepared = json.loads(read(os.path.join(
+                os.path.dirname(results), "args-T6.json")))
+            if not isinstance(prepared, dict):
+                prepared = {}
+        except (OSError, ValueError):
+            prepared = {}
+        left = set_aside(results, prepared)
         raise SystemExit(f"{refused}{left}") from None
 
 
 def record(args):
-    base = os.path.abspath(os.path.expanduser(args.base))
+    base = base_dir(args)
     results = os.path.join(base, "results")
     with open(args.output) as f:
         out = json.load(f)
@@ -2448,6 +2875,19 @@ def record(args):
     if want.get("results_head") and head != want["results_head"]:
         raise SystemExit(f"the results tree moved from "
                          f"{want['results_head']} to {head} since prepare")
+    # A record another clone made of a run prepared on the same head and
+    # pushed first is one this run did not see: of the two, the second to
+    # record is refused, here or, past a race, by the sequence check.
+    if not args.no_fetch:
+        git("-C", results, "fetch", "-q", "origin", RESULTS)
+    there = git("-C", results, "rev-parse", "-q", "--verify",
+                f"origin/{RESULTS}", check=False).stdout.strip()
+    if there and git("-C", results, "merge-base", "--is-ancestor", there,
+                     head, check=False).returncode:
+        raise SystemExit(f"origin/{RESULTS} is at {there[:12]}, past the "
+                         f"head {run} was prepared on: another clone "
+                         "recorded a run this one did not see. Prepare and "
+                         f"run {run} again")
     if result.get("run") != run or result.get("run_id") != want["run_id"]:
         raise SystemExit(f"the output is run {result.get('run')} "
                          f"{result.get('run_id')}, not the prepared {run} "
@@ -2462,12 +2902,11 @@ def record(args):
     dirty_runs = git("-C", results, "status", "--porcelain",
                      "--untracked-files=all", "--", *RUNS_DIRS)
     if dirty_runs:
-        why = ("recorded runs have uncommitted changes; the selection is "
-               "built from committed records only:\n" + dirty_runs)
-        # After T6 those changes are P7's: set aside with its pages.
-        if args.task == "T6":
-            why += set_aside(results, changed(results), result)
-        raise SystemExit(why)
+        # After T6 those changes are P7's: cmd_record sets them aside with
+        # its pages.
+        raise SystemExit("recorded runs have uncommitted changes; the "
+                         "selection is built from committed records only:\n"
+                         + dirty_runs)
     for name, task in runs(results, stopped=True):
         if task.get("run_id") == want["run_id"] or \
                 task.get("output_sha256") == digest:
@@ -2494,9 +2933,14 @@ def record(args):
     target = os.path.join(results, RUNS_DIR, run)
     if os.path.exists(target):
         raise SystemExit(f"{target} exists; a run is recorded once")
-    tmp = target + ".tmp"
-    shutil.rmtree(tmp, ignore_errors=True)
-    os.makedirs(tmp)
+    # The returns are written beside the results tree and moved into it just
+    # before the commit: a record that dies on the way leaves nothing in the
+    # records directory that the next record or prepare refuses. The lock
+    # cmd_record holds makes any such directory one a record left that died.
+    for old in os.listdir(base):
+        if old.startswith(".record-") and old.endswith(".tmp"):
+            shutil.rmtree(os.path.join(base, old), ignore_errors=True)
+    tmp = tempfile.mkdtemp(prefix=f".record-{run}-", suffix=".tmp", dir=base)
     for i, r in enumerate(result.get("returns", []), 1):
         name = f"{i:03d}-{r['label']}{'-restart' if r['attempt'] else ''}"
         with open(os.path.join(tmp, f"{name}.json"), "w") as f:
@@ -2507,7 +2951,6 @@ def record(args):
     meta["research_round"] = ROUND
     with open(os.path.join(tmp, "task.json"), "w") as f:
         json.dump(meta, f, indent=1, ensure_ascii=False)
-    os.rename(tmp, target)
     message = [f"Record {run} of round {ROUND}, {result['date']}",
                f"Read {BRANCH} at {result['commit']}; {result['started']} "
                f"agents started, {len(result['followUps'])} items for "
@@ -2515,20 +2958,13 @@ def record(args):
     paths = [target]
     stopped = bool((result.get("summary") or {}).get("stopped"))
     if args.task == "T6" and stopped:
-        # Pages a stopped T6 wrote, deleted or changed are not kept for the
-        # next attempt: tracked paths return to HEAD, new ones are removed.
-        for o in T6_FILES + T6_DIRS:
-            if git("-C", results, "cat-file", "-e", f"HEAD:{o.rstrip('/')}",
-                   check=False).returncode == 0:
-                git("-C", results, "checkout", "-q", "HEAD", "--", o)
-            if os.path.exists(os.path.join(results, o)):
-                git("-C", results, "clean", "-fdq", "--", o, check=False)
+        # Nothing a stopped T6 wrote, deleted, changed or staged is kept for
+        # the next attempt: the tree and its index return to HEAD, which
+        # prepare found clean, and new files are removed.
+        git("-C", results, "reset", "-q", "--hard", "HEAD")
+        git("-C", results, "clean", "-fdq")
     if args.task == "T6" and not stopped:
         dirty = changed(results)
-        rel = os.path.relpath(target, results).replace(os.sep, "/")
-
-        def in_run(d):
-            return d == rel or d.startswith(rel + "/")
         rets = result.get("returns", [])
         wrote = {f for r in rets if r["role"] == "P7"
                  for f in r["data"].get("files", [])}
@@ -2539,10 +2975,8 @@ def record(args):
         pages = {f for _, f in by_group}
 
         def refuse(why):
-            shutil.rmtree(target, ignore_errors=True)
-            raise SystemExit(why + set_aside(
-                results, [d for d in changed(results) if not in_run(d)],
-                result))
+            shutil.rmtree(tmp, ignore_errors=True)
+            raise SystemExit(why + set_aside(results, want))
 
         outside = sorted(f for f in pages if not GROUP_PAGE.fullmatch(f)
                          or f in T6_REQUIRED)
@@ -2572,8 +3006,8 @@ def record(args):
                 plan_body(read(os.path.join(results, plan))):
             refuse(f"P7 changed {plan} below its status line")
         allowed = set(T6_REQUIRED) | pages
-        stray = [d for d in dirty if not in_run(d)
-                 and not (d in allowed and d in wrote and d in seen)]
+        stray = [d for d in dirty
+                 if not (d in allowed and d in wrote and d in seen)]
         unchanged = sorted(wrote - set(dirty))
         if unchanged:
             refuse("P7 lists files it did not change: " + ", ".join(unchanged))
@@ -2592,30 +3026,44 @@ def record(args):
         if misplaced:
             refuse("figure checks whose line does not state the figure: "
                    + "; ".join(misplaced))
-        paths += [os.path.join(results, d) for d in dirty
-                  if not in_run(d)]
+        paths += [os.path.join(results, d) for d in dirty]
     sel_rel = os.path.join(RUNS_DIR, "selection.json")
     sel_tracked = git("-C", results, "cat-file", "-e", f"HEAD:{sel_rel}",
                       check=False).returncode == 0
     new = selection_to_write(results, sel_rel, (run, meta), stopped)
+    os.makedirs(os.path.dirname(target), exist_ok=True)
     if new is not None:
         sel = os.path.join(results, sel_rel)
         with open(sel, "w") as f:
             json.dump(new, f, indent=1, ensure_ascii=False)
         paths.append(sel)
+    # The run's directory is claimed by creating it, which fails when it
+    # exists, and only a directory this record created is removed again.
+    claimed = False
     try:
+        os.mkdir(target)
+        claimed = True
+        for n in sorted(os.listdir(tmp)):
+            shutil.move(os.path.join(tmp, n), os.path.join(target, n))
         git("-C", results, "add", "--", *paths)
         git("-C", results, "commit", "-q", "-m", message[0], "-m",
             message[1], "--", *paths)
-    except SystemExit:
+    except (SystemExit, OSError) as failed:
         git("-C", results, "reset", "-q", "--", *paths, check=False)
         # A selection.json this record created goes; one in HEAD returns.
-        if sel_tracked:
+        if new is not None and sel_tracked:
             git("-C", results, "checkout", "-q", "--", sel_rel, check=False)
-        elif os.path.exists(os.path.join(results, sel_rel)):
+        elif new is not None and os.path.exists(os.path.join(results,
+                                                             sel_rel)):
             os.remove(os.path.join(results, sel_rel))
-        shutil.rmtree(target, ignore_errors=True)
+        if claimed:
+            shutil.rmtree(target, ignore_errors=True)
+        if isinstance(failed, FileExistsError):
+            raise SystemExit(f"{target} exists; a run is recorded "
+                             "once") from None
         raise
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
     print(f"{target}: {len(result.get('returns', []))} returns committed "
           f"on {RESULTS}; push it")
     return 0
@@ -2625,7 +3073,7 @@ def record(args):
 
 def cmd_raised(args):
     not_on_research_branch()
-    base = os.path.abspath(os.path.expanduser(args.base))
+    base = base_dir(args)
     results = os.path.join(base, "results")
     shown = git("-C", results, "show",
                 f"HEAD:{RUNS_DIR}/{args.run}/task.json", check=False)
@@ -2694,7 +3142,7 @@ def cmd_script(args):
             m.group(1)) and "stopped" not in m.group(1)):
         raise SystemExit(f"{args.run!r} is not a run: T1 to T6, or FU-NAME "
                          "with NAME of letters and digits")
-    base = os.path.abspath(os.path.expanduser(args.base))
+    base = base_dir(args)
     prepared = os.path.join(base, f"args-{args.run}.json")
     if not os.path.isfile(prepared):
         raise SystemExit(f"{prepared} is not there; run prepare first")
@@ -2784,6 +3232,9 @@ def main():
     r.add_argument("output")
     r.add_argument("--base", required=True)
     r.add_argument("--name", default="1", help="follow-up run name")
+    r.add_argument("--no-fetch", action="store_true",
+                   help="compare with origin's results branch as last "
+                   "fetched")
     r.set_defaults(fn=cmd_record)
     q = sub.add_parser("raised", parents=[rnd])
     q.add_argument("--base", required=True)
