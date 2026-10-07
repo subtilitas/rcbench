@@ -3158,7 +3158,7 @@ static void draw_right(gfx_canvas_t *c, bool power)
                                    : s.paused ? ui_theme_color(UI_C_WARN)
                                               : ui_theme_color(UI_C_PANEL_HI);
     ui_button(c, s.sweep_btn,
-              (s.sweeping || s.paused) ? TR(SV_PAUSE) : "SWEEP", sweep_fill,
+              s.paused ? TR(SV_PAUSED) : s.sweeping ? TR(SV_PAUSE) : "SWEEP", sweep_fill,
               false, s.sweeping || s.paused || (s.armed && s.sweep_able));
     ui_button(c, s.release_btn, TR(SV_RELEASE), ui_theme_color(UI_C_PANEL_HI),
               false, true);

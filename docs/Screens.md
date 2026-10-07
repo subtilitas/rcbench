@@ -253,13 +253,13 @@ the panel and timed from when the coprocessor started its own.
 
 **PAUSE pauses it.** While a sweep runs the button reads PAUSE in the accent
 colour. A tap stops the sweep where the output has got to -- which SPEED can
-leave behind the curve -- and holds it there; the button still reads PAUSE,
+leave behind the curve -- and holds it there; the button then reads PAUSED,
 filled in the warning colour. The coprocessor does the holding (the link's
 HOLD, SWEEP register 4), because only it knows exactly where that is;
 without feedback the horn drawn on the panel is an estimate of it. The panel
 repeats the hold every 100 ms (`SERVO_HOLD_MS`), so a pause outlasts the
 coprocessor's 500 ms rule. A pause does not wait behind sweep writes already
-on the wire. A second tap on PAUSE resumes the sweep from the curve's
+on the wire. A tap on PAUSED resumes the sweep from the curve's
 beginning -- the centre for a sine or a triangle, the first end for a
 square -- and the output slews there from where it was paused, at SPEED's
 rate, at once at 100 %. The coprocessor keeps no phase across a hold, so a

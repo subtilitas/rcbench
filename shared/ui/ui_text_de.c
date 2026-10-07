@@ -713,6 +713,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_RANGE]               = "BEREICH",
     [TX_SV_CENTRE_BTN]          = "ZENTRIEREN",
     [TX_SV_PAUSE]               = "PAUSE",
+    [TX_SV_PAUSED]              = "PAUSIERT",
     [TX_SV_RELEASE]             = "FREIGEBEN",
     [TX_SV_IN_FORCE_1]          = "Aktiv: jedes PWM-Ruder läuft mit %u Hz.",
     [TX_SV_IN_FORCE_2]          = "Ein PPM-Ausgang behält seinen eigenen Frame.",

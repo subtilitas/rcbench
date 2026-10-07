@@ -1690,7 +1690,7 @@ static int sweep_btn_pixels(gfx_color_t col)
 }
 
 /*
- * PAUSE pauses a running sweep with the link's HOLD and stays PAUSE, filled
+ * PAUSE pauses a running sweep with the link's HOLD and reads PAUSED, filled
  * in the warning colour rather than the accent; a second tap starts the
  * curve again, from its beginning, as the coprocessor does.  In both themes.
  */

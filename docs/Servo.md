@@ -390,7 +390,8 @@ the sweep as well; nothing on the bench measures the horn, so that is not
 shown.
 
 PAUSE, the sweep button while a sweep runs, holds the output where it has
-got to, and the button fills in the warning colour. A second tap resumes
+got to, and the button reads PAUSED, filled in the warning colour. A tap on
+PAUSED resumes
 the sweep from the curve's beginning: the coprocessor keeps no phase across
 the hold. A paused sweep is the moment to raise SPEED: the pause stays, and
 the resume runs at the new rate.

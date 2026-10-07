@@ -278,13 +278,13 @@ gestartet hat.
 **PAUSE hält sie an.** Während ein Sweep läuft, heißt der Knopf PAUSE, in der
 Akzentfarbe. Ein Tippen hält die Kurve dort an, wo der Ausgang gerade steht
 -- TEMPO kann ihn hinter der Kurve zurücklassen --, und hält ihn dort; der
-Knopf heißt weiter PAUSE, gefüllt in der Warnfarbe. Das Halten übernimmt der
+Knopf heißt dann PAUSIERT, gefüllt in der Warnfarbe. Das Halten übernimmt der
 Koprozessor (das HOLD des Links, SWEEP-Register 4), weil nur er genau weiß,
 wo das ist; ohne Rückmeldung ist das im Panel gezeichnete Horn eine Schätzung
 davon. Das Panel wiederholt das Halten alle 100 ms (`SERVO_HOLD_MS`), daher
 überdauert eine Pause die 500-ms-Regel des Koprozessors. Eine Pause wartet
 nicht hinter Sweep-Schreibvorgängen, die schon auf dem Draht sind. Ein
-zweites Tippen auf PAUSE setzt den Sweep am Anfang der Kurve fort -- in der
+Tippen auf PAUSIERT setzt den Sweep am Anfang der Kurve fort -- in der
 Mitte bei Sinus und Dreieck, am ersten Ende beim Rechteck --, und der
 Ausgang fährt von der Stelle der Pause dorthin, mit der Rate von TEMPO, bei
 100 % sofort. Der Koprozessor behält über ein Halten keine Phase, daher kann
