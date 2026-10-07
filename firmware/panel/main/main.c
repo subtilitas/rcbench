@@ -3935,6 +3935,10 @@ static void write_output_binding(const outbind_t *bind)
  * lowest pin is the motor.
  */
 static uint8_t s_servo_channels;
+/* For the screen's SWEEP: a binding read, with a surface in it. */
+static atomic_bool s_servo_surfaces;
+/* A sweep command with no surface to sweep: the screen stops waiting. */
+static atomic_bool s_sweep_refused;
 
 /*
  * Whether that mask is an answer at all.
@@ -4124,6 +4128,7 @@ static bool write_servo(const servo_cmd_t sv)
             return true;
         }
         const uint16_t hold = LINK_SV_HOLD;
+        const uint32_t sent = now_ms();
         if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 1u, &hold,
                         &reply)) {
             s_hold_unanswered = s_hold_unanswered
@@ -4133,20 +4138,37 @@ static bool write_servo(const servo_cmd_t sv)
         if (reply.op != LINK_OP_ACK) {
             return false;
         }
+        const uint32_t took = now_ms();
+        /*
+         * A pause whose HOLD was answered only at a retry may have frozen at
+         * an earlier attempt, been let go 500 ms later and frozen again
+         * where resting had got it; an exchange that outlasted a HOLD's life
+         * may have been let go meanwhile too.  Where the output is held is
+         * then not known here, and an angle drawn from the tap would be
+         * said again to the servo by the next change of profile.  So the
+         * hold is over: the surfaces are released to their centre, a state
+         * both ends know, and the screen is told, as for a HOLD left
+         * unrepeated.
+         */
+        if ((s_hold_unanswered && s_servo_sweeping && !s_servo_holding)
+            || (uint32_t)(took - sent) > OUT_DEFAULT_TIMEOUT_MS) {
+            s_hold_unanswered    = false;
+            s_servo_sweeping     = false;
+            s_servo_holding      = false;
+            servo_phase_stopped(&s_far_phase);
+            s_servo_held.kind    = SERVO_CMD_NONE;
+            s_servo_release_owed = true;
+            atomic_store(&s_servo_hold_lost, true);
+            return true;
+        }
         /* The hold that paused a running sweep: the far end keeps the
          * curve's phase as of now, and the screen draws the pause from it
          * rather than from the tap. */
         if (s_servo_sweeping && !s_servo_holding) {
-            if (s_hold_unanswered) {
-                /* An earlier attempt may have taken: not timed. */
-                servo_phase_untimed(&s_far_phase);
-            } else {
-                const uint32_t kept = servo_phase_held(&s_far_phase,
-                                                       now_ms());
-                atomic_store(&s_sweep_held_seq, (unsigned)sv.pause_seq);
-                atomic_store(&s_sweep_held_kept, kept);
-                atomic_store(&s_sweep_held_new, true);
-            }
+            const uint32_t kept = servo_phase_held(&s_far_phase, took);
+            atomic_store(&s_sweep_held_seq, (unsigned)sv.pause_seq);
+            atomic_store(&s_sweep_held_kept, kept);
+            atomic_store(&s_sweep_held_new, true);
         }
         if (!s_servo_sweeping && !s_servo_holding) {
             /* A hold of no sweep: nothing to resume. */
@@ -4155,7 +4177,8 @@ static bool write_servo(const servo_cmd_t sv)
         s_hold_unanswered = false;
         s_servo_sweeping = false;
         s_servo_holding  = true;
-        s_servo_hold_ms  = now_ms();
+        /* From the send: the far end heard it no earlier than that. */
+        s_servo_hold_ms  = sent;
         s_servo_written |= s_servo_channels;
         return true;
     }
@@ -4194,6 +4217,11 @@ static bool write_servo(const servo_cmd_t sv)
      * one is -- a bench with only a motor on it would stop arming.
      */
     if (mask == 0u) {
+        /* A sweep of nothing never starts, so no start is published for it:
+         * the screen is told instead, or it would wait for one. */
+        if (sv.kind == SERVO_CMD_SWEEP) {
+            atomic_store(&s_sweep_refused, true);
+        }
         return true;
     }
     uint8_t first = 0u, count = 0u;
@@ -5468,6 +5496,7 @@ static void read_outputs_binding(void)
         s_servo_channels = outputs_role_channels(orr.regs, ccr.regs,
                                                  OUT_ROLE_SURFACE);
         s_servo_known    = true;
+        atomic_store(&s_servo_surfaces, s_servo_channels != 0u);
         if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
             s_outputs_read = got;
             s_outputs_read_fresh = true;
@@ -5491,6 +5520,7 @@ static void read_outputs_binding(void)
          */
         s_servo_channels = 0u;
         s_servo_known    = false;
+        atomic_store(&s_servo_surfaces, false);
         if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
             s_outputs_read = none;
             s_outputs_read_fresh = true;
@@ -6471,6 +6501,10 @@ void app_main(void)
             servo_screen_rate((servo_rate_state_t)(r >> 16),
                               (uint16_t)(r & 0xFFFFu));
             servo_screen_set_sweep(atomic_load(&s_servo_sweep_able));
+            servo_screen_set_surfaces(atomic_load(&s_servo_surfaces));
+            if (atomic_exchange(&s_sweep_refused, false)) {
+                servo_screen_sweep_refused();
+            }
             if (atomic_exchange(&s_servo_hold_lost, false)) {
                 servo_screen_released();
             }

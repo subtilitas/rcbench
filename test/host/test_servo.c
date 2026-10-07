@@ -2185,6 +2185,120 @@ TEST_CASE(a_change_during_a_pause_drain_holds_the_drawn_angle)
 }
 
 /*
+ * PAUSED tapped 0.1 s after PAUSE, the HOLD acknowledged 0.2 s after that:
+ * the far end ran on to the acknowledgement, 307 ms past the tap, and holds
+ * there until the RESUME arrives.  The late acknowledgement moves the drawn
+ * output to that held point -- near the 0.5 Hz sine's 1884 us, not the
+ * 1740 us the drawing had stopped at -- and the resume goes on from it.
+ */
+TEST_CASE(an_early_resume_keeps_the_output_the_far_end_held)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    sweep_go();
+    frames(0.1f);
+    const uint32_t tap_phase = servo_screen_curve_ms();
+    const servo_cmd_t hold = pause_go();
+    frames(0.1f);                              /* drawn on */
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED, before the ack */
+    CHECK(last_cmd().resume);
+    frames(0.2f);
+    CHECK(servo_screen_drawn() < 1780u);       /* stopped at the tap */
+    servo_screen_sweep_held(hold.pause_seq, tap_phase + 307u);
+    const uint16_t held = servo_screen_drawn();
+    CHECK(held > 1870u && held < 1900u);
+    ack_resume(tap_phase + 307u, 0u);
+    CHECK(servo_screen_drawn() >= held - 2u);
+    frames(0.05f);
+    CHECK(servo_screen_drawn() > 1880u);
+}
+
+/*
+ * The link going ends a sweep and a pause: the far end lets them go 500 ms
+ * after its last word and rests the surfaces, and so does the drawing.  The
+ * next tap starts a sweep; nothing is resumed.
+ */
+TEST_CASE(the_link_going_ends_a_pause_at_rest)
+{
+    fresh();
+    servo_screen_set_link(true);
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    sweep_go();
+    frames(0.4f);
+    const servo_cmd_t hold = pause_go();
+    ack_hold(&hold);
+    CHECK(servo_screen_paused());
+    CHECK(servo_screen_drawn() > 1800u);
+    servo_screen_set_link(false);
+    CHECK(!servo_screen_paused());
+    CHECK(!servo_screen_sweeping());
+    CHECK_EQ(servo_screen_drawn(), 1500u);
+    frames(0.5f);
+    CHECK_EQ(servo_screen_drawn(), 1500u);
+    servo_screen_set_link(true);
+    tap(SWEEP_X, BTN_Y);
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
+    CHECK(!c.resume);
+}
+
+/*
+ * No surface bound: SWEEP is greyed and sends nothing, since a sweep of
+ * nothing never starts.  A sweep command the panel finds nothing to send to
+ * ends the wait for its start.
+ */
+TEST_CASE(sweep_needs_a_surface_bound)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    servo_screen_set_surfaces(false);
+    scr->render(&cv, 0);
+    CHECK_EQ(sweep_btn_pixels(ui_theme_color(UI_C_ACCENT)), 0);
+    tap(SWEEP_X, BTN_Y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    CHECK(!servo_screen_sweeping());
+
+    servo_screen_set_surfaces(true);
+    tap(SWEEP_X, BTN_Y);
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_SWEEP);
+    CHECK(servo_screen_sweeping());
+    servo_screen_sweep_refused();
+    CHECK(!servo_screen_sweeping());
+    CHECK(!servo_screen_paused());
+}
+
+/*
+ * A HOLD the panel had to let go of -- answered only at a retry, or after
+ * longer than a hold lives -- while the curve was drawn on: the pause ends,
+ * and a profile change after it says no position from the drawing, only
+ * the rest the surfaces were released to.
+ */
+TEST_CASE(a_released_pause_says_no_drawn_angle)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(ARM_X + 1, SPEED_Y);                   /* SPEED's slowest */
+    sweep_go();
+    frames(0.3f);
+    (void)pause_go();
+    frames(0.2f);                              /* drawn on, not acked */
+    servo_screen_released();
+    CHECK(!servo_screen_paused());
+    open_settings();
+    tap(TRIM_UP_X, ROW_Y(3));
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
+    close_settings();
+    frames(0.6f);                              /* no drain left */
+    open_settings();
+    tap(TRIM_DN_X, ROW_Y(3));
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
+}
+
+/*
  * Leaving while a PAUSE is drawn on, and opening SERVO again: no curve,
  * drain or acknowledgement of the old sweep is drawn, and a new sweep
  * starts from its own beginning.
@@ -4334,6 +4448,10 @@ int main(void)
     RUN(an_early_resume_is_rebased_on_the_phase_the_far_end_kept);
     RUN(a_changed_curve_is_drawn_from_its_acknowledged_start);
     RUN(a_change_during_a_pause_drain_holds_the_drawn_angle);
+    RUN(an_early_resume_keeps_the_output_the_far_end_held);
+    RUN(the_link_going_ends_a_pause_at_rest);
+    RUN(sweep_needs_a_surface_bound);
+    RUN(a_released_pause_says_no_drawn_angle);
     RUN(leaving_forgets_the_sweep_model);
     RUN(a_start_acknowledgement_applies_to_its_own_command);
     RUN(a_later_repeat_acknowledged_ends_the_wait);

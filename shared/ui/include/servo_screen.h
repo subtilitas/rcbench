@@ -161,6 +161,14 @@ void servo_screen_rate(servo_rate_state_t st, uint16_t hz);
  *  offered only then. */
 void servo_screen_set_sweep(bool able);
 
+/** Whether a surface is bound, as the panel last read the binding: SWEEP
+ *  is offered only then, since a sweep of nothing never starts. */
+void servo_screen_set_surfaces(bool any);
+
+/** A sweep command found no surface to sweep and was not sent: the screen
+ *  stops waiting for its start and ends the sweep. */
+void servo_screen_sweep_refused(void);
+
 /** Whether a sweep is running, for the application and tests. */
 bool servo_screen_sweeping(void);
 

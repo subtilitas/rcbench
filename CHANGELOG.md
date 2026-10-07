@@ -37,10 +37,17 @@ sweep starts over from the curve's beginning, and the alert band says so.
   PAUSED carries the sweep on from the point of the curve it was paused at,
   its dwell and its count of ends included. A changed SPEED keeps the
   pause, and the resume runs at it. CENTRE, RELEASE, a finger on the dial,
-  STOP, a disarm, leaving the screen, a hold unrepeated for 500 ms, and a
-  changed type, frame rate, pulse, trim, travel or reverse end a pause,
-  and the button reads SWEEP. Touch events going missing pause a running
-  sweep.
+  STOP, a disarm, leaving the screen, a hold unrepeated for 500 ms, a HOLD
+  answered only at a retry or after longer than 500 ms, the link going,
+  and a changed type, frame rate, pulse, trim, travel or reverse end a
+  pause, and the button reads SWEEP. A HOLD answered late or at a retry
+  releases the surfaces to their centre, since where the coprocessor holds
+  is then not known. The link going ends a sweep or a pause, and the
+  output is drawn at rest, as the coprocessor rests the surfaces. A HOLD
+  acknowledged after PAUSED was tapped still moves the horn to the output
+  the coprocessor held, and the resume goes on from there. Touch events
+  going missing pause a running sweep. SWEEP is offered only with a surface
+  bound, greyed otherwise.
 - **SERVO draws a sweep as the coprocessor runs it.** A started, resumed
   or restarted sweep is drawn only from the coprocessor's acknowledgement
   of it; until then the horn stays where the output is, and during a
