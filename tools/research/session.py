@@ -949,7 +949,8 @@ def record_selftest():
     repositories with a bare origin: changed() on a rename in the working
     tree; two records with one sequence number; a record after another
     clone pushed one on the same head; a commit that fails; a record that
-    dies while it writes the returns; a stopped T6 with files outside
+    dies while it writes the returns; two clones that each prepared T6
+    with a merge of their own; a stopped T6 with files outside
     the outputs and in the index; a refused T6 with a staged deletion, a
     staged rename and a file added with intent to add, and with a commit
     an agent made; a stash that cannot be made; the tree prepare refuses
@@ -1016,7 +1017,7 @@ def record_selftest():
             return f"record failed: {err!r}"
         return ""
 
-    p24 ={"phases": "P2-P4", "round": 1, "categories": ["R1"], "items": []}
+    p24 = {"phases": "P2-P4", "round": 1, "categories": ["R1"], "items": []}
     fu_summary = {"selection": {}, "figures_open": {}, "q_missing": [],
                   "chain_failed": []}
     p0 = [{"label": "P0", "role": "P0", "attempt": 0, "data": {}}]
@@ -1031,8 +1032,13 @@ def record_selftest():
         git("-C", seed, "add", "-A")
         git("-C", seed, *env, "commit", "-q", "-m", "seed")
         git("-C", seed, "branch", "-q", RESULTS)
+        # The plan branch, one commit past the results branch, which
+        # prepare merges before T6.
+        git("-C", seed, "checkout", "-q", "-b", BRANCH)
+        write(os.path.join(seed, "hardware/docs/Research.md"), "answers\n")
+        git("-C", seed, *env, "commit", "-q", "-am", "answers")
         git("init", "-q", "--bare", at("origin"), cwd=tmp)
-        git("-C", seed, "push", "-q", at("origin"), RESULTS)
+        git("-C", seed, "push", "-q", at("origin"), RESULTS, BRANCH)
 
         # A rename in the working tree carries its source as one in the
         # index does.
@@ -1137,6 +1143,31 @@ def record_selftest():
                and changed(res_r),
                f"a stash that fails reads as {got!r}")
         os.remove(os.path.join(res_r, ".git", "index.lock"))
+
+        # Two clones prepare T6 on one head, each with its own merge before
+        # T6. The second to record is refused, keeps P7's pages in the
+        # stash, and drops its merge, so the next prepare finds the branch
+        # at origin's head.
+        base_m, res_m = clone("m")
+        base_n, res_n = clone("n")
+        for res, ref in ((res_m, "aaa"), (res_n, "bbb")):
+            git("-C", res, "merge", "-q", "--no-ff", "-m",
+                f"Merge {BRANCH} at {ref} before T6", f"origin/{BRANCH}")
+        want_m = prepared(base_m, "T6", "T6")
+        want_n = prepared(base_n, "T6", "T6")
+        got = record_as(base_m, "T6", output(base_m, want_m, stopped),
+                        fetch=True)
+        expect(got == "", f"the first of two clones records T6: {got}")
+        git("-C", res_m, "push", "-q", "origin", RESULTS)
+        write(os.path.join(res_n, "hardware/docs/IOBoard.md"), "P7\n")
+        got = record_as(base_n, "T6", output(base_n, want_n, stopped),
+                        fetch=True)
+        expect("another clone recorded" in got and "is dropped" in got
+               and git("-C", res_n, "rev-parse", "HEAD")
+               == git("-C", res_n, "rev-parse", f"origin/{RESULTS}")
+               and changed(res_n) == []
+               and "refused T6 id-T6" in git("-C", res_n, "stash", "list"),
+               f"the second clone's T6 leaves its merge: {got!r}")
 
         # A commit an agent made during T6 is undone into the stash.
         base_g, res_g = clone("g")
@@ -2599,6 +2630,42 @@ def result_shape(result, want):
                          + ", ".join(lacking))
 
 
+def drop_stale_merge(results):
+    """After a refused T6, with the tree clean: a results branch that origin
+    has moved past only by the merges prepare made before T6 returns to
+    origin's head. Two clones that prepared T6 on one head each made such a
+    merge; once the first records and pushes, the second's merge diverges
+    from origin, and the next prepare, which makes a new one, would refuse
+    the branch. A branch that holds any other commit origin lacks, or a
+    record, is left as it is. Returns the sentence the refusal adds."""
+    there = git("-C", results, "rev-parse", "-q", "--verify",
+                f"origin/{RESULTS}", check=False).stdout.strip()
+    if not there or git("-C", results, "merge-base", "--is-ancestor", there,
+                        "HEAD", check=False).returncode == 0:
+        return ""
+    own = git("-C", results, "rev-list", "--first-parent", "HEAD",
+              f"^{there}", check=False)
+    fork = git("-C", results, "merge-base", there, "HEAD",
+               check=False).stdout.strip()
+    if own.returncode or not own.stdout.split() or not fork or git(
+            "-C", results, "diff", "--quiet", fork, "HEAD", "--",
+            *RUNS_DIRS, check=False).returncode:
+        return ""
+    for c in own.stdout.split():
+        parents = git("-C", results, "rev-list", "--parents", "-n", "1", c,
+                      check=False).stdout.split()[1:]
+        subject = git("-C", results, "log", "-1", "--format=%s", c,
+                      check=False).stdout
+        if len(parents) != 2 or not subject.startswith(f"Merge {BRANCH} at "):
+            return ""
+    if git("-C", results, "reset", "-q", "--hard", there,
+           check=False).returncode:
+        return ""
+    merges = ", ".join(c[:12] for c in own.stdout.split())
+    return (f"; the merge before T6 {merges} is dropped and {RESULTS} is at "
+            f"origin's {there[:12]}, where the next prepare merges again")
+
+
 def set_aside(results, prepared):
     """A refused T6 leaves the results tree as prepare left it for the next
     attempt; what P7 changed is kept in the stash `refused T6 RUN_ID`, not
@@ -2631,7 +2698,7 @@ def set_aside(results, prepared):
             out += (f"; the results tree moved from {start[:12]} to "
                     f"{head[:12]} and its commits are kept")
     if not changed(results):
-        return out
+        return out + drop_stale_merge(results)
     before = git("-C", results, "rev-parse", "-q", "--verify", "refs/stash",
                  check=False).stdout.strip()
     staged = git("-C", results, "add", "-A", check=False)
@@ -2639,7 +2706,8 @@ def set_aside(results, prepared):
                   "-m", name, check=False) if staged.returncode == 0 else None
     left = changed(results)
     if stashed is not None and stashed.returncode == 0 and not left:
-        return out + f"; the changes are in the stash '{name}' of {results}"
+        return (out + f"; the changes are in the stash '{name}' of {results}"
+                + drop_stale_merge(results))
     after = git("-C", results, "rev-parse", "-q", "--verify", "refs/stash",
                 check=False).stdout.strip()
     why = (stashed if stashed is not None else staged).stderr.strip()

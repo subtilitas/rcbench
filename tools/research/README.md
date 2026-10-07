@@ -84,10 +84,10 @@ round 1's records, which lack it, are read as round 1. The round's own
 run of the round is recorded; until then a run reads the previous round's.
 `check` runs the round rules on a throwaway git repository, and fails when
 the plan has no section "Round 2". It also runs `record` on throwaway
-clones of a bare origin: two clones on one head, a commit hook that fails, a
-record that dies while writing, a stopped and a refused T6, a commit made
-during T6, a stash git cannot make, the tree `prepare` refuses before T6, and
-a base directory under a symbolic link.
+clones of a bare origin: two clones on one head, before any run and before
+T6, a commit hook that fails, a record that dies while writing, a stopped
+and a refused T6, a commit made during T6, a stash git cannot make, the tree
+`prepare` refuses before T6, and a base directory under a symbolic link.
 
 A follow-up file's `round` is the pass of follow-up tasks within the research
 round, 1 or 2: the plan's "Follow-up tasks run in at most 2 rounds". It is not
@@ -702,7 +702,13 @@ tree. Every change is staged before the stash, so a staged deletion or rename
 and a file added with intent to add are kept whole. Commits on top of the
 head T6 was prepared on, such as one an agent made, are undone into that
 stash when they change no record and origin does not hold them; otherwise
-they are kept and the refusal says so. When git cannot make the stash, as
+they are kept and the refusal says so. With the tree set aside, a results
+branch that origin has moved past only by the merges `prepare` made before T6
+returns to origin's head, and the refusal names the merges dropped: two
+clones that prepared T6 on one head each made such a merge, and after the
+first records and pushes, the second's would make its next `prepare` refuse
+a branch diverged from origin. A branch that holds any other commit origin
+lacks, or a record, is left as it is. When git cannot make the stash, as
 with an `index.lock` left in the tree, the refusal says that setting the
 changes aside failed and lists the files left, and names the stash only when
 git made one with part of them. `raised` reads the committed
