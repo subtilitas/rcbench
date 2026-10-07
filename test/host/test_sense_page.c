@@ -1,10 +1,10 @@
 /*
  * The SENSE and SERVO_SENSE link pages at the coprocessor.
  *
- * Under test: the set-up as a page starts; the INA228's ADCRANGE from its
- * shunt and maximum, at one SHUNT_CAL, and the INA3221's full scale from
- * its shunt;
- * the bus refused on pins that are not one I2C block's pair, on pins the
+ * Under test: the set-up as a page starts; an INA228 shunt and maximum
+ * taken exactly when the driver's ina228_calibrate() takes them, and the
+ * INA3221's full scale from its shunt; the bus refused on pins that are
+ * not one I2C block's pair, on pins the
  * board, an output or the supply holds, and while the bank is armed; every
  * value held to its range, the reserved registers to 0, the two parts to
  * two addresses; a refused write storing nothing; the pins reserved while
@@ -16,6 +16,8 @@
 #include <string.h>
 
 #include "greatest.h"
+
+#include "ina228.h"
 
 #include "link_msg.h"
 #include "link_pages.h"
@@ -121,36 +123,53 @@ TEST_CASE(a_page_starts_with_both_parts_off_at_the_modules_defaults)
     sense_page_defaults(NULL);
 }
 
-/* CURRENT_LSB is the ADC's step over the shunt, so SHUNT_CAL is 4096 at
- * either range and the maximum only chooses the range.  MATEK
- * I2C-INA-BM: 200 uOhm at 204.8 A is 40.96 mV, the top of ADCRANGE 1. */
-TEST_CASE(the_maximum_chooses_adcrange_and_shunt_cal_stays_4096)
+/* One rule, the driver's: inside the page's own ranges, a shunt and a
+ * maximum are taken exactly when ina228_calibrate() takes them. */
+TEST_CASE(the_ina228_set_up_is_taken_when_the_driver_calibrates_it)
 {
-    uint8_t range = 9u;
-    CHECK_EQ(sense_i228_cal(200u, 2048u, &range), 4096u);
-    CHECK_EQ(range, 1u);
-    /* Past 40.96 mV at the maximum: the wider range, the same cal. */
-    CHECK_EQ(sense_i228_cal(200u, 2049u, &range), 4096u);
-    CHECK_EQ(range, 0u);
-    CHECK_EQ(sense_i228_cal(200u, 6553u, &range), 4096u);
-    CHECK_EQ(range, 0u);
-    /* 163.84 mV exactly is still inside; a step past it is not. */
-    CHECK_EQ(sense_i228_cal(16384u, 100u, &range), 4096u);
-    CHECK_EQ(range, 0u);
-    range = 9u;
-    CHECK_EQ(sense_i228_cal(16385u, 100u, &range), 0u);
-    CHECK_EQ(range, 9u);
-    CHECK_EQ(sense_i228_cal(20000u, 6553u, NULL), 0u);
-    /* The smallest set-up the page takes, and every shunt: the same cal. */
-    CHECK_EQ(sense_i228_cal(50u, 10u, &range), SENSE_I228_SHUNT_CAL);
-    CHECK_EQ(range, 1u);
-    CHECK_EQ(sense_i228_cal(20000u, 20u, &range), SENSE_I228_SHUNT_CAL);
-    CHECK_EQ(range, 1u);
-    CHECK_EQ(sense_i228_cal(20000u, 21u, &range), SENSE_I228_SHUNT_CAL);
-    CHECK_EQ(range, 0u);
-    /* Nothing across nothing has no range. */
-    CHECK_EQ(sense_i228_cal(0u, 2048u, NULL), 0u);
-    CHECK_EQ(sense_i228_cal(200u, 0u, NULL), 0u);
+    static const uint16_t uohm[] = {
+        50u, 81u, 82u, 100u, 200u, 250u, 1000u, 16384u, 16385u, 20000u,
+    };
+    static const uint16_t da[] = {
+        10u, 20u, 21u, 100u, 2048u, 2049u, 5000u, 6000u, 6553u,
+    };
+    unsigned taken = 0u;
+    unsigned refused = 0u;
+    for (size_t i = 0; i < sizeof(uohm) / sizeof(uohm[0]); ++i) {
+        for (size_t k = 0; k < sizeof(da) / sizeof(da[0]); ++k) {
+            fresh();
+            ina228_cal_t cal;
+            const bool ok = ina228_calibrate(uohm[i], (uint32_t)da[k] * 100u,
+                                             &cal) == INA228_SETUP_OK;
+            CHECK_EQ(i228(0x45u, uohm[i], da[k], 0u),
+                     ok ? 0u : LINK_NACK_BAD_VALUE);
+            if (ok) {
+                ++taken;
+                CHECK_EQ(cal.shunt_cal, INA228_SHUNT_CAL_ADC);
+            } else {
+                ++refused;
+            }
+        }
+    }
+    /* Both answers occur, so the grid holds the rule's edges. */
+    CHECK(taken > 0u);
+    CHECK(refused > 0u);
+
+    /* MATEK I2C-INA-BM: 200 uOhm at 204.8 A is 40.96 mV, the top of
+     * ADCRANGE 1, and 204.9 A moves to ADCRANGE 0 at the same SHUNT_CAL. */
+    fresh();
+    CHECK_EQ(i228(0x45u, 200u, 2048u, 0u), 0u);
+    CHECK_EQ(i228(0x45u, 200u, 2049u, 0u), 0u);
+    /* 163.84 mV exactly is inside; a step past it is not. */
+    CHECK_EQ(i228(0x45u, 16384u, 100u, 0u), 0u);
+    CHECK_EQ(i228(0x45u, 16385u, 100u, 0u), LINK_NACK_BAD_VALUE);
+    /* Under 81.92 uOhm ADCRANGE 0 would read past 2000 A: only a maximum
+     * that fits ADCRANGE 1 is taken.  At 50 uOhm that is up to 819.2 A,
+     * past the page's 655.3 A, so the floor always works. */
+    CHECK_EQ(i228(0x45u, 50u, 6553u, 0u), 0u);
+    CHECK_EQ(i228(0x45u, 81u, 5000u, 0u), 0u);           /* 40.5 mV: 1 */
+    CHECK_EQ(i228(0x45u, 81u, 6000u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(i228(0x45u, 82u, 6000u, 0u), 0u);           /* 1998 A: 0 */
 }
 
 /* DAOKAI's R100: 163.8 mV across 0.1 Ohm is 1.638 A, and the 5 mOhm floor
@@ -522,7 +541,7 @@ TEST_CASE(the_channel_flags_and_the_arm_word_pack_as_documented)
 int main(void)
 {
     RUN(a_page_starts_with_both_parts_off_at_the_modules_defaults);
-    RUN(the_maximum_chooses_adcrange_and_shunt_cal_stays_4096);
+    RUN(the_ina228_set_up_is_taken_when_the_driver_calibrates_it);
     RUN(the_ina3221_full_scale_follows_from_its_shunt);
     RUN(the_bus_is_refused_on_pins_that_are_not_one_blocks_pair);
     RUN(the_bus_is_refused_on_pins_something_else_holds);

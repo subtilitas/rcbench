@@ -63,31 +63,6 @@ void sense_page_init(sense_page_t *p);
  *  registers): what a store record from before protocol 4.7 restores. */
 void sense_page_defaults(uint16_t *cfg);
 
-/** The INA228's SHUNT_CAL under sense_i228_cal()'s rule, at either range. */
-#define SENSE_I228_SHUNT_CAL 4096u
-
-/**
- * The INA228's SHUNT_CAL for a shunt of @p shunt_uohm micro-ohms and a
- * maximum of @p max_da tenths of an ampere, and in @p adcrange (may be
- * NULL) the ADCRANGE it is for.
- *
- * CURRENT_LSB is the shunt ADC's step divided by the shunt -- 78.125 nV / R
- * at ADCRANGE 1, 312.5 nV / R at ADCRANGE 0 -- so CURRENT and VSHUNT clip
- * together and CURRENT never runs out before the ADC does.  SHUNT_CAL =
- * 13107.2e6 * CURRENT_LSB * R (times 4 at ADCRANGE 1) is then 4096 at
- * either range, for every shunt.  The maximum only chooses the range: 1
- * (+-40.96 mV) while max * R is at most 40.96 mV, 0 (+-163.84 mV) up to
- * 163.84 mV.
- *
- * SENSE_I228_SHUNT_CAL, or 0 when max * R is past 163.84 mV or either
- * value is 0: no range reads that current, and @p adcrange is untouched.
- *
- * ina228_calibrate() in shared/sense (the INA drivers) uses the same rule;
- * once it is on main this page calls it instead.
- */
-uint16_t sense_i228_cal(uint16_t shunt_uohm, uint16_t max_da,
-                        uint8_t *adcrange);
-
 /**
  * The INA3221's full scale in mA for a shunt of @p shunt_dmohm tenths of a
  * milliohm: 163.8 mV across it.  1638 at 0.1 Ohm.  0 for no shunt.
@@ -101,9 +76,13 @@ uint32_t sense_i3221_full_scale_ma(uint16_t shunt_dmohm);
  * one I2C block's pair while a part is enabled, a pin past the bank,
  * reserved, bound to an output or in @p taken, the two parts on one
  * address while both are enabled, the INA3221 enabled with no channel, an
- * INA228 maximum past 163.84 mV across its shunt, and any change while
- * @p o is driving (BAD_VALUE).  A write of the set-up in force is taken
- * armed or not.
+ * INA228 shunt and maximum ina228_calibrate() refuses (past 163.84 mV
+ * across the shunt, or a full scale past INA228_FS_MA_LIMIT at the range
+ * it chooses), and any change while @p o is driving (BAD_VALUE).  A write
+ * of the set-up in force is taken armed or not.
+ *
+ * The INA228's calibration is the driver's, ina228_calibrate(), so the
+ * page refuses exactly the set-ups the driver could not run.
  *
  * @p taken is the pins another page holds: the SUPPLY page's,
  * supply_page_pins().  The bank's reservation covers them on the

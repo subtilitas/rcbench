@@ -9,14 +9,11 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "ina228.h"
 #include "link_msg.h"
 
 /* The INA3221's shunt full scale, 163.8 mV, in uV: 4095 steps of 40 uV. */
 #define I3221_FULL_SCALE_UV 163800uL
-
-/* The INA228's two shunt ranges, in uV. */
-#define I228_RANGE1_UV 40960uL
-#define I228_RANGE0_UV 163840uL
 
 /* The largest current a register of signed mA carries. */
 #define MA_MAX 32767u
@@ -48,20 +45,13 @@ void sense_page_init(sense_page_t *p)
     }
 }
 
-uint16_t sense_i228_cal(uint16_t shunt_uohm, uint16_t max_da,
-                        uint8_t *adcrange)
+/* Whether the driver can calibrate the INA228 for this shunt and maximum:
+ * one rule, the driver's, so the page takes no set-up the part refuses. */
+static bool i228_calibrates(uint16_t shunt_uohm, uint16_t max_da)
 {
-    /* The shunt's voltage at the maximum: A/10 * uOhm = uV * 10. */
-    const uint32_t product = (uint32_t)max_da * (uint32_t)shunt_uohm;
-    if (product == 0u || product > I228_RANGE0_UV * 10u) {
-        return 0u;
-    }
-    /* The range is all the maximum chooses: CURRENT_LSB is the ADC's step
-     * over the shunt at either one, so SHUNT_CAL does not move. */
-    if (adcrange != NULL) {
-        *adcrange = (product <= I228_RANGE1_UV * 10u) ? 1u : 0u;
-    }
-    return (uint16_t)SENSE_I228_SHUNT_CAL;
+    ina228_cal_t cal;
+    return ina228_calibrate(shunt_uohm, (uint32_t)max_da * 100u, &cal)
+           == INA228_SETUP_OK;
 }
 
 uint32_t sense_i3221_full_scale_ma(uint16_t shunt_dmohm)
@@ -151,8 +141,8 @@ static bool values_ok(const uint16_t *c)
         || c[LINK_SN_I228_SHUNT_UOHM] > LINK_SN_I228_UOHM_MAX
         || c[LINK_SN_I228_MAX_DA] < LINK_SN_I228_DA_MIN
         || c[LINK_SN_I228_MAX_DA] > LINK_SN_I228_DA_MAX
-        || sense_i228_cal(c[LINK_SN_I228_SHUNT_UOHM], c[LINK_SN_I228_MAX_DA],
-                          NULL) == 0u) {
+        || !i228_calibrates(c[LINK_SN_I228_SHUNT_UOHM],
+                            c[LINK_SN_I228_MAX_DA])) {
         return false;
     }
     if (c[LINK_SN_I3221_ADDR] < LINK_SN_I3221_ADDR_MIN

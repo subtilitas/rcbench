@@ -294,8 +294,10 @@ enum {
  *     while the shunt's voltage at it is at most 40.96 mV, 0 up to
  *     163.84 mV, and past that the write is refused.  CURRENT_LSB is the
  *     shunt ADC's step divided by the shunt at that range, so CURRENT and
- *     VSHUNT clip together, and SHUNT_CAL is 4096 at either range
- *     (sense_i228_cal()).
+ *     VSHUNT clip together, and SHUNT_CAL is 4096 at either range.  A
+ *     shunt whose full scale at the chosen range passes 2000 A is refused
+ *     too: below 81.92 micro-ohms only ADCRANGE 1 is taken.  The rule is
+ *     the driver's, ina228_calibrate() in shared/sense.
  *
  *     I3221_ADDR to register 11 are the INA3221, one frame: its address,
  *     0x40 to 0x43; its shunt in 0.1 milliohm, 50 to 10000 (5 mOhm to

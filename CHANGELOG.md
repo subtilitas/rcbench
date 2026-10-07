@@ -13,8 +13,11 @@ history is in git.
   INA228 in the ESC's power path and a TI INA3221 on the servo rail:
   enable, SDA, SCL and 100 or 400 kHz; the INA228's address, shunt (50 to
   20000 µΩ) and range (1.0 to 655.3 A); the INA3221's address, shunt (5 mΩ
-  to 1 Ω, default 0.1 Ω for 1.638 A full scale) and channels. Registers 7
-  and 11 are reserved and take only 0. SDA and SCL must be one I2C block's
+  to 1 Ω, default 0.1 Ω for 1.638 A full scale) and channels. The INA228's
+  shunt and range are held to the driver's `ina228_calibrate()`: SHUNT_CAL
+  4096, ADCRANGE from the range, refused past 163.84 mV or 2000 A full
+  scale. Registers 7 and 11 are reserved and take only 0. SDA and SCL must
+  be one I2C block's
   pair (GP16 and GP17 by default), and are refused on a reserved pin, an
   output's pin or a SUPPLY pin; any change is refused while the bank is
   armed. The set-up is kept in the coprocessor's flash. SERVO_SENSE (0x2C)
