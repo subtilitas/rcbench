@@ -564,6 +564,14 @@ quantity that shows a reading supersedes failing live readings, and passing
 live readings a failing held quantity. A return whose `category` names another
 category counts as not returned. Only the kept part's rule-5 alternate gates
 its selection, and the alternate of a part on the board must be on the board.
+An alternate that shares a part number or an LCSC number with the part it
+stands in for, by its name or its record's `lcsc` field, an ordering option
+after `#` aside (`part1#TR` for `part1`), is that part under a distributor's
+or packing number and no second source: the function's part, or the Q
+alternative, is marked `second_source_missing`. Another maker's packing
+suffix, as Texas Instruments' reel letter, or a distributor's number whose
+record gives no LCSC number or another one, is not read as the same product:
+a current limitation.
 The kept part counts for a Q4 or Q8 option class in which the datasheet
 verifier confirmed it: `kept_option` when it is the first-ranked part after
 the drops, the option the re-rank gives it in the ranking, or its option when

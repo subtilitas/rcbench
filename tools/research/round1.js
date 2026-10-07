@@ -1472,6 +1472,12 @@ function selection(functions, ledger) {
     // Rule 5's alternate passes rule 1 as the part does: a part and its
     // alternate are both on the board or both off it.
     const offBoardAlt = c => !!(altOf(c) && recOf(altOf(c)) && (onBoard(c) !== onBoard(recOf(altOf(c))) || recOf(altOf(c)).placements < c.placements))
+    // Rule 5's alternate is another product. One that shares a part number
+    // or an LCSC number with the part, by its name or its record, an
+    // ordering option after '#' aside, is the part itself under a
+    // distributor's or packing number.
+    const names = functions.map(x => x.function)
+    const sameAlt = c => !!(altOf(c) && (samePart(c, altOf(c), names, true) || (recOf(altOf(c)) && samePart(c, recOf(altOf(c)), names, true))))
     const qAlternatives = f.verify.filter(v => v.kind === 'q-alternative' && !(kept && v.part === kept.part)).map(v => ({ ...qAlt(v), option: String(v.option || '') }))
     // Each option class of the decision (categories.json q_options) needs a
     // part: the kept part in the class its figure was asked for, as the
@@ -1492,9 +1498,9 @@ function selection(functions, ledger) {
       const alt = altOf(rec)
       const shared = alt && altOwner.get(alt) !== v.part
       return { part: v.part, status: st(v) || 'not verified', alternate: alt,
-        alternate_status: !alt ? '' : altSt(v.part, alt) || (shared ? `not verified: shared with ${altOwner.get(alt)}` : 'not verified'), second_source_missing: !rec || noSecondSource(rec) || offBoardAlt(rec) }
+        alternate_status: !alt ? '' : altSt(v.part, alt) || (shared ? `not verified: shared with ${altOwner.get(alt)}` : 'not verified'), second_source_missing: !rec || noSecondSource(rec) || offBoardAlt(rec) || sameAlt(rec) }
     }
-    const missing = !!(kept && (noSecondSource(kept) || offBoardAlt(kept)))
+    const missing = !!(kept && (noSecondSource(kept) || offBoardAlt(kept) || sameAlt(kept)))
     return { function: f.function, decision: f.decision || 'none', part: kept ? kept.part : null, rank: kept ? kept.rank : null, alternate: altOf(kept), refuted,
       alternate_unverified: alternateUnverified, second_source_missing: missing, q_alternatives: qAlternatives, q_options_missing: qOptionsMissing }
   })

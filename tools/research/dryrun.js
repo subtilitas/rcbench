@@ -86,7 +86,9 @@ async function runTask(task, opts = {}) {
     base0.requirements = base0.requirements.map(r => ({ ...r, pass: true }))
     base0.placements = opts.placements === undefined ? 1 : opts.placements
     base0.lcsc = opts.lcsc === undefined ? 'C1000' : opts.lcsc
-    const cand = rank => ({ ...base0, rank, part: `part${rank}`,
+    // Each candidate on the board has an LCSC number of its own, as distinct
+    // products do: C1001 for part1, C1009 for a rank-9 alternate's record.
+    const cand = rank => ({ ...base0, rank, part: `part${rank}`, lcsc: opts.lcsc === undefined ? `C${1000 + rank}` : opts.lcsc,
       second_source_route: rank === 2 && opts.replacementAlt ? 'alternate' : (rank === 1 && opts.emptyAlt ? 'alternate' : 'second-vendor'), second_source_part: rank === 2 && opts.replacementAlt ? 'altB' : '' })
     if (role === 'P0') {
       Object.assign(data, { stop: false, held: [], checkout_head: 'deadbeef', snapshot: '2026-09-14T09:56:01+00:00',
@@ -129,7 +131,7 @@ async function runTask(task, opts = {}) {
       // alts {PART: ALTERNATE}: rule-5 alternates, each with a record.
       for (const [part, alt] of Object.entries(opts.alts || {})) {
         Object.assign(data.functions[0].shortlist.find(c => c.part === part), { second_source_route: 'alternate', second_source_part: alt })
-        if (!data.functions[0].shortlist.some(c => c.part === alt)) data.functions[0].shortlist.push({ ...cand(9), part: alt, rank: 9 })
+        if (!data.functions[0].shortlist.some(c => c.part === alt)) data.functions[0].shortlist.push({ ...cand(9), part: alt, rank: 9, ...(opts.altLcsc ? { lcsc: opts.altLcsc } : {}) })
       }
       if (opts.twoQShare) {
         Object.assign(data.functions[0].shortlist[1], { second_source_route: 'alternate', second_source_part: 'altS2' })
@@ -792,6 +794,17 @@ async function main() {
   // A check without its source shows nothing.
   r = await runTask('T2', { noSource: true })
   check(r1(r).selection[0].part === null, 'checks without a source: not verified')
+  // A rule-5 alternate is another product: one that shares the part's part
+  // number, an ordering option after '#' aside, or its LCSC number, by name
+  // or by its record, is no second source.
+  r = await runTask('T2', { alts: { part1: 'partD' }, p4parts: ['partD'] })
+  check(r1(r).selection[0].alternate === 'partD' && r1(r).selection[0].second_source_missing === false, 'distinct alternate, verified: second source present')
+  r = await runTask('T2', { alts: { part1: 'DK-PART1-ND' }, p4parts: ['DK-PART1-ND'], altLcsc: 'C1001' })
+  check(r1(r).selection[0].second_source_missing === true, 'alternate whose record carries the part\'s LCSC number: second source missing')
+  r = await runTask('T2', { alts: { part1: 'part1#TR' }, p4parts: ['part1#TR'] })
+  check(r1(r).selection[0].second_source_missing === true, 'alternate that is an ordering option of the part: second source missing')
+  r = await runTask('T2', { altName: 'part1 (C1001)', verify: ['part1 (C1001)'] })
+  check(r1(r).selection[0].second_source_missing === true, 'alternate named by the part\'s number and LCSC number: second source missing')
   // A part on the board needs an alternate on the board.
   r = await runTask('T2', { offBoardAlt: true, verify: ['altOff'] })
   check(r1(r).selection[0].part === 'part1' && r1(r).selection[0].second_source_missing === true, 'off-board alternate of a part on the board: second source missing')
