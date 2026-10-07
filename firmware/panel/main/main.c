@@ -27,6 +27,15 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 
+/* sdkconfig.defaults sets the main task's stack to 8192 bytes, and
+ * tools/stack_check.py holds the UI's deepest chain to it.  ESP-IDF reads the
+ * defaults only when it creates sdkconfig, so a checkout whose sdkconfig
+ * predates that line still builds with 3584 bytes and overflows on
+ * PROGRAMMER's first frame.  Such a build stops here. */
+#if CONFIG_ESP_MAIN_TASK_STACK_SIZE < 8192
+#error "CONFIG_ESP_MAIN_TASK_STACK_SIZE is under 8192: delete firmware/panel/sdkconfig so sdkconfig.defaults applies"
+#endif
+
 #include "board.h"
 #include "ui_band.h"
 #include "board_pins.h"
