@@ -71,6 +71,12 @@ sweep starts over from the curve's beginning, and the alert band says so.
   profile, named with the model, and the supply takes the model's own cell
   count. The search filters both levels and is kept between them; card
   profiles join their maker. The count moves to the line under the rows.
+- **The menu-starting step is listened through.** Pulling the jumper or
+  pressing the button starts the Kontronik mode series at once, while the
+  operator's hand is at the ESC. The run counts beeps from the moment it
+  asks for that step; the menu heard in order, or DONE, takes it as done,
+  and SILENCE and TIMEOUT run from then. Before, the run listened only after
+  DONE, at least 1000 ms after the prompt, and lost the first groups.
 - **Manual steps in German.** A step carries its German in `action_de`
   (1-120 bytes of UTF-8), shown when the interface is German, with the
   English as the fallback. All 24 profiles' steps have it.

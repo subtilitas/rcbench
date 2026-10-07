@@ -1630,6 +1630,7 @@ static uint32_t sp_signature(void)
         s.st.green ? 1u : 0u,
         esc_stick_hand_ready(e) ? 1u : 0u,
         (esc_stick_hand_left_ms(e) + 999u) / 1000u, e->hand,
+        e->hand_menu ? 1u : 0u,
     };
     uint32_t h = 2166136261u;
     for (size_t i = 0; i < sizeof(parts) / sizeof(parts[0]); ++i) {
@@ -3274,7 +3275,9 @@ static void sp_draw_prompt(gfx_canvas_t *c)
                       ui_theme_color(UI_C_TEXT));
     y += 12;
     const char *pos = sp_pos(e->out.throttle_pct);
-    if (e->phase == ESC_STICK_HAND_ON) {
+    if (e->hand_menu) {
+        snprintf(line, sizeof(line), TR(SP_PROMPT_LISTEN), pos);
+    } else if (e->phase == ESC_STICK_HAND_ON) {
         snprintf(line, sizeof(line), TR(SP_PROMPT_ON), pos);
     } else if (m->when == ESC_MANUAL_AT_POWER_UP) {
         snprintf(line, sizeof(line), "%s", TR(SP_PROMPT_AT_POWER));
@@ -3288,6 +3291,11 @@ static void sp_draw_prompt(gfx_canvas_t *c)
                  (unsigned)(m->hold_ms / 1000u),
                  (unsigned)(m->hold_ms % 1000u / 100u));
         sp_text(c, a.x + 20, y, line, 92, ui_theme_color(UI_C_TEXT_DIM));
+        y += 22;
+    }
+    if (e->hand_menu) {
+        sp_text(c, a.x + 20, y, TR(SP_PROMPT_HEARD), 92,
+                ui_theme_color(UI_C_TEXT_DIM));
         y += 22;
     }
     snprintf(line, sizeof(line), TR(SP_PROMPT_LEFT),

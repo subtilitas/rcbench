@@ -216,7 +216,7 @@ each with the moment it is due:
 | --- | --- |
 | `before_power` | lists it on the warning: HOLD TO RUN is the word that it is done. From the second power-up of a run on, it stops before each power-up and asks again |
 | `at_power_up` | stops before each power-up with the supply off and asks; DONE switches the supply on, and the run counts down the hold the profile gives |
-| `before_menu` | stops once the entry has had its time, with the ESC powered and the stick at MIN, and asks; DONE starts the menu |
+| `before_menu` | asks once the entry has had its time, with the ESC powered and the stick at the power-up position. The last such step is the action that starts the menu, and the run counts the beeps from the moment it asks (see below); an earlier one waits for DONE |
 | `during_menu` | cannot know the moment: the profile does not run, `manual step` |
 | `after_programming` | shows it on the result |
 
@@ -247,6 +247,31 @@ supply and its readings, and every end sets the throttle to MIN, switches
 the supply off and disarms.
 
 ![The run waiting for the jumper](img/programmer-stick-hand-prompt.png)
+
+**The action that starts the menu.** In every profile of record the last
+`before_menu` step starts the mode series at once: the ESC answers the
+pulled jumper or the pressed button with a three-tone sequence and sounds
+mode 1, 2, 3 ... after it (for example Kontronik_Jazz.pdf p.6, "Jumper
+abziehen" followed by the tone sequence and the series;
+Kontronik_Pix1000_3000.pdf p.4 steps 5 and 6, "Taster drücken" followed by
+the descending tones and the series; KOSMIK p.8 step 6). The operator's
+hand is at the ESC then, not at the screen. So the run counts the beeps
+from the moment it asks for that step, with the stick where the power-up
+put it:
+
+- The step is taken as done by the first group the order rule finds in
+  order with the one before it -- the menu running -- or by DONE,
+  whichever comes first. The ESC's three-tone answer is a group of 3 and
+  not in order with mode 1, so it does not count.
+- The quiet-first and order rules hold from the prompt: no group counts
+  until GROUP GAP of quiet, and a value is acted on only on the third
+  group in a row in order. A partial first group is never acted on.
+- SILENCE and TIMEOUT run from the moment the step is done; until then the
+  ESC is silent by design. No step done within 60 s ends the run with NOT
+  CONFIRMED.
+- The stick does not move while the step is asked. A profile whose menu
+  rests at another position than the power-up would move it, so there the
+  run asks for DONE and listens only after it, as for every earlier step.
 
 A step at a powered ESC is asked for only with the stick at the
 motor-off position: MIN, or MID where a value's `entry_throttle` names it,
@@ -312,7 +337,7 @@ A change of either light repaints both screen buffers.
 | MANUAL STEP | entry position | off | before a power-up with a step due: DONE, then POWER ON; no DONE in 60 s: NOT CONFIRMED |
 | POWER ON | entry position | on | when a sample reports the output on; after 3000 ms: NO POWER |
 | ENTRY | entry position | on | ENTRY after power-on: the value's `entry_hold_ms`, else the profile's `hold_ms` where it states one, and no less than the longest `hold_ms` of an `at_power_up` step |
-| MANUAL STEP, POWERED | entry position, MIN | on | after ENTRY with a `before_menu` step due: DONE, then the menu; no DONE in 60 s: NOT CONFIRMED |
+| MANUAL STEP, POWERED | the power-up position | on | after ENTRY with a `before_menu` step due that is not the menu's own start: DONE, then the next step or the menu; no DONE in 60 s: NOT CONFIRMED. The last step is asked from ITEMS or VALUES, already counting |
 | ITEMS | rest position | on | an item group in order names a wanted item: the select move |
 | VALUES | where the last move left it | on | a value group in order names the wanted value: the value move |
 | STORING | the value move, then the store move, then the value's own moves (`after_select`) | on | after STORE, and after STORE again for each move: the profile's store move, then each of the value's |
@@ -536,10 +561,10 @@ one), groups loop with 250 ms beeps, 250 ms gaps, 800 ms long beeps and
 those numbers is made up. Where the profile names a store move, a selection
 is kept only once the stick makes it. An item keyed `exit` leaves the menu
 when it is selected, and one keyed `reset` clears what was stored. The
-model's samples arrive every 50 ms. It does not model a jumper or a
-button: it enters its menu after `hold_ms` whether a manual step is
-confirmed or not, and the run's quiet-first rule starts counting at a group
-boundary after DONE.
+model's samples arrive every 50 ms. The panel's model does not model a
+jumper or a button: it enters its menu after `hold_ms`. The host suite's
+does (`wait_hand`): the menu waits for the action, answers it with three
+beeps and starts the series 1500 ms later.
 
 The host suite (`test_esc_stick`) runs the engine against the simulation end
 to end: two-stage and one-stage menus, repeated groups, a rest position,

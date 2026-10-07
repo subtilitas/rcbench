@@ -240,7 +240,7 @@ mit dem Zeitpunkt, an dem er fällig ist:
 | --- | --- |
 | `before_power` | nennt ihn auf der Warnung: HALTEN ZUM STARTEN sagt, dass er erledigt ist. Ab dem zweiten Einschalten eines Laufs hält er vor jedem Einschalten an und fragt erneut |
 | `at_power_up` | hält vor jedem Einschalten mit ausgeschaltetem Netzteil an und fragt; ERLEDIGT schaltet das Netzteil ein, und der Lauf zählt das Halten herunter, das das Profil nennt |
-| `before_menu` | hält an, sobald der Einstieg seine Zeit hatte, mit versorgtem ESC und dem Knüppel auf MIN, und fragt; ERLEDIGT startet das Menü |
+| `before_menu` | fragt, sobald der Einstieg seine Zeit hatte, mit versorgtem ESC und dem Knüppel in der Einschaltstellung. Der letzte solche Schritt ist die Handlung, die das Menü startet, und der Lauf zählt die Pieptöne ab dem Moment, in dem er fragt (siehe unten); ein früherer wartet auf ERLEDIGT |
 | `during_menu` | kann den Zeitpunkt nicht kennen: das Profil läuft nicht, `Handgriff` |
 | `after_programming` | zeigt ihn auf dem Ergebnis |
 
@@ -272,6 +272,33 @@ Messwerte, und jedes Ende setzt Throttle auf MIN, schaltet das Netzteil aus
 und entschärft.
 
 ![Der Lauf wartet auf den Jumper](img/de/programmer-stick-hand-prompt.png)
+
+**Die Handlung, die das Menü startet.** In jedem Profil im Satz startet der
+letzte Schritt `before_menu` die Modusfolge sofort: der ESC beantwortet den
+abgezogenen Jumper oder den gedrückten Taster mit einem Dreiklang und gibt
+danach Modus 1, 2, 3 ... aus (zum Beispiel Kontronik_Jazz.pdf S. 6,
+"Jumper abziehen", gefolgt von der Tonfolge und der Folge;
+Kontronik_Pix1000_3000.pdf S. 4 Schritte 5 und 6, "Taster drücken",
+gefolgt von den absteigenden Tönen und der Folge; KOSMIK S. 8 Schritt 6).
+Die Hand des Bedieners ist dann am ESC, nicht am Bildschirm. Deshalb zählt
+der Lauf die Pieptöne ab dem Moment, in dem er nach diesem Schritt fragt,
+mit dem Knüppel dort, wo das Einschalten ihn ließ:
+
+- Der Schritt gilt als erledigt mit der ersten Gruppe, die die
+  Reihenfolgeregel in Folge mit der davor findet -- das Menü läuft --,
+  oder mit ERLEDIGT, was zuerst kommt. Der Dreiklang des ESC ist eine
+  Gruppe von 3 und nicht in Folge mit Modus 1, er zählt also nicht.
+- Die Regeln der ruhigen Leitung und der Reihenfolge gelten ab der Frage:
+  keine Gruppe zählt vor GROUP GAP Ruhe, und auf einen Wert wird erst mit
+  der dritten Gruppe in Folge reagiert. Auf eine angeschnittene erste
+  Gruppe wird nie reagiert.
+- SILENCE und ZEITLIMIT laufen ab dem Moment, in dem der Schritt erledigt
+  ist; bis dahin schweigt der ESC planmäßig. Kein erledigter Schritt
+  innerhalb von 60 s beendet den Lauf mit NICHT BESTÄTIGT.
+- Der Knüppel bewegt sich nicht, solange nach dem Schritt gefragt wird. Ein
+  Profil, dessen Menü in einer anderen Stellung als der Einschaltstellung
+  ruht, würde ihn bewegen; dort fragt der Lauf nach ERLEDIGT und hört erst
+  danach zu, wie bei jedem früheren Schritt.
 
 Um einen Schritt an einem versorgten ESC wird nur mit dem Knüppel in der
 Motor-Aus-Stellung gebeten: MIN, oder MID, wo das `entry_throttle` eines
@@ -343,7 +370,7 @@ gezeichnet.
 | HANDGRIFF | Einstiegsstellung | aus | vor einem Einschalten mit fälligem Schritt: ERLEDIGT, dann EINSCHALTEN; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT |
 | EINSCHALTEN | Einstiegsstellung | an | wenn ein Messwert den Ausgang an meldet; nach 3000 ms: AUSGANG NICHT GEMELDET |
 | EINSTIEG | Einstiegsstellung | an | EINSTIEG nach dem Einschalten: das `entry_hold_ms` des Werts, sonst das `hold_ms` des Profils, wo es eines nennt, und nicht kürzer als das längste `hold_ms` eines Schritts `at_power_up` |
-| HANDGRIFF, VERSORGT | Einstiegsstellung, MIN | an | nach EINSTIEG mit einem fälligen Schritt `before_menu`: ERLEDIGT, dann das Menü; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT |
+| HANDGRIFF, VERSORGT | Einschaltstellung | an | nach EINSTIEG mit einem fälligen Schritt `before_menu`, der nicht der Start des Menüs ist: ERLEDIGT, dann der nächste Schritt oder das Menü; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT. Nach dem letzten Schritt wird aus PUNKTE oder WERTE gefragt, schon zählend |
 | PUNKTE | Ruhestellung | an | eine Punktgruppe in Reihenfolge nennt einen gewünschten Punkt: die Auswahlbewegung |
 | WERTE | wo die letzte Bewegung es ließ | an | eine Wertgruppe in Reihenfolge nennt den gewünschten Wert: die Wertbewegung |
 | SPEICHERN | die Wertbewegung, dann die Speicherbewegung, dann die eigenen Bewegungen des Werts (`after_select`) | an | nach SPEICHERN, und nach SPEICHERN noch einmal für jede Bewegung: die Speicherbewegung des Profils, dann jede des Werts |
@@ -589,10 +616,11 @@ folgt: Einschalten in der Einstiegsstellung betritt das Menü nach dem
 ausgedacht. Wo das Profil eine Speicherbewegung nennt, wird eine Auswahl
 erst behalten, wenn der Knüppel sie macht. Ein Punkt mit dem Schlüssel
 `exit` verlässt das Menü, wenn er gewählt wird, und einer mit `reset` löscht,
-was gespeichert war. Die Messwerte des Modells kommen alle 50 ms. Es bildet
-keinen Jumper und keinen Taster nach: es betritt sein Menü nach `hold_ms`,
-ob ein Handgriff bestätigt ist oder nicht, und die Regel der ruhigen Leitung
-lässt den Lauf nach ERLEDIGT an einer Gruppengrenze zu zählen beginnen.
+was gespeichert war. Die Messwerte des Modells kommen alle 50 ms. Das Modell
+des Panels bildet keinen Jumper und keinen Taster nach: es betritt sein
+Menü nach `hold_ms`. Das der Host-Suite tut es (`wait_hand`): das Menü
+wartet auf die Handlung, beantwortet sie mit drei Pieptönen und beginnt die
+Folge 1500 ms später.
 
 Die Host-Suite (`test_esc_stick`) lässt den Ablauf von Ende zu Ende gegen
 die Simulation laufen: zwei- und einstufige Menüs, wiederholte Gruppen, eine

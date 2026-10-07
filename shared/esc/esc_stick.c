@@ -935,6 +935,8 @@ static void ask(esc_stick_t *e, int i, esc_stick_phase_t ph)
 {
     e->hand = (uint8_t)i;
     e->hand_done = false;
+    e->hand_menu = false;
+    e->hand_ms = e->now_ms;
     enter(e, ph);
 }
 
@@ -956,15 +958,33 @@ static void before_power(esc_stick_t *e, unsigned from)
     }
 }
 
-/* The menu begins once every step due before it is done. */
+/*
+ * The menu begins once every step due before it is done.  The last
+ * before_menu step is the action that starts the menu -- the jumper pulled,
+ * the button pressed: the ESC answers with its tones and sounds the series
+ * at once -- so the run listens from the moment it asks for it, with the
+ * stick where the power-up left it, and DONE is only a way to say so
+ * early.  The first group the order rule finds in order with the one
+ * before it is the menu running, and takes the step as done.  Where the
+ * menu rests elsewhere the stick would move under the operator's hand, so
+ * the run waits for DONE before listening, as for every earlier step.
+ */
 static void before_menu(esc_stick_t *e, unsigned from)
 {
     const int i = hand_due(e, from, true);
     if (i < 0) {
         begin_menu(e);
-    } else {
-        ask(e, i, ESC_STICK_HAND_ON);
+        return;
     }
+    if (hand_due(e, (unsigned)i + 1u, true) < 0 && rest_of(e) == e->entry) {
+        begin_menu(e);
+        e->hand = (uint8_t)i;
+        e->hand_done = false;
+        e->hand_menu = true;
+        e->hand_ms = e->now_ms;
+        return;
+    }
+    ask(e, i, ESC_STICK_HAND_ON);
 }
 
 static bool hand_phase(esc_stick_phase_t ph)
@@ -974,7 +994,7 @@ static bool hand_phase(esc_stick_phase_t ph)
 
 const esc_manual_t *esc_stick_hand(const esc_stick_t *e)
 {
-    if (!esc_stick_running(e) || !hand_phase(e->phase)
+    if (!esc_stick_running(e) || !(hand_phase(e->phase) || e->hand_menu)
         || e->p->manual == NULL || e->hand >= e->p->manual_count) {
         return NULL;
     }
@@ -1025,7 +1045,7 @@ uint32_t esc_stick_entry_ms(const esc_stick_t *e)
 bool esc_stick_hand_ready(const esc_stick_t *e)
 {
     return esc_stick_hand(e) != NULL && !e->hand_done
-           && since(e->now_ms, e->phase_ms) >= ESC_STICK_HAND_MIN_MS;
+           && since(e->now_ms, e->hand_ms) >= ESC_STICK_HAND_MIN_MS;
 }
 
 uint32_t esc_stick_hand_left_ms(const esc_stick_t *e)
@@ -1033,7 +1053,7 @@ uint32_t esc_stick_hand_left_ms(const esc_stick_t *e)
     if (esc_stick_hand(e) == NULL) {
         return 0u;
     }
-    const uint32_t in = since(e->now_ms, e->phase_ms);
+    const uint32_t in = since(e->now_ms, e->hand_ms);
     return (in < ESC_STICK_HAND_WAIT_MS) ? ESC_STICK_HAND_WAIT_MS - in : 0u;
 }
 
@@ -1075,6 +1095,16 @@ esc_throttle_t esc_stick_store_move(const esc_stick_t *e, unsigned k)
     const esc_value_t *v = &e->p->items[c->item].values[c->value];
     return (k < v->after_count && k < ESC_AFTER_MAX) ? v->after[k]
                                                       : ESC_THR_NONE;
+}
+
+/* The action that starts the menu is done: by DONE, or by the menu heard
+ * in order.  SILENCE and TIMEOUT count from now. */
+static void hand_menu_done(esc_stick_t *e)
+{
+    e->hand_menu = false;
+    e->hand_done = true;
+    e->heard_ms = e->now_ms;
+    e->phase_ms = e->now_ms;
 }
 
 static uint8_t wanted_value(const esc_stick_t *e)
@@ -1126,6 +1156,9 @@ static void on_group(esc_stick_t *e, uint8_t count, bool valid)
     e->prev = count;
     e->prev_trusted = in_order;
     e->last_in_order = in_order;
+    if (in_order && e->hand_menu) {
+        hand_menu_done(e);          /* the menu runs: the action is done */
+    }
     e->last_trusted = act;
     if (!act) {
         return;
@@ -1397,6 +1430,17 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         break;
     case ESC_STICK_ITEMS:
     case ESC_STICK_VALUES:
+        if (e->hand_menu) {
+            /* Listening while the action is asked for: the ESC is silent
+             * until it is done, so SILENCE and TIMEOUT run from then. */
+            if (e->hand_done) {
+                hand_menu_done(e);
+            } else if (since(e->now_ms, e->hand_ms)
+                       >= ESC_STICK_HAND_WAIT_MS) {
+                finish(e, ESC_STICK_ABORTED, ESC_STICK_R_HAND);
+            }
+            break;
+        }
         if (since(e->now_ms, e->heard_ms) >= e->t.silence_ms) {
             finish(e, ESC_STICK_ABORTED, ESC_STICK_R_NO_BEEPS);
         } else if (in_phase >= e->t.timeout_ms) {

@@ -107,6 +107,7 @@ static void rig(const char *id)
     }
     esc_sim_cfg_t c;
     esc_sim_defaults(&c);
+    c.wait_hand = true;         /* the menu starts at the pull */
     esc_sim_init(&r.sim, r.p, &c);
     r.now = 1000u;
     r.link = true;
@@ -198,6 +199,29 @@ static void run_until_phase(esc_stick_phase_t ph, uint32_t ms)
     for (uint32_t i = 0; i < ms && esc_stick_running(&r.e)
                          && r.e.phase != ph; ++i) {
         tick();
+    }
+}
+
+/* Until the run asks for the step that starts the menu. */
+static void run_until_asked(uint32_t ms)
+{
+    for (uint32_t i = 0; i < ms && esc_stick_running(&r.e); ++i) {
+        const esc_manual_t *m = esc_stick_hand(&r.e);
+        if (m != NULL && m->when == ESC_MANUAL_BEFORE_MENU && r.e.hand_menu) {
+            return;
+        }
+        tick();
+    }
+}
+
+/* The person does it now -- the jumper pulled, the button pressed -- and,
+ * with @p done, taps DONE once it counts. */
+static void act(bool done)
+{
+    esc_sim_hand(&r.sim, r.now);
+    if (done) {
+        run_for(ESC_STICK_HAND_MIN_MS);
+        (void)esc_stick_confirm(&r.e);
     }
 }
 
@@ -1410,12 +1434,15 @@ static void rig_hand(const char *id, const esc_manual_t *m, uint8_t n)
     r.p = &g_hand;
     esc_sim_cfg_t c;
     esc_sim_defaults(&c);
+    c.wait_hand = true;
     esc_sim_init(&r.sim, r.p, &c);
 }
 
 /* Kontronik JAZZ: the jumper is on before the warning is held, the run
- * powers up, waits the 2 s entry, and then stops, powered and at MIN, until
- * DONE says the jumper is off; then it counts the modes and stores one. */
+ * powers up and waits the 2 s entry, then asks for the pull and listens
+ * from that moment, powered and at MIN.  The ESC is silent until the pull;
+ * SILENCE does not end the run meanwhile.  No DONE: the menu heard in
+ * order takes the step as done, and the mode is stored. */
 TEST_CASE(a_jumper_pulled_after_the_entry_is_waited_for)
 {
     rig("kontronik-jazz");
@@ -1423,13 +1450,14 @@ TEST_CASE(a_jumper_pulled_after_the_entry_is_waited_for)
     esc_stick_change_t c[1] = { change(1, 3) };
     CHECK(start(c, 1));
     CHECK(esc_stick_hand(&r.e) == NULL);
-    run_until_phase(ESC_STICK_HAND_ON, 60000u);
-    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);
+    run_until_asked(60000u);
     const esc_manual_t *m = esc_stick_hand(&r.e);
     CHECK(m != NULL);
     if (m != NULL) {
         CHECK_EQ(m->when, ESC_MANUAL_BEFORE_MENU);
     }
+    CHECK_EQ(r.e.phase, ESC_STICK_VALUES);        /* listening already */
+    CHECK(r.e.hand_menu);
     CHECK(esc_stick_out(&r.e)->supply_on);
     CHECK(esc_stick_out(&r.e)->arm);
     CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MIN);
@@ -1438,19 +1466,101 @@ TEST_CASE(a_jumper_pulled_after_the_entry_is_waited_for)
     CHECK(!esc_stick_hand_ready(&r.e));
     CHECK(!esc_stick_confirm(&r.e));
     CHECK_EQ(esc_stick_hand_left_ms(&r.e), ESC_STICK_HAND_WAIT_MS);
-    run_for(ESC_STICK_HAND_MIN_MS);
-    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);       /* it waits */
-    CHECK(esc_stick_hand_ready(&r.e));
-    CHECK(esc_stick_confirm(&r.e));
-    CHECK(!esc_stick_confirm(&r.e));              /* once */
-    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);       /* acted on next step */
-    tick();
-    CHECK_EQ(r.e.phase, ESC_STICK_VALUES);
+    run_for(r.t.silence_ms + 1000u);
+    CHECK(esc_stick_running(&r.e));
+    CHECK(r.e.hand_menu);
+    CHECK_EQ(r.e.groups, 0u);
+    act(false);
+    for (uint32_t i = 0; i < 20000u && r.e.hand_menu; ++i) {
+        tick();
+    }
+    CHECK(!r.e.hand_menu);
+    CHECK(r.e.hand_done);
     CHECK(esc_stick_hand(&r.e) == NULL);
+    CHECK(!esc_stick_confirm(&r.e));
     run_for(240000u);
     CHECK_EQ(r.e.phase, ESC_STICK_DONE);
     CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
     ended_safe();
+}
+
+/* The pull starts the series at once, and DONE comes when the operator is
+ * back at the screen, here 4 s later.  Counting from the pull, mode 3 is
+ * acted on in the first loop -- groups 1, 2, 3 in order -- not a whole
+ * loop later, as it would be counting from DONE.  A partial first group is
+ * never acted on: the quiet-first and order rules hold from the prompt. */
+TEST_CASE(a_pull_starts_the_menu_and_no_group_is_lost)
+{
+    rig("kontronik-jazz");
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    run_until_asked(60000u);
+    run_for(300u);
+    act(false);
+    const uint32_t pulled = r.now;
+    run_for(4000u);
+    (void)esc_stick_confirm(&r.e);            /* back at the screen */
+    run_until_phase(ESC_STICK_STORE, 60000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_STORE);
+    /* The answer (1.25 s), the pause, then 1, 2 and 3 at about 1.75 s
+     * each: under 9 s.  One loop of nine modes more is over 15 s. */
+    if (r.now - pulled > 9000u) {
+        T_FAIL("mode 3 acted on %u ms after the pull",
+               (unsigned)(r.now - pulled));
+    }
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+
+    /* The ESC already sounding when the run asks: no group counted until
+     * GROUP GAP of quiet, and the order rule needs three in a row. */
+    rig("kontronik-jazz");
+    c[0] = change(1, 2);
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_ENTRY, 60000u);
+    act(false);                               /* pulled early */
+    run_until_asked(60000u);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 2);
+}
+
+/* Two before_menu steps: the first waits in HAND_ON for DONE, the second
+ * starts the menu and is listened through. */
+TEST_CASE(an_earlier_step_still_waits_for_done)
+{
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_BEFORE_MENU, "Check the LED.", 0u },
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u },
+    };
+    rig_hand("kontronik-jazz", k, 2);
+    esc_stick_change_t c[1] = { change(1, 3) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_HAND_ON, 60000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);
+    CHECK(!r.e.hand_menu);
+    CHECK_EQ(r.e.hand, 0u);
+    run_for(5000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);      /* waits for DONE */
+    CHECK(esc_stick_confirm(&r.e));
+    tick();
+    CHECK(r.e.hand_menu);
+    CHECK_EQ(r.e.hand, 1u);
+    CHECK_EQ(r.e.phase, ESC_STICK_VALUES);
+    act(false);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+
+    /* A menu that rests elsewhere: the stick would move under the hand, so
+     * the last step waits for DONE too. */
+    rig_hand("kontronik-jazz", &k[1], 1);
+    g_hand.listen_throttle = ESC_THR_MID;
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_HAND_ON, 60000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);
+    CHECK(!r.e.hand_menu);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MIN);
 }
 
 /* No DONE: the run ends after ESC_STICK_HAND_WAIT_MS, everything off, with
@@ -1460,9 +1570,9 @@ TEST_CASE(a_step_never_confirmed_ends_the_run)
     rig("kontronik-jazz");
     esc_stick_change_t c[1] = { change(1, 3) };
     CHECK(start(c, 1));
-    run_until_phase(ESC_STICK_HAND_ON, 60000u);
+    run_until_asked(60000u);
     run_for(ESC_STICK_HAND_WAIT_MS - 2u);
-    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);
+    CHECK(r.e.hand_menu);                   /* the ESC waits, silent */
     CHECK(esc_stick_hand_left_ms(&r.e) <= 2u);
     run_for(10u);
     CHECK_EQ(r.e.reason, ESC_STICK_R_HAND);
@@ -1487,9 +1597,9 @@ TEST_CASE(stop_abort_and_the_supply_end_a_run_waiting_for_a_step)
         rig("kontronik-jazz");
         esc_stick_change_t c[1] = { change(1, 3) };
         CHECK(start(c, 1));
-        run_until_phase(ESC_STICK_HAND_ON, 60000u);
+        run_until_asked(60000u);
         run_for(ESC_STICK_HAND_MIN_MS);
-        CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);
+        CHECK(r.e.hand_menu);
         /* A DONE taken in the same frame as the end: the end wins, and
          * the menu never starts. */
         CHECK(esc_stick_confirm(&r.e));
@@ -1575,10 +1685,10 @@ TEST_CASE(the_entry_lasts_at_least_the_hold_at_power_up)
     run_until_phase(ESC_STICK_ENTRY, 10000u);
     CHECK_EQ(r.e.phase, ESC_STICK_ENTRY);
     const uint32_t on = r.e.on_ms;
-    run_until_phase(ESC_STICK_HAND_ON, 10000u);
-    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);
-    CHECK(r.e.phase_ms - on >= 3000u);
-    CHECK(r.e.phase_ms - on < 3010u);
+    run_until_asked(10000u);
+    CHECK(r.e.hand_menu);
+    CHECK(r.e.hand_ms - on >= 3000u);
+    CHECK(r.e.hand_ms - on < 3010u);
     /* Without the hold, the entry's own 2 s. */
     static const esc_manual_t pull[] = {
         { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u },
@@ -1675,11 +1785,10 @@ TEST_CASE(a_car_mode_is_powered_up_from_the_middle)
     run_until_phase(ESC_STICK_SIGNAL, 10000u);
     CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MID);
     CHECK(!esc_stick_out(&r.e)->supply_on);
-    run_until_phase(ESC_STICK_HAND_ON, 60000u);
+    run_until_asked(60000u);
     /* The jumper is pulled with the stick at MID, the manual's motor-off. */
     CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MID);
-    run_for(ESC_STICK_HAND_MIN_MS);
-    CHECK(esc_stick_confirm(&r.e));
+    act(true);
     run_for(240000u);
     CHECK_EQ(r.e.phase, ESC_STICK_DONE);
     CHECK_EQ(r.on_n, 1u);
@@ -1693,9 +1802,8 @@ TEST_CASE(a_car_mode_is_powered_up_from_the_middle)
     c[0] = change(1, 3);
     CHECK_EQ(esc_stick_change_entry(r.p, &c[0]), ESC_THR_MIN);
     CHECK(start(c, 1));
-    run_until_phase(ESC_STICK_HAND_ON, 60000u);
-    run_for(ESC_STICK_HAND_MIN_MS);
-    CHECK(esc_stick_confirm(&r.e));
+    run_until_asked(60000u);
+    act(true);
     run_for(240000u);
     CHECK_EQ(r.e.phase, ESC_STICK_DONE);
     CHECK(r.on_pct[0] == ESC_STICK_PCT_MIN);
@@ -1719,14 +1827,13 @@ TEST_CASE(a_value_waits_its_own_entry_time)
         run_until_phase(ESC_STICK_ENTRY, 10000u);
         CHECK_EQ(esc_stick_entry_ms(&r.e), k[i].ms);
         const uint32_t on = r.e.on_ms;
-        run_until_phase(ESC_STICK_HAND_ON, 20000u);
-        CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);
-        if (r.e.phase_ms - on < k[i].ms || r.e.phase_ms - on > k[i].ms + 5u) {
+        run_until_asked(20000u);
+        CHECK(r.e.hand_menu);
+        if (r.e.hand_ms - on < k[i].ms || r.e.hand_ms - on > k[i].ms + 5u) {
             T_FAIL("mode %u asked after %u ms, want %u", k[i].mode,
-                   (unsigned)(r.e.phase_ms - on), (unsigned)k[i].ms);
+                   (unsigned)(r.e.hand_ms - on), (unsigned)k[i].ms);
         }
-        run_for(ESC_STICK_HAND_MIN_MS);
-        CHECK(esc_stick_confirm(&r.e));
+        act(true);
         run_for(240000u);
         CHECK_EQ(r.e.phase, ESC_STICK_DONE);
         CHECK_EQ(esc_sim_stored(&r.sim, 1), k[i].mode);
@@ -1768,9 +1875,8 @@ TEST_CASE(a_value_makes_its_moves_after_the_selection)
     rig("kontronik-pix");
     esc_stick_change_t c[1] = { change(1, 2) };
     CHECK(start(c, 1));
-    run_until_phase(ESC_STICK_HAND_ON, 60000u);
-    run_for(ESC_STICK_HAND_MIN_MS);
-    CHECK(esc_stick_confirm(&r.e));
+    run_until_asked(60000u);
+    act(true);
     run_until_phase(ESC_STICK_STORE, 240000u);
     CHECK_EQ(r.e.phase, ESC_STICK_STORE);
     CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MAX);
@@ -1790,9 +1896,8 @@ TEST_CASE(a_value_makes_its_moves_after_the_selection)
     rig("kontronik-pix");
     c[0] = change(1, 3);
     CHECK(start(c, 1));
-    run_until_phase(ESC_STICK_HAND_ON, 60000u);
-    run_for(ESC_STICK_HAND_MIN_MS);
-    CHECK(esc_stick_confirm(&r.e));
+    run_until_asked(60000u);
+    act(true);
     run_until_phase(ESC_STICK_STORE, 240000u);
     CHECK_EQ(esc_stick_store_move(&r.e, 0u), ESC_THR_NONE);
     run_for(240000u);
@@ -1815,9 +1920,8 @@ TEST_CASE(a_value_makes_its_moves_after_the_selection)
     r.p = &bare;
     c[0] = change(1, 2);
     CHECK(start(c, 1));
-    run_until_phase(ESC_STICK_HAND_ON, 60000u);
-    run_for(ESC_STICK_HAND_MIN_MS);
-    CHECK(esc_stick_confirm(&r.e));
+    run_until_asked(60000u);
+    act(true);
     run_for(240000u);
     CHECK_EQ(r.e.phase, ESC_STICK_DONE);
     CHECK_EQ(r.sim.stores, 0u);
@@ -1831,9 +1935,8 @@ TEST_CASE(a_car_mode_selects_at_full_and_stores_at_the_brake)
     rig("kontronik-jazz");
     esc_stick_change_t c[1] = { change(1, 6) };
     CHECK(start(c, 1));
-    run_until_phase(ESC_STICK_HAND_ON, 60000u);
-    run_for(ESC_STICK_HAND_MIN_MS);
-    CHECK(esc_stick_confirm(&r.e));
+    run_until_asked(60000u);
+    act(true);
     run_for(240000u);
     CHECK_EQ(r.e.phase, ESC_STICK_DONE);
     CHECK(r.on_pct[0] == ESC_STICK_PCT_MID);
@@ -2022,6 +2125,8 @@ int main(void)
     RUN(the_green_light_shows_every_pulse_for_its_minimum);
     RUN(the_simulation_enters_only_from_the_entry_position);
     RUN(a_jumper_pulled_after_the_entry_is_waited_for);
+    RUN(a_pull_starts_the_menu_and_no_group_is_lost);
+    RUN(an_earlier_step_still_waits_for_done);
     RUN(a_step_never_confirmed_ends_the_run);
     RUN(stop_abort_and_the_supply_end_a_run_waiting_for_a_step);
     RUN(a_step_at_power_up_is_asked_with_the_supply_off);

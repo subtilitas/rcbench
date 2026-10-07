@@ -287,6 +287,11 @@ static void segment_over(esc_sim_t *s, uint32_t at)
             s->seg = SEG_WAIT;
             const uint32_t menu = s->on_ms + s->c.entry_ms;
             s->seg_end = ((int32_t)(menu - at) > 0) ? menu : at;
+            if (s->answering) {
+                /* The answer to the action, then a pause, then the menu. */
+                s->answering = false;
+                s->seg_end = at + s->c.pause_ms;
+            }
             return;
         }
         s->seg = SEG_PAUSE;
@@ -311,6 +316,13 @@ static void segment_over(esc_sim_t *s, uint32_t at)
         }
         if (!s->tones_done) {
             start_group(s, at, 2u, false, false);   /* "entered" */
+            return;
+        }
+        if (s->c.wait_hand && !s->hand_done
+            && esc_profile_manual_count(s->p, ESC_MANUAL_BEFORE_MENU) > 0u) {
+            /* The jumper still on, the button not pressed: the ESC waits,
+             * silent, for esc_sim_hand(). */
+            s->seg = SEG_NONE;
             return;
         }
         if (listen_pos(s) != s->entry) {
@@ -513,6 +525,7 @@ int32_t esc_sim_step(esc_sim_t *s, uint32_t now_ms, bool powered,
         s->pos = pos;
         s->ended = 0u;
         s->tones_done = false;
+        s->hand_done = false;
         s->menu_groups = 0u;
         if (s->c.entry_ms == 0u) {
             s->c.entry_ms = (s->p->entry_hold_ms != 0u) ? s->p->entry_hold_ms
@@ -552,4 +565,17 @@ int32_t esc_sim_step(esc_sim_t *s, uint32_t now_ms, bool powered,
         ma += (int32_t)((s->lcg >> 16) % span) - (int32_t)s->c.noise_ma;
     }
     return (ma > 0) ? ma : 0;
+}
+
+void esc_sim_hand(esc_sim_t *s, uint32_t now_ms)
+{
+    if (s == NULL || !s->powered || s->hand_done) {
+        return;
+    }
+    s->hand_done = true;
+    if (s->mode == ESC_SIM_ENTRY && s->tones_done && s->seg == SEG_NONE) {
+        /* Waiting: the three-tone answer at once, then the menu. */
+        s->answering = true;
+        start_group(s, now_ms, 3u, false, false);
+    }
 }

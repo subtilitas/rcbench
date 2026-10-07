@@ -418,6 +418,10 @@ typedef struct {
                                              index into p->manual        */
     bool                 hand_done;     /**< DONE taken, for the next
                                              step to act on               */
+    bool                 hand_menu;     /**< the menu is counted while the
+                                             action that starts it is
+                                             asked for                    */
+    uint32_t             hand_ms;       /**< when the step was asked      */
     uint32_t             pulses;        /**< pulses begun this run: the
                                              detector's rises            */
 } esc_stick_t;
@@ -459,10 +463,14 @@ const esc_stick_out_t *esc_stick_out(const esc_stick_t *e);
  *     the first power-up's are on the warning a run starts from.  The
  *     supply is off and the stick at the entry position; DONE switches the
  *     supply on.
- *   - once the entry has had its time (ESC_STICK_HAND_ON): each
- *     before_menu step, with the ESC powered and the stick at the entry
- *     position, which is MIN on every profile that has one
- *     (esc_stick_kind()).  DONE starts the menu.
+ *   - once the entry has had its time: each before_menu step, with the
+ *     ESC powered and the stick at the power-up position (MIN, or MID
+ *     where the value names it).  The last of them is the action that
+ *     starts the menu, and the run counts groups from the moment it asks
+ *     for it (phase ITEMS or VALUES, the step still returned here): the
+ *     first group in order with the one before it, or DONE, takes it as
+ *     done.  An earlier one, or one whose menu rests elsewhere, waits in
+ *     ESC_STICK_HAND_ON for DONE, which starts the menu.
  *
  * STOP, ABORT, a disarm and every supply rule end a waiting run as any
  * other: throttle to MIN, supply off, disarmed.  No DONE within

@@ -55,6 +55,9 @@ typedef struct {
                                loses its last beep; -1 none              */
     bool     deaf;        /**< never takes a selection                   */
     bool     mute;        /**< never beeps                               */
+    bool     wait_hand;   /**< where the profile has a before_menu step,
+                               the menu waits for esc_sim_hand(), answers
+                               it with three beeps and starts at once    */
 } esc_sim_cfg_t;
 
 typedef enum {
@@ -99,6 +102,8 @@ typedef struct {
     uint32_t             menu_groups;
     bool                 dropped;      /* this beep draws nothing       */
     bool                 tones_done;   /* the entry's own tones         */
+    bool                 hand_done;    /* the person's action, this power-up */
+    bool                 answering;    /* sounding the answer to it      */
 
     /* What it keeps, by item number. */
     uint8_t              stored[256];
@@ -121,6 +126,11 @@ void esc_sim_init(esc_sim_t *s, const esc_profile_t *p,
  */
 int32_t esc_sim_step(esc_sim_t *s, uint32_t now_ms, bool powered,
                      float throttle_pct);
+
+/** The person's action at the ESC -- the jumper pulled, the button
+ *  pressed -- at @p now_ms.  With wait_hand, a menu waiting for it starts;
+ *  one done before the entry ends lets the menu start when it does. */
+void esc_sim_hand(esc_sim_t *s, uint32_t now_ms);
 
 /** The value stored for the item numbered @p item, 0 when none was. */
 uint8_t esc_sim_stored(const esc_sim_t *s, uint8_t item);

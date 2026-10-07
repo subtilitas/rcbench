@@ -760,7 +760,10 @@ int main(int argc, char **argv)
                 ui_router_event(&e);
                 static stick_rig_t hrig;
                 memset(&hrig, 0, sizeof(hrig));
-                esc_sim_init(&hrig.sim, programmer_screen_stick()->p, NULL);
+                esc_sim_cfg_t hc;
+                esc_sim_defaults(&hc);
+                hc.wait_hand = true;            /* silent until the pull */
+                esc_sim_init(&hrig.sim, programmer_screen_stick()->p, &hc);
                 const esc_stick_t *run = programmer_screen_stick();
                 /* Asked, and a second on: DONE is live. */
                 for (int ms = 0; ms < 60000 && esc_stick_running(run)

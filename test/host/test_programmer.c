@@ -555,7 +555,10 @@ static void rig_start(rig_t *r)
 {
     memset(r, 0, sizeof(*r));
     r->last_pct = -1.0f;
-    esc_sim_init(&r->sim, programmer_screen_stick()->p, NULL);
+    esc_sim_cfg_t c;
+    esc_sim_defaults(&c);
+    c.wait_hand = true;     /* a before_menu menu starts at the action */
+    esc_sim_init(&r->sim, programmer_screen_stick()->p, &c);
 }
 
 static void rig_run(rig_t *r, uint32_t ms)
@@ -1671,11 +1674,10 @@ TEST_CASE(a_run_asks_for_its_manual_step_and_goes_on_with_done)
     static rig_t r;
     rig_start(&r);
     const esc_stick_t *run = programmer_screen_stick();
-    for (uint32_t i = 0; i < 60000u && run->phase != ESC_STICK_HAND_ON;
-         ++i) {
+    for (uint32_t i = 0; i < 60000u && !run->hand_menu; ++i) {
         rig_step(&r);
     }
-    CHECK_EQ(run->phase, ESC_STICK_HAND_ON);
+    CHECK(run->hand_menu);                   /* asked, and listening */
     CHECK(r.on);
     CHECK(r.armed);
     CHECK(r.pct == 0.0f);
@@ -1684,15 +1686,17 @@ TEST_CASE(a_run_asks_for_its_manual_step_and_goes_on_with_done)
     for (int i = 0; i < 5; ++i) {
         rig_step(&r);
     }
-    CHECK_EQ(run->phase, ESC_STICK_HAND_ON);
+    CHECK(run->hand_menu);
     tap(WRITE_X, BTN_CY);                    /* ABORT's place: covered */
     CHECK(esc_stick_running(run));
     for (uint32_t i = 0; i < ESC_STICK_HAND_MIN_MS; ++i) {
         rig_step(&r);
     }
     draws();
+    esc_sim_hand(&r.sim, r.now);             /* the jumper, pulled */
     tap(HOLD_X, HOLD_Y);                     /* DONE */
     rig_step(&r);
+    CHECK(!run->hand_menu);
     CHECK_EQ(run->phase, ESC_STICK_VALUES);
     rig_run(&r, 300000u);
     CHECK_EQ(run->phase, ESC_STICK_DONE);
@@ -1758,11 +1762,10 @@ TEST_CASE(abort_on_the_prompt_ends_the_run)
     static rig_t r;
     rig_start(&r);
     const esc_stick_t *run = programmer_screen_stick();
-    for (uint32_t i = 0; i < 60000u && run->phase != ESC_STICK_HAND_ON;
-         ++i) {
+    for (uint32_t i = 0; i < 60000u && !run->hand_menu; ++i) {
         rig_step(&r);
     }
-    CHECK_EQ(run->phase, ESC_STICK_HAND_ON);
+    CHECK(run->hand_menu);
     tap(CANCEL_X, HOLD_Y);                   /* ABORT */
     rig_run(&r, 1000u);
     CHECK_EQ(run->phase, ESC_STICK_ABORTED);
