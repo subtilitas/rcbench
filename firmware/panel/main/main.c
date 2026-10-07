@@ -4389,6 +4389,8 @@ static bool write_servo(const servo_cmd_t sv)
                 const uint16_t resume = LINK_SV_RESUME;
                 if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 1u,
                                 &resume, &reply)) {
+                    /* It may have taken: the next command stops first. */
+                    s_servo_sweep_unknown = true;
                     return false;
                 }
                 if (reply.op == LINK_OP_ACK) {
@@ -4450,8 +4452,12 @@ static bool write_servo(const servo_cmd_t sv)
                 }
             }
             if (!write_regs(&s_host, LINK_PAGE_SERVO, LINK_SV_SWEEP, 4u, curve,
-                            &reply)
-                || reply.op != LINK_OP_ACK) {
+                            &reply)) {
+                /* It may have taken: the next command stops first. */
+                s_servo_sweep_unknown = true;
+                return false;
+            }
+            if (reply.op != LINK_OP_ACK) {
                 return false;
             }
             if (plan == SERVO_RESUME_TOO_OLD) {

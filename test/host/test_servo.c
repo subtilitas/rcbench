@@ -2501,27 +2501,105 @@ TEST_CASE(a_resume_and_its_repeat_go_with_the_let_go)
     CHECK(!servo_screen_sweeping());
 }
 
-/* 2c: PAUSED, PAUSE, PAUSED while HOLD N is out: the resume of N is
- * dropped, HOLD N+1 and its resume are sent, and the screen, on N+1 now,
- * takes no let-go of N and waits for that resume's start. */
-TEST_CASE(a_later_pause_outlives_the_let_go)
+/*
+ * 2c, and a PAUSE after an unacknowledged resume: PAUSED, PAUSE, PAUSED
+ * while HOLD N is out.  The second HOLD holds what pause N left, so it and
+ * its resume derive from N and go with it; the screen, still on N, takes
+ * the let-go and stops, and nothing is left held or sweeping.
+ */
+TEST_CASE(a_later_pause_goes_with_the_let_go)
 {
     servo_cmd_t hold;
     paused_on_n(&hold);
     tap(SWEEP_X, BTN_Y);                       /* PAUSED */
     const servo_cmd_t r1 = last_cmd();
     const servo_cmd_t h2 = pause_go();         /* PAUSE: N+1 */
-    tap(SWEEP_X, BTN_Y);                       /* PAUSED */
-    const servo_cmd_t r2 = last_cmd();
+    CHECK_EQ(h2.from_pause, hold.pause_seq);
     servo_pause_end_t ended = { true, hold.pause_seq };
     CHECK(servo_cmd_stale(&ended, &r1));
-    CHECK(!servo_cmd_stale(&ended, &h2));      /* sent, and retires it */
-    CHECK(!servo_cmd_stale(&ended, &r2));
+    CHECK(servo_cmd_stale(&ended, &h2));       /* dropped: no hold of rest */
     servo_screen_released(hold.pause_seq);
-    CHECK(servo_screen_sweeping());            /* waiting for N+1's resume */
+    CHECK(!servo_screen_paused());
+    CHECK(!servo_screen_sweeping());
+    CHECK_EQ(servo_screen_commanded(), 1500u);
+
+    /* And with a second PAUSED after it, before the let-go arrives. */
+    paused_on_n(&hold);
+    tap(SWEEP_X, BTN_Y);
+    const servo_cmd_t a = last_cmd();
+    const servo_cmd_t b = pause_go();
+    tap(SWEEP_X, BTN_Y);
+    const servo_cmd_t c = last_cmd();
+    servo_pause_end_t e2 = { true, hold.pause_seq };
+    CHECK(servo_cmd_stale(&e2, &a));
+    CHECK(servo_cmd_stale(&e2, &b));
+    CHECK(servo_cmd_stale(&e2, &c));
+    servo_screen_released(hold.pause_seq);
+    CHECK(!servo_screen_sweeping());
+    CHECK(!servo_screen_paused());
+}
+
+/*
+ * A PAUSED that starts a changed curve -- the TEST page changed while
+ * paused -- is a new origin, not a resume: it carries no pause, survives a
+ * let-go of the old one, and the screen keeps waiting for its start.
+ */
+TEST_CASE(a_changed_curve_from_paused_is_a_new_start)
+{
+    servo_cmd_t hold;
+    paused_on_n(&hold);
+    settings_set(SET_SERVO_TEST_HZ, 1.0f);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED: a new curve */
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
+    CHECK(!c.resume);
+    CHECK_EQ(c.from_pause, 0u);
+    servo_pause_end_t ended = { true, hold.pause_seq };
+    CHECK(!servo_cmd_stale(&ended, &c));
+    servo_screen_released(hold.pause_seq);
+    CHECK(servo_screen_sweeping());            /* still waiting for it */
+    acked(0u, SERVO_SWEEP_FROM_REST, 0u);
+    frames(0.125f);
+    CHECK(servo_screen_commanded() > 1760u);
+}
+
+/*
+ * A sweep-button tap whose command has not left, then the let-go of the
+ * pause, then a second tap in the next frame's first drain: the second tap
+ * is a tap of its own, not an undo across the notification.  Variant A:
+ * PAUSED pending, the screen stops, and the next tap starts a sweep from
+ * no pause.  Variant A2: a taken resume, PAUSE pending, the screen stops,
+ * and the next tap does not restore a wait for the dropped resume.
+ */
+TEST_CASE(no_undo_across_a_let_go)
+{
+    servo_cmd_t hold;
+    paused_on_n(&hold);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED, pending */
+    servo_screen_released(hold.pause_seq);
+    CHECK(!servo_screen_sweeping());
+    tap(SWEEP_X, BTN_Y);                       /* a new SWEEP */
+    servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
+    CHECK(!c.resume);
+    CHECK_EQ(c.from_pause, 0u);
+    CHECK(servo_screen_sweeping());
     acked(0u, SERVO_SWEEP_FROM_REST, 0u);
     frames(0.25f);
-    CHECK(servo_screen_commanded() > 1760u);   /* sweeping, as the servo */
+    CHECK(servo_screen_commanded() > 1760u);
+
+    paused_on_n(&hold);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED: taken, dropped */
+    (void)last_cmd();
+    tap(SWEEP_X, BTN_Y);                       /* PAUSE, pending */
+    servo_screen_released(hold.pause_seq);
+    CHECK(!servo_screen_sweeping());
+    CHECK(!servo_screen_paused());
+    tap(SWEEP_X, BTN_Y);                       /* not an undo */
+    c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
+    CHECK(!c.resume);
+    CHECK_EQ(c.from_pause, 0u);
 }
 
 /*
@@ -4812,7 +4890,9 @@ int main(void)
     RUN(a_resume_said_again_keeps_its_pause);
     RUN(a_drag_after_pause_outlives_the_let_go);
     RUN(a_resume_and_its_repeat_go_with_the_let_go);
-    RUN(a_later_pause_outlives_the_let_go);
+    RUN(a_later_pause_goes_with_the_let_go);
+    RUN(a_changed_curve_from_paused_is_a_new_start);
+    RUN(no_undo_across_a_let_go);
     RUN(an_undone_pair_keeps_the_resume_waiting);
     RUN(a_refused_sweep_leaves_nothing_driven);
     RUN(an_early_resume_keeps_the_reading_at_the_hold);

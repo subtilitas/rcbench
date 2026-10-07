@@ -410,13 +410,19 @@ static struct {
      * clock, to draw the horn by. */
     bool        sweep_able;      /* the coprocessor speaks 4.2 or later  */
     /*
-     * The pause the screen's commands still derive from: set by PAUSE, kept
-     * by what carries that pause on -- its resume, a repeat of the resume,
-     * a position said again under a changed profile -- and ended by
-     * anything that sets a new origin (stop_sweep(): a drag, CENTRE,
-     * RELEASE, a new start or pause, a disarm, leaving).  Every command
-     * carries it (from_pause); the panel drops those of a pause it lets go
-     * of, and the screen takes that let-go only while still on it.
+     * The pause whose HOLD what the screen expects of the far end rests on,
+     * or 0.  Set by a PAUSE of a sweep the far end is known to run.  Kept
+     * by everything that carries that pause on: its resume and the resume
+     * said again, a position said again under a changed profile, and a
+     * further PAUSE before the resume is acknowledged -- that HOLD holds
+     * what the first pause left.  Ended by the acknowledgement of a start
+     * or a resume (the far end then moves on its own), and by anything
+     * that sets a new origin: stop_sweep() -- a drag, CENTRE, RELEASE, a
+     * curve restarted, a disarm, leaving, the link going -- and
+     * start_sweep() -- SWEEP, or a PAUSED that starts a changed curve.
+     * Every command carries it (from_pause); the panel drops those of a
+     * pause it lets go of, and the screen takes that let-go exactly while
+     * it is still set to that pause (servo_screen_released()).
      */
     uint16_t    lineage;
     bool        surfaces;        /* a surface is bound to sweep          */
@@ -911,6 +917,9 @@ static void stop_sweep(void)
  */
 static void hold_sweep(void)
 {
+    /* A PAUSE before the resume of an earlier pause is acknowledged holds
+     * what that pause left, and stays on it. */
+    const uint16_t root = s.lineage;
     const bool moving = !s.awaiting;
     if (!moving) {
         /* Not yet moving at the far end as far as is known here: paused
@@ -942,11 +951,12 @@ static void hold_sweep(void)
     if (s.pause_seq == 0u) {
         s.pause_seq = 1u;       /* 0 is no pause */
     }
+    s.lineage = root;
     post(SERVO_CMD_HOLD, 0);
     if (s.pending.kind == SERVO_CMD_HOLD) {
         s.pending.pause_seq = s.pause_seq;
     }
-    s.lineage = s.pause_seq;
+    s.lineage = (root != 0u) ? root : s.pause_seq;
     ++s.ctrl_rev;
 }
 
@@ -980,7 +990,9 @@ static void start_sweep(void)
     s.sweeping       = true;
     s.awaiting       = true;
     s.await_phase_ms = 0u;
+    s.lineage        = 0u;      /* a new origin */
     post(SERVO_CMD_SWEEP, 0);
+    s.pending.resume = false;   /* a start, whatever it replaced */
     record_start();
     ++s.ctrl_rev;
 }
@@ -1140,6 +1152,7 @@ void servo_screen_released(uint16_t pause_seq)
      * a new start, the screen's newer command was sent and is what the
      * surfaces do, so this changes nothing.
      */
+    s.toggle_live = false;      /* no undo across a notification */
     if (pause_seq == 0u || pause_seq != s.lineage) {
         return;
     }
@@ -1198,6 +1211,7 @@ static float drawn_after(const sweep_t *w, uint32_t phase_ms, uint32_t ms,
 void servo_screen_sweep_started(uint16_t start_seq, uint32_t age_ms,
                                 servo_sweep_from_t from, uint32_t since_ms)
 {
+    s.toggle_live = false;      /* no undo across a notification */
     /*
      * The far end's curve has phase 0 age_ms ago: this one is timed from
      * then, rather than from the tap that asked for it a queue and a few
@@ -1242,6 +1256,7 @@ void servo_screen_sweep_started(uint16_t start_seq, uint32_t age_ms,
     s.sw.running  = true;
     s.sw.paused   = false;
     s.awaiting    = false;
+    s.lineage     = 0u;         /* the far end moves on its own now */
     s.dr.on    = false;
     ++s.ctrl_rev;
     /* A resume's origin is for this acknowledgement only. */
@@ -1290,6 +1305,7 @@ static float drawn_after(const sweep_t *w, uint32_t phase_ms, uint32_t ms,
 
 void servo_screen_sweep_held(uint16_t pause_seq, uint32_t kept_ms)
 {
+    s.toggle_live = false;      /* no undo across a notification */
     /*
      * The far end ran its curve on until the HOLD reached it, a queue and an
      * exchange after the tap; at 5 Hz that is a visible share of a cycle.
@@ -2408,6 +2424,7 @@ void servo_screen_set_surfaces(bool any)
 
 void servo_screen_sweep_refused(void)
 {
+    s.toggle_live = false;      /* no undo across a notification */
     /* Nothing bound to sweep: no start comes, nothing moves, and nothing
      * is driven for a change of profile to say again. */
     if (s.sweeping || s.paused) {
