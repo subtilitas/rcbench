@@ -388,6 +388,9 @@ static struct {
      * until the HOLD reaches it, whatever the slider says meanwhile, since
      * a paused slider sends nothing. */
     int         pause_speed_pct;
+    /* And where the output was drawn at the tap, which the replay of the
+     * acknowledgement interval starts from. */
+    float       pause_from_cmd;
     bool        sweep_ended;     /* the next command ends it             */
     sweep_t     sw;
     uint32_t    clock_ms;
@@ -746,8 +749,12 @@ static void hold_sweep(void)
 {
     sweep_pause(&s.sw, s.clock_ms);
     s.pause_speed_pct = s.speed_pct;
+    /* With feedback the reading itself: tick() turns it into a command
+     * only on its next pass. */
+    s.pause_from_cmd  = s.have_feedback ? us_to_cmd(deg_to_us_f(s.shown_deg))
+                                        : s.shown_cmd;
     stop_sweep();
-    s.commanded_deg = s.shown_deg;
+    s.commanded_deg = clamp_travel(s.shown_deg);
     post(SERVO_CMD_HOLD, 0);
     ++s.ctrl_rev;
 }
@@ -942,12 +949,18 @@ void servo_screen_sweep_held(uint32_t age_ms)
     if ((int32_t)into < 0 || (int32_t)extra < 0) {
         return;
     }
-    if (!s.have_feedback) {
+    if (s.have_feedback) {
+        /* The servo is where it reports, and is held there. */
+        s.shown_cmd = us_to_cmd(deg_to_us_f(s.shown_deg));
+    } else {
         const uint32_t ms = (extra > 5000u) ? 5000u : extra;
-        s.shown_cmd = drawn_after(&s.sw, s.sw.paused_ms, ms, s.shown_cmd);
+        s.shown_cmd = drawn_after(&s.sw, s.sw.paused_ms, ms,
+                                  s.pause_from_cmd);
         s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
-        s.commanded_deg = s.shown_deg;
     }
+    /* Either way the held angle is the one a changed profile says again
+     * (reissue()), as hold_sweep() left it at the tap. */
+    s.commanded_deg = clamp_travel(s.shown_deg);
     s.sw.paused_ms = into;
     ++s.ctrl_rev;
 }
@@ -1208,6 +1221,19 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid)
      */
     if (valid) {
         s.shown_deg = deg;
+        /*
+         * Paused, the servo is held where it is, and it goes on moving while
+         * the HOLD is on its way and while it settles on the output held:
+         * the angle a changed profile says again (reissue()) is the one it
+         * reports, not the one it had at the tap.
+         */
+        if (s.paused) {
+            const uint16_t was = deg_to_us(s.commanded_deg);
+            s.commanded_deg = clamp_travel(deg);
+            if (deg_to_us(s.commanded_deg) != was) {
+                ++s.ctrl_rev;       /* COMMANDED shows it */
+            }
+        }
     }
     if (!same) {
         s.shown_q_deg = q_deg;

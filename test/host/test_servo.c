@@ -1880,6 +1880,73 @@ static uint16_t slow_pause_acknowledged(bool raise, uint16_t *at_tap)
     return servo_screen_drawn();
 }
 
+/*
+ * With feedback, the servo goes on moving after the tap -- while the HOLD
+ * is on its way and while it settles -- and the paused angle follows what
+ * it reports: a trim changed while paused says the angle it is at, 5 us
+ * up, not the one it had at the tap.
+ */
+TEST_CASE(a_pause_with_feedback_holds_the_angle_the_servo_reports)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    servo_screen_feedback(1500u, 0.2f, true);
+    tap(SWEEP_X, BTN_Y);
+    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
+    frames(0.2f);
+    servo_screen_feedback(1600u, 0.2f, true);
+    frames(0.05f);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSE */
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_HOLD);
+    CHECK_EQ(servo_screen_commanded(), 1600u);
+    servo_screen_feedback(1700u, 0.2f, true);  /* moved on after the tap */
+    frames(0.1f);
+    servo_screen_sweep_held(0u);
+    CHECK_EQ(servo_screen_commanded(), 1700u);
+    CHECK_EQ(servo_screen_drawn(), 1700u);
+    servo_screen_feedback(1720u, 0.2f, true);  /* and settled */
+    CHECK_EQ(servo_screen_commanded(), 1720u);
+    CHECK(servo_screen_paused());
+
+    open_settings();
+    tap(TRIM_UP_X, ROW_Y(3));
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_POSITION);
+    CHECK_EQ(c.value_us, 1725u);
+    CHECK(!servo_screen_paused());
+}
+
+/*
+ * Feedback lost between the tap and the acknowledgement: the replay of the
+ * interval starts from where the output was drawn at the tap, 1600 us, and
+ * moves at most SPEED's 74 us, not from a reading that came after it.
+ */
+TEST_CASE(a_pause_replays_from_the_tap_when_feedback_goes)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    tap(ARM_X + 1, SPEED_Y);                   /* SPEED's slowest */
+    servo_screen_feedback(1500u, 0.2f, true);
+    tap(SWEEP_X, BTN_Y);
+    servo_screen_sweep_started(0u, SERVO_SWEEP_FROM_REST, 0u);
+    frames(0.25f);
+    servo_screen_feedback(1600u, 0.2f, true);
+    /* tapped before a frame has passed: the reading is the start */
+    tap(SWEEP_X, BTN_Y);                       /* PAUSE */
+    servo_screen_feedback(1700u, 0.2f, true);
+    frames(0.05f);
+    servo_screen_feedback(0u, 0.0f, false);    /* gone */
+    frames(0.25f);
+    servo_screen_sweep_held(0u);
+    const uint16_t at_ack = servo_screen_drawn();
+    CHECK(at_ack > 1600u && at_ack <= 1674u);
+    CHECK_EQ(servo_screen_commanded(), at_ack);
+    frames(0.5f);                              /* held, and drawn held */
+    CHECK_EQ(servo_screen_drawn(), at_ack);
+}
+
 TEST_CASE(the_acknowledged_pause_moves_the_output_at_speed)
 {
     uint16_t at_tap = 0u;
@@ -3751,6 +3818,8 @@ int main(void)
     RUN(pause_holds_the_sweep_and_a_second_tap_resumes_it);
     RUN(paused_carries_the_sweep_on_from_its_phase);
     RUN(the_pause_is_drawn_from_when_the_hold_was_acknowledged);
+    RUN(a_pause_with_feedback_holds_the_angle_the_servo_reports);
+    RUN(a_pause_replays_from_the_tap_when_feedback_goes);
     RUN(the_acknowledged_pause_moves_the_output_at_speed);
     RUN(a_curve_changed_while_paused_starts_over);
     RUN(a_pause_ends_where_a_hold_ended);

@@ -316,7 +316,10 @@ geht dorthin. Ein Finger auf der Skala, ZENTRIEREN, FREIGEBEN, STOP, ein
 Disarm und das Verlassen der Seite beenden einen Sweep, ob er läuft oder
 angehalten ist, und der Knopf heißt wieder SWEEP. Ein geänderter Typ, eine
 geänderte Frame Rate, Pulsbreite, Trim, WEG oder REVERSE beenden auch eine
-Pause; das Servo wird dann als Position am Winkel der Pause gehalten. Ein
+Pause; das Servo wird dann als Position am Winkel der Pause gehalten. Mit
+Rückmeldung ist das der Winkel, den das Servo zuletzt gemeldet hat und zu
+dem es sich nach dem Tippen noch bewegen kann; ohne Rückmeldung ist es die
+gezeichnete Schätzung bei der Quittung. Ein
 geändertes TEMPO lässt die Pause stehen; das Fortsetzen läuft mit dem neuen
 TEMPO. Verlorene Touch-Ereignisse halten einen laufenden Sweep an wie PAUSE.
 Eine geänderte Einstellung startet einen laufenden Sweep mit der neuen Kurve

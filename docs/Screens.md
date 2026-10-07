@@ -287,7 +287,10 @@ so the panel releases the surfaces to their centre and the horn goes there.
 A finger on the dial, CENTRE, RELEASE, STOP, a disarm and leaving the screen
 end a sweep, running or paused, and the button reads SWEEP again. A changed
 type, frame rate, pulse, trim, travel or reverse ends a pause too, and the
-servo is held at the paused angle as a position. A changed SPEED keeps the
+servo is held at the paused angle as a position. With feedback the paused
+angle is the one the servo last reported, which it can still be moving to
+after the tap; without feedback it is the drawn estimate at the
+acknowledgement. A changed SPEED keeps the
 pause; the resume runs at the new SPEED. Touch events going missing pause a
 running sweep as PAUSE would. A changed setting starts a running sweep over
 with the new curve; a changed profile or frame rate goes with it at once. SWEEP is offered on an armed bench and a coprocessor
