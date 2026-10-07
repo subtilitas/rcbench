@@ -1569,15 +1569,23 @@ TEST_CASE(an_earlier_step_still_waits_for_done)
     CHECK_EQ(r.e.phase, ESC_STICK_DONE);
     CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
 
-    /* A menu that rests elsewhere: the stick would move under the hand, so
-     * the last step waits for DONE too. */
+    /* A menu that rests elsewhere: listening would need a move under the
+     * operator's hand at a powered ESC, and waiting for DONE would drop
+     * the groups the pull starts.  Not run: the profile's listen move away
+     * from the entry, or a value powered up away from the listen move. */
+    const char *why = NULL;
     rig_hand("kontronik-jazz", &k[1], 1);
     g_hand.listen_throttle = ESC_THR_MID;
+    CHECK_EQ(esc_stick_kind(&g_hand, &why), ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "menu start, rest elsewhere");
+    CHECK(!start(c, 1));
+    g_hand.listen_throttle = ESC_THR_MIN;     /* the entry's */
+    CHECK(esc_stick_kind(&g_hand, &why) != ESC_STICK_KIND_NONE);
     CHECK(start(c, 1));
-    run_until_phase(ESC_STICK_HAND_ON, 60000u);
-    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);
-    CHECK(!r.e.hand_menu);
-    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MIN);
+    esc_stick_abort(&r.e, ESC_STICK_R_USER);
+    esc_stick_change_t car[1] = { change(1, 6) };   /* powered at MID */
+    CHECK(!esc_stick_check(&g_hand, car, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "menu start, rest elsewhere");
 
     /* A last step the profile does not mark as starting the menu waits for
      * DONE as any other: a card profile's own step, not the series. */
@@ -1832,6 +1840,98 @@ TEST_CASE(the_supply_stays_on_while_the_esc_repeats_the_mode)
         }
     }
     CHECK_EQ(runs, 10u);
+}
+
+/*
+ * A profile with no entry time of its own but one on every value: the
+ * profile-wide rest rule leaves it to the per-change one, which sees each
+ * value's time.  YGE mode setup 6 rests away from its entry and states
+ * no hold; with a hold on every value it runs, and a value without one is
+ * refused by itself.
+ */
+TEST_CASE(a_hold_on_every_value_times_the_rest_move)
+{
+    const char *why = NULL;
+    const esc_profile_t *y = esc_profiles_find("yge-mode-setup-6");
+    CHECK(y != NULL);
+    if (y == NULL) {
+        return;
+    }
+    CHECK_EQ(esc_stick_kind(y, &why), ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "rest move, no entry time");
+    static esc_profile_t q;
+    static esc_item_t items[8];
+    static esc_value_t values[8][16];
+    q = *y;
+    CHECK(y->item_count <= 8u);
+    for (unsigned i = 0; i < y->item_count && i < 8u; ++i) {
+        items[i] = y->items[i];
+        CHECK(items[i].value_count <= 16u);
+        for (unsigned v = 0; v < items[i].value_count && v < 16u; ++v) {
+            values[i][v] = y->items[i].values[v];
+            values[i][v].entry_hold_ms = 3000u;
+        }
+        items[i].values = values[i];
+    }
+    q.items = items;
+    CHECK(esc_stick_kind(&q, &why) != ESC_STICK_KIND_NONE);
+    esc_stick_timing_t t;
+    esc_stick_timing_defaults(&t);
+    esc_stick_change_t c[1] = { { 0u, 0u } };
+    CHECK(esc_stick_check(&q, c, 1, &t, &why));
+    CHECK_EQ(esc_stick_change_entry_ms(&q, &c[0], &t), 3000u);
+    values[0][0].entry_hold_ms = 0u;            /* this one states none */
+    CHECK(esc_stick_kind(&q, &why) != ESC_STICK_KIND_NONE);
+    CHECK(!esc_stick_check(&q, c, 1, &t, &why));
+    CHECK_STR_EQ(why, "rest move, no entry time");
+    if (items[0].value_count > 1u) {
+        c[0].value = 1u;
+        CHECK(esc_stick_check(&q, c, 1, &t, &why));
+    }
+}
+
+/*
+ * The confirmation is pending from the selection on, not only once the
+ * step before the power-off is asked: an end while the ESC stores
+ * (ESC_STICK_STORE) switches the supply off under it as well.  The result
+ * says so, and that a KONTROL-X may be locked; a profile without such a
+ * step says neither.
+ */
+TEST_CASE(an_end_while_the_esc_stores_says_it_was_cut_short)
+{
+    static const char *const k_ids[] = {
+        "kontronik-kontrol-x", "kontronik-3sl", "hobbywing-flyfun-8item",
+    };
+    for (size_t k = 0; k < 3; ++k) {
+        rig(k_ids[k]);
+        esc_stick_change_t c[1] = {
+            change(1, 2)
+        };
+        CHECK(start(c, 1));
+        for (uint32_t i = 0; i < 240000u && esc_stick_running(&r.e)
+                             && r.e.phase != ESC_STICK_STORE; ++i) {
+            if (r.e.hand_menu) {
+                act(false);
+            }
+            tick();
+        }
+        CHECK_EQ(r.e.phase, ESC_STICK_STORE);
+        CHECK(!esc_stick_cut_short(&r.e));      /* not while it runs */
+        r.stops++;
+        r.pressed++;
+        tick();
+        CHECK_EQ(r.e.reason, ESC_STICK_R_STOP);
+        ended_safe();
+        CHECK_EQ(esc_stick_cut_short(&r.e), k < 2);
+        CHECK_EQ(esc_stick_lock_risk(&r.e), k == 0);
+    }
+    /* Before the selection: nothing is stored yet. */
+    rig("kontronik-kontrol-x");
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    run_until_asked(60000u);
+    esc_stick_abort(&r.e, ESC_STICK_R_USER);
+    CHECK(!esc_stick_cut_short(&r.e));
 }
 
 /* While a step is waited for, every end a run has still ends it: ABORT,
@@ -2184,8 +2284,9 @@ TEST_CASE(the_set_points_stay_within_the_escs_ratings)
     CHECK_EQ(esc_stick_rating(p, -1, 12000u, 1000u, true),
              ESC_STICK_RATING_V_OVER);
 
-    /* No rating stated: VOLTAGE by hand is refused; the model's own cell
-     * count is taken; another model's cell count standing in is not. */
+    /* No rating stated: nothing is refused for it.  VOLTAGE by hand, and
+     * another model's cell count standing in, are said to be unvouched;
+     * the model's own cell count is not. */
     static esc_model_t k_m[2];
     static esc_profile_t q;
     q = *p;
@@ -2198,14 +2299,27 @@ TEST_CASE(the_set_points_stay_within_the_escs_ratings)
     q.models = k_m;
     q.model_count = 2;
     CHECK_EQ(esc_stick_model_v_max(&q, 0), 0u);
-    CHECK_EQ(esc_stick_rating(&q, 0, 7600u, 1000u, true),
-             ESC_STICK_RATING_V_UNKNOWN);
-    CHECK_EQ(esc_stick_rating(&q, 0, esc_stick_model_mv(&q, 0), 1000u, false),
+    CHECK_EQ(esc_stick_rating(&q, 0, 20000u, 1000u, true),
              ESC_STICK_RATING_OK);
+    CHECK(esc_stick_rating_unknown(&q, 0, 7600u, true));
+    CHECK(!esc_stick_rating_unknown(&q, 0, esc_stick_model_mv(&q, 0), false));
     CHECK_EQ(esc_stick_rating(&q, 1, esc_stick_model_mv(&q, 1), 1000u, false),
-             ESC_STICK_RATING_V_UNKNOWN);
-    CHECK_EQ(esc_stick_rating(&q, 1, 0u, 1000u, false),
-             ESC_STICK_RATING_V_UNKNOWN);
+             ESC_STICK_RATING_OK);
+    CHECK(esc_stick_rating_unknown(&q, 1, esc_stick_model_mv(&q, 1), false));
+    CHECK(esc_stick_rating_unknown(&q, 1, 0u, false));
+    CHECK(!esc_stick_rating_unknown(&q, -1, 7600u, false));
+    CHECK(esc_stick_rating_unknown(&q, -1, 7600u, true));
+    CHECK(!esc_stick_rating_unknown(p, six, 20000u, true));   /* stated */
+    /* A stated current or lowest input still refuses with no voltage
+     * rating. */
+    k_m[0].current_a = 1u;
+    CHECK_EQ(esc_stick_rating(&q, 0, 7600u, 2000u, true),
+             ESC_STICK_RATING_I_OVER);
+    k_m[0].current_a = 6u;
+    k_m[0].v_min_mv = 8000u;
+    CHECK_EQ(esc_stick_rating(&q, 0, 7600u, 1000u, true),
+             ESC_STICK_RATING_V_UNDER);
+    k_m[0].v_min_mv = 0u;
     CHECK_EQ(esc_stick_model_v_max(&q, -1), 0u);
     CHECK_EQ(esc_stick_model_v_max(NULL, -1), 0u);
     CHECK_EQ(esc_stick_model_ma_max(NULL, 0), 0u);
@@ -2885,6 +2999,8 @@ int main(void)
     RUN(a_step_never_confirmed_ends_the_run);
     RUN(the_supply_stays_on_until_the_esc_has_confirmed);
     RUN(the_supply_stays_on_while_the_esc_repeats_the_mode);
+    RUN(a_hold_on_every_value_times_the_rest_move);
+    RUN(an_end_while_the_esc_stores_says_it_was_cut_short);
     RUN(stop_abort_and_the_supply_end_a_run_waiting_for_a_step);
     RUN(a_step_at_power_up_is_asked_with_the_supply_off);
     RUN(the_entry_lasts_at_least_the_hold_at_power_up);

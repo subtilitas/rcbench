@@ -1154,7 +1154,7 @@ static const ui_text_id_t k_why[] = {
     TX_ESC_WHY_THRESHOLD, TX_ESC_WHY_ENTRY, TX_ESC_WHY_SELECT_WINDOW,
     TX_ESC_WHY_VALUE_WINDOW, TX_ESC_WHY_NO_RUN, TX_ESC_WHY_ONE_VALUE,
     TX_ESC_WHY_HAND, TX_ESC_WHY_ENTRY_POS, TX_ESC_WHY_ENTRY_TIME,
-    TX_ESC_WHY_AFTER_TWO, TX_ESC_WHY_AFTER_NONE,
+    TX_ESC_WHY_AFTER_TWO, TX_ESC_WHY_AFTER_NONE, TX_ESC_WHY_MENU_REST,
 };
 
 const char *programmer_screen_why_text(const char *why)
@@ -1196,16 +1196,6 @@ static const char *sp_rating_why(const esc_profile_t *p, int model,
                  (unsigned)(v_max / 1000u),
                  (unsigned)(v_max % 1000u / 100u));
         return buf;
-    case ESC_STICK_RATING_V_UNKNOWN:
-        if (longer && by_hand) {
-            snprintf(buf, n, TR(SP_V_UNRATED_NOTE),
-                     (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u));
-        } else if (longer) {
-            snprintf(buf, n, "%s", TR(SP_V_UNRATED_CELLS_NOTE));
-        } else {
-            snprintf(buf, n, "%s", TR(SP_V_UNRATED));
-        }
-        return buf;
     case ESC_STICK_RATING_V_UNDER: {
         const uint32_t v_min = esc_stick_model_v_min(p, model);
         snprintf(buf, n, longer ? TR(SP_V_UNDER_ESC_NOTE) : TR(SP_V_UNDER_ESC),
@@ -1223,6 +1213,40 @@ static const char *sp_rating_why(const esc_profile_t *p, int model,
     default:
         return NULL;
     }
+}
+
+/*
+ * The warning for a voltage the data cannot vouch for
+ * (esc_stick_rating_unknown()), into @p buf, or NULL: the short form for a
+ * row, the long one for the page's note.  The run goes ahead.
+ */
+static const char *sp_rating_warn(const esc_profile_t *p, int model,
+                                  uint32_t mv, bool by_hand, bool longer,
+                                  char *buf, size_t n)
+{
+    if (!esc_stick_rating_unknown(p, model, mv, by_hand)) {
+        return NULL;
+    }
+    if (!longer) {
+        snprintf(buf, n, "%s", TR(SP_V_UNRATED));
+    } else if (by_hand) {
+        snprintf(buf, n, TR(SP_V_UNRATED_NOTE),
+                 (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u));
+    } else {
+        snprintf(buf, n, TR(SP_V_UNRATED_CELLS_NOTE),
+                 (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u));
+    }
+    return buf;
+}
+
+/* The same for the model on a row, or the page's, with the settings now. */
+static const char *sp_model_warn(const esc_profile_t *p, int model, char *buf,
+                                 size_t n)
+{
+    const float v = settings_get(SET_STICK_V);
+    const uint32_t mv = (v > 0.0f) ? (uint32_t)lroundf(v * 1000.0f)
+                                   : esc_stick_model_mv(p, model);
+    return sp_rating_warn(p, model, mv, v > 0.0f, false, buf, n);
 }
 
 /*
@@ -1448,6 +1472,8 @@ static void sp_enter(void)
     }
 }
 
+static void sp_pick_shown(void);
+
 static void sp_pick_profile(const esc_profile_t *p)
 {
     stick_t *t = &s.st;
@@ -1464,6 +1490,7 @@ static void sp_pick_profile(const esc_profile_t *p)
     ui_hold_reset(&t->hold);
     t->hand_open = false;
     t->model = -1;
+    sp_pick_shown();
     /* A profile with manual steps says so by itself the first time it is
      * opened; MANUAL INTERVENTION REQUIRED shows it again. */
     if (p != NULL && p->manual_count > 0u) {
@@ -1482,6 +1509,35 @@ static void sp_pick_profile(const esc_profile_t *p)
             break;
         }
     }
+}
+
+/*
+ * The items the page offers, as indices into the profile's, in its order:
+ * those on the model picked (esc_item_applies()); with no model, those on
+ * every model.  Returns how many.
+ */
+static int sp_items(uint8_t *idx)
+{
+    const stick_t *t = &s.st;
+    int n = 0;
+    for (unsigned i = 0; t->p != NULL && i < t->p->item_count; ++i) {
+        if (esc_item_applies(t->p, i, t->model)) {
+            idx[n++] = (uint8_t)i;
+        }
+    }
+    return n;
+}
+
+/* The picked item kept among those shown: the first shown otherwise. */
+static void sp_pick_shown(void)
+{
+    stick_t *t = &s.st;
+    if (t->p == NULL
+        || esc_item_applies(t->p, (unsigned)t->picked, t->model)) {
+        return;
+    }
+    uint8_t idx[256];
+    t->picked = (sp_items(idx) > 0) ? idx[0] : 0;
 }
 
 /* The picks as changes, in item order; how many were picked in all. */
@@ -1572,6 +1628,17 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
         snprintf(st->note, sizeof(st->note), "%s", TR(SP_NO_CELLS));
         return false;
     }
+    /* Every change on the model picked: an item another model has may
+     * share its number and values with one this model has, and the run
+     * would change that one instead. */
+    for (size_t i = 0; i < *n; ++i) {
+        if (!esc_item_applies(st->p, ch[i].item, st->model)) {
+            const esc_item_t *it = &st->p->items[ch[i].item];
+            snprintf(st->note, sizeof(st->note), TR(SP_ITEM_NOT_HERE),
+                     (unsigned)it->number, it->name);
+            return false;
+        }
+    }
     const supply_caps_t caps = supply_screen_caps();
     const unsigned vmax = (unsigned)lroundf(caps.v_max * 1000.0f);
     const unsigned vmin = (unsigned)lroundf(caps.v_min * 1000.0f);
@@ -1609,6 +1676,10 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
         snprintf(st->note, sizeof(st->note), "%s", sp_why_text(why));
         return false;
     }
+    /* It runs; a voltage the data cannot vouch for is said, not refused. */
+    (void)sp_rating_warn(st->p, st->model, *mv,
+                         settings_get(SET_STICK_V) > 0.0f, true, st->note,
+                         sizeof(st->note));
     return true;
 }
 
@@ -2164,6 +2235,7 @@ static bool sp_down(const touch_event_t *evt)
                 sp_pick_profile(p);
                 t->model = model;
                 t->hand_model = model;
+                sp_pick_shown();
                 s.stage = STAGE_DEVICE;
                 ++s.rev;
             } else if (p->manual_count > 0u) {
@@ -2293,7 +2365,8 @@ static bool sp_down(const touch_event_t *evt)
         ++s.rev;
         return true;
     }
-    const int items = (int)t->p->item_count;
+    uint8_t shown[256];
+    const int items = sp_items(shown);
     const int max_scroll = (items > ROWS_MAX) ? items - ROWS_MAX : 0;
     if (gfx_rect_contains(s.page_up, px, py) && t->iscroll > 0) {
         --t->iscroll;
@@ -2306,7 +2379,11 @@ static bool sp_down(const touch_event_t *evt)
         return true;
     }
     for (int i = 0; i < sp_rows_shown(items, t->iscroll); ++i) {
-        const int idx = t->iscroll + i;
+        const int at = t->iscroll + i;
+        if (at < 0 || at >= items) {
+            break;
+        }
+        const int idx = shown[at];
         const int by = gfx_rect_contains(s.down[i], px, py)  ? -1
                      : gfx_rect_contains(s.up[i], px, py)    ?  1 : 0;
         if (by != 0 && esc_stick_not_offered(&t->p->items[idx]) == NULL) {
@@ -2491,7 +2568,13 @@ static void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r, const sp_row_t *row,
     sp_text(c, r.x + 368, r.y + 8, p->family, (r.w - 368 - 236 - tag) / 8,
             ui_theme_color(UI_C_TEXT_FAINT));
     char right[80];
-    if (runs) {
+    char warn[40];
+    const bool unrated = runs
+                         && sp_model_warn(p, row->model, warn, sizeof(warn))
+                                != NULL;
+    if (unrated) {
+        snprintf(right, sizeof(right), "%s", warn);
+    } else if (runs) {
         char items[24];
         const esc_stick_kind_t kind = esc_stick_kind(p, NULL);
         snprintf(items, sizeof(items),
@@ -2508,8 +2591,9 @@ static void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r, const sp_row_t *row,
     gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 232),
                                  (int16_t)(r.y + 8), 220, 16 },
                 right, UI_FONT_LABEL,
-                runs ? ui_theme_color(UI_C_ACCENT)
-                     : ui_theme_color(UI_C_TEXT_FAINT), 1,
+                unrated ? ui_theme_color(UI_C_WARN)
+                : runs  ? ui_theme_color(UI_C_ACCENT)
+                        : ui_theme_color(UI_C_TEXT_FAINT), 1,
                 GFX_ALIGN_RIGHT);
 }
 
@@ -3170,7 +3254,8 @@ static void sp_draw_items(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
     const esc_profile_t *p = t->p;
-    const int items = (int)p->item_count;
+    uint8_t shown[256];
+    const int items = sp_items(shown);
     gfx_text(c, PAD + 12, PARM_Y + 12, TR(SP_CHANGE), UI_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
     if (p->manual_count > 0u) {
@@ -3190,7 +3275,11 @@ static void sp_draw_items(gfx_canvas_t *c)
               t->iscroll < max_scroll);
 
     for (int i = 0; i < sp_rows_shown(items, t->iscroll); ++i) {
-        const int idx = t->iscroll + i;
+        const int at = t->iscroll + i;
+        if (at < 0 || at >= items) {
+            break;
+        }
+        const int idx = shown[at];
         const esc_item_t *it = &p->items[idx];
         const int pick = t->pick[idx];
         const int y = ROW_Y0 + i * ROW_H;
@@ -3232,6 +3321,9 @@ static void sp_draw_items(gfx_canvas_t *c)
     }
 
     /* The picked item: its values, and where it applies. */
+    if (items == 0) {
+        return;
+    }
     const esc_item_t *it = &p->items[t->picked];
     char line[160];
     if (it->applies_when[0] != '\0') {
@@ -3766,6 +3858,22 @@ const char *programmer_screen_stick_row_why(int i)
     int model = -1;
     const esc_profile_t *p = programmer_screen_stick_row(i, &model);
     return (p != NULL) ? sp_model_why(p, model, why, sizeof(why)) : NULL;
+}
+
+int programmer_screen_stick_item_at(int i)
+{
+    uint8_t shown[256];
+    const int n = sp_items(shown);
+    return (i >= 0 && i < n) ? shown[i] : -1;
+}
+
+const char *programmer_screen_stick_row_warn(int i)
+{
+    static char warn[64];
+    int model = -1;
+    const esc_profile_t *p = programmer_screen_stick_row(i, &model);
+    return (p != NULL && programmer_screen_stick_row_why(i) == NULL)
+               ? sp_model_warn(p, model, warn, sizeof(warn)) : NULL;
 }
 
 const char *programmer_screen_stick_note(void)

@@ -86,8 +86,9 @@ sweep starts over from the curve's beginning, and the alert band says so.
   beeps from the moment it asks for that step; the menu heard in order, or
   DONE, takes it as done, and SILENCE and TIMEOUT run from then. Every
   other step waits for DONE. One a profile, only on `before_menu`, none
-  after it, in the generator and the card reader alike. 16 Kontronik
-  profiles mark their pull or press.
+  after it, and only where the menu rests at the power-up position, in the
+  generator and the card reader alike. 16 Kontronik profiles mark their
+  pull or press.
 - **No step at an ESC that may be powered.** RUN is refused while the
   supply does not read off: a reading no older than 1000 ms with the
   supply's own state off and the current at or under 20 mA for 200 ms.
@@ -105,8 +106,8 @@ sweep starts over from the curve's beginning, and the alert band says so.
   prompt says not to touch the ESC. Every Kontronik profile that runs
   carries one: the ESC repeats the stored mode as tones before the manual
   disconnects it. No DONE within 60 s ends the run with NOT CONFIRMED; that
-  end, and any other while the step is asked, says on the result that the
-  mode may not be stored. `manual[].locks` marks the step where the ESC
+  end, and any other from the selection of the value on, says on the
+  result that the mode may not be stored. `manual[].locks` marks the step where the ESC
   locks itself instead (8 to 10 LED flashes): the KOBY, JIVE Pro, KOLIBRI,
   KONTROL-X / KOLIBRI-X and KOSMIK profiles, where the result says the ESC
   may be locked.
@@ -115,12 +116,16 @@ sweep starts over from the curve's beginning, and the alert band says so.
   English as the fallback. All 24 profiles' steps have it.
 - **The ESC's ratings hold the stick run's set points.** VOLTAGE, or the
   cell count's voltage, is refused over the model's `v_max_mv` and under
-  its `v_min_mv`; VOLTAGE set by hand is refused for a model that states
-  no voltage rating, and VOLTAGE 0 for one that states neither a rating
-  nor a cell count; CURRENT LIMIT is refused over the model's `current_a`.
-  The row, the page and RUN say which, with both figures. Profiles carry
-  `models[].v_min_mv` from the JSON, in the generator and the card reader
-  alike. At 20 V the list opens 21 profiles.
+  its `v_min_mv`, and CURRENT LIMIT over its `current_a`; the row, the
+  page and RUN say which, with both figures. A model that states no
+  `v_max_mv` runs with a warning on its row and beside RUN: at VOLTAGE set
+  by hand, or at the family's lowest cell count where it states none of
+  its own. Profiles carry `models[].v_min_mv` from the JSON, in the
+  generator and the card reader alike.
+- **A page offers only the model's items.** An item with `applies_to` is
+  listed only on the models it names, and RUN refuses a change to an item
+  not on the model: Jeti's Cutoff mode and Switching frequency share item
+  3 on different models.
 
 ### Changed
 

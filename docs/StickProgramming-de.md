@@ -89,7 +89,7 @@ höchstens 512 Modelle.
 
 Die Zeile unter den Zeilen sagt, dass kein Profil geprüft ist, und die
 Zählung rechts davon zählt die Ebene: `1-9/20 Hersteller, 6 ausführbar` --
-die Hersteller mit einem laufenden Modell -- oder `1-9 von 82, 37
+die Hersteller mit einem laufenden Modell -- oder `1-9 von 82, 40
 ausführbar` für die Modelle eines Herstellers.
 
 ![Die Hersteller](img/de/programmer-stick.png)
@@ -156,6 +156,17 @@ Zellen" -- bietet nichts zur Wahl; seine Zeile zeigt NICHTS ZU WÄHLEN. Die Zeil
 Werte des gewählten Punkts und den Standardwert. START erscheint, sobald ein
 Wert gewählt ist und der Lauf starten kann; kann er es nicht, sagt die Zeile
 neben START, warum.
+
+Die Seite listet nur die Punkte des Modells, für das sie geöffnet wurde:
+ein Punkt mit `applies_to` steht bei den Modellen, die er nennt, und bei
+den anderen nicht. Zwei Punkte können sich an verschiedenen Modellen
+Nummer und Werte teilen -- Jetis Cutoff mode an sechs kleinen 3P-Modellen
+und Switching frequency an den übrigen, beide Punkt 3 --, und der ESC gibt
+nur den aus, den er hat; eine Änderung am anderen würde diesen speichern.
+START lehnt als letzte Prüfung eine Änderung an einem Punkt ab, den das
+Modell nicht hat (`3 Cutoff mode gibt es an diesem Modell nicht`). Eine
+Seite ohne gewähltes Modell, die nur ein Kartenprofil ohne Modelle öffnet,
+listet die Punkte, die jedes Modell hat.
 
 ![Zwei Werte gewählt](img/de/programmer-stick-items.png)
 
@@ -315,9 +326,11 @@ ERLEDIGT zu tippen, sobald die Bestätigung zu Ende ist; ERLEDIGT schaltet
 das Netzteil aus, und der Lauf endet oder schaltet aus und ein wie jeder
 andere. Die Abfrage sagt, dass der ESC versorgt ist und nicht berührt
 werden darf. Kein ERLEDIGT innerhalb von 60 s beendet den Lauf mit NICHT
-BESTÄTIGT, ebenso jedes andere Ende, während der Schritt gefragt ist;
-jedes davon schaltet das Netzteil während der Bestätigung aus, und das
-Ergebnis sagt, dass der Modus womöglich nicht gespeichert ist.
+BESTÄTIGT. Dieses Ende, und jedes andere ab der Auswahl des Werts --
+während der ESC speichert (SPEICHERN) oder während der Schritt gefragt
+ist --, schaltet das Netzteil während des Speicherns oder der Bestätigung
+aus, und das Ergebnis sagt, dass der Modus womöglich nicht gespeichert
+ist.
 
 Ein KOBY, JIVE Pro, KOLIBRI, KONTROL-X / KOLIBRI-X oder KOSMIK, der vor
 dem Ende dieser Bestätigung seine Versorgung verliert, wertet die
@@ -363,8 +376,14 @@ mit dem Knüppel dort, wo das Einschalten ihn ließ:
   innerhalb von 60 s beendet den Lauf mit NICHT BESTÄTIGT.
 - Der Knüppel bewegt sich nicht, solange nach dem Schritt gefragt wird. Ein
   Profil, dessen Menü in einer anderen Stellung als der Einschaltstellung
-  ruht, würde ihn bewegen; dort fragt der Lauf nach ERLEDIGT und hört erst
-  danach zu, wie bei jedem früheren Schritt.
+  ruht -- `scheme.listen` abseits des Einstiegs, oder ein Wert, der
+  abseits von `scheme.listen` eingeschaltet wird --, bräuchte eine Bewegung
+  unter der Hand des Bedieners an einem versorgten ESC, und erst auf
+  ERLEDIGT zu warten, verlöre die Gruppen, die die Handlung startet.
+  Generator und Kartenleser lehnen eine solche Datei ab
+  (`manual[0].starts_menu: the menu rests elsewhere (scheme.listen)`), und
+  der Ablauf lehnt ein anders gebautes Profil als `Menüstart, Ruhe
+  anderswo` ab.
 
 Um einen Schritt an einem versorgten ESC wird nur mit dem Knüppel in der
 Motor-Aus-Stellung gebeten: MIN, oder MID, wo das `entry_throttle` eines
@@ -585,12 +604,21 @@ scharf schaltet:
 | --- | --- | --- | --- |
 | SPANNUNG, oder die der Zellenzahl | über dem `v_max_mv` des Modells | `20.0 V, ESC bis 8.4 V` | `SPANNUNG 20.0 V liegt über den 8.4 V des ESC` |
 | SPANNUNG, oder die der Zellenzahl | unter dem `v_min_mv` des Modells, wo genannt | `11.9 V, ESC ab 12.0 V` | `SPANNUNG 11.9 V liegt unter den 12.0 V des ESC` |
-| SPANNUNG von Hand | das Modell nennt kein `v_max_mv`: die Daten bürgen für keine Spannung | `ESC-Grenze unbekannt` | `SPANNUNG 7.4 V: Grenze des ESC nicht angegeben` |
-| SPANNUNG 0 | das Modell nennt weder `v_max_mv` noch eine Zellenzahl: die Zellenzahl der Familie stünde für seine eigene | `ESC-Grenze unbekannt` | `Das Modell nennt weder Zellenzahl noch Spannungsgrenze` |
 | STROMBEGRENZUNG | über dem `current_a` des Modells, wo genannt | `2.0 A, ESC bis 1 A` | `STROMBEGRENZUNG 2.0 A liegt über den 1 A des ESC` |
 
+Ein Modell, das kein `v_max_mv` nennt, läuft, mit einer Warnung an Stelle
+der Zusammenfassung seiner Zeile und als Hinweis neben START, in der
+Warnfarbe:
+
+| Sollwert | Die Zeile sagt | Der Hinweis sagt |
+| --- | --- | --- |
+| SPANNUNG von Hand | `ESC-Grenze unbekannt` | `SPANNUNG 7.4 V: ESC-Grenze unbekannt, prüfen` |
+| SPANNUNG 0, das Modell nennt keine Zellenzahl: die niedrigste der Familie steht dafür | `ESC-Grenze unbekannt` | `7.6 V nach Zellenzahl der Familie: Grenze unbekannt` |
+
 SPANNUNG 0 an einem Modell, das seine Zellenzahl, aber kein `v_max_mv`
-nennt, läuft mit dieser Zellenzahl: der eigenen Angabe der Daten. Auf der
+nennt, läuft mit dieser Zellenzahl ohne Warnung: der eigenen Angabe der
+Daten. Ein genanntes `v_min_mv` oder `current_a` gilt, ob `v_max_mv`
+genannt ist oder nicht. Auf der
 Seite der Familie ohne gewähltes Modell ist die Grenze das niedrigste
 `v_max_mv` ihrer Modelle, unbekannt, wenn eines keines nennt, und die
 niedrigste Eingangsspannung das höchste `v_min_mv`. STROMBEGRENZUNG geht
@@ -601,14 +629,16 @@ höchstens bis 3.0 A; jedes Modell im Satz, das einen Strom nennt, ist für
 
 24 der 72 Profile sind von einer Art, die der Ablauf ausführt: 13
 zweistufige und 11 einstufige. Mit den 20 V des PD mini und den
-vorgegebenen Grenzen öffnet die Liste 21 davon:
-hobbywing-skywalker-v2-hv-opto braucht 22,8 V, und dualsky-xcontroller und
-kontronik-beat-car nennen für ihr eines Modell weder Zellenzahl noch
-Spannungsgrenze (siehe [Das Netzteil](#das-netzteil)). Auch 4 Modellzeilen
-von Familien, die sich öffnen, werden bei 20 V abgelehnt, jede mit 22,8 V:
-FLYFUN 130A und 160A HV OPTO V5 sowie Gecko 120A und 150A OPTO HV.
-KOLIBRI-X 60 LV und 90 LV von kontronik-kontrol-x nennen ebenfalls keines
-von beiden und werden abgelehnt. Ein Profil läuft, wenn es
+vorgegebenen Grenzen öffnet die Liste 23 davon:
+hobbywing-skywalker-v2-hv-opto braucht 22,8 V. Auch 4 Modellzeilen von
+Familien, die sich öffnen, werden bei 20 V abgelehnt, jede mit 22,8 V:
+FLYFUN 130A und 160A HV OPTO V5 sowie Gecko 120A und 150A OPTO HV. 4
+Zeilen öffnen mit der Warnung zur Grenze (siehe [Das
+Netzteil](#das-netzteil)): das eine Modell von dualsky-xcontroller und von
+kontronik-beat-car, die weder Zellenzahl noch Spannungsgrenze nennen und
+deshalb SPANNUNG brauchen, und KOLIBRI-X 60 LV und 90 LV von
+kontronik-kontrol-x, die mit der niedrigsten Zellenzahl der Familie
+laufen. Ein Profil läuft, wenn es
 `"automatable": "full"` ist, oder `"assisted"` mit Handgriffen, auf die der
 Lauf warten kann (siehe [Handgriffe](#handgriffe)), vor dem Einschalten
 betreten wird, mit `count`
@@ -640,9 +670,10 @@ ruhte.
 | Werte wiederholen sich | einstufig, eine Wertnummer in zwei Punkten |
 | Auswahl = Ruhestellung | die Auswahlbewegung ist die Ruhestellung: keine Bewegung zu machen |
 | Wertbewegung = Auswahl | zweistufig, `value_select` gleich `select` |
-| Ruhe ohne Einstiegszeit | `scheme.listen` weicht von der Einschaltstellung ab und keine Zeit ist genannt: `hold_ms` ist null, der Wert hat kein `entry_hold_ms` und kein Schritt `at_power_up` hat ein `hold_ms`: die YGE-Profile |
+| Ruhe ohne Einstiegszeit | `scheme.listen` weicht von der Einschaltstellung ab und keine Zeit ist genannt: `hold_ms` ist null, der Wert hat kein `entry_hold_ms` und kein Schritt `at_power_up` hat ein `hold_ms`: die YGE-Profile. Ein Profil, dessen Werte ein eigenes `entry_hold_ms` nennen, wird je Änderung beurteilt: eine ohne Zeit wird abgelehnt, die anderen laufen |
 | Speichern, zweistufig | zweistufig mit `scheme.store` |
 | Speichern = Auswahl | einstufig, `scheme.store` gleich `select` |
+| Menüstart, Ruhe anderswo | ein Schritt mit `starts_menu`, und das Menü ruht abseits der Einschaltstellung: `scheme.listen` abseits des Einstiegs, oder ein Wert, der abseits davon eingeschaltet wird |
 | 22.8 V, Obergrenze 21.0 V | die Spannung (SPANNUNG, oder die Zellenzahl des Profils) liegt über der Grenze von SUPPLY |
 
 Ein auf der SD-Karte korrigiertes Profil steht mit seiner Korrektur in der

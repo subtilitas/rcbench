@@ -116,7 +116,7 @@ is taken in a gap ahead of the save that needs it.
 | Servo limit search, servo synchronisation | built and tested against a modelled servo |
 | OpenYGE codec | built and tested; not wired in. The implementation is pursued in a separate repository |
 | ESC programming profiles | 72 families, 451 models, from 153 manuals; compiled in from `shared/esc/profiles/*.json` and replaced or extended by `/ESC/*.json` on the card at start-up. The reader and the registry are tested on the host; the card path has not run on a panel. Every profile is unverified and carries no beep timing. The nine YGE profiles name where the stick rests while the menu sounds (`scheme.listen`). [Reference](docs/EscProfiles.md) |
-| Stick programming | built and tested on the host against a simulated ESC (`shared/esc/esc_stick.c`, `esc_sim.c`): the ESC STICK class on PROGRAMMER runs 24 of the 72 profiles (13 two-stage, 11 one-stage; at 20 V the list opens 21, one needing 22.8 V and two whose one model states neither a cell count nor a voltage rating, and refuses 4 more model rows of families that open, each needing 22.8 V, and 2 KOLIBRI-X rows that state neither from a warning held for 2 s (NO PROPELLER, MOTOR SECURED?: a resistor load or a motor mounted solid without propeller), arming and moving the throttle through the MOTOR screen's commands and switching the supply through SUPPLY's. Beeps are counted from the supply current with hysteresis from a quiet line, lengths judged in readings, and a group acted on only when it and the one before it are in the menu's order; a sweep of lost beeps against entry times stores no wrong value in the simulation. A planned end switches the supply off before the stick moves. The list shows the makers, then one maker's models by current, voltage and name, each opening its family's profile at the model's own cell count; a search over maker and family or maker and model filters both levels, case-insensitive with `*` as a wildcard, filtered with every key on a keyboard docked beside it. A stack light on the run and the result shows green while the detector holds a beep (at least 150 ms) and red on an end caused by something not as expected, a stop the bench raised itself (BENCH STOPPED, told from a pressed STOP by the arming policy's count of presses) included. Profiles list the steps a person does at the ESC (`manual`: a jumper, a button) with when each is due; 24 carry them, and the 10 Kontronik profiles that run ask for each with a prompt (DONE, ABORT, 60 s), powered only with the stick at motor-off; each value is powered up from the stick position the manual programs it from (`entry_throttle`: the Kontronik car modes at MID), the stick moved only with the supply off. MANUAL INTERVENTION REQUIRED on a profile's page and a MANUAL tag in the list show the steps. With the PD mini off, the panel's modelled supply draws the simulated ESC's current. Never run against an ESC; every beep timing is a default in the settings, not a measurement. [Reference](docs/StickProgramming.md) |
+| Stick programming | built and tested on the host against a simulated ESC (`shared/esc/esc_stick.c`, `esc_sim.c`): the ESC STICK class on PROGRAMMER runs 24 of the 72 profiles (13 two-stage, 11 one-stage; at 20 V the list opens 23, one needing 22.8 V, and refuses 4 more model rows of families that open, each needing 22.8 V; 4 model rows that state no voltage rating open with a warning from a warning held for 2 s (NO PROPELLER, MOTOR SECURED?: a resistor load or a motor mounted solid without propeller), arming and moving the throttle through the MOTOR screen's commands and switching the supply through SUPPLY's. Beeps are counted from the supply current with hysteresis from a quiet line, lengths judged in readings, and a group acted on only when it and the one before it are in the menu's order; a sweep of lost beeps against entry times stores no wrong value in the simulation. A planned end switches the supply off before the stick moves. The list shows the makers, then one maker's models by current, voltage and name, each opening its family's profile at the model's own cell count; a search over maker and family or maker and model filters both levels, case-insensitive with `*` as a wildcard, filtered with every key on a keyboard docked beside it. A stack light on the run and the result shows green while the detector holds a beep (at least 150 ms) and red on an end caused by something not as expected, a stop the bench raised itself (BENCH STOPPED, told from a pressed STOP by the arming policy's count of presses) included. Profiles list the steps a person does at the ESC (`manual`: a jumper, a button) with when each is due; 24 carry them, and the 10 Kontronik profiles that run ask for each with a prompt (DONE, ABORT, 60 s), powered only with the stick at motor-off; each value is powered up from the stick position the manual programs it from (`entry_throttle`: the Kontronik car modes at MID), the stick moved only with the supply off. MANUAL INTERVENTION REQUIRED on a profile's page and a MANUAL tag in the list show the steps. With the PD mini off, the panel's modelled supply draws the simulated ESC's current. Never run against an ESC; every beep timing is a default in the settings, not a measurement. [Reference](docs/StickProgramming.md) |
 | Measurement front end | parts chosen, nothing fitted: the INA228 as motor monitor and three TPS55285 servo converters with a fourth as the adjustable supply (owner, 2026-09-30); 7 INA3221 port monitors, both motor shunts and the BQ25713 pack charger from round 1 of the component research: [hardware](hardware/STATUS.md) |
 | Servo programmer | Hitec table in the programmer screen; KST (a servo manufacturer) held at the owner's request |
 
@@ -249,7 +249,7 @@ chrome-cached screen to 2,000.
 | `shared/ui/analyser_screen.c` | 224 | 221 | 98.7% |
 | `shared/ui/balance_screen.c` | 311 | 311 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
-| `shared/ui/programmer_screen.c` | 2135 | 2014 | 94.3% |
+| `shared/ui/programmer_screen.c` | 2184 | 2062 | 94.4% |
 | `shared/ui/log_viewer_screen.c` | 796 | 724 | 91.0% |
 | `shared/ui/log_select.c` | 26 | 26 | 100.0% |
 | `shared/ui/settings_screen.c` | 304 | 295 | 97.0% |
@@ -272,9 +272,9 @@ chrome-cached screen to 2,000.
 | `shared/openyge/openyge_frame.c` | 165 | 162 | 98.2% |
 | `shared/openyge/openyge_status.c` | 39 | 39 | 100.0% |
 | `shared/openyge/openyge_params.c` | 66 | 66 | 100.0% |
-| `shared/esc/esc_json.c` | 878 | 830 | 94.5% |
-| `shared/esc/esc_registry.c` | 154 | 152 | 98.7% |
-| `shared/esc/esc_stick.c` | 1003 | 969 | 96.6% |
+| `shared/esc/esc_json.c` | 893 | 844 | 94.5% |
+| `shared/esc/esc_registry.c` | 168 | 166 | 98.8% |
+| `shared/esc/esc_stick.c` | 1029 | 995 | 96.7% |
 | `shared/esc/esc_sim.c` | 362 | 338 | 93.4% |
 | `shared/servo/servo_sim.c` | 122 | 122 | 100.0% |
 | `shared/sbus/sbus.c` | 54 | 53 | 98.2% |
@@ -307,7 +307,7 @@ chrome-cached screen to 2,000.
 | `shared/bench/pdmini.c` | 553 | 544 | 98.4% |
 | `shared/bench/supply_link.c` | 255 | 245 | 96.1% |
 | `shared/bench/log_writer.c` | 126 | 114 | 90.5% |
-| **total** | **20602** | **19862** | **96.4%** |
+| **total** | **20706** | **19964** | **96.4%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

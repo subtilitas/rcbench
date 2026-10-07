@@ -1359,6 +1359,30 @@ static void decode(dec_t *d, esc_profile_t *p)
     if (!d->failed) {
         decode_items(d, root, p);
     }
+    /* The step that starts the menu is asked with the stick where the
+     * power-up left it, and the run counts from then: the menu has to
+     * rest there, for every value's power-up position. */
+    for (unsigned i = 0; !d->failed && p->manual != NULL
+                         && p->listen_throttle != ESC_THR_NONE
+                         && i < p->manual_count; ++i) {
+        if (!p->manual[i].starts_menu) {
+            continue;
+        }
+        bool elsewhere = p->listen_throttle != p->entry_throttle;
+        for (unsigned k = 0; !elsewhere && p->items != NULL
+                             && k < p->item_count; ++k) {
+            const esc_item_t *it = &p->items[k];
+            for (unsigned vi = 0; vi < it->value_count; ++vi) {
+                const esc_throttle_t et = it->values[vi].entry_throttle;
+                elsewhere = elsewhere
+                            || (et != ESC_THR_NONE && et != p->listen_throttle);
+            }
+        }
+        if (elsewhere) {
+            FAIL(d, "manual[%u].starts_menu: the menu rests elsewhere "
+                 "(scheme.listen)", i);
+        }
+    }
 }
 
 static const char *lex_why_text(lex_why_t why)

@@ -137,7 +137,7 @@ JSON. The panel does not load them.
 | `values[].entry_throttle` | `min`, `mid`, `max`: the stick position the manual programs this value from, where it is not the entry's; absent or null, the entry's. Stick programming powers the ESC up there for that value |
 | `values[].entry_hold_ms` | 0 to 600000: power-on to the menu when this value is programmed, where the manual gives a wait other than `scheme.entry.hold_ms`; absent or null, the entry's. Kontronik SUN PLUS modes 4 to 6 wait 5000 ms |
 | `values[].after_select` | 1 to 4 of `min`, `mid`, `max`: the moves the manual asks for after this value's select move, in order, each once the ESC has answered the one before; absent or null, none. The Kontronik car modes and PIX mode 2 go to `min`, the brake. Each is a move: the first not where the stick is when they begin -- the profile's `scheme.store` move, else the select (or `value_select`) move -- and none the same as the one before; a file with one that stays put is refused. Stick programming makes each STORE after the one before, after the profile's `scheme.store` move; a two-stage profile takes none |
-| `applies_to` | model names of this profile, or null for all |
+| `applies_to` | model names of this profile, or null for all. Stick programming offers the item only on those models |
 | `applies_when` | a condition in words, e.g. `"model type heli"` |
 
 Two items may share a number only when both carry `applies_to` or
@@ -162,7 +162,7 @@ power, in the order a run meets it. Absent or null: none.
 | `when` | `before_power`, `at_power_up`, `before_menu`, `during_menu`, `before_power_off`, `after_programming`; each step no earlier than the one above it |
 | `action` | 1 to 120 bytes of UTF-8, in English: two lines of the screen's pop-up |
 | `action_de` | the same step in German, 1 to 120 bytes of UTF-8, umlauts included; absent or null when none, and the English shows in German too |
-| `starts_menu` | `true` where the action itself starts the menu's series, as a Kontronik jumper pulled or button pressed does; absent, null or `false` otherwise. Only on a `before_menu` step, at most one a profile, and no `before_menu` step after it. Stick programming listens from the moment it asks for that step ([Stick programming](StickProgramming.md#manual-steps)) |
+| `starts_menu` | `true` where the action itself starts the menu's series, as a Kontronik jumper pulled or button pressed does; absent, null or `false` otherwise. Only on a `before_menu` step, at most one a profile, and no `before_menu` step after it. Where `scheme.listen` is set, it equals the entry position and every value's `entry_throttle`: the menu rests where the step is asked. Stick programming listens from the moment it asks for that step ([Stick programming](StickProgramming.md#manual-steps)) |
 | `locks` | `true` on a `before_power_off` step where the manual says the ESC locks itself when its supply goes off before the step is done, as the Kontronik KOBY, JIVE Pro, KOLIBRI, KONTROL-X and KOSMIK do; absent, null or `false` otherwise, and only on that kind. Stick programming then says the ESC may be locked, not only that the value may not be stored |
 | `hold_ms` | `at_power_up` only: 0 to 60000, how long the step is held after the supply comes on; absent or null when not stated |
 

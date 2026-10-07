@@ -1003,29 +1003,45 @@ TEST_CASE(every_end_draws_its_reason)
  * the warning. */
 TEST_CASE(a_run_that_cannot_start_says_why)
 {
-    /* No cell count and no voltage rating: nothing in the data vouches
-     * for a voltage, automatic or set by hand, and the model's row says
-     * so instead of opening. */
-    static const float k_v[] = { 0.0f, 7.4f };
-    for (size_t k = 0; k < 2; ++k) {
-        fresh();
-        settings_set(SET_STICK_V, k_v[k]);
-        open_profile("dualsky-xcontroller");
-        CHECK(programmer_screen_stick_page() == NULL);
-        int row = -1;
-        for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
-            const esc_profile_t *q = programmer_screen_stick_row(i, NULL);
-            row = (q != NULL && strcmp(q->id, "dualsky-xcontroller") == 0)
-                      ? i : row;
-        }
-        const char *why = programmer_screen_stick_row_why(row);
-        CHECK(why != NULL && strcmp(why, "ESC rating unknown") == 0);
-        CHECK_EQ(programmer_screen_stick_runs(), 0u);
-        memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
-        scr->render(&cv, 0);
-        CHECK(lit() > 20000);
-        scr->leave();
+    /* No cell count and no voltage rating: the row opens with a warning;
+     * RUN asks for VOLTAGE, and with one it runs, the warning on the
+     * page. */
+    fresh();
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    open_maker("Dualsky");
+    int row = -1;
+    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
+        const esc_profile_t *q = programmer_screen_stick_row(i, NULL);
+        row = (q != NULL && strcmp(q->id, "dualsky-xcontroller") == 0)
+                  ? i : row;
     }
+    CHECK(programmer_screen_stick_row_why(row) == NULL);
+    const char *warn = programmer_screen_stick_row_warn(row);
+    CHECK(warn != NULL && strcmp(warn, "ESC rating unknown") == 0);
+    open_model("dualsky-xcontroller", NULL);
+    CHECK(programmer_screen_stick_page() != NULL);
+    tap(STEP_UP_X, STEP_CY(0));
+    scr->tick(0.02f);
+    tap(WRITE_X, BTN_CY);
+    hold_for(3.0f);
+    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_STR_EQ(programmer_screen_stick_note(),
+                 "no cell count in the profile: set VOLTAGE on TIMING");
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    scr->render(&cv, 0);
+    CHECK(lit() > 20000);
+    settings_set(SET_STICK_V, 7.4f);
+    scr->tick(0.02f);
+    CHECK_STR_EQ(programmer_screen_stick_note(),
+                 "VOLTAGE 7.4 V: ESC rating unknown, check it");
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    scr->render(&cv, 0);
+    CHECK(lit() > 20000);
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    scr->leave();
     settings_set(SET_STICK_V, 0.0f);
 
     /* VOLTAGE over the cap, set where a profile ran: refused on RUN. */
@@ -1244,15 +1260,56 @@ TEST_CASE(a_profile_over_the_supply_cap_is_refused_in_the_list)
     hold_for(2.25f);
     CHECK_EQ(programmer_screen_stick_runs(), 0u);
     CHECK(programmer_screen_stick_page() == NULL);
-    /* DualSky's XController states no cell count and no rating: no
-     * voltage is vouched for, and it does not open. */
+    /* DualSky's XController states none, and opens, its rating
+     * unknown. */
     tap(BACK_X, BACK_Y);
     open_maker("Dualsky");
     open_model("dualsky-xcontroller", NULL);
-    CHECK(programmer_screen_stick_page() == NULL);
+    CHECK(programmer_screen_stick_page() != NULL);
+    tap(TIMING_X, TIMING_Y);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
+}
+
+/* The page offers only the items on the model opened: FLYFUN V5's BEC
+ * voltage is on its 60, 80 and 120 A models.  With no model, only the
+ * items every model has. */
+TEST_CASE(the_page_offers_only_the_models_items)
+{
+    const esc_profile_t *p = esc_profiles_find("hobbywing-flyfun-v5");
+    CHECK(p != NULL);
+    if (p == NULL) {
+        return;
+    }
+    int bec = -1;
+    for (unsigned i = 0; i < p->item_count; ++i) {
+        bec = (p->items[i].applies_count > 0u) ? (int)i : bec;
+    }
+    CHECK(bec >= 0);
+    static const struct { const char *model; bool has; } k[] = {
+        { "FLYFUN 60A V5", true }, { "FLYFUN 80A OPTO V5", false },
+    };
+    for (size_t c = 0; c < 2; ++c) {
+        fresh();
+        programmer_screen_bench(0u, false, 0u, 0u, false);
+        tap(TILE_CX(2), TILE_CY);
+        open_maker("Hobbywing");
+        open_model("hobbywing-flyfun-v5", k[c].model);
+        CHECK(programmer_screen_stick_page() != NULL);
+        bool seen = false;
+        int rows = 0;
+        for (int i = 0; programmer_screen_stick_item_at(i) >= 0; ++i) {
+            seen = seen || programmer_screen_stick_item_at(i) == bec;
+            ++rows;
+        }
+        CHECK_EQ(seen, k[c].has);
+        CHECK_EQ(rows, (int)p->item_count - (k[c].has ? 0 : 1));
+        memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+        scr->render(&cv, 0);
+        CHECK(lit() > 20000);
+        scr->leave();
+    }
 }
 
 /* The model's own rating, not only the SUPPLY cap: FlyFun-6A is rated
@@ -1366,6 +1423,42 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
     settings_set(SET_STICK_I, 1.0f);
     scr->leave();
     esc_profiles_clear_overrides();
+
+    /* KOLIBRI-X 60 LV states no cell count and no rating: VOLTAGE 0 takes
+     * the family's lowest cell count, opens, and says so. */
+    fresh();
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    open_maker("Kontronik");
+    int kx = -1;
+    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
+        int m = -1;
+        const esc_profile_t *q = programmer_screen_stick_row(i, &m);
+        kx = (q != NULL && strcmp(q->models[m].name, "KOLIBRI-X 60 LV") == 0)
+                 ? i : kx;
+    }
+    CHECK(kx >= 0);
+    CHECK(programmer_screen_stick_row_why(kx) == NULL);
+    const char *warn = programmer_screen_stick_row_warn(kx);
+    CHECK(warn != NULL && strcmp(warn, "ESC rating unknown") == 0);
+    ui_text_set_language(UI_LANG_DE);
+    warn = programmer_screen_stick_row_warn(kx);
+    CHECK(warn != NULL && strcmp(warn, "ESC-Grenze unbekannt") == 0);
+    ui_text_set_language(UI_LANG_EN);
+    open_model("kontronik-kontrol-x", "KOLIBRI-X 60 LV");
+    CHECK(programmer_screen_stick_page() != NULL);
+    tap(CANCEL_X, HOLD_Y);                   /* the steps, read */
+    tap(STEP_UP_X, STEP_CY(0));
+    supply_reads_off();
+    scr->tick(0.02f);
+    char want[64];
+    const uint32_t mv = esc_stick_model_mv(esc_profiles_find(
+                                               "kontronik-kontrol-x"), -1);
+    snprintf(want, sizeof(want),
+             "%u.%u V from the family's lowest cells: rating unknown",
+             (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u));
+    CHECK_STR_EQ(programmer_screen_stick_note(), want);
+    scr->leave();
 }
 
 /* ------------------------------------------------------------ the search */
@@ -2756,6 +2849,7 @@ int main(void)
     RUN(the_page_shows_the_entry_the_run_waits);
     RUN(the_hold_needs_every_pre_power_step_read);
     RUN(a_voltage_over_the_escs_rating_is_refused);
+    RUN(the_page_offers_only_the_models_items);
     RUN(a_maker_at_its_most_models_lists_every_one);
     RUN(every_step_after_programming_is_shown);
     RUN(no_step_at_the_esc_while_the_supply_reads_live);

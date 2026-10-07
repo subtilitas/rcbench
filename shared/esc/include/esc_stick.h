@@ -160,9 +160,6 @@ uint32_t esc_stick_model_v_min(const esc_profile_t *p, int model);
 typedef enum {
     ESC_STICK_RATING_OK = 0,
     ESC_STICK_RATING_V_OVER,     /**< @p mv over the rated voltage        */
-    ESC_STICK_RATING_V_UNKNOWN,  /**< the rated voltage not stated, and
-                                      the voltage set by hand or not the
-                                      model's own cell count's            */
     ESC_STICK_RATING_V_UNDER,    /**< @p mv under the lowest input stated */
     ESC_STICK_RATING_I_OVER,     /**< @p ma over the rated current        */
 } esc_stick_rating_t;
@@ -170,16 +167,24 @@ typedef enum {
 /**
  * Whether @p mv and @p ma suit model @p model of @p p (-1: every model of
  * the family).  A voltage over the rated one (esc_stick_model_v_max()) is
- * refused, set by hand (@p by_hand) or taken from the cell count.  Where
- * the rated voltage is not stated, only a voltage the data vouches for is
- * taken: the model's own lowest cell count (esc_stick_model_mv()), or for
- * -1 the family's.  One set by hand, or a family's cell count standing in
- * for a model that states none, is refused.  A current over the rated
- * one, where stated, is refused, and so is a voltage under the lowest
- * input the model states (v_min_mv; for -1 the highest of its models').
+ * refused, set by hand (@p by_hand) or taken from the cell count, and so
+ * is one under the lowest input the model states (v_min_mv; for -1 the
+ * highest of its models').  A current over the rated one, where stated,
+ * is refused.  A rating the data does not state refuses nothing:
+ * esc_stick_rating_unknown() says when the operator is to be told.
  */
 esc_stick_rating_t esc_stick_rating(const esc_profile_t *p, int model,
                                     uint32_t mv, uint32_t ma, bool by_hand);
+
+/**
+ * Whether the data cannot vouch for @p mv on model @p model: the rated
+ * voltage is not stated, and the voltage is set by hand (@p by_hand) or is
+ * not the model's own cell count's -- the family's lowest standing in for
+ * a model that states none, or none at all.  The run goes ahead; the
+ * screen says the ESC's rating is unknown.
+ */
+bool esc_stick_rating_unknown(const esc_profile_t *p, int model, uint32_t mv,
+                              bool by_hand);
 
 /** Whether @p it is an action rather than a setting: keyed reset or exit.
  *  Selecting one makes the ESC act on the select move; it sounds no values,
@@ -471,11 +476,12 @@ typedef struct {
                                              action that starts it is
                                              asked for                    */
     uint32_t             hand_ms;       /**< when the step was asked      */
-    bool                 end_open;      /**< a before_power_off step is
-                                             asked and not confirmed: an
-                                             end now switches the supply
-                                             off under the ESC's
-                                             confirmation                 */
+    bool                 end_open;      /**< the value is selected and
+                                             the profile has a
+                                             before_power_off step not yet
+                                             confirmed: an end now switches
+                                             the supply off under the
+                                             ESC's store or confirmation  */
     uint32_t             pulses;        /**< pulses begun this run: the
                                              detector's rises            */
 } esc_stick_t;
@@ -557,13 +563,15 @@ uint32_t esc_stick_change_entry_ms(const esc_profile_t *p,
  *  of the change it makes. */
 uint32_t esc_stick_entry_ms(const esc_stick_t *e);
 
-/** Whether the run ended while a before_power_off step was asked: the
- *  supply went off before the operator said the ESC had confirmed, and
- *  the value may not be stored.  False while the run is under way. */
+/** Whether the run ended between a selection and the DONE of the profile's
+ *  before_power_off steps -- while the ESC stored or confirmed: the supply
+ *  went off before the operator said the ESC had confirmed, and the value
+ *  may not be stored.  False while the run is under way, and for a profile
+ *  without such a step. */
 bool esc_stick_cut_short(const esc_stick_t *e);
 
-/** esc_stick_cut_short(), and the step asked marks locks: the ESC may
- *  have locked itself. */
+/** esc_stick_cut_short(), and a before_power_off step of the profile marks
+ *  locks: the ESC may have locked itself. */
 bool esc_stick_lock_risk(const esc_stick_t *e);
 
 /** Whether DONE would count now: ESC_STICK_HAND_MIN_MS after the step was

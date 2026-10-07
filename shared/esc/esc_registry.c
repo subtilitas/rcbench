@@ -286,6 +286,28 @@ bool esc_profile_matches(const esc_profile_t *p, const char *pattern)
     return false;
 }
 
+bool esc_item_applies(const esc_profile_t *p, unsigned item, int model)
+{
+    if (p == NULL || item >= p->item_count) {
+        return false;
+    }
+    const esc_item_t *it = &p->items[item];
+    if (it->applies_count == 0u || it->applies_to == NULL) {
+        return true;
+    }
+    if (model < 0 || (unsigned)model >= p->model_count) {
+        return false;
+    }
+    const char *name = p->models[model].name;
+    for (unsigned i = 0; i < it->applies_count; ++i) {
+        if (name != NULL && it->applies_to[i] != NULL
+            && strcmp(it->applies_to[i], name) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool esc_model_matches(const esc_profile_t *p, unsigned model,
                        const char *pattern)
 {

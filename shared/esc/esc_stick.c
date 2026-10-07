@@ -131,6 +131,32 @@ static bool hand_fits(const esc_profile_t *p)
     return true;
 }
 
+/* Whether a value states its own entry time: the profile-wide rest rule
+ * leaves such a profile to the per-change one (entry_refused()), which
+ * sees the value's time. */
+static bool value_holds(const esc_profile_t *p)
+{
+    for (unsigned i = 0; i < p->item_count; ++i) {
+        for (unsigned k = 0; k < p->items[i].value_count; ++k) {
+            if (p->items[i].values[k].entry_hold_ms != 0u) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/* The step that starts the menu, or NULL. */
+static const esc_manual_t *menu_start(const esc_profile_t *p)
+{
+    for (unsigned i = 0; p->manual != NULL && i < p->manual_count; ++i) {
+        if (p->manual[i].starts_menu) {
+            return &p->manual[i];
+        }
+    }
+    return NULL;
+}
+
 static esc_stick_kind_t refuse(const char **why, const char *text)
 {
     if (why != NULL) {
@@ -161,6 +187,15 @@ esc_stick_kind_t esc_stick_kind(const esc_profile_t *p, const char **why)
     if (!hand_fits(p)) {
         return refuse(why, "manual step");
     }
+    /* The run listens from the moment it asks for the action that starts
+     * the menu, with the stick where the power-up left it: a menu that
+     * rests elsewhere would need a move under the operator's hand at a
+     * powered ESC, so such a profile is not run.  The parsers refuse the
+     * file; this holds a profile built otherwise. */
+    if (menu_start(p) != NULL && p->listen_throttle != ESC_THR_NONE
+        && p->listen_throttle != p->entry_throttle) {
+        return refuse(why, "menu start, rest elsewhere");
+    }
     switch (p->scheme) {
     case ESC_SCHEME_COUNT:
     case ESC_SCHEME_SHORT_LONG:
@@ -190,7 +225,8 @@ esc_stick_kind_t esc_stick_kind(const esc_profile_t *p, const char **why)
      * YGE's, a stick teach -- so it is not guessed.
      */
     if (rest != p->entry_throttle && p->entry_hold_ms == 0u
-        && esc_stick_change_entry_ms(p, NULL, NULL) == 0u) {
+        && esc_stick_change_entry_ms(p, NULL, NULL) == 0u
+        && !value_holds(p)) {
         return refuse(why, "rest move, no entry time");
     }
     if (p->value_select_throttle != ESC_THR_NONE) {
@@ -317,18 +353,10 @@ uint32_t esc_stick_model_v_min(const esc_profile_t *p, int model)
 esc_stick_rating_t esc_stick_rating(const esc_profile_t *p, int model,
                                     uint32_t mv, uint32_t ma, bool by_hand)
 {
+    (void)by_hand;
     const uint32_t v_max = esc_stick_model_v_max(p, model);
     if (v_max != 0u && mv > v_max) {
         return ESC_STICK_RATING_V_OVER;
-    }
-    /* The cell count the data states for this model, or the family's for
-     * -1: not one borrowed from another model. */
-    const bool own = !by_hand && mv != 0u && p != NULL
-                     && (model < 0
-                         || ((unsigned)model < p->model_count
-                             && p->models[model].cells_min != 0u));
-    if (v_max == 0u && !own) {
-        return ESC_STICK_RATING_V_UNKNOWN;
     }
     const uint32_t v_min = esc_stick_model_v_min(p, model);
     if (v_min != 0u && mv < v_min) {
@@ -339,6 +367,21 @@ esc_stick_rating_t esc_stick_rating(const esc_profile_t *p, int model,
         return ESC_STICK_RATING_I_OVER;
     }
     return ESC_STICK_RATING_OK;
+}
+
+bool esc_stick_rating_unknown(const esc_profile_t *p, int model, uint32_t mv,
+                              bool by_hand)
+{
+    if (esc_stick_model_v_max(p, model) != 0u) {
+        return false;
+    }
+    /* The cell count the data states for this model, or the family's for
+     * -1: not one borrowed from another model. */
+    const bool own = !by_hand && mv != 0u && p != NULL
+                     && (model < 0
+                         || ((unsigned)model < p->model_count
+                             && p->models[model].cells_min != 0u));
+    return !own;
 }
 
 bool esc_stick_is_action(const esc_item_t *it)
@@ -452,6 +495,9 @@ static const char *entry_refused(const esc_profile_t *p,
     }
     if (from == ESC_THR_MAX && from != p->entry_throttle && hand_powered(p)) {
         return "manual step";
+    }
+    if (menu_start(p) != NULL && rest != from) {
+        return "menu start, rest elsewhere";
     }
     return NULL;
 }
@@ -1258,8 +1304,18 @@ bool esc_stick_cut_short(const esc_stick_t *e)
 
 bool esc_stick_lock_risk(const esc_stick_t *e)
 {
-    return esc_stick_cut_short(e) && e->p != NULL && e->p->manual != NULL
-           && e->hand < e->p->manual_count && e->p->manual[e->hand].locks;
+    if (!esc_stick_cut_short(e) || e->p == NULL || e->p->manual == NULL) {
+        return false;
+    }
+    /* Cut during the store or a step before the power-off: the lock is
+     * the profile's, whichever of its steps marks it. */
+    for (unsigned i = 0; i < e->p->manual_count; ++i) {
+        if (e->p->manual[i].when == ESC_MANUAL_BEFORE_POWER_OFF
+            && e->p->manual[i].locks) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /* The action that starts the menu is done: by DONE, or by the menu heard
@@ -1283,6 +1339,11 @@ static void selected(esc_stick_t *e)
     e->done[e->active] = true;
     if (all_done(e) || e->p->one_change_per_entry) {
         e->store_step = 0u;
+        /* From the selection on the ESC is storing and then confirming:
+         * an end now switches the supply off under it, as one while the
+         * step before the power-off is asked does. */
+        e->end_open = esc_profile_manual_count(
+                          e->p, ESC_MANUAL_BEFORE_POWER_OFF) > 0u;
         enter(e, ESC_STICK_STORE);
         return;
     }

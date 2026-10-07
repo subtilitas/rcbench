@@ -84,6 +84,14 @@ const esc_profile_t *programmer_screen_stick_row(int i, int *model);
  *  showing, or NULL when it runs or there is no such row; for tests. */
 const char *programmer_screen_stick_row_why(int i);
 
+/** The item row @p i of the page shows, as an index into the profile's
+ *  items; -1 past the last.  For tests. */
+int programmer_screen_stick_item_at(int i);
+
+/** The warning row @p i shows while it runs: the ESC's voltage rating
+ *  unknown; NULL for none.  For tests. */
+const char *programmer_screen_stick_row_warn(int i);
+
 /** The note the page shows under RUN: why a run cannot start, "" for
  *  none; for tests. */
 const char *programmer_screen_stick_note(void);

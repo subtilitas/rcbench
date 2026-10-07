@@ -586,6 +586,113 @@ TEST_CASE(a_manual_step_the_generator_refuses_is_refused_here_too)
     }
 }
 
+/* @p src with its first @p from replaced by @p to, freed by the caller;
+ * NULL where @p src holds no @p from. */
+static char *swap_in(const char *src, const char *from, const char *to)
+{
+    const char *at = (src != NULL) ? strstr(src, from) : NULL;
+    if (at == NULL) {
+        return NULL;
+    }
+    const size_t head = (size_t)(at - src);
+    char *out = malloc(strlen(src) + strlen(to) + 1u);
+    memcpy(out, src, head);
+    strcpy(out + head, to);
+    strcat(out, at + strlen(from));
+    return out;
+}
+
+/* The step that starts the menu is asked with the stick where the
+ * power-up left it: a menu that rests elsewhere -- the profile's listen
+ * move, or a value powered up away from it -- is refused, as the
+ * generator refuses it. */
+TEST_CASE(a_menu_start_needs_the_menu_to_rest_at_the_power_up)
+{
+    char *j = with_manual("[{\"when\": \"before_menu\", \"action\": "
+                          "\"x\", \"starts_menu\": true}]");
+    static const struct {
+        const char *listen;
+        const char *value;      /* value 2's own power-up position */
+        const char *err;
+    } k[] = {
+        { "min", NULL, "manual[0].starts_menu: the menu rests elsewhere" },
+        { "max", NULL, NULL },
+        { "max", "mid", "manual[0].starts_menu: the menu rests elsewhere" },
+        { "max", "max", NULL },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        char to[96];
+        (void)snprintf(to, sizeof(to),
+                       "\"listen\": {\"throttle\": \"%s\"}, \"select\": {",
+                       k[i].listen);
+        char *a = swap_in(j, "\"select\": {", to);
+        char *b = a;
+        if (k[i].value != NULL) {
+            char v[96];
+            (void)snprintf(v, sizeof(v),
+                           "{\"number\": 2, \"name\": \"on\", "
+                           "\"entry_throttle\": \"%s\"}", k[i].value);
+            b = swap_in(a, "{\"number\": 2, \"name\": \"on\"}", v);
+            free(a);
+        }
+        char err[96] = "";
+        const bool ok = b != NULL && parses(b, err, sizeof(err));
+        if (k[i].err == NULL) {
+            if (!ok) {
+                T_FAIL("case %u refused: %s", (unsigned)i, err);
+            }
+        } else if (ok || strncmp(err, k[i].err, strlen(k[i].err)) != 0) {
+            T_FAIL("case %u: got \"%s\", want \"%s\"", (unsigned)i, err,
+                   k[i].err);
+        }
+        free(b);
+    }
+    free(j);
+}
+
+/* An item with applies_to is on the models it names only; with no model
+ * picked, only the items on every model count.  Jeti's Master HELI 40-3P
+ * has no Cutoff mode -- six small 3P models do -- which shares number 3
+ * with the Switching frequency it does have. */
+TEST_CASE(an_item_is_on_the_models_it_names)
+{
+    const esc_profile_t *p = esc_profiles_find("jeti-spin-3p");
+    CHECK(p != NULL);
+    if (p == NULL) {
+        return;
+    }
+    int heli = -1, small = -1, cutoff = -1, freq = -1;
+    for (int m = 0; m < (int)p->model_count; ++m) {
+        heli = (strcmp(p->models[m].name, "Master HELI 40-3P") == 0) ? m
+                                                                      : heli;
+    }
+    for (unsigned i = 0; i < p->item_count; ++i) {
+        if (strcmp(p->items[i].name, "Cutoff mode") == 0) {
+            cutoff = (int)i;
+            for (int m = 0; m < (int)p->model_count; ++m) {
+                if (strcmp(p->models[m].name, p->items[i].applies_to[0]) == 0) {
+                    small = m;
+                }
+            }
+        }
+        if (strcmp(p->items[i].name, "Switching frequency") == 0) {
+            freq = (int)i;
+        }
+    }
+    CHECK(heli >= 0 && small >= 0 && cutoff >= 0 && freq >= 0);
+    if (heli < 0 || small < 0 || cutoff < 0 || freq < 0) {
+        return;
+    }
+    CHECK_EQ(p->items[cutoff].number, p->items[freq].number);
+    CHECK(!esc_item_applies(p, (unsigned)cutoff, heli));
+    CHECK(esc_item_applies(p, (unsigned)cutoff, small));
+    CHECK(esc_item_applies(p, 0u, heli));
+    CHECK(!esc_item_applies(p, (unsigned)cutoff, -1));    /* the family */
+    CHECK(!esc_item_applies(p, (unsigned)cutoff, (int)p->model_count));
+    CHECK(!esc_item_applies(p, p->item_count, heli));
+    CHECK(!esc_item_applies(NULL, 0u, 0));
+}
+
 TEST_CASE(every_profile_of_record_parses_to_its_generated_table)
 {
     CHECK(esc_profiles_builtin_count > 0u);
@@ -1447,5 +1554,7 @@ int main(void)
     RUN(the_longest_pattern_and_a_long_text_are_matched_whole);
     RUN(a_profile_is_found_by_maker_and_name_read_as_one);
     RUN(sky_v2_finds_the_three_skywalker_v2_profiles);
+    RUN(a_menu_start_needs_the_menu_to_rest_at_the_power_up);
+    RUN(an_item_is_on_the_models_it_names);
     return test_summary("esc_profiles");
 }

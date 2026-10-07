@@ -415,6 +415,19 @@ def check(path: pathlib.Path) -> dict:
     for number, conditional in seen.items():
         want(len(conditional) == 1 or all(conditional), f"{w}.items",
              f"number {number} twice without applies_to or applies_when")
+    # The step that starts the menu is asked with the stick where the
+    # power-up left it, and the run counts from then: the menu has to rest
+    # there, for every value's power-up position.
+    lis = p["listen_thr"]
+    if lis != "ESC_THR_NONE":
+        for i, m in enumerate(p["manual"]):
+            if m["sm"] != "true":
+                continue
+            at = {p["entry_thr"]} | {v["et"] for it in p["items"]
+                                     for v in it["values"]
+                                     if v["et"] != "ESC_THR_NONE"}
+            want(at == {lis}, f"{w}.manual[{i}].starts_menu",
+                 "the menu rests elsewhere (scheme.listen)")
     return p
 
 
@@ -530,6 +543,13 @@ def self_test() -> list[str]:
 
     def man(steps: str, kind: str = "assisted") -> bytes:
         return at(auto, f'"automatable": "{kind}", "manual": {steps},')
+
+    def sel_listen(data: bytes, where: str) -> bytes:
+        """@data with a listen move to @where."""
+        text = data.decode("utf-8").replace(
+            '"select": {', f'"listen": {{"throttle": "{where}"}}, '
+            '"select": {', 1)
+        return text.encode("utf-8")
 
     def sel_max(data: bytes, store: str = "") -> bytes:
         """@data with the select move at max, and a store move."""
@@ -670,6 +690,9 @@ def self_test() -> list[str]:
             '{"when": "before_power_off", "action": "y"}]'),
         "manual before off held": man(
             '[{"when": "before_power_off", "action": "x", "hold_ms": 0}]'),
+        "manual starts, listen elsewhere": sel_listen(man(
+            '[{"when": "before_menu", "action": "x", "starts_menu": true}]'),
+            "min"),
         "manual locks before the menu": man(
             '[{"when": "before_menu", "action": "x", "locks": true}]'),
         "manual locks a string": man(
@@ -733,6 +756,9 @@ def self_test() -> list[str]:
                              '{"when": "after_programming", "action": "z"}]'),
         "v_min at v_max": at('"v_min_mv": 5500', '"v_min_mv": 12600'),
         "v_min null": at('"v_min_mv": 5500', '"v_min_mv": null'),
+        "manual starts, listen at the entry": sel_listen(man(
+            '[{"when": "before_menu", "action": "x", "starts_menu": true}]'),
+            "max"),
         "manual before off locks": man(
             '[{"when": "before_power_off", "action": "x", "locks": true}]'),
         "manual before off locks not": man(

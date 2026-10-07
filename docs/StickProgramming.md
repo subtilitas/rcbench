@@ -81,7 +81,7 @@ models.
 
 The line under the rows says no profile is verified, and the count at its
 right counts the level: `1-9 of 20 makers, 6 run` -- the makers with a
-model that runs -- or `1-9 of 82, 37 run` for a maker's models.
+model that runs -- or `1-9 of 82, 40 run` for a maker's models.
 
 ![The makers](img/programmer-stick.png)
 
@@ -141,6 +141,16 @@ cell count, "N beeps = N cells" -- has nothing to choose; its row shows
 NOTHING TO CHOOSE. The line under the list names the selected item's values and the
 default. RUN is offered once a value is picked and the run can start; when it
 cannot, the line beside RUN says why.
+
+The page lists only the items on the model it was opened for: an item with
+`applies_to` shows on the models it names, and not on the others. Two
+items may share a number and values on different models -- Jeti's Cutoff
+mode on six small 3P models and Switching frequency on the rest, both
+item 3 -- and the ESC sounds only the one it has, so a change to the other
+would store this one. RUN refuses a change to an item not on the model as
+the last check (`3 Cutoff mode is not on this model`). A page with no model
+picked, which only a card profile without models opens, lists the items
+every model has.
 
 ![Two values picked](img/programmer-stick-items.png)
 
@@ -285,8 +295,9 @@ powered, the stick where the store left it, and asks the operator to
 watch the ESC and tap DONE once the confirmation has ended; DONE switches
 the supply off, and the run ends or cycles as any other. The prompt says
 the ESC is powered and not to touch it. No DONE within 60 s ends the run
-with NOT CONFIRMED, and so does every other end while the step is asked;
-each of them switches the supply off under the confirmation, and the
+with NOT CONFIRMED. That end, and every other from the selection of the
+value on -- while the ESC stores (STORING) or while the step is asked --
+switches the supply off under the store or the confirmation, and the
 result says the mode may not be stored.
 
 A KOBY, JIVE Pro, KOLIBRI, KONTROL-X / KOLIBRI-X or KOSMIK that loses its
@@ -328,8 +339,13 @@ put it:
   ESC is silent by design. No step done within 60 s ends the run with NOT
   CONFIRMED.
 - The stick does not move while the step is asked. A profile whose menu
-  rests at another position than the power-up would move it, so there the
-  run asks for DONE and listens only after it, as for every earlier step.
+  rests at another position than the power-up -- `scheme.listen` away from
+  the entry, or a value powered up away from `scheme.listen` -- would need
+  a move under the operator's hand at a powered ESC, and waiting for DONE
+  first would drop the groups the action starts. The generator and the
+  card reader refuse such a file (`manual[0].starts_menu: the menu rests
+  elsewhere (scheme.listen)`), and the engine refuses such a profile built
+  otherwise as `menu start, rest elsewhere`.
 
 A step at a powered ESC is asked for only with the stick at the
 motor-off position: MIN, or MID where a value's `entry_throttle` names it,
@@ -530,12 +546,19 @@ and on RUN, the last check before the run arms:
 | --- | --- | --- | --- |
 | VOLTAGE, or the cell count's | over the model's `v_max_mv` | `20.0 V, ESC rated 8.4 V` | `VOLTAGE 20.0 V is over the ESC's 8.4 V` |
 | VOLTAGE, or the cell count's | under the model's `v_min_mv`, where stated | `11.9 V, ESC from 12.0 V` | `VOLTAGE 11.9 V is under the ESC's lowest 12.0 V` |
-| VOLTAGE set by hand | the model states no `v_max_mv`: the data vouches for no voltage | `ESC rating unknown` | `VOLTAGE 7.4 V: the ESC's voltage rating is not stated` |
-| VOLTAGE 0 | the model states neither `v_max_mv` nor a cell count: the family's cell count would stand in for its own | `ESC rating unknown` | `This model states no cell count and no voltage rating` |
 | CURRENT LIMIT | over the model's `current_a`, where stated | `2.0 A, ESC rated 1 A` | `CURRENT LIMIT 2.0 A is over the ESC's 1 A` |
 
+A model that states no `v_max_mv` runs, with a warning in place of the
+row's summary and as the note beside RUN, in the warning colour:
+
+| Set point | Row says | Note says |
+| --- | --- | --- |
+| VOLTAGE set by hand | `ESC rating unknown` | `VOLTAGE 7.4 V: ESC rating unknown, check it` |
+| VOLTAGE 0, the model stating no cell count: the family's lowest stands in | `ESC rating unknown` | `7.6 V from the family's lowest cells: rating unknown` |
+
 VOLTAGE 0 on a model that states its cell count but no `v_max_mv` runs at
-that cell count: the data's own figure. On the family's page with no model
+that cell count with no warning: the data's own figure. A stated
+`v_min_mv` or `current_a` holds whether or not `v_max_mv` is stated. On the family's page with no model
 picked, the rating is the lowest `v_max_mv` of its models, unknown when one
 of them states none, and the lowest input the highest `v_min_mv`. CURRENT
 LIMIT goes to 3.0 A at most; every model of record that states a current is
@@ -544,13 +567,14 @@ rated 4 A or more, so only a card profile can meet that rule.
 ## Which profiles run
 
 24 of the 72 profiles are of a kind the engine runs: 13 two-stage and 11
-one-stage. With the PD mini's 20 V and the default caps the list opens 21 of
-them: hobbywing-skywalker-v2-hv-opto needs 22.8 V, and dualsky-xcontroller
-and kontronik-beat-car state neither a cell count nor a voltage rating for
-their one model (see [The supply](#the-supply)). 4 model rows of families
+one-stage. With the PD mini's 20 V and the default caps the list opens 23 of
+them: hobbywing-skywalker-v2-hv-opto needs 22.8 V. 4 model rows of families
 that open are refused at 20 V too, each needing 22.8 V: FLYFUN 130A and
-160A HV OPTO V5, and Gecko 120A and 150A OPTO HV. KOLIBRI-X 60 LV and 90 LV
-of kontronik-kontrol-x state neither either, and are refused. A profile runs when it is
+160A HV OPTO V5, and Gecko 120A and 150A OPTO HV. 4 rows open with the
+rating warning (see [The supply](#the-supply)): dualsky-xcontroller's and
+kontronik-beat-car's one model, which state neither a cell count nor a
+voltage rating and so need VOLTAGE set, and KOLIBRI-X 60 LV and 90 LV of
+kontronik-kontrol-x, which run at the family's lowest cell count. A profile runs when it is
 `"automatable": "full"`, or `"assisted"` with manual steps the run can wait
 for (see [Manual steps](#manual-steps)), is entered before power-on, counts
 with `count` or `short_long`, and has a select move. A rest position other than the entry
@@ -579,9 +603,10 @@ minimum, where it rested, to store.
 | values repeat across items | one-stage, a value number in two items |
 | select move is the rest | the select move is the rest position: no move to make |
 | value move = select move | two-stage, `value_select` equals `select` |
-| rest move, no entry time | `scheme.listen` differs from the power-up position and no time is stated: `hold_ms` is null, the value has no `entry_hold_ms` and no `at_power_up` step has a `hold_ms`: the YGE profiles |
+| rest move, no entry time | `scheme.listen` differs from the power-up position and no time is stated: `hold_ms` is null, the value has no `entry_hold_ms` and no `at_power_up` step has a `hold_ms`: the YGE profiles. A profile whose values state their own `entry_hold_ms` is judged per change: one without a time is refused, the others run |
 | store move, two stages | two-stage with a `scheme.store` |
 | store move = select move | one-stage, `scheme.store` equals `select` |
+| menu start, rest elsewhere | a step marked `starts_menu`, and the menu rests away from the power-up position: `scheme.listen` away from the entry, or a value powered up away from it |
 | needs 22.8 V, cap 21.0 V | the voltage (VOLTAGE, or the profile's cell count) is over the SUPPLY cap |
 
 A profile corrected on the SD card is listed with its correction.

@@ -322,6 +322,14 @@ bool esc_profile_matches(const esc_profile_t *p, const char *pattern);
 bool esc_model_matches(const esc_profile_t *p, unsigned model,
                        const char *pattern);
 
+/**
+ * Whether item @p item of @p p is on model @p model: an item without
+ * applies_to is on every model; one with it only on the models it names.
+ * For -1 -- the family, no model picked -- only an item on every model,
+ * as the one item the ESC is sure to have.
+ */
+bool esc_item_applies(const esc_profile_t *p, unsigned item, int model);
+
 /** How many of the profile's manual steps are due at @p when. */
 unsigned esc_profile_manual_count(const esc_profile_t *p,
                                   esc_manual_when_t when);
