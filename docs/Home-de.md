@@ -17,6 +17,7 @@ Zeitanforderungen). Beide sind über CAN (Controller Area Network) mit
 | Aufgabe | Seite |
 | --- | --- |
 | Funktionsliste und Stand jeder Funktion | [Worum es geht](Manifest-de.md) |
+| Die Teile des Beta-Prüfstands kaufen, verkabeln und flashen | [Bauanleitung, PDF](https://github.com/subtilitas/rcbench/releases/download/v0.13.0/rcbench-build-guide-de-v0.13.0.pdf) (4 Seiten, für 0.13.0) |
 | Beide Platinen bauen und flashen | [Bauen](Building-de.md) |
 | Die beiden Platinen verkabeln und den Bus prüfen | [Den Link in Betrieb nehmen](Bringup-de.md) |
 | Die Bildschirme bedienen | [Bildschirme](Screens-de.md) |
