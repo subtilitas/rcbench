@@ -20,6 +20,7 @@
 #include "servo_sim.h"
 #include "servo_test.h"
 #include "supply.h"
+#include "ui_text.h"
 
 #define FRAME_MS 20u            /* the panel's loop, about 50 frames a second */
 #define LO_US    1100u
@@ -477,7 +478,8 @@ TEST_CASE(the_brownout_walk_stops_where_the_servo_stops)
     CHECK(servo_test_brownout(&g.t, &moved, &stopped));
     CHECK_NEAR(moved, 4.2f, 0.001f);
     CHECK(stopped);
-    CHECK(strstr(g.report, "Moved at 4.20 V; no movement at 4.00 V.") != NULL);
+    CHECK(strstr(g.report, "Moved at 4.20 V; no movement seen at 4.00 V.")
+          != NULL);
     /* 5.0 down to 4.0 in 0.2 V steps. */
     CHECK_EQ(g.t.step_count, 6u);
     CHECK(g.set_v_max <= 5.0f + 0.001f);
@@ -508,6 +510,8 @@ TEST_CASE(the_brownout_walk_ends_at_the_floor)
     CHECK(strstr(g.report, "down to 3.30 V") != NULL);
     CHECK(strstr(g.report, "lower not tested") != NULL);
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_PASS);
+    CHECK(strstr(g.report, "Brown-out start  movement seen at 5.00 V: PASS\n")
+          != NULL);
 
     /* Not moving at the first: said so. */
     rig_fresh();
@@ -519,7 +523,38 @@ TEST_CASE(the_brownout_walk_ends_at_the_floor)
     run_out(60000u);
     CHECK(!servo_test_brownout(&g.t, &moved, &stopped));
     CHECK(stopped);
-    CHECK(strstr(g.report, "No movement at 5.00 V, the first step.") != NULL);
+    CHECK(strstr(g.report, "No movement seen at 5.00 V, the first step: "
+                           "not measurable.") != NULL);
+    /* The walk is the whole run, and it measured nothing: the result and
+     * the limits say where, not "0 of 0 moves". */
+    CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_NOT_MEASURABLE);
+    CHECK(strstr(g.report, "Result:         NOT MEASURABLE - no movement "
+                           "seen at 5.00 V, the brown-out walk's first "
+                           "voltage\n") != NULL);
+    CHECK(strstr(g.report, "0 of 0") == NULL);
+    CHECK(strstr(g.report, "Brown-out start  no movement seen at 5.00 V: "
+                           "NOT MEASURABLE\n") != NULL);
+
+    /* A step that moves and passes, and a walk that sees nothing at its
+     * first voltage: the walk measured nothing, so the run is not PASS. */
+    rig_fresh();
+    g.brownout_v = 9.0f;
+    cfg_defaults(&c);
+    c.steps_v[0] = 9.6f;
+    c.step_count = 1u;
+    c.brownout = true;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(120000u);
+    CHECK_EQ(g.t.steps[0].no_rise, 0u);
+    CHECK_EQ(g.t.steps[0].timeouts, 0u);
+    CHECK(!g.t.steps[1].moved);
+    CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_NOT_MEASURABLE);
+    CHECK(strstr(g.report, "Result:         NOT MEASURABLE - no movement "
+                           "seen at 5.00 V, the brown-out walk's first "
+                           "voltage\n") != NULL);
+    CHECK(strstr(g.report, "Moves seen       0 unseen: PASS\n") != NULL);
+    CHECK(strstr(g.report, "Brown-out start  no movement seen at 5.00 V: "
+                           "NOT MEASURABLE\n") != NULL);
 }
 
 /* A cap under 5.0 V starts the walk at the cap. */
@@ -561,6 +596,29 @@ TEST_CASE(each_limit_fails_the_run)
     CHECK_EQ(start(&c), SERVO_TEST_START_OK);
     run_out(60000u);
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_FAIL);
+    CHECK(strstr(g.report, "Travel time      longest 700 ms, limit 500 ms: "
+                           "FAIL") != NULL);
+
+    /* The same servo read by the PD mini: its readings lag and repeat, so
+     * the travel time is an upper bound, reported and not checked. */
+    rig_fresh();
+    cfg_defaults(&c);
+    c.step_count = 1u;
+    c.travel_max_ms = 500u;
+    servo_test_meter_pdmini(&c.meter);
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(60000u);
+    CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_PASS);
+    CHECK(strstr(g.report, "Supply:         PD mini\n") != NULL);
+    CHECK(strstr(g.report, "Lag:            about 300 ms from a change of "
+                           "current to the reading that shows it\n") != NULL);
+    CHECK(strstr(g.report, "Repeats:        a reading can repeat") != NULL);
+    CHECK(strstr(g.report, "Travel times:   an upper bound, not checked "
+                           "against the limit\n") != NULL);
+    CHECK(strstr(g.report, "Travel time      longest 700 ms, limit 500 ms: "
+                           "upper bound, not checked against the limit\n")
+          != NULL);
+    servo_test_meter_pdmini(NULL);          /* nothing to fill: no harm */
 
     rig_fresh();
     cfg_defaults(&c);
@@ -615,9 +673,11 @@ TEST_CASE(a_servo_pushing_on_a_stop_ends_the_run)
     CHECK_EQ(s->timeouts, 0u);      /* each end's level measured first */
 }
 
-/* A servo that does not move: every counted move is late, and the run
- * fails. */
-TEST_CASE(a_servo_that_does_not_move_fails)
+/* A servo that does not move: no counted move shows movement, so none is
+ * timed and none is late.  The current cannot tell it from a servo moving
+ * under the threshold, so the step and the run read NOT MEASURABLE, not
+ * FAIL, and the report says how many moves went unseen. */
+TEST_CASE(a_servo_that_does_not_move_is_not_measurable)
 {
     rig_fresh();
     g.brownout_v = 99.0f;
@@ -627,10 +687,48 @@ TEST_CASE(a_servo_that_does_not_move_fails)
     c.moves = 2u;
     CHECK_EQ(start(&c), SERVO_TEST_START_OK);
     run_out(60000u);
-    CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_FAIL);
+    CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_NOT_MEASURABLE);
     CHECK_EQ(g.t.steps[0].travels, 0u);
     CHECK_EQ(g.t.steps[0].no_rise, 2u);
-    CHECK_EQ(g.t.steps[0].timeouts, 2u);
+    CHECK_EQ(g.t.steps[0].timeouts, 0u);
+    CHECK(strstr(g.report, "Result:         NOT MEASURABLE - 2 of 2 counted "
+                           "moves showed no movement in the current") != NULL);
+    CHECK(strstr(g.report, "    2    0      2 NOT MEASURABLE\n") != NULL);
+    CHECK(strstr(g.report, "Moves arrived    0 late: PASS") != NULL);
+    CHECK(strstr(g.report, "Moves seen       2 unseen: NOT MEASURABLE")
+          != NULL);
+    /* No move arrived: there is no longest travel time to state. */
+    CHECK(strstr(g.report, "Travel time      longest --, limit OFF: not "
+                           "measured, no move arrived\n") != NULL);
+    CHECK(strstr(g.report, "longest 0 ms") == NULL);
+
+    /* Nor on the PD mini with a limit set: not an upper bound of 0 ms. */
+    rig_fresh();
+    g.brownout_v = 99.0f;
+    cfg_defaults(&c);
+    c.step_count = 1u;
+    c.moves = 2u;
+    c.travel_max_ms = 500u;
+    servo_test_meter_pdmini(&c.meter);
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(60000u);
+    CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_NOT_MEASURABLE);
+    CHECK(strstr(g.report, "Travel time      longest --, limit 500 ms: not "
+                           "measured, no move arrived\n") != NULL);
+    CHECK(strstr(g.report, "upper bound, not checked against the limit\n")
+          != NULL);                         /* the header line, not this */
+    CHECK(strstr(g.report, "longest 0 ms") == NULL);
+
+    /* A limit exceeded still fails it. */
+    rig_fresh();
+    g.brownout_v = 99.0f;
+    cfg_defaults(&c);
+    c.step_count = 1u;
+    c.moves = 2u;
+    c.idle_max_a = 0.05f;
+    CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+    run_out(60000u);
+    CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_FAIL);
 }
 
 /* Every abort: the output asked off, the servo let go, ABORTED and the
@@ -858,6 +956,113 @@ TEST_CASE(a_moving_current_equal_to_the_holding_current_is_the_limit)
     CHECK(s->travel_sum_ms / s->travels < 1240u);     /* to the low end */
 }
 
+/*
+ * A slow servo read through a lagging meter: it holds 0.05 A, moves at
+ * 0.30 A for @p travel_ms after 40 ms of latency, and the meter shows each
+ * current @p lag_ms late, read every 100 ms.  Four counted moves.  A
+ * @p travel_ms of 0 is a servo that moves normally to place both ends, then
+ * sticks at 0.30 A from its first counted move on, the third.
+ */
+static void run_lagged(servo_test_t *t, uint32_t travel_ms, uint32_t lag_ms,
+                       const servo_test_meter_t *meter)
+{
+    servo_test_cfg_t c;
+    cfg_defaults(&c);
+    c.step_count = 1u;
+    c.settle_ms  = 0u;
+    c.moves      = 4u;
+    c.report     = false;
+    c.meter      = *meter;
+    servo_test_init(t);
+    uint32_t now = 1000u, next = now, cmd_at = 0u, first_at = 0u;
+    uint16_t cmd = CENTRE, prev = CENTRE, samples = 1u;
+    unsigned moves = 0u;
+    servo_test_reading_t r;
+    memset(&r, 0, sizeof(r));
+    r.v = 4.8f;
+    r.set_v = 4.8f;
+    r.output = true;
+    r.online = true;
+    r.ok = true;
+    r.mode = 1u;
+    r.taken_ms = now;
+    (void)servo_test_start(t, &c, now, &r, 1.0f, 20.0f);
+    for (int k = 0; k < 20000 && servo_test_running(t); ++k) {
+        now += 10u;
+        if (now >= next) {
+            next += 100u;
+            /* What the servo drew lag_ms ago. */
+            const uint32_t seen = now - lag_ms;
+            const uint32_t dt = seen - cmd_at;
+            float i = 0.05f;
+            const uint32_t travel = (travel_ms == 0u) ? 1200u : travel_ms;
+            if (first_at != 0u && (int32_t)(seen - first_at) >= 40) {
+                i = 0.30f;                              /* stuck */
+            } else if (cmd != prev && (int32_t)dt >= 40
+                       && dt < 40u + travel) {
+                i = 0.30f;
+            }
+            r.samples = ++samples;
+            r.taken_ms = now;
+            r.i = i;
+            servo_test_reading(t, &r, 0u);
+        }
+        const servo_test_in_t in = { true, 20.0f };
+        servo_test_do_t d;
+        servo_test_step(t, now, &in, &d);
+        if (d.command) {
+            prev = cmd;
+            cmd = d.cmd_us;
+            cmd_at = now;
+            if (cmd != CENTRE && ++moves == 3u && travel_ms == 0u) {
+                first_at = now;
+            }
+        }
+        while (servo_test_peek(t, NULL) != SERVO_TEST_OUT_NONE) {
+            servo_test_pop(t);
+        }
+    }
+}
+
+/* A servo that arrives at 2840 ms shows it on a meter 300 ms behind at
+ * about 3140 ms, after the 3000 ms window: the meter's lag widens the
+ * window to 3300 ms, so the move is timed and not late.  Without the lag
+ * stated the same readings are late.  A servo that never arrives is late
+ * on the lagging meter too, and fails the run. */
+TEST_CASE(a_meters_lag_widens_the_window_and_a_stuck_move_is_late)
+{
+    static servo_test_t t;
+    servo_test_meter_t pd;
+    servo_test_meter_pdmini(&pd);
+    servo_test_init(&t);
+    CHECK_EQ(servo_test_travel_window_ms(&t), 3000u);
+    CHECK_EQ(servo_test_travel_window_ms(NULL), 3000u);
+
+    run_lagged(&t, 2800u, 300u, &pd);
+    CHECK_EQ(servo_test_travel_window_ms(&t), 3300u);
+    CHECK_EQ(t.why, SERVO_TEST_AB_NONE);
+    CHECK_EQ(t.steps[0].timeouts, 0u);
+    CHECK_EQ(t.steps[0].travels, 4u);
+    CHECK(t.steps[0].travel_max_ms > SERVO_TEST_TRAVEL_TIMEOUT_MS);
+    CHECK(t.steps[0].travel_max_ms <= 3300u);
+    CHECK_EQ(servo_test_verdict(&t), SERVO_TEST_PASS);
+
+    servo_test_meter_t none;
+    memset(&none, 0, sizeof(none));
+    run_lagged(&t, 2800u, 300u, &none);
+    CHECK(t.steps[0].timeouts > 0u);
+    CHECK_EQ(servo_test_verdict(&t), SERVO_TEST_FAIL);
+
+    /* Stuck at 0.30 A from its first counted move on: that move rises and
+     * never comes back, late at 3300 ms, and fails the run.  The end it
+     * then holds measures 0.30 A, so moves after it show no change. */
+    run_lagged(&t, 0u, 300u, &pd);
+    CHECK_EQ(t.why, SERVO_TEST_AB_NONE);
+    CHECK(t.steps[0].timeouts > 0u);
+    CHECK_EQ(t.steps[0].travels, 0u);
+    CHECK_EQ(servo_test_verdict(&t), SERVO_TEST_FAIL);
+}
+
 /* A supply whose reading count stops while its page goes on answering --
  * display reads on the coprocessor that are slow or fail -- shows the same
  * current over and over.  None of it is a new reading: no row is logged,
@@ -1082,6 +1287,8 @@ TEST_CASE(the_words_come_from_one_table)
     CHECK_STR_EQ(servo_test_abort_name(SERVO_TEST_AB_COUNT), "");
     CHECK_STR_EQ(servo_test_verdict_name(SERVO_TEST_FAIL), "FAIL");
     CHECK_STR_EQ(servo_test_verdict_name(SERVO_TEST_ABORTED), "ABORTED");
+    CHECK_STR_EQ(servo_test_verdict_name(SERVO_TEST_NOT_MEASURABLE),
+                 "NOT MEASURABLE");
     CHECK_STR_EQ(servo_test_start_name((servo_test_start_t)99), "");
     CHECK_STR_EQ(servo_str(SERVO_STR_COUNT), "");
     for (int k = 0; k < (int)SERVO_STR_COUNT; ++k) {
@@ -1093,6 +1300,406 @@ TEST_CASE(the_words_come_from_one_table)
     CHECK(!servo_report_line(NULL, 0u, b, sizeof(b)));
     CHECK(servo_test_drained(&t));
     CHECK(!servo_test_rates(&t, NULL, NULL, NULL));
+}
+
+/* -------------------------------------------- replays of runs on the bench */
+
+/*
+ * Two runs on the bench on 0.13.0 with the PD mini, from a tester: an
+ * MG90S micro servo (fixtures/servo-mg90s.csv) and a 1102HB digital
+ * (fixtures/servo-1102hb.csv).  Each ran 4.80 and 6.00 V for 60 s and the
+ * brown-out walk: LENGTH BY TIME, SETTLE 500 ms, DWELL 200 ms, the ends
+ * 1100 and 1900 us, current limit 2.00 A.  0.13.0 took movement to be a
+ * reading 0.10 A from the level before the command and saw none: every
+ * move ran out at 3000 ms, late, and both runs read FAIL.  The files are
+ * the runs' CSVs, trimmed: every SET, SETTLE and IDLE row, and of each
+ * command's MOVE and HOLD rows those within 2.0 s of its first and its
+ * last, the reading just before the next command.
+ *
+ * A replay plays a recording back against the commands the run gives
+ * now.  Each command starts the recorded response to the same command: a
+ * step's start its SET, SETTLE and IDLE rows, a move the next recorded
+ * move to the same end.  Rows arrive at their recorded time after the
+ * recorded command, which fell between two readings and is taken at their
+ * middle.  Past the end of a response its last reading repeats every
+ * 105 ms, and so does it across a gap the trim left.  Moves end at their
+ * arrival where 0.13.0 waited 3000 ms, so a step makes more of them than
+ * were recorded: they start over from the first move end to end.
+ * Brown-out voltages under the recorded 5.00 V replay its response, so a
+ * replay says nothing about a servo below 5.00 V.
+ *
+ * With RP_PRINT set in the environment each replay prints its report: the
+ * sample in docs/Servo.md is the MG90S's, with TRAVEL TIME at 800 ms.
+ */
+#define RP_ROWS     1000u
+#define RP_SEGS     48u
+#define RP_STEPS    3u
+#define RP_EVERY_MS 105u
+#define RP_GAP_MS   400u        /* longer between two rows is a trim */
+
+typedef struct {
+    uint32_t at;            /* ms after the command */
+    float    v, i;
+    bool     set;           /* in SET: the set point not yet read back */
+} rp_row_t;
+
+typedef struct {
+    uint16_t cmd;
+    uint16_t first, n;
+} rp_seg_t;
+
+typedef struct {
+    bool     brownout;
+    rp_seg_t prep;          /* SET, SETTLE and IDLE */
+    rp_seg_t moves[RP_SEGS];
+    unsigned n_moves;
+} rp_step_t;
+
+typedef struct {
+    rp_row_t  rows[RP_ROWS];
+    unsigned  n_rows;
+    rp_step_t steps[RP_STEPS];
+    unsigned  n_steps;
+} rp_rec_t;
+
+static bool rp_is_prep(const char *phase)
+{
+    return strcmp(phase, "SET") == 0 || strcmp(phase, "SETTLE") == 0
+           || strcmp(phase, "IDLE") == 0;
+}
+
+/* A recording into @p r, by the command each row answers. */
+static bool rp_load(rp_rec_t *r, const char *name)
+{
+    char path[512];
+    snprintf(path, sizeof(path), "%s/%s", FIXTURE_DIR, name);
+    FILE *f = fopen(path, "r");
+    if (f == NULL) {
+        return false;
+    }
+    memset(r, 0, sizeof(*r));
+    char line[256];
+    bool ok = fgets(line, sizeof(line), f) != NULL;     /* the header */
+    char test_was[16] = "";
+    unsigned step_was = 0u;
+    uint32_t t_was = 0u, origin = 0u;
+    rp_step_t *st = NULL;
+    rp_seg_t *seg = NULL;
+    while (ok && fgets(line, sizeof(line), f) != NULL) {
+        double ts, set, v, lim, i;
+        char test[16], phase[16];
+        unsigned step, cmd;
+        if (sscanf(line, "%lf;%15[^;];%u;%15[^;];%u;;%lf;%lf;%lf;%lf", &ts,
+                   test, &step, phase, &cmd, &set, &v, &lim, &i) != 9) {
+            ok = false;
+            break;
+        }
+        const uint32_t t = (uint32_t)lround(ts * 1000.0);
+        /* The command fell between the last reading and this one. */
+        const uint32_t mid = (st != NULL) ? t_was + (t - t_was) / 2u : t;
+        if (st == NULL || strcmp(test, test_was) != 0 || step != step_was) {
+            if (r->n_steps >= RP_STEPS) {
+                ok = false;
+                break;
+            }
+            st = &r->steps[r->n_steps++];
+            st->brownout = strcmp(test, "BROWN-OUT") == 0;
+            seg = &st->prep;
+            seg->cmd = (uint16_t)cmd;
+            seg->first = (uint16_t)r->n_rows;
+            origin = mid;
+            snprintf(test_was, sizeof(test_was), "%s", test);
+            step_was = step;
+        } else if (!rp_is_prep(phase)
+                   && (seg == &st->prep || cmd != seg->cmd)) {
+            if (st->n_moves >= RP_SEGS) {
+                ok = false;
+                break;
+            }
+            seg = &st->moves[st->n_moves++];
+            seg->cmd = (uint16_t)cmd;
+            seg->first = (uint16_t)r->n_rows;
+            origin = mid;
+        }
+        if (r->n_rows >= RP_ROWS) {
+            ok = false;
+            break;
+        }
+        r->rows[r->n_rows].at = t - origin;
+        r->rows[r->n_rows].v  = (float)v;
+        r->rows[r->n_rows].i  = (float)i;
+        r->rows[r->n_rows].set = strcmp(phase, "SET") == 0;
+        ++r->n_rows;
+        ++seg->n;
+        t_was = t;
+    }
+    fclose(f);
+    return ok && r->n_steps > 0u;
+}
+
+typedef struct {
+    const rp_rec_t  *rec;
+    float            scale;     /* every current, times this */
+    const rp_step_t *step;
+    const rp_seg_t  *seg;       /* the response playing */
+    uint32_t         seg_at;    /* its command */
+    unsigned         next;      /* its next row */
+    unsigned         cursor;    /* the next recorded move to look at */
+    float            v, i;      /* the last reading */
+    uint32_t         last_at;
+    uint16_t         samples;
+    float            set_v;     /* the set point asked */
+    float            set_read;  /* and read back */
+} rp_play_t;
+
+/* The recorded step for the run's step: the characterisation steps in
+ * order, the last for any after it; the brown-out's for every voltage. */
+static const rp_step_t *rp_step_for(const rp_rec_t *r, bool brownout,
+                                    unsigned idx)
+{
+    const rp_step_t *found = NULL;
+    unsigned k = 0u;
+    for (unsigned s = 0; s < r->n_steps; ++s) {
+        if (r->steps[s].brownout != brownout) {
+            continue;
+        }
+        found = &r->steps[s];
+        if (k++ == idx) {
+            break;
+        }
+    }
+    return found;
+}
+
+static void rp_command(rp_play_t *p, const servo_test_t *t,
+                       const servo_test_do_t *d, uint32_t now)
+{
+    if (d->set || p->step == NULL) {
+        const servo_test_step_t *s = &t->steps[t->step];
+        p->step = rp_step_for(p->rec, s->brownout, t->step);
+        p->seg = (p->step != NULL) ? &p->step->prep : NULL;
+        p->cursor = 0u;
+    } else {
+        const rp_seg_t *m = NULL;
+        for (unsigned k = 0; m == NULL && k < 2u * p->step->n_moves; ++k) {
+            if (p->cursor >= p->step->n_moves) {
+                p->cursor = 1u;
+            }
+            if (p->step->moves[p->cursor].cmd == d->cmd_us) {
+                m = &p->step->moves[p->cursor];
+            }
+            ++p->cursor;
+        }
+        CHECK(m != NULL);
+        p->seg = m;
+    }
+    p->seg_at = now;
+    p->next = 0u;
+}
+
+/* The readings due by @p now, to the run. */
+static void rp_readings(rp_play_t *p, servo_test_t *t, uint32_t now)
+{
+    for (;;) {
+        uint32_t at = 0u;
+        const rp_row_t *row = NULL;
+        if (p->seg != NULL && p->next < p->seg->n) {
+            row = &p->rec->rows[p->seg->first + p->next];
+            at = p->seg_at + row->at;
+            /* The rows a trim took out: the last reading repeats. */
+            if ((int32_t)(at - p->last_at) > (int32_t)RP_GAP_MS) {
+                row = NULL;
+            }
+        }
+        if (row != NULL) {
+            if ((int32_t)(at - now) > 0) {
+                return;
+            }
+            p->v = row->v;
+            p->i = row->i * p->scale;
+            /* The set point read back where the recording read it. */
+            if (!row->set) {
+                p->set_read = p->set_v;
+            }
+            ++p->next;
+        } else {
+            at = p->last_at + RP_EVERY_MS;
+            if ((int32_t)(at - now) > 0) {
+                return;
+            }
+        }
+        if ((int32_t)(at - p->last_at) <= 0) {
+            at = p->last_at + 1u;
+        }
+        servo_test_reading_t r;
+        memset(&r, 0, sizeof(r));
+        r.v = p->v;
+        r.i = p->i;
+        r.set_v = p->set_read;
+        r.set_i = 2.0f;
+        r.mode = 1u;
+        r.output = true;
+        r.online = true;
+        r.ok = true;
+        r.samples = ++p->samples;
+        r.taken_ms = at;
+        p->last_at = at;
+        servo_test_reading(t, &r, 0u);
+    }
+}
+
+/* The tester's settings, read by the PD mini. */
+static void rp_cfg(servo_test_cfg_t *c)
+{
+    cfg_defaults(c);
+    c->i_limit  = 2.0f;
+    c->brownout = true;
+    c->by_moves = false;
+    c->time_s   = 60u;
+    servo_test_meter_pdmini(&c->meter);
+}
+
+/* A run of @p c against recording @p r, its report into @p report. */
+static void rp_run(servo_test_t *t, const rp_rec_t *r, float scale,
+                   const servo_test_cfg_t *c, char *report, size_t cap)
+{
+    rp_play_t p;
+    memset(&p, 0, sizeof(p));
+    p.rec = r;
+    p.scale = scale;
+    uint32_t now = 1000u;
+    p.last_at = now;
+    servo_test_reading_t last;
+    memset(&last, 0, sizeof(last));
+    last.online = true;
+    servo_test_init(t);
+    CHECK_EQ(servo_test_start(t, c, now, &last, 3.0f, 20.0f),
+             SERVO_TEST_START_OK);
+    size_t len = 0u;
+    report[0] = '\0';
+    for (int k = 0; k < 100000 && !servo_test_drained(t); ++k) {
+        now += 10u;
+        rp_readings(&p, t, now);
+        const servo_test_in_t in = { true, 20.0f };
+        servo_test_do_t d;
+        servo_test_step(t, now, &in, &d);
+        if (d.set) {
+            p.set_v = d.set_v;
+        }
+        if (d.command) {
+            rp_command(&p, t, &d, now);
+        }
+        const char *text = NULL;
+        servo_test_out_t o;
+        while ((o = servo_test_peek(t, &text)) != SERVO_TEST_OUT_NONE) {
+            const size_t n = strlen(text);
+            if (o == SERVO_TEST_OUT_TXT && len + n + 2u < cap) {
+                memcpy(report + len, text, n);
+                len += n;
+                report[len++] = '\n';
+                report[len] = '\0';
+            }
+            servo_test_pop(t);
+        }
+    }
+    CHECK(servo_test_drained(t));
+}
+
+static rp_rec_t     g_rec;
+static servo_test_t g_rp;
+static char         g_rp_report[12288];
+
+/* What a characterisation step of a replay must show: every counted move
+ * either timed or unseen, none late, at least @p seen_min of them seen. */
+static void rp_check_step(const servo_test_step_t *s, unsigned seen_min)
+{
+    CHECK(s->done);
+    CHECK(s->moves >= 20u);
+    CHECK_EQ(s->timeouts, 0u);
+    CHECK_EQ(s->travels + s->no_rise, s->moves);
+    CHECK(s->travels >= seen_min);
+}
+
+/* The MG90S draws 0.001 A holding and 0.04 to 0.077 A moving: every move
+ * is seen at the 0.020 A threshold, timed, none late, and the run passes.
+ * The brown-out walk sees it move at 5.00 V. */
+TEST_CASE(a_micro_servo_on_the_pd_mini_is_seen_moving)
+{
+    CHECK(rp_load(&g_rec, "servo-mg90s.csv"));
+    CHECK_EQ(g_rec.n_steps, 3u);
+    servo_test_cfg_t c;
+    rp_cfg(&c);
+    rp_run(&g_rp, &g_rec, 1.0f, &c, g_rp_report, sizeof(g_rp_report));
+    if (getenv("RP_PRINT") != NULL) {
+        fputs(g_rp_report, stdout);
+    }
+    CHECK_EQ(g_rp.why, SERVO_TEST_AB_NONE);
+    CHECK_EQ(servo_test_verdict(&g_rp), SERVO_TEST_PASS);
+    for (unsigned k = 0; k < 2u; ++k) {
+        rp_check_step(&g_rp.steps[k], g_rp.steps[k].moves);
+    }
+    CHECK(g_rp.steps[2].brownout);
+    CHECK(g_rp.steps[2].moved);
+    CHECK(strstr(g_rp_report, "Result:         PASS\n") != NULL);
+}
+
+/* The 1102HB holds 0.015 to 0.029 A and peaks 0.039 to 0.044 A moving:
+ * moves to the high end, from the low end's 0.028 A, never pass the level
+ * before them by the 0.020 A threshold.  Those are unseen, neither timed
+ * nor late; the moves seen all arrive, and the run reads NOT MEASURABLE,
+ * not FAIL. */
+TEST_CASE(a_servo_moving_under_the_threshold_is_not_failed)
+{
+    CHECK(rp_load(&g_rec, "servo-1102hb.csv"));
+    CHECK_EQ(g_rec.n_steps, 3u);
+    servo_test_cfg_t c;
+    rp_cfg(&c);
+    rp_run(&g_rp, &g_rec, 1.0f, &c, g_rp_report, sizeof(g_rp_report));
+    if (getenv("RP_PRINT") != NULL) {
+        fputs(g_rp_report, stdout);
+    }
+    CHECK_EQ(g_rp.why, SERVO_TEST_AB_NONE);
+    CHECK_EQ(servo_test_verdict(&g_rp), SERVO_TEST_NOT_MEASURABLE);
+    for (unsigned k = 0; k < 2u; ++k) {
+        rp_check_step(&g_rp.steps[k], 1u);
+        CHECK(g_rp.steps[k].no_rise > 0u);
+    }
+    CHECK(strstr(g_rp_report, "Result:         NOT MEASURABLE - ") != NULL);
+    CHECK(strstr(g_rp_report, "Moves arrived    0 late: PASS") != NULL);
+    /* As the bench writes it in German, where the tester read FAIL. */
+    c.text = ui_text_table(UI_LANG_DE)->servo;
+    rp_run(&g_rp, &g_rec, 1.0f, &c, g_rp_report, sizeof(g_rp_report));
+    CHECK(strstr(g_rp_report, "NICHT BESTANDEN") == NULL);
+    CHECK(strstr(g_rp_report, "Ergebnis:        NICHT MESSBAR - bei ")
+          != NULL);
+}
+
+/* The MG90S's recording with every current three times as large, as an
+ * MS24 draws: 0.003 A holding, 0.11 to 0.23 A moving.  Every move seen,
+ * none late, PASS; TRAVEL TIME at 500 ms is reported against the PD mini's
+ * travel times and not checked.  The same readings from a meter whose
+ * travel times hold do fail it. */
+TEST_CASE(a_standard_servo_on_the_pd_mini_passes)
+{
+    CHECK(rp_load(&g_rec, "servo-mg90s.csv"));
+    servo_test_cfg_t c;
+    rp_cfg(&c);
+    c.travel_max_ms = 500u;
+    rp_run(&g_rp, &g_rec, 3.0f, &c, g_rp_report, sizeof(g_rp_report));
+    if (getenv("RP_PRINT") != NULL) {
+        fputs(g_rp_report, stdout);
+    }
+    CHECK_EQ(g_rp.why, SERVO_TEST_AB_NONE);
+    CHECK_EQ(servo_test_verdict(&g_rp), SERVO_TEST_PASS);
+    for (unsigned k = 0; k < 2u; ++k) {
+        rp_check_step(&g_rp.steps[k], g_rp.steps[k].moves);
+    }
+    CHECK(strstr(g_rp_report, "limit 500 ms: upper bound, not checked "
+                              "against the limit") != NULL);
+
+    c.meter.upper_bound = false;
+    rp_run(&g_rp, &g_rec, 3.0f, &c, g_rp_report, sizeof(g_rp_report));
+    CHECK_EQ(servo_test_verdict(&g_rp), SERVO_TEST_FAIL);
 }
 
 int main(void)
@@ -1107,11 +1714,12 @@ int main(void)
     RUN(the_brownout_walk_starts_under_the_cap);
     RUN(each_limit_fails_the_run);
     RUN(a_servo_pushing_on_a_stop_ends_the_run);
-    RUN(a_servo_that_does_not_move_fails);
+    RUN(a_servo_that_does_not_move_is_not_measurable);
     RUN(every_abort_switches_off_lets_go_and_reports);
     RUN(an_end_held_harder_than_the_servo_moves_is_reached_settled);
     RUN(an_acceleration_spike_above_the_level_is_not_the_arrival);
     RUN(a_moving_current_equal_to_the_holding_current_is_the_limit);
+    RUN(a_meters_lag_widens_the_window_and_a_stuck_move_is_late);
     RUN(a_frozen_current_is_no_reading);
     RUN(skipped_readings_are_reported);
     RUN(a_count_starting_again_is_not_readings_skipped);
@@ -1122,6 +1730,9 @@ int main(void)
     RUN(a_full_outbox_counts_the_rows_it_loses);
     RUN(the_csv_reads_back_in_the_viewer);
     RUN(the_words_come_from_one_table);
+    RUN(a_micro_servo_on_the_pd_mini_is_seen_moving);
+    RUN(a_servo_moving_under_the_threshold_is_not_failed);
+    RUN(a_standard_servo_on_the_pd_mini_passes);
     free(g.csv_text);
     return test_summary("servo_test");
 }

@@ -2146,6 +2146,14 @@ static void test_cfg(servo_test_cfg_t *c)
     c->travel_deg = (uint8_t)s.travel_deg;
     c->range_pct  = (uint8_t)settings_get_int(SET_SERVO_TEST_RANGE);
     c->model      = supply_screen_model();
+    /* The current is the PD mini's, whose travel times are an upper bound.
+     * The model stands in for it: no lag of its own, and its travel times
+     * held to what a run on the PD mini can check. */
+    servo_test_meter_pdmini(&c->meter);
+    if (c->model) {
+        c->meter.lag_ms  = 0u;
+        c->meter.repeats = false;
+    }
     snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
     /* The report in the language showing at the start; the CSV in English
      * whatever it is. */
