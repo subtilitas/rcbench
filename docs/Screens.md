@@ -9,7 +9,9 @@ operated.
 
 The top band is shared by every screen. From the right: STOP, the run clock
 (while armed or after a run), ARMED or SAFE, a FAULT code when one is reported,
-the output mode (LINK or SIM), and LINK or NO LINK.
+the mode, and LINK or NO LINK. The mode is BENCH while the link is up and the
+panel drives the coprocessor's outputs, and SIM while no coprocessor answers
+and the panel runs on its own models.
 
 STOP works on every screen. It disarms and latches: the bench stays disarmed
 until it is armed again. Navigating away, an alert expiring or the link
@@ -191,7 +193,9 @@ SPEED is the rate the bench may move the output, in degrees a second of the
 horn's travel, not a speed for the drawing alone. At 100% the command goes
 straight through and the servo moves at its own rate; below that the bench
 ramps the command in front of it, so 30% takes three times as long to cross
-as 90%. It applies to a held output as soon as it is changed.
+as 90%. It applies to a held output as soon as it is changed. Without
+feedback the horn is drawn moving at the same rate, and at 100% at the
+command at once.
 
 **ARM before anything moves.** While the bench is not armed the coprocessor
 writes a pulse of length zero to every PWM pin, so the horn on screen follows
@@ -247,20 +251,84 @@ end), about PULSE CENTRE. RANGE is a share of the travel the servo may make:
 of TRAVEL, and of the nearer of PULSE MIN and MAX, so the sweep reaches
 neither end it may not. SPEED on the right card limits it as it limits a
 drag, and trim is not applied. The horn follows the same curve, computed on
-the panel and timed from when the coprocessor started its own. While it runs
-the button reads HOLD, and a tap stops the sweep where the output has got to
--- which SPEED can leave behind the curve -- and holds it there. The
-coprocessor does the holding, because only it knows exactly where that is;
-without feedback the horn drawn on the panel is an estimate of it. A HOLD
-does not wait behind sweep writes already on the wire. A HOLD the link left
-unrepeated for 500 ms has been let go at the far end, so the panel releases
-the surfaces to their centre and the horn goes there. A finger on the dial,
-CENTRE, RELEASE,
-a disarm and leaving the screen stop it too, and touch events going missing
-stop it as HOLD would. A changed setting starts it over
-with the new curve; a changed profile or frame rate goes with it at once. SWEEP is offered on an armed bench and a coprocessor
+the panel and timed from when the coprocessor started its own. The panel
+draws only what the coprocessor is known to do: a sweep asked for, or
+resumed, is drawn once its start is acknowledged, and until then the horn
+stays where the output is. Without feedback it is then worked on from where
+the output was when the coprocessor began, along the curve at SPEED. Two
+taps on the sweep button that reach the screen in one frame, before the
+first one's command has left, cancel out: nothing is sent and the sweep
+goes on as it was.
+
+**PAUSE pauses it.** While a sweep runs the button reads PAUSE in the accent
+colour. A tap stops the sweep where the output has got to -- which SPEED can
+leave behind the curve -- and holds it there; the button then reads PAUSED,
+filled in the warning colour. The coprocessor does the holding (the link's
+HOLD, SWEEP register 4), because only it knows exactly where that is;
+without feedback the horn drawn on the panel is an estimate of it. The panel
+repeats the hold every 100 ms (`SERVO_HOLD_MS`), so a pause outlasts the
+coprocessor's 500 ms rule. A pause does not wait behind sweep writes already
+on the wire. A tap on PAUSED carries the sweep on from the point of the
+curve it was paused at: its place in a dwell and the ends it has reached go
+on from there too, and the horn is drawn on from that phase. The phase is
+the curve's when the coprocessor acknowledged the HOLD, not at the tap: the
+curve runs on there for the exchange in between, and so the drawing runs
+on too, at the SPEED in force at the tap, for at most 500 ms -- the longest
+the coprocessor runs a sweep it has not heard. Without feedback the drawn
+horn is then put where the output had got at the acknowledgement: the curve
+to that phase, slewed as the drawing slews. A SPEED changed in between reaches the
+coprocessor only with the resume. A tap on PAUSED leaves the horn where it
+is until the resume is acknowledged; the panel then times the drawing from
+the phase the coprocessor kept, as it timed the two acknowledgements, also
+when the tap came before the HOLD's acknowledgement. The coprocessor
+keeps the phase while it holds and resumes the curve (`LINK_SV_RESUME`,
+protocol 4.6); the output slews from where it was held to the curve at
+SPEED's rate, at once at 100 %, and is normally already there. A curve
+changed on the TEST page while paused starts as a new sweep instead. A
+coprocessor older than 4.6, or one that refuses the resume because its hold
+has ended, starts the curve over from its beginning -- the centre for a
+sine or a triangle, the first end for a square -- and the alert band says
+so: `coprocessor older than 4.6 -- the sweep starts over` or `coprocessor
+refused the resume -- the sweep starts over`. So does a pause whose HOLD
+was answered only at a retry, since an earlier attempt can have reached the
+coprocessor and the phase it kept is then not known on the panel: `the
+pause was retried on the link -- the sweep starts over`.
+
+![A paused sweep](img/servo-paused.png)
+
+A hold the link left unrepeated for 500 ms has been let go at the far end,
+so the panel releases the surfaces to their centre and the horn goes there.
+A finger on the dial, CENTRE, RELEASE, STOP, a disarm and leaving the screen
+end a sweep, running or paused, and the button reads SWEEP again. A changed
+type, frame rate, pulse, trim, travel or reverse ends a pause too, and the
+servo is held at the paused angle as a position. With feedback the paused
+angle is the one the servo last reported, which it can still be moving to
+after the tap; without feedback it is the drawn estimate at the
+acknowledgement. A changed SPEED keeps the
+pause; the resume runs at the new SPEED. Touch events going missing pause a
+running sweep as PAUSE would. A changed setting starts a running sweep over
+with the new curve, drawn from when the coprocessor acknowledges it; until
+then the old curve is drawn on, as the coprocessor runs it, under the
+pulses and TRAVEL it was sent with. Each acknowledgement is matched to the
+command it answers: a SPEED or curve changed while a start waits does not
+let the earlier command's acknowledgement draw the newer one. A changed
+profile or frame rate goes with it at once. SWEEP is offered on an armed bench and a coprocessor
 speaking protocol 4.2; the coprocessor stops a sweep the panel has not
 repeated for 500 ms and leaves each surface where its output has got to.
+
+**SPEED LIMITS THE SWEEP** replaces SPEED's label on the right card, in the
+warning colour, while SPEED is slower than the fastest change the curve asks
+for. SPEED then shapes the motion instead of CURVE: a square, a sine and a
+triangle all move as ramps at SPEED's rate and look alike, and the output
+can turn back before it reaches an end. The line follows the settings, so it
+shows before SWEEP is pressed as well as while a sweep runs. Raise SPEED, or
+lower the TEST page's SPEED (the rate in Hz) or RANGE, to clear it. A square
+jumps between its ends, so it shows at every SPEED below 100 %. With the
+TEST page's defaults (sine, 0.5 Hz, RANGE 80 %) and TRAVEL +/-90 deg it
+clears at SPEED 63 %, and for a triangle at 40 %.
+[Servo procedures](Servo.md#sweep-and-speed) gives the rule.
+
+![SPEED limiting a sweep](img/servo-sweep.png)
 
 **START TEST runs the automatic test** on the TEST page: the servo stepped
 through the supply voltages chosen there, its current measured at rest,

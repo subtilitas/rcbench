@@ -351,6 +351,51 @@ real rate through the coprocessor, the PD mini's averaging, the command's
 delay to the pin, and whether a real servo's current falls back to its
 holding level within 0.05 A.
 
+## Sweep and SPEED
+
+SWEEP on the SERVO screen drives the servo through the TEST page's curve.
+SPEED on the right card limits how fast the output may move. When SPEED is
+slower than the fastest change the curve asks for, SPEED shapes the motion
+instead of the curve, and SPEED's row reads SPEED LIMITS THE SWEEP in the
+warning colour ([Screens](Screens.md#servo)).
+
+The fastest change, with f the TEST page's rate in Hz and A the amplitude in
+degrees (RANGE of the travel either side of PULSE CENTRE):
+
+| CURVE | Fastest change | Where |
+| --- | --- | --- |
+| square | a jump | at each change of end |
+| sine | 2 pi f A | through the centre |
+| triangle | 4 f A | throughout |
+
+SPEED below 100 % allows 3.6 deg/s per percent: 36 deg/s at 10 %, 356.4
+deg/s at 99 %. At 100 % the command is not slewed and nothing is limited. A
+square is limited at every SPEED below 100 %. The dwell does not enter: it
+adds time at the ends, not to the motion. The line follows the settings,
+before SWEEP is pressed and while it runs. `sweep_slew_limited()` in
+`shared/servo/servo_sweep.c` decides it, in the command units the
+coprocessor slews in.
+
+| TEST page | A | Fastest change | Clears at SPEED |
+| --- | ---: | ---: | ---: |
+| sine, 0.5 Hz, RANGE 80 %, TRAVEL +/-90 deg | 72 deg | 226 deg/s | 63 % |
+| triangle, 0.5 Hz, RANGE 80 %, TRAVEL +/-90 deg | 72 deg | 144 deg/s | 40 % |
+| square, any | any | a jump | 100 % |
+
+To clear the line, raise SPEED, or lower the TEST page's SPEED (the rate) or
+RANGE.
+
+The line compares the curve with SPEED only. A servo slower than both limits
+the sweep as well; nothing on the bench measures the horn, so that is not
+shown.
+
+PAUSE, the sweep button while a sweep runs, holds the output where it has
+got to, and the button reads PAUSED, filled in the warning colour. A tap on
+PAUSED carries the sweep on from the phase it was paused at, on a
+coprocessor speaking protocol 4.6; an older one starts the curve over. A
+paused sweep is the moment to raise SPEED: the pause stays, and the resume
+runs at the new rate.
+
 ## Prerequisites
 
 Current sensing on the servo outputs: one sensor per output for the limit

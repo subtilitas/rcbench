@@ -23,6 +23,7 @@ bool sweep_start(sweep_t *w, const sweep_cfg_t *cfg, uint32_t now_ms)
     if (w == NULL) {
         return false;
     }
+    w->paused = false;
     if (!sweep_cfg_valid(cfg)) {
         w->running = false;
         return false;
@@ -37,7 +38,35 @@ void sweep_stop(sweep_t *w)
 {
     if (w != NULL) {
         w->running = false;
+        w->paused  = false;
     }
+}
+
+/*
+ * The phase is the time into the sweep, kept as milliseconds: everything
+ * the curve is -- its point, the dwell it is in, the ends it has reached --
+ * follows from that time, so starting the clock that far back again is the
+ * whole of a resume.
+ */
+void sweep_pause(sweep_t *w, uint32_t now_ms)
+{
+    if (w == NULL || !w->running) {
+        return;
+    }
+    w->paused_ms = now_ms - w->start_ms;
+    w->running   = false;
+    w->paused    = true;
+}
+
+bool sweep_resume(sweep_t *w, uint32_t now_ms)
+{
+    if (w == NULL || !w->paused) {
+        return false;
+    }
+    w->start_ms = now_ms - w->paused_ms;
+    w->running  = true;
+    w->paused   = false;
+    return true;
 }
 
 /*
@@ -95,6 +124,28 @@ uint32_t sweep_moves(const sweep_t *w, uint32_t now_ms)
         return w->cfg.moves;
     }
     return (n > UINT32_MAX) ? UINT32_MAX : (uint32_t)n;
+}
+
+bool sweep_slew_limited(const sweep_cfg_t *cfg, uint16_t slew_per_s)
+{
+    if (!sweep_cfg_valid(cfg) || slew_per_s == 0u || cfg->amplitude == 0u) {
+        return false;
+    }
+    /* Both sides in thousandths of a unit a second.  The triangle's in
+     * integers: 4 * 5000 * 500 is 10^7. */
+    const uint32_t slew_milli = (uint32_t)slew_per_s * 1000u;
+    switch (cfg->kind) {
+    case SWEEP_TRIANGLE:
+        return 4u * (uint32_t)cfg->mhz * (uint32_t)cfg->amplitude > slew_milli;
+    case SWEEP_SINE:
+        return 6.28318531f * (float)cfg->mhz * (float)cfg->amplitude
+               > (float)slew_milli;
+    case SWEEP_SQUARE:
+    case SWEEP_OFF:
+    case SWEEP_KIND_COUNT:
+    default:
+        return true;    /* a jump; the other kinds were refused above */
+    }
 }
 
 /* The curve's position, -1..1, a fraction @p x of the way through its

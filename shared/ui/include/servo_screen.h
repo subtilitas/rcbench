@@ -84,6 +84,16 @@ typedef struct {
      *  on the dial, CENTRE.  The panel gives it way at once over sweep
      *  writes already on the wire or queued. */
     bool             ends_sweep;
+    /** SERVO_CMD_SWEEP carrying on the sweep PAUSE held, from where it was
+     *  held: the panel asks the coprocessor to resume it (protocol 4.6),
+     *  and an older one, or one that refuses, starts the curve over. */
+    bool             resume;
+    /** SERVO_CMD_HOLD: which pause it is, given back with its
+     *  acknowledgement in servo_screen_sweep_held(). */
+    uint16_t         pause_seq;
+    /** SERVO_CMD_SWEEP: which sweep command it is, given back with the
+     *  acknowledgement of a start in servo_screen_sweep_started(). */
+    uint16_t         start_seq;
 } servo_cmd_t;
 
 /** Drop the cached chrome, so the next frame repaints it. */
@@ -118,6 +128,10 @@ void servo_screen_cancel_arm(void);
 /** Commanded pulse width, for the application and for tests. */
 uint16_t servo_screen_commanded(void);
 
+/** The pulse width the solid arm is drawn at: measured, or without
+ *  feedback the drawing's estimate of the output.  For tests. */
+uint16_t servo_screen_drawn(void);
+
 /** The frame rate and the type in force, for the application and tests. */
 uint16_t servo_screen_frame_hz(void);
 const char *servo_screen_type_name(void);
@@ -150,6 +164,10 @@ void servo_screen_set_sweep(bool able);
 /** Whether a sweep is running, for the application and tests. */
 bool servo_screen_sweeping(void);
 
+/** Whether a sweep is paused: PAUSE tapped, the hold in force, nothing
+ *  else commanded since.  For tests. */
+bool servo_screen_paused(void);
+
 /** The panel let go of what the screen was holding -- a HOLD the far end
  *  had already ended -- and released the surfaces to their centre. */
 void servo_screen_released(void);
@@ -160,15 +178,41 @@ typedef enum {
     SERVO_SWEEP_FROM_HERE,    /**< carrying on: a changed curve            */
     SERVO_SWEEP_FROM_FROZEN,  /**< where it froze when the sweep went
                                    unrepeated, @p frozen_ago_ms ago        */
+    SERVO_SWEEP_RESUMED,      /**< where it was held: the paused sweep
+                                   carried on from its phase; @p age_ms is
+                                   the age of the curve's phase 0, moved on
+                                   by the hold (servo_phase_resumed())     */
 } servo_sweep_from_t;
 
 /**
- * The coprocessor started the sweep @p age_ms ago, its output starting from
- * @p from: the horn is drawn along its curve from then, and without feedback
- * from where that output was.
+ * The coprocessor started the sweep with its curve's phase 0 @p age_ms ago,
+ * its output starting from @p from.  Until this, a sweep asked for is not
+ * drawn: the far end is not known to move.  From it the horn is drawn along
+ * the curve, and without feedback worked on from where that output was
+ * when the far end began to move.  @p since_ms is, for
+ * SERVO_SWEEP_FROM_FROZEN, how long ago the far end froze, and for
+ * SERVO_SWEEP_RESUMED how long ago the resume was acknowledged; for a
+ * resume @p age_ms is the panel's timing of the far end's phase 0, moved on
+ * by the hold, whatever this screen took the pause's phase to be.
+ * @p start_seq is the sweep command whose write it acknowledges
+ * (servo_cmd_t): a start or resume waited for is ended only by its own.
  */
-void servo_screen_sweep_started(uint32_t age_ms, servo_sweep_from_t from,
-                                uint32_t frozen_ago_ms);
+void servo_screen_sweep_started(uint16_t start_seq, uint32_t age_ms,
+                                servo_sweep_from_t from, uint32_t since_ms);
+
+/**
+ * The coprocessor took the HOLD of pause @p pause_seq (servo_cmd_t) and kept
+ * its curve @p kept_ms in (servo_phase_held()).  The curve ran on until
+ * then, so the paused phase drawn here is set to it, not to the tap's.
+ * Nothing unless that pause still stands: one resumed before this arrives
+ * is rebased by its SERVO_SWEEP_RESUMED, and another pause's is not this
+ * one's.
+ */
+void servo_screen_sweep_held(uint16_t pause_seq, uint32_t kept_ms);
+
+/** How far the sweep's curve clock is from its phase 0, paused or not.
+ *  For tests, which stand in for the panel's timing. */
+uint32_t servo_screen_curve_ms(void);
 
 /**
  * Set the commanded angle without a touch event.

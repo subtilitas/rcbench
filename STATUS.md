@@ -32,7 +32,7 @@ capture stay on the coprocessor, and only results travel.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the coprocessor transmits only when asked. Worst-case
 payload 52 kB/s against 12 to 30 kB/s of expected traffic. Protocol version
-4.5. [Reference](docs/Link.md).
+4.6. [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO6 (J8) from the core that does
 not draw. The task runs every 5 ms; the line edges every 20 ms
@@ -98,7 +98,7 @@ is taken in a gap ahead of the save that needs it.
 | Board, display, GT911, SD card | built; the panel boots and reports each step on the splash |
 | Shell: band, router, splash, menu, simulation watermark | built |
 | Motor & ESC (electronic speed controller) screen | built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the throttle are written to the coprocessor's control page at every 50 ms poll while the link is up; an arm writes CLEAR on its own, then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK to either leaves the panel disarmed. An arm and a throttle have gone through it on the bring-up bench and run a motor; the paths a session has to provoke -- a NACK, a STOP mid-throttle, a link pulled while armed -- have not |
-| Servo screen | built; writes `CHAN_CFG` and `CHANNELS` over the link, the frame rate on `SERVO` to a coprocessor speaking protocol 4.1, and a sweep (square, sine or triangle, run by the coprocessor) to one speaking 4.2. A SETTINGS overlay sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session, and the automatic test, its limits and the device under test in NVS; a heli type or a rate above 60 Hz is applied only through a warning held for 2 s, and every restart is STANDARD PWM at 50 Hz. The right card plots the supply's voltage, current and power: the PD mini's when SETUP enables it, `supply_sim_t`'s otherwise. START TEST on the TEST page runs the automatic test (`shared/servo/servo_test.c`): the supply stepped through 4.8 and 6.0 V, and 7.4 and 8.4 V with HV SERVO on (session only, through the HV warning's 2 s hold), idle, moving and holding current and the travel time from the supply's current at each, a brown-out walk from 5.0 V down in 0.2 V steps, and `BENCHnnn.CSV` and `BENCHnnn.TXT` written by the `runlog` task. STOP, a disarm, link loss, the supply and the operator end a run with the output off and a report marked ABORTED. A frame rate other than 50 Hz, the sweep and the automatic test have not been tried on hardware |
+| Servo screen | built; writes `CHAN_CFG` and `CHANNELS` over the link, the frame rate on `SERVO` to a coprocessor speaking protocol 4.1, and a sweep (square, sine or triangle, run by the coprocessor) to one speaking 4.2, which PAUSE holds (the button then reads PAUSED) and a tap on PAUSED carries on from the phase it was held at on a coprocessor speaking 4.6 (`LINK_SV_RESUME`), and starts over from the curve's beginning, with an alert, on an older one or one that refuses; SPEED's row reads SPEED LIMITS THE SWEEP while SPEED is slower than the curve's fastest change. A SETTINGS overlay sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session, and the automatic test, its limits and the device under test in NVS; a heli type or a rate above 60 Hz is applied only through a warning held for 2 s, and every restart is STANDARD PWM at 50 Hz. The right card plots the supply's voltage, current and power: the PD mini's when SETUP enables it, `supply_sim_t`'s otherwise. START TEST on the TEST page runs the automatic test (`shared/servo/servo_test.c`): the supply stepped through 4.8 and 6.0 V, and 7.4 and 8.4 V with HV SERVO on (session only, through the HV warning's 2 s hold), idle, moving and holding current and the travel time from the supply's current at each, a brown-out walk from 5.0 V down in 0.2 V steps, and `BENCHnnn.CSV` and `BENCHnnn.TXT` written by the `runlog` task. STOP, a disarm, link loss, the supply and the operator end a run with the output off and a report marked ABORTED. A frame rate other than 50 Hz, the sweep and the automatic test have not been tried on hardware |
 | Supply screen | built and tested on the host; the control task drives the PD mini through the SUPPLY page (`shared/bench/supply_link.c`) when SETUP INTERFACES enables it, and runs `supply_sim_t` otherwise. Set points shown beside their readings, a keypad, a SETTINGS overlay (caps, start values, current and voltage trips, the confirmation for live changes) kept in NVS, and a question before a set point changes a live output. Every stop, a trip, a lost ON and a supply that stops answering switch the output off; the supply is stepped and logged from `control_pump()`, so it keeps its 50 ms cadence while an exchange waits. A supply run is logged with its own columns |
 | PD mini driver | the codec and driver (`shared/bench/pdmini.c`) are built and tested on the host against a modelled module; the coprocessor runs it on a PIO UART on the pins the SUPPLY page (protocol 4.3) names, and the panel writes and reads that page; never run against a module. The wiring is kept in the coprocessor's flash with the output bindings (record version 4; version 3 records still load) and driven at boot with the output off; the command is not kept. A wiring change while a module has answered waits for a state read sent after it and is taken only if that read shows the output off (protocol 4.5). A live output whose input reads under the set point plus 0.5 V on 2 input reads in a row is switched off and the panel names the input and the set point; the rule is chosen, not measured. The PIO receive FIFO holds 8 bytes, 4.2 ms of reply at 19200 baud; the main loop's pass time is not measured |
 | Analyser, programmer, balance, battery screens | built, rendered from models |
@@ -216,8 +216,8 @@ this list to `test/host/CMakeLists.txt`.
 
 Coverage floors: 94% overall, 85% for every file except `stub_screen.c`, which
 is exempt by name. `tools/coverage.py --check` fails on drift of the table
-below. `render_ui.py --check` holds 114 committed screenshots to the current
-render, 57 in English and the same 57 in German, and `render_ui.py --fit`
+below. `render_ui.py --check` holds 118 committed screenshots to the current
+render, 59 in English and the same 59 in German, and `render_ui.py --fit`
 fails on a German string that overflows where it is drawn; `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000.
 
@@ -230,7 +230,7 @@ chrome-cached screen to 2,000.
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
 | `shared/ui/ui_widgets.c` | 200 | 192 | 96.0% |
 | `shared/ui/ui_icons.c` | 122 | 122 | 100.0% |
-| `shared/ui/ui_band.c` | 35 | 33 | 94.3% |
+| `shared/ui/ui_band.c` | 37 | 35 | 94.6% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
 | `shared/ui/ui_plot.c` | 194 | 184 | 94.8% |
 | `shared/ui/ui_hero.c` | 29 | 28 | 96.5% |
@@ -245,7 +245,7 @@ chrome-cached screen to 2,000.
 | `shared/ui/supply_screen.c` | 972 | 960 | 98.8% |
 | `shared/ui/ui_keypad.c` | 163 | 161 | 98.8% |
 | `shared/ui/ui_textkey.c` | 170 | 169 | 99.4% |
-| `shared/ui/servo_screen.c` | 2166 | 2115 | 97.7% |
+| `shared/ui/servo_screen.c` | 2406 | 2352 | 97.8% |
 | `shared/ui/analyser_screen.c` | 224 | 221 | 98.7% |
 | `shared/ui/balance_screen.c` | 311 | 311 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
@@ -266,7 +266,7 @@ chrome-cached screen to 2,000.
 | `shared/safety/touch_loss.c` | 45 | 45 | 100.0% |
 | `shared/servo/servo_limit.c` | 120 | 116 | 96.7% |
 | `shared/servo/servo_sync.c` | 172 | 167 | 97.1% |
-| `shared/servo/servo_sweep.c` | 91 | 87 | 95.6% |
+| `shared/servo/servo_sweep.c` | 118 | 114 | 96.6% |
 | `shared/servo/servo_test.c` | 499 | 483 | 96.8% |
 | `shared/servo/servo_report.c` | 323 | 322 | 99.7% |
 | `shared/openyge/openyge_frame.c` | 165 | 162 | 98.2% |
@@ -299,7 +299,7 @@ chrome-cached screen to 2,000.
 | `shared/outputs/outputs_pages.c` | 190 | 179 | 94.2% |
 | `shared/outputs/out_bind.c` | 461 | 449 | 97.4% |
 | `shared/outputs/out_pwm_map.c` | 15 | 15 | 100.0% |
-| `shared/outputs/servo_page.c` | 125 | 123 | 98.4% |
+| `shared/outputs/servo_page.c` | 192 | 190 | 99.0% |
 | `shared/outputs/supply_page.c` | 245 | 242 | 98.8% |
 | `shared/outputs/out_store_map.c` | 68 | 68 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
@@ -307,7 +307,7 @@ chrome-cached screen to 2,000.
 | `shared/bench/pdmini.c` | 553 | 544 | 98.4% |
 | `shared/bench/supply_link.c` | 255 | 245 | 96.1% |
 | `shared/bench/log_writer.c` | 126 | 114 | 90.5% |
-| **total** | **19068** | **18356** | **96.3%** |
+| **total** | **19404** | **18689** | **96.3%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -341,7 +341,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The control task has no test of its own | touch, STOP, arming, the outputs, the link and the heartbeat run in a task on the core that does not draw. It has run on hardware -- an arm, a throttle and a servo command have all gone through it -- but nothing exercises it deliberately: `main.c` is not in the host suite. The `runlog` task beside it, which owns every write to the card, is in the same position. A multi-agent review found six defects in it, including a heartbeat that stopped for up to 1000 ms on an unanswered poll and a splash tap that latched STOP; those are fixed, and the rules it drives are now in `shared/safety/arming.c` under `test_arming` | a session with both boards: arm, drag the throttle while the screen is busy, press STOP, unplug the link, and confirm the heartbeat's period on a scope at J8. ESP-IDF warns that a second core touching PSRAM shares bandwidth with the bounce-buffer refill and can starve it into the screen shift already seen on this board; the control task touches no framebuffer, which is the reason to expect it is clear, not evidence that it is |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The refill interrupt is masked for the length of the write, so the bounce buffer starves and the driver restarts the DMA at the next VBlank | nothing, unless the disturbance proves unacceptable. `CONFIG_SPI_FLASH_AUTO_SUSPEND` would remove it (the module's flash is 0x46 4018, an XMC die ESP-IDF grants `SPI_FLASH_CHIP_CAP_SUSPEND`), but ESP-IDF warns against it for a workload with an interrupt every 512 us |
 | Stick programming has met no ESC | the engine, the PROGRAMMER tab and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150 ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200 ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a motor mounted solid without propeller: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
-| The German interface has not been read on a panel | the tables, the fonts and the fit check are built and tested on the host, and the 57 German screenshots are rendered by the panel's code; no German-speaking operator has read the screens on a board. An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. Two English help lines on SETUP (Capacity's and Rated kV's) are longer than the 36 cells their row shows and are cut there | a beta tester's pass over every screen in German on a panel, and shorter English help for the two rows |
+| The German interface has not been read on a panel | the tables, the fonts and the fit check are built and tested on the host, and the 59 German screenshots are rendered by the panel's code; no German-speaking operator has read the screens on a board. An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. Two English help lines on SETUP (Capacity's and Rated kV's) are longer than the 36 cells their row shows and are cut there | a beta tester's pass over every screen in German on a panel, and shorter English help for the two rows |
 
 ## Constraints
 

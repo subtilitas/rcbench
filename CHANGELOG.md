@@ -6,6 +6,58 @@ history is in git.
 
 ## Unreleased
 
+The link protocol is 4.6: the coprocessor keeps a held sweep's phase and
+resumes it (SWEEP register 5, RESUME). Flash both images. A 0.12.0
+coprocessor (4.5) still links and sweeps with this panel, but a paused
+sweep starts over from the curve's beginning, and the alert band says so.
+
+### Added
+
+- **RESUME on the SERVO link page (protocol 4.6).** A hold (SWEEP 4) keeps
+  the phase of a sweep that was running; SWEEP 5 written alone carries it
+  on from there. Refused with BAD_VALUE when no phase is kept or registers
+  2 to 5 changed since the hold, NOT_ARMED on a disarmed bench. A write of
+  0, a curve written over the hold, a disarm, 500 ms unwritten or a
+  restart forget the phase.
+- **SERVO says when SPEED limits a sweep.** SPEED's row on the right card
+  reads SPEED LIMITS THE SWEEP (TEMPO BEGRENZT DEN SWEEP in German), in the
+  warning colour, while SPEED is slower than the fastest change the TEST
+  page's curve asks for: 2 pi f A for a sine, 4 f A for a triangle, and a
+  jump for a square, which every SPEED below 100 % limits. The curves then
+  move alike, as ramps at SPEED's rate. It follows the settings, before
+  SWEEP is pressed and while a sweep runs. With the TEST page's defaults
+  (sine, 0.5 Hz, RANGE 80 %) and TRAVEL +/-90 deg it clears at SPEED 63 %.
+
+### Changed
+
+- **SERVO's sweep button pauses and resumes.** While a sweep runs it reads
+  PAUSE (in English and German) where it read HOLD. A tap holds the output
+  where it has got to, as HOLD did, and the button reads PAUSED (German:
+  PAUSIERT), filled in the warning colour instead of the accent. A tap on
+  PAUSED carries the sweep on from the point of the curve it was paused at,
+  its dwell and its count of ends included. A changed SPEED keeps the
+  pause, and the resume runs at it. CENTRE, RELEASE, a finger on the dial,
+  STOP, a disarm, leaving the screen, a hold unrepeated for 500 ms, and a
+  changed type, frame rate, pulse, trim, travel or reverse end a pause,
+  and the button reads SWEEP. Touch events going missing pause a running
+  sweep.
+- **SERVO draws a sweep as the coprocessor runs it.** A started, resumed
+  or restarted sweep is drawn only from the coprocessor's acknowledgement
+  of it; until then the horn stays where the output is, and during a
+  restart the old curve is drawn on. A PAUSE draws the curve on until the
+  HOLD is acknowledged, for at most 500 ms. Two taps on the sweep button in
+  one frame, before the first one's command has left, cancel out: nothing
+  is sent.
+- **At SPEED 100 % the horn is drawn at the command at once** when nothing
+  measures the servo; it was drawn moving at 360 deg/s. The coprocessor
+  takes the command at once at 100 %, and the drawing now does the same.
+- **SERVO's CENTRE button reads ZENTRIEREN in German.** CENTRE stays
+  English as a pulse name (PULS CENTRE).
+- **The status band's mode reads BENCH or SIM.** It read LINK with the link
+  up, the word the link chip beside it already showed. BENCH is the panel
+  driving the coprocessor's outputs, SIM the panel running on its own
+  models while no coprocessor answers. Both stay English in German.
+
 ## 0.12.0 - 2026-10-07
 
 SERVO runs an automatic servo test: supply steps, currents, travel time, a

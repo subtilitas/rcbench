@@ -9,8 +9,10 @@ einzelnen Bildschirme bedient werden.
 
 Das obere Band ist auf allen Bildschirmen gleich. Von rechts: STOP, die
 Laufzeituhr (im scharfen Zustand oder nach einem Lauf), ARMED oder SAFE, ein
-FEHLER-Code, sobald einer gemeldet wird, der Ausgangsmodus (LINK oder SIM) und
-LINK oder KEIN LINK.
+FEHLER-Code, sobald einer gemeldet wird, der Modus und LINK oder KEIN LINK.
+Der Modus ist BENCH, solange der Link steht und das Panel die Ausgänge des
+Koprozessors ansteuert, und SIM, solange kein Koprozessor antwortet und das
+Panel mit seinen eigenen Modellen rechnet.
 
 STOP funktioniert auf jedem Bildschirm. Es entschärft und rastet ein: der
 Prüfstand bleibt entschärft, bis er erneut scharf geschaltet wird. Ein
@@ -208,7 +210,8 @@ darf, und nicht nur eine Geschwindigkeit für die Zeichnung. Bei 100 % geht
 der Befehl unverändert durch und das Servo läuft mit seiner eigenen
 Geschwindigkeit; darunter rampt der Prüfstand den Befehl davor, 30 % braucht
 also dreimal so lange wie 90 %. Die Änderung wirkt sofort auf einen
-gehaltenen Ausgang.
+gehaltenen Ausgang. Ohne Rückmeldung wird das Horn mit derselben Rate
+bewegt gezeichnet, bei 100 % sofort am Befehl.
 
 **Vor jeder Bewegung ARM.** Solange der Prüfstand nicht scharf ist, schreibt
 der Koprozessor auf jeden PWM-Pin einen Impuls der Länge null: der Arm auf dem
@@ -271,20 +274,94 @@ Servo machen darf: von WEG und vom näheren von PULS MIN und MAX, damit die
 Kurve kein Ende erreicht, das sie nicht erreichen darf. TEMPO auf der rechten
 Karte begrenzt sie wie ein Ziehen, Trim gilt nicht. Das Horn folgt derselben
 Kurve, im Panel gerechnet und ab dem Moment, in dem der Koprozessor seine
-gestartet hat. Während sie läuft, heißt der Knopf HOLD; ein Tippen hält die
-Kurve dort an, wo der Ausgang gerade steht -- TEMPO kann ihn hinter der Kurve
-zurücklassen --, und hält ihn dort. Das Halten übernimmt der Koprozessor,
-weil nur er genau weiß, wo das ist; ohne Rückmeldung ist das im Panel
-gezeichnete Horn eine Schätzung davon. Ein HOLD wartet nicht hinter
-Sweep-Schreibvorgängen, die schon auf dem Draht sind. Ein HOLD, den der Link
-500 ms nicht wiederholt hat, hat das andere Ende losgelassen; das Panel gibt
-die Surfaces dann zur Mitte frei, und das Horn geht dorthin. Ein Finger auf der
-Skala, CENTRE, FREIGEBEN, ein Disarm und das Verlassen der Seite beenden sie
-ebenfalls, und verlorene Touch-Ereignisse halten sie an wie HOLD. Eine geänderte Einstellung startet sie mit der neuen Kurve neu; ein
-geändertes Profil oder eine geänderte Frame Rate geht sofort mit.
+gestartet hat. Das Panel zeichnet nur, was der Koprozessor bekanntermaßen
+tut: ein verlangter oder fortgesetzter Sweep wird gezeichnet, sobald sein
+Start quittiert ist, und bis dahin bleibt das Horn, wo der Ausgang ist.
+Ohne Rückmeldung wird es dann ab der Stelle weitergerechnet, an der der
+Ausgang war, als der Koprozessor begann, entlang der Kurve mit TEMPO. Zwei
+Tipper auf den Sweep-Knopf, die den Bildschirm im selben Frame erreichen,
+bevor der Befehl des ersten hinaus ist, heben sich auf: nichts wird
+gesendet, und der Sweep läuft weiter wie zuvor.
+
+**PAUSE hält sie an.** Während ein Sweep läuft, heißt der Knopf PAUSE, in der
+Akzentfarbe. Ein Tippen hält die Kurve dort an, wo der Ausgang gerade steht
+-- TEMPO kann ihn hinter der Kurve zurücklassen --, und hält ihn dort; der
+Knopf heißt dann PAUSIERT, gefüllt in der Warnfarbe. Das Halten übernimmt der
+Koprozessor (das HOLD des Links, SWEEP-Register 4), weil nur er genau weiß,
+wo das ist; ohne Rückmeldung ist das im Panel gezeichnete Horn eine Schätzung
+davon. Das Panel wiederholt das Halten alle 100 ms (`SERVO_HOLD_MS`), daher
+überdauert eine Pause die 500-ms-Regel des Koprozessors. Eine Pause wartet
+nicht hinter Sweep-Schreibvorgängen, die schon auf dem Draht sind. Ein
+Tippen auf PAUSIERT setzt den Sweep an dem Punkt der Kurve fort, an dem er
+angehalten wurde: die Stelle in einem Verweilen und die erreichten Enden
+laufen von dort weiter, und das Horn wird ab dieser Phase gezeichnet. Die
+Phase ist die der Kurve, als der Koprozessor das HOLD quittiert hat, nicht
+die beim Tippen: dort läuft die Kurve während des Austauschs dazwischen
+weiter, und so läuft auch die Zeichnung weiter, mit dem TEMPO, das beim
+Tippen galt, höchstens 500 ms lang -- so lange führt der Koprozessor einen
+Sweep, von dem er nichts mehr hört. Ohne Rückmeldung wird das Horn dann
+dorthin gesetzt, wo der Ausgang bei der Quittung war: die Kurve bis zu
+dieser Phase, verlangsamt wie in der Zeichnung. Ein dazwischen geändertes TEMPO erreicht den Koprozessor erst mit dem
+Fortsetzen. Ein Tippen auf PAUSIERT lässt das Horn stehen, bis das
+Fortsetzen quittiert ist; dann misst das Panel die Zeichnung ab der Phase,
+die der Koprozessor behalten hat, so wie es die beiden Quittungen gemessen
+hat, auch wenn das Tippen vor der Quittung des HOLD kam. Der
+Koprozessor behält die Phase, solange er hält, und setzt die Kurve fort
+(`LINK_SV_RESUME`, Protokoll 4.6); der Ausgang fährt mit der Rate von TEMPO
+von der gehaltenen Stelle zur Kurve, bei 100 % sofort, und ist meist schon
+dort. Eine während der Pause auf der TEST-Seite geänderte Kurve startet
+stattdessen als neuer Sweep. Ein Koprozessor älter als 4.6, oder einer, der
+das Fortsetzen abweist, weil sein Halten geendet hat, startet die Kurve von
+ihrem Anfang -- in der Mitte bei Sinus und Dreieck, am ersten Ende beim
+Rechteck --, und das Alert-Band sagt es: `Koprozessor älter als 4.6 -- der
+Sweep beginnt von vorn` oder `Koprozessor lehnte das Fortsetzen ab -- der
+Sweep beginnt von vorn`. Ebenso eine Pause, deren HOLD erst bei einer
+Wiederholung beantwortet wurde, denn ein früherer Versuch kann den
+Koprozessor erreicht haben, und die Phase, die er behalten hat, ist im
+Panel dann nicht bekannt: `Pause auf dem Link wiederholt -- der Sweep
+beginnt von vorn`.
+
+![Ein angehaltener Sweep](img/de/servo-paused.png)
+
+Ein Halten, das der Link 500 ms nicht wiederholt hat, hat das andere Ende
+losgelassen; das Panel gibt die Surfaces dann zur Mitte frei, und das Horn
+geht dorthin. Ein Finger auf der Skala, ZENTRIEREN, FREIGEBEN, STOP, ein
+Disarm und das Verlassen der Seite beenden einen Sweep, ob er läuft oder
+angehalten ist, und der Knopf heißt wieder SWEEP. Ein geänderter Typ, eine
+geänderte Frame Rate, Pulsbreite, Trim, WEG oder REVERSE beenden auch eine
+Pause; das Servo wird dann als Position am Winkel der Pause gehalten. Mit
+Rückmeldung ist das der Winkel, den das Servo zuletzt gemeldet hat und zu
+dem es sich nach dem Tippen noch bewegen kann; ohne Rückmeldung ist es die
+gezeichnete Schätzung bei der Quittung. Ein
+geändertes TEMPO lässt die Pause stehen; das Fortsetzen läuft mit dem neuen
+TEMPO. Verlorene Touch-Ereignisse halten einen laufenden Sweep an wie PAUSE.
+Eine geänderte Einstellung startet einen laufenden Sweep mit der neuen Kurve
+neu, gezeichnet ab der Quittung des Koprozessors; bis dahin wird die alte
+Kurve weitergezeichnet, wie der Koprozessor sie fährt, mit den Pulsen und
+dem WEG, mit denen sie gesendet wurde. Jede Quittung wird dem Befehl
+zugeordnet, den sie beantwortet: ein TEMPO oder eine Kurve, die geändert
+wird, während ein Start wartet, wird nicht von der Quittung des früheren
+Befehls gezeichnet. Ein geändertes
+Profil oder eine geänderte Frame Rate geht sofort mit.
 SWEEP gibt es bei scharfem Prüfstand und einem Koprozessor mit Protokoll 4.2;
 der Koprozessor hält eine Kurve an, die das Panel 500 ms nicht wiederholt hat,
 und lässt jede Surface dort stehen, wo ihr Ausgang gerade ist.
+
+**TEMPO BEGRENZT DEN SWEEP** steht in der Warnfarbe statt der Beschriftung
+TEMPO auf der rechten Karte, solange TEMPO langsamer ist als die schnellste
+Änderung, die die Kurve verlangt. Dann bestimmt TEMPO die Bewegung, nicht
+KURVE: Rechteck, Sinus und Dreieck laufen alle als Rampen mit der Rate von
+TEMPO und sehen gleich aus, und der Ausgang kann umkehren, bevor er ein Ende
+erreicht. Die Zeile folgt den Einstellungen; sie erscheint also schon vor
+dem Druck auf SWEEP und ebenso, während ein Sweep läuft. TEMPO erhöhen oder
+TEMPO (die Rate in Hz) oder BEREICH auf der TEST-Seite senken, dann
+verschwindet sie. Ein Rechteck springt zwischen seinen Enden, daher erscheint
+sie dort bei jedem TEMPO unter 100 %. Mit den Vorgaben der TEST-Seite
+(Sinus, 0,5 Hz, BEREICH 80 %) und WEG +/-90 Grad verschwindet sie
+ab TEMPO 63 %, beim Dreieck ab 40 %.
+[Servoverfahren](Servo-de.md#sweep-und-tempo) nennt die Regel.
+
+![TEMPO begrenzt einen Sweep](img/de/servo-sweep.png)
 
 **TEST STARTEN startet den automatischen Test** auf der TEST-Seite: das Servo
 wird durch die dort gewählten Spannungen geführt, sein Strom in Ruhe, in
@@ -308,7 +385,7 @@ auf der linken Karte. Der Lauf führt das Servo und die Sollwerte und den
 Schalter von SUPPLY, bis er endet. Er endet vorzeitig, mit ausgeschaltetem
 Ausgang und dem Servo zur Mitte freigegeben, bei TEST BEENDEN (auf der linken
 Karte oder der TEST-Seite), STOP, einem Disarm, wenn der Link geht, beim
-Verlassen der Seite, bei einem Finger auf der Skala, CENTRE, SWEEP,
+Verlassen der Seite, bei einem Finger auf der Skala, ZENTRIEREN, SWEEP,
 FREIGEBEN, einem Tippen auf einen Sollwert, einer Änderung an Typ, Impulsen,
 Trim, Weg, Reverse oder TEMPO des Servos, bei verlorenen Touch-Ereignissen
 und beim Netzteil: siehe [die Liste](Servo-de.md#was-einen-lauf-beendet).
@@ -334,7 +411,7 @@ die Karte den Bericht vollständig angenommen hat.
 ### Einstellungen
 
 OPTIONEN, oben auf der rechten Karte, öffnet die Einstellungen des Servos über
-der linken Karte. ARM, CENTRE, FREIGEBEN und STOP bleiben, wo sie sind, und
+der linken Karte. ARM, ZENTRIEREN, FREIGEBEN und STOP bleiben, wo sie sind, und
 funktionieren. Ein Wert öffnet die Tastatur, eine Liste eine Liste, ein
 Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 

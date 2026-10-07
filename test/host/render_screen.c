@@ -42,6 +42,7 @@
 #include "esc_sim.h"
 #include "supply.h"
 #include "supply_screen.h"
+#include "ui_band.h"
 #include "ui_keypad.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
@@ -234,7 +235,7 @@ static const ui_bench_status_t k_status = {
     .armed       = false,
     .faults      = 0,
     .run_seconds = 257,
-    .mode        = "DSHOT600",
+    .mode        = NULL,    /* ui_band_mode() of the link, per view */
     .simulated   = false,
     /* Not read in this harness; the strip prints "--". */
     .mcu_temp_c = NAN,
@@ -363,6 +364,54 @@ static void servo_run_view(bool to_the_end)
     }
     if (to_the_end) {
         servo_screen_test_files(12, true);
+        ui_router_tick(0.02f);
+    }
+}
+
+/*
+ * The TEST page's sine, 0.5 Hz over 80 % of the travel, swept with SPEED at
+ * the left end of its track, 12 %: the curve asks for 1257 units a second
+ * at the centre and SPEED allows 240, so SPEED's row says it limits the
+ * sweep.  Geometry from servo_screen.c, offset by the band: the SPEED
+ * track's left end and SWEEP.  With @p pause, PAUSE is tapped 0.8 s in and
+ * the frames after it show the paused button.
+ */
+static void servo_sweep_view(bool pause)
+{
+    ui_router_goto(SCREEN_SERVO);
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    /* Nothing measures the horn on this bench: it is drawn chasing the
+     * command at SPEED. */
+    servo_screen_feedback(0u, 0.0f, false);
+    uint32_t now = 100000u;
+    servo_screen_clock(now);
+    tap(521, UI_BAND_H + 307);                      /* SPEED 12 % */
+    tap(651, UI_BAND_H + 366);                      /* SWEEP */
+    servo_cmd_t taken;
+    uint16_t start_seq = 0u;
+    while (servo_screen_take(&taken)) {
+        start_seq = taken.start_seq;
+    }
+    /* The far end's start, acknowledged as the panel would. */
+    servo_screen_sweep_started(start_seq, 0u, SERVO_SWEEP_FROM_REST, 0u);
+    uint16_t hold_seq = 0u;
+    for (int i = 0; i < 40 + (pause ? 20 : 0); ++i) {
+        if (pause && i == 40) {
+            tap(651, UI_BAND_H + 366);              /* PAUSE */
+        }
+        if (pause && i == 41) {
+            /* The HOLD acknowledged a frame later, as the panel would. */
+            servo_screen_sweep_held(hold_seq, servo_screen_curve_ms());
+        }
+        now += 20u;
+        servo_screen_clock(now);
+        servo_cmd_t sc;
+        while (servo_screen_take(&sc)) {
+            if (sc.kind == SERVO_CMD_HOLD) {
+                hold_seq = sc.pause_seq;
+            }
+        }
         ui_router_tick(0.02f);
     }
 }
@@ -1006,6 +1055,9 @@ int main(int argc, char **argv)
                 const gfx_rect_t r = ui_keypad_key_rect(&kp, k[i]);
                 tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
             }
+        } else if (strcmp(view, "servo-sweep") == 0
+                   || strcmp(view, "servo-paused") == 0) {
+            servo_sweep_view(strcmp(view, "servo-paused") == 0);
         } else if (strcmp(view, "servo") != 0) {
             ui_router_goto(SCREEN_SERVO);
             tap(734, UI_BAND_H + 24);
@@ -1028,10 +1080,16 @@ int main(int argc, char **argv)
 
     ui_bench_status_t st = k_status;
     st.simulated = sim || (id == SCREEN_MOTOR);
+    /* Modelled numbers are the panel's own, which it runs only while no
+     * coprocessor answers: the band says NO LINK and SIM, as on the bench. */
+    st.link_up   = !st.simulated;
+    st.mode      = ui_band_mode(st.link_up);
     st.armed     = (id == SCREEN_MOTOR
                     && strcmp(view, "motor-held") != 0)
                    || strcmp(view, "servo-run") == 0
-                   || strcmp(view, "servo-result") == 0;
+                   || strcmp(view, "servo-result") == 0
+                   || strcmp(view, "servo-sweep") == 0
+                   || strcmp(view, "servo-paused") == 0;
     ui_router_set_status(&st);
     ui_router_goto(id);
 

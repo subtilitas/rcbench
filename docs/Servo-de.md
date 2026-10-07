@@ -238,7 +238,7 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | `Prüfstand DISARMED` | DISARM oder alles andere, was den Prüfstand entschärft hat |
 | `Link verloren` | der Link zum Koprozessor ging während des Laufs verloren |
 | `Seite SERVO verlassen` | eine andere Seite wurde geöffnet |
-| `vom Bediener gestoppt` | TEST BEENDEN, ein Finger auf der Skala, CENTRE, SWEEP, FREIGEBEN, ein Tippen auf einen Sollwert |
+| `vom Bediener gestoppt` | TEST BEENDEN, ein Finger auf der Skala, ZENTRIEREN, SWEEP, FREIGEBEN, ein Tippen auf einen Sollwert |
 | `Servo-Optionen geändert` | Typ, Frame Rate, Impulse, Trim, Weg, Reverse oder TEMPO geändert |
 | `Touch-Ereignisse verloren` | zwischen zwei Frames gingen Ereignisse verloren |
 | `Netzteil antwortet nicht` | ein Messwert als nicht antwortend markiert |
@@ -320,6 +320,53 @@ und die CSV, vom Parser der Log-Ansicht zurückgelesen. Nicht gemessen: die
 wirkliche Rate der Messwerte über den Koprozessor, die Mittelung des PD mini,
 die Verzögerung des Befehls bis zum Pin, und ob der Strom eines echten Servos
 auf 0,05 A genau auf seinen Haltestrom zurückfällt.
+
+## Sweep und TEMPO
+
+SWEEP auf der Seite SERVO fährt das Servo die Kurve der TEST-Seite ab.
+TEMPO auf der rechten Karte begrenzt, wie schnell sich der Ausgang bewegen
+darf. Ist TEMPO langsamer als die schnellste Änderung, die die Kurve
+verlangt, bestimmt TEMPO die Bewegung statt der Kurve, und die Zeile von
+TEMPO lautet in der Warnfarbe TEMPO BEGRENZT DEN SWEEP
+([Bildschirme](Screens-de.md#servo)).
+
+Die schnellste Änderung, mit f der Rate der TEST-Seite in Hz und A der
+Amplitude in Grad (BEREICH des Wegs zu beiden Seiten von PULS CENTRE):
+
+| KURVE | Schnellste Änderung | Wo |
+| --- | --- | --- |
+| Rechteck | ein Sprung | bei jedem Wechsel des Endes |
+| Sinus | 2 pi f A | durch die Mitte |
+| Dreieck | 4 f A | überall |
+
+TEMPO unter 100 % erlaubt 3,6 Grad/s je Prozent: 36 Grad/s bei 10 %,
+356,4 Grad/s bei 99 %. Bei 100 % wird der Befehl nicht verlangsamt, und
+nichts wird begrenzt. Ein Rechteck ist bei jedem TEMPO unter 100 %
+begrenzt. VERWEILEN zählt nicht: es fügt Zeit an den Enden hinzu, nicht zur
+Bewegung. Die Zeile folgt den Einstellungen, vor dem Druck auf SWEEP und
+während er läuft. `sweep_slew_limited()` in `shared/servo/servo_sweep.c`
+entscheidet das, in den Befehlseinheiten, in denen der Koprozessor die Rampe
+fährt.
+
+| TEST-Seite | A | Schnellste Änderung | Verschwindet ab TEMPO |
+| --- | ---: | ---: | ---: |
+| Sinus, 0,5 Hz, BEREICH 80 %, WEG +/-90 Grad | 72 Grad | 226 Grad/s | 63 % |
+| Dreieck, 0,5 Hz, BEREICH 80 %, WEG +/-90 Grad | 72 Grad | 144 Grad/s | 40 % |
+| Rechteck, beliebig | beliebig | ein Sprung | 100 % |
+
+Die Zeile verschwindet, wenn TEMPO steigt oder TEMPO (die Rate) oder
+BEREICH auf der TEST-Seite sinkt.
+
+Die Zeile vergleicht die Kurve nur mit TEMPO. Ein Servo, das langsamer ist
+als beide, begrenzt den Sweep ebenfalls; nichts auf dem Prüfstand misst das
+Ruderhorn, daher wird das nicht angezeigt.
+
+PAUSE, der Sweep-Knopf während ein Sweep läuft, hält den Ausgang dort, wo
+er gerade steht, und der Knopf heißt PAUSIERT, gefüllt in der Warnfarbe.
+Ein Tippen auf PAUSIERT setzt den Sweep ab der Phase fort, an der er
+angehalten wurde, bei einem Koprozessor mit Protokoll 4.6; ein älterer
+startet die Kurve von vorn. Ein angehaltener Sweep ist der Moment, TEMPO zu
+erhöhen: die Pause bleibt, und das Fortsetzen läuft mit der neuen Rate.
 
 ## Voraussetzungen
 

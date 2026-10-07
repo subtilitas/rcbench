@@ -52,7 +52,7 @@ static gfx_color_t fb[W * H];
 
 static const ui_bench_status_t k_status = {
     .link_up = true, .armed = true, .faults = 0,
-    .run_seconds = 257, .mode = "DSHOT600",
+    .run_seconds = 257, .mode = "BENCH",    /* ui_band_mode(true) */
     /* Not read in this harness; the strip prints "--". */
     .mcu_temp_c = NAN,
 };

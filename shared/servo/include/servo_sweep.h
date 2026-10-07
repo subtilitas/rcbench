@@ -62,6 +62,8 @@ typedef struct {
     sweep_cfg_t cfg;
     uint32_t    start_ms;
     bool        running;
+    bool        paused;      /**< stopped by sweep_pause(), phase kept    */
+    uint32_t    paused_ms;   /**< how far into the sweep it was paused    */
 } sweep_t;
 
 /** Whether @p cfg is one a sweep can run: a curve, a speed and an amplitude
@@ -72,7 +74,23 @@ bool sweep_cfg_valid(const sweep_cfg_t *cfg);
  *  sweep_cfg_valid() refuses. */
 bool sweep_start(sweep_t *w, const sweep_cfg_t *cfg, uint32_t now_ms);
 
+/** Stop, and forget any paused phase. */
 void sweep_stop(sweep_t *w);
+
+/**
+ * Stop a running sweep at @p now_ms and keep how far into it it was, so
+ * sweep_resume() carries on from there: the same point of the curve, the
+ * same dwell, the movements reached so far.  Nothing for a sweep that is not
+ * running, finished included.
+ */
+void sweep_pause(sweep_t *w, uint32_t now_ms);
+
+/**
+ * Carry a paused sweep on at @p now_ms from where it was paused.  False,
+ * and nothing changes, when nothing is paused: never paused, stopped or
+ * started since.
+ */
+bool sweep_resume(sweep_t *w, uint32_t now_ms);
 
 /**
  * The command at @p now_ms into @p command.  True while the sweep runs;
@@ -84,6 +102,21 @@ bool sweep_step(sweep_t *w, uint32_t now_ms, uint16_t *command);
 /** How many ends the sweep has reached by @p now_ms, the moves limit
  *  included once reached. */
 uint32_t sweep_moves(const sweep_t *w, uint32_t now_ms);
+
+/**
+ * Whether a slew of @p slew_per_s command units a second is slower than the
+ * fastest change @p cfg's curve asks for, so the slew and not the curve
+ * decides how the output moves.  The fastest change, at amplitude A and
+ * f = mhz / 1000 cycles a second, is 2 pi f A for a sine (at the centre)
+ * and 4 f A for a triangle (throughout).  A square jumps, so any slew
+ * limits it.  The dwell does not enter: it adds time at the ends, not to
+ * the motion.
+ *
+ * A slew of 0 is no limit, as on an output channel, and limits nothing.
+ * False for a configuration sweep_cfg_valid() refuses and for an amplitude
+ * of 0, which asks for no change.
+ */
+bool sweep_slew_limited(const sweep_cfg_t *cfg, uint16_t slew_per_s);
 
 #ifdef __cplusplus
 }

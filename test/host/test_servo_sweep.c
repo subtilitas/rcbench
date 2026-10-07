@@ -163,6 +163,109 @@ TEST_CASE(a_long_sweep_keeps_its_period)
              2u * 36000u + 1u);
 }
 
+/*
+ * The slew a curve outruns: 4 f A for a triangle, 2 pi f A for a sine, and
+ * any slew at all for a square's jump.  At 1 Hz and 400 units those are
+ * 1600 and 2513.3 units a second.
+ */
+TEST_CASE(a_slew_limits_a_sweep_that_asks_for_a_faster_change)
+{
+    const sweep_cfg_t tri = { SWEEP_TRIANGLE, 1000u, 400u, 200u, 0u };
+    CHECK(sweep_slew_limited(&tri, 1599u));
+    CHECK(!sweep_slew_limited(&tri, 1600u));
+    const sweep_cfg_t sine = { SWEEP_SINE, 1000u, 400u, 200u, 0u };
+    CHECK(sweep_slew_limited(&sine, 2513u));
+    CHECK(!sweep_slew_limited(&sine, 2514u));
+    const sweep_cfg_t square = { SWEEP_SQUARE, SWEEP_MHZ_MIN, 1u, 0u, 0u };
+    CHECK(sweep_slew_limited(&square, UINT16_MAX));
+
+    /* Half the rate or half the range halves what the curve asks for. */
+    const sweep_cfg_t slow = { SWEEP_TRIANGLE, 500u, 400u, 0u, 0u };
+    const sweep_cfg_t narrow = { SWEEP_TRIANGLE, 1000u, 200u, 0u, 0u };
+    CHECK(sweep_slew_limited(&slow, 799u));
+    CHECK(!sweep_slew_limited(&slow, 800u));
+    CHECK(sweep_slew_limited(&narrow, 799u));
+    CHECK(!sweep_slew_limited(&narrow, 800u));
+}
+
+/* No slew, no change asked for, or no sweep: nothing is limited. */
+TEST_CASE(no_slew_and_no_amplitude_limit_nothing)
+{
+    const sweep_cfg_t square = { SWEEP_SQUARE, 5000u, 500u, 0u, 0u };
+    CHECK(!sweep_slew_limited(&square, 0u));
+    const sweep_cfg_t still = { SWEEP_SQUARE, 5000u, 0u, 0u, 0u };
+    CHECK(!sweep_slew_limited(&still, 1u));
+    const sweep_cfg_t off = { SWEEP_OFF, 1000u, 400u, 0u, 0u };
+    CHECK(!sweep_slew_limited(&off, 1u));
+    CHECK(!sweep_slew_limited(NULL, 1u));
+}
+
+/*
+ * The figures are the curve's own: the steepest change sweep_step() makes
+ * in any 4 ms of a cycle sits between the slews either side of the limit.
+ */
+TEST_CASE(the_limit_is_the_steepest_change_the_curve_makes)
+{
+    const sweep_kind_t kinds[] = { SWEEP_SINE, SWEEP_TRIANGLE };
+    for (unsigned k = 0; k < 2u; ++k) {
+        sweep_t w = make(kinds[k], 2000u, 300u, 100u, 0u);
+        unsigned steepest = 0u;
+        for (uint32_t t = 0u; t < 700u; ++t) {
+            const uint16_t a = at(&w, t), b = at(&w, t + 4u);
+            const unsigned d = (a > b) ? (unsigned)(a - b)
+                                       : (unsigned)(b - a);
+            steepest = (d > steepest) ? d : steepest;
+        }
+        const unsigned per_s = steepest * 250u;   /* units in 4 ms, a second */
+        CHECK(sweep_slew_limited(&w.cfg, (uint16_t)(per_s * 9u / 10u)));
+        CHECK(!sweep_slew_limited(&w.cfg, (uint16_t)(per_s * 11u / 10u)));
+    }
+}
+
+/*
+ * A pause keeps how far into the sweep it was: resumed any time later, the
+ * curve, its dwell and its count go on from there.
+ */
+TEST_CASE(a_paused_sweep_resumes_where_it_was)
+{
+    sweep_t w = make(SWEEP_TRIANGLE, 1000u, 400u, 100u, 0u);   /* at 1000 */
+    uint16_t c = 0;
+    CHECK(sweep_step(&w, 1000u + 300u, &c));       /* in the first dwell */
+    CHECK_EQ(c, 900u);
+    sweep_pause(&w, 1300u);
+    CHECK(!w.running);
+    CHECK(!sweep_step(&w, 5000u, &c));             /* paused: the centre */
+    CHECK_EQ(c, SWEEP_CENTRE);
+    CHECK(sweep_resume(&w, 9000u));
+    CHECK(sweep_step(&w, 9000u + 40u, &c));        /* 340 ms: still held */
+    CHECK_EQ(c, 900u);
+    CHECK(sweep_step(&w, 9000u + 175u, &c));       /* 475 ms: on the way */
+    CHECK_EQ(c, 700u);
+    CHECK_EQ(sweep_moves(&w, 9000u + 175u), 1u);
+    CHECK(!sweep_resume(&w, 9500u));               /* once */
+}
+
+/* Only a running sweep pauses, and a stop or a start forgets the pause. */
+TEST_CASE(a_stop_or_a_start_forgets_a_pause)
+{
+    sweep_t w = make(SWEEP_SINE, 1000u, 400u, 0u, 0u);
+    sweep_pause(&w, 1100u);
+    sweep_stop(&w);
+    CHECK(!sweep_resume(&w, 1200u));
+    sweep_pause(&w, 1300u);                        /* stopped: nothing kept */
+    CHECK(!sweep_resume(&w, 1400u));
+
+    w = make(SWEEP_SINE, 1000u, 400u, 0u, 0u);
+    sweep_pause(&w, 1100u);
+    const sweep_cfg_t cfg = { SWEEP_SQUARE, 1000u, 400u, 0u, 0u };
+    CHECK(sweep_start(&w, &cfg, 1200u));
+    sweep_stop(&w);
+    CHECK(!sweep_resume(&w, 1300u));
+
+    sweep_pause(NULL, 0u);
+    CHECK(!sweep_resume(NULL, 0u));
+}
+
 int main(void)
 {
     RUN(a_configuration_outside_its_ranges_is_refused);
@@ -174,5 +277,10 @@ int main(void)
     RUN(a_stopped_sweep_rests_at_the_centre);
     RUN(the_clock_may_wrap);
     RUN(a_long_sweep_keeps_its_period);
+    RUN(a_slew_limits_a_sweep_that_asks_for_a_faster_change);
+    RUN(no_slew_and_no_amplitude_limit_nothing);
+    RUN(the_limit_is_the_steepest_change_the_curve_makes);
+    RUN(a_paused_sweep_resumes_where_it_was);
+    RUN(a_stop_or_a_start_forgets_a_pause);
     return test_summary("servo_sweep");
 }
