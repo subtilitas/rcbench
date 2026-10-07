@@ -16,7 +16,7 @@ Network) at 1 Mbit/s.
 | Task | Page |
 | --- | --- |
 | Feature list and the state of each feature | [What this is for](Manifest.md) |
-| Buy the parts of the beta bench, wire and flash them | [Build guide, PDF](https://github.com/subtilitas/rcbench/releases/download/v0.13.0/rcbench-build-guide-en-v0.13.0.pdf) (4 pages, for 0.13.0) |
+| Buy the parts of the beta bench, wire and flash them | [Build guide, PDF](https://github.com/subtilitas/rcbench/releases/latest/download/rcbench-build-guide-en.pdf) (4 pages, attached to every release) |
 | Build and flash both boards | [Building](Building.md) |
 | Wire the two boards and verify the bus | [Bringing up the link](Bringup.md) |
 | Operate the screens | [Screens](Screens.md) |
