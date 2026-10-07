@@ -950,7 +950,8 @@ def record_selftest():
     tree; two records with one sequence number; a record after another
     clone pushed one on the same head; a commit that fails; a record that
     dies while it writes the returns; two clones that each prepared T6
-    with a merge of their own; a stopped T6 with files outside
+    with a merge of their own; a record while another holds the base; a
+    run directory made during a record; a stopped T6 with files outside
     the outputs and in the index; a refused T6 with a staged deletion, a
     staged rename and a file added with intent to add, and with a commit
     an agent made; a stash that cannot be made; the tree prepare refuses
@@ -1168,6 +1169,37 @@ def record_selftest():
                and changed(res_n) == []
                and "refused T6 id-T6" in git("-C", res_n, "stash", "list"),
                f"the second clone's T6 leaves its merge: {got!r}")
+
+        # One record at a time in a base directory.
+        want_w = prepared(base_c, "FU-W", "FU", p24, {"P0": {}})
+        out_w = output(base_c, want_w, fu_summary, p0)
+        held = lock_file(base_c, "record")
+        try:
+            got = record_as(base_c, "FU", out_w, "W")
+        finally:
+            os.close(held)
+        expect(got.startswith("another record is running"),
+               f"a record while another holds the base: {got!r}")
+        # A run directory made after record's check is not moved into and
+        # not removed.
+        original = selection_to_write
+        run_dir = os.path.join(res_c, r1, "FU-W")
+
+        def racing(*a):
+            write(os.path.join(run_dir, "other.json"), "{}")
+            return original(*a)
+        globals()["selection_to_write"] = racing
+        try:
+            got = record_as(base_c, "FU", out_w, "W")
+        finally:
+            globals()["selection_to_write"] = original
+        left = os.listdir(run_dir) if os.path.isdir(run_dir) else None
+        expect(got.endswith("exists; a run is recorded once")
+               and left == ["other.json"]
+               and not [n for n in os.listdir(base_c)
+                        if n.startswith(".record-")],
+               f"a run directory made during record: {got!r}, {left}")
+        shutil.rmtree(run_dir, ignore_errors=True)
 
         # A commit an agent made during T6 is undone into the stash.
         base_g, res_g = clone("g")
@@ -2154,15 +2186,21 @@ def pending_runs(base, results, run):
 PREPARE_LOCK = []
 
 
-def lock_base(base):
-    fd = os.open(os.path.join(base, ".prepare.lock"),
+def lock_file(base, command):
+    """An exclusive lock on BASE/.COMMAND.lock, refused while another
+    process holds it; the open descriptor, which holds it until closed."""
+    fd = os.open(os.path.join(base, f".{command}.lock"),
                  os.O_RDWR | os.O_CREAT, 0o644)
     try:
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         os.close(fd)
-        raise SystemExit(f"another prepare is running in {base}") from None
-    PREPARE_LOCK.append(fd)
+        raise SystemExit(f"another {command} is running in {base}") from None
+    return fd
+
+
+def lock_base(base):
+    PREPARE_LOCK.append(lock_file(base, "prepare"))
 
 
 def turn(results, task, run, followup, cats):
@@ -2774,6 +2812,20 @@ def misplaced_figures(results, returns):
 
 
 def cmd_record(args):
+    """record, one at a time in a base directory: it holds BASE/.record.lock
+    from its first check to its commit, and through setting P7's changes
+    aside after a refused T6."""
+    base = base_dir(args)
+    if not os.path.isdir(base):
+        raise SystemExit(f"{base} is not a directory; prepare a run first")
+    fd = lock_file(base, "record")
+    try:
+        return record_or_set_aside(args)
+    finally:
+        os.close(fd)
+
+
+def record_or_set_aside(args):
     """record, with every refusal after T6 setting P7's changes aside."""
     try:
         return record(args)
@@ -2883,10 +2935,12 @@ def record(args):
         raise SystemExit(f"{target} exists; a run is recorded once")
     # The returns are written beside the results tree and moved into it just
     # before the commit: a record that dies on the way leaves nothing in the
-    # records directory that the next record or prepare refuses.
-    tmp = os.path.join(base, f".record-{run}.tmp")
-    shutil.rmtree(tmp, ignore_errors=True)
-    os.makedirs(tmp)
+    # records directory that the next record or prepare refuses. The lock
+    # cmd_record holds makes any such directory one a record left that died.
+    for old in os.listdir(base):
+        if old.startswith(".record-") and old.endswith(".tmp"):
+            shutil.rmtree(os.path.join(base, old), ignore_errors=True)
+    tmp = tempfile.mkdtemp(prefix=f".record-{run}-", suffix=".tmp", dir=base)
     for i, r in enumerate(result.get("returns", []), 1):
         name = f"{i:03d}-{r['label']}{'-restart' if r['attempt'] else ''}"
         with open(os.path.join(tmp, f"{name}.json"), "w") as f:
@@ -2983,20 +3037,33 @@ def record(args):
         with open(sel, "w") as f:
             json.dump(new, f, indent=1, ensure_ascii=False)
         paths.append(sel)
+    # The run's directory is claimed by creating it, which fails when it
+    # exists, and only a directory this record created is removed again.
+    claimed = False
     try:
-        shutil.move(tmp, target)
+        os.mkdir(target)
+        claimed = True
+        for n in sorted(os.listdir(tmp)):
+            shutil.move(os.path.join(tmp, n), os.path.join(target, n))
         git("-C", results, "add", "--", *paths)
         git("-C", results, "commit", "-q", "-m", message[0], "-m",
             message[1], "--", *paths)
-    except (SystemExit, OSError):
+    except (SystemExit, OSError) as failed:
         git("-C", results, "reset", "-q", "--", *paths, check=False)
         # A selection.json this record created goes; one in HEAD returns.
-        if sel_tracked:
+        if new is not None and sel_tracked:
             git("-C", results, "checkout", "-q", "--", sel_rel, check=False)
-        elif os.path.exists(os.path.join(results, sel_rel)):
+        elif new is not None and os.path.exists(os.path.join(results,
+                                                             sel_rel)):
             os.remove(os.path.join(results, sel_rel))
-        shutil.rmtree(target, ignore_errors=True)
+        if claimed:
+            shutil.rmtree(target, ignore_errors=True)
+        if isinstance(failed, FileExistsError):
+            raise SystemExit(f"{target} exists; a run is recorded "
+                             "once") from None
         raise
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
     print(f"{target}: {len(result.get('returns', []))} returns committed "
           f"on {RESULTS}; push it")
     return 0

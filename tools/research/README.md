@@ -85,7 +85,8 @@ run of the round is recorded; until then a run reads the previous round's.
 `check` runs the round rules on a throwaway git repository, and fails when
 the plan has no section "Round 2". It also runs `record` on throwaway
 clones of a bare origin: two clones on one head, before any run and before
-T6, a commit hook that fails, a record that dies while writing, a stopped
+T6, a commit hook that fails, a record that dies while writing, a record
+while another holds the base, a run directory made during a record, a stopped
 and a refused T6, a commit made during T6, a stash git cannot make, the tree
 `prepare` refuses before T6, and a base directory under a symbolic link.
 
@@ -642,10 +643,15 @@ run was prepared on: another clone recorded a run on that head first, and
 this run did not see it. Two records that still carry one sequence number,
 pushed in a race past that check, make every gate of `prepare` and `record`
 refuse until the record pushed second is reverted; that run is then prepared
-and run again. `record` writes the returns in `BASE/.record-RUN.tmp` and moves
-the directory into the records directory just before its commit, so a record
-that dies while writing leaves nothing there for the next `record` or
-`prepare` to refuse. A
+and run again. One `record` runs at a time in a base directory: it holds a
+lock on `BASE/.record.lock` from its first check to its commit, and a second
+is refused while the first holds it. `record` writes the returns in a
+directory `BASE/.record-RUN-*.tmp` of its own and moves them into the records
+directory just before its commit, so a record that dies while writing leaves
+nothing there for the next `record` or `prepare` to refuse; the next `record`
+removes such a directory. It claims the run's directory by creating it: a
+directory that exists by then refuses the record, and `record` never removes
+a run directory it did not create. A
 task P0 stopped is recorded as `TASK-stopped-N` and does not count as
 recorded. After any run that is not stopped it rewrites the round's
 `selection.json` where it changes, the part each function keeps over every
