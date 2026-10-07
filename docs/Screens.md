@@ -264,6 +264,20 @@ with the new curve; a changed profile or frame rate goes with it at once. SWEEP 
 speaking protocol 4.2; the coprocessor stops a sweep the panel has not
 repeated for 500 ms and leaves each surface where its output has got to.
 
+**SPEED LIMITS THE SWEEP** replaces SPEED's label on the right card, in the
+warning colour, while SPEED is slower than the fastest change the curve asks
+for. SPEED then shapes the motion instead of CURVE: a square, a sine and a
+triangle all move as ramps at SPEED's rate and look alike, and the output
+can turn back before it reaches an end. The line follows the settings, so it
+shows before SWEEP is pressed as well as while a sweep runs. Raise SPEED, or
+lower the TEST page's SPEED (the rate in Hz) or RANGE, to clear it. A square
+jumps between its ends, so it shows at every SPEED below 100 %. With the
+TEST page's defaults (sine, 0.5 Hz, RANGE 80 %) and TRAVEL +/-90 deg it
+clears at SPEED 63 %, and for a triangle at 40 %.
+[Servo procedures](Servo.md#sweep-and-speed) gives the rule.
+
+![SPEED limiting a sweep](img/servo-sweep.png)
+
 **START TEST runs the automatic test** on the TEST page: the servo stepped
 through the supply voltages chosen there, its current measured at rest,
 moving and holding, its travel timed, and the voltage at which it stops

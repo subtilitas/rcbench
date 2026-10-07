@@ -369,6 +369,34 @@ static void servo_run_view(bool to_the_end)
 }
 
 /*
+ * The TEST page's sine, 0.5 Hz over 80 % of the travel, swept with SPEED at
+ * the left end of its track, 12 %: the curve asks for 1257 units a second
+ * at the centre and SPEED allows 240, so SPEED's row says it limits the
+ * sweep.  Geometry from servo_screen.c, offset by the band: the SPEED
+ * track's left end and SWEEP.
+ */
+static void servo_sweep_view(void)
+{
+    ui_router_goto(SCREEN_SERVO);
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    /* Nothing measures the horn on this bench: it is drawn chasing the
+     * command at SPEED. */
+    servo_screen_feedback(0u, 0.0f, false);
+    uint32_t now = 100000u;
+    servo_screen_clock(now);
+    tap(521, UI_BAND_H + 307);                      /* SPEED 12 % */
+    tap(651, UI_BAND_H + 366);                      /* SWEEP */
+    for (int i = 0; i < 40; ++i) {
+        now += 20u;
+        servo_screen_clock(now);
+        servo_cmd_t sc;
+        while (servo_screen_take(&sc)) { }
+        ui_router_tick(0.02f);
+    }
+}
+
+/*
  * A stick run on a modelled bench, as the panel drives one with no
  * coprocessor: the bench arms when asked, the supply switches when asked and
  * is read every 50 ms, and the simulated ESC draws the current.  One
@@ -1007,6 +1035,8 @@ int main(int argc, char **argv)
                 const gfx_rect_t r = ui_keypad_key_rect(&kp, k[i]);
                 tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
             }
+        } else if (strcmp(view, "servo-sweep") == 0) {
+            servo_sweep_view();
         } else if (strcmp(view, "servo") != 0) {
             ui_router_goto(SCREEN_SERVO);
             tap(734, UI_BAND_H + 24);
@@ -1036,7 +1066,8 @@ int main(int argc, char **argv)
     st.armed     = (id == SCREEN_MOTOR
                     && strcmp(view, "motor-held") != 0)
                    || strcmp(view, "servo-run") == 0
-                   || strcmp(view, "servo-result") == 0;
+                   || strcmp(view, "servo-result") == 0
+                   || strcmp(view, "servo-sweep") == 0;
     ui_router_set_status(&st);
     ui_router_goto(id);
 

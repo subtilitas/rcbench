@@ -709,6 +709,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_SUPPLY]              = "NETZTEIL",
     [TX_SV_SET]                 = "SOLL",
     [TX_SV_SPEED]               = "TEMPO",
+    [TX_SV_SPEED_LIMITS]        = "TEMPO BEGRENZT DEN SWEEP",
     [TX_SV_RANGE]               = "BEREICH",
     [TX_SV_RELEASE]             = "FREIGEBEN",
     [TX_SV_IN_FORCE_1]          = "Aktiv: jedes PWM-Ruder läuft mit %u Hz.",

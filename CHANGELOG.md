@@ -6,6 +6,17 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- **SERVO says when SPEED limits a sweep.** SPEED's row on the right card
+  reads SPEED LIMITS THE SWEEP (TEMPO BEGRENZT DEN SWEEP in German), in the
+  warning colour, while SPEED is slower than the fastest change the TEST
+  page's curve asks for: 2 pi f A for a sine, 4 f A for a triangle, and a
+  jump for a square, which every SPEED below 100 % limits. The curves then
+  move alike, as ramps at SPEED's rate. It follows the settings, before
+  SWEEP is pressed and while a sweep runs. With the TEST page's defaults
+  (sine, 0.5 Hz, RANGE 80 %) and TRAVEL +/-90 deg it clears at SPEED 63 %.
+
 ### Changed
 
 - **The status band's mode reads BENCH or SIM.** It read LINK with the link

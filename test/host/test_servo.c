@@ -1628,6 +1628,55 @@ TEST_CASE(hold_keeps_the_output_where_it_has_got_to)
     CHECK(at > 1500u && at < 1600u);           /* about 11 deg */
 }
 
+/* Pixels of @p col on SPEED's row of the right card. */
+static int speed_row_pixels(gfx_color_t col)
+{
+    int n = 0;
+    for (int y = 264 + 5; y < 264 + 21; ++y) {
+        for (int x = ARM_X; x < ARM_X + ARM_W; ++x) {
+            n += (fb[(size_t)y * W + x] == col) ? 1 : 0;
+        }
+    }
+    return n;
+}
+
+/*
+ * SPEED's row says when SPEED rather than the curve shapes the sweep, in the
+ * warning colour, from the settings: before SWEEP is pressed and on a bench
+ * that is not armed.  The TEST page's sine, 0.5 Hz over 400 units, asks for
+ * 1257 units a second; SPEED at the left end of its track allows at most
+ * 240.  The rate typed on the TEST page clears it while the page is open:
+ * 0.05 Hz asks for 126.
+ */
+TEST_CASE(speed_says_when_it_limits_the_sweep)
+{
+    fresh();
+    scr->render(&cv, 0);
+    CHECK_EQ(speed_row_pixels(ui_theme_color(UI_C_WARN)), 0);   /* 100 % */
+
+    tap(ARM_X + 1, SPEED_Y);                   /* SPEED's slowest */
+    scr->render(&cv, 0);
+    CHECK(speed_row_pixels(ui_theme_color(UI_C_WARN)) > 100);
+    CHECK_EQ(speed_row_pixels(ui_theme_color(UI_C_DANGER)), 0);
+
+    open_settings();
+    tap(TAB_X(1), TAB_Y);                      /* TEST */
+    tap(ROW_L_X, ROW_Y(1));                    /* SPEED, the rate */
+    keys("0.05");
+    scr->render(&cv, 0);
+    CHECK_EQ(speed_row_pixels(ui_theme_color(UI_C_WARN)), 0);
+
+    tap(ROW_L_X, ROW_Y(1));
+    keys("0.5");
+    scr->render(&cv, 0);
+    CHECK(speed_row_pixels(ui_theme_color(UI_C_WARN)) > 100);
+    close_settings();
+
+    tap(ARM_X + ARM_W - 1, SPEED_Y);           /* SPEED 100 %: no slew */
+    scr->render(&cv, 0);
+    CHECK_EQ(speed_row_pixels(ui_theme_color(UI_C_WARN)), 0);
+}
+
 /*
  * Without feedback the horn is drawn where the far end's output is, slewing
  * as the coprocessor slews -- in its command units -- so the horn HOLD
@@ -3389,6 +3438,7 @@ int main(void)
     RUN(a_changed_setting_starts_the_sweep_over);
     RUN(a_profile_changed_while_it_sweeps_goes_with_the_sweep);
     RUN(hold_keeps_the_output_where_it_has_got_to);
+    RUN(speed_says_when_it_limits_the_sweep);
     RUN(hold_without_feedback_matches_the_far_ends_slew);
     RUN(the_drawn_output_starts_where_the_far_ends_output_starts);
     RUN(a_range_changed_while_it_sweeps_goes_with_its_own_amplitude);

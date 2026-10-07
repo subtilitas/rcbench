@@ -117,6 +117,7 @@ SCREENS = {
     "servo-hv":       ("servo-hv.png",       "servo", "dark"),
     "servo-run":      ("servo-run.png",      "servo", "dark"),
     "servo-result":   ("servo-result.png",   "servo", "dark"),
+    "servo-sweep":    ("servo-sweep.png",    "servo", "dark"),
     "analyser":   ("analyser.png",   "analyser",   "dark"),
     "logs":       ("logs.png",       "logs",       "dark"),
     "analyser-failsafe": ("analyser-failsafe.png", "analyser", "dark"),

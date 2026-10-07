@@ -288,6 +288,22 @@ SWEEP gibt es bei scharfem Prüfstand und einem Koprozessor mit Protokoll 4.2;
 der Koprozessor hält eine Kurve an, die das Panel 500 ms nicht wiederholt hat,
 und lässt jede Surface dort stehen, wo ihr Ausgang gerade ist.
 
+**TEMPO BEGRENZT DEN SWEEP** steht in der Warnfarbe statt der Beschriftung
+TEMPO auf der rechten Karte, solange TEMPO langsamer ist als die schnellste
+Änderung, die die Kurve verlangt. Dann bestimmt TEMPO die Bewegung, nicht
+KURVE: Rechteck, Sinus und Dreieck laufen alle als Rampen mit der Rate von
+TEMPO und sehen gleich aus, und der Ausgang kann umkehren, bevor er ein Ende
+erreicht. Die Zeile folgt den Einstellungen; sie erscheint also schon vor
+dem Druck auf SWEEP und ebenso, während ein Sweep läuft. TEMPO erhöhen oder
+TEMPO (die Rate in Hz) oder BEREICH auf der TEST-Seite senken, dann
+verschwindet sie. Ein Rechteck springt zwischen seinen Enden, daher erscheint
+sie dort bei jedem TEMPO unter 100 %. Mit den Vorgaben der TEST-Seite
+(Sinus, 0,5 Hz, BEREICH 80 %) und WEG +/-90 Grad verschwindet sie
+ab TEMPO 63 %, beim Dreieck ab 40 %.
+[Servoverfahren](Servo-de.md#sweep-und-tempo) nennt die Regel.
+
+![TEMPO begrenzt einen Sweep](img/de/servo-sweep.png)
+
 **TEST STARTEN startet den automatischen Test** auf der TEST-Seite: das Servo
 wird durch die dort gewählten Spannungen geführt, sein Strom in Ruhe, in
 Bewegung und beim Halten gemessen, seine Stellzeit gemessen, und die

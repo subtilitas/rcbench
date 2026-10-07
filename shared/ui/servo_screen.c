@@ -746,6 +746,20 @@ static void start_sweep(void)
     ++s.ctrl_rev;
 }
 
+/*
+ * Whether SPEED is slower than the fastest change the TEST page's curve asks
+ * for, so the slew and not the curve shapes the sweep.  From the settings,
+ * so it shows before SWEEP is pressed as well as while one runs: a running
+ * sweep is this curve, started over when a setting changes.  The sweep's
+ * amplitude and SPEED's slew are in the same units, the command across the
+ * range a command carries.
+ */
+static bool speed_limits_sweep(void)
+{
+    const sweep_cfg_t cfg = sweep_cfg_now();
+    return sweep_slew_limited(&cfg, slew_of(s.speed_pct));
+}
+
 static bool same_sweep(const sweep_cfg_t *a, const sweep_cfg_t *b)
 {
     return a->kind == b->kind && a->mhz == b->mhz
@@ -2900,16 +2914,21 @@ static void draw_left(gfx_canvas_t *c)
     }
 }
 
-static void row(gfx_canvas_t *c, int y, const char *label, const char *value)
+static void row_in(gfx_canvas_t *c, int y, const char *label,
+                   gfx_color_t label_col, const char *value)
 {
-    gfx_text(c, RC_X, y + 5, label, UI_FONT_LABEL,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
+    gfx_text(c, RC_X, y + 5, label, UI_FONT_LABEL, label_col, 1);
     if (value != NULL) {
         gfx_text_in(c, (gfx_rect_t){ (int16_t)(RC_X + 80), (int16_t)(y + 5),
                                      (int16_t)(RC_W - 80), 16 },
                     value, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1,
                     GFX_ALIGN_RIGHT);
     }
+}
+
+static void row(gfx_canvas_t *c, int y, const char *label, const char *value)
+{
+    row_in(c, y, label, ui_theme_color(UI_C_TEXT_DIM), value);
 }
 
 /*
@@ -3092,8 +3111,14 @@ static void draw_right(gfx_canvas_t *c, bool power)
     }
     draw_sup_row(c);
 
+    /* SPEED's row says when SPEED, not CURVE, decides how a sweep moves:
+     * the curves then look alike. */
     snprintf(buf, sizeof(buf), "%d %%", s.speed_pct);
-    row(c, 264, TR(SV_SPEED), buf);
+    if (speed_limits_sweep()) {
+        row_in(c, 264, TR(SV_SPEED_LIMITS), ui_theme_color(UI_C_WARN), buf);
+    } else {
+        row(c, 264, TR(SV_SPEED), buf);
+    }
     s.speed.color = ui_theme_color(UI_C_ACCENT);
     ui_slider_render(&s.speed, c);
 
