@@ -530,7 +530,8 @@ Input/Output) auf zwei seiner Pins, über die SUPPLY-Link-Page (Protokoll
 in SETUP unter ANSCHLÜSSE eingeschaltet, sagt die Kopfzeile PD MINI. Ist er
 abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
 Netzteils: die Kopfzeile sagt NETZTEIL SIMULIERT, und die Kachel im Menü trägt
-SIMULIERT. Gegen ein Modul ist der PD mini noch nicht gelaufen.
+SIMULIERT. Gegen ein Modul lief der PD mini mit 0.10.0 und 0.10.1; nichts,
+was nach 0.10.1 hinzukam.
 
 Das Layout ist das von MOTOR & ESC. Der Plot zeigt Spannung, Strom und
 Leistung der letzten 27 s. Die Leiste rechts zeigt die Messwerte, die

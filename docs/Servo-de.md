@@ -314,7 +314,7 @@ ein Heli-Typ oder eine Frame Rate über 60 Hz gilt.
 
 ### Nicht auf Hardware gelaufen
 
-Kein Lauf hat ein Servo oder einen PD mini betrieben. Die Host-Suite prüft die
+Kein Servotest ist gegen ein Servo oder einen PD mini gelaufen. Die Host-Suite prüft die
 Engine gegen `servo_sim` und `supply_sim`, die Seite SERVO, die sie führt,
 und die CSV, vom Parser der Log-Ansicht zurückgelesen. Nicht gemessen: die
 wirkliche Rate der Messwerte über den Koprozessor, die Mittelung des PD mini,

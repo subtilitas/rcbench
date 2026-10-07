@@ -487,8 +487,8 @@ input/output) UART on two of its pins, through the SUPPLY link page
 (protocol 4.3). The panel writes the page and reads it every 100 ms. With
 the PD mini enabled on SETUP under INTERFACES, the header says PD MINI. With
 it disabled, the panel runs a model of a supply in its place: the header
-says SUPPLY MODEL and the menu tile is marked MODELLED. The PD mini has not
-been run against a module.
+says SUPPLY MODEL and the menu tile is marked MODELLED. The PD mini ran
+against a module on 0.10.0 and 0.10.1; nothing added after 0.10.1 has.
 
 The layout is the one MOTOR & ESC uses. The plot shows voltage, current and
 power over the last 27 s. The rail shows the readings, the run's lowest
