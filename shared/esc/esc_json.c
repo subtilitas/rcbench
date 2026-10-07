@@ -1054,6 +1054,7 @@ static void decode_manual(dec_t *d, uint32_t root, esc_profile_t *p)
     }
     esc_manual_t *m = take(d, n * sizeof(*m), _Alignof(esc_manual_t));
     int last = 0;
+    bool started = false;
     uint32_t ti = (uint32_t)arr + 1u;
     for (uint32_t i = 0; i < n && !d->failed; ++i, ti = d->t[ti].next) {
         char w[24];
@@ -1104,9 +1105,34 @@ static void decode_manual(dec_t *d, uint32_t root, esc_profile_t *p)
                  (unsigned)ESC_MANUAL_ACTION_MAX);
             return;
         }
+        /* Whether the step starts the menu: absent or null, false.  Only
+         * a before_menu step, the last of them, once. */
+        const int64_t sv = member(d, ti, "starts_menu");
+        bool starts = false;
+        if (sv >= 0 && d->t[sv].type != T_NULL) {
+            if (d->t[sv].type != T_TRUE && d->t[sv].type != T_FALSE) {
+                FAIL(d, "%s.starts_menu: not a boolean", w);
+                return;
+            }
+            starts = d->t[sv].type == T_TRUE;
+        }
+        if (starts && when != (int)ESC_MANUAL_BEFORE_MENU) {
+            FAIL(d, "%s.starts_menu: only for before_menu", w);
+            return;
+        }
+        if (starts && started) {
+            FAIL(d, "%s.starts_menu: a second step that starts the menu", w);
+            return;
+        }
+        if (started && when == (int)ESC_MANUAL_BEFORE_MENU) {
+            FAIL(d, "%s.when: before_menu after the step that starts the "
+                 "menu", w);
+            return;
+        }
+        started = started || starts;
         if (m != NULL) {
             m[i] = (esc_manual_t){ (esc_manual_when_t)when, action,
-                                   (uint32_t)hold, de };
+                                   (uint32_t)hold, de, starts };
         }
     }
     p->manual_count = (uint8_t)n;

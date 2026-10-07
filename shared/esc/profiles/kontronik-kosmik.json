@@ -171,6 +171,7 @@
       "when": "before_menu",
       "action": "Press the button marked PRESS after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).",
       "action_de": "Taster mit der Aufschrift PRESS nach den Zellentönen drücken (Schrumpfschlauch: hinten, nahe dem Sensoranschluss).",
+      "starts_menu": true,
       "source": "Kontronik_KOSMIK_HV_HV-I_2025.pdf p.8 (DE), p.20 (EN)"
     }
   ],

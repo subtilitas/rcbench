@@ -157,6 +157,10 @@ typedef struct {
     /** The same step in German, shown when the interface is; "" or NULL
      *  where the profile gives none, and the English is shown. */
     const char       *action_de;
+    /** The step starts the menu: the ESC answers it and sounds its series
+     *  at once (a Kontronik jumper pulled, its button pressed).  Only a
+     *  before_menu step, the last of them, at most one a profile. */
+    bool              starts_menu;
 } esc_manual_t;
 
 typedef struct {

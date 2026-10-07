@@ -960,12 +960,12 @@ static void before_power(esc_stick_t *e, unsigned from)
 }
 
 /*
- * The menu begins once every step due before it is done.  The last
- * before_menu step is the action that starts the menu -- the jumper pulled,
- * the button pressed: the ESC answers with its tones and sounds the series
- * at once -- so the run listens from the moment it asks for it, with the
- * stick where the power-up left it, and DONE is only a way to say so
- * early.  The first group the order rule finds in order with the one
+ * The menu begins once every step due before it is done.  A step the
+ * profile marks starts_menu is the action that starts the menu -- the
+ * jumper pulled, the button pressed: the ESC answers with its tones and
+ * sounds the series at once -- so the run listens from the moment it asks
+ * for it, with the stick where the power-up left it, and DONE is only a
+ * way to say so early.  Every other step waits for DONE.  The first group the order rule finds in order with the one
  * before it is the menu running, and takes the step as done.  Where the
  * menu rests elsewhere the stick would move under the operator's hand, so
  * the run waits for DONE before listening, as for every earlier step.
@@ -977,7 +977,7 @@ static void before_menu(esc_stick_t *e, unsigned from)
         begin_menu(e);
         return;
     }
-    if (hand_due(e, (unsigned)i + 1u, true) < 0 && rest_of(e) == e->entry) {
+    if (e->p->manual[i].starts_menu && rest_of(e) == e->entry) {
         begin_menu(e);
         e->hand = (uint8_t)i;
         e->hand_done = false;

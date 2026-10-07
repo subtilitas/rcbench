@@ -87,6 +87,7 @@
       "when": "before_menu",
       "action": "Pull the jumper off after 5 s or the tone sequence.",
       "action_de": "Jumper nach 5 s oder der Tonfolge abziehen.",
+      "starts_menu": true,
       "source": "Kontronik_Star-Line.pdf p.5"
     }
   ],

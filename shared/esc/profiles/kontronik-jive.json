@@ -87,6 +87,7 @@
       "when": "before_menu",
       "action": "Pull the jumper off after 2 s or the tone sequence.",
       "action_de": "Jumper nach 2 s oder der Tonfolge abziehen.",
+      "starts_menu": true,
       "source": "Kontronik_Jive.pdf p.6 (DE), p.18 (EN)"
     }
   ],

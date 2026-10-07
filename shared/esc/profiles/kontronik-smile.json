@@ -57,6 +57,7 @@
       "when": "before_menu",
       "action": "Press and release the button after 2 s or the tone sequence.",
       "action_de": "Taster nach 2 s oder der Tonfolge drücken und loslassen.",
+      "starts_menu": true,
       "source": "Kontronik_Smile.pdf p.4 (DE), p.17 (EN)"
     }
   ],

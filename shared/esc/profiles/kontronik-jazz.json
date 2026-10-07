@@ -93,6 +93,7 @@
       "when": "before_menu",
       "action": "After 2 s or the tone sequence: JAZZ: pull the jumper off. MINIJAZZ: press the button.",
       "action_de": "Nach 2 s oder der Tonfolge: JAZZ: Jumper abziehen. MINIJAZZ: Taster drücken.",
+      "starts_menu": true,
       "source": "Kontronik_Jazz.pdf p.6; Kontronik_MiniJazz.pdf p.6 (DE), p.15 (EN)"
     }
   ],

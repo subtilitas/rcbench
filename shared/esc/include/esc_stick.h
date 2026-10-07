@@ -465,12 +465,13 @@ const esc_stick_out_t *esc_stick_out(const esc_stick_t *e);
  *     supply on.
  *   - once the entry has had its time: each before_menu step, with the
  *     ESC powered and the stick at the power-up position (MIN, or MID
- *     where the value names it).  The last of them is the action that
- *     starts the menu, and the run counts groups from the moment it asks
- *     for it (phase ITEMS or VALUES, the step still returned here): the
- *     first group in order with the one before it, or DONE, takes it as
- *     done.  An earlier one, or one whose menu rests elsewhere, waits in
- *     ESC_STICK_HAND_ON for DONE, which starts the menu.
+ *     where the value names it).  One marked starts_menu is the action
+ *     that starts the menu, and the run counts groups from the moment it
+ *     asks for it (phase ITEMS or VALUES, the step still returned here):
+ *     the first group in order with the one before it, or DONE, takes it
+ *     as done.  Any other, or one whose menu rests elsewhere, waits in
+ *     ESC_STICK_HAND_ON for DONE, which goes on to the next step or the
+ *     menu.
  *
  * STOP, ABORT, a disarm and every supply rule end a waiting run as any
  * other: throttle to MIN, supply off, disarmed.  No DONE within

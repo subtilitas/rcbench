@@ -81,6 +81,11 @@ sweep starts over from the curve's beginning, and the alert band says so.
   opened the steps with the family's lowest voltage, which could say the run
   will ask for them; the steps, the page, RUN and the warning now judge the
   model tapped.
+- **A step says whether it starts the menu.** `manual[].starts_menu`
+  marks the step whose action starts the series; the run listens from the
+  prompt only for that step, and every other waits for DONE. One a profile,
+  only on before_menu, none after it, in the generator and the card reader
+  alike. 16 Kontronik profiles mark their pull or press.
 - **Manual steps in German.** A step carries its German in `action_de`
   (1-120 bytes of UTF-8), shown when the interface is German, with the
   English as the fallback. All 24 profiles' steps have it.

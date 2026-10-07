@@ -162,6 +162,7 @@ static void same(const esc_profile_t *a, const esc_profile_t *b)
         CHECK_STR_EQ(a->manual[i].action, b->manual[i].action);
         CHECK_EQ(a->manual[i].hold_ms, b->manual[i].hold_ms);
         CHECK_STR_EQ(a->manual[i].action_de, b->manual[i].action_de);
+        CHECK_EQ(a->manual[i].starts_menu, b->manual[i].starts_menu);
     }
 }
 
@@ -454,6 +455,33 @@ TEST_CASE(a_manual_step_the_generator_refuses_is_refused_here_too)
         { "[{\"when\": \"before_menu\", \"action\": \"x\","
           " \"action_de\": 1}]", "manual[0].action_de: not a string" },
         { de61, "manual[0].action_de: longer than 120 bytes" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"starts_menu\": 1}]", "manual[0].starts_menu: not a boolean" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"starts_menu\": \"y\"}]",
+          "manual[0].starts_menu: not a boolean" },
+        { "[{\"when\": \"before_power\", \"action\": \"x\","
+          " \"starts_menu\": true}]",
+          "manual[0].starts_menu: only for before_menu" },
+        { "[{\"when\": \"after_programming\", \"action\": \"x\","
+          " \"starts_menu\": true}]",
+          "manual[0].starts_menu: only for before_menu" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"starts_menu\": true}, {\"when\": \"before_menu\","
+          " \"action\": \"y\", \"starts_menu\": true}]",
+          "manual[1].starts_menu: a second step" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"starts_menu\": true}, {\"when\": \"before_menu\","
+          " \"action\": \"y\"}]",
+          "manual[1].when: before_menu after the step" },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\"},"
+          " {\"when\": \"before_menu\", \"action\": \"y\","
+          " \"starts_menu\": true}, {\"when\": \"after_programming\","
+          " \"action\": \"z\"}]", NULL },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"starts_menu\": false}]", NULL },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"starts_menu\": null}]", NULL },
         { de60, NULL },
         { "[{\"when\": \"before_menu\", \"action\": \"x\","
           " \"action_de\": null}]", NULL },

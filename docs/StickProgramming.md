@@ -218,7 +218,7 @@ each with the moment it is due:
 | --- | --- |
 | `before_power` | lists it on the warning: HOLD TO RUN is the word that it is done. From the second power-up of a run on, it stops before each power-up and asks again |
 | `at_power_up` | stops before each power-up with the supply off and asks; DONE switches the supply on, and the run counts down the hold the profile gives |
-| `before_menu` | asks once the entry has had its time, with the ESC powered and the stick at the power-up position. The last such step is the action that starts the menu, and the run counts the beeps from the moment it asks (see below); an earlier one waits for DONE |
+| `before_menu` | asks once the entry has had its time, with the ESC powered and the stick at the power-up position. A step marked `starts_menu` is the action that starts the menu, and the run counts the beeps from the moment it asks (see below); every other one waits for DONE |
 | `during_menu` | cannot know the moment: the profile does not run, `manual step` |
 | `after_programming` | shows it on the result |
 
@@ -250,14 +250,17 @@ the supply off and disarms.
 
 ![The run waiting for the jumper](img/programmer-stick-hand-prompt.png)
 
-**The action that starts the menu.** In every profile of record the last
-`before_menu` step starts the mode series at once: the ESC answers the
+**The action that starts the menu.** A profile marks the step whose
+action starts the mode series with `"starts_menu": true`; a step without it
+waits for DONE, whatever its place. 16 Kontronik profiles mark their last
+`before_menu` step: the ESC answers the
 pulled jumper or the pressed button with a three-tone sequence and sounds
 mode 1, 2, 3 ... after it (for example Kontronik_Jazz.pdf p.6, "Jumper
 abziehen" followed by the tone sequence and the series;
 Kontronik_Pix1000_3000.pdf p.4 steps 5 and 6, "Taster drücken" followed by
-the descending tones and the series; KOSMIK p.8 step 6). The operator's
-hand is at the ESC then, not at the screen. So the run counts the beeps
+the descending tones and the series; KOSMIK p.8 step 6). CYBER-Line and HELI-Line,
+whose jumper is pulled as the battery is connected and which wait about
+5 s for a signal, do not mark it. The operator's hand is at the ESC then, not at the screen. So the run counts the beeps
 from the moment it asks for that step, with the stick where the power-up
 put it:
 

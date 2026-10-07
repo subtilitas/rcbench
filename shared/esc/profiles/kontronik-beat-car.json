@@ -45,6 +45,7 @@
       "when": "before_menu",
       "action": "Pull the jumper off after 2 s or the tone sequence.",
       "action_de": "Jumper nach 2 s oder der Tonfolge abziehen.",
+      "starts_menu": true,
       "source": "Kontronik_Beat.pdf p.15 (DE), p.37 (EN)"
     }
   ],

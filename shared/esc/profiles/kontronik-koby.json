@@ -69,6 +69,7 @@
       "when": "before_menu",
       "action": "Press the button under the shrink tube after 2 s or the tone sequence.",
       "action_de": "Taster unter dem Schrumpfschlauch nach 2 s oder der Tonfolge drücken.",
+      "starts_menu": true,
       "source": "Kontronik_Koby.pdf p.2, p.5"
     }
   ],

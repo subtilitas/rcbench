@@ -51,6 +51,7 @@
       "when": "before_menu",
       "action": "Pull the jumper cable off after the cell-count tones, within 10 s of power-up.",
       "action_de": "Jumperkabel nach den Zellentönen abziehen, innerhalb 10 s nach dem Einschalten.",
+      "starts_menu": true,
       "source": "Kontronik_Jive_Pro.pdf p.7, p.11 (DE), p.22 (EN)"
     }
   ],

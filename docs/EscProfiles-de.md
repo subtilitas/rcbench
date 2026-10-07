@@ -162,6 +162,7 @@ Reihenfolge, in der ein Lauf darauf trifft. Fehlt es oder ist null: keine.
 | `when` | `before_power`, `at_power_up`, `before_menu`, `during_menu`, `after_programming`; kein Schritt früher als der darüber |
 | `action` | 1 bis 120 Byte UTF-8, englisch: zwei Zeilen des Pop-ups |
 | `action_de` | derselbe Schritt auf Deutsch, 1 bis 120 Byte UTF-8, Umlaute eingeschlossen; fehlt es oder ist null, erscheint auch auf Deutsch das Englische |
+| `starts_menu` | `true`, wo die Handlung selbst die Folge des Menüs startet, wie ein abgezogener Jumper oder ein gedrückter Taster bei Kontronik; fehlt es, null oder `false` sonst. Nur an einem Schritt `before_menu`, höchstens einer je Profil, und kein Schritt `before_menu` danach. Die Stick-Programmierung hört ab dem Moment zu, in dem sie nach diesem Schritt fragt ([Stick-Programmierung](StickProgramming-de.md#handgriffe)) |
 | `hold_ms` | nur `at_power_up`: 0 bis 60000, wie lange der Schritt nach dem Einschalten gehalten wird; fehlt oder null, wo nicht angegeben |
 
 `source` und jedes andere Feld eines Schritts bleiben im JSON. Die Aktion

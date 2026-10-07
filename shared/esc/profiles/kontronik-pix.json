@@ -63,6 +63,7 @@
       "when": "before_menu",
       "action": "Press the button marked Taster on the label after 2 s or the tone sequence.",
       "action_de": "Taster mit der Aufschrift Taster nach 2 s oder der Tonfolge drücken.",
+      "starts_menu": true,
       "source": "Kontronik_Pix1000_3000.pdf p.4 (DE), p.10 (EN); Kontronik_Pix4000.pdf p.4"
     }
   ],

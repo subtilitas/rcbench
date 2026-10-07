@@ -1525,13 +1525,13 @@ TEST_CASE(a_pull_starts_the_menu_and_no_group_is_lost)
     CHECK_EQ(esc_sim_stored(&r.sim, 1), 2);
 }
 
-/* Two before_menu steps: the first waits in HAND_ON for DONE, the second
- * starts the menu and is listened through. */
+/* Two before_menu steps: the first waits in HAND_ON for DONE, the second,
+ * marked starts_menu, is listened through. */
 TEST_CASE(an_earlier_step_still_waits_for_done)
 {
     static const esc_manual_t k[] = {
         { ESC_MANUAL_BEFORE_MENU, "Check the LED.", 0u },
-        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u },
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true },
     };
     rig_hand("kontronik-jazz", k, 2);
     esc_stick_change_t c[1] = { change(1, 3) };
@@ -1561,6 +1561,27 @@ TEST_CASE(an_earlier_step_still_waits_for_done)
     CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);
     CHECK(!r.e.hand_menu);
     CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MIN);
+
+    /* A last step the profile does not mark as starting the menu waits for
+     * DONE as any other: a card profile's own step, not the series. */
+    rig_hand("kontronik-jazz", &k[0], 1);
+    CHECK(!g_hand.manual[0].starts_menu);
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_HAND_ON, 60000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);
+    CHECK(!r.e.hand_menu);
+    act(false);
+    run_for(5000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_ON);      /* still waits */
+    CHECK_EQ(r.e.groups, 0u);
+    CHECK(esc_stick_confirm(&r.e));
+    tick();
+    CHECK_EQ(r.e.phase, ESC_STICK_VALUES);
+    CHECK(!r.e.hand_menu);
+    CHECK(esc_stick_hand(&r.e) == NULL);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
 }
 
 /* No DONE: the run ends after ESC_STICK_HAND_WAIT_MS, everything off, with
@@ -1672,7 +1693,7 @@ TEST_CASE(the_entry_lasts_at_least_the_hold_at_power_up)
 {
     static const esc_manual_t k[] = {
         { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u },
-        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u },
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true },
     };
     rig_hand("kontronik-jazz", k, 2);
     CHECK_EQ(r.t.entry_ms, 2000u);
@@ -1691,7 +1712,7 @@ TEST_CASE(the_entry_lasts_at_least_the_hold_at_power_up)
     CHECK(r.e.hand_ms - on < 3010u);
     /* Without the hold, the entry's own 2 s. */
     static const esc_manual_t pull[] = {
-        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u },
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true },
     };
     rig_hand("kontronik-jazz", pull, 1);
     CHECK(start(c, 1));

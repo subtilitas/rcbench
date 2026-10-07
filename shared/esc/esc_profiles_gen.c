@@ -458,8 +458,8 @@ static const esc_value_t p_greatplanes_electrifly_c_series_v1[] = {
     { "4-cell Li-Po (blue LED blinks 4)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_greatplanes_electrifly_c_series_manual[] = {
-    { ESC_MANUAL_AT_POWER_UP, "Press the ESC's on/off button: once for brake setup; held 4-5 s, until the red LED goes out, for battery setup.", 0u, "Ein/Aus-Taster des ESC: einmal f\303\274r Bremse; 4-5 s halten, bis die rote LED ausgeht, f\303\274r Akkutyp." },
-    { ESC_MANUAL_DURING_MENU, "Battery setup: press the button to step the type, read it on the blue LED; hold it 2-3 s to store.", 0u, "Akkutyp: Taster dr\303\274cken zum Weiterschalten, an der blauen LED ablesen; 2-3 s halten zum Speichern." },
+    { ESC_MANUAL_AT_POWER_UP, "Press the ESC's on/off button: once for brake setup; held 4-5 s, until the red LED goes out, for battery setup.", 0u, "Ein/Aus-Taster des ESC: einmal f\303\274r Bremse; 4-5 s halten, bis die rote LED ausgeht, f\303\274r Akkutyp.", false },
+    { ESC_MANUAL_DURING_MENU, "Battery setup: press the button to step the type, read it on the blue LED; hold it 2-3 s to store.", 0u, "Akkutyp: Taster dr\303\274cken zum Weiterschalten, an der blauen LED ablesen; 2-3 s halten zum Speichern.", false },
 };
 static const esc_item_t p_greatplanes_electrifly_c_series_items[] = {
     { "Brake", "brake", 1u, 2u, p_greatplanes_electrifly_c_series_v0,
@@ -1886,8 +1886,8 @@ static const esc_value_t p_kontronik_3p_v3[] = {
     { "enabled by pulling and re-plugging the jumper within about 5 s", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_3p_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold pins; it stays on through phase 1.", 0u, "Jumper auf die beiden Goldkontakte stecken; er bleibt w\303\244hrend Phase 1 stecken." },
-    { ESC_MANUAL_DURING_MENU, "Between phases: power off, pull the jumper, power on. Phase 2: pull it before the last flashes to switch cutoff off.", 0u, "Zwischen den Phasen: aus, Jumper ab, ein. Phase 2: vor den letzten Blinkzeichen abziehen, Abschaltung aus." },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold pins; it stays on through phase 1.", 0u, "Jumper auf die beiden Goldkontakte stecken; er bleibt w\303\244hrend Phase 1 stecken.", false },
+    { ESC_MANUAL_DURING_MENU, "Between phases: power off, pull the jumper, power on. Phase 2: pull it before the last flashes to switch cutoff off.", 0u, "Zwischen den Phasen: aus, Jumper ab, ein. Phase 2: vor den letzten Blinkzeichen abziehen, Abschaltung aus.", false },
 };
 static const esc_item_t p_kontronik_3p_items[] = {
     { "Throttle positions (brake off, max speed, motor off) and brake speed (phase 1)", "throttle_range", 1u, 4u, p_kontronik_3p_v0,
@@ -1928,8 +1928,8 @@ static const esc_value_t p_kontronik_3sl_v0[] = {
     { "Reverse motor rotation", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_3sl_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold contacts.", 0u, "Jumper auf die beiden Goldkontakte stecken." },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the three-tone sequence.", 0u, "Jumper nach 2 s oder dem Dreiklang abziehen." },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold contacts.", 0u, "Jumper auf die beiden Goldkontakte stecken.", false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the three-tone sequence.", 0u, "Jumper nach 2 s oder dem Dreiklang abziehen.", true },
 };
 static const esc_item_t p_kontronik_3sl_items[] = {
     { "Mode", "mode", 1u, 7u, p_kontronik_3sl_v0,
@@ -1969,8 +1969,8 @@ static const esc_value_t p_kontronik_beat_v0[] = {
     { "Car 2: forward and reverse", 8u, false, ESC_THR_MID, 0u, 1u, { ESC_THR_MIN } },
 };
 static const esc_manual_t p_kontronik_beat_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on any 2 of the 3 programming contacts.", 0u, "Jumper auf 2 beliebige der 3 Programmierkontakte stecken." },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the tone sequence.", 0u, "Jumper nach 2 s oder der Tonfolge abziehen." },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on any 2 of the 3 programming contacts.", 0u, "Jumper auf 2 beliebige der 3 Programmierkontakte stecken.", false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the tone sequence.", 0u, "Jumper nach 2 s oder der Tonfolge abziehen.", true },
 };
 static const esc_item_t p_kontronik_beat_items[] = {
     { "Mode", "mode", 1u, 8u, p_kontronik_beat_v0,
@@ -1997,8 +1997,8 @@ static const esc_value_t p_kontronik_beat_car_v0[] = {
     { "Forward / reverse, combinable with modes 2 to 6", 8u, false, ESC_THR_MID, 0u, 1u, { ESC_THR_MIN } },
 };
 static const esc_manual_t p_kontronik_beat_car_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on any 2 of the 3 programming contacts.", 0u, "Jumper auf 2 beliebige der 3 Programmierkontakte stecken." },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the tone sequence.", 0u, "Jumper nach 2 s oder der Tonfolge abziehen." },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on any 2 of the 3 programming contacts.", 0u, "Jumper auf 2 beliebige der 3 Programmierkontakte stecken.", false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the tone sequence.", 0u, "Jumper nach 2 s oder der Tonfolge abziehen.", true },
 };
 static const esc_item_t p_kontronik_beat_car_items[] = {
     { "Mode", "mode", 1u, 8u, p_kontronik_beat_car_v0,
@@ -2025,8 +2025,8 @@ static const esc_value_t p_kontronik_beat_fai_v0[] = {
     { "Reverse motor rotation", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_beat_fai_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on any 2 of the 3 programming contacts.", 0u, "Jumper auf 2 beliebige der 3 Programmierkontakte stecken." },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the tone sequence.", 0u, "Jumper nach 2 s oder der Tonfolge abziehen." },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on any 2 of the 3 programming contacts.", 0u, "Jumper auf 2 beliebige der 3 Programmierkontakte stecken.", false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the tone sequence.", 0u, "Jumper nach 2 s oder der Tonfolge abziehen.", true },
 };
 static const esc_item_t p_kontronik_beat_fai_items[] = {
     { "Mode", "mode", 1u, 7u, p_kontronik_beat_fai_v0,
@@ -2061,9 +2061,9 @@ static const esc_value_t p_kontronik_cyber_line_v3[] = {
     { "undervoltage cutoff off: pull the jumper during the reset sequence", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_cyber_line_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the programming contacts.", 0u, "Jumper auf die Programmierkontakte stecken." },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off as soon as the drive battery is connected.", 0u, "Jumper abziehen, sobald der Antriebsakku angesteckt ist." },
-    { ESC_MANUAL_DURING_MENU, "Current limit and reset: fit the jumper again while the ESC beeps, as the program asks.", 0u, "Strombegrenzung und Reset: Jumper wieder stecken, w\303\244hrend der ESC piept, wie das Programm es verlangt." },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the programming contacts.", 0u, "Jumper auf die Programmierkontakte stecken.", false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off as soon as the drive battery is connected.", 0u, "Jumper abziehen, sobald der Antriebsakku angesteckt ist.", false },
+    { ESC_MANUAL_DURING_MENU, "Current limit and reset: fit the jumper again while the ESC beeps, as the program asks.", 0u, "Strombegrenzung und Reset: Jumper wieder stecken, w\303\244hrend der ESC piept, wie das Programm es verlangt.", false },
 };
 static const esc_item_t p_kontronik_cyber_line_items[] = {
     { "Stick positions (brake / motor-off, full) with optional EMK brake and start button", "throttle_range", 1u, 1u, p_kontronik_cyber_line_v0,
@@ -2108,9 +2108,9 @@ static const esc_value_t p_kontronik_heli_jive_v1[] = {
     { "on: throttle moved to the AR position after the confirmation tones", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_heli_jive_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on 2 of the 3 programming contacts (the German manual: the 2 marked ones).", 0u, "Jumper auf 2 der 3 Programmierkontakte stecken (deutsches Handbuch: die 2 markierten)." },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the tone sequence, within 10 s of power-up.", 0u, "Jumper nach 2 s oder der Tonfolge abziehen, innerhalb 10 s nach dem Einschalten." },
-    { ESC_MANUAL_AFTER_PROGRAMMING, "The jumper may be fitted again; it can stay on the ESC in use.", 0u, "Jumper darf wieder gesteckt werden und im Betrieb am ESC bleiben." },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on 2 of the 3 programming contacts (the German manual: the 2 marked ones).", 0u, "Jumper auf 2 der 3 Programmierkontakte stecken (deutsches Handbuch: die 2 markierten).", false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the tone sequence, within 10 s of power-up.", 0u, "Jumper nach 2 s oder der Tonfolge abziehen, innerhalb 10 s nach dem Einschalten.", true },
+    { ESC_MANUAL_AFTER_PROGRAMMING, "The jumper may be fitted again; it can stay on the ESC in use.", 0u, "Jumper darf wieder gesteckt werden und im Betrieb am ESC bleiben.", false },
 };
 static const esc_item_t p_kontronik_heli_jive_items[] = {
     { "Mode", "mode", 1u, 10u, p_kontronik_heli_jive_v0,
@@ -2139,9 +2139,9 @@ static const esc_value_t p_kontronik_heli_line_v2[] = {
     { "reset: about 30 s after the last signal a 6-fold signal arrives; LED flashes continuously", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_heli_line_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the programming contacts.", 0u, "Jumper auf die Programmierkontakte stecken." },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off as soon as the drive battery is connected.", 0u, "Jumper abziehen, sobald der Antriebsakku angesteckt ist." },
-    { ESC_MANUAL_DURING_MENU, "Current regulation and reset: fit the jumper again when the program asks; a start button is pressed and let go.", 0u, "Stromregelung und Reset: Jumper wieder stecken, wenn das Programm es verlangt; Starttaster dr\303\274cken und loslassen." },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the programming contacts.", 0u, "Jumper auf die Programmierkontakte stecken.", false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off as soon as the drive battery is connected.", 0u, "Jumper abziehen, sobald der Antriebsakku angesteckt ist.", false },
+    { ESC_MANUAL_DURING_MENU, "Current regulation and reset: fit the jumper again when the program asks; a start button is pressed and let go.", 0u, "Stromregelung und Reset: Jumper wieder stecken, wenn das Programm es verlangt; Starttaster dr\303\274cken und loslassen.", false },
 };
 static const esc_item_t p_kontronik_heli_line_items[] = {
     { "Stick positions (motor-off, full) with throttle compensation and start button", "throttle_range", 1u, 1u, p_kontronik_heli_line_v0,
@@ -2183,8 +2183,8 @@ static const esc_value_t p_kontronik_jazz_v0[] = {
     { "LiPo undervoltage cutoff, 2.7 to 3 V per cell, added on top of another mode", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_jazz_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "JAZZ: fit the jumper on any 2 of the 3 programming contacts. MINIJAZZ has a button instead.", 0u, "JAZZ: Jumper auf 2 beliebige der 3 Programmierkontakte stecken. MINIJAZZ hat stattdessen einen Taster." },
-    { ESC_MANUAL_BEFORE_MENU, "After 2 s or the tone sequence: JAZZ: pull the jumper off. MINIJAZZ: press the button.", 0u, "Nach 2 s oder der Tonfolge: JAZZ: Jumper abziehen. MINIJAZZ: Taster dr\303\274cken." },
+    { ESC_MANUAL_BEFORE_POWER, "JAZZ: fit the jumper on any 2 of the 3 programming contacts. MINIJAZZ has a button instead.", 0u, "JAZZ: Jumper auf 2 beliebige der 3 Programmierkontakte stecken. MINIJAZZ hat stattdessen einen Taster.", false },
+    { ESC_MANUAL_BEFORE_MENU, "After 2 s or the tone sequence: JAZZ: pull the jumper off. MINIJAZZ: press the button.", 0u, "Nach 2 s oder der Tonfolge: JAZZ: Jumper abziehen. MINIJAZZ: Taster dr\303\274cken.", true },
 };
 static const esc_item_t p_kontronik_jazz_items[] = {
     { "Mode", "mode", 1u, 9u, p_kontronik_jazz_v0,
@@ -2227,8 +2227,8 @@ static const esc_value_t p_kontronik_jive_v1[] = {
     { "each tone adds 10 % brake strength; the count at which the throttle returns to motor-off is stored", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_jive_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the 2 marked programming contacts (English manual: any 2 of the 3).", 0u, "Jumper auf die 2 markierten Programmierkontakte stecken (englisches Handbuch: 2 beliebige der 3)." },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the tone sequence.", 0u, "Jumper nach 2 s oder der Tonfolge abziehen." },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the 2 marked programming contacts (English manual: any 2 of the 3).", 0u, "Jumper auf die 2 markierten Programmierkontakte stecken (englisches Handbuch: 2 beliebige der 3).", false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the tone sequence.", 0u, "Jumper nach 2 s oder der Tonfolge abziehen.", true },
 };
 static const esc_item_t p_kontronik_jive_items[] = {
     { "Mode", "mode", 1u, 11u, p_kontronik_jive_v0,
@@ -2280,8 +2280,8 @@ static const esc_value_t p_kontronik_jive_pro_v1[] = {
     { "8.0 V", 15u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_jive_pro_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Plug the jumper cable onto the ESC.", 0u, "Jumperkabel auf den ESC stecken." },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper cable off after the cell-count tones, within 10 s of power-up.", 0u, "Jumperkabel nach den Zellent\303\266nen abziehen, innerhalb 10 s nach dem Einschalten." },
+    { ESC_MANUAL_BEFORE_POWER, "Plug the jumper cable onto the ESC.", 0u, "Jumperkabel auf den ESC stecken.", false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper cable off after the cell-count tones, within 10 s of power-up.", 0u, "Jumperkabel nach den Zellent\303\266nen abziehen, innerhalb 10 s nach dem Einschalten.", true },
 };
 static const esc_item_t p_kontronik_jive_pro_items[] = {
     { "Mode", "mode", 1u, 6u, p_kontronik_jive_pro_v0,
@@ -2333,7 +2333,7 @@ static const esc_value_t p_kontronik_koby_v1[] = {
     { "8.0 V", 15u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_koby_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button under the shrink tube after 2 s or the tone sequence.", 0u, "Taster unter dem Schrumpfschlauch nach 2 s oder der Tonfolge dr\303\274cken." },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button under the shrink tube after 2 s or the tone sequence.", 0u, "Taster unter dem Schrumpfschlauch nach 2 s oder der Tonfolge dr\303\274cken.", true },
 };
 static const esc_item_t p_kontronik_koby_items[] = {
     { "Mode", "mode", 1u, 5u, p_kontronik_koby_v0,
@@ -2405,7 +2405,7 @@ static const esc_value_t p_kontronik_kolibri_v2[] = {
     { "9.0 V", 20u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_kolibri_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button on the ESC after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).", 0u, "Taster am ESC nach den Zellent\303\266nen dr\303\274cken (Schrumpfschlauch-Versionen: hinten, nahe dem Sensoranschluss)." },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button on the ESC after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).", 0u, "Taster am ESC nach den Zellent\303\266nen dr\303\274cken (Schrumpfschlauch-Versionen: hinten, nahe dem Sensoranschluss).", true },
 };
 static const esc_item_t p_kontronik_kolibri_items[] = {
     { "Mode", "mode", 1u, 9u, p_kontronik_kolibri_v0,
@@ -2438,7 +2438,7 @@ static const esc_value_t p_kontronik_kontrol_x_v0[] = {
     { "Reverse motor rotation", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_kontrol_x_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button under the shrink tube after 2 s or the tone sequence.", 0u, "Taster unter dem Schrumpfschlauch nach 2 s oder der Tonfolge dr\303\274cken." },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button under the shrink tube after 2 s or the tone sequence.", 0u, "Taster unter dem Schrumpfschlauch nach 2 s oder der Tonfolge dr\303\274cken.", true },
 };
 static const esc_item_t p_kontronik_kontrol_x_items[] = {
     { "Mode", "mode", 1u, 4u, p_kontronik_kontrol_x_v0,
@@ -2509,7 +2509,7 @@ static const esc_value_t p_kontronik_kosmik_v2[] = {
     { "8.0 V", 15u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_kosmik_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button marked PRESS after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).", 0u, "Taster mit der Aufschrift PRESS nach den Zellent\303\266nen dr\303\274cken (Schrumpfschlauch: hinten, nahe dem Sensoranschluss)." },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button marked PRESS after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).", 0u, "Taster mit der Aufschrift PRESS nach den Zellent\303\266nen dr\303\274cken (Schrumpfschlauch: hinten, nahe dem Sensoranschluss).", true },
 };
 static const esc_item_t p_kontronik_kosmik_items[] = {
     { "Mode", "mode", 1u, 9u, p_kontronik_kosmik_v0,
@@ -2541,8 +2541,8 @@ static const esc_value_t p_kontronik_mini20_v1[] = {
     { "off: jumper removed", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_mini20_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold contacts; it stays on through phase 1.", 0u, "Jumper auf die beiden Goldkontakte stecken; er bleibt w\303\244hrend Phase 1 stecken." },
-    { ESC_MANUAL_DURING_MENU, "Between phases: power off, pull the jumper, power on. Phase 2: pull it between the flashes to switch cutoff off.", 0u, "Zwischen den Phasen: aus, Jumper ab, ein. Phase 2: zwischen den Blinkzeichen abziehen, Abschaltung aus." },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold contacts; it stays on through phase 1.", 0u, "Jumper auf die beiden Goldkontakte stecken; er bleibt w\303\244hrend Phase 1 stecken.", false },
+    { ESC_MANUAL_DURING_MENU, "Between phases: power off, pull the jumper, power on. Phase 2: pull it between the flashes to switch cutoff off.", 0u, "Zwischen den Phasen: aus, Jumper ab, ein. Phase 2: zwischen den Blinkzeichen abziehen, Abschaltung aus.", false },
 };
 static const esc_item_t p_kontronik_mini20_items[] = {
     { "Throttle positions and brake yes/no (phase 1)", "throttle_range", 1u, 2u, p_kontronik_mini20_v0,
@@ -2578,8 +2578,8 @@ static const esc_value_t p_kontronik_opto_bec_v2[] = {
     { "enabled by pressing the start button after the double signal", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_opto_bec_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the short-circuit bridge on the two gold contacts, or hold a start button there while powering up.", 0u, "Kurzschlussbr\303\274cke auf die beiden Goldkontakte stecken, oder dort einen Starttaster beim Einschalten halten." },
-    { ESC_MANUAL_AFTER_PROGRAMMING, "Remove the bridge.", 0u, "Br\303\274cke abziehen." },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the short-circuit bridge on the two gold contacts, or hold a start button there while powering up.", 0u, "Kurzschlussbr\303\274cke auf die beiden Goldkontakte stecken, oder dort einen Starttaster beim Einschalten halten.", false },
+    { ESC_MANUAL_AFTER_PROGRAMMING, "Remove the bridge.", 0u, "Br\303\274cke abziehen.", false },
 };
 static const esc_item_t p_kontronik_opto_bec_items[] = {
     { "Throttle positions: brake or motor-off, full", "throttle_range", 1u, 1u, p_kontronik_opto_bec_v0,
@@ -2618,9 +2618,9 @@ static const esc_value_t p_kontronik_optomax_v2[] = {
     { "off: bridge removed before the double signal", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_optomax_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the short-circuit bridge on the two gold contacts.", 0u, "Kurzschlussbr\303\274cke auf die beiden Goldkontakte stecken." },
-    { ESC_MANUAL_DURING_MENU, "To switch the cutoff off, pull the bridge before the double signal.", 0u, "Zum Ausschalten der Abschaltung die Br\303\274cke vor dem Doppelsignal abziehen." },
-    { ESC_MANUAL_AFTER_PROGRAMMING, "Remove the bridge.", 0u, "Br\303\274cke abziehen." },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the short-circuit bridge on the two gold contacts.", 0u, "Kurzschlussbr\303\274cke auf die beiden Goldkontakte stecken.", false },
+    { ESC_MANUAL_DURING_MENU, "To switch the cutoff off, pull the bridge before the double signal.", 0u, "Zum Ausschalten der Abschaltung die Br\303\274cke vor dem Doppelsignal abziehen.", false },
+    { ESC_MANUAL_AFTER_PROGRAMMING, "Remove the bridge.", 0u, "Br\303\274cke abziehen.", false },
 };
 static const esc_item_t p_kontronik_optomax_items[] = {
     { "Throttle positions", "throttle_range", 1u, 1u, p_kontronik_optomax_v0,
@@ -2655,7 +2655,7 @@ static const esc_value_t p_kontronik_pix_v0[] = {
     { "LiPo undervoltage detection: switches between 0.7 to 0.8 V per NiCd/NiMH cell and 2.7 to 3 V per LiPo cell", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_pix_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button marked Taster on the label after 2 s or the tone sequence.", 0u, "Taster mit der Aufschrift Taster nach 2 s oder der Tonfolge dr\303\274cken." },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button marked Taster on the label after 2 s or the tone sequence.", 0u, "Taster mit der Aufschrift Taster nach 2 s oder der Tonfolge dr\303\274cken.", true },
 };
 static const esc_item_t p_kontronik_pix_items[] = {
     { "Mode", "mode", 1u, 5u, p_kontronik_pix_v0,
@@ -2688,7 +2688,7 @@ static const esc_value_t p_kontronik_smile_v0[] = {
     { "LiPo undervoltage cutoff, 3 V per cell, added on top of another mode", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_smile_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press and release the button after 2 s or the tone sequence.", 0u, "Taster nach 2 s oder der Tonfolge dr\303\274cken und loslassen." },
+    { ESC_MANUAL_BEFORE_MENU, "Press and release the button after 2 s or the tone sequence.", 0u, "Taster nach 2 s oder der Tonfolge dr\303\274cken und loslassen.", true },
 };
 static const esc_item_t p_kontronik_smile_items[] = {
     { "Mode", "mode", 1u, 8u, p_kontronik_smile_v0,
@@ -2722,8 +2722,8 @@ static const esc_value_t p_kontronik_star_line_v0[] = {
     { "Car: proportional brake", 6u, false, ESC_THR_MID, 0u, 1u, { ESC_THR_MIN } },
 };
 static const esc_manual_t p_kontronik_star_line_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold contacts.", 0u, "Jumper auf die beiden Goldkontakte stecken." },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 5 s or the tone sequence.", 0u, "Jumper nach 5 s oder der Tonfolge abziehen." },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold contacts.", 0u, "Jumper auf die beiden Goldkontakte stecken.", false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 5 s or the tone sequence.", 0u, "Jumper nach 5 s oder der Tonfolge abziehen.", true },
 };
 static const esc_item_t p_kontronik_star_line_items[] = {
     { "Mode", "mode", 1u, 6u, p_kontronik_star_line_v0,
@@ -2756,7 +2756,7 @@ static const esc_value_t p_kontronik_sun_plus_v0[] = {
     { "LiPo undervoltage detection (2.7 to 3 V per cell instead of 0.7 to 0.8 V)", 9u, false, ESC_THR_MID, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_sun_plus_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button after the tone sequence: 2 s for modes 1 to 3, 5 s for modes 4 to 6.", 0u, "Taster nach der Tonfolge dr\303\274cken: 2 s bei Modi 1 bis 3, 5 s bei Modi 4 bis 6." },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button after the tone sequence: 2 s for modes 1 to 3, 5 s for modes 4 to 6.", 0u, "Taster nach der Tonfolge dr\303\274cken: 2 s bei Modi 1 bis 3, 5 s bei Modi 4 bis 6.", true },
 };
 static const esc_item_t p_kontronik_sun_plus_items[] = {
     { "Mode", "mode", 1u, 7u, p_kontronik_sun_plus_v0,
@@ -3725,7 +3725,7 @@ static const esc_value_t p_turnigy_aquastar_v6[] = {
     { "exit programming and go", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_turnigy_aquastar_manual[] = {
-    { ESC_MANUAL_AT_POWER_UP, "Switch the ESC's own switch on, with the throttle at MAX and the drive battery connected.", 0u, "Den Schalter des ESC einschalten, mit Throttle auf MAX und angestecktem Antriebsakku." },
+    { ESC_MANUAL_AT_POWER_UP, "Switch the ESC's own switch on, with the throttle at MAX and the drive battery connected.", 0u, "Den Schalter des ESC einschalten, mit Throttle auf MAX und angestecktem Antriebsakku.", false },
 };
 static const esc_item_t p_turnigy_aquastar_items[] = {
     { "Low cutoff voltage", "cutoff_voltage", 1u, 10u, p_turnigy_aquastar_v0,

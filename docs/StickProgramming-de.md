@@ -242,7 +242,7 @@ mit dem Zeitpunkt, an dem er fällig ist:
 | --- | --- |
 | `before_power` | nennt ihn auf der Warnung: HALTEN ZUM STARTEN sagt, dass er erledigt ist. Ab dem zweiten Einschalten eines Laufs hält er vor jedem Einschalten an und fragt erneut |
 | `at_power_up` | hält vor jedem Einschalten mit ausgeschaltetem Netzteil an und fragt; ERLEDIGT schaltet das Netzteil ein, und der Lauf zählt das Halten herunter, das das Profil nennt |
-| `before_menu` | fragt, sobald der Einstieg seine Zeit hatte, mit versorgtem ESC und dem Knüppel in der Einschaltstellung. Der letzte solche Schritt ist die Handlung, die das Menü startet, und der Lauf zählt die Pieptöne ab dem Moment, in dem er fragt (siehe unten); ein früherer wartet auf ERLEDIGT |
+| `before_menu` | fragt, sobald der Einstieg seine Zeit hatte, mit versorgtem ESC und dem Knüppel in der Einschaltstellung. Ein Schritt mit `starts_menu` ist die Handlung, die das Menü startet, und der Lauf zählt die Pieptöne ab dem Moment, in dem er fragt (siehe unten); jeder andere wartet auf ERLEDIGT |
 | `during_menu` | kann den Zeitpunkt nicht kennen: das Profil läuft nicht, `Handgriff` |
 | `after_programming` | zeigt ihn auf dem Ergebnis |
 
@@ -275,14 +275,19 @@ und entschärft.
 
 ![Der Lauf wartet auf den Jumper](img/de/programmer-stick-hand-prompt.png)
 
-**Die Handlung, die das Menü startet.** In jedem Profil im Satz startet der
-letzte Schritt `before_menu` die Modusfolge sofort: der ESC beantwortet den
+**Die Handlung, die das Menü startet.** Ein Profil kennzeichnet den
+Schritt, dessen Handlung die Modusfolge startet, mit `"starts_menu": true`;
+ein Schritt ohne das wartet auf ERLEDIGT, wo er auch steht. 16
+Kontronik-Profile kennzeichnen ihren letzten Schritt `before_menu`: der ESC
+beantwortet den
 abgezogenen Jumper oder den gedrückten Taster mit einem Dreiklang und gibt
 danach Modus 1, 2, 3 ... aus (zum Beispiel Kontronik_Jazz.pdf S. 6,
 "Jumper abziehen", gefolgt von der Tonfolge und der Folge;
 Kontronik_Pix1000_3000.pdf S. 4 Schritte 5 und 6, "Taster drücken",
 gefolgt von den absteigenden Tönen und der Folge; KOSMIK S. 8 Schritt 6).
-Die Hand des Bedieners ist dann am ESC, nicht am Bildschirm. Deshalb zählt
+CYBER-Line und HELI-Line, deren Jumper beim Anstecken des Akkus abgezogen
+wird und die etwa 5 s auf ein Signal warten, kennzeichnen ihn nicht. Die
+Hand des Bedieners ist dann am ESC, nicht am Bildschirm. Deshalb zählt
 der Lauf die Pieptöne ab dem Moment, in dem er nach diesem Schritt fragt,
 mit dem Knüppel dort, wo das Einschalten ihn ließ:
 

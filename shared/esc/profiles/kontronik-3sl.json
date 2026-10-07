@@ -87,6 +87,7 @@
       "when": "before_menu",
       "action": "Pull the jumper off after 2 s or the three-tone sequence.",
       "action_de": "Jumper nach 2 s oder dem Dreiklang abziehen.",
+      "starts_menu": true,
       "source": "Kontronik_3SL.pdf p.5"
     }
   ],

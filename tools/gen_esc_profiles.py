@@ -181,7 +181,7 @@ def check_manual(d: dict, w: str, auto: str) -> list[dict]:
          f"{w}.manual", f"not 1-{MANUAL_MAX} steps")
     want(auto == "ESC_AUTO_ASSISTED", f"{w}.manual",
          "only on an assisted profile")
-    out, last = [], 0
+    out, last, starts = [], 0, None
     for i, m in enumerate(man):
         mw = f"{w}.manual[{i}]"
         want(isinstance(m, dict), mw, "not an object")
@@ -199,8 +199,21 @@ def check_manual(d: dict, w: str, auto: str) -> list[dict]:
         de = "" if m.get("action_de") is None else text(m, "action_de", mw)
         want(len(de.encode("utf-8")) <= ACTION_MAX, f"{mw}.action_de",
              f"longer than {ACTION_MAX} bytes")
+        # Whether the step starts the menu: absent or null, false.
+        sm = m.get("starts_menu")
+        want(sm is None or isinstance(sm, bool), f"{mw}.starts_menu",
+             "not a boolean")
+        sm = bool(sm)
+        want(not sm or when == "ESC_MANUAL_BEFORE_MENU",
+             f"{mw}.starts_menu", "only for before_menu")
+        want(not sm or starts is None, f"{mw}.starts_menu",
+             "a second step that starts the menu")
+        want(starts is None or when != "ESC_MANUAL_BEFORE_MENU",
+             f"{mw}.when", "before_menu after the step that starts the menu")
+        if sm:
+            starts = i
         out.append({"when": when, "action": action, "hold": hold or 0,
-                    "de": de})
+                    "de": de, "sm": "true" if sm else "false"})
     return out
 
 
@@ -432,7 +445,7 @@ def emit(profiles: list[dict]) -> str:
             o.append(f"static const esc_manual_t {n}_manual[] = {{\n")
             for m in p["manual"]:
                 o.append(f"    {{ {m['when']}, {c_str(m['action'])}, "
-                         f"{m['hold']}u, {c_str(m['de'])} }},\n")
+                         f"{m['hold']}u, {c_str(m['de'])}, {m['sm']} }},\n")
             o.append("};\n")
         if p["items"]:
             o.append(f"static const esc_item_t {n}_items[] = {{\n")
@@ -584,6 +597,21 @@ def self_test() -> list[str]:
         "manual de 61 umlauts": man('[{"when": "before_menu", "action": "x", '
                                     '"action_de": "' + "\u00fc" * 61
                                     + '"}]'),
+        "manual starts 1": man('[{"when": "before_menu", "action": "x", '
+                               '"starts_menu": 1}]'),
+        "manual starts a string": man('[{"when": "before_menu", '
+                                      '"action": "x", "starts_menu": "y"}]'),
+        "manual starts before power": man(
+            '[{"when": "before_power", "action": "x", "starts_menu": true}]'),
+        "manual starts after": man(
+            '[{"when": "after_programming", "action": "x", '
+            '"starts_menu": true}]'),
+        "manual starts twice": man(
+            '[{"when": "before_menu", "action": "x", "starts_menu": true}, '
+            '{"when": "before_menu", "action": "y", "starts_menu": true}]'),
+        "manual before_menu after the start": man(
+            '[{"when": "before_menu", "action": "x", "starts_menu": true}, '
+            '{"when": "before_menu", "action": "y"}]'),
         "manual de 121 bytes": man('[{"when": "before_menu", "action": "x", '
                                    '"action_de": "' + "x" * 121 + '"}]'),
     }
@@ -630,6 +658,14 @@ def self_test() -> list[str]:
             '"hold_ms": null}]'),
         "manual with more": man('[{"when": "during_menu", "action": "x", '
                                 '"source": "p. 5"}]'),
+        "manual starts": man('[{"when": "before_menu", "action": "x"}, '
+                             '{"when": "before_menu", "action": "y", '
+                             '"starts_menu": true}, '
+                             '{"when": "after_programming", "action": "z"}]'),
+        "manual starts false": man('[{"when": "before_menu", "action": "x", '
+                                   '"starts_menu": false}]'),
+        "manual starts null": man('[{"when": "before_menu", "action": "x", '
+                                  '"starts_menu": null}]'),
         "manual de null": man('[{"when": "before_menu", "action": "x", '
                               '"action_de": null}]'),
         "manual de 60 umlauts": man('[{"when": "before_menu", "action": "x", '
