@@ -3939,10 +3939,9 @@ static uint8_t s_servo_channels;
 static atomic_bool s_servo_surfaces;
 /* A sweep command with no surface to sweep: the screen stops waiting. */
 static atomic_bool s_sweep_refused;
-/* The pause the panel last let go of, which a resume queued behind it
- * belongs to and must not carry on. */
-static bool        s_pause_ended;
-static uint16_t    s_pause_ended_seq;
+/* The pause the panel last let go of: commands asked during it and queued
+ * behind the HOLD that ended it are not sent (servo_cmd_stale()). */
+static servo_pause_end_t s_pause_ended;
 
 /*
  * Whether that mask is an answer at all.
@@ -4135,8 +4134,8 @@ static bool write_servo(const servo_cmd_t sv)
          */
         const uint32_t since = now_ms() - s_servo_hold_ms;
         if (s_servo_holding && since > OUT_DEFAULT_TIMEOUT_MS) {
-            s_pause_ended        = true;
-            s_pause_ended_seq    = sv.pause_seq;
+            s_pause_ended.on        = true;
+            s_pause_ended.pause_seq = sv.pause_seq;
             s_servo_holding      = false;
             s_servo_held.kind    = SERVO_CMD_NONE;
             s_servo_release_owed = true;
@@ -4182,8 +4181,8 @@ static bool write_servo(const servo_cmd_t sv)
                 || reply.op != LINK_OP_ACK) {
                 s_servo_sweep_unknown = true;
             }
-            s_pause_ended        = true;
-            s_pause_ended_seq    = sv.pause_seq;
+            s_pause_ended.on        = true;
+            s_pause_ended.pause_seq = sv.pause_seq;
             s_hold_unanswered    = false;
             s_servo_sweeping     = false;
             s_servo_holding      = false;
@@ -4496,6 +4495,9 @@ static bool write_servo(const servo_cmd_t sv)
             if (started) {
                 servo_phase_started(&s_far_phase, took);
                 s_hold_unanswered = false;
+                /* A resume that fell back to this start is used up: its
+                 * repeats are the curve, not resumes. */
+                servo_resume_taken(sv.start_seq);
                 memcpy(s_servo_curve, curve, sizeof(curve));
                 atomic_store(&s_sweep_start_ms, took);
                 atomic_store(&s_sweep_start_seq, (unsigned)sv.start_seq);
@@ -4825,11 +4827,14 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
         return;
     }
     /*
-     * A resume of a pause the panel has let go of -- queued behind the HOLD
-     * whose late acknowledgement ended it -- is stale: the screen has ended
-     * that pause, and carrying it on would start motion it does not show.
+     * A command asked during a pause the panel has let go of -- queued
+     * behind the HOLD whose late acknowledgement ended it: a resume, or a
+     * position said again under a changed profile -- is stale.  The screen
+     * shows the surfaces released to rest; sent, the resume would start
+     * motion it does not show and the position would void the release and
+     * hold an angle drawn from the abandoned pause.
      */
-    if (s_pause_ended && servo_cmd_resumes_pause(&sv, s_pause_ended_seq)) {
+    if (servo_cmd_stale(&s_pause_ended, &sv)) {
         return;
     }
     s_servo_held = sv;

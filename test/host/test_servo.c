@@ -2347,10 +2347,9 @@ TEST_CASE(a_resume_of_a_let_go_pause_is_dropped)
     tap(SWEEP_X, BTN_Y);                       /* PAUSED, HOLD in flight */
     const servo_cmd_t resume = last_cmd();
     CHECK(resume.resume);
-    CHECK(servo_cmd_resumes_pause(&resume, hold.pause_seq));
-    CHECK(!servo_cmd_resumes_pause(&resume, (uint16_t)(hold.pause_seq + 1u)));
-    CHECK(!servo_cmd_resumes_pause(&hold, hold.pause_seq));
-    CHECK(!servo_cmd_resumes_pause(NULL, 0u));
+    CHECK_EQ(resume.from_pause, hold.pause_seq);
+    servo_pause_end_t ended = { true, hold.pause_seq };
+    CHECK(servo_cmd_stale(&ended, &resume));
     CHECK(servo_screen_sweeping());            /* waiting for the resume */
     servo_screen_released();                   /* the late HOLD let go */
     CHECK(!servo_screen_sweeping());
@@ -2361,6 +2360,77 @@ TEST_CASE(a_resume_of_a_let_go_pause_is_dropped)
     const servo_cmd_t again = last_cmd();
     CHECK_EQ(again.kind, SERVO_CMD_SWEEP);
     CHECK(!again.resume);
+}
+
+/*
+ * A profile changed while paused says the held angle as a POSITION asked
+ * during that pause; once the panel has let the pause go, that POSITION is
+ * stale and dropped, so the surfaces stay at the rest the screen shows.
+ * The first command from after the pause retires the record: a pause
+ * number reused later is not mistaken for it.  A disarm is never stale.
+ */
+TEST_CASE(commands_from_a_let_go_pause_are_stale)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    sweep_go();
+    frames(0.2f);
+    const servo_cmd_t hold = pause_go();
+    CHECK(hold.pause_seq != 0u);
+    CHECK_EQ(hold.from_pause, 0u);
+    ack_hold(&hold);
+    open_settings();
+    tap(TRIM_UP_X, ROW_Y(3));                  /* while paused */
+    const servo_cmd_t pos = last_cmd();
+    CHECK_EQ(pos.kind, SERVO_CMD_POSITION);
+    CHECK_EQ(pos.from_pause, hold.pause_seq);
+    close_settings();
+
+    servo_pause_end_t ended = { true, hold.pause_seq };
+    CHECK(servo_cmd_stale(&ended, &pos));      /* queued behind the HOLD */
+    CHECK(ended.on);
+    const servo_cmd_t disarm = { .kind = SERVO_CMD_DISARM,
+                                 .from_pause = hold.pause_seq };
+    CHECK(!servo_cmd_stale(&ended, &disarm));
+    CHECK(ended.on);                           /* not a drive command */
+    servo_screen_released();
+    tap(ARM_X + 40, BTN_Y);                    /* CENTRE, after the pause */
+    const servo_cmd_t centre = last_cmd();
+    CHECK_EQ(centre.kind, SERVO_CMD_CENTRE);
+    CHECK_EQ(centre.from_pause, 0u);
+    CHECK(!servo_cmd_stale(&ended, &centre));
+    CHECK(!ended.on);                          /* retired */
+    CHECK(!servo_cmd_stale(&ended, &pos));     /* a reused number later */
+    CHECK(!servo_cmd_stale(NULL, &pos));
+    CHECK(!servo_cmd_stale(&ended, NULL));
+}
+
+/*
+ * A resume waiting for its acknowledgement, a PAUSE and PAUSED drained in
+ * one pass on top of it: the pair undoes itself and leaves the resume as it
+ * was, its pause and origin included, so the late HOLD acknowledgement of
+ * the first pause still moves the horn to the output held.
+ */
+TEST_CASE(an_undone_pair_keeps_the_resume_waiting)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    sweep_go();
+    frames(0.1f);
+    const uint32_t tap_phase = servo_screen_curve_ms();
+    const servo_cmd_t hold = pause_go();
+    frames(0.1f);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED, before the ack */
+    CHECK(last_cmd().resume);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSE ... */
+    tap(SWEEP_X, BTN_Y);                       /* ... PAUSED, same pass */
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
+    frames(0.2f);
+    servo_screen_sweep_held(hold.pause_seq, tap_phase + 307u);
+    const uint16_t held = servo_screen_drawn();
+    CHECK(held > 1870u && held < 1900u);
 }
 
 /*
@@ -4620,6 +4690,8 @@ int main(void)
     RUN(sweep_needs_the_link);
     RUN(a_resume_of_a_let_go_pause_is_dropped);
     RUN(a_resume_origin_is_used_once);
+    RUN(commands_from_a_let_go_pause_are_stale);
+    RUN(an_undone_pair_keeps_the_resume_waiting);
     RUN(a_refused_sweep_leaves_nothing_driven);
     RUN(an_early_resume_keeps_the_reading_at_the_hold);
     RUN(a_released_pause_says_no_drawn_angle);

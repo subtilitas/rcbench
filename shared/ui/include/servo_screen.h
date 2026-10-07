@@ -89,9 +89,12 @@ typedef struct {
      *  and an older one, or one that refuses, starts the curve over. */
     bool             resume;
     /** SERVO_CMD_HOLD: which pause it is, given back with its
-     *  acknowledgement in servo_screen_sweep_held(); a resume
-     *  (SERVO_CMD_SWEEP with resume) carries the pause it resumes. */
+     *  acknowledgement in servo_screen_sweep_held().  Never 0. */
     uint16_t         pause_seq;
+    /** The pause this command was asked during -- a resume of it, or a
+     *  position said again under a changed profile -- or 0: what the panel
+     *  drops once it has let that pause go (servo_cmd_stale()). */
+    uint16_t         from_pause;
     /** SERVO_CMD_SWEEP: which sweep command it is, given back with the
      *  acknowledgement of a start in servo_screen_sweep_started(). */
     uint16_t         start_seq;
@@ -178,9 +181,22 @@ void servo_screen_sweep_refused(void);
  */
 bool servo_cmd_survives_link_loss(const servo_cmd_t *c);
 
-/** Whether @p c resumes the pause numbered @p pause_seq: a stale resume,
- *  when that pause has been let go of at the panel. */
-bool servo_cmd_resumes_pause(const servo_cmd_t *c, uint16_t pause_seq);
+/** A pause the panel has let go of, for servo_cmd_stale(). */
+typedef struct {
+    bool     on;
+    uint16_t pause_seq;
+} servo_pause_end_t;
+
+/**
+ * Whether the drive command @p c (a position, a centre, a sweep or a hold)
+ * was asked during the pause @p e records as let go of, so is stale and is
+ * not to be sent: the screen has ended that pause, and the command would
+ * hold or move the servo somewhere it no longer shows.  The screen asks
+ * nothing more of a pause it has left, and commands keep their order, so
+ * the first drive command from after the pause retires @p e; a pause
+ * number reused after 65535 more is then not mistaken for it.
+ */
+bool servo_cmd_stale(servo_pause_end_t *e, const servo_cmd_t *c);
 
 /** Whether a sweep is running, for the application and tests. */
 bool servo_screen_sweeping(void);

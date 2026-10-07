@@ -480,6 +480,11 @@ static struct {
         float       commanded_deg;
         sweep_drain_t dr;
         start_rec_t start_rec;
+        uint16_t    pause_seq, resume_pause_seq;
+        uint32_t    pause_tap_ms;
+        float       pause_from_cmd, resume_from_cmd;
+        int         pause_speed_pct;
+        bool        resume_from_set;
     }           undo;
     bool        toggle_live;
     servo_cmd_kind_t toggle_kind;
@@ -767,9 +772,10 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
     if (kind != SERVO_CMD_HOLD) {
         s.dr.on = false;
     }
-    s.pending.kind     = kind;
-    s.pending.value_us = us;
-    s.pending.resume   = resume;
+    s.pending.kind       = kind;
+    s.pending.value_us   = us;
+    s.pending.resume     = resume;
+    s.pending.from_pause = s.paused ? s.pause_seq : 0u;
     ++s.post_count;
     if (kind == SERVO_CMD_SWEEP) {
         ++s.start_seq;
@@ -922,6 +928,9 @@ static void hold_sweep(void)
     s.dr.from_ms = s.clock_ms;
     s.commanded_deg = clamp_travel(s.shown_deg);
     ++s.pause_seq;
+    if (s.pause_seq == 0u) {
+        s.pause_seq = 1u;       /* 0 is no pause */
+    }
     post(SERVO_CMD_HOLD, 0);
     if (s.pending.kind == SERVO_CMD_HOLD) {
         s.pending.pause_seq = s.pause_seq;
@@ -1034,9 +1043,6 @@ static void resume_sweep(void)
     post(SERVO_CMD_SWEEP, 0);
     record_start();
     s.pending.resume = s.pending.kind == SERVO_CMD_SWEEP;
-    if (s.pending.resume) {
-        s.pending.pause_seq = s.pause_seq;
-    }
     ++s.ctrl_rev;
 }
 
@@ -1062,6 +1068,13 @@ static void toggle_sweep(void)
         s.sweep_ended    = s.undo.sweep_ended;
         s.driving        = s.undo.driving;
         s.commanded_deg  = s.undo.commanded_deg;
+        s.pause_seq        = s.undo.pause_seq;
+        s.pause_tap_ms     = s.undo.pause_tap_ms;
+        s.pause_from_cmd   = s.undo.pause_from_cmd;
+        s.pause_speed_pct  = s.undo.pause_speed_pct;
+        s.resume_from_set  = s.undo.resume_from_set;
+        s.resume_from_cmd  = s.undo.resume_from_cmd;
+        s.resume_pause_seq = s.undo.resume_pause_seq;
         s.toggle_live    = false;
         ++s.ctrl_rev;
         return;
@@ -1077,6 +1090,13 @@ static void toggle_sweep(void)
     s.undo.sweep_ended    = s.sweep_ended;
     s.undo.driving        = s.driving;
     s.undo.commanded_deg  = s.commanded_deg;
+    s.undo.pause_seq        = s.pause_seq;
+    s.undo.pause_tap_ms     = s.pause_tap_ms;
+    s.undo.pause_from_cmd   = s.pause_from_cmd;
+    s.undo.pause_speed_pct  = s.pause_speed_pct;
+    s.undo.resume_from_set  = s.resume_from_set;
+    s.undo.resume_from_cmd  = s.resume_from_cmd;
+    s.undo.resume_pause_seq = s.resume_pause_seq;
     const uint32_t before = s.post_count;
     if (s.sweeping) {
         hold_sweep();
@@ -2377,10 +2397,23 @@ void servo_screen_sweep_refused(void)
     }
 }
 
-bool servo_cmd_resumes_pause(const servo_cmd_t *c, uint16_t pause_seq)
+bool servo_cmd_stale(servo_pause_end_t *e, const servo_cmd_t *c)
 {
-    return c != NULL && c->kind == SERVO_CMD_SWEEP && c->resume
-           && c->pause_seq == pause_seq;
+    if (e == NULL || c == NULL || !e->on) {
+        return false;
+    }
+    const bool drive = c->kind == SERVO_CMD_POSITION
+                       || c->kind == SERVO_CMD_CENTRE
+                       || c->kind == SERVO_CMD_SWEEP
+                       || c->kind == SERVO_CMD_HOLD;
+    if (!drive) {
+        return false;
+    }
+    if (c->from_pause != 0u && c->from_pause == e->pause_seq) {
+        return true;
+    }
+    e->on = false;              /* from after it: nothing of it is queued */
+    return false;
 }
 
 bool servo_cmd_survives_link_loss(const servo_cmd_t *c)
