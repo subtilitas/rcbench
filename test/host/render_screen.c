@@ -377,7 +377,7 @@ typedef struct {
     esc_sim_t sim;
     bool      armed, on;
     float     pct;
-    uint32_t  now, next, seq, stops;
+    uint32_t  now, next, seq, stops, pressed;
 } stick_rig_t;
 
 static void stick_step(stick_rig_t *r)
@@ -399,7 +399,7 @@ static void stick_step(stick_rig_t *r)
         supply_screen_set_output(r->on);
         supply_screen_set_on_coming(false);
     }
-    programmer_screen_bench(r->now, r->armed, r->stops, false);
+    programmer_screen_bench(r->now, r->armed, r->stops, r->pressed, false);
     const int32_t ma = esc_sim_step(&r->sim, r->now, r->on,
                                     r->armed ? r->pct : -1.0f);
     if (r->now >= r->next) {
@@ -635,7 +635,7 @@ int main(int argc, char **argv)
         supply_screen_set_caps(&caps);
         supply_screen_settings_loaded();
         ui_router_goto(SCREEN_PROGRAMMER);
-        programmer_screen_bench(0u, false, 0u, false);
+        programmer_screen_bench(0u, false, 0u, 0u, false);
         tap(660, UI_BAND_H + 180);              /* the ESC STICK tile */
         if (strcmp(view, "programmer-stick-find") == 0
             || strcmp(view, "programmer-stick-found") == 0) {
@@ -690,7 +690,8 @@ int main(int argc, char **argv)
                     if (strcmp(view, "programmer-stick-aborted") == 0
                         && run->phase == ESC_STICK_ITEMS
                         && run->groups >= 2u && rig.stops == 0u) {
-                        rig.stops = 1u;         /* STOP */
+                        rig.stops = 1u;         /* STOP, pressed */
+                        rig.pressed = 1u;
                     }
                     if (strcmp(view, "programmer-stick-failed") == 0
                         && run->phase == ESC_STICK_ITEMS

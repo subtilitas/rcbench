@@ -17,7 +17,11 @@
 
 #include "esc_profile.h"
 
+/* Set by test/host/CMakeLists.txt to an absolute path; this one holds when
+ * the suite is built some other way and run from test/host. */
+#ifndef PROFILE_DIR
 #define PROFILE_DIR "../../shared/esc/profiles"
+#endif
 
 static char *load(const char *path, size_t *len)
 {

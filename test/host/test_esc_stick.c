@@ -34,6 +34,7 @@ typedef struct {
     bool     armed;
     bool     arm_refused;     /* the bench never arms                 */
     uint32_t stops;
+    uint32_t pressed;         /* of the stops, those pressed          */
     bool     link;
     bool     supply_on;
     bool     supply_dead;     /* the output never comes on            */
@@ -114,7 +115,7 @@ static void rig(const char *id)
 
 static esc_stick_bench_t bench(void)
 {
-    esc_stick_bench_t b = { r.now, r.armed, r.stops, r.link };
+    esc_stick_bench_t b = { r.now, r.armed, r.stops, r.link, r.pressed };
     return b;
 }
 
@@ -948,9 +949,9 @@ TEST_CASE(an_esc_that_never_beeps_ends_the_run)
 TEST_CASE(abort_stop_and_disarm_end_the_run_safe)
 {
     static const esc_stick_reason_t want[] = {
-        ESC_STICK_R_USER, ESC_STICK_R_STOP, ESC_STICK_R_DISARMED,
-        ESC_STICK_R_LINK, ESC_STICK_R_SUPPLY_OFF, ESC_STICK_R_SUPPLY_LOST,
-        ESC_STICK_R_STALE, ESC_STICK_R_LEFT,
+        ESC_STICK_R_USER, ESC_STICK_R_STOP, ESC_STICK_R_BENCH_STOP,
+        ESC_STICK_R_DISARMED, ESC_STICK_R_LINK, ESC_STICK_R_SUPPLY_OFF,
+        ESC_STICK_R_SUPPLY_LOST, ESC_STICK_R_STALE, ESC_STICK_R_LEFT,
     };
     for (size_t k = 0; k < sizeof(want) / sizeof(want[0]); ++k) {
         rig("hobbywing-flyfun-8item");
@@ -962,7 +963,8 @@ TEST_CASE(abort_stop_and_disarm_end_the_run_safe)
         switch (want[k]) {
         case ESC_STICK_R_USER:  esc_stick_abort(&r.e, ESC_STICK_R_USER); break;
         case ESC_STICK_R_LEFT:  esc_stick_abort(&r.e, ESC_STICK_R_LEFT); break;
-        case ESC_STICK_R_STOP:  r.stops++;                               break;
+        case ESC_STICK_R_STOP:  r.stops++; r.pressed++;                  break;
+        case ESC_STICK_R_BENCH_STOP: r.stops++;                          break;
         case ESC_STICK_R_DISARMED: r.arm_refused = true; r.armed = false; break;
         case ESC_STICK_R_LINK:  r.link = false;                          break;
         case ESC_STICK_R_SUPPLY_OFF: r.supply_dead = true;               break;
@@ -1167,6 +1169,7 @@ TEST_CASE(the_red_light_is_for_ends_nobody_chose)
     } k[] = {
         { ESC_STICK_R_NONE,        false },
         { ESC_STICK_R_STOP,        false },
+        { ESC_STICK_R_BENCH_STOP,  true },
         { ESC_STICK_R_USER,        false },
         { ESC_STICK_R_LEFT,        false },
         { ESC_STICK_R_DISARMED,    true },
@@ -1190,6 +1193,91 @@ TEST_CASE(the_red_light_is_for_ends_nobody_chose)
             T_FAIL("%s is decided wrong", esc_stick_reason_text(k[i].r));
         }
     }
+}
+
+/* A stop is STOP only when every stop in the span was pressed: a stop the
+ * bench raised is never hidden by a press that came with it. */
+TEST_CASE(a_stop_nobody_pressed_is_the_benchs_own)
+{
+    CHECK_EQ(esc_stick_stop_reason(1u, 1u), ESC_STICK_R_STOP);
+    CHECK_EQ(esc_stick_stop_reason(2u, 2u), ESC_STICK_R_STOP);
+    CHECK_EQ(esc_stick_stop_reason(1u, 0u), ESC_STICK_R_BENCH_STOP);
+    CHECK_EQ(esc_stick_stop_reason(2u, 1u), ESC_STICK_R_BENCH_STOP);
+    /* Counts that wrapped between the start and the stop. */
+    rig("hobbywing-flyfun-8item");
+    r.stops = UINT32_MAX;
+    r.pressed = UINT32_MAX;
+    esc_stick_change_t c[1] = { change(3, 2) };
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_ITEMS, 60000u);
+    r.stops++;
+    r.pressed++;
+    run_for(100u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_STOP);
+    CHECK(!esc_stick_reason_is_fault(r.e.reason));
+    rig("hobbywing-flyfun-8item");
+    r.stops = 5u;
+    r.pressed = 5u;
+    CHECK(start(c, 1));
+    run_until_phase(ESC_STICK_ITEMS, 60000u);
+    r.stops += 2u;                  /* a press and touch lost with it */
+    r.pressed += 1u;
+    run_for(100u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_BENCH_STOP);
+    CHECK(esc_stick_reason_is_fault(r.e.reason));
+    ended_safe();
+}
+
+/* Green only while the supply is on for the menu.  A pulse the detector
+ * holds when STORE switches the supply off -- the ESC's own tone answering
+ * a selection -- does not keep it lit through POWER OFF, POWER CYCLE and the
+ * next POWER ON.  Swept over STORE, so the off lands in every part of a
+ * tone, on three menus. */
+TEST_CASE(the_green_light_is_dark_while_the_supply_is_off)
+{
+    static const char *const ids[] = {
+        "sunrise-pro", "hobbywing-flyfun-8item", "dualsky-xcontroller",
+    };
+    unsigned lit_on = 0u;
+    for (size_t k = 0; k < sizeof(ids) / sizeof(ids[0]); ++k) {
+        for (uint32_t st = 0u; st <= 4000u; st += 250u) {
+            rig(ids[k]);
+            r.t.store_ms = st;
+            esc_stick_change_t c[2];
+            size_t n = 1u;
+            if (k == 0u) {
+                c[0] = change(1, 3);
+                c[1] = change(2, 4);
+                n = 2u;
+            } else {
+                c[0] = change(3, 2);
+            }
+            CHECK(start(c, n));
+            esc_stick_light_t l;
+            esc_stick_light_reset(&l, &r.e);
+            for (uint32_t i = 0; i < 400000u && esc_stick_running(&r.e);
+                 ++i) {
+                tick();
+                const bool g = esc_stick_light_green(&l, &r.e, r.now);
+                const esc_stick_phase_t ph = r.e.phase;
+                const bool off = ph == ESC_STICK_OFF
+                                 || ph == ESC_STICK_CYCLE
+                                 || ph == ESC_STICK_POWER
+                                 || ph == ESC_STICK_SIGNAL
+                                 || ph == ESC_STICK_ARMING;
+                if (g && off) {
+                    T_FAIL("%s STORE %u ms: green in %s", ids[k],
+                           (unsigned)st, esc_stick_phase_text(ph));
+                    break;
+                }
+                if (off) {
+                    CHECK_EQ(esc_stick_beeps(&r.e), 0u);
+                }
+                lit_on += g ? 1u : 0u;
+            }
+        }
+    }
+    CHECK(lit_on > 1000u);
 }
 
 /* Every rise of the detector is counted as a pulse, on every power-up. */
@@ -1328,6 +1416,8 @@ int main(void)
     RUN(the_signal_is_in_place_before_the_power);
     RUN(every_reason_and_phase_has_its_words);
     RUN(the_red_light_is_for_ends_nobody_chose);
+    RUN(a_stop_nobody_pressed_is_the_benchs_own);
+    RUN(the_green_light_is_dark_while_the_supply_is_off);
     RUN(the_run_counts_every_pulse_the_detector_begins);
     RUN(the_green_light_shows_every_pulse_for_its_minimum);
     RUN(the_simulation_enters_only_from_the_entry_position);

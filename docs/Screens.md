@@ -675,8 +675,8 @@ green is on while a beep is detected, for at least 150 ms:
 ![A run](img/programmer-stick-run.png)
 
 The result stays until OK. Its red light is on when the run ended because
-something was not as expected, and dark on DONE, STOP, ABORT and leaving
-the screen ([the list](StickProgramming.md#how-a-run-ends)):
+something was not as expected, a stop the bench raised itself included,
+and dark on DONE, a STOP pressed, ABORT and leaving the screen ([the list](StickProgramming.md#how-a-run-ends)):
 
 ![Done](img/programmer-stick-done.png)
 

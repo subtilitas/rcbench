@@ -10,16 +10,19 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "greatest.h"
 
 #include "esc_sim.h"
+#include "gfx.h"
 #include "programmer_screen.h"
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_screen.h"
+#include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_theme.h"
 
@@ -375,7 +378,7 @@ static void hold_for(float seconds)
 /* The stick class, then hobbywing-flyfun-8item: the third that runs. */
 static void descend_to_hobbywing(void)
 {
-    programmer_screen_bench(0u, false, 0u, false);
+    programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
     tap(ROW_CX, SP_ROW_CY(2));
 }
@@ -404,7 +407,7 @@ typedef struct {
     esc_sim_t sim;
     bool      armed, on;
     float     pct;
-    uint32_t  now, next, seq, stops;
+    uint32_t  now, next, seq, stops, pressed;
     int       arms, disarms;
     /* What can go wrong with the bench. */
     bool      no_arm, no_power, silent, offline, link_lost, report_off;
@@ -453,7 +456,8 @@ static void rig_step(rig_t *r)
         r->moved_while_on++;
     }
     r->last_pct = eff;
-    programmer_screen_bench(r->now, r->armed, r->stops, !r->link_lost);
+    programmer_screen_bench(r->now, r->armed, r->stops, r->pressed,
+                            !r->link_lost);
     const int32_t ma = esc_sim_step(&r->sim, r->now, r->module_on,
                                     r->armed ? r->pct : -1.0f);
     if (r->now >= r->next && !r->silent) {
@@ -497,7 +501,7 @@ static void rig_run(rig_t *r, uint32_t ms)
 TEST_CASE(a_profile_the_engine_cannot_run_goes_no_further)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, false);
+    programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
     tap(LIST_DN_X, LIST_CY);
     tap(LIST_DN_X, LIST_CY);                 /* rows 18 to 26 */
@@ -556,7 +560,7 @@ TEST_CASE(a_hold_that_is_interrupted_starts_nothing)
         } else if (k == 1) {
             scr->cancel();                          /* touch went missing */
         } else {
-            programmer_screen_bench(0u, false, 1u, false);  /* STOP */
+            programmer_screen_bench(0u, false, 1u, 1u, false);  /* STOP */
         }
         for (int i = 0; i < 12; ++i) {
             scr->tick(0.25f);
@@ -607,7 +611,7 @@ TEST_CASE(a_whole_run_on_the_modelled_bench_stores_and_lets_go)
  * a DISARM, and the supply's OFF. */
 TEST_CASE(leaving_abort_and_stop_end_a_run_and_let_go)
 {
-    for (int k = 0; k < 3; ++k) {
+    for (int k = 0; k < 4; ++k) {
         fresh();
         descend_to_hobbywing();
         pick_cutoff();
@@ -628,18 +632,23 @@ TEST_CASE(leaving_abort_and_stop_end_a_run_and_let_go)
             CHECK(esc_stick_running(programmer_screen_stick()));
             tap(WRITE_X, BTN_CY);            /* ABORT */
             want = ESC_STICK_R_USER;
-        } else {
-            r.stops++;
+        } else if (k == 2) {
+            r.stops++;                       /* STOP pressed */
+            r.pressed++;
             want = ESC_STICK_R_STOP;
+        } else {
+            r.stops++;                       /* the bench's own: touch */
+            want = ESC_STICK_R_BENCH_STOP;
         }
         rig_run(&r, 1000u);
         const esc_stick_t *run = programmer_screen_stick();
         CHECK_EQ(run->phase, ESC_STICK_ABORTED);
         CHECK_EQ(run->reason, want);
-        /* An end the operator chose lights no red. */
+        /* An end the operator chose lights no red; the bench's own does. */
         bool red = true, green = true;
         programmer_screen_stick_lights(&red, &green);
-        CHECK(!red && !green);
+        CHECK_EQ(red, want == ESC_STICK_R_BENCH_STOP);
+        CHECK(!green);
         CHECK(!r.armed);
         CHECK(!r.on);
         CHECK_EQ(r.sim.stores, 0u);
@@ -797,7 +806,7 @@ TEST_CASE(every_phase_of_a_run_draws)
     /* sunrise-pro, the tenth that runs: page two, row one.  The list
      * refuses hobbywing-skywalker-v2-hv-opto at 22.8 V before it. */
     fresh();
-    programmer_screen_bench(0u, false, 0u, false);
+    programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
     tap(LIST_DN_X, LIST_CY);
     tap(ROW_CX, SP_ROW_CY(0));
@@ -839,7 +848,7 @@ TEST_CASE(every_end_draws_its_reason)
         static rig_t r;
         memset(&r, 0, sizeof(r));
         /* The link answers at the start for LINK LOST, and only then. */
-        programmer_screen_bench(0u, false, 0u, want[k] == ESC_STICK_R_LINK);
+        programmer_screen_bench(0u, false, 0u, 0u, want[k] == ESC_STICK_R_LINK);
         hold_for(2.25f);
         esc_sim_init(&r.sim, programmer_screen_stick()->p, NULL);
         switch (want[k]) {
@@ -895,7 +904,7 @@ TEST_CASE(every_end_draws_its_reason)
 TEST_CASE(a_run_that_cannot_start_says_why)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, false);
+    programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
     tap(ROW_CX, SP_ROW_CY(0));               /* dualsky: no cell count */
     tap(STEP_UP_X, STEP_CY(0));
@@ -991,7 +1000,7 @@ TEST_CASE(a_stop_or_a_lost_touch_takes_a_queued_arm_away)
         hold_for(2.25f);                     /* ARM queued, not taken */
         CHECK_EQ(programmer_screen_stick_runs(), 1u);
         if (k == 0) {
-            programmer_screen_bench(10u, false, 1u, false);   /* STOP */
+            programmer_screen_bench(10u, false, 1u, 1u, false);   /* STOP */
         } else {
             scr->cancel();                   /* touch events lost */
         }
@@ -1059,7 +1068,7 @@ TEST_CASE(the_screen_passes_the_supplys_own_state)
 TEST_CASE(the_list_follows_voltage_and_the_cap)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, false);
+    programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
     settings_set(SET_SUPPLY_V_MAX, 7.0f);
     supply_screen_limits_changed();
@@ -1117,7 +1126,7 @@ TEST_CASE(a_profile_over_the_supply_cap_is_refused_in_the_list)
     fresh();
     settings_set(SET_SUPPLY_V_MAX, 7.0f);
     supply_screen_limits_changed();
-    programmer_screen_bench(0u, false, 0u, false);
+    programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
@@ -1184,7 +1193,7 @@ static int listed(void)
 TEST_CASE(the_search_filters_the_list_with_every_key)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, false);
+    programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
     CHECK_EQ(listed(), (int)esc_profiles_count());
     CHECK_STR_EQ(programmer_screen_stick_search(), "");
@@ -1239,7 +1248,7 @@ TEST_CASE(the_search_filters_the_list_with_every_key)
 TEST_CASE(ok_keeps_the_search_cancel_restores_it_and_empty_clears_it)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, false);
+    programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
     tap(FIND_X, FIND_Y);
     find_type("FLYFUN\n");
@@ -1283,7 +1292,7 @@ TEST_CASE(ok_keeps_the_search_cancel_restores_it_and_empty_clears_it)
 TEST_CASE(a_lost_touch_drops_a_search_key_under_way)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, false);
+    programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
     tap(FIND_X, FIND_Y);
     ui_textkey_t k;
@@ -1309,6 +1318,64 @@ TEST_CASE(a_lost_touch_drops_a_search_key_under_way)
     e.type = TOUCH_EVENT_UP;
     scr->event(&e);
     CHECK_STR_EQ(programmer_screen_stick_search(), "");
+}
+
+/* The header's box, mirrored from programmer_screen.c: SP_COUNT_W, 304 px
+ * of 8 px cells. */
+#define COUNT_CELLS 38
+
+/*
+ * The registry at its most -- every built-in profile and
+ * ESC_PROFILE_MAX_OVERRIDES card ones -- found whole by "*", on its last
+ * page: the widest header either language can draw, with every profile
+ * counted as one that runs, still fits its box.
+ */
+TEST_CASE(the_header_fits_at_the_registrys_most)
+{
+    fresh();
+    esc_profiles_clear_overrides();
+    static char ids[ESC_PROFILE_MAX_OVERRIDES][16];
+    for (unsigned i = 0; i < ESC_PROFILE_MAX_OVERRIDES; ++i) {
+        esc_profile_t p = esc_profiles_builtin[i % esc_profiles_builtin_count];
+        snprintf(ids[i], sizeof(ids[i]), "card-%u", i);
+        p.id = ids[i];
+        CHECK(esc_profiles_override(&p, NULL));
+    }
+    const int total = (int)esc_profiles_count();
+    CHECK_EQ(total, (int)(esc_profiles_builtin_count
+                          + ESC_PROFILE_MAX_OVERRIDES));
+    programmer_screen_bench(0u, false, 0u, 0u, false);
+    tap(TILE_CX(2), TILE_CY);
+    tap(FIND_X, FIND_Y);
+    find_type("*\n");
+    CHECK_EQ(listed(), total);
+    for (int i = 0; i < 20; ++i) {
+        tap(LIST_DN_X, LIST_CY);
+    }
+    int top = 0;
+    (void)programmer_screen_stick_listed(&top);
+    CHECK(top + 9 >= total && top < total);
+    for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
+        char line[96];
+        snprintf(line, sizeof(line),
+                 ui_tr_in((ui_lang_t)l, TX_SP_LIST_FOUND), top + 1, total,
+                 total, total);
+        if (gfx_text_cells(line) > COUNT_CELLS) {
+            T_FAIL("language %d: \"%s\" is %d cells, the box %d", l, line,
+                   gfx_text_cells(line), COUNT_CELLS);
+        }
+        snprintf(line, sizeof(line),
+                 ui_tr_in((ui_lang_t)l, TX_SP_LIST_COUNT), top + 1, total,
+                 total, total);
+        CHECK(gfx_text_cells(line) <= COUNT_CELLS);
+        ui_text_set_language((ui_lang_t)l);
+        memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+        programmer_invalidate();
+        scr->render(&cv, l & 1);
+        CHECK(lit() > 20000);
+    }
+    ui_text_set_language(UI_LANG_EN);
+    esc_profiles_clear_overrides();
 }
 
 /* ------------------------------------------------------- the stack light */
@@ -1357,7 +1424,7 @@ TEST_CASE(a_result_of_many_changes_counts_the_rest)
 {
     fresh();
     /* hobbywing-flyfun-v5, the fifth that runs: twelve items. */
-    programmer_screen_bench(0u, false, 0u, false);
+    programmer_screen_bench(0u, false, 0u, 0u, false);
     tap(TILE_CX(2), TILE_CY);
     tap(ROW_CX, SP_ROW_CY(4));
     for (int i = 0; i < 7; ++i) {
@@ -1408,5 +1475,6 @@ int main(void)
     RUN(ok_keeps_the_search_cancel_restores_it_and_empty_clears_it);
     RUN(a_lost_touch_drops_a_search_key_under_way);
     RUN(the_green_light_follows_the_beeps);
+    RUN(the_header_fits_at_the_registrys_most);
     return test_summary("programmer");
 }

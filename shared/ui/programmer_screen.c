@@ -291,6 +291,9 @@ static const proto_t k_protos[] = {
 #define SP_FIND_X   214
 #define SP_FIND_W   172
 #define SP_DOCK_X   352
+/* The count right of the field, up to the ^ button: 38 cells. */
+#define SP_COUNT_X  (SP_FIND_X + SP_FIND_W + 8)
+#define SP_COUNT_W  (W - PAD - 12 - 76 - 8 - SP_COUNT_X)
 
 /* The stack light at the right of the run's card: a cap, the red and the
  * green lens, each with a collar under it, and the base, px. */
@@ -342,7 +345,7 @@ typedef struct {
     uint32_t    built_key;  /* sp_list_key() when the list was built */
 
     /* The bench, as the application last said. */
-    uint32_t now_ms, stops;
+    uint32_t now_ms, stops, pressed;
     bool     armed, link_up;
 
     /* The search: the pattern the list shows, what it was when the
@@ -1266,7 +1269,7 @@ static void sp_start(void)
         return;     /* the note says why */
     }
     const esc_stick_bench_t b = { t->now_ms, t->armed, t->stops,
-                                  t->link_up };
+                                  t->link_up, t->pressed };
     const char *why = NULL;
     if (!esc_stick_start(&t->run, t->p, ch, n, &tm, mv, ma, &b, &why)) {
         snprintf(t->note, sizeof(t->note), "%s", sp_why_text(why));
@@ -1332,7 +1335,7 @@ static void sp_tick(float dt_s)
     }
     if (esc_stick_running(&t->run)) {
         const esc_stick_bench_t b = { t->now_ms, t->armed, t->stops,
-                                      t->link_up };
+                                      t->link_up, t->pressed };
         esc_stick_step(&t->run, &b);
         sp_follow();
         /* A light that changes repaints both buffers: the signature moves
@@ -1758,10 +1761,8 @@ static void sp_draw_list(gfx_canvas_t *c)
              (t->find[0] != '\0') ? TR(SP_LIST_FOUND) : TR(SP_LIST_COUNT),
              (t->count > 0) ? t->scroll + 1 : 0, last, t->count,
              t->runnable);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(SP_FIND_X + SP_FIND_W + 8),
-                                 (int16_t)(CRUMB_Y + 7),
-                                 (int16_t)(t->list_up.x - 8 - SP_FIND_X
-                                           - SP_FIND_W - 8), 16 },
+    gfx_text_in(c, (gfx_rect_t){ SP_COUNT_X, (int16_t)(CRUMB_Y + 7),
+                                 SP_COUNT_W, 16 },
                 count, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1,
                 GFX_ALIGN_RIGHT);
     ui_button(c, t->list_up, "^", ui_theme_color(UI_C_PANEL_HI), false,
@@ -1935,6 +1936,7 @@ static const char *sp_reason_help(esc_stick_reason_t r)
 {
     switch (r) {
     case ESC_STICK_R_STOP:        return TR(SP_WHY_STOP);
+    case ESC_STICK_R_BENCH_STOP:  return TR(SP_WHY_BENCH_STOP);
     case ESC_STICK_R_DISARMED:    return TR(SP_WHY_DISARMED);
     case ESC_STICK_R_LINK:        return TR(SP_WHY_LINK);
     case ESC_STICK_R_SUPPLY_OFF:  return TR(SP_WHY_SUPPLY_OFF);
@@ -1980,6 +1982,7 @@ static const char *sp_reason_text(esc_stick_reason_t r)
     switch (r) {
     case ESC_STICK_R_NONE:        return "";
     case ESC_STICK_R_STOP:        return TR(SP_R_STOP);
+    case ESC_STICK_R_BENCH_STOP:  return TR(SP_R_BENCH_STOP);
     case ESC_STICK_R_DISARMED:    return TR(SP_R_DISARMED);
     case ESC_STICK_R_LINK:        return TR(SP_R_LINK);
     case ESC_STICK_R_SUPPLY_OFF:  return TR(SP_R_SUPPLY_OFF);
@@ -2536,7 +2539,7 @@ static void sp_render(gfx_canvas_t *c)
 /* ------------------------------------------- the application's side ----- */
 
 void programmer_screen_bench(uint32_t now_ms, bool armed, uint32_t stops,
-                             bool link_up)
+                             uint32_t pressed, bool link_up)
 {
     stick_t *t = &s.st;
     /* A stop ends a hold under way; the warning stays, and a new hold is
@@ -2545,11 +2548,13 @@ void programmer_screen_bench(uint32_t now_ms, bool armed, uint32_t stops,
      * frame's count and clear the stop. */
     if (stops != t->stops) {
         sp_end_hold();
-        sp_end_run(ESC_STICK_R_STOP);
+        sp_end_run(esc_stick_stop_reason(stops - t->stops,
+                                         pressed - t->pressed));
     }
     t->now_ms = now_ms;
     t->armed = armed;
     t->stops = stops;
+    t->pressed = pressed;
     t->link_up = link_up;
 }
 

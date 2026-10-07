@@ -36,11 +36,14 @@ int  programmer_screen_dirty(void);
 
 /**
  * The bench as this frame found it, before the frame's touch: the time,
- * whether it is armed, how many stops have been counted, and whether the
- * coprocessor answers.  A stop count that moved ends the warning's hold.
+ * whether it is armed, how many stops have been counted and how many of
+ * those an operator pressed (arming_pressed_count()), and whether the
+ * coprocessor answers.  A stop count that moved ends the warning's hold,
+ * and a run: with STOP when every new stop was pressed, else with BENCH
+ * STOPPED.
  */
 void programmer_screen_bench(uint32_t now_ms, bool armed, uint32_t stops,
-                             bool link_up);
+                             uint32_t pressed, bool link_up);
 
 /** One supply sample, every one, in the order they were taken. */
 void programmer_screen_supply(const supply_state_t *st);

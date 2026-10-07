@@ -60,7 +60,7 @@ Profil von der SD-Karte (Secure Digital) trägt KARTE.
 
 SUCHE neben ESC STICK filtert die Liste. Ein Tippen darauf dockt die
 Texttastatur rechts an, und die Zeilen werden links davon schmaler: der
-Hersteller, der gekürzte Name und eine Marke, ob das Profil ausführbar ist
+Hersteller, der gekürzte Name und ein Zeichen, ob das Profil ausführbar ist
 (ein gefüllter Punkt) oder nicht (ein Ring). Jede Taste filtert die Liste
 sofort, und die Liste springt auf ihre erste Zeile, sobald sich die Suche
 ändert.
@@ -77,7 +77,7 @@ sofort, und die Liste springt auf ihre erste Zeile, sobald sich die Suche
   Modell JAZZ 55 LV.
 - Eine leere Suche zeigt jedes Profil. Die Suche fasst bis zu 16 Zeichen.
 - Die Kopfzeile zählt, was die Suche gefunden hat:
-  `1-3 von 3 gefunden, 2 ausführbar`. Findet sie nichts, sagt die Liste
+  `1-3/3 gefunden, 2 ausführbar`. Findet sie nichts, sagt die Liste
   `Kein Profil passt zur Suche.`
 
 OK schließt die Tastatur und behält die Suche, ABBRECHEN kehrt zu der Suche
@@ -176,8 +176,9 @@ Grün auf einem hellgrauen Fuß.
 - **Rot** leuchtet auf einem Ergebnis, dessen Lauf endete, weil etwas nicht
   wie erwartet war, und bleibt bis OK an. Die Gründe stehen unter
   [Wie ein Lauf endet](#wie-ein-lauf-endet). Bei FERTIG und bei den Enden,
-  die ein Bediener wählt, bleibt es aus: STOP, ABBRECHEN und das Verlassen
-  des Bildschirms.
+  die ein Bediener wählt, bleibt es aus: gedrücktes STOP, ABBRECHEN und das
+  Verlassen des Bildschirms. Ein Stopp, den der Prüfstand selbst auslöst,
+  PRÜFSTAND GESTOPPT, schaltet es ein.
 
 Ändert sich eine der beiden Leuchten, werden beide Bildpuffer neu
 gezeichnet.
@@ -359,7 +360,8 @@ Liste.
 | Ergebnis | Ursache | Rote Leuchte |
 | --- | --- | --- |
 | FERTIG | jede Auswahl getroffen | aus |
-| STOP | STOP, aus jeder Quelle, während des Laufs gezählt | aus |
+| STOP | STOP gedrückt, im Band oder auf einer Seite, während des Laufs | aus |
+| PRÜFSTAND GESTOPPT | ein Stopp, den der Prüfstand während des Laufs selbst auslöste: Touch 500 ms ohne Antwort, Touch-Ereignisse verloren unter einem STOP-Druck oder unter dem Scharfschalten, oder die Ablehnung oder der Failsafe des Koprozessors; das Band nennt, welcher | an |
 | DISARMED | der Prüfstand wurde entschärft | an |
 | LINK VERLOREN | der Koprozessor antwortete irgendwann während des Laufs und hörte auf | an |
 | NETZTEIL AUS | der Ausgang ging aus: eine Abschaltung, oder ein ON, das das Netzteil fallen ließ | an |
@@ -377,11 +379,16 @@ Liste.
 | SEITE VERLASSEN | der Bildschirm wurde verlassen | aus |
 
 Die Spalte der roten Leuchte ist `esc_stick_reason_is_fault()` in
-`shared/esc/esc_stick.c`, ein Fall je Grund, und `test_esc_stick` hält sie
-an diese Tabelle. Ein STOP, den der Prüfstand selbst auslöst, zählt wie ein
-gedrücktes STOP, weil die Engine für beide einen Zähler sieht, und lässt Rot
-aus; das Band sagt, was den Prüfstand gestoppt hat. TOUCH VERLOREN ist an:
-Ereignisse gingen verloren, sie wurden nicht gewählt.
+`shared/esc/esc_stick.c`, ein Fall je Grund. `tools/check_docs.py` liest
+diese Funktion und schlägt fehl, wenn diese Tabelle oder ihr englisches
+Gegenstück etwas anderes sagt. TOUCH VERLOREN ist an: Ereignisse gingen
+verloren, sie wurden nicht gewählt.
+
+STOP und PRÜFSTAND GESTOPPT kommen aus zwei Zählern, die das Panel führt:
+jeder Stopp, und davon die gedrückten (`arming_stop_pressed()`, im selben
+Aufruf wie der Stopp gezählt). Ein Lauf, der seit seinem Beginn mehr Stopps
+als Drücke sieht, endet mit PRÜFSTAND GESTOPPT, damit ein Stopp des
+Prüfstands nicht hinter einem Druck verschwindet, der mit ihm kam.
 
 Jedes Ende setzt das Gas auf MIN, schaltet das Netzteil aus und entschärft;
 ein Abbruch tut alle drei in einem Schritt.

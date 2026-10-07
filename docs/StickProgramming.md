@@ -159,7 +159,8 @@ things, drawn as a signal tower: red over green on a light grey base.
 - **Red** is lit on a result whose run ended because something was not as
   expected, and stays on until OK. The reasons are listed under
   [How a run ends](#how-a-run-ends). It stays dark on DONE and on the ends
-  an operator chooses: STOP, ABORT and leaving the screen.
+  an operator chooses: STOP pressed, ABORT and leaving the screen. A stop
+  the bench raises itself, BENCH STOPPED, lights it.
 
 A change of either light repaints both screen buffers.
 
@@ -325,7 +326,8 @@ A profile corrected on the SD card is listed with its correction.
 | Result | Cause | Red light |
 | --- | --- | --- |
 | DONE | every selection made | dark |
-| STOP | STOP, from any source, counted while the run was under way | dark |
+| STOP | STOP pressed, in the band or on a screen, while the run was under way | dark |
+| BENCH STOPPED | a stop the bench raised itself while the run was under way: touch silent for 500 ms, touch events lost under a STOP press or under the arm, or the coprocessor's refusal or failsafe; the band names which | lit |
 | DISARMED | the bench disarmed | lit |
 | LINK LOST | the coprocessor answered at some time during the run and stopped answering | lit |
 | SUPPLY OFF | the output went off: a trip, or an ON the supply let go | lit |
@@ -343,11 +345,15 @@ A profile corrected on the SD card is listed with its correction.
 | SCREEN LEFT | the screen was left | dark |
 
 The red light's column is `esc_stick_reason_is_fault()` in
-`shared/esc/esc_stick.c`, one case per reason, and `test_esc_stick` holds
-it to this table. A STOP the bench raises itself is counted with a STOP
-pressed, since the engine sees one count for both, and leaves red dark; the
-band says what stopped the bench. TOUCH LOST is lit: events were lost, not
-chosen.
+`shared/esc/esc_stick.c`, one case per reason. `tools/check_docs.py` reads
+that function and fails when this table, or its German twin, says
+otherwise. TOUCH LOST is lit: events were lost, not chosen.
+
+STOP and BENCH STOPPED come from two counts the panel keeps: every stop,
+and of those the ones pressed (`arming_stop_pressed()`, counted in the
+same call as the stop). A run that sees more stops than presses since it
+began ends with BENCH STOPPED, so a stop the bench raised is not hidden by
+a press that came with it.
 
 Every end sets the throttle to MIN, switches the supply off and disarms; an
 abort does all three in one step. A stop latches as any stop does: the next

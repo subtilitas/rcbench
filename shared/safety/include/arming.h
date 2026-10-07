@@ -57,6 +57,12 @@ typedef struct {
      * and it invalidates a gesture just as much.
      */
     uint32_t stops;
+    /**
+     * Of those, the ones an operator pressed: counted in the same call as
+     * the stop, so a reader that sees a stop sees its press with it.  What
+     * is left -- touch dead or lost, the far end -- is the bench's own.
+     */
+    uint32_t pressed;
     bool     touch_was_dead;  /**< so touch dying is counted once, not per pass */
     /**
      * A disarm owed to something the policy saw between steps.
@@ -95,6 +101,13 @@ bool arming_stopped(const arming_t *a);
 /** How many stops have been applied. Changes on every stop, latched or not,
  *  so a caller can act on the event rather than on the level. */
 uint32_t arming_stop_count(const arming_t *a);
+
+/** A STOP an operator pressed: arming_stop(), counted as pressed too. */
+void arming_stop_pressed(arming_t *a);
+
+/** How many of the stops were pressed (arming_stop_pressed()); never more
+ *  than arming_stop_count() has counted since arming_init(). */
+uint32_t arming_pressed_count(const arming_t *a);
 
 /**
  * Sample the touch controller's health, and act on the edge where it dies.

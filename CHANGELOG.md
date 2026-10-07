@@ -83,8 +83,13 @@ history is in git.
   the beep count. Green is on while the beep detector holds a pulse, at
   least 150 ms (`ESC_STICK_BEEP_LIGHT_MS`) so a beep shorter than a frame
   shows. Red is lit on a result that ended because something was not as
-  expected (every end except DONE, STOP, ABORT and leaving the screen,
-  decided in `esc_stick_reason_is_fault()`), until OK.
+  expected (every end except DONE, a STOP pressed, ABORT and leaving the
+  screen, decided in `esc_stick_reason_is_fault()`), until OK. A stop the
+  bench raises itself -- touch silent or lost, the coprocessor's refusal or
+  failsafe -- ends a run with BENCH STOPPED and lights red; the arming
+  policy counts pressed stops (`arming_stop_pressed()`) apart from the
+  rest, and `tools/check_docs.py` holds the docs' red light table to the
+  code.
 - **Where the stick rests, and the move that stores.** An ESC profile may
   name `scheme.listen`, the stick position while the menu sounds, and
   `scheme.store`, the move that stores a selection; the generator and the

@@ -315,6 +315,30 @@ TEST_CASE(every_stop_counts_even_when_the_latch_does_not_move)
     CHECK_EQ(arming_stop_count(NULL), 0);
 }
 
+/* A pressed STOP is a stop and a press; the bench's own stops are stops
+ * only, so a run can tell the two apart. */
+TEST_CASE(a_pressed_stop_is_counted_apart_from_the_benchs_own)
+{
+    arming_t a;
+    arming_init(&a, 0, SETTLE_MS);
+    arming_stop_pressed(&a);
+    CHECK(arming_stopped(&a));
+    CHECK_EQ(arming_stop_count(&a), 1);
+    CHECK_EQ(arming_pressed_count(&a), 1);
+    arming_stop(&a);                        /* touch lost under a press */
+    arming_stop_from_far_end(&a);           /* the coprocessor's */
+    CHECK_EQ(arming_stop_count(&a), 3);
+    CHECK_EQ(arming_pressed_count(&a), 1);
+    /* Touch that stops answering for ARMING_TOUCH_DEAD_MS. */
+    arming_touch_poll(&a, ARMING_TOUCH_DEAD_MS);
+    CHECK_EQ(arming_stop_count(&a), 4);
+    CHECK_EQ(arming_pressed_count(&a), 1);
+    arming_request_arm(&a, ARMING_TOUCH_DEAD_MS);
+    CHECK_EQ(arming_pressed_count(&a), 1);
+    arming_stop_pressed(NULL);
+    CHECK_EQ(arming_pressed_count(NULL), 0);
+}
+
 TEST_CASE(a_settling_arm_is_abandoned_when_touch_dies)
 {
     /*
@@ -437,6 +461,7 @@ int main(void)
     RUN(the_rules_survive_a_millisecond_wrap);
     RUN(the_latch_can_be_asked_about);
     RUN(every_stop_counts_even_when_the_latch_does_not_move);
+    RUN(a_pressed_stop_is_counted_apart_from_the_benchs_own);
     RUN(touch_that_stops_answering_counts_once);
     RUN(a_settling_arm_is_abandoned_when_touch_dies);
     RUN(touch_health_can_be_judged_apart_from_the_policy_step);

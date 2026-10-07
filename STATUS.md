@@ -116,7 +116,7 @@ is taken in a gap ahead of the save that needs it.
 | Servo limit search, servo synchronisation | built and tested against a modelled servo |
 | OpenYGE codec | built and tested; not wired in. The implementation is pursued in a separate repository |
 | ESC programming profiles | 72 families, 451 models, from 153 manuals; compiled in from `shared/esc/profiles/*.json` and replaced or extended by `/ESC/*.json` on the card at start-up. The reader and the registry are tested on the host; the card path has not run on a panel. Every profile is unverified and carries no beep timing. The nine YGE profiles name where the stick rests while the menu sounds (`scheme.listen`). [Reference](docs/EscProfiles.md) |
-| Stick programming | built and tested on the host against a simulated ESC (`shared/esc/esc_stick.c`, `esc_sim.c`): the ESC STICK class on PROGRAMMER runs 14 of the 72 profiles (13 two-stage, 1 one-stage; the list opens 13, one needing 22.8 V) from a warning held for 2 s (NO PROPELLER, MOTOR SECURED?: a resistor load or a motor mounted solid without propeller), arming and moving the throttle through the MOTOR screen's commands and switching the supply through SUPPLY's. Beeps are counted from the supply current with hysteresis from a quiet line, lengths judged in readings, and a group acted on only when it and the one before it are in the menu's order; a sweep of lost beeps against entry times stores no wrong value in the simulation. A planned end switches the supply off before the stick moves. The list has a search over maker and name or maker and model, case-insensitive with `*` as a wildcard, filtered with every key on a keyboard docked beside it. A stack light on the run and the result shows green while the detector holds a beep (at least 150 ms) and red on an end caused by something not as expected. With the PD mini off, the panel's modelled supply draws the simulated ESC's current. Never run against an ESC; every beep timing is a default in the settings, not a measurement. [Reference](docs/StickProgramming.md) |
+| Stick programming | built and tested on the host against a simulated ESC (`shared/esc/esc_stick.c`, `esc_sim.c`): the ESC STICK class on PROGRAMMER runs 14 of the 72 profiles (13 two-stage, 1 one-stage; the list opens 13, one needing 22.8 V) from a warning held for 2 s (NO PROPELLER, MOTOR SECURED?: a resistor load or a motor mounted solid without propeller), arming and moving the throttle through the MOTOR screen's commands and switching the supply through SUPPLY's. Beeps are counted from the supply current with hysteresis from a quiet line, lengths judged in readings, and a group acted on only when it and the one before it are in the menu's order; a sweep of lost beeps against entry times stores no wrong value in the simulation. A planned end switches the supply off before the stick moves. The list has a search over maker and name or maker and model, case-insensitive with `*` as a wildcard, filtered with every key on a keyboard docked beside it. A stack light on the run and the result shows green while the detector holds a beep (at least 150 ms) and red on an end caused by something not as expected, a stop the bench raised itself (BENCH STOPPED, told from a pressed STOP by the arming policy's count of presses) included. With the PD mini off, the panel's modelled supply draws the simulated ESC's current. Never run against an ESC; every beep timing is a default in the settings, not a measurement. [Reference](docs/StickProgramming.md) |
 | Measurement front end | parts chosen, nothing fitted: the INA228 as motor monitor and three TPS55285 servo converters with a fourth as the adjustable supply (owner, 2026-09-30); 7 INA3221 port monitors, both motor shunts and the BQ25713 pack charger from round 1 of the component research: [hardware](hardware/STATUS.md) |
 | Servo programmer | Hitec table in the programmer screen; KST (a servo manufacturer) held at the owner's request |
 
@@ -217,7 +217,7 @@ this list to `test/host/CMakeLists.txt`.
 Coverage floors: 94% overall, 85% for every file except `stub_screen.c`, which
 is exempt by name. `tools/coverage.py --check` fails on drift of the table
 below. `render_ui.py --check` holds 114 committed screenshots to the current
-render, 54 in English and the same 54 in German, and `render_ui.py --fit`
+render, 57 in English and the same 57 in German, and `render_ui.py --fit`
 fails on a German string that overflows where it is drawn; `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000.
 
@@ -249,7 +249,7 @@ chrome-cached screen to 2,000.
 | `shared/ui/analyser_screen.c` | 224 | 221 | 98.7% |
 | `shared/ui/balance_screen.c` | 311 | 311 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
-| `shared/ui/programmer_screen.c` | 1467 | 1371 | 93.5% |
+| `shared/ui/programmer_screen.c` | 1469 | 1373 | 93.5% |
 | `shared/ui/log_viewer_screen.c` | 796 | 724 | 91.0% |
 | `shared/ui/log_select.c` | 26 | 26 | 100.0% |
 | `shared/ui/settings_screen.c` | 304 | 295 | 97.0% |
@@ -262,7 +262,7 @@ chrome-cached screen to 2,000.
 | `shared/logfile/log_fields.c` | 46 | 45 | 97.8% |
 | `shared/logfile/log_name.c` | 62 | 62 | 100.0% |
 | `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
-| `shared/safety/arming.c` | 90 | 84 | 93.3% |
+| `shared/safety/arming.c` | 97 | 91 | 93.8% |
 | `shared/safety/touch_loss.c` | 45 | 45 | 100.0% |
 | `shared/servo/servo_limit.c` | 120 | 116 | 96.7% |
 | `shared/servo/servo_sync.c` | 172 | 167 | 97.1% |
@@ -274,7 +274,7 @@ chrome-cached screen to 2,000.
 | `shared/openyge/openyge_params.c` | 66 | 66 | 100.0% |
 | `shared/esc/esc_json.c` | 741 | 689 | 93.0% |
 | `shared/esc/esc_registry.c` | 113 | 112 | 99.1% |
-| `shared/esc/esc_stick.c` | 694 | 662 | 95.4% |
+| `shared/esc/esc_stick.c` | 705 | 673 | 95.5% |
 | `shared/esc/esc_sim.c` | 306 | 283 | 92.5% |
 | `shared/servo/servo_sim.c` | 122 | 122 | 100.0% |
 | `shared/sbus/sbus.c` | 54 | 53 | 98.2% |
@@ -307,7 +307,7 @@ chrome-cached screen to 2,000.
 | `shared/bench/pdmini.c` | 513 | 504 | 98.2% |
 | `shared/bench/supply_link.c` | 222 | 212 | 95.5% |
 | `shared/bench/log_writer.c` | 126 | 114 | 90.5% |
-| **total** | **18884** | **18172** | **96.2%** |
+| **total** | **18904** | **18192** | **96.2%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

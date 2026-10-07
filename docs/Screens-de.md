@@ -730,7 +730,8 @@ ist, mindestens 150 ms:
 ![Ein Lauf](img/de/programmer-stick-run.png)
 
 Das Ergebnis bleibt bis OK. Sein Rot leuchtet, wenn der Lauf endete, weil
-etwas nicht wie erwartet war, und bleibt aus bei FERTIG, STOP, ABBRECHEN und
+etwas nicht wie erwartet war, ein Stopp des Prüfstands selbst eingeschlossen,
+und bleibt aus bei FERTIG, gedrücktem STOP, ABBRECHEN und
 dem Verlassen des Bildschirms ([die Liste](StickProgramming-de.md#wie-ein-lauf-endet)):
 
 ![Fertig](img/de/programmer-stick-done.png)
