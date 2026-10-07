@@ -1768,6 +1768,74 @@ TEST_CASE(a_manual_step_shows_in_the_language_showing)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* KONTROL-X mode 2 to the step before the supply goes off: the button
+ * pressed when asked, the ESC powered and the stick at MAX after the
+ * store. */
+static const esc_stick_t *run_to_end_step(rig_t *r)
+{
+    fresh();
+    open_profile("kontronik-kontrol-x");
+    tap(CANCEL_X, HOLD_Y);                   /* the steps, read */
+    tap(STEP_UP_X, STEP_CY(0));              /* KEEP, 1 */
+    tap(STEP_UP_X, STEP_CY(0));              /* 2 */
+    supply_reads_off();
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    rig_start(r);
+    const esc_stick_t *run = programmer_screen_stick();
+    bool pressed = false;
+    for (uint32_t i = 0; i < 240000u && esc_stick_running(run)
+                         && run->phase != ESC_STICK_HAND_END; ++i) {
+        if (run->hand_menu && !pressed) {
+            esc_sim_hand(&r->sim, r->now);   /* the button */
+            pressed = true;
+        }
+        rig_step(r);
+    }
+    CHECK_EQ(run->phase, ESC_STICK_HAND_END);
+    return run;
+}
+
+/* The run holds the ESC powered after the store until DONE, with the
+ * prompt up; DONE switches the supply off.  No DONE: the run ends with
+ * NOT CONFIRMED and says the ESC may be locked. */
+TEST_CASE(the_supply_stays_on_until_done_after_the_store)
+{
+    static rig_t r;
+    const esc_stick_t *run = run_to_end_step(&r);
+    CHECK(r.on);
+    CHECK(r.armed);
+    CHECK(r.pct == ESC_STICK_PCT_MAX);
+    CHECK(programmer_screen_stick_hand_shown() == false);
+    draws();                                 /* the prompt */
+    for (uint32_t i = 0; i < ESC_STICK_HAND_MIN_MS; ++i) {
+        rig_step(&r);
+    }
+    CHECK(r.on);
+    tap(HOLD_X, HOLD_Y);                     /* DONE */
+    rig_step(&r);
+    CHECK_EQ(run->phase, ESC_STICK_OFF);
+    rig_run(&r, 60000u);
+    CHECK_EQ(run->phase, ESC_STICK_DONE);
+    CHECK(!esc_stick_lock_risk(run));
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 2);
+    CHECK(!r.on);
+    draws();
+
+    run = run_to_end_step(&r);
+    rig_run(&r, ESC_STICK_HAND_WAIT_MS + 1000u);
+    CHECK_EQ(run->phase, ESC_STICK_ABORTED);
+    CHECK_EQ(run->reason, ESC_STICK_R_HAND);
+    CHECK(esc_stick_lock_risk(run));
+    CHECK(!r.on);
+    CHECK(!r.armed);
+    draws();                                 /* the result, with the lock */
+    ui_text_set_language(UI_LANG_DE);
+    draws();
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* ABORT on the prompt ends the run as ABORT does: disarmed, supply off. */
 TEST_CASE(abort_on_the_prompt_ends_the_run)
 {
@@ -2511,6 +2579,7 @@ int main(void)
     RUN(a_row_that_does_not_run_shows_its_manual_steps);
     RUN(a_run_asks_for_its_manual_step_and_goes_on_with_done);
     RUN(abort_on_the_prompt_ends_the_run);
+    RUN(the_supply_stays_on_until_done_after_the_store);
     RUN(a_manual_step_shows_in_the_language_showing);
     RUN(makers_are_alphabetical_and_count_their_models);
     RUN(models_go_by_current_then_voltage_then_name);

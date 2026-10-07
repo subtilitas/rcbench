@@ -1126,6 +1126,8 @@ static const char *sp_when_text(const esc_manual_t *m)
         return TR(SP_HAND_WHEN_BEFORE_MENU);
     case ESC_MANUAL_DURING_MENU:
         return TR(SP_HAND_WHEN_DURING_MENU);
+    case ESC_MANUAL_BEFORE_POWER_OFF:
+        return TR(SP_HAND_WHEN_BEFORE_OFF);
     case ESC_MANUAL_AFTER_PROGRAMMING:
         return TR(SP_HAND_WHEN_AFTER);
     }
@@ -1583,6 +1585,8 @@ static bool sp_warn_gated(void)
  * step wrapped to two lines, and room kept for the line about later steps,
  * above HOLD TO RUN.
  */
+static unsigned sp_later_steps(const esc_profile_t *p);
+
 static bool sp_warn_steps_fit(const esc_profile_t *p)
 {
     if (p == NULL || esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER)
@@ -1590,9 +1594,7 @@ static bool sp_warn_steps_fit(const esc_profile_t *p)
         return true;
     }
     const int last = s.st.hold_btn.y - 20;
-    const unsigned later = esc_profile_manual_count(p, ESC_MANUAL_AT_POWER_UP)
-                           + esc_profile_manual_count(p,
-                                                      ESC_MANUAL_BEFORE_MENU);
+    const unsigned later = sp_later_steps(p);
     const int keep = (later > 0u) ? 22 : 0;
     int y = PAD + 68 + 5 * 22 + 66 + 22;
     for (unsigned i = 0; i < p->manual_count; ++i) {
@@ -1606,6 +1608,15 @@ static bool sp_warn_steps_fit(const esc_profile_t *p)
         }
     }
     return true;
+}
+
+/* The steps the run stops for on its way, after the warning's: at the
+ * power-up, before the menu, and before the supply goes off. */
+static unsigned sp_later_steps(const esc_profile_t *p)
+{
+    return esc_profile_manual_count(p, ESC_MANUAL_AT_POWER_UP)
+           + esc_profile_manual_count(p, ESC_MANUAL_BEFORE_MENU)
+           + esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER_OFF);
 }
 
 /* Whether HOLD TO RUN may not count: the supply does not read off, or the
@@ -2653,6 +2664,7 @@ static const char *sp_phase_text(esc_stick_phase_t ph)
     case ESC_STICK_CYCLE:   return TR(SP_PH_CYCLE);
     case ESC_STICK_HAND_OFF: return TR(SP_PH_HAND_OFF);
     case ESC_STICK_HAND_ON: return TR(SP_PH_HAND_ON);
+    case ESC_STICK_HAND_END: return TR(SP_PH_HAND_END);
     case ESC_STICK_OFF:     return TR(SP_PH_OFF);
     case ESC_STICK_DONE:    return TR(SP_PH_DONE);
     case ESC_STICK_ABORTED: return TR(SP_PH_ABORTED);
@@ -3014,9 +3026,15 @@ static void sp_draw_result(gfx_canvas_t *c)
     } else {
         gfx_text(c, PAD + 12, HELP_Y, sp_reason_help(e->reason),
                  UI_FONT_LABEL, dim, 1);
-        gfx_text(c, PAD + 12, HELP_Y + 18,
-                 TR(SP_SAFE_NOW),
-                 UI_FONT_LABEL, dim, 1);
+        /* The supply went off while the ESC was to confirm: a Kontronik
+         * ESC takes that for programming broken off and locks itself. */
+        if (esc_stick_lock_risk(e)) {
+            gfx_text(c, PAD + 12, HELP_Y + 18, TR(SP_HAND_LOCK),
+                     UI_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
+        } else {
+            gfx_text(c, PAD + 12, HELP_Y + 18, TR(SP_SAFE_NOW),
+                     UI_FONT_LABEL, dim, 1);
+        }
     }
     ui_button(c, s.write_btn, "OK", ui_theme_color(UI_C_PANEL_HI), false,
               true);
@@ -3328,9 +3346,7 @@ static void sp_draw_warning_hand(gfx_canvas_t *c, const esc_profile_t *p,
                                  gfx_rect_t a, int y)
 {
     const int last = s.st.hold_btn.y - 20;     /* the last line's top */
-    const unsigned later =
-        esc_profile_manual_count(p, ESC_MANUAL_AT_POWER_UP)
-        + esc_profile_manual_count(p, ESC_MANUAL_BEFORE_MENU);
+    const unsigned later = sp_later_steps(p);
     if (esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER) > 0u
         && sp_warn_gated()) {
         /* No hand at the ESC until the supply reads off. */
@@ -3497,6 +3513,8 @@ static void sp_draw_prompt(gfx_canvas_t *c)
         snprintf(line, sizeof(line), TR(SP_PROMPT_LISTEN), pos);
     } else if (e->phase == ESC_STICK_HAND_ON) {
         snprintf(line, sizeof(line), TR(SP_PROMPT_ON), pos);
+    } else if (e->phase == ESC_STICK_HAND_END) {
+        snprintf(line, sizeof(line), TR(SP_PROMPT_END), pos);
     } else if (m->when == ESC_MANUAL_AT_POWER_UP) {
         snprintf(line, sizeof(line), "%s", TR(SP_PROMPT_AT_POWER));
     } else {
@@ -3516,7 +3534,11 @@ static void sp_draw_prompt(gfx_canvas_t *c)
                 ui_theme_color(UI_C_TEXT_DIM));
         y += 22;
     }
-    snprintf(line, sizeof(line), TR(SP_PROMPT_LEFT),
+    /* Before the supply goes off, an end switches it off under the ESC's
+     * confirmation: said here, as the result says it after. */
+    snprintf(line, sizeof(line),
+             (e->phase == ESC_STICK_HAND_END) ? TR(SP_PROMPT_LEFT_END)
+                                              : TR(SP_PROMPT_LEFT),
              (unsigned)((esc_stick_hand_left_ms(e) + 999u) / 1000u));
     sp_text(c, a.x + 20, y, line, 92, ui_theme_color(UI_C_TEXT_FAINT));
     const bool ready = esc_stick_hand_ready(e);

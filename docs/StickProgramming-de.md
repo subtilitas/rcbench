@@ -253,6 +253,7 @@ mit dem Zeitpunkt, an dem er fällig ist:
 | `at_power_up` | hält vor jedem Einschalten mit ausgeschaltetem Netzteil an und fragt; ERLEDIGT schaltet das Netzteil ein, und der Lauf zählt das Halten herunter, das das Profil nennt |
 | `before_menu` | fragt, sobald der Einstieg seine Zeit hatte, mit versorgtem ESC und dem Knüppel in der Einschaltstellung. Ein Schritt mit `starts_menu` ist die Handlung, die das Menü startet, und der Lauf zählt die Pieptöne ab dem Moment, in dem er fragt (siehe unten); jeder andere wartet auf ERLEDIGT |
 | `during_menu` | kann den Zeitpunkt nicht kennen: das Profil läuft nicht, `Handgriff` |
+| `before_power_off` | hält nach der letzten Bewegung des Speicherns an, mit versorgtem ESC und dem Knüppel, wo das Speichern ihn ließ, und schaltet das Netzteil erst auf ERLEDIGT aus. Niemand berührt den ESC: der Bediener beobachtet, wie er den Wert bestätigt (Töne, LED) |
 | `after_programming` | zeigt ihn auf dem Ergebnis |
 
 Ein Profil mit Handgriffen zeigt im Kopf seiner Punktliste rot MANUELLER
@@ -301,6 +302,29 @@ Messwerte, und jedes Ende setzt Throttle auf MIN, schaltet das Netzteil aus
 und entschärft.
 
 ![Der Lauf wartet auf den Jumper](img/de/programmer-stick-hand-prompt.png)
+
+**Bevor das Netzteil ausschaltet.** Ein Kontronik-ESC der Familien KOBY,
+JIVE Pro, KOLIBRI, KONTROL-X / KOLIBRI-X und KOSMIK bestätigt einen
+gespeicherten Modus mit Tönen und seiner LED, und einer, der vor dem Ende
+dieser Bestätigung seine Versorgung verliert, wertet die Programmierung
+als abgebrochen und sperrt sich: 8-fach Blinken an einem KONTROL-X
+(Kontronik_Kontrol-X_Kolibri-X.pdf S. 4, S. 11), 9-fach an KOBY, JIVE Pro
+oder KOLIBRI, 10-fach an KOSMIK. Ihre Profile tragen einen Schritt
+`before_power_off`. Nach der letzten Bewegung des Speicherns hält der Lauf
+den ESC versorgt, den Knüppel, wo das Speichern ihn ließ, und bittet den
+Bediener, den ESC zu beobachten und ERLEDIGT zu tippen, sobald die
+Bestätigung zu Ende ist; ERLEDIGT schaltet das Netzteil aus, und der Lauf
+endet oder schaltet aus und ein wie jeder andere. Die Abfrage sagt, dass
+der ESC versorgt ist und nicht berührt werden darf. Kein ERLEDIGT
+innerhalb von 60 s beendet den Lauf mit NICHT BESTÄTIGT, ebenso jedes
+andere Ende, während der Schritt gefragt ist; jedes davon schaltet das
+Netzteil während der Bestätigung aus, und das Ergebnis sagt, dass der ESC
+gesperrt sein kann und geprüft werden muss. Von den fünf läuft
+KONTROL-X; die anderen zeigen den Schritt in ihrer Liste der Handgriffe.
+
+![Der Lauf wartet auf die Bestätigung des ESCs](img/de/programmer-stick-hand-end.png)
+
+![Kein ERLEDIGT: der ESC kann gesperrt sein](img/de/programmer-stick-hand-locked.png)
 
 **Die Handlung, die das Menü startet.** Ein Profil kennzeichnet den
 Schritt, dessen Handlung die Modusfolge startet, mit `"starts_menu": true`;
@@ -366,7 +390,7 @@ und `greatplanes-electrifly-c-series`. 10 laufen:
 | `kontronik-beat-car` | wie BEAT | Modi 2 bis 6, 8 |
 | `kontronik-beat-fai` | wie BEAT | keine |
 | `kontronik-jazz` | JAZZ: Jumper wie BEAT; MINIJAZZ: Taster nach 2 s oder den Tönen | Modi 6, 8 |
-| `kontronik-kontrol-x` | Taster unter dem Schrumpfschlauch nach 2 s oder den Tönen | Modus 3 |
+| `kontronik-kontrol-x` | Taster unter dem Schrumpfschlauch nach 2 s oder den Tönen; nicht berühren, bis die Modusbestätigung zu Ende ist | Modus 3 |
 | `kontronik-pix` | Taster mit der Aufschrift Taster nach 2 s oder den Tönen | keine |
 | `kontronik-smile` | Taster drücken und loslassen nach 2 s oder den Tönen | Modus 6 |
 | `kontronik-star-line` | Jumper vor dem Einschalten auf, nach 5 s oder den Tönen ab | Modus 6 |
@@ -412,6 +436,7 @@ gezeichnet.
 | EINSCHALTEN | Einstiegsstellung | an | wenn ein Messwert den Ausgang an meldet; nach 3000 ms: AUSGANG NICHT GEMELDET |
 | EINSTIEG | Einstiegsstellung | an | EINSTIEG nach dem Einschalten: das `entry_hold_ms` des Werts, sonst das `hold_ms` des Profils, wo es eines nennt, und nicht kürzer als das längste `hold_ms` eines Schritts `at_power_up` |
 | HANDGRIFF, VERSORGT | Einschaltstellung | an | nach EINSTIEG mit einem fälligen Schritt `before_menu`, der nicht der Start des Menüs ist: ERLEDIGT, dann der nächste Schritt oder das Menü; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT. Nach dem letzten Schritt wird aus PUNKTE oder WERTE gefragt, schon zählend |
+| WARTEN AUF DEN ESC | wo es speicherte | an | nach SPEICHERN mit einem fälligen Schritt `before_power_off`: ERLEDIGT, dann der nächste solche Schritt oder das Netzteil aus (AUS UND EIN oder AUSSCHALTEN); kein ERLEDIGT in 60 s: NICHT BESTÄTIGT, und das Ergebnis sagt, dass der ESC gesperrt sein kann |
 | PUNKTE | Ruhestellung | an | eine Punktgruppe in Reihenfolge nennt einen gewünschten Punkt: die Auswahlbewegung |
 | WERTE | wo die letzte Bewegung es ließ | an | eine Wertgruppe in Reihenfolge nennt den gewünschten Wert: die Wertbewegung |
 | SPEICHERN | die Wertbewegung, dann die Speicherbewegung, dann die eigenen Bewegungen des Werts (`after_select`) | an | nach SPEICHERN, und nach SPEICHERN noch einmal für jede Bewegung: die Speicherbewegung des Profils, dann jede des Werts |
@@ -708,6 +733,14 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   ohne Grenze auf seinen Jumper oder Taster wartet und was er tut, wenn
   das Abziehen spät kommt, steht nicht fest, außer bei HELI JIVE und JIVE
   Pro (10 s), die nicht laufen.
+- Ein KOBY, JIVE Pro, KOLIBRI, KONTROL-X / KOLIBRI-X oder KOSMIK, dessen
+  Netzteil vor dem Ende seiner Modusbestätigung ausschaltet, sperrt sich
+  (8- bis 10-fach Blinken, je nach Familie). Der Lauf schaltet das Netzteil
+  vor ERLEDIGT aus bei NICHT BESTÄTIGT (kein ERLEDIGT innerhalb von 60 s),
+  STOP, ABBRECHEN, einem Entschärfen, einem verlorenen Link und jeder
+  Netzteilregel, und sagt dann, dass der ESC gesperrt sein kann. Der
+  Prüfstand sieht weder die Bestätigung noch die Sperre; ERLEDIGT ist das
+  Wort des Bedieners, dass die Bestätigung zu Ende ist.
 - Welche Werte ein Kontronik-ESC aus der Mitte programmiert, ist den
   Handbüchern entnommen; für JAZZ-Modi 6 und 8, KONTROL-X-Modus 3 und
   SUN-PLUS-Modi 2, 3, 5, 6 und 9 nennt das Handbuch die Stellung nicht, und

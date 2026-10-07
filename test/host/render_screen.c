@@ -869,6 +869,55 @@ int main(int argc, char **argv)
             for (int i = 0; i < 10; ++i) {
                 stick_step(&arig);
             }
+        } else if (strcmp(view, "programmer-stick-hand-end") == 0
+                   || strcmp(view, "programmer-stick-hand-locked") == 0) {
+            /*
+             * kontronik-kontrol-x mode 2, run to the step before the supply
+             * goes off: the button pressed when asked, the mode stored, the
+             * ESC powered with the stick at MAX.  -end: the prompt, DONE
+             * live.  -locked: no DONE, the result.
+             */
+            stick_open("Kontronik", "kontronik-kontrol-x");
+            tap(684, UI_BAND_H + 378);          /* OK: the first opening */
+            tap(765, UI_BAND_H + 132 + 10);     /* mode 1 */
+            tap(765, UI_BAND_H + 132 + 10);     /* mode 2 */
+            stick_supply_off();
+            tap(698, UI_BAND_H + 407);          /* RUN: the warning */
+            touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                                .point = { .id = 2, .x = 156,
+                                           .y = UI_BAND_H + 378,
+                                           .strength = 40 } };
+            ui_router_event(&e);
+            for (int i = 0; i < 9; ++i) {
+                ui_router_tick(0.25f);
+            }
+            e.type = TOUCH_EVENT_UP;
+            ui_router_event(&e);
+            static stick_rig_t erig;
+            memset(&erig, 0, sizeof(erig));
+            esc_sim_cfg_t ec;
+            esc_sim_defaults(&ec);
+            ec.wait_hand = true;                /* silent until the press */
+            esc_sim_init(&erig.sim, programmer_screen_stick()->p, &ec);
+            const esc_stick_t *run = programmer_screen_stick();
+            bool pressed = false;
+            for (int ms = 0; ms < 400000 && esc_stick_running(run)
+                             && run->phase != ESC_STICK_HAND_END; ++ms) {
+                if (run->hand_menu && !pressed) {
+                    esc_sim_hand(&erig.sim, erig.now);
+                    pressed = true;
+                }
+                stick_step(&erig);
+            }
+            const int wait = (strcmp(view, "programmer-stick-hand-end") == 0)
+                                 ? (int)ESC_STICK_HAND_MIN_MS
+                                 : (int)ESC_STICK_HAND_WAIT_MS + 1000;
+            for (int ms = 0; ms < wait; ++ms) {
+                stick_step(&erig);
+            }
+            for (int i = 0; i < 10; ++i) {
+                stick_step(&erig);
+            }
         } else if (strcmp(view, "programmer-stick-hand-list") == 0) {
             /* Kontronik's models, those with manual steps tagged. */
             stick_open("Kontronik", NULL);

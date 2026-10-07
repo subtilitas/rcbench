@@ -48,6 +48,7 @@ MANUAL = {"before_power": "ESC_MANUAL_BEFORE_POWER",
           "at_power_up": "ESC_MANUAL_AT_POWER_UP",
           "before_menu": "ESC_MANUAL_BEFORE_MENU",
           "during_menu": "ESC_MANUAL_DURING_MENU",
+          "before_power_off": "ESC_MANUAL_BEFORE_POWER_OFF",
           "after_programming": "ESC_MANUAL_AFTER_PROGRAMMING"}
 MANUAL_MAX = 4          # steps in one profile: ESC_MANUAL_MAX
 AFTER_MAX = 4           # moves after a value's selection: ESC_AFTER_MAX
@@ -644,6 +645,17 @@ def self_test() -> list[str]:
             '{"when": "before_menu", "action": "y"}]'),
         "manual de 121 bytes": man('[{"when": "before_menu", "action": "x", '
                                    '"action_de": "' + "x" * 121 + '"}]'),
+        "manual before off, then the menu": man(
+            '[{"when": "before_power_off", "action": "x"}, '
+            '{"when": "before_menu", "action": "y"}]'),
+        "manual before off after programming": man(
+            '[{"when": "after_programming", "action": "x"}, '
+            '{"when": "before_power_off", "action": "y"}]'),
+        "manual before off held": man(
+            '[{"when": "before_power_off", "action": "x", "hold_ms": 0}]'),
+        "manual before off starts": man(
+            '[{"when": "before_power_off", "action": "x", '
+            '"starts_menu": true}]'),
     }
     accept = {
         "plain": base.encode("utf-8"),
@@ -696,6 +708,11 @@ def self_test() -> list[str]:
                              '{"when": "before_menu", "action": "y", '
                              '"starts_menu": true}, '
                              '{"when": "after_programming", "action": "z"}]'),
+        "manual before off": man(
+            '[{"when": "before_menu", "action": "x", "starts_menu": true}, '
+            '{"when": "before_power_off", "action": "y"}, '
+            '{"when": "before_power_off", "action": "z"}, '
+            '{"when": "after_programming", "action": "w"}]'),
         "manual starts false": man('[{"when": "before_menu", "action": "x", '
                                    '"starts_menu": false}]'),
         "manual starts null": man('[{"when": "before_menu", "action": "x", '

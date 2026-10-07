@@ -843,6 +843,12 @@ späteren Schritt mit ERLEDIGT und ABBRECHEN an und wartet höchstens 60 s
 
 ![Der Lauf wartet auf den Jumper](img/de/programmer-stick-hand-prompt.png)
 
+Ein Kontronik-ESC, der sich sperrt, wenn sein Netzteil ausschaltet, bevor
+er den gespeicherten Modus bestätigt hat, hält den Lauf nach dem Speichern
+versorgt, den Knüppel, wo er speicherte, bis ERLEDIGT:
+
+![Der Lauf wartet auf die Bestätigung des ESCs](img/de/programmer-stick-hand-end.png)
+
 Während er läuft, zeigt die Seite die Phase, die Pieptöne der laufenden
 Gruppe und die letzte Gruppe. ABBRECHEN, STOP und das Verlassen des Bildschirms
 beenden ihn mit dem Gas auf MIN, dem Netzteil aus und dem Prüfstand

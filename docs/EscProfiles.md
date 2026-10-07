@@ -158,7 +158,7 @@ power, in the order a run meets it. Absent or null: none.
 | Field | Values |
 | --- | --- |
 | `manual` | 1 to 4 steps; only on an `automatable: "assisted"` profile |
-| `when` | `before_power`, `at_power_up`, `before_menu`, `during_menu`, `after_programming`; each step no earlier than the one above it |
+| `when` | `before_power`, `at_power_up`, `before_menu`, `during_menu`, `before_power_off`, `after_programming`; each step no earlier than the one above it |
 | `action` | 1 to 120 bytes of UTF-8, in English: two lines of the screen's pop-up |
 | `action_de` | the same step in German, 1 to 120 bytes of UTF-8, umlauts included; absent or null when none, and the English shows in German too |
 | `starts_menu` | `true` where the action itself starts the menu's series, as a Kontronik jumper pulled or button pressed does; absent, null or `false` otherwise. Only on a `before_menu` step, at most one a profile, and no `before_menu` step after it. Stick programming listens from the moment it asks for that step ([Stick programming](StickProgramming.md#manual-steps)) |

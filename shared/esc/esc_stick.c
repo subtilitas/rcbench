@@ -106,13 +106,15 @@ static bool values_repeat(const esc_profile_t *p)
  * supply comes on, or after the entry -- is asked for with the stick where
  * the entry put it, so only for an entry at MIN, the motor-off position: a
  * person is not asked to reach for a powered ESC whose stick is at MID or
- * MAX.
+ * MAX.  A step before the supply goes off asks for no hand at all -- the
+ * operator watches the ESC -- so any stick position holds it.
  */
 static bool hand_fits(const esc_profile_t *p)
 {
     for (unsigned i = 0; p->manual != NULL && i < p->manual_count; ++i) {
         switch (p->manual[i].when) {
         case ESC_MANUAL_BEFORE_POWER:
+        case ESC_MANUAL_BEFORE_POWER_OFF:
         case ESC_MANUAL_AFTER_PROGRAMMING:
             break;
         case ESC_MANUAL_AT_POWER_UP:
@@ -724,6 +726,7 @@ const char *esc_stick_phase_text(esc_stick_phase_t ph)
     case ESC_STICK_CYCLE:   return "POWER CYCLE";
     case ESC_STICK_HAND_OFF: return "MANUAL STEP";
     case ESC_STICK_HAND_ON: return "MANUAL STEP, POWERED";
+    case ESC_STICK_HAND_END: return "WAITING FOR THE ESC";
     case ESC_STICK_OFF:     return "POWER OFF";
     case ESC_STICK_DONE:    return "DONE";
     case ESC_STICK_ABORTED: return "ABORTED";
@@ -835,7 +838,7 @@ void esc_stick_abort(esc_stick_t *e, esc_stick_reason_t why)
 static bool powered_phase(esc_stick_phase_t ph)
 {
     return ph == ESC_STICK_ENTRY || ph == ESC_STICK_HAND_ON
-           || ph == ESC_STICK_ITEMS
+           || ph == ESC_STICK_HAND_END || ph == ESC_STICK_ITEMS
            || ph == ESC_STICK_VALUES || ph == ESC_STICK_STORE;
 }
 
@@ -1016,7 +1019,8 @@ static void before_menu(esc_stick_t *e, unsigned from)
 
 static bool hand_phase(esc_stick_phase_t ph)
 {
-    return ph == ESC_STICK_HAND_OFF || ph == ESC_STICK_HAND_ON;
+    return ph == ESC_STICK_HAND_OFF || ph == ESC_STICK_HAND_ON
+           || ph == ESC_STICK_HAND_END;
 }
 
 const esc_manual_t *esc_stick_hand(const esc_stick_t *e)
@@ -1122,6 +1126,47 @@ esc_throttle_t esc_stick_store_move(const esc_stick_t *e, unsigned k)
     const esc_value_t *v = &e->p->items[c->item].values[c->value];
     return (k < v->after_count && k < ESC_AFTER_MAX) ? v->after[k]
                                                       : ESC_THR_NONE;
+}
+
+/*
+ * The supply off, the stick where it is; see the top of this file.  A
+ * pulse under way is dropped with the group: no reading reaches the
+ * detector until the next power-up starts it afresh.
+ */
+static void supply_off(esc_stick_t *e)
+{
+    e->out.supply_on = false;
+    esc_det_drop_group(&e->det);
+    e->off_seen = false;
+    e->off_asked_ms = e->now_ms;
+    e->off_seq = e->seq;
+    e->off_since_known = false;
+    e->cycle_moved = false;
+    enter(e, all_done(e) ? ESC_STICK_OFF : ESC_STICK_CYCLE);
+}
+
+/*
+ * The supply goes off once every before_power_off step from @p from is
+ * done: each is asked with the ESC powered and the stick where the store
+ * left it, and DONE goes on to the next or switches the supply off.
+ */
+static void before_off(esc_stick_t *e, unsigned from)
+{
+    const esc_profile_t *p = e->p;
+    for (unsigned i = from; p->manual != NULL && i < p->manual_count; ++i) {
+        if (p->manual[i].when == ESC_MANUAL_BEFORE_POWER_OFF) {
+            ask(e, (int)i, ESC_STICK_HAND_END);
+            e->lock_risk = true;
+            return;
+        }
+    }
+    e->lock_risk = false;
+    supply_off(e);
+}
+
+bool esc_stick_lock_risk(const esc_stick_t *e)
+{
+    return e != NULL && e->phase == ESC_STICK_ABORTED && e->lock_risk;
 }
 
 /* The action that starts the menu is done: by DONE, or by the menu heard
@@ -1482,11 +1527,14 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         break;
     case ESC_STICK_HAND_OFF:
     case ESC_STICK_HAND_ON:
+    case ESC_STICK_HAND_END:
         if (e->hand_done) {
             if (e->phase == ESC_STICK_HAND_OFF) {
                 before_power(e, (unsigned)e->hand + 1u);
-            } else {
+            } else if (e->phase == ESC_STICK_HAND_ON) {
                 before_menu(e, (unsigned)e->hand + 1u);
+            } else {
+                before_off(e, (unsigned)e->hand + 1u);
             }
         } else if (in_phase >= ESC_STICK_HAND_WAIT_MS) {
             finish(e, ESC_STICK_ABORTED, ESC_STICK_R_HAND);
@@ -1547,17 +1595,9 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
             enter(e, ESC_STICK_STORE);
             break;
         }
-        /* Off first, the stick where it is; see the top of this file.  A
-         * pulse under way is dropped with the group: no reading reaches the
-         * detector until the next power-up starts it afresh. */
-        e->out.supply_on = false;
-        esc_det_drop_group(&e->det);
-        e->off_seen = false;
-        e->off_asked_ms = e->now_ms;
-        e->off_seq = e->seq;
-        e->off_since_known = false;
-        e->cycle_moved = false;
-        enter(e, all_done(e) ? ESC_STICK_OFF : ESC_STICK_CYCLE);
+        /* Off first, once the ESC has confirmed where the profile asks to
+         * watch it do so. */
+        before_off(e, 0u);
         break;
     case ESC_STICK_OFF:
         if (e->off_seen) {

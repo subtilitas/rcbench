@@ -141,6 +141,9 @@ typedef enum {
     ESC_MANUAL_BEFORE_MENU,       /**< powered, after the entry, before the
                                        menu sounds                          */
     ESC_MANUAL_DURING_MENU,       /**< while the menu sounds                */
+    ESC_MANUAL_BEFORE_POWER_OFF,  /**< powered, after the value is stored,
+                                       before the supply goes off: hands
+                                       off, the operator watches the ESC  */
     ESC_MANUAL_AFTER_PROGRAMMING, /**< once the run is over                 */
 } esc_manual_when_t;
 

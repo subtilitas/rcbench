@@ -2282,6 +2282,7 @@ static const esc_value_t p_kontronik_jive_pro_v1[] = {
 static const esc_manual_t p_kontronik_jive_pro_manual[] = {
     { ESC_MANUAL_BEFORE_POWER, "Plug the jumper cable onto the ESC.", 0u, "Jumperkabel auf den ESC stecken.", false },
     { ESC_MANUAL_BEFORE_MENU, "Pull the jumper cable off after the cell-count tones, within 10 s of power-up.", 0u, "Jumperkabel nach den Zellent\303\266nen abziehen, innerhalb 10 s nach dem Einschalten.", true },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC seine Modusbest\303\244tigung beendet hat (T\303\266ne, LED), dann ERLEDIGT tippen.", false },
 };
 static const esc_item_t p_kontronik_jive_pro_items[] = {
     { "Mode", "mode", 1u, 6u, p_kontronik_jive_pro_v0,
@@ -2334,6 +2335,7 @@ static const esc_value_t p_kontronik_koby_v1[] = {
 };
 static const esc_manual_t p_kontronik_koby_manual[] = {
     { ESC_MANUAL_BEFORE_MENU, "Press the button under the shrink tube after 2 s or the tone sequence.", 0u, "Taster unter dem Schrumpfschlauch nach 2 s oder der Tonfolge dr\303\274cken.", true },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC seine Modusbest\303\244tigung beendet hat (T\303\266ne, LED), dann ERLEDIGT tippen.", false },
 };
 static const esc_item_t p_kontronik_koby_items[] = {
     { "Mode", "mode", 1u, 5u, p_kontronik_koby_v0,
@@ -2406,6 +2408,7 @@ static const esc_value_t p_kontronik_kolibri_v2[] = {
 };
 static const esc_manual_t p_kontronik_kolibri_manual[] = {
     { ESC_MANUAL_BEFORE_MENU, "Press the button on the ESC after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).", 0u, "Taster am ESC nach den Zellent\303\266nen dr\303\274cken (Schrumpfschlauch-Versionen: hinten, nahe dem Sensoranschluss).", true },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC seine Modusbest\303\244tigung beendet hat (T\303\266ne, LED), dann ERLEDIGT tippen.", false },
 };
 static const esc_item_t p_kontronik_kolibri_items[] = {
     { "Mode", "mode", 1u, 9u, p_kontronik_kolibri_v0,
@@ -2439,6 +2442,7 @@ static const esc_value_t p_kontronik_kontrol_x_v0[] = {
 };
 static const esc_manual_t p_kontronik_kontrol_x_manual[] = {
     { ESC_MANUAL_BEFORE_MENU, "Press the button under the shrink tube after 2 s or the tone sequence.", 0u, "Taster unter dem Schrumpfschlauch nach 2 s oder der Tonfolge dr\303\274cken.", true },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC seine Modusbest\303\244tigung beendet hat (T\303\266ne, LED), dann ERLEDIGT tippen.", false },
 };
 static const esc_item_t p_kontronik_kontrol_x_items[] = {
     { "Mode", "mode", 1u, 4u, p_kontronik_kontrol_x_v0,
@@ -2510,6 +2514,7 @@ static const esc_value_t p_kontronik_kosmik_v2[] = {
 };
 static const esc_manual_t p_kontronik_kosmik_manual[] = {
     { ESC_MANUAL_BEFORE_MENU, "Press the button marked PRESS after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).", 0u, "Taster mit der Aufschrift PRESS nach den Zellent\303\266nen dr\303\274cken (Schrumpfschlauch: hinten, nahe dem Sensoranschluss).", true },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC seine Modusbest\303\244tigung beendet hat (T\303\266ne, LED), dann ERLEDIGT tippen.", false },
 };
 static const esc_item_t p_kontronik_kosmik_items[] = {
     { "Mode", "mode", 1u, 9u, p_kontronik_kosmik_v0,
@@ -4611,7 +4616,7 @@ const esc_profile_t esc_profiles_builtin[] = {
       ESC_THR_MAX, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, -1, true, false,
       9u, p_kontronik_jive_pro_steps, 2u, p_kontronik_jive_pro_models, 2u, p_kontronik_jive_pro_items,
-      2u, p_kontronik_jive_pro_manual },
+      3u, p_kontronik_jive_pro_manual },
     { "kontronik-koby", "Kontronik",
       "KOBY",
       ESC_SCHEME_COUNT, ESC_ENC_COUNT, ESC_ANNOUNCE_ITEM_THEN_VALUE, ESC_AUTO_ASSISTED,
@@ -4620,7 +4625,7 @@ const esc_profile_t esc_profiles_builtin[] = {
       ESC_THR_MAX, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, -1, true, false,
       8u, p_kontronik_koby_steps, 4u, p_kontronik_koby_models, 2u, p_kontronik_koby_items,
-      1u, p_kontronik_koby_manual },
+      2u, p_kontronik_koby_manual },
     { "kontronik-kolibri", "Kontronik",
       "KOLIBRI",
       ESC_SCHEME_COUNT, ESC_ENC_COUNT, ESC_ANNOUNCE_ITEM_THEN_VALUE, ESC_AUTO_ASSISTED,
@@ -4629,7 +4634,7 @@ const esc_profile_t esc_profiles_builtin[] = {
       ESC_THR_MAX, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, -1, true, false,
       8u, p_kontronik_kolibri_steps, 5u, p_kontronik_kolibri_models, 3u, p_kontronik_kolibri_items,
-      1u, p_kontronik_kolibri_manual },
+      2u, p_kontronik_kolibri_manual },
     { "kontronik-kontrol-x", "Kontronik",
       "KONTROL-X / KOLIBRI-X",
       ESC_SCHEME_COUNT, ESC_ENC_COUNT, ESC_ANNOUNCE_ITEM, ESC_AUTO_ASSISTED,
@@ -4638,7 +4643,7 @@ const esc_profile_t esc_profiles_builtin[] = {
       ESC_THR_MAX, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, -1, true, false,
       7u, p_kontronik_kontrol_x_steps, 3u, p_kontronik_kontrol_x_models, 1u, p_kontronik_kontrol_x_items,
-      1u, p_kontronik_kontrol_x_manual },
+      2u, p_kontronik_kontrol_x_manual },
     { "kontronik-kosmik", "Kontronik",
       "KOSMIK HV / HV-I",
       ESC_SCHEME_COUNT, ESC_ENC_COUNT, ESC_ANNOUNCE_ITEM_THEN_VALUE, ESC_AUTO_ASSISTED,
@@ -4647,7 +4652,7 @@ const esc_profile_t esc_profiles_builtin[] = {
       ESC_THR_MAX, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, -1, true, false,
       8u, p_kontronik_kosmik_steps, 12u, p_kontronik_kosmik_models, 3u, p_kontronik_kosmik_items,
-      1u, p_kontronik_kosmik_manual },
+      2u, p_kontronik_kosmik_manual },
     { "kontronik-mini20", "Kontronik",
       "MINI20",
       ESC_SCHEME_STICK_POSITION, ESC_ENC_COUNT, ESC_ANNOUNCE_ITEM, ESC_AUTO_ASSISTED,

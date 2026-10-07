@@ -31,7 +31,8 @@ sweep starts over from the curve's beginning, and the alert band says so.
   person does at the ESC besides the throttle and the power -- a jumper
   fitted before the power-up and pulled after the entry tones, a button
   pressed -- and when: `before_power`, `at_power_up`, `before_menu`,
-  `during_menu`, `after_programming`. 24 profiles carry them: the 22
+  `during_menu`, `before_power_off`, `after_programming`. 24 profiles
+  carry them: the 22
   Kontronik families, `turnigy-aquastar` and
   `greatplanes-electrifly-c-series`. The generator and the card reader take
   the same files, at most 4 steps of at most 120 bytes each.
@@ -100,6 +101,15 @@ sweep starts over from the curve's beginning, and the alert band says so.
   reading with the output on or the current up during such a step ends the
   run at once, and readings that stop end it with NO READINGS. The result
   says not to touch the ESC while the supply does not read off.
+- **The supply stays on until the ESC has confirmed.** A
+  `before_power_off` step holds the run after the store's last move, the
+  ESC powered and the stick where the store left it, until DONE; the
+  prompt says not to touch the ESC. A Kontronik KOBY, JIVE Pro, KOLIBRI,
+  KONTROL-X / KOLIBRI-X or KOSMIK locks itself when its supply goes off
+  before its mode confirmation has ended (8 to 10 LED flashes), and the
+  five profiles carry the step. No DONE within 60 s ends the run with NOT
+  CONFIRMED; that end, and any other while the step is asked, says on the
+  result that the ESC may be locked.
 - **Manual steps in German.** A step carries its German in `action_de`
   (1-120 bytes of UTF-8), shown when the interface is German, with the
   English as the fallback. All 24 profiles' steps have it.

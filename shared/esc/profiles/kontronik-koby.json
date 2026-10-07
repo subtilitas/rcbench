@@ -71,6 +71,12 @@
       "action_de": "Taster unter dem Schrumpfschlauch nach 2 s oder der Tonfolge drücken.",
       "starts_menu": true,
       "source": "Kontronik_Koby.pdf p.2, p.5"
+    },
+    {
+      "when": "before_power_off",
+      "action": "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.",
+      "action_de": "Nicht berühren: warten, bis der ESC seine Modusbestätigung beendet hat (Töne, LED), dann ERLEDIGT tippen.",
+      "source": "Kontronik_Koby.pdf p.5 (DE)"
     }
   ],
   "scheme": {
@@ -233,6 +239,7 @@
     "Item number 2 is an index chosen here."
   ],
   "notes": [
-    "Modes 5 to 9 do not exist on the KOBY."
+    "Modes 5 to 9 do not exist on the KOBY.",
+    "The manual asks for the power to stay on until the ESC has confirmed the mode: a supply off before that is taken as programming broken off and locks the ESC, shown as 9 LED flashes (Kontronik_Koby.pdf p.5 (DE)). The step before_power_off holds the run powered until the operator taps DONE."
   ]
 }

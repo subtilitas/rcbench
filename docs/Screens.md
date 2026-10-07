@@ -774,6 +774,12 @@ step with DONE and ABORT, waiting at most 60 s
 
 ![The run waiting for the jumper](img/programmer-stick-hand-prompt.png)
 
+A Kontronik ESC that locks itself when its supply goes off before it has
+confirmed the stored mode holds the run powered after the store, the stick
+where it stored, until DONE:
+
+![The run waiting for the ESC's confirmation](img/programmer-stick-hand-end.png)
+
 While it runs, the page shows the phase, the beeps of the group under way
 and the last group. ABORT, STOP and leaving the screen end it with the
 throttle at MIN, the supply off and the bench disarmed. The stack light's

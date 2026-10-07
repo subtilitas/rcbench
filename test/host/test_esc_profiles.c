@@ -519,6 +519,24 @@ TEST_CASE(a_manual_step_the_generator_refuses_is_refused_here_too)
           " \"hold_ms\": 60000}]", NULL },
         { "[{\"when\": \"during_menu\", \"action\": \"x\","
           " \"source\": \"p. 5\"}]", NULL },
+        /* The step before the supply goes off: after the menu, before
+         * what follows the run, and neither held nor the menu's start. */
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"starts_menu\": true}, {\"when\": \"before_power_off\","
+          " \"action\": \"y\"}, {\"when\": \"before_power_off\","
+          " \"action\": \"z\"}, {\"when\": \"after_programming\","
+          " \"action\": \"w\"}]", NULL },
+        { "[{\"when\": \"before_power_off\", \"action\": \"x\"},"
+          " {\"when\": \"before_menu\", \"action\": \"y\"}]",
+          "manual[1].when: before the step above it" },
+        { "[{\"when\": \"after_programming\", \"action\": \"x\"},"
+          " {\"when\": \"before_power_off\", \"action\": \"y\"}]",
+          "manual[1].when: before the step above it" },
+        { "[{\"when\": \"before_power_off\", \"action\": \"x\","
+          " \"hold_ms\": 0}]", "manual[0].hold_ms: only for at_power_up" },
+        { "[{\"when\": \"before_power_off\", \"action\": \"x\","
+          " \"starts_menu\": true}]",
+          "manual[0].starts_menu: only for before_menu" },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         char *j = with_manual(k[i].steps);

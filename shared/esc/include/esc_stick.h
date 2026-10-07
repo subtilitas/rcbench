@@ -263,6 +263,9 @@ typedef enum {
                                DONE before the power-up                 */
     ESC_STICK_HAND_ON,    /**< powered, waiting for a manual step's DONE
                                before the menu                          */
+    ESC_STICK_HAND_END,   /**< powered, the stick where it stored,
+                               waiting for a before_power_off step's
+                               DONE before the supply goes off          */
     ESC_STICK_OFF,        /**< supply off, the stick where it stored    */
     ESC_STICK_DONE,
     ESC_STICK_ABORTED,
@@ -428,6 +431,11 @@ typedef struct {
                                              action that starts it is
                                              asked for                    */
     uint32_t             hand_ms;       /**< when the step was asked      */
+    bool                 lock_risk;     /**< a before_power_off step is
+                                             asked and not confirmed: an
+                                             end now switches the supply
+                                             off under the ESC's
+                                             confirmation                 */
     uint32_t             pulses;        /**< pulses begun this run: the
                                              detector's rises            */
 } esc_stick_t;
@@ -482,6 +490,14 @@ const esc_stick_out_t *esc_stick_out(const esc_stick_t *e);
  *     as done.  Any other, or one whose menu rests elsewhere, waits in
  *     ESC_STICK_HAND_ON for DONE, which goes on to the next step or the
  *     menu.
+ *   - after the last move of a store, before the supply goes off: each
+ *     before_power_off step (ESC_STICK_HAND_END).  The ESC stays powered
+ *     and the stick where the store left it; nobody touches the ESC, the
+ *     operator watches it confirm the value (tones, LED) and taps DONE.
+ *     DONE switches the supply off.  A Kontronik ESC that loses its power
+ *     before that confirmation has ended takes the programming as broken
+ *     off and locks itself; an end while such a step is asked is told by
+ *     esc_stick_lock_risk().
  *
  * STOP, ABORT, a disarm and every supply rule end a waiting run as any
  * other: throttle to MIN, supply off, disarmed.  No DONE within
@@ -500,6 +516,11 @@ uint32_t esc_stick_change_entry_ms(const esc_profile_t *p,
 /** Power-on to the menu at this power-up, ms: esc_stick_change_entry_ms()
  *  of the change it makes. */
 uint32_t esc_stick_entry_ms(const esc_stick_t *e);
+
+/** Whether the run ended while a before_power_off step was asked: the
+ *  supply went off before the operator said the ESC had confirmed, and
+ *  the ESC may have locked itself.  False while the run is under way. */
+bool esc_stick_lock_risk(const esc_stick_t *e);
 
 /** Whether DONE would count now: ESC_STICK_HAND_MIN_MS after the step was
  *  asked. */

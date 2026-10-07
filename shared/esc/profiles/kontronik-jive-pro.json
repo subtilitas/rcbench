@@ -53,6 +53,12 @@
       "action_de": "Jumperkabel nach den Zellentönen abziehen, innerhalb 10 s nach dem Einschalten.",
       "starts_menu": true,
       "source": "Kontronik_Jive_Pro.pdf p.7, p.11 (DE), p.22 (EN)"
+    },
+    {
+      "when": "before_power_off",
+      "action": "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.",
+      "action_de": "Nicht berühren: warten, bis der ESC seine Modusbestätigung beendet hat (Töne, LED), dann ERLEDIGT tippen.",
+      "source": "Kontronik_Jive_Pro.pdf p.7, p.9 (DE)"
     }
   ],
   "scheme": {
@@ -221,6 +227,7 @@
   "notes": [
     "Modes 1 to 6 can only be set by mode programming, not with the programming unit, per the manual.",
     "Mode 4 on this ESC always includes autorotation; the manual states it cannot be programmed with or without AR.",
-    "The jumper cable is pulled within 10 s of initialisation (Kontronik_Jive_Pro.pdf p.11 DE, p.22 EN)."
+    "The jumper cable is pulled within 10 s of initialisation (Kontronik_Jive_Pro.pdf p.11 DE, p.22 EN).",
+    "The manual asks for the power to stay on until the ESC has confirmed the mode: a supply off before that is taken as programming broken off and locks the ESC, shown as 9 LED flashes (Kontronik_Jive_Pro.pdf p.7, p.9 (DE)). The step before_power_off holds the run powered until the operator taps DONE."
   ]
 }

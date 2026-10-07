@@ -1614,6 +1614,134 @@ TEST_CASE(a_step_never_confirmed_ends_the_run)
     CHECK(!esc_stick_confirm(&r.e));
 }
 
+/* Until the run asks for the step before the supply goes off. */
+static void run_until_end_step(uint32_t ms)
+{
+    for (uint32_t i = 0; i < ms && esc_stick_running(&r.e)
+                         && r.e.phase != ESC_STICK_HAND_END; ++i) {
+        if (r.e.hand_menu) {
+            act(false);                 /* the button pressed */
+        }
+        tick();
+    }
+}
+
+/*
+ * Kontronik KONTROL-X: the supply off before the ESC has confirmed its
+ * mode locks the ESC (Kontronik_Kontrol-X_Kolibri-X.pdf p.4, 8 flashes).
+ * After the store the run holds the ESC powered, the stick where the store
+ * left it, until DONE; then the supply goes off and the run ends as any
+ * other.  No DONE in ESC_STICK_HAND_WAIT_MS: the run ends safe and says
+ * the ESC may be locked; so does any other end while the step is asked.
+ */
+TEST_CASE(the_supply_stays_on_until_the_esc_has_confirmed)
+{
+    rig("kontronik-kontrol-x");
+    CHECK_EQ(esc_profile_manual_count(r.p, ESC_MANUAL_BEFORE_POWER_OFF), 1u);
+    esc_stick_change_t c[1] = { change(1, 2) };
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK_EQ(esc_stick_done_count(&r.e), 1u);
+    const esc_manual_t *m = esc_stick_hand(&r.e);
+    CHECK(m != NULL);
+    if (m != NULL) {
+        CHECK_EQ(m->when, ESC_MANUAL_BEFORE_POWER_OFF);
+    }
+    CHECK(!r.e.hand_menu);
+    CHECK(r.e.lock_risk);
+    CHECK(esc_stick_out(&r.e)->supply_on);
+    CHECK(esc_stick_out(&r.e)->arm);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MAX);
+    CHECK_STR_EQ(esc_stick_phase_text(r.e.phase), "WAITING FOR THE ESC");
+    run_for(30000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);     /* powered, waiting */
+    CHECK(esc_stick_out(&r.e)->supply_on);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MAX);
+    CHECK(esc_stick_confirm(&r.e));
+    tick();
+    CHECK_EQ(r.e.phase, ESC_STICK_OFF);
+    CHECK(!esc_stick_out(&r.e)->supply_on);
+    CHECK(!r.e.lock_risk);
+    run_for(20000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK(!esc_stick_lock_risk(&r.e));
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 2);
+
+    /* Mode 3 goes to full reverse after full forward: the step is asked
+     * with the stick where the last move left it. */
+    rig("kontronik-kontrol-x");
+    c[0] = change(1, 3);
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MIN);
+    run_for(ESC_STICK_HAND_MIN_MS);
+    CHECK(esc_stick_confirm(&r.e));
+    run_for(20000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+
+    /* No DONE: NOT CONFIRMED, everything off, and the ESC may be locked. */
+    rig("kontronik-kontrol-x");
+    c[0] = change(1, 2);
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK(!esc_stick_lock_risk(&r.e));           /* not while it runs */
+    run_for(ESC_STICK_HAND_WAIT_MS - 2u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    run_for(10u);
+    CHECK_EQ(r.e.phase, ESC_STICK_ABORTED);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_HAND);
+    ended_safe();
+    CHECK(esc_stick_lock_risk(&r.e));
+
+    /* STOP while the step is asked: the same. */
+    rig("kontronik-kontrol-x");
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    r.stops++;
+    r.pressed++;
+    tick();
+    CHECK_EQ(r.e.reason, ESC_STICK_R_STOP);
+    ended_safe();
+    CHECK(esc_stick_lock_risk(&r.e));
+
+    /* An end before the step, or after its DONE, is no such end. */
+    rig("kontronik-kontrol-x");
+    CHECK(start(c, 1));
+    run_until_asked(60000u);
+    esc_stick_abort(&r.e, ESC_STICK_R_USER);
+    CHECK(!esc_stick_lock_risk(&r.e));
+
+    /* A profile with two such steps asks for both, in order. */
+    static const esc_manual_t k[] = {
+        { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true },
+        { ESC_MANUAL_BEFORE_POWER_OFF, "Watch the LED.", 0u, NULL, false },
+        { ESC_MANUAL_BEFORE_POWER_OFF, "Listen for the tones.", 0u, NULL,
+          false },
+    };
+    rig_hand("kontronik-jazz", k, 3);
+    esc_stick_change_t j[1] = { change(1, 3) };
+    CHECK(start(j, 1));
+    run_until_end_step(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK_EQ(r.e.hand, 1u);
+    run_for(ESC_STICK_HAND_MIN_MS);
+    CHECK(esc_stick_confirm(&r.e));
+    tick();
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK_EQ(r.e.hand, 2u);
+    CHECK(esc_stick_out(&r.e)->supply_on);
+    CHECK(!esc_stick_confirm(&r.e));            /* too soon after the last */
+    run_for(ESC_STICK_HAND_MIN_MS);
+    CHECK(esc_stick_confirm(&r.e));
+    run_for(20000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+}
+
 /* While a step is waited for, every end a run has still ends it: ABORT,
  * STOP, the bench's own stop, a disarm, the supply and the link. */
 TEST_CASE(stop_abort_and_the_supply_end_a_run_waiting_for_a_step)
@@ -2451,6 +2579,7 @@ int main(void)
     RUN(a_pull_starts_the_menu_and_no_group_is_lost);
     RUN(an_earlier_step_still_waits_for_done);
     RUN(a_step_never_confirmed_ends_the_run);
+    RUN(the_supply_stays_on_until_the_esc_has_confirmed);
     RUN(stop_abort_and_the_supply_end_a_run_waiting_for_a_step);
     RUN(a_step_at_power_up_is_asked_with_the_supply_off);
     RUN(the_entry_lasts_at_least_the_hold_at_power_up);

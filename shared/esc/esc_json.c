@@ -752,7 +752,7 @@ static const char *const k_when[]     = { "before_power_on",
     "after_power_on" };
 static const char *const k_changes[]  = { "one", "many" };
 static const char *const k_manual[]   = { "before_power", "at_power_up",
-    "before_menu", "during_menu", "after_programming" };
+    "before_menu", "during_menu", "before_power_off", "after_programming" };
 static const char *const k_cells[]    = { "lipo", "nimh" };
 
 #define COUNT(a) ((int)(sizeof(a) / sizeof((a)[0])))
