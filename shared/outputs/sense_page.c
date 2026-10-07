@@ -130,8 +130,7 @@ static bool one_block(uint16_t sda, uint16_t scl)
 static bool values_ok(const uint16_t *c)
 {
     if (c[LINK_SN_ENABLE] > (LINK_SN_EN_I228 | LINK_SN_EN_I3221)
-        || (c[LINK_SN_KHZ] != LINK_SN_KHZ_STANDARD
-            && c[LINK_SN_KHZ] != LINK_SN_KHZ_FAST)
+        || c[LINK_SN_KHZ] != LINK_SN_KHZ_BUS
         || c[LINK_SN_RESERVED_7] != 0u || c[LINK_SN_RESERVED_11] != 0u) {
         return false;
     }
@@ -242,6 +241,11 @@ static uint8_t arm_check(const sense_page_t *p, const uint16_t *f,
         || (arm & (uint16_t)~LINK_SS_ARM_BITS) != 0u || ch == 0u
         || f[1] > MA_MAX || f[2] == 0u || f[2] > MA_MAX
         || f[3] == 0u || f[3] > MA_MAX) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    /* CH1 only: the schedule samples CH1 fast enough to time a move, and
+     * CH2 and CH3 at 50 Hz. */
+    if (ch != LINK_SS_CAP_CH) {
         return LINK_NACK_BAD_VALUE;
     }
     const uint16_t *c = p->sense;

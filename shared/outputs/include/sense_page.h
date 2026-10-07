@@ -8,8 +8,8 @@
  * I2C block's SDA and SCL, and on pins the board, an output or the SUPPLY
  * page already holds; the pins it takes are reserved from the outputs for
  * as long as either part is enabled (sense_page_pins()).  A capture arms
- * only on an armed bank, on a channel the INA3221 reads, and for an output
- * channel that is a surface on a PWM slot.
+ * only on an armed bank, on INA3221 CH1 while the INA3221 reads it, and
+ * for an output channel that is a surface on a PWM slot.
  *
  * Host-tested.  The page holds the contract and the checks; reading the
  * parts and filling the read-only registers is the coprocessor's, and
@@ -39,7 +39,7 @@ extern "C" {
  */
 #define SENSE_DEFAULT_SDA        16u
 #define SENSE_DEFAULT_SCL        17u
-#define SENSE_DEFAULT_KHZ        LINK_SN_KHZ_FAST
+#define SENSE_DEFAULT_KHZ        LINK_SN_KHZ_BUS
 #define SENSE_DEFAULT_I228_ADDR  0x45u
 #define SENSE_DEFAULT_I228_UOHM  200u
 #define SENSE_DEFAULT_I228_DA    2048u
@@ -102,8 +102,8 @@ void sense_page_read(const sense_page_t *p, uint8_t off, uint8_t n,
  * other write is an arm, LINK_SS_CAP_FRAME registers from CAP_ARM.
  * Refused: off the page (BAD_RANGE); a read-only register (READ_ONLY);
  * not the whole frame, CAP_ARM with bits it does not have, an INA3221
- * channel that is not 1 to 3 or not read, an output channel that is not a
- * surface on a PWM slot, a level past 32767 mA, a movement or band of 0 or
+ * channel that is not 1 (LINK_SS_CAP_CH) or not read, an output channel
+ * that is not a surface on a PWM slot, a level past 32767 mA, a movement or band of 0 or
  * past 32767 mA (BAD_VALUE); an arm while @p o is not driving (NOT_ARMED).
  * An arm restarts the capture: CAP_STATE armed, the results 0.
  */

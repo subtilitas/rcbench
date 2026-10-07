@@ -82,6 +82,7 @@ TRACKED = [
     "shared/servo/servo_limit.c",
     "shared/servo/servo_sync.c",
     "shared/servo/servo_sweep.c",
+    "shared/servo/servo_move.c",
     "shared/servo/servo_test.c",
     "shared/servo/servo_report.c",
     "shared/openyge/openyge_frame.c",
@@ -127,6 +128,7 @@ TRACKED = [
     "shared/sense/sense_bus.c",
     "shared/sense/ina228.c",
     "shared/sense/ina3221.c",
+    "shared/sense/sense_sched.c",
     "shared/sense/tone.c",
 ]
 

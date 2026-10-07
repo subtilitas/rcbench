@@ -282,8 +282,9 @@ enum {
  *     rail.
  *
  *     ENABLE to KHZ are the bus, one frame: ENABLE bit 0 the INA228, bit 1
- *     the INA3221; the GPIO for SDA and the one for SCL; the clock, 100 or
- *     400 kHz.  The RP2350 has its I2C function at pin mod 4 -- 0 I2C0 SDA,
+ *     the INA3221; the GPIO for SDA and the one for SCL; the clock, 400 kHz
+ *     and nothing else (LINK_SN_KHZ_BUS): the schedule's 1 ms tick does not
+ *     fit a slower bus.  The RP2350 has its I2C function at pin mod 4 -- 0 I2C0 SDA,
  *     1 I2C0 SCL, 2 I2C1 SDA, 3 I2C1 SCL -- so SDA is a GPIO whose number
  *     mod 4 is 0 or 2 and SCL is the one after it: one I2C block's pair.
  *
@@ -367,8 +368,8 @@ enum {
 #define LINK_SN_EN_I3221  0x02u
 
 /* The ranges a write is held to. */
-#define LINK_SN_KHZ_STANDARD     100u
-#define LINK_SN_KHZ_FAST         400u
+/** The bus clock, the one KHZ takes: 400 kHz, the parts' fast mode. */
+#define LINK_SN_KHZ_BUS          400u
 #define LINK_SN_I228_ADDR_MIN    0x40u
 #define LINK_SN_I228_ADDR_MAX    0x4Fu
 #define LINK_SN_I228_UOHM_MIN      50u
@@ -418,7 +419,8 @@ typedef enum {
  *     the same of the capture's move.
  *
  *     CAP_ARM to CAP_BAND_MA are a capture, one frame: CAP_ARM with bit 7
- *     set, the INA3221 channel in bits 0..1 (1 to 3) and in bits 8..10 the
+ *     set, the INA3221 channel in bits 0..1 (1: CH2 and CH3 are refused,
+ *     LINK_SS_CAP_CH) and in bits 8..10 the
  *     output channel (0 to 7) whose next changed command starts the timing;
  *     the holding level the move ends at, 0 to 32767 mA; the distance from
  *     the level before the command that counts as movement, and the band
@@ -428,7 +430,8 @@ typedef enum {
  *     alone or at the head of the frame, whose other registers are then not
  *     stored.  Refused with BAD_VALUE: any other write that is not the
  *     whole frame, CAP_ARM bits outside the three fields, a value out of
- *     range, an INA3221 channel SENSE does not read, and an output channel
+ *     range, an INA3221 channel other than CH1 or one SENSE does not read,
+ *     and an output channel
  *     that is not a surface rendered by a PWM slot; with NOT_ARMED on a
  *     disarmed bank.  A bank that stops driving ends a capture that has not
  *     finished: CAP_ARM reads 0 and CAP_STATE idle.
@@ -436,8 +439,12 @@ typedef enum {
  *     CAP_STATE onwards are read only: the state (link_cap_state_t);
  *     captures finished, modulo 65536; the time from the PWM frame that
  *     carries the new pulse to the movement and to the arrival, in 0.1 ms,
- *     6553.5 ms at most; the highest and the mean filtered current of the
- *     move in mA, signed, over CAP_SAMPLES samples.
+ *     6553.5 ms at most, resolved to CH1's 1 ms sample interval; the
+ *     highest and the mean filtered current of the move in mA, signed,
+ *     over CAP_SAMPLES samples.  A capture ends arrived, at a stop, late
+ *     (movement and no arrival within 3000 ms plus the meter's lag),
+ *     unseen (no movement in that time) or lost (the INA3221 stopped
+ *     answering).
  *
  *     Not kept: a coprocessor restart reads 0 throughout. */
 enum {
@@ -482,6 +489,9 @@ enum {
 #define LINK_SS_ARM_OUT(r)     ((uint8_t)(((r) >> 8) & 0x07u))
 /** Every bit CAP_ARM may carry. */
 #define LINK_SS_ARM_BITS       0x0783u
+/** The one INA3221 channel a capture is taken on; CH2 and CH3 are refused
+ *  with BAD_VALUE, the field kept for a channel read fast enough later. */
+#define LINK_SS_CAP_CH         1u
 
 typedef enum {
     LINK_CAP_IDLE      = 0,
@@ -490,7 +500,11 @@ typedef enum {
     LINK_CAP_MOVING    = 3,
     LINK_CAP_ARRIVED   = 4, /**< back within the band of the holding level */
     LINK_CAP_AT_STOP   = 5, /**< settled, pushing on an end stop           */
-    LINK_CAP_LATE      = 6, /**< no arrival inside 3000 ms                 */
+    LINK_CAP_LATE      = 6, /**< movement, and no arrival within 3000 ms
+                                 plus the meter's lag                      */
+    LINK_CAP_UNSEEN    = 7, /**< no movement within 3000 ms plus the
+                                 meter's lag: neither timed nor late       */
+    LINK_CAP_LOST      = 8, /**< the INA3221 stopped answering            */
 } link_cap_state_t;
 
 #define LINK_OS_RANGE_OF(first, count) \
