@@ -317,7 +317,7 @@ C_STRS = rf"((?:{C_STR}\s*)+)"
 # One printf conversion, and what each kind prints: a number, a character,
 # or any text.
 CONVERSION = re.compile(
-    r"%[-+ #0]*\d*(?:\.\d+)?(?:hh|h|ll|l|z)?([diouxXfeEgGcs])")
+    r"%[-+ #0]*(?:\d+|\*)?(?:\.(?:\d+|\*))?(?:hh|h|ll|l|z)?([diouxXfeEgGcs])")
 PRINTS = {"c": ".", "s": ".+?"}
 NUMBER = r"[-+]?[0-9A-Fa-f][0-9A-Fa-f.,]*"
 
@@ -399,8 +399,10 @@ def string_pairs() -> list[tuple[str, str]]:
     de_servo = keyed(table(de, "k_servo["), "SERVO_STR_")
     pairs += [(en_servo[k], v) for k, v in de_servo.items() if k in en_servo]
 
-    return [(e.strip(), d.strip()) for e, d in pairs
-            if len(e.strip()) >= 2 and e.strip() != d.strip()]
+    # A quote's spaces are collapsed (quoted_spans), so both sides are too:
+    # a column padded with two spaces is quoted with one.
+    flat = [(" ".join(e.split()), " ".join(d.split())) for e, d in pairs]
+    return [(e, d) for e, d in flat if len(e) >= 2 and e != d]
 
 
 def format_pattern(fmt: str) -> re.Pattern[str] | None:
