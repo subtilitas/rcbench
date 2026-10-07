@@ -651,13 +651,23 @@ def check_version(problems: list[str]) -> None:
 
     # The servo test's sample report prints RCBENCH_VERSION_STRING on its
     # Firmware line, so the sample shows what this release writes.
+    # Servo.md holds the sample; the German page links to it.
+    samples = 0
     for page in sorted(DOCS.glob("Servo*.md")):
         for n, line in enumerate(read(page).splitlines(), 1):
-            m = re.match(r"Firmware:\s+rcbench (\d+\.\d+\.\d+)$", line)
-            if m and m.group(1) != "%d.%d.%d" % have:
+            m = re.match(r"\s*Firmware:\s+rcbench\s+(\S+)", line)
+            if m is None:
+                continue
+            if page.name == "Servo.md":
+                samples += 1
+            if m.group(1) != "%d.%d.%d" % have:
                 problems.append(
                     "%s:%d: the sample report says rcbench %s; this release "
                     "writes %d.%d.%d" % (page.name, n, m.group(1), *have))
+    if samples == 0:
+        problems.append(
+            "Servo.md has no sample report Firmware line to hold to the "
+            "version")
 
 
 STICK_C = REPO / "shared" / "esc" / "esc_stick.c"
