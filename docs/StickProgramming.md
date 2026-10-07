@@ -330,9 +330,15 @@ the manual's motor-off in the middle. A profile whose `at_power_up` or
 `before_menu` step comes with an entry at MID or MAX does not run,
 `manual step`, and a value it would power up at MAX is refused the same
 way. The 60 s is
-the operator's time to reach the ESC, not the ESC's: no manual in the set
-states how long an ESC waits for its jumper or button except the HELI JIVE
-and JIVE Pro, 10 s after power-up, and neither runs.
+the operator's time to reach the ESC, not the ESC's. For the entry jumper
+or button, only the HELI JIVE and JIVE Pro manuals state how long the ESC
+waits: 10 s after power-up, and neither profile runs. Steps later in a
+procedure have windows of their own, and none of these profiles runs
+either: OPTO, BEC and OPTOMAX take the start-button press within about
+5 s of the double signal (Kontronik_Opto.pdf p.3, Kontronik_BEC.pdf,
+Kontronik_Optomax.pdf), 3P the jumper pulled and fitted again within about
+5 s of the second phase's end (Kontronik_3P_en.pdf), and CYBER-Line the
+jumper fitted again during about 30 s of signals.
 
 The result of a run lists the profile's `after_programming` steps in two
 lines under the changes; steps that need more say how many there are
@@ -663,9 +669,11 @@ engine's stores no value other than the one asked for.
 - One supply only: the PD mini, at most 20 V. ESCs that need more need an
   external supply, which the bench does not switch.
 - Manual steps are the manuals' and untested. Whether a Kontronik ESC waits
-  for its jumper or button without a limit, and what it does when the
-  pull comes late, is not stated except for the HELI JIVE and JIVE Pro
-  (10 s), which do not run.
+  for its entry jumper or button without a limit, and what it does when
+  the pull comes late, is not stated except for the HELI JIVE and JIVE Pro
+  (10 s), which do not run. The later windows of OPTO, BEC, OPTOMAX, 3P
+  (about 5 s) and CYBER-Line (about 30 s) belong to profiles that do not
+  run.
 - A KOBY, JIVE Pro, KOLIBRI, KONTROL-X / KOLIBRI-X or KOSMIK whose supply
   goes off before its mode confirmation has ended locks itself (8 to 10
   LED flashes, by family). The run switches the supply off before DONE

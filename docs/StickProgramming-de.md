@@ -363,10 +363,17 @@ Motor-Aus-Stellung gebeten: MIN, oder MID, wo das `entry_throttle` eines
 Werts sie nennt, die Motor-Aus-Stellung des Handbuchs in der Mitte. Ein
 Profil, dessen Schritt `at_power_up` oder `before_menu` mit einem Einstieg
 auf MID oder MAX kommt, läuft nicht, `Handgriff`, und ein Wert, den es bei
-MAX einschalten würde, wird ebenso abgelehnt. Die 60 s sind die Zeit des Bedieners, den ESC zu erreichen,
-nicht die des ESCs: kein Handbuch im Satz nennt, wie lange ein ESC auf
-seinen Jumper oder Taster wartet, außer HELI JIVE und JIVE Pro, 10 s nach
-dem Einschalten, und keiner von beiden läuft.
+MAX einschalten würde, wird ebenso abgelehnt. Die 60 s sind die Zeit des
+Bedieners, den ESC zu erreichen, nicht die des ESCs. Wie lange ein ESC auf
+seinen Einstiegs-Jumper oder -Taster wartet, nennen nur die Handbücher von
+HELI JIVE und JIVE Pro: 10 s nach dem Einschalten, und keines der beiden
+Profile läuft. Spätere Schritte eines Ablaufs haben eigene Fenster, und
+auch von diesen Profilen läuft keines: OPTO, BEC und OPTOMAX nehmen den
+Starttaster innerhalb von ca. 5 s nach dem Doppel-Signal
+(Kontronik_Opto.pdf S. 3, Kontronik_BEC.pdf, Kontronik_Optomax.pdf), 3P
+den Jumper abgezogen und wieder gesteckt innerhalb von ca. 5 s nach dem
+Ende der zweiten Phase (Kontronik_3P_de.pdf), und CYBER-Line den Jumper
+wieder gesteckt während ca. 30 s Signalen.
 
 Das Ergebnis eines Laufs nennt die Schritte `after_programming` des
 Profils in zwei Zeilen unter den Änderungen; brauchen sie mehr, sagt es
@@ -730,9 +737,11 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
 - Nur ein Netzteil: das PD mini, höchstens 20 V. ESCs, die mehr brauchen,
   brauchen eine externe Versorgung, die der Prüfstand nicht schaltet.
 - Die Handgriffe sind die der Handbücher und unerprobt. Ob ein Kontronik-ESC
-  ohne Grenze auf seinen Jumper oder Taster wartet und was er tut, wenn
-  das Abziehen spät kommt, steht nicht fest, außer bei HELI JIVE und JIVE
-  Pro (10 s), die nicht laufen.
+  ohne Grenze auf seinen Einstiegs-Jumper oder -Taster wartet und was er
+  tut, wenn das Abziehen spät kommt, steht nicht fest, außer bei HELI JIVE
+  und JIVE Pro (10 s), die nicht laufen. Die späteren Fenster von OPTO,
+  BEC, OPTOMAX, 3P (ca. 5 s) und CYBER-Line (ca. 30 s) gehören zu
+  Profilen, die nicht laufen.
 - Ein KOBY, JIVE Pro, KOLIBRI, KONTROL-X / KOLIBRI-X oder KOSMIK, dessen
   Netzteil vor dem Ende seiner Modusbestätigung ausschaltet, sperrt sich
   (8- bis 10-fach Blinken, je nach Familie). Der Lauf schaltet das Netzteil
