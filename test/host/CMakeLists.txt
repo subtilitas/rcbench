@@ -105,3 +105,7 @@ foreach(suite gfx touch_map nav widgets keypad bench supply supply_screen pdmini
     set_tests_properties(${suite} PROPERTIES
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endforeach()
+# The profiles of record, by an absolute path, so test_esc_profiles reads
+# them from whatever directory it is started in.
+target_compile_definitions(test_esc_profiles PRIVATE
+    "PROFILE_DIR=\"${SHARED}/esc/profiles\"")

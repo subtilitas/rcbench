@@ -17,7 +17,11 @@
 
 #include "esc_profile.h"
 
+/* Set by test/host/CMakeLists.txt to an absolute path; this one holds when
+ * the suite is built some other way and run from test/host. */
+#ifndef PROFILE_DIR
 #define PROFILE_DIR "../../shared/esc/profiles"
+#endif
 
 static char *load(const char *path, size_t *len)
 {
@@ -756,6 +760,162 @@ TEST_CASE(the_registry_refuses_past_its_capacity)
     CHECK_EQ(esc_profiles_override_count(), 0);
 }
 
+/* ------------------------------------------------------------- search */
+
+TEST_CASE(a_pattern_is_found_anywhere_and_case_does_not_matter)
+{
+    CHECK(esc_text_matches("Skywalker V2 15A-100A", "walker"));
+    CHECK(esc_text_matches("Skywalker V2 15A-100A", "WALKER"));
+    CHECK(esc_text_matches("SKYWALKER", "skyWalker"));
+    CHECK(esc_text_matches("Skywalker V2 15A-100A", "100a"));
+    CHECK(esc_text_matches("Skywalker V2 15A-100A", "Skywalker V2 15A-100A"));
+    CHECK(!esc_text_matches("Skywalker V2 15A-100A", "walker v3"));
+    CHECK(!esc_text_matches("Skywalker", "Skywalkers"));
+    CHECK(!esc_text_matches("", "a"));
+    /* Only letters fold: a digit or a mark matches itself alone. */
+    CHECK(!esc_text_matches("A-B", "A_B"));
+    CHECK(esc_text_matches("[x]", "[X]"));
+    CHECK(!esc_text_matches("@", "`"));             /* 0x40 and 0x60 */
+}
+
+TEST_CASE(an_empty_pattern_or_stars_alone_find_everything)
+{
+    CHECK(esc_text_matches("Kontronik", ""));
+    CHECK(esc_text_matches("Kontronik", "*"));
+    CHECK(esc_text_matches("Kontronik", "**"));
+    CHECK(esc_text_matches("Kontronik", "*****"));
+    CHECK(esc_text_matches("", ""));
+    CHECK(esc_text_matches("", "*"));
+    CHECK(esc_text_matches("", "**"));
+    CHECK(esc_text_matches("Kontronik", NULL));
+    CHECK(esc_text_matches(NULL, ""));
+    CHECK(!esc_text_matches(NULL, "a"));
+}
+
+TEST_CASE(a_star_stands_for_any_run_of_characters)
+{
+    const char *t = "Skywalker V2 15A-100A, 11-item menu";
+    CHECK(esc_text_matches(t, "sky*v2"));
+    CHECK(esc_text_matches(t, "*sky*v2"));          /* leading star */
+    CHECK(esc_text_matches(t, "sky*v2*"));          /* trailing star */
+    CHECK(esc_text_matches(t, "**sky**v2**"));
+    CHECK(esc_text_matches(t, "s*k*y*m*u"));
+    CHECK(esc_text_matches(t, "walker*"));          /* none at the end */
+    CHECK(esc_text_matches(t, "*menu"));
+    CHECK(esc_text_matches(t, "V2*15"));            /* a run of one */
+    CHECK(esc_text_matches(t, "V2* 15"));           /* a run of none */
+    CHECK(!esc_text_matches(t, "v2*sky"));          /* the order holds */
+    CHECK(!esc_text_matches(t, "sky*v3"));
+    CHECK(!esc_text_matches(t, "menu*x"));
+    /* The first place a part fits is not the only one tried. */
+    CHECK(esc_text_matches("aab aac", "a*ac"));
+    CHECK(esc_text_matches("ab ab abc", "ab*abc"));
+    CHECK(!esc_text_matches("ab ab abd", "ab*abc"));
+}
+
+TEST_CASE(a_letter_outside_ascii_matches_only_itself)
+{
+    /* No built-in profile names one (all are ASCII); a card's may.  UTF-8
+     * bytes compare as they are: no case folding outside A to Z, and a
+     * star spans a two-byte letter whole. */
+    const char *t = "Müller Fahrtregler GRÖSSE";
+    CHECK(esc_text_matches(t, "Müller"));
+    CHECK(esc_text_matches(t, "mÜller") == false);
+    CHECK(esc_text_matches(t, "M*LLER"));
+    CHECK(esc_text_matches(t, "m*ller fahrt"));
+    CHECK(esc_text_matches(t, "gr*sse"));
+    CHECK(esc_text_matches(t, "GRÖSSE"));
+    CHECK(!esc_text_matches(t, "grösse"));
+    CHECK(!esc_text_matches(t, "MULLER"));
+    for (size_t i = 0; i < esc_profiles_builtin_count; ++i) {
+        const esc_profile_t *p = &esc_profiles_builtin[i];
+        for (const char *c = p->brand; *c != '\0'; ++c) {
+            CHECK(((unsigned char)*c) < 0x80u);
+        }
+        for (const char *c = p->family; *c != '\0'; ++c) {
+            CHECK(((unsigned char)*c) < 0x80u);
+        }
+    }
+}
+
+TEST_CASE(the_longest_pattern_and_a_long_text_are_matched_whole)
+{
+    /* 23 characters, the text keyboard's most. */
+    CHECK(esc_text_matches("Hobbywing Skywalker 130A/160A HV OPTO V2",
+                           "SKYWALKER 130A/160A HV "));
+    CHECK(!esc_text_matches("Hobbywing Skywalker 130A/160A HV OPTO V2",
+                            "SKYWALKER 130A/160A HVX"));
+    CHECK(esc_text_matches("Hobbywing", "***********************"));
+    CHECK(esc_text_matches("abcdefghijklmnopqrstuvw",
+                           "A*B*C*D*E*F*G*H*I*J*K*L"));
+    CHECK(!esc_text_matches("abcdefghijklmnopqrstuvw",
+                            "A*B*C*D*E*F*G*H*I*J*K*Z"));
+    /* A text of 4000 characters with the part at its very end, and the
+     * worst case for the retry: no match after many near ones. */
+    static char big[4001];
+    memset(big, 'a', 4000u);
+    big[4000] = '\0';
+    CHECK(!esc_text_matches(big, "a*aaaaaaaaaaaaaaaaab"));
+    big[3999] = 'b';
+    CHECK(esc_text_matches(big, "a*aaaaaaaaaaaaaaaaab"));
+    CHECK(esc_text_matches(big, "B"));
+}
+
+TEST_CASE(a_profile_is_found_by_maker_and_name_read_as_one)
+{
+    /* The owner's example: a Kontronik Jazz 55.  The built-in profile is
+     * "Kontronik" "JAZZ / MINIJAZZ"; the 55 is in its model "JAZZ 55 LV". */
+    const esc_profile_t *jazz = esc_profiles_find("kontronik-jazz");
+    CHECK(jazz != NULL);
+    CHECK(esc_profile_matches(jazz, "*kontr*jazz*55*"));
+    CHECK(esc_profile_matches(jazz, "KONTR*Jazz"));     /* mixed case */
+    CHECK(esc_profile_matches(jazz, "kontronik jazz"));   /* across the join */
+    CHECK(esc_profile_matches(jazz, "nik JAZZ / mini"));
+    CHECK(esc_profile_matches(jazz, "minijazz 20"));      /* a model alone */
+    CHECK(!esc_profile_matches(jazz, "kontr*jazz*56"));
+    CHECK(!esc_profile_matches(jazz, "jazz*kontr"));
+    CHECK(!esc_profile_matches(jazz, "kontronikjazz"));   /* the space holds */
+    CHECK(!esc_profile_matches(NULL, ""));
+
+    /* The same rule on a profile whose name carries the size: the maker and
+     * the name are one text, the models need not say it. */
+    esc_profile_t p;
+    memset(&p, 0, sizeof(p));
+    p.brand = "Kontronik";
+    p.family = "Jazz 55-10-18";
+    CHECK(esc_profile_matches(&p, "*kontr*jazz*55*"));
+    CHECK(esc_profile_matches(&p, "KONTR*Jazz"));
+    CHECK(esc_profile_matches(&p, "ik j"));
+    CHECK(!esc_profile_matches(&p, "jazz 56"));
+    p.brand = NULL;
+    p.family = NULL;
+    CHECK(esc_profile_matches(&p, ""));
+    CHECK(esc_profile_matches(&p, " "));                  /* the join */
+    CHECK(!esc_profile_matches(&p, "k"));
+
+    /* Every built-in profile is found by its own maker and name. */
+    for (size_t i = 0; i < esc_profiles_builtin_count; ++i) {
+        const esc_profile_t *b = &esc_profiles_builtin[i];
+        char both[256];
+        (void)snprintf(both, sizeof(both), "%s %s", b->brand, b->family);
+        CHECK(esc_profile_matches(b, both));
+        CHECK(esc_profile_matches(b, b->brand));
+    }
+}
+
+TEST_CASE(sky_v2_finds_the_three_skywalker_v2_profiles)
+{
+    unsigned n = 0;
+    for (size_t i = 0; i < esc_profiles_count(); ++i) {
+        const esc_profile_t *p = esc_profiles_at(i);
+        if (esc_profile_matches(p, "SKY*V2")) {
+            CHECK(strstr(p->family, "Skywalker") != NULL);
+            ++n;
+        }
+    }
+    CHECK_EQ(n, 3u);
+}
+
 int main(void)
 {
     RUN(every_profile_of_record_parses_to_its_generated_table);
@@ -780,5 +940,12 @@ int main(void)
     RUN(a_card_profile_takes_a_built_in_profiles_place);
     RUN(a_card_profile_with_a_new_id_follows_the_built_in_ones);
     RUN(the_registry_refuses_past_its_capacity);
+    RUN(a_pattern_is_found_anywhere_and_case_does_not_matter);
+    RUN(an_empty_pattern_or_stars_alone_find_everything);
+    RUN(a_star_stands_for_any_run_of_characters);
+    RUN(a_letter_outside_ascii_matches_only_itself);
+    RUN(the_longest_pattern_and_a_long_text_are_matched_whole);
+    RUN(a_profile_is_found_by_maker_and_name_read_as_one);
+    RUN(sky_v2_finds_the_three_skywalker_v2_profiles);
     return test_summary("esc_profiles");
 }

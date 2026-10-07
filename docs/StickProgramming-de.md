@@ -4,7 +4,8 @@
 
 Die Stick-Programmierung stellt einen ESC (Electronic Speed Controller) über
 sein Gasknüppel-Menü ein. Der Prüfstand versorgt den ESC aus dem PD mini,
-der Motor ist durch eine Widerstandslast ersetzt. Er bewegt das Gas in die
+mit einem Lastwiderstand anstelle des Motors oder einem fest montierten
+Motor ohne Propeller. Er bewegt das Gas in die
 Stellungen, die das [ESC-Profil](EscProfiles-de.md) nennt, und zählt die
 Pieptöne des Menüs als Pulse im Versorgungsstrom. Auf dem Bildschirm ist es
 die Klasse ESC STICK des Bildschirms PROGRAMMER.
@@ -22,10 +23,17 @@ Was sie nicht weiß:
 
 ## Vor einem Lauf
 
-1. Den Motor vom ESC trennen.
-2. Eine Widerstandslast an die Motorleitungen des ESCs legen. Ihr Wert ist
-   nicht festgelegt: kein ESC ist in eine solche gelaufen. Sie muss den
-   Strom bei der Spannung des Laufs unter dessen Strombegrenzung halten.
+1. Den Propeller abnehmen. Ein Lauf fährt das Gas auf MAX und zurück,
+   während der ESC versorgt ist. Der ESC ist dann in seinem
+   Programmiermenü und treibt nicht, aber in seltenen Fällen kann ein Motor
+   anlaufen und drehen.
+2. Entweder den Motor am ESC lassen, fest montiert, oder an seiner Stelle
+   einen Lastwiderstand an die Motorleitungen des ESCs legen. Die Pieptöne
+   werden in beiden Fällen aus dem Strom gezählt. Der Wert des Widerstands
+   ist nicht festgelegt: kein ESC ist in einen solchen gelaufen. Er muss
+   den Strom bei der Spannung des Laufs unter dessen Strombegrenzung
+   halten. Wie gut Pieptöne durch die Wicklungen eines Motors im Strom zu
+   lesen sind, ist nicht gemessen.
 3. Die Signalleitung des ESCs an einen Pin legen, der auf dem Bildschirm
    OUTPUTS mit der Rolle Throttle gebunden ist. Ein Lauf steuert jeden als
    Throttle gebundenen Kanal, wie der Bildschirm MOTOR.
@@ -44,9 +52,53 @@ Prüfstand nicht ausführen kann, nennt den Grund in seiner Zeile und öffnet
 nichts; ebenso eines, dessen Spannung über der Grenze von SUPPLY liegt.
 Reihenfolge und Anzahl folgen SPANNUNG und der Grenze, wenn sie sich
 ändern. Ein
-Profil von der SD-Karte trägt KARTE.
+Profil von der SD-Karte (Secure Digital) trägt KARTE.
 
 ![Die Profile](img/de/programmer-stick.png)
+
+### Suche
+
+SUCHE neben ESC STICK filtert die Liste. Ein Tippen darauf dockt die
+Texttastatur rechts an, und die Zeilen werden links davon schmaler: der
+Hersteller, der gekürzte Name und ein Zeichen, ob das Profil ausführbar ist
+(ein gefüllter Punkt) oder nicht (ein Ring). Jede Taste filtert die Liste
+sofort, und die Liste springt auf ihre erste Zeile, sobald sich die Suche
+ändert.
+
+- Ein Profil wird gefunden, wenn der Suchtext irgendwo in Hersteller und
+  Name steht, als ein Text gelesen ("Hobbywing Skywalker V2 15A-100A,
+  11-item menu"), oder in Hersteller und einem seiner Modelle ("Kontronik
+  JAZZ 55 LV").
+- Groß- und Kleinschreibung spielen keine Rolle: `KONTR*Jazz` findet
+  "Kontronik JAZZ / MINIJAZZ".
+- `*` steht für eine beliebige Folge von Zeichen, auch für keine. Die Taste
+  `*` sitzt dort, wo die Namenstastatur `_` hat. `sky*v2` findet die drei
+  Profile Skywalker V2; `kontr*jazz*55` findet das Jazz-Profil über sein
+  Modell JAZZ 55 LV.
+- Eine leere Suche zeigt jedes Profil. Die Suche fasst bis zu 16 Zeichen.
+- Die Kopfzeile zählt, was die Suche gefunden hat:
+  `1-3/3 gefunden, 2 ausführbar`. Findet sie nichts, sagt die Liste
+  `Kein Profil passt zur Suche.`
+
+OK schließt die Tastatur und behält die Suche, ABBRECHEN kehrt zu der Suche
+zurück, mit der die Tastatur geöffnet wurde, und CLR, dann OK leert sie.
+Eine Zeile, die bei offener Tastatur angetippt wird, öffnet ihr Profil, die
+Suche bleibt. Bei geschlossener Tastatur leert X im Feld die Suche. Die
+Suche bleibt über die Seite eines Profils und zurück und beim Verlassen des
+Bildschirms erhalten und ist nach einem Neustart leer.
+
+![Eine Suche wird getippt](img/de/programmer-stick-find.png)
+
+![Eine Suche angewendet](img/de/programmer-stick-found.png)
+
+Die Groß- und Kleinschreibung wird nur für die Buchstaben A bis Z
+ausgeglichen. Ä, Ö und Ü in einem Profil von der Karte passen nur auf
+denselben Buchstaben in derselben Schreibung, und die Tastatur hat keine
+Taste für sie; `*` steht für einen davon. Kein eingebautes Profil hat einen
+Buchstaben außerhalb von ASCII (American Standard Code for Information
+Interchange) im Namen.
+
+### Ein Profil und sein Lauf
 
 Die Seite eines Profils listet seine Menüpunkte. Jeder steht anfangs auf
 BEHALTEN und bleibt dann, wie er ist; die Stepper gehen durch die Werte des
@@ -63,7 +115,17 @@ neben START, warum.
 
 ![Zwei Werte gewählt](img/de/programmer-stick-items.png)
 
-START öffnet eine Warnung über den ganzen Bildschirm. HALTEN ZUM STARTEN startet den
+START öffnet eine Warnung über den ganzen Bildschirm mit dem Titel KEIN
+PROPELLER, MOTOR GESICHERT?. Sie sagt, was der Lauf tut: er versorgt den
+ESC aus dem Netzteil und fährt Throttle auf MAX und zurück, um durch das
+Programmiermenü zu schalten. In seltenen Fällen kann ein Motor anlaufen und
+drehen, deshalb muss ein angeschlossener Motor fest montiert sein und darf
+keinen Propeller tragen; ein Lastwiderstand anstelle des Motors geht
+ebenso. Die Pieptöne werden aus dem Strom gezählt. Darunter stehen das
+Profil, die Sollwerte des Netzteils mit der Zahl der Änderungen und die
+Zeile, dass das Profil ungeprüft und jede Pieptonzeit ein Vorgabewert ist.
+
+HALTEN ZUM STARTEN startet den
 Lauf nach 2 s Halten, wie ARM. Ein Finger, der den Knopf verlässt, ein
 verlorenes Touch-Ereignis oder ein STOP während des Haltens bricht es ab;
 ABBRECHEN schließt die Warnung. Das ARM, das das Halten anfordert, verlässt den
@@ -76,9 +138,11 @@ es keinen Stopp aufheben kann, der danach kam.
 Während des Laufs zeigt die Seite die Phase, die Pieptöne der laufenden
 Gruppe, die letzte Gruppe und ob sie in der Reihenfolge war, und den Strom
 neben seinem Grundwert. ABBRECHEN beendet den Lauf, ebenso STOP im Band und das
-Verlassen des Bildschirms. ZURÜCK und TIMING sind nicht verfügbar.
+Verlassen des Bildschirms. ZURÜCK und TIMING sind nicht verfügbar. Die
+Signalsäule neben der Pieptonzahl ist [unten](#die-signalsäule)
+beschrieben.
 
-![Ein Lauf zählt Punktgruppen](img/de/programmer-stick-run.png)
+![Ein Lauf zählt Punktgruppen, ein Piepton läuft](img/de/programmer-stick-run.png)
 
 Das Ergebnis bleibt bis OK: welche Auswahlen getroffen wurden, und bei einem
 abgebrochenen Lauf der Grund. Bei mehr als fünf Änderungen zählt die letzte
@@ -86,13 +150,38 @@ Zeile den Rest.
 
 ![Fertig](img/de/programmer-stick-done.png)
 
-![Gestoppt](img/de/programmer-stick-aborted.png)
+![Gestoppt: STOP, Rot aus](img/de/programmer-stick-aborted.png)
+
+![Vom Netzteil beendet: NETZTEIL AUS, Rot an](img/de/programmer-stick-failed.png)
 
 TIMING öffnet die Einstellungen unten. SCHLIESSEN fordert das Speichern an;
 gespeichert wird, während der Prüfstand entschärft und der Ausgang des
 Netzteils aus ist.
 
 ![Die Zeiteinstellungen](img/de/programmer-stick-timing.png)
+
+### Die Signalsäule
+
+Eine Signalsäule rechts auf der Karte des Laufs und des Ergebnisses zeigt
+zwei Dinge, gezeichnet wie eine Signalsäule an einer Maschine: Rot über
+Grün auf einem hellgrauen Fuß.
+
+- **Grün** leuchtet, solange der Pieptondetektor einen Puls hält: vom
+  Messwert, der über Grundwert plus SCHWELLE stieg, bis zu dem, der unter
+  Grundwert plus SCHWELLE minus HYSTERESE fiel. Jeder Puls schaltet es ein, ob auf
+  seine Gruppe später reagiert wird oder nicht. Ein Puls, kürzer als ein
+  Frame, ist trotzdem zu sehen: Grün bleibt mindestens 150 ms
+  (`ESC_STICK_BEEP_LIGHT_MS`) an, ab dem Frame, der den Puls zuerst sieht.
+  Auf dem Ergebnis ist Grün aus.
+- **Rot** leuchtet auf einem Ergebnis, dessen Lauf endete, weil etwas nicht
+  wie erwartet war, und bleibt bis OK an. Die Gründe stehen unter
+  [Wie ein Lauf endet](#wie-ein-lauf-endet). Bei FERTIG und bei den Enden,
+  die ein Bediener wählt, bleibt es aus: gedrücktes STOP, ABBRECHEN und das
+  Verlassen des Bildschirms. Ein Stopp, den der Prüfstand selbst auslöst,
+  PRÜFSTAND GESTOPPT, schaltet es ein.
+
+Ändert sich eine der beiden Leuchten, werden beide Bildpuffer neu
+gezeichnet.
 
 ## Was ein Lauf tut
 
@@ -268,25 +357,38 @@ Liste.
 
 ## Wie ein Lauf endet
 
-| Ergebnis | Ursache |
-| --- | --- |
-| FERTIG | jede Auswahl getroffen |
-| STOP | STOP, aus jeder Quelle, während des Laufs gezählt |
-| DISARMED | der Prüfstand wurde entschärft |
-| LINK VERLOREN | der Koprozessor antwortete irgendwann während des Laufs und hörte auf |
-| NETZTEIL AUS | der Ausgang ging aus: eine Abschaltung, oder ein ON, das das Netzteil fallen ließ |
-| NETZTEIL ANTWORTET NICHT | das Netzteil antwortet nicht mehr |
-| KEINE MESSWERTE | der Messwertzähler 1000 ms unverändert |
-| MESSRATE | 3 späte Messwerte hintereinander |
-| NICHT ARMED | nicht scharf innerhalb von 3000 ms |
-| AUSGANG NICHT GEMELDET | der Ausgang nicht innerhalb von 3000 ms als an gemeldet |
-| NETZTEIL BLEIBT EIN | das Netzteil meldet den Ausgang nicht innerhalb von 3000 ms nach der Anforderung des Laufs aus, mit dem Strom unten |
-| TOUCH VERLOREN | Touch-Ereignisse verloren, solange das ARM des Laufs noch nicht genommen oder der Prüfstand noch nicht scharf war |
-| KEINE PIEPTÖNE | STILLE lang kein Piepton |
-| STROM BLEIBT HOCH | ein Puls länger als zweimal LANG MAX |
-| ZEITLIMIT | innerhalb von ZEITLIMIT auf keine gewünschte Gruppe reagiert |
-| ABGEBROCHEN | ABBRECHEN |
-| SEITE VERLASSEN | der Bildschirm wurde verlassen |
+| Ergebnis | Ursache | Rote Leuchte |
+| --- | --- | --- |
+| FERTIG | jede Auswahl getroffen | aus |
+| STOP | STOP gedrückt, im Band oder auf einer Seite, während des Laufs | aus |
+| PRÜFSTAND GESTOPPT | ein Stopp, den der Prüfstand während des Laufs selbst auslöste: Touch 500 ms ohne Antwort, Touch-Ereignisse verloren unter einem STOP-Druck oder unter dem Scharfschalten, oder die Ablehnung oder der Failsafe des Koprozessors; das Band nennt, welcher | an |
+| DISARMED | der Prüfstand wurde entschärft | an |
+| LINK VERLOREN | der Koprozessor antwortete irgendwann während des Laufs und hörte auf | an |
+| NETZTEIL AUS | der Ausgang ging aus: eine Abschaltung, oder ein ON, das das Netzteil fallen ließ | an |
+| NETZTEIL ANTWORTET NICHT | das Netzteil antwortet nicht mehr | an |
+| KEINE MESSWERTE | der Messwertzähler 1000 ms unverändert | an |
+| MESSRATE | 3 späte Messwerte hintereinander | an |
+| NICHT ARMED | nicht scharf innerhalb von 3000 ms | an |
+| AUSGANG NICHT GEMELDET | der Ausgang nicht innerhalb von 3000 ms als an gemeldet | an |
+| NETZTEIL BLEIBT EIN | das Netzteil meldet den Ausgang nicht innerhalb von 3000 ms nach der Anforderung des Laufs aus, mit dem Strom unten | an |
+| TOUCH VERLOREN | Touch-Ereignisse verloren, solange das ARM des Laufs noch nicht genommen oder der Prüfstand noch nicht scharf war | an |
+| KEINE PIEPTÖNE | STILLE lang kein Piepton | an |
+| STROM BLEIBT HOCH | ein Puls länger als zweimal LANG MAX | an |
+| ZEITLIMIT | innerhalb von ZEITLIMIT auf keine gewünschte Gruppe reagiert | an |
+| ABGEBROCHEN | ABBRECHEN | aus |
+| SEITE VERLASSEN | der Bildschirm wurde verlassen | aus |
+
+Die Spalte der roten Leuchte ist `esc_stick_reason_is_fault()` in
+`shared/esc/esc_stick.c`, ein Fall je Grund. `tools/check_docs.py` liest
+diese Funktion und schlägt fehl, wenn diese Tabelle oder ihr englisches
+Gegenstück etwas anderes sagt. TOUCH VERLOREN ist an: Ereignisse gingen
+verloren, sie wurden nicht gewählt.
+
+STOP und PRÜFSTAND GESTOPPT kommen aus zwei Zählern, die das Panel führt:
+jeder Stopp, und davon die gedrückten (`arming_stop_pressed()`, im selben
+Aufruf wie der Stopp gezählt). Ein Lauf, der seit seinem Beginn mehr Stopps
+als Drücke sieht, endet mit PRÜFSTAND GESTOPPT, damit ein Stopp des
+Prüfstands nicht hinter einem Druck verschwindet, der mit ihm kam.
 
 Jedes Ende setzt das Gas auf MIN, schaltet das Netzteil aus und entschärft;
 ein Abbruch tut alle drei in einem Schritt.
@@ -371,3 +473,6 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   auf andere Endpunkte kalibriert ist, liest sie womöglich anders.
 - Nur ein Netzteil: das PD mini, höchstens 20 V. ESCs, die mehr brauchen,
   brauchen eine externe Versorgung, die der Prüfstand nicht schaltet.
+- Kein Lauf mit einem Motor am ESC anstelle des Lastwiderstands. Ob ein
+  Motor während des Menüs anläuft und wie seine Wicklungen die Pieptöne im
+  Strom formen, ist nicht gemessen.

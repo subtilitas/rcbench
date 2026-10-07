@@ -10,9 +10,10 @@ Covered: docs/ (the wiki source), README.md and README-de.md, STATUS.md, and
 the pages under hardware/.  The wiki pages are additionally held to the
 sidebar and to having a German counterpart.  The `Who compiles what` table in
 STATUS.md and docs/Building.md is derived from the three build files, and the
-screenshot count in STATUS.md from docs/img.  A German page that quotes an
-interface string in backticks quotes the German the screen shows, not its
-English.
+screenshot count in STATUS.md from docs/img.  The stick pages' table of how
+a run ends is held to esc_stick_reason_is_fault().  A German page that
+quotes an interface string in backticks quotes the German the screen shows,
+not its English.
 
     python3 tools/check_docs.py
 
@@ -588,6 +589,18 @@ def check_screenshot_count(problems: list[str]) -> None:
     if said != real:
         problems.append(f"STATUS.md: says {m.group(1)} committed screenshots; "
                         f"docs/img holds {real}")
+    # And the split by language, wherever STATUS.md gives it.
+    en = len(list(IMG.glob("*.png")))
+    de = len(list((IMG / "de").glob("*.png")))
+    for m in re.finditer(r"(\d+) in English and the same (\d+) in German",
+                         text):
+        if (int(m.group(1)), int(m.group(2))) != (en, de):
+            problems.append(f"STATUS.md: says {m.group(0)}; docs/img holds "
+                            f"{en} and docs/img/de {de}")
+    for m in re.finditer(r"the (\d+) German screenshots", text):
+        if int(m.group(1)) != de:
+            problems.append(f"STATUS.md: says {m.group(0)}; docs/img/de "
+                            f"holds {de}")
 
 
 VERSION_H = REPO / "shared" / "link" / "include" / "rcbench_version.h"
@@ -637,6 +650,85 @@ def check_version(problems: list[str]) -> None:
             "defines make it %d.%d.%d" % (m.group(1), *have))
 
 
+STICK_C = REPO / "shared" / "esc" / "esc_stick.c"
+
+# The table in each stick programming page that gives every end of a run
+# its red light: the page, the header row, and the words for lit and dark.
+RED_TABLES = [
+    (DOCS / "StickProgramming.md", "| Result | Cause | Red light |",
+     "en", {"lit": True, "dark": False}),
+    (DOCS / "StickProgramming-de.md", "| Ergebnis | Ursache | Rote Leuchte |",
+     "de", {"an": True, "aus": False}),
+]
+
+
+def reason_faults() -> dict[str, bool]:
+    """ESC_STICK_R_* suffix -> whether esc_stick_reason_is_fault() lights
+    red for it, read from the switch's case labels and their returns."""
+    src = read(STICK_C)
+    start = src.index("bool esc_stick_reason_is_fault(")
+    body = src[start:src.index("\n}\n", start)]
+    faults: dict[str, bool] = {}
+    pending: list[str] = []
+    for line in body.splitlines():
+        m = re.match(r"\s*case ESC_STICK_R_(\w+):", line)
+        if m:
+            pending.append(m.group(1))
+        m = re.search(r"return (true|false);", line)
+        if m and pending:
+            for name in pending:
+                faults[name] = m.group(1) == "true"
+            pending = []
+    return faults
+
+
+def check_red_light_tables(problems: list[str]) -> None:
+    """The stick pages' table of how a run ends says, for every reason, what
+    esc_stick_reason_is_fault() does with it, under the words the screen
+    shows in that language: one row per reason, DONE dark, nothing else."""
+    faults = reason_faults()
+    if not faults:
+        problems.append("esc_stick.c: no esc_stick_reason_is_fault() cases")
+        return
+    english = {k: c_strings(v) for k, v in re.findall(
+        rf"UI_TEXT\((\w+),\s*\d+,\s*{C_STRS}\)", read(UI_TEXT_DEF))}
+    german = {k[3:]: v for k, v in keyed(table(read(UI_TEXT_DE), "k_text["),
+                                         "TX_").items()}
+    for page, header, lang, words in RED_TABLES:
+        names = english if lang == "en" else german
+        want: dict[str, bool] = {names["SP_PH_DONE"]: False}
+        for reason, lit in faults.items():
+            if reason == "NONE":
+                continue
+            word = names.get(f"SP_R_{reason}")
+            if word is None:
+                problems.append(f"{page.name}: ESC_STICK_R_{reason} has no "
+                                f"SP_R_{reason} in {lang}")
+                continue
+            want[word] = lit
+        text = read(page)
+        if header not in text:
+            problems.append(f"{page.name}: no table headed '{header}'")
+            continue
+        rows = text[text.index(header):].split("\n\n", 1)[0].splitlines()[2:]
+        have: dict[str, bool | None] = {}
+        for row in rows:
+            cells = [c.strip() for c in row.strip().strip("|").split("|")]
+            have[cells[0]] = words.get(cells[-1])
+        for word, lit in want.items():
+            if word not in have:
+                problems.append(f"{page.name}: the red light table has no "
+                                f"row for {word}")
+            elif have[word] is not lit:
+                problems.append(f"{page.name}: the red light table says "
+                                f"{word} is {'dark' if lit else 'lit'}; "
+                                "esc_stick_reason_is_fault() says otherwise")
+        for word in have:
+            if word not in want:
+                problems.append(f"{page.name}: the red light table has a "
+                                f"row for {word}, which is no end of a run")
+
+
 def check_spdx(problems: list[str]) -> None:
     """Every source file carries an SPDX (Software Package Data Exchange)
     licence line.  A new file without one fails the build.
@@ -669,6 +761,7 @@ def main() -> int:
     check_shared_modules(problems)
     check_compile_table(problems)
     check_screenshot_count(problems)
+    check_red_light_tables(problems)
     check_spdx(problems)
 
     for problem in problems:

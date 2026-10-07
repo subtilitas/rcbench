@@ -4,10 +4,11 @@
 
 Stick programming sets an ESC (electronic speed controller) through its
 throttle-stick menu. The bench powers the ESC from the PD mini supply, with
-the motor replaced by a resistor load. It moves the throttle to the
-positions the [ESC profile](EscProfiles.md) names, and counts the menu's
-beeps as pulses in the supply current. On the screen it is the ESC STICK
-class of the PROGRAMMER screen.
+a resistor load in place of the motor or a motor mounted solid with no
+propeller. It moves the throttle to the positions the
+[ESC profile](EscProfiles.md) names, and counts the menu's beeps as pulses
+in the supply current. On the screen it is the ESC STICK class of the
+PROGRAMMER screen.
 
 What it does not know:
 
@@ -22,10 +23,15 @@ What it does not know:
 
 ## Before a run
 
-1. Disconnect the motor from the ESC.
-2. Fit a resistor load across the ESC's motor leads. Its value is not
-   specified: no ESC has been run into one. It has to keep the current under
-   the run's current limit at the run's voltage.
+1. Take the propeller off. A run moves the throttle to MAX and back while
+   the ESC is powered. The ESC is in its programming menu then, not
+   driving, but in rare cases a motor may start and run.
+2. Either leave the motor on the ESC, mounted solid, or fit a resistor load
+   across the ESC's motor leads in its place. The beeps are counted from
+   the current either way. The resistor's value is not specified: no ESC
+   has been run into one. It has to keep the current under the run's
+   current limit at the run's voltage. How well beeps through a motor's
+   windings read in the current is not measured.
 3. Connect the ESC's signal lead to a pin bound with the throttle role on
    the OUTPUTS screen. A run commands every channel bound as a throttle, as
    the MOTOR screen does.
@@ -42,9 +48,49 @@ PROGRAMMER, then ESC STICK:
 The list holds every profile, those the bench can run first. A profile it
 cannot run names the reason on its row and opens nothing; so does one whose
 voltage is over the SUPPLY cap. The order and the count follow VOLTAGE and
-the cap as they change. A profile from the SD card carries CARD.
+the cap as they change. A profile from the SD (Secure Digital) card carries
+CARD.
 
 ![The profiles](img/programmer-stick.png)
+
+### Search
+
+SEARCH beside ESC STICK filters the list. Tapping it docks the text
+keyboard on the right of the screen, and the rows narrow to its left: the
+maker, the name cut to fit, and a mark for whether the profile runs (a
+filled dot) or not (a ring). Every key filters the list at once, and the
+list returns to its first row whenever the search changes.
+
+- A profile is found when the search text appears anywhere in its maker
+  and name read as one text, "Hobbywing Skywalker V2 15A-100A, 11-item
+  menu", or in its maker and one of its models, "Kontronik JAZZ 55 LV".
+- Case does not matter: `KONTR*Jazz` finds "Kontronik JAZZ / MINIJAZZ".
+- `*` stands for any run of characters, none included. The keyboard's `*`
+  key sits where the name keyboard has `_`. `sky*v2` finds the three
+  Skywalker V2 profiles; `kontr*jazz*55` finds the Jazz profile by its
+  model JAZZ 55 LV.
+- An empty search shows every profile. The search holds up to 16
+  characters.
+- The header counts what the search found: `1-3 of 3 found, 2 run`. With
+  nothing found the list says `No profile matches the search.`
+
+OK closes the keyboard with the search kept, CANCEL goes back to the search
+the keyboard opened on, and CLR then OK clears it. A row tapped while the
+keyboard is open opens that profile, the search kept. With the keyboard
+closed, X in the field clears the search. The search stays through a
+profile's page and back and when the screen is left, and is empty after a
+restart.
+
+![Typing a search](img/programmer-stick-find.png)
+
+![A search applied](img/programmer-stick-found.png)
+
+Case folding covers the letters A to Z only. Ä, Ö and Ü in a profile from
+the card match only the same letter in the same case, and the keyboard has
+no key for them; `*` stands in for one. No built-in profile name holds a
+letter outside ASCII (American Standard Code for Information Interchange).
+
+### A profile and its run
 
 A profile's page lists its menu items. Each starts at KEEP, which leaves the
 item as it is; the steppers move through the item's values and stop at
@@ -59,33 +105,64 @@ cannot, the line beside RUN says why.
 
 ![Two values picked](img/programmer-stick-items.png)
 
-RUN opens a warning over the whole screen. HOLD TO RUN starts the run after
-2 s of holding, as ARM does. A finger that leaves the button, a lost touch
-event or a STOP during the hold abandons it; CANCEL closes the warning. The
-ARM the hold asks for leaves the screen with the next frame's commands; a
-STOP or a lost touch event before then takes it back and ends the run, so it
-cannot clear a stop that came after it.
+RUN opens a warning over the whole screen, titled NO PROPELLER, MOTOR
+SECURED?. It says what the run does: it powers the ESC from the supply and
+moves its throttle to MAX and back to step through the programming menu. In
+rare cases a motor may start and run, so a connected motor must be mounted
+solid and carry no propeller; a resistor load in place of the motor works
+as well. The beeps are counted from the current. Below that stand the
+profile, the supply's set points with the number of changes, and the line
+that the profile is unverified and every beep time a default.
+
+HOLD TO RUN starts the run after 2 s of holding, as ARM does. A finger that
+leaves the button, a lost touch event or a STOP during the hold abandons
+it; CANCEL closes the warning. The ARM the hold asks for leaves the screen
+with the next frame's commands; a STOP or a lost touch event before then
+takes it back and ends the run, so it cannot clear a stop that came after
+it.
 
 ![The warning](img/programmer-stick-warning.png)
 
 During the run the page shows the phase, the beeps in the group under way,
 the last group and whether it was in order, and the current against its
 floor. ABORT ends the run, and so does STOP in the band or leaving the
-screen. BACK and TIMING are not offered.
+screen. BACK and TIMING are not offered. The stack light beside the beep
+count is described [below](#the-stack-light).
 
-![A run counting item groups](img/programmer-stick-run.png)
+![A run counting item groups, a beep under way](img/programmer-stick-run.png)
 
 The result stays until OK: which selections were made, and for an aborted
 run the reason. Past five changes the last line counts the rest.
 
 ![Done](img/programmer-stick-done.png)
 
-![Stopped](img/programmer-stick-aborted.png)
+![Stopped: STOP, red dark](img/programmer-stick-aborted.png)
+
+![Ended by the supply: SUPPLY OFF, red lit](img/programmer-stick-failed.png)
 
 TIMING opens the settings below. CLOSE asks for them to be saved; the save
 is taken while the bench is disarmed and the supply's output is off.
 
 ![The timing settings](img/programmer-stick-timing.png)
+
+### The stack light
+
+A stack light at the right of the run's card and of the result shows two
+things, drawn as a signal tower: red over green on a light grey base.
+
+- **Green** is on while the beep detector holds a pulse: from the reading
+  that rose above the floor plus THRESHOLD to the one that fell below the
+  floor plus THRESHOLD less HYSTERESIS. Every pulse lights it, whether its
+  group is later acted on or not. A pulse shorter than a frame still shows:
+  green stays on at least 150 ms (`ESC_STICK_BEEP_LIGHT_MS`) from the frame
+  that first sees the pulse. Green is dark on the result.
+- **Red** is lit on a result whose run ended because something was not as
+  expected, and stays on until OK. The reasons are listed under
+  [How a run ends](#how-a-run-ends). It stays dark on DONE and on the ends
+  an operator chooses: STOP pressed, ABORT and leaving the screen. A stop
+  the bench raises itself, BENCH STOPPED, lights it.
+
+A change of either light repaints both screen buffers.
 
 ## What a run does
 
@@ -246,25 +323,37 @@ A profile corrected on the SD card is listed with its correction.
 
 ## How a run ends
 
-| Result | Cause |
-| --- | --- |
-| DONE | every selection made |
-| STOP | STOP, from any source, counted while the run was under way |
-| DISARMED | the bench disarmed |
-| LINK LOST | the coprocessor answered at some time during the run and stopped answering |
-| SUPPLY OFF | the output went off: a trip, or an ON the supply let go |
-| SUPPLY NOT ANSWERING | the supply stopped answering |
-| NO READINGS | the reading count unmoved for 1000 ms |
-| READ RATE | 3 late readings in a row |
-| NOT ARMED | not armed within 3000 ms |
-| NO POWER | the output not reported on within 3000 ms |
-| SUPPLY STAYS ON | the supply not reporting its output off, with the current down, within 3000 ms of the run asking it off |
-| TOUCH LOST | touch events lost while the run's ARM was not yet taken, or the bench not yet armed |
-| NO BEEPS | no beep for SILENCE |
-| CURRENT STAYS HIGH | one pulse longer than twice LONG MAX |
-| TIMEOUT | no wanted group acted on within TIMEOUT |
-| ABORTED | ABORT |
-| SCREEN LEFT | the screen was left |
+| Result | Cause | Red light |
+| --- | --- | --- |
+| DONE | every selection made | dark |
+| STOP | STOP pressed, in the band or on a screen, while the run was under way | dark |
+| BENCH STOPPED | a stop the bench raised itself while the run was under way: touch silent for 500 ms, touch events lost under a STOP press or under the arm, or the coprocessor's refusal or failsafe; the band names which | lit |
+| DISARMED | the bench disarmed | lit |
+| LINK LOST | the coprocessor answered at some time during the run and stopped answering | lit |
+| SUPPLY OFF | the output went off: a trip, or an ON the supply let go | lit |
+| SUPPLY NOT ANSWERING | the supply stopped answering | lit |
+| NO READINGS | the reading count unmoved for 1000 ms | lit |
+| READ RATE | 3 late readings in a row | lit |
+| NOT ARMED | not armed within 3000 ms | lit |
+| NO POWER | the output not reported on within 3000 ms | lit |
+| SUPPLY STAYS ON | the supply not reporting its output off, with the current down, within 3000 ms of the run asking it off | lit |
+| TOUCH LOST | touch events lost while the run's ARM was not yet taken, or the bench not yet armed | lit |
+| NO BEEPS | no beep for SILENCE | lit |
+| CURRENT STAYS HIGH | one pulse longer than twice LONG MAX | lit |
+| TIMEOUT | no wanted group acted on within TIMEOUT | lit |
+| ABORTED | ABORT | dark |
+| SCREEN LEFT | the screen was left | dark |
+
+The red light's column is `esc_stick_reason_is_fault()` in
+`shared/esc/esc_stick.c`, one case per reason. `tools/check_docs.py` reads
+that function and fails when this table, or its German twin, says
+otherwise. TOUCH LOST is lit: events were lost, not chosen.
+
+STOP and BENCH STOPPED come from two counts the panel keeps: every stop,
+and of those the ones pressed (`arming_stop_pressed()`, counted in the
+same call as the stop). A run that sees more stops than presses since it
+began ends with BENCH STOPPED, so a stop the bench raised is not hidden by
+a press that came with it.
 
 Every end sets the throttle to MIN, switches the supply off and disarms; an
 abort does all three in one step. A stop latches as any stop does: the next
@@ -341,3 +430,6 @@ engine's stores no value other than the one asked for.
   calibrated to other end points may read them differently.
 - One supply only: the PD mini, at most 20 V. ESCs that need more need an
   external supply, which the bench does not switch.
+- No run with a motor on the ESC in place of the resistor load. Whether a
+  motor starts during the menu, and how its windings shape the beeps in
+  the current, is not measured.

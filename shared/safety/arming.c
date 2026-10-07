@@ -53,6 +53,20 @@ uint32_t arming_stop_count(const arming_t *a)
     return (a != NULL) ? a->stops : 0u;
 }
 
+void arming_stop_pressed(arming_t *a)
+{
+    if (a == NULL) {
+        return;
+    }
+    arming_stop(a);
+    ++a->pressed;
+}
+
+uint32_t arming_pressed_count(const arming_t *a)
+{
+    return (a != NULL) ? a->pressed : 0u;
+}
+
 void arming_request_arm(arming_t *a, uint32_t now_ms)
 {
     if (a == NULL || arming_touch_dead(a, now_ms)) {

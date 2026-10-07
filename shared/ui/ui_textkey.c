@@ -32,8 +32,9 @@ static const char k_chars[UI_TEXTKEY_CHARS + 1] =
 static const ui_text_id_t k_bottom_tx[] = { TX_SPACE, TX_COUNT, TX_CANCEL,
                                             TX_COUNT };
 static const char *const k_bottom[] = { NULL, "CLR", NULL, "OK" };
-/* How many columns each bottom key spans. */
+/* How many columns each bottom key spans, for a name and for a search. */
 static const int k_bottom_span[] = { 4, 2, 2, 2 };
+static const int k_search_span[] = { 3, 2, 3, 2 };
 
 void ui_textkey_open(ui_textkey_t *k, gfx_rect_t area, const char *title,
                      const char *text, int max_len)
@@ -53,6 +54,16 @@ void ui_textkey_open(ui_textkey_t *k, gfx_rect_t area, const char *title,
     snprintf(k->text, (size_t)k->max_len + 1u, "%s",
              (text != NULL) ? text : "");
     k->len = (int)strlen(k->text);
+}
+
+void ui_textkey_open_search(ui_textkey_t *k, gfx_rect_t area,
+                            const char *title, const char *text,
+                            int max_len)
+{
+    ui_textkey_open(k, area, title, text, max_len);
+    if (k != NULL) {
+        k->search = true;
+    }
 }
 
 void ui_textkey_close(ui_textkey_t *k)
@@ -91,6 +102,14 @@ const char *ui_textkey_label(int key)
     return (k_bottom[b] != NULL) ? k_bottom[b] : ui_tr(k_bottom_tx[b]);
 }
 
+const char *ui_textkey_key_label(const ui_textkey_t *k, int key)
+{
+    if (k != NULL && k->search && key == UI_TK_MARK) {
+        return "*";
+    }
+    return ui_textkey_label(key);
+}
+
 gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key)
 {
     if (k == NULL || key < 0 || key >= UI_TK_KEYS) {
@@ -108,12 +127,13 @@ gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key)
         col  = key % TK_COLS;
         span = 1;
     } else {
+        const int *spans = k->search ? k_search_span : k_bottom_span;
         row  = TK_ROWS - 1;
         col  = 0;
         for (int i = 0; i < key - UI_TEXTKEY_CHARS; ++i) {
-            col += k_bottom_span[i];
+            col += spans[i];
         }
-        span = k_bottom_span[key - UI_TEXTKEY_CHARS];
+        span = spans[key - UI_TEXTKEY_CHARS];
     }
     return (gfx_rect_t){ (int16_t)(left + col * (kw + TK_GAP)),
                          (int16_t)(top + row * (kh + TK_GAP)),
@@ -141,7 +161,7 @@ static ui_textkey_result_t press(ui_textkey_t *k, int key, char *out,
         return UI_TEXTKEY_NONE;
     }
     if (key < UI_TEXTKEY_CHARS) {
-        add(k, k_chars[key]);
+        add(k, (k->search && key == UI_TK_MARK) ? '*' : k_chars[key]);
         return UI_TEXTKEY_NONE;
     }
     switch (key) {
@@ -156,6 +176,13 @@ static ui_textkey_result_t press(ui_textkey_t *k, int key, char *out,
         ui_textkey_close(k);
         return UI_TEXTKEY_CANCELLED;
     default: {                       /* OK */
+        if (k->search) {             /* as typed: what the list shows */
+            if (out != NULL && n > 0u) {
+                snprintf(out, n, "%s", k->text);
+            }
+            ui_textkey_close(k);
+            return UI_TEXTKEY_OK;
+        }
         const char *a = k->text;
         while (*a == ' ') {
             ++a;
@@ -256,7 +283,8 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
         const gfx_color_t fill = (key == UI_TK_OK)
                                      ? ui_theme_color(UI_C_ACCENT)
                                      : ui_theme_color(UI_C_PANEL_SUNK);
-        ui_button(c, ui_textkey_key_rect(k, key), ui_textkey_label(key),
-                  fill, k->pressed == key, true);
+        ui_button(c, ui_textkey_key_rect(k, key),
+                  ui_textkey_key_label(k, key), fill, k->pressed == key,
+                  true);
     }
 }

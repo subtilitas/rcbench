@@ -491,6 +491,7 @@ static struct {
     float         mcu_temp_c;
     bool          stopped;
     uint32_t      stops;
+    uint32_t      pressed;     /**< of the stops, those pressed */
     uint16_t      faults;
     uint32_t      link_errors;
     uint32_t      run_seconds;
@@ -1000,8 +1001,10 @@ static void control_pump(void)
                  *
                  * The rest of a stop -- the bank, the throttle, the servo's
                  * slot, telling the far end -- follows when the loop is free.
+                 * Counted as pressed: an operator's STOP, which a stick run
+                 * tells apart from the bench's own.
                  */
-                arming_stop(&s_arm);
+                arming_stop_pressed(&s_arm);
                 counted_here = true;
             }
         }
@@ -3739,7 +3742,7 @@ static void service_arming(bool link_up)
      */
     if (atomic_exchange(&s_stop_request, false)
         && !atomic_exchange(&s_stop_counted, false)) {
-        arming_stop(&s_arm);
+        arming_stop_pressed(&s_arm);        /* the band's STOP, pressed */
     }
 
     /*
@@ -4775,7 +4778,7 @@ static void drain_commands(bool link_up, bench_state_t *bench)
             s_arm_take_drv = atomic_load(&s_drv_gaps);
         }
         if (pc.kind == PANEL_CMD_STOP) {
-            arming_stop(&s_arm);
+            arming_stop_pressed(&s_arm);    /* a screen's STOP, pressed */
             outputs_arm(&s_out, false, now_ms());
             throttle_to_zero();
             servo_let_go();
@@ -5656,6 +5659,7 @@ static void publish_snapshot(const bench_state_t *bench, bool link_up,
     s_snap.arm_gen     = s_arm_gen;
     s_snap.stopped     = arming_stopped(&s_arm);
     s_snap.stops       = arming_stop_count(&s_arm);
+    s_snap.pressed     = arming_pressed_count(&s_arm);
     s_snap.faults      = link_up ? s_dev_faults : (uint16_t)0;
     s_snap.link_errors = (uint32_t)s_bring.dev_crc_errors
                          + (uint32_t)s_bring.dev_resyncs;
@@ -6207,6 +6211,7 @@ void app_main(void)
         bool     supply_now;
         uint32_t supply_gen_now;
         uint32_t stops_now;
+        uint32_t pressed_now;
         uint32_t arm_gen_now;
         bool     link_now;
         snap_lock();
@@ -6215,6 +6220,7 @@ void app_main(void)
         supply_now     = s_snap.supply.output;
         supply_gen_now = s_snap.supply_gen;
         stops_now      = s_snap.stops;
+        pressed_now    = s_snap.pressed;
         arm_gen_now    = s_snap.arm_gen;
         snap_unlock();
         /* Whether this frame found the touch stream broken; an arm is
@@ -6239,8 +6245,10 @@ void app_main(void)
         }
         last_stops = stops_now;
         /* And a stick run on PROGRAMMER, which ends on a stop, a disarm or
-         * a link that went, and steps on the frame's time. */
-        programmer_screen_bench(now_ms(), armed_now, stops_now, link_now);
+         * a link that went, and steps on the frame's time.  The pressed
+         * count tells an operator's STOP from the bench's own. */
+        programmer_screen_bench(now_ms(), armed_now, stops_now, pressed_now,
+                                link_now);
 
         /* The slider follows the bench: a disarm returns the command to
          * zero, so the control the operator picks up next is at zero too. */

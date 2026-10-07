@@ -287,6 +287,59 @@ TEST_CASE(the_keyboard_refuses_an_empty_name_and_keeps_its_length)
     CHECK(!tk.open);
 }
 
+/* Opened for a search: "*" in place of "_", the text as typed, an empty
+ * one taken, and a bottom row that still tiles its width. */
+TEST_CASE(a_search_keyboard_types_a_star_and_takes_an_empty_text)
+{
+    char out[24] = "unset";
+    ui_textkey_open_search(&tk, k_area, "SEARCH", "SKY", 16);
+    CHECK(tk.search);
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, UI_TK_MARK), "*");
+    CHECK_STR_EQ(ui_textkey_label(UI_TK_MARK), "_");
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, tk_key('V')), "V");
+    (void)tk_press(UI_TK_MARK, out, sizeof(out));
+    (void)tk_press(tk_key('V'), out, sizeof(out));
+    (void)tk_press(UI_TK_SPACE, out, sizeof(out));
+    CHECK_STR_EQ(tk.text, "SKY*V ");
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_OK);
+    CHECK_STR_EQ(out, "SKY*V ");                 /* as typed, not trimmed */
+    CHECK(!tk.open);
+
+    ui_textkey_open_search(&tk, k_area, "SEARCH", "SKY", 16);
+    (void)tk_press(UI_TK_CLR, out, sizeof(out));
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_OK);
+    CHECK_STR_EQ(out, "");                       /* no search */
+    CHECK(!tk.refused);
+
+    /* The bottom row: SPACE and CANCEL three columns, CLR and OK two, end
+     * to end across the row of characters above. */
+    ui_textkey_open_search(&tk, k_area, "SEARCH", "", 16);
+    const gfx_rect_t z = ui_textkey_key_rect(&tk, tk_key('Z'));
+    const gfx_rect_t del = ui_textkey_key_rect(&tk, UI_TK_DEL);
+    const gfx_rect_t sp = ui_textkey_key_rect(&tk, UI_TK_SPACE);
+    const gfx_rect_t clr = ui_textkey_key_rect(&tk, UI_TK_CLR);
+    const gfx_rect_t can = ui_textkey_key_rect(&tk, UI_TK_CANCEL);
+    const gfx_rect_t ok = ui_textkey_key_rect(&tk, UI_TK_OK);
+    CHECK_EQ(sp.x, z.x);
+    CHECK_EQ(ok.x + ok.w, del.x + del.w);
+    CHECK_EQ(sp.w, can.w);
+    CHECK_EQ(clr.w, ok.w);
+    CHECK(sp.w > clr.w);
+    CHECK(clr.x > sp.x + sp.w && can.x > clr.x + clr.w
+          && ok.x > can.x + can.w);
+    /* CANCEL hands nothing back. */
+    strcpy(out, "kept");
+    CHECK_EQ(tk_press(UI_TK_CANCEL, out, sizeof(out)), UI_TEXTKEY_CANCELLED);
+    CHECK_STR_EQ(out, "kept");
+    /* A name keyboard opened after it is a name keyboard again. */
+    ui_textkey_open(&tk, k_area, "NAME", "", 23);
+    CHECK(!tk.search);
+    (void)tk_press(UI_TK_MARK, out, sizeof(out));
+    CHECK_STR_EQ(tk.text, "_");
+    ui_textkey_open_search(NULL, k_area, "SEARCH", "", 16);
+    CHECK_STR_EQ(ui_textkey_key_label(NULL, UI_TK_MARK), "_");
+}
+
 TEST_CASE(a_keyboard_key_acts_on_its_own_release_only)
 {
     char out[32] = "";
@@ -375,6 +428,7 @@ int main(void)
     RUN(the_keypad_draws_inside_its_area_and_only_while_open);
     RUN(the_keyboard_edits_the_name_it_was_opened_with);
     RUN(the_keyboard_refuses_an_empty_name_and_keeps_its_length);
+    RUN(a_search_keyboard_types_a_star_and_takes_an_empty_text);
     RUN(a_keyboard_key_acts_on_its_own_release_only);
     RUN(the_keyboard_draws_inside_its_area_and_only_while_open);
     return test_summary("keypad");

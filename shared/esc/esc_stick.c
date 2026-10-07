@@ -512,6 +512,7 @@ const char *esc_stick_reason_text(esc_stick_reason_t r)
     switch (r) {
     case ESC_STICK_R_NONE:        return "";
     case ESC_STICK_R_STOP:        return "STOP";
+    case ESC_STICK_R_BENCH_STOP:  return "BENCH STOPPED";
     case ESC_STICK_R_DISARMED:    return "DISARMED";
     case ESC_STICK_R_LINK:        return "LINK LOST";
     case ESC_STICK_R_SUPPLY_OFF:  return "SUPPLY OFF";
@@ -529,6 +530,42 @@ const char *esc_stick_reason_text(esc_stick_reason_t r)
     case ESC_STICK_R_LEFT:        return "SCREEN LEFT";
     }
     return "?";
+}
+
+esc_stick_reason_t esc_stick_stop_reason(uint32_t stops, uint32_t pressed)
+{
+    return (stops > pressed) ? ESC_STICK_R_BENCH_STOP : ESC_STICK_R_STOP;
+}
+
+/*
+ * Every reason decided here, without a default, so a reason added to the
+ * list is decided too: -Wswitch names it.
+ */
+bool esc_stick_reason_is_fault(esc_stick_reason_t r)
+{
+    switch (r) {
+    case ESC_STICK_R_NONE:          /* DONE, or not ended            */
+    case ESC_STICK_R_STOP:          /* STOP pressed                  */
+    case ESC_STICK_R_USER:          /* ABORT                         */
+    case ESC_STICK_R_LEFT:          /* the screen left               */
+        return false;
+    case ESC_STICK_R_BENCH_STOP:    /* touch, or the far end         */
+    case ESC_STICK_R_DISARMED:
+    case ESC_STICK_R_LINK:
+    case ESC_STICK_R_SUPPLY_OFF:
+    case ESC_STICK_R_SUPPLY_LOST:
+    case ESC_STICK_R_STALE:
+    case ESC_STICK_R_RATE:
+    case ESC_STICK_R_NOT_ARMED:
+    case ESC_STICK_R_NO_POWER:
+    case ESC_STICK_R_SUPPLY_ON:
+    case ESC_STICK_R_NO_BEEPS:
+    case ESC_STICK_R_HIGH:
+    case ESC_STICK_R_TIMEOUT:
+    case ESC_STICK_R_TOUCH:         /* events lost, not chosen       */
+        return true;
+    }
+    return true;        /* a value outside the list is not as expected */
 }
 
 const char *esc_stick_phase_text(esc_stick_phase_t ph)
@@ -588,6 +625,43 @@ static uint32_t since(uint32_t now, uint32_t then)
 {
     const int32_t d = (int32_t)(now - then);
     return (d > 0) ? (uint32_t)d : 0u;
+}
+
+static bool powered_phase(esc_stick_phase_t ph);
+
+void esc_stick_light_reset(esc_stick_light_t *l, const esc_stick_t *e)
+{
+    if (l == NULL) {
+        return;
+    }
+    l->pulses = (e != NULL) ? e->pulses : 0u;
+    l->from_ms = 0u;
+    l->held = false;
+}
+
+bool esc_stick_light_green(esc_stick_light_t *l, const esc_stick_t *e,
+                           uint32_t now_ms)
+{
+    if (l == NULL || !esc_stick_running(e)) {
+        esc_stick_light_reset(l, e);
+        return false;
+    }
+    if (!powered_phase(e->phase)) {
+        /* No reading reaches the detector here: a pulse it held when the
+         * supply went off is not a beep. */
+        l->pulses = e->pulses;
+        l->held = false;
+        return false;
+    }
+    if (e->pulses != l->pulses) {
+        l->pulses = e->pulses;
+        l->from_ms = now_ms;
+        l->held = true;
+    }
+    if (l->held && since(now_ms, l->from_ms) >= ESC_STICK_BEEP_LIGHT_MS) {
+        l->held = false;
+    }
+    return e->det.high || l->held;
 }
 
 static void enter(esc_stick_t *e, esc_stick_phase_t ph)
@@ -773,6 +847,7 @@ bool esc_stick_start(esc_stick_t *e, const esc_profile_t *p,
     e->n = (uint8_t)n;
     e->now_ms = b->now_ms;
     e->stops0 = b->stops;
+    e->pressed0 = b->pressed;
     e->link0 = b->link_up;
     e->link_seen = b->link_up;
     e->out.supply_mv = mv;
@@ -880,8 +955,12 @@ void esc_stick_sample(esc_stick_t *e, const esc_stick_sample_t *s)
         && since(s->at_ms, e->on_ms) < ESC_STICK_SETTLE_MS) {
         return;     /* the input capacitors, not the ESC */
     }
+    const bool was_high = e->det.high;
     const esc_det_event_t ev = esc_det_reading(&e->det, s->at_ms, s->ma,
                                                late);
+    if (!was_high && e->det.high) {
+        e->pulses++;
+    }
     const bool menu = e->phase == ESC_STICK_ITEMS
                       || e->phase == ESC_STICK_VALUES;
     if (late && menu) {
@@ -913,7 +992,9 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
     const uint32_t in_phase = since(e->now_ms, e->phase_ms);
 
     if (b->stops != e->stops0) {
-        finish(e, ESC_STICK_ABORTED, ESC_STICK_R_STOP);
+        finish(e, ESC_STICK_ABORTED,
+               esc_stick_stop_reason(b->stops - e->stops0,
+                                     b->pressed - e->pressed0));
         return;
     }
     /* A link that was up and went is lost, whenever it came up. */
@@ -1000,8 +1081,11 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
             enter(e, ESC_STICK_STORE);
             break;
         }
-        /* Off first, the stick where it is; see the top of this file. */
+        /* Off first, the stick where it is; see the top of this file.  A
+         * pulse under way is dropped with the group: no reading reaches the
+         * detector until the next power-up starts it afresh. */
         e->out.supply_on = false;
+        esc_det_drop_group(&e->det);
         e->off_seen = false;
         e->off_asked_ms = e->now_ms;
         e->off_seq = e->seq;

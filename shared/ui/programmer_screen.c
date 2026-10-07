@@ -28,6 +28,12 @@
  * every move it makes goes out as the MOTOR screen's commands do, through
  * the arming policy and the output bank.
  *
+ * The profile list has a search field.  Its keyboard docks on the right
+ * while it is open and the rows narrow to its left, so the list filters
+ * with every key and stays in view.  A run shows a stack light: green while
+ * the detector holds a beep, red on a result that ended because something
+ * was not as expected (esc_stick_reason_is_fault()).
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -41,6 +47,7 @@
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_text.h"
+#include "ui_textkey.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -278,6 +285,28 @@ static const proto_t k_protos[] = {
 #define SP_QUEUE   8
 #define SP_NOTE    72
 
+/* The search field in the crumb row, and the keyboard docked to the right
+ * of SP_DOCK_X below it while the field is typed in. */
+#define SP_FIND_MAX 16
+#define SP_FIND_X   214
+#define SP_FIND_W   172
+#define SP_DOCK_X   352
+/* The count right of the field, up to the ^ button: 38 cells. */
+#define SP_COUNT_X  (SP_FIND_X + SP_FIND_W + 8)
+#define SP_COUNT_W  (W - PAD - 12 - 76 - 8 - SP_COUNT_X)
+
+/* The stack light at the right of the run's card: a cap, the red and the
+ * green lens, each with a collar under it, and the base, px. */
+#define SP_TOWER_W     44
+#define SP_TOWER_X     (W - PAD - 16 - SP_TOWER_W)
+#define SP_TOWER_Y     (PARM_Y + 14)
+#define SP_TOWER_CAP   8
+#define SP_TOWER_LENS  58
+#define SP_TOWER_RING  3
+#define SP_TOWER_BASE  26
+/* What the run's and the result's lines may take beside it, in cells. */
+#define SP_LINE_CELLS  86
+
 /* The settings the TIMING page shows, in its order. */
 static const setting_id_t k_sp_settings[] = {
     SET_STICK_V, SET_STICK_I, SET_STICK_BEEP_MIN, SET_STICK_GAP_MIN,
@@ -316,8 +345,20 @@ typedef struct {
     uint32_t    built_key;  /* sp_list_key() when the list was built */
 
     /* The bench, as the application last said. */
-    uint32_t now_ms, stops;
+    uint32_t now_ms, stops, pressed;
     bool     armed, link_up;
+
+    /* The search: the pattern the list shows, what it was when the
+     * keyboard opened (CANCEL goes back to it), and the keyboard. */
+    char         find[SP_FIND_MAX + 1];
+    char         find_was[SP_FIND_MAX + 1];
+    ui_textkey_t tk;
+    uint32_t     tk_rev;    /* the keyboard's revision last drawn */
+    gfx_rect_t   find_box, find_clr;
+
+    /* The stack light's green, as the last tick had it. */
+    esc_stick_light_t light;
+    bool              green;
 
     /* What the run has asked for, and what is still to be taken. */
     motor_cmd_t q[SP_QUEUE];
@@ -435,6 +476,9 @@ static void reset(void)
                                      (int16_t)(W - 2 * PAD - 24),
                                      SP_ROW_H - 4 };
     }
+    s.st.find_box = (gfx_rect_t){ SP_FIND_X, CRUMB_Y, SP_FIND_W, 30 };
+    s.st.find_clr = (gfx_rect_t){ (int16_t)(SP_FIND_X + SP_FIND_W - 30),
+                                  (int16_t)(CRUMB_Y + 2), 28, 26 };
     s.st.list_up = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 76), CRUMB_Y,
                                  STEP_W, 30 };
     s.st.list_dn = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 38), CRUMB_Y,
@@ -517,6 +561,8 @@ static void sp_track(const touch_event_t *evt);
 static void sp_build_list(bool keep_scroll);
 static int  sp_runnable_count(void);
 static void sp_render(gfx_canvas_t *c);
+static void sp_find_event(const touch_event_t *evt);
+static void sp_find_close(void);
 
 static void event(const touch_event_t *evt)
 {
@@ -524,7 +570,11 @@ static void event(const touch_event_t *evt)
         return;
     }
     if (evt->type != TOUCH_EVENT_DOWN) {
-        sp_track(evt);         /* only the warning's hold follows a finger */
+        /* Only the search's keys and the warning's hold follow a finger. */
+        if (s.st.tk.open) {
+            sp_find_event(evt);
+        }
+        sp_track(evt);
         return;
     }
     const int px = evt->point.x, py = evt->point.y;
@@ -990,10 +1040,11 @@ static uint32_t sp_list_key(void)
 }
 
 /*
- * What can run first, then what cannot, each in the registry's order.
- * Built again whenever the list comes back on screen and whenever VOLTAGE or
- * the SUPPLY cap moves under it, so the order and the count follow the
- * reasons the rows draw.
+ * What can run first, then what cannot, each in the registry's order, of
+ * the profiles the search finds (esc_profile_matches(); all of them while
+ * it is empty).  Built again whenever the list comes back on screen, the
+ * search changes, or VOLTAGE or the SUPPLY cap moves under it, so the order
+ * and the count follow the reasons the rows draw.
  */
 static void sp_build_list(bool keep_scroll)
 {
@@ -1005,7 +1056,11 @@ static void sp_build_list(bool keep_scroll)
     const size_t total = esc_profiles_count();
     for (int pass = 0; pass < 2; ++pass) {
         for (size_t i = 0; i < total && t->count < SP_MAX; ++i) {
-            const bool runs = sp_runs(esc_profiles_at(i));
+            const esc_profile_t *p = esc_profiles_at(i);
+            if (!esc_profile_matches(p, t->find)) {
+                continue;
+            }
+            const bool runs = sp_runs(p);
             if (runs == (pass == 0)) {
                 t->order[t->count++] = (int)i;
                 t->runnable += runs ? 1 : 0;
@@ -1214,7 +1269,7 @@ static void sp_start(void)
         return;     /* the note says why */
     }
     const esc_stick_bench_t b = { t->now_ms, t->armed, t->stops,
-                                  t->link_up };
+                                  t->link_up, t->pressed };
     const char *why = NULL;
     if (!esc_stick_start(&t->run, t->p, ch, n, &tm, mv, ma, &b, &why)) {
         snprintf(t->note, sizeof(t->note), "%s", sp_why_text(why));
@@ -1222,6 +1277,8 @@ static void sp_start(void)
     }
     t->runs++;
     t->shown = true;
+    esc_stick_light_reset(&t->light, &t->run);
+    t->green = false;
     t->sent_arm = false;
     t->sent_supply = false;
     t->sent_pct = ESC_STICK_PCT_MIN;
@@ -1253,6 +1310,7 @@ static uint32_t sp_signature(void)
         e->last_in_order ? 1u : 0u,
         (uint32_t)e->ma, (uint32_t)esc_det_floor_ma(&e->det), e->iv_ms,
         esc_stick_done_count(e), e->entries, e->active, tenths,
+        s.st.green ? 1u : 0u,
     };
     uint32_t h = 2166136261u;
     for (size_t i = 0; i < sizeof(parts) / sizeof(parts[0]); ++i) {
@@ -1277,9 +1335,13 @@ static void sp_tick(float dt_s)
     }
     if (esc_stick_running(&t->run)) {
         const esc_stick_bench_t b = { t->now_ms, t->armed, t->stops,
-                                      t->link_up };
+                                      t->link_up, t->pressed };
         esc_stick_step(&t->run, &b);
         sp_follow();
+        /* A light that changes repaints both buffers: the signature moves
+         * the revision, and each buffer redraws on a revision it has not
+         * drawn. */
+        t->green = esc_stick_light_green(&t->light, &t->run, t->now_ms);
         const uint32_t sig = sp_signature();
         if (sig != t->sig) {
             t->sig = sig;
@@ -1307,9 +1369,11 @@ static void sp_leave(void)
         esc_stick_abort(&t->run, ESC_STICK_R_LEFT);
         sp_follow();
     }
-    /* A warning not held is a run not started. */
+    /* A warning not held is a run not started.  The search keeps what was
+     * typed. */
     t->warn = false;
     sp_end_hold();
+    sp_find_close();
     if (t->timing) {
         t->timing = false;
         if (settings_dirty()) {
@@ -1365,6 +1429,11 @@ static void sp_cancel(void)
 {
     sp_end_hold();
     stick_t *t = &s.st;
+    if (t->tk.open && t->tk.pressed >= 0) {
+        ui_textkey_cancel_press(&t->tk);
+        t->tk_rev = t->tk.revision;
+        ++s.rev;
+    }
     bool queued = false;
     for (int i = 0; i < t->qn; ++i) {
         queued = queued || t->q[i].kind == MOTOR_CMD_ARM;
@@ -1401,6 +1470,60 @@ static int sp_rows_shown(int total, int scroll)
     return (n > ROWS_MAX) ? ROWS_MAX : (n < 0) ? 0 : n;
 }
 
+/* The search's keyboard, docked right of the narrowed rows. */
+static gfx_rect_t sp_dock(void)
+{
+    return (gfx_rect_t){ SP_DOCK_X, (int16_t)(SP_ROW_Y0 - 2),
+                         (int16_t)(W - PAD - SP_DOCK_X),
+                         (int16_t)(H - PAD - SP_ROW_Y0 + 2) };
+}
+
+/* A profile row, narrowed to the left of the keyboard while it is open. */
+static gfx_rect_t sp_row(int i)
+{
+    gfx_rect_t r = s.st.rows[i];
+    if (s.st.tk.open) {
+        r.w = (int16_t)(SP_DOCK_X - 8 - r.x);
+    }
+    return r;
+}
+
+/* The keyboard closes; the search stays as typed. */
+static void sp_find_close(void)
+{
+    stick_t *t = &s.st;
+    if (t->tk.open) {
+        ui_textkey_close(&t->tk);
+        t->tk_rev = t->tk.revision;
+        ++s.rev;
+    }
+}
+
+/*
+ * One event for the search's keyboard.  Every key that changes the text
+ * filters the list at once; OK keeps the text, CANCEL goes back to the
+ * search the keyboard opened on.
+ */
+static void sp_find_event(const touch_event_t *evt)
+{
+    stick_t *t = &s.st;
+    char out[SP_FIND_MAX + 1];
+    const ui_textkey_result_t r = ui_textkey_event(&t->tk, evt, out,
+                                                   sizeof(out));
+    const char *typed = (r == UI_TEXTKEY_OK)        ? out
+                      : (r == UI_TEXTKEY_CANCELLED) ? t->find_was
+                                                    : t->tk.text;
+    if (strcmp(typed, t->find) != 0) {
+        snprintf(t->find, sizeof(t->find), "%.*s", SP_FIND_MAX, typed);
+        sp_build_list(false);           /* a new search starts at the top */
+        ++s.rev;
+    }
+    if (t->tk.revision != t->tk_rev) {
+        t->tk_rev = t->tk.revision;
+        ++s.rev;
+    }
+}
+
 static bool sp_down(const touch_event_t *evt)
 {
     stick_t *t = &s.st;
@@ -1422,8 +1545,28 @@ static bool sp_down(const touch_event_t *evt)
     }
 
     if (s.stage == STAGE_PROTOCOL) {
+        if (t->tk.open && gfx_rect_contains(t->tk.area, px, py)) {
+            sp_find_event(evt);
+            return true;
+        }
         if (gfx_rect_contains(s.back, px, py)) {
+            sp_find_close();
             s.stage = STAGE_CLASS;
+            ++s.rev;
+            return true;
+        }
+        if (!t->tk.open && t->find[0] != '\0'
+            && gfx_rect_contains(t->find_clr, px, py)) {
+            t->find[0] = '\0';                  /* X: the whole list */
+            sp_build_list(false);
+            ++s.rev;
+            return true;
+        }
+        if (!t->tk.open && gfx_rect_contains(t->find_box, px, py)) {
+            memcpy(t->find_was, t->find, sizeof(t->find_was));
+            ui_textkey_open_search(&t->tk, sp_dock(), TR(SP_FIND_TITLE),
+                                   t->find, SP_FIND_MAX);
+            t->tk_rev = t->tk.revision;
             ++s.rev;
             return true;
         }
@@ -1439,14 +1582,16 @@ static bool sp_down(const touch_event_t *evt)
             return true;
         }
         for (int i = 0; i < SP_ROWS && t->scroll + i < t->count; ++i) {
-            if (!gfx_rect_contains(t->rows[i], px, py)) {
+            if (!gfx_rect_contains(sp_row(i), px, py)) {
                 continue;
             }
             const esc_profile_t *p = esc_profiles_at(
                 (size_t)t->order[t->scroll + i]);
             /* A profile the engine cannot run says why on its row and goes
-             * no further. */
+             * no further.  One picked while the keyboard is open closes it,
+             * the search kept. */
             if (sp_runs(p)) {
+                sp_find_close();
                 sp_pick_profile(p);
                 s.stage = STAGE_DEVICE;
                 ++s.rev;
@@ -1578,17 +1723,46 @@ static bool sp_down(const touch_event_t *evt)
 
 /* ------------------------------------------- the stick class, drawn ----- */
 
+/* The search field: what is searched for, or SEARCH; X clears it while
+ * the keyboard is closed. */
+static void sp_draw_find(gfx_canvas_t *c)
+{
+    const stick_t *t = &s.st;
+    const gfx_rect_t b = t->find_box;
+    const bool any = t->find[0] != '\0';
+    const bool clr = any && !t->tk.open;
+    gfx_fill_round_rect(c, b.x, b.y, b.w, b.h, UI_R_CTL,
+                        ui_theme_color(UI_C_PANEL_SUNK));
+    gfx_draw_round_rect(c, b.x, b.y, b.w, b.h, UI_R_CTL,
+                        t->tk.open ? ui_theme_color(UI_C_ACCENT)
+                                   : ui_theme_color(UI_C_EDGE));
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(b.x + 8), b.y,
+                                 (int16_t)(b.w - 16 - (clr ? 28 : 0)),
+                                 b.h },
+                any ? t->find : TR(SP_FIND), UI_FONT_LABEL,
+                any ? ui_theme_color(UI_C_TEXT)
+                    : ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_LEFT);
+    if (clr) {
+        ui_button(c, t->find_clr, "X", ui_theme_color(UI_C_PANEL_HI), false,
+                  true);
+    }
+}
+
 static void sp_draw_list(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
+    const bool dock = t->tk.open;
     draw_crumb(c, "ESC STICK");
+    sp_draw_find(c);
     char count[64];
     const int last = (t->scroll + SP_ROWS < t->count) ? t->scroll + SP_ROWS
                                                       : t->count;
-    snprintf(count, sizeof(count), TR(SP_LIST_COUNT),
+    snprintf(count, sizeof(count),
+             (t->find[0] != '\0') ? TR(SP_LIST_FOUND) : TR(SP_LIST_COUNT),
              (t->count > 0) ? t->scroll + 1 : 0, last, t->count,
              t->runnable);
-    gfx_text_in(c, (gfx_rect_t){ 360, (int16_t)(CRUMB_Y + 7), 320, 16 },
+    gfx_text_in(c, (gfx_rect_t){ SP_COUNT_X, (int16_t)(CRUMB_Y + 7),
+                                 SP_COUNT_W, 16 },
                 count, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1,
                 GFX_ALIGN_RIGHT);
     ui_button(c, t->list_up, "^", ui_theme_color(UI_C_PANEL_HI), false,
@@ -1596,8 +1770,12 @@ static void sp_draw_list(gfx_canvas_t *c)
     ui_button(c, t->list_dn, "v", ui_theme_color(UI_C_PANEL_HI), false,
               t->scroll + SP_ROWS < t->count);
 
+    if (t->count == 0) {
+        gfx_text(c, PAD + 12, SP_ROW_Y0 + 8, TR(SP_FIND_NONE), UI_FONT_LABEL,
+                 ui_theme_color(UI_C_TEXT_DIM), 1);
+    }
     for (int i = 0; i < SP_ROWS && t->scroll + i < t->count; ++i) {
-        const gfx_rect_t r = t->rows[i];
+        const gfx_rect_t r = sp_row(i);
         const esc_profile_t *p = esc_profiles_at(
             (size_t)t->order[t->scroll + i]);
         char cap[40];
@@ -1608,6 +1786,22 @@ static void sp_draw_list(gfx_canvas_t *c)
                            : ui_theme_color(UI_C_PANEL_SUNK));
         const gfx_color_t ink = runs ? ui_theme_color(UI_C_TEXT)
                                      : ui_theme_color(UI_C_TEXT_FAINT);
+        if (dock) {
+            /* Narrow: the maker, the name cut, and a mark for whether it
+             * runs -- filled in the accent, or an empty ring. */
+            sp_text(c, r.x + 8, r.y + 8, p->brand, 11, ink);
+            sp_text(c, r.x + 104, r.y + 8, p->family, (r.w - 104 - 28) / 8,
+                    runs ? ui_theme_color(UI_C_TEXT_DIM)
+                         : ui_theme_color(UI_C_TEXT_FAINT));
+            const int mx = r.x + r.w - 14, my = r.y + r.h / 2;
+            if (runs) {
+                gfx_fill_circle(c, mx, my, 5, ui_theme_color(UI_C_ACCENT));
+            } else {
+                gfx_draw_circle(c, mx, my, 5,
+                                ui_theme_color(UI_C_TEXT_FAINT));
+            }
+            continue;
+        }
         sp_text(c, r.x + 12, r.y + 8, p->brand, 13, ink);
         sp_text(c, r.x + 124, r.y + 8, p->family, (r.w - 124 - 236) / 8,
                 runs ? ui_theme_color(UI_C_TEXT_DIM)
@@ -1633,9 +1827,102 @@ static void sp_draw_list(gfx_canvas_t *c)
                          : ui_theme_color(UI_C_TEXT_FAINT), 1,
                     GFX_ALIGN_RIGHT);
     }
+    if (dock) {
+        ui_textkey_render(&t->tk, c);
+        return;
+    }
     gfx_text(c, PAD + 12, SP_ROW_Y0 + SP_ROWS * SP_ROW_H + 6,
              TR(SP_UNVERIFIED_ALL),
              UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
+}
+
+/*
+ * One lens or the base of the stack light: a cylinder seen from the side.
+ * Lit, the colour runs to a near-white band down the middle; unlit, the
+ * same colour greyed and dark.  Both darken toward the edges, and a darker
+ * line every 6 px is a rib of the lens.  Drawn row by row in runs of one
+ * colour, since the panel's frame buffer is cached by rows.
+ */
+static void sp_cylinder(gfx_canvas_t *c, int x, int y, int w, int h,
+                        gfx_color_t base, bool lit, bool ribs)
+{
+    gfx_color_t col[64];
+    gfx_color_t rib[64];
+    if (w > 64) {
+        w = 64;
+    }
+    for (int i = 0; i < w; ++i) {
+        /* 0 in the middle, 255 at either edge, in eight steps. */
+        const int off = (2 * i + 1 - w < 0) ? w - 2 * i - 1 : 2 * i + 1 - w;
+        const int d = ((off * 8 / (w + 1)) * 255) / 7;
+        gfx_color_t k;
+        if (d < 64) {
+            k = gfx_lerp(base, GFX_WHITE, lit ? 120 : 24);
+        } else {
+            k = gfx_lerp(base, GFX_BLACK, (uint8_t)((d - 64) * 150 / 191));
+        }
+        col[i] = k;
+        rib[i] = gfx_lerp(k, GFX_BLACK, 80);
+    }
+    for (int row = 0; row < h; ++row) {
+        const bool dark = row == 0 || row == h - 1
+                          || (ribs && row % 6 == 5);
+        const gfx_color_t *line = dark ? rib : col;
+        int run = 0;
+        for (int i = 1; i <= w; ++i) {
+            if (i == w || line[i] != line[run]) {
+                gfx_hline(c, x + run, y + row, i - run, line[run]);
+                run = i;
+            }
+        }
+    }
+}
+
+/* A lens, lit or dark, with a glow around it when lit. */
+static void sp_lens(gfx_canvas_t *c, int x, int y, gfx_color_t colour,
+                    bool lit)
+{
+    const gfx_color_t panel = ui_theme_color(UI_C_PANEL);
+    if (lit) {
+        gfx_fill_rect(c, x - 4, y - 3, SP_TOWER_W + 8, SP_TOWER_LENS + 6,
+                      gfx_lerp(panel, colour, 60));
+        gfx_fill_rect(c, x - 2, y - 1, SP_TOWER_W + 4, SP_TOWER_LENS + 2,
+                      gfx_lerp(panel, colour, 130));
+        sp_cylinder(c, x, y, SP_TOWER_W, SP_TOWER_LENS, colour, true, true);
+        return;
+    }
+    /* Off: the colour greyed, then darkened. */
+    const gfx_color_t off = gfx_lerp(gfx_lerp(colour, GFX_GREY(110), 150),
+                                     GFX_BLACK, 150);
+    sp_cylinder(c, x, y, SP_TOWER_W, SP_TOWER_LENS, off, false, true);
+}
+
+/*
+ * The stack light: red over green on a light grey base, as a signal tower
+ * on a machine.  Green: the detector holds a beep.  Red: the run ended for
+ * a reason esc_stick_reason_is_fault() names.
+ */
+static void sp_draw_tower(gfx_canvas_t *c, bool red, bool green)
+{
+    const int x = SP_TOWER_X;
+    int y = SP_TOWER_Y;
+    const gfx_color_t grey = GFX_GREY(196);
+    sp_cylinder(c, x + 6, y, SP_TOWER_W - 12, SP_TOWER_CAP, GFX_GREY(90),
+                false, false);
+    y += SP_TOWER_CAP;
+    sp_lens(c, x, y, ui_theme_color(UI_C_DANGER), red);
+    y += SP_TOWER_LENS;
+    sp_cylinder(c, x, y, SP_TOWER_W, SP_TOWER_RING, grey, false, false);
+    y += SP_TOWER_RING;
+    sp_lens(c, x, y, ui_theme_color(UI_C_OK), green);
+    y += SP_TOWER_LENS;
+    sp_cylinder(c, x, y, SP_TOWER_W, SP_TOWER_RING, grey, false, false);
+    y += SP_TOWER_RING;
+    sp_cylinder(c, x - 2, y, SP_TOWER_W + 4, SP_TOWER_BASE, grey, false,
+                false);
+    y += SP_TOWER_BASE;
+    sp_cylinder(c, x - 8, y, SP_TOWER_W + 16, 4, GFX_GREY(160), false,
+                false);
 }
 
 /* "MIN", "MID" or "MAX" for a percentage the run commands. */
@@ -1649,6 +1936,7 @@ static const char *sp_reason_help(esc_stick_reason_t r)
 {
     switch (r) {
     case ESC_STICK_R_STOP:        return TR(SP_WHY_STOP);
+    case ESC_STICK_R_BENCH_STOP:  return TR(SP_WHY_BENCH_STOP);
     case ESC_STICK_R_DISARMED:    return TR(SP_WHY_DISARMED);
     case ESC_STICK_R_LINK:        return TR(SP_WHY_LINK);
     case ESC_STICK_R_SUPPLY_OFF:  return TR(SP_WHY_SUPPLY_OFF);
@@ -1694,6 +1982,7 @@ static const char *sp_reason_text(esc_stick_reason_t r)
     switch (r) {
     case ESC_STICK_R_NONE:        return "";
     case ESC_STICK_R_STOP:        return TR(SP_R_STOP);
+    case ESC_STICK_R_BENCH_STOP:  return TR(SP_R_BENCH_STOP);
     case ESC_STICK_R_DISARMED:    return TR(SP_R_DISARMED);
     case ESC_STICK_R_LINK:        return TR(SP_R_LINK);
     case ESC_STICK_R_SUPPLY_OFF:  return TR(SP_R_SUPPLY_OFF);
@@ -1734,12 +2023,13 @@ static void sp_draw_progress(gfx_canvas_t *c)
              ui_theme_color(UI_C_ACCENT), 1);
     gfx_text(c, PAD + 12, PARM_Y + 34, sp_phase_text(e->phase),
              UI_FONT_HEAD, txt, 1);
+    /* The count beside the stack light. */
     snprintf(line, sizeof(line), "%u", esc_stick_beeps(e));
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(W - PAD - 232),
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(SP_TOWER_X - 24 - 210),
                                  (int16_t)(PARM_Y + 14), 210, 34 },
                 line, UI_FONT_NUM, ui_theme_color(UI_C_CURR), 1,
                 GFX_ALIGN_RIGHT);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(W - PAD - 232),
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(SP_TOWER_X - 24 - 210),
                                  (int16_t)(PARM_Y + 50), 210, 16 },
                 TR(SP_BEEPS_GROUP), UI_FONT_LABEL,
                 ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_RIGHT);
@@ -1763,7 +2053,7 @@ static void sp_draw_progress(gfx_canvas_t *c)
     snprintf(line, sizeof(line), TR(SP_SELECTION),
              (done < e->n) ? done + 1u : (unsigned)e->n, (unsigned)e->n,
              what);
-    sp_text(c, PAD + 12, y0, line, 94, txt);
+    sp_text(c, PAD + 12, y0, line, SP_LINE_CELLS, txt);
 
     switch (e->phase) {
     case ESC_STICK_ARMING:
@@ -1832,7 +2122,7 @@ static void sp_draw_progress(gfx_canvas_t *c)
         line[0] = '\0';
         break;
     }
-    sp_text(c, PAD + 12, y0 + pitch, line, 94, dim);
+    sp_text(c, PAD + 12, y0 + pitch, line, SP_LINE_CELLS, dim);
 
     if (e->groups == 0u) {
         snprintf(line, sizeof(line), "%s", TR(SP_LAST_NONE));
@@ -1851,12 +2141,24 @@ static void sp_draw_progress(gfx_canvas_t *c)
     snprintf(line, sizeof(line), TR(SP_CURRENT), (int)e->ma,
              (int)esc_det_floor_ma(&e->det), (unsigned)e->iv_ms);
     gfx_text(c, PAD + 12, y0 + 4 * pitch, line, UI_FONT_LABEL, dim, 1);
+    /* After the lines, so a line that reached under it would show as
+     * painted over in the fit check. */
+    sp_draw_tower(c, false, t->green);
 
     gfx_text(c, PAD + 12, HELP_Y + 9,
              TR(SP_ENDS_RUN), UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT),
              1);
     ui_button(c, s.write_btn, TR(SP_ABORT), ui_theme_color(UI_C_DANGER),
               false, true);
+}
+
+/* The red light: a result on screen, until OK, of a run that ended on
+ * something not as expected. */
+static bool sp_red(void)
+{
+    const esc_stick_t *e = &s.st.run;
+    return s.st.shown && e->phase == ESC_STICK_ABORTED
+           && esc_stick_reason_is_fault(e->reason);
 }
 
 static void sp_draw_result(gfx_canvas_t *c)
@@ -1888,7 +2190,8 @@ static void sp_draw_result(gfx_canvas_t *c)
         sp_change_text(&e->ch[i], what, sizeof(what));
         snprintf(line, sizeof(line), "%s  %s",
                  e->done[i] ? TR(SP_MADE) : TR(SP_NOT_MADE), what);
-        sp_text(c, PAD + 12, y0 + (int)(i + 1u) * pitch, line, 94,
+        sp_text(c, PAD + 12, y0 + (int)(i + 1u) * pitch, line,
+                SP_LINE_CELLS,
                 e->done[i] ? ui_theme_color(UI_C_TEXT) : dim);
     }
     if (shown < e->n) {
@@ -1900,6 +2203,7 @@ static void sp_draw_result(gfx_canvas_t *c)
                  (unsigned)(e->n - shown), made);
         gfx_text(c, PAD + 12, y0 + 5 * pitch, line, UI_FONT_LABEL, dim, 1);
     }
+    sp_draw_tower(c, sp_red(), false);
     if (done) {
         gfx_text(c, PAD + 12, HELP_Y,
                  TR(SP_TONES_1),
@@ -2163,7 +2467,8 @@ static void sp_draw_device(gfx_canvas_t *c)
 
 /*
  * The warning a run needs before it starts: in the danger colour, over the
- * whole screen, saying what the run does to an ESC with a motor on it.
+ * whole screen, saying what the run does to the ESC and what may happen to
+ * a motor on it.
  */
 static void sp_draw_warning(gfx_canvas_t *c)
 {
@@ -2183,15 +2488,17 @@ static void sp_draw_warning(gfx_canvas_t *c)
                 GFX_ALIGN_CENTER);
     static const ui_text_id_t k_lines[] = {
         TX_SP_WARN_1, TX_SP_WARN_2, TX_SP_WARN_3, TX_SP_WARN_4,
+        TX_SP_WARN_5,
     };
-    for (int i = 0; i < 4; ++i) {
+    const int n = (int)(sizeof(k_lines) / sizeof(k_lines[0]));
+    for (int i = 0; i < n; ++i) {
         gfx_text(c, a.x + 20, a.y + 68 + i * 22, ui_tr(k_lines[i]),
                  UI_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT), 1);
     }
     char line[128];
     snprintf(line, sizeof(line), "%s %s", t->p->brand, t->p->family);
-    sp_text(c, a.x + 20, a.y + 68 + 5 * 22, line, 90,
+    sp_text(c, a.x + 20, a.y + 68 + (n + 1) * 22, line, 90,
             ui_theme_color(UI_C_ACCENT));
     uint32_t mv, ma;
     sp_supply(&mv, &ma);
@@ -2203,9 +2510,9 @@ static void sp_draw_warning(gfx_canvas_t *c)
              (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 10u),
              (unsigned)(ma / 1000u), (unsigned)(ma % 1000u / 10u),
              (unsigned)picked);
-    gfx_text(c, a.x + 20, a.y + 68 + 6 * 22, line, UI_FONT_LABEL,
+    gfx_text(c, a.x + 20, a.y + 68 + (n + 2) * 22, line, UI_FONT_LABEL,
              ui_theme_color(UI_C_VOLT), 1);
-    gfx_text(c, a.x + 20, a.y + 68 + 7 * 22,
+    gfx_text(c, a.x + 20, a.y + 68 + (n + 3) * 22,
              TR(SP_WARN_UNVERIFIED),
              UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
     ui_button(c, t->hold_btn, TR(SP_HOLD_TO_RUN),
@@ -2232,7 +2539,7 @@ static void sp_render(gfx_canvas_t *c)
 /* ------------------------------------------- the application's side ----- */
 
 void programmer_screen_bench(uint32_t now_ms, bool armed, uint32_t stops,
-                             bool link_up)
+                             uint32_t pressed, bool link_up)
 {
     stick_t *t = &s.st;
     /* A stop ends a hold under way; the warning stays, and a new hold is
@@ -2241,11 +2548,13 @@ void programmer_screen_bench(uint32_t now_ms, bool armed, uint32_t stops,
      * frame's count and clear the stop. */
     if (stops != t->stops) {
         sp_end_hold();
-        sp_end_run(ESC_STICK_R_STOP);
+        sp_end_run(esc_stick_stop_reason(stops - t->stops,
+                                         pressed - t->pressed));
     }
     t->now_ms = now_ms;
     t->armed = armed;
     t->stops = stops;
+    t->pressed = pressed;
     t->link_up = link_up;
 }
 
@@ -2292,6 +2601,34 @@ const esc_profile_t *programmer_screen_stick_profile(void)
 uint32_t programmer_screen_stick_runs(void) { return s.st.runs; }
 
 const esc_stick_t *programmer_screen_stick(void) { return &s.st.run; }
+
+const char *programmer_screen_stick_search(void) { return s.st.find; }
+
+bool programmer_screen_stick_typing(void) { return s.st.tk.open; }
+
+int programmer_screen_stick_listed(int *top)
+{
+    if (top != NULL) {
+        *top = s.st.scroll;
+    }
+    return s.st.count;
+}
+
+const esc_profile_t *programmer_screen_stick_page(void)
+{
+    return (s.klass == CLASS_STICK && s.stage == STAGE_DEVICE) ? s.st.p
+                                                               : NULL;
+}
+
+void programmer_screen_stick_lights(bool *red, bool *green)
+{
+    if (red != NULL) {
+        *red = sp_red();
+    }
+    if (green != NULL) {
+        *green = esc_stick_running(&s.st.run) && s.st.green;
+    }
+}
 
 static void render(gfx_canvas_t *c, int buffer_index)
 {

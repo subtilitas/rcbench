@@ -2,9 +2,10 @@
  * Stick programming: an ESC (electronic speed controller) programmed through
  * its throttle-stick menu, with the beeps counted in the supply current.
  *
- * The ESC is powered from the bench supply with the motor replaced by a
- * resistor load.  It sounds its menu through the load, so each beep is a
- * pulse in the supply current.  The engine drives the throttle to the
+ * The ESC is powered from the bench supply with a resistor load in place
+ * of the motor, or a motor mounted solid with no propeller.  It sounds its
+ * menu through the load or the windings, so each beep is a pulse in the
+ * supply current.  The engine drives the throttle to the
  * profile's positions, switches the supply, counts the pulses into groups
  * and moves the throttle on the group that names the wanted item or value.
  *
@@ -238,7 +239,10 @@ typedef enum {
 
 typedef enum {
     ESC_STICK_R_NONE = 0,
-    ESC_STICK_R_STOP,         /**< STOP, from any source                 */
+    ESC_STICK_R_STOP,         /**< STOP pressed                          */
+    ESC_STICK_R_BENCH_STOP,   /**< a stop the bench raised itself: touch
+                                   that stopped answering or was lost, the
+                                   coprocessor's refusal or failsafe       */
     ESC_STICK_R_DISARMED,     /**< the bench disarmed under the run      */
     ESC_STICK_R_LINK,         /**< the coprocessor stopped answering     */
     ESC_STICK_R_SUPPLY_OFF,   /**< the output went off: a trip, a lost ON */
@@ -258,6 +262,23 @@ typedef enum {
 
 /** A word or two for the screen. */
 const char *esc_stick_reason_text(esc_stick_reason_t r);
+
+/**
+ * The end @p stops stops give, @p pressed of them pressed by an operator,
+ * both counted over the same span: STOP when every one was pressed, BENCH
+ * STOPPED when any was not, so a stop the bench raised is never hidden by
+ * a press that came with it.
+ */
+esc_stick_reason_t esc_stick_stop_reason(uint32_t stops, uint32_t pressed);
+
+/**
+ * Whether a run that ended for @p r ended because something was not as
+ * expected: a reading, the supply, the link, the arm, the ESC, or a stop
+ * the bench raised itself.  False for the ends an operator chose (STOP
+ * pressed, ABORT, leaving the screen) and for none.  The screen's red
+ * light.
+ */
+bool esc_stick_reason_is_fault(esc_stick_reason_t r);
 const char *esc_stick_phase_text(esc_stick_phase_t ph);
 
 /** What the bench is doing, each step. */
@@ -266,6 +287,8 @@ typedef struct {
     bool     armed;
     uint32_t stops;          /**< every stop counted, by any means         */
     bool     link_up;
+    uint32_t pressed;        /**< of the stops, the ones an operator
+                                  pressed, counted with the stop itself  */
 } esc_stick_bench_t;
 
 /**
@@ -311,6 +334,7 @@ typedef struct {
     uint32_t             now_ms;
 
     uint32_t             stops0;
+    uint32_t             pressed0;
     bool                 link0;
     bool                 link_seen;     /**< the link was up at some time */
     bool                 off_seen;      /**< the output is off: reported,
@@ -355,6 +379,8 @@ typedef struct {
     bool                 last_trusted;  /**< and so did that one: the
                                              last group could be acted on */
     uint8_t              entries;       /**< power-ups this run          */
+    uint32_t             pulses;        /**< pulses begun this run: the
+                                             detector's rises            */
 } esc_stick_t;
 
 /**
@@ -388,6 +414,33 @@ unsigned esc_stick_done_count(const esc_stick_t *e);
 
 /** The beeps of the group under way. */
 unsigned esc_stick_beeps(const esc_stick_t *e);
+
+/** A beep shown for less than this would fall between two frames, ms: the
+ *  green light stays on at least this long from the frame that first sees
+ *  the pulse. */
+#define ESC_STICK_BEEP_LIGHT_MS 150u
+
+/**
+ * The green light: on while the detector holds a pulse, from the reading
+ * that rose above the threshold to the one that fell below the release,
+ * and for at least ESC_STICK_BEEP_LIGHT_MS from the first look that sees a
+ * pulse begun, so a pulse that rises and falls between two looks still
+ * shows.  Every pulse lights it, trusted group or not.  Off while the
+ * supply is not on for the menu (outside ENTRY, ITEMS, VALUES and STORE)
+ * and while no run is under way.
+ */
+typedef struct {
+    uint32_t pulses;    /**< the run's count at the last look */
+    uint32_t from_ms;   /**< when that look saw a new pulse   */
+    bool     held;      /**< the minimum time is running      */
+} esc_stick_light_t;
+
+/** Start watching @p e: pulses already counted do not light it. */
+void esc_stick_light_reset(esc_stick_light_t *l, const esc_stick_t *e);
+
+/** Whether the green light is on at @p now_ms. */
+bool esc_stick_light_green(esc_stick_light_t *l, const esc_stick_t *e,
+                           uint32_t now_ms);
 
 #ifdef __cplusplus
 }

@@ -36,11 +36,14 @@ int  programmer_screen_dirty(void);
 
 /**
  * The bench as this frame found it, before the frame's touch: the time,
- * whether it is armed, how many stops have been counted, and whether the
- * coprocessor answers.  A stop count that moved ends the warning's hold.
+ * whether it is armed, how many stops have been counted and how many of
+ * those an operator pressed (arming_pressed_count()), and whether the
+ * coprocessor answers.  A stop count that moved ends the warning's hold,
+ * and a run: with STOP when every new stop was pressed, else with BENCH
+ * STOPPED.
  */
 void programmer_screen_bench(uint32_t now_ms, bool armed, uint32_t stops,
-                             bool link_up);
+                             uint32_t pressed, bool link_up);
 
 /** One supply sample, every one, in the order they were taken. */
 void programmer_screen_supply(const supply_state_t *st);
@@ -58,6 +61,21 @@ uint32_t programmer_screen_stick_runs(void);
 
 /** The stick run, under way or ended, for tests. */
 const esc_stick_t *programmer_screen_stick(void);
+
+/** The ESC STICK search as typed, "" for none, and whether its keyboard
+ *  is open; for tests. */
+const char *programmer_screen_stick_search(void);
+bool programmer_screen_stick_typing(void);
+
+/** How many profiles the list holds under the search, and the index in it
+ *  of the top row shown; for tests. */
+int programmer_screen_stick_listed(int *top);
+
+/** The profile whose page is open, or NULL on the list; for tests. */
+const esc_profile_t *programmer_screen_stick_page(void);
+
+/** What the stack light shows; for tests. */
+void programmer_screen_stick_lights(bool *red, bool *green);
 
 /**
  * A refusal of the stick engine (esc_stick_kind(), esc_stick_check(),

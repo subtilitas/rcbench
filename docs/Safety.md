@@ -81,10 +81,13 @@ unpowered or unplugged panel reads as a line that is not edging.
 - Arming is a two-second hold on ARM, and the command goes when the hold
   completes rather than when the finger lifts. Disarming is a press.
 - A stick run on PROGRAMMER arms through the same policy, after its warning
-  (MOTOR REMOVED, LOAD FITTED?) is held for 2 s. It then sets the throttle to
-  the profile's entry position before it switches the supply on, which for
-  most ESCs is full throttle: that is how their menu is entered, and why the
-  warning asks for the motor to be off. The hold's ARM waits one frame in
+  (NO PROPELLER, MOTOR SECURED?) is held for 2 s. It then sets the throttle
+  to the profile's entry position before it switches the supply on, which
+  for most ESCs is the stick at MAX: that is how their menu is entered. The
+  ESC then sounds its programming menu and does not drive, but in rare
+  cases a motor may start and run, so the warning asks for a resistor load
+  in place of the motor, or a motor mounted solid with no propeller. The
+  hold's ARM waits one frame in
   the screen; a STOP or a lost touch event in that frame takes it back and
   ends the run, so it cannot clear the stop. STOP, a disarm, a lost link,
   ABORT and leaving the screen end the run with the throttle at minimum, the

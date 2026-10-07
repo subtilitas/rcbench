@@ -7,6 +7,13 @@
  * a name is what a report is filed under.  Spaces at either end are dropped
  * on OK.
  *
+ * Opened for a search (ui_textkey_open_search()) it types a search pattern
+ * instead: the "_" key types "*", the wildcard; OK takes the text as typed,
+ * empty included, since an empty search is no search; and the bottom row
+ * gives SPACE and CANCEL three columns each, CLR and OK two, so CANCEL's
+ * longer translations fit an area narrower than the SERVO screen's.  The
+ * caller reads the text as it is typed from @c text.
+ *
  * The screen routes events to it while it is open and draws it last, as it
  * does the keypad.
  *
@@ -40,6 +47,8 @@ enum {
 };
 /** The DEL key, last of the character rows. */
 #define UI_TK_DEL (UI_TEXTKEY_CHARS - 1)
+/** The key that types "_", or "*" in a search. */
+#define UI_TK_MARK (UI_TEXTKEY_CHARS - 3)
 
 typedef enum {
     UI_TEXTKEY_NONE = 0,   /**< still open, or the event was not its   */
@@ -55,6 +64,7 @@ typedef struct {
     int        len;
     int        max_len;
     bool       refused;     /**< OK on an empty name                  */
+    bool       search;      /**< a search pattern: see the top        */
     int        pressed;     /**< the key under the press, or -1       */
     uint8_t    press_id;
     uint32_t   revision;    /**< bumped on every change a render shows */
@@ -65,6 +75,11 @@ typedef struct {
 void ui_textkey_open(ui_textkey_t *k, gfx_rect_t area, const char *title,
                      const char *text, int max_len);
 
+/** Open for a search pattern; see the top of this file. */
+void ui_textkey_open_search(ui_textkey_t *k, gfx_rect_t area,
+                            const char *title, const char *text,
+                            int max_len);
+
 void ui_textkey_close(ui_textkey_t *k);
 
 /** A press under way is dropped: the touch stream lost an event.  What was
@@ -74,7 +89,8 @@ void ui_textkey_cancel_press(ui_textkey_t *k);
 /**
  * One touch event.  A key acts on the release of the contact that pressed
  * it, over the same key; a second contact is ignored while one is down.
- * UI_TEXTKEY_OK writes the name, ends trimmed, into @p out.
+ * UI_TEXTKEY_OK writes the name, ends trimmed, into @p out; a search's
+ * text as typed.
  */
 ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
                                      char *out, size_t n);
@@ -82,8 +98,12 @@ ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
 /** Where a key is drawn and hit; zero size for one out of range. */
 gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key);
 
-/** A key's label, or "" for one out of range. */
+/** A key's label, or "" for one out of range; as a name keyboard shows
+ *  it. */
 const char *ui_textkey_label(int key);
+
+/** A key's label as @p k shows it: "*" for UI_TK_MARK in a search. */
+const char *ui_textkey_key_label(const ui_textkey_t *k, int key);
 
 /** The whole keyboard over its area.  Nothing while it is closed. */
 void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c);
