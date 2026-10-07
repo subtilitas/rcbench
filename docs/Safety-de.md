@@ -100,7 +100,7 @@ Panel als Leitung ohne Flanken gelesen wird.
   Link, ABORT und das Verlassen des Bildschirms beenden den Lauf mit dem Gas
   auf Minimum, dem Netzteil aus und dem Prüfstand entschärft, in einem
   Schritt. Ein Lauf, der wie geplant endet, schaltet zuerst das Netzteil aus
-  und bewegt den Knüppel, wenn der Ausgang aus meldet.
+  und bewegt den Knüppel, wenn das Netzteil selbst den Ausgang aus meldet.
   [Stick-Programmierung](StickProgramming-de.md).
 - Einem Halten werden höchstens 250 ms pro Frame gutgeschrieben, es erstreckt
   sich also über mindestens acht Frames mit stehendem Druck. Die Dauer eines

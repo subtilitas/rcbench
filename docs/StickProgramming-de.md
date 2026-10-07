@@ -351,7 +351,8 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   (BEC-Spannung) an den Modellen mit 60, 80 und 120 A, in `ztw-gecko`
   Punkt 6 an den SBEC-Modellen. An einem Modell ohne den Punkt geben die
   Punkte danach womöglich eine Nummer weniger aus, als das Profil sagt.
-  Einen davon zu wählen kann dann den Punkt darunter wählen; die
+  Einen davon zu wählen kann dann den Punkt danach wählen, eine Nummer
+  höher im Profil; die
   Reihenfolgeregel merkt das nicht, weil das Menü in Reihenfolge ist, nur
   kürzer. Ein Profil je Modellsatz wäre die Abhilfe und ist nicht angelegt.
 - `sunrise-pro`: das Handbuch schaltet die Bremse mit "the first quad group"

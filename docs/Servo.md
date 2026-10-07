@@ -209,7 +209,7 @@ still writes the report, marked ABORTED with the reason. The bench stays armed
 unless the ending was a disarm, STOP or leaving the screen, which disarm.
 Once a run is over, whichever screen is up, SUPPLY's set points go back to
 what they were before it. That waits until the run's OFF has been sent, a
-reading taken after that shows the output off, no ON is on its way and
+reading taken after that in which the supply itself reports the output off, no ON is on its way and
 OUTPUT ON is not being held on SERVO or SUPPLY. Set points changed after
 the run ended are
 left as they are.

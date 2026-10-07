@@ -89,8 +89,8 @@ unpowered or unplugged panel reads as a line that is not edging.
   ends the run, so it cannot clear the stop. STOP, a disarm, a lost link,
   ABORT and leaving the screen end the run with the throttle at minimum, the
   supply off and the bench disarmed, in one step. A run that ends as planned
-  switches the supply off first and moves the stick once the output reads
-  off. [Stick programming](StickProgramming.md).
+  switches the supply off first and moves the stick once the supply itself
+  reports the output off. [Stick programming](StickProgramming.md).
 - A hold is credited at most 250 ms per frame, so it spans at least eight
   frames with the press standing. A frame's duration is measured at its top
   and applied at its end, and without the cap one late frame credits a hold

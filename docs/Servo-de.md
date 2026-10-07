@@ -226,7 +226,8 @@ schreibt trotzdem den Bericht, als ABORTED mit dem Grund markiert. Der
 Prüfstand bleibt scharf, außer das Ende war ein Disarm, STOP oder das
 Verlassen des Screens, die entschärfen. Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
 Lauf zurück, gleich welcher Screen oben ist. Das wartet, bis das OFF des
-Laufs gesendet ist, ein danach genommener Messwert den Ausgang aus zeigt,
+Laufs gesendet ist, ein danach genommener Messwert zeigt, dass das Netzteil selbst den Ausgang
+aus meldet,
 kein ON unterwegs ist und OUTPUT ON weder auf SERVO noch auf SUPPLY
 gehalten wird. Sollwerte, die nach
 dem Ende des Laufs geändert wurden, bleiben, wie sie sind.

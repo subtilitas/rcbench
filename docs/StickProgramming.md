@@ -320,7 +320,8 @@ engine's stores no value other than the one asked for.
   `hobbywing-flyfun-v5` item 6 (BEC voltage) is on the 60, 80 and 120 A
   models, and in `ztw-gecko` item 6 on the SBEC models. On a model without
   the item, the items after it may sound one number lower than the profile
-  says. Selecting one of them can then pick the item below it; the order
+  says. Selecting one of them can then pick the item after it, one number
+  higher in the profile; the order
   rule does not notice, because the menu is in order, only shorter. A
   profile per model set is the fix and is not made.
 - `sunrise-pro`: the manual toggles the brake with "the first quad group",
