@@ -44,6 +44,8 @@ typedef enum {
     LINK_PAGE_PADS      = 0x28, /**< the pads that are not pins, read-only  */
     LINK_PAGE_SERVO     = 0x29, /**< the surfaces' frame rate, not kept     */
     LINK_PAGE_SUPPLY    = 0x2A, /**< the PD mini on a PIO UART; wiring kept */
+    LINK_PAGE_SENSE     = 0x2B, /**< the current monitors' bus; set-up kept */
+    LINK_PAGE_SERVO_SENSE = 0x2C, /**< the servo rail's channels, a move timed */
 } link_page_id_t;
 
 /*
@@ -52,9 +54,15 @@ typedef enum {
  * Bump the major when a register changes meaning or a page is renumbered;
  * bump the minor when a page or a register is added at the end, which an
  * older host can ignore.
+ *
+ * Only the major has to agree for the link to come up and the bench to arm.
+ * The panel reads the minor at link-up and sends nothing to a page the
+ * coprocessor's minor does not have: SUPPLY from 4.3, SENSE and
+ * SERVO_SENSE from 4.7.  A coprocessor never asks the panel's minor; a
+ * page an older panel does not know is a page it never writes.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 6u
+#define LINK_PROTOCOL_MINOR 7u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -268,6 +276,219 @@ enum {
 #define LINK_SP_WIRE_REFUSED 0x200u  /**< protocol 4.5 */
 #define LINK_SP_SAGGED       0x400u  /**< protocol 4.5 */
 
+/* --- the SENSE page (protocol 4.7): two I2C (Inter-Integrated Circuit)
+ *     current monitors on one bus the coprocessor runs on two of its pins,
+ *     a TI INA228 in the ESC's power path and a TI INA3221 on the servo
+ *     rail.
+ *
+ *     ENABLE to KHZ are the bus, one frame: ENABLE bit 0 the INA228, bit 1
+ *     the INA3221; the GPIO for SDA and the one for SCL; the clock, 100 or
+ *     400 kHz.  The RP2350 has its I2C function at pin mod 4 -- 0 I2C0 SDA,
+ *     1 I2C0 SCL, 2 I2C1 SDA, 3 I2C1 SCL -- so SDA is a GPIO whose number
+ *     mod 4 is 0 or 2 and SCL is the one after it: one I2C block's pair.
+ *
+ *     I228_ADDR to register 7 are the INA228, one frame: its address, 0x40
+ *     to 0x4F; its shunt in micro-ohms, 50 to 20000; the current its range
+ *     is set for, in 0.1 A, 1.0 to 655.3 A, which is as far as BENCH's
+ *     current register reaches.  CURRENT_LSB is that current / 2^19, and
+ *     SHUNT_CAL and ADCRANGE follow from it and the shunt
+ *     (sense_i228_cal()); the shunt's voltage at that current has to be
+ *     inside the part's 163.84 mV.
+ *
+ *     I3221_ADDR to register 11 are the INA3221, one frame: its address,
+ *     0x40 to 0x43; its shunt in 0.1 milliohm, 50 to 10000 (5 mOhm to
+ *     1 Ohm); the channels read, bits 0..2 for CH1 to CH3, at least one
+ *     while the part is enabled.  The part's full scale is 163.8 mV across
+ *     the shunt: 1.638 A at the DAOKAI module's 0.1 Ohm, 32.76 A at 5 mOhm,
+ *     which is the most SERVO_SENSE's signed mA carry.
+ *
+ *     Registers 7 and 11 are reserved: they read 0, and a write of anything
+ *     else is refused with BAD_VALUE.  They keep each part's frame four
+ *     registers long for a later minor to give them a meaning.
+ *
+ *     Refused with BAD_VALUE: a value out of its range, SDA and SCL not one
+ *     I2C block's pair, a pin past the bank, reserved, bound to an output or
+ *     held by the SUPPLY page, the two parts on one address while both are
+ *     enabled, and any change while the bank is armed -- the bus opened
+ *     again stops the readings for some milliseconds mid-run.  The pins are
+ *     no output's while either part is enabled.
+ *
+ *     FLAGS onwards are read only: FLAGS (link_sense_flag_t); PRESENT, bit
+ *     n for address 0x40 + n answering the last scan; the ID the INA228
+ *     gave (DEVICE_ID) and the one the INA3221 gave (die ID); transactions
+ *     failed, modulo 65536; the INA228's die temperature in 0.1 C, signed,
+ *     and its DIAG_ALRT as read; its CHARGE in 0.01 mAh, signed 32 bit, and
+ *     its ENERGY in 0.01 Wh, 32 bit, each low register first and counted
+ *     since the run's arm; and the ESC's own telemetry voltage (10 mV) and
+ *     current (10 mA), ESC_FLAGS bit 0 and bit 1 saying each is valid --
+ *     here because BENCH carries the INA228's while it answers.
+ *
+ *     ENABLE to register 11 are kept in the coprocessor's flash beside the
+ *     bindings and the supply's wiring, and the bus is opened at boot. */
+enum {
+    LINK_SN_ENABLE          = 0,
+    LINK_SN_SDA_PIN         = 1,
+    LINK_SN_SCL_PIN         = 2,
+    LINK_SN_KHZ             = 3,
+    LINK_SN_I228_ADDR       = 4,
+    LINK_SN_I228_SHUNT_UOHM = 5,
+    LINK_SN_I228_MAX_DA     = 6,
+    LINK_SN_RESERVED_7      = 7,   /**< reads 0; written 0                  */
+    LINK_SN_I3221_ADDR      = 8,
+    LINK_SN_I3221_SHUNT_DMOHM = 9,
+    LINK_SN_I3221_CHANNELS  = 10,
+    LINK_SN_RESERVED_11     = 11,  /**< reads 0; written 0                  */
+    LINK_SN_FLAGS           = 12,  /**< read only from here                 */
+    LINK_SN_PRESENT         = 13,
+    LINK_SN_I228_ID         = 14,
+    LINK_SN_I3221_ID        = 15,
+    LINK_SN_ERRORS          = 16,
+    LINK_SN_I228_TEMP_DC    = 17,  /**< 0.1 C, signed -- read as int16_t    */
+    LINK_SN_I228_DIAG       = 18,
+    LINK_SN_I228_CHARGE_LO  = 19,  /**< 0.01 mAh, int32_t, low half first   */
+    LINK_SN_I228_CHARGE_HI  = 20,
+    LINK_SN_I228_ENERGY_LO  = 21,  /**< 0.01 Wh, uint32_t, low half first   */
+    LINK_SN_I228_ENERGY_HI  = 22,
+    LINK_SN_ESC_VOLTAGE_CV  = 23,  /**< 10 mV steps                         */
+    LINK_SN_ESC_CURRENT_CA  = 24,  /**< 10 mA steps                         */
+    LINK_SN_ESC_FLAGS       = 25,
+    LINK_SN_COUNT           = 26,
+};
+/** The set-up, ENABLE to register 11: what a write may change, and what
+ *  flash keeps. */
+#define LINK_SN_CONFIG_COUNT 12u
+
+/* ENABLE's bits. */
+#define LINK_SN_EN_I228   0x01u
+#define LINK_SN_EN_I3221  0x02u
+
+/* The ranges a write is held to. */
+#define LINK_SN_KHZ_STANDARD     100u
+#define LINK_SN_KHZ_FAST         400u
+#define LINK_SN_I228_ADDR_MIN    0x40u
+#define LINK_SN_I228_ADDR_MAX    0x4Fu
+#define LINK_SN_I228_UOHM_MIN      50u
+#define LINK_SN_I228_UOHM_MAX   20000u
+#define LINK_SN_I228_DA_MIN        10u
+#define LINK_SN_I228_DA_MAX      6553u
+#define LINK_SN_I3221_ADDR_MIN   0x40u
+#define LINK_SN_I3221_ADDR_MAX   0x43u
+#define LINK_SN_I3221_DMOHM_MIN    50u
+#define LINK_SN_I3221_DMOHM_MAX 10000u
+#define LINK_SN_I3221_CH_ALL     0x07u
+
+/** What the coprocessor says about the bus and the two parts. */
+typedef enum {
+    LINK_SN_I228_ONLINE    = 1u << 0, /**< answering, identity good, in use */
+    /** Its last identity read was an INA228's.  With ONLINE clear, it has
+     *  stopped answering since. */
+    LINK_SN_I228_ID_OK     = 1u << 1,
+    /** Something answers at its address with another identity, and is not
+     *  used. */
+    LINK_SN_I228_ID_WRONG  = 1u << 2,
+    /** Its last current read the top of its range: BENCH's current and
+     *  power are then lower bounds, not values. */
+    LINK_SN_I228_CLIPPED   = 1u << 3,
+    LINK_SN_I3221_ONLINE   = 1u << 4,
+    LINK_SN_I3221_ID_OK    = 1u << 5,
+    LINK_SN_I3221_ID_WRONG = 1u << 6,
+    LINK_SN_BUS_OPEN       = 1u << 8, /**< the I2C block runs on its pins   */
+    LINK_SN_BUS_STUCK      = 1u << 9, /**< SDA held low, being clocked free */
+} link_sense_flag_t;
+
+/* ESC_FLAGS' bits. */
+#define LINK_SN_ESC_VOLTAGE_OK 0x01u
+#define LINK_SN_ESC_CURRENT_OK 0x02u
+
+/* --- the SERVO_SENSE page (protocol 4.7): the INA3221's three channels,
+ *     and a move timed on the coprocessor's clock.
+ *
+ *     Registers 0 to 11, four a channel from CH1: the mean and the highest
+ *     current in mA, signed, and the mean and the lowest bus voltage in mV,
+ *     at the load side of the shunt, over the last 50 ms window.  WINDOW
+ *     numbers the windows, modulo 65536; a read does not end one, so a
+ *     reply lost on the link loses nothing.  CH_FLAGS bits 0..2 say a
+ *     channel's window holds readings; bits 4..6 that one of them read the
+ *     top of the range, 163.8 mV across the shunt, which makes that
+ *     channel's mean and highest current lower bounds and not values; bit 7
+ *     the same of the capture's move.
+ *
+ *     CAP_ARM to CAP_BAND_MA are a capture, one frame: CAP_ARM with bit 7
+ *     set, the INA3221 channel in bits 0..1 (1 to 3) and in bits 8..10 the
+ *     output channel (0 to 7) whose next changed command starts the timing;
+ *     the holding level the move ends at, 0 to 32767 mA; the distance from
+ *     the level before the command that counts as movement, and the band
+ *     around the holding level that counts as arrival, each 1 to 32767 mA.
+ *     An arm is the whole frame from CAP_ARM; an arm restarts a capture
+ *     already running.  CAP_ARM written 0 disarms and is never refused,
+ *     alone or at the head of the frame, whose other registers are then not
+ *     stored.  Refused with BAD_VALUE: any other write that is not the
+ *     whole frame, CAP_ARM bits outside the three fields, a value out of
+ *     range, an INA3221 channel SENSE does not read, and an output channel
+ *     that is not a surface rendered by a PWM slot; with NOT_ARMED on a
+ *     disarmed bank.  A bank that stops driving ends a capture that has not
+ *     finished: CAP_ARM reads 0 and CAP_STATE idle.
+ *
+ *     CAP_STATE onwards are read only: the state (link_cap_state_t);
+ *     captures finished, modulo 65536; the time from the PWM frame that
+ *     carries the new pulse to the movement and to the arrival, in 0.1 ms,
+ *     6553.5 ms at most; the highest and the mean filtered current of the
+ *     move in mA, signed, over CAP_SAMPLES samples.
+ *
+ *     Not kept: a coprocessor restart reads 0 throughout. */
+enum {
+    LINK_SS_CH_MEAN_MA  = 0,   /**< channel n's at LINK_SS_CH_STRIDE * (n-1) */
+    LINK_SS_CH_MAX_MA   = 1,
+    LINK_SS_CH_MEAN_MV  = 2,
+    LINK_SS_CH_MIN_MV   = 3,
+    LINK_SS_CH_STRIDE   = 4,
+};
+#define LINK_SS_CHANNELS 3u
+enum {
+    LINK_SS_WINDOW       = 12,
+    LINK_SS_CH_FLAGS     = 13,
+    LINK_SS_CAP_ARM      = 14,
+    LINK_SS_CAP_HOLD_MA  = 15,
+    LINK_SS_CAP_MOVE_MA  = 16,
+    LINK_SS_CAP_BAND_MA  = 17,
+    LINK_SS_CAP_STATE    = 18,  /**< read only from here */
+    LINK_SS_CAP_SEQ      = 19,
+    LINK_SS_CAP_MOVE_T   = 20,  /**< 0.1 ms              */
+    LINK_SS_CAP_ARRIVE_T = 21,  /**< 0.1 ms              */
+    LINK_SS_CAP_PEAK_MA  = 22,
+    LINK_SS_CAP_MEAN_MA  = 23,
+    LINK_SS_CAP_SAMPLES  = 24,
+    LINK_SS_COUNT        = 25,
+};
+/** The registers a capture is armed with, from LINK_SS_CAP_ARM. */
+#define LINK_SS_CAP_FRAME 4u
+
+/* CH_FLAGS' bits, for INA3221 channel 1 to 3. */
+#define LINK_SS_CH_VALID(ch)   ((uint16_t)(1u << ((unsigned)(ch) - 1u)))
+#define LINK_SS_CH_CLIPPED(ch) ((uint16_t)(1u << ((unsigned)(ch) + 3u)))
+#define LINK_SS_CAP_CLIPPED    0x80u
+
+/* CAP_ARM: bit 7, the INA3221 channel (1 to 3) and the output channel
+ * (0 to 7). */
+#define LINK_SS_ARM            0x80u
+#define LINK_SS_ARM_OF(ch, out) \
+    ((uint16_t)(LINK_SS_ARM | ((unsigned)(ch) & 0x03u) \
+                | (((unsigned)(out) & 0x07u) << 8)))
+#define LINK_SS_ARM_CH(r)      ((uint8_t)((r) & 0x03u))
+#define LINK_SS_ARM_OUT(r)     ((uint8_t)(((r) >> 8) & 0x07u))
+/** Every bit CAP_ARM may carry. */
+#define LINK_SS_ARM_BITS       0x0783u
+
+typedef enum {
+    LINK_CAP_IDLE      = 0,
+    LINK_CAP_ARMED     = 1, /**< waiting for the command to change         */
+    LINK_CAP_WAIT_MOVE = 2, /**< the new pulse is out; no movement yet     */
+    LINK_CAP_MOVING    = 3,
+    LINK_CAP_ARRIVED   = 4, /**< back within the band of the holding level */
+    LINK_CAP_AT_STOP   = 5, /**< settled, pushing on an end stop           */
+    LINK_CAP_LATE      = 6, /**< no arrival inside 3000 ms                 */
+} link_cap_state_t;
+
 #define LINK_OS_RANGE_OF(first, count) \
     ((uint16_t)((((unsigned)(first) & 0xFFu) << 8) | ((unsigned)(count) & 0xFFu)))
 #define LINK_OS_FIRST(range) ((uint8_t)((range) >> 8))
@@ -409,6 +630,18 @@ typedef enum {
      * reported its own.
      */
     LINK_BN_TEMP_MOT_OK = 1u << 4,
+    /**
+     * Voltage, current and power are the INA228's (protocol 4.7), not the
+     * ESC's telemetry, which the SENSE page then carries.
+     */
+    LINK_BN_SENSED     = 1u << 5,
+    /**
+     * CHARGE_MAH and ENERGY_DWH are the INA228's accumulators, cleared at
+     * this run's arm, with the part answering throughout (protocol 4.7).
+     * Clear, the two registers count nothing the panel can use, and it
+     * counts its own from the current.
+     */
+    LINK_BN_TOTALS_OK  = 1u << 6,
     /**
      * The numbers are modelled, not measured.  Set by a coprocessor running
      * without a front end and by the panel's own simulator; the panel draws

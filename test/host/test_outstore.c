@@ -9,12 +9,20 @@
  * Both are checked here rather than on the board, because the board has one
  * copy of the sector and a test needs many.
  *
+ * And what a record carries: version 5 everything, and a version 3 or 4
+ * record an earlier build wrote read with what it lacks at its page's
+ * defaults -- the supply off, the current monitors off.
+ *
  * SPDX-License-Identifier: MIT
  */
+
+#include <string.h>
 
 #include "greatest.h"
 
 #include "out_store_map.h"
+#include "out_store_rec.h"
+#include "sense_page.h"
 
 /* A small geometry: the rules are the same at 2 x 16, and a case that has to
  * fill a sector reads better with four slots in it. */
@@ -434,6 +442,90 @@ TEST_CASE(an_unfinished_write_is_rejected)
     CHECK(!out_store_intact(0xFFFFFFFFuL, 0xFFFFFFFFuL, 0u));
 }
 
+/* A configuration whose every register is its own index plus @p base, so a
+ * field read from the wrong place shows. */
+static void numbered(out_store_t *c, uint16_t base)
+{
+    uint16_t *w = (uint16_t *)(void *)c;
+    for (size_t i = 0; i < sizeof(*c) / sizeof(uint16_t); ++i) {
+        w[i] = (uint16_t)(base + i);
+    }
+}
+
+/* Each version appends to the one before: 64 registers of bindings, then
+ * 4 of supply wiring, then 12 of sensor set-up. */
+TEST_CASE(each_record_version_carries_the_one_before_and_more)
+{
+    CHECK_EQ(out_store_cfg_size(3u), 128u);
+    CHECK_EQ(out_store_cfg_size(4u), 136u);
+    CHECK_EQ(out_store_cfg_size(5u), 160u);
+    CHECK_EQ(out_store_cfg_size(OUT_STORE_VERSION), sizeof(out_store_t));
+    CHECK_EQ(out_store_cfg_size(2u), 0u);
+    CHECK_EQ(out_store_cfg_size(6u), 0u);
+    /* A header of 20 bytes and the newest configuration fit one 256-byte
+     * flash page. */
+    CHECK(20u + sizeof(out_store_t) <= 256u);
+}
+
+TEST_CASE(a_version_5_record_reads_back_whole)
+{
+    out_store_t in;
+    out_store_t out;
+    numbered(&in, 0x1000u);
+    memset(&out, 0, sizeof(out));
+    CHECK(out_store_cfg_read(5u, &in, &out));
+    CHECK_EQ(memcmp(&in, &out, sizeof(in)), 0);
+}
+
+TEST_CASE(a_version_4_record_keeps_its_wiring_and_leaves_the_sensors_off)
+{
+    out_store_t in;
+    out_store_t out;
+    numbered(&in, 0x2000u);
+    memset(&out, 0xA5, sizeof(out));
+    CHECK(out_store_cfg_read(4u, &in, &out));
+    CHECK_EQ(memcmp(out.slots, in.slots, sizeof(in.slots)), 0);
+    CHECK_EQ(memcmp(out.chan_cfg, in.chan_cfg, sizeof(in.chan_cfg)), 0);
+    CHECK_EQ(memcmp(out.supply, in.supply, sizeof(in.supply)), 0);
+    uint16_t want[LINK_SN_CONFIG_COUNT];
+    sense_page_defaults(want);
+    CHECK_EQ(memcmp(out.sense, want, sizeof(want)), 0);
+    CHECK_EQ(out.sense[LINK_SN_ENABLE], 0u);
+}
+
+TEST_CASE(a_version_3_record_keeps_its_bindings_and_leaves_the_rest_off)
+{
+    out_store_t in;
+    out_store_t out;
+    numbered(&in, 0x3000u);
+    memset(&out, 0xA5, sizeof(out));
+    CHECK(out_store_cfg_read(3u, &in, &out));
+    CHECK_EQ(memcmp(out.slots, in.slots, sizeof(in.slots)), 0);
+    CHECK_EQ(memcmp(out.chan_cfg, in.chan_cfg, sizeof(in.chan_cfg)), 0);
+    /* The supply as its page starts: disabled, at 19200 baud. */
+    CHECK_EQ(out.supply[LINK_SP_ENABLE], 0u);
+    CHECK_EQ(out.supply[LINK_SP_TX_PIN], 0u);
+    CHECK_EQ(out.supply[LINK_SP_RX_PIN], 0u);
+    CHECK_EQ(out.supply[LINK_SP_BAUD], 1u);
+    CHECK_EQ(out.sense[LINK_SN_ENABLE], 0u);
+    CHECK_EQ(out.sense[LINK_SN_SDA_PIN], 16u);
+}
+
+TEST_CASE(a_record_of_another_version_reads_as_nothing)
+{
+    out_store_t in;
+    out_store_t out;
+    out_store_t was;
+    numbered(&in, 0x4000u);
+    memset(&out, 0x5A, sizeof(out));
+    was = out;
+    CHECK(!out_store_cfg_read(2u, &in, &out));
+    CHECK(!out_store_cfg_read(6u, &in, &out));
+    CHECK(!out_store_cfg_read(5u, NULL, &out));
+    CHECK_EQ(memcmp(&out, &was, sizeof(out)), 0);
+    CHECK(!out_store_cfg_read(5u, &in, NULL));
+}
+
 int main(void)
 {
     RUN(an_unfinished_write_is_rejected);
@@ -452,5 +544,10 @@ int main(void)
     RUN(erasing_ahead_of_time_leaves_no_save_paying_for_one);
     RUN(a_power_cut_during_a_save_leaves_the_record_before_it);
     RUN(a_power_cut_during_an_erase_leaves_the_live_record);
+    RUN(each_record_version_carries_the_one_before_and_more);
+    RUN(a_version_5_record_reads_back_whole);
+    RUN(a_version_4_record_keeps_its_wiring_and_leaves_the_sensors_off);
+    RUN(a_version_3_record_keeps_its_bindings_and_leaves_the_rest_off);
+    RUN(a_record_of_another_version_reads_as_nothing);
     return test_summary("outstore");
 }

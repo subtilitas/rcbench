@@ -37,6 +37,7 @@
 #include "outputs_pages.h"
 #include "pd_uart.h"
 #include "pdmini.h"
+#include "sense_page.h"
 #include "servo_page.h"
 #include "supply_page.h"
 #include "xl2515.h"
@@ -66,7 +67,14 @@ static uint8_t       s_pd_rate;      /* the rate it runs at, 0..6     */
 static bool          s_supply_unsaved;
 /* New wiring taken, the UART to attach once it is saved. */
 static bool          s_supply_attach;
-/* What the board and this file hold, before the supply takes its pins. */
+/*
+ * The SENSE and SERVO_SENSE pages: the current monitors' set-up, kept, and
+ * the pins it holds.  No part is read yet: FLAGS reads no bus open, and
+ * every reading 0.
+ */
+static sense_page_t  s_sense;
+/* What the board and this file hold, before the supply and the sensor bus
+ * take their pins. */
 static uint64_t      s_base_reserved;
 static link_dev_t    s_dev;
 
@@ -177,6 +185,8 @@ static void save_outputs(const iomcu_state_t *s)
     memcpy(cfg.chan_cfg, s->chan_cfg, sizeof(cfg.chan_cfg));
     /* And the supply's wiring, so a restart can still switch a module off. */
     memcpy(cfg.supply, &s_supply.regs[LINK_SP_ENABLE], sizeof(cfg.supply));
+    /* And the sensor bus's set-up, so its pins stay held across one. */
+    memcpy(cfg.sense, &s_sense.sense[LINK_SN_ENABLE], sizeof(cfg.sense));
     out_store_save(&cfg, s_now_ms);
 }
 
@@ -260,6 +270,17 @@ static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 }
 
 /*
+ * What no output may have: the board's own pins, and the ones the supply
+ * and the sensor bus hold now.
+ */
+static void reserve_held(void)
+{
+    outputs_reserve_pins(&s_outputs, s_base_reserved
+                                     | supply_page_pins(&s_supply)
+                                     | sense_page_pins(&s_sense));
+}
+
+/*
  * The supply's pins: reserved from the outputs while it holds them, and the
  * PIO UART claimed for them.  False when no PIO block can reach them or has
  * room.
@@ -268,8 +289,7 @@ static bool supply_rewire(void)
 {
     pd_uart_close();
     s_pd_open = false;
-    outputs_reserve_pins(&s_outputs,
-                         s_base_reserved | supply_page_pins(&s_supply));
+    reserve_held();
     if (!supply_page_enabled(&s_supply)) {
         return true;
     }
@@ -298,8 +318,7 @@ static bool supply_probe(void)
     s_supply_attach = false;
     pd_uart_close();
     s_pd_open = false;
-    outputs_reserve_pins(&s_outputs,
-                         s_base_reserved | supply_page_pins(&s_supply));
+    reserve_held();
     if (!supply_page_enabled(&s_supply)) {
         return true;
     }
@@ -406,6 +425,50 @@ static uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
     return supply_take(off, n, in, false);
 }
 
+static void sense_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    sense_page_read(&s_sense, off, n, out);
+}
+
+/*
+ * The sensor bus's set-up: judged by the page against the bank and the
+ * supply's pins, then its pins reserved and the set-up saved.  Refused
+ * while armed, so a save it asks for is taken at the next disarm like
+ * any other.
+ */
+static uint8_t sense_write(void *ctx, uint8_t off, uint8_t n,
+                           const uint16_t *in)
+{
+    (void)ctx;
+    uint16_t was[LINK_SN_CONFIG_COUNT];
+    memcpy(was, s_sense.sense, sizeof(was));
+    const uint8_t nack = sense_page_write(&s_sense, off, n, in, &s_outputs,
+                                          supply_page_pins(&s_supply));
+    if (nack != 0u) {
+        return nack;
+    }
+    if (memcmp(was, s_sense.sense, sizeof(was)) != 0) {
+        reserve_held();
+        save_outputs(&s_state);
+    }
+    return 0u;
+}
+
+static void servo_sense_read(void *ctx, uint8_t off, uint8_t n,
+                             uint16_t *out)
+{
+    (void)ctx;
+    sense_servo_read(&s_sense, off, n, out);
+}
+
+static uint8_t servo_sense_write(void *ctx, uint8_t off, uint8_t n,
+                                 const uint16_t *in)
+{
+    (void)ctx;
+    return sense_servo_write(&s_sense, off, n, in, &s_outputs);
+}
+
 static void servo_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     (void)ctx;
@@ -445,6 +508,10 @@ static uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
     /* Nor one on a pin the supply holds: the bank would leave it unbound,
      * and a restart would drive it on the module's pin. */
     if (supply_page_slots_check(&s_supply, next) != 0u) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    /* Nor on one the sensor bus holds, for the same reason. */
+    if (sense_page_slots_check(&s_sense, next) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
     /* Nor a slot bound beside a surface at another rate. */
@@ -703,6 +770,9 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_PADS,      LINK_PAD_COUNT, pads_read,      NULL },
     { LINK_PAGE_SERVO,     LINK_SV_COUNT,  servo_read,     servo_write },
     { LINK_PAGE_SUPPLY,    LINK_SP_COUNT,  supply_read,    supply_write },
+    { LINK_PAGE_SENSE,     LINK_SN_COUNT,  sense_read,     sense_write },
+    { LINK_PAGE_SERVO_SENSE, LINK_SS_COUNT, servo_sense_read,
+      servo_sense_write },
 };
 
 /* ------------------------------------------------------------ the heartbeat */
@@ -1160,6 +1230,7 @@ int main(void)
                       | IOMCU_RESERVED_PINS | IOMCU_ABSENT_PINS;
     outputs_reserve_pins(&s_outputs, s_base_reserved);
     supply_page_init(&s_supply);
+    sense_page_init(&s_sense);
     (void)outputs_set_role(&s_outputs, CH_THROTTLE, OUT_ROLE_THROTTLE);
     outputs_chan_cfg_apply(&s_outputs, s_state.chan_cfg);
     outputs_slots_apply(&s_outputs, s_state.slots);
@@ -1191,6 +1262,18 @@ int main(void)
             supply_page_init(&s_supply);
             (void)supply_rewire();
         }
+    }
+    /*
+     * The sensor bus's set-up, through the page's own checks as well: after
+     * the slots and the supply, so a pin either already holds is refused and
+     * the page starts with both parts off.  The bank is not armed yet, so
+     * nothing refuses it for that.
+     */
+    if (have_saved) {
+        (void)sense_page_write(&s_sense, LINK_SN_ENABLE,
+                               (uint8_t)LINK_SN_CONFIG_COUNT, saved.sense,
+                               &s_outputs, supply_page_pins(&s_supply));
+        reserve_held();
     }
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 
@@ -1286,6 +1369,8 @@ int main(void)
                     now);
         /* The sweep's command for this pass, before the step slews to it. */
         (void)servo_page_step(&s_servo, &s_outputs, now);
+        /* A capture ends with the run it was timing. */
+        sense_page_step(&s_sense, outputs_driving(&s_outputs));
         /* The supply: its bytes in, a step of its driver, and the output off
          * whenever the panel's heartbeat is not there to switch it off. */
         /* The page first, so a heartbeat lost this pass reaches the driver
