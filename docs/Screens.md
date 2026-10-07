@@ -266,9 +266,10 @@ through the supply voltages chosen there, its current measured at rest,
 moving and holding, its travel timed, and the voltage at which it stops
 moving. [Servo procedures](Servo.md#automatic-test) gives the method and the
 files. START TEST needs an armed bench and a supply that answers; the line
-under it says ARM FIRST, A STEP IS OUTSIDE THE CAPS (a chosen step above the
-voltage cap in force, checked before any warning opens), LAST REPORT STILL
-WRITING, or why a run was refused, and follows the bench as that changes.
+under it says ARM FIRST, NO STEP CHOSEN, SUPPLY NOT ANSWERING, A STEP IS
+OUTSIDE THE CAPS (a chosen step above the voltage cap in force, checked
+before any warning opens) or LAST REPORT STILL WRITING, and follows the
+bench and the settings as they change.
 It is a two-second hold,
 the gesture OUTPUT ON uses, because a run switches the supply on and moves
 the servo. With HV SERVO on and a step above 6.0 V chosen, a tap opens HV
@@ -286,7 +287,8 @@ trim, travel, reverse or SPEED, touch events going missing, and on the
 supply: see [the list](Servo.md#what-ends-a-run). Once a run is over, whichever screen is up, SUPPLY's set points go back to
 what they were before it. That waits until the run's OFF has been sent, a
 reading taken after that shows the output off, no ON is on its way and
-OUTPUT ON is not being held. Set points changed after the run ended are
+OUTPUT ON is not being held on SERVO or SUPPLY. Set points changed after
+the run ended are
 left as they are.
 
 ![A run](img/servo-run.png)

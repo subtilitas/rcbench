@@ -2184,14 +2184,13 @@ static void test_close(void)
     if (s_test_fp == NULL) {
         return;
     }
-    if (fflush(s_test_fp) != 0 || fsync(fileno(s_test_fp)) != 0) {
-        s_test_failed = true;
-    }
-    if (fclose(s_test_fp) != 0) {
-        s_test_failed = true;
-    }
-    if (s_test_failed && s_test_txt) {
-        s_test_txt_bad = true;
+    bool bad = fflush(s_test_fp) != 0 || fsync(fileno(s_test_fp)) != 0;
+    bad = (fclose(s_test_fp) != 0) || bad;
+    /* This file's failure, not the run's: a CSV that failed does not make
+     * a report written whole a bad one. */
+    if (bad) {
+        s_test_failed  = true;
+        s_test_txt_bad = s_test_txt_bad || s_test_txt;
     }
     s_test_fp = NULL;
     if (!s_test_txt) {

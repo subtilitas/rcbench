@@ -1498,22 +1498,27 @@ static bool test_needs_hv(void)
 
 /* What the run is told: the TEST and LIMITS pages, the servo's profile, and
  * its ends -- the sweep's, RANGE of the travel either side of PULSE CENTRE. */
+static void test_ends(uint16_t *end_lo, uint16_t *end_hi)
+{
+    const sweep_cfg_t sw = sweep_cfg_now();
+    uint16_t lo, hi;
+    cmd_range(&lo, &hi);
+    const float span = (float)(hi - lo);
+    const float k = 2.0f * (float)SWEEP_CENTRE;
+    *end_lo = (uint16_t)lroundf(
+        (float)lo + span * (float)(SWEEP_CENTRE - sw.amplitude) / k);
+    *end_hi = (uint16_t)lroundf(
+        (float)lo + span * (float)(SWEEP_CENTRE + sw.amplitude) / k);
+}
+
 static void test_cfg(servo_test_cfg_t *c)
 {
     memset(c, 0, sizeof(*c));
     c->step_count = test_steps(c->steps_v);
     c->brownout   = settings_get_bool(SET_SERVO_BROWNOUT);
     c->i_limit    = supply_screen_set_i();
-    const sweep_cfg_t sw = sweep_cfg_now();
-    uint16_t lo, hi;
-    cmd_range(&lo, &hi);
-    const float span = (float)(hi - lo);
-    const float k = 2.0f * (float)SWEEP_CENTRE;
     c->centre_us = s.centre_us;
-    c->end_lo_us = (uint16_t)lroundf(
-        (float)lo + span * (float)(SWEEP_CENTRE - sw.amplitude) / k);
-    c->end_hi_us = (uint16_t)lroundf(
-        (float)lo + span * (float)(SWEEP_CENTRE + sw.amplitude) / k);
+    test_ends(&c->end_lo_us, &c->end_hi_us);
     c->settle_ms     = (uint16_t)settings_get_int(SET_SERVO_SETTLE_MS);
     c->dwell_ms      = (uint16_t)settings_get_int(SET_SERVO_DWELL_MS);
     c->by_moves      = settings_get_int(SET_SERVO_LEN_BY) != 0;
@@ -1612,9 +1617,11 @@ static void test_restore_service(void)
         }
         break;
     case RS_OFF_SEEN:
-        /* Not under OUTPUT ON's hold, nor with an ON on its way: the set
-         * point an ON lands at is the one the operator held for. */
-        if (!s.out_down && !supply_screen_output_live()) {
+        /* Not under OUTPUT ON's hold, here or on SUPPLY, nor with an ON
+         * on its way: the set point an ON lands at is the one the operator
+         * held for. */
+        if (!s.out_down && !supply_screen_output_held()
+            && !supply_screen_output_live()) {
             s.test_restore = false;
             supply_screen_put(s.test_v0, s.test_i0);
         }
@@ -1648,10 +1655,23 @@ static int test_blocked(void)
     if (!servo_test_drained(&s.test)) {
         return SERVO_STR_START_BUSY;
     }
-    /* A step the supply's caps do not reach: refused here, before a
-     * warning names a voltage the run would not use. */
+    /* What the engine would refuse, said live: a refusal stays on the
+     * line only while it holds, and goes with the edit that answers it. */
     float v[SERVO_TEST_STEPS_MAX];
     const uint8_t n = test_steps(v);
+    if (n == 0u && !settings_get_bool(SET_SERVO_BROWNOUT)) {
+        return SERVO_STR_START_NO_STEPS;
+    }
+    if (!s.have_sup || !s.sup.online) {
+        return SERVO_STR_START_NO_SUPPLY;
+    }
+    uint16_t lo, hi;
+    test_ends(&lo, &hi);
+    if (!(lo < s.centre_us && s.centre_us < hi)) {
+        return SERVO_STR_START_BAD_ENDS;
+    }
+    /* A step the supply's caps do not reach: refused here, before a
+     * warning names a voltage the run would not use. */
     const supply_caps_t caps = supply_screen_caps();
     for (uint8_t k = 0; k < n; ++k) {
         if (v[k] > caps.v_max + 0.001f || v[k] < caps.v_min - 0.001f) {

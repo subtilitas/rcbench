@@ -655,6 +655,11 @@ void supply_screen_ask_off(void) { post_off(); }
 
 bool supply_screen_off_pending(void) { return s.pending.off; }
 
+bool supply_screen_output_held(void)
+{
+    return s.pressed == P_OUTPUT && !s.press_on;
+}
+
 void supply_screen_limits_changed(void)
 {
     refresh_limits();

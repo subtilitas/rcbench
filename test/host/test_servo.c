@@ -3159,6 +3159,128 @@ TEST_CASE(the_result_names_the_report_only_when_it_was_written)
     free(without);
 }
 
+/* The overlay's pixels, the left card, against @p want's. */
+static bool overlay_same(const gfx_color_t *want)
+{
+    for (int y = 6; y < 426; ++y) {
+        if (memcmp(&fb[(size_t)y * W + 6], &want[(size_t)y * W + 6],
+                   488 * sizeof(gfx_color_t)) != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/* A refusal goes with the change that answers it: NO STEP CHOSEN, then
+ * STEP 4.8 V turned on; SUPPLY NOT ANSWERING, then the supply answering.
+ * The page is then the one drawn with nothing refused. */
+TEST_CASE(a_refusal_goes_with_the_edit_that_answers_it)
+{
+    gfx_color_t *want = malloc(FB_BYTES);
+    for (int k = 0; k < 2; ++k) {
+        /* The page with nothing refused. */
+        bench_fresh();
+        settings_set(SET_SERVO_STEP_60, 0.0f);
+        settings_set(SET_SERVO_BROWNOUT, 0.0f);
+        open_settings();
+        tap(TAB_X(1), TAB_Y);
+        scr->tick(0.02f);
+        servo_invalidate();
+        scr->render(&cv, 0);
+        memcpy(want, fb, FB_BYTES);
+
+        /* Refused, then answered. */
+        bench_fresh();
+        settings_set(SET_SERVO_STEP_60, 0.0f);
+        settings_set(SET_SERVO_BROWNOUT, 0.0f);
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+        st.set_v = supply_screen_set_v();
+        if (k == 0) {
+            settings_set(SET_SERVO_STEP_48, 0.0f);
+        } else {
+            st.samples = ++b.samples;            /* not answering */
+            servo_screen_supply(&st);
+        }
+        hold_start(2.3f);
+        CHECK(!servo_screen_testing());
+        if (k == 0) {
+            settings_set(SET_SERVO_STEP_48, 1.0f);
+        } else {
+            st.online = true;
+            st.samples = ++b.samples;
+            servo_screen_supply(&st);
+        }
+        for (int i = 0; i < 10; ++i) {
+            scr->tick(0.02f);
+        }
+        servo_invalidate();
+        scr->render(&cv, 0);
+        CHECK(overlay_same(want));
+    }
+    free(want);
+}
+
+/* OUTPUT ON held on SUPPLY holds the restore back as a hold on SERVO does:
+ * the ON lands at the set point shown at the press. */
+TEST_CASE(a_hold_on_supplys_output_on_holds_the_restore_back)
+{
+    bench_fresh();
+    short_runs();
+    supply_screen_put(5.5f, 1.5f);
+    hold_start(2.3f);
+    bench_frames(3000u);
+    scr->leave();                                /* ends the run */
+    CHECK(!servo_screen_testing());
+    const float v_end = supply_screen_set_v();
+    /* The OFF goes; then, on SUPPLY, OUTPUT ON pressed (its right rail,
+     * 676, 318) before a sample shows the output off. */
+    supply_cmd_t c;
+    while (supply_screen_poll_cmd(&c)) {
+        b.out = c.off ? false : (c.on ? true : b.out);
+    }
+    supply_screen_set_output(b.out);
+    const ui_screen_t *sup = supply_screen();
+    const touch_event_t down = { .type = TOUCH_EVENT_DOWN,
+                                 .point = { .id = 1, .x = 676, .y = 318,
+                                            .strength = 40 } };
+    sup->event(&down);
+    CHECK(supply_screen_output_held());
+    float on_v = 0.0f;
+    for (uint32_t k = 0; k < 600u; k += 20u) {   /* samples, all off */
+        b.now += 20u;
+        servo_screen_clock(b.now);
+        while (supply_screen_poll_cmd(&c)) {
+            b.out = c.off ? false : (c.on ? true : b.out);
+        }
+        supply_screen_set_output(b.out);
+        if ((int32_t)(b.now - b.next) >= 0) {
+            b.next += 100u;
+            supply_state_t st;
+            memset(&st, 0, sizeof(st));
+            st.online = true;
+            st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+            st.output = b.out;
+            st.set_v = supply_screen_set_v();
+            st.samples = ++b.samples;
+            st.taken_ms = b.now;
+            servo_screen_supply(&st);
+        }
+        servo_screen_service();
+        bench_drain();
+    }
+    CHECK(fabsf(supply_screen_set_v() - v_end) < 1e-4f);    /* held back */
+    const touch_event_t up = { .type = TOUCH_EVENT_UP,
+                               .point = { .id = 1, .x = 676, .y = 318,
+                                          .strength = 40 } };
+    sup->event(&up);                             /* let go early: no ON */
+    CHECK(!supply_screen_output_held());
+    bench_frames_on(600u, true, &on_v);
+    CHECK(fabsf(supply_screen_set_v() - 5.5f) < 1e-4f);
+    CHECK_EQ(on_v, 0.0f);
+}
+
 int main(void)
 {
     RUN(a_touch_on_the_dial_points_the_horn_there);
@@ -3258,5 +3380,7 @@ int main(void)
     RUN(arm_first_goes_once_the_bench_is_armed);
     RUN(a_run_outside_the_caps_is_refused_before_the_warning);
     RUN(the_result_names_the_report_only_when_it_was_written);
+    RUN(a_refusal_goes_with_the_edit_that_answers_it);
+    RUN(a_hold_on_supplys_output_on_holds_the_restore_back);
     return test_summary("servo");
 }

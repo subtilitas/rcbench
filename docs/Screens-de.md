@@ -290,10 +290,10 @@ Bewegung und beim Halten gemessen, seine Stellzeit gemessen, und die
 Spannung gesucht, bei der es sich nicht mehr bewegt. [Servoverfahren](Servo-de.md#automatischer-test)
 beschreibt das Verfahren und die Dateien. START TEST braucht einen scharfen
 Prüfstand und ein Netzteil, das antwortet; die Zeile darunter sagt ARM FIRST,
-A STEP IS OUTSIDE THE CAPS (eine gewählte Stufe über der geltenden
-Spannungsgrenze, geprüft, bevor eine Warnung aufgeht), LAST REPORT STILL
-WRITING oder, warum ein Lauf abgelehnt wurde, und folgt dem Prüfstand, wenn
-sich das ändert. Es ist ein Halten über zwei Sekunden,
+NO STEP CHOSEN, SUPPLY NOT ANSWERING, A STEP IS OUTSIDE THE CAPS (eine
+gewählte Stufe über der geltenden Spannungsgrenze, geprüft, bevor eine
+Warnung aufgeht) oder LAST REPORT STILL WRITING und folgt dem Prüfstand und
+den Einstellungen, wenn sie sich ändern. Es ist ein Halten über zwei Sekunden,
 die Geste von OUTPUT ON, weil ein Lauf das Netzteil einschaltet und das Servo
 bewegt. Ist HV SERVO an und eine Stufe über 6,0 V gewählt, öffnet ein Tippen
 stattdessen HV SERVOS ONLY mit der höchsten Stufe, und der Lauf startet erst,
@@ -312,7 +312,8 @@ und beim Netzteil: siehe [die Liste](Servo-de.md#was-einen-lauf-beendet).
 Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
 Lauf zurück, gleich welcher Screen oben ist. Das wartet, bis das OFF des
 Laufs gesendet ist, ein danach genommener Messwert den Ausgang aus zeigt,
-kein ON unterwegs ist und OUTPUT ON nicht gehalten wird. Sollwerte, die nach
+kein ON unterwegs ist und OUTPUT ON weder auf SERVO noch auf SUPPLY
+gehalten wird. Sollwerte, die nach
 dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 
 ![Ein Lauf](img/servo-run.png)

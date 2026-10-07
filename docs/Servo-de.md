@@ -139,7 +139,10 @@ oder für TEST TIME, wie LENGTH BY sagt, höchstens 1000 je Stufe.
   ein Ende verlässt, an dem es gegen einen Anschlag gedrückt hat.
 - **Ankunft:** nach Bewegung ein Messwert mehr als 0,10 A über dem
   Haltestrom des Zielendes, dann der erste Messwert, der wieder auf 0,05 A
-  (`SERVO_TEST_BAND_A`) daran liegt. Die Halteströme der beiden Enden können
+  (`SERVO_TEST_BAND_A`) daran liegt, auf jeder Seite. Ein Messwert, der
+  stattdessen mehr als 0,05 A unter den Wert fällt, wie nach einem
+  Stromstoß beim Beschleunigen, übergibt die Bewegung der Regel unten. Die
+  Halteströme der beiden Enden können
   sich um mehr als 0,05 A unterscheiden; ein Messwert, der noch auf dem
   Wert des Startendes liegt, oder ein steigender Strom, der den Wert des
   Ziels durchläuft, ist keine Ankunft.
@@ -149,6 +152,10 @@ oder für TEST TIME, wie LENGTH BY sagt, höchstens 1000 je Stufe.
   die nach Bewegung auf 0,05 A am Wert und aneinander liegen. Ein Strom, der
   den Wert des Ziels mit weniger als 0,05 A je Messwert durchsteigt, kann
   dort für eine Ankunft gehalten werden.
+- **Nicht unterscheidbar:** ein Servo, dessen Strom in Bewegung auf 0,05 A
+  am Haltestrom des Ziels liegt, ist von einem, das schon dort steht, nicht
+  zu unterscheiden; eine Bewegung zu diesem Ende endet bei ihren ersten zwei
+  Messwerten.
 - **Stellzeit:** vom Befehl bis zum Messwert der Ankunft.
 - **Strom in Bewegung:** der Mittelwert der Messwerte zwischen Befehl und
   Ankunft; der Spitzenwert ist der höchste davon.
@@ -220,7 +227,8 @@ Prüfstand bleibt scharf, außer das Ende war ein Disarm, STOP oder das
 Verlassen des Screens, die entschärfen. Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
 Lauf zurück, gleich welcher Screen oben ist. Das wartet, bis das OFF des
 Laufs gesendet ist, ein danach genommener Messwert den Ausgang aus zeigt,
-kein ON unterwegs ist und OUTPUT ON nicht gehalten wird. Sollwerte, die nach
+kein ON unterwegs ist und OUTPUT ON weder auf SERVO noch auf SUPPLY
+gehalten wird. Sollwerte, die nach
 dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 
 | Grund im Bericht | Ursache |

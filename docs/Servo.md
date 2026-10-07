@@ -130,7 +130,10 @@ end to end, MOVEMENTS of them or for TEST TIME, as LENGTH BY says, at most
   an end it was pushing on.
 - **Arrival:** after movement, a reading more than 0.10 A above the
   destination end's holding level, then the first reading back within
-  0.05 A (`SERVO_TEST_BAND_A`) of it. The two ends' holding levels can
+  0.05 A (`SERVO_TEST_BAND_A`) of it, on either side. A reading that falls
+  more than 0.05 A below the level instead, as after a burst of current
+  while the servo accelerates, hands the move to the rule below. The two
+  ends' holding levels can
   differ by more than 0.05 A, so a reading still at the start end's level,
   or a rising current passing the destination's level, is not an arrival.
 - **Arrival at an end held harder than the servo moves**, an end pushing on
@@ -138,6 +141,9 @@ end to end, MOVEMENTS of them or for TEST TIME, as LENGTH BY says, at most
   of two readings in a row, after movement, within 0.05 A of the level and
   of each other. A current that climbs through the destination's level by
   less than 0.05 A a reading can be taken for an arrival there.
+- **Not told apart:** a servo whose moving current lies within 0.05 A of the
+  destination's holding current cannot be told from one already there; a
+  move to that end is timed at its first two readings.
 - **Travel time:** from the command to the arrival's reading.
 - **Moving current:** the mean of the readings between the command and the
   arrival; the peak is the highest of them.
@@ -204,7 +210,8 @@ unless the ending was a disarm, STOP or leaving the screen, which disarm.
 Once a run is over, whichever screen is up, SUPPLY's set points go back to
 what they were before it. That waits until the run's OFF has been sent, a
 reading taken after that shows the output off, no ON is on its way and
-OUTPUT ON is not being held. Set points changed after the run ended are
+OUTPUT ON is not being held on SERVO or SUPPLY. Set points changed after
+the run ended are
 left as they are.
 
 | Reason in the report | Cause |

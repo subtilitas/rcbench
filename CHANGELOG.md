@@ -30,7 +30,8 @@ history is in git.
   above STALL AT end a run with the output off and the report marked
   ABORTED. Afterwards, whichever screen is up, SUPPLY's set points go back
   to their values before the run, once its OFF has gone, a reading after it
-  shows the output off and OUTPUT ON is not held; not if they were changed
+  shows the output off and OUTPUT ON is held on neither SERVO nor SUPPLY;
+  not if they were changed
   since. A number carried by a `BENCHnnn.TXT` alone is not reused, and the
   log viewer's DELETE removes a run's report with it. Progress and the
   result show on the left card. The engine is

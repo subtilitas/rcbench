@@ -220,6 +220,7 @@ void servo_screen_test_files(int number, bool report);
  * Every frame, whichever screen is up: a run's end is seen, and SUPPLY's
  * set points go back to what they were before it once its OFF has gone, a
  * sample taken after that shows the output off, no ON is on its way and
- * OUTPUT ON is not being held -- unless they were set since it ended.
+ * OUTPUT ON is not being held, here or on SUPPLY -- unless they were set
+ * since it ended.
  */
 void servo_screen_service(void);
