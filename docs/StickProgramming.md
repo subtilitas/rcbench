@@ -359,7 +359,7 @@ and `greatplanes-electrifly-c-series`. 10 run:
 | `kontronik-pix` | button marked Taster after 2 s or the tones | none |
 | `kontronik-smile` | button pressed and let go after 2 s or the tones | mode 6 |
 | `kontronik-star-line` | jumper on before the power-up, off after 5 s or the tones | mode 6 |
-| `kontronik-sun-plus` | button after the tones: 2 s, 5 s for modes 4 to 6 | modes 2, 3, 5, 6, 9 |
+| `kontronik-sun-plus` | button after the tones: 2 s, 5 s for modes 4 to 6 | mode 6 |
 
 The other 14 show their steps and name the reason on their row:
 `manual step` for `kontronik-3p`, `kontronik-cyber-line`,
@@ -674,9 +674,13 @@ engine's stores no value other than the one asked for.
   bench does not see the confirmation or the lock; DONE is the operator's
   word that the confirmation has ended.
 - Which values a Kontronik ESC programs from the middle is read from the
-  manuals; for JAZZ modes 6 and 8, KONTROL-X mode 3 and SUN PLUS modes 2, 3,
-  5, 6 and 9 the manual does not place the position, and the values are
-  powered up at MID as if it were the middle. The add-on modes (7, 9) are programmed
+  manuals. For JAZZ modes 6 and 8, KONTROL-X mode 3 and SUN PLUS mode 6
+  the manual does not place the position, and the values are powered up at
+  MID as if it were the middle. SUN PLUS modes 2, 3, 5 and 9 start at the
+  manual's neutral position, which its English text places at the back for
+  mode 4 ("neutral position (back position)", Kontronik_Sun_Plus.pdf p.12)
+  and which mode 5 sets on a two-position switch (p.13); they are powered
+  up at MIN on that reading. The add-on modes (7, 9) are programmed
   from the back; whether they store the stick range again on an ESC set to
   a car mode is not stated.
 - A mode list with a gap never has the numbers after the gap, nor the

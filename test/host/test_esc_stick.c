@@ -2003,6 +2003,35 @@ TEST_CASE(a_value_waits_its_own_entry_time)
     CHECK_EQ(esc_stick_change_entry_ms(NULL, NULL, NULL), 0u);
 }
 
+/* SUN PLUS: the manual's neutral position is the back (mode 4, "neutral
+ * position (back position)", p.12 EN; mode 5's two-position switch, p.13
+ * EN), so every mode powers up at MIN but mode 6, the car mode, whose
+ * brake lies below its neutral: MID. */
+TEST_CASE(sun_plus_powers_up_at_the_back_but_its_car_mode)
+{
+    rig("kontronik-sun-plus");
+    for (uint8_t m = 1; m <= 9; ++m) {
+        const esc_stick_change_t c = change(1, m);
+        if (c.value == 255) {
+            continue;           /* modes 7 and 8 are not in the list */
+        }
+        const esc_throttle_t want = (m == 6) ? ESC_THR_MID : ESC_THR_MIN;
+        if (esc_stick_change_entry(r.p, &c) != want) {
+            T_FAIL("mode %u powers up at %d", m,
+                   (int)esc_stick_change_entry(r.p, &c));
+        }
+    }
+    esc_stick_change_t c[1] = { change(1, 5) };
+    CHECK(start(c, 1));
+    run_until_asked(20000u);
+    CHECK(r.e.hand_menu);
+    CHECK(r.on_n >= 1u && r.on_pct[0] == ESC_STICK_PCT_MIN);
+    act(true);
+    run_for(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 5);
+}
+
 /* A two-stage power-up takes one entry time for every change; a value
  * whose time is under the settle time cannot have a floor. */
 TEST_CASE(an_entry_time_that_cannot_work_is_refused)
@@ -2589,6 +2618,7 @@ int main(void)
     RUN(each_power_up_enters_from_the_position_of_its_change);
     RUN(a_power_up_position_that_cannot_work_is_refused);
     RUN(a_value_waits_its_own_entry_time);
+    RUN(sun_plus_powers_up_at_the_back_but_its_car_mode);
     RUN(an_entry_time_that_cannot_work_is_refused);
     RUN(shared_entry_times_compare_what_the_run_waits);
     RUN(a_run_started_with_the_output_on_asks_nothing);

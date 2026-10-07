@@ -2753,12 +2753,12 @@ static const esc_model_t p_kontronik_sun_plus_models[] = {
 };
 static const esc_value_t p_kontronik_sun_plus_v0[] = {
     { "APM: reset, EMK brake and undervoltage cutoff on, stick range learned at every power-up", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Glider: brake and undervoltage cutoff on, optional separate motor-off position", 2u, false, ESC_THR_MID, 0u, 0u, { 0 } },
-    { "Motor plane / boat: brake off, undervoltage reduction instead of cutoff", 3u, false, ESC_THR_MID, 0u, 0u, { 0 } },
+    { "Glider: brake and undervoltage cutoff on, optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Motor plane / boat: brake off, undervoltage reduction instead of cutoff", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Helicopter: throttle compensation for falling battery voltage, linear throttle curve", 4u, false, ESC_THR_NONE, 5000u, 0u, { 0 } },
-    { "Competition: maximum brake response, undervoltage and overtemperature cutoff off", 5u, false, ESC_THR_MID, 5000u, 0u, { 0 } },
+    { "Competition: maximum brake response, undervoltage and overtemperature cutoff off", 5u, false, ESC_THR_NONE, 5000u, 0u, { 0 } },
     { "Car: proportional brake, undervoltage cutoff off", 6u, false, ESC_THR_MID, 5000u, 1u, { ESC_THR_MIN } },
-    { "LiPo undervoltage detection (2.7 to 3 V per cell instead of 0.7 to 0.8 V)", 9u, false, ESC_THR_MID, 0u, 0u, { 0 } },
+    { "LiPo undervoltage detection (2.7 to 3 V per cell instead of 0.7 to 0.8 V)", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_sun_plus_manual[] = {
     { ESC_MANUAL_BEFORE_MENU, "Press the button after the tone sequence: 2 s for modes 1 to 3, 5 s for modes 4 to 6.", 0u, "Taster nach der Tonfolge dr\303\274cken: 2 s bei Modi 1 bis 3, 5 s bei Modi 4 bis 6.", true },

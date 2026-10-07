@@ -117,13 +117,11 @@
         },
         {
           "number": 2,
-          "name": "Glider: brake and undervoltage cutoff on, optional separate motor-off position",
-          "entry_throttle": "mid"
+          "name": "Glider: brake and undervoltage cutoff on, optional separate motor-off position"
         },
         {
           "number": 3,
-          "name": "Motor plane / boat: brake off, undervoltage reduction instead of cutoff",
-          "entry_throttle": "mid"
+          "name": "Motor plane / boat: brake off, undervoltage reduction instead of cutoff"
         },
         {
           "number": 4,
@@ -133,7 +131,6 @@
         {
           "number": 5,
           "name": "Competition: maximum brake response, undervoltage and overtemperature cutoff off",
-          "entry_throttle": "mid",
           "entry_hold_ms": 5000
         },
         {
@@ -147,8 +144,7 @@
         },
         {
           "number": 9,
-          "name": "LiPo undervoltage detection (2.7 to 3 V per cell instead of 0.7 to 0.8 V)",
-          "entry_throttle": "mid"
+          "name": "LiPo undervoltage detection (2.7 to 3 V per cell instead of 0.7 to 0.8 V)"
         }
       ],
       "applies_to": null,
@@ -169,7 +165,7 @@
   "notes": [
     "INDEX.csv lists 'ProgCard'; the manual names the ProgCARD (order no. 9305) for individual parameters.",
     "The motor drive is brushed ('Kollektormotoren'), 3-wire inputs only.",
-    "Modes 2, 3, 5, 6 and 9 start at 'Neutralstellung', which the manual does not place (Kontronik_Sun_Plus.pdf p.4-7); mode 6 has a separate brake step after it. They carry entry_throttle mid, so stick programming does not store them from the brake position. Mode 4's English text gives 'neutral position (back position)'.",
+    "Modes 2 to 6 and 9 start at 'Neutralstellung' (Kontronik_Sun_Plus.pdf p.4-7). The English text places it for mode 4 as 'neutral position (back position)' (p.12 EN), and mode 5 sets a two-position motor switch, which has no middle, to it (p.13 EN): neutral is read as the back, and modes 2, 3, 5 and 9 power up at MIN. Mode 6, the car mode, moves to the EMF-brake position after full throttle (p.13 EN), a brake below neutral, so it carries entry_throttle mid; the manual does not place its neutral.",
     "Modes 4, 5 and 6 wait 5 s for the ascending tones before the button (Kontronik_Sun_Plus.pdf p.5-6 DE, p.12-13 EN), modes 1, 2, 3 and 9 wait 2 s: entry_hold_ms 5000 on modes 4 to 6, the scheme's 2000 ms for the rest.",
     "Mode 6 moves the stick to the brake position after the full-throttle selection (Kontronik_Sun_Plus.pdf p.6-7 DE, p.13 EN): after_select min, made STORE after the selection; the manual gives no time."
   ]

@@ -394,7 +394,7 @@ und `greatplanes-electrifly-c-series`. 10 laufen:
 | `kontronik-pix` | Taster mit der Aufschrift Taster nach 2 s oder den Tönen | keine |
 | `kontronik-smile` | Taster drücken und loslassen nach 2 s oder den Tönen | Modus 6 |
 | `kontronik-star-line` | Jumper vor dem Einschalten auf, nach 5 s oder den Tönen ab | Modus 6 |
-| `kontronik-sun-plus` | Taster nach den Tönen: 2 s, 5 s bei Modi 4 bis 6 | Modi 2, 3, 5, 6, 9 |
+| `kontronik-sun-plus` | Taster nach den Tönen: 2 s, 5 s bei Modi 4 bis 6 | Modus 6 |
 
 Die anderen 14 zeigen ihre Schritte und nennen den Grund in ihrer Zeile:
 `Handgriff` bei `kontronik-3p`, `kontronik-cyber-line`,
@@ -742,9 +742,14 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   Prüfstand sieht weder die Bestätigung noch die Sperre; ERLEDIGT ist das
   Wort des Bedieners, dass die Bestätigung zu Ende ist.
 - Welche Werte ein Kontronik-ESC aus der Mitte programmiert, ist den
-  Handbüchern entnommen; für JAZZ-Modi 6 und 8, KONTROL-X-Modus 3 und
-  SUN-PLUS-Modi 2, 3, 5, 6 und 9 nennt das Handbuch die Stellung nicht, und
-  die Werte werden bei MID eingeschaltet, als wäre es die Mitte. Die Zusatzmodi (7, 9)
+  Handbüchern entnommen. Für JAZZ-Modi 6 und 8, KONTROL-X-Modus 3 und
+  SUN-PLUS-Modus 6 nennt das Handbuch die Stellung nicht, und die Werte
+  werden bei MID eingeschaltet, als wäre es die Mitte. SUN-PLUS-Modi 2, 3,
+  5 und 9 beginnen in der Neutralstellung des Handbuchs, die sein
+  englischer Text für Modus 4 hinten verortet ("neutral position (back
+  position)", Kontronik_Sun_Plus.pdf S. 12) und die Modus 5 an einem
+  Zwei-Stellungs-Schalter einstellt (S. 13); sie werden nach dieser Lesart
+  bei MIN eingeschaltet. Die Zusatzmodi (7, 9)
   werden von hinten programmiert; ob sie an einem ESC im Car-Modus den
   Knüppelweg neu speichern, steht nicht fest.
 - Bei einer Modusliste mit Lücke wird auf die Nummern nach der Lücke und
