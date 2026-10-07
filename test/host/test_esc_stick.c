@@ -1867,6 +1867,51 @@ TEST_CASE(an_entry_time_that_cannot_work_is_refused)
     CHECK_STR_EQ(why, "ENTRY above 500 ms");
 }
 
+/* Values asking 2 s and 3 s, with a button held 5 s at power-up: the run
+ * waits 5 s for either, so they share a power-up.  The check compares what
+ * the run waits, not what the values ask. */
+TEST_CASE(shared_entry_times_compare_what_the_run_waits)
+{
+    const char *why = NULL;
+    rig("hobbywing-flyfun-8item");
+    static esc_profile_t two;
+    static esc_item_t two_items[2];
+    static esc_value_t v0[2], v1[2];
+    static const esc_manual_t hold[] = {
+        { ESC_MANUAL_AT_POWER_UP, "Hold SET.", 5000u },
+    };
+    two = *r.p;
+    memcpy(two_items, r.p->items, sizeof(two_items));
+    memcpy(v0, r.p->items[0].values, sizeof(v0));
+    memcpy(v1, r.p->items[1].values, sizeof(v1));
+    v0[1].entry_hold_ms = 2000u;
+    v1[1].entry_hold_ms = 3000u;
+    two_items[0].values = v0;
+    two_items[1].values = v1;
+    two.items = two_items;
+    two.item_count = 2;
+    /* A hand at a powered ESC is asked for at MIN. */
+    two.entry_throttle = ESC_THR_MIN;
+    two.select_throttle = ESC_THR_MAX;
+    two.value_select_throttle = ESC_THR_MID;
+    two.listen_throttle = ESC_THR_NONE;
+    two.automatable = ESC_AUTO_ASSISTED;
+    two.manual = hold;
+    two.manual_count = 1;
+    CHECK_EQ(esc_stick_kind(&two, NULL), ESC_STICK_KIND_TWO_STAGE);
+    esc_stick_change_t c[2] = { { 0u, 1u }, { 1u, 1u } };
+    CHECK_EQ(esc_stick_change_entry_ms(&two, &c[0], &r.t), 5000u);
+    CHECK_EQ(esc_stick_change_entry_ms(&two, &c[1], &r.t), 5000u);
+    CHECK(esc_stick_check(&two, c, 2, &r.t, &why));
+    /* A hold shorter than one of them: 3 s against 2.5 s, refused. */
+    static const esc_manual_t short_hold[] = {
+        { ESC_MANUAL_AT_POWER_UP, "Hold SET.", 2500u },
+    };
+    two.manual = short_hold;
+    CHECK(!esc_stick_check(&two, c, 2, &r.t, &why));
+    CHECK_STR_EQ(why, "changes need different entry times");
+}
+
 /* PIX mode 2: full throttle selects, then the stick goes to the brake
  * and the ESC answers before the mode is stored.  The simulated ESC keeps
  * nothing without that move, so a run that skipped it would fail here. */
@@ -2138,6 +2183,7 @@ int main(void)
     RUN(a_power_up_position_that_cannot_work_is_refused);
     RUN(a_value_waits_its_own_entry_time);
     RUN(an_entry_time_that_cannot_work_is_refused);
+    RUN(shared_entry_times_compare_what_the_run_waits);
     RUN(a_value_makes_its_moves_after_the_selection);
     RUN(a_car_mode_selects_at_full_and_stores_at_the_brake);
     return test_summary("esc_stick");

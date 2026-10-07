@@ -154,7 +154,9 @@ output off with the current down (`ESC_STICK_OFF_MA`,
   changes in the order the ESC sounds them, so all changes of a run share
   one power-up. A run whose changes need different positions is refused
   with `changes need different power-up positions`, and one whose changes
-  need different entry times (`entry_hold_ms`) with `changes need
+  need different entry times -- what the run waits: the value's
+  `entry_hold_ms` or the entry's, and no less than the longest
+  `at_power_up` hold -- with `changes need
   different entry times`; neither is reordered. No profile of record has
   such a mix.
 - Where the profile names no rest position the stick rests at the power-up

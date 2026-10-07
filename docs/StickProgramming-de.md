@@ -171,7 +171,9 @@ Einstieg.
   alle Änderungen eines Laufs teilen sich deshalb ein Einschalten. Ein Lauf,
   dessen Änderungen verschiedene Stellungen brauchen, wird abgelehnt, mit
   `Änderungen brauchen verschiedene Einschaltstellungen`, und einer, dessen
-  Änderungen verschiedene Einstiegszeiten (`entry_hold_ms`) brauchen, mit
+  Änderungen verschiedene Einstiegszeiten brauchen -- was der Lauf wartet:
+  das `entry_hold_ms` des Werts oder das des Einstiegs, und nicht kürzer
+  als das längste Halten `at_power_up` --, mit
   `Änderungen brauchen verschiedene Einstiegszeiten`; keiner wird
   umsortiert. Kein Profil im Satz hat eine solche Mischung.
 - Wo das Profil keine Ruhestellung nennt, ruht der Knüppel in der

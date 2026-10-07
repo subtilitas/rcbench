@@ -308,9 +308,10 @@ static bool hand_powered(const esc_profile_t *p)
  *     its own.
  *   - The rest is that position where the profile names none, and the
  *     select move has to differ from it.
- *   - A power-up's entry time is its value's entry_hold_ms where the
- *     manual gives one, else the timing's entry; the changes a power-up
- *     shares share one.  A move to a named rest needs a time the profile
+ *   - A power-up's entry time is what the run waits
+ *     (esc_stick_change_entry_ms()): its value's entry_hold_ms where the
+ *     manual gives one, else the timing's entry, and no less than the
+ *     longest at_power_up hold; the changes a power-up shares share one.  A move to a named rest needs a time the profile
  *     or the value states.
  *   - A hand at a powered ESC with the stick at MAX is not asked for.  MID
  *     is, where the value names it: the manual's motor-off in the middle.
@@ -1010,13 +1011,22 @@ uint32_t esc_stick_change_entry_ms(const esc_profile_t *p,
                                    const esc_stick_change_t *c,
                                    const esc_stick_timing_t *t)
 {
-    const uint32_t entry = (t != NULL) ? t->entry_ms : 0u;
-    if (p == NULL || c == NULL || c->item >= p->item_count
-        || c->value >= p->items[c->item].value_count) {
-        return entry;
+    uint32_t ms = (t != NULL) ? t->entry_ms : 0u;
+    if (p == NULL) {
+        return ms;
     }
-    const uint32_t v = p->items[c->item].values[c->value].entry_hold_ms;
-    return (v != 0u) ? v : entry;
+    if (c != NULL && c->item < p->item_count
+        && c->value < p->items[c->item].value_count
+        && p->items[c->item].values[c->value].entry_hold_ms != 0u) {
+        ms = p->items[c->item].values[c->value].entry_hold_ms;
+    }
+    for (unsigned i = 0; p->manual != NULL && i < p->manual_count; ++i) {
+        const esc_manual_t *m = &p->manual[i];
+        if (m->when == ESC_MANUAL_AT_POWER_UP && m->hold_ms > ms) {
+            ms = m->hold_ms;
+        }
+    }
+    return ms;
 }
 
 uint32_t esc_stick_entry_ms(const esc_stick_t *e)
@@ -1025,21 +1035,12 @@ uint32_t esc_stick_entry_ms(const esc_stick_t *e)
         return 0u;
     }
     /* The first change still to make is this power-up's (next_entry()). */
-    uint32_t ms = e->t.entry_ms;
     for (uint8_t i = 0; i < e->n; ++i) {
         if (!e->done[i]) {
-            ms = esc_stick_change_entry_ms(e->p, &e->ch[i], &e->t);
-            break;
+            return esc_stick_change_entry_ms(e->p, &e->ch[i], &e->t);
         }
     }
-    for (unsigned i = 0; e->p->manual != NULL && i < e->p->manual_count;
-         ++i) {
-        const esc_manual_t *m = &e->p->manual[i];
-        if (m->when == ESC_MANUAL_AT_POWER_UP && m->hold_ms > ms) {
-            ms = m->hold_ms;
-        }
-    }
-    return ms;
+    return esc_stick_change_entry_ms(e->p, NULL, &e->t);
 }
 
 bool esc_stick_hand_ready(const esc_stick_t *e)
