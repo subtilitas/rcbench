@@ -154,6 +154,9 @@ static void dial_at(float deg, int r, int *x, int *y)
 /* The sweep command last taken, as the panel would give it back with the
  * acknowledgement of its write. */
 static uint16_t g_sweep_seq;
+/* And the pause last taken, as the panel gives it back when it lets the
+ * pause go. */
+static uint16_t g_hold_seq;
 
 static servo_cmd_t last_cmd(void)
 {
@@ -161,6 +164,9 @@ static servo_cmd_t last_cmd(void)
     servo_screen_take(&c);
     if (c.kind == SERVO_CMD_SWEEP) {
         g_sweep_seq = c.start_seq;
+    }
+    if (c.kind == SERVO_CMD_HOLD) {
+        g_hold_seq = c.pause_seq;
     }
     return c;
 }
@@ -1577,7 +1583,7 @@ TEST_CASE(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave)
     frames(0.5f);
     (void)pause_go();
     CHECK(servo_screen_commanded() > 1800u);
-    servo_screen_released();
+    servo_screen_released(g_hold_seq);
     CHECK_EQ(servo_screen_commanded(), 1500u);
     (void)last_cmd();
     choose_type(1);                            /* not driving: a rest */
@@ -2351,7 +2357,7 @@ TEST_CASE(a_resume_of_a_let_go_pause_is_dropped)
     servo_pause_end_t ended = { true, hold.pause_seq };
     CHECK(servo_cmd_stale(&ended, &resume));
     CHECK(servo_screen_sweeping());            /* waiting for the resume */
-    servo_screen_released();                   /* the late HOLD let go */
+    servo_screen_released(g_hold_seq);                   /* the late HOLD let go */
     CHECK(!servo_screen_sweeping());
     CHECK(!servo_screen_paused());
     frames(0.5f);
@@ -2394,7 +2400,7 @@ TEST_CASE(commands_from_a_let_go_pause_are_stale)
                                  .from_pause = hold.pause_seq };
     CHECK(!servo_cmd_stale(&ended, &disarm));
     CHECK(ended.on);                           /* not a drive command */
-    servo_screen_released();
+    servo_screen_released(g_hold_seq);
     tap(ARM_X + 40, BTN_Y);                    /* CENTRE, after the pause */
     const servo_cmd_t centre = last_cmd();
     CHECK_EQ(centre.kind, SERVO_CMD_CENTRE);
@@ -2404,6 +2410,118 @@ TEST_CASE(commands_from_a_let_go_pause_are_stale)
     CHECK(!servo_cmd_stale(&ended, &pos));     /* a reused number later */
     CHECK(!servo_cmd_stale(NULL, &pos));
     CHECK(!servo_cmd_stale(&ended, NULL));
+}
+
+/*
+ * The let-go of pause N, with the queue behind its late HOLD in each order
+ * the screen can leave: the panel drops exactly the commands that still
+ * derive from N, and the screen takes the let-go only while it is still on
+ * N -- so once the queue drains, the surfaces do what the screen shows.
+ */
+static void paused_on_n(servo_cmd_t *hold)
+{
+    fresh();
+    servo_screen_set_armed(true);
+    servo_screen_set_sweep(true);
+    sweep_go();
+    frames(0.3f);
+    *hold = pause_go();                        /* its ack is late */
+}
+
+/* 1: PAUSED and then SPEED in one pass: the resume, said again at the new
+ * SPEED, still derives from N and is dropped with it; the screen stops. */
+TEST_CASE(a_resume_said_again_keeps_its_pause)
+{
+    servo_cmd_t hold;
+    paused_on_n(&hold);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED ... */
+    tap(ARM_X + 1, SPEED_Y);                   /* ... SPEED, same pass */
+    const servo_cmd_t c = last_cmd();
+    CHECK_EQ(c.kind, SERVO_CMD_SWEEP);
+    CHECK(c.resume);
+    CHECK_EQ(c.from_pause, hold.pause_seq);
+    servo_pause_end_t ended = { true, hold.pause_seq };
+    CHECK(servo_cmd_stale(&ended, &c));
+    servo_screen_released(hold.pause_seq);
+    CHECK(!servo_screen_sweeping());
+    CHECK(!servo_screen_paused());
+}
+
+/* 2a: a drag after PAUSE leaves N: its POSITION is sent and holds the
+ * servo there, and the screen keeps showing it driven there. */
+TEST_CASE(a_drag_after_pause_outlives_the_let_go)
+{
+    servo_cmd_t hold;
+    paused_on_n(&hold);
+    int x, y;
+    dial_at(30.0f, ARC_R - 20, &x, &y);
+    tap(x, y);
+    const servo_cmd_t pos = last_cmd();
+    CHECK_EQ(pos.kind, SERVO_CMD_POSITION);
+    CHECK_EQ(pos.from_pause, 0u);
+    servo_pause_end_t ended = { true, hold.pause_seq };
+    CHECK(!servo_cmd_stale(&ended, &pos));     /* sent, and retires it */
+    const uint16_t at = servo_screen_commanded();
+    servo_screen_released(hold.pause_seq);
+    CHECK_EQ(servo_screen_commanded(), at);    /* still driven there */
+    open_settings();
+    tap(TRIM_UP_X, ROW_Y(3));
+    const servo_cmd_t again = last_cmd();
+    CHECK_EQ(again.kind, SERVO_CMD_POSITION);  /* the drag, said again */
+    CHECK_EQ(again.value_us, at + 5u);
+    close_settings();
+
+    /* CENTRE the same way. */
+    paused_on_n(&hold);
+    tap(ARM_X + 40, BTN_Y);
+    const servo_cmd_t centre = last_cmd();
+    CHECK_EQ(centre.kind, SERVO_CMD_CENTRE);
+    CHECK_EQ(centre.from_pause, 0u);
+    servo_screen_released(hold.pause_seq);
+    CHECK_EQ(servo_screen_commanded(), 1500u);
+}
+
+/* 2b: SPEED moves while a taken resume waits: both the resume and the
+ * SWEEP said again derive from N and are dropped; the screen stops. */
+TEST_CASE(a_resume_and_its_repeat_go_with_the_let_go)
+{
+    servo_cmd_t hold;
+    paused_on_n(&hold);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED */
+    const servo_cmd_t resume = last_cmd();
+    tap(ARM_X + 1, SPEED_Y);                   /* SPEED, after it was taken */
+    const servo_cmd_t repeat = last_cmd();
+    CHECK_EQ(repeat.kind, SERVO_CMD_SWEEP);
+    CHECK_EQ(resume.from_pause, hold.pause_seq);
+    CHECK_EQ(repeat.from_pause, hold.pause_seq);
+    servo_pause_end_t ended = { true, hold.pause_seq };
+    CHECK(servo_cmd_stale(&ended, &resume));
+    CHECK(servo_cmd_stale(&ended, &repeat));
+    servo_screen_released(hold.pause_seq);
+    CHECK(!servo_screen_sweeping());
+}
+
+/* 2c: PAUSED, PAUSE, PAUSED while HOLD N is out: the resume of N is
+ * dropped, HOLD N+1 and its resume are sent, and the screen, on N+1 now,
+ * takes no let-go of N and waits for that resume's start. */
+TEST_CASE(a_later_pause_outlives_the_let_go)
+{
+    servo_cmd_t hold;
+    paused_on_n(&hold);
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED */
+    const servo_cmd_t r1 = last_cmd();
+    const servo_cmd_t h2 = pause_go();         /* PAUSE: N+1 */
+    tap(SWEEP_X, BTN_Y);                       /* PAUSED */
+    const servo_cmd_t r2 = last_cmd();
+    servo_pause_end_t ended = { true, hold.pause_seq };
+    CHECK(servo_cmd_stale(&ended, &r1));
+    CHECK(!servo_cmd_stale(&ended, &h2));      /* sent, and retires it */
+    CHECK(!servo_cmd_stale(&ended, &r2));
+    servo_screen_released(hold.pause_seq);
+    CHECK(servo_screen_sweeping());            /* waiting for N+1's resume */
+    acked(0u, SERVO_SWEEP_FROM_REST, 0u);
+    frames(0.25f);
+    CHECK(servo_screen_commanded() > 1760u);   /* sweeping, as the servo */
 }
 
 /*
@@ -2521,7 +2639,7 @@ TEST_CASE(a_released_pause_says_no_drawn_angle)
     frames(0.3f);
     (void)pause_go();
     frames(0.2f);                              /* drawn on, not acked */
-    servo_screen_released();
+    servo_screen_released(g_hold_seq);
     CHECK(!servo_screen_paused());
     open_settings();
     tap(TRIM_UP_X, ROW_Y(3));
@@ -2894,7 +3012,7 @@ TEST_CASE(a_pause_ends_where_a_hold_ended)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
 
     paused_sweep();
-    servo_screen_released();                   /* unrepeated for 500 ms */
+    servo_screen_released(g_hold_seq);                   /* unrepeated for 500 ms */
     CHECK(!servo_screen_paused());
 
     paused_sweep();
@@ -4691,6 +4809,10 @@ int main(void)
     RUN(a_resume_of_a_let_go_pause_is_dropped);
     RUN(a_resume_origin_is_used_once);
     RUN(commands_from_a_let_go_pause_are_stale);
+    RUN(a_resume_said_again_keeps_its_pause);
+    RUN(a_drag_after_pause_outlives_the_let_go);
+    RUN(a_resume_and_its_repeat_go_with_the_let_go);
+    RUN(a_later_pause_outlives_the_let_go);
     RUN(an_undone_pair_keeps_the_resume_waiting);
     RUN(a_refused_sweep_leaves_nothing_driven);
     RUN(an_early_resume_keeps_the_reading_at_the_hold);

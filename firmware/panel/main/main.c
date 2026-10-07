@@ -4066,6 +4066,7 @@ static bool        s_servo_sweeping;
 static bool        s_servo_holding;      /* LINK_SV_HOLD in force there */
 static uint32_t    s_servo_hold_ms;      /* when the far end last took it */
 static atomic_bool s_servo_hold_lost;    /* for the screen: it let go */
+static atomic_uint s_servo_hold_lost_seq; /* of this pause */
 static bool        s_servo_sweep_unknown;
 static atomic_bool s_servo_sweep_able;   /* for the screen's SWEEP */
 static uint16_t    s_servo_minor;        /* its protocol minor: 6 resumes */
@@ -4139,6 +4140,7 @@ static bool write_servo(const servo_cmd_t sv)
             s_servo_holding      = false;
             s_servo_held.kind    = SERVO_CMD_NONE;
             s_servo_release_owed = true;
+            atomic_store(&s_servo_hold_lost_seq, (unsigned)sv.pause_seq);
             atomic_store(&s_servo_hold_lost, true);
             return true;
         }
@@ -4189,6 +4191,7 @@ static bool write_servo(const servo_cmd_t sv)
             servo_phase_stopped(&s_far_phase);
             s_servo_held.kind    = SERVO_CMD_NONE;
             s_servo_release_owed = true;
+            atomic_store(&s_servo_hold_lost_seq, (unsigned)sv.pause_seq);
             atomic_store(&s_servo_hold_lost, true);
             /* Not taken as held: a caller that voids an owed release on
              * success would cancel the one just owed. */
@@ -6583,7 +6586,8 @@ void app_main(void)
                 servo_screen_sweep_refused();
             }
             if (atomic_exchange(&s_servo_hold_lost, false)) {
-                servo_screen_released();
+                servo_screen_released(
+                    (uint16_t)atomic_load(&s_servo_hold_lost_seq));
             }
             /* The pause's phase before a resume that rebases on it. */
             if (atomic_exchange(&s_sweep_held_new, false)) {

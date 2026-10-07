@@ -409,6 +409,16 @@ static struct {
     /* The sweep: the same curve the coprocessor runs, on this screen's own
      * clock, to draw the horn by. */
     bool        sweep_able;      /* the coprocessor speaks 4.2 or later  */
+    /*
+     * The pause the screen's commands still derive from: set by PAUSE, kept
+     * by what carries that pause on -- its resume, a repeat of the resume,
+     * a position said again under a changed profile -- and ended by
+     * anything that sets a new origin (stop_sweep(): a drag, CENTRE,
+     * RELEASE, a new start or pause, a disarm, leaving).  Every command
+     * carries it (from_pause); the panel drops those of a pause it lets go
+     * of, and the screen takes that let-go only while still on it.
+     */
+    uint16_t    lineage;
     bool        surfaces;        /* a surface is bound to sweep          */
     /* The tap's phase of the pause in force, and for a resume asked before
      * that pause's HOLD was acknowledged, where its replay starts: the
@@ -480,7 +490,7 @@ static struct {
         float       commanded_deg;
         sweep_drain_t dr;
         start_rec_t start_rec;
-        uint16_t    pause_seq, resume_pause_seq;
+        uint16_t    pause_seq, resume_pause_seq, lineage;
         uint32_t    pause_tap_ms;
         float       pause_from_cmd, resume_from_cmd;
         int         pause_speed_pct;
@@ -775,7 +785,7 @@ static void post(servo_cmd_kind_t kind, uint16_t us)
     s.pending.kind       = kind;
     s.pending.value_us   = us;
     s.pending.resume     = resume;
-    s.pending.from_pause = s.paused ? s.pause_seq : 0u;
+    s.pending.from_pause = s.lineage;
     ++s.post_count;
     if (kind == SERVO_CMD_SWEEP) {
         ++s.start_seq;
@@ -875,6 +885,7 @@ static float sweep_deg(uint16_t cmd)
  * that follows; the button reads SWEEP from now. */
 static void stop_sweep(void)
 {
+    s.lineage         = 0u;
     s.resume_from_set = false;
     s.awaiting       = false;
     s.dr.on          = false;
@@ -935,6 +946,7 @@ static void hold_sweep(void)
     if (s.pending.kind == SERVO_CMD_HOLD) {
         s.pending.pause_seq = s.pause_seq;
     }
+    s.lineage = s.pause_seq;
     ++s.ctrl_rev;
 }
 
@@ -1075,6 +1087,7 @@ static void toggle_sweep(void)
         s.resume_from_set  = s.undo.resume_from_set;
         s.resume_from_cmd  = s.undo.resume_from_cmd;
         s.resume_pause_seq = s.undo.resume_pause_seq;
+        s.lineage          = s.undo.lineage;
         s.toggle_live    = false;
         ++s.ctrl_rev;
         return;
@@ -1097,6 +1110,7 @@ static void toggle_sweep(void)
     s.undo.resume_from_set  = s.resume_from_set;
     s.undo.resume_from_cmd  = s.resume_from_cmd;
     s.undo.resume_pause_seq = s.resume_pause_seq;
+    s.undo.lineage          = s.lineage;
     const uint32_t before = s.post_count;
     if (s.sweeping) {
         hold_sweep();
@@ -1116,11 +1130,19 @@ bool servo_screen_paused(void) { return s.paused; }
 
 uint32_t servo_screen_curve_ms(void) { return s.clock_ms - s.sw.start_ms; }
 
-void servo_screen_released(void)
+void servo_screen_released(uint16_t pause_seq)
 {
-    /* Nothing held any more, and the horn goes to the centre the surfaces
-     * were released to.  A pause is over with the hold, and a resume of it
-     * asked for meanwhile is dropped by the panel: the sweep ends here. */
+    /*
+     * Nothing held any more, and the horn goes to the centre the surfaces
+     * were released to -- while the screen is still on that pause.  The
+     * panel dropped everything it asked since (its lineage), so the
+     * surfaces are at rest.  Left since, by a drag, CENTRE, a new pause or
+     * a new start, the screen's newer command was sent and is what the
+     * surfaces do, so this changes nothing.
+     */
+    if (pause_seq == 0u || pause_seq != s.lineage) {
+        return;
+    }
     stop_sweep();
     s.driving       = false;
     s.paused        = false;

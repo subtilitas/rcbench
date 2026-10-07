@@ -91,9 +91,10 @@ typedef struct {
     /** SERVO_CMD_HOLD: which pause it is, given back with its
      *  acknowledgement in servo_screen_sweep_held().  Never 0. */
     uint16_t         pause_seq;
-    /** The pause this command was asked during -- a resume of it, or a
-     *  position said again under a changed profile -- or 0: what the panel
-     *  drops once it has let that pause go (servo_cmd_stale()). */
+    /** The pause this command derives from -- a resume of it, a repeat of
+     *  that resume, a position said again under a changed profile -- or 0:
+     *  what the panel drops once it has let that pause go
+     *  (servo_cmd_stale()). */
     uint16_t         from_pause;
     /** SERVO_CMD_SWEEP: which sweep command it is, given back with the
      *  acknowledgement of a start in servo_screen_sweep_started(). */
@@ -205,9 +206,14 @@ bool servo_screen_sweeping(void);
  *  else commanded since.  For tests. */
 bool servo_screen_paused(void);
 
-/** The panel let go of what the screen was holding -- a HOLD the far end
- *  had already ended -- and released the surfaces to their centre. */
-void servo_screen_released(void);
+/**
+ * The panel let go of pause @p pause_seq -- a HOLD the far end had already
+ * ended, or one answered late -- released the surfaces to their centre and
+ * dropped the commands asked during that pause.  Taken only while the
+ * screen's commands still derive from that pause; one that has moved on
+ * since was sent, and the surfaces follow it.
+ */
+void servo_screen_released(uint16_t pause_seq);
 
 /** Where the coprocessor's output was when it started a sweep. */
 typedef enum {
