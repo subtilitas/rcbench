@@ -823,6 +823,17 @@ void servo_screen_released(void)
     ++s.ctrl_rev;
 }
 
+/* One step of the drawn output towards @p want, at most @p step command
+ * units: the slew the far end applies, as the drawing models it. */
+static float chase_cmd(float from, float want, float step)
+{
+    const float d = want - from;
+    if (fabsf(d) <= step) {
+        return want;
+    }
+    return from + ((d > 0.0f) ? step : -step);
+}
+
 /* Where the horn was drawn @p ago_ms ago, from the trail; the oldest kept
  * for anything older. */
 static float shown_cmd_ago(uint32_t ago_ms)
@@ -872,23 +883,67 @@ void servo_screen_sweep_started(uint32_t age_ms, servo_sweep_from_t from,
     ++s.ctrl_rev;
 }
 
+/*
+ * The drawn output after @p ms more of the sweep @p w from @p phase_ms in,
+ * starting at @p from: each step the curve's command, chased at SPEED as
+ * tick() chases it.  Steps of 4 ms, under a frame, so a turn of the curve
+ * is followed as the drawing follows it.
+ */
+static float drawn_after(const sweep_t *w, uint32_t phase_ms, uint32_t ms,
+                         float from)
+{
+    sweep_t run = *w;
+    run.running  = true;
+    run.paused   = false;
+    run.start_ms = 0u;
+    const float per_ms = (float)SPEED_FULL_SPAN_S * (float)s.speed_pct
+                         / 100.0f / 1000.0f;
+    float shown = from;
+    for (uint32_t done = 0u; done < ms;) {
+        const uint32_t dt = (ms - done < 4u) ? ms - done : 4u;
+        done += dt;
+        uint16_t cmd = (uint16_t)SWEEP_CENTRE;
+        (void)sweep_step(&run, phase_ms + done, &cmd);
+        const float want = us_to_cmd(deg_to_us_f(clamp_travel(sweep_deg(cmd))));
+        shown = chase_cmd(shown, want, per_ms * (float)dt);
+    }
+    return shown;
+}
+
 void servo_screen_sweep_held(uint32_t age_ms)
 {
     /*
      * The far end ran its curve on until the HOLD reached it, a queue and an
      * exchange after the tap; at 5 Hz that is a visible share of a cycle.
      * Timed from the acknowledgement, as a start is, so the two errors are
-     * the same and cancel in the phase.  A time before the curve's start is
-     * not this sweep's.
+     * the same and cancel in the phase.  A time before the tap is not this
+     * pause's.
+     *
+     * Without feedback the horn is the drawing's estimate of the output, so
+     * it moves on to where the output had got by then: the curve from the
+     * tap's phase to the acknowledged one, slewed at SPEED as the drawing
+     * slews.  Worked out here rather than by drawing the curve on until the
+     * acknowledgement, which would need an end for a HOLD that is never
+     * acknowledged; without one, the tap's estimate stands.  At most 5 s is
+     * worked through, 1250 steps.
      */
     if (!s.paused || !s.sw.paused) {
         return;
     }
     const uint32_t held_at = s.clock_ms - age_ms;
     const uint32_t into = held_at - s.sw.start_ms;
-    if ((int32_t)into >= 0) {
-        s.sw.paused_ms = into;
+    const uint32_t extra = into - s.sw.paused_ms;
+    if ((int32_t)into < 0 || (int32_t)extra < 0) {
+        return;
     }
+    if (!s.have_feedback) {
+        const uint32_t ms = (extra > 5000u) ? 5000u : extra;
+        s.shown_cmd = drawn_after(&s.sw, s.sw.paused_ms, ms, s.shown_cmd);
+        s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
+        s.commanded_deg = s.shown_deg;
+    }
+    s.sw.paused_ms = into;
+    ++s.ctrl_rev;
 }
 
 void servo_screen_set_sweep(bool able)
@@ -1211,6 +1266,8 @@ void servo_screen_supply(const supply_state_t *st)
 }
 
 uint16_t servo_screen_commanded(void) { return deg_to_us(s.commanded_deg); }
+
+uint16_t servo_screen_drawn(void) { return deg_to_us(s.shown_deg); }
 
 uint16_t servo_screen_frame_hz(void) { return s.frame_hz; }
 
@@ -3911,9 +3968,9 @@ static void tick(float dt_s)
     const float step = (float)SPEED_FULL_SPAN_S * (float)s.speed_pct / 100.0f
                        * dt_s;
     const float want = us_to_cmd(deg_to_us_f(s.commanded_deg));
-    const float d = want - s.shown_cmd;
+    const float next = chase_cmd(s.shown_cmd, want, step);
 
-    if (fabsf(d) <= step) {
+    if (next == want) {
         s.shown_cmd = want;
         if (s.shown_deg != s.commanded_deg) {
             s.shown_deg = s.commanded_deg;
@@ -3922,7 +3979,7 @@ static void tick(float dt_s)
         remember_shown();
         return;
     }
-    s.shown_cmd += (d > 0.0f) ? step : -step;
+    s.shown_cmd = next;
     s.shown_deg = us_to_deg_f(cmd_to_us(s.shown_cmd));
     ++s.ctrl_rev;
     remember_shown();

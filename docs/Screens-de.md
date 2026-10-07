@@ -289,7 +289,10 @@ angehalten wurde: die Stelle in einem Verweilen und die erreichten Enden
 laufen von dort weiter, und das Horn wird ab dieser Phase gezeichnet. Die
 Phase ist die der Kurve, als der Koprozessor das HOLD quittiert hat, nicht
 die beim Tippen: dort läuft die Kurve während des Austauschs dazwischen
-weiter. Ein Tippen auf PAUSIERT, bevor diese Quittung den Bildschirm
+weiter. Ohne Rückmeldung rückt das gezeichnete Horn beim Eintreffen der
+Quittung dorthin vor, wo der Ausgang bis dahin war: die Kurve bis zu dieser
+Phase, mit TEMPO verlangsamt wie in der Zeichnung. Ein Tippen auf PAUSIERT,
+bevor diese Quittung den Bildschirm
 erreicht, behält in der Zeichnung die Phase des Tippens; die Zeit zwischen
 beiden ist nicht gemessen. Der
 Koprozessor behält die Phase, solange er hält, und setzt die Kurve fort

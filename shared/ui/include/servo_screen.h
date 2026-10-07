@@ -122,6 +122,10 @@ void servo_screen_cancel_arm(void);
 /** Commanded pulse width, for the application and for tests. */
 uint16_t servo_screen_commanded(void);
 
+/** The pulse width the solid arm is drawn at: measured, or without
+ *  feedback the drawing's estimate of the output.  For tests. */
+uint16_t servo_screen_drawn(void);
+
 /** The frame rate and the type in force, for the application and tests. */
 uint16_t servo_screen_frame_hz(void);
 const char *servo_screen_type_name(void);
