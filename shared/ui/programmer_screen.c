@@ -2752,7 +2752,7 @@ static void sp_draw_progress(gfx_canvas_t *c)
         break;
     case ESC_STICK_ENTRY: {
         const uint32_t in = e->now_ms - e->on_ms;
-        const uint32_t wait = esc_stick_entry_ms(e);
+        const uint32_t wait = e->entry_wait;
         const uint32_t left = (in < wait) ? wait - in : 0u;
         /* A button held while the supply came on: how long still, then
          * that it can go. */
@@ -3155,6 +3155,25 @@ static const char *sp_mark(ui_text_id_t id)
     return buf;
 }
 
+/*
+ * The entry time the page shows: during a run and on its result, the wait
+ * of the run's power-up, kept after its change is made; else what the
+ * first change picked would wait, or with none picked the entry's.
+ */
+static uint32_t sp_entry_shown(void)
+{
+    const stick_t *t = &s.st;
+    if (esc_stick_running(&t->run) || t->shown) {
+        return t->run.entry_wait;
+    }
+    esc_stick_timing_t tm;
+    sp_timing(&tm);
+    size_t picked = 0;
+    esc_stick_change_t ch[ESC_STICK_MAX_CHANGES];
+    const size_t n = sp_changes(ch, &picked);
+    return esc_stick_change_entry_ms(t->p, (n > 0u) ? &ch[0] : NULL, &tm);
+}
+
 static void sp_draw_device(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
@@ -3197,8 +3216,8 @@ static void sp_draw_device(gfx_canvas_t *c)
     if (esc_stick_running(&t->run) || t->shown) {
         mv = t->run.out.supply_mv;
         ma = t->run.out.supply_ma;
-        tm.entry_ms = esc_stick_entry_ms(&t->run);
     }
+    tm.entry_ms = sp_entry_shown();
     snprintf(line, sizeof(line), TR(SP_SUPPLY_ENTRY), (unsigned)(mv / 1000u),
              (unsigned)(mv % 1000u / 10u), (unsigned)(ma / 1000u),
              (unsigned)(ma % 1000u / 10u), (unsigned)(tm.entry_ms / 1000u),
@@ -3594,6 +3613,11 @@ const char *programmer_screen_stick_maker_at(int i)
     const stick_t *t = &s.st;
     return (t->level == 0 && i >= 0 && i < t->count) ? t->makers[i].name
                                                      : NULL;
+}
+
+uint32_t programmer_screen_stick_entry_shown(void)
+{
+    return (s.st.p != NULL) ? sp_entry_shown() : 0u;
 }
 
 bool programmer_screen_stick_supply_reads_off(void)

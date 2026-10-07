@@ -2083,6 +2083,44 @@ TEST_CASE(a_maker_at_its_most_models_lists_every_one)
     esc_profiles_clear_overrides();
 }
 
+/* SUN PLUS mode 4 waits 5 s from power-on, the profile's entry 2 s: the
+ * page shows 5 s when mode 4 is picked, through the run, and on the result
+ * after the change is made. */
+TEST_CASE(the_page_shows_the_entry_the_run_waits)
+{
+    fresh();
+    open_profile("kontronik-sun-plus");
+    tap(CANCEL_X, HOLD_Y);                   /* the steps, read */
+    CHECK_EQ(programmer_screen_stick_entry_shown(), 2000u);
+    for (int i = 0; i < 4; ++i) {
+        tap(STEP_UP_X, STEP_CY(0));          /* KEEP, 1, 2, 3, 4 */
+    }
+    CHECK_EQ(programmer_screen_stick_entry_shown(), 5000u);
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    static rig_t r;
+    rig_start(&r);
+    const esc_stick_t *run = programmer_screen_stick();
+    for (uint32_t i = 0; i < 60000u && !run->hand_menu; ++i) {
+        rig_step(&r);
+    }
+    CHECK_EQ(programmer_screen_stick_entry_shown(), 5000u);
+    esc_sim_hand(&r.sim, r.now);
+    for (uint32_t i = 0; i < 240000u && run->phase != ESC_STICK_STORE;
+         ++i) {
+        rig_step(&r);
+    }
+    CHECK_EQ(run->phase, ESC_STICK_STORE);
+    CHECK_EQ(esc_stick_entry_ms(run), 2000u);    /* the next change's */
+    CHECK_EQ(programmer_screen_stick_entry_shown(), 5000u);
+    rig_run(&r, 300000u);
+    CHECK_EQ(run->phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 4);
+    CHECK_EQ(programmer_screen_stick_entry_shown(), 5000u);
+    draws();
+}
+
 /* A family whose models need different voltages, with the SUPPLY cap
  * between them: 3SL's 6-cell models (7.2 V) run, its 14-cell ones
  * (16.8 V) do not.  The row, the pop-up, the page and RUN agree for the
@@ -2396,6 +2434,7 @@ int main(void)
     RUN(the_search_finds_on_both_levels_and_back_keeps_it);
     RUN(a_card_profile_joins_its_maker);
     RUN(the_model_tapped_is_the_one_judged);
+    RUN(the_page_shows_the_entry_the_run_waits);
     RUN(a_maker_at_its_most_models_lists_every_one);
     RUN(every_step_after_programming_is_shown);
     RUN(no_step_at_the_esc_while_the_supply_reads_live);

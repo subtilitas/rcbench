@@ -1236,6 +1236,7 @@ bool esc_stick_start(esc_stick_t *e, const esc_profile_t *p,
     e->off_seen = false;
     e->off_asked_ms = b->now_ms;
     e->off_since_known = false;
+    e->entry_wait = esc_stick_entry_ms(e);
     enter(e, ESC_STICK_ARMING);
     return true;
 }
@@ -1488,6 +1489,9 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
             e->have_reading = false;
             e->late_run = 0u;
             e->entries++;
+            /* This power-up's wait, kept for it and for the result after
+             * the change it makes is done. */
+            e->entry_wait = esc_stick_entry_ms(e);
             esc_det_init(&e->det, &e->t, e->det.long_equals_short);
             esc_det_floor_only(&e->det);
             enter(e, ESC_STICK_ENTRY);
@@ -1496,7 +1500,7 @@ void esc_stick_step(esc_stick_t *e, const esc_stick_bench_t *b)
         }
         break;
     case ESC_STICK_ENTRY:
-        if (since(e->now_ms, e->on_ms) >= esc_stick_entry_ms(e)) {
+        if (since(e->now_ms, e->on_ms) >= e->entry_wait) {
             before_menu(e, 0u);
         }
         break;

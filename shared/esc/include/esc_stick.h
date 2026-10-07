@@ -417,6 +417,9 @@ typedef struct {
                                              last group could be acted on */
     uint8_t              entries;       /**< power-ups this run          */
     esc_throttle_t       entry;         /**< this power-up's position    */
+    uint32_t             entry_wait;    /**< this power-up's power-on to
+                                             the menu, ms, kept after its
+                                             change is made               */
     uint8_t              hand;          /**< the manual step asked, an
                                              index into p->manual        */
     bool                 hand_done;     /**< DONE taken, for the next
