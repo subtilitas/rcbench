@@ -275,22 +275,29 @@ the supply off and disarms.
 
 ![The run waiting for the jumper](img/programmer-stick-hand-prompt.png)
 
-**Before the supply goes off.** A Kontronik ESC of the KOBY, JIVE Pro,
-KOLIBRI, KONTROL-X / KOLIBRI-X and KOSMIK families confirms a stored mode
-with tones and its LED, and one that loses its supply before that
-confirmation has ended takes the programming as broken off and locks
-itself: 8 LED flashes on a KONTROL-X (Kontronik_Kontrol-X_Kolibri-X.pdf
-p.4, p.11), 9 on a KOBY, JIVE Pro or KOLIBRI, 10 on a KOSMIK. Their
-profiles carry a `before_power_off` step. After the store's last move the
-run holds the ESC powered, the stick where the store left it, and asks the
-operator to watch the ESC and tap DONE once the confirmation has ended;
-DONE switches the supply off, and the run ends or cycles as any other.
-The prompt says the ESC is powered and not to touch it. No DONE within
-60 s ends the run with NOT CONFIRMED, and so does every other end while the
-step is asked; each of them switches the supply off under the
-confirmation, and the result says the ESC may be locked and to check it.
-Of the five, KONTROL-X runs; the others show the step on their list of
-steps.
+**Before the supply goes off.** A Kontronik ESC confirms a stored mode
+by repeating it as tones (the manuals' control output, "Kontrollausgabe"),
+mode 7 as seven, and the manuals disconnect the battery only after it.
+STORE (2000 ms by default) can end before a long repeat does. Every
+Kontronik profile that runs, and the five below, carry a
+`before_power_off` step: after the store's last move the run holds the ESC
+powered, the stick where the store left it, and asks the operator to
+watch the ESC and tap DONE once the confirmation has ended; DONE switches
+the supply off, and the run ends or cycles as any other. The prompt says
+the ESC is powered and not to touch it. No DONE within 60 s ends the run
+with NOT CONFIRMED, and so does every other end while the step is asked;
+each of them switches the supply off under the confirmation, and the
+result says the mode may not be stored.
+
+A KOBY, JIVE Pro, KOLIBRI, KONTROL-X / KOLIBRI-X or KOSMIK that loses its
+supply before that confirmation has ended takes the programming as broken
+off and locks itself: 8 LED flashes on a KONTROL-X
+(Kontronik_Kontrol-X_Kolibri-X.pdf p.4, p.11), 9 on a KOBY, JIVE Pro or
+KOLIBRI, 10 on a KOSMIK. Their step marks it (`"locks": true`), and there
+the prompt and the result say the ESC may be locked and to check it. Of
+the five, KONTROL-X runs; the others show the step on their list of
+steps. The other Kontronik manuals name no lock for a power-off during the
+repeat.
 
 ![The run waiting for the ESC's confirmation](img/programmer-stick-hand-end.png)
 
@@ -352,7 +359,8 @@ After an aborted run of a profile with a step before or at the power-up,
 the result says to check the ESC: a jumper fitted for the run may still be in place.
 
 24 profiles have manual steps: the 22 Kontronik families, `turnigy-aquastar`
-and `greatplanes-electrifly-c-series`. 10 run:
+and `greatplanes-electrifly-c-series`. 10 run, each with its step before the
+supply goes off as well:
 
 | Profile | Steps | Values powered up at MID |
 | --- | --- | --- |
@@ -361,7 +369,7 @@ and `greatplanes-electrifly-c-series`. 10 run:
 | `kontronik-beat-car` | as BEAT | modes 2 to 6, 8 |
 | `kontronik-beat-fai` | as BEAT | none |
 | `kontronik-jazz` | JAZZ: jumper as BEAT; MINIJAZZ: button after 2 s or the tones | modes 6, 8 |
-| `kontronik-kontrol-x` | button under the shrink tube after 2 s or the tones; hands off until the mode confirmation has ended | mode 3 |
+| `kontronik-kontrol-x` | button under the shrink tube after 2 s or the tones; the step before the power-off marks the lock | mode 3 |
 | `kontronik-pix` | button marked Taster after 2 s or the tones | none |
 | `kontronik-smile` | button pressed and let go after 2 s or the tones | mode 6 |
 | `kontronik-star-line` | jumper on before the power-up, off after 5 s or the tones | mode 6 |

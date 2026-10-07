@@ -59,6 +59,8 @@ typedef struct {
     uint32_t skip;            /* readings the supply took unseen      */
     float    on_pct[8];       /* the stick at each power-up           */
     unsigned on_n;
+    bool     no_watch;        /* nobody taps DONE once the ESC has
+                                 confirmed (before_power_off)         */
 } rig_t;
 
 static rig_t r;
@@ -180,6 +182,12 @@ static void tick(void)
             r.next_read += r.late_once_by;
             r.late_once_at = 0u;
         }
+    }
+    /* The operator watching the ESC confirm taps DONE as soon as it
+     * counts: the run goes on as before the step existed. */
+    if (!r.no_watch && r.e.phase == ESC_STICK_HAND_END
+        && esc_stick_hand_ready(&r.e)) {
+        (void)esc_stick_confirm(&r.e);
     }
     const esc_stick_bench_t b = bench();
     esc_stick_step(&r.e, &b);
@@ -1617,6 +1625,7 @@ TEST_CASE(a_step_never_confirmed_ends_the_run)
 /* Until the run asks for the step before the supply goes off. */
 static void run_until_end_step(uint32_t ms)
 {
+    r.no_watch = true;
     for (uint32_t i = 0; i < ms && esc_stick_running(&r.e)
                          && r.e.phase != ESC_STICK_HAND_END; ++i) {
         if (r.e.hand_menu) {
@@ -1649,7 +1658,7 @@ TEST_CASE(the_supply_stays_on_until_the_esc_has_confirmed)
         CHECK_EQ(m->when, ESC_MANUAL_BEFORE_POWER_OFF);
     }
     CHECK(!r.e.hand_menu);
-    CHECK(r.e.lock_risk);
+    CHECK(r.e.end_open);
     CHECK(esc_stick_out(&r.e)->supply_on);
     CHECK(esc_stick_out(&r.e)->arm);
     CHECK(esc_stick_out(&r.e)->throttle_pct == ESC_STICK_PCT_MAX);
@@ -1662,7 +1671,7 @@ TEST_CASE(the_supply_stays_on_until_the_esc_has_confirmed)
     tick();
     CHECK_EQ(r.e.phase, ESC_STICK_OFF);
     CHECK(!esc_stick_out(&r.e)->supply_on);
-    CHECK(!r.e.lock_risk);
+    CHECK(!r.e.end_open);
     run_for(20000u);
     CHECK_EQ(r.e.phase, ESC_STICK_DONE);
     CHECK(!esc_stick_lock_risk(&r.e));
@@ -1740,6 +1749,89 @@ TEST_CASE(the_supply_stays_on_until_the_esc_has_confirmed)
     run_for(20000u);
     CHECK_EQ(r.e.phase, ESC_STICK_DONE);
     CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
+}
+
+/*
+ * Kontronik 3SL repeats the stored mode as tones before the manual
+ * disconnects it (Kontrollausgabe, Kontronik_3SL.pdf p.5-17): mode 7 as
+ * seven, longer than STORE.  The run holds the ESC powered after the store
+ * until DONE, whatever the mode; an end before DONE says the mode may not
+ * be stored, and not that the ESC locks, which the 3SL manual does not
+ * say.  Every runnable Kontronik profile carries such a step, and only
+ * the five whose manuals name the lock mark it.
+ */
+TEST_CASE(the_supply_stays_on_while_the_esc_repeats_the_mode)
+{
+    rig("kontronik-3sl");
+    esc_stick_change_t c[1] = { change(1, 7) };
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK_EQ(esc_stick_done_count(&r.e), 1u);
+    const esc_manual_t *m = esc_stick_hand(&r.e);
+    CHECK(m != NULL && !m->locks);
+    CHECK(esc_stick_out(&r.e)->supply_on);
+    run_for(r.t.store_ms * 4u);                /* well past STORE */
+    CHECK_EQ(r.e.phase, ESC_STICK_HAND_END);
+    CHECK(esc_stick_out(&r.e)->supply_on);
+    CHECK(esc_stick_confirm(&r.e));
+    run_for(20000u);
+    CHECK_EQ(r.e.phase, ESC_STICK_DONE);
+    CHECK(!esc_stick_cut_short(&r.e));
+    CHECK_EQ(esc_sim_stored(&r.sim, 1), 7);
+
+    /* No DONE: cut short, not locked. */
+    rig("kontronik-3sl");
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    run_for(ESC_STICK_HAND_WAIT_MS + 10u);
+    CHECK_EQ(r.e.reason, ESC_STICK_R_HAND);
+    ended_safe();
+    CHECK(esc_stick_cut_short(&r.e));
+    CHECK(!esc_stick_lock_risk(&r.e));
+
+    /* KONTROL-X's step marks the lock: both. */
+    rig("kontronik-kontrol-x");
+    c[0] = change(1, 2);
+    CHECK(start(c, 1));
+    run_until_end_step(240000u);
+    esc_stick_abort(&r.e, ESC_STICK_R_USER);
+    CHECK(esc_stick_cut_short(&r.e));
+    CHECK(esc_stick_lock_risk(&r.e));
+    CHECK(!esc_stick_cut_short(NULL));
+    CHECK(!esc_stick_lock_risk(NULL));
+
+    /* Every Kontronik profile that runs repeats its mode before the
+     * power-off; the lock is the five's. */
+    static const char *const k_locks[] = {
+        "kontronik-koby", "kontronik-kontrol-x", "kontronik-jive-pro",
+        "kontronik-kolibri", "kontronik-kosmik",
+    };
+    unsigned runs = 0u;
+    for (size_t i = 0; i < esc_profiles_count(); ++i) {
+        const esc_profile_t *p = esc_profiles_at(i);
+        if (strncmp(p->id, "kontronik-", 10) != 0) {
+            continue;
+        }
+        bool want_lock = false;
+        for (size_t k = 0; k < sizeof(k_locks) / sizeof(k_locks[0]); ++k) {
+            want_lock = want_lock || strcmp(p->id, k_locks[k]) == 0;
+        }
+        const bool runnable = esc_stick_kind(p, NULL) != ESC_STICK_KIND_NONE;
+        runs += runnable ? 1u : 0u;
+        unsigned offs = 0u, locks = 0u;
+        for (unsigned k = 0; k < p->manual_count; ++k) {
+            offs += (p->manual[k].when == ESC_MANUAL_BEFORE_POWER_OFF);
+            locks += p->manual[k].locks ? 1u : 0u;
+        }
+        if ((runnable || want_lock) && offs != 1u) {
+            T_FAIL("%s: %u steps before the power-off", p->id, offs);
+        }
+        if (locks != (want_lock ? 1u : 0u)) {
+            T_FAIL("%s: %u steps mark the lock", p->id, locks);
+        }
+    }
+    CHECK_EQ(runs, 10u);
 }
 
 /* While a step is waited for, every end a run has still ends it: ABORT,
@@ -2678,6 +2770,7 @@ int main(void)
     RUN(an_earlier_step_still_waits_for_done);
     RUN(a_step_never_confirmed_ends_the_run);
     RUN(the_supply_stays_on_until_the_esc_has_confirmed);
+    RUN(the_supply_stays_on_while_the_esc_repeats_the_mode);
     RUN(stop_abort_and_the_supply_end_a_run_waiting_for_a_step);
     RUN(a_step_at_power_up_is_asked_with_the_supply_off);
     RUN(the_entry_lasts_at_least_the_hold_at_power_up);

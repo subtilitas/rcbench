@@ -303,24 +303,32 @@ und entschärft.
 
 ![Der Lauf wartet auf den Jumper](img/de/programmer-stick-hand-prompt.png)
 
-**Bevor das Netzteil ausschaltet.** Ein Kontronik-ESC der Familien KOBY,
-JIVE Pro, KOLIBRI, KONTROL-X / KOLIBRI-X und KOSMIK bestätigt einen
-gespeicherten Modus mit Tönen und seiner LED, und einer, der vor dem Ende
-dieser Bestätigung seine Versorgung verliert, wertet die Programmierung
-als abgebrochen und sperrt sich: 8-fach Blinken an einem KONTROL-X
-(Kontronik_Kontrol-X_Kolibri-X.pdf S. 4, S. 11), 9-fach an KOBY, JIVE Pro
-oder KOLIBRI, 10-fach an KOSMIK. Ihre Profile tragen einen Schritt
-`before_power_off`. Nach der letzten Bewegung des Speicherns hält der Lauf
-den ESC versorgt, den Knüppel, wo das Speichern ihn ließ, und bittet den
-Bediener, den ESC zu beobachten und ERLEDIGT zu tippen, sobald die
-Bestätigung zu Ende ist; ERLEDIGT schaltet das Netzteil aus, und der Lauf
-endet oder schaltet aus und ein wie jeder andere. Die Abfrage sagt, dass
-der ESC versorgt ist und nicht berührt werden darf. Kein ERLEDIGT
-innerhalb von 60 s beendet den Lauf mit NICHT BESTÄTIGT, ebenso jedes
-andere Ende, während der Schritt gefragt ist; jedes davon schaltet das
-Netzteil während der Bestätigung aus, und das Ergebnis sagt, dass der ESC
+**Bevor das Netzteil ausschaltet.** Ein Kontronik-ESC bestätigt einen
+gespeicherten Modus, indem er ihn als Töne wiederholt (die Kontrollausgabe
+der Handbücher), Modus 7 als sieben, und die Handbücher stecken den Akku
+erst danach ab. SPEICHERN (vorgegeben 2000 ms) kann vor einer langen
+Wiederholung enden. Jedes Kontronik-Profil, das läuft, und die fünf
+unten tragen einen Schritt `before_power_off`: nach der letzten Bewegung
+des Speicherns hält der Lauf den ESC versorgt, den Knüppel, wo das
+Speichern ihn ließ, und bittet den Bediener, den ESC zu beobachten und
+ERLEDIGT zu tippen, sobald die Bestätigung zu Ende ist; ERLEDIGT schaltet
+das Netzteil aus, und der Lauf endet oder schaltet aus und ein wie jeder
+andere. Die Abfrage sagt, dass der ESC versorgt ist und nicht berührt
+werden darf. Kein ERLEDIGT innerhalb von 60 s beendet den Lauf mit NICHT
+BESTÄTIGT, ebenso jedes andere Ende, während der Schritt gefragt ist;
+jedes davon schaltet das Netzteil während der Bestätigung aus, und das
+Ergebnis sagt, dass der Modus womöglich nicht gespeichert ist.
+
+Ein KOBY, JIVE Pro, KOLIBRI, KONTROL-X / KOLIBRI-X oder KOSMIK, der vor
+dem Ende dieser Bestätigung seine Versorgung verliert, wertet die
+Programmierung als abgebrochen und sperrt sich: 8-fach Blinken an einem
+KONTROL-X (Kontronik_Kontrol-X_Kolibri-X.pdf S. 4, S. 11), 9-fach an KOBY,
+JIVE Pro oder KOLIBRI, 10-fach an KOSMIK. Ihr Schritt kennzeichnet das
+(`"locks": true`), und dort sagen Abfrage und Ergebnis, dass der ESC
 gesperrt sein kann und geprüft werden muss. Von den fünf läuft
 KONTROL-X; die anderen zeigen den Schritt in ihrer Liste der Handgriffe.
+Die übrigen Kontronik-Handbücher nennen keine Sperre für ein Ausschalten
+während der Wiederholung.
 
 ![Der Lauf wartet auf die Bestätigung des ESCs](img/de/programmer-stick-hand-end.png)
 
@@ -388,7 +396,8 @@ oder beim Einschalten sagt es, den ESC zu prüfen: ein für den Lauf
 gesteckter Jumper kann noch stecken.
 
 24 Profile haben Handgriffe: die 22 Kontronik-Familien, `turnigy-aquastar`
-und `greatplanes-electrifly-c-series`. 10 laufen:
+und `greatplanes-electrifly-c-series`. 10 laufen, jedes auch mit seinem
+Schritt, bevor das Netzteil ausschaltet:
 
 | Profil | Schritte | Werte, bei MID eingeschaltet |
 | --- | --- | --- |
@@ -397,7 +406,7 @@ und `greatplanes-electrifly-c-series`. 10 laufen:
 | `kontronik-beat-car` | wie BEAT | Modi 2 bis 6, 8 |
 | `kontronik-beat-fai` | wie BEAT | keine |
 | `kontronik-jazz` | JAZZ: Jumper wie BEAT; MINIJAZZ: Taster nach 2 s oder den Tönen | Modi 6, 8 |
-| `kontronik-kontrol-x` | Taster unter dem Schrumpfschlauch nach 2 s oder den Tönen; nicht berühren, bis die Modusbestätigung zu Ende ist | Modus 3 |
+| `kontronik-kontrol-x` | Taster unter dem Schrumpfschlauch nach 2 s oder den Tönen; der Schritt vor dem Ausschalten kennzeichnet die Sperre | Modus 3 |
 | `kontronik-pix` | Taster mit der Aufschrift Taster nach 2 s oder den Tönen | keine |
 | `kontronik-smile` | Taster drücken und loslassen nach 2 s oder den Tönen | Modus 6 |
 | `kontronik-star-line` | Jumper vor dem Einschalten auf, nach 5 s oder den Tönen ab | Modus 6 |

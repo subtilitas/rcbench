@@ -431,7 +431,7 @@ typedef struct {
                                              action that starts it is
                                              asked for                    */
     uint32_t             hand_ms;       /**< when the step was asked      */
-    bool                 lock_risk;     /**< a before_power_off step is
+    bool                 end_open;      /**< a before_power_off step is
                                              asked and not confirmed: an
                                              end now switches the supply
                                              off under the ESC's
@@ -494,10 +494,10 @@ const esc_stick_out_t *esc_stick_out(const esc_stick_t *e);
  *     before_power_off step (ESC_STICK_HAND_END).  The ESC stays powered
  *     and the stick where the store left it; nobody touches the ESC, the
  *     operator watches it confirm the value (tones, LED) and taps DONE.
- *     DONE switches the supply off.  A Kontronik ESC that loses its power
- *     before that confirmation has ended takes the programming as broken
- *     off and locks itself; an end while such a step is asked is told by
- *     esc_stick_lock_risk().
+ *     DONE switches the supply off.  An end while such a step is asked is
+ *     told by esc_stick_cut_short(): the value may not be stored.  Where
+ *     the step marks locks -- a Kontronik ESC that takes the programming
+ *     as broken off and locks itself -- esc_stick_lock_risk() says so.
  *
  * STOP, ABORT, a disarm and every supply rule end a waiting run as any
  * other: throttle to MIN, supply off, disarmed.  No DONE within
@@ -519,7 +519,11 @@ uint32_t esc_stick_entry_ms(const esc_stick_t *e);
 
 /** Whether the run ended while a before_power_off step was asked: the
  *  supply went off before the operator said the ESC had confirmed, and
- *  the ESC may have locked itself.  False while the run is under way. */
+ *  the value may not be stored.  False while the run is under way. */
+bool esc_stick_cut_short(const esc_stick_t *e);
+
+/** esc_stick_cut_short(), and the step asked marks locks: the ESC may
+ *  have locked itself. */
 bool esc_stick_lock_risk(const esc_stick_t *e);
 
 /** Whether DONE would count now: ESC_STICK_HAND_MIN_MS after the step was

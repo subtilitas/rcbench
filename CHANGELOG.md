@@ -102,12 +102,14 @@ sweep starts over from the curve's beginning, and the alert band says so.
 - **The supply stays on until the ESC has confirmed.** A
   `before_power_off` step holds the run after the store's last move, the
   ESC powered and the stick where the store left it, until DONE; the
-  prompt says not to touch the ESC. A Kontronik KOBY, JIVE Pro, KOLIBRI,
-  KONTROL-X / KOLIBRI-X or KOSMIK locks itself when its supply goes off
-  before its mode confirmation has ended (8 to 10 LED flashes), and the
-  five profiles carry the step. No DONE within 60 s ends the run with NOT
-  CONFIRMED; that end, and any other while the step is asked, says on the
-  result that the ESC may be locked.
+  prompt says not to touch the ESC. Every Kontronik profile that runs
+  carries one: the ESC repeats the stored mode as tones before the manual
+  disconnects it. No DONE within 60 s ends the run with NOT CONFIRMED; that
+  end, and any other while the step is asked, says on the result that the
+  mode may not be stored. `manual[].locks` marks the step where the ESC
+  locks itself instead (8 to 10 LED flashes): the KOBY, JIVE Pro, KOLIBRI,
+  KONTROL-X / KOLIBRI-X and KOSMIK profiles, where the result says the ESC
+  may be locked.
 - **Manual steps in German.** A step carries its German in `action_de`
   (1-120 bytes of UTF-8), shown when the interface is German, with the
   English as the fallback. All 24 profiles' steps have it.

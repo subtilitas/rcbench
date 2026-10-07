@@ -3026,10 +3026,13 @@ static void sp_draw_result(gfx_canvas_t *c)
     } else {
         gfx_text(c, PAD + 12, HELP_Y, sp_reason_help(e->reason),
                  UI_FONT_LABEL, dim, 1);
-        /* The supply went off while the ESC was to confirm: a Kontronik
-         * ESC takes that for programming broken off and locks itself. */
-        if (esc_stick_lock_risk(e)) {
-            gfx_text(c, PAD + 12, HELP_Y + 18, TR(SP_HAND_LOCK),
+        /* The supply went off while the ESC was to confirm: the value may
+         * not be stored, and a Kontronik ESC whose step marks it takes
+         * that for programming broken off and locks itself. */
+        if (esc_stick_cut_short(e)) {
+            gfx_text(c, PAD + 12, HELP_Y + 18,
+                     esc_stick_lock_risk(e) ? TR(SP_HAND_LOCK)
+                                            : TR(SP_HAND_CUT),
                      UI_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
         } else {
             gfx_text(c, PAD + 12, HELP_Y + 18, TR(SP_SAFE_NOW),
@@ -3537,8 +3540,9 @@ static void sp_draw_prompt(gfx_canvas_t *c)
     /* Before the supply goes off, an end switches it off under the ESC's
      * confirmation: said here, as the result says it after. */
     snprintf(line, sizeof(line),
-             (e->phase == ESC_STICK_HAND_END) ? TR(SP_PROMPT_LEFT_END)
-                                              : TR(SP_PROMPT_LEFT),
+             (e->phase != ESC_STICK_HAND_END) ? TR(SP_PROMPT_LEFT)
+             : m->locks                       ? TR(SP_PROMPT_LEFT_END)
+                                              : TR(SP_PROMPT_LEFT_CUT),
              (unsigned)((esc_stick_hand_left_ms(e) + 999u) / 1000u));
     sp_text(c, a.x + 20, y, line, 92, ui_theme_color(UI_C_TEXT_FAINT));
     const bool ready = esc_stick_hand_ready(e);

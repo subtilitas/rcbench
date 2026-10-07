@@ -169,6 +169,10 @@ typedef struct {
      *  at once (a Kontronik jumper pulled, its button pressed).  Only a
      *  before_menu step, the last of them, at most one a profile. */
     bool              starts_menu;
+    /** The ESC locks itself when its supply goes off before the step is
+     *  done (a Kontronik KOBY, JIVE Pro, KOLIBRI, KONTROL-X or KOSMIK).
+     *  Only a before_power_off step. */
+    bool              locks;
 } esc_manual_t;
 
 typedef struct {

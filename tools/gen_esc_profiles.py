@@ -221,8 +221,17 @@ def check_manual(d: dict, w: str, auto: str) -> list[dict]:
              f"{mw}.when", "before_menu after the step that starts the menu")
         if sm:
             starts = i
+        # Whether the ESC locks when the supply goes off before the step is
+        # done: absent or null, false.  Only a before_power_off step.
+        lk = m.get("locks")
+        want(lk is None or isinstance(lk, bool), f"{mw}.locks",
+             "not a boolean")
+        lk = bool(lk)
+        want(not lk or when == "ESC_MANUAL_BEFORE_POWER_OFF", f"{mw}.locks",
+             "only for before_power_off")
         out.append({"when": when, "action": action, "hold": hold or 0,
-                    "de": de, "sm": "true" if sm else "false"})
+                    "de": de, "sm": "true" if sm else "false",
+                    "lk": "true" if lk else "false"})
     return out
 
 
@@ -459,7 +468,8 @@ def emit(profiles: list[dict]) -> str:
             o.append(f"static const esc_manual_t {n}_manual[] = {{\n")
             for m in p["manual"]:
                 o.append(f"    {{ {m['when']}, {c_str(m['action'])}, "
-                         f"{m['hold']}u, {c_str(m['de'])}, {m['sm']} }},\n")
+                         f"{m['hold']}u, {c_str(m['de'])}, {m['sm']}, "
+                         f"{m['lk']} }},\n")
             o.append("};\n")
         if p["items"]:
             o.append(f"static const esc_item_t {n}_items[] = {{\n")
@@ -653,6 +663,12 @@ def self_test() -> list[str]:
             '{"when": "before_power_off", "action": "y"}]'),
         "manual before off held": man(
             '[{"when": "before_power_off", "action": "x", "hold_ms": 0}]'),
+        "manual locks before the menu": man(
+            '[{"when": "before_menu", "action": "x", "locks": true}]'),
+        "manual locks a string": man(
+            '[{"when": "before_power_off", "action": "x", "locks": "y"}]'),
+        "manual locks 1": man(
+            '[{"when": "before_power_off", "action": "x", "locks": 1}]'),
         "manual before off starts": man(
             '[{"when": "before_power_off", "action": "x", '
             '"starts_menu": true}]'),
@@ -708,6 +724,11 @@ def self_test() -> list[str]:
                              '{"when": "before_menu", "action": "y", '
                              '"starts_menu": true}, '
                              '{"when": "after_programming", "action": "z"}]'),
+        "manual before off locks": man(
+            '[{"when": "before_power_off", "action": "x", "locks": true}]'),
+        "manual before off locks not": man(
+            '[{"when": "before_power_off", "action": "x", "locks": false}, '
+            '{"when": "before_power_off", "action": "y", "locks": null}]'),
         "manual before off": man(
             '[{"when": "before_menu", "action": "x", "starts_menu": true}, '
             '{"when": "before_power_off", "action": "y"}, '

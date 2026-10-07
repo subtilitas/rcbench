@@ -509,6 +509,8 @@ typedef struct {
     float     last_pct;
     uint32_t  every;          /* ms between readings; 0 is 50 */
     int32_t   extra_ma;
+    bool      no_watch;       /* nobody taps DONE once the ESC has
+                                 confirmed (before_power_off) */
 } rig_t;
 
 static void rig_step(rig_t *r)
@@ -567,6 +569,12 @@ static void rig_step(rig_t *r)
         r->next = r->now + ((r->every != 0u) ? r->every : 50u);
     }
     scr->tick(0.001f);
+    /* The operator watching the ESC confirm taps DONE once it counts. */
+    const esc_stick_t *run = programmer_screen_stick();
+    if (!r->no_watch && run->phase == ESC_STICK_HAND_END
+        && esc_stick_hand_ready(run)) {
+        tap(HOLD_X, HOLD_Y);
+    }
     r->now++;
 }
 
@@ -1731,7 +1739,7 @@ TEST_CASE(a_run_asks_for_its_manual_step_and_goes_on_with_done)
 TEST_CASE(a_manual_step_shows_in_the_language_showing)
 {
     const esc_profile_t *p = esc_profiles_find("kontronik-jazz");
-    CHECK(p != NULL && p->manual_count == 2u);
+    CHECK(p != NULL && p->manual_count == 3u);
     if (p == NULL || p->manual_count < 2u) {
         return;
     }
@@ -1783,6 +1791,7 @@ static const esc_stick_t *run_to_end_step(rig_t *r)
     hold_for(2.25f);
     CHECK_EQ(programmer_screen_stick_runs(), 1u);
     rig_start(r);
+    r->no_watch = true;
     const esc_stick_t *run = programmer_screen_stick();
     bool pressed = false;
     for (uint32_t i = 0; i < 240000u && esc_stick_running(run)
@@ -1831,6 +1840,42 @@ TEST_CASE(the_supply_stays_on_until_done_after_the_store)
     CHECK(!r.on);
     CHECK(!r.armed);
     draws();                                 /* the result, with the lock */
+    ui_text_set_language(UI_LANG_DE);
+    draws();
+    ui_text_set_language(UI_LANG_EN);
+
+    /* JAZZ repeats its mode with no lock named: the prompt and the result
+     * say the mode may not be stored. */
+    fresh();
+    descend_to_jazz();
+    tap(CANCEL_X, HOLD_Y);                   /* the steps, read */
+    for (int i = 0; i < 3; ++i) {
+        tap(STEP_UP_X, STEP_CY(0));          /* KEEP, 1, 2, 3 */
+    }
+    supply_reads_off();
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    rig_start(&r);
+    r.no_watch = true;
+    run = programmer_screen_stick();
+    bool pulled = false;
+    for (uint32_t i = 0; i < 240000u && esc_stick_running(run)
+                         && run->phase != ESC_STICK_HAND_END; ++i) {
+        if (run->hand_menu && !pulled) {
+            esc_sim_hand(&r.sim, r.now);     /* the jumper */
+            pulled = true;
+        }
+        rig_step(&r);
+    }
+    CHECK_EQ(run->phase, ESC_STICK_HAND_END);
+    CHECK(esc_stick_hand(run) != NULL && !esc_stick_hand(run)->locks);
+    draws();                                 /* the prompt */
+    rig_run(&r, ESC_STICK_HAND_WAIT_MS + 1000u);
+    CHECK_EQ(run->reason, ESC_STICK_R_HAND);
+    CHECK(esc_stick_cut_short(run));
+    CHECK(!esc_stick_lock_risk(run));
+    draws();                                 /* the result */
     ui_text_set_language(UI_LANG_DE);
     draws();
     ui_text_set_language(UI_LANG_EN);

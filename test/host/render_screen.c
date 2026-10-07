@@ -427,6 +427,7 @@ typedef struct {
     bool      armed, on;
     float     pct;
     uint32_t  now, next, seq, stops, pressed;
+    bool      no_watch;     /* nobody taps DONE before the power-off */
 } stick_rig_t;
 
 static void stick_step(stick_rig_t *r)
@@ -466,6 +467,12 @@ static void stick_step(stick_rig_t *r)
         r->next = r->now + 50u;
     }
     ui_router_tick(0.001f);
+    /* The operator watching the ESC confirm taps DONE once it counts. */
+    const esc_stick_t *run = programmer_screen_stick();
+    if (!r->no_watch && run->phase == ESC_STICK_HAND_END
+        && esc_stick_hand_ready(run)) {
+        tap(156, UI_BAND_H + 378);
+    }
     r->now++;
 }
 
@@ -757,25 +764,25 @@ int main(int argc, char **argv)
                   "in first.", 0u,
                   "Den Programmier-Jumper auf die beiden Goldkontakte neben "
                   "den Motorkabeln stecken, das Empfängerkabel zuerst.",
-                  false },
+                  false, false },
                 { ESC_MANUAL_BEFORE_POWER,
                   "Set the transmitter's throttle trim to its middle and its "
                   "throttle curve to linear before the ESC is powered.", 0u,
                   "Die Throttle-Trimmung des Senders auf Mitte und die "
                   "Gaskurve linear stellen, bevor der ESC Strom bekommt.",
-                  false },
+                  false, false },
                 { ESC_MANUAL_BEFORE_POWER,
                   "Connect the motor and fix it to the bench so that it "
                   "cannot turn its leads off the contacts by itself.", 0u,
                   "Den Motor anschließen und am Prüfstand befestigen, damit "
                   "er seine Kabel nicht selbst von den Kontakten dreht.",
-                  false },
+                  false, false },
                 { ESC_MANUAL_BEFORE_POWER,
                   "Take any propeller or pinion off the motor shaft and keep "
                   "hands and tools clear of the motor for the run.", 0u,
                   "Propeller oder Ritzel von der Motorwelle nehmen und Hände "
                   "und Werkzeug während des Laufs vom Motor fernhalten.",
-                  false },
+                  false, false },
             };
             static esc_profile_t ex;
             ex = *esc_profiles_find("sunrise-pro");
@@ -809,27 +816,27 @@ int main(int argc, char **argv)
                   "again.", 0u,
                   "Den Programmier-Jumper vor dem Flug von den beiden "
                   "Goldkontakten abziehen, sonst geht der ESC wieder ins "
-                  "Menü.", false },
+                  "Menü.", false, false },
                 { ESC_MANUAL_AFTER_PROGRAMMING,
                   "Refit the heat shrink over the programming contacts and "
                   "the button so that no conductive dirt reaches them in "
                   "use.", 0u,
                   "Den Schrumpfschlauch wieder über Kontakte und Taster "
                   "ziehen, damit im Betrieb kein leitender Schmutz hinkommt.",
-                  false },
+                  false, false },
                 { ESC_MANUAL_AFTER_PROGRAMMING,
                   "Disconnect the bench supply, then reconnect the flight "
                   "battery and check the stored mode on the start-up "
                   "tones.", 0u,
                   "Netzteil abziehen, dann den Flugakku anstecken und den "
-                  "gespeicherten Modus an den Starttönen prüfen.", false },
+                  "gespeicherten Modus an den Starttönen prüfen.", false, false },
                 { ESC_MANUAL_AFTER_PROGRAMMING,
                   "Run the motor without a propeller at low throttle once "
                   "and check the direction and the brake before the first "
                   "flight.", 0u,
                   "Den Motor einmal ohne Propeller mit wenig Gas laufen "
                   "lassen und vor dem Erstflug Drehrichtung und Bremse "
-                  "prüfen.", false },
+                  "prüfen.", false, false },
             };
             static esc_profile_t card;
             card = *esc_profiles_find("sunrise-pro");
@@ -895,6 +902,7 @@ int main(int argc, char **argv)
             ui_router_event(&e);
             static stick_rig_t erig;
             memset(&erig, 0, sizeof(erig));
+            erig.no_watch = true;
             esc_sim_cfg_t ec;
             esc_sim_defaults(&ec);
             ec.wait_hand = true;                /* silent until the press */

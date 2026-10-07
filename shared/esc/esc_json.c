@@ -1154,9 +1154,24 @@ static void decode_manual(dec_t *d, uint32_t root, esc_profile_t *p)
             return;
         }
         started = started || starts;
+        /* Whether the ESC locks when the supply goes off before the step
+         * is done: absent or null, false.  Only a before_power_off step. */
+        const int64_t lv = member(d, ti, "locks");
+        bool locks = false;
+        if (lv >= 0 && d->t[lv].type != T_NULL) {
+            if (d->t[lv].type != T_TRUE && d->t[lv].type != T_FALSE) {
+                FAIL(d, "%s.locks: not a boolean", w);
+                return;
+            }
+            locks = d->t[lv].type == T_TRUE;
+        }
+        if (locks && when != (int)ESC_MANUAL_BEFORE_POWER_OFF) {
+            FAIL(d, "%s.locks: only for before_power_off", w);
+            return;
+        }
         if (m != NULL) {
             m[i] = (esc_manual_t){ (esc_manual_when_t)when, action,
-                                   (uint32_t)hold, de, starts };
+                                   (uint32_t)hold, de, starts, locks };
         }
     }
     p->manual_count = (uint8_t)n;

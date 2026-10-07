@@ -537,6 +537,19 @@ TEST_CASE(a_manual_step_the_generator_refuses_is_refused_here_too)
         { "[{\"when\": \"before_power_off\", \"action\": \"x\","
           " \"starts_menu\": true}]",
           "manual[0].starts_menu: only for before_menu" },
+        /* Whether the ESC locks: a boolean, only before the supply goes
+         * off. */
+        { "[{\"when\": \"before_power_off\", \"action\": \"x\","
+          " \"locks\": true}]", NULL },
+        { "[{\"when\": \"before_power_off\", \"action\": \"x\","
+          " \"locks\": false}, {\"when\": \"before_power_off\","
+          " \"action\": \"y\", \"locks\": null}]", NULL },
+        { "[{\"when\": \"before_menu\", \"action\": \"x\","
+          " \"locks\": true}]", "manual[0].locks: only for before_power_off" },
+        { "[{\"when\": \"before_power_off\", \"action\": \"x\","
+          " \"locks\": \"y\"}]", "manual[0].locks: not a boolean" },
+        { "[{\"when\": \"before_power_off\", \"action\": \"x\","
+          " \"locks\": 1}]", "manual[0].locks: not a boolean" },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         char *j = with_manual(k[i].steps);

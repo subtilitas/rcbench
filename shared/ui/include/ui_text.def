@@ -644,6 +644,7 @@ UI_TEXT(SP_HAND_OVER_LIVE,         70, "The supply does not read off: do not tou
 UI_TEXT(SP_HAND_AFTER_N,           93, "%u steps after programming: MANUAL INTERVENTION REQUIRED above lists them.")
 UI_TEXT(SP_HAND_UNDO,              93, "Check the ESC: what was fitted before power-up may still be in place.")
 UI_TEXT(SP_HAND_LOCK,               0, "The supply went off before the ESC confirmed: it may be locked. Check it.")
+UI_TEXT(SP_HAND_CUT,               96, "The supply went off before the ESC confirmed: the mode may not be stored.")
 UI_TEXT(SP_PROMPT_TITLE,            0, "MANUAL STEP NOW")
 UI_TEXT(SP_PROMPT_OFF,             90, "The supply is off, the throttle at %s. Do this now, then tap DONE.")
 UI_TEXT(SP_PROMPT_AT_POWER,        90, "Begin this now and keep at it: DONE switches the supply on.")
@@ -654,6 +655,7 @@ UI_TEXT(SP_PROMPT_LISTEN,           0, "The ESC is powered, the throttle at %s. 
 UI_TEXT(SP_PROMPT_HEARD,            0, "The menu heard in order goes on by itself; DONE goes on at once.")
 UI_TEXT(SP_PROMPT_LEFT,             0, "No DONE within %u s ends the run: throttle to MIN, supply off, disarmed.")
 UI_TEXT(SP_PROMPT_LEFT_END,         0, "No DONE within %u s ends the run: supply off, and the ESC may lock itself.")
+UI_TEXT(SP_PROMPT_LEFT_CUT,        92, "No DONE within %u s ends the run: supply off, and the mode may not be stored.")
 UI_TEXT(SP_HAND_DONE,               0, "DONE")
 UI_TEXT(SP_POWER_UP_AT,             0, "POWER-UP AT %s")
 

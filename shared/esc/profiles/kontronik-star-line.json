@@ -89,6 +89,12 @@
       "action_de": "Jumper nach 5 s oder der Tonfolge abziehen.",
       "starts_menu": true,
       "source": "Kontronik_Star-Line.pdf p.5"
+    },
+    {
+      "when": "before_power_off",
+      "action": "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.",
+      "action_de": "Nicht berühren: warten, bis der ESC den Modus fertig wiederholt hat (Töne), dann ERLEDIGT tippen.",
+      "source": "Kontronik_Star-Line.pdf p.5-10 (DE/EN)"
     }
   ],
   "scheme": {
@@ -188,6 +194,7 @@
   "notes": [
     "The BEC type for StarBEC 40-6-12 is not stated; the bec field there reflects no manual statement.",
     "Mode 6 is programmed with the stick at motor-off in the middle (Kontronik_Star-Line.pdf p.6): entry_throttle mid.",
-    "Mode 6 moves the stick to the brake position (back) after the full-throttle selection (Kontronik_Star-Line.pdf p.6): after_select min, made STORE after the selection; the manual gives no time."
+    "Mode 6 moves the stick to the brake position (back) after the full-throttle selection (Kontronik_Star-Line.pdf p.6): after_select min, made STORE after the selection; the manual gives no time.",
+    "After the store the ESC repeats the stored mode as tones (control output, 'Kontrollausgabe'), and the manual disconnects power after it (Kontronik_Star-Line.pdf p.5-10 (DE/EN)). The step before_power_off holds the run powered until the operator taps DONE. The manual names no lock for a power-off before the end of it."
   ]
 }

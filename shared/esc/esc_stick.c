@@ -1160,17 +1160,23 @@ static void before_off(esc_stick_t *e, unsigned from)
     for (unsigned i = from; p->manual != NULL && i < p->manual_count; ++i) {
         if (p->manual[i].when == ESC_MANUAL_BEFORE_POWER_OFF) {
             ask(e, (int)i, ESC_STICK_HAND_END);
-            e->lock_risk = true;
+            e->end_open = true;
             return;
         }
     }
-    e->lock_risk = false;
+    e->end_open = false;
     supply_off(e);
+}
+
+bool esc_stick_cut_short(const esc_stick_t *e)
+{
+    return e != NULL && e->phase == ESC_STICK_ABORTED && e->end_open;
 }
 
 bool esc_stick_lock_risk(const esc_stick_t *e)
 {
-    return e != NULL && e->phase == ESC_STICK_ABORTED && e->lock_risk;
+    return esc_stick_cut_short(e) && e->p != NULL && e->p->manual != NULL
+           && e->hand < e->p->manual_count && e->p->manual[e->hand].locks;
 }
 
 /* The action that starts the menu is done: by DONE, or by the menu heard

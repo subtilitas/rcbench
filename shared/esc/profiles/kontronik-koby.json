@@ -76,6 +76,7 @@
       "when": "before_power_off",
       "action": "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.",
       "action_de": "Nicht berühren: warten, bis der ESC seine Modusbestätigung beendet hat (Töne, LED), dann ERLEDIGT tippen.",
+      "locks": true,
       "source": "Kontronik_Koby.pdf p.5 (DE)"
     }
   ],

@@ -647,6 +647,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SP_HAND_AFTER_N]        = "%u Handgriffe nach dem Programmieren: MANUELLER EINGRIFF NÖTIG oben nennt sie.",
     [TX_SP_HAND_UNDO]           = "ESC prüfen: was vor dem Einschalten gesteckt wurde, kann noch stecken.",
     [TX_SP_HAND_LOCK]           = "Netzteil aus, bevor der ESC bestätigt hat: er kann gesperrt sein. Prüfen.",
+    [TX_SP_HAND_CUT]            = "Netzteil aus, bevor der ESC bestätigt hat: der Modus ist evtl. nicht gespeichert.",
     [TX_SP_PROMPT_TITLE]        = "JETZT VON HAND",
     [TX_SP_PROMPT_OFF]          = "Netzteil aus, Throttle auf %s. Jetzt ausführen, dann ERLEDIGT tippen.",
     [TX_SP_PROMPT_AT_POWER]     = "Jetzt beginnen und dabei bleiben: ERLEDIGT schaltet das Netzteil ein.",
@@ -657,6 +658,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SP_PROMPT_HEARD]        = "Hört der Lauf das Menü in Folge, geht er selbst weiter; ERLEDIGT sofort.",
     [TX_SP_PROMPT_LEFT]         = "Ohne ERLEDIGT in %u s endet der Lauf: Throttle auf MIN, Netzteil aus, DISARMED.",
     [TX_SP_PROMPT_LEFT_END]     = "Ohne ERLEDIGT in %u s endet der Lauf: Netzteil aus, der ESC kann sich sperren.",
+    [TX_SP_PROMPT_LEFT_CUT]     = "Ohne ERLEDIGT in %u s endet der Lauf: Netzteil aus, Modus evtl. nicht gespeichert.",
     [TX_SP_HAND_DONE]           = "ERLEDIGT",
     [TX_SP_POWER_UP_AT]         = "EINSCHALTEN BEI %s",
 
