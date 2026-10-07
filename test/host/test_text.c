@@ -353,7 +353,8 @@ TEST_CASE(the_report_is_translated_and_the_csv_is_not)
  * puts it, in every language. */
 TEST_CASE(the_report_columns_line_up)
 {
-    static const int k_cols[] = { 0, 7, 15, 22, 29, 36, 44, 52, 59, 67, 73 };
+    static const int k_cols[] = { 0, 7, 15, 22, 29, 36, 43, 51, 59, 66, 74, 80,
+                                  85 };
     for (int l = 0; l < UI_LANG_COUNT; ++l) {
         const ui_language_t *t = ui_text_table((ui_lang_t)l);
         const char *head = servo_str_in(t != NULL ? t->servo : NULL,
@@ -380,10 +381,13 @@ TEST_CASE(the_report_columns_line_up)
 TEST_CASE(the_report_labels_line_up)
 {
     static const servo_str_t k_labelled[] = {
-        SERVO_STR_R_RESULT, SERVO_STR_R_RESULT_WHY, SERVO_STR_R_DEVICE,
+        SERVO_STR_R_RESULT, SERVO_STR_R_RESULT_WHY, SERVO_STR_R_RESULT_UNSEEN,
+        SERVO_STR_R_RESULT_BO_UNSEEN,
+        SERVO_STR_R_DEVICE,
         SERVO_STR_R_FIRMWARE, SERVO_STR_R_LOG, SERVO_STR_R_SUPPLY,
         SERVO_STR_R_READINGS, SERVO_STR_R_READINGS_FEW, SERVO_STR_R_SKIPPED,
         SERVO_STR_R_RESOLUTION, SERVO_STR_R_RESOLUTION_UNKNOWN,
+        SERVO_STR_R_LAG, SERVO_STR_R_REPEATS, SERVO_STR_R_UPPER_BOUND,
         SERVO_STR_R_DURATION, SERVO_STR_R_ROWS, SERVO_STR_R_TYPE,
         SERVO_STR_R_RATE, SERVO_STR_R_DANGER, SERVO_STR_R_HV,
         SERVO_STR_R_ENDS, SERVO_STR_R_BROWNOUT,
@@ -393,8 +397,11 @@ TEST_CASE(the_report_labels_line_up)
     };
     static const servo_str_t k_limits[] = {
         SERVO_STR_R_LIM_IDLE, SERVO_STR_R_LIM_HOLD, SERVO_STR_R_LIM_TRAVEL,
-        SERVO_STR_R_LIM_TRAVEL_OFF, SERVO_STR_R_LIM_STALL,
-        SERVO_STR_R_LIM_LATE,
+        SERVO_STR_R_LIM_TRAVEL_OFF, SERVO_STR_R_LIM_TRAVEL_BOUND,
+        SERVO_STR_R_LIM_TRAVEL_NONE,
+        SERVO_STR_R_LIM_STALL,
+        SERVO_STR_R_LIM_LATE, SERVO_STR_R_LIM_UNSEEN,
+        SERVO_STR_R_LIM_BO_SEEN, SERVO_STR_R_LIM_BO_UNSEEN,
     };
     for (int l = 0; l < UI_LANG_COUNT; ++l) {
         const ui_language_t *t = ui_text_table((ui_lang_t)l);
