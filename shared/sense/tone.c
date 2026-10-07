@@ -71,6 +71,24 @@ bool tone_init(tone_t *d, const tone_cfg_t *c)
     d->gap       = div_up((uint64_t)c->tick_hz * c->gap_us, 1000000u);
     d->start_low = div_up(2u * (uint64_t)c->tick_hz * c->hold_ns,
                           1000000000u);
+    /*
+     * Settings under which no signal can make a tone, refused rather than
+     * run deaf.  Two bursts need a low between them that is a low (at
+     * least glitch), that can start a burst (at least start_low), that is
+     * shorter than a tone period (at most per_max) and that does not end
+     * the run (under gap).  gap is at least per_max by the gap_us check
+     * above, so the per_max conditions are the stronger; the gap ones say
+     * the same of the silence.  A window needs window_min_periods periods
+     * to end in it, each at least half per_min long, the shortest that
+     * counts.
+     */
+    if (d->gap <= d->glitch || d->gap <= d->start_low
+        || d->per_max <= d->glitch || d->per_max <= d->start_low
+        || (uint64_t)(c->window_min_periods - 1u) * (d->per_min / 2u)
+               >= d->win_ticks) {
+        memset(d, 0, sizeof *d);
+        return false;
+    }
     return true;
 }
 
@@ -86,11 +104,19 @@ static float hz_of(const tone_t *d, uint32_t n, uint64_t ticks)
     return (float)d->c.tick_hz * (float)n / (float)ticks;
 }
 
-/* |a - b| * 100 > pct * ref, without a division. */
-static bool off_by_more(uint64_t a, uint64_t b, uint64_t ref, uint32_t pct)
+/* |a - b| * 100 * @p den > pct * ref: @p a lies more than pct / den
+ * percent from @p b, without a division, so an odd pct halves exactly. */
+static bool off_by_more_frac(uint64_t a, uint64_t b, uint64_t ref,
+                             uint32_t pct, uint32_t den)
 {
     const uint64_t diff = a > b ? a - b : b - a;
-    return diff * 100u > (uint64_t)pct * ref;
+    return diff * 100u * den > (uint64_t)pct * ref;
+}
+
+/* |a - b| * 100 > pct * ref. */
+static bool off_by_more(uint64_t a, uint64_t b, uint64_t ref, uint32_t pct)
+{
+    return off_by_more_frac(a, b, ref, pct, 1u);
 }
 
 static uint64_t beep_mean(const tone_t *d)
@@ -251,7 +277,7 @@ static uint32_t on_side(const tone_t *d, uint64_t bm, uint64_t m,
     for (uint32_t i = 0; i < d->n_pend; ++i) {
         const tone_pend_t *e = &d->pend[i];
         if (e->good && (e->p > m) == (bm > m)
-            && off_by_more(e->p, m, m, pct / 2u)) {
+            && off_by_more_frac(e->p, m, m, pct, 2u)) {
             n++;
         }
     }

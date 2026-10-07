@@ -473,6 +473,73 @@ TEST_CASE(a_configuration_that_contradicts_itself_is_refused)
     CHECK_EQ(det.car_max, 1);
 }
 
+/* A 1 MHz clock, tones 10 to 20 kHz, carrier from 30 kHz: the period of
+ * f_min_hz is 100 ticks. */
+static void cfg_1mhz(tone_cfg_t *c)
+{
+    tone_cfg_defaults(c, 1000000u);
+    c->f_min_hz = 10000u;
+    c->f_max_hz = 20000u;
+    c->carrier_min_hz = 30000u;
+    c->glitch_ns = 1000u;
+    c->hold_ns = 0u;
+    c->gap_us = 100u;
+}
+
+TEST_CASE(settings_under_which_no_signal_makes_a_tone_are_refused)
+{
+    tone_cfg_t c;
+    /* Twice a 100 us hold-off is 200 ticks, past the 100-tick gap and
+     * the 100-tick longest period: no low could start a burst and stay
+     * inside the run. */
+    cfg_1mhz(&c);
+    c.hold_ns = 100000u;
+    CHECK(!tone_init(&det, &c));
+    /* The gap past twice the hold-off, the longest period not: still no
+     * low between two bursts both starts one and fits a period. */
+    cfg_1mhz(&c);
+    c.hold_ns = 60000u;
+    c.gap_us = 200u;
+    CHECK(!tone_init(&det, &c));
+    /* Twice the hold-off exactly the longest period: refused; one tick
+     * under: taken. */
+    cfg_1mhz(&c);
+    c.hold_ns = 50000u;
+    CHECK(!tone_init(&det, &c));
+    c.hold_ns = 49500u;
+    CHECK(tone_init(&det, &c));
+    CHECK_EQ(det.start_low, 99);
+    CHECK_EQ(det.per_max, 100);
+    /* A glitch as long as the longest period: every low between two
+     * bursts is a glitch.  10 us is 10 ticks; a 100 kHz f_min_hz is a
+     * 10-tick period. */
+    cfg_1mhz(&c);
+    c.f_min_hz = 100000u;
+    c.f_max_hz = 200000u;
+    c.carrier_min_hz = 300000u;
+    c.glitch_ns = 10000u;
+    c.gap_us = 20u;
+    CHECK(!tone_init(&det, &c));
+    /* Or as long as the gap: every low ends the run. */
+    c.gap_us = 10u;
+    CHECK(!tone_init(&det, &c));
+    c.glitch_ns = 9000u;
+    c.gap_us = 20u;
+    CHECK(tone_init(&det, &c));
+    /* A window of 1000 us at 37.5 MHz is 37500 ticks; the shortest
+     * period that counts is 2884.  14 periods need 13 of them inside a
+     * window: 37492, taken.  15 need 14: 40376, refused. */
+    tone_cfg_defaults(&c, TICK_HZ);
+    c.window_us = 1000u;
+    c.window_min_periods = 14u;
+    CHECK(tone_init(&det, &c));
+    c.window_min_periods = 15u;
+    CHECK(!tone_init(&det, &c));
+    /* A refused set-up runs nothing. */
+    tone_edge(&det, 100u, true);
+    CHECK_EQ(tone_stats(&det)->edges, 0);
+}
+
 /* -------------------------------------------------------------- tones */
 
 TEST_CASE(a_square_tone_reads_its_frequency_from_500_hz_to_6_khz)
@@ -1142,6 +1209,39 @@ TEST_CASE(a_pitch_exactly_split_pct_away_does_not_split)
     }
 }
 
+TEST_CASE(an_odd_split_pct_halves_exactly)
+{
+    /* split_pct 1 on a 1 MHz clock, a beep's mean 1000 ticks, then a
+     * block of 1001, 1002, 1021, 1021: its pitch is 1.1 % off, but only
+     * two periods lie more than 0.5 % off, not the three a split needs.
+     * Truncating 1 / 2 to 0 counted all four. */
+    tone_cfg_t c;
+    tone_cfg_defaults(&c, 1000000u);
+    c.glitch_ns = 1000u;
+    c.split_pct = 1u;
+    static const uint64_t tail[] = { 1001, 1002, 1021, 1021 };
+    edges_t e = { 0 };
+    uint64_t t = 10000u;
+    for (unsigned k = 0; k < 11u; ++k) {
+        edge_tick(&e, t, true);
+        edge_tick(&e, t + 500u, false);
+        t += 1000u;
+    }
+    for (size_t k = 0; k < 4u; ++k) {
+        t += tail[k] - 1000u;
+        edge_tick(&e, t, true);
+        edge_tick(&e, t + 500u, false);
+        t += 1000u;
+    }
+    start(&c);
+    play_ticks(&e, t + 100000u);
+    CHECK_EQ(n_beeps, 1);
+    CHECK_EQ(beeps[0].bursts, 15);
+    CHECK_EQ(beeps[0].flags, 0);
+    CHECK_EQ(tone_stats(&det)->rejected, 0);
+    edges_free(&e);
+}
+
 TEST_CASE(a_beep_of_exactly_min_periods_is_a_beep)
 {
     /* 4 bursts, 3 periods: a beep.  3 bursts: none. */
@@ -1516,6 +1616,7 @@ int main(void)
 {
     RUN(the_defaults_are_a_configuration_init_takes);
     RUN(a_configuration_that_contradicts_itself_is_refused);
+    RUN(settings_under_which_no_signal_makes_a_tone_are_refused);
     RUN(a_square_tone_reads_its_frequency_from_500_hz_to_6_khz);
     RUN(a_chopped_tone_reads_the_tone_and_the_carrier);
     RUN(a_carrier_running_free_of_the_tone_moves_bursts_not_the_mean);
@@ -1541,6 +1642,7 @@ int main(void)
     RUN(a_low_of_exactly_twice_the_hold_off_can_start_a_burst);
     RUN(tones_at_exactly_the_lowest_and_highest_frequency_are_in_range);
     RUN(a_pitch_exactly_split_pct_away_does_not_split);
+    RUN(an_odd_split_pct_halves_exactly);
     RUN(a_beep_of_exactly_min_periods_is_a_beep);
     RUN(a_period_ending_on_a_window_boundary_belongs_to_the_next);
     RUN(after_a_hole_the_first_rise_starts_a_beep);

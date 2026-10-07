@@ -251,10 +251,14 @@ void tone_cfg_defaults(tone_cfg_t *c, uint32_t tick_hz);
  *  itself or names a range the tick clock cannot resolve: f_min_hz >=
  *  f_max_hz, carrier_min_hz <= f_max_hz, f_max_hz or carrier_min_hz above
  *  tick_hz (a period under one tick), hold_ns above 100000, glitch_ns
- *  outside 1 to 10000 or
- *  under one tick, gap_us under the period of f_min_hz,
- *  a window outside 1000 to 100000 us, f_min_hz under 50 Hz, a minimum of
- *  0. */
+ *  outside 1 to 10000 or under one tick, gap_us under the period of
+ *  f_min_hz, a window outside 1000 to 100000 us, f_min_hz under 50 Hz, a
+ *  minimum of 0.  Also refused, as settings under which no signal makes a
+ *  tone, in whole ticks: the period of f_min_hz, or the gap, at most the
+ *  glitch or at most twice the hold-off (no low could part two bursts
+ *  without being a glitch, being too short to start one, or ending the
+ *  run); window_min_periods - 1 periods of half the period of f_max_hz,
+ *  the shortest that counts, filling a window. */
 bool tone_init(tone_t *d, const tone_cfg_t *c);
 
 /** One edge at tick @p t, @p level after it. */
