@@ -3126,7 +3126,7 @@ static void draw_right(gfx_canvas_t *c, bool power)
              (unsigned)s.max_us);
     row(c, 322, TR(SV_RANGE), buf);
 
-    ui_button(c, s.centre_btn, "CENTRE", ui_theme_color(UI_C_ACCENT),
+    ui_button(c, s.centre_btn, TR(SV_CENTRE_BTN), ui_theme_color(UI_C_ACCENT),
               false, true);
     ui_button(c, s.sweep_btn, s.sweeping ? "HOLD" : "SWEEP",
               s.sweeping ? ui_theme_color(UI_C_ACCENT)

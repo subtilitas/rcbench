@@ -281,7 +281,7 @@ gezeichnete Horn eine Schätzung davon. Ein HOLD wartet nicht hinter
 Sweep-Schreibvorgängen, die schon auf dem Draht sind. Ein HOLD, den der Link
 500 ms nicht wiederholt hat, hat das andere Ende losgelassen; das Panel gibt
 die Surfaces dann zur Mitte frei, und das Horn geht dorthin. Ein Finger auf der
-Skala, CENTRE, FREIGEBEN, ein Disarm und das Verlassen der Seite beenden sie
+Skala, ZENTRIEREN, FREIGEBEN, ein Disarm und das Verlassen der Seite beenden sie
 ebenfalls, und verlorene Touch-Ereignisse halten sie an wie HOLD. Eine geänderte Einstellung startet sie mit der neuen Kurve neu; ein
 geändertes Profil oder eine geänderte Frame Rate geht sofort mit.
 SWEEP gibt es bei scharfem Prüfstand und einem Koprozessor mit Protokoll 4.2;
@@ -326,7 +326,7 @@ auf der linken Karte. Der Lauf führt das Servo und die Sollwerte und den
 Schalter von SUPPLY, bis er endet. Er endet vorzeitig, mit ausgeschaltetem
 Ausgang und dem Servo zur Mitte freigegeben, bei TEST BEENDEN (auf der linken
 Karte oder der TEST-Seite), STOP, einem Disarm, wenn der Link geht, beim
-Verlassen der Seite, bei einem Finger auf der Skala, CENTRE, SWEEP,
+Verlassen der Seite, bei einem Finger auf der Skala, ZENTRIEREN, SWEEP,
 FREIGEBEN, einem Tippen auf einen Sollwert, einer Änderung an Typ, Impulsen,
 Trim, Weg, Reverse oder TEMPO des Servos, bei verlorenen Touch-Ereignissen
 und beim Netzteil: siehe [die Liste](Servo-de.md#was-einen-lauf-beendet).
@@ -352,7 +352,7 @@ die Karte den Bericht vollständig angenommen hat.
 ### Einstellungen
 
 OPTIONEN, oben auf der rechten Karte, öffnet die Einstellungen des Servos über
-der linken Karte. ARM, CENTRE, FREIGEBEN und STOP bleiben, wo sie sind, und
+der linken Karte. ARM, ZENTRIEREN, FREIGEBEN und STOP bleiben, wo sie sind, und
 funktionieren. Ein Wert öffnet die Tastatur, eine Liste eine Liste, ein
 Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 

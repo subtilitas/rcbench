@@ -19,6 +19,8 @@ history is in git.
 
 ### Changed
 
+- **SERVO's CENTRE button reads ZENTRIEREN in German.** CENTRE stays
+  English as a pulse name (PULS CENTRE).
 - **The status band's mode reads BENCH or SIM.** It read LINK with the link
   up, the word the link chip beside it already showed. BENCH is the panel
   driving the coprocessor's outputs, SIM the panel running on its own

@@ -238,7 +238,7 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | `Prüfstand DISARMED` | DISARM oder alles andere, was den Prüfstand entschärft hat |
 | `Link verloren` | der Link zum Koprozessor ging während des Laufs verloren |
 | `Seite SERVO verlassen` | eine andere Seite wurde geöffnet |
-| `vom Bediener gestoppt` | TEST BEENDEN, ein Finger auf der Skala, CENTRE, SWEEP, FREIGEBEN, ein Tippen auf einen Sollwert |
+| `vom Bediener gestoppt` | TEST BEENDEN, ein Finger auf der Skala, ZENTRIEREN, SWEEP, FREIGEBEN, ein Tippen auf einen Sollwert |
 | `Servo-Optionen geändert` | Typ, Frame Rate, Impulse, Trim, Weg, Reverse oder TEMPO geändert |
 | `Touch-Ereignisse verloren` | zwischen zwei Frames gingen Ereignisse verloren |
 | `Netzteil antwortet nicht` | ein Messwert als nicht antwortend markiert |

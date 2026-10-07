@@ -59,7 +59,9 @@ Sicherheitsbedienelemente, die in jeder Sprache gleich lauten. Ein
 passen.
 
 - Die Sicherheits- und Antriebsbedienung: ARM, DISARM, ARMED, DISARMED,
-  STOP, SWEEP, HOLD, CENTRE, TRIM, REVERSE.
+  STOP, SWEEP, HOLD, TRIM, REVERSE. CENTRE bleibt als Pulsname Englisch
+  (PULS CENTRE); die Taste auf SERVO, die das Servo dorthin fährt, heißt
+  ZENTRIEREN.
 - Die Seitentitel: MOTOR & ESC, SERVO, SUPPLY, ANALYSER, LOGS, SETUP,
   SETTINGS, BATTERY, BALANCE, PROGRAMMER, OUTPUTS, PICK A PIN, LOG VIEWER,
   CAN BUS FAULT, LINK LOST. Ein Hinweis, der eine Seite nennt, nennt sie
