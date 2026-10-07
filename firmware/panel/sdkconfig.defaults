@@ -97,6 +97,18 @@ CONFIG_COMPILER_OPTIMIZATION_PERF=y
 # Scheduler ----------------------------------------------------------------
 CONFIG_FREERTOS_HZ=1000
 
+# Main task stack ----------------------------------------------------------
+# app_main runs the UI: every screen's enter, tick, event and render is
+# called on the main task.  ESP-IDF's default stack, 3584 bytes, is below
+# the UI's deepest call chain, which tools/stack_check.py reads out of the
+# ELF: 3856 bytes, through the log viewer's render and snprintf().  8192
+# holds that, the check's 1024-byte margin and 3312 bytes for the 165 calls
+# through a pointer the check cannot follow and for screens to grow.  The
+# stack is taken from internal RAM (random-access memory) at start-up, 4608
+# bytes more than the default.  CI fails when the chain outgrows the stack
+# less the margin.
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
 # Console on both sockets ---------------------------------------------------
 #
 # The board has two USB-C (Universal Serial Bus) sockets: one through a
