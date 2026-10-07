@@ -77,5 +77,5 @@ Verzögerung, weder konstant noch spezifiziert, das sind 300° bei 10 000 rpm.
 
 Einen Beschleunigungssensor und optional einen Indexsensor am Koprozessor.
 Keiner von beiden ist bestückt; der Bildschirm arbeitet deshalb aus dem Modell
-und trägt die Marke MODELLED. Einrichtung, Blattumrechnung und beide
+und trägt die Marke SIMULIERT. Einrichtung, Blattumrechnung und beide
 Platzierungsanleitungen funktionieren ohne die Sensoren.

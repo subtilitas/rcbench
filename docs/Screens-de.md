@@ -10,7 +10,7 @@ einzelnen Bildschirme bedient werden.
 Das obere Band ist auf allen Bildschirmen gleich. Von rechts: STOP, die
 Laufzeituhr (im scharfen Zustand oder nach einem Lauf), ARMED oder SAFE, ein
 FAULT-Code, sobald einer gemeldet wird, der Ausgangsmodus (LINK oder SIM) und
-LINK oder NO LINK.
+LINK oder KEIN LINK.
 
 STOP funktioniert auf jedem Bildschirm. Es entschärft und rastet ein: der
 Prüfstand bleibt entschärft, bis er erneut scharf geschaltet wird. Ein
@@ -43,14 +43,14 @@ steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
 
 | Marke | Bedeutung |
 | --- | --- |
-| SOON | den Bildschirm gibt es nicht; die Kachel nennt, was er tun wird und worauf er wartet |
-| MODELLED | den Bildschirm gibt es und er funktioniert, aber seine Hardware ist nicht bestückt; jeder Wert ist simuliert, und der Bildschirm sagt das |
+| BALD | den Bildschirm gibt es nicht; die Kachel nennt, was er tun wird und worauf er wartet |
+| SIMULIERT | den Bildschirm gibt es und er funktioniert, aber seine Hardware ist nicht bestückt; jeder Wert ist simuliert, und der Bildschirm sagt das |
 | keine | die Hardware ist bestückt, die Messwerte sind gemessen |
 
 Die Marke wird aus den Capability-Bits abgeleitet, die der Koprozessor beim
 Hochfahren meldet. Ein Bildschirm ohne seine Hardware öffnet trotzdem und
-arbeitet aus dem Modell. SUPPLY trägt MODELLED, solange der PD mini in SETUP
-unter INTERFACES abgeschaltet ist, unabhängig davon, was der Koprozessor
+arbeitet aus dem Modell. SUPPLY trägt SIMULIERT, solange der PD mini in SETUP
+unter ANSCHLÜSSE abgeschaltet ist, unabhängig davon, was der Koprozessor
 meldet: Das Panel rechnet dann sein eigenes Modell eines Netzteils.
 
 Das Menü im hellen Theme:
@@ -86,12 +86,12 @@ konkurrieren.
 
 Die Kurve ist die Aufzeichnung eines Laufs. Sie läuft nur, solange der
 Prüfstand scharf ist: das Scharfschalten löscht sie, das Entschärfen hält sie
-so an, wie sie stand. Die Beschriftung der Fläche liest `LIVE TELEMETRY`,
-solange sie läuft, `TELEMETRY HELD`, solange sie einen Lauf hält, und
-`TELEMETRY IDLE` vor dem ersten Scharfschalten, wenn im Plot
-`no run recorded` steht. Die rechte Achsenbeschriftung liest `NOW`, solange
-sie läuft, und `END` dort, wo eine gehaltene stehen geblieben ist. Die
-Anzeigen, die TABLE-Seite, die Summen und die Temperaturleiste sind
+so an, wie sie stand. Die Beschriftung der Fläche liest `TELEMETRIE LIVE`,
+solange sie läuft, `TELEMETRIE, LETZTER LAUF`, solange sie einen Lauf hält, und
+`TELEMETRIE RUHT` vor dem ersten Scharfschalten, wenn im Plot
+`kein Lauf aufgezeichnet` steht. Die rechte Achsenbeschriftung liest `JETZT`, solange
+sie läuft, und `ENDE` dort, wo eine gehaltene stehen geblieben ist. Die
+Anzeigen, die TABELLE-Seite, die Summen und die Temperaturleiste sind
 jederzeit live, ob scharf oder nicht.
 
 Das Fenster ist 534 Spalten breit bei 20 Abtastungen je Sekunde, also 26,7 s.
@@ -136,7 +136,7 @@ wurde, zwei Sekunden später wieder scharf schalten. Das Scharfschalten lässt d
 zweimal aufblitzen: weiss, schwarz, rot, und noch einmal, je ein gezeichneter
 Frame. Ein scharfer Prüfstand trägt das Gefahrenrot, und DISARM ist ein Druck
 und kein Halten: Anhalten braucht nie ein Halten. DISARM und STOP halten den
-Ausgang sofort an, ohne Rampe. RESET PEAKS löscht die Spitzenwertmarken und
+Ausgang sofort an, ohne Rampe. SPITZEN ZURÜCKSETZEN löscht die Spitzenwertmarken und
 lässt die Live-Anzeigen unverändert.
 
 ### EFF ist eine Guessimetrik
@@ -191,7 +191,7 @@ Abstand zwischen beiden ist die Verzögerung des Servos selbst. Die Ringe um
 die Spitze pulsieren, solange das Servo angesteuert wird. Den Finger zu heben
 lässt noch nicht los: Der Bildschirm wiederholt die letzte Stellung alle
 SERVO_HOLD_MS, ein Servo bleibt also stehen, wo es hingestellt wurde. Erst
-**RELEASE**, die Schaltfläche, führt die Ruderflächen auf die Mitte zurück --
+**FREIGEBEN**, die Schaltfläche, führt die Ruderflächen auf die Mitte zurück --
 und auch dann bleiben die Pins gebunden und treiben weiter, auf der Mitte
 ihres Wegs. Beendet werden die Flanken durch ein Entschärfen oder durch das
 Verlassen des Bildschirms, was entschärft.
@@ -203,7 +203,7 @@ diesem Bildschirm genau wie ein gebundener SERVO-PWM-Ausgang. Ist überhaupt
 kein Ruderflächen-Kanal gebunden, kommandiert er nichts und kein Pin bewegt
 sich.
 
-SPEED ist die Geschwindigkeit, mit der der Prüfstand den Ausgang bewegen
+TEMPO ist die Geschwindigkeit, mit der der Prüfstand den Ausgang bewegen
 darf, und nicht nur eine Geschwindigkeit für die Zeichnung. Bei 100 % geht
 der Befehl unverändert durch und das Servo läuft mit seiner eigenen
 Geschwindigkeit; darunter rampt der Prüfstand den Befehl davor, 30 % braucht
@@ -225,7 +225,7 @@ nicht dafür gebaut ist -- und das Netzteil, das das Servo versorgt: Spannung,
 Strom und Leistung, abgelesen und über die letzten 13 s geplottet. Ohne Sample
 vom Netzteil stehen dort `--`.
 
-**Das Netzteil wird auch hier eingestellt und geschaltet.** Die Zeile SET
+**Das Netzteil wird auch hier eingestellt und geschaltet.** Die Zeile SOLL
 unter dem Plot trägt die beiden Sollwerte von SUPPLY, Spannung und
 Strombegrenzung, und seinen Ausgangsschalter. Es sind die von SUPPLY, keine
 Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
@@ -233,82 +233,82 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
 - Ein Tippen auf einen Sollwert öffnet das Keypad über der linken Karte. Ein
   Wert außerhalb der Grenzen wird hineingeholt, wie auf SUPPLY.
 - Ist der Ausgang an, wartet ein getippter Sollwert auf die Rückfrage von
-  SUPPLY, OUTPUT IS ON, mit APPLY und CANCEL, außer SUPPLYs SETTINGS, CONFIRM
-  WHILE ON, KEYPAD ist aus. Die Rückfrage verschwindet unbeantwortet, wenn
+  SUPPLY, AUSGANG IST EIN, mit ÜBERNEHMEN und ABBRECHEN, außer SUPPLYs OPTIONEN, RÜCKFRAGE
+  IM BETRIEB, TASTENFELD ist aus. Die Rückfrage verschwindet unbeantwortet, wenn
   der Ausgang ausgeht.
 - Eine Spannung, die von 6,0 V oder darunter auf mehr als 6,0 V erhöht wird,
-  öffnet die Warnung HV SERVOS ONLY: Standardservos sind für 4,8 bis 6,0 V
+  öffnet die Warnung NUR HV-SERVOS: Standardservos sind für 4,8 bis 6,0 V
   ausgelegt, darüber arbeitet nur ein als HV (high voltage) spezifiziertes
   Servo innerhalb seiner Spezifikation; ein Standardservo kann darüber sofort
   zerstört werden. Die Spannung gilt erst, nachdem HOLD
-  TO APPLY 2 s gehalten wurde, dieselbe Geste wie bei der Profilwarnung;
-  CANCEL verwirft sie. STOP beendet das Halten. Bei eingeschaltetem Ausgang ersetzt sie die Rückfrage
+  TO ÜBERNEHMEN 2 s gehalten wurde, dieselbe Geste wie bei der Profilwarnung;
+  ABBRECHEN verwirft sie. STOP beendet das Halten. Bei eingeschaltetem Ausgang ersetzt sie die Rückfrage
   von SUPPLY und bleibt stehen, wenn der Ausgang ausgeht. Eine Spannung, die
   schon über 6,0 V liegt, ändert sich ohne sie. Eine auf SUPPLY eingestellte
   Spannung öffnet sie nicht.
 
   ![Die HV-Warnung](img/de/servo-hv.png)
 
-- OUTPUT ON ist ein Halten über zwei Sekunden, OUTPUT OFF ein Tippen, wie auf
+- AUSGANG EIN ist ein Halten über zwei Sekunden, AUSGANG AUS ein Tippen, wie auf
   SUPPLY. STOP beendet ein laufendes Halten. Liegt der Spannungssollwert über
-  6,0 V, gleich wo er eingestellt wurde, öffnet OUTPUT ON stattdessen HV
+  6,0 V, gleich wo er eingestellt wurde, öffnet AUSGANG EIN stattdessen HV
   SERVOS ONLY mit der Spannung, und der Ausgang geht erst an, nachdem HOLD TO
-  APPLY 2 s gehalten wurde; das Halten des Schalters selbst und ein Tippen
-  auf APPLY schalten nichts ein. Ein Sollwert, der während des gewöhnlichen
+  ÜBERNEHMEN 2 s gehalten wurde; das Halten des Schalters selbst und ein Tippen
+  auf ÜBERNEHMEN schalten nichts ein. Ein Sollwert, der während des gewöhnlichen
   Haltens über 6,0 V steigt -- auf SUPPLY, oder nach einem Lauf
-  zurückgesetzt --, wird beim Abschluss des Haltens gesehen: HV SERVOS ONLY
+  zurückgesetzt --, wird beim Abschluss des Haltens gesehen: NUR HV-SERVOS
   öffnet sich, und nichts geht an. Beim Verlassen von SERVO bleibt
-  der Ausgang, wie er ist; ein Druck auf OUTPUT OFF beim Verlassen wird als
+  der Ausgang, wie er ist; ein Druck auf AUSGANG AUS beim Verlassen wird als
   das OFF gesendet, das er war.
 
 **SWEEP fährt das Servo eine Kurve ab**, auf dem Koprozessor, wo das Timing
-nicht vom Link abhängt: CURVE (Rechteck, Sinus oder Dreieck), SPEED (0,05 bis
-5 Zyklen je Sekunde) und DWELL (die Haltezeit an jedem Ende) von der
-TEST-Seite, um PULSE CENTRE herum. RANGE ist ein Anteil des Wegs, den das
-Servo machen darf: von TRAVEL und vom näheren von PULSE MIN und MAX, damit die
-Kurve kein Ende erreicht, das sie nicht erreichen darf. SPEED auf der rechten
+nicht vom Link abhängt: KURVE (Rechteck, Sinus oder Dreieck), TEMPO (0,05 bis
+5 Zyklen je Sekunde) und VERWEILEN (die Haltezeit an jedem Ende) von der
+TEST-Seite, um PULS CENTRE herum. BEREICH ist ein Anteil des Wegs, den das
+Servo machen darf: von WEG und vom näheren von PULS MIN und MAX, damit die
+Kurve kein Ende erreicht, das sie nicht erreichen darf. TEMPO auf der rechten
 Karte begrenzt sie wie ein Ziehen, Trim gilt nicht. Das Horn folgt derselben
 Kurve, im Panel gerechnet und ab dem Moment, in dem der Koprozessor seine
 gestartet hat. Während sie läuft, heißt der Knopf HOLD; ein Tippen hält die
-Kurve dort an, wo der Ausgang gerade steht -- SPEED kann ihn hinter der Kurve
+Kurve dort an, wo der Ausgang gerade steht -- TEMPO kann ihn hinter der Kurve
 zurücklassen --, und hält ihn dort. Das Halten übernimmt der Koprozessor,
 weil nur er genau weiß, wo das ist; ohne Rückmeldung ist das im Panel
 gezeichnete Horn eine Schätzung davon. Ein HOLD wartet nicht hinter
 Sweep-Schreibvorgängen, die schon auf dem Draht sind. Ein HOLD, den der Link
 500 ms nicht wiederholt hat, hat das andere Ende losgelassen; das Panel gibt
 die Surfaces dann zur Mitte frei, und das Horn geht dorthin. Ein Finger auf der
-Skala, CENTRE, RELEASE, ein Disarm und das Verlassen des Screens beenden sie
+Skala, CENTRE, FREIGEBEN, ein Disarm und das Verlassen des Screens beenden sie
 ebenfalls, und verlorene Touch-Ereignisse halten sie an wie HOLD. Eine geänderte Einstellung startet sie mit der neuen Kurve neu; ein
 geändertes Profil oder eine geänderte Frame Rate geht sofort mit.
 SWEEP gibt es bei scharfem Prüfstand und einem Koprozessor mit Protokoll 4.2;
 der Koprozessor hält eine Kurve an, die das Panel 500 ms nicht wiederholt hat,
 und lässt jede Surface dort stehen, wo ihr Ausgang gerade ist.
 
-**START TEST startet den automatischen Test** auf der TEST-Seite: das Servo
+**TEST STARTEN startet den automatischen Test** auf der TEST-Seite: das Servo
 wird durch die dort gewählten Spannungen geführt, sein Strom in Ruhe, in
 Bewegung und beim Halten gemessen, seine Stellzeit gemessen, und die
 Spannung gesucht, bei der es sich nicht mehr bewegt. [Servoverfahren](Servo-de.md#automatischer-test)
-beschreibt das Verfahren und die Dateien. START TEST braucht einen scharfen
-Prüfstand und ein Netzteil, das antwortet; die Zeile darunter sagt ARM FIRST,
-NO STEP CHOSEN, SUPPLY NOT ANSWERING, RANGE TOO SMALL (die Enden aus RANGE
-und TRAVEL fallen auf PULSE CENTRE), A STEP IS OUTSIDE THE CAPS (eine
+beschreibt das Verfahren und die Dateien. TEST STARTEN braucht einen scharfen
+Prüfstand und ein Netzteil, das antwortet; die Zeile darunter sagt ZUERST ARM,
+KEINE STUFE GEWÄHLT, NETZTEIL ANTWORTET NICHT, BEREICH ZU KLEIN (die Enden aus BEREICH
+und WEG fallen auf PULS CENTRE), STUFE ÜBER DEN OBERGRENZEN (eine
 gewählte Stufe über der geltenden Spannungsgrenze, geprüft, bevor eine
-Warnung aufgeht) oder LAST REPORT STILL WRITING und folgt dem Prüfstand und
+Warnung aufgeht) oder LETZTER BERICHT SCHREIBT NOCH und folgt dem Prüfstand und
 den Einstellungen, wenn sie sich ändern. Es ist ein Halten über zwei Sekunden,
-die Geste von OUTPUT ON, weil ein Lauf das Netzteil einschaltet und das Servo
+die Geste von AUSGANG EIN, weil ein Lauf das Netzteil einschaltet und das Servo
 bewegt. Ist HV SERVO an und eine Stufe über 6,0 V gewählt, öffnet ein Tippen
-stattdessen HV SERVOS ONLY mit der höchsten Stufe, und der Lauf startet erst,
-nachdem HOLD TO APPLY 2 s gehalten wurde. HV SERVO gilt für die Sitzung:
+stattdessen NUR HV-SERVOS mit der höchsten Stufe, und der Lauf startet erst,
+nachdem HALTEN ZUM ÜBERNEHMEN 2 s gehalten wurde. HV SERVO gilt für die Sitzung:
 jeder Neustart schaltet es aus.
 
 Die Einstellungen schließen sich beim Start, und Stufe und Phase stehen oben
 auf der linken Karte. Der Lauf führt das Servo und die Sollwerte und den
 Schalter von SUPPLY, bis er endet. Er endet vorzeitig, mit ausgeschaltetem
-Ausgang und dem Servo zur Mitte freigegeben, bei STOP TEST (auf der linken
+Ausgang und dem Servo zur Mitte freigegeben, bei TEST BEENDEN (auf der linken
 Karte oder der TEST-Seite), STOP, einem Disarm, wenn der Link geht, beim
 Verlassen des Screens, bei einem Finger auf der Skala, CENTRE, SWEEP,
-RELEASE, einem Tippen auf einen Sollwert, einer Änderung an Typ, Impulsen,
-Trim, Weg, Reverse oder SPEED des Servos, bei verlorenen Touch-Ereignissen
+FREIGEBEN, einem Tippen auf einen Sollwert, einer Änderung an Typ, Impulsen,
+Trim, Weg, Reverse oder TEMPO des Servos, bei verlorenen Touch-Ereignissen
 und beim Netzteil: siehe [die Liste](Servo-de.md#was-einen-lauf-beendet).
 Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
 Lauf zurück, gleich welcher Screen oben ist. Das wartet, bis das OFF des
@@ -316,13 +316,13 @@ Laufs gesendet ist, ein danach genommener Messwert zeigt, dass das
 Netzteil selbst den Ausgang aus meldet -- nicht die Anforderung des Panels,
 der das PD mini einen Link-Austausch und eine Modultransaktion später
 folgt --,
-kein ON unterwegs ist und OUTPUT ON weder auf SERVO noch auf SUPPLY
+kein ON unterwegs ist und AUSGANG EIN weder auf SERVO noch auf SUPPLY
 gehalten wird. Sollwerte, die nach
 dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 
 ![Ein Lauf](img/de/servo-run.png)
 
-Das Ergebnis bleibt bis CLOSE auf der linken Karte: PASS, FAIL oder ABORTED
+Das Ergebnis bleibt bis SCHLIESSEN auf der linken Karte: BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN
 und der Grund, die längste Stellzeit und der höchste Haltestrom, und die
 Dateien, die die Karte angenommen hat: `BENCHnnn.CSV`, und `+ .TXT`, sobald
 die Karte den Bericht vollständig angenommen hat.
@@ -331,8 +331,8 @@ die Karte den Bericht vollständig angenommen hat.
 
 ### Einstellungen
 
-SETTINGS, oben auf der rechten Karte, öffnet die Einstellungen des Servos über
-der linken Karte. ARM, CENTRE, RELEASE und STOP bleiben, wo sie sind, und
+OPTIONEN, oben auf der rechten Karte, öffnet die Einstellungen des Servos über
+der linken Karte. ARM, CENTRE, FREIGEBEN und STOP bleiben, wo sie sind, und
 funktionieren. Ein Wert öffnet die Tastatur, eine Liste eine Liste, ein
 Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 
@@ -340,23 +340,23 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 
 | Seite | Einstellung | Wirkung |
 | --- | --- | --- |
-| OUTPUT | TYPE | das Servoprofil: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC oder HELI TAIL 760 |
-| OUTPUT | FRAME RATE | wie oft ein Impuls gesendet wird; die Liste des Typs oder CUSTOM über die Tastatur |
-| OUTPUT | PULSE MIN, CENTRE, MAX | die Impulsbreiten, auf die der Weg abgebildet wird, 400 bis 2500 us: -90 Grad ist MIN, 0 ist CENTRE, +90 Grad ist MAX, und RELEASE ruht auf CENTRE. Ein Ende liegt nicht weiter von CENTRE entfernt als CENTRE von 400 us oder 2500 us |
-| OUTPUT | TRIM | zur Mitte addiert, 5 us je Schritt, bis 200 us in jede Richtung |
-| OUTPUT | TRAVEL | wie weit der Arm in jede Richtung darf, 10 bis 90 Grad |
-| OUTPUT | REVERSE | die Richtung, in der der Winkel auf den Impuls abgebildet wird |
-| TEST | CURVE, SPEED, RANGE | die Bewegung von SWEEP: Rechteck, Sinus oder Dreieck, 0,05 bis 5 Hz, 10 bis 100 % des Wegs. Der automatische Test springt zwischen den Enden, die RANGE ergibt |
-| TEST | LENGTH BY, TEST TIME, MOVEMENTS | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen |
-| TEST | DWELL, SETTLE | Haltezeit an jedem Ende; Wartezeit nach einer Spannungsstufe vor dem Messen |
+| AUSGANG | TYP | das Servoprofil: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC oder HELI TAIL 760 |
+| AUSGANG | FRAME RATE | wie oft ein Impuls gesendet wird; die Liste des Typs oder EIGENE über die Tastatur |
+| AUSGANG | PULS MIN, CENTRE, MAX | die Impulsbreiten, auf die der Weg abgebildet wird, 400 bis 2500 us: -90 Grad ist MIN, 0 ist CENTRE, +90 Grad ist MAX, und FREIGEBEN ruht auf CENTRE. Ein Ende liegt nicht weiter von CENTRE entfernt als CENTRE von 400 us oder 2500 us |
+| AUSGANG | TRIM | zur Mitte addiert, 5 us je Schritt, bis 200 us in jede Richtung |
+| AUSGANG | WEG | wie weit der Arm in jede Richtung darf, 10 bis 90 Grad |
+| AUSGANG | REVERSE | die Richtung, in der der Winkel auf den Impuls abgebildet wird |
+| TEST | KURVE, TEMPO, BEREICH | die Bewegung von SWEEP: Rechteck, Sinus oder Dreieck, 0,05 bis 5 Hz, 10 bis 100 % des Wegs. Der automatische Test springt zwischen den Enden, die BEREICH ergibt |
+| TEST | LÄNGE NACH, TESTZEIT, BEWEGUNGEN | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen |
+| TEST | VERWEILEN, EINSCHWINGEN | Haltezeit an jedem Ende; Wartezeit nach einer Spannungsstufe vor dem Messen |
 | TEST | STEP 4,8 / 6,0 / 7,4 / 8,4 V, BROWN-OUT | die Spannungsstufen und der Brown-out-Lauf ab 5,0 V abwärts; 7,4 und 8,4 V laufen nur mit HV SERVO an |
-| TEST | HV SERVO | nimmt die Stufen 7,4 und 8,4 V hinzu, vorgegeben aus und nach jedem Neustart aus; ein Lauf mit ihnen startet nur über HV SERVOS ONLY |
-| TEST | START TEST | der automatische Test: 2 s Halten bei scharfem Prüfstand; STOP TEST, solange er läuft |
-| LIMITS | VOLTAGE MAX, CURRENT MAX | die Grenzen des Bildschirms SUPPLY, dieselben Einstellungen |
-| LIMITS | STALL AT | über diesem Strom gilt das Servo als blockiert |
-| LIMITS | IDLE CURRENT, HOLD CURRENT, TRAVEL TIME | Pass/Fail-Grenzen; 0 wird nicht geprüft |
-| DUT | NAME | das Testobjekt, bis 23 Zeichen, für den Bericht |
-| DUT | REPORT | ein Textbericht neben dem Log jedes Tests |
+| TEST | HV SERVO | nimmt die Stufen 7,4 und 8,4 V hinzu, vorgegeben aus und nach jedem Neustart aus; ein Lauf mit ihnen startet nur über NUR HV-SERVOS |
+| TEST | TEST STARTEN | der automatische Test: 2 s Halten bei scharfem Prüfstand; TEST BEENDEN, solange er läuft |
+| GRENZEN | SPANNUNG MAX, STROM MAX | die Grenzen des Bildschirms SUPPLY, dieselben Einstellungen |
+| GRENZEN | BLOCKIERT AB | über diesem Strom gilt das Servo als blockiert |
+| GRENZEN | RUHESTROM, HALTESTROM, STELLZEIT | Pass/Fail-Grenzen; 0 wird nicht geprüft |
+| PRÜFLING | NAME | das Testobjekt, bis 23 Zeichen, für den Bericht |
+| PRÜFLING | BERICHT | ein Textbericht neben dem Log jedes Tests |
 
 | Typ | Mitte | Weg | Bildwiederholraten |
 | --- | --- | --- | --- |
@@ -372,9 +372,9 @@ also 1 / (längster Impuls + 1 ms): 333 Hz bei 2000 us. Die Heli-Profile laufen
 mit den Raten, die Rotorflight für digitale Taumelscheiben- und
 Schmalband-Heckservos nennt, mit mindestens 0,5 ms zwischen den Impulsen. Eine
 Rate, die den Impulsen keine Pause lässt, wird abgelehnt, ebenso ein längerer
-PULSE MAX bei einer Rate, in die er nicht passt. Die Pause gilt nach dem
+PULS MAX bei einer Rate, in die er nicht passt. Die Pause gilt nach dem
 längsten Impuls, den der Koprozessor ausgeben kann, dem oberen Ende des
-Bereichs, den ein Befehl trägt: PULSE MAX, oder darüber hinaus, wenn CENTRE
+Bereichs, den ein Befehl trägt: PULS MAX, oder darüber hinaus, wenn CENTRE
 nicht in der Mitte liegt, um so viel, wie CENTRE näher an MAX liegt als an MIN.
 Ein CENTRE, der dieses Ende über die Pause der Rate schieben würde, wird
 ebenfalls abgelehnt.
@@ -382,8 +382,8 @@ ebenfalls abgelehnt.
 **Ein Heli-Typ oder jede Bildwiederholrate über 60 Hz kann ein Servo zerstören,
 das nicht dafür gebaut ist.** Die Wahl öffnet eine Warnung in der
 Gefahrenfarbe, die nennt, was gewählt ist und was es mit einem nicht dafür
-gebauten Servo macht; angewendet wird es erst, nachdem HOLD TO APPLY 2 s
-gehalten wurde. CANCEL, ein abrutschender Finger, ein Touch-Verlust und das
+gebauten Servo macht; angewendet wird es erst, nachdem HALTEN ZUM ÜBERNEHMEN 2 s
+gehalten wurde. ABBRECHEN, ein abrutschender Finger, ein Touch-Verlust und das
 Verlassen des Bildschirms wenden nichts an. Typ und Rate bleiben auf der
 rechten Karte rot, und jeder Neustart geht auf STANDARD PWM mit 50 Hz zurück:
 ein nach einem Neustart angestecktes Servo bekommt nie eine Rate, die für ein
@@ -400,13 +400,13 @@ geschieht, ist der, den der Arm verwendet. Eine schnellere Rate folgt den
 Impulsbreiten, sobald alle angekommen sind; jede andere Rate geht ihnen voraus,
 und nichts Breiteres geht hinaus, bevor sie angekommen ist. So tragen die Pins
 nie eine schnelle Rate mit den breiteren Impulsen eines langsameren Profils.
-Die OUTPUT-Seite sagt, was aus ihr wurde:
+Die AUSGANG-Seite sagt, was aus ihr wurde:
 
 | Hinweis | Bedeutung |
 | --- | --- |
 | In force | jede PWM-Surface läuft mit der angezeigten Rate |
 | The rate goes with the next position | noch nicht geschrieben |
-| REFUSED | eine Surface teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
+| ABGELEHNT | eine Surface teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
 | This coprocessor takes no frame rate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50 Hz seiner Bindung |
 
 Ein Neustart des Koprozessors und jede auf OUTPUTS geschriebene Bindung setzen
@@ -415,12 +415,12 @@ seine Rate mit der nächsten Stellung erneut, gegen die dann geltende Bindung.
 Eine Bindung wird nicht geschrieben, solange das Zurücksetzen auf die eigene
 Rate jedes Slots unbeantwortet bleibt, und der Prüfstand wird von keinem
 Screen aus scharf, solange die Rate der Surfaces nicht bekannt ist: Der Arm
-wird mit `servo frame rate not known -- arm again` abgelehnt, und ein Arm, der
+wird mit `Frame Rate des Servos unbekannt -- erneut ARM` abgelehnt, und ein Arm, der
 bei unterbrochenem Link gemacht wurde, erreicht den Koprozessor erst, wenn das
 Zurücksetzen angekommen ist.
 
-Die OUTPUT-Einstellungen und HV SERVO gelten für die Sitzung; die übrigen
-Einstellungen unter TEST, LIMITS und DUT liegen im NVS (Non-Volatile Storage)
+Die AUSGANG-Einstellungen und HV SERVO gelten für die Sitzung; die übrigen
+Einstellungen unter TEST, GRENZEN und PRÜFLING liegen im NVS (Non-Volatile Storage)
 und werden wie bei SUPPLY geschrieben.
 
 ![Die Einstellungen des automatischen Tests](img/de/servo-test.png)
@@ -448,29 +448,29 @@ PD mini, einen USB-PD-Trigger (USB Power Delivery), der über einen UART
 Koprozessor steuert ihn über einen PIO-UART (PIO: Programmable
 Input/Output) auf zwei seiner Pins, über die SUPPLY-Link-Page (Protokoll
 4.3). Das Panel schreibt die Page und liest sie alle 100 ms. Ist der PD mini
-in SETUP unter INTERFACES eingeschaltet, sagt die Kopfzeile PD MINI. Ist er
+in SETUP unter ANSCHLÜSSE eingeschaltet, sagt die Kopfzeile PD MINI. Ist er
 abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
-Netzteils: die Kopfzeile sagt SUPPLY MODEL, und die Kachel im Menü trägt
-MODELLED. Gegen ein Modul ist der PD mini noch nicht gelaufen.
+Netzteils: die Kopfzeile sagt NETZTEIL SIMULIERT, und die Kachel im Menü trägt
+SIMULIERT. Gegen ein Modul ist der PD mini noch nicht gelaufen.
 
 Das Layout ist das von MOTOR & ESC. Der Plot zeigt Spannung, Strom und
 Leistung der letzten 27 s. Die Leiste rechts zeigt die Messwerte, die
 niedrigste Spannung des Laufs und seinen höchsten Strom und seine höchste
-Leistung. MODE sagt, welchen Sollwert das Netzteil hält: CV (constant voltage)
+Leistung. MODUS sagt, welchen Sollwert das Netzteil hält: CV (constant voltage)
 bei der eingestellten Spannung oder CC (constant current) an der
 Strombegrenzung. CC steht in der Warnfarbe: ein Netzteil in CC liefert der
 Last nicht die Spannung, auf die es gestellt ist.
 
-Ein Sollwert steht neben seinem Messwert. VOLT und CURR tragen ihn in Klammern
+Ein Sollwert steht neben seinem Messwert. SPANN. und STROM tragen ihn in Klammern
 hinter dem Namen, und der Plot zeichnet ihn gestrichelt in der Farbe und auf
-der Skala des Messwerts. TABLE führt beide auf. Der Wert in Klammern ist der
+der Skala des Messwerts. TABELLE führt beide auf. Der Wert in Klammern ist der
 Sollwert, den das Netzteil zu halten meldet; solange es nicht antwortet, der
 des Bildschirms.
 
 | Sollwert | Modell | PD mini | Knöpfe |
 | --- | --- | --- | --- |
-| VOLTAGE | 3,3 bis 21 V, Schritte von 20 mV | 1 bis 20 V, Schritte von 10 mV | 0,1 V |
-| CURRENT LIMIT | 0,5 bis 5 A, Schritte von 50 mA | 0,05 bis 3 A, Schritte von 10 mA | 0,1 A |
+| SPANNUNG | 3,3 bis 21 V, Schritte von 20 mV | 1 bis 20 V, Schritte von 10 mV | 0,1 V |
+| STROMBEGRENZUNG | 0,5 bis 5 A, Schritte von 50 mA | 0,05 bis 3 A, Schritte von 10 mA | 0,1 A |
 
 Die Bereiche des Modells sind das weiteste Profil einer USB-PD-PPS-Quelle
 (Programmable Power Supply), 3,3 bis 21 V bei bis zu 5 A. Die des PD mini
@@ -480,31 +480,31 @@ Spannung ist zusätzlich auf 0,5 V unter der Eingangsspannung begrenzt, die
 er meldet, an 5 V Eingang also höchstens 4,5 V. Ein Sollwert über dem
 Eingang bringt das Modul in ERR, bis es stromlos war; die 0,5 V Abstand
 sind nicht gemessen. Beide engen
-die Grenzen unter SETTINGS ein, und die Schieber folgen dem Netzteil, das
+die Grenzen unter OPTIONEN ein, und die Schieber folgen dem Netzteil, das
 in Gebrauch ist. Ein Tippen auf eine Spur setzt den Wert unter dem Finger.
 
-**Ein Tippen auf die Karte VOLT oder CURR oder auf den Wert eines Sollwerts
+**Ein Tippen auf die Karte SPANN. oder STROM oder auf den Wert eines Sollwerts
 öffnet eine Tastatur** über der linken Spalte. Sie zeigt den Bereich in der
 Titelzeile und den aktuellen Wert blass, bis eine Ziffer getippt ist. OK
 übernimmt einen Wert im Bereich, gerundet auf den Schritt des Netzteils; ein
 Wert außerhalb wird abgelehnt, und der Bereich wechselt in die Warnfarbe. OK
-ohne Eingabe und CANCEL lassen den Sollwert, wie er war.
+ohne Eingabe und ABBRECHEN lassen den Sollwert, wie er war.
 
 ![Die Tastatur](img/de/supply-keypad.png)
 
 **Eine Änderung an einem eingeschalteten Ausgang fragt zuerst.** Solange der
 Ausgang an ist, öffnet ein neuer Sollwert vom Schieber oder seinen
 Schrittknöpfen oder von der Tastatur eine Frage, die die Änderung nennt.
-APPLY gibt sie dem Netzteil; CANCEL verwirft sie, und der Schieber geht
+ÜBERNEHMEN gibt sie dem Netzteil; ABBRECHEN verwirft sie, und der Schieber geht
 zurück. Ein Ziehen fragt einmal, beim Loslassen, und bis dahin hält das
 Netzteil den alten Sollwert. Bei ausgeschaltetem Ausgang wird nichts gefragt.
-SETTINGS schaltet die Frage für den Schieber und für die Tastatur getrennt
+OPTIONEN schaltet die Frage für den Schieber und für die Tastatur getrennt
 ab.
 
 ![Die Frage](img/de/supply-confirm.png)
 
-**OUTPUT ON ist ein Zwei-Sekunden-Halten**, dieselbe Geste und dieselbe Blende
-wie ARM. OUTPUT OFF ist ein Tippen. STOP schaltet den Ausgang auf jedem
+**AUSGANG EIN ist ein Zwei-Sekunden-Halten**, dieselbe Geste und dieselbe Blende
+wie ARM. AUSGANG AUS ist ein Tippen. STOP schaltet den Ausgang auf jedem
 Bildschirm ab. Ebenso jeder andere Stopp, den der Prüfstand zählt -- ein
 Touch, der nicht mehr antwortet, ein ON, dessen Touch-Ereignisse verloren
 gingen, bevor der Bildschirm es zeigte, und ein Koprozessor, der nicht scharf
@@ -518,7 +518,7 @@ ist.
 **Mit dem PD mini** geht ein OFF vor allem anderen an die SUPPLY-Page, was
 das Panel ihr schuldet, und der Koprozessor schaltet den Ausgang selbst ab,
 wenn der Heartbeat des Panels ausbleibt. Ein eingeschalteter PD mini zeigt
-NOT ANSWERING, solange kein Koprozessor antwortet, der Protokoll 4.3
+ANTWORTET NICHT, solange kein Koprozessor antwortet, der Protokoll 4.3
 spricht, oder solange die Messwerte der Page älter als 1500 ms sind; ein
 Ausgang, der an ist, wird dann abgeschaltet. Ebenfalls abgeschaltet, mit
 einer Zeile im Band, wird der Ausgang, wenn der Koprozessor ein ON abweist
@@ -530,55 +530,55 @@ wenn der Ausgang nicht schalten will und wenn die Sollwerte nicht übernommen
 werden. Eine Änderung der Pins oder der Baudrate und das Ein- oder Ausschalten
 des PD mini schalten den Ausgang ab.
 
-OUTPUT ON und OFF, RESET PEAKS und die Messwerte bleiben unter der Tastatur,
-der Frage und SETTINGS bedienbar. Ein Finger zur Zeit: solange einer ein
+AUSGANG EIN und AUS, SPITZEN ZURÜCKSETZEN und die Messwerte bleiben unter der Tastatur,
+der Frage und OPTIONEN bedienbar. Ein Finger zur Zeit: solange einer ein
 Bedienelement hält, bewirkt ein zweiter Finger nirgends auf dem Bildschirm
 etwas.
 
 ### Einstellungen
 
-SETTINGS, rechts in der Leiste über beiden Spalten, öffnet die Einstellungen
+OPTIONEN, rechts in der Leiste über beiden Spalten, öffnet die Einstellungen
 des Netzteils über der linken Spalte. Jede liegt im NVS (Non-Volatile Storage)
 des Panels und übersteht einen Neustart. Ein Wert öffnet die Tastatur, ein
 Schalter kippt beim Tippen. Jede Änderung wird im nächsten Frame geschrieben,
 in dem der Prüfstand unscharf ist, der Ausgang des Netzteils aus ist und nicht
 das Foto der Platine geladen wird, und mit ihr jede ungespeicherte Änderung
-aus SETUP: ein Flash-Schreibvorgang hält beide Kerne an, OUTPUT OFF und die
-Trips eingeschlossen. Die unterste Zeile sagt SAVED, SAVE WAITING, NOT SAVED
-(der Schreibvorgang wurde abgelehnt) oder SETUP CHANGES NOT SAVED: eine
-Änderung in SETUP, die ohne SAVE verlassen wurde und die nichts schreibt, bis
-SAVE dort oder eine Änderung hier danach fragt.
+aus SETUP: ein Flash-Schreibvorgang hält beide Kerne an, AUSGANG AUS und die
+Trips eingeschlossen. Die unterste Zeile sagt GESPEICHERT, SPEICHERN WARTET, NICHT GESPEICHERT
+(der Schreibvorgang wurde abgelehnt) oder SETUP NICHT GESPEICHERT: eine
+Änderung in SETUP, die ohne SPEICHERN verlassen wurde und die nichts schreibt, bis
+SPEICHERN dort oder eine Änderung hier danach fragt.
 
 ![Die Einstellungen des Netzteils](img/de/supply-settings.png)
 
 | Einstellung | Bereich | Vorgabe | Wirkung |
 | --- | --- | --- | --- |
-| VOLTAGE MAX | 3,3 bis 21 V | 21,00 V | die höchste Spannung, die ein Sollwert annimmt |
-| CURRENT MAX | 0,5 bis 5 A | 5,00 A | die höchste Strombegrenzung, die ein Sollwert annimmt |
-| START VOLTAGE | bis VOLTAGE MAX | 6,00 V | der Spannungs-Sollwert nach einem Neustart |
-| START CURRENT | bis CURRENT MAX | 2,00 A | die Strombegrenzung nach einem Neustart |
-| CURRENT TRIP | 0 bis 5 A | OFF | Ausgang aus, wenn der Strom TRIP TIME lang darüber lag |
-| VOLTAGE TRIP | 0 bis 21 V | OFF | Ausgang aus, wenn die Spannung TRIP TIME lang darüber lag |
-| TRIP TIME | 0 bis 5000 ms | 100 ms | wie lange ein Messwert über einem Trip liegt, bevor er auslöst |
-| SLIDER AND STEPS | ON, OFF | ON | fragen, bevor der Schieber einen eingeschalteten Ausgang ändert |
-| KEYPAD | ON, OFF | ON | fragen, bevor die Tastatur einen eingeschalteten Ausgang ändert |
+| SPANNUNG MAX | 3,3 bis 21 V | 21,00 V | die höchste Spannung, die ein Sollwert annimmt |
+| STROM MAX | 0,5 bis 5 A | 5,00 A | die höchste Strombegrenzung, die ein Sollwert annimmt |
+| STARTSPANNUNG | bis SPANNUNG MAX | 6,00 V | der Spannungs-Sollwert nach einem Neustart |
+| STARTSTROM | bis STROM MAX | 2,00 A | die Strombegrenzung nach einem Neustart |
+| ÜBERSTROM | 0 bis 5 A | AUS | Ausgang aus, wenn der Strom ABSCHALTZEIT lang darüber lag |
+| ÜBERSPANNUNG | 0 bis 21 V | AUS | Ausgang aus, wenn die Spannung ABSCHALTZEIT lang darüber lag |
+| ABSCHALTZEIT | 0 bis 5000 ms | 100 ms | wie lange ein Messwert über einem Trip liegt, bevor er auslöst |
+| SLIDER, SCHRITTE | EIN, AUS | EIN | fragen, bevor der Schieber einen eingeschalteten Ausgang ändert |
+| TASTENFELD | EIN, AUS | EIN | fragen, bevor die Tastatur einen eingeschalteten Ausgang ändert |
 
 Eine Grenze, die unter einen Sollwert gesenkt wird, holt den Sollwert sofort
 auf sie herunter, und einen Startwert mit ihm. Ein getippter Wert kommt in der
 sicheren Richtung auf den Schritt der Einstellung: eine Grenze rundet ab, 12,01 V
-erlauben also 12,00 V, und ein Trip über 0 ist mindestens ein Schritt, nie OFF.
+erlauben also 12,00 V, und ein Trip über 0 ist mindestens ein Schritt, nie AUS.
 Ein Trip von 0 ist aus. Die Zeit über einem Trip zählt ab dem ersten Messwert
 darüber. Ein
 Messwert unter seinem Trip beginnt die Zählung neu; ein Messwert, der nicht
-ankam, lässt sie stehen. Ein Trip schaltet den Ausgang ab, MODE zeigt TRIP,
+ankam, lässt sie stehen. Ein Trip schaltet den Ausgang ab, MODUS zeigt ABSCH.,
 bis der Ausgang wieder eingeschaltet wird, und das Band sagt, welcher Trip
 ausgelöst hat. Das Netzteil hält seine Strombegrenzung in CC, daher löst ein
-Strom-Trip auf oder über CURRENT LIMIT nicht aus; unter der Begrenzung
+Strom-Trip auf oder über STROMBEGRENZUNG nicht aus; unter der Begrenzung
 gesetzt, schaltet er eine Last ab, die zu lange zu viel zieht.
 
 Nach einem Neustart ist der Ausgang aus, welche Startwerte auch gelten.
 
-Ist der PD mini das Netzteil, bietet SETTINGS außerdem RESET PD MINI. Das
+Ist der PD mini das Netzteil, bietet OPTIONEN außerdem PD MINI ZURÜCKSETZEN. Das
 schaltet den Ausgang ab und startet das Modul neu (sein Befehl
 SYSTEM_RESET), für ein Modul, das ERR zeigt -- ein Sollwert über seinem
 Eingang bringt es dorthin --, ohne es abzustecken. Etwa 1 s später wird es
@@ -591,7 +591,7 @@ der Ausgang geht aus, und das Band sagt es.
 Ein Lauf ist ein Einschalten des Ausgangs. Der Plot leert sich, wenn der
 Ausgang angeht, und hält den Lauf, nachdem er ausgeht. mAh und Wh unter dem
 Schalter zählen den Lauf aus den angezeigten Messwerten, jeder Schritt auf 1 s
-begrenzt. RESET PEAKS beginnt die niedrigsten und höchsten Werte neu ab dem
+begrenzt. SPITZEN ZURÜCKSETZEN beginnt die niedrigsten und höchsten Werte neu ab dem
 aktuellen Messwert.
 
 Ein Lauf wird in eine eigene `BENCHnnn.CSV` geschrieben, eine Zeile alle
@@ -617,7 +617,7 @@ und 2,00 A, bringt der Stoß es in CC. Seine Messwerte sind nicht gemessen,
 und am Prüfstand wird nichts versorgt.
 
 Die Verdrahtung des PD mini -- PD mini, PD mini TX, PD mini RX und PD mini
-baud -- steht in SETUP unter INTERFACES. TX und RX sind GPIO-Nummern des
+baud -- steht in SETUP unter ANSCHLÜSSE. TX und RX sind GPIO-Nummern des
 Koprozessors: TX geht zum DM des Moduls, RX kommt von seinem DP. Der
 Koprozessor weist einen Pin ab, der reserviert, an einen Ausgang gebunden
 oder der andere Pin ist. PD mini baud ist die eigene UART-Baudrate-
@@ -678,9 +678,9 @@ zeigt das Timing als benannte Stufen, die anderen in Grad Vorzündung:
 
 ![Grad statt benannter Stufen](img/de/programmer-am32.png)
 
-Ein geänderter Wert wird erst geschrieben, wenn WRITE gedrückt wird.
+Ein geänderter Wert wird erst geschrieben, wenn SCHREIBEN gedrückt wird.
 Vorgemerkte Änderungen tragen eine Markierung und eine eigene Farbe, und der
-WRITE-Knopf zeigt, wie viele vorgemerkt sind:
+SCHREIBEN-Knopf zeigt, wie viele vorgemerkt sind:
 
 ![Zwei vorgemerkte Änderungen](img/de/programmer-dirty.png)
 
@@ -697,18 +697,18 @@ nicht laufen kann, nennt den Grund:
 
 ![Die Profile](img/de/programmer-stick.png)
 
-Die Punkte eines Profils stehen anfangs auf KEEP. Die Stepper wählen einen
-Wert; RUN zählt die gewählten Werte:
+Die Punkte eines Profils stehen anfangs auf BEHALTEN. Die Stepper wählen einen
+Wert; START zählt die gewählten Werte:
 
 ![Zwei Werte gewählt](img/de/programmer-stick-items.png)
 
-RUN öffnet eine Warnung über den ganzen Bildschirm. Der Lauf beginnt, wenn
-HOLD TO RUN 2 s gehalten ist:
+START öffnet eine Warnung über den ganzen Bildschirm. Der Lauf beginnt, wenn
+HALTEN ZUM STARTEN 2 s gehalten ist:
 
 ![Die Warnung](img/de/programmer-stick-warning.png)
 
 Während er läuft, zeigt die Seite die Phase, die Pieptöne der laufenden
-Gruppe und die letzte Gruppe. ABORT, STOP und das Verlassen des Bildschirms
+Gruppe und die letzte Gruppe. ABBRECHEN, STOP und das Verlassen des Bildschirms
 beenden ihn mit dem Gas auf MIN, dem Netzteil aus und dem Prüfstand
 entschärft:
 
@@ -731,7 +731,7 @@ davon ist gemessen:
 
 Die Zellen werden als Abweichung vom Mittelwert des Packs gezeichnet. Das
 Urteil folgt der Spreizung, dem größten Abstand zwischen zwei beliebigen
-Zellen: HEALTHY unter 30 mV, WATCH ab 30 mV, REPLACE ab 60 mV. Die Skala folgt
+Zellen: GUT unter 30 mV, BEOBACHTEN ab 30 mV, ERSETZEN ab 60 mV. Die Skala folgt
 dem Pack bis hinunter zu einer Untergrenze von 12 mV und steht neben dem Plot.
 
 Unter Last messen. In Ruhe liest sich eine schwache Zelle wie die anderen.
@@ -755,12 +755,12 @@ Scharfschalten oder, solange der Prüfstand nicht scharf ist, ein Einschalten
 des SUPPLY-Ausgangs. Ein automatischer Servotest nimmt ebenfalls die nächste
 Nummer: sein Log ist `BENCHnnn.CSV`, das die Liste als Lauf zeigt, sein
 Bericht `BENCHnnn.TXT`, den die Liste nicht zeigt. Eine Nummer, die eine der
-beiden Dateien trägt, ist vergeben, und DELETE auf einem Lauf löscht seinen
+beiden Dateien trägt, ist vergeben, und LÖSCHEN auf einem Lauf löscht seinen
 Bericht mit.
 
 Die Liste fasst 48 Einträge, die Karte bis zu 999 Läufe. Passen nicht alle
 hinein, behält die Liste die neuesten Läufe, und ihr Reiter zeigt
-`48 OF 137 FILES` statt `FILES`: ein Lauf, der in der Liste fehlt, ist dann
+`48 VON 137 DATEIEN` statt `DATEIEN`: ein Lauf, der in der Liste fehlt, ist dann
 einer, für den die Liste zu kurz war, und nicht einer, der nie geschrieben
 wurde. Was neu heißt, steht in der Nummer im Namen: die Panel-Platine hat
 keine Uhr, die einen Stromausfall übersteht, deshalb trägt jede Datei auf der
@@ -768,9 +768,9 @@ Karte das Datum 1980-01-01. Ein Lauf geht einer Datei vor, die der Prüfstand
 nicht geschrieben hat, also listet eine Karte mit 48 oder mehr Läufen keine
 andere Datei mehr. Alte Läufe löschen, um eine zurückzuholen.
 
-DELETE löscht die ausgewählte Datei von der Karte. Vorher kommt eine Rückfrage:
+LÖSCHEN löscht die ausgewählte Datei von der Karte. Vorher kommt eine Rückfrage:
 ein zweites Feld nennt die Datei und ihre Größe, und erst dessen eigenes
-DELETE, auf dem Knopf gedrückt und losgelassen, löscht sie. CANCEL oder das
+LÖSCHEN, auf dem Knopf gedrückt und losgelassen, löscht sie. ABBRECHEN oder das
 Verlassen des Bildschirms schließt die Rückfrage, ohne zu löschen. Der Lauf,
 den der Logger offen hat, wird abgewiesen. Eine Datei, die in der
 Importansicht oder im Plot offen war, verschwindet beim Löschen aus beiden.
@@ -780,7 +780,7 @@ Lauf, der sich nicht öffnen ließ, und zählt sonst von dort weiter. Eine
 gelöschte Nummer wird nur wieder vergeben, wenn sie bei diesem Lesen über allen
 verbliebenen Läufen lag.
 
-![Die DELETE-Rückfrage](img/de/logs-delete.png)
+![Die LÖSCHEN-Rückfrage](img/de/logs-delete.png)
 
 Ein Lauf wird alle 20 Zeilen oder 1000 ms Laufzeit auf die Karte festgeschrieben,
 je nachdem, was zuerst eintritt. Ein Stromausfall mitten im Lauf kostet die
@@ -798,14 +798,14 @@ erscheint im Band:
 
 | Meldung | Was passiert ist |
 |---|---|
-| `no card -- this run is not recorded` | nichts ist gemountet, der Lauf wurde nie geöffnet |
-| `card unreadable -- run not recorded` | die Karte ließ sich nicht auflisten, es war keine Laufnummer wählbar |
-| `card full or unwritable -- run not recorded` | es ließ sich keine Laufnummer anlegen |
-| `the card did not keep up -- run not recorded` | jede Zeile wurde verworfen, es gibt für diesen Lauf gar keine Datei |
-| `the card fell behind -- the log has gaps` | einzelne Zeilen wurden verworfen; die Zeitspalte der Datei zeigt, wo |
-| `the card stopped taking rows -- run not recorded past here` | ein Schreibvorgang ist mitten im Lauf fehlgeschlagen, jede weitere Zeile wird abgewiesen |
-| `the card stopped taking rows -- the log is short` | derselbe Fehler, beim Schließen des Laufs noch einmal gemeldet |
-| `the card failed on the last write -- the log is short` | das Schließen ist fehlgeschlagen, die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
+| `keine Karte -- dieser Lauf wird nicht aufgezeichnet` | nichts ist gemountet, der Lauf wurde nie geöffnet |
+| `Karte nicht lesbar -- Lauf nicht aufgezeichnet` | die Karte ließ sich nicht auflisten, es war keine Laufnummer wählbar |
+| `Karte voll oder nicht beschreibbar -- Lauf nicht aufgezeichnet` | es ließ sich keine Laufnummer anlegen |
+| `die Karte kam nicht nach -- Lauf nicht aufgezeichnet` | jede Zeile wurde verworfen, es gibt für diesen Lauf gar keine Datei |
+| `die Karte fiel zurück -- das Log hat Lücken` | einzelne Zeilen wurden verworfen; die Zeitspalte der Datei zeigt, wo |
+| `die Karte nimmt keine Zeilen mehr an -- Lauf ab hier nicht aufgezeichnet` | ein Schreibvorgang ist mitten im Lauf fehlgeschlagen, jede weitere Zeile wird abgewiesen |
+| `die Karte nimmt keine Zeilen mehr an -- das Log ist unvollständig` | derselbe Fehler, beim Schließen des Laufs noch einmal gemeldet |
+| `die Karte versagte beim letzten Schreiben -- das Log ist unvollständig` | das Schließen ist fehlgeschlagen, die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
 
 Bei den ersten vier gibt es keine Datei zu suchen. Bei den letzten vier gibt
 es eine, und sie hört zu früh auf.
@@ -830,17 +830,17 @@ bleibt und warum: [Sprache der Oberfläche](Language-de.md).
 ### Werte behalten
 
 Ein geänderter Wert wirkt sofort und wird erst in den Flash geschrieben, wenn
-SAVE gedrückt wird. Die Taste unter RESET CATEGORY nennt einen von drei
+SPEICHERN gedrückt wird. Die Taste unter KATEGORIE ZURÜCKSETZEN nennt einen von drei
 Zuständen:
 
 | Beschriftung | Bedeutung |
 | --- | --- |
-| `SAVED` | Nichts ist ungeschrieben. Die Taste ist inaktiv. |
-| `SAVE` | Etwas ist ungeschrieben. Ein Druck fordert das Schreiben an. |
-| `WHEN IDLE` | Das Schreiben ist angefordert und wartet auf einen Moment dafür. |
-| `NOT SAVED` | Der Store hat das Schreiben abgelehnt. Was auf das Medium gelangt ist, geht aus dem Bildschirm nicht hervor: Eine Ablehnung bei einem Key lässt die davor geschriebenen Keys committed, der nächste Boot kann also eine Mischung aus neuen und alten Werten laden. Ein Druck versucht es erneut. |
+| `GESPEICHERT` | Nichts ist ungeschrieben. Die Taste ist inaktiv. |
+| `SPEICHERN` | Etwas ist ungeschrieben. Ein Druck fordert das Schreiben an. |
+| `BEI STILLSTAND` | Das Schreiben ist angefordert und wartet auf einen Moment dafür. |
+| `NICHT GESPEICHERT` | Der Store hat das Schreiben abgelehnt. Was auf das Medium gelangt ist, geht aus dem Bildschirm nicht hervor: Eine Ablehnung bei einem Key lässt die davor geschriebenen Keys committed, der nächste Boot kann also eine Mischung aus neuen und alten Werten laden. Ein Druck versucht es erneut. |
 
-![Ein geänderter Wert, SAVE angeboten](img/de/setup-dirty.png)
+![Ein geänderter Wert, SPEICHERN angeboten](img/de/setup-dirty.png)
 
 Der Druck fordert an, er schreibt nicht. Einstellungen zu schreiben committet
 eine Page im NVS (Non-Volatile Storage), und eine Flash-Operation auf dem
@@ -848,18 +848,18 @@ ESP32-S3 schaltet den Instruction Cache ab, es läuft also für ihre Dauer auf
 keinem der beiden Kerne Code. Geschrieben wird im ersten Frame, in dem der
 Prüfstand disarmed ist und kein Platinenfoto geholt oder abgelegt wird. Auf
 dem Einstellungs-Bildschirm ist das der nächste Frame, und die Beschriftung
-steht auf `SAVED`, so schnell wie das Auge dem Druck folgt. Armed steht die
-Anforderung als `WHEN IDLE`, bis der Prüfstand disarmed wird.
+steht auf `GESPEICHERT`, so schnell wie das Auge dem Druck folgt. Armed steht die
+Anforderung als `BEI STILLSTAND`, bis der Prüfstand disarmed wird.
 
 Ein Store, der ablehnt, lässt die Beschriftung in der Danger-Farbe auf
-`NOT SAVED` stehen, bis das nächste erfolgreiche Schreiben oder die nächste
+`NICHT GESPEICHERT` stehen, bis das nächste erfolgreiche Schreiben oder die nächste
 Änderung kommt. Eine Ablehnung macht nicht rückgängig, was schon geschrieben
 wurde: Die Werte werden Key für Key gesetzt, und ein Fehlschlag mittendrin
 lässt die früheren Keys committed, das Medium kann also eine Mischung aus
 neuen und alten Werten halten. Der Bildschirm kann nicht sagen, welche. Ein
 Panel, dessen NVS gar nicht hochkam, lehnt jedes Schreiben der Sitzung ab,
 schreibt nichts und sagt das zusätzlich einmal auf dem Splash als
-`NVS unavailable`.
+`NVS nicht verfügbar`.
 
 Nicht gespeicherte Werte bleiben, bis das Panel ausgeschaltet wird. Das
 Verlassen des Bildschirms schreibt nichts.
@@ -898,11 +898,11 @@ tut — der Draht hat eben noch Frames getragen.
 
 | Überschrift | Bedeutung |
 | --- | --- |
-| `this panel is off the bus` | zu viele Frames blieben unquittiert; es hat aufgehört zu senden |
-| `this panel is rejoining the bus` | es zählt die Ruhezeit ab, die ein Rejoin braucht, rund 3 s |
-| `this panel's controller has stopped` | untätig und nicht neu gestartet — ein Fehler in der Firmware |
-| `the link stopped answering` | der Controller ist am Bus und niemand antwortet |
-| `the controller cannot be read` | der Treiber läuft nicht; es kann nichts gesendet werden |
+| `Panel ist vom Bus getrennt` | zu viele Frames blieben unquittiert; es hat aufgehört zu senden |
+| `Panel verbindet sich neu` | es zählt die Ruhezeit ab, die ein Rejoin braucht, rund 3 s |
+| `Controller des Panels steht` | untätig und nicht neu gestartet — ein Fehler in der Firmware |
+| `Link antwortet nicht mehr` | der Controller ist am Bus und niemand antwortet |
+| `Controller nicht lesbar` | der Treiber läuft nicht; es kann nichts gesendet werden |
 
 Vier Sekunden, nicht eine: der Link fällt gelegentlich für einen Poll aus, und
 ein Bildschirm, der bei jedem Zucken übernimmt, ist einer, den man wegklickt.
@@ -967,7 +967,7 @@ treibt jeden als Motor gebundenen Kanal — MOTOR PWM und die DShot-Einträge �
 und lässt die Servokanäle in Ruhe.
 
 Ein MOTOR-PWM-Kanal sendet 0 % Gas als Idle pulse und 100 % als Full pulse:
-1000 us und 2000 us ab Werk, einstellbar unter SETUP, ESC / BENCH, in Schritten
+1000 us und 2000 us ab Werk, einstellbar unter SETUP, ESC / PRÜFSTAND, in Schritten
 von 10 us (Idle pulse 800 bis 1600 us, Full pulse 1400 bis 2400 us). Die
 beiden Einstellungen gehen an die als Motor gebundenen Kanäle und an keine
 anderen: ein SERVO-PWM-Kanal behält 1000 bis 2000 us oder den Bereich, den der
@@ -978,7 +978,7 @@ Ein Coprozessor, der sich verbindet, bekommt die beiden Einstellungen, bevor
 der Prüfstand ihn treibt: bei einem schon scharfen Prüfstand bleibt er
 entschärft, bis er sie hat. Ein
 Idle pulse, der nicht unter dem Full pulse liegt, wird nicht gesendet, und das
-Band zeigt `idle pulse must be below full pulse -- not sent`.
+Band zeigt `Leerlaufpuls muss unter dem Vollpuls liegen -- nicht gesendet`.
 
 Ein ESC, dessen Gasweg an einem Sender kalibriert wurde, nimmt den kürzesten
 Puls dieses Senders als null. Ein Idle pulse darüber liest der ESC als Gas,
@@ -1010,10 +1010,10 @@ Die Pad-Nummer unter jedem Pin ist die auf der Platine aufgedruckte, damit wer
 Pads zählt und wer GPIO-Nummern (General-Purpose Input/Output) liest beim
 gleichen Pin ankommen.
 
-Jede Änderung schreibt die Pages sofort. Es gibt keine APPLY-Taste: ein
+Jede Änderung schreibt die Pages sofort. Es gibt keine ÜBERNEHMEN-Taste: ein
 Bildschirm mit einer nicht gesendeten Auswahl ist ein Bildschirm, der dem
 Prüfstand widerspricht, und nichts sagt, welcher von beiden treibt. Was aus dem
-Schreiben wurde, steht unter dem Protokoll — WRITTEN, NO LINK oder REFUSED.
+Schreiben wurde, steht unter dem Protokoll — GESCHRIEBEN, KEIN LINK oder ABGELEHNT.
 
 Ein Protokollwechsel sagt, welcher Satz gerade bearbeitet wird. Nichts wird
 verworfen: die Pins des verlassenen Protokolls bleiben gebunden, und die Pins
@@ -1157,5 +1157,5 @@ Auf einer eigenen Seite beschrieben: [Auswuchten](Balance-de.md).
 
 ## Bildschirme, die nicht fertig sind
 
-Eine Kachel mit der Marke SOON nennt, was der Bildschirm tun wird und auf
+Eine Kachel mit der Marke BALD nennt, was der Bildschirm tun wird und auf
 welches Bauteil oder welche Entscheidung er wartet.

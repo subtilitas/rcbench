@@ -81,9 +81,15 @@ history is in git.
   `tools/render_ui.py` renders every screenshot in German into
   `docs/img/de/` as well, the German wiki pages show those, and
   `render_ui.py --fit`, run in CI, fails on a German string that is cut,
-  runs past its field or overlaps another. `test_text` holds every format to
-  its English's conversions and every string no screenshot shows to its
-  field. The how and the glossary are on the new Language page.
+  runs past its field or overlaps another. `tools/check_formats.py`, run in
+  CI, compiles `shared/` with each English string in place of its lookup
+  under `-Wformat=2 -Wformat-nonliteral -Wformat-signedness` and fails on
+  any warning; `test_text` holds every German format to its English's
+  conversions and every string no screenshot shows to its field, and
+  `tools/check_docs.py` fails on a German page that quotes in backticks the
+  English of a string the screen shows in German. Numbers
+  keep the decimal point in every language. The how and the glossary are on
+  the new Language page.
 
 ### Changed
 

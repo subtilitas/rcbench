@@ -10,7 +10,9 @@ Covered: docs/ (the wiki source), README.md and README-de.md, STATUS.md, and
 the pages under hardware/.  The wiki pages are additionally held to the
 sidebar and to having a German counterpart.  The `Who compiles what` table in
 STATUS.md and docs/Building.md is derived from the three build files, and the
-screenshot count in STATUS.md from docs/img.
+screenshot count in STATUS.md from docs/img.  A German page that quotes an
+interface string in backticks quotes the German the screen shows, not its
+English.
 
     python3 tools/check_docs.py
 
@@ -287,6 +289,63 @@ def check_option_lists(problems: list[str]) -> None:
                     f"{', '.join(missing)}")
 
 
+UI_TEXT_DEF = REPO / "shared" / "ui" / "include" / "ui_text.def"
+UI_TEXT_DE = REPO / "shared" / "ui" / "ui_text_de.c"
+
+# Quotes on a German page that stay English although the screen translates
+# the same word: values of the servo test's CSV, which is English in every
+# language.
+ENGLISH_QUOTES = {
+    ("Servo-de.md", "SET"),
+    ("Servo-de.md", "SETTLE"),
+    ("Servo-de.md", "OFF"),
+}
+
+
+def translated_strings() -> dict[str, str]:
+    """English to German, for every interface string German changes."""
+    english = dict(re.findall(
+        r'UI_TEXT\((\w+),\s*\d+,\s*"((?:[^"\\]|\\.)*)"\)',
+        read(UI_TEXT_DEF)))
+    german = dict(re.findall(
+        r'\[TX_(\w+)\]\s*=\s*"((?:[^"\\]|\\.)*)"', read(UI_TEXT_DE)))
+    out: dict[str, str] = {}
+    for key, text in english.items():
+        text = text.strip()
+        if len(text) < 2 or key not in german:
+            continue
+        if german[key].strip() != text:
+            out.setdefault(text, german[key].strip())
+    return out
+
+
+def check_quoted_labels(problems: list[str]) -> None:
+    """A German page quotes the German of a translated interface string.
+
+    Only backtick quotes are held to it: prose also names protocol pages,
+    supply commands and board markings that share a word with a label.  A
+    quote right after "Konsole: " is the console's, which stays English.
+    """
+    strings = translated_strings()
+    for page in pages() + [REPO / "README-de.md"]:
+        if not page.name.endswith(DE_SUFFIX):
+            continue
+        text = re.sub(r"```.*?```", lambda m: "\n" * m.group().count("\n"),
+                      read(page), flags=re.S)
+        for no, line in enumerate(text.splitlines(), 1):
+            for m in re.finditer(r"`([^`]+)`", line):
+                quote = m.group(1).strip()
+                if quote not in strings:
+                    continue
+                if line[:m.start()].endswith("Konsole: "):
+                    continue
+                if (page.name, quote) in ENGLISH_QUOTES:
+                    continue
+                problems.append(
+                    f"{page.name}:{no}: quotes `{quote}`, which the screen "
+                    f"shows as `{strings[quote]}`")
+
+
 def check_shared_modules(problems: list[str]) -> None:
     """Building.md's tree lists every module under shared/.
 
@@ -477,6 +536,7 @@ def main() -> int:
     check_translations(problems)
     check_suites(problems)
     check_option_lists(problems)
+    check_quoted_labels(problems)
     check_shared_modules(problems)
     check_compile_table(problems)
     check_screenshot_count(problems)

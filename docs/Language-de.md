@@ -15,23 +15,40 @@ SPEICHERN sie übernimmt.
 | Folgt der Sprache | Bleibt, wie es ist |
 | --- | --- |
 | Beschriftungen, Namen und Hilfetexte der Einstellungen, Alarme im Band, Warnfelder, Ablehnungshinweise, die Details des Splash | die Begriffe unter [Begriffe, die Englisch bleiben](#begriffe-die-englisch-bleiben) |
-| der TXT-Bericht des Servotests, in der Sprache beim Start des Laufs | die CSV des Servotests: Kopfzeile und die Wörter in ihren Zeilen (`test`, `phase`, `mode`), damit Werkzeuge jeden Lauf gleich lesen |
-| die Hinweise und Ablehnungen der Stick-Programmierung | Namen, Punkte und Werte der ESC-Profile, die aus den Anleitungen stammen |
+| der TXT-Bericht (reiner Text) des Servotests, in der Sprache beim Start des Laufs | die CSV-Datei (Comma-Separated Values) des Servotests: Kopfzeile und die Wörter in ihren Zeilen (`test`, `phase`, `mode`), damit Werkzeuge jeden Lauf gleich lesen |
+| die Hinweise und Ablehnungen der Stick-Programmierung | Namen, Punkte und Werte der Profile des ESC (Electronic Speed Controller), die aus den Anleitungen stammen |
 | | die Parameternamen des Programmers und ihre Werte, die der Firmware gehören, wie ihre Konfiguratoren sie zeigen |
 | | das Konsolen-Log |
 
 Aktuelle Einschränkungen:
 
-- Ein Alarm, der schon im Band steht, und der Titel eines schon offenen
-  Tastenfelds oder einer Auswahlliste bleiben in der Sprache, in der sie
-  entstanden sind, bis sie ersetzt werden.
+- Ein Alarm, der schon im Band steht, bleibt in der Sprache, in der er
+  entstand, bis er ersetzt, weggetippt oder nach 30 s (`UI_ALERT_SHOW_S`)
+  gelöscht wird. Der gehaltene Alarm für einen Touch-Controller, der beim
+  Start nicht antwortete, entsteht in der Sprache aus dem NVS und bleibt bis
+  zum Neustart; ohne Touch lässt sich die Sprache bis dahin nicht ändern.
+- Die Meldezeile von LOG VIEWER (eine Datei, die sich nicht öffnen oder
+  löschen ließ, eine gelöschte Datei) bleibt in ihrer Sprache, bis die
+  nächste geöffnete oder gelöschte Datei sie ersetzt oder leert.
+- Der Titel eines schon offenen Tastenfelds oder einer Auswahlliste bleibt
+  in seiner Sprache, bis es sich schließt.
 - Die Stick-Engine meldet eine Ablehnung auf Englisch, und die Seite findet
   die Übersetzung über dieses Englisch. Eine Ablehnung, die die Tabelle nicht
   kennt, erscheint auf Englisch. `test_text` prüft, dass jede Ablehnung der
-  einkompilierten Profile eine Übersetzung hat.
+  einkompilierten Profile einen deutschen Eintrag hat.
 - Zwei englische Hilfetexte in SETUP sind länger als die 36 Zellen der Zeile
   und werden dort abgeschnitten: die von Capacity und von Rated kV.
   `render_ui.py --fit` führt sie als Hinweise.
+
+## Zahlen
+
+Die Seiten, der TXT-Bericht und die CSV schreiben in jeder Sprache den
+Dezimalpunkt: 7.4 V, 0.05 A. Es ist das Trennzeichen des Senders, der
+ESC-Konfiguratoren und der eigenen Anzeige des Netzteils, und eine CSV mit
+Dezimalkomma bräuchte ein anderes Feldtrennzeichen. Die deutschen Seiten
+dieser Dokumentation schreiben im Fließtext das deutsche Dezimalkomma
+(7,4 V); ein Text, der vom Bildschirm zitiert wird, behält seinen Punkt
+(`seit 1.5 s kein Messwert`).
 
 ## Begriffe, die Englisch bleiben
 
@@ -47,9 +64,13 @@ passen.
   SETTINGS, BATTERY, BALANCE, PROGRAMMER, OUTPUTS, PICK A PIN, LOG VIEWER,
   CAN BUS FAULT, LINK LOST. Ein Hinweis, der eine Seite nennt, nennt sie
   beim Titel: "der Seite SUPPLY".
-- Protokoll- und Modusnamen: DShot, PWM, PPM, OneShot, S.BUS, CAN,
-  BLHeli_S, AM32, ESCape32, VESC, KISS, PD mini, AUTO, CV, CC,
-  STANDARD PWM, HELI CYCLIC, ESC STICK, BUS OFF.
+- Protokoll- und Modusnamen: DShot, PWM (Pulse-Width Modulation), PPM
+  (Pulse-Position Modulation), OneShot, S.BUS, CAN (Controller Area
+  Network), BLHeli_S, AM32, ESCape32, VESC, KISS, PD mini, AUTO, CV
+  (Constant Voltage), CC (Constant Current), STANDARD PWM, HELI CYCLIC,
+  ESC STICK, BUS OFF.
+- Zwei Zustandswörter, kurz genug für ihren Platz: SAFE im Statusband und
+  SILENT im Urteil des ANALYSER.
 - Die Begriffe des Fachs: Frame Rate, Throttle, Failsafe, Brown-out, Timing,
   Endpoint, Link, Live, Online, Touch, Display, Pin, Slot, Pad, Resync,
   Bad tail, tx err, rx err, bus err, Frame.
@@ -68,7 +89,7 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | set point | Sollwert |
 | current limit | Strombegrenzung |
 | cap | Obergrenze |
-| trip, current trip, voltage trip | Abschaltung, Überstrom, Überspannung |
+| trip (die eigene Abschaltung des Netzteils), current trip, voltage trip | Abschaltung (ABSCH. auf der Karte MODUS), Überstrom, Überspannung |
 | card | Karte |
 | run | Lauf |
 | step (des Netzteils) | Stufe |
@@ -92,9 +113,9 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | movement, dwell, settle | Bewegung, Verweilen, Einschwingen |
 | speed (des Servotests), range | Tempo, Bereich |
 | device under test | Prüfling |
-| pass, fail, aborted | bestanden, nicht bestanden, abgebrochen |
+| pass, fail, aborted (ein Urteil) | bestanden, nicht bestanden, abgebrochen |
+| FAULT (ein Zustand) | FEHLER |
 | ON, OFF | EIN, AUS |
-| SAFE, FAULT | SICHER, FEHLER |
 | beep | Piepton |
 | item, value (eines ESC-Menüs) | Punkt, Wert |
 | entry (in ein ESC-Menü), power-up | Einstieg, Einschalten |
@@ -105,7 +126,12 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | terminator, branch (eines Busses) | Abschluss, Stichleitung |
 | separator, row, column | Trenner, Zeile, Spalte |
 | plot, table | Grafik, Tabelle |
-| modelled | Modell |
+| simulated, modelled (vom Panel berechnet) | simuliert |
+| model (ein Flugmodell, ein ESC-Produkt) | Modell |
+| protocol page (des Links) | Page |
+| floor (des Stroms, Stick-Programmierung) | Grund |
+| horn (eines Servos) | Ruderhorn |
+| start (einen Lauf) | starten, START auf einem Knopf |
 | surface (die Rolle eines Ausgangs) | Ruder |
 | connect, disconnect, read, write | verbinden, trennen, lesen, schreiben |
 
@@ -146,7 +172,7 @@ Funktionen oben.
 
 | Datei | Enthält |
 | --- | --- |
-| `shared/ui/include/ui_text.def` | jeden übersetzten Text: seine ID, die Zellen seines Feldes, wo kein Screenshot ihn zeigt, und sein Englisch |
+| `shared/ui/include/ui_text.def` | jeden übersetzten Text: seine ID (Identifier), die Zellen seines Feldes, wo kein Screenshot ihn zeigt, und sein Englisch |
 | `shared/ui/ui_text_de.c` | das Deutsche nach ID; Beschriftungen, Hilfetexte, Optionen und Kategorien der Einstellungen; die Wörter des Servotests und den Bericht |
 | `shared/ui/ui_text.c` | die Suche: `TR(ID)`, `ui_setting_label()`, `ui_servo_str()` und die übrigen |
 
@@ -174,11 +200,27 @@ Wort teilt, gehört dem Layout und nicht der Übersetzung und ist ebenfalls ein
 Hinweis. Die Prüfung schlägt auch bei einem Text ohne angegebene Breite fehl,
 den keine Ansicht zeichnet.
 
-`test_text` deckt den Rest ab: jede ID hat Deutsch, jedes Format wandelt,
-was sein Englisch wandelt, jeder Text mit angegebener Breite passt in jeder
-Sprache hinein, Alarme und Splash-Details passen in ihre Puffer, übersetzte
-Einstellungen passen in SETUP und die TIMING-Seite, und Spalten und
-Beschriftungen des Berichts stehen bündig.
+```bash
+python3 tools/check_formats.py
+```
+
+übersetzt `shared/` mit jedem Aufruf von `TR()` und jedem Wort des Berichts
+durch sein englisches Literal ersetzt, unter `-Wformat=2
+-Wformat-nonliteral -Wformat-signedness`, und schlägt bei jeder Warnung
+fehl: jedes englische Format passt zu den Argumenten seines Aufrufs. Die
+`main.c` des Panels liegt nicht in `shared/` und ist nicht abgedeckt.
+
+`test_text` deckt den Rest ab: jede ID hat Deutsch, jedes deutsche Format
+wandelt, was sein Englisch wandelt, jeder Text mit angegebener Breite passt
+in jeder Sprache hinein, Alarme und Splash-Details passen in ihre Puffer,
+übersetzte Einstellungen passen in SETUP und die TIMING-Seite, und Spalten
+und Beschriftungen des Berichts stehen bündig.
+
+`tools/check_docs.py` schlägt fehl, wenn eine deutsche Wiki-Seite in
+Backticks das Englische eines Textes zitiert, den der Bildschirm deutsch
+zeigt. Fließtext ohne Backticks wird nicht geprüft: Er nennt auch
+Protokoll-Pages, Befehle an das Netzteil und Beschriftungen der Platine, die
+ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 

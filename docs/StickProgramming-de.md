@@ -17,7 +17,7 @@ Was sie nicht weiß:
 - Kein Profil ist verifiziert. Punkt- und Wertnummern und Einstiegsgesten
   sind die der Handbücher.
 - Die eigenen Töne des ESCs nach einer Auswahl werden nicht ausgewertet.
-  DONE heißt: jede Auswahlbewegung kam auf eine gezählte Gruppe in der
+  FERTIG heißt: jede Auswahlbewegung kam auf eine gezählte Gruppe in der
   Reihenfolge des Menüs, nicht, dass der ESC sie gespeichert hat.
 
 ## Vor einem Lauf
@@ -42,31 +42,31 @@ PROGRAMMER, dann ESC STICK:
 Die Liste enthält jedes Profil, die ausführbaren zuerst. Ein Profil, das der
 Prüfstand nicht ausführen kann, nennt den Grund in seiner Zeile und öffnet
 nichts; ebenso eines, dessen Spannung über der Grenze von SUPPLY liegt.
-Reihenfolge und Anzahl folgen VOLTAGE und der Grenze, wenn sie sich
+Reihenfolge und Anzahl folgen SPANNUNG und der Grenze, wenn sie sich
 ändern. Ein
-Profil von der SD-Karte trägt CARD.
+Profil von der SD-Karte trägt KARTE.
 
 ![Die Profile](img/de/programmer-stick.png)
 
 Die Seite eines Profils listet seine Menüpunkte. Jeder steht anfangs auf
-KEEP und bleibt dann, wie er ist; die Stepper gehen durch die Werte des
+BEHALTEN und bleibt dann, wie er ist; die Stepper gehen durch die Werte des
 Punkts und halten an beiden Enden an. Punkte mit dem Schlüssel `reset` oder
 `exit` sind Aktionen, keine Einstellungen: der ESC handelt auf die
-Auswahlbewegung und gibt keine Werte aus, deshalb zeigen ihre Zeilen ACTION,
-NOT SET und bieten nichts an. Ein Punkt mit einem einzigen Wert -- die
+Auswahlbewegung und gibt keine Werte aus, deshalb zeigen ihre Zeilen AKTION,
+NICHT SETZBAR und bieten nichts an. Ein Punkt mit einem einzigen Wert -- die
 einzige Einstellung, die es gibt, oder eine Regel, die als Wert geschrieben
 ist, wie die Zellenzahl von `hobbywing-flyfun-hv-9item`, "N Pieptöne = N
-Zellen" -- bietet nichts zur Wahl; seine Zeile zeigt NOTHING TO CHOOSE. Die Zeile unter der Liste nennt die
-Werte des gewählten Punkts und den Standardwert. RUN erscheint, sobald ein
+Zellen" -- bietet nichts zur Wahl; seine Zeile zeigt NICHTS ZU WÄHLEN. Die Zeile unter der Liste nennt die
+Werte des gewählten Punkts und den Standardwert. START erscheint, sobald ein
 Wert gewählt ist und der Lauf starten kann; kann er es nicht, sagt die Zeile
-neben RUN, warum.
+neben START, warum.
 
 ![Zwei Werte gewählt](img/de/programmer-stick-items.png)
 
-RUN öffnet eine Warnung über den ganzen Bildschirm. HOLD TO RUN startet den
+START öffnet eine Warnung über den ganzen Bildschirm. HALTEN ZUM STARTEN startet den
 Lauf nach 2 s Halten, wie ARM. Ein Finger, der den Knopf verlässt, ein
 verlorenes Touch-Ereignis oder ein STOP während des Haltens bricht es ab;
-CANCEL schließt die Warnung. Das ARM, das das Halten anfordert, verlässt den
+ABBRECHEN schließt die Warnung. Das ARM, das das Halten anfordert, verlässt den
 Bildschirm mit den Befehlen des nächsten Frames; ein STOP oder ein
 verlorenes Touch-Ereignis davor nimmt es zurück und beendet den Lauf, damit
 es keinen Stopp aufheben kann, der danach kam.
@@ -75,8 +75,8 @@ es keinen Stopp aufheben kann, der danach kam.
 
 Während des Laufs zeigt die Seite die Phase, die Pieptöne der laufenden
 Gruppe, die letzte Gruppe und ob sie in der Reihenfolge war, und den Strom
-neben seinem Grundwert. ABORT beendet den Lauf, ebenso STOP im Band und das
-Verlassen des Bildschirms. BACK und TIMING sind nicht verfügbar.
+neben seinem Grundwert. ABBRECHEN beendet den Lauf, ebenso STOP im Band und das
+Verlassen des Bildschirms. ZURÜCK und TIMING sind nicht verfügbar.
 
 ![Ein Lauf zählt Punktgruppen](img/de/programmer-stick-run.png)
 
@@ -88,7 +88,7 @@ Zeile den Rest.
 
 ![Gestoppt](img/de/programmer-stick-aborted.png)
 
-TIMING öffnet die Einstellungen unten. CLOSE fordert das Speichern an;
+TIMING öffnet die Einstellungen unten. SCHLIESSEN fordert das Speichern an;
 gespeichert wird, während der Prüfstand entschärft und der Ausgang des
 Netzteils aus ist.
 
@@ -98,17 +98,17 @@ Netzteils aus ist.
 
 | Phase | Gas | Netzteil | Endet |
 | --- | --- | --- | --- |
-| ARMING | MIN | aus | wenn der Prüfstand scharf meldet; nach 3000 ms: NOT ARMED |
+| ARMING | MIN | aus | wenn der Prüfstand scharf meldet; nach 3000 ms: NICHT ARMED |
 | SIGNAL | Einstiegsstellung | aus | nach 1000 ms, damit der ESC das Signal beim Start sieht |
-| POWER ON | Einstiegsstellung | an | wenn ein Messwert den Ausgang an meldet; nach 3000 ms: NO POWER |
-| ENTRY | Einstiegsstellung | an | ENTRY nach dem Einschalten: das `hold_ms` des Profils, wo es eines nennt |
-| ITEMS | Ruhestellung | an | eine Punktgruppe in Reihenfolge nennt einen gewünschten Punkt: die Auswahlbewegung |
-| VALUES | wo die letzte Bewegung es ließ | an | eine Wertgruppe in Reihenfolge nennt den gewünschten Wert: die Wertbewegung |
-| STORING | die Wertbewegung, dann die Speicherbewegung | an | nach STORE, und nach STORE noch einmal, wo das Profil eine Speicherbewegung hat |
-| POWER CYCLE | wo es speicherte, dann Einstiegsstellung | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten, dann OFF TIME (mindestens 1000 ms) in der Einstiegsstellung, dann wieder POWER ON; nicht innerhalb von 3000 ms aus: SUPPLY STAYS ON |
-| POWER OFF | wo es speicherte | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten; nicht innerhalb von 3000 ms: SUPPLY STAYS ON |
-| DONE | MIN | aus | entschärft |
-| ABORTED | MIN | aus | entschärft, alles in einem Schritt |
+| EINSCHALTEN | Einstiegsstellung | an | wenn ein Messwert den Ausgang an meldet; nach 3000 ms: AUSGANG NICHT GEMELDET |
+| EINSTIEG | Einstiegsstellung | an | EINSTIEG nach dem Einschalten: das `hold_ms` des Profils, wo es eines nennt |
+| PUNKTE | Ruhestellung | an | eine Punktgruppe in Reihenfolge nennt einen gewünschten Punkt: die Auswahlbewegung |
+| WERTE | wo die letzte Bewegung es ließ | an | eine Wertgruppe in Reihenfolge nennt den gewünschten Wert: die Wertbewegung |
+| SPEICHERN | die Wertbewegung, dann die Speicherbewegung | an | nach SPEICHERN, und nach SPEICHERN noch einmal, wo das Profil eine Speicherbewegung hat |
+| AUS UND EIN | wo es speicherte, dann Einstiegsstellung | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten, dann AUSSCHALTZEIT (mindestens 1000 ms) in der Einstiegsstellung, dann wieder EINSCHALTEN; nicht innerhalb von 3000 ms aus: NETZTEIL BLEIBT EIN |
+| AUSSCHALTEN | wo es speicherte | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten; nicht innerhalb von 3000 ms: NETZTEIL BLEIBT EIN |
+| FERTIG | MIN | aus | entschärft |
+| ABGEBROCHEN | MIN | aus | entschärft, alles in einem Schritt |
 
 MIN, MID und MAX sind 0, 50 und 100 % des Wegs des Throttle-Ausgangs. Die
 Ruhestellung ist `scheme.listen` des Profils, oder die Einstiegsstellung, wo
@@ -118,7 +118,7 @@ wieder Punkte; ein einstufiges Menü zählt Werte und speichert mit `select`,
 gefolgt von der Bewegung `scheme.store` des Profils, wo es eine nennt. Ein
 Profil mit `"changes_per_entry": "one"` nimmt eine Änderung je Einschalten,
 also schaltet ein Lauf mit mehreren Änderungen das Netzteil zwischen ihnen
-für OFF TIME aus.
+für AUSSCHALTZEIT aus.
 
 Ein Lauf, der wie geplant endet oder die Versorgung aus- und einschaltet,
 schaltet zuerst das Netzteil aus und lässt den Knüppel, wo er gespeichert
@@ -132,7 +132,7 @@ und bis dahin ist der ESC versorgt und in seinem Menü.
 Zwei Teile dieser Regel sind nicht gemessen:
 - Der Strom, den das PD mini bei ausgeschaltetem Ausgang meldet. Die Regel
   nimmt unter 20 mA an. Ein Modul, das mehr meldet, beendet jeden geplanten
-  Lauf mit ABORTED und SUPPLY STAYS ON, und ein Lauf mit einer Änderung je
+  Lauf mit ABGEBROCHEN und NETZTEIL BLEIBT EIN, und ein Lauf mit einer Änderung je
   Einschalten kommt nie zur zweiten Änderung.
 - Wie lange der ESC aus seinen Eingangskondensatoren weiterläuft, nachdem
   der Schalter des PD mini geöffnet hat. Der Strom zeigt, dass der Schalter
@@ -147,24 +147,24 @@ Scharfschalten.
 
 ## Wie die Pieptöne gezählt werden
 
-- **Grundwert.** Während ENTRY, ab 500 ms nach dem Einschalten, ist der
+- **Grundwert.** Während EINSTIEG, ab 500 ms nach dem Einschalten, ist der
   Grundwert der niedrigste gelesene Strom. Ein Piepton kann ihn nicht
   anheben. Während das Menü gezählt wird, folgt der Grundwert ruhigen
   Messwerten um 1/16 des Unterschieds je Messwert.
-- **Piepton.** Ein Messwert über Grundwert plus THRESHOLD beginnt einen
-  Puls; einer unter Grundwert plus THRESHOLD minus HYSTERESIS beendet ihn.
-- **Längen in Messwerten.** Ein Puls mit weniger Messwerten, als BEEP MIN
+- **Piepton.** Ein Messwert über Grundwert plus SCHWELLE beginnt einen
+  Puls; einer unter Grundwert plus SCHWELLE minus HYSTERESE beendet ihn.
+- **Längen in Messwerten.** Ein Puls mit weniger Messwerten, als PIEPTON MIN
   beim längsten gesehenen Abstand halten muss, oder eine Lücke zwischen zwei
-  Pulsen mit weniger, als GAP MIN halten muss, verdirbt seine Gruppe. Ein
-  Puls, dessen erster und letzter Messwert weiter als LONG MAX auseinander
-  liegen, verdirbt seine Gruppe. Ein Puls ab LONG ist ein langer Piepton; in
+  Pulsen mit weniger, als PAUSE MIN halten muss, verdirbt seine Gruppe. Ein
+  Puls, dessen erster und letzter Messwert weiter als LANG MAX auseinander
+  liegen, verdirbt seine Gruppe. Ein Puls ab LANG ist ein langer Piepton; in
   einem Profil ohne lange Pieptöne verdirbt er seine Gruppe, ebenso ein
   langer nach einem kurzen.
-- **Gruppe.** Stille von GROUP GAP nach dem letzten Puls beendet eine
+- **Gruppe.** Stille von GRUPPENPAUSE nach dem letzten Puls beendet eine
   Gruppe. Ihre Zahl sind die kurzen Pieptöne plus `long_equals_short` für
   jeden langen.
 - **Erst Stille.** Wenn eine Phase zu hören beginnt, wird keine Gruppe
-  gezählt, bevor GROUP GAP Stille gehört ist; die erste Gruppe ist also
+  gezählt, bevor GRUPPENPAUSE Stille gehört ist; die erste Gruppe ist also
   ganz und nicht das Ende einer schon laufenden.
 - **Reihenfolge.** Eine Gruppe ist in Reihenfolge, wenn sie eins mehr als
   die Gruppe davor ist, oder die niedrigste Nummer der Schleife nach ihrer
@@ -179,11 +179,11 @@ Scharfschalten.
   Auswahl braucht einen verlorenen Piepton in jeder von drei Gruppen
   hintereinander, oder, in einem Menü mit wiederholten Gruppen, eine ganz
   verlorene Gruppe und einen verlorenen Piepton in der nächsten.
-- **Späte Messwerte.** Ein Messwert, der mehr als das Kürzere von BEEP MIN
-  und GAP MIN nach dem vorigen kommt, ist spät, ebenso einer, dessen Zähler
+- **Späte Messwerte.** Ein Messwert, der mehr als das Kürzere von PIEPTON MIN
+  und PAUSE MIN nach dem vorigen kommt, ist spät, ebenso einer, dessen Zähler
   einen übersprungenen Messwert zeigt: er verdirbt die Gruppe, in die er
   fällt, und bricht die Reihenfolge. 3 späte Messwerte hintereinander
-  beenden den Lauf mit READ RATE.
+  beenden den Lauf mit MESSRATE.
 
 ## Die Einstellungen
 
@@ -192,34 +192,34 @@ Einstellungen. Kein Wert hier ist gemessen.
 
 | Einstellung | Vorgabe | Bereich | Was sie ist |
 | --- | --- | --- | --- |
-| Voltage | 0 V | 0 bis 20 V | die Spannung des Netzteils; 0 nimmt sie aus dem Profil |
-| Current limit | 1,00 A | 0,10 bis 3,00 A | die Strombegrenzung des Netzteils während des Laufs |
-| Beep min | 200 ms | 20 bis 2000 ms | kürzester Piepton, den der ESC gibt |
-| Gap min | 200 ms | 20 bis 2000 ms | kürzeste Stille zwischen zwei Pieptönen |
-| Long | 500 ms | 50 bis 5000 ms | ein Piepton ab dieser Länge ist ein langer |
-| Long max | 1500 ms | 100 bis 10000 ms | ein längerer Puls ist kein Piepton |
-| Group gap | 700 ms | 50 bis 10000 ms | Stille, die eine Gruppe beendet |
-| Entry | 5000 ms | 1000 bis 60000 ms | Einschalten bis zum Menü, wo das Profil kein `hold_ms` nennt |
-| Store | 2000 ms | 0 bis 10000 ms | gehalten an der letzten Auswahl vor dem Ausschalten |
-| Off time | 3000 ms | 500 bis 20000 ms | Netzteil aus zwischen zwei Einstiegen |
-| Silence | 10000 ms | 1000 bis 60000 ms | so lange kein Piepton beendet den Lauf |
-| Timeout | 180000 ms | 5000 bis 600000 ms | so lange keine Reaktion auf eine gewünschte Gruppe beendet den Lauf |
-| Threshold | 100 mA | 10 bis 2000 mA | über dem Grundwert: ein Piepton |
-| Hysteresis | 40 mA | 0 bis 1000 mA | unter der Schwelle minus diesem Wert: Stille |
+| Spannung | 0 V | 0 bis 20 V | die Spannung des Netzteils; 0 nimmt sie aus dem Profil |
+| Strombegrenzung | 1,00 A | 0,10 bis 3,00 A | die Strombegrenzung des Netzteils während des Laufs |
+| Piepton min | 200 ms | 20 bis 2000 ms | kürzester Piepton, den der ESC gibt |
+| Pause min | 200 ms | 20 bis 2000 ms | kürzeste Stille zwischen zwei Pieptönen |
+| Lang | 500 ms | 50 bis 5000 ms | ein Piepton ab dieser Länge ist ein langer |
+| Lang max | 1500 ms | 100 bis 10000 ms | ein längerer Puls ist kein Piepton |
+| Gruppenpause | 700 ms | 50 bis 10000 ms | Stille, die eine Gruppe beendet |
+| Einstieg | 5000 ms | 1000 bis 60000 ms | Einschalten bis zum Menü, wo das Profil kein `hold_ms` nennt |
+| Speichern | 2000 ms | 0 bis 10000 ms | gehalten an der letzten Auswahl vor dem Ausschalten |
+| Ausschaltzeit | 3000 ms | 500 bis 20000 ms | Netzteil aus zwischen zwei Einstiegen |
+| Stille | 10000 ms | 1000 bis 60000 ms | so lange kein Piepton beendet den Lauf |
+| Zeitlimit | 180000 ms | 5000 bis 600000 ms | so lange keine Reaktion auf eine gewünschte Gruppe beendet den Lauf |
+| Schwelle | 100 mA | 10 bis 2000 mA | über dem Grundwert: ein Piepton |
+| Hysterese | 40 mA | 0 bis 1000 mA | unter der Schwelle minus diesem Wert: Stille |
 
 Ein Lauf wird abgelehnt, nicht angepasst, wenn die Einstellungen sich
-widersprechen: LONG höchstens BEEP MIN, LONG MAX höchstens LONG, GROUP GAP
-höchstens GAP MIN, THRESHOLD höchstens HYSTERESIS, ENTRY höchstens 500 ms,
-oder GROUP GAP plus das Kürzere von BEEP MIN und GAP MIN mindestens das
+widersprechen: LANG höchstens PIEPTON MIN, LANG MAX höchstens LANG, GRUPPENPAUSE
+höchstens PAUSE MIN, SCHWELLE höchstens HYSTERESE, EINSTIEG höchstens 500 ms,
+oder GRUPPENPAUSE plus das Kürzere von PIEPTON MIN und PAUSE MIN mindestens das
 `within_ms` des Profils für seine Auswahl- oder Wertbewegung.
 
 ## Das Netzteil
 
-VOLTAGE 0 nimmt das niedrigste `cells_min` unter den Modellen des Profils,
+SPANNUNG 0 nimmt das niedrigste `cells_min` unter den Modellen des Profils,
 mit 3,8 V je LiPo-Zelle (Lithium-Polymer) oder 1,2 V je NiMH-Zelle
 (Nickel-Metallhydrid): über der Abschaltung dieses Modells und unter dem
 Maximum jedes Modells. Ein Profil, dessen Modelle keine Zellenzahl nennen,
-braucht VOLTAGE. Eine Spannung über der Grenze des Bildschirms SUPPLY oder
+braucht SPANNUNG. Eine Spannung über der Grenze des Bildschirms SUPPLY oder
 unter dem Minimum des Netzteils, und eine Strombegrenzung über der Grenze
 von SUPPLY, werden abgelehnt. Die Sollwerte des Laufs werden die Sollwerte
 des Bildschirms SUPPLY.
@@ -246,22 +246,22 @@ ruhte.
 
 | Die Zeile sagt | Warum |
 | --- | --- |
-| needs a person at the ESC | `automatable` ist `assisted` |
-| no usable procedure | `automatable` ist `none` |
-| entered after power-on | `scheme.entry.when` ist `after_power_on` |
-| melody menu, yes/no menu, stick-position menu, menu of its own kind | `scheme.type` |
-| tones told apart by pitch | `scheme.announce.encoding` ist `melody` oder `yes_no` |
-| item and value, one move | `item_then_value` ohne `value_select`: welche Gruppe die Bewegung beantwortet, steht nicht fest |
-| two moves, no value tones | `value_select` ohne `item_then_value` |
-| many changes, one stage | einstufig mit `"changes_per_entry": "many"` |
-| items counted, one stage | einstufig, `item` angesagt, mehrere Punkte |
-| values repeat across items | einstufig, eine Wertnummer in zwei Punkten |
-| select move is the rest | die Auswahlbewegung ist die Ruhestellung: keine Bewegung zu machen |
-| value move = select move | zweistufig, `value_select` gleich `select` |
-| rest move, no entry time | `scheme.listen` weicht von der Einstiegsstellung ab und `hold_ms` ist null: die YGE-Profile |
-| store move, two stages | zweistufig mit `scheme.store` |
-| store move = select move | einstufig, `scheme.store` gleich `select` |
-| needs 22.8 V, cap 21.0 V | die Spannung (VOLTAGE, oder die Zellenzahl des Profils) liegt über der Grenze von SUPPLY |
+| braucht eine Person am ESC | `automatable` ist `assisted` |
+| kein nutzbares Verfahren | `automatable` ist `none` |
+| Einstieg nach Einschalten | `scheme.entry.when` ist `after_power_on` |
+| Melodie-Menü, Ja/Nein-Menü, Stickpositions-Menü, Menü eigener Art | `scheme.type` |
+| Töne nach Tonhöhe getrennt | `scheme.announce.encoding` ist `melody` oder `yes_no` |
+| Punkt und Wert: 1 Bewegung | `item_then_value` ohne `value_select`: welche Gruppe die Bewegung beantwortet, steht nicht fest |
+| 2 Bewegungen, ohne Werttöne | `value_select` ohne `item_then_value` |
+| viele Änderungen, einstufig | einstufig mit `"changes_per_entry": "many"` |
+| Punkte gezählt, einstufig | einstufig, `item` angesagt, mehrere Punkte |
+| Werte wiederholen sich | einstufig, eine Wertnummer in zwei Punkten |
+| Auswahl = Ruhestellung | die Auswahlbewegung ist die Ruhestellung: keine Bewegung zu machen |
+| Wertbewegung = Auswahl | zweistufig, `value_select` gleich `select` |
+| Ruhe ohne Einstiegszeit | `scheme.listen` weicht von der Einstiegsstellung ab und `hold_ms` ist null: die YGE-Profile |
+| Speichern, zweistufig | zweistufig mit `scheme.store` |
+| Speichern = Auswahl | einstufig, `scheme.store` gleich `select` |
+| 22.8 V, Obergrenze 21.0 V | die Spannung (SPANNUNG, oder die Zellenzahl des Profils) liegt über der Grenze von SUPPLY |
 
 Ein auf der SD-Karte korrigiertes Profil steht mit seiner Korrektur in der
 Liste.
@@ -270,23 +270,23 @@ Liste.
 
 | Ergebnis | Ursache |
 | --- | --- |
-| DONE | jede Auswahl getroffen |
+| FERTIG | jede Auswahl getroffen |
 | STOP | STOP, aus jeder Quelle, während des Laufs gezählt |
 | DISARMED | der Prüfstand wurde entschärft |
-| LINK LOST | der Koprozessor antwortete irgendwann während des Laufs und hörte auf |
-| SUPPLY OFF | der Ausgang ging aus: eine Auslösung, oder ein ON, das das Netzteil fallen ließ |
-| SUPPLY NOT ANSWERING | das Netzteil antwortet nicht mehr |
-| NO READINGS | der Messwertzähler 1000 ms unverändert |
-| READ RATE | 3 späte Messwerte hintereinander |
-| NOT ARMED | nicht scharf innerhalb von 3000 ms |
-| NO POWER | der Ausgang nicht innerhalb von 3000 ms als an gemeldet |
-| SUPPLY STAYS ON | das Netzteil meldet den Ausgang nicht innerhalb von 3000 ms nach der Anforderung des Laufs aus, mit dem Strom unten |
-| TOUCH LOST | Touch-Ereignisse verloren, solange das ARM des Laufs noch nicht genommen oder der Prüfstand noch nicht scharf war |
-| NO BEEPS | SILENCE lang kein Piepton |
-| CURRENT STAYS HIGH | ein Puls länger als zweimal LONG MAX |
-| TIMEOUT | innerhalb von TIMEOUT auf keine gewünschte Gruppe reagiert |
-| ABORTED | ABORT |
-| SCREEN LEFT | der Bildschirm wurde verlassen |
+| LINK VERLOREN | der Koprozessor antwortete irgendwann während des Laufs und hörte auf |
+| NETZTEIL AUS | der Ausgang ging aus: eine Auslösung, oder ein ON, das das Netzteil fallen ließ |
+| NETZTEIL ANTWORTET NICHT | das Netzteil antwortet nicht mehr |
+| KEINE MESSWERTE | der Messwertzähler 1000 ms unverändert |
+| MESSRATE | 3 späte Messwerte hintereinander |
+| NICHT ARMED | nicht scharf innerhalb von 3000 ms |
+| AUSGANG NICHT GEMELDET | der Ausgang nicht innerhalb von 3000 ms als an gemeldet |
+| NETZTEIL BLEIBT EIN | das Netzteil meldet den Ausgang nicht innerhalb von 3000 ms nach der Anforderung des Laufs aus, mit dem Strom unten |
+| TOUCH VERLOREN | Touch-Ereignisse verloren, solange das ARM des Laufs noch nicht genommen oder der Prüfstand noch nicht scharf war |
+| KEINE PIEPTÖNE | STILLE lang kein Piepton |
+| STROM BLEIBT HOCH | ein Puls länger als zweimal LANG MAX |
+| ZEITLIMIT | innerhalb von ZEITLIMIT auf keine gewünschte Gruppe reagiert |
+| ABGEBROCHEN | ABBRECHEN |
+| SEITE VERLASSEN | der Bildschirm wurde verlassen |
 
 Jedes Ende setzt das Gas auf MIN, schaltet das Netzteil aus und entschärft;
 ein Abbruch tut alle drei in einem Schritt.
@@ -304,11 +304,11 @@ alle 100 ms (`PDMINI_DISPLAY_MS`), und das Panel liest die Page alle 100 ms
 100 bis 150 ms auseinander, und der Zähler kann zwischen zwei Page-Lesungen
 um 2 weiterlaufen. Ein Zähler, der um mehr als 1 weiterläuft, ist ein
 Messwert, den das Panel nie sah, und ist spät. Ein Zähler, der stehen
-bleibt, sind Messwerte, die ausbleiben: NO READINGS nach 1000 ms, wie frisch
+bleibt, sind Messwerte, die ausbleiben: KEINE MESSWERTE nach 1000 ms, wie frisch
 die Page selbst auch ist. Ein Piepton oder eine Lücke kürzer als etwa
 200 ms kann zwischen zwei Messwerte des Moduls fallen und ungesehen
 bleiben; die Reihenfolgeregel übergeht dann die Gruppe, statt die Nummer
-darunter zu wählen. BEEP MIN und GAP MIN stehen deshalb auf 200 ms. Ob der
+darunter zu wählen. PIEPTON MIN und PAUSE MIN stehen deshalb auf 200 ms. Ob der
 Strom des Moduls ein Augenblickswert oder ein Mittel über sein Intervall
 ist, ist nicht bekannt.
 
@@ -318,7 +318,7 @@ Pieptöne, die nicht gemessen ist. Es wird nicht gemacht.
 
 ## Simulation
 
-Ist das PD mini in SETUP INTERFACES aus, betreibt der Bildschirm SUPPLY das
+Ist das PD mini in SETUP ANSCHLÜSSE aus, betreibt der Bildschirm SUPPLY das
 Modell eines Netzteils im Panel. Während eines Stick-Laufs ist der Strom
 dieses Modells ein simulierter ESC (`shared/esc/esc_sim.c`), der dem Profil
 folgt: Einschalten in der Einstiegsstellung betritt das Menü nach dem
@@ -344,11 +344,11 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
 - Kein Lauf gegen einen ESC. Die Vorgaben und die Reihenfolgeregel sind an
   echten Pieptönen nicht erprobt.
 - Ein ESC, der eine Auswahl ignoriert, gibt weiter seine Punkte aus, die der
-  Lauf dann als Werte zählt: er kann DONE melden, ohne dass etwas
+  Lauf dann als Werte zählt: er kann FERTIG melden, ohne dass etwas
   gespeichert ist.
 - Bei einem Menü, das länger oder kürzer als sein Profil ist, wird auf die
   niedrigste Nummer nie reagiert, weil die höchste der Schleife nicht die
-  davor gehörte ist; der Lauf endet mit TIMEOUT.
+  davor gehörte ist; der Lauf endet mit ZEITLIMIT.
 - Eine Auswahl braucht drei Gruppen hintereinander in Reihenfolge und
   kostet also mindestens einen Durchgang der Schleife: bis zu etwa zwei
   Schleifen, wenn die gewünschte Nummer die niedrigste ist. Ein

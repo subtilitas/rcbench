@@ -90,14 +90,14 @@ Panel als Leitung ohne Flanken gelesen wird.
   Kommando geht ab, wenn das Halten durchgelaufen ist, nicht wenn der Finger
   abhebt. Das Entschärfen ist ein Druck.
 - Ein Stick-Lauf auf PROGRAMMER schaltet über dieselbe Policy scharf, nachdem
-  seine Warnung (MOTOR REMOVED, LOAD FITTED?) 2 s gehalten ist. Danach setzt
+  seine Warnung (MOTOR ABGEKLEMMT, LAST ANGESCHLOSSEN?) 2 s gehalten ist. Danach setzt
   er das Gas auf die Einstiegsstellung des Profils, bevor er das Netzteil
   einschaltet; bei den meisten ESCs ist das Vollgas: so wird ihr Menü
   betreten, und deshalb verlangt die Warnung, dass der Motor ab ist. Das ARM
   des Haltens wartet einen Frame im Bildschirm; ein STOP oder ein verlorenes
   Touch-Ereignis in diesem Frame nimmt es zurück und beendet den Lauf, damit
   es den Stopp nicht aufheben kann. STOP, ein Entschärfen, ein verlorener
-  Link, ABORT und das Verlassen des Bildschirms beenden den Lauf mit dem Gas
+  Link, ABBRECHEN und das Verlassen des Bildschirms beenden den Lauf mit dem Gas
   auf Minimum, dem Netzteil aus und dem Prüfstand entschärft, in einem
   Schritt. Ein Lauf, der wie geplant endet, schaltet zuerst das Netzteil aus
   und bewegt den Knüppel, wenn das Netzteil selbst den Ausgang aus meldet.
@@ -142,11 +142,11 @@ Panel als Leitung ohne Flanken gelesen wird.
   Timer fertig wird, ein verlorenes Release schaltet dort also von selbst
   scharf oder quittiert; die Kacheln der Übersicht, die Zellen des Outputs-
   und des Picker-Bildschirms, die Tasten des Einstellungs-Bildschirms, die
-  Tasten, Zeilen und die DELETE-Rückfrage des Log-Viewers und die Tab-Zeilen
+  Tasten, Zeilen und die LÖSCHEN-Rückfrage des Log-Viewers und die Tab-Zeilen
   von MOTOR & ESC, ANALYSER und BALANCE wirken stattdessen auf das Release,
   und ein gehaltener Druck besitzt eine Track-ID, die der Controller
   wiederverwendet -- ein späterer Kontakt, der woanders begann, wird dann für
-  das fehlende Release gehalten. Die DELETE-Rückfrage bleibt bei einem Abbruch
+  das fehlende Release gehalten. Die LÖSCHEN-Rückfrage bleibt bei einem Abbruch
   offen und nimmt den nächsten frischen Druck an. HOME und STOP sind die eigene
   Geste des Routers, und er bricht sie selbst ab.
 - Bricht der Touch-Strom ab, während STOP gehalten wird, wird gestoppt. Der
